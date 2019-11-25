@@ -72,9 +72,11 @@ poplar::program::Sequence PopPrograms::setRandomSeedFromHost() {
   return prog;
 }
 
-void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
-                                   poplar::program::Sequence &sq,
-                                   std::ostringstream &ss) {
+void PopPrograms::addPipelineCycle(
+    PipelineCycle pCycle,
+    poplar::program::Sequence &sq,
+    std::ostringstream &ss,
+    std::map<PipelineStage, poplar::Function> &fwdFunctions) {
   // Inside the each phase, conditionally do:
   //
   // 1. The pre-forward fragment
@@ -107,10 +109,10 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
   }
 
   // 3.
-  for (auto &stage_seq : pipelineSeqs.at(PipelineFragmentId::Forward)) {
+  for (auto &stage_seq : fwdFunctions) {
     if (pInfo.doStage(pCycle, stage_seq.first)) {
       ss << "\n  ps" << stage_seq.first << " : Forward";
-      sq.add(stage_seq.second);
+      sq.add(poplar::program::Call(stage_seq.second));
     }
   }
 
@@ -208,12 +210,19 @@ poplar::program::Sequence PopPrograms::getMainProgramFromPipelineFragments() {
 
   PipelineInfo pInfo = dv_p->pipelineInfo();
 
+  std::map<PipelineStage, poplar::Function> fwdFunctions;
+
+  for (auto &stage_seq : pipelineSeqs.at(PipelineFragmentId::Forward)) {
+    fwdFunctions.insert(
+        {stage_seq.first, dv_p->graph().addFunction(stage_seq.second)});
+  }
+
   poplar::program::Sequence fill;
   for (PipelineCycle pCycle = pInfo.fillPhase.start;
        pCycle <= pInfo.fillPhase.end;
        pCycle++) {
     ss << "\nPipeline Cycle " + std::to_string(pCycle) + ":";
-    addPipelineCycle(pCycle, fill, ss);
+    addPipelineCycle(pCycle, fill, ss, fwdFunctions);
   }
 
   // All pipeline cycles in the main phase are identical. So we create the
@@ -221,14 +230,14 @@ poplar::program::Sequence PopPrograms::getMainProgramFromPipelineFragments() {
   poplar::program::Sequence main;
   int64_t mainCycles = pInfo.mainPhase.end - pInfo.mainPhase.start + 1;
   ss << "\nPipeline Cycle 'Main', " + std::to_string(mainCycles) + " cycles";
-  addPipelineCycle(pInfo.mainPhase.start, main, ss);
+  addPipelineCycle(pInfo.mainPhase.start, main, ss, fwdFunctions);
 
   poplar::program::Sequence flush;
   for (PipelineCycle pCycle = pInfo.flushPhase.start;
        pCycle <= pInfo.flushPhase.end;
        pCycle++) {
     ss << "\nPipeline Cycle " + std::to_string(pCycle) + ":";
-    addPipelineCycle(pCycle, flush, ss);
+    addPipelineCycle(pCycle, flush, ss, fwdFunctions);
   }
 
   logging::devicex::debug("Pipelining program construction summary:");

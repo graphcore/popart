@@ -112,9 +112,11 @@ public:
   std::vector<poplar::program::Sequence *>
   pipelineIpuCopyFragments(PipelineStage, const std::string &desc);
 
-  void addPipelineCycle(PipelineCycle pCycle,
-                        poplar::program::Sequence &sq,
-                        std::ostringstream &ss);
+  void
+  addPipelineCycle(PipelineCycle pCycle,
+                   poplar::program::Sequence &sq,
+                   std::ostringstream &ss,
+                   std::map<PipelineStage, poplar::Function> &fwdFunctions);
 
   Devicex *dv_p;
 
