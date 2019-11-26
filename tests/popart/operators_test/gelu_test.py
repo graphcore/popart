@@ -15,6 +15,8 @@ def poplibs_gelu(x):
 def test_gelu(op_tester):
     input_data = np.linspace(-10, 10, 100, dtype=np.float32)
 
+    op_tester.atol = 1e-6
+
     def init_builder(builder):
         i1 = builder.addInputTensor(input_data)
         o = builder.aiGraphcore.gelu([i1])
@@ -33,6 +35,8 @@ def test_gelu(op_tester):
 
 def test_gelu_inplace(op_tester):
     input_data = np.linspace(-10, 10, 100, dtype=np.float32)
+
+    op_tester.atol = 1e-6
 
     def init_builder(builder):
         i1 = builder.addInputTensor(input_data)
@@ -76,6 +80,8 @@ def test_gelu_training(op_tester):
     # The regroupinBeneficial function assumes that the input tensor is a 2D one.
     # I increase the dimension of the tensor in order to avoid segfaul.
     input_data = np.asarray([np.linspace(-10, 10, 100, dtype=np.float32)])
+
+    op_tester.atol = 1e-6
 
     def init_builder(builder):
         i1 = builder.addInputTensor(input_data)
