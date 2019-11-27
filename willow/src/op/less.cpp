@@ -18,8 +18,26 @@ std::vector<std::unique_ptr<Op>> LessOp::getGradOps() {
 }
 
 namespace {
-static OpCreator<LessOp> LessOpCreator({Onnx::Operators::Less_7,
-                                        Onnx::Operators::Less_9});
+
+static OpDefinition::DataTypes T  = {DataType::UINT8,
+                                    DataType::UINT16,
+                                    DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT8,
+                                    DataType::INT16,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT,
+                                    DataType::FLOAT16};
+static OpDefinition::DataTypes T1 = {DataType::BOOL};
+
+static OpDefinition lessOpDef({OpDefinition::Inputs({{"A", T}, {"B", T}}),
+                               OpDefinition::Outputs({{"B", T1}}),
+                               OpDefinition::Attributes({})});
+
+static OpCreator<LessOp>
+    LessOpCreator(OpDefinitions({{Onnx::Operators::Less_7, lessOpDef},
+                                 {Onnx::Operators::Less_9, lessOpDef}}));
 } // namespace
 
 } // namespace popart

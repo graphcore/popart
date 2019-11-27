@@ -33,10 +33,22 @@ std::unique_ptr<Op> ReduceSumGradOp::clone() const {
 }
 
 namespace {
-// @SL@ the new factory method for the reduceSum op will get the attributes from
-// the model and pass them to the constructor of the OP
+
+static OpDefinition::DataTypes T = {DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT};
+
+static OpDefinition reduceSumOpDef(
+    {OpDefinition::Inputs({{"data", T}}),
+     OpDefinition::Outputs({{"reduced", T}}),
+     OpDefinition::Attributes({{"axes", {"*"}}, {"keepdims", {"*"}}})});
+
 static OpCreator<ReduceSumOp> reduceSumOpCreator(
-    {Onnx::Operators::ReduceSum_1, Onnx::Operators::ReduceSum_11},
+    OpDefinitions({{Onnx::Operators::ReduceSum_1, reduceSumOpDef},
+                   {Onnx::Operators::ReduceSum_11, reduceSumOpDef}}),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

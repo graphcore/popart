@@ -146,7 +146,18 @@ public:
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };
 
-static popart::OpCreator<CubeOp> cubeOpCreator(Onnx::CustomOperators::Cube);
+// describe the inputs and outputs that are supported by the operation
+
+static popart::OpDefinition::DataTypes T = {popart::DataType::FLOAT16,
+                                            popart::DataType::FLOAT};
+
+static popart::OpDefinition
+    cubeOpDef({popart::OpDefinition::Inputs({{"input", T}}),
+               popart::OpDefinition::Outputs({{"output", T}}),
+               popart::OpDefinition::Attributes({})});
+
+static popart::OpCreator<CubeOp>
+    cubeOpCreator({{Onnx::CustomOperators::Cube, cubeOpDef}});
 
 // forward Opx (poplar implementation of the forward Op)
 class CubeOpx : public popart::popx::Opx {

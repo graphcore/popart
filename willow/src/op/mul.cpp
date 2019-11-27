@@ -99,8 +99,20 @@ const std::vector<GradInOutMapper> &MulArg1GradOp::gradInputInfo() const {
 }
 
 namespace {
-static OpCreator<MulOp> mulOpCreator({Onnx::Operators::Mul_6,
-                                      Onnx::Operators::Mul_7});
+
+static OpDefinition::DataTypes T = {DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT};
+
+static OpDefinition mulOpDef({OpDefinition::Inputs({{"A", T}, {"B", T}}),
+                              OpDefinition::Outputs({{"C", T}}),
+                              OpDefinition::Attributes({})});
+
+static OpCreator<MulOp> mulOpCreator(OpDefinitions(
+    {{Onnx::Operators::Mul_6, mulOpDef}, {Onnx::Operators::Mul_7, mulOpDef}}));
 
 } // namespace
 

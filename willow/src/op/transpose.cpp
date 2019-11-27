@@ -154,8 +154,28 @@ std::unique_ptr<Op> TransposeInplaceOp::clone() const {
 }
 
 namespace {
+
+static OpDefinition::DataTypes T = {DataType::UINT8,
+                                    DataType::UINT16,
+                                    DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT8,
+                                    DataType::INT16,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT,
+                                    DataType::BOOL};
+
+static OpDefinition
+    transposeOpDef({OpDefinition::Inputs({{"data", T}}),
+                    OpDefinition::Outputs({{"transposed", T}}),
+                    OpDefinition::Attributes({{"perm", {"*"}}})});
+
 static OpCreator<TransposeOp> transposeOpCreator(
-    Onnx::Operators::Transpose_1,
+    OpDefinitions({
+        {Onnx::Operators::Transpose_1, transposeOpDef},
+    }),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

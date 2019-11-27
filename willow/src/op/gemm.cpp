@@ -64,11 +64,32 @@ void GemmOp::appendOutlineAttributes(OpSerialiserBase &os) const {
     os.appendAttribute("broadcast", broadcast);
 }
 namespace {
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16,
+                                    DataType::FLOAT,
+                                    DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT32,
+                                    DataType::INT64};
+
+static OpDefinition gemmOpDef({OpDefinition::Inputs({
+                                   {"A", T},
+                                   {"B", T},
+                                   {"C", T},
+                               }),
+                               OpDefinition::Outputs({{"Y", T}}),
+                               OpDefinition::Attributes({{"alpha", {"*"}},
+                                                         {"beta", {"*"}},
+                                                         {"transA", {"*"}},
+                                                         {"transB", {"*"}}})});
+
 static OpCreator<GemmOp> gemmOpCreator(
-    {Onnx::Operators::Gemm_6,
-     Onnx::Operators::Gemm_7,
-     Onnx::Operators::Gemm_9,
-     Onnx::Operators::Gemm_11},
+    OpDefinitions({
+        {Onnx::Operators::Gemm_6, gemmOpDef},
+        {Onnx::Operators::Gemm_7, gemmOpDef},
+        {Onnx::Operators::Gemm_9, gemmOpDef},
+        {Onnx::Operators::Gemm_11, gemmOpDef},
+    }),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

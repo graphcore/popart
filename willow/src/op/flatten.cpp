@@ -141,6 +141,24 @@ view::Regions FlattenInplaceOp::aliases(InIndex in, OutIndex) const {
 }
 
 namespace {
+
+static OpDefinition::DataTypes T = {DataType::UINT8,
+                                    DataType::UINT16,
+                                    DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT8,
+                                    DataType::INT16,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT,
+                                    DataType::BOOL};
+
+static OpDefinition
+    flatternOpDef({OpDefinition::Inputs({{"input", T}}),
+                   OpDefinition::Outputs({{"output", T}}),
+                   OpDefinition::Attributes({{"axis", {"*"}}})});
+
 static std::unique_ptr<Op> flattenOpFactory(const OperatorIdentifier &_opid,
                                             const Op::Settings &settings,
                                             const Attributes &attr) {
@@ -156,16 +174,13 @@ flattenInplaceOpFactory(const OperatorIdentifier &_opid,
   return std::make_unique<FlattenInplaceOp>(_opid, axis, settings);
 }
 
-static OpCreator<FlattenOp> flattenOpCreator({Onnx::Operators::Flatten_1,
-                                              Onnx::Operators::Flatten_9,
-                                              Onnx::Operators::Flatten_11},
-                                             flattenOpFactory,
-                                             true);
+static OpCreator<FlattenOp>
+    flattenOpCreator({{Onnx::Operators::Flatten_1, flatternOpDef},
+                      {Onnx::Operators::Flatten_9, flatternOpDef},
+                      {Onnx::Operators::Flatten_11, flatternOpDef}},
+                     flattenOpFactory,
+                     true);
 
-static OpCreator<FlattenOp> flattenInplaceOpCreator(
-    {Onnx::CustomOperators::FlattenInplace, Onnx::Operators::Flatten_9},
-    flattenInplaceOpFactory,
-    true);
 } // namespace
 
 } // namespace popart

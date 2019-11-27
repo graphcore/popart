@@ -41,10 +41,22 @@ const std::vector<GradInOutMapper> &ReduceMinGradOp::gradInputInfo() const {
 }
 
 namespace {
-// @SL@ the new factory method for the reduceMin op will get the attributes from
-// the model and pass them to the constructor of the OP
+
+static OpDefinition::DataTypes T = {DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT};
+
+static OpDefinition reduceMinOpDef(
+    {OpDefinition::Inputs({{"data", T}}),
+     OpDefinition::Outputs({{"reduced", T}}),
+     OpDefinition::Attributes({{"axes", {"*"}}, {"keepdims", {"*"}}})});
+
 static OpCreator<ReduceMinOp> reduceMinOpCreator(
-    {Onnx::Operators::ReduceMin_1, Onnx::Operators::ReduceMin_11},
+    OpDefinitions({{Onnx::Operators::ReduceMin_1, reduceMinOpDef},
+                   {Onnx::Operators::ReduceMin_11, reduceMinOpDef}}),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

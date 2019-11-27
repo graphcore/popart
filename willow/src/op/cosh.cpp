@@ -20,7 +20,18 @@ std::vector<std::unique_ptr<Op>> CoshOp::getGradOps() {
 void CoshOp::setup() { outInfo(getOutIndex()) = inInfo(getInIndex()); }
 
 namespace {
-static OpCreator<CoshOp> coshOpCreator(Onnx::Operators::Cosh_9);
-}
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition coshOpDef({OpDefinition::Inputs({
+                                   {"input", T},
+                               }),
+                               OpDefinition::Outputs({{"output", T}}),
+                               OpDefinition::Attributes({})});
+
+static OpCreator<CoshOp>
+    coshOpCreator(OpDefinitions({{Onnx::Operators::Cosh_9, coshOpDef}}));
+
+} // namespace
 
 } // namespace popart

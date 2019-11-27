@@ -18,7 +18,18 @@ std::vector<std::unique_ptr<Op>> TanOp::getGradOps() {
 }
 
 namespace {
-static OpCreator<TanOp> tanOpCreator(Onnx::Operators::Tan_7);
-}
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition tanOpDef({OpDefinition::Inputs({
+                                  {"input", T},
+                              }),
+                              OpDefinition::Outputs({{"output", T}}),
+                              OpDefinition::Attributes({})});
+
+static OpCreator<TanOp> tanOpCreator(OpDefinitions({
+    {Onnx::Operators::Tan_7, tanOpDef},
+}));
+} // namespace
 
 } // namespace popart

@@ -187,7 +187,29 @@ bool ReshapeBaseOp::canBeReplacedByIdentity() {
 }
 
 namespace {
-static OpCreator<ReshapeOp> reshapeOpCreator(Onnx::Operators::Reshape_5);
+
+// Can we support more data types?
+static OpDefinition::DataTypes T  = {DataType::UINT8,
+                                    DataType::UINT16,
+                                    DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT8,
+                                    DataType::INT16,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT,
+                                    DataType::BOOL};
+static OpDefinition::DataTypes T1 = {DataType::INT64};
+
+static OpDefinition
+    reshapeOpDef({OpDefinition::Inputs({{"data", T}, {"shape", T1, true}}),
+                  OpDefinition::Outputs({{"output", T}}),
+                  OpDefinition::Attributes({})});
+
+static OpCreator<ReshapeOp> reshapeOpCreator(OpDefinitions({
+    {Onnx::Operators::Reshape_5, reshapeOpDef},
+}));
 } // namespace
 
 } // namespace popart

@@ -40,8 +40,16 @@ void MeanArgGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 }
 
 namespace {
-static OpCreator<MeanOp> opCreator({Onnx::Operators::Mean_6,
-                                    Onnx::Operators::Mean_8});
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition meanOpDef({OpDefinition::Inputs({{"data_0", T}}),
+                               OpDefinition::Outputs({{"mean", T}}),
+                               OpDefinition::Attributes({})});
+
+static OpCreator<MeanOp>
+    opCreator(OpDefinitions({{Onnx::Operators::Mean_6, meanOpDef},
+                             {Onnx::Operators::Mean_8, meanOpDef}}));
 } // namespace
 
 } // namespace popart

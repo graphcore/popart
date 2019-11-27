@@ -91,8 +91,23 @@ const std::vector<GradInOutMapper> &DivArg1GradOp::gradInputInfo() const {
 }
 
 namespace {
-static OpCreator<DivOp> divOpCreator({Onnx::Operators::Div_6,
-                                      Onnx::Operators::Div_7});
+
+static OpDefinition::DataTypes T = {DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT};
+
+static OpDefinition divOpDef({OpDefinition::Inputs({
+                                  {"A", T},
+                                  {"B", T},
+                              }),
+                              OpDefinition::Outputs({{"C", T}}),
+                              OpDefinition::Attributes({})});
+
+static OpCreator<DivOp> divOpCreator(OpDefinitions(
+    {{Onnx::Operators::Div_6, divOpDef}, {Onnx::Operators::Div_7, divOpDef}}));
 } // namespace
 
 } // namespace popart

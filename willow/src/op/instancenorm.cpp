@@ -90,8 +90,23 @@ std::unique_ptr<Op> InstanceNormGradOp::clone() const {
 }
 
 namespace {
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition instanceNormOpDef({OpDefinition::Inputs({
+                                           {"input", T},
+                                           {"scale", T},
+                                           {"B", T},
+                                       }),
+                                       OpDefinition::Outputs({{"output", T}}),
+                                       OpDefinition::Attributes({
+                                           {"epsilon", {"*"}},
+                                       })});
+
 static OpCreator<InstanceNormOp> instanceNormOpCreator(
-    Onnx::Operators::InstanceNormalization_6,
+    OpDefinitions({
+        {Onnx::Operators::InstanceNormalization_6, instanceNormOpDef},
+    }),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

@@ -52,7 +52,15 @@ SinhGradOp::SinhGradOp(const SinhOp &fwdop)
     : ElementWiseNonLinearUnaryGradOp(Onnx::GradOperators::SinhGrad, fwdop) {}
 
 namespace {
-static OpCreator<SinhOp> sinhOpCreator(Onnx::Operators::Sinh_9);
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition sinhOpDef({OpDefinition::Inputs({{"input", T}}),
+                               OpDefinition::Outputs({{"output", T}}),
+                               OpDefinition::Attributes({})});
+static OpCreator<SinhOp> sinhOpCreator(OpDefinitions({
+    {Onnx::Operators::Sinh_9, sinhOpDef},
+}));
 } // namespace
 
 } // namespace popart

@@ -377,8 +377,29 @@ const std::map<int, int> &IfConditionGradOp::gradOutToNonGradIn() const {
 
 namespace {
 
+static OpDefinition::DataTypes B = {DataType::BOOL};
+static OpDefinition::DataTypes V = {DataType::UINT8,
+                                    DataType::UINT16,
+                                    DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT8,
+                                    DataType::INT16,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT,
+                                    DataType::BOOL};
+
+static OpDefinition ifOpDef({OpDefinition::Inputs({{"cond", B}}),
+                             OpDefinition::Outputs({{"outputs", V}}),
+                             OpDefinition::Attributes({
+                                 {"else_branch", {"*"}},
+                                 {"then_branch", {"*"}},
+                             })});
+
 static OpCreator<IfOp> ifOpCreator(
-    {Onnx::Operators::If_1, Onnx::Operators::If_11},
+    OpDefinitions({{Onnx::Operators::If_1, ifOpDef},
+                   {Onnx::Operators::If_11, ifOpDef}}),
     [](const OperatorIdentifier &opid_,
        const Op::Settings &settings_,
        const Attributes &attr) -> std::unique_ptr<Op> {

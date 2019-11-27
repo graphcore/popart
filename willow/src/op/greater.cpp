@@ -20,8 +20,32 @@ std::vector<std::unique_ptr<Op>> GreaterOp::getGradOps() {
 }
 
 namespace {
-static OpCreator<GreaterOp> GreaterOpCreator({Onnx::Operators::Greater_7,
-                                              Onnx::Operators::Greater_9});
+
+static OpDefinition::DataTypes T  = {DataType::UINT8,
+                                    DataType::UINT16,
+                                    DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT8,
+                                    DataType::INT16,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT};
+static OpDefinition::DataTypes T1 = {DataType::BOOL};
+
+static OpDefinition greaterOpDef({OpDefinition::Inputs({
+                                      {"A", T},
+                                      {"B", T},
+                                  }),
+                                  OpDefinition::Outputs({{"C", T1}}),
+                                  OpDefinition::Attributes({})});
+
+// Note : Don't support attributes axis or broadcast for version 1
+
+static OpCreator<GreaterOp> GreaterOpCreator(
+    OpDefinitions({{Onnx::Operators::Greater_1, greaterOpDef},
+                   {Onnx::Operators::Greater_7, greaterOpDef},
+                   {Onnx::Operators::Greater_9, greaterOpDef}}));
 } // namespace
 
 } // namespace popart

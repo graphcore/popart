@@ -26,8 +26,15 @@ std::unique_ptr<Op> MaxArgGradOp::clone() const {
 }
 
 namespace {
-static OpCreator<MaxOp> maxOpCreator({Onnx::Operators::Max_6,
-                                      Onnx::Operators::Max_8});
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition maxOpDef({OpDefinition::Inputs({{"data", T}}),
+                              OpDefinition::Outputs({{"max", T}}),
+                              OpDefinition::Attributes({})});
+
+static OpCreator<MaxOp> maxOpCreator(OpDefinitions(
+    {{Onnx::Operators::Max_6, maxOpDef}, {Onnx::Operators::Max_8, maxOpDef}}));
 } // namespace
 
 } // namespace popart

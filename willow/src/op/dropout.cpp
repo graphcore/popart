@@ -102,10 +102,19 @@ const std::map<int, int> &DropoutGradOp::gradOutToNonGradIn() const {
 }
 
 namespace {
+
+static OpDefinition::DataTypes T  = {DataType::FLOAT16, DataType::FLOAT};
+static OpDefinition::DataTypes T1 = {DataType::BOOL};
+
+static OpDefinition
+    dropoutOpDef({OpDefinition::Inputs({{"data", T}}),
+                  OpDefinition::Outputs({{"output", T}, {"mask", T1}}),
+                  OpDefinition::Attributes({{"ratio", {"*"}}})});
+
 static OpCreator<DropoutOp> dropoutOpCreator(
-    {Onnx::Operators::Dropout_6,
-     Onnx::Operators::Dropout_7,
-     Onnx::Operators::Dropout_10},
+    OpDefinitions({{Onnx::Operators::Dropout_6, dropoutOpDef},
+                   {Onnx::Operators::Dropout_7, dropoutOpDef},
+                   {Onnx::Operators::Dropout_10, dropoutOpDef}}),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

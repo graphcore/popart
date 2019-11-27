@@ -119,7 +119,12 @@ void HasReceptiveFieldOp::Settings::setFromAttributes(
   attributes.setIfPresent(dilations, "dilations");
 
   if (attributes.hasAttribute("auto_pad")) {
-    throw error("auto_pad is set, but is deprecated and unsupported by popart");
+    std::string autoPad =
+        attributes.getAttribute<Attributes::String>("auto_pad", "NOTSET");
+    if (autoPad != "NOTSET") {
+      throw error(
+          "auto_pad is set, but is deprecated and unsupported by popart");
+    }
   }
 }
 

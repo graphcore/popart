@@ -118,8 +118,53 @@ void OnehotGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 }
 
 namespace {
+
+// Do we support all types as there is a cast in the definition
+static OpDefinition::DataTypes T1 = {DataType::UINT8,
+                                     DataType::UINT16,
+                                     DataType::UINT32,
+                                     DataType::UINT64,
+                                     DataType::INT8,
+                                     DataType::INT16,
+                                     DataType::INT32,
+                                     DataType::INT64,
+                                     DataType::FLOAT16,
+                                     DataType::FLOAT};
+static OpDefinition::DataTypes T2 = {DataType::UINT8,
+                                     DataType::UINT16,
+                                     DataType::UINT32,
+                                     DataType::UINT64,
+                                     DataType::INT8,
+                                     DataType::INT16,
+                                     DataType::INT32,
+                                     DataType::INT64,
+                                     DataType::FLOAT16,
+                                     DataType::FLOAT};
+static OpDefinition::DataTypes T3 = {DataType::UINT8,
+                                     DataType::UINT16,
+                                     DataType::UINT32,
+                                     DataType::UINT64,
+                                     DataType::INT8,
+                                     DataType::INT16,
+                                     DataType::INT32,
+                                     DataType::INT64,
+                                     DataType::FLOAT16,
+                                     DataType::FLOAT,
+                                     DataType::BOOL};
+
+static OpDefinition onehotOpDef({OpDefinition::Inputs({
+                                     {"indices", T1},
+                                     {"depth", T2},
+                                     {"values", T3},
+                                 }),
+                                 OpDefinition::Outputs({{"output", T3}}),
+                                 OpDefinition::Attributes({{"axis", {"*"}}})});
+
 static OpCreator<OnehotOp> onehotOpCreator(
-    {Onnx::Operators::OneHot_9, Onnx::Operators::OneHot_11},
+    OpDefinitions({
+        {Onnx::Operators::OneHot_9, onehotOpDef},
+        {Onnx::Operators::OneHot_11, onehotOpDef},
+    }),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

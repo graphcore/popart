@@ -52,7 +52,16 @@ AtanGradOp::AtanGradOp(const AtanOp &fwdop)
     : ElementWiseNonLinearUnaryGradOp(Onnx::GradOperators::AtanGrad, fwdop) {}
 
 namespace {
-static OpCreator<AtanOp> atanOpCreator(Onnx::Operators::Atan_7);
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition atanOpDef({OpDefinition::Inputs({{"input", T}}),
+                               OpDefinition::Outputs({{"output", T}}),
+                               OpDefinition::Attributes({})});
+
+static OpCreator<AtanOp> atanOpCreator(OpDefinitions({
+    {Onnx::Operators::Atan_7, atanOpDef},
+}));
 } // namespace
 
 } // namespace popart

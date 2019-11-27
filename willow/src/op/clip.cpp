@@ -97,11 +97,22 @@ const std::map<int, int> &ClipGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition
+    clipOpV6Def({OpDefinition::Inputs({{"input", T}}),
+                 OpDefinition::Outputs({{"output", T}}),
+                 OpDefinition::Attributes({{"min", {"*"}}, {"max", {"*"}}})});
+
+static OpDefinition
+    clipOpV11Def({OpDefinition::Inputs({{"input", T}, {"min", T}, {"max", T}}),
+                  OpDefinition::Outputs({{"output", T}}),
+                  OpDefinition::Attributes({})});
+
 namespace {
 static OpCreator<ClipOp> clipOpCreator(
-    {Onnx::Operators::Clip_1,
-     Onnx::Operators::Clip_6,
-     Onnx::Operators::Clip_11},
+    OpDefinitions({{Onnx::Operators::Clip_6, clipOpV6Def},
+                   {Onnx::Operators::Clip_11, clipOpV11Def}}),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

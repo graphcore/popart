@@ -123,11 +123,28 @@ std::unique_ptr<Op> AveragePoolGradOp::clone() const {
 }
 
 namespace {
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition
+    averagePoolOpDef({OpDefinition::Inputs({{"X", T}}),
+                      OpDefinition::Outputs({{"Y", T}}),
+                      OpDefinition::Attributes({// Deprecated
+                                                // {"auto_pad", {"*"}},
+                                                // Not currently supported
+                                                // {"ceil_mode", {"*"}},
+                                                // {"count_include_pad", {"*"}},
+                                                {"kernel_shape", {"*"}},
+                                                {"pads", {"*"}},
+                                                {"strides", {"*"}}})});
+
 static OpCreator<AveragePoolOp> averagePoolOpCreator(
-    {Onnx::Operators::AveragePool_1,
-     Onnx::Operators::AveragePool_7,
-     Onnx::Operators::AveragePool_10,
-     Onnx::Operators::AveragePool_11},
+    OpDefinitions({
+        {Onnx::Operators::AveragePool_1, averagePoolOpDef},
+        {Onnx::Operators::AveragePool_7, averagePoolOpDef},
+        {Onnx::Operators::AveragePool_10, averagePoolOpDef},
+        {Onnx::Operators::AveragePool_11, averagePoolOpDef},
+    }),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

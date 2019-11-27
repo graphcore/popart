@@ -103,8 +103,26 @@ const std::map<int, int> &SplitGradOp::gradOutToNonGradIn() const {
 
 namespace {
 
+static OpDefinition::DataTypes T = {DataType::UINT8,
+                                    DataType::UINT16,
+                                    DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT8,
+                                    DataType::INT16,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT,
+                                    DataType::BOOL};
+
+static OpDefinition
+    splitOpDef({OpDefinition::Inputs({{"input", T}}),
+                OpDefinition::Outputs({{"outputs", T}}),
+                OpDefinition::Attributes({{"axis", {"*"}}, {"split", {"*"}}})});
+
 static OpCreator<SplitOp> splitOpCreator(
-    {Onnx::Operators::Split_2, Onnx::Operators::Split_11},
+    OpDefinitions({{Onnx::Operators::Split_2, splitOpDef},
+                   {Onnx::Operators::Split_11, splitOpDef}}),
     [](const OperatorIdentifier &opid_,
        const Op::Settings &settings_,
        const Attributes &attr) -> std::unique_ptr<Op> {

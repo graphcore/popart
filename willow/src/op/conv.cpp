@@ -326,8 +326,28 @@ ConvPartialsType fromString(const std::string &s) {
   }
 }
 
+static OpDefinition convOpDef(
+    {OpDefinition::Inputs({
+         {"X", {{DataType::FLOAT, DataType::FLOAT16}}},
+         {"W", {{DataType::FLOAT, DataType::FLOAT16}}},
+         {"B", {{DataType::FLOAT, DataType::FLOAT16}}},
+     }),
+     OpDefinition::Outputs({{"Y", {{DataType::FLOAT, DataType::FLOAT16}}}}),
+     OpDefinition::Attributes({
+         {"auto_pad", {"NOTSET"}}, // don't support. auto pad does not seem
+         // deprecated from conv
+         {"dilations", {"*"}},
+         {"group", {"*"}},
+         {"kernel_shape", {"*"}}, // Do we support this?
+         {"pads", {"*"}},
+         {"strides", {"*"}},
+     })});
+
 static OpCreator<ConvOp> convOpCreator(
-    {Onnx::Operators::Conv_1, Onnx::Operators::Conv_11},
+    OpDefinitions({
+        {Onnx::Operators::Conv_1, convOpDef},
+        {Onnx::Operators::Conv_11, convOpDef},
+    }),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {
@@ -369,8 +389,16 @@ static OpCreator<ConvOp> convOpCreator(
     },
     true);
 
-static OpCreator<ConvFlipWeightsOp>
-    convFlipWeightsOpCreator(Onnx::CustomOperators::ConvFlipWeights);
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition
+    convFlipWeightsOpDef({OpDefinition::Inputs({{"input", T}}),
+                          OpDefinition::Outputs({{"output", T}}),
+                          OpDefinition::Attributes({})});
+
+static OpCreator<ConvFlipWeightsOp> convFlipWeightsOpCreator(OpDefinitions({
+    {Onnx::CustomOperators::ConvFlipWeights, convFlipWeightsOpDef},
+}));
 } // namespace
 
 } // namespace popart

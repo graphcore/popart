@@ -414,8 +414,34 @@ const std::map<int, int> &PopartLSTMGradOp::gradOutToNonGradIn() const {
 
 namespace {
 
+static OpDefinition::DataTypes T  = {DataType::FLOAT16, DataType::FLOAT};
+static OpDefinition::DataTypes T1 = {DataType::INT32};
+
+static OpDefinition
+    lstmOpDef({OpDefinition::Inputs({
+                   {"X", T},
+                   {"W", T},
+                   {"R", T},
+                   {"B", T},
+                   //{"sequence_lens", T1 }, // not supported
+                   {"initial_h", T},
+                   {"initial_c", T},
+                   //{"P", T },// peep hole not supported
+               }),
+               OpDefinition::Outputs({{"Y", T}, {"Y_h", T}, {"Y_c", T}}),
+               OpDefinition::Attributes({
+                   //{"activation_alpha", {"*"}},
+                   //{"activation_beta", {"*"}},
+                   //{"activations", {"*"}},
+                   //{"clip", {"*"}},
+                   {"direction", {"forward"}},
+                   {"hidden_size", {"*"}},
+                   {"input_forget", {"0"}},
+               })});
+
 static OpCreator<LSTMOp> lstmOpCreator(
-    {Onnx::Operators::LSTM_1, Onnx::Operators::LSTM_7},
+    OpDefinitions({{Onnx::Operators::LSTM_1, lstmOpDef},
+                   {Onnx::Operators::LSTM_7, lstmOpDef}}),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {
@@ -452,8 +478,18 @@ static OpCreator<LSTMOp> lstmOpCreator(
     },
     true);
 
+static OpDefinition popartLstmOpDef(
+    {OpDefinition::Inputs({
+         {"X", T},
+         {"Weights", T},
+         {"Bias", T},
+         {"InitiState", T},
+     }),
+     OpDefinition::Outputs({{"Output", T}, {"CellState", T}}),
+     OpDefinition::Attributes({{"output_full_sequence", {"*"}}})});
+
 static OpCreator<PopartLSTMOp> popartLSTMOpCreator(
-    {Onnx::CustomOperators::LSTM_1},
+    OpDefinitions({{Onnx::CustomOperators::LSTM_1, popartLstmOpDef}}),
     [](const OperatorIdentifier &opid,
        const Op::Settings &settings,
        const Attributes &attr) {

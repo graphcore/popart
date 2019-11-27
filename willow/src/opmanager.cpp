@@ -15,12 +15,14 @@ OpManager &OpManager::getInstance() {
 }
 
 void OpManager::registerOp(const OperatorIdentifier &opid,
+                           const OpDefinition &details,
                            bool isPublic,
                            OpFactoryFunc func) {
 
   OpInfo info(opid);
   info.isPublic = isPublic;
   info.f1       = func;
+  info.details  = details;
 
   auto it = getInstance().opMap.find(std::make_pair(opid.domain, opid.type));
   if (it != getInstance().opMap.end()) {
@@ -43,6 +45,21 @@ OpManager::getSupportedOperations(bool includePrivate) {
     for (auto &opVersion : op.second) {
       if (opVersion.second.isPublic || includePrivate) {
         list.push_back(opVersion.second.id);
+      }
+    }
+  }
+
+  return list;
+}
+
+const OpDefinitions
+OpManager::getSupportedOperationsDefinition(bool includePrivate) {
+  OpDefinitions list;
+
+  for (auto &op : OpManager::getInstance().opMap) {
+    for (auto &opVersion : op.second) {
+      if (opVersion.second.isPublic || includePrivate) {
+        list.insert({opVersion.second.id, opVersion.second.details});
       }
     }
   }
@@ -146,6 +163,21 @@ OpVersion OpManager::getOpVersionFromOpSet(const OpDomain &opDomain,
   }
 
   return version;
+}
+
+std::ostream &operator<<(std::ostream &os,
+                         const std::vector<DataType> &dataTypes) {
+
+  for (auto &dt : dataTypes) {
+
+    if (dt != dataTypes[0]) {
+      os << ", ";
+    }
+
+    os << "tensor(" << dt << ")";
+  }
+
+  return os;
 }
 
 } // namespace popart

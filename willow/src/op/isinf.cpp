@@ -18,7 +18,22 @@ OperatorIdentifier IsInf::getOpId(const Ir &) {
 }
 
 namespace {
-static OpCreator<IsInf> IsInfCreator(Onnx::Operators::IsInf_10);
+
+static OpDefinition::DataTypes T1 = {DataType::FLOAT};
+static OpDefinition::DataTypes T2 = {DataType::BOOL};
+
+static OpDefinition
+    isInfOpDef({OpDefinition::Inputs({{"x", T1}}),
+                OpDefinition::Outputs({{"y", T2}}),
+                OpDefinition::Attributes({
+                    // Dont support the optional attributes. T13477
+                    //{"detect_negative", {"?"}},
+                    //{"detect_positive", {"?"}},
+
+                })});
+
+static OpCreator<IsInf>
+    IsInfCreator(OpDefinitions({{Onnx::Operators::IsInf_10, isInfOpDef}}));
 } // namespace
 
 } // namespace popart

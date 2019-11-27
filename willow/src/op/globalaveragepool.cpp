@@ -108,8 +108,15 @@ const GlobalAveragePoolOp *GlobalAveragePoolGradOp::getCloneOfCreator() const {
 }
 
 namespace {
-static OpCreator<GlobalAveragePoolOp>
-    globalAveragePoolOpCreator({Onnx::Operators::GlobalAveragePool_1});
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition globalAveragePoolOpDef({OpDefinition::Inputs({{"X", T}}),
+                                            OpDefinition::Outputs({{"Y", T}}),
+                                            OpDefinition::Attributes({})});
+
+static OpCreator<GlobalAveragePoolOp> globalAveragePoolOpCreator(OpDefinitions(
+    {{Onnx::Operators::GlobalAveragePool_1, globalAveragePoolOpDef}}));
 } // namespace
 
 } // namespace popart

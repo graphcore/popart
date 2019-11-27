@@ -45,10 +45,22 @@ const std::vector<GradInOutMapper> &ReduceLogSumGradOp::gradInputInfo() const {
 }
 
 namespace {
-// @SL@ the new factory method for the reduceLogSum op will get the attributes
-// from the model and pass them to the constructor of the OP
+
+static OpDefinition::DataTypes T = {DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT};
+
+static OpDefinition reduceLogSumOpDef(
+    {OpDefinition::Inputs({{"data", T}}),
+     OpDefinition::Outputs({{"reduced", T}}),
+     OpDefinition::Attributes({{"axes", {"*"}}, {"keepdims", {"*"}}})});
+
 static OpCreator<ReduceLogSumOp> ReduceLogSumOpCreator(
-    {Onnx::Operators::ReduceLogSum_1, Onnx::Operators::ReduceLogSum_11},
+    OpDefinitions({{Onnx::Operators::ReduceLogSum_1, reduceLogSumOpDef},
+                   {Onnx::Operators::ReduceLogSum_11, reduceLogSumOpDef}}),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

@@ -372,10 +372,41 @@ const std::map<int, int> &SliceGradOp::gradOutToNonGradIn() const {
 }
 
 namespace {
+
+static OpDefinition::DataTypes T    = {DataType::UINT8,
+                                    DataType::UINT16,
+                                    DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT8,
+                                    DataType::INT16,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT,
+                                    DataType::BOOL};
+static OpDefinition::DataTypes Tind = {DataType::INT32, DataType::INT64};
+
+static OpDefinition
+    sliceOpV1Def({OpDefinition::Inputs({{"data", T}}),
+                  OpDefinition::Outputs({{"output", T}}),
+                  OpDefinition::Attributes(
+                      {{"axes", {"*"}}, {"ends", {"*"}}, {"starts", {"*"}}})});
+
+static OpDefinition sliceOpDef({OpDefinition::Inputs({
+                                    {"data", T},
+                                    {"starts", Tind, true},
+                                    {"ends", Tind, true},
+                                    {"axes", Tind, true},
+                                    // Not supported
+                                    //{"steps", Tind true} },
+                                }),
+                                OpDefinition::Outputs({{"output", T}}),
+                                OpDefinition::Attributes({})});
+
 static OpCreator<SliceOp> sliceOpCreator(
-    {Onnx::Operators::Slice_1,
-     Onnx::Operators::Slice_10,
-     Onnx::Operators::Slice_11},
+    OpDefinitions({{Onnx::Operators::Slice_1, sliceOpV1Def},
+                   {Onnx::Operators::Slice_10, sliceOpDef},
+                   {Onnx::Operators::Slice_11, sliceOpDef}}),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

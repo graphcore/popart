@@ -41,10 +41,22 @@ const std::vector<GradInOutMapper> &ReduceMaxGradOp::gradInputInfo() const {
 }
 
 namespace {
-// @SL@ the new factory method for the reduceMax op will get the attributes from
-// the model and pass them to the constructor of the OP
+
+static OpDefinition::DataTypes T = {DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT};
+
+static OpDefinition reduceMaxOpDef(
+    {OpDefinition::Inputs({{"data", T}}),
+     OpDefinition::Outputs({{"reduced", T}}),
+     OpDefinition::Attributes({{"axes", {"*"}}, {"keepdims", {"*"}}})});
+
 static OpCreator<ReduceMaxOp> reduceMaxOpCreator(
-    {Onnx::Operators::ReduceMax_1, Onnx::Operators::ReduceMax_11},
+    OpDefinitions({{Onnx::Operators::ReduceMax_1, reduceMaxOpDef},
+                   {Onnx::Operators::ReduceMax_11, reduceMaxOpDef}}),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

@@ -320,8 +320,29 @@ Shape MatMulRhsGradOp::getLhsInputShape() const { return fwdOpLhsInfo.shape(); }
 Shape MatMulRhsGradOp::getOutputShape() const { return fwdOpRhsInfo.shape(); }
 
 namespace {
+
+static OpDefinition::DataTypes T = {DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT};
+
+static OpDefinition
+    matmulOpDef({OpDefinition::Inputs({
+                     {"A", T},
+                     {"B", T},
+                 }),
+                 OpDefinition::Outputs({{"Y", T}}),
+                 OpDefinition::Attributes({
+                     {sSerializeMatMulModeAttribute, {"*"}},
+                     {sSerializeMatMulFactorAttribute, {"*"}},
+                     {sSerializeMatMulPrecisionAttribute, {"*"}},
+                 })});
+
 static OpCreator<MatMulOp> matMulOpCreator(
-    {Onnx::Operators::MatMul_1, Onnx::Operators::MatMul_9},
+    OpDefinitions({{Onnx::Operators::MatMul_1, matmulOpDef},
+                   {Onnx::Operators::MatMul_9, matmulOpDef}}),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

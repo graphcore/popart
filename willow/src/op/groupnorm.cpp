@@ -86,8 +86,22 @@ void GroupNormGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("epsilon", epsilon);
 }
 namespace {
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition groupNormOpDef(
+    {OpDefinition::Inputs({
+         {"X", T},
+         {"Scale", T},
+         {"Bias", T},
+     }),
+     OpDefinition::Outputs({{"Y", T}, {"Mean", T}, {"Var", T}}),
+     OpDefinition::Attributes({{"num_groups", {"*"}}, {"epsilon", {"*"}}})});
+
 static OpCreator<GroupNormOp> groupNormOpCreator(
-    Onnx::CustomOperators::GroupNormalization_1,
+    OpDefinitions({
+        {Onnx::CustomOperators::GroupNormalization_1, groupNormOpDef},
+    }),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

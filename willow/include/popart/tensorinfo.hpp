@@ -187,6 +187,7 @@ private:
 };
 
 std::ostream &operator<<(std::ostream &stream, const TensorInfo &ti);
+std::ostream &operator<<(std::ostream &stream, const DataType &dt);
 
 } // namespace popart
 

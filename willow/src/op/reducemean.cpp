@@ -35,10 +35,22 @@ std::unique_ptr<Op> ReduceMeanGradOp::clone() const {
 }
 
 namespace {
-// @SL@ the new factory method for the reduceMean op will get the attributes
-// from the model and pass them to the constructor of the OP
+
+static OpDefinition::DataTypes T = {DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT};
+
+static OpDefinition reduceMeanOpDef(
+    {OpDefinition::Inputs({{"data", T}}),
+     OpDefinition::Outputs({{"reduced", T}}),
+     OpDefinition::Attributes({{"axes", {"*"}}, {"keepdims", {"*"}}})});
+
 static OpCreator<ReduceMeanOp> ReduceMeanOpCreator(
-    {Onnx::Operators::ReduceMean_1, Onnx::Operators::ReduceMean_11},
+    OpDefinitions({{Onnx::Operators::ReduceMean_1, reduceMeanOpDef},
+                   {Onnx::Operators::ReduceMean_11, reduceMeanOpDef}}),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

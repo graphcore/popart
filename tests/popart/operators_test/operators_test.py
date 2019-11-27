@@ -21,6 +21,29 @@ def test_get_op_types():
     assert (len(ops_all) > len(ops_public))
 
 
+def test_get_op_types_definition():
+    ops_public = popart.getSupportedOperationsDefinition(False)
+    assert (len(ops_public) > 0)
+
+    for k, v in ops_public.items():
+        print(k.domain, k.type, k.version)
+        print(" Inputs:")
+        for i in v.inputs:
+            print("  ", i.name, i.supportedTensors)
+        print(" Outputs:")
+        for o in v.outputs:
+            print("  ", o.name, o.supportedTensors)
+        print(" Attributes:")
+        for a, r in v.attributes.items():
+            print("  ", a, r.supportedValuesRegex)
+
+        print("")
+
+    ops_all = popart.getSupportedOperationsDefinition(True)
+    assert (len(ops_all) > 0)
+    assert (len(ops_all) > len(ops_public))
+
+
 def test_add(op_tester):
     d1 = np.random.rand(2).astype(np.float32)
     d2 = np.random.rand(2).astype(np.float32)
@@ -1318,8 +1341,6 @@ def test_argmin_keepdims(op_tester):
 
 
 def _test_argmax(op_tester, data, axis, keepdims):
-    print(f'_test_argmax axis={axis}, keepdims={keepdims}')
-
     def init_builder(builder):
         i1 = builder.addInputTensor(data)
         o = builder.aiOnnx.argmax([i1], axis, keepdims, "test_argmax")

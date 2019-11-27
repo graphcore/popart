@@ -46,19 +46,50 @@ const std::map<int, int> &CastGradOp::gradOutToNonGradIn() const {
 }
 
 namespace {
-static OpCreator<CastOp> castOpCreator(
-    {Onnx::Operators::Cast_1, Onnx::Operators::Cast_6, Onnx::Operators::Cast_9},
-    [](const OperatorIdentifier &opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      int64_t i64_to;
-      attr.set(i64_to, "to");
-      auto tpdt_to   = static_cast<onnx::TensorProto_DataType>(i64_to);
-      DataType dt_to = onnxutil::getDataType(tpdt_to);
 
-      return std::make_unique<CastOp>(opid, dt_to, settings);
-    },
-    true);
+static OpDefinition::DataTypes T1 = {DataType::FLOAT16,
+                                     DataType::FLOAT,
+                                     DataType::INT8,
+                                     DataType::INT16,
+                                     DataType::INT32,
+                                     DataType::UINT8,
+                                     DataType::UINT16,
+                                     DataType::UINT32,
+                                     DataType::BOOL};
+static OpDefinition::DataTypes T2 = {DataType::FLOAT16,
+                                     DataType::FLOAT,
+                                     DataType::INT8,
+                                     DataType::INT16,
+                                     DataType::INT32,
+                                     DataType::UINT8,
+                                     DataType::UINT16,
+                                     DataType::UINT32,
+                                     DataType::BOOL};
+
+static OpDefinition castOpDef(
+    {OpDefinition::Inputs({{"input", T1}}),
+     OpDefinition::Outputs({{"output", T2}}),
+     OpDefinition::Attributes(
+         {{"to",
+           {"FLOAT|FLOAT16|INT8|INT16|INT32|UINT8|UINT16|UINT32|BOOL"}}})});
+
+static OpCreator<CastOp>
+    castOpCreator(OpDefinitions({
+                      {Onnx::Operators::Cast_6, castOpDef},
+                      {Onnx::Operators::Cast_9, castOpDef},
+                  }),
+                  [](const OperatorIdentifier &opid,
+                     const Op::Settings &settings,
+                     const Attributes &attr) -> std::unique_ptr<Op> {
+                    int64_t i64_to;
+                    attr.set(i64_to, "to");
+                    auto tpdt_to =
+                        static_cast<onnx::TensorProto_DataType>(i64_to);
+                    DataType dt_to = onnxutil::getDataType(tpdt_to);
+
+                    return std::make_unique<CastOp>(opid, dt_to, settings);
+                  },
+                  true);
 } // namespace
 
 } // namespace popart

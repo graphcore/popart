@@ -140,11 +140,46 @@ std::unique_ptr<Op> topKFactory(const OperatorIdentifier &_opid,
   }
 }
 
-static OpCreator<TopKOp> TopKOpCreator({Onnx::Operators::TopK_1,
-                                        Onnx::Operators::TopK_10,
-                                        Onnx::Operators::TopK_11},
-                                       topKFactory,
-                                       true);
+static OpDefinition::DataTypes T_V1 = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition::DataTypes T = {DataType::UINT8,
+                                    DataType::UINT16,
+                                    DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT8,
+                                    DataType::INT16,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT};
+static OpDefinition::DataTypes K = {DataType::INT64};
+
+static OpDefinition
+    topKOpV1Def({OpDefinition::Inputs({{"X", T_V1}}),
+                 OpDefinition::Outputs({{"Values", T}, {"Indicies", K}}),
+                 OpDefinition::Attributes({
+                     {"axis", {"*"}},
+                     {"k", {"*"}},
+                 })});
+
+static OpDefinition
+    topKOpDef({OpDefinition::Inputs({
+                   {"X", T},
+                   {"K", K, true},
+               }),
+               OpDefinition::Outputs({{"Values", T}, {"Indicies", K}}),
+               OpDefinition::Attributes({
+                   {"axis", {"*"}},
+               })});
+
+static OpCreator<TopKOp>
+    TopKOpCreator(OpDefinitions({
+                      {Onnx::Operators::TopK_1, topKOpV1Def},
+                      {Onnx::Operators::TopK_10, topKOpDef},
+                      {Onnx::Operators::TopK_11, topKOpDef},
+                  }),
+                  topKFactory,
+                  true);
 } // namespace
 
 } // namespace popart

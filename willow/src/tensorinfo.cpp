@@ -426,6 +426,11 @@ std::ostream &operator<<(std::ostream &stream, const TensorInfo &ti) {
   return stream;
 }
 
+std::ostream &operator<<(std::ostream &stream, const DataType &dt) {
+  stream << getDataTypeInfoMap().at(dt).lcasename();
+  return stream;
+}
+
 DataTypeInfo::DataTypeInfo(DataType type__,
                            int nbytes__,
                            bool isFixedPoint__,

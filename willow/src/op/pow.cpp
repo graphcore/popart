@@ -91,8 +91,15 @@ const std::vector<GradInOutMapper> &PowArg1GradOp::gradInputInfo() const {
 } // namespace popart
 
 namespace {
-static OpCreator<PowOp> mulOpCreator({Onnx::Operators::Pow_1,
-                                      Onnx::Operators::Pow_7});
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition powOpDef({OpDefinition::Inputs({{"X", T}, {"Y", T}}),
+                              OpDefinition::Outputs({{"Z", T}}),
+                              OpDefinition::Attributes({})});
+
+static OpCreator<PowOp> mulOpCreator(OpDefinitions(
+    {{Onnx::Operators::Pow_1, powOpDef}, {Onnx::Operators::Pow_7, powOpDef}}));
 } // namespace
 
 } // namespace popart

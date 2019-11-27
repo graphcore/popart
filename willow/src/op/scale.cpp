@@ -85,8 +85,16 @@ const std::map<int, int> &ScaleGradOp::gradOutToNonGradIn() const {
 }
 
 namespace {
+
+// Does this support FLOAT16. defs.cc says no
+static OpDefinition::DataTypes T = {DataType::FLOAT};
+
+static OpDefinition scaleOpDef({OpDefinition::Inputs({{"X", T}}),
+                                OpDefinition::Outputs({{"Y", T}}),
+                                OpDefinition::Attributes({{"scale", {"*"}}})});
+
 static OpCreator<ScaleOp> scaleOpCreator(
-    Onnx::CustomOperators::Scale_1,
+    OpDefinitions({{Onnx::CustomOperators::Scale_1, scaleOpDef}}),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

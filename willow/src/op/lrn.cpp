@@ -83,8 +83,22 @@ void LRNGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 }
 
 namespace {
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition lrnOpDef({OpDefinition::Inputs({{"X", T}}),
+                              OpDefinition::Outputs({{"Y", T}}),
+                              OpDefinition::Attributes({
+                                  {"alpha", {"*"}},
+                                  {"beta", {"*"}},
+                                  {"bias", {"*"}},
+                                  {"size", {"*"}},
+                              })});
+
 static OpCreator<LRNOp> lrnOpCreator(
-    {Onnx::Operators::LRN_1},
+    OpDefinitions({
+        {Onnx::Operators::LRN_1, lrnOpDef},
+    }),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

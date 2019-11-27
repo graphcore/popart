@@ -237,8 +237,21 @@ const std::vector<GradInOutMapper> &AddArg1GradOp::gradInputInfo() const {
 void AddArg1GradOp::setup() { outInfo(getOutIndex()) = forward_op_arg_info; }
 
 namespace {
-static OpCreator<AddOp> addOpCreator({Onnx::Operators::Add_6,
-                                      Onnx::Operators::Add_7});
+
+static OpDefinition::DataTypes T = {DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT};
+
+static OpDefinition addOpDef({OpDefinition::Inputs({{"A", T}, {"B", T}}),
+                              OpDefinition::Outputs({{"C", T}}),
+                              OpDefinition::Attributes({})});
+
+static OpCreator<AddOp> addOpCreator(OpDefinitions(
+    {{Onnx::Operators::Add_6, addOpDef}, {Onnx::Operators::Add_7, addOpDef}}));
+
 } // namespace
 
 } // namespace popart

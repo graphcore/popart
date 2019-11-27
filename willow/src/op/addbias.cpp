@@ -181,8 +181,18 @@ const std::map<int, int> &AddBiasDataGradOp::gradOutToNonGradIn() const {
 
 namespace {
 
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition addBiasOpDef({OpDefinition::Inputs({{"input", T}}),
+                                  OpDefinition::Outputs({{"output", T}}),
+                                  OpDefinition::Attributes({})});
+
 // The AddBiasOp should not be created from the onnx graph
-static OpCreator<AddBiasOp> addOpCreator(Onnx::CustomOperators::AddBias, false);
+static OpCreator<AddBiasOp>
+    addOpCreator(OpDefinitions({
+                     {Onnx::CustomOperators::AddBias, addBiasOpDef},
+                 }),
+                 false);
 } // namespace
 
 } // namespace popart

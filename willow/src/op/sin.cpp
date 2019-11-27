@@ -28,7 +28,16 @@ std::unique_ptr<Op> SinGradOp::clone() const {
 }
 
 namespace {
-static OpCreator<SinOp> sinOpCreator(Onnx::Operators::Sin_7);
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition sinOpDef({OpDefinition::Inputs({{"input", T}}),
+                              OpDefinition::Outputs({{"output", T}}),
+                              OpDefinition::Attributes({})});
+
+static OpCreator<SinOp> sinOpCreator(OpDefinitions({
+    {Onnx::Operators::Sin_7, sinOpDef},
+}));
 } // namespace
 
 } // namespace popart

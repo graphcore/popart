@@ -204,8 +204,16 @@ void NlllWithSoftmaxGradDirectOp::setup() {
 }
 
 namespace {
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition softmaxOpDef({OpDefinition::Inputs({{"input", T}}),
+                                  OpDefinition::Outputs({{"output", T}}),
+                                  OpDefinition::Attributes({{"axis", {"*"}}})});
+
 static OpCreator<SoftmaxOp> softmaxOpCreator(
-    {Onnx::Operators::Softmax_1, Onnx::Operators::Softmax_11},
+    OpDefinitions({{Onnx::Operators::Softmax_1, softmaxOpDef},
+                   {Onnx::Operators::Softmax_11, softmaxOpDef}}),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {
@@ -215,10 +223,6 @@ static OpCreator<SoftmaxOp> softmaxOpCreator(
     },
     true);
 
-// static GradOpCreator<SoftmaxGradOp>
-//    softmaxGradOpCreator(Onnx::GradOperators::SoftmaxGrad);
-// static GradOpCreator<SoftmaxGradDirectOp>
-//    softmaxGradDirectOpCreator(Onnx::CustomGradOperators::SoftmaxGradDirect);
 } // namespace
 
 } // namespace popart

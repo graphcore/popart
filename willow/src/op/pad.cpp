@@ -254,8 +254,40 @@ std::vector<int64_t> PadGradOp::calculateAxes(const PadOp &) {
 }
 
 namespace {
+
+static OpDefinition::DataTypes T  = {DataType::UINT8,
+                                    DataType::UINT16,
+                                    DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT8,
+                                    DataType::INT16,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT};
+static OpDefinition::DataTypes T1 = {DataType::INT64};
+
+static OpDefinition
+    padOpV2Def({OpDefinition::Inputs({{"data", T}}),
+                OpDefinition::Outputs({{"output", T}}),
+                OpDefinition::Attributes({{"mode", {"constant|reflect|edge"}},
+                                          {"pads", {"*"}},
+                                          {"value", {"*"}}})});
+
+static OpDefinition padOpV11Def({OpDefinition::Inputs({
+                                     {"data", T},
+                                     {"pads", T1, true},
+                                     {"constant_value", T, true},
+                                 }),
+                                 OpDefinition::Outputs({{"output", T}}),
+                                 OpDefinition::Attributes({
+                                     {"mode", {"constant|reflect|edge"}},
+                                 })});
+
 static OpCreator<PadOp> padCreator(
-    {Onnx::Operators::Pad_2, Onnx::Operators::Pad_11},
+    OpDefinitions({{Onnx::Operators::Pad_2, padOpV2Def},
+                   {Onnx::Operators::Pad_11, padOpV11Def}}),
+    //{Onnx::Operators::Pad_2, Onnx::Operators::Pad_11},
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {
@@ -267,6 +299,6 @@ static OpCreator<PadOp> padCreator(
       return std::unique_ptr<Op>(new PadOp(_opid, pads, value, mode, settings));
     },
     true);
-}
+} // namespace
 
 } // namespace popart

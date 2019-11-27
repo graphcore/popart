@@ -69,7 +69,16 @@ void SigmoidGradOp::setup() {
 }
 
 namespace {
-static OpCreator<SigmoidOp> sigmoidOpCreator(Onnx::Operators::Sigmoid_6);
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition sigmoidOpDef({OpDefinition::Inputs({{"X", T}}),
+                                  OpDefinition::Outputs({{"Y", T}}),
+                                  OpDefinition::Attributes({})});
+
+static OpCreator<SigmoidOp> sigmoidOpCreator(OpDefinitions({
+    {Onnx::Operators::Sigmoid_6, sigmoidOpDef},
+}));
 } // namespace
 
 } // namespace popart

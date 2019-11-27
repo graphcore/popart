@@ -18,7 +18,17 @@ std::vector<std::unique_ptr<Op>> SquareOp::getGradOps() {
 }
 
 namespace {
-static OpCreator<SquareOp> squareOpCreator(Onnx::CustomOperators::Square);
-}
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition squareOpDef({OpDefinition::Inputs({{"X", T}}),
+                                 OpDefinition::Outputs({{"Y", T}}),
+                                 OpDefinition::Attributes({})});
+
+// There is no defs.cc for this operation
+static OpCreator<SquareOp> squareOpCreator(OpDefinitions({
+    {Onnx::CustomOperators::Square, squareOpDef},
+}));
+} // namespace
 
 } // namespace popart

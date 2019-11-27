@@ -18,8 +18,17 @@ std::vector<std::unique_ptr<Op>> AndOp::getGradOps() {
 }
 
 namespace {
-static OpCreator<AndOp> AndOpCreator({Onnx::Operators::And_1,
-                                      Onnx::Operators::And_7});
+
+static OpDefinition::DataTypes T  = {DataType::BOOL};
+static OpDefinition::DataTypes T1 = {DataType::BOOL};
+
+static OpDefinition andOpDef({OpDefinition::Inputs({{"A", T}, {"B", T}}),
+                              OpDefinition::Outputs({{"C", T1}}),
+                              OpDefinition::Attributes({})});
+
+static OpCreator<AndOp> AndOpCreator(OpDefinitions(
+    {{Onnx::Operators::And_1, andOpDef}, {Onnx::Operators::And_7, andOpDef}}));
+
 } // namespace
 
 } // namespace popart

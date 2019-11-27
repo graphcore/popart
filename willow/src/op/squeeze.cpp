@@ -137,8 +137,28 @@ std::unique_ptr<Op> SqueezeInplaceOp::clone() const {
 }
 
 namespace {
+
+static OpDefinition::DataTypes T = {DataType::UINT8,
+                                    DataType::UINT16,
+                                    DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT8,
+                                    DataType::INT16,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT,
+                                    DataType::BOOL};
+
+static OpDefinition squeezeOpDef({OpDefinition::Inputs({{"data", T}}),
+                                  OpDefinition::Outputs({{"squeezed", T}}),
+                                  OpDefinition::Attributes({{"axes", {"*"}}})});
+
 static OpCreator<SqueezeOp> squeezeOpCreator(
-    {Onnx::Operators::Squeeze_1, Onnx::Operators::Squeeze_11},
+    OpDefinitions({
+        {Onnx::Operators::Squeeze_1, squeezeOpDef},
+        {Onnx::Operators::Squeeze_11, squeezeOpDef},
+    }),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

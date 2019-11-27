@@ -175,8 +175,16 @@ void SubsampleGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 }
 
 namespace {
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition
+    subsampleOpDef({OpDefinition::Inputs({{"X", T}}),
+                    OpDefinition::Outputs({{"Y", T}}),
+                    OpDefinition::Attributes({{"strides", {"*"}}})});
+
 static OpCreator<SubsampleOp> subsampleOpCreator(
-    Onnx::CustomOperators::Subsample_1,
+    OpDefinitions({{Onnx::CustomOperators::Subsample_1, subsampleOpDef}}),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {
