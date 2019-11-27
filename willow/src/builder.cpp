@@ -275,12 +275,6 @@ TensorId AiGraphcoreOpset1::gelu(const std::vector<TensorId> &args,
       .at(0);
 }
 
-TensorId AiGraphcoreOpset1::gelu(const std::vector<TensorId> &args,
-                                 const std::string &name) {
-  return impl
-      ->op(Onnx::AiGraphcore::OpSet1::Gelu, getOpsetVersion(), args, {}, name)
-      .at(0);
-}
 
 std::vector<TensorId>
 Builder::customOp(const OperatorIdentifier &opid,

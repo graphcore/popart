@@ -54,7 +54,6 @@ std::unique_ptr<Op> GeluGradOp::clone() const {
 }
 
 namespace {
-<<<<<<< HEAD
 static OpCreator<GeluOp> geluOpCreator(
     {Onnx::CustomOperators::Gelu_1},
     [](const OperatorIdentifier &opid,
@@ -63,16 +62,6 @@ static OpCreator<GeluOp> geluOpCreator(
       return std::unique_ptr<Op>(new GeluOp(opid, settings));
     },
     true);
-=======
-static OpCreator<GeluOp> geluOpCreator(
-    {Onnx::CustomOperators::Gelu_1},
-    [](const OperatorIdentifier &opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      return std::unique_ptr<Op>(new GeluOp(opid, settings));
-    },
-    true);
->>>>>>> origin/develop
 
 } // namespace
 } // namespace popart
