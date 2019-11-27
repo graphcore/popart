@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeConstSGD0) {
     // The model will be reduce(conv(conv(conv(conv(....(conv(input))...)))),
     // nConv convolutions chained together, with the number of
     // channels increasing by 1 at each subsequent conv.
-    constexpr int nConv = 15;
+    constexpr int nConv = 11;
     std::array<std::vector<float>, nConv> weights;
     std::array<ConstVoidData, nConv> cvds;
     std::array<TensorId, nConv + 1> actIds;
@@ -89,9 +89,9 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeConstSGD0) {
     auto cpuDevice =
         popart::DeviceManager::createDeviceManager().createCpuDevice();
 
-    auto opts           = SessionOptions();
-    opts.mergeVarUpdate = mvu;
-
+    auto opts                       = SessionOptions();
+    opts.enableOutlining            = false;
+    opts.mergeVarUpdate             = mvu;
     opts.mergeVarUpdateMemThreshold = 100;
 
     float lossLambda = 0.26;
@@ -151,12 +151,12 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeConstSGD0) {
     }
   };
 
+  std::cout << "Test AutoTight" << std::endl;
+  test(MergeVarUpdateType::AutoTight);
+
   std::cout << "Test All" << std::endl;
   test(MergeVarUpdateType::All);
 
   std::cout << "Test None" << std::endl;
   test(MergeVarUpdateType::None);
-
-  std::cout << "Test AutoTight" << std::endl;
-  test(MergeVarUpdateType::AutoTight);
 }

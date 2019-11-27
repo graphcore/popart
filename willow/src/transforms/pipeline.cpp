@@ -627,7 +627,7 @@ bool Pipeline::apply(Graph &graph) const {
     depth = ir.getSessionOptions().accumulationFactor;
     if (depth < minDepth) {
       // For replicated graphs we are replicating the entire pipeline, so these
-      // condidtions still hold.
+      // conditions still hold.
       throw error("For pipelining, depth (gradient accumulation factor) must "
                   "be at least {} "
                   "for {} IPUs",

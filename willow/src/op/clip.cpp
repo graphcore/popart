@@ -47,14 +47,14 @@ float ClipOp::getClipMax() const { return max; }
 float ClipInplaceOp::getClipMin() const { return min; }
 float ClipInplaceOp::getClipMax() const { return max; }
 
-void ClipOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void ClipOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("min", min);
   os.appendAttribute("max", max);
 }
 
-void ClipInplaceOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void ClipInplaceOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("min", min);
   os.appendAttribute("max", max);
 }

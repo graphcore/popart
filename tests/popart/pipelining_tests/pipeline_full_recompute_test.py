@@ -175,5 +175,6 @@ def test_full_recompute_pipelining(tmpdir):
     p_anchors = run_test(popart.RecomputationType.Pipeline, verify)
 
     for key in s_anchors.keys():
+        assert np.all(np.isclose(n_anchors[key], s_anchors[key]))
         assert np.all(np.isclose(n_anchors[key], p_anchors[key]))
         assert np.all(np.isclose(s_anchors[key], p_anchors[key]))

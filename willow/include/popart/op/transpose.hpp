@@ -20,11 +20,10 @@ public:
   void setPerm(const Shape &value) { perm = value; }
   const Shape &getPerm() const { return perm; }
 
-  // currently these are conservative TODO T6973
-  view::RegMap fwdRegMap(InIndex) const final;
-  view::RegMap bwdRegMap(InIndex) const final;
+  view::RegMap fwdRegMap(InIndex, OutIndex) const final;
+  view::RegMap bwdRegMap(InIndex, OutIndex) const final;
 
-  view::Region aliases(InIndex index) const final { return uses(index); }
+  view::Regions aliases(InIndex in, OutIndex) const final { return uses(in); }
 
   // Get the permutation required to reverse the Transpose operation
   Shape generateReversePermutation() const;
@@ -48,7 +47,7 @@ public:
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   bool canBeReplacedByIdentity() override;
 

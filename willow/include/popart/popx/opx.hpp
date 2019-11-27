@@ -8,12 +8,19 @@
 
 #include <popart/error.hpp>
 #include <popart/names.hpp>
+#include <popart/op.hpp>
 
 namespace popart {
 
 class TensorInfo;
 
 namespace popx {
+
+class ICreatorCandidate;
+using ICreatorCandidatePtr = std::shared_ptr<ICreatorCandidate>;
+struct UnwindEndpoint;
+using UnwindEndpointPtr = std::shared_ptr<UnwindEndpoint>;
+struct OpxInAndOutIndex;
 
 class Devicex;
 
@@ -28,10 +35,9 @@ enum class InputCreatorType {
   // Cannot create tensor, nor can it allow a
   // a downstream Opx to create the tensor
   DEADEND,
-  // Opx has a poplar call to a function that can
-  // lay out the input tensor on the device from multiple
-  // creators
-  CANUNWIND_MULTIPLE_CREATORS
+  // Has a potential creator, but can also allow an Opx downstream in the graph
+  // to create it instead.
+  CANDELEGATE
 };
 
 class Opx {
@@ -49,7 +55,7 @@ public:
   // default return DEADEND, i.e. unable to create input tensor, and
   // cannot use downstream opxs as candidates to create input
   // tensor
-  virtual InputCreatorType getInputCreatorType(InIndex index0) const;
+  virtual InputCreatorType getInputCreatorType(InIndex index) const;
   // When an input tensor has multiple creator candidates, we choose
   // the one with highest priority
   double inputCreatorPriority{0.0};
@@ -57,20 +63,18 @@ public:
   // does it create the same poplar::Tensor as if opx1 creates one at
   // index1?. default behaviour : throws error
   virtual bool createsEquiv(int index0, const Opx *opx1, int index1) const;
+
+  virtual bool canUnwind(InIndex, OutIndex) const;
+
+  virtual std::pair<std::vector<ICreatorCandidatePtr>,
+                    std::vector<UnwindEndpointPtr>>
+  getEndpoints(InIndex index, std::vector<OpxInAndOutIndex> path) const;
+
   // Reverses the layout change to an input tensor for an op that returned
   // CANUNWIND
   virtual poplar::Tensor
   unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const;
-
-  // Reverses the layout change to an input tensor for an op that returned
-  // CANUNWIND_MULTIPLE_CREATORS
-  virtual poplar::Tensor unwindTensorLayout(std::vector<poplar::Tensor> tensor,
-                                            InIndex,
-                                            OutIndex) const;
-
-  // Returns list of creator candidates, used in CANUNWIND_MULTIPLE_CREATORS
-  virtual std::vector<std::pair<Op *, InIndex>>
-      getCreatorCandicates(InIndex) const;
+  virtual view::RegMap unwindRegion(InIndex, OutIndex) const;
 
   // To create a poplar::Tensor for input index index0, which
   // poplar::Tensors must already exist?

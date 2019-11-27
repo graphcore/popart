@@ -31,12 +31,12 @@ public:
   float getPadValue() const;
   const std::string &getMode() const;
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   void setup() final;
 
-  view::RegMap fwdRegMap(InIndex i) const final;
-  view::RegMap bwdRegMap(InIndex i) const final;
+  view::RegMap fwdRegMap(InIndex, OutIndex) const final;
+  view::RegMap bwdRegMap(InIndex, OutIndex) const final;
 
 private:
   std::vector<int64_t> pads;
@@ -74,9 +74,9 @@ public:
     return Op::getInplaceVariant(o);
   }
 
-  view::Region modifies(InIndex index) const override;
-  view::Region aliases(InIndex index) const override;
-  view::Region uses(InIndex index) const override;
+  view::Regions modifies(InIndex) const override;
+  view::Regions aliases(InIndex, OutIndex) const override;
+  view::Regions uses(InIndex index) const override;
 };
 
 } // namespace popart

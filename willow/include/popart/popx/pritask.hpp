@@ -2,12 +2,26 @@
 #define GUARD_PRITASK_HPP
 
 #include <functional>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <poplar/Program.hpp>
 #include <popart/names.hpp>
 
 namespace popart {
+
+using SequenceMap =
+    std::map<poplar::program::Sequence *, poplar::program::Sequence>;
+
+enum class DependencyType {
+  // Depends on output of other Op
+  OUTPUT = 0,
+  // Depends on tensor initialisation (weight)
+  TENSOR,
+  // Depends on scheduler choice
+  SCHEDULER
+};
 
 /** A Pritask is a task which has a priority and a set of dependent tasks. */
 class PriTask {
@@ -16,16 +30,18 @@ public:
   // the name of this task, must be a unique identifier
   TaskId name;
   // the names of tasks which MUST appear before this task in a linearisation
-  std::vector<TaskId> dependsOn;
-  std::function<void()> f;
+  std::vector<std::pair<TaskId, DependencyType>> dependsOn;
+  std::function<SequenceMap()> f;
+
   PriTask() = default;
   PriTask(double priority,
           TaskId,
-          const std::vector<TaskId> &deps,
-          const std::function<void()> &func);
+          const std::vector<std::pair<TaskId, DependencyType>> &deps,
+          const std::function<SequenceMap()> &funcInst);
 
   // remove dep from dependsOn.
   void removeDep(const TaskId &dep);
+  void removeDep(DependencyType type);
 };
 
 // returns true if "a" has lower priority than "b"
@@ -41,7 +57,8 @@ public:
   // as possible, subject to all dependencies being satisfied.
   // the algorithm used is a variant of  Kahn's algorithm.
   // An error is thrown if not linearizable (schedulable).
-  std::vector<PriTask> getLinearised() const;
+  std::vector<PriTask>
+  getLinearised(std::set<DependencyType> dependencies) const;
   PriTasks() = default;
 };
 

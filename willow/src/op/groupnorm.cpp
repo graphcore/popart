@@ -37,8 +37,8 @@ void GroupNormOp::setup() {
                                 {inInfo(getXInIndex()).dim(0) * num_groups}};
 }
 
-void GroupNormOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void GroupNormOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("num_groups", num_groups);
   os.appendAttribute("epsilon", epsilon);
 }
@@ -81,8 +81,8 @@ std::unique_ptr<Op> GroupNormGradOp::clone() const {
   return std::make_unique<GroupNormGradOp>(*this);
 }
 
-void GroupNormGradOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void GroupNormGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("epsilon", epsilon);
 }
 namespace {

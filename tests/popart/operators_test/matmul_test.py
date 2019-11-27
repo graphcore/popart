@@ -53,7 +53,7 @@ def test_matmul_mismatched_inputs(op_tester):
 
     assert (
         e_info.value.args[0] ==
-        "Op(ai.onnx.MatMul:9, outputs=[MatMul:0]) contracting dimensions unequal: lhs 'input' [3 4], rhs 'input/1' [3 4]"
+        "Op(ai.onnx.MatMul:9, inputs=[input, input/1], outputs=[MatMul:0]) contracting dimensions unequal: lhs 'input' [3 4], rhs 'input/1' [3 4]"
     )
 
 
@@ -81,7 +81,7 @@ def test_matmul_scalar_input(op_tester):
 
     assert (
         e_info.value.args[0] ==
-        "Op(ai.onnx.MatMul:9, outputs=[MatMul:0]) doesn't support scalar tensor input as the lhs input"
+        "Op(ai.onnx.MatMul:9, inputs=[input, input/1], outputs=[MatMul:0]) doesn't support scalar tensor input as the lhs input"
     )
 
 

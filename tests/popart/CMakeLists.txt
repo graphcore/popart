@@ -93,6 +93,7 @@ add_all_py_unit_tests("test_util;auto_virtual_graph_test;exception_test;test_ses
 add_subdirectory(operators_test)
 add_subdirectory(constexpr_tests)
 add_subdirectory(inplace_tests)
+add_subdirectory(tensor_tests)
 add_subdirectory(dot_tests)
 add_subdirectory(transformation_tests)
 add_subdirectory(pattern_tests)

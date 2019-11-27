@@ -18,8 +18,8 @@ public:
   std::unique_ptr<Op>
   getInplaceVariant(const OperatorIdentifier &) const override;
 
-  view::RegMap fwdRegMap(InIndex i) const override;
-  view::RegMap bwdRegMap(InIndex i) const override;
+  view::RegMap fwdRegMap(InIndex, OutIndex) const override;
+  view::RegMap bwdRegMap(InIndex, OutIndex) const override;
 
   void setInplacePriority(const OperatorIdentifier &, float);
 
@@ -47,8 +47,8 @@ public:
     return Op::getInplaceVariant(o);
   }
 
-  view::Region modifies(InIndex index) const override;
-  view::Region aliases(InIndex index) const override;
+  view::Regions modifies(InIndex) const override;
+  view::Regions aliases(InIndex, OutIndex) const override;
 };
 
 class AddRhsInplaceOp : public AddOp {
@@ -68,8 +68,8 @@ public:
     return Op::getInplaceVariant(o);
   }
 
-  view::Region modifies(InIndex index) const override;
-  view::Region aliases(InIndex index) const override;
+  view::Regions modifies(InIndex) const override;
+  view::Regions aliases(InIndex, OutIndex) const override;
 };
 
 class AddArg0GradOp : public ReduceSumOp {

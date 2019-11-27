@@ -43,11 +43,18 @@ using ReturnPeriod = int;
 // The position at which a Tensor is consumed by an Op
 using InIndex = int;
 // The position at which a Tensor is output by an Op
-using OutIndex      = int;
-using PipelineCycle = int64_t;
-using VGraphId      = int64_t;
-using PipelineStage = int64_t;
-using StashIndex    = int64_t;
+using OutIndex             = int;
+using PipelineCycle        = int64_t;
+using VGraphId             = int64_t;
+using PipelineStage        = int64_t;
+using PingPongPhase        = int64_t;
+using BatchSerializedPhase = int64_t;
+using StashIndex           = int64_t;
+
+// The identifier for a remote buffer
+using RemoteBufferId = int64_t;
+// The index within a remote buffer
+using RemoteBufferIndex = int64_t;
 
 // forward declaring several popart classes
 class DataFlow;
@@ -75,11 +82,12 @@ class Scope;
 class Graph;
 class GraphId;
 enum class TensorType;
+struct POpCmp;
 
 namespace view {
 class Region;
-using RegMap  = std::function<Region(const Region &)>;
 using Regions = std::vector<Region>;
+using RegMap  = std::function<Regions(const Region &)>;
 class Link;
 class Chains;
 using LowBounds = std::vector<int64_t>;
@@ -97,17 +105,19 @@ using NodeAttributes = google::protobuf::RepeatedPtrField<onnx::AttributeProto>;
 using OnnxTensors    = std::map<TensorId, onnx::TensorProto>;
 using Node           = onnx::NodeProto;
 using OnnxTensorPtrs = std::map<TensorId, const onnx::TensorProto *>;
-using OpsBeforeKey   = std::map<Op *, std::vector<Op *>>;
+using OpsBeforeKey   = std::map<Op *, std::vector<Op *>, POpCmp>;
 
 // Custom node attribute names
-static constexpr const char *sVirtualGraphAttribute = "__ipu_number";
-static constexpr const char *sInplaceOpNames        = "__inplace_op_names";
-static constexpr const char *sInplaceOpPriorities   = "__inplace_op_priorities";
+static constexpr const char *sVirtualGraphAttribute  = "__ipu_number";
+static constexpr const char *sPingPongPhaseAttribute = "__ping_pong_phase";
+static constexpr const char *sInplaceOpNames         = "__inplace_op_names";
+static constexpr const char *sInplaceOpPriorities = "__inplace_op_priorities";
 static constexpr const char *sRecomputeOutputAttribute =
     "__recompute_output_in_backward_pass";
 static constexpr const char *sPartialsTypeAttribute    = "__partials_type";
 static constexpr const char *sAvailMemAttribute        = "__available_memory";
 static constexpr const char *sPipelineStageAttribute   = "__pipeline_stage";
+static constexpr const char *sCacheOutputAttribute     = "__cache_output";
 static constexpr const char *sOutputTypeAttribute      = "__output_type";
 static constexpr const char *sExcludePatternsAttribute = "__exclude_patterns";
 

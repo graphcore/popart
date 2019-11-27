@@ -10,13 +10,12 @@ public:
   static std::size_t id();
 
   HostReduce() : Transform() {}
-  virtual ~HostReduce() = default;
 
   virtual bool apply(Graph &) const final;
 
-  virtual std::size_t getId() const override final { return id(); }
+  virtual std::size_t getId() const final { return id(); }
 
-  virtual std::string getName() const override final { return "HostReduce"; }
+  virtual std::string getName() const final { return "HostReduce"; }
 };
 
 } // namespace popart

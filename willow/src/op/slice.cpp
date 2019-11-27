@@ -46,17 +46,17 @@ view::Region BaseSliceOp::getFullInRegion() const {
   return createSlicedRegion(inShape(getInIndex()));
 }
 
-view::RegMap BaseSliceOp::fwdRegMap(InIndex inIndex) const {
-  if (inIndex != 0) {
+view::RegMap BaseSliceOp::fwdRegMap(InIndex inIndex, OutIndex outIndex) const {
+  if (inIndex != 0 || outIndex != 0) {
     throw error("Internal Logic Error in BaseSliceOp::fwdRegMap."
                 "Received input index {} but only 0 allowed, "
                 "This for Op {}, ",
                 inIndex,
                 str());
   }
+  auto fullInRegion = getFullInRegion();
 
-  return [this](const view::Region &r) {
-    auto fullInRegion = getFullInRegion();
+  return [fullInRegion](const view::Region &r) {
     // (1) get intersection with maximal input region
     auto inRegion = r.intersect(fullInRegion);
     // (2) map to the output region by subtracting lower of maximal region
@@ -66,11 +66,11 @@ view::RegMap BaseSliceOp::fwdRegMap(InIndex inIndex) const {
       out_lb[i] -= fullInRegion.getLower()[i];
       out_ub[i] -= fullInRegion.getLower()[i];
     }
-    return view::Region(out_lb, out_ub);
+    return view::Regions(1, view::Region(out_lb, out_ub));
   };
 }
 
-view::Region BaseSliceOp::uses(InIndex inIndex) const {
+view::Regions BaseSliceOp::uses(InIndex inIndex) const {
   if (inIndex != 0) {
     throw error("Internal Logic Error in BaseSliceOp::uses. "
                 "BaseSliceOp has has input index {}, but only 0 permitted. "
@@ -78,7 +78,7 @@ view::Region BaseSliceOp::uses(InIndex inIndex) const {
                 inIndex,
                 str());
   }
-  return getFullInRegion();
+  return {getFullInRegion()};
 }
 
 std::unique_ptr<Op>
@@ -102,9 +102,8 @@ view::Region BaseSliceOp::getFullOutRegion() const {
   return view::Region::getFull(outShape(getOutIndex()));
 }
 
-view::RegMap BaseSliceOp::bwdRegMap(InIndex inIndex) const {
-  if (inIndex != 0) {
-
+view::RegMap BaseSliceOp::bwdRegMap(InIndex inIndex, OutIndex outIndex) const {
+  if (inIndex != 0 || outIndex != 0) {
     throw error("Internal Logic Error in BaseSliceOp::bwdRegMap. "
                 "Received input index {} but only 0 allowed. "
                 "This for Op {}. ",
@@ -112,9 +111,10 @@ view::RegMap BaseSliceOp::bwdRegMap(InIndex inIndex) const {
                 str());
   }
 
-  return [this](const view::Region &r) {
-    auto fullOutRegion    = getFullOutRegion();
-    auto fullInRegion     = getFullInRegion();
+  auto fullOutRegion = getFullOutRegion();
+  auto fullInRegion  = getFullInRegion();
+
+  return [fullInRegion, fullOutRegion](const view::Region &r) {
     auto outRegion        = r.intersect(fullOutRegion);
     view::LowBounds in_lb = outRegion.getLower();
     view::UppBounds in_ub = outRegion.getUpper();
@@ -122,7 +122,7 @@ view::RegMap BaseSliceOp::bwdRegMap(InIndex inIndex) const {
       in_lb[i] += fullInRegion.getLower()[i];
       in_ub[i] += fullInRegion.getLower()[i];
     }
-    return view::Region(in_lb, in_ub);
+    return view::Regions(1, view::Region(in_lb, in_ub));
   };
 }
 
@@ -229,7 +229,6 @@ SliceInplaceOp::SliceInplaceOp(const SliceOp &op)
                   op.getEnds(),
                   op.getAxes(),
                   op.getSettings()) {
-  allSlices       = op.allSlices;
   unwindConcatDim = op.unwindConcatDim;
 }
 
@@ -306,19 +305,19 @@ std::vector<std::unique_ptr<Op>> SliceInplaceOp::getGradOps() {
       str());
 }
 
-view::Region SliceInplaceOp::aliases(InIndex inIndex) const {
-  if (inIndex != 0) {
+view::Regions SliceInplaceOp::aliases(InIndex in, OutIndex) const {
+  if (in != 0) {
     throw error("Internal Logic Error in SliceInplaceOp::aliases. "
                 "BaseSliceOp has no input index {}, only 0 permitted. "
                 "This for Op {}",
-                inIndex,
+                in,
                 str());
   }
-  return getFullInRegion();
+  return {getFullInRegion()};
 }
 
-void BaseSliceOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void BaseSliceOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
 
   if (opid.version < 10) {
     os.appendAttribute("starts", starts);

@@ -29,7 +29,7 @@ public:
   bool hasInitialCInput() const;
   bool hasOutput(OutIndex) const;
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   bool isTraining() const;
 

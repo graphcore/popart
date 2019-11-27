@@ -44,17 +44,19 @@ AddBiasOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   return Op::getInplaceVariant(operator_id);
 }
 
-view::RegMap AddBiasOp::fwdRegMap(InIndex argIndex) const {
+view::RegMap AddBiasOp::fwdRegMap(InIndex argIndex, OutIndex) const {
   if (argIndex == getDataInIndex()) {
     // data input maps directly to the output
-    return [](const view::Region &r) { return r; };
+    return [](const view::Region &r) { return view::Regions(1, r); };
   } else if (argIndex == getBiasInIndex()) {
     // output is shape [_, x, _, _]
     // biasIn is shape [x]
     // the biasIn slice [a:b]
     // maps to the output slice [:, a:b, :, :]
-    return [this](const view::Region &r) {
-      auto out_shape = outShape(getOutIndex());
+    auto out_shape     = outShape(getOutIndex());
+    auto upper_capture = outShape(getOutIndex());
+    return [out_shape, upper_capture](const view::Region &r) {
+      auto upper = upper_capture;
       if (out_shape.size() != 4) {
         throw error("unexpected output shape for AddBiasInplace");
       }
@@ -63,37 +65,37 @@ view::RegMap AddBiasOp::fwdRegMap(InIndex argIndex) const {
       }
 
       std::vector<int64_t> lower{0, 0, 0, 0};
-      auto upper = outShape(getOutIndex());
 
       lower.at(1) = r.getLower().at(0);
       upper.at(1) = r.getUpper().at(0);
 
-      return view::Region{lower, upper};
+      return view::Regions(1, view::Region{lower, upper});
     };
   } else {
     throw error("Bad index ({}) to AddBiasOp::fwdRegMap", argIndex);
   }
 }
 
-view::RegMap AddBiasOp::bwdRegMap(InIndex argIndex) const {
+view::RegMap AddBiasOp::bwdRegMap(InIndex argIndex, OutIndex) const {
   if (argIndex == getDataInIndex()) {
-    return [](const view::Region &r) { return r; };
+    return [](const view::Region &r) { return view::Regions(1, r); };
   } else if (argIndex == getBiasInIndex()) {
     // output is shape [_, x, _, _]
     // biasIn is shape [x]
     // the output slice [_, a:b, _, _]
     // maps to the biasIn slice [a:b]
-    return [this](const view::Region &r) {
-      auto out_shape = outShape(getOutIndex());
+    auto out_shape   = outShape(getOutIndex());
+    auto biasInIndex = getBiasInIndex();
+    return [biasInIndex, out_shape](const view::Region &r) {
       if (r.getLower().size() != 4) {
         throw error("unexpected region size in AddBiasInplace::bwdRegMap({})",
-                    getBiasInIndex());
+                    biasInIndex);
       }
 
       int64_t a = r.getLower().at(1);
       int64_t b = r.getUpper().at(1);
 
-      return view::Region{{a}, {b}};
+      return view::Regions(1, view::Region{{a}, {b}});
     };
   } else {
     throw error("Bad index ({}) to AddBiasOp::bwdRegMap", argIndex);
@@ -118,21 +120,21 @@ AddBiasInplaceOp::getInplaceVariant(const OperatorIdentifier &o) const {
   return Op::getInplaceVariant(o);
 }
 
-view::Region AddBiasInplaceOp::modifies(InIndex index) const {
+view::Regions AddBiasInplaceOp::modifies(InIndex index) const {
   if (index == getDataInIndex()) {
-    return view::Region::getFull(inShape(index));
+    return {view::Region::getFull(inShape(index))};
   } else if (index == getBiasInIndex()) {
-    return view::Region::getEmpty(inRank(index));
+    return {view::Region::getEmpty(inRank(index))};
   } else {
     throw error("Invalid index passed to AddBiasInplaceOp::modifies");
   }
 }
 
-view::Region AddBiasInplaceOp::aliases(InIndex index) const {
-  if (index == getDataInIndex()) {
-    return view::Region::getFull(inShape(index));
-  } else if (index == getBiasInIndex()) {
-    return view::Region::getEmpty(inRank(index));
+view::Regions AddBiasInplaceOp::aliases(InIndex in, OutIndex) const {
+  if (in == getDataInIndex()) {
+    return {view::Region::getFull(inShape(in))};
+  } else if (in == getBiasInIndex()) {
+    return {view::Region::getEmpty(inRank(in))};
   } else {
     throw error("Invalid index passed to AddBiasInplaceOp::modifies");
   }

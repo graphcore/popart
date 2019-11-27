@@ -135,8 +135,8 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
 
   std::vector<float> raw_A_grad_out(A_info.nelms());
   std::vector<float> raw_B_grad_out(B_info.nelms());
-  std::vector<std::vector<float>> raw_grads_out = {raw_B_grad_out,
-                                                   raw_A_grad_out};
+  std::vector<std::vector<float>> raw_grads_out = {raw_A_grad_out,
+                                                   raw_B_grad_out};
 
   std::vector<float> A_dummy_data(A_info.nelms());
   std::vector<float> B_dummy_data(B_info.nelms());
@@ -144,16 +144,27 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
     A_dummy_data[i] = static_cast<float>(i);
   }
   for (int i = 0; i < B_dummy_data.size(); ++i) {
-    B_dummy_data[i] = static_cast<float>(i);
+    B_dummy_data[i] = static_cast<float>(B_dummy_data.size() - i - 1);
   }
 
-  std::vector<std::vector<float>> dummy_data = {B_dummy_data, A_dummy_data};
+  std::vector<std::vector<float>> dummy_data = {A_dummy_data, B_dummy_data};
 
   BOOST_CHECK(session->getGradAndVarStreamIds().size() == 2);
-  int i = 0;
+  // Careful iterating over getGradAndVarStreamIds, no guarantee for order.
   for (const auto &gv : session->getGradAndVarStreamIds()) {
     const auto &grad_stream_id   = gv.first;
     const auto &weight_stream_id = gv.second;
+
+    int i{};
+    if (weight_stream_id == "wl_init_input") {
+      // This is the stream for A
+      i = 0;
+    } else if (weight_stream_id == "wl_init_input/1") {
+      // This is the stream for B
+      i = 1;
+    } else {
+      throw error("Unexpected weight_stream_id: " + weight_stream_id);
+    }
 
     void *grad_dst = raw_grads_out[i].data();
     auto grad_size = raw_grads_out[i].size() * sizeof(float);
@@ -168,8 +179,6 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
                                      [weight_src, weight_size](void *w) {
                                        std::memcpy(w, weight_src, weight_size);
                                      });
-
-    ++i;
   }
 
   // inputs:
@@ -192,13 +201,13 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
 
   session->weightsToHost();
   session->readWeights(weightsRead);
-  BOOST_CHECK_EQUAL_COLLECTIONS(v_B_grad.begin(),
-                                v_B_grad.end(),
+  BOOST_CHECK_EQUAL_COLLECTIONS(v_A_grad.begin(),
+                                v_A_grad.end(),
                                 raw_grads_out[0].begin(),
                                 raw_grads_out[0].end());
 
-  BOOST_CHECK_EQUAL_COLLECTIONS(v_A_grad.begin(),
-                                v_A_grad.end(),
+  BOOST_CHECK_EQUAL_COLLECTIONS(v_B_grad.begin(),
+                                v_B_grad.end(),
                                 raw_grads_out[1].begin(),
                                 raw_grads_out[1].end());
 

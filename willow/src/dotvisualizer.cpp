@@ -52,6 +52,8 @@ std::string DotVisualizer::getTensorNodeColor(TensorType type) const {
     return "\"gold\"";
   case TensorType::Variable:
     return "\"blue\"";
+  case TensorType::Cache:
+    return "\"green\"";
   case TensorType::Momentum:
   case TensorType::Unknown:
   case TensorType::ActGrad:
@@ -93,7 +95,10 @@ std::ofstream &DotVisualizer::strm(const std::string &gString) {
 std::string DotVisualizer::getOpNodeColor(Op *n) {
   bool inplace = false;
   for (auto &x : n->input->tensorMap()) {
-    inplace |= !n->aliases(x.first).isEmpty();
+    auto regions = n->aliases(x.first, 0);
+    inplace |= !std::all_of(regions.begin(),
+                            regions.end(),
+                            [](const view::Region &r) { return r.isEmpty(); });
   }
 
   if (inplace) {

@@ -54,8 +54,8 @@ std::vector<std::unique_ptr<Op>> DropoutOp::getGradOps() {
   return upops;
 }
 
-void DropoutOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void DropoutOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("ratio", ratio);
 
   // Appending the seedModfier ensures that caching can only occur

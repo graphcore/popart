@@ -57,7 +57,13 @@ getPipelineStageToVGraphMap(const Graph &graph) {
   std::map<PipelineStage, VGraphId> result;
   for (auto &id_op : graph.getOps()) {
     auto op = id_op.second.get();
-    if (op->hasPipelineStage() && op->hasVirtualGraphId()) {
+    if (op->hasPipelineStage() && op->hasVirtualGraphId() &&
+        !op->isIpuCopyOp()) {
+      logging::pattern::trace("[getPipelineStageToVGraphMap]:"
+                              "Op {}, pipeline stage: {}, VGID: {}",
+                              op->debugName(),
+                              op->getPipelineStage(),
+                              op->getVirtualGraphId());
       result[op->getPipelineStage()] = op->getVirtualGraphId();
     }
   }

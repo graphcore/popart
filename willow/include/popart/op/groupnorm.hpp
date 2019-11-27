@@ -30,7 +30,7 @@ public:
   float getEpsilon() const { return epsilon; }
   int64_t getNumGroups() const { return num_groups; }
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   bool isNorm() const override { return true; }
 
@@ -61,7 +61,7 @@ public:
 
   float getEpsilon() const { return epsilon; }
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
 

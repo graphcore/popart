@@ -19,6 +19,7 @@ class TransformBuilder {
               std::map<std::string, boost::any> attributes,
               boost::optional<int64_t> virtualGraphId,
               boost::optional<int64_t> pipelineStage,
+              boost::optional<PingPongPhase>,
               const std::string opName,
               const std::string outputName);
 
@@ -28,6 +29,7 @@ class TransformBuilder {
                     TensorId &out,
                     boost::optional<int64_t> virtualGraphId,
                     boost::optional<int64_t> pipelineStage,
+                    boost::optional<PingPongPhase>,
                     const std::string debugPrefix);
 
 public:
@@ -38,11 +40,13 @@ public:
   TensorId getNextId(const std::string &name, OutIndex n = 0);
 
   Op *getProducer(TensorId id);
+  bool hasProducer(TensorId id);
 
   TensorId concat(std::vector<TensorId> &inputs,
                   int64_t axis,
                   boost::optional<int64_t> virtualGraphId,
                   boost::optional<int64_t> pipelineStage,
+                  boost::optional<PingPongPhase>,
                   const std::string opName,
                   const std::string outputName);
 
@@ -51,33 +55,45 @@ public:
               TensorId out,
               boost::optional<int64_t> virtualGraphId,
               boost::optional<int64_t> pipelineStage,
+              boost::optional<PingPongPhase>,
               const std::string opName);
 
   TensorId concat(std::vector<TensorId> &inputs,
                   boost::optional<int64_t> virtualGraphId,
                   boost::optional<int64_t> pipelineStage,
+                  boost::optional<PingPongPhase> pingPongPhase,
                   const std::string opName,
                   const std::string outputName) {
-    return concat(inputs, 0, virtualGraphId, pipelineStage, opName, outputName);
+    return concat(inputs,
+                  0,
+                  virtualGraphId,
+                  pipelineStage,
+                  pingPongPhase,
+                  opName,
+                  outputName);
   }
 
   void concat(std::vector<TensorId> &inputs,
               TensorId out,
               boost::optional<int64_t> virtualGraphId,
               boost::optional<int64_t> pipelineStage,
+              boost::optional<PingPongPhase> pingPongPhase,
               const std::string opName) {
-    concat(inputs, 0, out, virtualGraphId, pipelineStage, opName);
+    concat(
+        inputs, 0, out, virtualGraphId, pipelineStage, pingPongPhase, opName);
   }
 
   void sum(std::vector<TensorId> &inputs,
            TensorId out,
            boost::optional<int64_t> virtualGraphId,
            boost::optional<int64_t> pipelineStage,
+           boost::optional<PingPongPhase>,
            const std::string opName);
 
   TensorId addLhsInplace(std::vector<TensorId> &inputs,
                          boost::optional<int64_t> virtualGraphId,
                          boost::optional<int64_t> pipelineStage,
+                         boost::optional<PingPongPhase>,
                          const std::string opName,
                          const std::string outputName);
 
@@ -85,12 +101,14 @@ public:
                      TensorId out,
                      boost::optional<int64_t> virtualGraphId,
                      boost::optional<int64_t> pipelineStage,
+                     boost::optional<PingPongPhase>,
                      const std::string opName);
 
   TensorId matmul(TensorId lhs,
                   TensorId rhs,
                   boost::optional<int64_t> virtualGraphId,
                   boost::optional<int64_t> pipelineStage,
+                  boost::optional<PingPongPhase>,
                   const std::string opName,
                   const std::string outputName,
                   std::map<std::string, boost::any> attrs = {},
@@ -101,12 +119,14 @@ public:
             DataType type,
             boost::optional<int64_t> virtualGraphId,
             boost::optional<int64_t> pipelineStage,
+            boost::optional<PingPongPhase>,
             const std::string opName);
 
   TensorId squeeze(TensorId in,
                    const Shape &axes,
                    boost::optional<int64_t> virtualGraphId,
                    boost::optional<int64_t> pipelineStage,
+                   boost::optional<PingPongPhase>,
                    const std::string opName,
                    const std::string outputName);
 
@@ -115,6 +135,7 @@ public:
                TensorId out,
                boost::optional<int64_t> virtualGraphId,
                boost::optional<int64_t> pipelineStage,
+               boost::optional<PingPongPhase>,
                const std::string opName);
 
   TensorId slice(TensorId in,
@@ -123,6 +144,7 @@ public:
                  const Shape &axes,
                  boost::optional<int64_t> virtualGraphId,
                  boost::optional<int64_t> pipelineStage,
+                 boost::optional<PingPongPhase>,
                  const std::string opName,
                  const std::string outputName);
 
@@ -132,6 +154,7 @@ public:
                         const Shape &axes,
                         boost::optional<int64_t> virtualGraphId,
                         boost::optional<int64_t> pipelineStage,
+                        boost::optional<PingPongPhase>,
                         const std::string opName,
                         const std::string outputName);
 
@@ -142,12 +165,14 @@ public:
              TensorId out,
              boost::optional<int64_t> virtualGraphId,
              boost::optional<int64_t> pipelineStage,
+             boost::optional<PingPongPhase>,
              const std::string opName);
 
   TensorId transpose(TensorId in,
                      Shape perm,
                      boost::optional<int64_t> virtualGraphId,
                      boost::optional<int64_t> pipelineStage,
+                     boost::optional<PingPongPhase>,
                      const std::string opName,
                      const std::string outTensorName);
 
@@ -156,12 +181,14 @@ public:
                  TensorId out,
                  boost::optional<int64_t> virtualGraphId,
                  boost::optional<int64_t> pipelineStage,
+                 boost::optional<PingPongPhase>,
                  const std::string opName);
 
   TensorId reshape(TensorId in,
                    Shape shape,
                    boost::optional<int64_t> virtualGraphId,
                    boost::optional<int64_t> pipelineStage,
+                   boost::optional<PingPongPhase>,
                    const std::string opName,
                    const std::string outputName);
 
@@ -170,6 +197,7 @@ public:
                      std::vector<int64_t> axes,
                      boost::optional<int64_t> virtualGraphId,
                      boost::optional<int64_t> pipelineStage,
+                     boost::optional<PingPongPhase>,
                      const std::string opName,
                      const std::string outputName);
 };

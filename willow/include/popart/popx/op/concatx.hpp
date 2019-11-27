@@ -11,7 +11,21 @@ class ConcatGradOp;
 
 namespace popx {
 
-class ConcatOpx : public Opx {
+class BaseConcatOpx : public Opx {
+public:
+  BaseConcatOpx(Op *, Devicex *);
+  InputCreatorType getInputCreatorType(InIndex) const final;
+
+  poplar::Tensor
+      unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const final;
+
+  view::RegMap unwindRegion(InIndex, OutIndex) const final;
+
+private:
+  const ConcatOp *const op;
+};
+
+class ConcatOpx : public BaseConcatOpx {
 public:
   ConcatOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
@@ -20,7 +34,7 @@ private:
   const ConcatOp *const op;
 };
 
-class ConcatInplaceOpx : public Opx {
+class ConcatInplaceOpx : public BaseConcatOpx {
 public:
   ConcatInplaceOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

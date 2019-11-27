@@ -39,8 +39,8 @@ void LRNOp::setup() {
   outInfo(getOutIndex()) = {inInfo(getInIndex()).dataType(), input_shape};
 }
 
-void LRNOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void LRNOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("alpha", alpha);
   os.appendAttribute("beta", beta);
   os.appendAttribute("bias", bias);
@@ -74,8 +74,8 @@ const std::map<int, int> &LRNGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
-void LRNGradOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void LRNGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("alpha", alpha);
   os.appendAttribute("beta", beta);
   os.appendAttribute("bias", bias);

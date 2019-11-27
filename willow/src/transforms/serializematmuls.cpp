@@ -149,6 +149,7 @@ static void serializeMatMul(TransformBuilder &builder,
                             std::vector<TensorId> &outputTensors,
                             boost::optional<int64_t> virtualGraphId,
                             boost::optional<int64_t> pipelineStage,
+                            boost::optional<int64_t> pingPongPhase,
                             std::string name) {
 
   for (int i = 0; i < matmul->getSerialiseSettings().factor; ++i) {
@@ -172,6 +173,7 @@ static void serializeMatMul(TransformBuilder &builder,
                                      axes,
                                      virtualGraphId,
                                      pipelineStage,
+                                     pingPongPhase,
                                      name + "_SliceLhs",
                                      builder.getNextId(name + "_SliceLhs"));
     }
@@ -192,6 +194,7 @@ static void serializeMatMul(TransformBuilder &builder,
                                      axes,
                                      virtualGraphId,
                                      pipelineStage,
+                                     pingPongPhase,
                                      name + "_SliceRhs",
                                      builder.getNextId(name + "_SliceRhs"));
     }
@@ -209,6 +212,7 @@ static void serializeMatMul(TransformBuilder &builder,
                             rhsMatMulInput,
                             virtualGraphId,
                             pipelineStage,
+                            pingPongPhase,
                             name + "_MatMul",
                             builder.getNextId(name + "_MatMul"),
                             attrs,
@@ -218,8 +222,18 @@ static void serializeMatMul(TransformBuilder &builder,
 
     mOp->setPhase(matmul->getPhase());
     mOp->setAvailableMemoryProportion(matmul->getAvailableMemoryProportion());
+    if (builder.hasProducer(lhsMatMulInput))
+      builder.getGraph().topoCons->insert(
+          builder.getProducer(lhsMatMulInput), mOp, true);
+    if (builder.hasProducer(rhsMatMulInput))
+      builder.getGraph().topoCons->insert(
+          builder.getProducer(rhsMatMulInput), mOp, true);
 
     outputTensors.push_back(m);
+    if (i > 0)
+      builder.getGraph().topoCons->insert(
+          builder.getProducer(outputTensors[i - 1]),
+          builder.getProducer(outputTensors[i]));
   }
 }
 
@@ -229,6 +243,7 @@ static void sumByAddInplace(TransformBuilder &builder,
                             std::vector<TensorId> &outputTensors,
                             boost::optional<int64_t> virtualGraphId,
                             boost::optional<int64_t> pipelineStage,
+                            boost::optional<int64_t> pingPongPhase,
                             std::string name) {
   auto out = outputTensors[0];
   for (size_t i = 1; i < outputTensors.size(); i++) {
@@ -238,13 +253,26 @@ static void sumByAddInplace(TransformBuilder &builder,
                             output->id,
                             virtualGraphId,
                             pipelineStage,
+                            pingPongPhase,
                             name + "_AddInplace");
+      if (builder.hasProducer(outputTensors[i]) &&
+          builder.hasProducer(output->id))
+        builder.getGraph().topoCons->insert(
+            builder.getProducer(outputTensors[i]),
+            builder.getProducer(output->id),
+            true);
     } else {
       out = builder.addLhsInplace(inputs,
                                   virtualGraphId,
                                   pipelineStage,
+                                  pingPongPhase,
                                   name + "_AddInplace",
                                   builder.getNextId(name + "_AddInPlace"));
+      if (builder.hasProducer(outputTensors[i]) && builder.hasProducer(out))
+        builder.getGraph().topoCons->insert(
+            builder.getProducer(outputTensors[i]),
+            builder.getProducer(out),
+            true);
       // Add a constraint so the inplace add happens before the next matmul
       if (!cast_needed)
         builder.getGraph().topoCons->insert(
@@ -260,36 +288,11 @@ static void sumByAddInplace(TransformBuilder &builder,
                  output->info.dataType(),
                  virtualGraphId,
                  pipelineStage,
+                 pingPongPhase,
                  name + "_Cast");
-  }
-}
-
-static void setAllSlices(Tensor *slicedTensor,
-                         const int unwindConcatDim,
-                         const int64_t factor) {
-  // All the slices of lhs tensor
-  std::vector<TensorId> slices;
-
-  // Build the list of slice tensors
-  for (auto op : slicedTensor->consumers.getOps()) {
-    SliceOp *sliceOp = dynamic_cast<SliceOp *>(op);
-    if (sliceOp) {
-      slices.push_back(op->output->tensorIdMap().at(0));
-    }
-  }
-
-  if (slices.size() != factor)
-    throw error("All slices does not match factor allslices: {} factor: {}",
-                slices.size(),
-                factor);
-
-  // Set the list in all the ops
-  for (auto op : slicedTensor->consumers.getOps()) {
-    SliceOp *sliceOp = dynamic_cast<SliceOp *>(op);
-    if (sliceOp) {
-      sliceOp->allSlices       = slices;
-      sliceOp->unwindConcatDim = unwindConcatDim;
-    }
+    if (builder.hasProducer(out) && builder.hasProducer(output->id))
+      builder.getGraph().topoCons->insert(
+          builder.getProducer(out), builder.getProducer(output->id), true);
   }
 }
 
@@ -300,6 +303,7 @@ static void serializeVarUpdate(int sliceDim,
                                std::vector<TensorId> &outputTensors,
                                boost::optional<int64_t> virtualGraphId,
                                boost::optional<int64_t> pipelineStage,
+                               boost::optional<int64_t> pingPongPhase,
                                std::string name) {
   auto chaseme = matMulOutput;
   std::vector<Op *> path;
@@ -387,6 +391,7 @@ static void serializeVarUpdate(int sliceDim,
                                    outputshape,
                                    virtualGraphId,
                                    pipelineStage,
+                                   pingPongPhase,
                                    name + "_Reshape",
                                    builder.getNextId(name + "_Reshape"));
         } else if (op->opid == Onnx::Operators::ReduceSum_1) {
@@ -396,6 +401,7 @@ static void serializeVarUpdate(int sliceDim,
                                      {0},
                                      virtualGraphId,
                                      pipelineStage,
+                                     pingPongPhase,
                                      name + "_ReduceSum",
                                      builder.getNextId(name + "_ReduceSum"));
         } else if (op->isConvertibleTo<VarUpdateOp>()) {
@@ -412,10 +418,11 @@ static void serializeVarUpdate(int sliceDim,
                                axes,
                                virtualGraphId,
                                pipelineStage,
+                               pingPongPhase,
                                name + "_Slice",
                                builder.getNextId(name + "_Slice"));
 
-      // Make sure the slice the weight after the output has be serialized
+      // Make sure the slice the weight after the output has been serialized
       builder.getGraph().topoCons->insert(builder.getProducer(output),
                                           builder.getProducer(slicedWeight));
 
@@ -456,7 +463,6 @@ static void serializeVarUpdate(int sliceDim,
     for (Op *opToRemove : path) {
       opToRemove->disconnectAllInputs();
       opToRemove->disconnectAllOutputs();
-      builder.getGraph().topoCons->remove(opToRemove);
       builder.getGraph().eraseOp(opToRemove->id);
     }
   } else {
@@ -466,6 +472,7 @@ static void serializeVarUpdate(int sliceDim,
                    matMulOutput->id,
                    virtualGraphId,
                    pipelineStage,
+                   pingPongPhase,
                    name + "_Concat");
   }
 }
@@ -479,6 +486,7 @@ serializeFwdMatMul_InputChannels(TransformBuilder &builder,
                                  std::vector<TensorId> &outputTensors,
                                  boost::optional<int64_t> virtualGraphId,
                                  boost::optional<int64_t> pipelineStage,
+                                 boost::optional<int64_t> pingPongPhase,
                                  std::string name) {
   serializeMatMul(builder,
                   lhs,
@@ -490,6 +498,7 @@ serializeFwdMatMul_InputChannels(TransformBuilder &builder,
                   outputTensors,
                   virtualGraphId,
                   pipelineStage,
+                  pingPongPhase,
                   name);
 
   builder.concat(outputTensors,
@@ -497,9 +506,8 @@ serializeFwdMatMul_InputChannels(TransformBuilder &builder,
                  output->id,
                  virtualGraphId,
                  pipelineStage,
+                 pingPongPhase,
                  name + "_Concat");
-
-  setAllSlices(lhs, 1, matmul->getSerialiseSettings().factor);
 
   builder.getGraph().topoCons->transfer(matmul, output->getProducer());
 }
@@ -513,6 +521,7 @@ serializeBwdLhsMatMul_InputChannels(TransformBuilder &builder,
                                     std::vector<TensorId> &outputTensors,
                                     boost::optional<int64_t> virtualGraphId,
                                     boost::optional<int64_t> pipelineStage,
+                                    boost::optional<int64_t> pingPongPhase,
                                     std::string name) {
 
   serializeMatMul(builder,
@@ -525,12 +534,14 @@ serializeBwdLhsMatMul_InputChannels(TransformBuilder &builder,
                   outputTensors,
                   virtualGraphId,
                   pipelineStage,
+                  pingPongPhase,
                   name);
 
   builder.concat(outputTensors,
                  output->id,
                  virtualGraphId,
                  pipelineStage,
+                 pingPongPhase,
                  name + "_Concat");
 }
 
@@ -543,6 +554,7 @@ serializeBwdRhsMatMul_InputChannels(TransformBuilder &builder,
                                     std::vector<TensorId> &outputTensors,
                                     boost::optional<int64_t> virtualGraphId,
                                     boost::optional<int64_t> pipelineStage,
+                                    boost::optional<int64_t> pingPongPhase,
                                     std::string name) {
   serializeMatMul(builder,
                   lhs,
@@ -554,6 +566,7 @@ serializeBwdRhsMatMul_InputChannels(TransformBuilder &builder,
                   outputTensors,
                   virtualGraphId,
                   pipelineStage,
+                  pingPongPhase,
                   name);
 
   sumByAddInplace(builder,
@@ -562,6 +575,7 @@ serializeBwdRhsMatMul_InputChannels(TransformBuilder &builder,
                   outputTensors,
                   virtualGraphId,
                   pipelineStage,
+                  pingPongPhase,
                   name);
 }
 
@@ -574,6 +588,7 @@ serializeFwdMatMul_ReducingDim(TransformBuilder &builder,
                                std::vector<TensorId> &outputTensors,
                                boost::optional<int64_t> virtualGraphId,
                                boost::optional<int64_t> pipelineStage,
+                               boost::optional<int64_t> pingPongPhase,
                                std::string name) {
 
   serializeMatMul(builder,
@@ -586,6 +601,7 @@ serializeFwdMatMul_ReducingDim(TransformBuilder &builder,
                   outputTensors,
                   virtualGraphId,
                   pipelineStage,
+                  pingPongPhase,
                   name);
 
   sumByAddInplace(builder,
@@ -594,10 +610,8 @@ serializeFwdMatMul_ReducingDim(TransformBuilder &builder,
                   outputTensors,
                   virtualGraphId,
                   pipelineStage,
+                  pingPongPhase,
                   name);
-
-  setAllSlices(lhs, 2, matmul->getSerialiseSettings().factor);
-  setAllSlices(rhs, 1, matmul->getSerialiseSettings().factor);
 
   builder.getGraph().topoCons->transfer(matmul, output->getProducer());
 }
@@ -611,6 +625,7 @@ serializeBwdLhsMatMul_ReducingDim(TransformBuilder &builder,
                                   std::vector<TensorId> &outputTensors,
                                   boost::optional<int64_t> virtualGraphId,
                                   boost::optional<int64_t> pipelineStage,
+                                  boost::optional<int64_t> pingPongPhase,
                                   std::string name) {
 
   serializeMatMul(builder,
@@ -623,6 +638,7 @@ serializeBwdLhsMatMul_ReducingDim(TransformBuilder &builder,
                   outputTensors,
                   virtualGraphId,
                   pipelineStage,
+                  pingPongPhase,
                   name);
 
   builder.concat(outputTensors,
@@ -630,6 +646,7 @@ serializeBwdLhsMatMul_ReducingDim(TransformBuilder &builder,
                  output->id,
                  virtualGraphId,
                  pipelineStage,
+                 pingPongPhase,
                  name + "_Concat");
 }
 
@@ -642,6 +659,7 @@ serializeBwdRhsMatMul_ReducingDim(TransformBuilder &builder,
                                   std::vector<TensorId> &outputTensors,
                                   boost::optional<int64_t> virtualGraphId,
                                   boost::optional<int64_t> pipelineStage,
+                                  boost::optional<int64_t> pingPongPhase,
                                   std::string name) {
   serializeMatMul(builder,
                   lhs,
@@ -653,6 +671,7 @@ serializeBwdRhsMatMul_ReducingDim(TransformBuilder &builder,
                   outputTensors,
                   virtualGraphId,
                   pipelineStage,
+                  pingPongPhase,
                   name);
 
   serializeVarUpdate(0,
@@ -662,6 +681,7 @@ serializeBwdRhsMatMul_ReducingDim(TransformBuilder &builder,
                      outputTensors,
                      virtualGraphId,
                      pipelineStage,
+                     pingPongPhase,
                      name);
 }
 
@@ -674,6 +694,7 @@ serializeFwdMatMul_OutputChannels(TransformBuilder &builder,
                                   std::vector<TensorId> &outputTensors,
                                   boost::optional<int64_t> virtualGraphId,
                                   boost::optional<int64_t> pipelineStage,
+                                  boost::optional<int64_t> pingPongPhase,
                                   std::string name) {
   serializeMatMul(builder,
                   lhs,
@@ -685,6 +706,7 @@ serializeFwdMatMul_OutputChannels(TransformBuilder &builder,
                   outputTensors,
                   virtualGraphId,
                   pipelineStage,
+                  pingPongPhase,
                   name);
 
   builder.concat(outputTensors,
@@ -692,9 +714,8 @@ serializeFwdMatMul_OutputChannels(TransformBuilder &builder,
                  output->id,
                  virtualGraphId,
                  pipelineStage,
+                 pingPongPhase,
                  name + "_Concat");
-
-  setAllSlices(rhs, 2, matmul->getSerialiseSettings().factor);
 
   builder.getGraph().topoCons->transfer(matmul, output->getProducer());
 }
@@ -708,6 +729,7 @@ serializeBwdLhsMatMul_OutputChannels(TransformBuilder &builder,
                                      std::vector<TensorId> &outputTensors,
                                      boost::optional<int64_t> virtualGraphId,
                                      boost::optional<int64_t> pipelineStage,
+                                     boost::optional<int64_t> pingPongPhase,
                                      std::string name) {
 
   serializeMatMul(builder,
@@ -720,6 +742,7 @@ serializeBwdLhsMatMul_OutputChannels(TransformBuilder &builder,
                   outputTensors,
                   virtualGraphId,
                   pipelineStage,
+                  pingPongPhase,
                   name);
 
   sumByAddInplace(builder,
@@ -728,6 +751,7 @@ serializeBwdLhsMatMul_OutputChannels(TransformBuilder &builder,
                   outputTensors,
                   virtualGraphId,
                   pipelineStage,
+                  pingPongPhase,
                   name);
 }
 
@@ -740,6 +764,7 @@ serializeBwdRhsMatMul_OutputChannels(TransformBuilder &builder,
                                      std::vector<TensorId> &outputTensors,
                                      boost::optional<int64_t> virtualGraphId,
                                      boost::optional<int64_t> pipelineStage,
+                                     boost::optional<int64_t> pingPongPhase,
                                      std::string name) {
   serializeMatMul(builder,
                   lhs,
@@ -751,6 +776,7 @@ serializeBwdRhsMatMul_OutputChannels(TransformBuilder &builder,
                   outputTensors,
                   virtualGraphId,
                   pipelineStage,
+                  pingPongPhase,
                   name);
 
   serializeVarUpdate(1,
@@ -760,6 +786,7 @@ serializeBwdRhsMatMul_OutputChannels(TransformBuilder &builder,
                      outputTensors,
                      virtualGraphId,
                      pipelineStage,
+                     pingPongPhase,
                      name);
 }
 
@@ -780,7 +807,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
     auto matmulRhs    = matmulInputTensorMap.at(MatMulOp::getRhsInIndex());
     auto matmulOutput = matmulOutputTensorMap.at(MatMulOp::getOutIndex());
 
-    logging::ir::info("matmul:{} {}x{}->{} mode:{} factor{} phase:{}",
+    logging::ir::info("matmul:{} {}x{}->{} mode: {} factor: {} phase: {}",
                       matmul->opid,
                       matmuLhs->info.shape(),
                       matmulRhs->info.shape(),
@@ -789,14 +816,19 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                       matmul->getSerialiseSettings().factor,
                       static_cast<int64_t>(matmul->getPhase()));
 
-    boost::optional<int64_t> virtualGraphId{};
+    boost::optional<VGraphId> virtualGraphId{};
     if (matmul->hasVirtualGraphId()) {
       virtualGraphId = matmul->getVirtualGraphId();
     }
 
-    boost::optional<int64_t> pipelineStage{};
+    boost::optional<PipelineStage> pipelineStage{};
     if (matmul->hasPipelineStage()) {
       pipelineStage = matmul->getPipelineStage();
+    }
+
+    boost::optional<PingPongPhase> pingPongPhase{};
+    if (matmul->hasPingPongPhase()) {
+      pingPongPhase = matmul->getPingPongPhase();
     }
 
     std::string name = matmul->getName();
@@ -818,6 +850,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                                          outputTensors,
                                          virtualGraphId,
                                          pipelineStage,
+                                         pingPongPhase,
                                          name);
       } break;
       case MatMulOp::Phase::BwdLhs: {
@@ -829,6 +862,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                                             outputTensors,
                                             virtualGraphId,
                                             pipelineStage,
+                                            pingPongPhase,
                                             name);
       } break;
       case MatMulOp::Phase::BwdRhs: {
@@ -840,6 +874,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                                             outputTensors,
                                             virtualGraphId,
                                             pipelineStage,
+                                            pingPongPhase,
                                             name);
       } break;
       };
@@ -855,6 +890,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                                           outputTensors,
                                           virtualGraphId,
                                           pipelineStage,
+                                          pingPongPhase,
                                           name);
       } break;
       case MatMulOp::Phase::BwdLhs: {
@@ -866,6 +902,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                                              outputTensors,
                                              virtualGraphId,
                                              pipelineStage,
+                                             pingPongPhase,
                                              name);
       } break;
       case MatMulOp::Phase::BwdRhs: {
@@ -877,6 +914,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                                              outputTensors,
                                              virtualGraphId,
                                              pipelineStage,
+                                             pingPongPhase,
                                              name);
       } break;
       };
@@ -892,6 +930,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                                        outputTensors,
                                        virtualGraphId,
                                        pipelineStage,
+                                       pingPongPhase,
                                        name);
       } break;
       case MatMulOp::Phase::BwdLhs: {
@@ -903,6 +942,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                                           outputTensors,
                                           virtualGraphId,
                                           pipelineStage,
+                                          pingPongPhase,
                                           name);
       } break;
       case MatMulOp::Phase::BwdRhs: {
@@ -914,6 +954,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                                           outputTensors,
                                           virtualGraphId,
                                           pipelineStage,
+                                          pingPongPhase,
                                           name);
       } break;
       };
@@ -923,11 +964,11 @@ bool SerializeMatMuls::apply(Graph &graph) const {
     graph.eraseOp(matmul->id);
   }
 
-  // Update the graph verticies
+  // Update the graph vertices
   graph.getIr().updateVertices();
 
   // Remove any dangling tensors
-  graph.getTensors().removeIsolated();
+  graph.getTensors().removeIsolated(true);
 
   return true;
 }

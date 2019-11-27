@@ -11,13 +11,11 @@ public:
 
   SerializeMatMuls() : Transform() {}
   virtual ~SerializeMatMuls() override {}
-  virtual bool apply(Graph &graph) const override final;
+  virtual bool apply(Graph &graph) const final;
 
-  virtual std::size_t getId() const override final { return id(); }
+  virtual std::size_t getId() const final { return id(); }
 
-  virtual std::string getName() const override final {
-    return "SerializeMatMuls";
-  }
+  virtual std::string getName() const final { return "SerializeMatMuls"; }
 
 private:
 };

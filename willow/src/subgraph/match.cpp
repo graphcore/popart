@@ -232,7 +232,7 @@ bool Match::intersects(const Match &rhs) const {
   auto thisIndex = 0ul;
   auto rhsIndex  = 0ul;
 
-  while (rhsIndex != rhs.starts.size() && thisIndex != starts.size()) {
+  while (thisIndex != starts.size() && rhsIndex != rhs.starts.size()) {
 
     int thisStart = starts[thisIndex];
     int thisEnd   = thisStart + length;

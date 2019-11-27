@@ -19,7 +19,10 @@
 
 namespace popart {
 
-enum class RecomputeType { CHECKPOINT = 0, RECOMPUTE };
+enum class RecomputeType { UNDEFINED = 0, CHECKPOINT, RECOMPUTE };
+enum class CacheType { UNDEFINED = 0, UNCACHED, CACHED };
+
+std::ostream &operator<<(std::ostream &, const RecomputeType &);
 
 class OpSerialiserBase;
 
@@ -85,7 +88,8 @@ public:
 
     Scope scope;
 
-    RecomputeType recomputeType = RecomputeType::CHECKPOINT;
+    RecomputeType recomputeType = RecomputeType::UNDEFINED;
+    CacheType cacheType         = CacheType::UNDEFINED;
 
     // optional inplace priorities, to take precedence over the default
     // priorities. A negative priority gurarantees no inplacing
@@ -100,6 +104,11 @@ public:
 
     boost::optional<PipelineStage> pipelineStage;
 
+    // The ping pong phase this op has been assigned to if set
+    boost::optional<PingPongPhase> pingPongPhase;
+
+    boost::optional<BatchSerializedPhase> batchSerializedPhase;
+
     // This method will append the optional attributes (vgraphId, etc)
     // depending on whether the attribute has been
     // set in the onnx model.
@@ -112,12 +121,24 @@ public:
 
   Settings &getSettings() { return settings; }
   const Settings &getSettings() const { return settings; }
+
   const boost::optional<int64_t> getOptionalVirtualGraphId() const;
   VGraphId getVirtualGraphId() const;
   virtual VGraphId getIntrospectionInVirtualGraphId(InIndex) const;
   virtual VGraphId getIntrospectionOutVirtualGraphId(OutIndex) const;
-  void setVirtualGraphId(const boost::optional<VGraphId> value);
+  void setVirtualGraphId(const boost::optional<VGraphId>);
   bool hasVirtualGraphId() const;
+
+  const boost::optional<PingPongPhase> getOptionalPingPongPhase() const;
+  virtual PingPongPhase getPingPongPhase() const;
+  void setPingPongPhase(const boost::optional<PingPongPhase>);
+  bool hasPingPongPhase() const;
+
+  const boost::optional<BatchSerializedPhase>
+  getOptionalBatchSerializedPhase() const;
+  virtual BatchSerializedPhase getBatchSerializedPhase() const;
+  void setBatchSerializedPhase(const boost::optional<BatchSerializedPhase>);
+  bool hasBatchSerializedPhase() const;
 
   bool isExcludedFromPattern(const Pattern *) const;
 
@@ -226,16 +247,16 @@ public:
   getInplaceVariant(const OperatorIdentifier &) const;
 
   // The input Region which this Op modifies (for inplace ops)
-  virtual view::Region modifies(InIndex) const;
+  virtual view::Regions modifies(InIndex) const;
   // The input Region which this Op uses
-  virtual view::Region uses(InIndex) const;
+  virtual view::Regions uses(InIndex) const;
   // The input Region which the output will alias (for inplace and view-changing
   // ops)
-  virtual view::Region aliases(InIndex) const;
+  virtual view::Regions aliases(InIndex, OutIndex) const;
   // Map used regions of the input to/from the output (we assume the same for
   // modifies, aliases, uses)
-  virtual view::RegMap fwdRegMap(InIndex) const;
-  virtual view::RegMap bwdRegMap(InIndex) const;
+  virtual view::RegMap fwdRegMap(InIndex, OutIndex) const;
+  virtual view::RegMap bwdRegMap(InIndex, OutIndex) const;
 
   // A grad-op outputs an edge-gradient tensor dT at gradOpOutIndex.
   // dT is the edge-gradient of a tensor T which was the input
@@ -315,6 +336,12 @@ public:
   // should be overridden if the derived class has additional attributes.
   virtual void appendAttributes(OpSerialiserBase &) const;
 
+  // Virtual method to append the op attributes that are relevant for outlining
+  // ops. Ops should override this function if there are additional attributes.
+  // Two ops with identical type and outline attributes can be outlined and are
+  // supposed to be functionally equivalent.
+  virtual void appendOutlineAttributes(OpSerialiserBase &) const;
+
   // All graph that this op may call during its execution
   virtual std::vector<const Graph *> getCalledGraphs() const;
 
@@ -362,6 +389,15 @@ protected:
 
 std::ostream &operator<<(std::ostream &, const GradInOutMapper &);
 std::ostream &operator<<(std::ostream &, const GradOpInType &);
+
+// A note on non-determinism. For maps with
+// pointers as keys, iterating through them
+// is non-deterministic with the default comparator.
+// To prevent non-determinism, POpCmp is used on any sets and maps that use
+// pointers to operators as a set/map key.
+struct POpCmp {
+  bool operator()(Op *const &a, Op *const &b) const { return a->id < b->id; }
+};
 
 } // namespace popart
 

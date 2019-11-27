@@ -988,6 +988,14 @@ void BuilderImpl::clearAttribute(const std::string &attribute) {
   attributes.erase(attribute);
 }
 
+bool BuilderImpl::hasAttribute(const std::string &attribute) {
+  return attributes.find(attribute) != attributes.end();
+}
+
+boost::any BuilderImpl::getAttribute(const std::string &attribute) {
+  return attributes.at(attribute);
+}
+
 void BuilderImpl::pushNameScope(const std::string &name) {
   name_scope_stack_.push_back(name);
 }

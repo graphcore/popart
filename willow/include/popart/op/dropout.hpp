@@ -44,7 +44,7 @@ public:
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   // Inputs
   static InIndex getInIndex() { return 0; }

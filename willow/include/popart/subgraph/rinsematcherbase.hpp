@@ -57,7 +57,7 @@ public:
 
 private:
   bool isoFunc(int l, const std::vector<Start> &s0s, Start s1) const {
-    // s0s are all ismorphic to each other.
+    // s0s are all isomorphic to each other.
     // We are testing : are all the sub-graphs
     // with a start in s0s also isomorphic to the sub-graph starting at s1?
     // Case 0: if there are no sub-graphs from s0s, this is trivially true

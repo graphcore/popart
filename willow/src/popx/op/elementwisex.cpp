@@ -23,6 +23,10 @@ poplar::Tensor ElementWiseUnaryOpx::unwindTensorLayout(poplar::Tensor tensor,
   return tensor;
 }
 
+view::RegMap ElementWiseUnaryOpx::unwindRegion(InIndex, OutIndex) const {
+  return [](const view::Region &r) { return view::Regions(1, r); };
+}
+
 ElementWiseBinaryOpx::ElementWiseBinaryOpx(Op *op, Devicex *devicex)
     : Opx(op, devicex) {}
 
@@ -75,6 +79,10 @@ poplar::Tensor ElementWiseBinaryOpx::unwindTensorLayout(poplar::Tensor tensor,
                                                         InIndex,
                                                         OutIndex) const {
   return tensor;
+}
+
+view::RegMap ElementWiseBinaryOpx::unwindRegion(InIndex, OutIndex) const {
+  return [](const view::Region &r) { return view::Regions(1, r); };
 }
 
 poplar::Tensor EwuComputex::cloneNcopy(poplar::program::Sequence &prog,

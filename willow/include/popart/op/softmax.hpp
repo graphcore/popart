@@ -17,7 +17,7 @@ public:
   int64_t getAxis() const;
   void setAxis(int64_t);
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   std::vector<std::tuple<OperatorIdentifier, float>>
   inplacePriorityDefault() const final;
@@ -34,7 +34,7 @@ public:
   std::unique_ptr<Op> clone() const final;
   int64_t getAxis() const { return axis; }
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
 private:
   int64_t axis;
@@ -55,7 +55,7 @@ public:
   static InIndex getActsInIndex() { return 1; }
   static OutIndex getOutIndex() { return 0; }
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 

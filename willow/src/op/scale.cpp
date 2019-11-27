@@ -44,13 +44,13 @@ std::vector<std::unique_ptr<Op>> ScaleOp::getGradOps() {
 float ScaleOp::getScaleFactor() const { return scale_factor; }
 float ScaleInplaceOp::getScaleFactor() const { return scale_factor; }
 
-void ScaleOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void ScaleOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("scale", scale_factor);
 }
 
-void ScaleInplaceOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void ScaleInplaceOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("scale", scale_factor);
 }
 

@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <popart/op.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/util.hpp>

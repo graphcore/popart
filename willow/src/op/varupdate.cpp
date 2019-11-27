@@ -44,22 +44,23 @@ void VarUpdateWithUpdaterOp::setup() {
   outInfo(getUpdatedVarOutIndex()) = info0;
 }
 
-view::Region VarUpdateOp::aliases(InIndex index) const {
-  if (index == getVarToUpdateInIndex()) {
-    return view::Region::getFull(inShape(index));
+view::Regions VarUpdateOp::aliases(InIndex in, OutIndex) const {
+  if (in == getVarToUpdateInIndex()) {
+    return {view::Region::getFull(inShape(in))};
   } else {
-    return view::Region::getEmpty(inRank(index));
+    return {view::Region::getEmpty(inRank(in))};
   }
 }
 
-view::Region VarUpdateOp::modifies(InIndex index) const {
-  return aliases(index);
+view::Regions VarUpdateOp::modifies(InIndex index) const {
+  return aliases(index, 0);
 }
 
 float VarUpdateOp::getSubgraphValue() const {
   // If we have replicated graphs then outline VaruUdates, if possible
   // The motivation for this is the (code) cost of inter-IPU copies, hmm
-  if (getIr().getSessionOptions().enableReplicatedGraphs) {
+  if (getIr().getSessionOptions().enableReplicatedGraphs ||
+      getIr().getSessionOptions().pingPongPhases > 1) {
     return getHighSubgraphValue();
   } else {
     return getLowSubgraphValue();

@@ -73,7 +73,8 @@ public:
   std::vector<Op *> getOpSchedule(const OpsBeforeKey &) const;
 
   // Do all the Ops with all their dependencies form a DAG?
-  bool isSchedulable(const OpsBeforeKey &) const;
+  bool isSchedulable(const OpsBeforeKey &,
+                     bool respectPingPongPhases = false) const;
 
   // There are ops in the graph with the recompute attribute, derived
   // from user-specified onnx node attribute
@@ -105,6 +106,9 @@ public:
   void removeOutput(const TensorId &);
   TensorId getOutputId(OutIndex idx) const { return graph_outputs.at(idx); }
 
+  void markAsZeroCopy(const TensorId &);
+  bool isMarkedAsZeroCopy(const TensorId &) const;
+
   TensorId addScope(const TensorId &) const;
   TensorId removeScope(const TensorId &) const;
   Scope getScope() const;
@@ -129,6 +133,7 @@ private:
   std::map<OpId, std::unique_ptr<Op>> ops;
   std::vector<TensorId> graph_inputs;
   std::vector<TensorId> graph_outputs;
+  std::vector<TensorId> zero_copy;
   std::unique_ptr<Scheduler> scheduler;
   std::vector<GradInOutMapper> gradInInfo;
 

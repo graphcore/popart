@@ -22,49 +22,19 @@ namespace popx {
 BaseSliceOpx::BaseSliceOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}
 
 InputCreatorType BaseSliceOpx::getInputCreatorType(InIndex inIndex) const {
-  if (!dynamic_cast<BaseSliceOp *>(op_p)->allSlices.empty()) {
-    return InputCreatorType::CANUNWIND_MULTIPLE_CREATORS;
-  } else {
-    return Opx::getInputCreatorType(inIndex);
-  }
-}
-poplar::Tensor
-BaseSliceOpx::unwindTensorLayout(std::vector<poplar::Tensor> tensors,
-                                 InIndex,
-                                 OutIndex) const {
-  BaseSliceOp *op = dynamic_cast<BaseSliceOp *>(this->op_p);
-  logging::opx::debug("BaseSliceOpx::unwindTensorLayout dim:{} inputs:{}",
-                      op->unwindConcatDim,
-                      tensors.size());
-  return poplar::concat(tensors, op->unwindConcatDim);
+  return InputCreatorType::CANUNWIND;
 }
 
-std::vector<std::pair<Op *, InIndex>>
-BaseSliceOpx::getCreatorCandicates(InIndex) const {
+poplar::Tensor BaseSliceOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                                InIndex,
+                                                OutIndex) const {
+  return tensor;
+}
 
-  std::vector<std::pair<Op *, InIndex>> creators;
-
+view::RegMap BaseSliceOpx::unwindRegion(InIndex inIndex,
+                                        OutIndex outIndex) const {
   BaseSliceOp *op = dynamic_cast<BaseSliceOp *>(this->op_p);
-
-  // Get the list of op's the consume the all the slices of the input tensor
-  for (auto t : op->allSlices) {
-    auto consumerOps = op->getIr().getTensor(t)->consumers.getOps();
-    for (auto *consumer : consumerOps) {
-      InIndex index = -1;
-      for (auto input : consumer->input->tensorIdMap()) {
-        if (input.second == t) {
-          index = input.first;
-          break;
-        }
-      }
-      if (index == -1) {
-        throw error("Could not determine input index for {}", t);
-      }
-      creators.push_back({consumer, index});
-    }
-  }
-
-  return creators;
+  return op->bwdRegMap(inIndex, outIndex);
 }
 
 SliceOpx::SliceOpx(Op *op, Devicex *devicex) : BaseSliceOpx(op, devicex) {

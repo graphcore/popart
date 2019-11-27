@@ -241,6 +241,8 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
   }
   boost::optional<PipelineStage> pipelineStage =
       matmulList.at(0).op->getOptionalPipelineStage();
+  boost::optional<PingPongPhase> pingPongPhase =
+      matmulList.at(0).op->getOptionalPipelineStage();
 
   // For any input that needs first to be transposed
   for (auto &info : matmulList) {
@@ -257,6 +259,7 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
                             rhsTransposeDims,
                             virtualGraphId,
                             pipelineStage,
+                            pingPongPhase,
                             info.op->name() + "_RhsTranspose",
                             createIntermediateTensorId(rhs->id));
 
@@ -265,6 +268,7 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
                             lhsTransposeDims,
                             virtualGraphId,
                             pipelineStage,
+                            pingPongPhase,
                             info.op->name() + "_LhsTranspose",
                             createIntermediateTensorId(lhs->id));
     }
@@ -289,6 +293,7 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
                           lhsShape,
                           virtualGraphId,
                           pipelineStage,
+                          pingPongPhase,
                           info.op->name() + "_LhsExpand",
                           createIntermediateTensorId(lhs->id));
       info.expandedRhsTId =
@@ -296,6 +301,7 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
                           rhsShape,
                           virtualGraphId,
                           pipelineStage,
+                          pingPongPhase,
                           info.op->name() + "_RhsExpand",
                           createIntermediateTensorId(rhs->id));
 
@@ -314,6 +320,7 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
                           lhsShape,
                           virtualGraphId,
                           pipelineStage,
+                          pingPongPhase,
                           info.op->name() + "_LhsExpand",
                           createIntermediateTensorId(lhs->id));
 
@@ -322,6 +329,7 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
                           rhsShape,
                           virtualGraphId,
                           pipelineStage,
+                          pingPongPhase,
                           info.op->name() + "_RhsExpand",
                           createIntermediateTensorId(rhs->id));
     }
@@ -337,11 +345,13 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
   auto lhsConcatId = builder.concat(lhsTensors,
                                     virtualGraphId,
                                     pipelineStage,
+                                    pingPongPhase,
                                     name + "_LhsConcat",
                                     builder.getNextId(name + "_LhsConcat"));
   auto rhsConcatId = builder.concat(rhsTensors,
                                     virtualGraphId,
                                     pipelineStage,
+                                    pingPongPhase,
                                     name + "_RhsConcat",
                                     builder.getNextId(name + "_RhsConcat"));
 
@@ -350,6 +360,7 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
                                  rhsConcatId,
                                  virtualGraphId,
                                  pipelineStage,
+                                 pingPongPhase,
                                  name,
                                  builder.getNextId(name),
                                  {},
@@ -377,6 +388,7 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
                                    axes,
                                    virtualGraphId,
                                    pipelineStage,
+                                   pingPongPhase,
                                    info.op->name() + "_Slice:",
                                    createIntermediateTensorId(matmulId));
 
@@ -385,6 +397,7 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
                       outputTensor->id,
                       virtualGraphId,
                       pipelineStage,
+                      pingPongPhase,
                       info.op->name() + "_Squeeze:");
 
     } else {
@@ -395,6 +408,7 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
                                    axes,
                                    virtualGraphId,
                                    pipelineStage,
+                                   pingPongPhase,
                                    info.op->name() + "_Slice:",
                                    createIntermediateTensorId(matmulId));
 
@@ -402,6 +416,7 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
                                        {0},
                                        virtualGraphId,
                                        pipelineStage,
+                                       pingPongPhase,
                                        info.op->name() + "_Squeeze:",
                                        createIntermediateTensorId(sliceId));
 
@@ -413,6 +428,7 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
                         outputTensor->id,
                         virtualGraphId,
                         pipelineStage,
+                        pingPongPhase,
                         info.op->name() + "_Transpose:");
     }
 

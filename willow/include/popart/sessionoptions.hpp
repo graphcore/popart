@@ -44,10 +44,11 @@ enum class MergeVarUpdateType {
 };
 
 enum class VirtualGraphMode {
-  Off = 0, // virtual graphs are not enabled
-  Manual,  // user must set the virtualGraph attribute on all ops and losses
-  Auto,    // autoVirtualGraph transform is used
-  N        // The number of VirtualGraphModes, must appear as the final enum
+  Off = 0,  // virtual graphs are not enabled
+  Manual,   // user must set the virtualGraph attribute on all ops and losses
+  Auto,     // autoVirtualGraph transform is used
+  PingPong, // pingPong transform
+  N         // The number of VirtualGraphModes, must appear as the final enum
 };
 
 enum class IrSerializationFormat {
@@ -97,7 +98,7 @@ struct SessionOptions {
 
   bool separateCallOpPdfs = true;
 
-  /// Controls caching of identifical sections of the graph.
+  /// Controls caching of identical sections of the graph.
   bool enableOutlining = true;
 
   /// Controls whether the cost of copying of cached sections should be included
@@ -224,6 +225,9 @@ struct SessionOptions {
 
   // Enable stochastic rounding
   bool enableStochasticRounding = false;
+
+  // Enable ping pong transformation (0/1: disabled, >=2: enabled)
+  int pingPongPhases = 0;
 
   // Enable the global fullyConnectedPass option for matmuls
   bool enableFullyConnectedPass = true;

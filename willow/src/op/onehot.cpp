@@ -77,8 +77,8 @@ std::vector<std::unique_ptr<Op>> OnehotOp::getGradOps() {
   return upops;
 }
 
-void OnehotOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void OnehotOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
   os.appendAttribute("depth", onehotAxisDim);
 }
@@ -112,8 +112,8 @@ const std::map<int, int> &OnehotGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
-void OnehotGradOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void OnehotGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
 }
 

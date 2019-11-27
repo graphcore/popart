@@ -257,13 +257,15 @@ BOOST_AUTO_TEST_CASE(Add_fwdRegMap0) {
     auto tensor = ir.getTensors().get(addOut);
     auto addOp  = tensor->getProducer();
 
-    auto arg0Map = addOp->fwdRegMap(AddOp::getArg0InIndex());
-    auto arg1Map = addOp->fwdRegMap(AddOp::getArg1InIndex());
+    auto arg0Map =
+        addOp->fwdRegMap(AddOp::getArg0InIndex(), AddOp::getOutIndex());
+    auto arg1Map =
+        addOp->fwdRegMap(AddOp::getArg1InIndex(), AddOp::getOutIndex());
 
     // dim 0 and 1 broadcast
     auto r                = arg1Map({{0, 0}, {1, 2}});
     view::Region expected = {{0, 0, 0}, {4, 2, 2}};
-    BOOST_CHECK(r == expected);
+    BOOST_CHECK(r.front() == expected);
   };
 
   TestRunner runner;
@@ -292,12 +294,13 @@ BOOST_AUTO_TEST_CASE(Add_bwdRegMap0) {
     auto tensor = ir.getTensors().get(addOut);
     auto addOp  = tensor->getProducer();
 
-    auto arg1Map = addOp->bwdRegMap(AddOp::getArg1InIndex());
+    auto arg1Map =
+        addOp->bwdRegMap(AddOp::getArg1InIndex(), AddOp::getOutIndex());
 
     // dim 0 and 1 broadcast
     auto r                = arg1Map({{1, 4}, {3, 6}});
     view::Region expected = {{1, 0}, {3, 1}};
-    BOOST_CHECK(r == expected);
+    BOOST_CHECK(r.front() == expected);
   };
 
   TestRunner runner;

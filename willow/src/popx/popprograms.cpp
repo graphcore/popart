@@ -356,12 +356,14 @@ poplar::Function &PopPrograms::getFragmentFunction(const Graph &called_graph,
   return funcs.at(called_graph.id.str());
 }
 
-bool PopPrograms::hasBeenRecomputed(OpId id) const {
-  auto itHas = (beenRecomputed.find(id) != beenRecomputed.end());
+bool PopPrograms::hasBeenRecomputed(OpId id, PingPongPhase phase) const {
+  auto itHas = (beenRecomputed.find({id, phase}) != beenRecomputed.end());
   return itHas;
 }
 
-void PopPrograms::recordRecomputed(OpId id) { beenRecomputed.insert(id); }
+void PopPrograms::recordRecomputed(OpId id, PingPongPhase phase) {
+  beenRecomputed.insert({id, phase});
+}
 
 poplar::program::Sequence &PopPrograms::recomputeFragment(OpId id) {
   auto found = recomputeSeqs.find(id);

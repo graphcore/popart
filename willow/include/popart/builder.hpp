@@ -7,6 +7,7 @@
 #include <vector>
 
 #include <popart/names.hpp>
+#include <popart/op.hpp>
 #include <popart/opidentifier.hpp>
 #include <popart/tensorinfo.hpp>
 
@@ -19,6 +20,8 @@ class BuilderImpl;
 class Builder;
 class TensorInfo;
 enum class DataType;
+enum class CacheType;
+enum class RecomputeType;
 
 class DomainOpSet {
 
@@ -273,6 +276,16 @@ public:
     return t.reshape({args[0], newShape}, name);
   }
 
+  void cacheOutput(const TensorId &nodeOutputName, CacheType value) {
+    addNodeAttribute(
+        sPingPongPhaseAttribute, static_cast<int64_t>(value), {nodeOutputName});
+  }
+
+  void recomputeOutput(const TensorId &nodeOutputName, RecomputeType value) {
+    addNodeAttribute(
+        sPingPongPhaseAttribute, static_cast<int64_t>(value), {nodeOutputName});
+  }
+
   /**
    * Enable/disable recomputation of the output of the node in the backward
    * pass.
@@ -280,9 +293,12 @@ public:
    * \param nodeOutputName Name of the output tensor of the ONNX node
    * \param value If the recompute is enabled/disabled
    */
-  void recomputeOutputInBackwardPass(const TensorId &nodeOutputName,
-                                     bool value = true) {
-    addNodeAttribute(sRecomputeOutputAttribute, value, {nodeOutputName});
+  void recomputeOutputInBackwardPass(
+      const TensorId &nodeOutputName,
+      RecomputeType value = RecomputeType::RECOMPUTE) {
+    addNodeAttribute(sRecomputeOutputAttribute,
+                     static_cast<int64_t>(value),
+                     {nodeOutputName});
   }
 
   /**
@@ -292,9 +308,12 @@ public:
    * \param nodeOutputNames Names of the output tensors of the ONNX node
    * \param value If the recompute is enabled/disabled
    */
-  void recomputeOutputInBackwardPass(const std::set<TensorId> &nodeOutputNames,
-                                     bool value = true) {
-    addNodeAttribute(sRecomputeOutputAttribute, value, nodeOutputNames);
+  void recomputeOutputInBackwardPass(
+      const std::set<TensorId> &nodeOutputNames,
+      RecomputeType value = RecomputeType::RECOMPUTE) {
+    addNodeAttribute(sRecomputeOutputAttribute,
+                     static_cast<int64_t>(value),
+                     nodeOutputNames);
   }
 
   /**
@@ -329,6 +348,15 @@ public:
    */
   void virtualGraph(const TensorId &nodeOutputName, int64_t value = 0) {
     addNodeAttribute(sVirtualGraphAttribute, value, {nodeOutputName});
+  }
+
+  /**
+   * Set the ping pong phase that computes the given node.
+   * \param nodeOutputName Name of the output tensor of the ONNX node
+   * \param value The index of the virtual graph that computes this node
+   */
+  void pingPongPhase(const TensorId &nodeOutputName, int64_t value = 0) {
+    addNodeAttribute(sPingPongPhaseAttribute, value, {nodeOutputName});
   }
 
   void pipelineStage(const TensorId &nodeOutputName, int64_t value) {
@@ -440,14 +468,29 @@ public:
   void clearAttribute(const std::string &attribute);
 
   /**
+   * Check if attribute is set
+   */
+  bool hasAttribute(const std::string &attribute);
+
+  /**
+   * Get current attribute value
+   */
+  boost::any getAttribute(const std::string &attribute);
+
+  /**
    * A convenience function for the pipeline stage attribute
    */
-  uint64_t getPipelineStage() const;
+  int64_t getPipelineStage() const;
+
+  /**
+   * A convenience function for the ping pong phase attribute
+   */
+  int64_t getPingPongPhase() const;
 
   /**
    * A convenience function for the virtual graph attribute
    */
-  uint64_t getVirtualGraph() const;
+  int64_t getVirtualGraph() const;
 
   /**
    * Set the virtual graph that computes the given node.  Applies when creating
@@ -459,6 +502,11 @@ public:
   void virtualGraph(const std::set<TensorId> &nodeOutputNames,
                     int64_t value = 0) {
     addNodeAttribute(sVirtualGraphAttribute, value, nodeOutputNames);
+  }
+
+  void pingPongPhase(const std::set<TensorId> &nodeOutputNames,
+                     int64_t value = 0) {
+    addNodeAttribute(sPingPongPhaseAttribute, value, nodeOutputNames);
   }
 
   /**
@@ -730,6 +778,14 @@ public:
    */
   int64_t getVirtualGraph(const std::set<TensorId> &nodeOutputNames) {
     return getInt64NodeAttribute(sVirtualGraphAttribute, nodeOutputNames);
+  }
+
+  int64_t getPingPongPhase(const TensorId &nodeOutputName) {
+    return getInt64NodeAttribute(sPingPongPhaseAttribute, {nodeOutputName});
+  }
+
+  int64_t getPingPongPhase(const std::set<TensorId> &nodeOutputNames) {
+    return getInt64NodeAttribute(sPingPongPhaseAttribute, nodeOutputNames);
   }
 
   /**

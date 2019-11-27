@@ -48,8 +48,8 @@ void ScatterOp::setup() {
   outInfo(outIndex()) = inInfo(dataInIndex());
 }
 
-void ScatterOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void ScatterOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
 }
 
@@ -81,8 +81,8 @@ void ScatterDataGradOp::setup() {
 
 int64_t ScatterDataGradOp::getAxis() const { return axis; }
 
-void ScatterDataGradOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void ScatterDataGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
 }
 
@@ -116,8 +116,8 @@ void ScatterUpdateGradOp::setup() {
 
 int64_t ScatterUpdateGradOp::getAxis() const { return axis; }
 
-void ScatterUpdateGradOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void ScatterUpdateGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
 }
 

@@ -67,7 +67,7 @@ bool PadSumPattern::matches(Op *op) const {
     return false;
   }
 
-  std::vector<view::Region> regions;
+  view::Regions regions;
   regions.reserve(inputProducers.size());
   for (auto producer : inputProducers) {
     auto pad = dynamic_cast<PadOp *>(producer);

@@ -308,15 +308,15 @@ def test_matmul_serialization_training_1(tmpdir):
                     [1, reducing_dim, output_channels]))
 
         # bwd lhs
-        lhs = matmuls[1]['inputs'][0]
-        rhs = matmuls[1]['inputs'][1]
+        lhs = matmuls[2]['inputs'][0]
+        rhs = matmuls[2]['inputs'][1]
         assert (lhs['shape'] == gen_shape([1, input_channels, output_channels])
                 and rhs['shape'] == gen_shape(
                     [1, output_channels, reducing_dim]))
 
         # bwd rhs
-        lhs = matmuls[2]['inputs'][0]
-        rhs = matmuls[2]['inputs'][1]
+        lhs = matmuls[1]['inputs'][0]
+        rhs = matmuls[1]['inputs'][1]
         assert (lhs['shape'] == gen_shape([1, reducing_dim, input_channels])
                 and rhs['shape'] == gen_shape(
                     [1, input_channels, output_channels]))
@@ -420,7 +420,7 @@ def test_matmul_serialization_training_1(tmpdir):
         assert (len(matmuls) == 0)
 
         # FWD
-        matmuls = [op for op in ir['_subgraph(1)'] if op['type'] == 'MatMul']
+        matmuls = [op for op in ir['_subgraph(0)'] if op['type'] == 'MatMul']
         assert (len(matmuls) == 1)
 
         lhs = matmuls[0]['inputs'][0]
@@ -432,7 +432,7 @@ def test_matmul_serialization_training_1(tmpdir):
             ]))
 
         # BWD_LHS
-        matmuls = [op for op in ir['_subgraph(0)'] if op['type'] == 'MatMul']
+        matmuls = [op for op in ir['_subgraph(1)'] if op['type'] == 'MatMul']
         assert (len(matmuls) == 1)
 
         lhs = matmuls[0]['inputs'][0]
@@ -598,7 +598,7 @@ def test_matmul_serialization_training_2(tmpdir):
         ]) and rhs['shape'] == gen_shape([1, reducing_dim, output_channels]))
 
         # BWD_LHS
-        matmuls = [op for op in ir['_subgraph(1)'] if op['type'] == 'MatMul']
+        matmuls = [op for op in ir['_subgraph(2)'] if op['type'] == 'MatMul']
         assert (len(matmuls) == 1)
 
         lhs = matmuls[0]['inputs'][0]
@@ -610,7 +610,7 @@ def test_matmul_serialization_training_2(tmpdir):
         ]) and rhs['shape'] == gen_shape([1, output_channels, reducing_dim]))
 
         # BWD_RHS
-        matmuls = [op for op in ir['_subgraph(2)'] if op['type'] == 'MatMul']
+        matmuls = [op for op in ir['_subgraph(1)'] if op['type'] == 'MatMul']
         assert (len(matmuls) == 1)
 
         lhs = matmuls[0]['inputs'][0]
@@ -634,7 +634,7 @@ def test_matmul_serialization_training_2(tmpdir):
         assert (len(matmuls) == 0)
 
         # FWD
-        matmuls = [op for op in ir['_subgraph(1)'] if op['type'] == 'MatMul']
+        matmuls = [op for op in ir['_subgraph(0)'] if op['type'] == 'MatMul']
         assert (len(matmuls) == 1)
 
         lhs = matmuls[0]['inputs'][0]
@@ -647,7 +647,7 @@ def test_matmul_serialization_training_2(tmpdir):
             [1, reducing_dim // matmul_serialization_factor, output_channels]))
 
         # BWD_LHS
-        matmuls = [op for op in ir['_subgraph(0)'] if op['type'] == 'MatMul']
+        matmuls = [op for op in ir['_subgraph(1)'] if op['type'] == 'MatMul']
         assert (len(matmuls) == 1)
 
         lhs = matmuls[0]['inputs'][0]
@@ -1111,7 +1111,7 @@ def test_matmul_serialization_training_with_gradient_accumlation(tmpdir):
         assert (len(matmuls) == 0)
 
         # FWD
-        matmuls = [op for op in ir['_subgraph(1)'] if op['type'] == 'MatMul']
+        matmuls = [op for op in ir['_subgraph(0)'] if op['type'] == 'MatMul']
         assert (len(matmuls) == 1)
 
         lhs = matmuls[0]['inputs'][0]
@@ -1137,7 +1137,7 @@ def test_matmul_serialization_training_with_gradient_accumlation(tmpdir):
             [batches_per_step, output_channels, reducing_dim]))
 
         # BWD_RHS
-        matmuls = [op for op in ir['_subgraph(0)'] if op['type'] == 'MatMul']
+        matmuls = [op for op in ir['_subgraph(1)'] if op['type'] == 'MatMul']
         assert (len(matmuls) == 1)
 
         lhs = matmuls[0]['inputs'][0]
@@ -1176,7 +1176,7 @@ def test_matmul_serialization_training_with_gradient_accumlation(tmpdir):
         ]))
 
         # BWD_LHS
-        matmuls = [op for op in ir['_subgraph(1)'] if op['type'] == 'MatMul']
+        matmuls = [op for op in ir['_subgraph(2)'] if op['type'] == 'MatMul']
         assert (len(matmuls) == 1)
 
         lhs = matmuls[0]['inputs'][0]
@@ -1190,7 +1190,7 @@ def test_matmul_serialization_training_with_gradient_accumlation(tmpdir):
                 ]))
 
         # BWD_RHS
-        matmuls = [op for op in ir['_subgraph(2)'] if op['type'] == 'MatMul']
+        matmuls = [op for op in ir['_subgraph(1)'] if op['type'] == 'MatMul']
         assert (len(matmuls) == 1)
 
         lhs = matmuls[0]['inputs'][0]
@@ -1212,7 +1212,7 @@ def test_matmul_serialization_training_with_gradient_accumlation(tmpdir):
         assert (len(matmuls) == 0)
 
         # FWD
-        matmuls = [op for op in ir['_subgraph(1)'] if op['type'] == 'MatMul']
+        matmuls = [op for op in ir['_subgraph(0)'] if op['type'] == 'MatMul']
         assert (len(matmuls) == 1)
 
         lhs = matmuls[0]['inputs'][0]
@@ -1226,7 +1226,7 @@ def test_matmul_serialization_training_with_gradient_accumlation(tmpdir):
                 ]))
 
         # BWD_LHS
-        matmuls = [op for op in ir['_subgraph(0)'] if op['type'] == 'MatMul']
+        matmuls = [op for op in ir['_subgraph(2)'] if op['type'] == 'MatMul']
         assert (len(matmuls) == 1)
 
         lhs = matmuls[0]['inputs'][0]
@@ -1241,7 +1241,7 @@ def test_matmul_serialization_training_with_gradient_accumlation(tmpdir):
         ]))
 
         # BWD_RHS
-        matmuls = [op for op in ir['_subgraph(2)'] if op['type'] == 'MatMul']
+        matmuls = [op for op in ir['_subgraph(1)'] if op['type'] == 'MatMul']
         assert (len(matmuls) == 1)
 
         lhs = matmuls[0]['inputs'][0]

@@ -100,21 +100,21 @@ std::unique_ptr<Op> AddLhsInplaceOp::clone() const {
   return std::make_unique<AddLhsInplaceOp>(*this);
 }
 
-view::Region AddLhsInplaceOp::modifies(InIndex index) const {
+view::Regions AddLhsInplaceOp::modifies(InIndex index) const {
   if (index == getArg0InIndex()) {
-    return view::Region::getFull(inShape(index));
+    return {view::Region::getFull(inShape(index))};
   } else if (index == getArg1InIndex()) {
-    return view::Region::getEmpty(inRank(index));
+    return {view::Region::getEmpty(inRank(index))};
   } else {
     throw error("Invalid index passed to AddLhsInplaceOp::modifies");
   }
 }
 
-view::Region AddLhsInplaceOp::aliases(InIndex index) const {
-  if (index == getArg0InIndex()) {
-    return view::Region::getFull(inShape(index));
-  } else if (index == getArg1InIndex()) {
-    return view::Region::getEmpty(inRank(index));
+view::Regions AddLhsInplaceOp::aliases(InIndex in, OutIndex) const {
+  if (in == getArg0InIndex()) {
+    return {view::Region::getFull(inShape(in))};
+  } else if (in == getArg1InIndex()) {
+    return {view::Region::getEmpty(inRank(in))};
   } else {
     throw error("Invalid index passed to AddLhsInplaceOp::modifies");
   }
@@ -127,32 +127,33 @@ std::unique_ptr<Op> AddRhsInplaceOp::clone() const {
   return std::make_unique<AddRhsInplaceOp>(*this);
 }
 
-view::Region AddRhsInplaceOp::modifies(InIndex index) const {
+view::Regions AddRhsInplaceOp::modifies(InIndex index) const {
   if (index == getArg0InIndex()) {
-    return view::Region::getEmpty(inRank(index));
+    return {view::Region::getEmpty(inRank(index))};
   } else if (index == getArg1InIndex()) {
-    return view::Region::getFull(inShape(index));
+    return {view::Region::getFull(inShape(index))};
   } else {
     throw error("Invalid index passed to AddRhsInplaceOp::modifies");
   }
 }
 
-view::Region AddRhsInplaceOp::aliases(InIndex index) const {
-  if (index == getArg0InIndex()) {
-    return view::Region::getEmpty(inRank(index));
-  } else if (index == getArg1InIndex()) {
-    return view::Region::getFull(inShape(index));
+view::Regions AddRhsInplaceOp::aliases(InIndex in, OutIndex) const {
+  if (in == getArg0InIndex()) {
+    return {view::Region::getEmpty(inRank(in))};
+  } else if (in == getArg1InIndex()) {
+    return {view::Region::getFull(inShape(in))};
   } else {
     throw error("Invalid index passed to AddRhsInplaceOp::modifies");
   }
 }
 
-view::RegMap AddOp::fwdRegMap(InIndex argIndex) const {
-  return [this, argIndex](const view::Region &r) {
-    auto out_shape = outShape(AddOp::getOutIndex());
+view::RegMap AddOp::fwdRegMap(InIndex argIndex, OutIndex) const {
+
+  auto out_shape = outShape(AddOp::getOutIndex());
+  auto in_shape  = inShape(argIndex);
+  return [out_shape, in_shape](const view::Region &r) {
     auto out_size  = static_cast<int>(out_shape.size());
-
-    auto arg_shape = padShape(inShape(argIndex), out_size, int64_t{1});
+    auto arg_shape = padShape(in_shape, out_size, int64_t{1});
     auto lower     = padShape(r.getLower(), out_size, int64_t{0});
     auto upper     = padShape(r.getUpper(), out_size, int64_t{1});
 
@@ -163,18 +164,18 @@ view::RegMap AddOp::fwdRegMap(InIndex argIndex) const {
       }
     }
 
-    return view::Region{lower, upper};
+    return view::Regions(1, view::Region{lower, upper});
   };
 }
 
-view::RegMap AddOp::bwdRegMap(InIndex argIndex) const {
-  return [this, argIndex](const view::Region &r) {
-    auto arg_shape = inShape(argIndex);
-    auto arg_size  = static_cast<int>(arg_shape.size());
+view::RegMap AddOp::bwdRegMap(InIndex argIndex, OutIndex) const {
 
-    auto out_shape = unpadShape(outShape(AddOp::getOutIndex()), arg_size);
-    auto lower     = unpadShape(r.getLower(), arg_size);
-    auto upper     = unpadShape(r.getUpper(), arg_size);
+  auto arg_shape = inShape(argIndex);
+  auto arg_size  = static_cast<int>(arg_shape.size());
+  auto out_shape = unpadShape(outShape(AddOp::getOutIndex()), arg_size);
+  return [arg_size, out_shape, arg_shape](const view::Region &r) {
+    auto lower = unpadShape(r.getLower(), arg_size);
+    auto upper = unpadShape(r.getUpper(), arg_size);
 
     // unbroadcasting
     for (int i = 0; i < out_shape.size(); i++) {
@@ -184,7 +185,7 @@ view::RegMap AddOp::bwdRegMap(InIndex argIndex) const {
       }
     }
 
-    return view::Region{lower, upper};
+    return view::Regions(1, view::Region{lower, upper});
   };
 }
 

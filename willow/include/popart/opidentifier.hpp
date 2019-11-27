@@ -316,6 +316,12 @@ const static AiGraphcoreOpIdV1 Nll("Nll");
 
 const static AiGraphcoreOpIdV1 IpuCopy("IpuCopy");
 
+const static AiGraphcoreOpIdV1 CacheAllocate("CacheAllocate");
+const static AiGraphcoreOpIdV1 CacheStore("CacheStore");
+const static AiGraphcoreOpIdV1 CacheLoad("CacheLoad");
+
+const static AiGraphcoreOpIdV1 RecomputePrereq("RecomputePrereq");
+
 const static AiGraphcoreOpIdV1 SGD0VarUpdate("SGD0VarUpdate");
 const static AiGraphcoreOpIdV1 SGD1Combo("SGD1Combo");
 const static AiGraphcoreOpIdV1 SGD1VarUpdate("SGD1VarUpdate");
@@ -352,7 +358,7 @@ const static OperatorIdentifier GroupNormalization =
 const static OperatorIdentifier PrintTensor = CustomOperators::PrintTensor_1;
 const static OperatorIdentifier Scale       = CustomOperators::Scale_1;
 const static OperatorIdentifier LSTM        = CustomOperators::LSTM_1;
-const static OperatorIdentifier Gelu       = CustomOperators::Gelu_1;
+const static OperatorIdentifier Gelu        = CustomOperators::Gelu_1;
 } // namespace OpSet1
 } // namespace AiGraphcore
 

@@ -14,6 +14,16 @@ namespace popart {
 // where input and output tensors share memory, such as
 // in-place ops, view-changing ops, and weight-update ops.
 
+class TopoOp {
+public:
+  TopoOp(Op *op_, bool tied_) : op(op_), tied(tied_) {}
+  TopoOp(Op *op_) : op(op_), tied(false) {}
+  TopoOp() = delete;
+  Op *op;
+  bool tied;
+  bool operator<(const TopoOp &rhs) const { return op < rhs.op; }
+};
+
 class TopoCons {
 public:
   // remove all topological constraints with op in it
@@ -21,8 +31,8 @@ public:
 
   // insert the constraint "before -> after"
   // if already present, do nothing
-  void insert(Op *before, Op *after);
-  void insert(const OpsBeforeKey &);
+  void insert(Op *before, Op *after, bool tied = false);
+  void insert(const OpsBeforeKey &, bool tied = false);
 
   // replace all topological constraints involving "beforeTransfer"
   // with "afterTransfer", on both ends of topological constraints
@@ -41,6 +51,9 @@ public:
   std::vector<Op *> getAfters(Op *before) const;
   std::vector<Op *> getBefores(Op *after) const;
 
+  std::vector<Op *> getTiedAfters(Op *before) const;
+  std::vector<Op *> getTiedBefores(Op *after) const;
+
   // required topological constraints such that "last"
   // is guaranteed to run after all other consumers
   // of Tensor "consumed"
@@ -48,19 +61,19 @@ public:
 
   friend std::ostream &operator<<(std::ostream &os, const TopoCons &tc);
 
-  const std::map<Op *, std::set<Op *>> &getValsAfter() const {
+  const std::map<Op *, std::set<TopoOp>, POpCmp> &getValsAfter() const {
     return valsAfter;
   }
-  const std::map<Op *, std::set<Op *>> &getValsBefore() const {
+  const std::map<Op *, std::set<TopoOp>, POpCmp> &getValsBefore() const {
     return valsBefore;
   }
 
 private:
   // for all val : set, "key -> val"
-  std::map<Op *, std::set<Op *>> valsAfter;
+  std::map<Op *, std::set<TopoOp>, POpCmp> valsAfter;
 
   // the mirror of valsAfterKey, so for all val : set, "val -> key"
-  std::map<Op *, std::set<Op *>> valsBefore;
+  std::map<Op *, std::set<TopoOp>, POpCmp> valsBefore;
 };
 
 std::ostream &operator<<(std::ostream &os, const TopoCons &tc);

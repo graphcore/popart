@@ -1,3 +1,4 @@
+#include <popart/logging.hpp>
 #include <popart/subgraph/algo1.hpp>
 
 namespace fwtools {
@@ -472,7 +473,6 @@ void Algo1Base::completeLocalUnsorted(std::vector<Match> &local,
 
 // how to process the top of the priority queue
 void Algo1Base::process(const Match &match) {
-
   if (match.length < 1 || match.starts.size() < 2) {
     // base case
     return;
@@ -482,6 +482,7 @@ void Algo1Base::process(const Match &match) {
 
     if (acc.length == match.length && acc.startsIntersect(match.starts)) {
       // same length as accepted with intersecting starts
+      popart::logging::trace("[RINSE Algo1] Intersecting starts, same length.");
       return;
     }
 
@@ -489,38 +490,49 @@ void Algo1Base::process(const Match &match) {
     // don't generate smaller cases as
     // they will also be subsumed
     if (acc.subsumes(match)) {
+      popart::logging::trace("[RINSE Algo1] Subsumed.");
       return;
     }
 
     if (acc.contains(match) && (2 * acc.starts.size() > match.starts.size())) {
       // contained by accepted with at least 1/2X the starts
+      popart::logging::trace("[RINSE Algo1] Contained (1/2x starts).");
       return;
     }
   }
 
   if (!noCrossingsWithAccepted(match)) {
+    popart::logging::trace("[RINSE Algo1] Crossing.");
     return;
   }
 
   if (!noOverlapping(match)) {
+    popart::logging::trace("[RINSE Algo1] Overlapping.");
     return;
   }
 
   if (!allIsomorphic(match)) {
+    popart::logging::trace("[RINSE Algo1] Not isomorphic.");
     return;
   }
 
   for (auto &acc : accepted) {
     if (acc.intersects(match)) {
+      popart::logging::trace("[RINSE Algo1] Intersects.");
       // the only type of intersection which can be
       // accepted is a "clean fit" (see definition)
       if (!acc.fitsCleanly(match)) {
-        // contained but not cleany
+        // contained but not cleanly
+        popart::logging::trace("[RINSE Algo1] Not contained cleanly.");
         return;
       }
     }
   }
 
+  popart::logging::trace(
+      "[RINSE Algo1] Accepting [{}, [{}]]",
+      match.length,
+      popart::logging::join(match.starts.begin(), match.starts.end(), ", "));
   accepted.push_back(match);
 
   if (match.length > 1) {

@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE(RecomputeTestPopxStandardCalls0) {
       dynamic_cast<popart::popx::Devicex *>(session->device_.get());
 
   // we count how many times each op appears
-  std::map<Op *, int> counts = devicex->getMainGraphOpCounts();
+  std::map<Op *, int, POpCmp> counts = devicex->getMainGraphOpCounts();
 
   int nOnes = 0;
   int nTwos = 0;
@@ -125,6 +125,4 @@ BOOST_AUTO_TEST_CASE(RecomputeTestPopxStandardCalls0) {
   BOOST_CHECK(nTwos > 0);
   // more non-recomputed than recomputed (including backwards pass)
   BOOST_CHECK(nOnes > nTwos);
-
-  std::cout << devicex->getMainGraphOpString() << std::endl;
 }

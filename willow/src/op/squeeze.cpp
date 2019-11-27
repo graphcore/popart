@@ -19,8 +19,9 @@ void SqueezeBaseOp::setup() {
                             squeeze(inShape(getInIndex()), axes)};
 }
 
-view::RegMap SqueezeBaseOp::fwdRegMap(InIndex inIndex) const {
-  if (inIndex != 0) {
+view::RegMap SqueezeBaseOp::fwdRegMap(InIndex inIndex,
+                                      OutIndex outIndex) const {
+  if (inIndex != 0 || outIndex != 0) {
     throw error("Internal Logic Error in SqueezeBaseOp::fwdRegMap."
                 "Received input index {} but only 0 allowed, "
                 "This for Op {}, ",
@@ -33,14 +34,15 @@ view::RegMap SqueezeBaseOp::fwdRegMap(InIndex inIndex) const {
   auto emptyRegion = view::Region::getEmpty(outRank(getOutIndex()));
   return [emptyRegion, outRegion](const view::Region &r) {
     if (r.isEmpty()) {
-      return emptyRegion;
+      return view::Regions(1, emptyRegion);
     }
-    return outRegion;
+    return view::Regions(1, outRegion);
   };
 }
 
-view::RegMap SqueezeBaseOp::bwdRegMap(InIndex inIndex) const {
-  if (inIndex != 0) {
+view::RegMap SqueezeBaseOp::bwdRegMap(InIndex inIndex,
+                                      OutIndex outIndex) const {
+  if (inIndex != 0 || outIndex != 0) {
     throw error("Internal Logic Error in SqueezeBaseOp::bwdRegMap."
                 "Received input index {} but only 0 allowed, "
                 "This for Op {}, ",
@@ -51,9 +53,9 @@ view::RegMap SqueezeBaseOp::bwdRegMap(InIndex inIndex) const {
   auto emptyRegion = view::Region::getEmpty(inRank(getInIndex()));
   return [emptyRegion, inRegion](const view::Region &r) {
     if (r.isEmpty()) {
-      return emptyRegion;
+      return view::Regions(1, emptyRegion);
     }
-    return inRegion;
+    return view::Regions(1, inRegion);
   };
 }
 
@@ -66,8 +68,8 @@ void SqueezeBaseOp::setAxesToDefault() {
   }
 }
 
-void SqueezeBaseOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void SqueezeBaseOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("axes", axes);
 }
 
@@ -94,6 +96,7 @@ SqueezeOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   // catch remaining cases and throw an error
   return Op::getInplaceVariant(operator_id);
 }
+
 std::vector<std::tuple<OperatorIdentifier, float>>
 SqueezeOp::inplacePriorityDefault() const {
   return {{Onnx::CustomOperators::SqueezeInplace, 10}};

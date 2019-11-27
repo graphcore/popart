@@ -53,8 +53,8 @@ std::vector<std::unique_ptr<Op>> MaxPoolOp::getGradOps() {
   return upops;
 }
 
-void MaxPoolOp::appendAttributes(OpSerialiserBase &os) const {
-  HasReceptiveFieldOp::appendAttributes(os);
+void MaxPoolOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  HasReceptiveFieldOp::appendOutlineAttributes(os);
   os.appendAttribute("storage_order", storageOrder);
   os.appendAttribute("kernel_shape", kernelShape);
   os.appendAttribute("ceil_mode", ceilMode);
@@ -77,8 +77,8 @@ MaxPoolGradOp::MaxPoolGradOp(const MaxPoolOp &op_)
       unpooledInfo(op_.inInfo(MaxPoolOp::getInIndex())),
       cloneOfCreator(op_.clone()) {}
 
-void MaxPoolGradOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void MaxPoolGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendForwardOp(getCloneOfCreator());
 }
 

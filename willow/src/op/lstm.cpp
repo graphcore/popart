@@ -136,8 +136,8 @@ bool LSTMOp::hasInitialCInput() const {
 
 bool LSTMOp::hasOutput(OutIndex index) const { return output->hasIndex(index); }
 
-void LSTMOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void LSTMOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("hidden_size", hidden_size_attribute);
 }
 

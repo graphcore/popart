@@ -58,8 +58,8 @@ void TopKOp::setup() {
       TensorInfo(inInfo(getInIndex()).dataType(), shape);
 }
 
-void TopKOp::appendAttributes(OpSerialiserBase &os) const {
-  BaseSortOp::appendAttributes(os);
+void TopKOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  BaseSortOp::appendOutlineAttributes(os);
 
   if (opid.version == 1) {
     os.appendAttribute("K", K);
@@ -104,8 +104,8 @@ const std::map<int, int> &TopKGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
-void TopKGradOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void TopKGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
 }
 

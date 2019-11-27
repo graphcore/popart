@@ -30,7 +30,7 @@ public:
   // weight decay scaling factor
   const OptimizerValue initWdsf0;
 
-  void appendAttributes(OpSerialiserBase &) const final;
+  void appendOutlineAttributes(OpSerialiserBase &) const final;
 };
 
 // The "0" in the name signifies that there are no persistant Tensors required

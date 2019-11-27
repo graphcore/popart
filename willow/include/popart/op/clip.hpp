@@ -21,7 +21,7 @@ public:
   float getClipMin() const;
   void setClipMax(float value) { max = value; }
   float getClipMax() const;
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   std::vector<std::tuple<OperatorIdentifier, float>>
   inplacePriorityDefault() const final;
@@ -40,7 +40,7 @@ public:
 
   float getClipMin() const;
   float getClipMax() const;
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
 private:
   float min;

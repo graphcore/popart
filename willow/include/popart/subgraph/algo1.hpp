@@ -129,8 +129,9 @@ public:
 private:
   // Using cumulative to accelerate to make this O(1)
   void setVal(Match &match) final {
-    match.setValue(cumVals[match.starts[0] + match.length] -
-                   cumVals[match.starts[0]]);
+    auto val =
+        cumVals[match.starts[0] + match.length] - cumVals[match.starts[0]];
+    match.setValue(val);
   }
 
   // This function should use the cumulative in the same way as setVal

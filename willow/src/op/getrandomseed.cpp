@@ -17,13 +17,13 @@ std::unique_ptr<Op> GetRandomSeedOp::clone() const {
   return std::make_unique<GetRandomSeedOp>(*this);
 }
 
-view::Region GetRandomSeedOp::aliases(InIndex index) const {
-  return view::Region::getFull(inShape(index));
+view::Regions GetRandomSeedOp::aliases(InIndex inIndex, OutIndex) const {
+  return {view::Region::getFull(inShape(inIndex))};
 }
 
 // Modifies is the same as aliases
-view::Region GetRandomSeedOp::modifies(InIndex index) const {
-  return aliases(index);
+view::Regions GetRandomSeedOp::modifies(InIndex inIndex) const {
+  return aliases(inIndex, 0);
 }
 
 namespace {} // namespace

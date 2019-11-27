@@ -32,8 +32,8 @@ TensorId RestoreOp::getRestoredTensorId() const {
   return reservedRestoredPrefix() + act->id;
 }
 
-void RestoreOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void RestoreOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("stashSize", stashSize);
 }
 
@@ -46,17 +46,17 @@ std::unique_ptr<Op> RestoreInplaceOp::clone() const {
   return std::make_unique<RestoreInplaceOp>(*this);
 }
 
-view::Region RestoreInplaceOp::aliases(InIndex index) const {
-  if (index == getActToRestoreInIndex()) {
-    return view::Region::getFull(inShape(index));
+view::Regions RestoreInplaceOp::aliases(InIndex in, OutIndex) const {
+  if (in == getActToRestoreInIndex()) {
+    return {view::Region::getFull(inShape(in))};
   } else {
-    return view::Region::getEmpty(inRank(index));
+    return {view::Region::getEmpty(inRank(in))};
   }
 }
 
 // Modifies is the same as aliases
-view::Region RestoreInplaceOp::modifies(InIndex index) const {
-  return aliases(index);
+view::Regions RestoreInplaceOp::modifies(InIndex index) const {
+  return aliases(index, 0);
 }
 
 } // namespace popart

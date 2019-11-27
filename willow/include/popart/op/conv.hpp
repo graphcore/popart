@@ -137,7 +137,7 @@ public:
   static InIndex getBiasInIndex() { return 2; }
   static OutIndex getOutIndex() { return 0; }
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   const ConvParameters &getParameters() const { return params; }
   void setParameters(const ConvParameters &p) { params = p; }
@@ -196,7 +196,7 @@ public:
 
   const ConvOp *getCloneOfCreator() const;
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
 
@@ -231,7 +231,7 @@ public:
     availableMemoryProportion = v;
   }
 
-  void appendAttributes(OpSerialiserBase &os) const final;
+  void appendOutlineAttributes(OpSerialiserBase &os) const final;
 
 private:
   ConvParameters params;
@@ -254,7 +254,7 @@ public:
   static InIndex getGradConvolvedInIndex() { return 1; }
   static OutIndex getOutIndex() { return 0; }
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   const ConvParameters &getParameters() const { return params; }
   void setParameters(const ConvParameters &p) { params = p; }

@@ -19,7 +19,7 @@ public:
 
   void setScaleFactor(float value) { scale_factor = value; }
   float getScaleFactor() const;
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   std::vector<std::tuple<OperatorIdentifier, float>>
   inplacePriorityDefault() const final;
@@ -37,7 +37,7 @@ public:
 
   // TODO T6801 : don't repeat scale_factor
   float getScaleFactor() const;
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
 private:
   float scale_factor;

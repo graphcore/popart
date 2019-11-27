@@ -44,6 +44,12 @@ poplar::Tensor ReshapeBaseOpx::unwindTensorLayout(poplar::Tensor tensor,
   return tensor.reshape(inInfo(ReshapeOp::getInIndex()).shape_szt());
 }
 
+view::RegMap ReshapeBaseOpx::unwindRegion(InIndex inIndex,
+                                          OutIndex outIndex) const {
+  ReshapeBaseOp *op = dynamic_cast<ReshapeBaseOp *>(this->op_p);
+  return op->bwdRegMap(inIndex, outIndex);
+}
+
 ReshapeGradOpx::ReshapeGradOpx(Op *op, Devicex *devicex)
     : ReshapeOpx(op, devicex) {
   verifyOp<ReshapeGradOp>(op, Onnx::GradOperators::ReshapeGrad);

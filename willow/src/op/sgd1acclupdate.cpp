@@ -23,9 +23,9 @@ std::map<InIndex, TensorId> SGD1AcclUpdateOp::optimizerInputs() const {
   throw error("SGD1 optimizer inputs not implemented yet");
 }
 
-void SGD1AcclUpdateOp::appendAttributes(OpSerialiserBase &os) const {
+void SGD1AcclUpdateOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 
-  Op::appendAttributes(os);
+  Op::appendOutlineAttributes(os);
 
   if (initSmm1.isConst()) {
     os.appendAttribute("const momentum", initSmm1.val());

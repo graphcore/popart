@@ -32,11 +32,11 @@ public:
   void setup() final;
   virtual void connectInTensor(InIndex, TensorId) final;
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
-  view::RegMap fwdRegMap(InIndex) const final;
-  view::RegMap bwdRegMap(OutIndex) const final;
-  view::Region uses(InIndex) const final;
+  view::RegMap fwdRegMap(InIndex, OutIndex) const final;
+  view::RegMap bwdRegMap(InIndex, OutIndex) const final;
+  view::Regions uses(InIndex) const final;
 
   view::Region createSlicedRegion(const Shape &toBeSliced) const;
 
@@ -58,10 +58,6 @@ public:
 
   // The dimension to concatentate on when unwinding the creator
   int unwindConcatDim = 0;
-
-  // The set of all slices of the input.
-  // Used by the mat mul serialization transform so that we can unwind a creator
-  std::vector<TensorId> allSlices;
 
 private:
   std::vector<int64_t> starts;
@@ -106,7 +102,7 @@ public:
                  const std::vector<int64_t> &axes_,
                  const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const final;
-  view::Region aliases(InIndex) const final;
+  view::Regions aliases(InIndex in, OutIndex) const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   // "modifies" is still the empty region
 };

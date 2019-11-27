@@ -500,7 +500,7 @@ BOOST_AUTO_TEST_CASE(Attribute_Inheritance) {
   int64_t vgNumber   = 20;
   std::string opName = "MyPadOp";
 
-  bool recompute = true;
+  auto recompute = RecomputeType::RECOMPUTE;
 
   auto padIn = aiOnnx.add({input1, input2});
   builder->virtualGraph(padIn, vgNumber);
@@ -555,9 +555,12 @@ BOOST_AUTO_TEST_CASE(Attribute_Inheritance) {
   BOOST_CHECK(op->getVirtualGraphId() == vgNumber);
 
   // recomputation
-  BOOST_CHECK(
-      op->settings.recomputeType ==
-      (recompute ? RecomputeType::RECOMPUTE : RecomputeType::CHECKPOINT));
+  if (recompute == RecomputeType::RECOMPUTE) {
+    BOOST_CHECK(op->settings.recomputeType == RecomputeType::RECOMPUTE);
+  } else {
+    BOOST_CHECK(op->settings.recomputeType == RecomputeType::CHECKPOINT ||
+                op->settings.recomputeType == RecomputeType::UNDEFINED);
+  }
 }
 
 BOOST_AUTO_TEST_CASE(PadSumPatternTest) {

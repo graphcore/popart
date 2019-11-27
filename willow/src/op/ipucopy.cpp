@@ -81,11 +81,16 @@ uint64_t IpuCopyOp::getMaxSourceIpu() const {
   return maxSourceIpu;
 }
 
-void IpuCopyOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void IpuCopyOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   // no appendAttribute for map<TensorId, uint64_t> so convert sourceIpus to
   // string
-  os.appendAttribute("__sourceIpus", logging::format("{}", sourceIpus));
+  std::set<int64_t> ipus;
+  for (auto &sourceIpu : sourceIpus) {
+    ipus.insert(sourceIpu.second);
+  }
+
+  os.appendAttribute("__sourceIpus", logging::format("{}", ipus));
   os.appendAttribute("__destIpu", destIpu);
 }
 

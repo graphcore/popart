@@ -19,7 +19,7 @@ public:
 
   void setup() override;
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   // The depth input is not connected to Onehot as an input
   // but rather is read in the connectInTensor method and used
@@ -60,7 +60,7 @@ public:
 
   int64_t getAxis() const { return axis; }
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 

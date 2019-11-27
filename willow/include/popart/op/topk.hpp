@@ -18,7 +18,7 @@ public:
   int64_t getK() const;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
 
-  void appendAttributes(OpSerialiserBase &) const final;
+  void appendOutlineAttributes(OpSerialiserBase &) const final;
 
   static InIndex getKInIndex() { return 1; }
 
@@ -59,7 +59,7 @@ public:
 
   static InIndex gradOutIndex() { return 0; }
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 

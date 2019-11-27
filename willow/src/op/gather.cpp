@@ -56,8 +56,8 @@ void GatherOp::setup() {
       TensorInfo(inInfo(dataInIndex()).dataType(), data_shape);
 }
 
-void GatherOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void GatherOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
 }
 
@@ -96,8 +96,8 @@ void GatherGradOp::setup() { outInfo(gradOutIndex()) = fwdDataInfo; }
 
 int64_t GatherGradOp::getAxis() const { return axis; }
 
-void GatherGradOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void GatherGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
 }
 

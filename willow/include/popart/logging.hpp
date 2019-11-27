@@ -243,6 +243,7 @@ MAKE_MODULE_TEMPLATE(builder)
 MAKE_MODULE_TEMPLATE(op)
 MAKE_MODULE_TEMPLATE(opx)
 MAKE_MODULE_TEMPLATE(ces)
+MAKE_MODULE_TEMPLATE(python)
 
 // Convenience macro to create a log entry prefixed with function name e.g.:
 //    void someFunc(int i) {

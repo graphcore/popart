@@ -60,6 +60,8 @@ std::string toString(VirtualGraphMode v) {
     return "VirtualGraphMode::Manual";
   case VirtualGraphMode::Auto:
     return "VirtualGraphMode::Auto";
+  case VirtualGraphMode::PingPong:
+    return "VirtualGraphMode::PingPong";
   case VirtualGraphMode::N:
     throw error("Bad VirtualGraphMode {}", static_cast<int>(v));
   default:

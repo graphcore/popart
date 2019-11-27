@@ -34,8 +34,8 @@ const std::vector<GradInOutMapper> &MeanArgGradOp::gradInputInfo() const {
   return gradInputInfoVec;
 }
 
-void MeanArgGradOp::appendAttributes(OpSerialiserBase &os) const {
-  LinearVariadicGradOp::appendAttributes(os);
+void MeanArgGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  LinearVariadicGradOp::appendOutlineAttributes(os);
   os.appendAttribute("scale", getScale());
 }
 

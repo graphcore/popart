@@ -32,8 +32,8 @@ void ArgExtremaOp::setup() {
   outInfo(getOutIndex()) = TensorInfo(DataType::INT32, shape);
 }
 
-void ArgExtremaOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void ArgExtremaOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("keepdims", keepdims);
   os.appendAttribute("axis", axis);
 }

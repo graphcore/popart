@@ -16,7 +16,7 @@ public:
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
-  void appendAttributes(OpSerialiserBase &os) const final;
+  void appendOutlineAttributes(OpSerialiserBase &os) const final;
   bool canBeReplacedByIdentity() final { return !printSelf; }
 
   bool shouldPrint() const { return printSelf; }

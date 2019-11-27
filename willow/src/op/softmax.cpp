@@ -61,13 +61,13 @@ int64_t SoftmaxOp::getAxis() const {
 
 void SoftmaxOp::setAxis(int64_t axis_) { axis = axis_; }
 
-void SoftmaxOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void SoftmaxOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
 }
 
-void SoftmaxInplaceOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void SoftmaxInplaceOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
 }
 
@@ -103,8 +103,8 @@ const std::map<int, int> &SoftmaxGradOp::gradOutToNonGradIn() const {
 
 int64_t SoftmaxGradOp::getAxis() const { return axis; }
 
-void SoftmaxGradOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void SoftmaxGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
 }
 

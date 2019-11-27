@@ -59,8 +59,8 @@ std::vector<std::unique_ptr<Op>> AveragePoolOp::getGradOps() {
   return upops;
 }
 
-void AveragePoolOp::appendAttributes(OpSerialiserBase &os) const {
-  HasReceptiveFieldOp::appendAttributes(os);
+void AveragePoolOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  HasReceptiveFieldOp::appendOutlineAttributes(os);
   os.appendAttribute("kernel_shape", kernelShape);
   os.appendAttribute("count_include_pad", countIncludePad);
   os.appendAttribute("ceil_mode", ceilMode);
@@ -83,8 +83,8 @@ AveragePoolGradOp::AveragePoolGradOp(const AveragePoolOp &op_)
       unpooledInfo(op_.inInfo(AveragePoolOp::getInIndex())),
       cloneOfCreator(op_.clone()) {}
 
-void AveragePoolGradOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void AveragePoolGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendForwardOp(getCloneOfCreator());
 }
 

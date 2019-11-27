@@ -28,13 +28,13 @@ public:
   static InIndex getInIndex(InIndex index) { return index; }
   static OutIndex getOutIndex() { return 0; }
 
-  view::RegMap fwdRegMap(InIndex) const final;
-  view::RegMap bwdRegMap(OutIndex) const final;
+  view::RegMap fwdRegMap(InIndex, OutIndex) const final;
+  view::RegMap bwdRegMap(InIndex, OutIndex) const final;
   // "uses" is still the full input region
   // "aliases" is still the empty region
   // "modifies" is still the empty region
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   static Shape getOutputShape(int64_t axis,
                               const std::vector<const Shape *> inputs);
@@ -84,7 +84,7 @@ public:
   }
 
   // The whole of the used area is aliased. "modifies" is still empty
-  view::Region aliases(InIndex index) const final { return uses(index); }
+  view::Regions aliases(InIndex in, OutIndex) const final { return uses(in); }
 };
 
 class ConcatGradOp : public Op {
@@ -95,7 +95,7 @@ public:
   std::unique_ptr<Op> clone() const override;
   void setup() override;
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;

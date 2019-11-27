@@ -119,8 +119,8 @@ void BatchNormOp::setup() {
   }
 }
 
-void BatchNormOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void BatchNormOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("epsilon", epsilon);
   os.appendAttribute("momentum", momentum);
   os.appendAttribute("spatial", spatial);
@@ -165,8 +165,8 @@ void BatchNormGradOp::setup() {
   outInfo(getBOutIndex())     = fwdBInInfo;
 }
 
-void BatchNormGradOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void BatchNormGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("epsilon", epsilon);
 }
 

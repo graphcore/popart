@@ -36,13 +36,16 @@
 
 // The transformations
 #include <popart/recompute.hpp>
+#include <popart/transforms/aliaszerocopy.hpp>
 #include <popart/transforms/auto_virtual_graph.hpp>
+#include <popart/transforms/cachesetup.hpp>
 #include <popart/transforms/groupmatmuls.hpp>
 #include <popart/transforms/hostreduce.hpp>
 #include <popart/transforms/inferpipelinestages.hpp>
 #include <popart/transforms/interipucopy.hpp>
 #include <popart/transforms/mergecopies.hpp>
 #include <popart/transforms/mergevarupdates.hpp>
+#include <popart/transforms/pingpong.hpp>
 #include <popart/transforms/pipeline.hpp>
 #include <popart/transforms/prune.hpp>
 #include <popart/transforms/serializematmuls.hpp>
@@ -253,7 +256,9 @@ bool Ir::isPatternsLevel(const Patterns &p, PatternsLevel level) {
   }
 }
 
-void Ir::removeIsolatedTensors() { getTensors().removeIsolated(); }
+void Ir::removeIsolatedTensors(bool retainCached) {
+  getTensors().removeIsolated(retainCached);
+}
 
 void Ir::setExecutionMode(const ExecutionMode &mode) { executionMode = mode; }
 
@@ -737,9 +742,28 @@ void Ir::prepareImpl(const IrBundle &gb) {
   if (requiresRandomSeed()) {
     initRandomSeed();
   }
+
+  if (userOptions.pingPongPhases > 1 &&
+      (userOptions.autoVirtualGraph ||
+       userOptions.virtualGraphMode != VirtualGraphMode::PingPong)) {
+    throw error("PingPong phases > 1 requires VirtualGraphMode::PingPong, "
+                "and autoVirtualGraph disabled");
+  }
+
   enableTransform(AutoVirtualGraph::id(),
                   userOptions.virtualGraphMode == VirtualGraphMode::Auto);
   applyTransform(AutoVirtualGraph::id(), getMainGraph());
+
+  // Required transform order for PingPong is:
+  // FWD -> PingPong1 -> Loss -> PingPong1 -> BWD -> PingPong2 -> IpuCopy ->
+  // PingPong3 -> Outline -> AliasZeroCopy -> CacheSetup
+
+  // First ping pong transformation pass (fwd)
+  if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
+      userOptions.pingPongPhases > 1) {
+    applyTransform(PingPong::id(1), getMainGraph());
+    verifyVirtualGraphIds(true);
+  }
 
   if (getSessionOptions().enablePipelining) {
     applyTransform(InferPipelineStages::id(), getMainGraph());
@@ -757,10 +781,19 @@ void Ir::prepareImpl(const IrBundle &gb) {
 
   // tensors with no producer and no consumers are removed
   // at this point. We may want something more subtle.
-  removeIsolatedTensors();
+  // (For pingpong the subtle thing here is to not remove cached tensors,
+  // those special little snowflakes *)
+  removeIsolatedTensors(true);
 
   if (gb.optimizer) {
     setOptimizer(*gb.optimizer);
+  }
+
+  // First ping pong transformation pass (fwd + loss)
+  if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
+      userOptions.pingPongPhases > 1) {
+    applyTransform(PingPong::id(1), getMainGraph());
+    verifyVirtualGraphIds(true);
   }
 
   updateVertices();
@@ -785,7 +818,16 @@ void Ir::prepareImpl(const IrBundle &gb) {
 
   // tensors with no producer and no
   // consumers are removed at this point.
-  removeIsolatedTensors();
+  removeIsolatedTensors(true);
+  updateVertices();
+
+  // Second ping pong transformation pass (bwd)
+  if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
+      userOptions.pingPongPhases > 1) {
+    applyTransform(PingPong::id(2), getMainGraph());
+    verifyVirtualGraphIds(true);
+  }
+
   updateVertices();
 
   switch (userOptions.mergeVarUpdate) {
@@ -861,10 +903,27 @@ void Ir::prepareImpl(const IrBundle &gb) {
 
   updateVertices();
 
+  // Third ping pong transformation pass (cut)
+  if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
+      userOptions.pingPongPhases > 1) {
+    applyTransform(PingPong::id(3), getMainGraph());
+    verifyVirtualGraphIds(true);
+  }
+
+  updateVertices();
+
   dotCheckpoint(DotCheck::PREALIAS);
 
   if (getSessionOptions().enableOutlining) {
     applyTransform(SubgraphOutline::id(), getMainGraph());
+    updateVertices();
+  }
+
+  // AliasZeroCopy: Reduce tensor liveness and outline call copy
+  if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
+      userOptions.pingPongPhases > 1) {
+    applyTransform(AliasZeroCopy::id(), getMainGraph());
+    removeIsolatedTensors(true);
     updateVertices();
   }
 
@@ -893,6 +952,12 @@ void Ir::prepareImpl(const IrBundle &gb) {
     applyTransform(HostReduce::id(), getMainGraph());
     updateVertices();
   }
+
+  enableTransform(CacheSetup::id(),
+                  userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
+                      userOptions.pingPongPhases > 1);
+
+  applyTransform(CacheSetup::id(), getMainGraph());
 
   // Now, we apply the Patterns which can handle and create
   // topological constraints. Currently, this is only one
@@ -1477,6 +1542,11 @@ bool Ir::streamingIsDisabledForTensor(const TensorId &tensorId) const {
     return true;
   }
 
+  // 3. The tensor is cached
+  if (getTensors().get(tensorId)->isCached()) {
+    return true;
+  }
+
   return false;
 }
 
@@ -1633,6 +1703,9 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
         autoRecomputationEnabled()) {
       throw error("Grad Ops should be grown before recompute annotation");
     }
+
+    // No gradOp should be of type RECOMPUTE.
+    gradOp->settings.recomputeType = RecomputeType::CHECKPOINT;
 
     if (nonGradOp->hasPipelineStage()) {
       gradOp->setPipelineStage(maxPipelineStage -
@@ -1880,7 +1953,7 @@ void Ir::updateVertices() {
   //  3) scheduledPreLoss (is it scheduled before the final loss?)
 
   logging::ir::trace(
-      "Updating all Vertices (toLoss, fromLoss, scheduledPreLoss)");
+      "\nUpdating all Vertices (toLoss, fromLoss, scheduledPreLoss)");
 
   // 1) Get all Ops which have toLoss Yes, and backwards propagate
   std::vector<Op *> toLossFrontier;
@@ -1952,8 +2025,12 @@ void Ir::updateVertices() {
     } else {
       op->scheduledPreLoss = ScheduledPreLoss::Yes;
     }
+    if (op->scheduledPreLoss == ScheduledPreLoss::No) {
+      op->settings.recomputeType = RecomputeType::CHECKPOINT;
+    }
   }
 
+  logging::ir::debug("setting scheduledPreLoss for Tensors in updateVertices");
   // 3.2) scheduledPreLoss for Tensors
   for (auto op : getMainGraph().getOpSchedule({})) {
     for (auto tensor : op->input->tensors()) {
@@ -1972,6 +2049,12 @@ void Ir::updateVertices() {
     for (auto tensor : op->output->tensors()) {
       tensor->scheduledPreLoss = op->scheduledPreLoss;
     }
+  }
+
+  // 4) Update alias
+  getTensors().clearAliases();
+  for (auto op : getOpSchedule({})) {
+    getTensors().updateAliases(op);
   }
 }
 
@@ -2120,6 +2203,7 @@ void Ir::constructBackwards() {
       case TensorType::Const: {
         break;
       }
+      case TensorType::Cache:
       case TensorType::Momentum:
       case TensorType::Unknown:
       case TensorType::N:
@@ -2310,6 +2394,10 @@ void Ir::growFinalLoss() {
     lossOp->toLoss = PathToLoss::Yes;
     // there is no path from the final loss to this pre-final loss op
     lossOp->fromLoss = PathFromLoss::No;
+    logging::trace("Growing loss: {} VGID: {}",
+                   lossOp->debugName(),
+                   lossOp->hasVirtualGraphId() ? lossOp->getVirtualGraphId()
+                                               : -1);
   }
 
   // now growing the FINAL loss (sum of individual losses)
@@ -2707,6 +2795,8 @@ void Ir::applyUpdateInplacePrioritiesForIpu() {
 
 void Ir::applyInplacePattern(Graph &graph) {
 
+  logging::ir::debug("Applying Inplace Pattern to Graph \"{}\"", graph.id);
+
   Inplace inplace;
 
   // <0> the id of the Op to inplace
@@ -2854,7 +2944,8 @@ Tensor *Ir::getTensor(const TensorId &tensor_id) const {
     }
   }
 
-  throw error("no Ir::Tensor with TensorId, in Ir::getTensor(..) " + tensor_id);
+  throw error("no Ir::Tensor with TensorId " + tensor_id +
+              ", in Ir::getTensor(..) ");
 }
 
 bool Ir::containsTensor(const TensorId &tensor_id) const {
@@ -2895,6 +2986,7 @@ bool Ir::hasGraph(const GraphId &graphId) const {
 }
 
 Graph &Ir::createGraph(const GraphId &graphId) {
+  logging::ir::trace("Creating Graph with id \"{}\"", graphId);
   auto found = graphs.find(graphId);
   if (found != graphs.end()) {
     throw error("Graph({}) is already in Ir", graphId);
@@ -2921,6 +3013,19 @@ const Tensors &Ir::getMainGraphTensors() const {
 uint32_t Ir::getAndIncrementDropoutSeedModifier() {
   dropoutSeedModifier += 1;
   return dropoutSeedModifier;
+}
+
+void Ir::setRemoteBufferInfo(RemoteBufferId id, RemoteBufferInfo info) {
+  remoteBufferInfoMap.insert({id, info});
+}
+
+const RemoteBufferInfo Ir::getRemoteBufferInfo(RemoteBufferId id) const {
+  return remoteBufferInfoMap.at(id);
+}
+
+const std::map<RemoteBufferId, RemoteBufferInfo>
+Ir::getAllRemoteBufferInfos() const {
+  return remoteBufferInfoMap;
 }
 
 } // namespace popart

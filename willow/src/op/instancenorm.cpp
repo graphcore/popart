@@ -42,8 +42,8 @@ void InstanceNormOp::setup() {
                                      Shape{batch_size * features}};
 }
 
-void InstanceNormOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void InstanceNormOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("epsilon", epsilon);
 }
 

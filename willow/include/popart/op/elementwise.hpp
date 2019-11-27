@@ -41,8 +41,8 @@ public:
                             const Op::Settings &_settings)
       : ElementWiseUnaryOp(_opid, _settings) {}
 
-  view::Region modifies(InIndex index) const final { return uses(index); }
-  view::Region aliases(InIndex index) const final { return uses(index); }
+  view::Regions modifies(InIndex index) const final { return uses(index); }
+  view::Regions aliases(InIndex in, OutIndex) const final { return uses(in); }
   // "uses" is still the full region
   // "fwdRegMap" is still the identity
   // "bwdRegMap" is still the identity

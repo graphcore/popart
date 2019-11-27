@@ -52,8 +52,8 @@ float GemmOp::getBeta() const { return beta; }
 bool GemmOp::getTransA() const { return transA; }
 bool GemmOp::getTransB() const { return transB; }
 
-void GemmOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void GemmOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
 
   os.appendAttribute("alpha", alpha);
   os.appendAttribute("beta", beta);

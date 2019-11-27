@@ -47,42 +47,42 @@ bool Op::isElementWiseUnary() const {
   return isConvertibleTo<ElementWiseUnaryOp>();
 }
 
-view::Region Op::uses(InIndex index) const {
-  return view::Region::getFull(inShape(index));
+view::Regions Op::uses(InIndex index) const {
+  return view::Regions(1, view::Region::getFull(inShape(index)));
 }
 
-view::Region Op::modifies(InIndex index) const {
-  return view::Region::getEmpty(inRank(index));
+view::Regions Op::modifies(InIndex index) const {
+  return view::Regions(1, view::Region::getEmpty(inRank(index)));
 };
 
-view::Region Op::aliases(InIndex index) const {
-  return view::Region::getEmpty(inRank(index));
+view::Regions Op::aliases(InIndex in, OutIndex) const {
+  return view::Regions(1, view::Region::getEmpty(inRank(in)));
 };
 
-view::RegMap Op::fwdRegMap(InIndex i) const {
+view::RegMap Op::fwdRegMap(InIndex i, OutIndex o) const {
   // TODO : merge these errors with those in bwdRegMap (T7107)
-  if (!input->hasIndex(i)) {
+  logging::op::trace("[fwdRegMap] for OP {} index {}", debugName(), i);
+  if (!input->hasIndex(i) || !output->hasIndex(o)) {
     throw error("invalid index in fwdRegMap");
-  } else if (!output->hasIndex(0)) {
+  } else if (!output->hasIndex(o)) {
     throw error("fwdMapReg called for op with no zero output");
   } else if (inShape(i) != outShape(0)) {
     throw error("default fwdRegMap not valid : should be specialised for {}",
                 str());
   }
-
-  return [](const view::Region &r) { return r; };
+  return [](const view::Region &r) { return view::Regions(1, r); };
 }
 
-view::RegMap Op::bwdRegMap(InIndex i) const {
-  if (!input->hasIndex(i)) {
+view::RegMap Op::bwdRegMap(InIndex i, OutIndex o) const {
+  logging::op::trace("[bwdRegMap] for OP {} index {}", debugName(), i);
+  if (!input->hasIndex(i) || !output->hasIndex(o)) {
     throw error("invalid index in bwdRegMap");
-  } else if (!output->hasIndex(0)) {
+  } else if (!output->hasIndex(o)) {
     throw error("bwdMapReg called for op with no zero output");
-  } else if (inShape(i) != outShape(0)) {
+  } else if (inShape(i) != outShape(o)) {
     throw error("default bwdRegMap not valid : should be specialised");
   }
-
-  return [](const view::Region &r) { return r; };
+  return [](const view::Region &r) { return view::Regions(1, r); };
 }
 
 bool Op::isLossOp() const { return false; }
@@ -185,27 +185,42 @@ std::string Op::getSubgraphEquivId() const {
 
   // Are any of the inputs aliased by output?
   bool noAliases = true;
-  for (auto &index_tensor : input->tensorMap()) {
-    noAliases = noAliases && aliases(index_tensor.first).isEmpty();
+  for (auto &in_tensor : input->tensorMap()) {
+    for (auto &out_tensor : output->tensorMap()) {
+      auto regions = aliases(in_tensor.first, out_tensor.first);
+      noAliases    = noAliases && std::all_of(regions.begin(),
+                                           regions.end(),
+                                           [](const view::Region &r) {
+                                             return r.isEmpty();
+                                           });
+    }
   }
 
   // Of all aliasing Ops, we only allow the VarUpdateOp to be outlined.
-  // This partially resolves the failure to the propogate inplace modifications
+  // This partially resolves the failure to the propagate inplace modifications
   // through calls, T8604.
+
+  /*
   bool aliasAndNotVarUpdate =
       !noAliases && !(dynamic_cast<const VarUpdateOp *>(this));
+  */
 
-  if (isOutlineable() && settings.recomputeType != RecomputeType::RECOMPUTE &&
-      !aliasAndNotVarUpdate) {
+  std::stringstream ss;
+  if (isOutlineable()) { // && !aliasAndNotVarUpdate) {
     OpEquivIdCreator os(this);
-    appendAttributes(os);
-    return os.str();
+    // TODO: Figure out which attributes really are relevant to outlining!
+    // Certainly, not all are, and this makes subgraph outlining ineffective.
+    appendOutlineAttributes(os);
+    ss << os.str();
+  } else {
+    // in the case where the op is not outlineable, we return a unique string
+    // to guarantee that it does not appear in any outline matches.
+    ss << str() << "_uid_" << id;
   }
 
-  // in the case where the op is not outlineable, we return a unique string
-  // to guarantee that it does not appear in any outline matches.
-  std::stringstream ss;
-  ss << str() << "_uid_" << id;
+  logging::trace(
+      "[Op::getSubgraphEquivId] Op: {} Id: {}", debugName(), ss.str());
+
   return ss.str();
 }
 
@@ -260,14 +275,17 @@ int64_t Op::memOfOutputs() const {
 }
 
 void Op::appendAttributes(OpSerialiserBase &os) const {
+  appendOutlineAttributes(os);
+  os.appendAttribute(sPingPongPhaseAttribute, settings.pingPongPhase);
+  os.appendAttribute(sPipelineStageAttribute, settings.pipelineStage);
+  os.appendAttribute("scope", getScope());
+}
 
+void Op::appendOutlineAttributes(OpSerialiserBase &os) const {
   std::string recomputeString =
       settings.recomputeType == RecomputeType::RECOMPUTE ? "YES" : "NO";
   os.appendAttribute("recompute", recomputeString);
-
   os.appendAttribute(sVirtualGraphAttribute, getOptionalVirtualGraphId());
-  os.appendAttribute(sPipelineStageAttribute, settings.pipelineStage);
-  os.appendAttribute("scope", getScope());
 }
 
 std::vector<const Graph *> Op::getCalledGraphs() const { return {}; }
@@ -310,7 +328,35 @@ Op::Op(const OperatorIdentifier &_opid, const Op::Settings &settings_)
 
 Ir &Op::Op::Settings::getIr() const { return graph.get().getIr(); }
 
+std::ostream &operator<<(std::ostream &ost, const RecomputeType &rt) {
+  switch (rt) {
+  case (RecomputeType::RECOMPUTE): {
+    ost << "Recompute";
+    return ost;
+  }
+
+  case (RecomputeType::CHECKPOINT): {
+    ost << "Checkpoint";
+    return ost;
+  }
+
+  case (RecomputeType::UNDEFINED): {
+    ost << "Undefined";
+    return ost;
+  }
+  default: {
+    throw error("Unrecognised RecomputeType is operator<<");
+  }
+  }
+}
+
 void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {
+
+  if (attributes.hasAttribute(sPingPongPhaseAttribute)) {
+    int64_t value;
+    attributes.set(value, sPingPongPhaseAttribute);
+    pingPongPhase = value;
+  }
 
   if (attributes.hasAttribute(sVirtualGraphAttribute)) {
     int64_t value;
@@ -325,10 +371,17 @@ void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {
   }
 
   if (attributes.hasAttribute(sRecomputeOutputAttribute)) {
-    int64_t value;
-    attributes.set(value, sRecomputeOutputAttribute);
-    recomputeType =
-        value ? RecomputeType::RECOMPUTE : RecomputeType::CHECKPOINT;
+    int64_t recomputeTypeTmp;
+
+    attributes.set(recomputeTypeTmp, sRecomputeOutputAttribute);
+    // reversing the static_cast<int64_t> used to insert value into ONNX proto
+    recomputeType = static_cast<RecomputeType>(recomputeTypeTmp);
+  }
+
+  if (attributes.hasAttribute(sCacheOutputAttribute)) {
+    int64_t cacheTypeTmp;
+    attributes.set(cacheTypeTmp, sCacheOutputAttribute);
+    cacheType = static_cast<CacheType>(cacheTypeTmp);
   }
 
   bool hasNamesAtt = attributes.hasAttribute(sInplaceOpNames);
@@ -410,6 +463,58 @@ bool Op::hasVirtualGraphId() const {
   }
 }
 
+const boost::optional<PingPongPhase> Op::getOptionalPingPongPhase() const {
+  return settings.pingPongPhase;
+}
+
+void Op::setPingPongPhase(const boost::optional<PingPongPhase> value) {
+  settings.pingPongPhase = value;
+}
+
+PingPongPhase Op::getPingPongPhase() const {
+  if (!hasPingPongPhase()) {
+    throw error("Cannot return PingPongPhase for Op {}. "
+                "It has not had this attribute set",
+                debugName());
+  }
+  return *(settings.pingPongPhase);
+}
+
+bool Op::hasPingPongPhase() const {
+  if (settings.pingPongPhase) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+const boost::optional<BatchSerializedPhase>
+Op::getOptionalBatchSerializedPhase() const {
+  return settings.batchSerializedPhase;
+}
+
+void Op::setBatchSerializedPhase(
+    const boost::optional<BatchSerializedPhase> value) {
+  settings.batchSerializedPhase = value;
+}
+
+BatchSerializedPhase Op::getBatchSerializedPhase() const {
+  if (!hasBatchSerializedPhase()) {
+    throw error("Cannot return BatchSerializedPhase for Op {}. "
+                "It has not had this attribute set",
+                debugName());
+  }
+  return *(settings.batchSerializedPhase);
+}
+
+bool Op::hasBatchSerializedPhase() const {
+  if (settings.batchSerializedPhase) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 boost::optional<PipelineStage> Op::getOptionalPipelineStage() const {
   return settings.pipelineStage;
 }
@@ -457,13 +562,19 @@ std::string Op::debugName() const {
     debug_id = ss.str();
   }
 
+  std::vector<TensorId> in_ids;
+  for (auto i : input->tensorIdMap()) {
+    in_ids.push_back(i.second);
+  }
+
   std::vector<TensorId> out_ids;
   for (auto i : output->tensorIdMap()) {
     out_ids.push_back(i.second);
   }
 
-  return logging::format("Op({}, outputs=[{}])",
+  return logging::format("Op({}, inputs=[{}], outputs=[{}])",
                          debug_id,
+                         logging::join(in_ids.begin(), in_ids.end(), ", "),
                          logging::join(out_ids.begin(), out_ids.end(), ", "));
 }
 

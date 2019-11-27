@@ -15,10 +15,9 @@ class CallOpx : public Opx {
 public:
   CallOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
-  poplar::Tensor createInput(InIndex, const std::string &name) const;
-  InputCreatorType getInputCreatorType(int) const;
-  bool createsEquiv(int index0, const Opx *opx1, int index1) const;
-  std::vector<TensorId> mustExistBeforeCreate(int index0) const;
+  std::pair<std::vector<ICreatorCandidatePtr>, std::vector<UnwindEndpointPtr>>
+      getEndpoints(InIndex, std::vector<OpxInAndOutIndex>) const;
+  InputCreatorType getInputCreatorType(InIndex) const;
 
 private:
   // Copy aliased or modifed inputs back from graph.
@@ -28,13 +27,12 @@ private:
   // they are created here by cloning the CallOp inputs.
   void copyInputs(poplar::program::Sequence &prog) const;
   // Copy the Graph output tensors to the CallOp outputs.
-  void copyOutputs(poplar::program::Sequence &prog,
-                   const std::vector<poplar::Tensor> &outputs) const;
+  void copyOutputs(
+      poplar::program::Sequence &prog,
+      const std::vector<std::pair<poplar::Tensor, bool>> &outputs) const;
   void doCall(poplar::program::Sequence &prog) const;
   // preparing outputs at returned (calling) site
-  std::vector<poplar::Tensor> prepareOutputs() const;
-
-  ICreatorCandidatePtr getCreator(InIndex) const;
+  std::vector<std::pair<poplar::Tensor, bool>> prepareOutputs() const;
 };
 
 } // namespace popx

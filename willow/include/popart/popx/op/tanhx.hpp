@@ -16,6 +16,7 @@ public:
   poplar::Tensor unwindTensorLayout(poplar::Tensor tensor,
                                     InIndex inIndex,
                                     OutIndex outIndex) const final;
+  view::RegMap unwindRegion(InIndex, OutIndex) const final;
 };
 
 class TanhGradOpx : public Opx {

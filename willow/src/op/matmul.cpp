@@ -21,8 +21,8 @@ MatMulBaseOp::MatMulBaseOp(
       availableMemoryProportion(availableMemoryProportion_),
       serialization(serialization_), outputType(outputType_) {}
 
-void MatMulBaseOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void MatMulBaseOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
 }
 
 void MatMulBaseOp::appendMore(OpSerialiserBase &os) const {

@@ -24,8 +24,8 @@ void StashOp::setup() {
   outInfo(getOutIndex()) = {inInfo(getInIndex()).dataType(), output_shape};
 }
 
-void StashOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void StashOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("stashSize", stashSize);
 }
 

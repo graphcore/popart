@@ -188,7 +188,7 @@ void SGD::runValueChecks(OptimizerValue lr,
     throw error("Negative learning rate ({}) in SGD, bailing as this might be "
                 "a user error.",
                 lr.val());
-  } else if (lr.val() == 0.0 && lr.isConst()) {
+  } else if (lr.val() == 0.0f && lr.isConst()) {
     throw error("Constant, zero learning rate in SGD, bailing as this might be "
                 "a user error.");
   }

@@ -27,8 +27,8 @@ public:
   bool isOutlineable() const final { return false; }
 
   // This updated seed aliases and in-place modifies the input seed
-  view::Region aliases(InIndex) const final;
-  view::Region modifies(InIndex) const final;
+  view::Regions aliases(InIndex, OutIndex) const final;
+  view::Regions modifies(InIndex) const final;
 };
 } // namespace popart
 

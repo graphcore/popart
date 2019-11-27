@@ -17,8 +17,8 @@ std::unique_ptr<Op> PrintTensorOp::clone() const {
   return std::make_unique<PrintTensorOp>(*this);
 }
 
-void PrintTensorOp::appendAttributes(OpSerialiserBase &os) const {
-  ElementWiseUnaryOp::appendAttributes(os);
+void PrintTensorOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  ElementWiseUnaryOp::appendOutlineAttributes(os);
   os.appendAttribute("printSelf", printSelf);
   os.appendAttribute("printGradient", printGradient);
 }

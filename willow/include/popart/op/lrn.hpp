@@ -32,7 +32,7 @@ public:
   float getBias() const { return bias; }
   int64_t getSize() const { return size; }
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
 private:
   float alpha;
@@ -56,7 +56,7 @@ public:
   float getBias() const { return bias; }
   int64_t getSize() const { return size; }
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   // Inputs
   static InIndex getInIndex() { return 0; }

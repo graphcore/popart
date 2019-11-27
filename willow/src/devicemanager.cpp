@@ -13,11 +13,18 @@ void DeviceManager::registerDeviceProvider(DeviceProvider *provider) {
   providers.push_back(provider);
 }
 
-std::vector<std::shared_ptr<DeviceInfo>> DeviceManager::enumerateDevices() {
+std::vector<std::shared_ptr<DeviceInfo>>
+DeviceManager::enumerateDevices(SyncPattern pattern,
+                                uint32_t replication_factor) {
   std::vector<std::shared_ptr<DeviceInfo>> devices;
   for (auto p : providers) {
-    p->enumerate(devices);
+    p->enumerate(devices, pattern, replication_factor);
   }
+
+  for (auto d : devices) {
+    logging::debug("Device: {}", d.get()->toString());
+  }
+
   return devices;
 }
 
@@ -54,9 +61,12 @@ DeviceManager::createSimDevice(std::map<std::string, std::string> &options) {
 }
 
 std::shared_ptr<DeviceInfo>
-DeviceManager::acquireAvailableDevice(int numIpus, int tilesPerIpu) {
+DeviceManager::acquireAvailableDevice(int numIpus,
+                                      int tilesPerIpu,
+                                      SyncPattern pattern,
+                                      uint32_t replication_factor) {
 
-  auto devices = enumerateDevices();
+  auto devices = enumerateDevices(pattern, replication_factor);
 
   for (auto &device : devices) {
     // Check if numIPUs is positive and a power of two
@@ -79,9 +89,12 @@ DeviceManager::acquireAvailableDevice(int numIpus, int tilesPerIpu) {
   return nullptr;
 }
 
-std::shared_ptr<DeviceInfo> DeviceManager::acquireDeviceById(int id) {
+std::shared_ptr<DeviceInfo>
+DeviceManager::acquireDeviceById(int id,
+                                 SyncPattern pattern = SyncPattern::FULL,
+                                 uint32_t replication_factor = 1) {
 
-  auto devices = enumerateDevices();
+  auto devices = enumerateDevices(pattern, replication_factor);
 
   for (auto &device : devices) {
     if (device->getId() == id) {

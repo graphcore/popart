@@ -52,6 +52,8 @@ std::vector<std::string> reservedPrefixes();
 // Create a new intermediate tensor id with a unique name
 TensorId createIntermediateTensorId(TensorId base_id);
 
+TensorId getCacheArgTensorId(TensorId base_id);
+
 constexpr const char *reservedDefaultWeightDecayScaleFactor0Prefix() {
   return "weightDecayScaleFactor0___default___";
 }

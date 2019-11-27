@@ -38,7 +38,7 @@ public:
   using PartitionMap = std::map<PartitionId, std::vector<VarUpdateStartEnd>>;
 
   // Transform the Graph by merging VarUpydates returned by getFinal
-  virtual bool apply(Graph &) const override final;
+  virtual bool apply(Graph &) const final;
 
   // partition all VarUpdateOps in the the largest possible groups
   PartitionMap getLargestGroupTargetsMap(const Graph &) const;
@@ -54,10 +54,8 @@ public:
   static std::size_t id();
   MergeAllVarUpdates() : MergeVarUpdates() {}
   virtual ~MergeAllVarUpdates() override {}
-  virtual std::size_t getId() const override final { return id(); }
-  virtual std::string getName() const override final {
-    return "MergeAllVarUpdates";
-  }
+  virtual std::size_t getId() const final { return id(); }
+  virtual std::string getName() const final { return "MergeAllVarUpdates"; }
 
 private:
   PartitionMap getFinal(const Graph &graph) const final {
@@ -77,10 +75,8 @@ public:
   static std::size_t id();
   MergeTightThreshold() : MergeAuto() {}
   virtual ~MergeTightThreshold() override {}
-  virtual std::size_t getId() const override final { return id(); }
-  virtual std::string getName() const override final {
-    return "MergeTightThreshold";
-  }
+  virtual std::size_t getId() const final { return id(); }
+  virtual std::string getName() const final { return "MergeTightThreshold"; }
 
 private:
   PartitionMap getFinal(const Graph &) const final;
@@ -95,10 +91,8 @@ public:
   static std::size_t id();
   MergeLooseThreshold() : MergeAuto() {}
   virtual ~MergeLooseThreshold() override {}
-  virtual std::size_t getId() const override final { return id(); }
-  virtual std::string getName() const override final {
-    return "MergeLooseThreshold";
-  }
+  virtual std::size_t getId() const final { return id(); }
+  virtual std::string getName() const final { return "MergeLooseThreshold"; }
   int64_t getMemToPlayWithAtPeak(const Graph &) const;
 
 private:

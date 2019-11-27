@@ -112,6 +112,9 @@ std::ostream &operator<<(std::ostream &os, const TensorType &tt) {
   case TensorType::Variable:
     os << "Variable";
     break;
+  case TensorType::Cache:
+    os << "Cache";
+    break;
   case TensorType::N:
   default:
     os << "Undefined";
@@ -210,9 +213,11 @@ void Consumers::append(std::stringstream &ss) {
   ss << "Total number of consumptions: " << getTotal();
 }
 
-const std::map<Op *, int> &Consumers::getMap() const { return consumers_m; }
+const std::map<Op *, int, POpCmp> &Consumers::getMap() const {
+  return consumers_m;
+}
 
-void Consumers::extend(const std::map<Op *, int> &m) {
+void Consumers::extend(const std::map<Op *, int, POpCmp> &m) {
   for (auto &op_count : m) {
     auto found = consumers_m.find(op_count.first);
     if (found != consumers_m.end()) {
@@ -238,6 +243,19 @@ void Tensor::resetProducer(Op *op) {
   producer = op;
 }
 
+void Tensor::setCached(bool cached_) { cached = cached_; }
+
+bool Tensor::isCached() const { return cached; }
+
+void Tensor::setRemoteBufferInfo(RemoteBufferId rbId, RemoteBufferIndex index) {
+  remoteBufferInfo = {rbId, index};
+}
+
+const std::pair<RemoteBufferId, RemoteBufferIndex>
+Tensor::getRemoteBufferInfo() const {
+  return remoteBufferInfo;
+}
+
 int Consumers::getTotal() const {
   //  using X = decltype(consumers_m.begin());
   //  return std::accumulate(consumers_m.begin(), consumers_m.end(), 0,
@@ -253,7 +271,8 @@ int Consumers::getTotal() const {
 // https://stackoverflow.com/questions/5058349
 Tensor::Tensor(TensorId n, TensorType t, Graph &g)
     : Vertex(), id(n), consumers(this), graph(g), producer(nullptr),
-      tensorTypeInfo(&getTensorTypeInfoMap().at(t)), data_(nullptr) {
+      tensorTypeInfo(&getTensorTypeInfoMap().at(t)), cached(false),
+      data_(nullptr) {
   // graph is currently unused - this removes the compiler warning
   (void)graph;
 }
@@ -289,6 +308,14 @@ bool Tensor::isOptimizerTensor() const {
     if (found != std::string::npos) {
       return true;
     }
+  }
+  return false;
+}
+
+bool Tensor::isCacheArgTensor() const {
+  std::size_t found = id.find("_CacheArg");
+  if (found != std::string::npos) {
+    return true;
   }
   return false;
 }
@@ -376,7 +403,8 @@ std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap() {
       {TensorType::Momentum, {TensorType::Momentum, "Momentum"}},
       {TensorType::Stream, {TensorType::Stream, "Stream"}},
       {TensorType::Unknown, {TensorType::Unknown, "Unknown"}},
-      {TensorType::Variable, {TensorType::Variable, "Variable"}}};
+      {TensorType::Variable, {TensorType::Variable, "Variable"}},
+      {TensorType::Cache, {TensorType::Cache, "Cache"}}};
   if (tensor_types_m.size() != static_cast<int64_t>(TensorType::N)) {
     throw error("missing element in TensorTypes");
   }

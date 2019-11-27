@@ -201,8 +201,8 @@ static void appendConvParameterAttributes(const ConvParameters &params,
                      p.outputTransformation.upperPadding);
 }
 
-void ConvOp::appendAttributes(OpSerialiserBase &os) const {
-  HasReceptiveFieldOp::appendAttributes(os);
+void ConvOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  HasReceptiveFieldOp::appendOutlineAttributes(os);
   os.appendAttribute("partialsType", toString(partialsType));
   if (availableMemoryProportion) {
     os.appendAttribute("availableMemoryProportion", *availableMemoryProportion);
@@ -224,8 +224,8 @@ std::unique_ptr<Op> ConvWeightsGradOp::clone() const {
   return std::make_unique<ConvWeightsGradOp>(*this);
 }
 
-void ConvWeightsGradOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void ConvWeightsGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendForwardOp(getCloneOfCreator());
   appendConvParameterAttributes(getCloneOfCreator()->getParameters(), os);
 }
@@ -259,8 +259,8 @@ std::unique_ptr<Op> ConvDataGradOp::clone() const {
   return std::make_unique<ConvDataGradOp>(*this);
 }
 
-void ConvDataGradOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void ConvDataGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendForwardOp(getCloneOfCreator());
   appendConvParameterAttributes(params, os);
 }
@@ -307,8 +307,8 @@ void ConvFlipWeightsOp::setup() {
   outInfo(getOutIndex()) = {weightsIn.dataType(), weightsOutShape};
 }
 
-void ConvFlipWeightsOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void ConvFlipWeightsOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("partialsType", toString(partialsType));
   if (availableMemoryProportion) {
     os.appendAttribute("availableMemoryProportion", *availableMemoryProportion);

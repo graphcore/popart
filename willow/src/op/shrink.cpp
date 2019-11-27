@@ -41,8 +41,8 @@ ShrinkOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   return Op::getInplaceVariant(operator_id);
 }
 
-void ShrinkOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void ShrinkOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("lambd", lambd_);
   os.appendAttribute("bias", bias_);
 }
@@ -56,8 +56,8 @@ std::unique_ptr<Op> ShrinkInplaceOp::clone() const {
   return std::make_unique<ShrinkInplaceOp>(*this);
 }
 
-void ShrinkInplaceOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void ShrinkInplaceOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("lambd", lambd_);
   os.appendAttribute("bias", bias_);
 }
@@ -70,8 +70,8 @@ std::unique_ptr<Op> ShrinkGradOp::clone() const {
   return std::make_unique<ShrinkGradOp>(*this);
 }
 
-void ShrinkGradOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void ShrinkGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("lambd", lambd_);
   os.appendAttribute("bias", bias_);
 }

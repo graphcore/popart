@@ -256,7 +256,7 @@ BOOST_AUTO_TEST_CASE(PipelineTopoConTest0) {
       std::cout << ss.str();
     }
 
-    std::map<Op *, int> schedIndex;
+    std::map<Op *, int, POpCmp> schedIndex;
     for (int i = 0; i < opSchedule.size(); ++i) {
       schedIndex.insert({opSchedule[i], i});
     }

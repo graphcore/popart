@@ -49,9 +49,11 @@ public:
   const VectorAndSet &getConstIds() const { return constIds; }
   void insertConstId(const std::string &);
   // remove all Tensors which have no producer and no consumers
-  void removeIsolated();
+  void removeIsolated(bool retainCached);
 
+  void clearAliases();
   void updateAliases(Op *op);
+  view::Regions getAliasRegions(Tensor *from, Tensor *to) const;
 
   // all non-empty alias Chains to "to"
   // returned map M will always have M[to] = "the identity chain"
@@ -83,8 +85,8 @@ private:
   Graph &graph;
 
   // all non-empty Chains
-  //      "to"..............."from"...."chains"
-  //       ^                  ^         ^
+  //                "to"........................."from"...."chains"
+  //                 ^                            ^         ^
   std::unordered_map<Tensor *, std::unordered_map<Tensor *, view::Chains>>
       aliasChainsToKey;
 

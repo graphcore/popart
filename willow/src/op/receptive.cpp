@@ -103,8 +103,8 @@ std::vector<uint32_t> HasReceptiveFieldOp::strides_u32() const {
   return vXtoY<int64_t, uint32_t>(strides);
 }
 
-void HasReceptiveFieldOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void HasReceptiveFieldOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("pads", pads);
   os.appendAttribute("strides", strides);
   os.appendAttribute("dilations", dilations);

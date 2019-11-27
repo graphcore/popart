@@ -22,9 +22,9 @@ std::map<InIndex, TensorId> SGD1VarUpdateOp::optimizerInputs() const {
   throw error("SGD1 optimizer inputs not implemented yet");
 }
 
-void SGD1VarUpdateOp::appendAttributes(OpSerialiserBase &os) const {
+void SGD1VarUpdateOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 
-  Op::appendAttributes(os);
+  Op::appendOutlineAttributes(os);
 
   if (initSlr1.isConst()) {
     os.appendAttribute("const scaled learning rate", initSlr1.val());

@@ -24,8 +24,8 @@ void GlobalMaxPoolOp::setup() {
       Shape(inShape(getInIndex()).begin() + 2, inShape(getInIndex()).end());
 }
 
-void GlobalMaxPoolOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void GlobalMaxPoolOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("kernel", kernel);
 }
 
@@ -60,8 +60,8 @@ GlobalMaxPoolGradOp::GlobalMaxPoolGradOp(const GlobalMaxPoolOp &op_)
       unpooledInfo(op_.inInfo(GlobalMaxPoolOp::getInIndex())),
       cloneOfCreator(op_.clone()) {}
 
-void GlobalMaxPoolGradOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void GlobalMaxPoolGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendForwardOp(getCloneOfCreator());
 }
 

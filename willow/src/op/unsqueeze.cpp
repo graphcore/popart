@@ -25,8 +25,8 @@ void UnsqueezeOp::setup() {
                             unsqueeze(inShape(getInIndex()), axes)};
 }
 
-void UnsqueezeOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void UnsqueezeOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("axes", axes);
 }
 

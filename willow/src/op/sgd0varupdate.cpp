@@ -9,9 +9,8 @@
 
 namespace popart {
 
-void SGD0VarUpdateOpBase::appendAttributes(OpSerialiserBase &os) const {
-
-  Op::appendAttributes(os);
+void SGD0VarUpdateOpBase::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
 
   if (initSlr0.isConst()) {
     os.appendAttribute("const scaled learning rate", initSlr0.val());

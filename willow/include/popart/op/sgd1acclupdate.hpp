@@ -17,7 +17,7 @@ public:
   std::unique_ptr<Op> clone() const final;
   std::unique_ptr<Op> cloneWithNewName(const TensorId &newName) const final;
   std::map<InIndex, TensorId> optimizerInputs() const final;
-  void appendAttributes(OpSerialiserBase &) const final;
+  void appendOutlineAttributes(OpSerialiserBase &) const final;
 
   const OptimizerValue initSmm1;
   const OptimizerValue initSwd1;

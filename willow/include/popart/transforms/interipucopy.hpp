@@ -16,11 +16,11 @@ public:
   InterIpuCopy() : Transform() {}
   virtual ~InterIpuCopy() override {}
 
-  virtual bool apply(Graph &graph) const override final;
+  virtual bool apply(Graph &graph) const final;
 
-  virtual std::size_t getId() const override final { return id(); }
+  virtual std::size_t getId() const final { return id(); }
 
-  virtual std::string getName() const override final { return "InterIpuCopy"; }
+  virtual std::string getName() const final { return "InterIpuCopy"; }
 
 private:
   // Generate a name for the new tensor on the toIpu

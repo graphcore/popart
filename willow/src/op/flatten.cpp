@@ -16,28 +16,29 @@ FlattenOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   return Op::getInplaceVariant(operator_id);
 }
 
-view::RegMap FlattenBaseOp::fwdRegMap(InIndex inIndex) const {
-  if (inIndex != 0) {
+view::RegMap FlattenBaseOp::fwdRegMap(InIndex inIndex,
+                                      OutIndex outIndex) const {
+  if (inIndex != 0 || outIndex != 0) {
     throw error("Internal Logic Error in FlattenBaseOp::fwdRegMap."
                 "Received input index {} but only 0 allowed, "
                 "This for Op {}, ",
                 inIndex,
                 str());
   }
-  // being conservative and returning the full region,
-  // even for non-full input region :
+  auto inRegion    = view::Region::getFull(inInfo(getInIndex()).shape());
   auto outRegion   = view::Region::getFull(outInfo(getOutIndex()).shape());
   auto emptyRegion = view::Region::getEmpty(outRank(getOutIndex()));
-  return [emptyRegion, outRegion](const view::Region &r) {
+  return [emptyRegion, inRegion, outRegion](const view::Region &r) {
     if (r.isEmpty()) {
-      return emptyRegion;
+      return view::Regions(1, emptyRegion);
     }
-    return outRegion;
+    return r.reshape(inRegion, outRegion);
   };
 }
 
-view::RegMap FlattenBaseOp::bwdRegMap(InIndex inIndex) const {
-  if (inIndex != 0) {
+view::RegMap FlattenBaseOp::bwdRegMap(InIndex inIndex,
+                                      OutIndex outIndex) const {
+  if (inIndex != 0 || outIndex != 0) {
     throw error("Internal Logic Error in FlattenBaseOp::bwdRegMap."
                 "Received input index {} but only 0 allowed, "
                 "This for Op {}, ",
@@ -45,12 +46,13 @@ view::RegMap FlattenBaseOp::bwdRegMap(InIndex inIndex) const {
                 str());
   }
   auto inRegion    = view::Region::getFull(inInfo(getInIndex()).shape());
+  auto outRegion   = view::Region::getFull(outInfo(getOutIndex()).shape());
   auto emptyRegion = view::Region::getEmpty(inRank(getInIndex()));
-  return [emptyRegion, inRegion](const view::Region &r) {
+  return [emptyRegion, inRegion, outRegion](const view::Region &r) {
     if (r.isEmpty()) {
-      return emptyRegion;
+      return view::Regions(1, emptyRegion);
     }
-    return inRegion;
+    return r.reshape(outRegion, inRegion);
   };
 }
 
@@ -112,8 +114,8 @@ int64_t FlattenBaseOp::getAxis() const { return axis; }
 
 void FlattenBaseOp::setAxis(int64_t value) { axis = value; }
 
-void FlattenBaseOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void FlattenBaseOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
 }
 
@@ -134,8 +136,8 @@ const std::map<int, int> &FlattenGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
-view::Region FlattenInplaceOp::aliases(InIndex index) const {
-  return uses(index);
+view::Regions FlattenInplaceOp::aliases(InIndex in, OutIndex) const {
+  return uses(in);
 }
 
 namespace {

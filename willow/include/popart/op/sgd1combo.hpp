@@ -30,7 +30,7 @@ public:
   // map of size 0/1/2, containing all non-const optimizer Tensors for this Op
   std::map<InIndex, TensorId> optimizerInputs() const final;
 
-  void appendAttributes(OpSerialiserBase &) const final;
+  void appendOutlineAttributes(OpSerialiserBase &) const final;
 
   // momentum
   const OptimizerValue initSmm1;

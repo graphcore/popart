@@ -81,8 +81,8 @@ public:
   // fragment for each recomputed Op
   poplar::program::Sequence &recomputeFragment(OpId);
 
-  bool hasBeenRecomputed(OpId) const;
-  void recordRecomputed(OpId);
+  bool hasBeenRecomputed(OpId, PingPongPhase) const;
+  void recordRecomputed(OpId, PingPongPhase);
 
   enum class PipelineFragmentId {
     ToDeviceStream = 0,
@@ -146,7 +146,7 @@ private:
 
   poplar::program::Sequence getMainProgramFromPipelineFragments();
 
-  std::set<OpId> beenRecomputed;
+  std::set<std::pair<OpId, PingPongPhase>> beenRecomputed;
 
   poplar::program::Sequence weightsFromHost();
   poplar::program::Sequence optimizerFromHost();

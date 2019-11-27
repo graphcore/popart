@@ -32,11 +32,9 @@ public:
 
   bool apply(Graph &graph) const final;
 
-  virtual std::size_t getId() const override final { return id(); }
+  virtual std::size_t getId() const final { return id(); }
 
-  virtual std::string getName() const override final {
-    return "AutoVirtualGraph";
-  }
+  virtual std::string getName() const final { return "AutoVirtualGraph"; }
 
   float
   costFn(Op *op, bool training, float w_weights, float w_activations) const;

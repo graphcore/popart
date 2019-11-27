@@ -22,19 +22,8 @@ TensorId conv(Builder *b, TensorId act, ConstVoidData wdata) {
   return act;
 }
 
-TensorId batchnormalization(Builder *b, TensorId act, ConstVoidData bndata) {
-  auto aiOnnx = b->aiOnnxOpset9();
-  auto scale  = b->addInitializedInputTensor(bndata);
-  auto bias   = b->addInitializedInputTensor(bndata);
-  auto mean   = b->addInitializedInputTensor(bndata);
-  auto var    = b->addInitializedInputTensor(bndata);
-  auto bn_out = aiOnnx.batchnormalization({act, scale, bias, mean, var}, 5);
-  act         = bn_out.at(0);
-  return act;
-}
-
 BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
-  auto run_test = [](bool enableOutlining, int expectedScheduleSize) {
+  auto getOpSchedule = [](bool enableOutlining) {
     // Build an onnnx model
     auto builder = Builder::create();
     auto aiOnnx  = builder->aiOnnxOpset9();
@@ -79,10 +68,18 @@ BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
                 Patterns({PreAliasPatternType::OPTOIDENTITY,
                           PreAliasPatternType::POSTNREPL})});
 
-    // All but the original 6 operations should be pruned
-    BOOST_CHECK_EQUAL(ir.getOpSchedule({}).size(), expectedScheduleSize);
+    return ir.getOpSchedule({});
   };
+  auto schedNoOutlining   = getOpSchedule(false);
+  auto schedWithOutlining = getOpSchedule(true);
 
-  run_test(false, 42);
-  run_test(true, 24);
+  // check that outlining grouped multiple mops at least once:
+  BOOST_CHECK(schedWithOutlining.size() < schedNoOutlining.size());
+
+  // check that there is no recomputation, with or without outlining:
+  for (const auto &x : {schedNoOutlining, schedWithOutlining}) {
+    BOOST_CHECK(std::all_of(x.cbegin(), x.cend(), [](const Op *op) {
+      return op->settings.recomputeType != RecomputeType::RECOMPUTE;
+    }));
+  }
 }

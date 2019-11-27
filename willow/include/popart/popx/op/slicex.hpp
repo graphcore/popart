@@ -16,12 +16,10 @@ public:
 
   InputCreatorType getInputCreatorType(InIndex) const final;
 
-  poplar::Tensor unwindTensorLayout(std::vector<poplar::Tensor> tensors,
-                                    InIndex inIndex,
-                                    OutIndex outIndex) const final;
+  poplar::Tensor
+      unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const final;
 
-  std::vector<std::pair<Op *, InIndex>>
-      getCreatorCandicates(InIndex) const final;
+  view::RegMap unwindRegion(InIndex, OutIndex) const final;
 };
 
 class SliceOpx : public BaseSliceOpx {

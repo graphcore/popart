@@ -475,11 +475,18 @@ bool MergeVarUpdates::apply(Graph &graph) const {
   const int concatAxis = 1;
 
   auto targetsMap = getFinal(graph);
+  logging::transform::debug("The number of VarUpdate groups to merge is {}",
+                            targetsMap.size());
 
   // the replaced VarUpdateOps which are replaced will be removed at the end
   std::set<VarUpdateOp *> toRemove;
 
   for (auto &targetMap : targetsMap) {
+    logging::transform::debug(
+        "Processing the VarUpdate group {}, which has {} VarUpdates in it.",
+        targetMap.first,
+        targetMap.second.size());
+
     auto target = targetMap.second;
 
     if (target.size() > 1 ||
@@ -680,6 +687,8 @@ bool MergeVarUpdates::apply(Graph &graph) const {
           "updated___" + concatedWeightsTensorId);
 
       multiUpdateOp->setup();
+      logging::transform::debug("Multi-update of {} created.",
+                                multiUpdateOp->str());
     }
   }
 
