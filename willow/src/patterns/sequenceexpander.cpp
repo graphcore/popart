@@ -25,22 +25,26 @@ static void connectPair(TensorId baseId,
 
 bool SequenceExpander::expand(std::vector<std::unique_ptr<Op>> &seq,
                               Op *op) const {
+  auto inputMap  = op->input->tensorIdMap();
+  auto outputMap = op->output->tensorIdMap();
+  op->disconnectAllInputs();
+  op->disconnectAllOutputs();
 
   // Connect the input tensors to the front of the sequence
   auto &front = seq.front();
-  for (auto &tensors : op->input->tensorIdMap()) {
+  for (auto &tensors : inputMap) {
     front->connectInTensor(tensors.first, tensors.second);
   }
 
   // Connect the output tensors to the back of the sequence
   auto &back = seq.back();
-  for (auto &tensors : op->output->tensorIdMap()) {
+  for (auto &tensors : outputMap) {
     back->connectOutTensor(tensors.first, tensors.second);
   }
 
   // Connect the sequence of ops with intermediate tensors
   for (int i = 0; i < seq.size() - 1; ++i) {
-    connectPair(op->input->id(0), seq[i], seq[i + 1]);
+    connectPair(inputMap.at(0), seq[i], seq[i + 1]);
   }
 
   // Add the ops into the IR
@@ -56,7 +60,6 @@ bool SequenceExpander::expand(std::vector<std::unique_ptr<Op>> &seq,
   // Delete the matched op
   logging::pattern::info("Removing op {}", op->str());
 
-  op->disconnectAllInputs();
   op->getGraph().eraseOp(op->id);
 
   return true;

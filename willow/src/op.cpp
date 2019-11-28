@@ -106,6 +106,14 @@ std::vector<std::unique_ptr<Op>> Op::getGradOps() { return {}; }
 void Op::setup() { throw error("No setup() for {}", opid); }
 
 void Op::defaultConnectInTensor(InIndex inIndex, TensorId tenId) {
+  if (input->hasIndex(inIndex)) {
+    throw error("ILE: error connecting input tensor '{}', {} already has an "
+                "input at index {}",
+                tenId,
+                debugName(),
+                inIndex);
+  }
+
   Tensor *ptensor = getGraph().getTensors().get(tenId);
   input->insert(inIndex, ptensor);
   ptensor->consumers.increment(this);
@@ -121,13 +129,25 @@ void Op::connectInTensor(InIndex inIndex, TensorId tenId) {
 }
 
 void Op::connectOutTensor(OutIndex outIndex, TensorId tenId) {
-  Tensor *ptensor = getGraph().getTensors().get(tenId);
-  output->insert(outIndex, ptensor);
-  if (ptensor->hasProducer()) {
-    ptensor->resetProducer(this);
-  } else {
-    ptensor->setProducer(this);
+  if (output->hasIndex(outIndex)) {
+    throw error("ILE: error connecting output tensor '{}', {} already has an "
+                "output at index {}",
+                tenId,
+                debugName(),
+                outIndex);
   }
+
+  Tensor *ptensor = getGraph().getTensors().get(tenId);
+
+  if (ptensor->hasProducer()) {
+    throw error("ILE: error connecting output tensor '{}' to {}, tensor "
+                "already has a producer",
+                tenId,
+                debugName());
+  }
+
+  output->insert(outIndex, ptensor);
+  ptensor->setProducer(this);
 
   // Output tensor takes fromLoss from op
   ptensor->fromLoss = fromLoss;
@@ -140,6 +160,14 @@ void Op::disconnectInTensor(Tensor *tensor) {
 }
 
 void Op::disconnectInTensor(InIndex inIndex, Tensor *tensor) {
+  if (inTensor(inIndex) != tensor) {
+    throw error("ILE: error disconnecting input tensor '{}', tensor is not "
+                "input {} of {}",
+                tensor->id,
+                inIndex,
+                debugName());
+  }
+
   tensor->consumers.decrement(this);
 
   input->erase(inIndex);
@@ -147,32 +175,46 @@ void Op::disconnectInTensor(InIndex inIndex, Tensor *tensor) {
 
 void Op::disconnectOutTensor(Tensor *tensor) {
   for (auto idx : output->indices(tensor)) {
-    // Trying to reset the producer here when the producer is not `this' should
-    // probably be an error
     if (tensor->hasProducer() && tensor->getProducer() == this) {
       tensor->resetProducer(nullptr);
+    } else {
+      throw error(
+          "ILE: error disconnecting output, tensor is not produced by this op");
     }
+
     output->erase(idx);
   }
 }
 
 void Op::disconnectAllInputs() {
-  for (auto entry : input->tensorMap()) {
-    auto tensor = entry.second;
-    tensor->consumers.decrement(this);
+  auto inputs = input->tensors();
+  for (auto i : inputs) {
+    disconnectInTensor(i);
   }
-  input->clear();
+  if (input->n() != 0) {
+    throw error("ILE: Failed to disconnect all inputs from {}", debugName());
+  }
 }
 
 void Op::disconnectAllOutputs() {
-  for (auto entry : output->tensorMap()) {
-    auto tensor = entry.second;
-    tensor->resetProducer(nullptr);
+  auto tensors = output->tensors();
+  for (auto tensor : tensors) {
+    disconnectOutTensor(tensor);
   }
-  output->clear();
+  if (output->n() != 0) {
+    throw error("ILE: Failed to disconnect all outputs from {}", debugName());
+  }
 }
 
 void Op::createAndConnectOutTensor(OutIndex outIndex, TensorId tenId) {
+  if (output->hasIndex(outIndex)) {
+    throw error("ILE: error connecting output tensor '{}', {} already has an "
+                "output at index {}",
+                tenId,
+                debugName(),
+                outIndex);
+  }
+
   tenId = (getScope() / tenId).str();
 
   getGraph().getTensors().addActGrad(tenId);

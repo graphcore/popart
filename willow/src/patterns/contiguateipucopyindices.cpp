@@ -117,14 +117,6 @@ bool ContiguateIpuCopyIndicesPattern::apply(Op *op) const {
         tensors.first, tensors.second, originalIpuCopyOp->getSourceIpu());
   }
 
-  // Connect the output tensor to the back of the sequence. Note: this
-  // can have more than one ouput (all with the same destIPUs) if this
-  // IpuCopy has been merged in the MergeCopies transform
-  auto &finalIpuCopy = seq.back();
-  for (auto &tensors : op->output->tensorIdMap()) {
-    finalIpuCopy->connectOutTensor(tensors.first, tensors.second);
-  }
-
   // Connect the sequence of IpuCopys with intermediate Tensors
   for (int seqIndex = 0; seqIndex < seq.size() - 1; seqIndex++) {
     auto srcOp  = seq.at(seqIndex).get();
@@ -135,6 +127,16 @@ bool ContiguateIpuCopyIndicesPattern::apply(Op *op) const {
       srcOp->createAndConnectOutTensor(i, tensor);
       destOp->connectInTensor(i, tensor, srcOp->getDestIpu());
     }
+  }
+
+  // Connect the output tensor to the back of the sequence. Note: this
+  // can have more than one ouput (all with the same destIPUs) if this
+  // IpuCopy has been merged in the MergeCopies transform
+  auto outputs = op->output->tensorIdMap();
+  op->disconnectAllOutputs();
+  auto &finalIpuCopy = seq.back();
+  for (auto &tensors : outputs) {
+    finalIpuCopy->connectOutTensor(tensors.first, tensors.second);
   }
 
   // Insert the newly minted Ops into the IR

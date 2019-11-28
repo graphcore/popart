@@ -179,8 +179,8 @@ computeInputIntervals(int64_t axis,
 }
 
 static boost::numeric::interval<int64_t> computeOutputInterval(int64_t axis,
-                                                               Op *op) {
-  return {0, op->output->tensor(0)->info.dim(static_cast<int>(axis))};
+                                                               Tensor *output) {
+  return {0, output->info.dim(static_cast<int>(axis))};
 }
 
 static std::vector<boost::numeric::interval<int64_t>>
@@ -341,7 +341,8 @@ bool PadSumPattern::apply(Op *op) const {
                 "SumOp::getOutIndex() don't match.");
   }
 
-  const auto outputIndex = AddOp::getOutIndex();
+  auto output = op->outTensor(AddOp::getOutIndex());
+  op->disconnectOutTensor(output);
 
   // Find the input tensors and the intermediate pads
   const auto producers = getProducerOps(op, order);
@@ -352,20 +353,15 @@ bool PadSumPattern::apply(Op *op) const {
 
   // The 1D intervals of the output tensor axis covered by the input tensors
   const auto inputIntervals = computeInputIntervals(axis, producers, inputs);
-  const auto outputInterval = computeOutputInterval(axis, op);
+  const auto outputInterval = computeOutputInterval(axis, output);
   const auto gaps           = subtractIntervals(outputInterval, inputIntervals);
 
   // Create new pad ops which don't have overlapping outputs
-  auto padTensorOps = createPadOps(axis,
-                                   inputs,
-                                   inputIntervals,
-                                   gaps,
-                                   op->settings,
-                                   op->input->tensor(outputIndex)->id);
+  auto padTensorOps = createPadOps(
+      axis, inputs, inputIntervals, gaps, op->settings, output->id);
 
   // Create the concat op
-  auto concat = createConcatOp(
-      axis, padTensorOps, op->output->tensor(outputIndex)->id, op->settings);
+  auto concat = createConcatOp(axis, padTensorOps, output->id, op->settings);
 
   // Insert the new ops into the IR
   insertPadOps(graph, padTensorOps);
