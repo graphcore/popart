@@ -293,9 +293,11 @@ public:
    * `getGradAndVarStreamIds` the streams can be used to copy gradients to the
    * host to perform collective operations after which the variables can be
    * streamed back after they have been updated to the device.
+   * `index` referes to the replica index when using replicated graphs.
    */
   void connectStreamToCallback(const std::string &streamHandle,
-                               std::function<void(void *)> callback);
+                               std::function<void(void *)> callback,
+                               unsigned index = 0);
 
 private:
   void configureFromOnnx(const std::string &model,

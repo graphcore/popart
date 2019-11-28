@@ -945,10 +945,14 @@ void Ir::prepareImpl(const IrBundle &gb) {
     updateVertices();
   }
 
-  if (!canTrain() && getSessionOptions().hostAllReduce) {
-    throw error("Host AllReduce only available when training.");
-  }
   if (getSessionOptions().hostAllReduce) {
+    if (!canTrain()) {
+      throw error("Host AllReduce only available when training.");
+    }
+    if (userOptions.mergeVarUpdate != MergeVarUpdateType::None) {
+      throw error("Host AllReduce does not work with MergeVarUpdates");
+    }
+
     applyTransform(HostReduce::id(), getMainGraph());
     updateVertices();
   }

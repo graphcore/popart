@@ -34,6 +34,19 @@ void HostReduceGradCopyOpx::grow(poplar::program::Sequence &prog) const {
   auto deviceToHostStream =
       dv_p->insertGradientStoreStream(grad_id, inInfo(updater_index), graph());
 
+  // TODO(T12685): Once replicatedReduceScatter is part of the Poplar
+  // public API we can replace the replicatedAllReduce with it and
+  // then do the AllGather on the host.
+  if (dv_p->getReplicationFactor() > 1) {
+    weightDeltas =
+        popops::replicatedAllReduce(graph(),
+                                    weightDeltas,
+                                    popops::Operation::ADD,
+                                    prog,
+                                    debugPrefix("allReduce_Add"),
+                                    {{"useReplicatedImplementation", "true"}});
+  }
+
   poplar::program::Copy gradientsToHostProg(weightDeltas, deviceToHostStream);
   prog.add(gradientsToHostProg);
 }

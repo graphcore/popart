@@ -3149,10 +3149,11 @@ poplar::DataStream &Devicex::insertWeightLoadStream(TensorId tensorId,
   if (streamMapEntry == fromHostWeightLoadStreams.end()) {
     fromHostWeightLoadStreams.emplace(
         tensorId,
-        poplar::DataStream(
-            graph.addHostToDeviceFIFO(weightLoadStreamId(tensorId),
-                                      popType(tensorInfo),
-                                      tensorInfo.nelms())));
+        poplar::DataStream(graph.addHostToDeviceFIFO(
+            weightLoadStreamId(tensorId),
+            popType(tensorInfo),
+            tensorInfo.nelms(),
+            poplar::ReplicatedStreamMode::BROADCAST)));
     streamMapEntry = fromHostWeightLoadStreams.find(tensorId);
   } else {
     throw error("Tensor Id " + tensorId +
@@ -3172,8 +3173,9 @@ std::vector<std::pair<TensorId, TensorId>> &Devicex::getGradAndVarStreamIds() {
 }
 
 void Devicex::connectStreamToCallback(const std::string &streamHandle,
-                                      std::function<void(void *)> callback) {
-  pEngine->connectStreamToCallback(streamHandle, callback);
+                                      std::function<void(void *)> callback,
+                                      unsigned index) {
+  pEngine->connectStreamToCallback(streamHandle, index, callback);
 }
 
 } // namespace popx

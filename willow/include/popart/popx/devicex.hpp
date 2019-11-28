@@ -211,7 +211,8 @@ public:
   std::vector<std::pair<TensorId, TensorId>> &getGradAndVarStreamIds();
 
   void connectStreamToCallback(const std::string &streamHandle,
-                               std::function<void(void *)> callback);
+                               std::function<void(void *)> callback,
+                               unsigned index);
 
 private:
   std::unique_ptr<poplar::Graph> pGraph{nullptr};
