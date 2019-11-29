@@ -45,6 +45,14 @@ void Session::setRandomSeed(uint64_t seedValue) {
   device_->setRandomSeedFromHost();
 }
 
+uint64_t Session::getCycleCount() {
+  logging::session::trace("Session::getCycleCount()");
+  if (!runCalled) {
+    throw error("Must call run before getCycleCount.");
+  }
+  return device_->cycleCountTensorToHost();
+}
+
 // get the TensorInfo on a Tensor
 TensorInfo Session::getInfo(TensorId id) const {
   logging::session::trace("Session::getInfo({})", id);
@@ -121,6 +129,8 @@ void Session::run(IStepIO &stepio) {
   }
 
   device_->run(stepio);
+
+  runCalled = true;
 }
 
 // write current model to ONNX file

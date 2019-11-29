@@ -670,6 +670,8 @@ PYBIND11_MODULE(popart_core, m) {
                      &SessionOptions::exportPoplarVertexGraph)
       .def_readwrite("ignoreData", &SessionOptions::ignoreData)
       .def_readwrite("syntheticDataMode", &SessionOptions::syntheticDataMode)
+      .def_readwrite("instrumentWithHardwareCycleCounter",
+                     &SessionOptions::instrumentWithHardwareCycleCounter)
       .def_readwrite("disableGradAccumulationTensorStreams",
                      &SessionOptions::disableGradAccumulationTensorStreams)
       .def_readwrite("enableOutlining", &SessionOptions::enableOutlining)
@@ -893,6 +895,7 @@ PYBIND11_MODULE(popart_core, m) {
       .def("setRandomSeed",
            &InferenceSession::setRandomSeed,
            py::arg("seedValue"))
+      .def("getCycleCount", &InferenceSession::getCycleCount)
       .def("weightsFromHost", &InferenceSession::weightsFromHost)
       .def("writeWeights", &TrainingSession::writeWeights)
       .def("run", &InferenceSession::run)
@@ -954,6 +957,7 @@ PYBIND11_MODULE(popart_core, m) {
       .def("setRandomSeed",
            &TrainingSession::setRandomSeed,
            py::arg("seedValue"))
+      .def("getCycleCount", &TrainingSession::getCycleCount)
       .def("weightsToHost", &TrainingSession::weightsToHost)
       .def("weightsFromHost", &TrainingSession::weightsFromHost)
       .def("readWeights", &TrainingSession::readWeights)

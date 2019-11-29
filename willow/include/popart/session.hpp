@@ -50,6 +50,11 @@ public:
   void weightsToHost();
 
   /**
+   * Copy the cycle count tensor to host from the device
+   */
+  uint64_t getCycleCount();
+
+  /**
    * Perform one step.
    *
    * input data  : from address in stepIO.in
@@ -184,6 +189,12 @@ protected:
   bool weightsFromHostCalled = false;
 
   /**
+   * Flag to indicate if run has been called
+   */
+  bool runCalled = false;
+
+  /**
+
    * Flag to indicate if optimizerFromHost has been called since and
    * optimizer was last created/updated on the host
    */

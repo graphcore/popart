@@ -103,6 +103,8 @@ constexpr const char *hostReduceVarCopyPrefix() {
   return "hostReduceVarCopy___";
 }
 
+constexpr const char *cycleCountPrefix() { return "cycleCount___"; }
+
 } // namespace popart
 
 #endif

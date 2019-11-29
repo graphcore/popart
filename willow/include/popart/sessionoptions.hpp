@@ -197,6 +197,11 @@ struct SessionOptions {
   /// it is removed (T13474)
   SyntheticDataMode syntheticDataMode = SyntheticDataMode::Off;
 
+  /// Add instrumentation to your program to count the number of device cycles
+  /// (a single tile, on a single IPU) that your main program takes to execute.
+  /// Expect this to have a small detrimental impact on performance.
+  bool instrumentWithHardwareCycleCounter = false;
+
   /// If true, the weight gradient tensors are not saved off the device
   /// when devicex.weightsFromHost() is called. Note: this option is
   /// overridden if syntheticDataMode is not Off.

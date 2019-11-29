@@ -11,6 +11,7 @@
 #include <boost/range/algorithm_ext.hpp>
 
 #include <poplar/CSRFunctions.hpp>
+#include <poplar/CycleCount.hpp>
 #include <poplin/codelets.hpp>
 #include <popnn/codelets.hpp>
 #include <popops/ElementWise.hpp>
@@ -437,6 +438,40 @@ void Devicex::weightsToHost(
         hostStreamToHost(mv_data, id);
       }
     }
+  }
+}
+
+const std::string Devicex::cycleCountStreamId() const {
+  return "d2h_" + std::string(cycleCountPrefix());
+}
+
+void Devicex::instrumentWithHardwareCycleCounter(
+    poplar::program::Sequence &sq) {
+  poplar::Tensor cycleCountTensor =
+      poplar::cycleCount(graph(), sq, 0, cycleCountPrefix());
+
+  // Create stream
+  auto st = graph().addDeviceToHostFIFO(cycleCountStreamId(),
+                                        cycleCountTensor.elementType(),
+                                        cycleCountTensor.numElements());
+
+  // Add program fragment to copy to host stream
+  auto cyclesToHostStream = poplar::program::Copy(cycleCountTensor, st, true);
+  progs.cycleCountTensorToHostFragment().add(cyclesToHostStream);
+}
+
+uint64_t Devicex::cycleCountTensorToHost() {
+  if (ir().getSessionOptions().instrumentWithHardwareCycleCounter) {
+    // Calls the copy from device to host
+    logging::devicex::debug("Writing cycle count to host");
+    pEngine->disableExecutionProfiling();
+    run(PopPrograms::ProgramIndex::CYCLECOUNTTENSORTOHOST);
+    logging::devicex::debug("Writing cycle count to host complete.");
+
+    return cycleCount;
+  } else {
+    throw error("SessionOption 'instrumentWithHardwareCycleCounter' must be "
+                "set to true in order to measure cycle count");
   }
 }
 
@@ -2119,6 +2154,13 @@ void Devicex::loadEngineAndConnectStreams() {
       }
     }
   }
+
+  // Hardware cycle counter - connect stream even if synthetic data mode is
+  // not off
+  if (ir().getSessionOptions().instrumentWithHardwareCycleCounter) {
+    pEngine->connectStream(cycleCountStreamId(),
+                           static_cast<void *>(&cycleCount));
+  }
 }
 
 void Devicex::reconnectInputStreams() {
@@ -2344,7 +2386,7 @@ void Devicex::prepare() {
     }
   }
 
-  // Init the random seed(s)
+  // Init the random seed
   if (ir().requiresRandomSeed()) {
     auto seedTen = ir().getTensor(GetRandomSeedOp::getStreamedSeedTensorId());
     tasks.add(fromHostTask(seedTen, progs.setRandomSeedFromHostFragment()));

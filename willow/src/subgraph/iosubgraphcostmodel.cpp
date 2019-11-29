@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include <popart/subgraph/iosubgraphcostmodel.hpp>
 
 #include <popart/op.hpp>

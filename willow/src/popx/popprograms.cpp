@@ -26,6 +26,10 @@ poplar::program::Sequence &PopPrograms::setRandomSeedFromHostFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::SETRANDOMSEEDFROMHOST)];
 }
 
+poplar::program::Sequence &PopPrograms::cycleCountTensorToHostFragment() {
+  return seqs[static_cast<int>(ProgramFragmentIndex::CYCLECOUNTTENSORTOHOST)];
+}
+
 poplar::program::Sequence &PopPrograms::initFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::INIT)];
 }
@@ -69,6 +73,12 @@ poplar::program::Sequence PopPrograms::optimizerFromHost() {
 poplar::program::Sequence PopPrograms::setRandomSeedFromHost() {
   poplar::program::Sequence prog;
   prog.add(setRandomSeedFromHostFragment());
+  return prog;
+}
+
+poplar::program::Sequence PopPrograms::cycleCountTensorToHost() {
+  poplar::program::Sequence prog;
+  prog.add(cycleCountTensorToHostFragment());
   return prog;
 }
 
@@ -272,15 +282,14 @@ poplar::program::Sequence PopPrograms::getMainProgramFromPipelineFragments() {
 }
 
 poplar::program::Sequence PopPrograms::program() {
+  poplar::program::Sequence outer;
   if (dv_p->ir().getSessionOptions().enablePipelining) {
-    return getMainProgramFromPipelineFragments();
+    outer.add(getMainProgramFromPipelineFragments());
   } else {
     poplar::program::Sequence prog;
     prog.add(preForwardFragment());
     prog.add(forwardFragment());
     prog.add(backwardFragment());
-
-    poplar::program::Sequence outer;
 
     outer.add(initFragment());
 
@@ -298,9 +307,13 @@ poplar::program::Sequence PopPrograms::program() {
     outer.add(poplar::program::Repeat(dv_p->ir().getDataFlow().batchesPerStep(),
                                       prog));
     outer.add(toHostFinalCopyFragment());
-
-    return outer;
   }
+
+  if (dv_p->ir().getSessionOptions().instrumentWithHardwareCycleCounter) {
+    dv_p->instrumentWithHardwareCycleCounter(outer);
+  }
+
+  return outer;
 }
 
 poplar::program::Sequence PopPrograms::weightsToHost() {
@@ -310,11 +323,12 @@ poplar::program::Sequence PopPrograms::weightsToHost() {
 std::vector<poplar::program::Program> PopPrograms::progs() {
   std::vector<poplar::program::Program> ps(ProgramIndex::N);
 
-  ps[ProgramIndex::WEIGHTSFROMHOST]       = weightsFromHost();
-  ps[ProgramIndex::OPTIMIZERFROMHOST]     = optimizerFromHost();
-  ps[ProgramIndex::SETRANDOMSEEDFROMHOST] = setRandomSeedFromHost();
-  ps[ProgramIndex::PROGRAM]               = program();
-  ps[ProgramIndex::WEIGHTSTOHOST]         = weightsToHost();
+  ps[ProgramIndex::WEIGHTSFROMHOST]        = weightsFromHost();
+  ps[ProgramIndex::OPTIMIZERFROMHOST]      = optimizerFromHost();
+  ps[ProgramIndex::SETRANDOMSEEDFROMHOST]  = setRandomSeedFromHost();
+  ps[ProgramIndex::PROGRAM]                = program();
+  ps[ProgramIndex::WEIGHTSTOHOST]          = weightsToHost();
+  ps[ProgramIndex::CYCLECOUNTTENSORTOHOST] = cycleCountTensorToHost();
 
   return ps;
 }
