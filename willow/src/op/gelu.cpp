@@ -27,7 +27,7 @@ std::vector<std::unique_ptr<Op>> GeluOp::getGradOps() {
 std::vector<std::tuple<OperatorIdentifier, float>>
 GeluOp::inplacePriorityDefault() const {
   // see T6768: choosing default inplace priorities
-  return {{Onnx::CustomOperators::Gelu_1, 10}};
+  return {{Onnx::CustomOperators::GeluInplace, 10}};
 }
 
 std::unique_ptr<Op>
