@@ -29,6 +29,8 @@ public:
   bool hasInitialCInput() const;
   bool hasOutput(OutIndex) const;
 
+  std::set<InIndex> optionalInputs() const final;
+
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   bool isTraining() const;
@@ -83,6 +85,8 @@ public:
   bool hasCellStateGradInput() const;
   bool hasHiddenStateGradInput() const;
 
+  std::set<InIndex> optionalInputs() const final;
+
   static InIndex getInitStateOutputInIndex() { return 0; }
   static InIndex getInitStateCellStateInIndex() { return 1; }
   static InIndex getIntermediatesInIndex() { return 2; }
@@ -106,11 +110,7 @@ public:
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
 
 private:
-  void tryConnectCellStateGrad();
-  void tryConnectHiddenStateGrad();
-
   const LSTMOp &forward_op;
-  mutable std::map<int, int> out_info;
 };
 
 // LSTM op that more closely resembles the poplar lstm.
@@ -144,6 +144,9 @@ public:
 
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
 
+  bool hasBiasesInput() const;
+  std::set<InIndex> optionalInputs() const final;
+
   static InIndex getInputInIndex() { return 0; }
   static InIndex getWeightsInIndex() { return 1; }
   static InIndex getBiasesInIndex() { return 2; }
@@ -174,6 +177,8 @@ public:
   const std::map<int, int> &gradOutToNonGradIn() const final;
 
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
+
+  std::set<InIndex> optionalInputs() const final;
 
   int64_t getInputSize() const;
   int64_t getSeqLength() const;

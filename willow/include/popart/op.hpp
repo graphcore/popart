@@ -197,6 +197,8 @@ public:
   // We might want a cycle counter too for more sophisticated recomputation
   int64_t memOfOutputs() const;
 
+  virtual std::set<InIndex> optionalInputs() const { return {}; }
+
   // wire a tensor to input: updates input and
   // updates consumers of tensor with id TensorId
   void defaultConnectInTensor(InIndex, TensorId);

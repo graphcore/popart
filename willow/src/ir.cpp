@@ -1720,6 +1720,8 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
     {
       // inputs to gradOp (to populate in this scope):
       std::map<int, std::string> m_inputs;
+      auto nonGradOptionalInputs = nonGradOp->optionalInputs();
+      auto gradOpOptionalInputs  = gradOp->optionalInputs();
       for (auto &inOutMapper : gradOp->gradInputInfo()) {
 
         int indexGrad     = inOutMapper.iGrad;
@@ -1730,14 +1732,19 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
         switch (type) {
         //  (1) the INPUT at index 'indexFwd' of nonGradOp
         case GradOpInType::IN: {
-          if (!nonGradOp->input->hasIndex(indexFwd)) {
-            throw error("Invalid configuration of gradOp {}. nonGradOp ({}) "
-                        "INPUT {} is not defined ",
-                        gradOp->debugName(),
-                        nonGradOp->debugName(),
-                        indexFwd);
+          if (nonGradOp->input->hasIndex(indexFwd)) {
+            m_inputs[indexGrad] = nonGradOp->input->tensor(indexFwd)->id;
+          } else if (nonGradOptionalInputs.find(indexFwd) ==
+                     nonGradOptionalInputs.end()) {
+            m_inputs[indexGrad] = emptyTensorId;
+          } else {
+            throw error(
+                "Invalid configuration of gradOp {}. nonGradOp ({}) INPUT {} "
+                "is not marked as optional, but is not defined",
+                gradOp->debugName(),
+                nonGradOp->debugName(),
+                indexFwd);
           }
-          m_inputs[indexGrad] = nonGradOp->input->tensor(indexFwd)->id;
           break;
         }
 
@@ -1758,16 +1765,34 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
         //      at index 'indexFwd' of nonGradOp.
         case GradOpInType::GRADOUT: {
           if (!nonGradOp->output->hasIndex(indexFwd)) {
-            std::stringstream ss;
-            ss << "No gradient for non-grad-op " << nonGradOp->debugName()
-               << " at index " << indexFwd << '.'
-               << " Could it be that the path along that index "
-               << "did not lead to final loss, "
-               << "in which case the gradient is zero?";
-            throw error(ss.str());
+            throw error("Invalid configuration of gradOp {}. nonGradOp ({}) "
+                        "OUTPUT {} is not defined ",
+                        gradOp->debugName(),
+                        nonGradOp->debugName(),
+                        indexFwd);
           }
-          m_inputs[indexGrad] =
+
+          auto gradTensorId =
               getGradId(nonGradOp->output->tensor(indexFwd)->id);
+          if (getMainGraph().getTensors().contains(gradTensorId,
+                                                   gradOp->getScope())) {
+            m_inputs[indexGrad] = gradTensorId;
+          } else {
+            if (gradOpOptionalInputs.find(indexGrad) !=
+                gradOpOptionalInputs.end()) {
+              m_inputs[indexGrad] = emptyTensorId;
+            } else {
+              throw error("No gradient for non-grad-op {} at index {}, but "
+                          "input {} is not marked as optional on grad-op {}. "
+                          "Could it be that "
+                          "the path along that index did not lead to the final "
+                          "loss, in which case the gradient is zero?",
+                          nonGradOp->debugName(),
+                          indexFwd,
+                          indexGrad,
+                          gradOp->debugName());
+            }
+          }
           break;
         }
         }
@@ -1783,20 +1808,15 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
         int gradOut   = out_in.first;
         int nonGradIn = out_in.second;
 
-        if (!nonGradOp->input->tensor(nonGradIn)) {
-          throw error("Invalid configuration of gradOp {}. nonGradOp ({}) "
-                      "OUTPUT {} is not defined ",
-                      gradOp->debugName(),
-                      nonGradOp->debugName(),
-                      nonGradIn);
+        if (v_outputs.size() < gradOut + 1) {
+          v_outputs.resize(gradOut + 1, emptyTensorId);
         }
 
-        TensorId inId  = nonGradOp->input->tensor(nonGradIn)->id;
-        TensorId outId = getEdgeGradId(inId, nonGradOpId, nonGradIn);
-        if (v_outputs.size() < gradOut + 1) {
-          v_outputs.resize(gradOut + 1, "");
+        if (nonGradOp->input->hasIndex(nonGradIn)) {
+          TensorId inId      = nonGradOp->input->tensor(nonGradIn)->id;
+          TensorId outId     = getEdgeGradId(inId, nonGradOpId, nonGradIn);
+          v_outputs[gradOut] = outId;
         }
-        v_outputs[gradOut] = outId;
       }
       getMainGraph().connectOutputs(OutputVecWrapper(v_outputs), gradOpId);
     }

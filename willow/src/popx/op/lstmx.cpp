@@ -465,7 +465,7 @@ PopartLSTMOpx::PopartLSTMOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 void PopartLSTMOpx::grow(poplar::program::Sequence &prog) const {
   auto input = getInTensor(PopartLSTMOp::getInputInIndex());
 
-  auto lstmWeights   = getWeights();
+  auto lstmWeights   = getWeights(prog);
   auto initState     = getInitialState();
   auto intermediates = getIntermediates();
 
@@ -509,13 +509,20 @@ popnn::lstm::LstmState PopartLSTMOpx::getInitialState() const {
   return initState;
 }
 
-popnn::lstm::LstmWeights PopartLSTMOpx::getWeights() const {
+popnn::lstm::LstmWeights
+PopartLSTMOpx::getWeights(poplar::program::Sequence &prog) const {
   auto &lstmOp    = getOp<PopartLSTMOp>();
   auto inputSize  = lstmOp.getInputSize();
   auto hiddenSize = lstmOp.getHiddenSize();
 
   auto weights = getInTensor(PopartLSTMOp::getWeightsInIndex());
-  auto biases  = getInTensor(PopartLSTMOp::getBiasesInIndex());
+  poplar::Tensor biases;
+  if (lstmOp.hasBiasesInput()) {
+    biases = getInTensor(PopartLSTMOp::getBiasesInIndex());
+  } else {
+    biases = createBiasesInput();
+    popops::zero(graph(), biases, prog, debugPrefix("zeroBiases"));
+  }
 
   auto inputWeights  = weights.slice(0, inputSize, 1);
   auto outputWeights = weights.slice(inputSize, inputSize + hiddenSize, 1);
@@ -601,7 +608,6 @@ void PopartLSTMGradOpx::grow(poplar::program::Sequence &prog) const {
   auto initialState  = getInTensor(PopartLSTMGradOp::getInitialStateInIndex());
   auto intermediates = getInTensor(PopartLSTMGradOp::getIntermediatesInIndex());
   auto weights       = getInTensor(PopartLSTMGradOp::getWeightsInIndex());
-  auto biases        = getInTensor(PopartLSTMGradOp::getBiasesInIndex());
   auto forwardInput  = getInTensor(PopartLSTMGradOp::getInputInIndex());
   auto forwardOutput = getInTensor(PopartLSTMGradOp::getFwdOutputInIndex());
   auto forwardOutputGrad =
@@ -613,6 +619,19 @@ void PopartLSTMGradOpx::grow(poplar::program::Sequence &prog) const {
         &getInTensor(PopartLSTMGradOp::getFwdCellStateGradInIndex());
   }
 
+  auto params = createLSTMParams<PopartLSTMGradOp>(this);
+  poplar::Tensor biases;
+  if (op.input->hasIndex(PopartLSTMGradOp::getBiasesInIndex())) {
+    biases = getInTensor(PopartLSTMGradOp::getBiasesInIndex());
+  } else {
+    biases = popnn::lstm::createWeightsBiases(graph(),
+                                              params,
+                                              debugPrefix("createBiases"),
+                                              dv_p->lstmOptions,
+                                              &dv_p->matmulCache);
+    popops::zero(graph(), biases, prog, debugPrefix("zeroBiases"));
+  }
+
   auto initialOutput               = initialState.slice(0, 1).squeeze({0});
   auto initialCellState            = initialState.slice(1, 2).squeeze({0});
   popnn::lstm::LstmState initState = {initialOutput, initialCellState};
@@ -622,8 +641,6 @@ void PopartLSTMGradOpx::grow(poplar::program::Sequence &prog) const {
   auto inputWeights  = weights.slice(0, inputSize, 1);
   auto outputWeights = weights.slice(inputSize, inputSize + hiddenSize, 1);
   popnn::lstm::LstmWeights lstmWeights = {inputWeights, outputWeights, biases};
-
-  auto params = createLSTMParams<PopartLSTMGradOp>(this);
 
   poplar::Tensor inputGrad;
   popnn::lstm::LstmWeights weightsGrad;
@@ -648,7 +665,9 @@ void PopartLSTMGradOpx::grow(poplar::program::Sequence &prog) const {
 
   setOutTensor(PopartLSTMGradOp::getInputOutIndex(), inputGrad);
   setOutTensor(PopartLSTMGradOp::getWeightsOutIndex(), weightsOut);
-  setOutTensor(PopartLSTMGradOp::getBiasesOutIndex(), weightsGrad.biases);
+  if (op.output->hasIndex(PopartLSTMGradOp::getBiasesOutIndex())) {
+    setOutTensor(PopartLSTMGradOp::getBiasesOutIndex(), weightsGrad.biases);
+  }
   setOutTensor(PopartLSTMGradOp::getInitialStateOutIndex(),
                initStateGrad.getAsTensor());
 }

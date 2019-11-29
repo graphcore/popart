@@ -42,6 +42,10 @@ std::map<InIndex, TensorId> SGD0VarUpdateOpBase::optimizerInputs() const {
   return m;
 }
 
+std::set<InIndex> SGD0VarUpdateOpBase::optionalInputs() const {
+  return {getSlr0InIndex(), getWdsf0InIndex()};
+}
+
 std::unique_ptr<Op> SGD0VarUpdateOp::cloneWithNewName(const TensorId &x) const {
   return std::make_unique<SGD0VarUpdateOp>(x, initSlr0, initWdsf0, settings);
 }

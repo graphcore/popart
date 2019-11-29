@@ -73,7 +73,7 @@ private:
   poplar::Tensor createInitialStateInput() const;
   std::unique_ptr<poplar::Tensor> getIntermediates() const;
   popnn::lstm::LstmState getInitialState() const;
-  popnn::lstm::LstmWeights getWeights() const;
+  popnn::lstm::LstmWeights getWeights(poplar::program::Sequence &) const;
 };
 
 class PopartLSTMGradOpx : public Opx {

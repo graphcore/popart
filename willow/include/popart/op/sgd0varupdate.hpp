@@ -31,6 +31,8 @@ public:
   const OptimizerValue initWdsf0;
 
   void appendOutlineAttributes(OpSerialiserBase &) const final;
+
+  std::set<InIndex> optionalInputs() const final;
 };
 
 // The "0" in the name signifies that there are no persistant Tensors required

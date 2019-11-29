@@ -50,6 +50,8 @@ public:
   static InIndex getDpsf1InIndex() { return 3; }
   static InIndex getSwd1InIndex() { return 4; }
   static InIndex getSlr1InIndex() { return 5; }
+
+  std::set<InIndex> optionalInputs() const final;
 };
 
 } // namespace popart

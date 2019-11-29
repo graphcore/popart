@@ -77,4 +77,9 @@ std::map<InIndex, TensorId> SGD1ComboOp::optimizerInputs() const {
   return m;
 }
 
+std::set<InIndex> SGD1ComboOp::optionalInputs() const {
+  return {
+      getSmm1InIndex(), getDpsf1InIndex(), getSwd1InIndex(), getSlr1InIndex()};
+}
+
 } // namespace popart

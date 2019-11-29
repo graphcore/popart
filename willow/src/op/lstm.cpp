@@ -136,6 +136,10 @@ bool LSTMOp::hasInitialCInput() const {
 
 bool LSTMOp::hasOutput(OutIndex index) const { return output->hasIndex(index); }
 
+std::set<InIndex> LSTMOp::optionalInputs() const {
+  return {getSequenceLensInIndex()};
+}
+
 void LSTMOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("hidden_size", hidden_size_attribute);
@@ -150,9 +154,6 @@ std::unique_ptr<Op> LSTMGradOp::clone() const {
 }
 
 void LSTMGradOp::setup() {
-  tryConnectCellStateGrad();
-  tryConnectHiddenStateGrad();
-
   outInfo(getInputOutIndex()) = forward_op.inInfo(LSTMOp::getInputInIndex());
   outInfo(getWeightsOutIndex()) =
       forward_op.inInfo(LSTMOp::getWeightsInIndex());
@@ -180,26 +181,8 @@ bool LSTMGradOp::hasHiddenStateGradInput() const {
   return input->hasIndex(getHiddenStateOutputGradInIndex());
 }
 
-void LSTMGradOp::tryConnectCellStateGrad() {
-  auto cell_state_id      = forward_op.outId(LSTMOp::getCellStateOutIndex());
-  auto cell_state_grad_id = getGradId(cell_state_id);
-  if (getGraph().getTensors().contains(cell_state_grad_id)) {
-    connectInTensor(getCellStateOutputGradInIndex(), cell_state_grad_id);
-  } else {
-    logging::op::debug("Could not find cell state grad tensor {}",
-                       cell_state_grad_id);
-  }
-}
-
-void LSTMGradOp::tryConnectHiddenStateGrad() {
-  auto hidden_state_id = forward_op.outId(LSTMOp::getHiddenStateOutIndex());
-  auto hidden_state_grad_id = getGradId(hidden_state_id);
-  if (getGraph().getTensors().contains(hidden_state_grad_id)) {
-    connectInTensor(getHiddenStateOutputGradInIndex(), hidden_state_grad_id);
-  } else {
-    logging::op::debug("Could not find hidden state grad tensor {}",
-                       hidden_state_grad_id);
-  }
+std::set<InIndex> LSTMGradOp::optionalInputs() const {
+  return {getCellStateOutputGradInIndex(), getHiddenStateOutputGradInIndex()};
 }
 
 const std::vector<GradInOutMapper> &LSTMGradOp::gradInputInfo() const {
@@ -228,7 +211,12 @@ const std::vector<GradInOutMapper> &LSTMGradOp::gradInputInfo() const {
       {getOutputInIndex(),
        LSTMOp::getOutputPassThroughIndex(),
        GradOpInType::OUT},
-
+      {getCellStateOutputGradInIndex(),
+       LSTMOp::getCellStateOutIndex(),
+       GradOpInType::GRADOUT},
+      {getHiddenStateOutputGradInIndex(),
+       LSTMOp::getHiddenStateOutIndex(),
+       GradOpInType::GRADOUT},
       {getOutputGradInIndex(),
        LSTMOp::getOutputOutIndex(),
        GradOpInType::GRADOUT}};
@@ -236,28 +224,15 @@ const std::vector<GradInOutMapper> &LSTMGradOp::gradInputInfo() const {
 }
 
 const std::map<int, int> &LSTMGradOp::gradOutToNonGradIn() const {
-  if (out_info.empty()) {
-    out_info.insert(
-        std::pair<int, int>(getInputOutIndex(), LSTMOp::getInputInIndex()));
-    out_info.insert(
-        std::pair<int, int>(getWeightsOutIndex(), LSTMOp::getWeightsInIndex()));
-    out_info.insert(std::pair<int, int>(getRecurrenceOutIndex(),
-                                        LSTMOp::getRecurrenceInIndex()));
-    if (forward_op.hasBiasInput()) {
-      out_info.insert(
-          std::pair<int, int>(getBiasOutIndex(), LSTMOp::getBiasInIndex()));
-    }
-    if (forward_op.hasInitialHInput()) {
-      out_info.insert(std::pair<int, int>(getInitialHOutIndex(),
-                                          LSTMOp::getInitialHInIndex()));
-    }
-    if (forward_op.hasInitialCInput()) {
-      out_info.insert(std::pair<int, int>(getInitialCOutIndex(),
-                                          LSTMOp::getInitialCInIndex()));
-    }
-  }
+  static const std::map<int, int> outInfo = {
+      {getInputOutIndex(), LSTMOp::getInputInIndex()},
+      {getWeightsOutIndex(), LSTMOp::getWeightsInIndex()},
+      {getRecurrenceOutIndex(), LSTMOp::getRecurrenceInIndex()},
+      {getBiasOutIndex(), LSTMOp::getBiasInIndex()},
+      {getInitialHOutIndex(), LSTMOp::getInitialHInIndex()},
+      {getInitialCOutIndex(), LSTMOp::getInitialCInIndex()}};
 
-  return out_info;
+  return outInfo;
 }
 
 const LSTMOp &LSTMGradOp::getForwardOp() const { return forward_op; }
@@ -292,7 +267,9 @@ void PopartLSTMOp::setup() {
   verifyShape(getWeightsInIndex(),
               {4, getInputSize() + getHiddenSize(), getHiddenSize()},
               "weights");
-  verifyShape(getBiasesInIndex(), {4, getHiddenSize()}, "bias");
+  if (hasBiasesInput()) {
+    verifyShape(getBiasesInIndex(), {4, getHiddenSize()}, "bias");
+  }
   verifyShape(getInitialStateInIndex(),
               {2, getBatchSize(), getHiddenSize()},
               "initialState");
@@ -318,6 +295,14 @@ void PopartLSTMOp::setup() {
                                             getBatchSize(),
                                             getHiddenSize()}};
   }
+}
+
+bool PopartLSTMOp::hasBiasesInput() const {
+  return input->hasIndex(getBiasesInIndex());
+}
+
+std::set<InIndex> PopartLSTMOp::optionalInputs() const {
+  return {getBiasesInIndex()};
 }
 
 int64_t PopartLSTMOp::getSeqLength() const {
@@ -347,18 +332,17 @@ std::unique_ptr<Op> PopartLSTMGradOp::clone() const {
 }
 
 void PopartLSTMGradOp::setup() {
-  if (getGraph().getTensors().contains(forwardCellStateGradId, getScope())) {
-    connectInTensor(
-        getFwdCellStateGradInIndex(),
-        getGraph().getTensors().find(forwardCellStateGradId, getScope()));
-  } else {
-    logging::warn("Could not find optional input {}", forwardCellStateGradId);
+  if (input->hasIndex(getBiasesInIndex())) {
+    outInfo(getBiasesOutIndex()) = inInfo(getBiasesInIndex());
   }
 
   outInfo(getInputOutIndex())        = inInfo(getInputInIndex());
   outInfo(getWeightsOutIndex())      = inInfo(getWeightsInIndex());
-  outInfo(getBiasesOutIndex())       = inInfo(getBiasesInIndex());
   outInfo(getInitialStateOutIndex()) = inInfo(getInitialStateInIndex());
+}
+
+std::set<InIndex> PopartLSTMGradOp::optionalInputs() const {
+  return {getBiasesInIndex(), getFwdCellStateGradInIndex()};
 }
 
 int64_t PopartLSTMGradOp::getInputSize() const {
@@ -395,9 +379,10 @@ const std::vector<GradInOutMapper> &PopartLSTMGradOp::gradInputInfo() const {
        GradOpInType::OUT},
       {getFwdOutputGradInIndex(),
        PopartLSTMOp::getOutputOutIndex(),
+       GradOpInType::GRADOUT},
+      {getFwdCellStateGradInIndex(),
+       PopartLSTMOp::getCellStateOutIndex(),
        GradOpInType::GRADOUT}};
-  // fwdCellState is an optional input and needs special handling, so is not
-  // included in the grad input info.
 
   return inInfo;
 }
