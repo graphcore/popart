@@ -1,9 +1,7 @@
 #include <boost/algorithm/cxx11/any_of.hpp>
 #include <boost/range/algorithm/find.hpp>
-
 #include <cmath>
 #include <memory>
-
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -12,10 +10,11 @@
 #include <popart/op/boundary.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/ipucopy.hpp>
-#include <popart/topocons.hpp>
-
+#include <popart/subgraph/iosubgraphcostmodel.hpp>
 #include <popart/subgraph/outliner.hpp>
+#include <popart/subgraph/prunematches.hpp>
 #include <popart/subgraph/subgraphutil.hpp>
+#include <popart/topocons.hpp>
 #include <popart/transforms/subgraphoutline.hpp>
 
 using boost::find;
@@ -35,75 +34,9 @@ template <typename T> void sortMatches(std::vector<T> &matches) {
 // TODO T8888: templatize every function in this namespace so that can be used
 // outside of popart, then put it in the popart/subgraph directory. Then add
 // tests with the Blip class (as other basic outlining functions are).
-namespace outline {
+namespace localoutline {
 namespace {
 using namespace fwtools::subgraph;
-
-// get a new cost estimate of a sub-sequence, using the cost of copying into
-// and out of cached subgraphs
-float getIoAdjustedValue(int64_t start,
-                         int64_t end,
-                         const std::vector<Op *> &schedule,
-                         const std::map<Op *, int> &schedule_index) {
-
-  // total number of input bytes
-  auto getInBytes = [](Op *op) {
-    int64_t inBytes = 0;
-    for (auto x : op->input->tensorMap()) {
-      inBytes += x.second->info.nbytes();
-    }
-    return inBytes;
-  };
-
-  // the value of caching an all ops
-  // (before adjusting for the cost of the copies)
-  float sumValues = 0;
-  for (auto i = start; i < end; ++i) {
-    // in this cost model, we take the value to scale as sqrt(input size)
-    sumValues += schedule[i]->getSubgraphValue() *
-                 std::sqrt(static_cast<float>(getInBytes(schedule[i])));
-  }
-
-  // the external inputs and outputs, which we use to adjust the value of
-  // match downwards
-  std::set<Tensor *> externalInputs;
-  std::set<Tensor *> externalOutputs;
-
-  for (auto i = start; i < end; ++i) {
-    Op *op = schedule[i];
-
-    // externalInputs
-    for (auto tensor : op->input->tensors()) {
-      if (!tensor->hasProducer() ||
-          schedule_index.at(tensor->getProducerUnsafe()) < start) {
-        externalInputs.emplace(tensor);
-      }
-    }
-
-    // externalOutputs
-    for (auto tensor : op->output->tensors()) {
-      for (auto consumer : tensor->consumers.getOps()) {
-        if (schedule_index.at(consumer) >= end) {
-          externalOutputs.insert(tensor);
-        }
-      }
-    }
-  }
-
-  float copyCost = 0.0f;
-  for (auto t : externalInputs) {
-    // again, we make the cost scale as sqrt(input size)
-    // we take coefficient 1.0f, a value intermediate of getSubgraphValue()
-    // for valuable (like conv) ops and others (like relu)
-    copyCost += 1.0f * std::sqrt(static_cast<float>(t->info.nbytes()));
-  }
-  for (auto t : externalOutputs) {
-    copyCost += 1.0f * std::sqrt(static_cast<float>(t->info.nbytes()));
-  }
-
-  sumValues -= copyCost;
-  return sumValues;
-}
 
 std::vector<int64_t> getBoundariesCrossed(int64_t start,
                                           int64_t end,
@@ -130,79 +63,6 @@ std::vector<int64_t> getBoundariesCrossed(int64_t start,
 }
 
 } // namespace
-
-template <typename T>
-std::vector<Match> pruneForIoSize(const std::vector<Match> &inMatches,
-                                  const std::vector<T *> &schedule) {
-
-  std::map<T *, int> schedule_index;
-  for (int i = 0; i < schedule.size(); ++i) {
-    schedule_index[schedule[i]] = i;
-  }
-
-  // For each match m in inMatches, take either m or some sub-sequence of it
-  std::vector<Match> pruned;
-
-  // inMatches, sorted from shortest to longest
-  std::vector<Match> inMatchesIncreasing = inMatches;
-  std::sort(inMatchesIncreasing.begin(),
-            inMatchesIncreasing.end(),
-            [](const Match &a, const Match &b) { return a.length < b.length; });
-
-  // as we add to "pruned", we keep track of what positions have been outlined
-  std::vector<bool> covered(schedule.size(), false);
-
-  for (auto &m : inMatchesIncreasing) {
-    // initialize best value as full sub-sequence
-    int minStart = m.starts[0];
-    int minEnd   = m.starts[0] + m.length;
-    float minAdjustedValue =
-        getIoAdjustedValue(minStart, minEnd, schedule, schedule_index);
-
-    // consider all sub-sequences of the match, computing the IO adjusted value
-    for (int start = m.starts[0]; start < m.starts[0] + m.length; ++start) {
-      for (int end = start + 1; end <= m.starts[0] + m.length; ++end) {
-
-        // valid start (not overlapping with covered)
-        bool goodStart =
-            (!covered[start] || (start > 0 && !covered[start - 1]));
-
-        // valid end (not overlapping with covered)
-        bool goodEnd =
-            (!covered[end] || (end < schedule.size() - 1 && !covered[end + 1]));
-
-        // we don't need to check for isomorphism, sub-sequences always are iso.
-        if (goodStart && goodEnd) {
-
-          float value =
-              getIoAdjustedValue(start, end, schedule, schedule_index);
-          if (value > minAdjustedValue) {
-            minAdjustedValue = value;
-            minStart         = start;
-            minEnd           = end;
-          }
-        }
-      }
-    }
-
-    std::vector<Start> newStarts(m.starts);
-    for (auto &x : newStarts) {
-      x += minStart - m.starts[0];
-    }
-
-    Match newMatch(newStarts, minEnd - minStart);
-    pruned.push_back(newMatch);
-
-    for (auto s0 : newStarts) {
-      for (int64_t d = 0; d < newMatch.length; ++d) {
-        covered[s0 + d] = true;
-      }
-    }
-  }
-
-  // TODO : T11924 : remove if below global value threshold
-  return pruned;
-}
 
 namespace {
 //  Outlining matches are not supposed to cross certain boundaries:
@@ -267,7 +127,7 @@ std::vector<Match> separateTopLevelMatches(const std::vector<Match> &inMatches,
 }
 } // namespace
 
-} // namespace outline
+} // namespace localoutline
 
 class Match {
 public:
@@ -897,14 +757,16 @@ std::vector<Match> getRinseMatches(const std::vector<Op *> &ops,
   // TODO: T Copy cost pruning can cause crossing matches,
   // and is therefore buggy/broken.
   if (copyCostPruning) {
-    fw_matches = outline::pruneForIoSize(fw_matches, ops);
+    fw_matches = fwtools::subgraph::prune::
+        pruneMatches<Op, popart::outline::IoSubgraphCostModel>(
+            fw_matches, ops, threshold);
   }
   int64_t num_matches_1 = fw_matches.size();
 
   // TODO: Enable this only when aliasZeroCopy is enabled, which requires
   // separation of top-level and non-top-level matches currently.
   if (topLevelSeparation) {
-    fw_matches = outline::separateTopLevelMatches(fw_matches, ops.size());
+    fw_matches = localoutline::separateTopLevelMatches(fw_matches, ops.size());
   }
   int64_t num_matches_2 = fw_matches.size();
 
@@ -982,7 +844,7 @@ bool SubgraphOutline::apply(Graph &graph) const {
   std::vector<Op *> schedule = graph.getOpSchedule({});
 
   // Change schedule to include boundaries that can't be outlined
-  outline::insertBoundariesOps(schedule);
+  localoutline::insertBoundariesOps(schedule);
 
   // Get updated schedule with boundaries
   schedule = graph.getOpSchedule({});

@@ -75,9 +75,6 @@ def test_matmul_serialization_invalid_factor(tmpdir):
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
     opts.enableGroupedMatmuls = False
-    # this threshold is to prevent a group of slices being outlined
-    # until T11924 is performed
-    opts.outlineThreshold = 10.0
 
     pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
 
@@ -127,7 +124,6 @@ def test_matmul_serialization_inference(tmpdir):
         opts = popart.SessionOptions()
         opts.reportOptions = {"showExecutionSteps": "true"}
         opts.enableGroupedMatmuls = False
-        opts.outlineThreshold = 10.0
 
         pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
 
@@ -262,7 +258,6 @@ def test_matmul_serialization_training_1(tmpdir):
         opts = popart.SessionOptions()
         opts.reportOptions = {"showExecutionSteps": "true"}
         opts.enableGroupedMatmuls = False
-        opts.outlineThreshold = 10.0
 
         pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
 
@@ -515,7 +510,6 @@ def test_matmul_serialization_training_2(tmpdir):
         opts = popart.SessionOptions()
         opts.reportOptions = {"showExecutionSteps": "true"}
         opts.enableGroupedMatmuls = False
-        opts.outlineThreshold = 10.0
 
         pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
 
@@ -772,7 +766,6 @@ def test_matmul_serialization_precision(tmpdir):
         opts = popart.SessionOptions()
         opts.reportOptions = {"showExecutionSteps": "true"}
         opts.enableGroupedMatmuls = False
-        opts.outlineThreshold = 10.0
 
         pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
 
