@@ -67,6 +67,7 @@ def test_check_sensible_cycle_counts():
     #     cannot expect exact results due to variability in host communication
 
 
+@tu.requires_ipu
 def test_get_cycle_count_requires_run():
     builder = popart.Builder()
     d0 = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]))
@@ -88,6 +89,7 @@ def test_get_cycle_count_requires_run():
         "Must call run before getCycleCount")
 
 
+@tu.requires_ipu
 def test_get_cycle_count_requires_instrumentation_option():
     builder = popart.Builder()
     d0 = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]))
