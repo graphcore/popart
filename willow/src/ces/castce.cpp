@@ -35,11 +35,12 @@ std::vector<char> tryCastFrom(Tensor *inputTensor,
     return doCast<FROM, float>(inputTensor, outputInfo);
   case DataType::FLOAT16:
     return doCast<FROM, float16_t>(inputTensor, outputInfo);
+  case DataType::UINT32:
+    return doCast<FROM, uint32_t>(inputTensor, outputInfo);
   case DataType::UINT8:
   case DataType::INT8:
   case DataType::UINT16:
   case DataType::INT16:
-  case DataType::UINT32:
   case DataType::UINT64:
   case DataType::BOOL:
   case DataType::BFLOAT16:
@@ -67,11 +68,12 @@ std::vector<char> tryCast(Tensor *inputTensor, const TensorInfo &outputInfo) {
     return tryCastFrom<float>(inputTensor, outputInfo);
   case DataType::FLOAT16:
     return tryCastFrom<float16_t>(inputTensor, outputInfo);
+  case DataType::UINT32:
+    return tryCastFrom<uint32_t>(inputTensor, outputInfo);
   case DataType::UINT8:
   case DataType::INT8:
   case DataType::UINT16:
   case DataType::INT16:
-  case DataType::UINT32:
   case DataType::UINT64:
   case DataType::BOOL:
   case DataType::BFLOAT16:

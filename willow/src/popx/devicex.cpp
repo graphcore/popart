@@ -1343,6 +1343,10 @@ PriTask Devicex::setInitTensorValTask(Tensor *tensor) {
       setInitVal<bool>(tensor);
       break;
     }
+    case DataType::UINT32: {
+      setInitVal<uint32_t>(tensor);
+      break;
+    }
 
     case DataType::UNDEFINED:
     case DataType::UINT8:
@@ -1352,7 +1356,6 @@ PriTask Devicex::setInitTensorValTask(Tensor *tensor) {
     case DataType::INT16:
     case DataType::STRING:
     case DataType::DOUBLE:
-    case DataType::UINT32:
     case DataType::UINT64:
     case DataType::COMPLEX64:
     case DataType::COMPLEX128:

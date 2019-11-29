@@ -111,6 +111,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_AddCastMatMul) {
 template <typename T> std::string getTypeName();
 
 template <> std::string getTypeName<int32_t>() { return "INT32"; }
+template <> std::string getTypeName<uint32_t>() { return "UINT32"; }
 template <> std::string getTypeName<float>() { return "FLOAT"; }
 template <> std::string getTypeName<float16_t>() { return "FLOAT16"; }
 
@@ -212,4 +213,6 @@ template <typename FROM, typename TO> void ConstExprTest_AddCastMatMul_Type() {
 BOOST_AUTO_TEST_CASE(ConstExprTest_AddCastMatMul_Types) {
   ConstExprTest_AddCastMatMul_Type<int32_t, float_t>();
   ConstExprTest_AddCastMatMul_Type<int32_t, float16_t>();
+  ConstExprTest_AddCastMatMul_Type<uint32_t, float_t>();
+  ConstExprTest_AddCastMatMul_Type<uint32_t, float16_t>();
 }

@@ -239,8 +239,7 @@ void BuilderImpl::populateTensorProtoFromConstVoidData(
   case DataType::INT8:
   case DataType::UINT16:
   case DataType::INT16:
-  case DataType::INT32:
-  case DataType::UINT32: {
+  case DataType::INT32: {
     auto src = static_cast<const int32_t *>(initData.data);
     auto dst = tp->mutable_int32_data();
     dst->Resize(element_count, 0);
@@ -268,11 +267,17 @@ void BuilderImpl::populateTensorProtoFromConstVoidData(
     memcpy(dst->mutable_data(), src, initData.info.nbytes());
     break;
   }
-
+  case DataType::UINT32:
+  case DataType::UINT64: {
+    auto src = static_cast<const uint64_t *>(initData.data);
+    auto dst = tp->mutable_uint64_data();
+    dst->Resize(element_count, 0);
+    memcpy(dst->mutable_data(), src, initData.info.nbytes());
+    break;
+  }
   case DataType::UNDEFINED:
   case DataType::STRING:
   case DataType::DOUBLE:
-  case DataType::UINT64:
   case DataType::COMPLEX64:
   case DataType::COMPLEX128:
   case DataType::BFLOAT16:
