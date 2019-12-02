@@ -291,7 +291,13 @@ int64_t TensorInfo::nbytes() const {
   return nelms() * static_cast<int64_t>(dataTypeInfo->nbytes());
 }
 
-int64_t TensorInfo::dim(int i) const { return shape_v[i]; }
+int64_t TensorInfo::dim(int i) const {
+  if (i >= shape_v.size()) {
+    throw error(
+        "Invalid input dimension {}, tensor of rank {}", i, shape_v.size());
+  }
+  return shape_v[i];
+}
 
 DataType TensorInfo::dataType() const { return dataTypeInfo->type(); }
 
