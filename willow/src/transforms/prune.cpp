@@ -26,6 +26,14 @@ bool Prune::apply(Graph &graph) const {
   // is the set which is returned
   std::set<Op *> required = ir.getTrainTargetOps();
 
+  // Find all ops which are not marked as pruneable and add those to required.
+  for (auto &id_op : graph.getOps()) {
+    auto op = id_op.second.get();
+    if (!op->pruneable) {
+      required.insert(op);
+    }
+  }
+
   // as we work backwards, we keep a
   // "front" of tensors,
   std::vector<Tensor *> tensorFront;

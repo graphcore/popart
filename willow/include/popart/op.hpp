@@ -73,6 +73,8 @@ public:
   //   three-part identifier.
   OperatorIdentifier opid;
 
+  bool pruneable = true;
+
   struct Settings {
 
     Settings(Graph &graph_, const std::string &name_)
