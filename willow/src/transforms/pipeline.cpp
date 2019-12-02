@@ -594,6 +594,22 @@ TensorId createStashableRandomSeed(GetRandomSeedOp *randomSeedOp) {
   return randomSeedClone->id;
 }
 
+bool containsSeedTensor(std::vector<TensorId> ids) {
+  bool containsSeedFromHost =
+      std::find(ids.begin(),
+                ids.end(),
+                GetRandomSeedOp::getStreamedSeedTensorId()) != ids.end();
+  bool containsUpdatedSeed =
+      std::find(ids.begin(),
+                ids.end(),
+                GetRandomSeedOp::getUpdatedSeedTensorId()) != ids.end();
+
+  if (containsSeedFromHost || containsUpdatedSeed) {
+    return true;
+  }
+  return false;
+}
+
 } // namespace
 
 bool Pipeline::apply(Graph &graph) const {
@@ -734,7 +750,7 @@ bool Pipeline::apply(Graph &graph) const {
   std::vector<TensorId> toStashCandidateTensors =
       getStashCandidateTensors(graph);
 
-  if (ir.requiresRandomSeed()) {
+  if (ir.requiresRandomSeed() && containsSeedTensor(toStashCandidateTensors)) {
     // Neither the input or the output of a GetRandomSeedOp should be stashed.
     auto getRandomSeedOp = findGetRandomSeedOp(graph);
     boost::remove_erase(toStashCandidateTensors, getRandomSeedOp->inId(0));
