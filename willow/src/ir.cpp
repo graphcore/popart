@@ -1720,8 +1720,10 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
     {
       // inputs to gradOp (to populate in this scope):
       std::map<int, std::string> m_inputs;
-      auto nonGradOptionalInputs = nonGradOp->optionalInputs();
-      auto gradOpOptionalInputs  = gradOp->optionalInputs();
+      auto isInputOptional = [](Op *op, InIndex i) {
+        auto optionalInputs = op->optionalInputs();
+        return optionalInputs.find(i) != optionalInputs.end();
+      };
       for (auto &inOutMapper : gradOp->gradInputInfo()) {
 
         int indexGrad     = inOutMapper.iGrad;
@@ -1734,9 +1736,8 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
         case GradOpInType::IN: {
           if (nonGradOp->input->hasIndex(indexFwd)) {
             m_inputs[indexGrad] = nonGradOp->input->tensor(indexFwd)->id;
-          } else if (nonGradOptionalInputs.find(indexFwd) ==
-                     nonGradOptionalInputs.end()) {
-            m_inputs[indexGrad] = emptyTensorId;
+          } else if (isInputOptional(nonGradOp, indexFwd)) {
+            m_inputs[indexGrad] = TensorId();
           } else {
             throw error(
                 "Invalid configuration of gradOp {}. nonGradOp ({}) INPUT {} "
@@ -1778,9 +1779,8 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
                                                    gradOp->getScope())) {
             m_inputs[indexGrad] = gradTensorId;
           } else {
-            if (gradOpOptionalInputs.find(indexGrad) !=
-                gradOpOptionalInputs.end()) {
-              m_inputs[indexGrad] = emptyTensorId;
+            if (isInputOptional(gradOp, indexGrad)) {
+              m_inputs[indexGrad] = TensorId();
             } else {
               throw error("No gradient for non-grad-op {} at index {}, but "
                           "input {} is not marked as optional on grad-op {}. "
@@ -1809,7 +1809,7 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
         int nonGradIn = out_in.second;
 
         if (v_outputs.size() < gradOut + 1) {
-          v_outputs.resize(gradOut + 1, emptyTensorId);
+          v_outputs.resize(gradOut + 1, TensorId());
         }
 
         if (nonGradOp->input->hasIndex(nonGradIn)) {

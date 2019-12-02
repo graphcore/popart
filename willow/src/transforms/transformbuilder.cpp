@@ -93,6 +93,43 @@ void TransformBuilder::opWithOutput(
   graph.moveIntoGraph(std::move(op));
 }
 
+std::vector<TensorId>
+TransformBuilder::multiOutputOp(const OperatorIdentifier &_opid,
+                                std::vector<TensorId> &inputs,
+                                OutIndex numberOfOutputs,
+                                std::map<std::string, boost::any> attributes,
+                                boost::optional<int64_t> virtualGraphId,
+                                boost::optional<int64_t> pipelineStage,
+                                boost::optional<PingPongPhase> pingPongPhase,
+                                const std::string opName) {
+
+  auto op = createOp(_opid, attributes, opName);
+
+  if (op == nullptr) {
+    throw error("Failed to create op : {} in the transform builder", _opid);
+  }
+
+  for (int i = 0; i < inputs.size(); ++i) {
+    op->connectInTensor(i, inputs[i]);
+  }
+  std::vector<TensorId> result;
+  for (OutIndex i = 0; i < numberOfOutputs; i++) {
+    op->createAndConnectOutTensor(i, createIntermediateTensorId(inputs.at(0)));
+    result.push_back(op->outId(i));
+  }
+
+  if (virtualGraphId) {
+    op->setVirtualGraphId(*virtualGraphId);
+  }
+  op->setPipelineStage(pipelineStage);
+  op->setPingPongPhase(pingPongPhase);
+
+  op->setup();
+  graph.moveIntoGraph(std::move(op));
+
+  return result;
+}
+
 TransformBuilder::TransformBuilder(Graph &graph_) : graph(graph_) {}
 
 TensorId TransformBuilder::getNextId(const std::string &name, OutIndex n) {
@@ -505,6 +542,60 @@ TransformBuilder::reducesum(TensorId in,
             pingPongPhase,
             opName,
             outputName);
+}
+
+std::vector<TensorId>
+TransformBuilder::split(TensorId in,
+                        int64_t axis,
+                        std::vector<int64_t> splitSizes,
+                        boost::optional<int64_t> virtualGraphId,
+                        boost::optional<int64_t> pipelineStage,
+                        boost::optional<PingPongPhase> pingPongPhase,
+                        const std::string opName) {
+
+  std::vector<TensorId> inputs = {in};
+  return multiOutputOp(Onnx::Operators::Split_11,
+                       inputs,
+                       splitSizes.size(),
+                       {{"axis", axis}, {"split", splitSizes}},
+                       virtualGraphId,
+                       pipelineStage,
+                       pingPongPhase,
+                       opName);
+}
+
+TensorId TransformBuilder::add(std::vector<TensorId> &inputs,
+                               boost::optional<int64_t> virtualGraphId,
+                               boost::optional<int64_t> pipelineStage,
+                               boost::optional<PingPongPhase> pingPongPhase,
+                               const std::string opName,
+                               const std::string outputName) {
+  return op(Onnx::Operators::Add_7,
+            inputs,
+            {},
+            virtualGraphId,
+            pipelineStage,
+            pingPongPhase,
+            opName,
+            outputName);
+}
+
+void TransformBuilder::unsqueeze(TensorId in,
+                                 std::vector<int64_t> axes,
+                                 TensorId out,
+                                 boost::optional<int64_t> virtualGraphId,
+                                 boost::optional<int64_t> pipelineStage,
+                                 boost::optional<PingPongPhase> pingPongPhase,
+                                 const std::string opName) {
+  std::vector<TensorId> inputs = {in};
+  return opWithOutput(Onnx::Operators::Unsqueeze_11,
+                      inputs,
+                      {{"axes", axes}},
+                      out,
+                      virtualGraphId,
+                      pipelineStage,
+                      pingPongPhase,
+                      opName);
 }
 
 Op *TransformBuilder::getProducer(TensorId id) {

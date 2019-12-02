@@ -1,6 +1,7 @@
 import numpy as np
 import popart
 import torch
+import json
 from op_tester import op_tester
 
 from pathlib import Path
@@ -40,6 +41,86 @@ def test_lstm(op_tester):
         return [Y, Y_h, Y_c]
 
     op_tester.run(init_builder, reference, 'infer')
+
+
+# Check the conversion from onnx lstm to popart lstm works.
+def test_lstm_popart(op_tester):
+    d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],
+                   [[7., 8., 9.], [10., 11., 12.]]]).astype(np.float32)
+
+    input_size = d1.shape[2]
+    hidden_size = 7
+
+    d2 = np.random.rand(1, 4 * hidden_size, input_size).astype(np.float32)
+    d3 = np.zeros((1, 4 * hidden_size, hidden_size)).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        i2 = builder.addInitializedInputTensor(d2)
+        i3 = builder.addInitializedInputTensor(d3)
+        Y, Y_h, Y_c = builder.aiOnnx.lstm([i1, i2, i3], 3, clip=None)
+        builder.addOutputTensor(Y)
+        return [Y, Y_h, Y_c]
+
+    def reference(ref_data):
+        lstm = LSTM_Helper(X=d1, W=d2, R=d3)
+        Y, Y_h, Y_c = lstm.step()
+
+        return [Y, Y_h, Y_c]
+
+    op_tester.passes = ['LSTMOp', 'SplitGradOpToConcat']
+    session = op_tester.run(init_builder, reference, 'train')
+
+    ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
+    graph = ir['maingraph']
+
+    # There should be one lstm and it should be the aigraphcore lstm
+    lstms = [op for op in graph if op['type'] == 'LSTM']
+    assert len(lstms) == 1
+    assert lstms[0]['domain'] == 'ai.graphcore'
+
+
+def test_lstm_outlining(op_tester):
+    d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],
+                   [[7., 8., 9.], [10., 11., 12.]]]).astype(np.float32)
+
+    input_size = d1.shape[2]
+    hidden_size = 3
+
+    d2 = np.random.rand(1, 4 * hidden_size, input_size).astype(np.float32)
+    d3 = np.zeros((1, 4 * hidden_size, hidden_size)).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        i2 = builder.addInitializedInputTensor(d2)
+        i3 = builder.addInitializedInputTensor(d3)
+        x = i1
+        for i in range(4):
+            Y, Y_h, Y_c = builder.aiOnnx.lstm([x, i2, i3], 3, clip=None)
+            x = builder.aiOnnx.squeeze([Y])
+        Y = builder.aiOnnx.identity([Y])
+        builder.addOutputTensor(Y)
+        return [Y]
+
+    def reference(ref_data):
+        return [None]
+
+    op_tester.passes = ['LSTMOp', 'SplitGradOpToConcat']
+    session = op_tester.run(init_builder, reference, 'train')
+
+    ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
+    main_graph = ir['maingraph']
+
+    # There should be no lstms left in the main graph
+    main_graph_lstms = [op for op in main_graph if op['type'] == 'LSTM']
+    assert len(main_graph_lstms) == 0
+
+    # There should be one lstm left in the whole model
+    lstms = []
+    for graph in ir.values():
+        x = [op for op in graph if op['type'] == 'LSTM']
+        lstms.extend(x)
+    assert len(lstms) == 1
 
 
 # Check the output of the onnx lstm vs the popart lstm.

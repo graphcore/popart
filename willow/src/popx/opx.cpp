@@ -95,6 +95,12 @@ void Opx::insert(TensorId id, const poplar::Tensor &tensor) const {
 TensorId Opx::inId(InIndex index) const { return op_p->input->id(index); }
 TensorId Opx::outId(OutIndex index) const { return op_p->output->id(index); }
 
+bool Opx::hasInput(InIndex index) const { return op_p->input->hasIndex(index); }
+
+bool Opx::hasOutput(OutIndex index) const {
+  return op_p->output->hasIndex(index);
+}
+
 const poplar::Tensor &Opx::getInTensor(InIndex index) const {
   if (!cachedInputs.empty()) {
     return cachedInputs[index];

@@ -146,7 +146,7 @@ void Graph::connectInputs(const T &inContainer, OpId opId) {
   auto optionalInputs = op->optionalInputs();
   for (int inIndex = 0; inIndex < inContainer.input_size(); ++inIndex) {
     auto &inName = inContainer.input(inIndex);
-    if (inName == emptyTensorId) {
+    if (inName == TensorId()) {
       if (optionalInputs.find(inIndex) == optionalInputs.end()) {
         throw error(
             "No input found for input {} of {}, but input is not optional",
@@ -167,7 +167,7 @@ template <typename T>
 void Graph::connectOutputs(const T &outContainer, OpId opId) {
   for (int outIndex = 0; outIndex < outContainer.output_size(); ++outIndex) {
     auto &outName = outContainer.output(outIndex);
-    if (outName == emptyTensorId) {
+    if (outName == TensorId()) {
       // no output at this position
     } else {
       // ONNX specifies that a tensor is the output of at most 1 node.

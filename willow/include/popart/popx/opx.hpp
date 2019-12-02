@@ -174,6 +174,9 @@ public:
   // The Devicex to which this Opx belongs
   Devicex *dv_p;
 
+  bool hasInput(InIndex) const;
+  bool hasOutput(OutIndex) const;
+
   const poplar::Tensor &getInTensor(InIndex index) const;
 
   void setOutTensor(OutIndex index, const poplar::Tensor &tensor) const;

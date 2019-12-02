@@ -270,9 +270,11 @@ void PopartLSTMOp::setup() {
   if (hasBiasesInput()) {
     verifyShape(getBiasesInIndex(), {4, getHiddenSize()}, "bias");
   }
-  verifyShape(getInitialStateInIndex(),
-              {2, getBatchSize(), getHiddenSize()},
-              "initialState");
+  if (input->hasIndex(getInitialStateInIndex())) {
+    verifyShape(getInitialStateInIndex(),
+                {2, getBatchSize(), getHiddenSize()},
+                "initialState");
+  }
 
   auto dtype = inInfo(getInputInIndex()).dataType();
 
@@ -302,7 +304,7 @@ bool PopartLSTMOp::hasBiasesInput() const {
 }
 
 std::set<InIndex> PopartLSTMOp::optionalInputs() const {
-  return {getBiasesInIndex()};
+  return {getBiasesInIndex(), getInitialStateInIndex()};
 }
 
 int64_t PopartLSTMOp::getSeqLength() const {
@@ -335,14 +337,18 @@ void PopartLSTMGradOp::setup() {
   if (input->hasIndex(getBiasesInIndex())) {
     outInfo(getBiasesOutIndex()) = inInfo(getBiasesInIndex());
   }
+  if (input->hasIndex(getInitialStateInIndex())) {
+    outInfo(getInitialStateOutIndex()) = inInfo(getInitialStateInIndex());
+  }
 
-  outInfo(getInputOutIndex())        = inInfo(getInputInIndex());
-  outInfo(getWeightsOutIndex())      = inInfo(getWeightsInIndex());
-  outInfo(getInitialStateOutIndex()) = inInfo(getInitialStateInIndex());
+  outInfo(getInputOutIndex())   = inInfo(getInputInIndex());
+  outInfo(getWeightsOutIndex()) = inInfo(getWeightsInIndex());
 }
 
 std::set<InIndex> PopartLSTMGradOp::optionalInputs() const {
-  return {getBiasesInIndex(), getFwdCellStateGradInIndex()};
+  return {getBiasesInIndex(),
+          getInitialStateInIndex(),
+          getFwdCellStateGradInIndex()};
 }
 
 int64_t PopartLSTMGradOp::getInputSize() const {

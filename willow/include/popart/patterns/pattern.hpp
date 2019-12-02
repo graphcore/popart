@@ -44,7 +44,8 @@ enum class PreAliasPatternType {
   MATMULOP,
   MATMULLHSGRADOP,
   MATMULRHSGRADOP,
-  SGD1DECOMPOSE
+  SGD1DECOMPOSE,
+  LSTMOP
 };
 
 // Definition: A tensor is "touched" by a Pattern if

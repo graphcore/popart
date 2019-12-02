@@ -137,7 +137,6 @@ static constexpr const char *sSerializeMatMulMode_InputChannels =
 static constexpr const char *sSerializeMatMulMode_ReducingDim = "reducing_dim";
 static constexpr const char *sSerializeMatMulMode_OutputChannels =
     "output_channels";
-static constexpr const char *emptyTensorId = "";
 
 } // namespace popart
 

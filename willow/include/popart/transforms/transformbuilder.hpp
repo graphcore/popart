@@ -32,6 +32,16 @@ class TransformBuilder {
                     boost::optional<PingPongPhase>,
                     const std::string debugPrefix);
 
+  std::vector<TensorId>
+  multiOutputOp(const OperatorIdentifier &_opid,
+                std::vector<TensorId> &inputs,
+                OutIndex numberOfOutputs,
+                std::map<std::string, boost::any> attributes,
+                boost::optional<int64_t> virtualGraphId,
+                boost::optional<int64_t> pipelineStage,
+                boost::optional<PingPongPhase>,
+                const std::string opName);
+
 public:
   TransformBuilder(Graph &graph_);
 
@@ -200,6 +210,29 @@ public:
                      boost::optional<PingPongPhase>,
                      const std::string opName,
                      const std::string outputName);
+
+  std::vector<TensorId> split(TensorId in,
+                              int64_t axis,
+                              std::vector<int64_t> splitSizes,
+                              boost::optional<int64_t> virtualGraphId,
+                              boost::optional<int64_t> pipelineStage,
+                              boost::optional<PingPongPhase>,
+                              const std::string opName);
+
+  TensorId add(std::vector<TensorId> &inputs,
+               boost::optional<int64_t> virtualGraphId,
+               boost::optional<int64_t> pipelineStage,
+               boost::optional<PingPongPhase>,
+               const std::string opName,
+               const std::string outputName);
+
+  void unsqueeze(TensorId in,
+                 std::vector<int64_t> axes,
+                 TensorId out,
+                 boost::optional<int64_t> virtualGraphId,
+                 boost::optional<int64_t> pipelineStage,
+                 boost::optional<PingPongPhase>,
+                 const std::string opName);
 };
 
 } // namespace popart
