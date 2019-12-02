@@ -896,7 +896,11 @@ std::pair<TaskId, DependencyType> Devicex::taskWhichCreates(TensorId id) {
     Op *producer = tensor->getProducer();
     auto outIdx  = producer->output->indicesMap().at(tensor).front();
     for (auto &entry : producer->input->indicesMap()) {
-      auto inIdx       = entry.second.front();
+      auto inIdx = entry.second.front();
+      logging::trace("Checking if {} aliases input {} to output {}",
+                     producer->debugName(),
+                     inIdx,
+                     outIdx);
       view::Regions rs = producer->aliases(inIdx, outIdx);
       if (rs.size() == 1 &&
           rs.front() == view::Region::getFull(tensor->info.shape()) &&
@@ -1679,12 +1683,18 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
   for (auto t_inds : op->input->indicesMap()) {
     Tensor *tensor = t_inds.first;
 
-    std::pair<TaskId, DependencyType> creatorTask = {
-        taskWhichPopulates(tensor->id), DependencyType::OUTPUT};
+    std::pair<TaskId, DependencyType> creatorTask =
+        taskWhichCreates(tensor->id);
+
+    std::pair<TaskId, DependencyType> populatorTask = {
+        taskWhichPopulates(tensor->id), DependencyType::SCHEDULER};
 
     // Make sure we only add the creatorTask once in the dependency list
     if (std::find(deps.begin(), deps.end(), creatorTask) == deps.end()) {
       deps.push_back(creatorTask);
+    }
+    if (std::find(deps.begin(), deps.end(), populatorTask) == deps.end()) {
+      deps.push_back(populatorTask);
     }
   }
 
@@ -1818,8 +1828,7 @@ void Devicex::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
                               op->debugName());
 
       growOpx(opx, progs.recomputeFragment(op->id));
-      seqs[&progs.recomputeFragment(op->id)].add(
-          progs.recomputeFragment(op->id));
+      seqs[&progs.forwardFragment()].add(progs.recomputeFragment(op->id));
     }
 
     // Pre-loss, not recompute or checkpoint
@@ -2522,11 +2531,12 @@ void Devicex::prepare() {
                           "SCHEDULER dependencies.");
   for (auto &task : tasks.getLinearised(
            {DependencyType::OUTPUT, DependencyType::SCHEDULER})) {
+    logging::devicex::trace("Adding sequences for task {}", task.name);
     for (auto seq : seqs[task.name]) {
       // Emplace intermediate sequence in final sequence
       seq.first->add(seq.second);
+      logging::trace("  Target sequence: {}", seq.first);
     }
-    logging::devicex::trace("Adding sequences for task {}", task.name);
     taskOrder.push_back(task.name);
   }
 
