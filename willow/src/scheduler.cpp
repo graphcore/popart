@@ -257,7 +257,7 @@ Scheduler::getPartialOpSchedule(const OpsBeforeKey &gCons,
     if (respectPingPongPhases && op->getOptionalPingPongPhase()) {
       auto phase = op->getOptionalPingPongPhase().get();
       ++nPhaseOps[phase];
-      logging::trace("[Scheduler] Op {}, phase {}", op->debugName(), phase);
+      logging::ir::trace("[scheduler] Op {}, phase {}", op->debugName(), phase);
     }
   }
 
@@ -293,13 +293,13 @@ Scheduler::getPartialOpSchedule(const OpsBeforeKey &gCons,
     // we first check the existing constraints on "after"
     for (Op *before : graph.topoCons->getBefores(after)) {
       if (before == after) {
-        throw error("[Scheduler] Op {} cannot appear before itself",
+        throw error("[scheduler] Op {} cannot appear before itself",
                     before->debugName());
       }
       if (!registered(before, after)) {
-        logging::trace("[Scheduler] Op {} topologically before {}",
-                       before->debugName(),
-                       after->debugName());
+        logging::ir::trace("[scheduler] Op {} topologically before {}",
+                           before->debugName(),
+                           after->debugName());
         opsAfterKey[before].push_back(after);
         ++nBeforeKey[after];
       }
@@ -310,8 +310,8 @@ Scheduler::getPartialOpSchedule(const OpsBeforeKey &gCons,
     if (found != gCons.end()) {
       for (auto before : found->second) {
         if (!registered(before, after)) {
-          logging::trace(
-              "[Scheduler] {} topologically before {} (user defined)",
+          logging::ir::trace(
+              "[scheduler] {} topologically before {} (user defined)",
               before->debugName(),
               after->debugName());
           opsAfterKey[before].push_back(after);
@@ -381,8 +381,8 @@ Scheduler::getPartialOpSchedule(const OpsBeforeKey &gCons,
     }
 
     auto op = opsToProcess.top();
-    // logging::trace(
-    //    "[Scheduler] Scheduling {}, VGID: {}, PingPong phase: {}",
+    // logging::ir::trace(
+    //    "[scheduler] Scheduling {}, VGID: {}, PingPong phase: {}",
     //    op->debugName(),
     //    op->hasVirtualGraphId() ? op->getVirtualGraphId() : -1,
     //    op->getOptionalPingPongPhase() ?
@@ -425,14 +425,15 @@ Scheduler::getPartialOpSchedule(const OpsBeforeKey &gCons,
           opDebugNames.insert(afterOp->debugName());
         }
 
-        logging::debug("[Scheduler] Failed to schedule {}, "
-                       "nIndicesAwaiting: {}, nBeforeKey: {}, opsAfterKey: {}, "
-                       "nPhaseOpsBefore: {}",
-                       op.second->debugName(),
-                       nIndicesAwaiting[op.second.get()],
-                       nBeforeKey.at(op.second.get()),
-                       opDebugNames,
-                       nPhaseOpsBefore);
+        logging::ir::debug(
+            "[scheduler] Failed to schedule {}, "
+            "nIndicesAwaiting: {}, nBeforeKey: {}, opsAfterKey: {}, "
+            "nPhaseOpsBefore: {}",
+            op.second->debugName(),
+            nIndicesAwaiting[op.second.get()],
+            nBeforeKey.at(op.second.get()),
+            opDebugNames,
+            nPhaseOpsBefore);
       }
     }
   }

@@ -49,6 +49,8 @@ public:
   virtual poplar::Tensor unwind(poplar::Tensor)                          = 0;
   virtual std::vector<popart::view::Region> unwind(popart::view::Region) = 0;
   virtual std::vector<popart::view::Region> unwind()                     = 0;
+
+  static bool greaterThan(ICreatorCandidatePtr, ICreatorCandidatePtr);
 };
 
 class InputCreatorCandidate : public ICreatorCandidate {

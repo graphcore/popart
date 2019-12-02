@@ -1102,7 +1102,8 @@ ICreatorCandidatePtr Devicex::getTensorCreator(Tensor *tensor) const {
       "{} creator candidate(s) for {}", candidates.size(), tensor->id);
 
   if (candidates.size() > 0) {
-    std::sort(candidates.begin(), candidates.end(), hasSmallerPriority);
+    std::sort(
+        candidates.begin(), candidates.end(), ICreatorCandidate::greaterThan);
 
     if (candidates.front()->getNumElems() == tensor->info.nelms()) {
       logging::trace("Candidate {} creates tensor alone.",

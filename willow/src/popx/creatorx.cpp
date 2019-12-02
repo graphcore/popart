@@ -46,25 +46,25 @@ poplar::Tensor compose(
   std::vector<std::pair<view::Region, poplar::Tensor>> currentTensorRegions =
       tensorRegions;
 
-  logging::trace("[creatorx] Full region {} {}",
-                 fullRegion.getLower(),
-                 fullRegion.getUpper());
+  logging::devicex::trace("[creatorx] Full region {} {}",
+                          fullRegion.getLower(),
+                          fullRegion.getUpper());
 
   view::Regions regions;
   for (auto &tensorRegion : tensorRegions) {
     regions.push_back(tensorRegion.first);
-    logging::trace("[creatorx] Tensor region {} {}",
-                   regions.back().getLower(),
-                   regions.back().getUpper());
+    logging::devicex::trace("[creatorx] Tensor region {} {}",
+                            regions.back().getLower(),
+                            regions.back().getUpper());
   }
 
   // Regions for which a linear mapping is chosen
   view::Regions linearRegions = fullRegion.sub(regions);
 
   for (view::Region region : linearRegions) {
-    logging::trace("[creatorx] Adding linear region {} {}",
-                   region.getLower(),
-                   region.getUpper());
+    logging::devicex::trace("[creatorx] Adding linear region {} {}",
+                            region.getLower(),
+                            region.getUpper());
     currentTensorRegions.emplace_back(region, fullTensor);
   }
 
@@ -147,6 +147,14 @@ poplar::Tensor compose(
 
 ICreatorCandidate::ICreatorCandidate() {}
 
+bool ICreatorCandidate::greaterThan(ICreatorCandidatePtr icc1,
+                                    ICreatorCandidatePtr icc2) {
+  return std::tuple<double, int64_t>(icc1->getMaxCreatorPriority(),
+                                     icc1->getNumElems()) >
+         std::tuple<double, int64_t>(icc2->getMaxCreatorPriority(),
+                                     icc2->getNumElems());
+};
+
 InputCreatorCandidate::InputCreatorCandidate(
     int index_,
     const Opx *opx_,
@@ -203,8 +211,8 @@ poplar::Tensor InputCreatorCandidate::unwind(poplar::Tensor input) {
   view::Regions inRegions;
 
   for (auto &opxOnPath : pathToInput) {
-    logging::trace("[creatorx] Unwinding at {}",
-                   opxOnPath.opx->getOp<Op>().debugName());
+    logging::devicex::trace("[creatorx] Unwinding at {}",
+                            opxOnPath.opx->getOp<Op>().debugName());
 
     for (auto outRegion : outRegions) {
       auto rs = opxOnPath.opx->unwindRegion(opxOnPath.inIndex,
@@ -219,7 +227,7 @@ poplar::Tensor InputCreatorCandidate::unwind(poplar::Tensor input) {
                              ->info.shape();
     auto fullRegion = view::Region::getFull(expectedShape);
 
-    logging::trace("[creatorx] Expected shape {}", expectedShape);
+    logging::devicex::trace("[creatorx] Expected shape {}", expectedShape);
 
     auto outInfo = opxOnPath.opx->getOp<Op>().outInfo(opxOnPath.outIndex);
 
@@ -229,7 +237,8 @@ poplar::Tensor InputCreatorCandidate::unwind(poplar::Tensor input) {
     // Map it linearly
     poputil::mapTensorLinearly(opxOnPath.opx->graph(), fullTensor);
 
-    logging::trace("[creatorx] Tensor shape before compose: {}", input.shape());
+    logging::devicex::trace("[creatorx] Tensor shape before compose: {}",
+                            input.shape());
 
     std::vector<std::pair<view::Region, poplar::Tensor>> tensorRegions;
     tensorRegions.reserve(outRegions.size());
@@ -242,13 +251,15 @@ poplar::Tensor InputCreatorCandidate::unwind(poplar::Tensor input) {
     // from the linearly created fullTensor.
     input = compose(tensorRegions, fullRegion, fullTensor);
 
-    logging::trace("[creatorx] Tensor shape after compose / before unwind: {}",
-                   input.shape());
+    logging::devicex::trace(
+        "[creatorx] Tensor shape after compose / before unwind: {}",
+        input.shape());
 
     input = opxOnPath.opx->unwindTensorLayout(
         input, opxOnPath.inIndex, opxOnPath.outIndex);
 
-    logging::trace("[creatorx] Tensor shape after unwind: {}", input.shape());
+    logging::devicex::trace("[creatorx] Tensor shape after unwind: {}",
+                            input.shape());
 
     outRegions = inRegions;
     inRegions.clear();
@@ -261,7 +272,8 @@ poplar::Tensor InputCreatorCandidate::unwind(poplar::Tensor input) {
                              ->info.shape();
     auto fullRegion = view::Region::getFull(expectedShape);
 
-    logging::trace("[creatorx] Expected final shape {}", expectedShape);
+    logging::devicex::trace("[creatorx] Expected final shape {}",
+                            expectedShape);
 
     auto inInfo =
         pathToInput.back().opx->getOp<Op>().inInfo(pathToInput.back().inIndex);
@@ -272,8 +284,8 @@ poplar::Tensor InputCreatorCandidate::unwind(poplar::Tensor input) {
     // Map it linearly
     poputil::mapTensorLinearly(pathToInput.back().opx->graph(), fullTensor);
 
-    logging::trace("[creatorx] Tensor shape before final compose: {}",
-                   input.shape());
+    logging::devicex::trace("[creatorx] Tensor shape before final compose: {}",
+                            input.shape());
 
     std::vector<std::pair<view::Region, poplar::Tensor>> tensorRegions;
     tensorRegions.reserve(outRegions.size());
@@ -286,8 +298,8 @@ poplar::Tensor InputCreatorCandidate::unwind(poplar::Tensor input) {
     // from the linearly created fullTensor.
     input = compose(tensorRegions, fullRegion, fullTensor);
 
-    logging::trace("[creatorx] Tensor shape after final compose: {}",
-                   input.shape());
+    logging::devicex::trace("[creatorx] Tensor shape after final compose: {}",
+                            input.shape());
   }
 
   return input;
@@ -364,9 +376,9 @@ InputMultiCreatorCandidate::createInput(const std::string &name) {
   for (auto &candidate : candidates) {
     poplar::Tensor tensor = candidate.first->createInput(
         name + "_fragment_" + std::to_string(candidateIdx));
-    logging::trace("Accepted candidate regions: {}, tensor shape: {}",
-                   candidate.second,
-                   tensor.shape());
+    logging::devicex::trace("Accepted candidate regions: {}, tensor shape: {}",
+                            candidate.second,
+                            tensor.shape());
     for (auto acceptedRegion : candidate.second)
       currentTensorRegions.push_back({acceptedRegion, tensor});
     ++candidateIdx;
@@ -439,13 +451,6 @@ InputMultiCreatorCandidate::getPathsFromInput() {
   }
   return paths;
 }
-
-bool hasSmallerPriority(ICreatorCandidatePtr icc1, ICreatorCandidatePtr icc2) {
-  return std::tuple<double, int64_t>(icc1->getMaxCreatorPriority(),
-                                     icc1->getNumElems()) <
-         std::tuple<double, int64_t>(icc2->getMaxCreatorPriority(),
-                                     icc2->getNumElems());
-};
 
 } // namespace popx
 } // namespace popart
