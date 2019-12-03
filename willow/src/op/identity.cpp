@@ -61,7 +61,26 @@ const std::map<int, int> &IdentityGradOp::gradOutToNonGradIn() const {
 }
 
 namespace {
-static OpCreator<IdentityOp> identityOpCreator(Onnx::Operators::Identity_1);
+
+static OpDefinition::DataTypes T = {DataType::UINT8,
+                                    DataType::UINT16,
+                                    DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT8,
+                                    DataType::INT16,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT,
+                                    DataType::BOOL};
+
+// Do we support more types for this?
+static OpDefinition identityOpDef({OpDefinition::Inputs({{"input", T}}),
+                                   OpDefinition::Outputs({{"output", T}}),
+                                   OpDefinition::Attributes({})});
+
+static OpCreator<IdentityOp> identityOpCreator(
+    OpDefinitions({{Onnx::Operators::Identity_1, identityOpDef}}));
 } // namespace
 
 } // namespace popart

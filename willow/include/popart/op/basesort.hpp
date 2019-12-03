@@ -13,7 +13,7 @@ public:
 
   int64_t getAxis() const;
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   static int getInIndex() { return 0; }
 

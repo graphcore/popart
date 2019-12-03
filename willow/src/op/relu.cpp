@@ -75,7 +75,16 @@ const std::map<int, int> &ReluGradOp::gradOutToNonGradIn() const {
 }
 
 namespace {
-static OpCreator<ReluOp> reluOpCreator(Onnx::Operators::Relu_6);
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition reluOpDef({OpDefinition::Inputs({{"X", T}}),
+                               OpDefinition::Outputs({{"Y", T}}),
+                               OpDefinition::Attributes({})});
+
+static OpCreator<ReluOp> reluOpCreator(OpDefinitions({
+    {Onnx::Operators::Relu_6, reluOpDef},
+}));
 } // namespace
 
 } // namespace popart

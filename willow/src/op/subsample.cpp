@@ -12,8 +12,9 @@ namespace popart {
 
 // T9392: There is code duplication across the view changing ops
 
-view::RegMap SubsampleBaseOp::fwdRegMap(InIndex inIndex) const {
-  if (inIndex != 0) {
+view::RegMap SubsampleBaseOp::fwdRegMap(InIndex inIndex,
+                                        OutIndex outIndex) const {
+  if (inIndex != 0 || outIndex != 0) {
     throw error("Internal Logic Error in SubsampleBaseOp::fwdRegMap."
                 "Received input index {} but only 0 allowed, "
                 "This for Op {}, ",
@@ -26,14 +27,15 @@ view::RegMap SubsampleBaseOp::fwdRegMap(InIndex inIndex) const {
   auto emptyRegion = view::Region::getEmpty(outRank(getOutIndex()));
   return [emptyRegion, outRegion](const view::Region &r) {
     if (r.isEmpty()) {
-      return emptyRegion;
+      return view::Regions(1, emptyRegion);
     }
-    return outRegion;
+    return view::Regions(1, outRegion); // TODO: Fine grained
   };
 }
 
-view::RegMap SubsampleBaseOp::bwdRegMap(InIndex inIndex) const {
-  if (inIndex != 0) {
+view::RegMap SubsampleBaseOp::bwdRegMap(InIndex inIndex,
+                                        OutIndex outIndex) const {
+  if (inIndex != 0 || outIndex != 0) {
     throw error("Internal Logic Error in SubsampleBaseOp::bwdRegMap."
                 "Received input index {} but only 0 allowed, "
                 "This for Op {}, ",
@@ -44,9 +46,9 @@ view::RegMap SubsampleBaseOp::bwdRegMap(InIndex inIndex) const {
   auto emptyRegion = view::Region::getEmpty(inRank(getInIndex()));
   return [emptyRegion, inRegion](const view::Region &r) {
     if (r.isEmpty()) {
-      return emptyRegion;
+      return view::Regions(1, emptyRegion);
     }
-    return inRegion;
+    return view::Regions(1, inRegion); // TODO: Fine grained
   };
 }
 
@@ -109,8 +111,8 @@ SubsampleInplaceOp::SubsampleInplaceOp(const SubsampleOp &op)
                       op.getStrides(),
                       op.settings) {}
 
-view::Region SubsampleInplaceOp::aliases(InIndex index) const {
-  return uses(index);
+view::Regions SubsampleInplaceOp::aliases(InIndex in, OutIndex) const {
+  return uses(in);
 }
 
 std::unique_ptr<Op> SubsampleInplaceOp::clone() const {
@@ -134,8 +136,8 @@ SubsampleOp::SubsampleOp(const OperatorIdentifier &_opid,
 // A subsample with all strides being  1 can be replaced by identity
 bool SubsampleBaseOp::canBeReplacedByIdentity() { return strideSizeOne(); }
 
-void SubsampleBaseOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void SubsampleBaseOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("strides", strides);
 }
 
@@ -167,14 +169,22 @@ std::vector<uint32_t> SubsampleGradOp::strides_u32() const {
   return vXtoY<int64_t, uint32_t>(strides);
 }
 
-void SubsampleGradOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void SubsampleGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("strides", strides);
 }
 
 namespace {
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition
+    subsampleOpDef({OpDefinition::Inputs({{"X", T}}),
+                    OpDefinition::Outputs({{"Y", T}}),
+                    OpDefinition::Attributes({{"strides", {"*"}}})});
+
 static OpCreator<SubsampleOp> subsampleOpCreator(
-    Onnx::CustomOperators::Subsample_1,
+    OpDefinitions({{Onnx::CustomOperators::Subsample_1, subsampleOpDef}}),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

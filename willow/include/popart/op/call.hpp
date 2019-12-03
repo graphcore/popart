@@ -14,11 +14,14 @@ public:
   void setup() final;
   std::unique_ptr<Op> clone() const final;
 
-  const Graph &getCalledGraph() const;
+  Graph &getCalledGraph() const;
 
-  void appendAttributes(OpSerialiserBase &os) const override;
+  void appendOutlineAttributes(OpSerialiserBase &os) const override;
 
   bool isInputModified(InIndex);
+
+  view::Regions modifies(InIndex) const override;
+  view::Regions aliases(InIndex, OutIndex) const override;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
@@ -29,8 +32,22 @@ public:
 
   std::vector<TensorId> getInputsForGraph(const Graph &) const override;
 
+  void addAlias(InIndex in,
+                OutIndex out,
+                view::Regions fwdRegions,
+                view::Regions bwdRegions);
+
+  view::RegMap fwdRegMap(InIndex, OutIndex) const final;
+  view::RegMap bwdRegMap(InIndex, OutIndex) const final;
+
 private:
   std::reference_wrapper<Graph> callee;
+  // Regions of Input Tensors (InIndex) are aliased by Output Tensors (OutIndex)
+  std::map<std::pair<InIndex, OutIndex>,
+           std::pair<view::Regions, view::Regions>>
+      aliasMap;
+  std::map<InIndex, bool> inZeroCopy;
+  std::map<OutIndex, bool> outZeroCopy;
 };
 
 } // namespace popart

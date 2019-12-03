@@ -26,8 +26,15 @@ std::unique_ptr<Op> MinArgGradOp::clone() const {
 }
 
 namespace {
-static OpCreator<MinOp> minOpCreator({Onnx::Operators::Min_6,
-                                      Onnx::Operators::Min_8});
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition minOpDef({OpDefinition::Inputs({{"data_0", T}}),
+                              OpDefinition::Outputs({{"min", T}}),
+                              OpDefinition::Attributes({})});
+
+static OpCreator<MinOp> minOpCreator(OpDefinitions(
+    {{Onnx::Operators::Min_6, minOpDef}, {Onnx::Operators::Min_8, minOpDef}}));
 } // namespace
 
 } // namespace popart

@@ -290,6 +290,16 @@ class Attribute:
                             self.name]["deprecated"]
         return False
 
+    def isRequired(self):
+        if self.op.fullName() in overrideOP:
+            if "attributes" in overrideOP[self.op.fullName()]:
+                if self.name in overrideOP[self.op.fullName()]["attributes"]:
+                    if "required" in overrideOP[
+                            self.op.fullName()]["attributes"][self.name]:
+                        return overrideOP[self.op.fullName()]["attributes"][
+                            self.name]["required"]
+        return None
+
 
 class Operation:
     def __init__(self, name, version, support):
@@ -403,7 +413,9 @@ def parseDefinitions():
                     print("- {} {} V:{}={} R:{} D:{}".format(
                         a.name, a.type, a.hasDefaultValue(), a.DefaultValue(),
                         a.required, a.isDeprecated()))
-
+                    if op.fullName() in overrideOP:
+                        if a.isRequired() is not None:
+                            a.required = a.isRequired()
     return schema
 
 

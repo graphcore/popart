@@ -44,13 +44,13 @@ std::vector<std::unique_ptr<Op>> ScaleOp::getGradOps() {
 float ScaleOp::getScaleFactor() const { return scale_factor; }
 float ScaleInplaceOp::getScaleFactor() const { return scale_factor; }
 
-void ScaleOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void ScaleOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("scale", scale_factor);
 }
 
-void ScaleInplaceOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void ScaleInplaceOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("scale", scale_factor);
 }
 
@@ -85,8 +85,16 @@ const std::map<int, int> &ScaleGradOp::gradOutToNonGradIn() const {
 }
 
 namespace {
+
+// Does this support FLOAT16. defs.cc says no
+static OpDefinition::DataTypes T = {DataType::FLOAT};
+
+static OpDefinition scaleOpDef({OpDefinition::Inputs({{"X", T}}),
+                                OpDefinition::Outputs({{"Y", T}}),
+                                OpDefinition::Attributes({{"scale", {"*"}}})});
+
 static OpCreator<ScaleOp> scaleOpCreator(
-    Onnx::CustomOperators::Scale_1,
+    OpDefinitions({{Onnx::CustomOperators::Scale_1, scaleOpDef}}),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

@@ -21,8 +21,18 @@ std::vector<std::unique_ptr<Op>> LogSoftmaxOp::getGradOps() {
 }
 
 namespace {
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition logSoftmaxOpDef({OpDefinition::Inputs({{"input", T}}),
+                                     OpDefinition::Outputs({{"output", T}}),
+                                     OpDefinition::Attributes({
+                                         {"axis", {"*"}},
+                                     })});
+
 static OpCreator<LogSoftmaxOp> logSoftmaxOpCreator(
-    {Onnx::Operators::LogSoftmax_1, Onnx::Operators::LogSoftmax_11},
+    OpDefinitions({{Onnx::Operators::LogSoftmax_1, logSoftmaxOpDef},
+                   {Onnx::Operators::LogSoftmax_11, logSoftmaxOpDef}}),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

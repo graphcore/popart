@@ -9,9 +9,8 @@
 
 namespace popart {
 
-void SGD0VarUpdateOpBase::appendAttributes(OpSerialiserBase &os) const {
-
-  Op::appendAttributes(os);
+void SGD0VarUpdateOpBase::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
 
   if (initSlr0.isConst()) {
     os.appendAttribute("const scaled learning rate", initSlr0.val());
@@ -19,6 +18,17 @@ void SGD0VarUpdateOpBase::appendAttributes(OpSerialiserBase &os) const {
 
   if (initWdsf0.isConst()) {
     os.appendAttribute("const weight decay scale factor", initWdsf0.val());
+  }
+}
+
+float SGD0VarUpdateOp::getSubgraphValue() const {
+  // If we have replicated graphs then outline VaruUdates, if possible
+  // The motivation for this is the (code) cost of inter-IPU copies
+  if (getIr().getSessionOptions().enableReplicatedGraphs ||
+      getIr().getSessionOptions().pingPongPhases > 1) {
+    return getHighSubgraphValue();
+  } else {
+    return getLowSubgraphValue();
   }
 }
 
@@ -41,6 +51,10 @@ std::map<InIndex, TensorId> SGD0VarUpdateOpBase::optimizerInputs() const {
     m.insert({index, inId(index)});
   }
   return m;
+}
+
+std::set<InIndex> SGD0VarUpdateOpBase::optionalInputs() const {
+  return {getSlr0InIndex(), getWdsf0InIndex()};
 }
 
 std::unique_ptr<Op> SGD0VarUpdateOp::cloneWithNewName(const TensorId &x) const {

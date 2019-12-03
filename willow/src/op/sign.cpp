@@ -43,7 +43,25 @@ std::unique_ptr<Op> SignGradOp::clone() const {
 }
 
 namespace {
-static OpCreator<SignOp> absOpCreator({Onnx::Operators::Sign_9});
+
+static OpDefinition::DataTypes T = {DataType::UINT8,
+                                    DataType::UINT16,
+                                    DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT8,
+                                    DataType::INT16,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT};
+
+static OpDefinition signOpDef({OpDefinition::Inputs({{"input", T}}),
+                               OpDefinition::Outputs({{"output", T}}),
+                               OpDefinition::Attributes({})});
+
+static OpCreator<SignOp> signOpCreator(OpDefinitions({
+    {Onnx::Operators::Sign_9, signOpDef},
+}));
 } // namespace
 
 } // namespace popart

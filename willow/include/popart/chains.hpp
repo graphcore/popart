@@ -2,6 +2,7 @@
 #define GUARD_NEURALNET_CHAINS_HPP
 
 #include <memory>
+#include <string>
 #include <vector>
 #include <popart/names.hpp>
 #include <popart/region.hpp>
@@ -20,13 +21,21 @@ public:
   static Link getIdentity(const Region &filter);
 
   Link(const Region &r_filter, const RegMap &r2r_mapper);
-  Region apply(const Region &r) const { return regmap(filter.intersect(r)); }
+  Link(const Region &r_filter,
+       const RegMap &r2r_mapper,
+       const std::string &dbName);
+  Regions apply(const Region &r) const { return regmap(filter.intersect(r)); }
   const Region &getFilter() const { return filter; }
+  bool contains(const Link &rhs) const;
+  void append(std::ostream &) const;
 
 private:
   Region filter;
   RegMap regmap;
+  std::string debugName;
 };
+
+std::ostream &operator<<(std::ostream &, const Link &);
 
 // a sequence of Links
 class Chain {
@@ -35,11 +44,12 @@ public:
   static Chain getIdentity(const Region &);
 
   Chain(const Link &l) { links = {l}; }
-  Region apply(const Region &) const;
+  Regions apply(const Region &) const;
   void append(const Chain &);
-  const std::vector<Link> &getLinks() { return links; }
+  const std::vector<Link> &getLinks() const { return links; }
   // Returns true when apply(a full tensor region) = empty region
   bool untraversable() const;
+  bool contains(const Chain &rhs) const;
 
 private:
   std::vector<Link> links;

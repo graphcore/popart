@@ -45,7 +45,18 @@ void TanhGradOp::setup() {
 }
 
 namespace {
-static OpCreator<TanhOp> tanhOpCreator(Onnx::Operators::Tanh_6);
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition tanhOpDef({OpDefinition::Inputs({
+                                   {"input", T},
+                               }),
+                               OpDefinition::Outputs({{"output", T}}),
+                               OpDefinition::Attributes({})});
+
+static OpCreator<TanhOp> tanhOpCreator(OpDefinitions({
+    {Onnx::Operators::Tanh_6, tanhOpDef},
+}));
 
 } // namespace
 

@@ -220,6 +220,8 @@ public:
   boost::any getAttribute(const std::string &attribute) const;
   bool hasAttribute(const std::string &attribute) const;
   void clearAttribute(const std::string &attribute);
+  bool hasAttribute(const std::string &attribute);
+  boost::any getAttribute(const std::string &attribute);
 
   void pushNameScope(const std::string &name);
   void popNameScope();

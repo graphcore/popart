@@ -66,7 +66,16 @@ const std::map<int, int> &ExpGradOp::gradOutToNonGradIn() const {
 void ExpGradOp::setup() { outInfo(getOutIndex()) = inInfo(getFwdOutInIndex()); }
 
 namespace {
-static OpCreator<ExpOp> expOpCreator(Onnx::Operators::Exp_6);
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition expOpDef({OpDefinition::Inputs({{"input", T}}),
+                              OpDefinition::Outputs({{"output", T}}),
+                              OpDefinition::Attributes({})});
+
+static OpCreator<ExpOp> expOpCreator(OpDefinitions({
+    {Onnx::Operators::Exp_6, expOpDef},
+}));
 } // namespace
 
 } // namespace popart

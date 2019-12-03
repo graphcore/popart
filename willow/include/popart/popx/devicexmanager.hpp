@@ -14,7 +14,9 @@ public:
   DevicexManager();
 
   virtual void
-  enumerate(std::vector<std::shared_ptr<popart::DeviceInfo>> &devices) override;
+  enumerate(std::vector<std::shared_ptr<popart::DeviceInfo>> &devices,
+            SyncPattern syncPattern,
+            uint32_t replication_factor) override;
 
   virtual std::shared_ptr<popart::DeviceInfo>
   createHostDevice(popart::DeviceType type,

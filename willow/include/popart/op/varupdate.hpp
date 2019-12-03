@@ -19,13 +19,12 @@ public:
   // Return (a reference to) the updated Var at this index
   static OutIndex getUpdatedVarOutIndex() { return 0; }
 
-  // This Op aliases and modifies the input at index getVarToUpdateInIndex()
-  view::Region aliases(InIndex) const final;
-  view::Region modifies(InIndex) const final;
+  // This Op aliases and modifies the input at index getVarIndex()
+  view::Regions aliases(InIndex in, OutIndex) const final;
+  view::Regions modifies(InIndex) const final;
 
   const TensorId &getVarId() const { return varId; }
 
-  float getSubgraphValue() const final;
 
   // Return a map of all optimizer specific input Tensors (learning rate, etc)
   virtual std::map<InIndex, TensorId> optimizerInputs() const = 0;

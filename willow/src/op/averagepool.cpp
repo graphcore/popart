@@ -59,8 +59,8 @@ std::vector<std::unique_ptr<Op>> AveragePoolOp::getGradOps() {
   return upops;
 }
 
-void AveragePoolOp::appendAttributes(OpSerialiserBase &os) const {
-  HasReceptiveFieldOp::appendAttributes(os);
+void AveragePoolOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  HasReceptiveFieldOp::appendOutlineAttributes(os);
   os.appendAttribute("kernel_shape", kernelShape);
   os.appendAttribute("count_include_pad", countIncludePad);
   os.appendAttribute("ceil_mode", ceilMode);
@@ -83,8 +83,8 @@ AveragePoolGradOp::AveragePoolGradOp(const AveragePoolOp &op_)
       unpooledInfo(op_.inInfo(AveragePoolOp::getInIndex())),
       cloneOfCreator(op_.clone()) {}
 
-void AveragePoolGradOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void AveragePoolGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendForwardOp(getCloneOfCreator());
 }
 
@@ -123,11 +123,28 @@ std::unique_ptr<Op> AveragePoolGradOp::clone() const {
 }
 
 namespace {
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition
+    averagePoolOpDef({OpDefinition::Inputs({{"X", T}}),
+                      OpDefinition::Outputs({{"Y", T}}),
+                      OpDefinition::Attributes({// Deprecated
+                                                // {"auto_pad", {"*"}},
+                                                // Not currently supported
+                                                // {"ceil_mode", {"*"}},
+                                                // {"count_include_pad", {"*"}},
+                                                {"kernel_shape", {"*"}},
+                                                {"pads", {"*"}},
+                                                {"strides", {"*"}}})});
+
 static OpCreator<AveragePoolOp> averagePoolOpCreator(
-    {Onnx::Operators::AveragePool_1,
-     Onnx::Operators::AveragePool_7,
-     Onnx::Operators::AveragePool_10,
-     Onnx::Operators::AveragePool_11},
+    OpDefinitions({
+        {Onnx::Operators::AveragePool_1, averagePoolOpDef},
+        {Onnx::Operators::AveragePool_7, averagePoolOpDef},
+        {Onnx::Operators::AveragePool_10, averagePoolOpDef},
+        {Onnx::Operators::AveragePool_11, averagePoolOpDef},
+    }),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

@@ -6,18 +6,25 @@
 
 namespace popart {
 
-uint64_t Builder::getPipelineStage() const {
+int64_t Builder::getPipelineStage() const {
   if (!impl_->hasAttribute(sPipelineStageAttribute)) {
     throw popart::error("Pipeline stage not set in current scope.");
   }
-  return boost::any_cast<uint64_t>(getAttribute(sPipelineStageAttribute));
+  return boost::any_cast<int64_t>(getAttribute(sPipelineStageAttribute));
 }
 
-uint64_t Builder::getVirtualGraph() const {
+int64_t Builder::getPingPongPhase() const {
+  if (!impl_->hasAttribute(sPingPongPhaseAttribute)) {
+    throw popart::error("PingPong phase not set in current scope.");
+  }
+  return boost::any_cast<int64_t>(getAttribute(sPingPongPhaseAttribute));
+}
+
+int64_t Builder::getVirtualGraph() const {
   if (!impl_->hasAttribute(sVirtualGraphAttribute)) {
     throw popart::error("Virtual graph not set in current scope.");
   }
-  return boost::any_cast<uint64_t>(getAttribute(sVirtualGraphAttribute));
+  return boost::any_cast<int64_t>(getAttribute(sVirtualGraphAttribute));
 }
 
 class TensorInfo;
@@ -251,6 +258,23 @@ TensorId AiGraphcoreOpset1::scale(const std::vector<TensorId> &args,
       .at(0);
 }
 
+std::vector<TensorId> AiGraphcoreOpset1::lstm(const std::vector<TensorId> &args,
+                                              int64_t outputFullSequence,
+                                              const std::string &name) {
+  return impl->op(Onnx::AiGraphcore::OpSet1::LSTM,
+                  getOpsetVersion(),
+                  args,
+                  {{"output_full_sequence", outputFullSequence}},
+                  name);
+}
+
+TensorId AiGraphcoreOpset1::gelu(const std::vector<TensorId> &args,
+                                 const std::string &name) {
+  return impl
+      ->op(Onnx::AiGraphcore::OpSet1::Gelu, getOpsetVersion(), args, {}, name)
+      .at(0);
+}
+
 std::vector<TensorId>
 Builder::customOp(const OperatorIdentifier &opid,
                   int opsetVersion,
@@ -418,6 +442,14 @@ void Builder::clearAttribute(const std::string &attribute) {
   impl_->clearAttribute(attribute);
 }
 
+bool Builder::hasAttribute(const std::string &attribute) {
+  return impl_->hasAttribute(attribute);
+}
+
+boost::any Builder::getAttribute(const std::string &attribute) {
+  return impl_->getAttribute(attribute);
+}
+
 void Builder::pushNameScope(const std::string &name) {
   impl_->pushNameScope(name);
 }
@@ -462,4 +494,5 @@ void Builder::setAvailableMemoryProportion(
   addNodeAttribute(
       sAvailMemAttribute, availableMemoryProportion, {nodeOutputName});
 }
+
 } // namespace popart

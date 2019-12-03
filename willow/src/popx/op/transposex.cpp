@@ -44,6 +44,12 @@ poplar::Tensor TransposeOpx::unwindTensorLayout(poplar::Tensor tensor,
   return tensor.dimShuffle(reverse_perm);
 }
 
+view::RegMap TransposeOpx::unwindRegion(InIndex inIndex,
+                                        OutIndex outIndex) const {
+  TransposeOp *op = dynamic_cast<TransposeOp *>(this->op_p);
+  return op->bwdRegMap(inIndex, outIndex);
+}
+
 TransposeInplaceOpx::TransposeInplaceOpx(Op *op, Devicex *devicex)
     : Opx(op, devicex) {
   verifyOp<TransposeInplaceOp>(op);
@@ -67,6 +73,12 @@ poplar::Tensor TransposeInplaceOpx::unwindTensorLayout(poplar::Tensor tensor,
   }
 
   return tensor.dimShuffle(reverse_perm);
+}
+
+view::RegMap TransposeInplaceOpx::unwindRegion(InIndex inIndex,
+                                               OutIndex outIndex) const {
+  TransposeInplaceOp *op = dynamic_cast<TransposeInplaceOp *>(this->op_p);
+  return op->bwdRegMap(inIndex, outIndex);
 }
 
 void TransposeInplaceOpx::grow(poplar::program::Sequence &) const {

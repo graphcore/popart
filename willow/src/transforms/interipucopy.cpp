@@ -14,7 +14,7 @@ namespace popart {
 
 namespace {
 
-// This transform may happend when pipelining disabled, in which case it should
+// This transform may happen when pipelining disabled, in which case it should
 // fall back to vgraph id.
 PipelineStage getPipelineStageOrVGraphId(const Op *op) {
   if (op->hasPipelineStage()) {
@@ -214,7 +214,7 @@ bool InterIpuCopy::apply(Graph &graph) const {
 
         // For each consumer op of the tensor
         // but, take a copy of the map as we will be modifying it.
-        std::map<Op *, int> map = t.second->consumers.getMap();
+        std::map<Op *, int, POpCmp> map = t.second->consumers.getMap();
         for (auto &c : map) {
 
           Op *to = c.first;

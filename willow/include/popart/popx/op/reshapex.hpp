@@ -18,6 +18,7 @@ public:
   poplar::Tensor unwindTensorLayout(poplar::Tensor tensor,
                                     InIndex inIndex,
                                     OutIndex outIndex) const final;
+  view::RegMap unwindRegion(InIndex inIndex, OutIndex outIndex) const final;
 };
 
 class ReshapeOpx : public ReshapeBaseOpx {

@@ -29,8 +29,15 @@ std::unique_ptr<Op> ReciprocalGradOp::clone() const {
 }
 
 namespace {
-static OpCreator<ReciprocalOp>
-    receiprocalOpCreator(Onnx::Operators::Reciprocal_6);
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition receiprocalOpDef({OpDefinition::Inputs({{"X", T}}),
+                                      OpDefinition::Outputs({{"Y", T}}),
+                                      OpDefinition::Attributes({})});
+
+static OpCreator<ReciprocalOp> receiprocalOpCreator(
+    OpDefinitions({{Onnx::Operators::Reciprocal_6, receiprocalOpDef}}));
 
 } // namespace
 

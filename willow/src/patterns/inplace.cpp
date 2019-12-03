@@ -2,6 +2,7 @@
 #include <popart/graph.hpp>
 #include <popart/op.hpp>
 #include <popart/patterns/inplace.hpp>
+#include <popart/patterns/patterns.hpp>
 #include <popart/pbwrap.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
@@ -39,7 +40,7 @@ ExternOpTensorBundle::ExternOpTensorBundle(Op *opCopy,
 
 Op *ExternOpTensorBundle::getOp() { return up_op.get(); }
 
-Inplace::Inplace() : Pattern() { initialise("InPlace"); }
+Inplace::Inplace() : Pattern() {}
 
 // what is touched? The output, and all the inputs at the target indices
 std::vector<const Tensor *> Inplace::touches(Op *op, OperatorIdentifier) const {
@@ -136,12 +137,11 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
       if (found == M.end()) {
         M[key] = {};
       }
-      view::Regions &regions = M[key];
+      view::Regions regions = M[key];
       for (auto &region : newRegs) {
-        // TODO : check that region is not
-        // a sub-region of one already in (T7104)
         regions.push_back(region);
       }
+      M[key] = mergeRegions(regions);
     }
   };
 
@@ -180,16 +180,21 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
   for (auto index_tensor : op->input->tensorMap()) {
     InIndex index = index_tensor.first;
     Tensor *t1    = index_tensor.second;
-    view::Link bottleLink(inOp->aliases(index), inOp->fwdRegMap(index));
-    for (auto t0_chsI : tensors.aliasChainsTo(t1)) {
-      auto t0   = t0_chsI.first;
-      auto chsI = t0_chsI.second;
-      for (auto c : t0->consumers.getOps()) {
-        // the indices at which the tensor is consumed:
-        for (InIndex t0in : c->input->indices(t0)) {
-          auto serialChains = chsI.series(bottleLink);
-          auto r2           = serialChains.apply(c->uses(t0in));
-          populate(consumer_regions, c, r2);
+    for (auto aliasRegion : inOp->aliases(index, 0)) {
+      view::Link bottleLink(
+          aliasRegion, inOp->fwdRegMap(index, 0), "from_" + inOp->str());
+      for (auto t0_chsI : tensors.aliasChainsTo(t1)) {
+        auto t0   = t0_chsI.first;
+        auto chsI = t0_chsI.second;
+        for (auto c : t0->consumers.getOps()) {
+          // the indices at which the tensor is consumed:
+          for (InIndex t0in : c->input->indices(t0)) {
+            auto serialChains = chsI.series(bottleLink);
+            for (auto r : c->uses(t0in)) {
+              auto r2 = serialChains.apply(r);
+              populate(consumer_regions, c, r2);
+            }
+          }
         }
       }
     }
@@ -200,7 +205,7 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
   auto getPostRegions =
       [op, &populate, &tensors, t2, inOp](
           // where getRegion might be op->uses(.) or op->modifies(.)
-          std::function<view::Region(Op *, InIndex)> getRegion) {
+          std::function<view::Regions(Op *, InIndex)> getRegions) {
         // to be set and returned in this function
         std::map<Op *, view::Regions> regions;
 
@@ -212,8 +217,10 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
           for (auto consumer : t3->consumers.getOps()) {
             for (InIndex t3_in : consumer->input->indices(t3)) {
               // where getRegion is the modified or used region
-              view::Regions r2 = chsO.apply(getRegion(consumer, t3_in));
-              populate(regions, consumer, r2);
+              for (auto r : getRegions(consumer, t3_in)) {
+                view::Regions r2 = chsO.apply(r);
+                populate(regions, consumer, r2);
+              }
             }
           }
         }
@@ -221,7 +228,11 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
         view::Regions opModRegs;
         for (auto index_tensor : op->input->tensorMap()) {
           InIndex index = index_tensor.first;
-          opModRegs.push_back(inOp->fwdRegMap(index)(getRegion(inOp, index)));
+          for (auto r0 : getRegions(inOp, index)) {
+            for (auto r1 : inOp->fwdRegMap(index, 0)(r0)) {
+              opModRegs.push_back(r1);
+            }
+          }
         }
         populate(regions, op, opModRegs);
         return regions;
@@ -297,7 +308,10 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
   bool schedFail = false;
   if (pricklyCase) {
     for (auto index_tensor : op->input->tensorMap()) {
-      if (!inOp->modifies(index_tensor.first).isEmpty()) {
+      auto modified = inOp->modifies(index_tensor.first);
+      if (!std::all_of(modified.begin(),
+                       modified.end(),
+                       [](const view::Region &r) { return r.isEmpty(); })) {
         InIndex modifyingIndex = index_tensor.first;
         Tensor *modifiedTensor = index_tensor.second;
         // we check if any of the inputs are aliased to modifiedTensor
@@ -356,7 +370,8 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
       Op *key      = key_befores.first;
       auto befores = key_befores.second;
       for (Op *before : befores) {
-        ss << "\n           " << before->str() << "-->" << key->str();
+        ss << "\n           " << before->debugName() << "-->"
+           << key->debugName();
       }
     }
     logging::pattern::debug("New constraints:" + ss.str());
@@ -365,4 +380,7 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
   return gCons;
 }
 
+namespace {
+static AddPatternName<Inplace> registerName("InPlace");
+} // namespace
 } // namespace popart

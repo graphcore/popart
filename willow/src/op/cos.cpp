@@ -29,7 +29,18 @@ std::unique_ptr<Op> CosGradOp::clone() const {
 }
 
 namespace {
-static OpCreator<CosOp> cosOpCreator(Onnx::Operators::Cos_7);
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition cosOpDef({OpDefinition::Inputs({
+                                  {"input", T},
+                              }),
+                              OpDefinition::Outputs({{"output", T}}),
+                              OpDefinition::Attributes({})});
+
+static OpCreator<CosOp>
+    cosOpCreator(OpDefinitions({{Onnx::Operators::Cos_7, cosOpDef}}));
+
 } // namespace
 
 } // namespace popart

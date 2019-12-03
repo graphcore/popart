@@ -39,8 +39,16 @@ std::unique_ptr<Op> FloorInplaceOp::clone() const {
 }
 
 namespace {
-static OpCreator<FloorOp> floorOpCreator({Onnx::Operators::Floor_1,
-                                          Onnx::Operators::Floor_6});
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition floorOpDef({OpDefinition::Inputs({{"X", T}}),
+                                OpDefinition::Outputs({{"Y", T}}),
+                                OpDefinition::Attributes({})});
+
+static OpCreator<FloorOp>
+    floorOpCreator(OpDefinitions({{Onnx::Operators::Floor_1, floorOpDef},
+                                  {Onnx::Operators::Floor_6, floorOpDef}}));
 
 } // namespace
 } // namespace popart

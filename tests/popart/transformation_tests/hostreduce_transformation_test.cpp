@@ -135,8 +135,8 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
 
   std::vector<float> raw_A_grad_out(A_info.nelms());
   std::vector<float> raw_B_grad_out(B_info.nelms());
-  std::vector<std::vector<float>> raw_grads_out = {raw_B_grad_out,
-                                                   raw_A_grad_out};
+  std::vector<std::vector<float>> raw_grads_out = {raw_A_grad_out,
+                                                   raw_B_grad_out};
 
   std::vector<float> A_dummy_data(A_info.nelms());
   std::vector<float> B_dummy_data(B_info.nelms());
@@ -144,16 +144,27 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
     A_dummy_data[i] = static_cast<float>(i);
   }
   for (int i = 0; i < B_dummy_data.size(); ++i) {
-    B_dummy_data[i] = static_cast<float>(i);
+    B_dummy_data[i] = static_cast<float>(B_dummy_data.size() - i - 1);
   }
 
-  std::vector<std::vector<float>> dummy_data = {B_dummy_data, A_dummy_data};
+  std::vector<std::vector<float>> dummy_data = {A_dummy_data, B_dummy_data};
 
   BOOST_CHECK(session->getGradAndVarStreamIds().size() == 2);
-  int i = 0;
+  // Careful iterating over getGradAndVarStreamIds, no guarantee for order.
   for (const auto &gv : session->getGradAndVarStreamIds()) {
     const auto &grad_stream_id   = gv.first;
     const auto &weight_stream_id = gv.second;
+
+    int i{};
+    if (weight_stream_id == "wl_init_input") {
+      // This is the stream for A
+      i = 0;
+    } else if (weight_stream_id == "wl_init_input/1") {
+      // This is the stream for B
+      i = 1;
+    } else {
+      throw error("Unexpected weight_stream_id: " + weight_stream_id);
+    }
 
     void *grad_dst = raw_grads_out[i].data();
     auto grad_size = raw_grads_out[i].size() * sizeof(float);
@@ -168,8 +179,6 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
                                      [weight_src, weight_size](void *w) {
                                        std::memcpy(w, weight_src, weight_size);
                                      });
-
-    ++i;
   }
 
   // inputs:
@@ -180,6 +189,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
 
   popart::StepIO stepio(inputs, anchors);
 
+  session->optimizerFromHost();
   session->weightsFromHost();
   session->run(stepio);
 
@@ -191,13 +201,13 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
 
   session->weightsToHost();
   session->readWeights(weightsRead);
-  BOOST_CHECK_EQUAL_COLLECTIONS(v_B_grad.begin(),
-                                v_B_grad.end(),
+  BOOST_CHECK_EQUAL_COLLECTIONS(v_A_grad.begin(),
+                                v_A_grad.end(),
                                 raw_grads_out[0].begin(),
                                 raw_grads_out[0].end());
 
-  BOOST_CHECK_EQUAL_COLLECTIONS(v_A_grad.begin(),
-                                v_A_grad.end(),
+  BOOST_CHECK_EQUAL_COLLECTIONS(v_B_grad.begin(),
+                                v_B_grad.end(),
                                 raw_grads_out[1].begin(),
                                 raw_grads_out[1].end());
 
@@ -376,6 +386,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
 
   popart::StepIO stepio(inputs, anchors);
 
+  session->optimizerFromHost();
   session->weightsFromHost();
   session->run(stepio);
 
@@ -388,5 +399,239 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
   for (int i = 4; i < 8; ++i) {
     // "wl_" from weightLoadStreamId
     BOOST_CHECK(callback_handles[i].substr(0, 3) == "wl_");
+  }
+}
+
+/*
+#Ground truth for unit test
+import torch
+
+K = 6
+M = 7
+N = 8
+replicationFactor = 2
+lossLambda = 0.1
+
+A = torch.ones(M,K, requires_grad=True)
+B = torch.ones(K,N, requires_grad=True)
+C = torch.ones(N,M, requires_grad=True)
+D = torch.ones(M,N, requires_grad=True)
+E = torch.matmul(A,B)
+F = torch.matmul(E,C)
+G = torch.matmul(F,D)
+err = torch.sum(lossLambda*torch.abs(G))
+err.backward()
+
+print(replicationFactor * A.grad[0,0])
+print(replicationFactor * B.grad[0,0])
+print(replicationFactor * C.grad[0,0])
+print(replicationFactor * D.grad[0,0])
+*/
+// Test: Training with replicated graphs
+BOOST_AUTO_TEST_CASE(HostReduceHierarchicalReductionWithReplicatedGraphs) {
+  // the dimensions of the matrices
+  int K = 6;
+  int M = 7;
+  int N = 8;
+
+  // prepare a Builder for creating onnx model
+  auto bder   = Builder::create();
+  auto aiOnnx = bder->aiOnnxOpset9();
+
+  // matrix A of shape M x K
+  TensorInfo A_info{"FLOAT", std::vector<int64_t>{M, K}};
+  std::vector<float> v_A_init(A_info.nelms());
+  for (auto &val : v_A_init) {
+    val = 1.0f;
+  }
+  TensorId A_id = bder->addInitializedInputTensor({v_A_init.data(), A_info});
+
+  // matrix B of shape K x N
+  TensorInfo B_info{"FLOAT", std::vector<int64_t>{K, N}};
+  std::vector<float> v_B_init(B_info.nelms());
+  for (auto &val : v_B_init) {
+    val = 1.0f;
+  }
+  TensorId B_id = bder->addInitializedInputTensor({v_B_init.data(), B_info});
+
+  // matrix C of shape N x M
+  TensorInfo C_info{"FLOAT", std::vector<int64_t>{N, M}};
+  std::vector<float> v_C_init(C_info.nelms());
+  for (auto &val : v_C_init) {
+    val = 1.0f;
+  }
+  TensorId C_id = bder->addInitializedInputTensor({v_C_init.data(), C_info});
+
+  // matrix D of shape M x N
+  TensorInfo D_info{"FLOAT", std::vector<int64_t>{M, N}};
+  std::vector<float> v_D_init(D_info.nelms());
+  for (auto &val : v_D_init) {
+    val = 1.0f;
+  }
+  TensorId D_id = bder->addInitializedInputTensor({v_D_init.data(), D_info});
+
+  std::map<TensorId, TensorInfo> idToInfo{{getGradId(A_id), A_info},
+                                          {getGradId(B_id), B_info},
+                                          {getGradId(C_id), C_info},
+                                          {getGradId(D_id), D_info}};
+
+  TensorInfo E_info{"FLOAT", std::vector<int64_t>{M, N}};
+  TensorId E_id = aiOnnx.matmul({A_id, B_id});
+
+  TensorInfo F_info{"FLOAT", std::vector<int64_t>{M, M}};
+  TensorId F_id = aiOnnx.matmul({E_id, C_id});
+
+  TensorInfo G_info{"FLOAT", std::vector<int64_t>{M, N}};
+  TensorId G_id = aiOnnx.matmul({F_id, D_id});
+
+  bder->addOutputTensor(G_id);
+
+  float lossLambda = 0.1f;
+
+  auto proto      = bder->getModelProto();
+  auto modelProto = io::getModelFromString(proto);
+  auto art        = AnchorReturnType("ALL");
+  // one batch per step
+  int batchesPerStep          = 1;
+  const int replicationFactor = 2;
+  auto dataFlow               = DataFlow(batchesPerStep, {{G_id, art}});
+
+  auto device = DeviceManager::createDeviceManager().acquireAvailableDevice(
+      replicationFactor);
+
+  if (device != nullptr) {
+
+    auto opts                   = SessionOptions();
+    opts.hostAllReduce          = true;
+    opts.enableReplicatedGraphs = true;
+    opts.replicatedGraphCount   = replicationFactor;
+
+    // training info
+    const float learningRate = 0.01f;
+    auto optimizer = SGD({{"defaultLearningRate", {learningRate, false}}});
+    std::unique_ptr<Loss> l1_loss(
+        new L1Loss(G_id, "l1LossVal", lossLambda, ReductionType::SUM));
+    std::vector<Loss *> losses{l1_loss.get()};
+
+    auto session = popart::TrainingSession::createFromOnnxModel(
+        proto,
+        dataFlow,
+        losses,
+        optimizer,
+        device,
+        popart::InputShapeInfo(),
+        opts,
+        popart::Patterns(PatternsLevel::DEFAULT));
+
+    // prepare the anchors. We have the output C,
+    std::vector<float> raw_G_out(G_info.nelms());
+    popart::NDArrayWrapper<float> G_wrapper(raw_G_out.data(), G_info.shape());
+
+    std::map<popart::TensorId, popart::IArray &> anchors = {
+        {G_id, G_wrapper},
+    };
+
+    session->prepareDevice();
+
+    std::unordered_map<TensorId, std::vector<float>> gradients;
+    for (const auto &gv : session->getGradAndVarStreamIds()) {
+      const auto &grad_stream_id   = gv.first;
+      const auto &weight_stream_id = gv.second;
+      const auto grad_id           = grad_stream_id.substr(3);
+      const int64_t nelms          = idToInfo[grad_id].nelms();
+      const int64_t nbytes         = idToInfo[grad_id].nbytes();
+
+      for (int i = 0; i < replicationFactor; ++i) {
+        session->connectStreamToCallback(
+            grad_stream_id,
+            [&gradients, grad_id, nelms](void *g) {
+              float *f      = reinterpret_cast<float *>(g);
+              auto gradient = std::vector<float>(f, f + nelms);
+              auto found    = gradients.find(grad_id);
+
+              // Check that the streamed gradients are the same for all replicas
+              if (found != gradients.end()) {
+                BOOST_CHECK_EQUAL_COLLECTIONS(found->second.begin(),
+                                              found->second.end(),
+                                              gradient.begin(),
+                                              gradient.end());
+              } else {
+                gradients[grad_id] = gradient;
+              }
+            },
+            i);
+      }
+
+      session->connectStreamToCallback(weight_stream_id, [nelms](void *w) {
+        float *f = reinterpret_cast<float *>(w);
+        std::fill(f, f + nelms, 42.0f);
+      });
+    }
+
+    // inputs:
+    popart::NDArrayWrapper<float> A_wrapper(v_A_init.data(), A_info);
+    popart::NDArrayWrapper<float> B_wrapper(v_B_init.data(), B_info);
+    popart::NDArrayWrapper<float> C_wrapper(v_C_init.data(), C_info);
+    popart::NDArrayWrapper<float> D_wrapper(v_D_init.data(), D_info);
+    std::map<popart::TensorId, popart::IArray &> inputs = {
+        {A_id, A_wrapper},
+        {B_id, B_wrapper},
+        {C_id, C_wrapper},
+        {D_id, D_wrapper},
+    };
+
+    popart::StepIO stepio(inputs, anchors);
+
+    session->optimizerFromHost();
+    session->weightsFromHost();
+    session->run(stepio);
+
+    // Ground truths are computed in PyTorch
+    const float A_grad_ground_truth_val = 89.6f;
+    const float B_grad_ground_truth_val = 78.4f;
+    const float C_grad_ground_truth_val = 67.2f;
+    const float D_grad_ground_truth_val = 67.2f;
+    for (auto &&x : gradients[getGradId(A_id)]) {
+      BOOST_CHECK_CLOSE(x, 89.6f, 1e-4f);
+    }
+    for (auto &&x : gradients[getGradId(B_id)]) {
+      BOOST_CHECK_CLOSE(x, 78.4f, 1e-4f);
+    }
+    for (auto &&x : gradients[getGradId(C_id)]) {
+      BOOST_CHECK_CLOSE(x, 67.2f, 1e-4f);
+    }
+    for (auto &&x : gradients[getGradId(D_id)]) {
+      BOOST_CHECK_CLOSE(x, 67.2f, 1e-4f);
+    }
+
+    for (const auto &g : gradients) {
+      BOOST_CHECK(idToInfo[g.first].nelms() == g.second.size());
+    }
+
+    WeightsIO weightsRead;
+    std::vector<float> A_readback(A_info.nelms(), -9.0f);
+    std::vector<float> B_readback(B_info.nelms(), -99.0f);
+    std::vector<float> C_readback(C_info.nelms(), -99.0f);
+    std::vector<float> D_readback(D_info.nelms(), -99.0f);
+    weightsRead.insert(A_id, {A_readback.data(), A_info});
+    weightsRead.insert(B_id, {B_readback.data(), B_info});
+    weightsRead.insert(C_id, {C_readback.data(), C_info});
+    weightsRead.insert(D_id, {D_readback.data(), D_info});
+
+    session->weightsToHost();
+    session->readWeights(weightsRead);
+
+    for (auto &&x : A_readback) {
+      BOOST_CHECK(x == 42.0f);
+    }
+    for (auto &&x : B_readback) {
+      BOOST_CHECK(x == 42.0f);
+    }
+    for (auto &&x : C_readback) {
+      BOOST_CHECK(x == 42.0f);
+    }
+    for (auto &&x : D_readback) {
+      BOOST_CHECK(x == 42.0f);
+    }
   }
 }

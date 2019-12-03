@@ -50,7 +50,7 @@ float AutoVirtualGraph::costFn(Op *op,
     if (map.first->tensorType() == TensorType::Variable ||
         map.first->tensorType() == TensorType::Const) {
       total += w_weights * static_cast<float>(map.first->info.nbytes());
-      // Record all input indicies seen.
+      // Record all input indices seen.
       for (int index : map.second) {
         inputs_seen.insert(index);
       }
@@ -114,7 +114,7 @@ float AutoVirtualGraph::costFn(Op *op,
 //     |        If splitting for 4 IPUs:
 //     E          IPU0: {A}. IPU1: {C}. IPU2: {B}. IPU3: {D,E}
 //
-// 1.1) Seperate graph into subgraphs
+// 1.1) Separate graph into subgraphs
 //   - Create a subgraph for each consumer of each dataStreamTensor (Inputs to
 //   graph)
 //   - Add all consuming Ops to its parent subgraph
@@ -130,7 +130,7 @@ float AutoVirtualGraph::costFn(Op *op,
 // 3) Subgraphs have been created in topological order, so..
 //   - Place subgraphs on a virtualGraph starting with 0.
 //   - If the total cost of a subgraph is more than the desired
-//     proportion of the total cost on a single IPU, find an split in the
+//     proportion of the total cost on a single IPU, find a split in the
 //     subgraph and place subsequent ops on the next virtualGraph.
 bool AutoVirtualGraph::apply(Graph &graph) const {
   auto &ir = graph.getIr();

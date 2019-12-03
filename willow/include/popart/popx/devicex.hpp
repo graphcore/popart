@@ -13,11 +13,13 @@
 #include <poputil/TileMapping.hpp>
 
 #include <popart/devicemanager.hpp>
+#include <popart/popx/creatorx.hpp>
 #include <popart/popx/enigma.hpp>
 #include <popart/popx/linearmapper.hpp>
 #include <popart/popx/poplaroptionsx.hpp>
 #include <popart/popx/popprograms.hpp>
-#include <popart/pritask.hpp>
+#include <popart/popx/poptensors.hpp>
+#include <popart/popx/pritask.hpp>
 
 #include <set>
 #include <popart/names.hpp>
@@ -66,109 +68,6 @@ public:
 poplar::Type popType(const TensorInfo &);
 poplar::Type popType(DataType);
 
-struct ICreatorCandidate;
-using ICreatorCandidatePtr = std::shared_ptr<ICreatorCandidate>;
-
-// An interface for a potential creator of a tensor
-struct ICreatorCandidate {
-
-  // A bundle struct to represent the path a tensor
-  // takes through an Opx
-  struct OpxInAndOutIndex {
-    OpxInAndOutIndex(const Opx *opx_, InIndex inIndex_, OutIndex outIndex_)
-        : opx(opx_), inIndex(inIndex_), outIndex(outIndex_) {}
-    OpxInAndOutIndex() = default;
-
-    const Opx *opx;
-    InIndex inIndex;
-    OutIndex outIndex;
-  };
-
-  ICreatorCandidate(int, const Opx *, std::vector<OpxInAndOutIndex> path);
-  virtual ~ICreatorCandidate() = default;
-
-  // Create's a input tensor
-  virtual poplar::Tensor createInput(const std::string &name) = 0;
-
-  // Returns the list of tensors that must be created before this one
-  virtual std::vector<TensorId> mustExistBeforeCreate() = 0;
-
-  virtual bool createsEquivalent(const ICreatorCandidatePtr other) = 0;
-
-  virtual double getMaxCreatorPriority() = 0;
-
-  virtual std::string str() = 0;
-
-  // Returns the unwind path from the tensor to the creator
-  std::vector<OpxInAndOutIndex> getPathFromInput() { return pathFromInput; }
-  void setPathFromInput(std::vector<OpxInAndOutIndex> &value) {
-    pathFromInput = value;
-  }
-
-  int getIndex() const { return index; }
-  const Opx *getOpx() const { return opx; }
-
-protected:
-  poplar::Tensor unwind(poplar::Tensor i);
-  std::vector<OpxInAndOutIndex> pathFromInput;
-
-private:
-  int index;
-  const Opx *opx;
-};
-
-class InputCreatorCandidate : public ICreatorCandidate {
-public:
-  InputCreatorCandidate(int, const Opx *, std::vector<OpxInAndOutIndex>);
-  InputCreatorCandidate()                   = default;
-  virtual ~InputCreatorCandidate() override = default;
-
-  poplar::Tensor createInput(const std::string &name) override;
-
-  std::vector<TensorId> mustExistBeforeCreate() override;
-
-  double getMaxCreatorPriority() override;
-
-  bool createsEquivalent(const ICreatorCandidatePtr other) override;
-
-  virtual std::string str() override;
-};
-
-class InputMultiCreatorCandidate : public ICreatorCandidate {
-public:
-  InputMultiCreatorCandidate(int,
-                             const Opx *,
-                             std::vector<OpxInAndOutIndex> path);
-  virtual ~InputMultiCreatorCandidate() override = default;
-
-  poplar::Tensor createInput(const std::string &name) override;
-  std::vector<TensorId> mustExistBeforeCreate() override;
-
-  double getMaxCreatorPriority() override;
-
-  bool createsEquivalent(const ICreatorCandidatePtr other) override;
-
-  virtual std::string str() override;
-
-  void addCreateorCandidate(ICreatorCandidatePtr c) { candidates.push_back(c); }
-
-private:
-  std::vector<ICreatorCandidatePtr> candidates;
-};
-
-class PopTensors {
-public:
-  PopTensors(const Ir &);
-  void insert(TensorId, const poplar::Tensor &);
-  const poplar::Tensor &get(TensorId) const;
-  bool contains(TensorId) const;
-  const std::map<TensorId, poplar::Tensor> &getTensors() const;
-
-private:
-  std::map<TensorId, poplar::Tensor> tensors_;
-  const Ir &ir;
-};
-
 class Devicex {
 
 private:
@@ -180,15 +79,19 @@ public:
   ~Devicex();
   void prepare();
   void weightsFromHost();
+  void remoteBufferWeightsFromHost();
   void optimizerFromHost();
   // Streams the random seed value from host, and sets the rng registers on
   // the device
   void setRandomSeedFromHost();
-
+  const std::string cycleCountStreamId() const;
+  void instrumentWithHardwareCycleCounter(poplar::program::Sequence &);
+  uint64_t cycleCountTensorToHost();
   void run(IStepIO &);
 
   // device -> host stream
   void weightsToHost();
+  void remoteBufferWeightsToHost();
   // device ->host stream -> specified host addresses
   void weightsToHost(const std::map<TensorId, MutableVoidData> &);
 
@@ -224,7 +127,7 @@ public:
 
   // Return the name of the task which initializes/creates a poplar::Tensor in a
   // poplar::Graph. This is NOT about creating a poplar::Program.
-  TaskId taskWhichCreates(TensorId) const;
+  std::pair<TaskId, DependencyType> taskWhichCreates(TensorId);
 
   // Return the name of the task which adds code which sets the initial
   // values of poplar::Tensor to a fragment. This IS about creating a
@@ -266,11 +169,11 @@ public:
   // Using the default arguments will return only creator candidates,
   // with each candidate's path containing only Opxs that need to be
   // 'unwound' to correctly lay out the input tensor
-  std::vector<ICreatorCandidatePtr> getCreatorEndpoints(
-      Tensor *tensor,
-      std::vector<ICreatorCandidate::OpxInAndOutIndex> pathFromInput,
-      bool excludeEndpointsFromPath = true,
-      bool includeDeadends          = false) const;
+  std::pair<std::vector<ICreatorCandidatePtr>, std::vector<UnwindEndpointPtr>>
+  getCreatorEndpoints(Tensor *tensor,
+                      std::vector<OpxInAndOutIndex> pathFromInput,
+                      bool excludeEndpointsFromPath = true,
+                      bool includeDeadends          = false) const;
 
   // Get a single creator candidate for creating a tensor
   // Will throw an error if multiple candidates that do not agree are found
@@ -291,9 +194,12 @@ public:
                           double val,
                           const std::string &name);
 
+  const poplar::RemoteBuffer &getRemoteBuffer(RemoteBufferId) const;
+
   poplar::Tensor getScalarVariable(poplar::Graph &graph,
                                    const poplar::Type &type,
                                    const std::string &name);
+
   PopStreamId gradientStoreStreamId(TensorId id) const;
   PopStreamId weightLoadStreamId(TensorId id) const;
 
@@ -307,7 +213,8 @@ public:
   std::vector<std::pair<TensorId, TensorId>> &getGradAndVarStreamIds();
 
   void connectStreamToCallback(const std::string &streamHandle,
-                               std::function<void(void *)> callback);
+                               std::function<void(void *)> callback,
+                               unsigned index);
 
 private:
   std::unique_ptr<poplar::Graph> pGraph{nullptr};
@@ -332,6 +239,8 @@ private:
   PipelineInfo pInfo;
   int64_t getStashSize(VGraphId vGraphId);
 
+  void createRemoteBuffers();
+
   std::map<PipelineStage, VGraphId> getPipelineToVGraphIdMap() const;
   PipelineStage getMaxPipelineStage() const;
 
@@ -339,6 +248,7 @@ private:
   // the correct create call (createWeights, addLinearly, etc)
   PriTask initTensorTask(Tensor *);
   PriTask initTensorByCloningTask(Op *op, TensorId srcId, TensorId dstId);
+  PriTask initTensorByAliasingTask(Op *op, TensorId srcId, TensorId dstId);
   TaskId initTensorTaskId(TensorId) const;
 
   PriTask initRandomSeed();
@@ -357,6 +267,7 @@ private:
   // Task to append a Copy from poplar::Stream to poplar::Tensor
   PriTask fromHostTask(Tensor *tensor,
                        poplar::program::Sequence &streamSq) const;
+
   TaskId fromHostTaskId(TensorId) const;
 
   // Task to create a poplar::Stream to write from poplar::Tensor to host
@@ -387,8 +298,8 @@ private:
   PriTask initAndUpdatePipelineStashIndicesTask();
 
   PriTask opTask(Op *, double priority, TaskId prevOpTaskId);
-  void opTaskFunc(Op *);
-  void pipelinedOpTaskFunc(Op *);
+  void opTaskFunc(TaskId taskId, Op *, SequenceMap &seqs);
+  void pipelinedOpTaskFunc(TaskId taskId, Op *, SequenceMap &seqs);
   void growOpx(Opx *, poplar::program::Sequence &);
 
   TaskId opTaskId(Op *) const;
@@ -422,23 +333,19 @@ public:
   const std::vector<Op *> &getMainGraphOpSeries() const;
 
   // index of first appearance of Op in series
-  std::map<Op *, int> getMainGraphOpSeriesNums() const;
+  std::map<Op *, int, POpCmp> getMainGraphOpSeriesNums() const;
 
   // number of appearances of each Op. Expectation: RECOMPUTE Ops appear twice
   // and CHECKPOINT Ops appear once
-  std::map<Op *, int> getMainGraphOpCounts() const;
+  std::map<Op *, int, POpCmp> getMainGraphOpCounts() const;
 
   // A summary string of the Op series, with annotation for recomputation
-  std::string getMainGraphOpString() const;
-
-  // Returns true if using synthetic data, false if using real data
-  // This will return the options.ignoreData flag
-  bool useSyntheticData() const;
+  std::string getMainGraphOpString(const std::vector<TaskId> &taskOrder) const;
 
   bool prepareHasBeenCalled() const { return prepareHasBeenCalled_; }
 
 private:
-  std::vector<Op *> mainGraphOpRegistery;
+  std::map<TaskId, std::vector<Op *>> mainGraphOpRegistry;
 
   // We have datastreams which are created during the prepare phase and
   // associated with the stream call back
@@ -514,6 +421,9 @@ private:
   std::map<TensorId, poplar::DataStream> toHostAnchorStreams;
   std::map<TensorId, poplar::DataStream> toHostWeightStreams;
 
+  // Remote buffers
+  std::map<RemoteBufferId, poplar::RemoteBuffer> remoteBuffers;
+
   // Streams for doing allreduce on host side
   std::map<TensorId, poplar::DataStream> toHostGradientStreams;
   std::map<TensorId, poplar::DataStream> fromHostWeightLoadStreams;
@@ -523,6 +433,10 @@ private:
   // Q: Consider replacing the d2h weight buffer with a data stream as
   // done for inputs
   std::map<TensorId, std::vector<char>> d2hWeightBuffers;
+  std::map<TensorId, std::vector<char>> chBuffers;
+
+  // Buffer for storing the hardware cycle count
+  uint64_t cycleCount = 0;
 
   // Wrapper for calls to poplar Engine API calls: loading
   // engine onto the poplar device and connecting streams.
@@ -598,12 +512,23 @@ private:
   bool opxTrace = false;
   poplar::Tensor opxTraceTensor;
 
-  // This keeps track of whether there the accumulateOuterFragment  is empty
+  // This keeps track of whether there the accumulateOuterFragment is empty
   // TODO T12001 a class which encapsulates framgments which has this attribute.
   bool outerLoopFragEmpty = true;
 
+  // When doing gradient reductions on the host this flags keeps track of
+  // whether a poplar::Program::Sync has been inserted into the graph to
+  // serve as a barrier to ensure that all gradient copy callbacks are complete
+  // before weight copy callbacks are executed.
+  bool hostReduceSyncInserted = false;
+
 public:
   bool getOuterLoopFragEmpty() const { return outerLoopFragEmpty; }
+
+  void setHostReduceSyncInserted(bool inserted) {
+    hostReduceSyncInserted = inserted;
+  }
+  bool getHostReduceSyncInserted() const { return hostReduceSyncInserted; }
 };
 
 } // namespace popx

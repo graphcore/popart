@@ -179,7 +179,9 @@ bool SplitGatherPattern::apply(Op *op) const {
   const auto stride      = (numElements / inputShape[axis]) / split;
   const auto inTensorId  = op->input->id(GatherOp::dataInIndex());
   const auto idxTensorId = op->input->id(GatherOp::indicesInIndex());
-  const auto outTensorId = op->output->id(GatherOp::outIndex());
+  auto output            = op->outTensor(GatherOp::outIndex());
+  op->disconnectOutTensor(output);
+  const auto outTensorId = output->id;
 
   logging::pattern::trace("Splitting {} into {} gathers of size [{}, {}]",
                           op->str(),

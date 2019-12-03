@@ -7,8 +7,8 @@
 #include <popart/inputshapeinfo.hpp>
 #include <popart/names.hpp>
 #include <popart/opidentifier.hpp>
-#include <popart/optionflags.hpp>
 #include <popart/patterns/patterns.hpp>
+#include <popart/sessionoptions.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/transforms/transform.hpp>
 
@@ -103,6 +103,14 @@ public:
   const Patterns &patterns;
 };
 
+class RemoteBufferInfo {
+public:
+  RemoteBufferInfo(TensorInfo info_, uint64_t repeats_)
+      : info(info_), repeats(repeats_) {}
+  TensorInfo info;
+  uint64_t repeats;
+};
+
 // FFS : Use a factory method to create the IR class and return a pointer
 //       Then the constructor can be private.
 // ie. static std::unique_ptr<Ir> create(const IrBundle&);
@@ -155,7 +163,7 @@ public:
 
   // Remove from the IR any tensors which are unconnected, i.e.
   // the have no producers or consumers
-  void removeIsolatedTensors();
+  void removeIsolatedTensors(bool retainCached);
 
   // Set which execution mode we are using
   void setExecutionMode(const ExecutionMode &mode);
@@ -221,6 +229,13 @@ public:
   // Is the virtualGraphMode set to something other than VirtualGraphMode::Off.
   bool virtualGraphsEnabled() const;
 
+  // Returns the options.syntheticDataMode flag
+  SyntheticDataMode syntheticDataMode() const;
+
+  // Returns false if options.useSyntheticDataMode is set to Off, otherwise
+  // returns true
+  bool useSyntheticData() const;
+
   void setRandomSeedValue(uint64_t seedVal);
 
 public:
@@ -232,6 +247,8 @@ public:
   // if check is in userOptions.dotChecks, then write the .dot file
   // in userOptions.logDir
   void dotCheckpoint(DotCheck check) const;
+
+  bool isInputToLoss(const Tensor *) const;
 
   const onnx::ModelProto &getModel() const;
 
@@ -366,6 +383,14 @@ public:
   bool requiresRandomSeed() const;
   uint32_t getAndIncrementDropoutSeedModifier();
 
+  void setRemoteBufferInfo(RemoteBufferId, RemoteBufferInfo);
+  const RemoteBufferInfo getRemoteBufferInfo(RemoteBufferId) const;
+  const std::map<RemoteBufferId, RemoteBufferInfo>
+  getAllRemoteBufferInfos() const;
+
+  void setPingPongPhasesReady() { pingPongPhasesReady = true; }
+  bool getPingPongPhasesReady() { return pingPongPhasesReady; }
+
 private:
   void prepareImpl(const IrBundle &);
 
@@ -455,15 +480,19 @@ private:
   std::map<OpId, std::set<Tensor *>> opAndRootInputs;
 
   OpId finalLossOpId{-1000};
+  bool constructedFinalLoss = false;
 
   ExecutionMode executionMode = ExecutionMode::TRAINING;
 
-  bool isPrepared = false;
+  bool pingPongPhasesReady = false;
+  bool isPrepared          = false;
 
   // enable/disable a transform stage
   void enableTransform(std::size_t transformId, bool enable);
 
   uint32_t dropoutSeedModifier = 0;
+
+  std::map<RemoteBufferId, RemoteBufferInfo> remoteBufferInfoMap;
 
 public:
   // A "dummy" Op used to ensure that anchor tensors

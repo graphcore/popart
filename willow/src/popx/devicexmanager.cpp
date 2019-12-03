@@ -27,7 +27,7 @@ popart::DeviceType convertDeviceType(poplar::TargetType targetType) {
   case poplar::TargetType::CPU:
     return DeviceType::Cpu;
   }
-  throw error("Unknonw target type");
+  throw error("Unknown target type");
 }
 
 DevicexManager::DevicexManager() {
@@ -35,10 +35,29 @@ DevicexManager::DevicexManager() {
 }
 
 void DevicexManager::enumerate(
-    std::vector<std::shared_ptr<popart::DeviceInfo>> &devices) {
+    std::vector<std::shared_ptr<popart::DeviceInfo>> &devices,
+    SyncPattern /* syncPattern */,
+    uint32_t /* replication_factor */) {
+
+  /*
+  GSPatternType patternType;
+  switch (syncPattern) {
+    case SyncPattern::REPLICA:
+      patternType = GSPatternType::REPLICA;
+    case SyncPattern::FULL:
+      patternType = GSPatternType::FULL;
+      break;
+    case SyncPattern::PINGPONG:
+      patternType = GSPatternType::PINGPONG;
+      break;
+  }
+  logging::debug("[DevicexInfo] Using sync pattern {}", patternType);
+
+  GSPattern gspattern = {patternType, replication_factor};*/
 
   auto deviceManager = poplar::DeviceManager::createDeviceManager();
   std::vector<poplar::Device> popdevices = deviceManager.getDevices();
+  // gspattern);
 
   for (auto &device : popdevices) {
 

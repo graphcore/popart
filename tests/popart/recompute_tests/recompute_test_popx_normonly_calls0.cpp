@@ -97,7 +97,7 @@ BOOST_AUTO_TEST_CASE(RecomputeTestPopxNormOnlyCalls0) {
       dynamic_cast<popart::popx::Devicex *>(session->device_.get());
 
   // we count how many times each op appears
-  std::map<Op *, int> counts = devicex->getMainGraphOpCounts();
+  std::map<Op *, int, POpCmp> counts = devicex->getMainGraphOpCounts();
 
   // for norm only, we expect all Norm ops to appear twice, all others once
   for (auto op_count : counts) {
@@ -108,6 +108,4 @@ BOOST_AUTO_TEST_CASE(RecomputeTestPopxNormOnlyCalls0) {
       BOOST_CHECK(op_count.second == 1);
     }
   }
-
-  std::cout << devicex->getMainGraphOpString() << std::endl;
 }

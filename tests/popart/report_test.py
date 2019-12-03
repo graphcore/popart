@@ -344,7 +344,6 @@ def test_no_compile(tmpdir):
 
     opts = popart.SessionOptions()
     opts.compileEngine = False
-    opts.logging = {"devicex": "INFO"}
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 

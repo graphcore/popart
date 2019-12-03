@@ -1,6 +1,6 @@
 import popart
 import numpy as np
-
+from popart_core import _InferenceSessionCore, _TrainingSessionCore
 # A wrapper around the Session cpp class, renamed SessionCore in pybind,
 # to enable more pythonic use. See session.hpp for parameter descriptions
 
@@ -69,7 +69,7 @@ class PrepareDeviceException(popart.popart_exception):
         return self.error.getGraphReport()
 
 
-class InferenceSession(popart.InferenceSessionCore):
+class InferenceSession(_InferenceSessionCore):
     def __init__(self,
                  fnModel,
                  dataFeed,
@@ -77,7 +77,7 @@ class InferenceSession(popart.InferenceSessionCore):
                  losses=[],
                  inputShapeInfo=popart.InputShapeInfo(),
                  passes=popart.Patterns(),
-                 userOptions=popart.SessionOptionsCore()):
+                 userOptions=popart.SessionOptions()):
 
         if passes == None:
             passes = popart.Patterns()
@@ -103,7 +103,7 @@ class InferenceSession(popart.InferenceSessionCore):
             raise popart.PrepareDeviceException(err)
 
 
-class TrainingSession(popart.TrainingSessionCore):
+class TrainingSession(_TrainingSessionCore):
     def __init__(self,
                  fnModel,
                  dataFeed,
@@ -112,7 +112,7 @@ class TrainingSession(popart.TrainingSessionCore):
                  deviceInfo,
                  inputShapeInfo=popart.InputShapeInfo(),
                  passes=popart.Patterns(),
-                 userOptions=popart.SessionOptionsCore()):
+                 userOptions=popart.SessionOptions()):
 
         if passes == None:
             passes = popart.Patterns()

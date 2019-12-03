@@ -40,8 +40,22 @@ const std::vector<GradInOutMapper> &ReduceL1GradOp::gradInputInfo() const {
 }
 
 namespace {
+
+static OpDefinition::DataTypes T = {DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT};
+
+static OpDefinition reduceL1OpDef(
+    {OpDefinition::Inputs({{"data", T}}),
+     OpDefinition::Outputs({{"reduced", T}}),
+     OpDefinition::Attributes({{"axes", {"*"}}, {"keepdims", {"*"}}})});
+
 static OpCreator<ReduceL1Op> reduceL1OpCreator(
-    {Onnx::Operators::ReduceL1_1, Onnx::Operators::ReduceL1_11},
+    OpDefinitions({{Onnx::Operators::ReduceL1_1, reduceL1OpDef},
+                   {Onnx::Operators::ReduceL1_11, reduceL1OpDef}}),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

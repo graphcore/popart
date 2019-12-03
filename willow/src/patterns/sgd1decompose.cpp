@@ -24,6 +24,7 @@ std::vector<const Tensor *> SGD1Decompose::touches(Op *) const { return {}; }
 
 namespace {
 template <typename T>
+
 void addAcclInTensor(SGD1ComboOp &comboOp,
                      const Tensor &weight,
                      const Tensor &weightGrad,
@@ -38,6 +39,10 @@ void addAcclInTensor(SGD1ComboOp &comboOp,
 
   // The weight data:
   const T *weightVal0;
+
+  // A note: we could have chosen to always initialize the velocity Tensor to
+  // 0, which would correspond to no weight decay in the first iteration. One
+  // serious issue with this would be that SGD0 and SGD1 behave differently.
 
   // It is possible that a transform has resulted in this weight Tensor not
   // having data, as it is the slice of the original weight data. We can try and
@@ -328,6 +333,7 @@ bool SGD1Decompose::apply(Op *op) const {
 namespace {
 // Not registering this pattern, as we want it to run at a special time (after
 // matmul serialization)
-}
+static AddPatternName<SGD1Decompose> registerName("SGD1Decompose");
+} // namespace
 
 } // namespace popart

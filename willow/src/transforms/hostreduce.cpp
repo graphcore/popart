@@ -35,14 +35,14 @@ bool HostReduce::apply(Graph &graph) const {
   std::vector<Op *> toRemove;
 
   int counter = 0;
-  for (auto &id_op : graph.getOps()) {
-    auto &op = id_op.second;
+  for (auto &id_op : graph.getOpSchedule({})) {
+    auto &op = id_op;
 
     if (!op->isConvertibleTo<SGD0VarUpdateOp>()) {
       continue;
     }
     changed              = true;
-    auto vop             = dynamic_cast<SGD0VarUpdateOp *>(op.get());
+    auto vop             = dynamic_cast<SGD0VarUpdateOp *>(op);
     auto optimizerInputs = vop->optimizerInputs();
 
     auto gradTensorId = vop->input->id(SGD0VarUpdateOp::getUpdaterInIndex());
@@ -68,10 +68,10 @@ bool HostReduce::apply(Graph &graph) const {
       gradCopyOp->setVirtualGraphId(vop->getVirtualGraphId());
     }
 
+    gradCopyOp->priority = std::numeric_limits<double>::max();
     gradCopyOp->setup();
 
     graph.topoCons->transfer(vop, gradCopyOp);
-
     gradCopyOps.push_back(gradCopyOp);
 
     std::string varCopyOpName;
@@ -100,12 +100,16 @@ bool HostReduce::apply(Graph &graph) const {
         SGD0VarUpdateOp::getUpdatedVarOutIndex(),
         "HostReduceOut__" + varTensorId);
 
+    varCopyOp->priority = std::numeric_limits<double>::min();
     varCopyOp->setup();
 
     if (op->hasVirtualGraphId()) {
       varCopyOp->setVirtualGraphId(op->getVirtualGraphId());
     }
 
+    if (!varCopyOps.empty()) {
+      graph.topoCons->insert(varCopyOps.back(), varCopyOp);
+    }
     varCopyOps.push_back(varCopyOp);
 
     for (auto &x : optimizerInputs) {
@@ -113,7 +117,7 @@ bool HostReduce::apply(Graph &graph) const {
       varCopyOp->connectInTensor(x.first, x.second);
     }
 
-    toRemove.push_back(op.get());
+    toRemove.push_back(op);
     ++counter;
     logging::transform::debug(
         "HostReduce replaced {} with grad copy {} and var copy {}",

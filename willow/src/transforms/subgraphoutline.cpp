@@ -1,18 +1,20 @@
 #include <boost/algorithm/cxx11/any_of.hpp>
 #include <boost/range/algorithm/find.hpp>
-
 #include <cmath>
 #include <memory>
-
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/op/boundary.hpp>
 #include <popart/op/call.hpp>
-#include <popart/topocons.hpp>
-
+#include <popart/op/ipucopy.hpp>
+#include <popart/subgraph/iosubgraphcostmodel.hpp>
 #include <popart/subgraph/outliner.hpp>
+#include <popart/subgraph/prunematches.hpp>
+#include <popart/subgraph/subgraphutil.hpp>
+#include <popart/topocons.hpp>
 #include <popart/transforms/subgraphoutline.hpp>
 
 using boost::find;
@@ -20,154 +22,112 @@ using boost::algorithm::any_of;
 
 namespace popart {
 namespace {
+template <typename T> void sortMatches(std::vector<T> &matches) {
+  std::sort(matches.begin(), matches.end(), [=](T &p1, T &p2) {
+    return std::tuple<int, std::vector<int>::size_type, int>(
+               p2.length, p1.starts.size(), p2.starts.front()) <
+           std::tuple<int, std::vector<int>::size_type, int>(
+               p1.length, p2.starts.size(), p1.starts.front());
+  });
+}
 
 // TODO T8888: templatize every function in this namespace so that can be used
 // outside of popart, then put it in the popart/subgraph directory. Then add
 // tests with the Blip class (as other basic outlining functions are).
-namespace outline {
+namespace localoutline {
 namespace {
 using namespace fwtools::subgraph;
 
-// get a new cost estimate of a sub-sequence, using the cost of copying into
-// and out of cached subgraphs
-float getIoAdjustedValue(int64_t start,
-                         int64_t end,
-                         const std::vector<Op *> &schedule,
-                         const std::map<Op *, int> &schedule_index) {
+std::vector<int64_t> getBoundariesCrossed(int64_t start,
+                                          int64_t end,
+                                          const std::vector<Op *> &schedule) {
+  std::vector<int64_t> crossing;
+  PingPongPhase phase{-1LL};
+  PingPongPhase last_phase{-1LL};
+  RecomputeType recompute      = RecomputeType::UNDEFINED;
+  RecomputeType last_recompute = RecomputeType::UNDEFINED;
 
-  // total number of input bytes
-  auto getInBytes = [](Op *op) {
-    int64_t inBytes = 0;
-    for (auto x : op->input->tensorMap()) {
-      inBytes += x.second->info.nbytes();
+  for (int64_t i = start; i < end; ++i) {
+    Op *op         = schedule[i];
+    last_phase     = phase;
+    last_recompute = recompute;
+    phase          = op->hasPingPongPhase() ? op->getPingPongPhase() : -1;
+    recompute      = op->settings.recomputeType == RecomputeType::RECOMPUTE
+                    ? RecomputeType::RECOMPUTE
+                    : RecomputeType::CHECKPOINT;
+    if (i > start && (phase != last_phase || recompute != last_recompute)) {
+      crossing.push_back(i - start);
     }
-    return inBytes;
-  };
+  }
+  return crossing;
+}
 
-  // the value of caching an all ops
-  // (before adjusting for the cost of the copies)
-  float sumValues = 0;
-  for (auto i = start; i < end; ++i) {
-    // in this cost model, we take the value to scale as sqrt(input size)
-    sumValues += schedule[i]->getSubgraphValue() *
-                 std::sqrt(static_cast<float>(getInBytes(schedule[i])));
+} // namespace
+
+namespace {
+//  Outlining matches are not supposed to cross certain boundaries:
+// a.) Across recompute/non-recompute operators
+// b.) Across PingPong phases
+void insertBoundariesOps(const std::vector<Op *> &schedule) {
+  for (int64_t i = 0; i < schedule.size() - 1; ++i) {
+    auto crossed = getBoundariesCrossed(i, i + 2, schedule);
+    if (crossed.size() > 0) {
+      auto &graph     = schedule[i]->getGraph();
+      auto boundaryOp = std::make_unique<BoundaryOp>(Op::Settings(graph, ""));
+      auto boundary   = boundaryOp.get();
+      auto phase      = schedule[i]->getOptionalPingPongPhase();
+      boundary->setPingPongPhase(phase);
+      VGraphId vgid = 0;
+      boundary->setVirtualGraphId(vgid);
+      graph.moveIntoGraph(std::move(boundaryOp));
+      graph.topoCons.get()->insert(schedule[i], boundary);
+      graph.topoCons.get()->insert(boundary, schedule[i + 1]);
+    }
+  }
+}
+
+std::vector<Match> separateTopLevelMatches(const std::vector<Match> &inMatches,
+                                           size_t scheduleSize) {
+  logging::trace("[SubgraphOutline] Separate top level matches start.");
+  std::vector<Match> filtered;
+
+  std::vector<int64_t> covered(scheduleSize, 0);
+
+  std::map<int, std::vector<Match>> matchesByLength;
+  for (auto &match : inMatches) {
+    matchesByLength[match.length].push_back(match);
   }
 
-  // the external inputs and outputs, which we use to adjust the value of
-  // match downwards
-  std::set<Tensor *> externalInputs;
-  std::set<Tensor *> externalOutputs;
-
-  for (auto i = start; i < end; ++i) {
-    Op *op = schedule[i];
-
-    // externalInputs
-    for (auto tensor : op->input->tensors()) {
-      if (!tensor->hasProducer() ||
-          schedule_index.at(tensor->getProducerUnsafe()) < start) {
-        externalInputs.emplace(tensor);
-      }
-    }
-
-    // externalOutputs
-    for (auto tensor : op->output->tensors()) {
-      for (auto consumer : tensor->consumers.getOps()) {
-        if (schedule_index.at(consumer) >= end) {
-          externalOutputs.insert(tensor);
+  for (auto iter = matchesByLength.rbegin(); iter != matchesByLength.rend();
+       ++iter) {
+    for (auto &match : iter->second) {
+      std::vector<Start> topLevelStarts;
+      std::vector<Start> coveredStarts;
+      for (Start start : match.starts) {
+        if (covered[start] > 0) {
+          coveredStarts.push_back(start);
+        } else {
+          topLevelStarts.push_back(start);
+        }
+        for (Start i = start; i < start + match.length; ++i) {
+          covered[i] += 1;
         }
       }
+      if (topLevelStarts.size() > 0) {
+        if (coveredStarts.size() > 0) {
+          // Mix of top level and covered starts; repeat top level matches
+          filtered.push_back(Match(topLevelStarts, match.length));
+        }
+      }
+      filtered.push_back(match);
     }
   }
-
-  float copyCost = 0.0f;
-  for (auto t : externalInputs) {
-    // again, we make the cost scale as sqrt(input size)
-    // we take coefficient 1.0f, a value intermediate of getSubgraphValue()
-    // for valuable (like conv) ops and others (like relu)
-    copyCost += 1.0f * std::sqrt(static_cast<float>(t->info.nbytes()));
-  }
-  for (auto t : externalOutputs) {
-    copyCost += 1.0f * std::sqrt(static_cast<float>(t->info.nbytes()));
-  }
-
-  sumValues -= copyCost;
-  return sumValues;
+  logging::trace("[SubgraphOutline] Separate top level matches end.");
+  return filtered;
 }
 } // namespace
 
-template <typename T>
-std::vector<Match> pruneForIoSize(const std::vector<Match> &inMatches,
-                                  const std::vector<T *> &schedule) {
-
-  std::map<T *, int> schedule_index;
-  for (int i = 0; i < schedule.size(); ++i) {
-    schedule_index[schedule[i]] = i;
-  }
-
-  // For each match m in inMatches, take either m or some sub-sequence of it
-  std::vector<Match> pruned;
-
-  // inMatches, sorted from shortest to longest
-  std::vector<Match> inMatchesIncreasing = inMatches;
-  std::sort(inMatchesIncreasing.begin(),
-            inMatchesIncreasing.end(),
-            [](const Match &a, const Match &b) { return a.length < b.length; });
-
-  // as we add to "pruned", we keep track of what positions have been outlined
-  std::vector<bool> covered(schedule.size(), false);
-
-  for (auto &m : inMatchesIncreasing) {
-    // initialize best value as full sub-sequence
-    int minStart = m.starts[0];
-    int minEnd   = m.starts[0] + m.length;
-    float minAdjustedValue =
-        getIoAdjustedValue(minStart, minEnd, schedule, schedule_index);
-
-    // consider all sub-sequences of the match, computing the IO adjusted value
-    for (int start = m.starts[0]; start < m.starts[0] + m.length; ++start) {
-      for (int end = start + 1; end <= m.starts[0] + m.length; ++end) {
-
-        // valid start (not overlapping with covered)
-        bool goodStart =
-            (!covered[start] || (start > 0 && !covered[start - 1]));
-
-        // valid end (not overlapping with covered)
-        bool goodEnd =
-            (!covered[end] || (end < schedule.size() - 1 && !covered[end + 1]));
-
-        // we don't need to check for isomorphism, sub-sequences always are iso.
-        if (goodStart && goodEnd) {
-
-          float value =
-              getIoAdjustedValue(start, end, schedule, schedule_index);
-          if (value > minAdjustedValue) {
-            minAdjustedValue = value;
-            minStart         = start;
-            minEnd           = end;
-          }
-        }
-      }
-    }
-
-    std::vector<Start> newStarts(m.starts);
-    for (auto &x : newStarts) {
-      x += minStart - m.starts[0];
-    }
-
-    Match newMatch(newStarts, minEnd - minStart);
-    pruned.push_back(newMatch);
-
-    for (auto s0 : newStarts) {
-      for (int64_t d = 0; d < newMatch.length; ++d) {
-        covered[s0 + d] = true;
-      }
-    }
-  }
-
-  // TODO : T11924 : remove if below global value threshold
-  return pruned;
-}
-} // namespace outline
+} // namespace localoutline
 
 class Match {
 public:
@@ -181,7 +141,7 @@ public:
     std::vector<Tensor *> external_outputs;
     std::set<Tensor *> all_outputs;
 
-    bool contains(const Op *) const;
+    // bool contains(const Op *) const;
     int getIndex(const Op *) const;
 
   private:
@@ -245,6 +205,7 @@ Match::Instance::Instance(const std::vector<OpId> &ops_, Graph &graph)
   }
 }
 
+/*
 bool Match::Instance::contains(const Op *op) const {
   for (auto opid : ops) {
     if (op->id == opid) {
@@ -253,6 +214,7 @@ bool Match::Instance::contains(const Op *op) const {
   }
   return false;
 }
+*/
 
 int Match::Instance::getIndex(const Op *op) const {
   for (int i = 0; i < ops.size(); i++) {
@@ -260,7 +222,7 @@ int Match::Instance::getIndex(const Op *op) const {
       return i;
     }
   }
-  throw error("Match::Instance does not contain op {}", op->id);
+  return -1;
 }
 
 void Match::Instance::addExternalInput(Tensor *tensor) {
@@ -295,6 +257,18 @@ Match::Match(const fwtools::subgraph::Match &match,
 void updateTopoCons(const std::vector<OpId> &ops,
                     const OpId &replacement_op,
                     Graph &graph) {
+
+  if (logging::shouldLog(logging::Module::none, logging::Level::Trace)) {
+    std::vector<std::string> graph_ops;
+    for (OpId opid : ops) {
+      graph_ops.push_back(graph.getOp(opid)->debugName());
+    }
+
+    logging::trace("[SubgraphOutline] Updating TopoCons for {} ops {}",
+                   graph.getOp(replacement_op)->debugName(),
+                   graph_ops);
+  }
+
   // dont include any of the ops being replaced
   auto include_op = [&](OpId opid) { return find(ops, opid) == ops.end(); };
 
@@ -334,38 +308,112 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
                               Graph &subgraph) {
 
   // Copy some attributes from the first op in the instance
-  auto scope    = graph.getOp(instance.ops.at(0))->getScope();
-  auto vgraphid = graph.getOp(instance.ops.at(0))->getOptionalVirtualGraphId();
-  auto ps       = graph.getOp(instance.ops.at(0))->getOptionalPipelineStage();
+  auto op          = graph.getOp(instance.ops.at(0));
+  auto scope       = op->getScope();
+  auto vgraphid    = op->getOptionalVirtualGraphId();
+  auto phase       = op->getOptionalPingPongPhase();
+  auto batchserial = op->getOptionalBatchSerializedPhase();
+  auto ps          = op->getOptionalPipelineStage();
+  auto recompute   = op->settings.recomputeType;
 
   // Create the call op. Note that toLoss and fromLoss are set in the
   // constructor
   auto up_call_op         = std::make_unique<CallOp>(graph, subgraph);
   auto call_op_id         = graph.moveIntoGraph(std::move(up_call_op));
-  auto call_op            = graph.getOp(call_op_id);
+  CallOp *call_op         = dynamic_cast<CallOp *>(graph.getOp(call_op_id));
   call_op->settings.scope = scope;
+  call_op->settings.recomputeType = recompute;
   call_op->setVirtualGraphId(vgraphid);
+  call_op->setPingPongPhase(phase);
   call_op->setPipelineStage(ps);
+  call_op->setBatchSerializedPhase(batchserial);
 
   // Set the position w.r.t loss, if possible. If any of the internal ops
   // is connected to the final loss, then so is this CallOp. Note that we use
   // the Ops in the instance of this Match, and not the canonical subgraph.
   for (auto opid : instance.ops) {
-    auto op = graph.getOp(opid);
-    if (op->toLoss == PathToLoss::Yes) {
+    auto instanceOp = graph.getOp(opid);
+    if (instanceOp->toLoss == PathToLoss::Yes) {
       call_op->toLoss = PathToLoss::Yes;
     }
-    if (op->fromLoss == PathFromLoss::Yes) {
+    if (instanceOp->fromLoss == PathFromLoss::Yes) {
       call_op->fromLoss = PathFromLoss::Yes;
     }
   }
 
+  // Check aliasing before disconnecting the old ops
+  for (int i = 0; i < instance.external_inputs.size(); i++) {
+    Tensor *inTensor = instance.external_inputs[i];
+    for (int j = 0; j < instance.external_outputs.size(); j++) {
+      Tensor *outTensor = instance.external_outputs[j];
+
+      if (inTensor->id == outTensor->id) {
+        throw error("[SubgraphOutline] ILE: "
+                    "{} is both subgraph input and output.",
+                    inTensor);
+      }
+
+      // alias Regions in input Tensor:
+      auto fwdAliasRegions =
+          graph.getTensors().getAliasRegions(inTensor, outTensor);
+      auto bwdAliasRegions =
+          graph.getTensors().getAliasRegions(outTensor, inTensor);
+
+      for (const auto &r : fwdAliasRegions) {
+        if (r.rank() != outTensor->info.rank()) {
+          throw error(
+              "Invalid Region of rank {} in updateTopoCons at InIndex {} "
+              "where the input Tensor is of rank {}. The Input Tensor is {}, "
+              "and it is entering CallOp {}. The Input Tensor has TensorInfo "
+              "{}.",
+              r.rank(),
+              i,
+              outTensor->info.rank(),
+              outTensor->str(),
+              call_op->str(),
+              outTensor->info);
+        }
+      }
+      for (const auto &r : bwdAliasRegions) {
+        if (r.rank() != inTensor->info.rank()) {
+          throw error(
+              "Invalid Region of rank {} in updateTopoCons at InIndex {} "
+              "where the input Tensor is of rank {}. The Input Tensor is {}, "
+              "and it is entering CallOp {}. The Input Tensor has TensorInfo "
+              "{}.",
+              r.rank(),
+              i,
+              inTensor->info.rank(),
+              inTensor->str(),
+              call_op->str(),
+              inTensor->info);
+        }
+      }
+
+      call_op->addAlias(i, j, fwdAliasRegions, bwdAliasRegions);
+      if (logging::shouldLog(logging::Module::transform,
+                             logging::Level::Trace)) {
+        logging::trace("[SubgraphOutline] Alias {} ({}) -> {} ({})",
+                       i,
+                       inTensor->id,
+                       j,
+                       outTensor->id);
+      }
+    }
+  }
+
+  double priority = -std::numeric_limits<double>::infinity();
+
   // Disconnect the old ops
   for (auto opid : instance.ops) {
-    auto op = graph.getOp(opid);
-    op->disconnectAllInputs();
-    op->disconnectAllOutputs();
+    auto old_op = graph.getOp(opid);
+    old_op->disconnectAllInputs();
+    old_op->disconnectAllOutputs();
+    priority = std::max(priority, old_op->priority);
   }
+
+  // CallOp's priority should be the max priority of the Op's that it replaces
+  call_op->priority = priority;
 
   // Connect inputs
   for (int i = 0; i < instance.external_inputs.size(); i++) {
@@ -397,6 +445,7 @@ int generate_subgraph_unique_id() { return subgraph_uid++; }
 
 class InstanceConstraints {
 public:
+  /*
   InstanceConstraints(const Match::Instance &instance, Graph &graph) {
     for (auto opid : instance.ops) {
       auto op = graph.getOp(opid);
@@ -431,17 +480,22 @@ public:
     }
   }
 
+
   bool operator!=(const InstanceConstraints &rhs) { return !(*this == rhs); }
+
 
   bool operator==(const InstanceConstraints &rhs) {
     return (internalBefores == rhs.internalBefores) &&
            (internalAfters == rhs.internalAfters);
   }
 
+  */
+
   std::map<int, std::set<int>> internalBefores;
   std::map<int, std::set<int>> internalAfters;
 };
 
+/*
 std::ostream &operator<<(std::ostream &os, const InstanceConstraints &ic) {
   os << "InstanceConstraints:";
 
@@ -475,15 +529,47 @@ void verifyTopologicalConstraints(const Match &match, Graph &graph) {
     InstanceConstraints c(match.instances.at(i), graph);
 
     if (c0 != c) {
+
+      std::vector<std::string> c0_ops;
+      std::vector<std::string> c_ops;
+
+      for (auto opid : match.instances.at(0).ops) {
+        c0_ops.push_back(graph.getOp(opid)->debugName());
+      }
+
+      for (auto opid : match.instances.at(i).ops) {
+        c_ops.push_back(graph.getOp(opid)->debugName());
+      }
+
       throw error("Internal Logic Error: Internal constraints between match "
-                  "instance \n{} \nand \n{} do not match",
+                  "instance \n{} \nand \n{} \n do not match "
+                  "(Ops: {} {}, {} {}).",
                   c0,
-                  c);
+                  c,
+                  match.instances.at(0).ops,
+                  c0_ops,
+                  match.instances.at(i).ops,
+                  c_ops);
+    }
+  }
+}
+*/
+
+void verifyMatchInstances(const Match &match) {
+  logging::debug("Checking match instances for inconsistencies");
+  auto &external_inputs = match.instances[0].external_inputs;
+  for (auto &instance : match.instances) {
+    if (instance.external_inputs.size() != external_inputs.size()) {
+      throw error("Instances of match have different external input sizes "
+                  "({} vs. {}).",
+                  external_inputs.size(),
+                  instance.external_inputs.size());
     }
   }
 }
 
 Graph &createSubgraph(const Match &match, Graph &graph) {
+
   auto &ir         = graph.getIr();
   auto subgraph_id = logging::format(
       "{}_subgraph({})", graph.id, generate_subgraph_unique_id());
@@ -491,35 +577,67 @@ Graph &createSubgraph(const Match &match, Graph &graph) {
   auto subgraph_scope = subgraph.getScope();
   auto &instance      = match.instances[0];
 
+  if (logging::shouldLog(logging::Module::transform, logging::Level::Trace)) {
+    std::stringstream ss;
+    for (int i = 0; i < instance.ops.size(); i++) {
+      auto opid = instance.ops.at(i);
+      auto op   = graph.getOp(opid);
+      ss << std::endl
+         << "    " << op->debugName() << ", "
+         << "VGID: " << (op->hasVirtualGraphId() ? op->getVirtualGraphId() : -1)
+         << ", "
+         << "PingPong phase: "
+         << (op->getOptionalPingPongPhase()
+                 ? op->getOptionalPingPongPhase().get()
+                 : -1);
+    }
+    logging::trace("[SubgraphOutline] Creating subgraph: {}, "
+                   "replacing {} instances, "
+                   "with ops: [{}]",
+                   subgraph_id,
+                   match.instances.size(),
+                   ss.str());
+  }
+
   // clone all the ops and move into subgraph
   std::map<Op *, Op *> clone_map;
+  std::vector<Op *> clones;
   for (int i = 0; i < instance.ops.size(); i++) {
-    auto opid             = instance.ops.at(i);
-    auto op               = graph.getOp(opid);
-    auto clone            = op->clone();
-    clone->settings.graph = subgraph;
-    clone->settings.scope = subgraph_scope;
-    auto cloneid          = subgraph.moveIntoGraph(std::move(clone));
-    clone_map.insert({op, subgraph.getOp(cloneid)});
+    auto opid                     = instance.ops.at(i);
+    auto op                       = graph.getOp(opid);
+    auto clone                    = op->clone();
+    clone->settings.graph         = subgraph;
+    clone->settings.scope         = subgraph_scope;
+    clone->settings.recomputeType = RecomputeType::CHECKPOINT;
+    auto cloneid                  = subgraph.moveIntoGraph(std::move(clone));
+    Op *clone_op                  = subgraph.getOp(cloneid);
+    clone_map.insert({op, clone_op});
+    clones.push_back(clone_op);
+  }
+
+  // Map out constraints by schedule match positions for all instances.
+  // If different constraints per instance exist, they either clash or can
+  // coexist. We assume instance.ops preserves schedule order.
+  std::set<std::pair<int, int>> constraints;
+  for (auto &instanceForConstraints : match.instances) {
+    for (int i = 0; i < instanceForConstraints.ops.size(); i++) {
+      auto opid   = instanceForConstraints.ops.at(i);
+      auto op     = graph.getOp(opid);
+      auto afters = graph.topoCons->getAfters(op);
+      for (Op *after_op : afters) {
+        auto j = instanceForConstraints.getIndex(after_op);
+        if (j > 0) {
+          // i before j
+          constraints.insert({i, j});
+        }
+      }
+    }
   }
 
   // Preserve topological constraints between ops being added to the subgraph
-  for (auto &op_subgraphOp : clone_map) {
-    auto op         = op_subgraphOp.first;
-    auto subgraphOp = op_subgraphOp.second;
-
-    for (auto &before : graph.topoCons->getBefores(op)) {
-      auto subgraphBefore = clone_map.find(before);
-      if (subgraphBefore != clone_map.end()) {
-        subgraph.topoCons->insert(subgraphBefore->second, subgraphOp);
-      }
-    }
-    for (auto &before : graph.topoCons->getAfters(op)) {
-      auto subgraphAfter = clone_map.find(before);
-      if (subgraphAfter != clone_map.end()) {
-        subgraph.topoCons->insert(subgraphOp, subgraphAfter->second);
-      }
-    }
+  for (auto &constraint : constraints) {
+    subgraph.topoCons->insert(clones[constraint.first],
+                              clones[constraint.second]);
   }
 
   // duplicate all the output tensors
@@ -564,7 +682,14 @@ Graph &createSubgraph(const Match &match, Graph &graph) {
       auto idx             = idx_tensor.first;
       auto tensor          = idx_tensor.second;
       auto clone_tensor_id = tensor_map.at(tensor)->id;
-      clone->connectInTensor(idx, clone_tensor_id);
+      auto *copyOp         = dynamic_cast<IpuCopyOp *>(op);
+      auto *cloneCopyOp    = dynamic_cast<IpuCopyOp *>(clone);
+      if (copyOp && cloneCopyOp) {
+        auto sourceIpu = copyOp->getSourceIpus().at(tensor->id);
+        cloneCopyOp->connectInTensor(idx, clone_tensor_id, sourceIpu);
+      } else {
+        clone->connectInTensor(idx, clone_tensor_id);
+      }
     }
 
     // connect outputs
@@ -582,7 +707,10 @@ Graph &createSubgraph(const Match &match, Graph &graph) {
 // Create a subgraph for the match and
 // replace instances of the match with a CallOp
 static std::vector<Replacement> applyMatch(const Match &match, Graph &graph) {
-  verifyTopologicalConstraints(match, graph);
+  verifyMatchInstances(match);
+
+  // TODO: Verify. This is possibly too strict. Can probably be dropped.
+  // verifyTopologicalConstraints(match, graph);
 
   auto &subgraph = createSubgraph(match, graph);
 
@@ -601,28 +729,69 @@ static std::vector<Replacement> applyMatch(const Match &match, Graph &graph) {
 // sorted so the smallest matches are at the back
 std::vector<Match> getRinseMatches(const std::vector<Op *> &ops,
                                    float threshold,
-                                   bool copyCostPruning) {
+                                   bool copyCostPruning,
+                                   bool topLevelSeparation) {
+
+  if (logging::shouldLog(logging::Module::transform, logging::Level::Trace)) {
+    std::vector<int> intSchedule = fwtools::subgraph::getIntSchedule(ops);
+    for (size_t i = 0; i < ops.size(); ++i) {
+      Op *op = ops[i];
+      logging::trace("[SubgraphOutline] "
+                     "Index: {}, ID: {}, Op: {}, "
+                     "VGID: {}, PingPong phase: {}",
+                     i,
+                     intSchedule[i],
+                     op->debugName(),
+                     op->hasVirtualGraphId() ? op->getVirtualGraphId() : -1,
+                     op->getOptionalPingPongPhase()
+                         ? op->getOptionalPingPongPhase().get()
+                         : -1);
+    }
+    logging::trace("[SubgraphOutline] Int schedule: {}", intSchedule);
+  }
 
   auto fw_matches = fwtools::subgraph::getRinseMatches(
       ops, threshold, fwtools::subgraph::getDefaultOutlinerAlgorithm());
+  int64_t num_matches_0 = fw_matches.size();
 
+  // TODO: T Copy cost pruning can cause crossing matches,
+  // and is therefore buggy/broken.
   if (copyCostPruning) {
-    fw_matches = outline::pruneForIoSize(fw_matches, ops);
+    fw_matches = fwtools::subgraph::prune::
+        pruneMatches<Op, popart::outline::IoSubgraphCostModel>(
+            fw_matches, ops, threshold);
   }
+  int64_t num_matches_1 = fw_matches.size();
+
+  // TODO: Enable this only when aliasZeroCopy is enabled, which requires
+  // separation of top-level and non-top-level matches currently.
+  if (topLevelSeparation) {
+    fw_matches = localoutline::separateTopLevelMatches(fw_matches, ops.size());
+  }
+  int64_t num_matches_2 = fw_matches.size();
+
+  // Remove the offsets caused by the boundary OPs from the matches
+  // outline::removeBoundariesOps(fw_matches, opsWithBoundaries);
+
+  logging::trace("[SubgraphOutline] Matches before pruning: {}, "
+                 "matches after IOSize: {}, "
+                 "matches after TopLevel: {}",
+                 num_matches_0,
+                 num_matches_1,
+                 num_matches_2);
 
   // Sort the matches so the smallest subgraphs are at the back.
   // `matches' is treated like a stack, so this will ensure the smallest
   // subgraphs are processed first `matches' cannot be std::stack as it needs
   // to be iterated over
-  std::sort(fw_matches.begin(),
-            fw_matches.end(),
-            [=](fwtools::subgraph::Match &p1, fwtools::subgraph::Match &p2) {
-              return p1.length > p2.length;
-            });
+  sortMatches<fwtools::subgraph::Match>(fw_matches);
 
   std::vector<Match> matches;
 
   for (auto &match : fw_matches) {
+    logging::trace("[SubgraphOutline] Match length: {}, starts: {}",
+                   match.length,
+                   match.starts);
     matches.emplace_back(match, ops);
   }
 
@@ -638,6 +807,15 @@ void applyReplacement(Match::Instance &instance, Replacement &replacement) {
   if (start != instance.ops.end()) {
     instance.ops.erase(start, start + replacement.ops.size());
     instance.ops.insert(start, replacement.replacement_op);
+  } else {
+    for (OpId id : replacement.ops) {
+      if (std::find(instance.ops.begin(), instance.ops.end(), id) !=
+          instance.ops.end()) {
+        throw error("Instance {} crossing replacement {}",
+                    instance.ops,
+                    replacement.ops);
+      }
+    }
   }
 }
 
@@ -663,12 +841,33 @@ bool SubgraphOutline::apply(Graph &graph) const {
 
   auto &ir = graph.getIr();
 
-  std::vector<Op *> outlinedOps = graph.getOpSchedule({});
+  std::vector<Op *> schedule = graph.getOpSchedule({});
+
+  // Change schedule to include boundaries that can't be outlined
+  localoutline::insertBoundariesOps(schedule);
+
+  // Get updated schedule with boundaries
+  schedule = graph.getOpSchedule({});
 
   auto matches =
-      getRinseMatches(outlinedOps,
+      getRinseMatches(schedule,
                       ir.getSessionOptions().outlineThreshold,
-                      ir.getSessionOptions().enableOutliningCopyCostPruning);
+                      ir.getSessionOptions().enableOutliningCopyCostPruning,
+                      ir.getSessionOptions().pingPongPhases > 1);
+
+  if (logging::shouldLog(logging::Module::none, logging::Level::Trace)) {
+    unsigned i = 0;
+    for (auto &match : matches) {
+      std::stringstream ss;
+      for (auto &instance : match.instances) {
+        ss << "["
+           << logging::join(instance.ops.begin(), instance.ops.end(), ", ")
+           << "]";
+      }
+      logging::trace("[SubgraphOutline] Match {}: {}", i, ss.str());
+      ++i;
+    }
+  }
 
   // matches needs to be treated like a stack
   while (!matches.empty()) {
@@ -679,7 +878,16 @@ bool SubgraphOutline::apply(Graph &graph) const {
     applyReplacements(matches, replacements);
   }
 
-  graph.getTensors().removeIsolated();
+  // Remove all boundaries
+  schedule = graph.getOpSchedule({});
+  for (Op *op : schedule) {
+    if (dynamic_cast<BoundaryOp *>(op)) {
+      graph.topoCons->remove(graph.getOp(op->id));
+      graph.eraseOp(op->id);
+    }
+  }
+
+  graph.getTensors().removeIsolated(true);
 
   return true;
 }

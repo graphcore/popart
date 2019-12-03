@@ -17,12 +17,16 @@ public:
   std::unique_ptr<Op> clone() const final;
   std::unique_ptr<Op> cloneWithNewName(const TensorId &newName) const final;
   std::map<InIndex, TensorId> optimizerInputs() const final;
-  void appendAttributes(OpSerialiserBase &) const final;
+  void appendOutlineAttributes(OpSerialiserBase &) const final;
 
   const OptimizerValue initSmm1;
   const OptimizerValue initSwd1;
   static InIndex getSmm1InIndex() { return 2; }
   static InIndex getSwd1InIndex() { return 3; }
+
+  // TODO https://phabricator.sourcevertex.net/T12562 for outlining this
+  bool isOutlineable() const final { return false; }
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };
 
 } // namespace popart

@@ -42,7 +42,20 @@ const std::map<int, int> &NegateGradOp::gradOutToNonGradIn() const {
 }
 
 namespace {
-static OpCreator<NegateOp> negateOpCreator(Onnx::Operators::Neg_6);
+
+static OpDefinition::DataTypes T = {DataType::INT8,
+                                    DataType::INT16,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT};
+
+static OpDefinition negateOpDef({OpDefinition::Inputs({{"X", T}}),
+                                 OpDefinition::Outputs({{"Y", T}}),
+                                 OpDefinition::Attributes({})});
+
+static OpCreator<NegateOp>
+    negateOpCreator(OpDefinitions({{Onnx::Operators::Neg_6, negateOpDef}}));
 
 } // namespace
 

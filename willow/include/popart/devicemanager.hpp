@@ -10,6 +10,8 @@ namespace popart {
 
 enum class DeviceType { IpuModel, Cpu, Ipu, Sim };
 
+enum class SyncPattern { FULL = 0, REPLICA, PINGPONG };
+
 class DeviceProvider;
 
 // TOD : When the Device/DeviceX classes are renamed to be ?backend? (Need to
@@ -68,7 +70,9 @@ public:
   virtual ~DeviceProvider() {}
 
   /// Get a list of ipu devices
-  virtual void enumerate(std::vector<std::shared_ptr<DeviceInfo>> &devices) = 0;
+  virtual void enumerate(std::vector<std::shared_ptr<DeviceInfo>> &devices,
+                         SyncPattern syncPattern,
+                         uint32_t replication_factor) = 0;
 
   /// Create a host device for testing
   virtual std::shared_ptr<DeviceInfo>
@@ -97,7 +101,9 @@ public:
    * attach the device before you can set it on the Session
    * \return A list of devices.
    */
-  std::vector<std::shared_ptr<DeviceInfo>> enumerateDevices();
+  std::vector<std::shared_ptr<DeviceInfo>>
+  enumerateDevices(SyncPattern syncPattern     = SyncPattern::FULL,
+                   uint32_t replication_factor = 1);
 
   /** Finds the first available hardware device, that a certain number of IPUs.
    * This method will attach to the device.
@@ -106,15 +112,19 @@ public:
    * \return A device, which can be used with a session. Will return nullptr if
    *         no device is available
    */
-  std::shared_ptr<DeviceInfo> acquireAvailableDevice(int numIpus     = 1,
-                                                     int tilesPerIpu = 1216);
+  std::shared_ptr<DeviceInfo>
+  acquireAvailableDevice(int numIpus                 = 1,
+                         int tilesPerIpu             = 1216,
+                         SyncPattern pattern         = SyncPattern::FULL,
+                         uint32_t replication_factor = 1);
 
   /** Allocates the hardware device by id. This id can be found running 'gc-info
    *  -l' This method will attache to the device
    * \param id The index of the IPU to be used
    * \return A device. Will return nullptr if the device is not  available
    */
-  std::shared_ptr<DeviceInfo> acquireDeviceById(int id);
+  std::shared_ptr<DeviceInfo>
+  acquireDeviceById(int id, SyncPattern pattern, uint32_t replication_factor);
 
   /** Create a 'simulated' CPU device
    * \return A device

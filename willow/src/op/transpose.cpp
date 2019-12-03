@@ -12,7 +12,7 @@ TransposeBaseOp::TransposeBaseOp(const OperatorIdentifier &_opid,
                                  const Op::Settings &settings_)
     : Op(_opid, settings_), perm(perm_) {}
 
-view::RegMap TransposeBaseOp::fwdRegMap(InIndex inIndex) const {
+view::RegMap TransposeBaseOp::fwdRegMap(InIndex inIndex, OutIndex) const {
   if (inIndex != 0) {
     throw error("Internal Logic Error in TransposeBaseOp::fwdRegMap."
                 "Received input index {} but only 0 allowed, "
@@ -20,19 +20,17 @@ view::RegMap TransposeBaseOp::fwdRegMap(InIndex inIndex) const {
                 inIndex,
                 str());
   }
-  // being conservative and returning the full region,
-  // even for non-full input region :
-  auto outRegion   = view::Region::getFull(outInfo(getOutIndex()).shape());
   auto emptyRegion = view::Region::getEmpty(outRank(getOutIndex()));
-  return [emptyRegion, outRegion](const view::Region &r) {
+  auto permutation = getPerm();
+  return [permutation, emptyRegion](const view::Region &r) {
     if (r.isEmpty()) {
-      return emptyRegion;
+      return view::Regions(1, emptyRegion);
     }
-    return outRegion;
+    return view::Regions(1, r.transpose(permutation));
   };
 }
 
-view::RegMap TransposeBaseOp::bwdRegMap(InIndex inIndex) const {
+view::RegMap TransposeBaseOp::bwdRegMap(InIndex inIndex, OutIndex) const {
   if (inIndex != 0) {
     throw error("Internal Logic Error in TransposeBaseOp::bwdRegMap."
                 "Received input index {} but only 0 allowed, "
@@ -40,13 +38,13 @@ view::RegMap TransposeBaseOp::bwdRegMap(InIndex inIndex) const {
                 inIndex,
                 str());
   }
-  auto inRegion    = view::Region::getFull(inInfo(getInIndex()).shape());
   auto emptyRegion = view::Region::getEmpty(inRank(getInIndex()));
-  return [emptyRegion, inRegion](const view::Region &r) {
+  auto permutation = generateReversePermutation();
+  return [permutation, emptyRegion](const view::Region &r) {
     if (r.isEmpty()) {
-      return emptyRegion;
+      return view::Regions(1, emptyRegion);
     }
-    return inRegion;
+    return view::Regions(1, r.transpose(permutation));
   };
 }
 
@@ -101,8 +99,8 @@ void TransposeBaseOp::setDefaultPerm() {
   }
 }
 
-void TransposeOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void TransposeOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("perm", getPerm());
 }
 
@@ -156,8 +154,28 @@ std::unique_ptr<Op> TransposeInplaceOp::clone() const {
 }
 
 namespace {
+
+static OpDefinition::DataTypes T = {DataType::UINT8,
+                                    DataType::UINT16,
+                                    DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT8,
+                                    DataType::INT16,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT,
+                                    DataType::BOOL};
+
+static OpDefinition
+    transposeOpDef({OpDefinition::Inputs({{"data", T}}),
+                    OpDefinition::Outputs({{"transposed", T}}),
+                    OpDefinition::Attributes({{"perm", {"*"}}})});
+
 static OpCreator<TransposeOp> transposeOpCreator(
-    Onnx::Operators::Transpose_1,
+    OpDefinitions({
+        {Onnx::Operators::Transpose_1, transposeOpDef},
+    }),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

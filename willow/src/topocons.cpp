@@ -23,39 +23,51 @@ OpsBeforeKey TopoCons::finalConsumerCons(const Tensor *tensor, Op *last) const {
   return ops;
 }
 
-void TopoCons::insert(const OpsBeforeKey &ops) {
+void TopoCons::insert(const OpsBeforeKey &ops, bool tied) {
 
   for (auto &after_befores : ops) {
     Op *after                        = after_befores.first;
     const std::vector<Op *> &befores = after_befores.second;
     for (auto &before : befores) {
-      insert(before, after);
+      insert(before, after, tied);
     }
   }
 }
 
 namespace {
-template <typename T>
-std::vector<T> getValsOrEmpty(T key, const std::map<T, std::set<T>> &M) {
+
+std::vector<Op *>
+getValsOrEmpty(Op *key,
+               const std::map<Op *, std::set<TopoOp>, POpCmp> &M,
+               bool tiedOnly) {
   auto found = M.find(key);
   if (found == M.end()) {
     return {};
   }
-  std::vector<T> vals;
+  std::vector<Op *> vals;
   vals.reserve(found->second.size());
-  for (T after : found->second) {
-    vals.push_back(after);
+  for (TopoOp after : found->second) {
+    if (!tiedOnly || after.tied)
+      vals.push_back(after.op);
   }
   return vals;
 }
 } // namespace
 
 std::vector<Op *> TopoCons::getAfters(Op *before) const {
-  return getValsOrEmpty(before, valsAfter);
+  return getValsOrEmpty(before, valsAfter, false);
 };
 
 std::vector<Op *> TopoCons::getBefores(Op *after) const {
-  return getValsOrEmpty(after, valsBefore);
+  return getValsOrEmpty(after, valsBefore, false);
+};
+
+std::vector<Op *> TopoCons::getTiedAfters(Op *before) const {
+  return getValsOrEmpty(before, valsAfter, true);
+};
+
+std::vector<Op *> TopoCons::getTiedBefores(Op *after) const {
+  return getValsOrEmpty(after, valsBefore, true);
 };
 
 void TopoCons::transfer(Op *beforeTransfer, Op *afterTransfer) {
@@ -81,18 +93,22 @@ void TopoCons::transferToMultiple(Op *beforeTransfer,
   // for all b : b -> beforeTransfer, insert
   //             b -> x for all x in afterTransfer. The edge
   //             b -> beforeTransfer will be removed at the end
-  for (Op *b : getBefores(beforeTransfer)) {
-    for (auto x : afterTransfer) {
-      insert(b, x);
+  if (valsBefore.find(beforeTransfer) != valsBefore.end()) {
+    for (TopoOp b : valsBefore[beforeTransfer]) {
+      for (auto x : afterTransfer) {
+        insert(b.op, x, b.tied);
+      }
     }
   }
 
   // for all a : beforeTransfer -> a, insert
   //             afterTransfer -> a. The edge
   //             beforeTransfer -> a will be removed at the end
-  for (Op *a : getAfters(beforeTransfer)) {
-    for (auto x : afterTransfer) {
-      insert(x, a);
+  if (valsAfter.find(beforeTransfer) != valsAfter.end()) {
+    for (TopoOp a : valsAfter[beforeTransfer]) {
+      for (auto x : afterTransfer) {
+        insert(x, a.op, a.tied);
+      }
     }
   }
 
@@ -125,7 +141,7 @@ void TopoCons::remove(Op *op) {
 }
 
 // insert the topological constraint before -> after
-void TopoCons::insert(Op *before, Op *after) {
+void TopoCons::insert(Op *before, Op *after, bool tied) {
 
   logging::ir::debug("Inserting topological constraint from {} to {}",
                      before->str(),
@@ -148,18 +164,21 @@ void TopoCons::insert(Op *before, Op *after) {
     }
   }
 
+  TopoOp topoAfter(after, tied);
+  TopoOp topoBefore(before, tied);
+
   found = valsAfter.find(before);
   if (found != valsAfter.end()) {
-    found->second.insert(after);
+    found->second.insert(topoAfter);
   } else {
-    valsAfter[before] = {after};
+    valsAfter[before] = {topoAfter};
   }
 
   found = valsBefore.find(after);
   if (found != valsBefore.end()) {
-    found->second.insert(before);
+    found->second.insert(topoBefore);
   } else {
-    valsBefore[after] = {before};
+    valsBefore[after] = {topoBefore};
   }
 }
 
@@ -183,7 +202,7 @@ std::ostream &operator<<(std::ostream &os, const TopoCons &tc) {
 
     os << logging::format("    {}:\n", op->debugName());
     for (auto o : opsAfter) {
-      os << logging::format("      {}\n", o->debugName());
+      os << logging::format("      {}\n", o.op->debugName());
     }
   }
 
@@ -194,7 +213,7 @@ std::ostream &operator<<(std::ostream &os, const TopoCons &tc) {
 
     os << logging::format("    {}:\n", op->debugName());
     for (auto o : opsBefore) {
-      os << logging::format("      {}\n", o->debugName());
+      os << logging::format("      {}\n", o.op->debugName());
     }
   }
 

@@ -18,7 +18,15 @@ std::vector<std::unique_ptr<Op>> NotOp::getGradOps() {
 }
 
 namespace {
-static OpCreator<NotOp> NotOpCreator({Onnx::Operators::Not_1});
+
+static OpDefinition::DataTypes T = {DataType::BOOL};
+
+static OpDefinition notOptDef({OpDefinition::Inputs({{"X", T}}),
+                               OpDefinition::Outputs({{"Y", T}}),
+                               OpDefinition::Attributes({})});
+
+static OpCreator<NotOp>
+    NotOpCreator(OpDefinitions({{Onnx::Operators::Not_1, notOptDef}}));
 } // namespace
 
 } // namespace popart

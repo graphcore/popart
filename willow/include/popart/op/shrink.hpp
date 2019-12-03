@@ -19,7 +19,7 @@ public:
   inplacePriorityDefault() const final;
   std::unique_ptr<Op> getInplaceVariant(const OperatorIdentifier &) const final;
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
   float lambd() const { return lambd_; }
   float bias() const { return bias_; }
 
@@ -33,7 +33,7 @@ public:
   ShrinkInplaceOp(const ShrinkOp &);
   std::unique_ptr<Op> clone() const final;
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
   float lambd() const { return lambd_; }
   float bias() const { return bias_; }
 
@@ -47,7 +47,7 @@ public:
   ShrinkGradOp(const ShrinkOp &);
   std::unique_ptr<Op> clone() const final;
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
   float lambd() const { return lambd_; }
   float bias() const { return bias_; }
 

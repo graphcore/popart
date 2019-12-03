@@ -53,7 +53,8 @@ std::vector<std::string> reservedPrefixes() {
                                     reservedAcclFinalOutPrefix(),
                                     reservedStashedPrefix(),
                                     reservedRestoredPrefix(),
-                                    reservedRandomSeedPrefix()};
+                                    reservedRandomSeedPrefix(),
+                                    cycleCountPrefix()};
 
   std::vector<std::string> optPrefs = reservedOptimizerPrefixes();
   prefs.insert(prefs.end(), optPrefs.begin(), optPrefs.end());
@@ -63,9 +64,15 @@ std::vector<std::string> reservedPrefixes() {
 
 TensorId createIntermediateTensorId(TensorId base_id) {
   static unsigned tensor_counter = 0;
-  auto temp_id = logging::format("t{}__{}", tensor_counter++, base_id);
+  auto temp_id = logging::format("{}__t{}", base_id, tensor_counter++);
   logging::ir::trace("Generating tensor id {}", temp_id);
   return temp_id;
+}
+
+TensorId getCacheArgTensorId(TensorId base_id) {
+  auto ca_id = logging::format("{}_CacheArg", base_id);
+  logging::ir::trace("Generating tensor id {}", ca_id);
+  return ca_id;
 }
 
 } // namespace popart

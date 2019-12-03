@@ -43,7 +43,16 @@ const std::map<int, int> &SqrtGradOp::gradOutToNonGradIn() const {
 }
 
 namespace {
-static OpCreator<SqrtOp> sqrtOpCreator(Onnx::Operators::Sqrt_6);
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition sqrtOpDef({OpDefinition::Inputs({{"X", T}}),
+                               OpDefinition::Outputs({{"Y", T}}),
+                               OpDefinition::Attributes({})});
+
+static OpCreator<SqrtOp> sqrtOpCreator(OpDefinitions({
+    {Onnx::Operators::Sqrt_6, sqrtOpDef},
+}));
 } // namespace
 
 } // namespace popart

@@ -28,9 +28,8 @@ public:
   void setOutShape(const Shape &value);
   const Shape &getOutShape() const;
 
-  // currently these are conservative TODO T6973
-  view::RegMap fwdRegMap(InIndex) const final;
-  view::RegMap bwdRegMap(InIndex) const final;
+  view::RegMap fwdRegMap(InIndex, OutIndex) const final;
+  view::RegMap bwdRegMap(InIndex, OutIndex) const final;
 
   bool canBeReplacedByIdentity() override;
 
@@ -83,7 +82,7 @@ public:
 
   // modifies and uses are still the defaults, but aliases changes
   // to be the same as uses (the full out region)
-  view::Region aliases(InIndex index) const final { return uses(index); }
+  view::Regions aliases(InIndex in, OutIndex) const final { return uses(in); }
 };
 
 // The gradient of reshape is the reverse of the

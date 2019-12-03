@@ -26,7 +26,7 @@ public:
   Shape getLowerPads() const;
   Shape getUpperPads() const;
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
@@ -49,7 +49,7 @@ public:
 
   const GlobalMaxPoolOp *getCloneOfCreator() const;
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 

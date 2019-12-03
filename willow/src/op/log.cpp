@@ -26,7 +26,15 @@ std::unique_ptr<Op> LogGradOp::clone() const {
 }
 
 namespace {
-static OpCreator<LogOp> logOpCreator_6(Onnx::Operators::Log_6);
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition logOpDef({OpDefinition::Inputs({{"input", T}}),
+                              OpDefinition::Outputs({{"output", T}}),
+                              OpDefinition::Attributes({})});
+
+static OpCreator<LogOp>
+    logOpCreator_6(OpDefinitions({{Onnx::Operators::Log_6, logOpDef}}));
 } // namespace
 
 } // namespace popart

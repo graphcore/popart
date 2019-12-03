@@ -85,4 +85,8 @@ void UpdateInplacePrioritiesForIpu::apply(Op *op) const {
   }
 }
 
+namespace {
+static AddPatternName<UpdateInplacePrioritiesForIpu>
+    registerName("UpdateInplacePrioritiesForIpu");
+} // namespace
 } // namespace popart

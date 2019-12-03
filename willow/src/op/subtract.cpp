@@ -81,8 +81,24 @@ void SubtractArg1GradOp::setup() {
 }
 
 namespace {
-static OpCreator<SubtractOp> subtractOpCreator({Onnx::Operators::Sub_6,
-                                                Onnx::Operators::Sub_7});
+
+static OpDefinition::DataTypes T = {DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT};
+
+static OpDefinition substractOpDef({OpDefinition::Inputs({
+                                        {"A", T},
+                                        {"B", T},
+                                    }),
+                                    OpDefinition::Outputs({{"C", T}}),
+                                    OpDefinition::Attributes({})});
+
+static OpCreator<SubtractOp> subtractOpCreator(
+    OpDefinitions({{Onnx::Operators::Sub_6, substractOpDef},
+                   {Onnx::Operators::Sub_7, substractOpDef}}));
 
 } // namespace
 

@@ -33,56 +33,6 @@ private:
   std::vector<std::size_t> getOutputShape() const;
 };
 
-class MatMulLhsGradOpx : public Opx {
-public:
-  MatMulLhsGradOpx(Op *, Devicex *);
-  ~MatMulLhsGradOpx() override = default;
-
-  MatMulLhsGradOp *getMatMulLhsGradOp() const;
-  void grow(poplar::program::Sequence &) const final;
-
-private:
-  // the Poplar tensor shape
-  // The shape of the grad op's gradient input
-  std::vector<std::size_t> getGradInputShape() const;
-  // The shape of the grad op's rhs input
-  std::vector<std::size_t> getRhsInputShape() const;
-  // The shape of the grad op's output
-  std::vector<std::size_t> getOutputShape() const;
-
-  // The ONNX shape to broadcast into to be Poplar reshape compatible
-  Shape getGradInputBroadcastShape() const;
-  Shape getRhsInputBroadcastShape() const;
-
-  // The Poplar reduction axes
-  std::vector<std::size_t> getOutputReductionAxes() const;
-};
-
-class MatMulRhsGradOpx : public Opx {
-public:
-  MatMulRhsGradOpx(Op *, Devicex *);
-  ~MatMulRhsGradOpx() override = default;
-
-  MatMulRhsGradOp *getMatMulRhsGradOp() const;
-  void grow(poplar::program::Sequence &) const final;
-
-private:
-  // the Poplar tensor shape
-  // The shape of the grad op's gradient input
-  std::vector<std::size_t> getLhsInputShape() const;
-  // The shape of the grad op's rhs input
-  std::vector<std::size_t> getGradInputShape() const;
-  // The shape of the grad op's output
-  std::vector<std::size_t> getOutputShape() const;
-
-  // The ONNX shape to broadcast into to be Poplar reshape compatible
-  Shape getLhsInputBroadcastShape() const;
-  Shape getGradInputBroadcastShape() const;
-
-  // The Poplar reduction axes
-  std::vector<std::size_t> getOutputReductionAxes() const;
-};
-
 } // namespace popx
 } // namespace popart
 

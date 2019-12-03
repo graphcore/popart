@@ -31,7 +31,16 @@ BOOST_AUTO_TEST_CASE(OpManager_Test1) {
   BOOST_CHECK(c == nullptr);
 
   // register the new op, (but it is just an AddOp)
+  static OpDefinition opDef(
+      {OpDefinition::Inputs({
+           {"input", {{DataType::FLOAT, DataType::FLOAT16}}},
+       }),
+       OpDefinition::Outputs(
+           {{"output", {{DataType::FLOAT, DataType::FLOAT16}}}}),
+       OpDefinition::Attributes({})});
+
   OpManager::registerOp({"ai_simon", "MyAdd", 2},
+                        opDef,
                         false,
                         [](const OperatorIdentifier &_opid,
                            const Op::Settings &settings,
@@ -65,7 +74,16 @@ BOOST_AUTO_TEST_CASE(OpxManager_Test1) {
 BOOST_AUTO_TEST_CASE(OpManager_Test2) {
 
   // register the new op, (but it is just an AddOp)
+  static OpDefinition opDef(
+      {OpDefinition::Inputs({
+           {"input", {{DataType::FLOAT, DataType::FLOAT16}}},
+       }),
+       OpDefinition::Outputs(
+           {{"output", {{DataType::FLOAT, DataType::FLOAT16}}}}),
+       OpDefinition::Attributes({})});
+
   OpManager::registerOp({"ai_simon", "MyAdd2", 1},
+                        opDef,
                         false,
                         [](const OperatorIdentifier &_opid,
                            const Op::Settings &settings,

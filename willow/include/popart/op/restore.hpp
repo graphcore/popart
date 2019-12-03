@@ -26,7 +26,7 @@ public:
 
   int64_t getStashSize() { return stashSize; }
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
 private:
   int64_t stashSize;
@@ -43,8 +43,8 @@ public:
   static InIndex getActToRestoreInIndex() { return 1; }
 
   // This Op aliases and modifies the input at index getVarIndex()
-  view::Region aliases(InIndex) const final;
-  view::Region modifies(InIndex) const final;
+  view::Regions aliases(InIndex in, OutIndex) const final;
+  view::Regions modifies(InIndex) const final;
 };
 
 } // namespace popart

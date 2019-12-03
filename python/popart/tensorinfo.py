@@ -1,5 +1,6 @@
 import popart
 import numpy as np
+from popart_core import _TensorInfoCore
 
 
 def _get_popart_type(dtype):
@@ -19,7 +20,7 @@ def _get_popart_type(dtype):
     }[dtype]
 
 
-class TensorInfo(popart.TensorInfoCore):
+class TensorInfo(_TensorInfoCore):
     """TensorInfo(dtype, shape)
     TensorInfo(numpy.ndarray)"""
 

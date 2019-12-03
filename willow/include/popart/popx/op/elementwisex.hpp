@@ -38,6 +38,7 @@ public:
   InputCreatorType getInputCreatorType(InIndex) const override;
   poplar::Tensor
       unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const override;
+  view::RegMap unwindRegion(InIndex, OutIndex) const override;
 };
 
 // non-inplace
@@ -72,6 +73,7 @@ public:
   InputCreatorType getInputCreatorType(InIndex) const override;
   poplar::Tensor
   unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const override;
+  view::RegMap unwindRegion(InIndex, OutIndex) const override;
 };
 
 // Base class for binary comparison operations

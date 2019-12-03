@@ -95,7 +95,7 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
     popart.getLogger().setLevel("TRACE")
     popart.getLogger("session").setLevel("WARN")
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.logDir = outputdir
     opts.constantWeights = False
 

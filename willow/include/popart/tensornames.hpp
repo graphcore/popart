@@ -52,6 +52,8 @@ std::vector<std::string> reservedPrefixes();
 // Create a new intermediate tensor id with a unique name
 TensorId createIntermediateTensorId(TensorId base_id);
 
+TensorId getCacheArgTensorId(TensorId base_id);
+
 constexpr const char *reservedDefaultWeightDecayScaleFactor0Prefix() {
   return "weightDecayScaleFactor0___default___";
 }
@@ -100,6 +102,8 @@ constexpr const char *hostReduceGradCopyPrefix() {
 constexpr const char *hostReduceVarCopyPrefix() {
   return "hostReduceVarCopy___";
 }
+
+constexpr const char *cycleCountPrefix() { return "cycleCount___"; }
 
 } // namespace popart
 

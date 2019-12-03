@@ -21,11 +21,10 @@ public:
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
-  // currently these are conservative TODO T6973
-  view::RegMap fwdRegMap(InIndex) const final;
-  view::RegMap bwdRegMap(InIndex) const final;
+  view::RegMap fwdRegMap(InIndex, OutIndex) const final;
+  view::RegMap bwdRegMap(InIndex, OutIndex) const final;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
@@ -67,7 +66,7 @@ public:
 
   // modifies and uses are still the defaults, but aliases changes
   // to be the same as uses (the full out region)
-  view::Region aliases(InIndex index) const final;
+  view::Regions aliases(InIndex in, OutIndex) const final;
 };
 
 // The gradient of a flatten is a reshape back to the original shape

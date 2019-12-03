@@ -27,13 +27,12 @@ def test_get_pipeline_stage():
         assert (builder.hasPipelineStage() == True)
         assert (builder.getPipelineStage() == 0)
 
-        # Pipeline stage isn't stacked, so this has no effect, but...
         with builder.pipelineStage(1):
             assert (builder.hasPipelineStage() == True)
-            assert (builder.getPipelineStage() == 0)
+            assert (builder.getPipelineStage() == 1)
 
-        # ...since we've now exited the context, pipeline stage will have been unset
-        assert (builder.hasPipelineStage() == False)
+        assert (builder.hasPipelineStage() == True)
+        assert (builder.getPipelineStage() == 0)
 
 
 def test_get_virtual_graph():
@@ -61,13 +60,13 @@ def test_get_virtual_graph():
         assert (builder.hasVirtualGraph() == True)
         assert (builder.getVirtualGraph() == 0)
 
-        # Virtual graph isn't stacked, so this has no effect, but...
+        # Virtual graph is stacked now
         with builder.virtualGraph(1):
             assert (builder.hasVirtualGraph() == True)
-            assert (builder.getVirtualGraph() == 0)
+            assert (builder.getVirtualGraph() == 1)
 
-        # ...since we've now exited the context, virtual graph will have been unset
-        assert (builder.hasVirtualGraph() == False)
+        assert (builder.hasVirtualGraph() == True)
+        assert (builder.getVirtualGraph() == 0)
 
 
 def test_get_name_scope():

@@ -15,7 +15,8 @@ public:
   // ordering constraints form a DAG, this schedule will contain all
   // the Ops
   std::vector<Op *> getPartialOpSchedule(const OpsBeforeKey &,
-                                         const Graph &) const;
+                                         const Graph &,
+                                         bool respectPingPongPhase) const;
 };
 
 } // namespace popart

@@ -123,5 +123,7 @@ def _test_gemm_grad(op_tester, A, B, C, alpha, beta, transA, transB):
         o.backward(torch.tensor(d__o))
         return [o, a.grad, b.grad, c.grad, None]
 
-    op_tester.passes = ['GemmDecomposition', 'PreUniRepl']
+    op_tester.passes = [
+        'GemmDecomposition', 'PreUniRepl', 'MatMulLhsGradOp', 'MatMulRhsGradOp'
+    ]
     op_tester.run(init_builder, reference, 'train')

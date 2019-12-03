@@ -35,8 +35,17 @@ const std::vector<GradInOutMapper> &SumArgGradOp::gradInputInfo() const {
 }
 
 namespace {
-static OpCreator<SumOp> sumOpCreator({Onnx::Operators::Sum_6,
-                                      Onnx::Operators::Sum_8});
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition sumOpDef({OpDefinition::Inputs({
+                                  {"data_0", T},
+                              }),
+                              OpDefinition::Outputs({{"sum", T}}),
+                              OpDefinition::Attributes({})});
+
+static OpCreator<SumOp> sumOpCreator(OpDefinitions(
+    {{Onnx::Operators::Sum_6, sumOpDef}, {Onnx::Operators::Sum_8, sumOpDef}}));
 } // namespace
 
 } // namespace popart

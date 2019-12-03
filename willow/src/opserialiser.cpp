@@ -33,6 +33,10 @@ void OpSerialiser::appendAttribute(const std::string &name, int64_t value) {
   appendAttr(name, value);
 }
 
+void OpSerialiser::appendAttribute(const std::string &name, int value) {
+  appendAttr(name, value);
+}
+
 void OpSerialiser::appendAttribute(const std::string &name, uint32_t value) {
   appendAttr(name, value);
 }
@@ -65,6 +69,11 @@ void OpSerialiser::appendAttribute(const std::string &name, bool value) {
 void OpSerialiser::appendAttribute(const std::string &name,
                                    const Scope &scope) {
   appendAttr(name, scope);
+}
+
+void OpSerialiser::appendAttribute(const std::string &name,
+                                   const std::map<TensorId, uint64_t> map) {
+  appendAttr(name, logging::format("{}", map));
 }
 
 template <typename T>
@@ -193,6 +202,10 @@ void OpJsonSerialiser::appendAttribute(const std::string &name, int64_t value) {
   appendAttr(name, value);
 }
 
+void OpJsonSerialiser::appendAttribute(const std::string &name, int value) {
+  appendAttr(name, value);
+}
+
 void OpJsonSerialiser::appendAttribute(const std::string &name,
                                        uint32_t value) {
   appendAttr(name, value);
@@ -229,6 +242,11 @@ void OpJsonSerialiser::appendAttribute(const std::string &name,
   appendAttr(name, scope);
 }
 
+void OpJsonSerialiser::appendAttribute(const std::string &name,
+                                       const std::map<TensorId, uint64_t> map) {
+  appendAttr(name, logging::format("{}", map));
+}
+
 template <typename T>
 void OpJsonSerialiser::appendAttr(const std::string &name, const T &value) {
   attributesAppended = true;
@@ -251,6 +269,10 @@ void OpEquivIdCreator::appendAttribute(const std::string &, float value) {
 }
 
 void OpEquivIdCreator::appendAttribute(const std::string &, int64_t value) {
+  appendAttr(value);
+}
+
+void OpEquivIdCreator::appendAttribute(const std::string &, int value) {
   appendAttr(value);
 }
 
@@ -290,6 +312,16 @@ void OpEquivIdCreator::appendAttribute(const std::string &, bool value) {
 void OpEquivIdCreator::appendAttribute(const std::string &,
                                        const Scope &scope) {
   appendAttr(scope);
+}
+
+void OpEquivIdCreator::appendAttribute(const std::string &,
+                                       const std::map<TensorId, uint64_t> map) {
+  std::vector<int64_t> vec;
+  vec.reserve(map.size());
+  for (auto &elem : map) {
+    vec.push_back(elem.second);
+  }
+  appendAttr(vec);
 }
 
 void OpEquivIdCreator::appendForwardOp(const Op *op) {

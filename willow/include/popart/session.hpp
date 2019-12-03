@@ -50,6 +50,11 @@ public:
   void weightsToHost();
 
   /**
+   * Copy the cycle count tensor to host from the device
+   */
+  uint64_t getCycleCount();
+
+  /**
    * Perform one step.
    *
    * input data  : from address in stepIO.in
@@ -182,6 +187,18 @@ protected:
    * Flag to indicate if weightsFromHost has been called
    */
   bool weightsFromHostCalled = false;
+
+  /**
+   * Flag to indicate if run has been called
+   */
+  bool runCalled = false;
+
+  /**
+
+   * Flag to indicate if optimizerFromHost has been called since and
+   * optimizer was last created/updated on the host
+   */
+  bool optimizerFromHostCalledSinceLastUpdate = false;
 };
 
 class InferenceSession : public Session {
@@ -287,9 +304,11 @@ public:
    * `getGradAndVarStreamIds` the streams can be used to copy gradients to the
    * host to perform collective operations after which the variables can be
    * streamed back after they have been updated to the device.
+   * `index` referes to the replica index when using replicated graphs.
    */
   void connectStreamToCallback(const std::string &streamHandle,
-                               std::function<void(void *)> callback);
+                               std::function<void(void *)> callback,
+                               unsigned index = 0);
 
 private:
   void configureFromOnnx(const std::string &model,

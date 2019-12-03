@@ -15,10 +15,14 @@ public:
   std::unique_ptr<Op> clone() const final;
   std::unique_ptr<Op> cloneWithNewName(const TensorId &newName) const final;
   std::map<InIndex, TensorId> optimizerInputs() const final;
-  void appendAttributes(OpSerialiserBase &) const final;
+  void appendOutlineAttributes(OpSerialiserBase &) const final;
 
   const OptimizerValue initSlr1;
   static InIndex getSlr1InIndex() { return 2; }
+
+  // TODO https://phabricator.sourcevertex.net/T12562 for outlining this
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+  bool isOutlineable() const final { return false; }
 };
 
 } // namespace popart

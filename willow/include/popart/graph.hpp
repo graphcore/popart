@@ -73,7 +73,8 @@ public:
   std::vector<Op *> getOpSchedule(const OpsBeforeKey &) const;
 
   // Do all the Ops with all their dependencies form a DAG?
-  bool isSchedulable(const OpsBeforeKey &) const;
+  bool isSchedulable(const OpsBeforeKey &,
+                     bool respectPingPongPhases = false) const;
 
   // There are ops in the graph with the recompute attribute, derived
   // from user-specified onnx node attribute
@@ -105,6 +106,9 @@ public:
   void removeOutput(const TensorId &);
   TensorId getOutputId(OutIndex idx) const { return graph_outputs.at(idx); }
 
+  void markAsZeroCopy(const TensorId &);
+  bool isMarkedAsZeroCopy(const TensorId &) const;
+
   TensorId addScope(const TensorId &) const;
   TensorId removeScope(const TensorId &) const;
   Scope getScope() const;
@@ -129,6 +133,7 @@ private:
   std::map<OpId, std::unique_ptr<Op>> ops;
   std::vector<TensorId> graph_inputs;
   std::vector<TensorId> graph_outputs;
+  std::vector<TensorId> zero_copy;
   std::unique_ptr<Scheduler> scheduler;
   std::vector<GradInOutMapper> gradInInfo;
 
@@ -137,11 +142,17 @@ private:
 
 template <typename T>
 void Graph::connectInputs(const T &inContainer, OpId opId) {
-  Op *op = ops[opId].get();
+  Op *op              = ops[opId].get();
+  auto optionalInputs = op->optionalInputs();
   for (int inIndex = 0; inIndex < inContainer.input_size(); ++inIndex) {
     auto &inName = inContainer.input(inIndex);
-    if (inName == "") {
-      // no input at this position
+    if (inName == TensorId()) {
+      if (optionalInputs.find(inIndex) == optionalInputs.end()) {
+        throw error(
+            "No input found for input {} of {}, but input is not optional",
+            inIndex,
+            op->debugName());
+      }
     } else {
       auto scopedName = getTensors().find(inName, op->getScope());
       // default: connects tensor <-> op, in both directions.
@@ -156,7 +167,7 @@ template <typename T>
 void Graph::connectOutputs(const T &outContainer, OpId opId) {
   for (int outIndex = 0; outIndex < outContainer.output_size(); ++outIndex) {
     auto &outName = outContainer.output(outIndex);
-    if (outName == "") {
+    if (outName == TensorId()) {
       // no output at this position
     } else {
       // ONNX specifies that a tensor is the output of at most 1 node.

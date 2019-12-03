@@ -30,7 +30,9 @@ public:
   // weight decay scaling factor
   const OptimizerValue initWdsf0;
 
-  void appendAttributes(OpSerialiserBase &) const final;
+  void appendOutlineAttributes(OpSerialiserBase &) const final;
+
+  std::set<InIndex> optionalInputs() const final;
 };
 
 // The "0" in the name signifies that there are no persistant Tensors required
@@ -45,6 +47,7 @@ public:
 
   std::unique_ptr<Op> clone() const final;
   std::unique_ptr<Op> cloneWithNewName(const TensorId &newName) const final;
+  float getSubgraphValue() const final;
 };
 
 } // namespace popart

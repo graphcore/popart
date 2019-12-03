@@ -20,7 +20,7 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
 private:
   int64_t stashSize;

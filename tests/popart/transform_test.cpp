@@ -16,14 +16,14 @@ public:
   TestTransform() : Transform() {}
   virtual ~TestTransform() override {}
 
-  virtual bool apply(Graph &) const override final {
+  virtual bool apply(Graph &) const final {
     executedCount++;
     return true;
   }
 
-  virtual std::size_t getId() const override final { return id(); }
+  virtual std::size_t getId() const final { return id(); }
 
-  virtual std::string getName() const override final { return "TestTransform"; }
+  virtual std::string getName() const final { return "TestTransform"; }
 
   static int executedCount;
 };

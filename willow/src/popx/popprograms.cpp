@@ -26,6 +26,10 @@ poplar::program::Sequence &PopPrograms::setRandomSeedFromHostFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::SETRANDOMSEEDFROMHOST)];
 }
 
+poplar::program::Sequence &PopPrograms::cycleCountTensorToHostFragment() {
+  return seqs[static_cast<int>(ProgramFragmentIndex::CYCLECOUNTTENSORTOHOST)];
+}
+
 poplar::program::Sequence &PopPrograms::initFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::INIT)];
 }
@@ -72,9 +76,17 @@ poplar::program::Sequence PopPrograms::setRandomSeedFromHost() {
   return prog;
 }
 
-void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
-                                   poplar::program::Sequence &sq,
-                                   std::ostringstream &ss) {
+poplar::program::Sequence PopPrograms::cycleCountTensorToHost() {
+  poplar::program::Sequence prog;
+  prog.add(cycleCountTensorToHostFragment());
+  return prog;
+}
+
+void PopPrograms::addPipelineCycle(
+    PipelineCycle pCycle,
+    poplar::program::Sequence &sq,
+    std::ostringstream &ss,
+    std::map<PipelineStage, poplar::Function> &fwdFunctions) {
   // Inside the each phase, conditionally do:
   //
   // 1. The pre-forward fragment
@@ -99,7 +111,7 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
       }
     }
   } else {
-    if (dv_p->useSyntheticData() == false) {
+    if (dv_p->ir().useSyntheticData() == false) {
       throw error(
           "There are no ToDeviceStream pipeline program fragments. Check that "
           "the stream copies have been added to the correct fragment.");
@@ -107,10 +119,10 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
   }
 
   // 3.
-  for (auto &stage_seq : pipelineSeqs.at(PipelineFragmentId::Forward)) {
+  for (auto &stage_seq : fwdFunctions) {
     if (pInfo.doStage(pCycle, stage_seq.first)) {
       ss << "\n  ps" << stage_seq.first << " : Forward";
-      sq.add(stage_seq.second);
+      sq.add(poplar::program::Call(stage_seq.second));
     }
   }
 
@@ -208,12 +220,19 @@ poplar::program::Sequence PopPrograms::getMainProgramFromPipelineFragments() {
 
   PipelineInfo pInfo = dv_p->pipelineInfo();
 
+  std::map<PipelineStage, poplar::Function> fwdFunctions;
+
+  for (auto &stage_seq : pipelineSeqs.at(PipelineFragmentId::Forward)) {
+    fwdFunctions.insert(
+        {stage_seq.first, dv_p->graph().addFunction(stage_seq.second)});
+  }
+
   poplar::program::Sequence fill;
   for (PipelineCycle pCycle = pInfo.fillPhase.start;
        pCycle <= pInfo.fillPhase.end;
        pCycle++) {
     ss << "\nPipeline Cycle " + std::to_string(pCycle) + ":";
-    addPipelineCycle(pCycle, fill, ss);
+    addPipelineCycle(pCycle, fill, ss, fwdFunctions);
   }
 
   // All pipeline cycles in the main phase are identical. So we create the
@@ -221,14 +240,14 @@ poplar::program::Sequence PopPrograms::getMainProgramFromPipelineFragments() {
   poplar::program::Sequence main;
   int64_t mainCycles = pInfo.mainPhase.end - pInfo.mainPhase.start + 1;
   ss << "\nPipeline Cycle 'Main', " + std::to_string(mainCycles) + " cycles";
-  addPipelineCycle(pInfo.mainPhase.start, main, ss);
+  addPipelineCycle(pInfo.mainPhase.start, main, ss, fwdFunctions);
 
   poplar::program::Sequence flush;
   for (PipelineCycle pCycle = pInfo.flushPhase.start;
        pCycle <= pInfo.flushPhase.end;
        pCycle++) {
     ss << "\nPipeline Cycle " + std::to_string(pCycle) + ":";
-    addPipelineCycle(pCycle, flush, ss);
+    addPipelineCycle(pCycle, flush, ss, fwdFunctions);
   }
 
   logging::devicex::debug("Pipelining program construction summary:");
@@ -263,15 +282,14 @@ poplar::program::Sequence PopPrograms::getMainProgramFromPipelineFragments() {
 }
 
 poplar::program::Sequence PopPrograms::program() {
+  poplar::program::Sequence outer;
   if (dv_p->ir().getSessionOptions().enablePipelining) {
-    return getMainProgramFromPipelineFragments();
+    outer.add(getMainProgramFromPipelineFragments());
   } else {
     poplar::program::Sequence prog;
     prog.add(preForwardFragment());
     prog.add(forwardFragment());
     prog.add(backwardFragment());
-
-    poplar::program::Sequence outer;
 
     outer.add(initFragment());
 
@@ -289,9 +307,13 @@ poplar::program::Sequence PopPrograms::program() {
     outer.add(poplar::program::Repeat(dv_p->ir().getDataFlow().batchesPerStep(),
                                       prog));
     outer.add(toHostFinalCopyFragment());
-
-    return outer;
   }
+
+  if (dv_p->ir().getSessionOptions().instrumentWithHardwareCycleCounter) {
+    dv_p->instrumentWithHardwareCycleCounter(outer);
+  }
+
+  return outer;
 }
 
 poplar::program::Sequence PopPrograms::weightsToHost() {
@@ -301,11 +323,12 @@ poplar::program::Sequence PopPrograms::weightsToHost() {
 std::vector<poplar::program::Program> PopPrograms::progs() {
   std::vector<poplar::program::Program> ps(ProgramIndex::N);
 
-  ps[ProgramIndex::WEIGHTSFROMHOST]       = weightsFromHost();
-  ps[ProgramIndex::OPTIMIZERFROMHOST]     = optimizerFromHost();
-  ps[ProgramIndex::SETRANDOMSEEDFROMHOST] = setRandomSeedFromHost();
-  ps[ProgramIndex::PROGRAM]               = program();
-  ps[ProgramIndex::WEIGHTSTOHOST]         = weightsToHost();
+  ps[ProgramIndex::WEIGHTSFROMHOST]        = weightsFromHost();
+  ps[ProgramIndex::OPTIMIZERFROMHOST]      = optimizerFromHost();
+  ps[ProgramIndex::SETRANDOMSEEDFROMHOST]  = setRandomSeedFromHost();
+  ps[ProgramIndex::PROGRAM]                = program();
+  ps[ProgramIndex::WEIGHTSTOHOST]          = weightsToHost();
+  ps[ProgramIndex::CYCLECOUNTTENSORTOHOST] = cycleCountTensorToHost();
 
   return ps;
 }
@@ -347,12 +370,14 @@ poplar::Function &PopPrograms::getFragmentFunction(const Graph &called_graph,
   return funcs.at(called_graph.id.str());
 }
 
-bool PopPrograms::hasBeenRecomputed(OpId id) const {
-  auto itHas = (beenRecomputed.find(id) != beenRecomputed.end());
+bool PopPrograms::hasBeenRecomputed(OpId id, PingPongPhase phase) const {
+  auto itHas = (beenRecomputed.find({id, phase}) != beenRecomputed.end());
   return itHas;
 }
 
-void PopPrograms::recordRecomputed(OpId id) { beenRecomputed.insert(id); }
+void PopPrograms::recordRecomputed(OpId id, PingPongPhase phase) {
+  beenRecomputed.insert({id, phase});
+}
 
 poplar::program::Sequence &PopPrograms::recomputeFragment(OpId id) {
   auto found = recomputeSeqs.find(id);

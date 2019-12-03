@@ -39,8 +39,16 @@ std::unique_ptr<Op> CeilInplaceOp::clone() const {
 }
 
 namespace {
-static OpCreator<CeilOp> ceilOpCreator({Onnx::Operators::Ceil_1,
-                                        Onnx::Operators::Ceil_6});
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition ceilOpDef({OpDefinition::Inputs({{"X", T}}),
+                               OpDefinition::Outputs({{"Y", T}}),
+                               OpDefinition::Attributes({})});
+
+static OpCreator<CeilOp>
+    ceilOpCreator(OpDefinitions({{Onnx::Operators::Ceil_1, ceilOpDef},
+                                 {Onnx::Operators::Ceil_6, ceilOpDef}}));
 
 } // namespace
 } // namespace popart

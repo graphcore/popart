@@ -132,9 +132,10 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
         print('{0}. {1}'.format(idx, d))
     print("")
 
-    opts = popart.SessionOptionsCore()
-    opts.ignoreData = syntheticData
+    opts = popart.SessionOptions()
     opts.logDir = outputdir
+    if syntheticData == True:
+        opts.syntheticDataMode = popart.SyntheticDataMode.RandomNormal
 
     modelProtoX = fnModel0
     if transformations:

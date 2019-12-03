@@ -654,7 +654,7 @@ def test_batchnorm_repeated():
 
     device = popart.DeviceManager().createCpuDevice()
 
-    options = popart.SessionOptionsCore()
+    options = popart.SessionOptions()
     options.enableStochasticRounding = False
 
     session = popart.InferenceSession(fnModel=proto,

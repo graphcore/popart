@@ -594,6 +594,22 @@ TensorId createStashableRandomSeed(GetRandomSeedOp *randomSeedOp) {
   return randomSeedClone->id;
 }
 
+bool containsSeedTensor(std::vector<TensorId> ids) {
+  bool containsSeedFromHost =
+      std::find(ids.begin(),
+                ids.end(),
+                GetRandomSeedOp::getStreamedSeedTensorId()) != ids.end();
+  bool containsUpdatedSeed =
+      std::find(ids.begin(),
+                ids.end(),
+                GetRandomSeedOp::getUpdatedSeedTensorId()) != ids.end();
+
+  if (containsSeedFromHost || containsUpdatedSeed) {
+    return true;
+  }
+  return false;
+}
+
 } // namespace
 
 bool Pipeline::apply(Graph &graph) const {
@@ -627,7 +643,7 @@ bool Pipeline::apply(Graph &graph) const {
     depth = ir.getSessionOptions().accumulationFactor;
     if (depth < minDepth) {
       // For replicated graphs we are replicating the entire pipeline, so these
-      // condidtions still hold.
+      // conditions still hold.
       throw error("For pipelining, depth (gradient accumulation factor) must "
                   "be at least {} "
                   "for {} IPUs",
@@ -694,7 +710,8 @@ bool Pipeline::apply(Graph &graph) const {
   // 0. Contiguate the IPUCopies
   ContiguateIpuCopyIndicesPattern contiguator;
   for (auto ipuCopyOp : getIpuCopyOps()) {
-    if (contiguator.matches(ipuCopyOp)) {
+    if (!ipuCopyOp->isExcludedFromPattern(&contiguator) &&
+        contiguator.matches(ipuCopyOp)) {
       logging::transform::debug("Contiguating {}", ipuCopyOp->debugName());
       contiguator.apply(ipuCopyOp);
     }
@@ -733,7 +750,7 @@ bool Pipeline::apply(Graph &graph) const {
   std::vector<TensorId> toStashCandidateTensors =
       getStashCandidateTensors(graph);
 
-  if (ir.requiresRandomSeed()) {
+  if (ir.requiresRandomSeed() && containsSeedTensor(toStashCandidateTensors)) {
     // Neither the input or the output of a GetRandomSeedOp should be stashed.
     auto getRandomSeedOp = findGetRandomSeedOp(graph);
     boost::remove_erase(toStashCandidateTensors, getRandomSeedOp->inId(0));

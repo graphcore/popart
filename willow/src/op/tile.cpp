@@ -136,8 +136,30 @@ bool TileOp::canBeReplacedByIdentity() {
 }
 
 namespace {
-static OpCreator<TileOp> tileOpCreator({Onnx::Operators::Tile_1,
-                                        Onnx::Operators::Tile_6});
+
+static OpDefinition::DataTypes T  = {DataType::UINT8,
+                                    DataType::UINT16,
+                                    DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT8,
+                                    DataType::INT16,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT,
+                                    DataType::BOOL};
+static OpDefinition::DataTypes T1 = {DataType::INT64};
+
+static OpDefinition tileOpDef({OpDefinition::Inputs({
+                                   {"input", T},
+                                   {"repeats", T1, true},
+                               }),
+                               OpDefinition::Outputs({{"output", T}}),
+                               OpDefinition::Attributes({})});
+
+static OpCreator<TileOp>
+    tileOpCreator(OpDefinitions({{Onnx::Operators::Tile_1, tileOpDef},
+                                 {Onnx::Operators::Tile_6, tileOpDef}}));
 } // namespace
 
 } // namespace popart

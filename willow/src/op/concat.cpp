@@ -39,7 +39,7 @@ void ConcatOp::regMapPreChecks(InIndex inIndex) const {
   }
 }
 
-view::RegMap ConcatOp::fwdRegMap(InIndex inIndex) const {
+view::RegMap ConcatOp::fwdRegMap(InIndex inIndex, OutIndex) const {
   regMapPreChecks(inIndex);
   int64_t offset = outOffsets[inIndex];
   int64_t axisIn = getAxis();
@@ -48,11 +48,11 @@ view::RegMap ConcatOp::fwdRegMap(InIndex inIndex) const {
     view::UppBounds upper = r_in.getUpper();
     lower[axisIn] += offset;
     upper[axisIn] += offset;
-    return view::Region(lower, upper);
+    return view::Regions(1, view::Region(lower, upper));
   };
 }
 
-view::RegMap ConcatOp::bwdRegMap(InIndex inIndex) const {
+view::RegMap ConcatOp::bwdRegMap(InIndex inIndex, OutIndex) const {
   regMapPreChecks(inIndex);
   int64_t offset = outOffsets[inIndex];
   int64_t axisIn = getAxis();
@@ -62,7 +62,7 @@ view::RegMap ConcatOp::bwdRegMap(InIndex inIndex) const {
     lower[axisIn] -= offset;
     upper[axisIn] -= offset;
     // TODO T8446 : check intersect?
-    return view::Region(lower, upper);
+    return view::Regions(1, view::Region(lower, upper));
   };
 }
 
@@ -204,8 +204,8 @@ ConcatGradOp::ConcatGradOp(const ConcatOp &fwd, InIndex inputIndex)
   gradOutToNonGradInInfo = {{getOutIndex(), ConcatOp::getInIndex(fwdInput)}};
 }
 
-void ConcatOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void ConcatOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
 }
 
@@ -233,8 +233,8 @@ const std::map<int, int> &ConcatGradOp::gradOutToNonGradIn() const {
 
 void ConcatGradOp::setup() { outInfo(getOutIndex()) = gradInfo; }
 
-void ConcatGradOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void ConcatGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
   os.appendAttribute("start", start);
   os.appendAttribute("end", end);
@@ -248,10 +248,29 @@ int64_t ConcatGradOp::getEnd() const { return end; }
 
 namespace {
 
+// Do we support other types??
+static OpDefinition::DataTypes T = {DataType::UINT8,
+                                    DataType::UINT16,
+                                    DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT8,
+                                    DataType::INT16,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT,
+                                    DataType::BOOL};
+
+static OpDefinition concatOpDef({OpDefinition::Inputs({{"inputs", T}}),
+                                 OpDefinition::Outputs({{"concat_result", T}}),
+                                 OpDefinition::Attributes({
+                                     {"axis", {"*"}},
+                                 })});
+
 static OpCreator<ConcatOp> concatOpCreator(
-    {Onnx::Operators::Concat_1,
-     Onnx::Operators::Concat_4,
-     Onnx::Operators::Concat_11},
+    OpDefinitions({{Onnx::Operators::Concat_1, concatOpDef},
+                   {Onnx::Operators::Concat_4, concatOpDef},
+                   {Onnx::Operators::Concat_11, concatOpDef}}),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {
@@ -260,7 +279,6 @@ static OpCreator<ConcatOp> concatOpCreator(
       return std::unique_ptr<Op>(new ConcatOp(_opid, axis, settings));
     },
     true);
-
 } // namespace
 
 } // namespace popart

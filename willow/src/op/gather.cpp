@@ -56,8 +56,8 @@ void GatherOp::setup() {
       TensorInfo(inInfo(dataInIndex()).dataType(), data_shape);
 }
 
-void GatherOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void GatherOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
 }
 
@@ -96,14 +96,34 @@ void GatherGradOp::setup() { outInfo(gradOutIndex()) = fwdDataInfo; }
 
 int64_t GatherGradOp::getAxis() const { return axis; }
 
-void GatherGradOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void GatherGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
 }
 
 namespace {
+
+static OpDefinition::DataTypes T  = {DataType::UINT8,
+                                    DataType::UINT16,
+                                    DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT8,
+                                    DataType::INT16,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT,
+                                    DataType::BOOL};
+static OpDefinition::DataTypes T1 = {DataType::INT32, DataType::INT64};
+
+static OpDefinition
+    gatherOpDef({OpDefinition::Inputs({{"data", T}, {"indices", T1}}),
+                 OpDefinition::Outputs({{"Y", T}}),
+                 OpDefinition::Attributes({{"axis", {"*"}}})});
+
 static OpCreator<GatherOp> gatherOpCreator(
-    {Onnx::Operators::Gather_1, Onnx::Operators::Gather_11},
+    OpDefinitions({{Onnx::Operators::Gather_1, gatherOpDef},
+                   {Onnx::Operators::Gather_11, gatherOpDef}}),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

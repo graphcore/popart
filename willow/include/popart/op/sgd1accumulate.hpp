@@ -16,10 +16,11 @@ public:
   std::unique_ptr<Op> clone() const final;
   std::unique_ptr<Op> cloneWithNewName(const TensorId &newName) const final;
   std::map<InIndex, TensorId> optimizerInputs() const final;
-  void appendAttributes(OpSerialiserBase &) const final;
+  void appendOutlineAttributes(OpSerialiserBase &) const final;
 
   const OptimizerValue initDpsf1;
   static InIndex getDpsf1InIndex() { return 2; }
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };
 
 } // namespace popart

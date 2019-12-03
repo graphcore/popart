@@ -22,21 +22,31 @@ bool PreAliasPattern::touchesAnchored(Op *op) const {
   return false;
 };
 
-void Pattern::initialise(std::string pattern_name_) {
-  pattern_name = pattern_name_;
+bool PreAliasPattern::touchesInputToLoss(Op *op) const {
+  for (auto &tensor : touches(op)) {
+    if (op->getIr().isInputToLoss(tensor)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 void Pattern::transferBaseProperties(Op *from, Op *to) const {
   if (from->hasVirtualGraphId()) {
     to->setVirtualGraphId(from->getVirtualGraphId());
   }
+  if (from->hasPingPongPhase()) {
+    to->setPingPongPhase(from->getPingPongPhase());
+  }
   if (from->hasPipelineStage()) {
     to->setPipelineStage(from->getPipelineStage());
   }
 
   to->settings.recomputeType = from->settings.recomputeType;
-
-  to->priority = from->priority;
+  to->settings.cacheType     = from->settings.cacheType;
+  to->fromLoss               = from->fromLoss;
+  to->toLoss                 = from->toLoss;
+  to->priority               = from->priority;
 }
 
 std::unique_ptr<Op>
@@ -69,11 +79,13 @@ Op *PreAliasPattern::makeReplacementOpInIr(
   std::unique_ptr<Op> newOpUp = makeReplacementOp(operator_id, oldOp, name);
   Op *newOp                   = newOpUp.get();
   oldOp->getGraph().moveIntoGraph(std::move(newOpUp));
-
+  transferBaseProperties(oldOp, newOp);
   return newOp;
 }
 
-const std::string &Pattern::getPatternName() const { return pattern_name; }
+const std::string &Pattern::getPatternName() const {
+  return PatternNames::getName(typeid(*this));
+}
 
 std::string Pattern::getReplacementOpName(Op *op,
                                           const std::string name) const {

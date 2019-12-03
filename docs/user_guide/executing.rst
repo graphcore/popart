@@ -168,7 +168,7 @@ Poplar engine. For example:
 
 .. code-block:: python
 
-  opts = popart.SessionOptionsCore()
+  opts = popart.SessionOptions()
   opts.engineOptions = {"debug.instrument": "true"}
 
 You can also control what information is included in the profiling report:

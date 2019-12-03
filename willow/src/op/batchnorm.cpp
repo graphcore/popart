@@ -119,8 +119,8 @@ void BatchNormOp::setup() {
   }
 }
 
-void BatchNormOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void BatchNormOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("epsilon", epsilon);
   os.appendAttribute("momentum", momentum);
   os.appendAttribute("spatial", spatial);
@@ -165,16 +165,36 @@ void BatchNormGradOp::setup() {
   outInfo(getBOutIndex())     = fwdBInInfo;
 }
 
-void BatchNormGradOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void BatchNormGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("epsilon", epsilon);
 }
 
 namespace {
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition batchNormOpDef(
+    {OpDefinition::Inputs({
+         {"X", T},
+         {"scale", T},
+         {"B", T},
+         {"mean", T},
+         {"var", T},
+     }),
+     OpDefinition::Outputs({{"Y", T},
+                            {"mean", T},
+                            {"var", T},
+                            {"saved_mean", T},
+                            {"saved_var", T}}),
+     OpDefinition::Attributes({{"epsilon", {"*"}}, {"momentum", {"*"}}})});
+
 static OpCreator<BatchNormOp> batchNormOpCreator(
-    {Onnx::Operators::BatchNormalization_6,
-     Onnx::Operators::BatchNormalization_7,
-     Onnx::Operators::BatchNormalization_9},
+    OpDefinitions({
+        {Onnx::Operators::BatchNormalization_6, batchNormOpDef},
+        {Onnx::Operators::BatchNormalization_7, batchNormOpDef},
+        {Onnx::Operators::BatchNormalization_9, batchNormOpDef},
+    }),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

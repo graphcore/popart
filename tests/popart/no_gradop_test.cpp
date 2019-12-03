@@ -48,7 +48,16 @@ public:
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };
 
-static OpCreator<DontTrainOp> donttrainOpCreator(CustomOperators::DontTrain);
+static popart::OpDefinition dontTrainOpDef(
+    {popart::OpDefinition::Inputs({
+         {"input", {{popart::DataType::FLOAT, popart::DataType::FLOAT16}}},
+     }),
+     popart::OpDefinition::Outputs(
+         {{"output", {{popart::DataType::FLOAT, popart::DataType::FLOAT16}}}}),
+     popart::OpDefinition::Attributes({})});
+
+static OpCreator<DontTrainOp>
+    donttrainOpCreator({{CustomOperators::DontTrain, dontTrainOpDef}});
 
 class DontTrainOpx : public popx::Opx {
 public:

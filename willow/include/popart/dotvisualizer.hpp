@@ -2,7 +2,7 @@
 #define GUARD_NEURALNET_POPART_DOTVISUALIZER_HPP
 
 #include <popart/names.hpp>
-#include <popart/optionflags.hpp>
+#include <popart/sessionoptions.hpp>
 
 namespace popart {
 class Ir;

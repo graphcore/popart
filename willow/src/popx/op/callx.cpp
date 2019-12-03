@@ -12,62 +12,49 @@ CallOpx::CallOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<CallOp>(op, Onnx::CustomOperators::Call);
 }
 
-ICreatorCandidatePtr CallOpx::getCreator(InIndex index) const {
-  auto &callop    = getOp<CallOp>();
-  auto &callgraph = callop.getCalledGraph();
-  auto tensor_id  = callgraph.getInputId(index);
-  auto tensor     = callgraph.getTensors().get(tensor_id);
+std::pair<std::vector<ICreatorCandidatePtr>, std::vector<UnwindEndpointPtr>>
+CallOpx::getEndpoints(InIndex index, std::vector<OpxInAndOutIndex> path) const {
+  auto &callop      = getOp<CallOp>();
+  auto &callgraph   = callop.getCalledGraph();
+  auto in_tensor_id = callgraph.getInputId(index);
+  auto inTensor     = callgraph.getTensors().get(in_tensor_id);
 
-  return dv_p->getTensorCreator(tensor);
+  // Internal endpoints
+  auto endpoints = dv_p->getCreatorEndpoints(inTensor, path);
+
+  return endpoints;
 }
 
-poplar::Tensor CallOpx::createInput(InIndex index,
-                                    const std::string &name) const {
-  auto creator = getCreator(index);
-  return creator->createInput(name);
+InputCreatorType CallOpx::getInputCreatorType(InIndex) const {
+  return InputCreatorType::CANDELEGATE;
 }
 
-InputCreatorType CallOpx::getInputCreatorType(int index) const {
-  auto creator = getCreator(index);
-  if (creator) {
-    return InputCreatorType::CANCREATE;
-  } else {
-    return InputCreatorType::DEADEND;
-  }
-}
-
-bool CallOpx::createsEquiv(int index0, const Opx *opx1, int index1) const {
-  // If opx1 is a CallOpx, delegate to opx1->getCreator getCreator
-  // while loop handles +1 depths of CallOpxs
-
-  ICreatorCandidatePtr c2;
-  if (opx1->op_p->opid != Onnx::CustomOperators::Call) {
-    c2 = dv_p->getTensorCreator(opx1->inTensor(index1));
-  } else {
-    while (opx1->op_p->opid == Onnx::CustomOperators::Call) {
-      c2     = dynamic_cast<const CallOpx *>(opx1)->getCreator(index1);
-      opx1   = c2->getOpx();
-      index1 = c2->getIndex();
-    }
-  }
-
-  // pass responsibility to creator
-  auto creator = getCreator(index0);
-  return creator->createsEquivalent(c2);
-}
-
-std::vector<TensorId> CallOpx::mustExistBeforeCreate(int index) const {
-  auto creator = getCreator(index);
-  return creator->mustExistBeforeCreate();
-}
-
-std::vector<poplar::Tensor> CallOpx::prepareOutputs() const {
-  std::vector<poplar::Tensor> outputs;
+std::vector<std::pair<poplar::Tensor, bool>> CallOpx::prepareOutputs() const {
+  std::vector<std::pair<poplar::Tensor, bool>> outputs;
   auto &callop = getOp<CallOp>();
 
+  int i = 0;
   for (auto out_id : callop.getCalledGraph().getOutputIds()) {
     auto output = get(out_id);
-    outputs.push_back(graph().clone(output));
+
+    bool aliased = false;
+    for (int j = 0; j < callop.input->n(); j++) {
+      auto input = get(callop.inId(j));
+      // Fully aliased & shape did not change
+      auto aliasRegions = callop.aliases(j, i);
+      bool alias        = aliasRegions.size() == 1 &&
+                   aliasRegions.front().nelms() == output.numElements() &&
+                   output.shape() == input.shape();
+      aliased |= alias;
+      if (alias) {
+        // Set aliased input as output
+        output = input;
+      }
+    }
+
+    logging::trace("Preparing graph output {}, aliased: {}", out_id, aliased);
+    outputs.push_back({aliased ? output : graph().clone(output), aliased});
+    ++i;
   }
 
   return outputs;
@@ -78,11 +65,16 @@ void CallOpx::copyModified(poplar::program::Sequence &prog) const {
 
   for (int i = 0; i < callop.input->n(); i++) {
     if (callop.isInputModified(i)) {
-      auto call_input  = get(callop.inId(i));
-      auto graph_input = get(callop.getCalledGraph().getInputId(i));
-
-      poplar::program::Copy copy_prog(graph_input, call_input);
-      prog.add(copy_prog);
+      auto call_input     = get(callop.inId(i));
+      auto graph_input_id = callop.getCalledGraph().getInputId(i);
+      auto graph_input    = get(graph_input_id);
+      if (!callop.getCalledGraph().isMarkedAsZeroCopy(graph_input_id)) {
+        logging::trace("[CallOpx] Copying modified input {}->{}",
+                       graph_input_id,
+                       callop.inId(i));
+        poplar::program::Copy copy_prog(graph_input, call_input);
+        prog.add(copy_prog);
+      }
     }
   }
 }
@@ -94,21 +86,36 @@ void CallOpx::copyInputs(poplar::program::Sequence &prog) const {
     auto call_input     = get(callop.inId(i));
     auto graph_input_id = callop.getCalledGraph().getInputId(i);
     auto graph_input    = get(graph_input_id);
-    poplar::program::Copy copy_prog(call_input, graph_input);
-    prog.add(copy_prog);
+    if (!callop.getCalledGraph().isMarkedAsZeroCopy(graph_input_id)) {
+      logging::trace(
+          "[CallOpx] Copying input {}->{}", callop.inId(i), graph_input_id);
+      poplar::program::Copy copy_prog(call_input, graph_input);
+      prog.add(copy_prog);
+    }
   }
 }
 
-void CallOpx::copyOutputs(poplar::program::Sequence &prog,
-                          const std::vector<poplar::Tensor> &outputs) const {
+void CallOpx::copyOutputs(
+    poplar::program::Sequence &prog,
+    const std::vector<std::pair<poplar::Tensor, bool>> &outputs) const {
   auto &callop = getOp<CallOp>();
-
   for (int i = 0; i < outputs.size(); i++) {
-    auto &call_output = outputs.at(i);
-    auto graph_output = get(callop.getCalledGraph().getOutputId(i));
+    auto &call_output    = outputs.at(i).first;
+    bool aliased         = outputs.at(i).second;
+    auto graph_output_id = callop.getCalledGraph().getOutputId(i);
+    auto graph_output    = get(graph_output_id);
 
-    poplar::program::Copy copy_prog(graph_output, call_output);
-    prog.add(copy_prog);
+    // Skip copy if aliased tensor
+    if (!aliased) {
+      logging::trace(
+          "[CallOpx] Copying output {}->{}", graph_output_id, callop.outId(i));
+      poplar::program::Copy copy_prog(graph_output, call_output);
+      prog.add(copy_prog);
+    } else {
+      logging::trace("[CallOpx] Skipping aliased output {}->{}",
+                     graph_output_id,
+                     callop.outId(i));
+    }
   }
 }
 
@@ -126,7 +133,7 @@ void CallOpx::grow(poplar::program::Sequence &prog) const {
   copyOutputs(prog, outputs);
   copyModified(prog);
   for (int i = 0; i < outputs.size(); i++) {
-    setOutTensor(i, outputs.at(i));
+    setOutTensor(i, outputs.at(i).first);
   }
 }
 

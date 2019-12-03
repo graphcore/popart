@@ -41,8 +41,8 @@ ShrinkOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   return Op::getInplaceVariant(operator_id);
 }
 
-void ShrinkOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void ShrinkOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("lambd", lambd_);
   os.appendAttribute("bias", bias_);
 }
@@ -56,8 +56,8 @@ std::unique_ptr<Op> ShrinkInplaceOp::clone() const {
   return std::make_unique<ShrinkInplaceOp>(*this);
 }
 
-void ShrinkInplaceOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void ShrinkInplaceOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("lambd", lambd_);
   os.appendAttribute("bias", bias_);
 }
@@ -70,15 +70,34 @@ std::unique_ptr<Op> ShrinkGradOp::clone() const {
   return std::make_unique<ShrinkGradOp>(*this);
 }
 
-void ShrinkGradOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void ShrinkGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("lambd", lambd_);
   os.appendAttribute("bias", bias_);
 }
 
 namespace {
+
+static OpDefinition::DataTypes T = {DataType::UINT8,
+                                    DataType::UINT16,
+                                    DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT8,
+                                    DataType::INT16,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT};
+
+static OpDefinition shrinkOpDef({OpDefinition::Inputs({{"input", T}}),
+                                 OpDefinition::Outputs({{"output", T}}),
+                                 OpDefinition::Attributes({{"bias", {"*"}},
+                                                           {"lambd", {"*"}}})});
+
 static OpCreator<ShrinkOp> shrinkOpCreator(
-    {Onnx::Operators::Shrink_9},
+    OpDefinitions({
+        {Onnx::Operators::Shrink_9, shrinkOpDef},
+    }),
     [](const OperatorIdentifier &opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

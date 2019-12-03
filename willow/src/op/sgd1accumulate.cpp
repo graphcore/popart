@@ -23,9 +23,9 @@ std::map<InIndex, TensorId> SGD1AccumulateOp::optimizerInputs() const {
   throw error("SGD1 optimizer inputs not implemented");
 }
 
-void SGD1AccumulateOp::appendAttributes(OpSerialiserBase &os) const {
+void SGD1AccumulateOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 
-  Op::appendAttributes(os);
+  Op::appendOutlineAttributes(os);
 
   if (initDpsf1.isConst()) {
     os.appendAttribute("const dampening scale factor", initDpsf1.val());

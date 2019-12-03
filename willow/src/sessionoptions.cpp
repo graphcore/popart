@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <array>
 #include <popart/error.hpp>
-#include <popart/optionflags.hpp>
+#include <popart/sessionoptions.hpp>
 
 namespace popart {
 
@@ -60,6 +60,8 @@ std::string toString(VirtualGraphMode v) {
     return "VirtualGraphMode::Manual";
   case VirtualGraphMode::Auto:
     return "VirtualGraphMode::Auto";
+  case VirtualGraphMode::PingPong:
+    return "VirtualGraphMode::PingPong";
   case VirtualGraphMode::N:
     throw error("Bad VirtualGraphMode {}", static_cast<int>(v));
   default:
@@ -112,10 +114,11 @@ operator()(const popart::SessionOptions &so) const {
   hsh      = (hsh ^ (std::hash<bool>{}(so.enableNonStableSoftmax) << 1)) << 1;
   hsh      = (hsh ^ (std::hash<int64_t>{}(so.replicatedGraphCount) << 1)) << 1;
   hsh      = (hsh ^ (std::hash<bool>{}(so.enablePipelining) << 1)) << 1;
-  hsh      = (hsh ^ (std::hash<bool>{}(so.ignoreData) << 1)) << 1;
   hsh = (hsh ^ (std::hash<bool>{}(so.enableFloatingPointChecks) << 1)) << 1;
   hsh = (hsh ^ (std::hash<bool>{}(so.enableStochasticRounding) << 1)) << 1;
   hsh = (hsh ^ (std::hash<bool>{}(so.enableFullyConnectedPass) << 1)) << 1;
+  hsh = (hsh ^ (std::hash<int>{}(static_cast<int>(so.syntheticDataMode)) << 1))
+        << 1;
   for (auto key_val : so.engineOptions) {
     hsh = (hsh ^ (std::hash<std::string>()(key_val.first) << 1)) << 1;
     hsh = (hsh ^ (std::hash<std::string>()(key_val.second) << 1)) << 1;

@@ -1,3 +1,4 @@
+
 #ifndef GUARD_NEURALNET_IDENTITY_HPP
 #define GUARD_NEURALNET_IDENTITY_HPP
 
@@ -28,7 +29,7 @@ public:
 
   std::unique_ptr<Op> clone() const override;
 
-  view::Region aliases(InIndex index) const final { return uses(index); }
+  view::Regions aliases(InIndex in, OutIndex) const final { return uses(in); }
 };
 
 class IdentityGradOp : public IdentityOp {

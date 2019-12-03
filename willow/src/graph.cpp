@@ -134,6 +134,22 @@ std::vector<const Graph *> Graph::getCalledGraphs() const {
   return called;
 }
 
+void Graph::markAsZeroCopy(const TensorId &tensorId) {
+  if (!getTensors().contains(tensorId)) {
+    throw error("Could not find tensor '{}' to mark as zero copy");
+  }
+  if (std::find(zero_copy.begin(), zero_copy.end(), tensorId) ==
+      zero_copy.end())
+    zero_copy.push_back(tensorId);
+}
+
+bool Graph::isMarkedAsZeroCopy(const TensorId &tensorId) const {
+  if (std::find(zero_copy.begin(), zero_copy.end(), tensorId) !=
+      zero_copy.end())
+    return true;
+  return false;
+}
+
 void Graph::constructFromOnnxGraph(const onnx::GraphProto &onnx_graph) {
   for (const auto &node : onnx_graph.node()) {
     if (OnnxConstExprUtil::isConst(node)) {
@@ -264,14 +280,15 @@ void Graph::eraseOp(OpId opid) {
   if (found == ops.end()) {
     throw error("ILE: no op " + std::to_string(opid) + " to erase");
   }
-
+  // Clean up topo cons for removed op, because the caller can't be trusted
+  // to clean this up properly, resulting in horrible accidents.
+  topoCons->remove(found->second.get());
   ops.erase(opid);
 }
 
 // T12001
 // Remove AddInplace, VarUpdate should be only modifier
 void Graph::setVarUpdateConstraints() {
-
   // For every Op, for every input, is it input modified?
   for (const auto &id_up : getOps()) {
     auto proposalOp = id_up.second.get();
@@ -279,7 +296,10 @@ void Graph::setVarUpdateConstraints() {
       auto proposalIndex  = inIndex_tensor.first;
       auto proposalTensor = inIndex_tensor.second;
 
-      if (!proposalOp->modifies(proposalIndex).isEmpty()) {
+      auto regions = proposalOp->modifies(proposalIndex);
+      if (!std::all_of(regions.begin(),
+                       regions.end(),
+                       [](const view::Region &r) { return r.isEmpty(); })) {
 
         // the input is modified.
         auto modifiedTensor = proposalTensor;
@@ -302,10 +322,16 @@ void Graph::setVarUpdateConstraints() {
             for (auto inIn_inTen : prod->input->tensorMap()) {
               auto inIn  = inIn_inTen.first;
               auto inTen = inIn_inTen.second;
-              if (!prod->aliases(inIn).isEmpty()) {
-                if (aliased.count(inTen) == 0) {
-                  frontier.push_back(inTen);
-                  aliased.emplace(inTen);
+              for (OutIndex out = 0; out < prod->output->n(); ++out) {
+                regions = prod->aliases(inIn, out);
+                if (!std::all_of(
+                        regions.begin(),
+                        regions.end(),
+                        [](const view::Region &r) { return r.isEmpty(); })) {
+                  if (aliased.count(inTen) == 0) {
+                    frontier.push_back(inTen);
+                    aliased.emplace(inTen);
+                  }
                 }
               }
             }
@@ -314,13 +340,22 @@ void Graph::setVarUpdateConstraints() {
           // finding new aliasing tensors going down through the consumers (but
           // not down through modifier)
           for (auto consumer : t->consumers.getOps()) {
-            for (InIndex conIndex : consumer->input->indices(t)) {
-              if (!consumer->aliases(conIndex).isEmpty() &&
-                  consumer != modifier) {
-                auto outTen = consumer->output->tensor(0);
-                if (aliased.count(outTen) == 0) {
-                  frontier.push_back(outTen);
-                  aliased.emplace(outTen);
+            for (InIndex conInIndex : consumer->input->indices(t)) {
+              for (OutIndex conOutIndex = 0;
+                   conOutIndex < consumer->output->n();
+                   ++conOutIndex) {
+                auto aliasedRegions =
+                    consumer->aliases(conInIndex, conOutIndex);
+                if (!std::all_of(
+                        aliasedRegions.begin(),
+                        aliasedRegions.end(),
+                        [](const view::Region &r) { return r.isEmpty(); }) &&
+                    consumer != modifier) {
+                  auto outTen = consumer->output->tensor(0);
+                  if (aliased.count(outTen) == 0) {
+                    frontier.push_back(outTen);
+                    aliased.emplace(outTen);
+                  }
                 }
               }
             }
@@ -401,8 +436,8 @@ void Graph::setConvFlipWeightConstraints() {
 }
 
 std::vector<Op *> Graph::getOpSchedule(const OpsBeforeKey &gCons) const {
-  auto sorted = scheduler->getPartialOpSchedule(gCons, *this);
-
+  auto sorted = scheduler->getPartialOpSchedule(
+      gCons, *this, ir.getPingPongPhasesReady());
   if (sorted.size() != getOps().size()) {
 
     // Create a string, listing all of the Ops not scheduled, which will be
@@ -431,8 +466,10 @@ std::vector<Op *> Graph::getOpSchedule(const OpsBeforeKey &gCons) const {
 }
 
 // Are the Ops with all the dependencies a DAG?
-bool Graph::isSchedulable(const OpsBeforeKey &gCons) const {
-  auto sorted = scheduler->getPartialOpSchedule(gCons, *this);
+bool Graph::isSchedulable(const OpsBeforeKey &gCons,
+                          bool respectPingPongPhases) const {
+  auto sorted =
+      scheduler->getPartialOpSchedule(gCons, *this, respectPingPongPhases);
   return sorted.size() == getOps().size();
 }
 
@@ -451,11 +488,11 @@ Graph::getLiveSets(const std::vector<Op *> &topoOps) const {
 
   // the key op waits for the ops in val
   // so the key op is later in the sort.
-  std::map<Op *, std::vector<Op *>> waiting;
+  std::map<Op *, std::vector<Op *>, POpCmp> waiting;
 
   // the number of ops that are waiting for key
   // this is NOT the size of the values of is_waiting_for
-  std::map<Op *, int> nWaiting;
+  std::map<Op *, int, POpCmp> nWaiting;
 
   for (Op *op : topoOps) {
     nWaiting[op] = 0;

@@ -48,8 +48,8 @@ void ScatterOp::setup() {
   outInfo(outIndex()) = inInfo(dataInIndex());
 }
 
-void ScatterOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void ScatterOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
 }
 
@@ -81,8 +81,8 @@ void ScatterDataGradOp::setup() {
 
 int64_t ScatterDataGradOp::getAxis() const { return axis; }
 
-void ScatterDataGradOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void ScatterDataGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
 }
 
@@ -116,14 +116,40 @@ void ScatterUpdateGradOp::setup() {
 
 int64_t ScatterUpdateGradOp::getAxis() const { return axis; }
 
-void ScatterUpdateGradOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void ScatterUpdateGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
 }
 
 namespace {
+
+static OpDefinition::DataTypes T    = {DataType::UINT8,
+                                    DataType::UINT16,
+                                    DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT8,
+                                    DataType::INT16,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT,
+                                    DataType::BOOL};
+static OpDefinition::DataTypes Tind = {DataType::INT32, DataType::INT64};
+
+static OpDefinition scatterOpDef({OpDefinition::Inputs({
+                                      {"data", T},
+                                      {"indices", Tind},
+                                      {"updates", T},
+                                  }),
+                                  OpDefinition::Outputs({{"output", T}}),
+                                  OpDefinition::Attributes({{"axis", {"*"}}})});
+
 static OpCreator<ScatterOp> ScatterOpCreator(
-    {Onnx::Operators::Scatter_9, Onnx::Operators::Scatter_11},
+    OpDefinitions({
+        {Onnx::Operators::Scatter_9, scatterOpDef},
+        // There is not a scatter 11, it has been deprecated
+        // {Onnx::Operators::Scatter_11, scatterOpDef}
+    }),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

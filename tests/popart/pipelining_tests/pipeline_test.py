@@ -18,7 +18,7 @@ def test_disabled_virtual_graphs():
     builder, op0_out, op1_out, op2_out, op3_out, anchor_map, loss = get_simple_linear_model(
     )
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.enablePipelining = True
     opts.virtualGraphMode = popart.VirtualGraphMode.Off
 
@@ -41,7 +41,7 @@ def test_enabled_recomputation():
     builder, op0_out, op1_out, op2_out, op3_out, anchor_map, loss = get_simple_linear_model(
     )
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.enablePipelining = True
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
     opts.autoRecomputation = popart.RecomputationType.Standard
@@ -77,7 +77,7 @@ def test_stream_tensors_to_multiple_ipus():
     builder, op0_out, op1_out, op2_out, op3_out, anchor_map, loss = get_simple_linear_model(
         streamInputToOp1AndOp2=True)
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.enablePipelining = True
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
@@ -124,7 +124,7 @@ def test_sharding_multi_source():
     loss = popart.NllLoss(op2_out, l0, "loss")
     anchor_map = {op2_out: art, "loss": art}
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.enablePipelining = True
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
@@ -599,7 +599,7 @@ def get_model_anchors(doSharding,
             anchor_map[d0] = art
             anchor_map[popart.reservedRestoredPrefix() + d0] = art
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
     opts.enablePipelining = doPipelining
 

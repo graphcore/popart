@@ -30,7 +30,7 @@ public:
   // map of size 0/1/2, containing all non-const optimizer Tensors for this Op
   std::map<InIndex, TensorId> optimizerInputs() const final;
 
-  void appendAttributes(OpSerialiserBase &) const final;
+  void appendOutlineAttributes(OpSerialiserBase &) const final;
 
   // momentum
   const OptimizerValue initSmm1;
@@ -50,6 +50,11 @@ public:
   static InIndex getDpsf1InIndex() { return 3; }
   static InIndex getSwd1InIndex() { return 4; }
   static InIndex getSlr1InIndex() { return 5; }
+
+  std::set<InIndex> optionalInputs() const final;
+
+  // this Op should not be present when outlining is performed
+  float getSubgraphValue() const final { return -1.0f; }
 };
 
 } // namespace popart

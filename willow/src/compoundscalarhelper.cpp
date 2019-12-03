@@ -1,5 +1,6 @@
 #include <string>
 #include <popart/compoundscalarhelper.hpp>
+#include <popart/op.hpp>
 #include <popart/optimizer.hpp>
 
 namespace popart {

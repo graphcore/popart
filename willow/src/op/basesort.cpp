@@ -27,8 +27,8 @@ void BaseSortOp::validateAxis() const {
   }
 }
 
-void BaseSortOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void BaseSortOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
 }
 

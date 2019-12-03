@@ -28,7 +28,7 @@ public:
   // Attributes
   float getEpsilon() const { return epsilon; }
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   bool isNorm() const override { return true; }
 

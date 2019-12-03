@@ -169,6 +169,7 @@ const static AiGraphcoreOpIdV1 FlattenGrad("FlattenGrad");
 // constexpr static char Floor[] = "Floor";
 // constexpr static char GRU[] = "GRU";
 const static AiGraphcoreOpIdV1 GatherGrad("GatherGrad");
+const static AiGraphcoreOpIdV1 GeluGrad("GeluGrad");
 // constexpr static char Gemm[] = "Gemm";
 const static AiGraphcoreOpIdV1 GlobalAveragePoolGrad("GlobalAveragePoolGrad");
 // constexpr static char GlobalLpPool[] = "GlobalLpPool";
@@ -184,6 +185,7 @@ const static AiGraphcoreOpIdV1
 constexpr static char IsNaN[] = "IsNan";
 const static AiGraphcoreOpIdV1 LRN("LRN");
 const static AiGraphcoreOpIdV1 LSTMGrad("LSTMGrad");
+const static AiGraphcoreOpIdV1 PopartLSTMGrad("PopartLSTMGrad");
 // constexpr static char LeakyRelu[] = "LeakyRely";
 // constexpr static char Less[] = "Less";
 const static AiGraphcoreOpIdV1 LogGrad("LogGrad");
@@ -294,6 +296,9 @@ const static AiGraphcoreOpIdV1 Scale_1("Scale", 1, 1);
 const static AiGraphcoreOpIdV1 Square("Square");
 const static AiGraphcoreOpIdV1 GetRandomSeed("GetRandomSeed");
 const static AiGraphcoreOpIdV1 GroupNormalization_1("GroupNormalization", 3, 3);
+const static AiGraphcoreOpIdV1 LSTM_1("LSTM", 4, 2);
+const static AiGraphcoreOpIdV1 Gelu_1("Gelu", 1, 1);
+const static AiGraphcoreOpIdV1 GeluInplace("GeluInplace");
 
 const static AiGraphcoreOpIdV1 ReluInplace("ReluInplace");
 const static AiGraphcoreOpIdV1 SinhInplace("SinhInplace");
@@ -310,6 +315,12 @@ const static AiGraphcoreOpIdV1 L1("L1");
 const static AiGraphcoreOpIdV1 Nll("Nll");
 
 const static AiGraphcoreOpIdV1 IpuCopy("IpuCopy");
+
+const static AiGraphcoreOpIdV1 CacheAllocate("CacheAllocate");
+const static AiGraphcoreOpIdV1 CacheStore("CacheStore");
+const static AiGraphcoreOpIdV1 CacheLoad("CacheLoad");
+
+const static AiGraphcoreOpIdV1 RecomputePrereq("RecomputePrereq");
 
 const static AiGraphcoreOpIdV1 SGD0VarUpdate("SGD0VarUpdate");
 const static AiGraphcoreOpIdV1 SGD1Combo("SGD1Combo");
@@ -346,6 +357,8 @@ const static OperatorIdentifier GroupNormalization =
     CustomOperators::GroupNormalization_1;
 const static OperatorIdentifier PrintTensor = CustomOperators::PrintTensor_1;
 const static OperatorIdentifier Scale       = CustomOperators::Scale_1;
+const static OperatorIdentifier LSTM        = CustomOperators::LSTM_1;
+const static OperatorIdentifier Gelu        = CustomOperators::Gelu_1;
 } // namespace OpSet1
 } // namespace AiGraphcore
 

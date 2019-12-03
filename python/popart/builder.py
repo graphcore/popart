@@ -1,10 +1,11 @@
 import popart
 import numpy as np
+from popart_core import _BuilderCore
 
 
 # A wrapper around the Builder cpp class, renamed BuilderCore in pybind,
 # to enable more pythonic use. See builder.hpp for the class definition.
-class Builder(popart.BuilderCore):
+class Builder(_BuilderCore):
     def __init__(self, modelProtoOrFilename=None, opsets=None):
 
         if (opsets == None):

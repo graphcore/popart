@@ -18,7 +18,16 @@ OperatorIdentifier IsNaN::getOpId(const Ir &) {
 }
 
 namespace {
-static OpCreator<IsNaN> IsNaNCreator(Onnx::Operators::IsNaN_9);
+
+static OpDefinition::DataTypes T1 = {DataType::FLOAT, DataType::FLOAT16};
+static OpDefinition::DataTypes T2 = {DataType::BOOL};
+
+static OpDefinition isNanOpDef({OpDefinition::Inputs({{"x", T1}}),
+                                OpDefinition::Outputs({{"y", T2}}),
+                                OpDefinition::Attributes({})});
+
+static OpCreator<IsNaN>
+    IsNaNCreator(OpDefinitions({{Onnx::Operators::IsNaN_9, isNanOpDef}}));
 } // namespace
 
 } // namespace popart

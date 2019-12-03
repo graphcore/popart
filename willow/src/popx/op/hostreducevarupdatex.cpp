@@ -21,6 +21,11 @@ HostReduceGradCopyOpx::HostReduceGradCopyOpx(Op *op, Devicex *devicex)
 }
 
 void HostReduceGradCopyOpx::grow(poplar::program::Sequence &prog) const {
+  if (dv_p->getHostReduceSyncInserted()) {
+    throw error("Internal Logic Error: all host reductions should happen after "
+                "all gradients sent to host");
+  }
+
   auto vu_op                  = getOp<HostReduceGradCopyOp>();
   const auto updater_index    = HostReduceGradCopyOp::getInIndex();
   poplar::Tensor weightDeltas = getInTensor(updater_index);
@@ -28,6 +33,19 @@ void HostReduceGradCopyOpx::grow(poplar::program::Sequence &prog) const {
   const auto grad_id = inId(updater_index);
   auto deviceToHostStream =
       dv_p->insertGradientStoreStream(grad_id, inInfo(updater_index), graph());
+
+  // TODO(T12685): Once replicatedReduceScatter is part of the Poplar
+  // public API we can replace the replicatedAllReduce with it and
+  // then do the AllGather on the host.
+  if (dv_p->getReplicationFactor() > 1) {
+    weightDeltas =
+        popops::replicatedAllReduce(graph(),
+                                    weightDeltas,
+                                    popops::Operation::ADD,
+                                    prog,
+                                    debugPrefix("allReduce_Add"),
+                                    {{"useReplicatedImplementation", "true"}});
+  }
 
   poplar::program::Copy gradientsToHostProg(weightDeltas, deviceToHostStream);
   prog.add(gradientsToHostProg);
@@ -39,6 +57,20 @@ HostReduceVarCopyOpx::HostReduceVarCopyOpx(Op *op, Devicex *devicex)
 }
 
 void HostReduceVarCopyOpx::grow(poplar::program::Sequence &prog) const {
+  if (!dv_p->getHostReduceSyncInserted()) {
+    // A sync is added here to enforce that gradient copies are executed
+    // before weight copies. Gradient copies are scheduled to happen before
+    // weight copies in PopART. However, if multiple stream copies are
+    // performed with a single sync id then a host read can be scheduled
+    // before a host write in the Poplar engine but the actual
+    // callback might still be executed after. This happens when Poplar
+    // merges two host syncs during compilation into one.
+    // See IPUTarget::prepareForStreamAccess() and
+    // IPUTarget::completeStreamAccess() for details
+    prog.add(poplar::program::Sync(poplar::SyncType::INTERNAL));
+    dv_p->setHostReduceSyncInserted(true);
+  }
+
   auto vu_op = getOp<HostSGD0VarUpdate>();
 
   const auto var_update_index = HostSGD0VarUpdate::getVarToUpdateInIndex();

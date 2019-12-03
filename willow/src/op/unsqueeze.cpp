@@ -25,8 +25,8 @@ void UnsqueezeOp::setup() {
                             unsqueeze(inShape(getInIndex()), axes)};
 }
 
-void UnsqueezeOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void UnsqueezeOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("axes", axes);
 }
 
@@ -56,8 +56,29 @@ const std::map<int, int> &UnsqueezeGradOp::gradOutToNonGradIn() const {
 }
 
 namespace {
+
+static OpDefinition::DataTypes T = {DataType::UINT8,
+                                    DataType::UINT16,
+                                    DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT8,
+                                    DataType::INT16,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT,
+                                    DataType::BOOL};
+
+static OpDefinition
+    unsqueezeOpDef({OpDefinition::Inputs({{"data", T}}),
+                    OpDefinition::Outputs({{"expanded", T}}),
+                    OpDefinition::Attributes({{"axes", {"*"}}})});
+
 static OpCreator<UnsqueezeOp> unsqueezeOpCreator(
-    {Onnx::Operators::Unsqueeze_1, Onnx::Operators::Unsqueeze_11},
+    OpDefinitions({
+        {Onnx::Operators::Unsqueeze_1, unsqueezeOpDef},
+        {Onnx::Operators::Unsqueeze_11, unsqueezeOpDef},
+    }),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

@@ -22,8 +22,8 @@ void GlobalAveragePoolOp::setup() {
       Shape(inShape(getInIndex()).begin() + 2, inShape(getInIndex()).end());
 }
 
-void GlobalAveragePoolOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void GlobalAveragePoolOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("kernel", kernel);
 }
 
@@ -58,8 +58,9 @@ GlobalAveragePoolGradOp::GlobalAveragePoolGradOp(const GlobalAveragePoolOp &op_)
       unpooledInfo(op_.inInfo(GlobalAveragePoolOp::getInIndex())),
       cloneOfCreator(op_.clone()) {}
 
-void GlobalAveragePoolGradOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void GlobalAveragePoolGradOp::appendOutlineAttributes(
+    OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendForwardOp(getCloneOfCreator());
 }
 
@@ -107,8 +108,15 @@ const GlobalAveragePoolOp *GlobalAveragePoolGradOp::getCloneOfCreator() const {
 }
 
 namespace {
-static OpCreator<GlobalAveragePoolOp>
-    globalAveragePoolOpCreator({Onnx::Operators::GlobalAveragePool_1});
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition globalAveragePoolOpDef({OpDefinition::Inputs({{"X", T}}),
+                                            OpDefinition::Outputs({{"Y", T}}),
+                                            OpDefinition::Attributes({})});
+
+static OpCreator<GlobalAveragePoolOp> globalAveragePoolOpCreator(OpDefinitions(
+    {{Onnx::Operators::GlobalAveragePool_1, globalAveragePoolOpDef}}));
 } // namespace
 
 } // namespace popart

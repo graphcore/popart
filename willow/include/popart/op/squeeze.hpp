@@ -20,12 +20,12 @@ public:
   static OutIndex getOutIndex() { return 0; }
 
   // currently these are conservative TODO T6973
-  view::RegMap fwdRegMap(InIndex) const final;
-  view::RegMap bwdRegMap(InIndex) const final;
+  view::RegMap fwdRegMap(InIndex, OutIndex) const final;
+  view::RegMap bwdRegMap(InIndex, OutIndex) const final;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
 protected:
   std::vector<int64_t> axes;

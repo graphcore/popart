@@ -18,8 +18,19 @@ std::vector<std::unique_ptr<Op>> OrOp::getGradOps() {
 }
 
 namespace {
-static OpCreator<OrOp> OrOpCreator({Onnx::Operators::Or_1,
-                                    Onnx::Operators::Or_7});
+
+static OpDefinition::DataTypes T  = {DataType::BOOL};
+static OpDefinition::DataTypes T1 = {DataType::BOOL};
+
+static OpDefinition orOpDef({OpDefinition::Inputs({
+                                 {"A", T},
+                                 {"B", T},
+                             }),
+                             OpDefinition::Outputs({{"C", T1}}),
+                             OpDefinition::Attributes({})});
+
+static OpCreator<OrOp> OrOpCreator(OpDefinitions(
+    {{Onnx::Operators::Or_1, orOpDef}, {Onnx::Operators::Or_7, orOpDef}}));
 } // namespace
 
 } // namespace popart

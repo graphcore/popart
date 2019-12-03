@@ -23,7 +23,7 @@ public:
   bool hasScale() const final { return true; }
   float getScale() const final { return 1.0f / static_cast<float>(nInputs); }
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
 private:
   std::vector<GradInOutMapper> gradInputInfoVec;

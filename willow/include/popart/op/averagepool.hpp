@@ -24,7 +24,7 @@ public:
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
   bool canBeReplacedByIdentity() override;
@@ -65,7 +65,7 @@ public:
 
   const AveragePoolOp *getCloneOfCreator() const;
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
 private:
   // The shape and type of the input to the

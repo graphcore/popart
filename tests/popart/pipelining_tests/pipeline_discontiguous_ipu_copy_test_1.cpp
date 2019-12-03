@@ -34,7 +34,7 @@ using namespace popart;
 //              |         |
 // ipu3/ps3  Identity     |
 //              |         |
-// ipu4/ps4    Add -------  
+// ipu4/ps4    Add -------
 //              |
 //            output0
 //
@@ -64,7 +64,7 @@ using namespace popart;
 //              |                       |
 //             copy                     |
 //              |                       |
-// ipu4/ps4    Add -- input1_c4 - copy -|  
+// ipu4/ps4    Add -- input1_c4 - copy -|
 //              |
 //            output0
 //
@@ -149,15 +149,15 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest1) {
 
   // Annotate with vgraph and pipelining info
   builder->virtualGraph(add0, 0);
-  builder->virtualGraph( id1, 1);
+  builder->virtualGraph(id1, 1);
   builder->virtualGraph(add2, 2);
-  builder->virtualGraph( id3, 3);
+  builder->virtualGraph(id3, 3);
   builder->virtualGraph(add4, 4);
 
   builder->pipelineStage(add0, 0);
-  builder->pipelineStage( id1, 1);
+  builder->pipelineStage(id1, 1);
   builder->pipelineStage(add2, 2);
-  builder->pipelineStage( id3, 3);
+  builder->pipelineStage(id3, 3);
   builder->pipelineStage(add4, 4);
 
   std::map<std::string, std::string> deviceOpts{{"numIPUs", "5"}};
@@ -172,7 +172,7 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest1) {
   ir.prepare({io::getModelFromString(builder->getModelProto()),
               InputShapeInfo(),
               DataFlow(12, {{add4, AnchorReturnType("ALL")}}),
-              {}, // no loss
+              {},      // no loss
               nullptr, // no optimizer
               *device,
               opts,
@@ -192,14 +192,14 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest1) {
   std::cout << "input1 srcDsts: " << std::endl;
   for (VGraphId vgId = 0; vgId < input0SrcDsts.size(); vgId++) {
     auto srcDst = input0SrcDsts.at(vgId);
-    auto src = srcDst.first;
-    auto dst = srcDst.second;
+    auto src    = srcDst.first;
+    auto dst    = srcDst.second;
     std::cout << "[ " << src << " ] --> [ " << dst << " ]" << std::endl;
 
     BOOST_CHECK(src == vgId);
     BOOST_CHECK(dst == vgId + 1);
   }
 
-  BOOST_CHECK(copies.size() == 8); // There are 8 IPU copies in total
+  BOOST_CHECK(copies.size() == 8);        // There are 8 IPU copies in total
   BOOST_CHECK(input0SrcDsts.size() == 4); // ... 4 of which copy input1
 }

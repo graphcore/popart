@@ -19,28 +19,29 @@ ReshapeOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   return Op::getInplaceVariant(operator_id);
 }
 
-view::RegMap ReshapeBaseOp::fwdRegMap(InIndex inIndex) const {
-  if (inIndex != 0) {
+view::RegMap ReshapeBaseOp::fwdRegMap(InIndex inIndex,
+                                      OutIndex outIndex) const {
+  if (inIndex != 0 || outIndex != 0) {
     throw error("Internal Logic Error in ReshapeBaseOp::fwdRegMap."
                 "Received input index {} but only 0 allowed, "
                 "This for Op {}, ",
                 inIndex,
                 str());
   }
-  // being conservative and returning the full region,
-  // even for non-full input region :
+  auto inRegion    = view::Region::getFull(inInfo(getInIndex()).shape());
   auto outRegion   = view::Region::getFull(outInfo(getOutIndex()).shape());
   auto emptyRegion = view::Region::getEmpty(outRank(getOutIndex()));
-  return [emptyRegion, outRegion](const view::Region &r) {
+  return [emptyRegion, inRegion, outRegion](const view::Region &r) {
     if (r.isEmpty()) {
-      return emptyRegion;
+      return view::Regions(1, emptyRegion);
     }
-    return outRegion;
+    return r.reshape(inRegion, outRegion);
   };
 }
 
-view::RegMap ReshapeBaseOp::bwdRegMap(InIndex inIndex) const {
-  if (inIndex != 0) {
+view::RegMap ReshapeBaseOp::bwdRegMap(InIndex inIndex,
+                                      OutIndex outIndex) const {
+  if (inIndex != 0 || outIndex != 0) {
     throw error("Internal Logic Error in ReshapeBaseOp::bwdRegMap."
                 "Received input index {} but only 0 allowed, "
                 "This for Op {}, ",
@@ -48,12 +49,13 @@ view::RegMap ReshapeBaseOp::bwdRegMap(InIndex inIndex) const {
                 str());
   }
   auto inRegion    = view::Region::getFull(inInfo(getInIndex()).shape());
+  auto outRegion   = view::Region::getFull(outInfo(getOutIndex()).shape());
   auto emptyRegion = view::Region::getEmpty(inRank(getInIndex()));
-  return [emptyRegion, inRegion](const view::Region &r) {
+  return [emptyRegion, inRegion, outRegion](const view::Region &r) {
     if (r.isEmpty()) {
-      return emptyRegion;
+      return view::Regions(1, emptyRegion);
     }
-    return inRegion;
+    return r.reshape(outRegion, inRegion);
   };
 }
 
@@ -185,7 +187,29 @@ bool ReshapeBaseOp::canBeReplacedByIdentity() {
 }
 
 namespace {
-static OpCreator<ReshapeOp> reshapeOpCreator(Onnx::Operators::Reshape_5);
+
+// Can we support more data types?
+static OpDefinition::DataTypes T  = {DataType::UINT8,
+                                    DataType::UINT16,
+                                    DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT8,
+                                    DataType::INT16,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT,
+                                    DataType::BOOL};
+static OpDefinition::DataTypes T1 = {DataType::INT64};
+
+static OpDefinition
+    reshapeOpDef({OpDefinition::Inputs({{"data", T}, {"shape", T1, true}}),
+                  OpDefinition::Outputs({{"output", T}}),
+                  OpDefinition::Attributes({})});
+
+static OpCreator<ReshapeOp> reshapeOpCreator(OpDefinitions({
+    {Onnx::Operators::Reshape_5, reshapeOpDef},
+}));
 } // namespace
 
 } // namespace popart

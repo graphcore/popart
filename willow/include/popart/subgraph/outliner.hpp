@@ -3,6 +3,7 @@
 
 #include "algo0.hpp"
 #include "algo1.hpp"
+#include <popart/logging.hpp>
 
 namespace fwtools {
 namespace subgraph {
@@ -51,8 +52,14 @@ std::vector<Match> getRinseMatches(const std::vector<T *> &schedule,
     matches      = separateByOverlaps(matches);
     setValues(matches, schedule);
     std::sort(matches.rbegin(), matches.rend());
+    popart::logging::trace("[getRinseMatches] pre final matches: {}",
+                           matches.size());
+
     matches =
         getFinalMatches(matches, threshold, static_cast<int>(schedule.size()));
+    popart::logging::trace("[getRinseMatches] final matches: {}",
+                           matches.size());
+
     return matches;
   }
 
@@ -62,9 +69,18 @@ std::vector<Match> getRinseMatches(const std::vector<T *> &schedule,
     algo1.init();
     auto acc = algo1.getPreThresholded();
 
-    // run the blanket algorithm, to remove matches with only incremental value
-    return applyIncrementalThreshold(
+    popart::logging::trace("[getRinseMatches] #matches pre threshold: {}",
+                           acc.size());
+
+    // run the blanket algorithm, to remove matches with only incremental
+    // value
+    acc = applyIncrementalThreshold(
         acc, static_cast<int>(schedule.size()), threshold);
+
+    popart::logging::trace("[getRinseMatches] #matches post threshold: {}",
+                           acc.size());
+
+    return acc;
   }
   }
   return std::vector<Match>{};

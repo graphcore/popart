@@ -23,10 +23,12 @@ using namespace popart;
 //  i2 -- Slice -- |
 //
 BOOST_AUTO_TEST_CASE(allocator_conv_control) {
-  /* In this test we check that a convolution does not allocate an input
-   * tensor when 'unwinding' through 'deadend' ops (in this case Slice)
+  /* In this test we check that a convolution does allocate an input
+   * tensor when 'unwinding' through 'canunwind' ops with special cases
+   * (in this case Slice, where only part of the region can be allocated by
+   * conv)
    *
-   * We observe that the input poplar tensors are created linearly
+   * We observe that the input poplar tensors are not created linearly
    */
 
   auto builder = Builder::create();
@@ -63,8 +65,8 @@ BOOST_AUTO_TEST_CASE(allocator_conv_control) {
   device.reset(new popx::Devicex(ir, cpuDevice));
   device->prepare();
 
-  BOOST_CHECK(device->getLinearlyCreatedInputTensors().count(i1) == 1);
-  BOOST_CHECK(device->getLinearlyCreatedInputTensors().count(i2) == 1);
+  BOOST_CHECK(device->getLinearlyCreatedInputTensors().count(i1) == 0);
+  BOOST_CHECK(device->getLinearlyCreatedInputTensors().count(i2) == 0);
 }
 
 // model:

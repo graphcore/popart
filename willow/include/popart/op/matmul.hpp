@@ -56,7 +56,7 @@ public:
   Phase getPhase() { return phase; }
   void setPhase(Phase p) { phase = p; }
 
-  void appendAttributes(OpSerialiserBase &os) const override;
+  void appendOutlineAttributes(OpSerialiserBase &os) const override;
   void appendMore(OpSerialiserBase &os) const override;
 
 protected:

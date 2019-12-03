@@ -56,8 +56,8 @@ void ReduceOp::setAxes(std::vector<int64_t> value) {
 
 void ReduceOp::setKeepDims(int64_t value) { keepdims = value; }
 
-void ReduceOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void ReduceOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("keepdims", keepdims);
   os.appendAttribute("axes", axes);
 }

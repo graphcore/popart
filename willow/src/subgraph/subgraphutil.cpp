@@ -133,9 +133,7 @@ std::vector<Match> applyIncrementalThreshold(const std::vector<Match> &dfm,
 
     if (dfm[i].getValue() - vChildren > threshold) {
       final_matches.push_back(dfm[i]);
-
       for (Start start : dfm[i].starts) {
-
         for (int j = start; j < start + len; ++j) {
           blanket[j] = nullptr;
         }

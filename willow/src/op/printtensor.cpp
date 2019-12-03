@@ -17,8 +17,8 @@ std::unique_ptr<Op> PrintTensorOp::clone() const {
   return std::make_unique<PrintTensorOp>(*this);
 }
 
-void PrintTensorOp::appendAttributes(OpSerialiserBase &os) const {
-  ElementWiseUnaryOp::appendAttributes(os);
+void PrintTensorOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  ElementWiseUnaryOp::appendOutlineAttributes(os);
   os.appendAttribute("printSelf", printSelf);
   os.appendAttribute("printGradient", printGradient);
 }
@@ -47,8 +47,29 @@ const std::map<int, int> &PrintTensorOp::gradOutToNonGradIn() const {
 }
 
 namespace {
+
+static OpDefinition::DataTypes T = {DataType::UINT8,
+                                    DataType::UINT16,
+                                    DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT8,
+                                    DataType::INT16,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT,
+                                    DataType::BOOL};
+
+static OpDefinition printTensorOpDef({OpDefinition::Inputs({{"X", T}}),
+                                      OpDefinition::Outputs({{"Y", T}}),
+                                      OpDefinition::Attributes({
+                                          {"print_gradient", {"*"}},
+                                      })});
+
 static OpCreator<PrintTensorOp> printtensorOpCreator(
-    Onnx::CustomOperators::PrintTensor_1,
+    OpDefinitions({
+        {Onnx::CustomOperators::PrintTensor_1, printTensorOpDef},
+    }),
     [](const OperatorIdentifier &opid_,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

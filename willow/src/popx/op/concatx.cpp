@@ -8,12 +8,43 @@
 namespace popart {
 namespace popx {
 
+BaseConcatOpx::BaseConcatOpx(Op *op_, Devicex *devicex)
+    : Opx(op_, devicex), op(static_cast<ConcatOp *>(op_)) {}
+
 ConcatOpx::ConcatOpx(Op *op_, Devicex *devicex)
-    : Opx(op_, devicex), op(static_cast<ConcatOp *>(op_)) {
+    : BaseConcatOpx(op_, devicex), op(static_cast<ConcatOp *>(op_)) {
   verifyOp<ConcatOp>(op_,
                      {Onnx::Operators::Concat_1,
                       Onnx::Operators::Concat_4,
                       Onnx::Operators::Concat_11});
+}
+
+InputCreatorType BaseConcatOpx::getInputCreatorType(InIndex) const {
+  return InputCreatorType::CANUNWIND;
+}
+
+poplar::Tensor BaseConcatOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                                 InIndex inIndex,
+                                                 OutIndex) const {
+  int64_t start = 0L;
+  for (int i = 0; i < inIndex; ++i) {
+    auto shape = op->inShape(ConcatOp::getInIndex(i));
+    start += shape[op->getAxis()];
+  }
+  int64_t end = 0L;
+  for (int i = 0; i <= inIndex; ++i) {
+    auto shape = op->inShape(ConcatOp::getInIndex(i));
+    end += shape[op->getAxis()];
+  }
+  return tensor.slice(static_cast<std::size_t>(start),
+                      static_cast<std::size_t>(end),
+                      static_cast<unsigned>(op->getAxis()));
+}
+
+view::RegMap BaseConcatOpx::unwindRegion(InIndex inIndex,
+                                         OutIndex outIndex) const {
+  ConcatOp *cop = dynamic_cast<ConcatOp *>(this->op_p);
+  return cop->bwdRegMap(inIndex, outIndex);
 }
 
 void ConcatOpx::grow(poplar::program::Sequence &prog) const {
@@ -31,7 +62,7 @@ void ConcatOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 ConcatInplaceOpx::ConcatInplaceOpx(Op *op_, Devicex *devicex)
-    : Opx(op_, devicex), op(static_cast<ConcatOp *>(op_)) {
+    : BaseConcatOpx(op_, devicex), op(static_cast<ConcatOp *>(op_)) {
   verifyOp<ConcatOp>(op_);
 }
 

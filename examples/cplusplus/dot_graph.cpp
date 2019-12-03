@@ -12,7 +12,7 @@
 #include <popart/onnxutil.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/optimizer.hpp>
-#include <popart/optionflags.hpp>
+#include <popart/sessionoptions.hpp>
 
 using namespace popart;
 namespace po = boost::program_options;

@@ -15,9 +15,9 @@
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/optimizervalue.hpp>
-#include <popart/optionflags.hpp>
 #include <popart/patterns/patterns.hpp>
 #include <popart/session.hpp>
+#include <popart/sessionoptions.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/version.hpp>
@@ -339,16 +339,32 @@ private:
 class AttributeContextManager {
   Builder &builder;
   std::string attribute;
-  uint64_t index;
+  boost::any value;
+  std::vector<boost::any> prevValue;
 
 public:
   AttributeContextManager(Builder &_builder,
                           const std::string &_attribute,
-                          int64_t _i)
-      : builder(_builder), attribute(_attribute), index(_i) {}
+                          boost::any value_)
+      : builder(_builder), attribute(_attribute), value(value_) {}
 
-  void enter() { builder.setAttribute(attribute, index); }
-  void exit() { builder.clearAttribute(attribute); }
+  void enter() {
+    if (builder.hasAttribute(attribute)) {
+      // Backup previous attribute value
+      prevValue.push_back(
+          boost::any_cast<int64_t>(builder.getAttribute(attribute)));
+      builder.clearAttribute(attribute);
+    }
+    builder.setAttribute(attribute, value);
+  }
+  void exit() {
+    builder.clearAttribute(attribute);
+    if (prevValue.size() > 0) {
+      // Restore previous attribute value
+      builder.setAttribute(attribute, prevValue.back());
+      prevValue.pop_back();
+    }
+  }
 };
 
 struct PrepareDeviceError {
@@ -460,6 +476,48 @@ PYBIND11_MODULE(popart_core, m) {
         &OpManager::getSupportedOperations,
         py::arg("includeInternal"));
 
+  py::enum_<DataType>(m, "DataType")
+      .value("UINT8", DataType::UINT8)
+      .value("INT8", DataType::INT8)
+      .value("UINT16", DataType::UINT16)
+      .value("INT16", DataType::INT16)
+      .value("INT32", DataType::INT32)
+      .value("INT64", DataType::INT64)
+      .value("UINT32", DataType::UINT32)
+      .value("UINT64", DataType::UINT64)
+      .value("BOOL", DataType::BOOL)
+      .value("FLOAT", DataType::FLOAT)
+      .value("FLOAT16", DataType::FLOAT16)
+      .value("BFLOAT16", DataType::BFLOAT16)
+      .value("DOUBLE", DataType::DOUBLE)
+      .value("COMPLEX64", DataType::COMPLEX64)
+      .value("COMPLEX128", DataType::COMPLEX128)
+      .value("STRING", DataType::STRING)
+      .value("UNDEFINED", DataType::UNDEFINED);
+
+  py::class_<OpDefinition::Input>(m, "OpDefinition::Input")
+      .def_readonly("name", &OpDefinition::Input::name)
+      .def_readonly("supportedTensors", &OpDefinition::Input::supportedTensors)
+      .def_readonly("constant", &OpDefinition::Input::constant);
+
+  py::class_<OpDefinition::Output>(m, "OpDefinition::Output")
+      .def_readonly("name", &OpDefinition::Output::name)
+      .def_readonly("supportedTensors",
+                    &OpDefinition::Output::supportedTensors);
+
+  py::class_<OpDefinition::Attribute>(m, "OpDefinition::Attribute")
+      .def_readonly("supportedValuesRegex",
+                    &OpDefinition::Attribute::supportedValuesRegex);
+
+  py::class_<OpDefinition>(m, "OpDefinition")
+      .def_readonly("inputs", &OpDefinition::inputs)
+      .def_readonly("outputs", &OpDefinition::outputs)
+      .def_readonly("attributes", &OpDefinition::attributes);
+
+  m.def("getSupportedOperationsDefinition",
+        &OpManager::getSupportedOperationsDefinition,
+        py::arg("includeInternal"));
+
   py::class_<IStepIO> stepio(m, "IStepIO");
 
   py::class_<IWeightsIO> weightsio(m, "IWeightsIO");
@@ -506,7 +564,7 @@ PYBIND11_MODULE(popart_core, m) {
       .def("anchors", &DataFlow::anchors, pybind11::return_value_policy::copy)
       .def("art", &DataFlow::art);
 
-  py::class_<TensorInfo>(m, "TensorInfoCore")
+  py::class_<TensorInfo>(m, "_TensorInfoCore")
       .def(py::init<std::string, const std::vector<int64_t> &>(),
            py::arg("dataType"),
            py::arg("shape"))
@@ -603,7 +661,7 @@ PYBIND11_MODULE(popart_core, m) {
            py::arg("weight_decay") = 0.0f,
            py::arg("loss_scaling") = 1.0f);
 
-  py::class_<SessionOptions>(m, "SessionOptionsCore")
+  py::class_<SessionOptions>(m, "SessionOptions")
       .def(py::init<>())
       .def_readwrite("logDir", &SessionOptions::logDir)
       .def_readwrite("exportPoplarComputationGraph",
@@ -611,6 +669,9 @@ PYBIND11_MODULE(popart_core, m) {
       .def_readwrite("exportPoplarVertexGraph",
                      &SessionOptions::exportPoplarVertexGraph)
       .def_readwrite("ignoreData", &SessionOptions::ignoreData)
+      .def_readwrite("syntheticDataMode", &SessionOptions::syntheticDataMode)
+      .def_readwrite("instrumentWithHardwareCycleCounter",
+                     &SessionOptions::instrumentWithHardwareCycleCounter)
       .def_readwrite("disableGradAccumulationTensorStreams",
                      &SessionOptions::disableGradAccumulationTensorStreams)
       .def_readwrite("enableOutlining", &SessionOptions::enableOutlining)
@@ -629,6 +690,7 @@ PYBIND11_MODULE(popart_core, m) {
                      &SessionOptions::mergeVarUpdateMemThreshold)
       .def_readwrite("rearrangeAnchorsOnHost",
                      &SessionOptions::rearrangeAnchorsOnHost)
+      .def_readwrite("pingPongPhases", &SessionOptions::pingPongPhases)
       .def_readwrite("enablePrefetchDatastreams",
                      &SessionOptions::enablePrefetchDatastreams)
       .def_readwrite("enableVirtualGraphs",
@@ -664,7 +726,8 @@ PYBIND11_MODULE(popart_core, m) {
       .def_readwrite("dotChecks", &SessionOptions::dotChecks)
       .def_readwrite("customCodelets", &SessionOptions::customCodelets)
       .def_readwrite("customCodeletCompileFlags",
-                     &SessionOptions::customCodeletCompileFlags);
+                     &SessionOptions::customCodeletCompileFlags)
+      .def_readwrite("hostAllReduce", &SessionOptions::hostAllReduce);
 
   py::enum_<PatternsLevel>(m, "PatternsLevel")
       .value("ALL", PatternsLevel::ALL)
@@ -684,6 +747,21 @@ PYBIND11_MODULE(popart_core, m) {
       .value("NormOnly", RecomputationType::NormOnly)
       .value("Pipeline", RecomputationType::Pipeline);
 
+  py::enum_<RecomputeType>(m, "RecomputeType")
+      .value("Undefined", RecomputeType::UNDEFINED)
+      .value("Checkpoint", RecomputeType::CHECKPOINT)
+      .value("Recompute", RecomputeType::RECOMPUTE);
+
+  py::enum_<CacheType>(m, "CacheType")
+      .value("Undefined", CacheType::UNDEFINED)
+      .value("Uncached", CacheType::UNCACHED)
+      .value("Cached", CacheType::CACHED);
+
+  py::enum_<SyncPattern>(m, "SyncPattern")
+      .value("Full", SyncPattern::FULL)
+      .value("Replica", SyncPattern::FULL)
+      .value("PingPong", SyncPattern::PINGPONG);
+
   py::enum_<MergeVarUpdateType>(m, "MergeVarUpdateType")
       .value("Off", MergeVarUpdateType::None)
       .value("All", MergeVarUpdateType::All)
@@ -693,7 +771,13 @@ PYBIND11_MODULE(popart_core, m) {
   py::enum_<VirtualGraphMode>(m, "VirtualGraphMode")
       .value("Off", VirtualGraphMode::Off)
       .value("Manual", VirtualGraphMode::Manual)
-      .value("Auto", VirtualGraphMode::Auto);
+      .value("Auto", VirtualGraphMode::Auto)
+      .value("PingPong", VirtualGraphMode::PingPong);
+
+  py::enum_<SyntheticDataMode>(m, "SyntheticDataMode")
+      .value("Off", SyntheticDataMode::Off)
+      .value("Zeros", SyntheticDataMode::Zeros)
+      .value("RandomNormal", SyntheticDataMode::RandomNormal);
 
   py::enum_<IrSerializationFormat>(m, "IrSerializationFormat")
       .value("JSON", IrSerializationFormat::JSON);
@@ -783,7 +867,7 @@ PYBIND11_MODULE(popart_core, m) {
           },
           py::arg("use_cbor") = false);
 
-  py::class_<InferenceSession>(m, "InferenceSessionCore")
+  py::class_<InferenceSession>(m, "_InferenceSessionCore")
       .def(py::init(&InferenceSession::createFromOnnxModel),
            py::arg("model"),
            py::arg("dataFlow").none(),
@@ -811,6 +895,7 @@ PYBIND11_MODULE(popart_core, m) {
       .def("setRandomSeed",
            &InferenceSession::setRandomSeed,
            py::arg("seedValue"))
+      .def("getCycleCount", &InferenceSession::getCycleCount)
       .def("weightsFromHost", &InferenceSession::weightsFromHost)
       .def("writeWeights", &TrainingSession::writeWeights)
       .def("run", &InferenceSession::run)
@@ -842,7 +927,7 @@ PYBIND11_MODULE(popart_core, m) {
       // Special test method to write serialise ir for analysis
       .def("_serializeIr", &InferenceSession::serializeIr, py::arg("format"));
 
-  py::class_<TrainingSession>(m, "TrainingSessionCore")
+  py::class_<TrainingSession>(m, "_TrainingSessionCore")
       .def(py::init(&TrainingSession::createFromOnnxModel),
            py::arg("model"),
            py::arg("dataFlow").none(),
@@ -872,6 +957,7 @@ PYBIND11_MODULE(popart_core, m) {
       .def("setRandomSeed",
            &TrainingSession::setRandomSeed,
            py::arg("seedValue"))
+      .def("getCycleCount", &TrainingSession::getCycleCount)
       .def("weightsToHost", &TrainingSession::weightsToHost)
       .def("weightsFromHost", &TrainingSession::weightsFromHost)
       .def("readWeights", &TrainingSession::readWeights)
@@ -948,13 +1034,22 @@ PYBIND11_MODULE(popart_core, m) {
            py::arg("args"),
            py::arg("scale"),
            py::arg("debugPrefix") = std::string())
+      .def("lstm",
+           &AiGraphcoreOpset1::lstm,
+           py::arg("args"),
+           py::arg("outputFullSequence") = 1,
+           py::arg("debugPrefix")        = std::string())
       .def("subsample",
            &AiGraphcoreOpset1::subsample,
            py::arg("args"),
            py::arg("strides"),
+           py::arg("debugPrefix") = std::string())
+      .def("gelu",
+           &AiGraphcoreOpset1::gelu,
+           py::arg("args"),
            py::arg("debugPrefix") = std::string());
 
-  py::class_<Builder>(m, "BuilderCore")
+  py::class_<Builder>(m, "_BuilderCore")
       .def(py::init(&Builder::create))
       .def(py::init(&Builder::createFromOnnxModel),
            py::arg("modelProtoOrFilename"))
@@ -1125,6 +1220,52 @@ PYBIND11_MODULE(popart_core, m) {
             return acm;
           },
           py::arg("value"))
+      .def("pingPongPhase",
+           static_cast<void (Builder::*)(const TensorId &, int64_t phase)>(
+               &Builder::pingPongPhase),
+           py::arg("nodeOutputNames"),
+           py::arg("value") = 0)
+      .def(
+          "pingPongPhase",
+          [](Builder &self, int64_t phase) -> AttributeContextManager {
+            AttributeContextManager acm(self, sPingPongPhaseAttribute, phase);
+            return acm;
+          },
+          py::arg("value") = 0)
+      .def(
+          "getPingPongPhase",
+          static_cast<int64_t (Builder::*)() const>(&Builder::getPingPongPhase))
+      .def("hasPingPongPhase",
+           [](Builder &self) -> bool {
+             return self.hasAttribute(sPingPongPhaseAttribute);
+           })
+      .def(
+          "recomputeOutput",
+          static_cast<void (Builder::*)(const TensorId &, RecomputeType value)>(
+              &Builder::recomputeOutput),
+          py::arg("nodeOutputNames"),
+          py::arg("value") = RecomputeType::UNDEFINED)
+      .def(
+          "recomputeOutput",
+          [](Builder &self, RecomputeType value) -> AttributeContextManager {
+            AttributeContextManager acm(
+                self, sRecomputeOutputAttribute, static_cast<int64_t>(value));
+            return acm;
+          },
+          py::arg("value") = RecomputeType::UNDEFINED)
+      .def("cacheOutput",
+           static_cast<void (Builder::*)(const TensorId &, CacheType value)>(
+               &Builder::cacheOutput),
+           py::arg("nodeOutputNames"),
+           py::arg("value") = CacheType::UNDEFINED)
+      .def(
+          "cacheOutput",
+          [](Builder &self, CacheType value) -> AttributeContextManager {
+            AttributeContextManager acm(
+                self, sCacheOutputAttribute, static_cast<int64_t>(value));
+            return acm;
+          },
+          py::arg("value") = CacheType::UNDEFINED)
       .def("pipelineStage",
            static_cast<void (Builder::*)(const TensorId &, int64_t value)>(
                &Builder::pipelineStage),
@@ -1137,14 +1278,19 @@ PYBIND11_MODULE(popart_core, m) {
             return acm;
           },
           py::arg("value"))
+      .def("excludePatterns",
+           static_cast<void (Builder::*)(
+               const TensorId &, const std::vector<std::string> &value)>(
+               &Builder::excludePatterns),
+           py::arg("nodeOutputName"),
+           py::arg("patternNames"))
       .def("getPipelineStage", &Builder::getPipelineStage)
       .def("hasPipelineStage",
            [](Builder &self) -> bool {
              return self.hasAttribute(sPipelineStageAttribute);
            })
-      .def(
-          "getVirtualGraph",
-          static_cast<uint64_t (Builder::*)() const>(&Builder::getVirtualGraph))
+      .def("getVirtualGraph",
+           static_cast<int64_t (Builder::*)() const>(&Builder::getVirtualGraph))
       .def("hasVirtualGraph",
            [](Builder &self) -> bool {
              return self.hasAttribute(sVirtualGraphAttribute);
@@ -1183,26 +1329,26 @@ PYBIND11_MODULE(popart_core, m) {
           py::arg("name"))
       .def(
           "getNameScope",
-          [](Builder &self, std::string &name) {
-            return self.getNameScope(name);
-          },
+          [](Builder &self,
+             std::string &name) { return self.getNameScope(name); },
           py::arg("name") = "")
       .def("getVirtualGraph",
            static_cast<int64_t (Builder::*)(const TensorId &)>(
                &Builder::getVirtualGraph),
            py::arg("nodeOutputNames"))
 
-      .def("recomputeOutputInBackwardPass",
-           static_cast<void (Builder::*)(const TensorId &, bool value)>(
-               &Builder::recomputeOutputInBackwardPass),
-           py::arg("nodeOutputName"),
-           py::arg("value") = true)
+      .def(
+          "recomputeOutputInBackwardPass",
+          static_cast<void (Builder::*)(const TensorId &, RecomputeType value)>(
+              &Builder::recomputeOutputInBackwardPass),
+          py::arg("nodeOutputName"),
+          py::arg("value") = RecomputeType::RECOMPUTE)
       .def("recomputeOutputInBackwardPass",
            static_cast<void (Builder::*)(const std::set<TensorId> &,
-                                         bool value)>(
+                                         RecomputeType value)>(
                &Builder::recomputeOutputInBackwardPass),
            py::arg("nodeOutputNames"),
-           py::arg("value") = true)
+           py::arg("value") = RecomputeType::RECOMPUTE)
 
       .def("getRecomputeOutputInBackwardPass",
            static_cast<bool (Builder::*)(const TensorId &)>(
@@ -1244,14 +1390,19 @@ PYBIND11_MODULE(popart_core, m) {
         return std::unique_ptr<DeviceManager, py::nodelete>(
             &DeviceManager::createDeviceManager());
       }))
-      .def(
-          "acquireAvailableDevice",
-          static_cast<std::shared_ptr<DeviceInfo> (DeviceManager::*)(int, int)>(
-              &DeviceManager::acquireAvailableDevice),
-          py::arg("numIpus")     = 1,
-          py::arg("tilesPerIpu") = 0)
-      .def(
-          "acquireDeviceById", &DeviceManager::acquireDeviceById, py::arg("id"))
+      .def("acquireAvailableDevice",
+           static_cast<std::shared_ptr<DeviceInfo> (DeviceManager::*)(
+               int, int, SyncPattern, uint32_t)>(
+               &DeviceManager::acquireAvailableDevice),
+           py::arg("numIpus")           = 1,
+           py::arg("tilesPerIpu")       = 0,
+           py::arg("pattern")           = SyncPattern::FULL,
+           py::arg("replicationFactor") = 1)
+      .def("acquireDeviceById",
+           &DeviceManager::acquireDeviceById,
+           py::arg("id"),
+           py::arg("pattern")           = SyncPattern::FULL,
+           py::arg("replicationFactor") = 1)
       .def("createCpuDevice", &DeviceManager::createCpuDevice)
       .def("createIpuModelDevice",
            [](DeviceManager &dm, py::dict e) {
@@ -1263,7 +1414,10 @@ PYBIND11_MODULE(popart_core, m) {
              std::map<std::string, std::string> options = getDictionary(e);
              return dm.createSimDevice(options);
            })
-      .def("enumerateDevices", &DeviceManager::enumerateDevices);
+      .def("enumerateDevices",
+           &DeviceManager::enumerateDevices,
+           py::arg("pattern")           = SyncPattern::FULL,
+           py::arg("replicationFactor") = 1);
 
   py::enum_<DeviceType>(m, "DeviceType")
       .value("IpuModel", DeviceType::IpuModel)

@@ -36,8 +36,13 @@ void Opx::grow(poplar::program::Sequence &) const {
   throw error("adding poplar::Tensors not implemented for {}", op_p->opid);
 }
 
-InputCreatorType Opx::getInputCreatorType(int) const {
+InputCreatorType Opx::getInputCreatorType(InIndex) const {
   return InputCreatorType::DEADEND;
+}
+
+bool Opx::canUnwind(InIndex in, OutIndex) const {
+  auto type = getInputCreatorType(in);
+  return type == InputCreatorType::CANUNWIND;
 }
 
 poplar::Tensor
@@ -47,16 +52,15 @@ Opx::unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const {
               op_p->opid);
 }
 
-poplar::Tensor
-Opx::unwindTensorLayout(std::vector<poplar::Tensor>, InIndex, OutIndex) const {
-  throw error("Opx for {} cannot unwind the tensor layout change between input "
-              "and output(s)",
+view::RegMap Opx::unwindRegion(InIndex, OutIndex) const {
+  throw error("Opx cannot unwind the region between input "
+              "and output for {}",
               op_p->opid);
 }
 
-std::vector<std::pair<Op *, InIndex>> Opx::getCreatorCandicates(InIndex) const {
-  throw error("Opx for {} does not have a defined list of creators",
-              op_p->opid);
+std::pair<std::vector<ICreatorCandidatePtr>, std::vector<UnwindEndpointPtr>>
+Opx::getEndpoints(InIndex, std::vector<OpxInAndOutIndex>) const {
+  throw error("Opx for {} cannot get endpoints for {}", op_p->opid);
 }
 
 int64_t Opx::getVirtualGraphId() const {
@@ -91,6 +95,12 @@ void Opx::insert(TensorId id, const poplar::Tensor &tensor) const {
 TensorId Opx::inId(InIndex index) const { return op_p->input->id(index); }
 TensorId Opx::outId(OutIndex index) const { return op_p->output->id(index); }
 
+bool Opx::hasInput(InIndex index) const { return op_p->input->hasIndex(index); }
+
+bool Opx::hasOutput(OutIndex index) const {
+  return op_p->output->hasIndex(index);
+}
+
 const poplar::Tensor &Opx::getInTensor(InIndex index) const {
   if (!cachedInputs.empty()) {
     return cachedInputs[index];
@@ -104,6 +114,9 @@ void Opx::setOutTensor(OutIndex index, const poplar::Tensor &tensor) const {
   if (cachedOutputs) {
     cachedOutputs->insert(cachedOutputs->begin() + index, tensor);
   } else {
+    logging::trace("Op {} inserting poplar::Tensor {}",
+                   getOp<Op>().debugName(),
+                   op_p->output->id(index));
     insert(op_p->output->id(index), tensor);
   }
 }

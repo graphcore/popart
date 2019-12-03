@@ -14,6 +14,7 @@ public:
   virtual ~OpSerialiserBase() {}
 
   virtual void appendAttribute(const std::string &, float)               = 0;
+  virtual void appendAttribute(const std::string &, int)                 = 0;
   virtual void appendAttribute(const std::string &, int64_t)             = 0;
   virtual void appendAttribute(const std::string &, uint32_t)            = 0;
   virtual void appendAttribute(const std::string &, uint64_t)            = 0;
@@ -24,6 +25,8 @@ public:
                                boost::optional<int64_t>)                 = 0;
   virtual void appendAttribute(const std::string &, bool)                = 0;
   virtual void appendAttribute(const std::string &, const Scope &)       = 0;
+  virtual void appendAttribute(const std::string &,
+                               const std::map<TensorId, uint64_t>)       = 0;
 
   virtual void appendForwardOp(const Op *) = 0;
 };
@@ -34,6 +37,7 @@ public:
 
   void appendAttribute(const std::string &, float) override;
   void appendAttribute(const std::string &, int64_t) override;
+  void appendAttribute(const std::string &, int) override;
   void appendAttribute(const std::string &, uint32_t) override;
   void appendAttribute(const std::string &, uint64_t) override;
   void appendAttribute(const std::string &,
@@ -42,6 +46,8 @@ public:
   void appendAttribute(const std::string &, boost::optional<int64_t>) override;
   void appendAttribute(const std::string &, bool) override;
   void appendAttribute(const std::string &, const Scope &) override;
+  void appendAttribute(const std::string &,
+                       const std::map<TensorId, uint64_t>) override;
 
   virtual void appendForwardOp(const Op *) override;
 
@@ -58,6 +64,7 @@ public:
   OpJsonSerialiser(const Op *, std::stringstream &ss_);
 
   void appendAttribute(const std::string &, float) override;
+  void appendAttribute(const std::string &, int) override;
   void appendAttribute(const std::string &, int64_t) override;
   void appendAttribute(const std::string &, uint32_t) override;
   void appendAttribute(const std::string &, uint64_t) override;
@@ -67,6 +74,8 @@ public:
   void appendAttribute(const std::string &, boost::optional<int64_t>) override;
   void appendAttribute(const std::string &, bool) override;
   void appendAttribute(const std::string &, const Scope &) override;
+  void appendAttribute(const std::string &,
+                       const std::map<TensorId, uint64_t>) override;
 
   virtual void appendForwardOp(const Op *) override;
 
@@ -94,6 +103,7 @@ public:
   OpEquivIdCreator(const Op *);
 
   void appendAttribute(const std::string &, float) override;
+  void appendAttribute(const std::string &, int) override;
   void appendAttribute(const std::string &, int64_t) override;
   void appendAttribute(const std::string &, uint32_t) override;
   void appendAttribute(const std::string &, uint64_t) override;
@@ -103,6 +113,8 @@ public:
   void appendAttribute(const std::string &, boost::optional<int64_t>) override;
   void appendAttribute(const std::string &, bool) override;
   void appendAttribute(const std::string &, const Scope &) override;
+  void appendAttribute(const std::string &,
+                       const std::map<TensorId, uint64_t>) override;
 
   virtual void appendForwardOp(const Op *) override;
 

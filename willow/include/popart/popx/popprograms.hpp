@@ -30,6 +30,7 @@ public:
     SETRANDOMSEEDFROMHOST,
     PROGRAM,
     WEIGHTSTOHOST,
+    CYCLECOUNTTENSORTOHOST,
     N // The number of programs
   };
 
@@ -45,6 +46,7 @@ public:
     VARUPDATEFROMACCUMULATOR,
     WEIGHTSTOHOST,
     TOHOSTFINALCOPY,
+    CYCLECOUNTTENSORTOHOST,
     N // The number of program fragments
   };
 
@@ -53,6 +55,7 @@ public:
   poplar::program::Sequence &streamWeightsFromHostFragment();
   poplar::program::Sequence &streamOptimizerFromHostFragment();
   poplar::program::Sequence &setRandomSeedFromHostFragment();
+  poplar::program::Sequence &cycleCountTensorToHostFragment();
   poplar::program::Sequence &toHostFinalCopyFragment();
   poplar::program::Sequence &initFragment();
   poplar::program::Sequence &preForwardFragment();
@@ -81,8 +84,8 @@ public:
   // fragment for each recomputed Op
   poplar::program::Sequence &recomputeFragment(OpId);
 
-  bool hasBeenRecomputed(OpId) const;
-  void recordRecomputed(OpId);
+  bool hasBeenRecomputed(OpId, PingPongPhase) const;
+  void recordRecomputed(OpId, PingPongPhase);
 
   enum class PipelineFragmentId {
     ToDeviceStream = 0,
@@ -112,9 +115,11 @@ public:
   std::vector<poplar::program::Sequence *>
   pipelineIpuCopyFragments(PipelineStage, const std::string &desc);
 
-  void addPipelineCycle(PipelineCycle pCycle,
-                        poplar::program::Sequence &sq,
-                        std::ostringstream &ss);
+  void
+  addPipelineCycle(PipelineCycle pCycle,
+                   poplar::program::Sequence &sq,
+                   std::ostringstream &ss,
+                   std::map<PipelineStage, poplar::Function> &fwdFunctions);
 
   Devicex *dv_p;
 
@@ -144,11 +149,12 @@ private:
 
   poplar::program::Sequence getMainProgramFromPipelineFragments();
 
-  std::set<OpId> beenRecomputed;
+  std::set<std::pair<OpId, PingPongPhase>> beenRecomputed;
 
   poplar::program::Sequence weightsFromHost();
   poplar::program::Sequence optimizerFromHost();
   poplar::program::Sequence setRandomSeedFromHost();
+  poplar::program::Sequence cycleCountTensorToHost();
   poplar::program::Sequence program();
   poplar::program::Sequence weightsToHost();
 };

@@ -9,6 +9,7 @@
 
 #include <popart/error.hpp>
 #include <popart/names.hpp>
+#include <popart/op.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/vertex.hpp>
@@ -22,6 +23,7 @@ enum class TensorType {
   Stream,
   Unknown,
   Variable,
+  Cache,
   N // number of tensor types
 };
 
@@ -49,14 +51,14 @@ public:
   // decrement the number of times an Op consumes
   void decrement(Op *);
   // increment the current counts with those in this map
-  void extend(const std::map<Op *, int> &);
+  void extend(const std::map<Op *, int, POpCmp> &);
   // return the total number of consumptions, taking
   // into account Ops which consume multiple times,
   // so the sum over consuming nodes of the number of
   // times consumed
   int getTotal() const;
   // the number of times each consumer uses the Tensor
-  const std::map<Op *, int> &getMap() const;
+  const std::map<Op *, int, POpCmp> &getMap() const;
   // the pointers to the consumers, no duplication for
   // Ops which consume multiple times
   std::vector<Op *> getOps() const;
@@ -70,7 +72,7 @@ public:
 private:
   // The number of times an Op consumes the Tensor which
   // owns these Consumers
-  std::map<Op *, int> consumers_m;
+  std::map<Op *, int, POpCmp> consumers_m;
   Tensor *tensorConsumed;
 };
 
@@ -128,9 +130,15 @@ public:
   void setProducer(Op *);
   void resetProducer(Op *);
   bool hasProducer() const;
+  void setCached(bool);
+  bool isCached() const;
+  void setRemoteBufferInfo(RemoteBufferId, RemoteBufferIndex);
+  const std::pair<RemoteBufferId, RemoteBufferIndex>
+  getRemoteBufferInfo() const;
   // Returns true for stream tensors that are optimizer tensors, as
   // well as their copies
   bool isOptimizerTensor() const;
+  bool isCacheArgTensor() const;
   bool isRandomSeedTensor() const;
   bool isAcclTensor() const;
   bool hasTensorData() const;
@@ -165,6 +173,8 @@ protected:
   Graph &graph;
   Op *producer;
   const TensorTypeInfo *tensorTypeInfo;
+  bool cached;
+  std::pair<RemoteBufferId, RemoteBufferIndex> remoteBufferInfo;
 
   // By default stream tensors are replicated
   ReplicatedStreamMode replicatedStreamMode = ReplicatedStreamMode::Replicate;

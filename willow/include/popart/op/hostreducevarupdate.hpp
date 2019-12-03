@@ -38,6 +38,8 @@ public:
     return std::unique_ptr<Op>(
         new HostSGD0VarUpdate(x, initSlr0, initWdsf0, settings));
   }
+
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
 };
 
 } // namespace popart

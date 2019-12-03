@@ -39,8 +39,8 @@ void LRNOp::setup() {
   outInfo(getOutIndex()) = {inInfo(getInIndex()).dataType(), input_shape};
 }
 
-void LRNOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void LRNOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("alpha", alpha);
   os.appendAttribute("beta", beta);
   os.appendAttribute("bias", bias);
@@ -74,8 +74,8 @@ const std::map<int, int> &LRNGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
-void LRNGradOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void LRNGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("alpha", alpha);
   os.appendAttribute("beta", beta);
   os.appendAttribute("bias", bias);
@@ -83,8 +83,22 @@ void LRNGradOp::appendAttributes(OpSerialiserBase &os) const {
 }
 
 namespace {
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition lrnOpDef({OpDefinition::Inputs({{"X", T}}),
+                              OpDefinition::Outputs({{"Y", T}}),
+                              OpDefinition::Attributes({
+                                  {"alpha", {"*"}},
+                                  {"beta", {"*"}},
+                                  {"bias", {"*"}},
+                                  {"size", {"*"}},
+                              })});
+
 static OpCreator<LRNOp> lrnOpCreator(
-    {Onnx::Operators::LRN_1},
+    OpDefinitions({
+        {Onnx::Operators::LRN_1, lrnOpDef},
+    }),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

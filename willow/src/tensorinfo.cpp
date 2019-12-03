@@ -291,7 +291,13 @@ int64_t TensorInfo::nbytes() const {
   return nelms() * static_cast<int64_t>(dataTypeInfo->nbytes());
 }
 
-int64_t TensorInfo::dim(int i) const { return shape_v[i]; }
+int64_t TensorInfo::dim(int i) const {
+  if (i >= shape_v.size()) {
+    throw error(
+        "Invalid input dimension {}, tensor of rank {}", i, shape_v.size());
+  }
+  return shape_v[i];
+}
 
 DataType TensorInfo::dataType() const { return dataTypeInfo->type(); }
 
@@ -317,27 +323,30 @@ bool TensorInfo::operator!=(const TensorInfo &i1) const {
 std::map<DataType, DataTypeInfo> initDataTypeInfoMap() {
 
   return {
-      {DataType::UNDEFINED,
-       {DataType::UNDEFINED, -1, false, "UNDEFINED", "undefined"}},
-      {DataType::FLOAT, {DataType::FLOAT, 4, false, "FLOAT", "float32"}},
+      // fixed point types
       {DataType::UINT8, {DataType::UINT8, 1, true, "UINT8", "uint"}},
       {DataType::INT8, {DataType::INT8, 1, true, "INT8", "int8"}},
       {DataType::UINT16, {DataType::UINT16, 2, true, "UINT16", "uint16"}},
       {DataType::INT16, {DataType::INT16, 2, true, "INT16", "int16"}},
       {DataType::INT32, {DataType::INT32, 4, true, "INT32", "int32"}},
       {DataType::INT64, {DataType::INT64, 8, true, "INT64", "int64"}},
-      {DataType::STRING, {DataType::STRING, -1, false, "STRING", "string"}},
+      {DataType::UINT32, {DataType::UINT32, 4, true, "UINT32", "uint32"}},
+      {DataType::UINT64, {DataType::UINT64, 8, true, "UINT64", "uint64"}},
       {DataType::BOOL, {DataType::BOOL, 1, true, "BOOL", "bool"}},
+      // floating point types
       {DataType::FLOAT16, {DataType::FLOAT16, 2, false, "FLOAT16", "float16"}},
       {DataType::BFLOAT16,
        {DataType::BFLOAT16, 2, false, "BFLOAT16", "bfloat16"}},
+      {DataType::FLOAT, {DataType::FLOAT, 4, false, "FLOAT", "float32"}},
       {DataType::DOUBLE, {DataType::DOUBLE, 8, false, "DOUBLE", "float64"}},
-      {DataType::UINT32, {DataType::UINT32, 4, false, "UINT32", "uint32"}},
-      {DataType::UINT64, {DataType::UINT64, 8, false, "UINT64", "uint64"}},
       {DataType::COMPLEX64,
        {DataType::COMPLEX64, 8, false, "COMPLEX64", "complex64"}},
       {DataType::COMPLEX128,
-       {DataType::COMPLEX128, 16, false, "COMPLEX128", "complex128"}}};
+       {DataType::COMPLEX128, 16, false, "COMPLEX128", "complex128"}},
+      // other types
+      {DataType::STRING, {DataType::STRING, -1, false, "STRING", "string"}},
+      {DataType::UNDEFINED,
+       {DataType::UNDEFINED, -1, false, "UNDEFINED", "undefined"}}};
 }
 
 std::map<std::string, DataType> initStrToDataTypeMap() {
@@ -423,6 +432,11 @@ const std::map<std::string, DataType> &getStrToDataTypeMap() {
 
 std::ostream &operator<<(std::ostream &stream, const TensorInfo &ti) {
   ti.append(stream);
+  return stream;
+}
+
+std::ostream &operator<<(std::ostream &stream, const DataType &dt) {
+  stream << getDataTypeInfoMap().at(dt).lcasename();
   return stream;
 }
 

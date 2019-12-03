@@ -16,6 +16,7 @@ public:
   poplar::Tensor unwindTensorLayout(poplar::Tensor tensor,
                                     InIndex inIndex,
                                     OutIndex outIndex) const final;
+  view::RegMap unwindRegion(InIndex, OutIndex) const final;
 };
 
 class TransposeInplaceOpx : public Opx {
@@ -27,6 +28,7 @@ public:
   poplar::Tensor unwindTensorLayout(poplar::Tensor tensor,
                                     InIndex inIndex,
                                     OutIndex outIndex) const final;
+  view::RegMap unwindRegion(InIndex, OutIndex) const final;
 };
 
 class TransposeGradOpx : public TransposeOpx {

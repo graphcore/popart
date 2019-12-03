@@ -27,7 +27,7 @@ def test_virtual_graph():
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
@@ -64,7 +64,7 @@ def test_virtual_graph2():
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
@@ -117,7 +117,7 @@ def test_virtual_graph3():
     losses[0].virtualGraph(1)
     optimizer = popart.SGD({"defaultLearningRate": (0.01, True)})
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.TrainingSession(fnModel=proto,
@@ -188,7 +188,7 @@ def test_virtual_graph4():
     losses[2].virtualGraph(2)
     optimizer = popart.ConstSGD(0.01)
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.TrainingSession(fnModel=proto,
@@ -234,7 +234,7 @@ def test_virtual_graph_bad_index():
     #
     # dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
     #
-    # opts = popart.SessionOptionsCore()
+    # opts = popart.SessionOptions()
     # opts.virtualGraphMode = popart.VirtualGraphMode.Manual
     #
     # s = popart.Session(fnModel=proto, dataFeed=dataFlow, userOptions=opts, deviceInfo=tu.get_ipu_model(numIPUs = 2))
@@ -291,7 +291,7 @@ def test_streaming_optimizer_tensors():
 
         optimizer = popart.SGD({"defaultLearningRate": (1.0, False)})
 
-        opts = popart.SessionOptionsCore()
+        opts = popart.SessionOptions()
         if enablePipelining:
             opts.virtualGraphMode = popart.VirtualGraphMode.Manual
         opts.enablePipelining = enablePipelining

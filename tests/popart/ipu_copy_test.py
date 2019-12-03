@@ -25,7 +25,7 @@ def test_ipu_copy_bca1():
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
@@ -58,7 +58,7 @@ def test_ipu_copy_aca1():
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
@@ -70,8 +70,9 @@ def test_ipu_copy_aca1():
         s.prepareDevice()
 
     assert (e_info.value.args[0].startswith(
-        "Op(ai.onnx.Add:7, outputs=[{}]) has been assigned to an invalid virtual graph 10"
-        .format(o)))
+        ("Op(ai.onnx.Add:7, inputs=[{}, {}], outputs=[{}]) " +
+         "has been assigned to an invalid virtual graph 10").format(
+             o1 + "_c10", o2 + "_c10", o)))
 
 
 # Test that an input stream tensor is correctly mapped to multiple ipus
@@ -100,7 +101,7 @@ def test_ipu_copy_bca4():
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
@@ -140,7 +141,7 @@ def test_ipu_copy_bca2():
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
@@ -172,7 +173,7 @@ def test_ipu_copy_bca3():
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
@@ -209,7 +210,7 @@ def test_ipu_copy_bca5():
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
@@ -253,7 +254,7 @@ def test_copy_to_op_with_duplicate_inputs():
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,

@@ -94,7 +94,7 @@ public:
     MatMulOp *matmulOp = dynamic_cast<MatMulOp *>(op);
 
     logging::pattern::debug(
-        "Applying MatMulOp pattern to reshape input from {} x{} to {} x {}",
+        "Applying MatMulOp pattern to reshape input from {} x {} to {} x {}",
         matmulOp->lhsIn()->info.shape(),
         matmulOp->rhsIn()->info.shape(),
         matmulOp->getExpandedLhsShape(),
@@ -112,18 +112,11 @@ public:
     auto outReshapeOp = dynamic_cast<ReshapeOp *>(
         makeReplacementOpInIr(Onnx::Operators::Reshape_5, op, "OutReshape"));
 
-    // expand the lhs input by reshaping it, set the priority to the lowest
-    // so that it is scheduled as late as possiable.
-    configureReshapeOp(lhsReshapeOp,
-                       matmulOp->getExpandedLhsShape(),
-                       lhs->id,
-                       std::numeric_limits<double>::lowest());
+    // expand the lhs input by reshaping it
+    configureReshapeOp(lhsReshapeOp, matmulOp->getExpandedLhsShape(), lhs->id);
 
     // expand the rhs input by reshaping it
-    configureReshapeOp(rhsReshapeOp,
-                       matmulOp->getExpandedRhsShape(),
-                       rhs->id,
-                       std::numeric_limits<double>::lowest());
+    configureReshapeOp(rhsReshapeOp, matmulOp->getExpandedRhsShape(), rhs->id);
 
     // disconnect the mat mul from it's original inputs & output
     matmulOp->disconnectAllInputs();
@@ -140,6 +133,14 @@ public:
                        out->info.shape(),
                        matmulOp->outTensor(MatMulOp::getOutIndex())->id,
                        out->id);
+
+    // Transfer existing topoCons
+    op->getGraph().topoCons->transfer(op, matmulOp);
+
+    // Tie operations together. Disabled for now due to issues with pipelining.
+    // op->getGraph().topoCons->insert(lhsReshapeOp, matmulOp, true);
+    // op->getGraph().topoCons->insert(rhsReshapeOp, matmulOp, true);
+    // op->getGraph().topoCons->insert(matmulOp, outReshapeOp, true);
 
     return true;
   }
@@ -312,10 +313,10 @@ public:
 
 bool MatMulGradPattern::apply(Op *op) const {
 
-  auto in       = getIn(op);
-  auto grad_in  = getGradIn(op);
-  auto simon    = grad_in;
-  auto grad_out = getGradOut(op);
+  auto in           = getIn(op);
+  auto grad_in      = getGradIn(op);
+  auto orig_grad_in = grad_in;
+  auto grad_out     = getGradOut(op);
 
   // Get the phase of the matmul grad op
   auto phase = dynamic_cast<MatMulBaseOp *>(op)->getPhase();
@@ -352,7 +353,7 @@ bool MatMulGradPattern::apply(Op *op) const {
   // Remove the MatMulXXXGradOp
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  // Make sure they any constrain on the matmulXXXgradop is moved to the matmul
+  // Make sure that any constrain on the matmulXXXgradop is moved to the matmul
   // op
   op->getGraph().topoCons->transfer(op, matmulOp);
   op->getGraph().eraseOp(op->id);
@@ -393,7 +394,7 @@ bool MatMulGradPattern::apply(Op *op) const {
 
     // Add constraint that we will not reshape the in until the grad_in has been
     // produced
-    reshapeOpInExpand->getGraph().topoCons->insert(simon->getProducer(),
+    reshapeOpInExpand->getGraph().topoCons->insert(orig_grad_in->getProducer(),
                                                    reshapeOpInExpand);
   }
 
@@ -498,6 +499,14 @@ bool MatMulGradPattern::apply(Op *op) const {
     }
   }
 
+  // Tie operations together
+  matmulOp->getGraph().topoCons->insert(reshapeOpInExpand, matmulOp, true);
+  matmulOp->getGraph().topoCons->insert(reshapeOpGradInExpand, matmulOp, true);
+  matmulOp->getGraph().topoCons->insert(transposeOp, matmulOp, true);
+  matmulOp->getGraph().topoCons->insert(matmulOp, squeezeOp, true);
+  matmulOp->getGraph().topoCons->insert(matmulOp, reduceSumOp, true);
+  matmulOp->getGraph().topoCons->insert(matmulOp, reshapeOp, true);
+
   // Remove any ops not used
   auto removedIfNotUsed = [](Op *opToRemove) {
     if (opToRemove->inTensorCount() == 0) {
@@ -514,7 +523,6 @@ bool MatMulGradPattern::apply(Op *op) const {
   return true;
 }
 
-// Disabled by default
 namespace {
 static PatternCreator<MatMulPattern>
     matMulPattern(PreAliasPatternType::MATMULOP, "MatMulOp", true);

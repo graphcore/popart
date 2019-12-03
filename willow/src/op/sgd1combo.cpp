@@ -18,7 +18,7 @@ SGD1ComboOp::SGD1ComboOp(const TensorId &varId_,
       initSmm1(initialSmm1), initDpsf1(initialDpsf1), initSwd1(initialSwd1),
       initSlr1(initialSlr1), withAcclReduce(withAcclReduce_) {}
 
-void SGD1ComboOp::appendAttributes(OpSerialiserBase &os) const {
+void SGD1ComboOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 
   Op::appendAttributes(os);
 
@@ -75,6 +75,11 @@ std::map<InIndex, TensorId> SGD1ComboOp::optimizerInputs() const {
   }
 
   return m;
+}
+
+std::set<InIndex> SGD1ComboOp::optionalInputs() const {
+  return {
+      getSmm1InIndex(), getDpsf1InIndex(), getSwd1InIndex(), getSlr1InIndex()};
 }
 
 } // namespace popart

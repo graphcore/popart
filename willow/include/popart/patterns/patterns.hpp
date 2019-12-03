@@ -5,6 +5,8 @@
 #include <initializer_list>
 #include <map>
 #include <string>
+#include <typeindex>
+#include <unordered_map>
 #include <vector>
 #include <popart/logging.hpp>
 #include <popart/patterns/pattern.hpp>
@@ -16,6 +18,35 @@ namespace popart {
 
 // FFS : add gcc like levels O2, O3, OS etc
 enum class PatternsLevel { NONE, DEFAULT, ALL };
+
+class PatternNames {
+public:
+  static void addName(const std::type_info &patternInfo,
+                      const std::string &name);
+
+  static const std::string &getName(const std::type_info &patternInfo);
+
+  template <typename PATTERN> static const std::string &getName() {
+    return getName(typeid(PATTERN));
+  }
+
+  static bool contains(const std::string &);
+
+private:
+  std::unordered_map<std::type_index, std::string> names;
+
+  static PatternNames &getInstance() {
+    static PatternNames instance;
+    return instance;
+  }
+};
+
+template <class PATTERN> class AddPatternName {
+public:
+  AddPatternName(std::string name) {
+    PatternNames::addName(typeid(PATTERN), name);
+  }
+};
 
 // This is a factory class which the patterns are registered with
 class PreAliasPatternManager {
@@ -116,9 +147,9 @@ public:
     PreAliasPatternManager::registerPattern(
         type, name, enabled, [name]() -> std::unique_ptr<PreAliasPattern> {
           auto pattern = std::unique_ptr<PATTERN>(new PATTERN());
-          pattern->initialise(name);
           return std::move(pattern);
         });
+    AddPatternName<PATTERN> registerName(name);
   }
 };
 

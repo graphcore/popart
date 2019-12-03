@@ -44,14 +44,22 @@ enum class MergeVarUpdateType {
 };
 
 enum class VirtualGraphMode {
-  Off = 0, // virtual graphs are not enabled
-  Manual,  // user must set the virtualGraph attribute on all ops and losses
-  Auto,    // autoVirtualGraph transform is used
-  N        // The number of VirtualGraphModes, must appear as the final enum
+  Off = 0,  // virtual graphs are not enabled
+  Manual,   // user must set the virtualGraph attribute on all ops and losses
+  Auto,     // autoVirtualGraph transform is used
+  PingPong, // pingPong transform
+  N         // The number of VirtualGraphModes, must appear as the final enum
 };
 
 enum class IrSerializationFormat {
   JSON // JSON format
+};
+
+enum class SyntheticDataMode {
+  Off = 0,      // Use real data
+  Zeros,        // Input tensors are initialised to all zeros
+  RandomNormal, // Input tensors are initialised with distribution ~N(0,1)
+  N             // The number of SyntheticDataModes, the final enum
 };
 
 std::string toString(VirtualGraphMode);
@@ -90,7 +98,7 @@ struct SessionOptions {
 
   bool separateCallOpPdfs = true;
 
-  /// Controls caching of identifical sections of the graph.
+  /// Controls caching of identical sections of the graph.
   bool enableOutlining = true;
 
   /// Controls whether the cost of copying of cached sections should be included
@@ -180,11 +188,23 @@ struct SessionOptions {
 
   /// Use synthetic data i.e. disable data transfer to/from the host
   /// Set to 'true' to use synthetic data, 'false' to use real data
+  /// To be removed: T13474
   bool ignoreData = false;
+
+  /// Use synthetic data i.e. disable data transfer to/from the host
+  /// Set to 'Off' to use real data
+  /// Note: this will be overriden by the legacy option 'ignoreData' until
+  /// it is removed (T13474)
+  SyntheticDataMode syntheticDataMode = SyntheticDataMode::Off;
+
+  /// Add instrumentation to your program to count the number of device cycles
+  /// (a single tile, on a single IPU) that your main program takes to execute.
+  /// Expect this to have a small detrimental impact on performance.
+  bool instrumentWithHardwareCycleCounter = false;
 
   /// If true, the weight gradient tensors are not saved off the device
   /// when devicex.weightsFromHost() is called. Note: this option is
-  /// overridden if ignoreData is true.
+  /// overridden if syntheticDataMode is not Off.
   bool disableGradAccumulationTensorStreams = false;
 
   /// when false, the backend will build the Poplar graph, but do not compile it
@@ -210,6 +230,9 @@ struct SessionOptions {
 
   // Enable stochastic rounding
   bool enableStochasticRounding = false;
+
+  // Enable ping pong transformation (0/1: disabled, >=2: enabled)
+  int pingPongPhases = 0;
 
   // Enable the global fullyConnectedPass option for matmuls
   bool enableFullyConnectedPass = true;

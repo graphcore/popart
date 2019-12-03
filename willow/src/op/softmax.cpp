@@ -61,13 +61,13 @@ int64_t SoftmaxOp::getAxis() const {
 
 void SoftmaxOp::setAxis(int64_t axis_) { axis = axis_; }
 
-void SoftmaxOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void SoftmaxOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
 }
 
-void SoftmaxInplaceOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void SoftmaxInplaceOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
 }
 
@@ -103,8 +103,8 @@ const std::map<int, int> &SoftmaxGradOp::gradOutToNonGradIn() const {
 
 int64_t SoftmaxGradOp::getAxis() const { return axis; }
 
-void SoftmaxGradOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void SoftmaxGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
 }
 
@@ -204,8 +204,16 @@ void NlllWithSoftmaxGradDirectOp::setup() {
 }
 
 namespace {
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition softmaxOpDef({OpDefinition::Inputs({{"input", T}}),
+                                  OpDefinition::Outputs({{"output", T}}),
+                                  OpDefinition::Attributes({{"axis", {"*"}}})});
+
 static OpCreator<SoftmaxOp> softmaxOpCreator(
-    {Onnx::Operators::Softmax_1, Onnx::Operators::Softmax_11},
+    OpDefinitions({{Onnx::Operators::Softmax_1, softmaxOpDef},
+                   {Onnx::Operators::Softmax_11, softmaxOpDef}}),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {
@@ -215,10 +223,6 @@ static OpCreator<SoftmaxOp> softmaxOpCreator(
     },
     true);
 
-// static GradOpCreator<SoftmaxGradOp>
-//    softmaxGradOpCreator(Onnx::GradOperators::SoftmaxGrad);
-// static GradOpCreator<SoftmaxGradDirectOp>
-//    softmaxGradDirectOpCreator(Onnx::CustomGradOperators::SoftmaxGradDirect);
 } // namespace
 
 } // namespace popart

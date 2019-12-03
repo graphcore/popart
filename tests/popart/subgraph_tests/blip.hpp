@@ -84,6 +84,21 @@ struct Edge {
   InIndex inIndex;
 };
 
+class ModThreeCostModel {
+public:
+  float value(int64_t begin,
+              int64_t end,
+              const std::vector<const Blip *> &sched,
+              const std::map<const Blip *, int> &sched_index) {
+    // prefer lengths of 2 (modulo 3)
+    // tie-break   1 : prefer long ones
+    // tie-breaker 2 : prefer late begins
+    //
+    float val = (end - begin) % 3 + (end - begin) * 1e-3 + 1e-6 * begin;
+    return val;
+  }
+};
+
 } // namespace blip
 
 #endif

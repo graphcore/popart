@@ -52,7 +52,16 @@ AsinGradOp::AsinGradOp(const AsinOp &fwdop)
     : ElementWiseNonLinearUnaryGradOp(Onnx::GradOperators::AsinGrad, fwdop) {}
 
 namespace {
-static OpCreator<AsinOp> asinOpCreator(Onnx::Operators::Asin_7);
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition asinOpDef({OpDefinition::Inputs({{"input", T}}),
+                               OpDefinition::Outputs({{"output", T}}),
+                               OpDefinition::Attributes({})});
+
+static OpCreator<AsinOp> asinOpCreator(OpDefinitions({
+    {Onnx::Operators::Asin_7, asinOpDef},
+}));
 } // namespace
 
 } // namespace popart

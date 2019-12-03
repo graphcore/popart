@@ -53,8 +53,8 @@ std::vector<std::unique_ptr<Op>> MaxPoolOp::getGradOps() {
   return upops;
 }
 
-void MaxPoolOp::appendAttributes(OpSerialiserBase &os) const {
-  HasReceptiveFieldOp::appendAttributes(os);
+void MaxPoolOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  HasReceptiveFieldOp::appendOutlineAttributes(os);
   os.appendAttribute("storage_order", storageOrder);
   os.appendAttribute("kernel_shape", kernelShape);
   os.appendAttribute("ceil_mode", ceilMode);
@@ -77,8 +77,8 @@ MaxPoolGradOp::MaxPoolGradOp(const MaxPoolOp &op_)
       unpooledInfo(op_.inInfo(MaxPoolOp::getInIndex())),
       cloneOfCreator(op_.clone()) {}
 
-void MaxPoolGradOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void MaxPoolGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendForwardOp(getCloneOfCreator());
 }
 
@@ -115,10 +115,56 @@ std::unique_ptr<Op> MaxPoolGradOp::clone() const {
 }
 
 namespace {
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+static OpDefinition::DataTypes I = {DataType::INT64};
+
+static OpDefinition
+    maxPoolOpV1Def({OpDefinition::Inputs({{"X", T}}),
+                    OpDefinition::Outputs({{"Y", T}}),
+                    OpDefinition::Attributes({
+                        //{"auto_pad", {"NOTSET"}}, // Not supported
+                        {"kernel_shape", {"*"}},
+                        {"pads", {"*"}},
+                        {"strides", {"*"}},
+                    })});
+
+static OpDefinition
+    maxPoolOpV8Def({OpDefinition::Inputs({{"X", T}}),
+                    OpDefinition::Outputs({
+                        {"Y", T},
+                        //{"Indices", I } Not supported?
+                    }),
+                    OpDefinition::Attributes({
+                        {"auto_pad", {"NOTSET"}}, // Not supported
+                        {"kernel_shape", {"*"}},
+                        {"pads", {"*"}},
+                        {"storage_order", {"1"}},
+                        {"strides", {"*"}},
+                    })});
+
+static OpDefinition maxPoolOpDef({OpDefinition::Inputs({{"X", T}}),
+                                  OpDefinition::Outputs({
+                                      {"Y", T},
+                                      //{"Indices", I } Not supported?
+                                  }),
+                                  OpDefinition::Attributes({
+                                      {"auto_pad", {"NOTSET"}},
+                                      {"ceil_mode", {"0"}},
+                                      {"dilations", {"*"}},
+                                      {"kernel_shape", {"*"}},
+                                      {"pads", {"*"}},
+                                      {"storage_order", {"1"}},
+                                      {"strides", {"*"}},
+                                  })});
+
 static OpCreator<MaxPoolOp> maxPoolOpCreator(
-    {Onnx::Operators::MaxPool_8,
-     Onnx::Operators::MaxPool_1,
-     Onnx::Operators::MaxPool_11},
+    OpDefinitions({
+        {Onnx::Operators::MaxPool_1, maxPoolOpV1Def},
+        {Onnx::Operators::MaxPool_8, maxPoolOpV8Def},
+        {Onnx::Operators::MaxPool_10, maxPoolOpDef},
+        {Onnx::Operators::MaxPool_11, maxPoolOpDef},
+    }),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

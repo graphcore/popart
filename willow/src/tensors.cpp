@@ -13,9 +13,29 @@ view::Chains Tensors::getChainsFromTo(Tensor *from, Tensor *to) const {
     return view::Chains::getIdentity(from->info.shape());
   }
 
+  if (aliasChainsFromKey.find(from) == aliasChainsFromKey.end()) {
+    throw error("No chains out of {} found (in particular, none to {})",
+                from->str(),
+                to->str());
+  }
   auto &allChainsFrom = aliasChainsFromKey.at(from);
   if (allChainsFrom.find(to) == allChainsFrom.end()) {
-    throw error("No chains {} -> {} found", from->str(), to->str());
+    std::ostringstream oss;
+    oss << "There are chains from " << from->str() << " but none to "
+        << to->str() << ". ";
+    auto foundRev0 = aliasChainsToKey.find(to);
+    if (foundRev0 == aliasChainsToKey.end()) {
+      oss << "There are NO chains from " << to->str();
+    } else {
+      auto revMap = foundRev0->second;
+      if (revMap.find(from) == revMap.end()) {
+        oss << "There are chains from " << to->str() << " but none to "
+            << from->str();
+      } else {
+        oss << " There is a chain from " << to->str() << " to " << from->str();
+      }
+    }
+    throw error(oss.str());
   }
   return allChainsFrom.at(to);
 }
@@ -49,103 +69,155 @@ Tensors::aliasChainsFrom(Tensor *from) const {
   return getAliasChains(aliasChainsFromKey, from);
 }
 
+// Regions in "from" aliased "to"
+view::Regions Tensors::getAliasRegions(Tensor *from, Tensor *to) const {
+  auto aliasedTensorMap = graph.getTensors().aliasChainsFrom(from);
+  auto it               = aliasedTensorMap.find(to);
+  if (it == aliasedTensorMap.end()) {
+    return view::Regions({view::Region::getEmpty(to->info.rank())});
+  } else {
+    return it->second.apply(view::Region::getFull(from->info.shape()));
+  }
+}
+
+void Tensors::clearAliases() {
+  aliasChainsFromKey.clear();
+  aliasChainsToKey.clear();
+}
+
 // Let the Chains flow through op (called on new inplace ops)
 void Tensors::updateAliases(Op *op) {
+  logging::trace("[updateAliases] Updating alias for Op {}", op->debugName());
 
-  // there is no aliasing for ops with more than 1 output,
-  if (!(op->output->n() == 1 && op->output->hasIndex(0))) {
-    throw error("No updateAliases for op which does not "
-                " have a unique output "
-                "at index 0, {}",
-                op->str());
-  }
-
-  // for the unique output of op t2,
-  Tensor *t2 = op->output->tensor(0);
-
-  // and for all of the inputs of op, t1,
+  // for all of the inputs of op, t1 and all output, t2:
   for (auto i1_t1 : op->input->tensorMap()) {
+    for (auto o1_t2 : op->output->tensorMap()) {
+      InIndex i1 = i1_t1.first;
+      Tensor *t1 = i1_t1.second;
 
-    InIndex i1 = i1_t1.first;
-    Tensor *t1 = i1_t1.second;
+      InIndex o1 = o1_t2.first;
+      Tensor *t2 = o1_t2.second;
 
-    auto fwdMap            = op->fwdRegMap(i1);
-    view::Region inRegion  = op->aliases(i1);
-    view::Region outRegion = fwdMap(inRegion);
+      logging::trace("[updateAliases] In: {}-{} {}, Out: {}-{} {}",
+                     i1,
+                     t1->id,
+                     t1->info.shape(),
+                     o1,
+                     t2->id,
+                     t2->info.shape());
 
-    // if there is an alias between the unique output
-    // t2 and the input t1, this opens new Chains
-    if (!outRegion.isEmpty()) {
+      view::Regions inRegions = op->aliases(i1, o1);
 
-      auto bwdMap = op->bwdRegMap(i1);
+      for (auto inRegion : inRegions) {
+        if (inRegion.isEmpty()) {
+          continue;
+        }
 
-      view::Link fwdLink(inRegion, fwdMap);
-      view::Link bwdLink(outRegion, bwdMap);
+        auto fwdMap              = op->fwdRegMap(i1, o1);
+        view::Regions outRegions = fwdMap(inRegion);
 
-      // all chains t0 -> t1 for all t0
-      auto allInChains = aliasChainsTo(t1);
-
-      // all chains t2 -> t3 for all t3
-      auto allOutChains = aliasChainsFrom(t2);
-
-      for (auto &inwards : allInChains) {
-        Tensor *t0 = inwards.first;
-        // the chains t0 -> t1
-        view::Chains inChains      = inwards.second;
-        auto inChainsFwdLinkSeries = inChains.series(fwdLink);
-
-        // the chains t1 -> t0. There are such chains,
-        // guaranteed by the existance of chains t0 -> t1
-        view::Chains inChainsRev = getChainsFromTo(t1, t0);
-
-        for (auto &outwards : allOutChains) {
-          Tensor *t3 = outwards.first;
-
-          // the chains t2 -> t3
-          view::Chains outChains = outwards.second;
-
-          // the chains t3 -> t2 (which must exist by symmetry of aliasing)
-          view::Chains outChainsRev = getChainsFromTo(t3, t2);
-
-          // we now have,
-          // t0 ------> t1 -> op -> t2 -----> t3
-          // and we want to update aliasChainsToKey[t3][t0]
-          // with all new chains that pass through op, as
-          // well as aliasChainsToKey[t0][t3]
-
-          auto newChains = inChainsFwdLinkSeries.series(outChains);
-          if (!newChains.isEmpty()) {
-            if (aliasChainsToKey.find(t3) == aliasChainsToKey.end()) {
-              aliasChainsToKey[t3] = {};
-            }
-            if (aliasChainsToKey.at(t3).find(t0) ==
-                aliasChainsToKey.at(t3).end()) {
-              aliasChainsToKey[t3][t0] = {}; // empty Chains
-            }
-            // add the new Chains
-            aliasChainsToKey[t3][t0] =
-                aliasChainsToKey[t3][t0].parallel(newChains);
-
-            // insert the mirror image
-            aliasChainsFromKey[t0][t3] = aliasChainsToKey[t3][t0];
+        // if there is an alias between the unique output
+        // t2 and the input t1, this opens new Chains
+        for (auto outRegion : outRegions) {
+          if (outRegion.isEmpty()) {
+            continue;
           }
+          auto bwdMap = op->bwdRegMap(i1, o1);
 
-          // same logic for t3 -> t0
-          newChains = outChainsRev.series(bwdLink).series(inChainsRev);
-          if (!newChains.isEmpty()) {
-            if (aliasChainsToKey.find(t0) == aliasChainsToKey.end()) {
-              aliasChainsToKey[t0] = {};
-            }
-            if (aliasChainsToKey.at(t0).find(t3) ==
-                aliasChainsToKey.at(t0).end()) {
-              aliasChainsToKey[t0][t3] = {}; // empty Chains
-            }
-            // add the new Chains
-            aliasChainsToKey[t0][t3] =
-                aliasChainsToKey[t0][t3].parallel(newChains);
+          view::Link fwdLink(inRegion, fwdMap, "Fwd Link of " + op->str());
+          view::Link bwdLink(outRegion, bwdMap, "Bwd Link of " + op->str());
 
-            // insert the mirror image
-            aliasChainsFromKey[t3][t0] = aliasChainsToKey[t0][t3];
+          // all chains t0 -> t1 for all t0
+          auto allInChains = aliasChainsTo(t1);
+
+          // all chains t2 -> t3 for all t3
+          auto allOutChains = aliasChainsFrom(t2);
+
+          for (auto &inwards : allInChains) {
+            Tensor *t0 = inwards.first;
+            // the chains t0 -> t1
+            view::Chains inChains      = inwards.second;
+            auto inChainsFwdLinkSeries = inChains.series(fwdLink);
+
+            // the chains t1 -> t0. There are such chains,
+            // guaranteed by the existence of chains t0 -> t1
+            logging::trace("[updateAliases] getChainsFromTo(t1, t0)");
+            view::Chains inChainsRev = getChainsFromTo(t1, t0);
+
+            for (auto &outwards : allOutChains) {
+              Tensor *t3 = outwards.first;
+
+              logging::trace("[updateAliases] Chain {}->{}->{}->{}",
+                             t0->id,
+                             t1->id,
+                             t2->id,
+                             t3->id);
+
+              // the chains t2 -> t3
+              view::Chains outChains = outwards.second;
+
+              // the chains t3 -> t2
+              // (which must exist by symmetry of aliasing)
+              view::Chains outChainsRev = getChainsFromTo(t3, t2);
+
+              // we now have,
+              // t0 -----> t1 -> op -> t2 -----> t3
+              // and we want to update aliasChainsToKey[t3][t0]
+              // with all new chains that pass through op, as
+              // well as aliasChainsToKey[t0][t3]
+              auto newChains = inChainsFwdLinkSeries.series(outChains);
+              logging::trace("[updateAliases] Chain {}->{} empty: {}",
+                             t0->id,
+                             t3->id,
+                             newChains.isEmpty() ? "yes" : "no");
+              if (!newChains.isEmpty()) {
+                logging::trace("[updateAliases] Non-empty fwd chains, "
+                               "appending to aliasChainsToKey");
+                if (aliasChainsToKey.find(t3) == aliasChainsToKey.end()) {
+                  aliasChainsToKey[t3] = {};
+                }
+                if (aliasChainsToKey.at(t3).find(t0) ==
+                    aliasChainsToKey.at(t3).end()) {
+                  aliasChainsToKey[t3][t0] = {}; // empty Chains
+                }
+                // add the new Chains
+                aliasChainsToKey[t3][t0] =
+                    aliasChainsToKey[t3][t0].parallel(newChains);
+
+                // insert the mirror image
+                aliasChainsFromKey[t0][t3] = aliasChainsToKey[t3][t0];
+              }
+
+              int nChainDirections = 0;
+              nChainDirections += !newChains.isEmpty();
+
+              // same logic for t3 -> t0
+              newChains = outChainsRev.series(bwdLink).series(inChainsRev);
+              nChainDirections += !newChains.isEmpty();
+
+              logging::trace("[updateAliases] Chain {}->{} empty: {}",
+                             t3->id,
+                             t0->id,
+                             newChains.isEmpty() ? "yes" : "no");
+              if (!newChains.isEmpty()) {
+                if (aliasChainsToKey.find(t0) == aliasChainsToKey.end()) {
+                  aliasChainsToKey[t0] = {};
+                }
+                if (aliasChainsToKey.at(t0).find(t3) ==
+                    aliasChainsToKey.at(t0).end()) {
+                  aliasChainsToKey[t0][t3] = {}; // empty Chains
+                }
+                // add the new Chains
+                aliasChainsToKey[t0][t3] =
+                    aliasChainsToKey[t0][t3].parallel(newChains);
+
+                // insert the mirror image
+                aliasChainsFromKey[t3][t0] = aliasChainsToKey[t0][t3];
+              }
+
+              // TODO(jn) turns this on and run tests (T13532)
+              // assert(nChainDirections % 2 == 0);
+            }
           }
         }
       }
@@ -163,10 +235,11 @@ std::vector<TensorId> Tensors::getAllTensorIds() const {
 }
 
 // remove all Tensors with no producer and no consumers
-void Tensors::removeIsolated() {
+void Tensors::removeIsolated(bool retainCached) {
   for (auto &id : getAllTensorIds()) {
     Tensor *tensor = M[id].get();
-    if (tensor->hasProducer() == false && tensor->consumers.getTotal() == 0) {
+    if (tensor->hasProducer() == false && tensor->consumers.getTotal() == 0 &&
+        !(retainCached && tensor->isCached())) {
       M.erase(id);
       logging::ir::debug("Removing isolated Tensor {}", id);
     }
@@ -198,9 +271,29 @@ Tensors::Tensors(Graph &pg) : graph(pg) {}
 Tensor *Tensors::get(TensorId tenId) const {
   auto found = M.find(tenId);
   if (found == M.end()) {
-    throw error("No Ir::Tensor with TensorId " + tenId + "in Tensors::get(..)");
+    throw error("No Ir::Tensor with TensorId " + tenId +
+                " in Tensors::get(..)");
   }
   return found->second.get();
+}
+
+bool Tensors::contains(TensorId tenId, const Scope &scope) const {
+  Scope s = scope;
+
+  while (!s.empty()) {
+    auto id = (s / tenId).str();
+    if (M.find(id) != M.end()) {
+      return true;
+    } else {
+      s.pop();
+    }
+  }
+
+  if (M.find(tenId) != M.end()) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 TensorId Tensors::find(TensorId tenId, const Scope &scope) const {

@@ -8,6 +8,9 @@
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 
+#include <popart/op/boundary.hpp>
+#include <popart/op/cache.hpp>
+#include <popart/op/recomputeprereq.hpp>
 #include <popart/transforms/prune.hpp>
 
 namespace popart {
@@ -22,6 +25,14 @@ bool Prune::apply(Graph &graph) const {
   // and work backwards. This
   // is the set which is returned
   std::set<Op *> required = ir.getTrainTargetOps();
+
+  // Find all ops which are not marked as pruneable and add those to required.
+  for (auto &id_op : graph.getOps()) {
+    auto op = id_op.second.get();
+    if (!op->pruneable) {
+      required.insert(op);
+    }
+  }
 
   // as we work backwards, we keep a
   // "front" of tensors,
@@ -83,7 +94,10 @@ bool Prune::apply(Graph &graph) const {
         // at any of the indices which op consumes t,
         // does it modify t?
         for (InIndex index : consumer->input->indices(t)) {
-          if (!consumer->modifies(index).isEmpty()) {
+          auto modified = consumer->modifies(index);
+          if (!std::all_of(modified.begin(),
+                           modified.end(),
+                           [](const view::Region &r) { return r.isEmpty(); })) {
             newRequired.insert(consumer);
           }
         }
@@ -117,7 +131,11 @@ bool Prune::apply(Graph &graph) const {
 
   for (auto &id_op : graph.getOps()) {
     Op *op = id_op.second.get();
-    if (required.count(op) == 0) {
+    // TODO: Better mechanism to preserve special ops
+    if (required.count(op) == 0 && !dynamic_cast<CacheAllocateOp *>(op) &&
+        !dynamic_cast<CacheLoadOp *>(op) && !dynamic_cast<CacheStoreOp *>(op) &&
+        !dynamic_cast<BoundaryOp *>(op) &&
+        !dynamic_cast<RecomputePrereqOp *>(op)) {
       opsToDelete.push_back(op);
       for (auto &t_inds : op->output->indicesMap()) {
         tensorsToDelete.push_back(t_inds.first);
@@ -133,11 +151,13 @@ bool Prune::apply(Graph &graph) const {
       tensor->consumers.decrement(op);
     }
     // remove the topo cons which might exist
+    logging::transform::debug("[Prune] Pruning operator {}", op->opid);
     graph.topoCons->remove(op);
     graph.eraseOp(op->id);
   }
 
   for (Tensor *tensor : tensorsToDelete) {
+    logging::transform::debug("[Prune] Pruning tensor {}", tensor->id);
     graph.getTensors().remove(tensor->id);
   }
 

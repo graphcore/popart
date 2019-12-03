@@ -71,7 +71,7 @@ BOOST_AUTO_TEST_CASE(SyntheticData_False) {
   popart::popx::Devicex *devicex =
       dynamic_cast<popart::popx::Devicex *>(session->device_.get());
 
-  BOOST_TEST(devicex->useSyntheticData() == false);
+  BOOST_TEST(devicex->ir().useSyntheticData() == false);
   BOOST_TEST(devicex->d2hWeightBuffers.size() == 0);
   // The one input tensor
   BOOST_TEST(devicex->fromHostStreams.size() == 1);
@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(SyntheticData_True) {
       new L1Loss(tensorIds.back(), "l1LossVal", 0.1, ReductionType::SUM)};
 
   SessionOptions options;
-  options.ignoreData = true;
+  options.syntheticDataMode = SyntheticDataMode::Zeros;
 
   auto cpuDevice =
       popart::DeviceManager::createDeviceManager().createCpuDevice();
@@ -127,7 +127,7 @@ BOOST_AUTO_TEST_CASE(SyntheticData_True) {
   popart::popx::Devicex *devicex =
       dynamic_cast<popart::popx::Devicex *>(session->device_.get());
 
-  BOOST_TEST(devicex->useSyntheticData() == true);
+  BOOST_TEST(devicex->ir().useSyntheticData() == true);
   BOOST_TEST(devicex->d2hWeightBuffers.size() == 0);
   BOOST_TEST(devicex->fromHostStreams.size() == 0);
   BOOST_TEST(devicex->toHostAnchorStreams.size() == 0);

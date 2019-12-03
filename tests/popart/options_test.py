@@ -89,7 +89,6 @@ def test_engine_options_passed_to_engine(tmpdir):
 
     opts = popart.SessionOptions()
     opts.engineOptions = {'option': 'value'}
-    opts.logging = {'all': 'DEBUG'}
 
     session = popart.InferenceSession(fnModel=proto,
                                       dataFeed=dataFlow,
@@ -125,7 +124,6 @@ def test_convolution_options(tmpdir):
 
     opts = popart.SessionOptions()
     opts.convolutionOptions = {'startTileMultiplier': '3'}
-    opts.logging = {'all': 'DEBUG'}
 
     session = popart.InferenceSession(fnModel=proto,
                                       dataFeed=dataFlow,
@@ -139,3 +137,11 @@ def test_convolution_options(tmpdir):
 
     assert (e_info.value.args[0].endswith(
         "Must start distributing convolutions on an even tile."))
+
+
+# An error should be thrown if the user tries to set an unrecognised option flag.
+# This is to prevent confusion is a user has a typo in an flag.
+def test_set_bad_options():
+    opts = popart.SessionOptions()
+    with pytest.raises(AttributeError) as e_info:
+        opts.foo = 'bar'

@@ -31,6 +31,10 @@ TanhOpx::unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const {
   return tensor;
 }
 
+view::RegMap TanhOpx::unwindRegion(InIndex, OutIndex) const {
+  return [](const view::Region &r) { return view::Regions(1, r); };
+}
+
 TanhGradOpx::TanhGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<TanhGradOp>(op, Onnx::GradOperators::TanhGrad);
 }

@@ -18,9 +18,32 @@ std::vector<std::unique_ptr<Op>> EqualOp::getGradOps() {
 }
 
 namespace {
-static OpCreator<EqualOp> EqualOpCreator({Onnx::Operators::Equal_1,
-                                          Onnx::Operators::Equal_7,
-                                          Onnx::Operators::Equal_11});
+
+static OpDefinition::DataTypes T  = {DataType::UINT8,
+                                    DataType::UINT16,
+                                    DataType::UINT32,
+                                    DataType::UINT64,
+                                    DataType::INT8,
+                                    DataType::INT16,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT,
+                                    DataType::BOOL};
+static OpDefinition::DataTypes T1 = {DataType::BOOL};
+
+static OpDefinition equalOpDef({OpDefinition::Inputs({
+                                    {"A", T},
+                                    {"B", T},
+                                }),
+                                OpDefinition::Outputs({{"C", T1}}),
+                                OpDefinition::Attributes({})});
+
+static OpCreator<EqualOp>
+    EqualOpCreator(OpDefinitions({{Onnx::Operators::Equal_1, equalOpDef},
+                                  {Onnx::Operators::Equal_7, equalOpDef},
+                                  {Onnx::Operators::Equal_11, equalOpDef}}));
+
 } // namespace
 
 } // namespace popart

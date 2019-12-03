@@ -24,10 +24,13 @@ public:
   uint64_t getMinSourceIpu() const;
   uint64_t getMaxSourceIpu() const;
 
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
+  // TODO T9357: PingPong needs this set to true.
+  // T13645: Investigate if this can be problematic.
+  // Should be session option.
   bool isOutlineable() const override { return false; }
 
   bool isIpuCopyOp() const final;
