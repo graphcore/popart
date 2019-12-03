@@ -51,8 +51,6 @@ def test_matmul_1d(tmpdir):
         opts.reportOptions = {"showExecutionSteps": "true"}
 
         pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
-        pat.MatMulLhsGradOp = False
-        pat.MatMulRhsGradOp = False
 
         session = popart.TrainingSession(
             fnModel=proto,

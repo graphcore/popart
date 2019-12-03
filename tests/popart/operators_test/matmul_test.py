@@ -408,10 +408,6 @@ def test_matmul_broadcasting(op_tester):
                 print("{} {} ".format(t1.grad, t2.grad))
                 return [r, r__o, t1.grad, t2.grad]
 
-        # Test without the MatMulXXGradOp to MatMulOp pass
-        op_tester.passes = []
-        op_tester.run(init_builder, reference, 'train')
-
         # Test with the MatMulXXGradOp to MatMulOp pass
         op_tester.passes = ['MatMulLhsGradOp', 'MatMulRhsGradOp']
         op_tester.run(init_builder, reference, 'train')
