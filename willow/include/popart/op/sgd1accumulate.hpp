@@ -20,6 +20,7 @@ public:
 
   const OptimizerValue initDpsf1;
   static InIndex getDpsf1InIndex() { return 2; }
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };
 
 } // namespace popart

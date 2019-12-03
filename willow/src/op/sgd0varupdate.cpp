@@ -21,6 +21,17 @@ void SGD0VarUpdateOpBase::appendOutlineAttributes(OpSerialiserBase &os) const {
   }
 }
 
+float SGD0VarUpdateOp::getSubgraphValue() const {
+  // If we have replicated graphs then outline VaruUdates, if possible
+  // The motivation for this is the (code) cost of inter-IPU copies
+  if (getIr().getSessionOptions().enableReplicatedGraphs ||
+      getIr().getSessionOptions().pingPongPhases > 1) {
+    return getHighSubgraphValue();
+  } else {
+    return getLowSubgraphValue();
+  }
+}
+
 SGD0VarUpdateOpBase::SGD0VarUpdateOpBase(const OperatorIdentifier &opid,
                                          const TensorId &varId_,
                                          OptimizerValue initialSlr0,

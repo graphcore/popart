@@ -47,6 +47,7 @@ public:
 
   std::unique_ptr<Op> clone() const final;
   std::unique_ptr<Op> cloneWithNewName(const TensorId &newName) const final;
+  float getSubgraphValue() const final;
 };
 
 } // namespace popart

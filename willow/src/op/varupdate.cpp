@@ -56,16 +56,6 @@ view::Regions VarUpdateOp::modifies(InIndex index) const {
   return aliases(index, 0);
 }
 
-float VarUpdateOp::getSubgraphValue() const {
-  // If we have replicated graphs then outline VaruUdates, if possible
-  // The motivation for this is the (code) cost of inter-IPU copies, hmm
-  if (getIr().getSessionOptions().enableReplicatedGraphs ||
-      getIr().getSessionOptions().pingPongPhases > 1) {
-    return getHighSubgraphValue();
-  } else {
-    return getLowSubgraphValue();
-  }
-}
 
 namespace {} // namespace
 

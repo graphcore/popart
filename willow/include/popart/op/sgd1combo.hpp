@@ -52,6 +52,9 @@ public:
   static InIndex getSlr1InIndex() { return 5; }
 
   std::set<InIndex> optionalInputs() const final;
+
+  // this Op should not be present when outlining is performed
+  float getSubgraphValue() const final { return -1.0f; }
 };
 
 } // namespace popart

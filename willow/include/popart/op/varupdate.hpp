@@ -25,7 +25,6 @@ public:
 
   const TensorId &getVarId() const { return varId; }
 
-  float getSubgraphValue() const final;
 
   // Return a map of all optimizer specific input Tensors (learning rate, etc)
   virtual std::map<InIndex, TensorId> optimizerInputs() const = 0;

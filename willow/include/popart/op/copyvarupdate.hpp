@@ -15,6 +15,8 @@ public:
   }
 
   std::map<InIndex, TensorId> optimizerInputs() const final { return {}; }
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };
 
 } // namespace popart
