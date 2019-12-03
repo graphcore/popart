@@ -2,6 +2,7 @@
 #define GUARD_NEURALNET_TENSORINDEXMAP_HPP
 
 #include <popart/names.hpp>
+#include <popart/tensor.hpp>
 
 namespace popart {
 
@@ -24,6 +25,18 @@ public:
   void clear();
   bool contains(Tensor *) const;
 
+  // In order to compare dereferenced Tensor pointers
+  struct TensorPtrComparator {
+    bool operator()(const Tensor *a, const Tensor *b) const {
+      if (a == nullptr || b == nullptr) {
+        // (nullptr<TensorPtr) since assumed as equal if not a<b and not b<a
+        return (a == nullptr && b != nullptr);
+      } else {
+        return a->str() < b->str();
+      }
+    }
+  };
+
   // get the Tensor at index
   Tensor *tensor(int);
   const Tensor *tensor(int) const;
@@ -32,7 +45,8 @@ public:
   TensorId id(int) const;
   bool hasIndex(int) const;
   const std::vector<int> &indices(Tensor *) const;
-  const std::map<Tensor *, std::vector<int>> &indicesMap() const;
+  const std::map<Tensor *, std::vector<int>, TensorPtrComparator> &
+  indicesMap() const;
   const std::map<int, Tensor *> &tensorMap() const;
   // Unique list of tensors in the TensorIndexMap
   const std::vector<Tensor *> tensors() const;
@@ -52,7 +66,7 @@ public:
 
 private:
   std::map<int, Tensor *> tensor_map;
-  std::map<Tensor *, std::vector<int>> indices_map;
+  std::map<Tensor *, std::vector<int>, TensorPtrComparator> indices_map;
 };
 
 } // namespace popart

@@ -360,7 +360,8 @@ std::vector<Op *> Consumers::getOps() const {
   return ops;
 }
 
-const std::map<Tensor *, std::vector<int>> &TensorIndexMap::indicesMap() const {
+const std::map<Tensor *, std::vector<int>, TensorIndexMap::TensorPtrComparator>
+    &TensorIndexMap::indicesMap() const {
   return indices_map;
 }
 
