@@ -130,6 +130,18 @@ void Ir::dotCheckpoint(DotCheck check) const {
   viz.write();
 }
 
+bool Ir::isInputToLoss(const Tensor *t) const {
+  for (auto &loss : losses) {
+    for (int i = 0; i < loss->input_size(); i++) {
+      auto input = loss->input(i);
+      if (input == t->id) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 void Ir::confirmNoReservedIds() const {
 
   auto &onnxGraph = onnxModel->graph();
@@ -1444,6 +1456,22 @@ void Ir::validateAnchors() const {
 bool Ir::applyPreAliasPattern(const PreAliasPattern *pattern, Graph &graph) {
   bool result = false;
 
+  auto canApplyPattern = [&](Op *op) {
+    if (op->isExcludedFromPattern(pattern) || !pattern->matches(op) ||
+        pattern->touchesAnchored(op)) {
+      return false;
+    }
+
+    // If the ir will construct a loss, but hasn't yet, check that the pattern
+    // doesn't touch the inputs to the loss.
+    if (canEvaluate() && !constructedFinalLoss &&
+        pattern->touchesInputToLoss(op)) {
+      return false;
+    }
+
+    return true;
+  };
+
   // the pattern chooses what order to go through the ops in
 
   std::vector<OpId> v_ops;
@@ -1459,13 +1487,11 @@ bool Ir::applyPreAliasPattern(const PreAliasPattern *pattern, Graph &graph) {
     // If the op still exists
     if (itr != graph.getOps().end()) {
       Op *op = itr->second.get();
-      if (!op->isExcludedFromPattern(pattern) && pattern->matches(op)) {
-        if (!pattern->touchesAnchored(op)) {
-          logging::pattern::debug("Applying pattern {} to {}",
-                                  pattern->getPatternName(),
-                                  op->debugName());
-          result |= pattern->apply(op);
-        }
+      if (canApplyPattern(op)) {
+        logging::pattern::debug("Applying pattern {} to {}",
+                                pattern->getPatternName(),
+                                op->debugName());
+        result |= pattern->apply(op);
       }
     }
   }
@@ -2478,6 +2504,7 @@ void Ir::growFinalLoss() {
   // updateVertices). To check our logic though, we do this here
   // and then check that we agree in updateVertices()
   logging::ir::trace("Final loss Op id set to {}", finalLossOpId);
+  constructedFinalLoss = true;
 }
 
 TensorId Ir::getFinalLossId() const { return "finalLoss"; }

@@ -248,6 +248,8 @@ public:
   // in userOptions.logDir
   void dotCheckpoint(DotCheck check) const;
 
+  bool isInputToLoss(const Tensor *) const;
+
   const onnx::ModelProto &getModel() const;
 
   const SessionOptions &getSessionOptions() const { return userOptions; }
@@ -478,6 +480,7 @@ private:
   std::map<OpId, std::set<Tensor *>> opAndRootInputs;
 
   OpId finalLossOpId{-1000};
+  bool constructedFinalLoss = false;
 
   ExecutionMode executionMode = ExecutionMode::TRAINING;
 

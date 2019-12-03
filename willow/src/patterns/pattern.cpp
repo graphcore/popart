@@ -22,6 +22,15 @@ bool PreAliasPattern::touchesAnchored(Op *op) const {
   return false;
 };
 
+bool PreAliasPattern::touchesInputToLoss(Op *op) const {
+  for (auto &tensor : touches(op)) {
+    if (op->getIr().isInputToLoss(tensor)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void Pattern::transferBaseProperties(Op *from, Op *to) const {
   if (from->hasVirtualGraphId()) {
     to->setVirtualGraphId(from->getVirtualGraphId());
