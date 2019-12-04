@@ -165,9 +165,9 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
             stream_id, [dst, size](void *g) { std::memcpy(dst, g, size); });
       }
     } else if (stream_id.compare(0,
-                                 strlen(weightStoreStreamPrefix),
-                                 weightStoreStreamPrefix) == 0) {
-      const auto weight_id = stream_id.substr(strlen(weightStoreStreamPrefix));
+                                 strlen(weightLoadStreamPrefix),
+                                 weightLoadStreamPrefix) == 0) {
+      const auto weight_id = stream_id.substr(strlen(weightLoadStreamPrefix));
       if (weight_id == A_id) {
         void *src   = A_dummy_data.data();
         size_t size = A_info.nbytes();
@@ -396,8 +396,8 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
   }
   for (int i = 4; i < 8; ++i) {
     BOOST_CHECK(callback_handles[i].compare(0,
-                                            strlen(weightStoreStreamPrefix),
-                                            weightStoreStreamPrefix) == 0);
+                                            strlen(weightLoadStreamPrefix),
+                                            weightLoadStreamPrefix) == 0);
   }
 }
 
@@ -564,11 +564,10 @@ BOOST_AUTO_TEST_CASE(HostReduceHierarchicalReductionWithReplicatedGraphs) {
               i);
         }
       } else if (stream_id.compare(0,
-                                   strlen(weightStoreStreamPrefix),
-                                   weightStoreStreamPrefix) == 0) {
-        const auto weight_id =
-            stream_id.substr(strlen(weightStoreStreamPrefix));
-        const int64_t nelms = idToInfo[getGradId(weight_id)].nelms();
+                                   strlen(weightLoadStreamPrefix),
+                                   weightLoadStreamPrefix) == 0) {
+        const auto weight_id = stream_id.substr(strlen(weightLoadStreamPrefix));
+        const int64_t nelms  = idToInfo[getGradId(weight_id)].nelms();
         session->connectStreamToCallback(stream_id, [nelms](void *w) {
           float *f = reinterpret_cast<float *>(w);
           std::fill(f, f + nelms, 42.0f);
