@@ -9,15 +9,30 @@
 
 namespace popart {
 
-HostReduceGradCopyOp::HostReduceGradCopyOp(const Op::Settings &settings_)
-    : Op(Onnx::CustomOperators::HostReduceGradCopy, settings_) {}
+GradCopyToHostOp::GradCopyToHostOp(const Op::Settings &settings_)
+    : Op(Onnx::CustomOperators::GradCopyToHost, settings_) {}
 
-void HostReduceGradCopyOp::appendAttributes(OpSerialiserBase &os) const {
+void GradCopyToHostOp::appendAttributes(OpSerialiserBase &os) const {
   Op::appendAttributes(os);
 }
 
-std::unique_ptr<Op> HostReduceGradCopyOp::clone() const {
-  return std::make_unique<HostReduceGradCopyOp>(*this);
+std::unique_ptr<Op> GradCopyToHostOp::clone() const {
+  return std::make_unique<GradCopyToHostOp>(*this);
+}
+
+GradCopyFromHostOp::GradCopyFromHostOp(const Op::Settings &settings_)
+    : Op(Onnx::CustomOperators::GradCopyFromHost, settings_) {}
+
+void GradCopyFromHostOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+}
+
+std::unique_ptr<Op> GradCopyFromHostOp::clone() const {
+  return std::make_unique<GradCopyFromHostOp>(*this);
+}
+
+void GradCopyFromHostOp::setup() {
+  outInfo(getOutIndex()) = inInfo(getInIndex());
 }
 
 HostSGD0VarUpdate::HostSGD0VarUpdate(const TensorId &varId_,
@@ -33,7 +48,5 @@ HostSGD0VarUpdate::HostSGD0VarUpdate(const TensorId &varId_,
 std::unique_ptr<Op> HostSGD0VarUpdate::clone() const {
   return std::make_unique<HostSGD0VarUpdate>(*this);
 }
-
-namespace {} // namespace
 
 } // namespace popart

@@ -957,6 +957,11 @@ void Ir::prepareImpl(const IrBundle &gb) {
     updateVertices();
   }
 
+  if (getSessionOptions().hostWeightUpdate &&
+      !getSessionOptions().hostAllReduce) {
+    throw error(
+        "Host weight update can't be enabled without enabling hostAllReduce.");
+  }
   if (getSessionOptions().hostAllReduce) {
     if (!canTrain()) {
       throw error("Host AllReduce only available when training.");

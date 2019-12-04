@@ -363,9 +363,9 @@ void TrainingSession::optimizerFromHost() {
 
 const Ir &TrainingSession::getIr() const { return ir; }
 
-const std::vector<std::pair<std::string, std::string>> &
-TrainingSession::getGradAndVarStreamIds() const {
-  return device_->getGradAndVarStreamIds();
+const std::vector<std::string> &
+TrainingSession::getHostReduceStreamIds() const {
+  return device_->getHostReduceStreamIds();
 }
 
 void TrainingSession::connectStreamToCallback(

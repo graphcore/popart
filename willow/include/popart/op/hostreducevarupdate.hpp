@@ -10,15 +10,33 @@
 namespace popart {
 
 // Copy gradients to the host. Does not produce any output
-class HostReduceGradCopyOp : public Op {
+class GradCopyToHostOp : public Op {
 public:
-  HostReduceGradCopyOp(const Op::Settings &);
+  GradCopyToHostOp(const Op::Settings &);
   std::unique_ptr<Op> clone() const final;
 
   // Gradient index
   static InIndex getInIndex() { return 0; }
 
   void setup() final {}
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
+  void appendAttributes(OpSerialiserBase &) const final;
+};
+
+// Copy gradients to the device. Output is the streamed gradient
+class GradCopyFromHostOp : public Op {
+public:
+  GradCopyFromHostOp(const Op::Settings &);
+  std::unique_ptr<Op> clone() const final;
+
+  // Gradient index
+  static InIndex getInIndex() { return 0; }
+
+  static OutIndex getOutIndex() { return 0; }
+
+  void setup() final;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 

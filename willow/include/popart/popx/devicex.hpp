@@ -201,16 +201,18 @@ public:
                                    const std::string &name);
 
   PopStreamId gradientStoreStreamId(TensorId id) const;
+  PopStreamId gradientLoadStreamId(TensorId id) const;
   PopStreamId weightLoadStreamId(TensorId id) const;
 
   poplar::DataStream &
   insertGradientStoreStream(TensorId, TensorInfo, poplar::Graph &);
   poplar::DataStream &
+  insertGradientLoadStream(TensorId, TensorInfo, poplar::Graph &);
+  poplar::DataStream &
   insertWeightLoadStream(TensorId, TensorInfo, poplar::Graph &);
 
-  const std::vector<std::pair<TensorId, TensorId>> &
-  getGradAndVarStreamIds() const;
-  std::vector<std::pair<TensorId, TensorId>> &getGradAndVarStreamIds();
+  const std::vector<TensorId> &getHostReduceStreamIds() const;
+  std::vector<TensorId> &getHostReduceStreamIds();
 
   void connectStreamToCallback(const std::string &streamHandle,
                                std::function<void(void *)> callback,
@@ -426,9 +428,10 @@ private:
 
   // Streams for doing allreduce on host side
   std::map<TensorId, poplar::DataStream> toHostGradientStreams;
+  std::map<TensorId, poplar::DataStream> fromHostGradientStreams;
   std::map<TensorId, poplar::DataStream> fromHostWeightLoadStreams;
 
-  std::vector<std::pair<TensorId, TensorId>> gradAndVarStreamIds;
+  std::vector<TensorId> hostReduceStreamIds;
 
   // Q: Consider replacing the d2h weight buffer with a data stream as
   // done for inputs

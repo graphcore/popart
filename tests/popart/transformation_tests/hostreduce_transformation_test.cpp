@@ -104,8 +104,9 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
   auto cpuDevice =
       popart::DeviceManager::createDeviceManager().createCpuDevice();
 
-  auto opts          = SessionOptions();
-  opts.hostAllReduce = true;
+  auto opts             = SessionOptions();
+  opts.hostAllReduce    = true;
+  opts.hostWeightUpdate = true;
 
   // training info
   auto optimizer = SGD({{"defaultLearningRate", {0.01, false}}});
@@ -135,8 +136,6 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
 
   std::vector<float> raw_A_grad_out(A_info.nelms());
   std::vector<float> raw_B_grad_out(B_info.nelms());
-  std::vector<std::vector<float>> raw_grads_out = {raw_A_grad_out,
-                                                   raw_B_grad_out};
 
   std::vector<float> A_dummy_data(A_info.nelms());
   std::vector<float> B_dummy_data(B_info.nelms());
@@ -147,38 +146,42 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
     B_dummy_data[i] = static_cast<float>(B_dummy_data.size() - i - 1);
   }
 
-  std::vector<std::vector<float>> dummy_data = {A_dummy_data, B_dummy_data};
-
-  BOOST_CHECK(session->getGradAndVarStreamIds().size() == 2);
-  // Careful iterating over getGradAndVarStreamIds, no guarantee for order.
-  for (const auto &gv : session->getGradAndVarStreamIds()) {
-    const auto &grad_stream_id   = gv.first;
-    const auto &weight_stream_id = gv.second;
-
-    int i{};
-    if (weight_stream_id == "wl_init_input") {
-      // This is the stream for A
-      i = 0;
-    } else if (weight_stream_id == "wl_init_input/1") {
-      // This is the stream for B
-      i = 1;
+  BOOST_CHECK(session->getHostReduceStreamIds().size() == 4);
+  // Careful iterating over getHostReduceStreamIds, no guarantee for order.
+  for (const auto &stream_id : session->getHostReduceStreamIds()) {
+    if (stream_id.compare(0,
+                          strlen(gradientStoreStreamPrefix),
+                          gradientStoreStreamPrefix) == 0) {
+      const auto grad_id = stream_id.substr(strlen(gradientStoreStreamPrefix));
+      if (grad_id == getGradId(A_id)) {
+        void *dst   = raw_A_grad_out.data();
+        size_t size = A_info.nbytes();
+        session->connectStreamToCallback(
+            stream_id, [dst, size](void *g) { std::memcpy(dst, g, size); });
+      } else if (grad_id == getGradId(B_id)) {
+        void *dst   = raw_B_grad_out.data();
+        size_t size = B_info.nbytes();
+        session->connectStreamToCallback(
+            stream_id, [dst, size](void *g) { std::memcpy(dst, g, size); });
+      }
+    } else if (stream_id.compare(0,
+                                 strlen(weightStoreStreamPrefix),
+                                 weightStoreStreamPrefix) == 0) {
+      const auto weight_id = stream_id.substr(strlen(weightStoreStreamPrefix));
+      if (weight_id == A_id) {
+        void *src   = A_dummy_data.data();
+        size_t size = A_info.nbytes();
+        session->connectStreamToCallback(
+            stream_id, [src, size](void *w) { std::memcpy(w, src, size); });
+      } else if (weight_id == B_id) {
+        void *src   = B_dummy_data.data();
+        size_t size = B_info.nbytes();
+        session->connectStreamToCallback(
+            stream_id, [src, size](void *w) { std::memcpy(w, src, size); });
+      }
     } else {
-      throw error("Unexpected weight_stream_id: " + weight_stream_id);
+      throw error("Unexpected stream id " + stream_id);
     }
-
-    void *grad_dst = raw_grads_out[i].data();
-    auto grad_size = raw_grads_out[i].size() * sizeof(float);
-    session->connectStreamToCallback(grad_stream_id,
-                                     [grad_dst, grad_size](void *g) {
-                                       std::memcpy(grad_dst, g, grad_size);
-                                     });
-
-    void *weight_src = dummy_data[i].data();
-    auto weight_size = dummy_data[i].size() * sizeof(float);
-    session->connectStreamToCallback(weight_stream_id,
-                                     [weight_src, weight_size](void *w) {
-                                       std::memcpy(w, weight_src, weight_size);
-                                     });
   }
 
   // inputs:
@@ -203,13 +206,13 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
   session->readWeights(weightsRead);
   BOOST_CHECK_EQUAL_COLLECTIONS(v_A_grad.begin(),
                                 v_A_grad.end(),
-                                raw_grads_out[0].begin(),
-                                raw_grads_out[0].end());
+                                raw_A_grad_out.begin(),
+                                raw_A_grad_out.end());
 
   BOOST_CHECK_EQUAL_COLLECTIONS(v_B_grad.begin(),
                                 v_B_grad.end(),
-                                raw_grads_out[1].begin(),
-                                raw_grads_out[1].end());
+                                raw_B_grad_out.begin(),
+                                raw_B_grad_out.end());
 
   BOOST_CHECK_EQUAL_COLLECTIONS(A_dummy_data.begin(),
                                 A_dummy_data.end(),
@@ -300,8 +303,9 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
   auto cpuDevice =
       popart::DeviceManager::createDeviceManager().createCpuDevice();
 
-  auto opts          = SessionOptions();
-  opts.hostAllReduce = true;
+  auto opts             = SessionOptions();
+  opts.hostAllReduce    = true;
+  opts.hostWeightUpdate = true;
 
   // training info
   auto optimizer = SGD({{"defaultLearningRate", {0.01, false}}});
@@ -333,7 +337,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
   auto ops       = ir.getOpSchedule({});
   std::vector<Op *> partial_op_schedule;
   for (auto op : ops) {
-    if (dynamic_cast<HostReduceGradCopyOp *>(op) ||
+    if (dynamic_cast<GradCopyToHostOp *>(op) ||
         dynamic_cast<HostSGD0VarUpdate *>(op)) {
       partial_op_schedule.push_back(op);
     }
@@ -342,7 +346,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
   // first 4 should be gradient copies, then followed by var copies
   for (int i = 0; i < 4; ++i) {
     auto asHostReduce =
-        dynamic_cast<HostReduceGradCopyOp *>(partial_op_schedule[i]);
+        dynamic_cast<GradCopyToHostOp *>(partial_op_schedule[i]);
     BOOST_CHECK(asHostReduce);
     auto tensorUpdateId = asHostReduce->inTensor(0)->id;
     const auto &inShape = partial_op_schedule[i]->inShape(0);
@@ -357,19 +361,12 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
   }
 
   std::vector<std::string> callback_handles;
-  for (const auto &gv : session->getGradAndVarStreamIds()) {
-    const auto &grad_stream_id   = gv.first;
-    const auto &weight_stream_id = gv.second;
+  for (const auto &stream_id : session->getHostReduceStreamIds()) {
 
-    session->connectStreamToCallback(
-        grad_stream_id, [&callback_handles, grad_stream_id](void *g) {
-          callback_handles.push_back(grad_stream_id);
-        });
-
-    session->connectStreamToCallback(
-        weight_stream_id, [&callback_handles, weight_stream_id](void *w) {
-          callback_handles.push_back(weight_stream_id);
-        });
+    session->connectStreamToCallback(stream_id,
+                                     [&callback_handles, stream_id](void *g) {
+                                       callback_handles.push_back(stream_id);
+                                     });
   }
 
   // inputs:
@@ -393,12 +390,14 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
   // Check that the callbacks are executed in the correct order (all gradients,
   // then all weights)
   for (int i = 0; i < 4; ++i) {
-    // "gr_" from gradientStoreStreamId
-    BOOST_CHECK(callback_handles[i].substr(0, 3) == "gr_");
+    BOOST_CHECK(callback_handles[i].compare(0,
+                                            strlen(gradientStoreStreamPrefix),
+                                            gradientStoreStreamPrefix) == 0);
   }
   for (int i = 4; i < 8; ++i) {
-    // "wl_" from weightLoadStreamId
-    BOOST_CHECK(callback_handles[i].substr(0, 3) == "wl_");
+    BOOST_CHECK(callback_handles[i].compare(0,
+                                            strlen(weightStoreStreamPrefix),
+                                            weightStoreStreamPrefix) == 0);
   }
 }
 
@@ -503,6 +502,7 @@ BOOST_AUTO_TEST_CASE(HostReduceHierarchicalReductionWithReplicatedGraphs) {
 
     auto opts                   = SessionOptions();
     opts.hostAllReduce          = true;
+    opts.hostWeightUpdate       = true;
     opts.enableReplicatedGraphs = true;
     opts.replicatedGraphCount   = replicationFactor;
 
@@ -534,38 +534,46 @@ BOOST_AUTO_TEST_CASE(HostReduceHierarchicalReductionWithReplicatedGraphs) {
     session->prepareDevice();
 
     std::unordered_map<TensorId, std::vector<float>> gradients;
-    for (const auto &gv : session->getGradAndVarStreamIds()) {
-      const auto &grad_stream_id   = gv.first;
-      const auto &weight_stream_id = gv.second;
-      const auto grad_id           = grad_stream_id.substr(3);
-      const int64_t nelms          = idToInfo[grad_id].nelms();
-      const int64_t nbytes         = idToInfo[grad_id].nbytes();
+    for (const auto &stream_id : session->getHostReduceStreamIds()) {
+      if (stream_id.compare(0,
+                            strlen(gradientStoreStreamPrefix),
+                            gradientStoreStreamPrefix) == 0) {
+        const auto grad_id =
+            stream_id.substr(strlen(gradientStoreStreamPrefix));
+        const int64_t nelms = idToInfo[grad_id].nelms();
 
-      for (int i = 0; i < replicationFactor; ++i) {
-        session->connectStreamToCallback(
-            grad_stream_id,
-            [&gradients, grad_id, nelms](void *g) {
-              float *f      = reinterpret_cast<float *>(g);
-              auto gradient = std::vector<float>(f, f + nelms);
-              auto found    = gradients.find(grad_id);
+        for (int i = 0; i < replicationFactor; ++i) {
+          session->connectStreamToCallback(
+              stream_id,
+              [&gradients, grad_id, nelms](void *g) {
+                float *f      = reinterpret_cast<float *>(g);
+                auto gradient = std::vector<float>(f, f + nelms);
+                auto found    = gradients.find(grad_id);
 
-              // Check that the streamed gradients are the same for all replicas
-              if (found != gradients.end()) {
-                BOOST_CHECK_EQUAL_COLLECTIONS(found->second.begin(),
-                                              found->second.end(),
-                                              gradient.begin(),
-                                              gradient.end());
-              } else {
-                gradients[grad_id] = gradient;
-              }
-            },
-            i);
+                // Check that the streamed gradients are the same for all
+                // replicas
+                if (found != gradients.end()) {
+                  BOOST_CHECK_EQUAL_COLLECTIONS(found->second.begin(),
+                                                found->second.end(),
+                                                gradient.begin(),
+                                                gradient.end());
+                } else {
+                  gradients[grad_id] = gradient;
+                }
+              },
+              i);
+        }
+      } else if (stream_id.compare(0,
+                                   strlen(weightStoreStreamPrefix),
+                                   weightStoreStreamPrefix) == 0) {
+        const auto weight_id =
+            stream_id.substr(strlen(weightStoreStreamPrefix));
+        const int64_t nelms = idToInfo[getGradId(weight_id)].nelms();
+        session->connectStreamToCallback(stream_id, [nelms](void *w) {
+          float *f = reinterpret_cast<float *>(w);
+          std::fill(f, f + nelms, 42.0f);
+        });
       }
-
-      session->connectStreamToCallback(weight_stream_id, [nelms](void *w) {
-        float *f = reinterpret_cast<float *>(w);
-        std::fill(f, f + nelms, 42.0f);
-      });
     }
 
     // inputs:
@@ -632,6 +640,468 @@ BOOST_AUTO_TEST_CASE(HostReduceHierarchicalReductionWithReplicatedGraphs) {
     }
     for (auto &&x : D_readback) {
       BOOST_CHECK(x == 42.0f);
+    }
+  }
+}
+
+/*
+# Ground truth for unit test
+import torch
+K = 6
+M = 7
+N = 8
+
+A = torch.ones(M,K, requires_grad=True)
+B = torch.ones(K,N, requires_grad=True)
+C = torch.ones(N,M, requires_grad=True)
+D = torch.ones(M,N, requires_grad=True)
+E = torch.matmul(A, B)
+F = torch.matmul(E, C)
+G = torch.matmul(F, D)
+
+params = [A,B,C,D]
+l1loss = torch.nn.L1Loss()
+optimizer = torch.optim.SGD(params, lr=1)
+
+optimizer.zero_grad()
+err = torch.sum(torch.abs(G))
+err.backward()
+optimizer.step()
+
+print(A[0,0])
+print(B[0,0])
+print(C[0,0])
+print(D[0,0])
+*/
+// Test: bidirectional gradient streaming and device side variable update
+BOOST_AUTO_TEST_CASE(HostReduceTransformationGradientStoreGradientLoad) {
+  // the dimensions of the matrices
+  int K = 6;
+  int M = 7;
+  int N = 8;
+
+  // prepare a Builder for creating onnx model
+  auto bder   = Builder::create();
+  auto aiOnnx = bder->aiOnnxOpset9();
+
+  // matrix A of shape M x K
+  TensorInfo A_info{"FLOAT", std::vector<int64_t>{M, K}};
+  std::vector<float> v_A_init(A_info.nelms());
+  for (auto &val : v_A_init) {
+    val = 1.0f;
+  }
+  TensorId A_id = bder->addInitializedInputTensor({v_A_init.data(), A_info});
+
+  // matrix B of shape K x N
+  TensorInfo B_info{"FLOAT", std::vector<int64_t>{K, N}};
+  std::vector<float> v_B_init(B_info.nelms());
+  for (auto &val : v_B_init) {
+    val = 1.0f;
+  }
+  TensorId B_id = bder->addInitializedInputTensor({v_B_init.data(), B_info});
+
+  // matrix C of shape N x M
+  TensorInfo C_info{"FLOAT", std::vector<int64_t>{N, M}};
+  std::vector<float> v_C_init(C_info.nelms());
+  for (auto &val : v_C_init) {
+    val = 1.0f;
+  }
+  TensorId C_id = bder->addInitializedInputTensor({v_C_init.data(), C_info});
+
+  // matrix D of shape M x N
+  TensorInfo D_info{"FLOAT", std::vector<int64_t>{M, N}};
+  std::vector<float> v_D_init(D_info.nelms());
+  for (auto &val : v_D_init) {
+    val = 1.0f;
+  }
+  TensorId D_id = bder->addInitializedInputTensor({v_D_init.data(), D_info});
+
+  std::map<TensorId, TensorInfo> idToInfo{{getGradId(A_id), A_info},
+                                          {getGradId(B_id), B_info},
+                                          {getGradId(C_id), C_info},
+                                          {getGradId(D_id), D_info}};
+
+  std::map<TensorId, float> idToGradVal;
+
+  TensorInfo E_info{"FLOAT", std::vector<int64_t>{M, N}};
+  TensorId E_id = aiOnnx.matmul({A_id, B_id});
+
+  TensorInfo F_info{"FLOAT", std::vector<int64_t>{M, M}};
+  TensorId F_id = aiOnnx.matmul({E_id, C_id});
+
+  TensorInfo G_info{"FLOAT", std::vector<int64_t>{M, N}};
+  TensorId G_id = aiOnnx.matmul({F_id, D_id});
+
+  bder->addOutputTensor(G_id);
+
+  float lossLambda = 1.0f;
+
+  auto proto      = bder->getModelProto();
+  auto modelProto = io::getModelFromString(proto);
+  auto art        = AnchorReturnType("ALL");
+  // one batch per step
+  int batchesPerStep = 1;
+  auto dataFlow      = DataFlow(batchesPerStep, {{G_id, art}});
+
+  auto cpuDevice =
+      popart::DeviceManager::createDeviceManager().createCpuDevice();
+
+  auto opts             = SessionOptions();
+  opts.hostAllReduce    = true;
+  opts.hostWeightUpdate = false;
+
+  // training info
+  auto optimizer = SGD({{"defaultLearningRate", {1.0f, false}}});
+  std::unique_ptr<Loss> l1_loss(
+      new L1Loss(G_id, "l1LossVal", lossLambda, ReductionType::SUM));
+  std::vector<Loss *> losses{l1_loss.get()};
+
+  auto session = popart::TrainingSession::createFromOnnxModel(
+      proto,
+      dataFlow,
+      losses,
+      optimizer,
+      cpuDevice,
+      popart::InputShapeInfo(),
+      opts,
+      popart::Patterns(PatternsLevel::DEFAULT));
+
+  // prepare the anchors. We have the output C,
+  std::vector<float> raw_G_out(G_info.nelms());
+  popart::NDArrayWrapper<float> G_wrapper(raw_G_out.data(), G_info.shape());
+
+  std::map<popart::TensorId, popart::IArray &> anchors = {
+      {G_id, G_wrapper},
+  };
+
+  session->prepareDevice();
+
+  const auto &ir = session->getIr();
+  auto ops       = ir.getOpSchedule({});
+  std::vector<Op *> partial_op_schedule;
+  for (auto op : ops) {
+    if (dynamic_cast<GradCopyToHostOp *>(op) ||
+        dynamic_cast<GradCopyFromHostOp *>(op)) {
+      partial_op_schedule.push_back(op);
+    }
+  }
+
+  // first 4 should be gradient copies, then followed by var copies
+  for (int i = 0; i < 4; ++i) {
+    auto asHostReduce =
+        dynamic_cast<GradCopyToHostOp *>(partial_op_schedule[i]);
+    BOOST_CHECK(asHostReduce);
+    auto tensorUpdateId = asHostReduce->inTensor(0)->id;
+    const auto &inShape = partial_op_schedule[i]->inShape(0);
+    BOOST_CHECK_EQUAL_COLLECTIONS(inShape.begin(),
+                                  inShape.end(),
+                                  idToInfo.at(tensorUpdateId).shape().begin(),
+                                  idToInfo.at(tensorUpdateId).shape().end());
+  }
+
+  for (int i = 4; i < partial_op_schedule.size(); ++i) {
+    BOOST_CHECK(dynamic_cast<GradCopyFromHostOp *>(partial_op_schedule[i]));
+  }
+
+  std::vector<std::string> callback_handles;
+  for (const auto &stream_id : session->getHostReduceStreamIds()) {
+    if (stream_id.compare(0,
+                          strlen(gradientStoreStreamPrefix),
+                          gradientStoreStreamPrefix) == 0) {
+      session->connectStreamToCallback(
+          stream_id, [&callback_handles, &idToGradVal, stream_id](void *g) {
+            callback_handles.push_back(stream_id);
+            const auto grad_id =
+                stream_id.substr(strlen(gradientStoreStreamPrefix));
+            float *f             = reinterpret_cast<float *>(g);
+            idToGradVal[grad_id] = f[0];
+          });
+    } else if (stream_id.compare(0,
+                                 strlen(gradientLoadStreamPrefix),
+                                 gradientLoadStreamPrefix) == 0) {
+      session->connectStreamToCallback(
+          stream_id,
+          [&callback_handles, &idToGradVal, &idToInfo, stream_id](void *g) {
+            callback_handles.push_back(stream_id);
+            const auto grad_id =
+                stream_id.substr(strlen(gradientLoadStreamPrefix));
+            const float grad_val = idToGradVal[grad_id];
+            const size_t nelms   = idToInfo[grad_id].nelms();
+            float *f             = reinterpret_cast<float *>(g);
+            std::fill(f, f + nelms, grad_val);
+          });
+    }
+  }
+
+  // inputs:
+  popart::NDArrayWrapper<float> A_wrapper(v_A_init.data(), A_info);
+  popart::NDArrayWrapper<float> B_wrapper(v_B_init.data(), B_info);
+  popart::NDArrayWrapper<float> C_wrapper(v_C_init.data(), C_info);
+  popart::NDArrayWrapper<float> D_wrapper(v_D_init.data(), D_info);
+  std::map<popart::TensorId, popart::IArray &> inputs = {
+      {A_id, A_wrapper},
+      {B_id, B_wrapper},
+      {C_id, C_wrapper},
+      {D_id, D_wrapper},
+  };
+
+  popart::StepIO stepio(inputs, anchors);
+
+  session->optimizerFromHost();
+  session->weightsFromHost();
+  session->run(stepio);
+
+  // Check that the callbacks are executed in the correct order (all gradients,
+  // then all weights)
+  for (int i = 0; i < 4; ++i) {
+    // "gr_" from gradientStoreStreamId
+    BOOST_CHECK(callback_handles[i].compare(0,
+                                            strlen(gradientStoreStreamPrefix),
+                                            gradientStoreStreamPrefix) == 0);
+  }
+  for (int i = 4; i < 8; ++i) {
+    BOOST_CHECK(callback_handles[i].compare(0,
+                                            strlen(gradientLoadStreamPrefix),
+                                            gradientLoadStreamPrefix) == 0);
+  }
+
+  WeightsIO weightsRead;
+  std::vector<float> A_readback(A_info.nelms(), -9.0f);
+  std::vector<float> B_readback(B_info.nelms(), -99.0f);
+  std::vector<float> C_readback(C_info.nelms(), -99.0f);
+  std::vector<float> D_readback(D_info.nelms(), -99.0f);
+  weightsRead.insert(A_id, {A_readback.data(), A_info});
+  weightsRead.insert(B_id, {B_readback.data(), B_info});
+  weightsRead.insert(C_id, {C_readback.data(), C_info});
+  weightsRead.insert(D_id, {D_readback.data(), D_info});
+
+  session->weightsToHost();
+  session->readWeights(weightsRead);
+  for (auto &&x : A_readback) {
+    BOOST_CHECK_CLOSE(x, -447.0f, 1e-5f);
+  }
+  for (auto &&x : B_readback) {
+    BOOST_CHECK_CLOSE(x, -391.0f, 1e-5f);
+  }
+  for (auto &&x : C_readback) {
+    BOOST_CHECK_CLOSE(x, -335.0f, 1e-5f);
+  }
+  for (auto &&x : D_readback) {
+    BOOST_CHECK_CLOSE(x, -335.0f, 1e-5f);
+  }
+}
+
+/*
+# Ground truth for unit test
+import torch
+K = 6
+M = 7
+N = 8
+
+A = torch.ones(M,K, requires_grad=True)
+B = torch.ones(K,N, requires_grad=True)
+C = torch.ones(N,M, requires_grad=True)
+D = torch.ones(M,N, requires_grad=True)
+E = torch.matmul(A, B)
+F = torch.matmul(E, C)
+G = torch.matmul(F, D)
+
+replicationFactor = 2
+params = [A,B,C,D]
+l1loss = torch.nn.L1Loss()
+optimizer = torch.optim.SGD(params, lr=0.1)
+
+optimizer.zero_grad()
+err = torch.sum(torch.abs(G))
+err.backward()
+optimizer.step()
+
+print(A[0,0])
+print(B[0,0])
+print(C[0,0])
+print(D[0,0])
+
+*/
+// Test: bidirectional gradient streaming and device side variable update
+BOOST_AUTO_TEST_CASE(
+    HostReduceTransformationGradientStoreGradientLoadReplicated) {
+  // the dimensions of the matrices
+  int K = 6;
+  int M = 7;
+  int N = 8;
+
+  // prepare a Builder for creating onnx model
+  auto bder   = Builder::create();
+  auto aiOnnx = bder->aiOnnxOpset9();
+
+  // matrix A of shape M x K
+  TensorInfo A_info{"FLOAT", std::vector<int64_t>{M, K}};
+  std::vector<float> v_A_init(A_info.nelms());
+  for (auto &val : v_A_init) {
+    val = 1.0f;
+  }
+  TensorId A_id = bder->addInitializedInputTensor({v_A_init.data(), A_info});
+
+  // matrix B of shape K x N
+  TensorInfo B_info{"FLOAT", std::vector<int64_t>{K, N}};
+  std::vector<float> v_B_init(B_info.nelms());
+  for (auto &val : v_B_init) {
+    val = 1.0f;
+  }
+  TensorId B_id = bder->addInitializedInputTensor({v_B_init.data(), B_info});
+
+  // matrix C of shape N x M
+  TensorInfo C_info{"FLOAT", std::vector<int64_t>{N, M}};
+  std::vector<float> v_C_init(C_info.nelms());
+  for (auto &val : v_C_init) {
+    val = 1.0f;
+  }
+  TensorId C_id = bder->addInitializedInputTensor({v_C_init.data(), C_info});
+
+  // matrix D of shape M x N
+  TensorInfo D_info{"FLOAT", std::vector<int64_t>{M, N}};
+  std::vector<float> v_D_init(D_info.nelms());
+  for (auto &val : v_D_init) {
+    val = 1.0f;
+  }
+  TensorId D_id = bder->addInitializedInputTensor({v_D_init.data(), D_info});
+
+  std::map<TensorId, TensorInfo> idToInfo{{getGradId(A_id), A_info},
+                                          {getGradId(B_id), B_info},
+                                          {getGradId(C_id), C_info},
+                                          {getGradId(D_id), D_info}};
+
+  std::map<TensorId, float> idToGradVal;
+
+  TensorInfo E_info{"FLOAT", std::vector<int64_t>{M, N}};
+  TensorId E_id = aiOnnx.matmul({A_id, B_id});
+
+  TensorInfo F_info{"FLOAT", std::vector<int64_t>{M, M}};
+  TensorId F_id = aiOnnx.matmul({E_id, C_id});
+
+  TensorInfo G_info{"FLOAT", std::vector<int64_t>{M, N}};
+  TensorId G_id = aiOnnx.matmul({F_id, D_id});
+
+  bder->addOutputTensor(G_id);
+
+  float lossLambda = 1.0f;
+
+  auto proto      = bder->getModelProto();
+  auto modelProto = io::getModelFromString(proto);
+  auto art        = AnchorReturnType("ALL");
+  // one batch per step
+  int batchesPerStep          = 1;
+  const int replicationFactor = 2;
+  auto dataFlow               = DataFlow(batchesPerStep, {{G_id, art}});
+
+  auto device = DeviceManager::createDeviceManager().acquireAvailableDevice(
+      replicationFactor);
+
+  if (device != nullptr) {
+    auto opts                   = SessionOptions();
+    opts.hostAllReduce          = true;
+    opts.hostWeightUpdate       = false;
+    opts.enableReplicatedGraphs = true;
+    opts.replicatedGraphCount   = replicationFactor;
+
+    // training info
+    auto optimizer = SGD({{"defaultLearningRate", {0.1f, false}}});
+    std::unique_ptr<Loss> l1_loss(
+        new L1Loss(G_id, "l1LossVal", lossLambda, ReductionType::SUM));
+    std::vector<Loss *> losses{l1_loss.get()};
+
+    auto session = popart::TrainingSession::createFromOnnxModel(
+        proto,
+        dataFlow,
+        losses,
+        optimizer,
+        device,
+        popart::InputShapeInfo(),
+        opts,
+        popart::Patterns(PatternsLevel::DEFAULT));
+
+    // prepare the anchors. We have the output C,
+    std::vector<float> raw_G_out(G_info.nelms());
+    popart::NDArrayWrapper<float> G_wrapper(raw_G_out.data(), G_info.shape());
+
+    std::map<popart::TensorId, popart::IArray &> anchors = {
+        {G_id, G_wrapper},
+    };
+
+    session->prepareDevice();
+
+    for (const auto &stream_id : session->getHostReduceStreamIds()) {
+      if (stream_id.compare(0,
+                            strlen(gradientStoreStreamPrefix),
+                            gradientStoreStreamPrefix) == 0) {
+        for (int i = 0; i < replicationFactor; ++i) {
+          session->connectStreamToCallback(
+              stream_id,
+              [&idToGradVal, stream_id](void *g) {
+                const auto grad_id =
+                    stream_id.substr(strlen(gradientStoreStreamPrefix));
+                float *f             = reinterpret_cast<float *>(g);
+                idToGradVal[grad_id] = f[0] / (float)replicationFactor;
+              },
+              i);
+        }
+      } else if (stream_id.compare(0,
+                                   strlen(gradientLoadStreamPrefix),
+                                   gradientLoadStreamPrefix) == 0) {
+        session->connectStreamToCallback(
+            stream_id, [&idToGradVal, &idToInfo, stream_id](void *g) {
+              const auto grad_id =
+                  stream_id.substr(strlen(gradientLoadStreamPrefix));
+              const float grad_val = idToGradVal[grad_id];
+              const size_t nelms   = idToInfo[grad_id].nelms();
+              float *f             = reinterpret_cast<float *>(g);
+              std::fill(f, f + nelms, grad_val);
+            });
+      }
+    }
+
+    // inputs:
+    popart::NDArrayWrapper<float> A_wrapper(v_A_init.data(), A_info);
+    popart::NDArrayWrapper<float> B_wrapper(v_B_init.data(), B_info);
+    popart::NDArrayWrapper<float> C_wrapper(v_C_init.data(), C_info);
+    popart::NDArrayWrapper<float> D_wrapper(v_D_init.data(), D_info);
+    std::map<popart::TensorId, popart::IArray &> inputs = {
+        {A_id, A_wrapper},
+        {B_id, B_wrapper},
+        {C_id, C_wrapper},
+        {D_id, D_wrapper},
+    };
+
+    popart::StepIO stepio(inputs, anchors);
+
+    session->optimizerFromHost();
+    session->weightsFromHost();
+    session->run(stepio);
+
+    WeightsIO weightsRead;
+    std::vector<float> A_readback(A_info.nelms(), -9.0f);
+    std::vector<float> B_readback(B_info.nelms(), -99.0f);
+    std::vector<float> C_readback(C_info.nelms(), -99.0f);
+    std::vector<float> D_readback(D_info.nelms(), -99.0f);
+    weightsRead.insert(A_id, {A_readback.data(), A_info});
+    weightsRead.insert(B_id, {B_readback.data(), B_info});
+    weightsRead.insert(C_id, {C_readback.data(), C_info});
+    weightsRead.insert(D_id, {D_readback.data(), D_info});
+
+    session->weightsToHost();
+    session->readWeights(weightsRead);
+
+    for (auto &&x : A_readback) {
+      BOOST_CHECK_CLOSE(x, -43.8f, 1e-4f);
+    }
+    for (auto &&x : B_readback) {
+      BOOST_CHECK_CLOSE(x, -38.2f, 1e-4f);
+    }
+    for (auto &&x : C_readback) {
+      BOOST_CHECK_CLOSE(x, -32.6f, 1e-4f);
+    }
+    for (auto &&x : D_readback) {
+      BOOST_CHECK_CLOSE(x, -32.6f, 1e-4f);
     }
   }
 }
