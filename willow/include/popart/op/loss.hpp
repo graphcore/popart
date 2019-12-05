@@ -19,7 +19,7 @@ namespace popart {
 //        number of samples this is an average (mean) reduction
 enum class ReductionType { SUM = 0, MEAN };
 
-enum class eLoss { NLL, L1 };
+enum class eLoss { NLL, L1, ID };
 std::map<std::string, eLoss> initLossMap();
 const std::map<std::string, eLoss> &lossMap();
 

@@ -9,6 +9,7 @@
 #include <popart/graphtransformer.hpp>
 #include <popart/ir.hpp>
 #include <popart/numerics.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/loss.hpp>
 #include <popart/op/nll.hpp>
@@ -622,6 +623,15 @@ PYBIND11_MODULE(popart_core, m) {
       .def("getLambda", &L1Loss::getLambda)
       .def("pipelineStage", &L1Loss::pipelineStage)
       .def("virtualGraph", &L1Loss::virtualGraph);
+
+  py::class_<IdentityLoss>(m, "IdentityLoss", loss)
+      .def(py::init<TensorId, TensorId, ReductionType>(),
+           py::arg("input"),
+           py::arg("output"),
+           py::arg("reduction") = ReductionType::SUM)
+      .def("getInputId", &IdentityLoss::getInputId)
+      .def("pipelineStage", &IdentityLoss::pipelineStage)
+      .def("virtualGraph", &IdentityLoss::virtualGraph);
 
   py::class_<OptimizerValue> optimizerValue(m, "OptimizerValue");
   optimizerValue.def(
