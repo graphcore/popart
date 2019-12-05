@@ -300,7 +300,8 @@ def test_id_loss_error():
             deviceInfo=popart.DeviceManager().createCpuDevice())
 
     assert (e_info.value.args[0].startswith(
-        f"The input tensor (shape [{Batchsize} {ExtraDim} {Classes}]) to the identity loss"
+        f"The identity loss Op(ai.onnx.Identity:1, inputs=[Exp:0]," +
+        f" outputs=[loss]) (shape [{Batchsize} {ExtraDim} {Classes}]) is expecting a tensor"
     ))
 
 

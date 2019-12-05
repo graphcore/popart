@@ -133,7 +133,6 @@ const std::vector<GradInOutMapper> &IdentityLossGradOp::gradInputInfo() const {
   // Input at index 0 of this grad op is the input at index 0 of the identity
   // non-grad op.
   static const std::vector<GradInOutMapper> inInfo = {
-      {getGradInIndex(), IdentityLossOp::getOutIndex(), GradOpInType::GRADOUT},
       {getInIndex(), IdentityLossOp::getInIndex(), GradOpInType::IN}};
   return inInfo;
 }
