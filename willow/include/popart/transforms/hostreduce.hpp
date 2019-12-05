@@ -6,6 +6,12 @@
 namespace popart {
 
 class HostReduce : public Transform {
+private:
+  Op *insertGradCopyToHostOp(Op *varUpdateOp, Graph &graph, int counter) const;
+  Op *
+  insertGradCopyFromHostOp(Op *varUpdateOp, Graph &graph, int counter) const;
+  Op *insertVarCopyOp(Op *varUpdateOp, Graph &graph, int counter) const;
+
 public:
   static std::size_t id();
 

@@ -293,11 +293,11 @@ public:
   const Ir &getIr() const;
 
   /**
-   * Access the stream IDs for the gradients and weights. Only populated if
-   * hostAllReduce is enabled in the SessionOptions
+   * Access the stream IDs for variables that are involved in host side
+   * reductions on the host. Only populated if hostAllReduce is enabled in the
+   * SessionOptions
    */
-  const std::vector<std::pair<std::string, std::string>> &
-  getGradAndVarStreamIds() const;
+  const std::vector<std::string> &getHostReduceStreamIds() const;
 
   /**
    * Connect Poplar stream callbacks. In conjunction with

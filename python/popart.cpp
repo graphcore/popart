@@ -993,7 +993,7 @@ PYBIND11_MODULE(popart_core, m) {
       .def("_serializeIr", &TrainingSession::serializeIr, py::arg("format"))
       // Accessor for internal objects
       .def("getIr", &TrainingSession::getIr)
-      .def("getGradAndVarStreamIds", &TrainingSession::getGradAndVarStreamIds)
+      .def("getHostReduceStreamIds", &TrainingSession::getHostReduceStreamIds)
       .def("connectStreamToCallback",
            &TrainingSession::connectStreamToCallback);
 

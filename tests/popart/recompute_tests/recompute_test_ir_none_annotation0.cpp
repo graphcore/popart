@@ -68,18 +68,18 @@ BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
                 Patterns({PreAliasPatternType::OPTOIDENTITY,
                           PreAliasPatternType::POSTNREPL})});
 
-    return ir.getOpSchedule({});
+    auto opSchedule = ir.getOpSchedule({});
+
+    // check that there is no recomputation
+    BOOST_CHECK(
+        std::all_of(opSchedule.cbegin(), opSchedule.cend(), [](const Op *op) {
+          return op->settings.recomputeType != RecomputeType::RECOMPUTE;
+        }));
+    return opSchedule.size();
   };
-  auto schedNoOutlining   = getOpSchedule(false);
-  auto schedWithOutlining = getOpSchedule(true);
+  auto schedNoOutliningSize   = getOpSchedule(false);
+  auto schedWithOutliningSize = getOpSchedule(true);
 
   // check that outlining grouped multiple mops at least once:
-  BOOST_CHECK(schedWithOutlining.size() < schedNoOutlining.size());
-
-  // check that there is no recomputation, with or without outlining:
-  for (const auto &x : {schedNoOutlining, schedWithOutlining}) {
-    BOOST_CHECK(std::all_of(x.cbegin(), x.cend(), [](const Op *op) {
-      return op->settings.recomputeType != RecomputeType::RECOMPUTE;
-    }));
-  }
+  BOOST_CHECK(schedWithOutliningSize < schedNoOutliningSize);
 }

@@ -329,7 +329,8 @@ const static AiGraphcoreOpIdV1 SGD1AcclUpdate("SGD1AcclUpdate");
 const static AiGraphcoreOpIdV1 SGD1AcclReduce("SGD1AcclReduce");
 const static AiGraphcoreOpIdV1 SGD1Accumulate("SGD1Accumulate");
 
-const static AiGraphcoreOpIdV1 HostReduceGradCopy("HostReduceGradCopy");
+const static AiGraphcoreOpIdV1 GradCopyToHost("GradCopyToHost");
+const static AiGraphcoreOpIdV1 GradCopyFromHost("GradCopyFromHost");
 const static AiGraphcoreOpIdV1 HostSGD0VarUpdate("HostSGD0VarUpdate");
 
 const static AiGraphcoreOpIdV1 CopyVarUpdate("CopyVarUpdate");

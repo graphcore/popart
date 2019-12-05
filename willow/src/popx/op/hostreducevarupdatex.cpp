@@ -15,24 +15,25 @@ namespace pe = popops::expr;
 namespace popart {
 namespace popx {
 
-HostReduceGradCopyOpx::HostReduceGradCopyOpx(Op *op, Devicex *devicex)
+GradCopyToHostOpx::GradCopyToHostOpx(Op *op, Devicex *devicex)
     : Opx(op, devicex) {
-  verifyOp<HostReduceGradCopyOp>(op, Onnx::CustomOperators::HostReduceGradCopy);
+  verifyOp<GradCopyToHostOp>(op, Onnx::CustomOperators::GradCopyToHost);
 }
 
-void HostReduceGradCopyOpx::grow(poplar::program::Sequence &prog) const {
+void GradCopyToHostOpx::grow(poplar::program::Sequence &prog) const {
   if (dv_p->getHostReduceSyncInserted()) {
     throw error("Internal Logic Error: all host reductions should happen after "
                 "all gradients sent to host");
   }
 
-  auto vu_op                  = getOp<HostReduceGradCopyOp>();
-  const auto updater_index    = HostReduceGradCopyOp::getInIndex();
+  const auto updater_index    = GradCopyToHostOp::getInIndex();
   poplar::Tensor weightDeltas = getInTensor(updater_index);
 
   const auto grad_id = inId(updater_index);
   auto deviceToHostStream =
       dv_p->insertGradientStoreStream(grad_id, inInfo(updater_index), graph());
+
+  dv_p->getHostReduceStreamIds().emplace_back(deviceToHostStream.handle());
 
   // TODO(T12685): Once replicatedReduceScatter is part of the Poplar
   // public API we can replace the replicatedAllReduce with it and
@@ -49,6 +50,42 @@ void HostReduceGradCopyOpx::grow(poplar::program::Sequence &prog) const {
 
   poplar::program::Copy gradientsToHostProg(weightDeltas, deviceToHostStream);
   prog.add(gradientsToHostProg);
+}
+
+GradCopyFromHostOpx::GradCopyFromHostOpx(Op *op, Devicex *devicex)
+    : Opx(op, devicex) {
+  verifyOp<GradCopyFromHostOp>(op, Onnx::CustomOperators::GradCopyFromHost);
+}
+
+void GradCopyFromHostOpx::grow(poplar::program::Sequence &prog) const {
+  if (!dv_p->getHostReduceSyncInserted()) {
+    // A sync is added here to enforce that gradient copies to host are executed
+    // before gradient copies to device. Gradient copies to host are scheduled
+    // to happen before gradient copies to device in PopART. However, if
+    // multiple stream copies are performed with a single sync id then a host
+    // read can be scheduled before a host write in the Poplar engine but the
+    // actual callback might still be executed after. This happens when Poplar
+    // merges two host syncs during compilation into one. See
+    // IPUTarget::prepareForStreamAccess() and IPUTarget::completeStreamAccess()
+    // for details
+    prog.add(poplar::program::Sync(poplar::SyncType::INTERNAL));
+    dv_p->setHostReduceSyncInserted(true);
+  }
+
+  const auto updater_index    = GradCopyFromHostOp::getInIndex();
+  poplar::Tensor weightDeltas = getInTensor(updater_index);
+
+  const auto grad_id = inId(updater_index);
+  auto hostToDeviceStream =
+      dv_p->insertGradientLoadStream(grad_id, inInfo(updater_index), graph());
+
+  dv_p->getHostReduceStreamIds().emplace_back(hostToDeviceStream.handle());
+
+  poplar::program::Copy gradientsFromHostProg(hostToDeviceStream, weightDeltas);
+  prog.add(gradientsFromHostProg);
+
+  // output is a reference to the updated input
+  setOutTensor(GradCopyFromHostOp::getOutIndex(), weightDeltas);
 }
 
 HostReduceVarCopyOpx::HostReduceVarCopyOpx(Op *op, Devicex *devicex)
@@ -71,20 +108,16 @@ void HostReduceVarCopyOpx::grow(poplar::program::Sequence &prog) const {
     dv_p->setHostReduceSyncInserted(true);
   }
 
-  auto vu_op = getOp<HostSGD0VarUpdate>();
-
   const auto var_update_index = HostSGD0VarUpdate::getVarToUpdateInIndex();
-
-  const auto grad_id     = getGradId(vu_op.getVarId());
-  poplar::Tensor weights = getInTensor(var_update_index);
+  const auto updater_index    = HostSGD0VarUpdate::getUpdaterInIndex();
+  const auto grad_id          = inId(updater_index);
+  poplar::Tensor weights      = getInTensor(var_update_index);
 
   const auto weight_id    = inId(var_update_index);
   auto hostToDeviceStream = dv_p->insertWeightLoadStream(
       weight_id, inInfo(var_update_index), graph());
 
-  dv_p->getGradAndVarStreamIds().emplace_back(
-      std::make_pair(dv_p->gradientStoreStreamId(grad_id),
-                     dv_p->weightLoadStreamId(weight_id)));
+  dv_p->getHostReduceStreamIds().emplace_back(hostToDeviceStream.handle());
 
   poplar::program::Copy hostWeightsToDeviceProg(hostToDeviceStream, weights);
   prog.add(hostWeightsToDeviceProg);
@@ -95,8 +128,11 @@ void HostReduceVarCopyOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<HostReduceGradCopyOpx>
-    HostReduceGradCopyOpxCreator(Onnx::CustomOperators::HostReduceGradCopy);
+OpxCreator<GradCopyToHostOpx>
+    GradCopyToHostOpxCreator(Onnx::CustomOperators::GradCopyToHost);
+
+OpxCreator<GradCopyFromHostOpx>
+    GradCopyFromHostOpxCreator(Onnx::CustomOperators::GradCopyFromHost);
 
 OpxCreator<HostReduceVarCopyOpx>
     HostReduceVarCopyOpxCreator(Onnx::CustomOperators::HostSGD0VarUpdate);

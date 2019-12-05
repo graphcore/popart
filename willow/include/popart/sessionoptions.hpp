@@ -246,6 +246,9 @@ struct SessionOptions {
   /// Perform AllReduce operation on the host. Only useful for training session
   bool hostAllReduce = false;
 
+  /// Perform weight update on the host. Only useful for training session
+  bool hostWeightUpdate = false;
+
   /// Poplar engine options
   std::map<std::string, std::string> engineOptions;
 

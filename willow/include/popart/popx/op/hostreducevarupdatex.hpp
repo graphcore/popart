@@ -8,9 +8,15 @@
 namespace popart {
 
 namespace popx {
-class HostReduceGradCopyOpx : public Opx {
+class GradCopyToHostOpx : public Opx {
 public:
-  HostReduceGradCopyOpx(Op *, Devicex *);
+  GradCopyToHostOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
+};
+
+class GradCopyFromHostOpx : public Opx {
+public:
+  GradCopyFromHostOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
 };
 

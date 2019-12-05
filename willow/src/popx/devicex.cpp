@@ -3167,14 +3167,16 @@ std::set<TensorId> Devicex::getEfficientlyCreatedInputTensors() const {
   return efficientlyCreatedInputTensors;
 }
 
-// Gradient store stream ID
 PopStreamId Devicex::gradientStoreStreamId(TensorId id) const {
-  return "gr_" + id;
+  return gradientStoreStreamPrefix + id;
 }
 
-// Weight load stream ID
+PopStreamId Devicex::gradientLoadStreamId(TensorId id) const {
+  return gradientLoadStreamPrefix + id;
+}
+
 PopStreamId Devicex::weightLoadStreamId(TensorId id) const {
-  return "wl_" + id;
+  return weightLoadStreamPrefix + id;
 }
 
 poplar::DataStream &Devicex::insertGradientStoreStream(TensorId tensorId,
@@ -3192,6 +3194,28 @@ poplar::DataStream &Devicex::insertGradientStoreStream(TensorId tensorId,
   } else {
     throw error("Tensor Id " + tensorId +
                 " already exists in toHostGradientStreams");
+  }
+
+  return streamMapEntry->second;
+}
+
+poplar::DataStream &Devicex::insertGradientLoadStream(TensorId tensorId,
+                                                      TensorInfo tensorInfo,
+                                                      poplar::Graph &graph) {
+  auto streamMapEntry = fromHostGradientStreams.find(tensorId);
+
+  if (streamMapEntry == fromHostGradientStreams.end()) {
+    fromHostGradientStreams.emplace(
+        tensorId,
+        poplar::DataStream(graph.addHostToDeviceFIFO(
+            gradientLoadStreamId(tensorId),
+            popType(tensorInfo),
+            tensorInfo.nelms(),
+            poplar::ReplicatedStreamMode::BROADCAST)));
+    streamMapEntry = fromHostGradientStreams.find(tensorId);
+  } else {
+    throw error("Tensor Id " + tensorId +
+                " already exists in fromHostGradientStreams");
   }
 
   return streamMapEntry->second;
@@ -3219,13 +3243,12 @@ poplar::DataStream &Devicex::insertWeightLoadStream(TensorId tensorId,
   return streamMapEntry->second;
 }
 
-const std::vector<std::pair<TensorId, TensorId>> &
-Devicex::getGradAndVarStreamIds() const {
-  return gradAndVarStreamIds;
+const std::vector<TensorId> &Devicex::getHostReduceStreamIds() const {
+  return hostReduceStreamIds;
 }
 
-std::vector<std::pair<TensorId, TensorId>> &Devicex::getGradAndVarStreamIds() {
-  return gradAndVarStreamIds;
+std::vector<TensorId> &Devicex::getHostReduceStreamIds() {
+  return hostReduceStreamIds;
 }
 
 void Devicex::connectStreamToCallback(const std::string &streamHandle,

@@ -138,6 +138,10 @@ static constexpr const char *sSerializeMatMulMode_ReducingDim = "reducing_dim";
 static constexpr const char *sSerializeMatMulMode_OutputChannels =
     "output_channels";
 
+// Poplar stream name prefixes for streams used in host side reductions
+static constexpr const char *gradientStoreStreamPrefix = "gradientStore__";
+static constexpr const char *gradientLoadStreamPrefix  = "gradientLoad__";
+static constexpr const char *weightLoadStreamPrefix    = "weightLoad__";
 } // namespace popart
 
 #endif
