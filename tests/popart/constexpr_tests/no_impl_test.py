@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import popart
 
 # importing test_session requires adding to sys.path
 import sys
@@ -20,8 +21,7 @@ def test_for_warning(capfd):
 
         return [x]
 
-    os.environ['POPART_LOG_LEVEL'] = 'TRACE'
-    os.environ['POPART_LOG_FORMAT'] = '%v'
+    popart.getLogger().setLevel("TRACE")
 
     session = PopartTestSession()
     session.prepare(init_builder)
@@ -30,6 +30,6 @@ def test_for_warning(capfd):
     print(err)
     err = err.splitlines()
 
-    warns = [i for i in err if i.startswith('No ConstExpr implementation of ')]
+    warns = [i for i in err if 'No ConstExpr implementation of ' in i]
     assert len(warns) > 1
     assert 'Relu' in warns[0]
