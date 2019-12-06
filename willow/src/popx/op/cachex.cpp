@@ -26,9 +26,8 @@ void CacheStoreOpx::grow(poplar::program::Sequence &prog) const {
   if (cacheStoreOp.input->hasIndex(
           CacheStoreOp::getRemoteBufferOffsetInIndex())) {
     auto offset = getInTensor(CacheStoreOp::getRemoteBufferOffsetInIndex());
-    // TODO: Enable when Poplar is ready
-    // poplar::program::Copy copy_prog(inTensor, buffer, offset);
-    // prog.add(copy_prog);
+    poplar::program::Copy copy_prog(inTensor, buffer, offset);
+    prog.add(copy_prog);
   } else {
     poplar::program::Copy copy_prog(inTensor, buffer);
     prog.add(copy_prog);
@@ -62,10 +61,9 @@ void CacheLoadOpx::grow(poplar::program::Sequence &prog) const {
 
   if (cacheLoadOp.input->hasIndex(
           CacheLoadOp::getRemoteBufferOffsetInIndex())) {
-    // TODO: Enable when Poplar is ready
-    // auto offset = getInTensor(CacheLoadOp::getArgInIndex());
-    // poplar::program::Copy copy_prog(buffer, outTensor, offset);
-    // prog.add(copy_prog);
+    auto offset = getInTensor(CacheLoadOp::getRemoteBufferOffsetInIndex());
+    poplar::program::Copy copy_prog(buffer, outTensor, offset);
+    prog.add(copy_prog);
   } else {
     poplar::program::Copy copy_prog(buffer, outTensor);
     prog.add(copy_prog);

@@ -1,5 +1,6 @@
 #include <memory>
 #include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
@@ -35,6 +36,10 @@ void IpuCopyOp::setup() {
     auto idx     = idx_tensor.first;
     outInfo(idx) = inInfo(idx);
   }
+}
+
+bool IpuCopyOp::isOutlineable() const {
+  return getGraph().getIr().getSessionOptions().pingPongPhases > 1;
 }
 
 const SourceIpuMap &IpuCopyOp::getSourceIpus() const { return sourceIpus; }

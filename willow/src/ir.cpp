@@ -974,11 +974,10 @@ void Ir::prepareImpl(const IrBundle &gb) {
     updateVertices();
   }
 
-  enableTransform(CacheSetup::id(),
-                  userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
-                      userOptions.pingPongPhases > 1);
-
-  applyTransform(CacheSetup::id(), getMainGraph());
+  if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
+      userOptions.pingPongPhases > 1) {
+    applyTransform(CacheSetup::id(), getMainGraph());
+  }
 
   // Now, we apply the Patterns which can handle and create
   // topological constraints. Currently, this is only one

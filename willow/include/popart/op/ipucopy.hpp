@@ -28,10 +28,10 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
-  // TODO T9357: PingPong needs this set to true.
+  // T9357: PingPong needs this set to true.
   // T13645: Investigate if this can be problematic.
   // Should be session option.
-  bool isOutlineable() const override { return false; }
+  bool isOutlineable() const override;
 
   bool isIpuCopyOp() const final;
 

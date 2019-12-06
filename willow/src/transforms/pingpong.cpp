@@ -73,9 +73,12 @@ getSanitizedPingPongPhase(const Graph &graph, Op *op, PingPongPhase phase) {
 } // namespace
 
 bool PingPong::apply(Graph &graph) const {
-  auto &ir             = graph.getIr();
-  auto &sessionOptions = ir.getSessionOptions();
-  const auto num_ipus  = ir.getDeviceInfo()->getNumIpus();
+  auto &ir                = graph.getIr();
+  auto &sessionOptions    = ir.getSessionOptions();
+  auto replicationDivisor = sessionOptions.enableReplicatedGraphs
+                                ? sessionOptions.replicatedGraphCount
+                                : 1;
+  const auto num_ipus = ir.getDeviceInfo()->getNumIpus() / replicationDivisor;
   // const auto training = ir.canTrain();
   const auto num_phases = sessionOptions.pingPongPhases;
 
@@ -134,7 +137,7 @@ bool PingPong::apply(Graph &graph) const {
       logging::transform::debug(
           "[PingPong] (FWD) mapping operator {} to VGID {}",
           op->opid,
-          op->getVirtualGraphId());
+          op->hasVirtualGraphId() ? op->getVirtualGraphId() : -1);
     }
 
     // Put the user defined losses on the final virtual graph.
@@ -170,7 +173,7 @@ bool PingPong::apply(Graph &graph) const {
           logging::transform::debug(
               "[PingPong] (BWD) mapping operator {} to VGID {}",
               op->opid,
-              op->getVirtualGraphId());
+              op->hasVirtualGraphId() ? op->getVirtualGraphId() : -1);
         }
       }
     }
@@ -229,7 +232,7 @@ bool PingPong::apply(Graph &graph) const {
           logging::transform::debug(
               "[PingPong] (REM) mapping operator {} to VGID {}",
               op->opid,
-              op->getVirtualGraphId());
+              op->hasVirtualGraphId() ? op->getVirtualGraphId() : -1);
         } else {
           ++num_ops_without_phase;
         }
