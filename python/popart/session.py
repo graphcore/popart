@@ -70,14 +70,21 @@ class PrepareDeviceException(popart.popart_exception):
 
 
 class InferenceSession(_InferenceSessionCore):
-    def __init__(self,
-                 fnModel,
-                 dataFeed,
-                 deviceInfo,
-                 losses=[],
-                 inputShapeInfo=popart.InputShapeInfo(),
-                 passes=popart.Patterns(),
-                 userOptions=popart.SessionOptions()):
+    def __init__(
+        self,
+        fnModel,
+        dataFeed,
+        deviceInfo,
+        losses=[],
+        inputShapeInfo=popart.InputShapeInfo(),
+        # default for passes must not be popart.Patterns()
+        # when `import popart` is run, the default arguments are created.
+        # If the user then loads a custom pattern via:
+        #     ctypes.cdll.LoadLibrary(custom_pattern_lib.so)
+        # The already constructed popart.Patterns will
+        # not include the custom pattern.
+        passes=None,
+        userOptions=popart.SessionOptions()):
 
         if passes == None:
             passes = popart.Patterns()
@@ -104,15 +111,22 @@ class InferenceSession(_InferenceSessionCore):
 
 
 class TrainingSession(_TrainingSessionCore):
-    def __init__(self,
-                 fnModel,
-                 dataFeed,
-                 losses,
-                 optimizer,
-                 deviceInfo,
-                 inputShapeInfo=popart.InputShapeInfo(),
-                 passes=popart.Patterns(),
-                 userOptions=popart.SessionOptions()):
+    def __init__(
+        self,
+        fnModel,
+        dataFeed,
+        losses,
+        optimizer,
+        deviceInfo,
+        inputShapeInfo=popart.InputShapeInfo(),
+        # default for passes must not be popart.Patterns()
+        # when `import popart` is run, the default arguments are created.
+        # If the user then loads a custom pattern via:
+        #     ctypes.cdll.LoadLibrary(custom_pattern_lib.so)
+        # The already constructed popart.Patterns will
+        # not include the custom pattern.
+        passes=None,
+        userOptions=popart.SessionOptions()):
 
         if passes == None:
             passes = popart.Patterns()
