@@ -63,10 +63,7 @@ class PreAliasPatternManager {
   std::map<std::type_index, PreAliasPatternInfo> patternInfos;
 
   // Singleton
-  static PreAliasPatternManager &getInstance() {
-    static PreAliasPatternManager instance;
-    return instance;
-  }
+  static PreAliasPatternManager &getInstance();
 
 public:
   // could add another parameter to set which level this pattern is in.
