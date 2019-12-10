@@ -1797,6 +1797,10 @@ template <typename Predicate> void walkProducers(Op *op, Predicate f) {
 } // namespace
 
 void Devicex::growOpx(Opx *opx, poplar::program::Sequence &seq) {
+  logging::devicex::trace("Calling growOpx for Op {} with debugName {}",
+                          opx->op_p->str(),
+                          opx->op_p->debugName());
+
   if (opxTrace) {
     seq.add(poplar::program::PrintTensor(opx->op_p->str() + "/enter",
                                          opxTraceTensor));
@@ -1973,11 +1977,23 @@ void Devicex::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
       dynamic_cast<IpuCopyOpx *>(opx)->createPipelinedOutput();
     } else if (op->settings.recomputeType == RecomputeType::CHECKPOINT ||
                op->settings.recomputeType == RecomputeType::UNDEFINED) {
-      logging::devicex::debug("Adding post-turning check-point Op {}",
+      logging::devicex::debug(
+          "Adding post-turning check-point Op {} {} in pipelinedOpTaskFunc",
+          op->str(),
+          op->debugName());
+      auto seqsKey =
+          &progs.pipelineForwardFragment(op->getPipelineStage(), op->str());
+      logging::devicex::debug("Obtained pipeline forward frag for ",
                               op->debugName());
-      growOpx(opx,
-              seqs[&progs.pipelineForwardFragment(op->getPipelineStage(),
-                                                  op->str())]);
+      auto found = seqs.find(seqsKey);
+      if (found == seqs.end()) {
+        seqs[seqsKey] = poplar::program::Sequence{};
+        found         = seqs.find(seqsKey);
+      }
+      logging::devicex::debug(
+          "Growing {} {} in pipelinedOpTaskFunc", op->str(), op->debugName());
+
+      growOpx(opx, found->second);
     } else if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
       logging::devicex::debug("Adding (first) recompute Op {}",
                               op->debugName());

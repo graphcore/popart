@@ -402,6 +402,7 @@ bool isFullRecompute(Graph &graph) {
 }
 
 std::vector<TensorId> getStashCandidateTensors(Graph &graph) {
+
   bool full_recompute = isFullRecompute(graph);
 
   std::vector<TensorId> toStashCandidateTensors;
@@ -819,8 +820,9 @@ bool Pipeline::apply(Graph &graph) const {
   }
 
   logging::transform::debug("Final Stash Tensors");
-  for (auto tid : toStashTensors)
+  for (auto tid : toStashTensors) {
     logging::transform::debug("  {}", tid);
+  }
 
   // 2. For each Tensor to be stashed, create a single stash
   //    and (in-place) restore op
@@ -830,6 +832,12 @@ bool Pipeline::apply(Graph &graph) const {
 
   for (auto &tid : toStashTensors) {
     auto tensor = graph.getTensors().get(tid);
+
+    if (tensor->consumers.getOps().empty()) {
+      throw error("Internal Logic Error : request to stash Tensor {} with no "
+                  "consumers, bailing",
+                  tensor->str());
+    }
 
     Op *stashRefOp;
     Op *restoreRefOp;
@@ -924,11 +932,19 @@ bool Pipeline::apply(Graph &graph) const {
     // Disconnect tid from all consumers in the restore ops pipeline stage,
     // reconnect to restoreId
     for (Op *tidConsumer : tidConsumers) {
-      if (tidConsumer->getPipelineStage() == restoreOp->getPipelineStage()) {
+      if (tidConsumer->getPipelineStage() == restoreOp->getPipelineStage() ||
+          (dynamic_cast<RestoreInplaceOp *>(restoreOp) &&
+           tidConsumer->settings.recomputeType == RecomputeType::RECOMPUTE &&
+           tidConsumer->getPipelineStage() < restoreOp->getPipelineStage())) {
         for (auto i : tidConsumer->input->indicesMap().at(tensor)) {
           tidConsumer->disconnectInTensor(i, tensor);
           tidConsumer->connectInTensor(i, restoreId);
         }
+      } else {
+        logging::transform::debug("Not connecting consumer {} to restore op {} "
+                                  "as they have different pipeline stages ",
+                                  tidConsumer->str(),
+                                  restoreOp->str());
       }
     }
 
@@ -937,6 +953,23 @@ bool Pipeline::apply(Graph &graph) const {
 
     // refresh consumers of tensor
     tidConsumers = tensor->consumers.getOps();
+
+    bool noConsumersOfRestore =
+        restoreOp->output->tensor(0)->consumers.getOps().empty();
+
+    if (noConsumersOfRestore) {
+      bool noRecomputeConsumersOfStash = std::none_of(
+          tidConsumers.cbegin(), tidConsumers.cend(), [](const Op *op) {
+            return op->settings.recomputeType == RecomputeType::RECOMPUTE;
+          });
+      std::ostringstream oss3;
+      oss3 << "Internal Logic Error : The RestoreOp " << restoreOp->str()
+           << " on pipeline stage " << restoreOp->getPipelineStage()
+           << " has no consumers. This seems strange, so bailing. "
+           << "noRecomputeConsumersOfStash = " << noRecomputeConsumersOfStash
+           << " where the tensor being stashed is " << tensor->str();
+      throw error(oss3.str());
+    }
 
     for (auto tidConsumer : tidConsumers) {
 

@@ -16,6 +16,28 @@ namespace popx {
 
 namespace {
 
+// Get the reference Tensor used for poplibs call for mask generation.
+// Note that the reference Tensor cannot just be the Tensor to be masked, as the
+// mask generated depends on the layout of the input and not just the random
+// seed. It is required that forwards, recompute and backwards masks are all the
+// same, so the same reference tensor must be used in for these cases
+poplar::Tensor getReferenceTensor(const Opx &opx) {
+
+  const auto &dbo   = opx.getOp<DropoutBaseOp>();
+  auto seedModifier = dbo.getSeedModifier();
+
+  poplar::Tensor refTensor;
+
+  if (opx.dv_p->dropoutReferenceTensors.find(seedModifier) ==
+      opx.dv_p->dropoutReferenceTensors.end()) {
+    refTensor = opx.getInTensor(0);
+    opx.dv_p->dropoutReferenceTensors.emplace(seedModifier, refTensor);
+  } else {
+    refTensor = opx.dv_p->dropoutReferenceTensors.at(seedModifier);
+  }
+  return refTensor;
+}
+
 std::pair<poplar::Tensor, poplar::Tensor>
 growDropout(poplar::Graph &graph,
             const poplar::Tensor &input,
@@ -62,25 +84,11 @@ DropoutOpx::DropoutOpx(Op *op, Devicex *devicex)
 }
 
 void DropoutOpx::grow(poplar::program::Sequence &prog) const {
-  auto &op = getOp<DropoutOp>();
+  auto &op          = getOp<DropoutOp>();
+  auto seedModifier = op.getSeedModifier();
 
   if (op_p->getIr().canTrain()) {
-    auto seedModifier = op.getSeedModifier();
-
-    // If fwd dropout op, add reference tensor for layer to map.
-    // If a recomputation op, retrieve the reference
-    // tensor for that layer.
-    // Ref tensor cannot be an op input because the tensor layout changes the
-    // result of poprand::bernoulli, and if the op is pipelined, the stash and
-    // restore ops may change the tensor layout of the ops input.
-    poplar::Tensor refTensor;
-    if (dv_p->dropoutReferenceTensors.find(seedModifier) ==
-        dv_p->dropoutReferenceTensors.end()) {
-      refTensor = getInTensor(DropoutOp::getInIndex());
-      dv_p->dropoutReferenceTensors.emplace(seedModifier, refTensor);
-    } else {
-      refTensor = dv_p->dropoutReferenceTensors.at(seedModifier);
-    }
+    poplar::Tensor refTensor = getReferenceTensor(*this);
 
     if (op.getOutputMask()) {
       auto dropout_mask = growDropout(graph(),
@@ -134,12 +142,10 @@ DropoutGradOpx::DropoutGradOpx(Op *op, Devicex *devicex)
 }
 
 void DropoutGradOpx::grow(poplar::program::Sequence &prog) const {
-  auto &op          = getOp<DropoutGradOp>();
-  auto seedModifier = op.getSeedModifier();
 
-  // Fwd dropout op should have added a reference tensor.
-  // See comment in forward op for why this cannot be an op input.
-  poplar::Tensor refTensor = dv_p->dropoutReferenceTensors.at(seedModifier);
+  auto &op                 = getOp<DropoutGradOp>();
+  auto seedModifier        = op.getSeedModifier();
+  poplar::Tensor refTensor = getReferenceTensor(*this);
 
   if (op.getOutputMask()) {
 

@@ -26,6 +26,8 @@ public:
   bool requiresRandomSeed() const override { return true; }
   InIndex getSeedInIndex() const override { return 1; }
 
+  void appendOutlineAttributes(OpSerialiserBase &) const final;
+
 protected:
   float ratio;
   uint32_t seedModifier;
@@ -44,8 +46,6 @@ public:
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
 
-  void appendOutlineAttributes(OpSerialiserBase &) const override;
-
   // Inputs
   static InIndex getInIndex() { return 0; }
 
@@ -63,6 +63,7 @@ public:
   std::unique_ptr<Op> clone() const final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
+
   void setup() final;
 
   static InIndex getGradInIndex() { return 0; }
