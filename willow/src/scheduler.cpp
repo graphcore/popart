@@ -425,7 +425,7 @@ Scheduler::getPartialOpSchedule(const OpsBeforeKey &gCons,
           opDebugNames.insert(afterOp->debugName());
         }
 
-        logging::ir::debug(
+        logging::ir::trace(
             "[scheduler] Failed to schedule {}, "
             "nIndicesAwaiting: {}, nBeforeKey: {}, opsAfterKey: {}, "
             "nPhaseOpsBefore: {}",

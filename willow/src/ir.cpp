@@ -2329,8 +2329,8 @@ void Ir::constructBackwards() {
       }
     }
   }
-
   logging::ir::info("Constructing backwards complete");
+  constructedBackwards = true;
 }
 
 void Ir::growCopyVarUpdateOp(const TensorId &varId, const TensorId &from) {
@@ -2827,6 +2827,8 @@ bool Ir::canEvaluate() const {
 bool Ir::canTrain() const {
   return getExecutionMode() == ExecutionMode::TRAINING;
 }
+
+bool Ir::hasConstructedBackwards() const { return constructedBackwards; }
 
 bool Ir::containsInitialisers() {
   return !(onnxModel->graph().initializer().empty());
