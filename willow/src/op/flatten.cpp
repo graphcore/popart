@@ -19,11 +19,11 @@ FlattenOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
 view::RegMap FlattenBaseOp::fwdRegMap(InIndex inIndex,
                                       OutIndex outIndex) const {
   if (inIndex != 0 || outIndex != 0) {
-    throw error("Internal Logic Error in FlattenBaseOp::fwdRegMap."
-                "Received input index {} but only 0 allowed, "
-                "This for Op {}, ",
-                inIndex,
-                str());
+    throw internal_error("[FlattenBaseOp::fwdRegMap] "
+                         "Received input index {} but only 0 allowed, "
+                         "This for Op {}, ",
+                         inIndex,
+                         str());
   }
   auto inRegion    = view::Region::getFull(inInfo(getInIndex()).shape());
   auto outRegion   = view::Region::getFull(outInfo(getOutIndex()).shape());
@@ -39,11 +39,11 @@ view::RegMap FlattenBaseOp::fwdRegMap(InIndex inIndex,
 view::RegMap FlattenBaseOp::bwdRegMap(InIndex inIndex,
                                       OutIndex outIndex) const {
   if (inIndex != 0 || outIndex != 0) {
-    throw error("Internal Logic Error in FlattenBaseOp::bwdRegMap."
-                "Received input index {} but only 0 allowed, "
-                "This for Op {}, ",
-                inIndex,
-                str());
+    throw internal_error("[FlattenBaseOp::bwdRegMap] "
+                         "Received input index {} but only 0 allowed, "
+                         "This for Op {}, ",
+                         inIndex,
+                         str());
   }
   auto inRegion    = view::Region::getFull(inInfo(getInIndex()).shape());
   auto outRegion   = view::Region::getFull(outInfo(getOutIndex()).shape());

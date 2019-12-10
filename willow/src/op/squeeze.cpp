@@ -22,11 +22,11 @@ void SqueezeBaseOp::setup() {
 view::RegMap SqueezeBaseOp::fwdRegMap(InIndex inIndex,
                                       OutIndex outIndex) const {
   if (inIndex != 0 || outIndex != 0) {
-    throw error("Internal Logic Error in SqueezeBaseOp::fwdRegMap."
-                "Received input index {} but only 0 allowed, "
-                "This for Op {}, ",
-                inIndex,
-                str());
+    throw internal_error("[SqueezeBaseOp::fwdRegMap] "
+                         "Received input index {} but only 0 allowed, "
+                         "This for Op {}, ",
+                         inIndex,
+                         str());
   }
   // being conservative and returning the full region,
   // even for non-full input region :
@@ -43,11 +43,11 @@ view::RegMap SqueezeBaseOp::fwdRegMap(InIndex inIndex,
 view::RegMap SqueezeBaseOp::bwdRegMap(InIndex inIndex,
                                       OutIndex outIndex) const {
   if (inIndex != 0 || outIndex != 0) {
-    throw error("Internal Logic Error in SqueezeBaseOp::bwdRegMap."
-                "Received input index {} but only 0 allowed, "
-                "This for Op {}, ",
-                inIndex,
-                str());
+    throw internal_error("[SqueezeBaseOp::bwdRegMap] "
+                         "Received input index {} but only 0 allowed, "
+                         "This for Op {}, ",
+                         inIndex,
+                         str());
   }
   auto inRegion    = view::Region::getFull(inInfo(getInIndex()).shape());
   auto emptyRegion = view::Region::getEmpty(inRank(getInIndex()));

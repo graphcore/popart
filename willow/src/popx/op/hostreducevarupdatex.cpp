@@ -22,8 +22,8 @@ GradCopyToHostOpx::GradCopyToHostOpx(Op *op, Devicex *devicex)
 
 void GradCopyToHostOpx::grow(poplar::program::Sequence &prog) const {
   if (dv_p->getHostReduceSyncInserted()) {
-    throw error("Internal Logic Error: all host reductions should happen after "
-                "all gradients sent to host");
+    throw internal_error("All host reductions should happen after "
+                         "all gradients sent to host");
   }
 
   const auto updater_index    = GradCopyToHostOp::getInIndex();

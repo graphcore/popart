@@ -1636,9 +1636,10 @@ Ir::getVirtualGraphIdFromTensorProducers(std::vector<Tensor *> ts) {
     for (auto t : ts) {
       ts_ids.push_back(t->id);
     }
-    throw error("ILE: None of the producers of the tensors in {} have virtual "
-                "graph ids",
-                ts_ids);
+    throw internal_error(
+        "None of the producers of the tensors in {} have virtual "
+        "graph ids",
+        ts_ids);
   }
 
   // Find the vgraph id with the most occurrences.
@@ -1917,7 +1918,7 @@ void OpGradRegistry::insert(Op *nonGrad, int index) {
   // this should be removed when we're happy the IL (internal logic)
   // is correct:
   if (partial[nonGrad->id].count(index) != 0) {
-    throw error("ILE : index already present in OpGradRegistry::insert");
+    throw internal_error("index already present in OpGradRegistry::insert");
   }
 
   partial[nonGrad->id].insert(index);
@@ -2115,7 +2116,8 @@ void Ir::updateVertices() {
 void Ir::setNEdgesToLoss() {
 
   if (isTesting()) {
-    throw error("ILE: Call to setNEdgesToLoss() in Testing  mode is not valid");
+    throw internal_error(
+        "Call to setNEdgesToLoss() in Testing  mode is not valid");
   }
 
   // set all edge counts to zero (we set from scratch in this function)
@@ -2410,8 +2412,7 @@ void Ir::growVarUpdateOpInternal(OpId opId) {
 
   auto varUpdateOp = dynamic_cast<VarUpdateOp *>(op);
   if (varUpdateOp == nullptr) {
-    throw error("Internal Logic Error (ILE) Op {} expected to be a VarUpdateOp",
-                op->str());
+    throw internal_error("Op {} expected to be a VarUpdateOp", op->str());
   }
   TensorId updatedVarId = getUpdatedVarId(varUpdateOp->getVarId());
   std::vector<TensorId> outputs{updatedVarId};

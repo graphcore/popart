@@ -40,7 +40,7 @@ const static int64_t maxGraphcoreOperatorSetVersion = 1;
 
 const BuilderImpl *BuilderImpl::getParent() const {
   if (!hasParent()) {
-    throw error("ILE: No Parent Builder");
+    throw internal_error("No Parent Builder");
   }
   return parent;
 }

@@ -85,8 +85,8 @@ bool ContiguateIpuCopyIndicesPattern::apply(Op *op) const {
   auto pipelineStageToVGraph = getPipelineStageToVGraphMap(op->getGraph());
 
   if (lastStage <= firstStage) {
-    throw error(
-        "ILE: Copy op {}, goes from stage {} to stage {}. Copies must always "
+    throw internal_error(
+        "Copy op {}, goes from stage {} to stage {}. Copies must always "
         "be to a later pipeline stage",
         originalIpuCopyOp->debugName(),
         firstStage,

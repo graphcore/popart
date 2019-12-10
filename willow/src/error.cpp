@@ -7,6 +7,9 @@
 namespace popart {
 
 ErrorSource getErrorSource(const std::exception &e) {
+  if (dynamic_cast<const popart::internal_error *>(&e)) {
+    return ErrorSource::popart_internal;
+  }
   if (dynamic_cast<const popart::memory_allocation_err *>(&e)) {
     return ErrorSource::popart;
   }

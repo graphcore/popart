@@ -107,7 +107,7 @@ void Region::checks() const {
   }
 
   if (isEmptyRank0 && lower.size() != 0) {
-    throw error("ILE: cannot be `empty-of-rank-0' if it is not rank 0!");
+    throw internal_error("cannot be `empty-of-rank-0' if it is not rank 0!");
   }
 }
 
@@ -144,10 +144,10 @@ Region Region::intersect(const Region &rhs) const {
 
   if (rank() != rhs.rank()) {
     std::ostringstream oss;
-    oss << "Internal Logic Error: Regions of different rank in intersect. ";
+    oss << "Regions of different rank in intersect. ";
     oss << "\n     First Region " << *this;
     oss << "\n     Second Region " << rhs;
-    throw error(oss.str());
+    throw internal_error(oss.str());
   }
   if (rhs.isEmpty() || isEmpty()) {
     return getEmpty(rhs.rank());
@@ -376,11 +376,12 @@ Regions Region::reshape(Region fullInRegion, Region fullOutRegion) const {
       reshapeAreas += x.nelms();
     }
     if (reshapeAreas != nelms()) {
-      throw error("Internal Logic Error: number of elements in output of "
-                  "Region::reshape differents from the number of elements of "
-                  "the input ({} != {})",
-                  reshapeAreas,
-                  nelms());
+      throw internal_error(
+          "number of elements in output of "
+          "Region::reshape differents from the number of elements of "
+          "the input ({} != {})",
+          reshapeAreas,
+          nelms());
     }
   }
 

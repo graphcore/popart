@@ -30,9 +30,10 @@ void SGD1AccumulateOpx::grow(poplar::program::Sequence &prog) const {
   if (isConst) {
     auto val = sgd1AccumulateOp.initDpsf1.val();
     if (val == 0.0f) {
-      throw error("ILE: dpsf1 of 0 is not allowed, should have been caught in "
-                  "the Ir, dpsf1 of 0 could be caused by dampening of 1, which "
-                  "means the gradient is multiplied by 0 (no learning)");
+      throw internal_error(
+          "dpsf1 of 0 is not allowed, should have been caught in "
+          "the Ir, dpsf1 of 0 could be caused by dampening of 1, which "
+          "means the gradient is multiplied by 0 (no learning)");
     }
     if (val - 1.0f == 0.0f) {
       // accl += grad
@@ -77,8 +78,8 @@ InputCreatorType SGD1AccumulateOpx::getInputCreatorType(int inIndex) const {
 std::vector<TensorId>
 SGD1AccumulateOpx::mustExistBeforeCreate(int index1) const {
   if (index1 != VarUpdateOp::getVarToUpdateInIndex()) {
-    throw error(
-        "ILE: SGD1AccumulateOpx::mustExistBeforeCreate : Invalid index");
+    throw internal_error(
+        "SGD1AccumulateOpx::mustExistBeforeCreate : Invalid index");
   }
   return {inId(VarUpdateWithUpdaterOp::getUpdaterInIndex())};
 }

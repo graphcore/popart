@@ -385,9 +385,9 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
       Tensor *outTensor = instance.external_outputs[j];
 
       if (inTensor->id == outTensor->id) {
-        throw error("[SubgraphOutline] ILE: "
-                    "{} is both subgraph input and output.",
-                    inTensor);
+        throw internal_error(
+            "[SubgraphOutline] {} is both subgraph input and output.",
+            inTensor);
       }
 
       // alias Regions in input Tensor:
@@ -578,7 +578,7 @@ void verifyTopologicalConstraints(const Match &match, Graph &graph) {
         c_ops.push_back(graph.getOp(opid)->debugName());
       }
 
-      throw error("Internal Logic Error: Internal constraints between match "
+      throw internal_error("Internal constraints between match "
                   "instance \n{} \nand \n{} \n do not match "
                   "(Ops: {} {}, {} {}).",
                   c0,

@@ -22,11 +22,11 @@ ReshapeOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
 view::RegMap ReshapeBaseOp::fwdRegMap(InIndex inIndex,
                                       OutIndex outIndex) const {
   if (inIndex != 0 || outIndex != 0) {
-    throw error("Internal Logic Error in ReshapeBaseOp::fwdRegMap."
-                "Received input index {} but only 0 allowed, "
-                "This for Op {}, ",
-                inIndex,
-                str());
+    throw internal_error("[ReshapeBaseOp::fwdRegMap] "
+                         "Received input index {} but only 0 allowed, "
+                         "This for Op {}, ",
+                         inIndex,
+                         str());
   }
   auto inRegion    = view::Region::getFull(inInfo(getInIndex()).shape());
   auto outRegion   = view::Region::getFull(outInfo(getOutIndex()).shape());
@@ -42,11 +42,11 @@ view::RegMap ReshapeBaseOp::fwdRegMap(InIndex inIndex,
 view::RegMap ReshapeBaseOp::bwdRegMap(InIndex inIndex,
                                       OutIndex outIndex) const {
   if (inIndex != 0 || outIndex != 0) {
-    throw error("Internal Logic Error in ReshapeBaseOp::bwdRegMap."
-                "Received input index {} but only 0 allowed, "
-                "This for Op {}, ",
-                inIndex,
-                str());
+    throw internal_error("[ReshapeBaseOp::bwdRegMap] "
+                         "Received input index {} but only 0 allowed, "
+                         "This for Op {}, ",
+                         inIndex,
+                         str());
   }
   auto inRegion    = view::Region::getFull(inInfo(getInIndex()).shape());
   auto outRegion   = view::Region::getFull(outInfo(getOutIndex()).shape());

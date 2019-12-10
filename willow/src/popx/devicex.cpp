@@ -511,12 +511,12 @@ PopTensors::PopTensors(const Ir &ir_) : ir(ir_) {}
 void PopTensors::insert(TensorId id, const poplar::Tensor &pt) {
   auto found = tensors_.find(id);
   if (found != tensors_.end()) {
-    throw error("ILE: poplar::Tensor " + id + " already in map");
+    throw internal_error("poplar::Tensor " + id + " already in map");
   }
 
   if (!ir.containsTensor(id)) {
-    throw error("ILE: no tensor named " + id +
-                " in ir, is this a valid poplar::Tensor?");
+    throw internal_error(
+        "no tensor named {} in ir, is this a valid poplar::Tensor?", id);
   }
 
   // confirm shapes agree (up to squeezing out the extra 1s)
@@ -620,8 +620,8 @@ PipelineInfo::PipelineInfo(int _batchesPerStep,
     mainCycles = bps - fillFlushPhaseCycles;
   }
   if (mainCycles < 1) {
-    throw error(
-        "ILE: mainCycles should not be less than 1. Current value is {}.",
+    throw internal_error(
+        "mainCycles should not be less than 1. Current value is {}.",
         mainCycles);
   }
 
@@ -854,7 +854,7 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
   if (!opx) {
     if (op->opid == Onnx::Operators::Constant_1 ||
         op->opid == Onnx::Operators::Constant_9) {
-      throw error("ILE: No Opx for {}", op->opid);
+      throw internal_error("No Opx for {}", op->opid);
     } else {
       auto pattern = PreAliasPatternManager::opReplacementPattern(op);
       if (pattern != "") {
@@ -1599,7 +1599,7 @@ void Devicex::addOpTasks(PriTasks &tasks) {
         addGraph(calledGraph);
       }
       if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
-        throw error("ILE: non-main Graph Op which is RECOMPUTE");
+        throw internal_error("non-main Graph Op which is RECOMPUTE");
       }
       allOps.push_back(op);
     }
@@ -1836,7 +1836,7 @@ void Devicex::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
 
     // Pre-loss, not recompute or checkpoint
     else {
-      throw error("ILE: Unrecognised recompute type");
+      throw internal_error("Unrecognised recompute type");
     }
     mainGraphOpRegistry[taskId].push_back(op);
   }
@@ -1846,9 +1846,9 @@ void Devicex::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
     if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
       std::stringstream oss;
       op->append(oss);
-      throw error("ILE: Recompute Op which is ScheduledPreLoss::No is "
-                  "not permitted: \n{}",
-                  oss.str());
+      throw internal_error("Recompute Op which is ScheduledPreLoss::No is "
+                           "not permitted: \n{}",
+                           oss.str());
     }
 
     // 2 special case Ops when their is a gradient accumulator / velocity.
@@ -1917,8 +1917,8 @@ void Devicex::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
   }
 
   else {
-    throw error("ILE: Unknown SchedulePreLoss in prepare, should "
-                "updateVertices have been called recently?");
+    throw internal_error("Unknown SchedulePreLoss in prepare, should "
+                         "updateVertices have been called recently?");
   }
 }
 
@@ -2825,11 +2825,12 @@ PriTask Devicex::toHostTask(Tensor *tensor,
     auto nElmsStream = poplarStream.numElements();
     auto nElmsTensor = tensors.get(tensor->id).numElements();
     if (nElmsStream != nElmsTensor) {
-      std::ostringstream oss;
-      oss << "Internal Logic Error in Devicex::toHostTask. "
-          << "The poplar::Tensor " << tensor->id << " has " << nElmsTensor
-          << ", whereas the poplar::Stream has " << nElmsStream << '.'
-          << " These should be the same.";
+      throw internal_error("[Devicex::toHostTask] "
+                           "The poplar::Tensor {} has {}, whereas the "
+                           "poplar::Stream has {}. These should be the same.",
+                           tensor->id,
+                           nElmsTensor,
+                           nElmsStream);
     }
 
     seqs[&sq].add(poplar::program::Copy(

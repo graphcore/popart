@@ -181,10 +181,11 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
   for (Op *op : graph.getOpSchedule({})) {
 
     if (op->toLoss != PathToLoss::Undefined) {
-      throw error("ILE: Op {} has been annotated with PathToLoss "
-                  "information, AutoVirtualGraph::apply should be applied "
-                  "before the final loss is grown though",
-                  op->str());
+      throw internal_error(
+          "Op {} has been annotated with PathToLoss "
+          "information, AutoVirtualGraph::apply should be applied "
+          "before the final loss is grown though",
+          op->str());
     }
 
     // Find potential split nodes

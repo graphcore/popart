@@ -1477,6 +1477,8 @@ PYBIND11_MODULE(popart_core, m) {
   // to do the type inference.  This prevents some inter dynamic library type
   // inference issues on OS/X
   static py::exception<popart::error> ePopart(m, "popart_exception");
+  static py::exception<popart::internal_error> ePopartInternal(
+      m, "popart_internal_exception");
   static py::exception<poplar::poplar_error> ePoplar(m, "poplar_exception");
   static py::exception<poputil::poplibs_error> ePoplibs(m, "poplibs_exception");
 
@@ -1487,6 +1489,9 @@ PYBIND11_MODULE(popart_core, m) {
       switch (popart::getErrorSource(e)) {
       case popart::ErrorSource::popart:
         ePopart(e.what());
+        return;
+      case popart::ErrorSource::popart_internal:
+        ePopartInternal(e.what());
         return;
       case popart::ErrorSource::poplar:
         ePoplar(e.what());

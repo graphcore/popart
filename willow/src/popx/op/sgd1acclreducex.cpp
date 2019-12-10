@@ -32,8 +32,9 @@ void SGD1AcclReduceOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   else {
-    throw error("ILE: SGD1AcclReduceOp should not be present as replication "
-                "factor is 1");
+    throw internal_error(
+        "SGD1AcclReduceOp should not be present as replication "
+        "factor is 1");
   }
 
   // reference accl/velocity returned

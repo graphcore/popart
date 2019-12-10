@@ -48,11 +48,11 @@ view::Region BaseSliceOp::getFullInRegion() const {
 
 view::RegMap BaseSliceOp::fwdRegMap(InIndex inIndex, OutIndex outIndex) const {
   if (inIndex != 0 || outIndex != 0) {
-    throw error("Internal Logic Error in BaseSliceOp::fwdRegMap."
-                "Received input index {} but only 0 allowed, "
-                "This for Op {}, ",
-                inIndex,
-                str());
+    throw internal_error(
+        "[BaseSliceOp::fwdRegMap] Received input index {} but only 0 allowed, "
+        "This for Op {}, ",
+        inIndex,
+        str());
   }
   auto fullInRegion = getFullInRegion();
 
@@ -72,11 +72,12 @@ view::RegMap BaseSliceOp::fwdRegMap(InIndex inIndex, OutIndex outIndex) const {
 
 view::Regions BaseSliceOp::uses(InIndex inIndex) const {
   if (inIndex != 0) {
-    throw error("Internal Logic Error in BaseSliceOp::uses. "
-                "BaseSliceOp has has input index {}, but only 0 permitted. "
-                "This for op ",
-                inIndex,
-                str());
+    throw internal_error(
+        "[BaseSliceOp::uses] "
+        "BaseSliceOp has has input index {}, but only 0 permitted. "
+        "This for op ",
+        inIndex,
+        str());
   }
   return {getFullInRegion()};
 }
@@ -104,11 +105,11 @@ view::Region BaseSliceOp::getFullOutRegion() const {
 
 view::RegMap BaseSliceOp::bwdRegMap(InIndex inIndex, OutIndex outIndex) const {
   if (inIndex != 0 || outIndex != 0) {
-    throw error("Internal Logic Error in BaseSliceOp::bwdRegMap. "
-                "Received input index {} but only 0 allowed. "
-                "This for Op {}. ",
-                inIndex,
-                str());
+    throw internal_error("[BaseSliceOp::bwdRegMap] "
+                         "Received input index {} but only 0 allowed. "
+                         "This for Op {}. ",
+                         inIndex,
+                         str());
   }
 
   auto fullOutRegion = getFullOutRegion();
@@ -298,8 +299,8 @@ void BaseSliceOp::setup() {
 }
 
 std::vector<std::unique_ptr<Op>> SliceInplaceOp::getGradOps() {
-  throw error(
-      "Internal Logic Error in SliceInplaceOp::getGradOps. "
+  throw internal_error(
+      "[SliceInplaceOp::getGradOps] "
       "All gradients should be generated before any inplacing is performed. "
       "This for Op {}",
       str());
@@ -307,11 +308,11 @@ std::vector<std::unique_ptr<Op>> SliceInplaceOp::getGradOps() {
 
 view::Regions SliceInplaceOp::aliases(InIndex in, OutIndex) const {
   if (in != 0) {
-    throw error("Internal Logic Error in SliceInplaceOp::aliases. "
-                "BaseSliceOp has no input index {}, only 0 permitted. "
-                "This for Op {}",
-                in,
-                str());
+    throw internal_error("[SliceInplaceOp::aliases] "
+                         "BaseSliceOp has no input index {}, only 0 permitted. "
+                         "This for Op {}",
+                         in,
+                         str());
   }
   return {getFullInRegion()};
 }

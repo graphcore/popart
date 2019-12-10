@@ -280,8 +280,8 @@ MergeLooseThreshold::getFinal(const Graph &g) const {
     }
   }
   if (switchIndex < 0) {
-    throw error(
-        "ILE: failed to set switchIndex, is the graph in training mode?");
+    throw internal_error(
+        "failed to set switchIndex, is the graph in training mode?");
   }
 
   // for every tensor which is
@@ -320,7 +320,7 @@ MergeLooseThreshold::getFinal(const Graph &g) const {
   }
 
   if (cumMemFwdLiveForBwd[opSched.size() - 1] != 0) {
-    throw error("ILE: expected final cumulative memory to be zero");
+    throw internal_error("expected final cumulative memory to be zero");
   }
 
   // An estimate of how much memory there is,  to use for delaying weight

@@ -265,7 +265,7 @@ std::unique_ptr<Op> Graph::addOp(const Node &node) {
     return p;
   else {
     if (node.op_type() == Onnx::AiOnnx::OpSet9::Constant.type) {
-      throw error("ILE. Constant Ops are not to be added");
+      throw internal_error("Constant Ops are not to be added");
     } else {
       throw error("No class for {}.{}:{}",
                   (node.domain() == "" ? Domain::ai_onnx : node.domain()),
@@ -278,7 +278,7 @@ std::unique_ptr<Op> Graph::addOp(const Node &node) {
 void Graph::eraseOp(OpId opid) {
   auto found = ops.find(opid);
   if (found == ops.end()) {
-    throw error("ILE: no op " + std::to_string(opid) + " to erase");
+    throw internal_error("no op {} to erase", std::to_string(opid));
   }
   // Clean up topo cons for removed op, because the caller can't be trusted
   // to clean this up properly, resulting in horrible accidents.
@@ -520,8 +520,8 @@ Graph::getLiveSets(const std::vector<Op *> &topoOps) const {
   for (Op *newOp : topoOps) {
     for (Op *isEarlier : waiting[newOp]) {
       if (live.count(isEarlier) == 0) {
-        throw error(
-            "ILE: Op {} should still be live (newOp waits for its output)",
+        throw internal_error(
+            "Op {} should still be live (newOp waits for its output)",
             isEarlier->str());
       }
       --nWaiting[isEarlier];

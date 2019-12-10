@@ -14,11 +14,11 @@ TransposeBaseOp::TransposeBaseOp(const OperatorIdentifier &_opid,
 
 view::RegMap TransposeBaseOp::fwdRegMap(InIndex inIndex, OutIndex) const {
   if (inIndex != 0) {
-    throw error("Internal Logic Error in TransposeBaseOp::fwdRegMap."
-                "Received input index {} but only 0 allowed, "
-                "This for Op {}, ",
-                inIndex,
-                str());
+    throw internal_error("[TransposeBaseOp::fwdRegMap] "
+                         "Received input index {} but only 0 allowed, "
+                         "This for Op {}, ",
+                         inIndex,
+                         str());
   }
   auto emptyRegion = view::Region::getEmpty(outRank(getOutIndex()));
   auto permutation = getPerm();
@@ -32,11 +32,11 @@ view::RegMap TransposeBaseOp::fwdRegMap(InIndex inIndex, OutIndex) const {
 
 view::RegMap TransposeBaseOp::bwdRegMap(InIndex inIndex, OutIndex) const {
   if (inIndex != 0) {
-    throw error("Internal Logic Error in TransposeBaseOp::bwdRegMap."
-                "Received input index {} but only 0 allowed, "
-                "This for Op {}, ",
-                inIndex,
-                str());
+    throw internal_error("[TransposeBaseOp::bwdRegMap] "
+                         "Received input index {} but only 0 allowed, "
+                         "This for Op {}, ",
+                         inIndex,
+                         str());
   }
   auto emptyRegion = view::Region::getEmpty(inRank(getInIndex()));
   auto permutation = generateReversePermutation();

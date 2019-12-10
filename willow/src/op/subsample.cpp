@@ -15,11 +15,11 @@ namespace popart {
 view::RegMap SubsampleBaseOp::fwdRegMap(InIndex inIndex,
                                         OutIndex outIndex) const {
   if (inIndex != 0 || outIndex != 0) {
-    throw error("Internal Logic Error in SubsampleBaseOp::fwdRegMap."
-                "Received input index {} but only 0 allowed, "
-                "This for Op {}, ",
-                inIndex,
-                str());
+    throw internal_error("[SubsampleBaseOp::fwdRegMap] "
+                         "Received input index {} but only 0 allowed, "
+                         "This for Op {}, ",
+                         inIndex,
+                         str());
   }
   // being conservative and returning the full region,
   // even for non-full input region :
@@ -36,11 +36,11 @@ view::RegMap SubsampleBaseOp::fwdRegMap(InIndex inIndex,
 view::RegMap SubsampleBaseOp::bwdRegMap(InIndex inIndex,
                                         OutIndex outIndex) const {
   if (inIndex != 0 || outIndex != 0) {
-    throw error("Internal Logic Error in SubsampleBaseOp::bwdRegMap."
-                "Received input index {} but only 0 allowed, "
-                "This for Op {}, ",
-                inIndex,
-                str());
+    throw internal_error("[SubsampleBaseOp::bwdRegMap] "
+                         "Received input index {} but only 0 allowed, "
+                         "This for Op {}, ",
+                         inIndex,
+                         str());
   }
   auto inRegion    = view::Region::getFull(inInfo(getInIndex()).shape());
   auto emptyRegion = view::Region::getEmpty(inRank(getInIndex()));

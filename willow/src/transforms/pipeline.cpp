@@ -198,7 +198,7 @@ Op *getStashReferenceOp(Tensor *t) {
 
 std::string zeroCandidatesError(Tensor *t, Op *stashRefOp) {
   std::stringstream ss;
-  ss << "ILE: No candidates for restore op.";
+  ss << "No candidates for restore op.";
 
   ss << logging::format("\nTensor: {}", t->id);
   if (t->hasProducer()) {
@@ -318,7 +318,7 @@ Op *getRestoreReferenceOp(Tensor *t, Op *stashRefOp) {
   }
 
   if (restoreCandidates.size() == 0) {
-    throw error(zeroCandidatesError(t, stashRefOp));
+    throw internal_error(zeroCandidatesError(t, stashRefOp));
   }
 
   // Check all candidates have the same pipeline stage
@@ -344,7 +344,8 @@ void chainCopies(std::vector<IpuCopyOp *> &copies) {
     if (c->input->n() > 1) {
       // Chaining copies with more than 1 input is possible, but I don't think
       // it will ever occur.
-      throw error("ILE: Attempting to chain a copy with more than one input.");
+      throw internal_error(
+          "Attempting to chain a copy with more than one input.");
     }
   }
 
@@ -729,7 +730,7 @@ bool Pipeline::apply(Graph &graph) const {
       if (delta != 1 && delta != -1) {
         std::stringstream ss;
         ss << logging::format(
-            "ILE: IpuCopy {} is not contiguous. It copies from IPU {} to "
+            "IpuCopy {} is not contiguous. It copies from IPU {} to "
             "IPU {}. Failed to contiguate all IpuCopyOps",
             ipuCopyOp->debugName(),
             sourceIpu,
@@ -742,7 +743,7 @@ bool Pipeline::apply(Graph &graph) const {
                               ipuCopyOp->outTensor(0)->str());
         ss << logging::format(
             "\nout tensor 0 lowest consumer pipeline stage: {}", destIpu);
-        throw error(ss.str());
+        throw internal_error(ss.str());
       }
     }
   }

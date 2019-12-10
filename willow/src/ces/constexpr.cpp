@@ -173,7 +173,7 @@ std::unique_ptr<ConstExprOp> ConstExprOpManager::createConstExprOp(Op *op) {
   if (it2 != self.constExprOpMap.end()) {
     return it2->second(op);
   } else {
-    throw error("ILE: No ConstExpr implementation of {}. ", op->opid.type);
+    throw internal_error("No ConstExpr implementation of {}. ", op->opid.type);
   }
 }
 
