@@ -20,6 +20,9 @@ public:
 
   int64_t virtual_graph_id = 0;
 
+  // Becomes true when the subgraph is first split over IPUs
+  bool has_been_split = false;
+
   std::pair<bool, OpId> best_split(float split_cost);
 };
 

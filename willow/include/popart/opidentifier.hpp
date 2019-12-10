@@ -179,6 +179,7 @@ const static AiGraphcoreOpIdV1 GroupNormalizationGrad("GroupNormalizationGrad");
 // constexpr static char HardSigmoid[] = "HardSigmoid";
 // constexpr static char Hardmax[] = "Hardmax";
 const static AiGraphcoreOpIdV1 IdentityGrad("IdentityGrad");
+const static AiGraphcoreOpIdV1 IdentityLossGrad("IdentityLossGrad");
 // constexpr static char If[] = "If";
 const static AiGraphcoreOpIdV1
     InstanceNormalizationGrad("InstanceNormalizationGrad");

@@ -8,13 +8,15 @@
 #include <popart/tensor.hpp>
 #include <popart/transforms/auto_virtual_graph.hpp>
 
+using SubgraphId = int;
+
 namespace popart {
 
 std::pair<bool, OpId> Subgraph::best_split(float split_cost) {
   auto lb_node = split_nodes.lower_bound(split_cost);
 
   if (lb_node == split_nodes.end()) {
-    return {false, lb_node->second};
+    return {false, -1};
   }
 
   auto best_node = lb_node;
@@ -116,17 +118,17 @@ float AutoVirtualGraph::costFn(Op *op,
 //
 // 1.1) Separate graph into subgraphs
 //   - Create a subgraph for each consumer of each dataStreamTensor (Inputs to
-//   graph)
+//     graph)
 //   - Add all consuming Ops to its parent subgraph
 //   - If an Op consumes from more than one subgraph, create a new subgraph for
-//   it.
+//     it.
 // 1.2) Find split nodes in subgraphs
 //   - Find nodes in the subgraph where all data collapses into a single Op.
 // 2) Calculate a cost for Op.
 //   - Keep a cumulative cost of the whole graph.
 //   - Keep a cumulative cost of each subgraph.
 //   - When saving a potential split node, save the cumulative cost of that
-//   subgraph up to the node.
+//     subgraph up to the node.
 // 3) Subgraphs have been created in topological order, so..
 //   - Place subgraphs on a virtualGraph starting with 0.
 //   - If the total cost of a subgraph is more than the desired
@@ -156,9 +158,9 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
 
   float cumulative_cost = 0.f;
   std::vector<Subgraph> subgraphs;
-  std::map<OpId, int> node_subgraph_map;
+  std::map<OpId, SubgraphId> node_subgraph_map;
 
-  int next_subgraph_id = 0;
+  SubgraphId next_subgraph_id = 0;
 
   auto startNewSubgraph =
       [&node_subgraph_map, &subgraphs, &next_subgraph_id](OpId conId) {
@@ -207,7 +209,7 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
     // Keep a cumulative cost of each subgraph.
     subgraph.cost += op_cost;
 
-    // Op is a split in the subgraph
+    // Op is a split in the subgraph, following rule 1.1 (see above)
     if (subgraph.candidates.erase(op->id) && subgraph.candidates.empty()) {
       subgraph.split_nodes.insert({subgraph.cost, op->id});
       logging::transform::trace(
@@ -257,7 +259,7 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
     }
   }
 
-  int id = 0;
+  SubgraphId id = 0;
   for (auto subgraph : subgraphs) {
     logging::transform::trace("Subgraph {} cost {} splits {}",
                               id,
@@ -268,42 +270,69 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
   logging::transform::trace("Total graph cost {}", cumulative_cost);
 
   // Find best splits for the number of ipus
-  float total_subgraph_costs   = 0;
-  int64_t virtual_graph_id     = 0;
-  int subgraph_id              = 0;
-  bool subgraph_has_been_split = false;
+  float total_subgraph_costs = 0;
+  int64_t virtual_graph_id   = 0;
+  SubgraphId subgraph_id     = 0;
   for (size_t i = 1; i <= num_ipus; i++) {
+    logging::transform::trace(
+        "[AutoVirtualGraph] Considering what to assign to IPU: {}", i - 1);
     float split_ratio = float(i) / float(num_ipus);
     float split_cost  = split_ratio * cumulative_cost;
     while (subgraph_id < subgraphs.size()) {
       auto &subgraph = subgraphs.at(subgraph_id);
 
-      float d = (subgraph.cost + total_subgraph_costs) - split_cost;
-      if (d > 0 && i != num_ipus) {
+      // How do we assign the current subgraph to current IPU?
+      // In one of four ways:
+      // 1) Fill budget for this IPU by assigning a split of this subgraph
+      // 2) Fill budget for this IPU by assigning rest of this subgraph
+      // 3) Fill budget for this IPU by assigning entirety of this subgraph
+      // 4) Assign entirety of this subgraph to this IPU, with room to spare
+      // The below algorithm covers there four cases together.
+
+      bool above_ipu_cost_budget =
+          (subgraph.cost + total_subgraph_costs) > split_cost;
+
+      // Design decision: Always put a zero-cost subgraph on the current IPU.
+      // It is possible that assigning the previous subgraph split has already
+      // taken us over the cost budget for this IPU. If this subgraph were an
+      // empty subgraph (therefore with no valid splits) we would end up with
+      // an empty IPU. Always putting a zero-cost subgraph on the current IPU
+      // avoids this issue. TODO T13956 : Avoid this problem more elegantly
+      above_ipu_cost_budget = above_ipu_cost_budget && (subgraph.cost > 0);
+
+      bool split_at_end =
+          (subgraph.cost + total_subgraph_costs) - split_cost == 0.0f;
+      if (above_ipu_cost_budget && i != num_ipus) {
         // Subgraph is bigger than the desired split
         // Find a split in the subgraph that best matches
         // the amount needed to reach split_cost
         // But not if it's the last IPU
         auto split = subgraph.best_split(split_cost - total_subgraph_costs);
+
         if (split.first) {
+          // A split has been found
           subgraph.split_nodes.erase(split.second);
           subgraph.final_splits.insert(split.second);
-          logging::transform::info("[AutoVirtualGraph] Split node: {}",
+          logging::transform::trace(
+              "[AutoVirtualGraph]   Assigning a split of subgraph: {}",
+              subgraph_id);
+          logging::transform::info("[AutoVirtualGraph]   Split node: {}",
                                    graph.getOp(split.second)->debugName());
 
           // Does the virtual_graph_id need setting?
-          if (!subgraph_has_been_split) {
+          if (!subgraph.has_been_split) {
             subgraph.virtual_graph_id = virtual_graph_id;
           }
-          subgraph_has_been_split = true;
+          subgraph.has_been_split = true;
 
           virtual_graph_id++;
           break;
         } else {
           // Could not find split node so place it at the end of the subgraph.
-          logging::transform::trace("Could not find split node of cost {}. ",
-                                    split_cost - total_subgraph_costs);
-          d = 0.f;
+          logging::transform::trace(
+              "[AutoVirtualGraph]   Could not find split node of cost {}",
+              split_cost - total_subgraph_costs);
+          split_at_end = true;
         }
       }
       // The whole the subgraph consumed.
@@ -312,16 +341,16 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
       subgraph_id++;
 
       // Does the virtual_graph_id need setting?
-      if (!subgraph_has_been_split) {
+      if (!subgraph.has_been_split) {
         subgraph.virtual_graph_id = virtual_graph_id;
       }
-      subgraph_has_been_split = false;
 
       // Split at the end of the subgraph
       // But not if it's the end of the graph
-      if (d == 0.0f && i != num_ipus && subgraph_id != subgraphs.size()) {
-        logging::transform::info(
-            "[AutoVirtualGraph] Split at end of subgraph: {}", subgraph_id - 1);
+      if (split_at_end && i != num_ipus && subgraph_id != subgraphs.size()) {
+        logging::transform::info("[AutoVirtualGraph]   Assigning remainder of "
+                                 "subgraph: {}. Split at end",
+                                 subgraph_id - 1);
         virtual_graph_id++;
         break;
       }
@@ -350,7 +379,6 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
   for (auto &loss : ir.losses) {
     loss->virtualGraph(virtual_graph_id);
   }
-
   return true;
 }
 

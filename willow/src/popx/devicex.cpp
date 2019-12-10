@@ -367,12 +367,13 @@ void Devicex::remoteBufferWeightsToHost() {
     Tensor *tensor = ir().getTensor(initId);
     if (tensor->isCached()) {
       logging::devicex::debug("remoteBufferWeightsToHost: {}", initId);
-      // auto remoteBufferInfo = tensor->getRemoteBufferInfo();
-      // char *data0           = d2hWeightBuffers[initId].data();
+      auto remoteBufferInfo = tensor->getRemoteBufferInfo();
+      char *data0           = d2hWeightBuffers[initId].data();
       // Weight should be the same for each replica, only return 0
-      // TODO: Enable when Poplar is ready
-      // pEngine->copyFromRemoteBuffer(getRemoteBuffer(remoteBufferInfo.first),
-      //                              data0, remoteBufferInfo.second, 0);
+      pEngine->copyFromRemoteBuffer(getRemoteBuffer(remoteBufferInfo.first),
+                                    data0,
+                                    remoteBufferInfo.second,
+                                    0);
     }
   }
 }
@@ -744,16 +745,15 @@ void Devicex::remoteBufferWeightsFromHost() {
     Tensor *tensor = ir().getTensor(initId);
     if (tensor->isCached()) {
       logging::devicex::debug("remoteBufferWeightsFromHost: {}", initId);
-      // char *data0           = static_cast<char
-      // *>(tensor->tensorData()->data()); auto remoteBufferInfo =
-      // tensor->getRemoteBufferInfo();
+      char *data0           = static_cast<char *>(tensor->tensorData()->data());
+      auto remoteBufferInfo = tensor->getRemoteBufferInfo();
       for (unsigned replica_id = 0; replica_id < getReplicationFactor();
            ++replica_id) {
         // Weights to every replica
-        // TODO: Enable when Poplar is ready
-        // pEngine->copyToRemoteBuffer(
-        //    data0, getRemoteBuffer(remoteBufferInfo.first),
-        //    remoteBufferInfo.second, replica_id);
+        pEngine->copyToRemoteBuffer(data0,
+                                    getRemoteBuffer(remoteBufferInfo.first),
+                                    remoteBufferInfo.second,
+                                    replica_id);
       }
     }
   }
@@ -1502,9 +1502,8 @@ void Devicex::createRemoteBuffers() {
         size,
         repeats);
 
-    // TODO: Enable when Poplar is ready
-    // remoteBuffers.insert({info.first, graph().addRemoteBuffer(
-    //    name, type, size, repeats, false)});
+    remoteBuffers.insert(
+        {info.first, graph().addRemoteBuffer(name, type, size, repeats, true)});
   }
 }
 

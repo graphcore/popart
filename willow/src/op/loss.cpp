@@ -5,7 +5,7 @@
 namespace popart {
 
 std::map<std::string, eLoss> initLossMap() {
-  return {{"NLL", eLoss::NLL}, {"L1", eLoss::L1}};
+  return {{"NLL", eLoss::NLL}, {"L1", eLoss::L1}, {"ID", eLoss::ID}};
 }
 
 const std::map<std::string, eLoss> &lossMap() {

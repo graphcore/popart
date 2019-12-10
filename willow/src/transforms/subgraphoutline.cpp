@@ -307,25 +307,62 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
                               Graph &graph,
                               Graph &subgraph) {
 
-  // Copy some attributes from the first op in the instance
-  auto op          = graph.getOp(instance.ops.at(0));
-  auto scope       = op->getScope();
-  auto vgraphid    = op->getOptionalVirtualGraphId();
-  auto phase       = op->getOptionalPingPongPhase();
-  auto batchserial = op->getOptionalBatchSerializedPhase();
-  auto ps          = op->getOptionalPipelineStage();
-  auto recompute   = op->settings.recomputeType;
+  // Copy some attributes with heuristics from the instance ops
+  boost::optional<Scope> scope;
+  boost::optional<VGraphId> ipu_copy_vgid;
+  boost::optional<VGraphId> vgid;
+  boost::optional<PingPongPhase> phase;
+  boost::optional<BatchSerializedPhase> batchserial;
+  bool conflicting_batchserial = false;
+  boost::optional<PipelineStage> pipeline_stage;
+  boost::optional<RecomputeType> recompute;
+
+  for (const OpId &opid : instance.ops) {
+    Op *op = graph.getOp(opid);
+    if (!scope.is_initialized()) {
+      scope = op->getScope();
+    }
+    IpuCopyOp *copy = dynamic_cast<IpuCopyOp *>(op);
+    if (copy && !ipu_copy_vgid.is_initialized()) {
+      ipu_copy_vgid = copy->getSourceIpu();
+    }
+    if (!vgid.is_initialized()) {
+      vgid = op->getOptionalVirtualGraphId();
+    }
+    if (!phase.is_initialized()) {
+      phase = op->getOptionalPingPongPhase();
+    }
+    if (!pipeline_stage.is_initialized()) {
+      pipeline_stage = op->getOptionalPipelineStage();
+    }
+    if (!recompute.is_initialized()) {
+      recompute = op->settings.recomputeType;
+    }
+    if (batchserial.is_initialized() && op->hasBatchSerializedPhase() &&
+        op->getBatchSerializedPhase() != batchserial) {
+      conflicting_batchserial = true;
+    }
+  }
+
+  // Fallback to IPU copy VGID
+  if (!vgid.is_initialized()) {
+    vgid = ipu_copy_vgid;
+  }
+
+  if (conflicting_batchserial) {
+    batchserial.reset();
+  }
 
   // Create the call op. Note that toLoss and fromLoss are set in the
   // constructor
   auto up_call_op         = std::make_unique<CallOp>(graph, subgraph);
   auto call_op_id         = graph.moveIntoGraph(std::move(up_call_op));
   CallOp *call_op         = dynamic_cast<CallOp *>(graph.getOp(call_op_id));
-  call_op->settings.scope = scope;
-  call_op->settings.recomputeType = recompute;
-  call_op->setVirtualGraphId(vgraphid);
+  call_op->settings.scope = scope.get();
+  call_op->settings.recomputeType = recompute.get();
+  call_op->setVirtualGraphId(vgid);
   call_op->setPingPongPhase(phase);
-  call_op->setPipelineStage(ps);
+  call_op->setPipelineStage(pipeline_stage);
   call_op->setBatchSerializedPhase(batchserial);
 
   // Set the position w.r.t loss, if possible. If any of the internal ops

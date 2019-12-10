@@ -79,6 +79,7 @@ public:
   static OutIndex getOutIndex() { return 0; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
+  bool isOutlineable() const final { return false; }
 
 private:
   const NllLoss *nllloss_;
@@ -103,6 +104,7 @@ public:
   static OutIndex getGradOutIndex() { return 1; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
+  bool isOutlineable() const final { return false; }
 
 private:
   const NllLoss *nllloss_;
