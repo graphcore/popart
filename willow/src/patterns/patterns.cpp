@@ -74,11 +74,6 @@ bool PatternNames::contains(const std::string &name) {
   return false;
 }
 
-PreAliasPatternManager &PreAliasPatternManager::getInstance() {
-  static PreAliasPatternManager instance;
-  return instance;
-}
-
 Patterns::Patterns(PatternsLevel level) {
   switch (level) {
 
