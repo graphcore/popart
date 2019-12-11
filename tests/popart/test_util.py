@@ -42,7 +42,7 @@ def acquire_ipu(numIPUs=1, tilesPerIPU=1216):
 def get_compute_sets_from_report(report):
 
     lines = report.split('\n')
-    cs = [x for x in lines if re.search(r' OnTileExecute .*:', x)]
+    cs = [x for x in lines if re.search(r' OnTileExecute:', x)]
     cs = [":".join(x.split(":")[1:]) for x in cs]
     cs = [x.strip() for x in cs]
     return set(cs)
