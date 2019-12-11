@@ -27,7 +27,7 @@ OptimizerValue CompoundScalarHelper::getFromScalarId(const TensorId &optId,
     return getFromWeightId("fudgeCakeSpaghettiBonanza", sgd);
   }
 
-  throw error("ILE: failed to determine optimizer type from id {}", optId);
+  throw internal_error("failed to determine optimizer type from id {}", optId);
 }
 
 TensorId CompoundScalarHelper::getScalarId(const Tensor &w,
@@ -50,10 +50,10 @@ TensorId CompoundScalarHelper::getWeightId(const TensorId &scalarId) const {
                        scalarId.end());
   }
 
-  throw error("ILE in CompoundScalarHelper::getWeightId(.) : failed to find "
-              "substring {} in {}",
-              specificPrefix(),
-              scalarId);
+  throw internal_error("CompoundScalarHelper::getWeightId(.) : failed to find "
+                       "substring {} in {}",
+                       specificPrefix(),
+                       scalarId);
 }
 
 float WeightDecayScaleFactor0Helper::val(const TensorId &weightId,

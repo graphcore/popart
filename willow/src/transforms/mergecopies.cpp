@@ -31,23 +31,25 @@ int64_t getSrcTensorVirtualGraph(const Tensor *t1) {
 
           return t0Id;
         }
-        throw error("ILE: Expected to be able to obtain VirtualGraphId of the "
-                    "source Tensor (t1 = {}) of an IpuCopyOp",
-                    t1->str());
+        throw internal_error(
+            "Expected to be able to obtain VirtualGraphId of the "
+            "source Tensor (t1 = {}) of an IpuCopyOp",
+            t1->str());
       }
-      throw error(
-          "ILE: Expected IpuCopyOp (producer = {}) in MergeCopies::apply to "
+      throw internal_error(
+          "Expected IpuCopyOp (producer = {}) in MergeCopies::apply to "
           "have exactly 1 input Tensor. Is this not the first time this "
           "transformation is being called?",
           producer->str());
     }
-    throw error("ILE: Expected the producer of a Tensor in a copy group to "
-                "be an IpuCopyOp, not an Op of another type ({})",
-                producer->str());
+    throw internal_error("Expected the producer of a Tensor in a copy group to "
+                         "be an IpuCopyOp, not an Op of another type ({})",
+                         producer->str());
   }
-  throw error("ILE: Expected a Tensor in a copy group to have a producer, in "
-              "particular an IpuCopyOp producer. Tensor : {}",
-              t1->str());
+  throw internal_error(
+      "Expected a Tensor in a copy group to have a producer, in "
+      "particular an IpuCopyOp producer. Tensor : {}",
+      t1->str());
 }
 } // namespace
 
@@ -88,7 +90,8 @@ static void mergeCopies(const std::vector<Tensor *> &copy_group, Graph &graph) {
     auto sourceIpu = producer->getSourceIpu(source->id);
 
     if (producer->input->n() != 1) {
-      throw error("ILE: Attempting to merge a copy with more than one input!");
+      throw internal_error(
+          "Attempting to merge a copy with more than one input!");
     }
 
     producer->disconnectInTensor(0, source);

@@ -302,6 +302,9 @@ public:
   // This is true when there are losses and an optimizer.
   bool canTrain() const;
 
+  // returns true if constructBackwards has finished
+  bool hasConstructedBackwards() const;
+
   // returns true if there are initializers in the onnx model
   bool containsInitialisers();
 
@@ -481,6 +484,7 @@ private:
 
   OpId finalLossOpId{-1000};
   bool constructedFinalLoss = false;
+  bool constructedBackwards = false;
 
   ExecutionMode executionMode = ExecutionMode::TRAINING;
 

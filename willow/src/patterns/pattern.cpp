@@ -59,8 +59,8 @@ PreAliasPattern::makeReplacementOp(const OperatorIdentifier &operator_id,
       operator_id, oldOp->getGraph(), getReplacementOpName(oldOp, name));
 
   if (newOp == nullptr) {
-    throw error(
-        "ILE : nullptr for newOp in makeReplacementOp, for op of type "
+    throw internal_error(
+        "nullptr for newOp in makeReplacementOp, for op of type "
         "{} trying to make {}. Possibly need to 'register' the replacement? ",
         oldOp->str(),
         operator_id);

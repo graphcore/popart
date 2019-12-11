@@ -58,11 +58,22 @@ public:
   }
 };
 
+/**
+ * Exception class specific to internal errors
+ * This should be used as an assert; for states where the user should not have
+ * been able to create.
+ */
+class internal_error : public error {
+public:
+  using error::error;
+};
+
 enum class ErrorSource {
-  popart  = 0,
-  poplar  = 1,
-  poplibs = 2,
-  unknown = 3,
+  popart = 0,
+  popart_internal,
+  poplar,
+  poplibs,
+  unknown,
 };
 
 // A specialization of the popart error exception for the case when the device

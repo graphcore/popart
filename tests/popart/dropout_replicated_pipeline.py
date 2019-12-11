@@ -172,8 +172,12 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation):
         userOptions.replicatedGraphCount = replicationFactor
     userOptions.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-    #see (TODO) T12976, prefetching datastreams currently not working (7/11/2019)
+    # TODO https://phabricator.sourcevertex.net/T14035
     userOptions.enablePrefetchDatastreams = False
+    #  passes:
+    userOptions.engineOptions = {"exchange.streamBufferOverlap": "any"}
+    #  fails:
+    #  userOptions.engineOptions = {"exchange.streamBufferOverlap" : "hostRearrangeOnly"}
 
     patterns = popart.Patterns()
     patterns.InPlace = True

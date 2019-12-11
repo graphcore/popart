@@ -66,7 +66,7 @@ void annotateStandard(const Graph &graph) {
 
   int nFwdOps = static_cast<int>(fwdOps.size());
   if (nFwdOps != liveSets.size() || memoryOfLives.size() != nFwdOps) {
-    throw error("ILE : sizes of vectors do not match");
+    throw internal_error("sizes of vectors do not match");
   }
 
   // resnet-50 has more activation memory for early layers, see

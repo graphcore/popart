@@ -340,7 +340,7 @@ std::vector<TensorId> Tensors::getNoProducerIds() const {
 
 void Tensors::insert(TensorId name, std::unique_ptr<Tensor> t) {
   if (M.find(name) != M.end()) {
-    throw error("ILE : tensor " + name + " already in M");
+    throw internal_error("tensor {} already in M", name);
   }
   M[name] = std::move(t);
 }

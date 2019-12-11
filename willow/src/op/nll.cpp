@@ -48,7 +48,7 @@ NllLoss::NllLoss(TensorId probs,
     : Loss({probs, label}, output, rt) {
   // confirming that I haven't miswired things
   if (input(getProbsInIndex()) != probs || input(getLabelInIndex()) != label) {
-    throw error("ILE: mis-wired tensors in calling parent constructor");
+    throw internal_error("mis-wired tensors in calling parent constructor");
   }
 }
 

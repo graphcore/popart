@@ -1,4 +1,6 @@
 #include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/op.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/op/split.hpp>
 #include <popart/patterns/splitoppattern.hpp>
@@ -27,6 +29,12 @@ std::vector<Slice> calculateSlices(const SplitOp &splitOp) {
 } // namespace
 
 bool SplitOpPattern::matches(Op *op) const {
+  // If running a training session. Make sure the splitGradOp has been grown
+  // before removing the fwd op (SplitOp) from the IR so
+  // splitgradoptoconcatpattern can run.
+  if (op->getIr().canTrain() && !op->getIr().hasConstructedBackwards()) {
+    return false;
+  }
   return op->isConvertibleTo<SplitOp>();
 }
 

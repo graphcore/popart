@@ -107,11 +107,12 @@ void Op::setup() { throw error("No setup() for {}", opid); }
 
 void Op::defaultConnectInTensor(InIndex inIndex, TensorId tenId) {
   if (input->hasIndex(inIndex)) {
-    throw error("ILE: error connecting input tensor '{}', {} already has an "
-                "input at index {}",
-                tenId,
-                debugName(),
-                inIndex);
+    throw internal_error(
+        "error connecting input tensor '{}', {} already has an "
+        "input at index {}",
+        tenId,
+        debugName(),
+        inIndex);
   }
 
   Tensor *ptensor = getGraph().getTensors().get(tenId);
@@ -130,20 +131,21 @@ void Op::connectInTensor(InIndex inIndex, TensorId tenId) {
 
 void Op::connectOutTensor(OutIndex outIndex, TensorId tenId) {
   if (output->hasIndex(outIndex)) {
-    throw error("ILE: error connecting output tensor '{}', {} already has an "
-                "output at index {}",
-                tenId,
-                debugName(),
-                outIndex);
+    throw internal_error(
+        "error connecting output tensor '{}', {} already has an "
+        "output at index {}",
+        tenId,
+        debugName(),
+        outIndex);
   }
 
   Tensor *ptensor = getGraph().getTensors().get(tenId);
 
   if (ptensor->hasProducer()) {
-    throw error("ILE: error connecting output tensor '{}' to {}, tensor "
-                "already has a producer",
-                tenId,
-                debugName());
+    throw internal_error("error connecting output tensor '{}' to {}, tensor "
+                         "already has a producer",
+                         tenId,
+                         debugName());
   }
 
   output->insert(outIndex, ptensor);
@@ -161,11 +163,11 @@ void Op::disconnectInTensor(Tensor *tensor) {
 
 void Op::disconnectInTensor(InIndex inIndex, Tensor *tensor) {
   if (inTensor(inIndex) != tensor) {
-    throw error("ILE: error disconnecting input tensor '{}', tensor is not "
-                "input {} of {}",
-                tensor->id,
-                inIndex,
-                debugName());
+    throw internal_error("error disconnecting input tensor '{}', tensor is not "
+                         "input {} of {}",
+                         tensor->id,
+                         inIndex,
+                         debugName());
   }
 
   tensor->consumers.decrement(this);
@@ -178,8 +180,8 @@ void Op::disconnectOutTensor(Tensor *tensor) {
     if (tensor->hasProducer() && tensor->getProducer() == this) {
       tensor->resetProducer(nullptr);
     } else {
-      throw error(
-          "ILE: error disconnecting output, tensor is not produced by this op");
+      throw internal_error(
+          "error disconnecting output, tensor is not produced by this op");
     }
 
     output->erase(idx);
@@ -192,7 +194,8 @@ void Op::disconnectAllInputs() {
     disconnectInTensor(i);
   }
   if (input->n() != 0) {
-    throw error("ILE: Failed to disconnect all inputs from {}", debugName());
+    throw internal_error("Failed to disconnect all inputs from {}",
+                         debugName());
   }
 }
 
@@ -202,17 +205,19 @@ void Op::disconnectAllOutputs() {
     disconnectOutTensor(tensor);
   }
   if (output->n() != 0) {
-    throw error("ILE: Failed to disconnect all outputs from {}", debugName());
+    throw internal_error("Failed to disconnect all outputs from {}",
+                         debugName());
   }
 }
 
 void Op::createAndConnectOutTensor(OutIndex outIndex, TensorId tenId) {
   if (output->hasIndex(outIndex)) {
-    throw error("ILE: error connecting output tensor '{}', {} already has an "
-                "output at index {}",
-                tenId,
-                debugName(),
-                outIndex);
+    throw internal_error(
+        "error connecting output tensor '{}', {} already has an "
+        "output at index {}",
+        tenId,
+        debugName(),
+        outIndex);
   }
 
   tenId = (getScope() / tenId).str();

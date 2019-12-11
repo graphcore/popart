@@ -42,7 +42,7 @@ int64_t NDIndices::flatten_impl(const std::vector<int64_t> &indices) const {
     index += (indices[d] % info.dim(d)) * stride;
   }
   if (index > info.nelms()) {
-    throw error("ILE in flatten : final index too large");
+    throw internal_error("In flatten : final index too large");
   }
   return index;
 }

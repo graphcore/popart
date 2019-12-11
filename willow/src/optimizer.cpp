@@ -447,9 +447,10 @@ bool SGD::validReplacement(const Optimizer &other) const {
 
   auto asSgd = dynamic_cast<const SGD *>(&other);
   if (!asSgd) {
-    throw error("ILE: other has same `type' as this SGD, but cannot be "
-                "dynamically cast to SGD. Has there been a redesign of the "
-                "optimizer classes? if so this needs a rethink");
+    throw internal_error(
+        "other has same `type' as this SGD, but cannot be "
+        "dynamically cast to SGD. Has there been a redesign of the "
+        "optimizer classes? if so this needs a rethink");
   }
 
   logging::ir::debug("Checking loss scaling for compatibility");

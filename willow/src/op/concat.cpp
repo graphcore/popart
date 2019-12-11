@@ -27,8 +27,8 @@ std::unique_ptr<Op> ConcatOp::clone() const {
 
 void ConcatOp::regMapPreChecks(InIndex inIndex) const {
   if (outOffsets.size() != input->tensorMap().size() + 1) {
-    throw error(
-        "ILE in ConcatOp::(fwd/bwd)RegMap, outOffsets not set correctly. It "
+    throw internal_error(
+        "ConcatOp::(fwd/bwd)RegMap, outOffsets not set correctly. It "
         "has size {} and the input tensorMap has size {}, this for Op {}",
         outOffsets.size(),
         input->tensorMap().size(),

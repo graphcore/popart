@@ -50,11 +50,11 @@ PadOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
 
 view::RegMap BasePadOp::fwdRegMap(InIndex inIndex, OutIndex outIndex) const {
   if (inIndex != 0 || outIndex != 0) {
-    throw error("Internal Logic Error in BasePadOp::fwdRegMap."
-                "Received input index {} but only 0 allowed, "
-                "This for Op {}, ",
-                inIndex,
-                str());
+    throw internal_error("[BasePadOp::fwdRegMap] "
+                         "Received input index {} but only 0 allowed, "
+                         "This for Op {}, ",
+                         inIndex,
+                         str());
   }
 
   // add the lower padding dimensions
@@ -72,11 +72,11 @@ view::RegMap BasePadOp::fwdRegMap(InIndex inIndex, OutIndex outIndex) const {
 
 view::RegMap BasePadOp::bwdRegMap(InIndex inIndex, OutIndex outIndex) const {
   if (inIndex != 0 || outIndex != 0) {
-    throw error("Internal Logic Error in BasePadOp::bwdRegMap."
-                "Received input index {} but only 0 allowed, "
-                "This for Op {}, ",
-                inIndex,
-                str());
+    throw internal_error("[BasePadOp::bwdRegMap] "
+                         "Received input index {} but only 0 allowed, "
+                         "This for Op {}, ",
+                         inIndex,
+                         str());
   }
 
   // add the lower padding dimensions
@@ -111,7 +111,7 @@ view::Regions PadInplaceOp::uses(InIndex index) const {
   if (index == 0) {
     return {view::Region::getFull(inShape(index))};
   }
-  throw error("ILE : invalid InIndex to PadInplaceOp::uses");
+  throw internal_error("invalid InIndex to PadInplaceOp::uses");
 }
 
 std::unique_ptr<Op> PadInplaceOp::clone() const {
