@@ -164,6 +164,7 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation):
     userOptions.enablePipelining = True
     userOptions.enableGradientAccumulation = True
     userOptions.accumulationFactor = accumulationFactor
+
     if pipelineRecomputation:
         userOptions.autoRecomputation = popart.RecomputationType.Pipeline
 

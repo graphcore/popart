@@ -183,10 +183,10 @@ bool MatMulPattern::apply(Op *op) const {
   // Transfer existing topoCons
   op->getGraph().topoCons->transfer(op, matmulOp);
 
-  // Tie operations together. Disabled for now due to issues with pipelining.
-  // op->getGraph().topoCons->insert(lhsReshapeOp, matmulOp, true);
-  // op->getGraph().topoCons->insert(rhsReshapeOp, matmulOp, true);
-  // op->getGraph().topoCons->insert(matmulOp, outReshapeOp, true);
+  // Tie operations together.
+  op->getGraph().topoCons->insert(lhsReshapeOp, matmulOp, true);
+  op->getGraph().topoCons->insert(rhsReshapeOp, matmulOp, true);
+  op->getGraph().topoCons->insert(matmulOp, outReshapeOp, true);
 
   return true;
 }
