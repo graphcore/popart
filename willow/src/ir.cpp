@@ -924,13 +924,6 @@ void Ir::prepareImpl(const IrBundle &gb) {
 
   updateVertices();
 
-  for (auto &id_graph : graphs) {
-    auto &graph = getGraph(id_graph.first);
-    applyPreAliasPatterns(graph);
-  }
-
-  updateVertices();
-
   dotCheckpoint(DotCheck::PREALIAS);
 
   if (getSessionOptions().enableOutlining) {

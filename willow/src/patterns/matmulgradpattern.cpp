@@ -1,11 +1,12 @@
 #include <memory>
 #include <numeric>
 #include <popart/graph.hpp>
+#include <popart/op/matmul.hpp>
 #include <popart/op/reducesum.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/op/squeeze.hpp>
 #include <popart/op/transpose.hpp>
-#include <popart/patterns/matmulgradpattern.hpp>
+#include <popart/patterns/pattern.hpp>
 #include <popart/patterns/patterns.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
@@ -13,183 +14,303 @@
 #include <popart/util.hpp>
 
 namespace popart {
+/*
+  The intention of this pattern is to make sure that all matmuls have 3D inputs
+  of the form  [g x n x m ] i.e. groups x row x colum
 
-namespace {
+                                [a,b]     [b,c]
+                                  |         |
+                               RESHAPE   RESHAPE
+    [a,b] [b,c]                   |         |
+      |     |                  [1,a,b]   [1,b,c]
+      |     |                       |     |
+      MAT MUL      ------>          MAT MUL
+         |                             |
+         |                          [1,a,c]
+       [a,c]                           |
+                                    RESHAPE
+                                       |
+                                     [a,c]
+ */
 
-Tensor *configureMatMulOp(MatMulOp *op,
-                          const TensorId lhsTensorId,
-                          const TensorId rhsTensorId,
-                          const TensorId outTensorId) {
-  op->connectInTensor(MatMulOp::getLhsInIndex(), lhsTensorId);
-  op->connectInTensor(MatMulOp::getRhsInIndex(), rhsTensorId);
-  op->createAndConnectOutTensor(MatMulOp::getOutIndex(), outTensorId);
-  op->setup();
-  return op->outTensor(MatMulOp::getOutIndex());
-}
+class MatMulPattern : public PreAliasPattern {
+public:
+  bool matches(Op *op) const override {
+    if (op->opid == Onnx::Operators::MatMul_1 ||
+        op->opid == Onnx::Operators::MatMul_9) {
+      // If the inputs are less than 3d
+      auto lhs = op->inTensor(MatMulOp::getLhsInIndex());
+      auto rhs = op->inTensor(MatMulOp::getRhsInIndex());
 
-std::vector<int64_t> getTransposeDimensions(popart::Tensor *t) {
-  // Transpose the final two dimensions
-  auto rank = t->info.rank();
-
-  if (rank < 2) {
-    throw error("Rank of input {} it too small for "
-                "MatMulGradPattern::getTransposeDimensions",
-                rank);
-  }
-
-  std::vector<int64_t> dims(rank);
-  std::iota(dims.begin(), dims.end(), 0);
-  std::swap(dims[rank - 2], dims[rank - 1]);
-  return dims;
-}
-
-popart::Tensor *configureReshapeOp(ReshapeOp *op,
-                                   const Shape &outShape,
-                                   const TensorId inputTensorId,
-                                   const TensorId outputTensorId,
-                                   const double priority = 0) {
-  op->setOutShape(outShape);
-  op->priority = priority;
-  op->connectInTensor(ReshapeOp::getInIndex(), inputTensorId);
-  op->connectOutTensor(ReshapeOp::getOutIndex(), outputTensorId);
-  op->setup();
-  return op->outTensor(ReshapeOp::getOutIndex());
-}
-
-popart::Tensor *configureReshapeOp(ReshapeOp *op,
-                                   const Shape &outShape,
-                                   const TensorId inputTensorId,
-                                   const double priority = 0) {
-  op->setOutShape(outShape);
-  op->priority = priority;
-  op->connectInTensor(ReshapeOp::getInIndex(), inputTensorId);
-  op->createAndConnectOutTensor(ReshapeOp::getOutIndex(),
-                                createIntermediateTensorId(inputTensorId));
-  op->setup();
-  return op->outTensor(ReshapeOp::getOutIndex());
-}
-
-popart::Tensor *configureTranposeOp(TransposeOp *op,
-                                    const TensorId inputTensorId,
-                                    const Shape &perm,
-                                    const double priority = 0) {
-  op->setPerm(perm);
-  op->priority = priority;
-  op->connectInTensor(TransposeOp::getInIndex(), inputTensorId);
-  op->createAndConnectOutTensor(TransposeOp::getOutIndex(),
-                                createIntermediateTensorId(inputTensorId));
-  op->setup();
-  return op->outTensor(TransposeOp::getOutIndex());
-}
-
-popart::Tensor *configureReduceSumOp(ReduceSumOp *op,
-                                     const TensorId inputTensorId,
-                                     const Shape &axes,
-                                     bool keepDims) {
-  op->setAxes(axes);
-  op->setKeepDims(keepDims);
-  op->connectInTensor(ReduceSumOp::getInIndex(), inputTensorId);
-  op->createAndConnectOutTensor(ReduceSumOp::getOutIndex(),
-                                createIntermediateTensorId(inputTensorId));
-  op->setup();
-  return op->outTensor(ReduceSumOp::getOutIndex());
-}
-
-popart::Tensor *configureSqueezeOp(SqueezeOp *op,
-                                   const TensorId inputTensorId,
-                                   const Shape &axes) {
-  op->setAxes(axes);
-  op->connectInTensor(SqueezeOp::getInIndex(), inputTensorId);
-  op->createAndConnectOutTensor(SqueezeOp::getOutIndex(),
-                                createIntermediateTensorId(inputTensorId));
-  op->setup();
-  return op->outTensor(SqueezeOp::getOutIndex());
-}
-
-Shape getLhsShape(Op *op) {
-  MatMulBaseOp *matmulOp = dynamic_cast<MatMulBaseOp *>(op);
-  return matmulOp->getExpandedLhsShape();
-}
-Shape getRhsShape(Op *op) {
-  MatMulBaseOp *matmulOp = dynamic_cast<MatMulBaseOp *>(op);
-  return matmulOp->getExpandedRhsShape();
-}
-
-} // namespace
-
-bool MatMulPattern::matches(Op *op) const {
-  if (op->opid == Onnx::Operators::MatMul_1 ||
-      op->opid == Onnx::Operators::MatMul_9) {
-    // If the inputs are less than 3d
-    auto lhs = op->inTensor(MatMulOp::getLhsInIndex());
-    auto rhs = op->inTensor(MatMulOp::getRhsInIndex());
-
-    // Match if either inputs is not a minium 3d tensor
-    if (lhs->info.rank() >= 3 && rhs->info.rank() >= 3) {
-      return false;
+      // Match if either inputs is not a minium 3d tensor
+      if (lhs->info.rank() >= 3 && rhs->info.rank() >= 3) {
+        return false;
+      } else {
+        return true;
+      }
     } else {
-      return true;
+      return false;
     }
-  } else {
-    return false;
   }
-}
 
-bool MatMulPattern::apply(Op *op) const {
+  std::vector<const Tensor *> touches(Op *) const override { return {}; }
 
-  MatMulOp *matmulOp = dynamic_cast<MatMulOp *>(op);
+  void configureReshapeOp(ReshapeOp *op,
+                          const Shape &outShape,
+                          const TensorId inputTensorId,
+                          const TensorId outputTensorId,
+                          const double priority = 0) const {
+    op->setOutShape(outShape);
+    op->priority = priority;
+    op->connectInTensor(ReshapeOp::getInIndex(), inputTensorId);
+    op->connectOutTensor(ReshapeOp::getOutIndex(), outputTensorId);
+    op->setup();
+  }
 
-  logging::pattern::debug(
-      "Applying MatMulOp pattern to reshape input from {} x {} to {} x {}",
-      matmulOp->lhsIn()->info.shape(),
-      matmulOp->rhsIn()->info.shape(),
-      matmulOp->getExpandedLhsShape(),
-      matmulOp->getExpandedRhsShape());
+  void configureReshapeOp(ReshapeOp *op,
+                          const Shape &outShape,
+                          const TensorId inputTensorId,
+                          const double priority = 0) const {
+    op->setOutShape(outShape);
+    op->priority = priority;
+    op->connectInTensor(ReshapeOp::getInIndex(), inputTensorId);
+    op->createAndConnectOutTensor(ReshapeOp::getOutIndex(),
+                                  createIntermediateTensorId(inputTensorId));
+    op->setup();
+  }
 
-  // The inputs/output tensors of the original matmul
-  auto lhs = matmulOp->lhsIn();
-  auto rhs = matmulOp->rhsIn();
-  auto out = matmulOp->out();
+  void configureMatMulOp(MatMulOp *op,
+                         const TensorId lhsTensorId,
+                         const TensorId rhsTensorId,
+                         const TensorId outTensorId) const {
+    op->connectInTensor(MatMulOp::getLhsInIndex(), lhsTensorId);
+    op->connectInTensor(MatMulOp::getRhsInIndex(), rhsTensorId);
+    op->createAndConnectOutTensor(MatMulOp::getOutIndex(), outTensorId);
+    op->setup();
+  }
 
-  auto lhsReshapeOp = dynamic_cast<ReshapeOp *>(
-      makeReplacementOpInIr(Onnx::Operators::Reshape_5, op, "LhsReshape"));
-  auto rhsReshapeOp = dynamic_cast<ReshapeOp *>(
-      makeReplacementOpInIr(Onnx::Operators::Reshape_5, op, "RhsReshape"));
-  auto outReshapeOp = dynamic_cast<ReshapeOp *>(
-      makeReplacementOpInIr(Onnx::Operators::Reshape_5, op, "OutReshape"));
+  bool apply(Op *op) const override {
 
-  // expand the lhs input by reshaping it
-  configureReshapeOp(lhsReshapeOp, matmulOp->getExpandedLhsShape(), lhs->id);
+    MatMulOp *matmulOp = dynamic_cast<MatMulOp *>(op);
 
-  // expand the rhs input by reshaping it
-  configureReshapeOp(rhsReshapeOp, matmulOp->getExpandedRhsShape(), rhs->id);
+    logging::pattern::debug(
+        "Applying MatMulOp pattern to reshape input from {} x {} to {} x {}",
+        matmulOp->lhsIn()->info.shape(),
+        matmulOp->rhsIn()->info.shape(),
+        matmulOp->getExpandedLhsShape(),
+        matmulOp->getExpandedRhsShape());
 
-  // disconnect the mat mul from it's original inputs & output
-  matmulOp->disconnectAllInputs();
-  matmulOp->disconnectAllOutputs();
+    // The inputs/output tensors of the original matmul
+    auto lhs = matmulOp->lhsIn();
+    auto rhs = matmulOp->rhsIn();
+    auto out = matmulOp->out();
 
-  // Setup the new matmul for 3d inputs
-  configureMatMulOp(matmulOp,
-                    lhsReshapeOp->outTensor(ReshapeOp::getOutIndex())->id,
-                    rhsReshapeOp->outTensor(ReshapeOp::getOutIndex())->id,
-                    createIntermediateTensorId(out->id));
+    auto lhsReshapeOp = dynamic_cast<ReshapeOp *>(
+        makeReplacementOpInIr(Onnx::Operators::Reshape_5, op, "LhsReshape"));
+    auto rhsReshapeOp = dynamic_cast<ReshapeOp *>(
+        makeReplacementOpInIr(Onnx::Operators::Reshape_5, op, "RhsReshape"));
+    auto outReshapeOp = dynamic_cast<ReshapeOp *>(
+        makeReplacementOpInIr(Onnx::Operators::Reshape_5, op, "OutReshape"));
 
-  // Reshape the output back the the user defined shape
-  configureReshapeOp(outReshapeOp,
-                     out->info.shape(),
-                     matmulOp->outTensor(MatMulOp::getOutIndex())->id,
-                     out->id);
+    // expand the lhs input by reshaping it
+    configureReshapeOp(lhsReshapeOp, matmulOp->getExpandedLhsShape(), lhs->id);
 
-  // Transfer existing topoCons
-  op->getGraph().topoCons->transfer(op, matmulOp);
+    // expand the rhs input by reshaping it
+    configureReshapeOp(rhsReshapeOp, matmulOp->getExpandedRhsShape(), rhs->id);
 
-  // Tie operations together.
-  op->getGraph().topoCons->insert(lhsReshapeOp, matmulOp, true);
-  op->getGraph().topoCons->insert(rhsReshapeOp, matmulOp, true);
-  op->getGraph().topoCons->insert(matmulOp, outReshapeOp, true);
+    // disconnect the mat mul from it's original inputs & output
+    matmulOp->disconnectAllInputs();
+    matmulOp->disconnectAllOutputs();
 
-  return true;
-}
+    // Setup the new matmul for 3d inputs
+    configureMatMulOp(matmulOp,
+                      lhsReshapeOp->outTensor(ReshapeOp::getOutIndex())->id,
+                      rhsReshapeOp->outTensor(ReshapeOp::getOutIndex())->id,
+                      createIntermediateTensorId(out->id));
+
+    // Reshape the output back the the user defined shape
+    configureReshapeOp(outReshapeOp,
+                       out->info.shape(),
+                       matmulOp->outTensor(MatMulOp::getOutIndex())->id,
+                       out->id);
+
+    // Transfer existing topoCons
+    op->getGraph().topoCons->transfer(op, matmulOp);
+
+    // Tie operations together. Disabled for now due to issues with pipelining.
+    op->getGraph().topoCons->insert(lhsReshapeOp, matmulOp, true);
+    op->getGraph().topoCons->insert(rhsReshapeOp, matmulOp, true);
+    op->getGraph().topoCons->insert(matmulOp, outReshapeOp, true);
+
+    return true;
+  }
+};
+
+// The following pattern will expand matmul(lhs/rhs)grad to a transpose and and
+// a matmul Additionally it may need to add a squeeze/reduce/reshape to the
+// output of the matmul to match the output of the grad op.
+
+class MatMulGradPattern : public PreAliasPattern {
+public:
+  std::vector<const Tensor *> touches(Op *) const override { return {}; }
+
+  bool apply(Op *) const override;
+
+  std::vector<int64_t> getTransposeDimensions(popart::Tensor *t) const {
+    // Transpose the final two dimensions
+    auto rank = t->info.rank();
+
+    if (rank < 2) {
+      throw error("Rank of input {} it too small for "
+                  "MatMulGradPattern::getTransposeDimensions",
+                  rank);
+    }
+
+    std::vector<int64_t> dims(rank);
+    std::iota(dims.begin(), dims.end(), 0);
+    std::swap(dims[rank - 2], dims[rank - 1]);
+    return dims;
+  }
+
+  popart::Tensor *configureReshapeOp(ReshapeOp *op,
+                                     const Shape &outShape,
+                                     const TensorId inputTensorId,
+                                     const TensorId outputTensorId,
+                                     const double priority = 0) const {
+    op->setOutShape(outShape);
+    op->priority = priority;
+    op->connectInTensor(ReshapeOp::getInIndex(), inputTensorId);
+    op->connectOutTensor(ReshapeOp::getOutIndex(), outputTensorId);
+    op->setup();
+    return op->outTensor(ReshapeOp::getOutIndex());
+  }
+
+  popart::Tensor *configureReshapeOp(ReshapeOp *op,
+                                     const Shape &outShape,
+                                     const TensorId inputTensorId,
+                                     const double priority = 0) const {
+    op->setOutShape(outShape);
+    op->priority = priority;
+    op->connectInTensor(ReshapeOp::getInIndex(), inputTensorId);
+    op->createAndConnectOutTensor(ReshapeOp::getOutIndex(),
+                                  createIntermediateTensorId(inputTensorId));
+    op->setup();
+    return op->outTensor(ReshapeOp::getOutIndex());
+  }
+
+  popart::Tensor *configureTranposeOp(TransposeOp *op,
+                                      const TensorId inputTensorId,
+                                      const Shape &perm,
+                                      const double priority = 0) const {
+    op->setPerm(perm);
+    op->priority = priority;
+    op->connectInTensor(TransposeOp::getInIndex(), inputTensorId);
+    op->createAndConnectOutTensor(TransposeOp::getOutIndex(),
+                                  createIntermediateTensorId(inputTensorId));
+    op->setup();
+    return op->outTensor(TransposeOp::getOutIndex());
+  }
+
+  popart::Tensor *configureMatMulOp(MatMulOp *op,
+                                    const TensorId lhsTensorId,
+                                    const TensorId rhsTensorId,
+                                    const TensorId outTensorId) const {
+    op->connectInTensor(MatMulOp::getLhsInIndex(), lhsTensorId);
+    op->connectInTensor(MatMulOp::getRhsInIndex(), rhsTensorId);
+    op->createAndConnectOutTensor(MatMulOp::getOutIndex(), outTensorId);
+    op->setup();
+    return op->outTensor(MatMulOp::getOutIndex());
+  }
+
+  popart::Tensor *configureReduceSumOp(ReduceSumOp *op,
+                                       const TensorId inputTensorId,
+                                       const Shape &axes,
+                                       bool keepDims) const {
+    op->setAxes(axes);
+    op->setKeepDims(keepDims);
+    op->connectInTensor(ReduceSumOp::getInIndex(), inputTensorId);
+    op->createAndConnectOutTensor(ReduceSumOp::getOutIndex(),
+                                  createIntermediateTensorId(inputTensorId));
+    op->setup();
+    return op->outTensor(ReduceSumOp::getOutIndex());
+  }
+
+  popart::Tensor *configureSqueezeOp(SqueezeOp *op,
+                                     const TensorId inputTensorId,
+                                     const Shape &axes) const {
+    op->setAxes(axes);
+    op->connectInTensor(SqueezeOp::getInIndex(), inputTensorId);
+    op->createAndConnectOutTensor(SqueezeOp::getOutIndex(),
+                                  createIntermediateTensorId(inputTensorId));
+    op->setup();
+    return op->outTensor(SqueezeOp::getOutIndex());
+  }
+
+  virtual popart::Tensor *getIn(Op *op) const      = 0;
+  virtual popart::Tensor *getGradIn(Op *op) const  = 0;
+  virtual popart::Tensor *getGradOut(Op *op) const = 0;
+
+  virtual InIndex getInIndex() const     = 0;
+  virtual InIndex getGradInIndex() const = 0;
+
+  Shape getLhsShape(Op *op) const {
+    MatMulBaseOp *matmulOp = dynamic_cast<MatMulBaseOp *>(op);
+    return matmulOp->getExpandedLhsShape();
+  }
+  Shape getRhsShape(Op *op) const {
+    MatMulBaseOp *matmulOp = dynamic_cast<MatMulBaseOp *>(op);
+    return matmulOp->getExpandedRhsShape();
+  }
+};
+
+class MatMulLhsGradPattern : public MatMulGradPattern {
+public:
+  bool matches(Op *op) const override {
+    return (op->opid == Onnx::GradOperators::MatMulLhsGrad);
+  }
+
+  virtual popart::Tensor *getIn(Op *op) const override {
+    return op->inTensor(MatMulLhsGradOp::getRhsInIndex());
+  }
+  virtual popart::Tensor *getGradIn(Op *op) const override {
+    return op->inTensor(MatMulLhsGradOp::getGradInIndex());
+  }
+  virtual popart::Tensor *getGradOut(Op *op) const override {
+    return op->outTensor(MatMulLhsGradOp::getOutIndex());
+  }
+
+  virtual InIndex getInIndex() const override {
+    return MatMulOp::getRhsInIndex();
+  }
+
+  virtual InIndex getGradInIndex() const override {
+    return MatMulOp::getLhsInIndex();
+  }
+};
+
+class MatMulRhsGradPattern : public MatMulGradPattern {
+public:
+  bool matches(Op *op) const override {
+    return (op->opid == Onnx::GradOperators::MatMulRhsGrad);
+  }
+
+  virtual popart::Tensor *getIn(Op *op) const override {
+    return op->inTensor(MatMulRhsGradOp::getLhsInIndex());
+  }
+  virtual popart::Tensor *getGradIn(Op *op) const override {
+    return op->inTensor(MatMulRhsGradOp::getGradInIndex());
+  }
+  virtual popart::Tensor *getGradOut(Op *op) const override {
+    return op->outTensor(MatMulRhsGradOp::getOutIndex());
+  }
+
+  virtual InIndex getInIndex() const override {
+    return MatMulOp::getLhsInIndex();
+  }
+  virtual InIndex getGradInIndex() const override {
+    return MatMulOp::getRhsInIndex();
+  }
+};
 
 bool MatMulGradPattern::apply(Op *op) const {
 
@@ -401,14 +522,6 @@ bool MatMulGradPattern::apply(Op *op) const {
   removedIfNotUsed(reshapeOp);
 
   return true;
-}
-
-bool MatMulLhsGradPattern::matches(Op *op) const {
-  return (op->opid == Onnx::GradOperators::MatMulLhsGrad);
-}
-
-bool MatMulRhsGradPattern::matches(Op *op) const {
-  return (op->opid == Onnx::GradOperators::MatMulRhsGrad);
 }
 
 namespace {
