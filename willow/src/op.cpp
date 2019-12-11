@@ -593,6 +593,20 @@ int Op::inRank(InIndex index) const { return inTensor(index)->info.rank(); }
 
 int Op::outRank(InIndex index) const { return outTensor(index)->info.rank(); }
 
+OutIndex Op::outIndex(Tensor *tensor) const {
+  std::vector<OutIndex> outIndices = output->indices(tensor);
+  if (outIndices.size() == 0) {
+    throw internal_error("Cannot find output index of tensor {} for {}",
+                         tensor->id,
+                         debugName());
+  } else if (outIndices.size() > 1) {
+    throw internal_error("Tensor {} is an output of {} at more than one index",
+                         tensor->id,
+                         debugName());
+  }
+  return outIndices.at(0);
+}
+
 std::string Op::str() const {
   std::stringstream ss;
   ss << id << " (" << opid << ")";

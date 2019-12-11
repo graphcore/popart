@@ -336,6 +336,8 @@ public:
   Rank inRank(InIndex index) const;
   Rank outRank(OutIndex index) const;
 
+  OutIndex outIndex(Tensor *) const;
+
   // Virtual method to append the op attributes to the stream. This method
   // should be overridden if the derived class has additional attributes.
   virtual void appendAttributes(OpSerialiserBase &) const;
