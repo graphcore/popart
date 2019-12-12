@@ -404,13 +404,36 @@ Patterns &Patterns::enablePattern(PreAliasPatternType t, bool v) {
 }
 
 std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
+  std::vector<const PreAliasPatternManager::PreAliasPatternInfo *> patternInfos;
+  for (auto &typeIndex_enabled : settings) {
+    auto &typeIndex = typeIndex_enabled.first;
+    auto enabled    = typeIndex_enabled.second;
+    if (enabled) {
+      patternInfos.push_back(&PreAliasPatternManager::getInfo(typeIndex));
+    }
+  }
+
+  // Pattern order is important. Sort the vector to preserve the order given by
+  // the PreAliasPatternType. Custom patterns don't have types, and should be
+  // sorted after the other patterns.
+  std::sort(patternInfos.begin(), patternInfos.end(), [](auto *lhs, auto *rhs) {
+    // If both have a type, sort by type.
+    // If neither have a type, sort by name.
+    // If only one has a type, it should the first of the two.
+    if (lhs->type && rhs->type) {
+      return *lhs->type < *rhs->type;
+    } else if (!lhs->type && !rhs->type) {
+      return lhs->name < rhs->name;
+    } else {
+      // if lhs has a type, rhs must not and lhs should come before rhs
+      // if lhs has no type, rhs must and rhs should come before lhs
+      return static_cast<bool>(lhs->type);
+    }
+  });
 
   std::vector<std::unique_ptr<PreAliasPattern>> patterns;
-
-  for (auto p : settings) {
-    if (p.second) {
-      patterns.emplace_back(PreAliasPatternManager::createPattern(p.first));
-    }
+  for (auto info : patternInfos) {
+    patterns.emplace_back(info->factory());
   }
 
   return patterns;
