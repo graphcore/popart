@@ -84,7 +84,7 @@ def test_weight_update(op_tester):
             np.float32(1.0)
         ]
 
-    op_tester.passes = ['GemmDecomposition', 'PreUniRepl']
+    op_tester.passes = ['GemmDecomposition', 'PreUniRepl', 'MatMulRhsGradOp']
     op_tester.loss_reduction_type = popart.ReductionType.Mean
     op_tester.run(init_builder,
                   reference,
@@ -178,7 +178,7 @@ def test_weight_update_replicated(op_tester):
             np.array([1, 1, 1, 1], np.float32)
         ]
 
-    op_tester.passes = ['GemmDecomposition', 'PreUniRepl']
+    op_tester.passes = ['GemmDecomposition', 'PreUniRepl', 'MatMulRhsGradOp']
     op_tester.options.enableReplicatedGraphs = True
     op_tester.options.replicatedGraphCount = replicationFactor
     op_tester.device = tu.acquire_ipu(replicationFactor)
