@@ -437,7 +437,7 @@ void Graph::setConvFlipWeightConstraints() {
 
 std::vector<Op *> Graph::getOpSchedule(const OpsBeforeKey &gCons) const {
   auto sorted = scheduler->getPartialOpSchedule(
-      gCons, *this, ir.getPingPongPhasesReady());
+      gCons, *this, true, ir.getPingPongPhasesReady());
   if (sorted.size() != getOps().size()) {
 
     // Create a string, listing all of the Ops not scheduled, which will be
@@ -468,8 +468,8 @@ std::vector<Op *> Graph::getOpSchedule(const OpsBeforeKey &gCons) const {
 // Are the Ops with all the dependencies a DAG?
 bool Graph::isSchedulable(const OpsBeforeKey &gCons,
                           bool respectPingPongPhases) const {
-  auto sorted =
-      scheduler->getPartialOpSchedule(gCons, *this, respectPingPongPhases);
+  auto sorted = scheduler->getPartialOpSchedule(
+      gCons, *this, false, respectPingPongPhases);
   return sorted.size() == getOps().size();
 }
 
