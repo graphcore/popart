@@ -1249,24 +1249,30 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
 }
 
 PriTask Devicex::initRandomSeed() {
-  auto seedId = GetRandomSeedOp::getUpdatedSeedTensorId();
+  auto streamedSeedId = GetRandomSeedOp::getStreamedSeedTensorId();
+  auto updatedSeedId  = GetRandomSeedOp::getUpdatedSeedTensorId();
 
-  auto initRandomSeedTask = [this, seedId]() {
+  auto initRandomSeedTask = [this, updatedSeedId]() {
     logging::devicex::debug("Initializing random seed.");
     SequenceMap seqs;
     poprand::setSeed(graph(),
-                     tensors.get(seedId),
+                     tensors.get(updatedSeedId),
                      0,
                      seqs[&progs.setRandomSeedFromHostFragment()],
-                     logging::format("{}/set", seedId));
+                     logging::format("{}/set", updatedSeedId));
     return seqs;
   };
 
+  std::vector<std::pair<TaskId, DependencyType>> deps;
+  deps.push_back(taskWhichCreates(updatedSeedId));
+  // Stream the seed tensor to device before using to set PRNGs
+  deps.push_back({fromHostTaskId(streamedSeedId), DependencyType::SCHEDULER});
+
   return {
-      +1e6,                       // high priority
-      initRandomSeedTaskId(),     // name of this task
-      {taskWhichCreates(seedId)}, // depends on
-      initRandomSeedTask          // what to run when the task is executed
+      +1e6,                   // high priority
+      initRandomSeedTaskId(), // name of this task
+      deps,                   // depends on
+      initRandomSeedTask      // what to run when the task is executed
   };
 }
 
