@@ -19,9 +19,6 @@ SGD1ComboOp::SGD1ComboOp(const TensorId &varId_,
       initSlr1(initialSlr1), withAcclReduce(withAcclReduce_) {}
 
 void SGD1ComboOp::appendOutlineAttributes(OpSerialiserBase &os) const {
-
-  Op::appendAttributes(os);
-
   if (initSmm1.isConst()) {
     os.appendAttribute("const scaled momentum", initSmm1.val());
   }

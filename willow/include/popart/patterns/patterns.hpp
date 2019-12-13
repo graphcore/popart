@@ -50,7 +50,15 @@ public:
 
 // This is a factory class which the patterns are registered with
 class PreAliasPatternManager {
+public:
+  struct PreAliasPatternInfo {
+    boost::optional<PreAliasPatternType> type;
+    bool enabledByDefault;
+    std::string name;
+    std::function<std::unique_ptr<PreAliasPattern>()> factory;
+  };
 
+private:
   PreAliasPatternManager() = default;
 
   // List of all registered pattern types

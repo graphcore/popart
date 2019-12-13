@@ -7,6 +7,7 @@
 #include <set>
 #include <tuple>
 
+#include <boost/lexical_cast.hpp>
 #include <boost/range/algorithm/find.hpp>
 #include <boost/range/algorithm_ext.hpp>
 
@@ -2265,13 +2266,13 @@ void Devicex::prepare() {
   // Do not like the dynamic_cast is there a better way to handle this?
   auto &popDevice = dynamic_cast<DevicexInfo &>(*deviceInfo).getDevice();
 
-  const unsigned numIOTilesPerIpu = 0;
+  const unsigned sharedStructureTilesPerIPU = 0;
   poplar::replication_factor rf(getReplicationFactor());
 
   logging::devicex::debug("Creating graph with replication factor {}",
                           getReplicationFactor());
 
-  pGraph.reset(new poplar::Graph(popDevice, numIOTilesPerIpu, rf));
+  pGraph.reset(new poplar::Graph(popDevice, sharedStructureTilesPerIPU, rf));
 
   popops::addCodelets(graph());
   poplin::addCodelets(graph());
@@ -2298,13 +2299,30 @@ void Devicex::prepare() {
     auto numIPUs     = graph().getTarget().getNumIPUs();
     auto tilesPerIPU = graph().getTarget().getTilesPerIPU();
 
+    int numIOTiles = 0;
+
+    if (const char *env_p = std::getenv("GCL_NUM_IO_TILES")) {
+      numIOTiles = boost::lexical_cast<int>(env_p);
+      if (numIOTiles <= 0 || numIOTiles > 128 || (numIOTiles % 2 != 0)) {
+        throw error(
+            "{} is an invalid number of IO tiles. "
+            "Number of IO tiles must be a positive even number up to 128",
+            numIOTiles);
+      }
+      logging::devicex::info(
+          "Reserving {} IO tiles for GCL collective operations on each IPU",
+          numIOTiles);
+    }
+
     for (unsigned ipu = 0; ipu < numIPUs; ++ipu) {
       unsigned startTile = ipu * tilesPerIPU;
       unsigned endTile   = (ipu + 1) * tilesPerIPU;
       virtualGraphs.emplace_back(
-          graph().createVirtualGraph(startTile, endTile));
-      logging::devicex::info(
-          "Created virtual graph {} from {} to {}", ipu, startTile, endTile);
+          graph().createVirtualGraph(startTile + numIOTiles, endTile));
+      logging::devicex::info("Created virtual graph {} from {} to {}",
+                             ipu,
+                             startTile + numIOTiles,
+                             endTile);
     }
 
     // Make sure that the virtual graph information is valid

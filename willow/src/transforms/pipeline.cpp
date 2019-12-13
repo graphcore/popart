@@ -242,64 +242,157 @@ Op *searchForRestoreReferenceOp(Tensor *t, Op *stashRefOp) {
   return nullptr;
 }
 
-bool notProducedOnIPU(Tensor *tensor) {
+bool isProducedOnIPU(Tensor *tensor) {
   // Has a producer and it's a copy
-  // or
+  if (tensor->hasProducer() &&
+      dynamic_cast<IpuCopyOp *>(tensor->getProducer())) {
+    return false;
+  }
+
   // Doesn't have a producer and it's a stream
-  return (tensor->hasProducer() &&
-          dynamic_cast<IpuCopyOp *>(tensor->getProducer())) ||
-         (!tensor->hasProducer() && tensor->tensorType() == TensorType::Stream);
+  if (!tensor->hasProducer() && tensor->tensorType() == TensorType::Stream) {
+    return false;
+  }
+
+  return true;
+}
+
+std::unique_ptr<IdentityOp> createIdenityCopyOp(Graph &graph,
+                                                Tensor *tensor,
+                                                VGraphId vGraphId,
+                                                PipelineStage pStage) {
+  Op::Settings identitySettings(graph, tensor->id + "_pipelineCopy");
+  auto op = std::make_unique<IdentityOp>(Onnx::Operators::Identity_1,
+                                         identitySettings);
+  if (op == nullptr) {
+    throw error("Failed to create op Identity Copy op, {}",
+                Onnx::Operators::Identity_1);
+  }
+
+  // ensure that op is not inplaced
+  op->settings.inplacePriorityVeto = {{"IdentityInplace", -1}};
+
+  op->setVirtualGraphId(vGraphId);
+  op->setPipelineStage(pStage);
+  return op;
 }
 
 void insertClonesBeforeIpuCopyConsumers(Graph &graph,
                                         Tensor *tensor,
                                         VGraphId src_ipu,
                                         PipelineStage pStage) {
-  TensorId tid = tensor->id;
+  // Modify the IR as shown below.
+  //
+  // Before:
+  //
+  //  Producer
+  //     |
+  //    tensor -------
+  //     |    \       \
+  //     |     \       \
+  //     |      \       \
+  //     |       \       \
+  // Consumer  IpuCopy0  IpuCopy1
+  //
+  // After:
+  //
+  //  Producer
+  //     |
+  //    tensor
+  //     |    \
+  //     |   Identity
+  //     |      \
+  //     |     tenor_copy --
+  //     |        \         \
+  // Consumers   IpuCopy0  IpuCopy1
+
   std::vector<IpuCopyOp *> ipuCopyConsumers;
   for (auto *c : tensor->consumers.getOps()) {
     auto ipuCopyOp = dynamic_cast<IpuCopyOp *>(c);
     if (ipuCopyOp)
       ipuCopyConsumers.push_back(ipuCopyOp);
   }
+
   if (ipuCopyConsumers.size() > 0) {
-    logging::transform::debug("Adding Identity Copy for tensor {}", tid);
-    Op::Settings identitySettings(graph, tid + "_pipelineCopyOp");
-    TensorId identityOutput = tensor->id + "_pipelineCopy";
+    auto identity = createIdenityCopyOp(graph, tensor, src_ipu, pStage);
+    TensorId identityOutput = identity->settings.name;
+    identity->connectInTensor(0, tensor->id);
+    identity->createAndConnectOutTensor(0, identityOutput);
+    identity->setup();
+    graph.moveIntoGraph(std::move(identity));
 
-    auto op = std::make_unique<IdentityOp>(Onnx::Operators::Identity_1,
-                                           identitySettings);
-    // ensure that op is not inplaced
-    op->settings.inplacePriorityVeto = {{"IdentityInplace", -1}};
-
-    if (op == nullptr) {
-      throw error(
-          "Failed to create op {} for insertClonesBeforeIpuCopyConsumers",
-          Onnx::Operators::Identity_1);
-    }
-
-    op->connectInTensor(0, tid);
-    op->createAndConnectOutTensor(0, identityOutput);
-    op->setVirtualGraphId(src_ipu);
-    op->setPipelineStage(pStage);
-
-    op->setup();
-    graph.moveIntoGraph(std::move(op));
     for (auto *ipuCopyOp : ipuCopyConsumers) {
-      InIndex index = -1;
-      for (auto input : ipuCopyOp->input->tensorIdMap()) {
-        if (input.second == tid) {
-          index = input.first;
-          break;
-        }
+      for (auto inIndex : ipuCopyOp->input->indices(tensor)) {
+        ipuCopyOp->disconnectInTensor(inIndex, tensor);
+        ipuCopyOp->connectInTensor(inIndex, identityOutput, src_ipu);
       }
-      if (index == -1) {
-        throw error("Could not determine input index for {} on {}",
-                    tid,
-                    ipuCopyOp->debugName());
-      }
-      ipuCopyOp->disconnectInTensor(index, tensor);
-      ipuCopyOp->connectInTensor(index, identityOutput, src_ipu);
+    }
+  }
+}
+
+void insertCloneBeforeCopiesToHost(Graph &graph,
+                                   Tensor *tensor,
+                                   VGraphId vGraphId,
+                                   PipelineStage pStage) {
+  // Since we can't rename anchors (as the user is expecting anchor of
+  // known name), we modify the IR as shown below.
+  //
+  // Before:
+  //
+  //  Producer
+  //     |
+  //  anchor_id
+  //     |    \
+  //     |     \
+  //     |      \
+  //     |       \
+  // Consumers  ToHostStream
+  //
+
+  // Intermediate1:
+  //
+  //  Producer
+  //     |
+  //  new_tensor_id
+  //     |
+  //   Identity
+  //
+  //      anchor_id
+  //       /      \
+  // Consumers   ToHostStream
+
+  // Final:
+  //
+  //  Producer
+  //     |
+  //  new_tensor_id
+  //     |     \
+  //     |    Identity
+  //     |       \
+  //     |       anchor_id
+  //     |         \
+  // Consumers   ToHostStream
+
+  // Intermediate1
+  auto producer = tensor->getProducer();
+  auto outIndex = producer->outIndex(tensor);
+  producer->disconnectOutTensor(tensor);
+  TensorId substituteId = tensor->id + "_substitute";
+  producer->createAndConnectOutTensor(outIndex, substituteId);
+  producer->setup();
+  auto identity = createIdenityCopyOp(graph, tensor, vGraphId, pStage);
+  identity->connectInTensor(0, substituteId);
+
+  // Final
+  identity->connectOutTensor(0, tensor->id);
+  identity->setup();
+  graph.moveIntoGraph(std::move(identity));
+  // for each consumer of anchor tensor, disconnect and reconnect at same
+  // indices to its substitute
+  for (auto op : tensor->consumers.getOps()) {
+    for (auto inIndex : op->input->indices(tensor)) {
+      op->disconnectInTensor(inIndex, tensor);
+      op->connectInTensor(inIndex, substituteId);
     }
   }
 }
@@ -418,7 +511,7 @@ std::vector<TensorId> getStashCandidateTensors(Graph &graph) {
 
     // Full Recompute use stashes only on the inputs to an IPU
     // to complete any pipeline stage.
-    if (full_recompute && !notProducedOnIPU(tensor)) {
+    if (full_recompute && isProducedOnIPU(tensor)) {
       continue;
     }
 
@@ -509,7 +602,7 @@ void setRecomputation(Graph &graph,
 
   for (auto tid : graph.getTensors().getAllTensorIds()) {
     Tensor *tensor = graph.getTensors().get(tid);
-    if (notProducedOnIPU(tensor) && !isStashCandidate(tensor)) {
+    if (!isProducedOnIPU(tensor) && !isStashCandidate(tensor)) {
       frontier.push(tensor);
     }
   }
@@ -987,17 +1080,21 @@ bool Pipeline::apply(Graph &graph) const {
     }
   }
 
-  // Any tensor is created by a recomputed op may be overwritten
-  // by the recompute phase before it is copied to the next IPU.
-  // So insert a identity (clone) between the op and the copy.
+  // Any tensor that is created by a recomputed op may be overwritten
+  // by the recompute phase before it is copied to the next IPU, or back
+  // to host (in the case of anchor tensors). So insert a identity
+  // (clone) between the op and the copy.
   if (full_recompute) {
     for (auto &tid : graph.getTensors().getAllTensorIds()) {
       auto tensor = graph.getTensors().get(tid);
 
       // Stash tensors have already been covered above
-      if (tensor->hasProducer() &&
-          std::find(toStashTensors.cbegin(), toStashTensors.cend(), tid) ==
-              toStashTensors.cend()) {
+      if (std::find(toStashTensors.cbegin(), toStashTensors.cend(), tid) !=
+          toStashTensors.cend()) {
+        continue;
+      }
+
+      if (tensor->hasProducer()) {
         Op *producer = tensor->getProducer();
         if (producer->settings.recomputeType == RecomputeType::RECOMPUTE) {
           insertClonesBeforeIpuCopyConsumers(
@@ -1005,11 +1102,18 @@ bool Pipeline::apply(Graph &graph) const {
               tensor,
               getVirtualGraphIdOrSourceIpu(producer),
               producer->getPipelineStage());
+
+          if (ir.isAnchored(tid) && tensor->consumers.getTotal() > 0) {
+            insertCloneBeforeCopiesToHost(
+                graph,
+                tensor,
+                getVirtualGraphIdOrSourceIpu(producer),
+                producer->getPipelineStage());
+          }
         }
       }
     }
   }
-
   return true;
 }
 

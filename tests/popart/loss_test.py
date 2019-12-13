@@ -27,6 +27,8 @@ def checkResult(result, margin):
 
 
 def test_3d_nll_loss_input():
+    # fix the random seed for this test
+    np.random.seed(0)
     ## input data
     Batchsize = 2
     ExtraDim = 4  # e.g. sequence length in language model
@@ -97,6 +99,8 @@ def test_3d_nll_loss_input():
 
 
 def test_nll_loss_with_ignored_index():
+    # fix the random seed for this test
+    np.random.seed(0)
     ## input data
     Batchsize = 2
     Classes = 8
@@ -166,6 +170,8 @@ def test_nll_loss_with_ignored_index():
 
 
 def test_nll_loss_grad_with_ignored_index():
+    # fix the random seed for this test
+    np.random.seed(0)
     ## input data
     Batchsize = 3
     Classes = 8
@@ -270,6 +276,8 @@ def test_nll_loss_grad_with_ignored_index():
 
 
 def test_id_loss_error():
+    # fix the random seed for this test
+    np.random.seed(0)
 
     ## input data
     Batchsize = 2
@@ -306,6 +314,8 @@ def test_id_loss_error():
 
 
 def test_id_nllloss_train():
+    # fix the random seed for this test
+    np.random.seed(0)
     # input data
     Batchsize = 8
     Classes = 32
@@ -480,6 +490,8 @@ def test_id_nllloss_train():
 
 
 def test_id_l1loss_train():
+    # fix the random seed for this test
+    np.random.seed(0)
     ## input data
     Batchsize = 4
     ExtraDim = 7
@@ -525,7 +537,7 @@ def test_id_l1loss_train():
                     out: art,
                     popart.reservedGradientPrefix() + out: art
                 }),
-            optimizer=popart.ConstSGD(1.0),
+            optimizer=popart.ConstSGD(LEARNING_RATE),
             losses=losses,
             passes=popart.Patterns(popart.PatternsLevel.ALL),
             deviceInfo=popart.DeviceManager().createIpuModelDevice({}),
@@ -567,7 +579,7 @@ def test_id_l1loss_train():
 
     net = Net()
     criterion = nn.Identity(reduction='sum')
-    optimizer = optim.SGD(net.parameters(), lr=1.0)
+    optimizer = optim.SGD(net.parameters(), lr=LEARNING_RATE)
     input_ = torch.tensor(ip_data, requires_grad=True)
     target = torch.tensor(np.zeros(shape=[Batchsize, Classes]).astype(
         np.float32),

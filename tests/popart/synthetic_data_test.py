@@ -48,6 +48,9 @@ def test_verify_synthetic_inputs(capfd):
     3. Verify that the data is as expected for that synthetic data mode
     """
 
+    # Test depends on logging output. Silence the logging from PopART
+    popart.getLogger().setLevel("OFF")
+
     ## A) Expect input is all zeros
     run_pt_session(popart.SyntheticDataMode.Zeros)
     _, err0 = capfd.readouterr()

@@ -840,8 +840,6 @@ void Ir::prepareImpl(const IrBundle &gb) {
     verifyVirtualGraphIds(true);
   }
 
-  updateVertices();
-
   switch (userOptions.mergeVarUpdate) {
 
   case (MergeVarUpdateType::All): {
@@ -927,6 +925,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   dotCheckpoint(DotCheck::PREALIAS);
 
   if (getSessionOptions().enableOutlining) {
+    updateAliases();
     applyTransform(SubgraphOutline::id(), getMainGraph());
     updateVertices();
   }
@@ -934,6 +933,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   // AliasZeroCopy: Reduce tensor liveness and outline call copy
   if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
       userOptions.pingPongPhases > 1) {
+    updateAliases();
     applyTransform(AliasZeroCopy::id(), getMainGraph());
     removeIsolatedTensors(true);
     updateVertices();
@@ -983,6 +983,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   // topological constraints. Currently, this is only one
   // in-placing Pattern.
   if (patterns.isInPlaceEnabled()) {
+    updateAliases();
     // Update the inplace priorities of ops before inplacing
     if (patterns.isUpdateInplacePrioritiesForIpuEnabled()) {
       applyUpdateInplacePrioritiesForIpu();
@@ -2105,11 +2106,12 @@ void Ir::updateVertices() {
       tensor->scheduledPreLoss = op->scheduledPreLoss;
     }
   }
+}
 
-  // 4) Update alias
+void Ir::updateAliases() {
   getTensors().clearAliases();
-  for (auto op : getOpSchedule({})) {
-    getTensors().updateAliases(op);
+  for (auto &op : getMainGraphOps()) {
+    getTensors().updateAliases(op.second.get());
   }
 }
 
@@ -2695,8 +2697,8 @@ std::vector<const Graph *> Ir::getGraphSchedule() const {
 }
 
 bool Ir::hasRandomOps() const {
-  for (auto op : getOpSchedule({})) {
-    if (op->requiresRandomSeed()) {
+  for (auto &op : getMainGraphOps()) {
+    if (op.second->requiresRandomSeed()) {
       return true;
     }
   }
@@ -2891,7 +2893,7 @@ void Ir::applyInplacePattern(Graph &graph) {
     }
   }
 
-  auto tripletComparitor = [](const Triplet &a, const Triplet &b) {
+  auto tripletComparator = [](const Triplet &a, const Triplet &b) {
     if (std::get<2>(a) - std::get<2>(b) != 0.0f) {
       return std::get<2>(a) > std::get<2>(b);
     }
@@ -2902,7 +2904,7 @@ void Ir::applyInplacePattern(Graph &graph) {
   if (priorities.size() != 0) {
 
     // sort in decreasing order of priority,
-    std::sort(priorities.begin(), priorities.end(), tripletComparitor);
+    std::sort(priorities.begin(), priorities.end(), tripletComparator);
 
     // removing all negative priorities. We use std::lower_bound
     // instead of std::find_if, taking advantage of the fact that priorities
@@ -2916,7 +2918,7 @@ void Ir::applyInplacePattern(Graph &graph) {
     // pivot, and erase all elements from there to the end. Note that
     // priority 0 elements will be removed.
     auto found = std::lower_bound(
-        priorities.begin(), priorities.end(), zeroPriority, tripletComparitor);
+        priorities.begin(), priorities.end(), zeroPriority, tripletComparator);
     priorities.erase(found, priorities.end());
 
     // we keep track of which ops have already been inplaced

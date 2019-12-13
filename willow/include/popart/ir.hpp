@@ -339,6 +339,7 @@ public:
   // For all vertices set the phase, and whether or not
   // there is a path to vertex in whose phase is BWD.
   void updateVertices();
+  void updateAliases();
 
   // modify the Ir using all the registered pre-alias patterns
   void applyPreAliasPatterns(Graph &);
