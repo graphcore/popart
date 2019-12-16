@@ -101,14 +101,14 @@ TensorId Graph::addInput(const TensorInfo &tinfo) {
 
 void Graph::markAsInput(const TensorId &tensorId) {
   if (!getTensors().contains(tensorId)) {
-    throw error("Could not find tensor '{}' to mark as input");
+    throw error("Could not find tensor '{}' to mark as input", tensorId);
   }
   graph_inputs.push_back(tensorId);
 }
 
 void Graph::markAsOutput(const TensorId &tensorId) {
   if (!getTensors().contains(tensorId)) {
-    throw error("Could not find tensor '{}' to mark as output");
+    throw error("Could not find tensor '{}' to mark as output", tensorId);
   }
   graph_outputs.push_back(tensorId);
 }
