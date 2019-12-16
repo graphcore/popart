@@ -2739,7 +2739,7 @@ void Devicex::tryLoadExecutable() {
         auto poplarCachePath = getPoplarCachePath();
         std::ifstream poplarFs(poplarCachePath, std::ifstream::binary);
         if (poplarFs.is_open()) {
-          logging::devicex::trace("Loading poplar Executable from '{}'",
+          logging::devicex::debug("Loading poplar Executable from '{}'",
                                   cachePath);
           cachedExecutable.emplace(poplar::Executable::deserialize(poplarFs));
           usingCachedExecutable = true;
