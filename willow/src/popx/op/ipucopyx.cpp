@@ -65,9 +65,9 @@ void IpuCopyOpx::growPipelined(poplar::program::Sequence &prog) const {
     auto &source      = getInTensor(idx);
     auto &destination = dv_p->tensors.get(outId);
 
-    // Waiting for T11865 as a possible optimisation
-    // This copy will be outlined by poplar preventing it from merging
-    prog.add(poplar::program::Copy(source, destination));
+    // Using dontOutline=true will make each copy to be unique
+    // which will then allow them to be merged into a single copy/sync.
+    prog.add(poplar::program::Copy(source, destination, true));
   }
 }
 
