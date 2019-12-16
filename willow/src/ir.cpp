@@ -2975,6 +2975,9 @@ void Ir::applyInplacePattern(Graph &graph) {
           if (isSchedulable(newTopoCons)) {
             inplacedAlready.insert(op->id);
             inplace.apply(op, identifier, newTopoCons);
+          } else {
+            logging::pattern::debug(
+                "Constraints not schedulable for inplacing op {}", op->id);
           }
         }
       }

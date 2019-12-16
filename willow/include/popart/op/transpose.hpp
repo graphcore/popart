@@ -23,8 +23,6 @@ public:
   view::RegMap fwdRegMap(InIndex, OutIndex) const final;
   view::RegMap bwdRegMap(InIndex, OutIndex) const final;
 
-  view::Regions aliases(InIndex in, OutIndex) const final { return uses(in); }
-
   // Get the permutation required to reverse the Transpose operation
   Shape generateReversePermutation() const;
 
@@ -65,6 +63,8 @@ public:
                      const Op::Settings &settings_);
   TransposeInplaceOp(const TransposeOp &);
   std::unique_ptr<Op> clone() const final;
+
+  view::Regions aliases(InIndex in, OutIndex) const final { return uses(in); }
 };
 
 // TransposeGrad is a reverse transposition
