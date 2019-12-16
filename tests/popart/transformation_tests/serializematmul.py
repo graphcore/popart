@@ -303,15 +303,15 @@ def test_matmul_serialization_training_1(tmpdir):
                     [1, reducing_dim, output_channels]))
 
         # bwd lhs
-        lhs = matmuls[1]['inputs'][0]
-        rhs = matmuls[1]['inputs'][1]
+        lhs = matmuls[2]['inputs'][0]
+        rhs = matmuls[2]['inputs'][1]
         assert (lhs['shape'] == gen_shape([1, input_channels, output_channels])
                 and rhs['shape'] == gen_shape(
                     [1, output_channels, reducing_dim]))
 
         # bwd rhs
-        lhs = matmuls[2]['inputs'][0]
-        rhs = matmuls[2]['inputs'][1]
+        lhs = matmuls[1]['inputs'][0]
+        rhs = matmuls[1]['inputs'][1]
         assert (lhs['shape'] == gen_shape([1, reducing_dim, input_channels])
                 and rhs['shape'] == gen_shape(
                     [1, input_channels, output_channels]))
