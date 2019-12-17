@@ -712,9 +712,9 @@ PYBIND11_MODULE(popart_core, m) {
       .def_readwrite("replicatedGraphCount",
                      &SessionOptions::replicatedGraphCount)
       .def_readwrite("compileEngine", &SessionOptions::compileEngine)
-      .def_readwrite("engineOptions", &SessionOptions::engineOptions)
-      .def_readwrite("convolutionOptions", &SessionOptions::convolutionOptions)
-      .def_readwrite("reportOptions", &SessionOptions::reportOptions)
+      .def_readwrite("_engineOptions", &SessionOptions::engineOptions)
+      .def_readwrite("_convolutionOptions", &SessionOptions::convolutionOptions)
+      .def_readwrite("_reportOptions", &SessionOptions::reportOptions)
       .def_readwrite("dotOpNames", &SessionOptions::dotOpNames)
       .def_readwrite("separateCallOpPdfs", &SessionOptions::separateCallOpPdfs)
       .def_readwrite("finalDotOp", &SessionOptions::finalDotOp)

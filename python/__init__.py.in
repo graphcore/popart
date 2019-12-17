@@ -16,3 +16,69 @@ from popart_core import *
 from popart.builder import Builder
 from popart.session import InferenceSession, TrainingSession, PrepareDeviceException
 from popart.tensorinfo import TensorInfo
+
+
+# pybind11 has some odd behaviour when binding
+# a member type `std::map<K, V>`.
+# Given the following binding where bar is of
+# type `std::map<std::string, std::string>`:
+#
+#   py::class_<Foo>(m, "Foo")
+#     .def_readwrite("bar", &Foo::bar)
+#
+# The following code:
+#
+#   foo = Foo()
+#   foo.bar = {'a': 'aa'}
+#   foo.bar['b'] = 'bb'
+#   print(foo.bar)
+#
+# Will print `{'a': 'aa'}`.
+# This is because foo.bar returns a copy of the underlying c++
+# dictionary, so `foo.bar['b'] = 'bb'` is updating the copy.
+# This property wraps the return of `foo.bar` in an instance of
+# DictWrapper. When DictWrapper is updated, it then resets `foo.bar`
+# to its new state.
+# This is equivalent to doing the following:
+#
+#   foo = Foo()
+#   foo.bar = {'a': 'aa'}
+#   bar_copy = foo.bar['b']
+#   bar_copy['b'] = 'bb'
+#   foo.bar = bar_copy
+#
+def _get_options_dict(option_name):
+    def get_option_impl(opts):
+        # Wrapper around dict.
+        # Everytime an element is set, the update lambda is called.
+        class DictWrapper(dict):
+            def __init__(self, update, *args, **kwargs):
+                self._update = update
+                super(DictWrapper, self).__init__(*args, **kwargs)
+
+            def __setitem__(self, name, value):
+                dict.__setitem__(self, name, value)
+                self._update(self)
+
+        def update_options(value):
+            setattr(opts, option_name, value)
+
+        return DictWrapper(update_options, getattr(opts, option_name))
+
+    return get_option_impl
+
+
+def _set_options_dict(option_name):
+    def set_option_impl(opts, value):
+        setattr(opts, option_name, value)
+
+    return set_option_impl
+
+
+SessionOptions.engineOptions = property(_get_options_dict('_engineOptions'),
+                                        _set_options_dict('_engineOptions'))
+SessionOptions.convolutionOptions = property(
+    _get_options_dict('_convolutionOptions'),
+    _set_options_dict('_convolutionOptions'))
+SessionOptions.reportOptions = property(_get_options_dict('_reportOptions'),
+                                        _set_options_dict('_reportOptions'))
