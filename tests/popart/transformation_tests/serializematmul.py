@@ -302,16 +302,24 @@ def test_matmul_serialization_training_1(tmpdir):
                 and rhs['shape'] == gen_shape(
                     [1, reducing_dim, output_channels]))
 
+        bwd_lhs = [
+            matmul for matmul in matmuls
+            if "lhs" in matmul["outputs"][0]["name"]
+        ][0]
         # bwd lhs
-        lhs = matmuls[1]['inputs'][0]
-        rhs = matmuls[1]['inputs'][1]
+        lhs = bwd_lhs['inputs'][0]
+        rhs = bwd_lhs['inputs'][1]
         assert (lhs['shape'] == gen_shape([1, input_channels, output_channels])
                 and rhs['shape'] == gen_shape(
                     [1, output_channels, reducing_dim]))
 
+        bwd_rhs = [
+            matmul for matmul in matmuls
+            if "rhs" in matmul["outputs"][0]["name"]
+        ][0]
         # bwd rhs
-        lhs = matmuls[2]['inputs'][0]
-        rhs = matmuls[2]['inputs'][1]
+        lhs = bwd_rhs['inputs'][0]
+        rhs = bwd_rhs['inputs'][1]
         assert (lhs['shape'] == gen_shape([1, reducing_dim, input_channels])
                 and rhs['shape'] == gen_shape(
                     [1, input_channels, output_channels]))
@@ -554,16 +562,24 @@ def test_matmul_serialization_training_2(tmpdir):
             1, lhs_group_dim * input_channels, reducing_dim
         ]) and rhs['shape'] == gen_shape([1, reducing_dim, output_channels]))
 
+        bwd_lhs = [
+            matmul for matmul in matmuls
+            if "Reshape" in matmul["outputs"][0]["name"]
+        ][0]
         # bwd lhs
-        lhs = matmuls[1]['inputs'][0]
-        rhs = matmuls[1]['inputs'][1]
+        lhs = bwd_lhs['inputs'][0]
+        rhs = bwd_lhs['inputs'][1]
         assert (lhs['shape'] == gen_shape([
             1, lhs_group_dim * input_channels, output_channels
         ]) and rhs['shape'] == gen_shape([1, output_channels, reducing_dim]))
 
+        bwd_rhs = [
+            matmul for matmul in matmuls
+            if "rhs" in matmul["outputs"][0]["name"]
+        ][0]
         # bwd rhs
-        lhs = matmuls[2]['inputs'][0]
-        rhs = matmuls[2]['inputs'][1]
+        lhs = bwd_rhs['inputs'][0]
+        rhs = bwd_rhs['inputs'][1]
 
         assert (lhs['shape'] == gen_shape(
             [1, reducing_dim, lhs_group_dim * input_channels])
@@ -810,16 +826,24 @@ def test_matmul_serialization_precision(tmpdir):
                 and rhs['shape'] == gen_shape(
                     [1, reducing_dim, output_channels]))
 
+        bwd_lhs = [
+            matmul for matmul in matmuls
+            if "lhs" in matmul["outputs"][0]["name"]
+        ][0]
         # bwd lhs
-        lhs = matmuls[1]['inputs'][0]
-        rhs = matmuls[1]['inputs'][1]
+        lhs = bwd_lhs['inputs'][0]
+        rhs = bwd_lhs['inputs'][1]
         assert (lhs['shape'] == gen_shape([1, input_channels, output_channels])
                 and rhs['shape'] == gen_shape(
                     [1, output_channels, reducing_dim]))
 
+        bwd_rhs = [
+            matmul for matmul in matmuls
+            if "rhs" in matmul["outputs"][0]["name"]
+        ][0]
         # bwd rhs
-        lhs = matmuls[2]['inputs'][0]
-        rhs = matmuls[2]['inputs'][1]
+        lhs = bwd_rhs['inputs'][0]
+        rhs = bwd_rhs['inputs'][1]
         assert (lhs['shape'] == gen_shape([1, reducing_dim, input_channels])
                 and rhs['shape'] == gen_shape(
                     [1, input_channels, output_channels]))
