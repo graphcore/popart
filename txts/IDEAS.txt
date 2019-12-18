@@ -1,2 +1,0 @@
-multi-ipu can be handled at the abstract level : makes 2 graphs, some kinda 
-mutex controlling when to read / write intermediate vals
