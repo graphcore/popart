@@ -20,30 +20,18 @@ Warnings with g++ are being worked on (an open task)
 CONFIGURE and BUILD
 -------------------
 
-Python 2 is not supported, only Python 3 is supported. 
+To build PopART:
 
-These are directions for building directly from the popart repository, 
-not from the popart_iew repo, which is the suggested way to build.
-To build from the popart_view directory, see the instructions in the wiki:
-https://phabricator.sourcevertex.net/w/onnx/
-
-
-On Ubuntu, in a clean build directory:
 ```
-cmake -DONNX_DIR=/where/onnx/installed/share/cmake/ONNX 
-      -DCMAKE_PREFIX_PATH=/where/pybind11/installed/share/cmake/pybind11
-      -DPOPLAR_INSTALL_DIR=/where/poplar/installed
-      -DCMAKE_INSTALL_PREFIX=/where/to/install/popart
-      /path/to/base/popart/dir
+cd build_scripts
+mkdir build
+cd build
+cmake .. -DPOPLAR_ROOT=<path_to_poplar>
+make -j 60 popart
 ```
 
-where I assume above that ONNX and pybind are already built and installed.
-
-Next, install pytorch, the directions are on the pytorch website.
-
-Now, 
-export LD_LIBRARY_PATH=~/where/popart/installed/lib:/where/poplar/installed/lib
-
-and you should be ready to use popart with an `import popart`
-
+After building, use PopART by sourcing the enable script:
+```
+source build_scripts/build/install/popart/enable.sh
+```
 
