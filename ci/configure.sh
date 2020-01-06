@@ -59,6 +59,7 @@ virtualenv -p ${PYTHON_BIN_PATH} ${VE}
 source ${VE}/bin/activate
 
 # Install dependencies
+pip install Pillow==6.1 # Pillow 6.1 needed for pytorch issue: https://github.com/python-pillow/Pillow/issues/4130
 pip install numpy
 pip install pytest
 pip install yapf
