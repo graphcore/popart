@@ -35,3 +35,11 @@ After building, use PopART by sourcing the enable script:
 source build_scripts/build/install/popart/enable.sh
 ```
 
+RUN UNIT TESTS
+--------------
+Run the unit test suite to ensure that any changes you have made to the
+source code haven't broken existing functionality:
+```
+cd build_scripts/build
+./test.sh popart -j 60
+```
