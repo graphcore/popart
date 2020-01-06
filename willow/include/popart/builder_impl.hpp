@@ -38,6 +38,8 @@ public:
 
   void addOutputTensor(const TensorId &arg0);
 
+  void setGraphName(const std::string &name);
+
   /**
    * Add an op to the model
    *

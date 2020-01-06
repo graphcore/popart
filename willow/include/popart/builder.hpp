@@ -849,6 +849,13 @@ public:
    */
   std::string getNameScope(const std::string &name = "") const;
 
+  /**
+   * Specifies a graph name
+   *
+   * \param name string to name the graph
+   */
+  void setGraphName(const std::string &name);
+
 private:
   void configure();
   void configure(const std::string &modelProtoOrFilename);

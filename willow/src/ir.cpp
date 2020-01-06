@@ -2558,7 +2558,7 @@ void Ir::serialise(SerialiseFormat format, std::stringstream &ss) const {
       ss << ",";
 
     if (firstGraph)
-      ss << "\"maingraph\" :[";
+      ss << "\"" << graph->getIr().getModel().graph().name() << "\" :[";
     else
       ss << "\"" << graph->id.str() << "\" :[";
 
