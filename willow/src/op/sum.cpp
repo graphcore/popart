@@ -34,6 +34,10 @@ const std::vector<GradInOutMapper> &SumArgGradOp::gradInputInfo() const {
   return gradInputInfoVec;
 }
 
+bool SumArgGradOp::canBeReplacedByIdentity() {
+  return inShape(0) == outShape(0);
+}
+
 namespace {
 
 static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
