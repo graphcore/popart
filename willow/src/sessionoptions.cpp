@@ -101,8 +101,8 @@ std::ostream &operator<<(std::ostream &os, RecomputationType r) {
 } // namespace popart
 
 namespace std {
-std::size_t hash<popart::SessionOptions>::
-operator()(const popart::SessionOptions &so) const {
+std::size_t hash<popart::SessionOptions>::operator()(
+    const popart::SessionOptions &so) const {
   // Hash based on all the SessionOptions attributes that
   // can affect compiled program
 
