@@ -2544,6 +2544,18 @@ void Ir::append(std::stringstream &ss) const {
   }
 }
 
+namespace {
+
+void setGraphIrName(const std::string &name, std::stringstream &ss) {
+  if (name.find("BuilderGraph_") != std::string::npos) {
+    ss << "\"maingraph\" :[";
+  } else {
+    ss << "\"" << name << "\" :[";
+  }
+}
+
+} // namespace
+
 void Ir::serialise(SerialiseFormat format, std::stringstream &ss) const {
 
   // TODO use the format to seralize the ir
@@ -2558,7 +2570,7 @@ void Ir::serialise(SerialiseFormat format, std::stringstream &ss) const {
       ss << ",";
 
     if (firstGraph)
-      ss << "\"" << graph->getIr().getModel().graph().name() << "\" :[";
+      setGraphIrName(graph->getIr().getModel().graph().name(), ss);
     else
       ss << "\"" << graph->id.str() << "\" :[";
 

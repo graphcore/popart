@@ -51,7 +51,7 @@ def test_main_graph_ir_name():
 
     np.random.seed(1)
     input_data = np.random.rand(2).astype(np.float32)
-    graph_name = "OUTER"
+    graph_name = "body_graph"
 
     def init_builder(builder):
         builder.setGraphName(graph_name)
@@ -66,3 +66,22 @@ def test_main_graph_ir_name():
     ir = json.loads(
         session._session._serializeIr(popart.IrSerializationFormat.JSON))
     assert (len(ir[graph_name]) == 1)
+
+
+def test_empty_graph_ir_name():
+
+    np.random.seed(1)
+    input_data = np.random.rand(2).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(input_data)
+        o = builder.aiOnnx.add([i1, i1])
+        builder.addOutputTensor(o)
+        return [o]
+
+    session = PopartTestSession()
+    session.prepare(init_builder)
+
+    ir = json.loads(
+        session._session._serializeIr(popart.IrSerializationFormat.JSON))
+    assert (len(ir["maingraph"]) == 1)
