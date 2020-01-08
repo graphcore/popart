@@ -111,4 +111,4 @@ def test_no_prepare_device():
         session.modelToHost('session_proto.onnx')
 
     assert (e_info.value.args[0].startswith(
-        "session.prepareDevice() must be called before trying to save"))
+        "Devicex::prepare() must be called before Devicex::weightsToHost"))
