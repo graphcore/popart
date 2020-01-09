@@ -69,13 +69,14 @@ void SGD0VarUpdateOpx::grow(poplar::program::Sequence &prog) const {
   // TODO: where does this go when there is replication?
   if (dv_p->getReplicationFactor() > 1 &&
       !dv_p->ir().getSessionOptions().hostAllReduce) {
-    weightDeltas =
-        popops::replicatedAllReduce(graph(),
-                                    weightDeltas,
-                                    popops::Operation::ADD,
-                                    prog,
-                                    debugPrefix("allReduce_Add"),
-                                    {{"useReplicatedImplementation", "true"}});
+    popops::replicatedAllReduceWithOutput(
+        graph(),
+        weightDeltas,
+        weightDeltas,
+        popops::Operation::ADD,
+        prog,
+        debugPrefix("allReduce_Add"),
+        {{"useReplicatedImplementation", "true"}});
   }
 
   // non-const scaled learning rate case

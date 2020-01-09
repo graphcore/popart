@@ -15,20 +15,17 @@ SGD1AcclReduceOpx::SGD1AcclReduceOpx(Op *op, Devicex *devicex)
 
 void SGD1AcclReduceOpx::grow(poplar::program::Sequence &prog) const {
 
-  const poplar::Tensor &velocity =
-      getInTensor(VarUpdateOp::getVarToUpdateInIndex());
+  poplar::Tensor velocity = getInTensor(VarUpdateOp::getVarToUpdateInIndex());
 
   if (dv_p->getReplicationFactor() > 1) {
-    poplar::Tensor velocityReduced =
-        popops::replicatedAllReduce(graph(),
-                                    velocity,
-                                    popops::Operation::ADD,
-                                    prog,
-                                    debugPrefix("allReduceVelocitySGD1"),
-                                    {{"useReplicatedImplementation", "true"}});
-
-    poplar::program::Copy copy(velocityReduced, velocity);
-    prog.add(copy);
+    popops::replicatedAllReduceWithOutput(
+        graph(),
+        velocity,
+        velocity,
+        popops::Operation::ADD,
+        prog,
+        debugPrefix("allReduceVelocitySGD1"),
+        {{"useReplicatedImplementation", "true"}});
   }
 
   else {
