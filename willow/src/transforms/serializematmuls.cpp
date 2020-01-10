@@ -538,6 +538,7 @@ serializeBwdLhsMatMul_InputChannels(TransformBuilder &builder,
                   name);
 
   builder.concat(outputTensors,
+                 1,
                  output->id,
                  virtualGraphId,
                  pipelineStage,
@@ -674,7 +675,7 @@ serializeBwdRhsMatMul_ReducingDim(TransformBuilder &builder,
                   pingPongPhase,
                   name);
 
-  serializeVarUpdate(0,
+  serializeVarUpdate(1,
                      builder,
                      output,
                      matmul,
@@ -779,7 +780,7 @@ serializeBwdRhsMatMul_OutputChannels(TransformBuilder &builder,
                   pingPongPhase,
                   name);
 
-  serializeVarUpdate(1,
+  serializeVarUpdate(2,
                      builder,
                      output,
                      matmul,
@@ -803,13 +804,14 @@ bool SerializeMatMuls::apply(Graph &graph) const {
     auto &matmulInputTensorMap  = matmul->input->tensorMap();
     auto &matmulOutputTensorMap = matmul->output->tensorMap();
 
-    auto matmuLhs     = matmulInputTensorMap.at(MatMulOp::getLhsInIndex());
+    auto matmulLhs    = matmulInputTensorMap.at(MatMulOp::getLhsInIndex());
     auto matmulRhs    = matmulInputTensorMap.at(MatMulOp::getRhsInIndex());
     auto matmulOutput = matmulOutputTensorMap.at(MatMulOp::getOutIndex());
+    auto outputShape  = matmulOutput->info.shape();
 
     logging::ir::info("matmul:{} {}x{}->{} mode: {} factor: {} phase: {}",
                       matmul->opid,
-                      matmuLhs->info.shape(),
+                      matmulLhs->info.shape(),
                       matmulRhs->info.shape(),
                       matmulOutput->info.shape(),
                       static_cast<int64_t>(matmul->getSerialiseSettings().mode),
@@ -843,7 +845,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
       switch (matmul->getPhase()) {
       case MatMulOp::Phase::Fwd: {
         serializeFwdMatMul_InputChannels(builder,
-                                         matmuLhs,
+                                         matmulLhs,
                                          matmulRhs,
                                          matmulOutput,
                                          matmul,
@@ -855,7 +857,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
       } break;
       case MatMulOp::Phase::BwdLhs: {
         serializeBwdLhsMatMul_InputChannels(builder,
-                                            matmuLhs,
+                                            matmulLhs,
                                             matmulRhs,
                                             matmulOutput,
                                             matmul,
@@ -867,7 +869,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
       } break;
       case MatMulOp::Phase::BwdRhs: {
         serializeBwdRhsMatMul_InputChannels(builder,
-                                            matmuLhs,
+                                            matmulLhs,
                                             matmulRhs,
                                             matmulOutput,
                                             matmul,
@@ -883,7 +885,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
       switch (matmul->getPhase()) {
       case MatMulOp::Phase::Fwd: {
         serializeFwdMatMul_OutputChannels(builder,
-                                          matmuLhs,
+                                          matmulLhs,
                                           matmulRhs,
                                           matmulOutput,
                                           matmul,
@@ -895,7 +897,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
       } break;
       case MatMulOp::Phase::BwdLhs: {
         serializeBwdLhsMatMul_OutputChannels(builder,
-                                             matmuLhs,
+                                             matmulLhs,
                                              matmulRhs,
                                              matmulOutput,
                                              matmul,
@@ -907,7 +909,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
       } break;
       case MatMulOp::Phase::BwdRhs: {
         serializeBwdRhsMatMul_OutputChannels(builder,
-                                             matmuLhs,
+                                             matmulLhs,
                                              matmulRhs,
                                              matmulOutput,
                                              matmul,
@@ -923,7 +925,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
       switch (matmul->getPhase()) {
       case MatMulOp::Phase::Fwd: {
         serializeFwdMatMul_ReducingDim(builder,
-                                       matmuLhs,
+                                       matmulLhs,
                                        matmulRhs,
                                        matmulOutput,
                                        matmul,
@@ -935,7 +937,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
       } break;
       case MatMulOp::Phase::BwdLhs: {
         serializeBwdLhsMatMul_ReducingDim(builder,
-                                          matmuLhs,
+                                          matmulLhs,
                                           matmulRhs,
                                           matmulOutput,
                                           matmul,
@@ -947,7 +949,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
       } break;
       case MatMulOp::Phase::BwdRhs: {
         serializeBwdRhsMatMul_ReducingDim(builder,
-                                          matmuLhs,
+                                          matmulLhs,
                                           matmulRhs,
                                           matmulOutput,
                                           matmul,
@@ -962,6 +964,15 @@ bool SerializeMatMuls::apply(Graph &graph) const {
 
     // Remove the original matmul
     graph.eraseOp(matmul->id);
+
+    if (outputShape != matmulOutput->info.shape()) {
+      throw internal_error("Serialization of matmul({}, {}) has changed output "
+                           "shape from {} to {}",
+                           matmulLhs->str(),
+                           matmulRhs->str(),
+                           outputShape,
+                           matmulOutput->info.shape());
+    }
   }
 
   // Update the graph vertices
