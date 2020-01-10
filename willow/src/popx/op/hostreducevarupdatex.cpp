@@ -21,11 +21,6 @@ GradCopyToHostOpx::GradCopyToHostOpx(Op *op, Devicex *devicex)
 }
 
 void GradCopyToHostOpx::grow(poplar::program::Sequence &prog) const {
-  if (dv_p->getHostReduceSyncInserted()) {
-    throw internal_error("All host reductions should happen after "
-                         "all gradients sent to host");
-  }
-
   const auto updater_index    = GradCopyToHostOp::getInIndex();
   poplar::Tensor weightDeltas = getInTensor(updater_index);
 
@@ -58,20 +53,6 @@ GradCopyFromHostOpx::GradCopyFromHostOpx(Op *op, Devicex *devicex)
 }
 
 void GradCopyFromHostOpx::grow(poplar::program::Sequence &prog) const {
-  if (!dv_p->getHostReduceSyncInserted()) {
-    // A sync is added here to enforce that gradient copies to host are executed
-    // before gradient copies to device. Gradient copies to host are scheduled
-    // to happen before gradient copies to device in PopART. However, if
-    // multiple stream copies are performed with a single sync id then a host
-    // read can be scheduled before a host write in the Poplar engine but the
-    // actual callback might still be executed after. This happens when Poplar
-    // merges two host syncs during compilation into one. See
-    // IPUTarget::prepareForStreamAccess() and IPUTarget::completeStreamAccess()
-    // for details
-    prog.add(poplar::program::Sync(poplar::SyncType::INTERNAL));
-    dv_p->setHostReduceSyncInserted(true);
-  }
-
   const auto updater_index    = GradCopyFromHostOp::getInIndex();
   poplar::Tensor weightDeltas = getInTensor(updater_index);
 
@@ -94,20 +75,6 @@ HostReduceVarCopyOpx::HostReduceVarCopyOpx(Op *op, Devicex *devicex)
 }
 
 void HostReduceVarCopyOpx::grow(poplar::program::Sequence &prog) const {
-  if (!dv_p->getHostReduceSyncInserted()) {
-    // A sync is added here to enforce that gradient copies are executed
-    // before weight copies. Gradient copies are scheduled to happen before
-    // weight copies in PopART. However, if multiple stream copies are
-    // performed with a single sync id then a host read can be scheduled
-    // before a host write in the Poplar engine but the actual
-    // callback might still be executed after. This happens when Poplar
-    // merges two host syncs during compilation into one.
-    // See IPUTarget::prepareForStreamAccess() and
-    // IPUTarget::completeStreamAccess() for details
-    prog.add(poplar::program::Sync(poplar::SyncType::INTERNAL));
-    dv_p->setHostReduceSyncInserted(true);
-  }
-
   const auto var_update_index = HostSGD0VarUpdate::getVarToUpdateInIndex();
   const auto updater_index    = HostSGD0VarUpdate::getUpdaterInIndex();
   const auto grad_id          = inId(updater_index);

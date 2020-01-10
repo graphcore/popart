@@ -6,6 +6,7 @@
 #include <popart/op/copyvarupdate.hpp>
 #include <popart/op/hostreducevarupdate.hpp>
 #include <popart/op/sgd0varupdate.hpp>
+#include <popart/op/sync.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
@@ -204,15 +205,39 @@ bool HostReduce::apply(Graph &graph) const {
     ++counter;
   }
 
+  // A sync is added here to enforce that gradient copies to host are executed
+  // before gradient/var copies to device. Gradient copies to host are scheduled
+  // to happen before gradient/var copies to device in PopART. However, if
+  // multiple stream copies are performed with a single sync id then a host
+  // read can be scheduled before a host write in the Poplar engine but the
+  // actual callback might still be executed after. This happens when Poplar
+  // merges two host syncs during compilation into one. See
+  // IPUTarget::prepareForStreamAccess() and IPUTarget::completeStreamAccess()
+  // for details
+  auto syncOp_up = std::make_unique<SyncOp>(
+      Op::Settings(graph, "HostReduceSync"), poplar::SyncType::INTERNAL);
+  auto syncOpId = graph.moveIntoGraph(std::move(syncOp_up));
+  auto syncOp   = graph.getOp(syncOpId);
+  syncOp->setup();
+
+  // Sync Op should run after all gradCopyToHost Ops
+  graph.topoCons->insert({{syncOp, gradCopyToHostOps}});
+
   if (ir.getSessionOptions().hostWeightUpdate) {
     // Ensure that all gradient copy op run before var copy ops
-    for (auto &op : varCopyOps) {
-      graph.topoCons->insert({{op, gradCopyToHostOps}});
+    for (auto &varCopyOp : varCopyOps) {
+      graph.topoCons->insert({{varCopyOp, gradCopyToHostOps}});
+
+      // Sync Op should run before all varCopy Ops
+      graph.topoCons->insert(syncOp, varCopyOp);
     }
   } else {
     // Ensure that all gradient copy from host run after gradient copy to host
-    for (auto &op : gradCopyFromHostOps) {
-      graph.topoCons->insert({{op, gradCopyToHostOps}});
+    for (auto &gradCopyFromHostOp : gradCopyFromHostOps) {
+      graph.topoCons->insert({{gradCopyFromHostOp, gradCopyToHostOps}});
+
+      // Sync Op should run before all gradCopyFromHost Ops
+      graph.topoCons->insert(syncOp, gradCopyFromHostOp);
     }
   }
 

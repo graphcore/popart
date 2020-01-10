@@ -350,6 +350,8 @@ const static AiGraphcoreOpIdV1 Call("Call");
 const static AiGraphcoreOpIdV1 GradientAccumulation("GradientAccl");
 const static AiGraphcoreOpIdV1 ResetAccumulation("ResetAccl");
 
+const static AiGraphcoreOpIdV1 Sync("Sync");
+
 } // namespace CustomOperators
 
 namespace AiGraphcore {
