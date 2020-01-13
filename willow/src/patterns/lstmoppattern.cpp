@@ -4,22 +4,13 @@
 #include <popart/op/lstm.hpp>
 #include <popart/op/split.hpp>
 #include <popart/op/transpose.hpp>
-#include <popart/patterns/pattern.hpp>
+#include <popart/patterns/lstmoppattern.hpp>
 #include <popart/patterns/patterns.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/transforms/transformbuilder.hpp>
 
 namespace popart {
-
-class LSTMPattern : public PreAliasPattern {
-public:
-  bool matches(Op *op) const override;
-
-  std::vector<const Tensor *> touches(Op *) const override { return {}; }
-
-  bool apply(Op *op) const override;
-};
 
 bool LSTMPattern::matches(Op *op) const {
   return op->isConvertibleTo<LSTMOp>();

@@ -50,15 +50,13 @@ public:
 
 // This is a factory class which the patterns are registered with
 class PreAliasPatternManager {
-public:
+private:
   struct PreAliasPatternInfo {
-    boost::optional<PreAliasPatternType> type;
     bool enabledByDefault;
     std::string name;
     std::function<std::unique_ptr<PreAliasPattern>()> factory;
   };
 
-private:
   PreAliasPatternManager() = default;
 
   std::map<PreAliasPatternType, std::type_index> patternTypeToTypeIndex;
@@ -76,7 +74,7 @@ public:
                   bool enabled,
                   std::function<std::unique_ptr<PreAliasPattern>()> func) {
     getInstance().patternInfos.insert(
-        {ti, PreAliasPatternInfo{type, enabled, name, func}});
+        {ti, PreAliasPatternInfo{enabled, name, func}});
     getInstance().patternTypeToTypeIndex.insert({type, ti});
   }
 
@@ -86,7 +84,7 @@ public:
                   bool enabled,
                   std::function<std::unique_ptr<PreAliasPattern>()> func) {
     getInstance().patternInfos.insert(
-        {ti, PreAliasPatternInfo{boost::none, enabled, name, func}});
+        {ti, PreAliasPatternInfo{enabled, name, func}});
   }
 
   static const std::map<std::type_index, PreAliasPatternInfo> &
