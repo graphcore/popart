@@ -61,8 +61,8 @@ T &NDArrayWrapper<T>::operator[](const std::vector<int64_t> &indices) {
 }
 
 template <typename T>
-const T &NDArrayWrapper<T>::
-operator[](const std::vector<int64_t> &indices) const {
+const T &
+    NDArrayWrapper<T>::operator[](const std::vector<int64_t> &indices) const {
   return data_[ndindices.flatten(indices)];
 }
 

@@ -18,6 +18,7 @@ void GroupNormalizationShapeInference(InferenceContext &ctx);
 void PrintTensorShapeInference(InferenceContext &ctx);
 void ScaleShapeInference(InferenceContext &ctx);
 void LSTMShapeInference(InferenceContext &ctx);
+void GeluShapeInference(InferenceContext &ctx);
 
 void SubsampleShapeInference(InferenceContext &ctx) {
   propagateElemTypeFromInputToOutput(ctx, 0, 0);
@@ -99,11 +100,16 @@ void LSTMShapeInference(InferenceContext &ctx) {
   *cell_state_shape->add_dim() = hidden_size;
 }
 
+void GeluShapeInference(InferenceContext &ctx) {
+  propagateShapeAndTypeFromFirstInput(ctx);
+}
+
 extern size_t dbg_count_check_GroupNormalization_AiGraphcore_ver1;
 extern size_t dbg_count_check_Subsample_AiGraphcore_ver1;
 extern size_t dbg_count_check_PrintTensor_AiGraphcore_ver1;
 extern size_t dbg_count_check_Scale_AiGraphcore_ver1;
 extern size_t dbg_count_check_LSTM_AiGraphcore_ver1;
+extern size_t dbg_count_check_Gelu_AiGraphcore_ver1;
 
 static const char groupnormalizationDoc[] =
     "GroupNormalization applies Group Normalization over a mini-batch of input";
@@ -229,6 +235,24 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               static_cast<int64_t>(1))
         .TypeAndShapeInferenceFunction(LSTMShapeInference));
 
+static const char geluDoc[] =
+    "Applies the Gaussian Error Linear Units function.";
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    Gelu,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc(geluDoc)
+        .Input(0, "X", "Input tensor", "T")
+        .Output(0, "Y", "Output tensor", "T")
+        .TypeConstraint("T",
+                        {"tensor(float)", "tensor(float16)"},
+                        "Constrain input and output types to float tensors.")
+        .TypeAndShapeInferenceFunction(GeluShapeInference));
+
 static bool registerOps() {
   auto &d = ONNX_NAMESPACE::OpSchemaRegistry::DomainToVersionRange::Instance();
   d.AddDomainToVersion(popart::Domain::ai_graphcore, 1, 1);
@@ -251,6 +275,9 @@ static bool registerOps() {
 
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(AiGraphcore, 1, LSTM)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(AiGraphcore, 1, Gelu)>());
 
   return true;
 }

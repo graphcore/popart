@@ -18,13 +18,12 @@ def test_set_random_seed_error():
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
-    s = popart.TrainingSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        optimizer=popart.ConstSGD(0.1),
-        losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
-        userOptions=popart.SessionOptions(),
-        deviceInfo=tu.get_ipu_model(numIPUs=2))
+    s = popart.TrainingSession(fnModel=proto,
+                               dataFeed=dataFlow,
+                               optimizer=popart.ConstSGD(0.1),
+                               losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
+                               userOptions=popart.SessionOptions(),
+                               deviceInfo=tu.get_ipu_model(numIPUs=2))
 
     with pytest.raises(popart.popart_exception) as e_info:
         s.setRandomSeed(0)
@@ -101,8 +100,8 @@ def test_stochastic_rounding_behaviour():
     session.prepareDevice()
 
     data0 = np.ones(shape_d).astype(np.float16)
-    data1 = 1e-3 * np.random.uniform(
-        low=-1.0, high=1.0, size=shape_d).astype(np.float16)
+    data1 = 1e-3 * np.random.uniform(low=-1.0, high=1.0, size=shape_d).astype(
+        np.float16)
 
     inputs = {d0: data0, d1: data1}
     stepio = popart.PyStepIO(inputs, anchors)

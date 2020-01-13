@@ -319,6 +319,7 @@ public:
   Graph &constructFromOnnxGraph(const onnx::GraphProto &graph,
                                 const Scope &scope);
 
+  // Calls ConstExprUtil::foldConstants on the graph.
   void foldConstants(Graph &);
 
   // Construct the backwards pass of the IR by doing an autograd of the forward

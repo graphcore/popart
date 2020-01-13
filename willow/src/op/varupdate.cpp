@@ -56,7 +56,6 @@ view::Regions VarUpdateOp::modifies(InIndex index) const {
   return aliases(index, 0);
 }
 
-
 namespace {} // namespace
 
 } // namespace popart

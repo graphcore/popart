@@ -495,4 +495,8 @@ void Builder::setAvailableMemoryProportion(
       sAvailMemAttribute, availableMemoryProportion, {nodeOutputName});
 }
 
+void Builder::setGraphName(const std::string &name) {
+  return impl_->setGraphName(name);
+}
+
 } // namespace popart

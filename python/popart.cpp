@@ -712,9 +712,9 @@ PYBIND11_MODULE(popart_core, m) {
       .def_readwrite("replicatedGraphCount",
                      &SessionOptions::replicatedGraphCount)
       .def_readwrite("compileEngine", &SessionOptions::compileEngine)
-      .def_readwrite("engineOptions", &SessionOptions::engineOptions)
-      .def_readwrite("convolutionOptions", &SessionOptions::convolutionOptions)
-      .def_readwrite("reportOptions", &SessionOptions::reportOptions)
+      .def_readwrite("_engineOptions", &SessionOptions::engineOptions)
+      .def_readwrite("_convolutionOptions", &SessionOptions::convolutionOptions)
+      .def_readwrite("_reportOptions", &SessionOptions::reportOptions)
       .def_readwrite("dotOpNames", &SessionOptions::dotOpNames)
       .def_readwrite("separateCallOpPdfs", &SessionOptions::separateCallOpPdfs)
       .def_readwrite("finalDotOp", &SessionOptions::finalDotOp)
@@ -737,7 +737,8 @@ PYBIND11_MODULE(popart_core, m) {
       .def_readwrite("customCodelets", &SessionOptions::customCodelets)
       .def_readwrite("customCodeletCompileFlags",
                      &SessionOptions::customCodeletCompileFlags)
-      .def_readwrite("hostAllReduce", &SessionOptions::hostAllReduce);
+      .def_readwrite("hostAllReduce", &SessionOptions::hostAllReduce)
+      .def_readwrite("hostWeightUpdate", &SessionOptions::hostWeightUpdate);
 
   py::enum_<PatternsLevel>(m, "PatternsLevel")
       .value("ALL", PatternsLevel::ALL)
@@ -1063,6 +1064,7 @@ PYBIND11_MODULE(popart_core, m) {
       .def(py::init(&Builder::create))
       .def(py::init(&Builder::createFromOnnxModel),
            py::arg("modelProtoOrFilename"))
+      .def("setGraphName", &Builder::setGraphName, py::arg("name"))
       .def("addInputTensor",
            &Builder::addInputTensor,
            py::arg("tensorInfo"),

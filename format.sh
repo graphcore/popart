@@ -1,12 +1,12 @@
 #how to format recursively with clang-format, from
 # https://stackoverflow.com/questions/28896909
 
-# we encourage all commits to be done with clang-format version 8
+# we encourage all commits to be done with clang-format version 9
 # note that the linter does not use this script for formatting.
 cf_version=$(python3 scripts/get_clang_format_version.py)
-if [[ "${cf_version}" -lt 8 ]];
+if [[ "${cf_version}" -lt 9 ]];
 then 
-  echo "Clang-format version should be 8.0.0 or greater. On OS/X this is currently (July 2019) the default, on Ubuntu consider installing clang-format locally with linuxbrew if you cannot install to filesystem"
+  echo "Clang-format version should be 9.0.0 or greater. On OS/X this is currently (Jan 2020) the default, on Ubuntu consider installing clang-format locally with linuxbrew if you cannot install to filesystem"
   echo "The value returned from scripts/get_clang_format_version.py was ${cf_version}" 
   exit
 fi

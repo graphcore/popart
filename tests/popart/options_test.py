@@ -145,3 +145,30 @@ def test_set_bad_options():
     opts = popart.SessionOptions()
     with pytest.raises(AttributeError) as e_info:
         opts.foo = 'bar'
+
+
+def test_update_options():
+    opts = popart.SessionOptions()
+    opts.engineOptions = {"aaaaa": "a"}
+    opts.engineOptions["bbbb"] = "b"
+
+    pdict = {"aaaaa": "a"}
+    pdict["bbbb"] = "b"
+
+    print("\nEngine options dict:")
+    for opt, val in opts.engineOptions.items():
+        print("opt:", opt, "val:", val)
+
+    print("\nPython dict:")
+    for opt, val in pdict.items():
+        print("opt:", opt, "val:", val)
+
+    # assert that the dictionaries are the same
+    keys_a = set(opts.engineOptions.keys())
+    keys_b = set(pdict.keys())
+    assert keys_a == keys_b
+
+    for key in keys_a:
+        a = opts.engineOptions[key]
+        b = pdict[key]
+        assert a == b

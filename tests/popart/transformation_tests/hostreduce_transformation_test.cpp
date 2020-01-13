@@ -9,6 +9,7 @@
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op/hostreducevarupdate.hpp>
 #include <popart/op/l1.hpp>
+#include <popart/op/sync.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/session.hpp>
@@ -22,6 +23,44 @@
 #include <vector>
 
 using namespace popart;
+
+// Check that schedule follows the pattern: N copies to host, sync, N copies to
+// device
+void checkOpSchedule(const std::vector<Op *> &opSchedule,
+                     bool hostWeightUpdate) {
+  std::vector<Op *> partialOpSchedule;
+  for (const auto &op : opSchedule) {
+    if (dynamic_cast<GradCopyToHostOp *>(op) ||
+        dynamic_cast<GradCopyFromHostOp *>(op) || dynamic_cast<SyncOp *>(op) ||
+        dynamic_cast<HostSGD0VarUpdate *>(op)) {
+      partialOpSchedule.push_back(op);
+    }
+  }
+
+  auto syncIt = std::find_if(
+      partialOpSchedule.begin(), partialOpSchedule.end(), [](Op *op) {
+        return dynamic_cast<SyncOp *>(op) != nullptr;
+      });
+
+  BOOST_CHECK(syncIt != partialOpSchedule.end());
+  int numCopiesToHost = 0;
+  for (auto it = partialOpSchedule.begin(); it != syncIt; ++it) {
+    BOOST_CHECK(dynamic_cast<GradCopyToHostOp *>(*it) != nullptr);
+    ++numCopiesToHost;
+  }
+
+  int numCopiesToDevice = 0;
+  for (auto it = std::next(syncIt, 1); it != partialOpSchedule.end(); ++it) {
+    if (hostWeightUpdate) {
+      BOOST_CHECK(dynamic_cast<HostSGD0VarUpdate *>(*it) != nullptr);
+    } else {
+      BOOST_CHECK(dynamic_cast<GradCopyFromHostOp *>(*it) != nullptr);
+    }
+    ++numCopiesToDevice;
+  }
+
+  BOOST_CHECK(numCopiesToHost == numCopiesToDevice);
+}
 
 // Test: SGD0VarUpdateOps should be replaced by HostReduceVarUpdate ops
 // Check that the gradient value is as expected
@@ -191,6 +230,10 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
                                                          {B_id, B_wrapper}};
 
   popart::StepIO stepio(inputs, anchors);
+
+  const auto &ir = session->getIr();
+  auto ops       = ir.getOpSchedule({});
+  checkOpSchedule(ops, opts.hostWeightUpdate);
 
   session->optimizerFromHost();
   session->weightsFromHost();
@@ -588,6 +631,10 @@ BOOST_AUTO_TEST_CASE(HostReduceHierarchicalReductionWithReplicatedGraphs) {
     };
 
     popart::StepIO stepio(inputs, anchors);
+
+    const auto &ir = session->getIr();
+    auto ops       = ir.getOpSchedule({});
+    checkOpSchedule(ops, opts.hostWeightUpdate);
 
     session->optimizerFromHost();
     session->weightsFromHost();
@@ -1072,6 +1119,10 @@ BOOST_AUTO_TEST_CASE(
     };
 
     popart::StepIO stepio(inputs, anchors);
+
+    const auto &ir = session->getIr();
+    auto ops       = ir.getOpSchedule({});
+    checkOpSchedule(ops, opts.hostWeightUpdate);
 
     session->optimizerFromHost();
     session->weightsFromHost();

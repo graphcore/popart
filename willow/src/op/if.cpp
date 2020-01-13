@@ -435,8 +435,12 @@ static OpCreator<IfOp> ifOpCreator(
         elseOutputIds.push_back(output.name());
       }
 
-      auto thenGraphId = generateSubgraphUniqueId("then");
-      auto elseGraphId = generateSubgraphUniqueId("else");
+      auto thenGraphId = thenBranch.name().empty()
+                             ? generateSubgraphUniqueId("then")
+                             : thenBranch.name();
+      auto elseGraphId = elseBranch.name().empty()
+                             ? generateSubgraphUniqueId("else")
+                             : elseBranch.name();
 
       // Construct then graph
       auto &ir        = settings_.graph.get().getIr();

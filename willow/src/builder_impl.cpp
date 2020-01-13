@@ -16,6 +16,13 @@
 #include <onnx/checker.h>
 #include <onnx/shape_inference/implementation.h>
 
+namespace {
+std::string generateUniqueGraphName(const std::string &name) {
+  static int uid = 0;
+  return name + "_" + std::to_string(uid++);
+}
+} // namespace
+
 namespace popart {
 
 // Supported IR version - this is the file format version
@@ -164,7 +171,12 @@ void BuilderImpl::addOpsetRequirement(const std::string &domain, int version) {
 
 void BuilderImpl::configure() {
   model_.set_ir_version(defaultIrVersion);
-  model_.mutable_graph()->set_name("BuilderGraph");
+  model_.mutable_graph()->set_name(generateUniqueGraphName("BuilderGraph"));
+}
+
+void BuilderImpl::setGraphName(const std::string &name) {
+  std::string new_name = name.empty() ? generateUniqueGraphName(name) : name;
+  model_.mutable_graph()->set_name(new_name);
 }
 
 TensorId BuilderImpl::addInputTensor(const TensorInfo &tensorInfo,

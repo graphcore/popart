@@ -458,6 +458,7 @@ Scheduler::getPartialOpSchedule(const OpsBeforeKey &gCons,
   }
   for (auto id_op : erase)
     unprocessedOps.erase(id_op.first);
+  erase.clear();
 
   while (true) {
 
@@ -471,7 +472,7 @@ Scheduler::getPartialOpSchedule(const OpsBeforeKey &gCons,
       break;
     }
 
-    auto id_op = opsToProcess->top();
+    auto op_id_process = opsToProcess->top();
     // logging::ir::trace(
     //    "[scheduler] Scheduling {}, VGID: {}, PingPong phase: {}",
     //    op->debugName(),
@@ -480,24 +481,24 @@ Scheduler::getPartialOpSchedule(const OpsBeforeKey &gCons,
     //           op->getOptionalPingPongPhase().get() : -1);
 
     opsToProcess->pop();
-    sorted.push_back(id_op.first);
-    if (id_op.first->getOptionalPingPongPhase()) {
-      auto phase = id_op.first->getOptionalPingPongPhase().get();
+    sorted.push_back(op_id_process.first);
+    if (op_id_process.first->getOptionalPingPongPhase()) {
+      auto phase = op_id_process.first->getOptionalPingPongPhase().get();
       --nPhaseOps[phase];
       if (nPhaseOps[phase] == 0) {
-        std::vector<OpIdPair> erase;
         for (OpIdPair op_id : unprocessedOps) {
           if (readyToProcess(op_id)) {
             opsToProcess->push(op_id);
             erase.push_back(op_id);
           }
         }
-        for (auto id_op : erase)
-          unprocessedOps.erase(id_op.first);
+        for (auto erase_op_id : erase)
+          unprocessedOps.erase(erase_op_id.first);
+        erase.clear();
       }
     }
 
-    for (OpIdPair waitingOp : opsAfterOpId[id_op.second]) {
+    for (OpIdPair waitingOp : opsAfterOpId[op_id_process.second]) {
       --nBeforeOpId[waitingOp.second];
       if (readyToProcess(waitingOp)) {
         opsToProcess->push(waitingOp);
@@ -505,7 +506,7 @@ Scheduler::getPartialOpSchedule(const OpsBeforeKey &gCons,
       }
     }
 
-    for (auto &tensor_indices : id_op.first->output->indicesMap()) {
+    for (auto &tensor_indices : op_id_process.first->output->indicesMap()) {
       processTensor(tensor_indices.first);
     }
   }

@@ -20,6 +20,8 @@ public:
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   std::unique_ptr<Op> clone() const final;
 
+  bool canBeReplacedByIdentity() override;
+
 private:
   std::vector<GradInOutMapper> gradInputInfoVec;
 };

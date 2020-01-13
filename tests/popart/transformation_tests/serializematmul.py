@@ -12,6 +12,36 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
 
+def _is_grad_tensor(x):
+    return x['name'].startswith(popart.reservedGradientPrefix())
+
+
+# The backward lhs matmul should take a gradient tensor in
+# as input 0 and a non gradient tensor in as input 1
+def _get_bwd_lhs_matmul(matmuls):
+    result = []
+    for m in matmuls:
+        i0 = m['inputs'][0]
+        i1 = m['inputs'][1]
+        if _is_grad_tensor(i0) and not _is_grad_tensor(i1):
+            result.append(m)
+    assert len(result) == 1
+    return result[0]
+
+
+# The backward rhs matmul should take a non gradient tensor
+# in as input 0 and a gradient tensor in as input  1
+def _get_bwd_rhs_matmul(matmuls):
+    result = []
+    for m in matmuls:
+        i0 = m['inputs'][0]
+        i1 = m['inputs'][1]
+        if not _is_grad_tensor(i0) and _is_grad_tensor(i1):
+            result.append(m)
+    assert len(result) == 1
+    return result[0]
+
+
 def gen_shape(shape):
     return '[{0} {1} {2}]'.format(str(shape[0]), str(shape[1]), str(shape[2]))
 
@@ -76,7 +106,7 @@ def test_matmul_serialization_invalid_factor(tmpdir):
     opts.reportOptions = {"showExecutionSteps": "true"}
     opts.enableGroupedMatmuls = False
 
-    pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
+    pat = popart.Patterns(['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp'])
 
     with pytest.raises(popart.popart_exception) as e_info:
         session = popart.InferenceSession(
@@ -125,7 +155,8 @@ def test_matmul_serialization_inference(tmpdir):
         opts.reportOptions = {"showExecutionSteps": "true"}
         opts.enableGroupedMatmuls = False
 
-        pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
+        pat = popart.Patterns(
+            ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp'])
 
         session = popart.InferenceSession(
             fnModel=proto,
@@ -259,7 +290,8 @@ def test_matmul_serialization_training_1(tmpdir):
         opts.reportOptions = {"showExecutionSteps": "true"}
         opts.enableGroupedMatmuls = False
 
-        pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
+        pat = popart.Patterns(
+            ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp'])
 
         session = popart.TrainingSession(
             fnModel=proto,
@@ -302,22 +334,16 @@ def test_matmul_serialization_training_1(tmpdir):
                 and rhs['shape'] == gen_shape(
                     [1, reducing_dim, output_channels]))
 
-        bwd_lhs = [
-            matmul for matmul in matmuls
-            if "lhs" in matmul["outputs"][0]["name"]
-        ][0]
         # bwd lhs
+        bwd_lhs = _get_bwd_lhs_matmul(matmuls)
         lhs = bwd_lhs['inputs'][0]
         rhs = bwd_lhs['inputs'][1]
         assert (lhs['shape'] == gen_shape([1, input_channels, output_channels])
                 and rhs['shape'] == gen_shape(
                     [1, output_channels, reducing_dim]))
 
-        bwd_rhs = [
-            matmul for matmul in matmuls
-            if "rhs" in matmul["outputs"][0]["name"]
-        ][0]
         # bwd rhs
+        bwd_rhs = _get_bwd_rhs_matmul(matmuls)
         lhs = bwd_rhs['inputs'][0]
         rhs = bwd_rhs['inputs'][1]
         assert (lhs['shape'] == gen_shape([1, reducing_dim, input_channels])
@@ -390,7 +416,7 @@ def test_matmul_serialization_training_1(tmpdir):
             [1, reducing_dim // matmul_serialization_factor, output_channels]))
 
         # BWD_LHS
-        matmuls = [op for op in ir['_subgraph(1)'] if op['type'] == 'MatMul']
+        matmuls = [op for op in ir['_subgraph(2)'] if op['type'] == 'MatMul']
         assert (len(matmuls) == 1)
 
         lhs = matmuls[0]['inputs'][0]
@@ -403,7 +429,7 @@ def test_matmul_serialization_training_1(tmpdir):
                 ]))
 
         # BWD_RHS
-        matmuls = [op for op in ir['_subgraph(2)'] if op['type'] == 'MatMul']
+        matmuls = [op for op in ir['_subgraph(1)'] if op['type'] == 'MatMul']
         assert (len(matmuls) == 1)
 
         lhs = matmuls[0]['inputs'][0]
@@ -435,7 +461,7 @@ def test_matmul_serialization_training_1(tmpdir):
             ]))
 
         # BWD_LHS
-        matmuls = [op for op in ir['_subgraph(1)'] if op['type'] == 'MatMul']
+        matmuls = [op for op in ir['_subgraph(2)'] if op['type'] == 'MatMul']
         assert (len(matmuls) == 1)
 
         lhs = matmuls[0]['inputs'][0]
@@ -447,7 +473,7 @@ def test_matmul_serialization_training_1(tmpdir):
             [1, output_channels // matmul_serialization_factor, reducing_dim]))
 
         # BWD_RHS
-        matmuls = [op for op in ir['_subgraph(2)'] if op['type'] == 'MatMul']
+        matmuls = [op for op in ir['_subgraph(1)'] if op['type'] == 'MatMul']
         assert (len(matmuls) == 1)
 
         lhs = matmuls[0]['inputs'][0]
@@ -519,7 +545,8 @@ def test_matmul_serialization_training_2(tmpdir):
         opts.reportOptions = {"showExecutionSteps": "true"}
         opts.enableGroupedMatmuls = False
 
-        pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
+        pat = popart.Patterns(
+            ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp'])
 
         session = popart.TrainingSession(
             fnModel=proto,
@@ -562,22 +589,16 @@ def test_matmul_serialization_training_2(tmpdir):
             1, lhs_group_dim * input_channels, reducing_dim
         ]) and rhs['shape'] == gen_shape([1, reducing_dim, output_channels]))
 
-        bwd_lhs = [
-            matmul for matmul in matmuls
-            if "Reshape" in matmul["outputs"][0]["name"]
-        ][0]
         # bwd lhs
+        bwd_lhs = _get_bwd_lhs_matmul(matmuls)
         lhs = bwd_lhs['inputs'][0]
         rhs = bwd_lhs['inputs'][1]
         assert (lhs['shape'] == gen_shape([
             1, lhs_group_dim * input_channels, output_channels
         ]) and rhs['shape'] == gen_shape([1, output_channels, reducing_dim]))
 
-        bwd_rhs = [
-            matmul for matmul in matmuls
-            if "rhs" in matmul["outputs"][0]["name"]
-        ][0]
         # bwd rhs
+        bwd_rhs = _get_bwd_rhs_matmul(matmuls)
         lhs = bwd_rhs['inputs'][0]
         rhs = bwd_rhs['inputs'][1]
 
@@ -657,7 +678,7 @@ def test_matmul_serialization_training_2(tmpdir):
             [1, reducing_dim // matmul_serialization_factor, output_channels]))
 
         # BWD_LHS
-        matmuls = [op for op in ir['_subgraph(1)'] if op['type'] == 'MatMul']
+        matmuls = [op for op in ir['_subgraph(2)'] if op['type'] == 'MatMul']
         assert (len(matmuls) == 1)
 
         lhs = matmuls[0]['inputs'][0]
@@ -669,7 +690,7 @@ def test_matmul_serialization_training_2(tmpdir):
             [1, output_channels, reducing_dim // matmul_serialization_factor]))
 
         # BWD_RHS
-        matmuls = [op for op in ir['_subgraph(2)'] if op['type'] == 'MatMul']
+        matmuls = [op for op in ir['_subgraph(1)'] if op['type'] == 'MatMul']
         assert (len(matmuls) == 1)
 
         lhs = matmuls[0]['inputs'][0]
@@ -703,7 +724,7 @@ def test_matmul_serialization_training_2(tmpdir):
             [1, reducing_dim, output_channels // matmul_serialization_factor]))
 
         # BWD_LHS
-        matmuls = [op for op in ir['_subgraph(1)'] if op['type'] == 'MatMul']
+        matmuls = [op for op in ir['_subgraph(2)'] if op['type'] == 'MatMul']
         assert (len(matmuls) == 1)
 
         lhs = matmuls[0]['inputs'][0]
@@ -716,7 +737,7 @@ def test_matmul_serialization_training_2(tmpdir):
             [1, output_channels // matmul_serialization_factor, reducing_dim]))
 
         # BWD_RHS
-        matmuls = [op for op in ir['_subgraph(2)'] if op['type'] == 'MatMul']
+        matmuls = [op for op in ir['_subgraph(1)'] if op['type'] == 'MatMul']
         assert (len(matmuls) == 1)
 
         lhs = matmuls[0]['inputs'][0]
@@ -783,7 +804,8 @@ def test_matmul_serialization_precision(tmpdir):
         opts.reportOptions = {"showExecutionSteps": "true"}
         opts.enableGroupedMatmuls = False
 
-        pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
+        pat = popart.Patterns(
+            ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp'])
 
         session = popart.TrainingSession(
             fnModel=proto,
@@ -826,22 +848,16 @@ def test_matmul_serialization_precision(tmpdir):
                 and rhs['shape'] == gen_shape(
                     [1, reducing_dim, output_channels]))
 
-        bwd_lhs = [
-            matmul for matmul in matmuls
-            if "lhs" in matmul["outputs"][0]["name"]
-        ][0]
         # bwd lhs
+        bwd_lhs = _get_bwd_lhs_matmul(matmuls)
         lhs = bwd_lhs['inputs'][0]
         rhs = bwd_lhs['inputs'][1]
         assert (lhs['shape'] == gen_shape([1, input_channels, output_channels])
                 and rhs['shape'] == gen_shape(
                     [1, output_channels, reducing_dim]))
 
-        bwd_rhs = [
-            matmul for matmul in matmuls
-            if "rhs" in matmul["outputs"][0]["name"]
-        ][0]
         # bwd rhs
+        bwd_rhs = _get_bwd_rhs_matmul(matmuls)
         lhs = bwd_rhs['inputs'][0]
         rhs = bwd_rhs['inputs'][1]
         assert (lhs['shape'] == gen_shape([1, reducing_dim, input_channels])
@@ -920,7 +936,7 @@ def test_matmul_serialization_precision(tmpdir):
             [1, reducing_dim // matmul_serialization_factor, output_channels]))
 
         # BWD_LHS
-        matmuls = [op for op in ir['_subgraph(1)'] if op['type'] == 'MatMul']
+        matmuls = [op for op in ir['_subgraph(2)'] if op['type'] == 'MatMul']
         assert (len(matmuls) == 1)
 
         lhs = matmuls[0]['inputs'][0]
@@ -933,7 +949,7 @@ def test_matmul_serialization_precision(tmpdir):
                 ]))
 
         # BWD_RHS
-        matmuls = [op for op in ir['_subgraph(2)'] if op['type'] == 'MatMul']
+        matmuls = [op for op in ir['_subgraph(1)'] if op['type'] == 'MatMul']
         assert (len(matmuls) == 1)
 
         lhs = matmuls[0]['inputs'][0]
@@ -968,7 +984,7 @@ def test_matmul_serialization_precision(tmpdir):
             ]))
 
         # BWD_LHS
-        matmuls = [op for op in ir['_subgraph(1)'] if op['type'] == 'MatMul']
+        matmuls = [op for op in ir['_subgraph(2)'] if op['type'] == 'MatMul']
         assert (len(matmuls) == 1)
 
         lhs = matmuls[0]['inputs'][0]
@@ -980,7 +996,7 @@ def test_matmul_serialization_precision(tmpdir):
             [1, output_channels // matmul_serialization_factor, reducing_dim]))
 
         # BWD_RHS
-        matmuls = [op for op in ir['_subgraph(2)'] if op['type'] == 'MatMul']
+        matmuls = [op for op in ir['_subgraph(1)'] if op['type'] == 'MatMul']
         assert (len(matmuls) == 1)
 
         lhs = matmuls[0]['inputs'][0]
@@ -1056,7 +1072,8 @@ def test_matmul_serialization_training_with_gradient_accumlation(tmpdir):
         opts.enableGradientAccumulation = True
         opts.accumulationFactor = 5
 
-        pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
+        pat = popart.Patterns(
+            ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp'])
 
         session = popart.TrainingSession(
             fnModel=proto,

@@ -25,7 +25,6 @@ public:
 
   const TensorId &getVarId() const { return varId; }
 
-
   // Return a map of all optimizer specific input Tensors (learning rate, etc)
   virtual std::map<InIndex, TensorId> optimizerInputs() const = 0;
 

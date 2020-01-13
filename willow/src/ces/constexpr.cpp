@@ -98,9 +98,9 @@ void ConstExprUtil::makeTensorConstInit(const TensorId name,
 
 bool ConstExprUtil::isComputable(Op *op, Graph &graph) {
   if (!ConstExprOpManager::hasConstExprOp(op)) {
-    logging::ces::warn("No ConstExpr implementation of {}, returning from "
-                       "constant folding early.",
-                       op->opid.type);
+    logging::ces::trace("No ConstExpr implementation of {}, returning from "
+                        "constant folding early.",
+                        op->opid.type);
     return false;
   }
 
