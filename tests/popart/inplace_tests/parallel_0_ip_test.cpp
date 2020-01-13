@@ -17,19 +17,19 @@
 
 using namespace popart;
 
-// where we test that with Relus is parallel, exactly 1 of
-// them is converted into an InplaceRelu by the Inplace pattern.
+// where we test that with unary ops in parallel, exactly 1 of
+// them is converted into an inplace op by the Inplace pattern.
 BOOST_AUTO_TEST_CASE(Inplace_parallel0) {
 
   // clang-format off
   //
-  // Consider the Relu Ops in PARALLEL
+  // Consider the unary ops in PARALLEL
   //
   //           | -- [Relu] -- (h0) -- |
   //           |                      | --- [Add] -- (h3) -|
-  // (in0) >---| -- [Relu] -- (h1) -- |                    |
+  // (in0) >---| -- [Sin] --- (h1) -- |                    |
   //           |                                           | -> [Add] -- (out)
-  //           | -- [Relu] -- (h2) ----------------------- |
+  //           | -- [Cos] --- (h2) ----------------------- |
   //
   // We can make the first relu in-place, but then we stall as
   // an in-place modifying op must run after all other consumers of its
@@ -38,9 +38,9 @@ BOOST_AUTO_TEST_CASE(Inplace_parallel0) {
   //
   //         | - [ReluInplace] - (h0) -|
   //         |                         | --- [Add] -- (h3) -|
-  // (in0) > | ------ [Relu] -- (h1) --|                    |
+  // (in0) > | ------ [Sin] ---- (h1) -|                    |
   //         |                                              | -> [Add] -- (out)
-  //         | ------ [Relu] -- (h2) ---------------------- |
+  //         | ------ [Cos] ---- (h2) --------------------- |
   //
   // We guarantee that it is indeed the Relu to h0 which is inplace 
   // by setting it to have a very high priority
@@ -55,8 +55,8 @@ BOOST_AUTO_TEST_CASE(Inplace_parallel0) {
   auto in0 = builder->addInputTensor(shape);
   auto h0  = aiOnnx.relu({in0});
   builder->setInplacePreferences(h0, {{"ReluInplace", 1e8}});
-  auto h1 = aiOnnx.relu({in0});
-  auto h2 = aiOnnx.relu({in0});
+  auto h1 = aiOnnx.sin({in0});
+  auto h2 = aiOnnx.cos({in0});
   // TODO T6707 : ensure that this (and other) tests are still valid
   // when inplace for Add is implemented, or default priorities change
   auto h3  = aiOnnx.add({h0, h1});
@@ -84,10 +84,14 @@ BOOST_AUTO_TEST_CASE(Inplace_parallel0) {
               Patterns(PatternsLevel::NONE).enableInPlace(true)});
 
   // Check the ir
-  // Just the one Relu has been inplaced
-  auto opsOfTypeRelu = ir.opsOfType(Onnx::AiOnnx::OpSet9::Relu);
-  BOOST_CHECK(opsOfTypeRelu.size() == 3 - 1);
+  // Just the Relu has been inplaced
+  auto opsOfTypeRelu        = ir.opsOfType(Onnx::AiOnnx::OpSet9::Relu);
   auto opsOfTypeReluInplace = ir.opsOfType(Onnx::CustomOperators::ReluInplace);
+  auto opsOfTypeSin         = ir.opsOfType(Onnx::AiOnnx::OpSet9::Sin);
+  auto opsOfTypeCos         = ir.opsOfType(Onnx::AiOnnx::OpSet9::Cos);
+  BOOST_CHECK(opsOfTypeRelu.size() == 0);
+  BOOST_CHECK(opsOfTypeSin.size() == 1);
+  BOOST_CHECK(opsOfTypeCos.size() == 1);
   BOOST_CHECK(opsOfTypeReluInplace.size() == 1);
   // and that the output of the inplace relu is h0
   BOOST_CHECK(opsOfTypeReluInplace.back()->output->id(0) == h0);

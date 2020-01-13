@@ -44,6 +44,7 @@
 #include <popart/transforms/inferpipelinestages.hpp>
 #include <popart/transforms/interipucopy.hpp>
 #include <popart/transforms/mergecopies.hpp>
+#include <popart/transforms/mergeduplicateops.hpp>
 #include <popart/transforms/mergevarupdates.hpp>
 #include <popart/transforms/pingpong.hpp>
 #include <popart/transforms/pipeline.hpp>
@@ -985,6 +986,8 @@ void Ir::prepareImpl(const IrBundle &gb) {
       userOptions.pingPongPhases > 1) {
     applyTransform(CacheSetup::id(), getMainGraph());
   }
+
+  applyTransform(MergeDuplicateOps::id(), getMainGraph());
 
   // Now, we apply the Patterns which can handle and create
   // topological constraints. Currently, this is only one

@@ -21,4 +21,7 @@ add_popart_cpp_unit_test(split_to_slice_patterns_test
 add_popart_cpp_unit_test(replicate_and_shard_ir_test_0 
                           replicate_and_shard_ir_test_0.cpp)
 
+add_popart_cpp_unit_test(merge_duplicate_ops_test 
+                          merge_duplicate_ops_test.cpp)
+
 add_all_py_unit_tests("")
