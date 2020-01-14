@@ -408,43 +408,43 @@ Patterns &Patterns::enablePattern(PreAliasPatternType t, bool v) {
 
 std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
   static std::map<std::type_index, int> patternPriority{
-      {std::type_index(typeid(PreUniRepl)), 0},
-      {std::type_index(typeid(PostNRepl)), 1},
-      {std::type_index(typeid(SoftmaxGradDirect)), 2},
-      {std::type_index(typeid(NlllWithSoftmaxGradDirect)), 3},
-      {std::type_index(typeid(ConvBiasPattern)), 4},
-      {std::type_index(typeid(OpToIdentityPattern)), 5},
-      {std::type_index(typeid(SubtractArg1GradOpPattern)), 6},
-      {std::type_index(typeid(MulArgGradOpPattern)), 7},
-      {std::type_index(typeid(ReciprocalGradOpPattern)), 8},
-      {std::type_index(typeid(DivArg0GradOpPattern)), 9},
-      {std::type_index(typeid(DivArg1GradOpPattern)), 10},
-      {std::type_index(typeid(ElementWiseGradOpPattern<SinGradOp, CosOp>)), 11},
-      {std::type_index(typeid(CosGradOpPattern)), 12},
-      {std::type_index(typeid(TanToSinOverCosPattern)), 13},
-      {std::type_index(typeid(SqrtGradOpPattern)), 14},
-      {std::type_index(typeid(ExpGradOpPattern)), 15},
-      {std::type_index(typeid(LogGradOpPattern)), 16},
-      {std::type_index(typeid(CoshOpPattern)), 17},
-      {std::type_index(typeid(LogSoftmaxOpPattern)), 18},
-      {std::type_index(typeid(GemmDecompositionPattern)), 19},
-      {std::type_index(typeid(NegativeOneScalePattern)), 20},
-      {std::type_index(typeid(PadSumPattern)), 21},
+      {std::type_index(typeid(PreUniRepl)), 35},
+      {std::type_index(typeid(PostNRepl)), 34},
+      {std::type_index(typeid(SoftmaxGradDirect)), 33},
+      {std::type_index(typeid(NlllWithSoftmaxGradDirect)), 32},
+      {std::type_index(typeid(ConvBiasPattern)), 31},
+      {std::type_index(typeid(OpToIdentityPattern)), 30},
+      {std::type_index(typeid(SubtractArg1GradOpPattern)), 29},
+      {std::type_index(typeid(MulArgGradOpPattern)), 28},
+      {std::type_index(typeid(ReciprocalGradOpPattern)), 27},
+      {std::type_index(typeid(DivArg0GradOpPattern)), 26},
+      {std::type_index(typeid(DivArg1GradOpPattern)), 25},
+      {std::type_index(typeid(ElementWiseGradOpPattern<SinGradOp, CosOp>)), 24},
+      {std::type_index(typeid(CosGradOpPattern)), 23},
+      {std::type_index(typeid(TanToSinOverCosPattern)), 22},
+      {std::type_index(typeid(SqrtGradOpPattern)), 21},
+      {std::type_index(typeid(ExpGradOpPattern)), 20},
+      {std::type_index(typeid(LogGradOpPattern)), 19},
+      {std::type_index(typeid(CoshOpPattern)), 18},
+      {std::type_index(typeid(LogSoftmaxOpPattern)), 17},
+      {std::type_index(typeid(GemmDecompositionPattern)), 16},
+      {std::type_index(typeid(NegativeOneScalePattern)), 15},
+      {std::type_index(typeid(PadSumPattern)), 14},
       {std::type_index(typeid(ElementWiseGradOpPattern<AbsGradOp, SignOp>)),
-       22},
-      {std::type_index(typeid(SplitGatherPattern)), 23},
-      {std::type_index(typeid(ConvDataGradPattern)), 24},
-      {std::type_index(typeid(SumToAddPattern)), 25},
-      {std::type_index(typeid(SplitGradOpToConcatPattern)), 26},
-      {std::type_index(typeid(SplitOpPattern)), 27},
-      {std::type_index(typeid(PowArg0GradOpPattern)), 28},
-      {std::type_index(typeid(PowArg1GradOpPattern)), 29},
-      {std::type_index(typeid(ContiguateIpuCopyIndicesPattern)), 30},
-      {std::type_index(typeid(MatMulPattern)), 31},
-      {std::type_index(typeid(MatMulLhsGradPattern)), 32},
-      {std::type_index(typeid(MatMulRhsGradPattern)), 33},
-      {std::type_index(typeid(SGD1Decompose)), 34},
-      {std::type_index(typeid(LSTMPattern)), 35}};
+       13},
+      {std::type_index(typeid(SplitGatherPattern)), 12},
+      {std::type_index(typeid(ConvDataGradPattern)), 11},
+      {std::type_index(typeid(SumToAddPattern)), 10},
+      {std::type_index(typeid(SplitGradOpToConcatPattern)), 9},
+      {std::type_index(typeid(SplitOpPattern)), 8},
+      {std::type_index(typeid(PowArg0GradOpPattern)), 7},
+      {std::type_index(typeid(PowArg1GradOpPattern)), 6},
+      {std::type_index(typeid(ContiguateIpuCopyIndicesPattern)), 5},
+      {std::type_index(typeid(MatMulPattern)), 4},
+      {std::type_index(typeid(MatMulLhsGradPattern)), 3},
+      {std::type_index(typeid(MatMulRhsGradPattern)), 2},
+      {std::type_index(typeid(SGD1Decompose)), 1},
+      {std::type_index(typeid(LSTMPattern)), 0}};
 
   std::vector<std::type_index> patternTypes;
   for (auto &typeIndex_enabled : settings) {
@@ -455,21 +455,21 @@ std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
     }
   }
 
-  // Deterministic pattern order is important. Sort the vector to preserve the
-  // order given by the patternPriority map. Any patterns not in patternPriority
-  // will be come after the patterns that are in patternPriority, and will be
-  // sorted using their names.
+  // Deterministic pattern order is important. Sort the vector in order of
+  // descending priority, using the entries in `patternPriority`. Any
+  // patterns not in `patternPriority` will come after the patterns that are in
+  // `patternPriority`, and will be sorted using their names.
   std::sort(
       patternTypes.begin(), patternTypes.end(), [](auto lhs, auto rhs) -> bool {
         auto lhsPriority = patternPriority.find(lhs);
         auto rhsPriority = patternPriority.find(rhs);
 
-        // If both have a priority, sort by priority.
+        // If both have a priority, sort by descending priority.
         // If neither have a priority, sort by name.
         // If only one has a priority, it should the first of the two.
         if (lhsPriority != patternPriority.end() &&
             rhsPriority != patternPriority.end()) {
-          return lhsPriority->second < rhsPriority->second;
+          return lhsPriority->second > rhsPriority->second;
         } else if (lhsPriority == patternPriority.end() &&
                    rhsPriority == patternPriority.end()) {
           auto lhsName = PreAliasPatternManager::getPatternName(lhs);
