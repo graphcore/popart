@@ -309,7 +309,7 @@ static void serializeVarUpdate(int sliceDim,
   std::vector<Op *> path;
   bool validPath               = true;
   bool endOfPathFound          = false;
-  const int slice_dim_from_end = 2 - sliceDim;
+  const int slice_dim_from_end = 3 - sliceDim;
 
   while (endOfPathFound == false && validPath == true) {
 
