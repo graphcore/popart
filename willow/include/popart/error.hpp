@@ -86,7 +86,7 @@ public:
 
   virtual std::unique_ptr<memory_allocation_err> clone() const = 0;
   virtual std::string getSummaryReport() const                 = 0;
-  virtual std::string getGraphReport(bool use_cbor) const      = 0;
+  virtual std::string getGraphReport(bool useCbor) const       = 0;
 };
 
 ErrorSource getErrorSource(const std::exception &e);

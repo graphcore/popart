@@ -377,8 +377,8 @@ struct PrepareDeviceError {
   virtual bool isSuccessful() const { return success; }
   std::string what() const { return exception->what(); }
   std::string getSummaryReport() const { return exception->getSummaryReport(); }
-  std::string getGraphReport(bool use_cbor) const {
-    return exception->getGraphReport(use_cbor);
+  std::string getGraphReport(bool useCbor) const {
+    return exception->getGraphReport(useCbor);
   }
 };
 
@@ -872,11 +872,11 @@ PYBIND11_MODULE(popart_core, m) {
       .def("getSummaryReport", &PrepareDeviceError::getSummaryReport)
       .def(
           "getGraphReport",
-          [](const PrepareDeviceError &error, bool use_cbor) {
-            auto report = error.getGraphReport(use_cbor);
+          [](const PrepareDeviceError &error, bool useCbor) {
+            auto report = error.getGraphReport(useCbor);
             return py::bytes(report);
           },
-          py::arg("use_cbor") = false);
+          py::arg("useCbor") = false);
 
   py::class_<InferenceSession>(m, "_InferenceSessionCore")
       .def(py::init(&InferenceSession::createFromOnnxModel),
@@ -912,21 +912,24 @@ PYBIND11_MODULE(popart_core, m) {
       .def("run", &InferenceSession::run)
       .def("modelToHost", &InferenceSession::modelToHost)
       .def("getInfo", &InferenceSession::getInfo)
-      .def("getSummaryReport", &InferenceSession::getSummaryReport)
+      .def("getSummaryReport",
+           &InferenceSession::getSummaryReport,
+           py::arg("resetProfile") = true)
       .def(
           "getGraphReport",
-          [](const InferenceSession &session, bool use_cbor) {
-            auto report = session.getGraphReport(use_cbor);
+          [](const InferenceSession &session, bool useCbor) {
+            auto report = session.getGraphReport(useCbor);
             return py::bytes(report);
           },
-          py::arg("use_cbor") = false)
+          py::arg("useCbor") = false)
       .def(
           "getExecutionReport",
-          [](const InferenceSession &session, bool use_cbor) {
-            auto report = session.getExecutionReport(use_cbor);
+          [](const InferenceSession &session, bool useCbor, bool resetProfile) {
+            auto report = session.getExecutionReport(useCbor, resetProfile);
             return py::bytes(report);
           },
-          py::arg("use_cbor") = false)
+          py::arg("useCbor")      = false,
+          py::arg("resetProfile") = true)
       .def("getSerializedGraph",
            [](const InferenceSession &session) {
              auto report = session.getSerializedGraph();
@@ -977,21 +980,24 @@ PYBIND11_MODULE(popart_core, m) {
       .def("run", &TrainingSession::run)
       .def("modelToHost", &TrainingSession::modelToHost)
       .def("getInfo", &TrainingSession::getInfo)
-      .def("getSummaryReport", &TrainingSession::getSummaryReport)
+      .def("getSummaryReport",
+           &TrainingSession::getSummaryReport,
+           py::arg("resetProfile") = true)
       .def(
           "getGraphReport",
-          [](const TrainingSession &session, bool use_cbor) {
-            auto report = session.getGraphReport(use_cbor);
+          [](const TrainingSession &session, bool useCbor) {
+            auto report = session.getGraphReport(useCbor);
             return py::bytes(report);
           },
-          py::arg("use_cbor") = false)
+          py::arg("useCbor") = false)
       .def(
           "getExecutionReport",
-          [](const TrainingSession &session, bool use_cbor) {
-            auto report = session.getExecutionReport(use_cbor);
+          [](const TrainingSession &session, bool useCbor, bool resetProfile) {
+            auto report = session.getExecutionReport(useCbor, resetProfile);
             return py::bytes(report);
           },
-          py::arg("use_cbor") = false)
+          py::arg("useCbor")      = false,
+          py::arg("resetProfile") = true)
       .def("getSerializedGraph",
            [](const TrainingSession &session) {
              auto report = session.getSerializedGraph();

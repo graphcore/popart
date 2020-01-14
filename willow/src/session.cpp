@@ -179,20 +179,20 @@ void Session::modelToHost(const std::string &fn) {
   }
 }
 
-std::string Session::getSummaryReport() const {
+std::string Session::getSummaryReport(bool resetProfile) const {
   logging::session::trace("Session::getSummaryReport");
 
-  return device_->getSummaryReport();
+  return device_->getSummaryReport(resetProfile);
 }
 
-std::string Session::getGraphReport(bool use_cbor) const {
+std::string Session::getGraphReport(bool useCbor) const {
   logging::session::trace("Session::getGraphReport");
-  return device_->getGraphReport(use_cbor);
+  return device_->getGraphReport(useCbor);
 }
 
-std::string Session::getExecutionReport(bool use_cbor) const {
+std::string Session::getExecutionReport(bool useCbor, bool resetProfile) const {
   logging::session::trace("Session::getExecutionReport");
-  return device_->getExecutionReport(use_cbor);
+  return device_->getExecutionReport(useCbor, resetProfile);
 }
 
 std::string Session::getSerializedGraph() const {

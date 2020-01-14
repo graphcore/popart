@@ -255,6 +255,44 @@ def test_execution_report(tmpdir):
     rep = session.getExecutionReport()
 
 
+def test_execution_report_reset(tmpdir):
+
+    builder = popart.Builder()
+
+    shape = popart.TensorInfo("FLOAT", [1])
+
+    i1 = builder.addInputTensor(shape)
+    i2 = builder.addInputTensor(shape)
+    o = builder.aiOnnx.add([i1, i2])
+    builder.addOutputTensor(o)
+
+    proto = builder.getModelProto()
+
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+
+    opts = popart.SessionOptions()
+    opts.engineOptions = {"debug.instrument": "true"}
+
+    session = popart.InferenceSession(
+        fnModel=proto,
+        dataFeed=dataFlow,
+        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+
+    anchors = session.initAnchorArrays()
+
+    session.prepareDevice()
+
+    d1 = np.array([10.]).astype(np.float32)
+    d2 = np.array([11.]).astype(np.float32)
+    stepio = popart.PyStepIO({i1: d1, i2: d2}, anchors)
+
+    session.run(stepio)
+
+    rep1 = session.getExecutionReport(resetProfile=False)
+    rep2 = session.getExecutionReport(resetProfile=False)
+    assert len(rep1) == len(rep2)
+
+
 def test_execution_report_cbor(tmpdir):
 
     builder = popart.Builder()

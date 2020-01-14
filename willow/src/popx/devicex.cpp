@@ -93,13 +93,13 @@ public:
     }
   }
 
-  std::string getGraphReport(bool use_cbor) const {
+  std::string getGraphReport(bool useCbor) const {
 
     if (exception.graphProfile.type() == poplar::ProfileValue::Type::MAP &&
         exception.graphProfile.size() != 0) {
 
       std::stringstream ss;
-      if (use_cbor) {
+      if (useCbor) {
         serializeToCBOR(ss, exception.graphProfile);
       } else {
         serializeToJSON(ss, exception.graphProfile);
@@ -3087,7 +3087,7 @@ void Devicex::doProfileChecks() const {
   }
 }
 
-std::string Devicex::getSummaryReport() const {
+std::string Devicex::getSummaryReport(bool resetProfile) const {
   doProfileChecks();
   const auto &g_prof = pEngine->getGraphProfile();
   const auto &e_prof = pEngine->getExecutionProfile();
@@ -3095,15 +3095,17 @@ std::string Devicex::getSummaryReport() const {
   std::stringstream ss;
   printProfileSummary(ss, g_prof, e_prof, reportOptions);
 
-  pEngine->resetExecutionProfile();
+  if (resetProfile) {
+    pEngine->resetExecutionProfile();
+  }
   return ss.str();
 }
 
-std::string Devicex::getGraphReport(bool use_cbor) const {
+std::string Devicex::getGraphReport(bool useCbor) const {
   doProfileChecks();
   std::stringstream ss;
   auto report = pEngine->getGraphProfile();
-  if (use_cbor) {
+  if (useCbor) {
     serializeToCBOR(ss, report);
   } else {
     serializeToJSON(ss, report);
@@ -3112,18 +3114,20 @@ std::string Devicex::getGraphReport(bool use_cbor) const {
   return ss.str();
 }
 
-std::string Devicex::getExecutionReport(bool use_cbor) const {
+std::string Devicex::getExecutionReport(bool useCbor, bool resetProfile) const {
   doProfileChecks();
   std::stringstream ss;
   auto report = pEngine->getExecutionProfile();
 
-  if (use_cbor) {
+  if (useCbor) {
     serializeToCBOR(ss, report);
   } else {
     serializeToJSON(ss, report);
   }
 
-  pEngine->resetExecutionProfile();
+  if (resetProfile) {
+    pEngine->resetExecutionProfile();
+  }
   return ss.str();
 }
 
