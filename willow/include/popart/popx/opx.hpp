@@ -32,6 +32,8 @@ enum class InputCreatorType {
   // allow an Opx downstream in the graph to
   // create it
   CANUNWIND,
+  // Can create or unwind
+  CANCREATE_OR_UNWIND,
   // Cannot create tensor, nor can it allow a
   // a downstream Opx to create the tensor
   DEADEND,

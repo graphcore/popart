@@ -839,6 +839,44 @@ Devicex::getCreatorEndpoints(Tensor *tensor,
   std::vector<ICreatorCandidatePtr> endpoints;
   std::vector<UnwindEndpointPtr> endpointsUnwind;
 
+  // For tensors created within a subgraph:
+  // Detect graph outputs and try to propagate out through the first call site
+  for (OutIndex o = 0; o < tensor->getGraph().getOutputIds().size(); ++o) {
+    TensorId graph_output_tensor_id = tensor->getGraph().getOutputId(o);
+    if (graph_output_tensor_id == tensor->id) {
+      Op *op       = tensor->getGraph().getCallSiteOps(1).front();
+      auto opx     = getOpx(op->id);
+      bool visited = false;
+      // Escape route only allowed if this call op has not been visited yet
+      for (auto &elem : pathFromInput) {
+        if (elem.isDelegate && opx == elem.opx) {
+          visited = true;
+        }
+      }
+      if (!visited) {
+        auto updatedPath = pathFromInput;
+
+        // Mark as delegate visited Opx on path
+        updatedPath.push_back({opx});
+
+        Tensor *nextOutputTensor = op->output->tensor(o);
+
+        logging::devicex::trace("Subgraph escape path: {} -> {}",
+                                graph_output_tensor_id,
+                                nextOutputTensor->id);
+
+        // Continue path recursion behind the subgraph
+        auto candidates = getCreatorEndpoints(nextOutputTensor, updatedPath);
+        for (auto &candidate : candidates.first) {
+          endpoints.push_back(candidate);
+        }
+        for (auto &candidate : candidates.second) {
+          endpointsUnwind.push_back(candidate);
+        }
+      }
+    }
+  }
+
   for (Op *op : tensor->consumers.getOps()) {
     auto conOpId   = op->id;
     const Opx *opx = getOpx(conOpId);
@@ -891,6 +929,9 @@ Devicex::getCreatorEndpoints(Tensor *tensor,
       // TODO: T13654 Generalize for other subgraphing ops (if, loop).
       // Create common base class for Loop, If, Call
       auto f_delegate = [&]() {
+        // Mark as delegate visited Opx on path
+        updatedPath.push_back({opx});
+
         const CallOpx *callopx = dynamic_cast<const CallOpx *>(opx);
         // Get delegated endpoints
         auto delegateEndpoints = callopx->getEndpoints(inIndex, updatedPath);
@@ -957,6 +998,14 @@ Devicex::getCreatorEndpoints(Tensor *tensor,
         logging::devicex::trace("{} can unwind, path depth {}",
                                 op->debugName(),
                                 updatedPath.size());
+        f_unwind();
+        break;
+      }
+      case InputCreatorType::CANCREATE_OR_UNWIND: {
+        logging::devicex::trace("{} can create or unwind , path depth {}",
+                                op->debugName(),
+                                updatedPath.size());
+        f_create();
         f_unwind();
         break;
       }
