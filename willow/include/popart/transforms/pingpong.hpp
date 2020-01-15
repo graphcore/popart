@@ -21,7 +21,7 @@ public:
 
   virtual std::size_t getId() const final { return id(pass); }
 
-  TensorId generateAllocTensorId(Tensor *tensor) const;
+  TensorId generateInitTensorId(Tensor *tensor) const;
 
   TensorId generateLoadedTensorId(Tensor *tensor, int64_t load_index) const;
 

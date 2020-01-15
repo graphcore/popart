@@ -10,6 +10,7 @@
 
 #include <popart/op/boundary.hpp>
 #include <popart/op/cache.hpp>
+#include <popart/op/init.hpp>
 #include <popart/op/recomputeprereq.hpp>
 #include <popart/transforms/prune.hpp>
 
@@ -132,8 +133,7 @@ bool Prune::apply(Graph &graph) const {
   for (auto &id_op : graph.getOps()) {
     Op *op = id_op.second.get();
     // TODO: Better mechanism to preserve special ops
-    if (required.count(op) == 0 && !dynamic_cast<CacheAllocateOp *>(op) &&
-        !dynamic_cast<CacheLoadOp *>(op) && !dynamic_cast<CacheStoreOp *>(op) &&
+    if (required.count(op) == 0 && !dynamic_cast<CacheStoreOp *>(op) &&
         !dynamic_cast<BoundaryOp *>(op) &&
         !dynamic_cast<RecomputePrereqOp *>(op)) {
       opsToDelete.push_back(op);

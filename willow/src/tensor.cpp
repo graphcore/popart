@@ -23,7 +23,7 @@ bool Tensor::consumersAllPreLoss() const {
   return true;
 }
 
-int64_t Tensor::getVirtualGraphIdUnsafe() const {
+VGraphId Tensor::getVirtualGraphIdUnsafe() const {
 
   // If this Tensor has a Producer, use its VirtualGraphId if it has one
   if (hasProducer()) {
@@ -66,7 +66,7 @@ int64_t Tensor::getVirtualGraphIdUnsafe() const {
   return -1;
 }
 
-int64_t Tensor::getVirtualGraphId() const {
+VGraphId Tensor::getVirtualGraphId() const {
   auto vid = getVirtualGraphIdUnsafe();
   if (vid == -1) {
     throw error("Invalid call to getVirtualGraphId, Tensor does not have one");

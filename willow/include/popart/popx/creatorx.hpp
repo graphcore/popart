@@ -18,12 +18,19 @@ using UnwindEndpointPtr = std::shared_ptr<UnwindEndpoint>;
 // takes through an Opx
 struct OpxInAndOutIndex {
   OpxInAndOutIndex(const Opx *opx_, InIndex inIndex_, OutIndex outIndex_)
-      : opx(opx_), inIndex(inIndex_), outIndex(outIndex_) {}
+      : opx(opx_), inIndex(inIndex_), outIndex(outIndex_), isDelegate(false) {}
+  OpxInAndOutIndex(const Opx *opx_)
+      : opx(opx_), inIndex(-1), outIndex(-1), isDelegate(true) {}
   OpxInAndOutIndex() = default;
+
+  bool operator==(const OpxInAndOutIndex &rhs) const {
+    return opx == rhs.opx && inIndex == rhs.inIndex && outIndex == rhs.outIndex;
+  }
 
   const Opx *opx;
   InIndex inIndex;
   OutIndex outIndex;
+  bool isDelegate;
 };
 
 // An interface for a potential creator of a tensor

@@ -5,6 +5,7 @@
 #include <popart/op.hpp>
 #include <popart/op/cache.hpp>
 #include <popart/op/call.hpp>
+#include <popart/op/init.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
@@ -47,7 +48,7 @@ bool AliasZeroCopy::isSameTensor(Graph &graph,
 // t: Tensor
 // (R): Recomputation
 
-// If P1/P2/P3 are CacheAllocateOps and t1/t3/t5 can be aliased
+// If P1/P2/P3 are InitOps and t1/t3/t5 can be aliased
 // (are not used in overlapping intervals),
 // and t1/t2/t7, t3/t4, t5/t6 are already aliased:
 //
@@ -141,7 +142,7 @@ bool AliasZeroCopy::apply(Graph &graph) const {
           Op *op = tensor->getProducerUnsafe();
           if (op &&
               (dynamic_cast<CacheLoadOp *>(op) || dynamic_cast<CallOp *>(op) ||
-               dynamic_cast<CacheAllocateOp *>(op))) {
+               dynamic_cast<InitOp *>(op))) {
             auto it = std::find(schedule.begin(), schedule.end(), op);
             producerPriorityMap[std::distance(schedule.begin(), it)] = {op,
                                                                         tensor};
@@ -194,10 +195,9 @@ bool AliasZeroCopy::apply(Graph &graph) const {
             current_id = tensor->id;
           } else {
             // Continuing the aliasing chain
-            if (CacheAllocateOp *cacheAlloc =
-                    dynamic_cast<CacheAllocateOp *>(op)) {
+            if (InitOp *cacheAlloc = dynamic_cast<InitOp *>(op)) {
               // Special case (currently sufficient for weight tensors),
-              // where the producer is a CacheAllocateOp, which can always be
+              // where the producer is a InitOp, which can always be
               // removed safely.
               auto consumers = tensor->consumers.getOps();
               // Currently, first consumer is guaranteed to be the updating op

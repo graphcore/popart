@@ -178,6 +178,7 @@ public:
   bool hasOutput(OutIndex) const;
 
   const poplar::Tensor &getInTensor(InIndex index) const;
+  const poplar::Tensor &getOutTensor(OutIndex index) const;
 
   void setOutTensor(OutIndex index, const poplar::Tensor &tensor) const;
 
@@ -196,6 +197,13 @@ public:
 
   poplar::Tensor getScalarVariable(const poplar::Type &type,
                                    const std::string &name) const;
+
+  // The Opx outputs that come from any subgraph and need to be prepared
+  // This allows growing the data flows through subgraphs independently, and
+  // growing the Opx that calls the subgraph can be deferred until after all
+  // data flows through the called subgraph are grown.
+  virtual std::vector<std::tuple<TensorId, TensorId, bool>>
+  getOutputsToPrepare() const;
 
 private:
   std::string idStr() const;

@@ -31,8 +31,10 @@
 #include <popart/op/call.hpp>
 #include <popart/op/getrandomseed.hpp>
 #include <popart/op/if.hpp>
+#include <popart/op/init.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/restore.hpp>
+#include <popart/op/subgraphop.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/patterns/pattern.hpp>
 #include <popart/popx/devicex.hpp>
@@ -513,99 +515,6 @@ poplar::Tensor Devicex::getScalarVariable(poplar::Graph &graph,
   return tensor;
 }
 
-PopTensors::PopTensors(const Ir &ir_) : ir(ir_) {}
-
-void PopTensors::insert(TensorId id, const poplar::Tensor &pt) {
-  auto found = tensors_.find(id);
-  if (found != tensors_.end()) {
-    throw internal_error("poplar::Tensor " + id + " already in map");
-  }
-
-  if (!ir.containsTensor(id)) {
-    throw internal_error(
-        "no tensor named {} in ir, is this a valid poplar::Tensor?", id);
-  }
-
-  // confirm shapes agree (up to squeezing out the extra 1s)
-  auto irTensor = ir.getTensor(id);
-  auto shape    = pt.shape();
-
-  if (pt.shape() != irTensor->info.shape_szt()) {
-
-    // squeeze out extra 1s
-    while (!shape.empty() && shape[0] == 1) {
-      shape.erase(shape.begin());
-    }
-
-    if (shape != irTensor->info.shape_szt()) {
-      std::stringstream ss;
-      ss << "poplar::Tensor " << id << " of unexpected shape. "
-         << "Poplar tensor shape: " << pt.shape() << "."
-         << "Expected (Ir) tensor shape: " << irTensor->info.shape_szt() << "."
-         << "This for tensor " << irTensor->str();
-      throw error(ss.str());
-    }
-  }
-
-  // confirm types agree
-  auto expectedType = popType(ir.getTensor(id)->info);
-  if (pt.elementType() != expectedType) {
-    std::stringstream ss;
-    ss << "poplar::Tensor " << id << " of unexpected Type. "
-       << "Poplar tensor type : " << pt.elementType();
-    ss << ". Expected (Ir) tensor type : " << expectedType;
-    ss << ". This for tensor " << irTensor->str();
-    throw error(ss.str());
-  }
-
-  tensors_[id] = pt;
-}
-
-bool PopTensors::contains(TensorId id) const {
-  return tensors_.find(id) != tensors_.end();
-}
-
-// TODO: T13636: Make this work if the aliased tensor is a concatenation,
-// or similar, of multiple tensors.
-void PopTensors::addAlias(TensorId id0, TensorId id1) {
-  logging::devicex::trace("Tensors {} and {} are aliases.", id0, id1);
-  tensorAliases_[id0].insert(id1);
-  tensorAliases_[id1].insert(id0);
-
-  for (auto alias : tensorAliases_[id0]) {
-    tensorAliases_[id1].insert(alias);
-    tensorAliases_[alias].insert(id1);
-  }
-  for (auto alias : tensorAliases_[id1]) {
-    tensorAliases_[id0].insert(alias);
-    tensorAliases_[alias].insert(id0);
-  }
-}
-
-const poplar::Tensor &PopTensors::get(TensorId id) const {
-  auto found = tensors_.find(id);
-
-  if (found == tensors_.end()) {
-    auto tryAlias = tensorAliases_.find(id);
-    if (tryAlias != tensorAliases_.end()) {
-      for (auto tid : tryAlias->second) {
-        found = tensors_.find(tid);
-        if (found != tensors_.end())
-          break;
-      }
-    }
-  }
-
-  if (found == tensors_.end()) {
-    throw error("no poplar::Tensor " + id);
-  }
-  return found->second;
-}
-
-const std::map<TensorId, poplar::Tensor> &PopTensors::getTensors() const {
-  return tensors_;
-}
-
 PipelineInfo::PipelineInfo(int _batchesPerStep,
                            int _gradAcclFactor,
                            int _numPipelineStages,
@@ -888,41 +797,15 @@ const Opx *Devicex::getOpx(OpId id) const { return opxs.at(id).get(); }
 // The Id of the task which adds a Tensor to a poplar::Graph
 std::pair<TaskId, DependencyType> Devicex::taskWhichCreates(TensorId id) {
   Tensor *tensor = ir().getTensor(id);
-  // Tensors without producers are created by special tasks
-  // These tasks are a TENSOR rather than an OUTPUT dependency.
-  if (!tensor->hasProducer()) {
+  // Tensors without producers, or produced by an InitOp are created by special
+  // tasks These tasks are a TENSOR rather than an OUTPUT dependency.
+  if (!tensor->hasProducer() || dynamic_cast<InitOp *>(tensor->getProducer())) {
     return {initTensorTaskId(id), DependencyType::TENSOR};
   }
 
   // Tensors with producer Ops are created (added to a Graph) by their
   // producer's OpTask
   else {
-    // Special handling for fully aliased tensors:
-    // Alleviate problems with circular dependencies of e.g.
-    // cached bias tensors of convolutions.
-    Op *producer = tensor->getProducer();
-    auto outIdx  = producer->output->indicesMap().at(tensor).front();
-    for (auto &entry : producer->input->indicesMap()) {
-      auto inIdx = entry.second.front();
-      logging::trace("Checking if {} aliases input {} to output {}",
-                     producer->debugName(),
-                     inIdx,
-                     outIdx);
-      view::Regions rs = producer->aliases(inIdx, outIdx);
-      if (rs.size() == 1 &&
-          rs.front() == view::Region::getFull(tensor->info.shape()) &&
-          !rs.front().isEmpty()) {
-        tensors.addAlias(producer->inId(inIdx), producer->outId(outIdx));
-        // Relaxed dependency: Producer task of the aliased tensor
-
-        // TODO: T13636: Make this work if the aliased
-        // tensor is a concatenation, or similar, of multiple tensors.
-        // And also make taskWhichCreates const plus adding tensors.addAlias in
-        // a separate function.
-        return taskWhichCreates(producer->inId(inIdx));
-      }
-    }
-
     return {opTaskId(tensor->getProducer()), DependencyType::OUTPUT};
   }
 }
@@ -1055,25 +938,25 @@ Devicex::getCreatorEndpoints(Tensor *tensor,
       // Opx has poplar call to layout tensor at this
       // inIndex
       case InputCreatorType::CANCREATE: {
-        logging::trace("{} can create, path depth {}",
-                       op->debugName(),
-                       updatedPath.size());
+        logging::devicex::trace("{} can create, path depth {}",
+                                op->debugName(),
+                                updatedPath.size());
         f_create();
         break;
       }
       case InputCreatorType::CANDELEGATE: {
-        logging::trace("{} can delegate, path depth {}",
-                       op->debugName(),
-                       updatedPath.size());
+        logging::devicex::trace("{} can delegate, path depth {}",
+                                op->debugName(),
+                                updatedPath.size());
         f_delegate();
         break;
       }
       // Recursively search the DAG downstream of the op until we
       // have set of endpoints that can create the tensor
       case InputCreatorType::CANUNWIND: {
-        logging::trace("{} can unwind, path depth {}",
-                       op->debugName(),
-                       updatedPath.size());
+        logging::devicex::trace("{} can unwind, path depth {}",
+                                op->debugName(),
+                                updatedPath.size());
         f_unwind();
         break;
       }
@@ -1113,12 +996,12 @@ ICreatorCandidatePtr Devicex::getTensorCreator(Tensor *tensor) const {
         candidates.begin(), candidates.end(), ICreatorCandidate::greaterThan);
 
     if (candidates.front()->getNumElems() == tensor->info.nelms()) {
-      logging::trace("Candidate {} creates tensor alone.",
-                     candidates.front()->str());
+      logging::devicex::trace("Candidate {} creates tensor alone.",
+                              candidates.front()->str());
       // A single top-priority candidate can initialize the tensor fully.
       return candidates.front();
     } else {
-      logging::trace("Multiple candidates needed.");
+      logging::devicex::trace("Multiple candidates needed.");
       // Multiple creators need to be concatenated to form the full tensor.
       std::shared_ptr<InputMultiCreatorCandidate> multiCandidate =
           std::make_shared<InputMultiCreatorCandidate>();
@@ -1127,11 +1010,12 @@ ICreatorCandidatePtr Devicex::getTensorCreator(Tensor *tensor) const {
         // process most important first
         multiCandidate->addCreatorCandidate(candidate);
       }
-      logging::trace("Using multi-candidate {}.", multiCandidate->str());
+      logging::devicex::trace("Using multi-candidate {}.",
+                              multiCandidate->str());
       return multiCandidate;
     }
   } else {
-    logging::trace("No suitable candidate.");
+    logging::devicex::trace("No suitable candidate.");
     return nullptr;
   }
 }
@@ -1140,6 +1024,10 @@ ICreatorCandidatePtr Devicex::getTensorCreator(Tensor *tensor) const {
 // created based on complex global criteria open.
 PriTask Devicex::initTensorTask(Tensor *tensor) {
   auto candidate = getTensorCreator(tensor);
+
+  // Initialising priMod to 0.0 since there is no guarantee that the tensor
+  // to be initialised has a consumer in it's graph.
+  double priMod = 0.0;
 
   // Design decision:
   // The order in which these initTensorTasks are run affects tensor
@@ -1150,12 +1038,15 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
   // based on:
   // - 0th consumer id
   // - the index at which it is consumed by this consumer
-  auto firstConsumer = tensor->consumers.getOps().front();
-  auto priMod0       = firstConsumer->id;
-  auto priMod1       = firstConsumer->input->indices(tensor).front();
-  // assumes an op has max 1000 inputs
-  auto priMod =
-      static_cast<double>(priMod0) + static_cast<double>(priMod1) / 1000.0;
+  if (tensor->consumers.getOps().size() > 0) {
+    // Tensor does have consumers
+    auto firstConsumer = tensor->consumers.getOps().front();
+    auto priMod0       = firstConsumer->id;
+    auto priMod1       = firstConsumer->input->indices(tensor).front();
+    // assumes an op has max 1000 inputs
+    priMod =
+        static_cast<double>(priMod0) + static_cast<double>(priMod1) / 1000.0;
+  }
 
   // 1. A unique candidate creator will create the tensor
   // 2. The tensor will be unwound (have its layout modified)
@@ -1201,16 +1092,29 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
       // tensor on that graph
       auto consumerOps = tensor->consumers.getOps();
 
+      std::vector<std::pair<Op *, bool>> relatedOps;
+      relatedOps.reserve(consumerOps.size() + 1);
+
+      for (auto *op : consumerOps) {
+        relatedOps.emplace_back(op, true);
+      }
+
+      if (tensor->hasProducer()) {
+        relatedOps.emplace_back(tensor->getProducer(), false);
+      }
+
       if (logging::shouldLog(logging::Module::devicex, logging::Level::Trace)) {
         std::stringstream ss;
-        for (auto *op : consumerOps) {
-          auto index = op->input->indicesMap().at(tensor)[0];
-          ss << std::endl
-             << "    {" << op->debugName() << ", VGID: "
-             << (op->hasVirtualGraphId()
-                     ? op->getIntrospectionInVirtualGraphId(index)
-                     : -1)
-             << "}";
+        for (auto &op : relatedOps) {
+          if (op.second) {
+            auto index = op.first->input->indicesMap().at(tensor)[0];
+            ss << std::endl
+               << "    {" << op.first->debugName() << ", VGID: "
+               << (op.first->hasVirtualGraphId()
+                       ? op.first->getIntrospectionInVirtualGraphId(index)
+                       : -1)
+               << "}";
+          }
         }
         logging::devicex::trace(
             "[initTensorTask] Tensor: {}, type: {}, consumed by ops: [{}]",
@@ -1220,23 +1124,29 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
       }
 
       std::vector<VGraphId> ipus;
-      for (auto *op : consumerOps) {
+      for (auto &op : relatedOps) {
         VGraphId vgid = -1;
-        if (op->hasVirtualGraphId()) {
-          // VirtualGraphId with subgraph call introspection
-          // for the current tensor
-          auto index = op->input->indicesMap().at(tensor)[0];
-          vgid       = op->getIntrospectionInVirtualGraphId(index);
+        if (op.first->hasVirtualGraphId()) {
+          if (op.second) {
+            // Consumer OP
+            // VirtualGraphId with subgraph call introspection
+            // for the current tensor
+            auto index = op.first->input->indicesMap().at(tensor)[0];
+            vgid       = op.first->getIntrospectionInVirtualGraphId(index);
+          } else {
+            // Producer OP
+            vgid = op.first->getVirtualGraphId();
+          }
         }
 
         // The copyToIpu op assume that the tensor will already
         // have been copied to the ipu from another op
-        if (op->opid != Onnx::CustomOperators::IpuCopy) {
+        if (op.first->opid != Onnx::CustomOperators::IpuCopy) {
 
           if (ipus.end() == std::find(ipus.begin(), ipus.end(), vgid)) {
 
-            auto &graph =
-                vgid > -1 ? getVirtualGraph(vgid) : getOpx(op->id)->graph();
+            auto &graph = vgid > -1 ? getVirtualGraph(vgid)
+                                    : getOpx(op.first->id)->graph();
 
             auto newTensor = graph.addVariable(
                 popType(tensor->info), tensor->info.shape_szt(), tensor->str());
@@ -1642,6 +1552,20 @@ void Devicex::addOpTasks(PriTasks &tasks) {
           }
         }
       }
+
+      auto opOutputs = getOpx(op->id)->getOutputsToPrepare();
+      for (int i = 0; i < opOutputs.size(); i++) {
+        auto opOutput = opOutputs[i];
+        if (!tasks.contains(initTensorTaskId(std::get<1>(opOutput)))) {
+          if (std::get<2>(opOutput)) {
+            tasks.add(initTensorByAliasingTask(
+                op, std::get<0>(opOutput), std::get<1>(opOutput)));
+          } else {
+            tasks.add(initTensorByCloningTask(
+                op, std::get<0>(opOutput), std::get<1>(opOutput)));
+          }
+        }
+      }
     }
 
     auto task = opTask(op, priority, prevOpTaskId);
@@ -1714,11 +1638,17 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
     }
   }
 
-  // For CacheAllocate, the output tensor is created externally, and must
-  // thereby exist before CacheAllocateOp is grown.
-  if (dynamic_cast<CacheAllocateOp *>(op)) {
+  // For InitOp and SubgraphOp,
+  // the output tensor is created externally, and must
+  // thereby exist before InitOp/SubgraphOp is grown.
+  if (dynamic_cast<InitOp *>(op) || dynamic_cast<SubgraphOp *>(op)) {
     for (auto t_inds : op->output->indicesMap()) {
       Tensor *tensor = t_inds.first;
+
+      logging::devicex::trace("Operation {} depends on it's output tensor {} "
+                              "being externally created.",
+                              op->debugName(),
+                              tensor->id);
 
       std::pair<TaskId, DependencyType> creatorTask = {
           initTensorTaskId(tensor->id), DependencyType::TENSOR};
@@ -1733,7 +1663,7 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
   auto addGraphOpsToDeps = [&](const Graph *graph) {
     for (auto graphOp : graph->getOpSchedule({})) {
       std::pair<TaskId, DependencyType> taskId = {opTaskId(graphOp),
-                                                  DependencyType::OUTPUT};
+                                                  DependencyType::SUBGRAPH};
       if (std::find(deps.begin(), deps.end(), taskId) == deps.end()) {
         deps.push_back(taskId);
       }
@@ -1764,7 +1694,8 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
       logging::devicex::debug("Creating output tensors for non-main {} in {}",
                               opx->op_p->debugName(),
                               containingGraph.id.str());
-      growOpx(opx, progs.scopeFragment(containingGraph));
+      // Record each scope task fragment separately first.
+      growOpx(opx, seqs[&progs.scopeFragment(containingGraph)]);
     } else if (ir().getSessionOptions().enablePipelining) {
       pipelinedOpTaskFunc(opTaskId(op), op, seqs);
     } else {
@@ -2414,13 +2345,15 @@ void Devicex::prepare() {
     tasks.add(setInitTensorValTask(tensor));
   }
 
-  // caches:
-  // 1) make tensor,
-  for (auto id : ir().getTensorIds(TensorType::Cache)) {
-    Tensor *tensor = ir().getTensor(id);
-    // 1
-    tasks.add(initTensorTask(tensor));
-    logging::devicex::debug("Adding initTensorTask for Cache {}", id);
+  // InitOp outputs:
+  // 1) ActGrad tensors
+  for (Op *op : ir().getAllOps()) {
+    if (InitOp *init = dynamic_cast<InitOp *>(op)) {
+      logging::devicex::trace("Adding InitOp {} output initTensorTask for {}",
+                              init->debugName(),
+                              init->output->tensor(InitOp::getOutIndex())->id);
+      tasks.add(initTensorTask(init->output->tensor(InitOp::getOutIndex())));
+    }
   }
 
   // stream-to-device tensors :
@@ -2556,38 +2489,160 @@ void Devicex::prepare() {
   }
 
   // Two-step task linearisation:
+  //
+  // Purpose: Avoids circular dependencies when growing ops and initialising
+  //          tensors with their tile mapping (layout) by deferring the
+  //          growOpx call on Ops that call subgraphs as long as possible.
+  //
+  // Example:
+  //
+  // Graph A (nested subgraph):
+  //        Data path x:    Data path y:
+  //              InitOp    InitOp
+  //                |         |
+  //         weight_init    bias_init
+  //                |         |
+  //           CacheLoad    CacheLoad
+  //                |         |
+  //       weight_loaded    bias_loaded
+  //      (graph output)    (graph output)
+  //
+  // Graph B (subgraph):
+  //
+  //         data    Call(A)
+  //          |      |     |
+  //          |   weight  bias
+  //          |      |     |
+  //         Convolution   |
+  //                 |     |
+  //            conv_out   |
+  //                 |     |
+  //                 AddBias
+  //                    |
+  //                   out
+  //
+  // Graph C (main graph):
+  //              in0       in1
+  //               |         |
+  //             Call(B)     |
+  //               |      Call(B)
+  //               |         |
+  //              out0      out1
+  //
+  // With one-step task linearisation, a circular dependency would arise
+  // because the tile mapping of "bias" depends on "conv_out" existing, since
+  // AddBias will clone the tile mapping of "conv_out" to "bias".
+  // To create "conv_out", however, "weight" needs to have a tile mapping,
+  // created by "Convolution". But "weight" is a copy of the "weight_loaded"
+  // output of subgraph "A". That means "weight_init" is the tensor to which
+  // the tensor layout of "Convolution" will be unwound to.
+  // However, Call(A) is the producer of both "weight" and "bias", and would
+  // therefore have to be grown before "Convolution", causing a circular
+  // dependency:
+  // Call(A) > Convolution > AddBias
+  // (due to Opx output directed acyclic graph)
+  // Convolution > AddBias > Call(A)
+  // (due to AddBias creating the tensor mapping for "bias" based on "conv_out")
+  //
+  // Two-step linearisation separates growing Opx and creating Poplar
+  // tensors, from adding the Poplar sequences, resulting from growing Opx,
+  // together to form a linear order, in which the Opx are executed.
+  //
+  // With two-step task linearisation, there are multiple types of dependencies:
+  // Call(A) depends on all Op tasks within graph A (SUBGRAPH dependency)
+  // Call(B) depends on all Op tasks within graph B (SUBGRAPH dependency)
+  // Convolution depends on "data" and "weight" (OUTPUT or TENSOR dependency,
+  //       depending on the creator and populator of those tensors)
+  // Convolution depends on Call(A) (SCHEDULE dependency)
+  //
+  // Step 1:
+  // For growing Opx, we can ignore SCHEDULE dependencies, because data paths
+  // flowing through subgraphs (from A to B in the example above):
+  //
+  // InitOp->weight_init->CacheLoad->weight_loaded->weight->Convolution->...
+  //
+  // can be grown independently from growing Call(A), thereby removing the
+  // circular dependency.
+  //
+  // The linearized order in which Opx are grown for the example above becomes:
+  // InitOp(x) > CacheLoad(x) > Convolution > InitOp(y) > CacheLoad(y) > AddBias
+  // > Call(A) > Call(B) > Call(B)
+  //
+  // Step 2:
+  // As soon as all data paths in a given graph (here A, B or C) are grown,
+  // so the SUBGRAPH dependencies for CallOpx are fulfilled,
+  // and we have one or more Poplar sequences for every opTask in the graph.
+  // The Poplar sequences can be emplaced in graph functions (for subgraphs)
+  // or the main sequence (main graph) according to SCHEDULER dependencies
+  // (following the IR scheduler order).
+  // All TENSOR dependencies can be ignored for emplacing sequences, since they
+  // are only necessary to create the weight tensors (InitOp outputs) in step 1.
+  //
+  // The linearized order in which sequences are emplaced for the example above
+  // becomes:
+  // InitOp(x) > CacheLoad(x) > InitOp(y) > CacheLoad(y) > Call(A)
+  // > Convolution > AddBias > Call(B) > Call(B)
 
   // Mappings for each task from final sequence to intermediate sequence
   std::map<TaskId, SequenceMap> seqs;
   std::vector<TaskId> taskOrder;
 
+  logging::devicex::debug("Creating linear task schedule with OUTPUT, "
+                          "SUBGRAPH and TENSOR dependencies.");
+  auto createSchedule = tasks.getLinearised({DependencyType::OUTPUT,
+                                             DependencyType::SUBGRAPH,
+                                             DependencyType::TENSOR});
+
+  logging::devicex::debug("Creating linear task schedule with OUTPUT, "
+                          "SUBGRAPH and SCHEDULER dependencies.");
+  auto emplaceSchedule = tasks.getLinearised({DependencyType::OUTPUT,
+                                              DependencyType::SUBGRAPH,
+                                              DependencyType::SCHEDULER});
+
+  auto emplaceTaskSeqs = [&](std::set<TaskId> filter) {
+    // 2.) Add intermediate sequences in final sequence
+    // Linearised, ignoring TENSOR creation dependencies (weight init deps)
+    // because all tensors exist at this point
+
+    for (auto &emplaceTask : emplaceSchedule) {
+      if ((filter.size() == 0 ||
+           filter.find(emplaceTask.name) != filter.end()) &&
+          seqs.find(emplaceTask.name) != seqs.end()) {
+        logging::devicex::trace("Adding sequences for task {}",
+                                emplaceTask.name);
+        for (auto seq : seqs[emplaceTask.name]) {
+          // Emplace intermediate sequence in final sequence
+          seq.first->add(seq.second);
+          logging::devicex::trace("  Target sequence: {}", seq.first);
+        }
+        // Erase sequences for task, so that each tasks's sequences
+        // are only added once.
+        seqs.erase(emplaceTask.name);
+        taskOrder.push_back(emplaceTask.name);
+      }
+    }
+  };
+
   // 1.) Create sequences and tensors
   // Linearised, ignoring SCHEDULER order dependencies, so that any circular
   // dependencies are avoided, when the scheduler order disagrees with the
   // tensor creation order
-  logging::devicex::debug("Creating linear task schedule with OUTPUT and "
-                          "TENSOR dependencies.");
-  for (auto &task :
-       tasks.getLinearised({DependencyType::OUTPUT, DependencyType::TENSOR})) {
-    seqs[task.name] = task.f();
-    logging::devicex::debug("Creating sequence for task {}", task.name);
-  }
 
-  // 2.) Add intermediate sequences in final sequence
-  // Linearised, ignoring TENSOR creation dependencies (weight init deps)
-  // because all tensors exist at this point
-  logging::devicex::debug("Creating linear task schedule with OUTPUT and "
-                          "SCHEDULER dependencies.");
-  for (auto &task : tasks.getLinearised(
-           {DependencyType::OUTPUT, DependencyType::SCHEDULER})) {
-    logging::devicex::trace("Adding sequences for task {}", task.name);
-    for (auto seq : seqs[task.name]) {
-      // Emplace intermediate sequence in final sequence
-      seq.first->add(seq.second);
-      logging::trace("  Target sequence: {}", seq.first);
+  for (auto &createTask : createSchedule) {
+    logging::devicex::debug("Creating sequence for task {}", createTask.name);
+    std::set<TaskId> subgraphTaskNames =
+        createTask.getDependenciesOfTypes({DependencyType::SUBGRAPH});
+    if (subgraphTaskNames.size() > 0) {
+      // Make sure the subgraph sequences are emplaced before the scopeFragments
+      // of the called graphs are constructed.
+      logging::devicex::trace("  Task depends on {} subgraph tasks",
+                              subgraphTaskNames.size());
+      emplaceTaskSeqs(subgraphTaskNames);
     }
-    taskOrder.push_back(task.name);
+    seqs[createTask.name] = createTask.f();
   }
+  // Emplace any main graph task sequences
+  emplaceTaskSeqs({});
 
   logging::devicex::debug(getMainGraphOpString(taskOrder));
 

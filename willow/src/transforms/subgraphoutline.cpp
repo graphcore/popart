@@ -9,6 +9,7 @@
 #include <popart/op.hpp>
 #include <popart/op/boundary.hpp>
 #include <popart/op/call.hpp>
+#include <popart/op/init.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/subgraph/iosubgraphcostmodel.hpp>
 #include <popart/subgraph/outliner.hpp>

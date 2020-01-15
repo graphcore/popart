@@ -924,4 +924,36 @@ void BackwardPassCreator::doPrune(Graph &graph) {
   }
 }
 
+std::vector<Op *> Graph::getCallSiteOps(size_t num) const {
+  std::vector<Op *> ops;
+
+  std::set<const Graph *> visited;
+
+  // Depth first search for call sites
+  std::vector<Op *> opStack;
+
+  // Start at first op of main graph
+  auto schedule = ir.getMainGraph().getOpSchedule({});
+  opStack.insert(opStack.end(), schedule.rbegin(), schedule.rend());
+
+  while (!opStack.empty()) {
+    Op *op = opStack.back();
+    opStack.pop_back();
+    for (const Graph *calledGraph : op->getCalledGraphs()) {
+      if (calledGraph->id.str() == id.str()) {
+        ops.push_back(op);
+        if (num > 0 && ops.size() == num) {
+          return ops;
+        }
+      } else if (visited.find(calledGraph) == visited.end()) {
+        schedule = calledGraph->getOpSchedule({});
+        opStack.insert(opStack.end(), schedule.rbegin(), schedule.rend());
+        visited.insert(calledGraph);
+      }
+    }
+  }
+
+  return ops;
+}
+
 } // namespace popart

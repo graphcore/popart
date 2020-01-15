@@ -9,7 +9,7 @@
 namespace popart {
 
 CallOp::CallOp(Graph &parent_, Graph &callee_)
-    : Op(Onnx::CustomOperators::Call, {parent_, ""}), callee(callee_) {
+    : SubgraphOp(Onnx::CustomOperators::Call, {parent_, ""}), callee(callee_) {
   settings.name = logging::format("Call_{}", callee_.id);
 }
 
@@ -26,7 +26,7 @@ void CallOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("callee", callee.get().id.str());
 }
 
-bool CallOp::isInputModified(InIndex index) {
+bool CallOp::isInputModified(InIndex index) const {
   auto tensor_id = getCalledGraph().getInputId(index);
   auto tensor    = getCalledGraph().getTensors().get(tensor_id);
 

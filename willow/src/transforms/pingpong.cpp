@@ -5,6 +5,8 @@
 #include <popart/op.hpp>
 #include <popart/op/boundary.hpp>
 #include <popart/op/cache.hpp>
+#include <popart/op/getrandomseed.hpp>
+#include <popart/op/init.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/loss.hpp>
 #include <popart/op/recomputeprereq.hpp>
@@ -20,11 +22,11 @@ std::size_t PingPong::id(int pass) {
   return typeid(PingPong).hash_code() + pass;
 }
 
-TensorId PingPong::generateAllocTensorId(Tensor *tensor) const {
+TensorId PingPong::generateInitTensorId(Tensor *tensor) const {
   // The copiedTensor id needs to be unique as the same tensor may be copied to
   // multiple phases
-  TensorId allocTensorId = tensor->id + "_alloc";
-  return allocTensorId;
+  TensorId initTensorId = tensor->id + "_init";
+  return initTensorId;
 }
 
 TensorId PingPong::generateLoadedTensorId(Tensor *tensor,
@@ -70,6 +72,43 @@ getSanitizedPingPongPhase(const Graph &graph, Op *op, PingPongPhase phase) {
   return phase;
 }
 
+// Compress priorities so that nothing is using priorities outside the range
+// -9000 to +9000
+void compressPriorities(Graph &graph) {
+  double max_pri = 9000;
+
+  std::map<double, std::set<Op *, POpCmp>, std::greater<double>> pPriOpsMap;
+  std::map<double, std::set<Op *, POpCmp>, std::less<double>> nPriOpsMap;
+  for (auto &op : graph.getOps()) {
+    if (op.second->priority > 0.0) {
+      pPriOpsMap[op.second->priority].insert(op.second.get());
+    }
+    if (op.second->priority < 0.0) {
+      nPriOpsMap[op.second->priority].insert(op.second.get());
+    }
+  }
+
+  {
+    double pri = max_pri;
+    for (auto &priOp : pPriOpsMap) {
+      for (Op *op : priOp.second) {
+        op->priority = pri;
+      }
+      pri -= max_pri / pPriOpsMap.size();
+    }
+  }
+
+  {
+    double pri = -max_pri;
+    for (auto &priOp : nPriOpsMap) {
+      for (Op *op : priOp.second) {
+        op->priority = pri;
+      }
+      pri += max_pri / nPriOpsMap.size();
+    }
+  }
+}
+
 } // namespace
 
 bool PingPong::apply(Graph &graph) const {
@@ -91,7 +130,9 @@ bool PingPong::apply(Graph &graph) const {
       num_phases,
       num_ipus);
 
-  if (pass == 1) {
+  if (pass == 1 || pass == 2) {
+    auto schedule = graph.getOpSchedule({});
+
     // Set all variable tensors to cached.
     // TODO: Offer more refined scheme
     for (TensorId id : graph.getTensors().getIds(TensorType::Variable)) {
@@ -101,7 +142,7 @@ bool PingPong::apply(Graph &graph) const {
 
     float cumulative_cost = 0.f;
 
-    for (Op *op : graph.getOpSchedule({})) {
+    for (Op *op : schedule) {
       cumulative_cost += costFn(op);
     }
 
@@ -111,7 +152,7 @@ bool PingPong::apply(Graph &graph) const {
     // TODO: Find better graph-cut algorithm for phase splitting
     PingPongPhase phase = 0;
     float phase_cost    = 0;
-    for (Op *op : graph.getOpSchedule({})) {
+    for (Op *op : schedule) {
 
       auto cost = costFn(op);
       // Every phase should handle at least some cost, but not too much
@@ -145,9 +186,37 @@ bool PingPong::apply(Graph &graph) const {
     for (auto &loss : ir.losses) {
       loss->virtualGraph((num_phases - 1) % num_ipus);
     }
+
+    // Recomputation annotation
+    logging::transform::debug("[PingPong] Recomputation & Cache annotation");
+    for (auto &op : graph.getOps()) {
+      // Cached everything not set by the user by default
+      if (op.second->settings.cacheType == CacheType::UNDEFINED) {
+        if (op.second->opid == Onnx::CustomOperators::GetRandomSeed) {
+          op.second->settings.cacheType = CacheType::UNCACHED;
+          logging::transform::trace("[PingPong] {} set to UNCACHED",
+                                    op.second->debugName());
+        } else {
+          op.second->settings.cacheType = CacheType::CACHED;
+          logging::transform::trace("[PingPong] {} set to CACHED",
+                                    op.second->debugName());
+        }
+      }
+      // Recompute everything else (fwd) not set by the user by default
+      if (op.second->settings.recomputeType == RecomputeType::UNDEFINED) {
+        if (!op.second->isIpuCopyOp() &&
+            !dynamic_cast<GetRandomSeedOp *>(op.second.get())) {
+          op.second->settings.recomputeType = RecomputeType::RECOMPUTE;
+          logging::transform::trace("[PingPong] {} set to RECOMPUTE",
+                                    op.second->debugName());
+        } else {
+          op.second->settings.recomputeType = RecomputeType::CHECKPOINT;
+        }
+      }
+    }
   }
 
-  if (pass == 2) {
+  if (pass == 3) {
     // Remap backward pass to the right phase
     for (Op *op : graph.getOpSchedule({})) {
       if (op->fromLoss == PathFromLoss::Yes) {
@@ -244,57 +313,30 @@ bool PingPong::apply(Graph &graph) const {
   }
 
   // Tensor cache store/load inserted in the third ping-pong pass only
-  if (pass == 3) {
+  if (pass == 4) {
     ir.setPingPongPhasesReady();
 
-    // Recomputation annotation & dummy consumers
-    logging::transform::debug("[PingPong] Recomputation & Cache annotation");
-    for (Op *op : graph.getOpSchedule({})) {
-      // Cached everything not set by the user by default
-      if (op->settings.cacheType == CacheType::UNDEFINED) {
-        if (op->opid == Onnx::CustomOperators::GetRandomSeed) {
-          op->settings.cacheType = CacheType::UNCACHED;
-          logging::transform::trace("[PingPong] {} set to UNCACHED",
-                                    op->debugName());
-        } else {
-          op->settings.cacheType = CacheType::CACHED;
-          logging::transform::trace("[PingPong] {} set to CACHED",
-                                    op->debugName());
-        }
-      }
-      // Assign correct priority to all Inter-IPU copies
-      if (op->isIpuCopyOp()) {
+    // Make sure no priorities outside of the range needed by
+    // pingpong are being used.
+    compressPriorities(graph);
 
+    for (auto &op : graph.getOps()) {
+      // Assign correct priority to all Inter-IPU copies
+      if (op.second->isIpuCopyOp()) {
+        // TODO: T13885 differentiate between IPU copies between same-phase IPUs
+        //       and different-phase IPUs (8 vs. 8)
         // Special type of IPUCopy between PingPong phases
         // Priority before CacheStore but after CacheLoad
-        if (!op->copiesOptimizerTensors()) {
-          op->priority = -9999.0;
+        IpuCopyOp *copy = dynamic_cast<IpuCopyOp *>(op.second.get());
+        if (!op.second->copiesOptimizerTensors() &&
+            copy->getDestIpu() % 2 != copy->getSourceIpu() % 2) {
+          op.second->priority = -9999.0;
         }
         // Always keep IPU copy checkpointed
-        if (op->settings.recomputeType == RecomputeType::UNDEFINED) {
-          op->settings.recomputeType = RecomputeType::CHECKPOINT;
+        if (op.second->settings.recomputeType == RecomputeType::UNDEFINED) {
+          op.second->settings.recomputeType = RecomputeType::CHECKPOINT;
           logging::transform::trace("[PingPong] {} set to CHECKPOINT",
-                                    op->debugName());
-        }
-      } else {
-        // Recompute everything else (fwd) not set by the user by default
-        if (op->settings.recomputeType == RecomputeType::UNDEFINED) {
-          if (op->toLoss != PathToLoss::Yes ||
-              op->scheduledPreLoss != ScheduledPreLoss::Yes) {
-            op->settings.recomputeType = RecomputeType::CHECKPOINT;
-            logging::transform::trace("[PingPong] {} set to CHECKPOINT",
-                                      op->debugName());
-          } else {
-            if (op->opid == Onnx::CustomOperators::GetRandomSeed) {
-              op->settings.recomputeType = RecomputeType::CHECKPOINT;
-              logging::transform::trace("[PingPong] {} set to CHECKPOINT",
-                                        op->debugName());
-            } else {
-              op->settings.recomputeType = RecomputeType::RECOMPUTE;
-              logging::transform::trace("[PingPong] {} set to RECOMPUTE",
-                                        op->debugName());
-            }
-          }
+                                    op.second->debugName());
         }
       }
     }
@@ -378,7 +420,9 @@ bool PingPong::apply(Graph &graph) const {
       if (std::find(cacheArgIds.begin(), cacheArgIds.end(), arg_tensor_id) ==
           cacheArgIds.end()) {
         graph.getTensors().addConstInit(
-            arg_tensor_id, argTensorInfo, reinterpret_cast<void *>(&idData));
+            arg_tensor_id,
+            argTensorInfo,
+            reinterpret_cast<void *>(idData.data()));
         cacheArgIds.push_back(arg_tensor_id);
       }
       return arg_tensor_id;
@@ -532,7 +576,7 @@ bool PingPong::apply(Graph &graph) const {
                   CacheStoreOp::getRemoteBufferOffsetInIndex(),
                   getCacheArg(tensor->id));
 
-              TensorId allocTensorId = generateAllocTensorId(tensor);
+              TensorId initTensorId = generateInitTensorId(tensor);
               loadedTensorId =
                   generateLoadedTensorId(tensor, consumerPingPongPhase);
               TensorId inTensorId;
@@ -545,23 +589,25 @@ bool PingPong::apply(Graph &graph) const {
                 // Tensor has a true producer op
                 inTensorId = tensor->id;
               } else {
-                // CacheAllocate as an inline "producer" op
-                auto cacheAllocateOp = std::make_unique<CacheAllocateOp>(
-                    Onnx::CustomOperators::CacheAllocate,
-                    tensor->info,
-                    settings);
-                Op *cacheAllocate       = cacheAllocateOp.get();
-                cacheAllocate->priority = -9997.0;
-                cacheAllocate->fromLoss = consumerPathFromLoss;
-                cacheAllocate->toLoss   = consumerPathToLoss;
-                cacheAllocate->setPingPongPhase(consumerPingPongPhase - 1);
+                // InitOp as a "producer" op
+                auto initOp =
+                    std::make_unique<InitOp>(Onnx::CustomOperators::Init,
+                                             tensor->info,
+                                             TensorType::Cache,
+                                             InitType::NONE,
+                                             settings);
+                Op *init       = initOp.get();
+                init->priority = -9997.0;
+                init->fromLoss = consumerPathFromLoss;
+                init->toLoss   = consumerPathToLoss;
+                init->setPingPongPhase(consumerPingPongPhase - 1);
                 VGraphId cAllVgid = consumerPingPongPhase % num_ipus;
-                cacheAllocate->setVirtualGraphId(cAllVgid);
-                graph.moveIntoGraph(std::move(cacheAllocateOp));
-                cacheAllocate->createAndConnectOutTensor(
-                    CacheAllocateOp::getCachedTensorOutIndex(), allocTensorId);
-                cacheAllocate->setup();
-                inTensorId = allocTensorId;
+                init->setVirtualGraphId(cAllVgid);
+                graph.moveIntoGraph(std::move(initOp));
+                init->createAndConnectOutTensor(InitOp::getOutIndex(),
+                                                initTensorId);
+                init->setup();
+                inTensorId = initTensorId;
               }
               // CacheLoad always needs both an input and an output,
               // for outlining and aliasing purposes
@@ -688,8 +734,8 @@ bool PingPong::apply(Graph &graph) const {
     if (sessionOptions.enableOutlining) {
       for (PingPongPhase phase = 0; phase < 2 * num_phases - 2; ++phase) {
         {
-          auto boundaryOp =
-              std::make_unique<BoundaryOp>(Op::Settings(graph, ""));
+          auto boundaryOp = std::make_unique<BoundaryOp>(
+              Op::Settings(graph, "PhaseBoundary"));
           auto boundary = boundaryOp.get();
           boundary->setPingPongPhase(phase);
           // Before CacheAlloc/CacheStore/CacheLoad
@@ -699,8 +745,8 @@ bool PingPong::apply(Graph &graph) const {
           graph.moveIntoGraph(std::move(boundaryOp));
         }
         {
-          auto boundaryOp =
-              std::make_unique<BoundaryOp>(Op::Settings(graph, ""));
+          auto boundaryOp = std::make_unique<BoundaryOp>(
+              Op::Settings(graph, "PhaseBoundary"));
           auto boundary = boundaryOp.get();
           boundary->setPingPongPhase(phase);
           // After CacheAlloc/CacheStore/CacheLoad
@@ -718,10 +764,12 @@ bool PingPong::apply(Graph &graph) const {
 namespace {
 // PingPong 1: Map forward pass to phases
 bool init1 = Transform::registerTransform(new PingPong(1));
-// PingPong 2: Map backward pass to phases
+// PingPong 2: Map forward + loss pass to phases
 bool init2 = Transform::registerTransform(new PingPong(2));
-// PingPong 3: Map remaining ops to phases, cut graph and insert cache ops.
+// PingPong 3: Map backward pass to phases
 bool init3 = Transform::registerTransform(new PingPong(3));
+// PingPong 3: Map remaining ops to phases, cut graph and insert cache ops.
+bool init4 = Transform::registerTransform(new PingPong(4));
 } // namespace
 
 } // namespace popart

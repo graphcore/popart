@@ -270,6 +270,8 @@ public:
   std::map<OpId, std::unique_ptr<Op>> &getMainGraphOps();
   const std::map<OpId, std::unique_ptr<Op>> &getMainGraphOps() const;
 
+  std::vector<Op *> getAllOps() const;
+
   Tensors &getMainGraphTensors();
   const Tensors &getMainGraphTensors() const;
 

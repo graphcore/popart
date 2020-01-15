@@ -109,6 +109,14 @@ const poplar::Tensor &Opx::getInTensor(InIndex index) const {
   }
 }
 
+const poplar::Tensor &Opx::getOutTensor(OutIndex index) const {
+  if (cachedOutputs && !cachedOutputs->empty()) {
+    return (*cachedOutputs)[index];
+  } else {
+    return get(op_p->output->id(index));
+  }
+}
+
 void Opx::setOutTensor(OutIndex index, const poplar::Tensor &tensor) const {
   // Assume that if we have cached inputs then we will use cached outputs
   if (cachedOutputs) {
@@ -222,6 +230,11 @@ poplar::Tensor Opx::getConst(const poplar::Type &type,
 poplar::Tensor Opx::getScalarVariable(const poplar::Type &type,
                                       const std::string &name) const {
   return dv_p->getScalarVariable(graph(), type, name);
+}
+
+std::vector<std::tuple<TensorId, TensorId, bool>>
+Opx::getOutputsToPrepare() const {
+  return {};
 }
 
 } // namespace popx

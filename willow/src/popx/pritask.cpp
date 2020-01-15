@@ -41,6 +41,17 @@ void PriTask::removeDep(DependencyType type) {
   dependsOn = newDependsOn;
 }
 
+std::set<TaskId>
+PriTask::getDependenciesOfTypes(std::set<DependencyType> depTypes) {
+  std::set<TaskId> taskIds;
+  for (auto &dep : dependsOn) {
+    if (depTypes.find(dep.second) != depTypes.end()) {
+      taskIds.insert(dep.first);
+    }
+  }
+  return taskIds;
+}
+
 bool operator<(const PriTask &a, const PriTask &b) {
   return (a.priority < b.priority); // we want highest priority off first
 }
@@ -129,7 +140,7 @@ PriTasks::getLinearised(std::set<DependencyType> dependencies) const {
   // while there are dependency-free tasks which have not been added
   while (!pq.empty()) {
     // 1) add the lowest (highest) priority dep-free task
-    linearisedTasks.push_back(pq.top());
+    linearisedTasks.push_back(tasksMap.at(pq.top().name));
     auto &parent = linearisedTasks.back().name;
     pq.pop();
     // update the dependencies of child tasks, pushing child tasks
