@@ -683,7 +683,7 @@ Graph &createSubgraph(const Match &match, Graph &graph) {
   for (auto output : instance.all_outputs) {
     auto new_id = (subgraph_scope / output->id).str();
 
-    auto clone = output->clone();
+    auto clone = output->clone(subgraph);
     clone->id  = new_id;
     subgraph.getTensors().moveIntoTensors(std::move(clone));
     auto clone_ptr = subgraph.getTensors().get(new_id);

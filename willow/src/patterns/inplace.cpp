@@ -18,8 +18,9 @@ ExternOpTensorBundle::ExternOpTensorBundle(Op *opCopy,
 
   // dummy inputs
   for (auto &index_tensor : opCopy->input->tensorMap()) {
-    std::unique_ptr<Tensor> up_t_clone = index_tensor.second->clone();
-    Tensor *t_clone                    = up_t_clone.get();
+    std::unique_ptr<Tensor> up_t_clone =
+        index_tensor.second->clone(index_tensor.second->getGraph());
+    Tensor *t_clone = up_t_clone.get();
     t_clone->id += std::to_string(index_tensor.first);
     tensors[t_clone->id] = std::move(up_t_clone);
     up_op->input->insert(index_tensor.first, t_clone);
@@ -28,9 +29,10 @@ ExternOpTensorBundle::ExternOpTensorBundle(Op *opCopy,
 
   // dummy outputs
   for (auto &index_tensor : opCopy->output->tensorMap()) {
-    std::unique_ptr<Tensor> up_t_clone = index_tensor.second->clone();
-    Tensor *t_clone                    = up_t_clone.get();
-    tensors[t_clone->id]               = std::move(up_t_clone);
+    std::unique_ptr<Tensor> up_t_clone =
+        index_tensor.second->clone(index_tensor.second->getGraph());
+    Tensor *t_clone      = up_t_clone.get();
+    tensors[t_clone->id] = std::move(up_t_clone);
     up_op->output->insert(index_tensor.first, t_clone);
     t_clone->setProducer(up_op.get());
   }

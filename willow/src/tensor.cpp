@@ -124,9 +124,9 @@ std::ostream &operator<<(std::ostream &os, const TensorType &tt) {
   return os;
 }
 
-std::unique_ptr<Tensor> Tensor::clone() const {
+std::unique_ptr<Tensor> Tensor::clone(Graph &graph_) const {
   std::unique_ptr<Tensor> theClone(
-      new Tensor("clone_" + id, tensorType(), graph));
+      new Tensor("clone_" + id, tensorType(), graph_));
   theClone->info = info;
   return theClone;
 }
@@ -416,8 +416,8 @@ VariableTensor::VariableTensor(TensorId n, Graph &g)
     : Tensor(n, TensorType::Variable, g),
       variableUpdateType(VariableUpdateType::Gradient) {}
 
-std::unique_ptr<Tensor> VariableTensor::clone() const {
-  std::unique_ptr<Tensor> theClone(new VariableTensor("clone_" + id, graph));
+std::unique_ptr<Tensor> VariableTensor::clone(Graph &graph_) const {
+  std::unique_ptr<Tensor> theClone(new VariableTensor("clone_" + id, graph_));
   theClone->info = info;
   return theClone;
 }

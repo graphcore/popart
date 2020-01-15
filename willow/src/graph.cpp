@@ -665,7 +665,7 @@ void BackwardPassCreator::cloneGraph(const Graph &from, Graph &to) {
 
     auto newId = to.addScope(from.removeScope(id));
 
-    auto tensorClone = tensor->clone();
+    auto tensorClone = tensor->clone(to);
     tensorClone->id  = newId;
     to.getTensors().moveIntoTensors(std::move(tensorClone));
     auto tensorClonePtr = to.getTensors().get(newId);

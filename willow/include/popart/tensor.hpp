@@ -101,7 +101,7 @@ public:
   std::string str() const final { return id; }
 
   // a copy of this, but with no consumers or producer
-  virtual std::unique_ptr<Tensor> clone() const;
+  virtual std::unique_ptr<Tensor> clone(Graph &graph_) const;
 
   // ActGrad, Variable, etc:
   TensorType tensorType() const;
@@ -190,7 +190,7 @@ class VariableTensor : public Tensor {
 public:
   VariableTensor(TensorId, Graph &);
 
-  std::unique_ptr<Tensor> clone() const override;
+  std::unique_ptr<Tensor> clone(Graph &graph_) const override;
 
   void setVariableUpdateType(VariableUpdateType type) {
     variableUpdateType = type;
