@@ -1075,6 +1075,9 @@ PYBIND11_MODULE(popart_core, m) {
            &Builder::addInputTensor,
            py::arg("tensorInfo"),
            py::arg("debugPrefix") = std::string())
+      .def("addUntypedInputTensor",
+           &Builder::addUntypedInputTensor,
+           py::arg("debugPrefix") = std::string())
       .def("addInputTensorFromParentGraph",
            &Builder::addInputTensorFromHigherScope,
            py::arg("tensorId"))

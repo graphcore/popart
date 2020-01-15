@@ -144,6 +144,12 @@ TensorId BuilderImpl::getNextId(const std::string &name, OutIndex n) {
   return proposedId;
 }
 
+TensorId BuilderImpl::getNextInputId(const std::string &debugPrefix) {
+  // Should we check for uniqueness of name? TODO T8278
+  std::string name = debugPrefix.empty() ? "input" : debugPrefix;
+  return getNextId(name);
+}
+
 void BuilderImpl::addOpsetRequirement(const std::string &domain, int version) {
 
   logging::builder::info(
@@ -181,23 +187,40 @@ void BuilderImpl::setGraphName(const std::string &name) {
 
 TensorId BuilderImpl::addInputTensor(const TensorInfo &tensorInfo,
                                      const std::string &debugPrefix) {
-
-  // Should we check for uniqueness of name? TODO T8278
-  std::string name = debugPrefix.empty() ? "input" : debugPrefix;
-  auto id          = getNextId(name);
+  auto id = getNextInputId(debugPrefix);
 
   // note that a TypeProto contains both shape and numerical type
   onnx::TypeProto onnxTensorType = tensorInfo.getOnnxTypeProto();
 
   // set name
-  auto *graph = model_.mutable_graph();
-  auto *input = graph->add_input();
-  input->set_name(id);
+  auto *input = addGraphInput(id);
 
   // set type
   auto *type = input->mutable_type();
   *type      = onnxTensorType;
 
+  return id;
+}
+
+TensorId BuilderImpl::addUntypedInputTensor(const std::string &debugPrefix) {
+  // TODO : Check T8276
+  // In the onnx spec:
+  //     message ValueInfoProto {
+  //     ...
+  //       // This field MUST be present in this version of the IR for
+  //       // inputs and outputs of the top-level graph.
+  //       TypeProto type = 2;
+  //
+  // It looks like it should be fine to add an untyped input tensor on
+  // subgraphs, but not in the top-level graph.
+  if (!hasParent()) {
+    throw error("Can not add untyped tensors to the top-level graph. Use "
+                "Builder::addInputTensor(const TensorInfo &tensorInfo, const "
+                "std::string &debugPrefix) instead.");
+  }
+
+  auto id = getNextInputId(debugPrefix);
+  addGraphInput(id);
   return id;
 }
 
@@ -213,15 +236,20 @@ void BuilderImpl::addInputTensorFromHigherScope(const TensorId &tensorId) {
         tensorId);
   }
 
-  // set name
-  auto *graph = model_.mutable_graph();
-  auto *input = graph->add_input();
-  input->set_name(tensorId);
+  addGraphInput(tensorId);
 
   // set type
   // We need to run type inference to determine the DataType
   // According to the spec the type (input->mutable_type()) is NOT optional
   // TODO : get the type. T8276
+}
+
+onnx::ValueInfoProto *BuilderImpl::addGraphInput(const TensorId &id) {
+  auto *graph = model_.mutable_graph();
+  auto *input = graph->add_input();
+  input->set_name(id);
+
+  return input;
 }
 
 void BuilderImpl::populateTensorProtoFromConstVoidData(

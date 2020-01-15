@@ -1445,3 +1445,19 @@ def test_tensor_names(tmpdir):
 
     assert (i10 == "input/1")
     assert (i11 == "data/1")
+
+
+def test_add_untyped_input():
+    builder = popart.Builder()
+
+    # Trying to add an untyped input tensor on the top-level
+    # graph should throw an error.
+    with pytest.raises(popart.popart_exception) as e_info:
+        builder.addUntypedInputTensor()
+
+    assert e_info.value.args[0].startswith(
+        "Can not add untyped tensors to the top-level graph.")
+
+    # Adding an untyped input on a subgraph should be fine.
+    sub_builder = builder.createSubgraphBuilder()
+    x = sub_builder.addUntypedInputTensor()

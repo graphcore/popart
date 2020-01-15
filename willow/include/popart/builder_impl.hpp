@@ -31,6 +31,8 @@ public:
   TensorId addInputTensor(const TensorInfo &tensorInfo,
                           const std::string &debugPrefix = "");
 
+  TensorId addUntypedInputTensor(const std::string &debugPrefix = "");
+
   void addInputTensorFromHigherScope(const TensorId &tensorId);
 
   TensorId addInitializedInputTensor(const ConstVoidData &initData,
@@ -242,11 +244,14 @@ public:
                                        onnx::TensorProto *tp);
 
 private:
+  onnx::ValueInfoProto *addGraphInput(const TensorId &id);
+
   void finalizeOp(onnx::NodeProto *node, const std::string &name);
 
   void addOpsetRequirement(const std::string &domain, int version);
 
   TensorId getNextId(const std::string &name, int n = -1);
+  TensorId getNextInputId(const std::string &debugPrefix);
 
   bool isInputTensor(TensorId id) const;
 
