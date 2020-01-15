@@ -1161,7 +1161,10 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
       return SequenceMap();
     };
 
-    return {1e6 + priMod, initTensorTaskId(tensor->id), {}, f};
+    // Discussion with David Norman suggests creating tensors as
+    // late as possible gives better IPU memory use, so
+    // giving this low priority.
+    return {-1e6 + priMod, initTensorTaskId(tensor->id), {}, f};
   }
 }
 
