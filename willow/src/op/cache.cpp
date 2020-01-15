@@ -16,7 +16,6 @@ std::unique_ptr<Op> CacheStoreOp::clone() const {
   return std::make_unique<CacheStoreOp>(*this);
 }
 
-
 CacheLoadOp::CacheLoadOp(const OperatorIdentifier &_opid,
                          const TensorInfo &tensor_info_,
                          const Op::Settings &settings_)
