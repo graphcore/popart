@@ -4,7 +4,6 @@ from popart.session import _initAnchorArrays
 import torch
 import torch.nn as nn
 from torch.onnx.utils import _model_to_graph
-from torch.jit import get_trace_graph
 from torch.onnx import ONNX_ARCHIVE_MODEL_PROTO_NAME, ExportTypes, OperatorExportTypes
 # Import all of torchwriter into this namespace
 from .torchwriter import *
