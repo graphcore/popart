@@ -130,7 +130,7 @@ int64_t Region::nelms() const {
 
   int64_t n = 1;
   for (int64_t i = 0; i < rank(); ++i) {
-    n *= std::max(0LL, (upper[i] - lower[i]));
+    n *= std::max<int64_t>(0L, (upper[i] - lower[i]));
   }
   return n;
 }
