@@ -308,6 +308,15 @@ void Ir::logIr() {
 
 void Ir::verifyPipelineSettings() const {
   if (!getSessionOptions().enablePipelining) {
+    // If pipelining is disabled, make sure no ops have a pipeline stage set.
+    for (auto &id_graph : graphs) {
+      auto &graph = id_graph.second;
+      for (auto &id_op : graph->getOps()) {
+        auto &op = id_op.second;
+        op->setPipelineStage(boost::none);
+      }
+    }
+
     return;
   }
 
@@ -393,6 +402,32 @@ void Ir::verifyPipelineSettings() const {
                     opNames,
                     ps,
                     vgraphs);
+      }
+    }
+  }
+}
+
+void Ir::verifyPingPongSettings() const {
+  // check for mismatched settings
+  if (userOptions.pingPongPhases > 1 &&
+      (userOptions.autoVirtualGraph ||
+       userOptions.virtualGraphMode != VirtualGraphMode::PingPong)) {
+    throw error("PingPong phases > 1 requires VirtualGraphMode::PingPong, "
+                "and autoVirtualGraph disabled");
+  }
+
+  // if pingpong is enabled
+  if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
+      userOptions.pingPongPhases > 1) {
+    // Currently there are no checks for when ping pong is enabled.
+  } else {
+    // if pingpong is disabled, make sure all ops pingpong phases are set to
+    // boost::none.
+    for (auto &id_graph : graphs) {
+      auto &graph = id_graph.second;
+      for (auto &id_op : graph->getOps()) {
+        auto &op = id_op.second;
+        op->setPingPongPhase(boost::none);
       }
     }
   }
@@ -744,6 +779,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   // Check virtual graph settings and annotations are consistent
   verifyVirtualGraphIds(false);
   verifyPipelineSettings();
+  verifyPingPongSettings();
 
   dotCheckpoint(DotCheck::FWD0);
 
@@ -755,13 +791,6 @@ void Ir::prepareImpl(const IrBundle &gb) {
 
   if (requiresRandomSeed()) {
     initRandomSeed();
-  }
-
-  if (userOptions.pingPongPhases > 1 &&
-      (userOptions.autoVirtualGraph ||
-       userOptions.virtualGraphMode != VirtualGraphMode::PingPong)) {
-    throw error("PingPong phases > 1 requires VirtualGraphMode::PingPong, "
-                "and autoVirtualGraph disabled");
   }
 
   enableTransform(AutoVirtualGraph::id(),
@@ -1071,75 +1100,74 @@ void Ir::verifyVertexAttributesOnlyInMain() const {
 }
 
 void Ir::verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const {
-  logging::ir::debug("Verifying virtual graph id consistency");
-
-  // Get the virtual graph Id from an op or loss (-1 if not set)
-  auto getVgid = [](const auto &x) -> int64_t {
-    if (x->hasVirtualGraphId()) {
-      return x->getVirtualGraphId();
-    } else {
-      return -1;
-    }
-  };
-
-  std::set<int64_t> vgraphs;
-
-  // Get the vgraph ids from all non-IpuCopyOps
-  for (auto &id_op : getMainGraph().getOps()) {
-    auto op = id_op.second.get();
-    if (!op->isConvertibleTo<IpuCopyOp>()) {
-      vgraphs.insert(getVgid(id_op.second));
-    }
-  }
-
-  for (auto &loss : losses) {
-    vgraphs.insert(getVgid(loss));
-  }
-
-  // a mix of annotated and not annotated Ops : suggests a problem
-  if (vgraphs.count(-1) != 0 && vgraphs.size() > 1) {
-    std::ostringstream errm;
-    errm << "Either all Ops in the main graph must have their virtual "
-         << "graph ids set, or none must. Op count per virtual graph id\n";
-    std::map<int64_t, int> vgraph_op_count;
-    for (auto id : vgraphs) {
-      vgraph_op_count.insert({id, 0});
-    }
-
-    for (auto &id_op : getMainGraph().getOps()) {
-      auto op = id_op.second.get();
-      vgraph_op_count.at(getVgid(op))++;
-    }
-
-    for (auto &loss : losses) {
-      vgraph_op_count.at(getVgid(loss))++;
-    }
-
-    for (auto &id_size : vgraph_op_count) {
-      errm << "  " << id_size.first << " : " << id_size.second << "\n";
-    }
-
-    errm << "Ops with no virtual graph id :  \n";
-    for (auto &id_op : getMainGraph().getOps()) {
-      auto op = id_op.second.get();
-      if (!op->isConvertibleTo<IpuCopyOp>() && !op->hasVirtualGraphId()) {
-        errm << "  " << op->str() << "\n";
-      }
-    }
-
-    errm << "Losses with no virtual graph id : \n";
-    for (auto &loss : losses) {
-      if (!loss->hasVirtualGraphId()) {
-        errm << "  "
-             << "Loss"
-             << "\n";
-      }
-    }
-
-    throw error(errm.str());
-  }
-
   if (virtualGraphsEnabled()) {
+    logging::ir::debug("Verifying virtual graph id consistency");
+    // Get the virtual graph Id from an op or loss (-1 if not set)
+    auto getVgid = [](const auto &x) -> int64_t {
+      if (x->hasVirtualGraphId()) {
+        return x->getVirtualGraphId();
+      } else {
+        return -1;
+      }
+    };
+
+    std::set<int64_t> vgraphs;
+
+    // Get the vgraph ids from all non-IpuCopyOps
+    for (auto &id_op : getMainGraph().getOps()) {
+      auto op = id_op.second.get();
+      if (!op->isConvertibleTo<IpuCopyOp>()) {
+        vgraphs.insert(getVgid(id_op.second));
+      }
+    }
+
+    for (auto &loss : losses) {
+      vgraphs.insert(getVgid(loss));
+    }
+
+    // a mix of annotated and not annotated Ops : suggests a problem
+    if (vgraphs.count(-1) != 0 && vgraphs.size() > 1) {
+      std::ostringstream errm;
+      errm << "Either all Ops in the main graph must have their virtual "
+           << "graph ids set, or none must. Op count per virtual graph id\n";
+      std::map<int64_t, int> vgraph_op_count;
+      for (auto id : vgraphs) {
+        vgraph_op_count.insert({id, 0});
+      }
+
+      for (auto &id_op : getMainGraph().getOps()) {
+        auto op = id_op.second.get();
+        vgraph_op_count.at(getVgid(op))++;
+      }
+
+      for (auto &loss : losses) {
+        vgraph_op_count.at(getVgid(loss))++;
+      }
+
+      for (auto &id_size : vgraph_op_count) {
+        errm << "  " << id_size.first << " : " << id_size.second << "\n";
+      }
+
+      errm << "Ops with no virtual graph id :  \n";
+      for (auto &id_op : getMainGraph().getOps()) {
+        auto op = id_op.second.get();
+        if (!op->isConvertibleTo<IpuCopyOp>() && !op->hasVirtualGraphId()) {
+          errm << "  " << op->str() << "\n";
+        }
+      }
+
+      errm << "Losses with no virtual graph id : \n";
+      for (auto &loss : losses) {
+        if (!loss->hasVirtualGraphId()) {
+          errm << "  "
+               << "Loss"
+               << "\n";
+        }
+      }
+
+      throw error(errm.str());
+    }
+
     // Check number ipus makes sense given virtual graphs have been enabled
     if (!postAutoVirtualGraphTransform && deviceInfo->getNumIpus() == 1) {
       logging::ir::warn("Auto virtualGraphMode is on, but only one IPU is "
@@ -1169,34 +1197,16 @@ void Ir::verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const {
             getSessionOptions().virtualGraphMode);
       }
     }
-
   }
 
   else {
-    // virtualGraphMode is Off, yet there is at least one Op with virtual graph
-    // id set : suggests a problem
-    if (vgraphs != std::set<int64_t>{-1}) {
-      for (auto &id_op : getMainGraph().getOps()) {
+    // if virtual graphs are not enabled, make sure no ops have a virtual graph
+    // id set.
+    for (auto &id_graph : graphs) {
+      auto &graph = id_graph.second;
+      for (auto &id_op : graph->getOps()) {
         auto op = id_op.second.get();
-        if (op->hasVirtualGraphId()) {
-          throw error("SessionOptions flag virtualGraphMode is {}, but "
-                      "{} has virtual graph id {}. This is inconsistent, "
-                      "consider setting virtualGraphMode to Manual or removing "
-                      "all virtual graph annotation from Ops. ",
-                      getSessionOptions().virtualGraphMode,
-                      op->str(),
-                      op->getVirtualGraphId());
-        }
-      }
-      for (auto &loss : losses) {
-        if (loss->hasVirtualGraphId()) {
-          throw error("SessionOptions flag virtualGraphMode is {}, but "
-                      "Loss has virtual graph id {}. This is inconsistent, "
-                      "consider setting virtualGraphMode to Manual or removing "
-                      "all virtual graph annotation from Ops. ",
-                      getSessionOptions().virtualGraphMode,
-                      loss->getVirtualGraphId());
-        }
+        op->setVirtualGraphId(boost::none);
       }
     }
   }

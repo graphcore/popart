@@ -79,6 +79,7 @@ def test_mixed_virtual_graph():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
     opts = popart.SessionOptions()
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     with pytest.raises(popart.popart_exception) as e_info:
         popart.InferenceSession(fnModel=proto,
