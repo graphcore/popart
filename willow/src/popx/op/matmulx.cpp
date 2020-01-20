@@ -1,5 +1,6 @@
 #include <memory>
 #include <popart/error.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/matmulx.hpp>
@@ -18,17 +19,25 @@ namespace popart {
 namespace popx {
 
 namespace {
-PoplarOptions getPoplarOptionsForMatMul(Devicex *device,
-                                        MatMulBaseOp::Phase phase) {
-  PoplarOptions options;
-  if (phase == MatMulBaseOp::Phase::Fwd) {
-    options = device->fwdMmOptions;
-  } else if (phase == MatMulBaseOp::Phase::BwdLhs) {
-    options = device->bwdMmLhsOptions;
-  } else if (phase == MatMulBaseOp::Phase::BwdRhs) {
-    options = device->bwdMmRhsOptions;
+PoplarOptions getPoplarOptionsForMatMul(MatMulBaseOp &op) {
+  PoplarOptions opts;
+  auto &ir = op.getIr();
+  if (ir.getSessionOptions().enableFullyConnectedPass &&
+      op.useFullyConnectedPass()) {
+    if (ir.isTraining()) {
+      auto phase = op.getPhase();
+      if (phase == MatMulBaseOp::Phase::Fwd) {
+        opts.options["fullyConnectedPass"] = "TRAINING_FWD";
+      } else if (phase == MatMulBaseOp::Phase::BwdLhs) {
+        opts.options["fullyConnectedPass"] = "TRAINING_BWD";
+      } else if (phase == MatMulBaseOp::Phase::BwdRhs) {
+        opts.options["fullyConnectedPass"] = "TRAINING_WU";
+      }
+    } else {
+      opts.options["fullyConnectedPass"] = "INFERENCE_FWD";
+    }
   }
-  return options;
+  return opts;
 }
 } // namespace
 
@@ -385,8 +394,7 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
   //                        G |  M   N
   // o' := matmul(a, b) = [10 | 28, 162]
 
-  auto opts =
-      getPoplarOptionsForMatMul(dv_p, matmul.getPhase()).toOptionFlags();
+  auto opts = getPoplarOptionsForMatMul(matmul).toOptionFlags();
   setMatMulOptions(matmul, opts);
   auto outputType = combinedBroadcastTs.first.elementType();
   if (auto _outputType = matmul.getOutputType())
@@ -531,8 +539,7 @@ poplar::Tensor MatMulOpx::createInput(InIndex index,
   rhsShape = matCombineBroadcastDims(rhsShape);
   std::swap(rhsShape[2], rhsShape[1]);
 
-  auto opts =
-      getPoplarOptionsForMatMul(dv_p, matmul.getPhase()).toOptionFlags();
+  auto opts = getPoplarOptionsForMatMul(matmul).toOptionFlags();
   setMatMulOptions(matmul, opts);
 
   if (index == MatMulOp::getLhsInIndex()) {

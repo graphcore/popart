@@ -16,10 +16,12 @@ MatMulBaseOp::MatMulBaseOp(
     const Phase phase_,
     const boost::optional<float> availableMemoryProportion_,
     const SerialiseSettings &serialization_,
-    const boost::optional<DataType> outputType_)
+    const boost::optional<DataType> outputType_,
+    const bool useFullyConnectedPass_)
     : Op(_opid, settings_), phase(phase_),
       availableMemoryProportion(availableMemoryProportion_),
-      serialization(serialization_), outputType(outputType_) {}
+      serialization(serialization_), outputType(outputType_),
+      useFullyConnectedPass_(useFullyConnectedPass_) {}
 
 void MatMulBaseOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
@@ -32,6 +34,7 @@ void MatMulBaseOp::appendMore(OpSerialiserBase &os) const {
                      static_cast<int64_t>(serialization.mode));
   os.appendAttribute("serialization_factor",
                      static_cast<int64_t>(serialization.factor));
+  os.appendAttribute("use_fully_connected_pass", useFullyConnectedPass());
 }
 
 MatMulBaseGradOp::MatMulBaseGradOp(const OperatorIdentifier &_opid,
@@ -42,7 +45,8 @@ MatMulBaseGradOp::MatMulBaseGradOp(const OperatorIdentifier &_opid,
                    phaseArg,
                    fwdOp.getAvailableMemoryProportion(),
                    fwdOp.getSerialiseSettings(),
-                   fwdOp.getOutputType()),
+                   fwdOp.getOutputType(),
+                   fwdOp.useFullyConnectedPass()),
       fwdOpOutputGrad(fwdOp.outInfo(0)), fwdOpLhsInfo(fwdOp.lhsIn()->info),
       fwdOpRhsInfo(fwdOp.rhsIn()->info), cloneOfCreator(fwdOp.clone()) {}
 

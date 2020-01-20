@@ -602,16 +602,6 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
   bwdConvOptions.options["pass"] = "TRAINING_BWD";
   wuConvOptions.options["pass"]  = "TRAINING_WU";
 
-  if (ir.getSessionOptions().enableFullyConnectedPass) {
-    if (ir.getExecutionMode() == Ir::ExecutionMode::TRAINING) {
-      fwdMmOptions.options.insert({"fullyConnectedPass", "TRAINING_FWD"});
-      bwdMmLhsOptions.options.insert({"fullyConnectedPass", "TRAINING_BWD"});
-      bwdMmRhsOptions.options.insert({"fullyConnectedPass", "TRAINING_WU"});
-    } else {
-      fwdMmOptions.options.insert({"fullyConnectedPass", "INFERENCE_FWD"});
-    }
-  }
-
   if (ir.getSessionOptions().enablePipelining) {
     pInfo = PipelineInfo(
         ir.getDataFlow().batchesPerStep(),

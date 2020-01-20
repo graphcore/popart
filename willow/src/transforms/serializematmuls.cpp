@@ -222,6 +222,7 @@ static void serializeMatMul(TransformBuilder &builder,
 
     mOp->setPhase(matmul->getPhase());
     mOp->setAvailableMemoryProportion(matmul->getAvailableMemoryProportion());
+    mOp->setUseFullyConnectedPass(matmul->useFullyConnectedPass());
     if (builder.hasProducer(lhsMatMulInput))
       builder.getGraph().topoCons->insert(
           builder.getProducer(lhsMatMulInput), mOp, true);
