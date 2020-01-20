@@ -89,6 +89,23 @@ void Tensors::clearAliases() {
 void Tensors::updateAliases(Op *op) {
   logging::trace("[updateAliases] Updating alias for Op {}", op->debugName());
 
+  std::unordered_map<Tensor *, std::unordered_map<Tensor *, view::Chains>>
+      newAliases;
+
+  auto registerChains =
+      [&newAliases](Tensor *t0, Tensor *t3, const view::Chains &newChains) {
+        if (!newChains.isEmpty()) {
+          if (newAliases.find(t0) == newAliases.end()) {
+            newAliases[t0] = {};
+          }
+          if (newAliases.at(t0).find(t3) == newAliases.at(t0).end()) {
+            newAliases[t0][t3] = {}; // empty Chains
+          }
+          // add the new Chains
+          newAliases[t0][t3] = newAliases[t0][t3].parallel(newChains);
+        }
+      };
+
   // for all of the inputs of op, t1 and all output, t2:
   for (auto i1_t1 : op->input->tensorMap()) {
     for (auto o1_t2 : op->output->tensorMap()) {
@@ -113,7 +130,9 @@ void Tensors::updateAliases(Op *op) {
           continue;
         }
 
-        auto fwdMap              = op->fwdRegMap(i1, o1);
+        auto fwdMap = op->fwdRegMap(i1, o1);
+        auto bwdMap = op->bwdRegMap(i1, o1);
+
         view::Regions outRegions = fwdMap(inRegion);
 
         // if there is an alias between the unique output
@@ -122,10 +141,18 @@ void Tensors::updateAliases(Op *op) {
           if (outRegion.isEmpty()) {
             continue;
           }
-          auto bwdMap = op->bwdRegMap(i1, o1);
 
-          view::Link fwdLink(inRegion, fwdMap, "Fwd Link of " + op->str());
-          view::Link bwdLink(outRegion, bwdMap, "Bwd Link of " + op->str());
+          view::Link fwdLink(inRegion,
+                             fwdMap,
+                             "Fwd Link of " + op->debugName() + " " +
+                                 std::to_string(i1) + "->" +
+                                 std::to_string(o1));
+
+          view::Link bwdLink(outRegion,
+                             bwdMap,
+                             "Bwd Link of " + op->debugName() + " " +
+                                 std::to_string(i1) + "->" +
+                                 std::to_string(o1));
 
           // all chains t0 -> t1 for all t0
           auto allInChains = aliasChainsTo(t1);
@@ -145,6 +172,7 @@ void Tensors::updateAliases(Op *op) {
             view::Chains inChainsRev = getChainsFromTo(t1, t0);
 
             for (auto &outwards : allOutChains) {
+
               Tensor *t3 = outwards.first;
 
               logging::trace("[updateAliases] Chain {}->{}->{}->{}",
@@ -165,62 +193,66 @@ void Tensors::updateAliases(Op *op) {
               // and we want to update aliasChainsToKey[t3][t0]
               // with all new chains that pass through op, as
               // well as aliasChainsToKey[t0][t3]
-              auto newChains = inChainsFwdLinkSeries.series(outChains);
-              logging::trace("[updateAliases] Chain {}->{} empty: {}",
-                             t0->id,
-                             t3->id,
-                             newChains.isEmpty() ? "yes" : "no");
-              if (!newChains.isEmpty()) {
+
+              auto newFwdChains = inChainsFwdLinkSeries.series(outChains);
+              auto newBwdChains =
+                  outChainsRev.series(bwdLink).series(inChainsRev);
+
+              bool fwdIsEmpty = newFwdChains.isEmpty();
+              bool bwdIsEmpty = newBwdChains.isEmpty();
+
+              if (fwdIsEmpty != bwdIsEmpty) {
+                std::ostringstream oss;
+                oss << "\n\nnewFwdChains : \n" << newFwdChains << '\n';
+                oss << "\ninChains : \n" << inChains << '\n';
+                oss << "\nfwdLink : \n" << fwdLink << '\n';
+                oss << "\noutChains : \n" << outChains << '\n';
+                oss << "\nDetermining if newFwdChains is empty" << '\n';
+                oss << "\nConclusion, fwdIsEmpty = : " << fwdIsEmpty << '\n';
+                oss << "\n\nnewBwdChains : \n" << newBwdChains << '\n';
+                oss << "\noutChainsRev : \n" << outChainsRev << '\n';
+                oss << "\nbwdLink : \n" << bwdLink << '\n';
+                oss << "\ninChainsRev : \n" << inChainsRev << '\n';
+                oss << "\nDetermining if newBwdChains is empty" << '\n';
+                oss << "\nConclusion, bwdIsEmpty : " << bwdIsEmpty << '\n';
+                throw internal_error(oss.str());
+              }
+
+              if (!fwdIsEmpty) {
                 logging::trace("[updateAliases] Non-empty fwd chains, "
                                "appending to aliasChainsToKey");
-                if (aliasChainsToKey.find(t3) == aliasChainsToKey.end()) {
-                  aliasChainsToKey[t3] = {};
-                }
-                if (aliasChainsToKey.at(t3).find(t0) ==
-                    aliasChainsToKey.at(t3).end()) {
-                  aliasChainsToKey[t3][t0] = {}; // empty Chains
-                }
-                // add the new Chains
-                aliasChainsToKey[t3][t0] =
-                    aliasChainsToKey[t3][t0].parallel(newChains);
-
-                // insert the mirror image
-                aliasChainsFromKey[t0][t3] = aliasChainsToKey[t3][t0];
+                registerChains(t3, t0, newFwdChains);
               }
-
-              int nChainDirections = 0;
-              nChainDirections += !newChains.isEmpty();
 
               // same logic for t3 -> t0
-              newChains = outChainsRev.series(bwdLink).series(inChainsRev);
-              nChainDirections += !newChains.isEmpty();
-
-              logging::trace("[updateAliases] Chain {}->{} empty: {}",
-                             t3->id,
-                             t0->id,
-                             newChains.isEmpty() ? "yes" : "no");
-              if (!newChains.isEmpty()) {
-                if (aliasChainsToKey.find(t0) == aliasChainsToKey.end()) {
-                  aliasChainsToKey[t0] = {};
-                }
-                if (aliasChainsToKey.at(t0).find(t3) ==
-                    aliasChainsToKey.at(t0).end()) {
-                  aliasChainsToKey[t0][t3] = {}; // empty Chains
-                }
-                // add the new Chains
-                aliasChainsToKey[t0][t3] =
-                    aliasChainsToKey[t0][t3].parallel(newChains);
-
-                // insert the mirror image
-                aliasChainsFromKey[t3][t0] = aliasChainsToKey[t0][t3];
+              if (!bwdIsEmpty) {
+                logging::trace("[updateAliases] Non-empty bwd chains, "
+                               "appending to aliasChainsToKey");
+                registerChains(t0, t3, newBwdChains);
               }
-
-              // TODO(jn) turns this on and run tests (T13532)
-              // assert(nChainDirections % 2 == 0);
             }
           }
         }
       }
+    }
+  }
+
+  for (auto x : newAliases) {
+    auto t0         = x.first;
+    auto t3_chain_s = x.second;
+    if (aliasChainsToKey.find(t0) == aliasChainsToKey.end()) {
+      aliasChainsToKey[t0] = {};
+    }
+    for (auto t3_chain : t3_chain_s) {
+      auto t3    = t3_chain.first;
+      auto chain = t3_chain.second;
+      if (aliasChainsToKey.at(t0).find(t3) == aliasChainsToKey.at(t0).end()) {
+        aliasChainsToKey[t0][t3] = {}; // empty Chains
+      }
+      // add the new Chains
+      aliasChainsToKey[t0][t3] = aliasChainsToKey[t0][t3].parallel(chain);
+      // insert the mirror image
+      aliasChainsFromKey[t3][t0] = aliasChainsToKey[t0][t3];
     }
   }
 }

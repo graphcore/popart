@@ -55,6 +55,8 @@ private:
   std::vector<Link> links;
 };
 
+std::ostream &operator<<(std::ostream &, const Chain &);
+
 // a set of parallel Chain objects
 class Chains {
 
@@ -70,12 +72,16 @@ public:
   Chains series(const Chains &) const;
   Chains parallel(const Chains &) const;
   Regions apply(const Region &r) const;
-  bool isEmpty() const { return chain_union.size() == 0; }
+  bool isEmpty() const;
+
+  const std::vector<Chain> &getChainUnion() const { return chain_union; }
 
 private:
   // TODO : consider rather a vector of lists
   std::vector<Chain> chain_union;
 };
+
+std::ostream &operator<<(std::ostream &, const Chains &);
 
 } // namespace view
 } // namespace popart

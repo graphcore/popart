@@ -6,6 +6,15 @@
 namespace popart {
 namespace view {
 
+bool Chains::isEmpty() const {
+  for (const auto &c : chain_union) {
+    if (!c.untraversable()) {
+      return false;
+    }
+  }
+  return true;
+}
+
 bool Chain::untraversable() const {
   if (links.size() == 0) {
     throw error(
@@ -24,6 +33,22 @@ void Link::append(std::ostream &ost) const {
 
 std::ostream &operator<<(std::ostream &ost, const Link &l) {
   l.append(ost);
+  return ost;
+}
+
+std::ostream &operator<<(std::ostream &ost, const Chain &c) {
+  ost << "Chain:\n";
+  for (auto l : c.getLinks()) {
+    ost << "" << l << '\n';
+  }
+  return ost;
+}
+
+std::ostream &operator<<(std::ostream &ost, const Chains &cs) {
+  ost << "Chains:\n";
+  for (auto c : cs.getChainUnion()) {
+    ost << c << '\n';
+  }
   return ost;
 }
 
