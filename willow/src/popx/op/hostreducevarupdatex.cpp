@@ -33,7 +33,9 @@ void GradCopyToHostOpx::grow(poplar::program::Sequence &prog) const {
   // TODO(T12685): Once replicatedReduceScatter is part of the Poplar
   // public API we can replace the replicatedAllReduce with it and
   // then do the AllGather on the host.
-  if (dv_p->getReplicationFactor() > 1) {
+  // If accumulation is enabled then the replicatedAllReduce is run from
+  // SGD1AcclReduceOp
+  if (dv_p->getReplicationFactor() > 1 && dv_p->getAccumulationFactor() == 1) {
     weightDeltas =
         popops::replicatedAllReduce(graph(),
                                     weightDeltas,

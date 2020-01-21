@@ -51,6 +51,7 @@
 #include <popart/tojson.hpp>
 #include <popart/topocons.hpp>
 
+#include <popart/op/hostreducevarupdate.hpp>
 #include <popart/op/sgd1acclreduce.hpp>
 #include <popart/op/sgd1acclupdate.hpp>
 #include <popart/op/sgd1varupdate.hpp>
@@ -1849,7 +1850,9 @@ void Devicex::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
     if (ir().getSessionOptions().enableGradientAccumulation &&
         (dynamic_cast<SGD1AcclReduceOp *>(op) ||
          dynamic_cast<SGD1VarUpdateOp *>(op) ||
-         dynamic_cast<SGD1AcclUpdateOp *>(op))) {
+         dynamic_cast<SGD1AcclUpdateOp *>(op) ||
+         dynamic_cast<GradCopyToHostOp *>(op) ||
+         dynamic_cast<GradCopyFromHostOp *>(op))) {
       outerLoopFragEmpty = false;
       growOpx(opx, seqs[&progs.accumulateOuterFragment()]);
     }
@@ -1920,7 +1923,9 @@ void Devicex::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
   } else if (ir().getSessionOptions().enableGradientAccumulation &&
              (dynamic_cast<SGD1AcclReduceOp *>(op) ||
               dynamic_cast<SGD1VarUpdateOp *>(op) ||
-              dynamic_cast<SGD1AcclUpdateOp *>(op))) {
+              dynamic_cast<SGD1AcclUpdateOp *>(op) ||
+              dynamic_cast<GradCopyToHostOp *>(op) ||
+              dynamic_cast<GradCopyFromHostOp *>(op))) {
     outerLoopFragEmpty = false;
     growOpx(opx, seqs[&progs.accumulateOuterFragment()]);
   } else {
