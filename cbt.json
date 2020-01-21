@@ -1,5 +1,8 @@
 {
   "dependencies" : [
+    "poprithms",
+    "poplar",
+    "poplibs",
     "onnx",
     "pybind11",
     "gcdoc",
