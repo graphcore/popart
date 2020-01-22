@@ -446,6 +446,7 @@ private:
   void verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const;
   void verifyVertexAttributesOnlyInMain() const;
   void verifyPipelineSettings() const;
+  void verifyPingPongSettings() const;
 
   // Verify ConstExpr folding has removed input tensors
   // as expected
