@@ -1400,12 +1400,12 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithAccumulation) {
 
   for (int i = 0; i < hostAllReduceDisabled.size(); i++) {
     std::cout << "Checking data " << i << '\n';
-    auto &lhs = hostAllReduceDisabled[i];
-    auto &rhs = hostAllReduceEnabled[i];
+    auto &lhs = hostAllReduceDisabled.at(i);
+    auto &rhs = hostAllReduceEnabled.at(i);
 
     BOOST_REQUIRE(lhs.size() == rhs.size());
     for (int j = 0; j < lhs.size(); j++) {
-      BOOST_CHECK(std::fabs(lhs[i] - rhs[i]) <= 1e-4f);
+      BOOST_CHECK(std::fabs(lhs.at(j) - rhs.at(j)) <= 1e-4f);
     }
   }
 }
