@@ -58,10 +58,32 @@ using OpIdentifierList = std::vector<OperatorIdentifier>;
 std::ostream &operator<<(std::ostream &os,
                          const std::vector<DataType> &dataTypes);
 
+class OpCreatorInfo {
+public:
+  const OperatorIdentifier &opid;
+  const Op::Settings &settings;
+  const Attributes &attributes;
+
+  OpCreatorInfo(const OperatorIdentifier &_opid,
+                const Op::Settings &_settings,
+                const Attributes &_attributes,
+                const std::vector<TensorId> &_inputIds)
+      : opid(_opid), settings(_settings), attributes(_attributes),
+        inputIds(_inputIds) {}
+
+  const std::vector<TensorId> &getInputIds() const;
+
+private:
+  const std::vector<TensorId> &inputIds;
+};
+
 class OpManager {
 
 public:
   using OpFactoryFunc =
+      std::function<std::unique_ptr<Op>(const OpCreatorInfo &)>;
+
+  using LegacyOpFactoryFunc =
       std::function<std::unique_ptr<Op>(const OperatorIdentifier &_opid,
                                         const Op::Settings &settings,
                                         const Attributes &_attr)>;
@@ -88,13 +110,15 @@ public:
   // Factory creation method
   // creates a op with matches the domain/type and has the largest version <=
   // opsetVersion
-  static std::unique_ptr<Op> createOp(const OpDomain &domain,
-                                      const OpType &type,
-                                      const int opsetVersion,
-                                      Graph &graph,
-                                      const std::string &name = "",
-                                      const Scope &scope      = {},
-                                      const Attributes &_attr = {});
+  static std::unique_ptr<Op>
+  createOp(const OpDomain &domain,
+           const OpType &type,
+           const int opsetVersion,
+           Graph &graph,
+           const std::string &name               = "",
+           const Scope &scope                    = {},
+           const Attributes &_attr               = {},
+           const std::vector<TensorId> &inputIds = {});
 
   // creates a op with matches the opid
   static std::unique_ptr<Op> createOp(const OperatorIdentifier &opid,
@@ -119,6 +143,7 @@ private:
                              const std::string &name,
                              const Scope &scope,
                              const Attributes &_attr,
+                             const std::vector<TensorId> &inputIds,
                              OpFactoryFunc func);
   // Singleton
   static OpManager &getInstance();
@@ -138,10 +163,9 @@ template <class OP> class OpCreator {
     OpManager::registerOp(opid,
                           details,
                           isPublic,
-                          [](const OperatorIdentifier &_opid,
-                             const Op::Settings &settings,
-                             const Attributes &) -> std::unique_ptr<Op> {
-                            return std::unique_ptr<OP>(new OP(_opid, settings));
+                          [](const OpCreatorInfo &info) -> std::unique_ptr<Op> {
+                            return std::unique_ptr<OP>(
+                                new OP(info.opid, info.settings));
                           });
   }
 
@@ -157,6 +181,18 @@ public:
             bool isPublic = true) {
     for (const auto &version : opDefinitions) {
       OpManager::registerOp(version.first, version.second, isPublic, func);
+    }
+  }
+
+  OpCreator(const OpDefinitions &opDefinitions,
+            OpManager::LegacyOpFactoryFunc func,
+            bool isPublic = true) {
+    OpManager::OpFactoryFunc wrapper = [func](const OpCreatorInfo &info) {
+      return func(info.opid, info.settings, info.attributes);
+    };
+
+    for (const auto &version : opDefinitions) {
+      OpManager::registerOp(version.first, version.second, isPublic, wrapper);
     }
   }
 };

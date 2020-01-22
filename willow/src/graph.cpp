@@ -251,6 +251,10 @@ void Graph::connectOutputsFromOutputMapWrapper(const OutputMapWrapper &out,
 }
 
 std::unique_ptr<Op> Graph::addOp(const Node &node) {
+  std::vector<TensorId> inputIds;
+  for (int i = 0; i < node.input_size(); i++) {
+    inputIds.push_back(node.input(i));
+  }
 
   int version = ir.getOpSetVersionFromModel(node.domain());
 
@@ -260,7 +264,8 @@ std::unique_ptr<Op> Graph::addOp(const Node &node) {
                                               *this,
                                               node.name(),
                                               getScope(),
-                                              node.attribute());
+                                              node.attribute(),
+                                              inputIds);
   if (p != nullptr)
     return p;
   else {
