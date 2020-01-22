@@ -12,6 +12,8 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 import test_util as tu
 
+np.random.seed(0)
+
 
 # Attention Op from BERT
 def attention_onnx(builder, qkv, mask, batch_size, sequence_length,
@@ -41,12 +43,15 @@ def attention_onnx(builder, qkv, mask, batch_size, sequence_length,
 
         x = builder.aiOnnx.softmax([x], axis=-1)
 
-        # x[batch_size, attention_heads, sequence_length, sequence_length] * v[batch_size, attention_heads, sequence_length, qkv_length]
+        # x[batch_size, attention_heads, sequence_length, sequence_length] *
+        # v[batch_size, attention_heads, sequence_length, qkv_length]
         z = builder.aiOnnx.matmul([x, v])
 
-        # [batch_size, attention_heads, sequence_length, qkv_length] -> [batch_size, sequence_length, attention_heads, qkv_length]
+        # [batch_size, attention_heads, sequence_length, qkv_length] ->
+        # [batch_size, sequence_length, attention_heads, qkv_length]
         z = builder.aiOnnx.transpose([z], perm=[0, 2, 1, 3])
-        # [batch_size, sequence_length, attention_heads, qkv_length] -> [batch_size*sequence_length, attention_heads*qkv_length]
+        # [batch_size, sequence_length, attention_heads, qkv_length] ->
+        # [batch_size*sequence_length, attention_heads*qkv_length]
         z = builder.reshape_const(builder.aiOnnx, [z],
                                   [sequence_length * batch_size, hidden_size])
     return z
@@ -151,7 +156,7 @@ def test_full_recompute_pipelining(tmpdir):
         inputs = {x_in: input_data, mask: mask_data}
         stepio = popart.PyStepIO(inputs, anchors)
 
-        for __ in range(10):
+        for _ in range(10):
             session.run(stepio)
 
         if verify is not None:
@@ -166,15 +171,15 @@ def test_full_recompute_pipelining(tmpdir):
         stashes = [op for op in ir["maingraph"] if op["type"] == "Stash"]
         stashedTensors = [stash["inputs"][0]["name"] for stash in stashes]
 
-        assert ('x_in' in stashedTensors)
-        assert ('mask' in stashedTensors)
-        assert ('mask_c1' in stashedTensors)
+        assert 'x_in' in stashedTensors
+        assert 'mask' in stashedTensors
+        assert 'mask_c1' in stashedTensors
 
     n_anchors = run_test()
     s_anchors = run_test(popart.RecomputationType.Standard)
     p_anchors = run_test(popart.RecomputationType.Pipeline, verify)
 
-    for key in s_anchors.keys():
-        assert np.all(np.isclose(n_anchors[key], s_anchors[key]))
-        assert np.all(np.isclose(n_anchors[key], p_anchors[key]))
-        assert np.all(np.isclose(s_anchors[key], p_anchors[key]))
+    for key in s_anchors:
+        assert np.allclose(n_anchors[key], s_anchors[key])
+        assert np.allclose(n_anchors[key], p_anchors[key])
+        assert np.allclose(s_anchors[key], p_anchors[key])

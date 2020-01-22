@@ -13,12 +13,6 @@ public:
   void grow(poplar::program::Sequence &) const final;
 };
 
-class CacheAllocateOpx : public Opx {
-public:
-  CacheAllocateOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
-};
-
 class CacheLoadOpx : public Opx {
 public:
   CacheLoadOpx(Op *, Devicex *);

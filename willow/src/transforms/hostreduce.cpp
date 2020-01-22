@@ -6,6 +6,8 @@
 #include <popart/op/copyvarupdate.hpp>
 #include <popart/op/hostreducevarupdate.hpp>
 #include <popart/op/sgd0varupdate.hpp>
+#include <popart/op/sgd1acclupdate.hpp>
+#include <popart/op/sgd1varupdate.hpp>
 #include <popart/op/sync.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/tensor.hpp>
@@ -21,9 +23,13 @@ std::size_t HostReduce::id() { return typeid(HostReduce).hash_code(); }
 Op *HostReduce::insertGradCopyToHostOp(Op *varUpdateOp,
                                        Graph &graph,
                                        int counter) const {
-  auto vop             = dynamic_cast<SGD0VarUpdateOp *>(varUpdateOp);
-  auto optimizerInputs = vop->optimizerInputs();
-  auto gradTensorId    = vop->input->id(SGD0VarUpdateOp::getUpdaterInIndex());
+
+  VarUpdateWithUpdaterOp *vop =
+      dynamic_cast<VarUpdateWithUpdaterOp *>(varUpdateOp);
+
+  // for the SGD1 case the gradTensor corresponds to velocity
+  auto gradTensorId =
+      vop->input->id(VarUpdateWithUpdaterOp::getUpdaterInIndex());
 
   std::string gradCopyOpName;
   if (vop->getName().empty()) {
@@ -49,9 +55,10 @@ Op *HostReduce::insertGradCopyToHostOp(Op *varUpdateOp,
   gradCopyOp->priority = std::numeric_limits<double>::max();
   gradCopyOp->setup();
 
-  graph.topoCons->transfer(vop, gradCopyOp);
-  for (auto &x : optimizerInputs) {
-    gradCopyOp->connectInTensor(x.first, x.second);
+  // Transferring topocons in this case would result in an incorrect scheduling
+  // of the acclUpdate ops
+  if (!varUpdateOp->isConvertibleTo<SGD1VarUpdateOp>()) {
+    graph.topoCons->transfer(vop, gradCopyOp);
   }
 
   return gradCopyOp;
@@ -60,9 +67,12 @@ Op *HostReduce::insertGradCopyToHostOp(Op *varUpdateOp,
 Op *HostReduce::insertGradCopyFromHostOp(Op *varUpdateOp,
                                          Graph &graph,
                                          int counter) const {
-  auto vop             = dynamic_cast<SGD0VarUpdateOp *>(varUpdateOp);
-  auto optimizerInputs = vop->optimizerInputs();
-  auto gradTensorId    = vop->input->id(SGD0VarUpdateOp::getUpdaterInIndex());
+
+  VarUpdateWithUpdaterOp *vop =
+      dynamic_cast<VarUpdateWithUpdaterOp *>(varUpdateOp);
+
+  auto gradTensorId =
+      vop->input->id(VarUpdateWithUpdaterOp::getUpdaterInIndex());
 
   std::string gradCopyOpName;
   if (vop->getName().empty()) {
@@ -91,9 +101,6 @@ Op *HostReduce::insertGradCopyFromHostOp(Op *varUpdateOp,
   gradCopyOp->setup();
 
   graph.topoCons->transfer(vop, gradCopyOp);
-  for (auto &x : optimizerInputs) {
-    gradCopyOp->connectInTensor(x.first, x.second);
-  }
 
   return gradCopyOp;
 }
@@ -166,13 +173,19 @@ bool HostReduce::apply(Graph &graph) const {
   for (auto &id_op : graph.getOpSchedule({})) {
     auto &op = id_op;
 
-    if (!op->isConvertibleTo<SGD0VarUpdateOp>()) {
+    const bool isVarUpdateOp = op->isConvertibleTo<SGD0VarUpdateOp>() ||
+                               op->isConvertibleTo<SGD1VarUpdateOp>();
+    if (!isVarUpdateOp) {
       continue;
+    }
+    if (op->isConvertibleTo<SGD1VarUpdateOp>() &&
+        ir.getSessionOptions().hostWeightUpdate) {
+      throw error("SGD1 is not supported with host weight update");
     }
     changed = true;
 
-    auto gradCopyOp = insertGradCopyToHostOp(op, graph, counter);
-    gradCopyToHostOps.push_back(gradCopyOp);
+    auto gradCopyToHostOp = insertGradCopyToHostOp(op, graph, counter);
+    gradCopyToHostOps.push_back(gradCopyToHostOp);
 
     if (ir.getSessionOptions().hostWeightUpdate) {
       auto varCopyOp = insertVarCopyOp(op, graph, counter);
@@ -186,20 +199,20 @@ bool HostReduce::apply(Graph &graph) const {
       logging::transform::debug(
           "HostReduce replaced {} with grad copy {} and var copy {}",
           op->getName(),
-          gradCopyOp->getName(),
+          gradCopyToHostOp->getName(),
           varCopyOp->getName());
     } else {
       // device side weight update
-      auto *gradCopyOp = insertGradCopyFromHostOp(op, graph, counter);
-      gradCopyFromHostOps.push_back(gradCopyOp);
+      auto *gradCopyFromHostOp = insertGradCopyFromHostOp(op, graph, counter);
+      gradCopyFromHostOps.push_back(gradCopyFromHostOp);
 
-      const auto index         = SGD0VarUpdateOp::getUpdaterInIndex();
+      const auto index         = VarUpdateWithUpdaterOp::getUpdaterInIndex();
       auto gradTensorId        = op->input->id(index);
       auto *originalGradTensor = ir.getTensor(gradTensorId);
 
       op->disconnectInTensor(index, originalGradTensor);
-      op->connectInTensor(index,
-                          gradCopyOp->outId(GradCopyFromHostOp::getOutIndex()));
+      op->connectInTensor(
+          index, gradCopyFromHostOp->outId(GradCopyFromHostOp::getOutIndex()));
     }
 
     ++counter;
@@ -218,6 +231,11 @@ bool HostReduce::apply(Graph &graph) const {
       Op::Settings(graph, "HostReduceSync"), poplar::SyncType::INTERNAL);
   auto syncOpId = graph.moveIntoGraph(std::move(syncOp_up));
   auto syncOp   = graph.getOp(syncOpId);
+
+  if (gradCopyToHostOps.back()->hasVirtualGraphId()) {
+    syncOp->setVirtualGraphId(gradCopyToHostOps.back()->getVirtualGraphId());
+  }
+
   syncOp->setup();
 
   // Sync Op should run after all gradCopyToHost Ops

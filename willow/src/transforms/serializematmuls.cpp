@@ -222,6 +222,7 @@ static void serializeMatMul(TransformBuilder &builder,
 
     mOp->setPhase(matmul->getPhase());
     mOp->setAvailableMemoryProportion(matmul->getAvailableMemoryProportion());
+    mOp->setUseFullyConnectedPass(matmul->useFullyConnectedPass());
     if (builder.hasProducer(lhsMatMulInput))
       builder.getGraph().topoCons->insert(
           builder.getProducer(lhsMatMulInput), mOp, true);
@@ -309,7 +310,7 @@ static void serializeVarUpdate(int sliceDim,
   std::vector<Op *> path;
   bool validPath               = true;
   bool endOfPathFound          = false;
-  const int slice_dim_from_end = 2 - sliceDim;
+  const int slice_dim_from_end = 3 - sliceDim;
 
   while (endOfPathFound == false && validPath == true) {
 

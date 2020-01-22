@@ -17,6 +17,7 @@ public:
   static InIndex getCachedTensorInIndex() { return 0; }
 
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
+  bool isOutlineable() const final { return true; }
 
   void setRemoteBufferId(RemoteBufferId remotebuffer_id_) {
     remotebuffer_id = remotebuffer_id_;
@@ -25,27 +26,6 @@ public:
 
 private:
   RemoteBufferId remotebuffer_id;
-};
-
-class CacheAllocateOp : public Op {
-public:
-  CacheAllocateOp(const OperatorIdentifier &,
-                  const TensorInfo &,
-                  const Op::Settings &);
-
-  std::unique_ptr<Op> clone() const final;
-  void setup() final;
-
-  static InIndex getCachedTensorOutIndex() { return 0; }
-
-  TensorInfo getTensorInfo() { return tensor_info; }
-
-  float getSubgraphValue() const final { return getLowSubgraphValue(); }
-
-  bool isOutlineable() const final { return false; }
-
-private:
-  TensorInfo tensor_info;
 };
 
 class CacheLoadOp : public Op {
@@ -70,6 +50,7 @@ public:
   TensorInfo getTensorInfo() { return tensor_info; }
 
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
+  bool isOutlineable() const final { return true; }
 
   void setRemoteBufferId(RemoteBufferId remotebuffer_id_) {
     remotebuffer_id = remotebuffer_id_;

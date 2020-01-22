@@ -665,7 +665,7 @@ void BackwardPassCreator::cloneGraph(const Graph &from, Graph &to) {
 
     auto newId = to.addScope(from.removeScope(id));
 
-    auto tensorClone = tensor->clone();
+    auto tensorClone = tensor->clone(to);
     tensorClone->id  = newId;
     to.getTensors().moveIntoTensors(std::move(tensorClone));
     auto tensorClonePtr = to.getTensors().get(newId);
@@ -922,6 +922,38 @@ void BackwardPassCreator::doPrune(Graph &graph) {
       graph.graph_inputs.erase(inputIter);
     }
   }
+}
+
+std::vector<Op *> Graph::getCallSiteOps(size_t num) const {
+  std::vector<Op *> ops;
+
+  std::set<const Graph *> visited;
+
+  // Depth first search for call sites
+  std::vector<Op *> opStack;
+
+  // Start at first op of main graph
+  auto schedule = ir.getMainGraph().getOpSchedule({});
+  opStack.insert(opStack.end(), schedule.rbegin(), schedule.rend());
+
+  while (!opStack.empty()) {
+    Op *op = opStack.back();
+    opStack.pop_back();
+    for (const Graph *calledGraph : op->getCalledGraphs()) {
+      if (calledGraph->id.str() == id.str()) {
+        ops.push_back(op);
+        if (num > 0 && ops.size() == num) {
+          return ops;
+        }
+      } else if (visited.find(calledGraph) == visited.end()) {
+        schedule = calledGraph->getOpSchedule({});
+        opStack.insert(opStack.end(), schedule.rbegin(), schedule.rend());
+        visited.insert(calledGraph);
+      }
+    }
+  }
+
+  return ops;
 }
 
 } // namespace popart

@@ -8,7 +8,7 @@
 namespace popart {
 namespace popx {
 
-CallOpx::CallOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+CallOpx::CallOpx(Op *op, Devicex *devicex) : SubgraphOpx(op, devicex) {
   verifyOp<CallOp>(op, Onnx::CustomOperators::Call);
 }
 
@@ -27,37 +27,6 @@ CallOpx::getEndpoints(InIndex index, std::vector<OpxInAndOutIndex> path) const {
 
 InputCreatorType CallOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CANDELEGATE;
-}
-
-std::vector<std::pair<poplar::Tensor, bool>> CallOpx::prepareOutputs() const {
-  std::vector<std::pair<poplar::Tensor, bool>> outputs;
-  auto &callop = getOp<CallOp>();
-
-  int i = 0;
-  for (auto out_id : callop.getCalledGraph().getOutputIds()) {
-    auto output = get(out_id);
-
-    bool aliased = false;
-    for (int j = 0; j < callop.input->n(); j++) {
-      auto input = get(callop.inId(j));
-      // Fully aliased & shape did not change
-      auto aliasRegions = callop.aliases(j, i);
-      bool alias        = aliasRegions.size() == 1 &&
-                   aliasRegions.front().nelms() == output.numElements() &&
-                   output.shape() == input.shape();
-      aliased |= alias;
-      if (alias) {
-        // Set aliased input as output
-        output = input;
-      }
-    }
-
-    logging::trace("Preparing graph output {}, aliased: {}", out_id, aliased);
-    outputs.push_back({aliased ? output : graph().clone(output), aliased});
-    ++i;
-  }
-
-  return outputs;
 }
 
 void CallOpx::copyModified(poplar::program::Sequence &prog) const {
@@ -95,15 +64,23 @@ void CallOpx::copyInputs(poplar::program::Sequence &prog) const {
   }
 }
 
-void CallOpx::copyOutputs(
-    poplar::program::Sequence &prog,
-    const std::vector<std::pair<poplar::Tensor, bool>> &outputs) const {
+void CallOpx::copyOutputs(poplar::program::Sequence &prog) const {
   auto &callop = getOp<CallOp>();
-  for (int i = 0; i < outputs.size(); i++) {
-    auto &call_output    = outputs.at(i).first;
-    bool aliased         = outputs.at(i).second;
+  for (int i = 0; i < callop.output->n(); i++) {
+    auto call_output     = getOutTensor(i);
     auto graph_output_id = callop.getCalledGraph().getOutputId(i);
     auto graph_output    = get(graph_output_id);
+
+    bool aliased = false;
+    for (int j = 0; j < callop.input->n(); j++) {
+      auto input = get(callop.inId(j));
+      // Fully aliased & shape did not change
+      auto aliasRegions = callop.aliases(j, i);
+      bool alias        = aliasRegions.size() == 1 &&
+                   aliasRegions.front().nelms() == call_output.numElements() &&
+                   call_output.shape() == input.shape();
+      aliased |= alias;
+    }
 
     // Skip copy if aliased tensor
     if (!aliased) {
@@ -129,12 +106,38 @@ void CallOpx::doCall(poplar::program::Sequence &prog) const {
 void CallOpx::grow(poplar::program::Sequence &prog) const {
   copyInputs(prog);
   doCall(prog);
-  auto outputs = prepareOutputs();
-  copyOutputs(prog, outputs);
+  copyOutputs(prog);
   copyModified(prog);
-  for (int i = 0; i < outputs.size(); i++) {
-    setOutTensor(i, outputs.at(i).first);
+}
+
+std::vector<std::tuple<TensorId, TensorId, bool>>
+CallOpx::getOutputsToPrepare() const {
+  auto &callop = getOp<CallOp>();
+  std::vector<std::tuple<TensorId, TensorId, bool>> outputs;
+  int i = 0;
+  for (auto subgraph_out_id : callop.getCalledGraph().getOutputIds()) {
+    bool aliased = false;
+    for (int j = 0; j < callop.input->n(); j++) {
+      // Fully aliased & shape did not change
+      auto aliasRegions = callop.aliases(j, i);
+      bool alias        = aliasRegions.size() == 1 &&
+                   aliasRegions.front().nelms() ==
+                       callop.output->tensor(i)->info.nelms() &&
+                   callop.output->tensor(i)->info.shape() ==
+                       callop.input->tensor(j)->info.shape();
+      aliased |= alias;
+      if (alias)
+        subgraph_out_id = callop.input->id(j);
+    }
+
+    TensorId call_out_id = callop.output->tensor(i)->id;
+
+    logging::trace(
+        "To prepare graph output {}, aliased: {}", subgraph_out_id, aliased);
+    outputs.emplace_back(subgraph_out_id, call_out_id, aliased);
+    ++i;
   }
+  return outputs;
 }
 
 namespace {

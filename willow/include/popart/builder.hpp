@@ -176,6 +176,14 @@ public:
                           const std::string &debugPrefix = "");
 
   /**
+   * Add a new input tensor without a type or shape to the model
+   *
+   * \param debugPrefix A string to prepend to the name of the tensor
+   * \return The unique name of the input tensor
+   */
+  TensorId addUntypedInputTensor(const std::string &debugPrefix = "");
+
+  /**
    * Add a new named input tensor to the model
    *
    * \param tensorId The identifier string of the input tensor. This identifier

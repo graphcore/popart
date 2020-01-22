@@ -26,7 +26,8 @@ public:
                const Phase phase_,
                const boost::optional<float> availableMemoryProportion_,
                const SerialiseSettings &serialization_,
-               const boost::optional<DataType> outputType);
+               const boost::optional<DataType> outputType_,
+               const bool useFullyConnectedPass_ = true);
   MatMulBaseOp(const MatMulBaseOp &) = default;
   ~MatMulBaseOp() override           = default;
 
@@ -37,6 +38,9 @@ public:
   // Return the expended shape of the rhs input to matmul
   // minium shape G x N x M
   virtual Shape getExpandedRhsShape() const = 0;
+
+  bool useFullyConnectedPass() const { return useFullyConnectedPass_; }
+  void setUseFullyConnectedPass(const bool b) { useFullyConnectedPass_ = b; }
 
   boost::optional<float> getAvailableMemoryProportion() const {
     return availableMemoryProportion;
@@ -61,6 +65,8 @@ public:
 
 protected:
   Phase phase;
+
+  bool useFullyConnectedPass_;
 
   boost::optional<float> availableMemoryProportion;
 

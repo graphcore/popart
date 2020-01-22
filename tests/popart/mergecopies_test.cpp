@@ -108,7 +108,10 @@ BOOST_AUTO_TEST_CASE(MergeCopies1) {
   auto a1 = aiOnnx.add({i, c2});
   builder->virtualGraph(a1, 1);
 
-  auto a2 = aiOnnx.add({i, a0});
+  // Note that add({i, a0}) is not enough for this test, as we need to ensure
+  // that a1 is generated before a2. Without topo-con exposure to public API, we
+  // replace add with sum
+  auto a2 = aiOnnx.sum({i, a0, a1});
   builder->virtualGraph(a2, 1);
 
   auto out = aiOnnx.add({a1, a2});

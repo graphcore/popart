@@ -317,7 +317,7 @@ const static AiGraphcoreOpIdV1 Nll("Nll");
 
 const static AiGraphcoreOpIdV1 IpuCopy("IpuCopy");
 
-const static AiGraphcoreOpIdV1 CacheAllocate("CacheAllocate");
+const static AiGraphcoreOpIdV1 Init("Init");
 const static AiGraphcoreOpIdV1 CacheStore("CacheStore");
 const static AiGraphcoreOpIdV1 CacheLoad("CacheLoad");
 

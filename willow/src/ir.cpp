@@ -20,6 +20,7 @@
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
 #include <popart/op/getrandomseed.hpp>
+#include <popart/op/init.hpp>
 #include <popart/op/loss.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
@@ -44,6 +45,7 @@
 #include <popart/transforms/inferpipelinestages.hpp>
 #include <popart/transforms/interipucopy.hpp>
 #include <popart/transforms/mergecopies.hpp>
+#include <popart/transforms/mergeduplicateops.hpp>
 #include <popart/transforms/mergevarupdates.hpp>
 #include <popart/transforms/pingpong.hpp>
 #include <popart/transforms/pipeline.hpp>
@@ -801,10 +803,10 @@ void Ir::prepareImpl(const IrBundle &gb) {
     setOptimizer(*gb.optimizer);
   }
 
-  // First ping pong transformation pass (fwd + loss)
+  // Second ping pong transformation pass (fwd + loss)
   if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
       userOptions.pingPongPhases > 1) {
-    applyTransform(PingPong::id(1), getMainGraph());
+    applyTransform(PingPong::id(2), getMainGraph());
     verifyVirtualGraphIds(true);
   }
 
@@ -833,10 +835,10 @@ void Ir::prepareImpl(const IrBundle &gb) {
   removeIsolatedTensors(true);
   updateVertices();
 
-  // Second ping pong transformation pass (bwd)
+  // Third ping pong transformation pass (bwd)
   if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
       userOptions.pingPongPhases > 1) {
-    applyTransform(PingPong::id(2), getMainGraph());
+    applyTransform(PingPong::id(3), getMainGraph());
     verifyVirtualGraphIds(true);
   }
 
@@ -913,10 +915,10 @@ void Ir::prepareImpl(const IrBundle &gb) {
 
   updateVertices();
 
-  // Third ping pong transformation pass (cut)
+  // Fourth ping pong transformation pass (cut)
   if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
       userOptions.pingPongPhases > 1) {
-    applyTransform(PingPong::id(3), getMainGraph());
+    applyTransform(PingPong::id(4), getMainGraph());
     verifyVirtualGraphIds(true);
   }
 
@@ -985,6 +987,8 @@ void Ir::prepareImpl(const IrBundle &gb) {
       userOptions.pingPongPhases > 1) {
     applyTransform(CacheSetup::id(), getMainGraph());
   }
+
+  applyTransform(MergeDuplicateOps::id(), getMainGraph());
 
   // Now, we apply the Patterns which can handle and create
   // topological constraints. Currently, this is only one
@@ -3084,6 +3088,16 @@ std::map<OpId, std::unique_ptr<Op>> &Ir::getMainGraphOps() {
 
 const std::map<OpId, std::unique_ptr<Op>> &Ir::getMainGraphOps() const {
   return getMainGraph().getOps();
+}
+
+std::vector<Op *> Ir::getAllOps() const {
+  std::vector<Op *> ops;
+  for (auto &graph : graphs) {
+    for (auto &op : graph.second->getOps()) {
+      ops.push_back(op.second.get());
+    }
+  }
+  return ops;
 }
 
 Tensors &Ir::getMainGraphTensors() { return getMainGraph().getTensors(); }

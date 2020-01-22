@@ -20,7 +20,9 @@ enum class DependencyType {
   // Depends on tensor initialisation (weight)
   TENSOR,
   // Depends on scheduler choice
-  SCHEDULER
+  SCHEDULER,
+  // Depends on subgraph ops
+  SUBGRAPH
 };
 
 /** A Pritask is a task which has a priority and a set of dependent tasks. */
@@ -42,6 +44,7 @@ public:
   // remove dep from dependsOn.
   void removeDep(const TaskId &dep);
   void removeDep(DependencyType type);
+  std::set<TaskId> getDependenciesOfTypes(std::set<DependencyType>);
 };
 
 // returns true if "a" has lower priority than "b"

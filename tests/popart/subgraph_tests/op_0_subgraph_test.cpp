@@ -140,7 +140,27 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
                 opts,
                 Patterns(PatternsLevel::ALL).enableInPlace(false)});
 
-    auto sched = ir.getOpSchedule({});
+    // pin down the scheduler in a few places, to reduce test shadiness:
+    OpsBeforeKey topoCons;
+    auto sgd0VarUpdates = ir.opsOfType(Onnx::CustomOperators::SGD0VarUpdate);
+    for (auto op : sgd0VarUpdates) {
+      topoCons.insert({op, {}});
+      for (auto t : op->input->tensors()) {
+        for (auto c : t->consumers.getOps()) {
+          if (c != op) {
+            topoCons[op].push_back(c);
+          }
+        }
+      }
+    }
+    // The four VarUpdates are constrained to be final consumers of their
+    // inputs. There are 1 or 2 other consumers of their inputs:
+    BOOST_CHECK(topoCons.size() == sgd0VarUpdates.size());
+    for (const auto &x : topoCons) {
+      BOOST_CHECK(x.second.size() == 1 || x.second.size() == 2);
+    }
+
+    auto sched = ir.getOpSchedule(topoCons);
 
     // The training schedule looks like this (05 / September / 2019)
     //
@@ -171,7 +191,8 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
     // 24 ConstSGDVarUpdate
     //
     // The scheduler might change in the future, or patterns might modify the
-    // Ops. if so, this test needs to be redesigned, or patterns disabled.
+    // Ops. if so, this test needs to be redesigned, or patterns disabled, or
+    // further scheduler pins inserted
 
     // verify that a change to the scheduler or a transform hasn't made this
     // test invalid

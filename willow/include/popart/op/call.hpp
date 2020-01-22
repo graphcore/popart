@@ -2,10 +2,11 @@
 #define GUARD_NEURALNET_CALL_HPP
 
 #include <popart/op.hpp>
+#include <popart/op/subgraphop.hpp>
 
 namespace popart {
 
-class CallOp : public Op {
+class CallOp : public SubgraphOp {
 public:
   // parent: Graph this CallOp belongs to
   // callee: Graph this CallOp executes
@@ -18,7 +19,7 @@ public:
 
   void appendOutlineAttributes(OpSerialiserBase &os) const override;
 
-  bool isInputModified(InIndex);
+  bool isInputModified(InIndex) const override;
 
   view::Regions modifies(InIndex) const override;
   view::Regions aliases(InIndex, OutIndex) const override;

@@ -1,7 +1,9 @@
 #include <popart/logging.hpp>
 #include <popart/patterns/patterns.hpp>
 
+#include <popart/op/abs.hpp>
 #include <popart/op/cos.hpp>
+#include <popart/op/sign.hpp>
 #include <popart/op/sin.hpp>
 #include <popart/patterns/contiguateipucopyindices.hpp>
 #include <popart/patterns/convbias.hpp>
@@ -16,6 +18,7 @@
 #include <popart/patterns/inplace.hpp>
 #include <popart/patterns/loggradoppattern.hpp>
 #include <popart/patterns/logsoftmaxoppattern.hpp>
+#include <popart/patterns/lstmoppattern.hpp>
 #include <popart/patterns/matmulgradpattern.hpp>
 #include <popart/patterns/mularggradoppattern.hpp>
 #include <popart/patterns/negativeonescalepattern.hpp>
@@ -404,36 +407,82 @@ Patterns &Patterns::enablePattern(PreAliasPatternType t, bool v) {
 }
 
 std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
-  std::vector<const PreAliasPatternManager::PreAliasPatternInfo *> patternInfos;
+  static std::map<std::type_index, int> patternPriority{
+      {std::type_index(typeid(PreUniRepl)), 35},
+      {std::type_index(typeid(PostNRepl)), 34},
+      {std::type_index(typeid(SoftmaxGradDirect)), 33},
+      {std::type_index(typeid(NlllWithSoftmaxGradDirect)), 32},
+      {std::type_index(typeid(ConvBiasPattern)), 31},
+      {std::type_index(typeid(OpToIdentityPattern)), 30},
+      {std::type_index(typeid(SubtractArg1GradOpPattern)), 29},
+      {std::type_index(typeid(MulArgGradOpPattern)), 28},
+      {std::type_index(typeid(ReciprocalGradOpPattern)), 27},
+      {std::type_index(typeid(DivArg0GradOpPattern)), 26},
+      {std::type_index(typeid(DivArg1GradOpPattern)), 25},
+      {std::type_index(typeid(ElementWiseGradOpPattern<SinGradOp, CosOp>)), 24},
+      {std::type_index(typeid(CosGradOpPattern)), 23},
+      {std::type_index(typeid(TanToSinOverCosPattern)), 22},
+      {std::type_index(typeid(SqrtGradOpPattern)), 21},
+      {std::type_index(typeid(ExpGradOpPattern)), 20},
+      {std::type_index(typeid(LogGradOpPattern)), 19},
+      {std::type_index(typeid(CoshOpPattern)), 18},
+      {std::type_index(typeid(LogSoftmaxOpPattern)), 17},
+      {std::type_index(typeid(GemmDecompositionPattern)), 16},
+      {std::type_index(typeid(NegativeOneScalePattern)), 15},
+      {std::type_index(typeid(PadSumPattern)), 14},
+      {std::type_index(typeid(ElementWiseGradOpPattern<AbsGradOp, SignOp>)),
+       13},
+      {std::type_index(typeid(SplitGatherPattern)), 12},
+      {std::type_index(typeid(ConvDataGradPattern)), 11},
+      {std::type_index(typeid(SumToAddPattern)), 10},
+      {std::type_index(typeid(SplitGradOpToConcatPattern)), 9},
+      {std::type_index(typeid(SplitOpPattern)), 8},
+      {std::type_index(typeid(PowArg0GradOpPattern)), 7},
+      {std::type_index(typeid(PowArg1GradOpPattern)), 6},
+      {std::type_index(typeid(ContiguateIpuCopyIndicesPattern)), 5},
+      {std::type_index(typeid(MatMulPattern)), 4},
+      {std::type_index(typeid(MatMulLhsGradPattern)), 3},
+      {std::type_index(typeid(MatMulRhsGradPattern)), 2},
+      {std::type_index(typeid(SGD1Decompose)), 1},
+      {std::type_index(typeid(LSTMPattern)), 0}};
+
+  std::vector<std::type_index> patternTypes;
   for (auto &typeIndex_enabled : settings) {
     auto &typeIndex = typeIndex_enabled.first;
     auto enabled    = typeIndex_enabled.second;
     if (enabled) {
-      patternInfos.push_back(&PreAliasPatternManager::getInfo(typeIndex));
+      patternTypes.push_back(typeIndex);
     }
   }
 
-  // Pattern order is important. Sort the vector to preserve the order given by
-  // the PreAliasPatternType. Custom patterns don't have types, and should be
-  // sorted after the other patterns.
-  std::sort(patternInfos.begin(), patternInfos.end(), [](auto *lhs, auto *rhs) {
-    // If both have a type, sort by type.
-    // If neither have a type, sort by name.
-    // If only one has a type, it should the first of the two.
-    if (lhs->type && rhs->type) {
-      return *lhs->type < *rhs->type;
-    } else if (!lhs->type && !rhs->type) {
-      return lhs->name < rhs->name;
-    } else {
-      // if lhs has a type, rhs must not and lhs should come before rhs
-      // if lhs has no type, rhs must and rhs should come before lhs
-      return static_cast<bool>(lhs->type);
-    }
-  });
+  // Deterministic pattern order is important. Sort the vector in order of
+  // descending priority, using the entries in `patternPriority`. Any
+  // patterns not in `patternPriority` will come after the patterns that are in
+  // `patternPriority`, and will be sorted using their names.
+  std::sort(
+      patternTypes.begin(), patternTypes.end(), [](auto lhs, auto rhs) -> bool {
+        auto lhsPriority = patternPriority.find(lhs);
+        auto rhsPriority = patternPriority.find(rhs);
+
+        // If both have a priority, sort by descending priority.
+        // If neither have a priority, sort by name.
+        // If only one has a priority, it should the first of the two.
+        if (lhsPriority != patternPriority.end() &&
+            rhsPriority != patternPriority.end()) {
+          return lhsPriority->second > rhsPriority->second;
+        } else if (lhsPriority == patternPriority.end() &&
+                   rhsPriority == patternPriority.end()) {
+          auto lhsName = PreAliasPatternManager::getPatternName(lhs);
+          auto rhsName = PreAliasPatternManager::getPatternName(rhs);
+          return lhsName < rhsName;
+        } else {
+          return lhsPriority != patternPriority.end();
+        }
+      });
 
   std::vector<std::unique_ptr<PreAliasPattern>> patterns;
-  for (auto info : patternInfos) {
-    patterns.emplace_back(info->factory());
+  for (auto ptype : patternTypes) {
+    patterns.emplace_back(PreAliasPatternManager::createPattern(ptype));
   }
 
   return patterns;

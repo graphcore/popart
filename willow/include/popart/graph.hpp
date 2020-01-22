@@ -120,6 +120,10 @@ public:
     return gradInInfo;
   }
 
+  // Returns the call sites to this graph in IR scheduler order.
+  // At most num call sites are returned if num > 0.
+  std::vector<Op *> getCallSiteOps(size_t num) const;
+
 private:
   std::vector<Op *>
   growGradOps(Op *nonGradOp, const std::map<TensorId, TensorId> &gradTensorMap);

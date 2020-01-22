@@ -193,6 +193,7 @@ def test_batchnorm_train_0(op_tester):
         return [_y, _input.grad, d__o]
 
     op_tester.passes = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.atol *= 10
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -220,13 +221,18 @@ def test_batchnorm_train_1(op_tester):
         # Relax the relative tolerance as small numbers lose precison
         op_tester.rtol = 1e-04
 
+        initializers = {}
+
         def init_builder(builder):
+            nonlocal initializers
 
             i1 = builder.addInputTensor(d1)
             iScale = builder.addInputTensor(scale)
             iB = builder.addInputTensor(b)
             iMean = builder.addInitializedInputTensor(mean)
+            initializers[iMean] = mean
             iVar = builder.addInitializedInputTensor(var)
+            initializers[iVar] = var
             o_y, o_mean, o_var, o_smean, o_svar = builder.aiOnnx.batchnormalization(
                 [i1, iScale, iB, iMean, iVar], 5, epsilon, momentum)
 
@@ -276,10 +282,10 @@ def test_batchnorm_train_1(op_tester):
         onnx_model = onnx.load(onnx_filename)
 
         # Verify that one of the initializers has been updated
-        assert onnx_model.graph.initializer[0].float_data[
-            0] == 1.0714294910430908
-        assert onnx_model.graph.initializer[0].float_data[
-            1] == 0.9557055234909058
+        for init in onnx_model.graph.initializer:
+            as_numpy = np.array(init.float_data, dtype=np.float32)
+            print(f'Checking {init.name} has been updated')
+            assert not np.allclose(initializers[init.name], as_numpy)
 
         os.remove(onnx_filename)
 

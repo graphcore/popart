@@ -927,9 +927,9 @@ bool Pipeline::apply(Graph &graph) const {
     auto tensor = graph.getTensors().get(tid);
 
     if (tensor->consumers.getOps().empty()) {
-      throw error("Internal Logic Error : request to stash Tensor {} with no "
-                  "consumers, bailing",
-                  tensor->str());
+      throw internal_error("request to stash Tensor {} with no "
+                           "consumers, bailing",
+                           tensor->str());
     }
 
     Op *stashRefOp;
@@ -1056,12 +1056,12 @@ bool Pipeline::apply(Graph &graph) const {
             return op->settings.recomputeType == RecomputeType::RECOMPUTE;
           });
       std::ostringstream oss3;
-      oss3 << "Internal Logic Error : The RestoreOp " << restoreOp->str()
-           << " on pipeline stage " << restoreOp->getPipelineStage()
+      oss3 << "The RestoreOp " << restoreOp->str() << " on pipeline stage "
+           << restoreOp->getPipelineStage()
            << " has no consumers. This seems strange, so bailing. "
            << "noRecomputeConsumersOfStash = " << noRecomputeConsumersOfStash
            << " where the tensor being stashed is " << tensor->str();
-      throw error(oss3.str());
+      throw internal_error(oss3.str());
     }
 
     for (auto tidConsumer : tidConsumers) {

@@ -16,20 +16,6 @@ std::unique_ptr<Op> CacheStoreOp::clone() const {
   return std::make_unique<CacheStoreOp>(*this);
 }
 
-CacheAllocateOp::CacheAllocateOp(const OperatorIdentifier &_opid,
-                                 const TensorInfo &tensor_info_,
-                                 const Op::Settings &settings_)
-    : Op(_opid, settings_), tensor_info(tensor_info_) {}
-
-std::unique_ptr<Op> CacheAllocateOp::clone() const {
-  return std::make_unique<CacheAllocateOp>(*this);
-}
-
-void CacheAllocateOp::setup() {
-  outInfo(getCachedTensorOutIndex()) = tensor_info;
-  output->tensor(getCachedTensorOutIndex())->setTensorType(TensorType::Cache);
-}
-
 CacheLoadOp::CacheLoadOp(const OperatorIdentifier &_opid,
                          const TensorInfo &tensor_info_,
                          const Op::Settings &settings_)

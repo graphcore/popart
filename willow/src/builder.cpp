@@ -185,6 +185,10 @@ TensorId Builder::addInputTensor(const TensorInfo &tensorInfo,
   return impl_->addInputTensor(tensorInfo, debugPrefix);
 }
 
+TensorId Builder::addUntypedInputTensor(const std::string &debugPrefix) {
+  return impl_->addUntypedInputTensor(debugPrefix);
+}
+
 void Builder::addInputTensorFromHigherScope(const TensorId &tensorId) {
   impl_->addInputTensorFromHigherScope(tensorId);
 }

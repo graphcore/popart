@@ -101,7 +101,7 @@ public:
   std::string str() const final { return id; }
 
   // a copy of this, but with no consumers or producer
-  virtual std::unique_ptr<Tensor> clone() const;
+  virtual std::unique_ptr<Tensor> clone(Graph &graph_) const;
 
   // ActGrad, Variable, etc:
   TensorType tensorType() const;
@@ -165,7 +165,9 @@ public:
   // Determine the virtual graph of this Tensor, on-the-fly
   // based on consumers and producers
   bool hasVirtualGraphId() const;
-  int64_t getVirtualGraphId() const;
+  VGraphId getVirtualGraphId() const;
+  // return the virtual graph id, or -1 if there is not one
+  VGraphId getVirtualGraphIdUnsafe() const;
 
   bool consumersAllPreLoss() const;
 
@@ -182,17 +184,13 @@ protected:
   // c++ note : we cannot initialise this as {nullptr} with gcc
   // when using pimpl, it must be initialised in the .cpp constructor
   std::unique_ptr<TensorData> data_;
-
-private:
-  // return the virtual graph id, or -1 if there is not one
-  int64_t getVirtualGraphIdUnsafe() const;
 };
 
 class VariableTensor : public Tensor {
 public:
   VariableTensor(TensorId, Graph &);
 
-  std::unique_ptr<Tensor> clone() const override;
+  std::unique_ptr<Tensor> clone(Graph &graph_) const override;
 
   void setVariableUpdateType(VariableUpdateType type) {
     variableUpdateType = type;

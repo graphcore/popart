@@ -218,10 +218,11 @@ bool MatMulGradPattern::apply(Op *op) const {
       makeReplacementOpInIr(Onnx::Operators::MatMul_9, op));
 
   // Copy over the matmul settings
+  auto matmulBaseOp = dynamic_cast<MatMulBaseOp *>(op);
   matmulOp->setAvailableMemoryProportion(
-      dynamic_cast<MatMulBaseOp *>(op)->getAvailableMemoryProportion());
-  matmulOp->getSerialiseSettings() =
-      (dynamic_cast<MatMulBaseOp *>(op)->getSerialiseSettings());
+      matmulBaseOp->getAvailableMemoryProportion());
+  matmulOp->getSerialiseSettings() = (matmulBaseOp->getSerialiseSettings());
+  matmulOp->setUseFullyConnectedPass(matmulBaseOp->useFullyConnectedPass());
 
   auto squeezeOp = dynamic_cast<SqueezeOp *>(
       makeReplacementOpInIr(Onnx::Operators::Squeeze_1, op, "Squeeze"));

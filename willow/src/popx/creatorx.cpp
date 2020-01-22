@@ -159,9 +159,15 @@ InputCreatorCandidate::InputCreatorCandidate(
     int index_,
     const Opx *opx_,
     std::vector<OpxInAndOutIndex> pathFromInput_)
-    : pathFromInput(pathFromInput_), index(index_), opx(opx_)
+    : index(index_), opx(opx_) {
 
-{}
+  pathFromInput.reserve(pathFromInput_.size());
+  for (OpxInAndOutIndex &pathElem : pathFromInput_) {
+    if (!pathElem.isDelegate) {
+      pathFromInput.push_back(pathElem);
+    }
+  }
+}
 
 double InputCreatorCandidate::getMaxCreatorPriority() {
   return getOpx()->inputCreatorPriority;
@@ -318,9 +324,14 @@ std::string InputCreatorCandidate::str() {
 
   std::string result = getOpx()->op_p->str();
 
+  auto pathToInput = pathFromInput;
+  std::reverse(pathToInput.begin(), pathToInput.end());
+
   result += "(";
-  for (auto &i : pathFromInput) {
-    result += "<- " + i.opx->op_p->str();
+  for (auto &i : pathToInput) {
+    result += " -> " + i.opx->op_p->str() + " ";
+    result += "[" + i.opx->op_p->output->id(i.outIndex);
+    result += "->" + i.opx->op_p->input->id(i.inIndex) + "]";
   }
   result += ")";
 

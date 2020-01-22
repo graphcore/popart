@@ -104,9 +104,10 @@ public:
   // Write weights from src to Ir Tensor memory (host -> host)
   void writeWeights(const IWeightsIO &src);
 
-  std::string getSummaryReport() const;
-  std::string getGraphReport(bool use_cbor = false) const;
-  std::string getExecutionReport(bool use_cbor = false) const;
+  std::string getSummaryReport(bool resetProfile = true) const;
+  std::string getGraphReport(bool useCbor = false) const;
+  std::string getExecutionReport(bool useCbor      = false,
+                                 bool resetProfile = true) const;
   void saveTensorTileMap(const std::string &) const;
   TensorTileMap getTensorTileMap() const;
   std::string getSerializedGraph() const;
@@ -139,7 +140,6 @@ public:
   poplin::matmul::PlanningCache matmulCache;
 
   PoplarOptions fwdConvOptions, bwdConvOptions, wuConvOptions;
-  PoplarOptions fwdMmOptions, bwdMmLhsOptions, bwdMmRhsOptions;
   poplar::OptionFlags engineOptions, reportOptions;
   poplar::OptionFlags pooling_options;
   poplar::OptionFlags lstmOptions;

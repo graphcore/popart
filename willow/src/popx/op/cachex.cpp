@@ -34,13 +34,6 @@ void CacheStoreOpx::grow(poplar::program::Sequence &prog) const {
   }
 }
 
-CacheAllocateOpx::CacheAllocateOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
-  verifyOp<CacheAllocateOp>(op, Onnx::CustomOperators::CacheAllocate);
-}
-
-void CacheAllocateOpx::grow(poplar::program::Sequence &) const {}
-
 CacheLoadOpx::CacheLoadOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<CacheLoadOp>(op, Onnx::CustomOperators::CacheLoad);
 }
@@ -89,8 +82,6 @@ view::RegMap CacheLoadOpx::unwindRegion(InIndex, OutIndex) const {
 }
 
 namespace {
-OpxCreator<CacheAllocateOpx>
-    cacheAllocateOpxCreator(Onnx::CustomOperators::CacheAllocate);
 OpxCreator<CacheStoreOpx>
     cacheStoreOpxCreator(Onnx::CustomOperators::CacheStore);
 OpxCreator<CacheLoadOpx> cacheLoadOpxCreator(Onnx::CustomOperators::CacheLoad);
