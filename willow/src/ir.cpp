@@ -717,7 +717,7 @@ void Ir::prepare(const IrBundle &gb) {
       ofs.open(irDumpDest, std::ofstream::out);
       if (ofs.is_open()) {
         std::stringstream ss;
-        serialise(Ir::SerialiseFormat::JSON, ss);
+        serialise(Ir::SerialiseFormat::JSON, ss, false);
         ofs << ss.str();
       } else {
         logging::ir::err("Failed to open file {} to dump ir.", irDumpDest);
@@ -2574,7 +2574,35 @@ void setGraphIrName(const std::string &name, std::stringstream &ss) {
 
 } // namespace
 
-void Ir::serialise(SerialiseFormat format, std::stringstream &ss) const {
+void Ir::serialise(SerialiseFormat format,
+                   std::stringstream &ss,
+                   bool useScheduler) const {
+
+  auto getGraphs = [this, useScheduler]() {
+    if (useScheduler) {
+      return getGraphSchedule();
+    } else {
+      std::vector<const Graph *> result;
+      for (auto &id_graph : graphs) {
+        auto graph = id_graph.second.get();
+        result.push_back(graph);
+      }
+      return result;
+    }
+  };
+
+  auto getOps = [this, useScheduler](auto *graph) {
+    if (useScheduler) {
+      return graph->getOpSchedule({});
+    } else {
+      std::vector<Op *> result;
+      for (auto &id_op : graph->getOps()) {
+        auto op = id_op.second.get();
+        result.push_back(op);
+      }
+      return result;
+    }
+  };
 
   // TODO use the format to seralize the ir
   (void)format;
@@ -2582,7 +2610,7 @@ void Ir::serialise(SerialiseFormat format, std::stringstream &ss) const {
   ss << "{";
 
   bool firstGraph = true;
-  for (auto graph : getGraphSchedule()) {
+  for (auto graph : getGraphs()) {
 
     if (!firstGraph)
       ss << ",";
@@ -2593,7 +2621,7 @@ void Ir::serialise(SerialiseFormat format, std::stringstream &ss) const {
       ss << "\"" << graph->id.str() << "\" :[";
 
     bool firstOp = true;
-    for (auto &op : graph->getOpSchedule({})) {
+    for (auto &op : getOps(graph)) {
 
       if (!firstOp)
         ss << ",";

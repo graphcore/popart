@@ -194,8 +194,13 @@ public:
   bool streamingIsDisabledForTensor(const TensorId &) const;
   void append(std::stringstream &) const;
 
-  // serialise the ir into the stream based on the format
-  void serialise(SerialiseFormat format, std::stringstream &ss) const;
+  // Serialise the ir into the stream based on the format. In circumstances
+  // where the scheduler may fail, setting `useScheduler` to false will not use
+  // the scheduler and just return the ops and graphs in the order they are
+  // stored.
+  void serialise(SerialiseFormat format,
+                 std::stringstream &ss,
+                 bool useScheduler = true) const;
 
   std::vector<std::unique_ptr<Loss>> losses;
 
