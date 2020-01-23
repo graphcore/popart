@@ -100,10 +100,13 @@ bool Inplace::apply(Op *op,
     graph.topoCons->transfer(op, inplaceOp);
     in_tensor->consumers.decrement(op);
     inplaceOp->input->insert(in_index, in_tensor);
+
+    if (!in_tensor->hasProducer()) {
+      graph.markAsInputConsumedInplaceForOptimization(in_tensor->id);
+    }
   }
   output_tensor->resetProducer(inplaceOp);
   inplaceOp->output->insert(0, output_tensor);
-
   inplaceOp->setup();
 
   graph.getTensors().updateAliases(inplaceOp);

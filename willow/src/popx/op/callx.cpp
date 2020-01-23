@@ -34,10 +34,12 @@ void CallOpx::copyModified(poplar::program::Sequence &prog) const {
 
   for (int i = 0; i < callop.input->n(); i++) {
     if (callop.isInputModified(i)) {
-      auto call_input     = get(callop.inId(i));
-      auto graph_input_id = callop.getCalledGraph().getInputId(i);
-      auto graph_input    = get(graph_input_id);
-      if (!callop.getCalledGraph().isMarkedAsZeroCopy(graph_input_id)) {
+      auto call_input         = get(callop.inId(i));
+      auto graph_input_id     = callop.getCalledGraph().getInputId(i);
+      auto graph_input        = get(graph_input_id);
+      const auto &calledGraph = callop.getCalledGraph();
+      if (!calledGraph.isMarkedAsZeroCopy(graph_input_id) &&
+          !calledGraph.isInputConsumedInplaceForOptimization(graph_input_id)) {
         logging::trace("[CallOpx] Copying modified input {}->{}",
                        graph_input_id,
                        callop.inId(i));
