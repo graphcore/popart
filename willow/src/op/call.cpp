@@ -1,19 +1,29 @@
 #include <memory>
+#include <onnx/onnx_pb.h>
 #include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/scope.hpp>
 #include <popart/tensorindex.hpp>
 
 namespace popart {
 
-CallOp::CallOp(Graph &parent_, Graph &callee_)
-    : SubgraphOp(Onnx::CustomOperators::Call, {parent_, ""}), callee(callee_) {
+CallOp::CallOp(const OperatorIdentifier &opid_, Graph &parent_, Graph &callee_)
+    : SubgraphOp(opid_, {parent_, "", parent_.getScope()}), callee(callee_) {
   settings.name = logging::format("Call_{}", callee_.id);
 }
 
-void CallOp::setup() {}
+void CallOp::setup() {
+  // Assume output tensors are ordered the same as those
+  // in the callee subgraph
+  for (int i = 0; i < callee.get().getOutputIds().size(); i++) {
+    TensorId calleeOutputId = callee.get().getOutputId(i);
+    outInfo(i) = callee.get().getTensors().get(calleeOutputId)->info;
+  }
+}
 
 std::unique_ptr<Op> CallOp::clone() const {
   return std::make_unique<CallOp>(*this);
@@ -53,13 +63,15 @@ bool CallOp::isInputModified(InIndex index) const {
 view::Regions CallOp::modifies(InIndex index) const {
   view::Regions modifiedRegions;
   for (int i = 0; i < output->n(); i++) {
-    auto regions = aliasMap.at({index, i}).first;
-    if (regions.size() > 0 &&
-        std::any_of(regions.begin(), regions.end(), [](const view::Region &r) {
-          return !r.isEmpty();
-        })) {
-      modifiedRegions.insert(
-          modifiedRegions.end(), regions.begin(), regions.end());
+    if (aliasMap.count({index, i})) {
+      auto regions = aliasMap.at({index, i}).first;
+      if (regions.size() > 0 &&
+          std::any_of(regions.begin(),
+                      regions.end(),
+                      [](const view::Region &r) { return !r.isEmpty(); })) {
+        modifiedRegions.insert(
+            modifiedRegions.end(), regions.begin(), regions.end());
+      }
     }
   }
   if (modifiedRegions.size() > 0) {
@@ -70,9 +82,13 @@ view::Regions CallOp::modifies(InIndex index) const {
 }
 
 view::Regions CallOp::aliases(InIndex in, OutIndex out) const {
+  // If not in aliasMap, return empty region
+  if (aliasMap.count({in, out}) == 0) {
+    return {view::Region::getEmpty(inRank(in))};
+  }
+
   // Regions of in which are aliased
   auto aliasRegions = aliasMap.at({in, out});
-
   if (logging::shouldLog(logging::Module::op, logging::Level::Trace)) {
     std::ostringstream oss;
     oss << "In CallOp::aliases(" << in << ", " << out << "), returning ";
@@ -81,7 +97,6 @@ view::Regions CallOp::aliases(InIndex in, OutIndex out) const {
     }
     logging::op::trace(oss.str());
   }
-
   for (const auto &r : aliasRegions.second) {
     if (r.rank() != inRank(in)) {
       throw error("Invalid Region of rank {} in CallOp::aliases at InIndex {} "
@@ -228,5 +243,86 @@ view::RegMap CallOp::bwdRegMap(InIndex inIndex, OutIndex outIndex) const {
         }
       };
 }
+
+namespace {
+
+static OpDefinition::DataTypes T = {DataType::UINT8,
+                                    DataType::UINT16,
+                                    DataType::UINT32,
+                                    DataType::INT8,
+                                    DataType::INT16,
+                                    DataType::INT32,
+                                    DataType::INT64,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT,
+                                    DataType::BOOL};
+
+static OpDefinition callOpDef({OpDefinition::Inputs({{"inputs", T}}),
+                               OpDefinition::Outputs({{"outputs", T}}),
+                               OpDefinition::Attributes({{"callee", {"*"}}})});
+
+static OpCreator<CallOp> callOpCreator(
+    OpDefinitions({{Onnx::CustomOperators::Call_1, callOpDef}}),
+    [](const OpCreatorInfo &info) -> std::unique_ptr<Op> {
+      auto callee = info.attributes.getAttribute<Attributes::Graph>("callee");
+
+      if (callee.name().empty()) {
+        throw error("CallOp subgraph must be named, so that it can be "
+                    "identified for re-use.");
+      }
+
+      // If the callee subgraph has already been constructed, get that.
+      // Otherwise, construct here.
+      auto &ir = info.settings.graph.get().getIr();
+      Graph *calleeGraph;
+      if (ir.hasGraph(callee.name())) {
+        calleeGraph = &ir.getGraph(callee.name());
+      } else {
+        calleeGraph = &ir.createGraph(callee.name());
+
+        // Find the input tensors in the parent graph (or its called
+        // graphs) to determine the tensor type
+        auto inputs = info.getInputIds();
+        std::map<TensorId, TensorInfo> inputInfos;
+        for (auto &graph : ir.getAllGraphs()) {
+          for (TensorId input : inputs) {
+            if (graph->getTensors().contains(input, graph->getScope())) {
+              TensorId tid = graph->getTensors().find(input, graph->getScope());
+              Tensor *tensor = graph->getTensors().get(tid);
+              inputInfos.emplace(input, tensor->info);
+            }
+          }
+        }
+
+        // Check that an InputInfo was found for all inputs
+        for (TensorId input : inputs) {
+          if (inputInfos.count(input) == 0) {
+            throw error(
+                "Unable to determine tensor info for input to CallOp, {}",
+                input);
+          }
+        }
+
+        for (int i = 0; i < callee.input_size(); i++) {
+          // Assume callee graph inputs are in the same order as this
+          // op's node inputs
+          TensorInfo calleeInputInfo = inputInfos.at(inputs.at(i));
+          auto scopedId = calleeGraph->addScope(callee.input(i).name());
+          calleeGraph->addInput(scopedId, calleeInputInfo);
+        }
+
+        calleeGraph->constructFromOnnxGraph(callee);
+
+        for (auto &output : callee.output()) {
+          auto scopedId = calleeGraph->addScope(output.name());
+          calleeGraph->markAsOutput(scopedId);
+        }
+      }
+
+      return std::unique_ptr<Op>(
+          new CallOp(info.opid, info.settings.graph.get(), *calleeGraph));
+    },
+    true);
+} // namespace
 
 } // namespace popart

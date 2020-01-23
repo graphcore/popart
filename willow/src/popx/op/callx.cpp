@@ -9,7 +9,7 @@ namespace popart {
 namespace popx {
 
 CallOpx::CallOpx(Op *op, Devicex *devicex) : SubgraphOpx(op, devicex) {
-  verifyOp<CallOp>(op, Onnx::CustomOperators::Call);
+  verifyOp<CallOp>(op, Onnx::CustomOperators::Call_1);
 }
 
 std::pair<std::vector<ICreatorCandidatePtr>, std::vector<UnwindEndpointPtr>>
@@ -143,7 +143,7 @@ CallOpx::getOutputsToPrepare() const {
 }
 
 namespace {
-OpxCreator<CallOpx> callOpxCreator(Onnx::CustomOperators::Call);
+OpxCreator<CallOpx> callOpxCreator(Onnx::CustomOperators::Call_1);
 }
 
 } // namespace popx

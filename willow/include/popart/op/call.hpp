@@ -10,7 +10,7 @@ class CallOp : public SubgraphOp {
 public:
   // parent: Graph this CallOp belongs to
   // callee: Graph this CallOp executes
-  CallOp(Graph &parent, Graph &callee);
+  CallOp(const OperatorIdentifier &, Graph &parent, Graph &callee);
 
   void setup() final;
   std::unique_ptr<Op> clone() const final;

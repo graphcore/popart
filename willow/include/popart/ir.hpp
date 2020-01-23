@@ -262,6 +262,9 @@ public:
   const Graph &getMainGraph() const;
   Graph &getMainGraph();
 
+  // Returns all graphs in `graphs' in an unscheduled order
+  std::vector<const Graph *> getAllGraphs() const;
+
   Graph &getGraph(const GraphId &) const;
   bool hasGraph(const GraphId &) const;
 

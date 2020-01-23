@@ -1064,6 +1064,12 @@ PYBIND11_MODULE(popart_core, m) {
       .def("gelu",
            &AiGraphcoreOpset1::gelu,
            py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("call",
+           &AiGraphcoreOpset1::call,
+           py::arg("args"),
+           py::arg("num_outputs"),
+           py::arg("callee"),
            py::arg("debugPrefix") = std::string());
 
   py::class_<Builder>(m, "_BuilderCore")

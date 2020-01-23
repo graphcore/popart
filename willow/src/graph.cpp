@@ -182,9 +182,7 @@ void Graph::constructFromOnnxGraph(const onnx::GraphProto &onnx_graph) {
 }
 
 Op *Graph::growFromNode(const Node &node) {
-
   OpId opId = moveIntoGraph(addOp(node));
-
   connectInputs(node, opId);
   connectOutputs(node, opId);
 

@@ -97,6 +97,24 @@ bool BuilderImpl::inLowerScope(const TensorId &id) const {
   return false;
 }
 
+bool BuilderImpl::inNeighbouringScope(const TensorId &id) const {
+
+  if (hasParent()) {
+    for (auto &child : getParent()->getChildren()) {
+      if (child == this) {
+        // Ignore current scope
+        continue;
+      } else {
+        if (child->inCurrentScope(id) || child->inLowerScope(id)) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
 bool BuilderImpl::inCurrentScope(const TensorId &id) const {
 
   if (tensorIds.count(id) == 0) {
@@ -135,7 +153,7 @@ TensorId BuilderImpl::getNextId(const std::string &name, OutIndex n) {
       proposedId = baseId + sNameDelimiter + std::to_string(counter);
     }
     valid = (!inCurrentScope(proposedId) && !inLowerScope(proposedId) &&
-             !inHigherScope(proposedId));
+             !inHigherScope(proposedId) && !inNeighbouringScope(proposedId));
   }
   if (tensorIds.count(proposedId) != 0) {
     throw error("cannot re-use proposedId");

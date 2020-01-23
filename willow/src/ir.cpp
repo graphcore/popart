@@ -1312,18 +1312,22 @@ void Ir::registerInputTensors() {
       addConsumerType(node.input(i), node, i);
     }
 
-    // need to look at the branch inputs for If node
+    // need to look at the subgraph inputs for If, Call nodes
+    auto addSubgraphInputs = [&](std::string branchName, Attributes attr) {
+      auto branch = attr.getAttribute<Attributes::Graph>(branchName);
+      for (int i = 0; i < branch.input_size(); i++) {
+        auto inputId = branch.input(i).name();
+        addConsumerType(inputId, node, i);
+      }
+    };
     if (node.op_type() == Onnx::AiOnnx::OpSet9::If.type) {
       Attributes attr{node.attribute()};
-      auto addBranchInputs = [&](std::string branchName) {
-        auto branch = attr.getAttribute<Attributes::Graph>(branchName);
-        for (int i = 0; i < branch.input_size(); i++) {
-          auto inputId = branch.input(i).name();
-          addConsumerType(inputId, node, i);
-        }
-      };
-      addBranchInputs("then_branch");
-      addBranchInputs("else_branch");
+      addSubgraphInputs("then_branch", attr);
+      addSubgraphInputs("else_branch", attr);
+    }
+    if (node.op_type() == Onnx::AiGraphcore::OpSet1::Call.type) {
+      Attributes attr{node.attribute()};
+      addSubgraphInputs("callee", attr);
     }
   }
 
@@ -3075,6 +3079,14 @@ Graph &Ir::getMainGraph() { return getGraph(GraphId::root()); }
 
 Graph &Ir::getGraph(const GraphId &graphId) const {
   return *graphs.at(graphId);
+}
+
+std::vector<const Graph *> Ir::getAllGraphs() const {
+  std::vector<const Graph *> allGraphs;
+  for (auto &id_graph : graphs) {
+    allGraphs.push_back(id_graph.second.get());
+  }
+  return allGraphs;
 }
 
 bool Ir::hasGraph(const GraphId &graphId) const {
