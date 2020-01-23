@@ -21,7 +21,13 @@ ExternOpTensorBundle::ExternOpTensorBundle(Op *opCopy,
     std::unique_ptr<Tensor> up_t_clone =
         index_tensor.second->clone(index_tensor.second->getGraph());
     Tensor *t_clone = up_t_clone.get();
+    // t_clone->id += "/" + std::to_string(index_tensor.first);
     t_clone->id += std::to_string(index_tensor.first);
+    if (tensors.find(t_clone->id) != tensors.end()) {
+      throw internal_error(
+          "Trying to add an input tensor that is already in tensors {}",
+          t_clone->id);
+    }
     tensors[t_clone->id] = std::move(up_t_clone);
     up_op->input->insert(index_tensor.first, t_clone);
     t_clone->consumers.increment(up_op.get());
@@ -31,7 +37,12 @@ ExternOpTensorBundle::ExternOpTensorBundle(Op *opCopy,
   for (auto &index_tensor : opCopy->output->tensorMap()) {
     std::unique_ptr<Tensor> up_t_clone =
         index_tensor.second->clone(index_tensor.second->getGraph());
-    Tensor *t_clone      = up_t_clone.get();
+    Tensor *t_clone = up_t_clone.get();
+    if (tensors.find(t_clone->id) != tensors.end()) {
+      throw internal_error(
+          "Trying to add an output tensor that is already in tensors {}",
+          t_clone->id);
+    }
     tensors[t_clone->id] = std::move(up_t_clone);
     up_op->output->insert(index_tensor.first, t_clone);
     t_clone->setProducer(up_op.get());
