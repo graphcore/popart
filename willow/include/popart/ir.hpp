@@ -516,6 +516,8 @@ public:
   // will be copied out of sub-graphs, even if they
   // have no consumers external to the sub-graph.
   Op &getSubgraphAnchorPlaceholder();
+
+  const decltype(graphs) &getGraphs() const { return graphs; }
 };
 
 } // namespace popart

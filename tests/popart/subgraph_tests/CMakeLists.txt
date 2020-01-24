@@ -40,6 +40,9 @@ add_popart_cpp_unit_test(op_0_subgraph_test op_0_subgraph_test.cpp)
 add_popart_cpp_unit_test(introspection_0_subgraph_test
 	introspection_0_subgraph_test.cpp)
 
+add_popart_cpp_unit_test(slice_outlining_0_numerical_test
+  slice_outlining_0_numerical_test.cpp)
+
 # 
 add_popart_cpp_unit_test(prune_matches_0_subgraph_test
 	prune_matches_0_subgraph_test.cpp)

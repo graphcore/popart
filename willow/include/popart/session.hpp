@@ -164,6 +164,8 @@ public:
    */
   std::string serializeIr(IrSerializationFormat format);
 
+  const Ir &getIr() const { return ir; }
+
 protected:
   /**
    * Select a device type.
@@ -291,8 +293,6 @@ public:
    * momentum, initial momentum tensors (zero)) there are to device
    */
   void optimizerFromHost();
-
-  const Ir &getIr() const;
 
   /**
    * Access the stream IDs for variables that are involved in host side
