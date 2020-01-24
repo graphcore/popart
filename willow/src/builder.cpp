@@ -447,6 +447,10 @@ void Builder::loadModelProto(const std::string &modelProtoOrFilename) {
   impl_->loadModelProto(modelProtoOrFilename);
 }
 
+void Builder::saveModelProto(const std::string &fn) {
+  impl_->saveModelProto(fn);
+}
+
 std::string Builder::getModelProto() const { return impl_->getModelProto(); }
 
 std::vector<TensorId> Builder::getInputTensorIds() const {

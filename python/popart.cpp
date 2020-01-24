@@ -1101,6 +1101,7 @@ PYBIND11_MODULE(popart_core, m) {
       .def("createSubgraphBuilder",
            &Builder::createSubgraphBuilder,
            pybind11::return_value_policy::reference)
+      .def("saveModelProto", &Builder::saveModelProto, py::arg("filename"))
 
       // Accessors for the ai.onnx domain builder interface
       .def_property_readonly("aiOnnxOpset6", &Builder::aiOnnxOpset6)

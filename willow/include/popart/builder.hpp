@@ -820,6 +820,13 @@ public:
   std::string getModelProto() const;
 
   /**
+   * Save the builder's ONNX ModelProto into the builder and validate it.
+   *
+   * \param fn The name of a file containing an ONNX model protobuf.
+   */
+  void saveModelProto(const std::string &fn);
+
+  /**
    * Return a list of ONNX graph input tensor ids
    *
    * \return A vector of input tensor names

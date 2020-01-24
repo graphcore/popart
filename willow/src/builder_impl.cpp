@@ -889,6 +889,13 @@ void BuilderImpl::loadModelProto(const std::string &modelProtoOrFilename) {
   }
 }
 
+void BuilderImpl::saveModelProto(const std::string &fn) {
+  // Check the model is valid.
+  onnx::checker::check_model(model_);
+
+  io::writeModel(model_, fn);
+}
+
 std::string BuilderImpl::getModelProto() const {
   std::string output;
   model_.SerializeToString(&output);

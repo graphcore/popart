@@ -210,6 +210,8 @@ public:
 
   void loadModelProto(const std::string &modelProtoOrFilename);
 
+  void saveModelProto(const std::string &fn);
+
   std::string getModelProto() const;
 
   std::vector<TensorId> getInputTensorIds() const;
