@@ -12,7 +12,7 @@ public:
            const Op::Settings &settings_);
 
   std::unique_ptr<Op> clone() const final;
-  std::vector<std::unique_ptr<Op>> getGradOps() final;
+  std::vector<std::unique_ptr<Op>> getGradOps() override;
   void setup() final;
 
   // Which axis to gather on.
@@ -36,7 +36,7 @@ class GatherGradOp : public Op {
 public:
   GatherGradOp(const GatherOp &op, int64_t axis);
 
-  std::unique_ptr<Op> clone() const final;
+  std::unique_ptr<Op> clone() const override;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
