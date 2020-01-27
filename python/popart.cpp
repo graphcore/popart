@@ -731,6 +731,8 @@ PYBIND11_MODULE(popart_core, m) {
                      &SessionOptions::enableFullyConnectedPass)
       .def_readwrite("enableGroupedMatmuls",
                      &SessionOptions::enableGroupedMatmuls)
+      .def_readwrite("enableStableNorm",
+                     &SessionOptions::enableStableNorm)
       // set in python use the python set constructor, so something like
       // mySessionOptions.dotChecks = {popart.DotCheck.FINAL}
       .def_readwrite("dotChecks", &SessionOptions::dotChecks)

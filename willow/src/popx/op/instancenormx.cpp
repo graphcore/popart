@@ -27,6 +27,8 @@ InstanceNormOpx::InstanceNormOpx(Op *op, Devicex *devicex)
 
 void InstanceNormOpx::grow(poplar::program::Sequence &prog) const {
 
+  auto op = getOp<InstanceNormOp>();
+
   // Get the inputs
   auto input = getInTensor(InstanceNormOp::getInputInIndex());
   auto scale = getInTensor(InstanceNormOp::getScaleInIndex());
@@ -40,6 +42,9 @@ void InstanceNormOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Shape nonBroadcastDims;
   std::tie(inputP, nonBroadcastDims) = convertOnnxInputToPoplarInput(input);
 
+  // Check for stable algorithm session option.
+  bool stable_algo = op.getIr().getSessionOptions().enableStableNorm;
+
   // Calculate the mean and the inverse standard deviation
   poplar::Tensor mean;
   poplar::Tensor invStdDev;
@@ -49,6 +54,7 @@ void InstanceNormOpx::grow(poplar::program::Sequence &prog) const {
                                         epsilon,
                                         prog,
                                         false,
+                                        stable_algo,
                                         poplar::FLOAT,
                                         debugPrefix("instanceNormStatistics"));
 

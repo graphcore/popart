@@ -86,6 +86,9 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
   float epsilon  = op.getEpsilon();
   float momentum = op.getMomentum();
 
+  // Check for stable algorithm session option.
+  bool stable_algo = op.getIr().getSessionOptions().enableStableNorm;
+
   if (op.isTraining()) {
 
     // Special case - zero sized array
@@ -115,6 +118,7 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
                                          epsilon,
                                          prog,
                                          false,
+                                         stable_algo,
                                          poplar::FLOAT,
                                          debugPrefix("normStats"));
 

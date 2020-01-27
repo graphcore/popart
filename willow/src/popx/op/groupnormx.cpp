@@ -31,6 +31,9 @@ void GroupNormOpx::grow(poplar::program::Sequence &prog) const {
   // Get the attributes
   float epsilon      = op.getEpsilon();
   int64_t num_groups = op.getNumGroups();
+  // Check for stable algorithm session option.
+  bool stable_algo = op.getIr().getSessionOptions().enableStableNorm;
+
   // int64_t num_channels = op.getNumChannels();
 
   // Get the inputs
@@ -53,6 +56,7 @@ void GroupNormOpx::grow(poplar::program::Sequence &prog) const {
                                      prog,
                                      static_cast<unsigned int>(num_groups),
                                      false,
+                                     stable_algo,
                                      poplar::FLOAT,
                                      debugPrefix("groupNormStatistics"));
 
