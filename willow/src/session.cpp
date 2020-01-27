@@ -361,8 +361,6 @@ void TrainingSession::optimizerFromHost() {
   optimizerFromHostCalledSinceLastUpdate = true;
 }
 
-const Ir &TrainingSession::getIr() const { return ir; }
-
 const std::vector<std::string> &
 TrainingSession::getHostReduceStreamIds() const {
   return device_->getHostReduceStreamIds();

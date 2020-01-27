@@ -9,6 +9,18 @@ std::ostream &operator<<(std::ostream &os, const OperatorIdentifier &opid) {
   return os;
 }
 
+const std::vector<TensorId> &OpCreatorInfo::getInputIds() const {
+  if (inputIds.empty()) {
+    throw internal_error(
+        "No inputs ids were passed to the call to OpManager::createOp, but the "
+        "op factory function for op {} is attempting to get the input ids.\n"
+        "Consider checking the call to createOp and adding the input ids.",
+        opid);
+  } else {
+    return inputIds;
+  }
+}
+
 OpManager &OpManager::getInstance() {
   static OpManager instance;
   return instance;
@@ -73,7 +85,8 @@ std::unique_ptr<Op> OpManager::createOp(const OpDomain &opDomain,
                                         Graph &graph,
                                         const std::string &name,
                                         const Scope &scope,
-                                        const Attributes &attr) {
+                                        const Attributes &attr,
+                                        const std::vector<TensorId> &inputIds) {
 
   OpManager &self = getInstance();
 
@@ -99,7 +112,8 @@ std::unique_ptr<Op> OpManager::createOp(const OpDomain &opDomain,
   }
 
   if (opInfo != nullptr) {
-    return self.create(opInfo->id, graph, name, scope, attr, opInfo->f1);
+    return self.create(
+        opInfo->id, graph, name, scope, attr, inputIds, opInfo->f1);
   }
   return nullptr;
 }
@@ -119,7 +133,7 @@ std::unique_ptr<Op> OpManager::createOp(const OperatorIdentifier &opid,
     const auto &it3 = it2->second.find(opid.version);
 
     if (it3 != it2->second.end()) {
-      return self.create(opid, graph, name, {}, attr, it3->second.f1);
+      return self.create(opid, graph, name, {}, attr, {}, it3->second.f1);
     }
   }
   return nullptr;
@@ -130,12 +144,14 @@ std::unique_ptr<Op> OpManager::create(const OperatorIdentifier &opid,
                                       const std::string &name,
                                       const Scope &scope,
                                       const Attributes &attr,
+                                      const std::vector<TensorId> &inputIds,
                                       OpFactoryFunc func) {
 
   Op::Settings settings(graph, name, scope);
   settings.setFromAttributes(attr);
 
-  return func(opid, settings, attr);
+  OpCreatorInfo info(opid, settings, attr, inputIds);
+  return func(info);
 }
 
 OpVersion OpManager::getOpVersionFromOpSet(const OpDomain &opDomain,

@@ -210,6 +210,8 @@ public:
 
   void loadModelProto(const std::string &modelProtoOrFilename);
 
+  void saveModelProto(const std::string &fn);
+
   std::string getModelProto() const;
 
   std::vector<TensorId> getInputTensorIds() const;
@@ -305,6 +307,10 @@ private:
 
   // in a child's scope, or lower
   bool inLowerScope(const TensorId &) const;
+
+  // in a neighbour's scope, or lower. A neighbour
+  // is any child of the parent that isn't `this'
+  bool inNeighbouringScope(const TensorId &) const;
 
   onnx::ModelProto model_;
 

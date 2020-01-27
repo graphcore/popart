@@ -279,6 +279,41 @@ TensorId AiGraphcoreOpset1::gelu(const std::vector<TensorId> &args,
       .at(0);
 }
 
+std::vector<TensorId> AiGraphcoreOpset1::call(const std::vector<TensorId> &args,
+                                              unsigned num_outputs,
+                                              const Builder &callee,
+                                              const std::string &name) {
+  auto calleeProto = io::getModelFromString(callee.getModelProto()).graph();
+
+  // Some checks:
+  // A subgraph must have at least one input and output, and the
+  // number of inputs and outputs must match that of the callee
+  // subgraph
+  auto checkInOuts = [&](int callSize, int sgSize, std::string dir) {
+    if (sgSize == 0) {
+      throw error("CallOp subgraph requires at least one {}.", dir);
+    }
+    if (callSize != sgSize) {
+      throw error("For CallOp '{}', number of {}s ({}) does not match that of "
+                  "the callee subgraph ({})",
+                  name,
+                  dir,
+                  callSize,
+                  sgSize);
+    }
+  };
+  checkInOuts(args.size(), calleeProto.input_size(), "input");
+  checkInOuts(
+      static_cast<int>(num_outputs), calleeProto.output_size(), "output");
+
+  return impl->op(Onnx::AiGraphcore::OpSet1::Call,
+                  getOpsetVersion(),
+                  args,
+                  num_outputs,
+                  {{"callee", calleeProto}},
+                  name);
+}
+
 std::vector<TensorId>
 Builder::customOp(const OperatorIdentifier &opid,
                   int opsetVersion,
@@ -410,6 +445,10 @@ Builder::getAllNodeAttributeNames(const std::set<TensorId> &nodeOutputNames) {
 
 void Builder::loadModelProto(const std::string &modelProtoOrFilename) {
   impl_->loadModelProto(modelProtoOrFilename);
+}
+
+void Builder::saveModelProto(const std::string &fn) {
+  impl_->saveModelProto(fn);
 }
 
 std::string Builder::getModelProto() const { return impl_->getModelProto(); }

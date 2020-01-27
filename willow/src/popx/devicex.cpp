@@ -1046,8 +1046,8 @@ ICreatorCandidatePtr Devicex::getTensorCreator(Tensor *tensor) const {
       std::shared_ptr<InputMultiCreatorCandidate> multiCandidate =
           std::make_shared<InputMultiCreatorCandidate>();
       for (auto candidate : candidates) {
-        // Important to add candidates sorted by importance (hasSmallerPriority)
-        // process most important first
+        // Important to add candidates sorted by priorty.
+        // Highest first - ICreatorCandidate::greaterThan.
         multiCandidate->addCreatorCandidate(candidate);
       }
       logging::devicex::trace("Using multi-candidate {}.",

@@ -137,8 +137,6 @@ private:
   std::map<ICreatorCandidatePtr, view::Regions> candidates;
 };
 
-bool hasSmallerPriority(ICreatorCandidatePtr icc1, ICreatorCandidatePtr icc2);
-
 } // namespace popx
 } // namespace popart
 

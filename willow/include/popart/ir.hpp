@@ -194,8 +194,13 @@ public:
   bool streamingIsDisabledForTensor(const TensorId &) const;
   void append(std::stringstream &) const;
 
-  // serialise the ir into the stream based on the format
-  void serialise(SerialiseFormat format, std::stringstream &ss) const;
+  // Serialise the ir into the stream based on the format. In circumstances
+  // where the scheduler may fail, setting `useScheduler` to false will not use
+  // the scheduler and just return the ops and graphs in the order they are
+  // stored.
+  void serialise(SerialiseFormat format,
+                 std::stringstream &ss,
+                 bool useScheduler = true) const;
 
   std::vector<std::unique_ptr<Loss>> losses;
 
@@ -261,6 +266,9 @@ public:
 
   const Graph &getMainGraph() const;
   Graph &getMainGraph();
+
+  // Returns all graphs in `graphs' in an unscheduled order
+  std::vector<const Graph *> getAllGraphs() const;
 
   Graph &getGraph(const GraphId &) const;
   bool hasGraph(const GraphId &) const;
@@ -508,6 +516,8 @@ public:
   // will be copied out of sub-graphs, even if they
   // have no consumers external to the sub-graph.
   Op &getSubgraphAnchorPlaceholder();
+
+  const decltype(graphs) &getGraphs() const { return graphs; }
 };
 
 } // namespace popart

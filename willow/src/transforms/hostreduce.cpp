@@ -52,14 +52,12 @@ Op *HostReduce::insertGradCopyToHostOp(Op *varUpdateOp,
     gradCopyOp->setVirtualGraphId(vop->getVirtualGraphId());
   }
 
+  if (vop->hasPipelineStage()) {
+    gradCopyOp->setPipelineStage(vop->getPipelineStage());
+  }
+
   gradCopyOp->priority = std::numeric_limits<double>::max();
   gradCopyOp->setup();
-
-  // Transferring topocons in this case would result in an incorrect scheduling
-  // of the acclUpdate ops
-  if (!varUpdateOp->isConvertibleTo<SGD1VarUpdateOp>()) {
-    graph.topoCons->transfer(vop, gradCopyOp);
-  }
 
   return gradCopyOp;
 }
@@ -97,10 +95,12 @@ Op *HostReduce::insertGradCopyFromHostOp(Op *varUpdateOp,
     gradCopyOp->setVirtualGraphId(vop->getVirtualGraphId());
   }
 
+  if (vop->hasPipelineStage()) {
+    gradCopyOp->setPipelineStage(vop->getPipelineStage());
+  }
+
   gradCopyOp->priority = std::numeric_limits<double>::min();
   gradCopyOp->setup();
-
-  graph.topoCons->transfer(vop, gradCopyOp);
 
   return gradCopyOp;
 }
@@ -138,7 +138,6 @@ Op *HostReduce::insertVarCopyOp(Op *varUpdateOp,
   varCopyOp->createAndConnectOutTensor(SGD0VarUpdateOp::getUpdatedVarOutIndex(),
                                        "HostReduceOut__" + varTensorId);
 
-  varCopyOp->priority = std::numeric_limits<double>::min();
   varCopyOp->setup();
 
   if (varUpdateOp->hasVirtualGraphId()) {
@@ -151,16 +150,25 @@ Op *HostReduce::insertVarCopyOp(Op *varUpdateOp,
   return varCopyOp;
 }
 
+void HostReduce::verifySessionOptions(const SessionOptions &options) const {
+  if (!options.hostAllReduce) {
+    return;
+  }
+
+  if (options.enablePipelining && options.hostWeightUpdate) {
+    throw error("Pipelining with host weight update not supported");
+  }
+
+  if (options.enableGradientAccumulation && options.hostWeightUpdate) {
+    throw error("Gradient accumulation with host weight update not supported");
+  }
+}
+
 bool HostReduce::apply(Graph &graph) const {
   bool changed = false;
   auto &ir     = graph.getIr();
 
-  if (!ir.getSessionOptions().hostAllReduce)
-    return changed;
-
-  if (!ir.canTrain() && ir.getSessionOptions().hostAllReduce) {
-    throw error("Host AllReduce only available when training.");
-  }
+  verifySessionOptions(ir.getSessionOptions());
 
   logging::transform::debug("Applying HostReduce transformation");
   std::vector<Op *> gradCopyToHostOps;
@@ -196,11 +204,6 @@ bool HostReduce::apply(Graph &graph) const {
       varCopyOps.push_back(varCopyOp);
       toRemove.push_back(op);
 
-      logging::transform::debug(
-          "HostReduce replaced {} with grad copy {} and var copy {}",
-          op->getName(),
-          gradCopyToHostOp->getName(),
-          varCopyOp->getName());
     } else {
       // device side weight update
       auto *gradCopyFromHostOp = insertGradCopyFromHostOp(op, graph, counter);
@@ -227,35 +230,40 @@ bool HostReduce::apply(Graph &graph) const {
   // merges two host syncs during compilation into one. See
   // IPUTarget::prepareForStreamAccess() and IPUTarget::completeStreamAccess()
   // for details
-  auto syncOp_up = std::make_unique<SyncOp>(
-      Op::Settings(graph, "HostReduceSync"), poplar::SyncType::INTERNAL);
-  auto syncOpId = graph.moveIntoGraph(std::move(syncOp_up));
-  auto syncOp   = graph.getOp(syncOpId);
+  if (!ir.getSessionOptions().enablePipelining) {
+    auto syncOp_up = std::make_unique<SyncOp>(
+        Op::Settings(graph, "HostReduceSync"), poplar::SyncType::INTERNAL);
+    auto syncOpId = graph.moveIntoGraph(std::move(syncOp_up));
+    auto syncOp   = graph.getOp(syncOpId);
 
-  if (gradCopyToHostOps.back()->hasVirtualGraphId()) {
-    syncOp->setVirtualGraphId(gradCopyToHostOps.back()->getVirtualGraphId());
-  }
+    syncOp->setup();
+    // Sync Op should run after all gradCopyToHost Ops
+    graph.topoCons->insert({{syncOp, gradCopyToHostOps}});
 
-  syncOp->setup();
+    if (ir.getSessionOptions().hostWeightUpdate) {
+      // Ensure that all gradient copy op run before var copy ops
+      for (auto &varCopyOp : varCopyOps) {
+        graph.topoCons->insert({{varCopyOp, gradCopyToHostOps}});
 
-  // Sync Op should run after all gradCopyToHost Ops
-  graph.topoCons->insert({{syncOp, gradCopyToHostOps}});
+        // Sync Op should run before all varCopy Ops
+        graph.topoCons->insert(syncOp, varCopyOp);
+      }
+    } else {
+      // Ensure that all gradient copy from host run after gradient copy to host
+      for (auto &gradCopyFromHostOp : gradCopyFromHostOps) {
+        graph.topoCons->insert({{gradCopyFromHostOp, gradCopyToHostOps}});
 
-  if (ir.getSessionOptions().hostWeightUpdate) {
-    // Ensure that all gradient copy op run before var copy ops
-    for (auto &varCopyOp : varCopyOps) {
-      graph.topoCons->insert({{varCopyOp, gradCopyToHostOps}});
-
-      // Sync Op should run before all varCopy Ops
-      graph.topoCons->insert(syncOp, varCopyOp);
+        // Sync Op should run before all gradCopyFromHost Ops
+        graph.topoCons->insert(syncOp, gradCopyFromHostOp);
+      }
     }
   } else {
-    // Ensure that all gradient copy from host run after gradient copy to host
-    for (auto &gradCopyFromHostOp : gradCopyFromHostOps) {
-      graph.topoCons->insert({{gradCopyFromHostOp, gradCopyToHostOps}});
-
-      // Sync Op should run before all gradCopyFromHost Ops
-      graph.topoCons->insert(syncOp, gradCopyFromHostOp);
+    if (gradCopyFromHostOps.size() != gradCopyToHostOps.size()) {
+      throw error("Unequal number of gradient copy operations");
+    }
+    // In pipelining, the sync is added implicitly in the GradCopyToHostOp
+    for (int i = 0; i < gradCopyToHostOps.size(); ++i) {
+      graph.topoCons->insert(gradCopyToHostOps[i], gradCopyFromHostOps[i]);
     }
   }
 

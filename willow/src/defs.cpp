@@ -19,6 +19,7 @@ void PrintTensorShapeInference(InferenceContext &ctx);
 void ScaleShapeInference(InferenceContext &ctx);
 void LSTMShapeInference(InferenceContext &ctx);
 void GeluShapeInference(InferenceContext &ctx);
+void CallShapeInference(InferenceContext &ctx);
 
 void SubsampleShapeInference(InferenceContext &ctx) {
   propagateElemTypeFromInputToOutput(ctx, 0, 0);
@@ -104,12 +105,17 @@ void GeluShapeInference(InferenceContext &ctx) {
   propagateShapeAndTypeFromFirstInput(ctx);
 }
 
+void CallShapeInference(InferenceContext &ctx) {
+  propagateShapeAndTypeFromFirstInput(ctx);
+}
+
 extern size_t dbg_count_check_GroupNormalization_AiGraphcore_ver1;
 extern size_t dbg_count_check_Subsample_AiGraphcore_ver1;
 extern size_t dbg_count_check_PrintTensor_AiGraphcore_ver1;
 extern size_t dbg_count_check_Scale_AiGraphcore_ver1;
 extern size_t dbg_count_check_LSTM_AiGraphcore_ver1;
 extern size_t dbg_count_check_Gelu_AiGraphcore_ver1;
+extern size_t dbg_count_check_Call_AiGraphcore_ver1;
 
 static const char groupnormalizationDoc[] =
     "GroupNormalization applies Group Normalization over a mini-batch of input";
@@ -142,9 +148,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               1e-5f)
         .TypeAndShapeInferenceFunction(GroupNormalizationShapeInference));
 
-static const char subsampleDoc[] =
-    "Subsample takes every Nth element of a tensor.";
-
 ONNX_OPERATOR_SET_SCHEMA_EX(
     Subsample,
     AiGraphcore,
@@ -152,7 +155,7 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
     1,
     false,
     OpSchema()
-        .SetDoc(subsampleDoc)
+        .SetDoc("Subsample takes every Nth element of a tensor.")
         .Input(0, "X", "Input tensor", "T")
         .Output(0, "Y", "Output tensor", "T")
         .TypeConstraint(
@@ -165,9 +168,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               false)
         .TypeAndShapeInferenceFunction(SubsampleShapeInference));
 
-static const char printTensorDoc[] =
-    "PrintTensor prints the value of a tensor.";
-
 ONNX_OPERATOR_SET_SCHEMA_EX(
     PrintTensor,
     AiGraphcore,
@@ -175,7 +175,7 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
     1,
     false,
     OpSchema()
-        .SetDoc(printTensorDoc)
+        .SetDoc("PrintTensor prints the value of a tensor.")
         .Input(0, "X", "Input tensor", "T")
         .Output(0, "Y", "Output tensor", "T")
         .TypeConstraint(
@@ -209,8 +209,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .Attr("scale", "The scale to apply", AttributeProto::FLOAT, true)
         .TypeAndShapeInferenceFunction(ScaleShapeInference));
 
-static const char lstmDoc[] = "";
-
 ONNX_OPERATOR_SET_SCHEMA_EX(
     LSTM,
     AiGraphcore,
@@ -218,7 +216,7 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
     1,
     false,
     OpSchema()
-        .SetDoc(lstmDoc)
+        .SetDoc("")
         .Input(0, "X", "The input tensor", "T")
         .Input(1, "Weights", "The concatenated input and output weights", "T")
         .Input(2, "Bias", "The biases", "T")
@@ -235,9 +233,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               static_cast<int64_t>(1))
         .TypeAndShapeInferenceFunction(LSTMShapeInference));
 
-static const char geluDoc[] =
-    "Applies the Gaussian Error Linear Units function.";
-
 ONNX_OPERATOR_SET_SCHEMA_EX(
     Gelu,
     AiGraphcore,
@@ -245,13 +240,49 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
     1,
     false,
     OpSchema()
-        .SetDoc(geluDoc)
+        .SetDoc("Applies the Gaussian Error Linear Units function.")
         .Input(0, "X", "Input tensor", "T")
         .Output(0, "Y", "Output tensor", "T")
         .TypeConstraint("T",
                         {"tensor(float)", "tensor(float16)"},
                         "Constrain input and output types to float tensors.")
         .TypeAndShapeInferenceFunction(GeluShapeInference));
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    Call,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("Call instantiates a call to a subgraph.")
+        .Input(0,
+               "inputs",
+               "List of inputs to the subgraph",
+               "T",
+               OpSchema::Variadic)
+        .Output(0,
+                "outputs",
+                "List of outputs from the subgraph",
+                "T",
+                OpSchema::Variadic)
+        .TypeConstraint(
+            "T",
+            {"tensor(float16)",
+             "tensor(float)",
+             "tensor(int8)",
+             "tensor(int16)",
+             "tensor(int32)",
+             "tensor(uint8)",
+             "tensor(uint16)",
+             "tensor(uint32)",
+             "tensor(bool)"},
+            "Input and output types can be any type supported by the IPU.")
+        .Attr("callee",
+              "The subgraph to call into.",
+              AttributeProto::GRAPH,
+              true)
+        .TypeAndShapeInferenceFunction(CallShapeInference));
 
 static bool registerOps() {
   auto &d = ONNX_NAMESPACE::OpSchemaRegistry::DomainToVersionRange::Instance();
@@ -278,6 +309,9 @@ static bool registerOps() {
 
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(AiGraphcore, 1, Gelu)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(AiGraphcore, 1, Call)>());
 
   return true;
 }

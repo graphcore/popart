@@ -243,6 +243,15 @@ struct SessionOptions {
   /// Enable/disable the serializing of matmuls.
   bool enableSerializedMatmuls = true;
 
+  /// If true, computes the mean first and subtracts the activations
+  /// from it before computing the variance. The implementation with
+  /// this flag set to true is slower than when set to false.
+  /// The stable version requires the first order moment to be
+  /// estimated and applied to the sample set before the second
+  /// order central moment is calculated.
+  /// See D20227.
+  bool enableStableNorm = false;
+
   /// Perform AllReduce operation on the host. Only useful for training session
   bool hostAllReduce = false;
 

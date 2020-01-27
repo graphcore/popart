@@ -1,7 +1,8 @@
 import numpy as np
-import pytest
+import os
 import popart
 import pytest
+import tempfile
 import test_util as tu
 
 
@@ -1461,3 +1462,20 @@ def test_add_untyped_input():
     # Adding an untyped input on a subgraph should be fine.
     sub_builder = builder.createSubgraphBuilder()
     x = sub_builder.addUntypedInputTensor()
+
+
+def test_save_model_to_file():
+    builder = popart.Builder()
+    i = builder.addInputTensor(popart.TensorInfo("FLOAT", [2]))
+    o = builder.aiOnnx.sqrt([i])
+
+    tmpdir = tempfile.gettempdir()
+    tmpfile = os.path.join(tmpdir, "model.onnx")
+    builder.saveModelProto(tmpfile)
+
+    # Check file has saved
+    assert os.path.exists(tmpfile) == True
+
+    # Check that, when re-loaded, its contents are the same as when saved
+    new_builder = popart.Builder(tmpfile)
+    assert new_builder.getModelProto() == builder.getModelProto()

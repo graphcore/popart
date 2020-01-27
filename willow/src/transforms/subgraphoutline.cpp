@@ -356,7 +356,8 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
 
   // Create the call op. Note that toLoss and fromLoss are set in the
   // constructor
-  auto up_call_op         = std::make_unique<CallOp>(graph, subgraph);
+  auto up_call_op =
+      std::make_unique<CallOp>(Onnx::CustomOperators::Call_1, graph, subgraph);
   auto call_op_id         = graph.moveIntoGraph(std::move(up_call_op));
   CallOp *call_op         = dynamic_cast<CallOp *>(graph.getOp(call_op_id));
   call_op->settings.scope = scope.get();

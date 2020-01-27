@@ -731,6 +731,8 @@ PYBIND11_MODULE(popart_core, m) {
                      &SessionOptions::enableFullyConnectedPass)
       .def_readwrite("enableGroupedMatmuls",
                      &SessionOptions::enableGroupedMatmuls)
+      .def_readwrite("enableStableNorm",
+                     &SessionOptions::enableStableNorm)
       // set in python use the python set constructor, so something like
       // mySessionOptions.dotChecks = {popart.DotCheck.FINAL}
       .def_readwrite("dotChecks", &SessionOptions::dotChecks)
@@ -1064,6 +1066,12 @@ PYBIND11_MODULE(popart_core, m) {
       .def("gelu",
            &AiGraphcoreOpset1::gelu,
            py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("call",
+           &AiGraphcoreOpset1::call,
+           py::arg("args"),
+           py::arg("num_outputs"),
+           py::arg("callee"),
            py::arg("debugPrefix") = std::string());
 
   py::class_<Builder>(m, "_BuilderCore")
@@ -1095,6 +1103,7 @@ PYBIND11_MODULE(popart_core, m) {
       .def("createSubgraphBuilder",
            &Builder::createSubgraphBuilder,
            pybind11::return_value_policy::reference)
+      .def("saveModelProto", &Builder::saveModelProto, py::arg("filename"))
 
       // Accessors for the ai.onnx domain builder interface
       .def_property_readonly("aiOnnxOpset6", &Builder::aiOnnxOpset6)

@@ -345,7 +345,7 @@ const static AiGraphcoreOpIdV1 SubsampleInplace("SubsampleInplace");
 
 const static AiGraphcoreOpIdV1 ConvFlipWeights("ConvFlipWeights");
 
-const static AiGraphcoreOpIdV1 Call("Call");
+const static AiGraphcoreOpIdV1 Call_1("Call");
 
 const static AiGraphcoreOpIdV1 GradientAccumulation("GradientAccl");
 const static AiGraphcoreOpIdV1 ResetAccumulation("ResetAccl");
@@ -363,6 +363,7 @@ const static OperatorIdentifier PrintTensor = CustomOperators::PrintTensor_1;
 const static OperatorIdentifier Scale       = CustomOperators::Scale_1;
 const static OperatorIdentifier LSTM        = CustomOperators::LSTM_1;
 const static OperatorIdentifier Gelu        = CustomOperators::Gelu_1;
+const static OperatorIdentifier Call        = CustomOperators::Call_1;
 } // namespace OpSet1
 } // namespace AiGraphcore
 

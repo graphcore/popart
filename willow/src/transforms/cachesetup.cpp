@@ -43,7 +43,7 @@ bool CacheSetup::apply(Graph &graph) const {
               consumer->opid == Onnx::CustomOperators::CacheStore) {
             argOpMap[tensor_id].insert(consumer);
             opArgMap[consumer].insert(tensor_id);
-          } else if (consumer->opid == Onnx::CustomOperators::Call) {
+          } else if (consumer->opid == Onnx::CustomOperators::Call_1) {
             CallOp *call = dynamic_cast<CallOp *>(consumer);
 
             auto indices = consumer->input->indices(front);

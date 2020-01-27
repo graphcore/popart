@@ -341,7 +341,13 @@ std::string InputCreatorCandidate::str() {
 InputMultiCreatorCandidate::InputMultiCreatorCandidate()
     : ICreatorCandidate() {}
 
-double InputMultiCreatorCandidate::getMaxCreatorPriority() { return 0.0; }
+double InputMultiCreatorCandidate::getMaxCreatorPriority() {
+  double priority = std::numeric_limits<double>::lowest();
+  for (auto &candidate : candidates) {
+    priority = std::max(candidate.first->getMaxCreatorPriority(), priority);
+  }
+  return priority;
+}
 
 view::Regions InputMultiCreatorCandidate::unwind() {
   throw("Not expected to unwind on InputMultiCreatorCandidate");
@@ -407,7 +413,7 @@ InputMultiCreatorCandidate::createInput(const std::string &name) {
 
 std::string InputMultiCreatorCandidate::str() {
   std::stringstream ss;
-  ss << "[";
+  ss << "[" << std::endl;
   for (auto candidate : candidates) {
     ss << candidate.first->str() << std::endl;
   }

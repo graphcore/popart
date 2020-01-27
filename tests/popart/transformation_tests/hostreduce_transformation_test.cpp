@@ -25,10 +25,8 @@
 
 using namespace popart;
 
-// Check that schedule follows the pattern: N copies to host, sync, N copies to
-// device
 void checkOpSchedule(const std::vector<Op *> &opSchedule,
-                     bool hostWeightUpdate) {
+                     const SessionOptions &options) {
   std::vector<Op *> partialOpSchedule;
   for (const auto &op : opSchedule) {
     if (dynamic_cast<GradCopyToHostOp *>(op) ||
@@ -37,27 +35,48 @@ void checkOpSchedule(const std::vector<Op *> &opSchedule,
       partialOpSchedule.push_back(op);
     }
   }
+  int numCopiesToHost   = 0;
+  int numCopiesToDevice = 0;
 
-  auto syncIt = std::find_if(
-      partialOpSchedule.begin(), partialOpSchedule.end(), [](Op *op) {
-        return dynamic_cast<SyncOp *>(op) != nullptr;
-      });
-
-  BOOST_CHECK(syncIt != partialOpSchedule.end());
-  int numCopiesToHost = 0;
-  for (auto it = partialOpSchedule.begin(); it != syncIt; ++it) {
-    BOOST_CHECK(dynamic_cast<GradCopyToHostOp *>(*it) != nullptr);
-    ++numCopiesToHost;
+  int numSyncs = 0;
+  for (const auto &op : partialOpSchedule) {
+    if (op->isConvertibleTo<SyncOp>()) {
+      ++numSyncs;
+    }
   }
 
-  int numCopiesToDevice = 0;
-  for (auto it = std::next(syncIt, 1); it != partialOpSchedule.end(); ++it) {
-    if (hostWeightUpdate) {
-      BOOST_CHECK(dynamic_cast<HostSGD0VarUpdate *>(*it) != nullptr);
-    } else {
-      BOOST_CHECK(dynamic_cast<GradCopyFromHostOp *>(*it) != nullptr);
+  if (options.enablePipelining) {
+    for (const auto &op : partialOpSchedule) {
+      if (op->isConvertibleTo<GradCopyToHostOp>()) {
+        ++numCopiesToHost;
+      } else if (op->isConvertibleTo<GradCopyFromHostOp>()) {
+        ++numCopiesToDevice;
+      } else if (op->isConvertibleTo<HostSGD0VarUpdate>()) {
+        ++numCopiesToDevice;
+      }
     }
-    ++numCopiesToDevice;
+  } else {
+    auto syncIt = std::find_if(
+        partialOpSchedule.begin(), partialOpSchedule.end(), [](Op *op) {
+          return dynamic_cast<SyncOp *>(op) != nullptr;
+        });
+    BOOST_CHECK(syncIt != partialOpSchedule.end());
+
+    BOOST_CHECK(numSyncs == 1);
+
+    for (auto it = partialOpSchedule.begin(); it != syncIt; ++it) {
+      BOOST_CHECK(dynamic_cast<GradCopyToHostOp *>(*it) != nullptr);
+      ++numCopiesToHost;
+    }
+
+    for (auto it = std::next(syncIt, 1); it != partialOpSchedule.end(); ++it) {
+      if (options.hostWeightUpdate) {
+        BOOST_CHECK(dynamic_cast<HostSGD0VarUpdate *>(*it) != nullptr);
+      } else {
+        BOOST_CHECK(dynamic_cast<GradCopyFromHostOp *>(*it) != nullptr);
+      }
+      ++numCopiesToDevice;
+    }
   }
 
   BOOST_CHECK(numCopiesToHost == numCopiesToDevice);
@@ -234,7 +253,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
 
   const auto &ir = session->getIr();
   auto ops       = ir.getOpSchedule({});
-  checkOpSchedule(ops, opts.hostWeightUpdate);
+  checkOpSchedule(ops, opts);
 
   session->optimizerFromHost();
   session->weightsFromHost();
@@ -635,7 +654,7 @@ BOOST_AUTO_TEST_CASE(HostReduceHierarchicalReductionWithReplicatedGraphs) {
 
     const auto &ir = session->getIr();
     auto ops       = ir.getOpSchedule({});
-    checkOpSchedule(ops, opts.hostWeightUpdate);
+    checkOpSchedule(ops, opts);
 
     session->optimizerFromHost();
     session->weightsFromHost();
@@ -1123,7 +1142,7 @@ BOOST_AUTO_TEST_CASE(
 
     const auto &ir = session->getIr();
     auto ops       = ir.getOpSchedule({});
-    checkOpSchedule(ops, opts.hostWeightUpdate);
+    checkOpSchedule(ops, opts);
 
     session->optimizerFromHost();
     session->weightsFromHost();
@@ -1304,8 +1323,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithAccumulation) {
     const auto &mainGraph = ir.getMainGraph();
 
     if (userOptions.hostAllReduce) {
-      checkOpSchedule(mainGraph.getOpSchedule({}),
-                      userOptions.hostWeightUpdate);
+      checkOpSchedule(mainGraph.getOpSchedule({}), userOptions);
     }
 
     std::vector<float> v_input_0(stepDataElms);
@@ -1399,13 +1417,511 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithAccumulation) {
   BOOST_REQUIRE(hostAllReduceDisabled.size() == hostAllReduceEnabled.size());
 
   for (int i = 0; i < hostAllReduceDisabled.size(); i++) {
-    std::cout << "Checking data " << i << '\n';
     auto &lhs = hostAllReduceDisabled.at(i);
     auto &rhs = hostAllReduceEnabled.at(i);
 
     BOOST_REQUIRE(lhs.size() == rhs.size());
     for (int j = 0; j < lhs.size(); j++) {
       BOOST_CHECK(std::fabs(lhs.at(j) - rhs.at(j)) <= 1e-4f);
+    }
+  }
+}
+
+BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipelining) {
+  auto run = [](bool hostAllReduce) {
+    auto builder     = Builder::create();
+    auto aiOnnx      = builder->aiOnnxOpset9();
+    auto aiGraphcore = builder->aiGraphcoreOpset1();
+
+    int64_t steps               = 1;
+    int64_t batchSize           = 3;
+    int64_t batchesPerStep      = 5;
+    int64_t accumulationFactor  = 1;
+    const bool enablePipelining = true;
+
+    int seed = 1011;
+    std::default_random_engine eng(seed);
+    std::uniform_real_distribution<float> fdis(-1, 1);
+
+    int64_t samplesPerStep = batchesPerStep * batchSize;
+
+    int64_t sampleHeight = 2;
+    std::vector<int64_t> sampleShape{sampleHeight, sampleHeight};
+
+    std::vector<int64_t> weightShape = sampleShape;
+
+    std::vector<int64_t> batchShape{batchSize, sampleHeight, sampleHeight};
+    std::vector<int64_t> stepDataShape{
+        batchesPerStep, batchSize, sampleHeight, sampleHeight};
+
+    TensorInfo sampleInfo{"FLOAT", sampleShape};
+    TensorInfo weightInfo = sampleInfo;
+    TensorInfo batchInfo{"FLOAT", batchShape};
+    TensorInfo stepDataInfo{"FLOAT", stepDataShape};
+
+    int64_t sampleElms{sampleHeight * sampleHeight};
+    int64_t batchElms    = sampleElms * batchSize;
+    int64_t stepDataElms = batchElms * batchesPerStep;
+
+    auto input1 = builder->addInputTensor(batchInfo, "1tupni");
+
+    std::vector<float> w0Vals(sampleElms);
+    ConstVoidData w0Data = {w0Vals.data(), sampleInfo};
+    auto w0              = builder->addInitializedInputTensor(w0Data);
+    auto a0              = aiOnnx.add({w0, input1}, "a0");
+    for (auto &x : w0Vals) {
+      x = fdis(eng);
+    }
+
+    std::vector<float> w1Vals(sampleElms);
+    ConstVoidData w1Data = {w1Vals.data(), sampleInfo};
+    auto w1              = builder->addInitializedInputTensor(w1Data);
+    auto act1            = aiOnnx.matmul({w1, a0}, "act1");
+    for (auto &x : w1Vals) {
+      x = fdis(eng);
+    }
+
+    std::vector<float> w2Vals(sampleElms);
+    ConstVoidData w2Data = {w2Vals.data(), sampleInfo};
+    auto w2              = builder->addInitializedInputTensor(w2Data);
+    auto act2            = aiOnnx.add({w2, act1}, "act2");
+    for (auto &x : w2Vals) {
+      x = fdis(eng);
+    }
+
+    std::vector<float> w3Vals(sampleElms);
+    ConstVoidData w3Data = {w3Vals.data(), sampleInfo};
+    auto w3              = builder->addInitializedInputTensor(w3Data);
+    auto act3            = aiOnnx.matmul({w3, act2}, "act3");
+    for (auto &x : w3Vals) {
+      x = fdis(eng);
+    }
+
+    std::vector<float> w4Vals(sampleElms);
+    ConstVoidData w4Data = {w4Vals.data(), sampleInfo};
+    auto w4              = builder->addInitializedInputTensor(w4Data);
+    auto act4            = aiOnnx.add({w4, act3}, "act4");
+    auto a4              = aiOnnx.sigmoid({act4});
+    for (auto &x : w4Vals) {
+      x = fdis(eng);
+    }
+
+    std::vector<float> w5Vals(sampleElms);
+    ConstVoidData w5Data = {w5Vals.data(), sampleInfo};
+    auto w5              = builder->addInitializedInputTensor(w5Data);
+    auto act5            = aiOnnx.add({w5, a4}, "act5");
+    auto a5              = aiOnnx.sigmoid({act5});
+    for (auto &x : w5Vals) {
+      x = fdis(eng);
+    }
+    builder->addOutputTensor(a5);
+
+    float learnRate = 1.0;
+    auto optimizer  = ConstSGD(learnRate);
+
+    float lambda = 1.0;
+
+    auto loss = std::unique_ptr<Loss>(
+        new L1Loss(a5, "l1LossVal", lambda, ReductionType::SUM));
+    auto proto = builder->getModelProto();
+
+    auto dataFlow = DataFlow(batchesPerStep, {{a5, AnchorReturnType("ALL")}});
+
+    SessionOptions userOptions;
+    userOptions.enablePipelining = enablePipelining;
+
+    std::map<std::string, std::string> deviceOpts;
+    if (!userOptions.enablePipelining) {
+      deviceOpts = std::map<std::string, std::string>({{"numIPUs", "1"}});
+    } else {
+      userOptions.virtualGraphMode = VirtualGraphMode::Auto;
+      deviceOpts = std::map<std::string, std::string>({{"numIPUs", "3"}});
+    }
+
+    userOptions.hostAllReduce              = hostAllReduce;
+    userOptions.enableGradientAccumulation = accumulationFactor > 1;
+    userOptions.accumulationFactor         = accumulationFactor;
+
+    std::string prefix = "";
+    if (userOptions.enableGradientAccumulation) {
+      prefix = reservedAcclToUpdatePrefix();
+    }
+
+    std::map<TensorId, TensorInfo> idToInfo{
+        {prefix + getGradId(w0), sampleInfo},
+        {prefix + getGradId(w1), sampleInfo},
+        {prefix + getGradId(w2), sampleInfo},
+        {prefix + getGradId(w3), sampleInfo},
+        {prefix + getGradId(w4), sampleInfo},
+        {prefix + getGradId(w5), sampleInfo}};
+
+    std::map<TensorId, std::vector<float>> idToGrad{
+        {prefix + getGradId(w0), std::vector<float>(sampleElms)},
+        {prefix + getGradId(w1), std::vector<float>(sampleElms)},
+        {prefix + getGradId(w2), std::vector<float>(sampleElms)},
+        {prefix + getGradId(w3), std::vector<float>(sampleElms)},
+        {prefix + getGradId(w4), std::vector<float>(sampleElms)},
+        {prefix + getGradId(w5), std::vector<float>(sampleElms)},
+    };
+
+    auto device =
+        DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
+
+    auto session = popart::TrainingSession::createFromOnnxModel(
+        proto,
+        dataFlow,
+        {loss.get()},
+        optimizer,
+        device,
+        InputShapeInfo(),
+        userOptions,
+        popart::Patterns(PatternsLevel::DEFAULT));
+
+    session->prepareDevice();
+    const auto &ir        = session->getIr();
+    const auto &mainGraph = ir.getMainGraph();
+    if (userOptions.hostAllReduce) {
+      checkOpSchedule(mainGraph.getOpSchedule({}), userOptions);
+    }
+
+    std::vector<float> v_input_0(stepDataElms);
+
+    std::vector<float> v_a5(stepDataElms);
+    popart::NDArrayWrapper<float> a5_wrapper(v_a5.data(), stepDataShape);
+
+    std::map<popart::TensorId, popart::IArray &> anchors = {
+        {a5, a5_wrapper},
+    };
+
+    WeightsIO weightsRead;
+    std::vector<float> w0_readback(weightInfo.nelms(), -99.0f);
+    std::vector<float> w1_readback(weightInfo.nelms(), -99.0f);
+    std::vector<float> w2_readback(weightInfo.nelms(), -99.0f);
+    std::vector<float> w3_readback(weightInfo.nelms(), -99.0f);
+    std::vector<float> w4_readback(weightInfo.nelms(), -99.0f);
+    std::vector<float> w5_readback(weightInfo.nelms(), -99.0f);
+    weightsRead.insert(w0, {w0_readback.data(), weightInfo});
+    weightsRead.insert(w1, {w1_readback.data(), weightInfo});
+    weightsRead.insert(w2, {w2_readback.data(), weightInfo});
+    weightsRead.insert(w3, {w3_readback.data(), weightInfo});
+    weightsRead.insert(w4, {w4_readback.data(), weightInfo});
+    weightsRead.insert(w5, {w5_readback.data(), weightInfo});
+
+    session->weightsFromHost();
+
+    std::vector<std::string> callback_handles;
+    for (const auto &stream_id : session->getHostReduceStreamIds()) {
+      if (stream_id.compare(0,
+                            strlen(gradientStoreStreamPrefix),
+                            gradientStoreStreamPrefix) == 0) {
+        session->connectStreamToCallback(
+            stream_id, [&callback_handles, &idToGrad, stream_id](void *g) {
+              callback_handles.push_back(stream_id);
+              const auto grad_id =
+                  stream_id.substr(strlen(gradientStoreStreamPrefix));
+              float *f   = reinterpret_cast<float *>(g);
+              auto &grad = idToGrad.at(grad_id);
+              std::copy(f, f + grad.size(), grad.data());
+            });
+      } else if (stream_id.compare(0,
+                                   strlen(gradientLoadStreamPrefix),
+                                   gradientLoadStreamPrefix) == 0) {
+        session->connectStreamToCallback(
+            stream_id, [&callback_handles, &idToGrad, stream_id](void *g) {
+              callback_handles.push_back(stream_id);
+              const auto grad_id =
+                  stream_id.substr(strlen(gradientLoadStreamPrefix));
+              const auto &grad = idToGrad.at(grad_id);
+              float *f         = reinterpret_cast<float *>(g);
+              std::copy(grad.begin(), grad.end(), f);
+            });
+      }
+    }
+
+    for (auto &x : v_input_0) {
+      x = fdis(eng);
+    }
+
+    for (int i = 0; i < steps; ++i) {
+      popart::NDArrayWrapper<float> input1_wrapper(v_input_0.data(),
+                                                   stepDataInfo);
+      std::map<popart::TensorId, popart::IArray &> inputs = {
+          {input1, input1_wrapper}};
+      popart::StepIO stepio(inputs, anchors);
+      session->run(stepio);
+    }
+
+    session->weightsToHost();
+    session->readWeights(weightsRead);
+
+    std::vector<std::vector<float>> ws = {w0_readback,
+                                          w1_readback,
+                                          w2_readback,
+                                          w3_readback,
+                                          w4_readback,
+                                          w5_readback};
+
+    return ws;
+  };
+
+  // Run the model with and without hostAllReduce
+  auto hostAllReduceDisabled = run(false);
+  auto hostAllReduceEnabled  = run(true);
+
+  BOOST_REQUIRE(hostAllReduceDisabled.size() == hostAllReduceEnabled.size());
+
+  for (int i = 0; i < hostAllReduceDisabled.size(); i++) {
+    auto &lhs = hostAllReduceDisabled[i];
+    auto &rhs = hostAllReduceEnabled[i];
+
+    BOOST_REQUIRE(lhs.size() == rhs.size());
+    for (int j = 0; j < lhs.size(); j++) {
+      BOOST_CHECK(std::fabs(lhs[j] - rhs[j]) <= 1e-4f);
+    }
+  }
+}
+
+BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation) {
+  auto run = [](bool hostAllReduce) {
+    auto builder     = Builder::create();
+    auto aiOnnx      = builder->aiOnnxOpset9();
+    auto aiGraphcore = builder->aiGraphcoreOpset1();
+
+    int64_t steps               = 2;
+    int64_t batchSize           = 5;
+    int64_t batchesPerStep      = 5;
+    int64_t accumulationFactor  = 5;
+    const bool enablePipelining = true;
+
+    int seed = 1011;
+    std::default_random_engine eng(seed);
+    std::uniform_real_distribution<float> fdis(-1, 1);
+
+    int64_t samplesPerStep = batchesPerStep * batchSize;
+
+    int64_t sampleHeight = 2;
+    std::vector<int64_t> sampleShape{sampleHeight, sampleHeight};
+
+    std::vector<int64_t> weightShape = sampleShape;
+
+    std::vector<int64_t> batchShape{batchSize, sampleHeight, sampleHeight};
+    std::vector<int64_t> stepDataShape{
+        batchesPerStep, batchSize, sampleHeight, sampleHeight};
+
+    TensorInfo sampleInfo{"FLOAT", sampleShape};
+    TensorInfo weightInfo = sampleInfo;
+    TensorInfo batchInfo{"FLOAT", batchShape};
+    TensorInfo stepDataInfo{"FLOAT", stepDataShape};
+
+    int64_t sampleElms{sampleHeight * sampleHeight};
+    int64_t batchElms    = sampleElms * batchSize;
+    int64_t stepDataElms = batchElms * batchesPerStep;
+
+    auto input1 = builder->addInputTensor(batchInfo, "1tupni");
+
+    std::vector<float> w0Vals(sampleElms);
+    ConstVoidData w0Data = {w0Vals.data(), sampleInfo};
+    auto w0              = builder->addInitializedInputTensor(w0Data);
+    auto a0              = aiOnnx.add({w0, input1}, "a0");
+    for (auto &x : w0Vals) {
+      x = fdis(eng);
+    }
+
+    std::vector<float> w1Vals(sampleElms);
+    ConstVoidData w1Data = {w1Vals.data(), sampleInfo};
+    auto w1              = builder->addInitializedInputTensor(w1Data);
+    auto act1            = aiOnnx.matmul({w1, a0}, "act1");
+    for (auto &x : w1Vals) {
+      x = fdis(eng);
+    }
+
+    std::vector<float> w2Vals(sampleElms);
+    ConstVoidData w2Data = {w2Vals.data(), sampleInfo};
+    auto w2              = builder->addInitializedInputTensor(w2Data);
+    auto act2            = aiOnnx.add({w2, act1}, "act2");
+    for (auto &x : w2Vals) {
+      x = fdis(eng);
+    }
+
+    std::vector<float> w3Vals(sampleElms);
+    ConstVoidData w3Data = {w3Vals.data(), sampleInfo};
+    auto w3              = builder->addInitializedInputTensor(w3Data);
+    auto act3            = aiOnnx.matmul({w3, act2}, "act3");
+    for (auto &x : w3Vals) {
+      x = fdis(eng);
+    }
+
+    std::vector<float> w4Vals(sampleElms);
+    ConstVoidData w4Data = {w4Vals.data(), sampleInfo};
+    auto w4              = builder->addInitializedInputTensor(w4Data);
+    auto act4            = aiOnnx.add({w4, act3}, "act4");
+    auto a4              = aiOnnx.sigmoid({act4});
+    for (auto &x : w4Vals) {
+      x = fdis(eng);
+    }
+
+    std::vector<float> w5Vals(sampleElms);
+    ConstVoidData w5Data = {w5Vals.data(), sampleInfo};
+    auto w5              = builder->addInitializedInputTensor(w5Data);
+    auto act5            = aiOnnx.add({w5, a4}, "act5");
+    auto a5              = aiOnnx.sigmoid({act5});
+    for (auto &x : w5Vals) {
+      x = fdis(eng);
+    }
+    builder->addOutputTensor(a5);
+
+    float learnRate = 1.0;
+    auto optimizer  = ConstSGD(learnRate);
+
+    float lambda = 1.0;
+
+    auto loss = std::unique_ptr<Loss>(
+        new L1Loss(a5, "l1LossVal", lambda, ReductionType::SUM));
+    auto proto = builder->getModelProto();
+
+    auto dataFlow = DataFlow(batchesPerStep, {{a5, AnchorReturnType("ALL")}});
+
+    SessionOptions userOptions;
+    userOptions.enablePipelining = enablePipelining;
+
+    std::map<std::string, std::string> deviceOpts;
+    if (!userOptions.enablePipelining) {
+      deviceOpts = std::map<std::string, std::string>({{"numIPUs", "1"}});
+    } else {
+      userOptions.virtualGraphMode = VirtualGraphMode::Auto;
+      deviceOpts = std::map<std::string, std::string>({{"numIPUs", "3"}});
+    }
+
+    userOptions.hostAllReduce              = hostAllReduce;
+    userOptions.enableGradientAccumulation = accumulationFactor > 1;
+    userOptions.accumulationFactor         = accumulationFactor;
+
+    std::string prefix = "";
+    if (userOptions.enableGradientAccumulation) {
+      prefix = reservedAcclToUpdatePrefix();
+    }
+
+    std::map<TensorId, std::vector<float>> idToGrad{
+        {prefix + getGradId(w0), std::vector<float>(sampleElms)},
+        {prefix + getGradId(w1), std::vector<float>(sampleElms)},
+        {prefix + getGradId(w2), std::vector<float>(sampleElms)},
+        {prefix + getGradId(w3), std::vector<float>(sampleElms)},
+        {prefix + getGradId(w4), std::vector<float>(sampleElms)},
+        {prefix + getGradId(w5), std::vector<float>(sampleElms)},
+    };
+
+    auto device =
+        DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
+
+    auto session = popart::TrainingSession::createFromOnnxModel(
+        proto,
+        dataFlow,
+        {loss.get()},
+        optimizer,
+        device,
+        InputShapeInfo(),
+        userOptions,
+        popart::Patterns(PatternsLevel::DEFAULT));
+
+    session->prepareDevice();
+    const auto &ir        = session->getIr();
+    const auto &mainGraph = ir.getMainGraph();
+    if (userOptions.hostAllReduce) {
+      checkOpSchedule(mainGraph.getOpSchedule({}), userOptions);
+    }
+
+    std::vector<float> v_input_0(stepDataElms);
+
+    std::vector<float> v_a5(stepDataElms);
+    popart::NDArrayWrapper<float> a5_wrapper(v_a5.data(), stepDataShape);
+
+    std::map<popart::TensorId, popart::IArray &> anchors = {
+        {a5, a5_wrapper},
+    };
+
+    WeightsIO weightsRead;
+    std::vector<float> w0_readback(weightInfo.nelms(), -99.0f);
+    std::vector<float> w1_readback(weightInfo.nelms(), -99.0f);
+    std::vector<float> w2_readback(weightInfo.nelms(), -99.0f);
+    std::vector<float> w3_readback(weightInfo.nelms(), -99.0f);
+    std::vector<float> w4_readback(weightInfo.nelms(), -99.0f);
+    std::vector<float> w5_readback(weightInfo.nelms(), -99.0f);
+    weightsRead.insert(w0, {w0_readback.data(), weightInfo});
+    weightsRead.insert(w1, {w1_readback.data(), weightInfo});
+    weightsRead.insert(w2, {w2_readback.data(), weightInfo});
+    weightsRead.insert(w3, {w3_readback.data(), weightInfo});
+    weightsRead.insert(w4, {w4_readback.data(), weightInfo});
+    weightsRead.insert(w5, {w5_readback.data(), weightInfo});
+
+    session->weightsFromHost();
+
+    std::vector<std::string> callback_handles;
+    for (const auto &stream_id : session->getHostReduceStreamIds()) {
+      if (stream_id.compare(0,
+                            strlen(gradientStoreStreamPrefix),
+                            gradientStoreStreamPrefix) == 0) {
+        session->connectStreamToCallback(
+            stream_id, [&callback_handles, &idToGrad, stream_id](void *g) {
+              callback_handles.push_back(stream_id);
+              const auto grad_id =
+                  stream_id.substr(strlen(gradientStoreStreamPrefix));
+              float *f   = reinterpret_cast<float *>(g);
+              auto &grad = idToGrad.at(grad_id);
+              std::copy(f, f + grad.size(), grad.data());
+            });
+      } else if (stream_id.compare(0,
+                                   strlen(gradientLoadStreamPrefix),
+                                   gradientLoadStreamPrefix) == 0) {
+        session->connectStreamToCallback(
+            stream_id, [&callback_handles, &idToGrad, stream_id](void *g) {
+              callback_handles.push_back(stream_id);
+              const auto grad_id =
+                  stream_id.substr(strlen(gradientLoadStreamPrefix));
+              const auto &grad = idToGrad.at(grad_id);
+              float *f         = reinterpret_cast<float *>(g);
+              std::copy(grad.begin(), grad.end(), f);
+            });
+      }
+    }
+
+    for (auto &x : v_input_0) {
+      x = fdis(eng);
+    }
+
+    for (int i = 0; i < steps; ++i) {
+      popart::NDArrayWrapper<float> input1_wrapper(v_input_0.data(),
+                                                   stepDataInfo);
+      std::map<popart::TensorId, popart::IArray &> inputs = {
+          {input1, input1_wrapper}};
+      popart::StepIO stepio(inputs, anchors);
+      session->run(stepio);
+    }
+
+    session->weightsToHost();
+    session->readWeights(weightsRead);
+
+    std::vector<std::vector<float>> ws = {w0_readback,
+                                          w1_readback,
+                                          w2_readback,
+                                          w3_readback,
+                                          w4_readback,
+                                          w5_readback};
+    return ws;
+  };
+
+  // Run the model with and without hostAllReduce
+  auto hostAllReduceDisabled = run(false);
+  auto hostAllReduceEnabled  = run(true);
+
+  BOOST_REQUIRE(hostAllReduceDisabled.size() == hostAllReduceEnabled.size());
+
+  for (int i = 0; i < hostAllReduceDisabled.size(); i++) {
+    auto &lhs = hostAllReduceDisabled[i];
+    auto &rhs = hostAllReduceEnabled[i];
+
+    BOOST_REQUIRE(lhs.size() == rhs.size());
+    for (int j = 0; j < lhs.size(); j++) {
+      BOOST_CHECK(std::fabs(lhs[j] - rhs[j]) <= 1e-4f);
     }
   }
 }

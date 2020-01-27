@@ -136,7 +136,7 @@ std::vector<const Graph *> Graph::getCalledGraphs() const {
 
 void Graph::markAsZeroCopy(const TensorId &tensorId) {
   if (!getTensors().contains(tensorId)) {
-    throw error("Could not find tensor '{}' to mark as zero copy");
+    throw error("Could not find tensor '{}' to mark as zero copy", tensorId);
   }
   if (std::find(zero_copy.begin(), zero_copy.end(), tensorId) ==
       zero_copy.end())
@@ -144,10 +144,23 @@ void Graph::markAsZeroCopy(const TensorId &tensorId) {
 }
 
 bool Graph::isMarkedAsZeroCopy(const TensorId &tensorId) const {
-  if (std::find(zero_copy.begin(), zero_copy.end(), tensorId) !=
-      zero_copy.end())
-    return true;
-  return false;
+  return std::find(zero_copy.begin(), zero_copy.end(), tensorId) !=
+         zero_copy.end();
+}
+
+void Graph::markAsInputConsumedInplaceForOptimization(
+    const TensorId &tensorId) {
+  if (!getTensors().contains(tensorId)) {
+    std::ostringstream oss;
+    oss << "No Tensor `" << tensorId
+        << "' found to mark as input-consumed-inplace-for-optimization";
+    throw error(oss.str());
+  }
+  inputs_consumed_inplace_for_optimization.emplace(tensorId);
+}
+bool Graph::isInputConsumedInplaceForOptimization(
+    const TensorId &tensorId) const {
+  return inputs_consumed_inplace_for_optimization.count(tensorId) != 0;
 }
 
 void Graph::constructFromOnnxGraph(const onnx::GraphProto &onnx_graph) {
@@ -169,9 +182,7 @@ void Graph::constructFromOnnxGraph(const onnx::GraphProto &onnx_graph) {
 }
 
 Op *Graph::growFromNode(const Node &node) {
-
   OpId opId = moveIntoGraph(addOp(node));
-
   connectInputs(node, opId);
   connectOutputs(node, opId);
 
@@ -251,6 +262,10 @@ void Graph::connectOutputsFromOutputMapWrapper(const OutputMapWrapper &out,
 }
 
 std::unique_ptr<Op> Graph::addOp(const Node &node) {
+  std::vector<TensorId> inputIds;
+  for (int i = 0; i < node.input_size(); i++) {
+    inputIds.push_back(node.input(i));
+  }
 
   int version = ir.getOpSetVersionFromModel(node.domain());
 
@@ -260,7 +275,8 @@ std::unique_ptr<Op> Graph::addOp(const Node &node) {
                                               *this,
                                               node.name(),
                                               getScope(),
-                                              node.attribute());
+                                              node.attribute(),
+                                              inputIds);
   if (p != nullptr)
     return p;
   else {

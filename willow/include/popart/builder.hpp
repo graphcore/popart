@@ -133,6 +133,22 @@ public:
    */
   TensorId gelu(const std::vector<TensorId> &args,
                 const std::string &name = {});
+
+  /**
+   * Add a call operation to the model
+   *
+   * This is a poplar extension, to expose manual code re-use to
+   * the builder
+   *
+   * \param args Tensor T
+   * \param callee The subgraph to call into
+   * \param name Optional identifier for operation
+   * \return A vector of tensors; the subgraph outputs
+   */
+  std::vector<TensorId> call(const std::vector<TensorId> &args,
+                             unsigned num_outputs,
+                             const Builder &callee,
+                             const std::string &name = {});
 };
 
 /**
@@ -802,6 +818,13 @@ public:
    * \return A serialized ONNX ModelProto
    */
   std::string getModelProto() const;
+
+  /**
+   * Save the builder's ONNX ModelProto into the builder and validate it.
+   *
+   * \param fn The name of a file containing an ONNX model protobuf.
+   */
+  void saveModelProto(const std::string &fn);
 
   /**
    * Return a list of ONNX graph input tensor ids

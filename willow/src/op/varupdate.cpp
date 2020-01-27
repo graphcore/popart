@@ -37,9 +37,7 @@ void VarUpdateWithUpdaterOp::setup() {
         << info1;
 
     // TODO T12001 : sort this out (serialize matmuls meets grad accl)
-    logging::ir::warn(
-        "The options enableVirtualGraphs is deprecated and will be removed in "
-        "a future release. Please use virtualGraphMode instead");
+    logging::ir::warn(oss.str());
   }
   outInfo(getUpdatedVarOutIndex()) = info0;
 }
