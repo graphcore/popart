@@ -47,6 +47,11 @@ void GradCopyToHostOpx::grow(poplar::program::Sequence &prog) const {
 
   poplar::program::Copy gradientsToHostProg(weightDeltas, deviceToHostStream);
   prog.add(gradientsToHostProg);
+
+  // When running in pipelined mode the sync op can is added after every copy
+  if (op_p->getIr().getSessionOptions().enablePipelining) {
+    prog.add(poplar::program::Sync(poplar::SyncType::INTERNAL));
+  }
 }
 
 GradCopyFromHostOpx::GradCopyFromHostOpx(Op *op, Devicex *devicex)

@@ -12,6 +12,8 @@ private:
   insertGradCopyFromHostOp(Op *varUpdateOp, Graph &graph, int counter) const;
   Op *insertVarCopyOp(Op *varUpdateOp, Graph &graph, int counter) const;
 
+  void verifySessionOptions(const SessionOptions &) const;
+
 public:
   static std::size_t id();
 
