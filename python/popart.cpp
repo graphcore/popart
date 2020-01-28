@@ -1238,6 +1238,8 @@ PYBIND11_MODULE(popart_core, m) {
       .def("getOutputTensorIds", &Builder::getOutputTensorIds)
       .def("getValueTensorIds", &Builder::getValueTensorIds)
       .def("getTensorShape", &Builder::getTensorShape, py::arg("id"))
+      .def(
+          "getTensorDtypeString", &Builder::getTensorDtypeString, py::arg("id"))
       .def("virtualGraph",
            static_cast<void (Builder::*)(const TensorId &, int64_t value)>(
                &Builder::virtualGraph),

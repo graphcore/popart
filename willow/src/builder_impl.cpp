@@ -1038,6 +1038,16 @@ std::vector<int64_t> BuilderImpl::getTensorShape(const TensorId id) {
   return shape;
 }
 
+std::string BuilderImpl::getTensorDtypeString(const TensorId id) {
+  std::string dtype;
+
+  auto &t           = getValueInfoProto(id);
+  auto dataTypeInfo = &getDataTypeInfoMap().at(
+      onnxutil::getDataType(t.type().tensor_type().elem_type()));
+
+  return dataTypeInfo->lcasename();
+}
+
 void BuilderImpl::setAttribute(const std::string &attribute, boost::any value) {
   attributes.insert(std::make_pair(attribute, value));
 }

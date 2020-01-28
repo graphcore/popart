@@ -1479,3 +1479,13 @@ def test_save_model_to_file():
     # Check that, when re-loaded, its contents are the same as when saved
     new_builder = popart.Builder(tmpfile)
     assert new_builder.getModelProto() == builder.getModelProto()
+
+
+def test_get_tensor_type():
+    builder = popart.Builder()
+    i0 = builder.addInputTensor(popart.TensorInfo("FLOAT", [10, 9, 8, 7]))
+    act0 = builder.aiGraphcore.subsample([i0], strides=[2, 3, 4, 5])
+    act1 = builder.aiOnnx.cast([act0], "INT32")
+    assert builder.getTensorDtypeString(i0) == "float32"
+    assert builder.getTensorDtypeString(act0) == "float32"
+    assert builder.getTensorDtypeString(act1) == "int32"

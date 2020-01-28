@@ -860,6 +860,15 @@ public:
   std::vector<int64_t> getTensorShape(const TensorId id);
 
   /**
+   * Return an ONNX graph tensor type as a lower case string, from either
+   * the input, output, or value_info lists in the GraphProto
+   *
+   * \param id Tensor id
+   * \return A lower case string of tensor type
+   */
+  std::string getTensorDtypeString(const TensorId id);
+
+  /**
    * Push a name onto the name scope stack.
    *
    * The names of tensors and nodes added to the ONNX graph will be prefixed

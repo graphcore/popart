@@ -222,6 +222,8 @@ public:
 
   std::vector<int64_t> getTensorShape(const TensorId id);
 
+  std::string getTensorDtypeString(const TensorId id);
+
   void setAttribute(const std::string &attribute, boost::any value);
   boost::any getAttribute(const std::string &attribute) const;
   bool hasAttribute(const std::string &attribute) const;
