@@ -434,7 +434,8 @@ void Ir::verifyPingPongSettings() const {
 }
 
 void Ir::verifyOpOutputConnectivity(const Graph &graph) const {
-  logging::ir::info("Checking op output tensor producers");
+  logging::ir::debug("Checking op output tensor producers for graph '{}'",
+                     graph.id.str());
 
   // Check op output tensor producers
   for (auto &op_pair : graph.getOps()) {
@@ -458,7 +459,8 @@ void Ir::verifyOpOutputConnectivity(const Graph &graph) const {
 }
 
 void Ir::verifyOpInputConnectivity(const Graph &graph) const {
-  logging::ir::info("Checking op input tensor consumers");
+  logging::ir::debug("Checking op input tensor consumers for graph '{}'",
+                     graph.id.str());
 
   // Count the number of times an op consumes its input tensors
   std::map<std::pair<Tensor *, Op *>, int> consumption_count;
@@ -490,7 +492,7 @@ void Ir::verifyOpInputConnectivity(const Graph &graph) const {
 }
 
 void Ir::verifyTensorProducerConnectivity() const {
-  logging::ir::info("Checking tensor producer outputs");
+  logging::ir::debug("Checking tensor producer outputs");
 
   for (auto &tid : getTensors().getAllTensorIds()) {
     auto tensor = getTensors().get(tid);
@@ -552,7 +554,7 @@ void Ir::verifyTensorProducerConnectivity() const {
 }
 
 void Ir::verifyTensorConsumerConnectivity() const {
-  logging::ir::info("Checking tensor consumer inputs");
+  logging::ir::debug("Checking tensor consumer inputs");
 
   // Count the number of times a tensor is consumed by an op
   std::map<std::pair<Tensor *, Op *>, int> consumption_count;
