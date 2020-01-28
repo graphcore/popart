@@ -860,6 +860,15 @@ public:
   std::vector<int64_t> getTensorShape(const TensorId id);
 
   /**
+   * Returns true if the ONNX tensor is in the initializer list
+   * of the GraphProto
+   *
+   * \param id Tensor id
+   * \return A boolean
+   */
+  bool isInitializer(const TensorId id);
+
+  /**
    * Return an ONNX graph tensor type as a lower case string, from either
    * the input, output, or value_info lists in the GraphProto
    *

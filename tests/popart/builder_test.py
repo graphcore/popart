@@ -1489,3 +1489,11 @@ def test_get_tensor_type():
     assert builder.getTensorDtypeString(i0) == "float32"
     assert builder.getTensorDtypeString(act0) == "float32"
     assert builder.getTensorDtypeString(act1) == "int32"
+
+
+def test_is_initializer():
+    builder = popart.Builder()
+    i0 = builder.addInputTensor(popart.TensorInfo("FLOAT", [10, 9, 8, 7]))
+    i1 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
+    assert builder.isInitializer(i0) == False
+    assert builder.isInitializer(i1) == True

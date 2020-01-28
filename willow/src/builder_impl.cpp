@@ -1048,6 +1048,17 @@ std::string BuilderImpl::getTensorDtypeString(const TensorId id) {
   return dataTypeInfo->lcasename();
 }
 
+bool BuilderImpl::isInitializer(const TensorId id) {
+  std::vector<std::string> initIds;
+  auto *graph = model_.mutable_graph();
+  for (auto initializer : graph->initializer()) {
+    if (initializer.name() == id) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void BuilderImpl::setAttribute(const std::string &attribute, boost::any value) {
   attributes.insert(std::make_pair(attribute, value));
 }

@@ -731,8 +731,7 @@ PYBIND11_MODULE(popart_core, m) {
                      &SessionOptions::enableFullyConnectedPass)
       .def_readwrite("enableGroupedMatmuls",
                      &SessionOptions::enableGroupedMatmuls)
-      .def_readwrite("enableStableNorm",
-                     &SessionOptions::enableStableNorm)
+      .def_readwrite("enableStableNorm", &SessionOptions::enableStableNorm)
       // set in python use the python set constructor, so something like
       // mySessionOptions.dotChecks = {popart.DotCheck.FINAL}
       .def_readwrite("dotChecks", &SessionOptions::dotChecks)
@@ -1240,6 +1239,7 @@ PYBIND11_MODULE(popart_core, m) {
       .def("getTensorShape", &Builder::getTensorShape, py::arg("id"))
       .def(
           "getTensorDtypeString", &Builder::getTensorDtypeString, py::arg("id"))
+      .def("isInitializer", &Builder::isInitializer, py::arg("id"))
       .def("virtualGraph",
            static_cast<void (Builder::*)(const TensorId &, int64_t value)>(
                &Builder::virtualGraph),
