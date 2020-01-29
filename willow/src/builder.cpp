@@ -469,6 +469,14 @@ std::vector<int64_t> Builder::getTensorShape(const TensorId id) {
   return impl_->getTensorShape(id);
 }
 
+std::string Builder::getTensorDtypeString(const TensorId id) {
+  return impl_->getTensorDtypeString(id);
+}
+
+bool Builder::isInitializer(const TensorId id) {
+  return impl_->isInitializer(id);
+}
+
 void Builder::setAttribute(const std::string &attribute, boost::any value) {
   impl_->setAttribute(attribute, value);
 }

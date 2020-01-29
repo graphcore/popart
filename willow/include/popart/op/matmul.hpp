@@ -27,7 +27,7 @@ public:
                const boost::optional<float> availableMemoryProportion_,
                const SerialiseSettings &serialization_,
                const boost::optional<DataType> outputType_,
-               const bool useFullyConnectedPass_ = true);
+               const bool enableFullyConnectedPass_ = true);
   MatMulBaseOp(const MatMulBaseOp &) = default;
   ~MatMulBaseOp() override           = default;
 
@@ -39,8 +39,8 @@ public:
   // minium shape G x N x M
   virtual Shape getExpandedRhsShape() const = 0;
 
-  bool useFullyConnectedPass() const { return useFullyConnectedPass_; }
-  void setUseFullyConnectedPass(const bool b) { useFullyConnectedPass_ = b; }
+  bool useFullyConnectedPass() const;
+  void setUseFullyConnectedPass(bool b) { enableFullyConnectedPass = b; }
 
   boost::optional<float> getAvailableMemoryProportion() const {
     return availableMemoryProportion;
@@ -66,7 +66,7 @@ public:
 protected:
   Phase phase;
 
-  bool useFullyConnectedPass_;
+  bool enableFullyConnectedPass;
 
   boost::optional<float> availableMemoryProportion;
 

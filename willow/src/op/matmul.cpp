@@ -1,5 +1,6 @@
 #include <memory>
 #include <popart/error.hpp>
+#include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/opmanager.hpp>
@@ -17,24 +18,32 @@ MatMulBaseOp::MatMulBaseOp(
     const boost::optional<float> availableMemoryProportion_,
     const SerialiseSettings &serialization_,
     const boost::optional<DataType> outputType_,
-    const bool useFullyConnectedPass_)
+    const bool enableFullyConnectedPass_)
     : Op(_opid, settings_), phase(phase_),
       availableMemoryProportion(availableMemoryProportion_),
       serialization(serialization_), outputType(outputType_),
-      useFullyConnectedPass_(useFullyConnectedPass_) {}
+      enableFullyConnectedPass(enableFullyConnectedPass_) {}
+
+bool MatMulBaseOp::useFullyConnectedPass() const {
+  return getIr().getSessionOptions().enableFullyConnectedPass &&
+         enableFullyConnectedPass;
+}
 
 void MatMulBaseOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
+  os.appendAttribute("available_memory_proportion",
+                     getAvailableMemoryProportion());
+  os.appendAttribute("fully_connected_pass",
+                     useFullyConnectedPass() ? static_cast<int64_t>(phase)
+                                             : -1);
 }
 
 void MatMulBaseOp::appendMore(OpSerialiserBase &os) const {
   Op::appendMore(os);
-  os.appendAttribute("phase", static_cast<int64_t>(phase));
   os.appendAttribute("serialization_mode",
                      static_cast<int64_t>(serialization.mode));
   os.appendAttribute("serialization_factor",
                      static_cast<int64_t>(serialization.factor));
-  os.appendAttribute("use_fully_connected_pass", useFullyConnectedPass());
 }
 
 MatMulBaseGradOp::MatMulBaseGradOp(const OperatorIdentifier &_opid,

@@ -135,29 +135,17 @@ bool AliasZeroCopy::apply(Graph &graph) const {
         tensors.push_back(op->input->tensor(j));
       }
       std::map<int64_t, std::pair<Op *, Tensor *>> producerPriorityMap;
-      std::map<int64_t, std::vector<Op *>> producerPhaseMap;
       bool zeroCopyPossible = true;
       if (!isSameTensor(graph, tensors)) {
-        for (auto &tensor : tensors) {
-          Op *op = tensor->getProducerUnsafe();
+        for (size_t k = 0; k < tensors.size(); ++k) {
+          auto tensor = tensors[k];
+          Op *op      = tensor->getProducerUnsafe();
           if (op &&
               (dynamic_cast<CacheLoadOp *>(op) || dynamic_cast<CallOp *>(op) ||
                dynamic_cast<InitOp *>(op))) {
-            auto it = std::find(schedule.begin(), schedule.end(), op);
-            producerPriorityMap[std::distance(schedule.begin(), it)] = {op,
-                                                                        tensor};
-            producerPhaseMap[op->getPingPongPhase()].push_back(op);
-            if (producerPhaseMap[op->getPingPongPhase()].size() > 1) {
-              // TODO: Tensor liveness based
-              logging::trace("[AliasZeroCopy] No zero copy for subgraph {}, "
-                             "input {} possible, because of producers in "
-                             "the same phase: {}.",
-                             candidate.second[0]->getCalledGraph().id,
-                             j,
-                             op->getPingPongPhase());
-              zeroCopyPossible = false;
-              break;
-            }
+            producerPriorityMap[scheduleLookup[op]] = {op, tensor};
+            std::pair<int64_t, int64_t> interval{
+                scheduleLookup[op], scheduleLookup[candidate.second[k]]};
           } else {
             logging::trace("[AliasZeroCopy] No zero copy for subgraph {}, "
                            "input {} possible, because producer is of type {}.",

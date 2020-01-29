@@ -62,6 +62,13 @@ void OpSerialiser::appendAttribute(const std::string &name,
   }
 }
 
+void OpSerialiser::appendAttribute(const std::string &name,
+                                   boost::optional<float> value) {
+  if (value) {
+    appendAttr(name, *value);
+  }
+}
+
 void OpSerialiser::appendAttribute(const std::string &name, bool value) {
   appendAttr(name, value ? "true" : "false");
 }
@@ -233,6 +240,13 @@ void OpJsonSerialiser::appendAttribute(const std::string &name,
   }
 }
 
+void OpJsonSerialiser::appendAttribute(const std::string &name,
+                                       boost::optional<float> value) {
+  if (value) {
+    appendAttr(name, *value);
+  }
+}
+
 void OpJsonSerialiser::appendAttribute(const std::string &name, bool value) {
   appendAttr(name, value ? "true" : "false");
 }
@@ -296,6 +310,17 @@ void OpEquivIdCreator::appendAttribute(const std::string &,
 
 void OpEquivIdCreator::appendAttribute(const std::string &,
                                        boost::optional<int64_t> value) {
+  if (value) {
+    appendAttr(*value);
+  } else {
+    // something should always be written for
+    // `value` when creating an equivalence id
+    appendAttr('?');
+  }
+}
+
+void OpEquivIdCreator::appendAttribute(const std::string &name,
+                                       boost::optional<float> value) {
   if (value) {
     appendAttr(*value);
   } else {
