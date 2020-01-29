@@ -1626,7 +1626,7 @@ Devicex::initTensorByCloningTask(Op *op, TensorId srcId, TensorId dstId) {
   auto f = [srcId, dstId, opx, this]() {
     logging::debug("Cloning tensor {} to {}", srcId, dstId);
     auto src = opx->get(srcId);
-    auto dst = opx->graph().clone(src);
+    auto dst = opx->graph().clone(src, dstId);
     tensors.insert(dstId, dst);
     return SequenceMap();
   };

@@ -22,8 +22,7 @@ namespace {
 PoplarOptions getPoplarOptionsForMatMul(MatMulBaseOp &op) {
   PoplarOptions opts;
   auto &ir = op.getIr();
-  if (ir.getSessionOptions().enableFullyConnectedPass &&
-      op.useFullyConnectedPass()) {
+  if (op.useFullyConnectedPass()) {
     if (ir.isTraining()) {
       auto phase = op.getPhase();
       if (phase == MatMulBaseOp::Phase::Fwd) {

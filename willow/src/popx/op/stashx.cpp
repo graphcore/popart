@@ -19,7 +19,8 @@ void StashOpx::grow(poplar::program::Sequence &prog) const {
   std::vector<poplar::Tensor> stashes;
   for (int64_t i = 0; i < stashOp.getStashSize(); i++) {
     auto stashPart =
-        graph().clone(getInTensor(StashOp::getInIndex()).expand({0}));
+        graph().clone(getInTensor(StashOp::getInIndex()).expand({0}),
+                      "Stash__" + inId(StashOp::getInIndex()));
     stashes.push_back(stashPart);
   }
   auto outTensor = poplar::concat(stashes, 0);
