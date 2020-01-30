@@ -26,7 +26,7 @@ def get_trainset():
 
     trainset = datasets.CIFAR10(root=c10datadir,
                                 train=True,
-                                download=True,
+                                download=False,
                                 transform=transform)
 
     return trainset

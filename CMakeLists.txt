@@ -225,7 +225,3 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/enable.sh
 
 # Docs
 add_subdirectory(docs)
-
-# Copies CTestCustom.ctest to the build dir
-configure_file(CTestCustom.ctest
-               ${CMAKE_CURRENT_BINARY_DIR})

@@ -46,5 +46,5 @@ else:
 print('Verifying CIFAR10 data...', flush=True)
 trainset = datasets.CIFAR10(root=c10datadir.c10datadir,
                             train=True,
-                            download=True,
+                            download=False,
                             transform=transform)
