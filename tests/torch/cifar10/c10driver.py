@@ -80,7 +80,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
     print("c10driver: getting data from", datadir)
     trainset = datasets.CIFAR10(root=datadir,
                                 train=True,
-                                download=True,
+                                download=False,
                                 transform=transform)
 
     fnModel0 = os.path.join(outputdir, "model0.onnx")

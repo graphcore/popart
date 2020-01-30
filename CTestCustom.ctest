@@ -1,2 +1,0 @@
-# Download the cifar10 dataset required by model tests
-set(CTEST_CUSTOM_PRE_TEST "python3 ${INSTALL_TESTS}/torch/cifar10/download_dataset.py")

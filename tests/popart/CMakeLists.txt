@@ -53,7 +53,6 @@ add_popart_cpp_unit_test(stepiotest stepio_tests.cpp)
 add_popart_cpp_unit_test(irhashtest ir_hash_test.cpp)
 add_popart_cpp_unit_test(custompatterntest custom_pattern_test.cpp)
 
-
 # Add a test that targets c++11 to check that the popart interface is c++11.
 # If the interface is not c++11, the build should fail.
 add_popart_cpp_unit_test(verify_cxx_11_interface verify_cxx_11_interface.cpp)
