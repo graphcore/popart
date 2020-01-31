@@ -312,10 +312,6 @@ private:
   // in a child's scope, or lower
   bool inLowerScope(const TensorId &) const;
 
-  // in a neighbour's scope, or lower. A neighbour
-  // is any child of the parent that isn't `this'
-  bool inNeighbouringScope(const TensorId &) const;
-
   onnx::ModelProto model_;
 
   std::map<std::string, boost::any> attributes;
