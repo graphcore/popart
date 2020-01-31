@@ -65,9 +65,9 @@ void IpuCopyOpx::growPipelined(poplar::program::Sequence &prog) const {
     auto &source      = getInTensor(idx);
     auto &destination = dv_p->tensors.get(outId);
 
-    // Using dontOutline=true will make each copy to be unique
-    // which will then allow them to be merged into a single copy/sync.
-    prog.add(poplar::program::Copy(source, destination, true));
+    // Using dontOutline=false will ensure the copies (buffers & code) are
+    // reused.
+    prog.add(poplar::program::Copy(source, destination, false));
   }
 }
 

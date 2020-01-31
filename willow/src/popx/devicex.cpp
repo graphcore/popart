@@ -1709,14 +1709,12 @@ PriTask Devicex::pipelinedCopyTask(Op *op, TaskId prevTaskId) {
   auto f = [this, copyOp, copyOpx]() {
     SequenceMap seqs;
     logging::debug("Adding pipelined copies for op {}", copyOp->debugName());
-    for (auto &prog : progs.pipelineIpuCopyFragments(
-             copyOp->getPipelineStage(),
-             logging::format("{}, {}, PipelineStage({})",
-                             copyOp->debugName(),
-                             copyOp->getFromToStr(),
-                             copyOp->getPipelineStage()))) {
-      copyOpx->growPipelined(seqs[prog]);
-    }
+    auto &prog = progs.pipelineIpuCopyFragment(
+        logging::format("{}, {}, PipelineStage({})",
+                        copyOp->debugName(),
+                        copyOp->getFromToStr(),
+                        copyOp->getPipelineStage()));
+    copyOpx->growPipelined(seqs[&prog]);
     return seqs;
   };
 

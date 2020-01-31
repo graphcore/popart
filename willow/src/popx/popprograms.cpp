@@ -153,12 +153,10 @@ void PopPrograms::addPipelineCycle(
   }
 
   // Insert the IPU-copies.
-  auto found = pipelineIpuCopySeqs.find(pCycle);
-  if (found != pipelineIpuCopySeqs.end()) {
-    ss << logging::format("\n  Cycle_{}_IpuCopies", pCycle);
-    poplar::program::Sequence x;
-    sq.add(found->second);
-  }
+  // Note: Always do all the copies. This is ensure that ALL copies are
+  // outlined across pipelineCycles AND merged across pipelineStages.
+  ss << logging::format("\n  IpuCopies");
+  sq.add(pipelineIpuCopySeq);
 }
 
 poplar::program::Sequence PopPrograms::getMainProgramFromPipelineFragments() {
@@ -221,16 +219,8 @@ poplar::program::Sequence PopPrograms::getMainProgramFromPipelineFragments() {
     }
   }
 
-  for (auto &pc_descs : pipelineIpuCopySeqDescs) {
-    auto pc     = pc_descs.first;
-    auto &descs = pc_descs.second;
+  ss << logging::format("\nIpuCopies: {}", pipelineIpuCopyDesc);
 
-    ss << logging::format("\nCycle_{}_IpuCopies:", pc);
-
-    for (auto &desc : descs) {
-      ss << logging::format("\n    {}", desc);
-    }
-  }
   ss << "\n\n";
 
   PipelineInfo pInfo = dv_p->pipelineInfo();
@@ -469,32 +459,10 @@ PopPrograms::pipelineToHostStreamFragment(PipelineStage pipelineStage,
       pipelineStage, PipelineFragmentId::ToHostStream, desc);
 }
 
-std::vector<poplar::program::Sequence *>
-PopPrograms::pipelineIpuCopyFragments(PipelineStage pipelineStage,
-                                      const std::string &desc) {
-  PipelineInfo pInfo = dv_p->pipelineInfo();
-
-  // Return the relevant sequences.
-  std::vector<poplar::program::Sequence *> copySeqs;
-  auto tryAddSequence = [&](PipelineCycle pc) {
-    if (pInfo.doStage(pc, pipelineStage)) {
-      auto &prog = pipelineIpuCopySeqs[pc];
-      copySeqs.push_back(&prog);
-
-      pipelineIpuCopySeqDescs[pc].push_back(desc);
-    }
-  };
-
-  // Add the programs to copySeqs in reverse order.
-  for (auto i = pInfo.flushPhase.end; i >= pInfo.flushPhase.start; i--) {
-    tryAddSequence(i);
-  }
-  tryAddSequence(pInfo.mainPhase.start);
-  for (auto i = pInfo.fillPhase.end; i >= pInfo.fillPhase.start; i--) {
-    tryAddSequence(i);
-  }
-
-  return copySeqs;
+poplar::program::Sequence &
+PopPrograms::pipelineIpuCopyFragment(const std::string &desc) {
+  pipelineIpuCopyDesc.append("\n    " + desc);
+  return pipelineIpuCopySeq;
 }
 
 std::string
