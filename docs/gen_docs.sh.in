@@ -10,5 +10,5 @@ export LD_LIBRARY_PATH=@PROJECT_BINARY_DIR@/python:$LD_LIBRARY_PATH
 echo gen_docs.sh
 echo $LIBRARY_PATH
 echo $PYTHONPATH
-echo python ${*}
-python ${*}
+echo @PYTHON_EXECUTABLE@ ${*}
+@PYTHON_EXECUTABLE@ ${*}
