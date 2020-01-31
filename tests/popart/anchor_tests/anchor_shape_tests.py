@@ -11,9 +11,9 @@ DATA_LEN = 5
 ANCHOR_TYPES = {
     "ReplicationFactor": [1],  # TODO: Enable replication once T12001 done.
     # Exception: Accl factor must divide batch size
-    "AccumulationFactor": [1, 4],
+    "AccumulationFactor": [4, 1],
     "Pipelining": [True, False],
-    "ReturnType": ["ALL", "FINAL"]
+    "ReturnType": ["FINAL", "ALL"]
 }
 # Learning rate 1 for easy comparison.
 LEARNING_RATE = 1.0
@@ -175,26 +175,21 @@ def test_all_anchor_returns():
         }
 
         # Add in BPS if all batches are requested. (AnchorReturnType("ALL"))
+        # Add in a replication dimension if needed.
+        if d["ReplicationFactor"] > 1:
+            for k in expected_shapes:
+                expected_shapes[k] = [d["ReplicationFactor"]
+                                      ] + expected_shapes[k]
+
+        if d["AccumulationFactor"] > 1 and d["ReturnType"] is not "FINAL":
+            for k in expected_shapes:  #[WEIGHTS, ACTIVATION, GRADIENT]:
+                expected_shapes[k] = [d["AccumulationFactor"]
+                                      ] + expected_shapes[k]
+
         if d["ReturnType"] == "ALL":
-            # Add in a replication dimension if needed.
-            if d["ReplicationFactor"] > 1:
-                for k in expected_shapes:
-                    expected_shapes[k] = [d["ReplicationFactor"]
-                                          ] + expected_shapes[k]
-            # First, add in a accumulation dimension if needed.
-            if d["AccumulationFactor"] > 1:
-                for k in expected_shapes:
-                    expected_shapes[k] = [d["AccumulationFactor"]
-                                          ] + expected_shapes[k]
             # Then add BPS
             for k in expected_shapes:
                 expected_shapes[k] = [BATCHES_PER_STEP] + expected_shapes[k]
-        else:
-            # Add in a replication dimension if needed.
-            if d["ReplicationFactor"] > 1:
-                for k in expected_shapes:
-                    expected_shapes[k] = [d["ReplicationFactor"]
-                                          ] + expected_shapes[k]
 
         if dicts is not None:
             for a in dicts:

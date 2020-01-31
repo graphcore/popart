@@ -1183,9 +1183,10 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithAccumulation) {
     auto aiGraphcore = builder->aiGraphcoreOpset1();
 
     int64_t steps              = 1;
-    int64_t batchSize          = 6;
+    int64_t microBatchSize     = 6;
     int64_t batchesPerStep     = 3;
     int64_t accumulationFactor = 3;
+    auto batchSize             = microBatchSize * accumulationFactor;
 
     int seed = 1011;
     std::default_random_engine eng(seed);
@@ -1198,20 +1199,24 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithAccumulation) {
 
     std::vector<int64_t> weightShape = sampleShape;
 
-    std::vector<int64_t> batchShape{batchSize, sampleHeight, sampleHeight};
-    std::vector<int64_t> stepDataShape{
-        batchesPerStep, batchSize, sampleHeight, sampleHeight};
+    std::vector<int64_t> microBatchShape{
+        microBatchSize, sampleHeight, sampleHeight};
+    std::vector<int64_t> stepDataShape{batchesPerStep,
+                                       accumulationFactor,
+                                       microBatchSize,
+                                       sampleHeight,
+                                       sampleHeight};
 
     TensorInfo sampleInfo{"FLOAT", sampleShape};
     TensorInfo weightInfo = sampleInfo;
-    TensorInfo batchInfo{"FLOAT", batchShape};
+    TensorInfo microBatchInfo{"FLOAT", microBatchShape};
     TensorInfo stepDataInfo{"FLOAT", stepDataShape};
 
     int64_t sampleElms{sampleHeight * sampleHeight};
-    int64_t batchElms    = sampleElms * batchSize;
+    int64_t batchElms    = sampleElms * microBatchSize * accumulationFactor;
     int64_t stepDataElms = batchElms * batchesPerStep;
 
-    auto input1 = builder->addInputTensor(batchInfo, "1tupni");
+    auto input1 = builder->addInputTensor(microBatchInfo, "1tupni");
 
     std::vector<float> w0Vals(sampleElms);
     for (auto &x : w0Vals) {
@@ -1688,9 +1693,10 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation) {
     auto aiGraphcore = builder->aiGraphcoreOpset1();
 
     int64_t steps               = 2;
-    int64_t batchSize           = 5;
-    int64_t batchesPerStep      = 5;
+    int64_t microBatchSize      = 4;
     int64_t accumulationFactor  = 5;
+    int64_t batchSize           = microBatchSize * accumulationFactor;
+    int64_t batchesPerStep      = 6;
     const bool enablePipelining = true;
 
     int seed = 1011;
@@ -1704,20 +1710,24 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation) {
 
     std::vector<int64_t> weightShape = sampleShape;
 
-    std::vector<int64_t> batchShape{batchSize, sampleHeight, sampleHeight};
-    std::vector<int64_t> stepDataShape{
-        batchesPerStep, batchSize, sampleHeight, sampleHeight};
+    std::vector<int64_t> microBatchShape{
+        microBatchSize, sampleHeight, sampleHeight};
+    std::vector<int64_t> stepDataShape{batchesPerStep,
+                                       accumulationFactor,
+                                       microBatchSize,
+                                       sampleHeight,
+                                       sampleHeight};
 
     TensorInfo sampleInfo{"FLOAT", sampleShape};
     TensorInfo weightInfo = sampleInfo;
-    TensorInfo batchInfo{"FLOAT", batchShape};
+    TensorInfo microBatchInfo{"FLOAT", microBatchShape};
     TensorInfo stepDataInfo{"FLOAT", stepDataShape};
 
     int64_t sampleElms{sampleHeight * sampleHeight};
     int64_t batchElms    = sampleElms * batchSize;
     int64_t stepDataElms = batchElms * batchesPerStep;
 
-    auto input1 = builder->addInputTensor(batchInfo, "1tupni");
+    auto input1 = builder->addInputTensor(microBatchInfo, "1tupni");
 
     std::vector<float> w0Vals(sampleElms);
     ConstVoidData w0Data = {w0Vals.data(), sampleInfo};

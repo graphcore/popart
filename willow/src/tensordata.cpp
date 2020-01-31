@@ -1,9 +1,10 @@
+#include <cstring>
 #include <popart/error.hpp>
 #include <popart/half.hpp>
+#include <popart/ir.hpp>
 #include <popart/onnxutil.hpp>
+#include <popart/stepio_size_assertion.hpp>
 #include <popart/tensordata.hpp>
-
-#include <cstring>
 
 namespace popart {
 
@@ -123,6 +124,12 @@ void StepIO::advance(TensorId id,
 
 ConstVoidData StepIO::in(TensorId id, int64_t numElements, bool /*prefetch*/) {
   return get<ConstVoidData>(id, inputsInfo, numElements, false, "inputs");
+}
+
+void StepIO::assertNumElements(const Ir &ir) const {
+  auto g = [](const ArrayInfo &info) { return info.array.nelms(); };
+  iosizecheck::assertInCorrect(ir, inputsInfo, g);
+  iosizecheck::assertOutCorrect(ir, outputsInfo, g);
 }
 
 void StepIO::inComplete(TensorId id, int64_t numElements) {

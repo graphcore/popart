@@ -499,11 +499,10 @@ def test_gradient_accumulation_anchors():
                                    popart.reservedGradientPrefix() + w0_name]
 
     print("full batch grad shape is ")
-    print(accl_anchor_arrays[popart.reservedGradientPrefix() + w0_name].shape)
+    print(full_batch_grad.shape)
 
     print("accl grad shape is ")
-    print(accl_anchor_arrays[popart.reservedAcclToUpdatePrefix() +
-                             popart.reservedGradientPrefix() + w0_name].shape)
+    print(accl_grad.shape)
 
     if (batches_per_step > 1):
         #TODO T11866
@@ -525,7 +524,7 @@ def test_gradient_accumulation_anchors():
         print("Absolute accl grad  %.3f" % (accl_grad_abs_sum))
 
         # initialising as per equations. When velocity scaling != 1 this may need changing T12001
-        adjusted_accl_grad = accl_grad.flatten().copy()
+        adjusted_accl_grad = accl_grad[-1].flatten().copy()
         for i, v in enumerate(w0_tensor.float_data):
             adjusted_accl_grad[i] -= wd * v
 
@@ -644,7 +643,7 @@ def test_loading_saved_gradient_accumulationt_tesors():
         t_accl = np.asarray(accls[grad_accl_prefix + name])
 
     # 4.
-    input_shape = sess.getInfo(input_name).shape()
+    input_shape = [accl_factor] + sess.getInfo(input_name).shape()
     stepio = popart.PyStepIO(
         {
             input_name: npr.rand(*input_shape).astype(np.float32),

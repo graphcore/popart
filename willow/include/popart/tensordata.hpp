@@ -12,6 +12,9 @@
 
 namespace popart {
 
+class Tensors;
+class Ir;
+
 // A class to hold data, used
 // within the popart::Tensor class.
 class TensorData {
@@ -70,6 +73,13 @@ public:
   // Use to indicate then the output data has been written to the
   // MutableVoidData
   virtual void outComplete(TensorId) {}
+
+  void enableRuntimeAsserts(bool b) { runtimeAssertsOn = b; }
+  bool runtimeAssertsEnabled() const { return runtimeAssertsOn; }
+  virtual void assertNumElements(const Ir &) const = 0;
+
+private:
+  bool runtimeAssertsOn{true};
 };
 
 class StepIO : public IStepIO {
@@ -86,6 +96,8 @@ public:
   ConstVoidData in(TensorId id, int64_t numElements, bool prefetch)final;
   void inComplete(TensorId id, int64_t numElements) final;
   MutableVoidData out(TensorId id, int64_t numElements) final;
+
+  virtual void assertNumElements(const Ir &) const final;
 
 private:
   TensorInfo getTensorInfo(IArray &array) const;
@@ -121,6 +133,8 @@ public:
                  OutputCompleteCallback outputCompleteCb_)
       : inputCb(inputCb_), inputCompleteCb(inputCompleteCb_),
         outputCb(outputCb_), outputCompleteCb(outputCompleteCb_) {}
+
+  void assertNumElements(const Ir &) const {}
 
   ConstVoidData in(TensorId id, int64_t numElements, bool prefetch)final;
   void inComplete(TensorId id, int64_t numElements) final;

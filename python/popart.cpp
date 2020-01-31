@@ -19,8 +19,10 @@
 #include <popart/patterns/patterns.hpp>
 #include <popart/session.hpp>
 #include <popart/sessionoptions.hpp>
+#include <popart/stepio_size_assertion.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/tensors.hpp>
 #include <popart/version.hpp>
 
 #include <popart/popx/devicex.hpp>
@@ -163,6 +165,12 @@ public:
     }
   }
 
+  void assertNumElements(const Ir &ir) const final {
+    auto g = [](const ArrayInfo &info) { return info.array.size(); };
+    iosizecheck::assertInCorrect(ir, inputsInfo, g);
+    iosizecheck::assertOutCorrect(ir, outputsInfo, g);
+  }
+
   template <typename T>
   T get(TensorId id,
         std::map<TensorId, ArrayInfo> &M,
@@ -270,6 +278,8 @@ public:
                    OutputCompleteCallback outputCompleteCb_)
       : inputCb(inputCb_), inputCompleteCb(inputCompleteCb_),
         outputCb(outputCb_), outputCompleteCb(outputCompleteCb_) {}
+
+  void assertNumElements(const Ir &) const final {}
 
   ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
     py::array a = inputCb(id, prefetch);
@@ -532,7 +542,8 @@ PYBIND11_MODULE(popart_core, m) {
       .def(py::init<std::map<TensorId, py::array>,
                     std::map<TensorId, py::array>>(),
            py::arg("inputs"),
-           py::arg("outputs"));
+           py::arg("outputs"))
+      .def("enableRuntimeAsserts", &PyStepIO::enableRuntimeAsserts);
 
   py::class_<PyStepIOCallback>(m, "PyStepIOCallback", stepio)
       .def(py::init<std::function<py::array(std::string, bool)>,

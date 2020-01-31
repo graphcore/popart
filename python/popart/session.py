@@ -24,31 +24,24 @@ def _initAnchorArrays(self):
         # With all options enabled return anchors are of the shape:
         # [batches_per_step, accl_factor, repl_factor, micro_batch, *data_shape]
         # TODO: T12496 confirm this ordering is correct with a test.
-        if batchesPerStep == 1 or artId == popart.AnchorReturnTypeId.FINAL:
-            anchorArrayShape = anchorShape
-            # If the graph replication is enabled and greater than 1 then add
-            # an extra dimension for the replication
-            if self.replicationFactor > 1:
-                anchorArrayShape.insert(0, self.replicationFactor)
+
+        anchorArrayShape = [self.replicationFactor]
+        if artId == popart.AnchorReturnTypeId.FINAL:
+            pass
         elif artId == popart.AnchorReturnTypeId.ALL:
-            anchorArrayShape = anchorShape
-            # Insert replication factor.
-            if self.replicationFactor > 1:
-                anchorArrayShape.insert(0, self.replicationFactor)
-            # Insert accumulationFactor factor.
-            if self.accumulationFactor > 1:
-                anchorArrayShape.insert(0, self.accumulationFactor)
-            # Finally insert batchesPerStep
+            anchorArrayShape.insert(0, self.accumulationFactor)
             anchorArrayShape.insert(0, batchesPerStep)
         elif artId == popart.AnchorReturnTypeId.EVERYN:
-            anchorArrayShape = anchorShape
-            # Insert replication factor.
-            if self.replicationFactor > 1:
-                anchorArrayShape.insert(0, self.replicationFactor)
+            if (batchesPerStep % self.dataFeed.art(anchor).rp() != 0):
+                raise RuntimeError(
+                    "Invalid anchor period, does not divide batchesPerStep")
+
             arp = self.dataFeed.art(anchor).rp()
-            # Finally insert batchesPerStep
-            if arp != batchesPerStep:
-                anchorArrayShape.insert(0, batchesPerStep // arp)
+            anchorArrayShape.insert(0, self.accumulationFactor)
+            anchorArrayShape.insert(0, batchesPerStep // arp)
+
+        anchorArrayShape = [x for x in anchorArrayShape if x != 1]
+        anchorArrayShape = anchorArrayShape + anchorShape
 
         anchorArrays[anchor] = np.empty(shape=anchorArrayShape,
                                         dtype=anchorInfo.data_type_lcase())

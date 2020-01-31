@@ -89,6 +89,11 @@ public:
   uint64_t cycleCountTensorToHost();
   void run(IStepIO &);
 
+private:
+  // the number of times run(IStepIO &) has been called
+  int nCallsToRun{0};
+
+public:
   // device -> host stream
   void weightsToHost();
   void remoteBufferWeightsToHost();
@@ -321,7 +326,6 @@ private:
 
   bool doRearrangeOnHost(Tensor *tensor) const;
 
-  // Hack need to for subgraph. do better
 public:
   std::unique_ptr<Opx> createOpx(Op *);
 

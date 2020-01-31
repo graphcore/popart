@@ -739,6 +739,15 @@ void Devicex::run(IStepIO &stepio) {
     throw error("Devicex::prepare() must be called before"
                 " Devicex::run(const IStepIO &) is called.");
   }
+
+  // Check that the input and output buffers have the correct number of
+  // elements. As run(.) is called multiple times during a user's session, the
+  // check is only performed in the first call to run, under the assumption that
+  // the user is unlikely to change the size of buffers between runs.
+  if (nCallsToRun == 0 && stepio.runtimeAssertsEnabled()) {
+    stepio.assertNumElements(ir());
+  }
+
   logging::devicex::debug("Performing one step: ");
 
   // Reconnect input streams.
@@ -752,6 +761,8 @@ void Devicex::run(IStepIO &stepio) {
 
   pEngine->enableExecutionProfiling();
   run(PopPrograms::ProgramIndex::PROGRAM);
+
+  ++nCallsToRun;
 }
 
 std::unique_ptr<Opx> Devicex::createOpx(Op *op) {

@@ -44,6 +44,26 @@ AnchorReturnTypeId AnchorReturnType::getIdFromStr(std::string artString) {
     throw error("Invalid anchor return type ID supplied: " + artString);
 }
 
+std::ostream &operator<<(std::ostream &oss, AnchorReturnTypeId art) {
+  switch (art) {
+  case (AnchorReturnTypeId::FINAL): {
+    oss << "FINAL";
+    break;
+  }
+
+  case (AnchorReturnTypeId::EVERYN): {
+    oss << "EVERYN";
+    break;
+  }
+
+  case (AnchorReturnTypeId::ALL): {
+    oss << "ALL";
+    break;
+  }
+  }
+  return oss;
+}
+
 std::size_t AnchorReturnType::hash() const {
   return std::hash<std::string>()(artStr_) ^ std::hash<int>()(returnPeriod_);
 }

@@ -1214,6 +1214,16 @@ void Ir::verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const {
   }
 }
 
+std::vector<TensorId> Ir::getModelInputIds() const {
+  const auto &onnxGraph = onnxModel->graph();
+  std::vector<TensorId> modelProtoInputIds;
+  modelProtoInputIds.reserve(onnxGraph.input_size());
+  for (const auto &valueInfo : onnxGraph.input()) {
+    modelProtoInputIds.push_back(valueInfo.name());
+  }
+  return modelProtoInputIds;
+}
+
 void Ir::resetWeights(const onnx::ModelProto &modelProto) {
   auto &onnxGraph = modelProto.graph();
 

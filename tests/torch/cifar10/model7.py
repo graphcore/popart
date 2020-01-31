@@ -46,7 +46,7 @@ inNames = ["image0"]
 outNames = ["out"]
 
 #cifar training data loader : at index 0 : image, at index 1 : label.
-cifarInIndices = {"image0": 0, "label": 1}
+cifarInIndices = {"image0": 0}  # not used in test: "label": 1}
 
 losses = [popart_core.L1Loss("out", "l1LossVal", 0.1)]
 

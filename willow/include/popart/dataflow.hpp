@@ -18,6 +18,9 @@ enum class AnchorReturnTypeId {
   EVERYN,    // return every Nth batch in the step
   ALL        // return all batches in the step.
 };
+
+std::ostream &operator<<(std::ostream &, AnchorReturnTypeId);
+
 // As an example, suppose we have an anchor scalar (0-d) tensor,
 // Suppose batchesPerStep = 4 and we process them in a batch of batchSize = 2
 // Suppose that the 2*4 = 8 samples are supplied in a 2d tensor with values:

@@ -26,7 +26,7 @@ inputShapeInfo = popart.InputShapeInfo()
 inputShapeInfo.add("image0",
                    popart.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
 inNames = ["image0"]
-cifarInIndices = {"image0": 0, "label": 1}
+cifarInIndices = {"image0": 0}
 outNames = ["out"]
 losses = [popart.L1Loss("out", "l1LossVal", 0.1)]
 
