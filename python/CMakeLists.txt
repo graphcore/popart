@@ -14,6 +14,7 @@ find_package(Poplar REQUIRED)
 
 message(STATUS "Python include dir: " ${PYTHON_INCLUDE_DIR})
 message(STATUS "Python library : " ${PYTHON_LIBRARY})
+message(STATUS "Python executable : " ${PYTHON_EXECUTABLE})
 
 pybind11_add_module(popart_core popart.cpp)
 
