@@ -866,7 +866,7 @@ public:
    * \param id Tensor id
    * \return A boolean
    */
-  bool isInitializer(const TensorId id);
+  bool isInitializer(const TensorId id) const;
 
   /**
    * Return an ONNX graph tensor type as a lower case string, from either

@@ -224,7 +224,7 @@ public:
 
   std::string getTensorDtypeString(const TensorId id);
 
-  bool isInitializer(const TensorId id);
+  bool isInitializer(const TensorId id) const;
 
   void setAttribute(const std::string &attribute, boost::any value);
   boost::any getAttribute(const std::string &attribute) const;
