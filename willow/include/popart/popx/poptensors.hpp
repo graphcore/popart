@@ -14,6 +14,8 @@ class PopTensors {
 public:
   PopTensors(const Ir &);
   void insert(TensorId, const poplar::Tensor &);
+  // The same as insert but without any checks against the IR
+  void insertUnsafe(TensorId id, const poplar::Tensor &pt);
   const poplar::Tensor &get(TensorId) const;
   bool contains(TensorId) const;
   const std::map<TensorId, poplar::Tensor> &getTensors() const;

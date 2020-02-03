@@ -16,6 +16,8 @@
 #include <poplin/codelets.hpp>
 #include <popnn/codelets.hpp>
 #include <popops/ElementWise.hpp>
+#include <popops/ScaledAdd.hpp>
+#include <popops/Zero.hpp>
 #include <popops/codelets.hpp>
 #include <poprand/RandomGen.hpp>
 #include <poprand/codelets.hpp>
@@ -2510,11 +2512,10 @@ void Devicex::prepare() {
       // 3
       tasks.add(fromHostTask(tensor, progs.streamWeightsFromHostFragment()));
       // 4
-      bool isAnchorStream = false;
-      tasks.add(streamToHostTask(tensor, isAnchorStream));
+      tasks.add(streamToHostTask(tensor, false));
       // 5
-      tasks.add(
-          toHostTask(tensor, progs.weightsToHostFragment(), isAnchorStream));
+      tasks.add(toHostTask(
+          tensor, progs.weightsToHostFragment(), ToHostStreamType::NonAnchor));
     } else {
       // 2
       tasks.add(setInitTensorValTask(tensor));
@@ -2587,46 +2588,15 @@ void Devicex::prepare() {
     for (auto anchorId : ir().getDataFlow().anchors()) {
       Tensor *tensor = ir().getTensor(anchorId);
 
-      bool isAnchorStream = true;
-      tasks.add(streamToHostTask(tensor, isAnchorStream));
+      tasks.add(streamToHostTask(tensor, true));
 
       // 2
       switch (ir().getDataFlow().art(anchorId).id()) {
       // Copy program runs after every batch
       case (AnchorReturnTypeId::ALL): {
-        if (ir().getSessionOptions().enablePipelining) {
-          auto isOptimizerTensorCopy = [&](Op *x) {
-            return x->isConvertibleTo<IpuCopyOp>() &&
-                   dynamic_cast<IpuCopyOp *>(x)->copiesOptimizerTensors();
-          };
-
-          PipelineStage ps;
-          // Copies of optimizer tensors do not have a pipeline stage.
-          if (tensor->hasProducer() &&
-              !isOptimizerTensorCopy(tensor->getProducer())) {
-            ps = tensor->getProducer()->getPipelineStage();
-          } else if (tensor->tensorType() == TensorType::Stream) {
-            ps = *tensor->consumers.findLowestPipelineStage();
-          } else if (tensor->tensorType() == TensorType::Variable) {
-            ps = *tensor->consumers.findHighestPipelineStage();
-          }
-          // Edge cases where we have a const or optimizer tensor.
-          else {
-            ps = *tensor->consumers.findHighestPipelineStage();
-          }
-
-          tasks.add(
-              toHostTask(tensor,
-                         progs.pipelineToHostStreamFragment(ps, tensor->str()),
-                         isAnchorStream));
-        } else {
-          tasks.add(toHostTask(
-              tensor,
-              tensor->tensorType() == TensorType::Variable
-                  ? progs.backwardFragment()
-                  : progs.forwardOrBackwardFragment(tensor->scheduledPreLoss),
-              isAnchorStream));
-        }
+        tasks.add(toHostTask(tensor,
+                             getAnchorReturnFragment(tensor),
+                             ToHostStreamType::NonSumAnchor));
         break;
       }
       // Copy program runs at the end of every N batches
@@ -2646,8 +2616,17 @@ void Devicex::prepare() {
       }
       // Copy program runs at the end of the step
       case (AnchorReturnTypeId::FINAL): {
-        tasks.add(toHostTask(
-            tensor, progs.toHostFinalCopyFragment(), isAnchorStream));
+        tasks.add(toHostTask(tensor,
+                             progs.toHostFinalCopyFragment(),
+                             ToHostStreamType::NonSumAnchor));
+        break;
+      }
+      case (AnchorReturnTypeId::SUM): {
+        tasks.add(
+            anchorReturnTypeSumTask(tensor, getAnchorReturnFragment(tensor)));
+        tasks.add(toHostTask(tensor,
+                             progs.toHostFinalCopyFragment(),
+                             ToHostStreamType::SumAnchor));
         break;
       }
       }
@@ -2889,6 +2868,35 @@ void Devicex::prepare() {
   prepareHasBeenCalled_ = true;
 }
 
+poplar::program::Sequence &Devicex::getAnchorReturnFragment(Tensor *tensor) {
+  if (ir().getSessionOptions().enablePipelining) {
+    auto isOptimizerTensorCopy = [&](Op *x) {
+      return x->isConvertibleTo<IpuCopyOp>() &&
+             dynamic_cast<IpuCopyOp *>(x)->copiesOptimizerTensors();
+    };
+
+    PipelineStage ps;
+    // Copies of optimizer tensors do not have a pipeline stage.
+    if (tensor->hasProducer() &&
+        !isOptimizerTensorCopy(tensor->getProducer())) {
+      ps = tensor->getProducer()->getPipelineStage();
+    } else if (tensor->tensorType() == TensorType::Stream) {
+      ps = *tensor->consumers.findLowestPipelineStage();
+    } else if (tensor->tensorType() == TensorType::Variable) {
+      ps = *tensor->consumers.findHighestPipelineStage();
+    }
+    // Edge cases where we have a const or optimizer tensor.
+    else {
+      ps = *tensor->consumers.findHighestPipelineStage();
+    }
+    return progs.pipelineToHostStreamFragment(ps, tensor->str());
+  } else {
+    return tensor->tensorType() == TensorType::Variable
+               ? progs.backwardFragment()
+               : progs.forwardOrBackwardFragment(tensor->scheduledPreLoss);
+  }
+}
+
 int64_t Devicex::getStashSize(VGraphId vGraphId) {
   int64_t maxVGraphId = static_cast<int64_t>(ir().getMaxVirtualGraphId());
   return 2 * (maxVGraphId - vGraphId) - 1;
@@ -3030,6 +3038,10 @@ TaskId Devicex::toHostTaskId(TensorId id, bool isAnchorStream) const {
   return "weightToHostTask_" + id;
 }
 
+TaskId Devicex::anchorSumTaskId(const TensorId &id) const {
+  return "anchorSumTask_" + id;
+}
+
 TaskId Devicex::initBatchCounterTensorsTaskId() const {
   return "initBatchCounterTensorsTask";
 }
@@ -3094,27 +3106,27 @@ PriTask Devicex::fromHostTask(Tensor *tensor,
 
 PriTask Devicex::toHostTask(Tensor *tensor,
                             poplar::program::Sequence &sq,
-                            bool isAnchorStream) const {
+                            ToHostStreamType stype) const {
 
-  auto f = [&sq, tensor, this, isAnchorStream]() {
+  auto f = [&sq, tensor, this, stype]() {
     SequenceMap seqs;
-    logging::devicex::debug(
-        "Adding poplar::program::Copy to host (isAnchorStream = {}) " +
-            tensor->id,
-        isAnchorStream);
+    logging::devicex::debug("Adding poplar::program::Copy to host "
+                            "(Type: {}) {}",
+                            static_cast<int>(stype),
+                            tensor->id);
 
     auto pToHostStreams = &toHostAnchorStreams;
-    if (!isAnchorStream) {
+    if (stype == ToHostStreamType::NonAnchor) {
       pToHostStreams = &toHostWeightStreams;
     }
-
-    const auto &poplarTensor = tensors.get(tensor->id);
     const auto &poplarStream = pToHostStreams->at(tensor->id);
-
+    const auto &anchorTensor = stype == ToHostStreamType::SumAnchor
+                                   ? tensors.get(anchorSumPrefix() + tensor->id)
+                                   : tensors.get(tensor->id);
     // verify that number of elements of poplar Tensor and poplar Stream are the
     // same
     auto nElmsStream = poplarStream.numElements();
-    auto nElmsTensor = tensors.get(tensor->id).numElements();
+    auto nElmsTensor = anchorTensor.numElements();
     if (nElmsStream != nElmsTensor) {
       throw internal_error("[Devicex::toHostTask] "
                            "The poplar::Tensor {} has {}, whereas the "
@@ -3125,12 +3137,13 @@ PriTask Devicex::toHostTask(Tensor *tensor,
     }
 
     seqs[&sq].add(poplar::program::Copy(
-        poplarTensor, poplarStream, doRearrangeOnHost(tensor)));
+        anchorTensor, poplarStream, doRearrangeOnHost(tensor)));
     return seqs;
   };
 
   auto finalPopulator = taskWhichPopulates(tensor->id);
-  if (isAnchorStream && tensor->tensorType() == TensorType::Variable) {
+  if (stype != ToHostStreamType::NonAnchor &&
+      tensor->tensorType() == TensorType::Variable) {
     for (auto op : tensor->consumers.getOps()) {
       if (dynamic_cast<VarUpdateOp *>(op)) {
         finalPopulator = opTaskId(op);
@@ -3138,20 +3151,72 @@ PriTask Devicex::toHostTask(Tensor *tensor,
     }
   }
 
-  auto taskId = toHostTaskId(tensor->id, isAnchorStream);
+  auto taskId = toHostTaskId(tensor->id, stype != ToHostStreamType::NonAnchor);
 
   logging::devicex::debug(
       "Final populator for {} is {} ", taskId, finalPopulator);
 
-  return {
-      +1e6, // writes to host: always as early as possible
-      taskId,
-      {// the dependencies:
-       // poplar::Stream creation task,
-       {streamToHostTaskId(tensor->id, isAnchorStream), DependencyType::OUTPUT},
-       // poplar::Tensor has its final values
-       {finalPopulator, DependencyType::OUTPUT}},
-      f};
+  std::vector<std::pair<TaskId, DependencyType>> deps = {
+      // the dependencies:
+      // poplar::Stream creation task,
+      {streamToHostTaskId(tensor->id, stype != ToHostStreamType::NonAnchor),
+       DependencyType::OUTPUT},
+      // poplar::Tensor has its final values
+      {finalPopulator, DependencyType::OUTPUT}};
+
+  if (stype == ToHostStreamType::SumAnchor) {
+    deps.push_back({anchorSumTaskId(tensor->id), DependencyType::TENSOR});
+  }
+
+  return {+1e6, // writes to host: always as early as possible
+          taskId,
+          deps,
+          f};
+}
+
+PriTask Devicex::anchorReturnTypeSumTask(Tensor *tensor,
+                                         poplar::program::Sequence &sq) {
+  auto f = [&sq, tensor, this]() {
+    SequenceMap seqs;
+
+    const auto &poplarTensor     = tensors.get(tensor->id);
+    const TensorId accumulatorId = anchorSumPrefix() + tensor->id;
+    auto accumulatorTensor       = graph().clone(poplarTensor, accumulatorId);
+    tensors.insertUnsafe(accumulatorId, accumulatorTensor);
+
+    logging::devicex::debug("Adding AnchorSum operations to {}", tensor->id);
+    popops::scaledAddTo(graph(),
+                        accumulatorTensor,
+                        poplarTensor,
+                        1.f,
+                        seqs[&sq],
+                        "AnchorSum_" + tensor->id);
+    // Zero the accumulator
+    popops::zero(graph(),
+                 accumulatorTensor,
+                 seqs[&progs.initFragment()],
+                 "AnchorSumZero_" + tensor->id);
+
+    return seqs;
+  };
+
+  auto finalPopulator = taskWhichPopulates(tensor->id);
+  if (tensor->tensorType() == TensorType::Variable) {
+    for (auto op : tensor->consumers.getOps()) {
+      if (dynamic_cast<VarUpdateOp *>(op)) {
+        finalPopulator = opTaskId(op);
+      }
+    }
+  }
+  auto taskId = anchorSumTaskId(tensor->id);
+  return {+1e7, // Increments before any other host streams
+          taskId,
+          {// the dependencies:
+           // poplar::Stream creation task,
+           {streamToHostTaskId(tensor->id, true), DependencyType::OUTPUT},
+           // poplar::Tensor has its final values
+           {finalPopulator, DependencyType::OUTPUT}},
+          f};
 }
 
 PriTask Devicex::initBatchCounterTensorsTask() {

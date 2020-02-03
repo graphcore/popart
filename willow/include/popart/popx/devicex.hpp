@@ -68,6 +68,8 @@ public:
 poplar::Type popType(const TensorInfo &);
 poplar::Type popType(DataType);
 
+enum class ToHostStreamType { NonAnchor, NonSumAnchor, SumAnchor };
+
 class Devicex {
 
 private:
@@ -281,11 +283,19 @@ private:
   PriTask streamToHostTask(Tensor *, bool isAnchorStream);
   TaskId streamToHostTaskId(TensorId, bool isAnchorStream) const;
 
+  poplar::program::Sequence &getAnchorReturnFragment(Tensor *tensor);
+
   // Task to append a Copy to poplar::Stream from poplar::Tensor
   PriTask toHostTask(Tensor *tensor,
                      poplar::program::Sequence &,
-                     bool isAnchorStream) const;
+                     ToHostStreamType) const;
   TaskId toHostTaskId(TensorId, bool isAnchorStream) const;
+
+  // Task to create an accumulator and scaleAddto to a poplar::Tensor to be
+  // Copied on the final batch per step
+  PriTask anchorReturnTypeSumTask(Tensor *tensor,
+                                  poplar::program::Sequence &sq);
+  TaskId anchorSumTaskId(const TensorId &) const;
 
   // Task to create poplar::Tensors from nothing, specifically for
   // use in keeping track of the batch count

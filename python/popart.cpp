@@ -536,7 +536,8 @@ PYBIND11_MODULE(popart_core, m) {
   py::enum_<AnchorReturnTypeId>(m, "AnchorReturnTypeId")
       .value("FINAL", AnchorReturnTypeId::FINAL)
       .value("EVERYN", AnchorReturnTypeId::EVERYN)
-      .value("ALL", AnchorReturnTypeId::ALL);
+      .value("ALL", AnchorReturnTypeId::ALL)
+      .value("SUM", AnchorReturnTypeId::SUM);
 
   py::class_<PyStepIO>(m, "PyStepIO", stepio)
       .def(py::init<std::map<TensorId, py::array>,

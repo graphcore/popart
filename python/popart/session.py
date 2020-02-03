@@ -26,7 +26,7 @@ def _initAnchorArrays(self):
         # TODO: T12496 confirm this ordering is correct with a test.
 
         anchorArrayShape = [self.replicationFactor]
-        if artId == popart.AnchorReturnTypeId.FINAL:
+        if artId == popart.AnchorReturnTypeId.FINAL or artId == popart.AnchorReturnTypeId.SUM:
             pass
         elif artId == popart.AnchorReturnTypeId.ALL:
             anchorArrayShape.insert(0, self.accumulationFactor)

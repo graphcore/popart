@@ -59,7 +59,7 @@ std::string CorrectnessAsserter::getBaseError(const std::string &io,
   std::ostringstream oss;
   oss << "Unexpected number of " << io << " elements for Tensor " << id
       << ". Expected " << expected << ", but received " << nElms << ".\n";
-  oss << "To disenable this check at your own risk, "
+  oss << "To disable this check at your own risk, "
       << "use IStepIO::enableRuntimeAsserts.\n";
   oss << "This with, ";
   oss << "\n   replication  factor = " << rFact;
@@ -80,6 +80,7 @@ int64_t CorrectnessAsserter::getArtDivisor(AnchorReturnType art) const {
   case (AnchorReturnTypeId::ALL):
     return 1;
   case (AnchorReturnTypeId::FINAL):
+  case (AnchorReturnTypeId::SUM):
     // Only the final micro-batch of the final batch is returned with final.
     return bps * aFact;
   case (AnchorReturnTypeId::EVERYN):

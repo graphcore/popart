@@ -40,6 +40,8 @@ AnchorReturnTypeId AnchorReturnType::getIdFromStr(std::string artString) {
     return AnchorReturnTypeId::EVERYN;
   else if (artString == "ALL")
     return AnchorReturnTypeId::ALL;
+  else if (artString == "SUM")
+    return AnchorReturnTypeId::SUM;
   else
     throw error("Invalid anchor return type ID supplied: " + artString);
 }
@@ -48,6 +50,11 @@ std::ostream &operator<<(std::ostream &oss, AnchorReturnTypeId art) {
   switch (art) {
   case (AnchorReturnTypeId::FINAL): {
     oss << "FINAL";
+    break;
+  }
+
+  case (AnchorReturnTypeId::SUM): {
+    oss << "SUM";
     break;
   }
 
