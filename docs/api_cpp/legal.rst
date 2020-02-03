@@ -1,10 +1,6 @@
 Legal
 =====
 
-This document is confidential and is provided subject to one or more
-confidentiality obligations between you and Graphcore, including a
-Non-Disclosure Agreement.
-
 The information disclosed to you hereunder (the "Materials") is provided
 solely for the selection and use of Graphcore products. To the maximum extent
 permitted by applicable law:

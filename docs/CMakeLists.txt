@@ -15,7 +15,7 @@ if (BUILD_DOCS)
 
   set(SUPPORTED_OPS_GEN ${CMAKE_CURRENT_SOURCE_DIR}/supported_ops_gen.rst)
 
-  message(STATUS "Python executable : " <TARGET_FILE:popart_core>)
+  message(STATUS "Popart_core lib : " $<TARGET_FILE:popart_core>)
   message(STATUS "Python executable : " ${Python3_EXECUTABLE})
 
   add_custom_command(
