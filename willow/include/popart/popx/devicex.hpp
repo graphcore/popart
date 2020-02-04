@@ -352,6 +352,9 @@ public:
 
 private:
   std::map<TaskId, std::vector<Op *>> mainGraphOpRegistry;
+  std::map<TaskId, std::vector<Op *>> requiredRecomputes;
+
+  void verifyTaskOrder(const std::vector<TaskId> &taskOrder) const;
 
   // We have datastreams which are created during the prepare phase and
   // associated with the stream call back

@@ -62,6 +62,143 @@
 namespace popart {
 namespace popx {
 
+namespace {
+
+// Walk the producers of an ops inputs, applying function f to every producer.
+// The producers are walked in a top down fashion. If f returns false of an op,
+// then further producers below it are not traversed.
+template <typename Predicate> void walkProducers(Op *op, Predicate f) {
+  std::vector<Op *> toCheck;
+  std::set<Op *> seen;
+
+  auto addProducers = [&toCheck, &seen](Op *x) {
+    for (auto t : x->input->tensors()) {
+      if (t->hasProducer()) {
+        auto p = t->getProducer();
+        if (seen.find(p) == seen.end()) {
+          toCheck.push_back(p);
+          seen.insert(p);
+        }
+      }
+    }
+  };
+
+  addProducers(op);
+  while (!toCheck.empty()) {
+    auto x = toCheck.back();
+    toCheck.pop_back();
+    if (f(x)) {
+      addProducers(x);
+    }
+  }
+}
+
+// This is a helper class used to find the recompute ops required before running
+// an op. The constructor takes a vector of ops to use as a schedule. Calls to
+// `getRequiredRecomputeOps` will return ops in the order in which they are
+// found in this schedule. If an op is not in the schedule, it will not be
+// returned by `getRequiredRecomputeOps`.
+class FindRequiredRecomputes {
+public:
+  FindRequiredRecomputes(const std::vector<Op *> &schedule)
+      : opSchedule(schedule) {}
+
+  // This will return the ops that need to be recomputed before running the
+  // parameter `op`. Ops will be returned in the order in which they are found
+  // in schedule.
+  //
+  // An op will only ever be returned once from this function.
+  // For example if Op A requires C,
+  // and            Op B requires C and D.
+  // Calling with A before B will return:
+  //   finder.getRequiredRecomputeOps(OpA) -> [C]
+  //   finder.getRequiredRecomputeOps(OpB) -> [D]
+  // but calling with B before A will return:
+  //   finder.getRequiredRecomputeOps(OpB) -> [C, D]
+  //   finder.getRequiredRecomputeOps(OpA) -> []
+  std::vector<Op *> getRequiredRecomputeOps(Op *op) {
+    PingPongPhase opPhase = -1;
+
+    std::set<Op *> toRerun;
+    if (op->getIr().getSessionOptions().enablePipelining) {
+      toRerun = getPipelineRecomputeOps(op, opPhase);
+    } else {
+      toRerun = getRecomputeOps(op, opPhase);
+    }
+
+    if (!toRerun.empty()) {
+      std::vector<Op *> rerunSchedule;
+      for (auto x : opSchedule) {
+        if (toRerun.find(x) != toRerun.end()) {
+          rerunSchedule.push_back(x);
+          alreadySeen.insert({x, opPhase});
+        }
+      }
+      return rerunSchedule;
+    } else {
+      return {};
+    }
+  }
+
+private:
+  std::set<Op *> getRecomputeOps(Op *op, PingPongPhase &opPhase) {
+    std::set<Op *> toRerun;
+    auto isSpecialCaseGradOp = [](Op *x) {
+      return x->getIr().getSessionOptions().enableGradientAccumulation &&
+             (dynamic_cast<SGD1AcclReduceOp *>(x) ||
+              dynamic_cast<SGD1VarUpdateOp *>(x) ||
+              dynamic_cast<SGD1AcclUpdateOp *>(x) ||
+              dynamic_cast<GradCopyToHostOp *>(x) ||
+              dynamic_cast<GradCopyFromHostOp *>(x));
+    };
+
+    // Ensure op is post loss and not a special case grad op.
+    if (op->scheduledPreLoss == ScheduledPreLoss::No &&
+        !isSpecialCaseGradOp(op)) {
+      if (op->hasPingPongPhase() &&
+          op->getIr().getSessionOptions().pingPongPhases >= 2) {
+        opPhase = op->getPingPongPhase();
+      }
+
+      walkProducers(op, [&toRerun, &op, opPhase, this](Op *x) {
+        bool samePingPongPhase =
+            (op->getIr().getSessionOptions().pingPongPhases >= 2 &&
+             op->hasPingPongPhase() && x->hasPingPongPhase() &&
+             op->getPingPongPhase() == x->getPingPongPhase());
+        if (x->settings.recomputeType == RecomputeType::RECOMPUTE &&
+            alreadySeen.find({x, opPhase}) == alreadySeen.end() &&
+            !samePingPongPhase) {
+          toRerun.insert(x);
+          return true;
+        } else {
+          return false;
+        }
+      });
+    }
+    return toRerun;
+  }
+
+  std::set<Op *> getPipelineRecomputeOps(Op *op, PingPongPhase opPhase) {
+    std::set<Op *> toRerun;
+    walkProducers(op, [&toRerun, &op, opPhase, this](Op *x) {
+      if (x->settings.recomputeType == RecomputeType::RECOMPUTE &&
+          alreadySeen.find({x, opPhase}) == alreadySeen.end() &&
+          x->getPipelineStage() != op->getPipelineStage()) {
+        toRerun.insert(x);
+        return true;
+      } else {
+        return false;
+      }
+    });
+    return toRerun;
+  };
+
+  std::set<std::pair<Op *, PingPongPhase>> alreadySeen;
+  const std::vector<Op *> &opSchedule;
+};
+
+} // namespace
+
 class devicex_memory_allocation_err : public popart::memory_allocation_err {
 
   const poplar::graph_memory_allocation_error exception;
@@ -285,6 +422,56 @@ std::map<Op *, int, POpCmp> Devicex::getMainGraphOpSeriesNums() const {
     }
   }
   return nums;
+}
+
+void Devicex::verifyTaskOrder(const std::vector<TaskId> &taskOrder) const {
+  logging::debug("Verifying task order");
+  int errors = 0;
+  std::set<Op *> seen;
+  std::set<Op *> recomputeSeen;
+
+  for (auto taskId : taskOrder) {
+    auto id_ops = mainGraphOpRegistry.find(taskId);
+    if (id_ops == mainGraphOpRegistry.end()) {
+      continue;
+    }
+    auto &taskOps = id_ops->second;
+
+    for (auto op : taskOps) {
+      // If this is the first time we are seeing this op, it is not a recompute
+      // grow.
+      if (seen.find(op) == seen.end()) {
+        // Check all the ops dependencies have already been run
+        for (auto before : op->getGraph().topoCons->getBefores(op)) {
+          if (seen.find(before) == seen.end()) {
+            logging::devicex::warn("Op {} required op {} to be run before it.",
+                                   op->id,
+                                   before->id);
+            errors++;
+          }
+        }
+        seen.insert(op);
+      }
+      // This is a recompute op.
+      else {
+        for (auto before : op->getGraph().topoCons->getBefores(op)) {
+          if (recomputeSeen.find(before) == recomputeSeen.end()) {
+            logging::devicex::warn(
+                "Recompute of op {} required op {} to be run before it.",
+                op->id,
+                before->id);
+            errors++;
+          }
+        }
+        recomputeSeen.insert(op);
+      }
+    }
+  }
+
+  if (errors > 0) {
+    logging::devicex::warn("Encountered {} errors when verifying task order",
+                           errors);
+  }
 }
 
 std::string
@@ -1592,6 +1779,8 @@ void Devicex::addOpTasks(PriTasks &tasks) {
   double priority     = 0.0;
   TaskId prevOpTaskId = "";
 
+  std::set<std::pair<Op *, PingPongPhase>> seenRecomputeOps;
+  FindRequiredRecomputes recomputeFinder(allOps);
   // Iterate through Ops according to the Ir's schedule
   for (auto op : allOps) {
     for (auto graph : op->getCalledGraphs()) {
@@ -1623,6 +1812,11 @@ void Devicex::addOpTasks(PriTasks &tasks) {
     }
 
     auto task = opTask(op, priority, prevOpTaskId);
+
+    auto rerunSchedule = recomputeFinder.getRequiredRecomputeOps(op);
+    if (!rerunSchedule.empty()) {
+      requiredRecomputes[task.name] = rerunSchedule;
+    }
 
     tasks.add(task);
     prevOpTaskId = task.name;
@@ -1761,39 +1955,6 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
   return {priority, opTaskId(op), deps, f};
 }
 
-namespace {
-
-// Walk the producers of an ops inputs, applying function f to every producer.
-// The producers are walked in a top down fashion. If f returns false of an op,
-// then further producers below it are not traversed.
-template <typename Predicate> void walkProducers(Op *op, Predicate f) {
-  std::vector<Op *> toCheck;
-  std::set<Op *> seen;
-
-  auto addProducers = [&toCheck, &seen](Op *x) {
-    for (auto t : x->input->tensors()) {
-      if (t->hasProducer()) {
-        auto p = t->getProducer();
-        if (seen.find(p) == seen.end()) {
-          toCheck.push_back(p);
-          seen.insert(p);
-        }
-      }
-    }
-  };
-
-  addProducers(op);
-  while (!toCheck.empty()) {
-    auto x = toCheck.back();
-    toCheck.pop_back();
-    if (f(x)) {
-      addProducers(x);
-    }
-  }
-}
-
-} // namespace
-
 void Devicex::growOpx(Opx *opx, poplar::program::Sequence &seq) {
   logging::devicex::trace("Calling growOpx for Op {} with debugName {}",
                           opx->op_p->str(),
@@ -1870,45 +2031,23 @@ void Devicex::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
 
     // post-loss, not special gradient accumulation case,
     else {
-      std::set<Op *> toRerun;
-      walkProducers(op, [&toRerun, this, op](Op *x) {
-        bool samePingPongPhase =
-            (this->ir().getSessionOptions().pingPongPhases >= 2 &&
-             op->hasPingPongPhase() && x->hasPingPongPhase() &&
-             op->getPingPongPhase() == x->getPingPongPhase());
-        PingPongPhase phase =
-            op->hasPingPongPhase() &&
-                    this->ir().getSessionOptions().pingPongPhases >= 2
-                ? op->getPingPongPhase()
-                : -1;
-        if (x->settings.recomputeType == RecomputeType::RECOMPUTE &&
-            !progs.hasBeenRecomputed(x->id, phase) && !samePingPongPhase) {
-          toRerun.insert(x);
-          return true;
-        } else {
-          return false;
+      auto found = requiredRecomputes.find(taskId);
+      if (found != requiredRecomputes.end()) {
+        auto &rerunSchedule = found->second;
+        for (auto opToRerun : rerunSchedule) {
+          logging::devicex::debug("Adding (second) recompute Op {}",
+                                  opToRerun->debugName());
+
+          seqs[&progs.backwardFragment()].add(
+              progs.recomputeFragment(opToRerun->id));
+          mainGraphOpRegistry[taskId].push_back(opToRerun);
+          PingPongPhase phase =
+              op->hasPingPongPhase() &&
+                      this->ir().getSessionOptions().pingPongPhases >= 2
+                  ? op->getPingPongPhase()
+                  : -1;
+          progs.recordRecomputed(opToRerun->id, phase);
         }
-      });
-
-      // The ops to rerun in topological order.
-      auto rerunSchedule = op->getGraph().getOpSchedule({});
-      boost::remove_erase_if(rerunSchedule, [&toRerun](Op *x) {
-        return toRerun.find(x) == toRerun.end();
-      });
-
-      for (auto opToRerun : rerunSchedule) {
-        logging::devicex::debug("Adding (second) recompute Op {}",
-                                opToRerun->debugName());
-
-        seqs[&progs.backwardFragment()].add(
-            progs.recomputeFragment(opToRerun->id));
-        mainGraphOpRegistry[taskId].push_back(opToRerun);
-        PingPongPhase phase =
-            op->hasPingPongPhase() &&
-                    this->ir().getSessionOptions().pingPongPhases >= 2
-                ? op->getPingPongPhase()
-                : -1;
-        progs.recordRecomputed(opToRerun->id, phase);
       }
 
       logging::devicex::debug("Adding post-turning check-point Op {}",
@@ -1940,34 +2079,25 @@ void Devicex::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
     outerLoopFragEmpty = false;
     growOpx(opx, seqs[&progs.accumulateOuterFragment()]);
   } else {
-    std::set<Op *> toRerun;
-    walkProducers(op, [&toRerun, &op, this](Op *x) {
-      if (x->settings.recomputeType == RecomputeType::RECOMPUTE &&
-          !progs.hasBeenRecomputed(x->id, -1) &&
-          x->getPipelineStage() != op->getPipelineStage()) {
-        toRerun.insert(x);
-        return true;
-      } else {
-        return false;
+    auto found = requiredRecomputes.find(taskId);
+    if (found != requiredRecomputes.end()) {
+      auto &rerunSchedule = found->second;
+
+      // Add the recomputations.
+      for (auto opToRerun : rerunSchedule) {
+        logging::devicex::debug("Adding (second) recompute Op {}",
+                                opToRerun->debugName());
+        if (progs.hasBeenRecomputed(opToRerun->id, -1)) {
+          throw internal_error("Ops to recompute should only appear in once in "
+                               "requiredRecomputes");
+        }
+        progs.recordRecomputed(opToRerun->id, -1);
+        seqs[&progs.pipelineForwardFragment(op->getPipelineStage(),
+                                            "recompute of " + opToRerun->str())]
+            .add(progs.recomputeFragment(opToRerun->id));
+
+        mainGraphOpRegistry[taskId].push_back(opToRerun);
       }
-    });
-
-    // The ops to rerun in topological order.
-    auto rerunSchedule = op->getGraph().getOpSchedule({});
-    boost::remove_erase_if(rerunSchedule, [&toRerun](Op *x) {
-      return toRerun.find(x) == toRerun.end();
-    });
-
-    // Add the recomputations.
-    for (auto opToRerun : rerunSchedule) {
-      logging::devicex::debug("Adding (second) recompute Op {}",
-                              opToRerun->debugName());
-      progs.recordRecomputed(opToRerun->id, -1);
-      seqs[&progs.pipelineForwardFragment(op->getPipelineStage(),
-                                          "recompute of " + opToRerun->str())]
-          .add(progs.recomputeFragment(opToRerun->id));
-
-      mainGraphOpRegistry[taskId].push_back(opToRerun);
     }
 
     if (op->isConvertibleTo<IpuCopyOp>()) {
@@ -2701,6 +2831,8 @@ void Devicex::prepare() {
   }
   // Emplace any main graph task sequences
   emplaceTaskSeqs({});
+
+  verifyTaskOrder(taskOrder);
 
   logging::devicex::debug(getMainGraphOpString(taskOrder));
 
