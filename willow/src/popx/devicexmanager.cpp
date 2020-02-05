@@ -163,8 +163,7 @@ std::shared_ptr<popart::DeviceInfo> DevicexManager::createHostDevice(
     ipuModel.numIPUs = mapFind(options, "numIPUs", int(ipuModel.numIPUs));
     ipuModel.tilesPerIPU =
         mapFind(options, "tilesPerIPU", int(ipuModel.tilesPerIPU));
-    ipuModel.compileIPUCode =
-        mapFind(options, "compileIPUCode", ipuModel.compileIPUCode);
+    ipuModel.compileIPUCode = mapFind(options, "compileIPUCode", true);
 
     poplar::Device device = ipuModel.createDevice();
     return std::make_shared<DevicexIpuModelInfo>(*this, device);
