@@ -1427,6 +1427,12 @@ PYBIND11_MODULE(popart_core, m) {
               py::object &,
               py::object &) { self.exit(); });
 
+  py::enum_<DeviceType>(m, "DeviceType")
+      .value("IpuModel", DeviceType::IpuModel)
+      .value("Cpu", DeviceType::Cpu)
+      .value("Ipu", DeviceType::Ipu)
+      .value("Sim", DeviceType::Sim);
+
   // PyBinding to a singleton
   py::class_<DeviceManager, std::unique_ptr<DeviceManager, py::nodelete>>(
       m, "DeviceManager")
@@ -1461,13 +1467,9 @@ PYBIND11_MODULE(popart_core, m) {
       .def("enumerateDevices",
            &DeviceManager::enumerateDevices,
            py::arg("pattern")           = SyncPattern::FULL,
-           py::arg("replicationFactor") = 1);
-
-  py::enum_<DeviceType>(m, "DeviceType")
-      .value("IpuModel", DeviceType::IpuModel)
-      .value("Cpu", DeviceType::Cpu)
-      .value("Ipu", DeviceType::Ipu)
-      .value("Sim", DeviceType::Sim);
+           py::arg("replicationFactor") = 1,
+           py::arg("numIpus")           = 1,
+           py::arg("deviceType")        = DeviceType::Ipu);
 
   py::class_<DeviceInfo, std::shared_ptr<DeviceInfo>>(m, "DeviceInfo")
       .def("attach", &DeviceInfo::attach)

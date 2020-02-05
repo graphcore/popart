@@ -13,10 +13,14 @@ class DevicexManager : public popart::DeviceProvider {
 public:
   DevicexManager();
 
+  virtual std::shared_ptr<DeviceInfo>
+  getDevice(SyncPattern syncPattern, uint32_t deviceManagerId) override;
+
   virtual void
   enumerate(std::vector<std::shared_ptr<popart::DeviceInfo>> &devices,
+            unsigned requiredNumIPUs,
             SyncPattern syncPattern,
-            uint32_t replication_factor) override;
+            DeviceType type) override;
 
   virtual std::shared_ptr<popart::DeviceInfo>
   createHostDevice(popart::DeviceType type,
@@ -98,6 +102,7 @@ private:
 };
 
 popart::DeviceType convertDeviceType(poplar::TargetType targetType);
+poplar::TargetType convertDeviceType(popart::DeviceType targetType);
 
 } // namespace popx
 } // namespace popart
