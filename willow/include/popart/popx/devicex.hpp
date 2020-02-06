@@ -193,6 +193,7 @@ public:
   // numbers across tiles. Combined with the random seed and seedModifier,
   // this ensures that the same random mask is generated for fwd and bwd
   // dropout ops in the same layer
+  // TODO: remove from this class, see T15790
   std::map<uint32_t, poplar::Tensor> dropoutReferenceTensors;
 
   poplar::Tensor getConst(poplar::Graph &graph,

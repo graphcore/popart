@@ -100,8 +100,9 @@ void NllOpx::applyScalingInPlaceForMeanReduction(
     poplar::Graph &graph,
     poplar::Tensor t,
     poplar::program::Sequence &prog) {
-  double totalSamples = static_cast<double>(opx.dv_p->getReplicationFactor()) *
-                        static_cast<double>(t.dim(0));
+  double totalSamples =
+      static_cast<double>(opx.getDevicex()->getReplicationFactor()) *
+      static_cast<double>(t.dim(0));
   auto t_totalSamples = opx.getConst(
       t.elementType(), {}, totalSamples, opx.debugPrefix("samples"));
   popops::mapInPlace(graph,
@@ -128,11 +129,11 @@ void NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
   auto numNonIgnoredSamples =
       popops::reduce(graph, mask, {0}, {popops::Operation::ADD}, prog);
 
-  auto repFactor =
-      opx.getConst(t.elementType(),
-                   {},
-                   static_cast<double>(opx.dv_p->getReplicationFactor()),
-                   opx.debugPrefix("replicationFactor"));
+  auto repFactor = opx.getConst(
+      t.elementType(),
+      {},
+      static_cast<double>(opx.getDevicex()->getReplicationFactor()),
+      opx.debugPrefix("replicationFactor"));
 
   popops::mapInPlace(graph,
                      pe::Divide(pe::_1, pe::Mul(pe::_2, pe::_3)),

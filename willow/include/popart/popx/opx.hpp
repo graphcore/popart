@@ -99,6 +99,13 @@ public:
   // shape.
   poplar::Tensor broadcast(const std::vector<int64_t> &, poplar::Tensor) const;
 
+  // Returns the Devicex to which this Opx belongs
+  const Devicex *getDevicex() const;
+
+  // Access dropoutReferenceTensors from Devicex
+  // TODO: Improve see, see TT15790
+  std::map<uint32_t, poplar::Tensor> &getDropoutReferenceTensors() const;
+
   // dv_p->getVirtualGraphId(). Defaults to 0 if virtualGraph is not enabled
   int64_t getVirtualGraphId() const;
   // Returns the virtual graph if enabled, else returns the dv_p->graph
@@ -172,10 +179,6 @@ public:
     }
   }
 
-  // TODO : Make dv_p private T8449
-  // The Devicex to which this Opx belongs
-  Devicex *dv_p;
-
   bool hasInput(InIndex) const;
   bool hasOutput(OutIndex) const;
 
@@ -206,6 +209,10 @@ public:
   // data flows through the called subgraph are grown.
   virtual std::vector<std::tuple<TensorId, TensorId, bool>>
   getOutputsToPrepare() const;
+
+protected:
+  // The Devicex to which this Opx belongs
+  Devicex *dv_p;
 
 private:
   std::string idStr() const;

@@ -191,6 +191,12 @@ poplar::Tensor Opx::broadcast(const std::vector<int64_t> &desired_shape,
   return broadcast(desired_shape, get(id));
 }
 
+const Devicex *Opx::getDevicex() const { return dv_p; }
+
+std::map<uint32_t, poplar::Tensor> &Opx::getDropoutReferenceTensors() const {
+  return dv_p->dropoutReferenceTensors;
+}
+
 poplar::Tensor Opx::broadcast(const std::vector<int64_t> &desired_shape,
                               poplar::Tensor t) const {
   const auto &t_shape = t.shape();

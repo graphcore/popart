@@ -28,12 +28,12 @@ poplar::Tensor getReferenceTensor(const Opx &opx) {
 
   poplar::Tensor refTensor;
 
-  if (opx.dv_p->dropoutReferenceTensors.find(seedModifier) ==
-      opx.dv_p->dropoutReferenceTensors.end()) {
+  if (opx.getDropoutReferenceTensors().find(seedModifier) ==
+      opx.getDropoutReferenceTensors().end()) {
     refTensor = opx.getInTensor(0);
-    opx.dv_p->dropoutReferenceTensors.emplace(seedModifier, refTensor);
+    opx.getDropoutReferenceTensors().emplace(seedModifier, refTensor);
   } else {
-    refTensor = opx.dv_p->dropoutReferenceTensors.at(seedModifier);
+    refTensor = opx.getDropoutReferenceTensors().at(seedModifier);
   }
   return refTensor;
 }
