@@ -49,7 +49,6 @@ add_popart_cpp_unit_test(mergecopiestest mergecopies_test.cpp)
 add_popart_cpp_unit_test(isnonlinearitytest is_nonlinearity_test.cpp)
 add_popart_cpp_unit_test(isnormtest is_norm_test.cpp)
 add_popart_cpp_unit_test(nogradoptest no_gradop_test.cpp)
-add_popart_cpp_unit_test(stepiotest stepio_tests.cpp)
 add_popart_cpp_unit_test(irhashtest ir_hash_test.cpp)
 add_popart_cpp_unit_test(custompatterntest custom_pattern_test.cpp)
 
@@ -62,7 +61,7 @@ function(add_popart_py_unit_test name)
   message(STATUS
     "Adding Python test '${name}'")
   add_test(NAME "${name}"
-           COMMAND pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/${name}.py
+           COMMAND ${Python3_EXECUTABLE} -m pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/${name}.py
            WORKING_DIRECTORY ${CMAKE_CURRENT_BUILD_DIR})
 endfunction()
 
@@ -109,3 +108,4 @@ add_subdirectory(anchor_tests)
 add_subdirectory(auto_virtual_graph_tests)
 add_subdirectory(dropout_tests)
 add_subdirectory(codelet_tests)
+add_subdirectory(stepio_tests)

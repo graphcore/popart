@@ -3,6 +3,7 @@ PopART User Guide
 
 .. gcdoc::
     :verb-borders:
+    :public:
 
 .. toctree::
     :maxdepth: 2

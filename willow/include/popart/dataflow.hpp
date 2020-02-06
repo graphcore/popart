@@ -14,10 +14,15 @@ namespace popart {
 // returned for a tensor, currently the 3 options are:
 
 enum class AnchorReturnTypeId {
-  FINAL = 0, // return just the final batch of the step
+  FINAL = 0, // return just the final micro-batch(es) of the step
   EVERYN,    // return every Nth batch in the step
-  ALL        // return all batches in the step.
+  ALL,       // return all batches in the step.
+  SUM, // return the same shape as FINAL, with accumulation over all aditional
+       // Tensor dimensions.
 };
+
+std::ostream &operator<<(std::ostream &, AnchorReturnTypeId);
+
 // As an example, suppose we have an anchor scalar (0-d) tensor,
 // Suppose batchesPerStep = 4 and we process them in a batch of batchSize = 2
 // Suppose that the 2*4 = 8 samples are supplied in a 2d tensor with values:

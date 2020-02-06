@@ -51,8 +51,8 @@ set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
 
 
 find_package(Threads REQUIRED)
-
 find_package(PROTOBUF REQUIRED)
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 # Using installed cmake find (ONNX must be installed)
 # For a hand-crafted Findonnx script, see a very early commit

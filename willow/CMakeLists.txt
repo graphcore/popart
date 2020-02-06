@@ -39,6 +39,9 @@ else()
 message( STATUS "Building WITHOUT Poplar IPU backend")
 endif()
 
+find_package(Poprithms REQUIRED)
+
+
 find_package(Spdlog REQUIRED)
 message(STATUS "Spdlog include dir is " ${SPDLOG_INCLUDE_DIRS})
 
@@ -58,6 +61,7 @@ target_include_directories (popart SYSTEM PUBLIC
     ${CBLAS_INCLUDE_DIRS}
     ${POPLAR_INCLUDE_DIR}
     ${POPLIBS_INCLUDE_DIR}
+    ${POPRITHMS_INCLUDE_DIR}
     )
 
 target_link_libraries(popart
@@ -74,6 +78,7 @@ target_link_libraries(popart
   ${POPOPS_LIB}
   ${POPRAND_LIB}
   ${POPUTIL_LIB}
+   ${POPRITHMS_LIB}
 )
 
 # The following defines cause compiler warnings if not set

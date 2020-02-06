@@ -473,7 +473,7 @@ std::string Builder::getTensorDtypeString(const TensorId id) {
   return impl_->getTensorDtypeString(id);
 }
 
-bool Builder::isInitializer(const TensorId id) {
+bool Builder::isInitializer(const TensorId id) const {
   return impl_->isInitializer(id);
 }
 

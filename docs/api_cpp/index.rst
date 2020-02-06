@@ -3,6 +3,7 @@ PopART C++ API Reference
 
 .. gcdoc::
     :verb-borders:
+    :public:
 
 .. toctree::
     :maxdepth: 4

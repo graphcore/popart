@@ -9,6 +9,8 @@
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 
+#include <poprithms/schedule/anneal/graph.hpp>
+
 namespace popart {
 
 namespace {
@@ -542,6 +544,11 @@ Scheduler::getPartialOpSchedule(const OpsBeforeKey &gCons,
       }
     }
   }
+
+  // A dry-run test that poprithms doesn't break any CI tests.
+  // This has no effect on the scheduling.
+  poprithms::schedule::anneal::Graph dryRunGraph;
+  dryRunGraph.insertAlloc(10.0f);
 
   return sorted;
 }

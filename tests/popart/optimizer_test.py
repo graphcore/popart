@@ -118,7 +118,7 @@ def test_sgd_param_check():
 def test_constsgd_vs_sgd():
     """
     In this test we run training with two sessions - one with an SGD optimizer
-    (learnRate streamed from host), one with a ConstSGD optimizer, othwerwise
+    (learnRate streamed from host), one with a ConstSGD optimizer, otherwise
     identical.
     We show that if the learning rates match, the training updates are 
     identical, otherwise they differ.
@@ -155,9 +155,6 @@ def test_constsgd_vs_sgd():
 
         stepioConstSgd = popart.PyStepIO(inputsConstSgd, anchorsArraysConstSgd)
 
-        # set scalar learnRate
-        inputsUserSgd["learningRate_FLOAT"] = np.ones(stepSize,
-                                                      dtype=np.float32) * lr
         stepioUserSgd = popart.PyStepIO(inputsUserSgd, anchorsArraysUserSgd)
 
         if step == numSteps - 1:

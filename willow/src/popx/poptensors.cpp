@@ -53,6 +53,15 @@ void PopTensors::insert(TensorId id, const poplar::Tensor &pt) {
   tensors_[id] = pt;
 }
 
+void PopTensors::insertUnsafe(TensorId id, const poplar::Tensor &pt) {
+  auto found = tensors_.find(id);
+  if (found != tensors_.end()) {
+    throw internal_error("poplar::Tensor " + id + " already in map");
+  }
+
+  tensors_[id] = pt;
+}
+
 bool PopTensors::contains(TensorId id) const {
   return tensors_.find(id) != tensors_.end();
 }

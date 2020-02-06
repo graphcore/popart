@@ -12,9 +12,6 @@ include_directories("${PROJECT_BINARY_DIR}/willow/include")
 find_package(pybind11 REQUIRED)
 find_package(Poplar REQUIRED)
 
-message(STATUS "Python include dir: " ${PYTHON_INCLUDE_DIR})
-message(STATUS "Python library : " ${PYTHON_LIBRARY})
-
 pybind11_add_module(popart_core popart.cpp)
 
 target_include_directories (popart_core SYSTEM PUBLIC

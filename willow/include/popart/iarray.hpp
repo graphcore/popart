@@ -1,5 +1,6 @@
 #ifndef GUARD_NEURALNET_IARRAY_HPP
 #define GUARD_NEURALNET_IARRAY_HPP
+
 #include <popart/tensorinfo.hpp>
 
 namespace popart {

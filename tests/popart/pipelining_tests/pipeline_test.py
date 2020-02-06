@@ -759,8 +759,6 @@ def test_pipeline_stages_backwards_through_ipus():
 
     def init_builder(builder):
         d0 = builder.addInputTensor(dummy_data, 'data0')
-        d1 = builder.addInputTensor(dummy_data, 'data1')
-        d2 = builder.addInputTensor(dummy_data, 'data2')
 
         s0 = builder.aiOnnx.sin([d0], "s0")
         m0 = builder.aiOnnx.mul([s0, d0])

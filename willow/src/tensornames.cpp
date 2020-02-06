@@ -54,6 +54,7 @@ std::vector<std::string> reservedPrefixes() {
                                     reservedStashedPrefix(),
                                     reservedRestoredPrefix(),
                                     reservedRandomSeedPrefix(),
+                                    anchorSumPrefix(),
                                     cycleCountPrefix()};
 
   std::vector<std::string> optPrefs = reservedOptimizerPrefixes();

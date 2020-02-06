@@ -256,6 +256,7 @@ public:
   bool isInputToLoss(const Tensor *) const;
 
   const onnx::ModelProto &getModel() const;
+  std::vector<TensorId> getModelInputIds() const;
 
   const SessionOptions &getSessionOptions() const { return userOptions; }
 
