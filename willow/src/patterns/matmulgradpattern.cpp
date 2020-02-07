@@ -273,9 +273,10 @@ bool MatMulGradPattern::apply(Op *op) const {
                             in->id,
                             std::numeric_limits<double>::lowest());
 
-    // Add constraint that we will not reshape the in until the grad_in has been
-    // produced
-    reshapeOpInExpand->getGraph().topoCons->insert(orig_grad_in->getProducer(),
+    // Add constraint that we will not reshape the forward in tensor until the
+    // grad_in tensor has been reshaped i.e. prevent the forward in reshape from
+    // running in the forward pass.
+    reshapeOpInExpand->getGraph().topoCons->insert(reshapeOpGradInExpand,
                                                    reshapeOpInExpand);
   }
 
