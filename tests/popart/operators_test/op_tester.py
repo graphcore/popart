@@ -40,10 +40,10 @@ def op_tester(tmpdir):
             self._init_input_map = {}
             self._outputs = []
 
-        def addInputTensor(self, data):
+        def addInputTensor(self, data, debugName=""):
             shape = popart.TensorInfo(data)
 
-            tensor_id = self._builder.addInputTensor(shape)
+            tensor_id = self._builder.addInputTensor(shape, debugName)
 
             self._input_map[tensor_id] = data
 

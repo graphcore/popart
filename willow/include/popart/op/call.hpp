@@ -17,6 +17,9 @@ public:
 
   Graph &getCalledGraph() const;
 
+  std::vector<std::unique_ptr<Op>> getGradOps() final;
+  std::vector<TensorId> getGradOpInputIds(const Graph &gradGraph);
+
   void appendOutlineAttributes(OpSerialiserBase &os) const override;
 
   bool isInputModified(InIndex) const override;
@@ -41,6 +44,8 @@ public:
   view::RegMap fwdRegMap(InIndex, OutIndex) const final;
   view::RegMap bwdRegMap(InIndex, OutIndex) const final;
 
+  GraphId getBackwardsGraphId() const;
+
 private:
   std::reference_wrapper<Graph> callee;
   // Regions of Input Tensors (InIndex) are aliased by Output Tensors (OutIndex)
@@ -49,6 +54,23 @@ private:
       aliasMap;
   std::map<InIndex, bool> inZeroCopy;
   std::map<OutIndex, bool> outZeroCopy;
+
+  std::vector<GradInOutMapper>
+  getGradInInfo(const std::vector<TensorId> &gradOpInputIds) const;
+};
+
+class CallGradOp : public CallOp {
+public:
+  CallGradOp(CallOp &fwdOp, const std::vector<GradInOutMapper> &gradInInfo_);
+
+  // std::unique_ptr<Op> clone() const override;
+
+  const std::vector<GradInOutMapper> &gradInputInfo() const final;
+  const std::map<int, int> &gradOutToNonGradIn() const final;
+
+private:
+  std::vector<GradInOutMapper> gradInInfo;
+  std::map<int, int> outInfoMap;
 };
 
 } // namespace popart
