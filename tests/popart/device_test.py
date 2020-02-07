@@ -9,13 +9,6 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
 
-def test_enum_devices():
-    """Test enumerating all devices.
-    """
-    devices = popart.DeviceManager().enumerateDevices()
-    assert len(devices) > 1
-
-
 def test_enum_specfic_devices():
     """Test that enumerating specific, per type and count works.
     """
