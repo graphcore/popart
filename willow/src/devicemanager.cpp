@@ -92,7 +92,7 @@ DeviceManager::acquireAvailableDevice(int numIpus,
                 numIpus);
   }
 
-  auto devices = enumerateDevices(pattern, numIpus);
+  auto devices = enumerateDevices(pattern, replication_factor, numIpus);
 
   for (auto &device : devices) {
     if ((!tilesPerIpu || tilesPerIpu == device->getTilesPerIpu())) {
