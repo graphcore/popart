@@ -45,11 +45,28 @@ void GradCopyToHostOpx::grow(poplar::program::Sequence &prog) const {
                                     {{"useReplicatedImplementation", "true"}});
   }
 
-  poplar::program::Copy gradientsToHostProg(weightDeltas, deviceToHostStream);
-  prog.add(gradientsToHostProg);
+  if (op_p->getIr().getSessionOptions().hostAllReduceRemoteBuffer) {
+    // TODO(T15568): This is currently a hack to get around the shortcoming of
+    // poplar::RemoteBuffers not supporting stream callbacks. We introduce
+    // dummy callbacks from which we can run the copyTo/From-RemoteBuffer
+    poplar::Tensor dummyTensor = graph().addVariable(poplar::CHAR, {1});
+    graph().setTileMapping(dummyTensor, 0);
 
-  // When running in pipelined mode the sync op can is added after every copy
-  if (op_p->getIr().getSessionOptions().enablePipelining) {
+    auto remoteBuffer = dv_p->getOrCreateHostReduceRemoteBuffer(
+        grad_id, inInfo(updater_index), graph());
+
+    poplar::program::Copy gradientsToHostProg(weightDeltas, remoteBuffer);
+    poplar::program::Copy dummyCallback(dummyTensor, deviceToHostStream);
+    prog.add(gradientsToHostProg);
+    prog.add(dummyCallback);
+  } else {
+    poplar::program::Copy gradientsToHostProg(weightDeltas, deviceToHostStream);
+    prog.add(gradientsToHostProg);
+  }
+
+  // When running in pipelined mode the sync op is added after every copy
+  if (op_p->getIr().getSessionOptions().enablePipelining ||
+      op_p->getIr().getSessionOptions().hostAllReduceRemoteBuffer) {
     prog.add(poplar::program::Sync(poplar::SyncType::INTERNAL));
   }
 }
@@ -67,10 +84,26 @@ void GradCopyFromHostOpx::grow(poplar::program::Sequence &prog) const {
   auto hostToDeviceStream =
       dv_p->insertGradientLoadStream(grad_id, inInfo(updater_index), graph());
 
-  dv_p->getHostReduceStreamIds().emplace_back(hostToDeviceStream.handle());
+  dv_p->getHostReduceStreamIds().push_back(hostToDeviceStream.handle());
 
-  poplar::program::Copy gradientsFromHostProg(hostToDeviceStream, weightDeltas);
-  prog.add(gradientsFromHostProg);
+  if (op_p->getIr().getSessionOptions().hostAllReduceRemoteBuffer) {
+    // This is currently a hack
+    poplar::Tensor dummyTensor = graph().addVariable(poplar::CHAR, {1});
+    // TODO: use linear mapper?
+    graph().setTileMapping(dummyTensor, 0);
+
+    auto remoteBuffer = dv_p->getOrCreateHostReduceRemoteBuffer(
+        grad_id, inInfo(updater_index), graph());
+
+    poplar::program::Copy dummyCallback(hostToDeviceStream, dummyTensor);
+    poplar::program::Copy gradientsFromHostProg(remoteBuffer, weightDeltas);
+    prog.add(dummyCallback);
+    prog.add(gradientsFromHostProg);
+  } else {
+    poplar::program::Copy gradientsFromHostProg(hostToDeviceStream,
+                                                weightDeltas);
+    prog.add(gradientsFromHostProg);
+  }
 
   // output is a reference to the updated input
   setOutTensor(GradCopyFromHostOp::getOutIndex(), weightDeltas);

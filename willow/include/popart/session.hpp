@@ -1,6 +1,7 @@
 #ifndef GUARD_NEURALNET_NET_HPP
 #define GUARD_NEURALNET_NET_HPP
 
+#include <poplar/DataStream.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 
@@ -302,6 +303,14 @@ public:
   const std::vector<std::string> &getHostReduceStreamIds() const;
 
   /**
+   * Access the remote buffers associated with gradient and weight streams
+   * that are used in host side all reduce operations. Only populated if
+   * hostAllReduce and hostAllReduceRemoteBuffer are enabled.
+   */
+  const std::map<std::string, poplar::RemoteBuffer> &
+  getHostReduceRemoteBuffers() const;
+
+  /**
    * Connect Poplar stream callbacks. In conjunction with
    * `getGradAndVarStreamIds` the streams can be used to copy gradients to the
    * host to perform collective operations after which the variables can be
@@ -311,6 +320,26 @@ public:
   void connectStreamToCallback(const std::string &streamHandle,
                                std::function<void(void *)> callback,
                                unsigned index = 0);
+
+  /**
+   * Read from a RemoteBuffer object into a user space pointer w.
+   * This can be useful when we run larger models with host side
+   * reductions since HEXOPT is currently limited to 128 MB
+   */
+  void copyFromRemoteBuffer(const poplar::RemoteBuffer &buffer,
+                            void *w,
+                            int repeat_index,
+                            unsigned replication_index = 0);
+
+  /**
+   * Write to a RemoteBuffer object from a user space pointer w.
+   * This can be useful when we run larger models with host side
+   * reductions since HEXOPT is currently limited to 128 MB
+   */
+  void copyToRemoteBuffer(void *w,
+                          const poplar::RemoteBuffer &buffer,
+                          int repeat_index,
+                          unsigned replication_index = 0);
 
 private:
   void configureFromOnnx(const std::string &model,

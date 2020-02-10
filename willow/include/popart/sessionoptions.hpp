@@ -258,6 +258,9 @@ struct SessionOptions {
   /// Perform weight update on the host. Only useful for training session
   bool hostWeightUpdate = false;
 
+  /// Enable the use of poplar::RemoteBuffers for hostAllReduce operations
+  bool hostAllReduceRemoteBuffer = false;
+
   /// Poplar engine options
   std::map<std::string, std::string> engineOptions;
 

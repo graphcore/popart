@@ -751,7 +751,9 @@ PYBIND11_MODULE(popart_core, m) {
       .def_readwrite("customCodeletCompileFlags",
                      &SessionOptions::customCodeletCompileFlags)
       .def_readwrite("hostAllReduce", &SessionOptions::hostAllReduce)
-      .def_readwrite("hostWeightUpdate", &SessionOptions::hostWeightUpdate);
+      .def_readwrite("hostWeightUpdate", &SessionOptions::hostWeightUpdate)
+      .def_readwrite("hostAllReduceRemoteBuffer",
+                     &SessionOptions::hostAllReduceRemoteBuffer);
 
   py::enum_<PatternsLevel>(m, "PatternsLevel")
       .value("ALL", PatternsLevel::ALL)

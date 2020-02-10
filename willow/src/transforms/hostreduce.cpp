@@ -162,6 +162,14 @@ void HostReduce::verifySessionOptions(const SessionOptions &options) const {
   if (options.enableGradientAccumulation && options.hostWeightUpdate) {
     throw error("Gradient accumulation with host weight update not supported");
   }
+
+  if (options.hostAllReduceRemoteBuffer && options.hostWeightUpdate) {
+    throw error("RemoteBuffer with host weight update not supported");
+  }
+
+  if (options.hostAllReduceRemoteBuffer && options.enableReplicatedGraphs) {
+    throw error("RemoteBuffer with replicated graphs not supported");
+  }
 }
 
 bool HostReduce::apply(Graph &graph) const {
@@ -230,13 +238,23 @@ bool HostReduce::apply(Graph &graph) const {
   // merges two host syncs during compilation into one. See
   // IPUTarget::prepareForStreamAccess() and IPUTarget::completeStreamAccess()
   // for details
-  if (!ir.getSessionOptions().enablePipelining) {
+  if (ir.getSessionOptions().enablePipelining ||
+      ir.getSessionOptions().hostAllReduceRemoteBuffer) {
+    if (gradCopyFromHostOps.size() != gradCopyToHostOps.size()) {
+      throw error("Unequal number of gradient copy operations");
+    }
+    // Sync is added implicitly in the GradCopyToHostOp
+    for (int i = 0; i < gradCopyToHostOps.size(); ++i) {
+      graph.topoCons->insert(gradCopyToHostOps[i], gradCopyFromHostOps[i]);
+    }
+  } else {
     auto syncOp_up = std::make_unique<SyncOp>(
         Op::Settings(graph, "HostReduceSync"), poplar::SyncType::INTERNAL);
     auto syncOpId = graph.moveIntoGraph(std::move(syncOp_up));
     auto syncOp   = graph.getOp(syncOpId);
 
     syncOp->setup();
+
     // Sync Op should run after all gradCopyToHost Ops
     graph.topoCons->insert({{syncOp, gradCopyToHostOps}});
 
@@ -256,14 +274,6 @@ bool HostReduce::apply(Graph &graph) const {
         // Sync Op should run before all gradCopyFromHost Ops
         graph.topoCons->insert(syncOp, gradCopyFromHostOp);
       }
-    }
-  } else {
-    if (gradCopyFromHostOps.size() != gradCopyToHostOps.size()) {
-      throw error("Unequal number of gradient copy operations");
-    }
-    // In pipelining, the sync is added implicitly in the GradCopyToHostOp
-    for (int i = 0; i < gradCopyToHostOps.size(); ++i) {
-      graph.topoCons->insert(gradCopyToHostOps[i], gradCopyFromHostOps[i]);
     }
   }
 
