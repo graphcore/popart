@@ -12,6 +12,12 @@ from popart.torch import torchwriter
 from popart import NllLoss, L1Loss
 import tempfile
 
+# `import test_util` requires adding to sys.path
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent.parent / 'popart'))
+import test_util as tu
+
 
 class TestFailureError(Exception):
     def __init__(self, message):
@@ -123,7 +129,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
         if device_hw_id:
             device = deviceManager.acquireDeviceById(device_hw_id)
         else:
-            device = deviceManager.acquireAvailableDevice()
+            device = tu.acquire_ipu()
 
     # Enumerate available devices
     print("Enumerating devices")

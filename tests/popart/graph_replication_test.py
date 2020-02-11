@@ -11,7 +11,6 @@ import test_util as tu
 from operators_test.op_tester import op_tester
 
 
-@tu.requires_ipu
 def test_weight_update(op_tester):
 
     A = np.ones((2, 4)).astype(np.float32)
@@ -92,7 +91,10 @@ def test_weight_update(op_tester):
                   optimizer=popart.SGD({"defaultLearningRate": (0.01, False)}))
 
 
-@tu.requires_ipu
+replicationFactor = 4
+
+
+@tu.requires_ipu(numIPUs=replicationFactor)
 def test_weight_update_replicated(op_tester):
 
     A = np.random.rand(2, 4).astype(np.float32)
@@ -103,8 +105,6 @@ def test_weight_update_replicated(op_tester):
     beta = np.random.random(1).astype(np.float32)[0]
     transA = False
     transB = False
-
-    replicationFactor = 4
 
     def init_builder(builder):
         i1 = builder.addInputTensor(A)
@@ -194,7 +194,7 @@ def test_weight_update_replicated(op_tester):
                   optimizer=popart.SGD({"defaultLearningRate": (0.01, False)}))
 
 
-@tu.requires_ipu
+@tu.requires_ipu(numIPUs=replicationFactor)
 def test_replication_infer(op_tester):
 
     # 2 samples per device
@@ -206,8 +206,6 @@ def test_replication_infer(op_tester):
     beta = 1.0
     transA = False
     transB = False
-
-    replicationFactor = 4
 
     def init_builder(builder):
         i1 = builder.addInputTensor(A)

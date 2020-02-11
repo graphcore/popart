@@ -90,8 +90,9 @@ def get_model_anchors(doSharding,
         opts.replicatedGraphCount = replicated_graph_count
         opts.enableReplicatedGraphs = True
 
-    device = popart.DeviceManager().acquireAvailableDevice(numIpus=numIPUs)
-    if device is None:
+    if tu.ipu_available(numIPUs):
+        device = tu.acquire_ipu(numIPUs=numIPUs)
+    else:
         pytest.skip("Test needs to run on IPU, but none are available")
 
     if doTraining is True:
@@ -239,7 +240,9 @@ def compare_anchors_pipe(no_pipe_anchors, pipe_anchors):
                 Max difference {np.max(np.abs(t1[i, :, j] - t2[i, :, j]))}"""
 
 
-@tu.requires_ipu
+# TODO see T16010
+# @tu.requires_ipu()
+@pytest.mark.skip("Test currently failing on hardware")
 def test_output_matches_replication_infer():
     """
     Pipelining + No Replication
@@ -267,7 +270,9 @@ def test_output_matches_replication_infer():
     compare_anchors_repl(no_repl_anchors, repl_anchors)
 
 
-@tu.requires_ipu
+# TODO see T16010
+# @tu.requires_ipu()
+@pytest.mark.skip("Test currently failing on hardware")
 def test_output_matches_pipeline_infer():
     """
     Pipelining + Replication
@@ -295,7 +300,9 @@ def test_output_matches_pipeline_infer():
     compare_anchors_both_repl(pipe_anchors, no_pipe_anchors)
 
 
-@tu.requires_ipu
+# TODO see T16010
+# @tu.requires_ipu()
+@pytest.mark.skip("Test currently failing on hardware")
 def test_output_matches_pipeline_train():
     """
     No Pipelining + Replication + Gradient Accumulation

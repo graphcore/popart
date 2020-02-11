@@ -13,6 +13,10 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
+replicationFactor = 2
+nVirtualGraphs = 2
+nIPUs = replicationFactor * nVirtualGraphs
+
 
 def runTest(forceAddOutOfPlace, pipelineRecomputation):
     """
@@ -40,15 +44,12 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation):
     height = 6
     batchesPerStep = 5
     sampleShape = [height, height]
-    replicationFactor = 2
     accumulationFactor = 4
-    nVirtualGraphs = 2
     samplesPerBatch = 48
     divvyFactor = replicationFactor * accumulationFactor
     if (samplesPerBatch % divvyFactor != 0):
         raise RuntimeError("Invalid divvy factor")
     samplesPerMicroBatch = samplesPerBatch // divvyFactor
-    nIPUs = replicationFactor * nVirtualGraphs
     stepDataShape = [batchesPerStep, samplesPerBatch, height, height]
     microBatchShape = [samplesPerMicroBatch, height, height]
     stepDataInfo = popart.TensorInfo("FLOAT", stepDataShape)
@@ -153,10 +154,8 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation):
 
     options = {"compileIPUCode": True, 'numIPUs': nIPUs, "tilesPerIPU": 1216}
     deviceManager = popart.DeviceManager()
-    device = popart.DeviceManager().acquireAvailableDevice(numIpus=nIPUs)
-
-    if device is None:
-        raise RuntimeError("Test needs to run on IPU, but none are available")
+    device = tu.acquire_ipu(numIPUs=nIPUs)
+    assert device
 
     userOptions = popart.SessionOptions()
     # This requires T12562 to be solved before enabling (TODO)
@@ -298,7 +297,7 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation):
     assert (error2 < 1e-5)
 
 
-@tu.requires_ipu
+@tu.requires_ipu(numIPUs=nIPUs)
 def test_all_cases():
     # this unit test checks a previously failing case
     runTest(forceAddOutOfPlace=False, pipelineRecomputation=False)

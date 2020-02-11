@@ -88,7 +88,6 @@ endfunction()
 # exception_test needs hardware: TODO resolve in T10881
 add_all_py_unit_tests("test_util;auto_virtual_graph_test;exception_test;test_session")
 
-
 add_subdirectory(operators_test)
 add_subdirectory(constexpr_tests)
 add_subdirectory(inplace_tests)

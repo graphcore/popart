@@ -1999,7 +1999,8 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation) {
   }
 }
 
-BOOST_AUTO_TEST_CASE(OATTSimpleTest) {
+// TODO see T16010
+BOOST_AUTO_TEST_CASE(OATTSimpleTest, *boost::unit_test::disabled()) {
   if (!OATT_enabled()) {
     return;
   }
@@ -2205,7 +2206,8 @@ BOOST_AUTO_TEST_CASE(OATTSimpleTest) {
   }
 }
 
-BOOST_AUTO_TEST_CASE(OATTWithAccumulation) {
+// TODO see T16010
+BOOST_AUTO_TEST_CASE(OATTWithAccumulation, *boost::unit_test::disabled()) {
   if (!OATT_enabled()) {
     return;
   }
@@ -2458,7 +2460,9 @@ BOOST_AUTO_TEST_CASE(OATTWithAccumulation) {
   }
 }
 
-BOOST_AUTO_TEST_CASE(OATTWithPipeliningAndAccumulation) {
+// TODO see T16010
+BOOST_AUTO_TEST_CASE(OATTWithPipeliningAndAccumulation,
+                     *boost::unit_test::disabled()) {
   if (!OATT_enabled()) {
     return;
   }

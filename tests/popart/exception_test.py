@@ -1,6 +1,12 @@
 import numpy as np
 import popart
 
+# `import test_util` requires adding to sys.path
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+import test_util as tu
+
 
 # test that we can get the graph & summary report after an out of memory exception
 # This test currently requires hardware, as the ipu model does not throw an exception
@@ -45,7 +51,7 @@ def test_out_of_memory_exception():
         losses=[],
         userOptions=options,
         passes=popart.Patterns(popart.PatternsLevel.NONE),
-        deviceInfo=popart.DeviceManager().acquireAvailableDevice(1))
+        deviceInfo=tu.acquire_ipu(1))
 
     try:
         session.prepareDevice()

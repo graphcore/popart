@@ -78,7 +78,7 @@ def test_stochastic_rounding():
     sess.setRandomSeed(0)
 
 
-@tu.requires_ipu
+@tu.requires_ipu()
 def test_stochastic_rounding_behaviour():
     np.random.seed(seed=1)
 
@@ -94,7 +94,7 @@ def test_stochastic_rounding_behaviour():
         fnModel=builder.getModelProto(),
         dataFeed=popart.DataFlow(1, {out: popart.AnchorReturnType("ALL")}),
         userOptions=opts,
-        deviceInfo=popart.DeviceManager().acquireAvailableDevice())
+        deviceInfo=tu.acquire_ipu())
 
     anchors = session.initAnchorArrays()
     session.prepareDevice()

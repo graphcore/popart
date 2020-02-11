@@ -3,6 +3,12 @@ import pytest
 import popart
 import itertools
 
+# `import test_util` requires adding to sys.path
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+import test_util as tu
+
 # Co-prime numbers to avoid `accidentally correct` answers.
 BATCHES_PER_STEP = 7
 BATCH_SIZE = 8
@@ -52,8 +58,10 @@ def return_options(anchorDict):
     if anchorDict["ReplicationFactor"] > 1:
         opts.replicatedGraphCount = anchorDict["ReplicationFactor"]
         opts.enableReplicatedGraphs = True
-        device = popart.DeviceManager().acquireAvailableDevice(ipus)
-        if device is None:
+        # TODO: use the tu.requires_ipu decorator
+        if tu.ipu_available(ipus):
+            device = tu.acquire_ipu(ipus)
+        else:
             print("No IPUS available for test options.")
             return None, None
     else:

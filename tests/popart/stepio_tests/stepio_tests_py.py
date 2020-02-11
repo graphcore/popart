@@ -62,7 +62,7 @@ def test_stepio_bufferinput(tmpdir):
     assert (np.allclose(anchors[o], expected_result))
 
 
-@tu.requires_ipu
+@tu.requires_ipu()
 def test_stepio_bufferinput_ipu(tmpdir):
 
     builder = popart.Builder()
@@ -227,7 +227,7 @@ def test_stepio_callbackinput(tmpdir):
     assert (np.allclose(anchors[o], expected_result))
 
 
-@tu.requires_ipu
+@tu.requires_ipu()
 def test_stepio_callbackinput_ipu(tmpdir):
 
     builder = popart.Builder()

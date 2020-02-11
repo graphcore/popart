@@ -14,7 +14,7 @@ def test_enum_specfic_devices():
     """
     ipu_counts = [1, 2, 4, 8, 16]
     ipu_types = [popart.DeviceType.IpuModel, popart.DeviceType.Cpu]
-    if tu.ipu_avaliable:
+    if tu.ipu_available():
         ipu_types += [popart.DeviceType.Ipu]
     deviceManager = popart.DeviceManager()
     for count, type_ in list(itertools.product(ipu_counts, ipu_types)):
@@ -26,7 +26,7 @@ def test_enum_specfic_devices():
             assert isinstance(device.type, type(type_))
 
 
-@tu.requires_ipu
+@tu.requires_ipu()
 def test_aquire_device_by_id():
     """Test that aquiring by id works.
     """

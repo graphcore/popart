@@ -45,13 +45,12 @@ def get_model(batches_per_step, replication_factor, batch_size, channels,
         opts.replicatedGraphCount = replication_factor
         opts.enableReplicatedGraphs = True
         ipus *= replication_factor
-    device = popart.DeviceManager().acquireAvailableDevice(ipus)
+
+    device = tu.acquire_ipu(ipus)
+    assert device
 
     if synthetic_data:
         opts.ignoreData = True
-
-    if device is None:
-        pytest.skip("Test needs to run on IPU, but none are available")
 
     session = popart.TrainingSession(fnModel=builder.getModelProto(),
                                      dataFeed=data_flow,
@@ -126,7 +125,7 @@ def run_test(batches_per_step, replication_factor, batch_size, channels,
 
 
 # Batch size > 1
-@tu.requires_ipu
+@tu.requires_ipu()
 def test_prefetch_0():
     args = dict(batches_per_step=1,
                 replication_factor=1,
@@ -138,7 +137,7 @@ def test_prefetch_0():
 
 
 # BPS > 1
-@tu.requires_ipu
+@tu.requires_ipu()
 def test_prefetch_1():
     args = dict(batches_per_step=7,
                 replication_factor=1,
@@ -150,7 +149,7 @@ def test_prefetch_1():
 
 
 # BPS > 1, Batch size > 1
-@tu.requires_ipu
+@tu.requires_ipu()
 def test_prefetch_2():
     args = dict(batches_per_step=7,
                 replication_factor=1,
@@ -202,7 +201,7 @@ def run_synthetic_test(batches_per_step, replication_factor, batch_size,
 
 
 # BPS > 1, Batch size > 1, synthetic data.
-@tu.requires_ipu
+@tu.requires_ipu()
 def test_prefetch_synthetic():
     args = dict(batches_per_step=7,
                 replication_factor=1,

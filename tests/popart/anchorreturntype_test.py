@@ -210,7 +210,7 @@ def test_returntype_sum4(tmpdir):
 
 
 # 0-d input tensors, batchesPerStep > 1, replication = 2
-@tu.requires_ipu
+@tu.requires_ipu()
 def test_returntype_all5(tmpdir):
     inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
     art = popart.AnchorReturnType("ALL")
@@ -218,7 +218,7 @@ def test_returntype_all5(tmpdir):
     assert (np.array_equal(anchors_o, inputArray))
 
 
-@tu.requires_ipu
+@tu.requires_ipu()
 def test_returntype_everyn5(tmpdir):
     inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
     art = popart.AnchorReturnType("EVERYN", 2)
@@ -226,7 +226,7 @@ def test_returntype_everyn5(tmpdir):
     assert (np.array_equal(anchors_o, [[3, 4], [7, 8]]))
 
 
-@tu.requires_ipu
+@tu.requires_ipu()
 def test_returntype_final5(tmpdir):
     inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
     art = popart.AnchorReturnType("FINAL")
@@ -234,7 +234,7 @@ def test_returntype_final5(tmpdir):
     assert (np.array_equal(anchors_o, [7, 8]))
 
 
-@tu.requires_ipu
+@tu.requires_ipu()
 def test_returntype_sum5(tmpdir):
     inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
     art = popart.AnchorReturnType("SUM")

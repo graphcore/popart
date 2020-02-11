@@ -3,11 +3,12 @@ import popart
 import pytest
 import re
 
-# importing test_session requires adding to sys.path
+# importing test_session and test_util requires adding to sys.path
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from test_session import PopartTestSession
+import test_util as tu
 
 
 def test_disabled_virtual_graphs():
@@ -360,8 +361,10 @@ def test_pipelined_dropout():
         out = next_layer_in
         builder.addOutputTensor(out)
 
-        device = popart.DeviceManager().acquireAvailableDevice(numIpus=ipus)
-        if device is None:
+        # TODO: use the tu.requires_ipu decorator
+        if tu.ipu_available(ipus):
+            device = tu.acquire_ipu(numIPUs=ipus)
+        else:
             pytest.skip("Test needs to run on IPU, but none are available")
 
         dfAnchors = {}
@@ -494,8 +497,10 @@ def test_pipelined_recomputed_dropout():
     out = next_layer_in
     builder.addOutputTensor(out)
 
-    device = popart.DeviceManager().acquireAvailableDevice(numIpus=ipus)
-    if device is None:
+    # TODO: use the tu.requires_ipu decorator
+    if tu.ipu_available(ipus):
+        device = tu.acquire_ipu(numIPUs=ipus)
+    else:
         pytest.skip("Test needs to run on IPU, but none are available")
 
     dfAnchors = {}
