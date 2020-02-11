@@ -1,5 +1,6 @@
 #include <memory>
 #include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/mul.hpp>
 #include <popart/patterns/mularggradoppattern.hpp>
 #include <popart/tensor.hpp>
@@ -35,7 +36,8 @@ bool MulArgGradOpPattern::apply(Op *op) const {
   auto mul = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Mul, op);
 
   // create a tensor to connect the multiply and reducesum ops
-  const auto tmp_tensor_id = createIntermediateTensorId(op->output->id(0));
+  const auto tmp_tensor_id =
+      op->getIr().createIntermediateTensorId(op->output->id(0));
   op->getGraph().getTensors().addActGrad(tmp_tensor_id);
   const auto tmp_tensor = op->getGraph().getTensors().get(tmp_tensor_id);
   tmp_tensor->info      = npOut(input_0->info, input_1->info);

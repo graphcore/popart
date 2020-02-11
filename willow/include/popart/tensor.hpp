@@ -16,6 +16,8 @@
 
 namespace popart {
 
+class Ir;
+
 enum class TensorType {
   ActGrad = 0, // an activation or a gradient, basically any output of an Op
   Const,
@@ -161,6 +163,9 @@ public:
 
   Graph &getGraph() { return graph; }
   const Graph &getGraph() const { return graph; }
+
+  Ir &getIr();
+  const Ir &getIr() const;
 
   // Determine the virtual graph of this Tensor, on-the-fly
   // based on consumers and producers

@@ -1,5 +1,6 @@
 #include <memory>
 #include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/add.hpp>
 #include <popart/op/cosh.hpp>
 #include <popart/op/exp.hpp>
@@ -40,27 +41,31 @@ bool CoshOpPattern::apply(Op *op) const {
 
   // Connect up the new ops
   exp1->connectInTensor(ExpOp::getInIndex(), input->id);
-  exp1->createAndConnectOutTensor(ExpOp::getOutIndex(),
-                                  createIntermediateTensorId(input->id));
+  exp1->createAndConnectOutTensor(
+      ExpOp::getOutIndex(),
+      input->getIr().createIntermediateTensorId(input->id));
   exp1->setup();
 
   negate->connectInTensor(NegateOp::getInIndex(), input->id);
-  negate->createAndConnectOutTensor(NegateOp::getOutIndex(),
-                                    createIntermediateTensorId(input->id));
+  negate->createAndConnectOutTensor(
+      NegateOp::getOutIndex(),
+      input->getIr().createIntermediateTensorId(input->id));
   negate->setup();
 
   exp2->connectInTensor(ExpOp::getInIndex(),
                         negate->outTensor(NegateOp::getOutIndex())->id);
-  exp2->createAndConnectOutTensor(ExpOp::getOutIndex(),
-                                  createIntermediateTensorId(input->id));
+  exp2->createAndConnectOutTensor(
+      ExpOp::getOutIndex(),
+      input->getIr().createIntermediateTensorId(input->id));
   exp2->setup();
 
   add->connectInTensor(AddOp::getArg0InIndex(),
                        exp1->outTensor(ExpOp::getOutIndex())->id);
   add->connectInTensor(AddOp::getArg1InIndex(),
                        exp2->outTensor(ExpOp::getOutIndex())->id);
-  add->createAndConnectOutTensor(AddOp::getOutIndex(),
-                                 createIntermediateTensorId(input->id));
+  add->createAndConnectOutTensor(
+      AddOp::getOutIndex(),
+      input->getIr().createIntermediateTensorId(input->id));
   add->setup();
 
   scale->connectInTensor(ScaleOp::getInIndex(),

@@ -37,7 +37,7 @@ bool LSTMPattern::apply(Op *op) const {
                           pstage,
                           pphase,
                           "concat",
-                          createIntermediateTensorId(inputs.at(0)));
+                          op->getIr().createIntermediateTensorId(inputs.at(0)));
   };
 
   auto split = [&](TensorId w, auto axis, std::vector<int64_t> splitSizes) {
@@ -51,7 +51,7 @@ bool LSTMPattern::apply(Op *op) const {
                              pstage,
                              pphase,
                              "transpose",
-                             createIntermediateTensorId(x));
+                             op->getIr().createIntermediateTensorId(x));
   };
 
   auto add = [&](std::vector<TensorId> inputs) {
@@ -60,7 +60,7 @@ bool LSTMPattern::apply(Op *op) const {
                        pstage,
                        pphase,
                        "add",
-                       createIntermediateTensorId(inputs.at(0)));
+                       op->getIr().createIntermediateTensorId(inputs.at(0)));
   };
 
   auto reshapeWeights = [&](TensorId w) {
@@ -133,10 +133,12 @@ bool LSTMPattern::apply(Op *op) const {
     newLstm->connectInTensor(PopartLSTMOp::getInitialStateInIndex(),
                              initialState);
   }
-  newLstm->createAndConnectOutTensor(PopartLSTMOp::getOutputOutIndex(),
-                                     createIntermediateTensorId(output));
-  newLstm->createAndConnectOutTensor(PopartLSTMOp::getCellStateOutIndex(),
-                                     createIntermediateTensorId(cellState));
+  newLstm->createAndConnectOutTensor(
+      PopartLSTMOp::getOutputOutIndex(),
+      newLstm->getIr().createIntermediateTensorId(output));
+  newLstm->createAndConnectOutTensor(
+      PopartLSTMOp::getCellStateOutIndex(),
+      newLstm->getIr().createIntermediateTensorId(cellState));
   newLstm->setup();
 
   // Unsqueeze the num_directions axis on the outputs

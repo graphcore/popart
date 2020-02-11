@@ -3,6 +3,8 @@
 #include <string>
 
 #include <popart/error.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/onnxutil.hpp>
 #include <popart/op.hpp>
 #include <popart/op/ipucopy.hpp>
@@ -13,6 +15,9 @@
 #include <popart/util.hpp>
 
 namespace popart {
+
+Ir &Tensor::getIr() { return getGraph().getIr(); }
+const Ir &Tensor::getIr() const { return getGraph().getIr(); }
 
 bool Tensor::consumersAllPreLoss() const {
   for (Op *consumer : consumers.getOps()) {

@@ -261,7 +261,7 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
                             pipelineStage,
                             pingPongPhase,
                             info.op->name() + "_RhsTranspose",
-                            createIntermediateTensorId(rhs->id));
+                            rhs->getIr().createIntermediateTensorId(rhs->id));
 
       info.transposeRhsTId =
           builder.transpose(lhs->id,
@@ -270,7 +270,7 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
                             pipelineStage,
                             pingPongPhase,
                             info.op->name() + "_LhsTranspose",
-                            createIntermediateTensorId(lhs->id));
+                            lhs->getIr().createIntermediateTensorId(lhs->id));
     }
   }
 
@@ -295,7 +295,7 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
                           pipelineStage,
                           pingPongPhase,
                           info.op->name() + "_LhsExpand",
-                          createIntermediateTensorId(lhs->id));
+                          lhs->getIr().createIntermediateTensorId(lhs->id));
       info.expandedRhsTId =
           builder.reshape(rhs->id,
                           rhsShape,
@@ -303,7 +303,7 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
                           pipelineStage,
                           pingPongPhase,
                           info.op->name() + "_RhsExpand",
-                          createIntermediateTensorId(rhs->id));
+                          rhs->getIr().createIntermediateTensorId(rhs->id));
 
     } else {
       const auto &inputTensorMap = info.op->input->tensorMap();
@@ -322,7 +322,7 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
                           pipelineStage,
                           pingPongPhase,
                           info.op->name() + "_LhsExpand",
-                          createIntermediateTensorId(lhs->id));
+                          lhs->getIr().createIntermediateTensorId(lhs->id));
 
       info.expandedRhsTId =
           builder.reshape(rhs->id,
@@ -331,7 +331,7 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
                           pipelineStage,
                           pingPongPhase,
                           info.op->name() + "_RhsExpand",
-                          createIntermediateTensorId(rhs->id));
+                          rhs->getIr().createIntermediateTensorId(rhs->id));
     }
   }
 
@@ -382,15 +382,16 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
 
       // Need to un-concat the grouped result
 
-      auto sliceId = builder.slice(matmulId,
-                                   starts,
-                                   ends,
-                                   axes,
-                                   virtualGraphId,
-                                   pipelineStage,
-                                   pingPongPhase,
-                                   info.op->name() + "_Slice:",
-                                   createIntermediateTensorId(matmulId));
+      auto sliceId =
+          builder.slice(matmulId,
+                        starts,
+                        ends,
+                        axes,
+                        virtualGraphId,
+                        pipelineStage,
+                        pingPongPhase,
+                        info.op->name() + "_Slice:",
+                        info.op->getIr().createIntermediateTensorId(matmulId));
 
       builder.squeeze(sliceId,
                       {0},
@@ -402,23 +403,25 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
 
     } else {
 
-      auto sliceId = builder.slice(matmulId,
-                                   starts,
-                                   ends,
-                                   axes,
-                                   virtualGraphId,
-                                   pipelineStage,
-                                   pingPongPhase,
-                                   info.op->name() + "_Slice:",
-                                   createIntermediateTensorId(matmulId));
+      auto sliceId =
+          builder.slice(matmulId,
+                        starts,
+                        ends,
+                        axes,
+                        virtualGraphId,
+                        pipelineStage,
+                        pingPongPhase,
+                        info.op->name() + "_Slice:",
+                        info.op->getIr().createIntermediateTensorId(matmulId));
 
-      auto squeezeId = builder.squeeze(sliceId,
-                                       {0},
-                                       virtualGraphId,
-                                       pipelineStage,
-                                       pingPongPhase,
-                                       info.op->name() + "_Squeeze:",
-                                       createIntermediateTensorId(sliceId));
+      auto squeezeId =
+          builder.squeeze(sliceId,
+                          {0},
+                          virtualGraphId,
+                          pipelineStage,
+                          pingPongPhase,
+                          info.op->name() + "_Squeeze:",
+                          info.op->getIr().createIntermediateTensorId(sliceId));
 
       Shape outputTransposeDims =
           tranposeDims(graph.getIr().getTensor(squeezeId)->info.shape());

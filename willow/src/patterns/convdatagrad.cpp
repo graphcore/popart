@@ -1,5 +1,6 @@
 #include <memory>
 #include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/addbias.hpp>
 #include <popart/op/conv.hpp>
 #include <popart/patterns/convdatagrad.hpp>
@@ -85,8 +86,9 @@ bool ConvDataGradPattern::apply(Op *op) const {
 
   // Configure the flip weight op
   flip->connectInTensor(ConvFlipWeightsOp::getInIndex(), weights_in->id);
-  flip->createAndConnectOutTensor(ConvFlipWeightsOp::getOutIndex(),
-                                  createIntermediateTensorId(weights_in->id));
+  flip->createAndConnectOutTensor(
+      ConvFlipWeightsOp::getOutIndex(),
+      weights_in->getIr().createIntermediateTensorId(weights_in->id));
 
   flip->setup();
   flip->setParameters(bwdConvParams);

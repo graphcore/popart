@@ -42,7 +42,8 @@ bool DivArg0GradOpPattern::apply(Op *op) const {
   // Connect up the new ops
   div->connectInTensor(0, grad_in->id);
   div->connectInTensor(1, fwd_in1->id);
-  div->createAndConnectOutTensor(0, createIntermediateTensorId(grad_in->id));
+  div->createAndConnectOutTensor(
+      0, grad_in->getIr().createIntermediateTensorId(grad_in->id));
   div->outInfo(0) = npOut(grad_in->info, fwd_in1->info);
 
   reduce->connectInTensor(0, div->outTensor(0)->id);

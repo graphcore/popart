@@ -1,5 +1,6 @@
 #include <memory>
 #include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/div.hpp>
 #include <popart/op/scale.hpp>
 #include <popart/op/sqrt.hpp>
@@ -36,8 +37,9 @@ bool SqrtGradOpPattern::apply(Op *op) const {
 
   // Connect up the new ops
   scale->connectInTensor(ScaleOp::getInIndex(), fwd_out->id);
-  scale->createAndConnectOutTensor(ScaleOp::getOutIndex(),
-                                   createIntermediateTensorId(fwd_out->id));
+  scale->createAndConnectOutTensor(
+      ScaleOp::getOutIndex(),
+      fwd_out->getIr().createIntermediateTensorId(fwd_out->id));
   scale->setup();
 
   div->connectInTensor(DivOp::getArg0InIndex(), grad_in->id);

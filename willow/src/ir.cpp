@@ -3186,4 +3186,12 @@ Ir::getAllRemoteBufferInfos() const {
   return remoteBufferInfoMap;
 }
 
+TensorId Ir::createIntermediateTensorId(const TensorId &base_id) {
+  auto temp_id =
+      logging::format("{}__t{}", base_id, intermediate_tensor_counter);
+  logging::ir::trace("Generating tensor id {}", temp_id);
+  ++intermediate_tensor_counter;
+  return temp_id;
+}
+
 } // namespace popart

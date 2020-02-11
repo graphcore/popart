@@ -114,7 +114,8 @@ TransformBuilder::multiOutputOp(const OperatorIdentifier &_opid,
   }
   std::vector<TensorId> result;
   for (OutIndex i = 0; i < numberOfOutputs; i++) {
-    op->createAndConnectOutTensor(i, createIntermediateTensorId(inputs.at(0)));
+    op->createAndConnectOutTensor(
+        i, op->getIr().createIntermediateTensorId(inputs.at(0)));
     result.push_back(op->outId(i));
   }
 

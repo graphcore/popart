@@ -1,5 +1,6 @@
 #include <memory>
 #include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/cos.hpp>
 #include <popart/op/mul.hpp>
 #include <popart/op/negate.hpp>
@@ -34,15 +35,17 @@ bool CosGradOpPattern::apply(Op *op) const {
 
   // Connect up the new ops
   sin->connectInTensor(SinOp::getInIndex(), fwd_in->id);
-  sin->createAndConnectOutTensor(SinOp::getOutIndex(),
-                                 createIntermediateTensorId(grad_in->id));
+  sin->createAndConnectOutTensor(
+      SinOp::getOutIndex(),
+      grad_in->getIr().createIntermediateTensorId(grad_in->id));
   sin->setup();
 
   mul->connectInTensor(MulOp::getArg0InIndex(), grad_in->id);
   mul->connectInTensor(MulOp::getArg1InIndex(),
                        sin->outTensor(SinOp::getOutIndex())->id);
-  mul->createAndConnectOutTensor(MulOp::getOutIndex(),
-                                 createIntermediateTensorId(grad_in->id));
+  mul->createAndConnectOutTensor(
+      MulOp::getOutIndex(),
+      grad_in->getIr().createIntermediateTensorId(grad_in->id));
   mul->setup();
 
   negate->connectInTensor(NegateOp::getInIndex(),

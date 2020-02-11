@@ -1,5 +1,6 @@
 #include <memory>
 #include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/add.hpp>
 #include <popart/op/concat.hpp>
 #include <popart/op/pad.hpp>
@@ -275,8 +276,8 @@ static std::vector<std::unique_ptr<PadOp>> createPadOps(
 
   for (int i = 0; i < result.size(); ++i) {
     result[i]->connectInTensor(0, inputs[i]->id);
-    result[i]->createAndConnectOutTensor(0,
-                                         createIntermediateTensorId(tensorId));
+    result[i]->createAndConnectOutTensor(
+        0, result[i]->getIr().createIntermediateTensorId(tensorId));
   }
 
   return result;

@@ -1,4 +1,5 @@
 #include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/op.hpp>
 #include <popart/patterns/sequenceexpander.hpp>
 #include <popart/pbwrap.hpp>
@@ -16,7 +17,7 @@ std::vector<const Tensor *> SequenceExpander::touches(Op *) const { return {}; }
 static void connectPair(TensorId baseId,
                         std::unique_ptr<Op> &left,
                         std::unique_ptr<Op> &right) {
-  auto tensor = createIntermediateTensorId(baseId);
+  auto tensor = left->getIr().createIntermediateTensorId(baseId);
   logging::pattern::info("Adding intermediate tensor with id {}", tensor);
 
   left->createAndConnectOutTensor(0, tensor);
