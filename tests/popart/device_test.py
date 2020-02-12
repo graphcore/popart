@@ -17,7 +17,7 @@ def test_enum_specfic_devices():
     if tu.ipu_available():
         ipu_types += [popart.DeviceType.Ipu]
     deviceManager = popart.DeviceManager()
-    for count, type_ in list(itertools.product(ipu_counts, ipu_types)):
+    for count, type_ in itertools.product(ipu_counts, ipu_types):
         devices = deviceManager.enumerateDevices(
             pattern=popart.SyncPattern.Full, numIpus=count, deviceType=type_)
 
@@ -31,7 +31,8 @@ def test_aquire_device_by_id():
     """Test that aquiring by id works.
     """
     deviceManager = popart.DeviceManager()
-    for id_ in list(range(16)):
+    ipu_count = len(deviceManager.enumerateDevices(numIpus=1))
+    for id_ in range(ipu_count):
         device = deviceManager.acquireDeviceById(
             id=id_, pattern=popart.SyncPattern.Full)
         # We can't be sure something else isn't using the IPUs...
