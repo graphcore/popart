@@ -150,6 +150,7 @@ def get_model_anchors(doSharding,
 
     inputs = {d0: data, l0: label}
     stepio = popart.PyStepIO(inputs, anchors)
+    stepio.enableRuntimeAsserts(False)
 
     session.weightsFromHost()
     if doTraining is True:
