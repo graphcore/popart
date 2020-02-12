@@ -1025,8 +1025,10 @@ print(D[0,0])
 
 */
 // Test: bidirectional gradient streaming and device side variable update
+// TODO see T16010
 BOOST_AUTO_TEST_CASE(
-    HostReduceTransformationGradientStoreGradientLoadReplicated) {
+    HostReduceTransformationGradientStoreGradientLoadReplicated,
+    *boost::unit_test::disabled()) {
   // the dimensions of the matrices
   int K                       = 6;
   int M                       = 7;
