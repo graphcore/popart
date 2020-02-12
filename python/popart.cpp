@@ -753,7 +753,12 @@ PYBIND11_MODULE(popart_core, m) {
       .def_readwrite("hostAllReduce", &SessionOptions::hostAllReduce)
       .def_readwrite("hostWeightUpdate", &SessionOptions::hostWeightUpdate)
       .def_readwrite("hostAllReduceRemoteBuffer",
-                     &SessionOptions::hostAllReduceRemoteBuffer);
+                     &SessionOptions::hostAllReduceRemoteBuffer)
+      .def_readwrite("hostWeightUpdate", &SessionOptions::hostWeightUpdate)
+
+      .def_readwrite("kahnTieBreaker", &SessionOptions::kahnTieBreaker)
+      .def_readwrite("timeLimitScheduler", &SessionOptions::timeLimitScheduler)
+      .def_readwrite("swapLimitScheduler", &SessionOptions::swapLimitScheduler);
 
   py::enum_<PatternsLevel>(m, "PatternsLevel")
       .value("ALL", PatternsLevel::ALL)

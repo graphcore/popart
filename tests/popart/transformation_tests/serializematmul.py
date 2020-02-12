@@ -12,6 +12,17 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
 
+def getBaseOptions():
+    opts = popart.SessionOptions()
+    opts.reportOptions = {"showExecutionSteps": "true"}
+    opts.enableGroupedMatmuls = False
+    # TODO(T14786) investigate why swapping causes some tests to fail
+    opts.swapLimitScheduler = -1
+    # TODO(T14786) investigate why GREEDY causes some tests to fail
+    opts.kahnTieBreaker = "FIFO"
+    return opts
+
+
 def _is_grad_tensor(x):
     return x['name'].startswith(popart.reservedGradientPrefix())
 
@@ -102,9 +113,7 @@ def test_matmul_serialization_invalid_factor(tmpdir):
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
-    opts = popart.SessionOptions()
-    opts.reportOptions = {"showExecutionSteps": "true"}
-    opts.enableGroupedMatmuls = False
+    opts = getBaseOptions()
 
     pat = popart.Patterns(['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp'])
 
@@ -151,9 +160,7 @@ def test_matmul_serialization_inference(tmpdir):
 
         dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
-        opts = popart.SessionOptions()
-        opts.reportOptions = {"showExecutionSteps": "true"}
-        opts.enableGroupedMatmuls = False
+        opts = getBaseOptions()
 
         pat = popart.Patterns(
             ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp'])
@@ -286,9 +293,7 @@ def test_matmul_serialization_training_1(tmpdir):
                 #popart.reservedGradientPrefix() + rhs: popart.AnchorReturnType("ALL"), << T11469
             })
 
-        opts = popart.SessionOptions()
-        opts.reportOptions = {"showExecutionSteps": "true"}
-        opts.enableGroupedMatmuls = False
+        opts = getBaseOptions()
 
         pat = popart.Patterns(
             ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp'])
@@ -541,9 +546,7 @@ def test_matmul_serialization_training_2(tmpdir):
                 popart.AnchorReturnType("ALL"),
             })
 
-        opts = popart.SessionOptions()
-        opts.reportOptions = {"showExecutionSteps": "true"}
-        opts.enableGroupedMatmuls = False
+        opts = getBaseOptions()
 
         pat = popart.Patterns(
             ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp'])
@@ -800,9 +803,7 @@ def test_matmul_serialization_precision(tmpdir):
                 #popart.reservedGradientPrefix() + rhs: popart.AnchorReturnType("ALL"), << T11469
             })
 
-        opts = popart.SessionOptions()
-        opts.reportOptions = {"showExecutionSteps": "true"}
-        opts.enableGroupedMatmuls = False
+        opts = getBaseOptions()
 
         pat = popart.Patterns(
             ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp'])
@@ -1066,9 +1067,8 @@ def test_matmul_serialization_training_with_gradient_accumlation(tmpdir):
                 #popart.reservedGradientPrefix() + rhs: popart.AnchorReturnType("ALL"), << T11469
             })
 
-        opts = popart.SessionOptions()
-        opts.reportOptions = {"showExecutionSteps": "true"}
-        opts.enableGroupedMatmuls = False
+        opts = getBaseOptions()
+
         opts.enableGradientAccumulation = True
         opts.accumulationFactor = 5
 

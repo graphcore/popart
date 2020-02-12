@@ -41,7 +41,6 @@ endif()
 
 find_package(Poprithms REQUIRED)
 
-
 find_package(Spdlog REQUIRED)
 message(STATUS "Spdlog include dir is " ${SPDLOG_INCLUDE_DIRS})
 
@@ -78,7 +77,7 @@ target_link_libraries(popart
   ${POPOPS_LIB}
   ${POPRAND_LIB}
   ${POPUTIL_LIB}
-   ${POPRITHMS_LIB}
+  ${POPRITHMS_LIB}
 )
 
 # The following defines cause compiler warnings if not set

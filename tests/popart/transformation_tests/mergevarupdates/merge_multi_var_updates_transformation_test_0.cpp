@@ -113,8 +113,12 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
 
     auto opts = SessionOptions();
 
-    opts.firstDotOp = 0;
-    opts.finalDotOp = 200;
+    // accurate scheduling is quite slow for this one. Imposing this limit on
+    // how many swaps to perform in the scheduling algorithm reduces test time
+    // from 280 seconds to 50 seconds.
+    opts.swapLimitScheduler = 20;
+    opts.firstDotOp         = 0;
+    opts.finalDotOp         = 200;
     opts.dotChecks.insert(DotCheck::FINAL);
     opts.logDir                     = ".";
     opts.mergeVarUpdate             = mvu;
