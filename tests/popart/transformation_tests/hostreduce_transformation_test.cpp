@@ -86,9 +86,35 @@ void checkOpSchedule(const std::vector<Op *> &opSchedule,
   BOOST_CHECK(numCopiesToHost == numCopiesToDevice);
 }
 
+// Checks that kernel boot commandline is correct for setting up OATT
 bool OATT_enabled() {
   const char *oatt_dev0 = "/dev/ipu0_mem";
-  return boost::filesystem::exists(boost::filesystem::path(oatt_dev0));
+  const char *ipu_driver_memmap_start =
+      "ipu_driver.memmap_start=0x400000000,0x5000000000";
+  const char *ipu_driver_memmap_size =
+      "ipu_driver.memmap_size=0x400000000,0x400000000";
+
+  std::ifstream t("/proc/cmdline");
+  std::string str((std::istreambuf_iterator<char>(t)),
+                  std::istreambuf_iterator<char>());
+  auto found_start = str.find(ipu_driver_memmap_start) != std::string::npos;
+  auto found_size  = str.find(ipu_driver_memmap_size) != std::string::npos;
+
+  const bool oatt_kernel_cmdline_correct = found_start && found_size;
+  const bool ipu_mem_device_exists =
+      boost::filesystem::exists(boost::filesystem::path(oatt_dev0));
+
+  return oatt_kernel_cmdline_correct && ipu_mem_device_exists;
+}
+
+std::shared_ptr<DeviceInfo> acquireAvailableDevice(int numDevices = 1) {
+  auto device =
+      DeviceManager::createDeviceManager().acquireAvailableDevice(numDevices);
+
+  if (!device) {
+    return nullptr;
+  }
+  return device;
 }
 
 // Test: SGD0VarUpdateOps should be replaced by HostReduceVarUpdate ops
@@ -567,9 +593,7 @@ BOOST_AUTO_TEST_CASE(HostReduceHierarchicalReductionWithReplicatedGraphs) {
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{G_id, art}});
 
-  auto device = DeviceManager::createDeviceManager().acquireAvailableDevice(
-      replicationFactor);
-
+  auto device = acquireAvailableDevice(replicationFactor);
   if (device != nullptr) {
 
     auto opts                   = SessionOptions();
@@ -1099,8 +1123,7 @@ BOOST_AUTO_TEST_CASE(
 
   auto dataFlow = DataFlow(batchesPerStep, {{G_id, art}});
 
-  auto device = DeviceManager::createDeviceManager().acquireAvailableDevice(
-      replicationFactor);
+  auto device = acquireAvailableDevice(replicationFactor);
 
   if (device != nullptr) {
     auto opts                   = SessionOptions();
@@ -2075,9 +2098,10 @@ BOOST_AUTO_TEST_CASE(OATTSimpleTest, *boost::unit_test::disabled()) {
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{G_id, art}});
 
-  auto ipuDevice =
-      popart::DeviceManager::createDeviceManager().acquireAvailableDevice();
-
+  auto device = acquireAvailableDevice();
+  if (!device) {
+    return;
+  }
   auto opts                      = SessionOptions();
   opts.hostAllReduce             = true;
   opts.hostAllReduceRemoteBuffer = true;
@@ -2094,7 +2118,7 @@ BOOST_AUTO_TEST_CASE(OATTSimpleTest, *boost::unit_test::disabled()) {
       dataFlow,
       losses,
       optimizer,
-      ipuDevice,
+      device,
       popart::InputShapeInfo(),
       opts,
       popart::Patterns(PatternsLevel::DEFAULT));
@@ -2348,7 +2372,10 @@ BOOST_AUTO_TEST_CASE(OATTWithAccumulation, *boost::unit_test::disabled()) {
     auto loss    = std::unique_ptr<Loss>(
         new L1Loss(act5, "l1LossVal", lambda, ReductionType::SUM));
 
-    auto device = DeviceManager::createDeviceManager().acquireAvailableDevice();
+    auto device = acquireAvailableDevice();
+    if (!device) {
+      return std::vector<std::vector<float>>();
+    }
 
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
@@ -2448,6 +2475,10 @@ BOOST_AUTO_TEST_CASE(OATTWithAccumulation, *boost::unit_test::disabled()) {
   // Run the model with and without hostAllReduce
   auto hostAllReduceDisabled = run(false);
   auto hostAllReduceEnabled  = run(true);
+
+  if (hostAllReduceDisabled.empty()) {
+    return;
+  }
 
   BOOST_REQUIRE(hostAllReduceDisabled.size() == hostAllReduceEnabled.size());
 
@@ -2599,8 +2630,10 @@ BOOST_AUTO_TEST_CASE(OATTWithPipeliningAndAccumulation,
         {prefix + getGradId(w5), std::vector<float>(sampleElms)},
     };
 
-    auto device =
-        DeviceManager::createDeviceManager().acquireAvailableDevice(4);
+    auto device = acquireAvailableDevice(4);
+    if (!device) {
+      return std::vector<std::vector<float>>();
+    }
 
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
@@ -2699,6 +2732,9 @@ BOOST_AUTO_TEST_CASE(OATTWithPipeliningAndAccumulation,
   // Run the model with and without hostAllReduce
   auto hostAllReduceDisabled = run(false);
   auto hostAllReduceEnabled  = run(true);
+  if (hostAllReduceDisabled.empty()) {
+    return;
+  }
 
   BOOST_REQUIRE(hostAllReduceDisabled.size() == hostAllReduceEnabled.size());
 
