@@ -134,6 +134,8 @@ public:
   bool hasProducer() const;
   void setCached(bool);
   bool isCached() const;
+  void setImplicitLoopInput(bool);
+  bool isImplicitLoopInput() const;
   void setRemoteBufferInfo(RemoteBufferId, RemoteBufferIndex);
   const std::pair<RemoteBufferId, RemoteBufferIndex>
   getRemoteBufferInfo() const;
@@ -181,6 +183,7 @@ protected:
   Op *producer;
   const TensorTypeInfo *tensorTypeInfo;
   bool cached;
+  bool implicitLoopInput;
   std::pair<RemoteBufferId, RemoteBufferIndex> remoteBufferInfo;
 
   // By default stream tensors are replicated

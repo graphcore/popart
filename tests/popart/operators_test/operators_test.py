@@ -155,6 +155,50 @@ def test_logical_if(op_tester):
     test(False)
 
 
+def test_loop(op_tester):
+    i1 = np.array([[1, 2], [3, 4]]).astype(np.float32)
+    i2 = np.array([[1, 2], [3, 4]]).astype(np.float32)
+    trip_count = 10
+
+    def init_builder(builder):
+        builder.setGraphName("main_graph")
+        a = builder.addInputTensor(i1)
+        b = builder.addInputTensor(i2)
+
+        M = builder.aiOnnxOpset10.constant(
+            np.array(trip_count).astype(np.int64))
+        cond = builder.aiOnnxOpset10.constant(
+            np.array(True).astype(np.bool), "cond")
+
+        loop_builder = builder.createSubgraphBuilder()
+        loop_builder.setGraphName("body")
+        # Inputs: [iteration_number, condition_in, a_in]
+        loop_builder.addInputTensor(popart.TensorInfo("INT64", []))
+        keepgoing = loop_builder.addInputTensor(popart.TensorInfo("BOOL", []))
+        a_in = loop_builder.addUntypedInputTensor(a)
+        a_out = loop_builder.aiOnnxOpset10.matmul([a_in, b])
+
+        # Outputs: [condition_out, a_out]
+        loop_builder.addOutputTensor(keepgoing)
+        loop_builder.addOutputTensor(a_out)
+
+        o = builder.aiOnnxOpset10.loop([M, cond, a], 1, loop_builder)[0]
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        a = i1
+        b = i2
+
+        x = a
+        for i in range(trip_count):
+            x = np.matmul(x, b)
+
+        return [x]
+
+    op_tester.run(init_builder, reference, step_type='infer')
+
+
 def test_convolution(op_tester):
     def init_builder(builder):
         data = np.ones([1, 2, 4, 4], dtype=np.float32)

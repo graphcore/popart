@@ -3039,8 +3039,18 @@ void Ir::applyInplacePattern(Graph &graph) {
           return false;
         };
 
+        auto consumesImplicitLoopInputs = [&] {
+          for (auto &index_tensor : op->input->tensorMap()) {
+            auto inTensor = index_tensor.second;
+            if (inTensor->isImplicitLoopInput()) {
+              return true;
+            }
+          }
+          return false;
+        };
+
         if (!op->isExcludedFromPattern(&inplace) && !touchesAnchors() &&
-            !recomputeUsingCheckpoint()) {
+            !recomputeUsingCheckpoint() && !consumesImplicitLoopInputs()) {
           auto newTopoCons = inplace.getNewTopoCons(op, identifier);
           if (isSchedulable(newTopoCons)) {
             inplacedAlready.insert(op->id);
