@@ -330,7 +330,7 @@ def test_dropout_training_replicated_repeatable():
 # batches per step and replicated graphs.
 def test_replicated_with_multiple_batches_per_step():
     replication_factor = 4
-    dsize = 10
+    dsize = 100
     batches_per_step = 2
     session, ip, out, d__ip, anchors = get_replicated_dropout_session(
         dsize=dsize,
