@@ -1118,7 +1118,7 @@ PYBIND11_MODULE(popart_core, m) {
           py::arg("initVal"),
           py::arg("debugPrefix") = std::string())
       .def("addOutputTensor", &Builder::addOutputTensor, py::arg("outputName"))
-      .def("createSubgraphBuilder",
+      .def("_createSubgraphBuilder",
            &Builder::createSubgraphBuilder,
            pybind11::return_value_policy::reference)
       .def("saveModelProto", &Builder::saveModelProto, py::arg("filename"))
@@ -1130,6 +1130,9 @@ PYBIND11_MODULE(popart_core, m) {
       .def_property_readonly("aiOnnxOpset9", &Builder::aiOnnxOpset9)
       .def_property_readonly("aiOnnxOpset10", &Builder::aiOnnxOpset10)
       .def_property_readonly("aiOnnxOpset11", &Builder::aiOnnxOpset11)
+
+      // Accessors for the ai.onnxml domain builder interface
+      .def_property_readonly("aiOnnxMlOpset1", &Builder::aiOnnxMlOpset1)
 
       // Accessors for the ai.graphcore domain builder interface
       .def_property_readonly("aiGraphcoreOpset1", &Builder::aiGraphcoreOpset1)

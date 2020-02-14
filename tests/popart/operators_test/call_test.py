@@ -52,10 +52,10 @@ def test_call(op_tester):
 
             if input_tensor_method == "from_higher_scope":
                 subgraph_builder.addOutputTensor(
-                    subgraph_builder.aiOnnxOpset10.add([i0, i1]))
+                    subgraph_builder.aiOnnx.add([i0, i1]))
             else:
                 subgraph_builder.addOutputTensor(
-                    subgraph_builder.aiOnnxOpset10.add([sgi0, sgi1]))
+                    subgraph_builder.aiOnnx.add([sgi0, sgi1]))
 
             act = builder.aiGraphcore.call([i0, i1], 1, subgraph_builder)[0]
             out = builder.aiGraphcore.call([act, i2], 1, subgraph_builder)[0]
@@ -119,10 +119,10 @@ def test_call_grad_1(op_tester):
 
             if input_tensor_method == "from_higher_scope":
                 subgraph_builder.addOutputTensor(
-                    subgraph_builder.aiOnnxOpset10.matmul([i0, i1]))
+                    subgraph_builder.aiOnnx.matmul([i0, i1]))
             else:
                 subgraph_builder.addOutputTensor(
-                    subgraph_builder.aiOnnxOpset10.matmul([sgi0, sgi1]))
+                    subgraph_builder.aiOnnx.matmul([sgi0, sgi1]))
 
             act = builder.aiGraphcore.call([i0, i1], 1, subgraph_builder)[0]
             out = builder.aiGraphcore.call([act, i2], 1, subgraph_builder)[0]
@@ -185,17 +185,14 @@ def test_nested_calls(op_tester):
         # sg0
         sg0_builder = builder.createSubgraphBuilder()
         sg0_i0 = sg0_builder.addUntypedInputTensor()
-        sg0_builder.addOutputTensor(
-            sg0_builder.aiGraphcoreOpset1.scale([sg0_i0], 2))
+        sg0_builder.addOutputTensor(sg0_builder.aiGraphcore.scale([sg0_i0], 2))
 
         # sg1
         sg1_builder = builder.createSubgraphBuilder()
         sg1_i0 = sg1_builder.addUntypedInputTensor()
         sg1_i1 = sg1_builder.addUntypedInputTensor()
-        sg1_act0 = sg1_builder.aiGraphcoreOpset1.call([sg1_i0], 1,
-                                                      sg0_builder)[0]
-        sg1_builder.addOutputTensor(
-            sg1_builder.aiOnnxOpset10.add([sg1_act0, sg1_i1]))
+        sg1_act0 = sg1_builder.aiGraphcore.call([sg1_i0], 1, sg0_builder)[0]
+        sg1_builder.addOutputTensor(sg1_builder.aiOnnx.add([sg1_act0, sg1_i1]))
 
         # main
         i0 = builder.addInputTensor(d0)
@@ -226,7 +223,7 @@ def test_subgraph_with_zero_outputs(op_tester):
         # sg0 (has no output)
         sg0_builder = builder.createSubgraphBuilder()
         sg0_i0 = sg0_builder.addUntypedInputTensor()
-        sg0_builder.aiGraphcoreOpset1.scale([sg0_i0], 2)
+        sg0_builder.aiGraphcore.scale([sg0_i0], 2)
 
         # main
         i0 = builder.addInputTensor(d0)
@@ -246,8 +243,7 @@ def test_subgraph_call_mismatch0(op_tester):
         # sg0 (has 1 output)
         sg0_builder = builder.createSubgraphBuilder()
         sg0_i0 = sg0_builder.addUntypedInputTensor()
-        sg0_builder.addOutputTensor(
-            sg0_builder.aiGraphcoreOpset1.scale([sg0_i0], 2))
+        sg0_builder.addOutputTensor(sg0_builder.aiGraphcore.scale([sg0_i0], 2))
 
         # main (expects 2 outputs)
         i0 = builder.addInputTensor(d0)
@@ -266,8 +262,7 @@ def test_subgraph_call_mismatch1(op_tester):
         # sg0 (has 1 input)
         sg0_builder = builder.createSubgraphBuilder()
         sg0_i0 = sg0_builder.addUntypedInputTensor()
-        sg0_builder.addOutputTensor(
-            sg0_builder.aiGraphcoreOpset1.scale([sg0_i0], 2))
+        sg0_builder.addOutputTensor(sg0_builder.aiGraphcore.scale([sg0_i0], 2))
 
         # main (expects 3 inputs)
         i0 = builder.addInputTensor(d0)
@@ -309,8 +304,7 @@ def test_call_grad_2(op_tester):
         subgraph_builder.addInputTensorFromParentGraph(i1)
 
         subgraph_builder.addOutputTensor(
-            subgraph_builder.aiOnnxOpset10.matmul([i0, i1],
-                                                  "add_inside_subgraph"))
+            subgraph_builder.aiOnnx.matmul([i0, i1], "add_inside_subgraph"))
         out = builder.aiGraphcore.call([i0, i1], 1, subgraph_builder,
                                        "call_subgraph")[0]
 
@@ -364,7 +358,7 @@ def test_call_grad_3():
             subgraph_builder = builder.createSubgraphBuilder()
 
             subgraph_builder.addInputTensorFromParentGraph(relu)
-            sm = subgraph_builder.aiOnnxOpset11.softmax([relu])
+            sm = subgraph_builder.aiOnnx.softmax([relu])
             subgraph_builder.addOutputTensor(sm)
 
             call = builder.aiGraphcore.call([relu], 1, subgraph_builder,
@@ -464,9 +458,8 @@ def test_stacked_subgraphs(op_tester):
         info = popart.TensorInfo("FLOAT", shape)
         sgi0 = subgraph_builder.addInputTensor(info)
         sgi1 = subgraph_builder.addInputTensor(info)
-        matmul = subgraph_builder.aiOnnxOpset10.matmul([sgi0, sgi1],
-                                                       "mm_layer")
-        relu = subgraph_builder.aiOnnxOpset10.relu([matmul], "relu_layer")
+        matmul = subgraph_builder.aiOnnx.matmul([sgi0, sgi1], "mm_layer")
+        relu = subgraph_builder.aiOnnx.relu([matmul], "relu_layer")
         subgraph_builder.addOutputTensor(relu)
 
         actIn = in0
@@ -520,9 +513,8 @@ def test_stacked_subgraphs_2():
             info = popart.TensorInfo("FLOAT", shape)
             sgi0 = subgraph_builder.addInputTensor(info)
             sgi1 = subgraph_builder.addInputTensor(info)
-            matmul = subgraph_builder.aiOnnxOpset10.matmul([sgi0, sgi1],
-                                                           "mm_layer")
-            relu = subgraph_builder.aiOnnxOpset10.relu([matmul], "relu_layer")
+            matmul = subgraph_builder.aiOnnx.matmul([sgi0, sgi1], "mm_layer")
+            relu = subgraph_builder.aiOnnx.relu([matmul], "relu_layer")
             subgraph_builder.addOutputTensor(relu)
 
             actIn = in0
@@ -598,8 +590,8 @@ def test_stacked_subgraphs_2():
 #     subgraph_builder = builder.createSubgraphBuilder()
 #     subgraph_builder.addInputTensorFromParentGraph(i0)
 #     subgraph_builder.addInputTensorFromParentGraph(i1)
-#     mm = subgraph_builder.aiOnnxOpset10.matmul([i0, i1])
-#     subgraph_builder.addOutputTensor(subgraph_builder.aiOnnxOpset10.dropout([mm], 1)[0])
+#     mm = subgraph_builder.aiOnnx.matmul([i0, i1])
+#     subgraph_builder.addOutputTensor(subgraph_builder.aiOnnx.dropout([mm], 1)[0])
 #
 #     out = builder.aiGraphcore.call([i0, i1], 1, subgraph_builder)[0]
 #
