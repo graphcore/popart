@@ -118,10 +118,25 @@ void PopPrograms::addPipelineCycle(
     }
   }
 
+  auto tryAddRestoreFragmentForStage = [&](PipelineStage stage) {
+    auto foundFragment = pipelineSeqs.find(PipelineFragmentId::Restore);
+    if (foundFragment != pipelineSeqs.end()) {
+      auto &stages_seqs = foundFragment->second;
+      auto foundStage   = stages_seqs.find(stage);
+      if (foundStage != stages_seqs.end()) {
+        auto &sequence = foundStage->second;
+        ss << "\n  ps" << stage << " : Restore";
+        sq.add(sequence);
+      }
+    }
+  };
+
   // 3.
   for (auto &stage_seq : fwdFunctions) {
-    if (pInfo.doStage(pCycle, stage_seq.first)) {
-      ss << "\n  ps" << stage_seq.first << " : Forward";
+    auto stage = stage_seq.first;
+    if (pInfo.doStage(pCycle, stage)) {
+      tryAddRestoreFragmentForStage(stage);
+      ss << "\n  ps" << stage << " : Forward";
       sq.add(poplar::program::Call(stage_seq.second));
     }
   }
@@ -429,6 +444,12 @@ PopPrograms::pipelineFragment(PipelineStage pipelineStage,
 }
 
 poplar::program::Sequence &
+PopPrograms::pipelineRestoreFragment(PipelineStage pipelineStage,
+                                     const std::string &desc) {
+  return pipelineFragment(pipelineStage, PipelineFragmentId::Restore, desc);
+}
+
+poplar::program::Sequence &
 PopPrograms::pipelineForwardFragment(PipelineStage pipelineStage,
                                      const std::string &desc) {
   return pipelineFragment(pipelineStage, PipelineFragmentId::Forward, desc);
@@ -481,6 +502,9 @@ PopPrograms::getStrFromPipelineFragmentId(PipelineFragmentId fragId) {
   switch (fragId) {
   case PipelineFragmentId::ToDeviceStream: {
     return "ToDeviceStream";
+  }
+  case PipelineFragmentId::Restore: {
+    return "Restore";
   }
   case PipelineFragmentId::Forward: {
     return "Forward";

@@ -89,6 +89,7 @@ public:
 
   enum class PipelineFragmentId {
     ToDeviceStream = 0,
+    Restore,
     Forward,
     ToHostStream,
     // IpuCopy fragment has been removed. There is now a Sequence per
@@ -107,6 +108,8 @@ public:
   pipelineToDeviceStreamFragment(PipelineStage pipelineStage,
                                  const std::string &desc);
   poplar::program::Sequence &pipelineForwardFragment(PipelineStage,
+                                                     const std::string &desc);
+  poplar::program::Sequence &pipelineRestoreFragment(PipelineStage,
                                                      const std::string &desc);
 
   // To stream anchors that are computed in the pipelineForwardFragment

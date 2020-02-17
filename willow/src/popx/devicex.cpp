@@ -2109,6 +2109,10 @@ void Devicex::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
       // the copy appears in, a new copy program is added to the cycles
       // sequence using `IpuCopyOpx::growPipelined`.
       dynamic_cast<IpuCopyOpx *>(opx)->createPipelinedOutput();
+    } else if (op->isConvertibleTo<RestoreOp>()) {
+      // Restore Operations are required to run at the start of a pipelineStage
+      growOpx(opx,
+              progs.pipelineRestoreFragment(op->getPipelineStage(), op->str()));
     } else if (op->settings.recomputeType == RecomputeType::CHECKPOINT ||
                op->settings.recomputeType == RecomputeType::UNDEFINED) {
       logging::devicex::debug(

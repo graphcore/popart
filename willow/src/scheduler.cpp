@@ -140,6 +140,30 @@ public:
     g.insertBinConstraints(bins, "pingPongPhaseStart_");
   }
 
+  void annotatePipelineStages() {
+    // Adding pipelineStage bins is not required for correctness.
+    // Constraining the Ops to be within their pipelineStage improves
+    // scheduling runtime as swaps with no effect are invalid.
+    std::vector<std::vector<OpAddress>> bins;
+    for (const auto &x : pg.getOps()) {
+      auto op = x.second.get();
+      if (op->hasPipelineStage()) {
+        auto opAddress = opAddresses[op];
+        auto stage     = op->getOptionalPipelineStage().get();
+        if (stage < -1) {
+          throw internal_error(
+              "stage < -1 unexpected. This function needs adjustment");
+        }
+        uint64_t binIndex = static_cast<uint64_t>(1LL + stage);
+        if (binIndex >= bins.size()) {
+          bins.resize(binIndex + 1);
+        }
+        bins[binIndex].push_back(opAddress);
+      }
+    }
+    g.insertBinConstraints(bins, "PipelineStageStart_");
+  }
+
   void annotatePriorities() {
     std::vector<std::array<OpAddress, 2>> ties;
     for (const auto &x : pg.getOps()) {
@@ -254,6 +278,9 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
       pg.getIr().getSessionOptions().pingPongPhases > 1) {
     grower->annotatePingPongPhase();
   }
+  if (pg.getIr().getSessionOptions().enablePipelining) {
+    grower->annotatePipelineStages();
+  }
   grower->annotatePriorities();
   grower->finalize();
   if (cacher->getGrower() == *grower) {
@@ -329,6 +356,9 @@ bool Scheduler::isSchedulable(const OpsBeforeKey &gCons,
   if (respectPingPongPhases &&
       pg.getIr().getSessionOptions().pingPongPhases > 1) {
     grower.annotatePingPongPhase();
+  }
+  if (pg.getIr().getSessionOptions().enablePipelining) {
+    grower.annotatePipelineStages();
   }
   grower.finalize();
   return grower.isSchedulable();
