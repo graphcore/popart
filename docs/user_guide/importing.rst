@@ -16,23 +16,9 @@ is used to create a pre-trained AlexNet graph, with a 4 x 3 x 244 x 244 input. T
 graph has an ONNX output called ``out``, and the ``DataFlow`` object
 contains an entry to fetch that anchor.
 
-.. code-block:: python
+.. literalinclude:: python_examples/importing.py
+  :language: python
 
-  import popart
-  import torch.onnx
-  import torchvision
-
-  input_ = torch.FloatTensor(torch.randn(4, 3, 224, 224))
-  model = torchvision.models.alexnet(pretrained=True)
-
-  torch.onnx.export(model, input_, "alexnet.onnx")
-
-  # Create a runtime environment
-  anchors = {"output" : popart.AnchorReturnType("ALL")}
-  dataFeed = popart.DataFlow(100, anchors)
-  device = popart.DeviceManager().createCpuDevice()
-
-  session = popart.InferenceSession("alexnet.onnx", dataFeed, device)
 
 The DataFlow object is described in more detail in :any:`popart_executing`.
 
