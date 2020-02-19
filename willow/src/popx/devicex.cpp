@@ -11,6 +11,7 @@
 #include <boost/range/algorithm/find.hpp>
 #include <boost/range/algorithm_ext.hpp>
 
+#include <gcl/ct/TileAllocation.hpp>
 #include <poplar/CSRFunctions.hpp>
 #include <poplar/CycleCount.hpp>
 #include <poplin/codelets.hpp>
@@ -2443,15 +2444,27 @@ void Devicex::prepare() {
           numIOTiles);
     }
 
-    for (unsigned ipu = 0; ipu < numIPUs; ++ipu) {
-      unsigned startTile = ipu * tilesPerIPU;
-      unsigned endTile   = (ipu + 1) * tilesPerIPU;
-      virtualGraphs.emplace_back(
-          graph().createVirtualGraph(startTile + numIOTiles, endTile));
-      logging::devicex::info("Created virtual graph {} from {} to {}",
-                             ipu,
-                             startTile + numIOTiles,
-                             endTile);
+    if (numIOTiles) {
+      const auto computeTiles =
+          gcl::perIPUTiles(graph(), numIOTiles, tilesPerIPU - numIOTiles);
+      for (unsigned ipu = 0; ipu < numIPUs; ++ipu) {
+        unsigned startTile = ipu * tilesPerIPU;
+        unsigned endTile   = (ipu + 1) * tilesPerIPU;
+        auto ipuGraph      = graph().createVirtualGraph(startTile, endTile);
+        virtualGraphs.emplace_back(ipuGraph.createVirtualGraph(computeTiles));
+        logging::devicex::info("Created virtual graph {} with {} tiles",
+                               ipu,
+                               tilesPerIPU - numIOTiles);
+      }
+    } else {
+      for (unsigned ipu = 0; ipu < numIPUs; ++ipu) {
+        unsigned startTile = ipu * tilesPerIPU;
+        unsigned endTile   = (ipu + 1) * tilesPerIPU;
+        virtualGraphs.emplace_back(
+            graph().createVirtualGraph(startTile, endTile));
+        logging::devicex::info(
+            "Created virtual graph {} from {} to {}", ipu, startTile, endTile);
+      }
     }
 
     // Make sure that the virtual graph information is valid
