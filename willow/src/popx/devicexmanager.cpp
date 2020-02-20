@@ -43,28 +43,45 @@ poplar::TargetType convertDeviceType(popart::DeviceType deviceType) {
   throw error("Unknown device type");
 }
 
+void addSyncConfig(const SyncPattern syncPattern, poplar::OptionFlags &flags) {
+  switch (syncPattern) {
+  case SyncPattern::Full:
+    break;
+  case SyncPattern::SinglePipeline:
+    flags.set("syncConfiguration", "ipuAndAll");
+    break;
+  case SyncPattern::PingPong:
+    flags.set("syncConfiguration", "IntraReplicaAndLadder");
+    break;
+  }
+}
+
 DevicexManager::DevicexManager() {
   DeviceManager::createDeviceManager().registerDeviceProvider(this);
 }
 
 std::shared_ptr<DeviceInfo>
-DevicexManager::getDevice(SyncPattern /* syncPattern */,
-                          uint32_t deviceManagerId) {
+DevicexManager::getDevice(SyncPattern syncPattern, uint32_t deviceManagerId) {
   auto deviceManager = poplar::DeviceManager::createDeviceManager();
-  auto device        = deviceManager.getDevice(deviceManagerId);
+
+  poplar::OptionFlags flags;
+  addSyncConfig(syncPattern, flags);
+  auto device = deviceManager.getDevice(deviceManagerId, flags);
   return std::make_shared<DevicexIpuInfo>(*this, device.getId(), device);
 }
 
 void DevicexManager::enumerate(
     std::vector<std::shared_ptr<popart::DeviceInfo>> &devices,
     unsigned requiredNumIPUs,
-    SyncPattern /* syncPattern */,
+    SyncPattern syncPattern,
     DeviceType type) {
 
   auto deviceManager = poplar::DeviceManager::createDeviceManager();
 
+  poplar::OptionFlags flags;
+  addSyncConfig(syncPattern, flags);
   std::vector<poplar::Device> popdevices =
-      deviceManager.getDevices(convertDeviceType(type), requiredNumIPUs);
+      deviceManager.getDevices(convertDeviceType(type), requiredNumIPUs, flags);
   for (auto &device : popdevices) {
     std::shared_ptr<popart::DeviceInfo> ipu =
         std::make_shared<DevicexIpuInfo>(*this, device.getId(), device);

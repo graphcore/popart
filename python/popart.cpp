@@ -789,9 +789,9 @@ PYBIND11_MODULE(popart_core, m) {
       .value("Cached", CacheType::CACHED);
 
   py::enum_<SyncPattern>(m, "SyncPattern")
-      .value("Full", SyncPattern::FULL)
-      .value("Replica", SyncPattern::FULL)
-      .value("PingPong", SyncPattern::PINGPONG);
+      .value("Full", SyncPattern::Full)
+      .value("SinglePipeline", SyncPattern::SinglePipeline)
+      .value("PingPong", SyncPattern::PingPong);
 
   py::enum_<MergeVarUpdateType>(m, "MergeVarUpdateType")
       .value("Off", MergeVarUpdateType::None)
@@ -1456,12 +1456,12 @@ PYBIND11_MODULE(popart_core, m) {
                &DeviceManager::acquireAvailableDevice),
            py::arg("numIpus")           = 1,
            py::arg("tilesPerIpu")       = 0,
-           py::arg("pattern")           = SyncPattern::FULL,
+           py::arg("pattern")           = SyncPattern::Full,
            py::arg("replicationFactor") = 1)
       .def("acquireDeviceById",
            &DeviceManager::acquireDeviceById,
            py::arg("id"),
-           py::arg("pattern")           = SyncPattern::FULL,
+           py::arg("pattern")           = SyncPattern::Full,
            py::arg("replicationFactor") = 1)
       .def("createCpuDevice", &DeviceManager::createCpuDevice)
       .def("createIpuModelDevice",
@@ -1476,7 +1476,7 @@ PYBIND11_MODULE(popart_core, m) {
            })
       .def("enumerateDevices",
            &DeviceManager::enumerateDevices,
-           py::arg("pattern")           = SyncPattern::FULL,
+           py::arg("pattern")           = SyncPattern::Full,
            py::arg("replicationFactor") = 1,
            py::arg("numIpus")           = 1,
            py::arg("deviceType")        = DeviceType::Ipu);

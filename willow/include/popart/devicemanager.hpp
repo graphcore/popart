@@ -11,7 +11,7 @@ namespace popart {
 
 enum class DeviceType { IpuModel = 0, Cpu, Ipu, Sim };
 
-enum class SyncPattern { FULL = 0, REPLICA, PINGPONG };
+enum class SyncPattern { Full = 0, SinglePipeline, PingPong };
 
 class DeviceProvider;
 
@@ -116,7 +116,7 @@ public:
    * \return List of requested IPUs.
    */
   std::shared_ptr<DeviceInfo>
-  getDevice(SyncPattern syncPattern  = SyncPattern::FULL,
+  getDevice(SyncPattern syncPattern  = SyncPattern::Full,
             uint32_t deviceManagerId = 0);
 
   /**
@@ -129,7 +129,7 @@ public:
    * \return List of requested IPUs.
    */
   std::vector<std::shared_ptr<DeviceInfo>>
-  enumerateDevices(SyncPattern pattern         = SyncPattern::FULL,
+  enumerateDevices(SyncPattern pattern         = SyncPattern::Full,
                    uint32_t replication_factor = 1,
                    int numIpus                 = 1,
                    DeviceType deviceType       = DeviceType::Ipu);
@@ -144,7 +144,7 @@ public:
   std::shared_ptr<DeviceInfo>
   acquireAvailableDevice(int numIpus                 = 1,
                          int tilesPerIpu             = 1216,
-                         SyncPattern pattern         = SyncPattern::FULL,
+                         SyncPattern pattern         = SyncPattern::Full,
                          uint32_t replication_factor = 1);
 
   /** Allocates the hardware device by id. This id can be found running 'gc-info
@@ -154,7 +154,7 @@ public:
    */
   std::shared_ptr<DeviceInfo>
   acquireDeviceById(int id,
-                    SyncPattern pattern         = SyncPattern::FULL,
+                    SyncPattern pattern         = SyncPattern::Full,
                     uint32_t replication_factor = 1);
 
   /** Create a 'simulated' CPU device

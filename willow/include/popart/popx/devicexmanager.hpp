@@ -103,6 +103,7 @@ private:
 
 popart::DeviceType convertDeviceType(poplar::TargetType targetType);
 poplar::TargetType convertDeviceType(popart::DeviceType targetType);
+void addSyncConfig(const SyncPattern syncPattern, poplar::OptionFlags &flags);
 
 } // namespace popx
 } // namespace popart
