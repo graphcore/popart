@@ -9,12 +9,10 @@ import torch
 from torchvision import transforms, datasets
 import re
 from tempfile import TemporaryDirectory
+from c10datadir import c10datadir
 
 
 def get_trainset():
-    tmpdir = tempfile.gettempdir()
-
-    c10datadir = os.path.abspath(os.path.join(tmpdir, 'cifar10data'))
     if (not os.path.exists(c10datadir)):
         print("Creating directory %s" % (c10datadir))
         os.mkdir(c10datadir)
