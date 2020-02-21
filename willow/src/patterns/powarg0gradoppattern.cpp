@@ -56,22 +56,26 @@ bool PowArg0GradOpPattern::apply(Op *op) const {
   // Connect up the new ops
   sub->connectInTensor(0, fwd_in1->id);
   sub->connectInTensor(1, "ones");
-  sub->createAndConnectOutTensor(0, createIntermediateTensorId(grad_in->id));
+  sub->createAndConnectOutTensor(
+      0, grad_in->getIr().createIntermediateTensorId(grad_in->id));
   sub->outInfo(0) = npOut(sub->inInfo(0), sub->inInfo(1));
 
   pow->connectInTensor(0, fwd_in0->id);
   pow->connectInTensor(1, sub->outTensor(0)->id);
-  pow->createAndConnectOutTensor(0, createIntermediateTensorId(grad_in->id));
+  pow->createAndConnectOutTensor(
+      0, grad_in->getIr().createIntermediateTensorId(grad_in->id));
   pow->outInfo(0) = npOut(pow->inInfo(0), pow->inInfo(1));
 
   mul_1->connectInTensor(0, fwd_in1->id);
   mul_1->connectInTensor(1, pow->outTensor(0)->id);
-  mul_1->createAndConnectOutTensor(0, createIntermediateTensorId(grad_in->id));
+  mul_1->createAndConnectOutTensor(
+      0, grad_in->getIr().createIntermediateTensorId(grad_in->id));
   mul_1->outInfo(0) = npOut(mul_1->inInfo(0), mul_1->inInfo(1));
 
   mul_2->connectInTensor(0, grad_in->id);
   mul_2->connectInTensor(1, mul_1->outTensor(0)->id);
-  mul_2->createAndConnectOutTensor(0, createIntermediateTensorId(grad_in->id));
+  mul_2->createAndConnectOutTensor(
+      0, grad_in->getIr().createIntermediateTensorId(grad_in->id));
   mul_2->outInfo(0) = npOut(mul_2->inInfo(0), mul_2->inInfo(1));
 
   reduce->connectInTensor(0, mul_2->outTensor(0)->id);

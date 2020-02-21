@@ -41,9 +41,10 @@ endif()
 
 find_package(Poprithms REQUIRED)
 
-
 find_package(Spdlog REQUIRED)
 message(STATUS "Spdlog include dir is " ${SPDLOG_INCLUDE_DIRS})
+
+find_package(gcl REQUIRED)
 
 add_library(popart SHARED ${sources})
 
@@ -62,6 +63,7 @@ target_include_directories (popart SYSTEM PUBLIC
     ${POPLAR_INCLUDE_DIR}
     ${POPLIBS_INCLUDE_DIR}
     ${POPRITHMS_INCLUDE_DIR}
+    ${GCL_INCLUDE_DIR}
     )
 
 target_link_libraries(popart
@@ -78,7 +80,8 @@ target_link_libraries(popart
   ${POPOPS_LIB}
   ${POPRAND_LIB}
   ${POPUTIL_LIB}
-   ${POPRITHMS_LIB}
+  ${POPRITHMS_LIB}
+  ${GCL_LIBRARIES}
 )
 
 # The following defines cause compiler warnings if not set

@@ -8,6 +8,7 @@
 
 #include <poplar/Device.hpp>
 #include <poplar/IPUModel.hpp>
+#include <poplar/OptionFlags.hpp>
 #include <poplar/exceptions.hpp>
 
 #include <algorithm>
@@ -30,52 +31,61 @@ popart::DeviceType convertDeviceType(poplar::TargetType targetType) {
   throw error("Unknown target type");
 }
 
+poplar::TargetType convertDeviceType(popart::DeviceType deviceType) {
+  switch (deviceType) {
+  case DeviceType::Ipu:
+    return poplar::TargetType::IPU;
+  case DeviceType::IpuModel:
+    return poplar::TargetType::IPU_MODEL;
+  case DeviceType::Cpu:
+    return poplar::TargetType::CPU;
+  }
+  throw error("Unknown device type");
+}
+
+void addSyncConfig(const SyncPattern syncPattern, poplar::OptionFlags &flags) {
+  switch (syncPattern) {
+  case SyncPattern::Full:
+    break;
+  case SyncPattern::SinglePipeline:
+    flags.set("syncConfiguration", "ipuAndAll");
+    break;
+  case SyncPattern::PingPong:
+    flags.set("syncConfiguration", "IntraReplicaAndLadder");
+    break;
+  }
+}
+
 DevicexManager::DevicexManager() {
   DeviceManager::createDeviceManager().registerDeviceProvider(this);
 }
 
+std::shared_ptr<DeviceInfo>
+DevicexManager::getDevice(SyncPattern syncPattern, uint32_t deviceManagerId) {
+  auto deviceManager = poplar::DeviceManager::createDeviceManager();
+
+  poplar::OptionFlags flags;
+  addSyncConfig(syncPattern, flags);
+  auto device = deviceManager.getDevice(deviceManagerId, flags);
+  return std::make_shared<DevicexIpuInfo>(*this, device.getId(), device);
+}
+
 void DevicexManager::enumerate(
     std::vector<std::shared_ptr<popart::DeviceInfo>> &devices,
-    SyncPattern /* syncPattern */,
-    uint32_t /* replication_factor */) {
-
-  /*
-  GSPatternType patternType;
-  switch (syncPattern) {
-    case SyncPattern::REPLICA:
-      patternType = GSPatternType::REPLICA;
-    case SyncPattern::FULL:
-      patternType = GSPatternType::FULL;
-      break;
-    case SyncPattern::PINGPONG:
-      patternType = GSPatternType::PINGPONG;
-      break;
-  }
-  logging::debug("[DevicexInfo] Using sync pattern {}", patternType);
-
-  GSPattern gspattern = {patternType, replication_factor};*/
+    unsigned requiredNumIPUs,
+    SyncPattern syncPattern,
+    DeviceType type) {
 
   auto deviceManager = poplar::DeviceManager::createDeviceManager();
-  std::vector<poplar::Device> popdevices = deviceManager.getDevices();
-  // gspattern);
 
+  poplar::OptionFlags flags;
+  addSyncConfig(syncPattern, flags);
+  std::vector<poplar::Device> popdevices =
+      deviceManager.getDevices(convertDeviceType(type), requiredNumIPUs, flags);
   for (auto &device : popdevices) {
-
-    popart::DeviceType type =
-        convertDeviceType(device.getTarget().getTargetType());
-    switch (type) {
-    case DeviceType::Ipu: {
-      std::shared_ptr<popart::DeviceInfo> ipu =
-          std::make_shared<DevicexIpuInfo>(*this, device.getId(), device);
-      devices.push_back(ipu);
-    } break;
-    case DeviceType::IpuModel:
-    case DeviceType::Cpu:
-    case DeviceType::Sim:
-    default: {
-      // Do nothing for the 'host' devices
-    }
-    }
+    std::shared_ptr<popart::DeviceInfo> ipu =
+        std::make_shared<DevicexIpuInfo>(*this, device.getId(), device);
+    devices.push_back(ipu);
   }
 }
 

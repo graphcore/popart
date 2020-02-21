@@ -1,6 +1,7 @@
 #include <memory>
 #include <utility>
 #include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/mul.hpp>
 #include <popart/op/negate.hpp>
 #include <popart/op/reciprocal.hpp>
@@ -38,20 +39,20 @@ bool ReciprocalGradOpPattern::apply(Op *op) const {
 
   // Connect up the new ops
   square->connectInTensor(0, fwd_input->id);
-  square->createAndConnectOutTensor(0,
-                                    createIntermediateTensorId(fwd_input->id));
+  square->createAndConnectOutTensor(
+      0, square->getIr().createIntermediateTensorId(fwd_input->id));
   square->outInfo(0) = fwd_input->info;
 
   reciprocal->connectInTensor(0,
                               square->outTensor(SquareOp::getOutIndex())->id);
   reciprocal->createAndConnectOutTensor(
-      0, createIntermediateTensorId(fwd_input->id));
+      0, reciprocal->getIr().createIntermediateTensorId(fwd_input->id));
   reciprocal->outInfo(0) = square->outInfo(0);
 
   negate->connectInTensor(
       0, reciprocal->outTensor(ReciprocalOp::getOutIndex())->id);
-  negate->createAndConnectOutTensor(0,
-                                    createIntermediateTensorId(fwd_input->id));
+  negate->createAndConnectOutTensor(
+      0, reciprocal->getIr().createIntermediateTensorId(fwd_input->id));
   negate->outInfo(0) = reciprocal->outInfo(0);
 
   mul->connectInTensor(0, negate->outTensor(0)->id);

@@ -4,13 +4,14 @@
 #include <memory>
 #include <sstream>
 #include <vector>
+#include <poplar/DeviceManager.hpp>
 #include <popart/names.hpp>
 
 namespace popart {
 
-enum class DeviceType { IpuModel, Cpu, Ipu, Sim };
+enum class DeviceType { IpuModel = 0, Cpu, Ipu, Sim };
 
-enum class SyncPattern { FULL = 0, REPLICA, PINGPONG };
+enum class SyncPattern { Full = 0, SinglePipeline, PingPong };
 
 class DeviceProvider;
 
@@ -69,10 +70,20 @@ class DeviceProvider {
 public:
   virtual ~DeviceProvider() {}
 
-  /// Get a list of ipu devices
+  virtual std::shared_ptr<DeviceInfo> getDevice(SyncPattern syncPattern,
+                                                unsigned deviceManagerId) = 0;
+
+  /**
+   * Get the list of all devices fulfilling the specified criteria.
+   *
+   * \param devices Devices to get
+   * \param requiredNumIPUs Number of IPUs to request.
+   * \param syncPattern Sync pattern
+   */
   virtual void enumerate(std::vector<std::shared_ptr<DeviceInfo>> &devices,
+                         uint32_t requiredNumIPUs,
                          SyncPattern syncPattern,
-                         uint32_t replication_factor) = 0;
+                         DeviceType type) = 0;
 
   /// Create a host device for testing
   virtual std::shared_ptr<DeviceInfo>
@@ -97,13 +108,31 @@ public:
    */
   void registerDeviceProvider(DeviceProvider *provider);
 
-  /** List all the connected hardware devices. To use a device you must first
-   * attach the device before you can set it on the Session
-   * \return A list of devices.
+  /**
+   * Get the Device object of a device by ID.
+   *
+   * \param syncPattern Sync pattern
+   * \param deviceManagerId Number of IPUs to request.
+   * \return List of requested IPUs.
+   */
+  std::shared_ptr<DeviceInfo>
+  getDevice(SyncPattern syncPattern  = SyncPattern::Full,
+            uint32_t deviceManagerId = 0);
+
+  /**
+   * Get the list of all devices fulfilling the specified criteria.
+   *
+   * \param pattern Sync pattern.
+   * \param replication_factor Number of times to replicate.
+   * \param numIpus Number of IPUs to request.
+   * \param deviceType Type of device required.
+   * \return List of requested IPUs.
    */
   std::vector<std::shared_ptr<DeviceInfo>>
-  enumerateDevices(SyncPattern syncPattern     = SyncPattern::FULL,
-                   uint32_t replication_factor = 1);
+  enumerateDevices(SyncPattern pattern         = SyncPattern::Full,
+                   uint32_t replication_factor = 1,
+                   int numIpus                 = 1,
+                   DeviceType deviceType       = DeviceType::Ipu);
 
   /** Finds the first available hardware device, that a certain number of IPUs.
    * This method will attach to the device.
@@ -115,16 +144,18 @@ public:
   std::shared_ptr<DeviceInfo>
   acquireAvailableDevice(int numIpus                 = 1,
                          int tilesPerIpu             = 1216,
-                         SyncPattern pattern         = SyncPattern::FULL,
+                         SyncPattern pattern         = SyncPattern::Full,
                          uint32_t replication_factor = 1);
 
   /** Allocates the hardware device by id. This id can be found running 'gc-info
-   *  -l' This method will attache to the device
+   *  -l' This method will attach to the device
    * \param id The index of the IPU to be used
-   * \return A device. Will return nullptr if the device is not  available
+   * \return A device. Will return nullptr if the device is not available
    */
   std::shared_ptr<DeviceInfo>
-  acquireDeviceById(int id, SyncPattern pattern, uint32_t replication_factor);
+  acquireDeviceById(int id,
+                    SyncPattern pattern         = SyncPattern::Full,
+                    uint32_t replication_factor = 1);
 
   /** Create a 'simulated' CPU device
    * \return A device

@@ -751,7 +751,14 @@ PYBIND11_MODULE(popart_core, m) {
       .def_readwrite("customCodeletCompileFlags",
                      &SessionOptions::customCodeletCompileFlags)
       .def_readwrite("hostAllReduce", &SessionOptions::hostAllReduce)
-      .def_readwrite("hostWeightUpdate", &SessionOptions::hostWeightUpdate);
+      .def_readwrite("hostWeightUpdate", &SessionOptions::hostWeightUpdate)
+      .def_readwrite("hostAllReduceRemoteBuffer",
+                     &SessionOptions::hostAllReduceRemoteBuffer)
+      .def_readwrite("hostWeightUpdate", &SessionOptions::hostWeightUpdate)
+
+      .def_readwrite("kahnTieBreaker", &SessionOptions::kahnTieBreaker)
+      .def_readwrite("timeLimitScheduler", &SessionOptions::timeLimitScheduler)
+      .def_readwrite("swapLimitScheduler", &SessionOptions::swapLimitScheduler);
 
   py::enum_<PatternsLevel>(m, "PatternsLevel")
       .value("ALL", PatternsLevel::ALL)
@@ -782,9 +789,9 @@ PYBIND11_MODULE(popart_core, m) {
       .value("Cached", CacheType::CACHED);
 
   py::enum_<SyncPattern>(m, "SyncPattern")
-      .value("Full", SyncPattern::FULL)
-      .value("Replica", SyncPattern::FULL)
-      .value("PingPong", SyncPattern::PINGPONG);
+      .value("Full", SyncPattern::Full)
+      .value("SinglePipeline", SyncPattern::SinglePipeline)
+      .value("PingPong", SyncPattern::PingPong);
 
   py::enum_<MergeVarUpdateType>(m, "MergeVarUpdateType")
       .value("Off", MergeVarUpdateType::None)
@@ -1111,7 +1118,7 @@ PYBIND11_MODULE(popart_core, m) {
           py::arg("initVal"),
           py::arg("debugPrefix") = std::string())
       .def("addOutputTensor", &Builder::addOutputTensor, py::arg("outputName"))
-      .def("createSubgraphBuilder",
+      .def("_createSubgraphBuilder",
            &Builder::createSubgraphBuilder,
            pybind11::return_value_policy::reference)
       .def("saveModelProto", &Builder::saveModelProto, py::arg("filename"))
@@ -1123,6 +1130,9 @@ PYBIND11_MODULE(popart_core, m) {
       .def_property_readonly("aiOnnxOpset9", &Builder::aiOnnxOpset9)
       .def_property_readonly("aiOnnxOpset10", &Builder::aiOnnxOpset10)
       .def_property_readonly("aiOnnxOpset11", &Builder::aiOnnxOpset11)
+
+      // Accessors for the ai.onnxml domain builder interface
+      .def_property_readonly("aiOnnxMlOpset1", &Builder::aiOnnxMlOpset1)
 
       // Accessors for the ai.graphcore domain builder interface
       .def_property_readonly("aiGraphcoreOpset1", &Builder::aiGraphcoreOpset1)
@@ -1427,6 +1437,12 @@ PYBIND11_MODULE(popart_core, m) {
               py::object &,
               py::object &) { self.exit(); });
 
+  py::enum_<DeviceType>(m, "DeviceType")
+      .value("IpuModel", DeviceType::IpuModel)
+      .value("Cpu", DeviceType::Cpu)
+      .value("Ipu", DeviceType::Ipu)
+      .value("Sim", DeviceType::Sim);
+
   // PyBinding to a singleton
   py::class_<DeviceManager, std::unique_ptr<DeviceManager, py::nodelete>>(
       m, "DeviceManager")
@@ -1440,12 +1456,12 @@ PYBIND11_MODULE(popart_core, m) {
                &DeviceManager::acquireAvailableDevice),
            py::arg("numIpus")           = 1,
            py::arg("tilesPerIpu")       = 0,
-           py::arg("pattern")           = SyncPattern::FULL,
+           py::arg("pattern")           = SyncPattern::Full,
            py::arg("replicationFactor") = 1)
       .def("acquireDeviceById",
            &DeviceManager::acquireDeviceById,
            py::arg("id"),
-           py::arg("pattern")           = SyncPattern::FULL,
+           py::arg("pattern")           = SyncPattern::Full,
            py::arg("replicationFactor") = 1)
       .def("createCpuDevice", &DeviceManager::createCpuDevice)
       .def("createIpuModelDevice",
@@ -1460,14 +1476,10 @@ PYBIND11_MODULE(popart_core, m) {
            })
       .def("enumerateDevices",
            &DeviceManager::enumerateDevices,
-           py::arg("pattern")           = SyncPattern::FULL,
-           py::arg("replicationFactor") = 1);
-
-  py::enum_<DeviceType>(m, "DeviceType")
-      .value("IpuModel", DeviceType::IpuModel)
-      .value("Cpu", DeviceType::Cpu)
-      .value("Ipu", DeviceType::Ipu)
-      .value("Sim", DeviceType::Sim);
+           py::arg("pattern")           = SyncPattern::Full,
+           py::arg("replicationFactor") = 1,
+           py::arg("numIpus")           = 1,
+           py::arg("deviceType")        = DeviceType::Ipu);
 
   py::class_<DeviceInfo, std::shared_ptr<DeviceInfo>>(m, "DeviceInfo")
       .def("attach", &DeviceInfo::attach)

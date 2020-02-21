@@ -258,6 +258,9 @@ struct SessionOptions {
   /// Perform weight update on the host. Only useful for training session
   bool hostWeightUpdate = false;
 
+  /// Enable the use of poplar::RemoteBuffers for hostAllReduce operations
+  bool hostAllReduceRemoteBuffer = false;
+
   /// Poplar engine options
   std::map<std::string, std::string> engineOptions;
 
@@ -274,6 +277,18 @@ struct SessionOptions {
   /// Compile flags for the custom codelets. For example `-g` to generate debug
   /// info.
   std::string customCodeletCompileFlags;
+
+  /// The maximum allowed time that can be spent searching for a good Graph
+  /// schedule before a solution must be returned
+  double timeLimitScheduler = 1e9;
+
+  /// The maximum number of improving steps allowed by the scheduling algorithm
+  /// before a solution must be returned
+  int64_t swapLimitScheduler = static_cast<int64_t>(1e9);
+
+  /// The initial scheduling is done with Kahn's algorithm. When several Ops are
+  /// free to be scheduled, this controls which method is used
+  std::string kahnTieBreaker = "greedy";
 };
 
 } // namespace popart

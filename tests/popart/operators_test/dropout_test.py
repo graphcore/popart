@@ -5,6 +5,12 @@ import torch
 import itertools
 from op_tester import op_tester
 
+# `import test_util` requires adding to sys.path
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+import test_util as tu
+
 
 # Check that dropout is equal to an identity function in inference
 def test_dropout_testing(op_tester):
@@ -114,8 +120,10 @@ def test_dropout_training4():
     out = builder.aiOnnx.matmul([d1, w])
     builder.addOutputTensor(out)
 
-    device = popart.DeviceManager().acquireAvailableDevice()
-    if device is None:
+    # TODO: use the tu.requires_ipu decorator
+    if tu.ipu_available():
+        device = tu.acquire_ipu()
+    else:
         pytest.skip("Test needs to run on IPU, but none are available")
 
     session, anchors = get_session(anchorIds=[d1, d__ip],
@@ -218,8 +226,10 @@ def test_dropout_training7():
     out = builder.aiOnnx.add([d1, d2])
     builder.addOutputTensor(out)
 
-    device = popart.DeviceManager().acquireAvailableDevice()
-    if device is None:
+    # TODO: use the tu.requires_ipu decorator
+    if tu.ipu_available():
+        device = tu.acquire_ipu()
+    else:
         pytest.skip("Test needs to run on IPU, but none are available")
 
     session, anchors = get_session(anchorIds=[d1, d2],
@@ -320,7 +330,7 @@ def test_dropout_training_replicated_repeatable():
 # batches per step and replicated graphs.
 def test_replicated_with_multiple_batches_per_step():
     replication_factor = 4
-    dsize = 10
+    dsize = 100
     batches_per_step = 2
     session, ip, out, d__ip, anchors = get_replicated_dropout_session(
         dsize=dsize,
@@ -370,8 +380,10 @@ def get_replicated_dropout_session(replication_factor=4,
         [out] = builder.aiOnnx.dropout([out], num_outputs=1, ratio=ratio)
     builder.addOutputTensor(out)
 
-    device = popart.DeviceManager().acquireAvailableDevice(replication_factor)
-    if device is None:
+    # TODO: use the tu.requires_ipu decorator
+    if tu.ipu_available(replication_factor):
+        device = tu.acquire_ipu(replication_factor)
+    else:
         pytest.skip("Test needs to run on IPU, but none are available")
 
     dfAnchors = [out, ip, d__ip]
@@ -410,8 +422,10 @@ def get_dropout_session(dsize=100,
     builder.addOutputTensor(out)
 
     if use_ipu is True:
-        device = popart.DeviceManager().acquireAvailableDevice()
-        if device is None:
+        # TODO: use the tu.requires_ipu decorator
+        if tu.ipu_available():
+            device = tu.acquire_ipu()
+        else:
             pytest.skip("Test needs to run on IPU, but none are available")
     else:
         device = popart.DeviceManager().createCpuDevice()

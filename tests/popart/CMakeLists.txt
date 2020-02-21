@@ -51,6 +51,7 @@ add_popart_cpp_unit_test(isnormtest is_norm_test.cpp)
 add_popart_cpp_unit_test(nogradoptest no_gradop_test.cpp)
 add_popart_cpp_unit_test(irhashtest ir_hash_test.cpp)
 add_popart_cpp_unit_test(custompatterntest custom_pattern_test.cpp)
+add_popart_cpp_unit_test(syncpatterntest sync_pattern_test.cpp)
 
 # Add a test that targets c++11 to check that the popart interface is c++11.
 # If the interface is not c++11, the build should fail.
@@ -88,6 +89,9 @@ endfunction()
 # exception_test needs hardware: TODO resolve in T10881
 add_all_py_unit_tests("test_util;auto_virtual_graph_test;exception_test;test_session")
 
+# device_test should be run serially as it tests that it can attach to each
+# IPU available on the machine it is run on.
+set_tests_properties(device_test PROPERTIES RUN_SERIAL TRUE)
 
 add_subdirectory(operators_test)
 add_subdirectory(constexpr_tests)
@@ -109,3 +113,4 @@ add_subdirectory(auto_virtual_graph_tests)
 add_subdirectory(dropout_tests)
 add_subdirectory(codelet_tests)
 add_subdirectory(stepio_tests)
+add_subdirectory(scheduling_tests)

@@ -379,6 +379,7 @@ const static AiGraphcoreOpIdV1
     NlllWithSoftmaxGradDirect("NlllWithSoftmaxGradDirect");
 const static AiGraphcoreOpIdV1 IfGrad("IfGrad");
 const static AiGraphcoreOpIdV1 IfConditionGrad("IfConditionGrad");
+const static AiGraphcoreOpIdV1 CallGrad("CallGrad");
 } // namespace CustomGradOperators
 } // namespace Onnx
 

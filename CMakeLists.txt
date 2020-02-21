@@ -35,6 +35,11 @@ set(INSTALL_EXAMPLES examples)
 # Tests path
 set(INSTALL_TESTS ${CMAKE_INSTALL_PREFIX}/tests)
 
+# There are tests for the python examples which need copying
+install(DIRECTORY docs/
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/docs
+  FILES_MATCHING REGEX ".*\.(py)$")
+
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 set(CMAKE_MACOSX_RPATH 1)

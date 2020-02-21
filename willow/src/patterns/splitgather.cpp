@@ -191,14 +191,14 @@ bool SplitGatherPattern::apply(Op *op) const {
 
   auto t0        = inTensorId;
   auto transpose = canonicalizeTranspose(axis, inputShape, op->settings);
-  auto t1        = createIntermediateTensorId(outTensorId);
+  auto t1        = output->getIr().createIntermediateTensorId(outTensorId);
   transpose->connectInTensor(0, t0);
   transpose->createAndConnectOutTensor(0, t1);
   transpose->setup();
 
   // Reshape the input tensor to a 2D tensor with the gather axis at the front
   auto reshape = canonicalizeShape(axis, inputShape, op->settings);
-  auto t2      = createIntermediateTensorId(outTensorId);
+  auto t2      = transpose->getIr().createIntermediateTensorId(outTensorId);
   reshape->connectInTensor(0, t1);
   reshape->createAndConnectOutTensor(0, t2);
   reshape->setup();
@@ -208,7 +208,7 @@ bool SplitGatherPattern::apply(Op *op) const {
   std::vector<TensorId> slicedts;
   slicedts.reserve(split);
   for (int i = 0; i < split; ++i) {
-    auto tid = createIntermediateTensorId(outTensorId);
+    auto tid = reshape->getIr().createIntermediateTensorId(outTensorId);
     slicedts.push_back(tid);
     slices[i]->connectInTensor(0, t2);
     slices[i]->createAndConnectOutTensor(0, tid);
@@ -220,7 +220,7 @@ bool SplitGatherPattern::apply(Op *op) const {
   std::vector<TensorId> gatheredts;
   gatheredts.reserve(split);
   for (int i = 0; i < split; ++i) {
-    auto tid = createIntermediateTensorId(outTensorId);
+    auto tid = gathers[i]->getIr().createIntermediateTensorId(outTensorId);
     gatheredts.push_back(tid);
     gathers[i]->connectInTensor(0, slicedts[i]);
     gathers[i]->connectInTensor(1, idxTensorId);
@@ -232,7 +232,7 @@ bool SplitGatherPattern::apply(Op *op) const {
   const auto concatDim = gather->inRank(1);
   auto concat          = std::make_unique<ConcatOp>(
       Onnx::Operators::Concat_4, concatDim, op->settings);
-  auto t3 = createIntermediateTensorId(outTensorId);
+  auto t3 = concat->getIr().createIntermediateTensorId(outTensorId);
   for (int i = 0; i < split; ++i) {
     concat->connectInTensor(i, gatheredts[i]);
   }
@@ -244,7 +244,7 @@ bool SplitGatherPattern::apply(Op *op) const {
   // Reshape back to the original shape, with the gather axis at the front
   auto unreshape =
       decanonicalizeShape(axis, inputShape, indicesShape, op->settings);
-  auto t4 = createIntermediateTensorId(outTensorId);
+  auto t4 = concat->getIr().createIntermediateTensorId(outTensorId);
   unreshape->connectInTensor(0, t3);
   unreshape->createAndConnectOutTensor(0, t4);
   unreshape->setup();

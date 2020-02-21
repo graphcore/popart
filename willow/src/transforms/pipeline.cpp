@@ -580,7 +580,8 @@ void setRecomputation(Graph &graph,
   };
 
   // Initialise ops to be Recompute, except Ops whose output enters an IpuCopy.
-  for (auto op : graph.getOpSchedule({})) {
+  for (auto &id_op : graph.getOps()) {
+    auto op = id_op.second.get();
     if (isRecomputable(op)) {
       // In full_recompute all forward ops are Recomputed
       if (!full_recompute && isConsumedByCopy(op)) {
@@ -1024,11 +1025,9 @@ bool Pipeline::apply(Graph &graph) const {
 
     // Disconnect tid from all consumers in the restore ops pipeline stage,
     // reconnect to restoreId
+    bool inplaceRestoreRequiredForRecompute = false;
     for (Op *tidConsumer : tidConsumers) {
-      if (tidConsumer->getPipelineStage() == restoreOp->getPipelineStage() ||
-          (dynamic_cast<RestoreInplaceOp *>(restoreOp) &&
-           tidConsumer->settings.recomputeType == RecomputeType::RECOMPUTE &&
-           tidConsumer->getPipelineStage() < restoreOp->getPipelineStage())) {
+      if (tidConsumer->getPipelineStage() == restoreOp->getPipelineStage()) {
         for (auto i : tidConsumer->input->indicesMap().at(tensor)) {
           tidConsumer->disconnectInTensor(i, tensor);
           tidConsumer->connectInTensor(i, restoreId);
@@ -1039,6 +1038,17 @@ bool Pipeline::apply(Graph &graph) const {
                                   tidConsumer->str(),
                                   restoreOp->str());
       }
+      if ((dynamic_cast<RestoreInplaceOp *>(restoreOp) &&
+           tidConsumer->settings.recomputeType == RecomputeType::RECOMPUTE &&
+           tidConsumer->getPipelineStage() < restoreOp->getPipelineStage())) {
+        inplaceRestoreRequiredForRecompute = true;
+      }
+    }
+
+    // This InplaceRestoreOp may have no consumers as they are all inplicit due
+    // to recomputation. Therefore it must not be pruned.
+    if (inplaceRestoreRequiredForRecompute) {
+      restoreOp->pruneable = false;
     }
 
     restoreOp->setup();
@@ -1050,7 +1060,7 @@ bool Pipeline::apply(Graph &graph) const {
     bool noConsumersOfRestore =
         restoreOp->output->tensor(0)->consumers.getOps().empty();
 
-    if (noConsumersOfRestore) {
+    if (noConsumersOfRestore && !inplaceRestoreRequiredForRecompute) {
       bool noRecomputeConsumersOfStash = std::none_of(
           tidConsumers.cbegin(), tidConsumers.cend(), [](const Op *op) {
             return op->settings.recomputeType == RecomputeType::RECOMPUTE;

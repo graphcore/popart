@@ -35,13 +35,15 @@ bool TanToSinOverCosPattern::apply(Op *op) const {
 
   // Connect up the new ops
   sin->connectInTensor(SinOp::getInIndex(), fwd_in->id);
-  sin->createAndConnectOutTensor(SinOp::getOutIndex(),
-                                 createIntermediateTensorId(fwd_in->id));
+  sin->createAndConnectOutTensor(
+      SinOp::getOutIndex(),
+      fwd_in->getIr().createIntermediateTensorId(fwd_in->id));
   sin->setup();
 
   cos->connectInTensor(CosOp::getInIndex(), fwd_in->id);
-  cos->createAndConnectOutTensor(CosOp::getOutIndex(),
-                                 createIntermediateTensorId(fwd_in->id));
+  cos->createAndConnectOutTensor(
+      CosOp::getOutIndex(),
+      fwd_in->getIr().createIntermediateTensorId(fwd_in->id));
   cos->setup();
 
   div->connectInTensor(DivOp::getArg0InIndex(),

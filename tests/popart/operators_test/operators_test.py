@@ -130,13 +130,13 @@ def test_logical_if(op_tester):
             then_builder.addInputTensorFromParentGraph(i1)
             then_builder.addInputTensorFromParentGraph(i2)
             then_builder.addOutputTensor(
-                then_builder.aiOnnxOpset10.add([i1, i2]))
+                then_builder.aiOnnx.add([i1, i2]))
 
             else_builder = builder.createSubgraphBuilder()
             else_builder.addInputTensorFromParentGraph(i1)
             else_builder.addInputTensorFromParentGraph(i2)
             else_builder.addOutputTensor(
-                else_builder.aiOnnxOpset10.sub([i1, i2]))
+                else_builder.aiOnnx.sub([i1, i2]))
 
             o = builder.aiOnnx.logical_if([condition], 1, else_builder,
                                           then_builder)[0]
@@ -153,6 +153,50 @@ def test_logical_if(op_tester):
 
     test(True)
     test(False)
+
+
+def test_loop(op_tester):
+    i1 = np.array([[1, 2], [3, 4]]).astype(np.float32)
+    i2 = np.array([[1, 2], [3, 4]]).astype(np.float32)
+    trip_count = 10
+
+    def init_builder(builder):
+        builder.setGraphName("main_graph")
+        a = builder.addInputTensor(i1)
+        b = builder.addInputTensor(i2)
+
+        M = builder.aiOnnx.constant(
+            np.array(trip_count).astype(np.int64))
+        cond = builder.aiOnnx.constant(
+            np.array(True).astype(np.bool), "cond")
+
+        loop_builder = builder.createSubgraphBuilder()
+        loop_builder.setGraphName("body")
+        # Inputs: [iteration_number, condition_in, a_in]
+        loop_builder.addInputTensor(popart.TensorInfo("INT64", []))
+        keepgoing = loop_builder.addInputTensor(popart.TensorInfo("BOOL", []))
+        a_in = loop_builder.addUntypedInputTensor(a)
+        a_out = loop_builder.aiOnnx.matmul([a_in, b])
+
+        # Outputs: [condition_out, a_out]
+        loop_builder.addOutputTensor(keepgoing)
+        loop_builder.addOutputTensor(a_out)
+
+        o = builder.aiOnnx.loop([M, cond, a], 1, loop_builder)[0]
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        a = i1
+        b = i2
+
+        x = a
+        for i in range(trip_count):
+            x = np.matmul(x, b)
+
+        return [x]
+
+    op_tester.run(init_builder, reference, step_type='infer')
 
 
 def test_convolution(op_tester):

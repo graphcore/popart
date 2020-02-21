@@ -118,10 +118,25 @@ void PopPrograms::addPipelineCycle(
     }
   }
 
+  auto tryAddRestoreFragmentForStage = [&](PipelineStage stage) {
+    auto foundFragment = pipelineSeqs.find(PipelineFragmentId::Restore);
+    if (foundFragment != pipelineSeqs.end()) {
+      auto &stages_seqs = foundFragment->second;
+      auto foundStage   = stages_seqs.find(stage);
+      if (foundStage != stages_seqs.end()) {
+        auto &sequence = foundStage->second;
+        ss << "\n  ps" << stage << " : Restore";
+        sq.add(sequence);
+      }
+    }
+  };
+
   // 3.
   for (auto &stage_seq : fwdFunctions) {
-    if (pInfo.doStage(pCycle, stage_seq.first)) {
-      ss << "\n  ps" << stage_seq.first << " : Forward";
+    auto stage = stage_seq.first;
+    if (pInfo.doStage(pCycle, stage)) {
+      tryAddRestoreFragmentForStage(stage);
+      ss << "\n  ps" << stage << " : Forward";
       sq.add(poplar::program::Call(stage_seq.second));
     }
   }
@@ -138,12 +153,10 @@ void PopPrograms::addPipelineCycle(
   }
 
   // Insert the IPU-copies.
-  auto found = pipelineIpuCopySeqs.find(pCycle);
-  if (found != pipelineIpuCopySeqs.end()) {
-    ss << logging::format("\n  Cycle_{}_IpuCopies", pCycle);
-    poplar::program::Sequence x;
-    sq.add(found->second);
-  }
+  // Note: Always do all the copies. This is ensure that ALL copies are
+  // outlined across pipelineCycles AND merged across pipelineStages.
+  ss << logging::format("\n  IpuCopies");
+  sq.add(pipelineIpuCopySeq);
 }
 
 poplar::program::Sequence PopPrograms::getMainProgramFromPipelineFragments() {
@@ -206,16 +219,8 @@ poplar::program::Sequence PopPrograms::getMainProgramFromPipelineFragments() {
     }
   }
 
-  for (auto &pc_descs : pipelineIpuCopySeqDescs) {
-    auto pc     = pc_descs.first;
-    auto &descs = pc_descs.second;
+  ss << logging::format("\nIpuCopies: {}", pipelineIpuCopyDesc);
 
-    ss << logging::format("\nCycle_{}_IpuCopies:", pc);
-
-    for (auto &desc : descs) {
-      ss << logging::format("\n    {}", desc);
-    }
-  }
   ss << "\n\n";
 
   PipelineInfo pInfo = dv_p->pipelineInfo();
@@ -429,6 +434,12 @@ PopPrograms::pipelineFragment(PipelineStage pipelineStage,
 }
 
 poplar::program::Sequence &
+PopPrograms::pipelineRestoreFragment(PipelineStage pipelineStage,
+                                     const std::string &desc) {
+  return pipelineFragment(pipelineStage, PipelineFragmentId::Restore, desc);
+}
+
+poplar::program::Sequence &
 PopPrograms::pipelineForwardFragment(PipelineStage pipelineStage,
                                      const std::string &desc) {
   return pipelineFragment(pipelineStage, PipelineFragmentId::Forward, desc);
@@ -448,32 +459,10 @@ PopPrograms::pipelineToHostStreamFragment(PipelineStage pipelineStage,
       pipelineStage, PipelineFragmentId::ToHostStream, desc);
 }
 
-std::vector<poplar::program::Sequence *>
-PopPrograms::pipelineIpuCopyFragments(PipelineStage pipelineStage,
-                                      const std::string &desc) {
-  PipelineInfo pInfo = dv_p->pipelineInfo();
-
-  // Return the relevant sequences.
-  std::vector<poplar::program::Sequence *> copySeqs;
-  auto tryAddSequence = [&](PipelineCycle pc) {
-    if (pInfo.doStage(pc, pipelineStage)) {
-      auto &prog = pipelineIpuCopySeqs[pc];
-      copySeqs.push_back(&prog);
-
-      pipelineIpuCopySeqDescs[pc].push_back(desc);
-    }
-  };
-
-  // Add the programs to copySeqs in reverse order.
-  for (auto i = pInfo.flushPhase.end; i >= pInfo.flushPhase.start; i--) {
-    tryAddSequence(i);
-  }
-  tryAddSequence(pInfo.mainPhase.start);
-  for (auto i = pInfo.fillPhase.end; i >= pInfo.fillPhase.start; i--) {
-    tryAddSequence(i);
-  }
-
-  return copySeqs;
+poplar::program::Sequence &
+PopPrograms::pipelineIpuCopyFragment(const std::string &desc) {
+  pipelineIpuCopyDesc.append("\n    " + desc);
+  return pipelineIpuCopySeq;
 }
 
 std::string
@@ -481,6 +470,9 @@ PopPrograms::getStrFromPipelineFragmentId(PipelineFragmentId fragId) {
   switch (fragId) {
   case PipelineFragmentId::ToDeviceStream: {
     return "ToDeviceStream";
+  }
+  case PipelineFragmentId::Restore: {
+    return "Restore";
   }
   case PipelineFragmentId::Forward: {
     return "Forward";

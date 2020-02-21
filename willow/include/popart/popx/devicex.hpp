@@ -193,6 +193,7 @@ public:
   // numbers across tiles. Combined with the random seed and seedModifier,
   // this ensures that the same random mask is generated for fwd and bwd
   // dropout ops in the same layer
+  // TODO: remove from this class, see T15790
   std::map<uint32_t, poplar::Tensor> dropoutReferenceTensors;
 
   poplar::Tensor getConst(poplar::Graph &graph,
@@ -211,6 +212,8 @@ public:
   PopStreamId gradientLoadStreamId(TensorId id) const;
   PopStreamId weightLoadStreamId(TensorId id) const;
 
+  poplar::RemoteBuffer &
+  getOrCreateHostReduceRemoteBuffer(TensorId, TensorInfo, poplar::Graph &);
   poplar::DataStream &
   insertGradientStoreStream(TensorId, TensorInfo, poplar::Graph &);
   poplar::DataStream &
@@ -221,9 +224,22 @@ public:
   const std::vector<TensorId> &getHostReduceStreamIds() const;
   std::vector<TensorId> &getHostReduceStreamIds();
 
+  const std::map<TensorId, poplar::RemoteBuffer> &
+  getHostReduceRemoteBuffers() const;
+
   void connectStreamToCallback(const std::string &streamHandle,
                                std::function<void(void *)> callback,
                                unsigned index);
+
+  void copyFromRemoteBuffer(const poplar::RemoteBuffer &buffer,
+                            void *w,
+                            int repeat_index,
+                            unsigned replication_index = 0);
+
+  void copyToRemoteBuffer(void *w,
+                          const poplar::RemoteBuffer &buffer,
+                          int repeat_index,
+                          unsigned replication_index = 0);
 
 private:
   std::unique_ptr<poplar::Graph> pGraph{nullptr};
@@ -444,6 +460,8 @@ private:
   std::map<RemoteBufferId, poplar::RemoteBuffer> remoteBuffers;
 
   // Streams for doing allreduce on host side
+
+  std::map<TensorId, poplar::RemoteBuffer> hostReduceRemoteBuffers;
   std::map<TensorId, poplar::DataStream> toHostGradientStreams;
   std::map<TensorId, poplar::DataStream> fromHostGradientStreams;
   std::map<TensorId, poplar::DataStream> fromHostWeightLoadStreams;

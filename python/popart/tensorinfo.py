@@ -1,9 +1,18 @@
 import popart
 import numpy as np
 from popart_core import _TensorInfoCore
+from typing import List, Union, Iterable, Tuple
 
 
-def _get_popart_type(dtype):
+def _get_popart_type(dtype: np.dtype) -> str:
+    """Return the relevant PopART type string from a numpy dtype
+
+    Arguments:
+        dtype {np.dtype} -- numpy dtype
+
+    Returns:
+        str -- PopART dtype string.
+    """
     return {
         np.uint8: 'UINT8',
         np.uint16: 'UINT16',
@@ -21,12 +30,26 @@ def _get_popart_type(dtype):
 
 
 class TensorInfo(_TensorInfoCore):
-    """TensorInfo(dtype, shape)
-    TensorInfo(numpy.ndarray)"""
+    """Python wrapper to TensorInfo to handle numpy types in constructor.
 
-    def __init__(self, *args):
-        # Return (dtype, shape) from *args
-        def unpack_args():
+    e.g:
+        TensorInfo(dtype, shape)
+        TensorInfo(numpy.ndarray)
+    
+    Raises:
+        TypeError: Raised if incorrect type is used to create a tensorinfo.
+    """
+
+    def __init__(self, *args: Union[Iterable, np.array]) -> None:
+        def unpack_args() -> Tuple[np.dtype, List[int]]:
+            """Return (dtype, shape) from *args
+
+            Raises:
+                TypeError: Raised if incorrect type is used to create a tensorinfo.
+
+            Returns:
+                (np.dtype, List[int]) -- tuple of numpy dtype and tensor shape.
+            """
             if len(args) == 2:
                 return args
             elif len(args) == 1 and isinstance(args[0], np.ndarray):
@@ -35,8 +58,16 @@ class TensorInfo(_TensorInfoCore):
             else:
                 raise TypeError(f'Can not create TensorInfo with args {args}')
 
-        # Convert a `type` or `numpy.dtype` to a `str`
-        def sanitize_dtype(dtype):
+        def sanitize_dtype(dtype: Union[type, np.dtype]) -> str:
+            """Convert a `type` or `numpy.dtype` to a `str`
+
+            Arguments:
+                dtype {Union[type, np.dtype]} -- Python type (e.g. float) or numpy dtype
+                (e.g. np.float32) to convert to PopART type string.
+
+            Returns:
+                str -- PopART type string.
+            """
             if isinstance(dtype, np.dtype):
                 return _get_popart_type(dtype.type)
             elif isinstance(dtype, type):

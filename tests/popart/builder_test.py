@@ -1469,7 +1469,7 @@ def test_save_model_to_file():
     i = builder.addInputTensor(popart.TensorInfo("FLOAT", [2]))
     o = builder.aiOnnx.sqrt([i])
 
-    tmpdir = tempfile.gettempdir()
+    tmpdir = tempfile.mkdtemp()
     tmpfile = os.path.join(tmpdir, "model.onnx")
     builder.saveModelProto(tmpfile)
 

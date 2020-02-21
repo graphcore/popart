@@ -11,6 +11,7 @@
 #include <boost/range/algorithm/find.hpp>
 #include <boost/range/algorithm_ext.hpp>
 
+#include <gcl/ct/TileAllocation.hpp>
 #include <poplar/CSRFunctions.hpp>
 #include <poplar/CycleCount.hpp>
 #include <poplin/codelets.hpp>
@@ -1709,14 +1710,12 @@ PriTask Devicex::pipelinedCopyTask(Op *op, TaskId prevTaskId) {
   auto f = [this, copyOp, copyOpx]() {
     SequenceMap seqs;
     logging::debug("Adding pipelined copies for op {}", copyOp->debugName());
-    for (auto &prog : progs.pipelineIpuCopyFragments(
-             copyOp->getPipelineStage(),
-             logging::format("{}, {}, PipelineStage({})",
-                             copyOp->debugName(),
-                             copyOp->getFromToStr(),
-                             copyOp->getPipelineStage()))) {
-      copyOpx->growPipelined(seqs[prog]);
-    }
+    auto &prog = progs.pipelineIpuCopyFragment(
+        logging::format("{}, {}, PipelineStage({})",
+                        copyOp->debugName(),
+                        copyOp->getFromToStr(),
+                        copyOp->getPipelineStage()));
+    copyOpx->growPipelined(seqs[&prog]);
     return seqs;
   };
 
@@ -2109,6 +2108,10 @@ void Devicex::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
       // the copy appears in, a new copy program is added to the cycles
       // sequence using `IpuCopyOpx::growPipelined`.
       dynamic_cast<IpuCopyOpx *>(opx)->createPipelinedOutput();
+    } else if (op->isConvertibleTo<RestoreOp>()) {
+      // Restore Operations are required to run at the start of a pipelineStage
+      growOpx(opx,
+              progs.pipelineRestoreFragment(op->getPipelineStage(), op->str()));
     } else if (op->settings.recomputeType == RecomputeType::CHECKPOINT ||
                op->settings.recomputeType == RecomputeType::UNDEFINED) {
       logging::devicex::debug(
@@ -2441,15 +2444,27 @@ void Devicex::prepare() {
           numIOTiles);
     }
 
-    for (unsigned ipu = 0; ipu < numIPUs; ++ipu) {
-      unsigned startTile = ipu * tilesPerIPU;
-      unsigned endTile   = (ipu + 1) * tilesPerIPU;
-      virtualGraphs.emplace_back(
-          graph().createVirtualGraph(startTile + numIOTiles, endTile));
-      logging::devicex::info("Created virtual graph {} from {} to {}",
-                             ipu,
-                             startTile + numIOTiles,
-                             endTile);
+    if (numIOTiles) {
+      const auto computeTiles =
+          gcl::perIPUTiles(graph(), numIOTiles, tilesPerIPU - numIOTiles);
+      for (unsigned ipu = 0; ipu < numIPUs; ++ipu) {
+        unsigned startTile = ipu * tilesPerIPU;
+        unsigned endTile   = (ipu + 1) * tilesPerIPU;
+        auto ipuGraph      = graph().createVirtualGraph(startTile, endTile);
+        virtualGraphs.emplace_back(ipuGraph.createVirtualGraph(computeTiles));
+        logging::devicex::info("Created virtual graph {} with {} tiles",
+                               ipu,
+                               tilesPerIPU - numIOTiles);
+      }
+    } else {
+      for (unsigned ipu = 0; ipu < numIPUs; ++ipu) {
+        unsigned startTile = ipu * tilesPerIPU;
+        unsigned endTile   = (ipu + 1) * tilesPerIPU;
+        virtualGraphs.emplace_back(
+            graph().createVirtualGraph(startTile, endTile));
+        logging::devicex::info(
+            "Created virtual graph {} from {} to {}", ipu, startTile, endTile);
+      }
     }
 
     // Make sure that the virtual graph information is valid
@@ -3539,17 +3554,42 @@ PopStreamId Devicex::weightLoadStreamId(TensorId id) const {
   return weightLoadStreamPrefix + id;
 }
 
+poplar::RemoteBuffer &
+Devicex::getOrCreateHostReduceRemoteBuffer(TensorId tensorId,
+                                           TensorInfo tensorInfo,
+                                           poplar::Graph &graph) {
+  auto entry = hostReduceRemoteBuffers.find(tensorId);
+
+  if (entry == hostReduceRemoteBuffers.end()) {
+    auto remoteBuffer = graph.addRemoteBuffer(
+        tensorId, popType(tensorInfo), tensorInfo.nelms(), 1, true);
+
+    hostReduceRemoteBuffers.emplace(tensorId, remoteBuffer);
+    entry = hostReduceRemoteBuffers.find(tensorId);
+  }
+
+  return entry->second;
+}
+
 poplar::DataStream &Devicex::insertGradientStoreStream(TensorId tensorId,
                                                        TensorInfo tensorInfo,
                                                        poplar::Graph &graph) {
   auto streamMapEntry = toHostGradientStreams.find(tensorId);
 
   if (streamMapEntry == toHostGradientStreams.end()) {
-    toHostGradientStreams.emplace(tensorId,
-                                  poplar::DataStream(graph.addDeviceToHostFIFO(
-                                      gradientStoreStreamId(tensorId),
-                                      popType(tensorInfo),
-                                      tensorInfo.nelms())));
+    if (ir().getSessionOptions().hostAllReduceRemoteBuffer) {
+      toHostGradientStreams.emplace(
+          tensorId,
+          poplar::DataStream(graph.addDeviceToHostFIFO(
+              gradientStoreStreamId(tensorId), poplar::CHAR, 1)));
+    } else {
+      toHostGradientStreams.emplace(
+          tensorId,
+          poplar::DataStream(
+              graph.addDeviceToHostFIFO(gradientStoreStreamId(tensorId),
+                                        popType(tensorInfo),
+                                        tensorInfo.nelms())));
+    }
     streamMapEntry = toHostGradientStreams.find(tensorId);
   } else {
     throw error("Tensor Id " + tensorId +
@@ -3565,13 +3605,20 @@ poplar::DataStream &Devicex::insertGradientLoadStream(TensorId tensorId,
   auto streamMapEntry = fromHostGradientStreams.find(tensorId);
 
   if (streamMapEntry == fromHostGradientStreams.end()) {
-    fromHostGradientStreams.emplace(
-        tensorId,
-        poplar::DataStream(graph.addHostToDeviceFIFO(
-            gradientLoadStreamId(tensorId),
-            popType(tensorInfo),
-            tensorInfo.nelms(),
-            poplar::ReplicatedStreamMode::BROADCAST)));
+    if (ir().getSessionOptions().hostAllReduceRemoteBuffer) {
+      fromHostGradientStreams.emplace(
+          tensorId,
+          poplar::DataStream(graph.addHostToDeviceFIFO(
+              gradientLoadStreamId(tensorId), poplar::CHAR, 1)));
+    } else {
+      fromHostGradientStreams.emplace(
+          tensorId,
+          poplar::DataStream(graph.addHostToDeviceFIFO(
+              gradientLoadStreamId(tensorId),
+              popType(tensorInfo),
+              tensorInfo.nelms(),
+              poplar::ReplicatedStreamMode::BROADCAST)));
+    }
     streamMapEntry = fromHostGradientStreams.find(tensorId);
   } else {
     throw error("Tensor Id " + tensorId +
@@ -3611,10 +3658,29 @@ std::vector<TensorId> &Devicex::getHostReduceStreamIds() {
   return hostReduceStreamIds;
 }
 
+const std::map<TensorId, poplar::RemoteBuffer> &
+Devicex::getHostReduceRemoteBuffers() const {
+  return hostReduceRemoteBuffers;
+}
+
 void Devicex::connectStreamToCallback(const std::string &streamHandle,
                                       std::function<void(void *)> callback,
                                       unsigned index) {
   pEngine->connectStreamToCallback(streamHandle, index, callback);
+}
+
+void Devicex::copyFromRemoteBuffer(const poplar::RemoteBuffer &buffer,
+                                   void *w,
+                                   int repeat_index,
+                                   unsigned replication_index) {
+  pEngine->copyFromRemoteBuffer(buffer, w, repeat_index, replication_index);
+}
+
+void Devicex::copyToRemoteBuffer(void *w,
+                                 const poplar::RemoteBuffer &buffer,
+                                 int repeat_index,
+                                 unsigned replication_index) {
+  pEngine->copyToRemoteBuffer(w, buffer, repeat_index, replication_index);
 }
 
 } // namespace popx

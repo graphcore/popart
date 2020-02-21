@@ -49,9 +49,6 @@ constexpr const char *reservedRandomSeedPrefix() { return "randomSeed___"; }
 std::vector<std::string> reservedOptimizerPrefixes();
 std::vector<std::string> reservedPrefixes();
 
-// Create a new intermediate tensor id with a unique name
-TensorId createIntermediateTensorId(TensorId base_id);
-
 TensorId getCacheArgTensorId(TensorId base_id);
 
 constexpr const char *reservedDefaultWeightDecayScaleFactor0Prefix() {

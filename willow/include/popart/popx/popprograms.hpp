@@ -89,10 +89,11 @@ public:
 
   enum class PipelineFragmentId {
     ToDeviceStream = 0,
+    Restore,
     Forward,
     ToHostStream,
-    // IpuCopy fragment has been removed. There is now a Sequence per
-    // PipelineCycle in pipelineIpuCopySeqs to which copies are added.
+    // IpuCopy fragment has been removed. There is now a single
+    // pipelineIpuCopySeq to which copies are added.
   };
   std::string getStrFromPipelineFragmentId(PipelineFragmentId);
 
@@ -108,12 +109,13 @@ public:
                                  const std::string &desc);
   poplar::program::Sequence &pipelineForwardFragment(PipelineStage,
                                                      const std::string &desc);
+  poplar::program::Sequence &pipelineRestoreFragment(PipelineStage,
+                                                     const std::string &desc);
 
   // To stream anchors that are computed in the pipelineForwardFragment
   poplar::program::Sequence &
   pipelineToHostStreamFragment(PipelineStage, const std::string &desc);
-  std::vector<poplar::program::Sequence *>
-  pipelineIpuCopyFragments(PipelineStage, const std::string &desc);
+  poplar::program::Sequence &pipelineIpuCopyFragment(const std::string &desc);
 
   void
   addPipelineCycle(PipelineCycle pCycle,
@@ -139,13 +141,13 @@ private:
            std::map<PipelineStage, poplar::program::Sequence>>
       pipelineSeqs;
 
-  // IpuCopy programs
-  std::map<PipelineCycle, poplar::program::Sequence> pipelineIpuCopySeqs;
-  std::map<PipelineCycle, std::vector<std::string>> pipelineIpuCopySeqDescs;
-
   // ... and their corresponding descriptions
   std::map<PipelineFragmentId, std::map<PipelineStage, std::string>>
       pipelineDescs;
+
+  // IpuCopy program
+  poplar::program::Sequence pipelineIpuCopySeq;
+  std::string pipelineIpuCopyDesc;
 
   poplar::program::Sequence getMainProgramFromPipelineFragments();
 

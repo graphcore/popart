@@ -84,7 +84,7 @@ POPLAR_PATH=$(python -c "import os.path; print(os.path.realpath('../../external/
 
 # Configure cmake
 #CC=clang CXX=clang++   cmake . -DPOPLAR_INSTALL_DIR=${POPLAR_PATH} -DEXTERNAL_PROJECT_NUM_JOBS=${NUM_PROCS} ${DOCS}
-cmake . -DPOPLAR_INSTALL_DIR=${POPLAR_PATH} -DEXTERNAL_PROJECT_NUM_JOBS=${NUM_PROCS} ${DOCS}
+cmake . -DPOPLAR_INSTALL_DIR=${POPLAR_PATH} -DC10_DIR=${PWD} -DEXTERNAL_PROJECT_NUM_JOBS=${NUM_PROCS} ${DOCS}
 
 echo "Done"
 

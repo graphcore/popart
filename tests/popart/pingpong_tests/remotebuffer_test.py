@@ -55,11 +55,12 @@ def get_device(sim=True, device_id=None, num_ipus=1, pingpong=False):
                 int(device_id), popart.SyncPattern.PingPong
                 if pingpong else popart.SyncPattern.Full)
         else:
-            device = deviceManager.acquireAvailableDevice(
-                num_ipus,
-                1216,
-                pattern=popart.SyncPattern.PingPong
-                if pingpong else popart.SyncPattern.Full)
+            pattern = (popart.SyncPattern.PingPong
+                       if pingpong else popart.SyncPattern.Full)
+            device = tu.acquire_ipu(numIPUs=num_ipus,
+                                    tilesPerIPU=1216,
+                                    pattern=pattern)
+            assert device
         if device is None:
             raise Exception('Failed to acquire IPU. Exiting.')
     return device

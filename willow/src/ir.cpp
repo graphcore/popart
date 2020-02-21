@@ -3039,8 +3039,18 @@ void Ir::applyInplacePattern(Graph &graph) {
           return false;
         };
 
+        auto consumesImplicitLoopInputs = [&] {
+          for (auto &index_tensor : op->input->tensorMap()) {
+            auto inTensor = index_tensor.second;
+            if (inTensor->isImplicitLoopInput()) {
+              return true;
+            }
+          }
+          return false;
+        };
+
         if (!op->isExcludedFromPattern(&inplace) && !touchesAnchors() &&
-            !recomputeUsingCheckpoint()) {
+            !recomputeUsingCheckpoint() && !consumesImplicitLoopInputs()) {
           auto newTopoCons = inplace.getNewTopoCons(op, identifier);
           if (isSchedulable(newTopoCons)) {
             inplacedAlready.insert(op->id);
@@ -3184,6 +3194,14 @@ const RemoteBufferInfo Ir::getRemoteBufferInfo(RemoteBufferId id) const {
 const std::map<RemoteBufferId, RemoteBufferInfo>
 Ir::getAllRemoteBufferInfos() const {
   return remoteBufferInfoMap;
+}
+
+TensorId Ir::createIntermediateTensorId(const TensorId &base_id) {
+  auto temp_id =
+      logging::format("{}__t{}", base_id, intermediate_tensor_counter);
+  logging::ir::trace("Generating tensor id {}", temp_id);
+  ++intermediate_tensor_counter;
+  return temp_id;
 }
 
 } // namespace popart

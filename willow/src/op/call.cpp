@@ -244,6 +244,40 @@ view::RegMap CallOp::bwdRegMap(InIndex inIndex, OutIndex outIndex) const {
       };
 }
 
+GraphId CallOp::getBackwardsGraphId() const {
+  return GraphId(logging::format("{}_bwd", callee.get().id));
+}
+
+std::vector<std::unique_ptr<Op>> CallOp::getGradOps() {
+  auto gradInInfo =
+      getCalledGraph().getBackwardsGraph(getBackwardsGraphId()).gradInputInfo();
+
+  std::vector<std::unique_ptr<Op>> upops;
+  upops.emplace_back(std::make_unique<CallGradOp>(*this, gradInInfo));
+  return upops;
+}
+
+CallGradOp::CallGradOp(CallOp &fwdOp,
+                       const std::vector<GradInOutMapper> &gradInInfo_)
+    : CallOp(Onnx::CustomOperators::Call_1,
+             fwdOp.getGraph(),
+             fwdOp.getCalledGraph().getBackwardsGraph(
+                 fwdOp.getBackwardsGraphId())),
+      gradInInfo(gradInInfo_) {
+  // An output for every input to the forward CallOp
+  for (int i = 0; i < fwdOp.input->n(); i++) {
+    outInfoMap.insert({i, i});
+  }
+}
+
+const std::vector<GradInOutMapper> &CallGradOp::gradInputInfo() const {
+  return gradInInfo;
+}
+
+const std::map<int, int> &CallGradOp::gradOutToNonGradIn() const {
+  return outInfoMap;
+}
+
 namespace {
 
 static OpDefinition::DataTypes T = {DataType::UINT8,

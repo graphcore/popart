@@ -452,41 +452,18 @@ void Graph::setConvFlipWeightConstraints() {
 }
 
 std::vector<Op *> Graph::getOpSchedule(const OpsBeforeKey &gCons) const {
-  auto sorted = scheduler->getPartialOpSchedule(
-      gCons, *this, true, ir.getPingPongPhasesReady());
-  if (sorted.size() != getOps().size()) {
-
-    // Create a string, listing all of the Ops not scheduled, which will be
-    // included in the error message.
-    std::set<Op *> notScheduled;
-    for (auto &id_op : getOps()) {
-      auto op = id_op.second.get();
-      if (std::find(sorted.cbegin(), sorted.cend(), op) == sorted.cend()) {
-        notScheduled.emplace(op);
-      }
-    }
-    std::stringstream missing;
-    for (auto op : notScheduled) {
-      missing << "\n\n";
-      op->append(missing);
-    }
-
-    throw error("failure to sort topologically in getOpSchedule ({} != {}). "
-                "Unscheduled: {}",
-                sorted.size(),
-                getOps().size(),
-                missing.str());
-  }
-
-  return sorted;
+  return scheduler->getSchedule(gCons,
+                                *this,
+                                ir.getPingPongPhasesReady(),
+                                getIr().getSessionOptions().timeLimitScheduler,
+                                getIr().getSessionOptions().swapLimitScheduler,
+                                getIr().getSessionOptions().kahnTieBreaker);
 }
 
 // Are the Ops with all the dependencies a DAG?
 bool Graph::isSchedulable(const OpsBeforeKey &gCons,
                           bool respectPingPongPhases) const {
-  auto sorted = scheduler->getPartialOpSchedule(
-      gCons, *this, false, respectPingPongPhases);
-  return sorted.size() == getOps().size();
+  return scheduler->isSchedulable(gCons, *this, respectPingPongPhases);
 }
 
 bool Graph::hasUserRecomputeOps() const {

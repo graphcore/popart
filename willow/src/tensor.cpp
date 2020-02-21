@@ -3,6 +3,8 @@
 #include <string>
 
 #include <popart/error.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/onnxutil.hpp>
 #include <popart/op.hpp>
 #include <popart/op/ipucopy.hpp>
@@ -13,6 +15,9 @@
 #include <popart/util.hpp>
 
 namespace popart {
+
+Ir &Tensor::getIr() { return getGraph().getIr(); }
+const Ir &Tensor::getIr() const { return getGraph().getIr(); }
 
 bool Tensor::consumersAllPreLoss() const {
   for (Op *consumer : consumers.getOps()) {
@@ -247,6 +252,12 @@ void Tensor::setCached(bool cached_) { cached = cached_; }
 
 bool Tensor::isCached() const { return cached; }
 
+void Tensor::setImplicitLoopInput(bool implicit_) {
+  implicitLoopInput = implicit_;
+}
+
+bool Tensor::isImplicitLoopInput() const { return implicitLoopInput; }
+
 void Tensor::setRemoteBufferInfo(RemoteBufferId rbId, RemoteBufferIndex index) {
   remoteBufferInfo = {rbId, index};
 }
@@ -272,7 +283,7 @@ int Consumers::getTotal() const {
 Tensor::Tensor(TensorId n, TensorType t, Graph &g)
     : Vertex(), id(n), consumers(this), graph(g), producer(nullptr),
       tensorTypeInfo(&getTensorTypeInfoMap().at(t)), cached(false),
-      data_(nullptr) {
+      data_(nullptr), implicitLoopInput(false) {
   // graph is currently unused - this removes the compiler warning
   (void)graph;
 }

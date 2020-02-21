@@ -1,6 +1,7 @@
 #include <memory>
 #include <numeric>
 #include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/reducesum.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/op/squeeze.hpp>
@@ -63,8 +64,9 @@ popart::Tensor *configureReshapeOp(ReshapeOp *op,
   op->setOutShape(outShape);
   op->priority = priority;
   op->connectInTensor(ReshapeOp::getInIndex(), inputTensorId);
-  op->createAndConnectOutTensor(ReshapeOp::getOutIndex(),
-                                createIntermediateTensorId(inputTensorId));
+  op->createAndConnectOutTensor(
+      ReshapeOp::getOutIndex(),
+      op->getIr().createIntermediateTensorId(inputTensorId));
   op->setup();
   return op->outTensor(ReshapeOp::getOutIndex());
 }
@@ -76,8 +78,9 @@ popart::Tensor *configureTranposeOp(TransposeOp *op,
   op->setPerm(perm);
   op->priority = priority;
   op->connectInTensor(TransposeOp::getInIndex(), inputTensorId);
-  op->createAndConnectOutTensor(TransposeOp::getOutIndex(),
-                                createIntermediateTensorId(inputTensorId));
+  op->createAndConnectOutTensor(
+      TransposeOp::getOutIndex(),
+      op->getIr().createIntermediateTensorId(inputTensorId));
   op->setup();
   return op->outTensor(TransposeOp::getOutIndex());
 }
@@ -89,8 +92,9 @@ popart::Tensor *configureReduceSumOp(ReduceSumOp *op,
   op->setAxes(axes);
   op->setKeepDims(keepDims);
   op->connectInTensor(ReduceSumOp::getInIndex(), inputTensorId);
-  op->createAndConnectOutTensor(ReduceSumOp::getOutIndex(),
-                                createIntermediateTensorId(inputTensorId));
+  op->createAndConnectOutTensor(
+      ReduceSumOp::getOutIndex(),
+      op->getIr().createIntermediateTensorId(inputTensorId));
   op->setup();
   return op->outTensor(ReduceSumOp::getOutIndex());
 }
@@ -100,8 +104,9 @@ popart::Tensor *configureSqueezeOp(SqueezeOp *op,
                                    const Shape &axes) {
   op->setAxes(axes);
   op->connectInTensor(SqueezeOp::getInIndex(), inputTensorId);
-  op->createAndConnectOutTensor(SqueezeOp::getOutIndex(),
-                                createIntermediateTensorId(inputTensorId));
+  op->createAndConnectOutTensor(
+      SqueezeOp::getOutIndex(),
+      op->getIr().createIntermediateTensorId(inputTensorId));
   op->setup();
   return op->outTensor(SqueezeOp::getOutIndex());
 }
@@ -172,7 +177,7 @@ bool MatMulPattern::apply(Op *op) const {
   configureMatMulOp(matmulOp,
                     lhsReshapeOp->outTensor(ReshapeOp::getOutIndex())->id,
                     rhsReshapeOp->outTensor(ReshapeOp::getOutIndex())->id,
-                    createIntermediateTensorId(out->id));
+                    matmulOp->getIr().createIntermediateTensorId(out->id));
 
   // Reshape the output back the the user defined shape
   configureReshapeOp(outReshapeOp,
@@ -273,9 +278,10 @@ bool MatMulGradPattern::apply(Op *op) const {
                             in->id,
                             std::numeric_limits<double>::lowest());
 
-    // Add constraint that we will not reshape the in until the grad_in has been
-    // produced
-    reshapeOpInExpand->getGraph().topoCons->insert(orig_grad_in->getProducer(),
+    // Add constraint that we will not reshape the forward in tensor until the
+    // grad_in tensor has been reshaped i.e. prevent the forward in reshape from
+    // running in the forward pass.
+    reshapeOpInExpand->getGraph().topoCons->insert(reshapeOpGradInExpand,
                                                    reshapeOpInExpand);
   }
 
@@ -289,8 +295,9 @@ bool MatMulGradPattern::apply(Op *op) const {
   matmulOp->setCanCreateInputs(false);
   matmulOp->connectInTensor(getGradInIndex(), grad_in->id);
   matmulOp->connectInTensor(getInIndex(), in->id);
-  matmulOp->createAndConnectOutTensor(MatMulOp::getOutIndex(),
-                                      createIntermediateTensorId(grad_out->id));
+  matmulOp->createAndConnectOutTensor(
+      MatMulOp::getOutIndex(),
+      matmulOp->getIr().createIntermediateTensorId(grad_out->id));
   matmulOp->setPhase(phase);
   matmulOp->setup();
   auto out = matmulOp->outTensor(MatMulOp::getOutIndex());

@@ -6,6 +6,7 @@
     "onnx",
     "pybind11",
     "gcdoc",
+    "gcl",
     "spdlog",
     "boost",
     "protobuf"

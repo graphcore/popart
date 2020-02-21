@@ -1,5 +1,6 @@
 #include <memory>
 #include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/add.hpp>
 #include <popart/op/gemm.hpp>
 #include <popart/op/matmul.hpp>
@@ -43,14 +44,14 @@ bool GemmDecompositionPattern::apply(Op *op) const {
 
   auto A = in_a->id;
   if (transA) {
-    auto tA = createIntermediateTensorId(A);
+    auto tA = matmul->getIr().createIntermediateTensorId(A);
     transposeTensor(A, tA, op);
     A = tA;
   }
 
   auto B = in_b->id;
   if (transB) {
-    auto tB = createIntermediateTensorId(B);
+    auto tB = in_b->getIr().createIntermediateTensorId(B);
     transposeTensor(B, tB, op);
     B = tB;
   }
@@ -58,15 +59,16 @@ bool GemmDecompositionPattern::apply(Op *op) const {
   // Connect up the new ops
   matmul->connectInTensor(MatMulOp::getLhsInIndex(), A);
   matmul->connectInTensor(MatMulOp::getRhsInIndex(), B);
-  matmul->createAndConnectOutTensor(MatMulOp::getOutIndex(),
-                                    createIntermediateTensorId(in_a->id));
+  matmul->createAndConnectOutTensor(
+      MatMulOp::getOutIndex(),
+      matmul->getIr().createIntermediateTensorId(in_a->id));
   matmul->setup();
 
-  auto scale1_out = createIntermediateTensorId(in_a->id);
+  auto scale1_out = in_a->getIr().createIntermediateTensorId(in_a->id);
   scaleTensor(
       matmul->outTensor(MatMulOp::getOutIndex())->id, scale1_out, alpha, op);
 
-  auto scale2_out = createIntermediateTensorId(in_a->id);
+  auto scale2_out = matmul->getIr().createIntermediateTensorId(in_a->id);
   scaleTensor(in_c->id, scale2_out, beta, op);
 
   add->connectInTensor(AddOp::getArg0InIndex(), scale1_out);

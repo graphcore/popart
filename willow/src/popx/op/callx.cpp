@@ -142,9 +142,14 @@ CallOpx::getOutputsToPrepare() const {
   return outputs;
 }
 
+CallGradOpx::CallGradOpx(Op *op, Devicex *devicex) : CallOpx(op, devicex) {
+  verifyOp<CallGradOp>(op, Onnx::CustomGradOperators::CallGrad);
+}
+
 namespace {
 OpxCreator<CallOpx> callOpxCreator(Onnx::CustomOperators::Call_1);
-}
+OpxCreator<CallGradOpx> callGradOpxCreator(Onnx::CustomGradOperators::CallGrad);
+} // namespace
 
 } // namespace popx
 } // namespace popart

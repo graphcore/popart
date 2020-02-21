@@ -366,11 +366,30 @@ TrainingSession::getHostReduceStreamIds() const {
   return device_->getHostReduceStreamIds();
 }
 
+const std::map<std::string, poplar::RemoteBuffer> &
+TrainingSession::getHostReduceRemoteBuffers() const {
+  return device_->getHostReduceRemoteBuffers();
+}
+
 void TrainingSession::connectStreamToCallback(
     const std::string &streamHandle,
     std::function<void(void *)> callback,
     unsigned index) {
   device_->connectStreamToCallback(streamHandle, callback, index);
+}
+
+void TrainingSession::copyFromRemoteBuffer(const poplar::RemoteBuffer &buffer,
+                                           void *w,
+                                           int repeat_index,
+                                           unsigned replication_index) {
+  device_->copyFromRemoteBuffer(buffer, w, repeat_index, replication_index);
+}
+
+void TrainingSession::copyToRemoteBuffer(void *w,
+                                         const poplar::RemoteBuffer &buffer,
+                                         int repeat_index,
+                                         unsigned replication_index) {
+  device_->copyToRemoteBuffer(w, buffer, repeat_index, replication_index);
 }
 
 } // namespace popart

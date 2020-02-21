@@ -36,6 +36,11 @@ private:
   std::vector<std::pair<poplar::Tensor, bool>> prepareOutputs() const;
 };
 
+class CallGradOpx : public CallOpx {
+public:
+  CallGradOpx(Op *, Devicex *);
+};
+
 } // namespace popx
 } // namespace popart
 

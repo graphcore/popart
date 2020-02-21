@@ -1,4 +1,6 @@
 #include <sstream>
+#include <poplar/DeviceManager.hpp>
+#include <poplar/OptionFlags.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/error.hpp>
 
@@ -13,18 +15,30 @@ void DeviceManager::registerDeviceProvider(DeviceProvider *provider) {
   providers.push_back(provider);
 }
 
+std::shared_ptr<DeviceInfo> DeviceManager::getDevice(SyncPattern syncPattern,
+                                                     unsigned deviceManagerId) {
+  for (auto p : providers) {
+    auto device = p->getDevice(syncPattern, deviceManagerId);
+    if (device != nullptr) {
+      return device;
+    }
+  }
+  return nullptr;
+}
+
 std::vector<std::shared_ptr<DeviceInfo>>
 DeviceManager::enumerateDevices(SyncPattern pattern,
-                                uint32_t replication_factor) {
+                                uint32_t /*replication_factor*/,
+                                int numIpus,
+                                DeviceType deviceType) {
   std::vector<std::shared_ptr<DeviceInfo>> devices;
-  for (auto p : providers) {
-    p->enumerate(devices, pattern, replication_factor);
-  }
 
+  for (auto p : providers) {
+    p->enumerate(devices, numIpus, pattern, deviceType);
+  }
   for (auto d : devices) {
     logging::debug("Device: {}", d.get()->toString());
   }
-
   return devices;
 }
 
@@ -65,24 +79,27 @@ DeviceManager::acquireAvailableDevice(int numIpus,
                                       int tilesPerIpu,
                                       SyncPattern pattern,
                                       uint32_t replication_factor) {
+  if (replication_factor > 1) {
+    logging::devicex::warn(
+        "You have specified a replication_factor in the call to aquire "
+        "available devices. This parameter is deprecated and will have no "
+        "effect. Please account for the replication factor when calculating "
+        "the number of IPUs required.");
+  }
+  if (numIpus > 0 && ((numIpus & (numIpus - 1)) != 0)) {
+    throw error("You have attempted to acquire {} IPUs. The number of IPUs "
+                "requested must be a power of two",
+                numIpus);
+  }
 
-  auto devices = enumerateDevices(pattern, replication_factor);
+  auto devices = enumerateDevices(pattern, replication_factor, numIpus);
 
   for (auto &device : devices) {
-    // Check if numIPUs is positive and a power of two
-    if (numIpus > 0 && ((numIpus & (numIpus - 1)) == 0)) {
-      if (numIpus == device->getNumIpus() &&
-          (!tilesPerIpu || tilesPerIpu == device->getTilesPerIpu())) {
-
-        // Attach to the device. Will succeed if available
-        if (device->attach()) {
-          return device;
-        }
+    if ((!tilesPerIpu || tilesPerIpu == device->getTilesPerIpu())) {
+      // Attach to the device. Will succeed if available
+      if (device->attach()) {
+        return device;
       }
-    } else {
-      throw error("You have attempted to acquire {} IPUs. The number of IPUs "
-                  "requested must be a power of two",
-                  numIpus);
     }
   }
 
@@ -91,18 +108,22 @@ DeviceManager::acquireAvailableDevice(int numIpus,
 
 std::shared_ptr<DeviceInfo>
 DeviceManager::acquireDeviceById(int id,
-                                 SyncPattern pattern = SyncPattern::FULL,
-                                 uint32_t replication_factor = 1) {
+                                 SyncPattern pattern,
+                                 uint32_t replication_factor) {
+  auto device = getDevice(pattern, id);
 
-  auto devices = enumerateDevices(pattern, replication_factor);
-
-  for (auto &device : devices) {
-    if (device->getId() == id) {
-      if (device->attach())
-        return device;
-    }
+  if (replication_factor > 1) {
+    logging::devicex::warn(
+        "You have specified a replication_factor in the call to aquire "
+        "available devices. This parameter is deprecated and will have no "
+        "effect. Please account for the replication factor when calculating "
+        "the number of IPUs required.");
   }
 
+  // Attach to the device. Will succeed if available
+  if (device->attach()) {
+    return device;
+  }
   return nullptr;
 }
 

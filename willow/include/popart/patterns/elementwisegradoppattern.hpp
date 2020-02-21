@@ -2,6 +2,7 @@
 #define GUARD_NEURALNET_ELEMENTWISEGRADOPPATTERN_HPP
 
 #include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/mul.hpp>
 #include <popart/patterns/pattern.hpp>
 
@@ -30,8 +31,9 @@ public:
 
     // Connect up the new ops
     d->connectInTensor(DOP::getInIndex(), fwd_in->id);
-    d->createAndConnectOutTensor(DOP::getOutIndex(),
-                                 createIntermediateTensorId(grad_in->id));
+    d->createAndConnectOutTensor(
+        DOP::getOutIndex(),
+        grad_in->getIr().createIntermediateTensorId(grad_in->id));
     d->setup();
 
     mul->connectInTensor(MulOp::getArg0InIndex(), grad_in->id);

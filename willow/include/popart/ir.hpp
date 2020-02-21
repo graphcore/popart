@@ -519,6 +519,12 @@ public:
   Op &getSubgraphAnchorPlaceholder();
 
   const decltype(graphs) &getGraphs() const { return graphs; }
+
+  // Create a new intermediate tensor id with a unique name
+  TensorId createIntermediateTensorId(const TensorId &base_id);
+
+private:
+  uint64_t intermediate_tensor_counter{0};
 };
 
 } // namespace popart

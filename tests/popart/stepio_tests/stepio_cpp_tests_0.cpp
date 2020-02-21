@@ -1,6 +1,7 @@
 #define BOOST_TEST_MODULE StepIOTest
 
 #include <boost/test/unit_test.hpp>
+#include <thread>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/devicemanager.hpp>
@@ -15,6 +16,26 @@
 #include <popart/tensordata.hpp>
 
 using namespace popart;
+
+namespace {
+
+std::shared_ptr<popart::DeviceInfo> acquireIpu() {
+  auto &dm = popart::DeviceManager::createDeviceManager();
+
+  // keep trying to attach to a device until one is available (this may not
+  // always be the case as other tests might be running in parallel).
+  while (true) {
+    if (auto d = dm.acquireAvailableDevice(1, 1216)) {
+      return d;
+    }
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+  }
+
+  return nullptr;
+}
+
+} // unnamed namespace
 
 BOOST_AUTO_TEST_CASE(StepIOTest_BufferInput) {
 
@@ -90,14 +111,14 @@ BOOST_AUTO_TEST_CASE(StepIOTest_BufferInput) {
                          &rawOutputData[0]) == true);
 }
 
-bool ipu_avaliable(boost::unit_test::test_unit_id) {
+bool ipu_available(boost::unit_test::test_unit_id) {
   auto devices =
       popart::DeviceManager::createDeviceManager().enumerateDevices();
   return devices.size() > 0;
 }
 
 BOOST_AUTO_TEST_CASE(StepIOTest_BufferInput_Ipu,
-                     *boost::unit_test::precondition(ipu_avaliable)) {
+                     *boost::unit_test::precondition(ipu_available)) {
 
   Shape inShape = {2, 5};
   TensorInfo inInfo{"INT32", inShape};
@@ -129,9 +150,7 @@ BOOST_AUTO_TEST_CASE(StepIOTest_BufferInput_Ipu,
   auto art      = AnchorReturnType("ALL");
   auto dataFlow = DataFlow(1, {{out, art}});
 
-  auto ipuDevice =
-      popart::DeviceManager::createDeviceManager().acquireAvailableDevice(1,
-                                                                          1216);
+  auto ipuDevice = acquireIpu();
 
   auto session = popart::InferenceSession::createFromOnnxModel(
       proto,
@@ -278,7 +297,7 @@ BOOST_AUTO_TEST_CASE(StepIOTest_CallbackInput) {
 }
 
 BOOST_AUTO_TEST_CASE(StepIOTest_CallbackInput_Ipu,
-                     *boost::unit_test::precondition(ipu_avaliable)) {
+                     *boost::unit_test::precondition(ipu_available)) {
 
   Shape inShape = {2, 5};
   TensorInfo inInfo{"INT32", inShape};
@@ -310,9 +329,7 @@ BOOST_AUTO_TEST_CASE(StepIOTest_CallbackInput_Ipu,
   auto art      = AnchorReturnType("ALL");
   auto dataFlow = DataFlow(1, {{out, art}});
 
-  auto ipuDevice =
-      popart::DeviceManager::createDeviceManager().acquireAvailableDevice(1,
-                                                                          1216);
+  auto ipuDevice = acquireIpu();
 
   auto session = popart::InferenceSession::createFromOnnxModel(
       proto,

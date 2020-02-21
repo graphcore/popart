@@ -3,6 +3,12 @@ import popart
 import time
 import pytest
 
+# `import test_util` requires adding to sys.path
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+import test_util as tu
+
 
 ## TODO T8803 : requires hardware or a sim device
 # Test:
@@ -10,8 +16,10 @@ import pytest
 # 2. That the cached engine isn't loaded for a different session
 def test_simple_load(tmp_path):
     def run_session(bps):
-        device = popart.DeviceManager().acquireAvailableDevice()
-        if not device:
+        # TODO: use the tu.requires_ipu decorator
+        if tu.ipu_available():
+            device = tu.acquire_ipu()
+        else:
             pytest.skip("Unable to acquire device")
 
         start = time.clock()
@@ -158,8 +166,10 @@ def test_bad_load(tmp_path):
         return proto, a, b, o
 
     def run_test(proto, a, b, o, test):
-        device = popart.DeviceManager().acquireAvailableDevice()
-        if not device:
+        # TODO: use the tu.requires_ipu decorator
+        if tu.ipu_available():
+            device = tu.acquire_ipu()
+        else:
             pytest.skip("Unable to acquire device")
 
         # Describe how to run the model
@@ -201,8 +211,10 @@ def test_bad_load(tmp_path):
 ## TODO T8803 : requires hardware or a sim device
 def test_get_reports(tmp_path):
     def run_session():
-        device = popart.DeviceManager().acquireAvailableDevice()
-        if not device:
+        # TODO: use the tu.requires_ipu decorator
+        if tu.ipu_available():
+            device = tu.acquire_ipu()
+        else:
             pytest.skip("Unable to acquire device")
 
         # Create a builder and construct a graph

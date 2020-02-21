@@ -122,8 +122,8 @@ bool ContiguateIpuCopyIndicesPattern::apply(Op *op) const {
     auto srcOp  = seq.at(seqIndex).get();
     auto destOp = seq.at(seqIndex + 1).get();
     for (int i = 0; i < originalIpuCopyOp->output->n(); i++) {
-      auto tensor =
-          createIntermediateTensorId(originalIpuCopyOp->output->id(i));
+      auto tensor = originalIpuCopyOp->getIr().createIntermediateTensorId(
+          originalIpuCopyOp->output->id(i));
       srcOp->createAndConnectOutTensor(i, tensor);
       destOp->connectInTensor(i, tensor, srcOp->getDestIpu());
     }

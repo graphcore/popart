@@ -17,7 +17,7 @@ import test_util as tu
 from operators_test.op_tester import op_tester
 
 
-@tu.requires_ipu
+@tu.requires_ipu()
 def return_options(anchorDict):
     opts = popart.SessionOptions()
 
@@ -38,8 +38,10 @@ def return_options(anchorDict):
     if anchorDict["ReplicationFactor"] > 1:
         opts.replicatedGraphCount = anchorDict["ReplicationFactor"]
         opts.enableReplicatedGraphs = True
-        device = popart.DeviceManager().acquireAvailableDevice(ipus)
-        if device is None:
+        # TODO: use the tu.requires_ipu decorator
+        if tu.ipu_available(ipus):
+            device = tu.acquire_ipu(ipus)
+        else:
             print("No IPUS available for test options.")
             return None, None
     else:

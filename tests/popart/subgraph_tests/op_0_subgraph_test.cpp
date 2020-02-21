@@ -126,8 +126,10 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
     auto opts = SessionOptions();
     // This test tests the functionality of fwtools::subgraph::getRinseMatches,
     // not the actual outlining of the Ir
-    opts.enableOutlining   = false;
-    opts.autoRecomputation = RecomputationType::None;
+    opts.enableOutlining    = false;
+    opts.autoRecomputation  = RecomputationType::None;
+    opts.kahnTieBreaker     = "fifo";
+    opts.swapLimitScheduler = -1;
 
     Ir ir;
     opts.mergeVarUpdate = MergeVarUpdateType::None;
@@ -140,26 +142,45 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
                 opts,
                 Patterns(PatternsLevel::ALL).enableInPlace(false)});
 
-    // pin down the scheduler in a few places, to reduce test shadiness:
+    // pin down the scheduler in a few places, to reduce test shadiness;
     OpsBeforeKey topoCons;
-    auto sgd0VarUpdates = ir.opsOfType(Onnx::CustomOperators::SGD0VarUpdate);
-    for (auto op : sgd0VarUpdates) {
-      topoCons.insert({op, {}});
-      for (auto t : op->input->tensors()) {
-        for (auto c : t->consumers.getOps()) {
-          if (c != op) {
-            topoCons[op].push_back(c);
+
+    auto insertBefores = [&topoCons](const std::vector<Op *> &ops) {
+      for (auto op : ops) {
+        topoCons.insert({op, {}});
+        for (auto t : op->input->tensors()) {
+          for (auto c : t->consumers.getOps()) {
+            if (c != op) {
+              topoCons[op].push_back(c);
+            }
           }
         }
       }
-    }
+    };
+
     // The four VarUpdates are constrained to be final consumers of their
-    // inputs. There are 1 or 2 other consumers of their inputs:
+    // inputs. There are 1 or 2 other consumers of their inputs.
+    auto sgd0VarUpdates = ir.opsOfType(Onnx::CustomOperators::SGD0VarUpdate);
+    insertBefores(sgd0VarUpdates);
     BOOST_CHECK(topoCons.size() == sgd0VarUpdates.size());
     for (const auto &x : topoCons) {
       BOOST_CHECK(x.second.size() == 1 || x.second.size() == 2);
     }
 
+    // ReluGrads are constrained to be final consumers
+    auto reluGrads = ir.opsOfType(Onnx::GradOperators::ReluGrad);
+    insertBefores(reluGrads);
+
+    // pin-down the relative order of the matmuls in the bwd pass
+    uint64_t pole{0};
+    for (auto x : reluGrads) {
+      auto out       = x->output->tensors()[0];
+      auto consumers = out->consumers.getOps();
+      if (consumers.size() == 2) {
+        topoCons[consumers[pole]].push_back(consumers[1 - pole]);
+      }
+      pole = pole == 0 ? 1 : 0;
+    }
     auto sched = ir.getOpSchedule(topoCons);
 
     // The training schedule looks like this (05 / September / 2019)
@@ -248,7 +269,7 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
   expected_train_matches_algo0 = {
       {{10, 18}, 5},
       {{0, 4}, 4},
-      {{11, 15, 19}, 3},
+      {{11, 15, 19}, 2},
       {{0, 2, 4, 6}, 2},
       {{13, 17, 21, 24}, 1},
       {{10, 14, 18, 22}, 1},
@@ -330,8 +351,10 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
   auto opts = SessionOptions();
   // This test tests the functionality of fwtools::subgraph::getRinseMatches,
   // not the actual outlining of the Ir
-  opts.enableOutlining   = false;
-  opts.autoRecomputation = RecomputationType::None;
+  opts.enableOutlining    = false;
+  opts.autoRecomputation  = RecomputationType::None;
+  opts.kahnTieBreaker     = "fifo";
+  opts.swapLimitScheduler = -1;
 
   Ir ir;
   ir.prepare({modelProto,
