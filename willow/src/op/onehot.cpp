@@ -59,8 +59,8 @@ void OnehotOp::connectInTensor(InIndex inIndex, TensorId tenId) {
 
     TensorData *depthTensorData = depthTensor->tensorData();
 
-    // check 5 : that is is rank 0 i.e. a scalar
-    if (depthTensor->info.rank() != 0) {
+    // check 4 : that it only has 1 element (i.e. rank 0)
+    if (depthTensor->info.nelms() != 1) {
       throw error("The depth tensor should be rank 0 in OneHot");
     }
 

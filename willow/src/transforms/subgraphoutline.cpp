@@ -70,19 +70,21 @@ namespace {
 // a.) Across recompute/non-recompute operators
 // b.) Across PingPong phases
 void insertBoundariesOps(const std::vector<Op *> &schedule) {
-  for (int64_t i = 0; i < schedule.size() - 1; ++i) {
-    auto crossed = getBoundariesCrossed(i, i + 2, schedule);
-    if (crossed.size() > 0) {
-      auto &graph     = schedule[i]->getGraph();
-      auto boundaryOp = std::make_unique<BoundaryOp>(Op::Settings(graph, ""));
-      auto boundary   = boundaryOp.get();
-      auto phase      = schedule[i]->getOptionalPingPongPhase();
-      boundary->setPingPongPhase(phase);
-      VGraphId vgid = 0;
-      boundary->setVirtualGraphId(vgid);
-      graph.moveIntoGraph(std::move(boundaryOp));
-      graph.topoCons.get()->insert(schedule[i], boundary);
-      graph.topoCons.get()->insert(boundary, schedule[i + 1]);
+  if (!schedule.empty()) {
+    for (int64_t i = 0; i < schedule.size() - 1; ++i) {
+      auto crossed = getBoundariesCrossed(i, i + 2, schedule);
+      if (crossed.size() > 0) {
+        auto &graph     = schedule[i]->getGraph();
+        auto boundaryOp = std::make_unique<BoundaryOp>(Op::Settings(graph, ""));
+        auto boundary   = boundaryOp.get();
+        auto phase      = schedule[i]->getOptionalPingPongPhase();
+        boundary->setPingPongPhase(phase);
+        VGraphId vgid = 0;
+        boundary->setVirtualGraphId(vgid);
+        graph.moveIntoGraph(std::move(boundaryOp));
+        graph.topoCons.get()->insert(schedule[i], boundary);
+        graph.topoCons.get()->insert(boundary, schedule[i + 1]);
+      }
     }
   }
 }
