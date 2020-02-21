@@ -266,6 +266,11 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
 
   // TODO(jn) cache advancedOptions too
 
+  // Do nothing on edge case where getOps is empty
+  if (pg.getOps().empty()) {
+    return {};
+  }
+
   if (!cacher) {
     cacher = std::make_unique<ScheduleCacher>(pg);
   }
