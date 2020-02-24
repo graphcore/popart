@@ -28,10 +28,13 @@ void OnnxConstExprUtil::processNode(const onnx::NodeProto &node, Graph *graph) {
 
 void OnnxConstExprUtil::processConstantNode(const onnx::NodeProto &node,
                                             Graph *graph) {
-  TensorId name = node.output(0);
+  // Add the scope of the current graph to the tensorID of the node output, this
+  // is done for ops as standard, but we also need to do it for the special case
+  // of constants.
+  TensorId name = graph->addScope(node.output(0));
   // We assume that a tensor coming from a Constant Node should
   // not have a gradient computed for it or be updated during training
-  // We will implement a seperate tool to convert between
+  // We will implement a separate tool to convert between
   // Constant Operator output and initializer in ONNX models (T6213)
   graph->getTensors().addConstInit(name, &node.attribute(0).t());
 }

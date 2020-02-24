@@ -316,8 +316,6 @@ def test_call_grad_2(op_tester):
             popart.reservedGradientPrefix() + i1,
         ]
 
-    return init_builder
-
     def reference(ref_data):
         d0_t = torch.tensor(d0, requires_grad=True)
         d1_t = torch.tensor(d1, requires_grad=True)
@@ -418,6 +416,56 @@ def test_call_grad_3():
     for k1, k2 in zip(sg_true.keys(), sg_false.keys()):
         print(k1, k2)
         assert np.allclose(sg_true[k1], sg_false[k2])
+
+
+def test_call_grad_scoped(op_tester):
+    d0 = np.random.normal(size=[4, 4]).astype(np.float32)
+    d1 = np.random.normal(size=[4, 4]).astype(np.float32)
+    c0 = np.ones(shape=[4, 4]).astype(np.float32)
+
+    def init_builder(builder):
+        i0 = builder.addInputTensor(d0, "input_d0")
+        i1 = builder.addInputTensor(d1, "input_d1")
+
+        subgraph_builder = builder.createSubgraphBuilder()
+
+        subgraph_builder.addInputTensorFromParentGraph(i0)
+        subgraph_builder.addInputTensorFromParentGraph(i1)
+        # Put in a sub-scope just to mix things up.
+        with subgraph_builder.nameScope("example_scope"):
+            m = subgraph_builder.aiOnnx.matmul([i0, i1], "mul_inside_subgraph")
+            # Add a constant - testing T15991
+            c = subgraph_builder.aiOnnx.constant(c0, "subgraph_const")
+            a = subgraph_builder.aiOnnx.add([m, c], "add_inside_subgraph")
+            subgraph_builder.addOutputTensor(a)
+        out = builder.aiGraphcore.call([i0, i1], 1, subgraph_builder,
+                                       "call_subgraph")[0]
+
+        builder.addOutputTensor(out)
+        return [
+            out,
+            popart.reservedGradientPrefix() + out,
+            popart.reservedGradientPrefix() + i0,
+            popart.reservedGradientPrefix() + i1,
+        ]
+
+    def reference(ref_data):
+        d0_t = torch.tensor(d0, requires_grad=True)
+        d1_t = torch.tensor(d1, requires_grad=True)
+        d1_t = torch.tensor(d1, requires_grad=True)
+        r = torch.matmul(d0_t, d1_t)
+        c_t = torch.tensor(c0, requires_grad=False)
+        r = torch.add(r, c_t)
+
+        # print(r)
+        r__o = ref_data.getOutputTensorGrad(0)
+        r.backward(torch.Tensor(r__o))
+
+        return [r, r__o, d0_t.grad, d1_t.grad]
+
+    op_tester.passes = popart.PatternsLevel.DEFAULT
+
+    op_tester.run(init_builder, reference, 'train')
 
 
 # Model: N matmuls in series, sharing weights with a subgraph
