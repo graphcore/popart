@@ -2794,8 +2794,8 @@ std::vector<const Graph *> Ir::getGraphSchedule() const {
 }
 
 bool Ir::hasRandomOps() const {
-  for (auto &op : getMainGraphOps()) {
-    if (op.second->requiresRandomSeed()) {
+  for (auto op : getAllOps()) {
+    if (op->requiresRandomSeed()) {
       return true;
     }
   }

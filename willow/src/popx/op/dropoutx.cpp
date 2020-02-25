@@ -23,7 +23,7 @@ namespace {
 // same, so the same reference tensor must be used in for these cases
 poplar::Tensor getReferenceTensor(const Opx &opx) {
 
-  const auto &dbo   = opx.getOp<DropoutBaseOp>();
+  const auto &dbo   = opx.getOp<DropoutOp>();
   auto seedModifier = dbo.getSeedModifier();
 
   poplar::Tensor refTensor;
@@ -103,10 +103,12 @@ void DropoutOpx::grow(poplar::program::Sequence &prog) const {
       auto mask         = dropout_mask.second;
 
       setOutTensor(op.getOutIndex(), dropout);
-      setOutTensor(
-          DropoutOp::getMaskOutIndex(),
-          popops::cast(graph(), mask, poplar::BOOL, prog, debugPrefix("mask")));
-
+      if (op.output->hasIndex(DropoutOp::getMaskOutIndex())) {
+        setOutTensor(
+            DropoutOp::getMaskOutIndex(),
+            popops::cast(
+                graph(), mask, poplar::BOOL, prog, debugPrefix("mask")));
+      }
     } else {
       double dropoutProbability = 1. - static_cast<double>(op.getRatio());
       double scale = 1. / (1. - static_cast<double>(op.getRatio()));
@@ -136,58 +138,10 @@ void DropoutOpx::grow(poplar::program::Sequence &prog) const {
   }
 }
 
-DropoutGradOpx::DropoutGradOpx(Op *op, Devicex *devicex)
-    : ElementWiseUnaryOpx(op, devicex) {
-  verifyOp<DropoutOp>(op, {Onnx::GradOperators::DropoutGrad});
-}
-
-void DropoutGradOpx::grow(poplar::program::Sequence &prog) const {
-
-  auto &op                 = getOp<DropoutGradOp>();
-  auto seedModifier        = op.getSeedModifier();
-  poplar::Tensor refTensor = getReferenceTensor(*this);
-
-  if (op.getOutputMask()) {
-
-    auto dropout_mask =
-        growDropout(graph(),
-                    getInTensor(DropoutGradOp::getGradInIndex()),
-                    getInTensor(op.getSeedInIndex()),
-                    refTensor,
-                    op.getRatio(),
-                    seedModifier,
-                    *this,
-                    prog);
-    auto dropout = dropout_mask.first;
-
-    setOutTensor(op.getOutIndex(), dropout);
-
-  } else {
-
-    double dropoutProbability = 1. - static_cast<double>(op.getRatio());
-    double scale              = 1. / (1. - static_cast<double>(op.getRatio()));
-
-    auto dropout =
-        poprand::dropout(graph(),
-                         &getInTensor(op.getSeedInIndex()),
-                         seedModifier,
-                         getInTensor(DropoutGradOp::getGradInIndex()),
-                         refTensor,
-                         dropoutProbability,
-                         scale,
-                         prog,
-                         debugPrefix("dropout"));
-
-    setOutTensor(op.getOutIndex(), dropout);
-  }
-}
-
 namespace {
 OpxCreator<DropoutOpx> dropoutOpxCreator({Onnx::Operators::Dropout_6,
                                           Onnx::Operators::Dropout_7,
                                           Onnx::Operators::Dropout_10});
-OpxCreator<DropoutGradOpx>
-    dropoutGradOpxCreator({Onnx::GradOperators::DropoutGrad});
 } // namespace
 
 } // namespace popx
