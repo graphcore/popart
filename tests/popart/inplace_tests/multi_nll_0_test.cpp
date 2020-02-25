@@ -20,6 +20,7 @@
 #include <popart/popx/devicex.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/testdevice.hpp>
 
 #define protected public
 #include <popart/session.hpp>
@@ -94,11 +95,7 @@ BOOST_AUTO_TEST_CASE(test) {
     auto loss1 =
         std::make_unique<NllLoss>(sm1, label1, "loss1", ReductionType::MEAN);
 
-    std::map<std::string, std::string> deviceOpts{{"numIPUs", "1"},
-                                                  {"tilesPerIPU", "20"}};
-
-    auto device =
-        DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
+    auto device = createTestDevice(TEST_TARGET, 1, 20);
 
     auto session = popart::TrainingSession::createFromOnnxModel(
         builder->getModelProto(),

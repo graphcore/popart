@@ -12,6 +12,7 @@
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/testdevice.hpp>
 
 #include <algorithm>
 #include <map>
@@ -138,8 +139,6 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
   // No anchors
   auto dataFlow = DataFlow(batchesPerStep, {});
 
-  std::map<std::string, std::string> deviceOpts{{"numIPUs", "3"}};
-
   float learnRate = 1;
   auto optimizer  = ConstSGD(learnRate);
 
@@ -147,8 +146,7 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
   auto loss    = std::unique_ptr<Loss>(
       new L1Loss(actOut, "l1LossVal", lambda, ReductionType::SUM));
 
-  auto device =
-      DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
+  auto device = createTestDevice(TEST_TARGET, 3);
 
   SessionOptions userOptions;
   userOptions.virtualGraphMode = VirtualGraphMode::Auto;

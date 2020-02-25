@@ -150,6 +150,7 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
     auto loss       = std::unique_ptr<Loss>(
         new L1Loss(actOut, "l1LossVal", lambda, ReductionType::SUM));
 
+    // TODO(T16599): Update this test for different devices.
     auto device =
         (tt == TestType::SingleBatchSimulator
              ? DeviceManager::createDeviceManager().createIpuModelDevice(

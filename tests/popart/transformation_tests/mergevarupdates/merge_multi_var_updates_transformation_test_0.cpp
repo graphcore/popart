@@ -12,6 +12,7 @@
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/testdevice.hpp>
 
 #include <algorithm>
 #include <map>
@@ -108,8 +109,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
     auto art      = AnchorReturnType("ALL");
     auto dataFlow = DataFlow(1, {{reduced, art}});
 
-    auto cpuDevice =
-        popart::DeviceManager::createDeviceManager().createCpuDevice();
+    auto device = popart::createTestDevice(TEST_TARGET);
 
     auto opts = SessionOptions();
 
@@ -139,7 +139,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
                 dataFlow,
                 losses,
                 &optimizer,
-                *cpuDevice,
+                *device,
                 opts,
                 Patterns()});
 

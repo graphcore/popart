@@ -14,6 +14,7 @@
 #include <popart/optimizer.hpp>
 #include <popart/session.hpp>
 #include <popart/tensordata.hpp>
+#include <popart/testdevice.hpp>
 
 #include <chrono>
 #include <complex>
@@ -238,13 +239,12 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
       boost::filesystem::create_directory(opts.logDir);
     }
 
-    auto cpuDevice =
-        popart::DeviceManager::createDeviceManager().createCpuDevice();
+    auto device = popart::createTestDevice(TEST_TARGET);
 
     auto session = popart::InferenceSession::createFromOnnxModel(
         proto,
         dataFlow,
-        cpuDevice,
+        device,
         {},
         popart::InputShapeInfo(),
         opts,

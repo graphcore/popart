@@ -14,6 +14,7 @@
 #include <popart/op/varupdate.hpp>
 #include <popart/subgraph/outliner.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/testdevice.hpp>
 
 #include <popart/filereader.hpp>
 #include <popart/op/l1.hpp>
@@ -113,8 +114,8 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
     std::unique_ptr<Optimizer> optimizer;
     std::vector<std::unique_ptr<L1Loss>> up_losses;
     std::vector<Loss *> losses{};
-    auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("ALL")}});
-    auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+    auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+    auto device   = createTestDevice(TEST_TARGET);
 
     if (train) {
       optimizer.reset(new ConstSGD(0.01));
@@ -138,7 +139,7 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
                 dataFlow,
                 losses,
                 optimizer.get(),
-                *cpuDevice,
+                *device,
                 opts,
                 Patterns(PatternsLevel::ALL).enableInPlace(false)});
 
@@ -335,7 +336,7 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
                 {reservedGradientPrefix() + o2, AnchorReturnType("ALL")},
                 {reservedGradientPrefix() + out, AnchorReturnType("ALL")},
                 {o2, AnchorReturnType("ALL")}});
-  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = createTestDevice(TEST_TARGET);
 
   optimizer.reset(new ConstSGD(0.01));
   up_losses.push_back(std::unique_ptr<L1Loss>(
@@ -362,7 +363,7 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
               dataFlow,
               losses,
               optimizer.get(),
-              *cpuDevice,
+              *device,
               opts,
               Patterns(PatternsLevel::DEFAULT).enableInPlace(false)});
 

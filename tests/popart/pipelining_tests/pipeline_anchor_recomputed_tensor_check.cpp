@@ -23,6 +23,7 @@
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/testdevice.hpp>
 
 BOOST_AUTO_TEST_CASE(PipelineAnchorRecomputedTensor0) {
 
@@ -106,7 +107,7 @@ BOOST_AUTO_TEST_CASE(PipelineAnchorRecomputedTensor0) {
         dataFlow,
         {&loss},
         ConstSGD(0.01),
-        DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts),
+        createTestDevice(TEST_TARGET, nIPUs),
         InputShapeInfo(),
         userOptions,
         popart::Patterns(PatternsLevel::DEFAULT));

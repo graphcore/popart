@@ -10,6 +10,7 @@
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/testdevice.hpp>
 
 #include <random>
 #include <vector>
@@ -86,15 +87,14 @@ BOOST_AUTO_TEST_CASE(Basic0TopK_Opset9) {
   auto art      = AnchorReturnType("ALL");
   auto dataFlow = DataFlow(1, {{values, art}, {indices, art}});
 
-  auto cpuDevice =
-      popart::DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = popart::createTestDevice(TEST_TARGET);
 
   auto opts = SessionOptions();
 
   auto session = popart::InferenceSession::createFromOnnxModel(
       proto,
       dataFlow,
-      cpuDevice,
+      device,
       {},
       popart::InputShapeInfo(),
       opts,
@@ -209,15 +209,14 @@ BOOST_AUTO_TEST_CASE(Basic0TopK_Opset10) {
   auto art      = AnchorReturnType("ALL");
   auto dataFlow = DataFlow(1, {{values, art}, {indices, art}});
 
-  auto cpuDevice =
-      popart::DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = popart::createTestDevice(TEST_TARGET);
 
   auto opts = SessionOptions();
 
   auto session = popart::InferenceSession::createFromOnnxModel(
       proto,
       dataFlow,
-      cpuDevice,
+      device,
       {},
       popart::InputShapeInfo(),
       opts,

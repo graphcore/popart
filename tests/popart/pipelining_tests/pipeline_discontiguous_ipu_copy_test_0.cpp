@@ -18,6 +18,7 @@
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/testdevice.hpp>
 
 // In this model, where continuous and exact pipelines are numerically
 // equivalent, there are Ops in the forwards and backwards passes which are
@@ -143,8 +144,6 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
     // No anchors
     auto dataFlow = DataFlow(batchesPerStep, {});
 
-    std::map<std::string, std::string> deviceOpts{{"numIPUs", "7"}};
-
     float learnRate = 0.01;
     auto optimizer  = ConstSGD(learnRate);
 
@@ -152,8 +151,7 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
     auto loss    = std::unique_ptr<Loss>(
         new L1Loss(actFinal, "l1LossVal", lambda, ReductionType::SUM));
 
-    auto device =
-        DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
+    auto device = createTestDevice(TEST_TARGET, 7);
 
     SessionOptions userOptions;
     userOptions.virtualGraphMode = VirtualGraphMode::Auto;

@@ -4,6 +4,7 @@
 
 #include <popart/devicemanager.hpp>
 #include <popart/popx/devicexmanager.hpp>
+#include <popart/testdevice.hpp>
 
 using namespace popart;
 using namespace popart::popx;
@@ -12,8 +13,7 @@ using namespace popart::popx;
 BOOST_AUTO_TEST_CASE(SyncPatternTest_0) {
 
   auto deviceInfo0 =
-      DeviceManager::createDeviceManager().acquireAvailableDevice(
-          2, 1216, SyncPattern::SinglePipeline);
+      createTestDevice(TEST_TARGET, 2, 1216, SyncPattern::SinglePipeline);
 
   if (deviceInfo0) {
     DevicexInfo &di0 = dynamic_cast<DevicexInfo &>(*deviceInfo0);
@@ -30,11 +30,9 @@ BOOST_AUTO_TEST_CASE(SyncPatternTest_0) {
 BOOST_AUTO_TEST_CASE(SyncPatternTest_1) {
 
   auto deviceInfo0 =
-      DeviceManager::createDeviceManager().acquireAvailableDevice(
-          2, 1216, SyncPattern::SinglePipeline);
+      createTestDevice(TEST_TARGET, 2, 1216, SyncPattern::SinglePipeline);
 
-  auto deviceInfo1 =
-      DeviceManager::createDeviceManager().acquireAvailableDevice(2, 1216);
+  auto deviceInfo1 = createTestDevice(TEST_TARGET, 2, 1216);
 
   if (deviceInfo0 && deviceInfo1) {
     DevicexInfo &di0 = dynamic_cast<DevicexInfo &>(*deviceInfo0);
@@ -52,8 +50,7 @@ BOOST_AUTO_TEST_CASE(SyncPatternTest_1) {
 BOOST_AUTO_TEST_CASE(SyncPatternTest_2, *boost::unit_test::disabled()) {
 
   auto deviceInfo0 =
-      DeviceManager::createDeviceManager().acquireAvailableDevice(
-          2, 1216, SyncPattern::PingPong);
+      createTestDevice(TEST_TARGET, 2, 1216, SyncPattern::PingPong);
 
   if (deviceInfo0) {
     DevicexInfo &di0 = dynamic_cast<DevicexInfo &>(*deviceInfo0);
@@ -70,11 +67,8 @@ BOOST_AUTO_TEST_CASE(SyncPatternTest_2, *boost::unit_test::disabled()) {
 BOOST_AUTO_TEST_CASE(SyncPatternTest_3, *boost::unit_test::disabled()) {
 
   auto deviceInfo0 =
-      DeviceManager::createDeviceManager().acquireAvailableDevice(
-          2, 1216, SyncPattern::PingPong);
-
-  auto deviceInfo1 =
-      DeviceManager::createDeviceManager().acquireAvailableDevice(2, 1216);
+      createTestDevice(TEST_TARGET, 2, 1216, SyncPattern::PingPong);
+  auto deviceInfo1 = createTestDevice(TEST_TARGET, 2, 1216);
 
   if (deviceInfo0 && deviceInfo1) {
     DevicexInfo &di0 = dynamic_cast<DevicexInfo &>(*deviceInfo0);
@@ -92,13 +86,10 @@ BOOST_AUTO_TEST_CASE(SyncPatternTest_3, *boost::unit_test::disabled()) {
 BOOST_AUTO_TEST_CASE(SyncPatternTest_4, *boost::unit_test::disabled()) {
 
   auto deviceInfo0 =
-      DeviceManager::createDeviceManager().acquireAvailableDevice(
-          2, 1216, SyncPattern::PingPong);
+      createTestDevice(TEST_TARGET, 2, 1216, SyncPattern::PingPong);
 
   auto deviceInfo1 =
-      DeviceManager::createDeviceManager().acquireAvailableDevice(
-          2, 1216, SyncPattern::SinglePipeline);
-
+      createTestDevice(TEST_TARGET, 2, 1216, SyncPattern::SinglePipeline);
   if (deviceInfo0 && deviceInfo1) {
     DevicexInfo &di0 = dynamic_cast<DevicexInfo &>(*deviceInfo0);
     DevicexInfo &di1 = dynamic_cast<DevicexInfo &>(*deviceInfo1);

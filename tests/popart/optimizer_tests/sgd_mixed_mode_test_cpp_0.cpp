@@ -23,6 +23,7 @@
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/testdevice.hpp>
 #undef protected
 
 BOOST_AUTO_TEST_CASE(SgdMixedModeTest0) {
@@ -114,10 +115,8 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTest0) {
         new L1Loss(add2, "l1LossVal", lambda, ReductionType::SUM));
 
     SessionOptions userOptions;
-    std::map<std::string, std::string> deviceOpts{{"numIPUs", "1"}};
 
-    auto device =
-        DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
+    auto device = createTestDevice(TEST_TARGET, 1);
 
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,

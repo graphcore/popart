@@ -13,6 +13,7 @@
 #include <popart/optimizer.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensordata.hpp>
+#include <popart/testdevice.hpp>
 
 using namespace popart;
 
@@ -76,7 +77,7 @@ void setIr(uint64_t N, Ir &ir) {
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
   auto dataFlow   = DataFlow(1, {{sum, AnchorReturnType("ALL")}});
-  auto cpuDevice  = DeviceManager::createDeviceManager().createCpuDevice();
+  auto device     = createTestDevice(TEST_TARGET);
   SessionOptions opts;
   opts.autoRecomputation              = RecomputationType::None;
   opts.enableOutlining                = false;
@@ -88,7 +89,7 @@ void setIr(uint64_t N, Ir &ir) {
               dataFlow,
               {},
               nullptr,
-              *cpuDevice,
+              *device,
               opts,
               Patterns({})});
 }

@@ -12,6 +12,7 @@
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/testdevice.hpp>
 
 #include <algorithm>
 #include <map>
@@ -127,15 +128,12 @@ BOOST_AUTO_TEST_CASE(WeightAnchorTest0) {
   SessionOptions userOptions;
   userOptions.virtualGraphMode = VirtualGraphMode::Auto;
 
-  std::map<std::string, std::string> deviceOpts{{"numIPUs", "3"}};
-
   auto optimizer = ConstSGD(0.01);
 
   auto loss = std::unique_ptr<Loss>(
       new L1Loss(act5, "l1LossVal", 0.1, ReductionType::SUM));
 
-  auto device =
-      DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
+  auto device = createTestDevice(TEST_TARGET, 3);
 
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,

@@ -13,6 +13,7 @@
 #include <popart/optimizer.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
+#include <popart/testdevice.hpp>
 
 void prepareIr1(popart::Ir &ir) {
 
@@ -102,8 +103,6 @@ void prepareIr1(popart::Ir &ir) {
   userOptions.virtualGraphMode = VirtualGraphMode::Auto;
   userOptions.enablePipelining = true;
 
-  std::map<std::string, std::string> deviceOpts{{"numIPUs", "3"}};
-
   auto optimizer = ConstSGD(0.01);
 
   auto loss1 = std::unique_ptr<Loss>(
@@ -118,8 +117,7 @@ void prepareIr1(popart::Ir &ir) {
   auto loss4 = std::unique_ptr<Loss>(
       new NllLoss(act9, l1, "nllLossVal_2", ReductionType::SUM));
 
-  auto device =
-      DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
+  auto device = createTestDevice(TEST_TARGET, 3);
 
   ir.prepare({modelProto,
               InputShapeInfo(),
@@ -197,15 +195,12 @@ void prepareIr0(popart::Ir &ir) {
   userOptions.virtualGraphMode = VirtualGraphMode::Auto;
   userOptions.enablePipelining = true;
 
-  std::map<std::string, std::string> deviceOpts{{"numIPUs", "3"}};
-
   auto optimizer = ConstSGD(0.01);
 
   auto loss = std::unique_ptr<Loss>(
       new L1Loss(act5, "l1LossVal", 0.1, ReductionType::SUM));
 
-  auto device =
-      DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
+  auto device = createTestDevice(TEST_TARGET, 3);
 
   ir.prepare({modelProto,
               InputShapeInfo(),

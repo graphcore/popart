@@ -12,6 +12,7 @@
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/testdevice.hpp>
 
 #include <algorithm>
 #include <map>
@@ -138,8 +139,7 @@ BOOST_AUTO_TEST_CASE(ContinuousEquivalentTest0) {
   auto loss    = std::unique_ptr<Loss>(
       new L1Loss(act5, "l1LossVal", lambda, ReductionType::SUM));
 
-  auto device =
-      DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
+  auto device = createTestDevice(TEST_TARGET, 3);
 
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,

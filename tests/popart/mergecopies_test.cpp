@@ -13,6 +13,7 @@
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensors.hpp>
+#include <popart/testdevice.hpp>
 
 using namespace popart;
 
@@ -64,10 +65,10 @@ BOOST_AUTO_TEST_CASE(MergeCopies0) {
   SessionOptions opts;
   opts.virtualGraphMode = VirtualGraphMode::Manual;
 
-  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
-  ir.prepare({model_proto, {}, data_flow, {}, nullptr, *cpuDevice, opts, {}});
+  ir.prepare({model_proto, {}, data_flow, {}, nullptr, *device, opts, {}});
 
   // Check the ir
   auto copies = getOpsOfType<IpuCopyOp>(ir);
@@ -128,10 +129,10 @@ BOOST_AUTO_TEST_CASE(MergeCopies1) {
   SessionOptions opts;
   opts.virtualGraphMode = VirtualGraphMode::Manual;
 
-  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
-  ir.prepare({model_proto, {}, data_flow, {}, nullptr, *cpuDevice, opts, {}});
+  ir.prepare({model_proto, {}, data_flow, {}, nullptr, *device, opts, {}});
 
   // Check the ir
   auto copies = getOpsOfType<IpuCopyOp>(ir);
@@ -184,10 +185,10 @@ BOOST_AUTO_TEST_CASE(MergeCopies2) {
   SessionOptions opts;
   opts.virtualGraphMode = VirtualGraphMode::Manual;
 
-  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
-  ir.prepare({model_proto, {}, data_flow, {}, nullptr, *cpuDevice, opts, {}});
+  ir.prepare({model_proto, {}, data_flow, {}, nullptr, *device, opts, {}});
 
   // Check the ir
   auto copies = getOpsOfType<IpuCopyOp>(ir);
@@ -235,10 +236,10 @@ BOOST_AUTO_TEST_CASE(MergeCopies3) {
   SessionOptions opts;
   opts.virtualGraphMode = VirtualGraphMode::Manual;
 
-  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
-  ir.prepare({model_proto, {}, data_flow, {}, nullptr, *cpuDevice, opts, {}});
+  ir.prepare({model_proto, {}, data_flow, {}, nullptr, *device, opts, {}});
 
   // Check the ir
   auto copies = getOpsOfType<IpuCopyOp>(ir);
@@ -287,10 +288,10 @@ BOOST_AUTO_TEST_CASE(MergeCopies4) {
   SessionOptions opts;
   opts.virtualGraphMode = VirtualGraphMode::Manual;
 
-  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
-  ir.prepare({model_proto, {}, data_flow, {}, nullptr, *cpuDevice, opts, {}});
+  ir.prepare({model_proto, {}, data_flow, {}, nullptr, *device, opts, {}});
 
   // Check the ir
   auto copies = getOpsOfType<IpuCopyOp>(ir);

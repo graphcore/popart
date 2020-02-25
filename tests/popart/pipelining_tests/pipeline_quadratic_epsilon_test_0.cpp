@@ -23,6 +23,8 @@
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/testdevice.hpp>
+
 #undef protected
 
 // The tricky thing with testing continuous pipelining is that we don't
@@ -203,7 +205,7 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
         new L1Loss(actFinal, "l1LossVal", lambda, ReductionType::SUM));
 
     SessionOptions userOptions;
-    std::map<std::string, std::string> deviceOpts{{"numIPUs", "1"}};
+    unsigned numIpus = 1;
 
     if (exportFinalDotFiles) {
       userOptions.dotChecks.insert(DotCheck::FINAL);
@@ -214,11 +216,10 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
     if (continuous == true) {
       userOptions.virtualGraphMode = VirtualGraphMode::Auto;
       userOptions.enablePipelining = true;
-      deviceOpts["numIPUs"]        = "3";
+      numIpus                      = 3;
     }
 
-    auto device =
-        DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
+    auto device = createTestDevice(TEST_TARGET, numIpus);
 
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,

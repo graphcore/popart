@@ -11,6 +11,7 @@
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
+#include <popart/testdevice.hpp>
 
 using namespace popart;
 
@@ -42,7 +43,7 @@ BOOST_AUTO_TEST_CASE(Inplace_slice0) {
     // Create the IR
     auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
 
-    auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+    auto device = createTestDevice(TEST_TARGET);
 
     Ir ir;
     ir.prepare({modelProto,
@@ -50,7 +51,7 @@ BOOST_AUTO_TEST_CASE(Inplace_slice0) {
                 dataFlow,
                 {},
                 nullptr,
-                *cpuDevice,
+                *device,
                 {},
                 Patterns(PatternsLevel::NONE).enableInPlace(enable_inplace)});
 

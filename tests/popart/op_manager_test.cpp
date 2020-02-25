@@ -17,6 +17,7 @@
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/testdevice.hpp>
 
 using namespace popart;
 
@@ -114,7 +115,7 @@ BOOST_AUTO_TEST_CASE(OpManager_Test2) {
   auto optimizer = SGD({{"defaultLearningRate", {0.01, false}}});
   std::vector<Loss *> losses{
       new L1Loss(customOut[0], "l1LossVal", 0.1, ReductionType::SUM)};
-  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
@@ -122,7 +123,7 @@ BOOST_AUTO_TEST_CASE(OpManager_Test2) {
               dataFlow,
               losses,
               &optimizer,
-              *cpuDevice,
+              *device,
               {},
               Patterns({PreAliasPatternType::PREUNIREPL})});
 
@@ -186,12 +187,11 @@ BOOST_AUTO_TEST_CASE(OpManager_Test3) {
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
-  auto dataFlow  = DataFlow(1, {{customOut[0], AnchorReturnType("ALL")}});
-  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+  auto dataFlow = DataFlow(1, {{customOut[0], AnchorReturnType("ALL")}});
+  auto device   = createTestDevice(TEST_TARGET);
 
   Ir ir;
-  ir.prepare(
-      {modelProto, {}, dataFlow, {}, nullptr, *cpuDevice, {}, Patterns()});
+  ir.prepare({modelProto, {}, dataFlow, {}, nullptr, *device, {}, Patterns()});
 
   // Check that the factory func actually executed.
   BOOST_CHECK(factory_func_executed);

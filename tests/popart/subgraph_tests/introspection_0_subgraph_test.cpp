@@ -14,6 +14,7 @@
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensors.hpp>
+#include <popart/testdevice.hpp>
 
 BOOST_AUTO_TEST_CASE(Introspection0_Subgraph) {
 
@@ -79,8 +80,7 @@ BOOST_AUTO_TEST_CASE(Introspection0_Subgraph) {
       new L1Loss(out[4], "l1LossVal_1", 0.1, ReductionType::MEAN));
   loss1->virtualGraph(1);
 
-  auto device =
-      DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
+  auto device = createTestDevice(TEST_TARGET, nIpus);
 
   Ir ir;
   ir.prepare({modelProto,

@@ -16,6 +16,7 @@
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensors.hpp>
+#include <popart/testdevice.hpp>
 
 #include <math.h>
 
@@ -73,7 +74,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add0) {
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{
       new L1Loss(outId, "l1LossVal", 0.1, ReductionType::SUM)};
-  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
@@ -81,7 +82,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add0) {
               dataFlow,
               losses,
               &optimizer,
-              *cpuDevice,
+              *device,
               {}, // no SessionOptions
               Patterns({PreAliasPatternType::POSTNREPL})});
 
@@ -160,7 +161,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add1) {
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{
       new L1Loss(outId, "l1LossVal", 0.1, ReductionType::SUM)};
-  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
@@ -168,7 +169,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add1) {
               dataFlow,
               {}, // no loss
               {}, // no optimizer
-              *cpuDevice,
+              *device,
               {}, // no SessionOptions
               Patterns({PreAliasPatternType::POSTNREPL})});
 
@@ -232,9 +233,9 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add2) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto art       = AnchorReturnType("ALL");
-  auto dataFlow  = DataFlow(1, {{o, art}});
-  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+  auto art      = AnchorReturnType("ALL");
+  auto dataFlow = DataFlow(1, {{o, art}});
+  auto device   = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
@@ -242,7 +243,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add2) {
               dataFlow,
               {}, // no loss
               {}, // no optimizer
-              *cpuDevice,
+              *device,
               {}, // no SessionOptions
               Patterns({PreAliasPatternType::POSTNREPL})});
 
@@ -301,13 +302,12 @@ template <typename T> void ConstExprTest_Add_Type(std::string type) {
   auto art      = AnchorReturnType("ALL");
   auto dataFlow = DataFlow(1, {{outId, art}});
 
-  auto cpuDevice =
-      popart::DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = popart::createTestDevice(TEST_TARGET);
 
   auto session = popart::InferenceSession::createFromOnnxModel(
       proto,
       dataFlow,
-      cpuDevice,
+      device,
       {}, // no losses
       InputShapeInfo(),
       {}, // no SessionOptions
@@ -382,7 +382,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Div0) {
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{
       new L1Loss(outId, "l1LossVal", 0.1, ReductionType::SUM)};
-  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
@@ -390,7 +390,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Div0) {
               dataFlow,
               losses,
               &optimizer,
-              *cpuDevice,
+              *device,
               {}, // no SessionOptions
               Patterns({PreAliasPatternType::POSTNREPL})});
 
@@ -473,7 +473,7 @@ void ConstExprTest_Elementwise_Test(
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{
       new L1Loss(outId, "l1LossVal", 0.1, ReductionType::SUM)};
-  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
@@ -481,7 +481,7 @@ void ConstExprTest_Elementwise_Test(
               dataFlow,
               losses,
               &optimizer,
-              *cpuDevice,
+              *device,
               {}, // no SessionOptions
               Patterns({PreAliasPatternType::POSTNREPL})});
 

@@ -15,6 +15,7 @@
 #include <popart/optimizer.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
+#include <popart/testdevice.hpp>
 
 BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest2) {
 
@@ -148,8 +149,7 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest2) {
     auto loss1 = std::unique_ptr<Loss>(
         new L1Loss(act, "l1LossVal_1", 0.1, ReductionType::MEAN));
 
-    auto device =
-        DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
+    auto device = createTestDevice(TEST_TARGET, nIpus);
 
     Patterns patterns(PatternsLevel::DEFAULT);
     patterns.enableMatMulOp(false);

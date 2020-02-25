@@ -2,6 +2,7 @@
 
 #include <boost/test/unit_test.hpp>
 #include <vector>
+#include <popart/testdevice.hpp>
 
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
@@ -60,7 +61,7 @@ BOOST_AUTO_TEST_CASE(StandardRecomputeTest) {
     auto optimizer = ConstSGD(0.01);
     std::vector<Loss *> losses{
         new L1Loss(act, "l1LossVal", 0.1, ReductionType::SUM)};
-    auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+    auto device = createTestDevice(TEST_TARGET);
 
     SessionOptions opts;
     opts.autoRecomputation = RecomputationType::Standard;
@@ -73,7 +74,7 @@ BOOST_AUTO_TEST_CASE(StandardRecomputeTest) {
                 dataFlow,
                 losses,
                 &optimizer,
-                *cpuDevice,
+                *device,
                 opts,
                 Patterns({PreAliasPatternType::OPTOIDENTITY,
                           PreAliasPatternType::POSTNREPL})});

@@ -23,6 +23,7 @@
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/testdevice.hpp>
 #undef protected
 
 BOOST_AUTO_TEST_CASE(PipelineRecomputeNumericalTest0x) {
@@ -135,8 +136,6 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeNumericalTest0x) {
     TensorId actFinal = act0;
 
     SessionOptions userOptions;
-    std::map<std::string, std::string> deviceOpts{
-        {"numIPUs", std::to_string(nIPUs)}};
 
     userOptions.enableVirtualGraphs = true;
 
@@ -169,8 +168,7 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeNumericalTest0x) {
 
     int64_t stepDataElms = accumulationFactor * microBatchElms * batchesPerStep;
 
-    auto device =
-        DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
+    auto device = createTestDevice(TEST_TARGET, nIPUs);
 
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
