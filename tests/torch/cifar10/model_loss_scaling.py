@@ -179,16 +179,23 @@ anchors_4 = c10driver.run(
     args.hw_id)
 
 # Make sure the gradient is scaled
-assert (np.allclose(
-    np.array(anchors_1[nllGradTensorId]) * 100,
-    (np.array(anchors_2[nllGradTensorId]))))
-assert (np.allclose(
-    np.array(anchors_1[nllGradTensorId]) * 100,
-    (np.array(anchors_3[nllGradTensorId]))))
-assert (np.allclose(
-    np.array(anchors_1[nllGradTensorId]) * 100,
-    (np.array(anchors_4[nllGradTensorId]))))
+# (doubled default tolerance to minimise spurious test failures)
+atol = 2e-8
+rtol = 2e-5
+assert (np.allclose(np.array(anchors_1[nllGradTensorId]) * 100,
+                    (np.array(anchors_2[nllGradTensorId])),
+                    atol=atol,
+                    rtol=rtol))
+assert (np.allclose(np.array(anchors_1[nllGradTensorId]) * 100,
+                    (np.array(anchors_3[nllGradTensorId])),
+                    atol=atol,
+                    rtol=rtol))
+assert (np.allclose(np.array(anchors_1[nllGradTensorId]) * 100,
+                    (np.array(anchors_4[nllGradTensorId])),
+                    atol=atol,
+                    rtol=rtol))
 
-assert (np.allclose(
-    np.array(anchors_1[l1GradTensorId]) * 100,
-    (np.array(anchors_2[l1GradTensorId]))))
+assert (np.allclose(np.array(anchors_1[l1GradTensorId]) * 100,
+                    (np.array(anchors_2[l1GradTensorId])),
+                    atol=atol,
+                    rtol=rtol))
