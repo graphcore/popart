@@ -15,8 +15,6 @@ class CallOpx : public SubgraphOpx {
 public:
   CallOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
-  std::pair<std::vector<ICreatorCandidatePtr>, std::vector<UnwindEndpointPtr>>
-      getEndpoints(InIndex, std::vector<OpxInAndOutIndex>) const;
   InputCreatorType getInputCreatorType(InIndex) const;
 
   std::vector<std::tuple<TensorId, TensorId, bool>>

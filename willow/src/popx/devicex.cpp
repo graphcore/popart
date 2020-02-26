@@ -28,6 +28,7 @@
 #include <popart/filereader.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
+#include <popart/liveness.hpp>
 #include <popart/logging.hpp>
 #include <popart/op.hpp>
 #include <popart/op/cache.hpp>
@@ -991,7 +992,9 @@ std::pair<TaskId, DependencyType> Devicex::taskWhichCreates(TensorId id) {
   Tensor *tensor = ir().getTensor(id);
   // Tensors without producers, or produced by an InitOp are created by special
   // tasks These tasks are a TENSOR rather than an OUTPUT dependency.
-  if (!tensor->hasProducer() || dynamic_cast<InitOp *>(tensor->getProducer())) {
+  if (!tensor->hasProducer() ||
+      dynamic_cast<SubgraphOp *>(tensor->getProducer()) ||
+      dynamic_cast<InitOp *>(tensor->getProducer())) {
     return {initTensorTaskId(id), DependencyType::TENSOR};
   }
 
@@ -1022,198 +1025,209 @@ TaskId Devicex::taskWhichPopulates(TensorId id) const {
   }
 }
 
-std::pair<std::vector<ICreatorCandidatePtr>, std::vector<UnwindEndpointPtr>>
-Devicex::getCreatorEndpoints(Tensor *tensor,
-                             std::vector<OpxInAndOutIndex> pathFromInput,
+std::vector<ICreatorCandidatePtr>
+Devicex::getCreatorEndpoints(const Tensor *startTensor,
                              bool excludeEndpointsFromPath,
                              bool includeDeadends) const {
 
   std::vector<ICreatorCandidatePtr> endpoints;
-  std::vector<UnwindEndpointPtr> endpointsUnwind;
+  std::vector<std::pair<const Tensor *, std::vector<OpxInAndOutIndex>>>
+      searchStack;
 
-  // For tensors created within a subgraph:
-  // Detect graph outputs and try to propagate out through the first call site
-  for (OutIndex o = 0; o < tensor->getGraph().getOutputIds().size(); ++o) {
-    TensorId graph_output_tensor_id = tensor->getGraph().getOutputId(o);
-    if (graph_output_tensor_id == tensor->id) {
-      Op *op       = tensor->getGraph().getCallSiteOps(1).front();
-      auto opx     = getOpx(op->id);
-      bool visited = false;
-      // Escape route only allowed if this call op has not been visited yet
-      for (auto &elem : pathFromInput) {
-        if (elem.isDelegate && opx == elem.opx) {
-          visited = true;
+  std::vector<OpxInAndOutIndex> startPath;
+  const Graph *currentGraph = &startTensor->getGraph();
+  while (currentGraph->id != ir().getMainGraph().id) {
+    // For tensors created within a subgraph:
+    // Detect graph outputs and try to propagate out through the first call site
+    // until the top-level graph is reached.
+    Op *op = currentGraph->getCallSiteOps(1).front();
+    // Insert the first call site as delegate element on the path
+    // this simulates "entering" a subgraph through a regular SubgraphOp
+    // (Theoretically, adding all call sites would be possible too,
+    // but should not be necessary)
+    startPath.push_back({getOpx(op->id)});
+    currentGraph = &op->getGraph();
+  }
+
+  // Add search starting point
+  searchStack.push_back({startTensor, startPath});
+
+  // Depth-first creator search
+  while (!searchStack.empty()) {
+    auto tensorAndPath                          = searchStack.back();
+    const Tensor *tensor                        = tensorAndPath.first;
+    std::vector<OpxInAndOutIndex> pathFromInput = tensorAndPath.second;
+    searchStack.pop_back();
+
+    // Check if any of the consumers can extend the path
+    for (Op *op : tensor->consumers.getOps()) {
+      auto conOpId   = op->id;
+      const Opx *opx = getOpx(conOpId);
+
+      for (InIndex inIndex : op->input->indices(ir().getTensor(tensor->id))) {
+        auto f_create = [&]() {
+          auto updatedPath = pathFromInput;
+          if (!excludeEndpointsFromPath) {
+            // note: no valid outIndex
+            updatedPath.push_back({opx, inIndex, -1});
+          }
+
+          // Get all ops to deduce global schedule position of the Opx
+          std::vector<Op *> ops;
+          ops.reserve(pathFromInput.size());
+          for (auto &opxOnPath : pathFromInput) {
+            Op *opOnPath = &opxOnPath.opx->getOp<Op>();
+            ops.push_back(opOnPath);
+          }
+
+          endpoints.push_back(std::make_shared<InputCreatorCandidate>(
+              inIndex,
+              opx,
+              updatedPath,
+              livenessAnalyzer->getGlobalSchedulePosition(ops)));
+        };
+
+        auto f_unwind = [&]() {
+          auto updatedPath = pathFromInput;
+          for (auto &ind_ten : op->output->tensorMap()) {
+            auto nextOutputTensor = ind_ten.second;
+            auto outIndex         = ind_ten.first;
+            if (opx->canUnwind(inIndex, outIndex)) {
+              updatedPath.push_back({opx, inIndex, outIndex});
+              searchStack.push_back({nextOutputTensor, updatedPath});
+            }
+          }
+        };
+
+        auto f_deadend = [&]() {
+          auto updatedPath = pathFromInput;
+          if (includeDeadends) {
+            if (!excludeEndpointsFromPath) {
+              updatedPath.push_back(
+                  {opx, inIndex, -1}); // note: no valid outIndex
+            }
+            endpoints.push_back(std::make_shared<InputCreatorCandidate>(
+                inIndex, opx, updatedPath, 0));
+          }
+        };
+
+        // TODO: T13654 Generalize for other subgraphing ops (if, loop).
+        // Create common base class for Loop, If, Call
+        auto f_delegate = [&]() {
+          auto updatedPath = pathFromInput;
+
+          // Mark as delegate visited Opx on path
+          updatedPath.push_back({opx});
+
+          const SubgraphOpx *callopx = dynamic_cast<const SubgraphOpx *>(opx);
+
+          // Get delegated endpoints
+          SubgraphOp *callOp = &callopx->getOp<SubgraphOp>();
+          auto callgraphs    = callOp->getCalledGraphs();
+
+          for (auto callgraph : callgraphs) {
+            auto in_tensor_id      = callgraph->getInputId(inIndex);
+            const Tensor *inTensor = ir().getTensor(in_tensor_id);
+            searchStack.push_back({inTensor, updatedPath});
+          }
+        };
+
+        switch (opx->getInputCreatorType(inIndex)) {
+        // Opx has poplar call to layout tensor at this
+        // inIndex
+        case InputCreatorType::CANCREATE: {
+          logging::devicex::trace("{} can create, path depth {}",
+                                  op->debugName(),
+                                  pathFromInput.size());
+          f_create();
+          break;
         }
-      }
-      if (!visited) {
-        auto updatedPath = pathFromInput;
-
-        // Mark as delegate visited Opx on path
-        updatedPath.push_back({opx});
-
-        Tensor *nextOutputTensor = op->output->tensor(o);
-
-        logging::devicex::trace("Subgraph escape path: {} -> {}",
-                                graph_output_tensor_id,
-                                nextOutputTensor->id);
-
-        // Continue path recursion behind the subgraph
-        auto candidates = getCreatorEndpoints(nextOutputTensor, updatedPath);
-        for (auto &candidate : candidates.first) {
-          endpoints.push_back(candidate);
+        case InputCreatorType::CANDELEGATE: {
+          logging::devicex::trace("{} can delegate, path depth {}",
+                                  op->debugName(),
+                                  pathFromInput.size());
+          f_delegate();
+          break;
         }
-        for (auto &candidate : candidates.second) {
-          endpointsUnwind.push_back(candidate);
+        // Recursively search the DAG downstream of the op until we
+        // have set of endpoints that can create the tensor
+        case InputCreatorType::CANUNWIND: {
+          logging::devicex::trace("{} can unwind, path depth {}",
+                                  op->debugName(),
+                                  pathFromInput.size());
+          f_unwind();
+          break;
+        }
+        case InputCreatorType::CANCREATE_OR_UNWIND: {
+          logging::devicex::trace("{} can create or unwind, path depth {}",
+                                  op->debugName(),
+                                  pathFromInput.size());
+          f_create();
+          f_unwind();
+          break;
+        }
+        // Consuming op can't create tensor
+        case InputCreatorType::DEADEND: {
+          f_deadend();
+          break;
+        }
+        default: {
+          throw error("InputCreatorType not implemented for Opx of OpId {}",
+                      op->id);
+        }
         }
       }
     }
-  }
 
-  for (Op *op : tensor->consumers.getOps()) {
-    auto conOpId   = op->id;
-    const Opx *opx = getOpx(conOpId);
+    auto subgraphEscape = [&]() {
+      // Example 1: Tensor is created before a subgraph, creator is behind it
+      //            D can be created, D escaped from C, C is unwound to B,
+      //            B delegates to A
+      // A-delegate        escape-D-create
+      //          |        |
+      //          B-unwind-C
+      //
+      // Example 2: Tensor is created inside a subgraph, creator is behind it
+      //            C can be created, C escaped from B, B is unwound to A
+      //                   escape-C-create
+      //                   |
+      //          A-unwind-B
 
-    for (InIndex inIndex : op->input->indices(tensor)) {
-      auto updatedPath = pathFromInput;
+      // Check if the path can continue behind a subgraph
+      auto graphOutputIds = tensor->getGraph().getOutputIds();
+      for (OutIndex o = 0; o < graphOutputIds.size(); ++o) {
+        if (graphOutputIds[o] == tensor->id) {
+          // Current tensor is the graph output at index o
+          auto pathToInput = pathFromInput;
+          std::reverse(pathToInput.begin(), pathToInput.end());
+          // Get the call site by walking back on the path
+          for (auto &opxOnPath : pathToInput) {
+            if (opxOnPath.isDelegate) {
+              // Is a delegate: Get the caller Op
+              SubgraphOp *op = &opxOnPath.opx->getOp<SubgraphOp>();
+              for (auto graph : op->getCalledGraphs()) {
+                // Loop over all callees
+                if (graph->id == tensor->getGraph().id) {
+                  // This callee is the graph where the current tensor is in
+                  // Get delegate output tensor corresponding to subgraph output
 
-      auto f_create = [&]() {
-        if (!excludeEndpointsFromPath) {
-          // note: no valid outIndex
-          updatedPath.push_back({opx, inIndex, -1});
-        }
-        endpoints.push_back(
-            std::make_shared<InputCreatorCandidate>(inIndex, opx, updatedPath));
-      };
-
-      auto f_unwind = [&]() {
-        for (auto &ind_ten : op->output->tensorMap()) {
-          auto nextOutputTensor = ind_ten.second;
-          auto outIndex         = ind_ten.first;
-          if (opx->canUnwind(inIndex, outIndex)) {
-            updatedPath.push_back({opx, inIndex, outIndex});
-            auto candidates =
-                getCreatorEndpoints(nextOutputTensor, updatedPath);
-            for (auto &candidate : candidates.first) {
-              endpoints.push_back(candidate);
-            }
-            // Record unwind endpoints which are graph outputs
-            for (TensorId tensor_id : op->getGraph().getOutputIds()) {
-              if (tensor_id == nextOutputTensor->id) {
-                endpointsUnwind.push_back(std::make_shared<UnwindEndpoint>(
-                    op->getGraph(), nextOutputTensor, updatedPath));
-              }
-            }
-          }
-        }
-      };
-
-      auto f_deadend = [&]() {
-        if (includeDeadends) {
-          if (!excludeEndpointsFromPath) {
-            updatedPath.push_back(
-                {opx, inIndex, -1}); // note: no valid outIndex
-          }
-          endpoints.push_back(std::make_shared<InputCreatorCandidate>(
-              inIndex, opx, updatedPath));
-        }
-      };
-
-      // TODO: T13654 Generalize for other subgraphing ops (if, loop).
-      // Create common base class for Loop, If, Call
-      auto f_delegate = [&]() {
-        // Mark as delegate visited Opx on path
-        updatedPath.push_back({opx});
-
-        const CallOpx *callopx = dynamic_cast<const CallOpx *>(opx);
-        // Get delegated endpoints
-        auto delegateEndpoints = callopx->getEndpoints(inIndex, updatedPath);
-
-        // Endpoints contributing to tensor creation
-        for (auto endpoint : delegateEndpoints.first) {
-          endpoints.push_back(endpoint);
-        }
-
-        // Endpoints that unwind, but don't create -> propagate recursively
-        for (auto endpoint : delegateEndpoints.second) {
-
-          // This op is the last unwinder along the delegate path
-          // auto last = endpoint->getPathsFromInput().front().back();
-          // Op* lastOp = last.opx->getOp<Op>();
-
-          // The delegate path is inside a subgraph, check subgraph outputs
-          auto graphOutputIds = endpoint->graph.getOutputIds();
-          for (OutIndex o = 0; o < graphOutputIds.size(); ++o) {
-            if (graphOutputIds[o] == endpoint->tensor->id) {
-              // Get delegate output tensor corresponding to subgraph output
-              Tensor *nextOutputTensor = op->output->tensor(o);
-              // Continue path recursion behind the subgraph
-              auto candidates = getCreatorEndpoints(nextOutputTensor,
-                                                    endpoint->pathFromInput);
-              for (auto &candidate : candidates.first) {
-                endpoints.push_back(candidate);
-              }
-
-              // Record delegate endpoints which are graph outputs
-              for (TensorId tensor_id : op->getGraph().getOutputIds()) {
-                if (tensor_id == nextOutputTensor->id) {
-                  endpointsUnwind.push_back(std::make_shared<UnwindEndpoint>(
-                      op->getGraph(),
-                      nextOutputTensor,
-                      endpoint->pathFromInput));
+                  // TODO: T13654 Generalize for other subgraphing ops (if,
+                  // loop).
+                  Tensor *nextOutputTensor = op->output->tensor(o);
+                  // Continue search behind the subgraph
+                  searchStack.push_back({nextOutputTensor, pathFromInput});
+                  return;
                 }
               }
             }
           }
         }
-      };
-
-      switch (opx->getInputCreatorType(inIndex)) {
-      // Opx has poplar call to layout tensor at this
-      // inIndex
-      case InputCreatorType::CANCREATE: {
-        logging::devicex::trace("{} can create, path depth {}",
-                                op->debugName(),
-                                updatedPath.size());
-        f_create();
-        break;
       }
-      case InputCreatorType::CANDELEGATE: {
-        logging::devicex::trace("{} can delegate, path depth {}",
-                                op->debugName(),
-                                updatedPath.size());
-        f_delegate();
-        break;
-      }
-      // Recursively search the DAG downstream of the op until we
-      // have set of endpoints that can create the tensor
-      case InputCreatorType::CANUNWIND: {
-        logging::devicex::trace("{} can unwind, path depth {}",
-                                op->debugName(),
-                                updatedPath.size());
-        f_unwind();
-        break;
-      }
-      case InputCreatorType::CANCREATE_OR_UNWIND: {
-        logging::devicex::trace("{} can create or unwind , path depth {}",
-                                op->debugName(),
-                                updatedPath.size());
-        f_create();
-        f_unwind();
-        break;
-      }
-      // Consuming op can't create tensor
-      case InputCreatorType::DEADEND: {
-        f_deadend();
-        break;
-      }
-      default: {
-        throw error("InputCreatorType not implemented for Opx of OpId {}",
-                    op->id);
-      }
-      }
-    }
+    };
+    subgraphEscape();
   }
-  return {endpoints, endpointsUnwind};
+
+  return endpoints;
 }
 
 ICreatorCandidatePtr Devicex::getTensorCreator(Tensor *tensor) const {
@@ -1226,8 +1240,7 @@ ICreatorCandidatePtr Devicex::getTensorCreator(Tensor *tensor) const {
                           tensor->id,
                           tensor->info.nelms());
 
-  std::vector<ICreatorCandidatePtr> candidates =
-      getCreatorEndpoints(tensor, {}).first;
+  std::vector<ICreatorCandidatePtr> candidates = getCreatorEndpoints(tensor);
 
   logging::devicex::trace(
       "{} creator candidate(s) for {}", candidates.size(), tensor->id);
@@ -1237,8 +1250,9 @@ ICreatorCandidatePtr Devicex::getTensorCreator(Tensor *tensor) const {
         candidates.begin(), candidates.end(), ICreatorCandidate::greaterThan);
 
     if (candidates.front()->getNumElems() == tensor->info.nelms()) {
-      logging::devicex::trace("Candidate {} creates tensor alone.",
-                              candidates.front()->str());
+      logging::devicex::trace("Candidate {} priority {} creates tensor alone.",
+                              candidates.front()->str(),
+                              candidates.front()->getMaxCreatorPriority());
       // A single top-priority candidate can initialize the tensor fully.
       return candidates.front();
     } else {
@@ -2422,6 +2436,10 @@ void Devicex::prepare() {
   setFloatingPointBehaviour(graph());
   setStochasticRoundingBehaviour(graph());
 
+  // Initialize the liveness analyzer
+  livenessAnalyzer.reset(new liveness::LivenessAnalyzer(&ir()));
+  livenessAnalyzer->apply();
+
   // Initialize remote buffer objects
   createRemoteBuffers();
 
@@ -3177,7 +3195,7 @@ PriTask Devicex::toHostTask(Tensor *tensor,
       {streamToHostTaskId(tensor->id, stype != ToHostStreamType::NonAnchor),
        DependencyType::OUTPUT},
       // poplar::Tensor has its final values
-      {finalPopulator, DependencyType::OUTPUT}};
+      {finalPopulator, DependencyType::SCHEDULER}};
 
   if (stype == ToHostStreamType::SumAnchor) {
     deps.push_back({anchorSumTaskId(tensor->id), DependencyType::TENSOR});
@@ -3230,7 +3248,7 @@ PriTask Devicex::anchorReturnTypeSumTask(Tensor *tensor,
            // poplar::Stream creation task,
            {streamToHostTaskId(tensor->id, true), DependencyType::OUTPUT},
            // poplar::Tensor has its final values
-           {finalPopulator, DependencyType::OUTPUT}},
+           {finalPopulator, DependencyType::SCHEDULER}},
           f};
 }
 
@@ -3384,7 +3402,7 @@ PriTask Devicex::toHostEveryNBatchesTask(Tensor *tensor,
        // poplar::Stream creation task,
        {streamToHostTaskId(tensor->id, isAnchorStream), DependencyType::OUTPUT},
        // poplar::Tensor value setting task
-       {taskWhichPopulates(tensor->id), DependencyType::OUTPUT}},
+       {taskWhichPopulates(tensor->id), DependencyType::SCHEDULER}},
       f};
 }
 

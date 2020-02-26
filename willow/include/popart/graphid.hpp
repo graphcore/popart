@@ -10,6 +10,8 @@ public:
   GraphId(const std::string &);
 
   bool operator<(const GraphId &) const;
+  bool operator==(const GraphId &) const;
+  bool operator!=(const GraphId &) const;
 
   static const GraphId &root();
 

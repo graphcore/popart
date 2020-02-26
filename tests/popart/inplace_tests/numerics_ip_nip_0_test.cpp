@@ -78,8 +78,7 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
 
     Shape inShape{static_cast<int64_t>(std::pow(2, N)), 2};
 
-    // see T15121: exponential slow down in a popx algorithm.
-    const bool useInitialReductionToAvoidLayoutSearch{true};
+    const bool useInitialReductionToAvoidLayoutSearch{false};
     if (useInitialReductionToAvoidLayoutSearch) {
       int64_t redFactor = 3;
       inShape.push_back(redFactor);

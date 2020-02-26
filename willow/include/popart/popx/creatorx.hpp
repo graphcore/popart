@@ -57,12 +57,17 @@ public:
   virtual std::vector<popart::view::Region> unwind(popart::view::Region) = 0;
   virtual std::vector<popart::view::Region> unwind()                     = 0;
 
+  virtual int64_t getScheduleIndex() const = 0;
+
   static bool greaterThan(ICreatorCandidatePtr, ICreatorCandidatePtr);
 };
 
 class InputCreatorCandidate : public ICreatorCandidate {
 public:
-  InputCreatorCandidate(int, const Opx *, std::vector<OpxInAndOutIndex>);
+  InputCreatorCandidate(InIndex index_,
+                        const Opx *opx_,
+                        std::vector<OpxInAndOutIndex> pathFromInput_,
+                        int64_t scheduleIndex_);
   InputCreatorCandidate()                   = default;
   virtual ~InputCreatorCandidate() override = default;
 
@@ -73,7 +78,7 @@ public:
   double getMaxCreatorPriority() override;
   int64_t getNumElems() override;
 
-  int getIndex() const { return index; }
+  InIndex getIndex() const { return index; }
   const Opx *getOpx() const { return opx; }
 
   // Returns the unwind path from the tensor to the creator
@@ -88,14 +93,19 @@ public:
   std::vector<popart::view::Region> unwind(popart::view::Region) override;
   std::vector<popart::view::Region> unwind() override;
 
-  virtual std::string str() override;
+  std::string str() override;
+
+  int64_t getScheduleIndex() const final { return scheduleIndex; }
 
 protected:
   std::vector<OpxInAndOutIndex> pathFromInput;
 
 private:
-  int index;
+  // Input index on the creating Op
+  InIndex index;
   const Opx *opx;
+  // Global schedule index to order the creators by global schedule position
+  int64_t scheduleIndex;
 };
 
 struct UnwindEndpoint {
@@ -120,7 +130,7 @@ public:
   double getMaxCreatorPriority() override;
   int64_t getNumElems() override;
 
-  virtual std::string str() override;
+  std::string str() override;
 
   bool addCreatorCandidate(ICreatorCandidatePtr);
 
@@ -130,6 +140,8 @@ public:
   poplar::Tensor unwind(poplar::Tensor) override;
   std::vector<popart::view::Region> unwind(popart::view::Region) override;
   std::vector<popart::view::Region> unwind() override;
+
+  int64_t getScheduleIndex() const final;
 
 private:
   view::Regions getAcceptedSubregions(view::Region);

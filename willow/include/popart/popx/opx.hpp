@@ -68,10 +68,6 @@ public:
 
   virtual bool canUnwind(InIndex, OutIndex) const;
 
-  virtual std::pair<std::vector<ICreatorCandidatePtr>,
-                    std::vector<UnwindEndpointPtr>>
-  getEndpoints(InIndex index, std::vector<OpxInAndOutIndex> path) const;
-
   // Reverses the layout change to an input tensor for an op that returned
   // CANUNWIND
   virtual poplar::Tensor

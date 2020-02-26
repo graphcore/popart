@@ -149,17 +149,20 @@ ICreatorCandidate::ICreatorCandidate() {}
 
 bool ICreatorCandidate::greaterThan(ICreatorCandidatePtr icc1,
                                     ICreatorCandidatePtr icc2) {
-  return std::tuple<double, int64_t>(icc1->getMaxCreatorPriority(),
-                                     icc1->getNumElems()) >
-         std::tuple<double, int64_t>(icc2->getMaxCreatorPriority(),
-                                     icc2->getNumElems());
+  return std::tuple<double, int64_t, int64_t>(icc1->getMaxCreatorPriority(),
+                                              icc1->getNumElems(),
+                                              icc2->getScheduleIndex()) >
+         std::tuple<double, int64_t, int64_t>(icc2->getMaxCreatorPriority(),
+                                              icc2->getNumElems(),
+                                              icc1->getScheduleIndex());
 };
 
 InputCreatorCandidate::InputCreatorCandidate(
-    int index_,
+    InIndex index_,
     const Opx *opx_,
-    std::vector<OpxInAndOutIndex> pathFromInput_)
-    : index(index_), opx(opx_) {
+    std::vector<OpxInAndOutIndex> pathFromInput_,
+    int64_t scheduleIndex_)
+    : index(index_), opx(opx_), scheduleIndex(scheduleIndex_) {
 
   pathFromInput.reserve(pathFromInput_.size());
   for (OpxInAndOutIndex &pathElem : pathFromInput_) {
@@ -369,6 +372,14 @@ std::vector<TensorId> InputMultiCreatorCandidate::mustExistBeforeCreate() {
     }
   }
   return tensor_ids;
+}
+
+int64_t InputMultiCreatorCandidate::getScheduleIndex() const {
+  int64_t index = 0;
+  for (auto &candidate : candidates) {
+    index = std::max(index, candidate.first->getScheduleIndex());
+  }
+  return index;
 }
 
 int64_t InputMultiCreatorCandidate::getNumElems() {
