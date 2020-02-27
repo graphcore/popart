@@ -1,3 +1,5 @@
+#include <fstream>
+
 #include <popart/builder_impl.hpp>
 #include <popart/error.hpp>
 #include <popart/filereader.hpp>
@@ -160,15 +162,59 @@ void Session::modelToHost(const std::string &fn) {
   }
 
   std::map<TensorId, MutableVoidData> initMap;
+  // For storing tensor data for externally stored tensors.
+  std::map<TensorId, std::vector<char>> externalTensorBuffers;
+
   for (int init_index = 0; init_index < model.graph().initializer_size();
        ++init_index) {
     onnx::TensorProto &tp =
         *model.mutable_graph()->mutable_initializer(init_index);
     TensorId tenId = tp.name();
-    initMap[tenId] = onnxutil::getMutableData(tp);
+
+    if (tp.has_data_location() &&
+        tp.data_location() == onnx::TensorProto::EXTERNAL) {
+      // Initialise a new MutableVoidData object to write to from host weight
+      // buffers
+      MutableVoidData mvd;
+      mvd.info = getInfo(tenId);
+      std::vector<char> buffer(mvd.info.nbytes());
+      externalTensorBuffers.emplace(tenId, buffer);
+      mvd.data = reinterpret_cast<void *>(externalTensorBuffers[tenId].data());
+      initMap[tenId] = mvd;
+    } else {
+      initMap[tenId] = onnxutil::getMutableData(tp);
+    }
   }
 
   device_->weightsToHost(initMap);
+
+  // Write data for externally saved weights to relevant locations on disk
+  for (int init_index = 0; init_index < model.graph().initializer_size();
+       ++init_index) {
+    onnx::TensorProto tp = model.graph().initializer(init_index);
+
+    if (tp.has_data_location() &&
+        tp.data_location() == onnx::TensorProto::EXTERNAL) {
+      TensorId tenId    = tp.name();
+      auto externalInfo = onnxutil::ExternalTensorProtoInfo(tp);
+      std::fstream ofs(externalInfo.location,
+                       std::ofstream::binary | std::ios_base::out |
+                           std::ios_base::in);
+      if (!ofs.is_open()) {
+        throw error("Trying to update initializer {}, stored in file {}, when "
+                    "writing modelToHost. Failed to open file",
+                    tenId,
+                    fn);
+      }
+
+      if (externalInfo.offset > 0) {
+        ofs.seekp(externalInfo.offset, std::ios::beg);
+      }
+      ofs.write(static_cast<const char *>(initMap[tenId].data),
+                externalInfo.length);
+      ofs.close();
+    }
+  }
 
   io::writeModel(model, fn);
 

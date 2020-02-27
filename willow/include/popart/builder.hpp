@@ -827,6 +827,17 @@ public:
   void saveModelProto(const std::string &fn);
 
   /**
+   * The model data cannot exceed 2GB - the maximum size of a Protobuf
+   * message. To prevent this for large models, ONNX tensor data can be
+   * saved separately.
+   *
+   * \param ids The names of tensors whose data is to be saved externally.
+   * \param fn The name of a file containing the binary tensor data.
+   */
+  void saveInitializersExternally(const std::vector<TensorId> &ids,
+                                  const std::string &fn);
+
+  /**
    * Return a list of ONNX graph input tensor ids
    *
    * \return A vector of input tensor names

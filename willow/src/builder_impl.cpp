@@ -1,8 +1,11 @@
 #include <algorithm>
+#include <fstream>
 #include <iterator>
 #include <sstream>
 #include <unordered_set>
 #include <vector>
+
+#include <boost/filesystem.hpp>
 
 #include <popart/builder_impl.hpp>
 #include <popart/ces/constexpr.hpp>
@@ -880,6 +883,11 @@ void BuilderImpl::saveModelProto(const std::string &fn) {
   onnx::checker::check_model(model_);
 
   io::writeModel(model_, fn);
+}
+
+void BuilderImpl::saveInitializersExternally(const std::vector<TensorId> &ids,
+                                             const std::string &fn) {
+  onnxutil::saveInitializersExternally(model_, ids, fn);
 }
 
 std::string BuilderImpl::getModelProto() const {

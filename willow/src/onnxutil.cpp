@@ -1,3 +1,7 @@
+#include <fstream>
+
+#include <boost/filesystem.hpp>
+
 #include <popart/error.hpp>
 #include <popart/filereader.hpp>
 #include <popart/onnxutil.hpp>
@@ -140,6 +144,49 @@ DataType getDataType(int tpd) {
   }
 }
 
+ExternalTensorProtoInfo::ExternalTensorProtoInfo(const onnx::TensorProto &tp) {
+  std::string name = tp.has_name() ? tp.name() : "";
+  if (tp.has_data_location() &&
+      tp.data_location() == onnx::TensorProto::EXTERNAL) {
+    for (const auto &info : tp.external_data()) {
+      if (info.key() == "location") {
+        location = info.value();
+      } else if (info.key() == "offset") {
+        offset = std::stoi(info.value());
+      } else if (info.key() == "length") {
+        length = std::stoi(info.value());
+      }
+    }
+
+    // Check the external_data contains valid settings
+    if (location == "") {
+      throw error("No location information for externally stored tensor '{}'",
+                  name);
+    } else if (!boost::filesystem::exists(location)) {
+      throw error(
+          "Unrecognised file name '{}' for externally stored tensor '{}'",
+          location,
+          name);
+    }
+    if (length <= 0) {
+      throw error(
+          "Invalid 'length' information ({}) for externally stored tensor '{}'",
+          length,
+          name);
+    }
+    if (offset < 0) {
+      throw error(
+          "Invalid 'offset' information ({}) for externally stored tensor '{}'",
+          offset,
+          name);
+    }
+  } else {
+    throw error("Cannot determine ExternalTensorProtoInfo for '{}', as it does "
+                "not have an external data location",
+                name);
+  }
+}
+
 ConstVoidData getConstData(const onnx::TensorProto &tp) {
   ConstVoidData cv_data;
   cv_data.info = TensorInfo(tp);
@@ -147,12 +194,30 @@ ConstVoidData getConstData(const onnx::TensorProto &tp) {
   // raw_data is a string: guaranteed to be contiguous in C++11
   if (tp.has_raw_data()) {
     cv_data.data = reinterpret_cast<const void *>(&(tp.raw_data()[0]));
+  } else if (tp.has_data_location() &&
+             tp.data_location() == onnx::TensorProto::EXTERNAL) {
+    auto externalInfo = ExternalTensorProtoInfo(tp);
+
+    std::ifstream ifs(externalInfo.location, std::ios::binary);
+    if (!ifs.is_open()) {
+      throw error("Unable to open file '{}' to read tensor data for '{}'",
+                  externalInfo.location,
+                  tp.name());
+    }
+
+    if (externalInfo.offset > 0) {
+      ifs.seekg(externalInfo.offset, std::ios::beg);
+    }
+    std::vector<char> externalTensorBuffer(externalInfo.length);
+    ifs.read(externalTensorBuffer.data(), externalInfo.length);
+    cv_data.store(std::move(externalTensorBuffer), TensorInfo(tp));
+    ifs.close();
   }
   // note: protobuf repeated field is essentially stl vector (has a function
   // Capactity()) and so data is contiguous
   else {
     switch (tp.data_type()) {
-    // we glean from onnx.proto that COMPLEX64 is stored in the float field
+    // onnx.proto states that COMPLEX64 is stored in the float field
     case onnx::TensorProto::COMPLEX64:
     case onnx::TensorProto::FLOAT: {
       cv_data.data = reinterpret_cast<const void *>(&(tp.float_data().Get(0)));
@@ -207,6 +272,11 @@ MutableVoidData getMutableData(onnx::TensorProto &tp) {
   mv_data.data = nullptr;
   if (tp.has_raw_data()) {
     mv_data.data = reinterpret_cast<void *>(&((*tp.mutable_raw_data())[0]));
+  } else if (tp.has_data_location() &&
+             tp.data_location() == onnx::TensorProto::EXTERNAL) {
+    throw error(
+        "Cannot call getMutableData on tensor '{}', as it is stored externally",
+        tp.name());
   } else {
     if (tp.data_type() == onnx::TensorProto::FLOAT) {
       mv_data.data =
@@ -233,8 +303,104 @@ onnx::ModelProto getModelProto(const std::string &modelProtoOrFilename) {
   return modelProto;
 }
 
+namespace {
+void clearInternallySavedData(onnx::TensorProto &tp) {
+  if (tp.has_raw_data()) {
+    tp.clear_raw_data();
+  }
+
+  // Determine all types of data that can be stored in a TensorProto with:
+  // $ grep "_data_.Clear(" onnx/onnx.pb.h
+  tp.clear_float_data();  // float_data_.Clear();
+  tp.clear_int32_data();  // int32_data_.Clear();
+  tp.clear_string_data(); // string_data_.Clear();
+  tp.clear_int64_data();  // int64_data_.Clear();
+                          // external_data_.Clear();
+  tp.clear_double_data(); // double_data_.Clear();
+  tp.clear_uint64_data(); // uint64_data_.Clear();
+}
+} // namespace
+
+void saveInitializersExternally(onnx::ModelProto &model,
+                                const std::vector<TensorId> &ids,
+                                const std::string &fn) {
+
+  if (boost::filesystem::exists(fn)) {
+    logging::info("Saving tensor data to file {}, but it already exists. Its "
+                  "contents will be overwritten",
+                  fn);
+  }
+  std::ofstream ofs(fn, std::ofstream::binary);
+  if (!ofs.is_open()) {
+    throw error("Failed to open file {}", fn);
+  }
+
+  int64_t totalBytes = 0;
+  for (const TensorId &id : ids) {
+    // 1. Some checks:
+    // That the tensor is an initializer
+    if (!isInitializer(model, id)) {
+      throw error("Tensor '{}' is not an initializer", id);
+    }
+    // That the tensor is not already saved externally
+    onnx::TensorProto &tp = getTensorProto(model, id);
+    if (tp.has_data_location()) {
+      if (tp.data_location() == onnx::TensorProto::EXTERNAL) {
+        throw error("Tensor '{}' already has an external data_location", id);
+      }
+    }
+    // And that the tensor has data that can be saved externally
+    ConstVoidData cvData = getConstData(tp);
+    auto nBytes          = cvData.info.nbytes();
+    if (nBytes == 0) {
+      throw error("Tensor '{}' has no data to save externally", id);
+    }
+
+    // 2. Set data location to external
+    tp.set_data_location(onnx::TensorProto::EXTERNAL);
+
+    // 3. Set external_data field
+    auto externalDataInfo = tp.mutable_external_data();
+    auto *location        = externalDataInfo->Add();
+    location->set_key("location");
+    location->set_value(fn);
+
+    auto *length = externalDataInfo->Add();
+    length->set_key("length");
+    length->set_value(std::to_string(nBytes));
+
+    auto *offset = externalDataInfo->Add();
+    offset->set_key("offset");
+    offset->set_value(std::to_string(totalBytes));
+    totalBytes += nBytes;
+
+    // 4. Save data to file
+    ofs.write(static_cast<const char *>(cvData.data), nBytes);
+
+    // 5. Delete the internally saved tensor data
+    clearInternallySavedData(tp);
+  }
+
+  ofs.close();
+}
+
+onnx::TensorProto &getTensorProto(onnx::ModelProto &model,
+                                  const TensorId &tId) {
+  onnx::GraphProto *g = model.mutable_graph();
+
+  for (unsigned i = 0; i < g->initializer_size(); ++i) {
+    onnx::TensorProto &init = *g->mutable_initializer(i);
+    if (init.name() == tId) {
+      return init;
+    }
+  }
+  throw error(
+      "Could not find onnx::TensorProto with name {} in model initializer list",
+      tId);
+}
+
 onnx::TensorProto getTensorProto(const onnx::ModelProto &model,
-                                 const TensorId tId) {
+                                 const TensorId &tId) {
   onnx::GraphProto g = model.graph();
 
   for (unsigned i = 0; i < g.initializer_size(); ++i) {
@@ -246,6 +412,17 @@ onnx::TensorProto getTensorProto(const onnx::ModelProto &model,
   throw error(
       "Could not find onnx::TensorProto with name {} in model initializer list",
       tId);
+}
+
+bool isInitializer(const onnx::ModelProto &model, const TensorId tId) {
+  onnx::GraphProto g = model.graph();
+  for (unsigned i = 0; i < g.initializer_size(); ++i) {
+    onnx::TensorProto &init = *g.mutable_initializer(i);
+    if (init.name() == tId) {
+      return true;
+    }
+  }
+  return false;
 }
 
 void visitModelNodes(onnx::ModelProto &model,

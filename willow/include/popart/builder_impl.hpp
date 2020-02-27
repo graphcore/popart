@@ -212,6 +212,13 @@ public:
 
   void saveModelProto(const std::string &fn);
 
+  // Note: The onnx external_data_helper.py has the same functionality in its
+  // convert_model_to_external_data method. However, this assumes a
+  // TensorProto's data is only stored as raw_data, when it is valid to store
+  // data in any 'data' field. Here we do not make this assumption.
+  void saveInitializersExternally(const std::vector<TensorId> &ids,
+                                  const std::string &fn);
+
   std::string getModelProto() const;
 
   std::vector<TensorId> getInputTensorIds() const;

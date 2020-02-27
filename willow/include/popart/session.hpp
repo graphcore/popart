@@ -199,7 +199,6 @@ protected:
   bool runCalled = false;
 
   /**
-
    * Flag to indicate if optimizerFromHost has been called since and
    * optimizer was last created/updated on the host
    */

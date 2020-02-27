@@ -96,11 +96,6 @@ void GraphTransformerImpl::convertFloatTensorToHalf(onnx::TensorProto &tp) {
   tp.clear_raw_data();
   tp.set_raw_data(hValData.data(), hValData.size());
   tp.set_data_type(onnx::TensorProto_DataType_FLOAT16);
-
-  tp.clear_float_data();
-  tp.clear_raw_data();
-  tp.set_raw_data(hValData.data(), hValData.size());
-  tp.set_data_type(onnx::TensorProto_DataType_FLOAT16);
 }
 
 void GraphTransformerImpl::convertInitializersToConstants(
@@ -262,6 +257,12 @@ void GraphTransformerImpl::prepareNodesForTraining() {
       }
     }
   }
+}
+
+void GraphTransformerImpl::saveInitializersExternally(
+    const std::vector<TensorId> &ids,
+    const std::string &fn) {
+  onnxutil::saveInitializersExternally(model, ids, fn);
 }
 
 } // namespace popart
