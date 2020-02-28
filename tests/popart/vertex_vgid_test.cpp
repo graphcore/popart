@@ -1,9 +1,8 @@
 #define BOOST_TEST_MODULE VertexVgidTest
 
 #include <boost/test/unit_test.hpp>
-#include <popart/builder.hpp>
-
 #include <vector>
+#include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/filereader.hpp>
 #include <popart/ir.hpp>
@@ -12,6 +11,7 @@
 #include <popart/optimizer.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
+#include <popart/testdevice.hpp>
 
 BOOST_AUTO_TEST_CASE(VertexVgidTest0) {
 
@@ -65,8 +65,7 @@ BOOST_AUTO_TEST_CASE(VertexVgidTest0) {
     auto optimizer = ConstSGD(0.01);
     auto loss      = std::unique_ptr<Loss>(
         new L1Loss(act, "l1LossVal", 0.1, ReductionType::SUM));
-    auto device =
-        DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
+    auto device = createTestDevice(TEST_TARGET, 3);
 
     Ir ir;
     ir.prepare({modelProto,

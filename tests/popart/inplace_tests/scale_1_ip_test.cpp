@@ -14,6 +14,7 @@
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
+#include <popart/testdevice.hpp>
 #include <popart/topocons.hpp>
 
 using namespace popart;
@@ -97,7 +98,7 @@ BOOST_AUTO_TEST_CASE(Inplace_Scale1) {
     // Create the IR
     auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
 
-    auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+    auto device = createTestDevice(TEST_TARGET);
 
     Ir ir;
     ir.prepare({modelProto,
@@ -105,7 +106,7 @@ BOOST_AUTO_TEST_CASE(Inplace_Scale1) {
                 dataFlow,
                 {},
                 nullptr,
-                *cpuDevice,
+                *device,
                 {},
                 Patterns(PatternsLevel::NONE).enableInPlace(true)});
 

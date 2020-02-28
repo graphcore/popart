@@ -16,6 +16,7 @@
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/testdevice.hpp>
 
 using namespace popart;
 
@@ -160,9 +161,7 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest1) {
   builder->pipelineStage(id3, 3);
   builder->pipelineStage(add4, 4);
 
-  std::map<std::string, std::string> deviceOpts{{"numIPUs", "5"}};
-  auto device =
-      DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
+  auto device = createTestDevice(TEST_TARGET, 5);
 
   SessionOptions opts;
   opts.virtualGraphMode = VirtualGraphMode::Manual;

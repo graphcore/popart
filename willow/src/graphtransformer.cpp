@@ -30,4 +30,10 @@ void GraphTransformer::prepareNodesForTraining() {
 
 void GraphTransformer::removeUnusedInputs() { impl->removeUnusedInputs(); }
 
+void GraphTransformer::saveInitializersExternally(
+    const std::vector<TensorId> &ids,
+    const std::string &fn) {
+  impl->saveInitializersExternally(ids, fn);
+}
+
 } // namespace popart

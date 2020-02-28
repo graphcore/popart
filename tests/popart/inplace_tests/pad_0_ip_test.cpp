@@ -8,6 +8,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/testdevice.hpp>
 
 #define protected public
 #include <popart/session.hpp>
@@ -76,15 +77,15 @@ BOOST_AUTO_TEST_CASE(Inplace_pad0) {
     auto modelProto = io::getModelFromString(proto);
 
     // Create the IR
-    auto dataFlow  = DataFlow(1, {{sum, AnchorReturnType("ALL")}});
-    auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+    auto dataFlow = DataFlow(1, {{sum, AnchorReturnType("ALL")}});
+    auto device   = createTestDevice(TEST_TARGET);
 
     auto opts = SessionOptions();
 
     auto session = popart::InferenceSession::createFromOnnxModel(
         proto,
         dataFlow,
-        cpuDevice,
+        device,
         {},
         popart::InputShapeInfo(),
         opts,

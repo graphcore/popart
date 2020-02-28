@@ -3,6 +3,7 @@
 #include <boost/test/unit_test.hpp>
 #include <iostream>
 #include <vector>
+#include <popart/testdevice.hpp>
 
 #include <popart/builder.hpp>
 #include <popart/filereader.hpp>
@@ -74,8 +75,7 @@ BOOST_AUTO_TEST_CASE(RecomputeTestPopxNormOnlyCalls0) {
       new L1Loss(act, "l1LossVal", 0.1, ReductionType::SUM));
   std::vector<Loss *> losses{l1loss.get()};
 
-  auto cpuDevice =
-      popart::DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = popart::createTestDevice(TEST_TARGET);
 
   auto opts              = SessionOptions();
   opts.autoRecomputation = RecomputationType::NormOnly;
@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE(RecomputeTestPopxNormOnlyCalls0) {
       dataFlow,
       losses,
       optimizer,
-      cpuDevice,
+      device,
       InputShapeInfo(),
       opts,
       Patterns({popart::PreAliasPatternType::POSTNREPL,

@@ -18,6 +18,8 @@ public:
   void convertFloatsToHalfs();
   void convertInitializersToConstants(const std::vector<TensorId> &ids);
   void convertAllFixedPointInitializersToConstants();
+  void saveInitializersExternally(const std::vector<TensorId> &ids,
+                                  const std::string &fn);
   void prepareNodesForTraining();
   void removeUnusedInputs();
 

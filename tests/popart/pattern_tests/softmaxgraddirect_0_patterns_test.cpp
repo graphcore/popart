@@ -14,6 +14,7 @@
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
+#include <popart/testdevice.hpp>
 
 using namespace popart;
 
@@ -83,7 +84,7 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect0) {
     InputShapeInfo inputInfo{};
     inputInfo.add(input2, labelInfo);
 
-    auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+    auto device = createTestDevice(TEST_TARGET);
 
     auto patterns = Patterns({PreAliasPatternType::PREUNIREPL,
                               PreAliasPatternType::SOFTMAXGRADDIRECT});
@@ -95,7 +96,7 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect0) {
                 dataFlow,
                 losses,
                 &optimizer,
-                *cpuDevice,
+                *device,
                 opts,
                 patterns});
 

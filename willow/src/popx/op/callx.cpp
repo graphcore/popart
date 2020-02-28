@@ -12,19 +12,6 @@ CallOpx::CallOpx(Op *op, Devicex *devicex) : SubgraphOpx(op, devicex) {
   verifyOp<CallOp>(op, Onnx::CustomOperators::Call_1);
 }
 
-std::pair<std::vector<ICreatorCandidatePtr>, std::vector<UnwindEndpointPtr>>
-CallOpx::getEndpoints(InIndex index, std::vector<OpxInAndOutIndex> path) const {
-  auto &callop      = getOp<CallOp>();
-  auto &callgraph   = callop.getCalledGraph();
-  auto in_tensor_id = callgraph.getInputId(index);
-  auto inTensor     = callgraph.getTensors().get(in_tensor_id);
-
-  // Internal endpoints
-  auto endpoints = dv_p->getCreatorEndpoints(inTensor, path);
-
-  return endpoints;
-}
-
 InputCreatorType CallOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CANDELEGATE;
 }

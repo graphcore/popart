@@ -173,4 +173,15 @@ MutableVoidData StepIOCallback::out(TensorId id, int64_t) {
   return outputCb(id);
 }
 void StepIOCallback::outComplete(TensorId id) { return outputCompleteCb(id); }
+
+ConstVoidData::ConstVoidData(const void *data_, const TensorInfo &info_)
+    : data(data_), info(info_) {}
+
+void ConstVoidData::store(std::vector<char> &&d, const TensorInfo &i) {
+  optionalData    = d;
+  data            = static_cast<const void *>(optionalData.data());
+  hasOptionalData = true;
+  info            = i;
+}
+
 } // namespace popart

@@ -129,14 +129,12 @@ def test_logical_if(op_tester):
             then_builder = builder.createSubgraphBuilder()
             then_builder.addInputTensorFromParentGraph(i1)
             then_builder.addInputTensorFromParentGraph(i2)
-            then_builder.addOutputTensor(
-                then_builder.aiOnnx.add([i1, i2]))
+            then_builder.addOutputTensor(then_builder.aiOnnx.add([i1, i2]))
 
             else_builder = builder.createSubgraphBuilder()
             else_builder.addInputTensorFromParentGraph(i1)
             else_builder.addInputTensorFromParentGraph(i2)
-            else_builder.addOutputTensor(
-                else_builder.aiOnnx.sub([i1, i2]))
+            else_builder.addOutputTensor(else_builder.aiOnnx.sub([i1, i2]))
 
             o = builder.aiOnnx.logical_if([condition], 1, else_builder,
                                           then_builder)[0]
@@ -165,10 +163,8 @@ def test_loop(op_tester):
         a = builder.addInputTensor(i1)
         b = builder.addInputTensor(i2)
 
-        M = builder.aiOnnx.constant(
-            np.array(trip_count).astype(np.int64))
-        cond = builder.aiOnnx.constant(
-            np.array(True).astype(np.bool), "cond")
+        M = builder.aiOnnx.constant(np.array(trip_count).astype(np.int64))
+        cond = builder.aiOnnx.constant(np.array(True).astype(np.bool), "cond")
 
         loop_builder = builder.createSubgraphBuilder()
         loop_builder.setGraphName("body")

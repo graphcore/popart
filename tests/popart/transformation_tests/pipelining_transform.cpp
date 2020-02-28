@@ -15,6 +15,7 @@
 #include <popart/session.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/testdevice.hpp>
 
 using namespace popart;
 
@@ -50,10 +51,7 @@ BOOST_AUTO_TEST_CASE(test) {
   auto out = aiOnnx.softmax({r0}, 1, "sfm");
   builder->addOutputTensor(out);
 
-  std::map<std::string, std::string> deviceOpts{{"numIPUs", "3"},
-                                                {"tilesPerIPU", "20"}};
-  auto deviceInfo =
-      DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
+  auto deviceInfo = createTestDevice(TEST_TARGET, 3, 20);
 
   auto optimizer = ConstSGD(0.01);
   Loss *loss(new NllLoss(out, l0, "loss", ReductionType::MEAN));

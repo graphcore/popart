@@ -58,11 +58,6 @@ view::RegMap Opx::unwindRegion(InIndex, OutIndex) const {
               op_p->opid);
 }
 
-std::pair<std::vector<ICreatorCandidatePtr>, std::vector<UnwindEndpointPtr>>
-Opx::getEndpoints(InIndex, std::vector<OpxInAndOutIndex>) const {
-  throw error("Opx for {} cannot get endpoints for {}", op_p->opid);
-}
-
 int64_t Opx::getVirtualGraphId() const {
   if (op_p->hasVirtualGraphId()) {
     return op_p->getVirtualGraphId();

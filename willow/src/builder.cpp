@@ -451,6 +451,11 @@ void Builder::saveModelProto(const std::string &fn) {
   impl_->saveModelProto(fn);
 }
 
+void Builder::saveInitializersExternally(const std::vector<TensorId> &ids,
+                                         const std::string &fn) {
+  impl_->saveInitializersExternally(ids, fn);
+}
+
 std::string Builder::getModelProto() const { return impl_->getModelProto(); }
 
 std::vector<TensorId> Builder::getInputTensorIds() const {

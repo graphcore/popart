@@ -17,6 +17,7 @@
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensors.hpp>
+#include <popart/testdevice.hpp>
 
 using namespace popart;
 
@@ -91,14 +92,14 @@ template <typename T> void ConstExprTest_Gather_Type(std::string type) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto art       = AnchorReturnType("ALL");
-  auto dataFlow  = DataFlow(1, {{outId, art}});
-  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+  auto art      = AnchorReturnType("ALL");
+  auto dataFlow = DataFlow(1, {{outId, art}});
+  auto device   = createTestDevice(TEST_TARGET);
 
   auto session = popart::InferenceSession::createFromOnnxModel(
       proto,
       dataFlow,
-      cpuDevice,
+      device,
       {}, // no losses
       InputShapeInfo(),
       {}, // no SessionOptions

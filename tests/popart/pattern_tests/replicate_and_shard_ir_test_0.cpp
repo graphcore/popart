@@ -7,6 +7,7 @@
 #include <popart/ir.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
+#include <popart/testdevice.hpp>
 
 // In this test: with 8 IPUs, replication over 4 IPUs, we test that the
 // auto-sharder uses 2 IPUs per replica
@@ -41,15 +42,13 @@ BOOST_AUTO_TEST_CASE(SplitToSliceTest0) {
   userOptions.virtualGraphMode       = VirtualGraphMode::Auto;
   userOptions.enableReplicatedGraphs = true;
   userOptions.replicatedGraphCount   = 4;
-  std::map<std::string, std::string> deviceOpts{{"numIPUs", "8"}};
 
   auto optimizer = ConstSGD(0.01);
 
   auto loss = std::unique_ptr<Loss>(
       new L1Loss(act, "l1LossVal", 0.1, ReductionType::SUM));
 
-  auto device =
-      DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
+  auto device = createTestDevice(TEST_TARGET, 8);
 
   Ir ir;
   ir.prepare({modelProto,

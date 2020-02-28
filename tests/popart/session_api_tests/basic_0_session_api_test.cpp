@@ -12,6 +12,7 @@
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/testdevice.hpp>
 
 #include <algorithm>
 #include <map>
@@ -41,13 +42,12 @@ BOOST_AUTO_TEST_CASE(Basic0SessionApi) {
 
   auto art      = AnchorReturnType("ALL");
   auto dataFlow = DataFlow(1, {{yId, art}});
-  auto cpuDevice =
-      popart::DeviceManager::createDeviceManager().createCpuDevice();
+  auto device   = popart::createTestDevice(TEST_TARGET);
 
   auto session = popart::InferenceSession::createFromOnnxModel(
       proto,
       dataFlow,
-      cpuDevice,
+      device,
       {},
       popart::InputShapeInfo(),
       opts,

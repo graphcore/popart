@@ -20,6 +20,7 @@
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/testdevice.hpp>
 
 #include <popart/popx/devicex.hpp>
 
@@ -53,15 +54,14 @@ BOOST_AUTO_TEST_CASE(SyntheticData_False) {
   std::vector<Loss *> losses{
       new L1Loss(tensorIds.back(), "l1LossVal", 0.1, ReductionType::SUM)};
 
-  auto cpuDevice =
-      popart::DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = popart::createTestDevice(TEST_TARGET);
 
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
       losses,
       optimizer,
-      cpuDevice,
+      device,
       InputShapeInfo(),
       {},
       Patterns({popart::PreAliasPatternType::POSTNREPL}));
@@ -109,15 +109,14 @@ BOOST_AUTO_TEST_CASE(SyntheticData_True) {
   SessionOptions options;
   options.syntheticDataMode = SyntheticDataMode::Zeros;
 
-  auto cpuDevice =
-      popart::DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = popart::createTestDevice(TEST_TARGET);
 
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
       losses,
       optimizer,
-      cpuDevice,
+      device,
       InputShapeInfo(),
       options,
       Patterns({popart::PreAliasPatternType::POSTNREPL}));

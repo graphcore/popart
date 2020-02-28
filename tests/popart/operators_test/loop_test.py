@@ -15,8 +15,7 @@ def test_simple_for_loop(op_tester):
             builder.setGraphName("main_graph")
             a = builder.addInputTensor(i1)
             b = builder.addInputTensor(i2)
-            M = builder.aiOnnx.constant(
-                np.array(10).astype(np.int64), "M")
+            M = builder.aiOnnx.constant(np.array(10).astype(np.int64), "M")
             cond = builder.aiOnnx.constant(
                 np.array(True).astype(np.bool), "cond")
 
@@ -82,10 +81,8 @@ def test_loop_matmul(op_tester):
         a = builder.addInputTensor(i1)
         b = builder.addInputTensor(i2)
 
-        M = builder.aiOnnx.constant(
-            np.array(trip_count).astype(np.int64))
-        cond = builder.aiOnnx.constant(
-            np.array(True).astype(np.bool), "cond")
+        M = builder.aiOnnx.constant(np.array(trip_count).astype(np.int64))
+        cond = builder.aiOnnx.constant(np.array(True).astype(np.bool), "cond")
 
         loop_builder = builder.createSubgraphBuilder()
         loop_builder.setGraphName("body")

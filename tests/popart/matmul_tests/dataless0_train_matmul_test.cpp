@@ -13,6 +13,7 @@
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/testdevice.hpp>
 
 #include <algorithm>
 #include <map>
@@ -106,8 +107,7 @@ BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
                               {reservedGradientPrefix() + A_id, art},
                               {reservedGradientPrefix() + B_id, art}});
 
-    auto cpuDevice =
-        popart::DeviceManager::createDeviceManager().createCpuDevice();
+    auto device = popart::createTestDevice(TEST_TARGET);
 
     auto opts            = SessionOptions();
     opts.enableOutlining = true;
@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
         dataFlow,
         losses,
         optimizer,
-        cpuDevice,
+        device,
         popart::InputShapeInfo(),
         opts,
         popart::Patterns(PatternsLevel::DEFAULT));

@@ -28,6 +28,7 @@ using namespace popart;
 
 // TODO(T15374) : refactor the tests to reduce code duplication by
 // separating creation of models into functions
+// TODO(T16598) Handle different devices by some logic or separate files.
 
 void checkOpSchedule(const std::vector<Op *> &opSchedule,
                      const SessionOptions &options) {

@@ -5,6 +5,7 @@
 #include <popart/dataflow.hpp>
 #include <popart/filereader.hpp>
 #include <popart/ir.hpp>
+#include <popart/testdevice.hpp>
 
 BOOST_AUTO_TEST_CASE(SplitToSliceTest0) {
 
@@ -36,9 +37,7 @@ BOOST_AUTO_TEST_CASE(SplitToSliceTest0) {
   SessionOptions userOptions;
   userOptions.virtualGraphMode = VirtualGraphMode::Off;
 
-  std::map<std::string, std::string> deviceOpts{{"numIPUs", "2"}};
-  auto device =
-      DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
+  auto device = createTestDevice(TEST_TARGET, 2);
 
   Ir ir;
   ir.prepare({modelProto,

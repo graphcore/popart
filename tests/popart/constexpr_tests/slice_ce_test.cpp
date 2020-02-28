@@ -13,6 +13,7 @@
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensors.hpp>
+#include <popart/testdevice.hpp>
 
 #include <math.h>
 
@@ -52,7 +53,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Slice0) {
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{
       new L1Loss(out_id, "l1LossVal", 0.1, ReductionType::SUM)};
-  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({model_proto,
@@ -60,7 +61,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Slice0) {
               data_flow,
               losses,
               &optimizer,
-              *cpuDevice,
+              *device,
               {}, // no SessionOptions
               Patterns({})});
 
@@ -116,7 +117,7 @@ template <typename T> void ConstExprTest_Slice0_Type() {
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{
       new L1Loss(out_id, "l1LossVal", 0.1, ReductionType::SUM)};
-  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({model_proto,
@@ -124,7 +125,7 @@ template <typename T> void ConstExprTest_Slice0_Type() {
               data_flow,
               losses,
               &optimizer,
-              *cpuDevice,
+              *device,
               {}, // no SessionOptions
               Patterns({})});
 

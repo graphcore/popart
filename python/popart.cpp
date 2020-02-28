@@ -1049,7 +1049,11 @@ PYBIND11_MODULE(popart_core, m) {
            &GraphTransformer::convertInitializersToConstants,
            py::arg("ids"))
       .def("convertAllFixedPointInitializersToConstants",
-           &GraphTransformer::convertAllFixedPointInitializersToConstants);
+           &GraphTransformer::convertAllFixedPointInitializersToConstants)
+      .def("saveInitializersExternally",
+           &GraphTransformer::saveInitializersExternally,
+           py::arg("ids"),
+           py::arg("filename"));
 
 // Include the generated poponx.cpp code
 #include "popart.cpp.gen"
@@ -1122,6 +1126,10 @@ PYBIND11_MODULE(popart_core, m) {
            &Builder::createSubgraphBuilder,
            pybind11::return_value_policy::reference)
       .def("saveModelProto", &Builder::saveModelProto, py::arg("filename"))
+      .def("saveInitializersExternally",
+           &Builder::saveInitializersExternally,
+           py::arg("ids"),
+           py::arg("filename"))
 
       // Accessors for the ai.onnx domain builder interface
       .def_property_readonly("aiOnnxOpset6", &Builder::aiOnnxOpset6)

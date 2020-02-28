@@ -13,6 +13,7 @@
 #include <popart/optimizer.hpp>
 #include <popart/session.hpp>
 #include <popart/tensordata.hpp>
+#include <popart/testdevice.hpp>
 
 using namespace popart;
 
@@ -49,13 +50,12 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose1) {
   auto art      = AnchorReturnType("ALL");
   auto dataFlow = DataFlow(1, {{out, art}});
 
-  auto cpuDevice =
-      popart::DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = popart::createTestDevice(TEST_TARGET);
 
   auto session = popart::InferenceSession::createFromOnnxModel(
       proto,
       dataFlow,
-      cpuDevice,
+      device,
       {},
       popart::InputShapeInfo(),
       {},
@@ -123,13 +123,12 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose2) {
   auto art      = AnchorReturnType("ALL");
   auto dataFlow = DataFlow(1, {{out, art}});
 
-  auto cpuDevice =
-      popart::DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = popart::createTestDevice(TEST_TARGET);
 
   auto session = popart::InferenceSession::createFromOnnxModel(
       proto,
       dataFlow,
-      cpuDevice,
+      device,
       {},
       popart::InputShapeInfo(),
       {},

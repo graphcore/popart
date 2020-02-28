@@ -8,6 +8,7 @@
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
 #include <popart/tensordata.hpp>
+#include <popart/testdevice.hpp>
 
 BOOST_AUTO_TEST_CASE(SplitGatherTest0) {
 
@@ -38,9 +39,7 @@ BOOST_AUTO_TEST_CASE(SplitGatherTest0) {
   SessionOptions userOptions;
   userOptions.virtualGraphMode = VirtualGraphMode::Manual;
 
-  std::map<std::string, std::string> deviceOpts{{"numIPUs", "2"}};
-  auto device =
-      DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
+  auto device = createTestDevice(TEST_TARGET, 2);
 
   Ir ir;
   ir.prepare({modelProto,

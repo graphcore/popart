@@ -14,18 +14,17 @@
 #include <popart/optimizer.hpp>
 #include <popart/session.hpp>
 #include <popart/tensordata.hpp>
+#include <popart/testdevice.hpp>
 
 using namespace popart;
 
 namespace {
 
 std::shared_ptr<popart::DeviceInfo> acquireIpu() {
-  auto &dm = popart::DeviceManager::createDeviceManager();
-
   // keep trying to attach to a device until one is available (this may not
   // always be the case as other tests might be running in parallel).
   while (true) {
-    if (auto d = dm.acquireAvailableDevice(1, 1216)) {
+    if (auto d = createTestDevice(TEST_TARGET, 1, 1216)) {
       return d;
     }
 
@@ -69,13 +68,12 @@ BOOST_AUTO_TEST_CASE(StepIOTest_BufferInput) {
   auto art      = AnchorReturnType("ALL");
   auto dataFlow = DataFlow(1, {{out, art}});
 
-  auto cpuDevice =
-      popart::DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = popart::createTestDevice(TEST_TARGET);
 
   auto session = popart::InferenceSession::createFromOnnxModel(
       proto,
       dataFlow,
-      cpuDevice,
+      device,
       {},
       popart::InputShapeInfo(),
       {},
@@ -223,13 +221,12 @@ BOOST_AUTO_TEST_CASE(StepIOTest_CallbackInput) {
   auto art      = AnchorReturnType("ALL");
   auto dataFlow = DataFlow(1, {{out, art}});
 
-  auto cpuDevice =
-      popart::DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = popart::createTestDevice(TEST_TARGET);
 
   auto session = popart::InferenceSession::createFromOnnxModel(
       proto,
       dataFlow,
-      cpuDevice,
+      device,
       {},
       popart::InputShapeInfo(),
       {},

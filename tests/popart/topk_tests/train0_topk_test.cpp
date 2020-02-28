@@ -12,6 +12,7 @@
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/testdevice.hpp>
 
 #include <algorithm>
 #include <map>
@@ -124,8 +125,7 @@ BOOST_AUTO_TEST_CASE(Train0TopK) {
     auto art      = AnchorReturnType("ALL");
     auto dataFlow = DataFlow(1, {{reservedGradientPrefix() + xId, art}});
 
-    auto cpuDevice =
-        popart::DeviceManager::createDeviceManager().createCpuDevice();
+    auto device = popart::createTestDevice(TEST_TARGET);
 
     auto opts = SessionOptions();
 
@@ -139,7 +139,7 @@ BOOST_AUTO_TEST_CASE(Train0TopK) {
         dataFlow,
         losses,
         optimizer,
-        cpuDevice,
+        device,
         popart::InputShapeInfo(),
         opts,
         popart::Patterns(PatternsLevel::DEFAULT));

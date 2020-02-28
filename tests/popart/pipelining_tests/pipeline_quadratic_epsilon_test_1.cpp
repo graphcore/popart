@@ -23,6 +23,7 @@
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/testdevice.hpp>
 #undef protected
 
 // A test of quadratic convergence for continuous pipelining.
@@ -234,8 +235,7 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilonTest1) {
     // number of "pixels" in a step
     int64_t stepDataElms = accumulationFactor * microBatchElms * batchesPerStep;
 
-    auto device =
-        DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
+    auto device = createTestDevice(TEST_TARGET, nIPUs);
 
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,

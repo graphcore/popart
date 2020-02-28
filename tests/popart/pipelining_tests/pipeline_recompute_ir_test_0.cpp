@@ -14,6 +14,7 @@
 #include <popart/optimizer.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
+#include <popart/testdevice.hpp>
 
 BOOST_AUTO_TEST_CASE(PipelineNoMultiSourceTest0) {
 
@@ -55,17 +56,13 @@ BOOST_AUTO_TEST_CASE(PipelineNoMultiSourceTest0) {
   userOptions.enablePipelining  = true;
   userOptions.autoRecomputation = RecomputationType::Standard;
 
-  std::map<std::string, std::string> deviceOpts{
-      {"numIPUs", std::to_string(nIpus)}};
-
   auto optimizer = ConstSGD(0.01);
 
   auto loss1 = std::unique_ptr<Loss>(
       new L1Loss(act, "l1LossVal_1", 0.1, ReductionType::MEAN));
   loss1->virtualGraph(2);
 
-  auto device =
-      DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
+  auto device = createTestDevice(TEST_TARGET, nIpus);
 
   Ir ir;
   ir.prepare({modelProto,

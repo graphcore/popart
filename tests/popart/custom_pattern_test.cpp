@@ -10,6 +10,7 @@
 #include <popart/patterns/pattern.hpp>
 #include <popart/patterns/patterns.hpp>
 #include <popart/session.hpp>
+#include <popart/testdevice.hpp>
 
 using namespace popart;
 
@@ -64,11 +65,10 @@ BOOST_AUTO_TEST_CASE(CustomPattern) {
   auto dataFlow =
       popart::DataFlow(1, {{reluOut, popart::AnchorReturnType("ALL")}});
 
-  auto cpuDevice =
-      popart::DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = popart::createTestDevice(TEST_TARGET);
 
   auto session =
-      popart::InferenceSession::createFromOnnxModel(proto, dataFlow, cpuDevice);
+      popart::InferenceSession::createFromOnnxModel(proto, dataFlow, device);
 
   float rawOutputData[2] = {0, 0};
   popart::NDArrayWrapper<float> outData(rawOutputData, {2});

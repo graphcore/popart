@@ -10,6 +10,14 @@ bool GraphId::operator<(const GraphId &other) const {
   return this->id < other.id;
 }
 
+bool GraphId::operator==(const GraphId &other) const {
+  return this->id == other.id;
+}
+
+bool GraphId::operator!=(const GraphId &other) const {
+  return this->id != other.id;
+}
+
 const GraphId &GraphId::root() { return rootId; }
 
 std::string GraphId::str() const { return id; }

@@ -6,20 +6,20 @@ add_popart_cpp_unit_test(softmaxgraddirect_0_patterns_test
                           softmaxgraddirect_0_patterns_test.cpp)
 
 add_popart_cpp_unit_test(splitgather_0_patterns_test 
-                          splitgather_0_patterns_test.cpp)
+                          splitgather_0_patterns_test.cpp VARIANTS "IpuModel")
 
 add_popart_cpp_unit_test(splitgather_default_patterns_test 
-                          splitgather_default_patterns_test.cpp)
+                          splitgather_default_patterns_test.cpp VARIANTS "IpuModel")
 
 add_popart_cpp_unit_test(patterns_test 
                           patterns_test.cpp)
 
 add_popart_cpp_unit_test(split_to_slice_patterns_test 
-                          split_to_slice_patterns_test.cpp)
+                          split_to_slice_patterns_test.cpp VARIANTS "IpuModel")
 
 
 add_popart_cpp_unit_test(replicate_and_shard_ir_test_0 
-                          replicate_and_shard_ir_test_0.cpp)
+                          replicate_and_shard_ir_test_0.cpp VARIANTS "IpuModel")
 
 add_popart_cpp_unit_test(merge_duplicate_ops_test 
                           merge_duplicate_ops_test.cpp)

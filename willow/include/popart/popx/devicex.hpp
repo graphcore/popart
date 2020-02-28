@@ -29,6 +29,9 @@
 using boost::optional;
 
 namespace popart {
+namespace liveness {
+class LivenessAnalyzer;
+}
 namespace popx {
 
 using PopStreamId = std::string;
@@ -176,9 +179,8 @@ public:
   // Using the default arguments will return only creator candidates,
   // with each candidate's path containing only Opxs that need to be
   // 'unwound' to correctly lay out the input tensor
-  std::pair<std::vector<ICreatorCandidatePtr>, std::vector<UnwindEndpointPtr>>
-  getCreatorEndpoints(Tensor *tensor,
-                      std::vector<OpxInAndOutIndex> pathFromInput,
+  std::vector<ICreatorCandidatePtr>
+  getCreatorEndpoints(const Tensor *tensor,
                       bool excludeEndpointsFromPath = true,
                       bool includeDeadends          = false) const;
 
@@ -240,6 +242,10 @@ public:
                           const poplar::RemoteBuffer &buffer,
                           int repeat_index,
                           unsigned replication_index = 0);
+
+  const liveness::LivenessAnalyzer *getLivenessAnalyzer() const {
+    return livenessAnalyzer.get();
+  }
 
 private:
   std::unique_ptr<poplar::Graph> pGraph{nullptr};
@@ -553,6 +559,9 @@ private:
   // This keeps track of whether there the accumulateOuterFragment is empty
   // TODO T12001 a class which encapsulates framgments which has this attribute.
   bool outerLoopFragEmpty = true;
+
+  // Helper class to analyze the global IR schedule and tensor liveness
+  std::unique_ptr<liveness::LivenessAnalyzer> livenessAnalyzer;
 
 public:
   bool getOuterLoopFragEmpty() const { return outerLoopFragEmpty; }

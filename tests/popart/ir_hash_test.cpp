@@ -13,6 +13,7 @@
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensors.hpp>
+#include <popart/testdevice.hpp>
 
 using namespace popart;
 
@@ -49,10 +50,8 @@ BOOST_AUTO_TEST_CASE(test0) {
   auto outId = proto.graph().output()[0].name();
   auto df0   = DataFlow(1, {{outId, AnchorReturnType("ALL")}});
   std::vector<Loss *> losses{new L1Loss(outId, "l1", 0.1, ReductionType::SUM)};
-  auto opt0      = ConstSGD(0.01);
-  auto deviceMgr = DeviceManager::createDeviceManager();
-  std::map<std::string, std::string> deviceOpts0{{"tilesPerIPU", "20"}};
-  auto device0 = deviceMgr.createIpuModelDevice(deviceOpts0);
+  auto opt0    = ConstSGD(0.01);
+  auto device0 = createTestDevice(TEST_TARGET, 1, 20);
 
   // Now create the Ir instances and their hashes, for:
   // ir0 : the reference
@@ -96,8 +95,7 @@ BOOST_AUTO_TEST_CASE(test0) {
 
   // 5. Same as reference, except different device options
   Ir ir5;
-  std::map<std::string, std::string> deviceOpts1{{"tilesPerIPU", "40"}};
-  auto device1 = deviceMgr.createIpuModelDevice(deviceOpts1);
+  auto device1 = createTestDevice(TEST_TARGET, 1, 40);
   ir5.prepare({proto, isi, df0, losses, &opt0, *device1, {}, Patterns()});
   std::size_t irHash5 = std::hash<Ir>{}(ir5);
 

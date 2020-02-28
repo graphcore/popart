@@ -13,6 +13,7 @@
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensors.hpp>
+#include <popart/testdevice.hpp>
 
 using namespace popart;
 
@@ -45,7 +46,7 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape0) {
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{
       new L1Loss(outId, "l1LossVal", 0.1, ReductionType::SUM)};
-  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
@@ -53,7 +54,7 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape0) {
               dataFlow,
               losses,
               &optimizer,
-              *cpuDevice,
+              *device,
               {}, // no SessionOptions
               Patterns({PreAliasPatternType::POSTNREPL})});
 
@@ -94,7 +95,7 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape_Initializer) {
   auto optimizer  = ConstSGD(0.01);
   std::vector<Loss *> losses{
       new L1Loss(outId, "l1LossVal", 0.1, ReductionType::SUM)};
-  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
@@ -102,7 +103,7 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape_Initializer) {
               dataFlow,
               losses,
               &optimizer,
-              *cpuDevice,
+              *device,
               {},
               Patterns({PreAliasPatternType::POSTNREPL})});
   BOOST_CHECK(ir.opsOfType(Onnx::Operators::Reshape_5).size() == 1);
