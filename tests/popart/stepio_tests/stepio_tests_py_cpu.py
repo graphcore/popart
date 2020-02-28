@@ -12,8 +12,7 @@ from test_session import PopartTestSession
 import test_util as tu
 
 
-@tu.requires_ipu
-def test_stepio_bufferinput_ipu(tmpdir):
+def test_stepio_bufferinput(tmpdir):
 
     builder = popart.Builder()
     shape = popart.TensorInfo("FLOAT", [2])
@@ -36,7 +35,7 @@ def test_stepio_bufferinput_ipu(tmpdir):
 
     session = popart.InferenceSession(fnModel=proto,
                                       dataFeed=dataFlow,
-                                      deviceInfo=tu.create_test_device(1))
+                                      deviceInfo=tu.create_test_device())
 
     session.prepareDevice()
 
@@ -69,8 +68,7 @@ def test_stepio_bufferinput_ipu(tmpdir):
     assert (np.allclose(anchors[o], expected_result))
 
 
-@tu.requires_ipu
-def test_stepio_callbackinput_ipu(tmpdir):
+def test_stepio_callbackinput(tmpdir):
 
     builder = popart.Builder()
     shape = popart.TensorInfo("FLOAT", [2])
@@ -93,7 +91,7 @@ def test_stepio_callbackinput_ipu(tmpdir):
 
     session = popart.InferenceSession(fnModel=proto,
                                       dataFeed=dataFlow,
-                                      deviceInfo=tu.create_test_device(1))
+                                      deviceInfo=tu.create_test_device())
 
     session.prepareDevice()
 
@@ -110,26 +108,21 @@ def test_stepio_callbackinput_ipu(tmpdir):
     def input_callback(id, prefetch):
         nonlocal i1_c, i2_c
 
-        if (prefetch == True):
-            return None
-
-        time.sleep(1)
+        time.sleep(2)
         print("input_callback ", id)
 
         t = inputs[id]
 
-        result = None
-
         print(t)
 
         if id == i1:
-            print("input_callback ", id, len(t), i1_c)
+            print("input_callback ", id, len(t))
             if (i1_c < len(t)):
                 result = t[i1_c]
                 i1_c = i1_c + 1
 
         if id == i2:
-            print("input_callback ", id, len(t), i2_c)
+            print("input_callback ", id, len(t))
             if (i2_c < len(t)):
                 result = t[i2_c]
                 i2_c = i2_c + 1
@@ -139,7 +132,7 @@ def test_stepio_callbackinput_ipu(tmpdir):
         return result
 
     def input_complete_callback(id):
-        print("output_complete_callback ", id)
+        print("input_complete_callback ", id)
 
     i1_d = 0
     i2_d = 0
@@ -148,7 +141,7 @@ def test_stepio_callbackinput_ipu(tmpdir):
     def output_callback(id):
         nonlocal i1_d, i2_d, o_d
 
-        time.sleep(1)
+        time.sleep(2)
         print("output_callback ", id)
 
         t = anchors[id]

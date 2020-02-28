@@ -2,6 +2,13 @@ import pytest
 import popart
 import onnx
 
+# `import test_util` requires adding to sys.path
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+import test_util as tu
+from operators_test.op_tester import op_tester
+
 
 def get_model_with_dim_param(tmpdir):
     # build the model
@@ -35,7 +42,7 @@ def test_model_with_unspecified_dim_params(tmpdir):
             fnModel=proto,
             dataFeed=popart.DataFlow(1,
                                      {outId: popart.AnchorReturnType("ALL")}),
-            deviceInfo=popart.DeviceManager().createCpuDevice())
+            deviceInfo=tu.create_test_device())
 
     assert e_info.value.args[0] == (
         "Input tensor 'input_0' must be specified in InputShapeInfo, as it has shape [fubar, 2, 32, 32], which uses an unknown value 'fubar'."
@@ -51,5 +58,5 @@ def test_model_with_specified_dim_params(tmpdir):
     session = popart.InferenceSession(
         fnModel=proto,
         dataFeed=popart.DataFlow(1, {outId: popart.AnchorReturnType("ALL")}),
-        deviceInfo=popart.DeviceManager().createCpuDevice(),
+        deviceInfo=tu.create_test_device(),
         inputShapeInfo=inputShapeInfo)

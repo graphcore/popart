@@ -17,6 +17,7 @@
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/testdevice.hpp>
 
 #include <algorithm>
 #include <map>
@@ -196,8 +197,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}});
 
-  auto cpuDevice =
-      popart::DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = popart::createTestDevice(TEST_TARGET);
 
   auto opts             = SessionOptions();
   opts.hostAllReduce    = true;
@@ -214,7 +214,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
       dataFlow,
       losses,
       optimizer,
-      cpuDevice,
+      device,
       popart::InputShapeInfo(),
       opts,
       popart::Patterns(PatternsLevel::DEFAULT));
@@ -399,8 +399,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{G_id, art}});
 
-  auto cpuDevice =
-      popart::DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = popart::createTestDevice(TEST_TARGET);
 
   auto opts             = SessionOptions();
   opts.hostAllReduce    = true;
@@ -417,7 +416,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
       dataFlow,
       losses,
       optimizer,
-      cpuDevice,
+      device,
       popart::InputShapeInfo(),
       opts,
       popart::Patterns(PatternsLevel::DEFAULT));
@@ -870,8 +869,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationGradientStoreGradientLoad) {
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{G_id, art}});
 
-  auto cpuDevice =
-      popart::DeviceManager::createDeviceManager().createCpuDevice();
+  auto device = popart::createTestDevice(TEST_TARGET);
 
   auto opts             = SessionOptions();
   opts.hostAllReduce    = true;
@@ -888,7 +886,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationGradientStoreGradientLoad) {
       dataFlow,
       losses,
       optimizer,
-      cpuDevice,
+      device,
       popart::InputShapeInfo(),
       opts,
       popart::Patterns(PatternsLevel::DEFAULT));

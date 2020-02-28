@@ -32,7 +32,7 @@ def test_basic(tmpdir, capfd):
     session = popart.InferenceSession(fnModel=proto,
                                       dataFeed=dataFlow,
                                       userOptions=opts,
-                                      deviceInfo=tu.get_poplar_cpu_device())
+                                      deviceInfo=tu.create_test_device())
 
     session.prepareDevice()
 
@@ -105,7 +105,7 @@ def test_train(tmpdir, capfd):
         userOptions=opts,
         optimizer=popart.ConstSGD(0.1),
         losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
-        deviceInfo=tu.get_poplar_cpu_device())
+        deviceInfo=tu.create_test_device())
 
     session.prepareDevice()
 

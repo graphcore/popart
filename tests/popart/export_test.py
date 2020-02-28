@@ -46,7 +46,7 @@ def test_constants_preserved():
                                      userOptions=opts,
                                      losses=losses,
                                      optimizer=optimizer,
-                                     deviceInfo=tu.get_poplar_cpu_device())
+                                     deviceInfo=tu.create_test_device())
 
     anchorArrays = session.initAnchorArrays()
 
@@ -103,7 +103,7 @@ def test_no_prepare_device():
                                      userOptions=opts,
                                      losses=losses,
                                      optimizer=optimizer,
-                                     deviceInfo=tu.get_poplar_cpu_device())
+                                     deviceInfo=tu.create_test_device())
 
     # No session.prepareDevice()
 

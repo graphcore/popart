@@ -13,6 +13,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
 
+@tu.requires_ipu_model
 def test_against_pytorch():
     """
     Comparison of popart and PyTorch optimizers, and the changes needed to PyTorch 
@@ -129,8 +130,7 @@ def test_against_pytorch():
     builder.addOutputTensor(mm1)
     loss1 = popart.L1Loss(mm1, "l1LossVal1", lambda1)
     dataFlow = popart.DataFlow(batchesPerStep, {})
-    options = {'numIPUs': nIPUs, "tilesPerIPU": 1216}
-    device = popart.DeviceManager().createIpuModelDevice(options)
+    device = tu.create_test_device(numIpus=nIPUs, tilesPerIpu=1216)
     userOptions = popart.SessionOptions()
     userOptions.enableGradientAccumulation = False
     userOptions.enablePrefetchDatastreams = False
@@ -141,7 +141,7 @@ def test_against_pytorch():
         userOptions=userOptions,
         losses=[loss1],
         optimizer=popart.SGD(optMap0),
-        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     anchorArrays = session.initAnchorArrays()
 

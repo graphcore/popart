@@ -46,7 +46,7 @@ def get_model(batches_per_step, replication_factor, batch_size, channels,
         opts.enableReplicatedGraphs = True
         ipus *= replication_factor
 
-    device = tu.acquire_ipu(ipus)
+    device = tu.create_test_device(ipus)
     assert device
 
     if synthetic_data:
@@ -125,7 +125,7 @@ def run_test(batches_per_step, replication_factor, batch_size, channels,
 
 
 # Batch size > 1
-@tu.requires_ipu()
+@tu.requires_ipu
 def test_prefetch_0():
     args = dict(batches_per_step=1,
                 replication_factor=1,
@@ -137,7 +137,7 @@ def test_prefetch_0():
 
 
 # BPS > 1
-@tu.requires_ipu()
+@tu.requires_ipu
 def test_prefetch_1():
     args = dict(batches_per_step=7,
                 replication_factor=1,
@@ -149,7 +149,7 @@ def test_prefetch_1():
 
 
 # BPS > 1, Batch size > 1
-@tu.requires_ipu()
+@tu.requires_ipu
 def test_prefetch_2():
     args = dict(batches_per_step=7,
                 replication_factor=1,
@@ -201,7 +201,7 @@ def run_synthetic_test(batches_per_step, replication_factor, batch_size,
 
 
 # BPS > 1, Batch size > 1, synthetic data.
-@tu.requires_ipu()
+@tu.requires_ipu
 def test_prefetch_synthetic():
     args = dict(batches_per_step=7,
                 replication_factor=1,

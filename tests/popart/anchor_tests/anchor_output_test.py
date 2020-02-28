@@ -14,10 +14,8 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
-from operators_test.op_tester import op_tester
 
 
-@tu.requires_ipu()
 def return_options(anchorDict):
     opts = popart.SessionOptions()
 
@@ -38,18 +36,18 @@ def return_options(anchorDict):
     if anchorDict["ReplicationFactor"] > 1:
         opts.replicatedGraphCount = anchorDict["ReplicationFactor"]
         opts.enableReplicatedGraphs = True
-        # TODO: use the tu.requires_ipu decorator
         if tu.ipu_available(ipus):
-            device = tu.acquire_ipu(ipus)
+            device = tu.create_test_device(numIpus=ipus)
         else:
             print("No IPUS available for test options.")
             return None, None
     else:
-        device = popart.DeviceManager().createIpuModelDevice({'numIPUs': ipus})
+        device = tu.create_test_device(numIpus=ipus)
     print("device: ", device)
     return opts, device
 
 
+@tu.requires_ipu
 def test_anchor_output():
     """
     Test a specific example's output of weights and accumulated gradient.

@@ -153,11 +153,12 @@ def run_graph(input_shape, initial_onnx_model, input_tensor_name,
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual if enable_multi_ipu else popart.VirtualGraphMode.Off
 
     if enable_multi_ipu:
-        device = tu.get_ipu_model(numIPUs=num_ipus, compileIPUCode=False)
+        device = tu.create_test_device(numIpus=num_ipus,
+                                       opts={"compileIPUCode": False})
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     else:
-        device = tu.get_ipu_model(compileIPUCode=False)
+        device = tu.create_test_device(opts={"compileIPUCode": False})
         opts.virtualGraphMode = popart.VirtualGraphMode.Off
 
     # only for test purposes, inference with gradient_accumulation should never work
@@ -315,6 +316,7 @@ def check_models(model_init, modelA_fn, modelB_fn):
                 relative_error)
 
 
+@tu.requires_ipu_model
 def test_gradient_accumulation_base():
     """
     base test (as simple as possible)
@@ -349,6 +351,7 @@ def test_gradient_accumulation_base():
                      no_accl_proto_filename)
 
 
+@tu.requires_ipu_model
 def test_gradient_accumulation_multi_batch():
     """
     from _base: increase batches per step and number of steps
@@ -382,6 +385,7 @@ def test_gradient_accumulation_multi_batch():
                      no_accl_proto_filename)
 
 
+@tu.requires_ipu_model
 def test_gradient_accumulation_multi_ipu():
     """
     from _multi_batch: enable multi ipus
@@ -414,6 +418,7 @@ def test_gradient_accumulation_multi_ipu():
                  no_accl_proto_filename)
 
 
+@tu.requires_ipu_model
 def test_gradient_accumulation_error_inference():
     """
     confirm that there is an error if in inference mode
@@ -436,6 +441,7 @@ def test_gradient_accumulation_error_inference():
         "Gradient Accumulation only available when training")
 
 
+@tu.requires_ipu_model
 def test_gradient_accumulation_error_accl_factor_invalid():
     """
     confirm that enable_accl = False => accl_factor = 1
@@ -457,6 +463,7 @@ def test_gradient_accumulation_error_accl_factor_invalid():
         "enableGradientAccumulation is false, but accumulationFactor > 1.")
 
 
+@tu.requires_ipu_model
 def test_gradient_accumulation_anchors():
     """
     Check that the accumulated gradients with gradient accumulation match
@@ -542,6 +549,7 @@ def test_gradient_accumulation_anchors():
         assert (abs_diff / (full_batch_abs_sum + accl_grad_abs_sum) < 1e-5)
 
 
+@tu.requires_ipu_model
 def test_gradient_accumulation_model_proto():
     np.random.seed(1234)
     label_array = np.random.randint(0, hidden_size, batch_size)
@@ -617,7 +625,7 @@ def test_loading_saved_gradient_accumulationt_tesors():
         opts.disableGradAccumulationTensorStreams = False
         sess = popart.TrainingSession(fnModel=fn,
                                       dataFeed=popart.DataFlow(1, {}),
-                                      deviceInfo=tu.get_poplar_cpu_device(),
+                                      deviceInfo=tu.create_test_device(),
                                       losses=losses,
                                       optimizer=optimizer,
                                       userOptions=opts)

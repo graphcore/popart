@@ -29,6 +29,6 @@ def test_valid_recompute_options():
             losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
             passes=popart.Patterns([]),
             userOptions=opts,
-            deviceInfo=popart.DeviceManager().createCpuDevice())
+            deviceInfo=tu.create_test_device())
     assert (e_info.value.args[0] ==
             "A mixture of auto and manual recomputaion is not supported")

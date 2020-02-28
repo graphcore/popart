@@ -1,5 +1,6 @@
 import numpy as np
 import popart
+import pytest
 
 # `import test_util` requires adding to sys.path
 import sys
@@ -11,6 +12,7 @@ import test_util as tu
 # test that we can get the graph & summary report after an out of memory exception
 # This test currently requires hardware, as the ipu model does not throw an exception
 # when it run's out of memory
+@tu.requires_ipu
 def test_out_of_memory_exception():
     d1 = np.random.rand(2000, 2000).astype(np.float32)
     d2 = np.random.rand(2000, 2000).astype(np.float32)
@@ -51,14 +53,14 @@ def test_out_of_memory_exception():
         losses=[],
         userOptions=options,
         passes=popart.Patterns(popart.PatternsLevel.NONE),
-        deviceInfo=tu.acquire_ipu(1))
+        deviceInfo=tu.create_test_device(1))
 
-    try:
+    with pytest.raises(popart.poplar_exception) as e:
         session.prepareDevice()
-        assert (False)
-    except popart.PrepareDeviceException as e:
         print("Caught PrepareDeviceException exception {}", e)
         print(e.getSummaryReport())
         print(e.getGraphReport())
+        assert e.value.args[0].startswith(
+            "Cannot allocate buffers for all streams")
 
     session.getTensorTileMap()

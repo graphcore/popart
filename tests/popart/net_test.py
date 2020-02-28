@@ -19,7 +19,7 @@ def test_net_from_string(tmpdir):
 
     popart.InferenceSession(fnModel=proto,
                             dataFeed=dataFlow,
-                            deviceInfo=tu.get_poplar_cpu_device())
+                            deviceInfo=tu.create_test_device())
 
 
 def test_net_from_file(tmpdir):
@@ -40,7 +40,7 @@ def test_net_from_file(tmpdir):
 
     popart.InferenceSession(fnModel="test.onnx",
                             dataFeed=dataFlow,
-                            deviceInfo=tu.get_poplar_cpu_device())
+                            deviceInfo=tu.create_test_device())
 
 
 def test_net_failure1(tmpdir):
@@ -60,7 +60,7 @@ def test_net_failure1(tmpdir):
     with pytest.raises(popart.popart_exception) as e_info:
         popart.InferenceSession(fnModel=proto,
                                 dataFeed=dataFlow,
-                                deviceInfo=tu.get_poplar_cpu_device())
+                                deviceInfo=tu.create_test_device())
 
     assert (e_info.type == popart.popart_exception)
     assert (
@@ -76,7 +76,7 @@ def test_net_failure2(tmpdir):
     with pytest.raises(popart.popart_exception) as e_info:
         popart.InferenceSession(fnModel="nothing",
                                 dataFeed=dataFlow,
-                                deviceInfo=tu.get_poplar_cpu_device())
+                                deviceInfo=tu.create_test_device())
 
     assert (e_info.type == popart.popart_exception)
     assert (e_info.value.args[0] == "Failed to parse ModelProto from string")

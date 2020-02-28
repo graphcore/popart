@@ -14,4 +14,5 @@ add_popart_cpp_unit_test(hostreduce_transform hostreduce_transformation_test.cpp
 
 add_subdirectory(mergevarupdates)
 
-add_all_py_unit_tests("")
+add_popart_py_unit_test(serializematmul)
+add_popart_py_unit_test(groupedmatmul)

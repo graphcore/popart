@@ -63,7 +63,7 @@ def test_sgd_mixed_mode(tmpdir):
             losses=[popart.L1Loss(add2, "l1LossVal", 1.0)],
             optimizer=opt0,
             passes=pat,
-            deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+            deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
         session.prepareDevice()
 

@@ -1,11 +1,13 @@
 import fnmatch
 import functools
 import inspect
-import numpy as np
-import popart
-import pytest
+import os
 import re
-import time
+from typing import Dict
+
+import pytest
+
+import popart
 
 
 def filter_dict(dict_to_filter, fun):
@@ -21,30 +23,34 @@ def filter_dict(dict_to_filter, fun):
     return filtered_dict
 
 
-def get_poplar_cpu_device():
+def create_test_device(numIpus: int = 1,
+                       tilesPerIpu: int = 1216,
+                       opts: Dict = None,
+                       pattern: popart.SyncPattern = popart.SyncPattern.Full):
+    testDeviceType = os.environ.get("TEST_TARGET")
+    if testDeviceType is None:
+        testDeviceType = "Cpu"
+    if opts is None:
+        opts = {}
+    opts["numIPUs"] = numIpus
+    opts["tilesPerIPU"] = tilesPerIpu
+    if testDeviceType == "Cpu":
+        device = popart.DeviceManager().createCpuDevice()
+    elif testDeviceType == "Sim":
+        device = popart.DeviceManager().createSimDevice()
+    elif testDeviceType == "Hw":
+        device = popart.DeviceManager().acquireAvailableDevice(
+            numIpus=numIpus, tilesPerIpu=tilesPerIpu, pattern=pattern)
+    elif testDeviceType == "IpuModel":
+        device = popart.DeviceManager().createIpuModelDevice(opts)
+    else:
+        raise RuntimeError(f"Unknown device type {testDeviceType}")
 
-    return popart.DeviceManager().createCpuDevice()
-
-
-def get_ipu_model(compileIPUCode=True, numIPUs=1, tilesPerIPU=1216):
-
-    options = {
-        "compileIPUCode": compileIPUCode,
-        'numIPUs': numIPUs,
-        "tilesPerIPU": tilesPerIPU
-    }
-    return popart.DeviceManager().createIpuModelDevice(options)
-
-
-def acquire_ipu(numIPUs=1, tilesPerIPU=1216, pattern=popart.SyncPattern.Full):
-    # even though a system has enough IPUs, other tests might currently be
-    # using them, so loop until we attach.
-    while True:
-        d = popart.DeviceManager().acquireAvailableDevice(
-            numIpus=numIPUs, tilesPerIpu=tilesPerIPU, pattern=pattern)
-        if d is not None:
-            return d
-        time.sleep(1)
+    if device is None:
+        return pytest.fail(
+            f"Tried to acquire device {testDeviceType} : {numIpus} IPUs, {tilesPerIpu} tiles,"
+            f" {pattern} pattern, but none were availaible")
+    return device
 
 
 def get_compute_sets_from_report(report):
@@ -99,6 +105,34 @@ def ipu_available(numIPUs=1):
     return len(popart.DeviceManager().enumerateDevices(numIpus=numIPUs)) > 0
 
 
-def requires_ipu(numIPUs=1):
-    return pytest.mark.skipif(ipu_available(numIPUs) == False,
-                              reason=f"Test requires {numIPUs} IPUs")
+def requires_ipu(func):
+    @functools.wraps(func)
+    def decorated_func(*args, **kwargs):
+        curr_test_target = os.environ.get("TEST_TARGET")
+        if "numIPUs" in kwargs:
+            numIPUs = kwargs["numIPUs"]
+        else:
+            numIPUs = 1
+        if not ipu_available(numIPUs):
+            return pytest.fail(f"Test requires {numIPUs} IPUs")
+        # If not already set, make the test target Hw
+        if not curr_test_target:
+            os.environ["TEST_TARGET"] = "Hw"
+
+        return func(*args, **kwargs)
+
+    return decorated_func
+
+
+def requires_ipu_model(func):
+    @functools.wraps(func)
+    def decorated_func(*args, **kwargs):
+        curr_test_target = os.environ.get("TEST_TARGET")
+
+        # If not already set, make the test target IpuModel
+        if not curr_test_target:
+            os.environ["TEST_TARGET"] = "IpuModel"
+
+        return func(*args, **kwargs)
+
+    return decorated_func

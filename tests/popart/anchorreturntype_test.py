@@ -26,7 +26,7 @@ def identity_inference_session(tmpdir, inputShape, inputArray, BPS, art, R=1):
     # TODO: Remove when T14730 is resolved.
     opts.enablePrefetchDatastreams = R < 1
 
-    device = tu.acquire_ipu(numIPUs=R) if R > 1 else tu.get_poplar_cpu_device()
+    device = tu.create_test_device(numIpus=R)
 
     session = popart.InferenceSession(fnModel=proto,
                                       dataFeed=dataFlow,
@@ -72,7 +72,7 @@ def simple_training_session(tmpdir, inputShape, inputArray, BPS, art, GA=1):
 
     session = popart.TrainingSession(fnModel=proto,
                                      dataFeed=dataFlow,
-                                     deviceInfo=tu.get_poplar_cpu_device(),
+                                     deviceInfo=tu.create_test_device(),
                                      userOptions=opts,
                                      losses=[loss],
                                      optimizer=popart.ConstSGD(0.01))
@@ -210,7 +210,7 @@ def test_returntype_sum4(tmpdir):
 
 
 # 0-d input tensors, batchesPerStep > 1, replication = 2
-@tu.requires_ipu()
+@tu.requires_ipu
 def test_returntype_all5(tmpdir):
     inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
     art = popart.AnchorReturnType("ALL")
@@ -218,7 +218,7 @@ def test_returntype_all5(tmpdir):
     assert (np.array_equal(anchors_o, inputArray))
 
 
-@tu.requires_ipu()
+@tu.requires_ipu
 def test_returntype_everyn5(tmpdir):
     inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
     art = popart.AnchorReturnType("EVERYN", 2)
@@ -226,7 +226,7 @@ def test_returntype_everyn5(tmpdir):
     assert (np.array_equal(anchors_o, [[3, 4], [7, 8]]))
 
 
-@tu.requires_ipu()
+@tu.requires_ipu
 def test_returntype_final5(tmpdir):
     inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
     art = popart.AnchorReturnType("FINAL")
@@ -234,7 +234,7 @@ def test_returntype_final5(tmpdir):
     assert (np.array_equal(anchors_o, [7, 8]))
 
 
-@tu.requires_ipu()
+@tu.requires_ipu
 def test_returntype_sum5(tmpdir):
     inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
     art = popart.AnchorReturnType("SUM")

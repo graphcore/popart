@@ -3,6 +3,12 @@ import pytest
 import popart
 import os
 
+# `import test_util` requires adding to sys.path
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+import test_util as tu
+
 cpp_str = """
 #include <poplar/HalfFloat.hpp>
 #include <poplar/Vertex.hpp>
@@ -41,6 +47,7 @@ def create_cpp_file(string, filename):
         f.write(string)
 
 
+@tu.requires_ipu_model
 def test_codelet():
     """Write a cpp file using the string above, then attempt to load it as
     a custom codelet. We assume poplar will handle invalid codelet code, so
@@ -68,13 +75,11 @@ def test_codelet():
     opts.customCodelets = ["test_vertex.cpp"]
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
-    deviceOpts = {'numIPUs': 1}
 
-    session = popart.InferenceSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        userOptions=opts,
-        deviceInfo=popart.DeviceManager().createIpuModelDevice(deviceOpts))
+    session = popart.InferenceSession(fnModel=proto,
+                                      dataFeed=dataFlow,
+                                      userOptions=opts,
+                                      deviceInfo=tu.create_test_device())
 
     session.prepareDevice()
 

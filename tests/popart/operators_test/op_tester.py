@@ -84,8 +84,7 @@ def op_tester(tmpdir):
             self.passes = []
             self.options = popart.SessionOptions()
             self.logging_dir = logging_dir
-            self.device = "cpu"
-            self.numIPUs = 2
+            self.numIPUs = 1
             self.rtol = 1e-05
             self.atol = 1e-08
             self.check_shapes = True
@@ -150,12 +149,8 @@ def op_tester(tmpdir):
 
             self.options.logDir = self.logging_dir
 
-            if self.device == "cpu":
-                device = tu.get_poplar_cpu_device()
-            elif self.device == "ipu_model":
-                device = tu.get_ipu_model(numIPUs=self.numIPUs)
-            else:
-                device = self.device
+            device = tu.create_test_device(numIpus=self.numIPUs)
+            print(f"Created device {device} with {self.numIPUs} IPUs")
 
             if step_type == 'infer':
                 session = popart.InferenceSession(fnModel=proto,

@@ -1,5 +1,6 @@
 import numpy as np
 import popart
+import test_util as tu
 
 
 # test the case where the entire graph is computable as a const exprssion
@@ -26,7 +27,7 @@ def test_all_constexpr():
         dataFeed=popart.DataFlow(1, {out: popart.AnchorReturnType("ALL")}),
         losses=[],
         passes=popart.Patterns(popart.PatternsLevel.ALL),
-        deviceInfo=popart.DeviceManager().createCpuDevice())
+        deviceInfo=tu.create_test_device())
 
     session.prepareDevice()
     session.weightsFromHost()

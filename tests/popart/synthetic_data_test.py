@@ -25,7 +25,7 @@ def run_pt_session(syntheticDataMode):
                                           1,
                                           {p: popart.AnchorReturnType("ALL")}),
                                       userOptions=opts,
-                                      deviceInfo=tu.acquire_ipu())
+                                      deviceInfo=tu.create_test_device())
 
     session.prepareDevice()
     anchors = session.initAnchorArrays()
@@ -41,7 +41,7 @@ def numpy_array_from_printtensor_string(string):
 
 
 # TODO see T16010
-# @tu.requires_ipu()
+# @tu.requires_ipu
 @pytest.mark.skip("Test currently failing on hardware")
 def test_verify_synthetic_inputs(capfd):
     """

@@ -131,7 +131,7 @@ def test_average_pool_with_count_include_pad(op_tester):
                                losses=losses,
                                optimizer=optimizer,
                                userOptions=opts,
-                               deviceInfo=tu.get_poplar_cpu_device())
+                               deviceInfo=tu.create_test_device())
 
     assert (e_info.value.args[0].startswith(
         "`count_include_pad` is not supported"))

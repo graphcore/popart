@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import popart
+import test_util as tu
 import pytest
 import torch
 import torch.optim as optim
@@ -59,7 +60,7 @@ def test_3d_nll_loss_input():
         optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
         losses=[popart.NllLoss(out, lb, "loss")],
         passes=popart.Patterns(popart.PatternsLevel.ALL),
-        deviceInfo=popart.DeviceManager().createCpuDevice())
+        deviceInfo=tu.create_test_device())
 
     session.prepareDevice()
     session.weightsFromHost()
@@ -130,7 +131,7 @@ def test_nll_loss_with_ignored_index():
         optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
         losses=[popart.NllLoss(out, lb, "loss", ignore_index=ignoreInd)],
         passes=popart.Patterns(popart.PatternsLevel.ALL),
-        deviceInfo=popart.DeviceManager().createCpuDevice())
+        deviceInfo=tu.create_test_device())
 
     session.prepareDevice()
     session.weightsFromHost()
@@ -213,7 +214,7 @@ def test_nll_loss_grad_with_ignored_index():
                                reduction=popart.ReductionType.Mean)
             ],
             passes=popart.Patterns(patterns),
-            deviceInfo=popart.DeviceManager().createCpuDevice())
+            deviceInfo=tu.create_test_device())
 
         session.prepareDevice()
         session.weightsFromHost()
@@ -305,7 +306,7 @@ def test_id_loss_error():
             optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
             losses=[popart.IdentityLoss(out, "loss")],
             passes=popart.Patterns(popart.PatternsLevel.ALL),
-            deviceInfo=popart.DeviceManager().createCpuDevice())
+            deviceInfo=tu.create_test_device())
 
     assert (e_info.value.args[0].startswith(
         f"The identity loss Op(ai.onnx.Identity:1, inputs=[Exp:0]," +
@@ -386,7 +387,7 @@ def test_id_nllloss_train():
             optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
             losses=losses,
             passes=popart.Patterns(popart.PatternsLevel.DEFAULT),
-            deviceInfo=popart.DeviceManager().createIpuModelDevice({}),
+            deviceInfo=tu.create_test_device(),
             userOptions=opts)
 
         session.prepareDevice()
@@ -540,7 +541,7 @@ def test_id_l1loss_train():
             optimizer=popart.ConstSGD(LEARNING_RATE),
             losses=losses,
             passes=popart.Patterns(popart.PatternsLevel.ALL),
-            deviceInfo=popart.DeviceManager().createIpuModelDevice({}),
+            deviceInfo=tu.create_test_device(),
             userOptions=opts)
 
         session.prepareDevice()

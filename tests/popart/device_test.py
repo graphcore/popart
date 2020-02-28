@@ -26,7 +26,7 @@ def test_enum_specfic_devices():
             assert isinstance(device.type, type(type_))
 
 
-@tu.requires_ipu()
+@tu.requires_ipu
 def test_aquire_device_by_id():
     """Test that aquiring by id works.
     """

@@ -108,7 +108,7 @@ def ipu_op_tester(tmpdir):
             opts.logDir = self.logging_dir
             opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-            device = tu.get_ipu_model(numIPUs=4)
+            device = tu.create_test_device(numIpus=4)
 
             if (step_type == 'infer'):
                 session = popart.InferenceSession(fnModel=proto,
@@ -118,13 +118,14 @@ def ipu_op_tester(tmpdir):
                                                       self.passes),
                                                   userOptions=opts)
             elif (step_type == 'train'):
-                session = popart.Session(fnModel=proto,
-                                         dataFeed=dataFlow,
-                                         losses=losses,
-                                         optimizer=optimizer,
-                                         deviceInfo=device,
-                                         passes=popart.Patterns(self.passes),
-                                         userOptions=opts)
+                session = popart.TrainingSession(fnModel=proto,
+                                                 dataFeed=dataFlow,
+                                                 losses=losses,
+                                                 optimizer=optimizer,
+                                                 deviceInfo=device,
+                                                 passes=popart.Patterns(
+                                                     self.passes),
+                                                 userOptions=opts)
 
             anchor_map = session.initAnchorArrays()
 
@@ -188,4 +189,4 @@ def ipu_op_tester(tmpdir):
 
             return session
 
-    return OpTester(str(tmpdir))
+    return OpTester((tmpdir))

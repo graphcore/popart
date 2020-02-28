@@ -5,6 +5,7 @@ import test_util as tu
 
 
 # Test that you can train a model and then use the weight in a inference run
+@tu.requires_ipu_model
 def test_train_then_infer_via_file():
 
     builder = popart.Builder()
@@ -41,8 +42,7 @@ def test_train_then_infer_via_file():
     # ----------------------------------------------
 
     # Create the device
-    options = {"compileIPUCode": True, 'numIPUs': 1, "tilesPerIPU": 1216}
-    device = popart.DeviceManager().createIpuModelDevice(options)
+    device = tu.create_test_device(1, 1216, opts={"compileIPUCode": True})
     device.attach()
 
     # ----------------------------------------------
@@ -108,6 +108,7 @@ def test_train_then_infer_via_file():
     inference_session.run(popart.PyStepIO(inference_inputs, inference_anchors))
 
 
+@tu.requires_ipu_model
 def test_cannot_call_resethostweights_with_constant_weights():
 
     builder = popart.Builder()
@@ -131,8 +132,7 @@ def test_cannot_call_resethostweights_with_constant_weights():
     # ----------------------------------------------
 
     # Create the device
-    options = {"compileIPUCode": True, 'numIPUs': 1, "tilesPerIPU": 1216}
-    device = popart.DeviceManager().createIpuModelDevice(options)
+    device = tu.create_test_device(1, 1216, opts={"compileIPUCode": True})
     device.attach()
 
     # ----------------------------------------------
@@ -166,6 +166,7 @@ def test_cannot_call_resethostweights_with_constant_weights():
         "Cannot call resetHostWeights when constantWeights is set"))
 
 
+@tu.requires_ipu_model
 def test_modelToHost_calls_resetHostWeights():
     builder = popart.Builder()
 
@@ -195,8 +196,7 @@ def test_modelToHost_calls_resetHostWeights():
     opts.constantWeights = False  # Allow the weights to be updated
 
     # Create the device
-    options = {"compileIPUCode": True, 'numIPUs': 1, "tilesPerIPU": 1216}
-    device = popart.DeviceManager().createIpuModelDevice(options)
+    device = tu.create_test_device(1, 1216, opts={"compileIPUCode": True})
     device.attach()
 
     # Prepare the Training session

@@ -9,7 +9,7 @@ import test_util as tu
 def getDevice():
 
     # A cpu device
-    return popart.DeviceManager().createCpuDevice()
+    return tu.create_test_device()
 
 
 def test_basic():

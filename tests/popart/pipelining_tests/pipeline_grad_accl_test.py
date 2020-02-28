@@ -2,10 +2,17 @@ import numpy as np
 import pytest
 import popart
 
+# `import test_util` requires adding to sys.path
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+import test_util as tu
+
 hidden_size = 16
 batch_size = 32
 
 
+@tu.requires_ipu_model
 def test_pipeline_grad_accl_model1():
     """
     Test a sequence of matmuls with gradient accumulation and with/
@@ -40,6 +47,7 @@ def test_pipeline_grad_accl_model1():
         assert np.allclose(t1, t2)
 
 
+@tu.requires_ipu_model
 def test_pipeline_grad_accl_model2():
     """
     Test a non-linear model with gradient accumulation and with/
@@ -70,6 +78,7 @@ def test_pipeline_grad_accl_model2():
         assert np.allclose(t1, t2)
 
 
+@tu.requires_ipu_model
 def test_invalid_grad_accl_size():
     """
     In this test we check that an error is thrown when using a gradient accumulation
@@ -156,9 +165,9 @@ def get_model_anchors_model1(doSharding,
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     if doSharding is False:
-        deviceOpts = {'numIPUs': 1, "tilesPerIPU": 20}
+        numIPUs = 1
     else:
-        deviceOpts = {'numIPUs': 3, "tilesPerIPU": 20}
+        numIPUs = 3
 
     if doTraining is True:
         session = popart.TrainingSession(
@@ -167,14 +176,14 @@ def get_model_anchors_model1(doSharding,
             losses=losses,
             optimizer=popart.ConstSGD(0.01),
             userOptions=opts,
-            deviceInfo=popart.DeviceManager().createIpuModelDevice(deviceOpts))
+            deviceInfo=tu.create_test_device(numIpus=numIPUs))
     else:
         session = popart.InferenceSession(
             fnModel=builder.getModelProto(),
             dataFeed=popart.DataFlow(batchesPerStep, anchor_map),
             losses=losses,
             userOptions=opts,
-            deviceInfo=popart.DeviceManager().createIpuModelDevice(deviceOpts))
+            deviceInfo=tu.create_test_device(numIpus=numIPUs))
 
     if doDevicex is False:
         return None
@@ -274,10 +283,10 @@ def get_model_anchors_model2(doSharding,
     opts.accumulationFactor = gradAcclFactor
 
     if doSharding is False:
-        deviceOpts = {'numIPUs': 1, "tilesPerIPU": 20}
+        numIPUs = 1
     else:
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
-        deviceOpts = {'numIPUs': 3, "tilesPerIPU": 20}
+        numIPUs = 3
         builder.virtualGraph(s0, 0)
         builder.virtualGraph(e0, 1)
         builder.virtualGraph(c0, 1)
@@ -292,14 +301,14 @@ def get_model_anchors_model2(doSharding,
             losses=[loss],
             optimizer=popart.ConstSGD(0.01),
             userOptions=opts,
-            deviceInfo=popart.DeviceManager().createIpuModelDevice(deviceOpts))
+            deviceInfo=tu.create_test_device(numIpus=numIPUs))
     else:
         session = popart.InferenceSession(
             fnModel=builder.getModelProto(),
             dataFeed=popart.DataFlow(batchesPerStep, anchor_map),
             losses=[loss],
             userOptions=opts,
-            deviceInfo=popart.DeviceManager().createIpuModelDevice(deviceOpts))
+            deviceInfo=tu.create_test_device(numIpus=numIPUs))
 
     if doDevicex is False:
         return None

@@ -23,7 +23,7 @@ def test_set_random_seed_error():
                                optimizer=popart.ConstSGD(0.1),
                                losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
                                userOptions=popart.SessionOptions(),
-                               deviceInfo=tu.get_ipu_model(numIPUs=2))
+                               deviceInfo=tu.create_test_device(numIpus=2))
 
     with pytest.raises(popart.popart_exception) as e_info:
         s.setRandomSeed(0)
@@ -56,7 +56,7 @@ def test_stochastic_rounding():
 
     dataFlow = popart.DataFlow(1, {o_y: popart.AnchorReturnType("ALL")})
 
-    device = popart.DeviceManager().createCpuDevice()
+    device = tu.create_test_device()
 
     options = popart.SessionOptions()
     options.enableStochasticRounding = True
@@ -78,7 +78,7 @@ def test_stochastic_rounding():
     sess.setRandomSeed(0)
 
 
-@tu.requires_ipu()
+@tu.requires_ipu
 def test_stochastic_rounding_behaviour():
     np.random.seed(seed=1)
 
@@ -94,7 +94,7 @@ def test_stochastic_rounding_behaviour():
         fnModel=builder.getModelProto(),
         dataFeed=popart.DataFlow(1, {out: popart.AnchorReturnType("ALL")}),
         userOptions=opts,
-        deviceInfo=tu.acquire_ipu())
+        deviceInfo=tu.create_test_device())
 
     anchors = session.initAnchorArrays()
     session.prepareDevice()

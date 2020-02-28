@@ -93,7 +93,7 @@ def test_engine_options_passed_to_engine(tmpdir):
     session = popart.InferenceSession(fnModel=proto,
                                       dataFeed=dataFlow,
                                       userOptions=opts,
-                                      deviceInfo=tu.get_poplar_cpu_device())
+                                      deviceInfo=tu.create_test_device())
 
     session.initAnchorArrays()
 
@@ -128,7 +128,7 @@ def test_convolution_options(tmpdir):
     session = popart.InferenceSession(fnModel=proto,
                                       dataFeed=dataFlow,
                                       userOptions=opts,
-                                      deviceInfo=tu.get_poplar_cpu_device())
+                                      deviceInfo=tu.create_test_device())
 
     anchors = session.initAnchorArrays()
 

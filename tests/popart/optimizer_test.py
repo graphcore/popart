@@ -37,7 +37,7 @@ def trainSession(anchors, optimizer, stepSize):
         dataFeed=popart.DataFlow(stepSize, anchors),
         losses=losses,
         optimizer=optimizer,
-        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     session.prepareDevice()
     session.weightsFromHost()
@@ -227,7 +227,7 @@ def test_sgd_with_float16_model():
         dataFeed=popart.DataFlow(1, anchorNames),
         losses=losses,
         optimizer=optimizer,
-        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     session.prepareDevice()
     session.weightsFromHost()

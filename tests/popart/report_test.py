@@ -4,6 +4,7 @@ import pytest
 import test_util as tu
 
 
+@tu.requires_ipu_model
 def test_summary_report_before_execution(tmpdir):
 
     builder = popart.Builder()
@@ -19,7 +20,7 @@ def test_summary_report_before_execution(tmpdir):
 
     session = popart.InferenceSession(fnModel=proto,
                                       dataFeed=dataFlow,
-                                      deviceInfo=tu.get_poplar_cpu_device())
+                                      deviceInfo=tu.create_test_device())
 
     session.initAnchorArrays()
 
@@ -30,6 +31,7 @@ def test_summary_report_before_execution(tmpdir):
         "Session must have been prepared before a report can be fetched"))
 
 
+@tu.requires_ipu_model
 def test_graph_report_before_execution(tmpdir):
 
     builder = popart.Builder()
@@ -45,7 +47,7 @@ def test_graph_report_before_execution(tmpdir):
 
     session = popart.InferenceSession(fnModel=proto,
                                       dataFeed=dataFlow,
-                                      deviceInfo=tu.get_poplar_cpu_device())
+                                      deviceInfo=tu.create_test_device())
 
     session.initAnchorArrays()
 
@@ -56,6 +58,7 @@ def test_graph_report_before_execution(tmpdir):
         "Session must have been prepared before a report can be fetched"))
 
 
+@tu.requires_ipu_model
 def test_execution_report_before_execution(tmpdir):
 
     builder = popart.Builder()
@@ -71,7 +74,7 @@ def test_execution_report_before_execution(tmpdir):
 
     session = popart.InferenceSession(fnModel=proto,
                                       dataFeed=dataFlow,
-                                      deviceInfo=tu.get_poplar_cpu_device())
+                                      deviceInfo=tu.create_test_device())
 
     session.initAnchorArrays()
 
@@ -82,92 +85,7 @@ def test_execution_report_before_execution(tmpdir):
         "Session must have been prepared before a report can be fetched"))
 
 
-def test_summary_report_with_cpu_device(tmpdir):
-
-    builder = popart.Builder()
-
-    i1 = builder.addInputTensor(popart.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    i2 = builder.addInputTensor(popart.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    o = builder.aiOnnx.add([i1, i2])
-    builder.addOutputTensor(o)
-
-    proto = builder.getModelProto()
-
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
-
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFeed=dataFlow,
-                                      deviceInfo=tu.get_poplar_cpu_device())
-
-    session.initAnchorArrays()
-
-    session.prepareDevice()
-
-    with pytest.raises(popart.poplar_exception) as e_info:
-        session.getExecutionReport()
-
-    assert (e_info.value.args[0].endswith(
-        "Profiling is disabled for current device type."))
-
-
-def test_graph_report_with_cpu_device(tmpdir):
-
-    builder = popart.Builder()
-
-    i1 = builder.addInputTensor(popart.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    i2 = builder.addInputTensor(popart.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    o = builder.aiOnnx.add([i1, i2])
-    builder.addOutputTensor(o)
-
-    proto = builder.getModelProto()
-
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
-
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFeed=dataFlow,
-                                      deviceInfo=tu.get_poplar_cpu_device())
-
-    session.initAnchorArrays()
-
-    session.prepareDevice()
-
-    with pytest.raises(popart.poplar_exception) as e_info:
-        session.getExecutionReport()
-
-    assert (e_info.value.args[0].endswith(
-        "Profiling is disabled for current device type."))
-
-
-def test_execution_report_with_cpu_device(tmpdir):
-
-    builder = popart.Builder()
-
-    shape = popart.TensorInfo("FLOAT", [1, 2, 32, 32])
-
-    i1 = builder.addInputTensor(shape)
-    i2 = builder.addInputTensor(shape)
-    o = builder.aiOnnx.add([i1, i2])
-    builder.addOutputTensor(o)
-
-    proto = builder.getModelProto()
-
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
-
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFeed=dataFlow,
-                                      deviceInfo=tu.get_poplar_cpu_device())
-
-    session.initAnchorArrays()
-
-    session.prepareDevice()
-
-    with pytest.raises(popart.poplar_exception) as e_info:
-        session.getExecutionReport()
-
-    assert (e_info.value.args[0].endswith(
-        "Profiling is disabled for current device type."))
-
-
+@tu.requires_ipu_model
 def test_compilation_report(tmpdir):
 
     builder = popart.Builder()
@@ -186,7 +104,7 @@ def test_compilation_report(tmpdir):
     session = popart.InferenceSession(
         fnModel=proto,
         dataFeed=dataFlow,
-        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     anchors = session.initAnchorArrays()
 
@@ -195,6 +113,7 @@ def test_compilation_report(tmpdir):
     assert (len(session.getGraphReport()) > 0)
 
 
+@tu.requires_ipu_model
 def test_compilation_report_cbor(tmpdir):
 
     builder = popart.Builder()
@@ -213,7 +132,7 @@ def test_compilation_report_cbor(tmpdir):
     session = popart.InferenceSession(
         fnModel=proto,
         dataFeed=dataFlow,
-        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     anchors = session.initAnchorArrays()
 
@@ -222,6 +141,7 @@ def test_compilation_report_cbor(tmpdir):
     assert (len(session.getGraphReport(True)) > 0)
 
 
+@tu.requires_ipu_model
 def test_execution_report(tmpdir):
 
     builder = popart.Builder()
@@ -240,7 +160,7 @@ def test_execution_report(tmpdir):
     session = popart.InferenceSession(
         fnModel=proto,
         dataFeed=dataFlow,
-        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     anchors = session.initAnchorArrays()
 
@@ -255,6 +175,7 @@ def test_execution_report(tmpdir):
     rep = session.getExecutionReport()
 
 
+@tu.requires_ipu_model
 def test_execution_report_reset(tmpdir):
 
     builder = popart.Builder()
@@ -276,7 +197,7 @@ def test_execution_report_reset(tmpdir):
     session = popart.InferenceSession(
         fnModel=proto,
         dataFeed=dataFlow,
-        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     anchors = session.initAnchorArrays()
 
@@ -293,6 +214,7 @@ def test_execution_report_reset(tmpdir):
     assert len(rep1) == len(rep2)
 
 
+@tu.requires_ipu_model
 def test_execution_report_cbor(tmpdir):
 
     builder = popart.Builder()
@@ -311,7 +233,7 @@ def test_execution_report_cbor(tmpdir):
     session = popart.InferenceSession(
         fnModel=proto,
         dataFeed=dataFlow,
-        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     anchors = session.initAnchorArrays()
 
@@ -326,6 +248,7 @@ def test_execution_report_cbor(tmpdir):
     rep = session.getExecutionReport(True)
 
 
+@tu.requires_ipu_model
 def test_tensor_tile_mapping(tmpdir):
 
     builder = popart.Builder()
@@ -344,7 +267,7 @@ def test_tensor_tile_mapping(tmpdir):
     session = popart.InferenceSession(
         fnModel=proto,
         dataFeed=dataFlow,
-        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     anchors = session.initAnchorArrays()
 
@@ -367,6 +290,7 @@ def test_tensor_tile_mapping(tmpdir):
     assert intervals[0] == (0, 1)
 
 
+@tu.requires_ipu_model
 def test_no_compile(tmpdir):
 
     builder = popart.Builder()
@@ -389,7 +313,7 @@ def test_no_compile(tmpdir):
         proto,
         dataFlow,
         userOptions=opts,
-        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     session.prepareDevice()
 

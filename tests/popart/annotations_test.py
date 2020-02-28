@@ -1,6 +1,7 @@
 import popart
 import numpy as np
 import json
+import test_util as tu
 
 
 def _get_ir(pingpong_enabled, virtualgraph_enabled, pipeline_enabled):
@@ -35,7 +36,7 @@ def _get_ir(pingpong_enabled, virtualgraph_enabled, pipeline_enabled):
     out = x
     builder.addOutputTensor(out)
 
-    device = popart.DeviceManager().createCpuDevice()
+    device = tu.create_test_device()
 
     dfAnchors = {}
     for anchorId in anchorIds:

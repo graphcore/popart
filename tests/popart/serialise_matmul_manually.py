@@ -1,4 +1,5 @@
 import popart
+import test_util as tu
 
 import torch
 import torchvision
@@ -88,7 +89,7 @@ def test_manual_serialization():
 
     loss1 = popart.L1Loss(Z, "l1LossVal1", 0.2)
     dataFlow = popart.DataFlow(1, {})
-    device = popart.DeviceManager().createCpuDevice()
+    device = tu.create_test_device()
     userOptions = popart.SessionOptions()
 
     # To obtain the final dot graph, uncomment this:

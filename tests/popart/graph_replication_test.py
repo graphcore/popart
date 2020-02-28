@@ -83,6 +83,8 @@ def test_weight_update(op_tester):
             np.float32(1.0)
         ]
 
+    op_tester.device = tu.create_test_device()
+    op_tester.numIPUs = 1
     op_tester.passes = ['GemmDecomposition', 'PreUniRepl', 'MatMulRhsGradOp']
     op_tester.loss_reduction_type = popart.ReductionType.Mean
     op_tester.run(init_builder,
@@ -94,7 +96,7 @@ def test_weight_update(op_tester):
 replicationFactor = 4
 
 
-@tu.requires_ipu(numIPUs=replicationFactor)
+@tu.requires_ipu
 def test_weight_update_replicated(op_tester):
 
     A = np.random.rand(2, 4).astype(np.float32)
@@ -181,7 +183,7 @@ def test_weight_update_replicated(op_tester):
     op_tester.passes = ['GemmDecomposition', 'PreUniRepl', 'MatMulRhsGradOp']
     op_tester.options.enableReplicatedGraphs = True
     op_tester.options.replicatedGraphCount = replicationFactor
-    op_tester.device = tu.acquire_ipu(replicationFactor)
+    op_tester.device = tu.create_test_device(numIpus=replicationFactor)
     if not op_tester.device:
         raise RuntimeError(
             "Failed to acquire IPU device in training graph replication test")
@@ -194,7 +196,7 @@ def test_weight_update_replicated(op_tester):
                   optimizer=popart.SGD({"defaultLearningRate": (0.01, False)}))
 
 
-@tu.requires_ipu(numIPUs=replicationFactor)
+@tu.requires_ipu
 def test_replication_infer(op_tester):
 
     # 2 samples per device
@@ -255,7 +257,7 @@ def test_replication_infer(op_tester):
     op_tester.passes = ['GemmDecomposition', 'PreUniRepl']
     op_tester.options.enableReplicatedGraphs = True
     op_tester.options.replicatedGraphCount = replicationFactor
-    op_tester.device = tu.acquire_ipu(replicationFactor)
+    op_tester.device = tu.create_test_device(replicationFactor)
     if not op_tester.device:
         raise RuntimeError(
             "Failed to acquire IPU device in inference graph replication test")

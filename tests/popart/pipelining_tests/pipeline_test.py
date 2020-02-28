@@ -11,6 +11,7 @@ from test_session import PopartTestSession
 import test_util as tu
 
 
+@tu.requires_ipu_model
 def test_disabled_virtual_graphs():
     """
     In this test we check that an error is thrown when doing pipelining
@@ -24,16 +25,17 @@ def test_disabled_virtual_graphs():
     opts.virtualGraphMode = popart.VirtualGraphMode.Off
 
     with pytest.raises(popart.popart_exception) as e_info:
-        session = popart.InferenceSession(
-            fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(10, anchor_map),
-            userOptions=opts,
-            losses=[loss],
-            deviceInfo=popart.DeviceManager().createIpuModelDevice({}))
+        session = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                          dataFeed=popart.DataFlow(
+                                              10, anchor_map),
+                                          userOptions=opts,
+                                          losses=[loss],
+                                          deviceInfo=tu.create_test_device())
     assert e_info.value.args[0].startswith(
         "Pipelining requires the 'virtualGraphMode' session option")
 
 
+@tu.requires_ipu_model
 def test_enabled_recomputation():
     """
     In this test we check that NO error is thrown when doing pipelining
@@ -53,17 +55,12 @@ def test_enabled_recomputation():
     builder.virtualGraph(op3_out, 1)
     loss.virtualGraph(1)
 
-    session = popart.InferenceSession(
-        fnModel=builder.getModelProto(),
-        dataFeed=popart.DataFlow(10, anchor_map),
-        userOptions=opts,
-        losses=[loss],
-        deviceInfo=popart.DeviceManager().createIpuModelDevice({
-            'numIPUs':
-            2,
-            "tilesPerIPU":
-            20
-        }))
+    session = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                      dataFeed=popart.DataFlow(10, anchor_map),
+                                      userOptions=opts,
+                                      losses=[loss],
+                                      deviceInfo=tu.create_test_device(
+                                          numIpus=2, tilesPerIpu=20))
 
 
 def test_stream_tensors_to_multiple_ipus():
@@ -88,17 +85,12 @@ def test_stream_tensors_to_multiple_ipus():
     builder.virtualGraph(op3_out, 1)
     loss.virtualGraph(1)
 
-    session = popart.InferenceSession(
-        fnModel=builder.getModelProto(),
-        dataFeed=popart.DataFlow(10, anchor_map),
-        userOptions=opts,
-        losses=[loss],
-        deviceInfo=popart.DeviceManager().createIpuModelDevice({
-            'numIPUs':
-            2,
-            "tilesPerIPU":
-            20
-        }))
+    session = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                      dataFeed=popart.DataFlow(10, anchor_map),
+                                      userOptions=opts,
+                                      losses=[loss],
+                                      deviceInfo=tu.create_test_device(
+                                          numIpus=2, tilesPerIpu=20))
 
 
 def test_sharding_multi_source():
@@ -134,17 +126,12 @@ def test_sharding_multi_source():
     builder.virtualGraph(op2_out, 2)
     loss.virtualGraph(2)
 
-    session = popart.InferenceSession(
-        fnModel=builder.getModelProto(),
-        dataFeed=popart.DataFlow(10, anchor_map),
-        userOptions=opts,
-        losses=[loss],
-        deviceInfo=popart.DeviceManager().createIpuModelDevice({
-            'numIPUs':
-            3,
-            "tilesPerIPU":
-            20
-        }))
+    session = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                      dataFeed=popart.DataFlow(10, anchor_map),
+                                      userOptions=opts,
+                                      losses=[loss],
+                                      deviceInfo=tu.create_test_device(
+                                          numIpus=3, tilesPerIpu=20))
 
 
 def test_inference_min_batches():
@@ -363,7 +350,7 @@ def test_pipelined_dropout():
 
         # TODO: use the tu.requires_ipu decorator
         if tu.ipu_available(ipus):
-            device = tu.acquire_ipu(numIPUs=ipus)
+            device = tu.create_test_device(numIpus=ipus)
         else:
             pytest.skip("Test needs to run on IPU, but none are available")
 
@@ -499,7 +486,7 @@ def test_pipelined_recomputed_dropout():
 
     # TODO: use the tu.requires_ipu decorator
     if tu.ipu_available(ipus):
-        device = tu.acquire_ipu(numIPUs=ipus)
+        device = tu.create_test_device(numIpus=ipus)
     else:
         pytest.skip("Test needs to run on IPU, but none are available")
 
@@ -609,10 +596,10 @@ def get_model_anchors(doSharding,
     opts.enablePipelining = doPipelining
 
     if doSharding is False:
-        deviceOpts = {'numIPUs': 1, "tilesPerIPU": 20}
+        numIPUs = 1
     else:
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
-        deviceOpts = {'numIPUs': 3, "tilesPerIPU": 20}
+        numIPUs = 3
         builder.virtualGraph(s0, 0)
         builder.virtualGraph(e0, 1)
         builder.virtualGraph(c0, 1)
@@ -627,14 +614,14 @@ def get_model_anchors(doSharding,
             losses=[loss],
             optimizer=popart.ConstSGD(0.01),
             userOptions=opts,
-            deviceInfo=popart.DeviceManager().createIpuModelDevice(deviceOpts))
+            deviceInfo=tu.create_test_device(numIpus=numIPUs, tilesPerIpu=20))
     else:
         session = popart.InferenceSession(
             fnModel=builder.getModelProto(),
             dataFeed=popart.DataFlow(batchesPerStep, anchor_map),
             losses=[loss],
             userOptions=opts,
-            deviceInfo=popart.DeviceManager().createIpuModelDevice(deviceOpts))
+            deviceInfo=tu.create_test_device(numIpus=numIPUs, tilesPerIpu=20))
 
     if doDevicex is False:
         return None

@@ -9,8 +9,11 @@ add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY)
 set(DEFAULT_TEST_VARIANTS "Cpu" CACHE STRING
     "The device variants to run tests on when no variants are set explicitly")
 
-set(ENABLED_TEST_VARIANTS "Cpu;IpuModel;Hw" CACHE STRING
-    "Generate tests for these devices and variants")
+# Generate tests for these devices and variants. Cmake variable ENABLED_TEST_VARIANTS can
+# be set with -DPOPART_CMAKE_ARGS=-DENABLED_TEST_VARIANTS=Hw for Hw only tests, for example.
+# -DPOPART_CMAKE_ARGS="-DENABLED_TEST_VARIANTS=Cpu$<SEMICOLON>IpuModel$<SEMICOLON>Hw"
+# Will enable all tests - note that you need to use '$<SEMICOLON>' not ';'
+set(ENABLED_TEST_VARIANTS "Cpu;IpuModel" CACHE STRING "Default (non-hw) test variants")
 
 # Remove any requested variants not present in ${ENABLED_TEST_VARIANTS}
 # If no variants were requested filtered ${DEFAULT_TEST_VARIANTS} are returned.
@@ -95,8 +98,7 @@ endfunction()
 #
 # Mark the test as requiring two IPUs - the relevant fixture will be added
 #
-# Currently supported targets are "Cpu;IpuModel;Sim;Sim2;Hw"
-# Currently supported configs are "cpp;default" which specify the codelet types
+# Currently supported targets are "Cpu;IpuModel;Sim;Hw"
 #
 #
 # LABELS
@@ -115,7 +117,7 @@ function(add_popart_cpp_unit_test name)
   sanitise_variants(test_args_VARIANTS)
   extract_targets(test_args_VARIANTS TARGETS)
   message(STATUS
-    "Adding test '${name}' with variants: ${test_args_VARIANTS}")
+    "Adding cpp test '${name}' with variants: ${test_args_VARIANTS}")
 
   foreach(TEST_TARGET ${TARGETS})
     set(executable_name "${TEST_TARGET}_${name}")
@@ -174,43 +176,96 @@ add_popart_cpp_unit_test(viewchangingtest view_changing_test.cpp)
 
 # Add a test that targets c++11 to check that the popart interface is c++11.
 # If the interface is not c++11, the build should fail.
-add_popart_cpp_unit_test(verify_cxx_11_interface verify_cxx_11_interface.cpp)
-set_property(TARGET "Cpu_verify_cxx_11_interface" PROPERTY CXX_STANDARD 11)
+add_test_executable(verify_cxx_11_interface verify_cxx_11_interface.cpp)
+set_property(TARGET "verify_cxx_11_interface" PROPERTY CXX_STANDARD 11)
 
+# Python unit test function
+# Uses VARIANTS as above for add_popart_cpp_unit_test
 function(add_popart_py_unit_test name)
+  set(oneValueArgs "VARIANTS;LABELS")
+  cmake_parse_arguments(test_args "" "FILES" "${oneValueArgs}" "FILES;${ARGN}")
+  set(FILES "${test_args_FILES}")
+
+  sanitise_variants(test_args_VARIANTS)
+  extract_targets(test_args_VARIANTS TARGETS)
   message(STATUS
-    "Adding Python test '${name}'")
-  add_test(NAME "${name}"
-           COMMAND ${Python3_EXECUTABLE} -m pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/${name}.py
+    "Adding python test '${name}' with variants: ${test_args_VARIANTS}")
+
+  foreach(VARIANT ${test_args_VARIANTS})
+    extract_target(VARIANT TEST_TARGET)
+    extract_runconfig(VARIANT TEST_CONFIG)
+
+    set(test_name "${TEST_TARGET}_${TEST_CONFIG}_${name}")
+    add_test(NAME "${test_name}"
+           COMMAND ${Python3_EXECUTABLE} -m pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/${name}.py 
            WORKING_DIRECTORY ${CMAKE_CURRENT_BUILD_DIR})
-endfunction()
-
-function(add_all_py_unit_tests exclusions)
-  message(STATUS "Adding all python tests in ${CMAKE_CURRENT_SOURCE_DIR}")
-
-  file(GLOB PYTHON_TESTS 
-    RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-    CONFIGURE_DEPENDS
-    *.py)
-
-  foreach(TEST_FILE ${PYTHON_TESTS})
-    get_filename_component(TEST_NAME ${TEST_FILE} NAME_WE)
-    list(FIND exclusions ${TEST_NAME} IDX)
-    if(IDX EQUAL -1)
-      add_popart_py_unit_test(${TEST_NAME})
-    else(IDX EQUAL -1)
-      message(STATUS "Skipping file ${TEST_FILE}")
-    endif(IDX EQUAL -1)
-  endforeach(TEST_FILE)
+    set_tests_properties(${test_name} PROPERTIES
+                         ENVIRONMENT TEST_TARGET=${TEST_TARGET})
+  endforeach()
 endfunction()
 
 # auto_virtual_graph_test is currently failing
-# exception_test needs hardware: TODO resolve in T10881
-add_all_py_unit_tests("test_util;auto_virtual_graph_test;exception_test;test_session")
+# TODO: Why are these tests disabled?
+# add_popart_py_unit_test("test_util")
+# add_popart_py_unit_test("auto_virtual_graph_test")
+# add_popart_py_unit_test("exception_test")
+# add_popart_py_unit_test("test_session")
+# add_popart_py_unit_test(ipu_gather_test)
+
+add_popart_py_unit_test(addbias)
+add_popart_py_unit_test(all_constexpr)
+add_popart_py_unit_test(anchorreturntype_test VARIANTS Hw)
+add_popart_py_unit_test(annotations_test)
+add_popart_py_unit_test(auto_virtual_graph_test VARIANTS IpuModel)
+add_popart_py_unit_test(builder_name_test)
+add_popart_py_unit_test(builder_test)
+add_popart_py_unit_test(context_scope_test)
+add_popart_py_unit_test(convolution_options_test VARIANTS IpuModel)
+add_popart_py_unit_test(cycle_count_test VARIANTS Hw)
+add_popart_py_unit_test(device_test VARIANTS Hw)
+add_popart_py_unit_test(dim_param_test)
+add_popart_py_unit_test(dropout_replicated_pipeline VARIANTS Hw)
+add_popart_py_unit_test(exception_test VARIANTS Hw)
+add_popart_py_unit_test(export_test)
+add_popart_py_unit_test(float_to_half_conversion_test)
+add_popart_py_unit_test(fp16_test)
+add_popart_py_unit_test(gradient_accumulation_test VARIANTS IpuModel)
+add_popart_py_unit_test(graph_caching_test VARIANTS IpuModel)
+add_popart_py_unit_test(graph_replication_test VARIANTS Hw)
+add_popart_py_unit_test(import_test)
+add_popart_py_unit_test(ipu_copy_test VARIANTS IpuModel)
+add_popart_py_unit_test(loader_test)
+add_popart_py_unit_test(loss_test)
+add_popart_py_unit_test(mapping_test VARIANTS IpuModel)
+add_popart_py_unit_test(memory_regression_test VARIANTS IpuModel)
+add_popart_py_unit_test(net_test)
+add_popart_py_unit_test(optimizer_test)
+add_popart_py_unit_test(options_test)
+add_popart_py_unit_test(outlining_test)
+add_popart_py_unit_test(padsumpattern)
+add_popart_py_unit_test(partials_tests VARIANTS IpuModel)
+add_popart_py_unit_test(patterns_test)
+add_popart_py_unit_test(prefetch_test VARIANTS Hw)
+add_popart_py_unit_test(printtensor)
+add_popart_py_unit_test(random_test VARIANTS Hw)
+add_popart_py_unit_test(recompute_compatibility_test)
+add_popart_py_unit_test(report_test VARIANTS IpuModel)
+add_popart_py_unit_test(report_test_cpu)
+add_popart_py_unit_test(saved_executable VARIANTS Hw)
+add_popart_py_unit_test(saved_executable_cpu)
+add_popart_py_unit_test(serialise_matmul_manually)
+add_popart_py_unit_test(stream_test)
+add_popart_py_unit_test(synthetic_data_test VARIANTS Hw)
+add_popart_py_unit_test(train_then_infer_test VARIANTS IpuModel)
+add_popart_py_unit_test(variable_inference_test)
+add_popart_py_unit_test(virtual_graph_check_test)
+add_popart_py_unit_test(virtual_graph_test VARIANTS IpuModel)
 
 # device_test should be run serially as it tests that it can attach to each
 # IPU available on the machine it is run on.
-set_tests_properties(device_test PROPERTIES RUN_SERIAL TRUE)
+if ("Hw" IN_LIST ENABLED_TEST_VARIANTS)
+  set_tests_properties("Hw_default_device_test" PROPERTIES RUN_SERIAL TRUE)
+endif()
 
 add_subdirectory(anchor_tests)
 add_subdirectory(auto_virtual_graph_tests)
