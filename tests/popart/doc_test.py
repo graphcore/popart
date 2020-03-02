@@ -8,5 +8,11 @@ PYTHON_EXAMPLE_PATH = os.path.abspath(
 sys.path.insert(0, PYTHON_EXAMPLE_PATH)
 
 
-def test_importing():
-    import importing
+def test_importing_graphs():
+    import importing_graphs
+    print("importing_graphs.py example succeeded")
+
+
+def test_importing_ession():
+    import importing_session
+    print("importing_session.py example succeeded")

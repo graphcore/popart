@@ -16,7 +16,7 @@ is used to create a pre-trained AlexNet graph, with a 4 x 3 x 244 x 244 input. T
 graph has an ONNX output called ``out``, and the ``DataFlow`` object
 contains an entry to fetch that anchor.
 
-.. literalinclude:: python_examples/importing.py
+.. literalinclude:: python_examples/importing_graphs.py
   :language: python
 
 
@@ -48,35 +48,9 @@ the network and the optimiser to use.
 
 An example of creating a session object from an ONNX model is shown below.
 
-.. code-block:: python
+.. literalinclude:: python_examples/importing_session.py
+  :language: python
 
-  import popart
-  import torch.onnx
-  import torchvision
-
-  input_ = torch.randn(4, 3, 224, 224)
-  model = torchvision.models.alexnet(pretrained=False)
-
-  torch.onnx.export(model, input_, "alexnet.onnx")
-
-  # Create a runtime environment
-  anchors = {"output" : popart.AnchorReturnType("ALL")}
-  dataFeed = popart.DataFlow(100, anchors)
-
-  losses = [popart.NllLoss("output", "labels", "loss")]
-  optimizer = popart.ConstSGD(0.001)
-
-  # We need to describe the labels input shape
-  inputShapeInfo = popart.InputShapeInfo()
-  inputShapeInfo.add("labels", popart.TensorInfo("INT32", [4]))
-  device = popart.DeviceManager().createCpuDevice()
-
-  session = popart.TrainingSession("alexnet.onnx",
-                                    deviceInfo=device,
-                                    dataFeed=dataFeed,
-                                    losses=losses,
-                                    optimizer=optimizer,
-                                    inputShapeInfo=inputShapeInfo)
 
 In this example, when the ``Session`` object is asked to train the graph, an ``NllLoss``
 node will be added to the end of the graph, and a ``ConstSGD`` optimiser will
