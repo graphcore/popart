@@ -885,6 +885,12 @@ PYBIND11_MODULE(popart_core, m) {
                     &Patterns::enableMatMulRhsGradOp)
       .def_property(
           "InPlace", &Patterns::isInPlaceEnabled, &Patterns::enableInPlace)
+      .def("isPatternEnabled",
+           static_cast<bool (Patterns::*)(const std::string &)>(
+               &Patterns::isPatternEnabled))
+      .def("enablePattern",
+           static_cast<Patterns &(Patterns::*)(const std::string &, bool)>(
+               &Patterns::enablePattern))
       .def("__repr__", [](const Patterns &p) {
         std::stringstream ss;
         ss << p;
