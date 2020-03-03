@@ -48,10 +48,11 @@ add_test(NAME model0_infer
 		 COMMAND ${Python3_EXECUTABLE} torch/cifar10/model0_infer.py)
 set_tests_properties(model0_infer PROPERTIES FIXTURES_REQUIRED cifar10)
 
-add_test(NAME model1
-		WORKING_DIRECTORY ${INSTALL_TESTS}
-		COMMAND ${Python3_EXECUTABLE} torch/cifar10/model1.py)
-set_tests_properties(model1 PROPERTIES FIXTURES_REQUIRED cifar10)
+# TODO: T16818 this test is very flaky, find out what's wrong.
+# add_test(NAME model1
+# 		WORKING_DIRECTORY ${INSTALL_TESTS}
+# 		COMMAND ${Python3_EXECUTABLE} torch/cifar10/model1.py)
+# set_tests_properties(model1 PROPERTIES FIXTURES_REQUIRED cifar10)
 
 add_test(NAME model2
 		WORKING_DIRECTORY ${INSTALL_TESTS}
