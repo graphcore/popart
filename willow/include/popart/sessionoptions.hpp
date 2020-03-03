@@ -234,6 +234,9 @@ struct SessionOptions {
   // Enable ping pong transformation (0/1: disabled, >=2: enabled)
   int pingPongPhases = 0;
 
+  // Enable batch serialization
+  int batchSerializationFactor = 0;
+
   // Enable the global fullyConnectedPass option for matmuls
   bool enableFullyConnectedPass = true;
 
