@@ -3071,8 +3071,22 @@ void Ir::applyInplacePattern(Graph &graph) {
           return false;
         };
 
+        auto consumesGraphOutput = [this, op, &graph]() {
+          const auto graphOutputs = graph.getOutputIds();
+          const auto opInTensors  = op->input->tensors();
+          return std::any_of(opInTensors.cbegin(),
+                             opInTensors.cend(),
+                             [graphOutputs](const Tensor *inTensor) {
+                               return std::find(graphOutputs.cbegin(),
+                                                graphOutputs.cend(),
+                                                inTensor->id) !=
+                                      graphOutputs.cend();
+                             });
+        };
+
         if (!op->isExcludedFromPattern(&inplace) && !touchesAnchors() &&
-            !recomputeUsingCheckpoint() && !consumesImplicitLoopInputs()) {
+            !recomputeUsingCheckpoint() && !consumesImplicitLoopInputs() &&
+            !consumesGraphOutput()) {
           auto newTopoCons = inplace.getNewTopoCons(op, identifier);
           if (isSchedulable(newTopoCons)) {
             inplacedAlready.insert(op->id);
