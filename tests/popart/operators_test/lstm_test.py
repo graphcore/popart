@@ -922,8 +922,7 @@ def test_import_torch_lstm(tmpdir):
         # generate a popart session
         builder = popart.Builder(onnx_file_name)
         outputs = builder.getOutputTensorIds()
-        anchors = {o: popart.AnchorReturnType('ALL') for o in outputs}
-        dataFlow = popart.DataFlow(1, anchors)
+        dataFlow = popart.DataFlow(1, outputs)
         device = tu.create_test_device(1, 1216, opts={"tilesPerIPU": 1216})
         s = popart.InferenceSession(fnModel=onnx_file_name,
                                     dataFeed=dataFlow,
@@ -1065,7 +1064,6 @@ def test_import_torch_lstm_train(tmpdir):
             popart.reservedGradientPrefix() + 'lstm.bias_ih_l0',
             popart.reservedGradientPrefix() + 'lstm.bias_hh_l0'
         ]
-        anchors = {o: popart.AnchorReturnType('ALL') for o in anchors}
         dataFlow = popart.DataFlow(1, anchors)
         optimizer = popart.ConstSGD(0.1)
         losses = [popart.L1Loss('out', "l1LossVal", 0.1)]
@@ -1221,8 +1219,7 @@ def test_import_torch_lstm_multi_run(tmpdir):
         # generate a popart session
         builder = popart.Builder(onnx_file_name)
         outputs = builder.getOutputTensorIds()
-        anchors = {o: popart.AnchorReturnType('ALL') for o in outputs}
-        dataFlow = popart.DataFlow(1, anchors)
+        dataFlow = popart.DataFlow(1, outputs)
         device = tu.create_test_device(1, 1216, opts={"tilesPerIPU": 1216})
         s = popart.InferenceSession(fnModel=onnx_file_name,
                                     dataFeed=dataFlow,

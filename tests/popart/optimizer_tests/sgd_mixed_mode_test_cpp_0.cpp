@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTest0) {
 
     builder->addOutputTensor(add2);
     auto proto    = builder->getModelProto();
-    auto dataFlow = DataFlow(stepSize, {});
+    auto dataFlow = DataFlow(stepSize);
 
     float lambda = 1.0;
     auto loss    = std::unique_ptr<Loss>(

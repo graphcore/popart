@@ -571,6 +571,12 @@ PYBIND11_MODULE(popart_core, m) {
       .def(py::init<int, const std::map<TensorId, AnchorReturnType> &>(),
            py::arg("batchesPerStep"),
            py::arg("anchorTensors"))
+      .def(py::init<int,
+                    const std::vector<TensorId> &,
+                    const AnchorReturnType &>(),
+           py::arg("batchesPerStep"),
+           py::arg("anchorIds"),
+           py::arg("anchorReturnType") = AnchorReturnType("ALL"))
       .def("isAnchored", &DataFlow::isAnchored)
       .def("nAnchors", &DataFlow::nAnchors)
       .def("batchesPerStep", &DataFlow::batchesPerStep)

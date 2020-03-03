@@ -156,7 +156,7 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeNumericalTest0x) {
 
     builder->addOutputTensor(actFinal);
     auto proto    = builder->getModelProto();
-    auto dataFlow = DataFlow(batchesPerStep, {});
+    auto dataFlow = DataFlow(batchesPerStep);
 
     // Changing this to SGD does not work, learning rate is not correct I think.
     auto optimizer = ConstSGD(0.04);

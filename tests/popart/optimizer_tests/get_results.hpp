@@ -174,7 +174,7 @@ getResults(const popart::SGD &opt0, // initial Optimizer
   builder->addOutputTensor(add1);
 
   auto proto    = builder->getModelProto();
-  auto dataFlow = DataFlow(batchesPerStep, {});
+  auto dataFlow = DataFlow(batchesPerStep);
 
   float lambda = 1.0;
   auto loss    = std::unique_ptr<Loss>(

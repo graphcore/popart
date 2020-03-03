@@ -59,7 +59,11 @@ private:
 class DataFlow {
 public:
   DataFlow();
+  DataFlow(int batchesPerStep);
   DataFlow(int batchesPerStep, const std::map<TensorId, AnchorReturnType> &);
+  DataFlow(int batchesPerStep,
+           const std::vector<TensorId> tIds,
+           const AnchorReturnType &art = AnchorReturnType("ALL"));
 
   DataFlow(const DataFlow &rhs) = default;
   DataFlow &operator=(const DataFlow &rhs) = default;
@@ -83,7 +87,7 @@ private:
   /// or evaluation
   std::map<TensorId, AnchorReturnType> m_anchors;
 
-  /// The set of anchor tensors, extracted from the map
+  /// The set of anchor tensors
   std::vector<TensorId> v_anchors;
   std::set<TensorId> s_anchors;
 

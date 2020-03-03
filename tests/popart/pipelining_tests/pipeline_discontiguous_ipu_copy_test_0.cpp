@@ -142,7 +142,7 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
     builder->addOutputTensor(actFinal);
     auto proto = builder->getModelProto();
     // No anchors
-    auto dataFlow = DataFlow(batchesPerStep, {});
+    auto dataFlow = DataFlow(batchesPerStep);
 
     float learnRate = 0.01;
     auto optimizer  = ConstSGD(learnRate);
