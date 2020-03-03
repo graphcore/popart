@@ -7,6 +7,12 @@ from op_tester import op_tester
 from pathlib import Path
 from test_session import PopartTestSession
 
+# `import test_util` requires adding to sys.path
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+import test_util as tu
+
 
 def np_rand(*shape):
     return np.random.rand(*shape).astype(np.float32)
@@ -40,6 +46,7 @@ def test_lstm(op_tester):
 
         return [Y, Y_h, Y_c]
 
+    op_tester.device = tu.create_test_device()
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -68,6 +75,7 @@ def test_lstm_popart(op_tester):
 
         return [Y, Y_h, Y_c]
 
+    op_tester.device = tu.create_test_device()
     op_tester.passes = ['LSTMOp', 'SplitGradOpToConcat']
     session = op_tester.run(init_builder, reference, 'train')
 
@@ -105,6 +113,7 @@ def test_lstm_outlining(op_tester):
     def reference(ref_data):
         return [None]
 
+    op_tester.device = tu.create_test_device()
     op_tester.passes = ['LSTMOp', 'SplitGradOpToConcat']
     session = op_tester.run(init_builder, reference, 'train')
 
@@ -857,6 +866,7 @@ class LSTM_Helper():
         return output, h_list[-1], C_t
 
 
+@tu.requires_ipu_model
 def test_import_torch_lstm(tmpdir):
     torch.manual_seed(0)
     np.random.seed(0)
@@ -912,10 +922,8 @@ def test_import_torch_lstm(tmpdir):
         # generate a popart session
         builder = popart.Builder(onnx_file_name)
         outputs = builder.getOutputTensorIds()
-        anchors = {o: popart.AnchorReturnType('ALL') for o in outputs}
-        dataFlow = popart.DataFlow(1, anchors)
-        options = {"compileIPUCode": True, 'numIPUs': 1, "tilesPerIPU": 1216}
-        device = popart.DeviceManager().createIpuModelDevice(options)
+        dataFlow = popart.DataFlow(1, outputs)
+        device = tu.create_test_device(1, 1216, opts={"tilesPerIPU": 1216})
         s = popart.InferenceSession(fnModel=onnx_file_name,
                                     dataFeed=dataFlow,
                                     deviceInfo=device)
@@ -954,6 +962,7 @@ def test_import_torch_lstm(tmpdir):
         assert np.allclose(po, to.data.numpy())
 
 
+@tu.requires_ipu_model
 def test_import_torch_lstm_train(tmpdir):
     torch.manual_seed(0)
     np.random.seed(0)
@@ -1055,12 +1064,10 @@ def test_import_torch_lstm_train(tmpdir):
             popart.reservedGradientPrefix() + 'lstm.bias_ih_l0',
             popart.reservedGradientPrefix() + 'lstm.bias_hh_l0'
         ]
-        anchors = {o: popart.AnchorReturnType('ALL') for o in anchors}
         dataFlow = popart.DataFlow(1, anchors)
         optimizer = popart.ConstSGD(0.1)
         losses = [popart.L1Loss('out', "l1LossVal", 0.1)]
-        options = {"compileIPUCode": True, 'numIPUs': 1, "tilesPerIPU": 1216}
-        device = popart.DeviceManager().createIpuModelDevice(options)
+        device = tu.create_test_device(1, 1216, opts={"tilesPerIPU": 1216})
         print('Creating session')
         s = popart.TrainingSession(fnModel=onnx_file_name,
                                    dataFeed=dataFlow,
@@ -1142,6 +1149,7 @@ def test_import_torch_lstm_train(tmpdir):
     assert errors == 0
 
 
+@tu.requires_ipu_model
 def test_import_torch_lstm_multi_run(tmpdir):
     torch.manual_seed(0)
     np.random.seed(0)
@@ -1211,10 +1219,8 @@ def test_import_torch_lstm_multi_run(tmpdir):
         # generate a popart session
         builder = popart.Builder(onnx_file_name)
         outputs = builder.getOutputTensorIds()
-        anchors = {o: popart.AnchorReturnType('ALL') for o in outputs}
-        dataFlow = popart.DataFlow(1, anchors)
-        options = {"compileIPUCode": True, 'numIPUs': 1, "tilesPerIPU": 1216}
-        device = popart.DeviceManager().createIpuModelDevice(options)
+        dataFlow = popart.DataFlow(1, outputs)
+        device = tu.create_test_device(1, 1216, opts={"tilesPerIPU": 1216})
         s = popart.InferenceSession(fnModel=onnx_file_name,
                                     dataFeed=dataFlow,
                                     deviceInfo=device)

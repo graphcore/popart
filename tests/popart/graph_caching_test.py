@@ -4,6 +4,7 @@ import popart
 import test_util as tu
 
 
+@tu.requires_ipu_model
 def test_convolution_cached_by_default():
     """
     In this test we check that the default behavior is for convolutions to be
@@ -49,7 +50,7 @@ def test_convolution_cached_by_default():
         losses=losses,
         optimizer=optimizer,
         userOptions=opts,
-        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     anchors = session.initAnchorArrays()
 
@@ -77,6 +78,7 @@ def test_convolution_cached_by_default():
     assert (num_4x4_convolutions == 1)
 
 
+@tu.requires_ipu_model
 def test_convolution_disable_all():
     """
     In this test we check that the correctness of having some convolutions
@@ -127,7 +129,7 @@ def test_convolution_disable_all():
         losses=losses,
         optimizer=optimizer,
         userOptions=opts,
-        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     anchors = session.initAnchorArrays()
 
@@ -157,6 +159,7 @@ def test_convolution_disable_all():
     assert (num_4x4_convolutions == 3)
 
 
+@tu.requires_ipu_model
 def test_matmul_infer_cached_by_default():
     """
     In this test we check that the default behaviour is for matmul to be
@@ -201,7 +204,7 @@ def test_matmul_infer_cached_by_default():
         fnModel=proto,
         dataFeed=dataFlow,
         userOptions=opts,
-        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     anchors = session.initAnchorArrays()
 
@@ -233,6 +236,7 @@ def test_matmul_infer_cached_by_default():
     assert (num_matmuls == 1)
 
 
+@tu.requires_ipu_model
 def test_matmul_train_cached_by_default():
     """
     In this test we check that the default behaviour is for matmul to be
@@ -295,7 +299,7 @@ def test_matmul_train_cached_by_default():
         losses=losses,
         optimizer=optimizer,
         userOptions=opts,
-        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     anchors = session.initAnchorArrays()
 
@@ -328,6 +332,7 @@ def test_matmul_train_cached_by_default():
     assert (num_matmuls == 3)
 
 
+@tu.requires_ipu_model
 def test_gemm_train_cached_by_default():
     """
     In this test we check that the default behaviour is for matmul to be
@@ -388,7 +393,7 @@ def test_gemm_train_cached_by_default():
         losses=losses,
         optimizer=optimizer,
         userOptions=opts,
-        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     anchors = session.initAnchorArrays()
 
@@ -426,6 +431,7 @@ def test_gemm_train_cached_by_default():
     assert (num_matmuls == 3)
 
 
+@tu.requires_ipu_model
 def test_outlining_bca1():
     """
     In this test we check that the default behaviour is for matmul to be
@@ -470,7 +476,7 @@ def test_outlining_bca1():
         fnModel=proto,
         dataFeed=dataFlow,
         userOptions=opts,
-        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     anchors = session.initAnchorArrays()
 
@@ -502,6 +508,7 @@ def test_outlining_bca1():
     assert (num_matmuls == 1)
 
 
+@tu.requires_ipu_model
 def test_outlining_bca2():
     """
     In this test we check that the default behaviour is for matmul to be
@@ -552,7 +559,7 @@ def test_outlining_bca2():
         fnModel=proto,
         dataFeed=dataFlow,
         userOptions=opts,
-        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     anchors = session.initAnchorArrays()
 
@@ -584,6 +591,7 @@ def test_outlining_bca2():
     assert (num_matmuls == 1)
 
 
+@tu.requires_ipu_model
 def test_outlining_bca3():
     """
     In this test we check that the default behaviour is for matmul to be
@@ -644,7 +652,7 @@ def test_outlining_bca3():
         losses=losses,
         optimizer=optimizer,
         userOptions=opts,
-        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     anchors = session.initAnchorArrays()
 
@@ -676,6 +684,7 @@ def test_outlining_bca3():
     assert (num_matmuls == 3)
 
 
+@tu.requires_ipu_model
 def test_outlining_bca4():
     """
     In this test we check that for the case of 2 2d tensors they can all
@@ -743,7 +752,7 @@ def test_outlining_bca4():
         userOptions=opts,
         # Enable the matmul patterns
         passes=popart.Patterns(popart.PatternsLevel.ALL),
-        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     anchors = session.initAnchorArrays()
 

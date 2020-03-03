@@ -181,7 +181,9 @@ public:
 
     // A priority which takes precedence over memory liveness:
     using OpPriority = double;
-    std::vector<std::tuple<OpPriority, int64_t>> super;
+    std::vector<
+        std::tuple<PingPongPhase, OpPriority, BatchSerializedPhase, OpPriority>>
+        super;
 
     // A priority which is secondary to memory liveness:
     using OpTypeStr = std::string;
@@ -192,14 +194,42 @@ public:
     for (const auto &x : pg.getOps()) {
       auto op             = x.second.get();
       auto op_batchserial = op->getOptionalBatchSerializedPhase();
+      auto op_pingpong    = op->getOptionalPingPongPhase();
+      auto op_priority    = op->settings.schedulePriority;
+
+      // Pingpong -1 to N are reserved
+      // -2 : No pingpong phase set
+      // -1 : Load weights of phase 0
+      // 0 - N: Compute phase n, load weights of phase n+1
+      auto op_pingpong_or =
+          op_pingpong && pg.getIr().getSessionOptions().pingPongPhases > 1
+              ? *op_pingpong
+              : -2;
+
+      // Batchserial -1 to N are reserved
+      // -2 : No batchserial phase set
+      // -1 : Init accumulator and updatee tensors
+      // 0 - N : Compute batch element n
       auto op_batchserial_or =
-          op_batchserial && pg.getIr().getSessionOptions().pingPongPhases > 1
+          op_batchserial &&
+                  pg.getIr().getSessionOptions().batchSerializationFactor > 1
               ? *op_batchserial
-              : -1;
+              : -2;
+
+      auto op_priority_pre_or =
+          op_batchserial.is_initialized() ? 0.0 : op_priority;
+      auto op_priority_post_or =
+          op_batchserial.is_initialized() ? op_priority : 0.0;
+
       // to strongly encourage Ops to be appear in
-      // 1) descending priority
-      // 2) ascending batch-serial phase
-      super.push_back({-op_batchserial_or, op->priority});
+      // 1) ascending pingpong phases
+      // 2) descending priority for ops without batch-serial phase
+      // 3) ascending batch-serial phase
+      // 4) descending priority within batch-serial phase
+      super.push_back({-op_pingpong_or,
+                       op_priority_pre_or,
+                       -op_batchserial_or,
+                       op_priority_post_or});
       sub.push_back({op->opid.type, ioNames(op), op->id});
     }
     g.insertStartAttractors(opIotas, super, -1);

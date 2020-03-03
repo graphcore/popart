@@ -571,6 +571,12 @@ PYBIND11_MODULE(popart_core, m) {
       .def(py::init<int, const std::map<TensorId, AnchorReturnType> &>(),
            py::arg("batchesPerStep"),
            py::arg("anchorTensors"))
+      .def(py::init<int,
+                    const std::vector<TensorId> &,
+                    const AnchorReturnType &>(),
+           py::arg("batchesPerStep"),
+           py::arg("anchorIds"),
+           py::arg("anchorReturnType") = AnchorReturnType("ALL"))
       .def("isAnchored", &DataFlow::isAnchored)
       .def("nAnchors", &DataFlow::nAnchors)
       .def("batchesPerStep", &DataFlow::batchesPerStep)
@@ -879,6 +885,12 @@ PYBIND11_MODULE(popart_core, m) {
                     &Patterns::enableMatMulRhsGradOp)
       .def_property(
           "InPlace", &Patterns::isInPlaceEnabled, &Patterns::enableInPlace)
+      .def("isPatternEnabled",
+           static_cast<bool (Patterns::*)(const std::string &)>(
+               &Patterns::isPatternEnabled))
+      .def("enablePattern",
+           static_cast<Patterns &(Patterns::*)(const std::string &, bool)>(
+               &Patterns::enablePattern))
       .def("__repr__", [](const Patterns &p) {
         std::stringstream ss;
         ss << p;
@@ -1337,6 +1349,13 @@ PYBIND11_MODULE(popart_core, m) {
           "pipelineStage",
           [](Builder &self, int64_t index) -> AttributeContextManager {
             AttributeContextManager acm(self, sPipelineStageAttribute, index);
+            return acm;
+          },
+          py::arg("value"))
+      .def(
+          "schedulePriority",
+          [](Builder &self, float priority) -> AttributeContextManager {
+            AttributeContextManager acm(self, sSchedulePriority, priority);
             return acm;
           },
           py::arg("value"))

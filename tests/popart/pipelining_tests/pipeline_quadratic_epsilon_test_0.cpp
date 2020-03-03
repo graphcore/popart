@@ -195,7 +195,7 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
 
     builder->addOutputTensor(actFinal);
     auto proto    = builder->getModelProto();
-    auto dataFlow = DataFlow(batchesPerStep, {});
+    auto dataFlow = DataFlow(batchesPerStep);
 
     float learnRate = 0.005;
     auto optimizer  = ConstSGD(learnRate);

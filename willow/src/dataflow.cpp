@@ -77,8 +77,10 @@ std::size_t AnchorReturnType::hash() const {
 
 DataFlow::DataFlow() : batchesPerStep_(0) {}
 
-DataFlow::DataFlow(int BpR, const std::map<TensorId, AnchorReturnType> &m)
-    : batchesPerStep_(BpR), m_anchors(m) {
+DataFlow::DataFlow(int bps) : batchesPerStep_(bps) {}
+
+DataFlow::DataFlow(int bps, const std::map<TensorId, AnchorReturnType> &m)
+    : batchesPerStep_(bps), m_anchors(m) {
 
   if (batchesPerStep_ <= 0) {
     throw error("'Batches per step' must be greater than zero");
@@ -101,6 +103,21 @@ DataFlow::DataFlow(int BpR, const std::map<TensorId, AnchorReturnType> &m)
     }
   }
 }
+
+static std::map<TensorId, AnchorReturnType>
+anchorMapFromVector(const std::vector<TensorId> tIds,
+                    const AnchorReturnType &art) {
+  std::map<TensorId, AnchorReturnType> anchor_map;
+  for (const auto &id : tIds) {
+    anchor_map.emplace(id, art);
+  }
+  return anchor_map;
+}
+
+DataFlow::DataFlow(int bps,
+                   const std::vector<TensorId> tIds,
+                   const AnchorReturnType &art)
+    : DataFlow(bps, anchorMapFromVector(tIds, art)) {}
 
 bool DataFlow::isAnchored(TensorId id) const {
   return (s_anchors.count(id) != 0);

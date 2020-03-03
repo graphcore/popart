@@ -80,11 +80,11 @@ void compressPriorities(Graph &graph) {
   std::map<double, std::set<Op *, POpCmp>, std::greater<double>> pPriOpsMap;
   std::map<double, std::set<Op *, POpCmp>, std::less<double>> nPriOpsMap;
   for (auto &op : graph.getOps()) {
-    if (op.second->priority > 0.0) {
-      pPriOpsMap[op.second->priority].insert(op.second.get());
+    if (op.second->settings.schedulePriority > 0.0) {
+      pPriOpsMap[op.second->settings.schedulePriority].insert(op.second.get());
     }
-    if (op.second->priority < 0.0) {
-      nPriOpsMap[op.second->priority].insert(op.second.get());
+    if (op.second->settings.schedulePriority < 0.0) {
+      nPriOpsMap[op.second->settings.schedulePriority].insert(op.second.get());
     }
   }
 
@@ -92,7 +92,7 @@ void compressPriorities(Graph &graph) {
     double pri = max_pri;
     for (auto &priOp : pPriOpsMap) {
       for (Op *op : priOp.second) {
-        op->priority = pri;
+        op->settings.schedulePriority = pri;
       }
       pri -= max_pri / pPriOpsMap.size();
     }
@@ -102,7 +102,7 @@ void compressPriorities(Graph &graph) {
     double pri = -max_pri;
     for (auto &priOp : nPriOpsMap) {
       for (Op *op : priOp.second) {
-        op->priority = pri;
+        op->settings.schedulePriority = pri;
       }
       pri += max_pri / nPriOpsMap.size();
     }
@@ -330,7 +330,7 @@ bool PingPong::apply(Graph &graph) const {
         IpuCopyOp *copy = dynamic_cast<IpuCopyOp *>(op.second.get());
         if (!op.second->copiesOptimizerTensors() &&
             copy->getDestIpu() % 2 != copy->getSourceIpu() % 2) {
-          op.second->priority = -9999.0;
+          op.second->settings.schedulePriority = -9999.0;
         }
         // Always keep IPU copy checkpointed
         if (op.second->settings.recomputeType == RecomputeType::UNDEFINED) {
@@ -383,9 +383,9 @@ bool PingPong::apply(Graph &graph) const {
           std::make_unique<RecomputePrereqOp>(Op::Settings(graph, ""));
       auto recomputePrereq = recomputePrereqOp.get();
       // Very high priority on prerequisites (at the start of a phase)
-      recomputePrereq->priority = 10000.0;
-      recomputePrereq->fromLoss = PathFromLoss::Yes;
-      recomputePrereq->toLoss   = PathToLoss::No;
+      recomputePrereq->settings.schedulePriority = 10000.0;
+      recomputePrereq->fromLoss                  = PathFromLoss::Yes;
+      recomputePrereq->toLoss                    = PathToLoss::No;
       recomputePrereq->setPingPongPhase(entry.first);
       VGraphId vgid = entry.first % num_ipus;
       recomputePrereq->setVirtualGraphId(vgid);
@@ -525,7 +525,7 @@ bool PingPong::apply(Graph &graph) const {
                     Onnx::CustomOperators::CacheStore, settings);
                 cacheStoreProducer = cacheStoreOp.get();
                 // Very low priority on stores (at the end of a phase)
-                cacheStoreProducer->priority = -10000.0;
+                cacheStoreProducer->settings.schedulePriority = -10000.0;
                 cacheStoreProducer->fromLoss = producerPathFromLoss;
                 cacheStoreProducer->toLoss   = producerPathToLoss;
                 cacheStoreProducer->settings.recomputeType =
@@ -561,10 +561,10 @@ bool PingPong::apply(Graph &graph) const {
                   Onnx::CustomOperators::CacheLoad, tensor->info, settings);
               cacheLoad = cacheLoadOp.get();
               // Very low priority on loads (at the end of the previous phase)
-              cacheLoad->priority               = -9998.0;
-              cacheLoad->fromLoss               = consumerPathFromLoss;
-              cacheLoad->toLoss                 = consumerPathToLoss;
-              cacheLoad->settings.recomputeType = RecomputeType::CHECKPOINT;
+              cacheLoad->settings.schedulePriority = -9998.0;
+              cacheLoad->fromLoss                  = consumerPathFromLoss;
+              cacheLoad->toLoss                    = consumerPathToLoss;
+              cacheLoad->settings.recomputeType    = RecomputeType::CHECKPOINT;
               // CacheLoad at the end of the previous phase, so that load
               // is executed before inter-IPU copy
               cacheLoad->setPingPongPhase(consumerPingPongPhase - 1);
@@ -596,10 +596,10 @@ bool PingPong::apply(Graph &graph) const {
                                              TensorType::Cache,
                                              InitType::NONE,
                                              settings);
-                Op *init       = initOp.get();
-                init->priority = -9997.0;
-                init->fromLoss = consumerPathFromLoss;
-                init->toLoss   = consumerPathToLoss;
+                Op *init                        = initOp.get();
+                init->settings.schedulePriority = -9997.0;
+                init->fromLoss                  = consumerPathFromLoss;
+                init->toLoss                    = consumerPathToLoss;
                 init->setPingPongPhase(consumerPingPongPhase - 1);
                 VGraphId cAllVgid = consumerPingPongPhase % num_ipus;
                 init->setVirtualGraphId(cAllVgid);
@@ -649,7 +649,7 @@ bool PingPong::apply(Graph &graph) const {
                     Onnx::CustomOperators::CacheStore, settings);
                 cacheStoreConsumer = cacheStoreOp.get();
                 // Very low priority on stores (at the end of a phase)
-                cacheStoreConsumer->priority = -10000.0;
+                cacheStoreConsumer->settings.schedulePriority = -10000.0;
                 cacheStoreConsumer->fromLoss = consumerPathFromLoss;
                 cacheStoreConsumer->toLoss   = consumerPathToLoss;
                 cacheStoreConsumer->settings.recomputeType =
@@ -739,8 +739,8 @@ bool PingPong::apply(Graph &graph) const {
           auto boundary = boundaryOp.get();
           boundary->setPingPongPhase(phase);
           // Before CacheAlloc/CacheStore/CacheLoad
-          boundary->priority = -9996.0;
-          VGraphId bdVgid    = phase % num_ipus;
+          boundary->settings.schedulePriority = -9996.0;
+          VGraphId bdVgid                     = phase % num_ipus;
           boundary->setVirtualGraphId(bdVgid);
           graph.moveIntoGraph(std::move(boundaryOp));
         }
@@ -750,8 +750,8 @@ bool PingPong::apply(Graph &graph) const {
           auto boundary = boundaryOp.get();
           boundary->setPingPongPhase(phase);
           // After CacheAlloc/CacheStore/CacheLoad
-          boundary->priority = -10001.0;
-          VGraphId bdVgid    = phase % num_ipus;
+          boundary->settings.schedulePriority = -10001.0;
+          VGraphId bdVgid                     = phase % num_ipus;
           boundary->setVirtualGraphId(bdVgid);
           graph.moveIntoGraph(std::move(boundaryOp));
         }

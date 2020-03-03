@@ -123,7 +123,7 @@ def test_matmul_serialization_invalid_factor(tmpdir):
             dataFeed=dataFlow,
             userOptions=opts,
             passes=pat,
-            deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+            deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     assert (e_info.value.args[0].startswith(
         "Invalid serialisation factor 3 for output channels dim 4. output_channels dim should be a multple of the serialisation factor"
@@ -170,7 +170,7 @@ def test_matmul_serialization_inference(tmpdir):
             dataFeed=dataFlow,
             userOptions=opts,
             passes=pat,
-            deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+            deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
         session.prepareDevice()
 
@@ -305,7 +305,7 @@ def test_matmul_serialization_training_1(tmpdir):
             losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
             optimizer=popart.ConstSGD(0.01),
             passes=pat,
-            deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+            deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
         session.prepareDevice()
 
@@ -558,7 +558,7 @@ def test_matmul_serialization_training_2(tmpdir):
             losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
             optimizer=popart.ConstSGD(0.01),
             passes=pat,
-            deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+            deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
         session.prepareDevice()
 
@@ -815,7 +815,7 @@ def test_matmul_serialization_precision(tmpdir):
             losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
             optimizer=popart.ConstSGD(0.01),
             passes=pat,
-            deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+            deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
         session.prepareDevice()
 
@@ -1082,7 +1082,7 @@ def test_matmul_serialization_training_with_gradient_accumlation(tmpdir):
             losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
             optimizer=popart.ConstSGD(0.01),
             passes=pat,
-            deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+            deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
         session.prepareDevice()
 

@@ -21,7 +21,7 @@ def inference_add_to_variable(tmpdir, np_type):
 
     session = popart.InferenceSession(fnModel=proto,
                                       dataFeed=dataFlow,
-                                      deviceInfo=tu.get_poplar_cpu_device())
+                                      deviceInfo=tu.create_test_device())
 
     session.prepareDevice()
 

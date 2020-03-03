@@ -95,3 +95,23 @@ BOOST_AUTO_TEST_CASE(DataFlow_Case5) {
   BOOST_CHECK_EXCEPTION(
       popart::DataFlow(5, {{"one", art}}), error, inValidReturnPeriod3);
 }
+
+BOOST_AUTO_TEST_CASE(DataFlow_Case6) {
+  std::vector<TensorId> ids{"one", "two"};
+
+  auto df = popart::DataFlow(3, ids);
+  BOOST_CHECK(df.nAnchors() == 2);
+  BOOST_CHECK(df.batchesPerStep() == 3);
+  BOOST_CHECK(df.isAnchored("one") == true);
+  BOOST_CHECK(df.isAnchored("two") == true);
+  BOOST_CHECK(df.art("one").id() == AnchorReturnTypeId::ALL);
+  BOOST_CHECK(df.art("two").id() == AnchorReturnTypeId::ALL);
+
+  auto df1 = popart::DataFlow(3, ids, AnchorReturnType("FINAL"));
+  BOOST_CHECK(df1.nAnchors() == 2);
+  BOOST_CHECK(df1.batchesPerStep() == 3);
+  BOOST_CHECK(df1.isAnchored("one") == true);
+  BOOST_CHECK(df1.isAnchored("two") == true);
+  BOOST_CHECK(df1.art("one").id() == AnchorReturnTypeId::FINAL);
+  BOOST_CHECK(df1.art("two").id() == AnchorReturnTypeId::FINAL);
+}

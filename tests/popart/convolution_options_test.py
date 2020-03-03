@@ -54,8 +54,7 @@ def conv_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
     opts.constantWeights = False  # Allow the weights to be updated
 
     # Create the device
-    options = {"compileIPUCode": True, 'numIPUs': 1, "tilesPerIPU": 1216}
-    device = popart.DeviceManager().createIpuModelDevice(options)
+    device = tu.create_test_device(1, 1216, opts={"compileIPUCode": True})
     device.attach()
 
     # Prepare the input data
@@ -131,8 +130,7 @@ def matmul_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
     opts.constantWeights = False  # Allow the weights to be updated
 
     # Create the device
-    options = {"compileIPUCode": True, 'numIPUs': 1, "tilesPerIPU": 1216}
-    device = popart.DeviceManager().createIpuModelDevice(options)
+    device = tu.create_test_device(1, 1216, opts={"compileIPUCode": True})
     device.attach()
 
     # Prepare the input data
@@ -168,6 +166,7 @@ def matmul_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
 
 # Test that poplar gets our instruction to set the available memory proportion.
 # Do this by matching the poplibs logs.
+@tu.requires_ipu_model
 def test_conv_avail_memory_log(tmpdir, capfd):
 
     avail_mem_prop = 0.6
@@ -186,6 +185,7 @@ def test_conv_avail_memory_log(tmpdir, capfd):
 
 
 # Test outside [0,1) error
+@tu.requires_ipu_model
 def test_conv_avail_memory_error(tmpdir, capfd):
 
     avail_mem_prop = 1.1  # Wrong value
@@ -198,6 +198,7 @@ def test_conv_avail_memory_error(tmpdir, capfd):
 
 
 # Test wrong op error
+@tu.requires_ipu_model
 def test_avail_memory_error_2(tmpdir, capfd):
 
     avail_mem_prop = 0.6
@@ -213,6 +214,7 @@ def test_avail_memory_error_2(tmpdir, capfd):
 
 # Test that poplar gets our instruction to set the available memory proportion.
 # Do this by matching the poplibs logs.
+@tu.requires_ipu_model
 def test_matmul_avail_memory_log(tmpdir, capfd):
 
     avail_mem_prop = 0.6

@@ -1,8 +1,10 @@
 import numpy as np
 import popart
+import test_util as tu
 from test_session import PopartTestSession
 
 
+@tu.requires_ipu_model
 def test_per_op_partials():
     data_size = 4
     kernel_size = 3
@@ -53,6 +55,7 @@ def test_per_op_partials():
     _check_for_conv_partials(session, ['half', 'float'], [])
 
 
+@tu.requires_ipu_model
 def test_per_op_partials_train():
     data_size = 4
     kernel_size = 3
@@ -108,6 +111,7 @@ def test_per_op_partials_train():
     _check_for_conv_partials(session, ['half', 'float'], [])
 
 
+@tu.requires_ipu_model
 def test_global_partials():
     data_size = 4
     kernel_size = 3
@@ -141,6 +145,7 @@ def test_global_partials():
 
 
 # check the summary report to see which conv partials are being used
+@tu.requires_ipu_model
 def _check_for_conv_partials(sess, includes, excludes):
     sr = sess._session.getSummaryReport()
     sr = sr.splitlines()

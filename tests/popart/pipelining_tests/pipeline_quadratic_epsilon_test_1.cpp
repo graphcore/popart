@@ -222,7 +222,7 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilonTest1) {
 
     builder->addOutputTensor(actFinal);
     auto proto    = builder->getModelProto();
-    auto dataFlow = DataFlow(batchesPerStep, {});
+    auto dataFlow = DataFlow(batchesPerStep);
 
     // The learning rate will be adjusted to the correct value at runtime
     auto optimizer = SGD({{"defaultLearningRate", {10000., false}}});

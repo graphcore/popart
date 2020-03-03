@@ -13,9 +13,6 @@ VarUpdateOp::VarUpdateOp(const OperatorIdentifier &_opid,
                          const TensorId &varId_,
                          const Op::Settings &settings_)
     : Op(_opid, settings_), varId(varId_) {
-
-  // very high priority, so that performed as early as possible
-  priority = std::numeric_limits<double>::max();
 }
 
 VarUpdateWithUpdaterOp::VarUpdateWithUpdaterOp(const OperatorIdentifier &opid_,

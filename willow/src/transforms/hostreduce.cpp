@@ -56,7 +56,7 @@ Op *HostReduce::insertGradCopyToHostOp(Op *varUpdateOp,
     gradCopyOp->setPipelineStage(vop->getPipelineStage());
   }
 
-  gradCopyOp->priority = std::numeric_limits<double>::max();
+  gradCopyOp->settings.schedulePriority = std::numeric_limits<double>::max();
   gradCopyOp->setup();
 
   return gradCopyOp;
@@ -99,7 +99,7 @@ Op *HostReduce::insertGradCopyFromHostOp(Op *varUpdateOp,
     gradCopyOp->setPipelineStage(vop->getPipelineStage());
   }
 
-  gradCopyOp->priority = std::numeric_limits<double>::lowest();
+  gradCopyOp->settings.schedulePriority = std::numeric_limits<double>::lowest();
   gradCopyOp->setup();
 
   return gradCopyOp;

@@ -622,6 +622,25 @@ void Ir::verifyTensorIds() const {
   logging::ir::info("TensorId check passed");
 }
 
+void Ir::verifySubgraphs() const {
+  for (auto graph : getAllGraphs()) {
+    // Verify that no subgraph contains an Op that is not outlinable
+    if (graph->id == getMainGraph().id) {
+      continue;
+    }
+    for (auto &id_op : graph->getOps()) {
+      auto op = id_op.second.get();
+      if (op->isOutlineable() == false) {
+        throw error("Subgraph '{}' contains op '{}', but ops of type '{}' are "
+                    "not outlineable",
+                    graph->id,
+                    op->debugName(),
+                    op->opid);
+      }
+    }
+  }
+}
+
 bool Ir::isCandidateForConstExprFolding(const Tensor &tensor) const {
   // A tensor is computable as a const expression if it is Const. This would
   // also be true for Variable tensors during inference, unless the user calls
@@ -1060,6 +1079,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   verifyTensorIds();
   verifyVirtualGraphIds(true);
   verifyVertexAttributesOnlyInMain();
+  verifySubgraphs();
   // end of checks
 
   isPrepared = true;
@@ -1771,6 +1791,8 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
   for (auto &upop : backOps) {
     Op *gradOp    = upop.get();
     OpId gradOpId = getMainGraph().moveIntoGraph(std::move(upop));
+    // Reset priority, since fwd priority should not influence bwd priority
+    gradOp->settings.schedulePriority = 0.0;
 
     if (nonGradOp->settings.recomputeType == RecomputeType::RECOMPUTE &&
         autoRecomputationEnabled()) {
@@ -2774,8 +2796,8 @@ std::vector<const Graph *> Ir::getGraphSchedule() const {
 }
 
 bool Ir::hasRandomOps() const {
-  for (auto &op : getMainGraphOps()) {
-    if (op.second->requiresRandomSeed()) {
+  for (auto op : getAllOps()) {
+    if (op->requiresRandomSeed()) {
       return true;
     }
   }

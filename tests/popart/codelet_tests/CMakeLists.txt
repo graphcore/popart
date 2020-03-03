@@ -1,2 +1,2 @@
 # Testing codelets
-add_all_py_unit_tests("")
+add_popart_py_unit_test(codelet_test VARIANTS IpuModel)

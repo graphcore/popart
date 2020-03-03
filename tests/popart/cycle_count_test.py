@@ -29,7 +29,7 @@ def get_simple_model_cycle_count(bps):
         fnModel=builder.getModelProto(),
         dataFeed=popart.DataFlow(bps, {out: popart.AnchorReturnType("ALL")}),
         userOptions=opts,
-        deviceInfo=tu.acquire_ipu(),
+        deviceInfo=tu.create_test_device(),
         passes=popart.Patterns(popart.PatternsLevel.NONE))
 
     session.prepareDevice()
@@ -48,7 +48,7 @@ def get_simple_model_cycle_count(bps):
     return cycles
 
 
-@tu.requires_ipu()
+@tu.requires_ipu
 def test_check_sensible_cycle_counts():
     cycles100 = get_simple_model_cycle_count(bps=100)
     cycles100_ = get_simple_model_cycle_count(bps=100)
@@ -67,7 +67,7 @@ def test_check_sensible_cycle_counts():
     #     cannot expect exact results due to variability in host communication
 
 
-@tu.requires_ipu()
+@tu.requires_ipu
 def test_get_cycle_count_requires_run():
     builder = popart.Builder()
     d0 = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]))
@@ -81,7 +81,7 @@ def test_get_cycle_count_requires_run():
                                           1,
                                           {p: popart.AnchorReturnType("ALL")}),
                                       userOptions=opts,
-                                      deviceInfo=tu.acquire_ipu())
+                                      deviceInfo=tu.create_test_device())
     session.prepareDevice()
 
     with pytest.raises(popart.popart_exception) as e_info:
@@ -90,7 +90,7 @@ def test_get_cycle_count_requires_run():
         "Must call run before getCycleCount")
 
 
-@tu.requires_ipu()
+@tu.requires_ipu
 def test_get_cycle_count_requires_instrumentation_option():
     builder = popart.Builder()
     d0 = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]))
@@ -101,7 +101,7 @@ def test_get_cycle_count_requires_instrumentation_option():
                                       dataFeed=popart.DataFlow(
                                           1,
                                           {p: popart.AnchorReturnType("ALL")}),
-                                      deviceInfo=tu.acquire_ipu())
+                                      deviceInfo=tu.create_test_device())
     session.prepareDevice()
     stepio = popart.PyStepIO({d0: np.random.rand(1).astype(np.float32)},
                              session.initAnchorArrays())

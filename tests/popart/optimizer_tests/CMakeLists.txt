@@ -1,4 +1,4 @@
-add_popart_cpp_unit_test(sgd_mixed_mode_test_cpp_0 sgd_mixed_mode_test_cpp_0.cpp VARIANTS "IpuModel")
+add_popart_cpp_unit_test(sgd_mixed_mode_test_cpp_0 sgd_mixed_mode_test_cpp_0.cpp VARIANTS IpuModel)
 add_popart_cpp_unit_test(sgd_mixed_mode_test_cpp_1_10 sgd_mixed_mode_test_cpp_1_10.cpp)
 add_popart_cpp_unit_test(sgd_mixed_mode_test_cpp_1_9 sgd_mixed_mode_test_cpp_1_9.cpp)
 add_popart_cpp_unit_test(sgd_mixed_mode_test_cpp_1_8 sgd_mixed_mode_test_cpp_1_8.cpp)
@@ -12,4 +12,5 @@ add_popart_cpp_unit_test(sgd_mixed_mode_test_cpp_1_1 sgd_mixed_mode_test_cpp_1_1
 add_popart_cpp_unit_test(sgd_mixed_mode_test_cpp_1_0 sgd_mixed_mode_test_cpp_1_0.cpp)
 add_popart_cpp_unit_test(sgd_mixed_mode_compatibility_test_0 sgd_mixed_mode_compatibility_test_0.cpp)
 
-add_all_py_unit_tests("")
+add_popart_py_unit_test(pytorch_comparisons VARIANTS IpuModel)
+add_popart_py_unit_test(sgd_mixed_mode_test_py_0)

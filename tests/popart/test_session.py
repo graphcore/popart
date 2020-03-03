@@ -79,12 +79,7 @@ class PopartTestSession:
                  'passes', 'userOptions'), popart.TrainingSession)
 
     def _get_device(self):
-        if self.device == "cpu":
-            return tu.get_poplar_cpu_device()
-        elif self.device == "ipu_model":
-            return tu.get_ipu_model(numIPUs=self.numIPUs)
-        else:
-            return self.device
+        return tu.create_test_device(numIpus=self.numIPUs)
 
     def _get_inputs(self, ins):
         inputs = {}

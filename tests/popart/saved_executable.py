@@ -10,17 +10,13 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
 
-## TODO T8803 : requires hardware or a sim device
 # Test:
 # 1. That engine caching works for two identical sessions
 # 2. That the cached engine isn't loaded for a different session
+@tu.requires_ipu
 def test_simple_load(tmp_path):
     def run_session(bps):
-        # TODO: use the tu.requires_ipu decorator
-        if tu.ipu_available():
-            device = tu.acquire_ipu()
-        else:
-            pytest.skip("Unable to acquire device")
+        device = tu.create_test_device()
 
         start = time.clock()
 
@@ -79,55 +75,8 @@ def test_simple_load(tmp_path):
     assert (first_duration / 2) < third_duration  # 2.
 
 
-# Check that no error is thrown if opts.cachePath is set and the device is a
-# cpu device.
-def test_cpu_device(tmp_path):
-    # Create a builder and construct a graph
-    builder = popart.Builder()
-
-    data_shape = popart.TensorInfo("FLOAT", [1])
-
-    a = builder.addInputTensor(data_shape)
-    b = builder.addInputTensor(data_shape)
-
-    o = builder.aiOnnx.add([a, b])
-
-    builder.addOutputTensor(o)
-
-    proto = builder.getModelProto()
-
-    # Describe how to run the model
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
-
-    opts = popart.SessionOptions()
-    opts.enableEngineCaching = True
-    opts.cachePath = str(tmp_path / 'saved_graph')
-
-    # Create a session to compile and execute the graph
-    session = popart.InferenceSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        userOptions=opts,
-        deviceInfo=popart.DeviceManager().createCpuDevice())
-
-    # Compile graph
-    session.prepareDevice()
-
-    # Create buffers to receive results from the execution
-    anchors = session.initAnchorArrays()
-
-    # Generate some random input data
-    data_a = np.random.rand(1).astype(np.float32)
-    data_b = np.random.rand(1).astype(np.float32)
-
-    stepio = popart.PyStepIO({a: data_a, b: data_b}, anchors)
-    session.run(stepio)
-
-    assert anchors[o] == data_a + data_b
-
-
-## TODO T8803 : requires hardware or a sim device
 # create 2 models with identical stream names
+@tu.requires_ipu
 def test_bad_load(tmp_path):
     def get_add_model():
         # Create a builder and construct a graph
@@ -166,11 +115,7 @@ def test_bad_load(tmp_path):
         return proto, a, b, o
 
     def run_test(proto, a, b, o, test):
-        # TODO: use the tu.requires_ipu decorator
-        if tu.ipu_available():
-            device = tu.acquire_ipu()
-        else:
-            pytest.skip("Unable to acquire device")
+        device = tu.create_test_device()
 
         # Describe how to run the model
         dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
@@ -208,14 +153,10 @@ def test_bad_load(tmp_path):
     print()
 
 
-## TODO T8803 : requires hardware or a sim device
+@tu.requires_ipu
 def test_get_reports(tmp_path):
     def run_session():
-        # TODO: use the tu.requires_ipu decorator
-        if tu.ipu_available():
-            device = tu.acquire_ipu()
-        else:
-            pytest.skip("Unable to acquire device")
+        device = tu.create_test_device()
 
         # Create a builder and construct a graph
         builder = popart.Builder()

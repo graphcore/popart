@@ -91,7 +91,7 @@ def get_model_anchors(doSharding,
         opts.enableReplicatedGraphs = True
 
     if tu.ipu_available(numIPUs):
-        device = tu.acquire_ipu(numIPUs=numIPUs)
+        device = tu.create_test_device(numIPUs=numIPUs)
     else:
         pytest.skip("Test needs to run on IPU, but none are available")
 
@@ -242,7 +242,7 @@ def compare_anchors_pipe(no_pipe_anchors, pipe_anchors):
 
 
 # TODO see T16010
-# @tu.requires_ipu()
+# @tu.requires_ipu
 @pytest.mark.skip("Test currently failing on hardware")
 def test_output_matches_replication_infer():
     """
@@ -272,7 +272,7 @@ def test_output_matches_replication_infer():
 
 
 # TODO see T16010
-# @tu.requires_ipu()
+# @tu.requires_ipu
 @pytest.mark.skip("Test currently failing on hardware")
 def test_output_matches_pipeline_infer():
     """
@@ -302,7 +302,7 @@ def test_output_matches_pipeline_infer():
 
 
 # TODO see T16010
-# @tu.requires_ipu()
+# @tu.requires_ipu
 @pytest.mark.skip("Test currently failing on hardware")
 def test_output_matches_pipeline_train():
     """

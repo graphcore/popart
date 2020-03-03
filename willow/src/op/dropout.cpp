@@ -7,32 +7,32 @@
 
 namespace popart {
 
-DropoutBaseOp::DropoutBaseOp(const OperatorIdentifier &opid_,
-                             float ratio_,
-                             uint32_t seedModifier_,
-                             bool outputMask_,
-                             const Op::Settings &settings_)
+DropoutOp::DropoutOp(const OperatorIdentifier &opid_,
+                     float ratio_,
+                     uint32_t seedModifier_,
+                     bool outputMask_,
+                     const Op::Settings &settings_)
     : Op(opid_, settings_), ratio(ratio_), seedModifier(seedModifier_),
       output_mask(outputMask_) {}
 
-uint32_t DropoutBaseOp::getSeedModifier() const { return seedModifier; }
+uint32_t DropoutOp::getSeedModifier() const { return seedModifier; }
 
-void DropoutBaseOp::setSeedModifier(uint32_t sm) { seedModifier = sm; }
+void DropoutOp::setSeedModifier(uint32_t sm) { seedModifier = sm; }
 
-float DropoutBaseOp::getRatio() const { return ratio; }
+float DropoutOp::getRatio() const { return ratio; }
 
-void DropoutBaseOp::setRatio(float r) { ratio = r; }
+void DropoutOp::setRatio(float r) { ratio = r; }
 
-float DropoutBaseOp::getSubgraphValue() const { return getLowSubgraphValue(); }
+float DropoutOp::getSubgraphValue() const { return getLowSubgraphValue(); }
 
 DropoutOp::DropoutOp(const OperatorIdentifier &_opid,
                      float ratio_,
                      const Op::Settings &settings_)
-    : DropoutBaseOp(_opid,
-                    ratio_,
-                    settings_.getIr().getAndIncrementDropoutSeedModifier(),
-                    false,
-                    settings_) {}
+    : DropoutOp(_opid,
+                ratio_,
+                settings_.getIr().getAndIncrementDropoutSeedModifier(),
+                false,
+                settings_) {}
 
 std::unique_ptr<Op> DropoutOp::clone() const {
   return std::make_unique<DropoutOp>(*this);
@@ -54,7 +54,7 @@ std::vector<std::unique_ptr<Op>> DropoutOp::getGradOps() {
   return upops;
 }
 
-void DropoutBaseOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+void DropoutOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("ratio", ratio);
 
@@ -72,18 +72,14 @@ bool DropoutOp::canBeReplacedByIdentity() {
 }
 
 DropoutGradOp::DropoutGradOp(const DropoutOp &fwdOp)
-    : DropoutBaseOp(Onnx::GradOperators::DropoutGrad,
-                    fwdOp.getRatio(),
-                    fwdOp.getSeedModifier(),
-                    fwdOp.getOutputMask(),
-                    fwdOp.getSettings()) {}
+    : DropoutOp(fwdOp.opid,
+                fwdOp.getRatio(),
+                fwdOp.getSeedModifier(),
+                fwdOp.getOutputMask(),
+                fwdOp.getSettings()) {}
 
 std::unique_ptr<Op> DropoutGradOp::clone() const {
   return std::make_unique<DropoutGradOp>(*this);
-}
-
-void DropoutGradOp::setup() {
-  outInfo(getOutIndex()) = inInfo(getGradInIndex());
 }
 
 const std::vector<GradInOutMapper> &DropoutGradOp::gradInputInfo() const {

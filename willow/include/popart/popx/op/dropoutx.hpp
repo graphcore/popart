@@ -16,12 +16,6 @@ public:
   void grow(poplar::program::Sequence &) const final;
 };
 
-class DropoutGradOpx : public ElementWiseUnaryOpx {
-public:
-  DropoutGradOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
-};
-
 } // namespace popx
 } // namespace popart
 

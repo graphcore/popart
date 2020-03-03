@@ -31,7 +31,7 @@ def test_basic(tmpdir):
                 fnModel=proto,
                 dataFeed=dataFlow,
                 userOptions=opts,
-                deviceInfo=tu.get_poplar_cpu_device())
+                deviceInfo=tu.create_test_device())
 
             dotFiles = list(Path(tmpdir).glob('*.dot'))
             assert len(dotFiles) == expected_dot_file_count

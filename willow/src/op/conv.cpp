@@ -214,10 +214,6 @@ ConvWeightsGradOp::ConvWeightsGradOp(const ConvOp &op_)
     : Op(Onnx::GradOperators::ConvWeightsGrad, op_.getSettings()),
       cloneOfCreator(op_.clone()),
       weightsInfo(op_.inInfo(ConvOp::getWeightsInIndex())) {
-  // we want this Op to be executed early, so that the weight
-  // update can be performed as early as possible, thus making
-  // weight gradient tensors non-live. TODO : same for matmul
-  priority = std::numeric_limits<double>::max();
 }
 
 std::unique_ptr<Op> ConvWeightsGradOp::clone() const {

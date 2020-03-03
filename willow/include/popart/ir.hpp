@@ -456,6 +456,7 @@ private:
   void verifyVertexAttributesOnlyInMain() const;
   void verifyPipelineSettings() const;
   void verifyPingPongSettings() const;
+  void verifySubgraphs() const;
 
   // Verify ConstExpr folding has removed input tensors
   // as expected

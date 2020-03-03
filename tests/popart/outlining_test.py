@@ -3,6 +3,7 @@ import numpy as np
 import torch
 import onnx
 from onnx import numpy_helper
+import test_util as tu
 
 
 def test_weight_update(tmpdir):
@@ -30,7 +31,7 @@ def test_weight_update(tmpdir):
         out = m3
         builder.addOutputTensor(out)
 
-        device = popart.DeviceManager().createCpuDevice()
+        device = tu.create_test_device()
 
         dfAnchors = {}
         for anchorId in anchorIds:
@@ -104,7 +105,7 @@ def test_batches_per_step_greater_than_one():
         out = m3
         builder.addOutputTensor(out)
 
-        device = popart.DeviceManager().createCpuDevice()
+        device = tu.create_test_device()
 
         dfAnchors = {}
         for anchorId in anchorIds:

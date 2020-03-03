@@ -99,7 +99,7 @@ BOOST_AUTO_TEST_CASE(test) {
 
     auto session = popart::TrainingSession::createFromOnnxModel(
         builder->getModelProto(),
-        DataFlow(batchesPerStep, {}),
+        DataFlow(batchesPerStep),
         {loss0.get(), loss1.get()},
         ConstSGD(1.0),
         device,

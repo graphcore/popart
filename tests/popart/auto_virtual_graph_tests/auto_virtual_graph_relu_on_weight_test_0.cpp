@@ -137,7 +137,7 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
   //
 
   // No anchors
-  auto dataFlow = DataFlow(batchesPerStep, {});
+  auto dataFlow = DataFlow(batchesPerStep);
 
   float learnRate = 1;
   auto optimizer  = ConstSGD(learnRate);

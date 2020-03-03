@@ -5,6 +5,7 @@ import torch
 import os
 from op_tester import op_tester
 import platform
+import test_util as tu
 
 if platform.system() != "Darwin":
     import onnx
@@ -658,7 +659,7 @@ def test_batchnorm_repeated():
 
     dataFlow = popart.DataFlow(1, {o_y: popart.AnchorReturnType("ALL")})
 
-    device = popart.DeviceManager().createCpuDevice()
+    device = tu.create_test_device()
 
     options = popart.SessionOptions()
     options.enableStochasticRounding = False

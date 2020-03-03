@@ -5,6 +5,7 @@ import json
 
 
 # test that the input tensors of add have been mapped to different tiles
+@tu.requires_ipu_model
 def test_basic_mapping(tmpdir):
 
     builder = popart.Builder()
@@ -23,7 +24,7 @@ def test_basic_mapping(tmpdir):
     session = popart.InferenceSession(
         fnModel=proto,
         dataFeed=dataFlow,
-        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     anchors = session.initAnchorArrays()
 
@@ -40,6 +41,7 @@ def test_basic_mapping(tmpdir):
 
 
 # test that the tile mapping can be saved using the environment variable
+@tu.requires_ipu_model
 def test_environment_mapping(tmpdir):
     mapFileName = 'ttm.js'
     os.environ['POPART_TENSOR_TILE_MAP'] = mapFileName
@@ -64,7 +66,7 @@ def test_environment_mapping(tmpdir):
         fnModel=proto,
         dataFeed=dataFlow,
         userOptions=opts,
-        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     anchors = session.initAnchorArrays()
 

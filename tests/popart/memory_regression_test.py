@@ -4,6 +4,7 @@ import os
 import numpy as np
 import argparse
 import json
+import test_util as tu
 
 
 def conv(b, x, ksize, stride, c_out, name):
@@ -151,6 +152,7 @@ def get_resnet18_proto(batch_size, training, norm_type):
     return proto, ip, lb, x
 
 
+@tu.requires_ipu_model
 def test_mini_resnet_like():
     dirpath = os.path.dirname(os.path.realpath(__file__))
     sys.path.append(dirpath + "/../../graph_util")
@@ -169,7 +171,7 @@ def test_mini_resnet_like():
         dataFeed=popart.DataFlow(1, {"loss": popart.AnchorReturnType("ALL")}),
         optimizer=popart.ConstSGD(0.001),
         losses=[popart.NllLoss(op, lb, "loss")],
-        deviceInfo=popart.DeviceManager().createIpuModelDevice({'numIPUs': 1}),
+        deviceInfo=tu.create_test_device(),
         userOptions=opts)
 
     session.prepareDevice()

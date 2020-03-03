@@ -4,6 +4,7 @@ import test_util as tu
 import numpy as np
 
 
+@tu.requires_ipu_model
 def test_virtual_graph():
 
     popart.getLogger().setLevel("TRACE")
@@ -33,13 +34,14 @@ def test_virtual_graph():
     s = popart.InferenceSession(fnModel=proto,
                                 dataFeed=dataFlow,
                                 userOptions=opts,
-                                deviceInfo=tu.get_ipu_model(numIPUs=2))
+                                deviceInfo=tu.create_test_device(numIpus=2))
 
     s.prepareDevice()
 
     pass
 
 
+@tu.requires_ipu_model
 def test_virtual_graph2():
 
     popart.getLogger().setLevel("TRACE")
@@ -70,11 +72,12 @@ def test_virtual_graph2():
     s = popart.InferenceSession(fnModel=proto,
                                 dataFeed=dataFlow,
                                 userOptions=opts,
-                                deviceInfo=tu.get_ipu_model(numIPUs=2))
+                                deviceInfo=tu.create_test_device(numIpus=2))
 
     s.prepareDevice()
 
 
+@tu.requires_ipu_model
 def test_virtual_graph3():
 
     popart.getLogger().setLevel("TRACE")
@@ -125,7 +128,7 @@ def test_virtual_graph3():
                                losses=losses,
                                optimizer=optimizer,
                                userOptions=opts,
-                               deviceInfo=tu.get_ipu_model(numIPUs=4))
+                               deviceInfo=tu.create_test_device(numIpus=4))
 
     s.prepareDevice()
 
@@ -143,6 +146,7 @@ def test_virtual_graph3():
     s.weightsFromHost()
 
 
+@tu.requires_ipu_model
 def test_virtual_graph4():
 
     builder = popart.Builder()
@@ -196,7 +200,7 @@ def test_virtual_graph4():
                                losses=losses,
                                optimizer=optimizer,
                                userOptions=opts,
-                               deviceInfo=tu.get_ipu_model(numIPUs=4))
+                               deviceInfo=tu.create_test_device(numIpus=4))
 
     s.prepareDevice()
 
@@ -213,6 +217,7 @@ def test_virtual_graph4():
     s.weightsFromHost()
 
 
+@tu.requires_ipu_model
 def test_virtual_graph_bad_index():
 
     # popart.getLogger().setLevel("TRACE")
@@ -237,12 +242,13 @@ def test_virtual_graph_bad_index():
     # opts = popart.SessionOptions()
     # opts.virtualGraphMode = popart.VirtualGraphMode.Manual
     #
-    # s = popart.Session(fnModel=proto, dataFeed=dataFlow, userOptions=opts, deviceInfo=tu.get_ipu_model(numIPUs = 2))
+    # s = popart.TrainingSession(fnModel=proto, dataFeed=dataFlow, userOptions=opts, deviceInfo=tu.create_test_device(numIpus = 2))
     # s.prepareDevice()
 
     pass
 
 
+@tu.requires_ipu_model
 def test_streaming_optimizer_tensors():
     bps = 5
     input_data = np.random.rand(bps, 2, 2).astype(np.float32)
@@ -306,7 +312,7 @@ def test_streaming_optimizer_tensors():
             losses=losses,
             optimizer=optimizer,
             userOptions=opts,
-            deviceInfo=tu.get_ipu_model(numIPUs=numIPUs))
+            deviceInfo=tu.create_test_device(numIpus=numIPUs))
 
         session.prepareDevice()
 

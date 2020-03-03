@@ -8,7 +8,14 @@ import torch.optim as optim
 import numpy as np
 import numpy.random as npr
 
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+from test_session import PopartTestSession
+import test_util as tu
 
+
+@tu.requires_ipu_model
 def test_multi_loss_pipeline(tmpdir):
 
     seed = 1015
@@ -93,9 +100,7 @@ def test_multi_loss_pipeline(tmpdir):
 
     def getWeights(withPipelining):
 
-        options = {'numIPUs': nIPUs, "tilesPerIPU": 1216}
-        deviceManager = popart.DeviceManager()
-        device = deviceManager.createIpuModelDevice(options)
+        device = tu.create_test_device(numIpus=nIPUs, tilesPerIpu=1216)
         userOptions = popart.SessionOptions()
         userOptions.enableOutlining = False
         userOptions.enablePipelining = withPipelining

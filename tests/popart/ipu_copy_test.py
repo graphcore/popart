@@ -4,6 +4,7 @@ import pytest
 import test_util as tu
 
 
+@tu.requires_ipu_model
 def test_ipu_copy_bca1():
 
     popart.getLogger().setLevel("TRACE")
@@ -31,12 +32,13 @@ def test_ipu_copy_bca1():
     s = popart.InferenceSession(fnModel=proto,
                                 dataFeed=dataFlow,
                                 userOptions=opts,
-                                deviceInfo=tu.get_ipu_model(numIPUs=3))
+                                deviceInfo=tu.create_test_device(numIpus=3))
 
     s.prepareDevice()
 
 
 # Will fail due to an invalid virtual graph
+@tu.requires_ipu_model
 def test_ipu_copy_aca1():
 
     popart.getLogger().setLevel("TRACE")
@@ -64,7 +66,7 @@ def test_ipu_copy_aca1():
     s = popart.InferenceSession(fnModel=proto,
                                 dataFeed=dataFlow,
                                 userOptions=opts,
-                                deviceInfo=tu.get_ipu_model(numIPUs=3))
+                                deviceInfo=tu.create_test_device(numIpus=3))
 
     with pytest.raises(popart.popart_exception) as e_info:
         s.prepareDevice()
@@ -76,6 +78,7 @@ def test_ipu_copy_aca1():
 
 
 # Test that an input stream tensor is correctly mapped to multiple ipus
+@tu.requires_ipu_model
 def test_ipu_copy_bca4():
 
     popart.getLogger().setLevel("TRACE")
@@ -107,12 +110,13 @@ def test_ipu_copy_bca4():
     s = popart.InferenceSession(fnModel=proto,
                                 dataFeed=dataFlow,
                                 userOptions=opts,
-                                deviceInfo=tu.get_ipu_model(numIPUs=3))
+                                deviceInfo=tu.create_test_device(numIpus=3))
 
     s.prepareDevice()
 
 
 # Test to ensure that same tensor it not copied multiple times to the same IPU
+@tu.requires_ipu_model
 def test_ipu_copy_bca2():
 
     popart.getLogger().setLevel("TRACE")
@@ -147,13 +151,14 @@ def test_ipu_copy_bca2():
     s = popart.InferenceSession(fnModel=proto,
                                 dataFeed=dataFlow,
                                 userOptions=opts,
-                                deviceInfo=tu.get_ipu_model(numIPUs=3))
+                                deviceInfo=tu.create_test_device(numIpus=3))
 
     s.prepareDevice()
 
 
 # Test to make sure that if a single op has multiple it mapped to multiple inputs then the copy does
 # the right thing
+@tu.requires_ipu_model
 def test_ipu_copy_bca3():
 
     popart.getLogger().setLevel("TRACE")
@@ -179,11 +184,12 @@ def test_ipu_copy_bca3():
     s = popart.InferenceSession(fnModel=proto,
                                 dataFeed=dataFlow,
                                 userOptions=opts,
-                                deviceInfo=tu.get_ipu_model(numIPUs=2))
+                                deviceInfo=tu.create_test_device(numIpus=2))
 
     s.prepareDevice()
 
 
+@tu.requires_ipu_model
 def test_ipu_copy_bca5():
 
     popart.getLogger().setLevel("TRACE")
@@ -216,7 +222,7 @@ def test_ipu_copy_bca5():
     s = popart.InferenceSession(fnModel=proto,
                                 dataFeed=dataFlow,
                                 userOptions=opts,
-                                deviceInfo=tu.get_ipu_model(numIPUs=3))
+                                deviceInfo=tu.create_test_device(numIpus=3))
 
     s.prepareDevice()
 
@@ -231,6 +237,7 @@ def test_ipu_copy_bca5():
 #                *        |
 #                *        v
 #                *      output
+@tu.requires_ipu_model
 def test_copy_to_op_with_duplicate_inputs():
     popart.getLogger().setLevel("TRACE")
 
@@ -260,6 +267,6 @@ def test_copy_to_op_with_duplicate_inputs():
     s = popart.InferenceSession(fnModel=proto,
                                 dataFeed=dataFlow,
                                 userOptions=opts,
-                                deviceInfo=tu.get_ipu_model(numIPUs=3))
+                                deviceInfo=tu.create_test_device(numIpus=3))
 
     s.prepareDevice()

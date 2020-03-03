@@ -152,9 +152,7 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation):
 
     dataFlow = popart.DataFlow(batchesPerStep, anchors)
 
-    options = {"compileIPUCode": True, 'numIPUs': nIPUs, "tilesPerIPU": 1216}
-    deviceManager = popart.DeviceManager()
-    device = tu.acquire_ipu(numIPUs=nIPUs)
+    device = tu.create_test_device(numIpus=nIPUs)
     assert device
 
     userOptions = popart.SessionOptions()
@@ -297,7 +295,7 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation):
     assert (error2 < 1e-5)
 
 
-@tu.requires_ipu(numIPUs=nIPUs)
+@tu.requires_ipu
 def test_all_cases():
     # this unit test checks a previously failing case
     runTest(forceAddOutOfPlace=False, pipelineRecomputation=False)

@@ -57,6 +57,7 @@ def attention_onnx(builder, qkv, mask, batch_size, sequence_length,
     return z
 
 
+@tu.requires_ipu_model
 def test_full_recompute_pipelining(tmpdir):
     batches_per_step = 5
     batch_size = 1
@@ -143,8 +144,9 @@ def test_full_recompute_pipelining(tmpdir):
                                          losses=[loss],
                                          optimizer=popart.ConstSGD(1e-9),
                                          passes=pat,
-                                         deviceInfo=tu.get_ipu_model(
-                                             compileIPUCode=False, numIPUs=3))
+                                         deviceInfo=tu.create_test_device(
+                                             numIpus=3,
+                                             opts={"compileIPUCode": False}))
 
         session.prepareDevice()
 

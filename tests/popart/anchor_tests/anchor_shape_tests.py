@@ -58,14 +58,13 @@ def return_options(anchorDict):
     if anchorDict["ReplicationFactor"] > 1:
         opts.replicatedGraphCount = anchorDict["ReplicationFactor"]
         opts.enableReplicatedGraphs = True
-        # TODO: use the tu.requires_ipu decorator
         if tu.ipu_available(ipus):
-            device = tu.acquire_ipu(ipus)
+            device = tu.create_test_device(numIpus=ipus)
         else:
             print("No IPUS available for test options.")
             return None, None
     else:
-        device = popart.DeviceManager().createIpuModelDevice({'numIPUs': ipus})
+        device = tu.create_test_device(numIpus=ipus)
     print("device: ", device)
     return opts, device
 
@@ -153,6 +152,7 @@ def return_anchors(anchorDict, label_array):
     return anchors
 
 
+@tu.requires_ipu
 def test_all_anchor_returns():
     """
     Iterate through all combinations of options and test against

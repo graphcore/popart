@@ -6,6 +6,12 @@ import torch.nn as nn
 import popart
 from op_tester import op_tester
 
+# `import test_util` requires adding to sys.path
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+import test_util as tu
+
 #  Subgraph, sg:
 #  in0  in1
 #   |    |
@@ -386,7 +392,7 @@ def test_call_grad_3():
             losses=losses,
             optimizer=popart.ConstSGD(0.001),
             userOptions=trainingOptions,
-            deviceInfo=popart.DeviceManager().createIpuModelDevice({}),
+            deviceInfo=tu.create_test_device(),
             passes=popart.Patterns(popart.PatternsLevel.DEFAULT))
 
         # Compile graph
@@ -588,7 +594,7 @@ def test_stacked_subgraphs_2():
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),
             dataFeed=popart.DataFlow(1, anchor_returns),
-            deviceInfo=popart.DeviceManager().createCpuDevice(),
+            deviceInfo=tu.create_test_device(),
             optimizer=popart.ConstSGD(0.1),
             losses=[popart.L1Loss(actIn, actIn + "/loss", 0.1)],
             userOptions=opts)
@@ -652,6 +658,6 @@ def test_stacked_subgraphs_2():
 #     session = popart.TrainingSession(
 #       fnModel=builder.getModelProto(),
 #       dataFeed=popart.DataFlow(1, anchorMap),
-#       deviceInfo=popart.DeviceManager().createCpuDevice(),
+#       deviceInfo=tu.create_test_device(),
 #       optimizer=popart.ConstSGD(0.1),
 #       losses=[popart.L1Loss(out, out+"/loss", 0.1)])

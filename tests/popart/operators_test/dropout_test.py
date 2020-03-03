@@ -13,6 +13,7 @@ import test_util as tu
 
 
 # Check that dropout is equal to an identity function in inference
+@tu.requires_ipu_model
 def test_dropout_testing(op_tester):
     d1 = np.random.rand(2).astype(np.float32)
 
@@ -36,6 +37,7 @@ def test_dropout_testing(op_tester):
 
 # Verify that the mask returned is correct when requesting 2 outputs.
 # Manually calculate the result of the dropout using numpy and compare
+@tu.requires_ipu_model
 def test_dropout_training1():
     dsize = 10
     ratio = 0.2
@@ -49,11 +51,10 @@ def test_dropout_training1():
     builder.addOutputTensor(o1)
     builder.addOutputTensor(o2)
 
-    session, anchors = get_session(
-        anchorIds=[o1, o2, ip, d__ip],
-        proto=builder.getModelProto(),
-        device=popart.DeviceManager().createCpuDevice(),
-        output=o1)
+    session, anchors = get_session(anchorIds=[o1, o2, ip, d__ip],
+                                   proto=builder.getModelProto(),
+                                   device=tu.create_test_device(),
+                                   output=o1)
 
     stepio = popart.PyStepIO({ip: d1}, anchors)
     session.run(stepio)
@@ -73,6 +74,7 @@ def test_dropout_training1():
 # 1. Check the non-masked elements of dropout are scaled in the same way as in
 #    pytorch
 # 2. Check that the expected ratio of inputs to dropout are masked
+@tu.requires_ipu_model
 def test_dropout_training3():
     dsize = 10000  # large input size to make statistical assumptions accurate
     ratio = 0.2
@@ -103,9 +105,9 @@ def test_dropout_training3():
     assert (np.isclose(onnxDropoutProportion, 1 - ratio, atol=0.05))
 
 
-## TODO T8803 : requires hardware or a sim device
 # Check that the forward activations and backwards gradients are
 # masked in the same way
+@tu.requires_ipu
 def test_dropout_training4():
     dsize = 10
     ratio = 0.2
@@ -120,11 +122,7 @@ def test_dropout_training4():
     out = builder.aiOnnx.matmul([d1, w])
     builder.addOutputTensor(out)
 
-    # TODO: use the tu.requires_ipu decorator
-    if tu.ipu_available():
-        device = tu.acquire_ipu()
-    else:
-        pytest.skip("Test needs to run on IPU, but none are available")
+    device = tu.create_test_device()
 
     session, anchors = get_session(anchorIds=[d1, d__ip],
                                    proto=builder.getModelProto(),
@@ -145,8 +143,8 @@ def test_dropout_training4():
             assert fwdEl != 0
 
 
-## TODO T8803 : requires hardware or a sim device
 # Test that a different mask is used every time session.run is called.
+@tu.requires_ipu
 def test_dropout_training_randomness():
     dsize = 100
     session, ip, out, d__ip, anchors = get_dropout_session(dsize=dsize,
@@ -167,9 +165,9 @@ def test_dropout_training_randomness():
     assert not np.array_equal(run1_out, run2_out)
 
 
-## TODO T8803 : requires hardware or a sim device
 # Test for repeatable randomness (i.e. if you run the same training session
 # on the same input data, with the same seed the same, random mask is applied)
+@tu.requires_ipu
 def test_dropout_training_set_seed():
     dsize = 100
     session, ip, out, d__ip, anchors = get_dropout_session(dsize=dsize,
@@ -190,9 +188,9 @@ def test_dropout_training_set_seed():
     assert (np.array_equal(run1_out, run2_out))
 
 
-## TODO T8803 : requires hardware or a sim device
 # Test that the dropout mask is different round each repeat loop
 # when repeat-count (batches-per-step) > 1
+@tu.requires_ipu
 def test_dropout_training6():
     dsize = 100
     bps = 2
@@ -212,9 +210,9 @@ def test_dropout_training6():
     assert (np.array_equal(anchors[out][0], anchors[out][1]) is not True)
 
 
-## TODO T8803 : requires hardware or a sim device
 # Test that two dropout ops with the same input, in the same graph,
 # have a different mask
+@tu.requires_ipu
 def test_dropout_training7():
     dsize = 100
     ratio = 0.2
@@ -226,9 +224,8 @@ def test_dropout_training7():
     out = builder.aiOnnx.add([d1, d2])
     builder.addOutputTensor(out)
 
-    # TODO: use the tu.requires_ipu decorator
     if tu.ipu_available():
-        device = tu.acquire_ipu()
+        device = tu.create_test_device()
     else:
         pytest.skip("Test needs to run on IPU, but none are available")
 
@@ -246,6 +243,7 @@ def test_dropout_training7():
 
 
 # Verify that popart errors out properly when ratio is not in (0,1)
+@tu.requires_ipu_model
 def test_dropout_training8(op_tester):
     d1 = np.random.rand(10).astype(np.float32)
     ratio = 100 * np.random.rand(1)[0] + 1
@@ -269,8 +267,8 @@ def test_dropout_training8(op_tester):
         "Please use a value in the interval (0,1)"))
 
 
-## TODO T8803 : requires hardware or a sim device
 # check we get a different dropout from each replicated graph
+@tu.requires_ipu
 def test_dropout_training_replicated():
     replication_factor = 4
     dsize = 10
@@ -294,8 +292,8 @@ def test_dropout_training_replicated():
         assert not np.allclose(a, b)
 
 
-## TODO T8803 : requires hardware or a sim device
 # Check set seed when using replicated graphs
+@tu.requires_ipu
 def test_dropout_training_replicated_repeatable():
     replication_factor = 4
     dsize = 10
@@ -325,9 +323,9 @@ def test_dropout_training_replicated_repeatable():
     assert np.array_equal(ref_d__ip, anchors[d__ip])
 
 
-## TODO T8803 : requires hardware or a sim device
 # Check that all micro batches use different seeds when using multiple
 # batches per step and replicated graphs.
+@tu.requires_ipu
 def test_replicated_with_multiple_batches_per_step():
     replication_factor = 4
     dsize = 100
@@ -380,11 +378,7 @@ def get_replicated_dropout_session(replication_factor=4,
         [out] = builder.aiOnnx.dropout([out], num_outputs=1, ratio=ratio)
     builder.addOutputTensor(out)
 
-    # TODO: use the tu.requires_ipu decorator
-    if tu.ipu_available(replication_factor):
-        device = tu.acquire_ipu(replication_factor)
-    else:
-        pytest.skip("Test needs to run on IPU, but none are available")
+    device = tu.create_test_device(replication_factor)
 
     dfAnchors = [out, ip, d__ip]
     dfAnchors = {i: popart.AnchorReturnType("ALL") for i in dfAnchors}
@@ -421,14 +415,7 @@ def get_dropout_session(dsize=100,
         [out] = builder.aiOnnx.dropout([out], num_outputs=1, ratio=ratio)
     builder.addOutputTensor(out)
 
-    if use_ipu is True:
-        # TODO: use the tu.requires_ipu decorator
-        if tu.ipu_available():
-            device = tu.acquire_ipu()
-        else:
-            pytest.skip("Test needs to run on IPU, but none are available")
-    else:
-        device = popart.DeviceManager().createCpuDevice()
+    device = tu.create_test_device()
 
     session, anchors = get_session(anchorIds=[out, ip, d__ip],
                                    proto=builder.getModelProto(),

@@ -44,12 +44,12 @@ def test_auto_virtual_graph_subgraphs_2():
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
 
-    device = tu.get_ipu_model(numIPUs=ipus)
+    device = tu.create_test_device(numIpus=ipus)
 
-    popart.Session(fnModel=proto,
-                   dataFeed=dataFlow,
-                   userOptions=opts,
-                   deviceInfo=device)
+    popart.InferenceSession(fnModel=proto,
+                            dataFeed=dataFlow,
+                            userOptions=opts,
+                            deviceInfo=device)
 
 
 def test_auto_virtual_graph_subgraphs_4():
@@ -92,12 +92,12 @@ def test_auto_virtual_graph_subgraphs_4():
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
 
-    device = tu.get_ipu_model(numIPUs=ipus)
+    device = tu.create_test_device(numIpus=ipus)
 
-    popart.Session(fnModel=proto,
-                   dataFeed=dataFlow,
-                   userOptions=opts,
-                   deviceInfo=device)
+    popart.InferenceSession(fnModel=proto,
+                            dataFeed=dataFlow,
+                            userOptions=opts,
+                            deviceInfo=device)
 
 
 def test_auto_virtual_graph_inf_2():
@@ -125,12 +125,12 @@ def test_auto_virtual_graph_inf_2():
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
 
-    device = tu.get_ipu_model(numIPUs=ipus)
+    device = tu.create_test_device(numIpus=ipus)
 
-    popart.Session(fnModel=proto,
-                   dataFeed=dataFlow,
-                   userOptions=opts,
-                   deviceInfo=device)
+    popart.InferenceSession(fnModel=proto,
+                            dataFeed=dataFlow,
+                            userOptions=opts,
+                            deviceInfo=device)
 
 
 def test_auto_virtual_graph_inf_many():
@@ -158,12 +158,12 @@ def test_auto_virtual_graph_inf_many():
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
 
-    device = tu.get_ipu_model(numIPUs=ipus)
+    device = tu.create_test_device(numIpus=ipus)
 
-    popart.Session(fnModel=proto,
-                   dataFeed=dataFlow,
-                   userOptions=opts,
-                   deviceInfo=device)
+    popart.InferenceSession(fnModel=proto,
+                            dataFeed=dataFlow,
+                            userOptions=opts,
+                            deviceInfo=device)
 
 
 def test_auto_virtual_graph_train():
@@ -196,16 +196,18 @@ def test_auto_virtual_graph_train():
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
 
-    device = tu.get_ipu_model(numIPUs=ipus)
+    device = tu.create_test_device(numIpus=ipus)
 
-    popart.Session(fnModel=proto,
-                   dataFeed=dataFlow,
-                   userOptions=opts,
-                   losses=[loss],
-                   optimizer=popart.SGD({"defaultLearningRate": (0.01, True)}),
-                   deviceInfo=device)
+    popart.TrainingSession(fnModel=proto,
+                           dataFeed=dataFlow,
+                           userOptions=opts,
+                           losses=[loss],
+                           optimizer=popart.SGD(
+                               {"defaultLearningRate": (0.01, True)}),
+                           deviceInfo=device)
 
 
+@tu.requires_ipu_model
 def test_auto_virtual_graph_not_enough_splits():
     ipus = 4
 
@@ -230,13 +232,13 @@ def test_auto_virtual_graph_not_enough_splits():
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
 
-    device = tu.get_ipu_model(numIPUs=ipus)
+    device = tu.create_test_device(numIpus=ipus)
 
     with pytest.raises(popart.popart_exception) as e_info:
-        popart.Session(fnModel=proto,
-                       dataFeed=dataFlow,
-                       userOptions=opts,
-                       deviceInfo=device)
+        popart.InferenceSession(fnModel=proto,
+                                dataFeed=dataFlow,
+                                userOptions=opts,
+                                deviceInfo=device)
 
     assert (e_info.value.args[0].startswith(
         "[AutoVirtualGraph] Couldn't find enough splits"))

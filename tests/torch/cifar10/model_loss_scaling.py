@@ -23,6 +23,7 @@ anchors = {
     "l1LossVal": popart.AnchorReturnType("ALL"),
     "nllLossVal": popart.AnchorReturnType("ALL"),
     "probs": popart.AnchorReturnType("FINAL"),
+    "preProbSquared": popart.AnchorReturnType("FINAL"),
     nllGradTensorId: popart.AnchorReturnType("FINAL"),
     l1GradTensorId: popart.AnchorReturnType("FINAL")
 }
@@ -195,7 +196,11 @@ assert (np.allclose(np.array(anchors_1[nllGradTensorId]) * 100,
                     atol=atol,
                     rtol=rtol))
 
+# Sign flipping can occur as something in the model is non-deterministic (see T16920)
+sign_flip = (np.sign(np.array(anchors_2['preProbSquared'])) *
+             np.sign(np.array(anchors_1['preProbSquared'])))
+
 assert (np.allclose(np.array(anchors_1[l1GradTensorId]) * 100,
-                    (np.array(anchors_2[l1GradTensorId])),
+                    np.array(anchors_2[l1GradTensorId]) * sign_flip,
                     atol=atol,
                     rtol=rtol))

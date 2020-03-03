@@ -19,8 +19,6 @@ std::vector<std::unique_ptr<Op>> SinOp::getGradOps() {
 
 SinGradOp::SinGradOp(const SinOp &fwdOp)
     : ElementWiseNonLinearUnaryGradOp(Onnx::GradOperators::SinGrad, fwdOp) {
-  // Give the gradient a slightly lower priority to help the scheduler
-  priority -= 1;
 }
 
 std::unique_ptr<Op> SinGradOp::clone() const {

@@ -776,6 +776,8 @@ std::vector<Op *> BackwardPassCreator::growGradOps(Op *nonGradOp) {
     OpId gradOpId = bwdGraph.moveIntoGraph(std::move(uPtrOp));
 
     gradOp->setScope(bwdGraph.getScope());
+    // Reset priority, since fwd priority should not influence bwd priority
+    gradOp->settings.schedulePriority = 0.0;
 
     if (nonGradOp->settings.recomputeType == RecomputeType::RECOMPUTE &&
         bwdGraph.getIr().autoRecomputationEnabled()) {

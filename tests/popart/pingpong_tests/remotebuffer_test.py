@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from test_session import PopartTestSession
+import test_util as tu
 
 Session = namedtuple('Session', ['session', 'anchors'])
 
@@ -57,9 +58,9 @@ def get_device(sim=True, device_id=None, num_ipus=1, pingpong=False):
         else:
             pattern = (popart.SyncPattern.PingPong
                        if pingpong else popart.SyncPattern.Full)
-            device = tu.acquire_ipu(numIPUs=num_ipus,
-                                    tilesPerIPU=1216,
-                                    pattern=pattern)
+            device = tu.create_test_device(numIPUs=num_ipus,
+                                           tilesPerIPU=1216,
+                                           pattern=pattern)
             assert device
         if device is None:
             raise Exception('Failed to acquire IPU. Exiting.')
@@ -114,7 +115,7 @@ class DataSet:
         return self.steps_per_epoch
 
 
-# TODO: Fixme when Poplar is ready.
+# TODO: Fixme when Poplar is ready. TODO: Update for multiple devices.
 @pytest.mark.skip(reason="Enable when Poplar backend is ready")
 def test_remote_buffer():
     np.random.seed(1234)
