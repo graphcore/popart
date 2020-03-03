@@ -125,7 +125,7 @@ BOOST_AUTO_TEST_CASE(ScheduleLiveness1Test) {
     auto scOp      = dynamic_cast<ScaleOp *>(op);
     int scaleAsInt = static_cast<int>(scOp->getScaleFactor());
     if (scaleAsInt % 5 == 0) {
-      scOp->priority = scOp->getScaleFactor() + 100.;
+      scOp->settings.schedulePriority = scOp->getScaleFactor() + 100.;
     }
   }
 

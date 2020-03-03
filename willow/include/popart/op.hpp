@@ -57,12 +57,6 @@ public:
   // The produced Tensors
   std::unique_ptr<TensorIndexMap> output;
 
-  // all Ops will be topologically sorted "as close to" the order of
-  // priority (highest to lowest) while still resulting in a valid
-  // topological ordering.
-  // default : 0.0
-  double priority{0.0};
-
   // The unique identifier of the Op (will always be set in Op::Op)
   OpId id{-1};
 
@@ -110,6 +104,15 @@ public:
     boost::optional<PingPongPhase> pingPongPhase;
 
     boost::optional<BatchSerializedPhase> batchSerializedPhase;
+
+    // Tensor layout mapping should be inferred "to" tensor <- "from" tensor
+    std::map<InIndex, InIndex> inferTensorMappingToFrom;
+
+    // all Ops will be topologically sorted "as close to" the order of
+    // priority (highest to lowest) while still resulting in a valid
+    // topological ordering.
+    // default : 0.0
+    double schedulePriority{0.0};
 
     // This method will append the optional attributes (vgraphId, etc)
     // depending on whether the attribute has been

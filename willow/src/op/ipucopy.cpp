@@ -24,7 +24,7 @@ IpuCopyOp::IpuCopyOp(const OperatorIdentifier &_opid,
                      const Op::Settings &settings_)
     : Op(_opid, settings_), destIpu(_destIpu) {
   // very high priority, so that performed as early as possible
-  priority = std::numeric_limits<double>::max();
+  settings.schedulePriority = std::numeric_limits<double>::max();
 }
 
 std::unique_ptr<Op> IpuCopyOp::clone() const {

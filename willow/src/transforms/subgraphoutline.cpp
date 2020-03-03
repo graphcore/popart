@@ -450,11 +450,11 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
     auto old_op = graph.getOp(opid);
     old_op->disconnectAllInputs();
     old_op->disconnectAllOutputs();
-    priority = std::max(priority, old_op->priority);
+    priority = std::max(priority, old_op->settings.schedulePriority);
   }
 
   // CallOp's priority should be the max priority of the Op's that it replaces
-  call_op->priority = priority;
+  call_op->settings.schedulePriority = priority;
 
   // Connect inputs
   for (int i = 0; i < instance.external_inputs.size(); i++) {

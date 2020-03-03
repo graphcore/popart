@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE(Introspection0_Subgraph) {
                    op->debugName(),
                    op->getSubgraphEquivId(),
                    op->getSubgraphValue(),
-                   op->priority);
+                   op->settings.schedulePriority);
   }
 
   for (int i = 0; i < sched.size(); ++i) {

@@ -1340,6 +1340,13 @@ PYBIND11_MODULE(popart_core, m) {
             return acm;
           },
           py::arg("value"))
+      .def(
+          "schedulePriority",
+          [](Builder &self, float priority) -> AttributeContextManager {
+            AttributeContextManager acm(self, sSchedulePriority, priority);
+            return acm;
+          },
+          py::arg("value"))
       .def("excludePatterns",
            static_cast<void (Builder::*)(
                const TensorId &, const std::vector<std::string> &value)>(

@@ -42,11 +42,11 @@ void Pattern::transferBaseProperties(Op *from, Op *to) const {
     to->setPipelineStage(from->getPipelineStage());
   }
 
-  to->settings.recomputeType = from->settings.recomputeType;
-  to->settings.cacheType     = from->settings.cacheType;
-  to->fromLoss               = from->fromLoss;
-  to->toLoss                 = from->toLoss;
-  to->priority               = from->priority;
+  to->settings.recomputeType    = from->settings.recomputeType;
+  to->settings.cacheType        = from->settings.cacheType;
+  to->fromLoss                  = from->fromLoss;
+  to->toLoss                    = from->toLoss;
+  to->settings.schedulePriority = from->settings.schedulePriority;
 }
 
 std::unique_ptr<Op>

@@ -283,7 +283,8 @@ void Op::toJSON(std::stringstream &ss) const { OpJsonSerialiser os(this, ss); }
 // The appendMore attributes appear in the log but are not used
 // in the outlining algorithm
 void Op::appendMore(OpSerialiserBase &os) const {
-  os.appendAttribute("priority", static_cast<float>(priority));
+  os.appendAttribute("schedulePriority",
+                     static_cast<float>(settings.schedulePriority));
 }
 
 int Op::getNonGradInIndex(int gradOpOutIndex) const {
@@ -345,7 +346,6 @@ const std::string &Op::name() const { return getName(); }
 
 Op::Op(const Op &op)
     : Vertex(op), input(new TensorIndexMap), output(new TensorIndexMap),
-      priority(op.priority),
       id(op.settings.graph.get().getIr().getAndIncrOpsCounter()), opid(op.opid),
       settings(op.settings) {
   // input, output: empty.
@@ -367,7 +367,7 @@ TensorId Op::outId(OutIndex index) { return outTensor(index)->id; }
 const TensorId Op::outId(OutIndex index) const { return outTensor(index)->id; }
 
 Op::Op(const OperatorIdentifier &_opid, const Op::Settings &settings_)
-    : input(new TensorIndexMap), output(new TensorIndexMap), priority(0.0),
+    : input(new TensorIndexMap), output(new TensorIndexMap),
       // the id
       id(settings_.graph.get().getIr().getAndIncrOpsCounter()), opid(_opid),
       // the Attributes
@@ -429,6 +429,12 @@ void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {
     int64_t cacheTypeTmp;
     attributes.set(cacheTypeTmp, sCacheOutputAttribute);
     cacheType = static_cast<CacheType>(cacheTypeTmp);
+  }
+
+  if (attributes.hasAttribute(sSchedulePriority)) {
+    float schedule_priority;
+    attributes.set(schedule_priority, sSchedulePriority);
+    schedulePriority = schedule_priority;
   }
 
   bool hasNamesAtt = attributes.hasAttribute(sInplaceOpNames);

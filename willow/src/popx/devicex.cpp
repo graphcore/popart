@@ -512,7 +512,7 @@ Devicex::getMainGraphOpString(const std::vector<TaskId> &taskOrder) const {
            << (op->hasPipelineStage() ? op->getPipelineStage() : -1)
            << "  VGID: "
            << (op->hasVirtualGraphId() ? op->getVirtualGraphId() : -1)
-           << "  priority: " << op->priority << std::endl;
+           << "  priority: " << op->settings.schedulePriority << std::endl;
       } else {
         ss << type << "  " << seriesNums[op] << "  " << op->str() << std::endl;
       }

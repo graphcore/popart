@@ -50,7 +50,7 @@ popart::Tensor *configureReshapeOp(ReshapeOp *op,
                                    const TensorId outputTensorId,
                                    const double priority = 0) {
   op->setOutShape(outShape);
-  op->priority = priority;
+  op->settings.schedulePriority = priority;
   op->connectInTensor(ReshapeOp::getInIndex(), inputTensorId);
   op->connectOutTensor(ReshapeOp::getOutIndex(), outputTensorId);
   op->setup();
@@ -62,7 +62,7 @@ popart::Tensor *configureReshapeOp(ReshapeOp *op,
                                    const TensorId inputTensorId,
                                    const double priority = 0) {
   op->setOutShape(outShape);
-  op->priority = priority;
+  op->settings.schedulePriority = priority;
   op->connectInTensor(ReshapeOp::getInIndex(), inputTensorId);
   op->createAndConnectOutTensor(
       ReshapeOp::getOutIndex(),
@@ -76,7 +76,7 @@ popart::Tensor *configureTranposeOp(TransposeOp *op,
                                     const Shape &perm,
                                     const double priority = 0) {
   op->setPerm(perm);
-  op->priority = priority;
+  op->settings.schedulePriority = priority;
   op->connectInTensor(TransposeOp::getInIndex(), inputTensorId);
   op->createAndConnectOutTensor(
       TransposeOp::getOutIndex(),

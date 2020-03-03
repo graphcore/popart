@@ -120,6 +120,7 @@ static constexpr const char *sPipelineStageAttribute   = "__pipeline_stage";
 static constexpr const char *sCacheOutputAttribute     = "__cache_output";
 static constexpr const char *sOutputTypeAttribute      = "__output_type";
 static constexpr const char *sExcludePatternsAttribute = "__exclude_patterns";
+static constexpr const char *sSchedulePriority         = "__schedule_priority";
 
 static constexpr const char *sSerializeMatMulModeAttribute =
     "__serialize_matmul_mode";

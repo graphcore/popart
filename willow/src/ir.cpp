@@ -1791,6 +1791,8 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
   for (auto &upop : backOps) {
     Op *gradOp    = upop.get();
     OpId gradOpId = getMainGraph().moveIntoGraph(std::move(upop));
+    // Reset priority, since fwd priority should not influence bwd priority
+    gradOp->settings.schedulePriority = 0.0;
 
     if (nonGradOp->settings.recomputeType == RecomputeType::RECOMPUTE &&
         autoRecomputationEnabled()) {

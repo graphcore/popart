@@ -199,7 +199,7 @@ public:
       // to strongly encourage Ops to be appear in
       // 1) descending priority
       // 2) ascending batch-serial phase
-      super.push_back({-op_batchserial_or, op->priority});
+      super.push_back({-op_batchserial_or, op->settings.schedulePriority});
       sub.push_back({op->opid.type, ioNames(op), op->id});
     }
     g.insertStartAttractors(opIotas, super, -1);
