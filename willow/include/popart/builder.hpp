@@ -135,6 +135,89 @@ public:
                 const std::string &name = {});
 
   /**
+   * Add an init operation to the model
+   *
+   * \param shape Shape of the tensor to initialise
+   * \param data_type Data type to initialise tensor with
+   * \param init_type Mode of tensor initialisations
+   * \param name Optional identifier for operation
+   * \return The name of the result tensor
+   */
+  TensorId init(Attributes::Ints shape,
+                Attributes::Int data_type,
+                Attributes::Int init_type,
+                const std::string &name = {});
+
+  /**
+   * Add a dynamic slice operation to the model
+   *
+   * Creates a new slice tensor, e.g. slice = tensor[offset]
+   *
+   * \param args [tensor, offset]
+   * \param axes Axes along which to slice
+   * \param sizes Size of the slice in each axis
+   * \param name Optional identifier for operation
+   * \return The name of the result tensor
+   */
+  TensorId dynamicslice(const std::vector<TensorId> &args,
+                        Attributes::Ints axes,
+                        Attributes::Ints sizes,
+                        Attributes::Int noOverlap,
+                        const std::string &name = {});
+
+  /**
+   * Add a dynamic update operation to the model
+   *
+   * Creates a copy of "tensor" with "slice" inserted at "offset",
+   * e.g. out = tensor, out[offset] = slice
+   *
+   * \param args [tensor, offset, slice]
+   * \param axes Axes along which to update
+   * \param sizes Size of the slice in each axis
+   * \param name Optional identifier for operation
+   * \return The name of the result tensor
+   */
+  TensorId dynamicupdate(const std::vector<TensorId> &args,
+                         Attributes::Ints axes,
+                         Attributes::Ints sizes,
+                         Attributes::Int noOverlap,
+                         const std::string &name = {});
+
+  /**
+   * Add a dynamic zero operation to the model
+   *
+   * Creates a copy of "tensor" with a slice at "offset" set to zero,
+   * e.g. out = tensor, out[offset] = 0.0
+   *
+   * \param args [tensor, offset]
+   * \param axes Axes along which to erase
+   * \param sizes Size of the slice in each axis
+   * \param name Optional identifier for operation
+   * \return The name of the result tensor
+   */
+  TensorId dynamiczero(const std::vector<TensorId> &args,
+                       Attributes::Ints axes,
+                       Attributes::Ints sizes,
+                       const std::string &name = {});
+
+  /**
+   * Add a dynamic add operation to the model
+   *
+   * Creates a copy of "tensor" with "slice" added at "offset",
+   * e.g. out = tensor, out[offset] += slice
+   *
+   * \param args [tensor, offset, slice]
+   * \param axes Axes along which to add
+   * \param sizes Size of the slice in each axis
+   * \param name Optional identifier for operation
+   * \return The name of the result tensor
+   */
+  TensorId dynamicadd(const std::vector<TensorId> &args,
+                      Attributes::Ints axes,
+                      Attributes::Ints sizes,
+                      const std::string &name = {});
+
+  /**
    * Add a call operation to the model
    *
    * This is a poplar extension, to expose manual code re-use to

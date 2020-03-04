@@ -36,6 +36,7 @@ public:
 class IdentityGradOp : public IdentityOp {
 public:
   IdentityGradOp(const IdentityOp &fwdOp);
+  IdentityGradOp(const Settings &settings);
   std::unique_ptr<Op> clone() const final;
 
   const std::vector<GradInOutMapper> &gradInputInfo() const final;

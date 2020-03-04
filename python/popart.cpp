@@ -10,6 +10,7 @@
 #include <popart/ir.hpp>
 #include <popart/numerics.hpp>
 #include <popart/op/identity.hpp>
+#include <popart/op/init.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/loss.hpp>
 #include <popart/op/nll.hpp>
@@ -505,6 +506,10 @@ PYBIND11_MODULE(popart_core, m) {
       .value("COMPLEX128", DataType::COMPLEX128)
       .value("STRING", DataType::STRING)
       .value("UNDEFINED", DataType::UNDEFINED);
+
+  py::enum_<InitType>(m, "InitType")
+      .value("NONE", InitType::NONE)
+      .value("ZERO", InitType::ZERO);
 
   py::class_<OpDefinition::Input>(m, "OpDefinition::Input")
       .def_readonly("name", &OpDefinition::Input::name)
@@ -1100,6 +1105,38 @@ PYBIND11_MODULE(popart_core, m) {
       .def("gelu",
            &AiGraphcoreOpset1::gelu,
            py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("init",
+           &AiGraphcoreOpset1::init,
+           py::arg("shape"),
+           py::arg("data_type"),
+           py::arg("init_type"),
+           py::arg("debugPrefix") = std::string())
+      .def("dynamicslice",
+           &AiGraphcoreOpset1::dynamicslice,
+           py::arg("args"),
+           py::arg("axes"),
+           py::arg("sizes"),
+           py::arg("noOverlap")   = 0,
+           py::arg("debugPrefix") = std::string())
+      .def("dynamicupdate",
+           &AiGraphcoreOpset1::dynamicupdate,
+           py::arg("args"),
+           py::arg("axes"),
+           py::arg("sizes"),
+           py::arg("noOverlap")   = 0,
+           py::arg("debugPrefix") = std::string())
+      .def("dynamiczero",
+           &AiGraphcoreOpset1::dynamiczero,
+           py::arg("args"),
+           py::arg("axes"),
+           py::arg("sizes"),
+           py::arg("debugPrefix") = std::string())
+      .def("dynamicadd",
+           &AiGraphcoreOpset1::dynamicadd,
+           py::arg("args"),
+           py::arg("axes"),
+           py::arg("sizes"),
            py::arg("debugPrefix") = std::string())
       .def("call",
            &AiGraphcoreOpset1::call,

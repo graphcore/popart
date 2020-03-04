@@ -591,7 +591,7 @@ bool PingPong::apply(Graph &graph) const {
               } else {
                 // InitOp as a "producer" op
                 auto initOp =
-                    std::make_unique<InitOp>(Onnx::CustomOperators::Init,
+                    std::make_unique<InitOp>(Onnx::CustomOperators::Init_1,
                                              tensor->info,
                                              TensorType::Cache,
                                              InitType::NONE,

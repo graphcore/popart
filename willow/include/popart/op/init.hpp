@@ -6,8 +6,20 @@
 
 namespace popart {
 
+// Initialisation behaviour has consequences for the liveness of tensors,
+// as well as their values before each new iteration.
+
+// None: Do not populate tensor in each iteration;
+//       only safe if tensor is overwritten by it's consumer before use.
+//       For example CacheLoad and DynamicUpdate are safe consumers, while
+//       DynamicAdd needs a zero-initialised tensor.
+// Zero: Populate tensor with zeros in each iteration (like np.zeros)
 enum class InitType { NONE = 0, ZERO };
 
+// Initialize a new tensor given
+// shape, data type, tensor type and initialization type.
+// Allows to create initialized tensors in any graph.
+// The InitOp has no tensor inputs and one tensor output.
 class InitOp : public Op {
 public:
   InitOp(const OperatorIdentifier &,

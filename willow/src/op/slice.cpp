@@ -11,7 +11,7 @@ namespace popart {
 Slice::Slice(int64_t start_, int64_t end_, int64_t axis_)
     : start(start_), end(end_), axis(axis_) {}
 
-TensorInfo BaseSliceOp::createOutShape() const {
+TensorInfo BaseSliceOp::createOutInfo() const {
   auto in_info      = inInfo(getInIndex());
   auto output_shape = in_info.shape();
 
@@ -294,7 +294,7 @@ void BaseSliceOp::connectInTensor(InIndex inIndex, TensorId tenId) {
 }
 
 void BaseSliceOp::setup() {
-  outInfo(getOutIndex()) = createOutShape();
+  outInfo(getOutIndex()) = createOutInfo();
   // TODO : check that shapes agree T9582
 }
 

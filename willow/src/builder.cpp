@@ -3,6 +3,7 @@
 #include <popart/logging.hpp>
 #include <popart/onnxutil.hpp>
 #include <popart/opidentifier.hpp>
+#include <popart/tensor.hpp>
 
 namespace popart {
 
@@ -276,6 +277,82 @@ TensorId AiGraphcoreOpset1::gelu(const std::vector<TensorId> &args,
                                  const std::string &name) {
   return impl
       ->op(Onnx::AiGraphcore::OpSet1::Gelu, getOpsetVersion(), args, {}, name)
+      .at(0);
+}
+
+TensorId AiGraphcoreOpset1::init(Attributes::Ints shape,
+                                 Attributes::Int data_type,
+                                 Attributes::Int init_type,
+                                 const std::string &name) {
+  return impl
+      ->op(Onnx::AiGraphcore::OpSet1::Init,
+           getOpsetVersion(),
+           {},
+           {{"shape", shape},
+            {"data_type", data_type},
+            {"tensor_type", static_cast<int64_t>(TensorType::ActGrad)},
+            {"init_type", init_type}},
+           name)
+      .at(0);
+}
+
+TensorId AiGraphcoreOpset1::dynamicslice(const std::vector<TensorId> &args,
+                                         Attributes::Ints axes,
+                                         Attributes::Ints sizes,
+                                         Attributes::Int noOverlap,
+                                         const std::string &name) {
+  return impl
+      ->op(Onnx::AiGraphcore::OpSet1::DynamicSlice,
+           getOpsetVersion(),
+           args,
+           {{"axes", axes}, {"sizes", sizes}, {"noOverlap", noOverlap}},
+           name)
+      .at(0);
+}
+
+TensorId AiGraphcoreOpset1::dynamicupdate(const std::vector<TensorId> &args,
+                                          Attributes::Ints axes,
+                                          Attributes::Ints sizes,
+                                          Attributes::Int noOverlap,
+                                          const std::string &name) {
+  return impl
+      ->op(Onnx::AiGraphcore::OpSet1::DynamicUpdate,
+           getOpsetVersion(),
+           args,
+           {{"axes", axes}, {"sizes", sizes}, {"noOverlap", noOverlap}},
+           name)
+      .at(0);
+}
+
+TensorId AiGraphcoreOpset1::dynamiczero(const std::vector<TensorId> &args,
+                                        Attributes::Ints axes,
+                                        Attributes::Ints sizes,
+                                        const std::string &name) {
+  return impl
+      ->op(Onnx::AiGraphcore::OpSet1::DynamicZero,
+           getOpsetVersion(),
+           args,
+           {
+               {"axes", axes},
+               {"sizes", sizes},
+           },
+           name)
+      .at(0);
+}
+
+TensorId AiGraphcoreOpset1::dynamicadd(const std::vector<TensorId> &args,
+                                       Attributes::Ints axes,
+                                       Attributes::Ints sizes,
+                                       const std::string &name) {
+  return impl
+      ->op(Onnx::AiGraphcore::OpSet1::DynamicAdd,
+           getOpsetVersion(),
+           args,
+           {
+               {"axes", axes},
+               {"sizes", sizes},
+           },
+           name)
       .at(0);
 }
 
