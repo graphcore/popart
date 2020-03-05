@@ -381,7 +381,8 @@ void Graph::setVarUpdateConstraints() {
         // aliased.erase(modifier->output->tensor(0));
 
         // for all consumers of aliasing tensors, add the topological constraint
-        std::set<Op *> befores;
+        auto OpCompare = [](Op *a, Op *b) { return a->id < b->id; };
+        std::set<Op *, decltype(OpCompare)> befores(OpCompare);
         for (Tensor *t : aliased) {
           for (Op *consumer : t->consumers.getOps()) {
 
