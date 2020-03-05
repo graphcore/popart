@@ -12,8 +12,7 @@ namespace popart {
 VarUpdateOp::VarUpdateOp(const OperatorIdentifier &_opid,
                          const TensorId &varId_,
                          const Op::Settings &settings_)
-    : Op(_opid, settings_), varId(varId_) {
-}
+    : Op(_opid, settings_), varId(varId_) {}
 
 VarUpdateWithUpdaterOp::VarUpdateWithUpdaterOp(const OperatorIdentifier &opid_,
                                                const TensorId &varId_,

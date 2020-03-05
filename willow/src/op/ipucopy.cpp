@@ -22,8 +22,7 @@ std::string IpuCopyOp::getFromToStr() const {
 IpuCopyOp::IpuCopyOp(const OperatorIdentifier &_opid,
                      uint64_t _destIpu,
                      const Op::Settings &settings_)
-    : Op(_opid, settings_), destIpu(_destIpu) {
-}
+    : Op(_opid, settings_), destIpu(_destIpu) {}
 
 std::unique_ptr<Op> IpuCopyOp::clone() const {
   return std::make_unique<IpuCopyOp>(*this);
