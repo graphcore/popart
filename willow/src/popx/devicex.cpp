@@ -2813,7 +2813,6 @@ void Devicex::prepare() {
         for (auto seq : seqs[emplaceTask.name]) {
           // Emplace intermediate sequence in final sequence
           seq.first->add(seq.second);
-          logging::devicex::trace("  Target sequence: {}", seq.first);
         }
         // Erase sequences for task, so that each tasks's sequences
         // are only added once.
