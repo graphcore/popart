@@ -186,7 +186,7 @@ constexpr static char IsNaN[] = "IsNan";
 const static AiGraphcoreOpIdV1 LRN("LRN");
 const static AiGraphcoreOpIdV1 LSTMGrad("LSTMGrad");
 const static AiGraphcoreOpIdV1 PopartLSTMGrad("PopartLSTMGrad");
-// constexpr static char LeakyRelu[] = "LeakyRely";
+const static AiGraphcoreOpIdV1 LeakyReluGrad("LeakyReluGrad");
 // constexpr static char Less[] = "Less";
 const static AiGraphcoreOpIdV1 LogGrad("LogGrad");
 // constexpr static char LogSoftmax[] = "LogSoftmax";
@@ -301,6 +301,7 @@ const static AiGraphcoreOpIdV1 Gelu_1("Gelu", 1, 1);
 const static AiGraphcoreOpIdV1 GeluInplace("GeluInplace");
 
 const static AiGraphcoreOpIdV1 ReluInplace("ReluInplace");
+const static AiGraphcoreOpIdV1 LeakyReluInplace("LeakyReluInplace");
 const static AiGraphcoreOpIdV1 SinhInplace("SinhInplace");
 const static AiGraphcoreOpIdV1 AsinInplace("AsinInplace");
 const static AiGraphcoreOpIdV1 AtanInplace("AtanInplace");
