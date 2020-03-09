@@ -1,0 +1,56 @@
+#ifndef GUARD_NEURALNET_LRELUX_HPP
+#define GUARD_NEURALNET_LRELUX_HPP
+
+#include <popart/names.hpp>
+#include <popart/popx/op/elementwisex.hpp>
+
+namespace popart {
+namespace popx {
+
+class LeakyReluComputex : public EwuComputex {
+public:
+  LeakyReluComputex(float _alpha) : alpha(_alpha) {}
+
+  poplar::Tensor outplace(poplar::program::Sequence &,
+                          poplar::Graph &,
+                          const poplar::Tensor &,
+                          const std::string &) const final;
+
+  void inplace(poplar::program::Sequence &,
+               poplar::Graph &,
+               const poplar::Tensor &,
+               const std::string &) const final;
+
+  static std::unique_ptr<EwuComputex> get(float _alpha) {
+    return std::unique_ptr<EwuComputex>(new LeakyReluComputex(_alpha));
+  }
+
+  float getAlpha() const { return alpha; }
+
+  static float getAlphaFromLReluOp(Op *op);
+  static float getAlphaFromLReluInplaceOp(Op *op);
+
+private:
+  float alpha;
+};
+
+class LeakyReluOpx : public ElementWiseUnaryOutplaceOpx {
+public:
+  LeakyReluOpx(Op *, Devicex *);
+};
+
+class LeakyReluInplaceOpx : public ElementWiseUnaryInplaceOpx {
+public:
+  LeakyReluInplaceOpx(Op *, Devicex *);
+};
+
+class LeakyReluGradOpx : public Opx {
+public:
+  LeakyReluGradOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
+};
+
+} // namespace popx
+} // namespace popart
+
+#endif

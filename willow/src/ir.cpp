@@ -40,6 +40,7 @@
 #include <popart/transforms/aliaszerocopy.hpp>
 #include <popart/transforms/auto_virtual_graph.hpp>
 #include <popart/transforms/cachesetup.hpp>
+#include <popart/transforms/dynamicoptransform.hpp>
 #include <popart/transforms/groupmatmuls.hpp>
 #include <popart/transforms/hostreduce.hpp>
 #include <popart/transforms/inferpipelinestages.hpp>
@@ -884,6 +885,8 @@ void Ir::prepareImpl(const IrBundle &gb) {
   // consumers are removed at this point.
   removeIsolatedTensors(true);
   updateVertices();
+
+  applyTransform(DynamicOpTransform::id(), getMainGraph());
 
   // Third ping pong transformation pass (bwd)
   if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
@@ -2290,17 +2293,16 @@ void Ir::constructBackwards() {
     }
 
     for (auto &nongrad_egrads : tensor_grad_registry.popComplete()) {
-
       Tensor *nongrad = getTensors().get(nongrad_egrads.first);
+
       const std::vector<Tensor *> &egrads = nongrad_egrads.second;
       // nongrad required below, as the name of the output of the
       // created op (sumOp) will be based off of it. Also, we
       // register the link between sumOp's output and nongrad
-      Op *sumOp = growGradSumOp(nongrad, egrads);
-
+      Op *sumOp       = growGradSumOp(nongrad, egrads);
       sumOp->fromLoss = PathFromLoss::Yes;
-      switch (nongrad->tensorType()) {
 
+      switch (nongrad->tensorType()) {
       // if sumOp creates the gradient of an activation tensor,
       case TensorType::ActGrad: {
         registerTensorGrad(sumOp->output->tensor(0));
@@ -3071,8 +3073,22 @@ void Ir::applyInplacePattern(Graph &graph) {
           return false;
         };
 
+        auto consumesGraphOutput = [this, op, &graph]() {
+          const auto graphOutputs = graph.getOutputIds();
+          const auto opInTensors  = op->input->tensors();
+          return std::any_of(opInTensors.cbegin(),
+                             opInTensors.cend(),
+                             [graphOutputs](const Tensor *inTensor) {
+                               return std::find(graphOutputs.cbegin(),
+                                                graphOutputs.cend(),
+                                                inTensor->id) !=
+                                      graphOutputs.cend();
+                             });
+        };
+
         if (!op->isExcludedFromPattern(&inplace) && !touchesAnchors() &&
-            !recomputeUsingCheckpoint() && !consumesImplicitLoopInputs()) {
+            !recomputeUsingCheckpoint() && !consumesImplicitLoopInputs() &&
+            !consumesGraphOutput()) {
           auto newTopoCons = inplace.getNewTopoCons(op, identifier);
           if (isSchedulable(newTopoCons)) {
             inplacedAlready.insert(op->id);

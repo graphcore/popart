@@ -186,7 +186,7 @@ constexpr static char IsNaN[] = "IsNan";
 const static AiGraphcoreOpIdV1 LRN("LRN");
 const static AiGraphcoreOpIdV1 LSTMGrad("LSTMGrad");
 const static AiGraphcoreOpIdV1 PopartLSTMGrad("PopartLSTMGrad");
-// constexpr static char LeakyRelu[] = "LeakyRely";
+const static AiGraphcoreOpIdV1 LeakyReluGrad("LeakyReluGrad");
 // constexpr static char Less[] = "Less";
 const static AiGraphcoreOpIdV1 LogGrad("LogGrad");
 // constexpr static char LogSoftmax[] = "LogSoftmax";
@@ -301,6 +301,7 @@ const static AiGraphcoreOpIdV1 Gelu_1("Gelu", 1, 1);
 const static AiGraphcoreOpIdV1 GeluInplace("GeluInplace");
 
 const static AiGraphcoreOpIdV1 ReluInplace("ReluInplace");
+const static AiGraphcoreOpIdV1 LeakyReluInplace("LeakyReluInplace");
 const static AiGraphcoreOpIdV1 SinhInplace("SinhInplace");
 const static AiGraphcoreOpIdV1 AsinInplace("AsinInplace");
 const static AiGraphcoreOpIdV1 AtanInplace("AtanInplace");
@@ -316,9 +317,18 @@ const static AiGraphcoreOpIdV1 Nll("Nll");
 
 const static AiGraphcoreOpIdV1 IpuCopy("IpuCopy");
 
-const static AiGraphcoreOpIdV1 Init("Init");
-const static AiGraphcoreOpIdV1 CacheStore("CacheStore");
-const static AiGraphcoreOpIdV1 CacheLoad("CacheLoad");
+const static AiGraphcoreOpIdV1 Init_1("Init", 0, 1);
+const static AiGraphcoreOpIdV1 CacheStore("CacheStore", {1, 2}, 0);
+const static AiGraphcoreOpIdV1 CacheLoad("CacheLoad", {1, 2}, 1);
+
+const static AiGraphcoreOpIdV1 DynamicSlice_1("DynamicSlice", 2, 1);
+const static AiGraphcoreOpIdV1 DynamicUpdate_1("DynamicUpdate", 3, 1);
+const static AiGraphcoreOpIdV1
+    DynamicUpdateInplace("DynamicUpdateInplace", 3, 1);
+const static AiGraphcoreOpIdV1 DynamicZero_1("DynamicZero", 2, 1);
+const static AiGraphcoreOpIdV1 DynamicZeroInplace("DynamicZeroInplace", 2, 1);
+const static AiGraphcoreOpIdV1 DynamicAdd_1("DynamicAdd", 3, 1);
+const static AiGraphcoreOpIdV1 DynamicAddInplace("DynamicAddInplace", 3, 1);
 
 const static AiGraphcoreOpIdV1 RecomputePrereq("RecomputePrereq");
 
@@ -358,10 +368,16 @@ namespace OpSet1 {
 const static OperatorIdentifier Subsample = CustomOperators::Subsample_1;
 const static OperatorIdentifier GroupNormalization =
     CustomOperators::GroupNormalization_1;
-const static OperatorIdentifier PrintTensor = CustomOperators::PrintTensor_1;
-const static OperatorIdentifier Scale       = CustomOperators::Scale_1;
-const static OperatorIdentifier LSTM        = CustomOperators::LSTM_1;
-const static OperatorIdentifier Gelu        = CustomOperators::Gelu_1;
+const static OperatorIdentifier PrintTensor  = CustomOperators::PrintTensor_1;
+const static OperatorIdentifier Scale        = CustomOperators::Scale_1;
+const static OperatorIdentifier LSTM         = CustomOperators::LSTM_1;
+const static OperatorIdentifier Gelu         = CustomOperators::Gelu_1;
+const static OperatorIdentifier Init         = CustomOperators::Init_1;
+const static OperatorIdentifier DynamicSlice = CustomOperators::DynamicSlice_1;
+const static OperatorIdentifier DynamicUpdate =
+    CustomOperators::DynamicUpdate_1;
+const static OperatorIdentifier DynamicZero = CustomOperators::DynamicZero_1;
+const static OperatorIdentifier DynamicAdd  = CustomOperators::DynamicAdd_1;
 const static OperatorIdentifier Call        = CustomOperators::Call_1;
 } // namespace OpSet1
 } // namespace AiGraphcore
@@ -379,6 +395,13 @@ const static AiGraphcoreOpIdV1
 const static AiGraphcoreOpIdV1 IfGrad("IfGrad");
 const static AiGraphcoreOpIdV1 IfConditionGrad("IfConditionGrad");
 const static AiGraphcoreOpIdV1 CallGrad("CallGrad");
+
+const static AiGraphcoreOpIdV1 DynamicSlicePadGrad("DynamicSlicePadGrad");
+const static AiGraphcoreOpIdV1
+    DynamicUpdateUpdaterGrad("DynamicUpdateUpdaterGrad");
+const static AiGraphcoreOpIdV1
+    DynamicUpdateToUpdateGrad("DynamicUpdateToUpdateGrad");
+const static AiGraphcoreOpIdV1 DynamicZeroGrad("DynamicZeroGrad");
 } // namespace CustomGradOperators
 } // namespace Onnx
 

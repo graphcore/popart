@@ -11,7 +11,7 @@ namespace popart {
 namespace popx {
 
 InitOpx::InitOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<InitOp>(op, Onnx::CustomOperators::Init);
+  verifyOp<InitOp>(op, Onnx::CustomOperators::Init_1);
 }
 
 void InitOpx::grow(poplar::program::Sequence &prog) const {
@@ -30,7 +30,7 @@ void InitOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<InitOpx> InitOpxCreator(Onnx::CustomOperators::Init);
+OpxCreator<InitOpx> InitOpxCreator(Onnx::CustomOperators::Init_1);
 } // namespace
 } // namespace popx
 } // namespace popart

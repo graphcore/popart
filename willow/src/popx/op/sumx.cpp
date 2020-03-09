@@ -52,7 +52,8 @@ void SumOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   // Compute the sum
-  auto sum = popops::map(graph(), *expr.front(), inputs, prog);
+  auto sum =
+      popops::map(graph(), *expr.front(), inputs, prog, debugPrefix("sum"));
   setOutTensor(SumOp::getOutIndex(), sum);
 }
 

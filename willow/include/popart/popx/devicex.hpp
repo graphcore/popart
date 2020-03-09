@@ -233,6 +233,8 @@ public:
                                std::function<void(void *)> callback,
                                unsigned index);
 
+  LinearMapper &getLinearMapper() { return linearMapper; }
+
   void copyFromRemoteBuffer(const poplar::RemoteBuffer &buffer,
                             void *w,
                             int repeat_index,

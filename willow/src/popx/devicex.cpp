@@ -1001,7 +1001,7 @@ std::pair<TaskId, DependencyType> Devicex::taskWhichCreates(TensorId id) {
   // Tensors with producer Ops are created (added to a Graph) by their
   // producer's OpTask
   else {
-    return {opTaskId(tensor->getProducer()), DependencyType::OUTPUT};
+    return {opTaskId(tensor->getProducer()), DependencyType::TENSOR};
   }
 }
 

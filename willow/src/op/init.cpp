@@ -25,4 +25,36 @@ void InitOp::setup() {
   output->tensor(getOutIndex())->setTensorType(tensor_type);
 }
 
+static OpDefinition::DataTypes T = {DataType::FLOAT,
+                                    DataType::FLOAT16,
+                                    DataType::INT32,
+                                    DataType::UINT32};
+
+static OpDefinition initOpDef({OpDefinition::Inputs({}),
+                               OpDefinition::Outputs({{"I", T}}),
+                               OpDefinition::Attributes({
+                                   {"shape", {"*"}},
+                                   {"data_type", {"*"}},
+                                   {"tensor_type", {"*"}},
+                                   {"init_type", {"*"}},
+                               })});
+
+static OpCreator<InitOp> initOpCreator(
+    OpDefinitions({{Onnx::CustomOperators::Init_1, initOpDef}}),
+    [](const OperatorIdentifier &_opid,
+       const Op::Settings &settings,
+       const Attributes &attr = {}) -> std::unique_ptr<Op> {
+      std::vector<int64_t> shape = attr.getAttribute<Attributes::Ints>("shape");
+      DataType data_type         = static_cast<DataType>(
+          attr.getAttribute<Attributes::Int>("data_type"));
+      TensorType tensor_type = static_cast<TensorType>(
+          attr.getAttribute<Attributes::Int>("tensor_type"));
+      InitType init_type = static_cast<InitType>(
+          attr.getAttribute<Attributes::Int>("init_type"));
+      TensorInfo info(data_type, shape);
+      return std::unique_ptr<InitOp>(
+          new InitOp(_opid, info, tensor_type, init_type, settings));
+    },
+    true);
+
 } // namespace popart

@@ -64,7 +64,7 @@ private:
   std::vector<int64_t> ends;
   std::vector<int64_t> axes;
 
-  TensorInfo createOutShape() const;
+  TensorInfo createOutInfo() const;
 
   // In the ONNX Slice description
   // If `index > dim_size` it is treated as `index == dim_size`
