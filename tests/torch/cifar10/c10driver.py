@@ -54,6 +54,7 @@ def run(torchWriter,
 
 def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
               device_hw_id, mode, syntheticData, transformations, epochs):
+
     dataFeed = torchWriter.dataFeed
     inputShapeInfo = torchWriter.inputShapeInfo
     validModes = ["infer", "evaluate", "train"]
@@ -226,14 +227,15 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
             dataShape = np.insert(dataShape, 0, batchesPerStep)
             return np.reshape(data, dataShape)
 
-    def getFnModel(framework, stepi):
-        return os.path.join(outputdir, "%sModel_%d.onnx" % (framework, stepi))
+    def getFnModel(framework, epoch):
+        return os.path.join(outputdir,
+                            "%sModel_epoch%s.onnx" % (framework, epoch))
 
-    def getFnPopArt(stepi):
-        return getFnModel("PopArt", stepi)
+    def getFnPopArt(epoch):
+        return getFnModel("PopArt", epoch)
 
-    def getFnTorch(stepi):
-        return getFnModel("Torch", stepi)
+    def getFnTorch(epoch):
+        return getFnModel("Torch", epoch)
 
     def reportTensorError(tensorInd, result):
         reportStr = str(tensorInd) + " :\n"
@@ -306,91 +308,93 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
     numReports = []
 
     for epoch in range(epochs):  # loop over the dataset multiple times
-        for stepi, stepData in enumerate(stepLoader):
-            if stepi == 1:  # Perform N steps, N=1
-                break
+        print("Epoch is %d" % (epoch, ))
+        stepData = next(iter(stepLoader))
 
-            # Form the input map for one step's worth of data.
-            # Note: data from the torch DataLoader has shape:
-            #   [stepSize * batchSize, sampleShape]
-            # whereas Popart expects input data of the shape:
-            #   [stepSize, batchSize, sampleShape]
-            # so we reshape the input array before passing to the stepio
-            inputs = {}
-            for tenId in cifarInIndices.keys():
-                inputs[tenId] = \
-                    addStepDimension(stepData[cifarInIndices[tenId]].numpy(),
-                                     session.dataFeed.batchesPerStep())
+        # Form the input map for one step's worth of data.
+        # Note: data from the torch DataLoader has shape:
+        #   [stepSize * batchSize, sampleShape]
+        # whereas Popart expects input data of the shape:
+        #   [stepSize, batchSize, sampleShape]
+        # so we reshape the input array before passing to the stepio
+        inputs = {}
+        for tenId in cifarInIndices.keys():
+            inputs[tenId] = \
+                addStepDimension(stepData[cifarInIndices[tenId]].numpy(),
+                                 session.dataFeed.batchesPerStep())
 
-            if mode == "train":
-                # take batchesPerStep passes (1 step), Torch
-                torchWriter.train(inputs)
+        if mode == "train":
+            # take batchesPerStep passes (1 step), Torch
+            torchWriter.train(inputs)
 
-                # take batchesPerStep passes (1 step), PopArt
-                pystepio = popart.PyStepIO(inputs, anchorArrays)
-                session.run(pystepio)
+            # take batchesPerStep passes (1 step), PopArt
+            pystepio = popart.PyStepIO(inputs, anchorArrays)
+            session.run(pystepio)
 
-                # write models to file
-                fnTorchModel = getFnTorch(stepi)
-                torchWriter.saveModel(fnTorchModel)
-                fnPopArtModel = getFnPopArt(stepi)
-                session.modelToHost(fnPopArtModel)
+            # write models to file
+            fnTorchModel = getFnTorch(epoch)
+            fnPopArtModel = getFnPopArt(epoch)
+            torchWriter.saveModel(fnTorchModel)
+            session.modelToHost(fnPopArtModel)
+            print("Writing models to " + fnTorchModel + " and " +
+                  fnPopArtModel)
 
-                # Compare parameters from updated Onnx models
-                if stepi == 0:
-                    nr = popart.NumericsReport(fnModel0, fnTorchModel,
-                                               fnModel0, fnPopArtModel)
-                else:
-                    nr = popart.NumericsReport(
-                        getFnTorch(stepi - 1), fnTorchModel,
-                        getFnPopArt(stepi - 1), fnPopArtModel)
+            # Compare parameters from updated Onnx models
+            print("Obtaining popart NumericsReport, A: Torch, B: Popart.")
+            if epoch is 0:
+                nr = popart.NumericsReport(fnModel0, fnTorchModel, fnModel0,
+                                           fnPopArtModel)
+            else:
+                nr = popart.NumericsReport(getFnTorch(epoch - 1), fnTorchModel,
+                                           getFnPopArt(epoch - 1),
+                                           fnPopArtModel)
 
-                print(nr.fullReport())
-                # One relative error calculated per weight tensor
-                for tId, relerror in nr.getRelativeErrors().items():
-                    checkResult(relerror, margin)
+            print(nr.fullReport())
+            # One relative error calculated per weight tensor
+            for tId, relerror in nr.getRelativeErrors().items():
+                checkResult(relerror, margin)
 
-            elif mode == "evaluate":
-                # take batchesPerStep passes (1 step), Torch
-                # returns scalar for each sample
-                torchLosses = torchWriter.evaluate(inputs)
+        elif mode == "evaluate":
+            # take batchesPerStep passes (1 step), Torch
+            # returns scalar for each sample
+            torchLosses = torchWriter.evaluate(inputs)
 
-                # take batchesPerStep passes (1 step), PopArt
-                pystepio = popart.PyStepIO(inputs, anchorArrays)
-                session.run(pystepio)
-                pLosses = getLossesFromAnchors(torchWriter, anchorArrays)
+            # take batchesPerStep passes (1 step), PopArt
+            pystepio = popart.PyStepIO(inputs, anchorArrays)
+            session.run(pystepio)
+            pLosses = getLossesFromAnchors(torchWriter, anchorArrays)
 
-                # Compare torch loss tensors with popart loss from
-                # anchor tensor map.
-                # Torch losses returned for all samples, whereas
+            # Compare torch loss tensors with popart loss from
+            # anchor tensor map.
+            # Torch losses returned for all samples, whereas
+            # anchors are returned as specified by the user.
+            # Subsample torch outputs to match dimensions
+            torchLosses = subsampleBatches(torchLosses, np.shape(pLosses))
+            result = getTensorError(torchLosses, pLosses)
+            print(reportTensorError(0, result))
+            checkResult(result, margin)
+
+        elif mode == "infer":
+            # take batchesPerStep passes (1 step), Torch
+            # returns map of outputs for each sample
+            # Note: already are of dimension matching the
+            # anchors
+            torchOutputs = torchWriter.infer(inputs)
+
+            # take batchesPerStep passes (1 step), PopArt
+            pystepio = popart.PyStepIO(inputs, anchorArrays)
+            session.run(pystepio)
+
+            # Compare torch outputs tensors with popart output from
+            # anchor tensor maps
+            for nInd, outName in enumerate(torchWriter.outNames):
+                # Torch outputs returned for all samples, whereas
                 # anchors are returned as specified by the user.
                 # Subsample torch outputs to match dimensions
-                torchLosses = subsampleBatches(torchLosses, np.shape(pLosses))
-                result = getTensorError(torchLosses, pLosses)
-                print(reportTensorError(0, result))
+                torchOuput = subsampleBatches(torchOutputs[outName],
+                                              np.shape(anchorArrays[outName]))
+                result = getTensorError(torchOuput, anchorArrays[outName])
+                print(reportTensorError(nInd, result))
                 checkResult(result, margin)
-
-            elif mode == "infer":
-                # take batchesPerStep passes (1 step), Torch
-                # returns map of outputs for each sample
-                # Note: already are of dimension matching the
-                # anchors
-                torchOutputs = torchWriter.infer(inputs)
-
-                # take batchesPerStep passes (1 step), PopArt
-                pystepio = popart.PyStepIO(inputs, anchorArrays)
-                session.run(pystepio)
-
-                # Compare torch outputs tensors with popart output from
-                # anchor tensor maps
-                for nInd, outName in enumerate(torchWriter.outNames):
-                    # Torch outputs returned for all samples, whereas
-                    # anchors are returned as specified by the user.
-                    # Subsample torch outputs to match dimensions
-                    torchOuput = subsampleBatches(
-                        torchOutputs[outName], np.shape(anchorArrays[outName]))
-                    result = getTensorError(torchOuput, anchorArrays[outName])
-                    print(reportTensorError(nInd, result))
-                    checkResult(result, margin)
 
     return anchorArrays
