@@ -8,13 +8,13 @@ from popart_core import _InferenceSessionCore, _TrainingSessionCore
 
 def _initAnchorArrays(sess: Union["InferenceSession", "TrainingSession"]
                       ) -> Dict[str, np.array]:
-    """Create the anchor arrays to feed data back into python with.
+    """Create the anchor arrays to feed data back into Python with.
 
     Arguments:
-        sess {InferenceSession or TrainingSession} -- popart session.
+        sess: PopART session.
 
     Returns:
-        Dict[str, np.array] --  Dict of anchor names and their relevant np arrays.
+        Dict of anchor names and their relevant np arrays.
     """
 
     anchorArrays = {}
@@ -60,14 +60,14 @@ def _initAnchorArrays(sess: Union["InferenceSession", "TrainingSession"]
 
 
 class PrepareDeviceException(popart.popart_exception):
-    """Custom expection thrown by the devicePrepare call
+    """Custom expection thrown by the ``devicePrepare`` call.
     """
 
     def __init__(self, e: popart.popart_exception) -> None:
         """Class initializer
 
         Arguments:
-            e {popart.popart_exception} -- Popart exception to be thrown.
+            e: PopART exception to be thrown.
         """
         super(popart.popart_exception, self).__init__(str(e))
         self.error = e
@@ -76,7 +76,7 @@ class PrepareDeviceException(popart.popart_exception):
         """Get the summary report
 
         Returns:
-            str -- The summary report string.
+            The summary report string.
         """
         return self.error.getSummaryReport()
 
@@ -84,7 +84,7 @@ class PrepareDeviceException(popart.popart_exception):
         """Get the graph report
 
         Returns:
-            str -- The graph report string.
+            The graph report string.
         """
         return self.error.getGraphReport()
 
@@ -93,30 +93,30 @@ class InferenceSession(_InferenceSessionCore):
     """ Create a runtime class for executing an ONNX graph on a set of IPU
     hardware for inference.
 
-    A wrapper around the Session cpp class, renamed SessionCore in pybind,
-    to enable more pythonic use. See session.hpp for parameter descriptions.
+    A wrapper around the ``Session`` C++ class, renamed ``SessionCore`` in pybind,
+    to enable more Pythonic use. See ``session.hpp`` for parameter descriptions.
 
     Arguments:
-        fnModel {bytes} -- ONNX model proto. Usually a loaded ONNX model, or from
-            builder.getModelProto()
-        dataFeed {Dict[int, Dict]} -- Configuration for the data feeds and fetches
-        deviceInfo {popart.DeviceInfo} -- DeviceInfo object specifying device type
-            (IPU, IPUModel, CPU) and count.
-        losses {List[popart.Loss]} -- A list of loss layers to use when training (default: {[]})
-        inputShapeInfo {popart.InputShapeInfo} -- Information about the shapes of input and output
-            tensors (default: {popart.InputShapeInfo()})
-        passes {popart.Patterns} -- Patterns to be run for optimization etc.
-            Note: default for passes must not be popart.Patterns()
-            when `import popart` is run, the default arguments are created.
-            If the user then loads a custom pattern via:
-            ctypes.cdll.LoadLibrary(custom_pattern_lib.so)
-            The already constructed popart.Patterns will
-            not include the custom pattern. (default: {None})
-        userOptions {popart.SessionOptions} -- Session options to apply. 
-            (default: {popart.SessionOptions()})
+        fnModel: ONNX model proto. Usually a loaded ONNX model, or from
+            ``builder.getModelProto()``.
+        dataFeed: Configuration for the data feeds and fetches.
+        deviceInfo: ``DeviceInfo`` object specifying device type.
+            (one of ``IPU``, ``IPUModel`` or ``CPU``) and count.
+        losses: A list of loss layers to use when training. Default: [].
+        inputShapeInfo: Information about the shapes of input and output
+            tensors. Default: ``popart.InputShapeInfo()``.
+        passes: Patterns to be run for optimization etc.
+            Note: default for passes must not be ``popart.Patterns()``.
+            When ``import popart`` is run, the default arguments are created.
+            If the user then loads a custom pattern using
+            ``ctypes.cdll.LoadLibrary(custom_pattern_lib.so)``
+            then the already constructed ``popart.Patterns`` will
+            not include the custom pattern. Default ``None``.
+        userOptions: Session options to apply.
+            Default: ``popart.SessionOptions()``.
 
     Raises:
-        popart.PrepareDeviceException: Exception thrown if an invalid device is provided.
+        popart.PrepareDeviceException: Thrown if an invalid device is provided.
     """
 
     def __init__(
@@ -144,21 +144,21 @@ class InferenceSession(_InferenceSessionCore):
             userOptions.enableGradientAccumulation else 1
 
     def initAnchorArrays(self) -> Dict[str, np.array]:
-        """Create the anchor arrays to feed data back into python with.
+        """Create the anchor arrays to feed data back into Python with.
 
         Returns:
-            Dict[str, np.array] -- Dict of anchor names and their relevant np arrays.
+            Dict of anchor names and their relevant np arrays.
         """
         return _initAnchorArrays(self)
 
     def prepareDevice(self) -> None:
         """Prepare the network for execution.
 
-        This will create the poplar::Graph, poplar::Engine, and setting up
-        poplar::Streams.
+        This will create the ``poplar::Graph`` and ``poplar::Engine``, and set up
+        ``poplar::Streams``.
 
         Raises:
-            popart.PrepareDeviceException: Exception thrown if an invalid device is provided.
+            popart.PrepareDeviceException: Thrown if an invalid device is provided.
         """
 
         err = popart.PrepareDeviceError()
@@ -173,26 +173,26 @@ class TrainingSession(_TrainingSessionCore):
     """Create a runtime class for executing an ONNX graph on a set of IPU
         hardware for training
 
-        A wrapper around the Session cpp class, renamed SessionCore in pybind,
-        to enable more pythonic use. See session.hpp for parameter descriptions.
+        A wrapper around the ``Session C++`` class, renamed ``SessionCore`` in pybind,
+        to enable more Pythonic use. See ``session.hpp`` for parameter descriptions.
 
         Arguments:
-            fnModel {bytes} -- ONNX model proto. Usually a loaded ONNX model,
-                or from builder.getModelProto()
-            dataFeed {Dict[int, Dict]} -- Configuration for the data feeds and fetches
-            losses {List[popart.Loss]} -- A list of loss layers to use when training
-            optimizer {popart.Optimizer} -- The type of optimizer to use when training
+            fnModel: ONNX model proto. Usually a loaded ONNX model,
+                or from ``builder.getModelProto()``.
+            dataFeed: Configuration for the data feeds and fetches.
+            losses: A list of loss layers to use when training.
+            optimizer: The type of optimizer to use when training
                 and it's properties.
-            deviceInfo {popart.DeviceInfo} -- DeviceInfo object specifying device type
+            deviceInfo: DeviceInfo object specifying device type
                 (IPU, IPUModel, CPU) and count.
-            inputShapeInfo {popart.InputShapeInfo} -- Information about the shapes of
-                input and output tensors (default: {popart.InputShapeInfo()})
-            passes {popart.Patterns} -- Optimization patterns to apply (default: {None})
-            userOptions {popart.SessionOptions} -- Session options to apply. 
-                (default: {popart.SessionOptions()})
+            inputShapeInfo: Information about the shapes of
+                input and output tensors. Default: ``popart.InputShapeInfo()``.
+            passes: Optimization patterns to apply. Default: ``None``.
+            userOptions: Session options to apply.
+                Default: ``popart.SessionOptions()``.
 
         Raises:
-            popart.PrepareDeviceException: Exception thrown if an invalid device is provided.
+            popart.PrepareDeviceException: Thrown if an invalid device is provided.
     """
 
     def __init__(
@@ -221,21 +221,21 @@ class TrainingSession(_TrainingSessionCore):
             userOptions.enableGradientAccumulation else 1
 
     def initAnchorArrays(self) -> Dict[str, np.array]:
-        """Create the anchor arrays to feed data back into python with.
+        """Create the anchor arrays to feed data back into Python with.
 
         Returns:
-            Dict[str, np.array] -- Dict of anchor names and their relevant np arrays.
+            Dict of anchor names and their relevant np arrays.
         """
         return _initAnchorArrays(self)
 
     def prepareDevice(self) -> None:
         """Prepare the network for execution.
 
-        This will create the poplar::Graph, poplar::Engine, and setting up
-        poplar::Streams.
+        This will create the ``poplar::Graph`` and ``poplar::Engine``, and set up
+        ``poplar::Streams``.
 
         Raises:
-            popart.PrepareDeviceException: Exception thrown if an invalid device is provided.
+            popart.PrepareDeviceException: Thrown if an invalid device is provided.
         """
         err = popart.PrepareDeviceError()
         super(TrainingSession, self).prepareDevice(err)

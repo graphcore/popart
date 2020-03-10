@@ -10,8 +10,8 @@ class Opset():
     """Minimal base class for the opsets
 
     Arguments:
-        builder {Builder} -- An interface for a Builder, used for creating ONNX graphs.
-        version {int} -- Opset version to use for the given opset sub-class.
+        builder: An interface for a Builder, used for creating ONNX graphs.
+        version: Opset version to use for the given opset sub-class.
     """
 
     def __init__(self, builder: "Builder", version: int) -> None:
@@ -20,15 +20,15 @@ class Opset():
 
 
 class Builder():
-    """ A wrapper around the Builder cpp class, renamed BuilderCore in pybind,
-    to enable more pythonic use. See builder.hpp for the class definition.
+    """ A wrapper around the ``Builder`` C++ class, renamed ``BuilderCore`` in pybind,
+    to enable more Pythonic use. See ``builder.hpp`` for the class definition.
 
     Arguments:
-        modelProtoOrFilename {str} -- Model protobuf string or file path of saved
-            onnx model proto. (default: {None})
-        opsets {dict} -- Dict of opset versions (default: {None})
-        builderCore {_BuilderCore} -- _BuilderCore object if wanting to create a subgraph
-            builder using an existing buildercore object. (default: {None})
+        modelProtoOrFilename: Model protobuf string or file path of saved
+            ONNX model proto. Default: ``None``.
+        opsets: Dict of opset versions. Default: ``None``.
+        builderCore: ``_BuilderCore`` object if you want to create a subgraph
+            builder using an existing ``buildercore`` object. Default: ``None``.
     """
 
     def __init__(self,
@@ -57,13 +57,13 @@ class Builder():
                                                    self.opsets["ai.graphcore"])
 
     def __getattr__(self, name: str) -> Any:
-        """Reroute all attribute requests to the underlying _BuilderCore object
+        """Reroute all attribute requests to the underlying ``_BuilderCore`` object
 
         Arguments:
-            name {str} --  attribute required.
+            name:  attribute required.
 
         Returns:
-            Any --  return of the builder._impl.attr call.
+            Return value from the ``builder._impl.attr`` call.
         """
         return getattr(self._impl, name)
 
@@ -75,15 +75,15 @@ class Builder():
         """Const version of the reshape op.
 
         Arguments:
-            aiOnnx {Opset} -- versioned aiOnnx opset e.g. aiOnnxOpset11
-            args {List[str]} --  List of tensor ids to feed as arguments.
-            shape {Iterable[int]} -- shape to rehape to e.g. [3, 2, 4]
+            aiOnnx: Versioned aiOnnx opset, for example: ``aiOnnxOpset11``.
+            args:  List of tensor ids to feed as arguments.
+            shape: Shape to reshape to, for example ``[3, 2, 4]``.
 
         Keyword Arguments:
-            debugPrefix {str} -- String to use as a debug prefix. (default: {""})
+            debugPrefix: String to use as a debug prefix. Default: "".
 
         Returns:
-            List[int] -- Output tensor ids.
+            Output tensor ids.
         """
 
         newShape = aiOnnx.constant(
@@ -94,7 +94,7 @@ class Builder():
         """Create a child builder to add ops to a subgraph using a call operation.
 
         Returns:
-            Builder -- The child builder.
+            The child builder.
         """
         subBuilderCore = self._createSubgraphBuilder()
         return Builder(builderCore=subBuilderCore)
@@ -104,12 +104,12 @@ class AiOnnx(Opset):
     """Return the builder interface for the given ai.onnx version.
 
     Arguments:
-        builder {Builder} -- parent class for access.
-        version {int} -- ai.Onnx opset version to use; 6 < version < 11
-            (default 10).
+        builder: Parent class for access.
+        version: ai.Onnx opset version to use; 6 < version < 11.
+            Default: 10.
 
     Raises:
-        ValueError: Error thrown if an invalid ai.Onnx opset version provided.
+        ValueError: Thrown if an invalid ai.Onnx opset version provided.
     """
 
     def __init__(self, builder: Builder, version: int) -> None:
@@ -131,13 +131,13 @@ class AiOnnx(Opset):
                 f"Unsupported or unrecognized ai.Onnx version: {self.version}")
 
     def __getattr__(self, name: str) -> Any:
-        """Reroute all attribute requests to the underlying _BuilderCore object
+        """Reroute all attribute requests to the underlying ``_BuilderCore`` object
 
         Arguments:
-            name {str} -- Attribute required.
+            name: Attribute required.
 
         Returns:
-            Any -- return of the builder._impl.attr call.
+            Return value of the ``builder._impl.attr`` call.
         """
         return getattr(self.aiOnnx, name)
 
@@ -150,20 +150,21 @@ class AiOnnx(Opset):
         """If conditional operation.
 
         Arguments:
-            args {List[str]} -- List of tensor ids to feed as arguments.
-            num_outputs {int} -- Number of output tensors from the if operator.
-                else_branch {Builder} -- SubgraphBuilder for the graph to run if condition
-                is false. Has num_outputs outputs: values you wish to be live-out to the enclosing 
-                scope. The number of outputs must match the number of outputs in the then_branch.
-            then_branch {Builder} -- SubgraphBuilder for the graph to run if condition is true.
-                Has num_outputs outputs: values you wish to be live-out to the enclosing scope.
-                The number of outputs must match the number of outputs in the else_branch.
+            args: List of tensor ids to feed as arguments.
+            num_outputs: Number of output tensors from the if operator.
+            else_branch: ``SubgraphBuilder`` for the graph to run if condition
+                is false. Has ``num_outputs`` outputs: values you wish to live-out to the subgraph
+                created by the if operation, other tensors will not be accessible to the wider graph.
+                The number of outputs must match the number of outputs in the ``then_branch``.
+            then_branch: ``SubgraphBuilder`` for the graph to run if condition is true.
+                Has ``num_outputs`` outputs: values you wish to be live-out to the enclosing scope.
+                The number of outputs must match the number of outputs in the ``else_branch``.
 
         Keyword Arguments:
-            name {str} -- A string to prepend to the name of the tensor (default: {""})
+            name: A string to prepend to the name of the tensor. Default: "".
 
         Returns:
-            List[str] -- Output tensor ids.
+            Output tensor ids.
         """
         return self.aiOnnx.logical_if(args, num_outputs, else_branch._impl,
                                       then_branch._impl, name)
@@ -176,15 +177,15 @@ class AiOnnx(Opset):
         """Generic Looping construct op.
 
         Arguments:
-            args {List[str]} -- List of tensor ids to feed as arguments.
-            num_outputs {int} --  Number of output tensors from the loop operator.
-            body {Builder} -- SubgraphBuilder for the graph to run in the loop.
+            args: List of tensor ids to feed as arguments.
+            num_outputs:  Number of output tensors from the loop operator.
+            body: SubgraphBuilder for the graph to run in the loop.
 
         Keyword Arguments:
-            debugPrefix {str} -- A string to prepend to the name of the tensor (default: {""})
+            debugPrefix: A string to prepend to the name of the tensor. Default: "".
 
         Returns:
-            List[str] -- Output tensor ids.
+            Output tensor ids.
         """
         return self.aiOnnx.loop(args, num_outputs, body._impl, debugPrefix)
 
@@ -193,7 +194,7 @@ class AiOnnxMl(Opset):
     """Return the builder interface for the given ai.onnx.ml version.
 
     Raises:
-        ValueError: Error thrown if an invalid ai.onnx.ml opset version provided.
+        ValueError: Thrown if an invalid ai.onnx.ml opset version provided.
     """
 
     def __init__(self, builder: Builder, version: int) -> None:
@@ -213,7 +214,7 @@ class AiGraphcore(Opset):
     """Return the builder interface for the given ai.graphcore version.
 
     Raises:
-        ValueError: Error thrown if an invalid ai.graphcore opset version provided.
+        ValueError: Thrown if an invalid ai.graphcore opset version provided.
     """
 
     def __init__(self, builder: Builder, version: int) -> None:
@@ -236,27 +237,27 @@ class AiGraphcore(Opset):
         the builder
 
         Arguments:
-            args {List[int]} -- List of tensor ids to feed as arguments.
-            num_outputs {int} -- Number of output tensors from the called graph.
-            callee {Builder} -- SubgraphBuilder for the graph to be called.
+            args: List of tensor ids to feed as arguments.
+            num_outputs: Number of output tensors from the called graph.
+            callee: ``SubgraphBuilder`` for the graph to be called.
 
         Keyword Arguments:
-            debugName {str} -- A string to prepend to the name of the tensor (default: {""})
+            debugName: A string to prepend to the name of the tensor. Default: "".
 
         Returns:
-            List[str] -- Output tensor ids.
+            Output tensor ids.
         """
         return self.aiGraphcore.call(args, num_outputs, callee._impl,
                                      debugName)
 
     def __getattr__(self, name: str) -> Any:
-        """Reroute all attribute requests to the underlying _BuilderCore object
+        """Reroute all attribute requests to the underlying ``_BuilderCore`` object
 
         Arguments:
-            name {str} --  attribute required.
+            name: The name of the attribute to be returned.
 
         Returns:
-            Any --  return of the builder._impl.attr call.
+            Return value of the ``builder._impl.attr`` call.
         """
         return getattr(self.aiGraphcore, name)
 
