@@ -137,6 +137,9 @@ bool Inplace::apply(Op *op,
 // what additional topological constraints are needed?
 OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
 
+  const auto OpCompare = [](const Op *a, const Op *b) { return a->id < b->id; };
+  using OpToRegions    = std::map<Op *, view::Regions, decltype(OpCompare)>;
+
   ExternOpTensorBundle eot_bun(op, op->getInplaceVariant(inpid));
   Op *inOp = eot_bun.getOp();
 
@@ -145,9 +148,7 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
       inOp->str(),
       op->str());
 
-  auto populate = [](std::map<Op *, view::Regions> &M,
-                     Op *key,
-                     const view::Regions &newRegs) {
+  auto populate = [](OpToRegions &M, Op *key, const view::Regions &newRegs) {
     if (newRegs.size() != 0) {
       auto found = M.find(key);
       if (found == M.end()) {
@@ -192,7 +193,7 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
   // through chsI, then through the bottleLink, to a region
   // in t2, creating a map;
   // of (op):(regions in t2)
-  std::map<Op *, view::Regions> consumer_regions;
+  OpToRegions consumer_regions(OpCompare);
   for (auto index_tensor : op->input->tensorMap()) {
     InIndex index = index_tensor.first;
     Tensor *t1    = index_tensor.second;
@@ -219,11 +220,11 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
   // return a map (Op* : Regions) of all Ops which use/modify an alias
   // of t2. The argument getRegion is either uses(.) or modifies(.)
   auto getPostRegions =
-      [op, &populate, &tensors, t2, inOp](
+      [op, &populate, &tensors, t2, inOp, OpCompare](
           // where getRegion might be op->uses(.) or op->modifies(.)
           std::function<view::Regions(Op *, InIndex)> getRegions) {
         // to be set and returned in this function
-        std::map<Op *, view::Regions> regions;
+        OpToRegions regions(OpCompare);
 
         // first, all ops downstream of op which modify/use
         // t2, and the modified/used regions
@@ -255,15 +256,15 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
       };
 
   // (1.2) getting all modifiers of t3-like tensors above
-  std::map<Op *, view::Regions> modifier_regions =
+  auto modifier_regions =
       getPostRegions([](Op *o, InIndex i) { return o->modifies(i); });
 
   // this is what we populate in this function
   OpsBeforeKey gCons;
 
   // modifer_regions X consumer_regions, the match-up
-  auto match_up = [&gCons](const std::map<Op *, view::Regions> &before_regions,
-                           const std::map<Op *, view::Regions> &after_regions) {
+  auto match_up = [&gCons](const OpToRegions &before_regions,
+                           const OpToRegions &after_regions) {
     for (const auto &op_regs0 : before_regions) {
       for (const auto &op_regs1 : after_regions) {
         Op *before = op_regs0.first;
@@ -289,14 +290,14 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
   // (2)
   auto &graph   = op->getGraph();
   auto afterOps = graph.topoCons->getAfters(op);
-  std::map<Op *, view::Regions> after_op_regions;
+  OpToRegions after_op_regions(OpCompare);
   for (auto after : afterOps) {
     auto found = consumer_regions.find(after);
     if (found != consumer_regions.end()) {
       after_op_regions[after] = found->second;
     }
   }
-  std::map<Op *, view::Regions> post_uses_regions =
+  auto post_uses_regions =
       getPostRegions([](Op *o, InIndex i) { return o->uses(i); });
   match_up(post_uses_regions, after_op_regions);
 
