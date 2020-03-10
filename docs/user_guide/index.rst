@@ -5,6 +5,9 @@ PopART User Guide
     :verb-borders:
     :public:
 
+.. globalindex::
+    :maxdepth: 2
+
 .. toctree::
     :maxdepth: 2
 
