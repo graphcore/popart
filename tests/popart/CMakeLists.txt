@@ -78,6 +78,7 @@ function(add_test_executable name)
       $<TARGET_PROPERTY:popart,INCLUDE_DIRECTORIES>)
   target_link_libraries(${name}
     popart
+    ${CMAKE_THREAD_LIBS_INIT}
     ${Boost_LIBRARIES}
   )
   if (NOT Boost_UNIT_TEST_FRAMEWORK_LIBRARY MATCHES "\\.a$")
