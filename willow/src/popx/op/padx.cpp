@@ -4,6 +4,7 @@
 #include <popart/popx/op/padgradx.hpp>
 #include <popart/popx/op/padx.hpp>
 #include <popart/popx/opxmanager.hpp>
+#include <popart/util.hpp>
 
 namespace popart {
 namespace popx {
@@ -18,8 +19,9 @@ poplar::Tensor pad_grow(const poplar::Tensor &inTensor,
                         const BasePadOp &pad_base_op) {
   auto &&pads    = pad_base_op.getPads();
   auto pad_value = pad_base_op.getPadValue();
-  auto t_rank    = inTensor.rank();
-  auto &&mode    = pad_base_op.getMode();
+
+  auto t_rank = inTensor.rank();
+  auto &&mode = pad_base_op.getMode();
 
   std::vector<std::ptrdiff_t> lower_padding;
   std::vector<std::ptrdiff_t> upper_padding;
@@ -29,6 +31,17 @@ poplar::Tensor pad_grow(const poplar::Tensor &inTensor,
   }
 
   poplar::Tensor out_tensor;
+
+  const auto logLevel = logging::Level::Trace;
+  if (logging::shouldLog(logging::Module::devicex, logLevel)) {
+    std::ostringstream oss;
+    oss << "In pad_grow with mode = " << mode << ", pad_value = " << pad_value
+        << ", lower_padding = ";
+    appendSequence(oss, lower_padding);
+    oss << ", upper_padding = ";
+    appendSequence(oss, upper_padding);
+    logging::log(logging::Module::devicex, logLevel, oss.str());
+  }
 
   if (mode == "constant") {
     out_tensor =
