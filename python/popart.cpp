@@ -805,6 +805,7 @@ PYBIND11_MODULE(popart_core, m) {
                       &SessionOptions::timeLimitScheduler);
     cls.def_readwrite("swapLimitScheduler",
                       &SessionOptions::swapLimitScheduler);
+    cls.def_readwrite("decomposeGradSum", &SessionOptions::decomposeGradSum);
   }
   {
     py::enum_<PatternsLevel> en(m, "PatternsLevel");

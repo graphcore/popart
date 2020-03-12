@@ -390,6 +390,8 @@ public:
   // Return the opset version in use for a domain
   int getOpSetVersionFromModel(const std::string &domain) const;
 
+  std::string getGradSumOpNamePrefix() const;
+
   bool autoRecomputationEnabled() const {
     return userOptions.autoRecomputation != RecomputationType::None;
   }

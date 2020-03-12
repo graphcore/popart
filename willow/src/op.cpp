@@ -587,6 +587,82 @@ PipelineStage Op::getPipelineStage() const {
   return *(settings.pipelineStage);
 }
 
+void Op::optionallySetVGraphIdFromMaxOfInputProducers() {
+  boost::optional<VGraphId> vgid;
+
+  for (auto indexAndTensor : input->tensorMap()) {
+    if (indexAndTensor.second->hasProducer()) {
+      Op *producerOp = indexAndTensor.second->getProducer();
+      if (producerOp->hasVirtualGraphId()) {
+        if (vgid.is_initialized()) {
+          vgid = std::max(vgid.get(), producerOp->getVirtualGraphId());
+        } else {
+          vgid = producerOp->getVirtualGraphId();
+        }
+      }
+    }
+  }
+
+  setVirtualGraphId(vgid);
+}
+
+void Op::optionallySetPingPongPhaseFromMaxOfInputProducers() {
+  boost::optional<PingPongPhase> ppp;
+
+  for (auto indexAndTensor : input->tensorMap()) {
+    if (indexAndTensor.second->hasProducer()) {
+      Op *producerOp = indexAndTensor.second->getProducer();
+      if (producerOp->hasPingPongPhase()) {
+        if (ppp.is_initialized()) {
+          ppp = std::max(ppp.get(), producerOp->getPingPongPhase());
+        } else {
+          ppp = producerOp->getPingPongPhase();
+        }
+      }
+    }
+  }
+
+  setPingPongPhase(ppp);
+}
+
+void Op::optionallySetBatchSerializedPhaseFromMaxOfInputProducers() {
+  boost::optional<BatchSerializedPhase> bsp;
+
+  for (auto indexAndTensor : input->tensorMap()) {
+    if (indexAndTensor.second->hasProducer()) {
+      Op *producerOp = indexAndTensor.second->getProducer();
+      if (producerOp->hasBatchSerializedPhase()) {
+        if (bsp.is_initialized()) {
+          bsp = std::max(bsp.get(), producerOp->getBatchSerializedPhase());
+        } else {
+          bsp = producerOp->getBatchSerializedPhase();
+        }
+      }
+    }
+  }
+
+  setBatchSerializedPhase(bsp);
+}
+
+void Op::optionallySetPipelineStageFromMaxOfInputProducers() {
+  boost::optional<PipelineStage> ps;
+
+  for (auto indexAndTensor : input->tensorMap()) {
+    if (indexAndTensor.second->hasProducer()) {
+      Op *producerOp = indexAndTensor.second->getProducer();
+      if (producerOp->hasPipelineStage()) {
+        if (ps.is_initialized()) {
+          ps = std::max(ps.get(), producerOp->getPipelineStage());
+        } else {
+          ps = producerOp->getPipelineStage();
+        }
+      }
+    }
+  }
+
+  setPipelineStage(ps);
+}
+
 const Shape &Op::inShape(InIndex index) const {
   return inTensor(index)->info.shape();
 }
