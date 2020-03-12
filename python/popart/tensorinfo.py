@@ -8,10 +8,10 @@ def _get_popart_type(dtype: np.dtype) -> str:
     """Return the relevant PopART type string from a numpy dtype
 
     Arguments:
-        dtype {np.dtype} -- numpy dtype
+        dtype: numpy dtype
 
     Returns:
-        str -- PopART dtype string.
+        PopART dtype string.
     """
     return {
         np.uint8: 'UINT8',
@@ -30,12 +30,12 @@ def _get_popart_type(dtype: np.dtype) -> str:
 
 
 class TensorInfo(_TensorInfoCore):
-    """Python wrapper to TensorInfo to handle numpy types in constructor.
+    """Python wrapper to ``TensorInfo`` to handle numpy types in constructor.
 
-    e.g:
+    For example:
         TensorInfo(dtype, shape)
         TensorInfo(numpy.ndarray)
-    
+
     Raises:
         TypeError: Raised if incorrect type is used to create a tensorinfo.
     """
@@ -48,7 +48,7 @@ class TensorInfo(_TensorInfoCore):
                 TypeError: Raised if incorrect type is used to create a tensorinfo.
 
             Returns:
-                (np.dtype, List[int]) -- tuple of numpy dtype and tensor shape.
+                Tuple of numpy dtype and tensor shape.
             """
             if len(args) == 2:
                 return args
@@ -62,11 +62,11 @@ class TensorInfo(_TensorInfoCore):
             """Convert a `type` or `numpy.dtype` to a `str`
 
             Arguments:
-                dtype {Union[type, np.dtype]} -- Python type (e.g. float) or numpy dtype
-                (e.g. np.float32) to convert to PopART type string.
+                dtype: Python type (for example, ``float``) or numpy dtype
+                (for example, ``np.float32``) to convert to PopART type string.
 
             Returns:
-                str -- PopART type string.
+                PopART type string.
             """
             if isinstance(dtype, np.dtype):
                 return _get_popart_type(dtype.type)

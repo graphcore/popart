@@ -275,8 +275,9 @@ void updateTopoCons(const std::vector<OpId> &ops,
   // dont include any of the ops being replaced
   auto include_op = [&](OpId opid) { return find(ops, opid) == ops.end(); };
 
-  std::set<Op *> befores;
-  std::set<Op *> afters;
+  auto OpCompare = [](const Op *a, const Op *b) { return a->id < b->id; };
+  std::set<Op *, decltype(OpCompare)> befores(OpCompare);
+  std::set<Op *, decltype(OpCompare)> afters(OpCompare);
 
   // Get all befores and afters that are not in ops
   for (auto &opid : ops) {

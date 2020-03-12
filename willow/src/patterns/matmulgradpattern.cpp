@@ -47,10 +47,8 @@ std::vector<int64_t> getTransposeDimensions(popart::Tensor *t) {
 popart::Tensor *configureReshapeOp(ReshapeOp *op,
                                    const Shape &outShape,
                                    const TensorId inputTensorId,
-                                   const TensorId outputTensorId,
-                                   const double priority = 0) {
+                                   const TensorId outputTensorId) {
   op->setOutShape(outShape);
-  op->settings.schedulePriority = priority;
   op->connectInTensor(ReshapeOp::getInIndex(), inputTensorId);
   op->connectOutTensor(ReshapeOp::getOutIndex(), outputTensorId);
   op->setup();
@@ -59,10 +57,8 @@ popart::Tensor *configureReshapeOp(ReshapeOp *op,
 
 popart::Tensor *configureReshapeOp(ReshapeOp *op,
                                    const Shape &outShape,
-                                   const TensorId inputTensorId,
-                                   const double priority = 0) {
+                                   const TensorId inputTensorId) {
   op->setOutShape(outShape);
-  op->settings.schedulePriority = priority;
   op->connectInTensor(ReshapeOp::getInIndex(), inputTensorId);
   op->createAndConnectOutTensor(
       ReshapeOp::getOutIndex(),
@@ -73,10 +69,8 @@ popart::Tensor *configureReshapeOp(ReshapeOp *op,
 
 popart::Tensor *configureTranposeOp(TransposeOp *op,
                                     const TensorId inputTensorId,
-                                    const Shape &perm,
-                                    const double priority = 0) {
+                                    const Shape &perm) {
   op->setPerm(perm);
-  op->settings.schedulePriority = priority;
   op->connectInTensor(TransposeOp::getInIndex(), inputTensorId);
   op->createAndConnectOutTensor(
       TransposeOp::getOutIndex(),
@@ -234,7 +228,7 @@ bool MatMulGradPattern::apply(Op *op) const {
   auto reduceSumOp = dynamic_cast<ReduceSumOp *>(
       makeReplacementOpInIr(Onnx::Operators::ReduceSum_1, op, "ReduceOut"));
   auto reshapeOp = dynamic_cast<ReshapeOp *>(
-      makeReplacementOpInIr(Onnx::Operators::Reshape_5, op, "ReduceOur"));
+      makeReplacementOpInIr(Onnx::Operators::Reshape_5, op, "ReduceOut"));
 
   // Remove the MatMulXXXGradOp
   op->disconnectAllInputs();
@@ -256,10 +250,8 @@ bool MatMulGradPattern::apply(Op *op) const {
     }
 
     // expand the input by reshaping it
-    grad_in = configureReshapeOp(reshapeOpGradInExpand,
-                                 grad_inShape,
-                                 grad_in->id,
-                                 std::numeric_limits<double>::lowest());
+    grad_in =
+        configureReshapeOp(reshapeOpGradInExpand, grad_inShape, grad_in->id);
   }
 
   // Expand the in tensor to a minimum 3d tensor
@@ -273,10 +265,7 @@ bool MatMulGradPattern::apply(Op *op) const {
     }
 
     // expand the input by reshaping it
-    in = configureReshapeOp(reshapeOpInExpand,
-                            inShape,
-                            in->id,
-                            std::numeric_limits<double>::lowest());
+    in = configureReshapeOp(reshapeOpInExpand, inShape, in->id);
 
     // Add constraint that we will not reshape the forward in tensor until the
     // grad_in tensor has been reshaped i.e. prevent the forward in reshape from
@@ -286,10 +275,7 @@ bool MatMulGradPattern::apply(Op *op) const {
   }
 
   // Configure the tranpose the in tensor
-  in = configureTranposeOp(transposeOp,
-                           in->id,
-                           getTransposeDimensions(in),
-                           std::numeric_limits<double>::lowest());
+  in = configureTranposeOp(transposeOp, in->id, getTransposeDimensions(in));
 
   // Configure the mat mul op
   matmulOp->setCanCreateInputs(false);

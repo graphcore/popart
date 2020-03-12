@@ -467,1102 +467,1147 @@ PYBIND11_MODULE(popart_core, m) {
   m.def("versionString", &popart::core::versionString);
   m.def("packageHash", &popart::core::packageHash);
 
-  py::class_<Logger>(m, "Logger")
-      .def("setLevel", &Logger::setLevel)
-      .def("debug", &Logger::debug)
-      .def("info", &Logger::info)
-      .def("warn", &Logger::warn)
-      .def("error", &Logger::error)
-      .def("critical", &Logger::critical);
-
-  py::class_<OperatorIdentifier>(m, "OperatorIdentifier")
-      .def(py::init<const std::string &, const std::string &, unsigned>(),
-           py::arg("domain"),
-           py::arg("type"),
-           py::arg("version"))
-      .def_readonly("domain", &OperatorIdentifier::domain)
-      .def_readonly("type", &OperatorIdentifier::type)
-      .def_readonly("version", &OperatorIdentifier::version);
-
+  {
+    py::class_<Logger> cls(m, "Logger");
+    cls.def("setLevel", &Logger::setLevel);
+    cls.def("debug", &Logger::debug);
+    cls.def("info", &Logger::info);
+    cls.def("warn", &Logger::warn);
+    cls.def("error", &Logger::error);
+    cls.def("critical", &Logger::critical);
+  }
+  {
+    py::class_<OperatorIdentifier> cls(m, "OperatorIdentifier");
+    cls.def(py::init<const std::string &, const std::string &, unsigned>(),
+            py::arg("domain"),
+            py::arg("type"),
+            py::arg("version"));
+    cls.def_readonly("domain", &OperatorIdentifier::domain);
+    cls.def_readonly("type", &OperatorIdentifier::type);
+    cls.def_readonly("version", &OperatorIdentifier::version);
+  }
   m.def("getSupportedOperations",
         &OpManager::getSupportedOperations,
         py::arg("includeInternal"));
-
-  py::enum_<DataType>(m, "DataType")
-      .value("UINT8", DataType::UINT8)
-      .value("INT8", DataType::INT8)
-      .value("UINT16", DataType::UINT16)
-      .value("INT16", DataType::INT16)
-      .value("INT32", DataType::INT32)
-      .value("INT64", DataType::INT64)
-      .value("UINT32", DataType::UINT32)
-      .value("UINT64", DataType::UINT64)
-      .value("BOOL", DataType::BOOL)
-      .value("FLOAT", DataType::FLOAT)
-      .value("FLOAT16", DataType::FLOAT16)
-      .value("BFLOAT16", DataType::BFLOAT16)
-      .value("DOUBLE", DataType::DOUBLE)
-      .value("COMPLEX64", DataType::COMPLEX64)
-      .value("COMPLEX128", DataType::COMPLEX128)
-      .value("STRING", DataType::STRING)
-      .value("UNDEFINED", DataType::UNDEFINED);
-
-  py::enum_<InitType>(m, "InitType")
-      .value("NONE", InitType::NONE)
-      .value("ZERO", InitType::ZERO);
-
-  py::class_<OpDefinition::Input>(m, "OpDefinition::Input")
-      .def_readonly("name", &OpDefinition::Input::name)
-      .def_readonly("supportedTensors", &OpDefinition::Input::supportedTensors)
-      .def_readonly("constant", &OpDefinition::Input::constant);
-
-  py::class_<OpDefinition::Output>(m, "OpDefinition::Output")
-      .def_readonly("name", &OpDefinition::Output::name)
-      .def_readonly("supportedTensors",
-                    &OpDefinition::Output::supportedTensors);
-
-  py::class_<OpDefinition::Attribute>(m, "OpDefinition::Attribute")
-      .def_readonly("supportedValuesRegex",
-                    &OpDefinition::Attribute::supportedValuesRegex);
-
-  py::class_<OpDefinition>(m, "OpDefinition")
-      .def_readonly("inputs", &OpDefinition::inputs)
-      .def_readonly("outputs", &OpDefinition::outputs)
-      .def_readonly("attributes", &OpDefinition::attributes);
+  {
+    py::enum_<DataType> en(m, "DataType");
+    en.value("UINT8", DataType::UINT8);
+    en.value("INT8", DataType::INT8);
+    en.value("UINT16", DataType::UINT16);
+    en.value("INT16", DataType::INT16);
+    en.value("INT32", DataType::INT32);
+    en.value("INT64", DataType::INT64);
+    en.value("UINT32", DataType::UINT32);
+    en.value("UINT64", DataType::UINT64);
+    en.value("BOOL", DataType::BOOL);
+    en.value("FLOAT", DataType::FLOAT);
+    en.value("FLOAT16", DataType::FLOAT16);
+    en.value("BFLOAT16", DataType::BFLOAT16);
+    en.value("DOUBLE", DataType::DOUBLE);
+    en.value("COMPLEX64", DataType::COMPLEX64);
+    en.value("COMPLEX128", DataType::COMPLEX128);
+    en.value("STRING", DataType::STRING);
+    en.value("UNDEFINED", DataType::UNDEFINED);
+  }
+  {
+    py::enum_<InitType> en(m, "InitType");
+    en.value("NONE", InitType::NONE);
+    en.value("ZERO", InitType::ZERO);
+  }
+  {
+    py::class_<OpDefinition::Input> cls(m, "OpDefinition::Input");
+    cls.def_readonly("name", &OpDefinition::Input::name);
+    cls.def_readonly("supportedTensors",
+                     &OpDefinition::Input::supportedTensors);
+    cls.def_readonly("constant", &OpDefinition::Input::constant);
+  }
+  {
+    py::class_<OpDefinition::Output> cls(m, "OpDefinition::Output");
+    cls.def_readonly("name", &OpDefinition::Output::name);
+    cls.def_readonly("supportedTensors",
+                     &OpDefinition::Output::supportedTensors);
+  }
+  {
+    py::class_<OpDefinition::Attribute> cls(m, "OpDefinition::Attribute");
+    cls.def_readonly("supportedValuesRegex",
+                     &OpDefinition::Attribute::supportedValuesRegex);
+  }
+  {
+    py::class_<OpDefinition> cls(m, "OpDefinition");
+    cls.def_readonly("inputs", &OpDefinition::inputs);
+    cls.def_readonly("outputs", &OpDefinition::outputs);
+    cls.def_readonly("attributes", &OpDefinition::attributes);
+  }
 
   m.def("getSupportedOperationsDefinition",
         &OpManager::getSupportedOperationsDefinition,
         py::arg("includeInternal"));
 
-  py::class_<IStepIO> stepio(m, "IStepIO");
+  {
+    py::class_<IStepIO> stepio(m, "IStepIO");
+    py::class_<IWeightsIO> weightsio(m, "IWeightsIO");
 
-  py::class_<IWeightsIO> weightsio(m, "IWeightsIO");
+    py::enum_<AnchorReturnTypeId> en(m, "AnchorReturnTypeId");
+    en.value("FINAL", AnchorReturnTypeId::FINAL);
+    en.value("EVERYN", AnchorReturnTypeId::EVERYN);
+    en.value("ALL", AnchorReturnTypeId::ALL);
+    en.value("SUM", AnchorReturnTypeId::SUM);
 
-  py::enum_<AnchorReturnTypeId>(m, "AnchorReturnTypeId")
-      .value("FINAL", AnchorReturnTypeId::FINAL)
-      .value("EVERYN", AnchorReturnTypeId::EVERYN)
-      .value("ALL", AnchorReturnTypeId::ALL)
-      .value("SUM", AnchorReturnTypeId::SUM);
+    {
+      py::class_<PyStepIO> cls(m, "PyStepIO", stepio);
+      cls.def(py::init<std::map<TensorId, py::array>,
+                       std::map<TensorId, py::array>>(),
+              py::arg("inputs"),
+              py::arg("outputs"));
+      cls.def("enableRuntimeAsserts", &PyStepIO::enableRuntimeAsserts);
+    }
+    {
+      py::class_<PyStepIOCallback> cls(m, "PyStepIOCallback", stepio);
+      cls.def(py::init<std::function<py::array(std::string, bool)>,
+                       std::function<void(std::string)>,
+                       std::function<py::array(std::string)>,
+                       std::function<void(std::string)>>(),
+              py::arg("input_callback"),
+              py::arg("input_complete_callback"),
+              py::arg("output_callback"),
+              py::arg("output_complete_callback"));
+    }
+    {
+      py::class_<PyWeightsIO> cls(m, "PyWeightsIO", weightsio);
+      cls.def(py::init<std::map<TensorId, py::array>>(), py::arg("weights"));
+    }
+  }
+  {
+    py::class_<AnchorReturnType> cls(m, "AnchorReturnType");
+    cls.def(py::init<std::string>(), py::arg("anchorReturnTypeString"));
+    cls.def(py::init<std::string, int>(),
+            py::arg("anchorReturnTypeString"),
+            py::arg("returnPeriod"));
+    cls.def("id", &AnchorReturnType::id);
+    cls.def("rp", &AnchorReturnType::rp);
+  }
+  {
+    py::class_<DataFlow> cls(m, "DataFlow");
+    cls.def(py::init<int, const std::map<TensorId, AnchorReturnType> &>(),
+            py::arg("batchesPerStep"),
+            py::arg("anchorTensors"));
+    cls.def(py::init<int,
+                     const std::vector<TensorId> &,
+                     const AnchorReturnType &>(),
+            py::arg("batchesPerStep"),
+            py::arg("anchorIds"),
+            py::arg("anchorReturnType") = AnchorReturnType("ALL"));
+    cls.def("isAnchored", &DataFlow::isAnchored);
+    cls.def("nAnchors", &DataFlow::nAnchors);
+    cls.def("batchesPerStep", &DataFlow::batchesPerStep);
+    cls.def("anchors", &DataFlow::anchors, pybind11::return_value_policy::copy);
+    cls.def("art", &DataFlow::art);
+  }
+  {
+    py::class_<TensorInfo> cls(m, "_TensorInfoCore");
+    cls.def(py::init<std::string, const std::vector<int64_t> &>(),
+            py::arg("dataType"),
+            py::arg("shape"));
+    cls.def("data_type_lcase", &TensorInfo::data_type_lcase);
+    cls.def("shape", &TensorInfo::shape);
+  }
+  {
+    py::class_<numerics::NumericsReport> cls(m, "NumericsReport");
+    cls.def(py::init<std::string, std::string, std::string, std::string>(),
+            py::arg("A0"),
+            py::arg("A1"),
+            py::arg("B0"),
+            py::arg("B1"));
+    cls.def("report", &numerics::NumericsReport::report);
+    cls.def("fullReport", &numerics::NumericsReport::fullReport);
+    cls.def("getRelativeErrors", &numerics::NumericsReport::getRelativeErrors);
+  }
+  {
+    py::class_<InputShapeInfo> cls(m, "InputShapeInfo");
+    cls.def(py::init<>());
+    cls.def("add", &InputShapeInfo::add);
+    cls.def("get", &InputShapeInfo::get);
+    cls.def("has", &InputShapeInfo::has);
+  }
+  {
+    py::class_<Loss> loss(m, "Loss");
+    loss.def("input", &Loss::input);
+    loss.def("output", &Loss::output);
 
-  py::class_<PyStepIO>(m, "PyStepIO", stepio)
-      .def(py::init<std::map<TensorId, py::array>,
-                    std::map<TensorId, py::array>>(),
-           py::arg("inputs"),
-           py::arg("outputs"))
-      .def("enableRuntimeAsserts", &PyStepIO::enableRuntimeAsserts);
+    py::enum_<ReductionType> en(m, "ReductionType");
+    en.value("Sum", ReductionType::SUM);
+    en.value("Mean", ReductionType::MEAN);
 
-  py::class_<PyStepIOCallback>(m, "PyStepIOCallback", stepio)
-      .def(py::init<std::function<py::array(std::string, bool)>,
-                    std::function<void(std::string)>,
-                    std::function<py::array(std::string)>,
-                    std::function<void(std::string)>>(),
-           py::arg("input_callback"),
-           py::arg("input_complete_callback"),
-           py::arg("output_callback"),
-           py::arg("output_complete_callback"));
+    {
+      py::class_<NllLoss> cls(m, "NllLoss", loss);
+      cls.def(py::init<TensorId, TensorId, TensorId, ReductionType>(),
+              py::arg("probabilities"),
+              py::arg("labels"),
+              py::arg("output"),
+              py::arg("reduction") = ReductionType::SUM);
+      cls.def(py::init<TensorId, TensorId, TensorId, int, ReductionType>(),
+              py::arg("probabilities"),
+              py::arg("labels"),
+              py::arg("output"),
+              py::arg("ignore_index"),
+              py::arg("reduction") = ReductionType::SUM);
+      cls.def("probsTensorId", &NllLoss::probsTensorId);
+      cls.def("labelTensorId", &NllLoss::labelTensorId);
+      cls.def("pipelineStage", &NllLoss::pipelineStage);
+      cls.def("virtualGraph", &NllLoss::virtualGraph);
+    }
 
-  py::class_<PyWeightsIO>(m, "PyWeightsIO", weightsio)
-      .def(py::init<std::map<TensorId, py::array>>(), py::arg("weights"));
+    {
+      py::class_<L1Loss> cls(m, "L1Loss", loss);
+      cls.def(py::init<TensorId, TensorId, float, ReductionType>(),
+              py::arg("input"),
+              py::arg("output"),
+              py::arg("lambda"),
+              py::arg("reduction") = ReductionType::SUM);
+      cls.def("getInputId", &L1Loss::getInputId);
+      cls.def("getLambda", &L1Loss::getLambda);
+      cls.def("pipelineStage", &L1Loss::pipelineStage);
+      cls.def("virtualGraph", &L1Loss::virtualGraph);
+    }
+    {
+      py::class_<IdentityLoss> cls(m, "IdentityLoss", loss);
+      cls.def(py::init<TensorId, TensorId, ReductionType>(),
+              py::arg("input"),
+              py::arg("output"),
+              py::arg("reduction") = ReductionType::SUM);
+      cls.def("getInputId", &IdentityLoss::getInputId);
+      cls.def("pipelineStage", &IdentityLoss::pipelineStage);
+      cls.def("virtualGraph", &IdentityLoss::virtualGraph);
+    }
+  }
+  {
+    py::class_<OptimizerValue> optimizerValue(m, "OptimizerValue");
+    optimizerValue.def(
+        py::init<float, bool>(), py::arg("val"), py::arg("isConst"));
+    optimizerValue.def(py::init<float>(), py::arg("val"));
+    optimizerValue.def(py::init<>());
+    optimizerValue.def(py::init<std::pair<float, bool>>());
 
-  py::class_<AnchorReturnType>(m, "AnchorReturnType")
-      .def(py::init<std::string>(), py::arg("anchorReturnTypeString"))
-      .def(py::init<std::string, int>(),
-           py::arg("anchorReturnTypeString"),
-           py::arg("returnPeriod"))
-      .def("id", &AnchorReturnType::id)
-      .def("rp", &AnchorReturnType::rp);
+    optimizerValue.def("val", &OptimizerValue::val);
+    optimizerValue.def("isConst", &OptimizerValue::isConst);
 
-  py::class_<DataFlow>(m, "DataFlow")
-      .def(py::init<int, const std::map<TensorId, AnchorReturnType> &>(),
-           py::arg("batchesPerStep"),
-           py::arg("anchorTensors"))
-      .def(py::init<int,
-                    const std::vector<TensorId> &,
-                    const AnchorReturnType &>(),
-           py::arg("batchesPerStep"),
-           py::arg("anchorIds"),
-           py::arg("anchorReturnType") = AnchorReturnType("ALL"))
-      .def("isAnchored", &DataFlow::isAnchored)
-      .def("nAnchors", &DataFlow::nAnchors)
-      .def("batchesPerStep", &DataFlow::batchesPerStep)
-      .def("anchors", &DataFlow::anchors, pybind11::return_value_policy::copy)
-      .def("art", &DataFlow::art);
+    py::class_<OptimizerValueMap> optimizerValueMap(m, "OptimizerValueMap");
+    optimizerValueMap.def("getDefault", &OptimizerValueMap::getDefault);
+  }
+  {
+    py::class_<Optimizer> optimizer(m, "Optimizer");
+    optimizer.def("getLossScalingVal", &Optimizer::getLossScalingVal);
 
-  py::class_<TensorInfo>(m, "_TensorInfoCore")
-      .def(py::init<std::string, const std::vector<int64_t> &>(),
-           py::arg("dataType"),
-           py::arg("shape"))
-      .def("data_type_lcase", &TensorInfo::data_type_lcase)
-      .def("shape", &TensorInfo::shape);
-
-  py::class_<numerics::NumericsReport>(m, "NumericsReport")
-      .def(py::init<std::string, std::string, std::string, std::string>(),
-           py::arg("A0"),
-           py::arg("A1"),
-           py::arg("B0"),
-           py::arg("B1"))
-      .def("report", &numerics::NumericsReport::report)
-      .def("fullReport", &numerics::NumericsReport::fullReport)
-      .def("getRelativeErrors", &numerics::NumericsReport::getRelativeErrors);
-
-  py::class_<InputShapeInfo>(m, "InputShapeInfo")
-      .def(py::init<>())
-      .def("add", &InputShapeInfo::add)
-      .def("get", &InputShapeInfo::get)
-      .def("has", &InputShapeInfo::has);
-
-  py::class_<Loss> loss(m, "Loss");
-  loss.def("input", &Loss::input);
-  loss.def("output", &Loss::output);
-
-  py::enum_<ReductionType>(m, "ReductionType")
-      .value("Sum", ReductionType::SUM)
-      .value("Mean", ReductionType::MEAN);
-
-  py::class_<NllLoss>(m, "NllLoss", loss)
-      .def(py::init<TensorId, TensorId, TensorId, ReductionType>(),
-           py::arg("probabilities"),
-           py::arg("labels"),
-           py::arg("output"),
-           py::arg("reduction") = ReductionType::SUM)
-      .def(py::init<TensorId, TensorId, TensorId, int, ReductionType>(),
-           py::arg("probabilities"),
-           py::arg("labels"),
-           py::arg("output"),
-           py::arg("ignore_index"),
-           py::arg("reduction") = ReductionType::SUM)
-      .def("probsTensorId", &NllLoss::probsTensorId)
-      .def("labelTensorId", &NllLoss::labelTensorId)
-      .def("pipelineStage", &NllLoss::pipelineStage)
-      .def("virtualGraph", &NllLoss::virtualGraph);
-
-  py::class_<L1Loss>(m, "L1Loss", loss)
-      .def(py::init<TensorId, TensorId, float, ReductionType>(),
-           py::arg("input"),
-           py::arg("output"),
-           py::arg("lambda"),
-           py::arg("reduction") = ReductionType::SUM)
-      .def("getInputId", &L1Loss::getInputId)
-      .def("getLambda", &L1Loss::getLambda)
-      .def("pipelineStage", &L1Loss::pipelineStage)
-      .def("virtualGraph", &L1Loss::virtualGraph);
-
-  py::class_<IdentityLoss>(m, "IdentityLoss", loss)
-      .def(py::init<TensorId, TensorId, ReductionType>(),
-           py::arg("input"),
-           py::arg("output"),
-           py::arg("reduction") = ReductionType::SUM)
-      .def("getInputId", &IdentityLoss::getInputId)
-      .def("pipelineStage", &IdentityLoss::pipelineStage)
-      .def("virtualGraph", &IdentityLoss::virtualGraph);
-
-  py::class_<OptimizerValue> optimizerValue(m, "OptimizerValue");
-  optimizerValue.def(
-      py::init<float, bool>(), py::arg("val"), py::arg("isConst"));
-  optimizerValue.def(py::init<float>(), py::arg("val"));
-  optimizerValue.def(py::init<>());
-  optimizerValue.def(py::init<std::pair<float, bool>>());
-
-  optimizerValue.def("val", &OptimizerValue::val);
-  optimizerValue.def("isConst", &OptimizerValue::isConst);
-
-  py::class_<OptimizerValueMap> optimizerValueMap(m, "OptimizerValueMap");
-  optimizerValueMap.def("getDefault", &OptimizerValueMap::getDefault);
-
-  py::class_<Optimizer> optimizer(m, "Optimizer");
-  optimizer.def("getLossScalingVal", &Optimizer::getLossScalingVal);
-
-  py::class_<SGD> sgd(m, "SGD", optimizer);
-  sgd.def(py::init([](py::dict pyd) {
-    auto cppm = getOptimizerValueDictionary(pyd);
-    return SGD(cppm);
-  }));
-  sgd.def("insertSpecific", [](SGD &self, TensorId id, py::dict pyd) {
-    self.insertSpecific(id, getOptimizerValueDictionary(pyd));
-  });
-
-  sgd.def("learningRates", &SGD::learningRates);
-  sgd.def("weightDecays", &SGD::weightDecays);
-  sgd.def("momentums", &SGD::momentums);
-  sgd.def("dampenings", &SGD::dampenings);
-  sgd.def("velocityScalings", &SGD::velocityScalings);
-
-  // This class is deprecated, and SGD should be preferred
-  py::class_<ConstSGD>(m, "ConstSGD", sgd)
-      .def(py::init<float, float, float>(),
-           py::arg("learning_rate"),
-           py::arg("weight_decay") = 0.0f,
-           py::arg("loss_scaling") = 1.0f);
-
-  py::class_<SessionOptions>(m, "SessionOptions")
-      .def(py::init<>())
-      .def_readwrite("logDir", &SessionOptions::logDir)
-      .def_readwrite("exportPoplarComputationGraph",
-                     &SessionOptions::exportPoplarComputationGraph)
-      .def_readwrite("exportPoplarVertexGraph",
-                     &SessionOptions::exportPoplarVertexGraph)
-      .def_readwrite("ignoreData", &SessionOptions::ignoreData)
-      .def_readwrite("syntheticDataMode", &SessionOptions::syntheticDataMode)
-      .def_readwrite("instrumentWithHardwareCycleCounter",
-                     &SessionOptions::instrumentWithHardwareCycleCounter)
-      .def_readwrite("disableGradAccumulationTensorStreams",
-                     &SessionOptions::disableGradAccumulationTensorStreams)
-      .def_readwrite("enableOutlining", &SessionOptions::enableOutlining)
-      .def_readwrite("enableOutliningCopyCostPruning",
-                     &SessionOptions::enableOutliningCopyCostPruning)
-      .def_readwrite("outlineThreshold", &SessionOptions::outlineThreshold)
-      .def_readwrite("accumulationFactor", &SessionOptions::accumulationFactor)
-      .def_readwrite("enableGradientAccumulation",
-                     &SessionOptions::enableGradientAccumulation)
-      .def_readwrite("enableNonStableSoftmax",
-                     &SessionOptions::enableNonStableSoftmax)
-      .def_readwrite("enablePipelining", &SessionOptions::enablePipelining)
-      .def_readwrite("autoRecomputation", &SessionOptions::autoRecomputation)
-      .def_readwrite("mergeVarUpdate", &SessionOptions::mergeVarUpdate)
-      .def_readwrite("mergeVarUpdateMemThreshold",
-                     &SessionOptions::mergeVarUpdateMemThreshold)
-      .def_readwrite("rearrangeAnchorsOnHost",
-                     &SessionOptions::rearrangeAnchorsOnHost)
-      .def_readwrite("pingPongPhases", &SessionOptions::pingPongPhases)
-      .def_readwrite("enablePrefetchDatastreams",
-                     &SessionOptions::enablePrefetchDatastreams)
-      .def_readwrite("enableVirtualGraphs",
-                     &SessionOptions::enableVirtualGraphs)
-      .def_readwrite("autoVirtualGraph", &SessionOptions::autoVirtualGraph)
-      .def_readwrite("virtualGraphMode", &SessionOptions::virtualGraphMode)
-      .def_readwrite("enableReplicatedGraphs",
-                     &SessionOptions::enableReplicatedGraphs)
-      .def_readwrite("replicatedGraphCount",
-                     &SessionOptions::replicatedGraphCount)
-      .def_readwrite("compileEngine", &SessionOptions::compileEngine)
-      .def_readwrite("_engineOptions", &SessionOptions::engineOptions)
-      .def_readwrite("_convolutionOptions", &SessionOptions::convolutionOptions)
-      .def_readwrite("_reportOptions", &SessionOptions::reportOptions)
-      .def_readwrite("dotOpNames", &SessionOptions::dotOpNames)
-      .def_readwrite("separateCallOpPdfs", &SessionOptions::separateCallOpPdfs)
-      .def_readwrite("finalDotOp", &SessionOptions::finalDotOp)
-      .def_readwrite("firstDotOp", &SessionOptions::firstDotOp)
-      .def_readwrite("constantWeights", &SessionOptions::constantWeights)
-      .def_readwrite("cachePath", &SessionOptions::cachePath)
-      .def_readwrite("enableEngineCaching",
-                     &SessionOptions::enableEngineCaching)
-      .def_readwrite("enableFloatingPointChecks",
-                     &SessionOptions::enableFloatingPointChecks)
-      .def_readwrite("enableStochasticRounding",
-                     &SessionOptions::enableStochasticRounding)
-      .def_readwrite("enableFullyConnectedPass",
-                     &SessionOptions::enableFullyConnectedPass)
-      .def_readwrite("enableGroupedMatmuls",
-                     &SessionOptions::enableGroupedMatmuls)
-      .def_readwrite("enableStableNorm", &SessionOptions::enableStableNorm)
-      // set in python use the python set constructor, so something like
-      // mySessionOptions.dotChecks = {popart.DotCheck.FINAL}
-      .def_readwrite("dotChecks", &SessionOptions::dotChecks)
-      .def_readwrite("customCodelets", &SessionOptions::customCodelets)
-      .def_readwrite("customCodeletCompileFlags",
-                     &SessionOptions::customCodeletCompileFlags)
-      .def_readwrite("hostAllReduce", &SessionOptions::hostAllReduce)
-      .def_readwrite("hostWeightUpdate", &SessionOptions::hostWeightUpdate)
-      .def_readwrite("hostAllReduceRemoteBuffer",
-                     &SessionOptions::hostAllReduceRemoteBuffer)
-      .def_readwrite("hostWeightUpdate", &SessionOptions::hostWeightUpdate)
-
-      .def_readwrite("kahnTieBreaker", &SessionOptions::kahnTieBreaker)
-      .def_readwrite("timeLimitScheduler", &SessionOptions::timeLimitScheduler)
-      .def_readwrite("swapLimitScheduler", &SessionOptions::swapLimitScheduler);
-
-  py::enum_<PatternsLevel>(m, "PatternsLevel")
-      .value("ALL", PatternsLevel::ALL)
-      .value("DEFAULT", PatternsLevel::DEFAULT)
-      .value("NONE", PatternsLevel::NONE);
-
-  py::enum_<DotCheck>(m, "DotCheck")
-      .value("FWD0", DotCheck::FWD0)
-      .value("FWD1", DotCheck::FWD1)
-      .value("BWD0", DotCheck::BWD0)
-      .value("PREALIAS", DotCheck::PREALIAS)
-      .value("FINAL", DotCheck::FINAL);
-
-  py::enum_<RecomputationType>(m, "RecomputationType")
-      .value("NoRecompute", RecomputationType::None)
-      .value("Standard", RecomputationType::Standard)
-      .value("NormOnly", RecomputationType::NormOnly)
-      .value("Pipeline", RecomputationType::Pipeline);
-
-  py::enum_<RecomputeType>(m, "RecomputeType")
-      .value("Undefined", RecomputeType::UNDEFINED)
-      .value("Checkpoint", RecomputeType::CHECKPOINT)
-      .value("Recompute", RecomputeType::RECOMPUTE);
-
-  py::enum_<CacheType>(m, "CacheType")
-      .value("Undefined", CacheType::UNDEFINED)
-      .value("Uncached", CacheType::UNCACHED)
-      .value("Cached", CacheType::CACHED);
-
-  py::enum_<SyncPattern>(m, "SyncPattern")
-      .value("Full", SyncPattern::Full)
-      .value("SinglePipeline", SyncPattern::SinglePipeline)
-      .value("PingPong", SyncPattern::PingPong);
-
-  py::enum_<MergeVarUpdateType>(m, "MergeVarUpdateType")
-      .value("Off", MergeVarUpdateType::None)
-      .value("All", MergeVarUpdateType::All)
-      .value("AutoTight", MergeVarUpdateType::AutoTight)
-      .value("AutoLoose", MergeVarUpdateType::AutoLoose);
-
-  py::enum_<VirtualGraphMode>(m, "VirtualGraphMode")
-      .value("Off", VirtualGraphMode::Off)
-      .value("Manual", VirtualGraphMode::Manual)
-      .value("Auto", VirtualGraphMode::Auto)
-      .value("PingPong", VirtualGraphMode::PingPong);
-
-  py::enum_<SyntheticDataMode>(m, "SyntheticDataMode")
-      .value("Off", SyntheticDataMode::Off)
-      .value("Zeros", SyntheticDataMode::Zeros)
-      .value("RandomNormal", SyntheticDataMode::RandomNormal);
-
-  py::enum_<IrSerializationFormat>(m, "IrSerializationFormat")
-      .value("JSON", IrSerializationFormat::JSON);
-
-  py::enum_<PreAliasPatternType>(m, "PreAliasPatternType")
-      .value("PREUNIREPL", PreAliasPatternType::PREUNIREPL)
-      .value("POSTNREPL", PreAliasPatternType::POSTNREPL)
-      .value("SOFTMAXGRADDIRECT", PreAliasPatternType::SOFTMAXGRADDIRECT)
-      .value("NLLLWITHSOFTMAXGRADDIRECT",
-             PreAliasPatternType::NLLLWITHSOFTMAXGRADDIRECT)
-      .value("SPLITCONVBIAS", PreAliasPatternType::SPLITCONVBIAS)
-      .value("OPTOIDENTITY", PreAliasPatternType::OPTOIDENTITY)
-      .value("SUBTRACTARG1GRADOP", PreAliasPatternType::SUBTRACTARG1GRADOP)
-      .value("MULARGGRADOP", PreAliasPatternType::MULARGGRADOP)
-      .value("RECIPROCALGRADOP", PreAliasPatternType::RECIPROCALGRADOP)
-      .value("SINGRADOP", PreAliasPatternType::SINGRADOP)
-      .value("COSGRADOP", PreAliasPatternType::COSGRADOP)
-      .value("TANTOSINOVERCOS", PreAliasPatternType::TANTOSINOVERCOS)
-      .value("DIVARG0GRADOP", PreAliasPatternType::DIVARG0GRADOP)
-      .value("DIVARG1GRADOP", PreAliasPatternType::DIVARG1GRADOP)
-      .value("POWARG0GRADOP", PreAliasPatternType::POWARG0GRADOP)
-      .value("POWARG1GRADOP", PreAliasPatternType::POWARG1GRADOP)
-      .value("SQRTGRADOP", PreAliasPatternType::SQRTGRADOP)
-      .value("EXPGRADOP", PreAliasPatternType::EXPGRADOP)
-      .value("GEMMDECOMPOSITION", PreAliasPatternType::GEMMDECOMPOSITION)
-      .value("NEGATIVEONESCALE", PreAliasPatternType::NEGATIVEONESCALE)
-      .value("MATMULOP", PreAliasPatternType::MATMULOP)
-      .value("MATMULLHSGRADOP", PreAliasPatternType::MATMULLHSGRADOP)
-      .value("MATMULRHSGRADOP", PreAliasPatternType::MATMULRHSGRADOP);
-
-  py::class_<Patterns>(m, "Patterns")
-      .def(py::init<>())
-      .def(py::init<PatternsLevel>())
-      .def(py::init<std::vector<PreAliasPatternType>>())
-      .def(py::init(
-          [](std::vector<std::string> l) { return Patterns::create(l); }))
-      .def_property("PreUniRepl",
-                    &Patterns::isPreUniReplEnabled,
-                    &Patterns::enablePreUniRepl)
-      .def_property("PostNRepl",
-                    &Patterns::isPostNReplEnabled,
-                    &Patterns::enablePostNRepl)
-      .def_property("SoftMaxGradDirect",
-                    &Patterns::isSoftMaxGradDirectEnabled,
-                    &Patterns::enableSoftMaxGradDirect)
-      .def_property("NlllWithSoftMaxGradDirect",
-                    &Patterns::isNlllWithSoftMaxGradDirectEnabled,
-                    &Patterns::enableNlllWithSoftMaxGradDirect)
-      .def_property("SplitConvBias",
-                    &Patterns::isSplitConvBiasEnabled,
-                    &Patterns::enableSplitConvBias)
-      .def_property("OpToIdentity",
-                    &Patterns::isOpToIdentityEnabled,
-                    &Patterns::enableOpToIdentity)
-      .def_property("SubtractArg1GradOp",
-                    &Patterns::isSubtractArg1GradOpEnabled,
-                    &Patterns::enableSubtractArg1GradOp)
-      .def_property("MulArgGradOp",
-                    &Patterns::isMulArgGradOpEnabled,
-                    &Patterns::enableMulArgGradOp)
-      .def_property(
-          "MatMulOp", &Patterns::isMatMulOpEnabled, &Patterns::enableMatMulOp)
-      .def_property("MatMulLhsGradOp",
-                    &Patterns::isMatMulLhsGradOpEnabled,
-                    &Patterns::enableMatMulLhsGradOp)
-      .def_property("MatMulRhsGradOp",
-                    &Patterns::isMatMulRhsGradOpEnabled,
-                    &Patterns::enableMatMulRhsGradOp)
-      .def_property(
-          "InPlace", &Patterns::isInPlaceEnabled, &Patterns::enableInPlace)
-      .def("isPatternEnabled",
-           static_cast<bool (Patterns::*)(const std::string &)>(
-               &Patterns::isPatternEnabled))
-      .def("enablePattern",
-           static_cast<Patterns &(Patterns::*)(const std::string &, bool)>(
-               &Patterns::enablePattern))
-      .def("__repr__", [](const Patterns &p) {
-        std::stringstream ss;
-        ss << p;
-        return ss.str();
+    {
+      py::class_<SGD> sgd(m, "SGD", optimizer);
+      sgd.def(py::init([](py::dict pyd) {
+        auto cppm = getOptimizerValueDictionary(pyd);
+        return SGD(cppm);
+      }));
+      sgd.def("insertSpecific", [](SGD &self, TensorId id, py::dict pyd) {
+        self.insertSpecific(id, getOptimizerValueDictionary(pyd));
       });
 
-  py::class_<PrepareDeviceError>(m, "PrepareDeviceError")
-      .def(py::init<>())
-      .def("__repr__", &PrepareDeviceError::what)
-      .def("isSuccessful", &PrepareDeviceError::isSuccessful)
-      .def("getSummaryReport", &PrepareDeviceError::getSummaryReport)
-      .def(
-          "getGraphReport",
-          [](const PrepareDeviceError &error, bool useCbor) {
-            auto report = error.getGraphReport(useCbor);
-            return py::bytes(report);
-          },
-          py::arg("useCbor") = false);
+      sgd.def("learningRates", &SGD::learningRates);
+      sgd.def("weightDecays", &SGD::weightDecays);
+      sgd.def("momentums", &SGD::momentums);
+      sgd.def("dampenings", &SGD::dampenings);
+      sgd.def("velocityScalings", &SGD::velocityScalings);
 
-  py::class_<InferenceSession>(m, "_InferenceSessionCore")
-      .def(py::init(&InferenceSession::createFromOnnxModel),
-           py::arg("model"),
-           py::arg("dataFlow").none(),
-           py::arg("deviceInfo"),
-           py::arg("losses"),
-           py::arg("inputShapeInfo"),
-           py::arg("userOptions"),
-           py::arg("passes"))
-      .def(
-          "prepareDevice",
-          [](InferenceSession &session, PrepareDeviceError *status) {
-            try {
-              session.prepareDevice();
-            } catch (const popart::memory_allocation_err &e) {
-              if (status != nullptr) {
-                status->exception = e.clone();
-                status->success   = false;
-              } else {
-                // rethrow the exception
-                throw;
-              }
+      { // This class is deprecated, and SGD should be preferred
+        py::class_<ConstSGD> cls(m, "ConstSGD", sgd);
+        cls.def(py::init<float, float, float>(),
+                py::arg("learning_rate"),
+                py::arg("weight_decay") = 0.0f,
+                py::arg("loss_scaling") = 1.0f);
+      }
+    }
+  }
+  {
+    py::class_<SessionOptions> cls(m, "SessionOptions");
+    cls.def(py::init<>());
+    cls.def_readwrite("logDir", &SessionOptions::logDir);
+    cls.def_readwrite("exportPoplarComputationGraph",
+                      &SessionOptions::exportPoplarComputationGraph);
+    cls.def_readwrite("exportPoplarVertexGraph",
+                      &SessionOptions::exportPoplarVertexGraph);
+    cls.def_readwrite("ignoreData", &SessionOptions::ignoreData);
+    cls.def_readwrite("syntheticDataMode", &SessionOptions::syntheticDataMode);
+    cls.def_readwrite("instrumentWithHardwareCycleCounter",
+                      &SessionOptions::instrumentWithHardwareCycleCounter);
+    cls.def_readwrite("disableGradAccumulationTensorStreams",
+                      &SessionOptions::disableGradAccumulationTensorStreams);
+    cls.def_readwrite("enableOutlining", &SessionOptions::enableOutlining);
+    cls.def_readwrite("enableOutliningCopyCostPruning",
+                      &SessionOptions::enableOutliningCopyCostPruning);
+    cls.def_readwrite("outlineThreshold", &SessionOptions::outlineThreshold);
+    cls.def_readwrite("accumulationFactor",
+                      &SessionOptions::accumulationFactor);
+    cls.def_readwrite("enableGradientAccumulation",
+                      &SessionOptions::enableGradientAccumulation);
+    cls.def_readwrite("enableNonStableSoftmax",
+                      &SessionOptions::enableNonStableSoftmax);
+    cls.def_readwrite("enablePipelining", &SessionOptions::enablePipelining);
+    cls.def_readwrite("autoRecomputation", &SessionOptions::autoRecomputation);
+    cls.def_readwrite("mergeVarUpdate", &SessionOptions::mergeVarUpdate);
+    cls.def_readwrite("mergeVarUpdateMemThreshold",
+                      &SessionOptions::mergeVarUpdateMemThreshold);
+    cls.def_readwrite("rearrangeAnchorsOnHost",
+                      &SessionOptions::rearrangeAnchorsOnHost);
+    cls.def_readwrite("pingPongPhases", &SessionOptions::pingPongPhases);
+    cls.def_readwrite("enablePrefetchDatastreams",
+                      &SessionOptions::enablePrefetchDatastreams);
+    cls.def_readwrite("enableVirtualGraphs",
+                      &SessionOptions::enableVirtualGraphs);
+    cls.def_readwrite("autoVirtualGraph", &SessionOptions::autoVirtualGraph);
+    cls.def_readwrite("virtualGraphMode", &SessionOptions::virtualGraphMode);
+    cls.def_readwrite("enableReplicatedGraphs",
+                      &SessionOptions::enableReplicatedGraphs);
+    cls.def_readwrite("replicatedGraphCount",
+                      &SessionOptions::replicatedGraphCount);
+    cls.def_readwrite("compileEngine", &SessionOptions::compileEngine);
+    cls.def_readwrite("_engineOptions", &SessionOptions::engineOptions);
+    cls.def_readwrite("_convolutionOptions",
+                      &SessionOptions::convolutionOptions);
+    cls.def_readwrite("_reportOptions", &SessionOptions::reportOptions);
+    cls.def_readwrite("dotOpNames", &SessionOptions::dotOpNames);
+    cls.def_readwrite("separateCallOpPdfs",
+                      &SessionOptions::separateCallOpPdfs);
+    cls.def_readwrite("finalDotOp", &SessionOptions::finalDotOp);
+    cls.def_readwrite("firstDotOp", &SessionOptions::firstDotOp);
+    cls.def_readwrite("constantWeights", &SessionOptions::constantWeights);
+    cls.def_readwrite("cachePath", &SessionOptions::cachePath);
+    cls.def_readwrite("enableEngineCaching",
+                      &SessionOptions::enableEngineCaching);
+    cls.def_readwrite("enableFloatingPointChecks",
+                      &SessionOptions::enableFloatingPointChecks);
+    cls.def_readwrite("enableStochasticRounding",
+                      &SessionOptions::enableStochasticRounding);
+    cls.def_readwrite("enableFullyConnectedPass",
+                      &SessionOptions::enableFullyConnectedPass);
+    cls.def_readwrite("enableGroupedMatmuls",
+                      &SessionOptions::enableGroupedMatmuls);
+    cls.def_readwrite("enableStableNorm", &SessionOptions::enableStableNorm);
+    // set in python use the python set constructor, so something like
+    // mySessionOptions.dotChecks = {popart.DotCheck.FINAL}
+    cls.def_readwrite("dotChecks", &SessionOptions::dotChecks);
+    cls.def_readwrite("customCodelets", &SessionOptions::customCodelets);
+    cls.def_readwrite("customCodeletCompileFlags",
+                      &SessionOptions::customCodeletCompileFlags);
+    cls.def_readwrite("hostAllReduce", &SessionOptions::hostAllReduce);
+    cls.def_readwrite("hostWeightUpdate", &SessionOptions::hostWeightUpdate);
+    cls.def_readwrite("hostAllReduceRemoteBuffer",
+                      &SessionOptions::hostAllReduceRemoteBuffer);
+    cls.def_readwrite("hostWeightUpdate", &SessionOptions::hostWeightUpdate);
+
+    cls.def_readwrite("kahnTieBreaker", &SessionOptions::kahnTieBreaker);
+    cls.def_readwrite("timeLimitScheduler",
+                      &SessionOptions::timeLimitScheduler);
+    cls.def_readwrite("swapLimitScheduler",
+                      &SessionOptions::swapLimitScheduler);
+  }
+  {
+    py::enum_<PatternsLevel> en(m, "PatternsLevel");
+    en.value("ALL", PatternsLevel::ALL);
+    en.value("DEFAULT", PatternsLevel::DEFAULT);
+    en.value("NONE", PatternsLevel::NONE);
+  }
+  {
+    py::enum_<DotCheck> en(m, "DotCheck");
+    en.value("FWD0", DotCheck::FWD0);
+    en.value("FWD1", DotCheck::FWD1);
+    en.value("BWD0", DotCheck::BWD0);
+    en.value("PREALIAS", DotCheck::PREALIAS);
+    en.value("FINAL", DotCheck::FINAL);
+  }
+  {
+    py::enum_<RecomputationType> en(m, "RecomputationType");
+    en.value("NoRecompute", RecomputationType::None);
+    en.value("Standard", RecomputationType::Standard);
+    en.value("NormOnly", RecomputationType::NormOnly);
+    en.value("Pipeline", RecomputationType::Pipeline);
+  }
+  {
+    py::enum_<RecomputeType> en(m, "RecomputeType");
+    en.value("Undefined", RecomputeType::UNDEFINED);
+    en.value("Checkpoint", RecomputeType::CHECKPOINT);
+    en.value("Recompute", RecomputeType::RECOMPUTE);
+  }
+  {
+    py::enum_<CacheType> en(m, "CacheType");
+    en.value("Undefined", CacheType::UNDEFINED);
+    en.value("Uncached", CacheType::UNCACHED);
+    en.value("Cached", CacheType::CACHED);
+  }
+  {
+    py::enum_<SyncPattern> en(m, "SyncPattern");
+    en.value("Full", SyncPattern::Full);
+    en.value("SinglePipeline", SyncPattern::SinglePipeline);
+    en.value("PingPong", SyncPattern::PingPong);
+  }
+  {
+    py::enum_<MergeVarUpdateType> en(m, "MergeVarUpdateType");
+    en.value("Off", MergeVarUpdateType::None);
+    en.value("All", MergeVarUpdateType::All);
+    en.value("AutoTight", MergeVarUpdateType::AutoTight);
+    en.value("AutoLoose", MergeVarUpdateType::AutoLoose);
+  }
+  {
+    py::enum_<VirtualGraphMode> en(m, "VirtualGraphMode");
+    en.value("Off", VirtualGraphMode::Off);
+    en.value("Manual", VirtualGraphMode::Manual);
+    en.value("Auto", VirtualGraphMode::Auto);
+    en.value("PingPong", VirtualGraphMode::PingPong);
+  }
+  {
+    py::enum_<SyntheticDataMode> en(m, "SyntheticDataMode");
+    en.value("Off", SyntheticDataMode::Off);
+    en.value("Zeros", SyntheticDataMode::Zeros);
+    en.value("RandomNormal", SyntheticDataMode::RandomNormal);
+  }
+  {
+    py::enum_<IrSerializationFormat> en(m, "IrSerializationFormat");
+    en.value("JSON", IrSerializationFormat::JSON);
+  }
+  {
+    py::enum_<PreAliasPatternType> en(m, "PreAliasPatternType");
+    en.value("PREUNIREPL", PreAliasPatternType::PREUNIREPL);
+    en.value("POSTNREPL", PreAliasPatternType::POSTNREPL);
+    en.value("SOFTMAXGRADDIRECT", PreAliasPatternType::SOFTMAXGRADDIRECT);
+    en.value("NLLLWITHSOFTMAXGRADDIRECT",
+             PreAliasPatternType::NLLLWITHSOFTMAXGRADDIRECT);
+    en.value("SPLITCONVBIAS", PreAliasPatternType::SPLITCONVBIAS);
+    en.value("OPTOIDENTITY", PreAliasPatternType::OPTOIDENTITY);
+    en.value("SUBTRACTARG1GRADOP", PreAliasPatternType::SUBTRACTARG1GRADOP);
+    en.value("MULARGGRADOP", PreAliasPatternType::MULARGGRADOP);
+    en.value("RECIPROCALGRADOP", PreAliasPatternType::RECIPROCALGRADOP);
+    en.value("SINGRADOP", PreAliasPatternType::SINGRADOP);
+    en.value("COSGRADOP", PreAliasPatternType::COSGRADOP);
+    en.value("TANTOSINOVERCOS", PreAliasPatternType::TANTOSINOVERCOS);
+    en.value("DIVARG0GRADOP", PreAliasPatternType::DIVARG0GRADOP);
+    en.value("DIVARG1GRADOP", PreAliasPatternType::DIVARG1GRADOP);
+    en.value("POWARG0GRADOP", PreAliasPatternType::POWARG0GRADOP);
+    en.value("POWARG1GRADOP", PreAliasPatternType::POWARG1GRADOP);
+    en.value("SQRTGRADOP", PreAliasPatternType::SQRTGRADOP);
+    en.value("EXPGRADOP", PreAliasPatternType::EXPGRADOP);
+    en.value("GEMMDECOMPOSITION", PreAliasPatternType::GEMMDECOMPOSITION);
+    en.value("NEGATIVEONESCALE", PreAliasPatternType::NEGATIVEONESCALE);
+    en.value("MATMULOP", PreAliasPatternType::MATMULOP);
+    en.value("MATMULLHSGRADOP", PreAliasPatternType::MATMULLHSGRADOP);
+    en.value("MATMULRHSGRADOP", PreAliasPatternType::MATMULRHSGRADOP);
+  }
+  {
+    py::class_<Patterns> cls(m, "Patterns");
+    cls.def(py::init<>());
+    cls.def(py::init<PatternsLevel>());
+    cls.def(py::init<std::vector<PreAliasPatternType>>());
+    cls.def(py::init(
+        [](std::vector<std::string> l) { return Patterns::create(l); }));
+    cls.def_property("PreUniRepl",
+                     &Patterns::isPreUniReplEnabled,
+                     &Patterns::enablePreUniRepl);
+    cls.def_property(
+        "PostNRepl", &Patterns::isPostNReplEnabled, &Patterns::enablePostNRepl);
+    cls.def_property("SoftMaxGradDirect",
+                     &Patterns::isSoftMaxGradDirectEnabled,
+                     &Patterns::enableSoftMaxGradDirect);
+    cls.def_property("NlllWithSoftMaxGradDirect",
+                     &Patterns::isNlllWithSoftMaxGradDirectEnabled,
+                     &Patterns::enableNlllWithSoftMaxGradDirect);
+    cls.def_property("SplitConvBias",
+                     &Patterns::isSplitConvBiasEnabled,
+                     &Patterns::enableSplitConvBias);
+    cls.def_property("OpToIdentity",
+                     &Patterns::isOpToIdentityEnabled,
+                     &Patterns::enableOpToIdentity);
+    cls.def_property("SubtractArg1GradOp",
+                     &Patterns::isSubtractArg1GradOpEnabled,
+                     &Patterns::enableSubtractArg1GradOp);
+    cls.def_property("MulArgGradOp",
+                     &Patterns::isMulArgGradOpEnabled,
+                     &Patterns::enableMulArgGradOp);
+    cls.def_property(
+        "MatMulOp", &Patterns::isMatMulOpEnabled, &Patterns::enableMatMulOp);
+    cls.def_property("MatMulLhsGradOp",
+                     &Patterns::isMatMulLhsGradOpEnabled,
+                     &Patterns::enableMatMulLhsGradOp);
+    cls.def_property("MatMulRhsGradOp",
+                     &Patterns::isMatMulRhsGradOpEnabled,
+                     &Patterns::enableMatMulRhsGradOp);
+    cls.def_property(
+        "InPlace", &Patterns::isInPlaceEnabled, &Patterns::enableInPlace);
+    cls.def("isPatternEnabled",
+            static_cast<bool (Patterns::*)(const std::string &)>(
+                &Patterns::isPatternEnabled));
+    cls.def("enablePattern",
+            static_cast<Patterns &(Patterns::*)(const std::string &, bool)>(
+                &Patterns::enablePattern));
+    cls.def("__repr__", [](const Patterns &p) {
+      std::stringstream ss;
+      ss << p;
+      return ss.str();
+    });
+  }
+  {
+    py::class_<PrepareDeviceError> cls(m, "PrepareDeviceError");
+    cls.def(py::init<>());
+    cls.def("__repr__", &PrepareDeviceError::what);
+    cls.def("isSuccessful", &PrepareDeviceError::isSuccessful);
+    cls.def("getSummaryReport", &PrepareDeviceError::getSummaryReport);
+    cls.def(
+        "getGraphReport",
+        [](const PrepareDeviceError &error, bool useCbor) {
+          auto report = error.getGraphReport(useCbor);
+          return py::bytes(report);
+        },
+        py::arg("useCbor") = false);
+  }
+  {
+    py::class_<InferenceSession> cls(m, "_InferenceSessionCore");
+    cls.def(py::init(&InferenceSession::createFromOnnxModel),
+            py::arg("model"),
+            py::arg("dataFlow").none(),
+            py::arg("deviceInfo"),
+            py::arg("losses"),
+            py::arg("inputShapeInfo"),
+            py::arg("userOptions"),
+            py::arg("passes"));
+    cls.def(
+        "prepareDevice",
+        [](InferenceSession &session, PrepareDeviceError *status) {
+          try {
+            session.prepareDevice();
+          } catch (const popart::memory_allocation_err &e) {
+            if (status != nullptr) {
+              status->exception = e.clone();
+              status->success   = false;
+            } else {
+              // rethrow the exception
+              throw;
             }
-          },
-          py::arg("err").none())
-      .def("setRandomSeed",
-           &InferenceSession::setRandomSeed,
-           py::arg("seedValue"))
-      .def("getCycleCount", &InferenceSession::getCycleCount)
-      .def("weightsFromHost", &InferenceSession::weightsFromHost)
-      .def("writeWeights", &TrainingSession::writeWeights)
-      .def("run", &InferenceSession::run)
-      .def("modelToHost", &InferenceSession::modelToHost)
-      .def("getInfo", &InferenceSession::getInfo)
-      .def("getSummaryReport",
-           &InferenceSession::getSummaryReport,
-           py::arg("resetProfile") = true)
-      .def(
-          "getGraphReport",
-          [](const InferenceSession &session, bool useCbor) {
-            auto report = session.getGraphReport(useCbor);
-            return py::bytes(report);
-          },
-          py::arg("useCbor") = false)
-      .def(
-          "getExecutionReport",
-          [](const InferenceSession &session, bool useCbor, bool resetProfile) {
-            auto report = session.getExecutionReport(useCbor, resetProfile);
-            return py::bytes(report);
-          },
-          py::arg("useCbor")      = false,
-          py::arg("resetProfile") = true)
-      .def("getSerializedGraph",
-           [](const InferenceSession &session) {
-             auto report = session.getSerializedGraph();
-             return py::bytes(report);
-           })
-      .def("getTensorTileMap", &InferenceSession::getTensorTileMap)
-      .def("resetHostWeights", &InferenceSession::resetHostWeights)
+          }
+        },
+        py::arg("err").none());
+    cls.def("setRandomSeed",
+            &InferenceSession::setRandomSeed,
+            py::arg("seedValue"));
+    cls.def("getCycleCount", &InferenceSession::getCycleCount);
+    cls.def("weightsFromHost", &InferenceSession::weightsFromHost);
+    cls.def("writeWeights", &TrainingSession::writeWeights);
+    cls.def("run", &InferenceSession::run);
+    cls.def("modelToHost", &InferenceSession::modelToHost);
+    cls.def("getInfo", &InferenceSession::getInfo);
+    cls.def("getSummaryReport",
+            &InferenceSession::getSummaryReport,
+            py::arg("resetProfile") = true);
+    cls.def(
+        "getGraphReport",
+        [](const InferenceSession &session, bool useCbor) {
+          auto report = session.getGraphReport(useCbor);
+          return py::bytes(report);
+        },
+        py::arg("useCbor") = false);
+    cls.def(
+        "getExecutionReport",
+        [](const InferenceSession &session, bool useCbor, bool resetProfile) {
+          auto report = session.getExecutionReport(useCbor, resetProfile);
+          return py::bytes(report);
+        },
+        py::arg("useCbor")      = false,
+        py::arg("resetProfile") = true);
+    cls.def("getSerializedGraph", [](const InferenceSession &session) {
+      auto report = session.getSerializedGraph();
+      return py::bytes(report);
+    });
+    cls.def("getTensorTileMap", &InferenceSession::getTensorTileMap);
+    cls.def("resetHostWeights", &InferenceSession::resetHostWeights);
 
-      // Special test method to write serialise ir for analysis
-      .def("_serializeIr", &InferenceSession::serializeIr, py::arg("format"));
-
-  py::class_<TrainingSession>(m, "_TrainingSessionCore")
-      .def(py::init(&TrainingSession::createFromOnnxModel),
-           py::arg("model"),
-           py::arg("dataFlow").none(),
-           py::arg("losses"),
-           py::arg("optimizer"),
-           py::arg("deviceInfo"),
-           py::arg("inputShapeInfo"),
-           py::arg("userOptions"),
-           py::arg("passes"))
-      .def("updateOptimizer", &TrainingSession::updateOptimizer)
-      .def(
-          "prepareDevice",
-          [](TrainingSession &session, PrepareDeviceError *status) {
-            try {
-              session.prepareDevice();
-            } catch (const popart::memory_allocation_err &e) {
-              if (status != nullptr) {
-                status->exception = e.clone();
-                status->success   = false;
-              } else {
-                // rethrow the exception
-                throw;
-              }
+    // Special test method to write serialise ir for analysis
+    cls.def("_serializeIr", &InferenceSession::serializeIr, py::arg("format"));
+  }
+  {
+    py::class_<TrainingSession> cls(m, "_TrainingSessionCore");
+    cls.def(py::init(&TrainingSession::createFromOnnxModel),
+            py::arg("model"),
+            py::arg("dataFlow").none(),
+            py::arg("losses"),
+            py::arg("optimizer"),
+            py::arg("deviceInfo"),
+            py::arg("inputShapeInfo"),
+            py::arg("userOptions"),
+            py::arg("passes"));
+    cls.def("updateOptimizer", &TrainingSession::updateOptimizer);
+    cls.def(
+        "prepareDevice",
+        [](TrainingSession &session, PrepareDeviceError *status) {
+          try {
+            session.prepareDevice();
+          } catch (const popart::memory_allocation_err &e) {
+            if (status != nullptr) {
+              status->exception = e.clone();
+              status->success   = false;
+            } else {
+              // rethrow the exception
+              throw;
             }
-          },
-          py::arg("err").none())
-      .def("setRandomSeed",
-           &TrainingSession::setRandomSeed,
-           py::arg("seedValue"))
-      .def("getCycleCount", &TrainingSession::getCycleCount)
-      .def("weightsToHost", &TrainingSession::weightsToHost)
-      .def("weightsFromHost", &TrainingSession::weightsFromHost)
-      .def("readWeights", &TrainingSession::readWeights)
-      .def("writeWeights", &TrainingSession::writeWeights)
-      .def("optimizerFromHost", &TrainingSession::optimizerFromHost)
-      .def("run", &TrainingSession::run)
-      .def("modelToHost", &TrainingSession::modelToHost)
-      .def("getInfo", &TrainingSession::getInfo)
-      .def("getSummaryReport",
-           &TrainingSession::getSummaryReport,
-           py::arg("resetProfile") = true)
-      .def(
-          "getGraphReport",
-          [](const TrainingSession &session, bool useCbor) {
-            auto report = session.getGraphReport(useCbor);
-            return py::bytes(report);
-          },
-          py::arg("useCbor") = false)
-      .def(
-          "getExecutionReport",
-          [](const TrainingSession &session, bool useCbor, bool resetProfile) {
-            auto report = session.getExecutionReport(useCbor, resetProfile);
-            return py::bytes(report);
-          },
-          py::arg("useCbor")      = false,
-          py::arg("resetProfile") = true)
-      .def("getSerializedGraph",
-           [](const TrainingSession &session) {
-             auto report = session.getSerializedGraph();
-             return py::bytes(report);
-           })
-      .def("getTensorTileMap", &TrainingSession::getTensorTileMap)
-      .def("resetHostWeights", &TrainingSession::resetHostWeights)
+          }
+        },
+        py::arg("err").none());
+    cls.def(
+        "setRandomSeed", &TrainingSession::setRandomSeed, py::arg("seedValue"));
+    cls.def("getCycleCount", &TrainingSession::getCycleCount);
+    cls.def("weightsToHost", &TrainingSession::weightsToHost);
+    cls.def("weightsFromHost", &TrainingSession::weightsFromHost);
+    cls.def("readWeights", &TrainingSession::readWeights);
+    cls.def("writeWeights", &TrainingSession::writeWeights);
+    cls.def("optimizerFromHost", &TrainingSession::optimizerFromHost);
+    cls.def("run", &TrainingSession::run);
+    cls.def("modelToHost", &TrainingSession::modelToHost);
+    cls.def("getInfo", &TrainingSession::getInfo);
+    cls.def("getSummaryReport",
+            &TrainingSession::getSummaryReport,
+            py::arg("resetProfile") = true);
+    cls.def(
+        "getGraphReport",
+        [](const TrainingSession &session, bool useCbor) {
+          auto report = session.getGraphReport(useCbor);
+          return py::bytes(report);
+        },
+        py::arg("useCbor") = false);
+    cls.def(
+        "getExecutionReport",
+        [](const TrainingSession &session, bool useCbor, bool resetProfile) {
+          auto report = session.getExecutionReport(useCbor, resetProfile);
+          return py::bytes(report);
+        },
+        py::arg("useCbor")      = false,
+        py::arg("resetProfile") = true);
+    cls.def("getSerializedGraph", [](const TrainingSession &session) {
+      auto report = session.getSerializedGraph();
+      return py::bytes(report);
+    });
+    cls.def("getTensorTileMap", &TrainingSession::getTensorTileMap);
+    cls.def("resetHostWeights", &TrainingSession::resetHostWeights);
 
-      // Special test method to write serialise ir for analysis
-      .def("_serializeIr", &TrainingSession::serializeIr, py::arg("format"))
-      // Accessor for internal objects
-      .def("getIr", &TrainingSession::getIr)
-      .def("getHostReduceStreamIds", &TrainingSession::getHostReduceStreamIds)
-      .def("connectStreamToCallback",
-           &TrainingSession::connectStreamToCallback);
-
-  py::class_<GraphTransformer>(m, "GraphTransformer")
-      .def(py::init<const std::string &>(), py::arg("modelProtoOrFilename"))
-      .def("getModelProto",
-           [](const GraphTransformer &graphtransformer) {
-             return py::bytes(graphtransformer.getModelProto());
-           })
-
-      .def("removeUnusedInputs", &GraphTransformer::removeUnusedInputs)
-      .def("prepareNodesForTraining",
-           &GraphTransformer::prepareNodesForTraining)
-      .def("convertFloatsToHalfs", &GraphTransformer::convertFloatsToHalfs)
-      .def("convertInitializersToConstants",
-           &GraphTransformer::convertInitializersToConstants,
-           py::arg("ids"))
-      .def("convertAllFixedPointInitializersToConstants",
-           &GraphTransformer::convertAllFixedPointInitializersToConstants)
-      .def("saveInitializersExternally",
-           &GraphTransformer::saveInitializersExternally,
-           py::arg("ids"),
-           py::arg("filename"));
-
+    // Special test method to write serialise ir for analysis
+    cls.def("_serializeIr", &TrainingSession::serializeIr, py::arg("format"));
+    // Accessor for internal objects
+    cls.def("getIr", &TrainingSession::getIr);
+    cls.def("getHostReduceStreamIds", &TrainingSession::getHostReduceStreamIds);
+    cls.def("connectStreamToCallback",
+            &TrainingSession::connectStreamToCallback);
+  }
+  {
+    py::class_<GraphTransformer> cls(m, "GraphTransformer");
+    cls.def(py::init<const std::string &>(), py::arg("modelProtoOrFilename"));
+    cls.def("getModelProto", [](const GraphTransformer &graphtransformer) {
+      return py::bytes(graphtransformer.getModelProto());
+    });
+    cls.def("removeUnusedInputs", &GraphTransformer::removeUnusedInputs);
+    cls.def("prepareNodesForTraining",
+            &GraphTransformer::prepareNodesForTraining);
+    cls.def("convertFloatsToHalfs", &GraphTransformer::convertFloatsToHalfs);
+    cls.def("convertInitializersToConstants",
+            &GraphTransformer::convertInitializersToConstants,
+            py::arg("ids"));
+    cls.def("convertAllFixedPointInitializersToConstants",
+            &GraphTransformer::convertAllFixedPointInitializersToConstants);
+    cls.def("saveInitializersExternally",
+            &GraphTransformer::saveInitializersExternally,
+            py::arg("ids"),
+            py::arg("filename"));
+  }
 // Include the generated poponx.cpp code
 #include "popart.cpp.gen"
+  {
+    py::class_<AiGraphcoreOpset1> cls(m, "AiGraphcoreOpset1");
+    cls.def("groupnormalization",
+            &AiGraphcoreOpset1::groupnormalization,
+            py::arg("args"),
+            py::arg("num_groups"),
+            py::arg("epsilon")     = 1e-05f,
+            py::arg("debugPrefix") = std::string());
+    cls.def("printtensor",
+            &AiGraphcoreOpset1::printtensor,
+            py::arg("args"),
+            py::arg("print_gradient") = 1,
+            py::arg("debugPrefix")    = std::string());
+    cls.def("scale",
+            &AiGraphcoreOpset1::scale,
+            py::arg("args"),
+            py::arg("scale"),
+            py::arg("debugPrefix") = std::string());
+    cls.def("lstm",
+            &AiGraphcoreOpset1::lstm,
+            py::arg("args"),
+            py::arg("outputFullSequence") = 1,
+            py::arg("debugPrefix")        = std::string());
+    cls.def("subsample",
+            &AiGraphcoreOpset1::subsample,
+            py::arg("args"),
+            py::arg("strides"),
+            py::arg("debugPrefix") = std::string());
+    cls.def("gelu",
+            &AiGraphcoreOpset1::gelu,
+            py::arg("args"),
+            py::arg("debugPrefix") = std::string());
+    cls.def("init",
+            &AiGraphcoreOpset1::init,
+            py::arg("shape"),
+            py::arg("data_type"),
+            py::arg("init_type"),
+            py::arg("debugPrefix") = std::string());
+    cls.def("dynamicslice",
+            &AiGraphcoreOpset1::dynamicslice,
+            py::arg("args"),
+            py::arg("axes"),
+            py::arg("sizes"),
+            py::arg("noOverlap")   = 0,
+            py::arg("debugPrefix") = std::string());
+    cls.def("dynamicupdate",
+            &AiGraphcoreOpset1::dynamicupdate,
+            py::arg("args"),
+            py::arg("axes"),
+            py::arg("sizes"),
+            py::arg("noOverlap")   = 0,
+            py::arg("debugPrefix") = std::string());
+    cls.def("dynamiczero",
+            &AiGraphcoreOpset1::dynamiczero,
+            py::arg("args"),
+            py::arg("axes"),
+            py::arg("sizes"),
+            py::arg("debugPrefix") = std::string());
+    cls.def("dynamicadd",
+            &AiGraphcoreOpset1::dynamicadd,
+            py::arg("args"),
+            py::arg("axes"),
+            py::arg("sizes"),
+            py::arg("debugPrefix") = std::string());
+    cls.def("call",
+            &AiGraphcoreOpset1::call,
+            py::arg("args"),
+            py::arg("num_outputs"),
+            py::arg("callee"),
+            py::arg("debugPrefix") = std::string());
+  }
+  {
+    py::class_<Builder> cls(m, "_BuilderCore");
+    cls.def(py::init(&Builder::create));
+    cls.def(py::init(&Builder::createFromOnnxModel),
+            py::arg("modelProtoOrFilename"));
+    cls.def("setGraphName", &Builder::setGraphName, py::arg("name"));
+    cls.def("addInputTensor",
+            &Builder::addInputTensor,
+            py::arg("tensorInfo"),
+            py::arg("debugPrefix") = std::string());
+    cls.def("addUntypedInputTensor",
+            &Builder::addUntypedInputTensor,
+            py::arg("debugPrefix") = std::string());
+    cls.def("addInputTensorFromParentGraph",
+            &Builder::addInputTensorFromHigherScope,
+            py::arg("tensorId"));
+    cls.def(
+        "addInitializedInputTensor",
+        [](Builder &builder, py::array array, std::string &debugPrefix) {
+          ConstVoidData initData;
+          initData.data = array.request().ptr;
+          initData.info = getTensorInfo(array);
+          return builder.addInitializedInputTensor(initData, debugPrefix);
+        },
+        py::arg("initVal"),
+        py::arg("debugPrefix") = std::string());
+    cls.def(
+        "addOutputTensor", &Builder::addOutputTensor, py::arg("outputName"));
+    cls.def("_createSubgraphBuilder",
+            &Builder::createSubgraphBuilder,
+            pybind11::return_value_policy::reference);
+    cls.def("saveModelProto", &Builder::saveModelProto, py::arg("filename"));
+    cls.def("saveInitializersExternally",
+            &Builder::saveInitializersExternally,
+            py::arg("ids"),
+            py::arg("filename"));
 
-  py::class_<AiGraphcoreOpset1>(m, "AiGraphcoreOpset1")
-      .def("groupnormalization",
-           &AiGraphcoreOpset1::groupnormalization,
-           py::arg("args"),
-           py::arg("num_groups"),
-           py::arg("epsilon")     = 1e-05f,
-           py::arg("debugPrefix") = std::string())
-      .def("printtensor",
-           &AiGraphcoreOpset1::printtensor,
-           py::arg("args"),
-           py::arg("print_gradient") = 1,
-           py::arg("debugPrefix")    = std::string())
-      .def("scale",
-           &AiGraphcoreOpset1::scale,
-           py::arg("args"),
-           py::arg("scale"),
-           py::arg("debugPrefix") = std::string())
-      .def("lstm",
-           &AiGraphcoreOpset1::lstm,
-           py::arg("args"),
-           py::arg("outputFullSequence") = 1,
-           py::arg("debugPrefix")        = std::string())
-      .def("subsample",
-           &AiGraphcoreOpset1::subsample,
-           py::arg("args"),
-           py::arg("strides"),
-           py::arg("debugPrefix") = std::string())
-      .def("gelu",
-           &AiGraphcoreOpset1::gelu,
-           py::arg("args"),
-           py::arg("debugPrefix") = std::string())
-      .def("init",
-           &AiGraphcoreOpset1::init,
-           py::arg("shape"),
-           py::arg("data_type"),
-           py::arg("init_type"),
-           py::arg("debugPrefix") = std::string())
-      .def("dynamicslice",
-           &AiGraphcoreOpset1::dynamicslice,
-           py::arg("args"),
-           py::arg("axes"),
-           py::arg("sizes"),
-           py::arg("noOverlap")   = 0,
-           py::arg("debugPrefix") = std::string())
-      .def("dynamicupdate",
-           &AiGraphcoreOpset1::dynamicupdate,
-           py::arg("args"),
-           py::arg("axes"),
-           py::arg("sizes"),
-           py::arg("noOverlap")   = 0,
-           py::arg("debugPrefix") = std::string())
-      .def("dynamiczero",
-           &AiGraphcoreOpset1::dynamiczero,
-           py::arg("args"),
-           py::arg("axes"),
-           py::arg("sizes"),
-           py::arg("debugPrefix") = std::string())
-      .def("dynamicadd",
-           &AiGraphcoreOpset1::dynamicadd,
-           py::arg("args"),
-           py::arg("axes"),
-           py::arg("sizes"),
-           py::arg("debugPrefix") = std::string())
-      .def("call",
-           &AiGraphcoreOpset1::call,
-           py::arg("args"),
-           py::arg("num_outputs"),
-           py::arg("callee"),
-           py::arg("debugPrefix") = std::string());
+    // Accessors for the ai.onnx domain builder interface
+    cls.def_property_readonly("aiOnnxOpset6", &Builder::aiOnnxOpset6);
+    cls.def_property_readonly("aiOnnxOpset7", &Builder::aiOnnxOpset7);
+    cls.def_property_readonly("aiOnnxOpset8", &Builder::aiOnnxOpset8);
+    cls.def_property_readonly("aiOnnxOpset9", &Builder::aiOnnxOpset9);
+    cls.def_property_readonly("aiOnnxOpset10", &Builder::aiOnnxOpset10);
+    cls.def_property_readonly("aiOnnxOpset11", &Builder::aiOnnxOpset11);
 
-  py::class_<Builder>(m, "_BuilderCore")
-      .def(py::init(&Builder::create))
-      .def(py::init(&Builder::createFromOnnxModel),
-           py::arg("modelProtoOrFilename"))
-      .def("setGraphName", &Builder::setGraphName, py::arg("name"))
-      .def("addInputTensor",
-           &Builder::addInputTensor,
-           py::arg("tensorInfo"),
-           py::arg("debugPrefix") = std::string())
-      .def("addUntypedInputTensor",
-           &Builder::addUntypedInputTensor,
-           py::arg("debugPrefix") = std::string())
-      .def("addInputTensorFromParentGraph",
-           &Builder::addInputTensorFromHigherScope,
-           py::arg("tensorId"))
-      .def(
-          "addInitializedInputTensor",
-          [](Builder &builder, py::array array, std::string &debugPrefix) {
-            ConstVoidData initData;
-            initData.data = array.request().ptr;
-            initData.info = getTensorInfo(array);
-            return builder.addInitializedInputTensor(initData, debugPrefix);
-          },
-          py::arg("initVal"),
-          py::arg("debugPrefix") = std::string())
-      .def("addOutputTensor", &Builder::addOutputTensor, py::arg("outputName"))
-      .def("_createSubgraphBuilder",
-           &Builder::createSubgraphBuilder,
-           pybind11::return_value_policy::reference)
-      .def("saveModelProto", &Builder::saveModelProto, py::arg("filename"))
-      .def("saveInitializersExternally",
-           &Builder::saveInitializersExternally,
-           py::arg("ids"),
-           py::arg("filename"))
+    // Accessors for the ai.onnxml domain builder interface
+    cls.def_property_readonly("aiOnnxMlOpset1", &Builder::aiOnnxMlOpset1);
 
-      // Accessors for the ai.onnx domain builder interface
-      .def_property_readonly("aiOnnxOpset6", &Builder::aiOnnxOpset6)
-      .def_property_readonly("aiOnnxOpset7", &Builder::aiOnnxOpset7)
-      .def_property_readonly("aiOnnxOpset8", &Builder::aiOnnxOpset8)
-      .def_property_readonly("aiOnnxOpset9", &Builder::aiOnnxOpset9)
-      .def_property_readonly("aiOnnxOpset10", &Builder::aiOnnxOpset10)
-      .def_property_readonly("aiOnnxOpset11", &Builder::aiOnnxOpset11)
+    // Accessors for the ai.graphcore domain builder interface
+    cls.def_property_readonly("aiGraphcoreOpset1", &Builder::aiGraphcoreOpset1);
+    // Custom Op interface for separately compiled operations used in python.
+    cls.def(
+        "customOp",
+        [](Builder &builder,
+           const std::string &opName,
+           const int &OpVersion,
+           const std::string &domain,
+           const py::list &inputs,
+           const py::dict &attr,
+           const unsigned &numOutputs,
+           const std::string &name) {
+          popart::OperatorIdentifier opId = {
+              domain, opName, static_cast<popart::OpVersion>(OpVersion)};
+          std::vector<TensorId> input_vector;
+          for (auto item : inputs) {
+            std::string str = py::cast<std::string>(item);
+            TensorId t      = static_cast<TensorId>(str);
+            input_vector.push_back(t);
+          }
+          return builder.customOp(
+              opId, 1, input_vector, numOutputs, getDictionaryVar(attr), name);
+        },
+        py::arg("opName"),
+        py::arg("opVersion"),
+        py::arg("domain"),
+        py::arg("inputs"),
+        py::arg("attributes"),
+        py::arg("numOutputs") = 1,
+        py::arg("name")       = std::string());
+    cls.def(
+        "addNodeAttribute",
+        static_cast<void (Builder::*)(
+            const std::string &, const int64_t &, const std::set<TensorId> &)>(
+            &Builder::addNodeAttribute),
+        py::arg("attributeName"),
+        py::arg("attributeValue"),
+        py::arg("nodeOutputNames"));
+    cls.def("addNodeAttribute",
+            static_cast<void (Builder::*)(const std::string &,
+                                          const std::vector<int64_t> &,
+                                          const std::set<TensorId> &)>(
+                &Builder::addNodeAttribute),
+            py::arg("attributeName"),
+            py::arg("attributeValue"),
+            py::arg("nodeOutputNames"));
+    cls.def(
+        "addNodeAttribute",
+        static_cast<void (Builder::*)(
+            const std::string &, const float &, const std::set<TensorId> &)>(
+            &Builder::addNodeAttribute),
+        py::arg("attributeName"),
+        py::arg("attributeValue"),
+        py::arg("nodeOutputNames"));
+    cls.def("addNodeAttribute",
+            static_cast<void (Builder::*)(const std::string &,
+                                          const std::vector<float> &,
+                                          const std::set<TensorId> &)>(
+                &Builder::addNodeAttribute),
+            py::arg("attributeName"),
+            py::arg("attributeValue"),
+            py::arg("nodeOutputNames"));
+    cls.def("addNodeAttribute",
+            static_cast<void (Builder::*)(const std::string &,
+                                          const std::string &,
+                                          const std::set<TensorId> &)>(
+                &Builder::addNodeAttribute),
+            py::arg("attributeName"),
+            py::arg("attributeValue"),
+            py::arg("nodeOutputNames"));
+    cls.def("addNodeAttribute",
+            static_cast<void (Builder::*)(const std::string &,
+                                          const std::vector<std::string> &,
+                                          const std::set<TensorId> &)>(
+                &Builder::addNodeAttribute),
+            py::arg("attributeName"),
+            py::arg("attributeValue"),
+            py::arg("nodeOutputNames"));
+    cls.def("nodeHasAttribute",
+            &Builder::nodeHasAttribute,
+            py::arg("attributeName"),
+            py::arg("nodeOutputNames"));
+    cls.def("getInt64NodeAttribute",
+            &Builder::getInt64NodeAttribute,
+            py::arg("attributeName"),
+            py::arg("nodeOutputNames"));
+    cls.def("getInt64VectorNodeAttribute",
+            &Builder::getInt64VectorNodeAttribute,
+            py::arg("attributeName"),
+            py::arg("nodeOutputNames"));
+    cls.def("getFloatNodeAttribute",
+            &Builder::getFloatNodeAttribute,
+            py::arg("attributeName"),
+            py::arg("nodeOutputNames"));
+    cls.def("getFloatVectorNodeAttribute",
+            &Builder::getFloatVectorNodeAttribute,
+            py::arg("attributeName"),
+            py::arg("nodeOutputNames"));
+    cls.def("getStringNodeAttribute",
+            &Builder::getStringNodeAttribute,
+            py::arg("attributeName"),
+            py::arg("nodeOutputNames"));
+    cls.def("getStringVectorNodeAttribute",
+            &Builder::getStringVectorNodeAttribute,
+            py::arg("attributeName"),
+            py::arg("nodeOutputNames"));
+    cls.def("removeNodeAttribute",
+            &Builder::removeNodeAttribute,
+            py::arg("attributeName"),
+            py::arg("nodeOutputNames"));
+    cls.def("getAllNodeAttributeNames",
+            &Builder::getAllNodeAttributeNames,
+            py::arg("nodeOutputNames"));
+    cls.def("getModelProto", [](const Builder &builder) {
+      return py::bytes(builder.getModelProto());
+    });
+    cls.def("getInputTensorIds", &Builder::getInputTensorIds);
+    cls.def("getOutputTensorIds", &Builder::getOutputTensorIds);
+    cls.def("getValueTensorIds", &Builder::getValueTensorIds);
+    cls.def("getTensorShape", &Builder::getTensorShape, py::arg("id"));
+    cls.def(
+        "getTensorDtypeString", &Builder::getTensorDtypeString, py::arg("id"));
+    cls.def("isInitializer", &Builder::isInitializer, py::arg("id"));
+    cls.def("virtualGraph",
+            static_cast<void (Builder::*)(const TensorId &, int64_t value)>(
+                &Builder::virtualGraph),
+            py::arg("nodeOutputNames"),
+            py::arg("value") = 0);
+    cls.def(
+        "virtualGraph",
+        [](Builder &self, int64_t index) -> AttributeContextManager {
+          AttributeContextManager acm(self, sVirtualGraphAttribute, index);
+          return acm;
+        },
+        py::arg("value"));
+    cls.def("pingPongPhase",
+            static_cast<void (Builder::*)(const TensorId &, int64_t phase)>(
+                &Builder::pingPongPhase),
+            py::arg("nodeOutputNames"),
+            py::arg("value") = 0);
+    cls.def(
+        "pingPongPhase",
+        [](Builder &self, int64_t phase) -> AttributeContextManager {
+          AttributeContextManager acm(self, sPingPongPhaseAttribute, phase);
+          return acm;
+        },
+        py::arg("value") = 0);
+    cls.def(
+        "getPingPongPhase",
+        static_cast<int64_t (Builder::*)() const>(&Builder::getPingPongPhase));
+    cls.def("hasPingPongPhase", [](Builder &self) -> bool {
+      return self.hasAttribute(sPingPongPhaseAttribute);
+    });
+    cls.def(
+        "recomputeOutput",
+        static_cast<void (Builder::*)(const TensorId &, RecomputeType value)>(
+            &Builder::recomputeOutput),
+        py::arg("nodeOutputNames"),
+        py::arg("value") = RecomputeType::UNDEFINED);
+    cls.def(
+        "recomputeOutput",
+        [](Builder &self, RecomputeType value) -> AttributeContextManager {
+          AttributeContextManager acm(
+              self, sRecomputeOutputAttribute, static_cast<int64_t>(value));
+          return acm;
+        },
+        py::arg("value") = RecomputeType::UNDEFINED);
+    cls.def("cacheOutput",
+            static_cast<void (Builder::*)(const TensorId &, CacheType value)>(
+                &Builder::cacheOutput),
+            py::arg("nodeOutputNames"),
+            py::arg("value") = CacheType::UNDEFINED);
+    cls.def(
+        "cacheOutput",
+        [](Builder &self, CacheType value) -> AttributeContextManager {
+          AttributeContextManager acm(
+              self, sCacheOutputAttribute, static_cast<int64_t>(value));
+          return acm;
+        },
+        py::arg("value") = CacheType::UNDEFINED);
+    cls.def("pipelineStage",
+            static_cast<void (Builder::*)(const TensorId &, int64_t value)>(
+                &Builder::pipelineStage),
+            py::arg("nodeOutputNames"),
+            py::arg("value") = 0);
+    cls.def(
+        "pipelineStage",
+        [](Builder &self, int64_t index) -> AttributeContextManager {
+          AttributeContextManager acm(self, sPipelineStageAttribute, index);
+          return acm;
+        },
+        py::arg("value"));
+    cls.def(
+        "schedulePriority",
+        [](Builder &self, float priority) -> AttributeContextManager {
+          AttributeContextManager acm(self, sSchedulePriority, priority);
+          return acm;
+        },
+        py::arg("value"));
+    cls.def("excludePatterns",
+            static_cast<void (Builder::*)(
+                const TensorId &, const std::vector<std::string> &value)>(
+                &Builder::excludePatterns),
+            py::arg("nodeOutputName"),
+            py::arg("patternNames"));
+    cls.def("getPipelineStage", &Builder::getPipelineStage);
+    cls.def("hasPipelineStage", [](Builder &self) -> bool {
+      return self.hasAttribute(sPipelineStageAttribute);
+    });
+    cls.def(
+        "getVirtualGraph",
+        static_cast<int64_t (Builder::*)() const>(&Builder::getVirtualGraph));
+    cls.def("hasVirtualGraph", [](Builder &self) -> bool {
+      return self.hasAttribute(sVirtualGraphAttribute);
+    });
+    cls.def("setPartialsType",
+            &Builder::setPartialsType,
+            py::arg("nodeOutputName"),
+            py::arg("partialsType"));
+    cls.def("getPartialsType",
+            &Builder::getPartialsType,
+            py::arg("nodeOutputName"));
+    cls.def("setAvailableMemoryProportion",
+            &Builder::setAvailableMemoryProportion,
+            py::arg("nodeOutputName"),
+            py::arg("availableMemoryProportion"));
+    cls.def(
+        "setSerializeMatMul",
+        [](Builder &self,
+           const std::set<TensorId> &nodeOutputNames,
+           std::string mode,
+           int64_t factor,
+           bool keep_precision) {
+          self.setSerializeMatMul(
+              nodeOutputNames, mode, factor, keep_precision);
+        },
+        py::arg("nodeOutputName"),
+        py::arg("mode"),
+        py::arg("factor")         = 0,
+        py::arg("keep_precision") = false);
+    cls.def(
+        "nameScope",
+        [](Builder &self, const std::string &name) -> NameContextManager {
+          NameContextManager ncm(self, name);
+          return ncm;
+        },
+        py::arg("name"));
+    cls.def(
+        "getNameScope",
+        [](Builder &self, std::string &name) {
+          return self.getNameScope(name);
+        },
+        py::arg("name") = "");
+    cls.def("getVirtualGraph",
+            static_cast<int64_t (Builder::*)(const TensorId &)>(
+                &Builder::getVirtualGraph),
+            py::arg("nodeOutputNames"));
 
-      // Accessors for the ai.onnxml domain builder interface
-      .def_property_readonly("aiOnnxMlOpset1", &Builder::aiOnnxMlOpset1)
+    cls.def(
+        "recomputeOutputInBackwardPass",
+        static_cast<void (Builder::*)(const TensorId &, RecomputeType value)>(
+            &Builder::recomputeOutputInBackwardPass),
+        py::arg("nodeOutputName"),
+        py::arg("value") = RecomputeType::RECOMPUTE);
+    cls.def("recomputeOutputInBackwardPass",
+            static_cast<void (Builder::*)(const std::set<TensorId> &,
+                                          RecomputeType value)>(
+                &Builder::recomputeOutputInBackwardPass),
+            py::arg("nodeOutputNames"),
+            py::arg("value") = RecomputeType::RECOMPUTE);
 
-      // Accessors for the ai.graphcore domain builder interface
-      .def_property_readonly("aiGraphcoreOpset1", &Builder::aiGraphcoreOpset1)
-      // Custom Op interface for separately compiled operations used in python.
-      .def(
-          "customOp",
-          [](Builder &builder,
-             const std::string &opName,
-             const int &OpVersion,
-             const std::string &domain,
-             const py::list &inputs,
-             const py::dict &attr,
-             const unsigned &numOutputs,
-             const std::string &name) {
-            popart::OperatorIdentifier opId = {
-                domain, opName, static_cast<popart::OpVersion>(OpVersion)};
-            std::vector<TensorId> input_vector;
-            for (auto item : inputs) {
-              std::string str = py::cast<std::string>(item);
-              TensorId t      = static_cast<TensorId>(str);
-              input_vector.push_back(t);
-            }
-            return builder.customOp(opId,
-                                    1,
-                                    input_vector,
-                                    numOutputs,
-                                    getDictionaryVar(attr),
-                                    name);
-          },
-          py::arg("opName"),
-          py::arg("opVersion"),
-          py::arg("domain"),
-          py::arg("inputs"),
-          py::arg("attributes"),
-          py::arg("numOutputs") = 1,
-          py::arg("name")       = std::string())
-      .def("addNodeAttribute",
-           static_cast<void (Builder::*)(const std::string &,
-                                         const int64_t &,
-                                         const std::set<TensorId> &)>(
-               &Builder::addNodeAttribute),
-           py::arg("attributeName"),
-           py::arg("attributeValue"),
-           py::arg("nodeOutputNames"))
-      .def("addNodeAttribute",
-           static_cast<void (Builder::*)(const std::string &,
-                                         const std::vector<int64_t> &,
-                                         const std::set<TensorId> &)>(
-               &Builder::addNodeAttribute),
-           py::arg("attributeName"),
-           py::arg("attributeValue"),
-           py::arg("nodeOutputNames"))
-      .def("addNodeAttribute",
-           static_cast<void (Builder::*)(
-               const std::string &, const float &, const std::set<TensorId> &)>(
-               &Builder::addNodeAttribute),
-           py::arg("attributeName"),
-           py::arg("attributeValue"),
-           py::arg("nodeOutputNames"))
-      .def("addNodeAttribute",
-           static_cast<void (Builder::*)(const std::string &,
-                                         const std::vector<float> &,
-                                         const std::set<TensorId> &)>(
-               &Builder::addNodeAttribute),
-           py::arg("attributeName"),
-           py::arg("attributeValue"),
-           py::arg("nodeOutputNames"))
-      .def("addNodeAttribute",
-           static_cast<void (Builder::*)(const std::string &,
-                                         const std::string &,
-                                         const std::set<TensorId> &)>(
-               &Builder::addNodeAttribute),
-           py::arg("attributeName"),
-           py::arg("attributeValue"),
-           py::arg("nodeOutputNames"))
-      .def("addNodeAttribute",
-           static_cast<void (Builder::*)(const std::string &,
-                                         const std::vector<std::string> &,
-                                         const std::set<TensorId> &)>(
-               &Builder::addNodeAttribute),
-           py::arg("attributeName"),
-           py::arg("attributeValue"),
-           py::arg("nodeOutputNames"))
-      .def("nodeHasAttribute",
-           &Builder::nodeHasAttribute,
-           py::arg("attributeName"),
-           py::arg("nodeOutputNames"))
-      .def("getInt64NodeAttribute",
-           &Builder::getInt64NodeAttribute,
-           py::arg("attributeName"),
-           py::arg("nodeOutputNames"))
-      .def("getInt64VectorNodeAttribute",
-           &Builder::getInt64VectorNodeAttribute,
-           py::arg("attributeName"),
-           py::arg("nodeOutputNames"))
-      .def("getFloatNodeAttribute",
-           &Builder::getFloatNodeAttribute,
-           py::arg("attributeName"),
-           py::arg("nodeOutputNames"))
-      .def("getFloatVectorNodeAttribute",
-           &Builder::getFloatVectorNodeAttribute,
-           py::arg("attributeName"),
-           py::arg("nodeOutputNames"))
-      .def("getStringNodeAttribute",
-           &Builder::getStringNodeAttribute,
-           py::arg("attributeName"),
-           py::arg("nodeOutputNames"))
-      .def("getStringVectorNodeAttribute",
-           &Builder::getStringVectorNodeAttribute,
-           py::arg("attributeName"),
-           py::arg("nodeOutputNames"))
-      .def("removeNodeAttribute",
-           &Builder::removeNodeAttribute,
-           py::arg("attributeName"),
-           py::arg("nodeOutputNames"))
-      .def("getAllNodeAttributeNames",
-           &Builder::getAllNodeAttributeNames,
-           py::arg("nodeOutputNames"))
-      .def("getModelProto",
-           [](const Builder &builder) {
-             return py::bytes(builder.getModelProto());
-           })
-      .def("getInputTensorIds", &Builder::getInputTensorIds)
-      .def("getOutputTensorIds", &Builder::getOutputTensorIds)
-      .def("getValueTensorIds", &Builder::getValueTensorIds)
-      .def("getTensorShape", &Builder::getTensorShape, py::arg("id"))
-      .def(
-          "getTensorDtypeString", &Builder::getTensorDtypeString, py::arg("id"))
-      .def("isInitializer", &Builder::isInitializer, py::arg("id"))
-      .def("virtualGraph",
-           static_cast<void (Builder::*)(const TensorId &, int64_t value)>(
-               &Builder::virtualGraph),
-           py::arg("nodeOutputNames"),
-           py::arg("value") = 0)
-      .def(
-          "virtualGraph",
-          [](Builder &self, int64_t index) -> AttributeContextManager {
-            AttributeContextManager acm(self, sVirtualGraphAttribute, index);
-            return acm;
-          },
-          py::arg("value"))
-      .def("pingPongPhase",
-           static_cast<void (Builder::*)(const TensorId &, int64_t phase)>(
-               &Builder::pingPongPhase),
-           py::arg("nodeOutputNames"),
-           py::arg("value") = 0)
-      .def(
-          "pingPongPhase",
-          [](Builder &self, int64_t phase) -> AttributeContextManager {
-            AttributeContextManager acm(self, sPingPongPhaseAttribute, phase);
-            return acm;
-          },
-          py::arg("value") = 0)
-      .def(
-          "getPingPongPhase",
-          static_cast<int64_t (Builder::*)() const>(&Builder::getPingPongPhase))
-      .def("hasPingPongPhase",
-           [](Builder &self) -> bool {
-             return self.hasAttribute(sPingPongPhaseAttribute);
-           })
-      .def(
-          "recomputeOutput",
-          static_cast<void (Builder::*)(const TensorId &, RecomputeType value)>(
-              &Builder::recomputeOutput),
-          py::arg("nodeOutputNames"),
-          py::arg("value") = RecomputeType::UNDEFINED)
-      .def(
-          "recomputeOutput",
-          [](Builder &self, RecomputeType value) -> AttributeContextManager {
-            AttributeContextManager acm(
-                self, sRecomputeOutputAttribute, static_cast<int64_t>(value));
-            return acm;
-          },
-          py::arg("value") = RecomputeType::UNDEFINED)
-      .def("cacheOutput",
-           static_cast<void (Builder::*)(const TensorId &, CacheType value)>(
-               &Builder::cacheOutput),
-           py::arg("nodeOutputNames"),
-           py::arg("value") = CacheType::UNDEFINED)
-      .def(
-          "cacheOutput",
-          [](Builder &self, CacheType value) -> AttributeContextManager {
-            AttributeContextManager acm(
-                self, sCacheOutputAttribute, static_cast<int64_t>(value));
-            return acm;
-          },
-          py::arg("value") = CacheType::UNDEFINED)
-      .def("pipelineStage",
-           static_cast<void (Builder::*)(const TensorId &, int64_t value)>(
-               &Builder::pipelineStage),
-           py::arg("nodeOutputNames"),
-           py::arg("value") = 0)
-      .def(
-          "pipelineStage",
-          [](Builder &self, int64_t index) -> AttributeContextManager {
-            AttributeContextManager acm(self, sPipelineStageAttribute, index);
-            return acm;
-          },
-          py::arg("value"))
-      .def(
-          "schedulePriority",
-          [](Builder &self, float priority) -> AttributeContextManager {
-            AttributeContextManager acm(self, sSchedulePriority, priority);
-            return acm;
-          },
-          py::arg("value"))
-      .def("excludePatterns",
-           static_cast<void (Builder::*)(
-               const TensorId &, const std::vector<std::string> &value)>(
-               &Builder::excludePatterns),
-           py::arg("nodeOutputName"),
-           py::arg("patternNames"))
-      .def("getPipelineStage", &Builder::getPipelineStage)
-      .def("hasPipelineStage",
-           [](Builder &self) -> bool {
-             return self.hasAttribute(sPipelineStageAttribute);
-           })
-      .def("getVirtualGraph",
-           static_cast<int64_t (Builder::*)() const>(&Builder::getVirtualGraph))
-      .def("hasVirtualGraph",
-           [](Builder &self) -> bool {
-             return self.hasAttribute(sVirtualGraphAttribute);
-           })
-      .def("setPartialsType",
-           &Builder::setPartialsType,
-           py::arg("nodeOutputName"),
-           py::arg("partialsType"))
-      .def("getPartialsType",
-           &Builder::getPartialsType,
-           py::arg("nodeOutputName"))
-      .def("setAvailableMemoryProportion",
-           &Builder::setAvailableMemoryProportion,
-           py::arg("nodeOutputName"),
-           py::arg("availableMemoryProportion"))
-      .def(
-          "setSerializeMatMul",
-          [](Builder &self,
-             const std::set<TensorId> &nodeOutputNames,
-             std::string mode,
-             int64_t factor,
-             bool keep_precision) {
-            self.setSerializeMatMul(
-                nodeOutputNames, mode, factor, keep_precision);
-          },
-          py::arg("nodeOutputName"),
-          py::arg("mode"),
-          py::arg("factor")         = 0,
-          py::arg("keep_precision") = false)
-      .def(
-          "nameScope",
-          [](Builder &self, const std::string &name) -> NameContextManager {
-            NameContextManager ncm(self, name);
-            return ncm;
-          },
-          py::arg("name"))
-      .def(
-          "getNameScope",
-          [](Builder &self,
-             std::string &name) { return self.getNameScope(name); },
-          py::arg("name") = "")
-      .def("getVirtualGraph",
-           static_cast<int64_t (Builder::*)(const TensorId &)>(
-               &Builder::getVirtualGraph),
-           py::arg("nodeOutputNames"))
+    cls.def("getRecomputeOutputInBackwardPass",
+            static_cast<bool (Builder::*)(const TensorId &)>(
+                &Builder::getRecomputeOutputInBackwardPass),
+            py::arg("nodeOutputName"));
 
-      .def(
-          "recomputeOutputInBackwardPass",
-          static_cast<void (Builder::*)(const TensorId &, RecomputeType value)>(
-              &Builder::recomputeOutputInBackwardPass),
-          py::arg("nodeOutputName"),
-          py::arg("value") = RecomputeType::RECOMPUTE)
-      .def("recomputeOutputInBackwardPass",
-           static_cast<void (Builder::*)(const std::set<TensorId> &,
-                                         RecomputeType value)>(
-               &Builder::recomputeOutputInBackwardPass),
-           py::arg("nodeOutputNames"),
-           py::arg("value") = RecomputeType::RECOMPUTE)
+    cls.def("getRecomputeOutputInBackwardPass",
+            static_cast<bool (Builder::*)(const std::set<TensorId> &)>(
+                &Builder::getRecomputeOutputInBackwardPass),
+            py::arg("nodeOutputNames"));
 
-      .def("getRecomputeOutputInBackwardPass",
-           static_cast<bool (Builder::*)(const TensorId &)>(
-               &Builder::getRecomputeOutputInBackwardPass),
-           py::arg("nodeOutputName"))
+    cls.def("setInplacePreferences",
+            static_cast<void (Builder::*)(const TensorId &,
+                                          const std::map<OpType, float> &)>(
+                &Builder::setInplacePreferences),
+            py::arg("nodeOutputName"),
+            py::arg("prefs"));
+  }
+  {
+    py::class_<AttributeContextManager> cls(m, "AttributeContextManager");
+    cls.def("__enter__", &AttributeContextManager::enter);
+    cls.def("__exit__",
+            [](AttributeContextManager &self,
+               py::object &,
+               py::object &,
+               py::object &) { self.exit(); });
+  }
+  {
+    py::class_<NameContextManager> cls(m, "NameContextManager");
+    cls.def("__enter__", &NameContextManager::enter);
+    cls.def(
+        "__exit__",
+        [](NameContextManager &self, py::object &, py::object &, py::object &) {
+          self.exit();
+        });
+  }
+  {
+    py::enum_<DeviceType> en(m, "DeviceType");
+    en.value("IpuModel", DeviceType::IpuModel);
+    en.value("Cpu", DeviceType::Cpu);
+    en.value("Ipu", DeviceType::Ipu);
+    en.value("Sim", DeviceType::Sim);
+  }
+  {
+    // PyBinding to a singleton
+    py::class_<DeviceManager, std::unique_ptr<DeviceManager, py::nodelete>> cls(
+        m, "DeviceManager");
+    cls.def(py::init([]() {
+      return std::unique_ptr<DeviceManager, py::nodelete>(
+          &DeviceManager::createDeviceManager());
+    }));
+    cls.def("acquireAvailableDevice",
+            static_cast<std::shared_ptr<DeviceInfo> (DeviceManager::*)(
+                int, int, SyncPattern, uint32_t)>(
+                &DeviceManager::acquireAvailableDevice),
+            py::arg("numIpus")           = 1,
+            py::arg("tilesPerIpu")       = 0,
+            py::arg("pattern")           = SyncPattern::Full,
+            py::arg("replicationFactor") = 1);
+    cls.def("acquireDeviceById",
+            &DeviceManager::acquireDeviceById,
+            py::arg("id"),
+            py::arg("pattern")           = SyncPattern::Full,
+            py::arg("replicationFactor") = 1);
+    cls.def("createCpuDevice", &DeviceManager::createCpuDevice);
+    cls.def("createIpuModelDevice", [](DeviceManager &dm, py::dict e) {
+      std::map<std::string, std::string> options = getDictionary(e);
+      return dm.createIpuModelDevice(options);
+    });
+    cls.def("createSimDevice", [](DeviceManager &dm, py::dict e) {
+      std::map<std::string, std::string> options = getDictionary(e);
+      return dm.createSimDevice(options);
+    });
+    cls.def("enumerateDevices",
+            &DeviceManager::enumerateDevices,
+            py::arg("pattern")           = SyncPattern::Full,
+            py::arg("replicationFactor") = 1,
+            py::arg("numIpus")           = 1,
+            py::arg("deviceType")        = DeviceType::Ipu);
+  }
+  {
+    py::class_<DeviceInfo, std::shared_ptr<DeviceInfo>> cls(m, "DeviceInfo");
+    cls.def("attach", &DeviceInfo::attach);
+    cls.def("detach", &DeviceInfo::detach);
+    cls.def_property_readonly("type", &DeviceInfo::getType);
+    cls.def_property_readonly("version", &DeviceInfo::getVersion);
+    cls.def_property_readonly("id", &DeviceInfo::getId);
+    cls.def_property_readonly("numIpus", &DeviceInfo::getNumIpus);
+    cls.def_property_readonly("tilesPerIpu", &DeviceInfo::getTilesPerIpu);
+    cls.def_property_readonly("driverIds", &DeviceInfo::getDriverIds);
 
-      .def("getRecomputeOutputInBackwardPass",
-           static_cast<bool (Builder::*)(const std::set<TensorId> &)>(
-               &Builder::getRecomputeOutputInBackwardPass),
-           py::arg("nodeOutputNames"))
-
-      .def("setInplacePreferences",
-           static_cast<void (Builder::*)(const TensorId &,
-                                         const std::map<OpType, float> &)>(
-               &Builder::setInplacePreferences),
-           py::arg("nodeOutputName"),
-           py::arg("prefs"));
-
-  py::class_<AttributeContextManager>(m, "AttributeContextManager")
-      .def("__enter__", &AttributeContextManager::enter)
-      .def("__exit__",
-           [](AttributeContextManager &self,
-              py::object &,
-              py::object &,
-              py::object &) { self.exit(); });
-
-  py::class_<NameContextManager>(m, "NameContextManager")
-      .def("__enter__", &NameContextManager::enter)
-      .def("__exit__",
-           [](NameContextManager &self,
-              py::object &,
-              py::object &,
-              py::object &) { self.exit(); });
-
-  py::enum_<DeviceType>(m, "DeviceType")
-      .value("IpuModel", DeviceType::IpuModel)
-      .value("Cpu", DeviceType::Cpu)
-      .value("Ipu", DeviceType::Ipu)
-      .value("Sim", DeviceType::Sim);
-
-  // PyBinding to a singleton
-  py::class_<DeviceManager, std::unique_ptr<DeviceManager, py::nodelete>>(
-      m, "DeviceManager")
-      .def(py::init([]() {
-        return std::unique_ptr<DeviceManager, py::nodelete>(
-            &DeviceManager::createDeviceManager());
-      }))
-      .def("acquireAvailableDevice",
-           static_cast<std::shared_ptr<DeviceInfo> (DeviceManager::*)(
-               int, int, SyncPattern, uint32_t)>(
-               &DeviceManager::acquireAvailableDevice),
-           py::arg("numIpus")           = 1,
-           py::arg("tilesPerIpu")       = 0,
-           py::arg("pattern")           = SyncPattern::Full,
-           py::arg("replicationFactor") = 1)
-      .def("acquireDeviceById",
-           &DeviceManager::acquireDeviceById,
-           py::arg("id"),
-           py::arg("pattern")           = SyncPattern::Full,
-           py::arg("replicationFactor") = 1)
-      .def("createCpuDevice", &DeviceManager::createCpuDevice)
-      .def("createIpuModelDevice",
-           [](DeviceManager &dm, py::dict e) {
-             std::map<std::string, std::string> options = getDictionary(e);
-             return dm.createIpuModelDevice(options);
-           })
-      .def("createSimDevice",
-           [](DeviceManager &dm, py::dict e) {
-             std::map<std::string, std::string> options = getDictionary(e);
-             return dm.createSimDevice(options);
-           })
-      .def("enumerateDevices",
-           &DeviceManager::enumerateDevices,
-           py::arg("pattern")           = SyncPattern::Full,
-           py::arg("replicationFactor") = 1,
-           py::arg("numIpus")           = 1,
-           py::arg("deviceType")        = DeviceType::Ipu);
-
-  py::class_<DeviceInfo, std::shared_ptr<DeviceInfo>>(m, "DeviceInfo")
-      .def("attach", &DeviceInfo::attach)
-      .def("detach", &DeviceInfo::detach)
-      .def_property_readonly("type", &DeviceInfo::getType)
-      .def_property_readonly("version", &DeviceInfo::getVersion)
-      .def_property_readonly("id", &DeviceInfo::getId)
-      .def_property_readonly("numIpus", &DeviceInfo::getNumIpus)
-      .def_property_readonly("tilesPerIpu", &DeviceInfo::getTilesPerIpu)
-      .def_property_readonly("driverIds", &DeviceInfo::getDriverIds)
-
-      .def_property_readonly("numWorkerContexts",
-                             &DeviceInfo::getNumWorkerContexts)
-      .def("__repr__", [](const DeviceInfo &di) {
-        std::stringstream ss;
-        ss << di;
-        return ss.str();
-      });
-
+    cls.def_property_readonly("numWorkerContexts",
+                              &DeviceInfo::getNumWorkerContexts);
+    cls.def("__repr__", [](const DeviceInfo &di) {
+      std::stringstream ss;
+      ss << di;
+      return ss.str();
+    });
+  }
   m.def("reservedGradientPrefix", &reservedGradientPrefix);
   m.def("reservedUpdatedVarPrefix", &reservedUpdatedVarPrefix);
 

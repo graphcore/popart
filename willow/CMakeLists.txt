@@ -85,6 +85,7 @@ target_link_libraries(popart
   ${POPUTIL_LIB}
   ${POPRITHMS_LIB}
   ${GCL_LIBRARIES}
+  ${CMAKE_THREAD_LIBS_INIT}
 )
 
 # The following defines cause compiler warnings if not set

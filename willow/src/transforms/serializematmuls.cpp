@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <memory>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
@@ -128,6 +129,12 @@ findSerializedMatMuls(popart::Graph &graph) {
       }
     }
   }
+
+  std::sort(matmuls.begin(),
+            matmuls.end(),
+            [](const popart::Op *op0, const popart::Op *op1) {
+              return op0->id < op1->id;
+            });
 
   return matmuls;
 }

@@ -130,10 +130,11 @@ set_tests_properties(model_lstm PROPERTIES FIXTURES_REQUIRED cifar10)
 # 		 COMMAND ${Python3_EXECUTABLE} torch/cifar10/model_instancenorm.py)
 # set_tests_properties(model_instancenorm PROPERTIES FIXTURES_REQUIRED cifar10)
 
-add_test(NAME model_loss_scaling
-		 WORKING_DIRECTORY ${INSTALL_TESTS}
-		 COMMAND ${Python3_EXECUTABLE} torch/cifar10/model_loss_scaling.py)
-set_tests_properties(model_loss_scaling PROPERTIES FIXTURES_REQUIRED cifar10)
+# flaky test, T16816
+# add_test(NAME model_loss_scaling
+# 		 WORKING_DIRECTORY ${INSTALL_TESTS}
+# 		 COMMAND ${Python3_EXECUTABLE} torch/cifar10/model_loss_scaling.py)
+# set_tests_properties(model_loss_scaling PROPERTIES FIXTURES_REQUIRED cifar10)
 
 # see T7159  
 # add_test(NAME model_batchnorm
