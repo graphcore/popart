@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <popart/op/elementwise.hpp>
 #include <popart/tensor.hpp>
 

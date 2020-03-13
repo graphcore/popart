@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <popart/graph.hpp>
 #include <popart/op.hpp>
 #include <popart/patterns/fuser.hpp>

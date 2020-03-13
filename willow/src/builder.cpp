@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <popart/builder_impl.hpp>
 #include <popart/filereader.hpp>
 #include <popart/logging.hpp>

@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <popops/Pad.hpp>
 #include <popart/error.hpp>
 #include <popart/op/pad.hpp>

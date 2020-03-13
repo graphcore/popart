@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <boost/algorithm/string.hpp>
 #include <fstream>
 #include <sstream>

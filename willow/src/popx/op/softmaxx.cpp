@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <iterator>
 #include <memory>
 #include <popart/error.hpp>

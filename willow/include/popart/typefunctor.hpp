@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_TYPEFUNCTOR_HPP
 #define GUARD_TYPEFUNCTOR_HPP
 

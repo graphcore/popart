@@ -1,3 +1,4 @@
+// Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <popops/ElementWise.hpp>
 #include <popops/Zero.hpp>
 #include <popart/graph.hpp>

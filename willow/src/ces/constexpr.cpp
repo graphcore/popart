@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <memory>
 #include <onnx/onnx_pb.h>
 #include <popart/attributes.hpp>

@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <boost/range/algorithm/find.hpp>
 
 #include <popart/popx/devicexmanager.hpp>

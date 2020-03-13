@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #ifndef NEURALNET_TENSOR_HPP
 #define NEURALNET_TENSOR_HPP
 

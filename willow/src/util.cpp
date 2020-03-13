@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <iostream>
 #include <popart/logging.hpp>
 #include <popart/names.hpp>

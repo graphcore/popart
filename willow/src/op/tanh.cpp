@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <memory>
 #include <popart/op/tanh.hpp>
 #include <popart/opmanager.hpp>

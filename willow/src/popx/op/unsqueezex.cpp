@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popart/error.hpp>
 #include <popart/op/unsqueeze.hpp>
 #include <popart/popx/op/unsqueezex.hpp>

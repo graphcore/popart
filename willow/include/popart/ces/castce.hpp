@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_NEURALNET_CONSTEXPRS_CASTCE_HPP
 #define GUARD_NEURALNET_CONSTEXPRS_CASTCE_HPP
 

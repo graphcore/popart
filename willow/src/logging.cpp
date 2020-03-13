@@ -1,4 +1,4 @@
-// Copyright (c) 2018, Graphcore Ltd, All rights reserved
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 
 #include <popart/error.hpp>
 #include <popart/logging.hpp>

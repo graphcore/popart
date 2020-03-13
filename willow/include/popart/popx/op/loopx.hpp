@@ -1,3 +1,4 @@
+// Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_NEURALNET_LOOPX_HPP
 #define GUARD_NEURALNET_LOOPX_HPP
 

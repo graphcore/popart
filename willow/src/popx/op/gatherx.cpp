@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popart/error.hpp>
 #include <popart/op/gather.hpp>
 #include <popart/popx/devicex.hpp>

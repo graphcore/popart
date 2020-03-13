@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #ifndef NEURALNET_GUARD_POPX_OP_SCATTERUTILX_HPP
 #define NEURALNET_GUARD_POPX_OP_SCATTERUTILX_HPP
 

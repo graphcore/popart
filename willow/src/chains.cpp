@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <popart/chains.hpp>
 #include <popart/error.hpp>

@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <cctype>
 #include <cstring>

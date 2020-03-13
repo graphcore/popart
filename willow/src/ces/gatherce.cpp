@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <vector>
 #include <popart/ces/gatherce.hpp>
 #include <popart/ndarraywrapper.hpp>

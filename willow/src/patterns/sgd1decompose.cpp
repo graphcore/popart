@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <memory>
 #include <popart/ces/slicece.hpp>
 #include <popart/graph.hpp>

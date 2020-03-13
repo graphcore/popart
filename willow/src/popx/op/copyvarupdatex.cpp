@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popops/Collectives.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/ScaledAdd.hpp>

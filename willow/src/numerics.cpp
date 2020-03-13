@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <popart/error.hpp>
 #include <popart/filereader.hpp>
 #include <popart/numerics.hpp>

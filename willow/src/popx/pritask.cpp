@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 
 #include <queue> // we use a priority_queue

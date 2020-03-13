@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <sstream>
 #include <poplar/DeviceManager.hpp>
 #include <poplar/OptionFlags.hpp>

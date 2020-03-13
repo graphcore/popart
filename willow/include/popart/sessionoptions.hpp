@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_OPTION_FLAGS_HPP
 #define GUARD_OPTION_FLAGS_HPP
 

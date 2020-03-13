@@ -1,4 +1,4 @@
-// Copyright (c) 2018, Graphcore Ltd, All rights reserved
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 
 #ifndef GUARD_NEURALNET_ERROR_HPP
 #define GUARD_NEURALNET_ERROR_HPP

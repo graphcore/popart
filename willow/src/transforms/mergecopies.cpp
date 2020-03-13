@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <boost/range/algorithm.hpp>
 
 #include <memory>

@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <cmath>
 #include <vector>
 #include <popart/ces/elementwisece.hpp>

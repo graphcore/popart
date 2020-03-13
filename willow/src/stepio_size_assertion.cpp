@@ -1,3 +1,4 @@
+// Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <sstream>
 #include <popart/error.hpp>
 #include <popart/stepio_size_assertion.hpp>

@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <popart/error.hpp>
 #include <popart/op.hpp>
 #include <popart/popx/opxmanager.hpp>

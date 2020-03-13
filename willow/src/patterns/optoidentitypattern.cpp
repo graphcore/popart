@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <memory>
 #include <popart/ir.hpp>
 #include <popart/op/gather.hpp>

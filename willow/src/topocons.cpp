@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popart/op.hpp>
 #include <popart/tensor.hpp>
 #include <popart/topocons.hpp>

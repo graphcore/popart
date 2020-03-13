@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <popart/intervals.hpp>
 // for std::sqrt
 #include <cmath>

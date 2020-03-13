@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 // Suffix Tree implemenation based on:
 // http://llvm.org/doxygen/MachineOutliner_8cpp_source.html
 // See https://llvm.org/LICENSE.txt for license information.

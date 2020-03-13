@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popart/graph.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/op/softmax.hpp>

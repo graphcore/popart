@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <string>
 #include <popart/compoundscalarhelper.hpp>
 #include <popart/op.hpp>

@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popops/ElementWise.hpp>
 #include <popart/error.hpp>
 #include <popart/op/clip.hpp>

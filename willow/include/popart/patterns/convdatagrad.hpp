@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_NEURALNET_CONV_DATA_GRAD_PATTERN_HPP
 #define GUARD_NEURALNET_CONV_DATA_GRAD_PATTERN_HPP
 

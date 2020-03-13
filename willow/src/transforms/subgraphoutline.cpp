@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <boost/algorithm/cxx11/any_of.hpp>
 #include <boost/range/algorithm/find.hpp>
 #include <cmath>

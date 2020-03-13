@@ -1,3 +1,4 @@
+// Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <popart/error.hpp>
 #include <popart/op/dynamic/dynamiczero.hpp>
 #include <popart/popx/devicex.hpp>

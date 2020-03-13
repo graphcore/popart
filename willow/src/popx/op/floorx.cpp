@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popops/ElementWise.hpp>
 #include <popart/op/floor.hpp>
 #include <popart/popx/devicex.hpp>

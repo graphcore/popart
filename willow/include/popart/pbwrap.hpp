@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_PBWRAP_GRAPH_HPP
 #define GUARD_PBWRAP_GRAPH_HPP
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2018, Graphcore Ltd, All rights reserved
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 
 #ifndef GUARD_LOGGING_HPP
 #define GUARD_LOGGING_HPP
