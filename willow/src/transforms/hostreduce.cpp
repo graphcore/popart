@@ -243,9 +243,22 @@ bool HostReduce::apply(Graph &graph) const {
     if (gradCopyFromHostOps.size() != gradCopyToHostOps.size()) {
       throw error("Unequal number of gradient copy operations");
     }
-    // Sync is added implicitly in the GradCopyToHostOp
-    for (int i = 0; i < gradCopyToHostOps.size(); ++i) {
-      graph.topoCons->insert(gradCopyToHostOps[i], gradCopyFromHostOps[i]);
+
+    // Sync is added implicitly in opx for this case
+    if (ir.getSessionOptions().enablePipelining) {
+      for (const auto &gradCopyToHostOp : gradCopyToHostOps) {
+        const auto toHostPs = gradCopyToHostOp->getPipelineStage();
+        for (const auto &gradCopyFromHostOp : gradCopyFromHostOps) {
+          const auto fromHostPs = gradCopyFromHostOp->getPipelineStage();
+          if (toHostPs == fromHostPs) {
+            graph.topoCons->insert(gradCopyToHostOp, gradCopyFromHostOp);
+          }
+        }
+      }
+    } else {
+      for (auto &gradCopyFromHostOp : gradCopyFromHostOps) {
+        graph.topoCons->insert({{gradCopyFromHostOp, gradCopyToHostOps}});
+      }
     }
   } else {
     auto syncOp_up = std::make_unique<SyncOp>(
