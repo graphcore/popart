@@ -1248,13 +1248,19 @@ std::vector<TensorId> Ir::getModelInputIds() const {
   return modelProtoInputIds;
 }
 
-void Ir::resetWeights(const onnx::ModelProto &modelProto) {
+void Ir::resetWeights(
+    const onnx::ModelProto &modelProto,
+    const bool ignoreWeightsInModelWithoutCorrespondingIrWeight) {
   auto &onnxGraph = modelProto.graph();
 
   for (const auto &initializer : onnxGraph.initializer()) {
     TensorId tenId = initializer.name();
     if (!getTensors().contains(tenId)) {
-      throw error("resetWeights, no tensor '" + tenId + "' in tensors");
+      if (ignoreWeightsInModelWithoutCorrespondingIrWeight) {
+        continue;
+      } else {
+        throw error("resetWeights, no tensor '" + tenId + "' in tensors");
+      }
     }
     auto tensor = getTensors().get(tenId);
     if (tensor->info != TensorInfo(initializer)) {
