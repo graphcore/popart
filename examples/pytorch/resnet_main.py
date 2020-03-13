@@ -1,3 +1,4 @@
+# Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 """
 Following code taken from https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py
 """

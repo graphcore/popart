@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Speed0SubgraphTest
 
 #include "validate.hpp"

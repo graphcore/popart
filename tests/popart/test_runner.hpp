@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_TEST_RUNNER_HPP
 #define GUARD_TEST_RUNNER_HPP
 

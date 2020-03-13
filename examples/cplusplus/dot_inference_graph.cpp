@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 // A tool for visualising the Ir (PopART's Intermediate representation).
 // as a .dot file which can be compiled into a .pdf file.
 

@@ -1,3 +1,4 @@
+# Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 # These unsqueeze tests are to verify the output of constexpr.
 # To see that the const expr is actually being applied,
 # see the tests in constexpr_tests directory

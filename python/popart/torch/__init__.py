@@ -1,3 +1,4 @@
+# Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 import popart
 from popart_core import _InferenceSessionCore, _TrainingSessionCore
 from popart.session import _initAnchorArrays

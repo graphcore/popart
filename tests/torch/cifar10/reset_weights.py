@@ -1,3 +1,4 @@
+# Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 import sys
 import os
 import numpy as np

@@ -1,3 +1,4 @@
+# Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 # see model0.py for a more detailed
 # description of what's going on.
 #

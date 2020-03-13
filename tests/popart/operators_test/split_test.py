@@ -1,3 +1,4 @@
+# Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 from op_tester import op_tester
 import numpy as np
 import popart

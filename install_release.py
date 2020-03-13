@@ -1,3 +1,4 @@
+# Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 # This script is run by the release agent to create a release of Tensorflow
 
 

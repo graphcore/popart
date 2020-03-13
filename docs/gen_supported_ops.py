@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 
 import sys
 

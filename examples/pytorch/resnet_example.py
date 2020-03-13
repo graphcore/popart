@@ -1,3 +1,4 @@
+# Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 import torch
 import torchvision
 import torchvision.transforms as transforms

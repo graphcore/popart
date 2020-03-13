@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 
 //
 // This example demonstrates how to create a custom operator for onnx, in this
