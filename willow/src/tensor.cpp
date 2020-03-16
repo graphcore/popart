@@ -2,6 +2,7 @@
 #include <cstring>
 #include <string>
 
+#include <popart/ces/constexpr.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -82,6 +83,47 @@ VGraphId Tensor::getVirtualGraphId() const {
 bool Tensor::hasVirtualGraphId() const {
   return getVirtualGraphIdUnsafe() != -1;
 }
+
+const void *Tensor::getTensorData() const {
+  if (hasTensorData()) {
+    return tensorData()->data();
+  } else {
+    return getDataViaRecursion().data();
+  }
+}
+
+std::vector<char> Tensor::getDataViaRecursion() const {
+  if (hasProducer()) {
+    Op *producer = getProducer();
+    ConstExprUtil constExprUtil;
+
+    // This loop should return eventually, otherwise an error is thrown.
+    for (size_t i = 0; i < producer->input->n(); i++) {
+      auto inTensor = producer->inTensor(i);
+
+      if (inTensor->hasTensorData()) {
+        if (constExprUtil.isComputable(producer, producer->getGraph())) {
+          auto ceOp = ConstExprOpManager::createConstExprOp(producer);
+          return ceOp->compute();
+        } else {
+          throw error(
+              "Recursing up the tree of producers for {}, the op {} was "
+              "found which has no const expr version.",
+              id,
+              producer->opid);
+        }
+      } else {
+        return inTensor->getDataViaRecursion();
+      }
+    }
+    throw error("Working through all of the input tensors to {}, it is still "
+                "not computable. Please check the inputs to this op.",
+                producer);
+  } else {
+    throw error("Tensor {} has no producer, so can't work back to find data.",
+                id);
+  }
+};
 
 std::set<PipelineStage> Tensor::getPipelineStages() const {
   auto result = consumers.getPipelineStages();
