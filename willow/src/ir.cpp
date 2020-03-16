@@ -1037,11 +1037,6 @@ void Ir::prepareImpl(const IrBundle &gb) {
     updateVertices();
   }
 
-  if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
-      userOptions.pingPongPhases > 1) {
-    applyTransform(CacheSetup::id(), getMainGraph());
-  }
-
   applyTransform(MergeDuplicateOps::id(), getMainGraph());
 
   // Now, we apply the Patterns which can handle and create
@@ -1058,6 +1053,8 @@ void Ir::prepareImpl(const IrBundle &gb) {
     }
     updateVertices();
   }
+
+  applyTransform(CacheSetup::id(), getMainGraph());
 
   // confirm that all the anchor names provided
   // are indeed real tensor names. This is a check

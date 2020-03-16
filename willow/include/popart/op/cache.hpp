@@ -8,7 +8,9 @@ namespace popart {
 
 class CacheStoreOp : public Op {
 public:
-  CacheStoreOp(const OperatorIdentifier &, const Op::Settings &);
+  CacheStoreOp(const OperatorIdentifier &,
+               const Op::Settings &,
+               RemoteBufferId id = -1UL);
 
   std::unique_ptr<Op> clone() const final;
   void setup() final {}
@@ -18,6 +20,7 @@ public:
 
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
   bool isOutlineable() const final { return true; }
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   void setRemoteBufferId(RemoteBufferId remotebuffer_id_) {
     remotebuffer_id = remotebuffer_id_;
@@ -31,8 +34,8 @@ private:
 class CacheLoadOp : public Op {
 public:
   CacheLoadOp(const OperatorIdentifier &,
-              const TensorInfo &,
-              const Op::Settings &);
+              const Op::Settings &,
+              RemoteBufferId id = -1UL);
 
   std::unique_ptr<Op> clone() const final;
   void setup() final;
@@ -47,10 +50,9 @@ public:
   view::RegMap fwdRegMap(InIndex, OutIndex) const final;
   view::RegMap bwdRegMap(InIndex, OutIndex) const final;
 
-  TensorInfo getTensorInfo() { return tensor_info; }
-
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
   bool isOutlineable() const final { return true; }
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   void setRemoteBufferId(RemoteBufferId remotebuffer_id_) {
     remotebuffer_id = remotebuffer_id_;
@@ -59,7 +61,6 @@ public:
 
 private:
   RemoteBufferId remotebuffer_id;
-  TensorInfo tensor_info;
 };
 
 } // namespace popart

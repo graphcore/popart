@@ -204,7 +204,10 @@ public:
                           double val,
                           const std::string &name);
 
-  const poplar::RemoteBuffer &getRemoteBuffer(RemoteBufferId) const;
+  const std::pair<poplar::RemoteBuffer, boost::optional<poplar::Tensor>> &
+      getRemoteBuffer(RemoteBufferId) const;
+
+  void setRemoteBufferTensor(RemoteBufferId, poplar::Tensor);
 
   poplar::Tensor getScalarVariable(poplar::Graph &graph,
                                    const poplar::Type &type,
@@ -465,7 +468,9 @@ private:
   std::map<TensorId, poplar::DataStream> toHostWeightStreams;
 
   // Remote buffers
-  std::map<RemoteBufferId, poplar::RemoteBuffer> remoteBuffers;
+  std::map<RemoteBufferId,
+           std::pair<poplar::RemoteBuffer, boost::optional<poplar::Tensor>>>
+      remoteBuffers;
 
   // Streams for doing allreduce on host side
 

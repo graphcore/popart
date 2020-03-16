@@ -558,7 +558,7 @@ bool PingPong::apply(Graph &graph) const {
                 tensorLoadMap.find({tensor->id, consumerPingPongPhase});
             if (tensorLoadMapEntry == tensorLoadMap.end()) {
               auto cacheLoadOp = std::make_unique<CacheLoadOp>(
-                  Onnx::CustomOperators::CacheLoad, tensor->info, settings);
+                  Onnx::CustomOperators::CacheLoad, settings);
               cacheLoad = cacheLoadOp.get();
               // Very low priority on loads (at the end of the previous phase)
               cacheLoad->settings.schedulePriority = -9998.0;

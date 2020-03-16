@@ -83,6 +83,21 @@ bool Prune::apply(Graph &graph) const {
     tensorFront.push_back(t);
     tensorsVisited.insert(t);
   }
+  // - CacheStore inputs
+  // CacheStore have no outputs and no consumers thereafter,
+  // so they will be pruned even though they do something necessary
+  // (e.g. store an updated weight tensor).
+  // This may no longer be necessary once we have host-tensor representations
+  // in the IR instead, that can represent the output of a CacheStore op
+  // TODO: T17309
+  for (Op *op : ir.getAllOps()) {
+    if (CacheStoreOp *store = dynamic_cast<CacheStoreOp *>(op)) {
+      for (auto &tensor : store->input->tensorMap()) {
+        tensorFront.push_back(tensor.second);
+        tensorsVisited.insert(tensor.second);
+      }
+    }
+  }
 
   while (tensorFront.size() != 0) {
     Tensor *t = tensorFront.back();

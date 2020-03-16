@@ -15,21 +15,39 @@ CacheStoreOpx::CacheStoreOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 void CacheStoreOpx::grow(poplar::program::Sequence &prog) const {
   auto &cacheStoreOp = getOp<CacheStoreOp>();
 
-  logging::trace("[CacheStoreOpx] Growing CacheStore for tensor {}, "
-                 "using RemoteBuffer {}",
-                 cacheStoreOp.input->tensor(0)->id,
-                 cacheStoreOp.getRemoteBufferId());
+  TensorId inTensorId =
+      cacheStoreOp.input->tensor(CacheStoreOp::getCachedTensorInIndex())->id;
 
-  auto inTensor = getInTensor(CacheStoreOp::getCachedTensorInIndex());
+  logging::debug(
+      "[CacheStoreOpx] Growing CacheStore for tensor {}, "
+      "using RemoteBuffer {}",
+      cacheStoreOp.input->tensor(CacheStoreOp::getCachedTensorInIndex())->id,
+      cacheStoreOp.getRemoteBufferId());
+
   auto buffer   = dv_p->getRemoteBuffer(cacheStoreOp.getRemoteBufferId());
+  auto inTensor = getInTensor(CacheStoreOp::getCachedTensorInIndex());
+
+  auto rbTensor = buffer.second;
+
+  if (!rbTensor.is_initialized()) {
+    rbTensor =
+        graph().clone(inTensor,
+                      inTensorId + "_CacheLoadTmp",
+                      poplar::TensorCloneMethod::PRESERVE_ORDER_AND_ALIASES);
+    dv_p->setRemoteBufferTensor(cacheStoreOp.getRemoteBufferId(),
+                                rbTensor.get());
+  }
+
+  poplar::program::Copy tmp_copy_prog(inTensor, rbTensor.get());
+  prog.add(tmp_copy_prog);
 
   if (cacheStoreOp.input->hasIndex(
           CacheStoreOp::getRemoteBufferOffsetInIndex())) {
     auto offset = getInTensor(CacheStoreOp::getRemoteBufferOffsetInIndex());
-    poplar::program::Copy copy_prog(inTensor, buffer, offset);
+    poplar::program::Copy copy_prog(rbTensor.get(), buffer.first, offset);
     prog.add(copy_prog);
   } else {
-    poplar::program::Copy copy_prog(inTensor, buffer);
+    poplar::program::Copy copy_prog(rbTensor.get(), buffer.first);
     prog.add(copy_prog);
   }
 }
@@ -41,8 +59,11 @@ CacheLoadOpx::CacheLoadOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 void CacheLoadOpx::grow(poplar::program::Sequence &prog) const {
   auto &cacheLoadOp = getOp<CacheLoadOp>();
 
+  TensorId outTensorId =
+      cacheLoadOp.output->tensor(CacheLoadOp::getCachedTensorOutIndex())->id;
+
   // Tensor completely overwritten
-  logging::trace(
+  logging::debug(
       "[CacheLoadOpx] Growing CacheLoad for tensor {} -> {}, "
       "using RemoteBuffer {}",
       cacheLoadOp.input->tensor(CacheLoadOp::getCachedTensorInIndex())->id,
@@ -52,15 +73,29 @@ void CacheLoadOpx::grow(poplar::program::Sequence &prog) const {
   auto buffer = dv_p->getRemoteBuffer(cacheLoadOp.getRemoteBufferId());
   poplar::Tensor outTensor = getInTensor(CacheLoadOp::getCachedTensorInIndex());
 
+  auto rbTensor = buffer.second;
+
+  if (!rbTensor.is_initialized()) {
+    rbTensor =
+        graph().clone(outTensor,
+                      outTensorId + "_CacheLoadTmp",
+                      poplar::TensorCloneMethod::PRESERVE_ORDER_AND_ALIASES);
+    dv_p->setRemoteBufferTensor(cacheLoadOp.getRemoteBufferId(),
+                                rbTensor.get());
+  }
+
   if (cacheLoadOp.input->hasIndex(
           CacheLoadOp::getRemoteBufferOffsetInIndex())) {
     auto offset = getInTensor(CacheLoadOp::getRemoteBufferOffsetInIndex());
-    poplar::program::Copy copy_prog(buffer, outTensor, offset);
+    poplar::program::Copy copy_prog(buffer.first, rbTensor.get(), offset);
     prog.add(copy_prog);
   } else {
-    poplar::program::Copy copy_prog(buffer, outTensor);
+    poplar::program::Copy copy_prog(buffer.first, rbTensor.get());
     prog.add(copy_prog);
   }
+
+  poplar::program::Copy tmp_copy_prog(rbTensor.get(), outTensor);
+  prog.add(tmp_copy_prog);
 
   setOutTensor(CacheLoadOp::getCachedTensorOutIndex(), outTensor);
 }

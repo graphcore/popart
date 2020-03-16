@@ -9,23 +9,36 @@
 namespace popart {
 
 CacheStoreOp::CacheStoreOp(const OperatorIdentifier &_opid,
-                           const Op::Settings &settings_)
-    : Op(_opid, settings_), remotebuffer_id(-1) {}
+                           const Op::Settings &settings_,
+                           RemoteBufferId id)
+    : Op(_opid, settings_), remotebuffer_id(id) {}
 
 std::unique_ptr<Op> CacheStoreOp::clone() const {
   return std::make_unique<CacheStoreOp>(*this);
 }
 
+void CacheStoreOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
+  os.appendAttribute("bufferid", remotebuffer_id);
+}
+
 CacheLoadOp::CacheLoadOp(const OperatorIdentifier &_opid,
-                         const TensorInfo &tensor_info_,
-                         const Op::Settings &settings_)
-    : Op(_opid, settings_), tensor_info(tensor_info_), remotebuffer_id(-1) {}
+                         const Op::Settings &settings_,
+                         RemoteBufferId id)
+    : Op(_opid, settings_), remotebuffer_id(id) {}
 
 std::unique_ptr<Op> CacheLoadOp::clone() const {
   return std::make_unique<CacheLoadOp>(*this);
 }
 
-void CacheLoadOp::setup() { outInfo(getCachedTensorOutIndex()) = tensor_info; }
+void CacheLoadOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
+  os.appendAttribute("bufferid", remotebuffer_id);
+}
+
+void CacheLoadOp::setup() {
+  outInfo(getCachedTensorOutIndex()) = inInfo(getCachedTensorInIndex());
+}
 
 view::Regions CacheLoadOp::modifies(InIndex index) const {
   if (index == getCachedTensorInIndex()) {
@@ -70,5 +83,42 @@ view::RegMap CacheLoadOp::bwdRegMap(InIndex inIndex, OutIndex outIndex) const {
   }
   return Op::bwdRegMap(inIndex, outIndex);
 }
+
+static OpDefinition::DataTypes T = {DataType::FLOAT,
+                                    DataType::FLOAT16,
+                                    DataType::INT32,
+                                    DataType::UINT32};
+
+static OpDefinition cacheLoadOpDef(
+    {OpDefinition::Inputs({{"X", T}, {"O", {{DataType::INT32}}}}),
+     OpDefinition::Outputs({{"Y", T}}),
+     OpDefinition::Attributes({})});
+
+static OpDefinition cacheStoreOpDef(
+    {OpDefinition::Inputs({{"X", T}, {"O", {{DataType::INT32}}}}),
+     OpDefinition::Outputs({}),
+     OpDefinition::Attributes({})});
+
+static OpCreator<CacheLoadOp> cacheLoadOpCreator(
+    OpDefinitions({{Onnx::CustomOperators::CacheLoad, cacheLoadOpDef}}),
+    [](const OperatorIdentifier &_opid,
+       const Op::Settings &settings,
+       const Attributes &attr = {}) -> std::unique_ptr<Op> {
+      int64_t bufferid = attr.getAttribute<Attributes::Int>("bufferid");
+      return std::unique_ptr<CacheLoadOp>(
+          new CacheLoadOp(_opid, settings, bufferid));
+    },
+    true);
+
+static OpCreator<CacheLoadOp> cacheStoreOpCreator(
+    OpDefinitions({{Onnx::CustomOperators::CacheStore, cacheStoreOpDef}}),
+    [](const OperatorIdentifier &_opid,
+       const Op::Settings &settings,
+       const Attributes &attr = {}) -> std::unique_ptr<Op> {
+      int64_t bufferid = attr.getAttribute<Attributes::Int>("bufferid");
+      return std::unique_ptr<CacheStoreOp>(
+          new CacheStoreOp(_opid, settings, bufferid));
+    },
+    true);
 
 } // namespace popart
