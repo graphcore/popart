@@ -152,6 +152,13 @@ public:
   PipelineStage getPipelineStage() const;
   boost::optional<PipelineStage> getOptionalPipelineStage() const;
 
+  // Loop over the producers of inputs. Check the particular
+  // Settings property. The maximum value is chosen
+  void optionallySetVGraphIdFromMaxOfInputProducers();
+  void optionallySetPipelineStageFromMaxOfInputProducers();
+  void optionallySetPingPongPhaseFromMaxOfInputProducers();
+  void optionallySetBatchSerializedPhaseFromMaxOfInputProducers();
+
   Ir &getIr();
   const Ir &getIr() const;
 

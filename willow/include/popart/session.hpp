@@ -141,8 +141,13 @@ public:
    *
    * \param model Either an ONNX model protobuf, or the name of a file
    *              containing an ONNX model protobuf
+   * \param ignoreWeightsInModelWithoutCorrespondingHostWeight If true, do
+   *        not error if there are initializers in the ONNX model with no
+   *        corresponding initializer tensor in the session's IR
    */
-  void resetHostWeights(const std::string &model);
+  void resetHostWeights(
+      const std::string &model,
+      const bool ignoreWeightsInModelWithoutCorrespondingHostWeight = false);
 
   /**
    * Read the weights. Must have called weightsToHost first

@@ -805,6 +805,7 @@ PYBIND11_MODULE(popart_core, m) {
                       &SessionOptions::timeLimitScheduler);
     cls.def_readwrite("swapLimitScheduler",
                       &SessionOptions::swapLimitScheduler);
+    cls.def_readwrite("decomposeGradSum", &SessionOptions::decomposeGradSum);
   }
   {
     py::enum_<PatternsLevel> en(m, "PatternsLevel");
@@ -1020,8 +1021,11 @@ PYBIND11_MODULE(popart_core, m) {
       return py::bytes(report);
     });
     cls.def("getTensorTileMap", &InferenceSession::getTensorTileMap);
-    cls.def("resetHostWeights", &InferenceSession::resetHostWeights);
-
+    cls.def("resetHostWeights",
+            &InferenceSession::resetHostWeights,
+            py::arg("modelProtoOrFilename"),
+            py::arg("ignoreWeightsInModelWithoutCorrespondingHostWeight") =
+                false);
     // Special test method to write serialise ir for analysis
     cls.def("_serializeIr", &InferenceSession::serializeIr, py::arg("format"));
   }
@@ -1087,8 +1091,11 @@ PYBIND11_MODULE(popart_core, m) {
       return py::bytes(report);
     });
     cls.def("getTensorTileMap", &TrainingSession::getTensorTileMap);
-    cls.def("resetHostWeights", &TrainingSession::resetHostWeights);
-
+    cls.def("resetHostWeights",
+            &TrainingSession::resetHostWeights,
+            py::arg("modelProtoOrFilename"),
+            py::arg("ignoreWeightsInModelWithoutCorrespondingHostWeight") =
+                false);
     // Special test method to write serialise ir for analysis
     cls.def("_serializeIr", &TrainingSession::serializeIr, py::arg("format"));
     // Accessor for internal objects
@@ -1117,6 +1124,7 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("ids"),
             py::arg("filename"));
   }
+
 // Include the generated poponx.cpp code
 #include "popart.cpp.gen"
   {

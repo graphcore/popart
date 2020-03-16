@@ -292,6 +292,12 @@ struct SessionOptions {
   /// The initial scheduling is done with Kahn's algorithm. When several Ops are
   /// free to be scheduled, this controls which method is used
   std::string kahnTieBreaker = "greedy";
+
+  /// Replaces single sums of partial gradients with a tree of additions.
+  /// This can reduce max liveness at the cost of extra cycles. A typical
+  /// use case for this would be if a large weight tensor is used as an
+  /// input to many operations
+  bool decomposeGradSum = false;
 };
 
 } // namespace popart

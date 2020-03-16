@@ -184,7 +184,9 @@ public:
   void prepare(const IrBundle &);
 
   // Reset the weights with data from an ONNX model
-  void resetWeights(const onnx::ModelProto &modelProto);
+  void resetWeights(
+      const onnx::ModelProto &modelProto,
+      const bool ignoreWeightsInModelWithoutCorrespondingIrWeight = false);
 
   void updateOptimizer(const Optimizer &);
   // take training steps
@@ -389,6 +391,8 @@ public:
 
   // Return the opset version in use for a domain
   int getOpSetVersionFromModel(const std::string &domain) const;
+
+  std::string getGradSumOpNamePrefix() const;
 
   bool autoRecomputationEnabled() const {
     return userOptions.autoRecomputation != RecomputationType::None;

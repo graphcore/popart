@@ -252,14 +252,17 @@ TensorTileMap Session::getTensorTileMap() const {
   return device_->getTensorTileMap();
 }
 
-void Session::resetHostWeights(const std::string &modelProtoOrFilename) {
+void Session::resetHostWeights(
+    const std::string &modelProtoOrFilename,
+    const bool ignoreWeightsInModelWithoutCorrespondingHostWeight) {
   logging::session::trace("Session::resetHostWeights");
   if (ir.getSessionOptions().constantWeights &&
       ir.getExecutionMode() == Ir::ExecutionMode::INFERENCE) {
     throw error("Cannot call resetHostWeights when constantWeights is set");
   }
   auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
-  ir.resetWeights(modelProto);
+  ir.resetWeights(modelProto,
+                  ignoreWeightsInModelWithoutCorrespondingHostWeight);
 
   // After the weights has been reset they must be rewritten to the target
   weightsFromHostCalled = false;

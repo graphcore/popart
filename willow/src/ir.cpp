@@ -40,6 +40,7 @@
 #include <popart/transforms/aliaszerocopy.hpp>
 #include <popart/transforms/auto_virtual_graph.hpp>
 #include <popart/transforms/cachesetup.hpp>
+#include <popart/transforms/decomposegradsum.hpp>
 #include <popart/transforms/dynamicoptransform.hpp>
 #include <popart/transforms/groupmatmuls.hpp>
 #include <popart/transforms/hostreduce.hpp>
@@ -1247,13 +1248,19 @@ std::vector<TensorId> Ir::getModelInputIds() const {
   return modelProtoInputIds;
 }
 
-void Ir::resetWeights(const onnx::ModelProto &modelProto) {
+void Ir::resetWeights(
+    const onnx::ModelProto &modelProto,
+    const bool ignoreWeightsInModelWithoutCorrespondingIrWeight) {
   auto &onnxGraph = modelProto.graph();
 
   for (const auto &initializer : onnxGraph.initializer()) {
     TensorId tenId = initializer.name();
     if (!getTensors().contains(tenId)) {
-      throw error("resetWeights, no tensor '" + tenId + "' in tensors");
+      if (ignoreWeightsInModelWithoutCorrespondingIrWeight) {
+        continue;
+      } else {
+        throw error("resetWeights, no tensor '" + tenId + "' in tensors");
+      }
     }
     auto tensor = getTensors().get(tenId);
     if (tensor->info != TensorInfo(initializer)) {
@@ -1714,6 +1721,8 @@ Ir::getVirtualGraphIdFromTensorProducers(std::vector<Tensor *> ts) {
   return it->first;
 }
 
+std::string Ir::getGradSumOpNamePrefix() const { return "GradSum"; }
+
 Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
 
   std::unique_ptr<popart::Op> gradSum =
@@ -1721,11 +1730,11 @@ Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
                           "Sum",
                           getOpSetVersionFromModel(Domain::ai_onnx),
                           getMainGraph(),
-                          "GradSum");
+                          getGradSumOpNamePrefix());
 
   if (getSessionOptions().enablePipelining) {
-    // Get all the producers pipeline stages and use the lowest one for the grad
-    // sum op.
+    // Get all the producers pipeline stages and use the highest
+    // one for the grad sum op.
     std::set<std::pair<PipelineStage, VGraphId>> ps;
     for (auto t : toSum) {
       // Pipeline stage will not be set if user has not explicitly set it.
@@ -1764,6 +1773,7 @@ Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
   getMainGraph().connectOutputs(OutputVecWrapper(outputs), opId);
   Op *op = getMainGraph().getOps()[opId].get();
   op->setup();
+
   return op;
 }
 
@@ -2385,6 +2395,11 @@ void Ir::constructBackwards() {
       }
     }
   }
+
+  if (getSessionOptions().decomposeGradSum) {
+    applyTransform(DecomposeGradSum::id(), getMainGraph());
+  }
+
   logging::ir::info("Constructing backwards complete");
   constructedBackwards = true;
 }
@@ -2627,7 +2642,7 @@ void Ir::serialise(SerialiseFormat format,
     }
   };
 
-  auto getOps = [this, useScheduler](auto *graph) {
+  auto getOps = [useScheduler](auto *graph) {
     if (useScheduler) {
       return graph->getOpSchedule({});
     } else {
