@@ -289,6 +289,15 @@ struct SessionOptions {
   /// before a solution must be returned
   int64_t swapLimitScheduler = static_cast<int64_t>(1e9);
 
+  /// PopART uses Poprithms for scheduling PopART Graphs. The Poprithms Graphs
+  /// created for scheduling can be optionally serialized (written to file). The
+  /// string below specifie the directory to serialize Poprithms Graphs to. If
+  /// it is empty, then the Graphs will not be serialized. The names of
+  /// serialization files will be poprithms_anneal_graph_`i'.json for the lowest
+  /// non-existing `i's. The directory must already exist, PopART will not
+  /// create it.
+  std::string serializedPoprithmsAnnealGraphsDir{};
+
   /// The initial scheduling is done with Kahn's algorithm. When several Ops are
   /// free to be scheduled, this controls which method is used
   std::string kahnTieBreaker = "greedy";

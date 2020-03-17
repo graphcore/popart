@@ -1,3 +1,5 @@
+#include <boost/filesystem.hpp>
+
 #include <algorithm>
 #include <array>
 #include <queue>
@@ -5,6 +7,7 @@
 #include <vector>
 #include <poprithms/schedule/anneal/graph.hpp>
 #include <popart/error.hpp>
+#include <popart/filereader.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
@@ -79,6 +82,9 @@ public:
   void initialize(KahnTieBreaker ktb) { g.initialize(ktb); }
   void finalize() { g.finalize(); }
   bool isSchedulable() const { return g.isSchedulable(); }
+  std::string getSerializationString() const {
+    return g.getSerializationString();
+  }
   ScheduleIndex opToSchedule(OpAddress a) const { return g.opToSchedule(a); }
 
   Op *toOp(OpAddress a) const { return addressToOp.at(a); }
@@ -322,6 +328,46 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
     cacher->registerHit();
     return cacher->getSchedule();
   }
+
+  if (!pg.getIr()
+           .getSessionOptions()
+           .serializedPoprithmsAnnealGraphsDir.empty()) {
+    auto dirName =
+        boost::filesystem::canonical(
+            pg.getIr().getSessionOptions().serializedPoprithmsAnnealGraphsDir)
+            .string();
+
+    if (!boost::filesystem::exists(dirName)) {
+      std::ostringstream oss;
+      oss << "No directory, `" << dirName << "' exists. "
+          << " The SessionOptions directory serializedPoprithmsAnnealGraphsDir "
+          << "must already exist, PopART will not create it. "
+          << "If you do not want to serialize Poprithms Graph, set "
+          << " serializePoprithmsAnnealGraphs "
+          << " to false.";
+      throw error(oss.str());
+    }
+    auto getTargetName = [dirName](int i) {
+      return io::appendDirFn(
+          dirName, "poprithms_anneal_graph_" + std::to_string(i) + ".json");
+    };
+
+    // iterate through file names until a non-existant one is found
+    int modelNumber{0};
+    while (boost::filesystem::exists(getTargetName(modelNumber))) {
+      ++modelNumber;
+    }
+    auto filename = getTargetName(modelNumber);
+
+    std::ofstream ofs;
+    ofs.open(filename);
+    if (!ofs.is_open()) {
+      throw error("Failed to open file {}", filename);
+    }
+    ofs << grower->getSerializationString();
+    ofs.close();
+  }
+
   cacher->registerMiss();
 
   bool debug      = false;

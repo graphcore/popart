@@ -1,4 +1,5 @@
 #include <pybind11/functional.h>
+
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -806,6 +807,8 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("swapLimitScheduler",
                       &SessionOptions::swapLimitScheduler);
     cls.def_readwrite("decomposeGradSum", &SessionOptions::decomposeGradSum);
+    cls.def_readwrite("serializedPoprithmsAnnealGraphsDir",
+                      &SessionOptions::serializedPoprithmsAnnealGraphsDir);
   }
   {
     py::enum_<PatternsLevel> en(m, "PatternsLevel");
