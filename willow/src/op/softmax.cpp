@@ -108,13 +108,12 @@ void SoftmaxGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("axis", axis);
 }
 
-SoftmaxGradDirectOp::SoftmaxGradDirectOp(const NllLoss *nls,
+SoftmaxGradDirectOp::SoftmaxGradDirectOp(const NllLoss nls,
                                          const Op::Settings &settings_)
-    : Op(Onnx::CustomGradOperators::SoftmaxGradDirect, settings_) {
-  nllloss_ = nls;
-}
+    : Op(Onnx::CustomGradOperators::SoftmaxGradDirect, settings_),
+      nllloss_(nls) {}
 
-const NllLoss *SoftmaxGradDirectOp::nlll() const { return nllloss_; }
+const NllLoss &SoftmaxGradDirectOp::nlll() const { return nllloss_; }
 
 std::unique_ptr<Op> SoftmaxGradDirectOp::clone() const {
   throw error("Unexpected (but valid) request to clone SoftmaxGradDirectOp");
@@ -133,7 +132,7 @@ void SoftmaxGradDirectOp::setup() {
 }
 
 bool SoftmaxGradDirectOp::hasNlllFwdOp() const {
-  TensorId lossTensorName = nlll()->output(NllLoss::getOutIndex());
+  TensorId lossTensorName = nlll().output(NllLoss::getOutIndex());
   if (getGraph().getTensors().contains(lossTensorName)) {
     auto t = getGraph().getTensors().get(lossTensorName);
     return t->hasProducer();
@@ -151,7 +150,7 @@ Op *SoftmaxGradDirectOp::nlllFwdOp() const {
                 id);
   }
 
-  TensorId lossTensorName = nlll()->output(NllLoss::getOutIndex());
+  TensorId lossTensorName = nlll().output(NllLoss::getOutIndex());
 
   // Find the op producing the loss tensor, i.e. the
   // corresponding fwd loss op whose bwd op has merged
@@ -162,18 +161,23 @@ Op *SoftmaxGradDirectOp::nlllFwdOp() const {
   return fwdLossOp;
 }
 
-NlllWithSoftmaxGradDirectOp::NlllWithSoftmaxGradDirectOp(
-    const NllLoss *nls,
-    const Op::Settings &settings_)
-    : Op(Onnx::CustomGradOperators::NlllWithSoftmaxGradDirect, settings_) {
-  nllloss_ = nls;
+void SoftmaxGradDirectOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
+  os.appendAttribute("reduction_type",
+                     static_cast<int64_t>(nlll().getReductionType()));
+  os.appendAttribute("has_ignore", nlll().hasIgnoreIndex());
 }
 
-const NllLoss *NlllWithSoftmaxGradDirectOp::nlll() const { return nllloss_; }
+NlllWithSoftmaxGradDirectOp::NlllWithSoftmaxGradDirectOp(
+    const NllLoss nls,
+    const Op::Settings &settings_)
+    : Op(Onnx::CustomGradOperators::NlllWithSoftmaxGradDirect, settings_),
+      nllloss_(nls) {}
+
+const NllLoss &NlllWithSoftmaxGradDirectOp::nlll() const { return nllloss_; }
 
 std::unique_ptr<Op> NlllWithSoftmaxGradDirectOp::clone() const {
-  throw error(
-      "Unexpected (but valid) request to clone NlllWithSoftmaxGradDirectOp");
+  return std::make_unique<NlllWithSoftmaxGradDirectOp>(*this);
 }
 
 void NlllWithSoftmaxGradDirectOp::setup() {
@@ -182,7 +186,7 @@ void NlllWithSoftmaxGradDirectOp::setup() {
   if (!getIr().getOptimizer().lossScaling().isConst()) {
     connectInTensor(NlllWithSoftmaxGradDirectOp::getLossScalingInIndex(),
                     getIr().getOptimizer().getLossScalingTensorId(
-                        inInfo(nlll()->getProbsInIndex()).dataType()));
+                        inInfo(nlll().getProbsInIndex()).dataType()));
   }
 
   // gradient of activations has same shape as probabilities
@@ -201,6 +205,14 @@ void NlllWithSoftmaxGradDirectOp::setup() {
   // 'pretend' that the NlllWithSoftmaxGradDirectOp has a path from the final
   // loss.
   fromLoss = PathFromLoss::Yes;
+}
+
+void NlllWithSoftmaxGradDirectOp::appendOutlineAttributes(
+    OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
+  os.appendAttribute("reduction_type",
+                     static_cast<int64_t>(nlll().getReductionType()));
+  os.appendAttribute("has_ignore", nlll().hasIgnoreIndex());
 }
 
 namespace {
