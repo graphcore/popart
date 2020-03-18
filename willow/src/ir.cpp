@@ -888,13 +888,21 @@ void Ir::prepareImpl(const IrBundle &gb) {
   removeIsolatedTensors(true);
   updateVertices();
 
-  applyTransform(DynamicOpTransform::id(), getMainGraph());
-
   // Third ping pong transformation pass (bwd)
   if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
       userOptions.pingPongPhases > 1) {
     applyTransform(PingPong::id(3), getMainGraph());
     verifyVirtualGraphIds(true);
+  }
+
+  // Dynamicoptransform decomposes grad sums that contain
+  // DynamicAdd/DynamicUpdate gradients, which can be decomposed efficiently
+  applyTransform(DynamicOpTransform::id(), getMainGraph());
+
+  // DecomposeGradSum decomposes remaining grad sums
+  if (getSessionOptions().decomposeGradSum ||
+      getSessionOptions().batchSerializationFactor > 1) {
+    applyTransform(DecomposeGradSum::id(), getMainGraph());
   }
 
   switch (userOptions.mergeVarUpdate) {
@@ -2393,11 +2401,6 @@ void Ir::constructBackwards() {
       }
     }
   }
-
-  if (getSessionOptions().decomposeGradSum) {
-    applyTransform(DecomposeGradSum::id(), getMainGraph());
-  }
-
   logging::ir::info("Constructing backwards complete");
   constructedBackwards = true;
 }

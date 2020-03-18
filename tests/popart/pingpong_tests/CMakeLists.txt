@@ -3,3 +3,4 @@
 # `ctest -R pingpong -j5 -VV'.
 
 add_popart_cpp_unit_test(remotebuffer_test remotebuffer_test.cpp VARIANTS "Hw")
+add_popart_cpp_unit_test(pingpong_gradsumdec_test pingpong_gradsumdec_test.cpp)

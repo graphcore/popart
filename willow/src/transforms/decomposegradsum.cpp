@@ -13,13 +13,33 @@ GradPartial::GradPartial(Tensor *t_, std::vector<Op *> pathFromLoss_)
     : t(t_), pathFromLoss(pathFromLoss_) {}
 
 bool GradPartial::operator<(const GradPartial &other) const {
-  if (pathLengthFromLoss() == other.pathLengthFromLoss()) {
-    throw error("Unable to determine relative order in the addition tree of "
-                "grad partials '{} and '{}'",
-                t->id,
-                other.t->id);
-  }
-  return pathLengthFromLoss() < other.pathLengthFromLoss();
+  Op *op      = pathFromLoss.back();
+  Op *otherOp = other.pathFromLoss.back();
+
+  // Compare factors to determine the optimal order for the addition tree.
+  // Consider annotations that imply an order
+  // (pipeline stage, pingpong phase, batch serialized phase)
+  // If an attribute is not set, assume that the Op comes before any of the
+  // Ops that have the attribute set by using -2
+  // (possible because -2 is not used as an actual phase index).
+
+  // TODO(T17524): Abstract inferring operation order so that this
+  // transform does not require knowledge of the attributes
+  std::tuple<PipelineStage, PingPongPhase, BatchSerializedPhase, size_t> order(
+      op->hasPipelineStage() ? op->getPipelineStage() : -2,
+      op->hasPingPongPhase() ? op->getPingPongPhase() : -2,
+      op->hasBatchSerializedPhase() ? op->getBatchSerializedPhase() : -2,
+      pathLengthFromLoss());
+
+  std::tuple<PipelineStage, PingPongPhase, BatchSerializedPhase, size_t>
+      otherOrder(otherOp->hasPipelineStage() ? otherOp->getPipelineStage() : -2,
+                 otherOp->hasPingPongPhase() ? otherOp->getPingPongPhase() : -2,
+                 otherOp->hasBatchSerializedPhase()
+                     ? otherOp->getBatchSerializedPhase()
+                     : -2,
+                 other.pathLengthFromLoss());
+
+  return order < otherOrder;
 }
 
 // Consider the paths from loss grad (L') to the three grad partials of a
@@ -149,7 +169,7 @@ bool DecomposeGradSum::apply(Graph &graph) const {
 
       // 1) For each partial grad input to the gradSumOp, get the path
       //    back to thier common loss gradient
-      while (pathEnd->fromLoss == PathFromLoss::Yes) {
+      while (pathEnd && pathEnd->fromLoss == PathFromLoss::Yes) {
         // Add the pathEnd to the path
         pathToLoss.push_back(pathEnd);
 
@@ -158,13 +178,11 @@ bool DecomposeGradSum::apply(Graph &graph) const {
         // to our path that we find. This is valid, as we
         // are doing the same in all cases, and are only
         // concerned with commonality of paths
-        for (Tensor *t : pathEnd->input->tensors()) {
+        auto inputTensors = pathEnd->input->tensors();
+        pathEnd           = nullptr;
+        for (Tensor *t : inputTensors) {
           if (!t->hasProducer()) {
-            throw error(
-                "Failed to trace a path from grad partial tensor '{}' to the "
-                "loss. Reached tensor '{}', but it has no producer.",
-                gradPartialTensor->id,
-                t->id);
+            break;
           }
           pathEnd = t->getProducer();
           if (pathEnd->fromLoss == PathFromLoss::Yes) {
@@ -210,8 +228,17 @@ bool DecomposeGradSum::apply(Graph &graph) const {
     Op *initOp        = graph.getOps()[initOpId].get();
     TensorId gradSumInit = gradSum->id + "_init";
     initOp->createAndConnectOutTensor(InitOp::getOutIndex(), gradSumInit);
+
+    // Since initOp needs to be scheduled post-loss,
+    // but has no path from loss, we need to force
+    // PathToLoss::No, PathFromLoss::Yes
+    initOp->toLoss   = PathToLoss::No;
+    initOp->fromLoss = PathFromLoss::Yes;
     initOp->setup();
     TensorId addLhsId = gradSumInit;
+
+    // Is this decomposition part of a batch serialisation?
+    bool batchSerialized = false;
 
     for (size_t i = 0; i < gradPartials.size(); i++) {
       GradPartial gradPartial             = partialsSumOrder.at(i);
@@ -236,12 +263,24 @@ bool DecomposeGradSum::apply(Graph &graph) const {
         addLhsId = partSummedId;
       }
 
+      // Gradient accumulator needs the same tensor layout as the gradient.
+      // Allow the AddOp to propagate the tensor layout from the gradient
+      // to the InitOp output:
+      op->settings.inferTensorMappingToFrom.insert(
+          {AddOp::getArg0InIndex(), AddOp::getArg1InIndex()});
+
       op->optionallySetVGraphIdFromMaxOfInputProducers();
       op->optionallySetPipelineStageFromMaxOfInputProducers();
       op->optionallySetPingPongPhaseFromMaxOfInputProducers();
       op->optionallySetBatchSerializedPhaseFromMaxOfInputProducers();
       op->setup();
+      op->toLoss   = PathToLoss::No;
       op->fromLoss = PathFromLoss::Yes;
+      batchSerialized |= op->hasBatchSerializedPhase();
+    }
+
+    if (batchSerialized) {
+      initOp->setBatchSerializedPhase(-1);
     }
   }
 
