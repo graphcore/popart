@@ -17,15 +17,17 @@ ReplicatedAllReduceOpx::ReplicatedAllReduceOpx(Op *op, Devicex *devicex)
 }
 
 void ReplicatedAllReduceOpx::grow(poplar::program::Sequence &prog) const {
-  const auto inIndex      = ReplicatedAllReduceOp::getInIndex();
-  poplar::Tensor toReduce = getInTensor(inIndex);
+  const auto inIndex                   = ReplicatedAllReduceOp::getInIndex();
+  poplar::Tensor toReduce              = getInTensor(inIndex);
+  poplar::OptionFlags allReduceOptions = dv_p->gclOptions;
+  allReduceOptions.set("useReplicatedImplementation", "true");
   poplar::Tensor output =
       popops::replicatedAllReduce(graph(),
                                   toReduce,
                                   popops::Operation::ADD,
                                   prog,
                                   debugPrefix("replicatedAllReduce"),
-                                  {{"useReplicatedImplementation", "true"}});
+                                  allReduceOptions);
   setOutTensor(ReplicatedAllReduceOp::getOutIndex(), output);
 }
 
@@ -54,12 +56,14 @@ void ReplicatedAllReduceInplaceOpx::grow(
     poplar::program::Sequence &prog) const {
   const auto inIndex      = ReplicatedAllReduceInplaceOp::getInIndex();
   poplar::Tensor toReduce = getInTensor(inIndex);
+  poplar::OptionFlags allReduceOptions = dv_p->gclOptions;
+  allReduceOptions.set("useReplicatedImplementation", "true");
   popops::replicatedAllReduceInPlace(graph(),
                                      toReduce,
                                      popops::Operation::ADD,
                                      prog,
                                      debugPrefix("replicatedAllReduce"),
-                                     {{"useReplicatedImplementation", "true"}});
+                                     allReduceOptions);
   setOutTensor(ReplicatedAllReduceInplaceOp::getOutIndex(), toReduce);
 }
 

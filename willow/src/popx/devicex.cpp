@@ -886,6 +886,13 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
         "Setting report option {} = {}", it.first, it.second);
     reportOptions.set(it.first, it.second);
   }
+
+  if (std::getenv("GCL_REAL_COLLECTIVES")) {
+    gclOptions.set("useGclCollectives", "true");
+  }
+  if (auto *val = std::getenv("GCL_MAX_BYTES_PER_TILE")) {
+    gclOptions.set("maxBytesPerTile", val);
+  }
 }
 
 void Devicex::weightsFromHost() {

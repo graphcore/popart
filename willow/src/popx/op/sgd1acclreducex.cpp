@@ -19,13 +19,14 @@ void SGD1AcclReduceOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor velocity = getInTensor(VarUpdateOp::getVarToUpdateInIndex());
 
   if (dv_p->isReplicatedGraph()) {
-    popops::replicatedAllReduceInPlace(
-        graph(),
-        velocity,
-        popops::Operation::ADD,
-        prog,
-        debugPrefix("allReduceVelocitySGD1"),
-        {{"useReplicatedImplementation", "true"}});
+    poplar::OptionFlags allReduceOptions = dv_p->gclOptions;
+    allReduceOptions.set("useReplicatedImplementation", "true");
+    popops::replicatedAllReduceInPlace(graph(),
+                                       velocity,
+                                       popops::Operation::ADD,
+                                       prog,
+                                       debugPrefix("allReduceVelocitySGD1"),
+                                       allReduceOptions);
   }
 
   else {

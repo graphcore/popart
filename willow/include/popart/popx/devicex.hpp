@@ -162,6 +162,7 @@ public:
   poplar::OptionFlags engineOptions, reportOptions;
   poplar::OptionFlags pooling_options;
   poplar::OptionFlags lstmOptions;
+  poplar::OptionFlags gclOptions;
 
   PopTensors tensors;
 
