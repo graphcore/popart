@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popart/ir.hpp>
 #include <popart/op/add.hpp>
 #include <popart/op/conv.hpp>

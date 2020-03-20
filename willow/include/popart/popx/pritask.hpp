@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_PRITASK_HPP
 #define GUARD_PRITASK_HPP
 

@@ -1,3 +1,4 @@
+// Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <popart/ir.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/poptensors.hpp>

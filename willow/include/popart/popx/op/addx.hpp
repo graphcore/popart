@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_NEURALNET_ADDX_HPP
 #define GUARD_NEURALNET_ADDX_HPP
 
@@ -14,16 +15,20 @@ namespace popx {
 class AddOpx : public ElementWiseBinaryOpx {
 public:
   AddOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const override;
+  InputCreatorType getInputCreatorType(InIndex) const override;
+  poplar::Tensor createInput(InIndex index,
+                             const std::string &name) const override;
+  std::vector<TensorId> mustExistBeforeCreate(InIndex) const override;
 };
 
-class AddLhsInplaceOpx : public Opx {
+class AddLhsInplaceOpx : public AddOpx {
 public:
   AddLhsInplaceOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
 };
 
-class AddRhsInplaceOpx : public Opx {
+class AddRhsInplaceOpx : public AddOpx {
 public:
   AddRhsInplaceOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

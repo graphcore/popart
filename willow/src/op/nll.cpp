@@ -1,9 +1,11 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <memory>
 #include <sstream>
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/tensor.hpp>
 
@@ -28,7 +30,7 @@ std::unique_ptr<Op> NllLoss::getOp(const Op::Settings &settings_) const {
   copiedSettings.vgraphId      = vgraphId;
   copiedSettings.pipelineStage = pipelineStage_;
   return std::unique_ptr<Op>(
-      new NllOp(Onnx::CustomOperators::Nll, this, copiedSettings));
+      new NllOp(Onnx::CustomOperators::Nll, *this, copiedSettings));
 }
 
 const OperatorIdentifier &NllLoss::op_type() const {
@@ -71,7 +73,7 @@ TensorId NllLoss::labelTensorId() const { return input(getLabelInIndex()); }
 
 void NllOp::setup() {
 
-  const auto &labelsInInfo = inInfo(nlll()->getLabelInIndex());
+  const auto &labelsInInfo = inInfo(nlll().getLabelInIndex());
   if (!labelsInInfo.getDataTypeInfo()->isFixedPoint()) {
     throw error(
         "Expected the label tensor NllOp to be fixed point, not the case "
@@ -80,21 +82,28 @@ void NllOp::setup() {
         str());
   }
 
-  const auto &probsInInfo = inInfo(nlll()->getProbsInIndex());
-  const auto &labelInInfo = inInfo(nlll()->getLabelInIndex());
+  const auto &probsInInfo = inInfo(nlll().getProbsInIndex());
+  const auto &labelInInfo = inInfo(nlll().getLabelInIndex());
   // Outputs a loss for each label index.
   // Same shape as label input, same datatype as probs input
-  outInfo(nlll()->getOutIndex())
+  outInfo(nlll().getOutIndex())
       .set(probsInInfo.dataType(), labelInInfo.shape());
 }
 
-const NllLoss *NllOp::nlll() const { return nllloss_; }
-const NllLoss *NllGradOp::nlll() const { return nllloss_; }
+const NllLoss &NllOp::nlll() const { return nllloss_; }
+const NllLoss &NllGradOp::nlll() const { return nllloss_; }
 
 NllOp::NllOp(const OperatorIdentifier &_opid,
-             const NllLoss *n,
+             const NllLoss n,
              const Op::Settings &settings_)
     : LossOp(_opid, settings_), nllloss_(n) {}
+
+void NllOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
+  os.appendAttribute("reduction_type",
+                     static_cast<int64_t>(nlll().getReductionType()));
+  os.appendAttribute("has_ignore", nlll().hasIgnoreIndex());
+}
 
 void NllGradOp::setup() {
 
@@ -102,11 +111,11 @@ void NllGradOp::setup() {
   if (!getIr().getOptimizer().lossScaling().isConst()) {
     connectInTensor(NllGradOp::getLossScalingInIndex(),
                     getIr().getOptimizer().getLossScalingTensorId(
-                        inInfo(nlll()->getProbsInIndex()).dataType()));
+                        inInfo(nlll().getProbsInIndex()).dataType()));
   }
 
   // gradient of probs has same shape as probs
-  outInfo(nlll()->getOutIndex()) = inInfo(nlll()->getProbsInIndex());
+  outInfo(nlll().getOutIndex()) = inInfo(nlll().getProbsInIndex());
 }
 
 NllGradOp::NllGradOp(const NllOp &op_)
@@ -121,8 +130,8 @@ const std::vector<GradInOutMapper> &NllGradOp::gradInputInfo() const {
   // input at index 0 : labelIn()
   // input at index 1 : probsIn()
   static const std::vector<GradInOutMapper> inInfo = {
-      {nlll()->getLabelInIndex(), nlll()->getLabelInIndex(), GradOpInType::IN},
-      {nlll()->getProbsInIndex(), nlll()->getProbsInIndex(), GradOpInType::IN}};
+      {nlll().getLabelInIndex(), nlll().getLabelInIndex(), GradOpInType::IN},
+      {nlll().getProbsInIndex(), nlll().getProbsInIndex(), GradOpInType::IN}};
   return inInfo;
 }
 
@@ -133,8 +142,15 @@ const std::map<int, int> &NllGradOp::gradOutToNonGradIn() const {
   // no gradient for label (one could interpret the
   // int as a sparse vector, but not neat)
   static const std::map<int, int> outInfo = {
-      {getOutIndex(), nlll()->getProbsInIndex()}};
+      {getOutIndex(), nlll().getProbsInIndex()}};
   return outInfo;
+}
+
+void NllGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
+  os.appendAttribute("reduction_type",
+                     static_cast<int64_t>(nlll().getReductionType()));
+  os.appendAttribute("has_ignore", nlll().hasIgnoreIndex());
 }
 
 namespace {} // namespace

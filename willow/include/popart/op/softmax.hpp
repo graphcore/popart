@@ -1,11 +1,11 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_NEURALNET_SOFTMAX_HPP
 #define GUARD_NEURALNET_SOFTMAX_HPP
 
 #include <popart/op/elementwise.hpp>
+#include <popart/op/nll.hpp>
 
 namespace popart {
-
-class NllLoss;
 
 class SoftmaxOp : public ElementWiseUnaryOp {
 public:
@@ -68,10 +68,10 @@ public:
   // where Op in this constructor must be a SoftmaxOp
   // where this is created by a merger between the Op
   // and an NllGradOp
-  SoftmaxGradDirectOp(const NllLoss *, const Op::Settings &);
+  SoftmaxGradDirectOp(const NllLoss, const Op::Settings &);
   std::unique_ptr<Op> clone() const final;
   void setup() final;
-  const NllLoss *nlll() const;
+  const NllLoss &nlll() const;
   bool hasNlllFwdOp() const;
   Op *nlllFwdOp() const;
 
@@ -79,10 +79,10 @@ public:
   static OutIndex getOutIndex() { return 0; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
-  bool isOutlineable() const final { return false; }
+  virtual void appendOutlineAttributes(OpSerialiserBase &) const final;
 
 private:
-  const NllLoss *nllloss_;
+  const NllLoss nllloss_;
 };
 
 class NlllWithSoftmaxGradDirectOp : public Op {
@@ -90,10 +90,10 @@ public:
   // where Op in this constructor must be a SoftmaxOp
   // where this is created by a merger between the Op
   // and an NllGradOp
-  NlllWithSoftmaxGradDirectOp(const NllLoss *, const Op::Settings &);
+  NlllWithSoftmaxGradDirectOp(const NllLoss, const Op::Settings &);
   std::unique_ptr<Op> clone() const final;
   void setup() final;
-  const NllLoss *nlll() const;
+  const NllLoss &nlll() const;
   Op *nlllFwdOp() const;
 
   static InIndex getProbsInIndex() { return 0; }
@@ -104,10 +104,10 @@ public:
   static OutIndex getGradOutIndex() { return 1; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
-  bool isOutlineable() const final { return false; }
+  virtual void appendOutlineAttributes(OpSerialiserBase &) const final;
 
 private:
-  const NllLoss *nllloss_;
+  const NllLoss nllloss_;
 };
 
 } // namespace popart

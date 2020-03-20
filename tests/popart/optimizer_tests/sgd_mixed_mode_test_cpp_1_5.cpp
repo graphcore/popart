@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE sgd_mixed_mode_test_1_5
 
 #include "get_results.hpp"

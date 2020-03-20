@@ -1,3 +1,4 @@
+# Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 import numpy as np
 import torch
 from op_tester import op_tester

@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <iterator>
 #include <memory>
 #include <popart/error.hpp>
@@ -131,8 +132,8 @@ NlllWithSoftmaxGradDirectOpx::NlllWithSoftmaxGradDirectOpx(Op *op,
 
 void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   SoftmaxGradDirectOp &sfmgd  = getOp<SoftmaxGradDirectOp>();
-  const poplar::Tensor &probs = get(sfmgd.nlll()->probsTensorId());
-  const poplar::Tensor &label = get(sfmgd.nlll()->labelTensorId());
+  const poplar::Tensor &probs = getInTensor(NllLoss::getProbsInIndex());
+  const poplar::Tensor &label = getInTensor(NllLoss::getLabelInIndex());
 
   // As for NllOpx, flatten outer dimensions if rank(probs) > 2
   auto probs2D = probs.flatten(0, probs.rank() - 1);
@@ -151,15 +152,15 @@ void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                      prog,
                      debugPrefix("negsub"));
 
-  if (sfmgd.nlll()->hasIgnoreIndex()) {
+  if (sfmgd.nlll().hasIgnoreIndex()) {
     auto lossMask = NllOpx::applyMaskInPlaceForIgnoredIndex(
-        *this, graph(), oneHot, label1D, sfmgd.nlll()->getIgnoreIndex(), prog);
-    if (sfmgd.nlll()->getReductionType() == ReductionType::MEAN) {
+        *this, graph(), oneHot, label1D, sfmgd.nlll().getIgnoreIndex(), prog);
+    if (sfmgd.nlll().getReductionType() == ReductionType::MEAN) {
       NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
           *this, graph(), oneHot, lossMask, prog);
     }
   } else {
-    if (sfmgd.nlll()->getReductionType() == ReductionType::MEAN) {
+    if (sfmgd.nlll().getReductionType() == ReductionType::MEAN) {
       NllOpx::applyScalingInPlaceForMeanReduction(*this, graph(), oneHot, prog);
     }
   }
@@ -235,8 +236,8 @@ void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
 
 void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   NlllWithSoftmaxGradDirectOp &nllsfmgd = getOp<NlllWithSoftmaxGradDirectOp>();
-  const poplar::Tensor &probs           = get(nllsfmgd.nlll()->probsTensorId());
-  const poplar::Tensor &label           = get(nllsfmgd.nlll()->labelTensorId());
+  const poplar::Tensor &probs = getInTensor(NllLoss::getProbsInIndex());
+  const poplar::Tensor &label = getInTensor(NllLoss::getLabelInIndex());
 
   // As for NllOpx, flatten outer dimensions if rank(probs) > 2
   auto probs2D = probs.flatten(0, probs.rank() - 1);
@@ -270,20 +271,20 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                      prog,
                      debugPrefix("NegSub"));
 
-  if (nllsfmgd.nlll()->hasIgnoreIndex()) {
+  if (nllsfmgd.nlll().hasIgnoreIndex()) {
     auto lossMask = NllOpx::applyMaskInPlaceForIgnoredIndex(
         *this,
         graph(),
         oneHot,
         label1D,
-        nllsfmgd.nlll()->getIgnoreIndex(),
+        nllsfmgd.nlll().getIgnoreIndex(),
         prog);
-    if (nllsfmgd.nlll()->getReductionType() == ReductionType::MEAN) {
+    if (nllsfmgd.nlll().getReductionType() == ReductionType::MEAN) {
       NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
           *this, graph(), oneHot, lossMask, prog);
     }
   } else {
-    if (nllsfmgd.nlll()->getReductionType() == ReductionType::MEAN) {
+    if (nllsfmgd.nlll().getReductionType() == ReductionType::MEAN) {
       NllOpx::applyScalingInPlaceForMeanReduction(*this, graph(), oneHot, prog);
     }
   }
@@ -335,20 +336,20 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                      debugPrefix("LogEpsMul"));
 
   // TODO: T8305, re-use the mask created above
-  if (nllsfmgd.nlll()->hasIgnoreIndex()) {
+  if (nllsfmgd.nlll().hasIgnoreIndex()) {
     auto lossMask = NllOpx::applyMaskInPlaceForIgnoredIndex(
         *this,
         graph(),
         reduction,
         label1D,
-        nllsfmgd.nlll()->getIgnoreIndex(),
+        nllsfmgd.nlll().getIgnoreIndex(),
         prog);
-    if (nllsfmgd.nlll()->getReductionType() == ReductionType::MEAN) {
+    if (nllsfmgd.nlll().getReductionType() == ReductionType::MEAN) {
       NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
           *this, graph(), reduction, lossMask, prog);
     }
   } else {
-    if (nllsfmgd.nlll()->getReductionType() == ReductionType::MEAN) {
+    if (nllsfmgd.nlll().getReductionType() == ReductionType::MEAN) {
       NllOpx::applyScalingInPlaceForMeanReduction(
           *this, graph(), reduction, prog);
     }

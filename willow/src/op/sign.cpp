@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <memory>
 #include <popart/op/sign.hpp>
 #include <popart/opmanager.hpp>

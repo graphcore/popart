@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <vector>
 // for `find', we need the algorithm header
 #include <algorithm>

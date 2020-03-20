@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popart/op/basesort.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/tensor.hpp>

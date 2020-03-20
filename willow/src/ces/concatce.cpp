@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <onnx/onnx_pb.h>
 #include <popart/ces/concatce.hpp>
 #include <popart/ndarraywrapper.hpp>

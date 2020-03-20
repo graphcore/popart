@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #define BOOST_ERROR_CODE_HEADER_ONLY
 // this ifdef suppresses the unused macro warning for
 // BOOST_ERROR_CODE_HEADER_ONLY

@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <onnx/onnx_pb.h>
 
 #include <popart/ces/onnxconstexpr.hpp>

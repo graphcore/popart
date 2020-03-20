@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_GRAPHTRANSFORMER_IMPL_H
 #define GUARD_GRAPHTRANSFORMER_IMPL_H
 

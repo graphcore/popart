@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <memory>
 #include <popart/error.hpp>
 #include <popart/op/logsoftmax.hpp>

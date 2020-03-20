@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <iterator>
 #include <memory>
 
@@ -9,8 +10,8 @@
 #include <popart/popx/op/gelux.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <poplin/ConvUtil.hpp>
 #include <popnn/NonLinearity.hpp>
+#include <popops/Rearrange.hpp>
 
 namespace popart {
 namespace popx {
@@ -50,7 +51,7 @@ void GeluGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto grad  = getInTensor(GeluGradOp::getGradInIndex());
   const auto input = getInTensor(GeluGradOp::getFwdArgInIndex());
 
-  auto gradRearranged = poplin::regroupIfBeneficial(
+  auto gradRearranged = popops::rearrange::regroupIfBeneficial(
       graph(), grad, input, prog, debugPrefix("regroup"));
 
   auto output = popnn::nonLinearityInputGradient(graph(),

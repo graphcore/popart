@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <memory>
 #include <vector>
 #include <popart/op/or.hpp>

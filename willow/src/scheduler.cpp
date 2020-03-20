@@ -1,3 +1,6 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <boost/filesystem.hpp>
+
 #include <algorithm>
 #include <array>
 #include <queue>
@@ -5,6 +8,7 @@
 #include <vector>
 #include <poprithms/schedule/anneal/graph.hpp>
 #include <popart/error.hpp>
+#include <popart/filereader.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
@@ -22,7 +26,7 @@ using poprithms::schedule::anneal::AllocAddress;
 using poprithms::schedule::anneal::AllocWeight;
 using poprithms::schedule::anneal::OpAddress;
 using poprithms::schedule::anneal::ScheduleIndex;
-using RithmicGraph   = poprithms::schedule::anneal::Graph;
+using RithmicGraph = poprithms::schedule::anneal::Graph;
 using KahnTieBreaker = poprithms::schedule::anneal::KahnTieBreaker;
 
 namespace {
@@ -79,6 +83,9 @@ public:
   void initialize(KahnTieBreaker ktb) { g.initialize(ktb); }
   void finalize() { g.finalize(); }
   bool isSchedulable() const { return g.isSchedulable(); }
+  std::string getSerializationString() const {
+    return g.getSerializationString();
+  }
   ScheduleIndex opToSchedule(OpAddress a) const { return g.opToSchedule(a); }
 
   Op *toOp(OpAddress a) const { return addressToOp.at(a); }
@@ -90,17 +97,17 @@ public:
       // We ignore Variable Tensors contribution, as they are always live.
       // TODO(jn) confirm that ping-pong and host reduction agree with this.
       if (t->tensorType() != TensorType::Variable) {
-        auto w            = static_cast<AllocWeight>(t->info.nbytes());
+        auto w = static_cast<AllocWeight>(t->info.nbytes());
         allocAddresses[t] = g.insertAlloc(w);
       }
     }
     for (const auto &x : pg.getOps()) {
-      auto op         = x.second.get();
+      auto op = x.second.get();
       opAddresses[op] = g.insertOp({}, {}, op->str());
       addressToOp.push_back(op);
     }
     for (const auto &x : pg.getOps()) {
-      auto op        = x.second.get();
+      auto op = x.second.get();
       auto opAddress = opAddresses[op];
       for (const auto t : op->input->tensors()) {
         if (auto producer = t->getProducerUnsafe()) {
@@ -125,7 +132,7 @@ public:
       auto op = x.second.get();
       if (op->getOptionalPingPongPhase()) {
         auto opAddress = opAddresses[op];
-        auto phase     = op->getOptionalPingPongPhase().get();
+        auto phase = op->getOptionalPingPongPhase().get();
         if (phase < -1) {
           throw internal_error(
               "phase < -1 unexpected. This function needs adjustment");
@@ -149,7 +156,7 @@ public:
       auto op = x.second.get();
       if (op->hasPipelineStage()) {
         auto opAddress = opAddresses[op];
-        auto stage     = op->getOptionalPipelineStage().get();
+        auto stage = op->getOptionalPipelineStage().get();
         if (stage < -1) {
           throw internal_error(
               "stage < -1 unexpected. This function needs adjustment");
@@ -167,7 +174,7 @@ public:
   void annotatePriorities() {
     std::vector<std::array<OpAddress, 2>> ties;
     for (const auto &x : pg.getOps()) {
-      auto op        = x.second.get();
+      auto op = x.second.get();
       auto tiedAfter = opAddresses[op];
       for (auto op2 : pg.topoCons->getTiedBefores(op)) {
         ties.push_back({opAddresses[op2], tiedAfter});
@@ -187,15 +194,15 @@ public:
 
     // A priority which is secondary to memory liveness:
     using OpTypeStr = std::string;
-    using IoNames   = std::string;
-    using UniqueId  = int;
+    using IoNames = std::string;
+    using UniqueId = int;
     std::vector<std::tuple<OpTypeStr, IoNames, UniqueId>> sub;
 
     for (const auto &x : pg.getOps()) {
-      auto op             = x.second.get();
+      auto op = x.second.get();
       auto op_batchserial = op->getOptionalBatchSerializedPhase();
-      auto op_pingpong    = op->getOptionalPingPongPhase();
-      auto op_priority    = op->settings.schedulePriority;
+      auto op_pingpong = op->getOptionalPingPongPhase();
+      auto op_priority = op->settings.schedulePriority;
 
       // Pingpong -1 to N are reserved
       // -2 : No pingpong phase set
@@ -226,9 +233,7 @@ public:
       // 2) descending priority for ops without batch-serial phase
       // 3) ascending batch-serial phase
       // 4) descending priority within batch-serial phase
-      super.push_back({-op_pingpong_or,
-                       op_priority_pre_or,
-                       -op_batchserial_or,
+      super.push_back({-op_pingpong_or, op_priority_pre_or, -op_batchserial_or,
                        op_priority_post_or});
       sub.push_back({op->opid.type, ioNames(op), op->id});
     }
@@ -238,8 +243,8 @@ public:
 
   void appendGCons(const OpsBeforeKey &gCons) {
     for (const auto &x : gCons) {
-      auto after        = x.first;
-      auto befores      = x.second;
+      auto after = x.first;
+      auto befores = x.second;
       auto addressAfter = opAddresses[after];
       for (auto b : befores) {
         auto addressBefore = opAddresses[b];
@@ -261,15 +266,13 @@ public:
   void registerHit() {
     ++nHits;
     logging::ir::debug(
-        "[Scheduler] SchedulerCacher hit # {} (Misses so far : {})",
-        nHits,
+        "[Scheduler] SchedulerCacher hit # {} (Misses so far : {})", nHits,
         nMisses);
   }
   void registerMiss() {
     ++nMisses;
     logging::ir::debug(
-        "[Scheduler] SchedulerCacher miss # {} (Hits so far : {})",
-        nMisses,
+        "[Scheduler] SchedulerCacher miss # {} (Hits so far : {})", nMisses,
         nHits);
   }
 
@@ -287,10 +290,8 @@ private:
 // so that inplace Ops are accurately described.
 
 std::vector<Op *>
-Scheduler::getSchedule(const OpsBeforeKey &gCons,
-                       const Graph &pg,
-                       bool respectPingPongPhases,
-                       double timeLimitSeconds,
+Scheduler::getSchedule(const OpsBeforeKey &gCons, const Graph &pg,
+                       bool respectPingPongPhases, double timeLimitSeconds,
                        int64_t swapLimitCount,
                        const std::string &kahnTieBreakerString) {
 
@@ -322,23 +323,61 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
     cacher->registerHit();
     return cacher->getSchedule();
   }
+
+  if (!pg.getIr()
+           .getSessionOptions()
+           .serializedPoprithmsAnnealGraphsDir.empty()) {
+    auto dirName =
+        boost::filesystem::canonical(
+            pg.getIr().getSessionOptions().serializedPoprithmsAnnealGraphsDir)
+            .string();
+
+    if (!boost::filesystem::exists(dirName)) {
+      std::ostringstream oss;
+      oss << "No directory, `" << dirName << "' exists. "
+          << " The SessionOptions directory serializedPoprithmsAnnealGraphsDir "
+          << "must already exist, PopART will not create it. "
+          << "If you do not want to serialize Poprithms Graph, set "
+          << " serializePoprithmsAnnealGraphs "
+          << " to false.";
+      throw error(oss.str());
+    }
+    auto getTargetName = [dirName](int i) {
+      return io::appendDirFn(dirName, "poprithms_anneal_graph_" +
+                                          std::to_string(i) + ".json");
+    };
+
+    // iterate through file names until a non-existant one is found
+    int modelNumber{0};
+    while (boost::filesystem::exists(getTargetName(modelNumber))) {
+      ++modelNumber;
+    }
+    auto filename = getTargetName(modelNumber);
+
+    std::ofstream ofs;
+    ofs.open(filename);
+    if (!ofs.is_open()) {
+      throw error("Failed to open file {}", filename);
+    }
+    ofs << grower->getSerializationString();
+    ofs.close();
+  }
+
   cacher->registerMiss();
 
-  bool debug      = false;
-  uint32_t seed   = 1011;
+  bool debug = false;
+  uint32_t seed = 1011;
   double pStayPut = 10.0;
   // As switching the swap size in the algorithm based on improvement/second is
   // non-deterministic, we disable this by giving it 0 probability
   double pHigherFallRate = 0.0;
-  double pClimb          = 1.0;
-  bool logging           = false;
+  double pClimb = 1.0;
+  bool logging = false;
 
   KahnTieBreaker ktb;
 
   auto ktbLower = kahnTieBreakerString;
-  std::transform(ktbLower.begin(),
-                 ktbLower.end(),
-                 ktbLower.begin(),
+  std::transform(ktbLower.begin(), ktbLower.end(), ktbLower.begin(),
                  [](unsigned char c) { return std::tolower(c); });
 
   if (ktbLower == "fifo") {
@@ -354,14 +393,8 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
   grower->initialize(ktb);
 
   grower->minSumLivenessAnneal(
-      poprithms::schedule::anneal::MinSumLivenessAlgo::RIPPLE,
-      debug,
-      seed,
-      pStayPut,
-      pHigherFallRate,
-      pClimb,
-      logging,
-      timeLimitSeconds,
+      poprithms::schedule::anneal::MinSumLivenessAlgo::RIPPLE, debug, seed,
+      pStayPut, pHigherFallRate, pClimb, logging, timeLimitSeconds,
       swapLimitCount);
 
   const auto nOps = pg.getOps().size();
@@ -381,8 +414,7 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
   return finalSchedule;
 }
 
-bool Scheduler::isSchedulable(const OpsBeforeKey &gCons,
-                              const Graph &pg,
+bool Scheduler::isSchedulable(const OpsBeforeKey &gCons, const Graph &pg,
                               bool respectPingPongPhases) const {
 
   GraphGrower grower(pg);
@@ -399,7 +431,7 @@ bool Scheduler::isSchedulable(const OpsBeforeKey &gCons,
   return grower.isSchedulable();
 }
 
-Scheduler::Scheduler()  = default;
+Scheduler::Scheduler() = default;
 Scheduler::~Scheduler() = default;
 
 } // namespace popart

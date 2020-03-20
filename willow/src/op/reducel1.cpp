@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <memory>
 #include <popart/op/reducel1.hpp>

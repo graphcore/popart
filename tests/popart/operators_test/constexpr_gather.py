@@ -1,3 +1,4 @@
+# Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 import itertools
 import numpy as np
 from op_tester import op_tester

@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <popart/logging.hpp>
 #include <popart/patterns/patterns.hpp>
 

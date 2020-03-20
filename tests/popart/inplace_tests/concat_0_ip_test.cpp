@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Concat0InplaceTest
 
 #include <boost/test/unit_test.hpp>

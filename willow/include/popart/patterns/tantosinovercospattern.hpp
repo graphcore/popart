@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_NEURALNET_TAN_TO_SIN_OVER_COS_PATTERN_HPP
 #define GUARD_NEURALNET_TAN_TO_SIN_OVER_COS_PATTERN_HPP
 

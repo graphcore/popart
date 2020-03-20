@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <sstream>
 #include <popart/op.hpp>
 #include <popart/scope.hpp>

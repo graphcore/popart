@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_NEURALNET_RESTORE_HPP
 #define GUARD_NEURALNET_RESTORE_HPP
 

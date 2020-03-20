@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popart/chains.hpp>
 #include <popart/graph.hpp>
 #include <popart/names.hpp>

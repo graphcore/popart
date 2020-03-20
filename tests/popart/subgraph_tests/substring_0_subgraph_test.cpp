@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Substring0SubgraphTest
 
 // tests of repeated sub-string matching. This is the

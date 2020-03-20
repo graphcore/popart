@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popart/error.hpp>
 #include <popart/graphtransformer.hpp>
 #include <popart/graphtransformer_impl.hpp>

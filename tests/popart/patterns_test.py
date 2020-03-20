@@ -1,3 +1,4 @@
+# Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 # Test for basic importing
 
 import pytest

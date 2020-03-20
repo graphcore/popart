@@ -1,3 +1,4 @@
+# Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 import numpy as np
 import popart
 import pytest
@@ -21,9 +22,7 @@ def run_pt_session(syntheticDataMode):
     opts.syntheticDataMode = syntheticDataMode
 
     session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                      dataFeed=popart.DataFlow(
-                                          1,
-                                          {p: popart.AnchorReturnType("ALL")}),
+                                      dataFeed=popart.DataFlow(1, [p]),
                                       userOptions=opts,
                                       deviceInfo=tu.create_test_device())
 
@@ -67,3 +66,23 @@ def test_verify_synthetic_inputs(capfd):
     assert np.all(rnData == 0) == False
     assert np.isclose(np.mean(rnData), 0, atol=0.02)
     assert np.isclose(np.std(rnData), 1, atol=0.1)
+
+
+def test_supported_input_type_float16():
+    def run_with_input_of_type(dtype):
+        builder = popart.Builder()
+        in0 = builder.addInputTensor(popart.TensorInfo(dtype, [2]))
+        out = builder.aiOnnx.sqrt([in0])
+
+        opts = popart.SessionOptions()
+        opts.syntheticDataMode = popart.SyntheticDataMode.RandomNormal
+        session = popart.InferenceSession(
+            fnModel=builder.getModelProto(),
+            userOptions=opts,
+            deviceInfo=popart.DeviceManager().createCpuDevice(),
+            dataFeed=popart.DataFlow(1, [out]))
+
+    run_with_input_of_type("FLOAT16")
+    run_with_input_of_type("FLOAT")
+    run_with_input_of_type("INT32")
+    run_with_input_of_type("UINT32")

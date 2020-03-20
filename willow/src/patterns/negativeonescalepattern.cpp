@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <boost/math/special_functions/relative_difference.hpp>
 #include <popart/op/scale.hpp>
 #include <popart/patterns/negativeonescalepattern.hpp>

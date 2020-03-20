@@ -1,3 +1,4 @@
+# Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 import onnx.defs
 import io
 import numpy as np  # type: ignore

@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #ifndef NEURALNET_TENSOR_HPP
 #define NEURALNET_TENSOR_HPP
 
@@ -178,6 +179,8 @@ public:
 
   bool consumersAllPreLoss() const;
 
+  const void *getTensorData() const;
+
 protected:
   Graph &graph;
   Op *producer;
@@ -192,6 +195,12 @@ protected:
   // c++ note : we cannot initialise this as {nullptr} with gcc
   // when using pimpl, it must be initialised in the .cpp constructor
   std::unique_ptr<TensorData> data_;
+
+  // Backtrack through input ops in order to get data from initializer tensors
+  // (if they exist). When ops are performed on initializers (e.g. slice), the
+  // data is (intentionally) not inhereted by the output tensors, this method
+  // finds the original data and sets the data of the callee tensor.
+  std::vector<char> getDataViaRecursion() const;
 };
 
 class VariableTensor : public Tensor {

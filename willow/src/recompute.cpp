@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popart/graph.hpp>
 #include <popart/intervals.hpp>
 #include <popart/ir.hpp>

@@ -1,3 +1,4 @@
+# Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 from pathlib import Path
 import tempfile
 from torchvision import transforms, datasets

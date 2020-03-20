@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -17,6 +18,37 @@ std::size_t CacheSetup::id() { return typeid(CacheSetup).hash_code(); }
 
 bool CacheSetup::apply(Graph &graph) const {
   logging::debug("[CacheSetup] Started.");
+
+  Ir &ir                 = graph.getIr();
+  int64_t remoteBufferId = 0;
+
+  // Create remote buffer info for CacheLoad/CacheStore ops with set buffer ID
+  for (Op *op : ir.getAllOps()) {
+    if (CacheLoadOp *loadOp = dynamic_cast<CacheLoadOp *>(op)) {
+      auto allRemoteBufferIds = ir.getAllRemoteBufferInfos();
+      RemoteBufferId id       = loadOp->getRemoteBufferId();
+      if (id > -1 && allRemoteBufferIds.find(id) == allRemoteBufferIds.end()) {
+        auto info = RemoteBufferInfo(
+            loadOp->output->tensor(CacheLoadOp::getCachedTensorOutIndex())
+                ->info,
+            1);
+        ir.setRemoteBufferInfo(id, info);
+        remoteBufferId = std::max(remoteBufferId, id + 1);
+      }
+    }
+    if (CacheStoreOp *storeOp = dynamic_cast<CacheStoreOp *>(op)) {
+      auto allRemoteBufferIds = ir.getAllRemoteBufferInfos();
+      RemoteBufferId id       = storeOp->getRemoteBufferId();
+      if (id > -1 && allRemoteBufferIds.find(id) == allRemoteBufferIds.end()) {
+        auto info = RemoteBufferInfo(
+            storeOp->input->tensor(CacheStoreOp::getCachedTensorInIndex())
+                ->info,
+            1);
+        ir.setRemoteBufferInfo(id, info);
+        remoteBufferId = std::max(remoteBufferId, id + 1);
+      }
+    }
+  }
 
   // Mapping from each CacheArg to it's final consumers
   std::map<TensorId, std::set<Op *>> argOpMap;
@@ -62,7 +94,8 @@ bool CacheSetup::apply(Graph &graph) const {
     }
   }
 
-  int64_t remoteBufferId = 0;
+  std::map<int64_t, std::set<VGraphId>> remoteBufferVGIDs;
+
   for (auto &argOp : argOpMap) {
     if (argBufferMap.find(argOp.first) == argBufferMap.end()) {
       int64_t remoteBufferIndex = 0;
@@ -92,24 +125,52 @@ bool CacheSetup::apply(Graph &graph) const {
         auto cacheArgTensor     = graph.getTensors().get(tensor_id);
         *static_cast<int *>(cacheArgTensor->tensorData()->data()) =
             static_cast<int>(remoteBufferIndex);
+        logging::trace("CacheArg {} buffer: {} index: {}",
+                       tensor_id,
+                       remoteBufferId,
+                       remoteBufferIndex);
         for (Op *op : argOpMap[tensor_id]) {
           if (CacheStoreOp *cs = dynamic_cast<CacheStoreOp *>(op)) {
             cs->setRemoteBufferId(remoteBufferId);
             tensorInfo = cs->input->tensor(cs->getCachedTensorInIndex())->info;
+            remoteBufferVGIDs[remoteBufferId].insert(
+                cs->hasVirtualGraphId() ? cs->getVirtualGraphId() : -1);
+            logging::transform::trace(
+                "[CacheSetup] Op {} connected to remote buffer {}. "
+                "Tensor info {}.",
+                cs->debugName(),
+                remoteBufferId,
+                cs->inInfo(CacheStoreOp::getCachedTensorInIndex()));
           }
           if (CacheLoadOp *cl = dynamic_cast<CacheLoadOp *>(op)) {
             cl->setRemoteBufferId(remoteBufferId);
             tensorInfo =
                 cl->output->tensor(cl->getCachedTensorOutIndex())->info;
+            remoteBufferVGIDs[remoteBufferId].insert(
+                cl->hasVirtualGraphId() ? cl->getVirtualGraphId() : -1);
+            logging::transform::trace(
+                "[CacheSetup] Op {} connected to remote buffer {}. "
+                "Tensor info {}.",
+                cl->debugName(),
+                remoteBufferId,
+                cl->outInfo(CacheLoadOp::getCachedTensorOutIndex()));
           }
         }
         remoteBufferIndex++;
       }
 
       auto info = RemoteBufferInfo(tensorInfo, remoteBufferIndex);
-      graph.getIr().setRemoteBufferInfo(remoteBufferId, info);
+      ir.setRemoteBufferInfo(remoteBufferId, info);
 
       remoteBufferId++;
+    }
+  }
+
+  for (auto &mapping : remoteBufferVGIDs) {
+    if (mapping.second.size() > 1) {
+      throw error(
+          "[CacheSetup] Remote buffer ID {} maps to multiple virtual graphs.",
+          mapping.first);
     }
   }
 

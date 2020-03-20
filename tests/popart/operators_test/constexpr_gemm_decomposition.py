@@ -1,3 +1,4 @@
+# Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 # this test checks the output of const folding after the GemmDecomposition pattern has been applied
 # gemm_ce_test.cpp checks the const folding actually happens
 import numpy as np

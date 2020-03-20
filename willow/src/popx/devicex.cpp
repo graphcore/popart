@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <cctype>
 #include <cstring>
@@ -565,10 +566,11 @@ void Devicex::remoteBufferWeightsToHost() {
       auto remoteBufferInfo = tensor->getRemoteBufferInfo();
       char *data0           = d2hWeightBuffers[initId].data();
       // Weight should be the same for each replica, only return 0
-      pEngine->copyFromRemoteBuffer(getRemoteBuffer(remoteBufferInfo.first),
-                                    data0,
-                                    remoteBufferInfo.second,
-                                    0);
+      pEngine->copyFromRemoteBuffer(
+          getRemoteBuffer(remoteBufferInfo.first).first,
+          data0,
+          remoteBufferInfo.second,
+          0);
     }
   }
 }
@@ -624,7 +626,8 @@ void Devicex::weightsToHost(
     // copy from the host stream memory points to the
     // addresses on onnxModelData
     for (auto id : ir().getTensorIds(TensorType::Variable)) {
-      if (!ir().streamingIsDisabledForTensor(id)) {
+      if (!ir().streamingIsDisabledForTensor(id) ||
+          ir().getTensor(id)->isCached()) {
         auto found = onnxModelData.find(id);
         if (found == onnxModelData.end()) {
           std::ostringstream oss;
@@ -848,10 +851,11 @@ void Devicex::remoteBufferWeightsFromHost() {
       for (unsigned replica_id = 0; replica_id < getReplicationFactor();
            ++replica_id) {
         // Weights to every replica
-        pEngine->copyToRemoteBuffer(data0,
-                                    getRemoteBuffer(remoteBufferInfo.first),
-                                    remoteBufferInfo.second,
-                                    replica_id);
+        pEngine->copyToRemoteBuffer(
+            data0,
+            getRemoteBuffer(remoteBufferInfo.first).first,
+            remoteBufferInfo.second,
+            replica_id);
       }
     }
   }
@@ -1665,8 +1669,13 @@ PriTask Devicex::streamToHostTask(Tensor *tensor, bool isAnchorStream) {
   };
 }
 
-const poplar::RemoteBuffer &Devicex::getRemoteBuffer(RemoteBufferId id) const {
+const std::pair<poplar::RemoteBuffer, boost::optional<poplar::Tensor>> &
+Devicex::getRemoteBuffer(RemoteBufferId id) const {
   return remoteBuffers.at(id);
+}
+
+void Devicex::setRemoteBufferTensor(RemoteBufferId id, poplar::Tensor tensor) {
+  remoteBuffers.at(id).second = tensor;
 }
 
 void Devicex::createRemoteBuffers() {
@@ -1684,7 +1693,9 @@ void Devicex::createRemoteBuffers() {
         repeats);
 
     remoteBuffers.insert(
-        {info.first, graph().addRemoteBuffer(name, type, size, repeats, true)});
+        {info.first,
+         {graph().addRemoteBuffer(name, type, size, repeats, true),
+          boost::optional<poplar::Tensor>()}});
   }
 }
 

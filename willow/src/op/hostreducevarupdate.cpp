@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <limits>
 #include <memory>
 #include <popart/ir.hpp>

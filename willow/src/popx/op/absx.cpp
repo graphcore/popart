@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popart/error.hpp>
 #include <popart/op/abs.hpp>
 #include <popart/popx/op/absx.hpp>

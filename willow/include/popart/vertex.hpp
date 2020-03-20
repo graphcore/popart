@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #ifndef NEURALNET_VERTEX_HPP
 #define NEURALNET_VERTEX_HPP
 

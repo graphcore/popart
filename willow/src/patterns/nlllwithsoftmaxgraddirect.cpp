@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popart/graph.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/op/softmax.hpp>
@@ -42,11 +43,11 @@ std::vector<const Tensor *> NlllWithSoftmaxGradDirect::touches(Op *) const {
 bool NlllWithSoftmaxGradDirect::apply(Op *op) const {
   auto sfmgdOp   = dynamic_cast<SoftmaxGradDirectOp *>(op);
   auto fwdLossOp = sfmgdOp->nlllFwdOp();
-  auto nlll      = sfmgdOp->nlll();
+  auto &nlll     = sfmgdOp->nlll();
   auto &graph    = op->getGraph();
 
-  auto label    = sfmgdOp->inTensor(nlll->getLabelInIndex());
-  auto probs    = sfmgdOp->inTensor(nlll->getProbsInIndex());
+  auto label    = sfmgdOp->inTensor(NllLoss::getLabelInIndex());
+  auto probs    = sfmgdOp->inTensor(NllLoss::getProbsInIndex());
   auto sfm_grad = sfmgdOp->outTensor(0);
   auto loss     = fwdLossOp->outTensor(0);
 

@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <cstring>
 #include <popart/error.hpp>
 #include <popart/half.hpp>

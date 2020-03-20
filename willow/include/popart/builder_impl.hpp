@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_BUILDER_IMPL_HPP
 #define GUARD_BUILDER_IMPL_HPP
 

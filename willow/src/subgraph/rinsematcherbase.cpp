@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popart/subgraph/rinsematcherbase.hpp>
 
 namespace fwtools {

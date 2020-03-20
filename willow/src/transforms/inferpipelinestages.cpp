@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/loss.hpp>

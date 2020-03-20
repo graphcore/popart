@@ -1,3 +1,4 @@
+# Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 import numpy as np
 from operators_test.ipu_op_tester import ipu_op_tester
 

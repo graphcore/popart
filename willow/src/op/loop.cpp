@@ -1,3 +1,4 @@
+// Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <onnx/onnx_pb.h>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>

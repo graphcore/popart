@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_NEURALNET_NLL_HPP
 #define GUARD_NEURALNET_NLL_HPP
 
@@ -42,7 +43,7 @@ private:
 class NllOp : public LossOp {
 public:
   NllOp(const OperatorIdentifier &_opid,
-        const NllLoss *nllloss,
+        const NllLoss nllloss,
         const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
@@ -50,12 +51,13 @@ public:
 
   static OutIndex getOutIndex() { return 0; }
 
-  const NllLoss *nlll() const;
+  const NllLoss &nlll() const;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
+  virtual void appendOutlineAttributes(OpSerialiserBase &) const final;
 
 private:
-  const NllLoss *nllloss_;
+  const NllLoss nllloss_;
 };
 
 class NllGradOp : public Op {
@@ -66,17 +68,18 @@ public:
   void setup() final;
   std::unique_ptr<Op> clone() const final;
 
-  // inputs 0 & 1 are defined in NllOp
+  // inputs 0 & 1 are defined in NllLoss
   static InIndex getLossScalingInIndex() { return 2; }
 
   static OutIndex getOutIndex() { return 0; }
 
-  const NllLoss *nlll() const;
+  const NllLoss &nlll() const;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
+  virtual void appendOutlineAttributes(OpSerialiserBase &) const final;
 
 private:
-  const NllLoss *nllloss_;
+  const NllLoss nllloss_;
 };
 
 } // namespace popart

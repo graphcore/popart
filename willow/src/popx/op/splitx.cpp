@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popart/op/split.hpp>
 #include <popart/popx/op/splitx.hpp>
 #include <popart/popx/opxmanager.hpp>

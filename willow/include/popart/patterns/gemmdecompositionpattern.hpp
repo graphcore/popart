@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_NEURALNET_GEMM_DECOMPOSITION_PATTERN_HPP
 #define GUARD_NEURALNET_GEMM_DECOMPOSITION_PATTERN_HPP
 

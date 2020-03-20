@@ -1,7 +1,11 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <popart/error.hpp>
 #include <popart/op/add.hpp>
+#include <popart/popx/devicex.hpp>
 #include <popart/popx/op/addx.hpp>
 #include <popart/popx/opxmanager.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
 
 #include <popops/ElementWise.hpp>
 #include <poputil/TileMapping.hpp>
@@ -41,7 +45,11 @@ static poplar::Tensor addInplace(poplar::Graph &graph,
 }
 
 AddOpx::AddOpx(Op *op, Devicex *devicex) : ElementWiseBinaryOpx(op, devicex) {
-  verifyOp<AddOp>(op, {Onnx::Operators::Add_6, Onnx::Operators::Add_7});
+  verifyOp<AddOp>(op,
+                  {Onnx::Operators::Add_6,
+                   Onnx::Operators::Add_7,
+                   Onnx::CustomOperators::AddLhsInplace,
+                   Onnx::CustomOperators::AddRhsInplace});
 }
 
 void AddOpx::grow(poplar::program::Sequence &prog) const {
@@ -55,8 +63,87 @@ void AddOpx::grow(poplar::program::Sequence &prog) const {
                            debugPrefix()));
 }
 
+InputCreatorType AddOpx::getInputCreatorType(InIndex index) const {
+  AddOp *op = dynamic_cast<AddOp *>(this->op_p);
+
+  // Check shape doesn't change due to numpy-style broadcasting.
+  if (op_p->inInfo(index) != op_p->outInfo(AddOp::getOutIndex())) {
+    return InputCreatorType::DEADEND;
+  }
+
+  auto itArg0 =
+      op->settings.inferTensorMappingToFrom.find(AddOp::getArg0InIndex());
+  auto itArg1 =
+      op->settings.inferTensorMappingToFrom.find(AddOp::getArg1InIndex());
+
+  bool inferArg0FromArg1 =
+      itArg0 != op->settings.inferTensorMappingToFrom.end() &&
+      itArg0->second == AddOp::getArg1InIndex();
+  bool inferArg1FromArg0 =
+      itArg1 != op->settings.inferTensorMappingToFrom.end() &&
+      itArg1->second == AddOp::getArg0InIndex();
+
+  if (index == AddOp::getArg0InIndex()) {
+    if (inferArg0FromArg1) {
+      return InputCreatorType::CANCREATE_OR_UNWIND;
+    } else if (inferArg1FromArg0) {
+      return InputCreatorType::DEADEND;
+    } else {
+      return InputCreatorType::CANUNWIND;
+    }
+  }
+
+  if (index == AddOp::getArg1InIndex()) {
+    if (inferArg1FromArg0) {
+      return InputCreatorType::CANCREATE_OR_UNWIND;
+    } else if (inferArg0FromArg1) {
+      return InputCreatorType::DEADEND;
+    } else {
+      return InputCreatorType::CANUNWIND;
+    }
+  }
+
+  return Opx::getInputCreatorType(index);
+}
+
+poplar::Tensor AddOpx::createInput(InIndex index,
+                                   const std::string &name) const {
+
+  if (index == AddOp::getArg0InIndex()) {
+    if (dv_p->tensors.contains(op_p->input->id(AddOp::getArg1InIndex()))) {
+      return graph().clone(getInTensor(AddOp::getArg1InIndex()), name);
+    }
+  }
+
+  if (index == AddOp::getArg1InIndex()) {
+    if (dv_p->tensors.contains(op_p->input->id(AddOp::getArg0InIndex()))) {
+      return graph().clone(getInTensor(AddOp::getArg0InIndex()), name);
+    }
+  }
+
+  throw error("AddOpx::createInput : Invalid index = " + std::to_string(index));
+}
+
+std::vector<TensorId> AddOpx::mustExistBeforeCreate(InIndex index) const {
+  AddOp *op = dynamic_cast<AddOp *>(this->op_p);
+
+  std::vector<TensorId> mustExist;
+
+  auto it = op->settings.inferTensorMappingToFrom.find(index);
+
+  if (it != op->settings.inferTensorMappingToFrom.end() &&
+      ((it->first == AddOp::getArg0InIndex() &&
+        it->second == AddOp::getArg1InIndex()) ||
+       (it->first == AddOp::getArg1InIndex() &&
+        it->second == AddOp::getArg0InIndex()))) {
+    mustExist.push_back(op->input->tensor(it->second)->id);
+  }
+
+  return mustExist;
+}
+
 AddLhsInplaceOpx::AddLhsInplaceOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : AddOpx(op, devicex) {
   verifyOp<AddLhsInplaceOp>(op);
 }
 
@@ -72,7 +159,7 @@ void AddLhsInplaceOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 AddRhsInplaceOpx::AddRhsInplaceOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : AddOpx(op, devicex) {
   verifyOp<AddRhsInplaceOp>(op);
 }
 

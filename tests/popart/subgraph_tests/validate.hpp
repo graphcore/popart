@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #ifndef TEST_SUBGRAPH_VALIDATE
 #define TEST_SUBGRAPH_VALIDATE
 

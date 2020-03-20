@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <memory>
 #include <popart/onnxutil.hpp>
 #include <popart/op/cast.hpp>

@@ -1,3 +1,4 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <popart/error.hpp>
 #include <popart/ndindices.hpp>
 #include <popart/tensorinfo.hpp>

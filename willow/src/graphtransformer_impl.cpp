@@ -1,3 +1,4 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popart/graphtransformer_impl.hpp>
 #include <popart/onnxutil.hpp>
 #include <popart/opidentifier.hpp>

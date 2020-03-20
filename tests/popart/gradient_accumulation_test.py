@@ -1,3 +1,4 @@
+# Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 import numpy as np
 import numpy.random as npr
 import popart
