@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 
 THIS_DIR=`dirname $0`
 

@@ -1,3 +1,4 @@
+# Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 # Utility functions used by the other scripts
 
 # Try and return the number of logical processor the machine has
