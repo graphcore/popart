@@ -103,7 +103,7 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
   auto getResults = [exportFinalDotFiles](bool continuous) {
     // input stream samples weights are generated randomly
     int seed = 1011;
-    std::default_random_engine eng(seed);
+    std::mt19937 eng(seed);
     std::uniform_real_distribution<float> fdis(-1, 1);
 
     int64_t batchSize      = 4;
@@ -323,12 +323,12 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
   auto delta_starts     = getDelta(continuous.start, exact.start);
   auto delta_ends       = getDelta(continuous.end, exact.end);
 
-  // Obtained on August 1 2019 on IPUModel:
+  // Obtained on 20 March 2020 on IPUModel:
   // --------------------------------------
-  // 159: delta exact 2.15162
-  // 159: delta continuous 2.15149
-  // 159: delta starts 0
-  // 159: delta ends 0.000195466
+  // delta exact 2.11625
+  // delta continuous 2.11608
+  // delta starts 0
+  // delta ends 0.000215948
 
   if (printStdOut) {
     std::cout << "delta exact " << delta_exact << std::endl;
