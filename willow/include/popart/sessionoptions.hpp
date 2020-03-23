@@ -41,7 +41,7 @@ enum class MergeVarUpdateType {
              // processed by different VarUpdateOps
   AutoTight, // Merge into groups, so that VarUpdateOps process Tensors of
              // exactly mergeVarUpdateMemThreshold in size
-  N          // The numbe of MergeVarUpdateTypes, must appear as the final enum
+  N          // The number of MergeVarUpdateTypes, must appear as the final enum
 };
 
 enum class VirtualGraphMode {
@@ -146,9 +146,9 @@ struct SessionOptions {
   /// cycles, especially for larger anchor tensors.
   bool rearrangeAnchorsOnHost = true;
 
-  /// By default, we will use prefecting for input data streams. Poplar will
+  /// By default, we will use prefetching for input data streams. Poplar will
   /// speculative read data for a stream before is is required to allow the
-  /// 'preparation' of the data to occur in parrallel with compute
+  /// 'preparation' of the data to occur in parallel with compute
   bool enablePrefetchDatastreams = true;
 
   /// By default, we use the stable-softmax poplar function. This input tensor
@@ -156,7 +156,7 @@ struct SessionOptions {
   /// before computing the exponentials, ensuring numerical stability. If you
   /// are sure the inputs to your softmax operations are small enough to not
   /// cause overflow when computing the exponential, you can enable the
-  /// non-stable version instead for speedup
+  /// non-stable version instead for speed-up
   bool enableNonStableSoftmax = false;
 
   /// Enable placement of operations on individual IPUs by creating a 'virtual
@@ -170,8 +170,11 @@ struct SessionOptions {
   bool enableGradientAccumulation = false;
 
   /// If enableReplicatedGraphs is true, replicatedGraphCount will set the
-  /// number of replicated graphs - must be a factor of the number of IPU's
-  /// (CHECK)
+  /// number of model replications. E.g. if your model uses 1 IPU, a
+  /// replicatedGraphCount of 2 will use 2 IPUs. If your model is
+  /// pipelined across 4 IPUs, a replicatedGraphCount of 4 will use 16 IPUs
+  /// total. Therefore the number of IPUs you request must be a multiple of
+  /// replicatedGraphCount.
   int64_t replicatedGraphCount = 1;
 
   /// Specify the number of micro-batches to accumulate before applying the
@@ -188,14 +191,13 @@ struct SessionOptions {
   bool enablePipelining = false;
 
   /// Use synthetic data i.e. disable data transfer to/from the host
-  /// Set to 'true' to use synthetic data, 'false' to use real data
-  /// To be removed: T13474
+  /// Set to 'true' to use synthetic data, 'false' to use real data.
+  /// This option is deprecated, please use syntheticDataMode.
   bool ignoreData = false;
 
   /// Use synthetic data i.e. disable data transfer to/from the host
   /// Set to 'Off' to use real data
-  /// Note: this will be overriden by the legacy option 'ignoreData' until
-  /// it is removed (T13474)
+  /// Note: this will be overriden by the legacy option 'ignoreData'.
   SyntheticDataMode syntheticDataMode = SyntheticDataMode::Off;
 
   /// Add instrumentation to your program to count the number of device cycles
@@ -253,7 +255,6 @@ struct SessionOptions {
   /// The stable version requires the first order moment to be
   /// estimated and applied to the sample set before the second
   /// order central moment is calculated.
-  /// See D20227.
   bool enableStableNorm = false;
 
   /// Perform AllReduce operation on the host. Only useful for training session
@@ -292,7 +293,7 @@ struct SessionOptions {
 
   /// PopART uses Poprithms for scheduling PopART Graphs. The Poprithms Graphs
   /// created for scheduling can be optionally serialized (written to file). The
-  /// string below specifie the directory to serialize Poprithms Graphs to. If
+  /// string below specified the directory to serialize Poprithms Graphs to. If
   /// it is empty, then the Graphs will not be serialized. The names of
   /// serialization files will be poprithms_anneal_graph_`i'.json for the lowest
   /// non-existing `i's. The directory must already exist, PopART will not
