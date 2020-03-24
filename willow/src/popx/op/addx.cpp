@@ -1,5 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <popart/error.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/add.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/addx.hpp>
@@ -65,6 +66,14 @@ void AddOpx::grow(poplar::program::Sequence &prog) const {
 
 InputCreatorType AddOpx::getInputCreatorType(InIndex index) const {
   AddOp *op = dynamic_cast<AddOp *>(this->op_p);
+
+  // TODO: T17972 Allowing add (in particular lhs, rhs inplace adds) leads to
+  // inefficient sub graph copying. Investigate why, then remove the below logic
+  // once fixed.
+  if (!(op_p->getIr().getSessionOptions().decomposeGradSum ||
+        op_p->getIr().getSessionOptions().batchSerializationFactor > 0)) {
+    return InputCreatorType::DEADEND;
+  }
 
   // Check shape doesn't change due to numpy-style broadcasting.
   if (op_p->inInfo(index) != op_p->outInfo(AddOp::getOutIndex())) {

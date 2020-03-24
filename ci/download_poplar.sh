@@ -1,4 +1,5 @@
 #!/bin/bash -e
+# Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 
 set -e
 

@@ -13,6 +13,7 @@
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/testdevice.hpp>
 
 #include <algorithm>
 #include <map>
@@ -151,18 +152,9 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
     auto loss       = std::unique_ptr<Loss>(
         new L1Loss(actOut, "l1LossVal", lambda, ReductionType::SUM));
 
-    // TODO(T16599): Update this test for different devices.
-    auto device =
-        (tt == TestType::SingleBatchSimulator
-             ? DeviceManager::createDeviceManager().createIpuModelDevice(
-                   deviceOpts)
-             : DeviceManager::createDeviceManager().acquireAvailableDevice(
-                   2, 1216));
-
-    if (device == nullptr) {
-      std::cout << "Skipping test, no IPUs available" << std::endl;
-      exit(0);
-    }
+    auto device = (tt == TestType::SingleBatchSimulator
+                       ? createTestDevice(TEST_TARGET, 3)
+                       : createTestDevice(TEST_TARGET, 2));
 
     SessionOptions userOptions;
     userOptions.virtualGraphMode = VirtualGraphMode::Auto;
@@ -193,7 +185,6 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
     std::map<TensorId, popart::NDArrayWrapper<BoolType>> ancWrappers;
     std::map<TensorId, popart::IArray &> anchors;
     for (TensorId maskId : maskIds) {
-
       maskAnchorReturns.emplace(maskId, std::vector<BoolType>(stepWeightElms));
 
       NDArrayWrapper<BoolType> ancWrapper(maskAnchorReturns[maskId].data(),

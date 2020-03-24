@@ -16,6 +16,7 @@ PopART User Guide
     builder
     executing
     examples
+    distributed_training
     supported_ops
     env_vars
     references

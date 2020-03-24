@@ -1,6 +1,14 @@
 #!/bin/bash
 set -e
 
+VENV=@PROJECT_BINARY_DIR@/venv
+
+virtualenv -p python3 ${VENV}
+source ${VENV}/bin/activate
+
+pip install numpy
+pip install sphinx
+
 source @POPLAR_INSTALL_DIR@/enable.sh
 
 export PYTHONPATH=@PROJECT_BINARY_DIR@/python:$PYTHONPATH
