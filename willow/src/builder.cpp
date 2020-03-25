@@ -3,6 +3,7 @@
 #include <popart/filereader.hpp>
 #include <popart/logging.hpp>
 #include <popart/onnxutil.hpp>
+#include <popart/op/receptive.hpp>
 #include <popart/opidentifier.hpp>
 #include <popart/tensor.hpp>
 
@@ -35,7 +36,8 @@ static void verifyWindowParameters(std::unique_ptr<BuilderImpl> &impl,
                                    TensorId input,
                                    const std::vector<int64_t> strides,
                                    const std::vector<int64_t> padding,
-                                   const std::vector<int64_t> dilation = {}) {
+                                   const std::vector<int64_t> kernel_shape,
+                                   std::vector<int64_t> dilation = {}) {
   auto num_spatial_dims = impl->getTensorShape(input).size() - 2;
   if (num_spatial_dims < 1) {
     throw error("Input tensor has no spatial dimensions");
@@ -58,21 +60,91 @@ static void verifyWindowParameters(std::unique_ptr<BuilderImpl> &impl,
         strides.size(),
         num_spatial_dims);
   }
+
+  // Validate that the input shape, kernel shape, strides, padding, and
+  // optional dilation combine to produce a valid output shape
+  if (impl->hasTensorShape(input) && kernel_shape.size()) {
+    // TODO T17932 : We do not have a mechanism for infering the output shape
+    // of custom ops, so this check can only be applied if the tensor shape
+    // is known
+    Shape inShape = impl->getTensorShape(input);
+    inShape.erase(inShape.begin(), inShape.begin() + 2);
+
+    // Default 'ones'
+    if (dilation.empty()) {
+      dilation.resize(num_spatial_dims, 1);
+    }
+
+    Shape spatialOutShape = HasReceptiveFieldOp::getSpatialOutShape(
+        inShape, kernel_shape, padding, strides, dilation);
+
+    if (std::any_of(spatialOutShape.begin(),
+                    spatialOutShape.end(),
+                    [](int64_t i) { return i < 0; })) {
+      throw error("Window parameter values combine to give invalid spatial "
+                  "output shape: {}",
+                  spatialOutShape);
+    }
+  }
 }
 
 // Functions that are expected by the generated code when the verifyInput
 // is set to true.
 
-static void
-verify_AiOnnxOpset6_Conv_1(std::unique_ptr<BuilderImpl> &impl,
+static void verifyConvBase(std::unique_ptr<BuilderImpl> &impl,
                            std::vector<TensorId> inputs,
                            std::map<std::string, boost::any> attributes) {
+  // TODO T17932 : We do not have a mechanism for infering the output shape
+  // of custom ops, so this check can only be applied if the tensor shape
+  // is known
+  Shape weightsKShape;
+  if (impl->hasTensorShape(inputs[1])) {
+    if (inputs.size() < 2) {
+      throw error("Conv requires at least two inputs: data, and weights. {} "
+                  "inputs provided.",
+                  inputs.size());
+    }
+    weightsKShape = impl->getTensorShape(inputs[1]);
+    weightsKShape.erase(weightsKShape.begin(), weightsKShape.begin() + 2);
+
+    // Verify that the optional kernel_shape attribute matches the inferred
+    // shape from the weight tensor's shape
+    if (attributes.count("kernel_shape")) {
+      auto userKShape =
+          boost::any_cast<const Shape &>(attributes["kernel_shape"]);
+
+      if (userKShape != weightsKShape) {
+        throw error(
+            "kernel_shape, {}, does not match inferred shape from weight "
+            "input '{}', {}",
+            userKShape,
+            inputs[1],
+            weightsKShape);
+      }
+    }
+  }
+
   verifyWindowParameters(
       impl,
       inputs[0],
       boost::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
       boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
-      boost::any_cast<const std::vector<int64_t> &>(attributes["dilations"]));
+      weightsKShape,
+      boost::any_cast<std::vector<int64_t> &>(attributes["dilations"]));
+}
+
+static void
+verify_AiOnnxOpset6_Conv_1(std::unique_ptr<BuilderImpl> &impl,
+                           std::vector<TensorId> inputs,
+                           std::map<std::string, boost::any> attributes) {
+  verifyConvBase(impl, inputs, attributes);
+}
+
+static void
+verify_AiOnnxOpset11_Conv_11(std::unique_ptr<BuilderImpl> &impl,
+                             std::vector<TensorId> inputs,
+                             std::map<std::string, boost::any> attributes) {
+  verifyConvBase(impl, inputs, attributes);
 }
 
 static void verify_AiOnnxOpset6_AveragePool_1(
@@ -83,7 +155,9 @@ static void verify_AiOnnxOpset6_AveragePool_1(
       impl,
       inputs[0],
       boost::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
-      boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]));
+      boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
+      boost::any_cast<const std::vector<int64_t> &>(
+          attributes["kernel_shape"]));
 }
 
 static void verify_AiOnnxOpset7_AveragePool_7(
@@ -94,7 +168,9 @@ static void verify_AiOnnxOpset7_AveragePool_7(
       impl,
       inputs[0],
       boost::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
-      boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]));
+      boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
+      boost::any_cast<const std::vector<int64_t> &>(
+          attributes["kernel_shape"]));
 }
 
 static void
@@ -105,7 +181,9 @@ verify_AiOnnxOpset6_MaxPool_1(std::unique_ptr<BuilderImpl> &impl,
       impl,
       inputs[0],
       boost::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
-      boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]));
+      boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
+      boost::any_cast<const std::vector<int64_t> &>(
+          attributes["kernel_shape"]));
 }
 
 static void
@@ -116,7 +194,9 @@ verify_AiOnnxOpset8_MaxPool_8(std::unique_ptr<BuilderImpl> &impl,
       impl,
       inputs[0],
       boost::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
-      boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]));
+      boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
+      boost::any_cast<const std::vector<int64_t> &>(
+          attributes["kernel_shape"]));
 }
 
 static void
@@ -127,7 +207,9 @@ verify_AiOnnxOpset10_MaxPool_10(std::unique_ptr<BuilderImpl> &impl,
       impl,
       inputs[0],
       boost::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
-      boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]));
+      boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
+      boost::any_cast<const std::vector<int64_t> &>(
+          attributes["kernel_shape"]));
 }
 
 static void

@@ -1498,3 +1498,38 @@ def test_is_initializer():
     i1 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
     assert builder.isInitializer(i0) == False
     assert builder.isInitializer(i1) == True
+
+
+def test_conv_kernel_shape_mismatch():
+    builder = popart.Builder()
+    i = builder.addInputTensor(popart.TensorInfo("FLOAT", [1, 64, 56, 56]))
+    w = builder.addInputTensor(popart.TensorInfo("FLOAT", [256, 64, 1, 1]))
+    # kernel shape, as inferred from weights shape = [1, 1]
+    with pytest.raises(popart.popart_exception) as e_info:
+        o = builder.aiOnnx.conv(
+            [i, w],
+            dilations=[1, 1],
+            kernel_shape=[64, 64],  # not [1, 1]
+            strides=[1, 1],
+            pads=[0, 0, 0, 0])
+    assert (
+        e_info.value.args[0] ==
+        "kernel_shape, [64 64], does not match inferred shape from weight input '"
+        + w + "', [1 1]")
+
+
+def test_conv_invalid_kernel_shape():
+    builder = popart.Builder()
+    i = builder.addInputTensor(popart.TensorInfo("FLOAT", [1, 64, 56, 56]))
+    w = builder.addInputTensor(popart.TensorInfo("FLOAT", [256, 64, 64, 64]))
+    with pytest.raises(popart.popart_exception) as e_info:
+        # Kernel [64, 64] not valid for spatial input [56, 56], given other
+        # conv window parameters
+        o = builder.aiOnnx.conv([i, w],
+                                dilations=[1, 1],
+                                strides=[1, 1],
+                                pads=[0, 0, 0, 0])
+    assert (
+        e_info.value.args[0] ==
+        "Window parameter values combine to give invalid spatial output shape: [-7 -7]"
+    )

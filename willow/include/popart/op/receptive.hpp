@@ -72,6 +72,13 @@ public:
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   virtual Shape getOutShape() const;
+  // Determine the spatial dimensions of the output - a subset of the
+  // dimensions of the complete output shape
+  static Shape getSpatialOutShape(Shape spatialD_,
+                                  Shape spatialK_,
+                                  std::vector<int64_t> pads_,
+                                  std::vector<int64_t> strides_,
+                                  std::vector<int64_t> dilations_);
 
 private:
   // set the public vector "spatialK"

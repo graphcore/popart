@@ -15,6 +15,9 @@ overrideOP = {
     "ai.onnx.Conv:1": {
         "verifyInput": True,
     },
+    "ai.onnx.Conv:11": {
+        "verifyInput": True,
+    },
     "ai.onnx.AveragePool:1": {
         "verifyInput": True,
     },

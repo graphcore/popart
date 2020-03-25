@@ -41,7 +41,7 @@ BOOST_AUTO_TEST_CASE(Inplace_addBias0) {
     add_input_tensor(b0, {2});
 
     auto c0 =
-        aiOnnx.conv({in0, w0, b0}, {1, 1}, 1, {1, 1}, {0, 0, 0, 0}, {2, 2});
+        aiOnnx.conv({in0, w0, b0}, {1, 1}, 1, {2, 2}, {0, 0, 0, 0}, {2, 2});
     auto out = aiOnnx.identity({c0});
 
     outputs.push_back(TestTensor::create<float>(out, {1, 2, 4, 4}));
