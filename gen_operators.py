@@ -435,6 +435,9 @@ def genBuilderHpp(filename, schema):
         addHeader(f)
 
         for k, v, in schema.domains.items():
+            if k != 'ai.onnx':
+                continue
+
             for opset_version, opset in sorted(v.opsets.items(),
                                                key=lambda x: int(x[0])):
 
@@ -465,7 +468,7 @@ def genBuilderHpp(filename, schema):
                 f.write("\n")
 
                 seen = []
-                for op in v.operations:
+                for op in sorted(v.operations, key=lambda x: x.CppName()):
                     found = [x for x in opset.operators if x.name == op.name]
 
                     if len(found) == 0 and \
@@ -475,8 +478,11 @@ def genBuilderHpp(filename, schema):
                         f.write("    using {}::{};\n".format(
                             baseclass, op.CppName()))
                         seen.append(op.name)
+                # Add a newline after the using statements.
+                if len(seen) > 0:
+                    f.write('\n')
 
-                for op in opset.operators:
+                for op in sorted(opset.operators, key=lambda x: x.name):
                     f.write("    /**\n")
                     f.write("     * Add the '{}' to the model\n".format(
                         op.name))
@@ -558,6 +564,9 @@ def genBuilderCpp(filename, schema):
         addHeader(f)
 
         for k, v, in schema.domains.items():
+            if k != 'ai.onnx':
+                continue
+
             for opset_version, opset in sorted(v.opsets.items(),
                                                key=lambda x: int(x[0])):
 
@@ -698,6 +707,8 @@ def genPythonBuilderBinds(filename, schema):
         addHeader(f)
 
         for k, v, in schema.domains.items():
+            if k != 'ai.onnx':
+                continue
 
             ops = []
 
@@ -874,6 +885,8 @@ def genOpIdentifiersHpp(filename, schema):
         f.write("namespace Operators {\n")
 
         for k, v, in schema.domains.items():
+            if k != 'ai.onnx':
+                continue
 
             ops = v.operations
             ''' 
@@ -912,6 +925,8 @@ def genOpIdentifiersHpp(filename, schema):
 
         f.write("namespace AiOnnx {\n")
         for k, v, in schema.domains.items():
+            if k != 'ai.onnx':
+                continue
 
             for opset_version, opset in sorted(v.opsets.items(),
                                                key=lambda x: int(x[0])):
@@ -921,7 +936,7 @@ def genOpIdentifiersHpp(filename, schema):
 
                 seen = []
 
-                for op in v.operations:
+                for op in sorted(v.operations, key=lambda x: x.name):
                     found = [
                         x for x in v.operations if x.name == op.name
                         and x.version <= int(opset_version)
