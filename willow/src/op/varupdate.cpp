@@ -13,7 +13,9 @@ namespace popart {
 VarUpdateOp::VarUpdateOp(const OperatorIdentifier &_opid,
                          const TensorId &varId_,
                          const Op::Settings &settings_)
-    : Op(_opid, settings_), varId(varId_) {}
+    : Op(_opid, settings_), varId(varId_) {
+  settings.schedulePriority = std::numeric_limits<double>::lowest();
+}
 
 VarUpdateWithUpdaterOp::VarUpdateWithUpdaterOp(const OperatorIdentifier &opid_,
                                                const TensorId &varId_,
