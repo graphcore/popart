@@ -9,9 +9,9 @@
 
 namespace popart {
 
-// Wrapper around the container of onnx::AtrributeProtos
+// Wrapper around the container of ONNX_NAMESPACE::AtrributeProtos
 // of a Node, provides faster and cleaner reads of values
-// from keys (strings) than onnx::AttributesProto
+// from keys (strings) than ONNX_NAMESPACE::AttributesProto
 class Attributes {
 public:
   // The types of attributes as defined in the onnx spec
@@ -19,7 +19,7 @@ public:
   using Int    = int64_t;
   using Float  = float;
   using String = std::string;
-  using Graph  = onnx::GraphProto;
+  using Graph  = ONNX_NAMESPACE::GraphProto;
 
   Attributes(const NodeAttributes &);
   Attributes() = default;

@@ -60,7 +60,8 @@ std::vector<const BuilderImpl *> BuilderImpl::getChildren() const {
   return children;
 }
 
-void BuilderImpl::finalizeOp(onnx::NodeProto *node, const std::string &name) {
+void BuilderImpl::finalizeOp(ONNX_NAMESPACE::NodeProto *node,
+                             const std::string &name) {
 
   std::string debug_name = name.empty() ? node->op_type() : name;
 
@@ -80,7 +81,7 @@ void BuilderImpl::finalizeOp(onnx::NodeProto *node, const std::string &name) {
   }
 
   // The node outputs are added to the model's value_info field here
-  onnx::shape_inference::InferShapes(model_);
+  ONNX_NAMESPACE::shape_inference::InferShapes(model_);
 
   // Sanity check: verify the output dimensions of each output are valid
   for (int i = 0; i < node->output_size(); ++i) {
@@ -219,7 +220,7 @@ TensorId BuilderImpl::addInputTensor(const TensorInfo &tensorInfo,
   auto id = getNextInputId(debugPrefix);
 
   // note that a TypeProto contains both shape and numerical type
-  onnx::TypeProto onnxTensorType = tensorInfo.getOnnxTypeProto();
+  ONNX_NAMESPACE::TypeProto onnxTensorType = tensorInfo.getOnnxTypeProto();
 
   // set name
   auto *input = addGraphInput(id);
@@ -273,7 +274,7 @@ void BuilderImpl::addInputTensorFromHigherScope(const TensorId &tensorId) {
   // TODO : get the type. T8276
 }
 
-onnx::ValueInfoProto *BuilderImpl::addGraphInput(const TensorId &id) {
+ONNX_NAMESPACE::ValueInfoProto *BuilderImpl::addGraphInput(const TensorId &id) {
   auto *graph = model_.mutable_graph();
   auto *input = graph->add_input();
   input->set_name(id);
@@ -284,7 +285,7 @@ onnx::ValueInfoProto *BuilderImpl::addGraphInput(const TensorId &id) {
 void BuilderImpl::populateTensorProtoFromConstVoidData(
     const ConstVoidData &initData,
     const std::string &id,
-    onnx::TensorProto *tp) {
+    ONNX_NAMESPACE::TensorProto *tp) {
   auto onnxTensorType = initData.info.getOnnxTypeProto();
 
   tp->set_data_type(onnxutil::getTPDataType(initData.info.dataType()));
@@ -478,10 +479,10 @@ void BuilderImpl::op(
 }
 
 bool BuilderImpl::findNodeProtoByOutputNamesImpl(
-    onnx::NodeProto *&out,
+    ONNX_NAMESPACE::NodeProto *&out,
     const std::set<TensorId> &nodeOutputNames) {
-  onnx::GraphProto *graph = model_.mutable_graph();
-  for (onnx::NodeProto &node : *graph->mutable_node()) {
+  ONNX_NAMESPACE::GraphProto *graph = model_.mutable_graph();
+  for (ONNX_NAMESPACE::NodeProto &node : *graph->mutable_node()) {
     // Don't check nodes which don't have the same number of outputs.
     if (node.output_size() != nodeOutputNames.size()) {
       continue;
@@ -505,10 +506,10 @@ bool BuilderImpl::findNodeProtoByOutputNamesImpl(
   return false;
 }
 
-onnx::NodeProto &BuilderImpl::findNodeProtoByOutputNames(
+ONNX_NAMESPACE::NodeProto &BuilderImpl::findNodeProtoByOutputNames(
     const std::set<TensorId> &nodeOutputNames) {
-  onnx::NodeProto *node = nullptr;
-  bool found            = findNodeProtoByOutputNamesImpl(node, nodeOutputNames);
+  ONNX_NAMESPACE::NodeProto *node = nullptr;
+  bool found = findNodeProtoByOutputNamesImpl(node, nodeOutputNames);
   if (!found) {
     std::ostringstream stream;
     std::copy(nodeOutputNames.begin(),
@@ -522,11 +523,11 @@ onnx::NodeProto &BuilderImpl::findNodeProtoByOutputNames(
   return *node;
 }
 
-bool BuilderImpl::nodeHasAttributeImpl(onnx::AttributeProto *&out,
-                                       onnx::NodeProto &node,
+bool BuilderImpl::nodeHasAttributeImpl(ONNX_NAMESPACE::AttributeProto *&out,
+                                       ONNX_NAMESPACE::NodeProto &node,
                                        const std::string &attributeName) {
   // Finds an attribute in a node.
-  for (onnx::AttributeProto &attribute : *node.mutable_attribute()) {
+  for (ONNX_NAMESPACE::AttributeProto &attribute : *node.mutable_attribute()) {
     if (attribute.name().compare(attributeName) == 0) {
       out = &attribute;
       return true;
@@ -537,23 +538,23 @@ bool BuilderImpl::nodeHasAttributeImpl(onnx::AttributeProto *&out,
 
 bool BuilderImpl::nodeHasAttribute(const std::string &attributeName,
                                    const std::set<TensorId> &nodeOutputNames) {
-  onnx::NodeProto &node      = findNodeProtoByOutputNames(nodeOutputNames);
-  onnx::AttributeProto *attr = nullptr; // unused
+  ONNX_NAMESPACE::NodeProto &node = findNodeProtoByOutputNames(nodeOutputNames);
+  ONNX_NAMESPACE::AttributeProto *attr = nullptr; // unused
   return nodeHasAttributeImpl(attr, node, attributeName);
 }
 
-onnx::AttributeProto &
+ONNX_NAMESPACE::AttributeProto &
 BuilderImpl::addNewAttributeToNode(const std::string &attributeName,
                                    const std::set<TensorId> &nodeOutputNames) {
-  onnx::NodeProto &node = findNodeProtoByOutputNames(nodeOutputNames);
+  ONNX_NAMESPACE::NodeProto &node = findNodeProtoByOutputNames(nodeOutputNames);
   return addNewAttributeToNode(attributeName, node);
 }
 
-onnx::AttributeProto &
+ONNX_NAMESPACE::AttributeProto &
 BuilderImpl::addNewAttributeToNode(const std::string &attributeName,
-                                   onnx::NodeProto &node) {
-  onnx::AttributeProto *attr = nullptr;
-  bool hasAttribute          = nodeHasAttributeImpl(attr, node, attributeName);
+                                   ONNX_NAMESPACE::NodeProto &node) {
+  ONNX_NAMESPACE::AttributeProto *attr = nullptr;
+  bool hasAttribute = nodeHasAttributeImpl(attr, node, attributeName);
   if (hasAttribute) {
     throw error("Node already has attribute " + attributeName + ".");
   }
@@ -565,27 +566,27 @@ BuilderImpl::addNewAttributeToNode(const std::string &attributeName,
 void BuilderImpl::addNodeAttribute(const std::string &attributeName,
                                    const int64_t &attributeValue,
                                    const std::set<TensorId> &nodeOutputNames) {
-  onnx::AttributeProto &attr =
+  ONNX_NAMESPACE::AttributeProto &attr =
       addNewAttributeToNode(attributeName, nodeOutputNames);
-  attr.set_type(onnx::AttributeProto::INT);
+  attr.set_type(ONNX_NAMESPACE::AttributeProto::INT);
   attr.set_i(attributeValue);
 }
 
 void BuilderImpl::addNodeAttribute(const std::string &attributeName,
                                    const int &attributeValue,
                                    const std::set<TensorId> &nodeOutputNames) {
-  onnx::AttributeProto &attr =
+  ONNX_NAMESPACE::AttributeProto &attr =
       addNewAttributeToNode(attributeName, nodeOutputNames);
-  attr.set_type(onnx::AttributeProto::INT);
+  attr.set_type(ONNX_NAMESPACE::AttributeProto::INT);
   attr.set_i(attributeValue);
 }
 
 void BuilderImpl::addNodeAttribute(const std::string &attributeName,
                                    const std::vector<int64_t> &attributeValue,
                                    const std::set<TensorId> &nodeOutputNames) {
-  onnx::AttributeProto &attr =
+  ONNX_NAMESPACE::AttributeProto &attr =
       addNewAttributeToNode(attributeName, nodeOutputNames);
-  attr.set_type(onnx::AttributeProto::INTS);
+  attr.set_type(ONNX_NAMESPACE::AttributeProto::INTS);
   for (int64_t i : attributeValue) {
     attr.add_ints(i);
   }
@@ -594,18 +595,18 @@ void BuilderImpl::addNodeAttribute(const std::string &attributeName,
 void BuilderImpl::addNodeAttribute(const std::string &attributeName,
                                    const float &attributeValue,
                                    const std::set<TensorId> &nodeOutputNames) {
-  onnx::AttributeProto &attr =
+  ONNX_NAMESPACE::AttributeProto &attr =
       addNewAttributeToNode(attributeName, nodeOutputNames);
-  attr.set_type(onnx::AttributeProto::FLOAT);
+  attr.set_type(ONNX_NAMESPACE::AttributeProto::FLOAT);
   attr.set_f(attributeValue);
 }
 
 void BuilderImpl::addNodeAttribute(const std::string &attributeName,
                                    const std::vector<float> &attributeValue,
                                    const std::set<TensorId> &nodeOutputNames) {
-  onnx::AttributeProto &attr =
+  ONNX_NAMESPACE::AttributeProto &attr =
       addNewAttributeToNode(attributeName, nodeOutputNames);
-  attr.set_type(onnx::AttributeProto::FLOATS);
+  attr.set_type(ONNX_NAMESPACE::AttributeProto::FLOATS);
   for (float f : attributeValue) {
     attr.add_floats(f);
   }
@@ -614,18 +615,18 @@ void BuilderImpl::addNodeAttribute(const std::string &attributeName,
 void BuilderImpl::addNodeAttribute(const std::string &attributeName,
                                    const std::string &attributeValue,
                                    const std::set<TensorId> &nodeOutputNames) {
-  onnx::AttributeProto &attr =
+  ONNX_NAMESPACE::AttributeProto &attr =
       addNewAttributeToNode(attributeName, nodeOutputNames);
-  attr.set_type(onnx::AttributeProto::STRING);
+  attr.set_type(ONNX_NAMESPACE::AttributeProto::STRING);
   attr.set_s(attributeValue);
 }
 
 void BuilderImpl::addNodeAttribute(const std::string &attributeName,
                                    const char *attributeValue,
                                    const std::set<TensorId> &nodeOutputNames) {
-  onnx::AttributeProto &attr =
+  ONNX_NAMESPACE::AttributeProto &attr =
       addNewAttributeToNode(attributeName, nodeOutputNames);
-  attr.set_type(onnx::AttributeProto::STRING);
+  attr.set_type(ONNX_NAMESPACE::AttributeProto::STRING);
   attr.set_s(attributeValue);
 }
 
@@ -633,9 +634,9 @@ void BuilderImpl::addNodeAttribute(
     const std::string &attributeName,
     const std::vector<std::string> &attributeValue,
     const std::set<TensorId> &nodeOutputNames) {
-  onnx::AttributeProto &attr =
+  ONNX_NAMESPACE::AttributeProto &attr =
       addNewAttributeToNode(attributeName, nodeOutputNames);
-  attr.set_type(onnx::AttributeProto::STRINGS);
+  attr.set_type(ONNX_NAMESPACE::AttributeProto::STRINGS);
   for (std::string s : attributeValue) {
     attr.add_strings(s);
   }
@@ -644,75 +645,76 @@ void BuilderImpl::addNodeAttribute(
 void BuilderImpl::addNodeAttribute(const std::string &attributeName,
                                    const bool attributeValue,
                                    const std::set<TensorId> &nodeOutputNames) {
-  onnx::AttributeProto &attr =
+  ONNX_NAMESPACE::AttributeProto &attr =
       addNewAttributeToNode(attributeName, nodeOutputNames);
-  attr.set_type(onnx::AttributeProto::INT);
+  attr.set_type(ONNX_NAMESPACE::AttributeProto::INT);
   attr.set_i(static_cast<int>(attributeValue));
 }
 
 // TODO change any to variant
 void BuilderImpl::addNodeAttribute(const std::string &attributeName,
                                    const boost::any &attributeValue,
-                                   onnx::NodeProto &node) {
+                                   ONNX_NAMESPACE::NodeProto &node) {
 
-  onnx::AttributeProto &attr = addNewAttributeToNode(attributeName, node);
+  ONNX_NAMESPACE::AttributeProto &attr =
+      addNewAttributeToNode(attributeName, node);
 
   const std::type_info &tinfo = attributeValue.type();
 
   if (tinfo == typeid(int32_t)) {
-    attr.set_type(onnx::AttributeProto::INT);
+    attr.set_type(ONNX_NAMESPACE::AttributeProto::INT);
     attr.set_i(boost::any_cast<int32_t>(attributeValue));
   } else if (tinfo == typeid(uint32_t)) {
-    attr.set_type(onnx::AttributeProto::INT);
+    attr.set_type(ONNX_NAMESPACE::AttributeProto::INT);
     attr.set_i(boost::any_cast<uint32_t>(attributeValue));
   } else if (tinfo == typeid(int64_t)) {
-    attr.set_type(onnx::AttributeProto::INT);
+    attr.set_type(ONNX_NAMESPACE::AttributeProto::INT);
     attr.set_i(static_cast<int>(boost::any_cast<int64_t>(attributeValue)));
   } else if (tinfo == typeid(uint64_t)) {
-    attr.set_type(onnx::AttributeProto::INT);
+    attr.set_type(ONNX_NAMESPACE::AttributeProto::INT);
     attr.set_i(static_cast<int>(boost::any_cast<uint64_t>(attributeValue)));
   } else if (tinfo == typeid(std::vector<int64_t>)) {
-    attr.set_type(onnx::AttributeProto::INTS);
+    attr.set_type(ONNX_NAMESPACE::AttributeProto::INTS);
     const std::vector<int64_t> &values =
         boost::any_cast<const std::vector<int64_t> &>(attributeValue);
     for (auto i : values) {
       attr.add_ints(i);
     }
   } else if (tinfo == typeid(float)) {
-    attr.set_type(onnx::AttributeProto::FLOAT);
+    attr.set_type(ONNX_NAMESPACE::AttributeProto::FLOAT);
     attr.set_f(boost::any_cast<float>(attributeValue));
   } else if (tinfo == typeid(std::vector<float>)) {
-    attr.set_type(onnx::AttributeProto::FLOAT);
+    attr.set_type(ONNX_NAMESPACE::AttributeProto::FLOAT);
     const std::vector<float> &values =
         boost::any_cast<const std::vector<float> &>(attributeValue);
     for (auto f : values) {
       attr.add_floats(f);
     }
   } else if (tinfo == typeid(std::string)) {
-    attr.set_type(onnx::AttributeProto::STRING);
+    attr.set_type(ONNX_NAMESPACE::AttributeProto::STRING);
     attr.set_s(boost::any_cast<std::string>(attributeValue));
   } else if (tinfo == typeid(char *)) {
-    attr.set_type(onnx::AttributeProto::STRING);
+    attr.set_type(ONNX_NAMESPACE::AttributeProto::STRING);
     attr.set_s(boost::any_cast<char *>(attributeValue));
   } else if (tinfo == typeid(std::vector<std::string>)) {
-    attr.set_type(onnx::AttributeProto::STRINGS);
+    attr.set_type(ONNX_NAMESPACE::AttributeProto::STRINGS);
     const std::vector<std::string> &values =
         boost::any_cast<const std::vector<std::string> &>(attributeValue);
     for (auto &s : values) {
       attr.add_strings(s);
     }
   } else if (tinfo == typeid(bool)) {
-    attr.set_type(onnx::AttributeProto::INT);
+    attr.set_type(ONNX_NAMESPACE::AttributeProto::INT);
     attr.set_i(static_cast<int>(boost::any_cast<bool>(attributeValue)));
   } else if (tinfo == typeid(ConstVoidData)) {
-    attr.set_type(onnx::AttributeProto::TENSOR);
+    attr.set_type(ONNX_NAMESPACE::AttributeProto::TENSOR);
     auto *t = attr.mutable_t();
     populateTensorProtoFromConstVoidData(
         boost::any_cast<ConstVoidData>(attributeValue), attributeName, t);
-  } else if (tinfo == typeid(onnx::GraphProto)) {
-    attr.set_type(onnx::AttributeProto::GRAPH);
-    const onnx::GraphProto &graph =
-        boost::any_cast<const onnx::GraphProto &>(attributeValue);
+  } else if (tinfo == typeid(ONNX_NAMESPACE::GraphProto)) {
+    attr.set_type(ONNX_NAMESPACE::AttributeProto::GRAPH);
+    const ONNX_NAMESPACE::GraphProto &graph =
+        boost::any_cast<const ONNX_NAMESPACE::GraphProto &>(attributeValue);
     auto *g = attr.mutable_g();
     *g      = graph;
   } else {
@@ -723,20 +725,20 @@ void BuilderImpl::addNodeAttribute(const std::string &attributeName,
 void BuilderImpl::addNodeAttribute(const std::string &attributeName,
                                    const ConstVoidData &attributeValue,
                                    const std::set<TensorId> &nodeOutputNames) {
-  onnx::AttributeProto &attr =
+  ONNX_NAMESPACE::AttributeProto &attr =
       addNewAttributeToNode(attributeName, nodeOutputNames);
-  attr.set_type(onnx::AttributeProto::TENSOR);
+  attr.set_type(ONNX_NAMESPACE::AttributeProto::TENSOR);
 
   auto *t = attr.mutable_t();
   populateTensorProtoFromConstVoidData(attributeValue, attributeName, t);
 }
 
-onnx::AttributeProto &
+ONNX_NAMESPACE::AttributeProto &
 BuilderImpl::getNodeAttribute(const std::string &attributeName,
                               const std::set<TensorId> &nodeOutputNames) {
-  onnx::NodeProto &node      = findNodeProtoByOutputNames(nodeOutputNames);
-  onnx::AttributeProto *attr = nullptr;
-  bool hasAttribute          = nodeHasAttributeImpl(attr, node, attributeName);
+  ONNX_NAMESPACE::NodeProto &node = findNodeProtoByOutputNames(nodeOutputNames);
+  ONNX_NAMESPACE::AttributeProto *attr = nullptr;
+  bool hasAttribute = nodeHasAttributeImpl(attr, node, attributeName);
   if (!hasAttribute) {
     throw error("Node does not have an attribute " + attributeName + ".");
   }
@@ -746,8 +748,9 @@ BuilderImpl::getNodeAttribute(const std::string &attributeName,
 int64_t
 BuilderImpl::getInt64NodeAttribute(const std::string &attributeName,
                                    const std::set<TensorId> &nodeOutputNames) {
-  onnx::AttributeProto &attr = getNodeAttribute(attributeName, nodeOutputNames);
-  if (attr.type() != onnx::AttributeProto::INT) {
+  ONNX_NAMESPACE::AttributeProto &attr =
+      getNodeAttribute(attributeName, nodeOutputNames);
+  if (attr.type() != ONNX_NAMESPACE::AttributeProto::INT) {
     throw error("Attribute " + attributeName + " is not an integer.");
   }
   return attr.i();
@@ -757,8 +760,9 @@ std::vector<int64_t> BuilderImpl::getInt64VectorNodeAttribute(
     const std::string &attributeName,
     const std::set<TensorId> &nodeOutputNames) {
   std::vector<int64_t> out;
-  onnx::AttributeProto &attr = getNodeAttribute(attributeName, nodeOutputNames);
-  if (attr.type() != onnx::AttributeProto::INTS) {
+  ONNX_NAMESPACE::AttributeProto &attr =
+      getNodeAttribute(attributeName, nodeOutputNames);
+  if (attr.type() != ONNX_NAMESPACE::AttributeProto::INTS) {
     throw error("Attribute " + attributeName + " is not an integer vector.");
   }
   for (int64_t i : attr.ints()) {
@@ -770,8 +774,9 @@ std::vector<int64_t> BuilderImpl::getInt64VectorNodeAttribute(
 float BuilderImpl::getFloatNodeAttribute(
     const std::string &attributeName,
     const std::set<TensorId> &nodeOutputNames) {
-  onnx::AttributeProto &attr = getNodeAttribute(attributeName, nodeOutputNames);
-  if (attr.type() != onnx::AttributeProto::FLOAT) {
+  ONNX_NAMESPACE::AttributeProto &attr =
+      getNodeAttribute(attributeName, nodeOutputNames);
+  if (attr.type() != ONNX_NAMESPACE::AttributeProto::FLOAT) {
     throw error("Attribute " + attributeName + " is not a float.");
   }
   return attr.f();
@@ -781,8 +786,9 @@ std::vector<float> BuilderImpl::getFloatVectorNodeAttribute(
     const std::string &attributeName,
     const std::set<TensorId> &nodeOutputNames) {
   std::vector<float> out;
-  onnx::AttributeProto &attr = getNodeAttribute(attributeName, nodeOutputNames);
-  if (attr.type() != onnx::AttributeProto::FLOATS) {
+  ONNX_NAMESPACE::AttributeProto &attr =
+      getNodeAttribute(attributeName, nodeOutputNames);
+  if (attr.type() != ONNX_NAMESPACE::AttributeProto::FLOATS) {
     throw error("Attribute " + attributeName + " is not a float vector.");
   }
   for (float f : attr.floats()) {
@@ -794,8 +800,9 @@ std::vector<float> BuilderImpl::getFloatVectorNodeAttribute(
 std::string
 BuilderImpl::getStringNodeAttribute(const std::string &attributeName,
                                     const std::set<TensorId> &nodeOutputNames) {
-  onnx::AttributeProto &attr = getNodeAttribute(attributeName, nodeOutputNames);
-  if (attr.type() != onnx::AttributeProto::STRING) {
+  ONNX_NAMESPACE::AttributeProto &attr =
+      getNodeAttribute(attributeName, nodeOutputNames);
+  if (attr.type() != ONNX_NAMESPACE::AttributeProto::STRING) {
     throw error("Attribute " + attributeName + " is not a string.");
   }
   return attr.s();
@@ -805,8 +812,9 @@ std::vector<std::string> BuilderImpl::getStringVectorNodeAttribute(
     const std::string &attributeName,
     const std::set<TensorId> &nodeOutputNames) {
   std::vector<std::string> out;
-  onnx::AttributeProto &attr = getNodeAttribute(attributeName, nodeOutputNames);
-  if (attr.type() != onnx::AttributeProto::STRINGS) {
+  ONNX_NAMESPACE::AttributeProto &attr =
+      getNodeAttribute(attributeName, nodeOutputNames);
+  if (attr.type() != ONNX_NAMESPACE::AttributeProto::STRINGS) {
     throw error("Attribute " + attributeName + " is not a string vector.");
   }
   for (std::string s : attr.strings()) {
@@ -819,8 +827,9 @@ bool BuilderImpl::getBoolNodeAttribute(
     const std::string &attributeName,
     const std::set<TensorId> &nodeOutputNames) {
 
-  onnx::AttributeProto &attr = getNodeAttribute(attributeName, nodeOutputNames);
-  if (attr.type() != onnx::AttributeProto::INT) {
+  ONNX_NAMESPACE::AttributeProto &attr =
+      getNodeAttribute(attributeName, nodeOutputNames);
+  if (attr.type() != ONNX_NAMESPACE::AttributeProto::INT) {
     throw error("Attribute " + attributeName + " is not a int.");
   }
 
@@ -830,7 +839,7 @@ bool BuilderImpl::getBoolNodeAttribute(
 void BuilderImpl::removeNodeAttribute(
     const std::string &attributeName,
     const std::set<TensorId> &nodeOutputNames) {
-  onnx::NodeProto &node = findNodeProtoByOutputNames(nodeOutputNames);
+  ONNX_NAMESPACE::NodeProto &node = findNodeProtoByOutputNames(nodeOutputNames);
   // To delete an attribute we must find the iterator for the attribute that we
   // want to delete.
   auto *attrs      = node.mutable_attribute();
@@ -852,7 +861,7 @@ void BuilderImpl::removeNodeAttribute(
 
 std::vector<std::string> BuilderImpl::getAllNodeAttributeNames(
     const std::set<TensorId> &nodeOutputNames) {
-  onnx::NodeProto &node = findNodeProtoByOutputNames(nodeOutputNames);
+  ONNX_NAMESPACE::NodeProto &node = findNodeProtoByOutputNames(nodeOutputNames);
   std::vector<std::string> out;
   for (auto attr : node.attribute()) {
     out.push_back(attr.name());
@@ -865,7 +874,7 @@ void BuilderImpl::loadModelProto(const std::string &modelProtoOrFilename) {
   model_ = onnxutil::getModelProto(modelProtoOrFilename);
 
   // Check imported model is valid.
-  onnx::checker::check_model(model_);
+  ONNX_NAMESPACE::checker::check_model(model_);
 
   // Check the IR version.
   if (model_.ir_version() < minIrVersion &&
@@ -902,7 +911,7 @@ void BuilderImpl::loadModelProto(const std::string &modelProtoOrFilename) {
 
 void BuilderImpl::saveModelProto(const std::string &fn) {
   // Check the model is valid.
-  onnx::checker::check_model(model_);
+  ONNX_NAMESPACE::checker::check_model(model_);
 
   io::writeModel(model_, fn);
 }
@@ -1021,17 +1030,18 @@ int BuilderImpl::getValueTensorIndex(TensorId id) const {
   }
 }
 
-const onnx::ValueInfoProto &BuilderImpl::getValueInfoProto(TensorId id) const {
+const ONNX_NAMESPACE::ValueInfoProto &
+BuilderImpl::getValueInfoProto(TensorId id) const {
   if (isInputTensor(id)) {
-    const onnx::ValueInfoProto &t =
+    const ONNX_NAMESPACE::ValueInfoProto &t =
         model_.graph().input(getInputTensorIndex(id));
     return t;
   } else if (isOutputTensor(id)) {
-    const onnx::ValueInfoProto &t =
+    const ONNX_NAMESPACE::ValueInfoProto &t =
         model_.graph().output(getOutputTensorIndex(id));
     return t;
   } else if (isValueTensor(id)) {
-    const onnx::ValueInfoProto &t =
+    const ONNX_NAMESPACE::ValueInfoProto &t =
         model_.graph().value_info(getValueTensorIndex(id));
     return t;
   } else {

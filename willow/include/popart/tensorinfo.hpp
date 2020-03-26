@@ -13,8 +13,8 @@ namespace popart {
 
 // There is a 1-1 correspondence
 // between popart::DataTypes
-// and onnx::TensorProto_DataTypes, aka
-// decltype(onnx::TensorProto().data_type()).
+// and ONNX_NAMESPACE::TensorProto_DataTypes, aka
+// decltype(ONNX_NAMESPACE::TensorProto().data_type()).
 
 enum class DataType {
   // fixed point types
@@ -156,10 +156,10 @@ public:
   TensorInfo(DataType, const Shape &);
   TensorInfo(std::string data_type, std::string shape);
   TensorInfo(std::string data_type, const Shape &);
-  explicit TensorInfo(const onnx::TensorProto &);
-  explicit TensorInfo(const onnx::TypeProto &);
-  void set(const onnx::TensorProto &);
-  void set(const onnx::TypeProto &);
+  explicit TensorInfo(const ONNX_NAMESPACE::TensorProto &);
+  explicit TensorInfo(const ONNX_NAMESPACE::TypeProto &);
+  void set(const ONNX_NAMESPACE::TensorProto &);
+  void set(const ONNX_NAMESPACE::TypeProto &);
   TensorInfo() = default;
   void set(DataType, const Shape &);
   const Shape &shape() const;
@@ -179,7 +179,7 @@ public:
   bool operator==(const TensorInfo &) const;
   bool operator!=(const TensorInfo &) const;
   Shape shapeFromString(const std::string &s) const;
-  onnx::TypeProto getOnnxTypeProto() const;
+  ONNX_NAMESPACE::TypeProto getOnnxTypeProto() const;
   const DataTypeInfo *getDataTypeInfo() const;
 
 private:

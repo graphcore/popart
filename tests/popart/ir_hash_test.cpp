@@ -28,7 +28,7 @@ using namespace popart;
  This test verifies that this is the case
 */
 
-onnx::ModelProto getProto() {
+ONNX_NAMESPACE::ModelProto getProto() {
   // Build a basic onnx model
   auto builder = Builder::create();
   auto aiOnnx  = builder->aiOnnxOpset9();

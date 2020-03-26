@@ -20,18 +20,19 @@ std::string getCanonicalFilename(const std::string &dirName0);
 std::string appendDirFn(const std::string &dir, const std::string &fn);
 
 /// load a ModelProto from a file
-onnx::ModelProto getModelFromFile(const std::string &filename);
+ONNX_NAMESPACE::ModelProto getModelFromFile(const std::string &filename);
 
 /// load a ModelProto from a string
-onnx::ModelProto getModelFromString(const std::string &modelProto);
+ONNX_NAMESPACE::ModelProto getModelFromString(const std::string &modelProto);
 
 // serialize a ModelProto to a binary protobuf file
-void writeModel(const onnx::ModelProto &model, const std::string &filename);
+void writeModel(const ONNX_NAMESPACE::ModelProto &model,
+                const std::string &filename);
 
 // getNode function from previous versions has been removed
 
 // load TensorProto
-onnx::TensorProto getTensor(const std::string &filename);
+ONNX_NAMESPACE::TensorProto getTensor(const std::string &filename);
 
 // fns are of the form somethingorother_dd.suffix
 // for each fn in fns:
@@ -50,10 +51,12 @@ std::vector<std::string> getMatchFns(const std::string &dir,
 // load all tensors in directory dir with "input" in their name.
 // The Graph g is needed, it us used to name the tensors correctly.
 // it matches the input_dd to g.input(dd).
-OnnxTensors getInputTensors(const onnx::GraphProto &g, const std::string &dir);
+OnnxTensors getInputTensors(const ONNX_NAMESPACE::GraphProto &g,
+                            const std::string &dir);
 
 // load all tensors in directory dir with "output" in their name.
-OnnxTensors getOutputTensors(const onnx::GraphProto &g, const std::string &dir);
+OnnxTensors getOutputTensors(const ONNX_NAMESPACE::GraphProto &g,
+                             const std::string &dir);
 
 // Check if a filename is a regular file
 bool isRegularFile(const std::string &filename);

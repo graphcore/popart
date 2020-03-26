@@ -31,7 +31,7 @@ BOOST_AUTO_TEST_CASE(Transformation_RemoveUnused0) {
     auto out = aiOnnx.relu({h0});
     builder->addOutputTensor(h0);
     std::string proto = builder->getModelProto();
-    onnx::ModelProto postProto;
+    ONNX_NAMESPACE::ModelProto postProto;
     if (removeOn) {
       GraphTransformer gt(proto);
       gt.removeUnusedInputs();

@@ -169,7 +169,7 @@ Attributes::Attributes(const NodeAttributes &attributes) {
 }
 
 void Attributes::append(std::stringstream &ss, std::string prefix) const {
-  using AttPro = onnx::AttributeProto;
+  using AttPro = ONNX_NAMESPACE::AttributeProto;
 
   std::size_t max_attr_length = 0;
   for (auto &name : names) {
@@ -343,7 +343,8 @@ void Attributes::setAttribute(const std::string &key, Attributes::Int &value) {
     set(value, key);
   } else {
     names.push_back(key);
-    onnx::AttributeProto *attribute = new onnx::AttributeProto();
+    ONNX_NAMESPACE::AttributeProto *attribute =
+        new ONNX_NAMESPACE::AttributeProto();
     attribute->set_name(key);
     attribute->set_i(value);
     att_map[key] = attribute;
@@ -356,7 +357,8 @@ void Attributes::setAttribute(const std::string &key, Attributes::Ints &value) {
     set(value, key);
   } else {
     names.push_back(key);
-    onnx::AttributeProto *attribute = new onnx::AttributeProto();
+    ONNX_NAMESPACE::AttributeProto *attribute =
+        new ONNX_NAMESPACE::AttributeProto();
     attribute->set_name(key);
     for (int i = 0; i < value.size(); ++i) {
       attribute->add_ints(value[i]);
@@ -371,7 +373,8 @@ void Attributes::setAttribute(const std::string &key, std::string &value) {
     set(value, key);
   } else {
     names.push_back(key);
-    onnx::AttributeProto *attribute = new onnx::AttributeProto();
+    ONNX_NAMESPACE::AttributeProto *attribute =
+        new ONNX_NAMESPACE::AttributeProto();
     attribute->set_name(key);
     attribute->set_s(value.c_str());
     att_map[key] = attribute;

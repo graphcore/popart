@@ -25,9 +25,9 @@ public:
   void removeUnusedInputs();
 
 private:
-  onnx::ModelProto model;
+  ONNX_NAMESPACE::ModelProto model;
 
-  static void convertFloatTensorToHalf(onnx::TensorProto &tp);
+  static void convertFloatTensorToHalf(ONNX_NAMESPACE::TensorProto &tp);
 };
 
 } // namespace popart

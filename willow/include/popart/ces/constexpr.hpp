@@ -38,7 +38,7 @@ private:
 };
 
 // for every Tensor which is the output of a
-// Node in an onnx::Graph, can its value be
+// Node in an ONNX_NAMESPACE::Graph, can its value be
 // computed just once, on host? If so, we say that
 // it is a ConstExprTensor and that its producing
 // Node is a ConstExprNode.

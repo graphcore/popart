@@ -62,7 +62,8 @@ void confirmRegularFile(const std::string &filename) {
   }
 }
 
-OnnxTensors getInputTensors(const onnx::GraphProto &g, const std::string &dir) {
+OnnxTensors getInputTensors(const ONNX_NAMESPACE::GraphProto &g,
+                            const std::string &dir) {
   auto fns = getMatchFns(dir, "input");
   std::vector<std::string> names;
   for (auto &x : g.input()) {
@@ -71,7 +72,7 @@ OnnxTensors getInputTensors(const onnx::GraphProto &g, const std::string &dir) {
   return getAndMatchTensors(fns, names);
 }
 
-OnnxTensors getOutputTensors(const onnx::GraphProto &g,
+OnnxTensors getOutputTensors(const ONNX_NAMESPACE::GraphProto &g,
                              const std::string &dir) {
   auto fns = getMatchFns(dir, "output");
   std::vector<std::string> names;
@@ -91,11 +92,11 @@ static bool getProtobufFromStream(std::istream &istream, T &proto) {
 }
 
 static bool getModelFromStream(std::istream &istream,
-                               onnx::ModelProto &modelProto) {
+                               ONNX_NAMESPACE::ModelProto &modelProto) {
   return getProtobufFromStream(istream, modelProto);
 }
 
-static void logModelInfo(onnx::ModelProto &modelProto) {
+static void logModelInfo(ONNX_NAMESPACE::ModelProto &modelProto) {
   logging::info("Onnx Model Info ir_version:{}, producer:{}.{}, domain:\"{}\", "
                 "model_version:{} num_opsets:{}",
                 modelProto.ir_version(),
@@ -124,7 +125,7 @@ static void logModelInfo(onnx::ModelProto &modelProto) {
   }
 }
 
-onnx::ModelProto getModelFromFile(const std::string &filename) {
+ONNX_NAMESPACE::ModelProto getModelFromFile(const std::string &filename) {
   // Verify that the version of the library that we linked against is
   // compatible with the version of the headers we compiled against.
   // As suggested at developers.google.com/protocol-buffers/docs/cpptutorial
@@ -139,7 +140,7 @@ onnx::ModelProto getModelFromFile(const std::string &filename) {
     throw error(ss.str());
   }
 
-  onnx::ModelProto modelProto;
+  ONNX_NAMESPACE::ModelProto modelProto;
 
   if (!getModelFromStream(input, modelProto)) {
     std::stringstream ss;
@@ -152,7 +153,7 @@ onnx::ModelProto getModelFromFile(const std::string &filename) {
   return modelProto;
 }
 
-onnx::ModelProto getModelFromString(const std::string &stringProto) {
+ONNX_NAMESPACE::ModelProto getModelFromString(const std::string &stringProto) {
   // Verify that the version of the library that we linked against is
   // compatible with the version of the headers we compiled against.
   // As suggested at developers.google.com/protocol-buffers/docs/cpptutorial
@@ -160,7 +161,7 @@ onnx::ModelProto getModelFromString(const std::string &stringProto) {
 
   std::stringstream input(stringProto);
 
-  onnx::ModelProto modelProto;
+  ONNX_NAMESPACE::ModelProto modelProto;
 
   if (!getModelFromStream(input, modelProto)) {
     throw error("Failed to parse ModelProto from string");
@@ -171,7 +172,8 @@ onnx::ModelProto getModelFromString(const std::string &stringProto) {
   return modelProto;
 }
 
-void writeModel(const onnx::ModelProto &model, const std::string &filename) {
+void writeModel(const ONNX_NAMESPACE::ModelProto &model,
+                const std::string &filename) {
 
   std::ofstream ofs;
   ofs.open(filename, std::ofstream::out | std::ofstream::binary);
@@ -186,7 +188,7 @@ void writeModel(const onnx::ModelProto &model, const std::string &filename) {
   }
 }
 
-onnx::TensorProto getTensor(const std::string &filename) {
+ONNX_NAMESPACE::TensorProto getTensor(const std::string &filename) {
 
   confirmRegularFile(filename);
   std::fstream fs(filename, std::ios::in | std::ios::binary);
@@ -197,7 +199,7 @@ onnx::TensorProto getTensor(const std::string &filename) {
     throw error(ss.str());
   }
 
-  onnx::TensorProto tensor;
+  ONNX_NAMESPACE::TensorProto tensor;
   if (!getProtobufFromStream(fs, tensor)) {
     std::stringstream ss;
     ss << "Failed to parse TensorProto from " << filename;

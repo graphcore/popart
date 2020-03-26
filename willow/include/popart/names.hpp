@@ -100,12 +100,13 @@ using TensorInterval     = std::pair<size_t, size_t>;
 using TensorIntervalList = std::vector<TensorInterval>;
 using TensorTileMap = std::map<std::string, std::vector<TensorIntervalList>>;
 
-// equivalent to decltype(&onnx::NodeProto().attribute(0))
-using onnxAttPtr     = const onnx::AttributeProto *;
-using NodeAttributes = google::protobuf::RepeatedPtrField<onnx::AttributeProto>;
-using OnnxTensors    = std::map<TensorId, onnx::TensorProto>;
-using Node           = onnx::NodeProto;
-using OnnxTensorPtrs = std::map<TensorId, const onnx::TensorProto *>;
+// equivalent to decltype(&ONNX_NAMESPACE::NodeProto().attribute(0))
+using onnxAttPtr = const ONNX_NAMESPACE::AttributeProto *;
+using NodeAttributes =
+    google::protobuf::RepeatedPtrField<ONNX_NAMESPACE::AttributeProto>;
+using OnnxTensors    = std::map<TensorId, ONNX_NAMESPACE::TensorProto>;
+using Node           = ONNX_NAMESPACE::NodeProto;
+using OnnxTensorPtrs = std::map<TensorId, const ONNX_NAMESPACE::TensorProto *>;
 using OpsBeforeKey   = std::map<Op *, std::vector<Op *>, POpCmp>;
 
 // Custom node attribute names

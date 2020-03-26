@@ -190,7 +190,7 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip1) {
     auto proto      = builder->getModelProto();
     auto modelProto = io::getModelFromString(proto);
 
-    // onnx::checker::check_model(modelProto);
+    // ONNX_NAMESPACE::checker::check_model(modelProto);
 
     // Create the IR, adding outId as an anchor
     auto art      = AnchorReturnType("ALL");

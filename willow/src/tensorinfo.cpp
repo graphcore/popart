@@ -28,14 +28,14 @@ TensorInfo::TensorInfo(DataType t, const Shape &s)
 TensorInfo::TensorInfo(std::string s_type, const Shape &s)
     : TensorInfo(dataTypeFromString(s_type), s) {}
 
-TensorInfo::TensorInfo(const onnx::TensorProto &t) { set(t); }
+TensorInfo::TensorInfo(const ONNX_NAMESPACE::TensorProto &t) { set(t); }
 
-TensorInfo::TensorInfo(const onnx::TypeProto &t) { set(t); }
+TensorInfo::TensorInfo(const ONNX_NAMESPACE::TypeProto &t) { set(t); }
 
 TensorInfo::TensorInfo(std::string s_type, std::string s_shape)
     : TensorInfo(dataTypeFromString(s_type), shapeFromString(s_shape)) {}
 
-void TensorInfo::set(const onnx::TensorProto &t) {
+void TensorInfo::set(const ONNX_NAMESPACE::TensorProto &t) {
   dataTypeInfo = &getDataTypeInfoMap().at(onnxutil::getDataType(t.data_type()));
   shape_v.clear();
   for (auto &v : t.dims()) {
@@ -44,7 +44,7 @@ void TensorInfo::set(const onnx::TensorProto &t) {
   shape_v.shrink_to_fit();
 }
 
-void TensorInfo::set(const onnx::TypeProto &t) {
+void TensorInfo::set(const ONNX_NAMESPACE::TypeProto &t) {
   auto type = t.tensor_type();
   dataTypeInfo =
       &getDataTypeInfoMap().at(onnxutil::getDataType(type.elem_type()));
@@ -410,13 +410,13 @@ Shape TensorInfo::shapeFromString(const std::string &s) const {
   return shape;
 }
 
-onnx::TypeProto TensorInfo::getOnnxTypeProto() const {
-  onnx::TypeProto typeProto;
+ONNX_NAMESPACE::TypeProto TensorInfo::getOnnxTypeProto() const {
+  ONNX_NAMESPACE::TypeProto typeProto;
 
-  onnx::TypeProto_Tensor *tensor = typeProto.mutable_tensor_type();
+  ONNX_NAMESPACE::TypeProto_Tensor *tensor = typeProto.mutable_tensor_type();
   tensor->set_elem_type(onnxutil::getTPDataType(dataTypeInfo->type()));
 
-  onnx::TensorShapeProto *shape = tensor->mutable_shape();
+  ONNX_NAMESPACE::TensorShapeProto *shape = tensor->mutable_shape();
   for (auto d : shape_v) {
     shape->add_dim()->set_dim_value(d);
   }
