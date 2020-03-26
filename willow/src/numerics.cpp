@@ -20,12 +20,12 @@ NumericsReport::NumericsReport(std::string AStarts, // A starts
     io::confirmRegularFile(fn);
   }
 
-  std::map<std::string, onnx::ModelProto> models;
+  std::map<std::string, ONNX_NAMESPACE::ModelProto> models;
   for (auto fn : fns) {
     models[fn] = io::getModelFromFile(fn);
   }
 
-  const onnx::ModelProto &mAStarts = models[AStarts];
+  const ONNX_NAMESPACE::ModelProto &mAStarts = models[AStarts];
 
   for (auto fn : fns) {
     if (models[fn].graph().initializer_size() !=
@@ -36,8 +36,9 @@ NumericsReport::NumericsReport(std::string AStarts, // A starts
 
   for (int wIndex = 0; wIndex < mAStarts.graph().initializer_size(); ++wIndex) {
 
-    auto getTensor = [wIndex,
-                      &models](std::string fn) -> const onnx::TensorProto & {
+    auto getTensor =
+        [wIndex,
+         &models](std::string fn) -> const ONNX_NAMESPACE::TensorProto & {
       return models[fn].graph().initializer(wIndex);
     };
 

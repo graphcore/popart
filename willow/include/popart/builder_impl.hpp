@@ -10,7 +10,7 @@
 
 #include <boost/any.hpp>
 
-// The BuilderImpl class has an onnx::ModelProto, so we cannot
+// The BuilderImpl class has an ONNX_NAMESPACE::ModelProto, so we cannot
 // use the forward declarations in names.hpp at this point
 #include <onnx/onnx_pb.h>
 
@@ -249,18 +249,18 @@ public:
   bool hasParent() const { return nullptr != parent; }
   std::vector<const BuilderImpl *> getChildren() const;
 
-  onnx::NodeProto &
+  ONNX_NAMESPACE::NodeProto &
   findNodeProtoByOutputNames(const std::set<TensorId> &nodeOutputNames);
 
   static void
   populateTensorProtoFromConstVoidData(const ConstVoidData &initData,
                                        const std::string &id,
-                                       onnx::TensorProto *tp);
+                                       ONNX_NAMESPACE::TensorProto *tp);
 
 private:
-  onnx::ValueInfoProto *addGraphInput(const TensorId &id);
+  ONNX_NAMESPACE::ValueInfoProto *addGraphInput(const TensorId &id);
 
-  void finalizeOp(onnx::NodeProto *node, const std::string &name);
+  void finalizeOp(ONNX_NAMESPACE::NodeProto *node, const std::string &name);
 
   void addOpsetRequirement(const std::string &domain, int version);
 
@@ -281,30 +281,31 @@ private:
 
   int getValueTensorIndex(TensorId id) const;
 
-  const onnx::ValueInfoProto &getValueInfoProto(TensorId id) const;
+  const ONNX_NAMESPACE::ValueInfoProto &getValueInfoProto(TensorId id) const;
 
   bool
-  findNodeProtoByOutputNamesImpl(onnx::NodeProto *&out,
+  findNodeProtoByOutputNamesImpl(ONNX_NAMESPACE::NodeProto *&out,
                                  const std::set<TensorId> &nodeOutputNames);
 
-  bool nodeHasAttributeImpl(onnx::AttributeProto *&out,
-                            onnx::NodeProto &node,
+  bool nodeHasAttributeImpl(ONNX_NAMESPACE::AttributeProto *&out,
+                            ONNX_NAMESPACE::NodeProto &node,
                             const std::string &attributeName);
 
-  onnx::AttributeProto &
+  ONNX_NAMESPACE::AttributeProto &
   addNewAttributeToNode(const std::string &attributeName,
                         const std::set<TensorId> &nodeOutputNames);
 
-  onnx::AttributeProto &addNewAttributeToNode(const std::string &attributeName,
-                                              onnx::NodeProto &node);
+  ONNX_NAMESPACE::AttributeProto &
+  addNewAttributeToNode(const std::string &attributeName,
+                        ONNX_NAMESPACE::NodeProto &node);
 
-  onnx::AttributeProto &
+  ONNX_NAMESPACE::AttributeProto &
   getNodeAttribute(const std::string &attributeName,
                    const std::set<TensorId> &nodeOutputNames);
 
   void addNodeAttribute(const std::string &attributeName,
                         const boost::any &attributeValue,
-                        onnx::NodeProto &node);
+                        ONNX_NAMESPACE::NodeProto &node);
 
   std::vector<std::string> name_scope_stack_;
 
@@ -320,7 +321,7 @@ private:
   // in a child's scope, or lower
   bool inLowerScope(const TensorId &) const;
 
-  onnx::ModelProto model_;
+  ONNX_NAMESPACE::ModelProto model_;
 
   std::map<std::string, boost::any> attributes;
 

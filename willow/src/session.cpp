@@ -140,8 +140,8 @@ void Session::run(IStepIO &stepio) {
 void Session::modelToHost(const std::string &fn) {
   logging::session::trace("Session::modelToHost");
 
-  onnx::ModelProto model      = ir.getModel();
-  onnx::GraphProto *onnxgraph = model.mutable_graph();
+  ONNX_NAMESPACE::ModelProto model      = ir.getModel();
+  ONNX_NAMESPACE::GraphProto *onnxgraph = model.mutable_graph();
 
   for (auto tId : ir.additionalModelProtoTensors) {
     // For additional tensors we want to save in the onnx modelproto, we copy
@@ -151,7 +151,7 @@ void Session::modelToHost(const std::string &fn) {
                   "Ids not allowed in onnx specification.",
                   tId);
     } else {
-      onnx::TensorProto *init = onnxgraph->add_initializer();
+      ONNX_NAMESPACE::TensorProto *init = onnxgraph->add_initializer();
       init->set_name(tId);
       auto tensor = ir.getMainGraph().getTensors().get(tId);
 
@@ -168,12 +168,12 @@ void Session::modelToHost(const std::string &fn) {
 
   for (int init_index = 0; init_index < model.graph().initializer_size();
        ++init_index) {
-    onnx::TensorProto &tp =
+    ONNX_NAMESPACE::TensorProto &tp =
         *model.mutable_graph()->mutable_initializer(init_index);
     TensorId tenId = tp.name();
 
     if (tp.has_data_location() &&
-        tp.data_location() == onnx::TensorProto::EXTERNAL) {
+        tp.data_location() == ONNX_NAMESPACE::TensorProto::EXTERNAL) {
       // Initialise a new MutableVoidData object to write to from host weight
       // buffers
       MutableVoidData mvd;
@@ -192,10 +192,10 @@ void Session::modelToHost(const std::string &fn) {
   // Write data for externally saved weights to relevant locations on disk
   for (int init_index = 0; init_index < model.graph().initializer_size();
        ++init_index) {
-    onnx::TensorProto tp = model.graph().initializer(init_index);
+    ONNX_NAMESPACE::TensorProto tp = model.graph().initializer(init_index);
 
     if (tp.has_data_location() &&
-        tp.data_location() == onnx::TensorProto::EXTERNAL) {
+        tp.data_location() == ONNX_NAMESPACE::TensorProto::EXTERNAL) {
       TensorId tenId    = tp.name();
       auto externalInfo = onnxutil::ExternalTensorProtoInfo(tp);
       std::fstream ofs(externalInfo.location,

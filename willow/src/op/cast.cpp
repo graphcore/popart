@@ -84,7 +84,7 @@ static OpCreator<CastOp> castOpCreator(
        const Attributes &attr) -> std::unique_ptr<Op> {
       int64_t i64_to;
       attr.set(i64_to, "to");
-      auto tpdt_to   = static_cast<onnx::TensorProto_DataType>(i64_to);
+      auto tpdt_to = static_cast<ONNX_NAMESPACE::TensorProto_DataType>(i64_to);
       DataType dt_to = onnxutil::getDataType(tpdt_to);
 
       return std::make_unique<CastOp>(opid, dt_to, settings);

@@ -9,7 +9,7 @@
 
 namespace popart {
 
-TensorData::TensorData(const onnx::TensorProto &tp) {
+TensorData::TensorData(const ONNX_NAMESPACE::TensorProto &tp) {
   ConstVoidData cv_data = onnxutil::getConstData(tp);
   data_.resize(cv_data.info.nbytes());
   std::memcpy(data_.data(), cv_data.data, cv_data.info.nbytes());
@@ -23,7 +23,7 @@ TensorData::TensorData(const TensorInfo &info, const void *from) {
 void *TensorData::data() { return data_.data(); }
 const void *TensorData::data() const { return data_.data(); }
 
-void TensorData::resetData(const onnx::TensorProto &tp) {
+void TensorData::resetData(const ONNX_NAMESPACE::TensorProto &tp) {
   ConstVoidData cv_data = onnxutil::getConstData(tp);
   if (data_.size() != cv_data.info.nbytes()) {
     throw error("cannot reset tensor data with data of non-matching size");

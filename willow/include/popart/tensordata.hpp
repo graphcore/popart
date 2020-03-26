@@ -24,8 +24,8 @@ public:
   // the size of the copy determined by TensorInfo
   TensorData(const TensorInfo &, const void *src);
 
-  // create by copying to data_ from onnx::TensorProto
-  TensorData(const onnx::TensorProto &);
+  // create by copying to data_ from ONNX_NAMESPACE::TensorProto
+  TensorData(const ONNX_NAMESPACE::TensorProto &);
 
   void *data();
   const void *data() const;
@@ -34,9 +34,10 @@ public:
   // Input data must be the same size as the existing data_
   void resetData(const TensorInfo &, const void *src);
 
-  // reset the data in the TensorData bt copying from onnx::TensorProto.
-  // Input data must be the same size as the existing data_
-  void resetData(const onnx::TensorProto &);
+  // reset the data in the TensorData bt copying from
+  // ONNX_NAMESPACE::TensorProto. Input data must be the same size as the
+  // existing data_
+  void resetData(const ONNX_NAMESPACE::TensorProto &);
 
 private:
   std::vector<char> data_;

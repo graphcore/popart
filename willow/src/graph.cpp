@@ -164,7 +164,8 @@ bool Graph::isInputConsumedInplaceForOptimization(
   return inputs_consumed_inplace_for_optimization.count(tensorId) != 0;
 }
 
-void Graph::constructFromOnnxGraph(const onnx::GraphProto &onnx_graph) {
+void Graph::constructFromOnnxGraph(
+    const ONNX_NAMESPACE::GraphProto &onnx_graph) {
   for (const auto &node : onnx_graph.node()) {
     if (OnnxConstExprUtil::isConst(node)) {
       OnnxConstExprUtil::processNode(node, this);

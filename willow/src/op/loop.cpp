@@ -40,7 +40,8 @@ bool existsInOpInputs(std::vector<std::pair<TensorId, TensorInfo>> &opInputs,
   return false;
 }
 
-std::vector<TensorId> getBodyInputIds(const onnx::GraphProto &bodyProto) {
+std::vector<TensorId>
+getBodyInputIds(const ONNX_NAMESPACE::GraphProto &bodyProto) {
   std::vector<TensorId> bodyInputIds;
   for (const auto &input : bodyProto.input()) {
     bodyInputIds.push_back(input.name());
@@ -49,7 +50,7 @@ std::vector<TensorId> getBodyInputIds(const onnx::GraphProto &bodyProto) {
 }
 
 std::vector<std::pair<int, TensorId>>
-pairInputIdxToInputId(const onnx::GraphProto &bodyProto) {
+pairInputIdxToInputId(const ONNX_NAMESPACE::GraphProto &bodyProto) {
   std::vector<std::pair<int, TensorId>> bodyInputs;
   for (int i = 0; i < bodyProto.input_size(); ++i) {
     bodyInputs.push_back(std::make_pair(i, bodyProto.input(i).name()));
@@ -59,7 +60,7 @@ pairInputIdxToInputId(const onnx::GraphProto &bodyProto) {
 }
 
 std::vector<std::pair<int, TensorId>>
-pairOutputIdxToOutputId(const onnx::GraphProto &body) {
+pairOutputIdxToOutputId(const ONNX_NAMESPACE::GraphProto &body) {
   std::vector<std::pair<int, TensorId>> bodyOutputs;
   for (int i = 0; i < body.output_size(); ++i) {
     bodyOutputs.push_back(std::make_pair(i, body.output(i).name()));
@@ -68,7 +69,7 @@ pairOutputIdxToOutputId(const onnx::GraphProto &body) {
 }
 
 std::vector<TensorId>
-addImplicitTensors(const onnx::GraphProto &bodyProto,
+addImplicitTensors(const ONNX_NAMESPACE::GraphProto &bodyProto,
                    popart::Tensors &tensors,
                    std::vector<std::pair<TensorId, TensorInfo>> &allOpInputs) {
 
@@ -204,7 +205,7 @@ static OpCreator<LoopOp> loopOpCreator(
     OpDefinitions({{Onnx::Operators::Loop_1, loopOpDef},
                    {Onnx::Operators::Loop_11, loopOpDef}}),
     [](const OpCreatorInfo &info) -> std::unique_ptr<Op> {
-      const onnx::GraphProto &bodyGraph =
+      const ONNX_NAMESPACE::GraphProto &bodyGraph =
           info.attributes.getAttribute<Attributes::Graph>("body");
       auto &mainGraph = info.settings.graph.get();
       auto &tensors   = mainGraph.getTensors();

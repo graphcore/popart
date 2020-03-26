@@ -14,41 +14,45 @@ public:
   int offset           = 0;
   int length           = 0;
 
-  ExternalTensorProtoInfo(const onnx::TensorProto &tp);
+  ExternalTensorProtoInfo(const ONNX_NAMESPACE::TensorProto &tp);
 };
 
-// for many types (float16, float, int, etc) onnx::TensorProto has
+// for many types (float16, float, int, etc) ONNX_NAMESPACE::TensorProto has
 // 2 ways of storing the data: either in field raw_data or a field
 // specific to the type. These functions handle these 2 possibilities.
-ConstVoidData getConstData(const onnx::TensorProto &tp);
-MutableVoidData getMutableData(onnx::TensorProto &tp);
+ConstVoidData getConstData(const ONNX_NAMESPACE::TensorProto &tp);
+MutableVoidData getMutableData(ONNX_NAMESPACE::TensorProto &tp);
 
 // Move tensor data for ids from inside ModelProto to external file, fn
-void saveInitializersExternally(onnx::ModelProto &model,
+void saveInitializersExternally(ONNX_NAMESPACE::ModelProto &model,
                                 const std::vector<TensorId> &ids,
                                 const std::string &fn);
 
 // Get an ONNX model protobuf, either from a file, or the string directly
-onnx::ModelProto getModelProto(const std::string &modelProtoOrFilename);
+ONNX_NAMESPACE::ModelProto
+getModelProto(const std::string &modelProtoOrFilename);
 
 // From a specified ModelProto, get a TensorProto by its name
-onnx::TensorProto getTensorProto(const onnx::ModelProto &model,
-                                 const TensorId &tId);
-onnx::TensorProto &getTensorProto(onnx::ModelProto &model, const TensorId &tId);
+ONNX_NAMESPACE::TensorProto
+getTensorProto(const ONNX_NAMESPACE::ModelProto &model, const TensorId &tId);
+ONNX_NAMESPACE::TensorProto &getTensorProto(ONNX_NAMESPACE::ModelProto &model,
+                                            const TensorId &tId);
 
 // Is the tensor in the model's initializer list?
-bool isInitializer(const onnx::ModelProto &model, const TensorId tId);
+bool isInitializer(const ONNX_NAMESPACE::ModelProto &model, const TensorId tId);
 
 // functions for translating between popart's enum class and onnx's enum
-onnx::TensorProto_DataType getTPDataType(DataType);
+ONNX_NAMESPACE::TensorProto_DataType getTPDataType(DataType);
 DataType getDataType(int);
 
-void visitModelNodes(onnx::ModelProto &model,
-                     std::function<void(onnx::NodeProto &)> f);
-void visitModelInitializers(onnx::ModelProto &model,
-                            std::function<void(onnx::TensorProto &)> f);
-void visitModelValueInfos(onnx::ModelProto &model,
-                          std::function<void(onnx::ValueInfoProto &)> f);
+void visitModelNodes(ONNX_NAMESPACE::ModelProto &model,
+                     std::function<void(ONNX_NAMESPACE::NodeProto &)> f);
+void visitModelInitializers(
+    ONNX_NAMESPACE::ModelProto &model,
+    std::function<void(ONNX_NAMESPACE::TensorProto &)> f);
+void visitModelValueInfos(
+    ONNX_NAMESPACE::ModelProto &model,
+    std::function<void(ONNX_NAMESPACE::ValueInfoProto &)> f);
 
 } // namespace onnxutil
 } // namespace popart

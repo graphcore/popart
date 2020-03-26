@@ -378,12 +378,14 @@ void Tensors::insert(TensorId name, std::unique_ptr<Tensor> t) {
   M[name] = std::move(t);
 }
 
-void Tensors::addConstInit(const TensorId &name, const onnx::TensorProto *pt) {
+void Tensors::addConstInit(const TensorId &name,
+                           const ONNX_NAMESPACE::TensorProto *pt) {
   addInit(name, pt, TensorType::Const);
   insertConstId(name);
 }
 
-void Tensors::addVarInit(const TensorId &name, const onnx::TensorProto *pt) {
+void Tensors::addVarInit(const TensorId &name,
+                         const ONNX_NAMESPACE::TensorProto *pt) {
   addInit(name, pt, TensorType::Variable);
 
   // A sanity check: if the tensor is fixed point, it is Const
@@ -435,7 +437,7 @@ void Tensors::makeConstInit(const TensorId &name, const void *src) {
 }
 
 void Tensors::addInit(const TensorId &name,
-                      const onnx::TensorProto *pt,
+                      const ONNX_NAMESPACE::TensorProto *pt,
                       TensorType tt) {
 
   if (tt == TensorType::Variable) {

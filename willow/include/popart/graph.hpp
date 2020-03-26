@@ -35,7 +35,7 @@ public:
   const Ir &getIr() const { return ir; }
   Ir &getIr() { return ir; }
 
-  void constructFromOnnxGraph(const onnx::GraphProto &onnx_graph);
+  void constructFromOnnxGraph(const ONNX_NAMESPACE::GraphProto &onnx_graph);
   Op *growFromNode(const Node &node);
   Graph &getBackwardsGraph(const GraphId &bwdId);
 

@@ -88,7 +88,7 @@ GradNonGradPair::GradNonGradPair(Op *g_, Op *ng_) : grad(g_), nongrad(ng_) {}
 
 GradNonGradPair::GradNonGradPair() : GradNonGradPair(nullptr, nullptr) {}
 
-const onnx::ModelProto &Ir::getModel() const { return *onnxModel; }
+const ONNX_NAMESPACE::ModelProto &Ir::getModel() const { return *onnxModel; }
 
 // Data stream tensors are all tensors, excluding:
 //  - optimizer tensors
@@ -164,7 +164,7 @@ void Ir::confirmNoReservedIds() const {
   }
 }
 
-IrBundle::IrBundle(const onnx::ModelProto &modelProto_,
+IrBundle::IrBundle(const ONNX_NAMESPACE::ModelProto &modelProto_,
                    const InputShapeInfo &inputShapeInfo_,
                    const DataFlow &dataFlow_,
                    const std::vector<Loss *> &losses_,
@@ -181,8 +181,8 @@ Ir::Ir() : onnxModel(nullptr) {
       {GraphId::root(), std::make_unique<Graph>(*this, GraphId::root())});
 }
 
-void Ir::setOnnxModel(const onnx::ModelProto &model) {
-  onnxModel.reset(new onnx::ModelProto(model));
+void Ir::setOnnxModel(const ONNX_NAMESPACE::ModelProto &model) {
+  onnxModel.reset(new ONNX_NAMESPACE::ModelProto(model));
 }
 
 void Ir::setDataFlow(const DataFlow &df) {
@@ -1256,7 +1256,7 @@ std::vector<TensorId> Ir::getModelInputIds() const {
 }
 
 void Ir::resetWeights(
-    const onnx::ModelProto &modelProto,
+    const ONNX_NAMESPACE::ModelProto &modelProto,
     const bool ignoreWeightsInModelWithoutCorrespondingIrWeight) {
   auto &onnxGraph = modelProto.graph();
 
@@ -1281,7 +1281,7 @@ void Ir::resetWeights(
 
 namespace {
 
-void checkForDimParams(const TensorId &id, const onnx::TypeProto &t) {
+void checkForDimParams(const TensorId &id, const ONNX_NAMESPACE::TypeProto &t) {
   auto dimString = [&]() {
     std::stringstream ss;
     ss << "[";
@@ -1667,7 +1667,7 @@ void Ir::constructForwards() {
   }
 }
 
-Graph &Ir::constructFromOnnxGraph(const onnx::GraphProto &graph,
+Graph &Ir::constructFromOnnxGraph(const ONNX_NAMESPACE::GraphProto &graph,
                                   const Scope &scope) {
   auto scope_id = scope.str();
   if (graphs.find(scope_id) == graphs.end()) {

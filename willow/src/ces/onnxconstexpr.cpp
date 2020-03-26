@@ -10,12 +10,13 @@
 
 namespace popart {
 
-bool OnnxConstExprUtil::isConst(const onnx::NodeProto &node) {
+bool OnnxConstExprUtil::isConst(const ONNX_NAMESPACE::NodeProto &node) {
   return node.op_type() == "Constant" || node.op_type() == "Shape" ||
          node.op_type() == "ConstantOfShape";
 }
 
-void OnnxConstExprUtil::processNode(const onnx::NodeProto &node, Graph *graph) {
+void OnnxConstExprUtil::processNode(const ONNX_NAMESPACE::NodeProto &node,
+                                    Graph *graph) {
   if (node.op_type() == "Constant") {
     processConstantNode(node, graph);
   } else if (node.op_type() == "Shape") {
@@ -27,8 +28,9 @@ void OnnxConstExprUtil::processNode(const onnx::NodeProto &node, Graph *graph) {
   }
 }
 
-void OnnxConstExprUtil::processConstantNode(const onnx::NodeProto &node,
-                                            Graph *graph) {
+void OnnxConstExprUtil::processConstantNode(
+    const ONNX_NAMESPACE::NodeProto &node,
+    Graph *graph) {
   // Add the scope of the current graph to the tensorID of the node output, this
   // is done for ops as standard, but we also need to do it for the special case
   // of constants.
@@ -40,7 +42,7 @@ void OnnxConstExprUtil::processConstantNode(const onnx::NodeProto &node,
   graph->getTensors().addConstInit(name, &node.attribute(0).t());
 }
 
-void OnnxConstExprUtil::processShapeNode(const onnx::NodeProto &node,
+void OnnxConstExprUtil::processShapeNode(const ONNX_NAMESPACE::NodeProto &node,
                                          Graph *graph) {
   std::vector<char> data;
   auto input_id = node.input(0);
@@ -61,8 +63,9 @@ void OnnxConstExprUtil::processShapeNode(const onnx::NodeProto &node,
   graph->getTensors().addConstInit(node.output(0), outInfo, data.data());
 }
 
-void OnnxConstExprUtil::processConstantOfShapeNode(const onnx::NodeProto &node,
-                                                   Graph *graph) {
+void OnnxConstExprUtil::processConstantOfShapeNode(
+    const ONNX_NAMESPACE::NodeProto &node,
+    Graph *graph) {
   auto inputId     = node.input(0);
   auto inputTensor = graph->getTensors().get(inputId);
   TensorId name    = node.output(0);
@@ -76,8 +79,8 @@ void OnnxConstExprUtil::processConstantOfShapeNode(const onnx::NodeProto &node,
         name, resultInfo, reinterpret_cast<void *>(resultData.data()));
   } else {
     // TensorData from attribute value
-    const onnx::TensorProto &value = node.attribute(0).t();
-    ConstVoidData valueCVData      = onnxutil::getConstData(value);
+    const ONNX_NAMESPACE::TensorProto &value = node.attribute(0).t();
+    ConstVoidData valueCVData                = onnxutil::getConstData(value);
 
     // Result takes data type from value and shape from input
     TensorInfo resultInfo(valueCVData.info.dataType(),

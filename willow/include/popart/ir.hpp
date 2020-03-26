@@ -85,7 +85,7 @@ private:
 // Ir Constructor inputs
 class IrBundle {
 public:
-  IrBundle(const onnx::ModelProto &modelProto,
+  IrBundle(const ONNX_NAMESPACE::ModelProto &modelProto,
            const InputShapeInfo &inputShapeInfo,
            const DataFlow &dataFlow,
            const std::vector<Loss *> &losses,
@@ -94,7 +94,7 @@ public:
            const SessionOptions &userOptions,
            const Patterns &patterns);
 
-  const onnx::ModelProto &modelProto;
+  const ONNX_NAMESPACE::ModelProto &modelProto;
   const InputShapeInfo &inputShapeInfo;
   const DataFlow &dataFlow;
   const std::vector<Loss *> &losses;
@@ -131,7 +131,7 @@ public:
   // will always be treated as constants, so left unchanged if in training mode
   // Weights for training should always therefore rather appear in the ONNX
   // initializer list, and in the ONNX input list.
-  void setOnnxModel(const onnx::ModelProto &model);
+  void setOnnxModel(const ONNX_NAMESPACE::ModelProto &model);
 
   // Set the dataflow
   void setDataFlow(const DataFlow &df);
@@ -186,12 +186,12 @@ public:
 
   // Reset the weights with data from an ONNX model
   void resetWeights(
-      const onnx::ModelProto &modelProto,
+      const ONNX_NAMESPACE::ModelProto &modelProto,
       const bool ignoreWeightsInModelWithoutCorrespondingIrWeight = false);
 
   void updateOptimizer(const Optimizer &);
   // take training steps
-  onnx::ModelProto step(int n);
+  ONNX_NAMESPACE::ModelProto step(int n);
   // if the tensor is returned to user (passes call to DataFlow).
   bool isAnchored(const TensorId &) const;
   bool streamingIsDisabledForTensor(const TensorId &) const;
@@ -258,7 +258,7 @@ public:
 
   bool isInputToLoss(const Tensor *) const;
 
-  const onnx::ModelProto &getModel() const;
+  const ONNX_NAMESPACE::ModelProto &getModel() const;
   std::vector<TensorId> getModelInputIds() const;
 
   const SessionOptions &getSessionOptions() const { return userOptions; }
@@ -330,7 +330,7 @@ public:
   void constructForwards();
 
   // Convert an ONNX graph into IR
-  Graph &constructFromOnnxGraph(const onnx::GraphProto &graph,
+  Graph &constructFromOnnxGraph(const ONNX_NAMESPACE::GraphProto &graph,
                                 const Scope &scope);
 
   // Calls ConstExprUtil::foldConstants on the graph.
@@ -474,7 +474,7 @@ private:
 private:
   DataFlow dataFlow;
 
-  std::unique_ptr<onnx::ModelProto> onnxModel;
+  std::unique_ptr<ONNX_NAMESPACE::ModelProto> onnxModel;
 
   // learning rate, momentum, etc.
   // Optimizer needed to construct backwards pass:
