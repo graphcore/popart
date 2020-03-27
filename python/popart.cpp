@@ -757,6 +757,8 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("rearrangeAnchorsOnHost",
                       &SessionOptions::rearrangeAnchorsOnHost);
     cls.def_readwrite("pingPongPhases", &SessionOptions::pingPongPhases);
+    cls.def_readwrite("explicitRecomputation",
+                      &SessionOptions::explicitRecomputation);
     cls.def_readwrite("enablePrefetchDatastreams",
                       &SessionOptions::enablePrefetchDatastreams);
     cls.def_readwrite("enableVirtualGraphs",
@@ -837,6 +839,7 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("Undefined", RecomputeType::UNDEFINED);
     en.value("Checkpoint", RecomputeType::CHECKPOINT);
     en.value("Recompute", RecomputeType::RECOMPUTE);
+    en.value("Recomputed", RecomputeType::RECOMPUTED);
   }
   {
     py::enum_<CacheType> en(m, "CacheType");

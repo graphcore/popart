@@ -20,7 +20,7 @@
 
 namespace popart {
 
-enum class RecomputeType { UNDEFINED = 0, CHECKPOINT, RECOMPUTE };
+enum class RecomputeType { UNDEFINED = 0, CHECKPOINT, RECOMPUTE, RECOMPUTED };
 enum class CacheType { UNDEFINED = 0, UNCACHED, CACHED };
 
 std::ostream &operator<<(std::ostream &, const RecomputeType &);
@@ -86,6 +86,7 @@ public:
     Scope scope;
     RecomputeType recomputeType = RecomputeType::UNDEFINED;
     CacheType cacheType         = CacheType::UNDEFINED;
+    // bool recompute              = false;
 
     // optional inplace priorities, to take precedence over the default
     // priorities. A negative priority gurarantees no inplacing

@@ -52,6 +52,8 @@ std::vector<std::string> reservedPrefixes();
 
 TensorId getCacheArgTensorId(TensorId base_id);
 
+TensorId createRecomputedTensorId(TensorId base_id);
+
 constexpr const char *reservedDefaultWeightDecayScaleFactor0Prefix() {
   return "weightDecayScaleFactor0___default___";
 }

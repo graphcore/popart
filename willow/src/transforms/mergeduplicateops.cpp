@@ -145,6 +145,7 @@ std::size_t MergeDuplicateOps::id() {
 }
 
 bool MergeDuplicateOps::apply(Graph &graph) const {
+
   TensorSearchHelper frontier;
 
   // Populate pending with all tensors that don't have a producer.
@@ -170,8 +171,8 @@ bool MergeDuplicateOps::apply(Graph &graph) const {
     frontier.push(t);
   };
 
-  // Traverse through the graph, mergeing consumers where possible.
-  // We traverse through the graph as changes earleir in the graph will affect
+  // Traverse through the graph, merging consumers where possible.
+  // We traverse through the graph as changes earlier in the graph will affect
   // which consumers may be merged.
   while (!frontier.empty()) {
     auto tensor = frontier.pop();
@@ -180,7 +181,14 @@ bool MergeDuplicateOps::apply(Graph &graph) const {
     auto consumerIdMap = getConsumerIdMap(tensor);
     for (auto &id_consumers : consumerIdMap) {
       auto &consumers = id_consumers.second;
-      if (consumers.size() > 1) {
+
+      auto recomputeEnabled =
+          std::find_if(std::begin(consumers), std::end(consumers), [](Op *op) {
+            return op->settings.recomputeType ==
+                   RecomputeType::RECOMPUTED; /*op->settings.recompute == 1;*/
+          });
+
+      if (consumers.size() > 1 && (recomputeEnabled == std::end(consumers))) {
         auto outIds = getAllOutputIds(consumers);
         mergeDuplicateConsumers(consumers);
         // Add any outputs that weren't erased to the frontier
