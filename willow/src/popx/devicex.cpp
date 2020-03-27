@@ -710,29 +710,26 @@ poplar::Tensor Devicex::getScalarVariable(poplar::Graph &graph,
   return tensor;
 }
 
-PipelineInfo::PipelineInfo(int _batchesPerStep,
-                           int _gradAcclFactor,
-                           int _numPipelineStages,
+PipelineInfo::PipelineInfo(int64_t _batchesPerStep,
+                           int64_t _gradAcclFactor,
+                           int64_t _numPipelineStages,
                            bool _doTraining,
                            bool _doGradAccl)
     : doTraining(_doTraining), doGradAccl(_doGradAccl) {
 
-  auto bps                  = static_cast<int64_t>(_batchesPerStep);
-  auto gradAcclFactor       = static_cast<int64_t>(_gradAcclFactor);
-  auto numPipelineStages    = static_cast<int64_t>(_numPipelineStages);
-  auto fillFlushPhaseCycles = numPipelineStages;
+  auto fillFlushPhaseCycles = _numPipelineStages - 1;
   fillPhase.start           = 0;
   fillPhase.end             = fillFlushPhaseCycles - 1;
 
   int64_t mainCycles;
   if (doGradAccl) {
-    mainCycles = gradAcclFactor - fillFlushPhaseCycles;
+    mainCycles = _gradAcclFactor - fillFlushPhaseCycles;
   } else {
-    mainCycles = bps - fillFlushPhaseCycles;
+    mainCycles = _batchesPerStep - fillFlushPhaseCycles;
   }
   if (mainCycles < 1) {
     throw internal_error(
-        "mainCycles should not be less than 1. Current value is {}.",
+        "Pipeline mainCycles should not be less than 1. Current value is {}.",
         mainCycles);
   }
 
@@ -798,12 +795,12 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
   wuConvOptions.options["pass"]  = "TRAINING_WU";
 
   if (ir.getSessionOptions().enablePipelining) {
-    pInfo = PipelineInfo(
-        ir.getDataFlow().batchesPerStep(),
-        static_cast<int>(ir.getSessionOptions().accumulationFactor),
-        static_cast<int>(getMaxPipelineStage()),
-        ir.canTrain(),
-        ir.getSessionOptions().enableGradientAccumulation);
+    pInfo =
+        PipelineInfo(static_cast<int64_t>(ir.getDataFlow().batchesPerStep()),
+                     ir.getSessionOptions().accumulationFactor,
+                     ir.getNumPipelineStages(),
+                     ir.canTrain(),
+                     ir.getSessionOptions().enableGradientAccumulation);
   }
 
   engineOptions.set("target.workerStackSizeInBytes", "0x200");
@@ -2940,11 +2937,6 @@ poplar::program::Sequence &Devicex::getAnchorReturnFragment(Tensor *tensor) {
   }
 }
 
-int64_t Devicex::getStashSize(VGraphId vGraphId) {
-  int64_t maxVGraphId = static_cast<int64_t>(ir().getMaxVirtualGraphId());
-  return 2 * (maxVGraphId - vGraphId) - 1;
-}
-
 poplar::Executable Devicex::getExecutable() {
   auto progressLogger = [](int progress, int total) {
     if (total != 0) {
@@ -3363,20 +3355,6 @@ std::map<PipelineStage, VGraphId> Devicex::getPipelineToVGraphIdMap() const {
   logging::devicex::debug(ss.str());
 
   return pipeline_vgraph_map;
-}
-
-PipelineStage Devicex::getMaxPipelineStage() const {
-  PipelineStage max_ps = 0;
-
-  for (auto &id_op : ir().getMainGraph().getOps()) {
-    auto op = id_op.second.get();
-
-    if (!op->isConvertibleTo<IpuCopyOp>()) {
-      max_ps = std::max(max_ps, op->getPipelineStage());
-    }
-  }
-
-  return max_ps;
 }
 
 PriTask Devicex::toHostEveryNBatchesTask(Tensor *tensor,

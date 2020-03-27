@@ -1794,6 +1794,29 @@ PipelineStage Ir::getFinalLossPipelineStage() const {
   }
 }
 
+int64_t Ir::getNumPipelineStages() const {
+  std::set<PipelineStage> pStages;
+
+  for (auto &id_op : getMainGraph().getOps()) {
+    auto op = id_op.second.get();
+    if (op->hasPipelineStage()) {
+      pStages.insert(op->getPipelineStage());
+    }
+  }
+  int64_t numStages = pStages.size();
+
+  // Check there are no 'missing' pipeline stages
+  for (int64_t i = 0; i < numStages; i++) {
+    if (!pStages.count(i)) {
+      throw error("The set of pipeline stages for all Ops contains {} stages, "
+                  "but stage {} is missing",
+                  numStages,
+                  i);
+    }
+  }
+  return numStages;
+}
+
 std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
   PipelineStage maxPipelineStage = 0;
   if (getSessionOptions().enablePipelining) {
@@ -2748,24 +2771,6 @@ int Ir::getOpSetVersionFromModel(const std::string &node_domain) const {
   }
 
   return version;
-}
-
-unsigned Ir::getMaxVirtualGraphId() const {
-  unsigned maxVirtualGraphId = 1;
-  unsigned replGraphCount =
-      static_cast<unsigned>(getSessionOptions().replicatedGraphCount);
-  unsigned numIPUs = static_cast<unsigned>(deviceInfo->getNumIpus());
-  if (getSessionOptions().enableReplicatedGraphs) {
-    if (numIPUs % replGraphCount != 0) {
-      throw error("For replicated graphs, the number of IPUs must be divisible "
-                  "by the replication factor.");
-    } else {
-      maxVirtualGraphId = numIPUs / replGraphCount;
-    }
-  } else {
-    maxVirtualGraphId = numIPUs;
-  }
-  return maxVirtualGraphId;
 }
 
 std::vector<GradNonGradPair> Ir::growLossGradients() {
