@@ -3120,7 +3120,7 @@ void Ir::applyInplacePattern(Graph &graph) {
             !recomputeUsingCheckpoint() && !consumesImplicitLoopInputs() &&
             !consumesGraphOutput()) {
           auto newTopoCons = inplace.getNewTopoCons(op, identifier);
-          if (isSchedulable(newTopoCons)) {
+          if (graph.isSchedulable(newTopoCons)) {
             inplacedAlready.insert(op->id);
             inplace.apply(op, identifier, newTopoCons);
           } else {
