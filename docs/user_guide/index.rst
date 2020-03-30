@@ -17,6 +17,7 @@ PopART User Guide
     executing
     examples
     distributed_training
+    performance
     supported_ops
     env_vars
     references

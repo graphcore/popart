@@ -1,9 +1,17 @@
 .. _popart_distributed_training:
 
 Distributed training with Horovod
-=====================
+=================================
 
-In order to scale out training with PopART across multiple machines we use `Horovod <https://github.com/horovod/horovod/>`_ to setup and run collective operations. There is currently support for the following MPI-based collective operations: ``Broadcast`` and ``AllReduce``. The ``Broadcast`` operation is typically run at the start of a training to initialize the weights to have the same values across the instances. Gradients produced during the backwards pass will be aggregated and averaged across the instances by running the ``AllReduce`` operation. This ensures that each rank applies the same gradients to its weights during the weight update step.
+In order to scale out training with PopART across multiple machines we use
+`Horovod <https://github.com/horovod/horovod/>`_ to setup and run collective
+operations. There is currently support for the following MPI-based collective
+operations: ``Broadcast`` and ``AllReduce``. The ``Broadcast`` operation is
+typically run at the start of a training to initialise the weights to have the
+same values across the instances. Gradients produced during the backwards pass
+will be aggregated and averaged across the instances by running the
+``AllReduce`` operation. This ensures that each rank applies the same gradients
+to its weights during the weight update step.
 
 How to modify a PopART program for distributed training
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -26,13 +34,16 @@ Enable the ``hostAllReduce`` PopART session option:
   userOpts.hostAllReduce = True
 
 
-Initialize the Horovod runtime:
+Initialise the Horovod runtime:
 
 .. code-block:: python
 
   hvd.init()
 
-Initialize the Horovod ``DistributedOptimizer`` object. The constructor takes the PopART optimiser, training session and session options objects as arguments. The ``DistributedOptimizer`` object will add operations to copy gradients into and out of the IPU and run the Horovod ``AllReduce`` operation:
+Initialise the Horovod ``DistributedOptimizer`` object. The constructor takes
+the PopART optimiser, training session and session options objects as arguments.
+The ``DistributedOptimizer`` object will add operations to copy gradients into
+and out of the IPU and run the Horovod ``AllReduce`` operation:
 
 .. code-block:: python
 
