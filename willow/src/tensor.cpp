@@ -284,7 +284,7 @@ int Consumers::getTotal() const {
 Tensor::Tensor(TensorId n, TensorType t, Graph &g)
     : Vertex(), id(n), consumers(this), graph(g), producer(nullptr),
       tensorTypeInfo(&getTensorTypeInfoMap().at(t)), cached(false),
-      data_(nullptr), implicitLoopInput(false) {
+      implicitLoopInput(false), data_(nullptr) {
   // graph is currently unused - this removes the compiler warning
   (void)graph;
 }

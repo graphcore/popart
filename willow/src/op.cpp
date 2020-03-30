@@ -435,7 +435,7 @@ void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {
   if (attributes.hasAttribute(sSchedulePriority)) {
     float schedule_priority;
     attributes.set(schedule_priority, sSchedulePriority);
-    schedulePriority = schedule_priority;
+    schedulePriority = static_cast<double>(schedule_priority);
   }
 
   bool hasNamesAtt = attributes.hasAttribute(sInplaceOpNames);

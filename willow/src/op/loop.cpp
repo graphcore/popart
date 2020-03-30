@@ -105,9 +105,9 @@ LoopOp::LoopOp(
     const std::vector<std::pair<TensorId, TensorInfo>> inputs,
     const std::vector<TensorId> implicitTensors,
     const std::vector<std::pair<TensorId, TensorInfo>> explicitTensors)
-    : Op(opid, settings), subgraphId_(subgraphId),
+    : Op(opid, settings), tripCountValue_(0), subgraphId_(subgraphId),
       implicitTensors_(implicitTensors), inputs_(inputs),
-      explicitTensors_(explicitTensors), tripCountValue_(0) {}
+      explicitTensors_(explicitTensors) {}
 
 void LoopOp::setup() {
 

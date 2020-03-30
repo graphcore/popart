@@ -167,14 +167,6 @@ static std::unique_ptr<Op> flattenOpFactory(const OperatorIdentifier &_opid,
   return std::make_unique<FlattenOp>(_opid, axis, settings);
 }
 
-static std::unique_ptr<Op>
-flattenInplaceOpFactory(const OperatorIdentifier &_opid,
-                        const Op::Settings &settings,
-                        const Attributes &attr) {
-  int64_t axis = attr.getAttribute<Attributes::Int>("axis", 1);
-  return std::make_unique<FlattenInplaceOp>(_opid, axis, settings);
-}
-
 static OpCreator<FlattenOp>
     flattenOpCreator({{Onnx::Operators::Flatten_1, flatternOpDef},
                       {Onnx::Operators::Flatten_9, flatternOpDef},

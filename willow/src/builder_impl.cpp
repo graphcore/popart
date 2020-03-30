@@ -91,8 +91,9 @@ void BuilderImpl::finalizeOp(ONNX_NAMESPACE::NodeProto *node,
     // is known
     if (hasTensorShape(output)) {
       std::vector<int64_t> shape = getTensorShape(output);
-      if (std::any_of(
-              shape.begin(), shape.end(), [](int64_t i) { return i < 0; })) {
+      if (std::any_of(shape.begin(), shape.end(), [](int64_t dim) {
+            return dim < 0;
+          })) {
         throw error(
             "Output '{}' of node '{}' has invalid shape, {}. Values must "
             "be non-negative in each shape dimension.",

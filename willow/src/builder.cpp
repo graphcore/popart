@@ -449,7 +449,7 @@ std::vector<TensorId> AiGraphcoreOpset1::call(const std::vector<TensorId> &args,
   // A subgraph must have at least one input and output, and the
   // number of inputs and outputs must match that of the callee
   // subgraph
-  auto checkInOuts = [&](int callSize, int sgSize, std::string dir) {
+  auto checkInOuts = [&](int64_t callSize, int64_t sgSize, std::string dir) {
     if (sgSize == 0) {
       throw error("CallOp subgraph requires at least one {}.", dir);
     }

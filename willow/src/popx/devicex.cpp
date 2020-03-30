@@ -196,7 +196,7 @@ private:
       }
     });
     return toRerun;
-  };
+  }
 
   std::set<std::pair<Op *, PingPongPhase>> alreadySeen;
   const std::vector<Op *> &opSchedule;
@@ -569,7 +569,7 @@ void Devicex::remoteBufferWeightsToHost() {
       pEngine->copyFromRemoteBuffer(
           getRemoteBuffer(remoteBufferInfo.first).first,
           data0,
-          remoteBufferInfo.second,
+          static_cast<int>(remoteBufferInfo.second),
           0);
     }
   }
@@ -851,7 +851,7 @@ void Devicex::remoteBufferWeightsFromHost() {
         pEngine->copyToRemoteBuffer(
             data0,
             getRemoteBuffer(remoteBufferInfo.first).first,
-            remoteBufferInfo.second,
+            static_cast<int>(remoteBufferInfo.second),
             replica_id);
       }
     }
@@ -2144,15 +2144,15 @@ void Devicex::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
           &progs.pipelineForwardFragment(op->getPipelineStage(), op->str());
       logging::devicex::debug("Obtained pipeline forward frag for ",
                               op->debugName());
-      auto found = seqs.find(seqsKey);
-      if (found == seqs.end()) {
+      auto found_ = seqs.find(seqsKey);
+      if (found_ == seqs.end()) {
         seqs[seqsKey] = poplar::program::Sequence{};
-        found         = seqs.find(seqsKey);
+        found_        = seqs.find(seqsKey);
       }
       logging::devicex::debug(
           "Growing {} {} in pipelinedOpTaskFunc", op->str(), op->debugName());
 
-      growOpx(opx, found->second);
+      growOpx(opx, found_->second);
     } else if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
       logging::devicex::debug("Adding (first) recompute Op {}",
                               op->debugName());

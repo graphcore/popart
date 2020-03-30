@@ -3103,7 +3103,7 @@ void Ir::applyInplacePattern(Graph &graph) {
           return false;
         };
 
-        auto consumesGraphOutput = [this, op, &graph]() {
+        auto consumesGraphOutput = [op, &graph]() {
           const auto graphOutputs = graph.getOutputIds();
           const auto opInTensors  = op->input->tensors();
           return std::any_of(opInTensors.cbegin(),
