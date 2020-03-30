@@ -1209,8 +1209,16 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("modelProtoOrFilename"));
     cls.def("setGraphName", &Builder::setGraphName, py::arg("name"));
     cls.def("addInputTensor",
-            &Builder::addInputTensor,
+            py::overload_cast<const TensorInfo &, const std::string &>(
+                &Builder::addInputTensor),
             py::arg("tensorInfo"),
+            py::arg("debugPrefix") = std::string());
+    cls.def("addInputTensor",
+            py::overload_cast<const std::string &,
+                              const Shape &,
+                              const std::string &>(&Builder::addInputTensor),
+            py::arg("dataType"),
+            py::arg("shape"),
             py::arg("debugPrefix") = std::string());
     cls.def("addUntypedInputTensor",
             &Builder::addUntypedInputTensor,

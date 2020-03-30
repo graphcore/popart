@@ -269,6 +269,12 @@ TensorId Builder::addInputTensor(const TensorInfo &tensorInfo,
   return impl_->addInputTensor(tensorInfo, debugPrefix);
 }
 
+TensorId Builder::addInputTensor(const std::string &dataType,
+                                 const Shape &shape,
+                                 const std::string &debugPrefix) {
+  return impl_->addInputTensor(TensorInfo(dataType, shape), debugPrefix);
+}
+
 TensorId Builder::addUntypedInputTensor(const std::string &debugPrefix) {
   return impl_->addUntypedInputTensor(debugPrefix);
 }
