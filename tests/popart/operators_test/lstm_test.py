@@ -341,7 +341,7 @@ def test_lstm_training_onnx_vs_popart():
                 clip=None)
             out = Y
             if sum_outputs:
-                out = builder.aiOnnx.add([Y, Y_c])
+                out = builder.aiOnnx.add([Y, Y_c], "sum_out_and_cell_state")
 
             return [
                 out,
@@ -392,7 +392,8 @@ def test_lstm_training_onnx_vs_popart():
             out, cell_state = builder.aiGraphcore.lstm(input_ids)
 
             if sum_outputs:
-                out = builder.aiOnnx.add([out, cell_state])
+                out = builder.aiOnnx.add([out, cell_state],
+                                         "sum_out_and_cell_state")
 
             return [
                 out,
@@ -424,35 +425,22 @@ def test_lstm_training_onnx_vs_popart():
     initial_c = np_rand(num_directions, batch_size, hidden_size)
 
     # Run with sum_outputs set to True
-    onnx_out = run_onnx_lstm(data, onnx_input_weights, onnx_output_weights,
-                             onnx_biases, seq_lens, initial_h, initial_c, True)
-    popart_out = run_popart_lstm(data, onnx_input_weights, onnx_output_weights,
-                                 onnx_biases, initial_h, initial_c, True)
+    for sum_outputs in [True, False]:
+        onnx_out = run_onnx_lstm(data, onnx_input_weights, onnx_output_weights,
+                                 onnx_biases, seq_lens, initial_h, initial_c,
+                                 sum_outputs)
+        popart_out = run_popart_lstm(data, onnx_input_weights,
+                                     onnx_output_weights, onnx_biases,
+                                     initial_h, initial_c, sum_outputs)
 
-    for k, ov in onnx_out.items():
-        if k.startswith(popart.reservedGradientPrefix()):
-            print(f'Checking anchor {k}')
+        for k, ov in onnx_out.items():
+            if k.startswith(popart.reservedGradientPrefix()):
+                print(f'Checking anchor {k}')
 
-            if k == 'model_out':
-                ov = np.squeeze(ov)
-            pv = popart_out[k]
-            assert np.array_equal(ov, pv)
-
-    # Run with sum_outputs set to False
-    onnx_out = run_onnx_lstm(data, onnx_input_weights, onnx_output_weights,
-                             onnx_biases, seq_lens, initial_h, initial_c,
-                             False)
-    popart_out = run_popart_lstm(data, onnx_input_weights, onnx_output_weights,
-                                 onnx_biases, initial_h, initial_c, False)
-
-    for k, ov in onnx_out.items():
-        if k.startswith(popart.reservedGradientPrefix()):
-            print(f'Checking anchor {k}')
-
-            if k == 'model_out':
-                ov = np.squeeze(ov)
-            pv = popart_out[k]
-            assert np.array_equal(ov, pv)
+                if k == 'model_out':
+                    ov = np.squeeze(ov)
+                pv = popart_out[k]
+                assert np.array_equal(ov, pv)
 
 
 def test_lstm_torch(op_tester):
