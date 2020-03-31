@@ -255,6 +255,4 @@ def test_dynamicupdate_overlap_correct(op_tester):
         return result
 
     op_tester.passes = popart.PatternsLevel.ALL
-    #: TODO(T18208) renable. Seems to be dynamicupdate is inplaced with the fix:
-    # https://phabricator.sourcevertex.net/D23529
-    # op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, 'train')
