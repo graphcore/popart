@@ -218,6 +218,12 @@ private:
   TensorId copyFromTensor;
 };
 
+struct PTensorCmp {
+  bool operator()(Tensor *const &a, Tensor *const &b) const {
+    return a->id < b->id;
+  }
+};
+
 } // namespace popart
 
 #endif

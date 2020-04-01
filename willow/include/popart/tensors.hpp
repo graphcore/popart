@@ -4,6 +4,7 @@
 
 #include <unordered_map>
 #include <vector>
+#include <popart/aliases.hpp>
 #include <popart/chains.hpp>
 #include <popart/names.hpp>
 #include <popart/vectorandset.hpp>
@@ -52,6 +53,7 @@ public:
   // remove all Tensors which have no producer and no consumers
   void removeIsolated(bool retainCached);
 
+  const Aliases &getAliases() const { return aliases; }
   void clearAliases();
   void updateAliases(Op *op);
   view::Regions getAliasRegions(Tensor *from, Tensor *to) const;
@@ -86,21 +88,7 @@ private:
 
   Graph &graph;
 
-  // all non-empty Chains
-  //                "to"........................."from"...."chains"
-  //                 ^                            ^         ^
-  std::unordered_map<Tensor *, std::unordered_map<Tensor *, view::Chains>>
-      aliasChainsToKey;
-
-  // the mirror of the above
-  std::unordered_map<Tensor *, std::unordered_map<Tensor *, view::Chains>>
-      aliasChainsFromKey;
-
-  // return M[t], but with guaranteed identity Chains from t
-  std::unordered_map<Tensor *, view::Chains> getAliasChains(
-      const std::unordered_map<Tensor *,
-                               std::unordered_map<Tensor *, view::Chains>> &M,
-      Tensor *t) const;
+  Aliases aliases;
 };
 
 } // namespace popart
