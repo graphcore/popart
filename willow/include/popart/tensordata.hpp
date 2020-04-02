@@ -35,6 +35,23 @@ public:
   // existing data_
   void resetData(const ONNX_NAMESPACE::TensorProto &);
 
+  template <typename RESULT_TYPE>
+  std::vector<RESULT_TYPE> copyDataAs(int expectedResultSize) const {
+    if (data_.size() != expectedResultSize * sizeof(RESULT_TYPE)) {
+      throw error("Size of data does not match expected result size. Expected "
+                  "data of {} bytes, but data is {} bytes in size.",
+                  expectedResultSize * sizeof(RESULT_TYPE),
+                  data_.size());
+    }
+
+    std::vector<RESULT_TYPE> result;
+    const RESULT_TYPE *x = reinterpret_cast<const RESULT_TYPE *>(data());
+    for (int i = 0; i < expectedResultSize; i++) {
+      result.push_back(x[i]);
+    }
+    return result;
+  }
+
 private:
   std::vector<char> data_;
 };
