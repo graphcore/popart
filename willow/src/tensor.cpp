@@ -3,6 +3,7 @@
 #include <cstring>
 #include <string>
 
+#include <popart/ces/constexpr.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -83,6 +84,40 @@ VGraphId Tensor::getVirtualGraphId() const {
 bool Tensor::hasVirtualGraphId() const {
   return getVirtualGraphIdUnsafe() != -1;
 }
+
+const void *Tensor::getTensorData() const {
+  if (hasTensorData()) {
+    return tensorData()->data();
+  } else {
+    return getDataViaRecursion().data();
+  }
+}
+
+std::vector<char> Tensor::getDataViaRecursion() const {
+  if (hasProducer()) {
+    Op *producer = getProducer();
+
+    if (ConstExprOpManager::hasConstExprOp(producer)) {
+      //
+      for (auto inTensor : producer->input->tensors()) {
+        if (!inTensor->hasTensorData()) {
+          auto outTemp = inTensor->getDataViaRecursion();
+          inTensor->setTensorData(inTensor->info, outTemp.data());
+        }
+      }
+      auto ceOp = ConstExprOpManager::createConstExprOp(producer);
+      return ceOp->compute();
+    } else {
+      throw error("Recursing up the tree of producers for {}, the op {} was "
+                  "found which has no const expr version.",
+                  id,
+                  producer->opid);
+    }
+  } else {
+    throw error("Tensor {} has no producer, so can't work back to find data.",
+                id);
+  }
+};
 
 std::set<PipelineStage> Tensor::getPipelineStages() const {
   auto result = consumers.getPipelineStages();

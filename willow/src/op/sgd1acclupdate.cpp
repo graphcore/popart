@@ -19,9 +19,17 @@ std::unique_ptr<Op> SGD1AcclUpdateOp::clone() const {
   return std::make_unique<SGD1AcclUpdateOp>(*this);
 }
 
-// T12001 : implement this
 std::map<InIndex, TensorId> SGD1AcclUpdateOp::optimizerInputs() const {
-  throw error("SGD1 optimizer inputs not implemented yet");
+  std::map<InIndex, TensorId> m;
+  if (!initSmm1.isConst()) {
+    auto index = getSmm1InIndex();
+    m.insert({index, inId(index)});
+  }
+  if (!initSwd1.isConst()) {
+    auto index = getSwd1InIndex();
+    m.insert({index, inId(index)});
+  }
+  return m;
 }
 
 void SGD1AcclUpdateOp::appendOutlineAttributes(OpSerialiserBase &os) const {

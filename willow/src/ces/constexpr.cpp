@@ -149,6 +149,8 @@ void ConstExprOpManager::registerConstOp(const std::string &type) {
   });
 }
 
+// TODO: T17818 Const ops expr should be able to be created from their inplace
+// variants.
 void ConstExprOpManager::registerConstOps() {
   registerConstOp<ConstExprAdd>("Add");
   registerConstOp<ConstExprMul>("Mul");
@@ -158,13 +160,17 @@ void ConstExprOpManager::registerConstOps() {
   registerConstOp<ConstExprCast>("Cast");
   registerConstOp<ConstExprScale>("Scale");
   registerConstOp<ConstExprSlice>("Slice");
+  registerConstOp<ConstExprSlice>("SliceInplace");
   registerConstOp<ConstExprTranspose>("Transpose");
   registerConstOp<ConstExprConcat>("Concat");
+  registerConstOp<ConstExprConcat>("ConcatInplace");
   registerConstOp<ConstExprUnsqueeze>("Unsqueeze");
   registerConstOp<ConstExprSqueeze>("Squeeze");
   registerConstOp<ConstExprIdentity>("Identity");
   registerConstOp<ConstExprReshape>("Reshape");
   registerConstOp<ConstExprGather>("Gather");
+  registerConstOp<ConstExprIdentity>("Flatten");
+  registerConstOp<ConstExprIdentity>("FlattenInplace");
 }
 
 std::unique_ptr<ConstExprOp> ConstExprOpManager::createConstExprOp(Op *op) {
