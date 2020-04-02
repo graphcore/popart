@@ -13,7 +13,7 @@ namespace popart {
 
 class Aliases {
 public:
-  Aliases(){};
+  Aliases() {}
   ~Aliases() = default;
 
   void clearAliases();

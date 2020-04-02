@@ -120,11 +120,9 @@ def test_inplace_exclude():
     input_data = np.random.rand(2, 2).astype(np.float32)
 
     exclude_inplace_id = ''
-    output_id = ''
 
     def init_builder(builder):
         nonlocal exclude_inplace_id
-        nonlocal output_id
 
         d0 = builder.addInputTensor(input_data, 'data0')
 
@@ -139,7 +137,6 @@ def test_inplace_exclude():
                 builder.excludePatterns(x, ["PostNRepl"])
 
         builder.addOutputTensor(x)
-        output_id = x
         return [x]
 
     session = PopartTestSession()
@@ -153,7 +150,7 @@ def test_inplace_exclude():
 
     for i in main_graph:
         o = i['outputs'][0]['name']
-        if o in (exclude_inplace_id, output_id):
+        if o == exclude_inplace_id:
             assert i['type'] == 'Identity'
         else:
             assert i['type'] == 'IdentityInplace'
