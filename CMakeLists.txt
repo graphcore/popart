@@ -138,6 +138,13 @@ else()
   set(PACKAGE_OS_TYPE unknown)
 endif()
 
+# SWDB_PACKAGE_NAME is used to set the name of the main poplar package,
+# e.g. ubuntu_16_04_installer
+if (DEFINED SWDB_PACKAGE_NAME)
+  set(PACKAGE_OS_TYPE ${SWDB_PACKAGE_NAME})
+  string(REPLACE "_installer" "" PACKAGE_OS_TYPE ${PACKAGE_OS_TYPE})
+  message(STATUS "Overriding package type '${PACKAGE_OS_TYPE}'")
+endif()
 
 set(PACKAGE_FILE_NAME popart-${PACKAGE_OS_TYPE}-${VERSION}-${SNAPSHOT})
 set(CPACK_PACKAGE_FILE_NAME ${PACKAGE_FILE_NAME})
