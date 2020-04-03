@@ -890,16 +890,22 @@ void BuilderImpl::loadModelProto(const std::string &modelProtoOrFilename) {
   for (auto opset : model_.opset_import()) {
     if (opset.domain() == "" && (opset.version() < minOnnxOperatorSetVersion ||
                                  opset.version() > maxOnnxOperatorSetVersion)) {
-      throw error("Expecting ONNX opset version {}, but got {}.",
-                  onnxOperatorSetVersion,
-                  opset.version());
+      throw error("Encountered ONNX opset version {}, Maximimum supported "
+                  "opset is {}, minimum {} and default {}.",
+                  opset.version(),
+                  maxOnnxOperatorSetVersion,
+                  minOnnxOperatorSetVersion,
+                  onnxOperatorSetVersion);
     }
     if (opset.domain() == Domain::ai_graphcore &&
         (opset.version() < minGraphcoreOperatorSetVersion ||
          opset.version() < maxGraphcoreOperatorSetVersion)) {
-      throw error("Expecting GC opset version {}, but got {}.",
-                  graphcoreOperatorSetVersion,
-                  opset.version());
+      throw error("Encountered GraphCore opset version {}, Maximimum supported "
+                  "opset is {}, minimum {} and default {}.",
+                  opset.version(),
+                  minGraphcoreOperatorSetVersion,
+                  maxGraphcoreOperatorSetVersion,
+                  graphcoreOperatorSetVersion);
     }
 
     // TODO : Need to check if we have already set the domain opsetversion

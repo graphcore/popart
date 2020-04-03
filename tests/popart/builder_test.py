@@ -1,10 +1,14 @@
 # Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-import numpy as np
 import os
-import popart
-import pytest
 import tempfile
+
+import popart
 import test_util as tu
+
+import numpy as np
+import onnx
+import pytest
+from onnx import AttributeProto, GraphProto, TensorProto, helper
 
 
 def getDevice():
@@ -1371,6 +1375,58 @@ def test_builder_opsetDefinesVersions(tmpdir):
     assert (
         "add(): incompatible function arguments. The following argument types are supported:"
         in e_info.value.args[0])
+
+
+def test_builder_opset11(tmpdir):
+    # Test the opset11 builder throws an error.
+    # TODO: T11574 update this once opset 11 is supported.
+    with pytest.raises((RuntimeError, popart.popart_exception)) as e_info:
+        builder = popart.Builder(opsets={"ai.onnx": 11, "ai.graphcore": 1})
+    assert (
+        "ONNX Opset 11 is not yet supported in PopART. Please use opset 10 to "
+        "build your model, or convert your ONNX model to opset 10 or lower" in
+        e_info.value.args[0])
+
+
+def test_builder_opset11_load(tmpdir):
+    # Test the opset11 builder throws an error when loading from onnx file.
+    # TODO: T11574 update this once opset 11 is supported.
+
+    # Create one input (ValueInfoProto)
+    X = helper.make_tensor_value_info('X', TensorProto.FLOAT, [3, 2])
+    pads = helper.make_tensor_value_info('pads', TensorProto.FLOAT, [1, 4])
+
+    value = helper.make_tensor_value_info('value', AttributeProto.FLOAT, [1])
+
+    # Create one output (ValueInfoProto)
+    Y = helper.make_tensor_value_info('Y', TensorProto.FLOAT, [3, 4])
+
+    # Create a node (NodeProto) - This is based on Pad-11
+    node_def = helper.make_node(
+        'Pad',  # node name
+        ['X', 'pads', 'value'],  # inputs
+        ['Y'],  # outputs
+        mode='constant',  # attributes
+    )
+
+    # Create the graph (GraphProto)
+    graph_def = helper.make_graph(
+        [node_def],
+        'test-model',
+        [X, pads, value],
+        [Y],
+    )
+
+    # Create the model (ModelProto)
+    model_def = helper.make_model(graph_def, producer_name='onnx-example')
+    onnx.save(model_def, os.path.join(tmpdir, "model.onnx"))
+
+    # For some reason this appears as a RuntimeError on OSX and popart.popart_exception
+    # on ubuntu.
+    with pytest.raises((RuntimeError, popart.popart_exception)) as e_info:
+        builder = popart.Builder(os.path.join(tmpdir, "model.onnx"))
+    assert ("Encountered ONNX opset version 11, Maximimum supported "
+            "opset is 10, minimum 6 and default 10." in e_info.value.args[0])
 
 
 def test_builder_opsetVersioning(tmpdir):

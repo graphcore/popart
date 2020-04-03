@@ -346,9 +346,14 @@ public:
   AiOnnxOpset10 aiOnnxOpset10() { return AiOnnxOpset10(this->impl_); }
 
   /**
-   * Return the builder interface for ai.onnx opset 11
+   * ONNX opset 11 is currently not supported in PopART, so return an error.
    */
-  AiOnnxOpset11 aiOnnxOpset11() { return AiOnnxOpset11(this->impl_); }
+  AiOnnxOpset11 aiOnnxOpset11() {
+    // TODO: T11574 update this once opset 11 is supported.
+    throw error(
+        "ONNX Opset 11 is not yet supported in PopART. Please use opset 10 to "
+        "build your model, or convert your ONNX model to opset 10 or lower.");
+  }
 
   /**
    * Return the builder interface for ai.onnx.ml opset 1
