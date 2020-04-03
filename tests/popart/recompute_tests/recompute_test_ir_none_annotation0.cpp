@@ -1,9 +1,10 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE RecomputeTestIrNoneAnnotation0
 
-#include <boost/test/unit_test.hpp>
+#include <memory>
 #include <vector>
-#include <popart/testdevice.hpp>
+
+#include <boost/test/unit_test.hpp>
 
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
@@ -14,6 +15,7 @@
 #include <popart/optimizer.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensordata.hpp>
+#include <popart/testdevice.hpp>
 
 using namespace popart;
 
@@ -49,8 +51,8 @@ BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
     // Add the last tensor, and the 3rd tensor as anchors
     auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("ALL")}});
     auto optimizer = ConstSGD(0.01);
-    std::vector<Loss *> losses{
-        new L1Loss(act, "l1LossVal", 0.1, ReductionType::SUM)};
+    std::vector<std::shared_ptr<Loss>> losses{
+        std::make_shared<L1Loss>(act, "l1LossVal", 0.1, ReductionType::SUM)};
     auto device = createTestDevice(TEST_TARGET);
 
     SessionOptions opts;

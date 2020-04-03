@@ -137,7 +137,8 @@ void Ir::dotCheckpoint(DotCheck check) const {
   viz.write();
 }
 
-bool Ir::isInputToLoss(const Tensor *t) const {
+bool Ir::isInputToLoss(const Tensor *t,
+                       const std::vector<std::shared_ptr<Loss>> &losses) const {
   for (auto &loss : losses) {
     for (int i = 0; i < loss->input_size(); i++) {
       auto input = loss->input(i);
@@ -169,7 +170,7 @@ void Ir::confirmNoReservedIds() const {
 IrBundle::IrBundle(const ONNX_NAMESPACE::ModelProto &modelProto_,
                    const InputShapeInfo &inputShapeInfo_,
                    const DataFlow &dataFlow_,
-                   const std::vector<Loss *> &losses_,
+                   const std::vector<std::shared_ptr<Loss>> &losses_,
                    const Optimizer *optimizer_,
                    DeviceInfo &deviceInfo_,
                    const SessionOptions &userOptions_,
@@ -281,13 +282,6 @@ void Ir::removeIsolatedTensors(bool retainCached) {
 }
 
 void Ir::setExecutionMode(const ExecutionMode &mode) { executionMode = mode; }
-
-void Ir::setLosses(const std::vector<Loss *> &_losses) {
-  losses.clear();
-  for (auto &l : _losses) {
-    losses.emplace_back(l->clone());
-  }
-}
 
 void Ir::setOptimizer(const Optimizer &o) {
   optimizer = o.clone();
@@ -848,11 +842,18 @@ void Ir::prepareImpl(const IrBundle &gb) {
   setPatterns(gb.patterns);
   setOnnxModel(gb.modelProto);
 
-  setLosses(gb.losses);
+  if (graphs.size() == 1) {
+    if (isPrepared) {
+      throw error("There is more than one graph at the loss insertion stage, "
+                  "which should not happen. This is an internal error.");
+    }
+  }
+
+  getMainGraph().setLosses(gb.losses);
 
   confirmNoReservedIds();
 
-  registerInputTensors();
+  registerInputTensors(gb.losses);
 
   if (!canTrain() && getSessionOptions().enableGradientAccumulation) {
     throw error("Gradient Accumulation only available when training.");
@@ -865,7 +866,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   constructForwards();
 
   // Check virtual graph settings and annotations are consistent
-  verifyVirtualGraphIds(false);
+  verifyVirtualGraphIds(false, gb.losses);
   verifyPipelineSettings();
   verifyPingPongSettings();
 
@@ -893,7 +894,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
       userOptions.pingPongPhases > 1) {
     applyTransform(PingPong::id(1), getMainGraph());
-    verifyVirtualGraphIds(true);
+    verifyVirtualGraphIds(true, gb.losses);
   }
 
   if (getSessionOptions().enablePipelining) {
@@ -901,7 +902,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   }
 
   if (canEvaluate()) {
-    growFinalLoss();
+    growFinalLoss(gb.losses);
     updateVertices();
     setNEdgesToLoss();
   }
@@ -924,7 +925,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
       userOptions.pingPongPhases > 1) {
     applyTransform(PingPong::id(2), getMainGraph());
-    verifyVirtualGraphIds(true);
+    verifyVirtualGraphIds(true, gb.losses);
   }
 
   updateVertices();
@@ -971,7 +972,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
       userOptions.pingPongPhases > 1) {
     applyTransform(PingPong::id(3), getMainGraph());
-    verifyVirtualGraphIds(true);
+    verifyVirtualGraphIds(true, gb.losses);
   }
 
   // Dynamicoptransform decomposes grad sums that contain
@@ -1061,7 +1062,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
       userOptions.pingPongPhases > 1) {
     applyTransform(PingPong::id(4), getMainGraph());
-    verifyVirtualGraphIds(true);
+    verifyVirtualGraphIds(true, gb.losses);
   }
 
   updateVertices();
@@ -1168,7 +1169,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   verifyConstExprFolding();
   verifyConnectivity();
   verifyTensorIds();
-  verifyVirtualGraphIds(true);
+  verifyVirtualGraphIds(true, gb.losses);
   verifyVertexAttributesOnlyInMain();
   verifySubgraphs();
   verifyRecomputeAttributes();
@@ -1213,7 +1214,9 @@ void Ir::verifyVertexAttributesOnlyInMain() const {
   }
 }
 
-void Ir::verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const {
+void Ir::verifyVirtualGraphIds(
+    bool postAutoVirtualGraphTransform,
+    const std::vector<std::shared_ptr<Loss>> &losses) const {
   if (virtualGraphsEnabled()) {
     logging::ir::debug("Verifying virtual graph id consistency");
     // Get the virtual graph Id from an op or loss (-1 if not set)
@@ -1397,7 +1400,8 @@ void checkForDimParams(const TensorId &id, const ONNX_NAMESPACE::TypeProto &t) {
 
 } // namespace
 
-void Ir::registerInputTensors() {
+void Ir::registerInputTensors(
+    const std::vector<std::shared_ptr<Loss>> &losses) {
 
   auto &onnxGraph = onnxModel->graph();
 
@@ -1616,7 +1620,16 @@ void Ir::validateAnchors() const {
 bool Ir::applyPreAliasPattern(const PreAliasPattern *pattern, Graph &graph) {
   bool result = false;
 
-  auto canApplyPattern = [&](Op *op) {
+  auto touchesInputToLoss = [this, &graph, pattern](Op *op) {
+    for (auto &tensor : pattern->touches(op)) {
+      if (this->isInputToLoss(tensor, graph.getLosses())) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  auto canApplyPattern = [this, &touchesInputToLoss, pattern](Op *op) {
     if (op->isExcludedFromPattern(pattern) || !pattern->matches(op) ||
         pattern->touchesAnchored(op)) {
       return false;
@@ -1624,8 +1637,8 @@ bool Ir::applyPreAliasPattern(const PreAliasPattern *pattern, Graph &graph) {
 
     // If the ir will construct a loss, but hasn't yet, check that the pattern
     // doesn't touch the inputs to the loss.
-    if (canEvaluate() && !constructedFinalLoss &&
-        pattern->touchesInputToLoss(op)) {
+    if (this->canEvaluate() && !this->constructedFinalLoss &&
+        touchesInputToLoss(op)) {
       return false;
     }
 
@@ -2622,7 +2635,7 @@ std::set<Op *> Ir::getTrainTargetOps() const {
   return trainTargets;
 }
 
-void Ir::growFinalLoss() {
+void Ir::growFinalLoss(const std::vector<std::shared_ptr<Loss>> &losses) {
   if (losses.size() == 0) {
     throw error("In Ir::growFinalLoss, but losses vector is empty");
   }

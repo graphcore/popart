@@ -79,7 +79,7 @@ bool InferPipelineStages::apply(Graph &graph) const {
         "\n  {}: {}", op->debugName(), op->getVirtualGraphId());
     op->setPipelineStage(op->getVirtualGraphId());
   }
-  for (auto &loss : graph.getIr().losses) {
+  for (auto &loss : graph.getLosses()) {
     ss << logging::format(
         "\n  Loss({}): {}", loss->input(0), loss->getVirtualGraphId());
     loss->pipelineStage(loss->getVirtualGraphId());

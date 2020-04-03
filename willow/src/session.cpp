@@ -8,6 +8,7 @@
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
 #include <popart/onnxutil.hpp>
+#include <popart/op/loss.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/session.hpp>
 #include <popart/sessionoptions.hpp>
@@ -276,6 +277,16 @@ std::string Session::serializeIr(IrSerializationFormat format) {
   return ss.str();
 }
 
+std::vector<std::shared_ptr<Loss>>
+Session::cloneLosses(const std::vector<Loss *> &losses) {
+
+  std::vector<std::shared_ptr<Loss>> lossesCloned;
+  for (auto &loss : losses) {
+    lossesCloned.push_back(std::move(loss->clone()));
+  }
+  return lossesCloned;
+}
+
 InferenceSession::InferenceSession() : Session() {}
 
 InferenceSession::~InferenceSession() = default;
@@ -296,7 +307,7 @@ void InferenceSession::configureFromOnnx(
   ir.prepare({modelProto,
               perk,
               df,
-              losses,
+              cloneLosses(losses),
               nullptr,
               *deviceInfo,
               userOptions,
@@ -353,7 +364,7 @@ void TrainingSession::configureFromOnnx(const std::string &modelProtoOrFilename,
   ir.prepare({modelProto,
               perk,
               df,
-              lossesIn,
+              cloneLosses(lossesIn),
               &optimizerIn,
               *deviceInfo,
               userOptions,

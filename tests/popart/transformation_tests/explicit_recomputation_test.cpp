@@ -1,5 +1,8 @@
 #define BOOST_TEST_MODULE ExplicitRecomputationTest
 
+#include <memory>
+#include <vector>
+
 #include <boost/test/unit_test.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
@@ -76,8 +79,8 @@ BOOST_AUTO_TEST_CASE(ExplicitRecomputation_Case) {
     auto dataFlow = DataFlow(1, {out}, AnchorReturnType("ALL"));
 
     auto optimizer = ConstSGD(0.01);
-    std::vector<Loss *> losses{
-        new L1Loss(out, "l1LossVal", 0.1, ReductionType::SUM)};
+    std::vector<std::shared_ptr<Loss>> losses{
+        std::make_shared<L1Loss>(out, "l1LossVal", 0.1, ReductionType::SUM)};
 
     auto device = createTestDevice(TEST_TARGET);
     SessionOptions opts;

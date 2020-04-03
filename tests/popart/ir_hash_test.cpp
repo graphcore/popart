@@ -1,8 +1,11 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE IrHashTest
 
-#include <boost/test/unit_test.hpp>
+#include <memory>
 #include <vector>
+
+#include <boost/test/unit_test.hpp>
+
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/filereader.hpp>
@@ -50,7 +53,8 @@ BOOST_AUTO_TEST_CASE(test0) {
   auto inId  = proto.graph().input()[0].name();
   auto outId = proto.graph().output()[0].name();
   auto df0   = DataFlow(1, {{outId, AnchorReturnType("ALL")}});
-  std::vector<Loss *> losses{new L1Loss(outId, "l1", 0.1, ReductionType::SUM)};
+  std::vector<std::shared_ptr<Loss>> losses{
+      std::make_shared<L1Loss>(outId, "l1", 0.1, ReductionType::SUM)};
   auto opt0    = ConstSGD(0.01);
   auto device0 = createTestDevice(TEST_TARGET, 1, 20);
 

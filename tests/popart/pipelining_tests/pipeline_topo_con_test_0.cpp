@@ -106,24 +106,24 @@ void prepareIr1(popart::Ir &ir) {
 
   auto optimizer = ConstSGD(0.01);
 
-  auto loss1 = std::unique_ptr<Loss>(
-      new L1Loss(act6, "l1LossVal_1", 0.1, ReductionType::MEAN));
+  auto loss1 =
+      std::make_shared<L1Loss>(act6, "l1LossVal_1", 0.1, ReductionType::MEAN);
 
-  auto loss2 = std::unique_ptr<Loss>(
-      new L1Loss(act8, "l1LossVal_2", 0.2, ReductionType::SUM));
+  auto loss2 =
+      std::make_shared<L1Loss>(act8, "l1LossVal_2", 0.2, ReductionType::SUM);
 
-  auto loss3 = std::unique_ptr<Loss>(
-      new NllLoss(act3, l0, "nllLossVal_1", ReductionType::MEAN));
+  auto loss3 =
+      std::make_shared<NllLoss>(act3, l0, "nllLossVal_1", ReductionType::MEAN);
 
-  auto loss4 = std::unique_ptr<Loss>(
-      new NllLoss(act9, l1, "nllLossVal_2", ReductionType::SUM));
+  auto loss4 =
+      std::make_shared<NllLoss>(act9, l1, "nllLossVal_2", ReductionType::SUM);
 
   auto device = createTestDevice(TEST_TARGET, 3);
 
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              {loss1.get(), loss2.get(), loss3.get(), loss4.get()},
+              {loss1, loss2, loss3, loss4},
               &optimizer,
               *device,
               userOptions,
@@ -198,15 +198,15 @@ void prepareIr0(popart::Ir &ir) {
 
   auto optimizer = ConstSGD(0.01);
 
-  auto loss = std::unique_ptr<Loss>(
-      new L1Loss(act5, "l1LossVal", 0.1, ReductionType::SUM));
+  auto loss =
+      std::make_shared<L1Loss>(act5, "l1LossVal", 0.1, ReductionType::SUM);
 
   auto device = createTestDevice(TEST_TARGET, 3);
 
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              {loss.get()},
+              {loss},
               &optimizer,
               *device,
               userOptions,

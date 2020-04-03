@@ -184,7 +184,7 @@ bool PingPong::apply(Graph &graph) const {
 
     // Put the user defined losses on the final virtual graph.
     // Losses should occur on the same virtual graph as the last FWD operators.
-    for (auto &loss : ir.losses) {
+    for (auto &loss : graph.getLosses()) {
       loss->virtualGraph((num_phases - 1) % num_ipus);
     }
 

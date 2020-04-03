@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE(NegPriorities_concat0) {
     //         |- [Concat] x2 -|                              /
     //         |                                             /
     //         |                                            /
-    // in3 ----|                                          [Concat] ---- o2 
+    // in3 ----|                                          [Concat] ---- o2
     //                                                    |              |
     // in4 ---------- [Relu] -- c3 -----------------------|         [ReduceSum]
     //                   ^                                               |
@@ -85,8 +85,8 @@ BOOST_AUTO_TEST_CASE(NegPriorities_concat0) {
     // Create the IR
     auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("ALL")}});
     auto optimizer = ConstSGD(0.01);
-    std::vector<Loss *> losses{
-        new L1Loss(out, "l1LossVal", 0.1, ReductionType::SUM)};
+    std::vector<std::shared_ptr<Loss>> losses{
+        std::make_shared<L1Loss>(out, "l1LossVal", 0.1, ReductionType::SUM)};
     auto device = createTestDevice(TEST_TARGET);
 
     Ir ir;

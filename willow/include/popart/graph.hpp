@@ -3,7 +3,9 @@
 #define GUARD_NEURALNET_GRAPH_HPP
 
 #include <map>
+#include <memory>
 #include <unordered_set>
+#include <vector>
 
 #include <popart/graphid.hpp>
 #include <popart/names.hpp>
@@ -34,6 +36,12 @@ public:
 
   const Ir &getIr() const { return ir; }
   Ir &getIr() { return ir; }
+
+  const std::vector<std::shared_ptr<Loss>> &getLosses() const { return losses; }
+
+  void setLosses(const std::vector<std::shared_ptr<Loss>> &losses_) {
+    losses = losses_;
+  }
 
   void constructFromOnnxGraph(const ONNX_NAMESPACE::GraphProto &onnx_graph);
   Op *growFromNode(const Node &node);
@@ -144,6 +152,7 @@ private:
   std::vector<GradInOutMapper> gradInInfo;
 
   Ir &ir;
+  std::vector<std::shared_ptr<Loss>> losses;
 };
 
 template <typename T>

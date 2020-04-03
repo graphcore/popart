@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <map>
+#include <memory>
 #include <random>
 #include <tuple>
 #include <vector>
@@ -138,8 +139,8 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD1) {
                           {"lossScaling", {0.2f, true}},
                           {"defaultMomentum", {0.9f, false}}});
     ;
-    std::vector<Loss *> losses{
-        new L1Loss(reduced, "l1LossVal", lossLambda, ReductionType::SUM)};
+    std::vector<std::shared_ptr<Loss>> losses{std::make_shared<L1Loss>(
+        reduced, "l1LossVal", lossLambda, ReductionType::SUM)};
 
     Ir ir;
     ir.prepare({modelProto,

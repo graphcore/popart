@@ -52,8 +52,8 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Slice0) {
   auto art       = AnchorReturnType("ALL");
   auto data_flow = DataFlow(1, {{out_id, art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{
-      new L1Loss(out_id, "l1LossVal", 0.1, ReductionType::SUM)};
+  std::vector<std::shared_ptr<Loss>> losses{
+      std::make_shared<L1Loss>(out_id, "l1LossVal", 0.1, ReductionType::SUM)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -116,8 +116,8 @@ template <typename T> void ConstExprTest_Slice0_Type() {
   auto art       = AnchorReturnType("ALL");
   auto data_flow = DataFlow(1, {{out_id, art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{
-      new L1Loss(out_id, "l1LossVal", 0.1, ReductionType::SUM)};
+  std::vector<std::shared_ptr<Loss>> losses{
+      std::make_shared<L1Loss>(out_id, "l1LossVal", 0.1, ReductionType::SUM)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;

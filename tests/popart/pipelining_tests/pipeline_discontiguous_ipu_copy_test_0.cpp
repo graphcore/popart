@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <boost/test/unit_test.hpp>
 #include <map>
+#include <memory>
 #include <random>
 #include <tuple>
 #include <vector>
@@ -149,8 +150,8 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
     auto optimizer  = ConstSGD(learnRate);
 
     float lambda = 0.1;
-    auto loss    = std::unique_ptr<Loss>(
-        new L1Loss(actFinal, "l1LossVal", lambda, ReductionType::SUM));
+    auto loss    = std::make_shared<L1Loss>(
+        actFinal, "l1LossVal", lambda, ReductionType::SUM);
 
     auto device = createTestDevice(TEST_TARGET, 7);
 
@@ -179,7 +180,7 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
       irWithPipe.prepare({modelProto,
                           InputShapeInfo(),
                           dataFlow,
-                          {loss.get()},
+                          {loss},
                           &optimizer,
                           *device,
                           userOptions,
@@ -191,12 +192,15 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
             std::make_tuple(cop->getSourceIpu(), cop->getDestIpu()));
       }
 
+      loss = std::make_shared<L1Loss>(
+          actFinal, "l1LossVal", lambda, ReductionType::SUM);
+
       userOptions.enablePipelining = false;
       Ir irWithoutPipe;
       irWithoutPipe.prepare({modelProto,
                              InputShapeInfo(),
                              dataFlow,
-                             {loss.get()},
+                             {loss},
                              &optimizer,
                              *device,
                              userOptions,

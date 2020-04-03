@@ -2,6 +2,7 @@
 #define BOOST_TEST_MODULE ConstExprScaleTest
 
 #include <boost/test/unit_test.hpp>
+#include <memory>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/devicemanager.hpp>
@@ -109,8 +110,8 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Scale0) {
   TensorId outId = model_proto.graph().output(0).name();
   auto data_flow = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{
-      new L1Loss(outId, "l1LossVal", 0.1, ReductionType::SUM)};
+  std::vector<std::shared_ptr<Loss>> losses{
+      std::make_shared<L1Loss>(outId, "l1LossVal", 0.1, ReductionType::SUM)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;

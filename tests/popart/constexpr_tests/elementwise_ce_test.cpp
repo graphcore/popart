@@ -73,8 +73,8 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add0) {
   auto art       = AnchorReturnType("ALL");
   auto dataFlow  = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{
-      new L1Loss(outId, "l1LossVal", 0.1, ReductionType::SUM)};
+  std::vector<std::shared_ptr<Loss>> losses{
+      std::make_shared<L1Loss>(outId, "l1LossVal", 0.1, ReductionType::SUM)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -160,8 +160,8 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add1) {
   auto art       = AnchorReturnType("ALL");
   auto dataFlow  = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{
-      new L1Loss(outId, "l1LossVal", 0.1, ReductionType::SUM)};
+  std::vector<std::shared_ptr<Loss>> losses{
+      std::make_shared<L1Loss>(outId, "l1LossVal", 0.1, ReductionType::SUM)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -381,8 +381,8 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Div0) {
   auto art       = AnchorReturnType("ALL");
   auto dataFlow  = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{
-      new L1Loss(outId, "l1LossVal", 0.1, ReductionType::SUM)};
+  std::vector<std::shared_ptr<Loss>> losses{
+      std::make_shared<L1Loss>(outId, "l1LossVal", 0.1, ReductionType::SUM)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -472,8 +472,8 @@ void ConstExprTest_Elementwise_Test(
   auto art       = AnchorReturnType("ALL");
   auto dataFlow  = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{
-      new L1Loss(outId, "l1LossVal", 0.1, ReductionType::SUM)};
+  std::vector<std::shared_ptr<Loss>> losses{
+      std::make_shared<L1Loss>(outId, "l1LossVal", 0.1, ReductionType::SUM)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;

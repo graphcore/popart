@@ -1,8 +1,11 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE PatternsTest
 
-#include <boost/test/unit_test.hpp>
+#include <memory>
 #include <vector>
+
+#include <boost/test/unit_test.hpp>
+
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/filereader.hpp>
@@ -54,8 +57,8 @@ BOOST_AUTO_TEST_CASE(PostNRepl_IdentityOp) {
   auto art       = AnchorReturnType("ALL");
   auto dataFlow  = DataFlow(1, {{tensorIds.back(), art}, {tensorIds[2], art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{
-      new L1Loss(tensorIds.back(), "l1LossVal", 0.1, ReductionType::SUM)};
+  std::vector<std::shared_ptr<Loss>> losses{std::make_shared<L1Loss>(
+      tensorIds.back(), "l1LossVal", 0.1, ReductionType::SUM)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -109,8 +112,8 @@ BOOST_AUTO_TEST_CASE(PreUniRepl) {
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("ALL")}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{
-      new L1Loss(identOut, "l1LossVal", 0.1, ReductionType::SUM)};
+  std::vector<std::shared_ptr<Loss>> losses{
+      std::make_shared<L1Loss>(identOut, "l1LossVal", 0.1, ReductionType::SUM)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -159,8 +162,8 @@ BOOST_AUTO_TEST_CASE(OpToIdentity) {
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("ALL")}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{
-      new L1Loss(identOut, "l1LossVal", 0.1, ReductionType::SUM)};
+  std::vector<std::shared_ptr<Loss>> losses{
+      std::make_shared<L1Loss>(identOut, "l1LossVal", 0.1, ReductionType::SUM)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -206,8 +209,8 @@ BOOST_AUTO_TEST_CASE(GatherToIdentity) {
   // Create the IR
   auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("ALL")}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{
-      new L1Loss(out, "l1LossVal", 0.1, ReductionType::SUM)};
+  std::vector<std::shared_ptr<Loss>> losses{
+      std::make_shared<L1Loss>(out, "l1LossVal", 0.1, ReductionType::SUM)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -257,8 +260,8 @@ BOOST_AUTO_TEST_CASE(SplitConvBias) {
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("ALL")}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{
-      new L1Loss(identOut, "l1LossVal", 0.1, ReductionType::SUM)};
+  std::vector<std::shared_ptr<Loss>> losses{
+      std::make_shared<L1Loss>(identOut, "l1LossVal", 0.1, ReductionType::SUM)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -404,8 +407,8 @@ BOOST_AUTO_TEST_CASE(SubtractArg1GradOp) {
                             {reservedGradientPrefix() + input1, art},
                             {reservedGradientPrefix() + input2, art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{
-      new L1Loss(identOut, "l1LossVal", 0.1, ReductionType::SUM)};
+  std::vector<std::shared_ptr<Loss>> losses{
+      std::make_shared<L1Loss>(identOut, "l1LossVal", 0.1, ReductionType::SUM)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -455,8 +458,8 @@ BOOST_AUTO_TEST_CASE(ReciprocalGradOp) {
                             {reservedGradientPrefix() + input, art},
                             {"l1LossVal", art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{
-      new L1Loss(output, "l1LossVal", 0.1, ReductionType::SUM)};
+  std::vector<std::shared_ptr<Loss>> losses{
+      std::make_shared<L1Loss>(output, "l1LossVal", 0.1, ReductionType::SUM)};
 
   auto opts   = SessionOptions();
   auto device = createTestDevice(TEST_TARGET);
@@ -525,8 +528,8 @@ BOOST_AUTO_TEST_CASE(Attribute_Inheritance) {
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("ALL")}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{
-      new L1Loss(identOut, "l1LossVal", 0.1, ReductionType::SUM)};
+  std::vector<std::shared_ptr<Loss>> losses{
+      std::make_shared<L1Loss>(identOut, "l1LossVal", 0.1, ReductionType::SUM)};
   losses[0]->virtualGraph(0);
   auto device = createTestDevice(TEST_TARGET);
 

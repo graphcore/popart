@@ -1,6 +1,8 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE PipelineRecomputeIrTest0
 
+#include <memory>
+
 #include "pipeline_recompute_string.hpp"
 #include <boost/test/unit_test.hpp>
 #include <popart/builder.hpp>
@@ -59,8 +61,8 @@ BOOST_AUTO_TEST_CASE(PipelineNoMultiSourceTest0) {
 
   auto optimizer = ConstSGD(0.01);
 
-  auto loss1 = std::unique_ptr<Loss>(
-      new L1Loss(act, "l1LossVal_1", 0.1, ReductionType::MEAN));
+  auto loss1 =
+      std::make_shared<L1Loss>(act, "l1LossVal_1", 0.1, ReductionType::MEAN);
   loss1->virtualGraph(2);
 
   auto device = createTestDevice(TEST_TARGET, nIpus);
@@ -69,7 +71,7 @@ BOOST_AUTO_TEST_CASE(PipelineNoMultiSourceTest0) {
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              {loss1.get()},
+              {loss1},
               &optimizer,
               *device,
               userOptions,
