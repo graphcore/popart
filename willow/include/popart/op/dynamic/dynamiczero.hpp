@@ -36,7 +36,6 @@ public:
 
 class DynamicZeroInplaceOp : public DynamicBinaryBaseInplaceOp {
 public:
-  // DynamicZeroInplaceOp();
   DynamicZeroInplaceOp(const DynamicZeroOp &dynamicZeroOp);
   DynamicZeroInplaceOp(const OperatorIdentifier &_opid,
                        std::vector<int64_t> axes_,

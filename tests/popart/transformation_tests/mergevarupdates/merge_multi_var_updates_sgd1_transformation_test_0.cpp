@@ -1,5 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#define BOOST_TEST_MODULE MergeMultiSgdVarUpdatesTransformation0
+#define BOOST_TEST_MODULE MergeVarUpdatesSGD1Transformation0
 
 #include <boost/test/unit_test.hpp>
 #include <popart/builder.hpp>
@@ -40,9 +40,9 @@ bnconv(Builder *b, TensorId act, ConstVoidData cwdata, ConstVoidData bwdata) {
 }
 } // namespace
 
-BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
+BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD1) {
 
-  auto test = [](MergeVarUpdateType mvu) {
+  auto test = [](MergeVarUpdateType mvu, std::string dtype) {
     // we will generate random input data
     int seed = 1013;
     std::default_random_engine eng(seed);
@@ -54,8 +54,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
 
     int nInChans  = 3;
     int batchsize = 1;
-    TensorInfo in0info{"FLOAT",
-                       std::vector<int64_t>{batchsize, nInChans, 6, 6}};
+    TensorInfo in0info{dtype, std::vector<int64_t>{batchsize, nInChans, 6, 6}};
     auto in0 = builder->addInputTensor(in0info);
     std::vector<float> in0data(in0info.nelms());
     for (auto &val : in0data) {
@@ -79,8 +78,8 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
     for (int i = 0; i < nConv; ++i) {
       int nOutChans = nInChans + 1;
       TensorInfo conv_weight_info{
-          "FLOAT", std::vector<int64_t>{nOutChans, nInChans, 1, 1}};
-      TensorInfo bn_weight_info("FLOAT", std::vector<int64_t>{nOutChans});
+          dtype, std::vector<int64_t>{nOutChans, nInChans, 1, 1}};
+      TensorInfo bn_weight_info(dtype, std::vector<int64_t>{nOutChans});
 
       copyElms += 2 * nOutChans;
       sgdElms += 2 * nOutChans;
@@ -130,7 +129,15 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
 
     float lossLambda   = 0.26;
     float learningRate = 0.1;
-    auto optimizer     = SGD({{"defaultLearningRate", {learningRate, false}}});
+
+    // Use a relatively complex SGD optimizer.
+    auto optimizer = SGD({{"defaultDampening", {0.05f, true}},
+                          {"defaultLearningRate", {1.0f, false}},
+                          {"defaultWeightDecay", {0.02f, false}},
+                          {"defaultVelocityScaling", {0.25f, true}},
+                          {"lossScaling", {0.2f, true}},
+                          {"defaultMomentum", {0.9f, false}}});
+    ;
     std::vector<Loss *> losses{
         new L1Loss(reduced, "l1LossVal", lossLambda, ReductionType::SUM)};
 
@@ -148,16 +155,21 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
     //
     // For case MergeVarUpdateType::All, all the ConstSgdVarUpdates have the
     // same learning rate, weight decay, so should all be merged into a single
-    // group
+    // group.
+    // For all cases we chould also have:
+    // 1 SGD1Accumulate and 1 SGD1AcclUpdate for each SGD1VarUpdate.
+    // 0 SGD1Combo ops.
 
     // Lambda to check the number of ops are as expected.
-    auto checkOps = [&](const popart::AiGraphcoreOpIdV1 &opType, int expected) {
+    auto checkOps = [&ir](const popart::AiGraphcoreOpIdV1 &opType,
+                          int expected) {
       auto count = ir.opsOfType(opType).size();
       std::cout << opType.type << " Elements : " << count
                 << " Expected: " << expected << std::endl;
       BOOST_CHECK(count == expected);
     };
     if (mvu == MergeVarUpdateType::All) {
+
       // 10 flattens per layer are:
       // 3) conv filters, bn bias, bn scale
       // 3) grads of each of the above
@@ -168,36 +180,62 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
 
       // 4 ConcatInplace
       checkOps(Onnx::CustomOperators::ConcatInplace, 4);
-      checkOps(Onnx::CustomOperators::SGD0VarUpdate, 1);
+
+      checkOps(Onnx::CustomOperators::SGD1VarUpdate, 1);
+
+      checkOps(Onnx::CustomOperators::SGD1Accumulate, 1);
+      checkOps(Onnx::CustomOperators::SGD1AcclUpdate, 1);
+      checkOps(Onnx::CustomOperators::SGD1Combo, 0);
+
       checkOps(Onnx::CustomOperators::CopyVarUpdate, 1);
 
     } else if (mvu == MergeVarUpdateType::None) {
-      checkOps(Onnx::CustomOperators::SGD0VarUpdate, 3 * nConv);
+
+      checkOps(Onnx::CustomOperators::SGD1VarUpdate, 3 * nConv);
       checkOps(Onnx::CustomOperators::CopyVarUpdate, 2 * nConv);
+
+      checkOps(Onnx::CustomOperators::SGD1Accumulate, 3 * nConv);
+      checkOps(Onnx::CustomOperators::SGD1AcclUpdate, 3 * nConv);
+      checkOps(Onnx::CustomOperators::SGD1Combo, 0);
+
       checkOps(Onnx::CustomOperators::FlattenInplace, 0);
       checkOps(Onnx::CustomOperators::ConcatInplace, 0);
-    }
+    } else if (mvu == MergeVarUpdateType::AutoTight) {
 
-    else if (mvu == MergeVarUpdateType::AutoTight) {
-      auto thr = opts.mergeVarUpdateMemThreshold;
-      std::cout << "memory threshold : " << thr << std::endl;
+      // Halve the memory threshold for FLOAT16 (multiply the divisor by 2)
+      auto thr = dtype == "FLOAT" ? opts.mergeVarUpdateMemThreshold
+                                  : opts.mergeVarUpdateMemThreshold * 2;
+      std::cout << "Data type: " << dtype << " memory threshold : " << thr
+                << std::endl;
       auto expectednsgd = (sgdElms * 4) / thr + ((sgdElms * 4) % thr != 0);
-      checkOps(Onnx::CustomOperators::SGD0VarUpdate, expectednsgd);
+      checkOps(Onnx::CustomOperators::SGD1VarUpdate, expectednsgd);
+      checkOps(Onnx::CustomOperators::SGD1Accumulate, expectednsgd);
+      checkOps(Onnx::CustomOperators::SGD1AcclUpdate, expectednsgd);
+
+      checkOps(Onnx::CustomOperators::SGD1Combo, 0);
 
       auto expectedncopy = (copyElms * 4) / thr + ((copyElms * 4) % thr != 0);
       checkOps(Onnx::CustomOperators::CopyVarUpdate, expectedncopy);
-    }
 
-    else if (mvu == MergeVarUpdateType::AutoLoose) {
+    } else if (mvu == MergeVarUpdateType::AutoLoose) {
       // because both thresholds are greater than the total memory, there should
       // be just 1 SGDVarUpdate and 1 CopyVarUpdate
-      checkOps(Onnx::CustomOperators::SGD0VarUpdate, 1);
+      checkOps(Onnx::CustomOperators::SGD1VarUpdate, 1);
+
+      checkOps(Onnx::CustomOperators::SGD1Accumulate, 1);
+      checkOps(Onnx::CustomOperators::SGD1AcclUpdate, 1);
+      checkOps(Onnx::CustomOperators::SGD1Combo, 0);
+
       checkOps(Onnx::CustomOperators::CopyVarUpdate, 1);
     }
   };
+  test(MergeVarUpdateType::All, "FLOAT");
+  test(MergeVarUpdateType::None, "FLOAT");
+  test(MergeVarUpdateType::AutoTight, "FLOAT");
+  test(MergeVarUpdateType::AutoLoose, "FLOAT");
 
-  test(MergeVarUpdateType::All);
-  test(MergeVarUpdateType::None);
-  test(MergeVarUpdateType::AutoTight);
-  test(MergeVarUpdateType::AutoLoose);
+  test(MergeVarUpdateType::All, "FLOAT16");
+  test(MergeVarUpdateType::None, "FLOAT16");
+  test(MergeVarUpdateType::AutoTight, "FLOAT16");
+  test(MergeVarUpdateType::AutoLoose, "FLOAT16");
 }

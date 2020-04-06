@@ -140,7 +140,7 @@ def test_inference_min_batches():
     Check that we throw if too few batches to fill and flush the pipeline
     for an inference model
     """
-    minBatches = 3  # numIpus
+    minBatches = 3  # == numIpus == numPipelineStages
 
     get_model_anchors(doSharding=True,
                       doPipelining=True,
@@ -163,7 +163,7 @@ def test_training_min_batches():
     Check that we throw if too few batches to fill and flush the pipeline
     for a training model
     """
-    minBatches = 5  # 2 * (numIpus-1) + 1
+    minBatches = 5  # == 2 * (numIpus-1) + 1 == numPipelineStages
 
     get_model_anchors(doSharding=True,
                       doPipelining=True,

@@ -51,9 +51,14 @@ InputCreatorType DynamicZeroOpx::getInputCreatorType(InIndex index) const {
 }
 
 poplar::Tensor
-DynamicZeroInplaceOpx::cloneNcopyOpt(poplar::program::Sequence &,
+DynamicZeroInplaceOpx::cloneNcopyOpt(poplar::program::Sequence &s,
                                      const poplar::Tensor &t) const {
-  return t;
+  if (t.isParallelWriteable()) {
+    return t;
+  } else {
+    // Outplace because t has internal aliases
+    return cloneNcopy(s, t);
+  }
 }
 
 namespace {
