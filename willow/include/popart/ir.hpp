@@ -4,6 +4,7 @@
 
 #include <map>
 #include <memory>
+#include <set>
 
 #include <popart/dataflow.hpp>
 #include <popart/devicemanager.hpp>
@@ -355,6 +356,11 @@ public:
   void updateVertices();
   void updateAliases();
 
+  // Ensure that all virtual graph IDs are not set.
+  // This can occur if the user has specified them but virtual graphs are turned
+  // off globally
+  void unsetAllVirtualGraphIds();
+
   // modify the Ir using all the registered pre-alias patterns
   void applyPreAliasPatterns(Graph &);
 
@@ -459,10 +465,14 @@ private:
   void verifyTensorConsumerConnectivity() const;
   void verifyTensorIds() const;
 
-  // Verities that the virtual graph IDs (if used) are valid, on ops and losses
-  void
-  verifyVirtualGraphIds(bool postAutoVirtualGraphTransform,
-                        const std::vector<std::shared_ptr<Loss>> &losses) const;
+  // Verifies that the virtual graph IDs (if used) are valid, on ops and losses
+  // if specified
+  void verifyVirtualGraphIds(bool postAutoVirtualGraphTransform,
+                             bool includeLosses) const;
+
+  // Very that all virtual graph ids have not been initialised. (Used when
+  // virtual graphs are disabled)
+  void verifyVirualGraphIdsNotInitialized() const;
 
   void verifyVertexAttributesOnlyInMain() const;
   void verifyPipelineSettings() const;

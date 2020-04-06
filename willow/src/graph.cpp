@@ -21,6 +21,7 @@
 // The layers required to construct the backwards pass
 #include <popart/op/conv.hpp>
 #include <popart/op/flatten.hpp>
+#include <popart/op/ipucopy.hpp>
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/sgd1acclupdate.hpp>
 #include <popart/op/sgd1varupdate.hpp>
@@ -74,6 +75,58 @@ Graph::Graph(Ir &ir_, const GraphId &id_) : id(id_), ir(ir_) {
 
 const std::map<OpId, std::unique_ptr<Op>> &Graph::getOps() const { return ops; }
 std::map<OpId, std::unique_ptr<Op>> &Graph::getOps() { return ops; }
+
+const int64_t Graph::NoVGraph = -1;
+
+const std::set<int64_t> Graph::getAllVirtualGraphIds(bool includeLosses) const {
+
+  std::set<int64_t> vGraphIds;
+
+  // Get the vgraph ids from all non-IpuCopyOps
+  for (auto &id_op : getOps()) {
+    auto op = id_op.second.get();
+    if (!op->isConvertibleTo<IpuCopyOp>()) {
+      vGraphIds.insert(getVirtualGraphId(*id_op.second));
+    }
+  }
+
+  if (includeLosses) {
+    for (auto &loss : losses) {
+      vGraphIds.insert(getVirtualGraphId(*loss));
+    }
+  }
+
+  return vGraphIds;
+}
+
+const std::map<int64_t, int>
+Graph::getVirtualGraphCounts(bool includeLosses) const {
+  std::map<int64_t, int> vGraphCounts;
+
+  for (auto &idOp : getOps()) {
+    int64_t vGraphId = getVirtualGraphId(*idOp.second);
+
+    if (vGraphCounts.count(vGraphId) == 0) {
+      vGraphCounts[vGraphId] = 0;
+    }
+
+    vGraphCounts[vGraphId]++;
+  }
+
+  if (includeLosses) {
+    for (auto &loss : getLosses()) {
+      int64_t vGraphId = getVirtualGraphId(*loss);
+
+      if (vGraphCounts.count(vGraphId) == 0) {
+        vGraphCounts[vGraphId] = 0;
+      }
+
+      vGraphCounts[vGraphId]++;
+    }
+  }
+
+  return vGraphCounts;
+}
 
 Op *Graph::getOp(OpId opId) {
   auto found = ops.find(opId);
@@ -148,7 +201,6 @@ bool Graph::isMarkedAsZeroCopy(const TensorId &tensorId) const {
   return std::find(zero_copy.begin(), zero_copy.end(), tensorId) !=
          zero_copy.end();
 }
-
 
 void Graph::constructFromOnnxGraph(
     const ONNX_NAMESPACE::GraphProto &onnx_graph) {
@@ -515,6 +567,22 @@ Graph::getLiveSets(const std::vector<Op *> &topoOps) const {
     liveSets.push_back(live);
   }
   return liveSets;
+}
+
+int64_t Graph::getVirtualGraphId(const Op &op) {
+  if (op.hasVirtualGraphId()) {
+    return op.getVirtualGraphId();
+  } else {
+    return NoVGraph;
+  }
+}
+
+int64_t Graph::getVirtualGraphId(const Loss &loss) {
+  if (loss.hasVirtualGraphId()) {
+    return loss.getVirtualGraphId();
+  } else {
+    return NoVGraph;
+  }
 }
 
 BackwardPassCreator::BackwardPassCreator(Graph &fwdGraph_, Graph &bwdGraph_)

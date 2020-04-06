@@ -4,6 +4,7 @@
 
 #include <map>
 #include <memory>
+#include <set>
 #include <unordered_set>
 #include <vector>
 
@@ -28,6 +29,14 @@ public:
 
   const std::map<OpId, std::unique_ptr<Op>> &getOps() const;
   std::map<OpId, std::unique_ptr<Op>> &getOps();
+
+  static const int64_t NoVGraph;
+
+  // Obtain a set of all vitual graphs Id used across ops (and losses)
+  const std::set<int64_t> getAllVirtualGraphIds(bool includeLosses) const;
+
+  // Obtain counts for each vitual graphs Id used across ops (and losses)
+  const std::map<int64_t, int> getVirtualGraphCounts(bool includeLosses) const;
 
   Op *getOp(OpId opId);
 
@@ -153,6 +162,10 @@ private:
 
   Ir &ir;
   std::vector<std::shared_ptr<Loss>> losses;
+
+  // Get the virtual graph Id from an op or loss (NoVGraph if not set)
+  static int64_t getVirtualGraphId(const Op &op);
+  static int64_t getVirtualGraphId(const Loss &loss);
 };
 
 template <typename T>
