@@ -1316,7 +1316,10 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
           tensor->id,
           candidate->str());
 
-      poplar::Tensor input = candidate->createInput(tensor->str());
+      // The clone makes sure to only keep the necessary parts of the unwound
+      // tensor alive, reducing IPU memory liveness (see T18661)
+      poplar::Tensor input = graph().clone(
+          candidate->createInput(tensor->str() + "_tmp"), tensor->str());
 
       tensors.insert(tensor->id, input);
       efficientlyCreatedInputTensors.insert(tensor->id);

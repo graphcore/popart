@@ -253,16 +253,12 @@ std::vector<TensorId> LSTMOpx::mustExistBeforeCreate(InIndex) const {
 
 void LSTMOpx::prepareWeights(poplar::program::Sequence &prog) const {
   // check to see if the weights were created
-  if (!inputCreated(LSTMOp::getWeightsInIndex())) {
-    prog.add(poplar::program::Copy(
-        getInTensor(LSTMOp::getWeightsInIndex()),
-        reshapePoplibWeightsForOnnx(getLSTMWeights().inputWeights, true)));
-  }
-  if (!inputCreated(LSTMOp::getRecurrenceInIndex())) {
-    prog.add(poplar::program::Copy(
-        getInTensor(LSTMOp::getRecurrenceInIndex()),
-        reshapePoplibWeightsForOnnx(getLSTMWeights().outputWeights, true)));
-  }
+  prog.add(poplar::program::Copy(
+      getInTensor(LSTMOp::getWeightsInIndex()),
+      reshapePoplibWeightsForOnnx(getLSTMWeights().inputWeights, true)));
+  prog.add(poplar::program::Copy(
+      getInTensor(LSTMOp::getRecurrenceInIndex()),
+      reshapePoplibWeightsForOnnx(getLSTMWeights().outputWeights, true)));
 }
 
 poplar::Tensor LSTMOpx::getInput(poplar::program::Sequence &prog) const {
@@ -291,12 +287,12 @@ void LSTMOpx::prepareInitialState(popnn::lstm::LstmState &init_state,
   }
 
   // Check the inputs have been created
-  if (hasInitC && !inputCreated(LSTMOp::getInitialCInIndex())) {
+  if (hasInitC) {
     prog.add(poplar::program::Copy(
         getInTensor(LSTMOp::getInitialCInIndex()),
         createInput(LSTMOp::getInitialCInIndex(), debugPrefix("initC"))));
   }
-  if (hasInitH && !inputCreated(LSTMOp::getInitialHInIndex())) {
+  if (hasInitH) {
     prog.add(poplar::program::Copy(
         getInTensor(LSTMOp::getInitialHInIndex()),
         createInput(LSTMOp::getInitialHInIndex(), debugPrefix("initH"))));
