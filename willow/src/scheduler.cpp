@@ -180,8 +180,8 @@ public:
         ties.push_back({opAddresses[op2], tiedAfter});
       }
     }
-    // less important than actual memory (use -1 otherwise)
-    g.insertAttractions(ties, AllocWeight(1.0, +1));
+    // more important than actual memory (use +1 otherwise)
+    g.insertAttractions(ties, AllocWeight(1.0, -1));
 
     std::vector<OpAddress> opIotas(nOps);
     std::iota(opIotas.begin(), opIotas.end(), 0);
