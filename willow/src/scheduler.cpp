@@ -393,7 +393,7 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
   } else if (ktbLower == "greedy") {
     ktb = KahnTieBreaker::GREEDY;
   } else if (ktbLower == "random") {
-    ktb = KahnTieBreaker::GREEDY;
+    ktb = KahnTieBreaker::RANDOM;
   } else {
     throw error("Unrecognised KahnTieBreaker, {}", kahnTieBreakerString);
   }
