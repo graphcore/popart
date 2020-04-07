@@ -10,14 +10,9 @@
 #include <popart/tensorindex.hpp>
 
 namespace popart {
-
-namespace {
-constexpr const char *const ALPHA_ATTRIBUTE = "alpha";
-
-// default alpha is 10**(-2) from
-// https://github.com/onnx/onnx/blob/master/docs/Operators.md#LeakyRelu
+const std::string ALPHA_ATTRIBUTE = "alpha";
+// default alpha is 10**(-2)
 const float ALPHA_DEFAULT = 1e-2f;
-} // namespace
 
 LeakyReluOp::LeakyReluOp(const OperatorIdentifier &_opid,
                          float _alpha,
@@ -114,7 +109,9 @@ static OpCreator<LeakyReluOp> leakyReluOpCreator(
       float alpha = attr.getAttribute<popart::Attributes::Float>(
           ALPHA_ATTRIBUTE, ALPHA_DEFAULT);
 
-      return std::make_unique<LeakyReluOp>(_opid, alpha, settings);
+      auto leakyRelu = new LeakyReluOp(_opid, alpha, settings);
+
+      return std::unique_ptr<popart::Op>(leakyRelu);
     },
     true);
 } // namespace

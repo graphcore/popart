@@ -130,7 +130,7 @@ BOOST_AUTO_TEST_CASE(Inplace_series_changedPreferences) {
               Patterns(PatternsLevel::NONE).enableInPlace(true)});
 
   // All the Relus have been optimised out,
-  // except the one which CONSUMES an anchors.
-  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Relu).size() == 1);
-  BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::ReluInplace).size() == N - 1);
+  // except the two which are anchors.
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Relu).size() == 2);
+  BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::ReluInplace).size() == N - 2);
 }

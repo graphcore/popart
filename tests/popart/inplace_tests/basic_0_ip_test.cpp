@@ -110,11 +110,12 @@ BOOST_AUTO_TEST_CASE(Inplace_basic1) {
               Patterns(PatternsLevel::NONE).enableInPlace(true)});
 
   // Check the ir
-  // first check that all 3 relus have been inplaced
+  // first check that 2 relus have been inplaced (the final relu creates
+  // an anchor so can't be)
   auto opsOfTypeRelu = ir.opsOfType(Onnx::AiOnnx::OpSet9::Relu);
-  BOOST_CHECK(opsOfTypeRelu.size() == 0);
+  BOOST_CHECK(opsOfTypeRelu.size() == 1);
   auto opsOfTypeReluInplace = ir.opsOfType(Onnx::CustomOperators::ReluInplace);
-  BOOST_CHECK(opsOfTypeReluInplace.size() == 3);
+  BOOST_CHECK(opsOfTypeReluInplace.size() == 2);
 
   auto inplaceOps = ir.opsOfType(Onnx::CustomOperators::ReluInplace);
   // we have already confirmed that there are 2 inplace ops:

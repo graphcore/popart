@@ -328,7 +328,7 @@ BOOST_AUTO_TEST_CASE(Inplace_add5) {
       auto w0     = builder.addInputTensor(info_1122);
       auto i1     = aiOnnx.identity({builder.addInputTensor(info_1144)});
       auto w1     = aiOnnx.identity({builder.addInputTensor(info_1122)});
-      auto c0 = aiOnnx.conv({in0, w0}, {1, 1}, 1, {2, 2}, {0, 0, 0, 0}, {2, 2});
+      auto c0 = aiOnnx.conv({in0, w0}, {1, 1}, 1, {1, 1}, {0, 0, 0, 0}, {2, 2});
 
       // Order the inputs depending on whether we want the lhs inplace or rhs
       // inplace version
@@ -344,7 +344,7 @@ BOOST_AUTO_TEST_CASE(Inplace_add5) {
         a0 = aiOnnx.relu({a0});
       }
 
-      auto c1 = aiOnnx.conv({a0, w1}, {1, 1}, 1, {2, 2}, {0, 0, 0, 0}, {2, 2});
+      auto c1 = aiOnnx.conv({a0, w1}, {1, 1}, 1, {1, 1}, {0, 0, 0, 0}, {2, 2});
 
       auto out = aiOnnx.identity({c1});
       builder.addOutputTensor(out);

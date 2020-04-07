@@ -178,14 +178,9 @@ DynamicUpdateInplaceOpx::DynamicUpdateInplaceOpx(Op *op, Devicex *devicex)
 }
 
 poplar::Tensor
-DynamicUpdateInplaceOpx::cloneNcopyOpt(poplar::program::Sequence &s,
+DynamicUpdateInplaceOpx::cloneNcopyOpt(poplar::program::Sequence &,
                                        const poplar::Tensor &t) const {
-  if (t.isParallelWriteable()) {
-    return t;
-  } else {
-    // Outplace because t has internal aliases
-    return cloneNcopy(s, t);
-  }
+  return t;
 }
 
 namespace {

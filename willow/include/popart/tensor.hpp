@@ -179,14 +179,6 @@ public:
 
   bool consumersAllPreLoss() const;
 
-  const void *getTensorData() const;
-
-  // Backtrack through input ops in order to get data from initializer tensors
-  // (if they exist). When ops are performed on initializers (e.g. slice), the
-  // data is (intentionally) not inhereted by the output tensors, this method
-  // finds the original data and sets the data of the callee tensor.
-  std::vector<char> getDataViaRecursion() const;
-
 protected:
   Graph &graph;
   Op *producer;
@@ -224,12 +216,6 @@ private:
 
   // If the type is copy, this will identity where to copy from
   TensorId copyFromTensor;
-};
-
-struct PTensorCmp {
-  bool operator()(Tensor *const &a, Tensor *const &b) const {
-    return a->id < b->id;
-  }
 };
 
 } // namespace popart

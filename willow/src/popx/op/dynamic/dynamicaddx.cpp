@@ -62,14 +62,9 @@ void DynamicAddOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 poplar::Tensor
-DynamicAddInplaceOpx::cloneNcopyOpt(poplar::program::Sequence &s,
+DynamicAddInplaceOpx::cloneNcopyOpt(poplar::program::Sequence &,
                                     const poplar::Tensor &t) const {
-  if (t.isParallelWriteable()) {
-    return t;
-  } else {
-    // Outplace because t has internal aliases
-    return cloneNcopy(s, t);
-  }
+  return t;
 }
 
 namespace {

@@ -124,7 +124,7 @@ void checkOpsPipelineStage(Graph &graph) {
     }
   };
 
-  // collect all ops in each pipeline stage
+  // collect all ops in  each pipeline stage
   std::map<PipelineStage, std::vector<Op *>> pipelineStages;
 
   for (auto &id_op : graph.getOps()) {
@@ -712,6 +712,7 @@ bool containsSeedTensor(std::vector<TensorId> ids) {
 bool Pipeline::apply(Graph &graph) const {
 
   auto &ir            = graph.getIr();
+  auto maxVGraphId    = ir.getMaxVirtualGraphId();
   bool full_recompute = isFullRecompute(graph);
   // We use numIPUs // replicated graph count for the max vGraph ID.
 
@@ -725,22 +726,34 @@ bool Pipeline::apply(Graph &graph) const {
 
   checkOpsPipelineStage(graph);
 
-  // 2. There must be enough mini-batches of data to fill the pipeline
-  int64_t numPipelineStages = ir.getNumPipelineStages();
+  // 2. There must be enough batches of data for the cycle of filling
+  //    and flushing the pipeline
+  int minDepth;
+  if (ir.canTrain()) {
+    minDepth = 2 * (maxVGraphId - 1) + 1;
+  } else {
+    minDepth = maxVGraphId;
+  }
+
+  int64_t depth;
   if (ir.getSessionOptions().enableGradientAccumulation) {
-    if (ir.getSessionOptions().accumulationFactor < numPipelineStages) {
+    depth = ir.getSessionOptions().accumulationFactor;
+    if (depth < minDepth) {
       // For replicated graphs we are replicating the entire pipeline, so these
       // conditions still hold.
       throw error("For pipelining, depth (gradient accumulation factor) must "
-                  "equal at least the number of pipeline stages ({})",
-                  numPipelineStages);
+                  "be at least {} "
+                  "for {} IPUs",
+                  minDepth,
+                  ir.getDeviceInfo()->getNumIpus());
     }
   } else {
-    int64_t bps = static_cast<int64_t>(ir.getDataFlow().batchesPerStep());
-    if (bps < numPipelineStages) {
-      throw error("For pipelining, depth (batchesPerStep) must equal at least "
-                  "the number of pipeline stages ({})",
-                  numPipelineStages);
+    depth = ir.getDataFlow().batchesPerStep();
+    if (depth < minDepth) {
+      throw error("For pipelining, depth (batchesPerStep) must be at least {} "
+                  "for {} IPUs",
+                  minDepth,
+                  ir.getDeviceInfo()->getNumIpus());
     }
   }
 

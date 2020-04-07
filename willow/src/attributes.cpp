@@ -220,15 +220,6 @@ void Attributes::append(std::stringstream &ss, std::string prefix) const {
     case AttPro::GRAPHS: {
       break;
     }
-    case AttPro::SPARSE_TENSOR: {
-      ss << "(spare tensor placeholder)";
-      break;
-    }
-
-    case AttPro::SPARSE_TENSORS: {
-      ss << "(spare tensors placeholder)";
-      break;
-    }
     }
 
     ss << "\n";

@@ -1,13 +1,9 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <memory>
-#include <popart/ces/concatce.hpp>
-#include <popart/ces/flattence.hpp>
 #include <popart/ces/slicece.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/onnxutil.hpp>
-#include <popart/op/concat.hpp>
-#include <popart/op/flatten.hpp>
 #include <popart/op/sgd1acclreduce.hpp>
 #include <popart/op/sgd1acclupdate.hpp>
 #include <popart/op/sgd1accumulate.hpp>
@@ -29,6 +25,7 @@ std::vector<const Tensor *> SGD1Decompose::touches(Op *) const { return {}; }
 
 namespace {
 template <typename T>
+
 void addAcclInTensor(SGD1ComboOp &comboOp,
                      const Tensor &weight,
                      const Tensor &weightGrad,
@@ -38,25 +35,48 @@ void addAcclInTensor(SGD1ComboOp &comboOp,
   auto wgInfo = weightGrad.info;
   auto nelms  = wgInfo.nelms();
 
+  // T12001
+  std::vector<T> d(nelms, 0.0f);
+
+  // The weight data:
+  const T *weightVal0;
+
   // A note: we could have chosen to always initialize the velocity Tensor to
   // 0, which would correspond to no weight decay in the first iteration. One
   // serious issue with this would be that SGD0 and SGD1 behave differently.
 
   // It is possible that a transform has resulted in this weight Tensor not
   // having data, as it is the slice of the original weight data. We can try and
-  // back-track to find the data.
-  // tempData needs to be outside the if statment as it should have the same
-  // lifetime as weightVal0.
-  std::vector<T> d(nelms, 0.0f);
-  std::vector<char> tempData;
-  const T *weightVal0;
-  if (weight.hasTensorData()) {
-    const void *outTemp = weight.tensorData()->data();
-    weightVal0          = static_cast<const T *>(outTemp);
+  // back-track to find the data. TODO T12031 move the below logic to tensor
+  // class and generalize.
+  std::vector<char> sliceOutTemp;
+  if (!weight.hasTensorData()) {
+
+    constexpr const char *infoString =
+        "In addAcclInTensor, trying to get the weight's data to initialize the "
+        "accumulation tensor with required weight decay term. ";
+    if (!weight.hasProducer()) {
+      throw error(std::string(infoString) +
+                  "But weight has no data. Moreover weight has no "
+                  "producer, so can't work back to find data.");
+    } else {
+      auto asSlice = dynamic_cast<BaseSliceOp *>(weight.getProducer());
+      if (!asSlice) {
+        throw error(std::string(infoString) +
+                    "But it has no data, and it's producer is not a slice to "
+                    "work back through, it is a " +
+                    weight.getProducer()->str());
+      }
+
+      ConstExprSlice ceSlice(asSlice);
+      sliceOutTemp = ceSlice.compute();
+      weightVal0 =
+          static_cast<const T *>(static_cast<void *>(sliceOutTemp.data()));
+    }
   } else {
-    tempData   = weight.getDataViaRecursion();
-    weightVal0 = reinterpret_cast<const T *>(tempData.data());
+    weightVal0 = static_cast<const T *>(weight.tensorData()->data());
   }
+
   // We add to the initialized velocity a weight decay term (see the equations)
   for (auto i = 0; i < nelms; ++i) {
     // T12001 investigate why += doesn't work
@@ -125,6 +145,8 @@ bool SGD1Decompose::apply(Op *op) const {
       throw error("Unsupported type in gradient accumulation transformation, "
                   "currently only FLOAT16 and FLOAT are supported");
     }
+    logging::pattern::trace("Created Accumulator Tensor in SGD1Decompose: {}",
+                            acclIntoAccumulatorId);
   }
 
   // Accumulate Op

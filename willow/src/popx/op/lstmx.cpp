@@ -59,11 +59,7 @@ void LSTMOpx::grow(poplar::program::Sequence &prog) const {
   reshapeAndInsert(LSTMOp::getOutputOutIndex(), output);
 
   auto output_h_state = output[createLSTMParams().timeSteps - 1];
-
-  // cloneNcopy to ensure outputs are not aliases of each other
-  // TODO T18126 remove requirement for this cloneNcopy
-  reshapeAndInsert(LSTMOp::getHiddenStateOutIndex(),
-                   cloneNcopy(prog, output_h_state));
+  reshapeAndInsert(LSTMOp::getHiddenStateOutIndex(), output_h_state);
   reshapeAndInsert(LSTMOp::getCellStateOutIndex(), cell_state);
 
   setOutTensor(LSTMOp::getInitStateOutputPassThroughIndex(), init_state.output);
@@ -74,13 +70,8 @@ void LSTMOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(LSTMOp::getOutputWeightsPassThroughIndex(),
                weights->outputWeights);
   setOutTensor(LSTMOp::getBiasesPassThroughIndex(), weights->biases);
-
-  // TODO T18126 register this alias or insert a cloneNcopy
   setOutTensor(LSTMOp::getInputPassThroughIndex(), input);
-
-  // cloneNcopy to ensure outputs are not aliases of each other
-  // TODO T18126 remove requirement for this cloneNcopy
-  setOutTensor(LSTMOp::getOutputPassThroughIndex(), cloneNcopy(prog, output));
+  setOutTensor(LSTMOp::getOutputPassThroughIndex(), output);
 }
 
 void LSTMOpx::reshapeAndInsert(OutIndex index,

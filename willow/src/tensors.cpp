@@ -10,7 +10,35 @@
 namespace popart {
 
 view::Chains Tensors::getChainsFromTo(Tensor *from, Tensor *to) const {
-  return aliases.getChainsFromTo(from, to);
+  if (from == to) {
+    return view::Chains::getIdentity(from->info.shape());
+  }
+
+  if (aliasChainsFromKey.find(from) == aliasChainsFromKey.end()) {
+    throw error("No chains out of {} found (in particular, none to {})",
+                from->str(),
+                to->str());
+  }
+  auto &allChainsFrom = aliasChainsFromKey.at(from);
+  if (allChainsFrom.find(to) == allChainsFrom.end()) {
+    std::ostringstream oss;
+    oss << "There are chains from " << from->str() << " but none to "
+        << to->str() << ". ";
+    auto foundRev0 = aliasChainsToKey.find(to);
+    if (foundRev0 == aliasChainsToKey.end()) {
+      oss << "There are NO chains from " << to->str();
+    } else {
+      auto revMap = foundRev0->second;
+      if (revMap.find(from) == revMap.end()) {
+        oss << "There are chains from " << to->str() << " but none to "
+            << from->str();
+      } else {
+        oss << " There is a chain from " << to->str() << " to " << from->str();
+      }
+    }
+    throw error(oss.str());
+  }
+  return allChainsFrom.at(to);
 }
 
 TensorId Tensors::moveIntoTensors(std::unique_ptr<Tensor> tensor) {
@@ -19,14 +47,27 @@ TensorId Tensors::moveIntoTensors(std::unique_ptr<Tensor> tensor) {
   return id;
 }
 
+std::unordered_map<Tensor *, view::Chains> Tensors::getAliasChains(
+    const std::unordered_map<Tensor *,
+                             std::unordered_map<Tensor *, view::Chains>> &fullM,
+    Tensor *t) const {
+  std::unordered_map<Tensor *, view::Chains> retM{};
+  auto found = fullM.find(t);
+  if (found != fullM.end()) {
+    retM = found->second;
+  }
+  retM[t] = view::Chains::getIdentity(t->info.shape());
+  return retM;
+}
+
 std::unordered_map<Tensor *, view::Chains>
 Tensors::aliasChainsTo(Tensor *to) const {
-  return aliases.aliasChainsTo(to);
+  return getAliasChains(aliasChainsToKey, to);
 }
 
 std::unordered_map<Tensor *, view::Chains>
 Tensors::aliasChainsFrom(Tensor *from) const {
-  return aliases.aliasChainsFrom(from);
+  return getAliasChains(aliasChainsFromKey, from);
 }
 
 // Regions in "from" aliased "to"
@@ -40,11 +81,31 @@ view::Regions Tensors::getAliasRegions(Tensor *from, Tensor *to) const {
   }
 }
 
-void Tensors::clearAliases() { aliases.clearAliases(); }
+void Tensors::clearAliases() {
+  aliasChainsFromKey.clear();
+  aliasChainsToKey.clear();
+}
 
 // Let the Chains flow through op (called on new inplace ops)
 void Tensors::updateAliases(Op *op) {
   logging::trace("[updateAliases] Updating alias for Op {}", op->debugName());
+
+  std::unordered_map<Tensor *, std::unordered_map<Tensor *, view::Chains>>
+      newAliases;
+
+  auto registerChains =
+      [&newAliases](Tensor *t0, Tensor *t3, const view::Chains &newChains) {
+        if (!newChains.isEmpty()) {
+          if (newAliases.find(t0) == newAliases.end()) {
+            newAliases[t0] = {};
+          }
+          if (newAliases.at(t0).find(t3) == newAliases.at(t0).end()) {
+            newAliases[t0][t3] = {}; // empty Chains
+          }
+          // add the new Chains
+          newAliases[t0][t3] = newAliases[t0][t3].parallel(newChains);
+        }
+      };
 
   // for all of the inputs of op, t1 and all output, t2:
   for (auto i1_t1 : op->input->tensorMap()) {
@@ -65,24 +126,134 @@ void Tensors::updateAliases(Op *op) {
 
       view::Regions inRegions = op->aliases(i1, o1);
 
-      if (std::all_of(inRegions.begin(), inRegions.end(), [](view::Region &r) {
-            return r.isEmpty();
-          })) {
-        continue;
+      for (auto inRegion : inRegions) {
+        if (inRegion.isEmpty()) {
+          continue;
+        }
+
+        auto fwdMap = op->fwdRegMap(i1, o1);
+        auto bwdMap = op->bwdRegMap(i1, o1);
+
+        view::Regions outRegions = fwdMap(inRegion);
+
+        // if there is an alias between the unique output
+        // t2 and the input t1, this opens new Chains
+        for (auto outRegion : outRegions) {
+          if (outRegion.isEmpty()) {
+            continue;
+          }
+
+          view::Link fwdLink(inRegion,
+                             fwdMap,
+                             "Fwd Link of " + op->debugName() + " " +
+                                 std::to_string(i1) + "->" +
+                                 std::to_string(o1));
+
+          view::Link bwdLink(outRegion,
+                             bwdMap,
+                             "Bwd Link of " + op->debugName() + " " +
+                                 std::to_string(i1) + "->" +
+                                 std::to_string(o1));
+
+          // all chains t0 -> t1 for all t0
+          auto allInChains = aliasChainsTo(t1);
+
+          // all chains t2 -> t3 for all t3
+          auto allOutChains = aliasChainsFrom(t2);
+
+          for (auto &inwards : allInChains) {
+            Tensor *t0 = inwards.first;
+            // the chains t0 -> t1
+            view::Chains inChains      = inwards.second;
+            auto inChainsFwdLinkSeries = inChains.series(fwdLink);
+
+            // the chains t1 -> t0. There are such chains,
+            // guaranteed by the existence of chains t0 -> t1
+            logging::trace("[updateAliases] getChainsFromTo(t1, t0)");
+            view::Chains inChainsRev = getChainsFromTo(t1, t0);
+
+            for (auto &outwards : allOutChains) {
+
+              Tensor *t3 = outwards.first;
+
+              logging::trace("[updateAliases] Chain {}->{}->{}->{}",
+                             t0->id,
+                             t1->id,
+                             t2->id,
+                             t3->id);
+
+              // the chains t2 -> t3
+              view::Chains outChains = outwards.second;
+
+              // the chains t3 -> t2
+              // (which must exist by symmetry of aliasing)
+              view::Chains outChainsRev = getChainsFromTo(t3, t2);
+
+              // we now have,
+              // t0 -----> t1 -> op -> t2 -----> t3
+              // and we want to update aliasChainsToKey[t3][t0]
+              // with all new chains that pass through op, as
+              // well as aliasChainsToKey[t0][t3]
+
+              auto newFwdChains = inChainsFwdLinkSeries.series(outChains);
+              auto newBwdChains =
+                  outChainsRev.series(bwdLink).series(inChainsRev);
+
+              bool fwdIsEmpty = newFwdChains.isEmpty();
+              bool bwdIsEmpty = newBwdChains.isEmpty();
+
+              if (fwdIsEmpty != bwdIsEmpty) {
+                std::ostringstream oss;
+                oss << "\n\nnewFwdChains : \n" << newFwdChains << '\n';
+                oss << "\ninChains : \n" << inChains << '\n';
+                oss << "\nfwdLink : \n" << fwdLink << '\n';
+                oss << "\noutChains : \n" << outChains << '\n';
+                oss << "\nDetermining if newFwdChains is empty" << '\n';
+                oss << "\nConclusion, fwdIsEmpty = : " << fwdIsEmpty << '\n';
+                oss << "\n\nnewBwdChains : \n" << newBwdChains << '\n';
+                oss << "\noutChainsRev : \n" << outChainsRev << '\n';
+                oss << "\nbwdLink : \n" << bwdLink << '\n';
+                oss << "\ninChainsRev : \n" << inChainsRev << '\n';
+                oss << "\nDetermining if newBwdChains is empty" << '\n';
+                oss << "\nConclusion, bwdIsEmpty : " << bwdIsEmpty << '\n';
+                throw internal_error(oss.str());
+              }
+
+              if (!fwdIsEmpty) {
+                logging::trace("[updateAliases] Non-empty fwd chains, "
+                               "appending to aliasChainsToKey");
+                registerChains(t3, t0, newFwdChains);
+              }
+
+              // same logic for t3 -> t0
+              if (!bwdIsEmpty) {
+                logging::trace("[updateAliases] Non-empty bwd chains, "
+                               "appending to aliasChainsToKey");
+                registerChains(t0, t3, newBwdChains);
+              }
+            }
+          }
+        }
       }
+    }
+  }
 
-      auto fwdMap = op->fwdRegMap(i1, o1);
-      auto bwdMap = op->bwdRegMap(i1, o1);
-
-      aliases.updateAliases(t1,
-                            t2,
-                            inRegions,
-                            fwdMap,
-                            bwdMap,
-                            "Fwd Link of " + op->debugName() + " " +
-                                std::to_string(i1) + "->" + std::to_string(o1),
-                            "Bwd Link of " + op->debugName() + " " +
-                                std::to_string(i1) + "->" + std::to_string(o1));
+  for (auto x : newAliases) {
+    auto t0         = x.first;
+    auto t3_chain_s = x.second;
+    if (aliasChainsToKey.find(t0) == aliasChainsToKey.end()) {
+      aliasChainsToKey[t0] = {};
+    }
+    for (auto t3_chain : t3_chain_s) {
+      auto t3    = t3_chain.first;
+      auto chain = t3_chain.second;
+      if (aliasChainsToKey.at(t0).find(t3) == aliasChainsToKey.at(t0).end()) {
+        aliasChainsToKey[t0][t3] = {}; // empty Chains
+      }
+      // add the new Chains
+      aliasChainsToKey[t0][t3] = aliasChainsToKey[t0][t3].parallel(chain);
+      // insert the mirror image
+      aliasChainsFromKey[t3][t0] = aliasChainsToKey[t0][t3];
     }
   }
 }

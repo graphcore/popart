@@ -80,29 +80,7 @@ void BuilderImpl::finalizeOp(ONNX_NAMESPACE::NodeProto *node,
     addNodeAttribute(attribute.first, attribute.second, *node);
   }
 
-  // The node outputs are added to the model's value_info field here
   ONNX_NAMESPACE::shape_inference::InferShapes(model_);
-
-  // Sanity check: verify the output dimensions of each output are valid
-  for (int i = 0; i < node->output_size(); ++i) {
-    const TensorId &output = node->output(i);
-    // TODO T17932 : We do not have a mechanism for inferring the output shape
-    // of custom ops, so this check can only be applied if the tensor shape
-    // is known
-    if (hasTensorShape(output)) {
-      std::vector<int64_t> shape = getTensorShape(output);
-      if (std::any_of(shape.begin(), shape.end(), [](int64_t dim) {
-            return dim < 0;
-          })) {
-        throw error(
-            "Output '{}' of node '{}' has invalid shape, {}. Values must "
-            "be non-negative in each shape dimension.",
-            output,
-            fullname.str(),
-            shape);
-      }
-    }
-  }
 }
 
 bool BuilderImpl::inHigherScope(const TensorId &id) const {
@@ -890,22 +868,16 @@ void BuilderImpl::loadModelProto(const std::string &modelProtoOrFilename) {
   for (auto opset : model_.opset_import()) {
     if (opset.domain() == "" && (opset.version() < minOnnxOperatorSetVersion ||
                                  opset.version() > maxOnnxOperatorSetVersion)) {
-      throw error("Encountered ONNX opset version {}, Maximimum supported "
-                  "opset is {}, minimum {} and default {}.",
-                  opset.version(),
-                  maxOnnxOperatorSetVersion,
-                  minOnnxOperatorSetVersion,
-                  onnxOperatorSetVersion);
+      throw error("Expecting ONNX opset version {}, but got {}.",
+                  onnxOperatorSetVersion,
+                  opset.version());
     }
     if (opset.domain() == Domain::ai_graphcore &&
         (opset.version() < minGraphcoreOperatorSetVersion ||
          opset.version() < maxGraphcoreOperatorSetVersion)) {
-      throw error("Encountered GraphCore opset version {}, Maximimum supported "
-                  "opset is {}, minimum {} and default {}.",
-                  opset.version(),
-                  minGraphcoreOperatorSetVersion,
-                  maxGraphcoreOperatorSetVersion,
-                  graphcoreOperatorSetVersion);
+      throw error("Expecting GC opset version {}, but got {}.",
+                  graphcoreOperatorSetVersion,
+                  opset.version());
     }
 
     // TODO : Need to check if we have already set the domain opsetversion
@@ -958,17 +930,17 @@ std::vector<TensorId> BuilderImpl::getValueTensorIds() const {
   return valueNames;
 }
 
-bool BuilderImpl::isInputTensor(const TensorId &id) const {
+bool BuilderImpl::isInputTensor(TensorId id) const {
   std::vector<TensorId> inIds = getInputTensorIds();
   return std::find(inIds.begin(), inIds.end(), id) != inIds.end();
 }
 
-bool BuilderImpl::isOutputTensor(const TensorId &id) const {
+bool BuilderImpl::isOutputTensor(TensorId id) const {
   std::vector<TensorId> outIds = getOutputTensorIds();
   return std::find(outIds.begin(), outIds.end(), id) != outIds.end();
 }
 
-bool BuilderImpl::isValueTensor(const TensorId &id) const {
+bool BuilderImpl::isValueTensor(TensorId id) const {
   std::vector<TensorId> valueIds = getValueTensorIds();
   return std::find(valueIds.begin(), valueIds.end(), id) != valueIds.end();
 }
@@ -1061,17 +1033,7 @@ BuilderImpl::getValueInfoProto(TensorId id) const {
   }
 }
 
-bool BuilderImpl::hasTensorShape(const TensorId &id) const {
-  if (isInputTensor(id) || isOutputTensor(id) || isValueTensor(id)) {
-    auto &t = getValueInfoProto(id);
-    if (t.type().tensor_type().shape().dim_size() > 0) {
-      return true;
-    }
-  }
-  return false;
-}
-
-std::vector<int64_t> BuilderImpl::getTensorShape(const TensorId &id) {
+std::vector<int64_t> BuilderImpl::getTensorShape(const TensorId id) {
   std::vector<int64_t> shape;
 
   auto &t = getValueInfoProto(id);
@@ -1081,7 +1043,7 @@ std::vector<int64_t> BuilderImpl::getTensorShape(const TensorId &id) {
   return shape;
 }
 
-std::string BuilderImpl::getTensorDtypeString(const TensorId &id) {
+std::string BuilderImpl::getTensorDtypeString(const TensorId id) {
   std::string dtype;
 
   auto &t           = getValueInfoProto(id);
@@ -1091,7 +1053,7 @@ std::string BuilderImpl::getTensorDtypeString(const TensorId &id) {
   return dataTypeInfo->lcasename();
 }
 
-bool BuilderImpl::isInitializer(const TensorId &id) const {
+bool BuilderImpl::isInitializer(const TensorId id) const {
   std::vector<std::string> initIds;
   for (const auto &initializer : model_.graph().initializer()) {
     if (initializer.name() == id) {

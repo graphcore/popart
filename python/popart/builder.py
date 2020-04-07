@@ -106,7 +106,7 @@ class AiOnnx(Opset):
 
     Arguments:
         builder: Parent class for access.
-        version: ai.Onnx opset version to use; 6 <= version <= 10.
+        version: ai.Onnx opset version to use; 6 < version < 11.
             Default: 10.
 
     Raises:
@@ -116,9 +116,6 @@ class AiOnnx(Opset):
     def __init__(self, builder: Builder, version: int) -> None:
         super(AiOnnx, self).__init__(builder, version)
         if self.version == 11:
-            # aiOnnx opset 11 not supported yet. Pass to root builder
-            # object for error.
-            # TODO: T11574 update this once opset 11 is supported.
             self.aiOnnx = self._builder.aiOnnxOpset11
         elif self.version == 10:
             self.aiOnnx = self._builder.aiOnnxOpset10

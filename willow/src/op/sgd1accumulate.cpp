@@ -21,12 +21,7 @@ std::unique_ptr<Op> SGD1AccumulateOp::clone() const {
 
 // T12001
 std::map<InIndex, TensorId> SGD1AccumulateOp::optimizerInputs() const {
-  std::map<InIndex, TensorId> m;
-  if (!initDpsf1.isConst()) {
-    auto index = getDpsf1InIndex();
-    m.insert({index, inId(index)});
-  }
-  return m;
+  throw error("SGD1 optimizer inputs not implemented");
 }
 
 void SGD1AccumulateOp::appendOutlineAttributes(OpSerialiserBase &os) const {

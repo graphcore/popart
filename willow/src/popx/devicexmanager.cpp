@@ -40,9 +40,6 @@ poplar::TargetType convertDeviceType(popart::DeviceType deviceType) {
     return poplar::TargetType::IPU_MODEL;
   case DeviceType::Cpu:
     return poplar::TargetType::CPU;
-  case DeviceType::Sim: {
-    throw error("Sim not supported in convertDeviceType");
-  }
   }
   throw error("Unknown device type");
 }

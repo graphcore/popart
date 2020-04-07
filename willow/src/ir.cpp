@@ -1794,29 +1794,6 @@ PipelineStage Ir::getFinalLossPipelineStage() const {
   }
 }
 
-int64_t Ir::getNumPipelineStages() const {
-  std::set<PipelineStage> pStages;
-
-  for (auto &id_op : getMainGraph().getOps()) {
-    auto op = id_op.second.get();
-    if (op->hasPipelineStage()) {
-      pStages.insert(op->getPipelineStage());
-    }
-  }
-  int64_t numStages = pStages.size();
-
-  // Check there are no 'missing' pipeline stages
-  for (int64_t i = 0; i < numStages; i++) {
-    if (!pStages.count(i)) {
-      throw error("The set of pipeline stages for all Ops contains {} stages, "
-                  "but stage {} is missing",
-                  numStages,
-                  i);
-    }
-  }
-  return numStages;
-}
-
 std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
   PipelineStage maxPipelineStage = 0;
   if (getSessionOptions().enablePipelining) {
@@ -2773,6 +2750,24 @@ int Ir::getOpSetVersionFromModel(const std::string &node_domain) const {
   return version;
 }
 
+unsigned Ir::getMaxVirtualGraphId() const {
+  unsigned maxVirtualGraphId = 1;
+  unsigned replGraphCount =
+      static_cast<unsigned>(getSessionOptions().replicatedGraphCount);
+  unsigned numIPUs = static_cast<unsigned>(deviceInfo->getNumIpus());
+  if (getSessionOptions().enableReplicatedGraphs) {
+    if (numIPUs % replGraphCount != 0) {
+      throw error("For replicated graphs, the number of IPUs must be divisible "
+                  "by the replication factor.");
+    } else {
+      maxVirtualGraphId = numIPUs / replGraphCount;
+    }
+  } else {
+    maxVirtualGraphId = numIPUs;
+  }
+  return maxVirtualGraphId;
+}
+
 std::vector<GradNonGradPair> Ir::growLossGradients() {
 
   auto finalLossOpFound = getMainGraph().getOps().find(finalLossOpId);
@@ -3058,98 +3053,79 @@ void Ir::applyInplacePattern(Graph &graph) {
     for (auto &ip : priorities) {
       OpId id                       = std::get<0>(ip);
       OperatorIdentifier identifier = std::get<1>(ip);
-
-      // check that the op has not already been inplaced
+      // first check that the op has not already been inplaced:
       auto inplaced_already_it = inplacedAlready.find(id);
       if (inplaced_already_it != inplacedAlready.end()) {
-        std::ostringstream oss;
-        oss << "[Inplacing] The Op being considered for inplacing, " << id
-            << ", is already inplace.";
-        logging::pattern::debug(oss.str());
-        continue;
-      }
-
-      Op *op = graph.getOps().at(id).get();
-
-      if (op->isExcludedFromPattern(&inplace)) {
-        std::ostringstream oss;
-        oss << "[Inplacing] The Op being considered for inplacing, "
-            << op->str() << ", is excluded from the Inplacing Pattern.";
-        logging::pattern::debug(oss.str());
-        continue;
-      }
-
-      // This is where the hard work of inplacing gets done: if op is inplaced,
-      // what additional topological constraints are needed to ensure
-      // correctness?
-      OpsBeforeKey newTopoCons = inplace.getNewTopoCons(op, identifier);
-
-      ExternOpTensorBundle eot_bun(op, op->getInplaceVariant(identifier));
-      const Op *inplaceOp = eot_bun.getOp();
-
-      // If any of the new topological constraints start at an Op whose inputs
-      // cannot be modified (consume anchors, certain recomputatation Ops, etc),
-      // then we cannot inplace op. This is because a constraint op -> op2 is
-      // inserted if and only if op2 modifies an input of op, which is exactly
-      // the case we must avoid if op->inputsUnmodifiable().
-      std::vector<const Op *> blockingTopoConFroms;
-      if (inplaceOp->modifies()) {
-        if (op->inputsUnmodifiable()) {
-          blockingTopoConFroms.push_back(op);
-        }
-        auto opFound = newTopoCons.find(op);
-        if (opFound != newTopoCons.end()) {
-          for (const auto before : opFound->second) {
-            if (before->inputsUnmodifiable()) {
-              blockingTopoConFroms.push_back(before);
+        // the Op has already been inplaced
+      } else {
+        Op *op              = graph.getOps().at(id).get();
+        auto touchesAnchors = [&] {
+          for (auto &tensor : inplace.touches(op, identifier)) {
+            if (isAnchored(tensor->id)) {
+              return true;
             }
           }
-        }
-      }
-      for (const auto &after_befores : newTopoCons) {
-        const auto after = after_befores.first;
-        for (const auto before : after_befores.second) {
-          if (after->modifies() && before->inputsUnmodifiable()) {
-            blockingTopoConFroms.push_back(before);
+          return false;
+        };
+
+        // If it is recompute and uses inplace output, do not inplace.
+        // This is conservative (aliasing can sometimes still be inplaced)
+        // TODO T9352: use logic based on existing Inplace code
+        // It can be shown that checkpoints consuming recomputable outputs
+        // do not need to be inplaced
+        auto recomputeUsingCheckpoint = [&] {
+          if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
+            for (auto &index_tensor : op->input->tensorMap()) {
+              auto inTensor = index_tensor.second;
+              if (!inTensor->hasProducer() ||
+                  (inTensor->hasProducer() &&
+                   inTensor->getProducer()->settings.recomputeType ==
+                       RecomputeType::CHECKPOINT)) {
+                return true;
+              }
+            }
+          }
+          return false;
+        };
+
+        auto consumesImplicitLoopInputs = [&] {
+          for (auto &index_tensor : op->input->tensorMap()) {
+            auto inTensor = index_tensor.second;
+            if (inTensor->isImplicitLoopInput()) {
+              return true;
+            }
+          }
+          return false;
+        };
+
+        auto consumesGraphOutput = [this, op, &graph]() {
+          const auto graphOutputs = graph.getOutputIds();
+          const auto opInTensors  = op->input->tensors();
+          return std::any_of(opInTensors.cbegin(),
+                             opInTensors.cend(),
+                             [graphOutputs](const Tensor *inTensor) {
+                               return std::find(graphOutputs.cbegin(),
+                                                graphOutputs.cend(),
+                                                inTensor->id) !=
+                                      graphOutputs.cend();
+                             });
+        };
+
+        if (!op->isExcludedFromPattern(&inplace) && !touchesAnchors() &&
+            !recomputeUsingCheckpoint() && !consumesImplicitLoopInputs() &&
+            !consumesGraphOutput()) {
+          auto newTopoCons = inplace.getNewTopoCons(op, identifier);
+          if (isSchedulable(newTopoCons)) {
+            inplacedAlready.insert(op->id);
+            inplace.apply(op, identifier, newTopoCons);
+          } else {
+            logging::pattern::debug(
+                "Constraints not schedulable for inplacing op {}", op->id);
           }
         }
-      }
-      if (!blockingTopoConFroms.empty()) {
-        std::ostringstream oss;
-        oss << "[Inplacing] The Op being considered for inplacing, "
-            << op->str() << " cannot be inplaced because it would effect "
-            << "inputs which cannot be modified. "
-            << "In particular, "
-            << "the following Ops have unmodifiable inputs "
-            << "which prevent inplacing:";
-        for (const auto before : blockingTopoConFroms) {
-          oss << "\n     " << before->id << " : "
-              << before->getInputsUnmodifiableString();
-        }
-        logging::pattern::debug(oss.str());
-        continue;
-      }
-
-      // finally, we check if there are cycles with the new topological
-      // constraints
-      if (!graph.isSchedulable(newTopoCons)) {
-        std::ostringstream oss;
-        oss << "[Inplacing] The new topological constraints prevent Op "
-            << op->id << " from being inplaced, as they would created a cycle ";
-        logging::pattern::debug(oss.str());
-        continue;
-      }
-
-      {
-        std::ostringstream oss;
-        oss << "[Inplacing] Inplacing Op " << op->str();
-        logging::pattern::debug(oss.str());
-        inplacedAlready.insert(op->id);
-        inplace.apply(op, identifier, newTopoCons);
       }
     }
   }
-  logging::pattern::trace("Completed Inplacing Pattern");
 }
 
 Op &Ir::getSubgraphAnchorPlaceholder() {

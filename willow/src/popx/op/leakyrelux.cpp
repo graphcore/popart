@@ -69,7 +69,8 @@ LeakyReluInplaceOpx::LeakyReluInplaceOpx(Op *op, Devicex *devicex)
           devicex,
           LeakyReluComputex::get(
               LeakyReluComputex::getAlphaFromLReluInplaceOp(op))) {
-  verifyOp<LeakyReluInplaceOp>(op, Onnx::CustomOperators::LeakyReluInplace);
+  verifyOp<LeakyReluInplaceOp>(
+      op, {Onnx::Operators::LeakyRelu_1, Onnx::Operators::LeakyRelu_6});
 }
 
 LeakyReluGradOpx::LeakyReluGradOpx(Op *op, Devicex *devicex)

@@ -435,7 +435,7 @@ void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {
   if (attributes.hasAttribute(sSchedulePriority)) {
     float schedule_priority;
     attributes.set(schedule_priority, sSchedulePriority);
-    schedulePriority = static_cast<double>(schedule_priority);
+    schedulePriority = schedule_priority;
   }
 
   bool hasNamesAtt = attributes.hasAttribute(sInplaceOpNames);
@@ -849,108 +849,6 @@ std::ostream &operator<<(std::ostream &ss, const GradOpInType &t) {
     break;
   }
   return ss;
-}
-
-bool Op::consumesAnchor() const {
-  for (auto tensor : input->tensors()) {
-    if (getIr().isAnchored(tensor->id)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool Op::producesAnchor() const {
-  for (auto tensor : output->tensors()) {
-    if (getIr().isAnchored(tensor->id)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool Op::consumesCheckpointAndIsRecompute() const {
-  if (settings.recomputeType == RecomputeType::RECOMPUTE) {
-    for (auto &index_tensor : input->tensorMap()) {
-      auto inTensor = index_tensor.second;
-      // Tensors without producers are effectively Checkpointed
-      if (!inTensor->hasProducer() ||
-          (inTensor->hasProducer() &&
-           inTensor->getProducer()->settings.recomputeType ==
-               RecomputeType::CHECKPOINT)) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-bool Op::consumesImplicitLoopInput() const {
-  for (auto &index_tensor : input->tensorMap()) {
-    auto inTensor = index_tensor.second;
-    if (inTensor->isImplicitLoopInput()) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool Op::consumesGraphOutput() const {
-
-  const auto graphOutputs = getGraph().getOutputIds();
-
-  const auto opInTensors = input->tensors();
-  return std::any_of(opInTensors.cbegin(),
-                     opInTensors.cend(),
-                     [graphOutputs](const Tensor *inTensor) {
-                       return std::find(graphOutputs.cbegin(),
-                                        graphOutputs.cend(),
-                                        inTensor->id) != graphOutputs.cend();
-                     });
-}
-
-std::string Op::getInputsUnmodifiableString() const {
-  std::ostringstream oss;
-  oss << "([produces anchor ? " << producesAnchor() << "], consumes anchor ? "
-      << consumesAnchor() << ", consumes checkpoint and is recompute ? "
-      << consumesCheckpointAndIsRecompute()
-      << ", consumes implicit loop input ? " << consumesImplicitLoopInput()
-      << ", consumes graph output ? " << consumesGraphOutput() << ')';
-  return oss.str();
-}
-
-bool Op::modifies() const {
-  for (const auto &index_tensor : input->tensorMap()) {
-    auto index = index_tensor.first;
-    for (auto reg : modifies(index)) {
-      if (!reg.isEmpty()) {
-        return true;
-      }
-    }
-  }
-
-  return false;
-}
-
-bool Op::inputsUnmodifiable() const {
-  return
-
-      // Anchor tensors must not be modified to ensure the correct values are
-      // returned. Here we conservatively assume anchors are returned at the
-      // very end of the computation
-      consumesAnchor()
-
-      // Checkpoint tensors must not be modified by recompute Ops to ensure
-      // the same value is used on first and second runs of the recompute Op
-      || consumesCheckpointAndIsRecompute()
-
-      // Implicit loop counter tensors must not be modified, because each loop
-      // iteration needs access to the unmodified original input.
-      || consumesImplicitLoopInput()
-
-      // Graph output tensors must not be modified to ensure the correct value
-      // is returned at the end of the computation
-      || consumesGraphOutput();
 }
 
 } // namespace popart

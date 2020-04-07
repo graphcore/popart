@@ -81,7 +81,7 @@ SumOpx::unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const {
 }
 
 view::RegMap SumOpx::unwindRegion(InIndex, OutIndex) const {
-  return [](const view::Region &r) { return view::Regions(1, r); };
+  return [this](const view::Region &r) { return view::Regions(1, r); };
 }
 
 SumArgGradOpx::SumArgGradOpx(Op *op_, Devicex *devicex_) : Opx(op_, devicex_) {}

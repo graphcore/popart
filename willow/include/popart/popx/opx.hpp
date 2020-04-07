@@ -166,14 +166,8 @@ public:
       }
     }
 
-    std::ostringstream oss;
-    oss << "In Opx::verifyOp, for op " << op->str()
-        << ". Failed to verify, as valid opids are : ( ";
-    for (auto valid : opids) {
-      oss << valid << ", ";
-    }
-    oss << ").";
-    throw error(oss.str());
+    // TODO : Improve error
+    throw error("Cannot create opx from {}", op->opid);
   }
 
   template <class OP> void verifyOp(Op *op) {

@@ -196,7 +196,7 @@ private:
       }
     });
     return toRerun;
-  }
+  };
 
   std::set<std::pair<Op *, PingPongPhase>> alreadySeen;
   const std::vector<Op *> &opSchedule;
@@ -569,7 +569,7 @@ void Devicex::remoteBufferWeightsToHost() {
       pEngine->copyFromRemoteBuffer(
           getRemoteBuffer(remoteBufferInfo.first).first,
           data0,
-          static_cast<int>(remoteBufferInfo.second),
+          remoteBufferInfo.second,
           0);
     }
   }
@@ -710,26 +710,29 @@ poplar::Tensor Devicex::getScalarVariable(poplar::Graph &graph,
   return tensor;
 }
 
-PipelineInfo::PipelineInfo(int64_t _batchesPerStep,
-                           int64_t _gradAcclFactor,
-                           int64_t _numPipelineStages,
+PipelineInfo::PipelineInfo(int _batchesPerStep,
+                           int _gradAcclFactor,
+                           int _numPipelineStages,
                            bool _doTraining,
                            bool _doGradAccl)
     : doTraining(_doTraining), doGradAccl(_doGradAccl) {
 
-  auto fillFlushPhaseCycles = _numPipelineStages - 1;
+  auto bps                  = static_cast<int64_t>(_batchesPerStep);
+  auto gradAcclFactor       = static_cast<int64_t>(_gradAcclFactor);
+  auto numPipelineStages    = static_cast<int64_t>(_numPipelineStages);
+  auto fillFlushPhaseCycles = numPipelineStages;
   fillPhase.start           = 0;
   fillPhase.end             = fillFlushPhaseCycles - 1;
 
   int64_t mainCycles;
   if (doGradAccl) {
-    mainCycles = _gradAcclFactor - fillFlushPhaseCycles;
+    mainCycles = gradAcclFactor - fillFlushPhaseCycles;
   } else {
-    mainCycles = _batchesPerStep - fillFlushPhaseCycles;
+    mainCycles = bps - fillFlushPhaseCycles;
   }
   if (mainCycles < 1) {
     throw internal_error(
-        "Pipeline mainCycles should not be less than 1. Current value is {}.",
+        "mainCycles should not be less than 1. Current value is {}.",
         mainCycles);
   }
 
@@ -795,12 +798,12 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
   wuConvOptions.options["pass"]  = "TRAINING_WU";
 
   if (ir.getSessionOptions().enablePipelining) {
-    pInfo =
-        PipelineInfo(static_cast<int64_t>(ir.getDataFlow().batchesPerStep()),
-                     ir.getSessionOptions().accumulationFactor,
-                     ir.getNumPipelineStages(),
-                     ir.canTrain(),
-                     ir.getSessionOptions().enableGradientAccumulation);
+    pInfo = PipelineInfo(
+        ir.getDataFlow().batchesPerStep(),
+        static_cast<int>(ir.getSessionOptions().accumulationFactor),
+        static_cast<int>(getMaxPipelineStage()),
+        ir.canTrain(),
+        ir.getSessionOptions().enableGradientAccumulation);
   }
 
   engineOptions.set("target.workerStackSizeInBytes", "0x200");
@@ -851,7 +854,7 @@ void Devicex::remoteBufferWeightsFromHost() {
         pEngine->copyToRemoteBuffer(
             data0,
             getRemoteBuffer(remoteBufferInfo.first).first,
-            static_cast<int>(remoteBufferInfo.second),
+            remoteBufferInfo.second,
             replica_id);
       }
     }
@@ -2144,15 +2147,15 @@ void Devicex::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
           &progs.pipelineForwardFragment(op->getPipelineStage(), op->str());
       logging::devicex::debug("Obtained pipeline forward frag for ",
                               op->debugName());
-      auto found_ = seqs.find(seqsKey);
-      if (found_ == seqs.end()) {
+      auto found = seqs.find(seqsKey);
+      if (found == seqs.end()) {
         seqs[seqsKey] = poplar::program::Sequence{};
-        found_        = seqs.find(seqsKey);
+        found         = seqs.find(seqsKey);
       }
       logging::devicex::debug(
           "Growing {} {} in pipelinedOpTaskFunc", op->str(), op->debugName());
 
-      growOpx(opx, found_->second);
+      growOpx(opx, found->second);
     } else if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
       logging::devicex::debug("Adding (first) recompute Op {}",
                               op->debugName());
@@ -2937,6 +2940,11 @@ poplar::program::Sequence &Devicex::getAnchorReturnFragment(Tensor *tensor) {
   }
 }
 
+int64_t Devicex::getStashSize(VGraphId vGraphId) {
+  int64_t maxVGraphId = static_cast<int64_t>(ir().getMaxVirtualGraphId());
+  return 2 * (maxVGraphId - vGraphId) - 1;
+}
+
 poplar::Executable Devicex::getExecutable() {
   auto progressLogger = [](int progress, int total) {
     if (total != 0) {
@@ -3355,6 +3363,20 @@ std::map<PipelineStage, VGraphId> Devicex::getPipelineToVGraphIdMap() const {
   logging::devicex::debug(ss.str());
 
   return pipeline_vgraph_map;
+}
+
+PipelineStage Devicex::getMaxPipelineStage() const {
+  PipelineStage max_ps = 0;
+
+  for (auto &id_op : ir().getMainGraph().getOps()) {
+    auto op = id_op.second.get();
+
+    if (!op->isConvertibleTo<IpuCopyOp>()) {
+      max_ps = std::max(max_ps, op->getPipelineStage());
+    }
+  }
+
+  return max_ps;
 }
 
 PriTask Devicex::toHostEveryNBatchesTask(Tensor *tensor,

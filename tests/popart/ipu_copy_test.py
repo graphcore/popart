@@ -72,9 +72,10 @@ def test_ipu_copy_aca1():
     with pytest.raises(popart.popart_exception) as e_info:
         s.prepareDevice()
 
-    assert (("inputs=[{}, {}], outputs=[{}]) " +
-             "has been assigned to an invalid virtual graph 10").format(
-                 o1 + "_c10", o2 + "_c10", o) in e_info.value.args[0])
+    assert (e_info.value.args[0].startswith(
+        ("Op(ai.onnx.Add:7, inputs=[{}, {}], outputs=[{}]) " +
+         "has been assigned to an invalid virtual graph 10").format(
+             o1 + "_c10", o2 + "_c10", o)))
 
 
 # Test that an input stream tensor is correctly mapped to multiple ipus

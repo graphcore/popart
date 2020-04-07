@@ -21,9 +21,9 @@ MatMulBaseOp::MatMulBaseOp(
     const boost::optional<DataType> outputType_,
     const bool enableFullyConnectedPass_)
     : Op(_opid, settings_), phase(phase_),
-      enableFullyConnectedPass(enableFullyConnectedPass_),
       availableMemoryProportion(availableMemoryProportion_),
-      serialization(serialization_), outputType(outputType_) {}
+      serialization(serialization_), outputType(outputType_),
+      enableFullyConnectedPass(enableFullyConnectedPass_) {}
 
 bool MatMulBaseOp::useFullyConnectedPass() const {
   return getIr().getSessionOptions().enableFullyConnectedPass &&

@@ -558,7 +558,7 @@ TransformBuilder::split(TensorId in,
   std::vector<TensorId> inputs = {in};
   return multiOutputOp(Onnx::Operators::Split_11,
                        inputs,
-                       static_cast<int>(splitSizes.size()),
+                       splitSizes.size(),
                        {{"axis", axis}, {"split", splitSizes}},
                        virtualGraphId,
                        pipelineStage,

@@ -45,9 +45,9 @@ class GraphCachex;
 class PipelineInfo {
 public:
   PipelineInfo() = default;
-  PipelineInfo(int64_t _batchesPerStep,
-               int64_t _gradAcclFactor,
-               int64_t _maxPipelineStage,
+  PipelineInfo(int _batchesPerStep,
+               int _gradAcclFactor,
+               int _numPipelineStages,
                bool _doTraining,
                bool _doGradAccl);
 
@@ -274,10 +274,12 @@ private:
   poplar::Tensor randomSeedTensor;
 
   PipelineInfo pInfo;
+  int64_t getStashSize(VGraphId vGraphId);
 
   void createRemoteBuffers();
 
   std::map<PipelineStage, VGraphId> getPipelineToVGraphIdMap() const;
+  PipelineStage getMaxPipelineStage() const;
 
   // Task to create a poplar::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)

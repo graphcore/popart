@@ -34,65 +34,27 @@ def run(torchWriter,
         mode="train",
         syntheticData=False,
         transformations=[],
-        epochs=4,
-        printAnchorArrays=False):
+        epochs=4):
 
     popart.getLogger().setLevel("TRACE")
     popart.getLogger("session").setLevel("WARN")
 
     if outputdir is None:
         with TemporaryDirectory() as outputdir:
-            return _run_impl(torchWriter,
-                             passes,
-                             outputdir,
-                             cifarInIndices,
-                             device,
-                             device_hw_id,
-                             mode,
-                             syntheticData,
-                             transformations,
-                             epochs,
-                             printAnchorArrays=printAnchorArrays)
+            return _run_impl(torchWriter, passes, outputdir, cifarInIndices,
+                             device, device_hw_id, mode, syntheticData,
+                             transformations, epochs)
     else:
         if not os.path.exists(outputdir):
             os.mkdir(outputdir)
 
-        return _run_impl(torchWriter,
-                         passes,
-                         outputdir,
-                         cifarInIndices,
-                         device,
-                         device_hw_id,
-                         mode,
-                         syntheticData,
-                         transformations,
-                         epochs,
-                         printAnchorArrays=printAnchorArrays)
+        return _run_impl(torchWriter, passes, outputdir, cifarInIndices,
+                         device, device_hw_id, mode, syntheticData,
+                         transformations, epochs)
 
 
 def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
-              device_hw_id, mode, syntheticData, transformations, epochs,
-              printAnchorArrays):
-
-    runIds = [-1] + [
-        int(x.split("runId")[1].split("_")[0])
-        for x in os.listdir(outputdir) if "runId" in x
-    ]
-    baseId = 1 + max(runIds)
-
-    def getFnModel(framework, epoch):
-        return os.path.join(
-            outputdir,
-            "runId%d_%sModel_epoch%s.onnx" % (baseId, framework, epoch))
-
-    def getFnPopArt(epoch):
-        return getFnModel("PopArt", epoch)
-
-    def getFnTorch(epoch):
-        return getFnModel("Torch", epoch)
-
-    def getFnModel0():
-        return os.path.join(outputdir, "runId%d_model0.onnx" % (baseId, ))
+              device_hw_id, mode, syntheticData, transformations, epochs):
 
     dataFeed = torchWriter.dataFeed
     inputShapeInfo = torchWriter.inputShapeInfo
@@ -129,7 +91,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
                                 download=False,
                                 transform=transform)
 
-    fnModel0 = getFnModel0()
+    fnModel0 = os.path.join(outputdir, "model0.onnx")
 
     # write ONNX Model to file
     torchWriter.saveModel(fnModel=fnModel0)
@@ -266,6 +228,16 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
             dataShape = np.insert(dataShape, 0, batchesPerStep)
             return np.reshape(data, dataShape)
 
+    def getFnModel(framework, epoch):
+        return os.path.join(outputdir,
+                            "%sModel_epoch%s.onnx" % (framework, epoch))
+
+    def getFnPopArt(epoch):
+        return getFnModel("PopArt", epoch)
+
+    def getFnTorch(epoch):
+        return getFnModel("Torch", epoch)
+
     def reportTensorError(tensorInd, result):
         reportStr = str(tensorInd) + " :\n"
         reportStr += "  |pA - tA|^2 / (|pA||tA| + 1e-8)  = " + str(
@@ -359,26 +331,6 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
             # take batchesPerStep passes (1 step), PopArt
             pystepio = popart.PyStepIO(inputs, anchorArrays)
             session.run(pystepio)
-
-            if printAnchorArrays:
-                print(
-                    "\nAnchor arrays (being printed as printAnchorArrays==True):"
-                )
-                for name in anchorArrays.keys():
-                    print("\nAnchored Array Name=", name, " and Size=",
-                          arr.size())
-
-                    arr = anchorArrays[name]
-                    if (arr.size < 10):
-                        print("\nArray (of size < 10) values are")
-                        print(arr)
-
-                    if len(arr.shape) > 1:
-                        for i, slice0 in enumerate(arr):
-                            print("Sum along axis %d is Sum=%.15f" %
-                                  (i, slice0.sum()))
-
-                    print("Total Sum is %.15f" % (arr.sum()))
 
             # write models to file
             fnTorchModel = getFnTorch(epoch)

@@ -3305,11 +3305,7 @@ AiOnnxOpset11::conv(const std::vector<TensorId>& args,
                   getOpsetVersion(),
                   args,
                   attributes,
-                  name,
-                  [this](std::vector<TensorId> inputs_,
-                         std::map<std::string, boost::any> attributes_) {
-                     verify_AiOnnxOpset11_Conv_11(this->impl, inputs_, attributes_);
-                  })[0];
+                  name)[0];
 }
 
 TensorId

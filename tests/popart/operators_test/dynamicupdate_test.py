@@ -206,12 +206,10 @@ def test_dynamicupdate_overlap_correct(op_tester):
                                                       np.uint32))
             scaled = builder.aiGraphcore.scale([tensors[sliceid]],
                                                float(1 + sliceid))
-
             out = builder.aiGraphcore.dynamicupdate([out, index, scaled],
                                                     axes=axes,
                                                     sizes=sizes,
                                                     noOverlap=False)
-
         result.append(out)
 
         sum = builder.aiOnnx.reducesum([out], axes=[0], keepdims=False)

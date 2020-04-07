@@ -7,7 +7,6 @@
 #include <popart/op/copyvarupdate.hpp>
 #include <popart/op/flatten.hpp>
 #include <popart/op/sgd0varupdate.hpp>
-#include <popart/op/sgd1combo.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/opidentifier.hpp>
@@ -47,6 +46,8 @@ MergeVarUpdates::PartitionId MergeVarUpdates::getPartitionId(Op *op) const {
   // same virtual graph
   ss << "vg_" << op->settings.vgraphId;
 
+  // T12001 Do this for SGD1VarUpdateOp
+  //
   // 1) SGD settings
   if (op->isConvertibleTo<SGD0VarUpdateOp>()) {
     auto svu = dynamic_cast<SGD0VarUpdateOp *>(op);
@@ -62,36 +63,6 @@ MergeVarUpdates::PartitionId MergeVarUpdates::getPartitionId(Op *op) const {
       ss << "_constWd_" << svu->initWdsf0.val();
     } else {
       ss << "_nonConstWd_" << svu->inId(svu->getWdsf0InIndex());
-    }
-  }
-
-  else if (op->isConvertibleTo<SGD1ComboOp>()) {
-    auto svu = dynamic_cast<SGD1ComboOp *>(op);
-    ss << "_SGD1C_";
-
-    // momentum
-    if (svu->initSmm1.isConst()) {
-      ss << "_constLr_" << svu->initSmm1.val();
-    } else {
-      ss << "_nonConstLr_" << svu->inId(svu->getSmm1InIndex());
-    }
-    // dampening scale factor
-    if (svu->initDpsf1.isConst()) {
-      ss << "_constWd_" << svu->initDpsf1.val();
-    } else {
-      ss << "_nonConstWd_" << svu->inId(svu->getDpsf1InIndex());
-    }
-    // weight decay scale factor
-    if (svu->initSwd1.isConst()) {
-      ss << "_constWd_" << svu->initSwd1.val();
-    } else {
-      ss << "_nonConstWd_" << svu->inId(svu->getSwd1InIndex());
-    }
-    // scaled learning rate
-    if (svu->initSlr1.isConst()) {
-      ss << "_constWd_" << svu->initSlr1.val();
-    } else {
-      ss << "_nonConstWd_" << svu->inId(svu->getSlr1InIndex());
     }
   }
 

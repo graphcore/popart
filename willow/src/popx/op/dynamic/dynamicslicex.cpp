@@ -97,7 +97,7 @@ poplar::Tensor DynamicSliceOpx::unwindTensorLayout(poplar::Tensor tensor,
 view::RegMap DynamicSliceOpx::unwindRegion(InIndex index, OutIndex) const {
   DynamicSliceBaseOp *op = dynamic_cast<DynamicSliceBaseOp *>(this->op_p);
   auto shape             = op->inShape(index);
-  return [shape](const view::Region &) {
+  return [shape](const view::Region &r) {
     return view::Regions(1, view::Region::getFull(shape));
   };
 }

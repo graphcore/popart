@@ -149,14 +149,6 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
     // For case MergeVarUpdateType::All, all the ConstSgdVarUpdates have the
     // same learning rate, weight decay, so should all be merged into a single
     // group
-
-    // Lambda to check the number of ops are as expected.
-    auto checkOps = [&](const popart::AiGraphcoreOpIdV1 &opType, int expected) {
-      auto count = ir.opsOfType(opType).size();
-      std::cout << opType.type << " Elements : " << count
-                << " Expected: " << expected << std::endl;
-      BOOST_CHECK(count == expected);
-    };
     if (mvu == MergeVarUpdateType::All) {
       // 10 flattens per layer are:
       // 3) conv filters, bn bias, bn scale
@@ -164,35 +156,56 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
       // 2) running mean & variance
       // 2) updates for each of the above
 
-      checkOps(Onnx::CustomOperators::FlattenInplace, nConv * 10);
+      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::FlattenInplace).size() ==
+                  nConv * 10);
 
       // 4 ConcatInplace
-      checkOps(Onnx::CustomOperators::ConcatInplace, 4);
-      checkOps(Onnx::CustomOperators::SGD0VarUpdate, 1);
-      checkOps(Onnx::CustomOperators::CopyVarUpdate, 1);
+      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::ConcatInplace).size() ==
+                  4);
+
+      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::SGD0VarUpdate).size() ==
+                  1);
+
+      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::CopyVarUpdate).size() ==
+                  1);
 
     } else if (mvu == MergeVarUpdateType::None) {
-      checkOps(Onnx::CustomOperators::SGD0VarUpdate, 3 * nConv);
-      checkOps(Onnx::CustomOperators::CopyVarUpdate, 2 * nConv);
-      checkOps(Onnx::CustomOperators::FlattenInplace, 0);
-      checkOps(Onnx::CustomOperators::ConcatInplace, 0);
+      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::SGD0VarUpdate).size() ==
+                  3 * nConv);
+      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::CopyVarUpdate).size() ==
+                  2 * nConv);
+      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::FlattenInplace).size() ==
+                  0);
+      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::ConcatInplace).size() ==
+                  0);
     }
 
     else if (mvu == MergeVarUpdateType::AutoTight) {
-      auto thr = opts.mergeVarUpdateMemThreshold;
+      auto nSgd  = ir.opsOfType(Onnx::CustomOperators::SGD0VarUpdate).size();
+      auto nCopy = ir.opsOfType(Onnx::CustomOperators::CopyVarUpdate).size();
+      auto thr   = opts.mergeVarUpdateMemThreshold;
+      std::cout << "copy elms : " << copyElms << std::endl;
+      std::cout << "sgd elms : " << sgdElms << std::endl;
+      std::cout << "nSgd : " << nSgd << std::endl;
+      std::cout << "nCopy : " << nCopy << std::endl;
       std::cout << "memory threshold : " << thr << std::endl;
       auto expectednsgd = (sgdElms * 4) / thr + ((sgdElms * 4) % thr != 0);
-      checkOps(Onnx::CustomOperators::SGD0VarUpdate, expectednsgd);
-
+      std::cout << "expected sgds : " << expectednsgd << std::endl;
       auto expectedncopy = (copyElms * 4) / thr + ((copyElms * 4) % thr != 0);
-      checkOps(Onnx::CustomOperators::CopyVarUpdate, expectedncopy);
+      std::cout << "expected copies : " << expectedncopy << std::endl;
+      BOOST_CHECK(nSgd == expectednsgd);
+      BOOST_CHECK(nCopy == expectedncopy);
     }
 
     else if (mvu == MergeVarUpdateType::AutoLoose) {
+      auto nSgd  = ir.opsOfType(Onnx::CustomOperators::SGD0VarUpdate).size();
+      auto nCopy = ir.opsOfType(Onnx::CustomOperators::CopyVarUpdate).size();
+      std::cout << "nSgd : " << nSgd << std::endl;
+      std::cout << "nCopy : " << nCopy << std::endl;
       // because both thresholds are greater than the total memory, there should
       // be just 1 SGDVarUpdate and 1 CopyVarUpdate
-      checkOps(Onnx::CustomOperators::SGD0VarUpdate, 1);
-      checkOps(Onnx::CustomOperators::CopyVarUpdate, 1);
+      BOOST_CHECK(nSgd == 1);
+      BOOST_CHECK(nCopy == 1);
     }
   };
 

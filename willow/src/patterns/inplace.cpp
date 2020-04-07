@@ -131,9 +131,6 @@ bool Inplace::apply(Op *op,
                           inplaceOp->opid);
 
   inplaceOp->getGraph().eraseOp(op->id);
-
-  logging::pattern::trace(
-      "Call to InplaceAll::apply is complete, returning true.");
   return true;
 }
 

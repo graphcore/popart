@@ -84,6 +84,7 @@ public:
     std::string name = "";
 
     Scope scope;
+
     RecomputeType recomputeType = RecomputeType::UNDEFINED;
     CacheType cacheType         = CacheType::UNDEFINED;
 
@@ -232,6 +233,9 @@ public:
   // Disconnect all output tensors
   void disconnectAllOutputs();
 
+  // might the input tensors be modified?
+  bool mayModify(InIndex) const;
+
   const std::string &name() const;
 
   // set shape and type parameters,
@@ -268,9 +272,6 @@ public:
   // modifies, aliases, uses)
   virtual view::RegMap fwdRegMap(InIndex, OutIndex) const;
   virtual view::RegMap bwdRegMap(InIndex, OutIndex) const;
-
-  // Is modifies(i) non-empty for any input index i?
-  bool modifies() const;
 
   // A grad-op outputs an edge-gradient tensor dT at gradOpOutIndex.
   // dT is the edge-gradient of a tensor T which was the input
@@ -394,17 +395,6 @@ public:
   // it will mean that any possiable subgraph that this op is part of will
   // not be cached. The default is enabled (return true)
   virtual bool isOutlineable() const;
-
-  bool inputsUnmodifiable() const;
-
-  // A summary of the calculation in inputsUnmodifiable()
-  std::string getInputsUnmodifiableString() const;
-
-  bool consumesAnchor() const;
-  bool producesAnchor() const;
-  bool consumesCheckpointAndIsRecompute() const;
-  bool consumesImplicitLoopInput() const;
-  bool consumesGraphOutput() const;
 
 protected:
   // Attempt to get the data of an input tensor. This method will throw an
