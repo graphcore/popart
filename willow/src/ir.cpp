@@ -2680,8 +2680,19 @@ void Ir::growFinalLoss(const std::vector<std::shared_ptr<Loss>> &losses) {
     }
 
     if (lossPipelineStages.size() > 0) {
-      finalLossSum->setPipelineStage(*std::max_element(
-          lossPipelineStages.begin(), lossPipelineStages.end()));
+      PipelineStage finalLossPipelineStage = *std::max_element(
+          lossPipelineStages.begin(), lossPipelineStages.end());
+      finalLossSum->setPipelineStage(finalLossPipelineStage);
+      // Set the virtual graph id for the final loss to be equal
+      // to the one of the other ops in the same pipeline stage.
+      for (auto &op : lossOps) {
+        if (op->hasPipelineStage() && op->hasVirtualGraphId()) {
+          if (op->getPipelineStage() == finalLossPipelineStage) {
+            finalLossSum->setVirtualGraphId(op->getVirtualGraphId());
+            break;
+          }
+        }
+      }
     }
   }
 
@@ -2689,7 +2700,7 @@ void Ir::growFinalLoss(const std::vector<std::shared_ptr<Loss>> &losses) {
   finalLossSum->toLoss   = PathToLoss::Yes;
   finalLossSum->fromLoss = PathFromLoss::Yes;
 
-  if (virtualGraphsEnabled()) {
+  if (virtualGraphsEnabled() && !finalLossSum->hasVirtualGraphId()) {
     std::vector<Tensor *> lossTensors;
     for (auto &op : lossOps) {
       lossTensors.push_back(op->output->tensor(0));
