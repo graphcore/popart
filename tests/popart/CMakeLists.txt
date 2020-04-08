@@ -84,7 +84,7 @@ function(add_test_executable name)
   if (NOT Boost_UNIT_TEST_FRAMEWORK_LIBRARY MATCHES "\\.a$")
     target_compile_definitions(${name} PRIVATE -DBOOST_TEST_DYN_LINK)
   endif()
-  
+
   set_property(TARGET ${name}
               APPEND_STRING PROPERTY
               COMPILE_FLAGS "-DTEST_TARGET=TestDeviceType::${TEST_TARGET}")
@@ -175,6 +175,7 @@ add_popart_cpp_unit_test(transformtest transform_test.cpp)
 add_popart_cpp_unit_test(vertex_vgid_test vertex_vgid_test.cpp VARIANTS "IpuModel")
 add_popart_cpp_unit_test(viewchangingtest view_changing_test.cpp)
 add_popart_cpp_unit_test(decomposegradientsummationtest decompose_gradient_summation_test.cpp)
+add_popart_cpp_unit_test(collectivestest collectives_test.cpp VARIANTS "Hw")
 
 # Add a test that targets c++11 to check that the popart interface is c++11.
 # If the interface is not c++11, the build should fail.
@@ -199,7 +200,7 @@ function(add_popart_py_unit_test name)
 
     set(test_name "${TEST_TARGET}_${TEST_CONFIG}_${name}")
     add_test(NAME "${test_name}"
-           COMMAND ${Python3_EXECUTABLE} -m pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/${name}.py 
+           COMMAND ${Python3_EXECUTABLE} -m pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/${name}.py
            WORKING_DIRECTORY ${CMAKE_CURRENT_BUILD_DIR})
     set_tests_properties(${test_name} PROPERTIES
                          ENVIRONMENT TEST_TARGET=${TEST_TARGET})

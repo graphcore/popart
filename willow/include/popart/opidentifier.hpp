@@ -346,6 +346,12 @@ const static AiGraphcoreOpIdV1 GradCopyToHost("GradCopyToHost");
 const static AiGraphcoreOpIdV1 GradCopyFromHost("GradCopyFromHost");
 const static AiGraphcoreOpIdV1 HostSGD0VarUpdate("HostSGD0VarUpdate");
 
+const static AiGraphcoreOpIdV1
+    ReplicatedAllReduceInplace("ReplicatedAllReduceInplace", 1, 1);
+const static AiGraphcoreOpIdV1 ReplicatedAllReduce("ReplicatedAllReduce", 1, 1);
+const static AiGraphcoreOpIdV1
+    ReplicatedReduceScatter("ReplicatedReduceScatter");
+
 const static AiGraphcoreOpIdV1 CopyVarUpdate("CopyVarUpdate");
 const static AiGraphcoreOpIdV1 FlattenInplace("FlattenInplace");
 const static AiGraphcoreOpIdV1 ReshapeInplace("ReshapeInplace");
