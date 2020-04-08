@@ -10,6 +10,7 @@
 #include <popart/error.hpp>
 #include <popart/graphtransformer.hpp>
 #include <popart/ir.hpp>
+#include <popart/np_utils.hpp>
 #include <popart/numerics.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/init.hpp>
@@ -20,8 +21,10 @@
 #include <popart/optimizer.hpp>
 #include <popart/optimizervalue.hpp>
 #include <popart/patterns/patterns.hpp>
+#include <popart/pyarray_accessor.hpp>
 #include <popart/session.hpp>
 #include <popart/sessionoptions.hpp>
+#include <popart/stepio_generic.hpp>
 #include <popart/stepio_size_assertion.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensornames.hpp>
@@ -38,44 +41,6 @@
 
 namespace py = pybind11;
 using namespace popart;
-
-std::map<std::string, DataType> initNpTypeMap() {
-  std::map<std::string, DataType> M;
-  // see tensorinfo.hpp for the complete list of
-  // DataTypes (defined originally in ONNX)
-  M["float16"] = DataType::FLOAT16;
-  M["float32"] = DataType::FLOAT;
-  M["uint8"]   = DataType::UINT8;
-  M["uint16"]  = DataType::UINT16;
-  M["uint32"]  = DataType::UINT32;
-  M["uint64"]  = DataType::UINT64;
-  M["int8"]    = DataType::INT8;
-  M["int16"]   = DataType::INT16;
-  M["int32"]   = DataType::INT32;
-  M["int64"]   = DataType::INT64;
-  M["bool"]    = DataType::BOOL;
-  return M;
-}
-
-DataType getDataTypeFromNpType(std::string npType) {
-  const static std::map<std::string, DataType> M = initNpTypeMap();
-  auto found                                     = M.find(npType);
-  if (found == M.end()) {
-    throw error("No numpy type {} registered in map to DataType", npType);
-  }
-  return found->second;
-}
-
-TensorInfo getTensorInfo(py::array npArr) {
-  auto dtype      = npArr.dtype();
-  auto typeString = py::str(dtype);
-  auto tRank      = npArr.ndim();
-  std::vector<int64_t> shape;
-  for (int i = 0; i < tRank; ++i) {
-    shape.push_back(npArr.shape(i));
-  }
-  return TensorInfo(getDataTypeFromNpType(typeString), shape);
-}
 
 // The following code attempts to convert the python dictionary
 // (py::dict) into a map of strings for keys and values. The default
@@ -149,13 +114,8 @@ std::map<std::string, boost::any> getDictionaryVar(py::dict pydict) {
   return dictionary;
 }
 
-class PyStepIO : public IStepIO {
-
-  struct ArrayInfo {
-    py::array array;
-    int64_t offset;
-  };
-
+class PyStepIO
+    : public StepIOGeneric<py::array, StepIONS::PyArrayAccessor, py::array> {
 public:
   PyStepIO(std::map<TensorId, py::array> inputs,
            std::map<TensorId, py::array> outputs) {
@@ -167,101 +127,6 @@ public:
       outputsInfo.insert({p.first, {p.second, 0}});
     }
   }
-
-  void assertNumElements(const Ir &ir) const final {
-    auto g = [](const ArrayInfo &info) { return info.array.size(); };
-    iosizecheck::assertInCorrect(ir, inputsInfo, g);
-    iosizecheck::assertOutCorrect(ir, outputsInfo, g);
-  }
-
-  template <typename T>
-  T get(TensorId id,
-        std::map<TensorId, ArrayInfo> &M,
-        int64_t numElements,
-        bool advance_,
-        std::string mapName) {
-
-    auto found = M.find(id);
-    if (found == M.end()) {
-      throw error("No tensor {} provided in PyStepIO's {}", id, mapName);
-    }
-
-    ArrayInfo &arrayInfo = found->second;
-    int64_t offset       = arrayInfo.offset;
-
-    T stepData;
-    stepData.info = getTensorInfo(arrayInfo.array);
-
-    int64_t arraySize = stepData.info.nbytes();
-
-    // Set the data using the offset
-    stepData.data =
-        static_cast<uint8_t *>(arrayInfo.array.request().ptr) + offset;
-
-    if (advance_) {
-
-      int64_t numBytes =
-          static_cast<int64_t>(stepData.info.getDataTypeInfo()->nbytes()) *
-          numElements;
-
-      // Wrap around if we read all the data
-      if (offset + numBytes == arraySize) {
-        arrayInfo.offset = 0;
-      } else {
-        arrayInfo.offset = offset + numBytes;
-      }
-    }
-
-    return stepData;
-  }
-
-  template <typename T>
-  void advance(TensorId id,
-               std::map<TensorId, ArrayInfo> &M,
-               int64_t numElements,
-               std::string mapName) {
-
-    auto found = M.find(id);
-    if (found == M.end()) {
-      throw error("No tensor {} provided in PyStepIO's {}", id, mapName);
-    }
-
-    ArrayInfo &arrayInfo = found->second;
-    int64_t offset       = arrayInfo.offset;
-
-    T stepData;
-    stepData.info = getTensorInfo(arrayInfo.array);
-
-    int64_t arraySize = stepData.info.nbytes();
-
-    // Set the data using the offset
-    int64_t numBytes =
-        static_cast<int64_t>(stepData.info.getDataTypeInfo()->nbytes()) *
-        numElements;
-
-    // Wrap around if we read all the data
-    if (offset + numBytes == arraySize) {
-      arrayInfo.offset = 0;
-    } else {
-      arrayInfo.offset = offset + numBytes;
-    }
-  }
-
-  ConstVoidData in(TensorId id, int64_t numElements, bool)final {
-    return get<ConstVoidData>(id, inputsInfo, numElements, false, "inputs");
-  }
-
-  void inComplete(TensorId id, int64_t numElements) final {
-    return advance<ConstVoidData>(id, inputsInfo, numElements, "inputs");
-  }
-
-  MutableVoidData out(TensorId id, int64_t numElements) final {
-    return get<MutableVoidData>(id, outputsInfo, numElements, true, "outputs");
-  }
-
-private:
-  std::map<TensorId, ArrayInfo> outputsInfo;
-  std::map<TensorId, ArrayInfo> inputsInfo;
 };
 
 class PyStepIOCallback : public IStepIO {

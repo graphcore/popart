@@ -4,6 +4,7 @@
 #include <popart/half.hpp>
 #include <popart/ir.hpp>
 #include <popart/onnxutil.hpp>
+#include <popart/stepio.hpp>
 #include <popart/stepio_size_assertion.hpp>
 #include <popart/tensordata.hpp>
 
@@ -37,108 +38,6 @@ void TensorData::resetData(const TensorInfo &info, const void *from) {
   }
   data_.resize(info.nbytes());
   std::memcpy(data_.data(), from, info.nbytes());
-}
-
-StepIO::StepIO(std::map<TensorId, IArray &> inputs,
-               std::map<TensorId, IArray &> outputs) {
-  for (auto p : inputs) {
-    inputsInfo.insert({p.first, {p.second, 0}});
-  }
-
-  for (auto p : outputs) {
-    outputsInfo.insert({p.first, {p.second, 0}});
-  }
-}
-
-TensorInfo StepIO::getTensorInfo(IArray &array) const {
-  auto dtype = array.dataType();
-  auto tRank = array.rank();
-  std::vector<int64_t> shape;
-  for (int i = 0; i < tRank; ++i) {
-    shape.push_back(array.dim(i));
-  }
-  return TensorInfo(dtype, shape);
-}
-
-template <typename T>
-T StepIO::get(TensorId id,
-              std::map<TensorId, ArrayInfo> &M,
-              int64_t numElements,
-              bool advanceIn,
-              std::string mapName) {
-
-  auto found = M.find(id);
-  if (found == M.end()) {
-    throw error("No tensor {} provided in PyStepIO's {}", id, mapName);
-  }
-
-  ArrayInfo &arrayInfo = found->second;
-  auto offset          = arrayInfo.offset;
-
-  T stepData;
-  stepData.info = getTensorInfo(arrayInfo.array);
-
-  // Set the data using the offset
-
-  stepData.data = static_cast<uint8_t *>(arrayInfo.array.data()) + offset;
-
-  if (advanceIn) {
-
-    auto numBytes = stepData.info.getDataTypeInfo()->nbytes() * numElements;
-
-    // Wrap around if we read all the data
-    if (offset + numBytes == stepData.info.nbytes()) {
-      arrayInfo.offset = 0;
-    } else {
-      arrayInfo.offset = offset + numBytes;
-    }
-  }
-
-  return stepData;
-}
-
-template <typename T>
-void StepIO::advance(TensorId id,
-                     std::map<TensorId, ArrayInfo> &M,
-                     int64_t numElements,
-                     std::string mapName) {
-
-  auto found = M.find(id);
-  if (found == M.end()) {
-    throw error("No tensor {} provided in PyStepIO's {}", id, mapName);
-  }
-
-  ArrayInfo &arrayInfo = found->second;
-  auto offset          = arrayInfo.offset;
-
-  T stepData;
-  stepData.info = getTensorInfo(arrayInfo.array);
-
-  auto numBytes = stepData.info.getDataTypeInfo()->nbytes() * numElements;
-
-  if (offset + numBytes == stepData.info.nbytes()) {
-    arrayInfo.offset = 0;
-  } else {
-    arrayInfo.offset = offset + numBytes;
-  }
-}
-
-ConstVoidData StepIO::in(TensorId id, int64_t numElements, bool /*prefetch*/) {
-  return get<ConstVoidData>(id, inputsInfo, numElements, false, "inputs");
-}
-
-void StepIO::assertNumElements(const Ir &ir) const {
-  auto g = [](const ArrayInfo &info) { return info.array.nelms(); };
-  iosizecheck::assertInCorrect(ir, inputsInfo, g);
-  iosizecheck::assertOutCorrect(ir, outputsInfo, g);
-}
-
-void StepIO::inComplete(TensorId id, int64_t numElements) {
-  return advance<ConstVoidData>(id, inputsInfo, numElements, "inputs");
-}
-
-MutableVoidData StepIO::out(TensorId id, int64_t numElements) {
-  return get<MutableVoidData>(id, outputsInfo, numElements, true, "outputs");
 }
 
 bool WeightsIO::contains(TensorId id) const {

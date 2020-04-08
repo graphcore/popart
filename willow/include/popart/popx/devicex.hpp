@@ -25,6 +25,7 @@
 #include <set>
 #include <popart/names.hpp>
 // MutableVoidData is defined in here:
+#include <popart/stepio.hpp>
 #include <popart/tensordata.hpp>
 
 using boost::optional;

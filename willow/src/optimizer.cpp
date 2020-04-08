@@ -7,6 +7,7 @@
 #include <popart/optimizer.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensor.hpp>
+#include <popart/tensordata.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
 #include <popart/util.hpp>

@@ -19,6 +19,7 @@
 #include <popart/op/nll.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/stepio.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>

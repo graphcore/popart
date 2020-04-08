@@ -1,6 +1,7 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <functional>
 #include <memory>
+#include <numeric>
 #include <popart/error.hpp>
 #include <popart/op/maxpool.hpp>
 #include <popart/opmanager.hpp>

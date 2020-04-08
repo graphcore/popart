@@ -7,6 +7,7 @@
 #include <popart/opserialiser.hpp>
 #include <popart/region.hpp>
 #include <popart/tensor.hpp>
+#include <popart/tensordata.hpp>
 #include <popart/tensors.hpp>
 #include <popart/util.hpp>
 

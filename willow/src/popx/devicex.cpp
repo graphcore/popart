@@ -50,6 +50,7 @@
 #include <popart/popx/poplaroptionsx.hpp>
 #include <popart/popx/pritask.hpp>
 #include <popart/recompute.hpp>
+#include <popart/stepio.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensors.hpp>

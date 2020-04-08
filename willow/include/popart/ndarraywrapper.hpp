@@ -4,6 +4,7 @@
 #include <popart/iarray.hpp>
 #include <popart/ndindices.hpp>
 #include <popart/tensor.hpp>
+#include <popart/tensordata.hpp>
 #include <popart/tensorinfo.hpp>
 
 namespace popart {

@@ -1,6 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <memory>
+#include <numeric>
 #include <popart/op/flatten.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>

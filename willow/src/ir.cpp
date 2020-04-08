@@ -29,6 +29,7 @@
 #include <popart/scheduler.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensor.hpp>
+#include <popart/tensordata.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>

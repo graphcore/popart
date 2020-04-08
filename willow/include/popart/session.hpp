@@ -5,6 +5,7 @@
 #include <poplar/DataStream.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
+#include <popart/stepio.hpp>
 
 namespace popart {
 

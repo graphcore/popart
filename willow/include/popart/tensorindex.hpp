@@ -2,7 +2,6 @@
 #ifndef GUARD_NEURALNET_TENSORINDEXMAP_HPP
 #define GUARD_NEURALNET_TENSORINDEXMAP_HPP
 
-#include <popart/names.hpp>
 #include <popart/tensor.hpp>
 
 namespace popart {

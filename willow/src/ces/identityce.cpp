@@ -3,6 +3,7 @@
 #include <popart/ces/identityce.hpp>
 #include <popart/op.hpp>
 #include <popart/tensor.hpp>
+#include <popart/tensordata.hpp>
 
 namespace popart {
 

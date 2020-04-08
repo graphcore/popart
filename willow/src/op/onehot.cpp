@@ -5,6 +5,7 @@
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/tensor.hpp>
+#include <popart/tensordata.hpp>
 #include <popart/tensors.hpp>
 #include <popart/typefunctor.hpp>
 
