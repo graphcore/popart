@@ -149,20 +149,6 @@ bool Graph::isMarkedAsZeroCopy(const TensorId &tensorId) const {
          zero_copy.end();
 }
 
-void Graph::markAsInputConsumedInplaceForOptimization(
-    const TensorId &tensorId) {
-  if (!getTensors().contains(tensorId)) {
-    std::ostringstream oss;
-    oss << "No Tensor `" << tensorId
-        << "' found to mark as input-consumed-inplace-for-optimization";
-    throw error(oss.str());
-  }
-  inputs_consumed_inplace_for_optimization.emplace(tensorId);
-}
-bool Graph::isInputConsumedInplaceForOptimization(
-    const TensorId &tensorId) const {
-  return inputs_consumed_inplace_for_optimization.count(tensorId) != 0;
-}
 
 void Graph::constructFromOnnxGraph(
     const ONNX_NAMESPACE::GraphProto &onnx_graph) {

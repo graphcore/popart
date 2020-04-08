@@ -111,9 +111,6 @@ public:
   void markAsZeroCopy(const TensorId &);
   bool isMarkedAsZeroCopy(const TensorId &) const;
 
-  void markAsInputConsumedInplaceForOptimization(const TensorId &);
-  bool isInputConsumedInplaceForOptimization(const TensorId &) const;
-
   TensorId addScope(const TensorId &) const;
   TensorId removeScope(const TensorId &) const;
   Scope getScope() const;
@@ -143,7 +140,6 @@ private:
   std::vector<TensorId> graph_inputs;
   std::vector<TensorId> graph_outputs;
   std::vector<TensorId> zero_copy;
-  std::unordered_set<TensorId> inputs_consumed_inplace_for_optimization;
   std::unique_ptr<Scheduler> scheduler;
   std::vector<GradInOutMapper> gradInInfo;
 

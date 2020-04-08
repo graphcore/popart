@@ -23,8 +23,6 @@ public:
 
   void appendOutlineAttributes(OpSerialiserBase &os) const override;
 
-  bool isInputModified(InIndex) const override;
-
   view::Regions modifies(InIndex) const override;
   view::Regions aliases(InIndex, OutIndex) const override;
 
@@ -39,8 +37,10 @@ public:
 
   void addAlias(InIndex in,
                 OutIndex out,
-                view::Regions fwdRegions,
-                view::Regions bwdRegions);
+                view::Chains fwdChains,
+                view::Chains bwdChains);
+
+  void addModified(InIndex in, view::Regions regions);
 
   view::RegMap fwdRegMap(InIndex, OutIndex) const final;
   view::RegMap bwdRegMap(InIndex, OutIndex) const final;
@@ -50,11 +50,9 @@ public:
 private:
   std::reference_wrapper<Graph> callee;
   // Regions of Input Tensors (InIndex) are aliased by Output Tensors (OutIndex)
-  std::map<std::pair<InIndex, OutIndex>,
-           std::pair<view::Regions, view::Regions>>
+  std::map<std::pair<InIndex, OutIndex>, std::pair<view::Chains, view::Chains>>
       aliasMap;
-  std::map<InIndex, bool> inZeroCopy;
-  std::map<OutIndex, bool> outZeroCopy;
+  std::map<InIndex, view::Regions> modifiesMap;
 
   std::vector<GradInOutMapper>
   getGradInInfo(const std::vector<TensorId> &gradOpInputIds) const;

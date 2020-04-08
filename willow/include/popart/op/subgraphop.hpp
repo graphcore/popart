@@ -10,8 +10,6 @@ class SubgraphOp : public Op {
 public:
   // parent: Graph this CallOp belongs to
   SubgraphOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
-
-  virtual bool isInputModified(InIndex) const = 0;
 };
 
 } // namespace popart

@@ -10,8 +10,22 @@
 namespace popart {
 namespace view {
 
+AccessType combine(std::set<AccessType> accessTypes) {
+  int accessTypeMask = 0;
+  for (auto accessType : accessTypes) {
+    accessTypeMask |= static_cast<int>(accessType);
+  }
+  return static_cast<AccessType>(accessTypeMask);
+}
+
 // Merge in approx. O(rank * 2 * n log^2 n)
 Regions mergeRegions(Regions regions) {
+
+  AccessType accessType = AccessType::NONE;
+  for (Region &r : regions) {
+    accessType = combine({r.getAccessType(), accessType});
+  }
+
   size_t last_size = 0;
   if (regions.size() > 0) {
     Regions subRegions;
@@ -70,6 +84,10 @@ Regions mergeRegions(Regions regions) {
       last_size = regions.size();
     }
   }
+
+  for (Region &r : regions) {
+    r.setAccessType(accessType);
+  }
   return regions;
 }
 
@@ -81,12 +99,18 @@ bool Region::operator==(const Region &r) const {
 bool Region::operator!=(const Region &r) const { return !(r == *this); }
 
 Region::Region(const std::vector<int64_t> &l, const std::vector<int64_t> &u)
-    : Region(l, u, false) {}
+    : Region(l, u, AccessType::READ_WRITE, false) {}
 
 Region::Region(const std::vector<int64_t> &l,
                const std::vector<int64_t> &u,
+               const AccessType at)
+    : Region(l, u, at, false) {}
+
+Region::Region(const std::vector<int64_t> &l,
+               const std::vector<int64_t> &u,
+               AccessType at,
                bool er0)
-    : lower(l), upper(u), isEmptyRank0(er0) {
+    : lower(l), upper(u), isEmptyRank0(er0), accessType(at) {
   checks();
 }
 
@@ -114,12 +138,15 @@ void Region::checks() const {
 
 Region Region::getEmpty(int64_t r) {
   // One possible empty region
-  return Region(LowBounds(r, 0), UppBounds(r, 0), r == 0 ? true : false);
+  return Region(LowBounds(r, 0),
+                UppBounds(r, 0),
+                AccessType::NONE,
+                r == 0 ? true : false);
 }
 
-Region Region::getFull(const Shape &s) {
+Region Region::getFull(const Shape &s, AccessType accessType) {
   // Use the Shape as the UppBounds
-  return Region(LowBounds(s.size(), 0), s, false);
+  return Region(LowBounds(s.size(), 0), s, accessType, false);
 }
 
 int64_t Region::rank() const { return lower.size(); }
@@ -153,7 +180,7 @@ Region Region::intersect(const Region &rhs) const {
   if (rhs.isEmpty() || isEmpty()) {
     return getEmpty(rhs.rank());
   }
-  Region result(lower, upper);
+  Region result(lower, upper, combine({getAccessType(), rhs.getAccessType()}));
 
   // Resolve templates and overload set
   const auto min = [](int64_t a, int64_t b) { return std::min(a, b); };
@@ -237,8 +264,8 @@ Regions Region::cut(const std::vector<std::set<int64_t>> &cuts,
           std::vector<int64_t> u2 = r0.getUpper();
           u1[i]                   = cut;
           l2[i]                   = cut;
-          Region r1(l1, u1);
-          Region r2(l2, u2);
+          Region r1(l1, u1, accessType);
+          Region r2(l2, u2, accessType);
           if (r1.nelms() > 0 || include_empty)
             wqueue.push_back(r1);
           if (r2.nelms() > 0 || include_empty)
@@ -394,11 +421,18 @@ std::pair<int64_t, Region> Region::merge(const Region &rhs) const {
   int64_t merge_dim = -1;
 
   if (contains(rhs)) {
-    return std::make_pair<int64_t, Region>(0, Region(getLower(), getUpper()));
+    return std::make_pair<int64_t, Region>(
+        0,
+        Region(getLower(),
+               getUpper(),
+               combine({getAccessType(), rhs.getAccessType()})));
   }
   if (rhs.contains(*this)) {
     return std::make_pair<int64_t, Region>(
-        0, Region(rhs.getLower(), rhs.getUpper()));
+        0,
+        Region(rhs.getLower(),
+               rhs.getUpper(),
+               combine({getAccessType(), rhs.getAccessType()})));
   }
 
   for (int64_t d = 0; d < rank(); ++d) {
@@ -420,7 +454,10 @@ std::pair<int64_t, Region> Region::merge(const Region &rhs) const {
     std::vector<int64_t> newUpper = upper;
     newLower[merge_dim] = std::min(lower[merge_dim], rhs.lower[merge_dim]);
     newUpper[merge_dim] = std::max(upper[merge_dim], rhs.upper[merge_dim]);
-    return {merge_dim, Region(newLower, newUpper)};
+    return {merge_dim,
+            Region(newLower,
+                   newUpper,
+                   combine({getAccessType(), rhs.getAccessType()}))};
   } else {
     return {-1, Region::getEmpty(rank())};
   }
@@ -441,7 +478,7 @@ Region Region::transpose(const Shape perm) const {
     l[i] = lower[perm[i]];
     u[i] = upper[perm[i]];
   }
-  return Region(l, u);
+  return Region(l, u, accessType);
 }
 
 std::ostream &operator<<(std::ostream &stream, const Region &r) {

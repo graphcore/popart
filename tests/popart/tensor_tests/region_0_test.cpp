@@ -151,19 +151,43 @@ BOOST_AUTO_TEST_CASE(Region_Reshape6) {
 
 BOOST_AUTO_TEST_CASE(Region_MergeRegions0) {
 
-  view::Region r0({0, 0}, {3, 4});
-  view::Region r1({1, 3}, {5, 5});
+  view::Region r0({0, 0}, {3, 4}, view::AccessType::READ);
+  view::Region r1({1, 3}, {5, 5}, view::AccessType::WRITE);
 
   view::Regions rs = view::mergeRegions({r0, r1});
 
   BOOST_CHECK(rs.size() == 3);
 
-  BOOST_CHECK(std::find(rs.begin(), rs.end(), view::Region({0, 0}, {3, 4})) !=
-              rs.end());
+  auto r2 = std::find(rs.begin(), rs.end(), view::Region({0, 0}, {3, 4}));
+  BOOST_CHECK(r2 != rs.end());
+  BOOST_CHECK(r2->getAccessType() == view::AccessType::READ_WRITE);
 
-  BOOST_CHECK(std::find(rs.begin(), rs.end(), view::Region({3, 3}, {5, 4})) !=
-              rs.end());
+  auto r3 = std::find(rs.begin(), rs.end(), view::Region({3, 3}, {5, 4}));
+  BOOST_CHECK(r3 != rs.end());
+  BOOST_CHECK(r3->getAccessType() == view::AccessType::READ_WRITE);
 
-  BOOST_CHECK(std::find(rs.begin(), rs.end(), view::Region({1, 4}, {5, 5})) !=
-              rs.end());
+  auto r4 = std::find(rs.begin(), rs.end(), view::Region({1, 4}, {5, 5}));
+  BOOST_CHECK(r4 != rs.end());
+  BOOST_CHECK(r4->getAccessType() == view::AccessType::READ_WRITE);
+}
+
+BOOST_AUTO_TEST_CASE(Region_AccessType0) {
+
+  BOOST_CHECK(view::combine({view::AccessType::NONE, view::AccessType::READ}) ==
+              view::AccessType::READ);
+  BOOST_CHECK(
+      view::combine({view::AccessType::NONE, view::AccessType::WRITE}) ==
+      view::AccessType::WRITE);
+  BOOST_CHECK(
+      view::combine({view::AccessType::NONE, view::AccessType::READ_WRITE}) ==
+      view::AccessType::READ_WRITE);
+  BOOST_CHECK(
+      view::combine({view::AccessType::READ, view::AccessType::WRITE}) ==
+      view::AccessType::READ_WRITE);
+  BOOST_CHECK(
+      view::combine({view::AccessType::READ, view::AccessType::READ_WRITE}) ==
+      view::AccessType::READ_WRITE);
+  BOOST_CHECK(
+      view::combine({view::AccessType::WRITE, view::AccessType::READ_WRITE}) ==
+      view::AccessType::READ_WRITE);
 }

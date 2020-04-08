@@ -384,9 +384,79 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
     }
   }
 
-  // Check aliasing before disconnecting the old ops
+  // Check aliasing and modifying before disconnecting the old ops
   for (int i = 0; i < instance.external_inputs.size(); i++) {
     Tensor *inTensor = instance.external_inputs[i];
+
+    std::map<Op *, int64_t> beforeOps;
+    for (Op *consumer : inTensor->consumers.getOps()) {
+      if (std::find(instance.ops.begin(), instance.ops.end(), consumer->id) !=
+          instance.ops.end()) {
+        beforeOps.insert({consumer, 0});
+      }
+    }
+    for (Op *consumer : inTensor->consumers.getOps()) {
+      for (Op *after : graph.topoCons->getAfters(consumer)) {
+        if (beforeOps.find(after) != beforeOps.end()) {
+          beforeOps[after]++;
+        }
+      }
+    }
+    std::vector<std::pair<Op *, int64_t>> consumersOrdered;
+    for (auto it = beforeOps.begin(); it != beforeOps.end(); ++it)
+      consumersOrdered.push_back(*it);
+
+    std::sort(
+        consumersOrdered.begin(),
+        consumersOrdered.end(),
+        [](const std::pair<Op *, int64_t> &a,
+           const std::pair<Op *, int64_t> &b) { return a.second < b.second; });
+
+    view::Regions modifiedRegions;
+    view::AccessType accessType = view::AccessType::NONE;
+
+    // As soon as a consumer modified the whole input, we can stop
+    for (auto &consumerOrdered : consumersOrdered) {
+      Op *c        = consumerOrdered.first;
+      auto indices = c->input->indices(inTensor);
+      for (InIndex index : indices) {
+        auto regions = consumerOrdered.first->modifies(index);
+
+        // If an op consumes the tensor without specifying modifies we assume
+        // (conservatively) full read access to the tensor
+        if (regions.empty() || regions.front().isEmpty()) {
+          accessType = view::combine({accessType, view::AccessType::READ});
+        }
+
+        modifiedRegions.insert(
+            modifiedRegions.end(), regions.begin(), regions.end());
+      }
+      modifiedRegions = view::mergeRegions(modifiedRegions);
+      for (auto &r : modifiedRegions) {
+        accessType = view::combine({accessType, r.getAccessType()});
+      }
+      if (modifiedRegions.size() > 0 &&
+          modifiedRegions.front() ==
+              view::Region::getFull(inTensor->info.shape()) &&
+          accessType == view::AccessType::WRITE) {
+        // The whole input tensor has been touched, conclude
+        //  If the whole tensor has been write-accessed first, we say that
+        //  the CallOp consumes the tensor write-only.
+        //  If any read access to the tensor happens before the write-only
+        //  access, the modified tensor is read-write.
+        //  Read-only does not make sense, since we ask about modified regions.
+        // Examples:
+        //  1.) VarUpdate will cause read-write access to modified input.
+        //  2.) CacheLoad will cause write-only access to modified input.
+        break;
+      }
+    }
+    // Update access type
+    for (auto &r : modifiedRegions) {
+      r.setAccessType(accessType);
+    }
+    call_op->addModified(i, modifiedRegions);
+
     for (int j = 0; j < instance.external_outputs.size(); j++) {
       Tensor *outTensor = instance.external_outputs[j];
 
@@ -398,49 +468,18 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
 
       // alias Regions in input Tensor:
       auto fwdAliasRegions =
-          graph.getTensors().getAliasRegions(inTensor, outTensor);
+          graph.getTensors().getChainsFromTo(inTensor, outTensor);
       auto bwdAliasRegions =
-          graph.getTensors().getAliasRegions(outTensor, inTensor);
-
-      for (const auto &r : fwdAliasRegions) {
-        if (r.rank() != outTensor->info.rank()) {
-          throw error(
-              "Invalid Region of rank {} in updateTopoCons at InIndex {} "
-              "where the input Tensor is of rank {}. The Input Tensor is {}, "
-              "and it is entering CallOp {}. The Input Tensor has TensorInfo "
-              "{}.",
-              r.rank(),
-              i,
-              outTensor->info.rank(),
-              outTensor->str(),
-              call_op->str(),
-              outTensor->info);
-        }
-      }
-      for (const auto &r : bwdAliasRegions) {
-        if (r.rank() != inTensor->info.rank()) {
-          throw error(
-              "Invalid Region of rank {} in updateTopoCons at InIndex {} "
-              "where the input Tensor is of rank {}. The Input Tensor is {}, "
-              "and it is entering CallOp {}. The Input Tensor has TensorInfo "
-              "{}.",
-              r.rank(),
-              i,
-              inTensor->info.rank(),
-              inTensor->str(),
-              call_op->str(),
-              inTensor->info);
-        }
-      }
+          graph.getTensors().getChainsFromTo(outTensor, inTensor);
 
       call_op->addAlias(i, j, fwdAliasRegions, bwdAliasRegions);
       if (logging::shouldLog(logging::Module::transform,
                              logging::Level::Trace)) {
-        logging::trace("[SubgraphOutline] Alias {} ({}) -> {} ({})",
-                       i,
-                       inTensor->id,
-                       j,
-                       outTensor->id);
+        logging::transform::trace("[SubgraphOutline] Alias {} ({}) -> {} ({})",
+                                  i,
+                                  inTensor->id,
+                                  j,
+                                  outTensor->id);
       }
     }
   }

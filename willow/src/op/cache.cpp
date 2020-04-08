@@ -43,7 +43,7 @@ void CacheLoadOp::setup() {
 
 view::Regions CacheLoadOp::modifies(InIndex index) const {
   if (index == getCachedTensorInIndex()) {
-    return {view::Region::getFull(inShape(index))};
+    return {view::Region::getFull(inShape(index), view::AccessType::WRITE)};
   } else if (index == getRemoteBufferOffsetInIndex()) {
     return {view::Region::getEmpty(inRank(index))};
   } else {
@@ -53,7 +53,7 @@ view::Regions CacheLoadOp::modifies(InIndex index) const {
 
 view::Regions CacheLoadOp::aliases(InIndex in, OutIndex) const {
   if (in == getCachedTensorInIndex()) {
-    return {view::Region::getFull(inShape(in))};
+    return {view::Region::getFull(inShape(in), view::AccessType::WRITE)};
   } else if (in == getRemoteBufferOffsetInIndex()) {
     return {view::Region::getEmpty(inRank(in))};
   } else {

@@ -37,49 +37,25 @@ void CallOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("callee", callee.get().id.str());
 }
 
-bool CallOp::isInputModified(InIndex index) const {
-  auto tensor_id = getCalledGraph().getInputId(index);
-  auto tensor    = getCalledGraph().getTensors().get(tensor_id);
+view::Regions CallOp::modifies(InIndex in) const {
+  // If not in modifiesMap, return empty region
+  if (modifiesMap.count(in) == 0) {
+    return {view::Region::getEmpty(inRank(in))};
+  }
 
-  for (auto consumer : tensor->consumers.getOps()) {
-    for (auto i : consumer->input->indices(tensor)) {
-      for (int o = 0; o < consumer->output->n(); ++o) {
-        auto aliasedRegions  = consumer->aliases(i, o);
-        auto modifiedRegions = consumer->modifies(i);
-        if (std::any_of(aliasedRegions.begin(),
-                        aliasedRegions.end(),
-                        [](const view::Region &r) { return !r.isEmpty(); }) ||
-            std::any_of(modifiedRegions.begin(),
-                        modifiedRegions.end(),
-                        [](const view::Region &r) { return !r.isEmpty(); })) {
-          return true;
-        }
-      }
+  // Regions of in which are aliased
+  auto modifiedRegions = modifiesMap.at(in);
+  for (const auto &r : modifiedRegions) {
+    if (r.rank() != inRank(in)) {
+      throw error("Invalid Region of rank {} in CallOp::modifies at InIndex {} "
+                  "where the input Tensor is of rank {}.",
+                  r.rank(),
+                  in,
+                  inRank(in));
     }
   }
 
-  return false;
-}
-
-view::Regions CallOp::modifies(InIndex index) const {
-  view::Regions modifiedRegions;
-  for (int i = 0; i < output->n(); i++) {
-    if (aliasMap.count({index, i})) {
-      auto regions = aliasMap.at({index, i}).first;
-      if (regions.size() > 0 &&
-          std::any_of(regions.begin(),
-                      regions.end(),
-                      [](const view::Region &r) { return !r.isEmpty(); })) {
-        modifiedRegions.insert(
-            modifiedRegions.end(), regions.begin(), regions.end());
-      }
-    }
-  }
-  if (modifiedRegions.size() > 0) {
-    return view::mergeRegions(modifiedRegions);
-  } else {
-    return {view::Region::getEmpty(inRank(index))};
-  }
+  return modifiedRegions;
 }
 
 view::Regions CallOp::aliases(InIndex in, OutIndex out) const {
@@ -89,16 +65,9 @@ view::Regions CallOp::aliases(InIndex in, OutIndex out) const {
   }
 
   // Regions of in which are aliased
-  auto aliasRegions = aliasMap.at({in, out});
-  if (logging::shouldLog(logging::Module::op, logging::Level::Trace)) {
-    std::ostringstream oss;
-    oss << "In CallOp::aliases(" << in << ", " << out << "), returning ";
-    for (const auto &r : aliasRegions.second) {
-      oss << "      " << r;
-    }
-    logging::op::trace(oss.str());
-  }
-  for (const auto &r : aliasRegions.second) {
+  auto aliasRegions =
+      aliasMap.at({in, out}).second.apply(view::Region::getFull(outShape(out)));
+  for (const auto &r : aliasRegions) {
     if (r.rank() != inRank(in)) {
       throw error("Invalid Region of rank {} in CallOp::aliases at InIndex {} "
                   "where the input Tensor is of rank {}.",
@@ -107,7 +76,8 @@ view::Regions CallOp::aliases(InIndex in, OutIndex out) const {
                   inRank(in));
     }
   }
-  return aliasRegions.second;
+
+  return aliasRegions;
 }
 
 std::vector<const Graph *> CallOp::getCalledGraphs() const {
@@ -213,36 +183,42 @@ VGraphId CallOp::getIntrospectionOutVirtualGraphId(OutIndex index) const {
 
 void CallOp::addAlias(InIndex in,
                       OutIndex out,
-                      view::Regions fwdRegions,
-                      view::Regions bwdRegions) {
+                      view::Chains fwdChains,
+                      view::Chains bwdChains) {
   aliasMap.insert(std::make_pair(std::make_pair(in, out),
-                                 std::make_pair(fwdRegions, bwdRegions)));
+                                 std::make_pair(fwdChains, bwdChains)));
+}
+
+void CallOp::addModified(InIndex in, view::Regions regions) {
+  modifiesMap.insert(std::make_pair(in, regions));
 }
 
 view::RegMap CallOp::fwdRegMap(InIndex inIndex, OutIndex outIndex) const {
-  auto outRegion   = view::Region::getFull(outInfo(outIndex).shape());
   auto emptyRegion = view::Region::getEmpty(outRank(outIndex));
-  return
-      [this, inIndex, outIndex, outRegion, emptyRegion](const view::Region &r) {
-        if (r.isEmpty() || aliasMap.at({inIndex, outIndex}).first.size() == 0) {
-          return view::Regions(1, emptyRegion);
-        } else {
-          return aliasMap.at({inIndex, outIndex}).first;
-        }
-      };
+  auto aliasChains = aliasMap.at({inIndex, outIndex}).first;
+
+  // Only capture by value
+  return [aliasChains, emptyRegion](const view::Region &r) {
+    if (r.isEmpty() || aliasChains.isEmpty()) {
+      return view::Regions(1, emptyRegion);
+    } else {
+      return aliasChains.apply(r);
+    }
+  };
 }
 
 view::RegMap CallOp::bwdRegMap(InIndex inIndex, OutIndex outIndex) const {
-  auto inRegion    = view::Region::getFull(inInfo(inIndex).shape());
   auto emptyRegion = view::Region::getEmpty(inRank(inIndex));
-  return
-      [this, inIndex, outIndex, inRegion, emptyRegion](const view::Region &r) {
-        if (r.isEmpty() || aliasMap.at({inIndex, outIndex}).first.size() == 0) {
-          return view::Regions(1, emptyRegion);
-        } else {
-          return aliasMap.at({inIndex, outIndex}).second;
-        }
-      };
+  auto aliasChains = aliasMap.at({inIndex, outIndex}).second;
+
+  // Only capture by value
+  return [aliasChains, emptyRegion](const view::Region &r) {
+    if (r.isEmpty() || aliasChains.isEmpty()) {
+      return view::Regions(1, emptyRegion);
+    } else {
+      return aliasChains.apply(r);
+    }
+  };
 }
 
 GraphId CallOp::getBackwardsGraphId() const {

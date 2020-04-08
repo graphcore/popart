@@ -13,6 +13,10 @@
 namespace popart {
 namespace view {
 
+enum class AccessType { NONE = 0, READ = 1, WRITE = 2, READ_WRITE = 3 };
+
+AccessType combine(std::set<AccessType> accessTypes);
+
 Regions mergeRegions(Regions regions);
 
 // a rectangular sub-region of a Shape
@@ -21,6 +25,9 @@ class Region {
 public:
   Region(const std::vector<int64_t> &lower_,
          const std::vector<int64_t> &upper_);
+  Region(const std::vector<int64_t> &lower_,
+         const std::vector<int64_t> &upper_,
+         const AccessType accessType);
   int64_t rank() const;
   int64_t nelms() const;
   bool isEmpty() const;
@@ -39,12 +46,15 @@ public:
   std::vector<int64_t> dimIndex(int64_t index) const;
   void checks() const;
   static Region getEmpty(int64_t r);
-  static Region getFull(const Shape &s);
+  static Region getFull(const Shape &s,
+                        AccessType accessType = AccessType::READ_WRITE);
   bool operator==(const Region &) const;
   bool operator!=(const Region &) const;
   const std::vector<int64_t> &getLower() const { return lower; }
   const std::vector<int64_t> &getUpper() const { return upper; }
   void append(std::ostream &ss) const;
+  AccessType getAccessType() const { return accessType; }
+  void setAccessType(AccessType at) { accessType = at; }
 
 private:
   std::vector<int64_t> lower;
@@ -54,8 +64,11 @@ private:
   // by looking for equal lower and upper bounds
   bool isEmptyRank0{false};
 
+  AccessType accessType{AccessType::NONE};
+
   Region(const std::vector<int64_t> &lower_,
          const std::vector<int64_t> &upper_,
+         const AccessType accessType,
          bool isEmpty_r0_);
 };
 
