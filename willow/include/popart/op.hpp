@@ -86,7 +86,6 @@ public:
     Scope scope;
     RecomputeType recomputeType = RecomputeType::UNDEFINED;
     CacheType cacheType         = CacheType::UNDEFINED;
-    // bool recompute              = false;
 
     // optional inplace priorities, to take precedence over the default
     // priorities. A negative priority gurarantees no inplacing

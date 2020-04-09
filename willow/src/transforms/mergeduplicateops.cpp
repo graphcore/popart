@@ -184,8 +184,7 @@ bool MergeDuplicateOps::apply(Graph &graph) const {
 
       auto recomputeEnabled =
           std::find_if(std::begin(consumers), std::end(consumers), [](Op *op) {
-            return op->settings.recomputeType ==
-                   RecomputeType::RECOMPUTED; /*op->settings.recompute == 1;*/
+            return op->settings.recomputeType == RecomputeType::RECOMPUTED;
           });
 
       if (consumers.size() > 1 && (recomputeEnabled == std::end(consumers))) {
