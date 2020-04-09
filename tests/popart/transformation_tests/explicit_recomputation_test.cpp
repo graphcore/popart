@@ -28,8 +28,8 @@ using namespace popart;
 // Finally, we have gradient computations and var updates as normal
 
 TensorId gemm(Builder *builder, TensorId ip, TensorId w0, TensorId b0) {
-  return builder->customOp(Onnx::AiOnnx::OpSet11::Gemm,
-                           11,
+  return builder->customOp(Onnx::AiOnnx::OpSet10::Gemm,
+                           10,
                            {ip, w0, b0},
                            1,
                            {{"__recompute_output_in_backward_pass",
@@ -46,7 +46,7 @@ BOOST_AUTO_TEST_CASE(ExplicitRecomputation_Case) {
 
   auto test = [](bool recomputation) {
     auto builder = Builder::create();
-    auto aiOnnx  = builder->aiOnnxOpset11();
+    auto aiOnnx  = builder->aiOnnxOpset10();
 
     TensorInfo wshape{"FLOAT", std::vector<int64_t>{10, 10}};
     TensorInfo bshape{"FLOAT", std::vector<int64_t>{10, 1}};
