@@ -73,7 +73,8 @@ def test_tile_invalid_repeat_vals(op_tester):
                           "ai.onnx": 10,
                           "ai.graphcore": 1
                       })
-    assert (e_info.value.args[0].find("has invalid value") != -1)
+    assert (e_info.value.args[0].find(
+        "Values must be non-negative in each shape dimension") != -1)
 
 
 def test_tile_invalid_repeats_size(op_tester):

@@ -21,6 +21,30 @@ then cd into the ``examples/custom_op/`` folder and run:
 
   $ g++  -fPIC custom_op.cpp -shared -lpopart -o custom_op.so
 
+If you are creating your own custom ops, make sure you retain the line:
+
+.. code-block:: c++
+
+  add_definitions(-DONNX_NAMESPACE=onnx)
+
+In your ``CMakeLists.txt``.
+
+Furthemore, If you are combining other projects that also utilise onnx,
+such as ONNX Runtime, you may get ``onnx`` namespace conflicts. If so, replace
+``-DONNX_NAMESPACE=onnx`` with ``-DONNX_NAMESPACE=popart_onnx`` or similar in
+your PopART ``CMakeLists.txt`` to avoid these.
+
+Then, in your other projects, you can still use the ``onnx`` namespace
+without issue.
+
+Alternatively, you can set the variable when running your cmake configuration,
+e.g.:
+
+.. code-block:: console
+
+  $ cmake . -DONNX_NAMESPACE=onnx -DCMAKE_GENERATOR="Ninja"
+
+
 Then, run:
 
 .. code-block:: console

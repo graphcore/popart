@@ -320,7 +320,7 @@ void OpEquivIdCreator::appendAttribute(const std::string &,
   }
 }
 
-void OpEquivIdCreator::appendAttribute(const std::string &name,
+void OpEquivIdCreator::appendAttribute(const std::string &,
                                        boost::optional<float> value) {
   if (value) {
     appendAttr(*value);

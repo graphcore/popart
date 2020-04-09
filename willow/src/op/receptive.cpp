@@ -56,20 +56,40 @@ Shape HasReceptiveFieldOp::getOutShape() const {
   Shape outShape(2 + nSpatialDims, 0);
   outShape[0] = batchSize;
   outShape[1] = getNOutChans();
-  // see https://pytorch.org/docs/stable/nn.html for
-  // determining spatial output size from conv parameters
-  // it is essentially the same as for pooling
-  // (same link, maxpool2d)
+
+  Shape spatialOutShape =
+      getSpatialOutShape(spatialD, spatialK, pads, strides, dilations);
+
   for (int spDim = 0; spDim < nSpatialDims; ++spDim) {
-    outShape[spDim + 2] =
-        //(inInfo(0).dim(spDim + 2)
-        (spatialD[spDim] + pads[spDim] + pads[nSpatialDims + spDim] -
-         dilations[spDim] * (spatialK[spDim] - 1) - 1) /
-            strides[spDim] +
-        1;
+    outShape[spDim + 2] = spatialOutShape[spDim];
   }
 
   return outShape;
+}
+
+// see https://pytorch.org/docs/stable/nn.html for
+// determining spatial output size from conv parameters
+// it is essentially the same as for pooling
+// (same link, maxpool2d)
+Shape HasReceptiveFieldOp::getSpatialOutShape(Shape spatialD_,
+                                              Shape spatialK_,
+                                              std::vector<int64_t> pads_,
+                                              std::vector<int64_t> strides_,
+                                              std::vector<int64_t> dilations_) {
+
+  Shape spatialOutShape;
+  int64_t numSpatialDims = spatialD_.size();
+
+  for (int spDim = 0; spDim < numSpatialDims; ++spDim) {
+    int64_t dimSize = spatialD_[spDim];
+    dimSize += pads_[spDim] + pads_[numSpatialDims + spDim] - 1;
+    dimSize -= dilations_[spDim] * (spatialK_[spDim] - 1);
+    dimSize /= strides_[spDim];
+    dimSize += 1;
+    spatialOutShape.push_back(dimSize);
+  }
+
+  return spatialOutShape;
 }
 
 std::vector<size_t> HasReceptiveFieldOp::spatialD_szt() const {

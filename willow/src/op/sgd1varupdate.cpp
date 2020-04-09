@@ -18,9 +18,13 @@ std::unique_ptr<Op> SGD1VarUpdateOp::clone() const {
   return std::make_unique<SGD1VarUpdateOp>(*this);
 }
 
-// T12001
 std::map<InIndex, TensorId> SGD1VarUpdateOp::optimizerInputs() const {
-  throw error("SGD1 optimizer inputs not implemented yet");
+  std::map<InIndex, TensorId> m;
+  if (!initSlr1.isConst()) {
+    auto index = getSlr1InIndex();
+    m.insert({index, inId(index)});
+  }
+  return m;
 }
 
 void SGD1VarUpdateOp::appendOutlineAttributes(OpSerialiserBase &os) const {

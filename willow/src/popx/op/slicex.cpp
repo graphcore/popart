@@ -23,6 +23,9 @@ namespace popx {
 BaseSliceOpx::BaseSliceOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}
 
 InputCreatorType BaseSliceOpx::getInputCreatorType(InIndex inIndex) const {
+  if (inIndex != 0) {
+    throw error("inIndex should be 0 in BaseSliceOpx");
+  }
   return InputCreatorType::CANUNWIND;
 }
 

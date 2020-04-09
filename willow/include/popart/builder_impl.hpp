@@ -228,11 +228,19 @@ public:
 
   std::vector<TensorId> getValueTensorIds() const;
 
-  std::vector<int64_t> getTensorShape(const TensorId id);
+  bool isInputTensor(const TensorId &id) const;
 
-  std::string getTensorDtypeString(const TensorId id);
+  bool isOutputTensor(const TensorId &id) const;
 
-  bool isInitializer(const TensorId id) const;
+  bool isValueTensor(const TensorId &id) const;
+
+  bool hasTensorShape(const TensorId &id) const;
+
+  std::vector<int64_t> getTensorShape(const TensorId &id);
+
+  std::string getTensorDtypeString(const TensorId &id);
+
+  bool isInitializer(const TensorId &id) const;
 
   void setAttribute(const std::string &attribute, boost::any value);
   boost::any getAttribute(const std::string &attribute) const;
@@ -266,12 +274,6 @@ private:
 
   TensorId getNextId(const std::string &name, int n = -1);
   TensorId getNextInputId(const std::string &debugPrefix);
-
-  bool isInputTensor(TensorId id) const;
-
-  bool isOutputTensor(TensorId id) const;
-
-  bool isValueTensor(TensorId id) const;
 
   std::string getStrFromTensorIdVec(std::vector<TensorId> v) const;
 

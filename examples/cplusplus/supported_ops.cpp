@@ -12,6 +12,8 @@
 #include "popart/opmanager.hpp"
 #include <iostream>
 
+namespace {
+
 void showOp(
     std::ostream &os,
     std::pair<const popart::OperatorIdentifier, popart::OpDefinition> op) {
@@ -46,6 +48,8 @@ void showOp(
 
   os << std::endl;
 }
+
+} // namespace
 
 auto main(int argc, char **argv) -> int {
 

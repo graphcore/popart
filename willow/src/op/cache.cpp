@@ -90,15 +90,15 @@ static OpDefinition::DataTypes T = {DataType::FLOAT,
                                     DataType::INT32,
                                     DataType::UINT32};
 
-static OpDefinition cacheLoadOpDef(
-    {OpDefinition::Inputs({{"X", T}, {"O", {{DataType::INT32}}}}),
-     OpDefinition::Outputs({{"Y", T}}),
-     OpDefinition::Attributes({})});
+static OpDefinition
+    cacheLoadOpDef({OpDefinition::Inputs({{"X", T}, {"O", {DataType::INT32}}}),
+                    OpDefinition::Outputs({{"Y", T}}),
+                    OpDefinition::Attributes({})});
 
-static OpDefinition cacheStoreOpDef(
-    {OpDefinition::Inputs({{"X", T}, {"O", {{DataType::INT32}}}}),
-     OpDefinition::Outputs({}),
-     OpDefinition::Attributes({})});
+static OpDefinition
+    cacheStoreOpDef({OpDefinition::Inputs({{"X", T}, {"O", {DataType::INT32}}}),
+                     OpDefinition::Outputs({}),
+                     OpDefinition::Attributes({})});
 
 static OpCreator<CacheLoadOp> cacheLoadOpCreator(
     OpDefinitions({{Onnx::CustomOperators::CacheLoad, cacheLoadOpDef}}),

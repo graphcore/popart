@@ -14,8 +14,7 @@ def test_basic(tmpdir):
     def run_test(enableOutlining):
         builder = popart.Builder()
 
-        shape = popart.TensorInfo("FLOAT", [1, 2, 4, 4])
-        i1 = builder.addInputTensor(shape, "data")
+        i1 = builder.addInputTensor("FLOAT", [1, 2, 4, 4], "data")
 
         i2 = builder.addInitializedInputTensor(filt_data, "filter")
 

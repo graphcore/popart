@@ -66,7 +66,7 @@ static OpCreator<GeluOp> geluOpCreator(
     OpDefinitions({{Onnx::CustomOperators::Gelu_1, geluOpDef}}),
     [](const OperatorIdentifier &opid,
        const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
+       const Attributes &) -> std::unique_ptr<Op> {
       return std::unique_ptr<Op>(new GeluOp(opid, settings));
     },
     true);

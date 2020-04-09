@@ -193,10 +193,9 @@ bool MatMulPattern::apply(Op *op) const {
 
 bool MatMulGradPattern::apply(Op *op) const {
 
-  auto in           = getIn(op);
-  auto grad_in      = getGradIn(op);
-  auto orig_grad_in = grad_in;
-  auto grad_out     = getGradOut(op);
+  auto in       = getIn(op);
+  auto grad_in  = getGradIn(op);
+  auto grad_out = getGradOut(op);
 
   // Get the phase of the matmul grad op
   auto phase = dynamic_cast<MatMulBaseOp *>(op)->getPhase();
