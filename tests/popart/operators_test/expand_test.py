@@ -26,8 +26,8 @@ def run_and_test_value(op_tester, inplace, init_builder, reference, mode):
         "ai.graphcore": 1
     })
     if inplace:
-        ir = json.loads(session._serializeIr(
-            popart.IrSerializationFormat.JSON))
+        ir = json.loads(
+            session._serializeIr(popart.IrSerializationFormat.JSON))
         graph = ir['maingraph']
 
         inplace = [op for op in graph if op['type'] == 'ExpandInplace']
