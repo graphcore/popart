@@ -2423,13 +2423,12 @@ void Devicex::prepare() {
   // Do not like the dynamic_cast is there a better way to handle this?
   auto &popDevice = dynamic_cast<DevicexInfo &>(*deviceInfo).getDevice();
 
-  const unsigned sharedStructureTilesPerIPU = 0;
   poplar::replication_factor rf(getReplicationFactor());
 
   logging::devicex::debug("Creating graph with replication factor {}",
                           getReplicationFactor());
 
-  pGraph.reset(new poplar::Graph(popDevice, sharedStructureTilesPerIPU, rf));
+  pGraph.reset(new poplar::Graph(popDevice, rf));
 
   popops::addCodelets(graph());
   poplin::addCodelets(graph());
