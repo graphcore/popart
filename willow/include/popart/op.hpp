@@ -20,7 +20,7 @@
 
 namespace popart {
 
-enum class RecomputeType { UNDEFINED = 0, CHECKPOINT, RECOMPUTE };
+enum class RecomputeType { UNDEFINED = 0, CHECKPOINT, RECOMPUTE, RECOMPUTED };
 enum class CacheType { UNDEFINED = 0, UNCACHED, CACHED };
 
 std::ostream &operator<<(std::ostream &, const RecomputeType &);

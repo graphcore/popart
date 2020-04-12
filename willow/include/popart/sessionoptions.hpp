@@ -237,6 +237,9 @@ struct SessionOptions {
   // Enable ping pong transformation (0/1: disabled, >=2: enabled)
   int pingPongPhases = 0;
 
+  // Enable explicit recomputation
+  bool explicitRecomputation = false;
+
   // Enable batch serialization
   int batchSerializationFactor = 0;
 

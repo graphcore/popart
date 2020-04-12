@@ -378,22 +378,21 @@ Ir &Op::Op::Settings::getIr() const { return graph.get().getIr(); }
 
 std::ostream &operator<<(std::ostream &ost, const RecomputeType &rt) {
   switch (rt) {
+  case (RecomputeType::RECOMPUTED): {
+    ost << "Recomputed";
+    return ost;
+  }
   case (RecomputeType::RECOMPUTE): {
     ost << "Recompute";
     return ost;
   }
-
   case (RecomputeType::CHECKPOINT): {
     ost << "Checkpoint";
     return ost;
   }
-
   case (RecomputeType::UNDEFINED): {
     ost << "Undefined";
     return ost;
-  }
-  default: {
-    throw error("Unrecognised RecomputeType is operator<<");
   }
   }
 }

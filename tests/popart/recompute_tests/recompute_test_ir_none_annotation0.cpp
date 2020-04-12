@@ -55,6 +55,7 @@ BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
 
     SessionOptions opts;
     opts.autoRecomputation              = RecomputationType::None;
+    opts.explicitRecomputation          = false;
     opts.enableOutlining                = enableOutlining;
     opts.enableOutliningCopyCostPruning = false;
     opts.mergeVarUpdate                 = MergeVarUpdateType::None;
@@ -72,7 +73,7 @@ BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
 
     auto opSchedule = ir.getOpSchedule({});
 
-    // check that there is no recomputation
+    // Check that there is no recomputation
     BOOST_CHECK(
         std::all_of(opSchedule.cbegin(), opSchedule.cend(), [](const Op *op) {
           return op->settings.recomputeType != RecomputeType::RECOMPUTE;
@@ -82,6 +83,6 @@ BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
   auto schedNoOutliningSize   = getOpSchedule(false);
   auto schedWithOutliningSize = getOpSchedule(true);
 
-  // check that outlining grouped multiple mops at least once:
+  // Check that outlining grouped multiple ops at least once:
   BOOST_CHECK(schedWithOutliningSize < schedNoOutliningSize);
 }

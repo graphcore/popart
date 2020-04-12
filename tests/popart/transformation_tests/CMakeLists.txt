@@ -12,7 +12,10 @@ add_popart_cpp_unit_test(pipelining_transform pipelining_transform.cpp)
 
 add_popart_cpp_unit_test(hostreduce_transform hostreduce_transformation_test.cpp)
 
+add_popart_cpp_unit_test(explicit_recomputation explicit_recomputation_test.cpp)
+
 add_subdirectory(mergevarupdates)
 
 add_popart_py_unit_test(serializematmul)
 add_popart_py_unit_test(groupedmatmul)
+add_popart_py_unit_test(explicitrecomputation)

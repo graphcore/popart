@@ -458,6 +458,7 @@ private:
   void verifyPipelineSettings() const;
   void verifyPingPongSettings() const;
   void verifySubgraphs() const;
+  void verifyRecomputeAttributes() const noexcept(false);
 
   // Verify ConstExpr folding has removed input tensors
   // as expected

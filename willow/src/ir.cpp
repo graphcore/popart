@@ -43,6 +43,7 @@
 #include <popart/transforms/cachesetup.hpp>
 #include <popart/transforms/decomposegradsum.hpp>
 #include <popart/transforms/dynamicoptransform.hpp>
+#include <popart/transforms/explicitrecompute.hpp>
 #include <popart/transforms/groupmatmuls.hpp>
 #include <popart/transforms/hostreduce.hpp>
 #include <popart/transforms/inferpipelinestages.hpp>
@@ -645,6 +646,21 @@ void Ir::verifySubgraphs() const {
   }
 }
 
+void Ir::verifyRecomputeAttributes() const noexcept(false) {
+  // If explicit recomputation is turned on
+  // No op is allowed to have its recompute type set to RECOMPUTE
+  if (userOptions.explicitRecomputation) {
+    for (auto op : getAllOps()) {
+      if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
+        throw error("Explicit recomputation is turned on for op '{}', but its "
+                    "recompute type is set to '{}'",
+                    op->debugName(),
+                    op->settings.recomputeType);
+      }
+    }
+  }
+}
+
 bool Ir::isCandidateForConstExprFolding(const Tensor &tensor) const {
   // A tensor is computable as a const expression if it is Const. This would
   // also be true for Variable tensors during inference, unless the user calls
@@ -889,6 +905,21 @@ void Ir::prepareImpl(const IrBundle &gb) {
   removeIsolatedTensors(true);
   updateVertices();
 
+  if (userOptions.explicitRecomputation) {
+    logging::transform::warn(
+        "WARNING: Enabling explicit recomputation. This option is deprecated "
+        "and will be removed in a future version. Future versions will enable "
+        "this option by default.");
+    if (autoRecomputationEnabled() && getSessionOptions().pingPongPhases < 2) {
+      logging::transform::info("Auto-annotating Ops for recomputation");
+      recompute::autoAnnotate(getMainGraph(),
+                              getSessionOptions().autoRecomputation);
+    }
+    // Transform from implicit to explicit recomputation
+    applyTransform(ExplicitRecompute::id(), getMainGraph());
+    updateVertices();
+  }
+
   // Third ping pong transformation pass (bwd)
   if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
       userOptions.pingPongPhases > 1) {
@@ -1012,7 +1043,9 @@ void Ir::prepareImpl(const IrBundle &gb) {
     updateVertices();
   }
 
-  if (autoRecomputationEnabled() && !getSessionOptions().enablePipelining) {
+  if (autoRecomputationEnabled() && !getSessionOptions().enablePipelining &&
+      !getSessionOptions().explicitRecomputation &&
+      getSessionOptions().pingPongPhases < 2) {
     updateVertices();
     logging::transform::info("Auto-annotating Ops for recomputation");
     recompute::autoAnnotate(getMainGraph(),
@@ -1091,6 +1124,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   verifyVirtualGraphIds(true);
   verifyVertexAttributesOnlyInMain();
   verifySubgraphs();
+  verifyRecomputeAttributes();
   // end of checks
 
   isPrepared = true;

@@ -70,4 +70,10 @@ TensorId getCacheArgTensorId(TensorId base_id) {
   return ca_id;
 }
 
+TensorId createRecomputedTensorId(TensorId base_id) {
+  auto recompute_id = logging::format("{}__re", base_id);
+  logging::ir::trace("Generating tensor id {}", recompute_id);
+  return recompute_id;
+}
+
 } // namespace popart

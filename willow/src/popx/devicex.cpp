@@ -2015,8 +2015,10 @@ void Devicex::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
     }
 
     // Pre-loss, recompute
-    else if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
-      logging::devicex::debug("Adding (first) recompute Op {}",
+    else if (op->settings.recomputeType == RecomputeType::RECOMPUTE ||
+             op->settings.recomputeType == RecomputeType::RECOMPUTED) {
+      logging::devicex::debug("Adding (first) {} Op {}",
+                              op->settings.recomputeType,
                               op->debugName());
 
       growOpx(opx, progs.recomputeFragment(op->id));
@@ -2421,13 +2423,12 @@ void Devicex::prepare() {
   // Do not like the dynamic_cast is there a better way to handle this?
   auto &popDevice = dynamic_cast<DevicexInfo &>(*deviceInfo).getDevice();
 
-  const unsigned sharedStructureTilesPerIPU = 0;
   poplar::replication_factor rf(getReplicationFactor());
 
   logging::devicex::debug("Creating graph with replication factor {}",
                           getReplicationFactor());
 
-  pGraph.reset(new poplar::Graph(popDevice, sharedStructureTilesPerIPU, rf));
+  pGraph.reset(new poplar::Graph(popDevice, rf));
 
   popops::addCodelets(graph());
   poplin::addCodelets(graph());
