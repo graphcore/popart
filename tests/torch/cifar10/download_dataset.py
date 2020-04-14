@@ -20,7 +20,7 @@ transform = transforms.Compose([
 ])
 
 # check if the tarball has been downloaded, if not : download it
-cifar10_url = 'https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz'
+cifar10_url = 'http://s3-eu-west-1.amazonaws.com/graphcore-public-mirror/cifar-10-python.tar.gz'
 c10fname = Path(urlparse(cifar10_url).path).name
 c10tar = c10datadir.c10datadir / c10fname
 if not c10tar.exists():
