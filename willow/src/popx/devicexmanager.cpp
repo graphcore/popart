@@ -55,7 +55,7 @@ void addSyncConfig(const SyncPattern syncPattern, poplar::OptionFlags &flags) {
     flags.set("syncConfiguration", "ipuAndAll");
     break;
   case SyncPattern::PingPong:
-    flags.set("syncConfiguration", "IntraReplicaAndLadder");
+    flags.set("syncConfiguration", "intraReplicaAndLadder");
     break;
   }
 }
