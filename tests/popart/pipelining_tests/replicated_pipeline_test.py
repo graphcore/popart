@@ -74,10 +74,10 @@ def get_model_anchors(doSharding,
     opts.enableStochasticRounding = False
 
     if doSharding is False:
-        numIPUs = 1 * replicated_graph_count
+        numIpus = 1 * replicated_graph_count
     else:
         opts.enableVirtualGraphs = True
-        numIPUs = 2 * replicated_graph_count
+        numIpus = 2 * replicated_graph_count
         builder.virtualGraph(s0, 0)
         builder.virtualGraph(e0, 0)
         builder.virtualGraph(c0, 0)
@@ -91,10 +91,7 @@ def get_model_anchors(doSharding,
         opts.replicatedGraphCount = replicated_graph_count
         opts.enableReplicatedGraphs = True
 
-    if tu.ipu_available(numIPUs):
-        device = tu.create_test_device(numIPUs=numIPUs)
-    else:
-        pytest.skip("Test needs to run on IPU, but none are available")
+    device = tu.create_test_device(numIpus=numIpus)
 
     if doTraining is True:
         session = popart.TrainingSession(fnModel=builder.getModelProto(),
@@ -242,9 +239,7 @@ def compare_anchors_pipe(no_pipe_anchors, pipe_anchors):
                 Max difference {np.max(np.abs(t1[i, :, j] - t2[i, :, j]))}"""
 
 
-# TODO see T16010
-# @tu.requires_ipu
-@pytest.mark.skip("Test currently failing on hardware")
+@tu.requires_ipu
 def test_output_matches_replication_infer():
     """
     Pipelining + No Replication
@@ -272,9 +267,7 @@ def test_output_matches_replication_infer():
     compare_anchors_repl(no_repl_anchors, repl_anchors)
 
 
-# TODO see T16010
-# @tu.requires_ipu
-@pytest.mark.skip("Test currently failing on hardware")
+@tu.requires_ipu
 def test_output_matches_pipeline_infer():
     """
     Pipelining + Replication
@@ -302,9 +295,7 @@ def test_output_matches_pipeline_infer():
     compare_anchors_both_repl(pipe_anchors, no_pipe_anchors)
 
 
-# TODO see T16010
-# @tu.requires_ipu
-@pytest.mark.skip("Test currently failing on hardware")
+@tu.requires_ipu
 def test_output_matches_pipeline_train():
     """
     No Pipelining + Replication + Gradient Accumulation

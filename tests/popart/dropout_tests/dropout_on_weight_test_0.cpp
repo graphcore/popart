@@ -144,17 +144,14 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
     for (auto &maskId : maskIds) {
       anchorMap.insert({maskId, AnchorReturnType("ALL")});
     }
-    auto dataFlow = DataFlow(batchesPerStep, anchorMap);
-    std::map<std::string, std::string> deviceOpts{{"numIPUs", "3"}};
+    auto dataFlow   = DataFlow(batchesPerStep, anchorMap);
     float learnRate = 1;
     auto optimizer  = ConstSGD(learnRate);
     float lambda    = 1;
     auto loss       = std::unique_ptr<Loss>(
         new L1Loss(actOut, "l1LossVal", lambda, ReductionType::SUM));
 
-    auto device = (tt == TestType::SingleBatchSimulator
-                       ? createTestDevice(TEST_TARGET, 3)
-                       : createTestDevice(TEST_TARGET, 2));
+    auto device = createTestDevice(TEST_TARGET, 2);
 
     SessionOptions userOptions;
     userOptions.virtualGraphMode = VirtualGraphMode::Auto;
