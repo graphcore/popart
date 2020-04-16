@@ -1204,6 +1204,10 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("num_outputs"),
             py::arg("callee"),
             py::arg("debugPrefix") = std::string());
+    cls.def("replicatedallreduce",
+            &AiGraphcoreOpset1::replicatedallreduce,
+            py::arg("args"),
+            py::arg("debugPrefix") = std::string());
   }
   {
     py::class_<Builder> cls(m, "_BuilderCore");

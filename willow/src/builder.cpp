@@ -480,6 +480,18 @@ std::vector<TensorId> AiGraphcoreOpset1::call(const std::vector<TensorId> &args,
                   name);
 }
 
+TensorId
+AiGraphcoreOpset1::replicatedallreduce(const std::vector<TensorId> &args,
+                                       const std::string &name) {
+  return impl
+      ->op(Onnx::AiGraphcore::OpSet1::ReplicatedAllReduce,
+           getOpsetVersion(),
+           args,
+           {},
+           name)
+      .at(0);
+}
+
 std::vector<TensorId>
 Builder::customOp(const OperatorIdentifier &opid,
                   int opsetVersion,
