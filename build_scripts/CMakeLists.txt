@@ -53,18 +53,27 @@ ExternalProject_Add(boost
   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}/boost
              -DCMAKE_POSITION_INDEPENDENT_CODE=ON )
 
+ExternalProject_Add(poprithms
+  SOURCE_DIR ${PROJECT_SOURCE_DIR}/poprithms
+  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}/poprithms
+             -DBOOST_ROOT=${INSTALL_DIR}/boost
+  GIT_REPOSITORY git@github.com:graphcore/poprithms.git
+  GIT_TAG a40232c16891f49be10bfc46a8ef3441897ae0f6
+  DEPENDS boost)
+
 ExternalProject_Add(popart
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/../
   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}/popart
              -DPROTOBUF_INSTALL_DIR=${INSTALL_DIR}/protobuf
-             -DONNX_INSTALL_DIR=${INSTALL_DIR}/onnx 
+             -DONNX_INSTALL_DIR=${INSTALL_DIR}/onnx
+             -DPOPRITHMS_INSTALL_DIR=${INSTALL_DIR}/poprithms
              -Dpybind11_DIR=${INSTALL_DIR}/pybind11/share/cmake/pybind11
              -DSPDLOG_INCLUDE_DIR=${INSTALL_DIR}/spdlog/include
              -DBOOST_ROOT=${INSTALL_DIR}/boost
              -DPOPLAR_INSTALL_DIR=${POPLAR_ROOT}
   DEPENDS spdlog
+          poprithms
           protobuf
           pybind11
           onnx
           boost )
-
