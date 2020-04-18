@@ -239,7 +239,7 @@ public:
                        op_priority_post_or});
       sub.push_back({op->opid.type, ioNames(op), op->id});
     }
-    g.insertStartAttractors(opIotas, super, -1);
+    g.insertStartAttractors(opIotas, super, -2);
     g.insertStartAttractors(opIotas, sub, +2);
   }
 

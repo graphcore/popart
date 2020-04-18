@@ -6,6 +6,7 @@
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/filereader.hpp>
+#include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op/add.hpp>
@@ -15,6 +16,7 @@
 #include <popart/sessionoptions.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/testdevice.hpp>
+#include <popart/topocons.hpp>
 
 using namespace popart;
 
@@ -159,6 +161,65 @@ BOOST_AUTO_TEST_CASE(ScheduleLiveness1Test) {
       BOOST_CHECK(scaleOp->getScaleFactor() == scaleFactor);
     } else {
       BOOST_CHECK(!scaleOp);
+    }
+  }
+}
+
+BOOST_AUTO_TEST_CASE(ScheduleLiveness2Test) {
+
+  uint64_t N = 5;
+  Ir ir;
+  setIr(N, ir);
+
+  // set priorities, manually, for certain Ops. In particular, every fifth scale
+  // op is given high priority.
+  // In addition, define a tied topo con
+  auto scaleOps = ir.opsOfType(Onnx::CustomOperators::Scale_1);
+  for (auto op : scaleOps) {
+    auto scOp                       = dynamic_cast<ScaleOp *>(op);
+    int scaleAsInt                  = static_cast<int>(scOp->getScaleFactor());
+    scOp->settings.schedulePriority = 3.0 - scOp->getScaleFactor();
+  }
+
+  // This topo con should not disturb the priority order
+  ir.getMainGraph().topoCons->insert(scaleOps[2], scaleOps[4], true);
+
+  auto opSchedule = ir.getOpSchedule({});
+
+  // Wrong schedule if lex order of tied topo cons is -1 and priorities is -1:
+  // Priority, Op
+  // 3 Op(ai.graphcore.Scale:1, inputs=[input], outputs=[Scale:0])
+  // 2 Op(ai.graphcore.Scale:1, inputs=[input], outputs=[Scale:0/1])
+  // 0 Op(ai.onnx.Add:7, inputs=[Scale:0, Scale:0/1], outputs=[Add:0])
+  // 1 Op(ai.graphcore.Scale:1, inputs=[input], outputs=[Scale:0/2])
+  // 0 Op(ai.onnx.Add:7, inputs=[Add:0, Scale:0/2], outputs=[Add:0/1])
+  // 0 Op(ai.graphcore.Scale:1, inputs=[input], outputs=[Scale:0/3])
+  // 0 Op(ai.onnx.Add:7, inputs=[Add:0/1, Scale:0/3], outputs=[Add:0/2])
+  // -1 Op(ai.graphcore.Scale:1, inputs=[input], outputs=[Scale:0/4])
+  // 0 Op(ai.onnx.Add:7, inputs=[Add:0/2, Scale:0/4], outputs=[Add:0/3])
+
+  // Correct schedule if lex order of tied topo cons is -1 and priorities is -2:
+  // Priority, Op
+  // 3 Op(ai.graphcore.Scale:1, inputs=[input], outputs=[Scale:0])
+  // 2 Op(ai.graphcore.Scale:1, inputs=[input], outputs=[Scale:0/1])
+  // 1 Op(ai.graphcore.Scale:1, inputs=[input], outputs=[Scale:0/2])
+  // 0 Op(ai.onnx.Add:7, inputs=[Scale:0, Scale:0/1], outputs=[Add:0])
+  // 0 Op(ai.onnx.Add:7, inputs=[Add:0, Scale:0/2], outputs=[Add:0/1])
+  // 0 Op(ai.graphcore.Scale:1, inputs=[input], outputs=[Scale:0/3])
+  // 0 Op(ai.onnx.Add:7, inputs=[Add:0/1, Scale:0/3], outputs=[Add:0/2])
+  // -1 Op(ai.graphcore.Scale:1, inputs=[input], outputs=[Scale:0/4])
+  // 0 Op(ai.onnx.Add:7, inputs=[Add:0/2, Scale:0/4], outputs=[Add:0/3])
+
+  // Check schedule order
+  for (uint64_t i = 0; i < opSchedule.size(); ++i) {
+    auto scaleOp = dynamic_cast<ScaleOp *>(opSchedule[i]);
+    if (i < 3) {
+      BOOST_CHECK(opSchedule[i]->settings.schedulePriority == 3.0 - i);
+      BOOST_CHECK(scaleOp);
+    }
+    if (i == opSchedule.size() - 2) {
+      BOOST_CHECK(opSchedule[i]->settings.schedulePriority == -1);
+      BOOST_CHECK(scaleOp);
     }
   }
 }
