@@ -685,6 +685,7 @@ PYBIND11_MODULE(popart_core, m) {
                       &SessionOptions::globalReplicaOffset);
     cls.def_readwrite("globalNumIpus", &SessionOptions::globalNumIpus);
     cls.def_readwrite("ipuSystemType", &SessionOptions::ipuSystemType);
+    cls.def_readwrite("groupHostSync", &SessionOptions::groupHostSync);
   }
   {
     py::enum_<PatternsLevel> en(m, "PatternsLevel");

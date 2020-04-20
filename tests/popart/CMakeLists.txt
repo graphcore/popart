@@ -265,7 +265,7 @@ add_popart_py_unit_test(variable_inference_test)
 add_popart_py_unit_test(virtual_graph_check_test)
 add_popart_py_unit_test(virtual_graph_test VARIANTS IpuModel)
 add_popart_py_unit_test(collectives_test VARIANTS Hw)
-
+add_popart_py_unit_test(test_groupHostSync VARIANTS IpuModel)
 
 # device_test should be run serially as it tests that it can attach to each
 # IPU available on the machine it is run on.

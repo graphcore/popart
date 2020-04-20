@@ -330,6 +330,11 @@ struct SessionOptions {
 
   /// The IPU SystemType
   std::string ipuSystemType = "ipu1";
+
+  /// Allows to group the streams from host at the beginning and the streams
+  /// to host at the end, this trades off sum-liveness efficiency for cycle
+  /// efficiency.
+  bool groupHostSync = false;
 };
 
 } // namespace popart

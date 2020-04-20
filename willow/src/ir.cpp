@@ -320,8 +320,9 @@ void Ir::verifyPipelineSettings() const {
     return;
   }
 
-  if (!virtualGraphsEnabled()) {
-    throw error("Pipelining requires the 'virtualGraphMode' session option "
+  if (!virtualGraphsEnabled() || getMaxVirtualGraphId() == 1) {
+    throw error("Pipelining requires more than 1 IPU and the "
+                "'virtualGraphMode' session option "
                 "to not be VirtualGraphMode::Off.");
   }
 
@@ -2865,6 +2866,24 @@ int Ir::getOpSetVersionFromModel(const std::string &node_domain) const {
   }
 
   return version;
+}
+
+unsigned Ir::getMaxVirtualGraphId() const {
+  unsigned maxVirtualGraphId = 1;
+  unsigned replGraphCount =
+      static_cast<unsigned>(getSessionOptions().replicatedGraphCount);
+  unsigned numIPUs = static_cast<unsigned>(deviceInfo->getNumIpus());
+  if (getSessionOptions().enableReplicatedGraphs) {
+    if (numIPUs % replGraphCount != 0) {
+      throw error("For replicated graphs, the number of IPUs must be divisible "
+                  "by the replication factor.");
+    } else {
+      maxVirtualGraphId = numIPUs / replGraphCount;
+    }
+  } else {
+    maxVirtualGraphId = numIPUs;
+  }
+  return maxVirtualGraphId;
 }
 
 std::vector<GradNonGradPair> Ir::growLossGradients() {

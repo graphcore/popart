@@ -383,6 +383,12 @@ public:
   // Return the default opset version for a domain
   int getDefaultOpsetVersion(const std::string &domain) const;
 
+  // Helper function to return the maximum virtual graph id (maximum number of
+  // VGraphs), based on replication factor and number of IPUs. Equal to number
+  // of IPUs // replicated graph factor if using replicated graphs, else equal
+  // to number of IPUs.
+  unsigned getMaxVirtualGraphId() const;
+
   // Return the opset version in use for a domain
   int getOpSetVersionFromModel(const std::string &domain) const;
 

@@ -3162,7 +3162,12 @@ PopStreamId Devicex::d2hId(TensorId id, bool isAnchorStream) const {
 
 PriTask Devicex::fromHostTask(Tensor *tensor,
                               poplar::program::Sequence &sq) const {
-
+  double priority;
+  if (ir().getSessionOptions().groupHostSync) {
+    priority = std::numeric_limits<double>::max();
+  } else {
+    priority = -1e6; // writes to device: always as late as possible (default)
+  }
   auto f = [&sq, tensor, this]() {
     SequenceMap seqs;
     logging::devicex::debug("Adding poplar::program::Copy from host " +
@@ -3173,8 +3178,7 @@ PriTask Devicex::fromHostTask(Tensor *tensor,
                                         doRearrangeOnHost(tensor)));
     return seqs;
   };
-
-  return {-1e6, // writes to device: always as late as possible
+  return {priority,
           fromHostTaskId(tensor->id),
           {
               {streamFromHostTaskId(tensor->id),
@@ -3248,11 +3252,13 @@ PriTask Devicex::toHostTask(Tensor *tensor,
   if (stype == ToHostStreamType::SumAnchor) {
     deps.push_back({anchorSumTaskId(tensor->id), DependencyType::TENSOR});
   }
-
-  return {+1e6, // writes to host: always as early as possible
-          taskId,
-          deps,
-          f};
+  double priority;
+  if (ir().getSessionOptions().groupHostSync) {
+    priority = -std::numeric_limits<double>::max();
+  } else {
+    priority = +1e6; // writes to host: always as soon as possible (default)
+  }
+  return {priority, taskId, deps, f};
 }
 
 PriTask Devicex::anchorReturnTypeSumTask(Tensor *tensor,
