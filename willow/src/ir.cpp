@@ -661,6 +661,52 @@ void Ir::verifyRecomputeAttributes() const noexcept(false) {
   }
 }
 
+void Ir::verifyDistributedReplicatedGraphSettings() const {
+  if (userOptions.enableDistributedReplicatedGraphs) {
+    auto localReplicationFactor  = userOptions.replicatedGraphCount;
+    auto globalReplicationFactor = userOptions.globalReplicationFactor;
+    auto globalReplicaOffset     = userOptions.globalReplicaOffset;
+    auto globalNumIpus           = userOptions.globalNumIpus;
+    if (globalReplicationFactor < 1) {
+      throw error("Invalid globalReplicationFactor value: {}, must be greater "
+                  "or equal than 1",
+                  globalReplicationFactor);
+    }
+
+    if (globalReplicaOffset < 0) {
+      throw error("Invalid globalReplicaOffset value: {}, must be greater or "
+                  "equal than 0",
+                  globalReplicaOffset);
+    }
+
+    if (globalNumIpus < 1) {
+      throw error(
+          "Invalid globalNumIpus value: {}, must be greater or equal than 1",
+          globalNumIpus);
+    }
+
+    if (globalReplicaOffset > globalReplicationFactor) {
+      throw error("Global replica offset: {}, is larger than global "
+                  "replication factor: {}",
+                  globalReplicaOffset,
+                  globalReplicationFactor);
+    }
+
+    if (userOptions.enableReplicatedGraphs) {
+      if (localReplicationFactor == 1) {
+        throw error(
+            "Local replicated graphs enabled but replication factor is 1");
+      }
+      if (localReplicationFactor > globalReplicationFactor) {
+        throw error("Invalid local replication factor: {}, larger than global "
+                    "replication factor: {}",
+                    localReplicationFactor,
+                    globalReplicationFactor);
+      }
+    }
+  }
+}
+
 bool Ir::isCandidateForConstExprFolding(const Tensor &tensor) const {
   // A tensor is computable as a const expression if it is Const. This would
   // also be true for Variable tensors during inference, unless the user calls

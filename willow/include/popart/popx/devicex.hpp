@@ -161,6 +161,14 @@ public:
   unsigned getReplicationFactor() const;
   unsigned getAccumulationFactor() const;
 
+  // If globalReplicatedGraphs are enabled then this will return an
+  // offset into the global instances, otherwise 0.
+  unsigned getReplicaOffset() const;
+
+  unsigned getGlobalReplicationFactor() const;
+
+  bool isReplicatedGraph() const;
+
   PipelineInfo pipelineInfo() const;
 
   bool containsFragment(const Graph &scope) const;
@@ -361,6 +369,8 @@ private:
   PopStreamId d2hId(TensorId, bool isAnchorStream) const;
 
   bool doRearrangeOnHost(Tensor *tensor) const;
+
+  void initPoplarGraph();
 
 public:
   std::unique_ptr<Opx> createOpx(Op *);

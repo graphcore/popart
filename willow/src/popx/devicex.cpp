@@ -813,6 +813,23 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
     engineOptions.set("exchange.enablePrefetch", "true");
   }
 
+  if (ir.getSessionOptions().enableDistributedReplicatedGraphs) {
+    logging::devicex::info("Setting firstRuntimeReplica {}",
+                           ir.getSessionOptions().globalReplicaOffset);
+
+    logging::devicex::info("Setting numberRuntimeReplica {}",
+                           ir.getSessionOptions().replicatedGraphCount);
+
+    std::string firstRuntimeReplica =
+        std::to_string(ir.getSessionOptions().globalReplicaOffset);
+    std::string numberRuntimeReplica =
+        std::to_string(ir.getSessionOptions().replicatedGraphCount);
+
+    engineOptions.set("target.syncReplicasIndependently", "true");
+    engineOptions.set("target.firstRuntimeReplica", firstRuntimeReplica);
+    engineOptions.set("target.numberRuntimeReplica", numberRuntimeReplica);
+  }
+
   for (auto it : ir.getSessionOptions().engineOptions) {
     logging::devicex::info(
         "Setting engine option {} = {}", it.first, it.second);
@@ -2215,6 +2232,35 @@ unsigned Devicex::getAccumulationFactor() const {
   return accumulationFactor;
 }
 
+unsigned Devicex::getGlobalReplicationFactor() const {
+
+  unsigned globalReplicationFactor = 1;
+  if (ir().getSessionOptions().enableDistributedReplicatedGraphs) {
+    globalReplicationFactor =
+        static_cast<unsigned>(ir().getSessionOptions().globalReplicationFactor);
+  }
+
+  else {
+    // A check on user input consistency
+    if (static_cast<unsigned>(
+            ir().getSessionOptions().globalReplicationFactor) > 1) {
+      throw error("enableDistributedReplicatedGraphs is false, but "
+                  "globalReplicationFactor > 1. "
+                  "Either enable global replicated graphs, or set the "
+                  "globalReplicationFactor "
+                  "to 1");
+    }
+  }
+
+  return globalReplicationFactor;
+}
+
+bool Devicex::isReplicatedGraph() const {
+  const bool isLocallyReplicated  = getReplicationFactor() > 1;
+  const bool isGloballyReplicated = getGlobalReplicationFactor() > 1;
+  return isLocallyReplicated || isGloballyReplicated;
+}
+
 PipelineInfo Devicex::pipelineInfo() const { return pInfo; }
 
 bool Devicex::isEngineLoaded() const { return engineIsLoaded; }
@@ -2420,15 +2466,7 @@ void Devicex::prepare() {
 
   tryLoadExecutable();
 
-  // Do not like the dynamic_cast is there a better way to handle this?
-  auto &popDevice = dynamic_cast<DevicexInfo &>(*deviceInfo).getDevice();
-
-  poplar::replication_factor rf(getReplicationFactor());
-
-  logging::devicex::debug("Creating graph with replication factor {}",
-                          getReplicationFactor());
-
-  pGraph.reset(new poplar::Graph(popDevice, rf));
+  initPoplarGraph();
 
   popops::addCodelets(graph());
   poplin::addCodelets(graph());
@@ -3407,6 +3445,44 @@ bool Devicex::doRearrangeOnHost(Tensor *tensor) const {
     return ir().getSessionOptions().rearrangeAnchorsOnHost;
   }
   return true;
+}
+
+void Devicex::initPoplarGraph() {
+  poplar::Target popTarget;
+  unsigned replicationFactor = 0;
+
+  if (ir().getSessionOptions().enableDistributedReplicatedGraphs) {
+    auto globalNumIpus  = ir().getSessionOptions().globalNumIpus;
+    auto &ipuSystemType = ir().getSessionOptions().ipuSystemType;
+
+    replicationFactor = getGlobalReplicationFactor();
+
+    logging::devicex::debug("Creating distributed replicated graph with global "
+                            "replication factor {}",
+                            replicationFactor);
+    switch (deviceInfo->getType()) {
+    case DeviceType::Ipu: {
+      popTarget = poplar::Target::createIPUTarget(globalNumIpus, ipuSystemType);
+      break;
+    }
+    default:
+      throw error(
+          "Only IPU Hardware devices supported with distributed replicated "
+          "graphs. Unsupported device type {}",
+          deviceInfo->toString());
+    }
+  } else {
+    // Do not like the dynamic_cast is there a better way to handle this?
+    auto &popDevice   = dynamic_cast<DevicexInfo &>(*deviceInfo).getDevice();
+    popTarget         = popDevice.getTarget();
+    replicationFactor = getReplicationFactor();
+
+    logging::devicex::debug("Creating graph with replication factor {}",
+                            replicationFactor);
+  }
+
+  pGraph.reset(new poplar::Graph(
+      popTarget, poplar::replication_factor(replicationFactor)));
 }
 
 void Devicex::doProfileChecks() const {

@@ -812,6 +812,14 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("decomposeGradSum", &SessionOptions::decomposeGradSum);
     cls.def_readwrite("serializedPoprithmsAnnealGraphsDir",
                       &SessionOptions::serializedPoprithmsAnnealGraphsDir);
+    cls.def_readwrite("enableDistributedReplicatedGraphs",
+                      &SessionOptions::enableDistributedReplicatedGraphs);
+    cls.def_readwrite("globalReplicationFactor",
+                      &SessionOptions::globalReplicationFactor);
+    cls.def_readwrite("globalReplicaOffset",
+                      &SessionOptions::globalReplicaOffset);
+    cls.def_readwrite("globalNumIpus", &SessionOptions::globalNumIpus);
+    cls.def_readwrite("ipuSystemType", &SessionOptions::ipuSystemType);
   }
   {
     py::enum_<PatternsLevel> en(m, "PatternsLevel");
