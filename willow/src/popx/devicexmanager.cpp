@@ -65,20 +65,24 @@ DevicexManager::DevicexManager() {
 }
 
 std::shared_ptr<DeviceInfo>
-DevicexManager::getDevice(SyncPattern syncPattern, uint32_t deviceManagerId) {
+DevicexManager::getDevice(SyncPattern syncPattern,
+                          uint32_t deviceManagerId,
+                          DeviceConnectionType connectionType) {
   auto deviceManager = poplar::DeviceManager::createDeviceManager();
 
   poplar::OptionFlags flags;
   addSyncConfig(syncPattern, flags);
   auto device = deviceManager.getDevice(deviceManagerId, flags);
-  return std::make_shared<DevicexIpuInfo>(*this, device.getId(), device);
+  return std::make_shared<DevicexIpuInfo>(
+      *this, connectionType, device.getId(), device);
 }
 
 void DevicexManager::enumerate(
     std::vector<std::shared_ptr<popart::DeviceInfo>> &devices,
     unsigned requiredNumIPUs,
     SyncPattern syncPattern,
-    DeviceType type) {
+    DeviceType type,
+    DeviceConnectionType connectionType) {
 
   auto deviceManager = poplar::DeviceManager::createDeviceManager();
 
@@ -87,8 +91,8 @@ void DevicexManager::enumerate(
   std::vector<poplar::Device> popdevices =
       deviceManager.getDevices(convertDeviceType(type), requiredNumIPUs, flags);
   for (auto &device : popdevices) {
-    std::shared_ptr<popart::DeviceInfo> ipu =
-        std::make_shared<DevicexIpuInfo>(*this, device.getId(), device);
+    std::shared_ptr<popart::DeviceInfo> ipu = std::make_shared<DevicexIpuInfo>(
+        *this, connectionType, device.getId(), device);
     devices.push_back(ipu);
   }
 }

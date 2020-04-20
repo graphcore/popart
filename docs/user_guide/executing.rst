@@ -109,6 +109,13 @@ The method ``createIpuModelDevice`` is used to create a Poplar software emulatio
 of an IPU device.  Similarly, the method ``createCpuDevice`` creates a simple Poplar CPU backend.
 See `PopART C++ API Reference <https://documents.graphcore.ai/documents/UG11/latest>`_ for details.
 
+By default the functions ``acquireAvailableDevice`` and ``acquireDeviceById`` will attach the device immediately to the running process. It is possible to defer the device attachment to the point at which it is required by PopART by passing the `DeviceConnectionType.ON_DEMAND` option to the `DeviceManager`.
+
+.. code-block:: python
+
+  # Acquire four IPUs on demand
+  connectionType=DeviceConnectionType.ON_DEMAND
+  dev = popart.DeviceManager().acquireAvailableDevice(4, connectionType=connectionType)
 
 Executing a session
 ===================

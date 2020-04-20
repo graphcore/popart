@@ -766,10 +766,6 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
 
   logging::devicex::info("Setting selected device: {}", *deviceInfo);
 
-  if (!deviceInfo->attach()) {
-    throw error("failed to attach to device");
-  }
-
   // Set the opxTrace flag based on the environment variable
   auto POPART_OPX_TRACE = getPopartEnvVar("OPX_TRACE");
   opxTrace = POPART_OPX_TRACE ? strncmp(POPART_OPX_TRACE, "1", 1) == 0 : false;
@@ -2278,6 +2274,13 @@ void Devicex::loadEngineAndConnectStreams() {
   }
   di.previouslyLoadedDevicexs.insert(this);
   setEngineIsLoaded(true);
+
+  if (di.getConnectionType() == DeviceConnectionType::ON_DEMAND) {
+    logging::devicex::debug("Attaching to device on demand");
+    if (!di.attach()) {
+      throw error("Failed to attach to device");
+    }
+  }
 
   pEngine->load(di.getDevice());
   logging::devicex::info("Engine loaded");

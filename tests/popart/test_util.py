@@ -27,7 +27,9 @@ def filter_dict(dict_to_filter, fun):
 def create_test_device(numIpus: int = 1,
                        tilesPerIpu: int = 1216,
                        opts: Dict = None,
-                       pattern: popart.SyncPattern = popart.SyncPattern.Full):
+                       pattern: popart.SyncPattern = popart.SyncPattern.Full,
+                       connectionType: popart.DeviceConnectionType = popart.
+                       DeviceConnectionType.ALWAYS):
     testDeviceType = os.environ.get("TEST_TARGET")
     if testDeviceType is None:
         testDeviceType = "Cpu"
@@ -41,7 +43,10 @@ def create_test_device(numIpus: int = 1,
         device = popart.DeviceManager().createSimDevice()
     elif testDeviceType == "Hw":
         device = popart.DeviceManager().acquireAvailableDevice(
-            numIpus=numIpus, tilesPerIpu=tilesPerIpu, pattern=pattern)
+            numIpus=numIpus,
+            tilesPerIpu=tilesPerIpu,
+            pattern=pattern,
+            connectionType=connectionType)
     elif testDeviceType == "IpuModel":
         device = popart.DeviceManager().createIpuModelDevice(opts)
     else:
@@ -50,7 +55,8 @@ def create_test_device(numIpus: int = 1,
     if device is None:
         return pytest.fail(
             f"Tried to acquire device {testDeviceType} : {numIpus} IPUs, {tilesPerIpu} tiles,"
-            f" {pattern} pattern, but none were availaible")
+            f" {pattern} pattern, {connectionType} connection, but none were availaible"
+        )
     return device
 
 

@@ -40,3 +40,18 @@ def test_aquire_device_by_id():
         if device is not None:
             assert device.id == id_
             device.detach()
+
+
+@tu.requires_ipu
+def test_default_connection_type():
+    deviceManager = popart.DeviceManager()
+    device = deviceManager.acquireAvailableDevice(1)
+    assert device.connectionType == popart.DeviceConnectionType.ALWAYS
+
+
+@tu.requires_ipu
+def test_on_demand_connection_type():
+    deviceManager = popart.DeviceManager()
+    device = deviceManager.acquireAvailableDevice(
+        1, connectionType=popart.DeviceConnectionType.ON_DEMAND)
+    assert device.connectionType == popart.DeviceConnectionType.ON_DEMAND
