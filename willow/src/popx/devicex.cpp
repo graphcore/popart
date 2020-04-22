@@ -3555,7 +3555,7 @@ std::string Devicex::getExecutionReport(bool useCbor, bool resetProfile) const {
 std::string Devicex::getSerializedGraph() const {
   doProfileChecks();
   std::stringstream ss;
-  graph().serialize(ss, poplar::SerializationFormat::Binary);
+  graph().serialize(ss, progs.progs(), poplar::SerializationFormat::Binary);
   return ss.str();
 }
 

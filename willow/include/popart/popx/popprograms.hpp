@@ -53,23 +53,34 @@ public:
 
   // Program fragments are not necessarily complete program that can be given to
   // a poplar engine.
+  const poplar::program::Sequence &streamWeightsFromHostFragment() const;
   poplar::program::Sequence &streamWeightsFromHostFragment();
+  const poplar::program::Sequence &streamOptimizerFromHostFragment() const;
   poplar::program::Sequence &streamOptimizerFromHostFragment();
+  const poplar::program::Sequence &setRandomSeedFromHostFragment() const;
   poplar::program::Sequence &setRandomSeedFromHostFragment();
+  const poplar::program::Sequence &cycleCountTensorToHostFragment() const;
   poplar::program::Sequence &cycleCountTensorToHostFragment();
+  const poplar::program::Sequence &toHostFinalCopyFragment() const;
   poplar::program::Sequence &toHostFinalCopyFragment();
+  const poplar::program::Sequence &initFragment() const;
   poplar::program::Sequence &initFragment();
+  const poplar::program::Sequence &preForwardFragment() const;
   poplar::program::Sequence &preForwardFragment();
+  const poplar::program::Sequence &forwardFragment() const;
   poplar::program::Sequence &forwardFragment();
+  const poplar::program::Sequence &backwardFragment() const;
   poplar::program::Sequence &backwardFragment();
+  const poplar::program::Sequence &accumulateOuterFragment() const;
   poplar::program::Sequence &accumulateOuterFragment();
+  const poplar::program::Sequence &weightsToHostFragment() const;
   poplar::program::Sequence &weightsToHostFragment();
   // If ScheduledPreLoss::Yes, then return forwardFragment(), else return
   // backwardFragment()
   poplar::program::Sequence &forwardOrBackwardFragment(ScheduledPreLoss);
 
   // A list of programs that can be run by the Poplar engine.
-  std::vector<poplar::program::Program> progs();
+  const std::vector<poplar::program::Program> progs() const;
 
   poplar::program::Sequence &programFragment(PopPrograms::ProgramFragmentIndex);
 
@@ -96,7 +107,7 @@ public:
     // IpuCopy fragment has been removed. There is now a single
     // pipelineIpuCopySeq to which copies are added.
   };
-  std::string getStrFromPipelineFragmentId(PipelineFragmentId);
+  std::string getStrFromPipelineFragmentId(PipelineFragmentId) const;
 
   // Program fragments specific to pipelined model. Each method to return
   // a pipeline program fragment takes a 'description' string, that describes
@@ -118,11 +129,11 @@ public:
   pipelineToHostStreamFragment(PipelineStage, const std::string &desc);
   poplar::program::Sequence &pipelineIpuCopyFragment(const std::string &desc);
 
-  void
-  addPipelineCycle(PipelineCycle pCycle,
-                   poplar::program::Sequence &sq,
-                   std::ostringstream &ss,
-                   std::map<PipelineStage, poplar::Function> &fwdFunctions);
+  void addPipelineCycle(
+      PipelineCycle pCycle,
+      poplar::program::Sequence &sq,
+      std::ostringstream &ss,
+      std::map<PipelineStage, poplar::Function> &fwdFunctions) const;
 
   Devicex *dv_p;
 
@@ -150,16 +161,16 @@ private:
   poplar::program::Sequence pipelineIpuCopySeq;
   std::string pipelineIpuCopyDesc;
 
-  poplar::program::Sequence getMainProgramFromPipelineFragments();
+  poplar::program::Sequence getMainProgramFromPipelineFragments() const;
 
   std::set<std::pair<OpId, PingPongPhase>> beenRecomputed;
 
-  poplar::program::Sequence weightsFromHost();
-  poplar::program::Sequence optimizerFromHost();
-  poplar::program::Sequence setRandomSeedFromHost();
-  poplar::program::Sequence cycleCountTensorToHost();
-  poplar::program::Sequence program();
-  poplar::program::Sequence weightsToHost();
+  poplar::program::Sequence weightsFromHost() const;
+  poplar::program::Sequence optimizerFromHost() const;
+  poplar::program::Sequence setRandomSeedFromHost() const;
+  poplar::program::Sequence cycleCountTensorToHost() const;
+  poplar::program::Sequence program() const;
+  poplar::program::Sequence weightsToHost() const;
 };
 
 } // namespace popx
