@@ -207,13 +207,8 @@ function(add_popart_py_unit_test name)
   endforeach()
 endfunction()
 
-# auto_virtual_graph_test is currently failing
-# TODO: Why are these tests disabled?
-# add_popart_py_unit_test("test_util")
-# add_popart_py_unit_test("auto_virtual_graph_test")
-# add_popart_py_unit_test("exception_test")
-# add_popart_py_unit_test("test_session")
-# add_popart_py_unit_test(ipu_gather_test)
+# add_popart_py_unit_test("test_util") Utility
+# add_popart_py_unit_test("test_session") Utility
 
 add_popart_py_unit_test(addbias)
 add_popart_py_unit_test(all_constexpr)
@@ -222,6 +217,7 @@ add_popart_py_unit_test(annotations_test)
 add_popart_py_unit_test(auto_virtual_graph_test VARIANTS IpuModel)
 add_popart_py_unit_test(builder_name_test)
 add_popart_py_unit_test(builder_test)
+add_popart_py_unit_test(collectives_test VARIANTS Hw)
 add_popart_py_unit_test(context_scope_test)
 add_popart_py_unit_test(convolution_options_test VARIANTS IpuModel)
 add_popart_py_unit_test(cycle_count_test VARIANTS Hw)
@@ -238,6 +234,7 @@ add_popart_py_unit_test(graph_caching_test VARIANTS IpuModel)
 add_popart_py_unit_test(graph_replication_test VARIANTS Hw)
 add_popart_py_unit_test(import_test)
 add_popart_py_unit_test(ipu_copy_test VARIANTS IpuModel)
+add_popart_py_unit_test(ipu_gather_test)
 add_popart_py_unit_test(loader_test)
 add_popart_py_unit_test(loss_test)
 add_popart_py_unit_test(mapping_test VARIANTS IpuModel)
