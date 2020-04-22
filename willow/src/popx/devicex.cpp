@@ -800,8 +800,6 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
                      ir.getSessionOptions().enableGradientAccumulation);
   }
 
-  engineOptions.set("target.workerStackSizeInBytes", "0x200");
-
   if (ir.getSessionOptions().enablePrefetchDatastreams) {
     logging::devicex::info("Setting engine options for prefetch data streams "
                            "(exchange.streamBufferOverlap = hostRearrangeOnly, "
