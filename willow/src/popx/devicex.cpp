@@ -506,6 +506,8 @@ Devicex::getMainGraphOpString(const std::vector<TaskId> &taskOrder) const {
         ss2 << ((op->fromLoss == PathFromLoss::Yes) ? "fY" : "fN");
         type = ss2.str();
       }
+      type +=
+          op->settings.recomputeType == RecomputeType::RECOMPUTED ? "-R" : "-F";
       if (logging::shouldLog(logging::Module::devicex, logging::Level::Trace)) {
         ss << type << "  " << seriesNums[op] << "  " << op->debugName()
            << "  PingPong: "
@@ -2021,14 +2023,14 @@ void Devicex::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
 
     // Pre-loss, not recompute
     if (op->settings.recomputeType == RecomputeType::CHECKPOINT ||
-        op->settings.recomputeType == RecomputeType::UNDEFINED) {
+        op->settings.recomputeType == RecomputeType::UNDEFINED ||
+        op->settings.recomputeType == RecomputeType::RECOMPUTED) {
       logging::devicex::debug("Adding checkpoint Op {}", op->debugName());
       growOpx(opx, seqs[&progs.forwardFragment()]);
     }
 
     // Pre-loss, recompute
-    else if (op->settings.recomputeType == RecomputeType::RECOMPUTE ||
-             op->settings.recomputeType == RecomputeType::RECOMPUTED) {
+    else if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
       logging::devicex::debug("Adding (first) {} Op {}",
                               op->settings.recomputeType,
                               op->debugName());
