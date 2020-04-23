@@ -28,6 +28,16 @@ else()
   set(OS_TYPE unknown)
 endif()
 
+# Use GOLD linker if g++ to speed up compilation
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+  # Based on https://github.com/frobware/c-hacks/blob/master/
+  # cmake/use-gold-linker.cmake
+  execute_process(COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=gold -Wl,--version OUTPUT_VARIABLE stdout ERROR_QUIET)
+  if("${stdout}" MATCHES "GNU gold")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fuse-ld=gold")
+  endif()
+endif()
+
 # Distribution paths
 set(INSTALL_PYDIR python)
 set(INSTALL_EXAMPLES examples)

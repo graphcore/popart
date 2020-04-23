@@ -24,12 +24,12 @@ file(GLOB x_sources src/popx/*cpp)
 file(GLOB opx_sources src/popx/op/*cpp)
 file(GLOB opx_dyn_sources src/popx/op/dynamic/*cpp)
 
-set(sources 
-  ${core_sources} 
-  ${op_sources} 
-  ${op_dyn_sources} 
-  ${ces_sources} 
-  ${patterns_sources} 
+set(sources
+  ${core_sources}
+  ${op_sources}
+  ${op_dyn_sources}
+  ${ces_sources}
+  ${patterns_sources}
   ${transforms_sources}
   ${subgraph_sources})
 
@@ -85,6 +85,7 @@ target_link_libraries(popart
   ${POPUTIL_LIB}
   ${POPRITHMS_LIB}
   ${GCL_LIBRARIES}
+  ${CMAKE_DL_LIBS}
   ${CMAKE_THREAD_LIBS_INIT}
 )
 
@@ -103,7 +104,7 @@ install(DIRECTORY "include/popart"
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
         COMPONENT popart)
 
-# See T6089: to use python3 where strictly required, and 
+# See T6089: to use python3 where strictly required, and
 # then remove this commented out code:
 #> add_custom_target(
 #>         python_ver_check
