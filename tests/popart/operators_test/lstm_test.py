@@ -984,7 +984,8 @@ def test_import_torch_lstm_train(tmpdir):
                           dummy_input,
                           onnx_file_name,
                           input_names=['X', 'initial_h', 'initial_c'],
-                          output_names=['out'])
+                          output_names=['out'],
+                          do_constant_folding=False)
 
     # create a random np array of shape `*shape` and type np.float32
     def np_rand(*shape):
