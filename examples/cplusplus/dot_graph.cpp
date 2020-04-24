@@ -5,6 +5,7 @@
 
 #include <boost/program_options.hpp>
 #include <iostream>
+#include <memory>
 #include <vector>
 #include <popart/builder.hpp>
 #include <popart/filereader.hpp>
@@ -78,7 +79,7 @@ int main(int argc, char **argv) {
   auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
 
   std::unique_ptr<Optimizer> optimizer;
-  std::vector<std::unique_ptr<Loss>> up_losses;
+  std::vector<std::shared_ptr<Loss>> up_losses;
 
   TensorId label = "label";
   InputShapeInfo isi;
@@ -94,21 +95,17 @@ int main(int argc, char **argv) {
     // choosing an arbitrary shape for label, can't run shape inference now
     isi.add(label, {"INT32", std::vector<int64_t>{7}});
 
-    up_losses.emplace_back(std::unique_ptr<Loss>(
-        new NllLoss(out, label, "nllLossVal", ReductionType::SUM)));
+    up_losses.emplace_back(std::make_shared<NllLoss>(
+        out, label, "nllLossVal", ReductionType::SUM));
   }
 
-  std::vector<Loss *> losses;
-  for (auto &x : up_losses) {
-    losses.push_back(x.get());
-  }
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
   ir.prepare({modelProto,
               isi,
               dataFlow,
-              losses,
+              up_losses,
               optimizer.get(),
               *cpuDevice,
               session_opts,

@@ -323,3 +323,34 @@ def test_no_compile(tmpdir):
 
     assert (e_info.value.args[0].endswith(
         "Session must have been prepared before a report can be fetched"))
+
+
+@tu.requires_ipu_model
+def test_serialized_graph_report(tmpdir):
+
+    builder = popart.Builder()
+
+    i1 = builder.addInputTensor(popart.TensorInfo("FLOAT", [2, 2]))
+    i2 = builder.addInputTensor(popart.TensorInfo("FLOAT", [2, 2]))
+    i3 = builder.addInputTensor(popart.TensorInfo("FLOAT", [2, 2]))
+
+    out = builder.aiOnnx.matmul([i1, i2], "ff1")
+    out = builder.aiOnnx.matmul([out, i3], "ff2")
+    builder.addOutputTensor(out)
+
+    proto = builder.getModelProto()
+
+    dataFlow = popart.DataFlow(1, {out: popart.AnchorReturnType("ALL")})
+
+    session = popart.InferenceSession(
+        fnModel=proto,
+        dataFeed=dataFlow,
+        deviceInfo=tu.create_test_device())
+
+    anchors = session.initAnchorArrays()
+
+    session.prepareDevice()   
+
+    # This is an encoded capnp report - so not easy to decode here
+    rep = session.getSerializedGraph()
+    assert (len(rep))

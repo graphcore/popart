@@ -50,6 +50,7 @@
 #include <popart/popx/poplaroptionsx.hpp>
 #include <popart/popx/pritask.hpp>
 #include <popart/recompute.hpp>
+#include <popart/stepio.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensors.hpp>
@@ -766,10 +767,6 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
 
   logging::devicex::info("Setting selected device: {}", *deviceInfo);
 
-  if (!deviceInfo->attach()) {
-    throw error("failed to attach to device");
-  }
-
   // Set the opxTrace flag based on the environment variable
   auto POPART_OPX_TRACE = getPopartEnvVar("OPX_TRACE");
   opxTrace = POPART_OPX_TRACE ? strncmp(POPART_OPX_TRACE, "1", 1) == 0 : false;
@@ -803,14 +800,29 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
                      ir.getSessionOptions().enableGradientAccumulation);
   }
 
-  engineOptions.set("target.workerStackSizeInBytes", "0x200");
-
   if (ir.getSessionOptions().enablePrefetchDatastreams) {
     logging::devicex::info("Setting engine options for prefetch data streams "
                            "(exchange.streamBufferOverlap = hostRearrangeOnly, "
                            "exchange.enablePrefetch = true");
     engineOptions.set("exchange.streamBufferOverlap", "hostRearrangeOnly");
     engineOptions.set("exchange.enablePrefetch", "true");
+  }
+
+  if (ir.getSessionOptions().enableDistributedReplicatedGraphs) {
+    logging::devicex::info("Setting firstRuntimeReplica {}",
+                           ir.getSessionOptions().globalReplicaOffset);
+
+    logging::devicex::info("Setting numberRuntimeReplica {}",
+                           ir.getSessionOptions().replicatedGraphCount);
+
+    std::string firstRuntimeReplica =
+        std::to_string(ir.getSessionOptions().globalReplicaOffset);
+    std::string numberRuntimeReplica =
+        std::to_string(ir.getSessionOptions().replicatedGraphCount);
+
+    engineOptions.set("target.syncReplicasIndependently", "true");
+    engineOptions.set("target.firstRuntimeReplica", firstRuntimeReplica);
+    engineOptions.set("target.numberRuntimeReplica", numberRuntimeReplica);
   }
 
   for (auto it : ir.getSessionOptions().engineOptions) {
@@ -2215,6 +2227,35 @@ unsigned Devicex::getAccumulationFactor() const {
   return accumulationFactor;
 }
 
+unsigned Devicex::getGlobalReplicationFactor() const {
+
+  unsigned globalReplicationFactor = 1;
+  if (ir().getSessionOptions().enableDistributedReplicatedGraphs) {
+    globalReplicationFactor =
+        static_cast<unsigned>(ir().getSessionOptions().globalReplicationFactor);
+  }
+
+  else {
+    // A check on user input consistency
+    if (static_cast<unsigned>(
+            ir().getSessionOptions().globalReplicationFactor) > 1) {
+      throw error("enableDistributedReplicatedGraphs is false, but "
+                  "globalReplicationFactor > 1. "
+                  "Either enable global replicated graphs, or set the "
+                  "globalReplicationFactor "
+                  "to 1");
+    }
+  }
+
+  return globalReplicationFactor;
+}
+
+bool Devicex::isReplicatedGraph() const {
+  const bool isLocallyReplicated  = getReplicationFactor() > 1;
+  const bool isGloballyReplicated = getGlobalReplicationFactor() > 1;
+  return isLocallyReplicated || isGloballyReplicated;
+}
+
 PipelineInfo Devicex::pipelineInfo() const { return pInfo; }
 
 bool Devicex::isEngineLoaded() const { return engineIsLoaded; }
@@ -2232,6 +2273,13 @@ void Devicex::loadEngineAndConnectStreams() {
   }
   di.previouslyLoadedDevicexs.insert(this);
   setEngineIsLoaded(true);
+
+  if (di.getConnectionType() == DeviceConnectionType::ON_DEMAND) {
+    logging::devicex::debug("Attaching to device on demand");
+    if (!di.attach()) {
+      throw error("Failed to attach to device");
+    }
+  }
 
   pEngine->load(di.getDevice());
   logging::devicex::info("Engine loaded");
@@ -2420,15 +2468,7 @@ void Devicex::prepare() {
 
   tryLoadExecutable();
 
-  // Do not like the dynamic_cast is there a better way to handle this?
-  auto &popDevice = dynamic_cast<DevicexInfo &>(*deviceInfo).getDevice();
-
-  poplar::replication_factor rf(getReplicationFactor());
-
-  logging::devicex::debug("Creating graph with replication factor {}",
-                          getReplicationFactor());
-
-  pGraph.reset(new poplar::Graph(popDevice, rf));
+  initPoplarGraph();
 
   popops::addCodelets(graph());
   poplin::addCodelets(graph());
@@ -3120,7 +3160,12 @@ PopStreamId Devicex::d2hId(TensorId id, bool isAnchorStream) const {
 
 PriTask Devicex::fromHostTask(Tensor *tensor,
                               poplar::program::Sequence &sq) const {
-
+  double priority;
+  if (ir().getSessionOptions().groupHostSync) {
+    priority = std::numeric_limits<double>::max();
+  } else {
+    priority = -1e6; // writes to device: always as late as possible (default)
+  }
   auto f = [&sq, tensor, this]() {
     SequenceMap seqs;
     logging::devicex::debug("Adding poplar::program::Copy from host " +
@@ -3131,8 +3176,7 @@ PriTask Devicex::fromHostTask(Tensor *tensor,
                                         doRearrangeOnHost(tensor)));
     return seqs;
   };
-
-  return {-1e6, // writes to device: always as late as possible
+  return {priority,
           fromHostTaskId(tensor->id),
           {
               {streamFromHostTaskId(tensor->id),
@@ -3206,11 +3250,13 @@ PriTask Devicex::toHostTask(Tensor *tensor,
   if (stype == ToHostStreamType::SumAnchor) {
     deps.push_back({anchorSumTaskId(tensor->id), DependencyType::TENSOR});
   }
-
-  return {+1e6, // writes to host: always as early as possible
-          taskId,
-          deps,
-          f};
+  double priority;
+  if (ir().getSessionOptions().groupHostSync) {
+    priority = -std::numeric_limits<double>::max();
+  } else {
+    priority = +1e6; // writes to host: always as soon as possible (default)
+  }
+  return {priority, taskId, deps, f};
 }
 
 PriTask Devicex::anchorReturnTypeSumTask(Tensor *tensor,
@@ -3409,6 +3455,44 @@ bool Devicex::doRearrangeOnHost(Tensor *tensor) const {
   return true;
 }
 
+void Devicex::initPoplarGraph() {
+  poplar::Target popTarget;
+  unsigned replicationFactor = 0;
+
+  if (ir().getSessionOptions().enableDistributedReplicatedGraphs) {
+    auto globalNumIpus  = ir().getSessionOptions().globalNumIpus;
+    auto &ipuSystemType = ir().getSessionOptions().ipuSystemType;
+
+    replicationFactor = getGlobalReplicationFactor();
+
+    logging::devicex::debug("Creating distributed replicated graph with global "
+                            "replication factor {}",
+                            replicationFactor);
+    switch (deviceInfo->getType()) {
+    case DeviceType::Ipu: {
+      popTarget = poplar::Target::createIPUTarget(globalNumIpus, ipuSystemType);
+      break;
+    }
+    default:
+      throw error(
+          "Only IPU Hardware devices supported with distributed replicated "
+          "graphs. Unsupported device type {}",
+          deviceInfo->toString());
+    }
+  } else {
+    // Do not like the dynamic_cast is there a better way to handle this?
+    auto &popDevice   = dynamic_cast<DevicexInfo &>(*deviceInfo).getDevice();
+    popTarget         = popDevice.getTarget();
+    replicationFactor = getReplicationFactor();
+
+    logging::devicex::debug("Creating graph with replication factor {}",
+                            replicationFactor);
+  }
+
+  pGraph.reset(new poplar::Graph(
+      popTarget, poplar::replication_factor(replicationFactor)));
+}
+
 void Devicex::doProfileChecks() const {
   if (pEngine == nullptr) {
     throw error(
@@ -3469,7 +3553,7 @@ std::string Devicex::getExecutionReport(bool useCbor, bool resetProfile) const {
 std::string Devicex::getSerializedGraph() const {
   doProfileChecks();
   std::stringstream ss;
-  graph().serialize(ss, poplar::SerializationFormat::Binary);
+  graph().serialize(ss, progs.progs(), poplar::SerializationFormat::Binary);
   return ss.str();
 }
 

@@ -8,6 +8,8 @@
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 
+#include <numeric>
+
 namespace popart {
 
 namespace {

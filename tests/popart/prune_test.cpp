@@ -1,8 +1,10 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE PatternsTest
 
-#include <boost/test/unit_test.hpp>
+#include <memory>
 #include <vector>
+
+#include <boost/test/unit_test.hpp>
 
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
@@ -11,6 +13,7 @@
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
+#include <popart/op/loss.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/transforms/prune.hpp>
@@ -56,9 +59,11 @@ BOOST_AUTO_TEST_CASE(PruneTest) {
                             {tensorIds[2], AnchorReturnType("ALL")}});
 
   Ir ir;
+  const std::vector<std::shared_ptr<Loss>> emptyLosses;
+
   ir.setOnnxModel(modelProto);
   ir.setDataFlow(dataFlow);
-  ir.registerInputTensors();
+  ir.registerInputTensors(emptyLosses);
   ir.constructForwards();
   ir.applyTransform(Prune::id(), ir.getMainGraph());
 
@@ -94,9 +99,11 @@ BOOST_AUTO_TEST_CASE(SelectivePruning) {
   auto dataFlow = DataFlow(1, {{c0, AnchorReturnType("ALL")}});
 
   Ir ir;
+  const std::vector<std::shared_ptr<Loss>> emptyLosses;
+
   ir.setOnnxModel(modelProto);
   ir.setDataFlow(dataFlow);
-  ir.registerInputTensors();
+  ir.registerInputTensors(emptyLosses);
   ir.constructForwards();
 
   auto c1Tensor         = ir.getMainGraph().getTensors().get(c1);

@@ -2,9 +2,13 @@
 #ifndef GUARD_NEURALNET_NET_HPP
 #define GUARD_NEURALNET_NET_HPP
 
+#include <memory>
+#include <vector>
+
 #include <poplar/DataStream.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
+#include <popart/stepio.hpp>
 
 namespace popart {
 
@@ -174,6 +178,12 @@ public:
   const Ir &getIr() const { return ir; }
 
 protected:
+  /**
+   * Clone all losses into share_ptrs
+   */
+  static std::vector<std::shared_ptr<Loss>>
+  cloneLosses(const std::vector<Loss *> &losses);
+
   /**
    * Select a device type.
    *

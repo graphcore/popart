@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <map>
+#include <memory>
 #include <random>
 #include <tuple>
 #include <vector>
@@ -98,8 +99,8 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeConstSGD0) {
     float lossLambda = 0.26;
     float learnRate  = 0.1;
     auto optimizer   = ConstSGD(learnRate);
-    std::vector<Loss *> losses{
-        new L1Loss(reduced, "l1LossVal", lossLambda, ReductionType::SUM)};
+    std::vector<std::shared_ptr<Loss>> losses{std::make_shared<L1Loss>(
+        reduced, "l1LossVal", lossLambda, ReductionType::SUM)};
 
     Ir ir;
     ir.prepare({modelProto,

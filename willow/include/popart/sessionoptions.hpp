@@ -174,7 +174,8 @@ struct SessionOptions {
   /// replicatedGraphCount of 2 will use 2 IPUs. If your model is
   /// pipelined across 4 IPUs, a replicatedGraphCount of 4 will use 16 IPUs
   /// total. Therefore the number of IPUs you request must be a multiple of
-  /// replicatedGraphCount.
+  /// replicatedGraphCount. If the training is done across multiple instances
+  /// then the replicatedGraphCount is the number of replicas for this instance.
   int64_t replicatedGraphCount = 1;
 
   /// Specify the number of micro-batches to accumulate before applying the
@@ -312,6 +313,28 @@ struct SessionOptions {
   /// use case for this would be if a large weight tensor is used as an
   /// input to many operations
   bool decomposeGradSum = false;
+
+  /// Enable training with Poplar replicated graphs across multiple PopART
+  /// instances
+  bool enableDistributedReplicatedGraphs = false;
+
+  /// The total number of replicas in a multi instance replicated graph training
+  /// session
+  int64_t globalReplicationFactor = 1;
+
+  /// The first replica index that this PopART instance is running
+  int64_t globalReplicaOffset = 0;
+
+  /// The total number of IPUs across all the PopART instances
+  int64_t globalNumIpus = 1;
+
+  /// The IPU SystemType
+  std::string ipuSystemType = "ipu1";
+
+  /// Allows to group the streams from host at the beginning and the streams
+  /// to host at the end, this trades off sum-liveness efficiency for cycle
+  /// efficiency.
+  bool groupHostSync = false;
 };
 
 } // namespace popart

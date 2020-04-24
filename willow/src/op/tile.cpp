@@ -7,6 +7,7 @@
 #include <popart/op/tile.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/tensor.hpp>
+#include <popart/tensordata.hpp>
 #include <popart/tensors.hpp>
 
 namespace popart {

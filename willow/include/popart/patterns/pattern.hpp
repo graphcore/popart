@@ -112,8 +112,6 @@ public:
   // be any anchored tensors touched?
   bool touchesAnchored(Op *) const;
 
-  bool touchesInputToLoss(Op *) const;
-
 private:
   static int tensor_counter;
 };

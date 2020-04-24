@@ -5,22 +5,22 @@
 
 #include <algorithm>
 #include <boost/test/unit_test.hpp>
+#include <memory>
 #include <vector>
 #include <popart/builder.hpp>
+#include <popart/filereader.hpp>
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
 #include <popart/op.hpp>
+#include <popart/op/l1.hpp>
 #include <popart/op/mul.hpp>
 #include <popart/op/relu.hpp>
 #include <popart/op/varupdate.hpp>
+#include <popart/optimizer.hpp>
 #include <popart/subgraph/outliner.hpp>
+#include <popart/tensordata.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>
-
-#include <popart/filereader.hpp>
-#include <popart/op/l1.hpp>
-#include <popart/optimizer.hpp>
-#include <popart/tensordata.hpp>
 
 namespace {
 
@@ -113,16 +113,15 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
     auto proto      = builder->getModelProto();
     auto modelProto = io::getModelFromString(proto);
     std::unique_ptr<Optimizer> optimizer;
-    std::vector<std::unique_ptr<L1Loss>> up_losses;
-    std::vector<Loss *> losses{};
+    std::vector<std::shared_ptr<Loss>> up_losses;
+
     auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
     auto device   = createTestDevice(TEST_TARGET);
 
     if (train) {
       optimizer.reset(new ConstSGD(0.01));
-      up_losses.push_back(std::unique_ptr<L1Loss>(
-          new L1Loss(out, "l1LossVal", 0.1, ReductionType::SUM)));
-      losses = {up_losses[0].get()};
+      up_losses.push_back(
+          std::make_shared<L1Loss>(out, "l1LossVal", 0.1, ReductionType::SUM));
     }
 
     auto opts = SessionOptions();
@@ -138,7 +137,7 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
     ir.prepare({modelProto,
                 InputShapeInfo(),
                 dataFlow,
-                losses,
+                up_losses,
                 optimizer.get(),
                 *device,
                 opts,
@@ -328,8 +327,7 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
   std::unique_ptr<Optimizer> optimizer;
-  std::vector<std::unique_ptr<L1Loss>> up_losses;
-  std::vector<Loss *> losses{};
+  std::vector<std::shared_ptr<Loss>> up_losses;
   auto dataFlow =
       DataFlow(1,
                {{out, AnchorReturnType("ALL")},
@@ -340,9 +338,8 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
   auto device = createTestDevice(TEST_TARGET);
 
   optimizer.reset(new ConstSGD(0.01));
-  up_losses.push_back(std::unique_ptr<L1Loss>(
-      new L1Loss(out, "l1LossVal", 0.1, ReductionType::SUM)));
-  losses = {up_losses[0].get()};
+  up_losses.push_back(
+      std::make_shared<L1Loss>(out, "l1LossVal", 0.1, ReductionType::SUM));
 
   std::vector<Match> expected_train_matches = {
       {{7, 13}, 6},
@@ -362,7 +359,7 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              losses,
+              up_losses,
               optimizer.get(),
               *device,
               opts,

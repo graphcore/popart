@@ -1,8 +1,10 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE OpManagerTest
 
-#include <boost/test/unit_test.hpp>
+#include <memory>
 #include <vector>
+
+#include <boost/test/unit_test.hpp>
 
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
@@ -114,8 +116,8 @@ BOOST_AUTO_TEST_CASE(OpManager_Test2) {
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow  = DataFlow(1, {{customOut[0], AnchorReturnType("ALL")}});
   auto optimizer = SGD({{"defaultLearningRate", {0.01, false}}});
-  std::vector<Loss *> losses{
-      new L1Loss(customOut[0], "l1LossVal", 0.1, ReductionType::SUM)};
+  std::vector<std::shared_ptr<Loss>> losses{std::make_shared<L1Loss>(
+      customOut[0], "l1LossVal", 0.1, ReductionType::SUM)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;

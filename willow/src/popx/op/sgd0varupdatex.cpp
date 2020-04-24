@@ -68,7 +68,7 @@ void SGD0VarUpdateOpx::grow(poplar::program::Sequence &prog) const {
       getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
 
   // TODO: where does this go when there is replication?
-  if (dv_p->getReplicationFactor() > 1 &&
+  if (dv_p->isReplicatedGraph() &&
       !dv_p->ir().getSessionOptions().hostAllReduce) {
     popops::replicatedAllReduceWithOutput(
         graph(),

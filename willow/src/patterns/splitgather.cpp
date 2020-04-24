@@ -1,5 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <memory>
+#include <numeric>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/concat.hpp>
@@ -9,6 +10,7 @@
 #include <popart/op/transpose.hpp>
 #include <popart/patterns/splitgather.hpp>
 #include <popart/tensor.hpp>
+#include <popart/tensordata.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensors.hpp>
 

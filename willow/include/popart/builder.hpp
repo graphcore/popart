@@ -233,6 +233,19 @@ public:
                              unsigned num_outputs,
                              const Builder &callee,
                              const std::string &name = {});
+
+  /**
+   * Add a replicated all reduce operation to the model
+   *
+   * This is a poplar extension, to expose manual code re-use to
+   * the builder
+   *
+   * \param args Tensor T to reduce across
+   * \param name Optional identifier for operation
+   * \return The name of the result tensor
+   */
+  TensorId replicatedallreduce(const std::vector<TensorId> &args,
+                               const std::string &name = {});
 };
 
 /**

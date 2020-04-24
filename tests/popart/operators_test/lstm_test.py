@@ -2,6 +2,7 @@
 import numpy as np
 import popart
 import torch
+import onnx
 import json
 from op_tester import op_tester
 
@@ -983,7 +984,8 @@ def test_import_torch_lstm_train(tmpdir):
                           dummy_input,
                           onnx_file_name,
                           input_names=['X', 'initial_h', 'initial_c'],
-                          output_names=['out'])
+                          output_names=['out'],
+                          do_constant_folding=False)
 
     # create a random np array of shape `*shape` and type np.float32
     def np_rand(*shape):
@@ -1254,3 +1256,67 @@ def test_import_torch_lstm_multi_run(tmpdir):
     for i, (po, to) in enumerate(zip(popart_out, torch_out)):
         print('Checking output {}'.format(i))
         assert np.allclose(po, to.data.numpy())
+
+
+# This tests certain configurations of torch lstm that can
+# export a model with a constant of shape operation.
+def test_lstm_export_with_constantofshape(tmpdir):
+    np.random.seed(42)
+    torch.manual_seed(43)
+
+    class RNNNet(torch.nn.Module):
+        def __init__(self):
+            super(RNNNet, self).__init__()
+
+            hidden_size = 8
+            input_size = 18
+
+            self.lstm = torch.nn.LSTM(input_size=input_size,
+                                      hidden_size=hidden_size,
+                                      batch_first=True)
+
+        def forward(self, x):
+            x, (h, c) = self.lstm(x)
+            return x
+
+    net = RNNNet()
+    np_data = np.random.rand(1, 100, 18).astype(np.float32)
+    torch_data = torch.from_numpy(np_data)
+    torchOutput = net(torch_data).detach().numpy()
+
+    export_name = str(tmpdir / "lstm_small_repro.onnx")
+
+    torch.onnx.export(net,
+                      torch_data,
+                      export_name,
+                      verbose=True,
+                      input_names=['data'],
+                      output_names=['tag'])
+
+    # Verify this model contains a ConstantOfShape op.
+    model = onnx.load(export_name)
+    nodes = model.graph.node
+    nodes = [i for i in nodes if i.op_type == 'ConstantOfShape']
+    assert len(nodes) > 0
+
+    inputShapeInfo = popart.InputShapeInfo()
+    inputShapeInfo.add("data", popart.TensorInfo("FLOAT", [1, 100, 18]))
+
+    anchors = {"tag": popart.AnchorReturnType("ALL")}
+    dataFeed = popart.DataFlow(1, anchors)
+    device = tu.create_test_device()
+
+    session = popart.InferenceSession(export_name,
+                                      dataFeed,
+                                      device,
+                                      inputShapeInfo=inputShapeInfo)
+
+    session.prepareDevice()
+
+    inferenceAnchors = session.initAnchorArrays()
+    stepio = popart.PyStepIO({"data": np_data}, inferenceAnchors)
+    session.run(stepio)
+    popartOutput = inferenceAnchors['tag']
+
+    assert torchOutput.shape == popartOutput.shape
+    assert np.allclose(torchOutput, popartOutput, atol=1e-07)

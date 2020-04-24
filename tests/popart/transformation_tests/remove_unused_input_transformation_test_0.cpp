@@ -7,6 +7,7 @@
 #include <popart/filereader.hpp>
 #include <popart/graphtransformer.hpp>
 #include <popart/tensordata.hpp>
+#include <popart/voiddata.hpp>
 
 using namespace popart;
 

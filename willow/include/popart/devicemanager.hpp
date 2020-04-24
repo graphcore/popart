@@ -14,6 +14,8 @@ enum class DeviceType { IpuModel = 0, Cpu, Ipu, Sim };
 
 enum class SyncPattern { Full = 0, SinglePipeline, PingPong };
 
+enum class DeviceConnectionType { ALWAYS = 0, ON_DEMAND, NEVER };
+
 class DeviceProvider;
 
 // TOD : When the Device/DeviceX classes are renamed to be ?backend? (Need to
@@ -23,8 +25,11 @@ class DeviceProvider;
 class DeviceInfo {
 
 public:
-  DeviceInfo(DeviceProvider &_provider, DeviceType _type)
-      : provider(_provider), type(_type) {
+  DeviceInfo(
+      DeviceProvider &_provider,
+      DeviceType _type,
+      DeviceConnectionType _connectionType = DeviceConnectionType::ALWAYS)
+      : provider(_provider), type(_type), connectionType(_connectionType) {
     (void)provider;
   }
 
@@ -41,6 +46,9 @@ public:
 
   /// Get the type of the device
   DeviceType getType() const { return type; }
+
+  /// Get the connection type of the device
+  DeviceConnectionType getConnectionType() const { return connectionType; }
 
   /// Return a description of the device
   std::string toString() const;
@@ -61,6 +69,7 @@ public:
 private:
   DeviceProvider &provider;
   DeviceType type;
+  DeviceConnectionType connectionType;
 };
 
 std::ostream &operator<<(std::ostream &os, const DeviceInfo &di);
@@ -71,8 +80,10 @@ class DeviceProvider {
 public:
   virtual ~DeviceProvider() {}
 
-  virtual std::shared_ptr<DeviceInfo> getDevice(SyncPattern syncPattern,
-                                                unsigned deviceManagerId) = 0;
+  virtual std::shared_ptr<DeviceInfo>
+  getDevice(SyncPattern syncPattern,
+            unsigned deviceManagerId,
+            DeviceConnectionType connectionType) = 0;
 
   /**
    * Get the list of all devices fulfilling the specified criteria.
@@ -84,7 +95,8 @@ public:
   virtual void enumerate(std::vector<std::shared_ptr<DeviceInfo>> &devices,
                          uint32_t requiredNumIPUs,
                          SyncPattern syncPattern,
-                         DeviceType type) = 0;
+                         DeviceType type,
+                         DeviceConnectionType connectionType) = 0;
 
   /// Create a host device for testing
   virtual std::shared_ptr<DeviceInfo>
@@ -117,8 +129,9 @@ public:
    * \return List of requested IPUs.
    */
   std::shared_ptr<DeviceInfo>
-  getDevice(SyncPattern syncPattern  = SyncPattern::Full,
-            uint32_t deviceManagerId = 0);
+  getDevice(SyncPattern syncPattern             = SyncPattern::Full,
+            uint32_t deviceManagerId            = 0,
+            DeviceConnectionType connectionType = DeviceConnectionType::ALWAYS);
 
   /**
    * Get the list of all devices fulfilling the specified criteria.
@@ -129,11 +142,12 @@ public:
    * \param deviceType Type of device required.
    * \return List of requested IPUs.
    */
-  std::vector<std::shared_ptr<DeviceInfo>>
-  enumerateDevices(SyncPattern pattern         = SyncPattern::Full,
-                   uint32_t replication_factor = 1,
-                   int numIpus                 = 1,
-                   DeviceType deviceType       = DeviceType::Ipu);
+  std::vector<std::shared_ptr<DeviceInfo>> enumerateDevices(
+      SyncPattern pattern                 = SyncPattern::Full,
+      uint32_t replication_factor         = 1,
+      int numIpus                         = 1,
+      DeviceType deviceType               = DeviceType::Ipu,
+      DeviceConnectionType connectionType = DeviceConnectionType::ALWAYS);
 
   /** Finds the first available hardware device, that a certain number of IPUs.
    * This method will attach to the device.
@@ -142,21 +156,23 @@ public:
    * \return A device, which can be used with a session. Will return nullptr if
    *         no device is available
    */
-  std::shared_ptr<DeviceInfo>
-  acquireAvailableDevice(int numIpus                 = 1,
-                         int tilesPerIpu             = 1216,
-                         SyncPattern pattern         = SyncPattern::Full,
-                         uint32_t replication_factor = 1);
+  std::shared_ptr<DeviceInfo> acquireAvailableDevice(
+      int numIpus                         = 1,
+      int tilesPerIpu                     = 1216,
+      SyncPattern pattern                 = SyncPattern::Full,
+      uint32_t replication_factor         = 1,
+      DeviceConnectionType connectionType = DeviceConnectionType::ALWAYS);
 
   /** Allocates the hardware device by id. This id can be found running 'gc-info
    *  -l' This method will attach to the device
    * \param id The index of the IPU to be used
    * \return A device. Will return nullptr if the device is not available
    */
-  std::shared_ptr<DeviceInfo>
-  acquireDeviceById(int id,
-                    SyncPattern pattern         = SyncPattern::Full,
-                    uint32_t replication_factor = 1);
+  std::shared_ptr<DeviceInfo> acquireDeviceById(
+      int id,
+      SyncPattern pattern                 = SyncPattern::Full,
+      uint32_t replication_factor         = 1,
+      DeviceConnectionType connectionType = DeviceConnectionType::ALWAYS);
 
   /** Create a 'simulated' CPU device
    * \return A device
@@ -193,6 +209,14 @@ public:
  */
 std::ostream &operator<<(std::ostream &os, const DeviceType &dt);
 
+/** Write a representation of a DeviceConnectionType to an output stream
+ *
+ * \param os output stream
+ * \param dct device connection type reference
+ * \return the same output stream for chaining
+ */
+std::ostream &operator<<(std::ostream &os, const DeviceConnectionType &dct);
+
 } // namespace popart
 
 namespace std {
@@ -202,7 +226,7 @@ template <> struct hash<popart::DeviceInfo> {
     // can affect compiled program
 
     std::stringstream ss;
-    ss << di.getType();
+    ss << di.getType() << di.getConnectionType();
 
     return std::hash<std::string>()(ss.str()) ^
            std::hash<std::string>()(di.getVersion()) ^

@@ -4,6 +4,7 @@
 
 #include <onnx/onnx_pb.h>
 #include <popart/tensordata.hpp>
+#include <popart/voiddata.hpp>
 
 namespace popart {
 namespace onnxutil {

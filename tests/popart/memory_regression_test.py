@@ -186,14 +186,14 @@ def test_mini_resnet_like():
     print(f'max_mem: {max_mem}')
 
     # Check that the total memory is within 5% of the reference
-    ref_total = 71_298_709
+    ref_total = 67_201_630
     # If it is more than 5% over, it needs investigating
     assert total_mem / ref_total < 1.05
     # If it is move than 5% under, the reference should probably be updated
     assert total_mem / ref_total > 0.95
 
     # Check that the maximum memory is within 5% of the reference
-    ref_max = 136_472
+    ref_max = 134_840
     # If it is more than 5% over, it needs investigating
     assert max_mem / ref_max < 1.05
     # If it is move than 5% under, the reference should probably be updated

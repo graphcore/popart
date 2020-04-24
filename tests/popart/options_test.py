@@ -104,42 +104,6 @@ def test_engine_options_passed_to_engine(tmpdir):
     assert (e_info.value.args[0].endswith("Unrecognised option 'option'"))
 
 
-def test_convolution_options(tmpdir):
-
-    builder = popart.Builder()
-
-    data_shape = popart.TensorInfo("FLOAT", [1, 2, 4, 4])
-    filt_shape = popart.TensorInfo("FLOAT", [3, 2, 3, 3])
-
-    i1 = builder.addInputTensor(data_shape)
-    i2 = builder.addInputTensor(filt_shape)
-    o = builder.aiOnnx.conv([i1, i2],
-                            dilations=[1, 1],
-                            pads=[1, 1, 1, 1],
-                            strides=[1, 1])
-    builder.addOutputTensor(o)
-
-    proto = builder.getModelProto()
-
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
-
-    opts = popart.SessionOptions()
-    opts.convolutionOptions = {'startTileMultiplier': '3'}
-
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFeed=dataFlow,
-                                      userOptions=opts,
-                                      deviceInfo=tu.create_test_device())
-
-    anchors = session.initAnchorArrays()
-
-    with pytest.raises(popart.poplibs_exception) as e_info:
-        session.prepareDevice()
-
-    assert (e_info.value.args[0].endswith(
-        "Must start distributing convolutions on an even tile."))
-
-
 # An error should be thrown if the user tries to set an unrecognised option flag.
 # This is to prevent confusion is a user has a typo in an flag.
 def test_set_bad_options():

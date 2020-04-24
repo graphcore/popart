@@ -9,15 +9,15 @@
 #include <boost/optional.hpp>
 
 #include <popart/error.hpp>
+#include <popart/istepio.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/vertex.hpp>
+#include <popart/voiddata.hpp>
 
 namespace popart {
-
-class Ir;
 
 enum class TensorType {
   ActGrad = 0, // an activation or a gradient, basically any output of an Op

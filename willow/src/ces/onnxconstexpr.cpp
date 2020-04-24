@@ -70,9 +70,23 @@ void OnnxConstExprUtil::processConstantOfShapeNode(
   auto inputTensor = graph->getTensors().get(inputId);
   TensorId name    = node.output(0);
 
+  // Check the input tensor is of type INT64 and has data.
+  if (inputTensor->info.dataType() != DataType::INT64) {
+    throw error("expected data type {} but input tensor `{}` has data type {}.",
+                DataType::INT64,
+                inputId,
+                inputTensor->info.dataType());
+  }
+  if (!inputTensor->hasTensorData()) {
+    throw error("the tensor `" + inputId + "` does not have data");
+  }
+  TensorData *tensorData = inputTensor->tensorData();
+  Shape outputShape =
+      tensorData->copyDataAs<int64_t>(inputTensor->info.nelms());
+
   if (node.attribute().size() == 0) {
     // if no value provided, use DataType::FLOAT and value 0.0f
-    TensorInfo resultInfo(DataType::FLOAT, inputTensor->info.shape());
+    TensorInfo resultInfo(DataType::FLOAT, outputShape);
     std::vector<float> resultData(resultInfo.nelms(), 0.0f);
 
     graph->getTensors().addConstInit(
@@ -83,8 +97,7 @@ void OnnxConstExprUtil::processConstantOfShapeNode(
     ConstVoidData valueCVData                = onnxutil::getConstData(value);
 
     // Result takes data type from value and shape from input
-    TensorInfo resultInfo(valueCVData.info.dataType(),
-                          inputTensor->info.shape());
+    TensorInfo resultInfo(valueCVData.info.dataType(), outputShape);
 
     const char *valueData = reinterpret_cast<const char *>(valueCVData.data);
     std::vector<char> resultData(resultInfo.nbytes());

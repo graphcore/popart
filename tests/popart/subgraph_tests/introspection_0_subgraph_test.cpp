@@ -74,11 +74,11 @@ BOOST_AUTO_TEST_CASE(Introspection0_Subgraph) {
 
   auto optimizer = ConstSGD(0.01);
 
-  auto loss0 = std::unique_ptr<Loss>(
-      new L1Loss(out[0], "l1LossVal_0", 0.1, ReductionType::MEAN));
+  auto loss0 =
+      std::make_shared<L1Loss>(out[0], "l1LossVal_0", 0.1, ReductionType::MEAN);
   loss0->virtualGraph(0);
-  auto loss1 = std::unique_ptr<Loss>(
-      new L1Loss(out[4], "l1LossVal_1", 0.1, ReductionType::MEAN));
+  auto loss1 =
+      std::make_shared<L1Loss>(out[4], "l1LossVal_1", 0.1, ReductionType::MEAN);
   loss1->virtualGraph(1);
 
   auto device = createTestDevice(TEST_TARGET, nIpus);
@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE(Introspection0_Subgraph) {
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              {loss0.get(), loss1.get()},
+              {loss0, loss1},
               &optimizer,
               *device,
               userOptions,

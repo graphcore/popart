@@ -25,6 +25,7 @@
 #include <set>
 #include <popart/names.hpp>
 // MutableVoidData is defined in here:
+#include <popart/stepio.hpp>
 #include <popart/tensordata.hpp>
 
 using boost::optional;
@@ -160,6 +161,14 @@ public:
   // Helper method to get the replication factor based on the user options
   unsigned getReplicationFactor() const;
   unsigned getAccumulationFactor() const;
+
+  // If globalReplicatedGraphs are enabled then this will return an
+  // offset into the global instances, otherwise 0.
+  unsigned getReplicaOffset() const;
+
+  unsigned getGlobalReplicationFactor() const;
+
+  bool isReplicatedGraph() const;
 
   PipelineInfo pipelineInfo() const;
 
@@ -361,6 +370,8 @@ private:
   PopStreamId d2hId(TensorId, bool isAnchorStream) const;
 
   bool doRearrangeOnHost(Tensor *tensor) const;
+
+  void initPoplarGraph();
 
 public:
   std::unique_ptr<Opx> createOpx(Op *);

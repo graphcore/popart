@@ -7,6 +7,7 @@
 #include <popart/op.hpp>
 #include <popart/op/loss.hpp>
 #include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
 #include <popart/transforms/auto_virtual_graph.hpp>
 
 using SubgraphId = int;
@@ -378,7 +379,7 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
   }
 
   // Put the user defined losses on the final virtual graph.
-  for (auto &loss : ir.losses) {
+  for (auto &loss : graph.getLosses()) {
     loss->virtualGraph(virtual_graph_id);
   }
   return true;

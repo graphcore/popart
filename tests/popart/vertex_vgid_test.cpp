@@ -64,15 +64,15 @@ BOOST_AUTO_TEST_CASE(VertexVgidTest0) {
     //
     auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("ALL")}});
     auto optimizer = ConstSGD(0.01);
-    auto loss      = std::unique_ptr<Loss>(
-        new L1Loss(act, "l1LossVal", 0.1, ReductionType::SUM));
+    auto loss =
+        std::make_shared<L1Loss>(act, "l1LossVal", 0.1, ReductionType::SUM);
     auto device = createTestDevice(TEST_TARGET, 3);
 
     Ir ir;
     ir.prepare({modelProto,
                 InputShapeInfo(),
                 dataFlow,
-                {loss.get()},
+                {loss},
                 &optimizer,
                 *device,
                 userOptions,

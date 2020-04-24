@@ -1684,12 +1684,11 @@ def test_instancenorm_grad(op_tester):
 
 
 def test_constantofshape(op_tester):
-    shape = np.random.rand(1, 2, 3).astype(np.int32)
+    shape = np.array([1, 2, 3]).astype(np.int64)
     value = np.array([3.1415]).astype(np.float32)
 
     def init_builder(builder):
-        s = builder.addInputTensor(shape)
-        i = builder.aiOnnx.identity([s])
+        i = builder.aiOnnx.constant(shape)
         c = builder.aiOnnx.constantofshape([i], value)
         o = builder.aiOnnx.identity([c])
 

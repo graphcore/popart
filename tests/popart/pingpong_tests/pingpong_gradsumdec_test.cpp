@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_CASE(TestDecomposeAcrossPingPongPhases) {
   TensorInfo wInfo{"FLOAT", std::vector<int64_t>{size, size}};
   std::vector<TestTensor> inputs;
   std::vector<TestTensor> outputs;
-  std::vector<float> w0Data(4 * 4, 0);
+  std::vector<float> w0Data(wInfo.nelms(), 0);
   ConstVoidData w0CVData{w0Data.data(), wInfo};
 
   runner.buildModel([&](auto &builder) {

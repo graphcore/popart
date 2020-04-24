@@ -29,6 +29,7 @@
 #include <popart/scheduler.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensor.hpp>
+#include <popart/tensordata.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
@@ -136,7 +137,8 @@ void Ir::dotCheckpoint(DotCheck check) const {
   viz.write();
 }
 
-bool Ir::isInputToLoss(const Tensor *t) const {
+bool Ir::isInputToLoss(const Tensor *t,
+                       const std::vector<std::shared_ptr<Loss>> &losses) const {
   for (auto &loss : losses) {
     for (int i = 0; i < loss->input_size(); i++) {
       auto input = loss->input(i);
@@ -168,7 +170,7 @@ void Ir::confirmNoReservedIds() const {
 IrBundle::IrBundle(const ONNX_NAMESPACE::ModelProto &modelProto_,
                    const InputShapeInfo &inputShapeInfo_,
                    const DataFlow &dataFlow_,
-                   const std::vector<Loss *> &losses_,
+                   const std::vector<std::shared_ptr<Loss>> &losses_,
                    const Optimizer *optimizer_,
                    DeviceInfo &deviceInfo_,
                    const SessionOptions &userOptions_,
@@ -281,13 +283,6 @@ void Ir::removeIsolatedTensors(bool retainCached) {
 
 void Ir::setExecutionMode(const ExecutionMode &mode) { executionMode = mode; }
 
-void Ir::setLosses(const std::vector<Loss *> &_losses) {
-  losses.clear();
-  for (auto &l : _losses) {
-    losses.emplace_back(l->clone());
-  }
-}
-
 void Ir::setOptimizer(const Optimizer &o) {
   optimizer = o.clone();
   optimizer->setFactorsFromOptions(getSessionOptions());
@@ -325,8 +320,9 @@ void Ir::verifyPipelineSettings() const {
     return;
   }
 
-  if (!virtualGraphsEnabled()) {
-    throw error("Pipelining requires the 'virtualGraphMode' session option "
+  if (!virtualGraphsEnabled() || getMaxVirtualGraphId() == 1) {
+    throw error("Pipelining requires more than 1 IPU and the "
+                "'virtualGraphMode' session option "
                 "to not be VirtualGraphMode::Off.");
   }
 
@@ -661,6 +657,52 @@ void Ir::verifyRecomputeAttributes() const noexcept(false) {
   }
 }
 
+void Ir::verifyDistributedReplicatedGraphSettings() const {
+  if (userOptions.enableDistributedReplicatedGraphs) {
+    auto localReplicationFactor  = userOptions.replicatedGraphCount;
+    auto globalReplicationFactor = userOptions.globalReplicationFactor;
+    auto globalReplicaOffset     = userOptions.globalReplicaOffset;
+    auto globalNumIpus           = userOptions.globalNumIpus;
+    if (globalReplicationFactor < 1) {
+      throw error("Invalid globalReplicationFactor value: {}, must be greater "
+                  "or equal than 1",
+                  globalReplicationFactor);
+    }
+
+    if (globalReplicaOffset < 0) {
+      throw error("Invalid globalReplicaOffset value: {}, must be greater or "
+                  "equal than 0",
+                  globalReplicaOffset);
+    }
+
+    if (globalNumIpus < 1) {
+      throw error(
+          "Invalid globalNumIpus value: {}, must be greater or equal than 1",
+          globalNumIpus);
+    }
+
+    if (globalReplicaOffset > globalReplicationFactor) {
+      throw error("Global replica offset: {}, is larger than global "
+                  "replication factor: {}",
+                  globalReplicaOffset,
+                  globalReplicationFactor);
+    }
+
+    if (userOptions.enableReplicatedGraphs) {
+      if (localReplicationFactor == 1) {
+        throw error(
+            "Local replicated graphs enabled but replication factor is 1");
+      }
+      if (localReplicationFactor > globalReplicationFactor) {
+        throw error("Invalid local replication factor: {}, larger than global "
+                    "replication factor: {}",
+                    localReplicationFactor,
+                    globalReplicationFactor);
+      }
+    }
+  }
+}
+
 bool Ir::isCandidateForConstExprFolding(const Tensor &tensor) const {
   // A tensor is computable as a const expression if it is Const. This would
   // also be true for Variable tensors during inference, unless the user calls
@@ -801,11 +843,18 @@ void Ir::prepareImpl(const IrBundle &gb) {
   setPatterns(gb.patterns);
   setOnnxModel(gb.modelProto);
 
-  setLosses(gb.losses);
+  if (graphs.size() == 1) {
+    if (isPrepared) {
+      throw error("There is more than one graph at the loss insertion stage, "
+                  "which should not happen. This is an internal error.");
+    }
+  }
+
+  getMainGraph().setLosses(gb.losses);
 
   confirmNoReservedIds();
 
-  registerInputTensors();
+  registerInputTensors(gb.losses);
 
   if (!canTrain() && getSessionOptions().enableGradientAccumulation) {
     throw error("Gradient Accumulation only available when training.");
@@ -816,9 +865,12 @@ void Ir::prepareImpl(const IrBundle &gb) {
 
   // construct the forward pass from ONNX,
   constructForwards();
+  if (!virtualGraphsEnabled()) {
+    unsetAllVirtualGraphIds();
+  }
 
   // Check virtual graph settings and annotations are consistent
-  verifyVirtualGraphIds(false);
+  verifyVirtualGraphIds(false, true);
   verifyPipelineSettings();
   verifyPingPongSettings();
 
@@ -846,7 +898,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
       userOptions.pingPongPhases > 1) {
     applyTransform(PingPong::id(1), getMainGraph());
-    verifyVirtualGraphIds(true);
+    verifyVirtualGraphIds(true, true);
   }
 
   if (getSessionOptions().enablePipelining) {
@@ -854,7 +906,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   }
 
   if (canEvaluate()) {
-    growFinalLoss();
+    growFinalLoss(gb.losses);
     updateVertices();
     setNEdgesToLoss();
   }
@@ -877,7 +929,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
       userOptions.pingPongPhases > 1) {
     applyTransform(PingPong::id(2), getMainGraph());
-    verifyVirtualGraphIds(true);
+    verifyVirtualGraphIds(true, false);
   }
 
   updateVertices();
@@ -924,7 +976,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
       userOptions.pingPongPhases > 1) {
     applyTransform(PingPong::id(3), getMainGraph());
-    verifyVirtualGraphIds(true);
+    verifyVirtualGraphIds(true, false);
   }
 
   // Dynamicoptransform decomposes grad sums that contain
@@ -1014,7 +1066,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
       userOptions.pingPongPhases > 1) {
     applyTransform(PingPong::id(4), getMainGraph());
-    verifyVirtualGraphIds(true);
+    verifyVirtualGraphIds(true, false);
   }
 
   updateVertices();
@@ -1121,7 +1173,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   verifyConstExprFolding();
   verifyConnectivity();
   verifyTensorIds();
-  verifyVirtualGraphIds(true);
+  verifyVirtualGraphIds(true, false);
   verifyVertexAttributesOnlyInMain();
   verifySubgraphs();
   verifyRecomputeAttributes();
@@ -1166,114 +1218,103 @@ void Ir::verifyVertexAttributesOnlyInMain() const {
   }
 }
 
-void Ir::verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const {
-  if (virtualGraphsEnabled()) {
-    logging::ir::debug("Verifying virtual graph id consistency");
-    // Get the virtual graph Id from an op or loss (-1 if not set)
-    auto getVgid = [](const auto &x) -> int64_t {
-      if (x->hasVirtualGraphId()) {
-        return x->getVirtualGraphId();
-      } else {
-        return -1;
-      }
-    };
+void Ir::verifyVirtualGraphIds(bool postAutoVirtualGraphTransform,
+                               bool includeLosses) const {
+  if (!virtualGraphsEnabled()) {
+    verifyVirualGraphIdsNotInitialized();
+    return;
+  }
 
-    std::set<int64_t> vgraphs;
+  if (includeLosses) {
+    logging::ir::debug(
+        "Verifying virtual graph id consistency (ops and losses)");
+  } else {
+    logging::ir::debug("Verifying virtual graph id consistency (ops)");
+  }
 
-    // Get the vgraph ids from all non-IpuCopyOps
+  const std::set<int64_t> &vgraphs(
+      getMainGraph().getAllVirtualGraphIds(includeLosses));
+
+  // a mix of annotated and not annotated Ops : suggests a problem
+  if (vgraphs.count(Graph::NoVGraph) != 0 && vgraphs.size() > 1) {
+
+    std::ostringstream errm;
+    errm << "Either all Ops in the main graph must have their virtual "
+         << "graph ids set, or none must. Op count per virtual graph id\n";
+
+    std::map<int64_t, int> vgraph_op_count(
+        getMainGraph().getVirtualGraphCounts(includeLosses));
+
+    for (auto &id_size : vgraph_op_count) {
+      errm << "  " << id_size.first << " : " << id_size.second << "\n";
+    }
+
+    errm << "Ops with no virtual graph id :  \n";
     for (auto &id_op : getMainGraph().getOps()) {
       auto op = id_op.second.get();
-      if (!op->isConvertibleTo<IpuCopyOp>()) {
-        vgraphs.insert(getVgid(id_op.second));
+      if (!op->isConvertibleTo<IpuCopyOp>() && !op->hasVirtualGraphId()) {
+        errm << "  " << op->str() << "\n";
       }
     }
 
-    for (auto &loss : losses) {
-      vgraphs.insert(getVgid(loss));
-    }
-
-    // a mix of annotated and not annotated Ops : suggests a problem
-    if (vgraphs.count(-1) != 0 && vgraphs.size() > 1) {
-      std::ostringstream errm;
-      errm << "Either all Ops in the main graph must have their virtual "
-           << "graph ids set, or none must. Op count per virtual graph id\n";
-      std::map<int64_t, int> vgraph_op_count;
-      for (auto id : vgraphs) {
-        vgraph_op_count.insert({id, 0});
-      }
-
-      for (auto &id_op : getMainGraph().getOps()) {
-        auto op = id_op.second.get();
-        vgraph_op_count.at(getVgid(op))++;
-      }
-
-      for (auto &loss : losses) {
-        vgraph_op_count.at(getVgid(loss))++;
-      }
-
-      for (auto &id_size : vgraph_op_count) {
-        errm << "  " << id_size.first << " : " << id_size.second << "\n";
-      }
-
-      errm << "Ops with no virtual graph id :  \n";
-      for (auto &id_op : getMainGraph().getOps()) {
-        auto op = id_op.second.get();
-        if (!op->isConvertibleTo<IpuCopyOp>() && !op->hasVirtualGraphId()) {
-          errm << "  " << op->str() << "\n";
-        }
-      }
-
+    if (includeLosses) {
       errm << "Losses with no virtual graph id : \n";
-      for (auto &loss : losses) {
+      for (auto &loss : getMainGraph().getLosses()) {
         if (!loss->hasVirtualGraphId()) {
           errm << "  "
                << "Loss"
                << "\n";
         }
       }
-
-      throw error(errm.str());
     }
-
-    // Check number ipus makes sense given virtual graphs have been enabled
-    if (!postAutoVirtualGraphTransform && deviceInfo->getNumIpus() == 1) {
-      logging::ir::warn("Auto virtualGraphMode is on, but only one IPU is "
-                        "specified, so no virtual graphs were created. Are you "
-                        "sure you meant to set VirtualGraphMode to auto?");
-    }
-    // Sanity check the virtual graph ids. Only -1's, no Op has a virtual graph
-    // annotation implies a problem.
-    if (vgraphs.size() == 1 && vgraphs.count(-1) != 0) {
-      // Manual virtual graphing, the user should have annotated ops.
-      if (getSessionOptions().virtualGraphMode == VirtualGraphMode::Manual) {
-        throw error("SessionOptions flag virtualGraphMode is {}, but no Ops "
-                    "have been annotated with virtual graph information. This "
-                    "is an inconsistent combination. ",
-                    getSessionOptions().virtualGraphMode);
-      }
-      // Auto virtual graphing, why has the auto-sharder not run?
-      else if (postAutoVirtualGraphTransform) {
-        throw error(
-            "SessionOptions flag virtualGraphMode is {}, but no Ops have "
-            "been "
-            "annotated with virtual graph information. Moreover, the "
-            "paramater "
-            "postAutoVirtualGraphTransoform is true, so AutoVirtualGraph "
-            "should have been run. This is an inconsistent combination, "
-            "possibly an internal logic error has occured",
-            getSessionOptions().virtualGraphMode);
-      }
-    }
+    throw error(errm.str());
   }
 
-  else {
-    // if virtual graphs are not enabled, make sure no ops have a virtual graph
-    // id set.
-    for (auto &id_graph : graphs) {
-      auto &graph = id_graph.second;
-      for (auto &id_op : graph->getOps()) {
-        auto op = id_op.second.get();
-        op->setVirtualGraphId(boost::none);
+  // Check number ipus makes sense given virtual graphs have been enabled
+  if (!postAutoVirtualGraphTransform && deviceInfo->getNumIpus() == 1) {
+    logging::ir::warn("Auto virtualGraphMode is on, but only one IPU is "
+                      "specified, so no virtual graphs were created. Are you "
+                      "sure you meant to set VirtualGraphMode to auto?");
+  }
+
+  // Sanity check the virtual graph ids. Only -1's, no Op has a virtual graph
+  // annotation implies a problem.
+  if (vgraphs.size() == 1 && vgraphs.count(-1) != 0) {
+    // Manual virtual graphing, the user should have annotated ops.
+    if (getSessionOptions().virtualGraphMode == VirtualGraphMode::Manual) {
+      throw error("SessionOptions flag virtualGraphMode is {}, but no Ops "
+                  "have been annotated with virtual graph information. This "
+                  "is an inconsistent combination. ",
+                  getSessionOptions().virtualGraphMode);
+    }
+    // Auto virtual graphing, why has the auto-sharder not run?
+    else if (postAutoVirtualGraphTransform) {
+      throw error("SessionOptions flag virtualGraphMode is {}, but no Ops have "
+                  "been "
+                  "annotated with virtual graph information. Moreover, the "
+                  "paramater "
+                  "postAutoVirtualGraphTransoform is true, so AutoVirtualGraph "
+                  "should have been run. This is an inconsistent combination, "
+                  "possibly an internal logic error has occured",
+                  getSessionOptions().virtualGraphMode);
+    }
+  }
+}
+
+void Ir::verifyVirualGraphIdsNotInitialized() const {
+  for (auto &id_graph : graphs) {
+    auto &graph = id_graph.second;
+    for (auto &id_op : graph->getOps()) {
+      auto op = id_op.second.get();
+      if (op->hasVirtualGraphId()) {
+        std::ostringstream errm;
+        errm << "SessionOptions flag virtualGraphMode is ";
+        errm << getSessionOptions().virtualGraphMode;
+        errm << ", but at least one op (";
+        errm << op->debugName();
+        errm << ") has virtualGraphId set.";
+
+        throw error(errm.str());
       }
     }
   }
@@ -1350,7 +1391,8 @@ void checkForDimParams(const TensorId &id, const ONNX_NAMESPACE::TypeProto &t) {
 
 } // namespace
 
-void Ir::registerInputTensors() {
+void Ir::registerInputTensors(
+    const std::vector<std::shared_ptr<Loss>> &losses) {
 
   auto &onnxGraph = onnxModel->graph();
 
@@ -1569,7 +1611,16 @@ void Ir::validateAnchors() const {
 bool Ir::applyPreAliasPattern(const PreAliasPattern *pattern, Graph &graph) {
   bool result = false;
 
-  auto canApplyPattern = [&](Op *op) {
+  auto touchesInputToLoss = [this, &graph, pattern](Op *op) {
+    for (auto &tensor : pattern->touches(op)) {
+      if (this->isInputToLoss(tensor, graph.getLosses())) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  auto canApplyPattern = [this, &touchesInputToLoss, pattern](Op *op) {
     if (op->isExcludedFromPattern(pattern) || !pattern->matches(op) ||
         pattern->touchesAnchored(op)) {
       return false;
@@ -1577,8 +1628,8 @@ bool Ir::applyPreAliasPattern(const PreAliasPattern *pattern, Graph &graph) {
 
     // If the ir will construct a loss, but hasn't yet, check that the pattern
     // doesn't touch the inputs to the loss.
-    if (canEvaluate() && !constructedFinalLoss &&
-        pattern->touchesInputToLoss(op)) {
+    if (this->canEvaluate() && !this->constructedFinalLoss &&
+        touchesInputToLoss(op)) {
       return false;
     }
 
@@ -2259,6 +2310,28 @@ void Ir::updateAliases() {
   }
 }
 
+void Ir::unsetAllVirtualGraphIds() {
+  bool hadToUnsetAny = false;
+
+  std::cout << "Unsetting" << std::endl;
+  for (auto &id_graph : graphs) {
+    auto &graph = id_graph.second;
+    for (auto &id_op : graph->getOps()) {
+      auto op = id_op.second.get();
+
+      if (op->hasVirtualGraphId()) {
+        op->setVirtualGraphId(boost::none);
+        hadToUnsetAny = true;
+      }
+    }
+  }
+
+  if (hadToUnsetAny) {
+    logging::ir::warn("Virtual graph settings ignored because virtual "
+                      "graphs are not enabled.");
+  }
+}
+
 void Ir::setNEdgesToLoss() {
 
   if (isTesting()) {
@@ -2575,7 +2648,7 @@ std::set<Op *> Ir::getTrainTargetOps() const {
   return trainTargets;
 }
 
-void Ir::growFinalLoss() {
+void Ir::growFinalLoss(const std::vector<std::shared_ptr<Loss>> &losses) {
   if (losses.size() == 0) {
     throw error("In Ir::growFinalLoss, but losses vector is empty");
   }
@@ -2589,6 +2662,11 @@ void Ir::growFinalLoss() {
     Op *lossOp = getMainGraph().getOps()[opId].get();
     getMainGraph().connectInputs(*loss, opId);
     getMainGraph().connectOutputs(*loss, opId);
+
+    if (!virtualGraphsEnabled()) {
+      lossOp->setVirtualGraphId(boost::none);
+    }
+
     lossOps.push_back(lossOp);
     lossOp->setup();
     lossOp->toLoss = PathToLoss::Yes;
@@ -2619,8 +2697,19 @@ void Ir::growFinalLoss() {
     }
 
     if (lossPipelineStages.size() > 0) {
-      finalLossSum->setPipelineStage(*std::max_element(
-          lossPipelineStages.begin(), lossPipelineStages.end()));
+      PipelineStage finalLossPipelineStage = *std::max_element(
+          lossPipelineStages.begin(), lossPipelineStages.end());
+      finalLossSum->setPipelineStage(finalLossPipelineStage);
+      // Set the virtual graph id for the final loss to be equal
+      // to the one of the other ops in the same pipeline stage.
+      for (auto &op : lossOps) {
+        if (op->hasPipelineStage() && op->hasVirtualGraphId()) {
+          if (op->getPipelineStage() == finalLossPipelineStage) {
+            finalLossSum->setVirtualGraphId(op->getVirtualGraphId());
+            break;
+          }
+        }
+      }
     }
   }
 
@@ -2628,7 +2717,7 @@ void Ir::growFinalLoss() {
   finalLossSum->toLoss   = PathToLoss::Yes;
   finalLossSum->fromLoss = PathFromLoss::Yes;
 
-  if (virtualGraphsEnabled()) {
+  if (virtualGraphsEnabled() && !finalLossSum->hasVirtualGraphId()) {
     std::vector<Tensor *> lossTensors;
     for (auto &op : lossOps) {
       lossTensors.push_back(op->output->tensor(0));
@@ -2805,6 +2894,24 @@ int Ir::getOpSetVersionFromModel(const std::string &node_domain) const {
   }
 
   return version;
+}
+
+unsigned Ir::getMaxVirtualGraphId() const {
+  unsigned maxVirtualGraphId = 1;
+  unsigned replGraphCount =
+      static_cast<unsigned>(getSessionOptions().replicatedGraphCount);
+  unsigned numIPUs = static_cast<unsigned>(deviceInfo->getNumIpus());
+  if (getSessionOptions().enableReplicatedGraphs) {
+    if (numIPUs % replGraphCount != 0) {
+      throw error("For replicated graphs, the number of IPUs must be divisible "
+                  "by the replication factor.");
+    } else {
+      maxVirtualGraphId = numIPUs / replGraphCount;
+    }
+  } else {
+    maxVirtualGraphId = numIPUs;
+  }
+  return maxVirtualGraphId;
 }
 
 std::vector<GradNonGradPair> Ir::growLossGradients() {

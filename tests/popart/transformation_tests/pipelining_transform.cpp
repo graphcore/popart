@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(test) {
   auto deviceInfo = createTestDevice(TEST_TARGET, 3, 20);
 
   auto optimizer = ConstSGD(0.01);
-  Loss *loss(new NllLoss(out, l0, "loss", ReductionType::MEAN));
+  auto loss = std::make_shared<NllLoss>(out, l0, "loss", ReductionType::MEAN);
 
   auto art                                       = AnchorReturnType("ALL");
   std::map<TensorId, AnchorReturnType> anchorMap = {

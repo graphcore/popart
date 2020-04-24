@@ -1,8 +1,11 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE ViewChangingTest
 
-#include <boost/test/unit_test.hpp>
+#include <memory>
 #include <vector>
+
+#include <boost/test/unit_test.hpp>
+
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/filereader.hpp>
@@ -45,8 +48,8 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape0) {
   auto art       = AnchorReturnType("ALL");
   auto dataFlow  = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{
-      new L1Loss(outId, "l1LossVal", 0.1, ReductionType::SUM)};
+  std::vector<std::shared_ptr<Loss>> losses{
+      std::make_shared<L1Loss>(outId, "l1LossVal", 0.1, ReductionType::SUM)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -94,8 +97,8 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape_Initializer) {
   auto art        = AnchorReturnType("ALL");
   auto dataFlow   = DataFlow(1, {{outId, art}});
   auto optimizer  = ConstSGD(0.01);
-  std::vector<Loss *> losses{
-      new L1Loss(outId, "l1LossVal", 0.1, ReductionType::SUM)};
+  std::vector<std::shared_ptr<Loss>> losses{std::shared_ptr<Loss>(
+      new L1Loss(outId, "l1LossVal", 0.1, ReductionType::SUM))};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;

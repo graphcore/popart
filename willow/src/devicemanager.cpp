@@ -16,10 +16,16 @@ void DeviceManager::registerDeviceProvider(DeviceProvider *provider) {
   providers.push_back(provider);
 }
 
-std::shared_ptr<DeviceInfo> DeviceManager::getDevice(SyncPattern syncPattern,
-                                                     unsigned deviceManagerId) {
+std::shared_ptr<DeviceInfo>
+DeviceManager::getDevice(SyncPattern syncPattern,
+                         unsigned deviceManagerId,
+                         DeviceConnectionType connectionType) {
+  if (connectionType == DeviceConnectionType::NEVER) {
+    throw error("Trying to acquire a hardware device when connectionType is "
+                "DeviceConnectionType::NEVER");
+  }
   for (auto p : providers) {
-    auto device = p->getDevice(syncPattern, deviceManagerId);
+    auto device = p->getDevice(syncPattern, deviceManagerId, connectionType);
     if (device != nullptr) {
       return device;
     }
@@ -31,11 +37,12 @@ std::vector<std::shared_ptr<DeviceInfo>>
 DeviceManager::enumerateDevices(SyncPattern pattern,
                                 uint32_t /*replication_factor*/,
                                 int numIpus,
-                                DeviceType deviceType) {
+                                DeviceType deviceType,
+                                DeviceConnectionType connectionType) {
   std::vector<std::shared_ptr<DeviceInfo>> devices;
 
   for (auto p : providers) {
-    p->enumerate(devices, numIpus, pattern, deviceType);
+    p->enumerate(devices, numIpus, pattern, deviceType, connectionType);
   }
   for (auto d : devices) {
     logging::debug("Device: {}", d.get()->toString());
@@ -79,7 +86,8 @@ std::shared_ptr<DeviceInfo>
 DeviceManager::acquireAvailableDevice(int numIpus,
                                       int tilesPerIpu,
                                       SyncPattern pattern,
-                                      uint32_t replication_factor) {
+                                      uint32_t replication_factor,
+                                      DeviceConnectionType connectionType) {
   if (replication_factor > 1) {
     logging::devicex::warn(
         "You have specified a replication_factor in the call to aquire "
@@ -92,13 +100,22 @@ DeviceManager::acquireAvailableDevice(int numIpus,
                 "requested must be a power of two",
                 numIpus);
   }
+  if (connectionType == DeviceConnectionType::NEVER) {
+    throw error("Trying to acquire a hardware device when connectionType is "
+                "DeviceConnectionType::NEVER");
+  }
 
-  auto devices = enumerateDevices(pattern, replication_factor, numIpus);
+  auto devices = enumerateDevices(
+      pattern, replication_factor, numIpus, DeviceType::Ipu, connectionType);
 
   for (auto &device : devices) {
     if ((!tilesPerIpu || tilesPerIpu == device->getTilesPerIpu())) {
       // Attach to the device. Will succeed if available
-      if (device->attach()) {
+      if (connectionType == DeviceConnectionType::ALWAYS) {
+        if (device->attach()) {
+          return device;
+        }
+      } else {
         return device;
       }
     }
@@ -110,8 +127,14 @@ DeviceManager::acquireAvailableDevice(int numIpus,
 std::shared_ptr<DeviceInfo>
 DeviceManager::acquireDeviceById(int id,
                                  SyncPattern pattern,
-                                 uint32_t replication_factor) {
-  auto device = getDevice(pattern, id);
+                                 uint32_t replication_factor,
+                                 DeviceConnectionType connectionType) {
+  if (connectionType == DeviceConnectionType::NEVER) {
+    throw error("Trying to acquire a hardware device when connectionType is "
+                "DeviceConnectionType::NEVER");
+  }
+
+  auto device = getDevice(pattern, id, connectionType);
 
   if (replication_factor > 1) {
     logging::devicex::warn(
@@ -122,10 +145,15 @@ DeviceManager::acquireDeviceById(int id,
   }
 
   // Attach to the device. Will succeed if available
-  if (device->attach()) {
-    return device;
+  if (connectionType == DeviceConnectionType::ALWAYS) {
+    if (device->attach()) {
+      return device;
+    } else {
+      return nullptr;
+    }
   }
-  return nullptr;
+
+  return device;
 }
 
 std::ostream &operator<<(std::ostream &os, const DeviceType &dt) {
@@ -147,10 +175,27 @@ std::ostream &operator<<(std::ostream &os, const DeviceType &dt) {
   return os;
 }
 
+std::ostream &operator<<(std::ostream &os, const DeviceConnectionType &dct) {
+  switch (dct) {
+  case DeviceConnectionType::ALWAYS:
+    os << "always";
+    break;
+  case DeviceConnectionType::ON_DEMAND:
+    os << "on-demand";
+    break;
+  case DeviceConnectionType::NEVER:
+    os << "never";
+    break;
+  }
+
+  return os;
+}
+
 std::string DeviceInfo::toString() const {
   std::stringstream ss;
 
-  ss << "Device Type:" << getType() << " Id:" << getId()
+  ss << "Device Type:" << getType()
+     << " Connection Type:" << getConnectionType() << " Id:" << getId()
      << " Version:" << getVersion() << " NumIPUs:" << getNumIpus()
      << " NumTilesPerIPU:" << getTilesPerIpu();
 

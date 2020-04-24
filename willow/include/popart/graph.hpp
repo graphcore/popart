@@ -3,7 +3,10 @@
 #define GUARD_NEURALNET_GRAPH_HPP
 
 #include <map>
+#include <memory>
+#include <set>
 #include <unordered_set>
+#include <vector>
 
 #include <popart/graphid.hpp>
 #include <popart/names.hpp>
@@ -27,6 +30,14 @@ public:
   const std::map<OpId, std::unique_ptr<Op>> &getOps() const;
   std::map<OpId, std::unique_ptr<Op>> &getOps();
 
+  static const int64_t NoVGraph;
+
+  // Obtain a set of all vitual graphs Id used across ops (and losses)
+  const std::set<int64_t> getAllVirtualGraphIds(bool includeLosses) const;
+
+  // Obtain counts for each vitual graphs Id used across ops (and losses)
+  const std::map<int64_t, int> getVirtualGraphCounts(bool includeLosses) const;
+
   Op *getOp(OpId opId);
 
   const Tensors &getTensors() const;
@@ -34,6 +45,12 @@ public:
 
   const Ir &getIr() const { return ir; }
   Ir &getIr() { return ir; }
+
+  const std::vector<std::shared_ptr<Loss>> &getLosses() const { return losses; }
+
+  void setLosses(const std::vector<std::shared_ptr<Loss>> &losses_) {
+    losses = losses_;
+  }
 
   void constructFromOnnxGraph(const ONNX_NAMESPACE::GraphProto &onnx_graph);
   Op *growFromNode(const Node &node);
@@ -144,6 +161,11 @@ private:
   std::vector<GradInOutMapper> gradInInfo;
 
   Ir &ir;
+  std::vector<std::shared_ptr<Loss>> losses;
+
+  // Get the virtual graph Id from an op or loss (NoVGraph if not set)
+  static int64_t getVirtualGraphId(const Op &op);
+  static int64_t getVirtualGraphId(const Loss &loss);
 };
 
 template <typename T>

@@ -1,7 +1,10 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE ReplicateAndShardIrTest
 
+#include <memory>
+
 #include <boost/test/unit_test.hpp>
+
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/filereader.hpp>
@@ -46,8 +49,8 @@ BOOST_AUTO_TEST_CASE(SplitToSliceTest0) {
 
   auto optimizer = ConstSGD(0.01);
 
-  auto loss = std::unique_ptr<Loss>(
-      new L1Loss(act, "l1LossVal", 0.1, ReductionType::SUM));
+  auto loss =
+      std::make_shared<L1Loss>(act, "l1LossVal", 0.1, ReductionType::SUM);
 
   auto device = createTestDevice(TEST_TARGET, 8);
 
@@ -55,7 +58,7 @@ BOOST_AUTO_TEST_CASE(SplitToSliceTest0) {
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              {loss.get()},
+              {loss},
               &optimizer,
               *device,
               userOptions,

@@ -5,6 +5,7 @@
 #include <popart/op/loop.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/tensor.hpp>
+#include <popart/tensordata.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
 

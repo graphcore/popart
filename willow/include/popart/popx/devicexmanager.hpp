@@ -15,13 +15,16 @@ public:
   DevicexManager();
 
   virtual std::shared_ptr<DeviceInfo>
-  getDevice(SyncPattern syncPattern, uint32_t deviceManagerId) override;
+  getDevice(SyncPattern syncPattern,
+            uint32_t deviceManagerId,
+            DeviceConnectionType connectionType) override;
 
   virtual void
   enumerate(std::vector<std::shared_ptr<popart::DeviceInfo>> &devices,
             unsigned requiredNumIPUs,
             SyncPattern syncPattern,
-            DeviceType type) override;
+            DeviceType type,
+            DeviceConnectionType connectionType) override;
 
   virtual std::shared_ptr<popart::DeviceInfo>
   createHostDevice(popart::DeviceType type,
@@ -34,8 +37,10 @@ class DevicexInfo : public popart::DeviceInfo {
 public:
   DevicexInfo(DeviceProvider &_provider,
               popart::DeviceType _type,
+              popart::DeviceConnectionType _connectionType,
               poplar::Device &_device)
-      : popart::DeviceInfo(_provider, _type), device(std::move(_device)) {}
+      : popart::DeviceInfo(_provider, _type, _connectionType),
+        device(std::move(_device)) {}
 
   virtual bool attach();
   virtual void detach();
@@ -65,7 +70,10 @@ protected:
 class DevicexCpuInfo : public DevicexInfo {
 public:
   DevicexCpuInfo(DeviceProvider &_provider, poplar::Device &_device)
-      : DevicexInfo(_provider, popart::DeviceType::Cpu, _device) {}
+      : DevicexInfo(_provider,
+                    popart::DeviceType::Cpu,
+                    popart::DeviceConnectionType::NEVER,
+                    _device) {}
 
   virtual int getId() const { return 0; }
   virtual std::string getVersion() const { return "<unknown-cpu>"; }
@@ -73,7 +81,10 @@ public:
 class DevicexSimInfo : public DevicexInfo {
 public:
   DevicexSimInfo(DeviceProvider &_provider, poplar::Device &_device)
-      : DevicexInfo(_provider, popart::DeviceType::Sim, _device) {}
+      : DevicexInfo(_provider,
+                    popart::DeviceType::Sim,
+                    popart::DeviceConnectionType::NEVER,
+                    _device) {}
 
   virtual int getId() const { return 0; }
   virtual std::string getVersion() const { return "<unknown-sim>"; }
@@ -81,15 +92,22 @@ public:
 class DevicexIpuModelInfo : public DevicexInfo {
 public:
   DevicexIpuModelInfo(DeviceProvider &_provider, poplar::Device &_device)
-      : DevicexInfo(_provider, popart::DeviceType::IpuModel, _device) {}
+      : DevicexInfo(_provider,
+                    popart::DeviceType::IpuModel,
+                    popart::DeviceConnectionType::NEVER,
+                    _device) {}
 
   virtual int getId() const { return 0; }
   virtual std::string getVersion() const { return "<unknown-ipumodel>"; }
 };
 class DevicexIpuInfo : public DevicexInfo {
 public:
-  DevicexIpuInfo(DeviceProvider &_provider, int _id, poplar::Device &_device)
-      : DevicexInfo(_provider, popart::DeviceType::Ipu, _device), id(_id) {}
+  DevicexIpuInfo(DeviceProvider &_provider,
+                 popart::DeviceConnectionType _dct,
+                 int _id,
+                 poplar::Device &_device)
+      : DevicexInfo(_provider, popart::DeviceType::Ipu, _dct, _device),
+        id(_id) {}
 
   virtual bool attach();
   virtual void detach();

@@ -388,6 +388,8 @@ const static OperatorIdentifier DynamicUpdate =
 const static OperatorIdentifier DynamicZero = CustomOperators::DynamicZero_1;
 const static OperatorIdentifier DynamicAdd  = CustomOperators::DynamicAdd_1;
 const static OperatorIdentifier Call        = CustomOperators::Call_1;
+const static OperatorIdentifier ReplicatedAllReduce =
+    CustomOperators::ReplicatedAllReduce;
 } // namespace OpSet1
 } // namespace AiGraphcore
 

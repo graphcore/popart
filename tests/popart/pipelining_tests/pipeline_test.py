@@ -32,8 +32,46 @@ def test_disabled_virtual_graphs():
                                           userOptions=opts,
                                           losses=[loss],
                                           deviceInfo=tu.create_test_device())
-    assert e_info.value.args[0].startswith(
-        "Pipelining requires the 'virtualGraphMode' session option")
+    assert e_info.value.args[0].startswith("Pipelining requires more than")
+
+
+@tu.requires_ipu_model
+def test_one_ipu():
+    """
+    In this test we check that an error is thrown when doing pipelining
+    on 1 IPU
+    """
+    builder = popart.Builder()
+    shape_d = [10]
+    shape_l = [1]
+    d0 = builder.addInputTensor(popart.TensorInfo("FLOAT", shape_d))
+    d1 = builder.addInputTensor(popart.TensorInfo("FLOAT", shape_d))
+    l0 = builder.addInputTensor(popart.TensorInfo("INT32", shape_l))
+    op0_out = builder.aiOnnx.sin([d0], "s0")
+    op1_out = builder.aiOnnx.exp([d1], "r0")
+    op2_out = builder.aiOnnx.mul([op0_out, op1_out], "m0")
+    builder.addOutputTensor(op2_out)
+    loss = popart.NllLoss(op2_out, l0, "loss")
+    opts = popart.SessionOptions()
+    opts.enablePipelining = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual  # i.e. use 1 ipu
+    builder.pipelineStage(op0_out, 0)
+    builder.virtualGraph(op0_out, 0)
+    builder.pipelineStage(op1_out, 0)
+    builder.virtualGraph(op1_out, 0)
+    builder.pipelineStage(op2_out, 1)
+    builder.virtualGraph(op2_out, 0)
+    loss.pipelineStage(1)
+    loss.virtualGraph(0)
+    with pytest.raises(popart.popart_exception) as e_info:
+        session = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                          dataFeed=popart.DataFlow(
+                                              10, [op2_out, "loss"]),
+                                          userOptions=opts,
+                                          losses=[loss],
+                                          deviceInfo=tu.create_test_device())
+        session.prepareDevice()
+    assert e_info.value.args[0].startswith("Pipelining requires more than")
 
 
 @tu.requires_ipu_model

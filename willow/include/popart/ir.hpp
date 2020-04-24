@@ -3,6 +3,9 @@
 #define GUARD_NEURALNET_WILLOWIR_HPP
 
 #include <map>
+#include <memory>
+#include <set>
+
 #include <popart/dataflow.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/inputshapeinfo.hpp>
@@ -88,7 +91,7 @@ public:
   IrBundle(const ONNX_NAMESPACE::ModelProto &modelProto,
            const InputShapeInfo &inputShapeInfo,
            const DataFlow &dataFlow,
-           const std::vector<Loss *> &losses,
+           const std::vector<std::shared_ptr<Loss>> &losses,
            const Optimizer *optimizer,
            DeviceInfo &deviceInfo,
            const SessionOptions &userOptions,
@@ -97,7 +100,7 @@ public:
   const ONNX_NAMESPACE::ModelProto &modelProto;
   const InputShapeInfo &inputShapeInfo;
   const DataFlow &dataFlow;
-  const std::vector<Loss *> &losses;
+  const std::vector<std::shared_ptr<Loss>> losses;
   const Optimizer *optimizer;
   DeviceInfo &deviceInfo;
   const SessionOptions &userOptions;
@@ -175,9 +178,6 @@ public:
   bool isTesting() { return executionMode == ExecutionMode::INFERENCE; }
   bool isEvaluation() { return executionMode == ExecutionMode::EVALUATION; }
 
-  // Set the losses, will clear any previous losses
-  void setLosses(const std::vector<Loss *> &l);
-
   // Log the IR in a human readable format.
   void logIr();
 
@@ -204,8 +204,6 @@ public:
   void serialise(SerialiseFormat format,
                  std::stringstream &ss,
                  bool useScheduler = true) const;
-
-  std::vector<std::unique_ptr<Loss>> losses;
 
   // The tensors specific to the optimization. Learning rate(s), momentum(s) etc
   std::vector<Tensor *> optimizerTensors() const;
@@ -256,7 +254,8 @@ public:
   // in userOptions.logDir
   void dotCheckpoint(DotCheck check) const;
 
-  bool isInputToLoss(const Tensor *) const;
+  bool isInputToLoss(const Tensor *,
+                     const std::vector<std::shared_ptr<Loss>> &losses) const;
 
   const ONNX_NAMESPACE::ModelProto &getModel() const;
   std::vector<TensorId> getModelInputIds() const;
@@ -343,7 +342,8 @@ public:
   // Register the input tensors of the ONNX graph,
   // and the inputs to the losses. For the ONNX input tensors,
   // determines which are Stream and which are Variable
-  void registerInputTensors();
+  // Losses are required as they may contain inputs such as class labels.
+  void registerInputTensors(const std::vector<std::shared_ptr<Loss>> &losses);
 
   // Consider the number of out edges a Vertex (Op/Tensor) has which lead to the
   // final loss Tensor is used in constructing the backwards pass. This function
@@ -355,6 +355,11 @@ public:
   // there is a path to vertex in whose phase is BWD.
   void updateVertices();
   void updateAliases();
+
+  // Ensure that all virtual graph IDs are not set.
+  // This can occur if the user has specified them but virtual graphs are turned
+  // off globally
+  void unsetAllVirtualGraphIds();
 
   // modify the Ir using all the registered pre-alias patterns
   void applyPreAliasPatterns(Graph &);
@@ -379,10 +384,16 @@ public:
 
   // starting from losses, construct the individual loss ops
   // as well as an op which sums them to get the final op
-  void growFinalLoss();
+  void growFinalLoss(const std::vector<std::shared_ptr<Loss>> &losses);
 
   // Return the default opset version for a domain
   int getDefaultOpsetVersion(const std::string &domain) const;
+
+  // Helper function to return the maximum virtual graph id (maximum number of
+  // VGraphs), based on replication factor and number of IPUs. Equal to number
+  // of IPUs // replicated graph factor if using replicated graphs, else equal
+  // to number of IPUs.
+  unsigned getMaxVirtualGraphId() const;
 
   // Return the opset version in use for a domain
   int getOpSetVersionFromModel(const std::string &domain) const;
@@ -453,12 +464,22 @@ private:
   void verifyTensorProducerConnectivity() const;
   void verifyTensorConsumerConnectivity() const;
   void verifyTensorIds() const;
-  void verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const;
+
+  // Verifies that the virtual graph IDs (if used) are valid, on ops and losses
+  // if specified
+  void verifyVirtualGraphIds(bool postAutoVirtualGraphTransform,
+                             bool includeLosses) const;
+
+  // Very that all virtual graph ids have not been initialised. (Used when
+  // virtual graphs are disabled)
+  void verifyVirualGraphIdsNotInitialized() const;
+
   void verifyVertexAttributesOnlyInMain() const;
   void verifyPipelineSettings() const;
   void verifyPingPongSettings() const;
   void verifySubgraphs() const;
   void verifyRecomputeAttributes() const noexcept(false);
+  void verifyDistributedReplicatedGraphSettings() const;
 
   // Verify ConstExpr folding has removed input tensors
   // as expected

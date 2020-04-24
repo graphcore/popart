@@ -15,69 +15,113 @@ namespace popx {
 
 PopPrograms::PopPrograms(Devicex *dv_p_) : dv_p(dv_p_) {}
 
+const poplar::program::Sequence &
+PopPrograms::streamWeightsFromHostFragment() const {
+  return seqs[static_cast<int>(ProgramFragmentIndex::STREAMWEIGHTSFROMHOST)];
+}
 poplar::program::Sequence &PopPrograms::streamWeightsFromHostFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::STREAMWEIGHTSFROMHOST)];
 }
 
+const poplar::program::Sequence &
+PopPrograms::streamOptimizerFromHostFragment() const {
+  return seqs[static_cast<int>(ProgramFragmentIndex::STREAMOPTIMIZERFROMHOST)];
+}
 poplar::program::Sequence &PopPrograms::streamOptimizerFromHostFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::STREAMOPTIMIZERFROMHOST)];
 }
 
+const poplar::program::Sequence &
+PopPrograms::setRandomSeedFromHostFragment() const {
+  return seqs[static_cast<int>(ProgramFragmentIndex::SETRANDOMSEEDFROMHOST)];
+}
 poplar::program::Sequence &PopPrograms::setRandomSeedFromHostFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::SETRANDOMSEEDFROMHOST)];
 }
 
+const poplar::program::Sequence &
+PopPrograms::cycleCountTensorToHostFragment() const {
+  return seqs[static_cast<int>(ProgramFragmentIndex::CYCLECOUNTTENSORTOHOST)];
+}
 poplar::program::Sequence &PopPrograms::cycleCountTensorToHostFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::CYCLECOUNTTENSORTOHOST)];
+}
+
+const poplar::program::Sequence &PopPrograms::initFragment() const {
+  return seqs[static_cast<int>(ProgramFragmentIndex::INIT)];
 }
 
 poplar::program::Sequence &PopPrograms::initFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::INIT)];
 }
 
+const poplar::program::Sequence &PopPrograms::preForwardFragment() const {
+  return seqs[static_cast<int>(ProgramFragmentIndex::PREFORWARD)];
+}
+
 poplar::program::Sequence &PopPrograms::preForwardFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::PREFORWARD)];
+}
+
+const poplar::program::Sequence &PopPrograms::forwardFragment() const {
+  return seqs[static_cast<int>(ProgramFragmentIndex::FORWARD)];
 }
 
 poplar::program::Sequence &PopPrograms::forwardFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::FORWARD)];
 }
 
+const poplar::program::Sequence &PopPrograms::backwardFragment() const {
+  return seqs[static_cast<int>(ProgramFragmentIndex::BACKWARD)];
+}
+
 poplar::program::Sequence &PopPrograms::backwardFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::BACKWARD)];
+}
+
+const poplar::program::Sequence &PopPrograms::toHostFinalCopyFragment() const {
+  return seqs[static_cast<int>(ProgramFragmentIndex::TOHOSTFINALCOPY)];
 }
 
 poplar::program::Sequence &PopPrograms::toHostFinalCopyFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::TOHOSTFINALCOPY)];
 }
 
+const poplar::program::Sequence &PopPrograms::accumulateOuterFragment() const {
+  return seqs[static_cast<int>(ProgramFragmentIndex::VARUPDATEFROMACCUMULATOR)];
+}
+
 poplar::program::Sequence &PopPrograms::accumulateOuterFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::VARUPDATEFROMACCUMULATOR)];
+}
+
+const poplar::program::Sequence &PopPrograms::weightsToHostFragment() const {
+  return seqs[static_cast<int>(ProgramFragmentIndex::WEIGHTSTOHOST)];
 }
 
 poplar::program::Sequence &PopPrograms::weightsToHostFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::WEIGHTSTOHOST)];
 }
 
-poplar::program::Sequence PopPrograms::weightsFromHost() {
+poplar::program::Sequence PopPrograms::weightsFromHost() const {
   poplar::program::Sequence prog;
   prog.add(streamWeightsFromHostFragment());
   return prog;
 }
 
-poplar::program::Sequence PopPrograms::optimizerFromHost() {
+poplar::program::Sequence PopPrograms::optimizerFromHost() const {
   poplar::program::Sequence prog;
   prog.add(streamOptimizerFromHostFragment());
   return prog;
 }
 
-poplar::program::Sequence PopPrograms::setRandomSeedFromHost() {
+poplar::program::Sequence PopPrograms::setRandomSeedFromHost() const {
   poplar::program::Sequence prog;
   prog.add(setRandomSeedFromHostFragment());
   return prog;
 }
 
-poplar::program::Sequence PopPrograms::cycleCountTensorToHost() {
+poplar::program::Sequence PopPrograms::cycleCountTensorToHost() const {
   poplar::program::Sequence prog;
   prog.add(cycleCountTensorToHostFragment());
   return prog;
@@ -87,7 +131,7 @@ void PopPrograms::addPipelineCycle(
     PipelineCycle pCycle,
     poplar::program::Sequence &sq,
     std::ostringstream &ss,
-    std::map<PipelineStage, poplar::Function> &fwdFunctions) {
+    std::map<PipelineStage, poplar::Function> &fwdFunctions) const {
   // Inside the each phase, conditionally do:
   //
   // 1. The pre-forward fragment
@@ -160,7 +204,8 @@ void PopPrograms::addPipelineCycle(
   sq.add(pipelineIpuCopySeq);
 }
 
-poplar::program::Sequence PopPrograms::getMainProgramFromPipelineFragments() {
+poplar::program::Sequence
+PopPrograms::getMainProgramFromPipelineFragments() const {
 
   // What's happening here? Consider the model:
   //
@@ -287,7 +332,7 @@ poplar::program::Sequence PopPrograms::getMainProgramFromPipelineFragments() {
   return outer;
 }
 
-poplar::program::Sequence PopPrograms::program() {
+poplar::program::Sequence PopPrograms::program() const {
   poplar::program::Sequence outer;
   if (dv_p->ir().getSessionOptions().enablePipelining) {
     outer.add(getMainProgramFromPipelineFragments());
@@ -322,11 +367,11 @@ poplar::program::Sequence PopPrograms::program() {
   return outer;
 }
 
-poplar::program::Sequence PopPrograms::weightsToHost() {
+poplar::program::Sequence PopPrograms::weightsToHost() const {
   return weightsToHostFragment();
 }
 
-std::vector<poplar::program::Program> PopPrograms::progs() {
+const std::vector<poplar::program::Program> PopPrograms::progs() const {
   std::vector<poplar::program::Program> ps(ProgramIndex::N);
 
   ps[ProgramIndex::WEIGHTSFROMHOST]        = weightsFromHost();
@@ -467,7 +512,7 @@ PopPrograms::pipelineIpuCopyFragment(const std::string &desc) {
 }
 
 std::string
-PopPrograms::getStrFromPipelineFragmentId(PipelineFragmentId fragId) {
+PopPrograms::getStrFromPipelineFragmentId(PipelineFragmentId fragId) const {
   switch (fragId) {
   case PipelineFragmentId::ToDeviceStream: {
     return "ToDeviceStream";

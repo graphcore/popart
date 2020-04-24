@@ -17,7 +17,16 @@ import test_util as tu
 
 
 @tu.requires_ipu_model
-def test_multi_loss_pipeline(tmpdir):
+def test_multi_loss_pipeline_same(tmpdir):
+    run_test_multi_loss_pipeline(same_vgraph=True)
+
+
+@tu.requires_ipu_model
+def test_multi_loss_pipeline_different(tmpdir):
+    run_test_multi_loss_pipeline(same_vgraph=False)
+
+
+def run_test_multi_loss_pipeline(same_vgraph=True):
 
     seed = 1015
     npr.seed(seed)
@@ -62,7 +71,7 @@ def test_multi_loss_pipeline(tmpdir):
     w1 = builder.addInitializedInputTensor(w1vals)
     scaleFactor = 1. / np.sqrt(height + 0.)
 
-    # all compute on IPU 0, all losses on IPU 1.
+    # all compute on IPU 0.
     with builder.virtualGraph(0):
         mm0 = builder.aiOnnx.matmul([input0, w0])
         mm1 = builder.aiOnnx.matmul([mm0, w1])
@@ -85,16 +94,22 @@ def test_multi_loss_pipeline(tmpdir):
     #      |  | |
     #      add  |
     #       |   |
-    #======================
-    #       |   |
-    #     loss loss
-    #
-    #
-    #
+    # - - - - - - - - - - -|
+    #       |   |          |
+    #     loss  |          |
+    #======================| <-- if same_vgraph == False
+    #           |          |
+    #         loss         |
+    # - - - - - - - - - - -|
+    #       |   |          |
+    #======================| <-- if same_vgraph == True
+    #       |   |          |
+    #     loss loss        |
+    # - - - - - - - - - - -|
     #
 
     loss1.virtualGraph(1)
-    loss2.virtualGraph(1)
+    loss2.virtualGraph(1 if same_vgraph else 0)
 
     anchors = {}
     dataFlow = popart.DataFlow(batchesPerStep, anchors)
