@@ -13,6 +13,7 @@
 
 // The layers:
 #include <popart/op/elementwise.hpp>
+#include <popart/op/restore.hpp>
 #include <popart/op/varupdate.hpp>
 
 namespace popart {
@@ -895,6 +896,17 @@ bool Op::consumesImplicitLoopInput() const {
   return false;
 }
 
+bool Op::consumesRestoredInplaceTensor() const {
+  for (auto tensor : input->tensors()) {
+    for (auto consumer : tensor->consumers.getOps()) {
+      if (consumer->isConvertibleTo<RestoreInplaceOp>()) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 bool Op::consumesGraphOutput() const {
 
   const auto graphOutputs = getGraph().getOutputIds();
@@ -947,6 +959,15 @@ bool Op::inputsUnmodifiable() const {
       // Implicit loop counter tensors must not be modified, because each loop
       // iteration needs access to the unmodified original input.
       || consumesImplicitLoopInput()
+
+      // A simple (but overly strict) way to ensure that an op is not inplaced
+      // if:
+      // - its input, or a tensor it aliases, is restored inplace
+      // - and its output, or a tensor that is an alias of it, is consumed
+      //   by an ipucopy
+      // TODO T19283: Make less strict once we can determine if any two tensors
+      // are aliases of eachother
+      || consumesRestoredInplaceTensor()
 
       // Graph output tensors must not be modified to ensure the correct value
       // is returned at the end of the computation
