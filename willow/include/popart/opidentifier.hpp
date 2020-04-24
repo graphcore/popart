@@ -302,6 +302,8 @@ const static AiGraphcoreOpIdV1 GroupNormalization_1("GroupNormalization", 3, 3);
 const static AiGraphcoreOpIdV1 LSTM_1("LSTM", 4, 2);
 const static AiGraphcoreOpIdV1 Gelu_1("Gelu", 1, 1);
 const static AiGraphcoreOpIdV1 GeluInplace("GeluInplace");
+const static AiGraphcoreOpIdV1 Detach_1("Detach", 1, 1);
+const static AiGraphcoreOpIdV1 DetachInplace("DetachInplace");
 
 const static AiGraphcoreOpIdV1 ReluInplace("ReluInplace");
 const static AiGraphcoreOpIdV1 LeakyReluInplace("LeakyReluInplace");
@@ -382,6 +384,7 @@ const static OperatorIdentifier Scale        = CustomOperators::Scale_1;
 const static OperatorIdentifier LSTM         = CustomOperators::LSTM_1;
 const static OperatorIdentifier Gelu         = CustomOperators::Gelu_1;
 const static OperatorIdentifier Init         = CustomOperators::Init_1;
+const static OperatorIdentifier Detach       = CustomOperators::Detach_1;
 const static OperatorIdentifier DynamicSlice = CustomOperators::DynamicSlice_1;
 const static OperatorIdentifier DynamicUpdate =
     CustomOperators::DynamicUpdate_1;

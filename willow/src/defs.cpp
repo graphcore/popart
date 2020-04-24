@@ -20,6 +20,7 @@ void PrintTensorShapeInference(InferenceContext &ctx);
 void ScaleShapeInference(InferenceContext &ctx);
 void LSTMShapeInference(InferenceContext &ctx);
 void GeluShapeInference(InferenceContext &ctx);
+void DetachShapeInference(InferenceContext &ctx);
 void CallShapeInference(InferenceContext &ctx);
 
 void SubsampleShapeInference(InferenceContext &ctx) {
@@ -106,6 +107,10 @@ void GeluShapeInference(InferenceContext &ctx) {
   propagateShapeAndTypeFromFirstInput(ctx);
 }
 
+void DetachShapeInference(InferenceContext &ctx) {
+  propagateShapeAndTypeFromFirstInput(ctx);
+}
+
 void CallShapeInference(InferenceContext &ctx) {
   propagateShapeAndTypeFromFirstInput(ctx);
 }
@@ -116,6 +121,7 @@ extern size_t dbg_count_check_PrintTensor_AiGraphcore_ver1;
 extern size_t dbg_count_check_Scale_AiGraphcore_ver1;
 extern size_t dbg_count_check_LSTM_AiGraphcore_ver1;
 extern size_t dbg_count_check_Gelu_AiGraphcore_ver1;
+extern size_t dbg_count_check_Detach_AiGraphcore_ver1;
 extern size_t dbg_count_check_Call_AiGraphcore_ver1;
 
 static const char groupnormalizationDoc[] =
@@ -249,6 +255,32 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
                         "Constrain input and output types to float tensors.")
         .TypeAndShapeInferenceFunction(GeluShapeInference));
 
+static const char detachDoc[] =
+    "An IdentityOp that doesn't return any grad ops. This allows you to "
+    "disconnect the flow of gradients when creating the backwards pass";
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    Detach,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc(detachDoc)
+        .Input(0, "X", "Input tensor", "T")
+        .Output(0, "Y", "Output tensor", "T")
+        .TypeConstraint("T",
+                        {"tensor(float)",
+                         "tensor(int32)",
+                         "tensor(float16)",
+                         "tensor(bool)"},
+                        "Do not constrain tensors")
+        .Attr("pass_through_creation",
+              "pass_through_creation",
+              AttributeProto::INT,
+              true)
+        .TypeAndShapeInferenceFunction(DetachShapeInference));
+
 ONNX_OPERATOR_SET_SCHEMA_EX(
     Call,
     AiGraphcore,
@@ -310,6 +342,10 @@ static bool registerOps() {
 
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(AiGraphcore, 1, Gelu)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, Detach)>());
 
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(AiGraphcore, 1, Call)>());
