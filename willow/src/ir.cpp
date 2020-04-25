@@ -3226,6 +3226,37 @@ void Ir::applyInplacePattern(Graph &graph) {
       // correctness?
       OpsBeforeKey newTopoCons = inplace.getNewTopoCons(op, identifier);
 
+      // beforeProducesOutput flag is used to prevent inplacing if any of the
+      // new constraints requried to inplace a node has a before node that
+      // produces an output of the graph. this is prevented because if the graph
+      // is executed using a call op, then the out from the nodes are copied
+      // after all the nodes of the sub graph have executed. this would cause
+      // the inplaced data to be corrupted even if the constraints are in place
+      // as the tensor output copy is delayed.
+      bool beforeProducesOutput = false;
+      for (auto &before_after : newTopoCons) {
+        auto &befores = before_after.second;
+
+        for (auto &before : befores) {
+          if (before->producesGraphOutput()) {
+            beforeProducesOutput =
+                true; // before node of the topocon constraint produces output
+            std::ostringstream oss;
+            oss << "[Inplacing] " << op->str()
+                << ", Excluded due to the required topological constraint with "
+                   "output node, "
+                << before->str();
+            logging::pattern::debug(oss.str());
+            break;
+          }
+        }
+        if (beforeProducesOutput)
+          break;
+      }
+      if (beforeProducesOutput) {
+        continue;
+      }
+
       ExternOpTensorBundle eot_bun(op, op->getInplaceVariant(identifier));
       const Op *inplaceOp = eot_bun.getOp();
 

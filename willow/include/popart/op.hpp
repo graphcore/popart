@@ -406,6 +406,7 @@ public:
   bool consumesImplicitLoopInput() const;
   bool consumesRestoredInplaceTensor() const;
   bool consumesGraphOutput() const;
+  bool producesGraphOutput() const;
 
 protected:
   // Attempt to get the data of an input tensor. This method will throw an
