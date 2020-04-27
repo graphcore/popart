@@ -91,6 +91,7 @@ def op_tester(tmpdir):
             self.check_shapes = True
             self.loss_reduction_type = popart.ReductionType.Sum
             self.equal_nan = False
+            self.inplacing = True
 
         def verifyTensor(self, t1, ref):
             if self.check_shapes:
@@ -152,6 +153,9 @@ def op_tester(tmpdir):
 
             device = tu.create_test_device(numIpus=self.numIPUs)
             print(f"Created device {device} with {self.numIPUs} IPUs")
+
+            patterns = popart.Patterns(self.passes)
+            patterns.InPlace = self.inplacing
 
             if step_type == 'infer':
                 session = popart.InferenceSession(fnModel=proto,

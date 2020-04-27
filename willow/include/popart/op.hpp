@@ -404,6 +404,7 @@ public:
   bool producesAnchor() const;
   bool consumesCheckpointAndIsRecompute() const;
   bool consumesImplicitLoopInput() const;
+  bool consumesRestoredInplaceTensor() const;
   bool consumesGraphOutput() const;
 
 protected:

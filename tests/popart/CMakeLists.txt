@@ -210,6 +210,7 @@ endfunction()
 # add_popart_py_unit_test("test_util") Utility
 # add_popart_py_unit_test("test_session") Utility
 
+# Python tests. Please try to sort alphabetically.
 add_popart_py_unit_test(addbias)
 add_popart_py_unit_test(all_constexpr)
 add_popart_py_unit_test(anchorreturntype_test VARIANTS Hw)
@@ -257,12 +258,11 @@ add_popart_py_unit_test(saved_executable_cpu)
 add_popart_py_unit_test(serialise_matmul_manually)
 add_popart_py_unit_test(stream_test)
 add_popart_py_unit_test(synthetic_data_test VARIANTS Hw)
+add_popart_py_unit_test(test_groupHostSync VARIANTS IpuModel)
 add_popart_py_unit_test(train_then_infer_test VARIANTS IpuModel)
 add_popart_py_unit_test(variable_inference_test)
 add_popart_py_unit_test(virtual_graph_check_test)
 add_popart_py_unit_test(virtual_graph_test VARIANTS IpuModel)
-add_popart_py_unit_test(collectives_test VARIANTS Hw)
-add_popart_py_unit_test(test_groupHostSync VARIANTS IpuModel)
 
 # device_test should be run serially as it tests that it can attach to each
 # IPU available on the machine it is run on.
