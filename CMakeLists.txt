@@ -4,6 +4,8 @@ project(popart)
 
 enable_testing()
 
+include(GNUInstallDirs)
+
 # All C++ code in this project will be compiled as C++14
 set (CMAKE_CXX_STANDARD 14)
 
@@ -237,6 +239,14 @@ configure_file(popart.prodinfo.yml
 #------ end of product info file
 
 #------ enable script
+if(${CMAKE_SYSTEM_NAME} STREQUAL Darwin)
+  set(LD_PATH_VARNAME "DYLD_LIBRARY_PATH")
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL Linux)
+  set(LD_PATH_VARNAME "LD_LIBRARY_PATH")
+else()
+  message(FATAL_ERROR "Unknown system name")
+endif()
+
 configure_file(enable.sh.in
   ${PROJECT_BINARY_DIR}/enable.sh
   @ONLY)
