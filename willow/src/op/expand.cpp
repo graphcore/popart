@@ -135,9 +135,6 @@ void ExpandOp::finaliseShape() {
       throw error("Expand shape constraint: corresponding dimensions must have "
                   "the same value or one of them must be 1");
     }
-    if (shape_y < 0) {
-      throw error("Expand shape constraint: -1 dimension is not supported");
-    }
     outShape[i] = std::max(shape_x, shape_y);
   }
 }

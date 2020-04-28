@@ -117,7 +117,7 @@ static OpCreator<ReplicatedAllReduceInplaceOp>
                         ReplicatedAllReduceInplaceOpDef}}),
         [](const OperatorIdentifier &_opid,
            const Op::Settings &settings,
-           const Attributes &attr = {}) -> std::unique_ptr<Op> {
+           const Attributes &attr) -> std::unique_ptr<Op> {
           return std::unique_ptr<ReplicatedAllReduceInplaceOp>(
               new ReplicatedAllReduceInplaceOp(_opid, settings));
         },
