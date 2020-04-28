@@ -1115,21 +1115,23 @@ void Ir::prepareImpl(const IrBundle &gb) {
     updateVertices();
   }
 
-  if (getSessionOptions().hostWeightUpdate &&
-      !getSessionOptions().hostAllReduce) {
-    throw error(
-        "Host weight update can't be enabled without enabling hostAllReduce.");
-  }
   if (getSessionOptions().hostAllReduce) {
-    if (!canTrain()) {
-      throw error("Host AllReduce only available when training.");
-    }
-    if (userOptions.mergeVarUpdate != MergeVarUpdateType::None) {
-      throw error("Host AllReduce does not work with MergeVarUpdates");
-    }
+    if (canTrain()) {
+      if (getSessionOptions().hostWeightUpdate &&
+          !getSessionOptions().hostAllReduce) {
+        throw error("Host weight update can't be enabled without enabling "
+                    "hostAllReduce.");
+      }
+      if (userOptions.mergeVarUpdate != MergeVarUpdateType::None) {
+        throw error("hostAllReduce does not work with MergeVarUpdates");
+      }
 
-    applyTransform(HostReduce::id(), getMainGraph());
-    updateVertices();
+      applyTransform(HostReduce::id(), getMainGraph());
+      updateVertices();
+    } else {
+      logging::ir::info("Skipping hostAllReduce transform when running "
+                        "inference or evaluation");
+    }
   }
 
   applyTransform(MergeDuplicateOps::id(), getMainGraph());
