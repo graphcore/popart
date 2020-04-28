@@ -2505,10 +2505,10 @@ void Devicex::prepare() {
 
     if (const char *env_p = std::getenv("GCL_NUM_IO_TILES")) {
       numIOTiles = boost::lexical_cast<int>(env_p);
-      if (numIOTiles <= 0 || numIOTiles > 128 || (numIOTiles % 2 != 0)) {
+      if (numIOTiles < 32 || numIOTiles > 192 || (numIOTiles % 2 != 0)) {
         throw error(
             "{} is an invalid number of IO tiles. "
-            "Number of IO tiles must be a positive even number up to 128",
+            "Number of IO tiles must be an even number between 32 and 192",
             numIOTiles);
       }
       logging::devicex::info(
