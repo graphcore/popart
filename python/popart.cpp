@@ -598,7 +598,6 @@ PYBIND11_MODULE(popart_core, m) {
                       &SessionOptions::exportPoplarComputationGraph);
     cls.def_readwrite("exportPoplarVertexGraph",
                       &SessionOptions::exportPoplarVertexGraph);
-    cls.def_readwrite("ignoreData", &SessionOptions::ignoreData);
     cls.def_readwrite("syntheticDataMode", &SessionOptions::syntheticDataMode);
     cls.def_readwrite("instrumentWithHardwareCycleCounter",
                       &SessionOptions::instrumentWithHardwareCycleCounter);

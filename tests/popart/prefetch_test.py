@@ -51,7 +51,7 @@ def get_model(batches_per_step, replication_factor, batch_size, channels,
     assert device
 
     if synthetic_data:
-        opts.ignoreData = True
+        opts.syntheticDataMode = popart.SyntheticDataMode.Zeros
 
     session = popart.TrainingSession(fnModel=builder.getModelProto(),
                                      dataFeed=data_flow,

@@ -226,14 +226,6 @@ void Ir::setUserOptions(const SessionOptions &flags) {
         "The options autoVirtualGraph is deprecated and will be removed in a "
         "future release. Please use virtualGraphMode instead");
   }
-  if (userOptions.ignoreData) {
-    // TODO: T13474 remove this option.
-    logging::ir::warn(
-        "The options ignoreData is deprecated and will be removed in a future "
-        "release. Please use syntheticDataMode instead. Setting "
-        "syntheticDataMode to 'Zeros'.");
-    userOptions.syntheticDataMode = SyntheticDataMode::Zeros;
-  }
 
   // If the user has not set virtualGraphMode (assuming default value Off means
   // the user left it unset), check the enableVirtualGraphs and

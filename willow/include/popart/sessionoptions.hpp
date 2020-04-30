@@ -192,13 +192,7 @@ struct SessionOptions {
   bool enablePipelining = false;
 
   /// Use synthetic data i.e. disable data transfer to/from the host
-  /// Set to 'true' to use synthetic data, 'false' to use real data.
-  /// This option is deprecated, please use syntheticDataMode.
-  bool ignoreData = false;
-
-  /// Use synthetic data i.e. disable data transfer to/from the host
   /// Set to 'Off' to use real data
-  /// Note: this will be overriden by the legacy option 'ignoreData'.
   SyntheticDataMode syntheticDataMode = SyntheticDataMode::Off;
 
   /// Add instrumentation to your program to count the number of device cycles
