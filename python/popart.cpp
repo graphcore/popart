@@ -1487,19 +1487,17 @@ PYBIND11_MODULE(popart_core, m) {
     }));
     cls.def("acquireAvailableDevice",
             static_cast<std::shared_ptr<DeviceInfo> (DeviceManager::*)(
-                int, int, SyncPattern, uint32_t, DeviceConnectionType)>(
+                int, int, SyncPattern, DeviceConnectionType)>(
                 &DeviceManager::acquireAvailableDevice),
-            py::arg("numIpus")           = 1,
-            py::arg("tilesPerIpu")       = 0,
-            py::arg("pattern")           = SyncPattern::Full,
-            py::arg("replicationFactor") = 1,
-            py::arg("connectionType")    = DeviceConnectionType::Always);
+            py::arg("numIpus")        = 1,
+            py::arg("tilesPerIpu")    = 0,
+            py::arg("pattern")        = SyncPattern::Full,
+            py::arg("connectionType") = DeviceConnectionType::Always);
     cls.def("acquireDeviceById",
             &DeviceManager::acquireDeviceById,
             py::arg("id"),
-            py::arg("pattern")           = SyncPattern::Full,
-            py::arg("replicationFactor") = 1,
-            py::arg("connectionType")    = DeviceConnectionType::Always);
+            py::arg("pattern")        = SyncPattern::Full,
+            py::arg("connectionType") = DeviceConnectionType::Always);
     cls.def("createCpuDevice", &DeviceManager::createCpuDevice);
     cls.def("createIpuModelDevice", [](DeviceManager &dm, py::dict e) {
       std::map<std::string, std::string> options = getDictionary(e);
@@ -1511,11 +1509,10 @@ PYBIND11_MODULE(popart_core, m) {
     });
     cls.def("enumerateDevices",
             &DeviceManager::enumerateDevices,
-            py::arg("pattern")           = SyncPattern::Full,
-            py::arg("replicationFactor") = 1,
-            py::arg("numIpus")           = 1,
-            py::arg("deviceType")        = DeviceType::Ipu,
-            py::arg("connectionType")    = DeviceConnectionType::Always);
+            py::arg("pattern")        = SyncPattern::Full,
+            py::arg("numIpus")        = 1,
+            py::arg("deviceType")     = DeviceType::Ipu,
+            py::arg("connectionType") = DeviceConnectionType::Always);
   }
   {
     py::class_<DeviceInfo, std::shared_ptr<DeviceInfo>> cls(m, "DeviceInfo");

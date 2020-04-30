@@ -137,14 +137,12 @@ public:
    * Get the list of all devices fulfilling the specified criteria.
    *
    * \param pattern Sync pattern.
-   * \param replication_factor Number of times to replicate.
    * \param numIpus Number of IPUs to request.
    * \param deviceType Type of device required.
    * \return List of requested IPUs.
    */
   std::vector<std::shared_ptr<DeviceInfo>> enumerateDevices(
       SyncPattern pattern                 = SyncPattern::Full,
-      uint32_t replication_factor         = 1,
       int numIpus                         = 1,
       DeviceType deviceType               = DeviceType::Ipu,
       DeviceConnectionType connectionType = DeviceConnectionType::Always);
@@ -160,7 +158,6 @@ public:
       int numIpus                         = 1,
       int tilesPerIpu                     = 1216,
       SyncPattern pattern                 = SyncPattern::Full,
-      uint32_t replication_factor         = 1,
       DeviceConnectionType connectionType = DeviceConnectionType::Always);
 
   /** Allocates the hardware device by id. This id can be found running 'gc-info
@@ -171,7 +168,6 @@ public:
   std::shared_ptr<DeviceInfo> acquireDeviceById(
       int id,
       SyncPattern pattern                 = SyncPattern::Full,
-      uint32_t replication_factor         = 1,
       DeviceConnectionType connectionType = DeviceConnectionType::Always);
 
   /** Create a 'simulated' CPU device

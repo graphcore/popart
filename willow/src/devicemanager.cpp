@@ -35,7 +35,6 @@ DeviceManager::getDevice(SyncPattern syncPattern,
 
 std::vector<std::shared_ptr<DeviceInfo>>
 DeviceManager::enumerateDevices(SyncPattern pattern,
-                                uint32_t /*replication_factor*/,
                                 int numIpus,
                                 DeviceType deviceType,
                                 DeviceConnectionType connectionType) {
@@ -86,15 +85,7 @@ std::shared_ptr<DeviceInfo>
 DeviceManager::acquireAvailableDevice(int numIpus,
                                       int tilesPerIpu,
                                       SyncPattern pattern,
-                                      uint32_t replication_factor,
                                       DeviceConnectionType connectionType) {
-  if (replication_factor > 1) {
-    logging::devicex::warn(
-        "You have specified a replication_factor in the call to aquire "
-        "available devices. This parameter is deprecated and will have no "
-        "effect. Please account for the replication factor when calculating "
-        "the number of IPUs required.");
-  }
   if (numIpus > 0 && ((numIpus & (numIpus - 1)) != 0)) {
     throw error("You have attempted to acquire {} IPUs. The number of IPUs "
                 "requested must be a power of two",
@@ -105,8 +96,8 @@ DeviceManager::acquireAvailableDevice(int numIpus,
                 "DeviceConnectionType::Never");
   }
 
-  auto devices = enumerateDevices(
-      pattern, replication_factor, numIpus, DeviceType::Ipu, connectionType);
+  auto devices =
+      enumerateDevices(pattern, numIpus, DeviceType::Ipu, connectionType);
 
   for (auto &device : devices) {
     if ((!tilesPerIpu || tilesPerIpu == device->getTilesPerIpu())) {
@@ -127,7 +118,6 @@ DeviceManager::acquireAvailableDevice(int numIpus,
 std::shared_ptr<DeviceInfo>
 DeviceManager::acquireDeviceById(int id,
                                  SyncPattern pattern,
-                                 uint32_t replication_factor,
                                  DeviceConnectionType connectionType) {
   if (connectionType == DeviceConnectionType::Never) {
     throw error("Trying to acquire a hardware device when connectionType is "
@@ -135,14 +125,6 @@ DeviceManager::acquireDeviceById(int id,
   }
 
   auto device = getDevice(pattern, id, connectionType);
-
-  if (replication_factor > 1) {
-    logging::devicex::warn(
-        "You have specified a replication_factor in the call to aquire "
-        "available devices. This parameter is deprecated and will have no "
-        "effect. Please account for the replication factor when calculating "
-        "the number of IPUs required.");
-  }
 
   // Attach to the device. Will succeed if available
   if (connectionType == DeviceConnectionType::Always) {
