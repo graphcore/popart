@@ -2315,7 +2315,6 @@ void Ir::updateAliases() {
 void Ir::unsetAllVirtualGraphIds() {
   bool hadToUnsetAny = false;
 
-  std::cout << "Unsetting" << std::endl;
   for (auto &id_graph : graphs) {
     auto &graph = id_graph.second;
     for (auto &id_op : graph->getOps()) {
