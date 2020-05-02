@@ -18,9 +18,43 @@ configure_file(cifar10/c10datadir.py.in
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cifar10/c10datadir.py
   DESTINATION ${INSTALL_TESTS}/torch/cifar10)
 
+set(CIFAR10_TEST_DIR "${INSTALL_TESTS}/torch/cifar10/")
+
+add_test(NAME download_cifar10_dataset_mkdir_and_check_space
+  	WORKING_DIRECTORY "${CIFAR10_TEST_DIR}"
+    COMMAND ${Python3_EXECUTABLE} -m download_dataset.mkdir_and_check_space)
+set_tests_properties(download_cifar10_dataset_mkdir_and_check_space
+    PROPERTIES FIXTURES_SETUP cifar10_dirmade
+    SKIP_RETURN_CODE 2)
+
+add_test(NAME download_cifar10_dataset_actual_download
+  	WORKING_DIRECTORY "${CIFAR10_TEST_DIR}"
+    COMMAND ${Python3_EXECUTABLE} -m download_dataset.actual_download)
+set_tests_properties(download_cifar10_dataset_actual_download
+    PROPERTIES FIXTURES_REQUIRED cifar10_dirmade
+               FIXTURES_SETUP cifar10_downloaded
+    SKIP_RETURN_CODE 2)
+
+add_test(NAME download_cifar10_dataset_verify_tar_file
+  	WORKING_DIRECTORY "${CIFAR10_TEST_DIR}"
+    COMMAND ${Python3_EXECUTABLE} -m download_dataset.verify_tar_file)
+set_tests_properties(download_cifar10_dataset_verify_tar_file
+    PROPERTIES FIXTURES_REQUIRED cifar10_downloaded
+               FIXTURES_SETUP cifar10_tar_verified
+    SKIP_RETURN_CODE 2)
+
+add_test(NAME download_cifar10_dataset_extract_tar_file
+    WORKING_DIRECTORY "${CIFAR10_TEST_DIR}"
+    COMMAND ${Python3_EXECUTABLE} -m download_dataset.extract_tar_file)
+set_tests_properties(download_cifar10_dataset_extract_tar_file
+    PROPERTIES FIXTURES_REQUIRED cifar10_tar_verified
+               FIXTURES_SETUP cifar10_tar_extracted
+    SKIP_RETURN_CODE 2)
+
 add_test(NAME download_cifar10_dataset
 	COMMAND ${Python3_EXECUTABLE} ${INSTALL_TESTS}/torch/cifar10/download_dataset.py)
-set_tests_properties(download_cifar10_dataset PROPERTIES FIXTURES_SETUP cifar10)
+set_tests_properties(download_cifar10_dataset
+    PROPERTIES FIXTURES_REQUIRED cifar10_tar_extracted FIXTURES_SETUP cifar10)
 
 #------ end of download data script
 
@@ -54,7 +88,7 @@ set_tests_properties(model0_infer PROPERTIES FIXTURES_REQUIRED cifar10)
 #  0) ensure that cifar10 test has run at least once (dataset downloaded)
 #  1) uncomment the add_test call
 #  2) ctest -R model1 -VV --repeat-until-fail 100000
-# 
+#
 # add_test(NAME model1
 # 		WORKING_DIRECTORY ${INSTALL_TESTS}
 # 		COMMAND ${Python3_EXECUTABLE} torch/cifar10/model1.py)
@@ -143,7 +177,7 @@ set_tests_properties(model_lstm PROPERTIES FIXTURES_REQUIRED cifar10)
 # 		 COMMAND ${Python3_EXECUTABLE} torch/cifar10/model_loss_scaling.py)
 # set_tests_properties(model_loss_scaling PROPERTIES FIXTURES_REQUIRED cifar10)
 
-# see T7159  
+# see T7159
 # add_test(NAME model_batchnorm
 # 		 WORKING_DIRECTORY ${INSTALL_TESTS}
 # 		 COMMAND ${Python3_EXECUTABLE} torch/cifar10/model_batchnorm.py --device=cpu)

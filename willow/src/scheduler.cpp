@@ -66,13 +66,13 @@ public:
            opAddresses == rhs.opAddresses;
   }
 
-  template <class... Args> void minSumLivenessAnneal(Args &&... a) {
+  void minSumLivenessAnneal(const std::map<std::string, std::string> &a) {
     auto ll = logging::Level::Debug;
     std::string strBefore;
     if (logging::shouldLog(logging::Module::ir, ll)) {
       strBefore = g.getLivenessString();
     }
-    g.minSumLivenessAnneal(a...);
+    g.minSumLivenessAnneal(a);
     if (logging::shouldLog(logging::Module::ir, ll)) {
       auto strAfter = g.getLivenessString();
       std::ostringstream oss;
@@ -371,16 +371,6 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
   }
 
   cacher->registerMiss();
-
-  bool debug      = false;
-  uint32_t seed   = 1011;
-  double pStayPut = 10.0;
-  // As switching the swap size in the algorithm based on improvement/second is
-  // non-deterministic, we disable this by giving it 0 probability
-  double pHigherFallRate = 0.0;
-  double pClimb          = 1.0;
-  bool logging           = false;
-
   KahnTieBreaker ktb;
 
   auto ktbLower = kahnTieBreakerString;
@@ -402,15 +392,10 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
   grower->initialize(ktb);
 
   grower->minSumLivenessAnneal(
-      poprithms::schedule::anneal::MinSumLivenessAlgo::RIPPLE,
-      debug,
-      seed,
-      pStayPut,
-      pHigherFallRate,
-      pClimb,
-      logging,
-      timeLimitSeconds,
-      swapLimitCount);
+      {{"debug", "0"},
+       {"seed", "1011"},
+       {"timeLimitSeconds", std::to_string(timeLimitSeconds)},
+       {"swapLimitCount", std::to_string(swapLimitCount)}});
 
   const auto nOps = pg.getOps().size();
   std::vector<std::tuple<ScheduleIndex, OpAddress>> subSchedule;

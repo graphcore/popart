@@ -27,7 +27,7 @@ public:
   void *data() final;
   DataType dataType() const final;
   std::size_t rank() const final;
-  int64_t dim(int index) const final;
+  int64_t dim(size_t index) const final;
   std::size_t nelms() const final;
 
 private:
@@ -90,8 +90,8 @@ template <typename T> std::size_t NDArrayWrapper<T>::rank() const {
   return info.rank();
 }
 
-template <typename T> int64_t NDArrayWrapper<T>::dim(int index) const {
-  return info.dim(index);
+template <typename T> int64_t NDArrayWrapper<T>::dim(size_t index) const {
+  return info.dim(static_cast<int>(index));
 }
 
 template <typename T> std::size_t NDArrayWrapper<T>::nelms() const {
