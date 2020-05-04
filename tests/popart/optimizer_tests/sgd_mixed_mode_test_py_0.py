@@ -55,7 +55,7 @@ def test_sgd_mixed_mode(tmpdir):
         opts.reportOptions = {"showExecutionSteps": "true"}
         opts.enableGroupedMatmuls = False
 
-        pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
+        pat = popart.Patterns(popart.PatternsLevel.Default)
 
         session = popart.TrainingSession(
             fnModel=proto,

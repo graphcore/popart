@@ -112,7 +112,7 @@ def test_matmul_serialization_invalid_factor(tmpdir):
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = getBaseOptions()
 
@@ -159,7 +159,7 @@ def test_matmul_serialization_inference(tmpdir):
 
         proto = builder.getModelProto()
 
-        dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+        dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
         opts = getBaseOptions()
 
@@ -286,12 +286,12 @@ def test_matmul_serialization_training_1(tmpdir):
             1,
             {
                 o:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 rhs:
-                popart.AnchorReturnType("FINAL"),
+                popart.AnchorReturnType("Final"),
                 popart.reservedGradientPrefix() + lhs:
-                popart.AnchorReturnType("ALL"),
-                #popart.reservedGradientPrefix() + rhs: popart.AnchorReturnType("ALL"), << T11469
+                popart.AnchorReturnType("All"),
+                #popart.reservedGradientPrefix() + rhs: popart.AnchorReturnType("All"), << T11469
             })
 
         opts = getBaseOptions()
@@ -540,11 +540,11 @@ def test_matmul_serialization_training_2(tmpdir):
         dataFlow = popart.DataFlow(
             1, {
                 o_reshape:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 rhs:
-                popart.AnchorReturnType("FINAL"),
+                popart.AnchorReturnType("Final"),
                 popart.reservedGradientPrefix() + lhs:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
             })
 
         opts = getBaseOptions()
@@ -796,12 +796,12 @@ def test_matmul_serialization_precision(tmpdir):
             1,
             {
                 o:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 rhs:
-                popart.AnchorReturnType("FINAL"),
+                popart.AnchorReturnType("Final"),
                 popart.reservedGradientPrefix() + lhs:
-                popart.AnchorReturnType("ALL"),
-                #popart.reservedGradientPrefix() + rhs: popart.AnchorReturnType("ALL"), << T11469
+                popart.AnchorReturnType("All"),
+                #popart.reservedGradientPrefix() + rhs: popart.AnchorReturnType("All"), << T11469
             })
 
         opts = getBaseOptions()
@@ -1060,12 +1060,12 @@ def test_matmul_serialization_training_with_gradient_accumlation(tmpdir):
             20,
             {
                 o:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 rhs:
-                popart.AnchorReturnType("FINAL"),
+                popart.AnchorReturnType("Final"),
                 popart.reservedGradientPrefix() + lhs:
-                popart.AnchorReturnType("ALL"),
-                #popart.reservedGradientPrefix() + rhs: popart.AnchorReturnType("ALL"), << T11469
+                popart.AnchorReturnType("All"),
+                #popart.reservedGradientPrefix() + rhs: popart.AnchorReturnType("All"), << T11469
             })
 
         opts = getBaseOptions()

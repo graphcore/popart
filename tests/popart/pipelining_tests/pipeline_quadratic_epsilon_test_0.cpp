@@ -203,13 +203,13 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
 
     float lambda = 0.1;
     auto loss    = std::unique_ptr<Loss>(
-        new L1Loss(actFinal, "l1LossVal", lambda, ReductionType::SUM));
+        new L1Loss(actFinal, "l1LossVal", lambda, ReductionType::Sum));
 
     SessionOptions userOptions;
     unsigned numIpus = 1;
 
     if (exportFinalDotFiles) {
-      userOptions.dotChecks.insert(DotCheck::FINAL);
+      userOptions.dotChecks.insert(DotCheck::Final);
       userOptions.logDir = "./dotTestContinuous_" + std::to_string(continuous);
       boost::filesystem::create_directory(userOptions.logDir);
     }
@@ -230,7 +230,7 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
         device,
         InputShapeInfo(),
         userOptions,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
 
     session->prepareDevice();
 

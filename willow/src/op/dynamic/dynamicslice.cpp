@@ -52,8 +52,8 @@ std::unique_ptr<Op> DynamicSlicePadGradOp::clone() const {
 const std::vector<GradInOutMapper> &
 DynamicSlicePadGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), DynamicBaseOp::getOutIndex(), GradOpInType::GRADOUT},
-      {getIndexInIndex(), DynamicBaseOp::getIndexInIndex(), GradOpInType::IN}};
+      {getInIndex(), DynamicBaseOp::getOutIndex(), GradOpInType::GradOut},
+      {getIndexInIndex(), DynamicBaseOp::getIndexInIndex(), GradOpInType::In}};
   return inInfo;
 }
 

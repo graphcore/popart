@@ -586,9 +586,9 @@ void setRecomputation(Graph &graph,
     if (isRecomputable(op)) {
       // In full_recompute all forward ops are Recomputed
       if (!full_recompute && isConsumedByCopy(op)) {
-        op->settings.recomputeType = RecomputeType::CHECKPOINT;
+        op->settings.recomputeType = RecomputeType::Checkpoint;
       } else {
-        op->settings.recomputeType = RecomputeType::RECOMPUTE;
+        op->settings.recomputeType = RecomputeType::Recompute;
       }
     }
   }
@@ -610,12 +610,12 @@ void setRecomputation(Graph &graph,
   }
 
   // Starting from the initial frontier found above,
-  // propogate "CHECKPOINT" forward til either a Stash Tensor or an IPU copy
+  // propogate "Checkpoint" forward til either a Stash Tensor or an IPU copy
   // is reached.
   while (!frontier.empty()) {
     Tensor *tensor = frontier.pop();
     for (Op *consumer : tensor->consumers.getOps()) {
-      consumer->settings.recomputeType = RecomputeType::CHECKPOINT;
+      consumer->settings.recomputeType = RecomputeType::Checkpoint;
       if (!dynamic_cast<IpuCopyOp *>(consumer)) {
         for (Tensor *consumerOut : consumer->output->tensors()) {
           if (!isStashCandidate(consumerOut)) {
@@ -857,15 +857,15 @@ bool Pipeline::apply(Graph &graph) const {
   // If there is recomputation, the candidate set is reduced.
   //
   // Candidate Tensors which can be recomputed from other stashing candidates,
-  // are filtered out, and their producers are set to RECOMPUTE.
+  // are filtered out, and their producers are set to Recompute.
   //
   // The only exceptions are candidate stashing Tensors which are copied to
   // another IPU : these must be stashed even if they recomputable. This
   // guarantees that the correct Tensor is copied after fwd and bwd have
   // executed.
   //
-  // Algorithm : initialize all pre-loss Ops to be RECOMPUTE, and then set to
-  // CHECKPOINT if (1) cannot be computed from previous Stashed Tensors or (2)
+  // Algorithm : initialize all pre-loss Ops to be Recompute, and then set to
+  // Checkpoint if (1) cannot be computed from previous Stashed Tensors or (2)
   // must be copied to next IPU.
   else {
     setRecomputation(graph, toStashCandidateTensors);
@@ -873,12 +873,12 @@ bool Pipeline::apply(Graph &graph) const {
     logging::transform::debug(
         "Reducing the set of stashing candidate Tensors for recomputation");
 
-    // Filter stash candidates: only stash CHECKPOINT Ops
+    // Filter stash candidates: only stash Checkpoint Ops
     for (auto tid : toStashCandidateTensors) {
       auto tensor = graph.getTensors().get(tid);
       if (!tensor->hasProducer() ||
           tensor->getProducer()->settings.recomputeType !=
-              RecomputeType::RECOMPUTE) {
+              RecomputeType::Recompute) {
         // For full_recompute if a stash candidate doesn't have a
         // restoreReference then it is not required for recomputation during the
         // backwards pass.
@@ -982,9 +982,9 @@ bool Pipeline::apply(Graph &graph) const {
       }
     }
 
-    // RECOMPUTE ops must be inplace, confirm:
+    // Recompute ops must be inplace, confirm:
     for (Op *tidConsumer : tidConsumers) {
-      if (tidConsumer->settings.recomputeType == RecomputeType::RECOMPUTE) {
+      if (tidConsumer->settings.recomputeType == RecomputeType::Recompute) {
         if (isInplace == false) {
           throw error("A recompute Op consumes a stashed Tensor, therefore "
                       "the stashing must be in-place. But some previous logic "
@@ -1027,7 +1027,7 @@ bool Pipeline::apply(Graph &graph) const {
                                   restoreOp->str());
       }
       if ((dynamic_cast<RestoreInplaceOp *>(restoreOp) &&
-           tidConsumer->settings.recomputeType == RecomputeType::RECOMPUTE &&
+           tidConsumer->settings.recomputeType == RecomputeType::Recompute &&
            tidConsumer->getPipelineStage() < restoreOp->getPipelineStage())) {
         inplaceRestoreRequiredForRecompute = true;
       }
@@ -1051,7 +1051,7 @@ bool Pipeline::apply(Graph &graph) const {
     if (noConsumersOfRestore && !inplaceRestoreRequiredForRecompute) {
       bool noRecomputeConsumersOfStash = std::none_of(
           tidConsumers.cbegin(), tidConsumers.cend(), [](const Op *op) {
-            return op->settings.recomputeType == RecomputeType::RECOMPUTE;
+            return op->settings.recomputeType == RecomputeType::Recompute;
           });
       std::ostringstream oss3;
       oss3 << "The RestoreOp " << restoreOp->str() << " on pipeline stage "
@@ -1094,7 +1094,7 @@ bool Pipeline::apply(Graph &graph) const {
 
       if (tensor->hasProducer()) {
         Op *producer = tensor->getProducer();
-        if (producer->settings.recomputeType == RecomputeType::RECOMPUTE) {
+        if (producer->settings.recomputeType == RecomputeType::Recompute) {
           insertClonesBeforeIpuCopyConsumers(
               graph,
               tensor,

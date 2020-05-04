@@ -193,7 +193,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
 
   auto proto      = bder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
-  auto art        = AnchorReturnType("ALL");
+  auto art        = AnchorReturnType("All");
   // one batch per step
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}});
@@ -207,7 +207,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
   // training info
   auto optimizer = SGD({{"defaultLearningRate", {0.01, false}}});
   std::unique_ptr<Loss> l1_loss(
-      new L1Loss(C_id, "l1LossVal", lossLambda, ReductionType::SUM));
+      new L1Loss(C_id, "l1LossVal", lossLambda, ReductionType::Sum));
   std::vector<Loss *> losses{l1_loss.get()};
 
   auto session = popart::TrainingSession::createFromOnnxModel(
@@ -218,7 +218,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
       device,
       popart::InputShapeInfo(),
       opts,
-      popart::Patterns(PatternsLevel::DEFAULT));
+      popart::Patterns(PatternsLevel::Default));
 
   // prepare the anchors. We have the output C,
   std::vector<float> raw_C_out(C_info.nelms());
@@ -395,7 +395,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
 
   auto proto      = bder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
-  auto art        = AnchorReturnType("ALL");
+  auto art        = AnchorReturnType("All");
   // one batch per step
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{G_id, art}});
@@ -409,7 +409,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
   // training info
   auto optimizer = SGD({{"defaultLearningRate", {0.01, false}}});
   std::unique_ptr<Loss> l1_loss(
-      new L1Loss(G_id, "l1LossVal", lossLambda, ReductionType::SUM));
+      new L1Loss(G_id, "l1LossVal", lossLambda, ReductionType::Sum));
   std::vector<Loss *> losses{l1_loss.get()};
 
   auto session = popart::TrainingSession::createFromOnnxModel(
@@ -420,7 +420,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
       device,
       popart::InputShapeInfo(),
       opts,
-      popart::Patterns(PatternsLevel::DEFAULT));
+      popart::Patterns(PatternsLevel::Default));
 
   // prepare the anchors. We have the output C,
   std::vector<float> raw_G_out(G_info.nelms());
@@ -589,7 +589,7 @@ BOOST_AUTO_TEST_CASE(HostReduceHierarchicalReductionWithReplicatedGraphs) {
 
   auto proto      = bder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
-  auto art        = AnchorReturnType("ALL");
+  auto art        = AnchorReturnType("All");
   // one batch per step
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{G_id, art}});
@@ -607,7 +607,7 @@ BOOST_AUTO_TEST_CASE(HostReduceHierarchicalReductionWithReplicatedGraphs) {
     const float learningRate = 0.01f;
     auto optimizer = SGD({{"defaultLearningRate", {learningRate, false}}});
     std::unique_ptr<Loss> l1_loss(
-        new L1Loss(G_id, "l1LossVal", lossLambda, ReductionType::SUM));
+        new L1Loss(G_id, "l1LossVal", lossLambda, ReductionType::Sum));
     std::vector<Loss *> losses{l1_loss.get()};
 
     auto session = popart::TrainingSession::createFromOnnxModel(
@@ -618,7 +618,7 @@ BOOST_AUTO_TEST_CASE(HostReduceHierarchicalReductionWithReplicatedGraphs) {
         device,
         popart::InputShapeInfo(),
         opts,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
 
     // prepare the anchors. We have the output C,
     std::vector<float> raw_G_out(replicationFactor * G_info.nelms());
@@ -865,7 +865,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationGradientStoreGradientLoad) {
 
   auto proto      = bder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
-  auto art        = AnchorReturnType("ALL");
+  auto art        = AnchorReturnType("All");
   // one batch per step
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{G_id, art}});
@@ -879,7 +879,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationGradientStoreGradientLoad) {
   // training info
   auto optimizer = SGD({{"defaultLearningRate", {1.0f, false}}});
   std::unique_ptr<Loss> l1_loss(
-      new L1Loss(G_id, "l1LossVal", lossLambda, ReductionType::SUM));
+      new L1Loss(G_id, "l1LossVal", lossLambda, ReductionType::Sum));
   std::vector<Loss *> losses{l1_loss.get()};
 
   auto session = popart::TrainingSession::createFromOnnxModel(
@@ -890,7 +890,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationGradientStoreGradientLoad) {
       device,
       popart::InputShapeInfo(),
       opts,
-      popart::Patterns(PatternsLevel::DEFAULT));
+      popart::Patterns(PatternsLevel::Default));
 
   // prepare the anchors. We have the output C,
   std::vector<float> raw_G_out(G_info.nelms());
@@ -1115,7 +1115,7 @@ BOOST_AUTO_TEST_CASE(
 
   auto proto      = bder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
-  auto art        = AnchorReturnType("ALL");
+  auto art        = AnchorReturnType("All");
   // one batch per step
   int batchesPerStep = 1;
 
@@ -1133,7 +1133,7 @@ BOOST_AUTO_TEST_CASE(
     // training info
     auto optimizer = SGD({{"defaultLearningRate", {0.1f, false}}});
     std::unique_ptr<Loss> l1_loss(
-        new L1Loss(G_id, "l1LossVal", lossLambda, ReductionType::SUM));
+        new L1Loss(G_id, "l1LossVal", lossLambda, ReductionType::Sum));
     std::vector<Loss *> losses{l1_loss.get()};
 
     auto session = popart::TrainingSession::createFromOnnxModel(
@@ -1144,7 +1144,7 @@ BOOST_AUTO_TEST_CASE(
         device,
         popart::InputShapeInfo(),
         opts,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
 
     std::vector<float> raw_G_out(replicationFactor * G_info.nelms());
     popart::NDArrayWrapper<float> G_wrapper(
@@ -1356,7 +1356,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithAccumulation) {
 
     auto proto = builder->getModelProto();
 
-    auto dataFlow = DataFlow(batchesPerStep, {{act5, AnchorReturnType("ALL")}});
+    auto dataFlow = DataFlow(batchesPerStep, {{act5, AnchorReturnType("All")}});
 
     SessionOptions userOptions;
     std::map<std::string, std::string> deviceOpts{{"numIPUs", "1"}};
@@ -1393,7 +1393,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithAccumulation) {
 
     float lambda = 1.0;
     auto loss    = std::unique_ptr<Loss>(
-        new L1Loss(act5, "l1LossVal", lambda, ReductionType::SUM));
+        new L1Loss(act5, "l1LossVal", lambda, ReductionType::Sum));
 
     auto device =
         DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
@@ -1406,7 +1406,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithAccumulation) {
         device,
         InputShapeInfo(),
         userOptions,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
 
     session->prepareDevice();
 
@@ -1613,10 +1613,10 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipelining) {
     float lambda = 1.0;
 
     auto loss = std::unique_ptr<Loss>(
-        new L1Loss(a5, "l1LossVal", lambda, ReductionType::SUM));
+        new L1Loss(a5, "l1LossVal", lambda, ReductionType::Sum));
     auto proto = builder->getModelProto();
 
-    auto dataFlow = DataFlow(batchesPerStep, {{a5, AnchorReturnType("ALL")}});
+    auto dataFlow = DataFlow(batchesPerStep, {{a5, AnchorReturnType("All")}});
 
     SessionOptions userOptions;
     userOptions.enablePipelining = enablePipelining;
@@ -1666,7 +1666,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipelining) {
         device,
         InputShapeInfo(),
         userOptions,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
 
     session->prepareDevice();
     const auto &ir        = session->getIr();
@@ -1872,10 +1872,10 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation) {
     float lambda = 1.0;
 
     auto loss = std::unique_ptr<Loss>(
-        new L1Loss(a5, "l1LossVal", lambda, ReductionType::SUM));
+        new L1Loss(a5, "l1LossVal", lambda, ReductionType::Sum));
     auto proto = builder->getModelProto();
 
-    auto dataFlow = DataFlow(batchesPerStep, {{a5, AnchorReturnType("ALL")}});
+    auto dataFlow = DataFlow(batchesPerStep, {{a5, AnchorReturnType("All")}});
 
     SessionOptions userOptions;
     userOptions.enablePipelining = enablePipelining;
@@ -1917,7 +1917,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation) {
         device,
         InputShapeInfo(),
         userOptions,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
 
     session->prepareDevice();
     const auto &ir        = session->getIr();
@@ -2091,7 +2091,7 @@ BOOST_AUTO_TEST_CASE(OATTSimpleTest, *boost::unit_test::disabled()) {
 
   auto proto      = bder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
-  auto art        = AnchorReturnType("ALL");
+  auto art        = AnchorReturnType("All");
   // one batch per step
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{G_id, art}});
@@ -2108,7 +2108,7 @@ BOOST_AUTO_TEST_CASE(OATTSimpleTest, *boost::unit_test::disabled()) {
   // training info
   auto optimizer = SGD({{"defaultLearningRate", {1.0f, false}}});
   std::unique_ptr<Loss> l1_loss(
-      new L1Loss(G_id, "l1LossVal", lossLambda, ReductionType::SUM));
+      new L1Loss(G_id, "l1LossVal", lossLambda, ReductionType::Sum));
   std::vector<Loss *> losses{l1_loss.get()};
 
   auto session = popart::TrainingSession::createFromOnnxModel(
@@ -2119,7 +2119,7 @@ BOOST_AUTO_TEST_CASE(OATTSimpleTest, *boost::unit_test::disabled()) {
       device,
       popart::InputShapeInfo(),
       opts,
-      popart::Patterns(PatternsLevel::DEFAULT));
+      popart::Patterns(PatternsLevel::Default));
 
   // prepare the anchors. We have the output C,
   std::vector<float> raw_G_out(G_info.nelms());
@@ -2328,7 +2328,7 @@ BOOST_AUTO_TEST_CASE(OATTWithAccumulation, *boost::unit_test::disabled()) {
 
     auto proto = builder->getModelProto();
 
-    auto dataFlow = DataFlow(batchesPerStep, {{act5, AnchorReturnType("ALL")}});
+    auto dataFlow = DataFlow(batchesPerStep, {{act5, AnchorReturnType("All")}});
 
     SessionOptions userOptions;
     std::map<std::string, std::string> deviceOpts{{"numIPUs", "1"}};
@@ -2368,7 +2368,7 @@ BOOST_AUTO_TEST_CASE(OATTWithAccumulation, *boost::unit_test::disabled()) {
 
     float lambda = 1.0;
     auto loss    = std::unique_ptr<Loss>(
-        new L1Loss(act5, "l1LossVal", lambda, ReductionType::SUM));
+        new L1Loss(act5, "l1LossVal", lambda, ReductionType::Sum));
 
     auto device = acquireAvailableDevice();
     if (!device) {
@@ -2383,7 +2383,7 @@ BOOST_AUTO_TEST_CASE(OATTWithAccumulation, *boost::unit_test::disabled()) {
         device,
         InputShapeInfo(),
         userOptions,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
 
     session->prepareDevice();
 
@@ -2597,10 +2597,10 @@ BOOST_AUTO_TEST_CASE(OATTWithPipeliningAndAccumulation,
     float lambda = 1.0;
 
     auto loss = std::unique_ptr<Loss>(
-        new L1Loss(a5, "l1LossVal", lambda, ReductionType::SUM));
+        new L1Loss(a5, "l1LossVal", lambda, ReductionType::Sum));
     auto proto = builder->getModelProto();
 
-    auto dataFlow = DataFlow(batchesPerStep, {{a5, AnchorReturnType("ALL")}});
+    auto dataFlow = DataFlow(batchesPerStep, {{a5, AnchorReturnType("All")}});
 
     SessionOptions userOptions;
     userOptions.enablePipelining = enablePipelining;
@@ -2641,7 +2641,7 @@ BOOST_AUTO_TEST_CASE(OATTWithPipeliningAndAccumulation,
         device,
         InputShapeInfo(),
         userOptions,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
 
     session->prepareDevice();
     const auto &ir        = session->getIr();

@@ -131,7 +131,7 @@ def run_graph(input_shape, initial_onnx_model, input_tensor_name,
     if enable_multi_ipu:
         losses[0].virtualGraph(1)
 
-    art = popart.AnchorReturnType("ALL")
+    art = popart.AnchorReturnType("All")
     anchorNames = {losses[0].output(0): art}
 
     if full_anchorage:

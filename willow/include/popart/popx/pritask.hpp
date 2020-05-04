@@ -17,13 +17,13 @@ using SequenceMap =
 
 enum class DependencyType {
   // Depends on output of other Op
-  OUTPUT = 0,
+  Output = 0,
   // Depends on tensor initialisation (weight)
-  TENSOR,
+  Tensor,
   // Depends on scheduler choice
-  SCHEDULER,
+  Scheduler,
   // Depends on subgraph ops
-  SUBGRAPH
+  SubGraph
 };
 
 /** A Pritask is a task which has a priority and a set of dependent tasks. */

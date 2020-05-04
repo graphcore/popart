@@ -46,17 +46,17 @@ std::vector<int64_t> getBoundariesCrossed(int64_t start,
   std::vector<int64_t> crossing;
   PingPongPhase phase{-1LL};
   PingPongPhase last_phase{-1LL};
-  RecomputeType recompute      = RecomputeType::UNDEFINED;
-  RecomputeType last_recompute = RecomputeType::UNDEFINED;
+  RecomputeType recompute      = RecomputeType::Undefined;
+  RecomputeType last_recompute = RecomputeType::Undefined;
 
   for (int64_t i = start; i < end; ++i) {
     Op *op         = schedule[i];
     last_phase     = phase;
     last_recompute = recompute;
     phase          = op->hasPingPongPhase() ? op->getPingPongPhase() : -1;
-    recompute      = op->settings.recomputeType == RecomputeType::RECOMPUTE
-                    ? RecomputeType::RECOMPUTE
-                    : RecomputeType::CHECKPOINT;
+    recompute      = op->settings.recomputeType == RecomputeType::Recompute
+                    ? RecomputeType::Recompute
+                    : RecomputeType::Checkpoint;
     if (i > start && (phase != last_phase || recompute != last_recompute)) {
       crossing.push_back(i - start);
     }
@@ -413,7 +413,7 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
            const std::pair<Op *, int64_t> &b) { return a.second < b.second; });
 
     view::Regions modifiedRegions;
-    view::AccessType accessType = view::AccessType::NONE;
+    view::AccessType accessType = view::AccessType::None;
 
     // As soon as a consumer modified the whole input, we can stop
     for (auto &consumerOrdered : consumersOrdered) {
@@ -425,7 +425,7 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
         // If an op consumes the tensor without specifying modifies we assume
         // (conservatively) full read access to the tensor
         if (regions.empty() || regions.front().isEmpty()) {
-          accessType = view::combine({accessType, view::AccessType::READ});
+          accessType = view::combine({accessType, view::AccessType::Read});
         }
 
         modifiedRegions.insert(
@@ -438,7 +438,7 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
       if (modifiedRegions.size() > 0 &&
           modifiedRegions.front() ==
               view::Region::getFull(inTensor->info.shape()) &&
-          accessType == view::AccessType::WRITE) {
+          accessType == view::AccessType::Write) {
         // The whole input tensor has been touched, conclude
         //  If the whole tensor has been write-accessed first, we say that
         //  the CallOp consumes the tensor write-only.
@@ -690,7 +690,7 @@ Graph &createSubgraph(const Match &match, Graph &graph) {
     auto clone                    = op->clone();
     clone->settings.graph         = subgraph;
     clone->settings.scope         = subgraph_scope;
-    clone->settings.recomputeType = RecomputeType::CHECKPOINT;
+    clone->settings.recomputeType = RecomputeType::Checkpoint;
     auto cloneid                  = subgraph.moveIntoGraph(std::move(clone));
     Op *clone_op                  = subgraph.getOp(cloneid);
     clone_map.insert({op, clone_op});

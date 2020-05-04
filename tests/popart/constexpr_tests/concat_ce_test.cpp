@@ -53,11 +53,11 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Concat0) {
   auto model_proto = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto art       = AnchorReturnType("ALL");
+  auto art       = AnchorReturnType("All");
   auto data_flow = DataFlow(1, {{out_id, art}});
   auto optimizer = ConstSGD(0.01);
   std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(out_id, "l1LossVal", 0.1, ReductionType::SUM)};
+      std::make_shared<L1Loss>(out_id, "l1LossVal", 0.1, ReductionType::Sum)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;

@@ -51,7 +51,7 @@ private:
 
 class TestRunner {
 public:
-  TestRunner() : patterns(PatternsLevel::NONE) {}
+  TestRunner() : patterns(PatternsLevel::NoPatterns) {}
 
   template <typename ModelBuilder>
   void buildModel(ModelBuilder &&modelBuilder) {
@@ -65,7 +65,7 @@ public:
     auto modelProto = io::getModelFromString(proto);
 
     // Create the IR
-    anchors.insert({outId, AnchorReturnType("ALL")});
+    anchors.insert({outId, AnchorReturnType("All")});
     auto dataFlow  = DataFlow(1, anchors);
     auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 

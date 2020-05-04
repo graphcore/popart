@@ -11,11 +11,11 @@ namespace popart {
 
 // Stages of Ir construction where .dot files can be written
 enum class DotCheck {
-  FWD0 = 0, // after construction of the forward pass
-  FWD1,     // after running pre-aliasing patterns
-  BWD0,     // after backwards construction
-  PREALIAS, // after all transformations, patterns, except the aliasing
-  FINAL,    // after running aliasing patterns (the final Ir)
+  Fwd0 = 0, // after construction of the forward pass
+  Fwd1,     // after running pre-aliasing patterns
+  Bwd0,     // after backwards construction
+  PreAlias, // after all transformations, patterns, except the aliasing
+  Final,    // after running aliasing patterns (the final Ir)
   N         // the number of DotChecks, must appear as the final enum
 };
 

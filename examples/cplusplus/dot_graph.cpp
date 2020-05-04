@@ -67,7 +67,7 @@ int main(int argc, char **argv) {
   std::vector<std::string> dotStrings;
 
   // Currently only the FINAL .dot file. Append others here as required.
-  session_opts.dotChecks.insert(DotCheck::FINAL);
+  session_opts.dotChecks.insert(DotCheck::Final);
 
   session_opts.logDir = opts.outputDir();
 
@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
   }
 
   auto out      = modelProto.graph().output(0).name();
-  auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+  auto dataFlow = DataFlow(1, {{out, AnchorReturnType("All")}});
 
   std::unique_ptr<Optimizer> optimizer;
   std::vector<std::shared_ptr<Loss>> up_losses;
@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
     isi.add(label, {"INT32", std::vector<int64_t>{7}});
 
     up_losses.emplace_back(std::make_shared<NllLoss>(
-        out, label, "nllLossVal", ReductionType::SUM));
+        out, label, "nllLossVal", ReductionType::Sum));
   }
 
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
@@ -109,7 +109,7 @@ int main(int argc, char **argv) {
               optimizer.get(),
               *cpuDevice,
               session_opts,
-              Patterns(PatternsLevel::DEFAULT).enableInPlace(true)});
+              Patterns(PatternsLevel::Default).enableInPlace(true)});
 
   // verify that the dot files have been created
   auto dotFileNames =

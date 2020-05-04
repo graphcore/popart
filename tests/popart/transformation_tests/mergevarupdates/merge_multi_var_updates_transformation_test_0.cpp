@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
     auto modelProto   = io::getModelFromString(proto);
 
     // create the IR
-    auto art      = AnchorReturnType("ALL");
+    auto art      = AnchorReturnType("All");
     auto dataFlow = DataFlow(1, {{reduced, art}});
 
     auto device = popart::createTestDevice(TEST_TARGET);
@@ -121,7 +121,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
     opts.swapLimitScheduler = 20;
     opts.firstDotOp         = 0;
     opts.finalDotOp         = 200;
-    opts.dotChecks.insert(DotCheck::FINAL);
+    opts.dotChecks.insert(DotCheck::Final);
     opts.logDir                     = ".";
     opts.mergeVarUpdate             = mvu;
     opts.mergeVarUpdateMemThreshold = mvu == MergeVarUpdateType::AutoLoose
@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
     float learningRate = 0.1;
     auto optimizer     = SGD({{"defaultLearningRate", {learningRate, false}}});
     std::vector<std::shared_ptr<Loss>> losses{std::make_shared<L1Loss>(
-        reduced, "l1LossVal", lossLambda, ReductionType::SUM)};
+        reduced, "l1LossVal", lossLambda, ReductionType::Sum)};
 
     Ir ir;
     ir.prepare({modelProto,

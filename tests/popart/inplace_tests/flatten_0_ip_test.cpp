@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(Inplace_flatten0) {
     auto modelProto = io::getModelFromString(proto);
 
     // Create the IR
-    auto dataFlow = DataFlow(1, {{dotOut, AnchorReturnType("ALL")}});
+    auto dataFlow = DataFlow(1, {{dotOut, AnchorReturnType("All")}});
     auto device   = createTestDevice(TEST_TARGET);
 
     auto opts            = SessionOptions();
@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE(Inplace_flatten0) {
         {},
         popart::InputShapeInfo(),
         opts,
-        popart::Patterns(PatternsLevel::NONE).enableInPlace(true));
+        popart::Patterns(PatternsLevel::NoPatterns).enableInPlace(true));
 
     // generate random input data
     int seed = 1011;

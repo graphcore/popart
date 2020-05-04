@@ -122,7 +122,7 @@ public:
 class Ir {
 
 public:
-  enum class ExecutionMode { INFERENCE, EVALUATION, TRAINING };
+  enum class ExecutionMode { Inference, Evaluation, Training };
 
   enum class SerialiseFormat { JSON };
 
@@ -174,9 +174,9 @@ public:
 
   // Convenience methods to query the mode of the model.
   // Onnx refers to Inference as testing.
-  bool isTraining() { return executionMode == ExecutionMode::TRAINING; }
-  bool isTesting() { return executionMode == ExecutionMode::INFERENCE; }
-  bool isEvaluation() { return executionMode == ExecutionMode::EVALUATION; }
+  bool isTraining() { return executionMode == ExecutionMode::Training; }
+  bool isTesting() { return executionMode == ExecutionMode::Inference; }
+  bool isEvaluation() { return executionMode == ExecutionMode::Evaluation; }
 
   // Log the IR in a human readable format.
   void logIr();
@@ -524,7 +524,7 @@ private:
   bool constructedFinalLoss = false;
   bool constructedBackwards = false;
 
-  ExecutionMode executionMode = ExecutionMode::TRAINING;
+  ExecutionMode executionMode = ExecutionMode::Training;
 
   bool pingPongPhasesReady = false;
   bool isPrepared          = false;

@@ -36,7 +36,7 @@ TensorId gemm(Builder *builder, TensorId ip, TensorId w0, TensorId b0) {
                            {ip, w0, b0},
                            1,
                            {{"__recompute_output_in_backward_pass",
-                             static_cast<int>(RecomputeType::RECOMPUTE)}},
+                             static_cast<int>(RecomputeType::Recompute)}},
                            "CustomGEMM")[0];
 }
 
@@ -76,11 +76,11 @@ BOOST_AUTO_TEST_CASE(ExplicitRecomputation_Case) {
     auto proto      = builder->getModelProto();
     auto modelProto = io::getModelFromString(proto);
 
-    auto dataFlow = DataFlow(1, {out}, AnchorReturnType("ALL"));
+    auto dataFlow = DataFlow(1, {out}, AnchorReturnType("All"));
 
     auto optimizer = ConstSGD(0.01);
     std::vector<std::shared_ptr<Loss>> losses{
-        std::make_shared<L1Loss>(out, "l1LossVal", 0.1, ReductionType::SUM)};
+        std::make_shared<L1Loss>(out, "l1LossVal", 0.1, ReductionType::Sum)};
 
     auto device = createTestDevice(TEST_TARGET);
     SessionOptions opts;
@@ -100,19 +100,19 @@ BOOST_AUTO_TEST_CASE(ExplicitRecomputation_Case) {
                 &optimizer,
                 *device,
                 opts,
-                Patterns(PatternsLevel::ALL)});
+                Patterns(PatternsLevel::All)});
 
     auto nRecompute = 0;
     for (auto op : ir.getOpSchedule({})) {
       if (recomputation) {
-        // All Ops except those that have their type set to RECOMPUTED
-        // must have their recompute type set to CHECKPOINT
-        if (op->settings.recomputeType != RecomputeType::RECOMPUTED) {
-          BOOST_CHECK(op->settings.recomputeType == RecomputeType::CHECKPOINT);
+        // All Ops except those that have their type set to Recomputed
+        // must have their recompute type set to Checkpoint
+        if (op->settings.recomputeType != RecomputeType::Recomputed) {
+          BOOST_CHECK(op->settings.recomputeType == RecomputeType::Checkpoint);
         }
 
         // Count the number of MatMuls with a recompute flag
-        if ((op->settings.recomputeType == RecomputeType::RECOMPUTED) &&
+        if ((op->settings.recomputeType == RecomputeType::Recomputed) &&
             (!op->opid.type.compare("MatMul"))) {
           nRecompute++;
         }
@@ -120,13 +120,13 @@ BOOST_AUTO_TEST_CASE(ExplicitRecomputation_Case) {
         // All Forward pass Ops must have recomputeType set to Recompute
         // if explicit recomputation is turned off and path is not from loss
         if (op->fromLoss == PathFromLoss::No) {
-          BOOST_CHECK(op->settings.recomputeType == RecomputeType::RECOMPUTE);
+          BOOST_CHECK(op->settings.recomputeType == RecomputeType::Recompute);
         }
 
         // All Backwards pass Ops must have recomputeType set to Checkpoint
         // if explicit recomputation is turned off and path is from Loss
         if (op->fromLoss == PathFromLoss::Yes) {
-          BOOST_CHECK(op->settings.recomputeType == RecomputeType::CHECKPOINT);
+          BOOST_CHECK(op->settings.recomputeType == RecomputeType::Checkpoint);
         }
       }
     }

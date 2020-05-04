@@ -155,7 +155,7 @@ def test_call_grad_1(op_tester):
 
         return [o, d__o, t0.grad, t1.grad, t2.grad]
 
-    op_tester.passes = popart.PatternsLevel.DEFAULT
+    op_tester.passes = popart.PatternsLevel.Default
     op_tester.run(get_init_builder("untyped"), reference, 'train')
     op_tester.run(get_init_builder("with_info"), reference, 'train')
     op_tester.run(get_init_builder("from_higher_scope"), reference, 'train')
@@ -334,7 +334,7 @@ def test_call_grad_2(op_tester):
 
         return [r, r__o, d0_t.grad, d1_t.grad]
 
-    op_tester.passes = popart.PatternsLevel.DEFAULT
+    op_tester.passes = popart.PatternsLevel.Default
 
     op_tester.run(init_builder, reference, 'train')
 
@@ -375,7 +375,7 @@ def test_call_grad_3():
             builder.addOutputTensor(sm)
             losses = [popart.NllLoss(sm, lb, "loss")]
 
-        art = popart.AnchorReturnType("ALL")
+        art = popart.AnchorReturnType("All")
         dataFlow = popart.DataFlow(
             1, {
                 ip: art,
@@ -394,7 +394,7 @@ def test_call_grad_3():
             optimizer=popart.ConstSGD(0.001),
             userOptions=trainingOptions,
             deviceInfo=tu.create_test_device(),
-            passes=popart.Patterns(popart.PatternsLevel.DEFAULT))
+            passes=popart.Patterns(popart.PatternsLevel.Default))
 
         # Compile graph
         trainingSession.prepareDevice()
@@ -470,7 +470,7 @@ def test_call_grad_scoped(op_tester):
 
         return [r, r__o, d0_t.grad, d1_t.grad]
 
-    op_tester.passes = popart.PatternsLevel.DEFAULT
+    op_tester.passes = popart.PatternsLevel.Default
 
     op_tester.run(init_builder, reference, 'train')
 
@@ -544,7 +544,7 @@ def test_stacked_subgraphs(op_tester):
 
         return [r, r__o, in_t.grad, w_t.grad]
 
-    op_tester.passes = popart.PatternsLevel.DEFAULT
+    op_tester.passes = popart.PatternsLevel.Default
 
     op_tester.run(init_builder, reference, 'train')
 
@@ -584,7 +584,7 @@ def test_stacked_subgraphs_2():
                 actIn = builder.aiOnnx.relu([actIn], "relu_layer" + str(layer))
 
         builder.addOutputTensor(actIn)
-        art = popart.AnchorReturnType("ALL")
+        art = popart.AnchorReturnType("All")
         anchor_returns = {
             w0: art,
             popart.reservedGradientPrefix() + w0: art,
@@ -651,8 +651,8 @@ def test_stacked_subgraphs_2():
 #     out = builder.aiGraphcore.call([i0, i1], 1, subgraph_builder)[0]
 #
 #     anchorMap = {
-#         popart.reservedGradientPrefix() + i0: popart.AnchorReturnType("ALL"),
-#         popart.reservedGradientPrefix() + i1: popart.AnchorReturnType("ALL")
+#         popart.reservedGradientPrefix() + i0: popart.AnchorReturnType("All"),
+#         popart.reservedGradientPrefix() + i1: popart.AnchorReturnType("All")
 #     }
 #
 #     # This should throw some exception, as the grad subgraph is empty

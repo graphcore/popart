@@ -73,11 +73,11 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_AddCastMatMul) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto art       = AnchorReturnType("ALL");
+  auto art       = AnchorReturnType("All");
   auto dataFlow  = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
   std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(outId, "l1LossVal", 0.1, ReductionType::SUM)};
+      std::make_shared<L1Loss>(outId, "l1LossVal", 0.1, ReductionType::Sum)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -88,7 +88,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_AddCastMatMul) {
               &optimizer,
               *device,
               {}, // no SessionOptions
-              Patterns({PreAliasPatternType::POSTNREPL})});
+              Patterns({PreAliasPatternType::PostNRepl})});
 
   // Check the ir
   // 1) The Matmul Op is present,
@@ -174,11 +174,11 @@ template <typename FROM, typename TO> void ConstExprTest_AddCastMatMul_Type() {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto art       = AnchorReturnType("ALL");
+  auto art       = AnchorReturnType("All");
   auto dataFlow  = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
   std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(outId, "l1LossVal", 0.1, ReductionType::SUM)};
+      std::make_shared<L1Loss>(outId, "l1LossVal", 0.1, ReductionType::Sum)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -189,7 +189,7 @@ template <typename FROM, typename TO> void ConstExprTest_AddCastMatMul_Type() {
               &optimizer,
               *device,
               {}, // no SessionOptions
-              Patterns({PreAliasPatternType::POSTNREPL})});
+              Patterns({PreAliasPatternType::PostNRepl})});
 
   // Check the ir
   // 1) The Matmul Op is present,

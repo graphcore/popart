@@ -223,7 +223,7 @@ bool DecomposeGradSum::apply(Graph &graph) const {
     auto init         = std::make_unique<InitOp>(Onnx::CustomOperators::Init_1,
                                          partialsSumOrder.front().t->info,
                                          TensorType::ActGrad,
-                                         InitType::ZERO,
+                                         InitType::Zero,
                                          initSettings);
     OpId initOpId     = graph.moveIntoGraph(std::move(init));
     Op *initOp        = graph.getOps()[initOpId].get();

@@ -18,7 +18,7 @@
 namespace popart {
 
 // FFS : add gcc like levels O2, O3, OS etc
-enum class PatternsLevel { NONE, DEFAULT, ALL };
+enum class PatternsLevel { NoPatterns, Default, All };
 
 class PatternNames {
 public:
@@ -182,7 +182,7 @@ private:
 public:
   Patterns(std::vector<PreAliasPatternType> types);
 
-  Patterns(PatternsLevel level = PatternsLevel::DEFAULT);
+  Patterns(PatternsLevel level = PatternsLevel::Default);
 
   static Patterns create(std::vector<std::string> patterns);
 

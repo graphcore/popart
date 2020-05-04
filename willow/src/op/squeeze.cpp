@@ -116,7 +116,7 @@ SqueezeGradOp::SqueezeGradOp(const SqueezeOp &op_)
 const std::vector<GradInOutMapper> &SqueezeGradOp::gradInputInfo() const {
   // input at index 0 : gradient of output of squeeze
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), SqueezeOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getInIndex(), SqueezeOp::getOutIndex(), GradOpInType::GradOut}};
   return inInfo;
 }
 

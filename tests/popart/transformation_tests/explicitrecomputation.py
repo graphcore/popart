@@ -49,7 +49,7 @@ def test_explicit_recomputation(tmpdir):
 
         dataflow_anchors = {}
         for anchorId in anchorIds:
-            dataflow_anchors.update({anchorId: popart.AnchorReturnType("ALL")})
+            dataflow_anchors.update({anchorId: popart.AnchorReturnType("All")})
 
         opts = popart.SessionOptions()
         opts.explicitRecomputation = explicit_recompute
@@ -61,7 +61,7 @@ def test_explicit_recomputation(tmpdir):
             dataFeed=popart.DataFlow(1, dataflow_anchors),
             optimizer=popart.ConstSGD(0.01),
             losses=[popart.L1Loss(out, "l1LossVal", 0.1)],
-            passes=popart.Patterns(popart.PatternsLevel.ALL),
+            passes=popart.Patterns(popart.PatternsLevel.All),
             userOptions=opts,
             deviceInfo=device)
 

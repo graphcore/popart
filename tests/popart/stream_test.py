@@ -20,9 +20,9 @@ def test_stream_on_off(tmpdir):
 
     dataFlow = popart.DataFlow(
         1, {
-            i1: popart.AnchorReturnType("ALL"),
-            i2: popart.AnchorReturnType("ALL"),
-            o: popart.AnchorReturnType("ALL")
+            i1: popart.AnchorReturnType("All"),
+            i2: popart.AnchorReturnType("All"),
+            o: popart.AnchorReturnType("All")
         })
 
     session = popart.InferenceSession(fnModel=proto,

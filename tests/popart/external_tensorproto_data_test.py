@@ -82,7 +82,7 @@ def test_load_externally_saved_tensors():
 
     # Create builder from onnx model
     builder = popart.Builder(tmpfile_model)
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
     session = popart.InferenceSession(
         fnModel=builder.getModelProto(),
         dataFeed=dataFlow,
@@ -119,7 +119,7 @@ def test_save_back_externally_saved_tensors():
         w_init = np.random.rand(*shape).astype('float32')
         initWeights.append(w_init)
         weightsIds.append(builder.addInitializedInputTensor(w_init))
-        anchorsDef[weightsIds[layer]] = popart.AnchorReturnType("ALL")
+        anchorsDef[weightsIds[layer]] = popart.AnchorReturnType("All")
         out = builder.aiOnnx.matmul([out, weightsIds[layer]])
 
     tmpdir = tempfile.mkdtemp()

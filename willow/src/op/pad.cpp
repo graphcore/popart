@@ -211,7 +211,7 @@ std::unique_ptr<Op> PadGradOp::clone() const {
 
 const std::vector<GradInOutMapper> &PadGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), BasePadOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getInIndex(), BasePadOp::getOutIndex(), GradOpInType::GradOut}};
 
   return inInfo;
 }

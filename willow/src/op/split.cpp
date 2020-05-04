@@ -82,7 +82,7 @@ SplitGradOp::SplitGradOp(const SplitOp &fwdOp, const Op::Settings &settings_)
     : Op(Onnx::GradOperators::SplitGrad, settings_),
       fwdOpInInfo(fwdOp.inInfo(SplitOp::getInIndex())), axis(fwdOp.getAxis()) {
   for (int i = 0; i < fwdOp.output->n(); i++) {
-    gradInInfo.push_back({i, i, GradOpInType::GRADOUT});
+    gradInInfo.push_back({i, i, GradOpInType::GradOut});
   }
 
   outInfoMap.insert({getOutIndex(), SplitOp::getInIndex()});

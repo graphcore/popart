@@ -34,8 +34,8 @@ std::unique_ptr<Op> ReduceL1GradOp::clone() const {
 
 const std::vector<GradInOutMapper> &ReduceL1GradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), ReduceL1GradOp::getOutIndex(), GradOpInType::GRADOUT},
-      {getFwdInInIndex(), ReduceL1GradOp::getInIndex(), GradOpInType::IN}};
+      {getInIndex(), ReduceL1GradOp::getOutIndex(), GradOpInType::GradOut},
+      {getFwdInInIndex(), ReduceL1GradOp::getInIndex(), GradOpInType::In}};
 
   return inInfo;
 }

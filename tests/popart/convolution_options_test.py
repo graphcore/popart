@@ -46,9 +46,9 @@ def conv_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
     ]
     training_dataFlow = popart.DataFlow(
         1, {
-            anchor_names[0]: popart.AnchorReturnType("ALL"),
-            anchor_names[1]: popart.AnchorReturnType("ALL"),
-            anchor_names[2]: popart.AnchorReturnType("ALL")
+            anchor_names[0]: popart.AnchorReturnType("All"),
+            anchor_names[1]: popart.AnchorReturnType("All"),
+            anchor_names[2]: popart.AnchorReturnType("All")
         })
 
     opts = popart.SessionOptions()
@@ -122,9 +122,9 @@ def matmul_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
     ]
     training_dataFlow = popart.DataFlow(
         1, {
-            anchor_names[0]: popart.AnchorReturnType("ALL"),
-            anchor_names[1]: popart.AnchorReturnType("ALL"),
-            anchor_names[2]: popart.AnchorReturnType("ALL")
+            anchor_names[0]: popart.AnchorReturnType("All"),
+            anchor_names[1]: popart.AnchorReturnType("All"),
+            anchor_names[2]: popart.AnchorReturnType("All")
         })
 
     opts = popart.SessionOptions()

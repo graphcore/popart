@@ -222,13 +222,13 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
     auto modelProto = io::getModelFromString(proto);
 
     // Create the IR, adding outId as an anchor
-    auto art      = AnchorReturnType("ALL");
+    auto art      = AnchorReturnType("All");
     auto dataFlow = DataFlow(1, {{out, art}});
 
     auto opts = SessionOptions();
-    opts.dotChecks.insert(DotCheck::BWD0);
-    opts.dotChecks.insert(DotCheck::FWD0);
-    opts.dotChecks.insert(DotCheck::FINAL);
+    opts.dotChecks.insert(DotCheck::Bwd0);
+    opts.dotChecks.insert(DotCheck::Fwd0);
+    opts.dotChecks.insert(DotCheck::Final);
     opts.dotOpNames      = false;
     opts.logDir          = "./dotfiles";
     opts.enableOutlining = outlining;
@@ -248,7 +248,7 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
         {},
         popart::InputShapeInfo(),
         opts,
-        popart::Patterns(PatternsLevel::NONE).enableInPlace(inp));
+        popart::Patterns(PatternsLevel::NoPatterns).enableInPlace(inp));
 
     // prepare the anchors
     float rawOutputData;

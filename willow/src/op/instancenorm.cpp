@@ -54,15 +54,15 @@ InstanceNormGradOp::InstanceNormGradOp(const InstanceNormOp &fwd_op)
 
 const std::vector<GradInOutMapper> &InstanceNormGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInputInIndex(), InstanceNormOp::getInputInIndex(), GradOpInType::IN},
-      {getScaleInIndex(), InstanceNormOp::getScaleInIndex(), GradOpInType::IN},
+      {getInputInIndex(), InstanceNormOp::getInputInIndex(), GradOpInType::In},
+      {getScaleInIndex(), InstanceNormOp::getScaleInIndex(), GradOpInType::In},
       {getOutGradInIndex(),
        InstanceNormOp::getInputInIndex(),
-       GradOpInType::GRADOUT},
-      {getMeanInIndex(), InstanceNormOp::getMeanOutIndex(), GradOpInType::OUT},
+       GradOpInType::GradOut},
+      {getMeanInIndex(), InstanceNormOp::getMeanOutIndex(), GradOpInType::Out},
       {getInvStdDevInIndex(),
        InstanceNormOp::getInvStdDevOutIndex(),
-       GradOpInType::OUT},
+       GradOpInType::Out},
   };
 
   return inInfo;

@@ -49,10 +49,10 @@ BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
     auto modelProto = io::getModelFromString(proto);
 
     // Add the last tensor, and the 3rd tensor as anchors
-    auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("ALL")}});
+    auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("All")}});
     auto optimizer = ConstSGD(0.01);
     std::vector<std::shared_ptr<Loss>> losses{
-        std::make_shared<L1Loss>(act, "l1LossVal", 0.1, ReductionType::SUM)};
+        std::make_shared<L1Loss>(act, "l1LossVal", 0.1, ReductionType::Sum)};
     auto device = createTestDevice(TEST_TARGET);
 
     SessionOptions opts;
@@ -70,15 +70,15 @@ BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
                 &optimizer,
                 *device,
                 opts,
-                Patterns({PreAliasPatternType::OPTOIDENTITY,
-                          PreAliasPatternType::POSTNREPL})});
+                Patterns({PreAliasPatternType::OptoIdentity,
+                          PreAliasPatternType::PostNRepl})});
 
     auto opSchedule = ir.getOpSchedule({});
 
     // Check that there is no recomputation
     BOOST_CHECK(
         std::all_of(opSchedule.cbegin(), opSchedule.cend(), [](const Op *op) {
-          return op->settings.recomputeType != RecomputeType::RECOMPUTE;
+          return op->settings.recomputeType != RecomputeType::Recompute;
         }));
     return opSchedule.size();
   };

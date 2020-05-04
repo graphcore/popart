@@ -36,7 +36,7 @@ ReshapeInplaceOpx::ReshapeInplaceOpx(Op *op, Devicex *devicex)
 }
 
 InputCreatorType ReshapeBaseOpx::getInputCreatorType(InIndex) const {
-  return InputCreatorType::CANUNWIND;
+  return InputCreatorType::CanUnwind;
 }
 
 poplar::Tensor ReshapeBaseOpx::unwindTensorLayout(poplar::Tensor tensor,

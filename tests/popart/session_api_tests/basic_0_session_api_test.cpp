@@ -41,7 +41,7 @@ BOOST_AUTO_TEST_CASE(Basic0SessionApi) {
 
   auto proto = builder->getModelProto();
 
-  auto art      = AnchorReturnType("ALL");
+  auto art      = AnchorReturnType("All");
   auto dataFlow = DataFlow(1, {{yId, art}});
   auto device   = popart::createTestDevice(TEST_TARGET);
 
@@ -52,7 +52,7 @@ BOOST_AUTO_TEST_CASE(Basic0SessionApi) {
       {},
       popart::InputShapeInfo(),
       opts,
-      popart::Patterns(PatternsLevel::NONE));
+      popart::Patterns(PatternsLevel::NoPatterns));
 
   // create anchor and co.
   std::vector<float> rawOutputValues(xInfo.nelms());

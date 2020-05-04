@@ -114,10 +114,10 @@ BOOST_AUTO_TEST_CASE(OpManager_Test2) {
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
-  auto dataFlow  = DataFlow(1, {{customOut[0], AnchorReturnType("ALL")}});
+  auto dataFlow  = DataFlow(1, {{customOut[0], AnchorReturnType("All")}});
   auto optimizer = SGD({{"defaultLearningRate", {0.01, false}}});
   std::vector<std::shared_ptr<Loss>> losses{std::make_shared<L1Loss>(
-      customOut[0], "l1LossVal", 0.1, ReductionType::SUM)};
+      customOut[0], "l1LossVal", 0.1, ReductionType::Sum)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_CASE(OpManager_Test2) {
               &optimizer,
               *device,
               {},
-              Patterns({PreAliasPatternType::PREUNIREPL})});
+              Patterns({PreAliasPatternType::PreUniRepl})});
 
   // Check the ir
   BOOST_CHECK(ir.opsOfType({"ai_simon", "MyAdd2", 1}).size() == 1);
@@ -190,7 +190,7 @@ BOOST_AUTO_TEST_CASE(OpManager_Test3) {
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
-  auto dataFlow = DataFlow(1, {{customOut[0], AnchorReturnType("ALL")}});
+  auto dataFlow = DataFlow(1, {{customOut[0], AnchorReturnType("All")}});
   auto device   = createTestDevice(TEST_TARGET);
 
   Ir ir;

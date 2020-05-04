@@ -98,7 +98,7 @@ void prepareIr1(popart::Ir &ir) {
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
 
-  auto dataFlow = DataFlow(10, {{act4, AnchorReturnType("ALL")}});
+  auto dataFlow = DataFlow(10, {{act4, AnchorReturnType("All")}});
 
   SessionOptions userOptions;
   userOptions.virtualGraphMode = VirtualGraphMode::Auto;
@@ -107,16 +107,16 @@ void prepareIr1(popart::Ir &ir) {
   auto optimizer = ConstSGD(0.01);
 
   auto loss1 =
-      std::make_shared<L1Loss>(act6, "l1LossVal_1", 0.1, ReductionType::MEAN);
+      std::make_shared<L1Loss>(act6, "l1LossVal_1", 0.1, ReductionType::Mean);
 
   auto loss2 =
-      std::make_shared<L1Loss>(act8, "l1LossVal_2", 0.2, ReductionType::SUM);
+      std::make_shared<L1Loss>(act8, "l1LossVal_2", 0.2, ReductionType::Sum);
 
   auto loss3 =
-      std::make_shared<NllLoss>(act3, l0, "nllLossVal_1", ReductionType::MEAN);
+      std::make_shared<NllLoss>(act3, l0, "nllLossVal_1", ReductionType::Mean);
 
   auto loss4 =
-      std::make_shared<NllLoss>(act9, l1, "nllLossVal_2", ReductionType::SUM);
+      std::make_shared<NllLoss>(act9, l1, "nllLossVal_2", ReductionType::Sum);
 
   auto device = createTestDevice(TEST_TARGET, 3);
 
@@ -127,7 +127,7 @@ void prepareIr1(popart::Ir &ir) {
               &optimizer,
               *device,
               userOptions,
-              Patterns(PatternsLevel::DEFAULT)});
+              Patterns(PatternsLevel::Default)});
 }
 
 void prepareIr0(popart::Ir &ir) {
@@ -190,7 +190,7 @@ void prepareIr0(popart::Ir &ir) {
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
 
-  auto dataFlow = DataFlow(10, {{act0, AnchorReturnType("ALL")}});
+  auto dataFlow = DataFlow(10, {{act0, AnchorReturnType("All")}});
 
   SessionOptions userOptions;
   userOptions.virtualGraphMode = VirtualGraphMode::Auto;
@@ -199,7 +199,7 @@ void prepareIr0(popart::Ir &ir) {
   auto optimizer = ConstSGD(0.01);
 
   auto loss =
-      std::make_shared<L1Loss>(act5, "l1LossVal", 0.1, ReductionType::SUM);
+      std::make_shared<L1Loss>(act5, "l1LossVal", 0.1, ReductionType::Sum);
 
   auto device = createTestDevice(TEST_TARGET, 3);
 
@@ -210,7 +210,7 @@ void prepareIr0(popart::Ir &ir) {
               &optimizer,
               *device,
               userOptions,
-              Patterns(PatternsLevel::DEFAULT)});
+              Patterns(PatternsLevel::Default)});
 }
 
 // We check that the topological constraints on Stash and Restore are satisfied

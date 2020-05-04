@@ -16,7 +16,7 @@ def test_net_from_string(tmpdir):
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     popart.InferenceSession(fnModel=proto,
                             dataFeed=dataFlow,
@@ -37,7 +37,7 @@ def test_net_from_file(tmpdir):
     with open("test.onnx", "wb") as f:
         f.write(proto)
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     popart.InferenceSession(fnModel="test.onnx",
                             dataFeed=dataFlow,

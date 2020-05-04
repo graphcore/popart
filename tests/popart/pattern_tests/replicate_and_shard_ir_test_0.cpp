@@ -40,7 +40,7 @@ BOOST_AUTO_TEST_CASE(SplitToSliceTest0) {
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
 
-  auto dataFlow = DataFlow(1, {{act, AnchorReturnType("ALL")}});
+  auto dataFlow = DataFlow(1, {{act, AnchorReturnType("All")}});
 
   SessionOptions userOptions;
   userOptions.virtualGraphMode       = VirtualGraphMode::Auto;
@@ -50,7 +50,7 @@ BOOST_AUTO_TEST_CASE(SplitToSliceTest0) {
   auto optimizer = ConstSGD(0.01);
 
   auto loss =
-      std::make_shared<L1Loss>(act, "l1LossVal", 0.1, ReductionType::SUM);
+      std::make_shared<L1Loss>(act, "l1LossVal", 0.1, ReductionType::Sum);
 
   auto device = createTestDevice(TEST_TARGET, 8);
 
@@ -62,7 +62,7 @@ BOOST_AUTO_TEST_CASE(SplitToSliceTest0) {
               &optimizer,
               *device,
               userOptions,
-              Patterns(PatternsLevel::DEFAULT)});
+              Patterns(PatternsLevel::Default)});
 
   std::set<int> vGraphs;
   for (auto &id_op : ir.getMainGraphOps()) {

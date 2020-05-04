@@ -115,13 +115,13 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
     std::unique_ptr<Optimizer> optimizer;
     std::vector<std::shared_ptr<Loss>> up_losses;
 
-    auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+    auto dataFlow = DataFlow(1, {{out, AnchorReturnType("All")}});
     auto device   = createTestDevice(TEST_TARGET);
 
     if (train) {
       optimizer.reset(new ConstSGD(0.01));
       up_losses.push_back(
-          std::make_shared<L1Loss>(out, "l1LossVal", 0.1, ReductionType::SUM));
+          std::make_shared<L1Loss>(out, "l1LossVal", 0.1, ReductionType::Sum));
     }
 
     auto opts = SessionOptions();
@@ -141,7 +141,7 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
                 optimizer.get(),
                 *device,
                 opts,
-                Patterns(PatternsLevel::ALL).enableInPlace(false)});
+                Patterns(PatternsLevel::All).enableInPlace(false)});
 
     // pin down the scheduler in a few places, to reduce test shadiness;
     OpsBeforeKey topoCons;
@@ -330,16 +330,16 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
   std::vector<std::shared_ptr<Loss>> up_losses;
   auto dataFlow =
       DataFlow(1,
-               {{out, AnchorReturnType("ALL")},
-                {reservedGradientPrefix() + in0, AnchorReturnType("ALL")},
-                {reservedGradientPrefix() + o2, AnchorReturnType("ALL")},
-                {reservedGradientPrefix() + out, AnchorReturnType("ALL")},
-                {o2, AnchorReturnType("ALL")}});
+               {{out, AnchorReturnType("All")},
+                {reservedGradientPrefix() + in0, AnchorReturnType("All")},
+                {reservedGradientPrefix() + o2, AnchorReturnType("All")},
+                {reservedGradientPrefix() + out, AnchorReturnType("All")},
+                {o2, AnchorReturnType("All")}});
   auto device = createTestDevice(TEST_TARGET);
 
   optimizer.reset(new ConstSGD(0.01));
   up_losses.push_back(
-      std::make_shared<L1Loss>(out, "l1LossVal", 0.1, ReductionType::SUM));
+      std::make_shared<L1Loss>(out, "l1LossVal", 0.1, ReductionType::Sum));
 
   std::vector<Match> expected_train_matches = {
       {{7, 13}, 6},
@@ -363,7 +363,7 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
               optimizer.get(),
               *device,
               opts,
-              Patterns(PatternsLevel::DEFAULT).enableInPlace(false)});
+              Patterns(PatternsLevel::Default).enableInPlace(false)});
 
   std::vector<Match> expected_matches{};
   auto sched = ir.getOpSchedule({});

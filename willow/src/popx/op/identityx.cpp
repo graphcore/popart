@@ -46,11 +46,11 @@ void IdentityLossGradOpx::grow(poplar::program::Sequence &) const {
   IdentityLossGradOp &identitylossop = getOp<IdentityLossGradOp>();
   double scale;
   switch (identitylossop.identityl()->getReductionType()) {
-  case ReductionType::SUM: {
+  case ReductionType::Sum: {
     scale = 1;
     break;
   }
-  case ReductionType::MEAN: {
+  case ReductionType::Mean: {
     uint64_t totalSamples =
         dv_p->getReplicationFactor() * getInTensor(0).numElements();
     scale = 1.0 / static_cast<double>(totalSamples);
@@ -69,7 +69,7 @@ void IdentityLossGradOpx::grow(poplar::program::Sequence &) const {
 }
 
 InputCreatorType IdentityLossOpx::getInputCreatorType(InIndex) const {
-  return InputCreatorType::CANUNWIND;
+  return InputCreatorType::CanUnwind;
 }
 
 void IdentityLossOpx::grow(poplar::program::Sequence &) const {

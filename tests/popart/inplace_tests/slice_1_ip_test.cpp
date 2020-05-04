@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_CASE(Inplace_SlicesOverlap) {
     auto modelProto = io::getModelFromString(proto);
 
     // Create the IR
-    auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+    auto dataFlow = DataFlow(1, {{out, AnchorReturnType("All")}});
 
     auto device = createTestDevice(TEST_TARGET);
 
@@ -92,7 +92,7 @@ BOOST_AUTO_TEST_CASE(Inplace_SlicesOverlap) {
                 nullptr,
                 *device,
                 {},
-                Patterns(PatternsLevel::NONE).enableInPlace(true)});
+                Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
 
     // get the index of the first op of type "identifier"
     auto getFirstPtrIndex = [](OperatorIdentifier identifier,

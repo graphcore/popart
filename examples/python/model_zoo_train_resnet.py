@@ -35,8 +35,8 @@ def preprocess(img_data):
     norm_img_data = np.zeros(img_data.shape).astype('float32')
     for i in range(img_data.shape[0]):
         # for each pixel in each channel, divide the value by 255 to get value between [0, 1] and then normalize
-        norm_img_data[i, :, :] = (
-            img_data[i, :, :] / 255 - mean_vec[i]) / stddev_vec[i]
+        norm_img_data[i, :, :] = (img_data[i, :, :] / 255 -
+                                  mean_vec[i]) / stddev_vec[i]
     return norm_img_data
 
 
@@ -44,12 +44,12 @@ def preprocess(img_data):
 parser = argparse.ArgumentParser(
     description="Resnet onnx model zoo training example.")
 parser.add_argument("url", help="URL for the onnx model zoo input.")
-parser.add_argument(
-    "image_directory",
-    help="Directory where the imagenet examples are stored.")
+parser.add_argument("image_directory",
+                    help="Directory where the imagenet examples are stored.")
 parser.add_argument("labels_file", help="File listing imagenet classes.")
-parser.add_argument(
-    "onnx_opset_version", help="ai.onnx opset version", default=7)
+parser.add_argument("onnx_opset_version",
+                    help="ai.onnx opset version",
+                    default=7)
 args = parser.parse_args()
 
 url = args.url
@@ -125,8 +125,8 @@ for f in files:
     img.close()
     # Preprocess as per the provided mean and std dev
     data = preprocess(np.transpose(data, (2, 0, 1)))
-    labels.append(
-        np.array([labels_lookup[img_class]["index"]], dtype=np.int32))
+    labels.append(np.array([labels_lookup[img_class]["index"]],
+                           dtype=np.int32))
     # Add a new dimension for images per batch. In this model, this remains
     # as 1 per batch.
     data = data[np.newaxis, :]
@@ -154,7 +154,7 @@ trainingOptions = popart.SessionOptions()
 trainingSession = popart.TrainingSession(
     fnModel=graph_transformer.getModelProto(),
     dataFeed=popart.DataFlow(batches_per_step,
-                              {output: popart.AnchorReturnType("ALL")}),
+                             {output: popart.AnchorReturnType("All")}),
     losses=[popart.NllLoss(probs, lb, "loss")],
     optimizer=popart.ConstSGD(0.001),
     userOptions=trainingOptions,

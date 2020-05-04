@@ -12,7 +12,7 @@ output_name = "output"
 torch.onnx.export(model, input_, "alexnet.onnx", output_names=[output_name])
 
 # Create a runtime environment
-anchors = {output_name: popart.AnchorReturnType("ALL")}
+anchors = {output_name: popart.AnchorReturnType("All")}
 dataFeed = popart.DataFlow(100, anchors)
 device = popart.DeviceManager().createCpuDevice()
 

@@ -151,8 +151,8 @@ BOOST_AUTO_TEST_CASE(Region_Reshape6) {
 
 BOOST_AUTO_TEST_CASE(Region_MergeRegions0) {
 
-  view::Region r0({0, 0}, {3, 4}, view::AccessType::READ);
-  view::Region r1({1, 3}, {5, 5}, view::AccessType::WRITE);
+  view::Region r0({0, 0}, {3, 4}, view::AccessType::Read);
+  view::Region r1({1, 3}, {5, 5}, view::AccessType::Write);
 
   view::Regions rs = view::mergeRegions({r0, r1});
 
@@ -160,34 +160,34 @@ BOOST_AUTO_TEST_CASE(Region_MergeRegions0) {
 
   auto r2 = std::find(rs.begin(), rs.end(), view::Region({0, 0}, {3, 4}));
   BOOST_CHECK(r2 != rs.end());
-  BOOST_CHECK(r2->getAccessType() == view::AccessType::READ_WRITE);
+  BOOST_CHECK(r2->getAccessType() == view::AccessType::ReadWrite);
 
   auto r3 = std::find(rs.begin(), rs.end(), view::Region({3, 3}, {5, 4}));
   BOOST_CHECK(r3 != rs.end());
-  BOOST_CHECK(r3->getAccessType() == view::AccessType::READ_WRITE);
+  BOOST_CHECK(r3->getAccessType() == view::AccessType::ReadWrite);
 
   auto r4 = std::find(rs.begin(), rs.end(), view::Region({1, 4}, {5, 5}));
   BOOST_CHECK(r4 != rs.end());
-  BOOST_CHECK(r4->getAccessType() == view::AccessType::READ_WRITE);
+  BOOST_CHECK(r4->getAccessType() == view::AccessType::ReadWrite);
 }
 
 BOOST_AUTO_TEST_CASE(Region_AccessType0) {
 
-  BOOST_CHECK(view::combine({view::AccessType::NONE, view::AccessType::READ}) ==
-              view::AccessType::READ);
+  BOOST_CHECK(view::combine({view::AccessType::None, view::AccessType::Read}) ==
+              view::AccessType::Read);
   BOOST_CHECK(
-      view::combine({view::AccessType::NONE, view::AccessType::WRITE}) ==
-      view::AccessType::WRITE);
+      view::combine({view::AccessType::None, view::AccessType::Write}) ==
+      view::AccessType::Write);
   BOOST_CHECK(
-      view::combine({view::AccessType::NONE, view::AccessType::READ_WRITE}) ==
-      view::AccessType::READ_WRITE);
+      view::combine({view::AccessType::None, view::AccessType::ReadWrite}) ==
+      view::AccessType::ReadWrite);
   BOOST_CHECK(
-      view::combine({view::AccessType::READ, view::AccessType::WRITE}) ==
-      view::AccessType::READ_WRITE);
+      view::combine({view::AccessType::Read, view::AccessType::Write}) ==
+      view::AccessType::ReadWrite);
   BOOST_CHECK(
-      view::combine({view::AccessType::READ, view::AccessType::READ_WRITE}) ==
-      view::AccessType::READ_WRITE);
+      view::combine({view::AccessType::Read, view::AccessType::ReadWrite}) ==
+      view::AccessType::ReadWrite);
   BOOST_CHECK(
-      view::combine({view::AccessType::WRITE, view::AccessType::READ_WRITE}) ==
-      view::AccessType::READ_WRITE);
+      view::combine({view::AccessType::Write, view::AccessType::ReadWrite}) ==
+      view::AccessType::ReadWrite);
 }

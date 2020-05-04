@@ -17,7 +17,7 @@ def test_set_random_seed_error():
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     s = popart.TrainingSession(fnModel=proto,
                                dataFeed=dataFlow,
@@ -55,7 +55,7 @@ def test_stochastic_rounding():
     builder.addOutputTensor(o_y)
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o_y: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o_y: popart.AnchorReturnType("All")})
 
     device = tu.create_test_device()
 
@@ -93,7 +93,7 @@ def test_stochastic_rounding_behaviour():
     opts.enableStochasticRounding = True
     session = popart.InferenceSession(
         fnModel=builder.getModelProto(),
-        dataFeed=popart.DataFlow(1, {out: popart.AnchorReturnType("ALL")}),
+        dataFeed=popart.DataFlow(1, {out: popart.AnchorReturnType("All")}),
         userOptions=opts,
         deviceInfo=tu.create_test_device())
 

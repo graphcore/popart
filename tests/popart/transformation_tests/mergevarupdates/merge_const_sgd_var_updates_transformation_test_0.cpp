@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeConstSGD0) {
     auto modelProto   = io::getModelFromString(proto);
 
     // create the IR
-    auto art      = AnchorReturnType("ALL");
+    auto art      = AnchorReturnType("All");
     auto dataFlow = DataFlow(1, {{reduced, art}});
 
     auto device = popart::createTestDevice(TEST_TARGET);
@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeConstSGD0) {
     float learnRate  = 0.1;
     auto optimizer   = ConstSGD(learnRate);
     std::vector<std::shared_ptr<Loss>> losses{std::make_shared<L1Loss>(
-        reduced, "l1LossVal", lossLambda, ReductionType::SUM)};
+        reduced, "l1LossVal", lossLambda, ReductionType::Sum)};
 
     Ir ir;
     ir.prepare({modelProto,

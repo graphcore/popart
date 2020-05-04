@@ -378,8 +378,8 @@ PYBIND11_MODULE(popart_core, m) {
   }
   {
     py::enum_<InitType> en(m, "InitType");
-    en.value("NONE", InitType::NONE);
-    en.value("ZERO", InitType::ZERO);
+    en.value("NoInit", InitType::NoInit);
+    en.value("Zero", InitType::Zero);
   }
   {
     py::class_<OpDefinition::Input> cls(m, "OpDefinition::Input");
@@ -415,10 +415,10 @@ PYBIND11_MODULE(popart_core, m) {
     py::class_<IWeightsIO> weightsio(m, "IWeightsIO");
 
     py::enum_<AnchorReturnTypeId> en(m, "AnchorReturnTypeId");
-    en.value("FINAL", AnchorReturnTypeId::FINAL);
-    en.value("EVERYN", AnchorReturnTypeId::EVERYN);
-    en.value("ALL", AnchorReturnTypeId::ALL);
-    en.value("SUM", AnchorReturnTypeId::SUM);
+    en.value("Final", AnchorReturnTypeId::Final);
+    en.value("EveryN", AnchorReturnTypeId::EveryN);
+    en.value("All", AnchorReturnTypeId::All);
+    en.value("Sum", AnchorReturnTypeId::Sum);
 
     {
       py::class_<PyStepIO> cls(m, "PyStepIO", stepio);
@@ -463,7 +463,7 @@ PYBIND11_MODULE(popart_core, m) {
                      const AnchorReturnType &>(),
             py::arg("batchesPerStep"),
             py::arg("anchorIds"),
-            py::arg("anchorReturnType") = AnchorReturnType("ALL"));
+            py::arg("anchorReturnType") = AnchorReturnType("All"));
     cls.def("isAnchored", &DataFlow::isAnchored);
     cls.def("nAnchors", &DataFlow::nAnchors);
     cls.def("batchesPerStep", &DataFlow::batchesPerStep);
@@ -502,8 +502,8 @@ PYBIND11_MODULE(popart_core, m) {
     loss.def("output", &Loss::output);
 
     py::enum_<ReductionType> en(m, "ReductionType");
-    en.value("Sum", ReductionType::SUM);
-    en.value("Mean", ReductionType::MEAN);
+    en.value("Sum", ReductionType::Sum);
+    en.value("Mean", ReductionType::Mean);
 
     {
       py::class_<NllLoss> cls(m, "NllLoss", loss);
@@ -511,13 +511,13 @@ PYBIND11_MODULE(popart_core, m) {
               py::arg("probabilities"),
               py::arg("labels"),
               py::arg("output"),
-              py::arg("reduction") = ReductionType::SUM);
+              py::arg("reduction") = ReductionType::Sum);
       cls.def(py::init<TensorId, TensorId, TensorId, int, ReductionType>(),
               py::arg("probabilities"),
               py::arg("labels"),
               py::arg("output"),
               py::arg("ignore_index"),
-              py::arg("reduction") = ReductionType::SUM);
+              py::arg("reduction") = ReductionType::Sum);
       cls.def("probsTensorId", &NllLoss::probsTensorId);
       cls.def("labelTensorId", &NllLoss::labelTensorId);
       cls.def("pipelineStage", &NllLoss::pipelineStage);
@@ -530,7 +530,7 @@ PYBIND11_MODULE(popart_core, m) {
               py::arg("input"),
               py::arg("output"),
               py::arg("lambda"),
-              py::arg("reduction") = ReductionType::SUM);
+              py::arg("reduction") = ReductionType::Sum);
       cls.def("getInputId", &L1Loss::getInputId);
       cls.def("getLambda", &L1Loss::getLambda);
       cls.def("pipelineStage", &L1Loss::pipelineStage);
@@ -541,7 +541,7 @@ PYBIND11_MODULE(popart_core, m) {
       cls.def(py::init<TensorId, TensorId, ReductionType>(),
               py::arg("input"),
               py::arg("output"),
-              py::arg("reduction") = ReductionType::SUM);
+              py::arg("reduction") = ReductionType::Sum);
       cls.def("getInputId", &IdentityLoss::getInputId);
       cls.def("pipelineStage", &IdentityLoss::pipelineStage);
       cls.def("virtualGraph", &IdentityLoss::virtualGraph);
@@ -691,17 +691,17 @@ PYBIND11_MODULE(popart_core, m) {
   }
   {
     py::enum_<PatternsLevel> en(m, "PatternsLevel");
-    en.value("ALL", PatternsLevel::ALL);
-    en.value("DEFAULT", PatternsLevel::DEFAULT);
-    en.value("NONE", PatternsLevel::NONE);
+    en.value("All", PatternsLevel::All);
+    en.value("Default", PatternsLevel::Default);
+    en.value("NoPatterns", PatternsLevel::NoPatterns);
   }
   {
     py::enum_<DotCheck> en(m, "DotCheck");
-    en.value("FWD0", DotCheck::FWD0);
-    en.value("FWD1", DotCheck::FWD1);
-    en.value("BWD0", DotCheck::BWD0);
-    en.value("PREALIAS", DotCheck::PREALIAS);
-    en.value("FINAL", DotCheck::FINAL);
+    en.value("Fwd0", DotCheck::Fwd0);
+    en.value("Fwd1", DotCheck::Fwd1);
+    en.value("Bwd0", DotCheck::Bwd0);
+    en.value("PreAlias", DotCheck::PreAlias);
+    en.value("Final", DotCheck::Final);
   }
   {
     py::enum_<RecomputationType> en(m, "RecomputationType");
@@ -712,16 +712,16 @@ PYBIND11_MODULE(popart_core, m) {
   }
   {
     py::enum_<RecomputeType> en(m, "RecomputeType");
-    en.value("Undefined", RecomputeType::UNDEFINED);
-    en.value("Checkpoint", RecomputeType::CHECKPOINT);
-    en.value("Recompute", RecomputeType::RECOMPUTE);
-    en.value("Recomputed", RecomputeType::RECOMPUTED);
+    en.value("Undefined", RecomputeType::Undefined);
+    en.value("Checkpoint", RecomputeType::Checkpoint);
+    en.value("Recompute", RecomputeType::Recompute);
+    en.value("Recomputed", RecomputeType::Recomputed);
   }
   {
     py::enum_<CacheType> en(m, "CacheType");
-    en.value("Undefined", CacheType::UNDEFINED);
-    en.value("Uncached", CacheType::UNCACHED);
-    en.value("Cached", CacheType::CACHED);
+    en.value("Undefined", CacheType::Undefined);
+    en.value("Uncached", CacheType::Uncached);
+    en.value("Cached", CacheType::Cached);
   }
   {
     py::enum_<SyncPattern> en(m, "SyncPattern");
@@ -755,30 +755,30 @@ PYBIND11_MODULE(popart_core, m) {
   }
   {
     py::enum_<PreAliasPatternType> en(m, "PreAliasPatternType");
-    en.value("PREUNIREPL", PreAliasPatternType::PREUNIREPL);
-    en.value("POSTNREPL", PreAliasPatternType::POSTNREPL);
-    en.value("SOFTMAXGRADDIRECT", PreAliasPatternType::SOFTMAXGRADDIRECT);
-    en.value("NLLLWITHSOFTMAXGRADDIRECT",
-             PreAliasPatternType::NLLLWITHSOFTMAXGRADDIRECT);
-    en.value("SPLITCONVBIAS", PreAliasPatternType::SPLITCONVBIAS);
-    en.value("OPTOIDENTITY", PreAliasPatternType::OPTOIDENTITY);
-    en.value("SUBTRACTARG1GRADOP", PreAliasPatternType::SUBTRACTARG1GRADOP);
-    en.value("MULARGGRADOP", PreAliasPatternType::MULARGGRADOP);
-    en.value("RECIPROCALGRADOP", PreAliasPatternType::RECIPROCALGRADOP);
-    en.value("SINGRADOP", PreAliasPatternType::SINGRADOP);
-    en.value("COSGRADOP", PreAliasPatternType::COSGRADOP);
-    en.value("TANTOSINOVERCOS", PreAliasPatternType::TANTOSINOVERCOS);
-    en.value("DIVARG0GRADOP", PreAliasPatternType::DIVARG0GRADOP);
-    en.value("DIVARG1GRADOP", PreAliasPatternType::DIVARG1GRADOP);
-    en.value("POWARG0GRADOP", PreAliasPatternType::POWARG0GRADOP);
-    en.value("POWARG1GRADOP", PreAliasPatternType::POWARG1GRADOP);
-    en.value("SQRTGRADOP", PreAliasPatternType::SQRTGRADOP);
-    en.value("EXPGRADOP", PreAliasPatternType::EXPGRADOP);
-    en.value("GEMMDECOMPOSITION", PreAliasPatternType::GEMMDECOMPOSITION);
-    en.value("NEGATIVEONESCALE", PreAliasPatternType::NEGATIVEONESCALE);
-    en.value("MATMULOP", PreAliasPatternType::MATMULOP);
-    en.value("MATMULLHSGRADOP", PreAliasPatternType::MATMULLHSGRADOP);
-    en.value("MATMULRHSGRADOP", PreAliasPatternType::MATMULRHSGRADOP);
+    en.value("PreUniRepl", PreAliasPatternType::PreUniRepl);
+    en.value("PostNRepl", PreAliasPatternType::PostNRepl);
+    en.value("SoftmaxGradDirect", PreAliasPatternType::SoftmaxGradDirect);
+    en.value("NLLLWithSoftmaxGradDirect",
+             PreAliasPatternType::NLLLWithSoftmaxGradDirect);
+    en.value("SplitConvBias", PreAliasPatternType::SplitConvBias);
+    en.value("OptoIdentity", PreAliasPatternType::OptoIdentity);
+    en.value("SubtractArg1GradOp", PreAliasPatternType::SubtractArg1GradOp);
+    en.value("MulArgGradOp", PreAliasPatternType::MulArgGradOp);
+    en.value("ReciprocalGradOp", PreAliasPatternType::ReciprocalGradOp);
+    en.value("SinGradOp", PreAliasPatternType::SinGradOp);
+    en.value("CosGradOp", PreAliasPatternType::CosGradOp);
+    en.value("TanToSinOverCos", PreAliasPatternType::TanToSinOverCos);
+    en.value("DivArg0GradOp", PreAliasPatternType::DivArg0GradOp);
+    en.value("DivArg1GradOp", PreAliasPatternType::DivArg1GradOp);
+    en.value("PowArg0GradOp", PreAliasPatternType::PowArg0GradOp);
+    en.value("PowArg1GradOp", PreAliasPatternType::PowArg1GradOp);
+    en.value("SqrtGradOp", PreAliasPatternType::SqrtGradOp);
+    en.value("ExpGradOp", PreAliasPatternType::ExpGradOp);
+    en.value("GemmDecomposition", PreAliasPatternType::GemmDecomposition);
+    en.value("NegativeOneScale", PreAliasPatternType::NegativeOneScale);
+    en.value("MatMulOp", PreAliasPatternType::MatMulOp);
+    en.value("MatMulLHSGradOp", PreAliasPatternType::MatMulLHSGradOp);
+    en.value("MatMulRHSGradOp", PreAliasPatternType::MatMulRHSGradOp);
   }
   {
     py::class_<Patterns> cls(m, "Patterns");
@@ -1315,7 +1315,7 @@ PYBIND11_MODULE(popart_core, m) {
         static_cast<void (Builder::*)(const TensorId &, RecomputeType value)>(
             &Builder::recomputeOutput),
         py::arg("nodeOutputNames"),
-        py::arg("value") = RecomputeType::UNDEFINED);
+        py::arg("value") = RecomputeType::Undefined);
     cls.def(
         "recomputeOutput",
         [](Builder &self, RecomputeType value) -> AttributeContextManager {
@@ -1323,12 +1323,12 @@ PYBIND11_MODULE(popart_core, m) {
               self, sRecomputeOutputAttribute, static_cast<int64_t>(value));
           return acm;
         },
-        py::arg("value") = RecomputeType::UNDEFINED);
+        py::arg("value") = RecomputeType::Undefined);
     cls.def("cacheOutput",
             static_cast<void (Builder::*)(const TensorId &, CacheType value)>(
                 &Builder::cacheOutput),
             py::arg("nodeOutputNames"),
-            py::arg("value") = CacheType::UNDEFINED);
+            py::arg("value") = CacheType::Undefined);
     cls.def(
         "cacheOutput",
         [](Builder &self, CacheType value) -> AttributeContextManager {
@@ -1336,7 +1336,7 @@ PYBIND11_MODULE(popart_core, m) {
               self, sCacheOutputAttribute, static_cast<int64_t>(value));
           return acm;
         },
-        py::arg("value") = CacheType::UNDEFINED);
+        py::arg("value") = CacheType::Undefined);
     cls.def("pipelineStage",
             static_cast<void (Builder::*)(const TensorId &, int64_t value)>(
                 &Builder::pipelineStage),
@@ -1420,13 +1420,13 @@ PYBIND11_MODULE(popart_core, m) {
         static_cast<void (Builder::*)(const TensorId &, RecomputeType value)>(
             &Builder::recomputeOutputInBackwardPass),
         py::arg("nodeOutputName"),
-        py::arg("value") = RecomputeType::RECOMPUTE);
+        py::arg("value") = RecomputeType::Recompute);
     cls.def("recomputeOutputInBackwardPass",
             static_cast<void (Builder::*)(const std::set<TensorId> &,
                                           RecomputeType value)>(
                 &Builder::recomputeOutputInBackwardPass),
             py::arg("nodeOutputNames"),
-            py::arg("value") = RecomputeType::RECOMPUTE);
+            py::arg("value") = RecomputeType::Recompute);
 
     cls.def("getRecomputeOutputInBackwardPass",
             static_cast<bool (Builder::*)(const TensorId &)>(
@@ -1472,9 +1472,9 @@ PYBIND11_MODULE(popart_core, m) {
   }
   {
     py::enum_<DeviceConnectionType> en(m, "DeviceConnectionType");
-    en.value("ALWAYS", DeviceConnectionType::ALWAYS);
-    en.value("ON_DEMAND", DeviceConnectionType::ON_DEMAND);
-    en.value("NEVER", DeviceConnectionType::NEVER);
+    en.value("Always", DeviceConnectionType::Always);
+    en.value("OnDemand", DeviceConnectionType::OnDemand);
+    en.value("Never", DeviceConnectionType::Never);
   }
 
   {
@@ -1493,13 +1493,13 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("tilesPerIpu")       = 0,
             py::arg("pattern")           = SyncPattern::Full,
             py::arg("replicationFactor") = 1,
-            py::arg("connectionType")    = DeviceConnectionType::ALWAYS);
+            py::arg("connectionType")    = DeviceConnectionType::Always);
     cls.def("acquireDeviceById",
             &DeviceManager::acquireDeviceById,
             py::arg("id"),
             py::arg("pattern")           = SyncPattern::Full,
             py::arg("replicationFactor") = 1,
-            py::arg("connectionType")    = DeviceConnectionType::ALWAYS);
+            py::arg("connectionType")    = DeviceConnectionType::Always);
     cls.def("createCpuDevice", &DeviceManager::createCpuDevice);
     cls.def("createIpuModelDevice", [](DeviceManager &dm, py::dict e) {
       std::map<std::string, std::string> options = getDictionary(e);
@@ -1515,7 +1515,7 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("replicationFactor") = 1,
             py::arg("numIpus")           = 1,
             py::arg("deviceType")        = DeviceType::Ipu,
-            py::arg("connectionType")    = DeviceConnectionType::ALWAYS);
+            py::arg("connectionType")    = DeviceConnectionType::Always);
   }
   {
     py::class_<DeviceInfo, std::shared_ptr<DeviceInfo>> cls(m, "DeviceInfo");

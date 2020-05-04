@@ -123,7 +123,7 @@ BOOST_AUTO_TEST_CASE(Train0TopK) {
     auto modelProto = io::getModelFromString(proto);
 
     // create the IR
-    auto art      = AnchorReturnType("ALL");
+    auto art      = AnchorReturnType("All");
     auto dataFlow = DataFlow(1, {{reservedGradientPrefix() + xId, art}});
 
     auto device = popart::createTestDevice(TEST_TARGET);
@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE(Train0TopK) {
     float learnRate = 0.1;
     auto optimizer  = ConstSGD(learnRate);
     std::vector<Loss *> losses{
-        new L1Loss(halvedOut, "l1LossVal", lossLambda, ReductionType::SUM)};
+        new L1Loss(halvedOut, "l1LossVal", lossLambda, ReductionType::Sum)};
 
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
@@ -143,7 +143,7 @@ BOOST_AUTO_TEST_CASE(Train0TopK) {
         device,
         popart::InputShapeInfo(),
         opts,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
 
     // prepare the anchors. We test just the
     // gradient of output values.

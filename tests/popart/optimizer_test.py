@@ -64,9 +64,9 @@ def test_sgd_param_check():
     lsName = popart.reservedLossScalingPrefix() + "FLOAT"
 
     anchorNames = {
-        lrName: popart.AnchorReturnType("ALL"),
-        wdName: popart.AnchorReturnType("ALL"),
-        lsName: popart.AnchorReturnType("ALL")
+        lrName: popart.AnchorReturnType("All"),
+        wdName: popart.AnchorReturnType("All"),
+        lsName: popart.AnchorReturnType("All")
     }
 
     # Just a placeholder optimizer. We overwrite the hyper-parameters in this
@@ -124,7 +124,7 @@ def test_constsgd_vs_sgd():
     We show that if the learning rates match, the training updates are 
     identical, otherwise they differ.
     """
-    anchorNames = {"l1LossVal": popart.AnchorReturnType("ALL")}
+    anchorNames = {"l1LossVal": popart.AnchorReturnType("All")}
     lr = 0.01
     wd = 0.01
     ls = 1000
@@ -218,7 +218,7 @@ def test_sgd_with_float16_model():
 
     anchorNames = {
         popart.reservedGradientPrefix() + inid1:
-        popart.AnchorReturnType("ALL"),
+        popart.AnchorReturnType("All"),
     }
 
     opts = popart.SessionOptions()

@@ -46,7 +46,7 @@ void DynamicZeroOpx::grow(poplar::program::Sequence &prog) const {
 
 InputCreatorType DynamicZeroOpx::getInputCreatorType(InIndex index) const {
   return index == DynamicBinaryBaseOp::getUpdateInIndex()
-             ? InputCreatorType::CANUNWIND
+             ? InputCreatorType::CanUnwind
              : Opx::getInputCreatorType(index);
 }
 

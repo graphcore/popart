@@ -75,5 +75,5 @@ def test_dynamiczero_training(op_tester):
                   torch.tensor(d__o), tensor.grad, inject_tensor.grad] + result
         return result
 
-    op_tester.passes = popart.PatternsLevel.ALL
+    op_tester.passes = popart.PatternsLevel.All
     op_tester.run(init_builder, reference, 'train')

@@ -92,7 +92,7 @@ BOOST_AUTO_TEST_CASE(MatMulGradPatternScheduleTest_0) {
 
   auto proto         = bder->getModelProto();
   auto modelProto    = io::getModelFromString(proto);
-  auto art           = AnchorReturnType("ALL");
+  auto art           = AnchorReturnType("All");
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{B_id, art}});
 
@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE(MatMulGradPatternScheduleTest_0) {
   std::map<popart::TensorId, popart::IArray &> anchors = {};
 
   std::unique_ptr<popart::L1Loss> l1Loss(
-      new popart::L1Loss(E_id, "l1LossVal", 0.1f, popart::ReductionType::MEAN));
+      new popart::L1Loss(E_id, "l1LossVal", 0.1f, popart::ReductionType::Mean));
   std::vector<popart::Loss *> losses{l1Loss.get()};
 
   auto optimizer = popart::ConstSGD(0.01f);
@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE(MatMulGradPatternScheduleTest_0) {
   // Disable outlining
   opts.enableOutlining = false;
 
-  auto passes = popart::Patterns(PatternsLevel::DEFAULT);
+  auto passes = popart::Patterns(PatternsLevel::Default);
   // Disable inplacing since this could affect the scheduler
   passes.enableInPlace(false);
 

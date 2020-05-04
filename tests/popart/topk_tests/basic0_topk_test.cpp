@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(Basic0TopK_Opset9) {
   auto modelProto = io::getModelFromString(proto);
 
   // create the IR
-  auto art      = AnchorReturnType("ALL");
+  auto art      = AnchorReturnType("All");
   auto dataFlow = DataFlow(1, {{values, art}, {indices, art}});
 
   auto device = popart::createTestDevice(TEST_TARGET);
@@ -99,7 +99,7 @@ BOOST_AUTO_TEST_CASE(Basic0TopK_Opset9) {
       {},
       popart::InputShapeInfo(),
       opts,
-      popart::Patterns(PatternsLevel::NONE));
+      popart::Patterns(PatternsLevel::NoPatterns));
 
   // prepare the anchors
   std::vector<float> rawOutputValues(outValuesInfo.nelms());
@@ -207,7 +207,7 @@ BOOST_AUTO_TEST_CASE(Basic0TopK_Opset10) {
   auto modelProto = io::getModelFromString(proto);
 
   // create the IR
-  auto art      = AnchorReturnType("ALL");
+  auto art      = AnchorReturnType("All");
   auto dataFlow = DataFlow(1, {{values, art}, {indices, art}});
 
   auto device = popart::createTestDevice(TEST_TARGET);
@@ -221,7 +221,7 @@ BOOST_AUTO_TEST_CASE(Basic0TopK_Opset10) {
       {},
       popart::InputShapeInfo(),
       opts,
-      popart::Patterns(PatternsLevel::NONE));
+      popart::Patterns(PatternsLevel::NoPatterns));
 
   // prepare the anchors
   std::vector<float> rawOutputValues(outValuesInfo.nelms());

@@ -33,7 +33,7 @@ const std::map<int, int> &SignGradOp::gradOutToNonGradIn() const {
 
 const std::vector<GradInOutMapper> &SignGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), SignOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getInIndex(), SignOp::getOutIndex(), GradOpInType::GradOut}};
   return inInfo;
 }
 

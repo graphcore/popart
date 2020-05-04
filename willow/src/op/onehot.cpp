@@ -101,8 +101,8 @@ void OnehotGradOp::setup() {
 
 const std::vector<GradInOutMapper> &OnehotGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getGradInIndex(), OnehotOp::getOutIndex(), GradOpInType::GRADOUT},
-      {getIndicesInIndex(), OnehotOp::getIndicesInIndex(), GradOpInType::IN}};
+      {getGradInIndex(), OnehotOp::getOutIndex(), GradOpInType::GradOut},
+      {getIndicesInIndex(), OnehotOp::getIndicesInIndex(), GradOpInType::In}};
 
   return inInfo;
 }

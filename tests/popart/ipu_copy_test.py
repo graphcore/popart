@@ -25,7 +25,7 @@ def test_ipu_copy_bca1():
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
@@ -59,7 +59,7 @@ def test_ipu_copy_aca1():
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
@@ -102,7 +102,7 @@ def test_ipu_copy_bca4():
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
@@ -143,7 +143,7 @@ def test_ipu_copy_bca2():
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
@@ -176,7 +176,7 @@ def test_ipu_copy_bca3():
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
@@ -214,7 +214,7 @@ def test_ipu_copy_bca5():
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
@@ -259,7 +259,7 @@ def test_copy_to_op_with_duplicate_inputs():
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual

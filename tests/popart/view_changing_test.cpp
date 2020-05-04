@@ -45,11 +45,11 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape0) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto art       = AnchorReturnType("ALL");
+  auto art       = AnchorReturnType("All");
   auto dataFlow  = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
   std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(outId, "l1LossVal", 0.1, ReductionType::SUM)};
+      std::make_shared<L1Loss>(outId, "l1LossVal", 0.1, ReductionType::Sum)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -60,7 +60,7 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape0) {
               &optimizer,
               *device,
               {}, // no SessionOptions
-              Patterns({PreAliasPatternType::POSTNREPL})});
+              Patterns({PreAliasPatternType::PostNRepl})});
 
   // Check the ir
   // 1) that the Reshape Op is present,
@@ -94,11 +94,11 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape_Initializer) {
   proto = graph_transformer.getModelProto();
 
   auto modelProto = io::getModelFromString(proto);
-  auto art        = AnchorReturnType("ALL");
+  auto art        = AnchorReturnType("All");
   auto dataFlow   = DataFlow(1, {{outId, art}});
   auto optimizer  = ConstSGD(0.01);
   std::vector<std::shared_ptr<Loss>> losses{std::shared_ptr<Loss>(
-      new L1Loss(outId, "l1LossVal", 0.1, ReductionType::SUM))};
+      new L1Loss(outId, "l1LossVal", 0.1, ReductionType::Sum))};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape_Initializer) {
               &optimizer,
               *device,
               {},
-              Patterns({PreAliasPatternType::POSTNREPL})});
+              Patterns({PreAliasPatternType::PostNRepl})});
   BOOST_CHECK(ir.opsOfType(Onnx::Operators::Reshape_5).size() == 1);
   BOOST_CHECK(ir.getMainGraphTensors().get(outId)->info.shape() == outShape);
 }

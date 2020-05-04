@@ -16,7 +16,7 @@ CallOpx::CallOpx(Op *op, Devicex *devicex) : SubgraphOpx(op, devicex) {
 }
 
 InputCreatorType CallOpx::getInputCreatorType(InIndex) const {
-  return InputCreatorType::CANDELEGATE;
+  return InputCreatorType::CanDelegate;
 }
 
 void CallOpx::copyModified(poplar::program::Sequence &prog) const {
@@ -50,7 +50,7 @@ void CallOpx::copyInputs(poplar::program::Sequence &prog) const {
     TensorId graph_input_id = callop.getCalledGraph().getInputId(i);
     auto graph_input        = get(graph_input_id);
 
-    view::AccessType accessType = view::AccessType::NONE;
+    view::AccessType accessType = view::AccessType::None;
     for (auto &r : callop.modifies(i)) {
       accessType = view::combine({accessType, r.getAccessType()});
     }
@@ -61,7 +61,7 @@ void CallOpx::copyInputs(poplar::program::Sequence &prog) const {
     // b.) The access type is not write-only (at least one consumer of the
     //     unmodified input tensor in the subgraph will read the contents
     //     of the tensor)
-    if (accessType != view::AccessType::WRITE) {
+    if (accessType != view::AccessType::Write) {
       logging::opx::trace(
           "[CallOpx] Copying input {}->{}", call_input_id, graph_input_id);
       poplar::program::Copy copy_prog(call_input, graph_input);
@@ -72,7 +72,7 @@ void CallOpx::copyInputs(poplar::program::Sequence &prog) const {
                           call_input_id,
                           graph_input_id);
     }
-    if (accessType == view::AccessType::WRITE) {
+    if (accessType == view::AccessType::Write) {
       logging::opx::trace("[CallOpx] Write undef tensor {}", graph_input_id);
       prog.add(poplar::program::WriteUndef(graph_input));
     }

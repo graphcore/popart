@@ -25,7 +25,7 @@ def test_valid_recompute_options():
     with pytest.raises(popart.popart_exception) as e_info:
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")}),
+            dataFeed=popart.DataFlow(1, {o: popart.AnchorReturnType("All")}),
             optimizer=popart.ConstSGD(0.001),
             losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
             passes=popart.Patterns([]),

@@ -40,7 +40,7 @@ def test_auto_virtual_graph_subgraphs_2():
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("FINAL")})
+    dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("Final")})
 
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
@@ -88,7 +88,7 @@ def test_auto_virtual_graph_subgraphs_4():
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("FINAL")})
+    dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("Final")})
 
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
@@ -121,7 +121,7 @@ def test_auto_virtual_graph_inf_2():
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("FINAL")})
+    dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("Final")})
 
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
@@ -154,7 +154,7 @@ def test_auto_virtual_graph_inf_many():
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("FINAL")})
+    dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("Final")})
 
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
@@ -192,7 +192,7 @@ def test_auto_virtual_graph_train():
     proto = builder.getModelProto()
 
     dataFlow = popart.DataFlow(
-        1, {loss.output(0): popart.AnchorReturnType("FINAL")})
+        1, {loss.output(0): popart.AnchorReturnType("Final")})
 
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
@@ -228,7 +228,7 @@ def test_auto_virtual_graph_not_enough_splits():
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("FINAL")})
+    dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("Final")})
 
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto

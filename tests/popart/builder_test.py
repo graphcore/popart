@@ -786,7 +786,7 @@ def test_set_weights_from_host():
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     optimizer = popart.ConstSGD(0.01)
     losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
@@ -1197,7 +1197,7 @@ def test_load_onnx_model_from_other_builder(tmpdir):
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     session = popart.InferenceSession(fnModel=proto,
                                       dataFeed=dataFlow,
@@ -1220,7 +1220,7 @@ def test_load_onnx_model_from_other_builder(tmpdir):
     # output is still the same
     builder2 = popart.Builder(proto)
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     proto2 = builder.getModelProto()
     session = popart.InferenceSession(fnModel=proto2,
@@ -1260,7 +1260,7 @@ def test_load_onnx_model_from_file(tmpdir):
 
     builder2 = popart.Builder(str(filename))
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
     optimizer = popart.ConstSGD(0.01)
     losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
 

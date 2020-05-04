@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE(Inplace_addBias0) {
 
   auto run_test = [&]() {
     TestRunner runner;
-    runner.patterns = Patterns({PreAliasPatternType::SPLITCONVBIAS});
+    runner.patterns = Patterns({PreAliasPatternType::SplitConvBias});
     runner.patterns.enableInPlace(inplaceEnabled);
     runner.patterns.enableUpdateInplacePrioritiesForIpu(true);
     runner.buildModel(buildModel);

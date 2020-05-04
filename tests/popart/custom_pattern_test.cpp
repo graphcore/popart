@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(CustomPattern) {
 
   // Create the session and run a session.
   auto dataFlow =
-      popart::DataFlow(1, {{reluOut, popart::AnchorReturnType("ALL")}});
+      popart::DataFlow(1, {{reluOut, popart::AnchorReturnType("All")}});
 
   auto device = popart::createTestDevice(TEST_TARGET);
 

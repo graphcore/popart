@@ -110,7 +110,7 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest1) {
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
-  auto dataFlow   = DataFlow(100, {{act, AnchorReturnType("ALL")}});
+  auto dataFlow   = DataFlow(100, {{act, AnchorReturnType("All")}});
 
   SessionOptions userOptions;
   userOptions.virtualGraphMode  = VirtualGraphMode::Manual;
@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest1) {
   auto optimizer = ConstSGD(0.01);
 
   auto loss1 =
-      std::make_shared<L1Loss>(act, "l1LossVal_1", 0.1, ReductionType::MEAN);
+      std::make_shared<L1Loss>(act, "l1LossVal_1", 0.1, ReductionType::Mean);
 
   loss1->virtualGraph(3);
 
@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest1) {
               &optimizer,
               *device,
               userOptions,
-              Patterns(PatternsLevel::DEFAULT)});
+              Patterns(PatternsLevel::Default)});
 
   auto sched = ir.getMainGraph().getOpSchedule({});
 
@@ -149,9 +149,9 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest1) {
       stashIpus.push_back(op->getVirtualGraphId());
     }
 
-    // Backwards pass Ops must not be RECOMPUTE
+    // Backwards pass Ops must not be Recompute
     if (op->fromLoss == PathFromLoss::Yes) {
-      BOOST_CHECK(op->settings.recomputeType == RecomputeType::CHECKPOINT);
+      BOOST_CHECK(op->settings.recomputeType == RecomputeType::Checkpoint);
     }
   }
 

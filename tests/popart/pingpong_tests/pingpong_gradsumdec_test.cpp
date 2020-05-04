@@ -82,9 +82,9 @@ BOOST_AUTO_TEST_CASE(TestDecomposeAcrossPingPongPhases) {
     // Use every second pingpong phase only (maps to one IPU)
     runner.opts.pingPongPhases   = numLayers * 2 - 1;
     runner.opts.virtualGraphMode = VirtualGraphMode::PingPong;
-    runner.patterns              = Patterns(PatternsLevel::DEFAULT);
+    runner.patterns              = Patterns(PatternsLevel::Default);
     runner.losses.push_back(
-        new L1Loss(sum, "l1Loss", 0.1, ReductionType::MEAN));
+        new L1Loss(sum, "l1Loss", 0.1, ReductionType::Mean));
 
     return sum;
   });

@@ -283,7 +283,7 @@ bool SplitGatherPattern::apply(Op *op) const {
 
 namespace {
 static PatternCreator<SplitGatherPattern>
-    convBiasPattern(PreAliasPatternType::SPLITGATHER, "SplitGather", false);
+    convBiasPattern(PreAliasPatternType::SplitGather, "SplitGather", false);
 }
 
 } // namespace popart

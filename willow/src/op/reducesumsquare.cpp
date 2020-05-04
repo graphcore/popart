@@ -38,8 +38,8 @@ std::unique_ptr<Op> ReduceSumSquareGradOp::clone() const {
 const std::vector<GradInOutMapper> &
 ReduceSumSquareGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), ReduceSumSquareOp::getOutIndex(), GradOpInType::GRADOUT},
-      {getFwdInInIndex(), ReduceSumSquareOp::getInIndex(), GradOpInType::IN}};
+      {getInIndex(), ReduceSumSquareOp::getOutIndex(), GradOpInType::GradOut},
+      {getFwdInInIndex(), ReduceSumSquareOp::getInIndex(), GradOpInType::In}};
 
   return inInfo;
 }

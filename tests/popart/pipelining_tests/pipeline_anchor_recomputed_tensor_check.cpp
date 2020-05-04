@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE(PipelineAnchorRecomputedTensor0) {
     auto sig          = aiOnnx.sigmoid({input0});
     auto scale        = aiGraphcore.scale({sig}, 2.0f);
     TensorId actFinal = scale;
-    auto loss         = L1Loss(actFinal, "l1LossVal", 0.1, ReductionType::SUM);
+    auto loss         = L1Loss(actFinal, "l1LossVal", 0.1, ReductionType::Sum);
 
     int nIPUs = (rt != RunType::SingleDevice ? 2 : 1);
     std::map<std::string, std::string> deviceOpts{
@@ -99,7 +99,7 @@ BOOST_AUTO_TEST_CASE(PipelineAnchorRecomputedTensor0) {
       builder->virtualGraph(scale, 0);
       loss.virtualGraph(nIPUs - 1);
     }
-    auto art      = AnchorReturnType("ALL");
+    auto art      = AnchorReturnType("All");
     auto inGradId = reservedGradientPrefix() + input0;
     auto dataFlow = DataFlow(batchesPerStep, {{sig, art}, {inGradId, art}});
 
@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE(PipelineAnchorRecomputedTensor0) {
         createTestDevice(TEST_TARGET, nIPUs),
         InputShapeInfo(),
         userOptions,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
 
     if (rt == RunType::ContinuousRecompPipe) {
       // Check our assumption, that the Sigmoid op is
@@ -119,7 +119,7 @@ BOOST_AUTO_TEST_CASE(PipelineAnchorRecomputedTensor0) {
       auto opSchedule = session->getIr().getOpSchedule({});
       for (auto op : opSchedule) {
         if (dynamic_cast<SigmoidOp *>(op)) {
-          BOOST_CHECK(op->settings.recomputeType == RecomputeType::RECOMPUTE);
+          BOOST_CHECK(op->settings.recomputeType == RecomputeType::Recompute);
         }
       }
     }

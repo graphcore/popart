@@ -88,7 +88,7 @@ def test_anchor_output():
     GRAD = popart.reservedGradientPrefix() + w
     ACCL = popart.reservedAcclToAccumulatorPrefix(
     ) + popart.reservedGradientPrefix() + w
-    art = popart.AnchorReturnType("ALL")
+    art = popart.AnchorReturnType("All")
     data_flow = popart.DataFlow(BATCHES_PER_STEP, {
         o: art,
         a: art,

@@ -17,7 +17,7 @@ def test_summary_report_before_execution(tmpdir):
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     session = popart.InferenceSession(fnModel=proto,
                                       dataFeed=dataFlow,
@@ -44,7 +44,7 @@ def test_graph_report_before_execution(tmpdir):
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     session = popart.InferenceSession(fnModel=proto,
                                       dataFeed=dataFlow,
@@ -71,7 +71,7 @@ def test_execution_report_before_execution(tmpdir):
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     session = popart.InferenceSession(fnModel=proto,
                                       dataFeed=dataFlow,
@@ -100,7 +100,7 @@ def test_compilation_report(tmpdir):
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     session = popart.InferenceSession(
         fnModel=proto,
@@ -128,7 +128,7 @@ def test_compilation_report_cbor(tmpdir):
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     session = popart.InferenceSession(
         fnModel=proto,
@@ -156,7 +156,7 @@ def test_execution_report(tmpdir):
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     session = popart.InferenceSession(
         fnModel=proto,
@@ -190,7 +190,7 @@ def test_execution_report_reset(tmpdir):
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
     opts.engineOptions = {"debug.instrument": "true"}
@@ -229,7 +229,7 @@ def test_execution_report_cbor(tmpdir):
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     session = popart.InferenceSession(
         fnModel=proto,
@@ -263,7 +263,7 @@ def test_tensor_tile_mapping(tmpdir):
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     session = popart.InferenceSession(
         fnModel=proto,
@@ -308,7 +308,7 @@ def test_no_compile(tmpdir):
     opts = popart.SessionOptions()
     opts.compileEngine = False
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     session = popart.InferenceSession(
         proto,
@@ -340,16 +340,15 @@ def test_serialized_graph_report(tmpdir):
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {out: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {out: popart.AnchorReturnType("All")})
 
-    session = popart.InferenceSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        deviceInfo=tu.create_test_device())
+    session = popart.InferenceSession(fnModel=proto,
+                                      dataFeed=dataFlow,
+                                      deviceInfo=tu.create_test_device())
 
     anchors = session.initAnchorArrays()
 
-    session.prepareDevice()   
+    session.prepareDevice()
 
     # This is an encoded capnp report - so not easy to decode here
     rep = session.getSerializedGraph()

@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE(SplitGatherTest0) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+  auto dataFlow = DataFlow(1, {{out, AnchorReturnType("All")}});
 
   SessionOptions userOptions;
   userOptions.virtualGraphMode = VirtualGraphMode::Manual;
@@ -50,7 +50,7 @@ BOOST_AUTO_TEST_CASE(SplitGatherTest0) {
               nullptr,
               *device,
               userOptions,
-              Patterns({PreAliasPatternType::SPLITGATHER})});
+              Patterns({PreAliasPatternType::SplitGather})});
 
   BOOST_CHECK(ir.opsOfType(Onnx::Operators::Gather_1).size() == 2);
 }

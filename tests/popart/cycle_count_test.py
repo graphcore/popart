@@ -28,10 +28,10 @@ def get_simple_model_cycle_count(bps):
 
     session = popart.InferenceSession(
         fnModel=builder.getModelProto(),
-        dataFeed=popart.DataFlow(bps, {out: popart.AnchorReturnType("ALL")}),
+        dataFeed=popart.DataFlow(bps, {out: popart.AnchorReturnType("All")}),
         userOptions=opts,
         deviceInfo=tu.create_test_device(),
-        passes=popart.Patterns(popart.PatternsLevel.NONE))
+        passes=popart.Patterns(popart.PatternsLevel.NoPatterns))
 
     session.prepareDevice()
     anchors = session.initAnchorArrays()
@@ -80,7 +80,7 @@ def test_get_cycle_count_requires_run():
     session = popart.InferenceSession(fnModel=builder.getModelProto(),
                                       dataFeed=popart.DataFlow(
                                           1,
-                                          {p: popart.AnchorReturnType("ALL")}),
+                                          {p: popart.AnchorReturnType("All")}),
                                       userOptions=opts,
                                       deviceInfo=tu.create_test_device())
     session.prepareDevice()
@@ -101,7 +101,7 @@ def test_get_cycle_count_requires_instrumentation_option():
     session = popart.InferenceSession(fnModel=builder.getModelProto(),
                                       dataFeed=popart.DataFlow(
                                           1,
-                                          {p: popart.AnchorReturnType("ALL")}),
+                                          {p: popart.AnchorReturnType("All")}),
                                       deviceInfo=tu.create_test_device())
     session.prepareDevice()
     stepio = popart.PyStepIO({d0: np.random.rand(1).astype(np.float32)},

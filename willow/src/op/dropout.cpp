@@ -85,10 +85,10 @@ std::unique_ptr<Op> DropoutGradOp::clone() const {
 
 const std::vector<GradInOutMapper> &DropoutGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getGradInIndex(), DropoutOp::getOutIndex(), GradOpInType::GRADOUT},
+      {getGradInIndex(), DropoutOp::getOutIndex(), GradOpInType::GradOut},
       // Dropout and DropoutGrad inheret from the same base op, so share the
       // same seed InIndex
-      {getSeedInIndex(), getSeedInIndex(), GradOpInType::IN}};
+      {getSeedInIndex(), getSeedInIndex(), GradOpInType::In}};
   return inInfo;
 }
 

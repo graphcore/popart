@@ -37,12 +37,12 @@ def _initAnchorArrays(sess: Union["InferenceSession", "TrainingSession"]
         # [batches_per_step, accl_factor, repl_factor, micro_batch, *data_shape]
 
         anchorArrayShape = [sess.replicationFactor]
-        if artId == popart.AnchorReturnTypeId.FINAL or artId == popart.AnchorReturnTypeId.SUM:
+        if artId == popart.AnchorReturnTypeId.Final or artId == popart.AnchorReturnTypeId.Sum:
             pass
-        elif artId == popart.AnchorReturnTypeId.ALL:
+        elif artId == popart.AnchorReturnTypeId.All:
             anchorArrayShape.insert(0, sess.accumulationFactor)
             anchorArrayShape.insert(0, batchesPerStep)
-        elif artId == popart.AnchorReturnTypeId.EVERYN:
+        elif artId == popart.AnchorReturnTypeId.EveryN:
             if batchesPerStep % sess.dataFeed.art(anchor).rp() != 0:
                 raise RuntimeError(
                     "Invalid anchor period, does not divide batchesPerStep")

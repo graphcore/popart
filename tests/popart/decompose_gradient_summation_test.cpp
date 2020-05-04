@@ -58,11 +58,11 @@ BOOST_AUTO_TEST_CASE(Test0) {
       out = aiOnnx.relu({out}, "relu_layer" + std::to_string(layer));
     }
 
-    runner.anchors.emplace(getGradId(input), AnchorReturnType("ALL"));
+    runner.anchors.emplace(getGradId(input), AnchorReturnType("All"));
     runner.opts.enableOutlining  = false; // to make introspecting the IR easy
     runner.opts.decomposeGradSum = true;
-    runner.patterns              = Patterns(PatternsLevel::DEFAULT);
-    runner.losses.push_back(new L1Loss(out, "l1Loss", 0.1, ReductionType::SUM));
+    runner.patterns              = Patterns(PatternsLevel::Default);
+    runner.losses.push_back(new L1Loss(out, "l1Loss", 0.1, ReductionType::Sum));
 
     return out;
   });

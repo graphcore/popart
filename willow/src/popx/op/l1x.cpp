@@ -36,11 +36,11 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
 
   double scale;
   switch (l1gradop.l1l()->getReductionType()) {
-  case ReductionType::SUM: {
+  case ReductionType::Sum: {
     scale = lambda;
     break;
   }
-  case ReductionType::MEAN: {
+  case ReductionType::Mean: {
     // Design note: The L1Loss measures the mean absolute error between
     // each element of the input and a (zero) target. The target here is the
     // same size as the input tensor. This is unlike NllLoss, whose target
@@ -92,7 +92,7 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 InputCreatorType L1Opx::getInputCreatorType(InIndex) const {
-  return InputCreatorType::CANUNWIND;
+  return InputCreatorType::CanUnwind;
 }
 
 // lambda * sum_{0,..rank-1} |v|
@@ -118,11 +118,11 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
 
   double scale;
   switch (l1op.l1l()->getReductionType()) {
-  case ReductionType::SUM: {
+  case ReductionType::Sum: {
     scale = lambda;
     break;
   }
-  case ReductionType::MEAN: {
+  case ReductionType::Mean: {
     double totalSamples = static_cast<double>(dv_p->getReplicationFactor()) *
                           static_cast<double>(getInTensor(0).dim(0));
     scale = lambda / totalSamples;

@@ -148,13 +148,13 @@ const std::map<int, int> &BatchNormGradOp::gradOutToNonGradIn() const {
 
 const std::vector<GradInOutMapper> &BatchNormGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getYGradInIndex(), BatchNormOp::getYOutIndex(), GradOpInType::GRADOUT},
-      {getXInIndex(), BatchNormOp::getXInIndex(), GradOpInType::IN},
-      {getScaleInIndex(), BatchNormOp::getScaleInIndex(), GradOpInType::IN},
+      {getYGradInIndex(), BatchNormOp::getYOutIndex(), GradOpInType::GradOut},
+      {getXInIndex(), BatchNormOp::getXInIndex(), GradOpInType::In},
+      {getScaleInIndex(), BatchNormOp::getScaleInIndex(), GradOpInType::In},
       {getMeanInIndex(),
        BatchNormOp::getSavedMeanOutIndex(),
-       GradOpInType::OUT},
-      {getVarInIndex(), BatchNormOp::getSavedVarOutIndex(), GradOpInType::OUT}};
+       GradOpInType::Out},
+      {getVarInIndex(), BatchNormOp::getSavedVarOutIndex(), GradOpInType::Out}};
 
   return inInfo;
 }

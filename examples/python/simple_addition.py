@@ -17,7 +17,7 @@ builder.addOutputTensor(o)
 proto = builder.getModelProto()
 
 # Describe how to run the model
-dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
 # Create a session to compile and execute the graph
 session = popart.InferenceSession(

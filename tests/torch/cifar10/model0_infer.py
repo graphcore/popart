@@ -12,7 +12,7 @@ args = cmdline.parse()
 
 nChans = 3
 batchesPerStep = 4
-anchors = {"out": popart.AnchorReturnType("EVERYN", 2)}
+anchors = {"out": popart.AnchorReturnType("EveryN", 2)}
 dataFeed = popart.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = popart.InputShapeInfo()
 samplesPerBatch = 6

@@ -117,12 +117,12 @@ BOOST_AUTO_TEST_CASE(WeightAnchorTest0) {
   // Setting anchors as act5 and a bunch of weights
   //
   auto dataFlow = DataFlow(batchesPerStep,
-                           {{act5, AnchorReturnType("ALL")},
-                            {w1, AnchorReturnType("ALL")},
-                            {w2, AnchorReturnType("ALL")},
-                            {w3, AnchorReturnType("ALL")},
-                            {w4, AnchorReturnType("ALL")},
-                            {w5, AnchorReturnType("ALL")}});
+                           {{act5, AnchorReturnType("All")},
+                            {w1, AnchorReturnType("All")},
+                            {w2, AnchorReturnType("All")},
+                            {w3, AnchorReturnType("All")},
+                            {w4, AnchorReturnType("All")},
+                            {w5, AnchorReturnType("All")}});
 
   // shard over 3 IPUs
   //
@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE(WeightAnchorTest0) {
   auto optimizer = ConstSGD(0.01);
 
   auto loss = std::unique_ptr<Loss>(
-      new L1Loss(act5, "l1LossVal", 0.1, ReductionType::SUM));
+      new L1Loss(act5, "l1LossVal", 0.1, ReductionType::Sum));
 
   auto device = createTestDevice(TEST_TARGET, 3);
 
@@ -144,7 +144,7 @@ BOOST_AUTO_TEST_CASE(WeightAnchorTest0) {
       device,
       InputShapeInfo(),
       userOptions,
-      popart::Patterns(PatternsLevel::DEFAULT));
+      popart::Patterns(PatternsLevel::Default));
 
   session->prepareDevice();
 

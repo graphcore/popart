@@ -26,7 +26,7 @@ public:
                                   int ignoreIndex,
                                   poplar::program::Sequence &prog);
   // If the loss that created this op was constructed with a
-  // ReductionType 'MEAN', then we scale the output of the loss
+  // ReductionType 'Mean', then we scale the output of the loss
   // tensor by 1/(local_batch_size * replication_factor)
   // (referred to as total number of samples)
   // This is a static function that is used to scale the every Nll

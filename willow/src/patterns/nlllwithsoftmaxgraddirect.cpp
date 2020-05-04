@@ -84,7 +84,7 @@ bool NlllWithSoftmaxGradDirect::apply(Op *op) const {
 
 namespace {
 static PatternCreator<NlllWithSoftmaxGradDirect>
-    PreUniReplPattern(PreAliasPatternType::NLLLWITHSOFTMAXGRADDIRECT,
+    PreUniReplPattern(PreAliasPatternType::NLLLWithSoftmaxGradDirect,
                       "NlllWithSoftmaxGradDirect");
 }
 

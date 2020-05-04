@@ -194,26 +194,26 @@ bool PingPong::apply(Graph &graph) const {
     logging::transform::debug("[PingPong] Recomputation & Cache annotation");
     for (auto &op : graph.getOps()) {
       // Cached everything not set by the user by default
-      if (op.second->settings.cacheType == CacheType::UNDEFINED) {
+      if (op.second->settings.cacheType == CacheType::Undefined) {
         if (op.second->opid == Onnx::CustomOperators::GetRandomSeed) {
-          op.second->settings.cacheType = CacheType::UNCACHED;
-          logging::transform::trace("[PingPong] {} set to UNCACHED",
+          op.second->settings.cacheType = CacheType::Uncached;
+          logging::transform::trace("[PingPong] {} set to Uncached",
                                     op.second->debugName());
         } else {
-          op.second->settings.cacheType = CacheType::CACHED;
-          logging::transform::trace("[PingPong] {} set to CACHED",
+          op.second->settings.cacheType = CacheType::Cached;
+          logging::transform::trace("[PingPong] {} set to Cached",
                                     op.second->debugName());
         }
       }
       // Recompute everything else (fwd) not set by the user by default
-      if (op.second->settings.recomputeType == RecomputeType::UNDEFINED) {
+      if (op.second->settings.recomputeType == RecomputeType::Undefined) {
         if (!op.second->isIpuCopyOp() &&
             !dynamic_cast<GetRandomSeedOp *>(op.second.get())) {
-          op.second->settings.recomputeType = RecomputeType::RECOMPUTE;
-          logging::transform::trace("[PingPong] {} set to RECOMPUTE",
+          op.second->settings.recomputeType = RecomputeType::Recompute;
+          logging::transform::trace("[PingPong] {} set to Recompute",
                                     op.second->debugName());
         } else {
-          op.second->settings.recomputeType = RecomputeType::CHECKPOINT;
+          op.second->settings.recomputeType = RecomputeType::Checkpoint;
         }
       }
     }
@@ -336,9 +336,9 @@ bool PingPong::apply(Graph &graph) const {
           op.second->settings.schedulePriority = -9999.0;
         }
         // Always keep IPU copy checkpointed
-        if (op.second->settings.recomputeType == RecomputeType::UNDEFINED) {
-          op.second->settings.recomputeType = RecomputeType::CHECKPOINT;
-          logging::transform::trace("[PingPong] {} set to CHECKPOINT",
+        if (op.second->settings.recomputeType == RecomputeType::Undefined) {
+          op.second->settings.recomputeType = RecomputeType::Checkpoint;
+          logging::transform::trace("[PingPong] {} set to Checkpoint",
                                     op.second->debugName());
         }
       }
@@ -355,8 +355,8 @@ bool PingPong::apply(Graph &graph) const {
       // Enabling factors
       cached |=
           ((producerOp &&
-            producerOp->settings.recomputeType != RecomputeType::RECOMPUTE &&
-            producerOp->settings.cacheType == CacheType::CACHED));
+            producerOp->settings.recomputeType != RecomputeType::Recompute &&
+            producerOp->settings.cacheType == CacheType::Cached));
       cached |= (!producerOp && tensor->isCached());
 
       // Disabling factors
@@ -366,7 +366,7 @@ bool PingPong::apply(Graph &graph) const {
       if (cached) {
         for (Op *consumer : tensor->consumers.getOps()) {
           // ... and a consumer of that tensor that is set to recompute ...
-          if (consumer->settings.recomputeType == RecomputeType::RECOMPUTE &&
+          if (consumer->settings.recomputeType == RecomputeType::Recompute &&
               (consumer->toLoss == PathToLoss::Yes ||
                consumer->scheduledPreLoss == ScheduledPreLoss::Yes) &&
               consumer->fromLoss != PathFromLoss::Yes) {
@@ -502,8 +502,8 @@ bool PingPong::apply(Graph &graph) const {
           // Enabling factors
           cached |= ((producerOp &&
                       producerOp->settings.recomputeType !=
-                          RecomputeType::RECOMPUTE &&
-                      producerOp->settings.cacheType == CacheType::CACHED) &&
+                          RecomputeType::Recompute &&
+                      producerOp->settings.cacheType == CacheType::Cached) &&
                      (abs(producerPingPongPhase - consumerPingPongPhase) > 2));
           cached |= (!producerOp && tensor->isCached());
 
@@ -532,7 +532,7 @@ bool PingPong::apply(Graph &graph) const {
                 cacheStoreProducer->fromLoss = producerPathFromLoss;
                 cacheStoreProducer->toLoss   = producerPathToLoss;
                 cacheStoreProducer->settings.recomputeType =
-                    RecomputeType::CHECKPOINT;
+                    RecomputeType::Checkpoint;
                 cacheStoreProducer->setPingPongPhase(storePhase);
                 VGraphId vgid = consumerPingPongPhase % num_ipus;
                 cacheStoreProducer->setVirtualGraphId(vgid);
@@ -567,7 +567,7 @@ bool PingPong::apply(Graph &graph) const {
               cacheLoad->settings.schedulePriority = -9998.0;
               cacheLoad->fromLoss                  = consumerPathFromLoss;
               cacheLoad->toLoss                    = consumerPathToLoss;
-              cacheLoad->settings.recomputeType    = RecomputeType::CHECKPOINT;
+              cacheLoad->settings.recomputeType    = RecomputeType::Checkpoint;
               // CacheLoad at the end of the previous phase, so that load
               // is executed before inter-IPU copy
               cacheLoad->setPingPongPhase(consumerPingPongPhase - 1);
@@ -597,7 +597,7 @@ bool PingPong::apply(Graph &graph) const {
                     std::make_unique<InitOp>(Onnx::CustomOperators::Init_1,
                                              tensor->info,
                                              TensorType::Cache,
-                                             InitType::NONE,
+                                             InitType::NoInit,
                                              settings);
                 Op *init                        = initOp.get();
                 init->settings.schedulePriority = -9997.0;
@@ -656,7 +656,7 @@ bool PingPong::apply(Graph &graph) const {
                 cacheStoreConsumer->fromLoss = consumerPathFromLoss;
                 cacheStoreConsumer->toLoss   = consumerPathToLoss;
                 cacheStoreConsumer->settings.recomputeType =
-                    RecomputeType::CHECKPOINT;
+                    RecomputeType::Checkpoint;
                 cacheStoreConsumer->setPingPongPhase(consumerPingPongPhase);
                 VGraphId cStoreVgid = consumerPingPongPhase % num_ipus;
                 cacheStoreConsumer->setVirtualGraphId(cStoreVgid);

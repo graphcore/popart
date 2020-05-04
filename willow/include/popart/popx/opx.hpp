@@ -28,19 +28,19 @@ class Devicex;
 enum class InputCreatorType {
   // Opx has a poplar call to a function that can
   // lay out the input tensor on the device
-  CANCREATE = 0,
+  CanCreate = 0,
   // Cannot create the input tensor, but can
   // allow an Opx downstream in the graph to
   // create it
-  CANUNWIND,
+  CanUnwind,
   // Can create or unwind
-  CANCREATE_OR_UNWIND,
+  CanCreateOrUnwind,
   // Cannot create tensor, nor can it allow a
   // a downstream Opx to create the tensor
-  DEADEND,
+  Deadend,
   // Has a potential creator, but can also allow an Opx downstream in the graph
   // to create it instead.
-  CANDELEGATE
+  CanDelegate
 };
 
 class Opx {

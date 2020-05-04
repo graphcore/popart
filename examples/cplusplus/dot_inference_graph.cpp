@@ -14,7 +14,6 @@
 using namespace popart;
 namespace po = boost::program_options;
 
-
 class Options {
 public:
   Options(int argc, char **argv);
@@ -42,7 +41,7 @@ int main(int argc, char **argv) {
   std::vector<std::string> dotStrings;
 
   // Only the FINAL .dot file. Append others here as required.
-  sessionOpts.dotChecks.insert(DotCheck::FINAL);
+  sessionOpts.dotChecks.insert(DotCheck::Final);
 
   sessionOpts.logDir = opts.outputDir();
 
@@ -51,7 +50,7 @@ int main(int argc, char **argv) {
   }
 
   auto out       = modelProto.graph().output(0).name();
-  auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+  auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("All")}});
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
@@ -62,7 +61,7 @@ int main(int argc, char **argv) {
               nullptr, // and no optimizer.
               *cpuDevice,
               sessionOpts,
-              Patterns(PatternsLevel::NONE).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
 
   // verify that the dot files have been created
   auto dotFileNames =

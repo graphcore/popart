@@ -103,7 +103,7 @@ void CacheLoadOpx::grow(poplar::program::Sequence &prog) const {
 
 InputCreatorType CacheLoadOpx::getInputCreatorType(InIndex index) const {
   return index == CacheLoadOp::getCachedTensorInIndex()
-             ? InputCreatorType::CANUNWIND
+             ? InputCreatorType::CanUnwind
              : Opx::getInputCreatorType(index);
 }
 

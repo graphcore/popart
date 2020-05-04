@@ -91,9 +91,9 @@ std::unique_ptr<Op> TopKGradOp::clone() const {
 const std::vector<GradInOutMapper> &TopKGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
       // gradient of the TopK values output:
-      {gradInIndex(), TopKOp::getValuesOutIndex(), GradOpInType::GRADOUT},
+      {gradInIndex(), TopKOp::getValuesOutIndex(), GradOpInType::GradOut},
       // The indices output of the TopK Op:
-      {indicesInIndex(), TopKOp::getIndicesOutIndex(), GradOpInType::OUT}};
+      {indicesInIndex(), TopKOp::getIndicesOutIndex(), GradOpInType::Out}};
   return inInfo;
 }
 

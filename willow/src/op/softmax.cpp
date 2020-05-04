@@ -89,8 +89,8 @@ const std::vector<GradInOutMapper> &SoftmaxGradOp::gradInputInfo() const {
   // input at index 1 (actsIn()): input of softmax (activations before p)
   // the (1-sparse) gradient of the output will be used
   static const std::vector<GradInOutMapper> inInfo = {
-      {getGradProbsInIndex(), SoftmaxOp::getOutIndex(), GradOpInType::GRADOUT},
-      {getActsInIndex(), SoftmaxOp::getInIndex(), GradOpInType::IN}};
+      {getGradProbsInIndex(), SoftmaxOp::getOutIndex(), GradOpInType::GradOut},
+      {getActsInIndex(), SoftmaxOp::getInIndex(), GradOpInType::In}};
   return inInfo;
 }
 

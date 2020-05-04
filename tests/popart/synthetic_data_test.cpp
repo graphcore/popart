@@ -49,11 +49,11 @@ BOOST_AUTO_TEST_CASE(SyntheticData_False) {
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
-  auto art       = AnchorReturnType("ALL");
+  auto art       = AnchorReturnType("All");
   auto dataFlow  = DataFlow(1, {{tensorIds.back(), art}, {tensorIds[2], art}});
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{
-      new L1Loss(tensorIds.back(), "l1LossVal", 0.1, ReductionType::SUM)};
+      new L1Loss(tensorIds.back(), "l1LossVal", 0.1, ReductionType::Sum)};
 
   auto device = popart::createTestDevice(TEST_TARGET);
 
@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_CASE(SyntheticData_False) {
       device,
       InputShapeInfo(),
       {},
-      Patterns({popart::PreAliasPatternType::POSTNREPL}));
+      Patterns({popart::PreAliasPatternType::PostNRepl}));
 
   session->prepareDevice();
 
@@ -101,11 +101,11 @@ BOOST_AUTO_TEST_CASE(SyntheticData_True) {
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
-  auto art       = AnchorReturnType("ALL");
+  auto art       = AnchorReturnType("All");
   auto dataFlow  = DataFlow(1, {{tensorIds.back(), art}, {tensorIds[2], art}});
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{
-      new L1Loss(tensorIds.back(), "l1LossVal", 0.1, ReductionType::SUM)};
+      new L1Loss(tensorIds.back(), "l1LossVal", 0.1, ReductionType::Sum)};
 
   SessionOptions options;
   options.syntheticDataMode = SyntheticDataMode::Zeros;
@@ -120,7 +120,7 @@ BOOST_AUTO_TEST_CASE(SyntheticData_True) {
       device,
       InputShapeInfo(),
       options,
-      Patterns({popart::PreAliasPatternType::POSTNREPL}));
+      Patterns({popart::PreAliasPatternType::PostNRepl}));
 
   session->prepareDevice();
 

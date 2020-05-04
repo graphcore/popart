@@ -26,28 +26,28 @@ public:
   PopPrograms(Devicex *dv_p_);
 
   enum ProgramIndex {
-    WEIGHTSFROMHOST = 0,
-    OPTIMIZERFROMHOST,
-    SETRANDOMSEEDFROMHOST,
-    PROGRAM,
-    WEIGHTSTOHOST,
-    CYCLECOUNTTENSORTOHOST,
+    WeightsFromHost = 0,
+    OptimizerFromHost,
+    SetRandomSeedFromHost,
+    Program,
+    WeightstoHost,
+    CycleCountTensortoHost,
     N // The number of programs
   };
 
   // Order of these enums is used for scheduling
   enum class ProgramFragmentIndex {
-    STREAMWEIGHTSFROMHOST = 0,
-    STREAMOPTIMIZERFROMHOST,
-    SETRANDOMSEEDFROMHOST,
-    INIT,
-    PREFORWARD,
-    FORWARD,
-    BACKWARD,
-    VARUPDATEFROMACCUMULATOR,
-    WEIGHTSTOHOST,
-    TOHOSTFINALCOPY,
-    CYCLECOUNTTENSORTOHOST,
+    StreamWeightsFromHost = 0,
+    StreamOptimizerFromHost,
+    SetRandomSeedFromHost,
+    Init,
+    PreForward,
+    Forward,
+    Backward,
+    VarUpdateFromAccumulator,
+    WeightstoHost,
+    ToHostFinalCopy,
+    CycleCountTensortoHost,
     N // The number of program fragments
   };
 

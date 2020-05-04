@@ -61,11 +61,11 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Gemm_Decomposition0) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR, adding out_id as an anchor
-  auto art       = AnchorReturnType("ALL");
+  auto art       = AnchorReturnType("All");
   auto dataFlow  = DataFlow(1, {{out_id, art}});
   auto optimizer = ConstSGD(0.01);
   std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(out_id, "l1LossVal", 0.1, ReductionType::SUM)};
+      std::make_shared<L1Loss>(out_id, "l1LossVal", 0.1, ReductionType::Sum)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -76,8 +76,8 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Gemm_Decomposition0) {
               &optimizer,
               *device,
               {}, // no SessionOptions
-              Patterns({PreAliasPatternType::POSTNREPL,
-                        PreAliasPatternType::GEMMDECOMPOSITION})});
+              Patterns({PreAliasPatternType::PostNRepl,
+                        PreAliasPatternType::GemmDecomposition})});
 
   // Check the ir
   // 1) there should only be 1 scale op,

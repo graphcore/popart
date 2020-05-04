@@ -15,7 +15,7 @@ ElementWiseUnaryOpx::ElementWiseUnaryOpx(Op *op, Devicex *devicex)
     : Opx(op, devicex) {}
 
 InputCreatorType ElementWiseUnaryOpx::getInputCreatorType(InIndex) const {
-  return InputCreatorType::CANUNWIND;
+  return InputCreatorType::CanUnwind;
 }
 
 poplar::Tensor ElementWiseUnaryOpx::unwindTensorLayout(poplar::Tensor tensor,
@@ -43,9 +43,9 @@ ElementWiseBinaryOpx::getInputCreatorType(InIndex index) const {
   // when performing the op.
   if (op_p->inInfo(index) ==
       op_p->outInfo(ElementWiseBinaryOp::getOutIndex())) {
-    return InputCreatorType::CANUNWIND;
+    return InputCreatorType::CanUnwind;
   } else {
-    return InputCreatorType::DEADEND;
+    return InputCreatorType::Deadend;
   }
 }
 

@@ -145,10 +145,10 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation):
     loss1.virtualGraph(1)
 
     anchors = {
-        mask0: popart.AnchorReturnType("ALL"),
-        mask1: popart.AnchorReturnType("ALL"),
-        mask2: popart.AnchorReturnType("ALL"),
-        maskSkip: popart.AnchorReturnType("ALL"),
+        mask0: popart.AnchorReturnType("All"),
+        mask1: popart.AnchorReturnType("All"),
+        mask2: popart.AnchorReturnType("All"),
+        maskSkip: popart.AnchorReturnType("All"),
     }
 
     dataFlow = popart.DataFlow(batchesPerStep, anchors)

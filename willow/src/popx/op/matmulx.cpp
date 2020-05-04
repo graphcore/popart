@@ -28,9 +28,9 @@ PoplarOptions getPoplarOptionsForMatMul(MatMulBaseOp &op) {
       auto phase = op.getPhase();
       if (phase == MatMulBaseOp::Phase::Fwd) {
         opts.options["fullyConnectedPass"] = "TRAINING_FWD";
-      } else if (phase == MatMulBaseOp::Phase::BwdLhs) {
+      } else if (phase == MatMulBaseOp::Phase::BwdLHS) {
         opts.options["fullyConnectedPass"] = "TRAINING_BWD";
-      } else if (phase == MatMulBaseOp::Phase::BwdRhs) {
+      } else if (phase == MatMulBaseOp::Phase::BwdRHS) {
         opts.options["fullyConnectedPass"] = "TRAINING_WU";
       }
     } else {
@@ -580,9 +580,9 @@ poplar::Tensor MatMulOpx::createInput(InIndex index,
 InputCreatorType MatMulOpx::getInputCreatorType(InIndex) const {
   const MatMulOp *op = dynamic_cast<const MatMulOp *>(op_p);
   if (op->getCanCreateInputs()) {
-    return InputCreatorType::CANCREATE;
+    return InputCreatorType::CanCreate;
   } else {
-    return InputCreatorType::DEADEND;
+    return InputCreatorType::Deadend;
   }
 }
 

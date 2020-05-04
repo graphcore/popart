@@ -61,13 +61,13 @@ const std::map<int, int> &GroupNormGradOp::gradOutToNonGradIn() const {
 
 const std::vector<GradInOutMapper> &GroupNormGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getYGradInIndex(), GroupNormOp::getYOutIndex(), GradOpInType::GRADOUT},
-      {getXInIndex(), GroupNormOp::getXInIndex(), GradOpInType::IN},
-      {getScaleInIndex(), GroupNormOp::getScaleInIndex(), GradOpInType::IN},
-      {getMeanInIndex(), GroupNormOp::getMeanOutIndex(), GradOpInType::OUT},
+      {getYGradInIndex(), GroupNormOp::getYOutIndex(), GradOpInType::GradOut},
+      {getXInIndex(), GroupNormOp::getXInIndex(), GradOpInType::In},
+      {getScaleInIndex(), GroupNormOp::getScaleInIndex(), GradOpInType::In},
+      {getMeanInIndex(), GroupNormOp::getMeanOutIndex(), GradOpInType::Out},
       {getInvStdDevInIndex(),
        GroupNormOp::getInvStdDevOutIndex(),
-       GradOpInType::OUT}};
+       GradOpInType::Out}};
   return inInfo;
 }
 

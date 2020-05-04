@@ -46,7 +46,7 @@ const std::map<int, int> &SubtractArg0GradOp::gradOutToNonGradIn() const {
 
 const std::vector<GradInOutMapper> &SubtractArg0GradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), SubtractOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getInIndex(), SubtractOp::getOutIndex(), GradOpInType::GradOut}};
 
   return inInfo;
 }
@@ -68,7 +68,7 @@ const std::map<int, int> &SubtractArg1GradOp::gradOutToNonGradIn() const {
 
 const std::vector<GradInOutMapper> &SubtractArg1GradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), SubtractOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getInIndex(), SubtractOp::getOutIndex(), GradOpInType::GradOut}};
 
   return inInfo;
 }

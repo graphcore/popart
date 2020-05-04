@@ -658,7 +658,7 @@ def test_batchnorm_repeated():
     builder.addOutputTensor(o_y)
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o_y: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o_y: popart.AnchorReturnType("All")})
 
     device = tu.create_test_device()
 

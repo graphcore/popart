@@ -164,7 +164,7 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeNumericalTest0x) {
 
     float lambda = 0.159;
     auto loss    = std::unique_ptr<Loss>(
-        new L1Loss(actFinal, "l1LossVal", lambda, ReductionType::SUM));
+        new L1Loss(actFinal, "l1LossVal", lambda, ReductionType::Sum));
     loss->virtualGraph(nIPUs - 1);
 
     int64_t stepDataElms = accumulationFactor * microBatchElms * batchesPerStep;
@@ -179,7 +179,7 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeNumericalTest0x) {
         device,
         InputShapeInfo(),
         userOptions,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
 
     auto opSchedule = session->ir.getOpSchedule({});
     int nRestore    = 0;

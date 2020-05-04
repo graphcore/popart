@@ -77,13 +77,13 @@ GlobalAveragePoolGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
       {getGradPooledInIndex(),
        GlobalAveragePoolOp::getOutIndex(),
-       GradOpInType::GRADOUT},
+       GradOpInType::GradOut},
       {getPooledInIndex(),
        GlobalAveragePoolOp::getOutIndex(),
-       GradOpInType::OUT},
+       GradOpInType::Out},
       {getPrePooledInIndex(),
        GlobalAveragePoolOp::getInIndex(),
-       GradOpInType::IN}};
+       GradOpInType::In}};
   return inInfo;
 }
 

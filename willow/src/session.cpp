@@ -221,7 +221,7 @@ void Session::modelToHost(const std::string &fn) {
   io::writeModel(model, fn);
 
   if (!ir.getSessionOptions().constantWeights ||
-      ir.getExecutionMode() != Ir::ExecutionMode::INFERENCE) {
+      ir.getExecutionMode() != Ir::ExecutionMode::Inference) {
     // Weights in ir, device, and disk now all match
     ir.resetWeights(model);
   }
@@ -259,7 +259,7 @@ void Session::resetHostWeights(
     const bool ignoreWeightsInModelWithoutCorrespondingHostWeight) {
   logging::session::trace("Session::resetHostWeights");
   if (ir.getSessionOptions().constantWeights &&
-      ir.getExecutionMode() == Ir::ExecutionMode::INFERENCE) {
+      ir.getExecutionMode() == Ir::ExecutionMode::Inference) {
     throw error("Cannot call resetHostWeights when constantWeights is set");
   }
   auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);

@@ -21,7 +21,7 @@ nOutChans = 10
 batchSize = 2
 batchesPerStep = 3
 anchors = {
-    "l1LossVal": popart.AnchorReturnType("ALL"),
+    "l1LossVal": popart.AnchorReturnType("All"),
 }
 
 dataFeed = popart.DataFlow(batchesPerStep, anchors)

@@ -18,9 +18,9 @@ nOutChans = 10
 batchSize = 2
 batchesPerStep = 3
 anchors = {
-    "l1LossVal": popart_core.AnchorReturnType("FINAL"),
-    "nllLossVal": popart_core.AnchorReturnType("FINAL"),
-    "probs": popart_core.AnchorReturnType("FINAL")
+    "l1LossVal": popart_core.AnchorReturnType("Final"),
+    "nllLossVal": popart_core.AnchorReturnType("Final"),
+    "probs": popart_core.AnchorReturnType("Final")
 }
 dataFeed = popart_core.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = popart_core.InputShapeInfo()

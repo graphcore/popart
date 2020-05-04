@@ -75,7 +75,7 @@ void PriTasks::add(const PriTask &t) {
     if (found != tasksMap.end()) {
       if (std::find(found->second.dependsOn.begin(),
                     found->second.dependsOn.end(),
-                    std::make_pair(t.name, DependencyType::OUTPUT)) !=
+                    std::make_pair(t.name, DependencyType::Output)) !=
           found->second.dependsOn.end()) {
         throw error("circular PriTask dependency " + x.first + " <-> " +
                     t.name);
@@ -98,9 +98,9 @@ PriTasks::getLinearised(std::set<DependencyType> dependencies) const {
 
   auto tasksMapCopy = tasksMap;
 
-  std::set<DependencyType> removeDepTypes = {DependencyType::OUTPUT,
-                                             DependencyType::SCHEDULER,
-                                             DependencyType::TENSOR};
+  std::set<DependencyType> removeDepTypes = {DependencyType::Output,
+                                             DependencyType::Scheduler,
+                                             DependencyType::Tensor};
 
   for (auto &x : tasksMapCopy) {
     dependentsOf[x.first] = {};

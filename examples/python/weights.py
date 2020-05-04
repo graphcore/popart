@@ -25,7 +25,7 @@ o = builder.aiOnnx.relu([o])
 o = builder.aiOnnx.softmax([o])
 builder.addOutputTensor(o)
 
-dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
 # Create a session to compile and the graph for inference
 #------------------------------------------------------------------------------

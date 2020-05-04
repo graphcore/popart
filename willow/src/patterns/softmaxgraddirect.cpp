@@ -30,7 +30,7 @@ OpId SoftmaxGradDirect::moveMergedIntoIr(Op *opRoot) const {
 
 namespace {
 static PatternCreator<SoftmaxGradDirect>
-    PreUniReplPattern(PreAliasPatternType::SOFTMAXGRADDIRECT,
+    PreUniReplPattern(PreAliasPatternType::SoftmaxGradDirect,
                       "SoftmaxGradDirect");
 }
 

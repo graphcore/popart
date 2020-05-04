@@ -169,7 +169,7 @@ def test_mini_resnet_like():
 
     session = popart.TrainingSession(
         fnModel=proto,
-        dataFeed=popart.DataFlow(1, {"loss": popart.AnchorReturnType("ALL")}),
+        dataFeed=popart.DataFlow(1, {"loss": popart.AnchorReturnType("All")}),
         optimizer=popart.ConstSGD(0.001),
         losses=[popart.NllLoss(op, lb, "loss")],
         deviceInfo=tu.create_test_device(),

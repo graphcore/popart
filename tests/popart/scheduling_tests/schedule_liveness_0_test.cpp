@@ -79,7 +79,7 @@ void setIr(uint64_t N, Ir &ir) {
   }
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
-  auto dataFlow   = DataFlow(1, {{sum, AnchorReturnType("ALL")}});
+  auto dataFlow   = DataFlow(1, {{sum, AnchorReturnType("All")}});
   auto device     = createTestDevice(TEST_TARGET);
   SessionOptions opts;
   opts.autoRecomputation              = RecomputationType::None;

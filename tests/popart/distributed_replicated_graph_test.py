@@ -77,7 +77,7 @@ def test_distributed_replicated_allreduce():
     builder.addOutputTensor(o)
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
     opts = popart.SessionOptions()
     opts.enableReplicatedGraphs = False
     opts.enableDistributedReplicatedGraphs = True
@@ -163,11 +163,11 @@ def test_distributed_replicated_weight_update():
     proto = builder.getModelProto()
 
     outputs = {
-        A: popart.AnchorReturnType("ALL"),
-        B: popart.AnchorReturnType("ALL"),
-        C: popart.AnchorReturnType("ALL"),
-        D: popart.AnchorReturnType("ALL"),
-        G: popart.AnchorReturnType("ALL")
+        A: popart.AnchorReturnType("All"),
+        B: popart.AnchorReturnType("All"),
+        C: popart.AnchorReturnType("All"),
+        D: popart.AnchorReturnType("All"),
+        G: popart.AnchorReturnType("All")
     }
 
     dataFlow = popart.DataFlow(1, outputs)
@@ -271,11 +271,11 @@ def test_distributed_hierarchical_replicated_weight_update():
     proto = builder.getModelProto()
 
     outputs = {
-        A: popart.AnchorReturnType("ALL"),
-        B: popart.AnchorReturnType("ALL"),
-        C: popart.AnchorReturnType("ALL"),
-        D: popart.AnchorReturnType("ALL"),
-        G: popart.AnchorReturnType("ALL")
+        A: popart.AnchorReturnType("All"),
+        B: popart.AnchorReturnType("All"),
+        C: popart.AnchorReturnType("All"),
+        D: popart.AnchorReturnType("All"),
+        G: popart.AnchorReturnType("All")
     }
 
     dataFlow = popart.DataFlow(1, outputs)

@@ -133,7 +133,7 @@ std::unique_ptr<Op> TransposeGradOp::clone() const {
 
 const std::vector<GradInOutMapper> &TransposeGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), TransposeOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getInIndex(), TransposeOp::getOutIndex(), GradOpInType::GradOut}};
 
   return inInfo;
 }

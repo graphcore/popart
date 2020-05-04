@@ -105,10 +105,10 @@ DynamicUpdateToUpdateGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
       {getUpdateInIndex(),
        DynamicBinaryBaseOp::getOutIndex(),
-       GradOpInType::GRADOUT},
+       GradOpInType::GradOut},
       {getIndexInIndex(),
        DynamicBinaryBaseOp::getIndexInIndex(),
-       GradOpInType::IN}};
+       GradOpInType::In}};
   return inInfo;
 }
 
@@ -134,10 +134,10 @@ std::unique_ptr<Op> DynamicUpdateUpdaterGradOp::clone() const {
 const std::vector<GradInOutMapper> &
 DynamicUpdateUpdaterGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), DynamicUpdateOp::getOutIndex(), GradOpInType::GRADOUT},
+      {getInIndex(), DynamicUpdateOp::getOutIndex(), GradOpInType::GradOut},
       {getIndexInIndex(),
        DynamicUpdateOp::getIndexInIndex(),
-       GradOpInType::IN}};
+       GradOpInType::In}};
   return inInfo;
 }
 

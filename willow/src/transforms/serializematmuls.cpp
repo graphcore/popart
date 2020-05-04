@@ -864,7 +864,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                                          pingPongPhase,
                                          name);
       } break;
-      case MatMulOp::Phase::BwdLhs: {
+      case MatMulOp::Phase::BwdLHS: {
         serializeBwdLhsMatMul_InputChannels(builder,
                                             matmulLhs,
                                             matmulRhs,
@@ -876,7 +876,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                                             pingPongPhase,
                                             name);
       } break;
-      case MatMulOp::Phase::BwdRhs: {
+      case MatMulOp::Phase::BwdRHS: {
         serializeBwdRhsMatMul_InputChannels(builder,
                                             matmulLhs,
                                             matmulRhs,
@@ -904,7 +904,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                                           pingPongPhase,
                                           name);
       } break;
-      case MatMulOp::Phase::BwdLhs: {
+      case MatMulOp::Phase::BwdLHS: {
         serializeBwdLhsMatMul_OutputChannels(builder,
                                              matmulLhs,
                                              matmulRhs,
@@ -916,7 +916,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                                              pingPongPhase,
                                              name);
       } break;
-      case MatMulOp::Phase::BwdRhs: {
+      case MatMulOp::Phase::BwdRHS: {
         serializeBwdRhsMatMul_OutputChannels(builder,
                                              matmulLhs,
                                              matmulRhs,
@@ -944,7 +944,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                                        pingPongPhase,
                                        name);
       } break;
-      case MatMulOp::Phase::BwdLhs: {
+      case MatMulOp::Phase::BwdLHS: {
         serializeBwdLhsMatMul_ReducingDim(builder,
                                           matmulLhs,
                                           matmulRhs,
@@ -956,7 +956,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                                           pingPongPhase,
                                           name);
       } break;
-      case MatMulOp::Phase::BwdRhs: {
+      case MatMulOp::Phase::BwdRHS: {
         serializeBwdRhsMatMul_ReducingDim(builder,
                                           matmulLhs,
                                           matmulRhs,

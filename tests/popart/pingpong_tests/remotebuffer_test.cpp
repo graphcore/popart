@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_0) {
 
   TensorId C_id = aiGraphcore.init({K, N, N},
                                    static_cast<int64_t>(DataType::FLOAT),
-                                   static_cast<int64_t>(InitType::NONE));
+                                   static_cast<int64_t>(InitType::NoInit));
 
   TensorInfo B_info{"FLOAT", std::vector<int64_t>{K, N, N}};
   TensorId B_id = bder->customOp(Onnx::CustomOperators::CacheLoad,
@@ -79,7 +79,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_0) {
 
   auto proto         = bder->getModelProto();
   auto modelProto    = io::getModelFromString(proto);
-  auto art           = AnchorReturnType("ALL");
+  auto art           = AnchorReturnType("All");
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{B_id, art}});
   auto device        = createTestDevice(TEST_TARGET);
@@ -105,7 +105,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_0) {
         losses,
         popart::InputShapeInfo(),
         opts,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
     session->prepareDevice();
     popart::StepIO stepio(inputs, anchors);
     session->run(stepio);
@@ -178,7 +178,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_1) {
 
   TensorId concat_id = aiGraphcore.init({K, N, N},
                                         static_cast<int64_t>(DataType::FLOAT),
-                                        static_cast<int64_t>(InitType::NONE));
+                                        static_cast<int64_t>(InitType::NoInit));
 
   TensorId B_cc0_id =
       aiGraphcore.dynamicupdate({concat_id, idx0_id, mmb0_id}, {0}, {1}, true);
@@ -207,7 +207,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_1) {
 
   auto proto         = bder->getModelProto();
   auto modelProto    = io::getModelFromString(proto);
-  auto art           = AnchorReturnType("ALL");
+  auto art           = AnchorReturnType("All");
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{B_l_id, art}});
   auto device        = createTestDevice(TEST_TARGET);
@@ -236,7 +236,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_1) {
         losses,
         popart::InputShapeInfo(),
         opts,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
     session->prepareDevice();
     popart::StepIO stepio(inputs, anchors);
     session->run(stepio);
@@ -314,7 +314,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadOutlineTest) {
 
   auto proto         = bder->getModelProto();
   auto modelProto    = io::getModelFromString(proto);
-  auto art           = AnchorReturnType("ALL");
+  auto art           = AnchorReturnType("All");
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}, {D_id, art}});
   auto device        = createTestDevice(TEST_TARGET);
@@ -343,7 +343,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadOutlineTest) {
         losses,
         popart::InputShapeInfo(),
         opts,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
     session->prepareDevice();
     popart::StepIO stepio(inputs, anchors);
     session->run(stepio);
@@ -359,7 +359,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadOutlineTest) {
         BOOST_CHECK(callOp->modifies(0).front() ==
                     view::Region::getFull(A_info.shape()));
         BOOST_CHECK(callOp->modifies(0).front().getAccessType() ==
-                    view::AccessType::WRITE);
+                    view::AccessType::Write);
       }
       if (CacheLoadOp *cacheLoadOp = dynamic_cast<CacheLoadOp *>(op)) {
         BOOST_CHECK(cacheLoadOp
@@ -370,7 +370,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadOutlineTest) {
                         .front() == view::Region::getFull(A_info.shape()));
         BOOST_CHECK(cacheLoadOp->modifies(CacheLoadOp::getCachedTensorInIndex())
                         .front()
-                        .getAccessType() == view::AccessType::WRITE);
+                        .getAccessType() == view::AccessType::Write);
       }
     }
   }

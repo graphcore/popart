@@ -80,8 +80,8 @@ std::unique_ptr<Op> GatherGradOp::clone() const {
 
 const std::vector<GradInOutMapper> &GatherGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {gradInIndex(), GatherOp::outIndex(), GradOpInType::GRADOUT},
-      {indicesInIndex(), GatherOp::indicesInIndex(), GradOpInType::IN}};
+      {gradInIndex(), GatherOp::outIndex(), GradOpInType::GradOut},
+      {indicesInIndex(), GatherOp::indicesInIndex(), GradOpInType::In}};
 
   return inInfo;
 }

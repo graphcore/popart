@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
 
     auto proto      = bder->getModelProto();
     auto modelProto = io::getModelFromString(proto);
-    auto art        = AnchorReturnType("ALL");
+    auto art        = AnchorReturnType("All");
     // one batch per step
     int batchesPerStep = 1;
     auto dataFlow      = DataFlow(batchesPerStep,
@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
     if (genPdf) {
       opts.firstDotOp = 0;
       opts.finalDotOp = 100;
-      opts.dotChecks.insert(DotCheck::FINAL);
+      opts.dotChecks.insert(DotCheck::Final);
       opts.logDir = "./dotfiles";
       if (!boost::filesystem::exists(opts.logDir)) {
         boost::filesystem::create_directory(opts.logDir);
@@ -126,7 +126,7 @@ BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
     float learnRate = 0.321;
     auto optimizer  = ConstSGD(learnRate);
     std::unique_ptr<Loss> l1_loss(
-        new L1Loss(C_id, "l1LossVal", lossLambda, ReductionType::SUM));
+        new L1Loss(C_id, "l1LossVal", lossLambda, ReductionType::Sum));
     std::vector<Loss *> losses{l1_loss.get()};
 
     auto session = popart::TrainingSession::createFromOnnxModel(
@@ -137,7 +137,7 @@ BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
         device,
         popart::InputShapeInfo(),
         opts,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
 
     // prepare the anchors. We have the output C,
     std::vector<float> raw_C_out(C_info.nelms());

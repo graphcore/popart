@@ -183,7 +183,7 @@ def test_all_anchor_returns():
             ACCL: [DATA_LEN, DATA_LEN]
         }
 
-        # Add in BPS if all batches are requested. (AnchorReturnType("ALL"))
+        # Add in BPS if all batches are requested. (AnchorReturnType("All"))
         # Add in a replication dimension if needed.
         if d["ReplicationFactor"] > 1:
             for k in expected_shapes:

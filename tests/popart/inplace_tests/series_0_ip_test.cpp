@@ -62,10 +62,10 @@ BOOST_AUTO_TEST_CASE(Inplace_series0) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the (training) IR
-  auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+  auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("All")}});
   auto optimizer = ConstSGD(0.01);
   std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(out, "l1LossVal", 0.1, ReductionType::SUM)};
+      std::make_shared<L1Loss>(out, "l1LossVal", 0.1, ReductionType::Sum)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -76,7 +76,7 @@ BOOST_AUTO_TEST_CASE(Inplace_series0) {
               &optimizer,
               *device,
               {},
-              Patterns(PatternsLevel::NONE).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
 
   // Check the ir
   // All the Relus and Exps have been optimised out,
@@ -116,10 +116,10 @@ BOOST_AUTO_TEST_CASE(Inplace_series_changedPreferences) {
 
   // Create the IR
   auto dataFlow = DataFlow(
-      1, {{out, AnchorReturnType("ALL")}, {in0, AnchorReturnType("ALL")}});
+      1, {{out, AnchorReturnType("All")}, {in0, AnchorReturnType("All")}});
   auto optimizer = ConstSGD(0.01);
   std::vector<std::shared_ptr<Loss>> losses{std::shared_ptr<Loss>(
-      new L1Loss(out, "l1LossVal", 0.1, ReductionType::SUM))};
+      new L1Loss(out, "l1LossVal", 0.1, ReductionType::Sum))};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -130,7 +130,7 @@ BOOST_AUTO_TEST_CASE(Inplace_series_changedPreferences) {
               &optimizer,
               *device,
               {},
-              Patterns(PatternsLevel::NONE).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
 
   // All the Relus have been optimised out,
   // except the one which CONSUMES an anchors.

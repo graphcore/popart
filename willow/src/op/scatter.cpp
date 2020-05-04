@@ -63,8 +63,8 @@ std::unique_ptr<Op> ScatterDataGradOp::clone() const {
 
 const std::vector<GradInOutMapper> &ScatterDataGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {gradInIndex(), ScatterOp::outIndex(), GradOpInType::GRADOUT},
-      {indicesInIndex(), ScatterOp::indicesInIndex(), GradOpInType::IN}};
+      {gradInIndex(), ScatterOp::outIndex(), GradOpInType::GradOut},
+      {indicesInIndex(), ScatterOp::indicesInIndex(), GradOpInType::In}};
 
   return inInfo;
 }
@@ -97,8 +97,8 @@ std::unique_ptr<Op> ScatterUpdateGradOp::clone() const {
 
 const std::vector<GradInOutMapper> &ScatterUpdateGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {gradInIndex(), ScatterOp::outIndex(), GradOpInType::GRADOUT},
-      {indicesInIndex(), ScatterOp::indicesInIndex(), GradOpInType::IN}};
+      {gradInIndex(), ScatterOp::outIndex(), GradOpInType::GradOut},
+      {indicesInIndex(), ScatterOp::indicesInIndex(), GradOpInType::In}};
 
   return inInfo;
 }

@@ -102,8 +102,8 @@ public:
   //
   virtual const std::vector<popart::GradInOutMapper> &gradInputInfo() const {
     static const std::vector<popart::GradInOutMapper> inInfo = {
-        {0, 0, popart::GradOpInType::GRADOUT},
-        {1, 0, popart::GradOpInType::OUT}};
+        {0, 0, popart::GradOpInType::GradOut},
+        {1, 0, popart::GradOpInType::Out}};
     return inInfo;
   }
 
@@ -244,7 +244,7 @@ auto main(int argc, char **argv) -> int {
   // 2.2 Loss(es).
   // 2.2.1 l1 loss : 0.1 * |output|_1
   std::unique_ptr<popart::L1Loss> l1Loss(new popart::L1Loss(
-      outputs[0], "l1LossVal", 0.1f, popart::ReductionType::SUM));
+      outputs[0], "l1LossVal", 0.1f, popart::ReductionType::Sum));
   std::vector<popart::Loss *> losses{l1Loss.get()};
 
   // 2.3 Data streaming.
@@ -256,9 +256,9 @@ auto main(int argc, char **argv) -> int {
                           // have an equivalent in other standard frameworks
                           // like Tensorflow. It is the number of batches to
                           // process when session->run(.) is called. (see below)
-                       {{outputs[0], popart::AnchorReturnType("ALL")},
+                       {{outputs[0], popart::AnchorReturnType("All")},
                         {popart::reservedGradientPrefix() + input,
-                         popart::AnchorReturnType("ALL")}});
+                         popart::AnchorReturnType("All")}});
 
   auto cpuDevice =
       popart::DeviceManager::createDeviceManager().createCpuDevice();
@@ -272,7 +272,7 @@ auto main(int argc, char **argv) -> int {
       cpuDevice,
       popart::InputShapeInfo(),
       {},
-      popart::Patterns({popart::PreAliasPatternType::PREUNIREPL}));
+      popart::Patterns({popart::PreAliasPatternType::PreUniRepl}));
 
   // prepare the anchors buffers. The anchors are what were specified in 2.3
   // for data streaming: the tensors which will be returned from the device

@@ -41,17 +41,17 @@ def test_matmul_1d(tmpdir):
         dataFlow = popart.DataFlow(
             1, {
                 o:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + lhs:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + rhs:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
             })
 
         opts = popart.SessionOptions()
         opts.reportOptions = {"showExecutionSteps": "true"}
 
-        pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
+        pat = popart.Patterns(popart.PatternsLevel.Default)
 
         session = popart.TrainingSession(
             fnModel=proto,
@@ -140,14 +140,14 @@ def test_matmul_grouping_test_1(tmpdir):
 
         proto = builder.getModelProto()
 
-        dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+        dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
         opts = popart.SessionOptions()
         opts.reportOptions = {"showExecutionSteps": "true"}
         opts.enableOutlining = False
         opts.enableGroupedMatmuls = groupingEnabled
 
-        pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
+        pat = popart.Patterns(popart.PatternsLevel.Default)
 
         session = popart.InferenceSession(
             fnModel=proto,
@@ -254,15 +254,15 @@ def test_matmul_grouping_test_2(tmpdir):
 
         dataFlow = popart.DataFlow(
             1, {
-                o: popart.AnchorReturnType("ALL"),
+                o: popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + a:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + b:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + c:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + d:
-                popart.AnchorReturnType("ALL")
+                popart.AnchorReturnType("All")
             })
 
         opts = popart.SessionOptions()
@@ -271,7 +271,7 @@ def test_matmul_grouping_test_2(tmpdir):
         opts.enableGroupedMatmuls = groupingEnabled
         opts.dotOpNames = True
 
-        pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
+        pat = popart.Patterns(popart.PatternsLevel.Default)
 
         session = popart.TrainingSession(
             fnModel=proto,
@@ -352,15 +352,15 @@ def test_matmul_grouping_test_3(tmpdir):
 
         dataFlow = popart.DataFlow(
             1, {
-                o: popart.AnchorReturnType("ALL"),
+                o: popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + a:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + b:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + c:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + d:
-                popart.AnchorReturnType("ALL")
+                popart.AnchorReturnType("All")
             })
 
         opts = popart.SessionOptions()
@@ -369,7 +369,7 @@ def test_matmul_grouping_test_3(tmpdir):
         opts.enableGroupedMatmuls = groupingEnabled
         opts.dotOpNames = True
 
-        pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
+        pat = popart.Patterns(popart.PatternsLevel.Default)
 
         session = popart.TrainingSession(
             fnModel=proto,
@@ -469,15 +469,15 @@ def test_matmul_grouping_test_4(tmpdir):
 
         dataFlow = popart.DataFlow(
             1, {
-                o: popart.AnchorReturnType("ALL"),
+                o: popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + a:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + b:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + c:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + d:
-                popart.AnchorReturnType("ALL")
+                popart.AnchorReturnType("All")
             })
 
         opts = popart.SessionOptions()
@@ -486,7 +486,7 @@ def test_matmul_grouping_test_4(tmpdir):
         opts.enableGroupedMatmuls = groupingEnabled
         opts.dotOpNames = True
 
-        pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
+        pat = popart.Patterns(popart.PatternsLevel.Default)
 
         session = popart.TrainingSession(
             fnModel=proto,

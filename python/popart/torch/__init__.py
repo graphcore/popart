@@ -93,8 +93,8 @@ class InferenceSession(_InferenceSessionCore):
             losses.append(
                 self.createLosses(self.losses, out, f"target_{idx}",
                                   f"loss_{idx}"))
-            self.anchor_returns[out] = popart.AnchorReturnType("ALL")
-            self.anchor_returns[f"loss_{idx}"] = popart.AnchorReturnType("ALL")
+            self.anchor_returns[out] = popart.AnchorReturnType("All")
+            self.anchor_returns[f"loss_{idx}"] = popart.AnchorReturnType("All")
 
         if passes is None:
             passes = popart.Patterns()
@@ -113,7 +113,7 @@ class InferenceSession(_InferenceSessionCore):
     def createLosses(self, loss, output, label=None, name="loss"):
         self.inputNames.append(label)
         if label:
-            self.anchor_returns[label] = popart.AnchorReturnType("ALL")
+            self.anchor_returns[label] = popart.AnchorReturnType("All")
         if isinstance(loss, torch.nn.NLLLoss):
             return popart.NllLoss(output, label, name)
         elif isinstance(loss, torch.nn.L1Loss):
@@ -236,8 +236,8 @@ class TrainingSession(_TrainingSessionCore):
             losses.append(
                 self.createLosses(self.losses, out, f"target_{idx}",
                                   f"loss_{idx}"))
-            self.anchor_returns[out] = popart.AnchorReturnType("ALL")
-            self.anchor_returns[f"loss_{idx}"] = popart.AnchorReturnType("ALL")
+            self.anchor_returns[out] = popart.AnchorReturnType("All")
+            self.anchor_returns[f"loss_{idx}"] = popart.AnchorReturnType("All")
 
         if passes is None:
             passes = popart.Patterns()
@@ -257,7 +257,7 @@ class TrainingSession(_TrainingSessionCore):
     def createLosses(self, loss, output, label=None, name="loss"):
         self.inputNames.append(label)
         if label:
-            self.anchor_returns[label] = popart.AnchorReturnType("ALL")
+            self.anchor_returns[label] = popart.AnchorReturnType("All")
         if isinstance(loss, torch.nn.NLLLoss):
             return popart.NllLoss(output, label, name)
         elif isinstance(loss, torch.nn.L1Loss):

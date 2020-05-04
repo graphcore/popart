@@ -26,7 +26,7 @@ InputCreatorType BaseSliceOpx::getInputCreatorType(InIndex inIndex) const {
   if (inIndex != 0) {
     throw error("inIndex should be 0 in BaseSliceOpx");
   }
-  return InputCreatorType::CANUNWIND;
+  return InputCreatorType::CanUnwind;
 }
 
 poplar::Tensor BaseSliceOpx::unwindTensorLayout(poplar::Tensor tensor,

@@ -15,7 +15,7 @@ namespace popart {
 //       For example CacheLoad and DynamicUpdate are safe consumers, while
 //       DynamicAdd needs a zero-initialised tensor.
 // Zero: Populate tensor with zeros in each iteration (like np.zeros)
-enum class InitType { NONE = 0, ZERO };
+enum class InitType { NoInit = 0, Zero };
 
 // Initialize a new tensor given
 // shape, data type, tensor type and initialization type.

@@ -258,11 +258,11 @@ void Ir::setPatterns(const Patterns &p) {
 }
 
 std::string Ir::getPatternLevelStr(const Patterns &p) {
-  if (isPatternsLevel(p, PatternsLevel::ALL)) {
+  if (isPatternsLevel(p, PatternsLevel::All)) {
     return "all";
-  } else if (isPatternsLevel(p, PatternsLevel::DEFAULT)) {
+  } else if (isPatternsLevel(p, PatternsLevel::Default)) {
     return "default";
-  } else if (isPatternsLevel(p, PatternsLevel::NONE)) {
+  } else if (isPatternsLevel(p, PatternsLevel::NoPatterns)) {
     return "no";
   } else {
     return "custom";
@@ -645,10 +645,10 @@ void Ir::verifySubgraphs() const {
 
 void Ir::verifyRecomputeAttributes() const noexcept(false) {
   // If explicit recomputation is turned on
-  // No op is allowed to have its recompute type set to RECOMPUTE
+  // No op is allowed to have its recompute type set to Recompute
   if (userOptions.explicitRecomputation) {
     for (auto op : getAllOps()) {
-      if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
+      if (op->settings.recomputeType == RecomputeType::Recompute) {
         throw error("Explicit recomputation is turned on for op '{}', but its "
                     "recompute type is set to '{}'",
                     op->debugName(),
@@ -831,11 +831,11 @@ void Ir::prepareImpl(const IrBundle &gb) {
   }
 
   if (gb.optimizer) {
-    setExecutionMode(ExecutionMode::TRAINING);
+    setExecutionMode(ExecutionMode::Training);
   } else if (gb.losses.empty()) {
-    setExecutionMode(ExecutionMode::INFERENCE);
+    setExecutionMode(ExecutionMode::Inference);
   } else {
-    setExecutionMode(ExecutionMode::EVALUATION);
+    setExecutionMode(ExecutionMode::Evaluation);
   }
 
   setDataFlow(gb.dataFlow);
@@ -875,13 +875,13 @@ void Ir::prepareImpl(const IrBundle &gb) {
   verifyPipelineSettings();
   verifyPingPongSettings();
 
-  dotCheckpoint(DotCheck::FWD0);
+  dotCheckpoint(DotCheck::Fwd0);
 
   for (auto &id_graph : graphs) {
     auto &graph = getGraph(id_graph.first);
     applyPreAliasPatterns(graph);
   }
-  dotCheckpoint(DotCheck::FWD1);
+  dotCheckpoint(DotCheck::Fwd1);
 
   if (requiresRandomSeed()) {
     initRandomSeed();
@@ -950,7 +950,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   }
 
   updateVertices();
-  dotCheckpoint(DotCheck::BWD0);
+  dotCheckpoint(DotCheck::Bwd0);
 
   applyTransform(Prune::id(), getMainGraph());
 
@@ -1095,7 +1095,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
 
   updateVertices();
 
-  dotCheckpoint(DotCheck::PREALIAS);
+  dotCheckpoint(DotCheck::PreAlias);
 
   if (getSessionOptions().enableOutlining) {
     updateAliases();
@@ -1176,7 +1176,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   // We allow duplicates.
   validateAnchors();
 
-  dotCheckpoint(DotCheck::FINAL);
+  dotCheckpoint(DotCheck::Final);
   logIr();
 
   // some checks, now that prepare is complete
@@ -1506,8 +1506,8 @@ void Ir::registerInputTensors(
     } else {
       // If inference or evaluation mode add initializers as constants if option
       // enabled
-      if ((getExecutionMode() == ExecutionMode::INFERENCE ||
-           getExecutionMode() == ExecutionMode::EVALUATION) &&
+      if ((getExecutionMode() == ExecutionMode::Inference ||
+           getExecutionMode() == ExecutionMode::Evaluation) &&
           getSessionOptions().constantWeights == true) {
         logCreationInfo("Constant", tenId);
         getTensors().addConstInit(tenId, &initializer);
@@ -1949,13 +1949,13 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
     //
     // gradOp->settings.schedulePriority = 0.0;
 
-    if (nonGradOp->settings.recomputeType == RecomputeType::RECOMPUTE &&
+    if (nonGradOp->settings.recomputeType == RecomputeType::Recompute &&
         autoRecomputationEnabled()) {
       throw error("Grad Ops should be grown before recompute annotation");
     }
 
-    // No gradOp should be of type RECOMPUTE.
-    gradOp->settings.recomputeType = RecomputeType::CHECKPOINT;
+    // No gradOp should be of type Recompute.
+    gradOp->settings.recomputeType = RecomputeType::Checkpoint;
 
     if (nonGradOp->hasPipelineStage()) {
       gradOp->setPipelineStage(maxPipelineStage -
@@ -1979,7 +1979,7 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
         // the input at index 'indexGrad' to gradOp is
         switch (type) {
         //  (1) the INPUT at index 'indexFwd' of nonGradOp
-        case GradOpInType::IN: {
+        case GradOpInType::In: {
           if (nonGradOp->input->hasIndex(indexFwd)) {
             m_inputs[indexGrad] = nonGradOp->input->tensor(indexFwd)->id;
           } else if (isInputOptional(nonGradOp, indexFwd)) {
@@ -1996,7 +1996,7 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
         }
 
         //  (2) the OUTPUT at index 'indexFwd' of nonGradOp
-        case GradOpInType::OUT: {
+        case GradOpInType::Out: {
           if (!nonGradOp->output->hasIndex(indexFwd)) {
             throw error("Invalid configuration of gradOp {}. nonGradOp ({}) "
                         "OUTPUT {} is not defined ",
@@ -2010,7 +2010,7 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
 
         //  (3) the GRADIENT of the OUTPUT
         //      at index 'indexFwd' of nonGradOp.
-        case GradOpInType::GRADOUT: {
+        case GradOpInType::GradOut: {
           if (!nonGradOp->output->hasIndex(indexFwd)) {
             throw error("Invalid configuration of gradOp {}. nonGradOp ({}) "
                         "OUTPUT {} is not defined ",
@@ -2296,7 +2296,7 @@ void Ir::updateVertices() {
       op->scheduledPreLoss = ScheduledPreLoss::Yes;
     }
     if (op->scheduledPreLoss == ScheduledPreLoss::No) {
-      op->settings.recomputeType = RecomputeType::CHECKPOINT;
+      op->settings.recomputeType = RecomputeType::Checkpoint;
     }
   }
 
@@ -3102,15 +3102,15 @@ bool Ir::isSchedulable(const OpsBeforeKey &gCons) const {
 Ir::ExecutionMode Ir::getExecutionMode() const { return executionMode; }
 
 bool Ir::canInfer() const {
-  return getExecutionMode() == ExecutionMode::INFERENCE || canEvaluate();
+  return getExecutionMode() == ExecutionMode::Inference || canEvaluate();
 }
 
 bool Ir::canEvaluate() const {
-  return getExecutionMode() == ExecutionMode::EVALUATION || canTrain();
+  return getExecutionMode() == ExecutionMode::Evaluation || canTrain();
 }
 
 bool Ir::canTrain() const {
-  return getExecutionMode() == ExecutionMode::TRAINING;
+  return getExecutionMode() == ExecutionMode::Training;
 }
 
 bool Ir::hasConstructedBackwards() const { return constructedBackwards; }

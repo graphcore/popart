@@ -128,7 +128,7 @@ FlattenGradOp::FlattenGradOp(const FlattenBaseOp &fwdOp)
 
 const std::vector<GradInOutMapper> &FlattenGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), FlattenBaseOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getInIndex(), FlattenBaseOp::getOutIndex(), GradOpInType::GradOut}};
   return inInfo;
 }
 

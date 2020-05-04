@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE(test) {
     builder->addOutputTensor(sm0);
     auto label0 = builder->addInputTensor(labelSampleInfo);
     auto loss0 =
-        std::make_unique<NllLoss>(sm0, label0, "loss0", ReductionType::MEAN);
+        std::make_unique<NllLoss>(sm0, label0, "loss0", ReductionType::Mean);
 
     auto slice1 =
         aiOnnx.slice({mmOut}, {1, 4, 2}, {0, 0, 1}, {0, 1, 2}, "slc1");
@@ -95,7 +95,7 @@ BOOST_AUTO_TEST_CASE(test) {
     builder->addOutputTensor(sm1);
     auto label1 = builder->addInputTensor(labelSampleInfo);
     auto loss1 =
-        std::make_unique<NllLoss>(sm1, label1, "loss1", ReductionType::MEAN);
+        std::make_unique<NllLoss>(sm1, label1, "loss1", ReductionType::Mean);
 
     auto device = createTestDevice(TEST_TARGET, 1, 20);
 
@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(test) {
         device,
         InputShapeInfo(),
         SessionOptions(),
-        popart::Patterns(PatternsLevel::DEFAULT).enableInPlace(doInplace));
+        popart::Patterns(PatternsLevel::Default).enableInPlace(doInplace));
 
     auto sched = session->ir.getOpSchedule({});
     std::cout << "The op schedule with inplace=" << doInplace << " is :\n";

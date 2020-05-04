@@ -23,7 +23,6 @@ bool PreAliasPattern::touchesAnchored(Op *op) const {
   return false;
 };
 
-
 void Pattern::transferBaseProperties(Op *from, Op *to) const {
   if (from->hasVirtualGraphId()) {
     to->setVirtualGraphId(from->getVirtualGraphId());

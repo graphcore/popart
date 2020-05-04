@@ -37,7 +37,7 @@ void CorrectnessAsserter::throwBadOutputSize(const TensorId &id,
   std::ostringstream oss;
   oss << getBaseError("output", id, expected, nElms)
       << "\nThe anchor return type is  " << art.id();
-  if (art.id() == AnchorReturnTypeId::EVERYN) {
+  if (art.id() == AnchorReturnTypeId::EveryN) {
     oss << "\nThe return period is " << art.rp();
   }
   throw error(oss.str());
@@ -78,13 +78,13 @@ int64_t CorrectnessAsserter::getInExpected(const TensorId &id) const {
 
 int64_t CorrectnessAsserter::getArtDivisor(AnchorReturnType art) const {
   switch (art.id()) {
-  case (AnchorReturnTypeId::ALL):
+  case (AnchorReturnTypeId::All):
     return 1;
-  case (AnchorReturnTypeId::FINAL):
-  case (AnchorReturnTypeId::SUM):
+  case (AnchorReturnTypeId::Final):
+  case (AnchorReturnTypeId::Sum):
     // Only the final micro-batch of the final batch is returned with final.
     return bps * aFact;
-  case (AnchorReturnTypeId::EVERYN):
+  case (AnchorReturnTypeId::EveryN):
     return art.rp();
   }
 }

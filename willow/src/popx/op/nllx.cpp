@@ -74,12 +74,12 @@ void NllOpx::grow(poplar::program::Sequence &prog) const {
   if (nllloss.hasIgnoreIndex()) {
     auto lossMask = applyMaskInPlaceForIgnoredIndex(
         *this, graph(), reduction, label1D, nllloss.getIgnoreIndex(), prog);
-    if (nllloss.getReductionType() == ReductionType::MEAN) {
+    if (nllloss.getReductionType() == ReductionType::Mean) {
       applyScalingInPlaceForMeanReductionWithIgnoreIndex(
           *this, graph(), reduction, lossMask, prog);
     }
   } else {
-    if (nllloss.getReductionType() == ReductionType::MEAN) {
+    if (nllloss.getReductionType() == ReductionType::Mean) {
       applyScalingInPlaceForMeanReduction(*this, graph(), reduction, prog);
     }
   }
@@ -234,12 +234,12 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
   if (nllloss.hasIgnoreIndex()) {
     auto lossMask = NllOpx::applyMaskInPlaceForIgnoredIndex(
         *this, graph(), oneHot, label1D, nllloss.getIgnoreIndex(), prog);
-    if (nllloss.getReductionType() == ReductionType::MEAN) {
+    if (nllloss.getReductionType() == ReductionType::Mean) {
       NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
           *this, graph(), oneHot, lossMask, prog);
     }
   } else {
-    if (nllloss.getReductionType() == ReductionType::MEAN) {
+    if (nllloss.getReductionType() == ReductionType::Mean) {
       NllOpx::applyScalingInPlaceForMeanReduction(*this, graph(), oneHot, prog);
     }
   }

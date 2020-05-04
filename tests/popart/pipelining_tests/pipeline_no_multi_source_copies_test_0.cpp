@@ -129,7 +129,7 @@ BOOST_AUTO_TEST_CASE(PipelineNoMultiSourceTest0) {
 
     auto proto      = builder->getModelProto();
     auto modelProto = io::getModelFromString(proto);
-    auto dataFlow   = DataFlow(20, {{act1, AnchorReturnType("ALL")}});
+    auto dataFlow   = DataFlow(20, {{act1, AnchorReturnType("All")}});
 
     SessionOptions userOptions;
     userOptions.virtualGraphMode = VirtualGraphMode::Manual;
@@ -139,7 +139,7 @@ BOOST_AUTO_TEST_CASE(PipelineNoMultiSourceTest0) {
     auto optimizer = ConstSGD(0.01);
 
     auto loss1 =
-        std::make_shared<L1Loss>(act, "l1LossVal_1", 0.1, ReductionType::MEAN);
+        std::make_shared<L1Loss>(act, "l1LossVal_1", 0.1, ReductionType::Mean);
     loss1->virtualGraph(nIpus - 1);
 
     auto device = createTestDevice(TEST_TARGET, nIpus);
@@ -151,7 +151,7 @@ BOOST_AUTO_TEST_CASE(PipelineNoMultiSourceTest0) {
                 &optimizer,
                 *device,
                 userOptions,
-                Patterns(PatternsLevel::DEFAULT)});
+                Patterns(PatternsLevel::Default)});
 
     int64_t nMultiSource = 0;
 

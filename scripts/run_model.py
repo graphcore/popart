@@ -23,7 +23,7 @@ graph_transformer.convertAllFixedPointInitializersToConstants()
 
 #specific to the task, this output might need changing
 output = builder.getOutputTensorIds()[0]
-dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("ALL")})
+dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("All")})
 
 s = popart.Session(graph_transformer.getModelProto(),
                    dataFeed=dataFlow,

@@ -44,7 +44,7 @@ UnsqueezeGradOp::UnsqueezeGradOp(const UnsqueezeOp &op_)
 const std::vector<GradInOutMapper> &UnsqueezeGradOp::gradInputInfo() const {
   // input at index 0 : gradient of output of unsqueeze
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), UnsqueezeOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getInIndex(), UnsqueezeOp::getOutIndex(), GradOpInType::GradOut}};
   return inInfo;
 }
 

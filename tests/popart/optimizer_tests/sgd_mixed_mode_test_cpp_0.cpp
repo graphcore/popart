@@ -113,7 +113,7 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTest0) {
 
     float lambda = 1.0;
     auto loss    = std::unique_ptr<Loss>(
-        new L1Loss(add2, "l1LossVal", lambda, ReductionType::SUM));
+        new L1Loss(add2, "l1LossVal", lambda, ReductionType::Sum));
 
     SessionOptions userOptions;
 
@@ -127,7 +127,7 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTest0) {
         device,
         InputShapeInfo(),
         SessionOptions(),
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
 
     session->prepareDevice();
     std::vector<float> v_input_x(stepDataInfo.nelms(), 3.1415);

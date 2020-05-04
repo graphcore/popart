@@ -130,8 +130,8 @@ const std::vector<GradInOutMapper> &NllGradOp::gradInputInfo() const {
   // input at index 0 : labelIn()
   // input at index 1 : probsIn()
   static const std::vector<GradInOutMapper> inInfo = {
-      {nlll().getLabelInIndex(), nlll().getLabelInIndex(), GradOpInType::IN},
-      {nlll().getProbsInIndex(), nlll().getProbsInIndex(), GradOpInType::IN}};
+      {nlll().getLabelInIndex(), nlll().getLabelInIndex(), GradOpInType::In},
+      {nlll().getProbsInIndex(), nlll().getProbsInIndex(), GradOpInType::In}};
   return inInfo;
 }
 

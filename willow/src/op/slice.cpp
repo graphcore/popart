@@ -363,7 +363,7 @@ void SliceGradOp::setPadding(const SliceOp &slice_op) {
 
 const std::vector<GradInOutMapper> &SliceGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), SliceOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getInIndex(), SliceOp::getOutIndex(), GradOpInType::GradOut}};
   return inInfo;
 }
 

@@ -14,9 +14,9 @@ nChans = 3
 samplesPerBatch = 2
 batchesPerStep = 4
 anchors = {
-    "l1LossVal": popart.AnchorReturnType("ALL"),
-    "out": popart.AnchorReturnType("FINAL"),
-    "image0": popart.AnchorReturnType("ALL")
+    "l1LossVal": popart.AnchorReturnType("All"),
+    "out": popart.AnchorReturnType("Final"),
+    "image0": popart.AnchorReturnType("All")
 }
 dataFeed = popart.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = popart.InputShapeInfo()

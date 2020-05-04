@@ -106,12 +106,12 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Scale0) {
   auto model_proto = io::getModelFromString(proto);
 
   // Create the IR
-  auto art       = AnchorReturnType("ALL");
+  auto art       = AnchorReturnType("All");
   TensorId outId = model_proto.graph().output(0).name();
   auto data_flow = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
   std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(outId, "l1LossVal", 0.1, ReductionType::SUM)};
+      std::make_shared<L1Loss>(outId, "l1LossVal", 0.1, ReductionType::Sum)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -142,7 +142,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Scale1) {
     auto model_proto = io::getModelFromString(proto);
 
     // Create the IR
-    auto art       = AnchorReturnType("ALL");
+    auto art       = AnchorReturnType("All");
     TensorId outId = model_proto.graph().output(0).name();
     auto data_flow = DataFlow(1, {{outId, art}});
     auto optimizer = ConstSGD(0.01);

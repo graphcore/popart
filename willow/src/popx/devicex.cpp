@@ -171,7 +171,7 @@ private:
             (op->getIr().getSessionOptions().pingPongPhases >= 2 &&
              op->hasPingPongPhase() && x->hasPingPongPhase() &&
              op->getPingPongPhase() == x->getPingPongPhase());
-        if (x->settings.recomputeType == RecomputeType::RECOMPUTE &&
+        if (x->settings.recomputeType == RecomputeType::Recompute &&
             alreadySeen.find({x, opPhase}) == alreadySeen.end() &&
             !samePingPongPhase) {
           toRerun.insert(x);
@@ -187,7 +187,7 @@ private:
   std::set<Op *> getPipelineRecomputeOps(Op *op, PingPongPhase opPhase) {
     std::set<Op *> toRerun;
     walkProducers(op, [&toRerun, &op, opPhase, this](Op *x) {
-      if (x->settings.recomputeType == RecomputeType::RECOMPUTE &&
+      if (x->settings.recomputeType == RecomputeType::Recompute &&
           alreadySeen.find({x, opPhase}) == alreadySeen.end() &&
           x->getPipelineStage() != op->getPipelineStage()) {
         toRerun.insert(x);
@@ -498,7 +498,7 @@ Devicex::getMainGraphOpString(const std::vector<TaskId> &taskOrder) const {
         type = "preL";
       } else if (found != 0) {
         type = "re.1";
-      } else if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
+      } else if (op->settings.recomputeType == RecomputeType::Recompute) {
         type = "re.0";
       } else {
         std::ostringstream ss2;
@@ -507,7 +507,7 @@ Devicex::getMainGraphOpString(const std::vector<TaskId> &taskOrder) const {
         type = ss2.str();
       }
       type +=
-          op->settings.recomputeType == RecomputeType::RECOMPUTED ? "-R" : "-F";
+          op->settings.recomputeType == RecomputeType::Recomputed ? "-R" : "-F";
       if (logging::shouldLog(logging::Module::devicex, logging::Level::Trace)) {
         ss << type << "  " << seriesNums[op] << "  " << op->debugName()
            << "  PingPong: "
@@ -554,7 +554,7 @@ void Devicex::weightsToHost() {
     logging::devicex::debug("Writing weights to host");
     pEngine->disableExecutionProfiling();
     // Weights on the IPU
-    run(PopPrograms::ProgramIndex::WEIGHTSTOHOST);
+    run(PopPrograms::ProgramIndex::WeightstoHost);
     // Weights in the remote buffers
     remoteBufferWeightsToHost();
     logging::devicex::debug("Writing weights to host complete.");
@@ -621,7 +621,7 @@ void Devicex::weightsToHost(
 
     pEngine->disableExecutionProfiling();
     // Weights on the IPU
-    run(PopPrograms::ProgramIndex::WEIGHTSTOHOST);
+    run(PopPrograms::ProgramIndex::WeightstoHost);
     // Weights in the remote buffers
     remoteBufferWeightsToHost();
 
@@ -673,7 +673,7 @@ uint64_t Devicex::cycleCountTensorToHost() {
     // Calls the copy from device to host
     logging::devicex::debug("Writing cycle count to host");
     pEngine->disableExecutionProfiling();
-    run(PopPrograms::ProgramIndex::CYCLECOUNTTENSORTOHOST);
+    run(PopPrograms::ProgramIndex::CycleCountTensortoHost);
     logging::devicex::debug("Writing cycle count to host complete.");
 
     return cycleCount;
@@ -782,7 +782,7 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
     wuConvOptions.options[it.first]  = it.second;
   }
 
-  if (ir.getExecutionMode() == Ir::ExecutionMode::TRAINING) {
+  if (ir.getExecutionMode() == Ir::ExecutionMode::Training) {
     fwdConvOptions.options["pass"] = "TRAINING_FWD";
     lstmOptions.set("inferenceOnly", "false");
   } else {
@@ -845,7 +845,7 @@ void Devicex::weightsFromHost() {
     logging::devicex::debug("Writing weights from host, ");
     pEngine->disableExecutionProfiling();
     // Weights on the IPU
-    run(PopPrograms::ProgramIndex::WEIGHTSFROMHOST);
+    run(PopPrograms::ProgramIndex::WeightsFromHost);
     // Weights in the remote buffers
     remoteBufferWeightsFromHost();
     logging::devicex::debug("done.");
@@ -876,7 +876,7 @@ void Devicex::optimizerFromHost() {
   if (ir().useSyntheticData() == false) {
     logging::devicex::debug("Writing optimizer from host, ");
     pEngine->disableExecutionProfiling();
-    run(PopPrograms::ProgramIndex::OPTIMIZERFROMHOST);
+    run(PopPrograms::ProgramIndex::OptimizerFromHost);
     logging::devicex::debug("done.");
   }
 }
@@ -966,7 +966,7 @@ void Devicex::run(IStepIO &stepio) {
   anchorsHostFromHostStreams(stepio);
 
   pEngine->enableExecutionProfiling();
-  run(PopPrograms::ProgramIndex::PROGRAM);
+  run(PopPrograms::ProgramIndex::Program);
 
   ++nCallsToRun;
 }
@@ -1010,13 +1010,13 @@ std::pair<TaskId, DependencyType> Devicex::taskWhichCreates(TensorId id) {
   if (!tensor->hasProducer() ||
       dynamic_cast<SubgraphOp *>(tensor->getProducer()) ||
       dynamic_cast<InitOp *>(tensor->getProducer())) {
-    return {initTensorTaskId(id), DependencyType::TENSOR};
+    return {initTensorTaskId(id), DependencyType::Tensor};
   }
 
   // Tensors with producer Ops are created (added to a Graph) by their
   // producer's OpTask
   else {
-    return {opTaskId(tensor->getProducer()), DependencyType::TENSOR};
+    return {opTaskId(tensor->getProducer()), DependencyType::Tensor};
   }
 }
 
@@ -1150,14 +1150,14 @@ Devicex::getCreatorEndpoints(const Tensor *startTensor,
         switch (opx->getInputCreatorType(inIndex)) {
         // Opx has poplar call to layout tensor at this
         // inIndex
-        case InputCreatorType::CANCREATE: {
+        case InputCreatorType::CanCreate: {
           logging::devicex::trace("{} can create, path depth {}",
                                   op->debugName(),
                                   pathFromInput.size());
           f_create();
           break;
         }
-        case InputCreatorType::CANDELEGATE: {
+        case InputCreatorType::CanDelegate: {
           logging::devicex::trace("{} can delegate, path depth {}",
                                   op->debugName(),
                                   pathFromInput.size());
@@ -1166,14 +1166,14 @@ Devicex::getCreatorEndpoints(const Tensor *startTensor,
         }
         // Recursively search the DAG downstream of the op until we
         // have set of endpoints that can create the tensor
-        case InputCreatorType::CANUNWIND: {
+        case InputCreatorType::CanUnwind: {
           logging::devicex::trace("{} can unwind, path depth {}",
                                   op->debugName(),
                                   pathFromInput.size());
           f_unwind();
           break;
         }
-        case InputCreatorType::CANCREATE_OR_UNWIND: {
+        case InputCreatorType::CanCreateOrUnwind: {
           logging::devicex::trace("{} can create or unwind, path depth {}",
                                   op->debugName(),
                                   pathFromInput.size());
@@ -1182,7 +1182,7 @@ Devicex::getCreatorEndpoints(const Tensor *startTensor,
           break;
         }
         // Consuming op can't create tensor
-        case InputCreatorType::DEADEND: {
+        case InputCreatorType::Deadend: {
           f_deadend();
           break;
         }
@@ -1459,7 +1459,7 @@ PriTask Devicex::initRandomSeed() {
   std::vector<std::pair<TaskId, DependencyType>> deps;
   deps.push_back(taskWhichCreates(updatedSeedId));
   // Stream the seed tensor to device before using to set PRNGs
-  deps.push_back({fromHostTaskId(streamedSeedId), DependencyType::SCHEDULER});
+  deps.push_back({fromHostTaskId(streamedSeedId), DependencyType::Scheduler});
 
   return {
       +1e6,                   // high priority
@@ -1496,7 +1496,7 @@ void Devicex::connectRandomSeedStream() {
 void Devicex::setRandomSeedFromHost() {
   if (ir().useSyntheticData() == false) {
     pEngine->disableExecutionProfiling();
-    run(PopPrograms::ProgramIndex::SETRANDOMSEEDFROMHOST);
+    run(PopPrograms::ProgramIndex::SetRandomSeedFromHost);
   }
 }
 
@@ -1576,7 +1576,7 @@ PriTask Devicex::setInitTensorValTask(Tensor *tensor) {
           setInitTensorValTaskId(tensor->id),
           // poplar::Tensor must exist. Other that this, this task can be
           // performed any time
-          {{initTensorTaskId(tensor->id), DependencyType::TENSOR}},
+          {{initTensorTaskId(tensor->id), DependencyType::Tensor}},
           f};
 }
 
@@ -1649,7 +1649,7 @@ PriTask Devicex::streamFromHostTask(Tensor *tensor) {
       0,                                // priority unimportant
       streamFromHostTaskId(tensor->id), // name of this task
       // poplar::Tensor must exist
-      {{initTensorTaskId(tensor->id), DependencyType::TENSOR}},
+      {{initTensorTaskId(tensor->id), DependencyType::Tensor}},
       f // what to run when the task is executed
   };
 }
@@ -1762,11 +1762,11 @@ PriTask Devicex::pipelinedCopyTask(Op *op, TaskId prevTaskId) {
   if (!prevTaskId.empty()) {
     // Ensure the ops are scheduled in the order we're iterating through them
     // here.
-    deps.push_back({prevTaskId, DependencyType::SCHEDULER});
+    deps.push_back({prevTaskId, DependencyType::Scheduler});
   }
 
   // The ops opTask needs to run first to create the destination tensor.
-  deps.push_back({opTaskId(op), DependencyType::OUTPUT});
+  deps.push_back({opTaskId(op), DependencyType::Output});
 
   return {-100, pipelinedCopyTaskId(op), deps, f};
 }
@@ -1802,8 +1802,8 @@ void Devicex::addOpTasks(PriTasks &tasks) {
       for (auto calledGraph : op->getCalledGraphs()) {
         addGraph(calledGraph);
       }
-      if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
-        throw internal_error("non-main Graph Op which is RECOMPUTE");
+      if (op->settings.recomputeType == RecomputeType::Recompute) {
+        throw internal_error("non-main Graph Op which is Recompute");
       }
       allOps.push_back(op);
     }
@@ -1915,7 +1915,7 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
         taskWhichCreates(tensor->id);
 
     std::pair<TaskId, DependencyType> populatorTask = {
-        taskWhichPopulates(tensor->id), DependencyType::SCHEDULER};
+        taskWhichPopulates(tensor->id), DependencyType::Scheduler};
 
     // Make sure we only add the creatorTask once in the dependency list
     if (std::find(deps.begin(), deps.end(), creatorTask) == deps.end()) {
@@ -1939,7 +1939,7 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
                               tensor->id);
 
       std::pair<TaskId, DependencyType> creatorTask = {
-          initTensorTaskId(tensor->id), DependencyType::TENSOR};
+          initTensorTaskId(tensor->id), DependencyType::Tensor};
 
       // Make sure we only add the creatorTask once in the dependency list
       if (std::find(deps.begin(), deps.end(), creatorTask) == deps.end()) {
@@ -1951,7 +1951,7 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
   auto addGraphOpsToDeps = [&](const Graph *graph) {
     for (auto graphOp : graph->getOpSchedule({})) {
       std::pair<TaskId, DependencyType> taskId = {opTaskId(graphOp),
-                                                  DependencyType::SUBGRAPH};
+                                                  DependencyType::SubGraph};
       if (std::find(deps.begin(), deps.end(), taskId) == deps.end()) {
         deps.push_back(taskId);
       }
@@ -1966,7 +1966,7 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
   // Note: the first opTask has no previous opTask
   if (prevOpTaskId != "") {
     std::pair<TaskId, DependencyType> prevTask = {prevOpTaskId,
-                                                  DependencyType::SCHEDULER};
+                                                  DependencyType::Scheduler};
     // Add dependency only if not already added
     if (std::find(deps.begin(), deps.end(), prevTask) == deps.end()) {
       deps.push_back(prevTask);
@@ -2022,15 +2022,15 @@ void Devicex::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
   else if (op->scheduledPreLoss == ScheduledPreLoss::Yes) {
 
     // Pre-loss, not recompute
-    if (op->settings.recomputeType == RecomputeType::CHECKPOINT ||
-        op->settings.recomputeType == RecomputeType::UNDEFINED ||
-        op->settings.recomputeType == RecomputeType::RECOMPUTED) {
+    if (op->settings.recomputeType == RecomputeType::Checkpoint ||
+        op->settings.recomputeType == RecomputeType::Undefined ||
+        op->settings.recomputeType == RecomputeType::Recomputed) {
       logging::devicex::debug("Adding checkpoint Op {}", op->debugName());
       growOpx(opx, seqs[&progs.forwardFragment()]);
     }
 
     // Pre-loss, recompute
-    else if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
+    else if (op->settings.recomputeType == RecomputeType::Recompute) {
       logging::devicex::debug("Adding (first) {} Op {}",
                               op->settings.recomputeType,
                               op->debugName());
@@ -2048,7 +2048,7 @@ void Devicex::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
 
   // post-loss
   else if (op->scheduledPreLoss == ScheduledPreLoss::No) {
-    if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
+    if (op->settings.recomputeType == RecomputeType::Recompute) {
       std::stringstream oss;
       op->append(oss);
       throw internal_error("Recompute Op which is ScheduledPreLoss::No is "
@@ -2153,8 +2153,8 @@ void Devicex::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
       // Restore Operations are required to run at the start of a pipelineStage
       growOpx(opx,
               progs.pipelineRestoreFragment(op->getPipelineStage(), op->str()));
-    } else if (op->settings.recomputeType == RecomputeType::CHECKPOINT ||
-               op->settings.recomputeType == RecomputeType::UNDEFINED) {
+    } else if (op->settings.recomputeType == RecomputeType::Checkpoint ||
+               op->settings.recomputeType == RecomputeType::Undefined) {
       logging::devicex::debug(
           "Adding post-turning check-point Op {} {} in pipelinedOpTaskFunc",
           op->str(),
@@ -2172,7 +2172,7 @@ void Devicex::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
           "Growing {} {} in pipelinedOpTaskFunc", op->str(), op->debugName());
 
       growOpx(opx, found_->second);
-    } else if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
+    } else if (op->settings.recomputeType == RecomputeType::Recompute) {
       logging::devicex::debug("Adding (first) recompute Op {}",
                               op->debugName());
 
@@ -2276,7 +2276,7 @@ void Devicex::loadEngineAndConnectStreams() {
   di.previouslyLoadedDevicexs.insert(this);
   setEngineIsLoaded(true);
 
-  if (di.getConnectionType() == DeviceConnectionType::ON_DEMAND) {
+  if (di.getConnectionType() == DeviceConnectionType::OnDemand) {
     logging::devicex::debug("Attaching to device on demand");
     if (!di.attach()) {
       throw error("Failed to attach to device");
@@ -2680,14 +2680,14 @@ void Devicex::prepare() {
       // 2
       switch (ir().getDataFlow().art(anchorId).id()) {
       // Copy program runs after every batch
-      case (AnchorReturnTypeId::ALL): {
+      case (AnchorReturnTypeId::All): {
         tasks.add(toHostTask(tensor,
                              getAnchorReturnFragment(tensor),
                              ToHostStreamType::NonSumAnchor));
         break;
       }
       // Copy program runs at the end of every N batches
-      case (AnchorReturnTypeId::EVERYN): {
+      case (AnchorReturnTypeId::EveryN): {
         if (ir().getSessionOptions().enablePipelining) {
           throw error(
               "AnchorReturnType::EVERYN is not valid for pipelined models");
@@ -2702,13 +2702,13 @@ void Devicex::prepare() {
         break;
       }
       // Copy program runs at the end of the step
-      case (AnchorReturnTypeId::FINAL): {
+      case (AnchorReturnTypeId::Final): {
         tasks.add(toHostTask(tensor,
                              progs.toHostFinalCopyFragment(),
                              ToHostStreamType::NonSumAnchor));
         break;
       }
-      case (AnchorReturnTypeId::SUM): {
+      case (AnchorReturnTypeId::Sum): {
         tasks.add(
             anchorReturnTypeSumTask(tensor, getAnchorReturnFragment(tensor)));
         tasks.add(toHostTask(tensor,
@@ -2843,15 +2843,15 @@ void Devicex::prepare() {
 
   logging::devicex::debug("Creating linear task schedule with OUTPUT, "
                           "SUBGRAPH and TENSOR dependencies.");
-  auto createSchedule = tasks.getLinearised({DependencyType::OUTPUT,
-                                             DependencyType::SUBGRAPH,
-                                             DependencyType::TENSOR});
+  auto createSchedule = tasks.getLinearised({DependencyType::Output,
+                                             DependencyType::SubGraph,
+                                             DependencyType::Tensor});
 
   logging::devicex::debug("Creating linear task schedule with OUTPUT, "
                           "SUBGRAPH and SCHEDULER dependencies.");
-  auto emplaceSchedule = tasks.getLinearised({DependencyType::OUTPUT,
-                                              DependencyType::SUBGRAPH,
-                                              DependencyType::SCHEDULER});
+  auto emplaceSchedule = tasks.getLinearised({DependencyType::Output,
+                                              DependencyType::SubGraph,
+                                              DependencyType::Scheduler});
 
   auto emplaceTaskSeqs = [&](std::set<TaskId> filter) {
     // 2.) Add intermediate sequences in final sequence
@@ -2884,7 +2884,7 @@ void Devicex::prepare() {
   for (auto &createTask : createSchedule) {
     logging::devicex::debug("Creating sequence for task {}", createTask.name);
     std::set<TaskId> subgraphTaskNames =
-        createTask.getDependenciesOfTypes({DependencyType::SUBGRAPH});
+        createTask.getDependenciesOfTypes({DependencyType::SubGraph});
     if (subgraphTaskNames.size() > 0) {
       // Make sure the subgraph sequences are emplaced before the scopeFragments
       // of the called graphs are constructed.
@@ -3182,9 +3182,9 @@ PriTask Devicex::fromHostTask(Tensor *tensor,
           fromHostTaskId(tensor->id),
           {
               {streamFromHostTaskId(tensor->id),
-               DependencyType::TENSOR}, // poplar::Stream created
+               DependencyType::Tensor}, // poplar::Stream created
               {initTensorTaskId(tensor->id),
-               DependencyType::TENSOR} // poplar::Tensor created
+               DependencyType::Tensor} // poplar::Tensor created
           },
           f};
 }
@@ -3245,12 +3245,12 @@ PriTask Devicex::toHostTask(Tensor *tensor,
       // the dependencies:
       // poplar::Stream creation task,
       {streamToHostTaskId(tensor->id, stype != ToHostStreamType::NonAnchor),
-       DependencyType::OUTPUT},
+       DependencyType::Output},
       // poplar::Tensor has its final values
-      {finalPopulator, DependencyType::SCHEDULER}};
+      {finalPopulator, DependencyType::Scheduler}};
 
   if (stype == ToHostStreamType::SumAnchor) {
-    deps.push_back({anchorSumTaskId(tensor->id), DependencyType::TENSOR});
+    deps.push_back({anchorSumTaskId(tensor->id), DependencyType::Tensor});
   }
   double priority;
   if (ir().getSessionOptions().groupHostSync) {
@@ -3300,9 +3300,9 @@ PriTask Devicex::anchorReturnTypeSumTask(Tensor *tensor,
           taskId,
           {// the dependencies:
            // poplar::Stream creation task,
-           {streamToHostTaskId(tensor->id, true), DependencyType::OUTPUT},
+           {streamToHostTaskId(tensor->id, true), DependencyType::Output},
            // poplar::Tensor has its final values
-           {finalPopulator, DependencyType::SCHEDULER}},
+           {finalPopulator, DependencyType::Scheduler}},
           f};
 }
 
@@ -3375,7 +3375,7 @@ PriTask Devicex::updateBatchCountTask(poplar::program::Sequence &sq) {
           updateBatchCountTaskId(),
           {
               {initBatchCounterTensorsTaskId(),
-               DependencyType::TENSOR} // poplar::Tensor creation task
+               DependencyType::Tensor} // poplar::Tensor creation task
           },
           f};
 }
@@ -3438,11 +3438,11 @@ PriTask Devicex::toHostEveryNBatchesTask(Tensor *tensor,
       toHostTaskId(tensor->id, isAnchorStream),
       {// the dependencies:
        // updating poplar::Tensor task,
-       {updateBatchCountTaskId(), DependencyType::OUTPUT},
+       {updateBatchCountTaskId(), DependencyType::Output},
        // poplar::Stream creation task,
-       {streamToHostTaskId(tensor->id, isAnchorStream), DependencyType::OUTPUT},
+       {streamToHostTaskId(tensor->id, isAnchorStream), DependencyType::Output},
        // poplar::Tensor value setting task
-       {taskWhichPopulates(tensor->id), DependencyType::SCHEDULER}},
+       {taskWhichPopulates(tensor->id), DependencyType::Scheduler}},
       f};
 }
 

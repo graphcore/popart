@@ -382,7 +382,7 @@ def get_replicated_dropout_session(replication_factor=4,
     device = tu.create_test_device(replication_factor)
 
     dfAnchors = [out, ip, d__ip]
-    dfAnchors = {i: popart.AnchorReturnType("ALL") for i in dfAnchors}
+    dfAnchors = {i: popart.AnchorReturnType("All") for i in dfAnchors}
 
     opts = popart.SessionOptions()
     opts.enableReplicatedGraphs = True
@@ -430,14 +430,14 @@ def get_dropout_session(dsize=100,
 def get_session(anchorIds, proto, device, output, bps=1):
     dfAnchors = {}
     for anchorId in anchorIds:
-        dfAnchors.update({anchorId: popart.AnchorReturnType("ALL")})
+        dfAnchors.update({anchorId: popart.AnchorReturnType("All")})
 
     session = popart.TrainingSession(
         fnModel=proto,
         dataFeed=popart.DataFlow(bps, dfAnchors),
         optimizer=popart.ConstSGD(0.1),
         losses=[popart.L1Loss(output, "l1LossVal", 0.1)],
-        passes=popart.Patterns(popart.PatternsLevel.ALL),
+        passes=popart.Patterns(popart.PatternsLevel.All),
         deviceInfo=device)
 
     session.prepareDevice()

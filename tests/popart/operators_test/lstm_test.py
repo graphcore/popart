@@ -1302,7 +1302,7 @@ def test_lstm_export_with_constantofshape(tmpdir):
     inputShapeInfo = popart.InputShapeInfo()
     inputShapeInfo.add("data", popart.TensorInfo("FLOAT", [1, 100, 18]))
 
-    anchors = {"tag": popart.AnchorReturnType("ALL")}
+    anchors = {"tag": popart.AnchorReturnType("All")}
     dataFeed = popart.DataFlow(1, anchors)
     device = tu.create_test_device()
 

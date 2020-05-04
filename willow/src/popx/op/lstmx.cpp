@@ -122,9 +122,9 @@ InputCreatorType LSTMOpx::getInputCreatorType(InIndex index) const {
       index == LSTMOp::getRecurrenceInIndex() ||
       index == LSTMOp::getInitialHInIndex() ||
       index == LSTMOp::getInitialCInIndex()) {
-    return InputCreatorType::CANCREATE;
+    return InputCreatorType::CanCreate;
   } else {
-    return InputCreatorType::DEADEND;
+    return InputCreatorType::Deadend;
   }
 }
 

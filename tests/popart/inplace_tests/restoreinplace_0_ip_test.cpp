@@ -62,7 +62,7 @@ BOOST_AUTO_TEST_CASE(test0) {
 
   auto output = aiOnnx.identity({t2});
 
-  auto loss = L1Loss(output, "idLossVal", 0.1, ReductionType::SUM);
+  auto loss = L1Loss(output, "idLossVal", 0.1, ReductionType::Sum);
 
   auto opts             = SessionOptions();
   opts.virtualGraphMode = VirtualGraphMode::Manual;
@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(test0) {
               &optimizer,
               *device,
               opts,
-              Patterns(PatternsLevel::NONE).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
 
   auto sched = ir.getOpSchedule({});
   BOOST_CHECK(sched[1]->opid == Onnx::CustomOperators::Stash);

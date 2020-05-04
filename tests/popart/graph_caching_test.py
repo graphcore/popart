@@ -37,8 +37,8 @@ def test_convolution_cached_by_default():
     ]
     dataFlow = \
         popart.DataFlow(1,
-                         {anchor_names[0] : popart.AnchorReturnType("ALL"),
-                          anchor_names[1] : popart.AnchorReturnType("ALL")})
+                         {anchor_names[0] : popart.AnchorReturnType("All"),
+                          anchor_names[1] : popart.AnchorReturnType("All")})
     optimizer = popart.ConstSGD(0.01)
     losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
 
@@ -115,8 +115,8 @@ def test_convolution_disable_all():
     ]
     dataFlow = \
         popart.DataFlow(1,
-                         {anchor_names[0] : popart.AnchorReturnType("ALL"),
-                          anchor_names[1] : popart.AnchorReturnType("ALL")})
+                         {anchor_names[0] : popart.AnchorReturnType("All"),
+                          anchor_names[1] : popart.AnchorReturnType("All")})
     optimizer = popart.ConstSGD(0.01)
     losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
 
@@ -196,7 +196,7 @@ def test_matmul_infer_cached_by_default():
     proto = builder.getModelProto()
 
     anchor_names = [o]
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
@@ -283,10 +283,10 @@ def test_matmul_train_cached_by_default():
     ]
     dataFlow = popart.DataFlow(
         1, {
-            anchor_names[0]: popart.AnchorReturnType("ALL"),
-            anchor_names[1]: popart.AnchorReturnType("ALL"),
-            anchor_names[2]: popart.AnchorReturnType("ALL"),
-            anchor_names[3]: popart.AnchorReturnType("ALL")
+            anchor_names[0]: popart.AnchorReturnType("All"),
+            anchor_names[1]: popart.AnchorReturnType("All"),
+            anchor_names[2]: popart.AnchorReturnType("All"),
+            anchor_names[3]: popart.AnchorReturnType("All")
         })
     optimizer = popart.ConstSGD(0.01)
     losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
@@ -375,12 +375,12 @@ def test_gemm_train_cached_by_default():
     ]
     dataFlow = popart.DataFlow(
         1, {
-            anchor_names[0]: popart.AnchorReturnType("ALL"),
-            anchor_names[1]: popart.AnchorReturnType("ALL"),
-            anchor_names[2]: popart.AnchorReturnType("ALL"),
-            anchor_names[3]: popart.AnchorReturnType("ALL"),
-            anchor_names[4]: popart.AnchorReturnType("ALL"),
-            anchor_names[5]: popart.AnchorReturnType("ALL")
+            anchor_names[0]: popart.AnchorReturnType("All"),
+            anchor_names[1]: popart.AnchorReturnType("All"),
+            anchor_names[2]: popart.AnchorReturnType("All"),
+            anchor_names[3]: popart.AnchorReturnType("All"),
+            anchor_names[4]: popart.AnchorReturnType("All"),
+            anchor_names[5]: popart.AnchorReturnType("All")
         })
     optimizer = popart.ConstSGD(0.01)
     losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
@@ -468,7 +468,7 @@ def test_outlining_bca1():
     proto = builder.getModelProto()
 
     anchor_names = [o]
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
@@ -551,7 +551,7 @@ def test_outlining_bca2():
     proto = builder.getModelProto()
 
     anchor_names = [o]
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
@@ -630,15 +630,15 @@ def test_outlining_bca3():
     anchor_names = [o]
     dataFlow = popart.DataFlow(
         1, {
-            o: popart.AnchorReturnType("ALL"),
+            o: popart.AnchorReturnType("All"),
             popart.reservedGradientPrefix() + i1:
-            popart.AnchorReturnType("ALL"),
+            popart.AnchorReturnType("All"),
             popart.reservedGradientPrefix() + i2:
-            popart.AnchorReturnType("ALL"),
+            popart.AnchorReturnType("All"),
             popart.reservedGradientPrefix() + i3:
-            popart.AnchorReturnType("ALL"),
+            popart.AnchorReturnType("All"),
             popart.reservedGradientPrefix() + i4:
-            popart.AnchorReturnType("ALL")
+            popart.AnchorReturnType("All")
         })
 
     opts = popart.SessionOptions()
@@ -723,15 +723,15 @@ def test_outlining_bca4():
     anchor_names = [o]
     dataFlow = popart.DataFlow(
         1, {
-            o: popart.AnchorReturnType("ALL"),
+            o: popart.AnchorReturnType("All"),
             popart.reservedGradientPrefix() + i1:
-            popart.AnchorReturnType("ALL"),
+            popart.AnchorReturnType("All"),
             popart.reservedGradientPrefix() + i2:
-            popart.AnchorReturnType("ALL"),
+            popart.AnchorReturnType("All"),
             popart.reservedGradientPrefix() + i3:
-            popart.AnchorReturnType("ALL"),
+            popart.AnchorReturnType("All"),
             popart.reservedGradientPrefix() + i4:
-            popart.AnchorReturnType("ALL")
+            popart.AnchorReturnType("All")
         })
 
     opts = popart.SessionOptions()
@@ -752,7 +752,7 @@ def test_outlining_bca4():
         optimizer=optimizer,
         userOptions=opts,
         # Enable the matmul patterns
-        passes=popart.Patterns(popart.PatternsLevel.ALL),
+        passes=popart.Patterns(popart.PatternsLevel.All),
         deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     anchors = session.initAnchorArrays()

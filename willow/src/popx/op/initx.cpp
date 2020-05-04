@@ -20,11 +20,11 @@ void InitOpx::grow(poplar::program::Sequence &prog) const {
   const auto &outTensor = getOutTensor(InitOp::getOutIndex());
 
   switch (initOp.getInitType()) {
-  case InitType::ZERO: {
+  case InitType::Zero: {
     popops::zero(graph(), outTensor, prog, debugPrefix("init_zero"));
     break;
   }
-  case InitType::NONE:
+  case InitType::NoInit:
   default:
     break;
   }

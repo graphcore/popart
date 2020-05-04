@@ -53,7 +53,7 @@ BOOST_AUTO_TEST_CASE(Dot_nested0) {
     opts.outlineThreshold   = 0.00001;
     opts.dotOpNames         = true;
     opts.separateCallOpPdfs = separateCallOpPdfs;
-    opts.dotChecks.insert(DotCheck::FINAL);
+    opts.dotChecks.insert(DotCheck::Final);
 
     opts.logDir = "./nestedDotTest" + random_string(14);
     boost::filesystem::create_directory(opts.logDir);
@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(Dot_nested0) {
     auto modelProto = io::getModelFromString(proto);
 
     out           = modelProto.graph().output(0).name();
-    auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+    auto dataFlow = DataFlow(1, {{out, AnchorReturnType("All")}});
     auto device   = createTestDevice(TEST_TARGET);
 
     Ir ir;

@@ -24,7 +24,7 @@ def test_patterns_default():
 def test_patterns_none():
     import popart
 
-    patterns = popart.Patterns(popart.PatternsLevel.NONE)
+    patterns = popart.Patterns(popart.PatternsLevel.NoPatterns)
     assert (patterns.PreUniRepl == False)
     assert (patterns.PostNRepl == False)
     assert (patterns.SoftMaxGradDirect == False)
@@ -39,7 +39,7 @@ def test_patterns_none():
 def test_patterns_all():
     import popart
 
-    patterns = popart.Patterns(popart.PatternsLevel.ALL)
+    patterns = popart.Patterns(popart.PatternsLevel.All)
     assert (patterns.PreUniRepl == True)
     assert (patterns.PostNRepl == True)
     assert (patterns.SoftMaxGradDirect == True)
@@ -80,7 +80,7 @@ def test_patterns_str():
 def test_patterns_enum():
     import popart
 
-    patterns = popart.Patterns([popart.PreAliasPatternType.POSTNREPL])
+    patterns = popart.Patterns([popart.PreAliasPatternType.PostNRepl])
     patterns.InPlace = True
     assert (patterns.PostNRepl == True)
     assert (patterns.InPlace == True)
@@ -112,5 +112,5 @@ def test_loss_inputs_untouched():
 
     session = PopartTestSession()
     session.mode = 'train'
-    session.passes = popart.Patterns(popart.PatternsLevel.DEFAULT)
+    session.passes = popart.Patterns(popart.PatternsLevel.Default)
     session.prepare(init_builder)

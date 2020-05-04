@@ -219,7 +219,7 @@ def train_process(opts):
                 fnModel=builder.getModelProto(),
                 dataFeed=popart.DataFlow(
                     opts.batches_per_step,
-                    {"output_0": popart.AnchorReturnType("ALL")}),
+                    {"output_0": popart.AnchorReturnType("All")}),
                 deviceInfo=get_device(opts.num_ipus, opts.simulation),
                 userOptions=inferenceOpts)
 

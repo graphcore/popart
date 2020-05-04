@@ -152,7 +152,7 @@ def test_sharding_multi_source():
     op2_out = builder.aiOnnx.mul([op0_out, op1_out], "m0")
     builder.addOutputTensor(op2_out)
 
-    art = popart.AnchorReturnType("ALL")
+    art = popart.AnchorReturnType("All")
     loss = popart.NllLoss(op2_out, l0, "loss")
     anchor_map = {op2_out: art, "loss": art}
 
@@ -395,7 +395,7 @@ def test_pipelined_dropout():
 
         dfAnchors = {}
         for x in dropouts + dropoutGrads + dropoutInputs:
-            dfAnchors[x] = popart.AnchorReturnType("ALL")
+            dfAnchors[x] = popart.AnchorReturnType("All")
 
         dataFlow = popart.DataFlow(batches_per_step, dfAnchors)
 
@@ -531,7 +531,7 @@ def test_pipelined_recomputed_dropout():
 
     dfAnchors = {}
     for x in dropouts + dropoutGrads + dropoutInputs:
-        dfAnchors[x] = popart.AnchorReturnType("ALL")
+        dfAnchors[x] = popart.AnchorReturnType("All")
 
     dataFlow = popart.DataFlow(batches_per_step, dfAnchors)
 
@@ -619,7 +619,7 @@ def get_model_anchors(doSharding,
     out = builder.aiOnnx.softmax([r0], axis=1, debugPrefix="sfm")
     builder.addOutputTensor(out)
 
-    art = popart.AnchorReturnType("ALL")
+    art = popart.AnchorReturnType("All")
     loss = popart.NllLoss(out, l0, "loss")
 
     anchor_map = {"loss": art, w0: art, e0: art}
@@ -712,7 +712,7 @@ def get_simple_linear_model(streamInputToOp1AndOp2=False):
     op3_out = builder.aiOnnx.exp([op2_out], "e1")
     builder.addOutputTensor(op3_out)
 
-    art = popart.AnchorReturnType("ALL")
+    art = popart.AnchorReturnType("All")
     loss = popart.NllLoss(op3_out, l0, "loss")
     anchor_map = {op3_out: art, "loss": art}
 

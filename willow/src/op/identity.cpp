@@ -53,7 +53,7 @@ std::unique_ptr<Op> IdentityGradOp::clone() const {
 
 const std::vector<GradInOutMapper> &IdentityGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), IdentityOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getInIndex(), IdentityOp::getOutIndex(), GradOpInType::GradOut}};
 
   return inInfo;
 }
@@ -137,7 +137,7 @@ const std::vector<GradInOutMapper> &IdentityLossGradOp::gradInputInfo() const {
   // Input at index 0 of this grad op is the input at index 0 of the identity
   // non-grad op.
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), IdentityLossOp::getInIndex(), GradOpInType::IN}};
+      {getInIndex(), IdentityLossOp::getInIndex(), GradOpInType::In}};
   return inInfo;
 }
 

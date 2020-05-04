@@ -299,8 +299,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train0) {
     out = aiOnnx.logical_if({in_condition}, 1, else_branch, then_branch)[0];
     builder.addOutputTensor(out);
 
-    runner.anchors.insert({getGradId(in0), AnchorReturnType("ALL")});
-    runner.anchors.insert({getGradId(in1), AnchorReturnType("ALL")});
+    runner.anchors.insert({getGradId(in0), AnchorReturnType("All")});
+    runner.anchors.insert({getGradId(in1), AnchorReturnType("All")});
 
     inputs.push_back(TestTensor::create<bool>(in_condition, infoBool.shape()));
     outputs.push_back(TestTensor::create<float>(out, info.shape()));
@@ -308,7 +308,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train0) {
     outputs.push_back(TestTensor::create<float>(getGradId(in1), info.shape()));
 
     runner.losses.push_back(
-        new L1Loss(out, "l1LossVal", 0.1, ReductionType::SUM));
+        new L1Loss(out, "l1LossVal", 0.1, ReductionType::Sum));
 
     return out;
   });
@@ -366,7 +366,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train1) {
   ConstVoidData in1CVData = {in1Data, info};
 
   TestRunner runner;
-  runner.opts.dotChecks.insert(DotCheck::FINAL);
+  runner.opts.dotChecks.insert(DotCheck::Final);
   runner.opts.separateCallOpPdfs = false;
   runner.patterns.enableInPlace(false);
   runner.patterns.enableSubtractArg1GradOp(true);
@@ -414,8 +414,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train1) {
     out = aiOnnx.logical_if({in_condition}, 1, else_branch, then_branch)[0];
     builder.addOutputTensor(out);
 
-    runner.anchors.insert({getGradId(in0), AnchorReturnType("ALL")});
-    runner.anchors.insert({getGradId(in1), AnchorReturnType("ALL")});
+    runner.anchors.insert({getGradId(in0), AnchorReturnType("All")});
+    runner.anchors.insert({getGradId(in1), AnchorReturnType("All")});
 
     inputs.push_back(TestTensor::create<bool>(in_condition, infoBool.shape()));
     outputs.push_back(TestTensor::create<float>(out, info.shape()));
@@ -423,7 +423,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train1) {
     outputs.push_back(TestTensor::create<float>(getGradId(in1), info.shape()));
 
     runner.losses.push_back(
-        new L1Loss(out, "l1LossVal", 0.1, ReductionType::SUM));
+        new L1Loss(out, "l1LossVal", 0.1, ReductionType::Sum));
 
     return out;
   });
@@ -563,8 +563,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train2) {
     out = aiOnnx.logical_if({in_condition}, 1, else_branch, then_branch)[0];
     builder.addOutputTensor(out);
 
-    runner.anchors.insert({getGradId(in0), AnchorReturnType("ALL")});
-    runner.anchors.insert({getGradId(in1), AnchorReturnType("ALL")});
+    runner.anchors.insert({getGradId(in0), AnchorReturnType("All")});
+    runner.anchors.insert({getGradId(in1), AnchorReturnType("All")});
 
     inputs.push_back(TestTensor::create<bool>(in_condition, infoBool.shape()));
     outputs.push_back(TestTensor::create<float>(out, info.shape()));
@@ -572,7 +572,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train2) {
     outputs.push_back(TestTensor::create<float>(getGradId(in1), info.shape()));
 
     runner.losses.push_back(
-        new L1Loss(out, "l1LossVal", 0.1, ReductionType::SUM));
+        new L1Loss(out, "l1LossVal", 0.1, ReductionType::Sum));
 
     return out;
   });
@@ -709,8 +709,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train3) {
     out = aiOnnx.logical_if({in_condition}, 1, else_branch, then_branch)[0];
     builder.addOutputTensor(out);
 
-    runner.anchors.insert({getGradId(in0), AnchorReturnType("ALL")});
-    runner.anchors.insert({getGradId(in1), AnchorReturnType("ALL")});
+    runner.anchors.insert({getGradId(in0), AnchorReturnType("All")});
+    runner.anchors.insert({getGradId(in1), AnchorReturnType("All")});
 
     inputs.push_back(TestTensor::create<bool>(in_condition, infoBool.shape()));
     outputs.push_back(TestTensor::create<float>(out, info.shape()));
@@ -718,7 +718,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train3) {
     outputs.push_back(TestTensor::create<float>(getGradId(in1), info.shape()));
 
     runner.losses.push_back(
-        new L1Loss(out, "l1LossVal", 0.1, ReductionType::SUM));
+        new L1Loss(out, "l1LossVal", 0.1, ReductionType::Sum));
 
     return out;
   });
@@ -896,7 +896,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_inputs_differ_train0) {
         outputs.push_back(TestTensor::create<float>(out, info.shape()));
 
         runner.losses.push_back(
-            new L1Loss(out, "l1LossVal", 0.1, ReductionType::SUM));
+            new L1Loss(out, "l1LossVal", 0.1, ReductionType::Sum));
 
         return out;
       });

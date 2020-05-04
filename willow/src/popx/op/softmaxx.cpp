@@ -155,12 +155,12 @@ void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   if (sfmgd.nlll().hasIgnoreIndex()) {
     auto lossMask = NllOpx::applyMaskInPlaceForIgnoredIndex(
         *this, graph(), oneHot, label1D, sfmgd.nlll().getIgnoreIndex(), prog);
-    if (sfmgd.nlll().getReductionType() == ReductionType::MEAN) {
+    if (sfmgd.nlll().getReductionType() == ReductionType::Mean) {
       NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
           *this, graph(), oneHot, lossMask, prog);
     }
   } else {
-    if (sfmgd.nlll().getReductionType() == ReductionType::MEAN) {
+    if (sfmgd.nlll().getReductionType() == ReductionType::Mean) {
       NllOpx::applyScalingInPlaceForMeanReduction(*this, graph(), oneHot, prog);
     }
   }
@@ -279,12 +279,12 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
         label1D,
         nllsfmgd.nlll().getIgnoreIndex(),
         prog);
-    if (nllsfmgd.nlll().getReductionType() == ReductionType::MEAN) {
+    if (nllsfmgd.nlll().getReductionType() == ReductionType::Mean) {
       NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
           *this, graph(), oneHot, lossMask, prog);
     }
   } else {
-    if (nllsfmgd.nlll().getReductionType() == ReductionType::MEAN) {
+    if (nllsfmgd.nlll().getReductionType() == ReductionType::Mean) {
       NllOpx::applyScalingInPlaceForMeanReduction(*this, graph(), oneHot, prog);
     }
   }
@@ -344,12 +344,12 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
         label1D,
         nllsfmgd.nlll().getIgnoreIndex(),
         prog);
-    if (nllsfmgd.nlll().getReductionType() == ReductionType::MEAN) {
+    if (nllsfmgd.nlll().getReductionType() == ReductionType::Mean) {
       NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
           *this, graph(), reduction, lossMask, prog);
     }
   } else {
-    if (nllsfmgd.nlll().getReductionType() == ReductionType::MEAN) {
+    if (nllsfmgd.nlll().getReductionType() == ReductionType::Mean) {
       NllOpx::applyScalingInPlaceForMeanReduction(
           *this, graph(), reduction, prog);
     }

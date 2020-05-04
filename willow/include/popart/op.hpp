@@ -20,8 +20,8 @@
 
 namespace popart {
 
-enum class RecomputeType { UNDEFINED = 0, CHECKPOINT, RECOMPUTE, RECOMPUTED };
-enum class CacheType { UNDEFINED = 0, UNCACHED, CACHED };
+enum class RecomputeType { Undefined = 0, Checkpoint, Recompute, Recomputed };
+enum class CacheType { Undefined = 0, Uncached, Cached };
 
 std::ostream &operator<<(std::ostream &, const RecomputeType &);
 
@@ -32,7 +32,7 @@ class OpSerialiserBase;
 // design note: it's not possible for an input to a
 // grad-op to NOT be directly related to
 // the corresponding non-grad-op.
-enum class GradOpInType { IN = 0, OUT, GRADOUT };
+enum class GradOpInType { In = 0, Out, GradOut };
 
 class GradInOutMapper {
 public:
@@ -84,8 +84,8 @@ public:
     std::string name = "";
 
     Scope scope;
-    RecomputeType recomputeType = RecomputeType::UNDEFINED;
-    CacheType cacheType         = CacheType::UNDEFINED;
+    RecomputeType recomputeType = RecomputeType::Undefined;
+    CacheType cacheType         = CacheType::Undefined;
 
     // optional inplace priorities, to take precedence over the default
     // priorities. A negative priority gurarantees no inplacing

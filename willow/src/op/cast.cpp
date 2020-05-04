@@ -34,7 +34,7 @@ std::unique_ptr<Op> CastGradOp::clone() const {
 
 const std::vector<GradInOutMapper> &CastGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), CastOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getInIndex(), CastOp::getOutIndex(), GradOpInType::GradOut}};
 
   return inInfo;
 }

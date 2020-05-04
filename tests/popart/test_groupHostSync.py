@@ -15,8 +15,8 @@ def test_groupHostSync():
     loss = popart.L1Loss(o, "l1_loss", 1.0)
 
     anchor_config = {
-        o: popart.AnchorReturnType("ALL"),
-        "l1_loss": popart.AnchorReturnType("ALL")
+        o: popart.AnchorReturnType("All"),
+        "l1_loss": popart.AnchorReturnType("All")
     }
     dataFlow = popart.DataFlow(1, anchor_config)
 

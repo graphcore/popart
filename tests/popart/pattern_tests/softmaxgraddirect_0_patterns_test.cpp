@@ -66,12 +66,12 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect0) {
 
     // Create the IR
     // Add the last tensor, and the 3rd tensor as anchors
-    auto art      = AnchorReturnType("ALL");
+    auto art      = AnchorReturnType("All");
     auto dataFlow = DataFlow(
         1, {{reservedGradientPrefix() + input1, art}, {"nllLossVal", art}});
     auto optimizer = ConstSGD(0.01);
     std::vector<std::shared_ptr<Loss>> losses{std::make_shared<NllLoss>(
-        softmaxOut, input2, "nllLossVal", ReductionType::SUM)};
+        softmaxOut, input2, "nllLossVal", ReductionType::Sum)};
 
     if (sameIPU == false) {
       losses[0]->virtualGraph(1);
@@ -90,8 +90,8 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect0) {
 
     auto device = createTestDevice(TEST_TARGET);
 
-    auto patterns = Patterns({PreAliasPatternType::PREUNIREPL,
-                              PreAliasPatternType::SOFTMAXGRADDIRECT});
+    auto patterns = Patterns({PreAliasPatternType::PreUniRepl,
+                              PreAliasPatternType::SoftmaxGradDirect});
     patterns.enableNlllWithSoftMaxGradDirect(enableNlllWithSoftmaxGradDirect);
 
     Ir ir;

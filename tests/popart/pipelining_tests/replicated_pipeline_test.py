@@ -55,7 +55,7 @@ def get_model_anchors(doSharding,
         out = builder.aiOnnx.softmax([r0], axis=1, debugPrefix="sfm")
     builder.addOutputTensor(out)
 
-    art = popart.AnchorReturnType("ALL")
+    art = popart.AnchorReturnType("All")
     loss = popart.NllLoss(out, l0, "loss")
 
     anchor_map = {"loss": art, w0: art, e0: art}

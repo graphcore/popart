@@ -17,7 +17,7 @@ inputShapeInfo = popart.InputShapeInfo()
 inputShapeInfo.add(labels_name, popart.TensorInfo("INT32", [4]))
 
 # Create a runtime environment
-anchors = {output_name: popart.AnchorReturnType("ALL")}
+anchors = {output_name: popart.AnchorReturnType("All")}
 dataFeed = popart.DataFlow(100, anchors)
 
 losses = [popart.NllLoss(output_name, labels_name, "loss")]

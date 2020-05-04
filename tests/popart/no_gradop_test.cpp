@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_CASE(Basic0) {
     outputs.push_back(TestTensor::create<float>(output, inputInfo.shape()));
 
     runner.losses.push_back(
-        new L1Loss(output, "l1LossVal", 0.1, ReductionType::SUM));
+        new L1Loss(output, "l1LossVal", 0.1, ReductionType::Sum));
 
     return output;
   });
@@ -200,7 +200,7 @@ BOOST_AUTO_TEST_CASE(Basic1) {
     outputs.push_back(TestTensor::create<float>(output, inputInfo.shape()));
 
     runner.losses.push_back(
-        new L1Loss(output, "l1LossVal", 0.1, ReductionType::SUM));
+        new L1Loss(output, "l1LossVal", 0.1, ReductionType::Sum));
 
     return output;
   });
@@ -277,7 +277,7 @@ BOOST_AUTO_TEST_CASE(Basic2) {
     outputs.push_back(TestTensor::create<float>(output, inputInfo.shape()));
 
     runner.losses.push_back(
-        new L1Loss(output, "l1LossVal", 0.1, ReductionType::SUM));
+        new L1Loss(output, "l1LossVal", 0.1, ReductionType::Sum));
 
     return output;
   });

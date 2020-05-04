@@ -27,8 +27,8 @@ batchesPerStep = 3
 # return the l1 loss "l1LossVal",
 # the tensor to which the loss is applied "out"
 anchors = {
-    "l1LossVal": popart_core.AnchorReturnType("FINAL"),
-    "out": popart_core.AnchorReturnType("FINAL")
+    "l1LossVal": popart_core.AnchorReturnType("Final"),
+    "out": popart_core.AnchorReturnType("Final")
 }
 dataFeed = popart_core.DataFlow(batchesPerStep, anchors)
 

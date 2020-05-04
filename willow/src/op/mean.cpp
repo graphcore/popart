@@ -22,7 +22,7 @@ MeanArgGradOp::MeanArgGradOp(const MeanOp &op_, InIndex inputIndex)
     : LinearVariadicGradOp(Onnx::GradOperators::MeanArgGrad, op_, inputIndex) {
 
   gradInputInfoVec = {
-      {getGradInIndex(), VariadicOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getGradInIndex(), VariadicOp::getOutIndex(), GradOpInType::GradOut}};
 
   nInputs = op_.input->n();
 }

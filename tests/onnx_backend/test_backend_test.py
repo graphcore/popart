@@ -101,7 +101,7 @@ class IpuBackend(onnx.backend.base.Backend):
 
         anchors = {}
         for output in model.graph.output:
-            anchors[output.name] = popart.AnchorReturnType("ALL")
+            anchors[output.name] = popart.AnchorReturnType("All")
 
         session = popart.InferenceSession(
             fnModel=model.SerializeToString(),

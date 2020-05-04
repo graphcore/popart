@@ -407,13 +407,13 @@ bool MatMulRhsGradPattern::matches(Op *op) const {
 
 namespace {
 static PatternCreator<MatMulPattern>
-    matMulPattern(PreAliasPatternType::MATMULOP, "MatMulOp", true);
+    matMulPattern(PreAliasPatternType::MatMulOp, "MatMulOp", true);
 static PatternCreator<MatMulLhsGradPattern>
-    matMulLhsGradPattern(PreAliasPatternType::MATMULLHSGRADOP,
+    matMulLhsGradPattern(PreAliasPatternType::MatMulLHSGradOp,
                          "MatMulLhsGradOp",
                          true);
 static PatternCreator<MatMulRhsGradPattern>
-    matMulRhsGradPattern(PreAliasPatternType::MATMULRHSGRADOP,
+    matMulRhsGradPattern(PreAliasPatternType::MatMulRHSGradOp,
                          "MatMulRhsGradOp",
                          true);
 } // namespace

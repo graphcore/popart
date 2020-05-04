@@ -27,9 +27,9 @@ anchors = {
     # setting these as anchors guarantees that the softmax-grad-direct
     # pattern is not run
     popart.reservedGradientPrefix() + "probs":
-    popart.AnchorReturnType("FINAL"),
+    popart.AnchorReturnType("Final"),
     popart.reservedGradientPrefix() + "pre_probs":
-    popart.AnchorReturnType("FINAL"),
+    popart.AnchorReturnType("Final"),
 }
 dataFeed = popart.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = popart.InputShapeInfo()
@@ -43,7 +43,7 @@ cifarInIndices = {"image0": 0, "label": 1}
 outNames = ["pre_probs", "probs"]
 losses = [popart.NllLoss("probs", "label", "nllLossVal")]
 
-willowOptPasses = popart.Patterns(popart.PatternsLevel.ALL)
+willowOptPasses = popart.Patterns(popart.PatternsLevel.All)
 
 
 class Module0(torch.nn.Module):

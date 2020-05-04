@@ -265,7 +265,7 @@ void MatMulOp::setup() {
 MatMulLhsGradOp::MatMulLhsGradOp(const MatMulOp &fwdOp)
     : MatMulBaseGradOp(Onnx::GradOperators::MatMulLhsGrad,
                        fwdOp,
-                       Phase::BwdLhs) {}
+                       Phase::BwdLHS) {}
 
 void MatMulLhsGradOp::setup() { outInfo(0) = fwdOpLhsInfo; }
 
@@ -278,8 +278,8 @@ const std::vector<GradInOutMapper> &MatMulLhsGradOp::gradInputInfo() const {
   // The index at which the rhs tensor is the input to the grad-op
   // is the same as the index at which it the input to the fwd-op
   static const std::vector<GradInOutMapper> inInfo = {
-      {getGradInIndex(), MatMulOp::getOutIndex(), GradOpInType::GRADOUT},
-      {getRhsInIndex(), MatMulOp::getRhsInIndex(), GradOpInType::IN}};
+      {getGradInIndex(), MatMulOp::getOutIndex(), GradOpInType::GradOut},
+      {getRhsInIndex(), MatMulOp::getRhsInIndex(), GradOpInType::In}};
   return inInfo;
 }
 
@@ -302,7 +302,7 @@ Shape MatMulLhsGradOp::getOutputShape() const { return fwdOpLhsInfo.shape(); }
 MatMulRhsGradOp::MatMulRhsGradOp(const MatMulOp &fwdOp)
     : MatMulBaseGradOp(Onnx::GradOperators::MatMulRhsGrad,
                        fwdOp,
-                       Phase::BwdRhs) {}
+                       Phase::BwdRHS) {}
 
 std::unique_ptr<Op> MatMulRhsGradOp::clone() const {
   return std::make_unique<MatMulRhsGradOp>(*this);
@@ -312,8 +312,8 @@ void MatMulRhsGradOp::setup() { outInfo(0) = fwdOpRhsInfo; }
 
 const std::vector<GradInOutMapper> &MatMulRhsGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getGradInIndex(), MatMulOp::getOutIndex(), GradOpInType::GRADOUT},
-      {getLhsInIndex(), MatMulOp::getLhsInIndex(), GradOpInType::IN}};
+      {getGradInIndex(), MatMulOp::getOutIndex(), GradOpInType::GradOut},
+      {getLhsInIndex(), MatMulOp::getLhsInIndex(), GradOpInType::In}};
   return inInfo;
 }
 

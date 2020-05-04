@@ -32,7 +32,7 @@ def test_constants_preserved():
 
     proto = builder.getModelProto()
 
-    anchors = {o2: popart.AnchorReturnType("ALL")}
+    anchors = {o2: popart.AnchorReturnType("All")}
 
     dataFlow = popart.DataFlow(1, anchors)
 
@@ -89,7 +89,7 @@ def test_no_prepare_device():
 
     proto = builder.getModelProto()
 
-    anchors = {o2: popart.AnchorReturnType("ALL")}
+    anchors = {o2: popart.AnchorReturnType("All")}
 
     dataFlow = popart.DataFlow(1, anchors)
 

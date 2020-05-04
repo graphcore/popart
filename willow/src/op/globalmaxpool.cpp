@@ -77,9 +77,9 @@ const std::vector<GradInOutMapper> &GlobalMaxPoolGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
       {getGradPooledInIndex(),
        GlobalMaxPoolOp::getOutIndex(),
-       GradOpInType::GRADOUT},
-      {getPooledInIndex(), GlobalMaxPoolOp::getOutIndex(), GradOpInType::OUT},
-      {getPrePooledInIndex(), GlobalMaxPoolOp::getInIndex(), GradOpInType::IN}};
+       GradOpInType::GradOut},
+      {getPooledInIndex(), GlobalMaxPoolOp::getOutIndex(), GradOpInType::Out},
+      {getPrePooledInIndex(), GlobalMaxPoolOp::getInIndex(), GradOpInType::In}};
   return inInfo;
 }
 

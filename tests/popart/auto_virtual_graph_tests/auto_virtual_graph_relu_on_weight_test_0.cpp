@@ -145,7 +145,7 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
 
   float lambda = 1;
   auto loss    = std::unique_ptr<Loss>(
-      new L1Loss(actOut, "l1LossVal", lambda, ReductionType::SUM));
+      new L1Loss(actOut, "l1LossVal", lambda, ReductionType::Sum));
 
   auto device = createTestDevice(TEST_TARGET, 3);
 
@@ -163,7 +163,7 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
       device,
       InputShapeInfo(),
       userOptions,
-      popart::Patterns(PatternsLevel::DEFAULT));
+      popart::Patterns(PatternsLevel::Default));
 
   session->prepareDevice();
 

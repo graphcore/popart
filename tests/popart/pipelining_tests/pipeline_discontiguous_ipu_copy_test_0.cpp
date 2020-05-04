@@ -151,7 +151,7 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
 
     float lambda = 0.1;
     auto loss    = std::make_shared<L1Loss>(
-        actFinal, "l1LossVal", lambda, ReductionType::SUM);
+        actFinal, "l1LossVal", lambda, ReductionType::Sum);
 
     auto device = createTestDevice(TEST_TARGET, 7);
 
@@ -184,7 +184,7 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
                           &optimizer,
                           *device,
                           userOptions,
-                          Patterns(PatternsLevel::DEFAULT)});
+                          Patterns(PatternsLevel::Default)});
 
       auto copiesWithPipe = getIpuCopies(irWithPipe);
       for (auto cop : copiesWithPipe) {
@@ -193,7 +193,7 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
       }
 
       loss = std::make_shared<L1Loss>(
-          actFinal, "l1LossVal", lambda, ReductionType::SUM);
+          actFinal, "l1LossVal", lambda, ReductionType::Sum);
 
       userOptions.enablePipelining = false;
       Ir irWithoutPipe;
@@ -204,7 +204,7 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
                              &optimizer,
                              *device,
                              userOptions,
-                             Patterns(PatternsLevel::DEFAULT)});
+                             Patterns(PatternsLevel::Default)});
 
       // we are testing both discontiguous copies in the forward and backward
       // passes. So  check that we actually have both types in the graph.
@@ -286,7 +286,7 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
           device,
           InputShapeInfo(),
           userOptions,
-          popart::Patterns(PatternsLevel::DEFAULT));
+          popart::Patterns(PatternsLevel::Default));
 
       session->prepareDevice();
 

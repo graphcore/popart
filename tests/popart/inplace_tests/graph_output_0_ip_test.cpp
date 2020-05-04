@@ -60,7 +60,7 @@ BOOST_AUTO_TEST_CASE(InplaceGraphOutputTest1) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto dataFlow = DataFlow(1, {{acts[1], AnchorReturnType("ALL")}});
+  auto dataFlow = DataFlow(1, {{acts[1], AnchorReturnType("All")}});
   auto device   = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -71,7 +71,7 @@ BOOST_AUTO_TEST_CASE(InplaceGraphOutputTest1) {
               nullptr,
               *device,
               {},
-              Patterns(PatternsLevel::NONE).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
 
   auto sched      = ir.getOpSchedule({});
   auto graphSched = ir.getGraphSchedule();
@@ -135,7 +135,7 @@ BOOST_AUTO_TEST_CASE(InplaceGraphOutputTest2) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto dataFlow = DataFlow(1, {{acts[1], AnchorReturnType("ALL")}});
+  auto dataFlow = DataFlow(1, {{acts[1], AnchorReturnType("All")}});
   auto device   = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -146,7 +146,7 @@ BOOST_AUTO_TEST_CASE(InplaceGraphOutputTest2) {
               nullptr,
               *device,
               {},
-              Patterns(PatternsLevel::NONE).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
 
   auto sched      = ir.getOpSchedule({});
   auto graphSched = ir.getGraphSchedule();

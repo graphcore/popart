@@ -119,7 +119,7 @@ bool ConvDataGradPattern::apply(Op *op) const {
 
 namespace {
 static PatternCreator<ConvDataGradPattern>
-    convDataGradPattern(PreAliasPatternType::CONVDATAGRAD, "ConvDataGrad");
+    convDataGradPattern(PreAliasPatternType::ConvDataGrad, "ConvDataGrad");
 }
 
 } // namespace popart

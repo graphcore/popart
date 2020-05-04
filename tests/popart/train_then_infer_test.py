@@ -32,9 +32,9 @@ def test_train_then_infer_via_file():
     ]
     training_dataFlow = popart.DataFlow(
         1, {
-            anchor_names[0]: popart.AnchorReturnType("ALL"),
-            anchor_names[1]: popart.AnchorReturnType("ALL"),
-            anchor_names[2]: popart.AnchorReturnType("ALL")
+            anchor_names[0]: popart.AnchorReturnType("All"),
+            anchor_names[1]: popart.AnchorReturnType("All"),
+            anchor_names[2]: popart.AnchorReturnType("All")
         })
 
     opts = popart.SessionOptions()
@@ -55,7 +55,7 @@ def test_train_then_infer_via_file():
 
     # Prepare the Inference session
     inference_dataFlow = popart.DataFlow(1,
-                                         {o: popart.AnchorReturnType("ALL")})
+                                         {o: popart.AnchorReturnType("All")})
 
     inference_session = popart.InferenceSession(
         fnModel=builder.getModelProto(),
@@ -145,7 +145,7 @@ def test_cannot_call_resethostweights_with_constant_weights():
 
     # Prepare the Inference session
     inference_dataFlow = popart.DataFlow(1,
-                                         {o: popart.AnchorReturnType("ALL")})
+                                         {o: popart.AnchorReturnType("All")})
 
     inference_session = popart.InferenceSession(
         fnModel=builder.getModelProto(),
@@ -190,7 +190,7 @@ def test_modelToHost_calls_resetHostWeights():
 
     anchor_names = [o]
     data_flow = popart.DataFlow(
-        1, {i: popart.AnchorReturnType("ALL")
+        1, {i: popart.AnchorReturnType("All")
             for i in anchor_names})
 
     opts = popart.SessionOptions()

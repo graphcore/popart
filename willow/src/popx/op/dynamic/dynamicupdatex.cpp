@@ -61,21 +61,21 @@ InputCreatorType DynamicUpdateOpx::getInputCreatorType(InIndex index) const {
 
   if (index == DynamicTernaryBaseOp::getUpdateInIndex()) {
     if (inferUpdateFromIn) {
-      return InputCreatorType::CANCREATE_OR_UNWIND;
+      return InputCreatorType::CanCreateOrUnwind;
     } else if (inferInFromUpdate) {
-      return InputCreatorType::DEADEND;
+      return InputCreatorType::Deadend;
     } else {
-      return InputCreatorType::CANUNWIND;
+      return InputCreatorType::CanUnwind;
     }
   }
 
   if (index == DynamicTernaryBaseOp::getInIndex()) {
     if (inferInFromUpdate) {
-      return InputCreatorType::CANCREATE_OR_UNWIND;
+      return InputCreatorType::CanCreateOrUnwind;
     } else if (inferUpdateFromIn) {
-      return InputCreatorType::DEADEND;
+      return InputCreatorType::Deadend;
     } else {
-      return InputCreatorType::CANUNWIND;
+      return InputCreatorType::CanUnwind;
     }
   }
 

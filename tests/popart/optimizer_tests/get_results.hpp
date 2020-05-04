@@ -179,7 +179,7 @@ getResults(const popart::SGD &opt0, // initial Optimizer
 
   float lambda = 1.0;
   auto loss    = std::unique_ptr<Loss>(
-      new L1Loss(add1, "l1LossVal", lambda, ReductionType::SUM));
+      new L1Loss(add1, "l1LossVal", lambda, ReductionType::Sum));
 
   SessionOptions userOptions;
   std::map<std::string, std::string> deviceOpts{{"numIPUs", "1"}};
@@ -236,7 +236,7 @@ getResults(const popart::SGD &opt0, // initial Optimizer
       device,
       InputShapeInfo(),
       userOptions,
-      popart::Patterns(PatternsLevel::DEFAULT));
+      popart::Patterns(PatternsLevel::Default));
 
   session->prepareDevice();
   std::vector<T> v_input_x(stepDataInfo.nelms(), 3.1415);

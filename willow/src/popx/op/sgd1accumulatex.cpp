@@ -72,7 +72,7 @@ poplar::Tensor SGD1AccumulateOpx::createInput(int inIndex,
 
 InputCreatorType SGD1AccumulateOpx::getInputCreatorType(int inIndex) const {
   return inIndex == VarUpdateOp::getVarToUpdateInIndex()
-             ? InputCreatorType::CANCREATE
+             ? InputCreatorType::CanCreate
              : Opx::getInputCreatorType(inIndex);
 }
 

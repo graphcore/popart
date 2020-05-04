@@ -54,11 +54,11 @@ BOOST_AUTO_TEST_CASE(PostNRepl_IdentityOp) {
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
-  auto art       = AnchorReturnType("ALL");
+  auto art       = AnchorReturnType("All");
   auto dataFlow  = DataFlow(1, {{tensorIds.back(), art}, {tensorIds[2], art}});
   auto optimizer = ConstSGD(0.01);
   std::vector<std::shared_ptr<Loss>> losses{std::make_shared<L1Loss>(
-      tensorIds.back(), "l1LossVal", 0.1, ReductionType::SUM)};
+      tensorIds.back(), "l1LossVal", 0.1, ReductionType::Sum)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_CASE(PostNRepl_IdentityOp) {
               &optimizer,
               *device,
               {},
-              Patterns({PreAliasPatternType::POSTNREPL})});
+              Patterns({PreAliasPatternType::PostNRepl})});
 
   // Check the ir
   // All but one of the identityOps should have been removed from the ir
@@ -110,10 +110,10 @@ BOOST_AUTO_TEST_CASE(PreUniRepl) {
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
-  auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("ALL")}});
+  auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("All")}});
   auto optimizer = ConstSGD(0.01);
   std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(identOut, "l1LossVal", 0.1, ReductionType::SUM)};
+      std::make_shared<L1Loss>(identOut, "l1LossVal", 0.1, ReductionType::Sum)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -124,7 +124,7 @@ BOOST_AUTO_TEST_CASE(PreUniRepl) {
               &optimizer,
               *device,
               {},
-              Patterns({PreAliasPatternType::PREUNIREPL})});
+              Patterns({PreAliasPatternType::PreUniRepl})});
 
   // Check the ir
   // the PadOp should have been removed
@@ -160,10 +160,10 @@ BOOST_AUTO_TEST_CASE(OpToIdentity) {
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
-  auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("ALL")}});
+  auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("All")}});
   auto optimizer = ConstSGD(0.01);
   std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(identOut, "l1LossVal", 0.1, ReductionType::SUM)};
+      std::make_shared<L1Loss>(identOut, "l1LossVal", 0.1, ReductionType::Sum)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -174,7 +174,7 @@ BOOST_AUTO_TEST_CASE(OpToIdentity) {
               &optimizer,
               *device,
               {},
-              Patterns({PreAliasPatternType::OPTOIDENTITY})});
+              Patterns({PreAliasPatternType::OptoIdentity})});
 
   // Check the ir
   // the PadOp should have been replaced with an IdentityOp
@@ -207,10 +207,10 @@ BOOST_AUTO_TEST_CASE(GatherToIdentity) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+  auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("All")}});
   auto optimizer = ConstSGD(0.01);
   std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(out, "l1LossVal", 0.1, ReductionType::SUM)};
+      std::make_shared<L1Loss>(out, "l1LossVal", 0.1, ReductionType::Sum)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -221,7 +221,7 @@ BOOST_AUTO_TEST_CASE(GatherToIdentity) {
               &optimizer,
               *device,
               {},
-              Patterns({PreAliasPatternType::OPTOIDENTITY})});
+              Patterns({PreAliasPatternType::OptoIdentity})});
 
   // Check the ir
   // the GatherOp should have been replaced with an IdentityOp
@@ -258,10 +258,10 @@ BOOST_AUTO_TEST_CASE(SplitConvBias) {
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
-  auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("ALL")}});
+  auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("All")}});
   auto optimizer = ConstSGD(0.01);
   std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(identOut, "l1LossVal", 0.1, ReductionType::SUM)};
+      std::make_shared<L1Loss>(identOut, "l1LossVal", 0.1, ReductionType::Sum)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -272,7 +272,7 @@ BOOST_AUTO_TEST_CASE(SplitConvBias) {
               &optimizer,
               *device,
               {},
-              Patterns({PreAliasPatternType::SPLITCONVBIAS})});
+              Patterns({PreAliasPatternType::SplitConvBias})});
 
   // Check the ir
   // Input 1 should connect to ConvOp
@@ -314,7 +314,7 @@ BOOST_AUTO_TEST_CASE(ScaleByOne) {
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
-  auto art      = AnchorReturnType("ALL");
+  auto art      = AnchorReturnType("All");
   auto dataFlow = DataFlow(1, {{scale, art}});
   auto device   = createTestDevice(TEST_TARGET);
 
@@ -326,7 +326,7 @@ BOOST_AUTO_TEST_CASE(ScaleByOne) {
               nullptr,
               *device,
               {},
-              Patterns({PreAliasPatternType::OPTOIDENTITY})});
+              Patterns({PreAliasPatternType::OptoIdentity})});
 
   // Check the ir
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Identity).size() == 1);
@@ -357,7 +357,7 @@ BOOST_AUTO_TEST_CASE(ScaleByNegativeOne) {
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
-  auto art      = AnchorReturnType("ALL");
+  auto art      = AnchorReturnType("All");
   auto dataFlow = DataFlow(1, {{scale, art}});
   auto device   = createTestDevice(TEST_TARGET);
 
@@ -369,7 +369,7 @@ BOOST_AUTO_TEST_CASE(ScaleByNegativeOne) {
               nullptr,
               *device,
               {},
-              Patterns({PreAliasPatternType::NEGATIVEONESCALE})});
+              Patterns({PreAliasPatternType::NegativeOneScale})});
 
   // Check the ir
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Neg).size() == 1);
@@ -401,14 +401,14 @@ BOOST_AUTO_TEST_CASE(SubtractArg1GradOp) {
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
-  auto art       = AnchorReturnType("ALL");
+  auto art       = AnchorReturnType("All");
   auto dataFlow  = DataFlow(1,
                            {{identOut, art},
                             {reservedGradientPrefix() + input1, art},
                             {reservedGradientPrefix() + input2, art}});
   auto optimizer = ConstSGD(0.01);
   std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(identOut, "l1LossVal", 0.1, ReductionType::SUM)};
+      std::make_shared<L1Loss>(identOut, "l1LossVal", 0.1, ReductionType::Sum)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -419,7 +419,7 @@ BOOST_AUTO_TEST_CASE(SubtractArg1GradOp) {
               &optimizer,
               *device,
               {},
-              Patterns({PreAliasPatternType::SUBTRACTARG1GRADOP})});
+              Patterns({PreAliasPatternType::SubtractArg1GradOp})});
 
   // Check the ir
   // SubtractArg1Grad should have been replaced with Negate and ReduceSum
@@ -452,14 +452,14 @@ BOOST_AUTO_TEST_CASE(ReciprocalGradOp) {
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
-  auto art       = AnchorReturnType("ALL");
+  auto art       = AnchorReturnType("All");
   auto dataFlow  = DataFlow(1,
                            {{output, art},
                             {reservedGradientPrefix() + input, art},
                             {"l1LossVal", art}});
   auto optimizer = ConstSGD(0.01);
   std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(output, "l1LossVal", 0.1, ReductionType::SUM)};
+      std::make_shared<L1Loss>(output, "l1LossVal", 0.1, ReductionType::Sum)};
 
   auto opts   = SessionOptions();
   auto device = createTestDevice(TEST_TARGET);
@@ -472,7 +472,7 @@ BOOST_AUTO_TEST_CASE(ReciprocalGradOp) {
               &optimizer,
               *device,
               opts,
-              Patterns({PreAliasPatternType::RECIPROCALGRADOP})});
+              Patterns({PreAliasPatternType::ReciprocalGradOp})});
 
   // Check the ir
   // ReciprocalGradOp should have been replace with SquareOp, ReciprocalOp,
@@ -505,7 +505,7 @@ BOOST_AUTO_TEST_CASE(Attribute_Inheritance) {
   int64_t vgNumber   = 20;
   std::string opName = "MyPadOp";
 
-  auto recompute = RecomputeType::RECOMPUTE;
+  auto recompute = RecomputeType::Recompute;
 
   auto padIn = aiOnnx.add({input1, input2});
   builder->virtualGraph(padIn, vgNumber);
@@ -526,10 +526,10 @@ BOOST_AUTO_TEST_CASE(Attribute_Inheritance) {
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
-  auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("ALL")}});
+  auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("All")}});
   auto optimizer = ConstSGD(0.01);
   std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(identOut, "l1LossVal", 0.1, ReductionType::SUM)};
+      std::make_shared<L1Loss>(identOut, "l1LossVal", 0.1, ReductionType::Sum)};
   losses[0]->virtualGraph(0);
   auto device = createTestDevice(TEST_TARGET);
 
@@ -544,7 +544,7 @@ BOOST_AUTO_TEST_CASE(Attribute_Inheritance) {
               &optimizer,
               *device,
               opts,
-              Patterns({PreAliasPatternType::OPTOIDENTITY})});
+              Patterns({PreAliasPatternType::OptoIdentity})});
 
   // Check the PadOp has been removed
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Pad).size() == 0);
@@ -560,11 +560,11 @@ BOOST_AUTO_TEST_CASE(Attribute_Inheritance) {
   BOOST_CHECK(op->getVirtualGraphId() == vgNumber);
 
   // recomputation
-  if (recompute == RecomputeType::RECOMPUTE) {
-    BOOST_CHECK(op->settings.recomputeType == RecomputeType::RECOMPUTE);
+  if (recompute == RecomputeType::Recompute) {
+    BOOST_CHECK(op->settings.recomputeType == RecomputeType::Recompute);
   } else {
-    BOOST_CHECK(op->settings.recomputeType == RecomputeType::CHECKPOINT ||
-                op->settings.recomputeType == RecomputeType::UNDEFINED);
+    BOOST_CHECK(op->settings.recomputeType == RecomputeType::Checkpoint ||
+                op->settings.recomputeType == RecomputeType::Undefined);
   }
 }
 
@@ -590,7 +590,7 @@ BOOST_AUTO_TEST_CASE(PadSumPatternTest) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+  auto dataFlow = DataFlow(1, {{out, AnchorReturnType("All")}});
   auto device   = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -601,7 +601,7 @@ BOOST_AUTO_TEST_CASE(PadSumPatternTest) {
               nullptr,
               *device,
               {},
-              Patterns({PreAliasPatternType::PADSUM})});
+              Patterns({PreAliasPatternType::PadSum})});
 
   // Check the ir
   // Sum op should have been replaced with a concat
@@ -633,7 +633,7 @@ BOOST_AUTO_TEST_CASE(PreUniRepl_0) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+  auto dataFlow = DataFlow(1, {{out, AnchorReturnType("All")}});
   auto device   = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -644,7 +644,7 @@ BOOST_AUTO_TEST_CASE(PreUniRepl_0) {
               nullptr,
               *device,
               {},
-              Patterns({PreAliasPatternType::PREUNIREPL})});
+              Patterns({PreAliasPatternType::PreUniRepl})});
 }
 
 BOOST_AUTO_TEST_CASE(SumToAddTest) {
@@ -664,7 +664,7 @@ BOOST_AUTO_TEST_CASE(SumToAddTest) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+  auto dataFlow = DataFlow(1, {{out, AnchorReturnType("All")}});
 
   SessionOptions userOptions;
 
@@ -679,7 +679,7 @@ BOOST_AUTO_TEST_CASE(SumToAddTest) {
               nullptr,
               *device,
               userOptions,
-              Patterns({PreAliasPatternType::SUMTOADD})});
+              Patterns({PreAliasPatternType::SumtoAdd})});
 
   BOOST_CHECK(ir.opsOfType(Onnx::Operators::Sum_8).size() == 0);
   BOOST_CHECK(ir.opsOfType(Onnx::Operators::Add_7).size() == 1);

@@ -52,9 +52,9 @@ BOOST_AUTO_TEST_CASE(test0) {
   auto isi   = InputShapeInfo();
   auto inId  = proto.graph().input()[0].name();
   auto outId = proto.graph().output()[0].name();
-  auto df0   = DataFlow(1, {{outId, AnchorReturnType("ALL")}});
+  auto df0   = DataFlow(1, {{outId, AnchorReturnType("All")}});
   std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(outId, "l1", 0.1, ReductionType::SUM)};
+      std::make_shared<L1Loss>(outId, "l1", 0.1, ReductionType::Sum)};
   auto opt0    = ConstSGD(0.01);
   auto device0 = createTestDevice(TEST_TARGET, 1, 20);
 
@@ -82,19 +82,19 @@ BOOST_AUTO_TEST_CASE(test0) {
 
   // 2. Same as reference, except different anchor return type
   Ir ir2;
-  auto df1 = DataFlow(1, {{outId, AnchorReturnType("FINAL")}});
+  auto df1 = DataFlow(1, {{outId, AnchorReturnType("Final")}});
   ir2.prepare({proto, isi, df1, losses, &opt0, *device0, {}, Patterns()});
   std::size_t irHash2 = std::hash<Ir>{}(ir2);
 
   // 3. Same as reference, except different batches-per-step
   Ir ir3;
-  auto df2 = DataFlow(2, {{outId, AnchorReturnType("ALL")}});
+  auto df2 = DataFlow(2, {{outId, AnchorReturnType("All")}});
   ir3.prepare({proto, isi, df2, losses, &opt0, *device0, {}, Patterns()});
   std::size_t irHash3 = std::hash<Ir>{}(ir3);
 
   // 4. Same as reference, except different anchor id
   Ir ir4;
-  auto df3 = DataFlow(2, {{inId, AnchorReturnType("ALL")}});
+  auto df3 = DataFlow(2, {{inId, AnchorReturnType("All")}});
   ir4.prepare({proto, isi, df3, losses, &opt0, *device0, {}, Patterns()});
   std::size_t irHash4 = std::hash<Ir>{}(ir4);
 

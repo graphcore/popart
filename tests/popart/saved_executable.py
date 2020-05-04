@@ -37,7 +37,7 @@ def test_simple_load(tmp_path):
         proto = builder.getModelProto()
 
         # Describe how to run the model
-        dataFlow = popart.DataFlow(bps, {o: popart.AnchorReturnType("ALL")})
+        dataFlow = popart.DataFlow(bps, {o: popart.AnchorReturnType("All")})
 
         opts = popart.SessionOptions()
         opts.enableEngineCaching = True
@@ -119,7 +119,7 @@ def test_bad_load(tmp_path):
         device = tu.create_test_device()
 
         # Describe how to run the model
-        dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+        dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
         opts = popart.SessionOptions()
         opts.enableEngineCaching = True
@@ -174,7 +174,7 @@ def test_get_reports(tmp_path):
         proto = builder.getModelProto()
 
         # Describe how to run the model
-        dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+        dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
         opts = popart.SessionOptions()
         opts.enableEngineCaching = True

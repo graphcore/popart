@@ -60,7 +60,7 @@ BOOST_AUTO_TEST_CASE(Introspection0_Subgraph) {
   auto modelProto = io::getModelFromString(proto);
   auto dataFlow   = DataFlow(
       100,
-      {{out[0], AnchorReturnType("ALL")}, {out[4], AnchorReturnType("ALL")}});
+      {{out[0], AnchorReturnType("All")}, {out[4], AnchorReturnType("All")}});
 
   SessionOptions userOptions;
   userOptions.virtualGraphMode               = VirtualGraphMode::Manual;
@@ -75,10 +75,10 @@ BOOST_AUTO_TEST_CASE(Introspection0_Subgraph) {
   auto optimizer = ConstSGD(0.01);
 
   auto loss0 =
-      std::make_shared<L1Loss>(out[0], "l1LossVal_0", 0.1, ReductionType::MEAN);
+      std::make_shared<L1Loss>(out[0], "l1LossVal_0", 0.1, ReductionType::Mean);
   loss0->virtualGraph(0);
   auto loss1 =
-      std::make_shared<L1Loss>(out[4], "l1LossVal_1", 0.1, ReductionType::MEAN);
+      std::make_shared<L1Loss>(out[4], "l1LossVal_1", 0.1, ReductionType::Mean);
   loss1->virtualGraph(1);
 
   auto device = createTestDevice(TEST_TARGET, nIpus);
@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE(Introspection0_Subgraph) {
               &optimizer,
               *device,
               userOptions,
-              Patterns(PatternsLevel::NONE)});
+              Patterns(PatternsLevel::NoPatterns)});
 
   auto sched = ir.getMainGraph().getOpSchedule({});
 

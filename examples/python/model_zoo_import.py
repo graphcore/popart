@@ -130,7 +130,7 @@ graph_transformer.convertAllFixedPointInitializersToConstants()
 # Create forward pass session
 session = popart.InferenceSession(
     fnModel=graph_transformer.getModelProto(),
-    dataFeed=popart.DataFlow(1, {output: popart.AnchorReturnType("ALL")}),
+    dataFeed=popart.DataFlow(1, {output: popart.AnchorReturnType("All")}),
     deviceInfo=popart.DeviceManager().createIpuModelDevice({}))
 
 # Compile graph

@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE(ReplicatedAllReduceInplaceTest) {
 
   auto proto         = bder->getModelProto();
   auto modelProto    = io::getModelFromString(proto);
-  auto art           = AnchorReturnType("ALL");
+  auto art           = AnchorReturnType("All");
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{B_id, art}});
   auto device        = createTestDevice(TEST_TARGET, numIPUs);
@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE(ReplicatedAllReduceInplaceTest) {
         losses,
         popart::InputShapeInfo(),
         opts,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
     session->prepareDevice();
     popart::StepIO stepio(inputs, anchors);
     session->run(stepio);
@@ -145,7 +145,7 @@ BOOST_AUTO_TEST_CASE(ReplicatedAllReduceTest) {
 
   auto proto         = bder->getModelProto();
   auto modelProto    = io::getModelFromString(proto);
-  auto art           = AnchorReturnType("ALL");
+  auto art           = AnchorReturnType("All");
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{B_id, art}});
   auto device        = createTestDevice(TEST_TARGET, numIPUs);
@@ -179,7 +179,7 @@ BOOST_AUTO_TEST_CASE(ReplicatedAllReduceTest) {
         losses,
         popart::InputShapeInfo(),
         opts,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
     session->prepareDevice();
     popart::StepIO stepio(inputs, anchors);
     session->run(stepio);
@@ -226,7 +226,7 @@ BOOST_AUTO_TEST_CASE(ReplicatedReduceScatter) {
 
   auto proto         = bder->getModelProto();
   auto modelProto    = io::getModelFromString(proto);
-  auto art           = AnchorReturnType("ALL");
+  auto art           = AnchorReturnType("All");
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{B_id, art}});
   auto device        = createTestDevice(TEST_TARGET, numIPUs);
@@ -260,7 +260,7 @@ BOOST_AUTO_TEST_CASE(ReplicatedReduceScatter) {
         losses,
         popart::InputShapeInfo(),
         opts,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
     session->prepareDevice();
     popart::StepIO stepio(inputs, anchors);
     session->run(stepio);

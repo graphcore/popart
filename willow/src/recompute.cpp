@@ -25,9 +25,9 @@ void annotateNormOnly(Graph &graph) {
     if (op->toLoss == PathToLoss::Yes && op->isNorm()) {
       // don't checkpoint Norms as their outputs are large and
       // relatively cheap to recompute
-      op->settings.recomputeType = RecomputeType::RECOMPUTE;
+      op->settings.recomputeType = RecomputeType::Recompute;
     } else {
-      op->settings.recomputeType = RecomputeType::CHECKPOINT;
+      op->settings.recomputeType = RecomputeType::Checkpoint;
     }
   }
 }
@@ -115,7 +115,7 @@ void annotateStandard(const Graph &graph) {
 
   for (auto op : fwdOps) {
     if (checkpoints.count(op) == 0) {
-      op->settings.recomputeType = RecomputeType::RECOMPUTE;
+      op->settings.recomputeType = RecomputeType::Recompute;
     }
   }
 }

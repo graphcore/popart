@@ -13,7 +13,7 @@ void fillLogStreams(std::array<std::stringstream, nIpus> &sss,
                     const std::vector<Op *> &sched) {
 
   auto recStr = [](RecomputeType t) {
-    return t == RecomputeType::CHECKPOINT ? "ChPo" : "Reco";
+    return t == RecomputeType::Checkpoint ? "ChPo" : "Reco";
   };
 
   for (auto op : sched) {

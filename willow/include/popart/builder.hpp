@@ -448,7 +448,7 @@ public:
    */
   void recomputeOutputInBackwardPass(
       const TensorId &nodeOutputName,
-      RecomputeType value = RecomputeType::RECOMPUTE) {
+      RecomputeType value = RecomputeType::Recompute) {
     addNodeAttribute(sRecomputeOutputAttribute,
                      static_cast<int64_t>(value),
                      {nodeOutputName});
@@ -463,7 +463,7 @@ public:
    */
   void recomputeOutputInBackwardPass(
       const std::set<TensorId> &nodeOutputNames,
-      RecomputeType value = RecomputeType::RECOMPUTE) {
+      RecomputeType value = RecomputeType::Recompute) {
     addNodeAttribute(sRecomputeOutputAttribute,
                      static_cast<int64_t>(value),
                      nodeOutputNames);

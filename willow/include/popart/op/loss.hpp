@@ -14,11 +14,11 @@ namespace popart {
 // When weight updates of a batch are computed in one go, we
 // are reducing over the gradients of the whole minibatch.
 // What type of reduction should this be?
-// SUM : By scaling the loss gradient (and loss) by identity,
+// Sum : By scaling the loss gradient (and loss) by identity,
 //       this is a sum reduction
-// MEAN : By dividing the loss gradient (and loss) by total
+// Mean : By dividing the loss gradient (and loss) by total
 //        number of samples this is an average (mean) reduction
-enum class ReductionType { SUM = 0, MEAN };
+enum class ReductionType { Sum = 0, Mean };
 
 enum class eLoss { NLL, L1, ID };
 std::map<std::string, eLoss> initLossMap();

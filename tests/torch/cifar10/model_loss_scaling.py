@@ -20,13 +20,13 @@ nOutChans = 10
 batchSize = 2
 batchesPerStep = 3
 anchors = {
-    "conv2.weight": popart.AnchorReturnType("ALL"),
-    "l1LossVal": popart.AnchorReturnType("ALL"),
-    "nllLossVal": popart.AnchorReturnType("ALL"),
-    "probs": popart.AnchorReturnType("FINAL"),
-    "preProbSquared": popart.AnchorReturnType("FINAL"),
-    nllGradTensorId: popart.AnchorReturnType("FINAL"),
-    l1GradTensorId: popart.AnchorReturnType("FINAL")
+    "conv2.weight": popart.AnchorReturnType("All"),
+    "l1LossVal": popart.AnchorReturnType("All"),
+    "nllLossVal": popart.AnchorReturnType("All"),
+    "probs": popart.AnchorReturnType("Final"),
+    "preProbSquared": popart.AnchorReturnType("Final"),
+    nllGradTensorId: popart.AnchorReturnType("Final"),
+    l1GradTensorId: popart.AnchorReturnType("Final")
 }
 dataFeed = popart.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = popart.InputShapeInfo()
@@ -44,7 +44,7 @@ losses = [
     popart.L1Loss("preProbSquared", "l1LossVal", 0.01)
 ]
 
-willowOptPasses = popart.Patterns(popart.PatternsLevel.ALL)
+willowOptPasses = popart.Patterns(popart.PatternsLevel.All)
 
 
 class Module0(torch.nn.Module):

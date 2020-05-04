@@ -232,8 +232,8 @@ const std::vector<GradInOutMapper> &ConvWeightsGradOp::gradInputInfo() const {
   // input at index getGradConvolvedIn() (0) : gradient of output of conv
   // input at index getPreConvolvedIn() (1)  : data input to conv
   static const std::vector<GradInOutMapper> inInfo = {
-      {getGradConvolvedInIndex(), ConvOp::getOutIndex(), GradOpInType::GRADOUT},
-      {getPreConvolvedInIndex(), ConvOp::getDataInIndex(), GradOpInType::IN}};
+      {getGradConvolvedInIndex(), ConvOp::getOutIndex(), GradOpInType::GradOut},
+      {getPreConvolvedInIndex(), ConvOp::getDataInIndex(), GradOpInType::In}};
   return inInfo;
 }
 
@@ -267,8 +267,8 @@ const std::vector<GradInOutMapper> &ConvDataGradOp::gradInputInfo() const {
   // input at index getGradConvolvedIn() : gradient of output of conv
   // input at index getWeightsIn()       : weights input to conv
   static const std::vector<GradInOutMapper> inInfo = {
-      {getGradConvolvedInIndex(), ConvOp::getOutIndex(), GradOpInType::GRADOUT},
-      {getWeightsInIndex(), ConvOp::getWeightsInIndex(), GradOpInType::IN}};
+      {getGradConvolvedInIndex(), ConvOp::getOutIndex(), GradOpInType::GradOut},
+      {getWeightsInIndex(), ConvOp::getWeightsInIndex(), GradOpInType::In}};
   return inInfo;
 }
 

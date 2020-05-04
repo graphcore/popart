@@ -142,7 +142,7 @@ def get_model_anchors_model1(doSharding,
     label_shape = [micro_batch_size]
     label = builder.addInputTensor(popart.TensorInfo("INT32", label_shape))
 
-    art = popart.AnchorReturnType("ALL")
+    art = popart.AnchorReturnType("All")
     losses = [popart.NllLoss(output, label, "NllLossVal")]
 
     # Loss on the last IPU
@@ -263,7 +263,7 @@ def get_model_anchors_model2(doSharding,
     l0 = builder.addInputTensor(popart.TensorInfo("INT32", label_shape),
                                 "label")
 
-    art = popart.AnchorReturnType("ALL")
+    art = popart.AnchorReturnType("All")
     loss = popart.NllLoss(out, l0, "loss")
 
     anchor_map = {"loss": art, w0: art, e0: art, s0: art, c0: art}

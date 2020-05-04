@@ -55,8 +55,8 @@ BOOST_AUTO_TEST_CASE(PruneTest) {
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow = DataFlow(1,
-                           {{tensorIds.back(), AnchorReturnType("ALL")},
-                            {tensorIds[2], AnchorReturnType("ALL")}});
+                           {{tensorIds.back(), AnchorReturnType("All")},
+                            {tensorIds[2], AnchorReturnType("All")}});
 
   Ir ir;
   const std::vector<std::shared_ptr<Loss>> emptyLosses;
@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE(SelectivePruning) {
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
-  auto dataFlow = DataFlow(1, {{c0, AnchorReturnType("ALL")}});
+  auto dataFlow = DataFlow(1, {{c0, AnchorReturnType("All")}});
 
   Ir ir;
   const std::vector<std::shared_ptr<Loss>> emptyLosses;

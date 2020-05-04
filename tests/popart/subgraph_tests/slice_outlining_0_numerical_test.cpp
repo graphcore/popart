@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(SliceTest0) {
     auto modelProto = io::getModelFromString(proto);
 
     // Create the IR, adding outId as an anchor
-    auto art      = AnchorReturnType("ALL");
+    auto art      = AnchorReturnType("All");
     auto dataFlow = DataFlow(1, {{out, art}});
 
     auto opts             = SessionOptions();
@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(SliceTest0) {
         {},
         popart::InputShapeInfo(),
         opts,
-        popart::Patterns(PatternsLevel::NONE).enableInPlace(inplace));
+        popart::Patterns(PatternsLevel::NoPatterns).enableInPlace(inplace));
 
     // prepare the anchors
     float rawOutputData;

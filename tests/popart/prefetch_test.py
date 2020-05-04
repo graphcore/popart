@@ -37,7 +37,7 @@ def get_model(batches_per_step, replication_factor, batch_size, channels,
     o = builder.aiOnnx.softmax([o])
     builder.addOutputTensor(o)
 
-    art = popart.AnchorReturnType("ALL")
+    art = popart.AnchorReturnType("All")
     data_flow = popart.DataFlow(batches_per_step, {ip: art, lb: art})
 
     opts = popart.SessionOptions()

@@ -125,7 +125,7 @@ BOOST_AUTO_TEST_CASE(ContinuousEquivalentTest0) {
   auto proto = builder->getModelProto();
 
   // Setting anchors as act5
-  auto dataFlow = DataFlow(batchesPerStep, {{act5, AnchorReturnType("ALL")}});
+  auto dataFlow = DataFlow(batchesPerStep, {{act5, AnchorReturnType("All")}});
 
   // shard over 3 IPUs, and enable pipelining
   SessionOptions userOptions;
@@ -138,7 +138,7 @@ BOOST_AUTO_TEST_CASE(ContinuousEquivalentTest0) {
 
   float lambda = 0.1;
   auto loss    = std::unique_ptr<Loss>(
-      new L1Loss(act5, "l1LossVal", lambda, ReductionType::SUM));
+      new L1Loss(act5, "l1LossVal", lambda, ReductionType::Sum));
 
   auto device = createTestDevice(TEST_TARGET, 3);
 
@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_CASE(ContinuousEquivalentTest0) {
       device,
       InputShapeInfo(),
       userOptions,
-      popart::Patterns(PatternsLevel::DEFAULT));
+      popart::Patterns(PatternsLevel::Default));
 
   session->prepareDevice();
 

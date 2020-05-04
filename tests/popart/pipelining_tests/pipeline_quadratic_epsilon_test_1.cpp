@@ -230,7 +230,7 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilonTest1) {
 
     float lambda = 0.1;
     auto loss    = std::unique_ptr<Loss>(
-        new L1Loss(actFinal, "l1LossVal", lambda, ReductionType::SUM));
+        new L1Loss(actFinal, "l1LossVal", lambda, ReductionType::Sum));
     loss->virtualGraph(nIPUs - 1);
 
     // number of "pixels" in a step
@@ -246,12 +246,12 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilonTest1) {
         device,
         InputShapeInfo(),
         userOptions,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
 
     auto opSchedule = session->ir.getOpSchedule({});
     int nRecomp     = 0;
     for (auto op : opSchedule) {
-      if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
+      if (op->settings.recomputeType == RecomputeType::Recompute) {
         ++nRecomp;
       }
     }

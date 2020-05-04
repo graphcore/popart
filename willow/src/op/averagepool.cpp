@@ -101,9 +101,9 @@ const std::vector<GradInOutMapper> &AveragePoolGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
       {getGradPooledInIndex(),
        AveragePoolOp::getOutIndex(),
-       GradOpInType::GRADOUT},
-      {getPooledInIndex(), AveragePoolOp::getOutIndex(), GradOpInType::OUT},
-      {getPrePooledInIndex(), AveragePoolOp::getInIndex(), GradOpInType::IN}};
+       GradOpInType::GradOut},
+      {getPooledInIndex(), AveragePoolOp::getOutIndex(), GradOpInType::Out},
+      {getPrePooledInIndex(), AveragePoolOp::getInIndex(), GradOpInType::In}};
   return inInfo;
 }
 

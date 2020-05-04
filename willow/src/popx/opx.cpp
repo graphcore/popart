@@ -38,12 +38,12 @@ void Opx::grow(poplar::program::Sequence &) const {
 }
 
 InputCreatorType Opx::getInputCreatorType(InIndex) const {
-  return InputCreatorType::DEADEND;
+  return InputCreatorType::Deadend;
 }
 
 bool Opx::canUnwind(InIndex in, OutIndex) const {
   auto type = getInputCreatorType(in);
-  return type == InputCreatorType::CANUNWIND;
+  return type == InputCreatorType::CanUnwind;
 }
 
 poplar::Tensor

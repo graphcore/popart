@@ -39,7 +39,7 @@ BOOST_AUTO_TEST_CASE(CorrectBufferNElmsTest0) {
   builder->addOutputTensor(out);
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
-  auto art        = AnchorReturnType("ALL");
+  auto art        = AnchorReturnType("All");
   auto dataFlow   = DataFlow(1, {{out, art}});
   auto opts       = SessionOptions();
   auto device     = popart::createTestDevice(TEST_TARGET);
@@ -50,7 +50,7 @@ BOOST_AUTO_TEST_CASE(CorrectBufferNElmsTest0) {
       {},
       popart::InputShapeInfo(),
       opts,
-      popart::Patterns(PatternsLevel::NONE));
+      popart::Patterns(PatternsLevel::NoPatterns));
   float rawOutputData;
   Shape outShape{};
   popart::NDArrayWrapper<float> outData(&rawOutputData, outShape);

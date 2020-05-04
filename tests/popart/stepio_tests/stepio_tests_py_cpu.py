@@ -29,9 +29,9 @@ def test_stepio_bufferinput(tmpdir):
 
     dataFlow = popart.DataFlow(
         batches_per_step, {
-            i1: popart.AnchorReturnType("ALL"),
-            i2: popart.AnchorReturnType("ALL"),
-            o: popart.AnchorReturnType("ALL")
+            i1: popart.AnchorReturnType("All"),
+            i2: popart.AnchorReturnType("All"),
+            o: popart.AnchorReturnType("All")
         })
 
     session = popart.InferenceSession(fnModel=proto,
@@ -85,9 +85,9 @@ def test_stepio_callbackinput(tmpdir):
 
     dataFlow = popart.DataFlow(
         batches_per_step, {
-            i1: popart.AnchorReturnType("ALL"),
-            i2: popart.AnchorReturnType("ALL"),
-            o: popart.AnchorReturnType("ALL")
+            i1: popart.AnchorReturnType("All"),
+            i2: popart.AnchorReturnType("All"),
+            o: popart.AnchorReturnType("All")
         })
 
     session = popart.InferenceSession(fnModel=proto,

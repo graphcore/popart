@@ -30,8 +30,8 @@ void SqrtGradOp::setup() { outInfo(getOutIndex()) = inInfo(getGradInIndex()); }
 
 const std::vector<GradInOutMapper> &SqrtGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getGradInIndex(), 0, GradOpInType::GRADOUT},
-      {getFwdOutInIndex(), SqrtOp::getOutIndex(), GradOpInType::OUT}};
+      {getGradInIndex(), 0, GradOpInType::GradOut},
+      {getFwdOutInIndex(), SqrtOp::getOutIndex(), GradOpInType::Out}};
 
   return inInfo;
 }

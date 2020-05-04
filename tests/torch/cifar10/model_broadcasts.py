@@ -18,7 +18,7 @@ nInChans = 3
 nOutChans = 10
 batchSize = 2
 batchesPerStep = 3
-anchors = {"l1LossVal": popart.AnchorReturnType("FINAL")}
+anchors = {"l1LossVal": popart.AnchorReturnType("Final")}
 dataFeed = popart.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = popart.InputShapeInfo()
 inputShapeInfo.add("image0",

@@ -170,6 +170,6 @@ def _get_anchors(anchorIds, builder):
     anchors = {}
     for anchorId in anchorIds:
         if anchorId not in builder._init_input_map:
-            anchors[anchorId] = popart.AnchorReturnType('ALL')
+            anchors[anchorId] = popart.AnchorReturnType('All')
 
     return anchors

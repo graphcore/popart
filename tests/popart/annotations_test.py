@@ -41,7 +41,7 @@ def _get_ir(pingpong_enabled, virtualgraph_enabled, pipeline_enabled):
 
     dfAnchors = {}
     for anchorId in anchorIds:
-        dfAnchors.update({anchorId: popart.AnchorReturnType("ALL")})
+        dfAnchors.update({anchorId: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
     # disable outlining to make the ir easier to parse
@@ -58,7 +58,7 @@ def _get_ir(pingpong_enabled, virtualgraph_enabled, pipeline_enabled):
                                      optimizer=popart.ConstSGD(0.1),
                                      losses=[loss],
                                      passes=popart.Patterns(
-                                         popart.PatternsLevel.ALL),
+                                         popart.PatternsLevel.All),
                                      userOptions=opts,
                                      deviceInfo=device)
 

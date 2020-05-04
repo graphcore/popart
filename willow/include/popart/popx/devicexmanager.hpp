@@ -72,7 +72,7 @@ public:
   DevicexCpuInfo(DeviceProvider &_provider, poplar::Device &_device)
       : DevicexInfo(_provider,
                     popart::DeviceType::Cpu,
-                    popart::DeviceConnectionType::NEVER,
+                    popart::DeviceConnectionType::Never,
                     _device) {}
 
   virtual int getId() const { return 0; }
@@ -83,7 +83,7 @@ public:
   DevicexSimInfo(DeviceProvider &_provider, poplar::Device &_device)
       : DevicexInfo(_provider,
                     popart::DeviceType::Sim,
-                    popart::DeviceConnectionType::NEVER,
+                    popart::DeviceConnectionType::Never,
                     _device) {}
 
   virtual int getId() const { return 0; }
@@ -94,7 +94,7 @@ public:
   DevicexIpuModelInfo(DeviceProvider &_provider, poplar::Device &_device)
       : DevicexInfo(_provider,
                     popart::DeviceType::IpuModel,
-                    popart::DeviceConnectionType::NEVER,
+                    popart::DeviceConnectionType::Never,
                     _device) {}
 
   virtual int getId() const { return 0; }

@@ -14,7 +14,7 @@ enum class DeviceType { IpuModel = 0, Cpu, Ipu, Sim };
 
 enum class SyncPattern { Full = 0, SinglePipeline, PingPong };
 
-enum class DeviceConnectionType { ALWAYS = 0, ON_DEMAND, NEVER };
+enum class DeviceConnectionType { Always = 0, OnDemand, Never };
 
 class DeviceProvider;
 
@@ -28,7 +28,7 @@ public:
   DeviceInfo(
       DeviceProvider &_provider,
       DeviceType _type,
-      DeviceConnectionType _connectionType = DeviceConnectionType::ALWAYS)
+      DeviceConnectionType _connectionType = DeviceConnectionType::Always)
       : provider(_provider), type(_type), connectionType(_connectionType) {
     (void)provider;
   }
@@ -131,7 +131,7 @@ public:
   std::shared_ptr<DeviceInfo>
   getDevice(SyncPattern syncPattern             = SyncPattern::Full,
             uint32_t deviceManagerId            = 0,
-            DeviceConnectionType connectionType = DeviceConnectionType::ALWAYS);
+            DeviceConnectionType connectionType = DeviceConnectionType::Always);
 
   /**
    * Get the list of all devices fulfilling the specified criteria.
@@ -147,7 +147,7 @@ public:
       uint32_t replication_factor         = 1,
       int numIpus                         = 1,
       DeviceType deviceType               = DeviceType::Ipu,
-      DeviceConnectionType connectionType = DeviceConnectionType::ALWAYS);
+      DeviceConnectionType connectionType = DeviceConnectionType::Always);
 
   /** Finds the first available hardware device, that a certain number of IPUs.
    * This method will attach to the device.
@@ -161,7 +161,7 @@ public:
       int tilesPerIpu                     = 1216,
       SyncPattern pattern                 = SyncPattern::Full,
       uint32_t replication_factor         = 1,
-      DeviceConnectionType connectionType = DeviceConnectionType::ALWAYS);
+      DeviceConnectionType connectionType = DeviceConnectionType::Always);
 
   /** Allocates the hardware device by id. This id can be found running 'gc-info
    *  -l' This method will attach to the device
@@ -172,7 +172,7 @@ public:
       int id,
       SyncPattern pattern                 = SyncPattern::Full,
       uint32_t replication_factor         = 1,
-      DeviceConnectionType connectionType = DeviceConnectionType::ALWAYS);
+      DeviceConnectionType connectionType = DeviceConnectionType::Always);
 
   /** Create a 'simulated' CPU device
    * \return A device

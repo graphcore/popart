@@ -212,7 +212,7 @@ void DynamicOpTransform::gradSumToGradChain(
       auto initOp = std::make_unique<InitOp>(Onnx::CustomOperators::Init_1,
                                              gradTensor->info,
                                              TensorType::ActGrad,
-                                             InitType::ZERO,
+                                             InitType::Zero,
                                              kv.second.front()->getSettings());
       Op *init    = initOp.get();
       init->setName("GradInit_" + gradTensor->id);

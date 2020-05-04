@@ -84,7 +84,7 @@ const std::vector<GradInOutMapper> &L1GradOp::gradInputInfo() const {
   // input at index 0 of this grad op is the input at index 0 of the L1
   // non-grad op.
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), L1Op::getInIndex(), GradOpInType::IN}};
+      {getInIndex(), L1Op::getInIndex(), GradOpInType::In}};
   return inInfo;
 }
 

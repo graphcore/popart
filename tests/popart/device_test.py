@@ -46,7 +46,7 @@ def test_aquire_device_by_id():
 def test_default_connection_type():
     deviceManager = popart.DeviceManager()
     device = deviceManager.acquireAvailableDevice(1)
-    assert device.connectionType == popart.DeviceConnectionType.ALWAYS
+    assert device.connectionType == popart.DeviceConnectionType.Always
 
 
 @tu.requires_ipu
@@ -54,4 +54,4 @@ def test_on_demand_connection_type():
     deviceManager = popart.DeviceManager()
     device = deviceManager.acquireAvailableDevice(
         1, connectionType=popart.DeviceConnectionType.ON_DEMAND)
-    assert device.connectionType == popart.DeviceConnectionType.ON_DEMAND
+    assert device.connectionType == popart.DeviceConnectionType.OnDemand

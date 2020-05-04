@@ -334,7 +334,7 @@ void Op::appendAttributes(OpSerialiserBase &os) const {
 
 void Op::appendOutlineAttributes(OpSerialiserBase &os) const {
   std::string recomputeString =
-      settings.recomputeType == RecomputeType::RECOMPUTE ? "YES" : "NO";
+      settings.recomputeType == RecomputeType::Recompute ? "YES" : "NO";
   os.appendAttribute("recompute", recomputeString);
   os.appendAttribute(sVirtualGraphAttribute, getOptionalVirtualGraphId());
 }
@@ -380,19 +380,19 @@ Ir &Op::Op::Settings::getIr() const { return graph.get().getIr(); }
 
 std::ostream &operator<<(std::ostream &ost, const RecomputeType &rt) {
   switch (rt) {
-  case (RecomputeType::RECOMPUTED): {
+  case (RecomputeType::Recomputed): {
     ost << "Recomputed";
     return ost;
   }
-  case (RecomputeType::RECOMPUTE): {
+  case (RecomputeType::Recompute): {
     ost << "Recompute";
     return ost;
   }
-  case (RecomputeType::CHECKPOINT): {
+  case (RecomputeType::Checkpoint): {
     ost << "Checkpoint";
     return ost;
   }
-  case (RecomputeType::UNDEFINED): {
+  case (RecomputeType::Undefined): {
     ost << "Undefined";
     return ost;
   }
@@ -833,15 +833,15 @@ std::ostream &operator<<(std::ostream &ss, const GradInOutMapper &g) {
 
 std::ostream &operator<<(std::ostream &ss, const GradOpInType &t) {
   switch (t) {
-  case GradOpInType::IN: {
+  case GradOpInType::In: {
     ss << "GradOpInType::IN";
     break;
   }
-  case GradOpInType::OUT: {
+  case GradOpInType::Out: {
     ss << "GradOpInType::OUT";
     break;
   }
-  case GradOpInType::GRADOUT: {
+  case GradOpInType::GradOut: {
     ss << "GradOpInType::GRADOUT";
     break;
   }
@@ -871,14 +871,14 @@ bool Op::producesAnchor() const {
 }
 
 bool Op::consumesCheckpointAndIsRecompute() const {
-  if (settings.recomputeType == RecomputeType::RECOMPUTE) {
+  if (settings.recomputeType == RecomputeType::Recompute) {
     for (auto &index_tensor : input->tensorMap()) {
       auto inTensor = index_tensor.second;
       // Tensors without producers are effectively Checkpointed
       if (!inTensor->hasProducer() ||
           (inTensor->hasProducer() &&
            inTensor->getProducer()->settings.recomputeType ==
-               RecomputeType::CHECKPOINT)) {
+               RecomputeType::Checkpoint)) {
         return true;
       }
     }

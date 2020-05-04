@@ -510,7 +510,7 @@ bool Graph::isSchedulable(const OpsBeforeKey &gCons,
 bool Graph::hasUserRecomputeOps() const {
   for (auto &id_op : getOps()) {
     if (id_op.second.get()->settings.recomputeType ==
-        RecomputeType::RECOMPUTE) {
+        RecomputeType::Recompute) {
       return true;
     }
   }
@@ -614,11 +614,11 @@ void BackwardPassCreator::populateGradInInfo(
   std::map<TensorId, GradInOutMapper> partialGradInfo;
   for (int i = 0; i < fwdGraph.getInputIds().size(); i++) {
     auto id = fwdGraph.getInputId(i);
-    partialGradInfo.insert({id, {-1, i, GradOpInType::IN}});
+    partialGradInfo.insert({id, {-1, i, GradOpInType::In}});
   }
   for (int i = 0; i < fwdGraph.getOutputIds().size(); i++) {
     auto id = fwdGraph.getOutputId(i);
-    partialGradInfo.insert({id, {-1, i, GradOpInType::GRADOUT}});
+    partialGradInfo.insert({id, {-1, i, GradOpInType::GradOut}});
   }
 
   auto bwdInputIds = bwdGraph.getInputIds();
@@ -844,7 +844,7 @@ std::vector<Op *> BackwardPassCreator::growGradOps(Op *nonGradOp) {
 
     gradOp->setScope(bwdGraph.getScope());
 
-    if (nonGradOp->settings.recomputeType == RecomputeType::RECOMPUTE &&
+    if (nonGradOp->settings.recomputeType == RecomputeType::Recompute &&
         bwdGraph.getIr().autoRecomputationEnabled()) {
       throw error("Grad Ops should be grown before recompute annotation");
     }
@@ -863,7 +863,7 @@ std::vector<Op *> BackwardPassCreator::growGradOps(Op *nonGradOp) {
         switch (type) {
         //  (1) the INPUT at index 'indexFwd' of nonGradOp
         //  This will be a tensor internal to fwdGraph
-        case GradOpInType::IN: {
+        case GradOpInType::In: {
           auto fwdId          = nonGradOp->inId(indexFwd);
           auto bwdId          = bwdGraph.addScope(fwdGraph.removeScope(fwdId));
           m_inputs[indexGrad] = bwdId;
@@ -872,7 +872,7 @@ std::vector<Op *> BackwardPassCreator::growGradOps(Op *nonGradOp) {
 
         //  (2) the OUTPUT at index 'indexFwd' of nonGradOp
         //  This will be a tensor internal to fwdGraph
-        case GradOpInType::OUT: {
+        case GradOpInType::Out: {
           auto fwdId          = nonGradOp->outId(indexFwd);
           auto bwdId          = bwdGraph.addScope(fwdGraph.removeScope(fwdId));
           m_inputs[indexGrad] = bwdId;
@@ -881,7 +881,7 @@ std::vector<Op *> BackwardPassCreator::growGradOps(Op *nonGradOp) {
 
         //  (3) the GRADIENT of the OUTPUT
         //      at index 'indexFwd' of nonGradOp.
-        case GradOpInType::GRADOUT: {
+        case GradOpInType::GradOut: {
           auto fwdId = nonGradOp->outId(indexFwd);
           auto found = gradTensorMap.find(fwdId);
           if (found == gradTensorMap.end()) {

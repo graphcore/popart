@@ -88,8 +88,8 @@ def train():
 
     batches_per_step = 32
     anchor_desc = {
-        output: popart.AnchorReturnType("ALL"),
-        loss.output(0): popart.AnchorReturnType("ALL")
+        output: popart.AnchorReturnType("All"),
+        loss.output(0): popart.AnchorReturnType("All")
     }
     dataFlow = popart.DataFlow(batches_per_step, anchor_desc)
 

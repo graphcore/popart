@@ -68,12 +68,12 @@ BOOST_AUTO_TEST_CASE(RecomputeTestPopxNormOnlyCalls0) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto art       = AnchorReturnType("ALL");
+  auto art       = AnchorReturnType("All");
   auto dataFlow  = DataFlow(1, {{act, art}});
   auto optimizer = ConstSGD(0.01);
 
   auto l1loss = std::unique_ptr<L1Loss>(
-      new L1Loss(act, "l1LossVal", 0.1, ReductionType::SUM));
+      new L1Loss(act, "l1LossVal", 0.1, ReductionType::Sum));
   std::vector<Loss *> losses{l1loss.get()};
 
   auto device = popart::createTestDevice(TEST_TARGET);
@@ -90,8 +90,8 @@ BOOST_AUTO_TEST_CASE(RecomputeTestPopxNormOnlyCalls0) {
       device,
       InputShapeInfo(),
       opts,
-      Patterns({popart::PreAliasPatternType::POSTNREPL,
-                popart::PreAliasPatternType::CONVDATAGRAD}));
+      Patterns({popart::PreAliasPatternType::PostNRepl,
+                popart::PreAliasPatternType::ConvDataGrad}));
   session->prepareDevice();
 
   popart::popx::Devicex *devicex =

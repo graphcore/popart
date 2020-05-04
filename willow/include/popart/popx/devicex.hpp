@@ -388,8 +388,8 @@ public:
   // index of first appearance of Op in series
   std::map<Op *, int, POpCmp> getMainGraphOpSeriesNums() const;
 
-  // number of appearances of each Op. Expectation: RECOMPUTE Ops appear twice
-  // and CHECKPOINT Ops appear once
+  // number of appearances of each Op. Expectation: Recompute Ops appear twice
+  // and Checkpoint Ops appear once
   std::map<Op *, int, POpCmp> getMainGraphOpCounts() const;
 
   // A summary string of the Op series, with annotation for recomputation

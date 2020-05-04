@@ -39,7 +39,7 @@ builder.addOutputTensor(y)
 
 proto = builder.getModelProto()
 
-art = popart.AnchorReturnType("ALL")
+art = popart.AnchorReturnType("All")
 # Describe how to run the model
 dataflow = popart.DataFlow(1, {y: art, cube: art, w: art})
 

@@ -121,13 +121,13 @@ def test_full_recompute_pipelining(tmpdir):
         dataFlow = popart.DataFlow(
             batches_per_step, {
                 o:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + qkv_1:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + qkv_2:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + qkv_3:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
             })
 
         opts = popart.SessionOptions()
@@ -137,7 +137,7 @@ def test_full_recompute_pipelining(tmpdir):
             opts.autoRecomputation = mode
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-        pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
+        pat = popart.Patterns(popart.PatternsLevel.Default)
 
         session = popart.TrainingSession(fnModel=proto,
                                          dataFeed=dataFlow,

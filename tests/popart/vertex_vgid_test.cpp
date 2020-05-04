@@ -62,10 +62,10 @@ BOOST_AUTO_TEST_CASE(VertexVgidTest0) {
     //
     // prepare the training graph
     //
-    auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("ALL")}});
+    auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("All")}});
     auto optimizer = ConstSGD(0.01);
     auto loss =
-        std::make_shared<L1Loss>(act, "l1LossVal", 0.1, ReductionType::SUM);
+        std::make_shared<L1Loss>(act, "l1LossVal", 0.1, ReductionType::Sum);
     auto device = createTestDevice(TEST_TARGET, 3);
 
     Ir ir;
@@ -76,7 +76,7 @@ BOOST_AUTO_TEST_CASE(VertexVgidTest0) {
                 &optimizer,
                 *device,
                 userOptions,
-                Patterns(PatternsLevel::DEFAULT)});
+                Patterns(PatternsLevel::Default)});
     //
     // training graph prepared
     //

@@ -20,9 +20,9 @@ std::shared_ptr<DeviceInfo>
 DeviceManager::getDevice(SyncPattern syncPattern,
                          unsigned deviceManagerId,
                          DeviceConnectionType connectionType) {
-  if (connectionType == DeviceConnectionType::NEVER) {
+  if (connectionType == DeviceConnectionType::Never) {
     throw error("Trying to acquire a hardware device when connectionType is "
-                "DeviceConnectionType::NEVER");
+                "DeviceConnectionType::Never");
   }
   for (auto p : providers) {
     auto device = p->getDevice(syncPattern, deviceManagerId, connectionType);
@@ -100,9 +100,9 @@ DeviceManager::acquireAvailableDevice(int numIpus,
                 "requested must be a power of two",
                 numIpus);
   }
-  if (connectionType == DeviceConnectionType::NEVER) {
+  if (connectionType == DeviceConnectionType::Never) {
     throw error("Trying to acquire a hardware device when connectionType is "
-                "DeviceConnectionType::NEVER");
+                "DeviceConnectionType::Never");
   }
 
   auto devices = enumerateDevices(
@@ -111,7 +111,7 @@ DeviceManager::acquireAvailableDevice(int numIpus,
   for (auto &device : devices) {
     if ((!tilesPerIpu || tilesPerIpu == device->getTilesPerIpu())) {
       // Attach to the device. Will succeed if available
-      if (connectionType == DeviceConnectionType::ALWAYS) {
+      if (connectionType == DeviceConnectionType::Always) {
         if (device->attach()) {
           return device;
         }
@@ -129,9 +129,9 @@ DeviceManager::acquireDeviceById(int id,
                                  SyncPattern pattern,
                                  uint32_t replication_factor,
                                  DeviceConnectionType connectionType) {
-  if (connectionType == DeviceConnectionType::NEVER) {
+  if (connectionType == DeviceConnectionType::Never) {
     throw error("Trying to acquire a hardware device when connectionType is "
-                "DeviceConnectionType::NEVER");
+                "DeviceConnectionType::Never");
   }
 
   auto device = getDevice(pattern, id, connectionType);
@@ -145,7 +145,7 @@ DeviceManager::acquireDeviceById(int id,
   }
 
   // Attach to the device. Will succeed if available
-  if (connectionType == DeviceConnectionType::ALWAYS) {
+  if (connectionType == DeviceConnectionType::Always) {
     if (device->attach()) {
       return device;
     } else {
@@ -177,13 +177,13 @@ std::ostream &operator<<(std::ostream &os, const DeviceType &dt) {
 
 std::ostream &operator<<(std::ostream &os, const DeviceConnectionType &dct) {
   switch (dct) {
-  case DeviceConnectionType::ALWAYS:
+  case DeviceConnectionType::Always:
     os << "always";
     break;
-  case DeviceConnectionType::ON_DEMAND:
+  case DeviceConnectionType::OnDemand:
     os << "on-demand";
     break;
-  case DeviceConnectionType::NEVER:
+  case DeviceConnectionType::Never:
     os << "never";
     break;
   }

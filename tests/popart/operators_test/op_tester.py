@@ -138,7 +138,7 @@ def op_tester(tmpdir):
 
             for anchorId in anchorIds:
                 if anchorId not in bld._init_input_map:
-                    anchors[anchorId] = popart.AnchorReturnType("ALL")
+                    anchors[anchorId] = popart.AnchorReturnType("All")
 
             dataFlow = popart.DataFlow(1, anchors)
 

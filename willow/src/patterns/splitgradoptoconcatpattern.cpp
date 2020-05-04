@@ -35,7 +35,7 @@ SplitGradOpToConcatPattern::sequence(Op *op) const {
 
 namespace {
 static PatternCreator<SplitGradOpToConcatPattern>
-    splitGradOpToConcatPattern(PreAliasPatternType::SPLITGRADOPTOCONCAT,
+    splitGradOpToConcatPattern(PreAliasPatternType::SplitGradOpToConcat,
                                "SplitGradOpToConcat");
 }
 

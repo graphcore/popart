@@ -52,8 +52,8 @@ std::unique_ptr<Op> SigmoidGradOp::clone() const {
 
 const std::vector<GradInOutMapper> &SigmoidGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getGradInIndex(), SigmoidOp::getOutIndex(), GradOpInType::GRADOUT},
-      {getFwdOutInIndex(), SigmoidOp::getOutIndex(), GradOpInType::OUT}};
+      {getGradInIndex(), SigmoidOp::getOutIndex(), GradOpInType::GradOut},
+      {getFwdOutInIndex(), SigmoidOp::getOutIndex(), GradOpInType::Out}};
 
   return inInfo;
 }

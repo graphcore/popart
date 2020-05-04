@@ -75,7 +75,7 @@ def test_codelet():
     opts = popart.SessionOptions()
     opts.customCodelets = ["test_vertex.cpp"]
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     session = popart.InferenceSession(fnModel=proto,
                                       dataFeed=dataFlow,

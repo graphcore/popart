@@ -97,28 +97,28 @@ def simple_training_session(tmpdir, inputShape, inputArray, BPS, art, GA=1):
 # 0-d input tensors, batchesPerStep = 1
 def test_returntype_all1(tmpdir):
     inputArray = 1
-    art = popart.AnchorReturnType("ALL")
+    art = popart.AnchorReturnType("All")
     anchors_o = identity_inference_session(tmpdir, [], inputArray, 1, art)
     assert (np.array_equal(anchors_o, inputArray))
 
 
 def test_returntype_evern1(tmpdir):
     inputArray = 1
-    art = popart.AnchorReturnType("EVERYN", 1)
+    art = popart.AnchorReturnType("EveryN", 1)
     anchors_o = identity_inference_session(tmpdir, [], inputArray, 1, art)
     assert (np.array_equal(anchors_o, inputArray))
 
 
 def test_returntype_final1(tmpdir):
     inputArray = 1
-    art = popart.AnchorReturnType("FINAL")
+    art = popart.AnchorReturnType("Final")
     anchors_o = identity_inference_session(tmpdir, [], inputArray, 1, art)
     assert (np.array_equal(anchors_o, inputArray))
 
 
 def test_returntype_sum1(tmpdir):
     inputArray = 1
-    art = popart.AnchorReturnType("SUM")
+    art = popart.AnchorReturnType("Sum")
     anchors_o = identity_inference_session(tmpdir, [], inputArray, 1, art)
     assert (np.array_equal(anchors_o, inputArray))
 
@@ -126,28 +126,28 @@ def test_returntype_sum1(tmpdir):
 # 0-d input tensors, batchesPerStep > 1
 def test_returntype_all2(tmpdir):
     inputArray = [1, 2, 3, 4, 5, 6, 7, 8]
-    art = popart.AnchorReturnType("ALL")
+    art = popart.AnchorReturnType("All")
     anchors_o = identity_inference_session(tmpdir, [], inputArray, 8, art)
     assert (np.array_equal(anchors_o, inputArray))
 
 
 def test_returntype_everyn2(tmpdir):
     inputArray = [1, 2, 3, 4, 5, 6, 7, 8]
-    art = popart.AnchorReturnType("EVERYN", 4)
+    art = popart.AnchorReturnType("EveryN", 4)
     anchors_o = identity_inference_session(tmpdir, [], inputArray, 8, art)
     assert (np.array_equal(anchors_o, [4, 8]))
 
 
 def test_returntype_final2(tmpdir):
     inputArray = [1, 2, 3, 4, 5, 6, 7, 8]
-    art = popart.AnchorReturnType("FINAL")
+    art = popart.AnchorReturnType("Final")
     anchors_o = identity_inference_session(tmpdir, [], inputArray, 8, art)
     assert (np.array_equal(anchors_o, 8))
 
 
 def test_returntype_sum2(tmpdir):
     inputArray = [1, 2, 3, 4, 5, 6, 7, 8]
-    art = popart.AnchorReturnType("SUM")
+    art = popart.AnchorReturnType("Sum")
     anchors_o = identity_inference_session(tmpdir, [], inputArray, 8, art)
     assert (np.array_equal(anchors_o, 36))
 
@@ -155,28 +155,28 @@ def test_returntype_sum2(tmpdir):
 # 1-d input tensors, batchesPerStep = 1
 def test_returntype_all3(tmpdir):
     inputArray = [1, 2]
-    art = popart.AnchorReturnType("ALL")
+    art = popart.AnchorReturnType("All")
     anchors_o = identity_inference_session(tmpdir, [2], inputArray, 1, art)
     assert (np.array_equal(anchors_o, inputArray))
 
 
 def test_returntype_everyn3(tmpdir):
     inputArray = [1, 2]
-    art = popart.AnchorReturnType("EVERYN", 1)
+    art = popart.AnchorReturnType("EveryN", 1)
     anchors_o = identity_inference_session(tmpdir, [2], inputArray, 1, art)
     assert (np.array_equal(anchors_o, inputArray))
 
 
 def test_returntype_final3(tmpdir):
     inputArray = [1, 2]
-    art = popart.AnchorReturnType("FINAL")
+    art = popart.AnchorReturnType("Final")
     anchors_o = identity_inference_session(tmpdir, [2], inputArray, 1, art)
     assert (np.array_equal(anchors_o, inputArray))
 
 
 def test_returntype_sum3(tmpdir):
     inputArray = [1, 2]
-    art = popart.AnchorReturnType("SUM")
+    art = popart.AnchorReturnType("Sum")
     anchors_o = identity_inference_session(tmpdir, [2], inputArray, 1, art)
     assert (np.array_equal(anchors_o, inputArray))
 
@@ -184,28 +184,28 @@ def test_returntype_sum3(tmpdir):
 # 1-d input tensors, batchesPerStep > 1
 def test_returntype_all4(tmpdir):
     inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
-    art = popart.AnchorReturnType("ALL")
+    art = popart.AnchorReturnType("All")
     anchors_o = identity_inference_session(tmpdir, [2], inputArray, 4, art)
     assert (np.array_equal(anchors_o, inputArray))
 
 
 def test_returntype_everyn4(tmpdir):
     inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
-    art = popart.AnchorReturnType("EVERYN", 2)
+    art = popart.AnchorReturnType("EveryN", 2)
     anchors_o = identity_inference_session(tmpdir, [2], inputArray, 4, art)
     assert (np.array_equal(anchors_o, [[3, 4], [7, 8]]))
 
 
 def test_returntype_final4(tmpdir):
     inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
-    art = popart.AnchorReturnType("FINAL")
+    art = popart.AnchorReturnType("Final")
     anchors_o = identity_inference_session(tmpdir, [2], inputArray, 4, art)
     assert (np.array_equal(anchors_o, [7, 8]))
 
 
 def test_returntype_sum4(tmpdir):
     inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
-    art = popart.AnchorReturnType("SUM")
+    art = popart.AnchorReturnType("Sum")
     anchors_o = identity_inference_session(tmpdir, [2], inputArray, 4, art)
     assert (np.array_equal(anchors_o, [16, 20]))
 
@@ -214,7 +214,7 @@ def test_returntype_sum4(tmpdir):
 @tu.requires_ipu
 def test_returntype_all5(tmpdir):
     inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
-    art = popart.AnchorReturnType("ALL")
+    art = popart.AnchorReturnType("All")
     anchors_o = identity_inference_session(tmpdir, [], inputArray, 4, art, R=2)
     assert (np.array_equal(anchors_o, inputArray))
 
@@ -222,7 +222,7 @@ def test_returntype_all5(tmpdir):
 @tu.requires_ipu
 def test_returntype_everyn5(tmpdir):
     inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
-    art = popart.AnchorReturnType("EVERYN", 2)
+    art = popart.AnchorReturnType("EveryN", 2)
     anchors_o = identity_inference_session(tmpdir, [], inputArray, 4, art, R=2)
     assert (np.array_equal(anchors_o, [[3, 4], [7, 8]]))
 
@@ -230,7 +230,7 @@ def test_returntype_everyn5(tmpdir):
 @tu.requires_ipu
 def test_returntype_final5(tmpdir):
     inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
-    art = popart.AnchorReturnType("FINAL")
+    art = popart.AnchorReturnType("Final")
     anchors_o = identity_inference_session(tmpdir, [], inputArray, 4, art, R=2)
     assert (np.array_equal(anchors_o, [7, 8]))
 
@@ -238,7 +238,7 @@ def test_returntype_final5(tmpdir):
 @tu.requires_ipu
 def test_returntype_sum5(tmpdir):
     inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
-    art = popart.AnchorReturnType("SUM")
+    art = popart.AnchorReturnType("Sum")
     anchors_o = identity_inference_session(tmpdir, [], inputArray, 4, art, R=2)
     assert (np.array_equal(anchors_o, [16, 20]))
 
@@ -246,28 +246,28 @@ def test_returntype_sum5(tmpdir):
 # 1-d input tensors, batchesPerStep > 1, gradient accumulation = 2
 def test_returntype_all6(tmpdir):
     inputArray = [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
-    art = popart.AnchorReturnType("ALL")
+    art = popart.AnchorReturnType("All")
     anchors_o = simple_training_session(tmpdir, [2], inputArray, 2, art, GA=2)
     assert (np.array_equal(anchors_o, inputArray))
 
 
 def test_returntype_everyn6(tmpdir):
     inputArray = [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
-    art = popart.AnchorReturnType("EVERYN", 2)
+    art = popart.AnchorReturnType("EveryN", 2)
     anchors_o = simple_training_session(tmpdir, [2], inputArray, 2, art, GA=2)
     assert (np.array_equal(anchors_o, [[3, 4], [7, 8]]))
 
 
 def test_returntype_final6(tmpdir):
     inputArray = [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
-    art = popart.AnchorReturnType("FINAL")
+    art = popart.AnchorReturnType("Final")
     anchors_o = simple_training_session(tmpdir, [2], inputArray, 2, art, GA=2)
     assert (np.array_equal(anchors_o, [7, 8]))
 
 
 def test_returntype_sum6(tmpdir):
     inputArray = [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
-    art = popart.AnchorReturnType("SUM")
+    art = popart.AnchorReturnType("Sum")
     anchors_o = simple_training_session(tmpdir, [2], inputArray, 2, art, GA=2)
     assert (np.array_equal(anchors_o, [16, 20]))
 
@@ -292,7 +292,7 @@ def test_invalid_period1():
 
 def test_invalid_period2():
     with pytest.raises(popart.popart_exception) as e_info:
-        popart.AnchorReturnType("EVERYN", -1)
+        popart.AnchorReturnType("EveryN", -1)
 
     assert (e_info.value.args[0] ==
             "Anchor return period must be greater than zero")
@@ -300,7 +300,7 @@ def test_invalid_period2():
 
 def test_invalid_period3():
     with pytest.raises(popart.popart_exception) as e_info:
-        popart.AnchorReturnType("EVERYN")
+        popart.AnchorReturnType("EveryN")
 
     assert (e_info.value.args[0] ==
             "Must specify return period with option 'EVERYN'")

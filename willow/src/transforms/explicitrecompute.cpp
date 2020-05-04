@@ -43,9 +43,9 @@ bool ExplicitRecompute::apply(Graph &graph) const {
   std::map<std::pair<TensorId, TensorContext>, TensorId> recomputedTensorMap;
 
   for (Op *op : schedule) {
-    if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
+    if (op->settings.recomputeType == RecomputeType::Recompute) {
       // Change every recompute op to checkpoint
-      op->settings.recomputeType = RecomputeType::CHECKPOINT;
+      op->settings.recomputeType = RecomputeType::Checkpoint;
 
       auto context = getContext(op);
 
@@ -55,7 +55,7 @@ bool ExplicitRecompute::apply(Graph &graph) const {
       Op *clone_op = graph.getOp(cloneid);
       clone_op->disconnectAllInputs();
       clone_op->disconnectAllOutputs();
-      clone_op->settings.recomputeType = RecomputeType::RECOMPUTED;
+      clone_op->settings.recomputeType = RecomputeType::Recomputed;
 
       for (auto &in : op->input->tensorMap()) {
         auto recomputedTensor =
@@ -89,7 +89,7 @@ bool ExplicitRecompute::apply(Graph &graph) const {
       auto context = getContext(consumer);
       if (((consumer->toLoss == PathToLoss::No &&
             consumer->fromLoss == PathFromLoss::Yes) ||
-           consumer->settings.recomputeType == RecomputeType::RECOMPUTED)
+           consumer->settings.recomputeType == RecomputeType::Recomputed)
           /*consumer->settings.recompute)*/
           && context == recomputedTensor.first.second) {
         auto indices = consumer->input->indices(tensor);

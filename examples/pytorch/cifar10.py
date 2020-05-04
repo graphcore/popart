@@ -145,7 +145,7 @@ def main():
             fnModel=builder.getModelProto(),
             dataFeed=popart.DataFlow(
                 batches_per_step,
-                {"output_0": popart.AnchorReturnType("ALL")}),
+                {"output_0": popart.AnchorReturnType("All")}),
             deviceInfo=popart.DeviceManager().acquireAvailableDevice(1))
 
         print("Compiling test model...")
