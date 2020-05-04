@@ -14,17 +14,13 @@ namespace popart {
 namespace popx {
 
 void StashOpx::grow(poplar::program::Sequence &prog) const {
-  auto &stashOp = getOp<StashOp>();
-  auto outInfo  = stashOp.outInfo(StashOp::getOutIndex());
-
-  std::vector<poplar::Tensor> stashes;
-  for (int64_t i = 0; i < stashOp.getStashSize(); i++) {
-    auto stashPart =
-        graph().clone(getInTensor(StashOp::getInIndex()).expand({0}),
-                      "Stash__" + inId(StashOp::getInIndex()));
-    stashes.push_back(stashPart);
-  }
-  auto outTensor = poplar::concat(stashes, 0);
+  auto &stashOp  = getOp<StashOp>();
+  auto outTensor = popops::createSliceableTensorFromSlice(
+      graph(),
+      getInTensor(StashOp::getInIndex()).expand({0}),
+      {0},
+      {static_cast<size_t>(stashOp.getStashSize())},
+      "Stash__" + inId(StashOp::getInIndex()));
 
   // Create the stash index tensor
   auto one       = getConst(poplar::UNSIGNED_INT, {}, 1.0, debugPrefix("one"));
