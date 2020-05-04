@@ -224,10 +224,9 @@ def test_convolution(op_tester):
 
 def test_convolution_2(op_tester):
     '''
-    Test the convolution when the conv in the bwd pass is not the same as the conv in the 
+    Test the convolution when the conv in the bwd pass is not the same as the conv in the
     forward pass
     '''
-
     def init_builder(builder):
         data = np.ones([1, 2, 4, 4], dtype=np.float32)
         filt = np.ones([4, 2, 1, 1], dtype=np.float32)
@@ -1167,7 +1166,11 @@ def test_pad_type_reflect(op_tester):
               mode='reflect')
 
 
-def _test_pad(op_tester, data, lower_padding, upper_padding, mode,
+def _test_pad(op_tester,
+              data,
+              lower_padding,
+              upper_padding,
+              mode,
               pad_value=0):
     def init_builder(builder):
         i1 = builder.addInputTensor(data)
@@ -1632,8 +1635,17 @@ def test_instancenorm_grad(op_tester):
     width = 4
     height = 4
 
+    non_zero_places = 5
+
     data = np.random.rand(batch_size, features, width,
                           height).astype(np.float32)
+
+    a_few_places = np.zeros_like(data.flatten())
+
+    for _ in range(non_zero_places):
+        a_few_places[int(np.random.rand() * a_few_places.size)] = 1.0
+
+    a_few_places = a_few_places.reshape(*data.shape)
 
     scale = np.random.rand(features).astype(np.float32)
     bias = np.random.rand(features).astype(np.float32)
@@ -1645,13 +1657,17 @@ def test_instancenorm_grad(op_tester):
         i_data = builder.addInputTensor(data)
         i_scale = builder.addInputTensor(scale)
         i_bias = builder.addInputTensor(bias)
-        out = builder.aiOnnx.instancenormalization([i_data, i_scale, i_bias],
-                                                   epsilon)
+
+        i_few_places = builder.addInputTensor(a_few_places)
+
+        normed = builder.aiOnnx.instancenormalization(
+            [i_data, i_scale, i_bias], epsilon)
+        out = builder.aiOnnx.mul([normed, i_few_places])
 
         builder.addOutputTensor(out)
 
         return [
-            out,
+            out, normed,
             popart.reservedGradientPrefix() + i_data,
             popart.reservedGradientPrefix() + i_scale,
             popart.reservedGradientPrefix() + i_bias,
@@ -1667,19 +1683,22 @@ def test_instancenorm_grad(op_tester):
                                     affine=True)
         m.weight.data = torch.tensor(scale)
         m.bias.data = torch.tensor(bias)
-        out = m(i_data)
+        normed = m(i_data)
+
+        out = normed * torch.tensor(a_few_places, requires_grad=False)
 
         d__o = ref_data.getOutputTensorGrad(0)
+
         out.backward(torch.tensor(d__o))
 
         assert i_data.grad is not None
         assert m.weight.grad is not None
         assert m.bias.grad is not None
 
-        return [out, i_data.grad, m.weight.grad, m.bias.grad, None]
+        return [out, normed, i_data.grad, m.weight.grad, m.bias.grad, None]
 
     op_tester.atol *= 10
-    op_tester.passes = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.passes = ['PreUniRepl', 'ReciprocalGradOp', 'MulArgGradOp']
     op_tester.run(init_builder, reference, 'train')
 
 
