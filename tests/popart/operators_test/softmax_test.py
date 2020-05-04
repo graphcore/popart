@@ -118,17 +118,28 @@ def _test_softmax(op_tester, data, axis):
 
 
 def _test_softmax_grad(op_tester, data, axis):
+
+    one_place = np.zeros_like(data.flatten())
+    one_place[int(np.random.rand() * one_place.size)] = 1.0
+    one_place = one_place.reshape(*data.shape)
+
     def init_builder(builder):
         i1 = builder.addInputTensor(data)
-        o = builder.aiOnnx.softmax([i1], axis)
+        i2 = builder.addInputTensor(one_place)
+
+        s = builder.aiOnnx.softmax([i1], axis)
+        o = builder.aiOnnx.mul([s, i2])
+
         builder.addOutputTensor(o)
         return [
-            o,
+            o, s,
             popart.reservedGradientPrefix() + i1,
             popart.reservedGradientPrefix() + o
         ]
 
     def reference(ref_data):
+        # ONNX softmax does not match torch softmax
+
         n = 1
         for i in data.shape[:axis]:
             n *= i
@@ -141,11 +152,13 @@ def _test_softmax_grad(op_tester, data, axis):
         sm = torch.nn.Softmax(dim=1)
         softmax_out = sm(reshaped_data)
         reshaped_softmax_out = softmax_out.view(*data.shape)
+        mult_softmax_out = reshaped_softmax_out * torch.tensor(
+            one_place, requires_grad=False)
 
         d__o = ref_data.getOutputTensorGrad(0)
-        reshaped_softmax_out.backward(torch.tensor(d__o))
+        mult_softmax_out.backward(torch.tensor(d__o))
 
-        return [reshaped_softmax_out, torch_data.grad, None]
+        return [mult_softmax_out, reshaped_softmax_out, torch_data.grad, None]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.passes = op_tester.passes = ['PreUniRepl', 'MulArgGradOp']
     op_tester.run(init_builder, reference, 'train')
