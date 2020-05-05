@@ -8,7 +8,7 @@ from op_tester import op_tester
 
 
 def test_elu(op_tester):
-    input_data = np.linspace(-10, 10, 250, dtype=np.float32)
+    input_data = np.linspace(-5, 5, 250, dtype=np.float32)
     alpha = 2.0
 
     def get_init_builder(builder_settings='NoInPlace'):

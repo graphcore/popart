@@ -73,10 +73,12 @@ void SeluGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto input     = getInTensor(SeluGradOp::getGradInIndex());
   const auto fwd_input = getInTensor(SeluGradOp::getFwdArgInIndex());
 
-  // We can write down the gradient of the Selu as two pieces:
-  // theta(fwd_input < 0)*gamma*alpha*exp(fwd_input) + theta(fwd_input >
-  // 0)*gamma The theta function is again written as theta(x) = (1+sign(x))/2
-  // which is 1 when the argument is positive and 0 elsewhere
+  // We can write down the gradient of the Elu as two pieces:
+  // theta(fwd_input < 0)*alpha*exp(fwd_input) + theta(fwd_input > 0)
+  // The theta function is again written as theta(x) = (1+sign(x))/2
+  // which is 1 when the argument is positive and 0 elsewhere,
+  // except for 0.5 at 0, which does not matter here since the other
+  // terms will be 0.
 
   std::vector<std::unique_ptr<popops::expr::Expr>> exprs;
 
@@ -89,7 +91,7 @@ void SeluGradOpx::grow(poplar::program::Sequence &prog) const {
   // This is the addition with the theta(fwd_input) to select when the input is
   // larger than 0
   exprs.push_back(std::make_unique<pe::Add>(
-      pe::Divide(pe::Add(pe::Const(1.0f), pe::Signum(pe::_1)), pe::Const(2.0f)),
+      pe::Divide(pe::Add(pe::Const(1.0f), pe::Signum(pe::_2)), pe::Const(2.0f)),
       *exprs.back()));
   // We multiply all the result by the scale gamma
   exprs.push_back(

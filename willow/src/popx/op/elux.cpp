@@ -70,9 +70,12 @@ void EluGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto fwd_input = getInTensor(EluGradOp::getFwdArgInIndex());
 
   // We can write down the gradient of the Elu as two pieces:
-  // theta(fwd_input < 0)*alpha*exp(fwd_input) + theta(fwd_input >
-  // 0) The theta function is again written as theta(x) = (1+sign(x))/2
-  // which is 1 when the argument is positive and 0 elsewhere
+  // theta(fwd_input < 0)*alpha*exp(fwd_input) + theta(fwd_input > 0)
+  // The theta function is again written as theta(x) = (1+sign(x))/2
+  // which is 1 when the argument is positive and 0 elsewhere,
+  // except for 0.5 at 0, which does not matter here since the other
+  // terms will be 0.
+
   std::vector<std::unique_ptr<popops::expr::Expr>> exprs;
 
   exprs.push_back(std::make_unique<pe::Divide>(
@@ -80,7 +83,7 @@ void EluGradOpx::grow(poplar::program::Sequence &prog) const {
   exprs.push_back(std::make_unique<pe::Mul>(
       pe::Mul(pe::Const(op.alpha()), pe::Exp(pe::_2)), *exprs.back()));
   exprs.push_back(std::make_unique<pe::Add>(
-      pe::Divide(pe::Add(pe::Const(1.0f), pe::Signum(pe::_1)), pe::Const(2.0f)),
+      pe::Divide(pe::Add(pe::Const(1.0f), pe::Signum(pe::_2)), pe::Const(2.0f)),
       *exprs.back()));
   exprs.push_back(std::make_unique<pe::Mul>(pe::_1, *exprs.back()));
 
@@ -88,7 +91,7 @@ void EluGradOpx::grow(poplar::program::Sequence &prog) const {
                             *exprs.back(),
                             {input, fwd_input},
                             prog,
-                            debugPrefix("selu_grad"));
+                            debugPrefix("elu_grad"));
 
   setOutTensor(EluGradOp::getOutIndex(), output);
 }
