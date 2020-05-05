@@ -25,6 +25,46 @@ public:
   void convertFloatsToHalfs();
 
   /**
+   * Convert the graph from uint8 to int32
+   */
+  void convertUINT8ToINT32();
+
+  /**
+   * Convert the graph from uint16 to int32
+   */
+  void convertUINT16ToINT32();
+
+  /**
+   * Convert the graph from int64 to int32
+   */
+  void convertINT64ToINT32();
+
+  /**
+   * Convert the graph from int8 to int32
+   */
+  void convertINT8ToINT32();
+
+  /**
+   * Convert the graph from int16 to int32
+   */
+  void convertINT16ToINT32();
+
+  /**
+   * Convert the graph from float64 to float32
+   */
+  void convertDoublesToFloats();
+
+  /**
+   * Convert the graph from float64 to float16
+   */
+  void convertDoublesToHalfs();
+
+  /**
+   * Convert the graph from BFloat16 to Float32
+   */
+  void convertBFloats16ToFloat32();
+
+  /**
    * Convert the given list of initializers into ONNX Constant Nodes
    *
    * \param ids A list of initializer names
