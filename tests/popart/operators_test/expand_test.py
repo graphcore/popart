@@ -5,6 +5,12 @@ from op_tester import op_tester
 import json
 from typing import List
 
+# `import test_util` requires adding to sys.path
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+import test_util as tu
+
 
 def grad(dY, X, dt):
     axes = []
@@ -26,8 +32,8 @@ def run_and_test_value(op_tester, inplace, init_builder, reference, mode):
         "ai.graphcore": 1
     })
     if inplace:
-        ir = json.loads(
-            session._serializeIr(popart.IrSerializationFormat.JSON))
+        ir = json.loads(session._serializeIr(
+            popart.IrSerializationFormat.JSON))
         graph = ir['maingraph']
 
         inplace = [op for op in graph if op['type'] == 'ExpandInplace']
@@ -238,3 +244,77 @@ def test_expand_scalar_inplace(op_tester):
 
 def test_expand_unwind(op_tester):
     expand_unwind(op_tester, False)
+
+
+#  Model1:            Model2:
+#
+#  i1   w             i1   w
+#   |   |              |   |
+#   |   |              |   |
+#   |   |              |   |
+#   matmul             matmul
+#    |                  |
+#    |       c          |   ones
+#    |      /           |  /
+#   expand -           mul-
+#    |                  |
+#    |                  |
+#    |                  |
+#   out                out
+#
+# Where ones = np.ones(shape=c)
+def test_expand_mul():
+    in_ = np.random.random_sample([3, 1]).astype(np.float32)
+    w = np.random.random_sample([3, 3]).astype(np.float32)
+    const = np.array([2, 1, 6]).astype(np.int64)
+
+    def get_session(expand_op=True):
+        builder = popart.Builder()
+
+        i1 = builder.addInputTensor(popart.TensorInfo("FLOAT", in_.shape))
+        w_in = builder.addInitializedInputTensor(w)
+        mul = builder.aiOnnx.matmul([w_in, i1])
+
+        if expand_op:
+            c = builder.aiOnnx.constant(const)
+            o = builder.aiOnnx.expand([mul, c])
+        else:
+            ones = np.ones(shape=const).astype(np.float32)
+            ones_in = builder.aiOnnx.constant(ones)
+            o = builder.aiOnnx.mul([mul, ones_in])
+
+        builder.addOutputTensor(o)
+        anchor_returns = [
+            o,
+            popart.reservedGradientPrefix() + o,
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + w_in
+        ]
+
+        opts = popart.SessionOptions()
+        session = popart.TrainingSession(
+            fnModel=builder.getModelProto(),
+            dataFeed=popart.DataFlow(1, anchor_returns),
+            deviceInfo=tu.create_test_device(),
+            optimizer=popart.ConstSGD(0.1),
+            losses=[popart.L1Loss(o, "loss", 0.1)],
+            userOptions=opts)
+
+        anchors = session.initAnchorArrays()
+        inputs = {i1: in_}
+        stepio = popart.PyStepIO(inputs, anchors)
+
+        session.prepareDevice()
+        session.weightsFromHost()
+        session.optimizerFromHost()
+        return session, stepio, anchors, anchor_returns
+
+    sess1, stepio1, anch1, arts1 = get_session(True)
+    sess2, stepio2, anch2, arts2 = get_session(False)
+
+    for i in range(5):
+        print(f"Step {i}")
+        sess1.run(stepio1)
+        sess2.run(stepio2)
+        for (k1, k2) in zip(arts1, arts2):
+            assert np.allclose(anch1[k1], anch2[k2])
