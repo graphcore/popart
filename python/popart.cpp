@@ -624,6 +624,8 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("pingPongPhases", &SessionOptions::pingPongPhases);
     cls.def_readwrite("explicitRecomputation",
                       &SessionOptions::explicitRecomputation);
+    cls.def_readwrite("batchSerializationFactor",
+                      &SessionOptions::batchSerializationFactor);
     cls.def_readwrite("enablePrefetchDatastreams",
                       &SessionOptions::enablePrefetchDatastreams);
     cls.def_readwrite("enableVirtualGraphs",

@@ -41,6 +41,7 @@
 #include <popart/recompute.hpp>
 #include <popart/transforms/aliaszerocopy.hpp>
 #include <popart/transforms/auto_virtual_graph.hpp>
+#include <popart/transforms/batchserialize.hpp>
 #include <popart/transforms/cachesetup.hpp>
 #include <popart/transforms/decomposegradsum.hpp>
 #include <popart/transforms/dynamicoptransform.hpp>
@@ -908,6 +909,16 @@ void Ir::prepareImpl(const IrBundle &gb) {
   if (canEvaluate()) {
     growFinalLoss(gb.losses);
     updateVertices();
+  }
+
+  // Batch serialisation, step 1
+  // (has to occur before setNEdgesToLoss, but after growFinalLoss)
+  if (userOptions.batchSerializationFactor > 1) {
+    applyTransform(BatchSerialize::id(1), getMainGraph());
+    updateVertices();
+  }
+
+  if (canEvaluate()) {
     setNEdgesToLoss();
   }
 
@@ -1070,6 +1081,12 @@ void Ir::prepareImpl(const IrBundle &gb) {
   }
 
   updateVertices();
+
+  // Batch serialisation, step 2
+  if (userOptions.batchSerializationFactor > 1) {
+    applyTransform(BatchSerialize::id(2), getMainGraph());
+    updateVertices();
+  }
 
   for (auto &id_graph : graphs) {
     auto &graph = getGraph(id_graph.first);
@@ -3462,6 +3479,23 @@ TensorId Ir::createIntermediateTensorId(const TensorId &base_id) {
   logging::ir::trace("Generating tensor id {}", temp_id);
   ++intermediate_tensor_counter;
   return temp_id;
+}
+
+TensorId
+Ir::createBatchSliceTensorId(TensorId base_id, unsigned s, unsigned e) {
+  auto slice_id = logging::format(
+      "{}__bs{}_{}_{}", base_id, s, e, intermediate_tensor_counter);
+  logging::ir::trace("Generating tensor id {}", slice_id);
+  ++intermediate_tensor_counter;
+  return slice_id;
+}
+
+TensorId Ir::createBatchConcatTensorId(TensorId base_id) {
+  auto concat_id =
+      logging::format("{}__cc{}", base_id, intermediate_tensor_counter);
+  logging::ir::trace("Generating tensor id {}", concat_id);
+  ++intermediate_tensor_counter;
+  return concat_id;
 }
 
 } // namespace popart
