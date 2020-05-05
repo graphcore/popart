@@ -529,7 +529,7 @@ def test_add_conv():
                             strides=[1, 1])
 
     assert (e_info.value.args[0].startswith(
-        "Length of dilations vector 2 != number of spatial d"))
+        "Length of dilations vector 1 != number of spatial d"))
 
 
 def test_add_conv_and_bias():

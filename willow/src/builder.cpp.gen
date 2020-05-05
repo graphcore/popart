@@ -2765,7 +2765,11 @@ AiOnnxOpset10::averagepool(const std::vector<TensorId>& args,
                   getOpsetVersion(),
                   args,
                   attributes,
-                  name)[0];
+                  name,
+                  [this](std::vector<TensorId> inputs_,
+                         std::map<std::string, boost::any> attributes_) {
+                     verify_AiOnnxOpset10_AveragePool_10(this->impl, inputs_, attributes_);
+                  })[0];
 }
 
 TensorId
@@ -3191,7 +3195,11 @@ AiOnnxOpset11::averagepool(const std::vector<TensorId>& args,
                   getOpsetVersion(),
                   args,
                   attributes,
-                  name)[0];
+                  name,
+                  [this](std::vector<TensorId> inputs_,
+                         std::map<std::string, boost::any> attributes_) {
+                     verify_AiOnnxOpset11_AveragePool_11(this->impl, inputs_, attributes_);
+                  })[0];
 }
 
 TensorId
@@ -3631,7 +3639,11 @@ AiOnnxOpset11::maxpool(const std::vector<TensorId>& args,
                   args,
                   num_outputs,
                   attributes,
-                  name);
+                  name,
+                  [this](std::vector<TensorId> inputs_,
+                         std::map<std::string, boost::any> attributes_) {
+                     verify_AiOnnxOpset11_MaxPool_11(this->impl, inputs_, attributes_);
+                  });
 }
 
 TensorId
@@ -3697,7 +3709,11 @@ AiOnnxOpset11::pad(const std::vector<TensorId>& args,
                   getOpsetVersion(),
                   args,
                   attributes,
-                  name)[0];
+                  name,
+                  [this](std::vector<TensorId> inputs_,
+                         std::map<std::string, boost::any> attributes_) {
+                     verify_AiOnnxOpset11_Pad_11(this->impl, inputs_, attributes_);
+                  })[0];
 }
 
 TensorId

@@ -51,13 +51,13 @@ static void verifyWindowParameters(std::unique_ptr<BuilderImpl> &impl,
   if (padding.size() != num_spatial_dims * 2) {
     throw error("Padding vector (length {}) does not have 2 values for each "
                 "spatial dimension {}",
-                strides.size(),
+                padding.size(),
                 num_spatial_dims);
   }
   if (dilation.size() != 0 && dilation.size() != num_spatial_dims) {
     throw error(
         "Length of dilations vector {} != number of spatial dimensions {}",
-        strides.size(),
+        dilation.size(),
         num_spatial_dims);
   }
 
@@ -173,6 +173,32 @@ static void verify_AiOnnxOpset7_AveragePool_7(
           attributes["kernel_shape"]));
 }
 
+static void verify_AiOnnxOpset10_AveragePool_10(
+    std::unique_ptr<BuilderImpl> &impl,
+    std::vector<TensorId> inputs,
+    std::map<std::string, boost::any> attributes) {
+  verifyWindowParameters(
+      impl,
+      inputs[0],
+      boost::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
+      boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
+      boost::any_cast<const std::vector<int64_t> &>(
+          attributes["kernel_shape"]));
+}
+
+static void verify_AiOnnxOpset11_AveragePool_11(
+    std::unique_ptr<BuilderImpl> &impl,
+    std::vector<TensorId> inputs,
+    std::map<std::string, boost::any> attributes) {
+  verifyWindowParameters(
+      impl,
+      inputs[0],
+      boost::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
+      boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
+      boost::any_cast<const std::vector<int64_t> &>(
+          attributes["kernel_shape"]));
+}
+
 static void
 verify_AiOnnxOpset6_MaxPool_1(std::unique_ptr<BuilderImpl> &impl,
                               std::vector<TensorId> inputs,
@@ -213,7 +239,19 @@ verify_AiOnnxOpset10_MaxPool_10(std::unique_ptr<BuilderImpl> &impl,
 }
 
 static void
-verify_AiOnnxOpset6_Pad_2(std::unique_ptr<BuilderImpl> &impl,
+verify_AiOnnxOpset11_MaxPool_11(std::unique_ptr<BuilderImpl> &impl,
+                                std::vector<TensorId> inputs,
+                                std::map<std::string, boost::any> attributes) {
+  verifyWindowParameters(
+      impl,
+      inputs[0],
+      boost::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
+      boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
+      boost::any_cast<const std::vector<int64_t> &>(
+          attributes["kernel_shape"]));
+}
+
+static void verifyPadBase(std::unique_ptr<BuilderImpl> &impl,
                           std::vector<TensorId> inputs,
                           std::map<std::string, boost::any> attributes) {
 
@@ -227,6 +265,20 @@ verify_AiOnnxOpset6_Pad_2(std::unique_ptr<BuilderImpl> &impl,
         pads.size(),
         rank);
   }
+}
+
+static void
+verify_AiOnnxOpset6_Pad_2(std::unique_ptr<BuilderImpl> &impl,
+                          std::vector<TensorId> inputs,
+                          std::map<std::string, boost::any> attributes) {
+  verifyPadBase(impl, inputs, attributes);
+}
+
+static void
+verify_AiOnnxOpset11_Pad_11(std::unique_ptr<BuilderImpl> &impl,
+                            std::vector<TensorId> inputs,
+                            std::map<std::string, boost::any> attributes) {
+  verifyPadBase(impl, inputs, attributes);
 }
 
 #include "builder.cpp.gen"

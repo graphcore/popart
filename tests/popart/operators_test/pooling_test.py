@@ -138,6 +138,19 @@ def test_average_pool_with_count_include_pad(op_tester):
         "`count_include_pad` is not supported"))
 
 
+def test_average_pool_invalid_params(op_tester):
+    builder = popart.Builder()
+    i1 = builder.addInputTensor("FLOAT", [1, 1, 14, 14])
+    with pytest.raises(popart.popart_exception) as e_info:
+        builder.aiOnnx.averagepool([i1],
+                                   kernel_shape=[3, 3],
+                                   count_include_pad=1,
+                                   pads=[0, 0, 0, 0, 0],
+                                   strides=[2, 2])
+    assert (e_info.value.args[0].startswith(
+        "Padding vector (length 5) does not have"))
+
+
 def test_maxpool_1(op_tester):
     d1 = np.random.rand(1, 1, 16, 16).astype(np.float32)
 
