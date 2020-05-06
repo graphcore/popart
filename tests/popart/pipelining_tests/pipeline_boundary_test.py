@@ -65,7 +65,6 @@ def test_pipeline_boundary():
 
         session.prepareDevice()
         session.weightsFromHost()
-        session.optimizerFromHost()
 
         session.run(stepio)
 
