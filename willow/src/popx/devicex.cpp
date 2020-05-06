@@ -1330,10 +1330,18 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
           tensor->id,
           candidate->str());
 
+      auto inputAndView = candidate->createInput(tensor->str() + "_tmp");
+
+      if (!inputAndView.second.empty()) {
+        // Underlying poplar::Tensor does not match IR expectations, supply
+        // view-changing transformation
+        tensors.setViewChangers(tensor->id, inputAndView.second);
+      }
+
       // The clone makes sure to only keep the necessary parts of the unwound
-      // tensor alive, reducing IPU memory liveness (see T18661)
-      poplar::Tensor input = graph().clone(
-          candidate->createInput(tensor->str() + "_tmp"), tensor->str());
+      // tensor alive, and contiguate it,
+      // reducing IPU memory liveness and fragmentation (see T18661)
+      poplar::Tensor input = graph().clone(inputAndView.first);
 
       tensors.insert(tensor->id, input);
       efficientlyCreatedInputTensors.insert(tensor->id);
@@ -3566,7 +3574,7 @@ TensorTileMap Devicex::getTensorTileMap() const {
 
   for (const auto &t : tensors.getTensors()) {
     std::vector<TensorIntervalList> mapping;
-    for (auto tile : graph().getTileMapping(t.second)) {
+    for (auto tile : graph().getTileMapping(*t.second.get())) {
       TensorIntervalList intervalList;
       std::transform(tile.begin(),
                      tile.end(),

@@ -498,7 +498,7 @@ bool BatchSerialize::apply(Graph &graph) const {
                     std::make_unique<InitOp>(Onnx::CustomOperators::Init_1,
                                              info,
                                              TensorType::ActGrad,
-                                             InitType::ZERO,
+                                             InitType::Zero,
                                              producer->getSettings());
                 Op *init = initOp.get();
                 init->setName("ConcatInit_" + concatId);
