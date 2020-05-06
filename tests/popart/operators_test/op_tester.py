@@ -82,7 +82,7 @@ def op_tester(tmpdir):
     class OpTester:
         def __init__(self, logging_dir):
             np.random.seed(0)
-            self.passes = []
+            self.patterns = []
             self.options = popart.SessionOptions()
             self.logging_dir = logging_dir
             self.numIPUs = 1
@@ -154,7 +154,7 @@ def op_tester(tmpdir):
             device = tu.create_test_device(numIpus=self.numIPUs)
             print(f"Created device {device} with {self.numIPUs} IPUs")
 
-            patterns = popart.Patterns(self.passes)
+            patterns = popart.Patterns(self.patterns)
             patterns.InPlace = self.inplacing
 
             if step_type == 'infer':
@@ -162,8 +162,8 @@ def op_tester(tmpdir):
                                                   dataFeed=dataFlow,
                                                   losses=losses,
                                                   deviceInfo=device,
-                                                  passes=popart.Patterns(
-                                                      self.passes),
+                                                  patterns=popart.Patterns(
+                                                      self.patterns),
                                                   userOptions=self.options)
             else:
                 session = popart.TrainingSession(fnModel=proto,
@@ -171,8 +171,8 @@ def op_tester(tmpdir):
                                                  losses=losses,
                                                  optimizer=optimizer,
                                                  deviceInfo=device,
-                                                 passes=popart.Patterns(
-                                                     self.passes),
+                                                 patterns=popart.Patterns(
+                                                     self.patterns),
                                                  userOptions=self.options)
 
             anchor_map = session.initAnchorArrays()

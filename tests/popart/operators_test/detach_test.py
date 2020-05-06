@@ -82,7 +82,7 @@ def test_detach_grad(op_tester, inplacing):
 
         return [out, x.grad, net.weight_param.grad, None]
 
-    op_tester.passes = ['PowArg0GradOp']
+    op_tester.patterns = ['PowArg0GradOp']
     op_tester.inplacing = inplacing
     op_tester.run(init_builder, reference, 'train')
 

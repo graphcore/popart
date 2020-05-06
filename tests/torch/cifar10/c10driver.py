@@ -26,7 +26,7 @@ class TestFailureError(Exception):
 
 
 def run(torchWriter,
-        passes,
+        patterns,
         outputdir,
         cifarInIndices,
         device,
@@ -43,7 +43,7 @@ def run(torchWriter,
     if outputdir is None:
         with TemporaryDirectory() as outputdir:
             return _run_impl(torchWriter,
-                             passes,
+                             patterns,
                              outputdir,
                              cifarInIndices,
                              device,
@@ -58,7 +58,7 @@ def run(torchWriter,
             os.mkdir(outputdir)
 
         return _run_impl(torchWriter,
-                         passes,
+                         patterns,
                          outputdir,
                          cifarInIndices,
                          device,
@@ -70,7 +70,7 @@ def run(torchWriter,
                          printAnchorArrays=printAnchorArrays)
 
 
-def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
+def _run_impl(torchWriter, patterns, outputdir, cifarInIndices, device,
               device_hw_id, mode, syntheticData, transformations, epochs,
               printAnchorArrays):
 
@@ -207,7 +207,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
         session = popart.InferenceSession(fnModel=modelProtoX,
                                           inputShapeInfo=inputShapeInfo,
                                           dataFeed=dataFeed,
-                                          passes=passes,
+                                          patterns=patterns,
                                           userOptions=opts,
                                           deviceInfo=device)
     elif mode == 'evaluate':
@@ -215,7 +215,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
                                           inputShapeInfo=inputShapeInfo,
                                           dataFeed=dataFeed,
                                           losses=torchWriter.losses,
-                                          passes=passes,
+                                          patterns=patterns,
                                           userOptions=opts,
                                           deviceInfo=device)
     else:
@@ -224,7 +224,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
                                          dataFeed=dataFeed,
                                          losses=torchWriter.losses,
                                          optimizer=torchWriter.optimizer,
-                                         passes=passes,
+                                         patterns=patterns,
                                          userOptions=opts,
                                          deviceInfo=device)
 

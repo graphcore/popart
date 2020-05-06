@@ -748,7 +748,7 @@ def test_outlining_bca4():
         optimizer=optimizer,
         userOptions=opts,
         # Enable the matmul patterns
-        passes=popart.Patterns(popart.PatternsLevel.All),
+        patterns=popart.Patterns(popart.PatternsLevel.All),
         deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     anchors = session.initAnchorArrays()

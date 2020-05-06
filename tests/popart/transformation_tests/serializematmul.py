@@ -123,7 +123,7 @@ def test_matmul_serialization_invalid_factor(tmpdir):
             fnModel=proto,
             dataFeed=dataFlow,
             userOptions=opts,
-            passes=pat,
+            patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     assert (e_info.value.args[0].startswith(
@@ -170,7 +170,7 @@ def test_matmul_serialization_inference(tmpdir):
             fnModel=proto,
             dataFeed=dataFlow,
             userOptions=opts,
-            passes=pat,
+            patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
         session.prepareDevice()
@@ -305,7 +305,7 @@ def test_matmul_serialization_training_1(tmpdir):
             userOptions=opts,
             losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
             optimizer=popart.ConstSGD(0.01),
-            passes=pat,
+            patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
         session.prepareDevice()
@@ -557,7 +557,7 @@ def test_matmul_serialization_training_2(tmpdir):
             userOptions=opts,
             losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
             optimizer=popart.ConstSGD(0.01),
-            passes=pat,
+            patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
         session.prepareDevice()
@@ -813,7 +813,7 @@ def test_matmul_serialization_precision(tmpdir):
             userOptions=opts,
             losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
             optimizer=popart.ConstSGD(0.01),
-            passes=pat,
+            patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
         session.prepareDevice()
@@ -1079,7 +1079,7 @@ def test_matmul_serialization_training_with_gradient_accumlation(tmpdir):
             userOptions=opts,
             losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
             optimizer=popart.ConstSGD(0.01),
-            passes=pat,
+            patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
         session.prepareDevice()

@@ -22,5 +22,5 @@ def test_add_basic(op_tester):
         result = d1 + d2 + dummy
         return [result]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'infer')

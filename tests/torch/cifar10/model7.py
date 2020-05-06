@@ -51,9 +51,9 @@ cifarInIndices = {"image0": 0}  # not used in test: "label": 1}
 
 losses = [popart_core.L1Loss("out", "l1LossVal", 0.1)]
 
-# The optimization passes to run in the Ir, see patterns.hpp
-willowOptPasses = popart.Patterns()
-willowOptPasses.OpToIdentity = True
+# The optimization patterns to run in the Ir, see patterns.hpp
+willowOptPatterns = popart.Patterns()
+willowOptPatterns.OpToIdentity = True
 
 
 class Module0(torch.nn.Module):
@@ -98,5 +98,5 @@ torchWriter = torchwriter.PytorchNetWriter(
     module=Module0(),
     samplesPerBatch=batchSize)
 
-c10driver.run(torchWriter, willowOptPasses, args.outputdir, cifarInIndices,
+c10driver.run(torchWriter, willowOptPatterns, args.outputdir, cifarInIndices,
               args.device, args.hw_id)

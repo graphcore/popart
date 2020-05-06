@@ -155,7 +155,7 @@ def test_call_grad_1(op_tester):
 
         return [o, d__o, t0.grad, t1.grad, t2.grad]
 
-    op_tester.passes = popart.PatternsLevel.Default
+    op_tester.patterns = popart.PatternsLevel.Default
     op_tester.run(get_init_builder("untyped"), reference, 'train')
     op_tester.run(get_init_builder("with_info"), reference, 'train')
     op_tester.run(get_init_builder("from_higher_scope"), reference, 'train')
@@ -334,7 +334,7 @@ def test_call_grad_2(op_tester):
 
         return [r, r__o, d0_t.grad, d1_t.grad]
 
-    op_tester.passes = popart.PatternsLevel.Default
+    op_tester.patterns = popart.PatternsLevel.Default
 
     op_tester.run(init_builder, reference, 'train')
 
@@ -470,7 +470,7 @@ def test_call_grad_scoped(op_tester):
 
         return [r, r__o, d0_t.grad, d1_t.grad]
 
-    op_tester.passes = popart.PatternsLevel.Default
+    op_tester.patterns = popart.PatternsLevel.Default
 
     op_tester.run(init_builder, reference, 'train')
 
@@ -544,7 +544,7 @@ def test_stacked_subgraphs(op_tester):
 
         return [r, r__o, in_t.grad, w_t.grad]
 
-    op_tester.passes = popart.PatternsLevel.Default
+    op_tester.patterns = popart.PatternsLevel.Default
 
     op_tester.run(init_builder, reference, 'train')
 

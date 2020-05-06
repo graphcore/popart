@@ -78,7 +78,7 @@ def test_lstm_popart(op_tester):
         return [Y, Y_h, Y_c]
 
     op_tester.device = tu.create_test_device()
-    op_tester.passes = ['LSTMOp', 'SplitGradOpToConcat']
+    op_tester.patterns = ['LSTMOp', 'SplitGradOpToConcat']
     session = op_tester.run(init_builder, reference, 'train')
 
     ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
@@ -116,7 +116,7 @@ def test_lstm_outlining(op_tester):
         return [None]
 
     op_tester.device = tu.create_test_device()
-    op_tester.passes = ['LSTMOp', 'SplitGradOpToConcat']
+    op_tester.patterns = ['LSTMOp', 'SplitGradOpToConcat']
     session = op_tester.run(init_builder, reference, 'train')
 
     ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
@@ -489,7 +489,7 @@ def test_lstm_torch(op_tester):
 
         return [Y, Y_h, Y_c]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -567,7 +567,7 @@ def test_lstm_torch_grad(op_tester):
 
         return [Y2, a.grad, wig, whg, None]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     # relaxing the numerical precision required for this test:
     op_tester.atol = 1e-07
     op_tester.rtol = 1e-04
@@ -772,7 +772,7 @@ def test_lstm_torch_grad_all_inputs(op_tester):
 
         return [Y2, a.grad, wig, whg, b_grad, h0.grad, c0.grad, None]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     op_tester.atol = 1e-07
     op_tester.run(init_builder, reference, 'train')
 
@@ -1064,7 +1064,7 @@ def test_import_torch_lstm_train(tmpdir):
                                    dataFeed=dataFlow,
                                    optimizer=optimizer,
                                    losses=losses,
-                                   passes=popart.Patterns(["PreUniRepl"]),
+                                   patterns=popart.Patterns(["PreUniRepl"]),
                                    deviceInfo=device)
         print('setting device')
 

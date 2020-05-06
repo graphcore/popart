@@ -193,7 +193,7 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation):
             "defaultWeightDecay": (defaultWeightDecay0, True)
         }),
         losses=[loss1],
-        passes=patterns,
+        patterns=patterns,
         userOptions=userOptions,
         deviceInfo=device)
 

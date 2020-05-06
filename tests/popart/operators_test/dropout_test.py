@@ -32,7 +32,7 @@ def test_dropout_testing(op_tester):
     op_tester.run(init_builder, reference, 'infer')
 
     # ... and with identity pattern
-    op_tester.passes = ['OpToIdentity']
+    op_tester.patterns = ['OpToIdentity']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -437,7 +437,7 @@ def get_session(anchorIds, proto, device, output, bps=1):
         dataFeed=popart.DataFlow(bps, dfAnchors),
         optimizer=popart.ConstSGD(0.1),
         losses=[popart.L1Loss(output, "l1LossVal", 0.1)],
-        passes=popart.Patterns(popart.PatternsLevel.All),
+        patterns=popart.Patterns(popart.PatternsLevel.All),
         deviceInfo=device)
 
     session.prepareDevice()

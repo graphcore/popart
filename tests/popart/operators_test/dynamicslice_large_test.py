@@ -41,7 +41,7 @@ def test_dynamicslice_large(op_tester):
 
     #op_tester.numIPUs = 1
     op_tester.device = tu.create_test_device(numIpus=1)
-    op_tester.passes = popart.PatternsLevel.All
+    op_tester.patterns = popart.PatternsLevel.All
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -92,5 +92,5 @@ def test_dynamicslice_update_large(op_tester):
     op_tester.options.enableOutliningCopyCostPruning = False
     #op_tester.options.aliasZeroCopy = True
     op_tester.device = tu.create_test_device(numIpus=1)
-    op_tester.passes = popart.PatternsLevel.All
+    op_tester.patterns = popart.PatternsLevel.All
     op_tester.run(init_builder, reference, 'infer')

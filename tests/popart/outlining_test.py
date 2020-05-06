@@ -49,7 +49,7 @@ def test_weight_update(tmpdir):
             dataFeed=popart.DataFlow(1, dfAnchors),
             optimizer=popart.ConstSGD(0.1),
             losses=[popart.L1Loss(out, "l1LossVal", 0.1)],
-            passes=popart.Patterns(popart.PatternsLevel.All),
+            patterns=popart.Patterns(popart.PatternsLevel.All),
             userOptions=opts,
             deviceInfo=device)
 
@@ -120,7 +120,7 @@ def test_batches_per_step_greater_than_one():
             dataFeed=popart.DataFlow(batches_per_step, dfAnchors),
             optimizer=popart.ConstSGD(0.1),
             losses=[popart.L1Loss(out, "l1LossVal", 0.1)],
-            passes=popart.Patterns(popart.PatternsLevel.All),
+            patterns=popart.Patterns(popart.PatternsLevel.All),
             userOptions=opts,
             deviceInfo=device)
 

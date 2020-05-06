@@ -60,7 +60,7 @@ def test_3d_nll_loss_input():
             }),
         optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
         losses=[popart.NllLoss(out, lb, "loss")],
-        passes=popart.Patterns(popart.PatternsLevel.All),
+        patterns=popart.Patterns(popart.PatternsLevel.All),
         deviceInfo=tu.create_test_device())
 
     session.prepareDevice()
@@ -131,7 +131,7 @@ def test_nll_loss_with_ignored_index():
         dataFeed=popart.DataFlow(1, {"loss": popart.AnchorReturnType("All")}),
         optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
         losses=[popart.NllLoss(out, lb, "loss", ignore_index=ignoreInd)],
-        passes=popart.Patterns(popart.PatternsLevel.All),
+        patterns=popart.Patterns(popart.PatternsLevel.All),
         deviceInfo=tu.create_test_device())
 
     session.prepareDevice()
@@ -214,7 +214,7 @@ def test_nll_loss_grad_with_ignored_index():
                                ignore_index=ignoreInd,
                                reduction=popart.ReductionType.Mean)
             ],
-            passes=popart.Patterns(patterns),
+            patterns=popart.Patterns(patterns),
             deviceInfo=tu.create_test_device())
 
         session.prepareDevice()
@@ -306,7 +306,7 @@ def test_id_loss_error():
             dataFeed=popart.DataFlow(1, {"loss": art}),
             optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
             losses=[popart.IdentityLoss(out, "loss")],
-            passes=popart.Patterns(popart.PatternsLevel.All),
+            patterns=popart.Patterns(popart.PatternsLevel.All),
             deviceInfo=tu.create_test_device())
 
     assert (e_info.value.args[0].startswith(
@@ -387,7 +387,7 @@ def test_id_nllloss_train():
             }),
             optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
             losses=losses,
-            passes=popart.Patterns(popart.PatternsLevel.Default),
+            patterns=popart.Patterns(popart.PatternsLevel.Default),
             deviceInfo=tu.create_test_device(),
             userOptions=opts)
 
@@ -541,7 +541,7 @@ def test_id_l1loss_train():
                 }),
             optimizer=popart.ConstSGD(LEARNING_RATE),
             losses=losses,
-            passes=popart.Patterns(popart.PatternsLevel.All),
+            patterns=popart.Patterns(popart.PatternsLevel.All),
             deviceInfo=tu.create_test_device(),
             userOptions=opts)
 

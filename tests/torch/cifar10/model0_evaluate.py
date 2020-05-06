@@ -68,7 +68,7 @@ torchWriter = torchwriter.PytorchNetWriter(
 
 # Passes if torch and popart models match
 c10driver.run(torchWriter=torchWriter,
-              passes=None,
+              patterns=None,
               outputdir=args.outputdir,
               cifarInIndices=cifarInIndices,
               device=args.device,

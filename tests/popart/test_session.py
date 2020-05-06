@@ -35,7 +35,7 @@ class PopartTestSession:
                                           losses=losses,
                                           optimizer=optimizer,
                                           deviceInfo=device,
-                                          passes=self.passes,
+                                          patterns=self.passes,
                                           userOptions=self.options)
         self._device_prepared = False
 

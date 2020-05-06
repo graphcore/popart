@@ -37,7 +37,7 @@ class InferenceSession(_InferenceSessionCore):
                  batch_size=1,
                  batches_per_step=1,
                  inputShapeInfo=popart.InputShapeInfo(),
-                 passes=popart.Patterns(),
+                 patterns=popart.Patterns(),
                  userOptions=popart.SessionOptions()):
 
         self.torchModel = torchModel
@@ -96,14 +96,14 @@ class InferenceSession(_InferenceSessionCore):
             self.anchor_returns[out] = popart.AnchorReturnType("All")
             self.anchor_returns[f"loss_{idx}"] = popart.AnchorReturnType("All")
 
-        if passes is None:
-            passes = popart.Patterns()
+        if patterns is None:
+            patterns = popart.Patterns()
 
         self.dataFeed = self.createDataFeed()
 
         super(InferenceSession,
               self).__init__(proto, self.dataFeed, self.deviceInfo, losses,
-                             self.inputShapeInfo, userOptions, passes)
+                             self.inputShapeInfo, userOptions, patterns)
 
         self.replicationFactor = userOptions.replicatedGraphCount if \
             userOptions.enableReplicatedGraphs else 1
@@ -179,7 +179,7 @@ class TrainingSession(_TrainingSessionCore):
                  batch_size=1,
                  batches_per_step=1,
                  inputShapeInfo=popart.InputShapeInfo(),
-                 passes=popart.Patterns(),
+                 patterns=popart.Patterns(),
                  userOptions=popart.SessionOptions()):
 
         self.torchModel = torchModel
@@ -239,15 +239,15 @@ class TrainingSession(_TrainingSessionCore):
             self.anchor_returns[out] = popart.AnchorReturnType("All")
             self.anchor_returns[f"loss_{idx}"] = popart.AnchorReturnType("All")
 
-        if passes is None:
-            passes = popart.Patterns()
+        if patterns is None:
+            patterns = popart.Patterns()
 
         self.dataFeed = self.createDataFeed()
 
         super(TrainingSession,
               self).__init__(proto, self.dataFeed, losses,
                              self.createOptimizer(), self.deviceInfo,
-                             self.inputShapeInfo, userOptions, passes)
+                             self.inputShapeInfo, userOptions, patterns)
 
         self.replicationFactor = userOptions.replicatedGraphCount if \
             userOptions.enableReplicatedGraphs else 1

@@ -18,7 +18,7 @@ def _subsample_helper(op_tester, input, strides, output, grad_ouput):
     def reference(ref_data):
         return [output, grad_ouput]
 
-    op_tester.passes = ['PreUniRepl', 'SqrtGradOp']
+    op_tester.patterns = ['PreUniRepl', 'SqrtGradOp']
     op_tester.run(init_builder, reference, 'train')
 
 

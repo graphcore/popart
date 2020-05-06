@@ -855,7 +855,7 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("losses"),
             py::arg("inputShapeInfo"),
             py::arg("userOptions"),
-            py::arg("passes"));
+            py::arg("patterns"));
     cls.def(
         "prepareDevice",
         [](InferenceSession &session, PrepareDeviceError *status) {
@@ -922,7 +922,7 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("deviceInfo"),
             py::arg("inputShapeInfo"),
             py::arg("userOptions"),
-            py::arg("passes"));
+            py::arg("patterns"));
     cls.def(
         "prepareDevice",
         [](TrainingSession &session, PrepareDeviceError *status) {

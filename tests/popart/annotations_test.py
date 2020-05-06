@@ -57,7 +57,7 @@ def _get_ir(pingpong_enabled, virtualgraph_enabled, pipeline_enabled):
                                      dataFeed=popart.DataFlow(1, dfAnchors),
                                      optimizer=popart.ConstSGD(0.1),
                                      losses=[loss],
-                                     passes=popart.Patterns(
+                                     patterns=popart.Patterns(
                                          popart.PatternsLevel.All),
                                      userOptions=opts,
                                      deviceInfo=device)

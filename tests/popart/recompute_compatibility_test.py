@@ -28,7 +28,7 @@ def test_valid_recompute_options():
             dataFeed=popart.DataFlow(1, {o: popart.AnchorReturnType("All")}),
             optimizer=popart.ConstSGD(0.001),
             losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
-            passes=popart.Patterns([]),
+            patterns=popart.Patterns([]),
             userOptions=opts,
             deviceInfo=tu.create_test_device())
     assert (e_info.value.args[0] ==

@@ -44,7 +44,7 @@ losses = [
     popart.L1Loss("preProbSquared", "l1LossVal", 0.01)
 ]
 
-willowOptPasses = popart.Patterns(popart.PatternsLevel.All)
+willowOptPatterns = popart.Patterns(popart.PatternsLevel.All)
 
 
 class Module0(torch.nn.Module):
@@ -115,7 +115,7 @@ torchWriter = torchwriter.PytorchNetWriter(
 #args.outputdir="/path/to/logging/dir/where/models/written/"
 
 c10driver.run(torchWriter,
-              willowOptPasses,
+              willowOptPatterns,
               args.outputdir,
               cifarInIndices,
               args.device,

@@ -26,7 +26,7 @@ def grad(dY, X, dt):
 
 def run_and_test_value(op_tester, inplace, init_builder, reference, mode):
     if inplace:
-        op_tester.passes = ['InPlace']
+        op_tester.patterns = ['InPlace']
     session = op_tester.run(init_builder, reference, mode, {
         "ai.onnx": 8,
         "ai.graphcore": 1
@@ -194,7 +194,7 @@ def expand_non_one_smaller_output(op_tester, inplace):
 
     with pytest.raises(popart.popart_exception) as e_info:
         if inplace:
-            op_tester.passes = ['InPlace']
+            op_tester.patterns = ['InPlace']
         session = op_tester.run(init_builder, None, 'infer')
         if inplace:
             ir = json.loads(

@@ -103,7 +103,7 @@ def test_manual_serialization():
                                      optimizer=popart.SGD(
                                          {"defaultLearningRate": (0.1, True)}),
                                      losses=[loss1],
-                                     passes=patterns,
+                                     patterns=patterns,
                                      userOptions=userOptions,
                                      deviceInfo=device)
 

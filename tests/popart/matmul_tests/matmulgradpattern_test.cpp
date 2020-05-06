@@ -109,9 +109,9 @@ BOOST_AUTO_TEST_CASE(MatMulGradPatternScheduleTest_0) {
   // Disable outlining
   opts.enableOutlining = false;
 
-  auto passes = popart::Patterns(PatternsLevel::Default);
+  auto patterns = popart::Patterns(PatternsLevel::Default);
   // Disable inplacing since this could affect the scheduler
-  passes.enableInPlace(false);
+  patterns.enableInPlace(false);
 
   auto device = createTestDevice(TEST_TARGET);
   auto session =
@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE(MatMulGradPatternScheduleTest_0) {
                                                    device,
                                                    popart::InputShapeInfo(),
                                                    opts,
-                                                   passes);
+                                                   patterns);
   session->prepareDevice();
   popart::StepIO stepio(inputs, anchors);
 

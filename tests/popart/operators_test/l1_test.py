@@ -39,7 +39,7 @@ def test_l1(op_tester):
                 np.sum(np.abs(data) * scale, axis=tuple(range(1, len(shape)))))
             return result
 
-        op_tester.passes = ['PreUniRepl']
+        op_tester.patterns = ['PreUniRepl']
         op_tester.run(init_builder, reference, 'infer')
 
 
@@ -83,5 +83,5 @@ def test_l1_training(op_tester):
             result[1::2] = [r.grad for r in result[1::2]]
             return result
 
-        op_tester.passes = ['OpToIdentity']
+        op_tester.patterns = ['OpToIdentity']
         op_tester.run(init_builder, reference, 'train')

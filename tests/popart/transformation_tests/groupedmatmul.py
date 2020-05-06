@@ -59,7 +59,7 @@ def test_matmul_1d(tmpdir):
             userOptions=opts,
             losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
             optimizer=popart.ConstSGD(0.01),
-            passes=pat,
+            patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
         session.prepareDevice()
@@ -153,7 +153,7 @@ def test_matmul_grouping_test_1(tmpdir):
             fnModel=proto,
             dataFeed=dataFlow,
             userOptions=opts,
-            passes=pat,
+            patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
         session.prepareDevice()
@@ -277,7 +277,7 @@ def test_matmul_grouping_test_2(tmpdir):
             fnModel=proto,
             dataFeed=dataFlow,
             userOptions=opts,
-            passes=pat,
+            patterns=pat,
             losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
             optimizer=popart.ConstSGD(0.01),
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
@@ -375,7 +375,7 @@ def test_matmul_grouping_test_3(tmpdir):
             fnModel=proto,
             dataFeed=dataFlow,
             userOptions=opts,
-            passes=pat,
+            patterns=pat,
             losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
             optimizer=popart.ConstSGD(0.01),
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
@@ -492,7 +492,7 @@ def test_matmul_grouping_test_4(tmpdir):
             fnModel=proto,
             dataFeed=dataFlow,
             userOptions=opts,
-            passes=pat,
+            patterns=pat,
             losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
             optimizer=popart.ConstSGD(0.01),
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))

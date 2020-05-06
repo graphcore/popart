@@ -106,8 +106,8 @@ class InferenceSession(_InferenceSessionCore):
         losses: A list of loss layers to use when training. Default: [].
         inputShapeInfo: Information about the shapes of input and output
             tensors. Default: ``popart.InputShapeInfo()``.
-        passes: Patterns to be run for optimization etc.
-            Note: default for passes must not be ``popart.Patterns()``.
+        patterns: Patterns to be run for optimization etc.
+            Note: default for patterns must not be ``popart.Patterns()``.
             When ``import popart`` is run, the default arguments are created.
             If the user then loads a custom pattern using
             ``ctypes.cdll.LoadLibrary(custom_pattern_lib.so)``
@@ -127,16 +127,16 @@ class InferenceSession(_InferenceSessionCore):
             deviceInfo: popart.DeviceInfo,
             losses: List[popart.Loss] = [],
             inputShapeInfo: popart.InputShapeInfo = popart.InputShapeInfo(),
-            passes: popart.Patterns = None,
+            patterns: popart.Patterns = None,
             userOptions: popart.SessionOptions = popart.SessionOptions()
     ) -> None:
 
-        if passes == None:
-            passes = popart.Patterns()
+        if patterns == None:
+            patterns = popart.Patterns()
 
         super(InferenceSession,
               self).__init__(fnModel, dataFeed, deviceInfo, losses,
-                             inputShapeInfo, userOptions, passes)
+                             inputShapeInfo, userOptions, patterns)
 
         self.dataFeed = dataFeed
         self.replicationFactor = userOptions.replicatedGraphCount if \
@@ -188,7 +188,7 @@ class TrainingSession(_TrainingSessionCore):
                 (IPU, IPUModel, CPU) and count.
             inputShapeInfo: Information about the shapes of
                 input and output tensors. Default: ``popart.InputShapeInfo()``.
-            passes: Optimization patterns to apply. Default: ``None``.
+            patterns: Optimization patterns to apply. Default: ``None``.
             userOptions: Session options to apply.
                 Default: ``popart.SessionOptions()``.
 
@@ -204,16 +204,16 @@ class TrainingSession(_TrainingSessionCore):
             optimizer: popart.Optimizer,
             deviceInfo: popart.DeviceInfo,
             inputShapeInfo: popart.InputShapeInfo = popart.InputShapeInfo(),
-            passes: popart.Patterns = None,
+            patterns: popart.Patterns = None,
             userOptions: popart.SessionOptions = popart.SessionOptions()
     ) -> None:
 
-        if passes is None:
-            passes = popart.Patterns()
+        if patterns is None:
+            patterns = popart.Patterns()
 
         super(TrainingSession,
               self).__init__(fnModel, dataFeed, losses, optimizer, deviceInfo,
-                             inputShapeInfo, userOptions, passes)
+                             inputShapeInfo, userOptions, patterns)
 
         self.dataFeed = dataFeed
         self.replicationFactor = userOptions.replicatedGraphCount if \

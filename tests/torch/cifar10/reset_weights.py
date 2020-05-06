@@ -40,7 +40,7 @@ def get_session(fnModel, inputShapeInfo, dataFeed, torchWriter, passes, opts):
         dataFeed=dataFeed,
         losses=torchWriter.losses,
         optimizer=torchWriter.optimizer,
-        passes=passes,
+        patterns=passes,
         userOptions=opts,
         deviceInfo=popart.DeviceManager().createCpuDevice())
 

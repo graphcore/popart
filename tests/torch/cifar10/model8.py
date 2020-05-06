@@ -38,7 +38,7 @@ losses = [
     popart.L1Loss("preProbSquared", "l1LossVal", 0.01)
 ]
 
-willowOptPasses = popart.Patterns(popart.PatternsLevel.All)
+willowOptPatterns = popart.Patterns(popart.PatternsLevel.All)
 
 
 class Module0(torch.nn.Module):
@@ -91,5 +91,5 @@ torchWriter = torchwriter.PytorchNetWriter(
     module=Module0(),
     samplesPerBatch=batchSize)
 
-c10driver.run(torchWriter, willowOptPasses, args.outputdir, cifarInIndices,
+c10driver.run(torchWriter, willowOptPatterns, args.outputdir, cifarInIndices,
               args.device, args.hw_id)

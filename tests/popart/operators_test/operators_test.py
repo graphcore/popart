@@ -69,7 +69,7 @@ def test_add(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, t1.grad, t2.grad, None]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -112,7 +112,7 @@ def test_cast_grad(op_tester):
         d_i1 = c.grad.numpy().astype(np.int32)
         return [out, d_i1, d_o]
 
-    op_tester.passes = ['PreUniRepl', 'PostNRepl', 'SqrtGradOp']
+    op_tester.patterns = ['PreUniRepl', 'PostNRepl', 'SqrtGradOp']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -245,7 +245,7 @@ def test_convolution_2(op_tester):
                             dtype=np.float32)
         return [expected, None]
 
-    op_tester.passes = ["ConvDataGrad"]
+    op_tester.patterns = ["ConvDataGrad"]
     op_tester.run(init_builder, reference, step_type='train')
 
 
@@ -386,7 +386,7 @@ def test_convolution_5(op_tester):
 
         return [o, dg, None]
 
-    op_tester.passes = ['ConvDataGrad']
+    op_tester.patterns = ['ConvDataGrad']
     op_tester.run(init_builder0, reference, step_type='train')
     op_tester.run(init_builder1, reference, step_type='train')
 
@@ -423,7 +423,7 @@ def test_div(op_tester):
         out = d1 / d2
         return [out]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -447,7 +447,7 @@ def test_div_grad(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, t1.grad, t2.grad, None]
 
-    op_tester.passes = ['PreUniRepl', 'DivArg0GradOp', 'DivArg1GradOp']
+    op_tester.patterns = ['PreUniRepl', 'DivArg0GradOp', 'DivArg1GradOp']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -472,7 +472,7 @@ def test_reciprocal_grad(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.passes = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -491,7 +491,7 @@ def test_sqrt(op_tester):
         out = torch.sqrt(a)
         return [out]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -516,7 +516,7 @@ def test_sqrt_grad(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, a.grad, None]
 
-    op_tester.passes = ['PreUniRepl', 'SqrtGradOp']
+    op_tester.patterns = ['PreUniRepl', 'SqrtGradOp']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -559,7 +559,7 @@ def test_exp_grad(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.passes = ['PreUniRepl', 'ExpGradOp']
+    op_tester.patterns = ['PreUniRepl', 'ExpGradOp']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -602,7 +602,7 @@ def test_sigmoid_grad(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -644,7 +644,7 @@ def test_transpose_grad(op_tester):
 
         return [o, a.grad, None]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -663,7 +663,7 @@ def test_asin(op_tester):
         out = torch.asin(a)
         return [out]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -682,7 +682,7 @@ def test_asin_inplace(op_tester):
         out = torch.asin(a)
         return [out]
 
-    op_tester.passes = ['InPlace']
+    op_tester.patterns = ['InPlace']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -708,7 +708,7 @@ def test_asin_grad(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, a.grad, None]
 
-    # op_tester.passes = ['OpToIdentity']
+    # op_tester.patterns = ['OpToIdentity']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -729,7 +729,7 @@ def test_atan(op_tester):
         out = torch.atan(a)
         return [out]
 
-    # op_tester.passes = ['PreUniRepl']
+    # op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -748,7 +748,7 @@ def test_atan_inplace(op_tester):
         out = torch.atan(a)
         return [out]
 
-    op_tester.passes = ['InPlace']
+    op_tester.patterns = ['InPlace']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -774,7 +774,7 @@ def test_atan_grad(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, a.grad, None]
 
-    # op_tester.passes = ['OpToIdentity']
+    # op_tester.patterns = ['OpToIdentity']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -793,7 +793,7 @@ def test_sinh(op_tester):
         out = torch.sinh(a)
         return [out]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -812,7 +812,7 @@ def test_sinh_inplace(op_tester):
         out = torch.sinh(a)
         return [out]
 
-    op_tester.passes = ['InPlace']
+    op_tester.patterns = ['InPlace']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -837,7 +837,7 @@ def test_sinh_grad(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, a.grad, None]
 
-    op_tester.passes = ['OpToIdentity']
+    op_tester.patterns = ['OpToIdentity']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -880,7 +880,7 @@ def test_log_grad(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.passes = ['PreUniRepl', 'LogGradOp']
+    op_tester.patterns = ['PreUniRepl', 'LogGradOp']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -904,7 +904,7 @@ def test_logsoftmax(op_tester):
         b = lsm(a)
         return [b]
 
-    op_tester.passes = ['LogSoftmaxOp', 'LogGradOp']
+    op_tester.patterns = ['LogSoftmaxOp', 'LogGradOp']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -931,7 +931,7 @@ def test_logsoftmax_grad(op_tester):
         return [b, a.grad, None]
 
     op_tester.atol *= 10
-    op_tester.passes = ['PreUniRepl', 'LogSoftmaxOp', 'LogGradOp']
+    op_tester.patterns = ['PreUniRepl', 'LogSoftmaxOp', 'LogGradOp']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -974,7 +974,7 @@ def test_unsqueeze_grad(op_tester):
         o.backward(torch.tensor(d__o))
         return [o, a.grad, None]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -1097,7 +1097,7 @@ def test_slice_grad(op_tester):
 
         return [o, a.grad, None]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -1119,7 +1119,7 @@ def test_slice_error_start_input(op_tester):
     def reference(ref_data):
         return []
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     with pytest.raises(popart.popart_exception) as e_info:
         op_tester.run(init_builder, reference, 'train')
 
@@ -1190,7 +1190,7 @@ def _test_pad(op_tester,
 
         return [o]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -1218,7 +1218,7 @@ def test_pad_grad(op_tester):
 
         return [o, a.grad, d__o]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -1247,7 +1247,7 @@ def test_scatter_0(op_tester):
     def reference(ref_data):
         return [output, data, np.sign(updates) * 0.1]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -1274,7 +1274,7 @@ def test_scatter_1(op_tester):
     def reference(ref_data):
         return [output, d_data, np.sign(updates) * 0.1]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -1303,7 +1303,7 @@ def test_scatter_2(op_tester):
     def reference(ref_data):
         return [output, data, np.sign(updates) * 0.1]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -1460,7 +1460,7 @@ def test_ceil_inplace(op_tester):
         result = np.exp(np.ceil(np.log(d1)))
         return [result.astype(np.float32)]
 
-    op_tester.passes = ['InPlace']
+    op_tester.patterns = ['InPlace']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -1518,7 +1518,7 @@ def test_floor_inplace(op_tester):
         result = np.exp(np.floor(np.log(d1)))
         return [result.astype(np.float32)]
 
-    op_tester.passes = ['InPlace']
+    op_tester.patterns = ['InPlace']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -1578,7 +1578,7 @@ def test_clip_inplace(op_tester):
         result = torch.exp(torch.clamp(torch.log(a), min=4, max=7))
         return [result]
 
-    op_tester.passes = ['InPlace']
+    op_tester.patterns = ['InPlace']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -1606,7 +1606,7 @@ def test_clip_grad(op_tester):
         print("b grad", b.grad)
         return [b, a.grad, None]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -1698,7 +1698,7 @@ def test_instancenorm_grad(op_tester):
         return [out, normed, i_data.grad, m.weight.grad, m.bias.grad, None]
 
     op_tester.atol *= 10
-    op_tester.passes = ['PreUniRepl', 'ReciprocalGradOp', 'MulArgGradOp']
+    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp', 'MulArgGradOp']
     op_tester.run(init_builder, reference, 'train')
 
 

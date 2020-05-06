@@ -89,5 +89,5 @@ def test_dynamicadd_training(op_tester):
         ] + result
         return result
 
-    op_tester.passes = popart.PatternsLevel.All
+    op_tester.patterns = popart.PatternsLevel.All
     op_tester.run(init_builder, reference, 'train')

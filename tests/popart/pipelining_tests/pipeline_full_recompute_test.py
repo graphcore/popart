@@ -144,7 +144,7 @@ def test_full_recompute_pipelining(tmpdir):
                                          userOptions=opts,
                                          losses=[loss],
                                          optimizer=popart.ConstSGD(1e-9),
-                                         passes=pat,
+                                         patterns=pat,
                                          deviceInfo=tu.create_test_device(
                                              numIpus=3,
                                              opts={"compileIPUCode": False}))

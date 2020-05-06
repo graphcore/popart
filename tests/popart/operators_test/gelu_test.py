@@ -52,7 +52,7 @@ def test_gelu_inplace(op_tester):
         m = torch_gelu(torch_test_data)
         return [m]
 
-    op_tester.passes = ['InPlace']
+    op_tester.patterns = ['InPlace']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -73,7 +73,7 @@ def test_gelu_torch(op_tester):
         m = torch_gelu(torch_test_data)
         return [m]
 
-    op_tester.passes = ['InPlace']
+    op_tester.patterns = ['InPlace']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -103,7 +103,7 @@ def test_gelu_training(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.passes = ['OpToIdentity']
+    op_tester.patterns = ['OpToIdentity']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -132,5 +132,5 @@ def test_gelu_torch_training(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.passes = ['OpToIdentity']
+    op_tester.patterns = ['OpToIdentity']
     op_tester.run(init_builder, reference, 'train')

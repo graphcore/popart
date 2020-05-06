@@ -47,7 +47,7 @@ def test_dynamicupdate(op_tester):
         result.append(np.concatenate((data0, data1, data2), axis=1))
         return result
 
-    op_tester.passes = popart.PatternsLevel.All
+    op_tester.patterns = popart.PatternsLevel.All
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -112,7 +112,7 @@ def test_dynamicupdate_training(op_tester):
         ] + result
         return result
 
-    op_tester.passes = popart.PatternsLevel.All
+    op_tester.patterns = popart.PatternsLevel.All
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -182,7 +182,7 @@ def test_dynamicupdate_overlap_wrong(op_tester):
         result = [sum, torch.tensor(d__o), tensor0.grad, tensor1.grad] + result
         return result
 
-    op_tester.passes = popart.PatternsLevel.All
+    op_tester.patterns = popart.PatternsLevel.All
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -254,5 +254,5 @@ def test_dynamicupdate_overlap_correct(op_tester):
         result = [sum, torch.tensor(d__o), tensor0.grad, tensor1.grad] + result
         return result
 
-    op_tester.passes = popart.PatternsLevel.All
+    op_tester.patterns = popart.PatternsLevel.All
     op_tester.run(init_builder, reference, 'train')

@@ -115,7 +115,7 @@ def ipu_op_tester(tmpdir):
                 session = popart.InferenceSession(fnModel=proto,
                                                   dataFeed=dataFlow,
                                                   deviceInfo=device,
-                                                  passes=popart.Patterns(
+                                                  patterns=popart.Patterns(
                                                       self.passes),
                                                   userOptions=opts)
             elif (step_type == 'train'):
@@ -124,7 +124,7 @@ def ipu_op_tester(tmpdir):
                                                  losses=losses,
                                                  optimizer=optimizer,
                                                  deviceInfo=device,
-                                                 passes=popart.Patterns(
+                                                 patterns=popart.Patterns(
                                                      self.passes),
                                                  userOptions=opts)
 
