@@ -171,7 +171,6 @@ BOOST_AUTO_TEST_CASE(test) {
     popart::StepIO stepio(inputs, {});
 
     session->weightsFromHost();
-    session->optimizerFromHost();
 
     session->run(stepio);
     session->weightsToHost();

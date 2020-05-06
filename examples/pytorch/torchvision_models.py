@@ -162,7 +162,7 @@ def train_process(opts):
     anchors = torchSession.initAnchorArrays()
 
     torchSession.prepareDevice()
-    torchSession.optimizerFromHost()
+
     torchSession.weightsFromHost()
     print("Compiling popart model took {:.2f}s".format(time.time() - start))
     for epoch in range(opts.epochs):  # loop over the dataset multiple times

@@ -2951,6 +2951,8 @@ void Devicex::prepare() {
 
   trySaveTensorTileMap();
 
+  optimizerFromHost();
+
   prepareHasBeenCalled_ = true;
 }
 

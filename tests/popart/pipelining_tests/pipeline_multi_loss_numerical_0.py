@@ -140,7 +140,7 @@ def run_test_multi_loss_pipeline(same_vgraph=True):
 
         session.prepareDevice()
         session.weightsFromHost()
-        session.optimizerFromHost()
+
         stepio = popart.PyStepIO({input0: inputVals}, anchorArrays)
         session.run(stepio)
         session.weightsToHost()

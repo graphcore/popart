@@ -138,7 +138,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD1) {
                           {"defaultVelocityScaling", {0.25f, true}},
                           {"lossScaling", {0.2f, true}},
                           {"defaultMomentum", {0.9f, false}}});
-    ;
+
     std::vector<std::shared_ptr<Loss>> losses{std::make_shared<L1Loss>(
         reduced, "l1LossVal", lossLambda, ReductionType::Sum)};
 

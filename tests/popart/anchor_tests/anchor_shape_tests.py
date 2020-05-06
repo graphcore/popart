@@ -147,7 +147,7 @@ def return_anchors(anchorDict, label_array):
             lb: label_array
         }, anchors)
     session.weightsFromHost()
-    session.optimizerFromHost()
+
     session.run(inference_stepio)
 
     return anchors

@@ -219,7 +219,7 @@ def test_nll_loss_grad_with_ignored_index():
 
         session.prepareDevice()
         session.weightsFromHost()
-        session.optimizerFromHost()
+
         return session
 
     inputs = {lb: lb_data.astype(np.int32)}
@@ -547,7 +547,6 @@ def test_id_l1loss_train():
 
         session.prepareDevice()
         session.weightsFromHost()
-        session.optimizerFromHost()
 
         anchors = session.initAnchorArrays()
         stepio = popart.PyStepIO({

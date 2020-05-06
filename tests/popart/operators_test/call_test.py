@@ -607,7 +607,7 @@ def test_stacked_subgraphs_2():
 
         session.prepareDevice()
         session.weightsFromHost()
-        session.optimizerFromHost()
+
         for _ in range(steps):
             session.run(stepio)
         return anchors

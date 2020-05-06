@@ -148,7 +148,7 @@ def test_save_back_externally_saved_tensors():
 
     session.prepareDevice()
     session.weightsFromHost()
-    session.optimizerFromHost()
+
     session.run(stepio)
 
     # Check the weights have been updated

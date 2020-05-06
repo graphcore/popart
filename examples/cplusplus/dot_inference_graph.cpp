@@ -101,8 +101,7 @@ Options::Options(int argc, char **argv) {
       ("compile-pdf", "compile dot->pdf(s)")
       ("op-count,c",
        po::value<int>()->default_value(10000),
-       "the number of Ops to write to the .dot file")
-    ;
+       "the number of Ops to write to the .dot file");
   // clang-format on
 
   po::positional_options_description p;

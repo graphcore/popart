@@ -109,7 +109,7 @@ def test_manual_serialization():
 
     session.prepareDevice()
     session.weightsFromHost()
-    session.optimizerFromHost()
+
     inputVals = np.array(npr.randn(1 * N * C0), dtype=np.float32)
     stepio = popart.PyStepIO({X: inputVals}, {})
     session.run(stepio)

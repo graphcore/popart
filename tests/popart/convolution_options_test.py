@@ -76,7 +76,6 @@ def conv_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
 
     # Run the training session
     training_session.weightsFromHost()
-    training_session.optimizerFromHost()
 
     training_anchors = training_session.initAnchorArrays()
     training_inputs = {input_: input_data}
@@ -152,7 +151,6 @@ def matmul_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
 
     # Run the training session
     training_session.weightsFromHost()
-    training_session.optimizerFromHost()
 
     training_anchors = training_session.initAnchorArrays()
     training_inputs = {input_: input_data}

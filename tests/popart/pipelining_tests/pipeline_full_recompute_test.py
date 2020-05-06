@@ -152,7 +152,6 @@ def test_full_recompute_pipelining(tmpdir):
         session.prepareDevice()
 
         session.weightsFromHost()
-        session.optimizerFromHost()
 
         anchors = session.initAnchorArrays()
 

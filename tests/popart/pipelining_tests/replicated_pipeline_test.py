@@ -151,8 +151,6 @@ def get_model_anchors(doSharding,
     stepio.enableRuntimeAsserts(False)
 
     session.weightsFromHost()
-    if doTraining is True:
-        session.optimizerFromHost()
 
     session.run(stepio)
 

@@ -255,7 +255,6 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
         session.weightsFromHost()
 
         print("Writing Optimizer tensors to device, if there are any")
-        session.optimizerFromHost()
 
     def addStepDimension(data, batchesPerStep):
         if batchesPerStep == 1:

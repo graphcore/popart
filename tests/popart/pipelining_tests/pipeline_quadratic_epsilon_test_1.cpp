@@ -289,8 +289,7 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilonTest1) {
 
       // initialize learnRate, write to device
       SGD newOptimizer({{"defaultLearningRate", {learnRate, false}}});
-      session->updateOptimizer(&newOptimizer);
-      session->optimizerFromHost();
+      session->updateOptimizerFromHost(&newOptimizer);
 
       int64_t samplesPerStep =
           batchesPerStep * accumulationFactor * microBatchSize;

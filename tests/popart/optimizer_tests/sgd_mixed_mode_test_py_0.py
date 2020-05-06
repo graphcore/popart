@@ -75,11 +75,11 @@ def test_sgd_mixed_mode(tmpdir):
         input0Data = np.array([3.1415], dtype=np.float32)
 
         stepio = popart.PyStepIO({input0: input0Data}, anchors)
-        session.optimizerFromHost()
+
         session.run(stepio)
 
-        session.updateOptimizer(opt1)
-        session.optimizerFromHost()
+        session.updateOptimizerFromHost(opt1)
+
         session.run(stepio)
 
         session.weightsToHost()

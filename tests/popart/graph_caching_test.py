@@ -65,7 +65,6 @@ def test_convolution_cached_by_default():
 
     session.run(stepio)
     session.weightsFromHost()
-    session.optimizerFromHost()
 
     # Check that there is only one convolution computation set.
     summaryReport = session.getSummaryReport()
@@ -144,7 +143,6 @@ def test_convolution_disable_all():
 
     session.run(stepio)
     session.weightsFromHost()
-    session.optimizerFromHost()
 
     # Check that there is only one convolution computation set.
     summaryReport = session.getSummaryReport()
@@ -321,7 +319,6 @@ def test_matmul_train_cached_by_default():
 
     session.run(stepio)
     session.weightsFromHost()
-    session.optimizerFromHost()
 
     # Check that there are only 3 matmul convs in computation set.
     summaryReport = session.getSummaryReport()
@@ -420,7 +417,6 @@ def test_gemm_train_cached_by_default():
 
     session.run(stepio)
     session.weightsFromHost()
-    session.optimizerFromHost()
 
     # Check that there is only 2 matmul conv's computation set.
     summaryReport = session.getSummaryReport()

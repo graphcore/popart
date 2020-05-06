@@ -202,7 +202,7 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation):
     session.prepareDevice()
     session.setRandomSeed(7)
     session.weightsFromHost()
-    session.optimizerFromHost()
+
     stepio = popart.PyStepIO({input0: inputVals}, anchorArrays)
     session.run(stepio)
     session.weightsToHost()

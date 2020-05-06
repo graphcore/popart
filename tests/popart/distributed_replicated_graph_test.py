@@ -199,7 +199,7 @@ def test_distributed_replicated_weight_update():
     stepio = popart.PyStepIO(inputs, anchors)
 
     session.weightsFromHost()
-    session.optimizerFromHost()
+
     session.run(stepio)
 
     torch_ground_truth = ground_truth()
@@ -308,7 +308,7 @@ def test_distributed_hierarchical_replicated_weight_update():
     stepio = popart.PyStepIO(inputs, anchors)
 
     session.weightsFromHost()
-    session.optimizerFromHost()
+
     session.run(stepio)
 
     torch_ground_truth = ground_truth()

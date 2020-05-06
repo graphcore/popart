@@ -323,16 +323,14 @@ def test_streaming_optimizer_tensors():
         stepio = popart.PyStepIO(inputs, anchors)
 
         session.weightsFromHost()
-        session.optimizerFromHost()
 
         # run 2 steps, changing the optimizer halfway through
         result = []
         session.run(stepio)
         result.append(np.copy(anchors[anchorId]))
 
-        session.updateOptimizer(
+        session.updateOptimizerFromHost(
             popart.SGD({"defaultLearningRate": (0.5, False)}))
-        session.optimizerFromHost()
 
         session.run(stepio)
         result.append(np.copy(anchors[anchorId]))

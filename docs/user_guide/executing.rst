@@ -44,7 +44,7 @@ then these must be written to the device. For example:
 .. code-block:: python
 
   session.weightsFromHost()
-  session.optimizerFromHost()
+
 
 These can also be updated between executions.
 
@@ -52,8 +52,8 @@ These can also be updated between executions.
 
   # Update learning rate parameter between training steps
   stepLr = learningRate[step]
-  session.updateOptimizer(popart.SGD(stepLr))
-  session.optimizerFromHost()
+  session.updateOptimizerFromHost(popart.SGD(stepLr))
+
 
 Retrieving results
 ~~~~~~~~~~~~~~~~~~

@@ -214,8 +214,6 @@ def get_model_anchors_model1(doSharding,
         }, anchors)
 
     session.weightsFromHost()
-    if doTraining is True:
-        session.optimizerFromHost()
 
     session.run(stepio)
 
@@ -341,8 +339,6 @@ def get_model_anchors_model2(doSharding,
     stepio = popart.PyStepIO(inputs, anchors)
 
     session.weightsFromHost()
-    if doTraining is True:
-        session.optimizerFromHost()
 
     for i in range(6):
         session.run(stepio)

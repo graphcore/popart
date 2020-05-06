@@ -208,7 +208,6 @@ def op_tester(tmpdir):
 
             if (step_type == 'train'):
                 session.weightsFromHost()
-                session.optimizerFromHost()
 
             session.run(stepio)
 

@@ -923,7 +923,6 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("inputShapeInfo"),
             py::arg("userOptions"),
             py::arg("passes"));
-    cls.def("updateOptimizer", &TrainingSession::updateOptimizer);
     cls.def(
         "prepareDevice",
         [](TrainingSession &session, PrepareDeviceError *status) {
@@ -947,7 +946,9 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("weightsFromHost", &TrainingSession::weightsFromHost);
     cls.def("readWeights", &TrainingSession::readWeights);
     cls.def("writeWeights", &TrainingSession::writeWeights);
-    cls.def("optimizerFromHost", &TrainingSession::optimizerFromHost);
+    cls.def("updateOptimizerFromHost",
+            (void (TrainingSession::*)(const Optimizer *)) &
+                TrainingSession::updateOptimizerFromHost);
     cls.def("run", &TrainingSession::run);
     cls.def("modelToHost", &TrainingSession::modelToHost);
     cls.def("getInfo", &TrainingSession::getInfo);

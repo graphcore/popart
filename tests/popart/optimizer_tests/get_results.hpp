@@ -251,17 +251,16 @@ getResults(const popart::SGD &opt0, // initial Optimizer
   session->weightsFromHost();
 
   // run 1 with opt0
-  session->optimizerFromHost();
   session->run(stepio);
 
   // run 2 with opt1
-  session->updateOptimizer(&opt1);
-  session->optimizerFromHost();
+  session->updateOptimizerFromHost(&opt1);
+
   session->run(stepio);
 
   // run 3 with opt2
-  session->updateOptimizer(&opt2);
-  session->optimizerFromHost();
+  session->updateOptimizerFromHost(&opt2);
+
   session->run(stepio);
 
   // read final weights back

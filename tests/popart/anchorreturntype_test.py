@@ -80,7 +80,6 @@ def simple_training_session(tmpdir, inputShape, inputArray, BPS, art, GA=1):
 
     session.prepareDevice()
     session.weightsFromHost()
-    session.optimizerFromHost()
 
     anchors = session.initAnchorArrays()
 

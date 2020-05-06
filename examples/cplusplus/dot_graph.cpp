@@ -150,8 +150,7 @@ Options::Options(int argc, char **argv) {
        "the index of the first op in the schedule to export")
       ("end-op,e",
        po::value<int>()->default_value(10000),
-       "the index of the final op in the schedule to export")
-    ;
+       "the index of the final op in the schedule to export");
   // clang-format on
 
   po::positional_options_description p;

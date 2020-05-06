@@ -42,7 +42,6 @@ def trainSession(anchors, optimizer, stepSize):
 
     session.prepareDevice()
     session.weightsFromHost()
-    session.optimizerFromHost()
 
     # add step dimension to infeed
     infeedShape = dataShape.shape()
@@ -93,13 +92,12 @@ def test_sgd_param_check():
         stepLr = learningRate[step]
         stepWd = weightDecay[step]
         stepLs = lossScaling[step]
-        session.updateOptimizer(
+        session.updateOptimizerFromHost(
             popart.SGD({
                 "defaultLearningRate": (stepLr, False),
                 "defaultWeightDecay": (stepWd, False),
                 "lossScaling": (stepLs, False)
             }))
-        session.optimizerFromHost()
 
         stepio = popart.PyStepIO(inputsUserSgd, anchorsArrays)
 
@@ -159,13 +157,12 @@ def test_constsgd_vs_sgd():
         stepioUserSgd = popart.PyStepIO(inputsUserSgd, anchorsArraysUserSgd)
 
         if step == numSteps - 1:
-            sessionUserSgd.updateOptimizer(
+            sessionUserSgd.updateOptimizerFromHost(
                 popart.SGD({
                     "defaultLearningRate": (2 * lr, False),
                     "defaultWeightDecay": (2 * wd, False),
                     "lossScaling": (2 * ls, False)
                 }))
-            sessionUserSgd.optimizerFromHost()
 
         sessionConstSgd.run(stepioConstSgd)
         sessionUserSgd.run(stepioUserSgd)
@@ -232,7 +229,6 @@ def test_sgd_with_float16_model():
 
     session.prepareDevice()
     session.weightsFromHost()
-    session.optimizerFromHost()
 
     anchorArrays = session.initAnchorArrays()
 
@@ -280,48 +276,14 @@ def test_sgd_with_zero_learning_rate():
     # Update optimizer with zero lr, (only valid if variable)
     optSettings["defaultLearningRate"] = (0.0, True)
     with pytest.raises(popart.popart_exception) as e_info:
-        session.updateOptimizer(popart.SGD(optSettings))
+        session.updateOptimizerFromHost(popart.SGD(optSettings))
     assert e_info.value.args[0].startswith(
         "Constant, zero learning rate in SGD")
 
     # Run a training step, and confirm the weights haven't updated
     optSettings["defaultLearningRate"] = (0.0, False)
-    session.updateOptimizer(popart.SGD(optSettings))
-    session.optimizerFromHost()
+    session.updateOptimizerFromHost(popart.SGD(optSettings))
+
     session.weightsToHost()
     session.readWeights(weightsio)
     assert np.array_equal(weights[wId], updated_weights)
-
-
-def test_check_optimizer_written_to_device():
-    """
-    In this test we check that the user can't mistakenly update the optimizer
-    on host without also updating on the device, before calling run
-    """
-
-    # Create the session with a variable SGD optimizer
-    optSettings = {
-        "defaultLearningRate": (0.5, False),
-        "defaultWeightDecay": (0.6, False)
-    }
-    session, inputsUserSgd = trainSession({}, popart.SGD(optSettings), 2)
-
-    # Run for a signle step. We haven't updated the optimizer between steps, so
-    # both run without error
-    stepio = popart.PyStepIO(inputsUserSgd, session.initAnchorArrays())
-    session.run(stepio)
-    session.run(stepio)
-
-    # Update optimizer on host
-    optSettings["defaultLearningRate"] = (0.4, False)
-    session.updateOptimizer(popart.SGD(optSettings))
-
-    # Try to run session, without updating optimizer on device
-    with pytest.raises(popart.popart_exception) as e_info:
-        session.run(stepio)
-    assert e_info.value.args[0].startswith(
-        "Must call optimizerFromHost before run")
-
-    # Try again after updating optimizer on device
-    session.optimizerFromHost()
-    session.run(stepio)

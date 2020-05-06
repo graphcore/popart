@@ -52,7 +52,6 @@ def get_session(fnModel, inputShapeInfo, dataFeed, torchWriter, passes, opts):
     session.weightsFromHost()
 
     print("Writing Optimizer tensors to device, if there are any")
-    session.optimizerFromHost()
 
     return session
 

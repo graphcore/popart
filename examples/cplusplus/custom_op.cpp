@@ -299,7 +299,7 @@ auto main(int argc, char **argv) -> int {
   popart::StepIO stepio(inputs, anchors);
 
   session->weightsFromHost();
-  session->optimizerFromHost();
+
   session->run(stepio);
 
   popart::logging::ir::err("input : {}", inData);

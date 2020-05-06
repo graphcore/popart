@@ -292,7 +292,6 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
   auto ops       = ir.getOpSchedule({});
   checkOpSchedule(ops, opts);
 
-  session->optimizerFromHost();
   session->weightsFromHost();
   session->run(stepio);
 
@@ -482,7 +481,6 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
 
   popart::StepIO stepio(inputs, anchors);
 
-  session->optimizerFromHost();
   session->weightsFromHost();
   session->run(stepio);
 
@@ -717,7 +715,6 @@ BOOST_AUTO_TEST_CASE(HostReduceHierarchicalReductionWithReplicatedGraphs) {
     auto ops       = ir.getOpSchedule({});
     checkOpSchedule(ops, opts);
 
-    session->optimizerFromHost();
     session->weightsFromHost();
     session->run(stepio);
 
@@ -973,7 +970,6 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationGradientStoreGradientLoad) {
 
   popart::StepIO stepio(inputs, anchors);
 
-  session->optimizerFromHost();
   session->weightsFromHost();
   session->run(stepio);
 
@@ -1230,7 +1226,6 @@ BOOST_AUTO_TEST_CASE(
     auto ops       = ir.getOpSchedule({});
     checkOpSchedule(ops, opts);
 
-    session->optimizerFromHost();
     session->weightsFromHost();
     session->run(stepio);
 
@@ -1669,6 +1664,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipelining) {
         popart::Patterns(PatternsLevel::Default));
 
     session->prepareDevice();
+
     const auto &ir        = session->getIr();
     const auto &mainGraph = ir.getMainGraph();
     if (userOptions.hostAllReduce) {
@@ -1920,6 +1916,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation) {
         popart::Patterns(PatternsLevel::Default));
 
     session->prepareDevice();
+
     const auto &ir        = session->getIr();
     const auto &mainGraph = ir.getMainGraph();
     if (userOptions.hostAllReduce) {
@@ -2130,6 +2127,7 @@ BOOST_AUTO_TEST_CASE(OATTSimpleTest, *boost::unit_test::disabled()) {
   };
 
   session->prepareDevice();
+
   const auto &ir = session->getIr();
   auto ops       = ir.getOpSchedule({});
   // checkOpSchedule(ops, opts);
@@ -2178,7 +2176,6 @@ BOOST_AUTO_TEST_CASE(OATTSimpleTest, *boost::unit_test::disabled()) {
 
   popart::StepIO stepio(inputs, anchors);
 
-  session->optimizerFromHost();
   session->weightsFromHost();
   session->run(stepio);
 

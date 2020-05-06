@@ -60,7 +60,7 @@ def main():
     anchors = torchSession.initAnchorArrays()
 
     torchSession.prepareDevice()
-    torchSession.optimizerFromHost()
+
     torchSession.weightsFromHost()
 
     for epoch in range(10):  # loop over the dataset multiple times

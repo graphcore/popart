@@ -146,7 +146,7 @@ public:
   void setInputShapeInfo(const InputShapeInfo &info);
 
   // Set the optimizer and add optimizer tensors
-  // FFS could this be combined with updateOptimizer?
+  // FFS could this be combined with updateOptimizerFromHost?
   void setOptimizer(const Optimizer &);
 
   void ensureOptimizerTensorCreated(const TensorId &optId,

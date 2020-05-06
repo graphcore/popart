@@ -681,8 +681,7 @@ def get_model_anchors(doSharding,
     stepio = popart.PyStepIO(inputs, anchors)
 
     session.weightsFromHost()
-    if doTraining is True:
-        session.optimizerFromHost()
+
     session.run(stepio)
 
     if doProfiling is True:

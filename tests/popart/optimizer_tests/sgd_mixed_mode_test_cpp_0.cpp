@@ -143,12 +143,11 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTest0) {
     session->weightsFromHost();
 
     // run 1 with opt0
-    session->optimizerFromHost();
     session->run(stepio);
 
     // run 2 with opt1
-    session->updateOptimizer(&opt1);
-    session->optimizerFromHost();
+    session->updateOptimizerFromHost(&opt1);
+
     session->run(stepio);
 
     // read final weights back

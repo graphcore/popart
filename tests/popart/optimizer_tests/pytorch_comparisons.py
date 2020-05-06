@@ -149,17 +149,16 @@ def test_against_pytorch():
     session.prepareDevice()
     session.weightsFromHost()
 
-    session.optimizerFromHost()
     stepio = popart.PyStepIO({input0: inputVals[0]}, anchorArrays)
     session.run(stepio)
 
-    session.updateOptimizer(popart.SGD(optMap1))
-    session.optimizerFromHost()
+    session.updateOptimizerFromHost(popart.SGD(optMap1))
+
     stepio = popart.PyStepIO({input0: inputVals[1]}, anchorArrays)
     session.run(stepio)
 
-    session.updateOptimizer(popart.SGD(optMap2))
-    session.optimizerFromHost()
+    session.updateOptimizerFromHost(popart.SGD(optMap2))
+
     stepio = popart.PyStepIO({input0: inputVals[2]}, anchorArrays)
     session.run(stepio)
 

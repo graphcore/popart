@@ -67,7 +67,7 @@ def test_decompose_gradient_sum():
 
             session.prepareDevice()
             session.weightsFromHost()
-            session.optimizerFromHost()
+
             session.run(stepio)
             return anchors[w0]
 

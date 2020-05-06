@@ -84,7 +84,6 @@ def test_train_then_infer_via_file():
 
     # Run the training session
     training_session.weightsFromHost()
-    training_session.optimizerFromHost()
 
     training_anchors = training_session.initAnchorArrays()
     training_inputs = {input: input_data}
@@ -213,7 +212,6 @@ def test_modelToHost_calls_resetHostWeights():
     session.prepareDevice()
 
     session.weightsFromHost()
-    session.optimizerFromHost()
 
     anchors = session.initAnchorArrays()
     inputs = {input: input_data}

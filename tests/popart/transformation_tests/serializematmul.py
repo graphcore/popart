@@ -311,7 +311,6 @@ def test_matmul_serialization_training_1(tmpdir):
         session.prepareDevice()
 
         session.weightsFromHost()
-        session.optimizerFromHost()
 
         anchors = session.initAnchorArrays()
 
@@ -564,7 +563,6 @@ def test_matmul_serialization_training_2(tmpdir):
         session.prepareDevice()
 
         session.weightsFromHost()
-        session.optimizerFromHost()
 
         anchors = session.initAnchorArrays()
 
@@ -821,7 +819,6 @@ def test_matmul_serialization_precision(tmpdir):
         session.prepareDevice()
 
         session.weightsFromHost()
-        session.optimizerFromHost()
 
         anchors = session.initAnchorArrays()
 
@@ -1088,7 +1085,6 @@ def test_matmul_serialization_training_with_gradient_accumlation(tmpdir):
         session.prepareDevice()
 
         session.weightsFromHost()
-        session.optimizerFromHost()
 
         anchors = session.initAnchorArrays()
 

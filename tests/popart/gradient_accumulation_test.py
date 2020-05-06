@@ -180,7 +180,6 @@ def run_graph(input_shape, initial_onnx_model, input_tensor_name,
 
     session.prepareDevice()
     session.weightsFromHost()
-    session.optimizerFromHost()
 
     anchor_arrays = session.initAnchorArrays()
 
@@ -631,7 +630,7 @@ def test_loading_saved_gradient_accumulationt_tesors():
                                       optimizer=optimizer,
                                       userOptions=opts)
         sess.prepareDevice()
-        sess.optimizerFromHost()
+
         sess.weightsFromHost()
         return sess
 

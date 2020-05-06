@@ -94,7 +94,7 @@ def main():
 
     print("Compiling model...")
     torchSession.prepareDevice()
-    torchSession.optimizerFromHost()
+
     torchSession.weightsFromHost()
 
     for epoch in range(10):  # loop over the dataset multiple times

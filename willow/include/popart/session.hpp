@@ -213,12 +213,6 @@ protected:
    * Flag to indicate if run has been called
    */
   bool runCalled = false;
-
-  /**
-   * Flag to indicate if optimizerFromHost has been called since and
-   * optimizer was last created/updated on the host
-   */
-  bool optimizerFromHostCalledSinceLastUpdate = false;
 };
 
 class InferenceSession : public Session {
@@ -291,24 +285,19 @@ public:
                       const SessionOptions &userOptions    = SessionOptions(),
                       const Patterns &patterns             = Patterns());
 
-  /** Update the optimizer.
+  /** Update the optimizer, as well as writing whatever optimizer tensors
+   * (learning rates, momentum, initial momentum tensors (zero)) there are to
+   * device.
    *
    * Note that the optimizer passed in must be compatible with that passed to
    * the constructor. For example, you cannot update to an Optimizer which uses
    * momentum here, if the Optimizer passed to the constructor did not have
    * momentum. Reason: The Ir would need to change to incorporate momentum, but
-   * the Ir is frozen once constructed. NB: Must call optimizerFromHost for this
-   * update to take effect on the device.
+   * the Ir is frozen once constructed.
    *
    * \param optimizer A pointer to a popart::Optimizer
    */
-  void updateOptimizer(const Optimizer *optimizer);
-
-  /**
-   * write whatever optimizer tensors (learning rates,
-   * momentum, initial momentum tensors (zero)) there are to device
-   */
-  void optimizerFromHost();
+  void updateOptimizerFromHost(const Optimizer *optimizer);
 
   /**
    * Access the stream IDs for variables that are involved in host side

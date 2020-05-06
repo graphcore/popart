@@ -109,7 +109,6 @@ def train():
         hvd.broadcast_weights(training.session, root_rank=0)
 
     training.session.weightsFromHost()
-    training.session.optimizerFromHost()
 
     # Synthetic data
     data = np.random.normal(size=(batches_per_step, batch_size, 784)).astype(
