@@ -330,7 +330,7 @@ public:
    * must already exist in the parent GraphProto's name scope and must appear
    * topologically before this sub-graph.
    */
-  void addInputTensorFromHigherScope(const TensorId &tensorId);
+  void addInputTensorFromParentGraph(const TensorId &tensorId);
 
   /**
    * Add a new preinitialized input tensor to the model

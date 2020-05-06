@@ -279,8 +279,8 @@ TensorId Builder::addUntypedInputTensor(const std::string &debugPrefix) {
   return impl_->addUntypedInputTensor(debugPrefix);
 }
 
-void Builder::addInputTensorFromHigherScope(const TensorId &tensorId) {
-  impl_->addInputTensorFromHigherScope(tensorId);
+void Builder::addInputTensorFromParentGraph(const TensorId &tensorId) {
+  impl_->addInputTensorFromParentGraph(tensorId);
 }
 
 TensorId Builder::addInitializedInputTensor(const ConstVoidData &initData,

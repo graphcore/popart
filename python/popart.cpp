@@ -1123,7 +1123,7 @@ PYBIND11_MODULE(popart_core, m) {
             &Builder::addUntypedInputTensor,
             py::arg("debugPrefix") = std::string());
     cls.def("addInputTensorFromParentGraph",
-            &Builder::addInputTensorFromHigherScope,
+            &Builder::addInputTensorFromParentGraph,
             py::arg("tensorId"));
     cls.def(
         "addInitializedInputTensor",
