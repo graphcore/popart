@@ -39,7 +39,6 @@ def main():
     inputs, labels = iter(trainloader).next()
 
     opts = popart.SessionOptions()
-    opts.enableVirtualGraphs = True
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
 
     start = time.process_time()

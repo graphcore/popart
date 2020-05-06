@@ -76,7 +76,7 @@ def get_model_anchors(doSharding,
     if doSharding is False:
         numIpus = 1 * replicated_graph_count
     else:
-        opts.enableVirtualGraphs = True
+        opts.virtualGraphMode = popart.VirtualGraphMode.Manual
         numIpus = 2 * replicated_graph_count
         builder.virtualGraph(s0, 0)
         builder.virtualGraph(e0, 0)

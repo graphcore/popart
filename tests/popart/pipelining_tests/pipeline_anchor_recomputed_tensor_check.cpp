@@ -91,9 +91,9 @@ BOOST_AUTO_TEST_CASE(PipelineAnchorRecomputedTensor0) {
 
     SessionOptions userOptions;
     if (rt == RunType::ContinuousRecompPipe) {
-      userOptions.enableVirtualGraphs = true;
-      userOptions.enablePipelining    = true;
-      userOptions.autoRecomputation   = RecomputationType::Pipeline;
+      userOptions.virtualGraphMode  = VirtualGraphMode::Manual;
+      userOptions.enablePipelining  = true;
+      userOptions.autoRecomputation = RecomputationType::Pipeline;
 
       builder->virtualGraph(sig, 0);
       builder->virtualGraph(scale, 0);

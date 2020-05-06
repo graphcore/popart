@@ -628,9 +628,6 @@ PYBIND11_MODULE(popart_core, m) {
                       &SessionOptions::batchSerializationFactor);
     cls.def_readwrite("enablePrefetchDatastreams",
                       &SessionOptions::enablePrefetchDatastreams);
-    cls.def_readwrite("enableVirtualGraphs",
-                      &SessionOptions::enableVirtualGraphs);
-    cls.def_readwrite("autoVirtualGraph", &SessionOptions::autoVirtualGraph);
     cls.def_readwrite("virtualGraphMode", &SessionOptions::virtualGraphMode);
     cls.def_readwrite("enableReplicatedGraphs",
                       &SessionOptions::enableReplicatedGraphs);

@@ -138,7 +138,7 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeNumericalTest0x) {
 
     SessionOptions userOptions;
 
-    userOptions.enableVirtualGraphs = true;
+    userOptions.virtualGraphMode = VirtualGraphMode::Manual;
 
     userOptions.reportOptions.insert({"showExecutionSteps", "true"});
 

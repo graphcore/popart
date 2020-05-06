@@ -159,10 +159,6 @@ struct SessionOptions {
   /// non-stable version instead for speed-up
   bool enableNonStableSoftmax = false;
 
-  /// Enable placement of operations on individual IPUs by creating a 'virtual
-  /// graph' for each IPU
-  bool enableVirtualGraphs = false;
-
   /// Enable replication of graphs
   bool enableReplicatedGraphs = false;
 
@@ -182,10 +178,8 @@ struct SessionOptions {
   /// varUpdate.
   int64_t accumulationFactor = 1;
 
-  /// Enable transformation pass that attempts to automatically place ops on
-  /// virtual graphs to achieve model parallelism.
-  bool autoVirtualGraph = false;
-
+  /// This option allows you to place ops on virtual graphs to achieve model
+  /// parallelism - either manually using model annotations, or automatically
   VirtualGraphMode virtualGraphMode = VirtualGraphMode::Off;
 
   /// Enable pipelining of virtual graphs

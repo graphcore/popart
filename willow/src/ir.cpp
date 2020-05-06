@@ -213,35 +213,8 @@ bool Ir::useSyntheticData() const {
   return syntheticDataMode() != SyntheticDataMode::Off;
 }
 
-void Ir::setUserOptions(const SessionOptions &flags) {
-  userOptions = flags;
+void Ir::setUserOptions(const SessionOptions &flags) { userOptions = flags; }
 
-  // Warn the user if they are using the enableVirtualGraphs or autoVirtualGraph
-  // options.
-  if (userOptions.enableVirtualGraphs) {
-    logging::ir::warn(
-        "The options enableVirtualGraphs is deprecated and will be removed in "
-        "a future release. Please use virtualGraphMode instead");
-  }
-  if (userOptions.autoVirtualGraph) {
-    logging::ir::warn(
-        "The options autoVirtualGraph is deprecated and will be removed in a "
-        "future release. Please use virtualGraphMode instead");
-  }
-
-  // If the user has not set virtualGraphMode (assuming default value Off means
-  // the user left it unset), check the enableVirtualGraphs and
-  // autoVirtualGraphs options.
-  if (userOptions.virtualGraphMode == VirtualGraphMode::Off) {
-    if (userOptions.enableVirtualGraphs) {
-      if (userOptions.autoVirtualGraph) {
-        userOptions.virtualGraphMode = VirtualGraphMode::Auto;
-      } else {
-        userOptions.virtualGraphMode = VirtualGraphMode::Manual;
-      }
-    }
-  }
-}
 void Ir::setInputShapeInfo(const InputShapeInfo &info) {
   inputShapeInfo = info;
 }
@@ -406,10 +379,8 @@ void Ir::verifyPipelineSettings() const {
 void Ir::verifyPingPongSettings() const {
   // check for mismatched settings
   if (userOptions.pingPongPhases > 1 &&
-      (userOptions.autoVirtualGraph ||
-       userOptions.virtualGraphMode != VirtualGraphMode::PingPong)) {
-    throw error("PingPong phases > 1 requires VirtualGraphMode::PingPong, "
-                "and autoVirtualGraph disabled");
+      userOptions.virtualGraphMode != VirtualGraphMode::PingPong) {
+    throw error("PingPong phases > 1 requires VirtualGraphMode::PingPong");
   }
 
   // if pingpong is enabled
@@ -833,8 +804,8 @@ void Ir::prepareImpl(const IrBundle &gb) {
   }
 
   setDataFlow(gb.dataFlow);
-  setUserOptions(gb.userOptions);
   setInputShapeInfo(gb.inputShapeInfo);
+  setUserOptions(gb.userOptions);
   setPatterns(gb.patterns);
   setOnnxModel(gb.modelProto);
 

@@ -105,7 +105,6 @@ def get_options(opts):
 
     # Enable auto-sharding
     if opts.num_ipus > 1 and opts.num_ipus > opts.replication_factor:
-        options.enableVirtualGraphs = True
         options.virtualGraphMode = popart.VirtualGraphMode.Auto
 
     # Enable pipelining

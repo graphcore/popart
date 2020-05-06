@@ -754,7 +754,7 @@ def test_pipeline_stage_errors():
         return [e1]
 
     session = PopartTestSession()
-    session.options.enableVirtualGraphs = True
+    session.options.virtualGraphMode = popart.VirtualGraphMode.Manual
     session.options.enablePipelining = True
     session.device = 'ipu_model'
     session.numIPUs = 2
@@ -827,7 +827,7 @@ def test_pipeline_stages_backwards_through_ipus():
         return e1
 
     session = PopartTestSession()
-    session.options.enableVirtualGraphs = True
+    session.options.virtualGraphMode = popart.VirtualGraphMode.Manual
     session.options.enablePipelining = True
     session.device = 'ipu_model'
     session.numIPUs = 2
@@ -888,7 +888,7 @@ def test_multiple_stages_per_virtual_graph_inference():
         return mm1
 
     session = PopartTestSession()
-    session.options.enableVirtualGraphs = True
+    session.options.virtualGraphMode = popart.VirtualGraphMode.Manual
     session.options.enablePipelining = True
     session.device = 'ipu_model'
     session.numIPUs = 2
@@ -952,11 +952,11 @@ def test_multiple_stages_per_virtual_graph_training():
 
         session = PopartTestSession()
         session.mode = 'train'
-        session.options.enableVirtualGraphs = set_pipeline_stages
         session.options.enablePipelining = set_pipeline_stages
         session.device = 'ipu_model'
         if set_pipeline_stages:
             session.numIPUs = 2
+            session.options.virtualGraphMode = popart.VirtualGraphMode.Manual
         session.batchesPerStep = bps
         session.options.enableGradientAccumulation = True
         session.options.accumulationFactor = accumulation_factor
@@ -1099,7 +1099,7 @@ def test_bad_auto_staging():
         return t2
 
     session = PopartTestSession()
-    session.options.enableVirtualGraphs = True
+    session.options.virtualGraphMode = popart.VirtualGraphMode.Manual
     session.options.enablePipelining = True
     session.device = 'ipu_model'
     session.numIPUs = 2

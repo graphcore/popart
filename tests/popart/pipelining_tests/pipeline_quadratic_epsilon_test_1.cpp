@@ -200,7 +200,7 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilonTest1) {
     std::map<std::string, std::string> deviceOpts{
         {"numIPUs", std::to_string(nIPUs)}};
 
-    userOptions.enableVirtualGraphs = true;
+    userOptions.virtualGraphMode = VirtualGraphMode::Manual;
 
     if (dumpPoplarTrace) {
       userOptions.reportOptions.insert({"showExecutionSteps", "true"});
