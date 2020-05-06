@@ -46,7 +46,7 @@ def test_pipeline_boundary():
         opts.enablePipelining = True
         numIpus = 2
 
-        patterns = popart.Patterns(popart.PatternsLevel.DEFAULT)
+        patterns = popart.Patterns(popart.PatternsLevel.Default)
         patterns.InPlace = True
 
         device = tu.create_test_device(numIpus=numIpus)
@@ -56,7 +56,7 @@ def test_pipeline_boundary():
                                          optimizer=popart.ConstSGD(0.1),
                                          losses=[loss],
                                          userOptions=opts,
-                                         passes=patterns)
+                                         patterns=patterns)
 
         anchors = session.initAnchorArrays()
 

@@ -394,7 +394,7 @@ def test_call_grad_3():
             optimizer=popart.ConstSGD(0.001),
             userOptions=trainingOptions,
             deviceInfo=tu.create_test_device(),
-            passes=popart.Patterns(popart.PatternsLevel.Default))
+            patterns=popart.Patterns(popart.PatternsLevel.Default))
 
         # Compile graph
         trainingSession.prepareDevice()
