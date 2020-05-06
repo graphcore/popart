@@ -12,7 +12,7 @@ namespace popx {
 class ViewChanger {
 public:
   virtual ~ViewChanger() {}
-  virtual poplar::Tensor apply(poplar::Tensor tensor) const;
+  virtual poplar::Tensor apply(poplar::Tensor tensor) const { return tensor; }
   virtual bool containsAllDataRegions() const { return true; }
 };
 
