@@ -921,6 +921,21 @@ bool Op::consumesGraphOutput() const {
                      });
 }
 
+bool Op::producesGraphOutput() const {
+
+  const auto graphOutputs = getGraph().getOutputIds();
+
+  const auto opOutTensors = output->tensors();
+
+  return std::any_of(opOutTensors.cbegin(),
+                     opOutTensors.cend(),
+                     [graphOutputs](const Tensor *outTensor) {
+                       return std::find(graphOutputs.cbegin(),
+                                        graphOutputs.cend(),
+                                        outTensor->id) != graphOutputs.cend();
+                     });
+}
+
 std::string Op::getInputsUnmodifiableString() const {
   std::ostringstream oss;
   oss << "([produces anchor ? " << producesAnchor() << "], consumes anchor ? "

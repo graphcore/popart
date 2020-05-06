@@ -51,6 +51,9 @@ void GraphTransformerImpl::convertFloatsToHalfs() {
                  type == ONNX_NAMESPACE::AttributeProto_AttributeType_GRAPHS) {
         throw error("Attributes of type GRAPH and GRAPHS : need impl in "
                     "convertFloatToHalf");
+      } else {
+        // not doing anything in this case, as this Transform is specific to
+        // type
       }
     }
   });
@@ -72,6 +75,490 @@ void GraphTransformerImpl::convertFloatsToHalfs() {
             if (p_tensor_type->has_elem_type()) {
               auto elem_type = p_tensor_type->elem_type();
               if (elem_type == ONNX_NAMESPACE::TensorProto_DataType_FLOAT) {
+                p_tensor_type->set_elem_type(
+                    ONNX_NAMESPACE::TensorProto_DataType_FLOAT16);
+              }
+            }
+          }
+        }
+      });
+}
+
+void GraphTransformerImpl::convertUINT8ToINT32() {
+  onnxutil::visitModelNodes(model, [](ONNX_NAMESPACE::NodeProto &node) {
+    for (unsigned att_i = 0; att_i < node.attribute_size(); ++att_i) {
+      auto ptr_att                        = node.mutable_attribute(att_i);
+      ONNX_NAMESPACE::AttributeProto &att = *ptr_att;
+
+      if (!att.has_type()) {
+        throw error("attribute has no type");
+      }
+
+      auto type = att.type();
+      if (type == ONNX_NAMESPACE::AttributeProto_AttributeType_TENSOR) {
+        if (!att.t().has_data_type()) {
+          throw error("Typeless tensor in convertUINT8ToINT32");
+        }
+        if (att.t().data_type() ==
+            ONNX_NAMESPACE::TensorProto_DataType_UNDEFINED) {
+          throw error("undefined tensor proto data type");
+        }
+        if (att.t().data_type() == ONNX_NAMESPACE::TensorProto_DataType_UINT8) {
+          auto &tensor = *att.mutable_t();
+          convertUINT8TensorToINT32(tensor);
+        }
+      } else if (type == ONNX_NAMESPACE::AttributeProto_AttributeType_GRAPH ||
+                 type == ONNX_NAMESPACE::AttributeProto_AttributeType_GRAPHS) {
+        throw error("Attributes of type GRAPH and GRAPHS : need impl in "
+                    "convertUINT8ToINT32");
+      } else {
+        // not doing anything in this case, as this Transform is specific to
+        // type
+      }
+    }
+  });
+
+  onnxutil::visitModelInitializers(
+      model, [](ONNX_NAMESPACE::TensorProto &initializer) {
+        if (initializer.data_type() ==
+            ONNX_NAMESPACE::TensorProto_DataType_UINT8) {
+          convertFloatTensorToHalf(initializer);
+        }
+      });
+
+  onnxutil::visitModelValueInfos(
+      model, [](ONNX_NAMESPACE::ValueInfoProto &value_info) {
+        if (value_info.has_type()) {
+          auto ptype = value_info.mutable_type();
+          if (ptype->has_tensor_type()) {
+            auto p_tensor_type = ptype->mutable_tensor_type();
+            if (p_tensor_type->has_elem_type()) {
+              auto elem_type = p_tensor_type->elem_type();
+              if (elem_type == ONNX_NAMESPACE::TensorProto_DataType_UINT8) {
+                p_tensor_type->set_elem_type(
+                    ONNX_NAMESPACE::TensorProto_DataType_INT32);
+              }
+            }
+          }
+        }
+      });
+}
+
+void GraphTransformerImpl::convertUINT16ToINT32() {
+  onnxutil::visitModelNodes(model, [](ONNX_NAMESPACE::NodeProto &node) {
+    for (unsigned att_i = 0; att_i < node.attribute_size(); ++att_i) {
+      auto ptr_att                        = node.mutable_attribute(att_i);
+      ONNX_NAMESPACE::AttributeProto &att = *ptr_att;
+
+      if (!att.has_type()) {
+        throw error("attribute has no type");
+      }
+
+      auto type = att.type();
+      if (type == ONNX_NAMESPACE::AttributeProto_AttributeType_TENSOR) {
+        if (!att.t().has_data_type()) {
+          throw error("Typeless tensor in convertUINT16ToINT32");
+        }
+        if (att.t().data_type() ==
+            ONNX_NAMESPACE::TensorProto_DataType_UNDEFINED) {
+          throw error("undefined tensor proto data type");
+        }
+        if (att.t().data_type() ==
+            ONNX_NAMESPACE::TensorProto_DataType_UINT16) {
+          auto &tensor = *att.mutable_t();
+          convertUINT16TensorToINT32(tensor);
+        }
+      } else if (type == ONNX_NAMESPACE::AttributeProto_AttributeType_GRAPH ||
+                 type == ONNX_NAMESPACE::AttributeProto_AttributeType_GRAPHS) {
+        throw error("Attributes of type GRAPH and GRAPHS : need impl in "
+                    "convertUINT16ToINT32");
+      } else {
+        // not doing anything in this case, as this Transform is specific to
+        // type
+      }
+    }
+  });
+
+  onnxutil::visitModelInitializers(
+      model, [](ONNX_NAMESPACE::TensorProto &initializer) {
+        if (initializer.data_type() ==
+            ONNX_NAMESPACE::TensorProto_DataType_UINT16) {
+          convertFloatTensorToHalf(initializer);
+        }
+      });
+
+  onnxutil::visitModelValueInfos(
+      model, [](ONNX_NAMESPACE::ValueInfoProto &value_info) {
+        if (value_info.has_type()) {
+          auto ptype = value_info.mutable_type();
+          if (ptype->has_tensor_type()) {
+            auto p_tensor_type = ptype->mutable_tensor_type();
+            if (p_tensor_type->has_elem_type()) {
+              auto elem_type = p_tensor_type->elem_type();
+              if (elem_type == ONNX_NAMESPACE::TensorProto_DataType_UINT16) {
+                p_tensor_type->set_elem_type(
+                    ONNX_NAMESPACE::TensorProto_DataType_INT32);
+              }
+            }
+          }
+        }
+      });
+}
+
+void GraphTransformerImpl::convertINT8ToINT32() {
+  onnxutil::visitModelNodes(model, [](ONNX_NAMESPACE::NodeProto &node) {
+    for (unsigned att_i = 0; att_i < node.attribute_size(); ++att_i) {
+      auto ptr_att                        = node.mutable_attribute(att_i);
+      ONNX_NAMESPACE::AttributeProto &att = *ptr_att;
+
+      if (!att.has_type()) {
+        throw error("attribute has no type");
+      }
+
+      auto type = att.type();
+      if (type == ONNX_NAMESPACE::AttributeProto_AttributeType_TENSOR) {
+        if (!att.t().has_data_type()) {
+          throw error("Typeless tensor in convertINT8ToINT32");
+        }
+        if (att.t().data_type() ==
+            ONNX_NAMESPACE::TensorProto_DataType_UNDEFINED) {
+          throw error("undefined tensor proto data type");
+        }
+        if (att.t().data_type() == ONNX_NAMESPACE::TensorProto_DataType_INT8) {
+          auto &tensor = *att.mutable_t();
+          convertINT8TensorToINT32(tensor);
+        }
+      } else if (type == ONNX_NAMESPACE::AttributeProto_AttributeType_GRAPH ||
+                 type == ONNX_NAMESPACE::AttributeProto_AttributeType_GRAPHS) {
+        throw error("Attributes of type GRAPH and GRAPHS : need impl in "
+                    "convertINT8ToINT32");
+      } else {
+        // not doing anything in this case, as this Transform is specific to
+        // type
+      }
+    }
+  });
+
+  onnxutil::visitModelInitializers(
+      model, [](ONNX_NAMESPACE::TensorProto &initializer) {
+        if (initializer.data_type() ==
+            ONNX_NAMESPACE::TensorProto_DataType_INT8) {
+          convertFloatTensorToHalf(initializer);
+        }
+      });
+
+  onnxutil::visitModelValueInfos(
+      model, [](ONNX_NAMESPACE::ValueInfoProto &value_info) {
+        if (value_info.has_type()) {
+          auto ptype = value_info.mutable_type();
+          if (ptype->has_tensor_type()) {
+            auto p_tensor_type = ptype->mutable_tensor_type();
+            if (p_tensor_type->has_elem_type()) {
+              auto elem_type = p_tensor_type->elem_type();
+              if (elem_type == ONNX_NAMESPACE::TensorProto_DataType_INT8) {
+                p_tensor_type->set_elem_type(
+                    ONNX_NAMESPACE::TensorProto_DataType_INT32);
+              }
+            }
+          }
+        }
+      });
+}
+
+void GraphTransformerImpl::convertINT16ToINT32() {
+  onnxutil::visitModelNodes(model, [](ONNX_NAMESPACE::NodeProto &node) {
+    for (unsigned att_i = 0; att_i < node.attribute_size(); ++att_i) {
+      auto ptr_att                        = node.mutable_attribute(att_i);
+      ONNX_NAMESPACE::AttributeProto &att = *ptr_att;
+
+      if (!att.has_type()) {
+        throw error("attribute has no type");
+      }
+
+      auto type = att.type();
+      if (type == ONNX_NAMESPACE::AttributeProto_AttributeType_TENSOR) {
+        if (!att.t().has_data_type()) {
+          throw error("Typeless tensor in convertINT16ToINT32");
+        }
+        if (att.t().data_type() ==
+            ONNX_NAMESPACE::TensorProto_DataType_UNDEFINED) {
+          throw error("undefined tensor proto data type");
+        }
+        if (att.t().data_type() == ONNX_NAMESPACE::TensorProto_DataType_INT16) {
+          auto &tensor = *att.mutable_t();
+          convertINT16TensorToINT32(tensor);
+        }
+      } else if (type == ONNX_NAMESPACE::AttributeProto_AttributeType_GRAPH ||
+                 type == ONNX_NAMESPACE::AttributeProto_AttributeType_GRAPHS) {
+        throw error("Attributes of type GRAPH and GRAPHS : need impl in "
+                    "convertINT16ToINT32");
+      } else {
+        // not doing anything in this case, as this Transform is specific to
+        // type
+      }
+    }
+  });
+
+  onnxutil::visitModelInitializers(
+      model, [](ONNX_NAMESPACE::TensorProto &initializer) {
+        if (initializer.data_type() ==
+            ONNX_NAMESPACE::TensorProto_DataType_INT16) {
+          convertFloatTensorToHalf(initializer);
+        }
+      });
+
+  onnxutil::visitModelValueInfos(
+      model, [](ONNX_NAMESPACE::ValueInfoProto &value_info) {
+        if (value_info.has_type()) {
+          auto ptype = value_info.mutable_type();
+          if (ptype->has_tensor_type()) {
+            auto p_tensor_type = ptype->mutable_tensor_type();
+            if (p_tensor_type->has_elem_type()) {
+              auto elem_type = p_tensor_type->elem_type();
+              if (elem_type == ONNX_NAMESPACE::TensorProto_DataType_INT16) {
+                p_tensor_type->set_elem_type(
+                    ONNX_NAMESPACE::TensorProto_DataType_INT32);
+              }
+            }
+          }
+        }
+      });
+}
+
+void GraphTransformerImpl::convertINT64ToINT32() {
+  onnxutil::visitModelNodes(model, [](ONNX_NAMESPACE::NodeProto &node) {
+    for (unsigned att_i = 0; att_i < node.attribute_size(); ++att_i) {
+      auto ptr_att                        = node.mutable_attribute(att_i);
+      ONNX_NAMESPACE::AttributeProto &att = *ptr_att;
+
+      if (!att.has_type()) {
+        throw error("attribute has no type");
+      }
+
+      auto type = att.type();
+      if (type == ONNX_NAMESPACE::AttributeProto_AttributeType_TENSOR) {
+        if (!att.t().has_data_type()) {
+          throw error("Typeless tensor in convertINT64ToINT32");
+        }
+        if (att.t().data_type() ==
+            ONNX_NAMESPACE::TensorProto_DataType_UNDEFINED) {
+          throw error("undefined tensor proto data type");
+        }
+        if (att.t().data_type() == ONNX_NAMESPACE::TensorProto_DataType_INT64) {
+          auto &tensor = *att.mutable_t();
+          convertINT64TensorToINT32(tensor);
+        }
+      } else if (type == ONNX_NAMESPACE::AttributeProto_AttributeType_GRAPH ||
+                 type == ONNX_NAMESPACE::AttributeProto_AttributeType_GRAPHS) {
+        throw error("Attributes of type GRAPH and GRAPHS : need impl in "
+                    "convertINT64ToINT32");
+      } else {
+        // not doing anything in this case, as this Transform is specific to
+        // type
+      }
+    }
+  });
+
+  onnxutil::visitModelInitializers(
+      model, [](ONNX_NAMESPACE::TensorProto &initializer) {
+        if (initializer.data_type() ==
+            ONNX_NAMESPACE::TensorProto_DataType_INT64) {
+          convertFloatTensorToHalf(initializer);
+        }
+      });
+
+  onnxutil::visitModelValueInfos(
+      model, [](ONNX_NAMESPACE::ValueInfoProto &value_info) {
+        if (value_info.has_type()) {
+          auto ptype = value_info.mutable_type();
+          if (ptype->has_tensor_type()) {
+            auto p_tensor_type = ptype->mutable_tensor_type();
+            if (p_tensor_type->has_elem_type()) {
+              auto elem_type = p_tensor_type->elem_type();
+              if (elem_type == ONNX_NAMESPACE::TensorProto_DataType_INT64) {
+                p_tensor_type->set_elem_type(
+                    ONNX_NAMESPACE::TensorProto_DataType_INT32);
+              }
+            }
+          }
+        }
+      });
+}
+
+void GraphTransformerImpl::convertDoublesToFloats() {
+  onnxutil::visitModelNodes(model, [](ONNX_NAMESPACE::NodeProto &node) {
+    for (unsigned att_i = 0; att_i < node.attribute_size(); ++att_i) {
+      auto ptr_att                        = node.mutable_attribute(att_i);
+      ONNX_NAMESPACE::AttributeProto &att = *ptr_att;
+
+      if (!att.has_type()) {
+        throw error("attribute has no type");
+      }
+
+      auto type = att.type();
+      if (type == ONNX_NAMESPACE::AttributeProto_AttributeType_TENSOR) {
+        if (!att.t().has_data_type()) {
+          throw error("Typeless tensor in convertDoublesToFloats");
+        }
+        if (att.t().data_type() ==
+            ONNX_NAMESPACE::TensorProto_DataType_UNDEFINED) {
+          throw error("undefined tensor proto data type");
+        }
+        if (att.t().data_type() ==
+            ONNX_NAMESPACE::TensorProto_DataType_DOUBLE) {
+          auto &tensor = *att.mutable_t();
+          convertDoubleTensorToFloat(tensor);
+        }
+      } else if (type == ONNX_NAMESPACE::AttributeProto_AttributeType_GRAPH ||
+                 type == ONNX_NAMESPACE::AttributeProto_AttributeType_GRAPHS) {
+        throw error("Attributes of type GRAPH and GRAPHS : need impl in "
+                    "convertDoublesToFloats");
+      } else {
+        // not doing anything in this case, as this Transform is specific to
+        // type
+      }
+    }
+  });
+
+  onnxutil::visitModelInitializers(
+      model, [](ONNX_NAMESPACE::TensorProto &initializer) {
+        if (initializer.data_type() ==
+            ONNX_NAMESPACE::TensorProto_DataType_DOUBLE) {
+          convertFloatTensorToHalf(initializer);
+        }
+      });
+
+  onnxutil::visitModelValueInfos(
+      model, [](ONNX_NAMESPACE::ValueInfoProto &value_info) {
+        if (value_info.has_type()) {
+          auto ptype = value_info.mutable_type();
+          if (ptype->has_tensor_type()) {
+            auto p_tensor_type = ptype->mutable_tensor_type();
+            if (p_tensor_type->has_elem_type()) {
+              auto elem_type = p_tensor_type->elem_type();
+              if (elem_type == ONNX_NAMESPACE::TensorProto_DataType_DOUBLE) {
+                p_tensor_type->set_elem_type(
+                    ONNX_NAMESPACE::TensorProto_DataType_FLOAT);
+              }
+            }
+          }
+        }
+      });
+}
+
+void GraphTransformerImpl::convertBFloats16ToFloat32() {
+  onnxutil::visitModelNodes(model, [](ONNX_NAMESPACE::NodeProto &node) {
+    for (unsigned att_i = 0; att_i < node.attribute_size(); ++att_i) {
+      auto ptr_att                        = node.mutable_attribute(att_i);
+      ONNX_NAMESPACE::AttributeProto &att = *ptr_att;
+
+      if (!att.has_type()) {
+        throw error("attribute has no type");
+      }
+
+      auto type = att.type();
+      if (type == ONNX_NAMESPACE::AttributeProto_AttributeType_TENSOR) {
+        if (!att.t().has_data_type()) {
+          throw error("Typeless tensor in convertBFloats16ToFloat32");
+        }
+        if (att.t().data_type() ==
+            ONNX_NAMESPACE::TensorProto_DataType_UNDEFINED) {
+          throw error("undefined tensor proto data type");
+        }
+        if (att.t().data_type() ==
+            ONNX_NAMESPACE::TensorProto_DataType_BFLOAT16) {
+          auto &tensor = *att.mutable_t();
+          convertBFloat16TensorToFloat32(tensor);
+        }
+      } else if (type == ONNX_NAMESPACE::AttributeProto_AttributeType_GRAPH ||
+                 type == ONNX_NAMESPACE::AttributeProto_AttributeType_GRAPHS) {
+        throw error("Attributes of type GRAPH and GRAPHS : need impl in "
+                    "convertBFloats16ToFloat32");
+      } else {
+        // not doing anything in this case, as this Transform is specific to
+        // type
+      }
+    }
+  });
+
+  onnxutil::visitModelInitializers(
+      model, [](ONNX_NAMESPACE::TensorProto &initializer) {
+        if (initializer.data_type() ==
+            ONNX_NAMESPACE::TensorProto_DataType_BFLOAT16) {
+          convertFloatTensorToHalf(initializer);
+        }
+      });
+
+  onnxutil::visitModelValueInfos(
+      model, [](ONNX_NAMESPACE::ValueInfoProto &value_info) {
+        if (value_info.has_type()) {
+          auto ptype = value_info.mutable_type();
+          if (ptype->has_tensor_type()) {
+            auto p_tensor_type = ptype->mutable_tensor_type();
+            if (p_tensor_type->has_elem_type()) {
+              auto elem_type = p_tensor_type->elem_type();
+              if (elem_type == ONNX_NAMESPACE::TensorProto_DataType_BFLOAT16) {
+                p_tensor_type->set_elem_type(
+                    ONNX_NAMESPACE::TensorProto_DataType_FLOAT);
+              }
+            }
+          }
+        }
+      });
+}
+
+void GraphTransformerImpl::convertDoublesToHalfs() {
+  onnxutil::visitModelNodes(model, [](ONNX_NAMESPACE::NodeProto &node) {
+    for (unsigned att_i = 0; att_i < node.attribute_size(); ++att_i) {
+      auto ptr_att                        = node.mutable_attribute(att_i);
+      ONNX_NAMESPACE::AttributeProto &att = *ptr_att;
+
+      if (!att.has_type()) {
+        throw error("attribute has no type");
+      }
+
+      auto type = att.type();
+      if (type == ONNX_NAMESPACE::AttributeProto_AttributeType_TENSOR) {
+        if (!att.t().has_data_type()) {
+          throw error("Typeless tensor in convertDoublesToHalfs");
+        }
+        if (att.t().data_type() ==
+            ONNX_NAMESPACE::TensorProto_DataType_UNDEFINED) {
+          throw error("undefined tensor proto data type");
+        }
+        if (att.t().data_type() ==
+            ONNX_NAMESPACE::TensorProto_DataType_DOUBLE) {
+          auto &tensor = *att.mutable_t();
+          convertDoubleTensorToHalf(tensor);
+        }
+      } else if (type == ONNX_NAMESPACE::AttributeProto_AttributeType_GRAPH ||
+                 type == ONNX_NAMESPACE::AttributeProto_AttributeType_GRAPHS) {
+        throw error("Attributes of type GRAPH and GRAPHS : need impl in "
+                    "convertDoublesToHalfs");
+      } else {
+        // not doing anything in this case, as this Transform is specific to
+        // type
+      }
+    }
+  });
+
+  onnxutil::visitModelInitializers(
+      model, [](ONNX_NAMESPACE::TensorProto &initializer) {
+        if (initializer.data_type() ==
+            ONNX_NAMESPACE::TensorProto_DataType_DOUBLE) {
+          convertFloatTensorToHalf(initializer);
+        }
+      });
+
+  onnxutil::visitModelValueInfos(
+      model, [](ONNX_NAMESPACE::ValueInfoProto &value_info) {
+        if (value_info.has_type()) {
+          auto ptype = value_info.mutable_type();
+          if (ptype->has_tensor_type()) {
+            auto p_tensor_type = ptype->mutable_tensor_type();
+            if (p_tensor_type->has_elem_type()) {
+              auto elem_type = p_tensor_type->elem_type();
+              if (elem_type == ONNX_NAMESPACE::TensorProto_DataType_DOUBLE) {
                 p_tensor_type->set_elem_type(
                     ONNX_NAMESPACE::TensorProto_DataType_FLOAT16);
               }
@@ -103,6 +590,197 @@ void GraphTransformerImpl::convertFloatTensorToHalf(
   tp.clear_raw_data();
   tp.set_raw_data(hValData.data(), hValData.size());
   tp.set_data_type(ONNX_NAMESPACE::TensorProto_DataType_FLOAT16);
+}
+
+void GraphTransformerImpl::convertDoubleTensorToHalf(
+    ONNX_NAMESPACE::TensorProto &tp) {
+  if (tp.data_type() != ONNX_NAMESPACE::TensorProto_DataType_DOUBLE) {
+    auto descriptor     = ONNX_NAMESPACE::TensorProto_DataType_descriptor();
+    auto data_type_name = descriptor->FindValueByNumber(tp.data_type())->name();
+    throw error("cannot set tensor type {} to type HALF", data_type_name);
+  }
+  auto mutableData = onnxutil::getMutableData(tp);
+  auto doubleData  = reinterpret_cast<const double *>(mutableData.data);
+
+  auto n_elms = mutableData.info.nelms();
+  std::vector<char> hValData(2 * n_elms);
+  // poplar::copyDoubleToDeviceHalf takes a Target as an argument, but doesn't
+  // use it, so a dummy target can be used here.
+  auto dummyTarget = poplar::Target();
+  poplar::copyDoubleToDeviceHalf(
+      dummyTarget, doubleData, hValData.data(), n_elms);
+
+  tp.clear_double_data();
+  tp.clear_raw_data();
+  tp.set_raw_data(hValData.data(), hValData.size());
+  tp.set_data_type(ONNX_NAMESPACE::TensorProto_DataType_FLOAT16);
+}
+
+void GraphTransformerImpl::convertDoubleTensorToFloat(
+    ONNX_NAMESPACE::TensorProto &tp) {
+  if (tp.data_type() != ONNX_NAMESPACE::TensorProto_DataType_DOUBLE) {
+    auto descriptor     = ONNX_NAMESPACE::TensorProto_DataType_descriptor();
+    auto data_type_name = descriptor->FindValueByNumber(tp.data_type())->name();
+    throw error("cannot set tensor type {} to type Float", data_type_name);
+  }
+  auto mutableData = onnxutil::getMutableData(tp);
+  auto doubleData  = reinterpret_cast<const double *>(mutableData.data);
+
+  auto n_elms = mutableData.info.nelms();
+
+  float floatData[n_elms];
+  std::copy(doubleData, doubleData + n_elms, floatData);
+
+  tp.clear_double_data();
+  tp.clear_raw_data();
+  for (int i = 0; i < n_elms; i++)
+    tp.add_float_data(floatData[i]);
+  tp.set_data_type(ONNX_NAMESPACE::TensorProto_DataType_FLOAT);
+}
+
+void GraphTransformerImpl::convertUINT8TensorToINT32(
+    ONNX_NAMESPACE::TensorProto &tp) {
+  if (tp.data_type() != ONNX_NAMESPACE::TensorProto_DataType_UINT8) {
+    auto descriptor     = ONNX_NAMESPACE::TensorProto_DataType_descriptor();
+    auto data_type_name = descriptor->FindValueByNumber(tp.data_type())->name();
+    throw error("cannot set tensor type {} to type INT32", data_type_name);
+  }
+  auto mutableData = onnxutil::getMutableData(tp);
+  auto uint8Data   = reinterpret_cast<const uint8_t *>(mutableData.data);
+
+  auto n_elms = mutableData.info.nelms();
+
+  int32_t int32Data[n_elms];
+  std::copy(uint8Data, uint8Data + n_elms, int32Data);
+
+  tp.clear_raw_data();
+  for (int i = 0; i < n_elms; i++)
+    tp.add_int32_data(int32Data[i]);
+  tp.set_data_type(ONNX_NAMESPACE::TensorProto_DataType_INT32);
+}
+
+void GraphTransformerImpl::convertUINT16TensorToINT32(
+    ONNX_NAMESPACE::TensorProto &tp) {
+  if (tp.data_type() != ONNX_NAMESPACE::TensorProto_DataType_UINT16) {
+    auto descriptor     = ONNX_NAMESPACE::TensorProto_DataType_descriptor();
+    auto data_type_name = descriptor->FindValueByNumber(tp.data_type())->name();
+    throw error("cannot set tensor type {} to type INT32", data_type_name);
+  }
+  auto mutableData = onnxutil::getMutableData(tp);
+  auto uint16Data  = reinterpret_cast<const uint16_t *>(mutableData.data);
+
+  auto n_elms = mutableData.info.nelms();
+
+  int32_t int32Data[n_elms];
+  std::copy(uint16Data, uint16Data + n_elms, int32Data);
+
+  tp.clear_raw_data();
+  for (int i = 0; i < n_elms; i++)
+    tp.add_int32_data(int32Data[i]);
+  tp.set_data_type(ONNX_NAMESPACE::TensorProto_DataType_INT32);
+}
+
+void GraphTransformerImpl::convertINT8TensorToINT32(
+    ONNX_NAMESPACE::TensorProto &tp) {
+  if (tp.data_type() != ONNX_NAMESPACE::TensorProto_DataType_INT8) {
+    auto descriptor     = ONNX_NAMESPACE::TensorProto_DataType_descriptor();
+    auto data_type_name = descriptor->FindValueByNumber(tp.data_type())->name();
+    throw error("cannot set tensor type {} to type INT32", data_type_name);
+  }
+  auto mutableData = onnxutil::getMutableData(tp);
+  auto int8Data    = reinterpret_cast<const int8_t *>(mutableData.data);
+
+  auto n_elms = mutableData.info.nelms();
+
+  int32_t int32Data[n_elms];
+  std::copy(int8Data, int8Data + n_elms, int32Data);
+
+  tp.clear_raw_data();
+  for (int i = 0; i < n_elms; i++)
+    tp.add_int32_data(int32Data[i]);
+  tp.set_data_type(ONNX_NAMESPACE::TensorProto_DataType_INT32);
+}
+
+void GraphTransformerImpl::convertINT16TensorToINT32(
+    ONNX_NAMESPACE::TensorProto &tp) {
+  if (tp.data_type() != ONNX_NAMESPACE::TensorProto_DataType_INT16) {
+    auto descriptor     = ONNX_NAMESPACE::TensorProto_DataType_descriptor();
+    auto data_type_name = descriptor->FindValueByNumber(tp.data_type())->name();
+    throw error("cannot set tensor type {} to type INT32", data_type_name);
+  }
+  auto mutableData = onnxutil::getMutableData(tp);
+  auto int16Data   = reinterpret_cast<const int16_t *>(mutableData.data);
+
+  auto n_elms = mutableData.info.nelms();
+
+  int32_t int32Data[n_elms];
+  std::copy(int16Data, int16Data + n_elms, int32Data);
+
+  tp.clear_raw_data();
+  for (int i = 0; i < n_elms; i++)
+    tp.add_int32_data(int32Data[i]);
+  tp.set_data_type(ONNX_NAMESPACE::TensorProto_DataType_INT32);
+}
+
+void GraphTransformerImpl::convertINT64TensorToINT32(
+    ONNX_NAMESPACE::TensorProto &tp) {
+  if (tp.data_type() != ONNX_NAMESPACE::TensorProto_DataType_INT64) {
+    auto descriptor     = ONNX_NAMESPACE::TensorProto_DataType_descriptor();
+    auto data_type_name = descriptor->FindValueByNumber(tp.data_type())->name();
+    throw error("cannot set tensor type {} to type INT64", data_type_name);
+  }
+  auto mutableData = onnxutil::getMutableData(tp);
+  auto int64Data   = reinterpret_cast<const int64_t *>(mutableData.data);
+
+  auto n_elms = mutableData.info.nelms();
+
+  // Make sure data is within acceptable bounds for an int32 not to overflow
+  for (int i = 0; i < n_elms; i++) {
+    if (int64Data[i] > INT_MAX || int64Data[i] < INT_MIN) {
+      throw error("In convertINT64TensorToINT32, cannot cast int64 to "
+                  "int32: number is too large.");
+    }
+  }
+
+  int32_t int32Data[n_elms];
+  std::copy(int64Data, int64Data + n_elms, int32Data);
+
+  tp.clear_raw_data();
+  tp.clear_int64_data();
+  for (int i = 0; i < n_elms; i++)
+    tp.add_int32_data(int32Data[i]);
+  tp.set_data_type(ONNX_NAMESPACE::TensorProto_DataType_INT32);
+}
+
+void GraphTransformerImpl::convertBFloat16TensorToFloat32(
+    ONNX_NAMESPACE::TensorProto &tp) {
+  if (tp.data_type() != ONNX_NAMESPACE::TensorProto_DataType_BFLOAT16) {
+    auto descriptor     = ONNX_NAMESPACE::TensorProto_DataType_descriptor();
+    auto data_type_name = descriptor->FindValueByNumber(tp.data_type())->name();
+    throw error("cannot set tensor type {} to type FLOAT32", data_type_name);
+  }
+  auto mutableData = onnxutil::getMutableData(tp);
+
+  // Even if the data is BFloat 16 we extract it as int16, just so that be get
+  // the 2 bytes out at once
+  auto int16Data = reinterpret_cast<const int16_t *>(mutableData.data);
+
+  // Initialize the recipient float32 array
+  auto n_elms = mutableData.info.nelms();
+  float floatData[n_elms];
+
+  // To convert from bfloat to float32 we simply append 16 zeros (2 bytes)
+  for (int i = 0; i < n_elms; i++) {
+    int32_t buffer    = (int32_t)int16Data[i];
+    buffer            = (buffer << 16);
+    float floatBuffer = *reinterpret_cast<float *>(&buffer);
+    floatData[i]      = floatBuffer;
+  }
+
+  tp.clear_raw_data();
+  for (int i = 0; i < n_elms; i++)
+    tp.add_float_data(floatData[i]);
+  tp.set_data_type(ONNX_NAMESPACE::TensorProto_DataType_FLOAT);
 }
 
 void GraphTransformerImpl::convertInitializersToConstants(

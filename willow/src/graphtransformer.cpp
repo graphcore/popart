@@ -16,6 +16,28 @@ std::string GraphTransformer::getModelProto() const {
 
 void GraphTransformer::convertFloatsToHalfs() { impl->convertFloatsToHalfs(); }
 
+void GraphTransformer::convertUINT8ToINT32() { impl->convertUINT8ToINT32(); }
+
+void GraphTransformer::convertUINT16ToINT32() { impl->convertUINT16ToINT32(); }
+
+void GraphTransformer::convertINT8ToINT32() { impl->convertINT8ToINT32(); }
+
+void GraphTransformer::convertINT16ToINT32() { impl->convertINT16ToINT32(); }
+
+void GraphTransformer::convertINT64ToINT32() { impl->convertINT64ToINT32(); }
+
+void GraphTransformer::convertDoublesToFloats() {
+  impl->convertDoublesToFloats();
+}
+
+void GraphTransformer::convertDoublesToHalfs() {
+  impl->convertDoublesToHalfs();
+}
+
+void GraphTransformer::convertBFloats16ToFloat32() {
+  impl->convertBFloats16ToFloat32();
+}
+
 void GraphTransformer::convertInitializersToConstants(
     const std::vector<TensorId> &ids) {
   impl->convertInitializersToConstants(ids);

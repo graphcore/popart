@@ -17,7 +17,7 @@ public:
   virtual poplar::Tensor outplace(poplar::program::Sequence &,
                                   poplar::Graph &,
                                   const poplar::Tensor &,
-                                  const std::string &) const = 0;
+                                  const std::string &) const;
 
   virtual void inplace(poplar::program::Sequence &,
                        poplar::Graph &,

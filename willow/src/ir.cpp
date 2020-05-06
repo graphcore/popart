@@ -41,6 +41,7 @@
 #include <popart/recompute.hpp>
 #include <popart/transforms/aliaszerocopy.hpp>
 #include <popart/transforms/auto_virtual_graph.hpp>
+#include <popart/transforms/batchserialize.hpp>
 #include <popart/transforms/cachesetup.hpp>
 #include <popart/transforms/decomposegradsum.hpp>
 #include <popart/transforms/dynamicoptransform.hpp>
@@ -908,6 +909,16 @@ void Ir::prepareImpl(const IrBundle &gb) {
   if (canEvaluate()) {
     growFinalLoss(gb.losses);
     updateVertices();
+  }
+
+  // Batch serialisation, step 1
+  // (has to occur before setNEdgesToLoss, but after growFinalLoss)
+  if (userOptions.batchSerializationFactor > 1) {
+    applyTransform(BatchSerialize::id(1), getMainGraph());
+    updateVertices();
+  }
+
+  if (canEvaluate()) {
     setNEdgesToLoss();
   }
 
@@ -1070,6 +1081,12 @@ void Ir::prepareImpl(const IrBundle &gb) {
   }
 
   updateVertices();
+
+  // Batch serialisation, step 2
+  if (userOptions.batchSerializationFactor > 1) {
+    applyTransform(BatchSerialize::id(2), getMainGraph());
+    updateVertices();
+  }
 
   for (auto &id_graph : graphs) {
     auto &graph = getGraph(id_graph.first);
@@ -3226,6 +3243,37 @@ void Ir::applyInplacePattern(Graph &graph) {
       // correctness?
       OpsBeforeKey newTopoCons = inplace.getNewTopoCons(op, identifier);
 
+      // beforeProducesOutput flag is used to prevent inplacing if any of the
+      // new constraints requried to inplace a node has a before node that
+      // produces an output of the graph. this is prevented because if the graph
+      // is executed using a call op, then the out from the nodes are copied
+      // after all the nodes of the sub graph have executed. this would cause
+      // the inplaced data to be corrupted even if the constraints are in place
+      // as the tensor output copy is delayed.
+      bool beforeProducesOutput = false;
+      for (auto &before_after : newTopoCons) {
+        auto &befores = before_after.second;
+
+        for (auto &before : befores) {
+          if (before->producesGraphOutput()) {
+            beforeProducesOutput =
+                true; // before node of the topocon constraint produces output
+            std::ostringstream oss;
+            oss << "[Inplacing] " << op->str()
+                << ", Excluded due to the required topological constraint with "
+                   "output node, "
+                << before->str();
+            logging::pattern::debug(oss.str());
+            break;
+          }
+        }
+        if (beforeProducesOutput)
+          break;
+      }
+      if (beforeProducesOutput) {
+        continue;
+      }
+
       ExternOpTensorBundle eot_bun(op, op->getInplaceVariant(identifier));
       const Op *inplaceOp = eot_bun.getOp();
 
@@ -3431,6 +3479,23 @@ TensorId Ir::createIntermediateTensorId(const TensorId &base_id) {
   logging::ir::trace("Generating tensor id {}", temp_id);
   ++intermediate_tensor_counter;
   return temp_id;
+}
+
+TensorId
+Ir::createBatchSliceTensorId(TensorId base_id, unsigned s, unsigned e) {
+  auto slice_id = logging::format(
+      "{}__bs{}_{}_{}", base_id, s, e, intermediate_tensor_counter);
+  logging::ir::trace("Generating tensor id {}", slice_id);
+  ++intermediate_tensor_counter;
+  return slice_id;
+}
+
+TensorId Ir::createBatchConcatTensorId(TensorId base_id) {
+  auto concat_id =
+      logging::format("{}__cc{}", base_id, intermediate_tensor_counter);
+  logging::ir::trace("Generating tensor id {}", concat_id);
+  ++intermediate_tensor_counter;
+  return concat_id;
 }
 
 } // namespace popart

@@ -96,6 +96,15 @@ poplar::Tensor EwuComputex::cloneNcopy(poplar::program::Sequence &prog,
   return outTensor;
 }
 
+poplar::Tensor EwuComputex::outplace(poplar::program::Sequence &prog,
+                                     poplar::Graph &graph,
+                                     const poplar::Tensor &tensor,
+                                     const std::string &debug_prefix) const {
+  auto out_tensor = cloneNcopy(prog, graph, tensor);
+  inplace(prog, graph, out_tensor, debug_prefix);
+  return out_tensor;
+}
+
 BinaryComparisonOpx::BinaryComparisonOpx(Op *op, Devicex *devicex)
     : Opx(op, devicex) {}
 

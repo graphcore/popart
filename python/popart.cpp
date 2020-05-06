@@ -624,6 +624,8 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("pingPongPhases", &SessionOptions::pingPongPhases);
     cls.def_readwrite("explicitRecomputation",
                       &SessionOptions::explicitRecomputation);
+    cls.def_readwrite("batchSerializationFactor",
+                      &SessionOptions::batchSerializationFactor);
     cls.def_readwrite("enablePrefetchDatastreams",
                       &SessionOptions::enablePrefetchDatastreams);
     cls.def_readwrite("enableVirtualGraphs",
@@ -995,6 +997,16 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("prepareNodesForTraining",
             &GraphTransformer::prepareNodesForTraining);
     cls.def("convertFloatsToHalfs", &GraphTransformer::convertFloatsToHalfs);
+    cls.def("convertUINT8ToINT32", &GraphTransformer::convertUINT8ToINT32);
+    cls.def("convertUINT16ToINT32", &GraphTransformer::convertUINT16ToINT32);
+    cls.def("convertINT8ToINT32", &GraphTransformer::convertINT8ToINT32);
+    cls.def("convertINT16ToINT32", &GraphTransformer::convertINT16ToINT32);
+    cls.def("convertINT64ToINT32", &GraphTransformer::convertINT64ToINT32);
+    cls.def("convertDoublesToFloats",
+            &GraphTransformer::convertDoublesToFloats);
+    cls.def("convertDoublesToHalfs", &GraphTransformer::convertDoublesToHalfs);
+    cls.def("convertBFloats16ToFloat32",
+            &GraphTransformer::convertBFloats16ToFloat32);
     cls.def("convertInitializersToConstants",
             &GraphTransformer::convertInitializersToConstants,
             py::arg("ids"));
