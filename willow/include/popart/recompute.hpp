@@ -1,5 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_Recompute_HPP
+#ifndef GUARD_NEURALNET_RECOMPUTE_HPP
 #define GUARD_NEURALNET_RECOMPUTE_HPP
 
 namespace popart {
