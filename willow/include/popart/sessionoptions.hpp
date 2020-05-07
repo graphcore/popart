@@ -235,6 +235,9 @@ struct SessionOptions {
   // Enable explicit recomputation
   bool explicitRecomputation = false;
 
+  // Number of IO tiles
+  int numIOTiles = 0;
+
   // Enable batch serialization
   int batchSerializationFactor = 0;
 

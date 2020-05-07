@@ -31,13 +31,17 @@ bool Tensor::consumersAllPreLoss() const {
 }
 
 VGraphId Tensor::getVirtualGraphIdUnsafe() const {
+  return getVirtualGraphIdAndIoTileUnsafe().first;
+}
+
+VGraphIdAndIoTile Tensor::getVirtualGraphIdAndIoTileUnsafe() const {
 
   // If this Tensor has a Producer, use its VirtualGraphId if it has one
   if (hasProducer()) {
     // special case of IPUCopy producer
     auto ipucopy = dynamic_cast<IpuCopyOp *>(getProducer());
     if (ipucopy) {
-      return ipucopy->getDestIpu();
+      return {ipucopy->getDestIpu(), ipucopy->settings.useIoTiles};
     } else if (getProducer()->hasVirtualGraphId()) {
       for (auto &indices : getProducer()->output->indicesMap()) {
         if (indices.first == this) {
@@ -65,24 +69,32 @@ VGraphId Tensor::getVirtualGraphIdUnsafe() const {
   for (Op *consumer : consumers.getOps()) {
     auto ipucopy = dynamic_cast<IpuCopyOp *>(consumer);
     if (ipucopy) {
-      return ipucopy->getSourceIpus().at(id);
+      return {ipucopy->getSourceIpus().at(id), ipucopy->settings.useIoTiles};
     }
   }
 
   // No virtual graph Id determined
-  return -1;
+  return {unusedVGraphId, false};
 }
 
-VGraphId Tensor::getVirtualGraphId() const {
-  auto vid = getVirtualGraphIdUnsafe();
-  if (vid == -1) {
+VGraphIdAndIoTile Tensor::getVirtualGraphIdAndIoTile() const {
+  auto vid = getVirtualGraphIdAndIoTileUnsafe();
+  if (vid == VGraphIdAndIoTile(unusedVGraphId, false)) {
     throw error("Invalid call to getVirtualGraphId, Tensor does not have one");
   }
   return vid;
 }
 
+VGraphId Tensor::getVirtualGraphId() const {
+  auto vid = getVirtualGraphIdAndIoTileUnsafe();
+  if (vid == VGraphIdAndIoTile(unusedVGraphId, false)) {
+    throw error("Invalid call to getVirtualGraphId, Tensor does not have one");
+  }
+  return vid.first;
+}
+
 bool Tensor::hasVirtualGraphId() const {
-  return getVirtualGraphIdUnsafe() != -1;
+  return getVirtualGraphIdUnsafe() != unusedVGraphId;
 }
 
 const void *Tensor::getTensorData() const {

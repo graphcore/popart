@@ -173,9 +173,15 @@ public:
   // Determine the virtual graph of this Tensor, on-the-fly
   // based on consumers and producers
   bool hasVirtualGraphId() const;
+
   VGraphId getVirtualGraphId() const;
   // return the virtual graph id, or -1 if there is not one
   VGraphId getVirtualGraphIdUnsafe() const;
+
+  // Return the virtual graph id and io tile flag
+  VGraphIdAndIoTile getVirtualGraphIdAndIoTile() const;
+  // return the virtual graph id, or {-1, false} if there is not one
+  VGraphIdAndIoTile getVirtualGraphIdAndIoTileUnsafe() const;
 
   bool consumersAllPreLoss() const;
 

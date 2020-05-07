@@ -325,6 +325,7 @@ const static AiGraphcoreOpIdV1 L1("L1");
 const static AiGraphcoreOpIdV1 Nll("Nll");
 
 const static AiGraphcoreOpIdV1 IpuCopy("IpuCopy");
+const static AiGraphcoreOpIdV1 IoTileCopy("IoTileCopy");
 
 const static AiGraphcoreOpIdV1 Init_1("Init", 0, 1);
 const static AiGraphcoreOpIdV1 CacheStore("CacheStore", {1, 2}, 0);

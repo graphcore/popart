@@ -50,6 +50,7 @@
 #include <popart/transforms/hostreduce.hpp>
 #include <popart/transforms/inferpipelinestages.hpp>
 #include <popart/transforms/interipucopy.hpp>
+#include <popart/transforms/iocomputetilecopy.hpp>
 #include <popart/transforms/mergecopies.hpp>
 #include <popart/transforms/mergeduplicateops.hpp>
 #include <popart/transforms/mergevarupdates.hpp>
@@ -1079,6 +1080,9 @@ void Ir::prepareImpl(const IrBundle &gb) {
     applyTransform(BatchSerialize::id(2), getMainGraph());
     updateVertices();
   }
+
+  applyTransform(IoComputeTileCopy::id(), getMainGraph());
+  updateVertices();
 
   for (auto &id_graph : graphs) {
     auto &graph = getGraph(id_graph.first);

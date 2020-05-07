@@ -92,7 +92,8 @@ std::vector<TensorId> CallOp::getInputsForGraph(const Graph &) const {
   return result;
 }
 
-VGraphId CallOp::getIntrospectionInVirtualGraphId(InIndex index) const {
+VGraphIdAndIoTile
+CallOp::getIntrospectionInVirtualGraphId(InIndex index) const {
   if (index > -1) {
     auto num_ids = getCalledGraph().getInputIds().size();
     if (index >= num_ids)
@@ -112,11 +113,12 @@ VGraphId CallOp::getIntrospectionInVirtualGraphId(InIndex index) const {
         if (consumer->hasVirtualGraphId()) {
           // Also works if the callee is another subgraph
           auto intropId = consumer->getIntrospectionInVirtualGraphId(subindex);
-          if (intropId > -1)
+          if (intropId.first > -1)
             return intropId;
         }
         if (IpuCopyOp *copyConsumer = dynamic_cast<IpuCopyOp *>(consumer)) {
-          return copyConsumer->getSourceIpu(tensor_id);
+          return {copyConsumer->getSourceIpu(tensor_id),
+                  copyConsumer->settings.useIoTiles};
         }
       }
     }
@@ -127,18 +129,22 @@ VGraphId CallOp::getIntrospectionInVirtualGraphId(InIndex index) const {
     // consuming operator is on another virtual graph.
     if (tensor->hasVirtualGraphId()) {
       // Tensor has VirtualGraphID given by it's producer or consumer
-      auto vgId = tensor->getVirtualGraphId();
-      if (vgId > -1) {
+      auto vgId = tensor->getVirtualGraphIdAndIoTile();
+      if (vgId.first > -1) {
         return vgId;
       }
     }
   }
 
   // Fallback 2: No VGID determined by introspection or tensor
-  return Op::hasVirtualGraphId() ? Op::getVirtualGraphId() : -1;
+  return Op::hasVirtualGraphId()
+             ? VGraphIdAndIoTile(Op::getVirtualGraphId(),
+                                 getSettings().useIoTiles ? true : false)
+             : VGraphIdAndIoTile(unusedVGraphId, false);
 }
 
-VGraphId CallOp::getIntrospectionOutVirtualGraphId(OutIndex index) const {
+VGraphIdAndIoTile
+CallOp::getIntrospectionOutVirtualGraphId(OutIndex index) const {
   if (index > -1) {
     auto num_ids = getCalledGraph().getOutputIds().size();
     if (index >= num_ids)
@@ -158,7 +164,7 @@ VGraphId CallOp::getIntrospectionOutVirtualGraphId(OutIndex index) const {
       if (producer->hasVirtualGraphId()) {
         // Also works if the callee is another subgraph
         auto vgId = producer->getIntrospectionOutVirtualGraphId(subindex);
-        if (vgId > -1) {
+        if (vgId.first > -1) {
           return vgId;
         }
       }
@@ -170,15 +176,20 @@ VGraphId CallOp::getIntrospectionOutVirtualGraphId(OutIndex index) const {
     // consuming operator is on another virtual graph.
     if (tensor->hasVirtualGraphId()) {
       // Tensor has VirtualGraphID given by it's producer or consumer
-      auto vgId = tensor->getVirtualGraphId();
-      if (vgId > -1) {
+      auto vgId = tensor->getVirtualGraphIdAndIoTile();
+      if (vgId.first > -1) {
         return vgId;
       }
     }
   }
 
+  IsIoTile useIoTiles = getSettings().useIoTiles;
+
   // Fallback 2: No VGID determined by introspection or tensor
-  return Op::hasVirtualGraphId() ? Op::getVirtualGraphId() : -1;
+  return Op::hasVirtualGraphId()
+             ? VGraphIdAndIoTile(Op::getVirtualGraphId(),
+                                 getSettings().useIoTiles ? true : false)
+             : VGraphIdAndIoTile(unusedVGraphId, false);
 }
 
 void CallOp::addAlias(InIndex in,

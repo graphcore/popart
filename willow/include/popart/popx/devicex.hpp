@@ -21,6 +21,7 @@
 #include <popart/popx/popprograms.hpp>
 #include <popart/popx/poptensors.hpp>
 #include <popart/popx/pritask.hpp>
+#include <popart/popx/virtualgraph.hpp>
 
 #include <set>
 #include <popart/names.hpp>
@@ -136,7 +137,10 @@ public:
   poplar::Graph &graph();
   const poplar::Graph &graph() const;
 
-  poplar::Graph &getVirtualGraph(VGraphId virtualGraphIndex);
+  // Return virtual graph mapping to IPU virtualGraphIndex,
+  // ioTileGraph selects between compute and IO tile graph.
+  poplar::Graph &getVirtualGraph(VGraphId virtualGraphIndex,
+                                 IsIoTile ioTileGraph = false);
 
   // Return the name of the task which initializes/creates a poplar::Tensor in a
   // poplar::Graph. This is NOT about creating a poplar::Program.
@@ -268,7 +272,7 @@ private:
   std::unique_ptr<poplar::Engine> pEngine{nullptr};
   std::unique_ptr<poplar::Target> pTarget{nullptr};
 
-  std::vector<poplar::Graph> virtualGraphs;
+  std::vector<VirtualGraph> virtualGraphs;
 
   std::shared_ptr<DeviceInfo> deviceInfo;
 

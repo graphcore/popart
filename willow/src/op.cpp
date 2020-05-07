@@ -338,6 +338,7 @@ void Op::appendOutlineAttributes(OpSerialiserBase &os) const {
       settings.recomputeType == RecomputeType::Recompute ? "YES" : "NO";
   os.appendAttribute("recompute", recomputeString);
   os.appendAttribute(sVirtualGraphAttribute, getOptionalVirtualGraphId());
+  os.appendAttribute("useIoTiles", settings.useIoTiles);
 }
 
 std::vector<const Graph *> Op::getCalledGraphs() const { return {}; }
@@ -440,6 +441,12 @@ void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {
     schedulePriority = static_cast<double>(schedule_priority);
   }
 
+  if (attributes.hasAttribute(sIOTilesAttribute)) {
+    int64_t useIoTilesTmp;
+    attributes.set(useIoTilesTmp, sIOTilesAttribute);
+    useIoTiles = static_cast<IsIoTile>(useIoTilesTmp);
+  }
+
   bool hasNamesAtt = attributes.hasAttribute(sInplaceOpNames);
   // either both or neither inplace attributes must be provided
   if (hasNamesAtt != attributes.hasAttribute(sInplaceOpPriorities)) {
@@ -503,12 +510,12 @@ VGraphId Op::getVirtualGraphId() const {
   return *(settings.vgraphId);
 }
 
-VGraphId Op::getIntrospectionInVirtualGraphId(InIndex) const {
-  return getVirtualGraphId();
+VGraphIdAndIoTile Op::getIntrospectionInVirtualGraphId(InIndex) const {
+  return {getVirtualGraphId(), settings.useIoTiles};
 }
 
-VGraphId Op::getIntrospectionOutVirtualGraphId(OutIndex) const {
-  return getVirtualGraphId();
+VGraphIdAndIoTile Op::getIntrospectionOutVirtualGraphId(OutIndex) const {
+  return {getVirtualGraphId(), settings.useIoTiles};
 }
 
 bool Op::hasVirtualGraphId() const {
@@ -693,8 +700,10 @@ void Op::inheritPlacementAttributes(bool inheritSerializations) {
           if (consumer != this && consumer->hasVirtualGraphId()) {
             for (auto &indices : consumer->input->indicesMap()) {
               if (indices.first == inIndexAndTensor.second) {
-                auto rvgid = consumer->getIntrospectionInVirtualGraphId(
-                    indices.second[0]);
+                auto rvgid =
+                    consumer
+                        ->getIntrospectionInVirtualGraphId(indices.second[0])
+                        .first;
                 if (rvgid != unusedVGraphId) {
                   if (requiredVgid.is_initialized()) {
                     requiredVgid = std::min(requiredVgid.get(), rvgid);

@@ -113,13 +113,13 @@ BOOST_AUTO_TEST_CASE(Introspection0_Subgraph) {
       if (tensor->id == "w0" || tensor->id == "input0") {
         BOOST_CHECK(tensor->getVirtualGraphId() == 0);
         auto index = op->input->indicesMap().at(tensor)[0];
-        BOOST_CHECK(op->getIntrospectionInVirtualGraphId(index) == 0);
+        BOOST_CHECK(op->getIntrospectionInVirtualGraphId(index).first == 0);
       }
 
       if (tensor->id == "w1" || tensor->id == "input1") {
         BOOST_CHECK(tensor->getVirtualGraphId() == 1);
         auto index = op->input->indicesMap().at(tensor)[0];
-        BOOST_CHECK(op->getIntrospectionInVirtualGraphId(index) == 1);
+        BOOST_CHECK(op->getIntrospectionInVirtualGraphId(index).first == 1);
       }
     }
   }

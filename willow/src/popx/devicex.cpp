@@ -7,6 +7,7 @@
 #include <random>
 #include <set>
 #include <tuple>
+#include <utility>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/range/algorithm/find.hpp>
@@ -37,6 +38,7 @@
 #include <popart/op/getrandomseed.hpp>
 #include <popart/op/if.hpp>
 #include <popart/op/init.hpp>
+#include <popart/op/iotilecopy.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/restore.hpp>
 #include <popart/op/subgraphop.hpp>
@@ -753,13 +755,26 @@ bool PipelineInfo::doStage(PipelineCycle pCycle, PipelineStage pStage) const {
 poplar::Graph &Devicex::graph() { return *pGraph; }
 const poplar::Graph &Devicex::graph() const { return *pGraph; }
 
-poplar::Graph &Devicex::getVirtualGraph(VGraphId virtualGraphIndex) {
+poplar::Graph &Devicex::getVirtualGraph(VGraphId virtualGraphIndex,
+                                        IsIoTile ioTileGraph) {
   if (virtualGraphIndex < 0 || virtualGraphIndex >= virtualGraphs.size()) {
     throw error("Invalid virtual graph index {} ({} available)",
                 virtualGraphIndex,
                 virtualGraphs.size());
   }
-  return virtualGraphs.at(virtualGraphIndex);
+  VirtualGraph &vg = virtualGraphs.at(virtualGraphIndex);
+
+  if (ioTileGraph) {
+    if (!vg.hasIoTilesGraph()) {
+      throw error("No IO tile graph for index {}", virtualGraphIndex);
+    }
+    return vg.getIoTilesGraph();
+  } else {
+    if (!vg.hasComputeTilesGraph()) {
+      throw error("No compute tile graph for index {}", virtualGraphIndex);
+    }
+    return vg.getComputeTilesGraph();
+  }
 }
 Devicex::~Devicex() = default;
 
@@ -1009,7 +1024,8 @@ std::pair<TaskId, DependencyType> Devicex::taskWhichCreates(TensorId id) {
   // tasks These tasks are a TENSOR rather than an OUTPUT dependency.
   if (!tensor->hasProducer() ||
       dynamic_cast<SubgraphOp *>(tensor->getProducer()) ||
-      dynamic_cast<InitOp *>(tensor->getProducer())) {
+      dynamic_cast<InitOp *>(tensor->getProducer()) ||
+      dynamic_cast<IoTileCopyOp *>(tensor->getProducer())) {
     return {initTensorTaskId(id), DependencyType::Tensor};
   }
 
@@ -1392,7 +1408,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
             ss << std::endl
                << "    {" << op.first->debugName() << ", VGID: "
                << (op.first->hasVirtualGraphId()
-                       ? op.first->getIntrospectionInVirtualGraphId(index)
+                       ? op.first->getIntrospectionInVirtualGraphId(index).first
                        : -1)
                << "}";
           }
@@ -1406,7 +1422,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
 
       std::vector<VGraphId> ipus;
       for (auto &op : relatedOps) {
-        VGraphId vgid = -1;
+        VGraphIdAndIoTile vgid{-1, false};
         if (op.first->hasVirtualGraphId()) {
           if (op.second) {
             // Consumer OP
@@ -1416,7 +1432,8 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
             vgid       = op.first->getIntrospectionInVirtualGraphId(index);
           } else {
             // Producer OP
-            vgid = op.first->getVirtualGraphId();
+            vgid = {op.first->getVirtualGraphId(),
+                    op.first->settings.useIoTiles};
           }
         }
 
@@ -1424,10 +1441,11 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
         // have been copied to the ipu from another op
         if (op.first->opid != Onnx::CustomOperators::IpuCopy) {
 
-          if (ipus.end() == std::find(ipus.begin(), ipus.end(), vgid)) {
+          if (ipus.end() == std::find(ipus.begin(), ipus.end(), vgid.first)) {
 
-            auto &graph = vgid > -1 ? getVirtualGraph(vgid)
-                                    : getOpx(op.first->id)->graph();
+            auto &graph = vgid.first > -1
+                              ? getVirtualGraph(vgid.first, vgid.second)
+                              : getOpx(op.first->id)->graph();
 
             auto newTensor = graph.addVariable(
                 popType(tensor->info), tensor->info.shape_szt(), tensor->str());
@@ -1435,7 +1453,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
 
             tensors.insert(tensor->id, newTensor);
             linearlyCreatedInputTensors.insert(tensor->id);
-            ipus.push_back(vgid);
+            ipus.push_back(vgid.first);
           }
         }
       }
@@ -1604,7 +1622,7 @@ PriTask Devicex::streamFromHostTask(Tensor *tensor) {
           // VirtualGraphId with subgraph call introspection
           // for the current tensor
           auto index = op->input->indicesMap().at(tensor)[0];
-          vgid       = op->getIntrospectionInVirtualGraphId(index);
+          vgid       = op->getIntrospectionInVirtualGraphId(index).first;
         }
 
         // Only stream the tensor once for all op's that consume it on an ipu
@@ -1937,7 +1955,8 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
   // For InitOp and SubgraphOp,
   // the output tensor is created externally, and must
   // thereby exist before InitOp/SubgraphOp is grown.
-  if (dynamic_cast<InitOp *>(op) || dynamic_cast<SubgraphOp *>(op)) {
+  if (dynamic_cast<InitOp *>(op) || dynamic_cast<SubgraphOp *>(op) ||
+      dynamic_cast<IoTileCopyOp *>(op)) {
     for (auto t_inds : op->output->indicesMap()) {
       Tensor *tensor = t_inds.first;
 
@@ -2509,35 +2528,50 @@ void Devicex::prepare() {
     auto numIPUs     = graph().getTarget().getNumIPUs();
     auto tilesPerIPU = graph().getTarget().getTilesPerIPU();
 
-    int numIOTiles = 0;
+    int numIOTiles = ir().getSessionOptions().numIOTiles;
 
     if (const char *env_p = std::getenv("GCL_NUM_IO_TILES")) {
       numIOTiles = boost::lexical_cast<int>(env_p);
+    }
+
+    if (numIOTiles) {
+
       if (numIOTiles < 32 || numIOTiles > 192 || (numIOTiles % 2 != 0)) {
         throw error(
             "{} is an invalid number of IO tiles. "
-            "Number of IO tiles must be an even number between 32 and 192",
+            "Number of IO tiles must be an even number in range [32, 192]",
             numIOTiles);
       }
       logging::devicex::info(
           "Reserving {} IO tiles for GCL collective operations on each IPU",
           numIOTiles);
-    }
 
-    if (numIOTiles) {
       const auto computeTiles =
-          gcl::perIPUTiles(graph(), numIOTiles, tilesPerIPU - numIOTiles);
-      for (unsigned ipu = 0; ipu < numIPUs; ++ipu) {
+          gcl::perIPUTiles(graph(), numIOTiles, tilesPerIPU - numIOTiles, true);
+
+      std::vector<unsigned> ioTiles;
+      ioTiles.reserve(numIOTiles);
+      unsigned j = 0;
+      for (unsigned i = 0; i < tilesPerIPU; ++i) {
+        if (j < computeTiles.size() && computeTiles[j] == i) {
+          ++j;
+        } else {
+          ioTiles.push_back(i);
+        }
+      }
+
+      for (VGraphId ipu = 0; ipu < numIPUs; ++ipu) {
         unsigned startTile = ipu * tilesPerIPU;
         unsigned endTile   = (ipu + 1) * tilesPerIPU;
         auto ipuGraph      = graph().createVirtualGraph(startTile, endTile);
-        virtualGraphs.emplace_back(ipuGraph.createVirtualGraph(computeTiles));
+        virtualGraphs.emplace_back(ipuGraph.createVirtualGraph(computeTiles),
+                                   ipuGraph.createVirtualGraph(ioTiles));
         logging::devicex::info("Created virtual graph {} with {} tiles",
                                ipu,
                                tilesPerIPU - numIOTiles);
       }
     } else {
-      for (unsigned ipu = 0; ipu < numIPUs; ++ipu) {
+      for (VGraphId ipu = 0; ipu < numIPUs; ++ipu) {
         unsigned startTile = ipu * tilesPerIPU;
         unsigned endTile   = (ipu + 1) * tilesPerIPU;
         virtualGraphs.emplace_back(
@@ -2637,6 +2671,14 @@ void Devicex::prepare() {
                               init->debugName(),
                               init->output->tensor(InitOp::getOutIndex())->id);
       tasks.add(initTensorTask(init->output->tensor(InitOp::getOutIndex())));
+    }
+    if (IoTileCopyOp *iocopy = dynamic_cast<IoTileCopyOp *>(op)) {
+      logging::devicex::trace(
+          "Adding IoTileCopyOp {} output initTensorTask for {}",
+          iocopy->debugName(),
+          iocopy->output->tensor(IoTileCopyOp::getOutIndex())->id);
+      tasks.add(
+          initTensorTask(iocopy->output->tensor(IoTileCopyOp::getOutIndex())));
     }
   }
 

@@ -105,6 +105,9 @@ public:
 
     boost::optional<BatchSerializedPhase> batchSerializedPhase;
 
+    // If the OP should be placed on I/O tiles instead of regular tiles
+    IsIoTile useIoTiles{false};
+
     // Tensor layout mapping should be inferred "to" tensor <- "from" tensor
     std::map<InIndex, InIndex> inferTensorMappingToFrom;
 
@@ -129,8 +132,8 @@ public:
 
   const boost::optional<int64_t> getOptionalVirtualGraphId() const;
   VGraphId getVirtualGraphId() const;
-  virtual VGraphId getIntrospectionInVirtualGraphId(InIndex) const;
-  virtual VGraphId getIntrospectionOutVirtualGraphId(OutIndex) const;
+  virtual VGraphIdAndIoTile getIntrospectionInVirtualGraphId(InIndex) const;
+  virtual VGraphIdAndIoTile getIntrospectionOutVirtualGraphId(OutIndex) const;
   void setVirtualGraphId(const boost::optional<VGraphId>);
   bool hasVirtualGraphId() const;
 

@@ -28,8 +28,10 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
-  VGraphId getIntrospectionInVirtualGraphId(InIndex index) const override;
-  VGraphId getIntrospectionOutVirtualGraphId(OutIndex index) const override;
+  VGraphIdAndIoTile
+  getIntrospectionInVirtualGraphId(InIndex index) const override;
+  VGraphIdAndIoTile
+  getIntrospectionOutVirtualGraphId(OutIndex index) const override;
 
   std::vector<const Graph *> getCalledGraphs() const override;
 
