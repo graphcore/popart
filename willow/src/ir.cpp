@@ -1835,33 +1835,6 @@ Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
                           getMainGraph(),
                           getGradSumOpNamePrefix());
 
-  if (getSessionOptions().enablePipelining) {
-    // Get all the producers pipeline stages and use the highest
-    // one for the grad sum op.
-    std::set<std::pair<PipelineStage, VGraphId>> ps;
-    for (auto t : toSum) {
-      // Pipeline stage will not be set if user has not explicitly set it.
-      auto prod = t->getProducer();
-      if (prod->hasPipelineStage()) {
-        ps.insert({prod->getPipelineStage(), prod->getVirtualGraphId()});
-      }
-    }
-
-    if (ps.size() > 0) {
-      auto chosen =
-          std::max_element(ps.begin(),
-                           ps.end(),
-                           [](std::pair<PipelineStage, VGraphId> lhs,
-                              std::pair<PipelineStage, VGraphId> rhs) {
-                             return lhs.first < rhs.first;
-                           });
-      gradSum->setPipelineStage(chosen->first);
-      gradSum->setVirtualGraphId(chosen->second);
-    }
-  } else if (virtualGraphsEnabled()) {
-    gradSum->setVirtualGraphId(getVirtualGraphIdFromTensorProducers(toSum));
-  }
-
   OpId opId = getMainGraph().moveIntoGraph(std::move(gradSum));
 
   std::vector<TensorId> inputs;
@@ -1876,7 +1849,7 @@ Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
   getMainGraph().connectOutputs(OutputVecWrapper(outputs), opId);
   Op *op = getMainGraph().getOps()[opId].get();
   op->setup();
-
+  op->inheritPlacementAttributes(true);
   return op;
 }
 
@@ -2615,29 +2588,7 @@ void Ir::ensureOptimizerTensorCreated(const TensorId &optId,
 }
 
 void Ir::growVarUpdateOpInternal(OpId opId) {
-
-  Op *op = getMainGraph().getOps()[opId].get();
-
-  if (virtualGraphsEnabled()) {
-    op->setVirtualGraphId(
-        getVirtualGraphIdFromTensorProducers(op->input->tensors()));
-  }
-
-  if (getSessionOptions().enablePipelining) {
-    // Get the pipeline stages from the inputs producers.
-    std::set<PipelineStage> stages;
-    for (auto input : op->input->tensors()) {
-      if (input->hasProducer() && input->getProducer()->hasPipelineStage()) {
-        stages.insert(input->getProducer()->getPipelineStage());
-      }
-    }
-
-    // Set the op to the highest pipeline stage if there is one.
-    if (stages.size() > 0) {
-      op->setPipelineStage(*std::max_element(stages.begin(), stages.end()));
-    }
-  }
-
+  Op *op           = getMainGraph().getOps()[opId].get();
   auto varUpdateOp = dynamic_cast<VarUpdateOp *>(op);
   if (varUpdateOp == nullptr) {
     throw internal_error("Op {} expected to be a VarUpdateOp", op->str());
@@ -2646,6 +2597,7 @@ void Ir::growVarUpdateOpInternal(OpId opId) {
   std::vector<TensorId> outputs{updatedVarId};
   getMainGraph().connectOutputs(OutputVecWrapper(outputs), opId);
   op->setup();
+  op->inheritPlacementAttributes(false);
 }
 
 std::set<Op *> Ir::getTrainTargetOps() const {
@@ -2696,45 +2648,9 @@ void Ir::growFinalLoss(const std::vector<std::shared_ptr<Loss>> &losses) {
                           getMainGraph(),
                           "FinalLoss");
 
-  if (getSessionOptions().enablePipelining) {
-    // Get the pipeline stages of the losses and use the highest one for the
-    // final loss sum.
-    std::set<PipelineStage> lossPipelineStages;
-    for (auto &op : lossOps) {
-      if (op->hasPipelineStage()) {
-        lossPipelineStages.insert(op->getPipelineStage());
-      }
-    }
-
-    if (lossPipelineStages.size() > 0) {
-      PipelineStage finalLossPipelineStage = *std::max_element(
-          lossPipelineStages.begin(), lossPipelineStages.end());
-      finalLossSum->setPipelineStage(finalLossPipelineStage);
-      // Set the virtual graph id for the final loss to be equal
-      // to the one of the other ops in the same pipeline stage.
-      for (auto &op : lossOps) {
-        if (op->hasPipelineStage() && op->hasVirtualGraphId()) {
-          if (op->getPipelineStage() == finalLossPipelineStage) {
-            finalLossSum->setVirtualGraphId(op->getVirtualGraphId());
-            break;
-          }
-        }
-      }
-    }
-  }
-
   // The final Loss Op is the only Op which (we say) has both paths to and from
   finalLossSum->toLoss   = PathToLoss::Yes;
   finalLossSum->fromLoss = PathFromLoss::Yes;
-
-  if (virtualGraphsEnabled() && !finalLossSum->hasVirtualGraphId()) {
-    std::vector<Tensor *> lossTensors;
-    for (auto &op : lossOps) {
-      lossTensors.push_back(op->output->tensor(0));
-    }
-    finalLossSum->setVirtualGraphId(
-        getVirtualGraphIdFromTensorProducers(lossTensors));
-  }
 
   finalLossOpId = getMainGraph().moveIntoGraph(std::move(finalLossSum));
 
@@ -2748,6 +2664,7 @@ void Ir::growFinalLoss(const std::vector<std::shared_ptr<Loss>> &losses) {
   getMainGraph().connectInputs(InputVecWrapper(inputs), finalLossOpId);
   getMainGraph().connectOutputs(OutputVecWrapper(outputs), finalLossOpId);
   getMainGraph().getOps()[finalLossOpId]->setup();
+  getMainGraph().getOps()[finalLossOpId]->inheritPlacementAttributes(false);
 
   // Not necessary to set the phase here (it will be done in
   // updateVertices). To check our logic though, we do this here

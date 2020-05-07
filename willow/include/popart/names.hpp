@@ -44,13 +44,21 @@ using ReturnPeriod = int;
 // The position at which a Tensor is consumed by an Op
 using InIndex = int;
 // The position at which a Tensor is output by an Op
-using OutIndex             = int;
-using PipelineCycle        = int64_t;
-using VGraphId             = int64_t;
-using PipelineStage        = int64_t;
-using PingPongPhase        = int64_t;
-using BatchSerializedPhase = int64_t;
-using StashIndex           = int64_t;
+using OutIndex      = int;
+using PipelineCycle = int64_t;
+using VGraphId      = int64_t;
+// Virtual graphs (IPUs) are counted from 0
+static constexpr const VGraphId unusedVGraphId = -1;
+using PipelineStage                            = int64_t;
+// Pipeline stages are counted from 0
+static constexpr const PipelineStage unusedPipelineStage = -1;
+using PingPongPhase                                      = int64_t;
+// Phase -1 is used for loading weights to phase 0, phase -2 is unused
+static constexpr const PingPongPhase unusedPingPongPhase = -2;
+using BatchSerializedPhase                               = int64_t;
+// Phase -1 is used to initialize accumulators, phase -2 is unused
+static constexpr const BatchSerializedPhase unusedBatchSerializedPhase = -2;
+using StashIndex = int64_t;
 
 // The identifier for a remote buffer
 using RemoteBufferId = int64_t;

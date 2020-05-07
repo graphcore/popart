@@ -152,12 +152,12 @@ public:
   PipelineStage getPipelineStage() const;
   boost::optional<PipelineStage> getOptionalPipelineStage() const;
 
-  // Loop over the producers of inputs. Check the particular
-  // Settings property. The maximum value is chosen
-  void optionallySetVGraphIdFromMaxOfInputProducers();
-  void optionallySetPipelineStageFromMaxOfInputProducers();
-  void optionallySetPingPongPhaseFromMaxOfInputProducers();
-  void optionallySetBatchSerializedPhaseFromMaxOfInputProducers();
+  // Inherit placement attributes:
+  // - Pipeline stage
+  // - Pingpong phase
+  // - Virtual graph ID
+  // - Batch serial phase
+  void inheritPlacementAttributes(bool inheritSerializations);
 
   Ir &getIr();
   const Ir &getIr() const;

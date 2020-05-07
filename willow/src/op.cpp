@@ -13,6 +13,7 @@
 
 // The layers:
 #include <popart/op/elementwise.hpp>
+#include <popart/op/ipucopy.hpp>
 #include <popart/op/restore.hpp>
 #include <popart/op/varupdate.hpp>
 
@@ -589,80 +590,274 @@ PipelineStage Op::getPipelineStage() const {
   return *(settings.pipelineStage);
 }
 
-void Op::optionallySetVGraphIdFromMaxOfInputProducers() {
-  boost::optional<VGraphId> vgid;
+void Op::inheritPlacementAttributes(bool inheritSerializations) {
+  const Ir &ir = getGraph().getIr();
 
-  for (auto indexAndTensor : input->tensorMap()) {
-    if (indexAndTensor.second->hasProducer()) {
-      Op *producerOp = indexAndTensor.second->getProducer();
-      if (producerOp->hasVirtualGraphId()) {
-        if (vgid.is_initialized()) {
-          vgid = std::max(vgid.get(), producerOp->getVirtualGraphId());
-        } else {
-          vgid = producerOp->getVirtualGraphId();
+  enum ConnectedOpRelation {
+    // The op from which to inherit is a producer of an input to this op
+    Producer = 0,
+    // The op from which to inherit is a consumer of an output to this op
+    Consumer
+  };
+
+  auto getOpVGID = [](Op *op, ConnectedOpRelation rel) {
+    boost::optional<VGraphId> vgid;
+    if (op->isIpuCopyOp()) {
+      IpuCopyOp *copyOp = dynamic_cast<IpuCopyOp *>(op);
+      // If the lhsOp is a producer to the current op, the DestIpu is relevant
+      // otherwise, the source IPU is relevant
+      vgid = rel == ConnectedOpRelation::Producer ? copyOp->getDestIpu()
+                                                  : copyOp->getSourceIpu();
+    } else {
+      vgid = op->getOptionalVirtualGraphId();
+    }
+    return vgid;
+  };
+
+  auto getOpPingPongPhase = [](Op *op, ConnectedOpRelation rel) {
+    boost::optional<PingPongPhase> phase;
+    if (op->isIpuCopyOp()) {
+      IpuCopyOp *copyOp = dynamic_cast<IpuCopyOp *>(op);
+      if (copyOp->getSourceIpu() % 2 != copyOp->getDestIpu() % 2 &&
+          rel == ConnectedOpRelation::Producer && op->hasPingPongPhase()) {
+        // Inter-phase copy: Destination phase
+        phase = op->getPingPongPhase() + 1;
+        return phase;
+      }
+    }
+    phase = op->getOptionalPingPongPhase();
+    return phase;
+  };
+
+  boost::optional<VGraphId> requiredVgid;
+  std::vector<std::pair<Op *, ConnectedOpRelation>> connectedOps;
+
+  // Scan if the current operation modifies any weights. This modification
+  // may occur through an inplace aliasing of the weight, e.g. with MatMul
+  // serialization, therefore we have to search through the aliasing chains
+  // to find any directly (or through an alias) modified weights, and ensure
+  // the modifying op is placed on the virtual graph that owns the weight.
+  for (auto inIndexAndTensor : input->tensorMap()) {
+
+    std::set<Tensor *, PTensorCmp> associatedVariableTensors;
+
+    if (inIndexAndTensor.second->getTensorTypeInfo()->type() ==
+        TensorType::Variable) {
+      associatedVariableTensors.insert(inIndexAndTensor.second);
+    }
+
+    auto aliasedTensorMap =
+        getGraph().getTensors().aliasChainsFrom(inIndexAndTensor.second);
+    auto fullRegion =
+        view::Region::getFull(inIndexAndTensor.second->info.shape());
+    for (const auto &chain : aliasedTensorMap) {
+      auto regions = chain.second.apply(fullRegion);
+      bool nonEmptyAlias =
+          std::any_of(regions.begin(), regions.end(), [](view::Region &r) {
+            return !r.isEmpty();
+          });
+      if (nonEmptyAlias &&
+          chain.first->getTensorTypeInfo()->type() == TensorType::Variable) {
+        associatedVariableTensors.insert(chain.first);
+        associatedVariableTensors.insert(inIndexAndTensor.second);
+      }
+    }
+
+    for (Tensor *varTensor : associatedVariableTensors) {
+      auto modifiedRegions = modifies(inIndexAndTensor.first);
+
+      bool variableModOrAlias =
+          std::any_of(modifiedRegions.begin(),
+                      modifiedRegions.end(),
+                      [](view::Region &r) { return !r.isEmpty(); });
+
+      for (auto outIndexAndTensor : output->tensorMap()) {
+        auto aliasedRegions =
+            aliases(inIndexAndTensor.first, outIndexAndTensor.first);
+
+        variableModOrAlias |=
+            std::any_of(aliasedRegions.begin(),
+                        aliasedRegions.end(),
+                        [](view::Region &r) { return !r.isEmpty(); });
+      }
+      logging::op::trace("Op {} consumes variable tensor {} ({}), touches: {}",
+                         debugName(),
+                         varTensor->id,
+                         inIndexAndTensor.second->id,
+                         variableModOrAlias ? "yes" : "no");
+      if (variableModOrAlias) {
+        // Variable tensors force the VGID to be such that the weight
+        // is not modified or aliased on any other VGID than the one where
+        // the weight is stored.
+        for (Op *consumer : varTensor->consumers.getOps()) {
+          if (consumer != this && consumer->hasVirtualGraphId()) {
+            for (auto &indices : consumer->input->indicesMap()) {
+              if (indices.first == inIndexAndTensor.second) {
+                auto rvgid = consumer->getIntrospectionInVirtualGraphId(
+                    indices.second[0]);
+                if (rvgid != unusedVGraphId) {
+                  if (requiredVgid.is_initialized()) {
+                    requiredVgid = std::min(requiredVgid.get(), rvgid);
+                  } else {
+                    requiredVgid = rvgid;
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }
   }
 
-  setVirtualGraphId(vgid);
-}
+  bool pipeline = ir.getSessionOptions().enablePipelining;
+  bool pingpong = ir.getSessionOptions().pingPongPhases > 1;
+  bool vgraphs =
+      ir.getSessionOptions().virtualGraphMode != VirtualGraphMode::Off;
 
-void Op::optionallySetPingPongPhaseFromMaxOfInputProducers() {
-  boost::optional<PingPongPhase> ppp;
+  // Sort function to find the Op from which to inherit attributes
+  // Sorting criteria:
+  // - Producers of inputs before consumers of outputs
+  // - Producers in descending order of
+  //    - PipelineStage
+  //    - PingPongPhase
+  //    - VGID
+  //    - BatchSerializedPhase
+  // - Consumers in ascending order of
+  //    - PipelineStage
+  //    - PingPongPhase
+  //    - VGID
+  //    - BatchSerializedPhase
+  auto opSorter = [pipeline,
+                   pingpong,
+                   vgraphs,
+                   &getOpVGID,
+                   &getOpPingPongPhase](
+                      const std::pair<Op *, ConnectedOpRelation> &lhs,
+                      const std::pair<Op *, ConnectedOpRelation> &rhs) {
+    Op *lhsOp                  = lhs.first;
+    ConnectedOpRelation lhsRel = lhs.second;
+    bool lhsProducer           = lhsRel != ConnectedOpRelation::Consumer;
+    bool lhsPipeline           = pipeline && lhsOp->hasPipelineStage();
+    bool lhsPingpong           = pingpong && lhsOp->hasPingPongPhase();
+    bool lhsVirtual =
+        vgraphs && (lhsOp->hasVirtualGraphId() || lhsOp->isIpuCopyOp());
+    Op *rhsOp                  = rhs.first;
+    ConnectedOpRelation rhsRel = rhs.second;
+    bool rhsProducer           = rhsRel != ConnectedOpRelation::Consumer;
+    bool rhsPipeline           = pipeline && rhsOp->hasPipelineStage();
+    bool rhsPingpong           = pingpong && rhsOp->hasPingPongPhase();
+    bool rhsVirtual =
+        vgraphs && (rhsOp->hasVirtualGraphId() || rhsOp->isIpuCopyOp());
 
-  for (auto indexAndTensor : input->tensorMap()) {
-    if (indexAndTensor.second->hasProducer()) {
-      Op *producerOp = indexAndTensor.second->getProducer();
-      if (producerOp->hasPingPongPhase()) {
-        if (ppp.is_initialized()) {
-          ppp = std::max(ppp.get(), producerOp->getPingPongPhase());
-        } else {
-          ppp = producerOp->getPingPongPhase();
-        }
-      }
+    std::tuple<bool,
+               PipelineStage,
+               PingPongPhase,
+               VGraphId,
+               BatchSerializedPhase,
+               OpId>
+        lhsTuple(
+            lhsProducer,
+            (lhsProducer ? 1 : -1) *
+                (lhsPipeline ? lhsOp->getPipelineStage() : unusedPipelineStage),
+            (lhsProducer ? 1 : -1) *
+                (lhsPingpong ? getOpPingPongPhase(lhsOp, lhsRel).get()
+                             : unusedPingPongPhase),
+            (lhsProducer ? 1 : -1) *
+                (lhsVirtual ? getOpVGID(lhsOp, lhsRel).get() : unusedVGraphId),
+            (lhsProducer ? 1 : -1) * (lhsOp->hasBatchSerializedPhase()
+                                          ? lhsOp->getBatchSerializedPhase()
+                                          : unusedBatchSerializedPhase),
+            lhsOp->id);
+
+    std::tuple<bool,
+               PipelineStage,
+               PingPongPhase,
+               VGraphId,
+               BatchSerializedPhase,
+               OpId>
+        rhsTuple(
+            rhsProducer,
+            (rhsProducer ? 1 : -1) *
+                (rhsPipeline ? rhsOp->getPipelineStage() : unusedPipelineStage),
+            (rhsProducer ? 1 : -1) *
+                (rhsPingpong ? getOpPingPongPhase(rhsOp, rhsRel).get()
+                             : unusedPingPongPhase),
+            (rhsProducer ? 1 : -1) *
+                (rhsVirtual ? getOpVGID(rhsOp, rhsRel).get() : unusedVGraphId),
+            (rhsProducer ? 1 : -1) * (rhsOp->hasBatchSerializedPhase()
+                                          ? rhsOp->getBatchSerializedPhase()
+                                          : unusedBatchSerializedPhase),
+            rhsOp->id);
+    return lhsTuple > rhsTuple;
+  };
+
+  for (auto inIndexAndTensor : input->tensorMap()) {
+    if (inIndexAndTensor.second->hasProducer()) {
+      connectedOps.emplace_back(inIndexAndTensor.second->getProducer(),
+                                ConnectedOpRelation::Producer);
     }
   }
 
-  setPingPongPhase(ppp);
-}
-
-void Op::optionallySetBatchSerializedPhaseFromMaxOfInputProducers() {
-  boost::optional<BatchSerializedPhase> bsp;
-
-  for (auto indexAndTensor : input->tensorMap()) {
-    if (indexAndTensor.second->hasProducer()) {
-      Op *producerOp = indexAndTensor.second->getProducer();
-      if (producerOp->hasBatchSerializedPhase()) {
-        if (bsp.is_initialized()) {
-          bsp = std::max(bsp.get(), producerOp->getBatchSerializedPhase());
-        } else {
-          bsp = producerOp->getBatchSerializedPhase();
-        }
-      }
+  for (auto outIndexAndTensor : output->tensorMap()) {
+    for (Op *consumer : outIndexAndTensor.second->consumers.getOps()) {
+      connectedOps.emplace_back(consumer, ConnectedOpRelation::Consumer);
     }
   }
 
-  setBatchSerializedPhase(bsp);
-}
+  bool inherited = false;
+  if (!connectedOps.empty()) {
+    auto connectedOp =
+        *std::min_element(connectedOps.begin(), connectedOps.end(), opSorter);
+    Op *op                  = connectedOp.first;
+    ConnectedOpRelation rel = connectedOp.second;
 
-void Op::optionallySetPipelineStageFromMaxOfInputProducers() {
-  boost::optional<PipelineStage> ps;
-
-  for (auto indexAndTensor : input->tensorMap()) {
-    if (indexAndTensor.second->hasProducer()) {
-      Op *producerOp = indexAndTensor.second->getProducer();
-      if (producerOp->hasPipelineStage()) {
-        if (ps.is_initialized()) {
-          ps = std::max(ps.get(), producerOp->getPipelineStage());
-        } else {
-          ps = producerOp->getPipelineStage();
-        }
-      }
+    if (pipeline) {
+      setPipelineStage(op->getOptionalPipelineStage());
     }
+
+    if (pingpong) {
+      setPingPongPhase(getOpPingPongPhase(op, rel));
+    }
+
+    if (vgraphs && !isIpuCopyOp()) {
+      setVirtualGraphId(getOpVGID(op, rel));
+    }
+
+    if (inheritSerializations) {
+      setBatchSerializedPhase(op->getOptionalBatchSerializedPhase());
+    }
+
+    inherited = true;
   }
 
-  setPipelineStage(ps);
+  // If inheritance did not yield the correct VGID, rectify
+  // Example where this happens:
+  //__________________________ phase 0, vgid 0
+  // Var0 ------------ Op
+  //  |                |
+  //__|________________|______ phase 1, vgid 1
+  //  |              OpGrad
+  //  |                |
+  //__|________________|______ phase 2, vgid 0
+  //  `------------ VarUpdate <- will inherit wrong phase and vgid
+  //
+  if (requiredVgid.is_initialized() &&
+      (!hasVirtualGraphId() || getVirtualGraphId() != requiredVgid.get())) {
+    logging::op::debug("Changing Op {} placement to required VGID: {}",
+                       debugName(),
+                       requiredVgid.get());
+    setVirtualGraphId(requiredVgid);
+    if (hasPingPongPhase()) {
+      setPingPongPhase(getPingPongPhase() + 1);
+    }
+    inherited = true;
+  }
+
+  if (!inherited) {
+    logging::op::warn("Could not inherit placement attributes to Op {}",
+                      debugName());
+  }
 }
 
 const Shape &Op::inShape(InIndex index) const {

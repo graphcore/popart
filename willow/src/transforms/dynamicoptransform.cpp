@@ -238,45 +238,8 @@ void DynamicOpTransform::gradSumToGradChain(
       }
     }
 
-    // Loop over the remaining producers of inputs to SumOp
-    // Check PingPongPhase, BatchSerializedPhase and PipelineStage.
-    // The maximum value of each of these is applied to the sum
     if (sumRequired) {
-      auto tensorMap = sumOp->input->tensorMap();
-      boost::optional<PingPongPhase> ppp;
-      boost::optional<BatchSerializedPhase> bsp;
-      boost::optional<PipelineStage> ps;
-
-      for (auto indexAndTensor : tensorMap) {
-        if (indexAndTensor.second->hasProducer()) {
-          Op *producerOp = indexAndTensor.second->getProducer();
-          if (producerOp->hasBatchSerializedPhase()) {
-            if (bsp.is_initialized()) {
-              bsp = std::max(bsp.get(), producerOp->getBatchSerializedPhase());
-            } else {
-              bsp = producerOp->getBatchSerializedPhase();
-            }
-          }
-          if (producerOp->hasPingPongPhase()) {
-            if (ppp.is_initialized()) {
-              ppp = std::max(ppp.get(), producerOp->getPingPongPhase());
-            } else {
-              ppp = producerOp->getPingPongPhase();
-            }
-          }
-          if (producerOp->hasPipelineStage()) {
-            if (ps.is_initialized()) {
-              ps = std::max(ps.get(), producerOp->getPipelineStage());
-            } else {
-              ps = producerOp->getPipelineStage();
-            }
-          }
-        }
-      }
-
-      sumOp->setPingPongPhase(ppp);
-      sumOp->setBatchSerializedPhase(bsp);
-      sumOp->setPipelineStage(ps);
+      sumOp->inheritPlacementAttributes(true);
       sumOp->setup();
     } else {
       ir.getMainGraph().eraseOp(sumOp->id);

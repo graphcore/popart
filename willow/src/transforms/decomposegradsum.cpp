@@ -270,16 +270,14 @@ bool DecomposeGradSum::apply(Graph &graph) const {
       op->settings.inferTensorMappingToFrom.insert(
           {AddOp::getArg0InIndex(), AddOp::getArg1InIndex()});
 
-      op->optionallySetVGraphIdFromMaxOfInputProducers();
-      op->optionallySetPipelineStageFromMaxOfInputProducers();
-      op->optionallySetPingPongPhaseFromMaxOfInputProducers();
-      op->optionallySetBatchSerializedPhaseFromMaxOfInputProducers();
+      op->inheritPlacementAttributes(true);
       op->setup();
       op->toLoss   = PathToLoss::No;
       op->fromLoss = PathFromLoss::Yes;
       batchSerialized |= op->hasBatchSerializedPhase();
     }
 
+    initOp->inheritPlacementAttributes(true);
     if (batchSerialized) {
       initOp->setBatchSerializedPhase(-1);
     }
