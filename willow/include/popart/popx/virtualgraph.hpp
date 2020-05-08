@@ -19,8 +19,8 @@ public:
         ioTilesGraph(
             std::make_shared<poplar::Graph>(std::move(ioTilesGraph_))) {}
 
-  bool hasComputeTilesGraph() { return computeTilesGraph.get() != nullptr; };
-  bool hasIoTilesGraph() { return ioTilesGraph.get() != nullptr; };
+  bool hasComputeTilesGraph() { return computeTilesGraph.get() != nullptr; }
+  bool hasIoTilesGraph() { return ioTilesGraph.get() != nullptr; }
 
   poplar::Graph &getComputeTilesGraph() { return *computeTilesGraph; }
   poplar::Graph &getIoTilesGraph() { return *ioTilesGraph; }

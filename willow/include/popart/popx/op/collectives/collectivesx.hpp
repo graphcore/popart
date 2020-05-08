@@ -57,12 +57,12 @@ public:
   const poplar::Tensor &getReferenceTensor() const;
 
   // Tensor element size in bytes
-  size_t getElementByteSize() const { return elemByteSize; };
+  size_t getElementByteSize() const { return elemByteSize; }
 
   // Number of elements in the collective balanced (reordered) tensor
   size_t getNumRearrangedTensorElems() const {
     return numRearrangedTensorElems;
-  };
+  }
 
 private:
   // Host tensor rearrangement routine
@@ -93,10 +93,10 @@ private:
 // serves to provide an IR-compatible view of the tensor
 class ReplicatedGatherInScatterOutViewChanger : public ViewChanger {
 public:
-  ReplicatedGatherInScatterOutViewChanger(int64_t nelms_) : nelms(nelms_){};
+  ReplicatedGatherInScatterOutViewChanger(int64_t nelms_) : nelms(nelms_) {}
   poplar::Tensor apply(poplar::Tensor tensor) const final {
     return tensor.slice(0, nelms, 0);
-  };
+  }
   bool containsAllDataRegions() const final { return false; }
 
 private:
@@ -111,11 +111,11 @@ private:
 class ReplicatedGatherOutScatterInViewChanger : public ViewChanger {
 public:
   ReplicatedGatherOutScatterInViewChanger(const CollectiveBalancedReorder *cbr_)
-      : cbr(cbr_){};
+      : cbr(cbr_) {}
   poplar::Tensor apply(poplar::Tensor tensor) const final {
     return cbr->undoRearrangeForCollective(tensor).reshape(
         cbr->getReferenceTensor().shape());
-  };
+  }
 
 private:
   const CollectiveBalancedReorder *cbr;
