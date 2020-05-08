@@ -44,6 +44,7 @@
 #include <popart/transforms/batchserialize.hpp>
 #include <popart/transforms/cachesetup.hpp>
 #include <popart/transforms/decomposegradsum.hpp>
+#include <popart/transforms/devicereduce.hpp>
 #include <popart/transforms/dynamicoptransform.hpp>
 #include <popart/transforms/explicitrecompute.hpp>
 #include <popart/transforms/groupmatmuls.hpp>
@@ -1056,6 +1057,37 @@ void Ir::prepareImpl(const IrBundle &gb) {
   SGD1Decompose sgd1Decomposer;
   applyPreAliasPattern(&sgd1Decomposer, getMainGraph());
 
+  if (getSessionOptions().hostWeightUpdate &&
+      !getSessionOptions().hostAllReduce) {
+    throw error(
+        "Host weight update can't be enabled without enabling hostAllReduce.");
+  }
+
+  if (getSessionOptions().hostAllReduce) {
+    if (canTrain()) {
+      if (getSessionOptions().hostWeightUpdate &&
+          !getSessionOptions().hostAllReduce) {
+        throw error("Host weight update can't be enabled without enabling "
+                    "hostAllReduce.");
+      }
+      if (userOptions.mergeVarUpdate != MergeVarUpdateType::None) {
+        throw error("hostAllReduce does not work with MergeVarUpdates");
+      }
+
+      applyTransform(HostReduce::id(), getMainGraph());
+      updateVertices();
+    } else {
+      logging::ir::info("Skipping hostAllReduce transform when running "
+                        "inference or evaluation");
+    }
+  } else {
+    if (getSessionOptions().enableReplicatedGraphs ||
+        getSessionOptions().enableDistributedReplicatedGraphs) {
+      applyTransform(DeviceReduce::id(), getMainGraph());
+      updateVertices();
+    }
+  }
+
   // Add internal ops to copy tensors between ipu's as needed
   applyTransform(InterIpuCopy::id(), getMainGraph());
 
@@ -1126,25 +1158,6 @@ void Ir::prepareImpl(const IrBundle &gb) {
   if (getSessionOptions().enablePipelining) {
     applyTransform(Pipeline::id(), getMainGraph());
     updateVertices();
-  }
-
-  if (getSessionOptions().hostAllReduce) {
-    if (canTrain()) {
-      if (getSessionOptions().hostWeightUpdate &&
-          !getSessionOptions().hostAllReduce) {
-        throw error("Host weight update can't be enabled without enabling "
-                    "hostAllReduce.");
-      }
-      if (userOptions.mergeVarUpdate != MergeVarUpdateType::None) {
-        throw error("hostAllReduce does not work with MergeVarUpdates");
-      }
-
-      applyTransform(HostReduce::id(), getMainGraph());
-      updateVertices();
-    } else {
-      logging::ir::info("Skipping hostAllReduce transform when running "
-                        "inference or evaluation");
-    }
   }
 
   applyTransform(MergeDuplicateOps::id(), getMainGraph());

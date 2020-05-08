@@ -358,6 +358,7 @@ const static AiGraphcoreOpIdV1
 const static AiGraphcoreOpIdV1 ReplicatedAllReduce("ReplicatedAllReduce", 1, 1);
 const static AiGraphcoreOpIdV1
     ReplicatedReduceScatter("ReplicatedReduceScatter");
+const static AiGraphcoreOpIdV1 ReplicatedAllGather("ReplicatedAllGather");
 
 const static AiGraphcoreOpIdV1 CopyVarUpdate("CopyVarUpdate");
 const static AiGraphcoreOpIdV1 FlattenInplace("FlattenInplace");

@@ -41,6 +41,7 @@ using PopStreamId = std::string;
 
 class Opx;
 class GraphCachex;
+class CollectiveBalancedReorder;
 
 // A class containing the tensors needed to track the
 // state of the pipeline
@@ -222,6 +223,11 @@ public:
       getRemoteBuffer(RemoteBufferId) const;
 
   void setRemoteBufferTensor(RemoteBufferId, poplar::Tensor);
+
+  std::shared_ptr<CollectiveBalancedReorder>
+  getCollectiveBalancedReorder(TensorId tensor_id);
+  void setCollectiveBalancedReorder(TensorId tensor_id,
+                                    std::shared_ptr<CollectiveBalancedReorder>);
 
   poplar::Tensor getScalarVariable(poplar::Graph &graph,
                                    const poplar::Type &type,
@@ -485,6 +491,10 @@ private:
   std::map<RemoteBufferId,
            std::pair<poplar::RemoteBuffer, boost::optional<poplar::Tensor>>>
       remoteBuffers;
+
+  // Collective balanced reordering information for replicated ops
+  std::map<TensorId, std::shared_ptr<CollectiveBalancedReorder>>
+      collectiveReorders;
 
   // Streams for doing allreduce on host side
 

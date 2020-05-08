@@ -19,9 +19,8 @@ void SGD1AcclReduceOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor velocity = getInTensor(VarUpdateOp::getVarToUpdateInIndex());
 
   if (dv_p->isReplicatedGraph()) {
-    popops::replicatedAllReduceWithOutput(
+    popops::replicatedAllReduceInPlace(
         graph(),
-        velocity,
         velocity,
         popops::Operation::ADD,
         prog,

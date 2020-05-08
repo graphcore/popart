@@ -47,6 +47,7 @@
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/devicexmanager.hpp>
 #include <popart/popx/op/callx.hpp>
+#include <popart/popx/op/collectives/collectivesx.hpp>
 #include <popart/popx/opx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/popx/poplaroptionsx.hpp>
@@ -1737,6 +1738,16 @@ void Devicex::createRemoteBuffers() {
          {graph().addRemoteBuffer(name, type, size, repeats, true),
           boost::optional<poplar::Tensor>()}});
   }
+}
+
+std::shared_ptr<CollectiveBalancedReorder>
+Devicex::getCollectiveBalancedReorder(TensorId tensor_id) {
+  return collectiveReorders[tensor_id];
+}
+void Devicex::setCollectiveBalancedReorder(
+    TensorId tensor_id,
+    std::shared_ptr<CollectiveBalancedReorder> cbr) {
+  collectiveReorders[tensor_id] = cbr;
 }
 
 bool Devicex::containsFragment(const Graph &graph) const {

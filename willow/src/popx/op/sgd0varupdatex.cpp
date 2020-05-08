@@ -1,5 +1,4 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <popops/Collectives.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/ScaledAdd.hpp>
 #include <popart/error.hpp>
@@ -67,19 +66,6 @@ void SGD0VarUpdateOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor weightDeltas =
       getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
 
-  // TODO: where does this go when there is replication?
-  if (dv_p->isReplicatedGraph() &&
-      !dv_p->ir().getSessionOptions().hostAllReduce) {
-    popops::replicatedAllReduceWithOutput(
-        graph(),
-        weightDeltas,
-        weightDeltas,
-        popops::Operation::ADD,
-        prog,
-        debugPrefix("allReduce_Add"),
-        {{"useReplicatedImplementation", "true"}});
-  }
-
   // non-const scaled learning rate case
   if (!vu_op.initSlr0.isConst()) {
     popops::scaledSubtractFrom(
@@ -102,6 +88,11 @@ void SGD0VarUpdateOpx::grow(poplar::program::Sequence &prog) const {
         debugPrefix("scaledSubtract"));
   }
 
+  if (hasInViewChangers(SGD0VarUpdateOp::getVarToUpdateInIndex())) {
+    setOutViewChangers(
+        SGD0VarUpdateOp::getUpdatedVarOutIndex(),
+        getInViewChangers(SGD0VarUpdateOp::getVarToUpdateInIndex()));
+  }
   // output is a reference to the updated input
   setOutTensor(SGD0VarUpdateOp::getUpdatedVarOutIndex(),
                getInTensor(SGD0VarUpdateOp::getVarToUpdateInIndex()));
