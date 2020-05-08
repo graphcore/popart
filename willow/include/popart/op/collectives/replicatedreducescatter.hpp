@@ -8,8 +8,8 @@ namespace popart {
 
 class ReplicatedReduceScatterOp : public CollectivesBaseOp {
 public:
-  ReplicatedReduceScatterOp(const OperatorIdentifier &opid,
-                            const Op::Settings &settings);
+  ReplicatedReduceScatterOp(const OperatorIdentifier &_opid,
+                            const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const final;
   void setup() final;
   float getSubgraphValue() const final { return getHighSubgraphValue(); }

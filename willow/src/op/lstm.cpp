@@ -254,10 +254,11 @@ std::vector<std::unique_ptr<Op>> PopartLSTMOp::getGradOps() {
 }
 
 void PopartLSTMOp::setup() {
-  auto verifyShape = [this](InIndex inIndex, Shape refShape, std::string id) {
+  auto verifyShape = [this](
+                         InIndex inIndex, Shape refShape, std::string idStr) {
     auto inputShape = inShape(inIndex);
     if (inputShape != refShape) {
-      throw error("Bad {} shape {}, should be {}", id, inIndex, refShape);
+      throw error("Bad {} shape {}, should be {}", idStr, inIndex, refShape);
     }
   };
 

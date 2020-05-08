@@ -34,8 +34,7 @@ private:
   void
   insertIoTileCopy(Graph &graph, Tensor *tensor, Op *fromOp, Op *toOp) const;
 
-  void
-  connectIoTileCopy(Graph &graph, Tensor *tensor, Op *fromOp, Op *toOp) const;
+  void connectIoTileCopy(Graph &graph, Tensor *tensor, Op *toOp) const;
 };
 
 } // namespace popart

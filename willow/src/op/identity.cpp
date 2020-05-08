@@ -44,8 +44,8 @@ std::unique_ptr<Op> IdentityInplaceOp::clone() const {
 IdentityGradOp::IdentityGradOp(const IdentityOp &fwdOp)
     : IdentityOp(Onnx::GradOperators::IdentityGrad, fwdOp.getSettings()) {}
 
-IdentityGradOp::IdentityGradOp(const Settings &settings)
-    : IdentityOp(Onnx::GradOperators::IdentityGrad, settings) {}
+IdentityGradOp::IdentityGradOp(const Settings &settings_)
+    : IdentityOp(Onnx::GradOperators::IdentityGrad, settings_) {}
 
 std::unique_ptr<Op> IdentityGradOp::clone() const {
   return std::make_unique<IdentityGradOp>(*this);

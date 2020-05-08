@@ -143,7 +143,7 @@ poplar::Tensor DynamicUpdateOpx::unwindTensorLayout(poplar::Tensor tensor,
 view::RegMap DynamicUpdateOpx::unwindRegion(InIndex index, OutIndex) const {
   DynamicTernaryBaseOp *op = dynamic_cast<DynamicTernaryBaseOp *>(this->op_p);
   auto shape               = op->inShape(index);
-  return [shape](const view::Region &r) {
+  return [shape](const view::Region &) {
     return view::Regions(1, view::Region::getFull(shape));
   };
 }

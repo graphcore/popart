@@ -9,9 +9,9 @@
 
 namespace popart {
 
-ReplicatedAllReduceOp::ReplicatedAllReduceOp(const OperatorIdentifier &opid,
-                                             const Op::Settings &settings)
-    : CollectivesBaseOp(opid, settings) {}
+ReplicatedAllReduceOp::ReplicatedAllReduceOp(const OperatorIdentifier &_opid,
+                                             const Op::Settings &settings_)
+    : CollectivesBaseOp(_opid, settings_) {}
 
 std::unique_ptr<Op> ReplicatedAllReduceOp::clone() const {
   return std::make_unique<ReplicatedAllReduceOp>(*this);
@@ -31,9 +31,9 @@ void ReplicatedAllReduceOp::setup() {
 }
 
 ReplicatedAllReduceInplaceOp::ReplicatedAllReduceInplaceOp(
-    const OperatorIdentifier &opid,
-    const Op::Settings &settings)
-    : CollectivesBaseOp(opid, settings) {}
+    const OperatorIdentifier &_opid,
+    const Op::Settings &settings_)
+    : CollectivesBaseOp(_opid, settings_) {}
 
 ReplicatedAllReduceInplaceOp::ReplicatedAllReduceInplaceOp(
     const ReplicatedAllReduceOp &rop)
@@ -83,7 +83,7 @@ static OpCreator<ReplicatedAllReduceOp> ReplicatedAllReduceOpCreator(
                     ReplicatedAllReduceOpDef}}),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
+       const Attributes & = {}) -> std::unique_ptr<Op> {
       return std::unique_ptr<ReplicatedAllReduceOp>(
           new ReplicatedAllReduceOp(_opid, settings));
     },
@@ -100,7 +100,7 @@ static OpCreator<ReplicatedAllReduceInplaceOp>
                         ReplicatedAllReduceInplaceOpDef}}),
         [](const OperatorIdentifier &_opid,
            const Op::Settings &settings,
-           const Attributes &attr) -> std::unique_ptr<Op> {
+           const Attributes & = {}) -> std::unique_ptr<Op> {
           return std::unique_ptr<ReplicatedAllReduceInplaceOp>(
               new ReplicatedAllReduceInplaceOp(_opid, settings));
         },

@@ -362,10 +362,14 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
   // constructor
   auto up_call_op =
       std::make_unique<CallOp>(Onnx::CustomOperators::Call_1, graph, subgraph);
-  auto call_op_id         = graph.moveIntoGraph(std::move(up_call_op));
-  CallOp *call_op         = dynamic_cast<CallOp *>(graph.getOp(call_op_id));
-  call_op->settings.scope = scope.get();
-  call_op->settings.recomputeType = recompute.get();
+  auto call_op_id = graph.moveIntoGraph(std::move(up_call_op));
+  CallOp *call_op = dynamic_cast<CallOp *>(graph.getOp(call_op_id));
+  if (scope.is_initialized()) {
+    call_op->settings.scope = scope.get();
+  }
+  if (recompute.is_initialized()) {
+    call_op->settings.recomputeType = recompute.get();
+  }
   call_op->setVirtualGraphId(vgid);
   call_op->setPingPongPhase(phase);
   call_op->setPipelineStage(pipeline_stage);

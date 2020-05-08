@@ -179,8 +179,7 @@ bool DynamicOpTransform::apply(Graph &graph) const {
     }
 
     // Dynamic update tensor layout preference is Update <- In
-    if (DynamicTernaryBaseOp *dynamicTernary =
-            dynamic_cast<DynamicTernaryBaseOp *>(op)) {
+    if (dynamic_cast<DynamicTernaryBaseOp *>(op)) {
       if (op->settings.inferTensorMappingToFrom.empty()) {
         op->settings.inferTensorMappingToFrom.insert(
             {DynamicTernaryBaseOp::getUpdateInIndex(),

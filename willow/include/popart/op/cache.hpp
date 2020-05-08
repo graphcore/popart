@@ -11,7 +11,7 @@ class CacheStoreOp : public Op {
 public:
   CacheStoreOp(const OperatorIdentifier &,
                const Op::Settings &,
-               RemoteBufferId id = -1UL);
+               RemoteBufferId rbid_ = -1UL);
 
   std::unique_ptr<Op> clone() const final;
   void setup() final {}
@@ -36,7 +36,7 @@ class CacheLoadOp : public Op {
 public:
   CacheLoadOp(const OperatorIdentifier &,
               const Op::Settings &,
-              RemoteBufferId id = -1UL);
+              RemoteBufferId rbid_ = -1UL);
 
   std::unique_ptr<Op> clone() const final;
   void setup() final;

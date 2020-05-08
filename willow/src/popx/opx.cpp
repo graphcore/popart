@@ -61,9 +61,9 @@ view::RegMap Opx::unwindRegion(InIndex, OutIndex) const {
               op_p->opid);
 }
 
-bool Opx::hasCreatorViewChangers(InIndex index) const { return false; }
+bool Opx::hasCreatorViewChangers(InIndex) const { return false; }
 
-ViewChangers Opx::getCreatorViewChangers(InIndex index) const {
+ViewChangers Opx::getCreatorViewChangers(InIndex) const {
   return ViewChangers();
 }
 

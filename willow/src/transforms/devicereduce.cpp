@@ -22,11 +22,8 @@ TensorId DeviceReduce::generateReducedTensorId(Tensor *tensor) const {
 }
 
 bool DeviceReduce::apply(Graph &graph) const {
-  auto &ir = graph.getIr();
-
   logging::transform::debug("Applying DeviceReduce transformation");
 
-  int counter = 0;
   for (Op *op : graph.getOpSchedule({})) {
 
     const bool isVar0UpdateOp = op->isConvertibleTo<SGD0VarUpdateOp>();

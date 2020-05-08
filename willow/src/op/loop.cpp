@@ -100,13 +100,13 @@ addImplicitTensors(const ONNX_NAMESPACE::GraphProto &bodyProto,
 } // namespace
 
 LoopOp::LoopOp(
-    const OperatorIdentifier &opid,
-    const Op::Settings &settings,
+    const OperatorIdentifier &_opid,
+    const Op::Settings &settings_,
     const GraphId &subgraphId,
     const std::vector<std::pair<TensorId, TensorInfo>> inputs,
     const std::vector<TensorId> implicitTensors,
     const std::vector<std::pair<TensorId, TensorInfo>> explicitTensors)
-    : Op(opid, settings), tripCountValue_(0), subgraphId_(subgraphId),
+    : Op(_opid, settings_), tripCountValue_(0), subgraphId_(subgraphId),
       implicitTensors_(implicitTensors), inputs_(inputs),
       explicitTensors_(explicitTensors) {}
 

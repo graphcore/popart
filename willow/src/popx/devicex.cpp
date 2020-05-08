@@ -1634,7 +1634,8 @@ PriTask Devicex::streamFromHostTask(Tensor *tensor) {
               tensor->id,
               vgid);
 
-          poplar::ReplicatedStreamMode mode;
+          poplar::ReplicatedStreamMode mode =
+              poplar::ReplicatedStreamMode::BROADCAST;
 
           if (tensor->tensorType() == TensorType::Variable) {
             // If it is a variable we 'broadcast' the same tensor
@@ -2572,8 +2573,8 @@ void Devicex::prepare() {
       }
 
       for (VGraphId ipu = 0; ipu < numIPUs; ++ipu) {
-        unsigned startTile = ipu * tilesPerIPU;
-        unsigned endTile   = (ipu + 1) * tilesPerIPU;
+        unsigned startTile = static_cast<unsigned>(ipu) * tilesPerIPU;
+        unsigned endTile   = (static_cast<unsigned>(ipu) + 1) * tilesPerIPU;
         auto ipuGraph      = graph().createVirtualGraph(startTile, endTile);
         virtualGraphs.emplace_back(ipuGraph.createVirtualGraph(computeTiles),
                                    ipuGraph.createVirtualGraph(ioTiles));
@@ -2583,8 +2584,8 @@ void Devicex::prepare() {
       }
     } else {
       for (VGraphId ipu = 0; ipu < numIPUs; ++ipu) {
-        unsigned startTile = ipu * tilesPerIPU;
-        unsigned endTile   = (ipu + 1) * tilesPerIPU;
+        unsigned startTile = static_cast<unsigned>(ipu) * tilesPerIPU;
+        unsigned endTile   = (static_cast<unsigned>(ipu) + 1) * tilesPerIPU;
         virtualGraphs.emplace_back(
             graph().createVirtualGraph(startTile, endTile));
         logging::devicex::info(
@@ -3535,9 +3536,13 @@ void Devicex::initPoplarGraph() {
                             replicationFactor);
     switch (deviceInfo->getType()) {
     case DeviceType::Ipu: {
-      popTarget = poplar::Target::createIPUTarget(globalNumIpus, ipuSystemType);
+      popTarget = poplar::Target::createIPUTarget(
+          static_cast<unsigned>(globalNumIpus), ipuSystemType);
       break;
     }
+    case DeviceType::Cpu:
+    case DeviceType::IpuModel:
+    case DeviceType::Sim:
     default:
       throw error(
           "Only IPU Hardware devices supported with distributed replicated "

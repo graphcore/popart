@@ -12,7 +12,6 @@ namespace popx {
 DetachOpx::DetachOpx(popart::Op *op, popart::popx::Devicex *devicex)
     : popart::popx::ElementWiseUnaryOpx(op, devicex) {
   verifyOp<DetachOp>(op, Onnx::CustomOperators::Detach_1);
-  auto detach_op = dynamic_cast<DetachOp *>(op_p);
 }
 
 void DetachOpx::grow(poplar::program::Sequence &prog) const {

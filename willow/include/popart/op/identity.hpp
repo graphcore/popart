@@ -26,7 +26,7 @@ public:
 class IdentityInplaceOp : public IdentityOp {
 public:
   IdentityInplaceOp(const OperatorIdentifier &_opid,
-                    const Op::Settings &settings);
+                    const Op::Settings &settings_);
   IdentityInplaceOp(const IdentityOp &concatOp);
 
   std::unique_ptr<Op> clone() const override;
@@ -37,7 +37,7 @@ public:
 class IdentityGradOp : public IdentityOp {
 public:
   IdentityGradOp(const IdentityOp &fwdOp);
-  IdentityGradOp(const Settings &settings);
+  IdentityGradOp(const Settings &settings_);
   std::unique_ptr<Op> clone() const final;
 
   const std::vector<GradInOutMapper> &gradInputInfo() const final;

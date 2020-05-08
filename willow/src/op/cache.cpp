@@ -11,8 +11,8 @@ namespace popart {
 
 CacheStoreOp::CacheStoreOp(const OperatorIdentifier &_opid,
                            const Op::Settings &settings_,
-                           RemoteBufferId id)
-    : Op(_opid, settings_), remotebuffer_id(id) {}
+                           RemoteBufferId rbid_)
+    : Op(_opid, settings_), remotebuffer_id(rbid_) {}
 
 std::unique_ptr<Op> CacheStoreOp::clone() const {
   return std::make_unique<CacheStoreOp>(*this);
@@ -25,8 +25,8 @@ void CacheStoreOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 
 CacheLoadOp::CacheLoadOp(const OperatorIdentifier &_opid,
                          const Op::Settings &settings_,
-                         RemoteBufferId id)
-    : Op(_opid, settings_), remotebuffer_id(id) {}
+                         RemoteBufferId rbid_)
+    : Op(_opid, settings_), remotebuffer_id(rbid_) {}
 
 std::unique_ptr<Op> CacheLoadOp::clone() const {
   return std::make_unique<CacheLoadOp>(*this);

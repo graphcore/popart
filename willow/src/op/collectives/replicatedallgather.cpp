@@ -47,7 +47,7 @@ static OpCreator<ReplicatedAllGatherOp> ReplicatedAllGatherOpCreator(
                     ReplicatedAllGatherOpDef}}),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
-       const Attributes &attr = {}) -> std::unique_ptr<Op> {
+       const Attributes & = {}) -> std::unique_ptr<Op> {
       return std::unique_ptr<ReplicatedAllGatherOp>(
           new ReplicatedAllGatherOp(_opid, settings));
     },

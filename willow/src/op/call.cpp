@@ -186,10 +186,9 @@ CallOp::getIntrospectionOutVirtualGraphId(OutIndex index) const {
   IsIoTile useIoTiles = getSettings().useIoTiles;
 
   // Fallback 2: No VGID determined by introspection or tensor
-  return Op::hasVirtualGraphId()
-             ? VGraphIdAndIoTile(Op::getVirtualGraphId(),
-                                 getSettings().useIoTiles ? true : false)
-             : VGraphIdAndIoTile(unusedVGraphId, false);
+  return Op::hasVirtualGraphId() ? VGraphIdAndIoTile(Op::getVirtualGraphId(),
+                                                     useIoTiles ? true : false)
+                                 : VGraphIdAndIoTile(unusedVGraphId, false);
 }
 
 void CallOp::addAlias(InIndex in,

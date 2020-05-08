@@ -13,9 +13,9 @@ namespace popart {
 DynamicSliceOp::DynamicSliceOp(const OperatorIdentifier &_opid,
                                std::vector<int64_t> axes_,
                                std::vector<int64_t> sizes_,
-                               bool noOverlap,
+                               bool noOverlap_,
                                const Op::Settings &settings_)
-    : DynamicSliceBaseOp(_opid, axes_, sizes_, noOverlap, settings_) {}
+    : DynamicSliceBaseOp(_opid, axes_, sizes_, noOverlap_, settings_) {}
 
 std::unique_ptr<Op> DynamicSliceOp::clone() const {
   return std::make_unique<DynamicSliceOp>(*this);

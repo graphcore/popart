@@ -8,8 +8,8 @@ namespace popart {
 
 class CollectivesBaseOp : public Op {
 public:
-  CollectivesBaseOp(const OperatorIdentifier &opid,
-                    const Op::Settings &settings);
+  CollectivesBaseOp(const OperatorIdentifier &_opid,
+                    const Op::Settings &settings_);
 
   // Input to gather/reduce/scatter
   static InIndex getInIndex() { return 0; }

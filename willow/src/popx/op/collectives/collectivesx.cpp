@@ -143,10 +143,9 @@ CollectiveBalancedReorder::rearrangeForCollective(poplar::Tensor tensor) const {
 
   std::vector<poplar::Tensor> allReorderedSlices;
 
-  int64_t padSize = 0;
+  size_t padSize = 0;
   for (auto &r : reorder) {
-    auto start = r.offset;
-    if (start == -1) {
+    if (r.offset == -1) {
       padSize += r.size;
     }
   }
@@ -156,17 +155,13 @@ CollectiveBalancedReorder::rearrangeForCollective(poplar::Tensor tensor) const {
 
   // Per-replica reordering
   for (auto &r : reorder) {
-    auto start = r.offset;
-    auto size  = r.size;
-    auto tile  = r.tile;
-    if (start > -1) {
-      auto end = start + size;
-      allReorderedSlices.push_back(flat.slice(start, end));
+    if (r.offset > -1) {
+      allReorderedSlices.push_back(flat.slice(r.offset, r.offset + r.size));
     } else {
-      auto end = padOffset + size;
-      allReorderedSlices.push_back(pad.slice(padOffset, end));
-      graph.setTileMapping(allReorderedSlices.back(), tile);
-      padOffset += size;
+      allReorderedSlices.push_back(pad.slice(padOffset, padOffset + r.size));
+      graph.setTileMapping(allReorderedSlices.back(),
+                           static_cast<unsigned>(r.tile));
+      padOffset += r.size;
     }
   }
 
@@ -194,10 +189,8 @@ poplar::Tensor CollectiveBalancedReorder::undoRearrangeForCollective(
   for (auto &r : reorder) {
     // Skip padding
     if (r.offset > -1) {
-      auto start = r.rearranged_offset;
-      auto size  = r.size;
-      auto end   = start + size;
-      allReorderedSlices.push_back(flat.slice(start, end));
+      allReorderedSlices.push_back(
+          flat.slice(r.rearranged_offset, r.rearranged_offset + r.size));
     }
   }
 
@@ -230,28 +223,25 @@ void CollectiveBalancedReorder::rearrange(const char *in,
   int64_t intervalOffset = 0;
 
   for (auto &r : reorder) {
-    auto ostart    = r.offset;
-    auto rstart    = r.rearranged_offset;
-    auto totalSize = r.size;
-    if (ostart > -1) {
+    if (r.offset > -1) {
       // Translate offset in the simplifed tensor (ostart) to offset in the
       // original input tensor (osstart)
       int64_t copiedOffset = 0;
-      while (copiedOffset < totalSize) {
+      while (copiedOffset < r.size) {
         auto currentInterval = intervals[intervalIndex];
         int64_t osstart      = currentInterval.begin();
         int64_t intervalSize = currentInterval.size();
         int64_t size =
-            std::min(intervalSize - intervalOffset, totalSize - copiedOffset);
+            std::min(intervalSize - intervalOffset, r.size - copiedOffset);
 
         int64_t inOff;
         int64_t outOff;
         if (forCollective) {
           inOff  = (osstart + intervalOffset) * elemByteSize;
-          outOff = (rstart + copiedOffset) * elemByteSize;
+          outOff = (r.rearranged_offset + copiedOffset) * elemByteSize;
         } else {
           outOff = (osstart + intervalOffset) * elemByteSize;
-          inOff  = (rstart + copiedOffset) * elemByteSize;
+          inOff  = (r.rearranged_offset + copiedOffset) * elemByteSize;
         }
 
         auto byteSize = size * elemByteSize;
@@ -328,7 +318,8 @@ CollectivesBaseOpx::getCollectiveLinkedGroup() const {
         } else {
           auto it = std::find(inputIds.begin(), inputIds.end(), front->id);
           if (it != inputIds.end()) {
-            InIndex index   = std::distance(inputIds.begin(), it);
+            InIndex index =
+                static_cast<InIndex>(std::distance(inputIds.begin(), it));
             auto &callSites = liveness->getGraphCallSites(front->getGraph().id);
             for (Op *callSite : callSites) {
               traceFront.push_back(callSite->input->tensor(index));

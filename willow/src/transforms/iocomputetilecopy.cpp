@@ -26,7 +26,6 @@ TensorId IoComputeTileCopy::generateCopiedTensorId(Tensor *tensor,
 
 void IoComputeTileCopy::connectIoTileCopy(Graph &,
                                           Tensor *tensor,
-                                          Op *fromOp,
                                           Op *toOp) const {
 
   // Copy the list of index's this input tensor is mapped
@@ -178,7 +177,7 @@ bool IoComputeTileCopy::apply(Graph &graph) const {
                   copiedTensors.find(tensor->id) != copiedTensors.end();
 
               if (alreadyCopied == true) {
-                connectIoTileCopy(graph, tensor, from, to);
+                connectIoTileCopy(graph, tensor, to);
               } else {
                 insertIoTileCopy(graph, tensor, from, to);
                 // Record the copy

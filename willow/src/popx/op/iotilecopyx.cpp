@@ -16,8 +16,6 @@ IoTileCopyOpx::IoTileCopyOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 void IoTileCopyOpx::grow(poplar::program::Sequence &prog) const {
-  IoTileCopyOp &op = getOp<IoTileCopyOp>();
-
   poplar::Tensor outTensor = getOutTensor(IoTileCopyOp::getOutIndex());
   poplar::Tensor inView    = getInView(IoTileCopyOp::getInIndex());
   poplar::Tensor outView   = getOutView(IoTileCopyOp::getOutIndex());

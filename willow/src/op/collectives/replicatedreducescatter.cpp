@@ -10,9 +10,9 @@
 namespace popart {
 
 ReplicatedReduceScatterOp::ReplicatedReduceScatterOp(
-    const OperatorIdentifier &opid,
-    const Op::Settings &settings)
-    : CollectivesBaseOp(opid, settings) {}
+    const OperatorIdentifier &_opid,
+    const Op::Settings &settings_)
+    : CollectivesBaseOp(_opid, settings_) {}
 
 std::unique_ptr<Op> ReplicatedReduceScatterOp::clone() const {
   return std::make_unique<ReplicatedReduceScatterOp>(*this);
@@ -47,7 +47,7 @@ static OpCreator<ReplicatedReduceScatterOp> ReplicatedReduceScatterOpCreator(
                     ReplicatedReduceScatterOpDef}}),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
-       const Attributes &attr = {}) -> std::unique_ptr<Op> {
+       const Attributes & = {}) -> std::unique_ptr<Op> {
       return std::unique_ptr<ReplicatedReduceScatterOp>(
           new ReplicatedReduceScatterOp(_opid, settings));
     },

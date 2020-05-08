@@ -8,8 +8,8 @@ namespace popart {
 
 class ReplicatedAllReduceOp : public CollectivesBaseOp {
 public:
-  ReplicatedAllReduceOp(const OperatorIdentifier &opid,
-                        const Op::Settings &settings);
+  ReplicatedAllReduceOp(const OperatorIdentifier &_opid,
+                        const Op::Settings &settings_);
 
   std::unique_ptr<Op> clone() const final;
   virtual std::unique_ptr<Op>
@@ -20,8 +20,8 @@ public:
 
 class ReplicatedAllReduceInplaceOp : public CollectivesBaseOp {
 public:
-  ReplicatedAllReduceInplaceOp(const OperatorIdentifier &opid,
-                               const Op::Settings &settings);
+  ReplicatedAllReduceInplaceOp(const OperatorIdentifier &_opid,
+                               const Op::Settings &settings_);
   ReplicatedAllReduceInplaceOp(const ReplicatedAllReduceOp &);
 
   view::Regions modifies(InIndex) const override;

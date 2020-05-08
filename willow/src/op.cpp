@@ -384,21 +384,22 @@ std::ostream &operator<<(std::ostream &ost, const RecomputeType &rt) {
   switch (rt) {
   case (RecomputeType::Recomputed): {
     ost << "Recomputed";
-    return ost;
+    break;
   }
   case (RecomputeType::Recompute): {
     ost << "Recompute";
-    return ost;
+    break;
   }
   case (RecomputeType::Checkpoint): {
     ost << "Checkpoint";
-    return ost;
+    break;
   }
   case (RecomputeType::Undefined): {
     ost << "Undefined";
-    return ost;
+    break;
   }
   }
+  return ost;
 }
 
 void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {

@@ -65,7 +65,7 @@ static OpCreator<DetachOp> detachOpCreator(
     }),
     [](const OperatorIdentifier &opid_,
        const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
+       const Attributes &) -> std::unique_ptr<Op> {
       return std::unique_ptr<Op>(new DetachOp(opid_, settings));
     },
     true);

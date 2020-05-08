@@ -13,7 +13,7 @@ struct ReorderMetadata {
                   int64_t rearranged_offset_,
                   int64_t size_,
                   int64_t tile_)
-      : offset(offset), rearranged_offset(rearranged_offset_), size(size_),
+      : offset(offset_), rearranged_offset(rearranged_offset_), size(size_),
         tile(tile_) {}
   int64_t offset;
   int64_t rearranged_offset;
@@ -35,8 +35,8 @@ struct ReorderMetadata {
 class CollectiveBalancedReorder {
 public:
   CollectiveBalancedReorder(poplar::Graph &graph_,
-                            poplar::Tensor tensor,
-                            unsigned replicationFactor);
+                            poplar::Tensor tensor_,
+                            unsigned replicationFactor_);
 
   // Balanced reorder the tensor in a collective-friendly manner
   poplar::Tensor rearrangeForCollective(poplar::Tensor tensor) const;
@@ -68,13 +68,14 @@ private:
   // Host tensor rearrangement routine
   void rearrange(const char *in, char *out, bool forCollective) const;
 
+  // Graph or subgraph on which the tensor and reordered tensor are allocated
+  poplar::Graph &graph;
+
+  unsigned replicationFactor;
+
   poplar::Tensor referenceTensor;
   size_t elemByteSize;
   size_t numRearrangedTensorElems;
-  unsigned replicationFactor;
-
-  // Graph or subgraph on which the tensor and reordered tensor are allocated
-  poplar::Graph &graph;
 
   // Tuple of: original offset, rearranged offset, size and tile
   std::vector<ReorderMetadata> reordering;

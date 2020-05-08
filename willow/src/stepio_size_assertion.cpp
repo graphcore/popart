@@ -86,6 +86,8 @@ int64_t CorrectnessAsserter::getArtDivisor(AnchorReturnType art) const {
     return bps * aFact;
   case (AnchorReturnTypeId::EveryN):
     return art.rp();
+  default:
+    throw error("Unknown anchor return type");
   }
 }
 

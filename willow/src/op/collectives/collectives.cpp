@@ -9,8 +9,8 @@
 
 namespace popart {
 
-CollectivesBaseOp::CollectivesBaseOp(const OperatorIdentifier &opid,
-                                     const Op::Settings &settings)
-    : Op(opid, settings) {}
+CollectivesBaseOp::CollectivesBaseOp(const OperatorIdentifier &_opid,
+                                     const Op::Settings &settings_)
+    : Op(_opid, settings_) {}
 
 } // namespace popart

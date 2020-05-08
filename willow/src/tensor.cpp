@@ -107,8 +107,6 @@ const void *Tensor::getTensorData() const {
 
 std::vector<char> Tensor::getDataViaRecursion() const {
   if (hasProducer()) {
-    Op *producer = getProducer();
-
     if (ConstExprOpManager::hasConstExprOp(producer)) {
       //
       for (auto inTensor : producer->input->tensors()) {
