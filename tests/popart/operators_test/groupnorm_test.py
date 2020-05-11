@@ -1,13 +1,15 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 import numpy as np
+import os
 import pytest
 import popart
+import random
 import torch
-import os
+
 from op_tester import op_tester
 
-# The poplar groups are strided, but the pytorch are not so the
-# gradient tensors are different.
+# The poplar groups are strided, but the pytorch are not so the output and
+# and gradient tensors are different.
 
 
 def test_groupnorm_0(op_tester):
@@ -17,19 +19,36 @@ def test_groupnorm_0(op_tester):
     num_groups = 2
 
     # create test data
-    d1 = 0.1 * np.random.randn(2, 4, 2, 2).astype(np.float32) - 0.02
+    d1 = 0.1 * np.random.randn(2, num_channels, 2, 2).astype(np.float32) - 0.02
 
     # Init with same values as pytorch
     b = np.zeros(num_channels).astype(np.float32)
     scale = np.ones(num_channels).astype(np.float32)
+
+    # Only backprop one value per group to avoid the gradient of the summed
+    # loss term being numerially zero
+    one_per_group = np.zeros_like(d1)
+
+    assert num_channels % num_groups == 0
+    channels_per_group = num_channels // num_groups
+
+    for group in range(num_groups):
+        offset = group * channels_per_group
+        num = random.randint(0, channels_per_group - 1)
+        one_per_group[:, offset + num, :, :] = 1.0
 
     def init_builder(builder):
 
         i1 = builder.addInputTensor(d1)
         iScale = builder.addInputTensor(scale)
         iB = builder.addInputTensor(b)
-        (o_y, o_mean, o_invstd) = builder.aiGraphcore.groupnormalization(
+        iOnePerGroup = builder.addInputTensor(one_per_group)
+
+        (normed, o_mean, o_invstd) = builder.aiGraphcore.groupnormalization(
             [i1, iScale, iB], num_groups, epsilon)
+
+        o_y = builder.aiOnnx.mul([normed, iOnePerGroup])
+
         builder.addOutputTensor(o_y)
         return [
             o_y, o_mean, o_invstd,
@@ -52,9 +71,6 @@ def test_groupnorm_0(op_tester):
         m.train()
         _y = m(_input)
 
-        d__o = ref_data.getOutputTensorGrad(0)
-        _y.backward(torch.tensor(d__o))
-
         t = _y[0][2].clone()
         _y[0][2] = _y[0][1]
         _y[0][1] = t
@@ -62,6 +78,11 @@ def test_groupnorm_0(op_tester):
         t = _y[1][2].clone()
         _y[1][2] = _y[1][1]
         _y[1][1] = t
+
+        _y = _y * torch.tensor(one_per_group, requires_grad=False)
+
+        d__o = ref_data.getOutputTensorGrad(0)
+        _y.backward(torch.tensor(d__o))
 
         # Get a view of input by channel
         v = _input.view(4, -1)
@@ -71,7 +92,7 @@ def test_groupnorm_0(op_tester):
 
         return [_y, _mean, _invstd, None, None, None, d__o]
 
-    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp', 'MulArgGradOp']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -91,13 +112,25 @@ def test_groupnorm_1(op_tester):
     b = np.zeros(num_channels).astype(np.float32)
     scale = np.ones(num_channels).astype(np.float32)
 
+    # Only backprop one value to avoid the gradient of the summed loss
+    # term being numerially zero
+    assert num_groups == 1
+    one_per_group = np.zeros_like(d1)
+    num = random.randint(0, num_channels - 1)
+    one_per_group[:, num, :, :] = 1.0
+
     def init_builder(builder):
 
         i1 = builder.addInputTensor(d1)
         iScale = builder.addInputTensor(scale)
         iB = builder.addInputTensor(b)
-        (o_y, o_mean, o_invstd) = builder.aiGraphcore.groupnormalization(
+        iOnePerGroup = builder.addInputTensor(one_per_group)
+
+        (normed, o_mean, o_invstd) = builder.aiGraphcore.groupnormalization(
             [i1, iScale, iB], num_groups)
+
+        o_y = builder.aiOnnx.mul([normed, iOnePerGroup])
+
         builder.addOutputTensor(o_y)
         builder.addOutputTensor(o_mean)
         builder.addOutputTensor(o_invstd)
@@ -117,6 +150,7 @@ def test_groupnorm_1(op_tester):
 
         m.train()
         _y = m(_input)
+        _y = _y * torch.tensor(one_per_group, requires_grad=False)
 
         d__o = ref_data.getOutputTensorGrad(0)
         _y.backward(torch.tensor(d__o))
@@ -131,41 +165,33 @@ def test_groupnorm_1(op_tester):
             _y, _mean, _invstd, _input.grad, m.weight.grad, m.bias.grad, d__o
         ]
 
-    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp', 'MulArgGradOp']
     op_tester.run(init_builder, reference, 'train')
 
 
 def test_groupnorm_2(op_tester):
-    epsilon = 1e-05
+    epsilon = 1.0
     num_channels = 6
     num_groups = 6
 
     # create test data
-    d1 = np.random.rand(5, num_channels, 2, 2).astype(np.float32) * 10
-    b = np.random.rand(num_channels).astype(np.float32)
-    scale = np.random.rand(num_channels).astype(np.float32)
-
-    # Relax the relative tolerance as small numbers lose precision
-    op_tester.rtol = 1e-04
-    op_tester.atol = 1e-06
+    d1 = np.random.rand(5, num_channels, 2, 2).astype(np.float32)
+    b = np.random.rand(num_channels).astype(np.float32) + 0.1
+    scale = np.random.rand(num_channels).astype(np.float32) * 0.9 + 0.1
 
     def init_builder(builder):
 
         i1 = builder.addInputTensor(d1)
         iScale = builder.addInputTensor(scale)
         iB = builder.addInputTensor(b)
+
         (o_y, o_mean, o_var) = builder.aiGraphcore.groupnormalization(
-            [i1, iScale, iB], num_groups)
+            [i1, iScale, iB], num_groups, epsilon)
+
         builder.addOutputTensor(o_y)
         builder.addOutputTensor(o_mean)
         builder.addOutputTensor(o_var)
-        return [
-            o_y, o_mean, o_var,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + iScale,
-            popart.reservedGradientPrefix() + iB,
-            popart.reservedGradientPrefix() + o_y
-        ]
+        return [o_y, o_mean, o_var]
 
     def reference(ref_data):
 
@@ -173,15 +199,12 @@ def test_groupnorm_2(op_tester):
         _weight = torch.tensor(scale, requires_grad=True)
         _bias = torch.tensor(b, requires_grad=True)
 
-        m = torch.nn.GroupNorm(num_groups, num_channels)
+        m = torch.nn.GroupNorm(num_groups, num_channels, eps=epsilon)
         m.weight.data.copy_(_weight)
         m.bias.data.copy_(_bias)
 
         m.train()
         _y = m(_input)
-
-        d__o = ref_data.getOutputTensorGrad(0)
-        _y.backward(torch.tensor(d__o))
 
         # Get a view of input by channel
         v = _input.view(30, -1)
@@ -191,15 +214,12 @@ def test_groupnorm_2(op_tester):
         # Get the mean and inv std dev
         _invstd = 1 / torch.sqrt(v.var(-1, unbiased=False) + epsilon)
 
-        return [
-            _y, _mean, _invstd, _input.grad, m.weight.grad, m.bias.grad, d__o
-        ]
+        return [_y, _mean, _invstd]
 
-    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.patterns = ['PreUniRepl']
+    op_tester.run(init_builder, reference, 'infer')
 
 
-# test with large epsilon
 def test_groupnorm_3(op_tester):
     epsilon = 0.2
     num_channels = 4
@@ -212,6 +232,15 @@ def test_groupnorm_3(op_tester):
                     [[1, 0], [0, 1]]]],
                   dtype=np.float32)
 
+    # Only backprop  a few (3 out of 4) locations to avoid the gradient of the
+    # summed loss term being numerially zero
+    non_zero_places = 3
+    a_few_places = np.zeros_like(d1.flatten())
+
+    for _ in range(non_zero_places):
+        a_few_places[int(np.random.rand() * a_few_places.size)] = 1.0
+
+    a_few_places = a_few_places.reshape(*d1.shape)
     b = np.zeros(num_channels).astype(np.float32)
     scale = np.ones(num_channels).astype(np.float32)
 
@@ -220,8 +249,13 @@ def test_groupnorm_3(op_tester):
         i1 = builder.addInputTensor(d1)
         iScale = builder.addInputTensor(scale)
         iB = builder.addInputTensor(b)
-        (o_y, o_mean, o_invstd) = builder.aiGraphcore.groupnormalization(
+
+        i_few_places = builder.addInputTensor(a_few_places)
+
+        (normed, o_mean, o_invstd) = builder.aiGraphcore.groupnormalization(
             [i1, iScale, iB], num_groups, epsilon)
+        o_y = builder.aiOnnx.mul([normed, i_few_places])
+
         builder.addOutputTensor(o_y)
         builder.addOutputTensor(o_mean)
         builder.addOutputTensor(o_invstd)
@@ -240,7 +274,7 @@ def test_groupnorm_3(op_tester):
         m = torch.nn.GroupNorm(num_groups, num_channels, eps=epsilon)
 
         m.train()
-        _y = m(_input)
+        _y = m(_input) * torch.tensor(a_few_places, requires_grad=False)
 
         d__o = ref_data.getOutputTensorGrad(0)
         _y.backward(torch.tensor(d__o))
@@ -257,7 +291,7 @@ def test_groupnorm_3(op_tester):
             _y, _mean, _invstd, _input.grad, m.weight.grad, m.bias.grad, d__o
         ]
 
-    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp', 'MulArgGradOp']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -280,13 +314,7 @@ def test_groupnorm_4(op_tester):
         (o_y, o_mean, o_invstd) = builder.aiGraphcore.groupnormalization(
             [i1, iScale, iB], num_groups, epsilon)
         builder.addOutputTensor(o_y)
-        return [
-            o_y, o_mean, o_invstd,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + iB,
-            popart.reservedGradientPrefix() + iScale,
-            popart.reservedGradientPrefix() + o_y
-        ]
+        return [o_y, o_mean, o_invstd]
 
     def reference(ref_data):
 
@@ -300,7 +328,7 @@ def test_groupnorm_4(op_tester):
         return [
             _y.astype(np.float16),
             _mean.astype(np.float16),
-            _invstd.astype(np.float16), None, None, None, None
+            _invstd.astype(np.float16)
         ]
 
     # We have to relax the tolerances slightly to account for the fact the
@@ -308,7 +336,7 @@ def test_groupnorm_4(op_tester):
     op_tester.atol = 1e-6
     op_tester.rtol = 1e-3
     op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, 'infer')
 
 
 def refGroupNormFwd(inputs,
@@ -410,13 +438,30 @@ def test_groupnorm_5(op_tester):
     b = np.zeros(num_channels).astype(np.float32)
     scale = np.ones(num_channels).astype(np.float32)
 
+    # Only backprop one value per group to avoid the gradient of the summed
+    # loss term being numerially zero
+    one_per_group = np.zeros_like(d1)
+
+    assert num_channels % num_groups == 0
+    channels_per_group = num_channels // num_groups
+
+    for group in range(num_groups):
+        offset = group * channels_per_group
+        num = random.randint(0, channels_per_group - 1)
+        one_per_group[:, offset + num, :, :] = 1.0
+
     def init_builder(builder):
 
         i1 = builder.addInputTensor(d1)
         iScale = builder.addInputTensor(scale)
         iB = builder.addInputTensor(b)
-        (o_y, o_mean, o_invstd) = builder.aiGraphcore.groupnormalization(
+        iOnePerGroup = builder.addInputTensor(one_per_group)
+
+        (normed, o_mean, o_invstd) = builder.aiGraphcore.groupnormalization(
             [i1, iScale, iB], num_groups, epsilon)
+
+        o_y = builder.aiOnnx.mul([normed, iOnePerGroup])
+
         builder.addOutputTensor(o_y)
         return [
             o_y, o_mean, o_invstd,
@@ -435,7 +480,6 @@ def test_groupnorm_5(op_tester):
         _input = torch.tensor(d1, requires_grad=True)
 
         m = torch.nn.GroupNorm(num_groups, num_channels, eps=epsilon)
-
         m.train()
         _y = m(_input)
 
@@ -449,6 +493,8 @@ def test_groupnorm_5(op_tester):
         t = _y[1][2].clone()
         _y[1][2] = _y[1][1]
         _y[1][1] = t
+
+        _y = _y * torch.tensor(one_per_group, requires_grad=False)
 
         # Get a view of input by channel
         v = _input.view(4, -1)
@@ -464,5 +510,5 @@ def test_groupnorm_5(op_tester):
     # Calculation is still pretty iffy at such large mean / std dev ratio.
     op_tester.rtol = 1e-3
     op_tester.atol = 1e-5
-    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp', 'MulArgGradOp']
     op_tester.run(init_builder, reference, 'train')
