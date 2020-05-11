@@ -25,9 +25,8 @@ NllOpx::NllOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 
 void NllOpx::grow(poplar::program::Sequence &prog) const {
   const NllOp &op             = getOp<NllOp>();
-  const NllLoss &nllloss      = op.nlll();
-  const poplar::Tensor &probs = getInTensor(NllLoss::getProbsInIndex());
-  const poplar::Tensor &label = getInTensor(NllLoss::getLabelInIndex());
+  const poplar::Tensor &probs = getInTensor(NllOp::getProbsInIndex());
+  const poplar::Tensor &label = getInTensor(NllOp::getLabelInIndex());
 
   // Expect an N-d Probs tensor and (N-1)-d Label tensor. If N=2:
   // Probs - a tensor of shape [Batchsize, NumClasses]
@@ -71,15 +70,15 @@ void NllOpx::grow(poplar::program::Sequence &prog) const {
                      prog,
                      debugPrefix("AddEpsLog"));
 
-  if (nllloss.hasIgnoreIndex()) {
+  if (op.hasIgnoreIndex()) {
     auto lossMask = applyMaskInPlaceForIgnoredIndex(
-        *this, graph(), reduction, label1D, nllloss.getIgnoreIndex(), prog);
-    if (nllloss.getReductionType() == ReductionType::Mean) {
+        *this, graph(), reduction, label1D, op.getIgnoreIndex(), prog);
+    if (op.getReductionType() == ReductionType::Mean) {
       applyScalingInPlaceForMeanReductionWithIgnoreIndex(
           *this, graph(), reduction, lossMask, prog);
     }
   } else {
-    if (nllloss.getReductionType() == ReductionType::Mean) {
+    if (op.getReductionType() == ReductionType::Mean) {
       applyScalingInPlaceForMeanReduction(*this, graph(), reduction, prog);
     }
   }
@@ -195,9 +194,8 @@ NllGradOpx::NllGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 
 void NllGradOpx::grow(poplar::program::Sequence &prog) const {
   const NllGradOp &gradOp     = getOp<NllGradOp>();
-  const NllLoss &nllloss      = gradOp.nlll();
-  const poplar::Tensor &probs = getInTensor(NllLoss::getProbsInIndex());
-  const poplar::Tensor &label = getInTensor(NllLoss::getLabelInIndex());
+  const poplar::Tensor &probs = getInTensor(NllOp::getProbsInIndex());
+  const poplar::Tensor &label = getInTensor(NllOp::getLabelInIndex());
 
   // As for NllOpx, flatten outer dimenstions if rank(probs) > 2
   auto probs2D = probs.flatten(0, probs.rank() - 1);
@@ -231,15 +229,15 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
 
   // Apply mask before reduction, so that ignored class doesn't
   // contribute to the loss gradient
-  if (nllloss.hasIgnoreIndex()) {
+  if (gradOp.hasIgnoreIndex()) {
     auto lossMask = NllOpx::applyMaskInPlaceForIgnoredIndex(
-        *this, graph(), oneHot, label1D, nllloss.getIgnoreIndex(), prog);
-    if (nllloss.getReductionType() == ReductionType::Mean) {
+        *this, graph(), oneHot, label1D, gradOp.getIgnoreIndex(), prog);
+    if (gradOp.getReductionType() == ReductionType::Mean) {
       NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
           *this, graph(), oneHot, lossMask, prog);
     }
   } else {
-    if (nllloss.getReductionType() == ReductionType::Mean) {
+    if (gradOp.getReductionType() == ReductionType::Mean) {
       NllOpx::applyScalingInPlaceForMeanReduction(*this, graph(), oneHot, prog);
     }
   }

@@ -29,75 +29,85 @@ def checkResult(result, margin):
 
 
 def test_3d_nll_loss_input():
-    # fix the random seed for this test
-    np.random.seed(0)
-    ## input data
-    Batchsize = 2
-    ExtraDim = 4  # e.g. sequence length in language model
-    Classes = 3
+    def run(withBuilderOp):
+        # fix the random seed for this test
+        np.random.seed(0)
+        ## input data
+        Batchsize = 2
+        ExtraDim = 4  # e.g. sequence length in language model
+        Classes = 3
 
-    dshape = [Batchsize, ExtraDim, Classes]
-    lshape = [Batchsize, ExtraDim]
+        dshape = [Batchsize, ExtraDim, Classes]
+        lshape = [Batchsize, ExtraDim]
+        flat_lshape = [Batchsize * ExtraDim]
 
-    ip_data = np.random.rand(Batchsize, ExtraDim, Classes).astype(np.float32)
-    lb_data = np.random.randint(Classes, size=lshape)
+        ip_data = np.random.rand(Batchsize, ExtraDim,
+                                 Classes).astype(np.float32)
+        lb_data = np.random.randint(Classes, size=lshape)
 
-    ###
-    # Popart
-    ###
-    builder = popart.Builder()
-    ip = builder.addInitializedInputTensor(ip_data)
-    lb = builder.addInputTensor(popart.TensorInfo("INT32", lshape))
-    out = builder.aiOnnx.softmax([ip], axis=np.size(lshape))
-    builder.addOutputTensor(out)
+        ###
+        # Popart
+        ###
+        builder = popart.Builder()
+        ip = builder.addInitializedInputTensor(ip_data)
+        lb = builder.addInputTensor(popart.TensorInfo("INT32", lshape))
+        out = builder.aiOnnx.softmax([ip], axis=np.size(lshape))
 
-    session = popart.TrainingSession(
-        fnModel=builder.getModelProto(),
-        dataFeed=popart.DataFlow(
-            1, {
-                "loss": popart.AnchorReturnType("All"),
-                out: popart.AnchorReturnType("All")
-            }),
-        optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
-        losses=[popart.NllLoss(out, lb, "loss")],
-        patterns=popart.Patterns(popart.PatternsLevel.All),
-        deviceInfo=tu.create_test_device())
+        if withBuilderOp == True:
+            nll0 = builder.aiGraphcore.nllloss([out, lb])
+            nll1 = builder.reshape_const(builder.aiOnnx, [nll0], flat_lshape)
+            loss = popart.IdentityLoss(nll1, "loss")
+        else:
+            loss = popart.NllLoss(out, lb, "loss")
 
-    session.prepareDevice()
-    session.weightsFromHost()
+        session = popart.TrainingSession(
+            fnModel=builder.getModelProto(),
+            dataFeed=popart.DataFlow(1, ["loss", out]),
+            optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
+            losses=[loss],
+            patterns=popart.Patterns(popart.PatternsLevel.All),
+            deviceInfo=tu.create_test_device())
 
-    anchors = session.initAnchorArrays()
-    stepio = popart.PyStepIO({lb: lb_data.astype(np.int32)}, anchors)
-    session.run(stepio)
+        session.prepareDevice()
+        session.weightsFromHost()
 
-    ###
-    # Pytorch
-    ###
-    softmax = torch.nn.Softmax(dim=1)
-    loss = torch.nn.NLLLoss(reduction='none')
+        anchors = session.initAnchorArrays()
+        stepio = popart.PyStepIO({lb: lb_data.astype(np.int32)}, anchors)
+        session.run(stepio)
 
-    # Swap Classes, ExtraDim axes
-    # This is because pytorch NllLoss expects inputs of the format:
-    #   Probs  - [BatchSize, Classes, ExtraDim0, ... , ExtraDimN]
-    #   Labels - [BatchSize, ExtraDim0, ... , ExtraDimN]
-    # whereas Popart expects (same as Tensorflow):
-    #   Probs  - [BatchSize, ExtraDim0, ... , ExtraDimN, Classes]
-    #   Labels - [BatchSize, ExtraDim0, ... , ExtraDimN]
-    ip_data = ip_data.transpose([0, 2, 1])
-    input = torch.tensor(ip_data, requires_grad=True)
-    target = torch.tensor(lb_data)
-    sm_out = softmax(input)
-    logsm = torch.log(sm_out)
-    output = loss(logsm, target)
+        ###
+        # Pytorch
+        ###
+        softmax = torch.nn.Softmax(dim=1)
+        loss = torch.nn.NLLLoss(reduction='none')
 
-    ###
-    # Compare
-    ###
-    print("Torch loss\n:", output.data.numpy())
-    print("Popart loss\n:", anchors["loss"])
+        # Swap Classes, ExtraDim axes
+        # This is because pytorch NllLoss expects inputs of the format:
+        #   Probs  - [BatchSize, Classes, ExtraDim0, ... , ExtraDimN]
+        #   Labels - [BatchSize, ExtraDim0, ... , ExtraDimN]
+        # whereas Popart expects (same as Tensorflow):
+        #   Probs  - [BatchSize, ExtraDim0, ... , ExtraDimN, Classes]
+        #   Labels - [BatchSize, ExtraDim0, ... , ExtraDimN]
+        ip_data = ip_data.transpose([0, 2, 1])
+        input = torch.tensor(ip_data, requires_grad=True)
+        target = torch.tensor(lb_data)
+        sm_out = softmax(input)
+        logsm = torch.log(sm_out)
+        output = loss(logsm, target)
+        if withBuilderOp == True:
+            output = output.reshape(flat_lshape)
 
-    result = getTensorError(output.data.numpy(), anchors["loss"])
-    checkResult(result, 1e-8)
+        ###
+        # Compare
+        ###
+        print("Torch loss\n:", output.data.numpy())
+        print("Popart loss\n:", anchors["loss"])
+
+        result = getTensorError(output.data.numpy(), anchors["loss"])
+        checkResult(result, 1e-8)
+
+    run(True)
+    run(False)
 
 
 def test_nll_loss_with_ignored_index():

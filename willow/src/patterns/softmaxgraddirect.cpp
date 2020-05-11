@@ -21,11 +21,21 @@ const OperatorIdentifier &SoftmaxGradDirect::get1() const {
 OpId SoftmaxGradDirect::moveMergedIntoIr(Op *opRoot) const {
   // The root of the pattern is an NLLGrad,
   // we need to move from it to the SoftmaxOp
-  Graph &graph = opRoot->getGraph();
-  Op *nllgrad  = opRoot;
+  Graph &graph       = opRoot->getGraph();
+  NllGradOp *nllgrad = dynamic_cast<NllGradOp *>(opRoot);
 
-  return graph.moveIntoGraph(std::unique_ptr<Op>(new SoftmaxGradDirectOp(
-      dynamic_cast<NllGradOp *>(nllgrad)->nlll(), nllgrad->getSettings())));
+  if (nllgrad->hasIgnoreIndex()) {
+    return graph.moveIntoGraph(
+        std::unique_ptr<Op>(new SoftmaxGradDirectOp(nllgrad->getLossTensorId(),
+                                                    nllgrad->getIgnoreIndex(),
+                                                    nllgrad->getReductionType(),
+                                                    nllgrad->getSettings())));
+  } else {
+    return graph.moveIntoGraph(
+        std::unique_ptr<Op>(new SoftmaxGradDirectOp(nllgrad->getLossTensorId(),
+                                                    nllgrad->getReductionType(),
+                                                    nllgrad->getSettings())));
+  }
 }
 
 namespace {

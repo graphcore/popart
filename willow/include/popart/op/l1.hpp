@@ -32,18 +32,24 @@ public:
   L1Op(const OperatorIdentifier &_opid,
        const L1Loss *l1loss,
        const Op::Settings &settings_);
+  L1Op(const OperatorIdentifier &_opid,
+       const float lambda_,
+       const ReductionType reduction_,
+       const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
-  const L1Loss *l1l() const;
 
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
+  float getLambda() const { return lambda; }
+  ReductionType getReductionType() const { return reduction; }
 
 private:
-  const L1Loss *l1loss_;
+  float lambda;
+  ReductionType reduction;
 };
 
 class L1GradOp : public Op {
@@ -53,7 +59,6 @@ public:
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
-  const L1Loss *l1l() const;
   std::unique_ptr<Op> clone() const final;
 
   static InIndex getInIndex() { return 0; }
@@ -62,9 +67,12 @@ public:
   static OutIndex getOutIndex() { return 0; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
+  float getLambda() const { return lambda; }
+  ReductionType getReductionType() const { return reduction; }
 
 private:
-  const L1Loss *l1loss_;
+  float lambda;
+  ReductionType reduction;
 };
 
 } // namespace popart

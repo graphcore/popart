@@ -152,15 +152,15 @@ void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                      prog,
                      debugPrefix("negsub"));
 
-  if (sfmgd.nlll().hasIgnoreIndex()) {
+  if (sfmgd.hasIgnoreIndex()) {
     auto lossMask = NllOpx::applyMaskInPlaceForIgnoredIndex(
-        *this, graph(), oneHot, label1D, sfmgd.nlll().getIgnoreIndex(), prog);
-    if (sfmgd.nlll().getReductionType() == ReductionType::Mean) {
+        *this, graph(), oneHot, label1D, sfmgd.getIgnoreIndex(), prog);
+    if (sfmgd.getReductionType() == ReductionType::Mean) {
       NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
           *this, graph(), oneHot, lossMask, prog);
     }
   } else {
-    if (sfmgd.nlll().getReductionType() == ReductionType::Mean) {
+    if (sfmgd.getReductionType() == ReductionType::Mean) {
       NllOpx::applyScalingInPlaceForMeanReduction(*this, graph(), oneHot, prog);
     }
   }
@@ -271,20 +271,15 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                      prog,
                      debugPrefix("NegSub"));
 
-  if (nllsfmgd.nlll().hasIgnoreIndex()) {
+  if (nllsfmgd.hasIgnoreIndex()) {
     auto lossMask = NllOpx::applyMaskInPlaceForIgnoredIndex(
-        *this,
-        graph(),
-        oneHot,
-        label1D,
-        nllsfmgd.nlll().getIgnoreIndex(),
-        prog);
-    if (nllsfmgd.nlll().getReductionType() == ReductionType::Mean) {
+        *this, graph(), oneHot, label1D, nllsfmgd.getIgnoreIndex(), prog);
+    if (nllsfmgd.getReductionType() == ReductionType::Mean) {
       NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
           *this, graph(), oneHot, lossMask, prog);
     }
   } else {
-    if (nllsfmgd.nlll().getReductionType() == ReductionType::Mean) {
+    if (nllsfmgd.getReductionType() == ReductionType::Mean) {
       NllOpx::applyScalingInPlaceForMeanReduction(*this, graph(), oneHot, prog);
     }
   }
@@ -336,20 +331,15 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                      debugPrefix("LogEpsMul"));
 
   // TODO: T8305, re-use the mask created above
-  if (nllsfmgd.nlll().hasIgnoreIndex()) {
+  if (nllsfmgd.hasIgnoreIndex()) {
     auto lossMask = NllOpx::applyMaskInPlaceForIgnoredIndex(
-        *this,
-        graph(),
-        reduction,
-        label1D,
-        nllsfmgd.nlll().getIgnoreIndex(),
-        prog);
-    if (nllsfmgd.nlll().getReductionType() == ReductionType::Mean) {
+        *this, graph(), reduction, label1D, nllsfmgd.getIgnoreIndex(), prog);
+    if (nllsfmgd.getReductionType() == ReductionType::Mean) {
       NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
           *this, graph(), reduction, lossMask, prog);
     }
   } else {
-    if (nllsfmgd.nlll().getReductionType() == ReductionType::Mean) {
+    if (nllsfmgd.getReductionType() == ReductionType::Mean) {
       NllOpx::applyScalingInPlaceForMeanReduction(
           *this, graph(), reduction, prog);
     }

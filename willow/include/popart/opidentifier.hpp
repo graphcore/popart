@@ -321,8 +321,9 @@ const static AiGraphcoreOpIdV1 ShrinkInplace("ShrinkInplace");
 const static AiGraphcoreOpIdV1 Stash("Stash");
 const static AiGraphcoreOpIdV1 ExpInplace("ExpInplace");
 const static AiGraphcoreOpIdV1 EluInplace("EluInplace");
-const static AiGraphcoreOpIdV1 L1("L1");
-const static AiGraphcoreOpIdV1 Nll("Nll");
+
+const static AiGraphcoreOpIdV1 L1("L1", 1, 1);
+const static AiGraphcoreOpIdV1 Nll("Nll", 2, 1);
 
 const static AiGraphcoreOpIdV1 IpuCopy("IpuCopy");
 const static AiGraphcoreOpIdV1 IoTileCopy("IoTileCopy");
@@ -400,6 +401,8 @@ const static OperatorIdentifier DynamicAdd  = CustomOperators::DynamicAdd_1;
 const static OperatorIdentifier Call        = CustomOperators::Call_1;
 const static OperatorIdentifier ReplicatedAllReduce =
     CustomOperators::ReplicatedAllReduce;
+const static OperatorIdentifier L1  = CustomOperators::L1;
+const static OperatorIdentifier Nll = CustomOperators::Nll;
 } // namespace OpSet1
 } // namespace AiGraphcore
 

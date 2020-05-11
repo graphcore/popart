@@ -25,7 +25,7 @@ L1Opx::L1Opx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 void L1GradOpx::grow(poplar::program::Sequence &prog) const {
   L1GradOp &l1gradop = getOp<L1GradOp>();
 
-  double lambda = static_cast<double>(l1gradop.l1l()->getLambda());
+  double lambda = static_cast<double>(l1gradop.getLambda());
 
   // Signum : +1 of positive, -1 if negative, 0 if zero.
   poplar::Tensor signumTensor = popops::map(graph(),
@@ -35,7 +35,7 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
                                             debugPrefix("Signum"));
 
   double scale;
-  switch (l1gradop.l1l()->getReductionType()) {
+  switch (l1gradop.getReductionType()) {
   case ReductionType::Sum: {
     scale = lambda;
     break;
@@ -114,10 +114,10 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
   // over dimension 0, which is batch id
   std::iota(dims.begin(), dims.end(), 1);
 
-  double lambda = static_cast<double>(l1op.l1l()->getLambda());
+  double lambda = static_cast<double>(l1op.getLambda());
 
   double scale;
-  switch (l1op.l1l()->getReductionType()) {
+  switch (l1op.getReductionType()) {
   case ReductionType::Sum: {
     scale = lambda;
     break;

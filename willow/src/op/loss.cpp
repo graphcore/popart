@@ -5,6 +5,28 @@
 
 namespace popart {
 
+std::string LossOp::reductionTypeToString(ReductionType reduction) {
+  if (reduction == ReductionType::Sum) {
+    return "Sum";
+  } else if (reduction == ReductionType::Mean) {
+    return "Mean";
+  } else {
+    throw error("Unexpected ReductionType. Cannot convert to string");
+  }
+}
+
+ReductionType LossOp::reductionTypeFromString(std::string reduction) {
+  if (reduction == "Sum") {
+    return ReductionType::Sum;
+  } else if (reduction == "Mean") {
+    return ReductionType::Mean;
+  } else {
+    throw error(
+        "Unexpected ReductionType string, {}. Cannot convert to ReductionType",
+        reduction);
+  }
+}
+
 std::map<std::string, eLoss> initLossMap() {
   return {{"NLL", eLoss::NLL}, {"L1", eLoss::L1}, {"ID", eLoss::ID}};
 }

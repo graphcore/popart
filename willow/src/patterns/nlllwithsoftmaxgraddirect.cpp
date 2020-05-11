@@ -43,7 +43,6 @@ std::vector<const Tensor *> NlllWithSoftmaxGradDirect::touches(Op *) const {
 bool NlllWithSoftmaxGradDirect::apply(Op *op) const {
   auto sfmgdOp   = dynamic_cast<SoftmaxGradDirectOp *>(op);
   auto fwdLossOp = sfmgdOp->nlllFwdOp();
-  auto &nlll     = sfmgdOp->nlll();
   auto &graph    = op->getGraph();
 
   auto label    = sfmgdOp->inTensor(NllLoss::getLabelInIndex());
@@ -52,9 +51,18 @@ bool NlllWithSoftmaxGradDirect::apply(Op *op) const {
   auto loss     = fwdLossOp->outTensor(0);
 
   // create the new op
-  auto nlllsfmgdId = graph.moveIntoGraph(std::unique_ptr<Op>(
-      new NlllWithSoftmaxGradDirectOp(nlll, sfmgdOp->getSettings())));
-  Op *nlllsfmgd    = graph.getOp(nlllsfmgdId);
+  OpId nlllsfmgdId;
+  if (sfmgdOp->hasIgnoreIndex()) {
+    nlllsfmgdId = graph.moveIntoGraph(std::unique_ptr<Op>(
+        new NlllWithSoftmaxGradDirectOp(sfmgdOp->getIgnoreIndex(),
+                                        sfmgdOp->getReductionType(),
+                                        sfmgdOp->getSettings())));
+  } else {
+    nlllsfmgdId =
+        graph.moveIntoGraph(std::unique_ptr<Op>(new NlllWithSoftmaxGradDirectOp(
+            sfmgdOp->getReductionType(), sfmgdOp->getSettings())));
+  }
+  Op *nlllsfmgd = graph.getOp(nlllsfmgdId);
 
   // Remove the SoftmaxGradDirectOp connections
   sfmgdOp->disconnectAllInputs();

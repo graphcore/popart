@@ -45,19 +45,39 @@ public:
   NllOp(const OperatorIdentifier &_opid,
         const NllLoss nllloss,
         const Op::Settings &settings_);
+
+  NllOp(const OperatorIdentifier &_opid,
+        const int ignoreIndex,
+        const ReductionType reduction,
+        const Op::Settings &settings_);
+
+  NllOp(const OperatorIdentifier &_opid,
+        const ReductionType reduction,
+        const Op::Settings &settings_);
+
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
 
+  static InIndex getProbsInIndex() { return 0; }
+  static InIndex getLabelInIndex() { return 1; }
   static OutIndex getOutIndex() { return 0; }
 
-  const NllLoss &nlll() const;
-
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
+  ReductionType getReductionType() const { return reduction_; }
+  bool hasIgnoreIndex() const { return hasIgnoreIndex_; }
+  int getIgnoreIndex() const { return ignoreIndex_; }
   virtual void appendOutlineAttributes(OpSerialiserBase &) const final;
 
 private:
-  const NllLoss nllloss_;
+  ReductionType reduction_;
+
+  // Specifies a target value that is masked when calculating the loss and
+  // input gradient
+  int ignoreIndex_;
+
+  // Has ignoreIndex_ been set?
+  bool hasIgnoreIndex_ = false;
 };
 
 class NllGradOp : public Op {
@@ -68,18 +88,23 @@ public:
   void setup() final;
   std::unique_ptr<Op> clone() const final;
 
-  // inputs 0 & 1 are defined in NllLoss
+  static InIndex getProbsInIndex() { return 0; }
+  static InIndex getLabelInIndex() { return 1; }
   static InIndex getLossScalingInIndex() { return 2; }
-
   static OutIndex getOutIndex() { return 0; }
 
-  const NllLoss &nlll() const;
-
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
+  ReductionType getReductionType() const { return reduction_; }
+  bool hasIgnoreIndex() const { return hasIgnoreIndex_; }
+  int getIgnoreIndex() const { return ignoreIndex_; }
+  TensorId getLossTensorId() const { return lossId_; }
   virtual void appendOutlineAttributes(OpSerialiserBase &) const final;
 
 private:
-  const NllLoss nllloss_;
+  TensorId lossId_;
+  ReductionType reduction_;
+  int ignoreIndex_;
+  bool hasIgnoreIndex_ = false;
 };
 
 } // namespace popart

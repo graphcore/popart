@@ -1097,6 +1097,28 @@ PYBIND11_MODULE(popart_core, m) {
             &AiGraphcoreOpset1::replicatedallreduce,
             py::arg("args"),
             py::arg("debugPrefix") = std::string());
+    cls.def("l1loss",
+            &AiGraphcoreOpset1::l1loss,
+            py::arg("args"),
+            py::arg("lambda"),
+            py::arg("reduction")   = ReductionType::Sum,
+            py::arg("debugPrefix") = std::string());
+    cls.def("nllloss",
+            py::overload_cast<const std::vector<TensorId> &,
+                              const ReductionType,
+                              const std::string &>(&AiGraphcoreOpset1::nllloss),
+            py::arg("args"),
+            py::arg("reduction")   = ReductionType::Sum,
+            py::arg("debugPrefix") = std::string());
+    cls.def("nllloss",
+            py::overload_cast<const std::vector<TensorId> &,
+                              const ReductionType,
+                              const int,
+                              const std::string &>(&AiGraphcoreOpset1::nllloss),
+            py::arg("args"),
+            py::arg("ignoreIndex"),
+            py::arg("reduction")   = ReductionType::Sum,
+            py::arg("debugPrefix") = std::string());
   }
   {
     py::class_<Builder> cls(m, "_BuilderCore");

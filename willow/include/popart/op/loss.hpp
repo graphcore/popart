@@ -75,6 +75,9 @@ public:
   LossOp(const Op &);
 
   bool isLossOp() const override;
+
+  static std::string reductionTypeToString(ReductionType reduction);
+  static ReductionType reductionTypeFromString(std::string reduction);
 };
 
 } // namespace popart

@@ -29,8 +29,7 @@ std::unique_ptr<Op> NllLoss::getOp(const Op::Settings &settings_) const {
   Op::Settings copiedSettings  = settings_;
   copiedSettings.vgraphId      = vgraphId;
   copiedSettings.pipelineStage = pipelineStage_;
-  return std::unique_ptr<Op>(
-      new NllOp(Onnx::CustomOperators::Nll, *this, copiedSettings));
+  return std::unique_ptr<Op>(new NllOp(op_type(), *this, copiedSettings));
 }
 
 const OperatorIdentifier &NllLoss::op_type() const {
@@ -73,7 +72,7 @@ TensorId NllLoss::labelTensorId() const { return input(getLabelInIndex()); }
 
 void NllOp::setup() {
 
-  const auto &labelsInInfo = inInfo(nlll().getLabelInIndex());
+  const auto &labelsInInfo = inInfo(getLabelInIndex());
   if (!labelsInInfo.getDataTypeInfo()->isFixedPoint()) {
     throw error(
         "Expected the label tensor NllOp to be fixed point, not the case "
@@ -82,27 +81,41 @@ void NllOp::setup() {
         str());
   }
 
-  const auto &probsInInfo = inInfo(nlll().getProbsInIndex());
-  const auto &labelInInfo = inInfo(nlll().getLabelInIndex());
+  const auto &probsInInfo = inInfo(getProbsInIndex());
+  const auto &labelInInfo = inInfo(getLabelInIndex());
   // Outputs a loss for each label index.
   // Same shape as label input, same datatype as probs input
-  outInfo(nlll().getOutIndex())
-      .set(probsInInfo.dataType(), labelInInfo.shape());
+  outInfo(getOutIndex()).set(probsInInfo.dataType(), labelInInfo.shape());
 }
-
-const NllLoss &NllOp::nlll() const { return nllloss_; }
-const NllLoss &NllGradOp::nlll() const { return nllloss_; }
 
 NllOp::NllOp(const OperatorIdentifier &_opid,
              const NllLoss n,
-             const Op::Settings &settings_)
-    : LossOp(_opid, settings_), nllloss_(n) {}
+             const Op::Settings &settings)
+    : LossOp(_opid, settings), reduction_(n.getReductionType()),
+      hasIgnoreIndex_(n.hasIgnoreIndex()) {
+  if (hasIgnoreIndex()) {
+    ignoreIndex_ = n.getIgnoreIndex();
+  }
+}
+
+NllOp::NllOp(const OperatorIdentifier &_opid,
+             const int ignoreIndex,
+             const ReductionType reduction,
+             const Op::Settings &settings)
+    : LossOp(_opid, settings), reduction_(reduction), ignoreIndex_(ignoreIndex),
+      hasIgnoreIndex_(true) {}
+
+NllOp::NllOp(const OperatorIdentifier &_opid,
+             const ReductionType reduction,
+             const Op::Settings &settings)
+    : LossOp(_opid, settings), reduction_(reduction) {}
 
 void NllOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
-  os.appendAttribute("reduction_type",
-                     static_cast<int64_t>(nlll().getReductionType()));
-  os.appendAttribute("has_ignore", nlll().hasIgnoreIndex());
+  os.appendAttribute("reduction_type", static_cast<int64_t>(reduction_));
+  if (hasIgnoreIndex()) {
+    os.appendAttribute("ignore_index", static_cast<int64_t>(ignoreIndex_));
+  }
 }
 
 void NllGradOp::setup() {
@@ -111,16 +124,21 @@ void NllGradOp::setup() {
   if (!getIr().getOptimizer().lossScaling().isConst()) {
     connectInTensor(NllGradOp::getLossScalingInIndex(),
                     getIr().getOptimizer().getLossScalingTensorId(
-                        inInfo(nlll().getProbsInIndex()).dataType()));
+                        inInfo(getProbsInIndex()).dataType()));
   }
 
   // gradient of probs has same shape as probs
-  outInfo(nlll().getOutIndex()) = inInfo(nlll().getProbsInIndex());
+  outInfo(getOutIndex()) = inInfo(getProbsInIndex());
 }
 
 NllGradOp::NllGradOp(const NllOp &op_)
     : Op(Onnx::CustomGradOperators::NllGrad, op_.getSettings()),
-      nllloss_(op_.nlll()) {}
+      reduction_(op_.getReductionType()), hasIgnoreIndex_(op_.hasIgnoreIndex()),
+      lossId_(op_.outId(NllOp::getOutIndex())) {
+  if (hasIgnoreIndex()) {
+    ignoreIndex_ = op_.getIgnoreIndex();
+  }
+}
 
 std::unique_ptr<Op> NllGradOp::clone() const {
   return std::make_unique<NllGradOp>(*this);
@@ -130,8 +148,8 @@ const std::vector<GradInOutMapper> &NllGradOp::gradInputInfo() const {
   // input at index 0 : labelIn()
   // input at index 1 : probsIn()
   static const std::vector<GradInOutMapper> inInfo = {
-      {nlll().getLabelInIndex(), nlll().getLabelInIndex(), GradOpInType::In},
-      {nlll().getProbsInIndex(), nlll().getProbsInIndex(), GradOpInType::In}};
+      {getLabelInIndex(), NllOp::getLabelInIndex(), GradOpInType::In},
+      {getProbsInIndex(), NllOp::getProbsInIndex(), GradOpInType::In}};
   return inInfo;
 }
 
@@ -142,17 +160,48 @@ const std::map<int, int> &NllGradOp::gradOutToNonGradIn() const {
   // no gradient for label (one could interpret the
   // int as a sparse vector, but not neat)
   static const std::map<int, int> outInfo = {
-      {getOutIndex(), nlll().getProbsInIndex()}};
+      {getOutIndex(), NllOp::getProbsInIndex()}};
   return outInfo;
 }
 
 void NllGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
-  os.appendAttribute("reduction_type",
-                     static_cast<int64_t>(nlll().getReductionType()));
-  os.appendAttribute("has_ignore", nlll().hasIgnoreIndex());
+  os.appendAttribute("reduction_type", static_cast<int64_t>(reduction_));
+  if (hasIgnoreIndex()) {
+    os.appendAttribute("ignore_index", static_cast<int64_t>(ignoreIndex_));
+  }
 }
 
-namespace {} // namespace
+namespace {
+
+static OpDefinition::DataTypes T1 = {DataType::FLOAT16, DataType::FLOAT};
+
+static OpDefinition::DataTypes T2 = {DataType::INT32, DataType::UINT32};
+
+static OpDefinition
+    nlllossOpDef({OpDefinition::Inputs({{"A", T1}, {"B", T2}}),
+                  OpDefinition::Outputs({{"C", T1}}),
+                  OpDefinition::Attributes({{"reduction", {"*"}},
+                                            {"ignore_index", {"*"}}})});
+
+static OpCreator<NllOp> nlllossOpCreator(
+    OpDefinitions({{Onnx::CustomOperators::Nll, nlllossOpDef}}),
+    [](const OperatorIdentifier &_opid,
+       const Op::Settings &settings,
+       const Attributes &attr = {}) -> std::unique_ptr<Op> {
+      std::string reductionStr =
+          attr.getAttribute<Attributes::String>("reduction");
+      ReductionType reduction = LossOp::reductionTypeFromString(reductionStr);
+      if (attr.hasAttribute("ignoreIndex")) {
+        int ignoreIndex = attr.getAttribute<Attributes::Int>("ignoreIndex");
+        return std::unique_ptr<NllOp>(
+            new NllOp(_opid, ignoreIndex, reduction, settings));
+      } else {
+        return std::unique_ptr<NllOp>(new NllOp(_opid, reduction, settings));
+      }
+    },
+    true);
+
+} // namespace
 
 } // namespace popart

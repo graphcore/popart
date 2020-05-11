@@ -9,6 +9,7 @@
 
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/op/loss.hpp>
 #include <popart/opidentifier.hpp>
 #include <popart/tensorinfo.hpp>
 
@@ -261,6 +262,54 @@ public:
    */
   TensorId replicatedallreduce(const std::vector<TensorId> &args,
                                const std::string &name = {});
+
+  /**
+   * Add an l1 loss operation to the model
+   *
+   * Calculates the mean absolute error between each element in the input with
+   * a zero target
+   *
+   * \param args [tensor]
+   * \param lamda Scale factor of L1 loss
+   * \param reduction Type of reduction to perform on the individual losses
+   * \param name Optional identifier for operation
+   * \return The name of the result tensor
+   */
+  TensorId l1loss(const std::vector<TensorId> &args,
+                  const float lamda,
+                  const ReductionType reduction,
+                  const std::string &name = {});
+
+  /**
+   * Add a negative log-likelihood loss operation to the model
+   *
+   * Calculates the nll loss given a probability tensor over classes, and
+   * a target tensor containing class labels
+   *
+   * \param args [probs, target]
+   * \param reduction Type of reduction to perform on the individual losses
+   * \param name Optional identifier for operation
+   * \return The name of the result tensor
+   */
+  TensorId nllloss(const std::vector<TensorId> &args,
+                   const ReductionType reduction,
+                   const std::string &name = {});
+
+  /**
+   * Add a negative log-likelihood loss operation to the model
+   *
+   * As above, but with an additional ignoreIndex parameter
+   *
+   * \param args [probs, target]
+   * \param reduction Type of reduction to perform on the individual losses
+   * \param ignoreIndex Optional class index to ignore in loss calculation
+   * \param name Optional identifier for operation
+   * \return The name of the result tensor
+   */
+  TensorId nllloss(const std::vector<TensorId> &args,
+                   const ReductionType reduction,
+                   const int ignoreIndex,
+                   const std::string &name = {});
 };
 
 /**
