@@ -34,9 +34,14 @@ void NllOp::setup() {
 
   const auto &probsInInfo = inInfo(getProbsInIndex());
   const auto &labelInInfo = inInfo(getLabelInIndex());
-  // Outputs a loss for each label index.
-  // Same shape as label input, same datatype as probs input
-  outInfo(getOutIndex()).set(probsInInfo.dataType(), labelInInfo.shape());
+
+  Shape outShape({});
+
+  if (getReductionType() == ReductionType::NoReduction) {
+    outShape = labelInInfo.shape();
+  }
+
+  outInfo(getOutIndex()).set(probsInInfo.dataType(), outShape);
 }
 
 NllOp::NllOp(const OperatorIdentifier &_opid,

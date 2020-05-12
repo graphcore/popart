@@ -82,7 +82,7 @@ def test_gelu_training(op_tester):
     # I increase the dimension of the tensor in order to avoid segfaul.
     input_data = np.asarray([np.linspace(-10, 10, 100, dtype=np.float32)])
 
-    op_tester.atol = 1e-6
+    op_tester.atol = 1e-5
 
     def init_builder(builder):
         i1 = builder.addInputTensor(input_data)

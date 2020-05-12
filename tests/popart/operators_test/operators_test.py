@@ -1245,7 +1245,9 @@ def test_scatter_0(op_tester):
         ]
 
     def reference(ref_data):
-        return [output, data, np.sign(updates) * 0.1]
+        data_grad = np.array([[0.0, 0.0, 1.0], [0.0, 1.0, 0.0],
+                              [1.0, 0.0, 0.0]]).astype(np.float32)
+        return [output, data_grad, np.ones_like(updates)]
 
     op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')
@@ -1256,7 +1258,7 @@ def test_scatter_1(op_tester):
     indices = np.array([[1, 3]]).astype(np.int32)
     updates = np.array([[-1.1, 2.1]]).astype(np.float32)
     output = np.array([[1.0, -1.1, 3.0, 2.1, 5.0]]).astype(np.float32)
-    d_data = np.array([[0.1, 0, 0.1, 0, 0.1]]).astype(np.float32)
+    d_data = np.array([[1.0, 0, 1.0, 0, 1.0]]).astype(np.float32)
     axis = 1
 
     def init_builder(builder):
@@ -1272,7 +1274,7 @@ def test_scatter_1(op_tester):
         ]
 
     def reference(ref_data):
-        return [output, d_data, np.sign(updates) * 0.1]
+        return [output, d_data, np.ones_like(updates)]
 
     op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')
@@ -1301,7 +1303,9 @@ def test_scatter_2(op_tester):
         ]
 
     def reference(ref_data):
-        return [output, data, np.sign(updates) * 0.1]
+        data_grad = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0],
+                              [1.0, 1.0, 1.0]]).astype(np.float32)
+        return [output, data_grad, np.ones_like(updates)]
 
     op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')

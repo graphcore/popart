@@ -1,4 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <popops/ElementWise.hpp>
+#include <popops/Reduce.hpp>
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/identity.hpp>
@@ -39,7 +41,7 @@ void IdentityGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 IdentityLossOpx::IdentityLossOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<IdentityLossOp>(op, Onnx::Operators::Identity_1);
+  verifyOp<IdentityLossOp>(op, Onnx::CustomOperators::IdentityLoss);
 }
 
 void IdentityLossGradOpx::grow(poplar::program::Sequence &) const {
@@ -72,8 +74,49 @@ InputCreatorType IdentityLossOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CanUnwind;
 }
 
-void IdentityLossOpx::grow(poplar::program::Sequence &) const {
-  setOutTensor(0, getInTensor(0));
+void IdentityLossOpx::grow(poplar::program::Sequence &prog) const {
+  const IdentityLossOp &op         = getOp<IdentityLossOp>();
+  const IdentityLoss *identityloss = op.identityl();
+
+  const poplar::Tensor &inTensor(getInTensor(0));
+
+  if (identityloss->getReductionType() == ReductionType::NoReduction) {
+    throw error("This should have been replaced by an Identity op rather than"
+                "an IdentityLoss op");
+  } else {
+
+    auto inTensor1D = inTensor.flatten();
+
+    double scale;
+    switch (identityloss->getReductionType()) {
+    case ReductionType::Sum: {
+      scale = 1.0;
+      break;
+    }
+    case ReductionType::Mean: {
+      double totalSamples = static_cast<double>(dv_p->getReplicationFactor()) *
+                            static_cast<double>(inTensor1D.dim(0));
+      scale = 1.0 / totalSamples;
+      break;
+    }
+    default: {
+      throw error("Unsupported reduction type for Loss {}", debugPrefix());
+    }
+    }
+
+    // t_scale is always expected to be FLOAT, regardless of the input type
+    // to the reduction
+    auto t_scale = getConst(poplar::FLOAT, {}, scale, debugPrefix("scale"));
+
+    auto reduction = popops::reduce(graph(),
+                                    inTensor1D,
+                                    {0},
+                                    {popops::Operation::ADD, false, t_scale},
+                                    prog,
+                                    debugPrefix("add"));
+
+    setOutTensor(0, reduction);
+  }
 }
 
 IdentityLossGradOpx::IdentityLossGradOpx(Op *op, Devicex *devicex)
@@ -85,6 +128,8 @@ namespace {
 OpxCreator<IdentityOpx> identityOpxCreator(Onnx::Operators::Identity_1);
 OpxCreator<IdentityInplaceOpx>
     identityInplaceOpxCreator(Onnx::CustomOperators::IdentityInplace);
+OpxCreator<IdentityLossOpx>
+    identityLossOpxCreator(Onnx::CustomOperators::IdentityLoss);
 OpxCreator<IdentityGradOpx>
     identityGradOpxCreator(Onnx::GradOperators::IdentityGrad);
 OpxCreator<IdentityLossGradOpx>

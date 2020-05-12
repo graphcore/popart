@@ -56,6 +56,7 @@ public:
   std::vector<TensorId> getStreamTensorNames() const final;
   std::unique_ptr<Op> getOp(const Op::Settings &settings_) const final;
   const OperatorIdentifier &op_type() const final;
+  bool canBeReplacedByIdentity() const;
   TensorId getInputId() const;
 
   std::unique_ptr<Loss> clone() const final {
@@ -71,7 +72,6 @@ public:
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
-  bool canBeReplacedByIdentity();
   const IdentityLoss *identityl() const;
 
   static InIndex getInIndex() { return 0; }

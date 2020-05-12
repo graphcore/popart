@@ -76,7 +76,7 @@ def ipu_op_tester(tmpdir):
     class OpTester:
         def __init__(self, logging_dir):
             np.random.seed(0)
-            self.passes = []
+            self.patterns = []
             self.logging_dir = logging_dir
             self.rtol = 1e-05
             self.atol = 1e-08
@@ -116,7 +116,7 @@ def ipu_op_tester(tmpdir):
                                                   dataFeed=dataFlow,
                                                   deviceInfo=device,
                                                   patterns=popart.Patterns(
-                                                      self.passes),
+                                                      self.patterns),
                                                   userOptions=opts)
             elif (step_type == 'train'):
                 session = popart.TrainingSession(fnModel=proto,
@@ -125,7 +125,7 @@ def ipu_op_tester(tmpdir):
                                                  optimizer=optimizer,
                                                  deviceInfo=device,
                                                  patterns=popart.Patterns(
-                                                     self.passes),
+                                                     self.patterns),
                                                  userOptions=opts)
 
             anchor_map = session.initAnchorArrays()

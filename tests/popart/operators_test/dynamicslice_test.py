@@ -151,7 +151,7 @@ def test_dynamicslice_overlap_wrong(op_tester):
         # but dynamicslice with noOverlap=True gives a wrong gradient result
         # due to overlapping slices
         tensor.grad += torch.tensor(
-            np.asarray([0.0, 0.0, 0.0, -0.1, -0.1, 0.0, 0.0, 0.0, 0.0, 0.0]))
+            np.asarray([0.0, 0.0, 0.0, -1.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
 
         result = [sum, torch.tensor(d__o), tensor.grad] + result
         return result

@@ -502,8 +502,9 @@ PYBIND11_MODULE(popart_core, m) {
     loss.def("output", &Loss::output);
 
     py::enum_<ReductionType> en(m, "ReductionType");
-    en.value("Sum", ReductionType::Sum);
     en.value("Mean", ReductionType::Mean);
+    en.value("NoReduction", ReductionType::NoReduction);
+    en.value("Sum", ReductionType::Sum);
 
     {
       py::class_<IdentityLoss> cls(m, "IdentityLoss", loss);

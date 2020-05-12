@@ -123,13 +123,6 @@ std::unique_ptr<Op> SoftmaxGradDirectOp::clone() const {
 void SoftmaxGradDirectOp::setup() {
   // gradient of activations has same shape as probabilities
   outInfo(getOutIndex()) = inInfo(getProbsInIndex());
-
-  // When replacing a SoftmaxGradOp with a SoftmaxGradDirectOp, we are
-  // disconnecting the path from the final loss to the ops downstream.
-  // However, we don't want updateVertices() alter the attributes of these
-  // ops after performing the SoftmaxGradDirectOp transform. So here we
-  // 'pretend' that the SoftmaxGradDirectOp has a path from the final loss.
-  fromLoss = PathFromLoss::Yes;
 }
 
 bool SoftmaxGradDirectOp::hasNlllFwdOp() const {
@@ -190,19 +183,13 @@ void NlllWithSoftmaxGradDirectOp::setup() {
   // gradient of activations has same shape as probabilities
   outInfo(getGradOutIndex()) = inInfo(getProbsInIndex());
 
-  // Outputs a loss for each label index.
-  // Same shape as label input, same datatype as probs input
-  outInfo(getLossOutIndex())
-      .set(inInfo(getProbsInIndex()).dataType(),
-           inInfo(getLabelInIndex()).shape());
+  Shape outShape({});
+  if (getReductionType() == ReductionType::NoReduction) {
+    outShape = inInfo(getLabelInIndex()).shape();
+  }
 
-  // When replacing a Nlll and SoftmaxGradOp with a NlllWithSoftmaxGradDirectOp,
-  // we are disconnecting the path from the final loss to the ops downstream.
-  // However, we don't want updateVertices() alter the attributes of these
-  // ops after performing the NlllWithSoftmaxGradDirectOp transform. So here we
-  // 'pretend' that the NlllWithSoftmaxGradDirectOp has a path from the final
-  // loss.
-  fromLoss = PathFromLoss::Yes;
+  outInfo(getLossOutIndex())
+      .set(inInfo(getProbsInIndex()).dataType(), outShape);
 }
 
 void NlllWithSoftmaxGradDirectOp::appendOutlineAttributes(

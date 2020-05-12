@@ -17,7 +17,7 @@ def test_selu(op_tester):
             builder.addOutputTensor(o)
             result = [o]
             if builder_settings is 'InPlace':
-                op_tester.passes = ['InPlace']
+                op_tester.patterns = ['InPlace']
             elif builder_settings is 'backward':
                 result = [
                     o,

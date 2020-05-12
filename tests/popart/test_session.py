@@ -10,7 +10,7 @@ class PopartTestSession:
         self.device = 'cpu'
         self.numIPUs = 1
         self.mode = 'inference'
-        self.passes = None
+        self.patterns = None
         self.batchesPerStep = 1
 
     def prepare_and_run(self, init_builder, ins=None):
@@ -35,7 +35,7 @@ class PopartTestSession:
                                           losses=losses,
                                           optimizer=optimizer,
                                           deviceInfo=device,
-                                          patterns=self.passes,
+                                          patterns=self.patterns,
                                           userOptions=self.options)
         self._device_prepared = False
 
@@ -71,13 +71,13 @@ class PopartTestSession:
             return session_type(**session_args)
 
         if self.mode == 'inference':
-            return create_session(
-                ('fnModel', 'dataFeed', 'deviceInfo', 'passes', 'userOptions'),
-                popart.InferenceSession)
+            return create_session(('fnModel', 'dataFeed', 'deviceInfo',
+                                   'patterns', 'userOptions'),
+                                  popart.InferenceSession)
         elif self.mode == 'train':
             return create_session(
                 ('fnModel', 'dataFeed', 'losses', 'optimizer', 'deviceInfo',
-                 'passes', 'userOptions'), popart.TrainingSession)
+                 'patterns', 'userOptions'), popart.TrainingSession)
 
     def _get_device(self):
         return tu.create_test_device(numIpus=self.numIPUs)

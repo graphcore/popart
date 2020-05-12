@@ -10,6 +10,8 @@ std::string LossOp::reductionTypeToString(ReductionType reduction) {
     return "Sum";
   } else if (reduction == ReductionType::Mean) {
     return "Mean";
+  } else if (reduction == ReductionType::NoReduction) {
+    return "None";
   } else {
     throw error("Unexpected ReductionType. Cannot convert to string");
   }
@@ -20,6 +22,8 @@ ReductionType LossOp::reductionTypeFromString(std::string reduction) {
     return ReductionType::Sum;
   } else if (reduction == "Mean") {
     return ReductionType::Mean;
+  } else if (reduction == "None") {
+    return ReductionType::NoReduction;
   } else {
     throw error(
         "Unexpected ReductionType string, {}. Cannot convert to ReductionType",

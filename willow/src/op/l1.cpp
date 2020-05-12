@@ -41,13 +41,17 @@ void L1GradOp::setup() {
 }
 
 void L1Op::setup() {
-  // output is a vector of length=batchsize, of the same type as input
   TensorInfo info0 = inInfo(getInIndex());
   if (info0.rank() == 0) {
     throw error("L1Op not valid for rank-0 tensor (scalar)");
   }
-  int64_t batchsize = info0.dim(0);
-  outInfo(getOutIndex()).set(info0.dataType(), {batchsize});
+
+  Shape outShape({});
+  if (getReductionType() == ReductionType::NoReduction) {
+    outShape = info0.shape();
+  }
+
+  outInfo(getOutIndex()).set(info0.dataType(), outShape);
 }
 
 L1GradOp::L1GradOp(const L1Op &op_)

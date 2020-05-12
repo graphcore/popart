@@ -28,7 +28,45 @@ def checkResult(result, margin):
         raise Exception(str(result) + " is greater than " + str(margin))
 
 
-def test_3d_nll_loss_input():
+def get_torch_reduction_type(popart_reduction_type):
+    if popart_reduction_type == popart.ReductionType.Mean:
+        return "mean"
+
+    if popart_reduction_type == popart.ReductionType.Sum:
+        return "sum"
+
+    if popart_reduction_type == popart.ReductionType.NoReduction:
+        return "none"
+
+
+def get_pytorch_equivalent_loss(torch_loss_fn,
+                                popart_reduction_type,
+                                loss_inputs,
+                                extra_args={}):
+
+    reduction = get_torch_reduction_type(popart_reduction_type)
+    return torch_loss_fn(reduction=reduction, **extra_args)(*loss_inputs)
+
+
+def get_pytorch_equivalent_identity_loss(popart_reduction_type, input):
+    if popart_reduction_type == popart.ReductionType.Sum:
+        return input.sum()
+    elif popart_reduction_type == popart.ReductionType.Mean:
+        return input.mean()
+    else:
+        assert popart_reduction_type == popart.ReductionType.Sum
+
+
+def popart_reduction_type(str):
+    if str == "mean":
+        return popart.ReductionType.Mean
+    if str == "sum":
+        return popart.ReductionType.Sum
+    assert str == "none"
+    return popart.ReductionType.NoReduction
+
+
+def run_3d_nll_loss_input(popart_reduction_type, with_patterns):
     # fix the random seed for this test
     np.random.seed(0)
     ## input data
@@ -40,7 +78,7 @@ def test_3d_nll_loss_input():
     lshape = [Batchsize, ExtraDim]
     flat_lshape = [Batchsize * ExtraDim]
 
-    ip_data = np.random.rand(Batchsize, ExtraDim, Classes).astype(np.float32)
+    ip_data = np.random.rand(*dshape).astype(np.float32)
     lb_data = np.random.randint(Classes, size=lshape)
 
     ###
@@ -51,17 +89,21 @@ def test_3d_nll_loss_input():
     lb = builder.addInputTensor(popart.TensorInfo("INT32", lshape))
     out = builder.aiOnnx.softmax([ip], axis=np.size(lshape))
 
-    nll0 = builder.aiGraphcore.nllloss([out, lb])
-    nll1 = builder.reshape_const(builder.aiOnnx, [nll0], flat_lshape)
-    loss = popart.IdentityLoss(nll1, "loss")
+    nll0 = builder.aiGraphcore.nllloss([out, lb], popart_reduction_type)
+    loss = popart.IdentityLoss(nll0, "loss", popart.ReductionType.NoReduction)
 
-    session = popart.TrainingSession(
-        fnModel=builder.getModelProto(),
-        dataFeed=popart.DataFlow(1, ["loss", out]),
-        optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
-        losses=[loss],
-        patterns=popart.Patterns(popart.PatternsLevel.All),
-        deviceInfo=tu.create_test_device())
+    patterns = (popart.PatternsLevel.All
+                if with_patterns else popart.PatternsLevel.NoPatterns)
+
+    session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                     dataFeed=popart.DataFlow(
+                                         1, ["loss", out]),
+                                     optimizer=popart.ConstSGD(
+                                         LEARNING_RATE, WEIGHT_DECAY),
+                                     losses=[loss],
+                                     patterns=popart.Patterns(patterns),
+                                     userOptions=popart.SessionOptions(),
+                                     deviceInfo=tu.create_test_device())
 
     session.prepareDevice()
     session.weightsFromHost()
@@ -74,7 +116,6 @@ def test_3d_nll_loss_input():
     # Pytorch
     ###
     softmax = torch.nn.Softmax(dim=1)
-    loss = torch.nn.NLLLoss(reduction='none')
 
     # Swap Classes, ExtraDim axes
     # This is because pytorch NllLoss expects inputs of the format:
@@ -88,8 +129,8 @@ def test_3d_nll_loss_input():
     target = torch.tensor(lb_data)
     sm_out = softmax(input)
     logsm = torch.log(sm_out)
-    output = loss(logsm, target)
-    output = output.reshape(flat_lshape)
+    output = get_pytorch_equivalent_loss(
+        torch.nn.NLLLoss, popart_reduction_type, [logsm, target])
 
     ###
     # Compare
@@ -101,7 +142,7 @@ def test_3d_nll_loss_input():
     checkResult(result, 1e-8)
 
 
-def test_nll_loss_with_ignored_index():
+def run_nll_loss_with_ignored_index(popart_reduction_type, with_patterns):
     # fix the random seed for this test
     np.random.seed(0)
     ## input data
@@ -125,14 +166,21 @@ def test_nll_loss_with_ignored_index():
     ip = builder.addInitializedInputTensor(ip_data)
     lb = builder.addInputTensor(popart.TensorInfo("INT32", lshape))
     out = builder.aiOnnx.softmax([ip], axis=np.size(lshape))
-    nll = builder.aiGraphcore.nllloss([out, lb], ignoreIndex=ignoreInd)
+    nll = builder.aiGraphcore.nllloss([out, lb],
+                                      ignoreIndex=ignoreInd,
+                                      reduction=popart_reduction_type)
+
+    patterns = (popart.PatternsLevel.All
+                if with_patterns else popart.PatternsLevel.NoPatterns)
 
     session = popart.TrainingSession(
         fnModel=builder.getModelProto(),
         dataFeed=popart.DataFlow(1, {"loss": popart.AnchorReturnType("All")}),
         optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
-        losses=[popart.IdentityLoss(nll, "loss")],
-        patterns=popart.Patterns(popart.PatternsLevel.All),
+        losses=[
+            popart.IdentityLoss(nll, "loss", popart.ReductionType.NoReduction)
+        ],
+        patterns=popart.Patterns(patterns),
         deviceInfo=tu.create_test_device())
 
     session.prepareDevice()
@@ -146,33 +194,36 @@ def test_nll_loss_with_ignored_index():
     # Pytorch
     ###
     softmax = torch.nn.Softmax(dim=1)
-    loss = torch.nn.NLLLoss(reduction='none', ignore_index=ignoreInd)
 
     input = torch.tensor(ip_data, requires_grad=True)
     target = torch.tensor(lb_data)
     sm_out = softmax(input)
     logsm = torch.log(sm_out)
-    output = loss(logsm, target)
+    output = get_pytorch_equivalent_loss(
+        torch.nn.NLLLoss,
+        popart_reduction_type, [logsm, target],
+        extra_args={'ignore_index': ignoreInd})
 
     ###
     # Compare
     ###
     torch_loss = output.data.numpy()
     popart_loss = anchors["loss"]
-    print("Torch loss\n:", torch_loss)
-    print("Popart loss\n:", popart_loss)
 
-    for sampleInd, labelInd in enumerate(lb_data):
-        if labelInd == ignoreInd:
-            assertStr = "losses for ignoreInd samples should be zero"
-            assert (torch_loss[sampleInd] == 0), assertStr
-            assert (popart_loss[sampleInd] == 0), assertStr
+    if popart_reduction_type == popart.ReductionType.NoReduction:
+        for batch_num in range(Batchsize):
+            labelInd = lb_data[batch_num]
+
+            if labelInd == ignoreInd:
+                assertStr = "losses for ignoreInd samples should be zero"
+                assert (torch_loss[batch_num] == 0), assertStr
+                assert (popart_loss[batch_num] == 0), assertStr
 
     result = getTensorError(torch_loss, popart_loss)
     checkResult(result, 1e-8)
 
 
-def test_nll_loss_grad_with_ignored_index():
+def run_nll_loss_grad_with_ignored_index(popart_reduction_type):
     # fix the random seed for this test
     np.random.seed(0)
     ## input data
@@ -182,7 +233,7 @@ def test_nll_loss_grad_with_ignored_index():
     dshape = [Batchsize, Classes]
     lshape = [Batchsize]
 
-    ip_data = np.random.rand(Batchsize, Classes).astype(np.float32)
+    ip_data = np.random.rand(*dshape).astype(np.float32)
     lb_data = np.array([1, 7, 4])
 
     # Samples whose target class index is equal to ignoreInd should
@@ -198,7 +249,7 @@ def test_nll_loss_grad_with_ignored_index():
     out = builder.aiOnnx.softmax([ip], axis=np.size(lshape))
     nll = builder.aiGraphcore.nllloss([out, lb],
                                       ignoreIndex=ignoreInd,
-                                      reduction=popart.ReductionType.Mean)
+                                      reduction=popart_reduction_type)
 
     ## 2 sessions: one with "SoftmaxGradDirect" pattern, one without
     def getPreparesSession(patterns):
@@ -241,15 +292,18 @@ def test_nll_loss_grad_with_ignored_index():
         return hook
 
     softmax = torch.nn.Softmax(dim=1)
-    loss = torch.nn.NLLLoss(reduction="mean", ignore_index=ignoreInd)
 
     input = torch.tensor(ip_data, requires_grad=True)
     target = torch.tensor(lb_data)
     sm_out = softmax(input)
     sm_out.register_hook(set_grad(sm_out))
     logsm = torch.log(sm_out)
-    output = loss(logsm, target)
-    output.backward(retain_graph=True)
+    output = get_pytorch_equivalent_loss(
+        torch.nn.NLLLoss,
+        popart_reduction_type, [logsm, target],
+        extra_args={'ignore_index': ignoreInd})
+
+    output.sum().backward(retain_graph=True)
 
     ###
     # Compare
@@ -258,278 +312,45 @@ def test_nll_loss_grad_with_ignored_index():
     px_smd_ip_grad = anchors_SMD[popart.reservedGradientPrefix() + ip]
     px_no_smd_ip_grad = anchors_NoSMD[popart.reservedGradientPrefix() + ip]
 
-    for sampleInd, labelInd in enumerate(lb_data):
-        if labelInd == ignoreInd:
-            assertStr = "loss grads for ignoreInd samples should be zero"
-            zero = np.zeros(Classes)
-            assert (np.equal(torch_ip_grad[sampleInd], zero).all()), assertStr
-            assert (np.equal(px_smd_ip_grad[sampleInd], zero).all()), assertStr
-            assert (np.equal(px_no_smd_ip_grad[sampleInd],
-                             zero).all()), assertStr
+    if popart_reduction_type == popart.ReductionType.NoReduction:
+        for sampleInd, labelInd in enumerate(lb_data):
+            print(f"s: {sampleInd}  l {labelInd}")
+            if labelInd == ignoreInd:
+                assertStr = "loss grads for ignoreInd samples should be zero"
+                zero = np.zeros(Classes)
+                assert (np.equal(torch_ip_grad[sampleInd],
+                                 zero).all()), assertStr
+                assert (np.equal(px_smd_ip_grad[sampleInd],
+                                 zero).all()), assertStr
+                assert (np.equal(np.abs(px_no_smd_ip_grad[sampleInd]),
+                                 zero).all()), assertStr
+                assert (np.equal(np.abs(px_smd_ip_grad[sampleInd]),
+                                 zero).all()), assertStr
 
     checkResult(getTensorError(torch_ip_grad, px_smd_ip_grad), 1e-8)
     checkResult(getTensorError(torch_ip_grad, px_no_smd_ip_grad), 1e-8)
 
 
-def test_id_nllloss_train():
-    # fix the random seed for this test
-    np.random.seed(0)
-    # input data
-    Batchsize = 8
-    Classes = 32
+def run_all_combinations(test_fn):
+    for reduction in (popart.ReductionType.Mean,
+                      popart.ReductionType.NoReduction,
+                      popart.ReductionType.Sum):
+        for patterns in (False, True):
+            print(reduction)
+            print(patterns, flush=True)
 
-    def get_model(ip_data, lb_data, w_data):
-
-        ###
-        # Popart
-        ###
-        builder = popart.Builder()
-        # Prepare input data
-        ip = builder.addInputTensor(popart.TensorInfo("FLOAT", ip_data.shape),
-                                    "input")
-        lb = builder.addInputTensor(popart.TensorInfo("INT32", lb_data.shape),
-                                    "label")
-        w0 = builder.addInitializedInputTensor(w_data, "weight")
-
-        c0 = builder.aiOnnx.conv([ip, w0],
-                                 dilations=[1, 1],
-                                 pads=[1, 1, 1, 1],
-                                 strides=[1, 1],
-                                 debugPrefix="conv")
-
-        r0 = builder.reshape_const(builder.aiOnnx, [c0], [Batchsize, Classes])
-
-        depth = builder.aiOnnx.constant(
-            np.array(Classes).astype(np.int32), "depth")
-        eps = builder.aiOnnx.constant(
-            np.array(1.0e-7).astype(np.float32), "eps")
-        values = builder.addInputTensor(popart.TensorInfo("INT32", [2]),
-                                        "values")
-
-        values_data = np.array([0, 1]).astype(np.int32)
-
-        # 'Manually' calculate NLLLoss
-        sm = builder.aiOnnx.softmax([r0],
-                                    axis=np.size(lb_data.shape),
-                                    debugPrefix="output")
-        lb = builder.aiOnnx.onehot([lb, depth, values],
-                                   axis=np.size(lb_data.shape))
-        lb = builder.aiOnnx.cast([lb], "FLOAT")
-
-        mul = builder.aiOnnx.mul([sm, lb])
-        red = builder.aiOnnx.reducesum([mul],
-                                       axes=[np.size(lb_data.shape)],
-                                       keepdims=False)
-        add = builder.aiOnnx.add([red, eps])
-        log = builder.aiOnnx.log([add])
-        out = builder.aiOnnx.neg([log])
-
-        losses = [popart.IdentityLoss(out, "loss")]
-
-        # Output
-        builder.addOutputTensor(sm)
-
-        opts = popart.SessionOptions()
-
-        art = popart.AnchorReturnType("All")
-        session = popart.TrainingSession(
-            fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(1, {
-                "loss": art,
-                w0: art,
-                "label": art
-            }),
-            optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
-            losses=losses,
-            patterns=popart.Patterns(popart.PatternsLevel.Default),
-            deviceInfo=tu.create_test_device(),
-            userOptions=opts)
-
-        session.prepareDevice()
-        session.weightsFromHost()
-
-        anchors = session.initAnchorArrays()
-        stepio = popart.PyStepIO(
-            {
-                ip: ip_data,
-                "label": lb_data.astype(np.int32),
-                values: values_data
-            }, anchors)
-
-        return session, stepio, anchors
-
-    dshape = [Batchsize, 2, 4, 4]
-    lshape = [Batchsize]
-    wshape = [2, 2, 3, 3]
-
-    ip_data = np.random.random_sample(size=dshape).astype(np.float32)
-    lb_data = np.random.randint(Classes, size=lshape)
-    w_data = np.random.random_sample(size=wshape).astype(np.float32)
-
-    ###
-    # Pytorch
-    ###
-    class Net(nn.Module):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.conv = nn.Conv2d(2, 2, 3, padding=[1, 1], bias=False)
-            self.conv.weight.data = torch.tensor(w_data)
-            self.sm = nn.Softmax(dim=np.size(lb_data.shape))
-
-        def forward(self, x, y):
-            x = self.conv(x)
-            x = torch.reshape(x, [Batchsize, Classes])
-            x = self.sm(x)
-            # Manual calculation of Nll loss. Pytorch's reduction is different to
-            # popart, so we calculate manually.
-            x = torch.mul(x, y)
-            x = torch.sum(x, dim=[np.size(lb_data.shape)])
-            x = torch.log(x)
-            x = -1 * x
-            return x
-
-    net = Net()
-    criterion = nn.Identity(reduction="sum")
-    optimizer = optim.SGD(net.parameters(),
-                          lr=LEARNING_RATE,
-                          weight_decay=WEIGHT_DECAY)
-    input_ = torch.tensor(ip_data, requires_grad=True)
-    # No 'onehot' op in pytorch so send in onehot tensor as input.
-    onehot = np.eye(Classes)[lb_data]
-    label = torch.tensor(onehot, requires_grad=False)
-
-    ###
-    # Compare
-    ###
-
-    id_sess, id_steio, id_anchors = get_model(ip_data, lb_data, w_data)
-
-    for i in range(5):
-        # Pytorch
-        optimizer.zero_grad()
-        outputs = net(input_, label)
-        loss = criterion(torch.sum(outputs))
-        loss.backward()
-        optimizer.step()
-        # Popart
-        id_sess.run(id_steio)
-        print(f"Step {i}")
-        print("ID Loss:", id_anchors["loss"].sum())
-        print("Pytorch Loss:", loss.item())
-        print("ID weight:", id_anchors["weight"].sum())
-        # Checks
-
-        assert (id_anchors["loss"].sum() - loss.item()) < 1e-4
+            test_fn(reduction, patterns)
 
 
-def test_id_l1loss_train():
-    # fix the random seed for this test
-    np.random.seed(0)
-    ## input data
-    Batchsize = 4
-    ExtraDim = 7
-    Classes = 32
+def test_3d_nll_loss_input():
+    run_all_combinations(run_3d_nll_loss_input)
 
-    def get_model(ip_data, w_data):
 
-        ###
-        # Popart
-        ###
-        builder = popart.Builder()
-        # Prepare input data
-        ip = builder.addInputTensor(popart.TensorInfo("FLOAT", ip_data.shape),
-                                    "input")
-        w0 = builder.addInitializedInputTensor(w_data, "weight")
+def test_nll_loss_with_ignored_index():
+    run_all_combinations(run_nll_loss_with_ignored_index)
 
-        c0 = builder.aiOnnx.conv([ip, w0],
-                                 dilations=[1, 1],
-                                 pads=[1, 1, 1, 1],
-                                 strides=[1, 1],
-                                 debugPrefix="conv")
 
-        r0 = builder.reshape_const(builder.aiOnnx, [c0], [Batchsize, Classes])
-        out = builder.aiOnnx.relu([r0], "relu")
-
-        redl1 = builder.aiOnnx.reducel1([out], axes=[1], keepdims=False)
-        losses = [popart.IdentityLoss(redl1, "loss")]
-        # Output
-        builder.addOutputTensor(out)
-
-        opts = popart.SessionOptions()
-
-        art = popart.AnchorReturnType("All")
-        session = popart.TrainingSession(
-            fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(
-                1, {
-                    "loss": art,
-                    w0: art,
-                    out: art,
-                    popart.reservedGradientPrefix() + out: art
-                }),
-            optimizer=popart.ConstSGD(LEARNING_RATE),
-            losses=losses,
-            patterns=popart.Patterns(popart.PatternsLevel.All),
-            deviceInfo=tu.create_test_device(),
-            userOptions=opts)
-
-        session.prepareDevice()
-        session.weightsFromHost()
-
-        anchors = session.initAnchorArrays()
-        stepio = popart.PyStepIO({
-            ip: ip_data,
-        }, anchors)
-
-        return session, stepio, anchors, out
-
-    dshape = [Batchsize, 2, 4, 4]
-
-    ip_data = np.random.random_sample(size=dshape).astype(np.float32)
-    w_data = np.ones([2, 2, 3, 3]).astype(np.float32)
-
-    ###
-    # Pytorch
-    ###
-    class Net(nn.Module):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.conv = nn.Conv2d(2, 2, 3, padding=[1, 1], bias=False)
-            self.conv.weight.data = torch.tensor(w_data)
-            self.relu = nn.ReLU()
-            self.l1 = nn.L1Loss(reduction="sum")
-
-        def forward(self, x, y):
-            x = self.conv(x)
-            x = torch.reshape(x, [Batchsize, Classes])
-            x = self.relu(x)
-            x = self.l1(x, y)
-            return x
-
-    net = Net()
-    criterion = nn.Identity(reduction='sum')
-    optimizer = optim.SGD(net.parameters(), lr=LEARNING_RATE)
-    input_ = torch.tensor(ip_data, requires_grad=True)
-    target = torch.tensor(np.zeros(shape=[Batchsize, Classes]).astype(
-        np.float32),
-                          requires_grad=False)
-
-    ###
-    # Compare
-    ###
-    id_sess, id_steio, id_anchors, out = get_model(ip_data, w_data)
-
-    for i in range(5):
-        # Pytorch
-        optimizer.zero_grad()
-        outputs = net(input_, target)
-        loss = criterion(outputs)
-        loss.backward()
-        optimizer.step()
-        # Popart
-        id_sess.run(id_steio)
-        print(f"Step {i}")
-        print("ID Loss:", id_anchors["loss"].mean())
-        print("Pytorch Loss:", loss.item() / Batchsize)
-        # Checks
-        assert (id_anchors["loss"].mean() - (loss.item() / Batchsize)) < 1e-4
+def test_nll_loss_grad_with_ignored_index():
+    run_nll_loss_grad_with_ignored_index(popart.ReductionType.Mean)
+    run_nll_loss_grad_with_ignored_index(popart.ReductionType.NoReduction)
+    run_nll_loss_grad_with_ignored_index(popart.ReductionType.Sum)

@@ -84,7 +84,15 @@ std::unique_ptr<Op> IdentityLoss::getOp(const Op::Settings &settings_) const {
 }
 
 const OperatorIdentifier &IdentityLoss::op_type() const {
-  return Onnx::Operators::Identity_1;
+  if (canBeReplacedByIdentity()) {
+    return Onnx::Operators::Identity_1;
+  } else {
+    return Onnx::CustomOperators::IdentityLoss;
+  }
+}
+
+bool IdentityLoss::canBeReplacedByIdentity() const {
+  return getReductionType() == ReductionType::NoReduction;
 }
 
 std::vector<TensorId> IdentityLoss::getStreamTensorNames() const { return {}; }
@@ -111,10 +119,15 @@ void IdentityLossGradOp::setup() {
 
 void IdentityLossOp::setup() {
   TensorInfo info0 = inInfo(getInIndex());
-  outInfo(getOutIndex()).set(info0.dataType(), info0.shape());
-}
 
-bool IdentityLossOp::canBeReplacedByIdentity() { return true; }
+  Shape outShape({});
+
+  if (identityloss_->getReductionType() == ReductionType::NoReduction) {
+    outShape = info0.shape();
+  }
+
+  outInfo(getOutIndex()).set(info0.dataType(), outShape);
+}
 
 IdentityLossGradOp::IdentityLossGradOp(const IdentityLossOp &op_)
     : Op(Onnx::GradOperators::IdentityLossGrad, op_.getSettings()),

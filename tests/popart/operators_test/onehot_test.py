@@ -66,11 +66,10 @@ def test_onehot_2d_with_axis_training(op_tester):
                        [values[0], values[0]], [values[0],
                                                 values[1]]]).astype(np.float32)
 
-    output_grad = np.array([[-0.1, -0.1], [0.1, -0.1], [-0.1, -0.1],
-                            [-0.1, -0.1], [-0.1, -0.1],
-                            [-0.1, 0.1]]).astype(np.float32)
+    output_grad = np.array([[1.0, 1.0], [1.0, 1.0], [1.0, 1.0], [1.0, 1.0],
+                            [1.0, 1.0], [1.0, 1.0]]).astype(np.float32)
 
-    values_grad = np.array([-1, 0.2]).astype(np.float32)
+    values_grad = np.array([10.0, 2.0]).astype(np.float32)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(indices)
@@ -94,7 +93,6 @@ def test_onehot_2d_with_axis_training(op_tester):
 def test_onehot_2d_without_axis_training(op_tester):
     indices = np.array([1, 5]).astype(np.int32)
     depth = np.array(6).astype(np.uint8)
-
     values = np.array([-0.5, 0.5]).astype(np.float32)
 
     output = np.array(
@@ -102,11 +100,10 @@ def test_onehot_2d_without_axis_training(op_tester):
          [values[0], values[0], values[0], values[0], values[0],
           values[1]]]).astype(np.float32)
 
-    output_grad = np.array([[-0.1, 0.1, -0.1, -0.1, -0.1, -0.1],
-                            [-0.1, -0.1, -0.1, -0.1, -0.1,
-                             0.1]]).astype(np.float32)
+    output_grad = np.array([[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+                            [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]).astype(np.float32)
 
-    values_grad = np.array([-1, 0.2]).astype(np.float32)
+    values_grad = np.array([10.0, 2.0]).astype(np.float32)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(indices)

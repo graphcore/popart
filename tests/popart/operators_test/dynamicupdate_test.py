@@ -177,7 +177,7 @@ def test_dynamicupdate_overlap_wrong(op_tester):
         # Note: We have to adjust the value here to make the comparison equal,
         # but dynamicupdate with noOverlap=True gives a wrong gradient result
         # due to overlapping updates
-        tensor0.grad[4] += 0.1
+        tensor0.grad[4] += 1.0
 
         result = [sum, torch.tensor(d__o), tensor0.grad, tensor1.grad] + result
         return result

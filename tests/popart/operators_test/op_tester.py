@@ -152,10 +152,13 @@ def op_tester(tmpdir):
                                                       self.patterns),
                                                   userOptions=self.options)
             else:
-                # Apply l1 loss to the output, assumed to be the first anchorId
-                l1 = bld.aiGraphcore.l1loss([anchorIds[0]], 0.1)
-                losses = [popart.IdentityLoss(l1, "idLossVal")]
-
+                assert step_type == 'train'
+                # Apply identity loss to the output, assumed to be the first anchorId
+                losses = [
+                    popart.IdentityLoss(anchorIds[0],
+                                        "loss",
+                                        reduction=popart.ReductionType.Sum)
+                ]
                 session = popart.TrainingSession(fnModel=bld.getModelProto(),
                                                  dataFeed=dataFlow,
                                                  losses=losses,

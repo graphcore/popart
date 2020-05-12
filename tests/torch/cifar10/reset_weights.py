@@ -31,7 +31,8 @@ def get_trainset():
     return trainset
 
 
-def get_session(fnModel, inputShapeInfo, dataFeed, torchWriter, passes, opts):
+def get_session(fnModel, inputShapeInfo, dataFeed, torchWriter, patterns,
+                opts):
     idLosses = []
     for loss in torchWriter.outNames:
         idLoss = popart.IdentityLoss(loss, loss + "/out")
@@ -45,7 +46,7 @@ def get_session(fnModel, inputShapeInfo, dataFeed, torchWriter, passes, opts):
         dataFeed=dataFeed,
         losses=idLosses,
         optimizer=torchWriter.optimizer,
-        patterns=passes,
+        patterns=patterns,
         userOptions=opts,
         deviceInfo=popart.DeviceManager().createCpuDevice())
 
@@ -76,7 +77,7 @@ def compare_models(model_A0, model_A1, model_B0, model_B1):
     return difference
 
 
-def run(torchWriter, passes, outputdir, cifarInIndices):
+def run(torchWriter, patterns, outputdir, cifarInIndices):
     dataFeed = torchWriter.dataFeed
     inputShapeInfo = torchWriter.inputShapeInfo
 
@@ -103,7 +104,7 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
     opts.constantWeights = False
 
     session = get_session(fnModel0, inputShapeInfo, dataFeed, torchWriter,
-                          passes, opts)
+                          patterns, opts)
 
     def addStepDimension(data, batchesPerStep):
         if batchesPerStep == 1:

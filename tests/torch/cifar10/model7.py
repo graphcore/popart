@@ -46,7 +46,8 @@ outNames = ["out"]
 #cifar training data loader : at index 0 : image, at index 1 : label.
 cifarInIndices = {"image0": 0}  # not used in test: "label": 1}
 
-# The optimization passes to run in the Ir, see patterns.hpp
+# The optimization patterns to run in the Ir, see patterns.hpp
+
 willowOptPatterns = popart.Patterns()
 willowOptPatterns.OpToIdentity = True
 

@@ -112,5 +112,5 @@ def test_loss_inputs_untouched():
 
     session = PopartTestSession()
     session.mode = 'train'
-    session.passes = popart.Patterns(popart.PatternsLevel.Default)
+    session.patterns = popart.Patterns(popart.PatternsLevel.Default)
     session.prepare(init_builder)

@@ -56,6 +56,15 @@ template <> DataType getDataType<std::string>();
 
 class TensorInfo;
 
+// Check if two tensors can be (numpy) broadcasted based on
+// https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
+bool npBroadcastable(const std::vector<int64_t> &s0,
+                     const std::vector<int64_t> &s1);
+bool npBroadcastable(const std::vector<int64_t> &s0,
+                     const std::vector<int64_t> &s1,
+                     size_t &overlap);
+bool npBroadcastable(const TensorInfo &i0, const TensorInfo &i1);
+
 // Calculate the numpy broadcast shape as described in
 // https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
 std::vector<int64_t> npOut(const std::vector<int64_t> &s0,
@@ -112,6 +121,10 @@ std::vector<T> unsqueeze(const std::vector<T> &v, const std::vector<T> &axes) {
 
   return new_shape;
 }
+
+// Check if two tensors can be (numpy) broadcasted based on
+// https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
+bool npBroadcastable(const TensorInfo &i0, const TensorInfo &i1);
 
 // Calculate the numpy broadcast shape as described in
 // https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html

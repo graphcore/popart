@@ -324,6 +324,7 @@ const static AiGraphcoreOpIdV1 EluInplace("EluInplace");
 
 const static AiGraphcoreOpIdV1 L1("L1", 1, 1);
 const static AiGraphcoreOpIdV1 Nll("Nll", 2, 1);
+const static AiGraphcoreOpIdV1 IdentityLoss("IdentityLoss", 1, 1);
 
 const static AiGraphcoreOpIdV1 IpuCopy("IpuCopy");
 const static AiGraphcoreOpIdV1 IoTileCopy("IoTileCopy");

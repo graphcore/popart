@@ -75,6 +75,12 @@ class NlllWithSoftmaxGradDirectOpx : public Opx {
 public:
   NlllWithSoftmaxGradDirectOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
+
+private:
+  void handleLossOutNotReducedToScalar(poplar::Tensor &reduction,
+                                       const poplar::Tensor &label,
+                                       poplar::Tensor &label1D,
+                                       poplar::program::Sequence &prog) const;
 };
 
 } // namespace popx

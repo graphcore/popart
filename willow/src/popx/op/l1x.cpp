@@ -34,33 +34,24 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
                                             prog,
                                             debugPrefix("Signum"));
 
-  double scale;
+  double scale = lambda;
   switch (l1gradop.getReductionType()) {
-  case ReductionType::Sum: {
-    scale = lambda;
+  case ReductionType::NoReduction:
     break;
-  }
+  case ReductionType::Sum:
+    break;
   case ReductionType::Mean: {
-    // Design note: The L1Loss measures the mean absolute error between
-    // each element of the input and a (zero) target. The target here is the
-    // same size as the input tensor. This is unlike NllOp, whose target
-    // is a 1D tensor of size `batchSize`.
-    // As a result the mean reduction is not over the size of the outer
-    // dimension, but over the total number of elements in the tensor.
-    // This is consistent with pytorch: pytorch.org/docs/stable/nn.html#l1loss
     double totalSamples = static_cast<double>(dv_p->getReplicationFactor()) *
                           static_cast<double>(getInTensor(0).numElements());
     scale = lambda / totalSamples;
     break;
   }
-  default: {
+  default:
     throw error("Unsupported reduction type for Loss {}", debugPrefix());
-  }
   }
 
   auto t_scale =
-      getConst(popType(op_p->inInfo(0)), {1}, scale, debugPrefix("scale"));
-
+      getConst(getInTensor(0).elementType(), {}, scale, debugPrefix("scale"));
   // scale the signum tensor by 'scale',
   // so +scale if positive, -scale if negative, 0 if zero
   auto gradTensor = popops::map(graph(),
@@ -97,7 +88,7 @@ InputCreatorType L1Opx::getInputCreatorType(InIndex) const {
 
 // lambda * sum_{0,..rank-1} |v|
 void L1Opx::grow(poplar::program::Sequence &prog) const {
-  L1Op &l1op               = getOp<L1Op>();
+  const L1Op &l1op         = getOp<L1Op>();
   poplar::Tensor absTensor = popops::map(graph(),
                                          popops::expr::UnaryOpType::ABSOLUTE,
                                          getInTensor(0),
@@ -108,43 +99,49 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
     throw error("invalid tensor (rank-0) in L1Opx");
   }
 
-  std::vector<size_t> dims(absTensor.rank() - 1);
-
-  // we will reduce over {1,....rank -1}. NOT
-  // over dimension 0, which is batch id
-  std::iota(dims.begin(), dims.end(), 1);
-
   double lambda = static_cast<double>(l1op.getLambda());
 
-  double scale;
-  switch (l1op.getReductionType()) {
-  case ReductionType::Sum: {
-    scale = lambda;
-    break;
-  }
-  case ReductionType::Mean: {
-    double totalSamples = static_cast<double>(dv_p->getReplicationFactor()) *
-                          static_cast<double>(getInTensor(0).dim(0));
-    scale = lambda / totalSamples;
-    break;
-  }
-  default: {
-    throw error("Unsupported reduction type for Loss {}", debugPrefix());
-  }
-  }
+  if (l1op.getReductionType() == ReductionType::NoReduction) {
+    auto t_scale =
+        getConst(absTensor.elementType(), {}, lambda, debugPrefix("scale"));
 
-  // t_scale is always expected to be FLOAT, regardless of the input type
-  // to the reduction
-  auto t_scale = getConst(poplar::FLOAT, {}, scale, debugPrefix("scale"));
+    auto scaled = popops::map(graph(),
+                              popops::expr::BinaryOpType::MULTIPLY,
+                              absTensor,
+                              t_scale,
+                              prog,
+                              debugPrefix("add"));
+    setOutTensor(0, scaled);
+  } else {
+    auto absTensor1D = absTensor.flatten();
+    double scale     = lambda;
 
-  auto reduction = popops::reduce(graph(),
-                                  absTensor,
-                                  dims,
-                                  {popops::Operation::ADD, false, t_scale},
-                                  prog,
-                                  debugPrefix("add"));
+    switch (l1op.getReductionType()) {
+    case ReductionType::Sum: {
+      break;
+    }
+    case ReductionType::Mean: {
+      double totalSamples = static_cast<double>(dv_p->getReplicationFactor()) *
+                            static_cast<double>(absTensor1D.dim(0));
+      scale = lambda / totalSamples;
+      break;
+    }
+    default: {
+      throw error("Unsupported reduction type for Loss {}", debugPrefix());
+    }
+    }
 
-  setOutTensor(0, reduction);
+    // t_scale is always expected to be FLOAT, regardless of the input type
+    // to the reduction
+    auto t_scale   = getConst(poplar::FLOAT, {}, scale, debugPrefix("scale"));
+    auto reduction = popops::reduce(graph(),
+                                    absTensor1D,
+                                    {0},
+                                    {popops::Operation::ADD, false, t_scale},
+                                    prog,
+                                    debugPrefix("add"));
+    setOutTensor(0, reduction);
+  }
 }
 
 L1GradOpx::L1GradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
