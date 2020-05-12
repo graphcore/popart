@@ -166,7 +166,9 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip1) {
 
         if (second_idx != first_idx) {
           activeTensors.pop_back();
-          activeTensors[second_idx] = activeTensors.back();
+          if (second_idx < activeTensors.size()) {
+            activeTensors[second_idx] = activeTensors.back();
+          }
         }
         activeTensors.back() = sum;
       }
