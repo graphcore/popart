@@ -1,6 +1,7 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE MatMulGradPatternTest
 
+#include <../random_util.hpp>
 #include <boost/test/unit_test.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
@@ -27,7 +28,6 @@
 #include <algorithm>
 #include <chrono>
 #include <map>
-#include <random>
 #include <tuple>
 #include <vector>
 
@@ -50,8 +50,8 @@ BOOST_AUTO_TEST_CASE(MatMulGradPatternScheduleTest_0) {
 
   // we will generate random initializations
   int seed = 1337;
-  std::default_random_engine eng(seed);
-  std::uniform_real_distribution<float> fdis(-4, 4);
+  DefaultRandomEngine eng(seed);
+  UniformRealDistribution<float> fdis(-4.f, +4.f);
 
   auto bder        = Builder::create();
   auto aiOnnx      = bder->aiOnnxOpset9();

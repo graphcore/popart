@@ -1,6 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE PipelineTrainingTest0
 
+#include <../random_util.hpp>
 #include <boost/test/unit_test.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
@@ -17,7 +18,6 @@
 
 #include <algorithm>
 #include <map>
-#include <random>
 #include <tuple>
 #include <vector>
 
@@ -37,8 +37,8 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
 
     // weights will be initiliased randomly
     int seed = 1011;
-    std::default_random_engine eng(seed);
-    std::uniform_real_distribution<float> fdis(0, 1);
+    DefaultRandomEngine eng(seed);
+    UniformRealDistribution<float> fdis(0.f, 1.f);
 
     // --------- Defining Tensor sizes ----------
     // in this example, accumulationFactor = replicationFactor = 1,

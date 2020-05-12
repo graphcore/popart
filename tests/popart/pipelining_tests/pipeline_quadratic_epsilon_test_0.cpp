@@ -1,11 +1,11 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE PipelineQuadraticEpsilonTesto0
 
+#include <../random_util.hpp>
 #include <algorithm>
 #include <boost/filesystem.hpp>
 #include <boost/test/unit_test.hpp>
 #include <map>
-#include <random>
 #include <tuple>
 #include <vector>
 
@@ -103,8 +103,8 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
   auto getResults = [exportFinalDotFiles](bool continuous) {
     // input stream samples weights are generated randomly
     int seed = 1011;
-    std::mt19937 eng(seed);
-    std::uniform_real_distribution<float> fdis(-1, 1);
+    DefaultRandomEngine eng(seed);
+    UniformRealDistribution<float> fdis(-1.f, +1.f);
 
     int64_t batchSize      = 4;
     int64_t batchesPerStep = 160;

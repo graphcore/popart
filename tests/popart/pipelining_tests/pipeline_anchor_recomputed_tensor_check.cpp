@@ -1,11 +1,11 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE PipelineAnchorRecomputedTensor0
 
+#include <../random_util.hpp>
 #include <algorithm>
 #include <boost/test/unit_test.hpp>
 #include <fstream>
 #include <map>
-#include <random>
 #include <tuple>
 #include <vector>
 
@@ -136,8 +136,8 @@ BOOST_AUTO_TEST_CASE(PipelineAnchorRecomputedTensor0) {
         {sig, sigWrapper}, {inGradId, inGradWrapper}};
 
     // generate new samples
-    std::default_random_engine eng(101);
-    std::uniform_real_distribution<float> fdis(-1, 1);
+    DefaultRandomEngine eng(101);
+    UniformRealDistribution<float> fdis(-1.f, +1.f);
     int64_t samplesPerStep = batchesPerStep * microBatchSize;
     std::vector<float> v_input_x(stepDataElms);
     for (int i = 0; i < samplesPerStep; ++i) {

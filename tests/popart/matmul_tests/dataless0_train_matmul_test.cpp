@@ -1,6 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Train0MatmulTest
 
+#include <../random_util.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/test/unit_test.hpp>
 #include <popart/builder.hpp>
@@ -18,7 +19,6 @@
 
 #include <algorithm>
 #include <map>
-#include <random>
 #include <tuple>
 #include <vector>
 
@@ -38,8 +38,8 @@ BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
 
     // we will generate random initializations
     int seed = 1013;
-    std::default_random_engine eng(seed);
-    std::uniform_real_distribution<float> fdis(-4, 4);
+    DefaultRandomEngine eng(seed);
+    UniformRealDistribution<float> fdis(-4.f, 4.f);
 
     // prepare a Builder for creating onnx model
     auto bder   = Builder::create();

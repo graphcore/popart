@@ -1,12 +1,12 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE MultiNll0InplaceTest
 
+#include <../random_util.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/test/unit_test.hpp>
 #include <chrono>
 #include <complex>
 #include <iostream>
-#include <random>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/devicemanager.hpp>
@@ -137,9 +137,9 @@ BOOST_AUTO_TEST_CASE(test) {
     session->prepareDevice();
 
     auto seed = 1011;
-    std::default_random_engine eng(seed);
-    std::uniform_real_distribution<float> fdis(0, 0.5);
-    std::uniform_int_distribution<uint64_t> idis(0, 3);
+    DefaultRandomEngine eng(seed);
+    UniformRealDistribution<float> fdis(0.f, 0.5f);
+    UniformIntDistribution<int> idis(0, 3);
 
     WeightsIO weightsRead;
     std::vector<float> readBackWeights(weightInfo.nelms(), -777.0f);
@@ -181,8 +181,8 @@ BOOST_AUTO_TEST_CASE(test) {
 
   // generate random input data
   auto seed = 1011;
-  std::default_random_engine eng(seed);
-  std::uniform_real_distribution<float> fdis(0, 0.5);
+  DefaultRandomEngine eng(seed);
+  UniformRealDistribution<float> fdis(0.f, 0.5f);
   std::array<float, 6 * 2> vWeight;
   for (auto &val : vWeight) {
     val = fdis(eng);

@@ -1,11 +1,11 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE PipelineRecomputeNumericalTest0
 
+#include <../random_util.hpp>
 #include <algorithm>
 #include <boost/test/unit_test.hpp>
 #include <fstream>
 #include <map>
-#include <random>
 #include <tuple>
 #include <vector>
 
@@ -92,8 +92,8 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeNumericalTest0x) {
     int64_t batchesPerStep = microBatchesPerStep / accumulationFactor;
 
     int seed = 1011;
-    std::default_random_engine eng(seed);
-    std::uniform_real_distribution<float> fdis(-1, 1);
+    DefaultRandomEngine eng(seed);
+    UniformRealDistribution<float> fdis(-1.f, +1.f);
 
     int64_t microBatchSize = 2;
     int64_t sampleHeight   = 8;

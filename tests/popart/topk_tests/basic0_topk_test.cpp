@@ -1,6 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Basic0TopkTest
 
+#include <../random_util.hpp>
 #include <boost/test/unit_test.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
@@ -13,7 +14,6 @@
 #include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>
 
-#include <random>
 #include <vector>
 
 BOOST_AUTO_TEST_CASE(Basic0TopK_Opset9) {
@@ -22,8 +22,8 @@ BOOST_AUTO_TEST_CASE(Basic0TopK_Opset9) {
 
   // generate random input data
   int seed = 1013;
-  std::default_random_engine eng(seed);
-  std::uniform_real_distribution<float> fdis(-4, 4);
+  DefaultRandomEngine eng(seed);
+  UniformRealDistribution<float> fdis(-4.f, +4.f);
 
   // prepare to build an onnx model
   auto builder = Builder::create();
@@ -138,8 +138,8 @@ BOOST_AUTO_TEST_CASE(Basic0TopK_Opset10) {
 
   // generate random input data
   int seed = 1013;
-  std::default_random_engine eng(seed);
-  std::uniform_real_distribution<float> fdis(-4, 4);
+  DefaultRandomEngine eng(seed);
+  UniformRealDistribution<float> fdis(-4.f, +4.f);
 
   // prepare to build an onnx model
   auto builder = Builder::create();

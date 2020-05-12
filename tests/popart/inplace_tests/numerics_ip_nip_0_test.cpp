@@ -1,6 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE NumericsInplaceVsNot0Test
 
+#include <../random_util.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/test/unit_test.hpp>
 #include <popart/builder.hpp>
@@ -20,7 +21,6 @@
 #include <chrono>
 #include <complex>
 #include <iostream>
-#include <random>
 
 using namespace popart;
 
@@ -89,14 +89,14 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
     TensorInfo inInfo{"FLOAT", inShape};
 
     // generate random input data in the range [0, 1e-1)
-    std::uniform_real_distribution<float> fdisInit(0, +1e-1);
+    DefaultRandomEngine eng(seed);
+    UniformRealDistribution<float> fdisInit(0.f, +1e-1f);
     // possibly perturb each value by a value in [0, 1e-4)
     float perturbFactor = perturbInput ? perturbSize : 0.0;
-    std::uniform_real_distribution<float> fdisScale(0.8, 1.3);
-    std::uniform_real_distribution<float> fdisPref(0, +10.0);
-    std::default_random_engine eng(seed);
-    std::uniform_int_distribution<uint64_t> idis(
-        0, std::numeric_limits<uint64_t>::max());
+    UniformRealDistribution<float> fdisScale(0.8f, 1.3f);
+    UniformRealDistribution<float> fdisPref(0.f, +10.0f);
+    UniformIntDistribution<uint64_t> idis(0,
+                                          std::numeric_limits<uint64_t>::max());
 
     std::vector<float> vInData(inInfo.nelms(), 0);
     for (uint64_t i = 0; i < inInfo.nelms(); ++i) {

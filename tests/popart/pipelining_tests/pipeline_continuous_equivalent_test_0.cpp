@@ -1,6 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE PipelineTrainingTest0
 
+#include <../random_util.hpp>
 #include <boost/test/unit_test.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
@@ -17,7 +18,6 @@
 
 #include <algorithm>
 #include <map>
-#include <random>
 #include <tuple>
 #include <vector>
 
@@ -27,11 +27,10 @@
 //
 BOOST_AUTO_TEST_CASE(ContinuousEquivalentTest0) {
 
-  int seed = 1011;
-  std::default_random_engine eng(seed);
-  std::uniform_real_distribution<float> fdis(0, 1);
-
   using namespace popart;
+  int seed = 1011;
+  DefaultRandomEngine eng(seed);
+  UniformRealDistribution<float> fdis(0.f, 1.f);
 
   auto builder     = Builder::create();
   auto aiOnnx      = builder->aiOnnxOpset9();

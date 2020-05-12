@@ -2,10 +2,10 @@
 #define BOOST_TEST_MODULE Speed0SubgraphTest
 
 #include "validate.hpp"
+#include <../random_util.hpp>
 #include <boost/test/unit_test.hpp>
 #include <chrono>
 #include <iostream>
-#include <random>
 #include <vector>
 
 #include "blip.hpp"
@@ -33,8 +33,8 @@ std::vector<std::unique_ptr<Blip>> getBlips(int taskId, int n_nodes) {
   else if (taskId == 2) {
     // random
     int seed = 1011;
-    std::default_random_engine eng(seed);
-    std::uniform_int_distribution<int> idis(0, 2);
+    popart::DefaultRandomEngine eng(seed);
+    popart::UniformIntDistribution<int> idis(0, 2);
     for (int i = 0; i < n_nodes; ++i) {
       auto symbol = idis(eng);
       blips.emplace_back(

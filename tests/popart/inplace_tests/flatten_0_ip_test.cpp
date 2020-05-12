@@ -1,9 +1,9 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Flatten0InplaceTest
 
+#include <../random_util.hpp>
 #include <boost/test/unit_test.hpp>
 #include <complex>
-#include <random>
 #include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
@@ -95,10 +95,8 @@ BOOST_AUTO_TEST_CASE(Inplace_flatten0) {
 
     // generate random input data
     int seed = 1011;
-    std::default_random_engine eng(seed);
-    std::uniform_real_distribution<float> fdis(0, 5);
-    std::uniform_int_distribution<uint64_t> idis(
-        0, std::numeric_limits<uint64_t>::max());
+    DefaultRandomEngine eng(seed);
+    UniformRealDistribution<float> fdis(0.f, 5.f);
 
     std::vector<float> vdata0(info0.nelms());
     for (auto &val : vdata0) {

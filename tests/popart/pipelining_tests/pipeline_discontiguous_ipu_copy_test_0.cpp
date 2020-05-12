@@ -1,11 +1,11 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE PipelineTrainingTest0
 
+#include <../random_util.hpp>
 #include <algorithm>
 #include <boost/test/unit_test.hpp>
 #include <map>
 #include <memory>
-#include <random>
 #include <tuple>
 #include <vector>
 #include <popart/builder.hpp>
@@ -38,8 +38,8 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
   auto test = [printStdOut](TestType tt) {
     // input stream samples are generated randomly
     int seed = 1011;
-    std::default_random_engine eng(seed);
-    std::uniform_real_distribution<float> fdis(0, 1);
+    DefaultRandomEngine eng(seed);
+    UniformRealDistribution<float> fdis(0.f, 1.f);
 
     int64_t batchSize      = 4;
     int64_t batchesPerStep = 400;

@@ -1,6 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Train0TopkTest
 
+#include <../random_util.hpp>
 #include <boost/test/unit_test.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
@@ -17,7 +18,6 @@
 
 #include <algorithm>
 #include <map>
-#include <random>
 #include <tuple>
 #include <vector>
 
@@ -43,8 +43,8 @@ BOOST_AUTO_TEST_CASE(Train0TopK) {
 
     // we will generate random input data
     int seed = 1013;
-    std::default_random_engine eng(seed);
-    std::uniform_real_distribution<float> fdis(-4, 4);
+    DefaultRandomEngine eng(seed);
+    UniformRealDistribution<float> fdis(-4.f, +4.f);
 
     // prepare to build an onnx model
     auto builder     = Builder::create();

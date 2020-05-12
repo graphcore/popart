@@ -9,6 +9,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include <boost/random/normal_distribution.hpp>
+
 #include <popart/builder.hpp>
 #include <popart/ces/constexpr.hpp>
 #include <popart/ces/onnxconstexpr.hpp>
@@ -1545,9 +1547,11 @@ void Ir::registerInputTensors(
           break;
         }
         case SyntheticDataMode::RandomNormal: {
-          // Radom normal number generator: mean 0, variance 1
-          std::default_random_engine generator;
-          std::normal_distribution<float> normalDistribution(0.0, 1.0);
+          // Random normal number generator: mean 0, variance 1
+          // Boost Random ensures numerical consistency across implementations
+          std::mt19937 generator;
+          boost::random::normal_distribution<float> normalDistribution(0.0,
+                                                                       1.0);
           for (auto &val : vals) {
             val = normalDistribution(generator);
           }

@@ -1,9 +1,10 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE NumericsInplaceVsNot1Test
 
+#include <../random_util.hpp>
+
 #include <climits>
 #include <cmath>
-#include <random>
 #include <utility>
 
 #include <boost/filesystem.hpp>
@@ -97,9 +98,10 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip1) {
     }
 
     // Use seeded random number generators
-    std::default_random_engine eng(seed);
-    std::uniform_int_distribution<unsigned int> dis;
-    std::uniform_real_distribution<float> fdisPref(0, +10.0);
+    DefaultRandomEngine eng(seed);
+    UniformIntDistribution<unsigned int> dis(
+        0, std::numeric_limits<unsigned int>::max());
+    UniformRealDistribution<float> fdisPref(0.f, +10.0f);
 
     // Function for adding a new op
     auto addNewOp = [H,
@@ -237,7 +239,7 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip1) {
     session->prepareDevice();
 
     // generate random input data in the range [0 )
-    std::uniform_int_distribution<int> fdisInit(-5, +5);
+    UniformIntDistribution<int> fdisInit(-5, 5);
     float perturbFactor = perturbInput ? perturbSize : 0.0;
     std::vector<float> vInData(inInfo.nelms(), 0);
 
