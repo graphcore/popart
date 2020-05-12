@@ -2654,7 +2654,7 @@ void Devicex::prepare() {
   }
 
   // Init the random seed
-  if (ir().requiresRandomSeed()) {
+  if (ir().requiresRandomSeed() and !ir().useSyntheticData()) {
     auto seedTen = ir().getTensor(GetRandomSeedOp::getStreamedSeedTensorId());
     tasks.add(fromHostTask(seedTen, progs.setRandomSeedFromHostFragment()));
     tasks.add(initRandomSeed());
