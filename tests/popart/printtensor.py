@@ -90,7 +90,7 @@ def test_train(tmpdir, capfd):
 
     # c1 will be printed, but d__c1 will not
     o = builder.aiGraphcore.printtensor([c1], print_gradient=0)
-    builder.addOutputTensor(o)
+    l1 = builder.aiGraphcore.l1loss([o], 0.1)
 
     proto = builder.getModelProto()
 
@@ -105,7 +105,7 @@ def test_train(tmpdir, capfd):
         dataFeed=dataFlow,
         userOptions=opts,
         optimizer=popart.ConstSGD(0.1),
-        losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
+        losses=[popart.IdentityLoss(l1, "idLossVal")],
         deviceInfo=tu.create_test_device())
 
     session.prepareDevice()

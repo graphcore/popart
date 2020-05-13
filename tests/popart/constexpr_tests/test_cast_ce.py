@@ -37,8 +37,7 @@ def test_various_casts():
             out_id = t3
             cast_id = t2
 
-            loss = builder.addL1Loss(t3, 'l1LossVal', 0.1,
-                                     popart.ReductionType.Sum)
+            loss = builder.addIdentityLoss(t3, 'idLossVal')
             return [t3, t2]
 
         def ref():

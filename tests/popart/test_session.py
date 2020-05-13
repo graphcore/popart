@@ -58,8 +58,8 @@ class PopartTestSession:
         else:
             print(f'Returning default losses')
             return [
-                popart.L1Loss(anchorIds[0], "l1LossVal", 0.1,
-                              popart.ReductionType.Sum)
+                popart.IdentityLoss(anchorIds[0], "idLossVal",
+                                    popart.ReductionType.Sum)
             ]
 
     def _get_session(self, **kwargs):
@@ -142,8 +142,8 @@ class _Builder:
 
         return tensor_id
 
-    def addL1Loss(self, *args):
-        self._losses.append(popart.L1Loss(*args))
+    def addIdentityLoss(self, *args):
+        self._losses.append(popart.IdentityLoss(*args))
         return self._losses[-1]
 
     def addOutputTensor(self, tensorId):

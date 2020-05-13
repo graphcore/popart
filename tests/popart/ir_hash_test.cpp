@@ -12,6 +12,7 @@
 #include <popart/graphtransformer.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/tensor.hpp>
@@ -54,7 +55,7 @@ BOOST_AUTO_TEST_CASE(test0) {
   auto outId = proto.graph().output()[0].name();
   auto df0   = DataFlow(1, {{outId, AnchorReturnType("All")}});
   std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(outId, "l1", 0.1, ReductionType::Sum)};
+      std::make_shared<IdentityLoss>(outId, "l1", ReductionType::Sum)};
   auto opt0    = ConstSGD(0.01);
   auto device0 = createTestDevice(TEST_TARGET, 1, 20);
 

@@ -24,10 +24,7 @@ Training operations
 Losses
 ......
 
-.. doxygenclass:: popart::L1Loss
-  :members:
-
-.. doxygenclass:: popart::NllLoss
+.. doxygenclass:: popart::IdentityLoss
   :members:
 
 Optimisers

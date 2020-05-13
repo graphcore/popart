@@ -11,8 +11,8 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
-#include <popart/op/nll.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
@@ -34,7 +34,7 @@ BOOST_AUTO_TEST_CASE(Inplace_basic0) {
   builder->setInplacePreferences(h0, {{"ReluInplace", 1e8}});
   auto h1  = aiOnnx.relu({h0});
   auto out = aiOnnx.relu({h1});
-  builder->addOutputTensor(out);
+  auto l1  = builder->aiGraphcoreOpset1().l1loss({out}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
@@ -43,7 +43,7 @@ BOOST_AUTO_TEST_CASE(Inplace_basic0) {
   auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("All")}});
   auto optimizer = ConstSGD(0.01);
   std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(out, "l1LossVal", 0.1, ReductionType::Sum)};
+      std::make_shared<IdentityLoss>(l1, "l1LossVal", ReductionType::Sum)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -86,7 +86,8 @@ BOOST_AUTO_TEST_CASE(Inplace_basic1) {
 
   auto out = aiOnnx.relu({h1});
   builder->virtualGraph(out, 4);
-  builder->addOutputTensor(out);
+  auto l1 = builder->aiGraphcoreOpset1().l1loss({out}, 0.1);
+  builder->virtualGraph(l1, 4);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
@@ -95,7 +96,7 @@ BOOST_AUTO_TEST_CASE(Inplace_basic1) {
   auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("All")}});
   auto optimizer = ConstSGD(0.01);
   std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(out, "l1LossVal", 0.1, ReductionType::Sum)};
+      std::make_shared<IdentityLoss>(l1, "l1LossVal", ReductionType::Sum)};
   losses[0]->virtualGraph(0);
   auto device = createTestDevice(TEST_TARGET);
 

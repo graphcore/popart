@@ -368,12 +368,10 @@ def test_call_grad_3():
 
             call = builder.aiGraphcore.call([relu], 1, subgraph_builder,
                                             "call_subgraph")[0]
-            builder.addOutputTensor(call)
-            losses = [popart.NllLoss(call, lb, "loss")]
+            nll = builder.aiGraphcore.nllloss([call, lb])
         else:
             sm = builder.aiOnnx.softmax([relu])
-            builder.addOutputTensor(sm)
-            losses = [popart.NllLoss(sm, lb, "loss")]
+            nll = builder.aiGraphcore.nllloss([sm, lb])
 
         art = popart.AnchorReturnType("All")
         dataFlow = popart.DataFlow(
@@ -390,7 +388,7 @@ def test_call_grad_3():
         trainingSession = popart.TrainingSession(
             fnModel=builder.getModelProto(),
             dataFeed=dataFlow,
-            losses=losses,
+            losses=[popart.IdentityLoss(nll, "loss")],
             optimizer=popart.ConstSGD(0.001),
             userOptions=trainingOptions,
             deviceInfo=tu.create_test_device(),
@@ -597,7 +595,7 @@ def test_stacked_subgraphs_2():
             dataFeed=popart.DataFlow(1, anchor_returns),
             deviceInfo=tu.create_test_device(),
             optimizer=popart.ConstSGD(0.1),
-            losses=[popart.L1Loss(actIn, actIn + "/loss", 0.1)],
+            losses=[popart.IdentityLoss(actIn, actIn + "/loss")],
             userOptions=opts)
 
         anchors = session.initAnchorArrays()
@@ -661,4 +659,4 @@ def test_stacked_subgraphs_2():
 #       dataFeed=popart.DataFlow(1, anchorMap),
 #       deviceInfo=tu.create_test_device(),
 #       optimizer=popart.ConstSGD(0.1),
-#       losses=[popart.L1Loss(out, out+"/loss", 0.1)])
+#       losses=[popart.IdentityLoss(out, out+"/loss")])

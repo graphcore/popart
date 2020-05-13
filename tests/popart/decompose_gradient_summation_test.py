@@ -44,7 +44,7 @@ def test_decompose_gradient_sum():
             opts = popart.SessionOptions()
             opts.decomposeGradSum = decomposeGradSum
 
-            loss = popart.L1Loss(actIn, actIn + "/loss", 0.1)
+            loss = popart.IdentityLoss(actIn, actIn + "/loss")
             if doSharding == True:
                 loss.virtualGraph(numLayers - 1)
                 opts.virtualGraphMode = popart.VirtualGraphMode.Manual

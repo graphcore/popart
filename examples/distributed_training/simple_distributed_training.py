@@ -27,13 +27,12 @@ def create_model():
     a = builder.aiOnnx.add([h, b])
 
     output = a
-    builder.addOutputTensor(output)
     probs = builder.aiOnnx.softmax([output])
-
     label_shape = popart.TensorInfo("INT32", [batch_size])
     label = builder.addInputTensor(label_shape)
+    nll = popart.aiGraphcore.nllloss([output, label])
 
-    loss = popart.NllLoss(probs, label, "nllLossVal")
+    loss = popart.IdentityLoss(nll, "nllLossVal")
 
     proto = builder.getModelProto()
 

@@ -7,6 +7,7 @@
 #include <popart/builder.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/add.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/matmul.hpp>
@@ -74,6 +75,8 @@ BOOST_AUTO_TEST_CASE(TestDecomposeAcrossPingPongPhases) {
       outVec.push_back(out);
     }
     auto sum = aiOnnx.sum(outVec);
+    auto l1  = builder.aiGraphcoreOpset1().l1loss({sum}, 0.1);
+    builder.pingPongPhase(l1, (numLayers - 1) * 2);
 
     // To make introspecting the IR easy
     runner.opts.enableOutlining = false;
@@ -84,7 +87,7 @@ BOOST_AUTO_TEST_CASE(TestDecomposeAcrossPingPongPhases) {
     runner.opts.virtualGraphMode = VirtualGraphMode::PingPong;
     runner.patterns              = Patterns(PatternsLevel::Default);
     runner.losses.push_back(
-        new L1Loss(sum, "l1Loss", 0.1, ReductionType::Mean));
+        new IdentityLoss(l1, "l1Loss", ReductionType::Mean));
 
     return sum;
   });

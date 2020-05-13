@@ -8,9 +8,8 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/call.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
-#include <popart/op/l1.hpp>
-#include <popart/op/nll.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
@@ -75,10 +74,10 @@ BOOST_AUTO_TEST_CASE(Introspection0_Subgraph) {
   auto optimizer = ConstSGD(0.01);
 
   auto loss0 =
-      std::make_shared<L1Loss>(out[0], "l1LossVal_0", 0.1, ReductionType::Mean);
+      std::make_shared<IdentityLoss>(out[0], "lossVal_0", ReductionType::Mean);
   loss0->virtualGraph(0);
   auto loss1 =
-      std::make_shared<L1Loss>(out[4], "l1LossVal_1", 0.1, ReductionType::Mean);
+      std::make_shared<IdentityLoss>(out[4], "lossVal_1", ReductionType::Mean);
   loss1->virtualGraph(1);
 
   auto device = createTestDevice(TEST_TARGET, nIpus);

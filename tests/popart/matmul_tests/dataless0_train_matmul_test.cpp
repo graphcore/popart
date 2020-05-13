@@ -10,6 +10,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/session.hpp>
@@ -64,10 +65,10 @@ BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
     // matrix C = A * B (output of network)
     TensorInfo C_info{"FLOAT", std::vector<int64_t>{M, N}};
     TensorId C_id = aiOnnx.matmul({A_id, B_id});
-    bder->addOutputTensor(C_id);
 
     // l1 loss with penalty term, will be applied to C
     float lossLambda = 0.26;
+    auto l1          = bder->aiGraphcoreOpset1().l1loss({C_id}, lossLambda);
 
     // compute the baseline
     std::vector<float> v_C_data(C_info.nelms());
@@ -126,7 +127,7 @@ BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
     float learnRate = 0.321;
     auto optimizer  = ConstSGD(learnRate);
     std::unique_ptr<Loss> l1_loss(
-        new L1Loss(C_id, "l1LossVal", lossLambda, ReductionType::Sum));
+        new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
     std::vector<Loss *> losses{l1_loss.get()};
 
     auto session = popart::TrainingSession::createFromOnnxModel(

@@ -303,7 +303,7 @@ def test_matmul_serialization_training_1(tmpdir):
             fnModel=proto,
             dataFeed=dataFlow,
             userOptions=opts,
-            losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
+            losses=[popart.IdentityLoss(o, "idLossVal")],
             optimizer=popart.ConstSGD(0.01),
             patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
@@ -555,7 +555,7 @@ def test_matmul_serialization_training_2(tmpdir):
             fnModel=proto,
             dataFeed=dataFlow,
             userOptions=opts,
-            losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
+            losses=[popart.IdentityLoss(o, "idLossVal")],
             optimizer=popart.ConstSGD(0.01),
             patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
@@ -811,7 +811,7 @@ def test_matmul_serialization_precision(tmpdir):
             fnModel=proto,
             dataFeed=dataFlow,
             userOptions=opts,
-            losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
+            losses=[popart.IdentityLoss(o, "idLossVal")],
             optimizer=popart.ConstSGD(0.01),
             patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
@@ -1077,7 +1077,7 @@ def test_matmul_serialization_training_with_gradient_accumlation(tmpdir):
             fnModel=proto,
             dataFeed=dataFlow,
             userOptions=opts,
-            losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
+            losses=[popart.IdentityLoss(o, "idLossVal")],
             optimizer=popart.ConstSGD(0.01),
             patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))

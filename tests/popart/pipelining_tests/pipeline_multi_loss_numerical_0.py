@@ -78,11 +78,14 @@ def run_test_multi_loss_pipeline(same_vgraph=True):
         scale1 = builder.aiGraphcore.scale([mm1], scaleFactor)
         skipOut = builder.aiOnnx.add([mm0, scale1])
 
-    builder.addOutputTensor(scale1)
-    builder.addOutputTensor(skipOut)
+    with builder.virtualGraph(1):
+        l1_1 = builder.aiGraphcore.l1loss([scale1], lambda1)
 
-    loss1 = popart.L1Loss(scale1, "l1LossVal1", lambda1)
-    loss2 = popart.L1Loss(skipOut, "l1LossVal2", lambda2)
+    with builder.virtualGraph(1 if same_vgraph else 0):
+        l1_2 = builder.aiGraphcore.l1loss([skipOut], lambda2)
+
+    loss1 = popart.IdentityLoss(l1_1, "l1LossVal1")
+    loss2 = popart.IdentityLoss(l1_2, "l1LossVal2")
 
     # input0  w0
     #    |    |

@@ -12,6 +12,7 @@
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/add.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/opmanager.hpp>
@@ -105,9 +106,8 @@ BOOST_AUTO_TEST_CASE(OpManager_Test2) {
                                      1,
                                      {{"attr1", 42}},
                                      "customOp");
-  auto padOut    = aiOnnx.add({input1, input2});
 
-  builder->addOutputTensor(customOut[0]);
+  auto l1 = builder->aiGraphcoreOpset1().l1loss({customOut[0]}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
@@ -116,8 +116,8 @@ BOOST_AUTO_TEST_CASE(OpManager_Test2) {
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow  = DataFlow(1, {{customOut[0], AnchorReturnType("All")}});
   auto optimizer = SGD({{"defaultLearningRate", {0.01, false}}});
-  std::vector<std::shared_ptr<Loss>> losses{std::make_shared<L1Loss>(
-      customOut[0], "l1LossVal", 0.1, ReductionType::Sum)};
+  std::vector<std::shared_ptr<Loss>> losses{
+      std::make_shared<IdentityLoss>(l1, "l1LossVal", ReductionType::Sum)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;

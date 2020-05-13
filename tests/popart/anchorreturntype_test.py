@@ -58,9 +58,9 @@ def simple_training_session(tmpdir, inputShape, inputArray, BPS, art, GA=1):
     w1 = builder.addInitializedInputTensor(
         np.zeros(inputShape, dtype=np.float32), "w1")
     o = builder.aiOnnx.add([i1, w1])
-    builder.addOutputTensor(o)
+    l1 = builder.aiGraphcore.l1loss([o], 0.0)
 
-    loss = popart.L1Loss(o, "l1LossVal", 0.0)
+    loss = popart.IdentityLoss(l1, "idLossVal")
 
     proto = builder.getModelProto()
 

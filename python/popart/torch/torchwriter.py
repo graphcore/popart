@@ -5,7 +5,7 @@ import torch.utils
 import torch.utils.data
 import popart
 from popart.writer import NetWriter
-from popart import TensorInfo, DataFlow, NllLoss, L1Loss, SGD, ConstSGD
+from popart import TensorInfo, DataFlow, IdentityLoss, SGD, ConstSGD
 
 
 def conv3x3(in_planes, out_planes, stride=1):

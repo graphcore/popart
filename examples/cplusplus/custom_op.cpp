@@ -14,6 +14,7 @@
 #include <popart/logging.hpp>
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
@@ -221,7 +222,8 @@ auto main(int argc, char **argv) -> int {
   // step 1 : generate an ONNX inference Model which uses Cube.
   // The simple mode will be : input->Cube->output
   //
-  auto builder = popart::Builder::create();
+  auto builder     = popart::Builder::create();
+  auto aiGraphcore = builder->aiGraphcoreOpset1();
 
   // The input Tensor will be of type FLOAT, and will
   // be a rank-1 tensor with 2 elements
@@ -232,7 +234,7 @@ auto main(int argc, char **argv) -> int {
   auto outputs =
       builder->customOp(Onnx::CustomOperators::Cube, 1, {input}, 1, {});
 
-  builder->addOutputTensor(outputs[0]);
+  auto l1 = aiGraphcore.l1loss({outputs[0]}, 0.1f, popart::ReductionType::Sum);
 
   auto proto = builder->getModelProto();
 
@@ -243,9 +245,9 @@ auto main(int argc, char **argv) -> int {
 
   // 2.2 Loss(es).
   // 2.2.1 l1 loss : 0.1 * |output|_1
-  std::unique_ptr<popart::L1Loss> l1Loss(new popart::L1Loss(
-      outputs[0], "l1LossVal", 0.1f, popart::ReductionType::Sum));
-  std::vector<popart::Loss *> losses{l1Loss.get()};
+  std::unique_ptr<popart::IdentityLoss> idLoss(
+      new popart::IdentityLoss(l1, "l1LossVal", popart::ReductionType::Sum));
+  std::vector<popart::Loss *> losses{idLoss.get()};
 
   // 2.3 Data streaming.
   // We will stream

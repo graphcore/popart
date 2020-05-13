@@ -69,14 +69,14 @@ def get_mm_model(accl_factor, enable_multi_ipu):
             else:
                 builder.virtualGraph(x, 0)
 
-    output_tensor_name = x
-    builder.addOutputTensor(output_tensor_name)
-    label_shape = [micro_batch_size]
-    label_tensor_name = builder.addInputTensor(
-        popart.TensorInfo("INT32", label_shape))
+    label_tensor_name = builder.addInputTensor("INT32", [micro_batch_size])
+    x = builder.aiGraphcore.nllloss([x, label_tensor_name])
+    if enable_multi_ipu:
+        builder.virtualGraph(x, 1)
+
     initial_onnx_model = builder.getModelProto()
 
-    return initial_onnx_model, input_tensor_name, output_tensor_name, label_tensor_name
+    return initial_onnx_model, input_tensor_name, x, label_tensor_name
 
 
 def get_complex_model(accl_factor):
@@ -123,9 +123,7 @@ def run_graph(input_shape, initial_onnx_model, input_tensor_name,
               final_proto_filename, enable_multi_ipu, full_anchorage,
               inference_mode):
 
-    losses = [
-        popart.NllLoss(output_tensor_name, label_tensor_name, "NllLossVal")
-    ]
+    losses = [popart.IdentityLoss(output_tensor_name, "idLossVal")]
 
     # Loss on the last IPU
     if enable_multi_ipu:
@@ -618,7 +616,7 @@ def test_loading_saved_gradient_accumulationt_tesors():
         assert grad_accl_prefix not in name
 
     def getTrainingSession(fn):
-        losses = [popart.NllLoss(output_name, lb_name, "NlllVal")]
+        losses = [popart.IdentityLoss(output_name, "NlllVal")]
         opts = popart.SessionOptions()
         opts.enableGradientAccumulation = True
         opts.accumulationFactor = accl_factor

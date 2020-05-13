@@ -53,10 +53,10 @@ def get_model_anchors(doSharding,
         out = builder.aiOnnx.softmax([do0], axis=1, debugPrefix="sfm")
     else:
         out = builder.aiOnnx.softmax([r0], axis=1, debugPrefix="sfm")
-    builder.addOutputTensor(out)
+    nll = builder.aiGraphcore.nllloss([out, l0])
 
     art = popart.AnchorReturnType("All")
-    loss = popart.NllLoss(out, l0, "loss")
+    loss = popart.IdentityLoss(nll, "loss")
 
     anchor_map = {"loss": art, w0: art, e0: art}
     if doTraining is True:
@@ -85,6 +85,7 @@ def get_model_anchors(doSharding,
         if doDropout:
             builder.virtualGraph(do0, 1)
         builder.virtualGraph(out, 1)
+        builder.virtualGraph(nll, 1)
 
         loss.virtualGraph(1)
     if replicated_graph_count > 1:

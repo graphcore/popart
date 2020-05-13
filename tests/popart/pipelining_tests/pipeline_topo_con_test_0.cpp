@@ -6,6 +6,7 @@
 #include <popart/dataflow.hpp>
 #include <popart/filereader.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/nll.hpp>
@@ -57,9 +58,10 @@ void prepareIr1(popart::Ir &ir) {
   auto act2 = aiOnnx.add({w2, act1}, "act2");
   act2      = aiOnnx.relu({act2});
 
-  auto w3   = builder->addInitializedInputTensor(wData);
-  auto act3 = aiOnnx.add({w2, act2}, "act3");
-  act3      = aiOnnx.relu({act3});
+  auto w3      = builder->addInitializedInputTensor(wData);
+  auto act3    = aiOnnx.add({w3, act2}, "act3");
+  act3         = aiOnnx.relu({act3});
+  auto act3nll = aiGraphcore.nllloss({act3, l0}, ReductionType::Mean);
 
   auto act4 = aiOnnx.add({act2, act3});
 
@@ -77,23 +79,21 @@ void prepareIr1(popart::Ir &ir) {
   // to handle this extension:
   //  act6 = aiOnnx.mul({act6, input1});
   //  act6 = aiOnnx.mul({act6, input3});
+  auto act6l1 = aiGraphcore.l1loss({act6}, 0.1, ReductionType::Mean);
 
   auto act7 = aiOnnx.sin({act6});
   act7      = aiOnnx.sigmoid({act6});
   act7      = aiOnnx.add({act6, act7});
 
-  auto act8 = aiOnnx.mul({act7, act7});
-  auto w6   = builder->addInitializedInputTensor(wData);
-  act8      = aiOnnx.mul({act8, w6});
-  act8      = aiOnnx.add({act8, input3});
+  auto act8   = aiOnnx.mul({act7, act7});
+  auto w6     = builder->addInitializedInputTensor(wData);
+  act8        = aiOnnx.mul({act8, w6});
+  act8        = aiOnnx.add({act8, input3});
+  auto act8l1 = aiGraphcore.l1loss({act8}, 0.2, ReductionType::Sum);
 
-  auto act9 = aiOnnx.relu({act8});
-  act9      = aiOnnx.softmax({act9});
-
-  builder->addOutputTensor(act6);
-  builder->addOutputTensor(act3);
-  builder->addOutputTensor(act8);
-  builder->addOutputTensor(act9);
+  auto act9    = aiOnnx.relu({act8});
+  act9         = aiOnnx.softmax({act9});
+  auto act9nll = aiGraphcore.nllloss({act9, l1}, ReductionType::Sum);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
@@ -107,16 +107,13 @@ void prepareIr1(popart::Ir &ir) {
   auto optimizer = ConstSGD(0.01);
 
   auto loss1 =
-      std::make_shared<L1Loss>(act6, "l1LossVal_1", 0.1, ReductionType::Mean);
-
+      std::make_shared<IdentityLoss>(act6l1, "l1LossVal_1", ReductionType::Sum);
   auto loss2 =
-      std::make_shared<L1Loss>(act8, "l1LossVal_2", 0.2, ReductionType::Sum);
-
-  auto loss3 =
-      std::make_shared<NllLoss>(act3, l0, "nllLossVal_1", ReductionType::Mean);
-
-  auto loss4 =
-      std::make_shared<NllLoss>(act9, l1, "nllLossVal_2", ReductionType::Sum);
+      std::make_shared<IdentityLoss>(act8l1, "l1LossVal_2", ReductionType::Sum);
+  auto loss3 = std::make_shared<IdentityLoss>(
+      act3nll, "nllLossVal_1", ReductionType::Sum);
+  auto loss4 = std::make_shared<IdentityLoss>(
+      act9nll, "nllLossVal_2", ReductionType::Sum);
 
   auto device = createTestDevice(TEST_TARGET, 3);
 
@@ -185,7 +182,7 @@ void prepareIr0(popart::Ir &ir) {
   auto act5            = aiOnnx.add({w5, act4}, "act5");
   act5                 = aiOnnx.relu({act5});
 
-  builder->addOutputTensor(act5);
+  auto l1 = builder->aiGraphcoreOpset1().l1loss({act5}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
@@ -199,7 +196,7 @@ void prepareIr0(popart::Ir &ir) {
   auto optimizer = ConstSGD(0.01);
 
   auto loss =
-      std::make_shared<L1Loss>(act5, "l1LossVal", 0.1, ReductionType::Sum);
+      std::make_shared<IdentityLoss>(l1, "l1LossVal", ReductionType::Sum);
 
   auto device = createTestDevice(TEST_TARGET, 3);
 

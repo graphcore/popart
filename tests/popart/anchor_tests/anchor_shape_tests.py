@@ -95,7 +95,7 @@ def return_anchors(anchorDict, label_array):
     o = builder.reshape_const(
         builder.aiOnnx, [o],
         [micro_batch_size, CHANNELS * DATA_LEN * DATA_LEN])
-    builder.addOutputTensor(o)
+    nll = builder.aiGraphcore.nllloss([o, lb])
 
     anchors = {}
     anchors[o] = popart.AnchorReturnType(anchorDict["ReturnType"])
@@ -114,7 +114,7 @@ def return_anchors(anchorDict, label_array):
 
     session = popart.TrainingSession(fnModel=builder.getModelProto(),
                                      dataFeed=data_flow,
-                                     losses=[popart.NllLoss(o, lb, "loss")],
+                                     losses=[popart.IdentityLoss(nll, "loss")],
                                      optimizer=popart.SGD({
                                          "defaultLearningRate":
                                          (LEARNING_RATE, True),

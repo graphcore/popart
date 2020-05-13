@@ -16,6 +16,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/restore.hpp>
@@ -221,16 +222,17 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilonTest1) {
       userOptions.enableGradientAccumulation = false;
     }
 
-    builder->addOutputTensor(actFinal);
+    float lambda = 0.1;
+    auto l1      = builder->aiGraphcoreOpset1().l1loss({actFinal}, 0.1);
+    builder->virtualGraph(l1, nIPUs - 1);
     auto proto    = builder->getModelProto();
     auto dataFlow = DataFlow(batchesPerStep);
 
     // The learning rate will be adjusted to the correct value at runtime
     auto optimizer = SGD({{"defaultLearningRate", {10000., false}}});
 
-    float lambda = 0.1;
-    auto loss    = std::unique_ptr<Loss>(
-        new L1Loss(actFinal, "l1LossVal", lambda, ReductionType::Sum));
+    auto loss = std::unique_ptr<Loss>(
+        new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
     loss->virtualGraph(nIPUs - 1);
 
     // number of "pixels" in a step

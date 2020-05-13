@@ -12,6 +12,7 @@
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
 #include <popart/op.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/mul.hpp>
 #include <popart/op/relu.hpp>
@@ -108,6 +109,8 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
       reluIds.push_back(aiOnnx.relu({mulOutIds.back()}));
     }
     auto out = aiOnnx.reducesum({reluIds.back()});
+    auto l1  = builder->aiGraphcoreOpset1().l1loss({out}, 0.1);
+
     builder->addOutputTensor(out);
 
     auto proto      = builder->getModelProto();
@@ -121,7 +124,7 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
     if (train) {
       optimizer.reset(new ConstSGD(0.01));
       up_losses.push_back(
-          std::make_shared<L1Loss>(out, "l1LossVal", 0.1, ReductionType::Sum));
+          std::make_shared<IdentityLoss>(l1, "l1LossVal", ReductionType::Sum));
     }
 
     auto opts = SessionOptions();
@@ -322,7 +325,7 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
   auto out = aiOnnx.conv({o4, w5}, {1, 1}, 1, {1, 1}, {0, 0, 0, 0}, {1, 1});
 
   // auto out = aiOnnx.reducesum({o1});
-  builder->addOutputTensor(out);
+  auto l1 = builder->aiGraphcoreOpset1().l1loss({out}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
@@ -339,7 +342,7 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
 
   optimizer.reset(new ConstSGD(0.01));
   up_losses.push_back(
-      std::make_shared<L1Loss>(out, "l1LossVal", 0.1, ReductionType::Sum));
+      std::make_shared<IdentityLoss>(l1, "l1LossVal", ReductionType::Sum));
 
   std::vector<Match> expected_train_matches = {
       {{7, 13}, 6},

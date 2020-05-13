@@ -185,9 +185,7 @@ def test_auto_virtual_graph_train():
     output = x
     builder.addOutputTensor(output)
 
-    label = builder.addInputTensor(popart.TensorInfo("INT32", [1]))
-
-    loss = popart.NllLoss(output, label, "nllLossVal")
+    loss = popart.IdentityLoss(output, "idLossVal")
 
     proto = builder.getModelProto()
 

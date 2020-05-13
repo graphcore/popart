@@ -43,7 +43,7 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
   case ReductionType::Mean: {
     // Design note: The L1Loss measures the mean absolute error between
     // each element of the input and a (zero) target. The target here is the
-    // same size as the input tensor. This is unlike NllLoss, whose target
+    // same size as the input tensor. This is unlike NllOp, whose target
     // is a 1D tensor of size `batchSize`.
     // As a result the mean reduction is not over the size of the outer
     // dimension, but over the total number of elements in the tensor.

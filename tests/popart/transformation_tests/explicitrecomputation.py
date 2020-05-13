@@ -60,7 +60,7 @@ def test_explicit_recomputation(tmpdir):
             fnModel=proto,
             dataFeed=popart.DataFlow(1, dataflow_anchors),
             optimizer=popart.ConstSGD(0.01),
-            losses=[popart.L1Loss(out, "l1LossVal", 0.1)],
+            losses=[popart.IdentityLoss(out, "idLossVal")],
             patterns=popart.Patterns(popart.PatternsLevel.All),
             userOptions=opts,
             deviceInfo=device)

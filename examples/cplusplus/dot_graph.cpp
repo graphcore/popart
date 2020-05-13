@@ -12,6 +12,7 @@
 #include <popart/graphtransformer.hpp>
 #include <popart/ir.hpp>
 #include <popart/onnxutil.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/sessionoptions.hpp>
@@ -95,8 +96,11 @@ int main(int argc, char **argv) {
     // choosing an arbitrary shape for label, can't run shape inference now
     isi.add(label, {"INT32", std::vector<int64_t>{7}});
 
-    up_losses.emplace_back(std::make_shared<NllLoss>(
-        out, label, "nllLossVal", ReductionType::Sum));
+    Builder *builder = Builder::createFromOnnxModel(modelProtoString).get();
+    auto aiGraphcore = builder->aiGraphcoreOpset1();
+    auto nlll        = aiGraphcore.nllloss({out, label}, ReductionType::Sum);
+    up_losses.emplace_back(
+        std::make_shared<IdentityLoss>(nlll, "nllLossVal", ReductionType::Sum));
   }
 
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();

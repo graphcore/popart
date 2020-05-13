@@ -9,6 +9,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/session.hpp>
@@ -117,7 +118,7 @@ BOOST_AUTO_TEST_CASE(Train0TopK) {
     auto squaredOut = aiOnnx.mul({values, values});
     auto halvedOut  = aiGraphcore.scale({squaredOut}, scaleFactor);
 
-    builder->addOutputTensor(halvedOut);
+    auto l1 = builder->aiGraphcoreOpset1().l1loss({halvedOut}, lossLambda);
 
     auto proto      = builder->getModelProto();
     auto modelProto = io::getModelFromString(proto);
@@ -133,7 +134,7 @@ BOOST_AUTO_TEST_CASE(Train0TopK) {
     float learnRate = 0.1;
     auto optimizer  = ConstSGD(learnRate);
     std::vector<Loss *> losses{
-        new L1Loss(halvedOut, "l1LossVal", lossLambda, ReductionType::Sum)};
+        new IdentityLoss(l1, "l1LossVal", ReductionType::Sum)};
 
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,

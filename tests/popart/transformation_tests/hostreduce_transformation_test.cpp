@@ -12,6 +12,7 @@
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op/hostreducevarupdate.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/sync.hpp>
 #include <popart/optimizer.hpp>
@@ -157,10 +158,10 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
   // matrix C = A * B (output of network)
   TensorInfo C_info{"FLOAT", std::vector<int64_t>{M, N}};
   TensorId C_id = aiOnnx.matmul({A_id, B_id});
-  bder->addOutputTensor(C_id);
 
   // l1 loss with penalty term, will be applied to C
   float lossLambda = 0.26;
+  auto l1          = bder->aiGraphcoreOpset1().l1loss({C_id}, lossLambda);
 
   // compute the baseline
   std::vector<float> v_C_data(C_info.nelms());
@@ -206,8 +207,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
 
   // training info
   auto optimizer = SGD({{"defaultLearningRate", {0.01, false}}});
-  std::unique_ptr<Loss> l1_loss(
-      new L1Loss(C_id, "l1LossVal", lossLambda, ReductionType::Sum));
+  std::unique_ptr<Loss> l1_loss(new IdentityLoss(l1, "l1", ReductionType::Sum));
   std::vector<Loss *> losses{l1_loss.get()};
 
   auto session = popart::TrainingSession::createFromOnnxModel(
@@ -387,10 +387,10 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
   TensorInfo G_info{"FLOAT", std::vector<int64_t>{M, N}};
   TensorId G_id = aiOnnx.matmul({F_id, D_id});
 
-  bder->addOutputTensor(G_id);
-
   // l1 loss with penalty term, will be applied to C
   float lossLambda = 0.26;
+
+  auto l1 = bder->aiGraphcoreOpset1().l1loss({G_id}, lossLambda);
 
   auto proto      = bder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
@@ -408,7 +408,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
   // training info
   auto optimizer = SGD({{"defaultLearningRate", {0.01, false}}});
   std::unique_ptr<Loss> l1_loss(
-      new L1Loss(G_id, "l1LossVal", lossLambda, ReductionType::Sum));
+      new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
   std::vector<Loss *> losses{l1_loss.get()};
 
   auto session = popart::TrainingSession::createFromOnnxModel(
@@ -581,9 +581,8 @@ BOOST_AUTO_TEST_CASE(HostReduceHierarchicalReductionWithReplicatedGraphs) {
   TensorInfo G_info{"FLOAT", std::vector<int64_t>{M, N}};
   TensorId G_id = aiOnnx.matmul({F_id, D_id});
 
-  bder->addOutputTensor(G_id);
-
   float lossLambda = 0.1f;
+  auto l1          = bder->aiGraphcoreOpset1().l1loss({G_id}, lossLambda);
 
   auto proto      = bder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
@@ -605,7 +604,7 @@ BOOST_AUTO_TEST_CASE(HostReduceHierarchicalReductionWithReplicatedGraphs) {
     const float learningRate = 0.01f;
     auto optimizer = SGD({{"defaultLearningRate", {learningRate, false}}});
     std::unique_ptr<Loss> l1_loss(
-        new L1Loss(G_id, "l1LossVal", lossLambda, ReductionType::Sum));
+        new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
     std::vector<Loss *> losses{l1_loss.get()};
 
     auto session = popart::TrainingSession::createFromOnnxModel(
@@ -856,9 +855,8 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationGradientStoreGradientLoad) {
   TensorInfo G_info{"FLOAT", std::vector<int64_t>{M, N}};
   TensorId G_id = aiOnnx.matmul({F_id, D_id});
 
-  bder->addOutputTensor(G_id);
-
   float lossLambda = 1.0f;
+  auto l1          = bder->aiGraphcoreOpset1().l1loss({G_id}, lossLambda);
 
   auto proto      = bder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
@@ -876,7 +874,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationGradientStoreGradientLoad) {
   // training info
   auto optimizer = SGD({{"defaultLearningRate", {1.0f, false}}});
   std::unique_ptr<Loss> l1_loss(
-      new L1Loss(G_id, "l1LossVal", lossLambda, ReductionType::Sum));
+      new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
   std::vector<Loss *> losses{l1_loss.get()};
 
   auto session = popart::TrainingSession::createFromOnnxModel(
@@ -1105,9 +1103,8 @@ BOOST_AUTO_TEST_CASE(
   TensorInfo G_info{"FLOAT", std::vector<int64_t>{M, N}};
   TensorId G_id = aiOnnx.matmul({F_id, D_id});
 
-  bder->addOutputTensor(G_id);
-
   float lossLambda = 1.0f;
+  auto l1          = bder->aiGraphcoreOpset1().l1loss({G_id}, lossLambda);
 
   auto proto      = bder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
@@ -1129,7 +1126,7 @@ BOOST_AUTO_TEST_CASE(
     // training info
     auto optimizer = SGD({{"defaultLearningRate", {0.1f, false}}});
     std::unique_ptr<Loss> l1_loss(
-        new L1Loss(G_id, "l1LossVal", lossLambda, ReductionType::Sum));
+        new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
     std::vector<Loss *> losses{l1_loss.get()};
 
     auto session = popart::TrainingSession::createFromOnnxModel(
@@ -1347,7 +1344,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithAccumulation) {
     ConstVoidData w5Data = {w5Vals.data(), sampleInfo};
     auto w5              = builder->addInitializedInputTensor(w5Data);
     auto act5            = aiOnnx.add({w5, act4}, "act5");
-    builder->addOutputTensor(act5);
+    auto l1              = builder->aiGraphcoreOpset1().l1loss({act5}, 1.0);
 
     auto proto = builder->getModelProto();
 
@@ -1386,9 +1383,8 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithAccumulation) {
     float learnRate = 1.0;
     auto optimizer  = ConstSGD(learnRate);
 
-    float lambda = 1.0;
-    auto loss    = std::unique_ptr<Loss>(
-        new L1Loss(act5, "l1LossVal", lambda, ReductionType::Sum));
+    auto loss = std::unique_ptr<Loss>(
+        new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
 
     auto device =
         DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
@@ -1597,6 +1593,9 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipelining) {
     auto w5              = builder->addInitializedInputTensor(w5Data);
     auto act5            = aiOnnx.add({w5, a4}, "act5");
     auto a5              = aiOnnx.sigmoid({act5});
+
+    float lambda = 1.0;
+    auto l1      = builder->aiGraphcoreOpset1().l1loss({a5}, lambda);
     for (auto &x : w5Vals) {
       x = fdis(eng);
     }
@@ -1605,10 +1604,8 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipelining) {
     float learnRate = 1.0;
     auto optimizer  = ConstSGD(learnRate);
 
-    float lambda = 1.0;
-
     auto loss = std::unique_ptr<Loss>(
-        new L1Loss(a5, "l1LossVal", lambda, ReductionType::Sum));
+        new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
     auto proto = builder->getModelProto();
 
     auto dataFlow = DataFlow(batchesPerStep, {{a5, AnchorReturnType("All")}});
@@ -1857,6 +1854,8 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation) {
     auto w5              = builder->addInitializedInputTensor(w5Data);
     auto act5            = aiOnnx.add({w5, a4}, "act5");
     auto a5              = aiOnnx.sigmoid({act5});
+    float lambda         = 1.0;
+    auto l1              = builder->aiGraphcoreOpset1().l1loss({a5}, lambda);
     for (auto &x : w5Vals) {
       x = fdis(eng);
     }
@@ -1865,10 +1864,8 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation) {
     float learnRate = 1.0;
     auto optimizer  = ConstSGD(learnRate);
 
-    float lambda = 1.0;
-
     auto loss = std::unique_ptr<Loss>(
-        new L1Loss(a5, "l1LossVal", lambda, ReductionType::Sum));
+        new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
     auto proto = builder->getModelProto();
 
     auto dataFlow = DataFlow(batchesPerStep, {{a5, AnchorReturnType("All")}});
@@ -2082,9 +2079,8 @@ BOOST_AUTO_TEST_CASE(OATTSimpleTest, *boost::unit_test::disabled()) {
   TensorInfo G_info{"FLOAT", std::vector<int64_t>{M, N}};
   TensorId G_id = aiOnnx.matmul({F_id, D_id});
 
-  bder->addOutputTensor(G_id);
-
   float lossLambda = 1.0f;
+  auto l1          = bder->aiGraphcoreOpset1().l1loss({G_id}, lossLambda);
 
   auto proto      = bder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
@@ -2105,7 +2101,7 @@ BOOST_AUTO_TEST_CASE(OATTSimpleTest, *boost::unit_test::disabled()) {
   // training info
   auto optimizer = SGD({{"defaultLearningRate", {1.0f, false}}});
   std::unique_ptr<Loss> l1_loss(
-      new L1Loss(G_id, "l1LossVal", lossLambda, ReductionType::Sum));
+      new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
   std::vector<Loss *> losses{l1_loss.get()};
 
   auto session = popart::TrainingSession::createFromOnnxModel(
@@ -2321,7 +2317,8 @@ BOOST_AUTO_TEST_CASE(OATTWithAccumulation, *boost::unit_test::disabled()) {
     ConstVoidData w5Data = {w5Vals.data(), sampleInfo};
     auto w5              = builder->addInitializedInputTensor(w5Data);
     auto act5            = aiOnnx.add({w5, act4}, "act5");
-    builder->addOutputTensor(act5);
+    float lambda         = 1.0;
+    auto l1              = builder->aiGraphcoreOpset1().l1loss({act5}, lambda);
 
     auto proto = builder->getModelProto();
 
@@ -2363,9 +2360,8 @@ BOOST_AUTO_TEST_CASE(OATTWithAccumulation, *boost::unit_test::disabled()) {
     float learnRate = 1.0;
     auto optimizer  = ConstSGD(learnRate);
 
-    float lambda = 1.0;
-    auto loss    = std::unique_ptr<Loss>(
-        new L1Loss(act5, "l1LossVal", lambda, ReductionType::Sum));
+    auto loss = std::unique_ptr<Loss>(
+        new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
 
     auto device = acquireAvailableDevice();
     if (!device) {
@@ -2586,15 +2582,14 @@ BOOST_AUTO_TEST_CASE(OATTWithPipeliningAndAccumulation,
     for (auto &x : w5Vals) {
       x = fdis(eng);
     }
-    builder->addOutputTensor(a5);
+    float lambda = 1.0;
+    auto l1      = builder->aiGraphcoreOpset1().l1loss({a5}, lambda);
 
     float learnRate = 1.0;
     auto optimizer  = ConstSGD(learnRate);
 
-    float lambda = 1.0;
-
     auto loss = std::unique_ptr<Loss>(
-        new L1Loss(a5, "l1LossVal", lambda, ReductionType::Sum));
+        new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
     auto proto = builder->getModelProto();
 
     auto dataFlow = DataFlow(batchesPerStep, {{a5, AnchorReturnType("All")}});

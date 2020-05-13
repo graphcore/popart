@@ -29,85 +29,73 @@ def checkResult(result, margin):
 
 
 def test_3d_nll_loss_input():
-    def run(withBuilderOp):
-        # fix the random seed for this test
-        np.random.seed(0)
-        ## input data
-        Batchsize = 2
-        ExtraDim = 4  # e.g. sequence length in language model
-        Classes = 3
+    # fix the random seed for this test
+    np.random.seed(0)
+    ## input data
+    Batchsize = 2
+    ExtraDim = 4  # e.g. sequence length in language model
+    Classes = 3
 
-        dshape = [Batchsize, ExtraDim, Classes]
-        lshape = [Batchsize, ExtraDim]
-        flat_lshape = [Batchsize * ExtraDim]
+    dshape = [Batchsize, ExtraDim, Classes]
+    lshape = [Batchsize, ExtraDim]
+    flat_lshape = [Batchsize * ExtraDim]
 
-        ip_data = np.random.rand(Batchsize, ExtraDim,
-                                 Classes).astype(np.float32)
-        lb_data = np.random.randint(Classes, size=lshape)
+    ###
+    # Popart
+    ###
+    builder = popart.Builder()
+    ip = builder.addInitializedInputTensor(ip_data)
+    lb = builder.addInputTensor(popart.TensorInfo("INT32", lshape))
+    out = builder.aiOnnx.softmax([ip], axis=np.size(lshape))
 
-        ###
-        # Popart
-        ###
-        builder = popart.Builder()
-        ip = builder.addInitializedInputTensor(ip_data)
-        lb = builder.addInputTensor(popart.TensorInfo("INT32", lshape))
-        out = builder.aiOnnx.softmax([ip], axis=np.size(lshape))
+    nll0 = builder.aiGraphcore.nllloss([out, lb])
+    nll1 = builder.reshape_const(builder.aiOnnx, [nll0], flat_lshape)
+    loss = popart.IdentityLoss(nll1, "loss")
 
-        if withBuilderOp == True:
-            nll0 = builder.aiGraphcore.nllloss([out, lb])
-            nll1 = builder.reshape_const(builder.aiOnnx, [nll0], flat_lshape)
-            loss = popart.IdentityLoss(nll1, "loss")
-        else:
-            loss = popart.NllLoss(out, lb, "loss")
+    session = popart.TrainingSession(
+        fnModel=builder.getModelProto(),
+        dataFeed=popart.DataFlow(1, ["loss", out]),
+        optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
+        losses=[loss],
+        patterns=popart.Patterns(popart.PatternsLevel.All),
+        deviceInfo=tu.create_test_device())
 
-        session = popart.TrainingSession(
-            fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(1, ["loss", out]),
-            optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
-            losses=[loss],
-            patterns=popart.Patterns(popart.PatternsLevel.All),
-            deviceInfo=tu.create_test_device())
+    session.prepareDevice()
+    session.weightsFromHost()
 
-        session.prepareDevice()
-        session.weightsFromHost()
+    anchors = session.initAnchorArrays()
+    stepio = popart.PyStepIO({lb: lb_data.astype(np.int32)}, anchors)
+    session.run(stepio)
 
-        anchors = session.initAnchorArrays()
-        stepio = popart.PyStepIO({lb: lb_data.astype(np.int32)}, anchors)
-        session.run(stepio)
+    ###
+    # Pytorch
+    ###
+    softmax = torch.nn.Softmax(dim=1)
+    loss = torch.nn.NLLLoss(reduction='none')
 
-        ###
-        # Pytorch
-        ###
-        softmax = torch.nn.Softmax(dim=1)
-        loss = torch.nn.NLLLoss(reduction='none')
+    # Swap Classes, ExtraDim axes
+    # This is because pytorch NllLoss expects inputs of the format:
+    #   Probs  - [BatchSize, Classes, ExtraDim0, ... , ExtraDimN]
+    #   Labels - [BatchSize, ExtraDim0, ... , ExtraDimN]
+    # whereas Popart expects (same as Tensorflow):
+    #   Probs  - [BatchSize, ExtraDim0, ... , ExtraDimN, Classes]
+    #   Labels - [BatchSize, ExtraDim0, ... , ExtraDimN]
+    ip_data = ip_data.transpose([0, 2, 1])
+    input = torch.tensor(ip_data, requires_grad=True)
+    target = torch.tensor(lb_data)
+    sm_out = softmax(input)
+    logsm = torch.log(sm_out)
+    output = loss(logsm, target)
+    output = output.reshape(flat_lshape)
 
-        # Swap Classes, ExtraDim axes
-        # This is because pytorch NllLoss expects inputs of the format:
-        #   Probs  - [BatchSize, Classes, ExtraDim0, ... , ExtraDimN]
-        #   Labels - [BatchSize, ExtraDim0, ... , ExtraDimN]
-        # whereas Popart expects (same as Tensorflow):
-        #   Probs  - [BatchSize, ExtraDim0, ... , ExtraDimN, Classes]
-        #   Labels - [BatchSize, ExtraDim0, ... , ExtraDimN]
-        ip_data = ip_data.transpose([0, 2, 1])
-        input = torch.tensor(ip_data, requires_grad=True)
-        target = torch.tensor(lb_data)
-        sm_out = softmax(input)
-        logsm = torch.log(sm_out)
-        output = loss(logsm, target)
-        if withBuilderOp == True:
-            output = output.reshape(flat_lshape)
+    ###
+    # Compare
+    ###
+    print("Torch loss\n:", output.data.numpy())
+    print("Popart loss\n:", anchors["loss"])
 
-        ###
-        # Compare
-        ###
-        print("Torch loss\n:", output.data.numpy())
-        print("Popart loss\n:", anchors["loss"])
-
-        result = getTensorError(output.data.numpy(), anchors["loss"])
-        checkResult(result, 1e-8)
-
-    run(True)
-    run(False)
+    result = getTensorError(output.data.numpy(), anchors["loss"])
+    checkResult(result, 1e-8)
 
 
 def test_nll_loss_with_ignored_index():
@@ -134,13 +122,13 @@ def test_nll_loss_with_ignored_index():
     ip = builder.addInitializedInputTensor(ip_data)
     lb = builder.addInputTensor(popart.TensorInfo("INT32", lshape))
     out = builder.aiOnnx.softmax([ip], axis=np.size(lshape))
-    builder.addOutputTensor(out)
+    nll = builder.aiGraphcore.nllloss([out, lb], ignoreIndex=ignoreInd)
 
     session = popart.TrainingSession(
         fnModel=builder.getModelProto(),
         dataFeed=popart.DataFlow(1, {"loss": popart.AnchorReturnType("All")}),
         optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
-        losses=[popart.NllLoss(out, lb, "loss", ignore_index=ignoreInd)],
+        losses=[popart.IdentityLoss(nll, "loss")],
         patterns=popart.Patterns(popart.PatternsLevel.All),
         deviceInfo=tu.create_test_device())
 
@@ -205,25 +193,18 @@ def test_nll_loss_grad_with_ignored_index():
     ip = builder.addInitializedInputTensor(ip_data)
     lb = builder.addInputTensor(popart.TensorInfo("INT32", lshape))
     out = builder.aiOnnx.softmax([ip], axis=np.size(lshape))
-    builder.addOutputTensor(out)
+    nll = builder.aiGraphcore.nllloss([out, lb],
+                                      ignoreIndex=ignoreInd,
+                                      reduction=popart.ReductionType.Mean)
 
     ## 2 sessions: one with "SoftmaxGradDirect" pattern, one without
     def getPreparesSession(patterns):
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(
-                1, {
-                    popart.reservedGradientPrefix() + ip:
-                    popart.AnchorReturnType("All")
-                }),
+            dataFeed=popart.DataFlow(1,
+                                     [popart.reservedGradientPrefix() + ip]),
             optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
-            losses=[
-                popart.NllLoss(out,
-                               lb,
-                               "loss",
-                               ignore_index=ignoreInd,
-                               reduction=popart.ReductionType.Mean)
-            ],
+            losses=[popart.IdentityLoss(nll, "loss")],
             patterns=popart.Patterns(patterns),
             deviceInfo=tu.create_test_device())
 
@@ -287,44 +268,6 @@ def test_nll_loss_grad_with_ignored_index():
     checkResult(getTensorError(torch_ip_grad, px_no_smd_ip_grad), 1e-8)
 
 
-def test_id_loss_error():
-    # fix the random seed for this test
-    np.random.seed(0)
-
-    ## input data
-    Batchsize = 2
-    ExtraDim = 7
-    Classes = 8
-
-    ip_data = np.random.rand(Batchsize, ExtraDim, Classes).astype(np.float32)
-
-    ###
-    # Popart
-    ###
-    builder = popart.Builder()
-
-    # Prepare input data
-    ip = builder.addInitializedInputTensor(ip_data, "input")
-    out = builder.aiOnnx.exp([ip])
-
-    builder.addOutputTensor(out)
-
-    art = popart.AnchorReturnType("All")
-    with pytest.raises(popart.popart_exception) as e_info:
-        session = popart.TrainingSession(
-            fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(1, {"loss": art}),
-            optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
-            losses=[popart.IdentityLoss(out, "loss")],
-            patterns=popart.Patterns(popart.PatternsLevel.All),
-            deviceInfo=tu.create_test_device())
-
-    assert (e_info.value.args[0].startswith(
-        f"The identity loss Op(ai.onnx.Identity:1, inputs=[Exp:0]," +
-        f" outputs=[loss]) (shape [{Batchsize} {ExtraDim} {Classes}]) is expecting a tensor"
-    ))
-
-
 def test_id_nllloss_train():
     # fix the random seed for this test
     np.random.seed(0)
@@ -332,7 +275,7 @@ def test_id_nllloss_train():
     Batchsize = 8
     Classes = 32
 
-    def get_model(ip_data, lb_data, w_data, id_loss):
+    def get_model(ip_data, lb_data, w_data):
 
         ###
         # Popart
@@ -352,36 +295,34 @@ def test_id_nllloss_train():
                                  debugPrefix="conv")
 
         r0 = builder.reshape_const(builder.aiOnnx, [c0], [Batchsize, Classes])
-        if id_loss:
-            depth = builder.aiOnnx.constant(
-                np.array(Classes).astype(np.int32), "depth")
-            eps = builder.aiOnnx.constant(
-                np.array(1.0e-7).astype(np.float32), "eps")
-            values = builder.addInputTensor(popart.TensorInfo("INT32", [2]),
-                                            "values")
 
-            values_data = np.array([0, 1]).astype(np.int32)
+        depth = builder.aiOnnx.constant(
+            np.array(Classes).astype(np.int32), "depth")
+        eps = builder.aiOnnx.constant(
+            np.array(1.0e-7).astype(np.float32), "eps")
+        values = builder.addInputTensor(popart.TensorInfo("INT32", [2]),
+                                        "values")
 
-            # 'Manually' calculate NLLLoss
-            sm = builder.aiOnnx.softmax([r0],
-                                        axis=np.size(lb_data.shape),
-                                        debugPrefix="output")
-            lb = builder.aiOnnx.onehot([lb, depth, values],
-                                       axis=np.size(lb_data.shape))
-            lb = builder.aiOnnx.cast([lb], "FLOAT")
+        values_data = np.array([0, 1]).astype(np.int32)
 
-            mul = builder.aiOnnx.mul([sm, lb])
-            red = builder.aiOnnx.reducesum([mul],
-                                           axes=[np.size(lb_data.shape)],
-                                           keepdims=False)
-            add = builder.aiOnnx.add([red, eps])
-            log = builder.aiOnnx.log([add])
-            out = builder.aiOnnx.neg([log])
+        # 'Manually' calculate NLLLoss
+        sm = builder.aiOnnx.softmax([r0],
+                                    axis=np.size(lb_data.shape),
+                                    debugPrefix="output")
+        lb = builder.aiOnnx.onehot([lb, depth, values],
+                                   axis=np.size(lb_data.shape))
+        lb = builder.aiOnnx.cast([lb], "FLOAT")
 
-            losses = [popart.IdentityLoss(out, "loss")]
-        else:
-            sm = builder.aiOnnx.softmax([r0], axis=np.size(lb_data.shape))
-            losses = [popart.NllLoss(sm, lb, "loss")]
+        mul = builder.aiOnnx.mul([sm, lb])
+        red = builder.aiOnnx.reducesum([mul],
+                                       axes=[np.size(lb_data.shape)],
+                                       keepdims=False)
+        add = builder.aiOnnx.add([red, eps])
+        log = builder.aiOnnx.log([add])
+        out = builder.aiOnnx.neg([log])
+
+        losses = [popart.IdentityLoss(out, "loss")]
+
         # Output
         builder.addOutputTensor(sm)
 
@@ -405,19 +346,12 @@ def test_id_nllloss_train():
         session.weightsFromHost()
 
         anchors = session.initAnchorArrays()
-        if id_loss:
-            stepio = popart.PyStepIO(
-                {
-                    ip: ip_data,
-                    "label": lb_data.astype(np.int32),
-                    values: values_data
-                }, anchors)
-        else:
-            stepio = popart.PyStepIO(
-                {
-                    ip: ip_data,
-                    "label": lb_data.astype(np.int32)
-                }, anchors)
+        stepio = popart.PyStepIO(
+            {
+                ip: ip_data,
+                "label": lb_data.astype(np.int32),
+                values: values_data
+            }, anchors)
 
         return session, stepio, anchors
 
@@ -465,14 +399,7 @@ def test_id_nllloss_train():
     # Compare
     ###
 
-    id_sess, id_steio, id_anchors = get_model(ip_data,
-                                              lb_data,
-                                              w_data,
-                                              id_loss=True)
-    n_sess, n_stepio, n_anchors = get_model(ip_data,
-                                            lb_data,
-                                            w_data,
-                                            id_loss=False)
+    id_sess, id_steio, id_anchors = get_model(ip_data, lb_data, w_data)
 
     for i in range(5):
         # Pytorch
@@ -483,22 +410,13 @@ def test_id_nllloss_train():
         optimizer.step()
         # Popart
         id_sess.run(id_steio)
-        n_sess.run(n_stepio)
         print(f"Step {i}")
         print("ID Loss:", id_anchors["loss"].sum())
-        print("Normal Loss:", n_anchors["loss"].sum())
         print("Pytorch Loss:", loss.item())
         print("ID weight:", id_anchors["weight"].sum())
-        print("Normal weight:", n_anchors["weight"].sum())
         # Checks
 
-        assert (id_anchors["loss"].sum() - n_anchors["loss"].sum()) < 1e-4
         assert (id_anchors["loss"].sum() - loss.item()) < 1e-4
-
-        result = getTensorError(id_anchors["loss"], n_anchors["loss"])
-        result_w = getTensorError(id_anchors["weight"], n_anchors["weight"])
-        checkResult(result, 1e-8)
-        checkResult(result_w, 1e-8)
 
 
 def test_id_l1loss_train():
@@ -509,7 +427,7 @@ def test_id_l1loss_train():
     ExtraDim = 7
     Classes = 32
 
-    def get_model(ip_data, w_data, id_loss):
+    def get_model(ip_data, w_data):
 
         ###
         # Popart
@@ -529,11 +447,8 @@ def test_id_l1loss_train():
         r0 = builder.reshape_const(builder.aiOnnx, [c0], [Batchsize, Classes])
         out = builder.aiOnnx.relu([r0], "relu")
 
-        if id_loss:
-            redl1 = builder.aiOnnx.reducel1([out], axes=[1], keepdims=False)
-            losses = [popart.IdentityLoss(redl1, "loss")]
-        else:
-            losses = [popart.L1Loss(out, "loss", 1.0)]
+        redl1 = builder.aiOnnx.reducel1([out], axes=[1], keepdims=False)
+        losses = [popart.IdentityLoss(redl1, "loss")]
         # Output
         builder.addOutputTensor(out)
 
@@ -599,13 +514,7 @@ def test_id_l1loss_train():
     ###
     # Compare
     ###
-
-    id_sess, id_steio, id_anchors, out = get_model(ip_data,
-                                                   w_data,
-                                                   id_loss=True)
-    n_sess, n_stepio, n_anchors, out = get_model(ip_data,
-                                                 w_data,
-                                                 id_loss=False)
+    id_sess, id_steio, id_anchors, out = get_model(ip_data, w_data)
 
     for i in range(5):
         # Pytorch
@@ -616,17 +525,8 @@ def test_id_l1loss_train():
         optimizer.step()
         # Popart
         id_sess.run(id_steio)
-        n_sess.run(n_stepio)
         print(f"Step {i}")
         print("ID Loss:", id_anchors["loss"].mean())
-        print("Normal Loss:", n_anchors["loss"].mean())
         print("Pytorch Loss:", loss.item() / Batchsize)
         # Checks
-        assert (id_anchors["loss"].mean() - n_anchors["loss"].mean()) < 1e-4
         assert (id_anchors["loss"].mean() - (loss.item() / Batchsize)) < 1e-4
-
-        result = getTensorError(id_anchors["loss"], n_anchors["loss"])
-        result_w = getTensorError(id_anchors["weight"], n_anchors["weight"])
-
-        checkResult(result, 1e-8)
-        checkResult(result_w, 1e-8)

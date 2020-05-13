@@ -11,6 +11,7 @@
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/session.hpp>
@@ -64,7 +65,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add0) {
   auto inId       = builder->addInputTensor(inInfo);
   auto outShapeId = aiOnnx.add({shape0Id, shape1Id});
   auto outId      = aiOnnx.reshape({inId, outShapeId});
-  builder->addOutputTensor(outId);
+  auto l1         = builder->aiGraphcoreOpset1().l1loss({outId}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
@@ -74,7 +75,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add0) {
   auto dataFlow  = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
   std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(outId, "l1LossVal", 0.1, ReductionType::Sum)};
+      std::make_shared<IdentityLoss>(l1, "l1LossVal", ReductionType::Sum)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -151,7 +152,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add1) {
   auto a2      = aiOnnx.add({a0, a1}, "a2");
   auto inputId = builder->addInputTensor(inputInfo);
   auto outId   = aiOnnx.matmul({a2, inputId});
-  builder->addOutputTensor(outId);
+  auto l1      = builder->aiGraphcoreOpset1().l1loss({outId}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
@@ -161,7 +162,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add1) {
   auto dataFlow  = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
   std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(outId, "l1LossVal", 0.1, ReductionType::Sum)};
+      std::make_shared<IdentityLoss>(l1, "l1LossVal", ReductionType::Sum)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -372,7 +373,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Div0) {
   auto inId       = builder->addInputTensor(inInfo);
   auto outShapeId = aiOnnx.div({shape0Id, shape1Id});
   auto outId      = aiOnnx.reshape({inId, outShapeId});
-  builder->addOutputTensor(outId);
+  auto l1         = builder->aiGraphcoreOpset1().l1loss({outId}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
@@ -382,7 +383,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Div0) {
   auto dataFlow  = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
   std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(outId, "l1LossVal", 0.1, ReductionType::Sum)};
+      std::make_shared<IdentityLoss>(l1, "l1LossVal", ReductionType::Sum)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -463,7 +464,7 @@ void ConstExprTest_Elementwise_Test(
   auto outShapeId = elementWiseFn(builder, {in0Id, in1Id});
 
   auto outId = aiOnnx.add({dataId, outShapeId});
-  builder->addOutputTensor(outId);
+  auto l1    = builder->aiGraphcoreOpset1().l1loss({outId}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
@@ -473,7 +474,7 @@ void ConstExprTest_Elementwise_Test(
   auto dataFlow  = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
   std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(outId, "l1LossVal", 0.1, ReductionType::Sum)};
+      std::make_shared<IdentityLoss>(l1, "l1LossVal", ReductionType::Sum)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;

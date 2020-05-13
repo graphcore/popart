@@ -143,9 +143,10 @@ def op_tester(tmpdir):
             dataFlow = popart.DataFlow(1, anchors)
 
             if len(losses) == 0:
+                l1 = bld.aiGraphcore.l1loss([anchorIds[0]], 0.1)
                 losses = [
-                    popart.L1Loss(anchorIds[0], "l1LossVal", 0.1,
-                                  self.loss_reduction_type)
+                    popart.IdentityLoss(l1, "idLossVal",
+                                        self.loss_reduction_type)
                 ]
             proto = bld.getModelProto()
 

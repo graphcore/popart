@@ -46,12 +46,11 @@ def test_one_ipu():
     shape_l = [1]
     d0 = builder.addInputTensor(popart.TensorInfo("FLOAT", shape_d))
     d1 = builder.addInputTensor(popart.TensorInfo("FLOAT", shape_d))
-    l0 = builder.addInputTensor(popart.TensorInfo("INT32", shape_l))
     op0_out = builder.aiOnnx.sin([d0], "s0")
     op1_out = builder.aiOnnx.exp([d1], "r0")
     op2_out = builder.aiOnnx.mul([op0_out, op1_out], "m0")
     builder.addOutputTensor(op2_out)
-    loss = popart.NllLoss(op2_out, l0, "loss")
+    loss = popart.IdentityLoss(op2_out, "loss")
     opts = popart.SessionOptions()
     opts.enablePipelining = True
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual  # i.e. use 1 ipu
@@ -150,10 +149,10 @@ def test_sharding_multi_source():
     op0_out = builder.aiOnnx.sin([d0], "s0")
     op1_out = builder.aiOnnx.exp([d1], "r0")
     op2_out = builder.aiOnnx.mul([op0_out, op1_out], "m0")
-    builder.addOutputTensor(op2_out)
+    nll = builder.aiGraphcore.nllloss([op2_out, l0])
 
     art = popart.AnchorReturnType("All")
-    loss = popart.NllLoss(op2_out, l0, "loss")
+    loss = popart.IdentityLoss(nll, "loss")
     anchor_map = {op2_out: art, "loss": art}
 
     opts = popart.SessionOptions()
@@ -163,6 +162,7 @@ def test_sharding_multi_source():
     builder.virtualGraph(op0_out, 0)
     builder.virtualGraph(op1_out, 1)
     builder.virtualGraph(op2_out, 2)
+    builder.virtualGraph(nll, 2)
     loss.virtualGraph(2)
 
     session = popart.InferenceSession(fnModel=builder.getModelProto(),
@@ -399,7 +399,7 @@ def test_pipelined_dropout():
 
         dataFlow = popart.DataFlow(batches_per_step, dfAnchors)
 
-        loss = popart.L1Loss(out, "l1LossVal", 0.1)
+        loss = popart.IdentityLoss(out, "idLossVal")
         if do_sharding:
             loss.virtualGraph(layers - 1)
 
@@ -535,7 +535,7 @@ def test_pipelined_recomputed_dropout():
 
     dataFlow = popart.DataFlow(batches_per_step, dfAnchors)
 
-    loss = popart.L1Loss(out, "l1LossVal", 0.1)
+    loss = popart.IdentityLoss(out, "idLossVal")
     loss.virtualGraph(layers - 1)
 
     userOptions = popart.SessionOptions()
@@ -617,10 +617,10 @@ def get_model_anchors(doSharding,
                              debugPrefix="c0")
     r0 = builder.reshape_const(builder.aiOnnx, [c0], [batchSize, 32])
     out = builder.aiOnnx.softmax([r0], axis=1, debugPrefix="sfm")
-    builder.addOutputTensor(out)
+    nll = builder.aiGraphcore.nllloss([out, l0])
 
     art = popart.AnchorReturnType("All")
-    loss = popart.NllLoss(out, l0, "loss")
+    loss = popart.IdentityLoss(nll, "loss")
 
     anchor_map = {"loss": art, w0: art, e0: art}
     if doTraining is True:
@@ -644,6 +644,7 @@ def get_model_anchors(doSharding,
         builder.virtualGraph(c0, 1)
         builder.virtualGraph(r0, 2)
         builder.virtualGraph(out, 2)
+        builder.virtualGraph(nll, 2)
         loss.virtualGraph(2)
 
     if doTraining is True:
@@ -697,10 +698,8 @@ def get_model_anchors(doSharding,
 def get_simple_linear_model(streamInputToOp1AndOp2=False):
     builder = popart.Builder()
     shape_d = [10]
-    shape_l = [1]
     d0 = builder.addInputTensor(popart.TensorInfo("FLOAT", shape_d))
     d1 = builder.addInputTensor(popart.TensorInfo("FLOAT", shape_d))
-    l0 = builder.addInputTensor(popart.TensorInfo("INT32", shape_l))
 
     op0_out = builder.aiOnnx.sin([d0], "s0")
     if streamInputToOp1AndOp2 is True:
@@ -712,7 +711,7 @@ def get_simple_linear_model(streamInputToOp1AndOp2=False):
     builder.addOutputTensor(op3_out)
 
     art = popart.AnchorReturnType("All")
-    loss = popart.NllLoss(op3_out, l0, "loss")
+    loss = popart.IdentityLoss(op3_out, "loss")
     anchor_map = {op3_out: art, "loss": art}
 
     return builder, op0_out, op1_out, op2_out, op3_out, anchor_map, loss
@@ -747,8 +746,7 @@ def test_pipeline_stage_errors():
             if psid is not None:
                 builder.pipelineStage(tid, psid)
 
-        loss = builder.addL1Loss(e1, 'l1LossVal', 0.1,
-                                 popart.ReductionType.Sum)
+        loss = builder.addIdentityLoss(e1, 'idLossVal')
         loss.virtualGraph(1)
 
         return [e1]
@@ -811,8 +809,7 @@ def test_pipeline_stages_backwards_through_ipus():
             builder.virtualGraph(tid, stage1_vgraph)
             builder.pipelineStage(tid, 1)
 
-        loss = builder.addL1Loss(e1, 'l1LossVal', 0.1,
-                                 popart.ReductionType.Sum)
+        loss = builder.addIdentityLoss(e1, 'idLossVal')
         loss.virtualGraph(stage1_vgraph)
         loss.pipelineStage(1)
 
@@ -874,8 +871,7 @@ def test_multiple_stages_per_virtual_graph_inference():
         builder.virtualGraph(s0, 1)
         builder.virtualGraph(mm1, 0)
 
-        loss = builder.addL1Loss(mm1, 'l1LossVal', 0.1,
-                                 popart.ReductionType.Sum)
+        loss = builder.addIdentityLoss(mm1, 'idLossVal')
         loss.virtualGraph(0)
         loss.pipelineStage(2)
 
@@ -942,8 +938,7 @@ def test_multiple_stages_per_virtual_graph_training():
                 builder.virtualGraph(t1, 1)
                 builder.virtualGraph(t2, 0)
 
-            loss = builder.addL1Loss(t2, 'l1LossVal', 0.1,
-                                     popart.ReductionType.Sum)
+            loss = builder.addIdentityLoss(t2, 'idLossVal')
             if set_pipeline_stages:
                 loss.pipelineStage(2)
                 loss.virtualGraph(0)
@@ -1022,8 +1017,7 @@ def test_recomputation():
             for t in (t0, t1, t2):
                 builder.virtualGraph(t, 0)
 
-            loss = builder.addL1Loss(t2, 'l1LossVal', 0.159,
-                                     popart.ReductionType.Sum)
+            loss = builder.addIdentityLoss(t2, 'idLossVal')
             loss.virtualGraph(1)
 
             return [t2]
@@ -1086,8 +1080,7 @@ def test_bad_auto_staging():
         builder.virtualGraph(t1, 1)
         builder.virtualGraph(t2, 0)
 
-        loss = builder.addL1Loss(t2, 'l1LossVal', 0.1,
-                                 popart.ReductionType.Sum)
+        loss = builder.addIdentityLoss(t2, 'idLossVal')
         loss.virtualGraph(0)
 
         return [t2]

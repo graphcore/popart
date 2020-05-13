@@ -33,7 +33,7 @@ def test_basic_squeeze():
 
         builder.addOutputTensor(x)
 
-        loss = builder.addL1Loss(x, 'l1LossVal', 0.1, popart.ReductionType.Sum)
+        loss = builder.addIdentityLoss(x, 'idLossVal')
         return [x, squeeze_id]
 
     def ref():

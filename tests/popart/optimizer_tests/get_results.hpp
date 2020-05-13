@@ -17,6 +17,7 @@
 #include <popart/half.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/restore.hpp>
@@ -172,14 +173,13 @@ getResults(const popart::SGD &opt0, // initial Optimizer
 
   auto add0 = aiOnnx.add({w0Id, input0});
   auto add1 = aiOnnx.add({w1Id, add0});
-  builder->addOutputTensor(add1);
+  auto l1   = builder->aiGraphcoreOpset1().l1loss({add1}, 1.0);
 
   auto proto    = builder->getModelProto();
   auto dataFlow = DataFlow(batchesPerStep);
 
-  float lambda = 1.0;
-  auto loss    = std::unique_ptr<Loss>(
-      new L1Loss(add1, "l1LossVal", lambda, ReductionType::Sum));
+  auto loss = std::unique_ptr<Loss>(
+      new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
 
   SessionOptions userOptions;
   std::map<std::string, std::string> deviceOpts{{"numIPUs", "1"}};

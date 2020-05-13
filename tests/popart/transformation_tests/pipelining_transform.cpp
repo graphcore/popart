@@ -9,6 +9,7 @@
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/op/stash.hpp>
 #include <popart/optimizer.hpp>
@@ -28,8 +29,9 @@ using namespace popart;
 //                      w0 --|
 BOOST_AUTO_TEST_CASE(test) {
 
-  auto builder = Builder::create();
-  auto aiOnnx  = builder->aiOnnxOpset9();
+  auto builder     = Builder::create();
+  auto aiOnnx      = builder->aiOnnxOpset9();
+  auto aiGraphcore = builder->aiGraphcoreOpset1();
 
   // data
   TensorInfo info_d{"FLOAT", std::vector<int64_t>{1, 2, 4, 4}};
@@ -45,17 +47,18 @@ BOOST_AUTO_TEST_CASE(test) {
   ConstVoidData weight_data   = {vals_w, info_w};
   auto w0                     = builder->addInitializedInputTensor(weight_data);
 
-  auto s0  = aiOnnx.sin({d0}, "s0");
-  auto e0  = aiOnnx.exp({s0}, "e0");
-  auto c0  = aiOnnx.conv({e0, w0}, {1, 1}, 1, {}, {1, 1, 1, 1}, {1, 1}, "c0");
-  auto r0  = builder->reshape_const(aiOnnx, {c0}, {1, 32});
-  auto out = aiOnnx.softmax({r0}, 1, "sfm");
-  builder->addOutputTensor(out);
+  auto s0   = aiOnnx.sin({d0}, "s0");
+  auto e0   = aiOnnx.exp({s0}, "e0");
+  auto c0   = aiOnnx.conv({e0, w0}, {1, 1}, 1, {}, {1, 1, 1, 1}, {1, 1}, "c0");
+  auto r0   = builder->reshape_const(aiOnnx, {c0}, {1, 32});
+  auto out  = aiOnnx.softmax({r0}, 1, "sfm");
+  auto nlll = aiGraphcore.nllloss({out, l0});
 
   auto deviceInfo = createTestDevice(TEST_TARGET, 3, 20);
 
   auto optimizer = ConstSGD(0.01);
-  auto loss = std::make_shared<NllLoss>(out, l0, "loss", ReductionType::Mean);
+
+  auto loss = std::make_shared<IdentityLoss>(nlll, "loss", ReductionType::Mean);
 
   auto art                                       = AnchorReturnType("All");
   std::map<TensorId, AnchorReturnType> anchorMap = {
@@ -69,6 +72,7 @@ BOOST_AUTO_TEST_CASE(test) {
   builder->virtualGraph(c0, 1);
   builder->virtualGraph(r0, 2);
   builder->virtualGraph(out, 2);
+  builder->virtualGraph(nlll, 2);
   loss->virtualGraph(2);
 
   Ir ir;

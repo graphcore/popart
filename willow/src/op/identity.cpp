@@ -110,15 +110,6 @@ void IdentityLossGradOp::setup() {
 }
 
 void IdentityLossOp::setup() {
-  if (inInfo(getInIndex()).rank() != 1) {
-    throw error(
-        "The identity loss {} (shape {}) is expecting a tensor of losses, 1 "
-        "per sample of shape [batch_size]. Please check prior loss calculation "
-        "ops to see if you have calculated the loss per-sample correctly.",
-        debugName(),
-        inInfo(getInIndex()).shape());
-  }
-  // output is a vector of length=batchsize, of the same type as input
   TensorInfo info0 = inInfo(getInIndex());
   outInfo(getOutIndex()).set(info0.dataType(), info0.shape());
 }

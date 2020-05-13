@@ -134,12 +134,6 @@ def get_resnet18_proto(batch_size, training, norm_type):
                                    [batch_size, ds[0], ds[1], ds[2]])
     ip = b.addInputTensor(data_shape, "data")
 
-    if training:
-        labl_shape = popart.TensorInfo("INT32", [batch_size])
-        lb = b.addInputTensor(labl_shape, "labels")
-    else:
-        lb = None
-
     x = conv(b, ip, 7, 2, 64, "i64")
     x = b.aiOnnx.relu([x])
     x = maxpool(b, x, 3, 2, 'same')
@@ -147,10 +141,14 @@ def get_resnet18_proto(batch_size, training, norm_type):
     x = b.aiOnnx.globalaveragepool([x])
     x = fully_connected(b, x, 1000)
     x = b.aiOnnx.softmax([x])
+    if training:
+        labl_shape = popart.TensorInfo("INT32", [batch_size])
+        lb = b.addInputTensor(labl_shape, "labels")
+        x = b.aiGraphcore.nllloss([x, lb])
     b.addOutputTensor(x)
     proto = b.getModelProto()
 
-    return proto, ip, lb, x
+    return proto, ip, x
 
 
 @tu.requires_ipu_model
@@ -162,7 +160,7 @@ def test_mini_resnet_like():
     norm_type = 'BatchNorm'
 
     # Get model proto
-    proto, ip, lb, op = get_resnet18_proto(batch_size, training, norm_type)
+    proto, ip, op = get_resnet18_proto(batch_size, training, norm_type)
 
     # Create the onnx session
     opts = popart.SessionOptions()
@@ -171,7 +169,7 @@ def test_mini_resnet_like():
         fnModel=proto,
         dataFeed=popart.DataFlow(1, {"loss": popart.AnchorReturnType("All")}),
         optimizer=popart.ConstSGD(0.001),
-        losses=[popart.NllLoss(op, lb, "loss")],
+        losses=[popart.IdentityLoss(op, "loss")],
         deviceInfo=tu.create_test_device(),
         userOptions=opts)
 

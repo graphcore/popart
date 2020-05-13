@@ -10,6 +10,7 @@
 #include <popart/filereader.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/nll.hpp>
@@ -127,7 +128,7 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest2) {
     act = getPipe(act, 2);
     act = getPipe(act, 3);
 
-    builder->addOutputTensor(act);
+    auto l1 = builder->aiGraphcoreOpset1().l1loss({act}, 0.1);
 
     auto proto      = builder->getModelProto();
     auto modelProto = io::getModelFromString(proto);
@@ -150,7 +151,7 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest2) {
     auto optimizer = ConstSGD(0.01);
 
     auto loss1 =
-        std::make_shared<L1Loss>(act, "l1LossVal_1", 0.1, ReductionType::Mean);
+        std::make_shared<IdentityLoss>(l1, "l1LossVal_1", ReductionType::Mean);
 
     auto device = createTestDevice(TEST_TARGET, nIpus);
 

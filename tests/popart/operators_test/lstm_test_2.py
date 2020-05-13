@@ -348,7 +348,7 @@ def test_import_torch_lstm_train(tmpdir):
         ]
         dataFlow = popart.DataFlow(1, anchors)
         optimizer = popart.ConstSGD(0.1)
-        losses = [popart.L1Loss('out', "l1LossVal", 0.1)]
+        losses = [popart.IdentityLoss('out', "idLossVal")]
         device = tu.create_test_device(1, 1216, opts={"tilesPerIPU": 1216})
         print('Creating session')
         s = popart.TrainingSession(fnModel=onnx_file_name,

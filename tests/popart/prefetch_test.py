@@ -35,7 +35,7 @@ def get_model(batches_per_step, replication_factor, batch_size, channels,
         [micro_batch_size, channels * data_len * data_len])
     o = builder.aiOnnx.relu([o])
     o = builder.aiOnnx.softmax([o])
-    builder.addOutputTensor(o)
+    o = builder.aiGraphcore.nllloss([o, lb])
 
     art = popart.AnchorReturnType("All")
     data_flow = popart.DataFlow(batches_per_step, {ip: art, lb: art})
@@ -55,7 +55,7 @@ def get_model(batches_per_step, replication_factor, batch_size, channels,
 
     session = popart.TrainingSession(fnModel=builder.getModelProto(),
                                      dataFeed=data_flow,
-                                     losses=[popart.NllLoss(o, lb, "loss")],
+                                     losses=[popart.IdentityLoss(o, "loss")],
                                      optimizer=popart.ConstSGD(1.0),
                                      userOptions=opts,
                                      deviceInfo=device)

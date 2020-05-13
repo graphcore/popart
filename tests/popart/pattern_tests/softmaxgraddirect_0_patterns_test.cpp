@@ -11,6 +11,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/optimizer.hpp>
@@ -39,27 +40,27 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect0) {
 
   auto test = [](bool sameIPU, bool enableNlllWithSoftmaxGradDirect) {
     // Build an onnx model
-    auto builder = Builder::create();
-    auto aiOnnx  = builder->aiOnnxOpset9();
+    auto builder     = Builder::create();
+    auto aiOnnx      = builder->aiOnnxOpset9();
+    auto aiGraphcore = builder->aiGraphcoreOpset1();
 
     TensorInfo inInfo{"FLOAT", std::vector<int64_t>{2, 2}};
     TensorInfo labelInfo{"INT32", std::vector<int64_t>{2}};
 
     auto input1 = builder->addInputTensor(inInfo);
-
-    // This tensor is NOT part of the ONNX model, losses
-    // are kept separate. It's shape is provided with InputShapeInfo
-    TensorId input2 = "labelId";
+    auto input2 = builder->addInputTensor(labelInfo);
 
     auto identOut   = aiOnnx.identity({input1});
     auto softmaxOut = aiOnnx.softmax({identOut});
+    auto nlll = aiGraphcore.nllloss({softmaxOut, input2}, ReductionType::Sum);
 
     if (sameIPU == false) {
       builder->virtualGraph(identOut, 2);
       builder->virtualGraph(softmaxOut, 2);
+      builder->virtualGraph(nlll, 1);
     }
 
-    builder->addOutputTensor(softmaxOut);
+    builder->addOutputTensor(nlll);
 
     auto proto      = builder->getModelProto();
     auto modelProto = io::getModelFromString(proto);
@@ -68,10 +69,11 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect0) {
     // Add the last tensor, and the 3rd tensor as anchors
     auto art      = AnchorReturnType("All");
     auto dataFlow = DataFlow(
-        1, {{reservedGradientPrefix() + input1, art}, {"nllLossVal", art}});
+        1, {{reservedGradientPrefix() + input1, art}, {"lossVal", art}});
     auto optimizer = ConstSGD(0.01);
-    std::vector<std::shared_ptr<Loss>> losses{std::make_shared<NllLoss>(
-        softmaxOut, input2, "nllLossVal", ReductionType::Sum)};
+
+    std::vector<std::shared_ptr<Loss>> losses{
+        std::make_shared<IdentityLoss>(nlll, "lossVal", ReductionType::Sum)};
 
     if (sameIPU == false) {
       losses[0]->virtualGraph(1);
@@ -85,9 +87,6 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect0) {
     // No .dot files will be written
     opts.dotChecks = {};
 
-    InputShapeInfo inputInfo{};
-    inputInfo.add(input2, labelInfo);
-
     auto device = createTestDevice(TEST_TARGET);
 
     auto patterns = Patterns({PreAliasPatternType::PreUniRepl,
@@ -96,7 +95,7 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect0) {
 
     Ir ir;
     ir.prepare({modelProto,
-                inputInfo,
+                {},
                 dataFlow,
                 losses,
                 &optimizer,
@@ -130,7 +129,7 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect0) {
               .size() == 0);
     }
 
-    // NllLoss, NllGradOp and SoftmaxGradOp should have been replaced with
+    // NllOp, NllGradOp and SoftmaxGradOp should have been replaced with
     // NlllWithSoftmaxGradDirectOp, but ONLY if same IPUs
     if (sameIPU == true && enableNlllWithSoftmaxGradDirect == true) {
       BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::Nll).size() == 0);

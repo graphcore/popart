@@ -83,7 +83,7 @@ def test_anchor_output():
         [micro_batch_size, CHANNELS * DATA_LEN * DATA_LEN])
     o = builder.aiOnnx.relu([o])
     o = builder.aiOnnx.softmax([o])
-    builder.addOutputTensor(o)
+    nll = builder.aiGraphcore.nllloss([o, lb])
 
     GRAD = popart.reservedGradientPrefix() + w
     ACCL = popart.reservedAcclToAccumulatorPrefix(
@@ -105,7 +105,7 @@ def test_anchor_output():
 
     session = popart.TrainingSession(fnModel=builder.getModelProto(),
                                      dataFeed=data_flow,
-                                     losses=[popart.NllLoss(o, lb, "loss")],
+                                     losses=[popart.IdentityLoss(nll, "loss")],
                                      optimizer=popart.ConstSGD(LEARNING_RATE),
                                      userOptions=opts,
                                      deviceInfo=device)

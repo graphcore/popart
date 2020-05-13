@@ -11,6 +11,7 @@
 #include <popart/filereader.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/sessionoptions.hpp>
@@ -54,6 +55,7 @@ BOOST_AUTO_TEST_CASE(StandardRecomputeTest) {
       act = conv(builder.get(), act, weight_data);
       act = aiOnnx.relu({act});
     }
+    auto l1 = builder->aiGraphcoreOpset1().l1loss({act}, 0.1);
 
     auto proto      = builder->getModelProto();
     auto modelProto = io::getModelFromString(proto);
@@ -62,7 +64,7 @@ BOOST_AUTO_TEST_CASE(StandardRecomputeTest) {
     auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("All")}});
     auto optimizer = ConstSGD(0.01);
     std::vector<std::shared_ptr<Loss>> losses{
-        std::make_shared<L1Loss>(act, "l1LossVal", 0.1, ReductionType::Sum)};
+        std::make_shared<IdentityLoss>(l1, "l1LossVal", ReductionType::Sum)};
     auto device = createTestDevice(TEST_TARGET);
 
     SessionOptions opts;

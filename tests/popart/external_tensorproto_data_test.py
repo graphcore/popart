@@ -140,7 +140,7 @@ def test_save_back_externally_saved_tensors():
         dataFeed=popart.DataFlow(1, anchorsDef),
         deviceInfo=popart.DeviceManager().createCpuDevice(),
         optimizer=popart.ConstSGD(10),
-        losses=[popart.L1Loss(out, out + "/loss", 0.1)])
+        losses=[popart.IdentityLoss(out, out + "/loss")])
 
     anchors = session.initAnchorArrays()
     inputs = {in0: np.random.rand(*shape).astype('float32')}

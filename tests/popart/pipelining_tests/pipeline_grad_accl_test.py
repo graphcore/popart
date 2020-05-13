@@ -135,15 +135,15 @@ def get_model_anchors_model1(doSharding,
                 f"weight_2_{i}")
             if i == 1: w0 = w
             x = builder.aiOnnx.matmul([x, w])
+        label = builder.addInputTensor("INT32", [micro_batch_size])
+        x = builder.aiGraphcore.nllloss([x, label])
+
     output = x
 
     builder.addOutputTensor(output)
 
-    label_shape = [micro_batch_size]
-    label = builder.addInputTensor(popart.TensorInfo("INT32", label_shape))
-
     art = popart.AnchorReturnType("All")
-    losses = [popart.NllLoss(output, label, "NllLossVal")]
+    losses = [popart.IdentityLoss(output, "loss")]
 
     # Loss on the last IPU
     losses[0].virtualGraph(2 if doSharding else 0)
@@ -255,14 +255,14 @@ def get_model_anchors_model2(doSharding,
                              debugPrefix="c0")
     r0 = builder.reshape_const(builder.aiOnnx, [c0], [micro_batch_size, 32])
     out = builder.aiOnnx.softmax([r0], axis=1, debugPrefix="sfm")
-    builder.addOutputTensor(out)
 
     label_shape = [micro_batch_size]
     l0 = builder.addInputTensor(popart.TensorInfo("INT32", label_shape),
                                 "label")
+    nll = builder.aiGraphcore.nllloss([out, l0])
 
     art = popart.AnchorReturnType("All")
-    loss = popart.NllLoss(out, l0, "loss")
+    loss = popart.IdentityLoss(nll, "loss")
 
     anchor_map = {"loss": art, w0: art, e0: art, s0: art, c0: art}
     if doTraining is True:
@@ -291,6 +291,7 @@ def get_model_anchors_model2(doSharding,
         builder.virtualGraph(c0, 1)
         builder.virtualGraph(r0, 2)
         builder.virtualGraph(out, 2)
+        builder.virtualGraph(nll, 2)
         loss.virtualGraph(2)
 
     if doTraining is True:

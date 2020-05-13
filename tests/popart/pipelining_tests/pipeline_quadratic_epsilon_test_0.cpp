@@ -16,6 +16,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/restore.hpp>
@@ -194,16 +195,16 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
     // sum of the 2 branch outputs
     auto actFinal = aiOnnx.add({actFinal0, actFinal1}, "finalAct");
 
-    builder->addOutputTensor(actFinal);
+    float lambda  = 0.1;
+    auto l1       = builder->aiGraphcoreOpset1().l1loss({actFinal}, lambda);
     auto proto    = builder->getModelProto();
     auto dataFlow = DataFlow(batchesPerStep);
 
     float learnRate = 0.005;
     auto optimizer  = ConstSGD(learnRate);
 
-    float lambda = 0.1;
-    auto loss    = std::unique_ptr<Loss>(
-        new L1Loss(actFinal, "l1LossVal", lambda, ReductionType::Sum));
+    auto loss = std::unique_ptr<Loss>(
+        new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
 
     SessionOptions userOptions;
     unsigned numIpus = 1;
@@ -337,5 +338,5 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
     std::cout << "delta ends " << delta_ends << std::endl;
   }
 
-  BOOST_CHECK(delta_ends < 0.0003);
+  BOOST_CHECK(delta_ends < 0.0005);
 }

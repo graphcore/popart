@@ -11,6 +11,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/optimizer.hpp>
@@ -34,7 +35,7 @@ BOOST_AUTO_TEST_CASE(Inplace_concat1) {
   auto s1  = aiOnnx.relu({c0});
   auto out = aiOnnx.reducesum({s1});
 
-  builder->addOutputTensor(out);
+  out = builder->aiGraphcoreOpset1().l1loss({out}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
@@ -43,7 +44,7 @@ BOOST_AUTO_TEST_CASE(Inplace_concat1) {
   auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("All")}});
   auto optimizer = ConstSGD(0.01);
   std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(out, "l1LossVal", 0.1, ReductionType::Sum)};
+      std::make_shared<IdentityLoss>(out, "l1LossVal", ReductionType::Sum)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;

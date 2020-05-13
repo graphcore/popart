@@ -506,37 +506,6 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("Mean", ReductionType::Mean);
 
     {
-      py::class_<NllLoss> cls(m, "NllLoss", loss);
-      cls.def(py::init<TensorId, TensorId, TensorId, ReductionType>(),
-              py::arg("probabilities"),
-              py::arg("labels"),
-              py::arg("output"),
-              py::arg("reduction") = ReductionType::Sum);
-      cls.def(py::init<TensorId, TensorId, TensorId, int, ReductionType>(),
-              py::arg("probabilities"),
-              py::arg("labels"),
-              py::arg("output"),
-              py::arg("ignore_index"),
-              py::arg("reduction") = ReductionType::Sum);
-      cls.def("probsTensorId", &NllLoss::probsTensorId);
-      cls.def("labelTensorId", &NllLoss::labelTensorId);
-      cls.def("pipelineStage", &NllLoss::pipelineStage);
-      cls.def("virtualGraph", &NllLoss::virtualGraph);
-    }
-
-    {
-      py::class_<L1Loss> cls(m, "L1Loss", loss);
-      cls.def(py::init<TensorId, TensorId, float, ReductionType>(),
-              py::arg("input"),
-              py::arg("output"),
-              py::arg("lambda"),
-              py::arg("reduction") = ReductionType::Sum);
-      cls.def("getInputId", &L1Loss::getInputId);
-      cls.def("getLambda", &L1Loss::getLambda);
-      cls.def("pipelineStage", &L1Loss::pipelineStage);
-      cls.def("virtualGraph", &L1Loss::virtualGraph);
-    }
-    {
       py::class_<IdentityLoss> cls(m, "IdentityLoss", loss);
       cls.def(py::init<TensorId, TensorId, ReductionType>(),
               py::arg("input"),
@@ -1104,20 +1073,10 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("reduction")   = ReductionType::Sum,
             py::arg("debugPrefix") = std::string());
     cls.def("nllloss",
-            py::overload_cast<const std::vector<TensorId> &,
-                              const ReductionType,
-                              const std::string &>(&AiGraphcoreOpset1::nllloss),
+            &AiGraphcoreOpset1::nllloss,
             py::arg("args"),
             py::arg("reduction")   = ReductionType::Sum,
-            py::arg("debugPrefix") = std::string());
-    cls.def("nllloss",
-            py::overload_cast<const std::vector<TensorId> &,
-                              const ReductionType,
-                              const int,
-                              const std::string &>(&AiGraphcoreOpset1::nllloss),
-            py::arg("args"),
-            py::arg("ignoreIndex"),
-            py::arg("reduction")   = ReductionType::Sum,
+            py::arg("ignoreIndex") = pybind11::none(),
             py::arg("debugPrefix") = std::string());
   }
   {

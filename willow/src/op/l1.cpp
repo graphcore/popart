@@ -21,32 +21,6 @@ std::vector<std::unique_ptr<Op>> L1Op::getGradOps() {
   return upops;
 }
 
-std::unique_ptr<Op> L1Loss::getOp(const Op::Settings &settings_) const {
-  Op::Settings copiedSettings  = settings_;
-  copiedSettings.vgraphId      = vgraphId;
-  copiedSettings.pipelineStage = pipelineStage_;
-  return std::unique_ptr<Op>(new L1Op(op_type(), this, copiedSettings));
-}
-
-const OperatorIdentifier &L1Loss::op_type() const {
-  return Onnx::CustomOperators::L1;
-}
-
-std::vector<TensorId> L1Loss::getStreamTensorNames() const { return {}; }
-
-L1Loss::L1Loss(TensorId in_, TensorId out_, float lmb, ReductionType rt_)
-    : Loss({in_}, out_, rt_), lambda(lmb) {}
-
-TensorId L1Loss::getInputId() const { return input(0); }
-
-float L1Loss::getLambda() const { return lambda; }
-
-L1Op::L1Op(const OperatorIdentifier &_opid,
-           const L1Loss *n,
-           const Op::Settings &settings_)
-    : LossOp(_opid, settings_), lambda(n->getLambda()),
-      reduction(n->getReductionType()) {}
-
 L1Op::L1Op(const OperatorIdentifier &_opid,
            const float lambda_,
            const ReductionType reduction_,

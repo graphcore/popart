@@ -114,18 +114,12 @@ class InferenceSession(_InferenceSessionCore):
         self.inputNames.append(label)
         if label:
             self.anchor_returns[label] = popart.AnchorReturnType("All")
-        if isinstance(loss, torch.nn.NLLLoss):
-            return popart.NllLoss(output, label, name)
-        elif isinstance(loss, torch.nn.L1Loss):
-            return popart.L1Loss(output, name)
-        elif isinstance(loss, torch.nn.Identity):
-            return popart.IdentityLoss(output, name)
-        elif isinstance(loss, torch.Tensor):
+        if isinstance(loss, torch.Tensor):
             return popart.IdentityLoss(output, name)
         else:
             raise RuntimeError(
-                "Only NLLLoss, L1Loss or Identity loss with manual "
-                "loss construction are currently supported.")
+                "Only Identity loss with manual loss construction is currently supported."
+            )
 
     def createDataFeed(self):
         return popart.DataFlow(self.batches_per_step, self.anchor_returns)
@@ -258,18 +252,12 @@ class TrainingSession(_TrainingSessionCore):
         self.inputNames.append(label)
         if label:
             self.anchor_returns[label] = popart.AnchorReturnType("All")
-        if isinstance(loss, torch.nn.NLLLoss):
-            return popart.NllLoss(output, label, name)
-        elif isinstance(loss, torch.nn.L1Loss):
-            return popart.L1Loss(output, name)
-        elif isinstance(loss, torch.nn.Identity):
-            return popart.IdentityLoss(output, name)
-        elif isinstance(loss, torch.Tensor):
+        if isinstance(loss, torch.Tensor):
             return popart.IdentityLoss(output, name)
         else:
             raise RuntimeError(
-                "Only NLLLoss, L1Loss or Identity loss with manual "
-                "loss construction are currently supported.")
+                "Only Identity loss with manual loss construction is currently supported."
+            )
 
     def createDataFeed(self):
         return popart.DataFlow(self.batches_per_step, self.anchor_returns)

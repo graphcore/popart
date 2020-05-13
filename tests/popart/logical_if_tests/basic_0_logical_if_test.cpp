@@ -7,6 +7,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/op/add.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/if.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/tensorinfo.hpp>
@@ -296,8 +297,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train0) {
       return builder;
     }(builder);
 
-    out = aiOnnx.logical_if({in_condition}, 1, else_branch, then_branch)[0];
-    builder.addOutputTensor(out);
+    out     = aiOnnx.logical_if({in_condition}, 1, else_branch, then_branch)[0];
+    auto l1 = builder.aiGraphcoreOpset1().l1loss({out}, 0.1);
 
     runner.anchors.insert({getGradId(in0), AnchorReturnType("All")});
     runner.anchors.insert({getGradId(in1), AnchorReturnType("All")});
@@ -307,8 +308,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train0) {
     outputs.push_back(TestTensor::create<float>(getGradId(in0), info.shape()));
     outputs.push_back(TestTensor::create<float>(getGradId(in1), info.shape()));
 
-    runner.losses.push_back(
-        new L1Loss(out, "l1LossVal", 0.1, ReductionType::Sum));
+    runner.losses.push_back(new IdentityLoss(l1, "loss", ReductionType::Sum));
 
     return out;
   });
@@ -411,8 +411,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train1) {
       return builder;
     }(builder);
 
-    out = aiOnnx.logical_if({in_condition}, 1, else_branch, then_branch)[0];
-    builder.addOutputTensor(out);
+    out     = aiOnnx.logical_if({in_condition}, 1, else_branch, then_branch)[0];
+    auto l1 = builder.aiGraphcoreOpset1().l1loss({out}, 0.1);
 
     runner.anchors.insert({getGradId(in0), AnchorReturnType("All")});
     runner.anchors.insert({getGradId(in1), AnchorReturnType("All")});
@@ -422,8 +422,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train1) {
     outputs.push_back(TestTensor::create<float>(getGradId(in0), info.shape()));
     outputs.push_back(TestTensor::create<float>(getGradId(in1), info.shape()));
 
-    runner.losses.push_back(
-        new L1Loss(out, "l1LossVal", 0.1, ReductionType::Sum));
+    runner.losses.push_back(new IdentityLoss(l1, "loss", ReductionType::Sum));
 
     return out;
   });
@@ -560,8 +559,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train2) {
       return builder;
     }(builder);
 
-    out = aiOnnx.logical_if({in_condition}, 1, else_branch, then_branch)[0];
-    builder.addOutputTensor(out);
+    out     = aiOnnx.logical_if({in_condition}, 1, else_branch, then_branch)[0];
+    auto l1 = builder.aiGraphcoreOpset1().l1loss({out}, 0.1);
 
     runner.anchors.insert({getGradId(in0), AnchorReturnType("All")});
     runner.anchors.insert({getGradId(in1), AnchorReturnType("All")});
@@ -571,8 +570,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train2) {
     outputs.push_back(TestTensor::create<float>(getGradId(in0), info.shape()));
     outputs.push_back(TestTensor::create<float>(getGradId(in1), info.shape()));
 
-    runner.losses.push_back(
-        new L1Loss(out, "l1LossVal", 0.1, ReductionType::Sum));
+    runner.losses.push_back(new IdentityLoss(l1, "loss", ReductionType::Sum));
 
     return out;
   });
@@ -706,8 +704,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train3) {
       return builder;
     }(builder);
 
-    out = aiOnnx.logical_if({in_condition}, 1, else_branch, then_branch)[0];
-    builder.addOutputTensor(out);
+    out     = aiOnnx.logical_if({in_condition}, 1, else_branch, then_branch)[0];
+    auto l1 = builder.aiGraphcoreOpset1().l1loss({out}, 0.1);
 
     runner.anchors.insert({getGradId(in0), AnchorReturnType("All")});
     runner.anchors.insert({getGradId(in1), AnchorReturnType("All")});
@@ -717,8 +715,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train3) {
     outputs.push_back(TestTensor::create<float>(getGradId(in0), info.shape()));
     outputs.push_back(TestTensor::create<float>(getGradId(in1), info.shape()));
 
-    runner.losses.push_back(
-        new L1Loss(out, "l1LossVal", 0.1, ReductionType::Sum));
+    runner.losses.push_back(new IdentityLoss(l1, "loss", ReductionType::Sum));
 
     return out;
   });
@@ -889,14 +886,14 @@ BOOST_AUTO_TEST_CASE(LogicalIf_inputs_differ_train0) {
 
         auto out =
             aiOnnx.logical_if({in_condition}, 1, else_branch, then_branch)[0];
-        builder.addOutputTensor(out);
+        auto l1 = builder.aiGraphcoreOpset1().l1loss({out}, 0.1);
 
         inputs.push_back(
             TestTensor::create<bool>(in_condition, infoBool.shape()));
         outputs.push_back(TestTensor::create<float>(out, info.shape()));
 
         runner.losses.push_back(
-            new L1Loss(out, "l1LossVal", 0.1, ReductionType::Sum));
+            new IdentityLoss(l1, "loss", ReductionType::Sum));
 
         return out;
       });

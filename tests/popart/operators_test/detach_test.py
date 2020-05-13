@@ -166,8 +166,7 @@ def test_detach_grad_branches(detach_branch_popart, detach_branch_pytorch):
 
     add = builder.aiOnnx.sum([r1, r2])
     o = builder.aiOnnx.softmax([add], axis=np.size(lb_data.shape))
-
-    builder.addOutputTensor(o)
+    loss = builder.aiGraphcore.nllloss([o, lb])
 
     dataFlow = popart.DataFlow(1, [
         o, "loss",
@@ -179,7 +178,7 @@ def test_detach_grad_branches(detach_branch_popart, detach_branch_pytorch):
     session = popart.TrainingSession(
         fnModel=builder.getModelProto(),
         dataFeed=dataFlow,
-        losses=[popart.NllLoss(o, lb, "loss")],
+        losses=[popart.IdentityLoss(loss, "loss")],
         optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
         userOptions=opts,
         deviceInfo=popart.DeviceManager().createIpuModelDevice({}))
@@ -309,7 +308,7 @@ def test_detach_error():
 
     o = builder.aiOnnx.softmax([o], axis=np.size(lshape))
 
-    builder.addOutputTensor(o)
+    loss = builder.aiGraphcore.nllloss([o, lb])
 
     dataFlow = popart.DataFlow(
         1, [o, "loss", popart.reservedGradientPrefix() + input_])
@@ -318,7 +317,7 @@ def test_detach_error():
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),
             dataFeed=dataFlow,
-            losses=[popart.NllLoss(o, lb, "loss")],
+            losses=[popart.IdentityLoss(loss, "loss")],
             optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
             userOptions=opts,
             deviceInfo=popart.DeviceManager().createIpuModelDevice({}))

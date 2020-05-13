@@ -132,8 +132,8 @@ NlllWithSoftmaxGradDirectOpx::NlllWithSoftmaxGradDirectOpx(Op *op,
 
 void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   SoftmaxGradDirectOp &sfmgd  = getOp<SoftmaxGradDirectOp>();
-  const poplar::Tensor &probs = getInTensor(NllLoss::getProbsInIndex());
-  const poplar::Tensor &label = getInTensor(NllLoss::getLabelInIndex());
+  const poplar::Tensor &probs = getInTensor(NllOp::getProbsInIndex());
+  const poplar::Tensor &label = getInTensor(NllOp::getLabelInIndex());
 
   // As for NllOpx, flatten outer dimensions if rank(probs) > 2
   auto probs2D = probs.flatten(0, probs.rank() - 1);
@@ -236,15 +236,15 @@ void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
 
 void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   NlllWithSoftmaxGradDirectOp &nllsfmgd = getOp<NlllWithSoftmaxGradDirectOp>();
-  const poplar::Tensor &probs = getInTensor(NllLoss::getProbsInIndex());
-  const poplar::Tensor &label = getInTensor(NllLoss::getLabelInIndex());
+  const poplar::Tensor &probs           = getInTensor(NllOp::getProbsInIndex());
+  const poplar::Tensor &label           = getInTensor(NllOp::getLabelInIndex());
 
   // As for NllOpx, flatten outer dimensions if rank(probs) > 2
   auto probs2D = probs.flatten(0, probs.rank() - 1);
   auto label1D = label.flatten();
 
   // 1 at position "label", 0 elsewhere.
-  // This tensor will be used for both NllLoss and SoftmaxDirectGrad
+  // This tensor will be used for both NllOp and SoftmaxDirectGrad
   auto oneHot =
       graph().clone(probs2D.elementType(), probs2D, debugPrefix("oneHot"));
   popops::encodeOneHot(graph(), label1D, oneHot, prog, debugPrefix("sfmGrad"));
@@ -310,7 +310,7 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
 
   setOutTensor(nllsfmgd.getGradOutIndex(), oneHot);
 
-  // Now compute the rest of the NllLoss from the same one-hot encoded tensor:
+  // Now compute the rest of the nll loss from the same one-hot encoded tensor:
 
   // sum rows, so that just the p corresponding to the label remains
   poplar::Tensor reduction = popops::reduce(graph(),

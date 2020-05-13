@@ -9,6 +9,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/session.hpp>
@@ -103,7 +104,9 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
       nInChans      = nOutChans;
     }
 
-    auto reduced      = aiOnnx.reducesum({actIds[nConv]}, {1, 2, 3});
+    auto reduced     = aiOnnx.reducesum({actIds[nConv]}, {1, 2, 3});
+    float lossLambda = 0.26;
+    auto l1 = builder->aiGraphcoreOpset1().l1loss({reduced}, lossLambda);
     std::string proto = builder->getModelProto();
     auto modelProto   = io::getModelFromString(proto);
 
@@ -129,11 +132,10 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
                                           : 24; // 24 bytes = 7 floats
     opts.looseThresholdAtPeak = 10000;
 
-    float lossLambda   = 0.26;
     float learningRate = 0.1;
     auto optimizer     = SGD({{"defaultLearningRate", {learningRate, false}}});
-    std::vector<std::shared_ptr<Loss>> losses{std::make_shared<L1Loss>(
-        reduced, "l1LossVal", lossLambda, ReductionType::Sum)};
+    std::vector<std::shared_ptr<Loss>> losses{
+        std::make_shared<IdentityLoss>(l1, "l1LossVal", ReductionType::Sum)};
 
     Ir ir;
     ir.prepare({modelProto,

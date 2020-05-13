@@ -15,6 +15,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/restore.hpp>
@@ -106,14 +107,14 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTest0) {
     auto add0 = aiOnnx.add({w0Id, input0});
     auto add1 = aiOnnx.add({w1Id, add0});
     auto add2 = aiOnnx.add({w2Id, add1});
+    auto l1   = builder->aiGraphcoreOpset1().l1loss({add2}, 1.0);
 
     builder->addOutputTensor(add2);
     auto proto    = builder->getModelProto();
     auto dataFlow = DataFlow(stepSize);
 
-    float lambda = 1.0;
-    auto loss    = std::unique_ptr<Loss>(
-        new L1Loss(add2, "l1LossVal", lambda, ReductionType::Sum));
+    auto loss = std::unique_ptr<Loss>(
+        new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
 
     SessionOptions userOptions;
 

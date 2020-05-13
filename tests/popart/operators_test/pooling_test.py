@@ -121,7 +121,7 @@ def test_average_pool_with_count_include_pad(op_tester):
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
     optimizer = popart.ConstSGD(0.01)
-    losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
+    losses = [popart.IdentityLoss(o, "idLossVal")]
     proto = builder.getModelProto()
 
     opts = popart.SessionOptions()

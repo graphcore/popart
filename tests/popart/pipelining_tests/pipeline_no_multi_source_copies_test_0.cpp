@@ -8,6 +8,7 @@
 #include <popart/dataflow.hpp>
 #include <popart/filereader.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/nll.hpp>
@@ -93,6 +94,8 @@ BOOST_AUTO_TEST_CASE(PipelineNoMultiSourceTest0) {
     builder->virtualGraph(act, 5);
     act = aiOnnx.relu({act}, "relu-final");
     builder->virtualGraph(act, 5);
+    act = builder->aiGraphcoreOpset1().l1loss({act}, 0.1);
+    builder->virtualGraph(act, 5);
 
     // in1, w1 in2,w2  in3, w3  in4, w4   in5, w5
     // |       |       |        |         |
@@ -125,8 +128,6 @@ BOOST_AUTO_TEST_CASE(PipelineNoMultiSourceTest0) {
     //                        |
     //
 
-    builder->addOutputTensor(act);
-
     auto proto      = builder->getModelProto();
     auto modelProto = io::getModelFromString(proto);
     auto dataFlow   = DataFlow(20, {{act1, AnchorReturnType("All")}});
@@ -139,7 +140,7 @@ BOOST_AUTO_TEST_CASE(PipelineNoMultiSourceTest0) {
     auto optimizer = ConstSGD(0.01);
 
     auto loss1 =
-        std::make_shared<L1Loss>(act, "l1LossVal_1", 0.1, ReductionType::Mean);
+        std::make_shared<IdentityLoss>(act, "l1LossVal_1", ReductionType::Mean);
     loss1->virtualGraph(nIpus - 1);
 
     auto device = createTestDevice(TEST_TARGET, nIpus);

@@ -7,12 +7,8 @@ These typically take named input tensors and name their outputs, and specify the
 Losses
 ~~~~~~
 
-.. doxygenclass:: popart::L1Loss
+.. doxygenclass:: popart::IdentityLoss
   :members:
-
-.. doxygenclass:: popart::NllLoss
-  :members:
-
 
 Optimisers
 ~~~~~~~~~~

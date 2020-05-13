@@ -22,7 +22,7 @@ def test_set_random_seed_error():
     s = popart.TrainingSession(fnModel=proto,
                                dataFeed=dataFlow,
                                optimizer=popart.ConstSGD(0.1),
-                               losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
+                               losses=[popart.IdentityLoss(o, "idLossVal")],
                                userOptions=popart.SessionOptions(),
                                deviceInfo=tu.create_test_device(numIpus=2))
 
@@ -65,7 +65,7 @@ def test_stochastic_rounding():
     sess = popart.TrainingSession(
         fnModel=proto,
         optimizer=popart.ConstSGD(0.1),
-        losses=[popart.L1Loss(o_y, "l1LossVal", 0.1)],
+        losses=[popart.IdentityLoss(o_y, "idLossVal")],
         dataFeed=dataFlow,
         deviceInfo=device,
         userOptions=options)

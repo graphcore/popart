@@ -14,6 +14,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/optimizer.hpp>
@@ -42,7 +43,7 @@ BOOST_AUTO_TEST_CASE(SyntheticData_False) {
     auto x = aiOnnx.identity({tensorIds[tensorIds.size() - 1]});
     tensorIds.push_back(x);
   }
-  builder->addOutputTensor(tensorIds.back());
+  auto l1 = builder->aiGraphcoreOpset1().l1loss({tensorIds.back()}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
@@ -53,7 +54,7 @@ BOOST_AUTO_TEST_CASE(SyntheticData_False) {
   auto dataFlow  = DataFlow(1, {{tensorIds.back(), art}, {tensorIds[2], art}});
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{
-      new L1Loss(tensorIds.back(), "l1LossVal", 0.1, ReductionType::Sum)};
+      new IdentityLoss(l1, "l1LossVal", ReductionType::Sum)};
 
   auto device = popart::createTestDevice(TEST_TARGET);
 
@@ -94,7 +95,7 @@ BOOST_AUTO_TEST_CASE(SyntheticData_True) {
     auto x = aiOnnx.identity({tensorIds[tensorIds.size() - 1]});
     tensorIds.push_back(x);
   }
-  builder->addOutputTensor(tensorIds.back());
+  auto l1 = builder->aiGraphcoreOpset1().l1loss({tensorIds.back()}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
@@ -105,7 +106,7 @@ BOOST_AUTO_TEST_CASE(SyntheticData_True) {
   auto dataFlow  = DataFlow(1, {{tensorIds.back(), art}, {tensorIds[2], art}});
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{
-      new L1Loss(tensorIds.back(), "l1LossVal", 0.1, ReductionType::Sum)};
+      new IdentityLoss(l1, "l1LossVal", ReductionType::Sum)};
 
   SessionOptions options;
   options.syntheticDataMode = SyntheticDataMode::Zeros;

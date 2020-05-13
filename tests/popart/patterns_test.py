@@ -106,7 +106,7 @@ def test_loss_inputs_untouched():
         x = builder.aiOnnx.matmul([i0, w0])
 
         builder.addOutputTensor(x)
-        builder.addL1Loss(x, 'l1LossVal', 0.1)
+        builder.addIdentityLoss(x, 'idLossVal')
 
         return []
 

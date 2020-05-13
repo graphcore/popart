@@ -7,7 +7,7 @@
 namespace popart {
 
 // consider,
-// (label), (probs) -> [NllLoss]
+// (label), (probs) -> [NllOp]
 // [NllGrad] -> (loss)
 // (label), (probs) -> [SoftmaxGradDirect] -> (d_acts).
 // This pattern replaces this with,

@@ -69,11 +69,7 @@ public:
   // where this is created by a merger between the Op
   // and an NllGradOp
   SoftmaxGradDirectOp(const TensorId lossId,
-                      const ReductionType reduction,
-                      const Op::Settings &settings);
-
-  SoftmaxGradDirectOp(const TensorId lossId,
-                      const int ignoreIndex,
+                      const boost::optional<int> ignoreIndex,
                       const ReductionType reduction,
                       const Op::Settings &settings);
   std::unique_ptr<Op> clone() const final;
@@ -87,15 +83,15 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
   ReductionType getReductionType() const { return reduction_; }
-  bool hasIgnoreIndex() const { return hasIgnoreIndex_; }
-  int getIgnoreIndex() const { return ignoreIndex_; }
+  bool hasIgnoreIndex() const { return ignoreIndex_ != boost::none; }
+  boost::optional<int> getOptionalIgnoreIndex() const { return ignoreIndex_; }
+  int getIgnoreIndex() const { return ignoreIndex_.get(); }
   virtual void appendOutlineAttributes(OpSerialiserBase &) const final;
 
 private:
   TensorId lossId_;
   ReductionType reduction_;
-  int ignoreIndex_;
-  bool hasIgnoreIndex_ = false;
+  boost::optional<int> ignoreIndex_;
 };
 
 class NlllWithSoftmaxGradDirectOp : public Op {
@@ -103,12 +99,10 @@ public:
   // where Op in this constructor must be a SoftmaxOp
   // where this is created by a merger between the Op
   // and an NllGradOp
-  NlllWithSoftmaxGradDirectOp(const int ignoreIndex,
+  NlllWithSoftmaxGradDirectOp(const boost::optional<int> ignoreIndex,
                               const ReductionType reduction,
                               const Op::Settings &settings);
 
-  NlllWithSoftmaxGradDirectOp(const ReductionType reduction,
-                              const Op::Settings &settings);
   std::unique_ptr<Op> clone() const final;
   void setup() final;
   Op *nlllFwdOp() const;
@@ -122,14 +116,13 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
   ReductionType getReductionType() const { return reduction_; }
-  bool hasIgnoreIndex() const { return hasIgnoreIndex_; }
-  int getIgnoreIndex() const { return ignoreIndex_; }
+  bool hasIgnoreIndex() const { return ignoreIndex_ != boost::none; }
+  int getIgnoreIndex() const { return ignoreIndex_.get(); }
   virtual void appendOutlineAttributes(OpSerialiserBase &) const final;
 
 private:
   ReductionType reduction_;
-  int ignoreIndex_;
-  bool hasIgnoreIndex_ = false;
+  boost::optional<int> ignoreIndex_;
 };
 
 } // namespace popart

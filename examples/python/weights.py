@@ -23,7 +23,7 @@ b = builder.addInitializedInputTensor(np.ones([2], np.float16))
 o = builder.aiOnnx.gemm([ip, w, b], 1., 1., False, False)
 o = builder.aiOnnx.relu([o])
 o = builder.aiOnnx.softmax([o])
-builder.addOutputTensor(o)
+o = builder.aiGraphcore.nllloss([o, lb])
 
 dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
@@ -52,7 +52,7 @@ trainingOptions = popart.SessionOptions()
 trainingSession = popart.TrainingSession(
     fnModel=builder.getModelProto(),
     dataFeed=dataFlow,
-    losses=[popart.NllLoss(o, lb, "loss")],
+    losses=[popart.IdentityLoss(o, "loss")],
     optimizer=popart.ConstSGD(0.001),
     userOptions=trainingOptions,
     deviceInfo=popart.DeviceManager().createIpuModelDevice({}))

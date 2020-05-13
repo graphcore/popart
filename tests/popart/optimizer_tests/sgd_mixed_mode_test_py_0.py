@@ -45,7 +45,7 @@ def test_sgd_mixed_mode(tmpdir):
         add1 = builder.aiOnnx.add([w1Id, add0])
         add2 = builder.aiOnnx.add([w2Id, add1])
 
-        builder.addOutputTensor(add2)
+        l1 = builder.aiGraphcore.l1loss([add2], 1.0)
 
         proto = builder.getModelProto()
 
@@ -61,7 +61,7 @@ def test_sgd_mixed_mode(tmpdir):
             fnModel=proto,
             dataFeed=dataFlow,\
             userOptions=opts,
-            losses=[popart.L1Loss(add2, "l1LossVal", 1.0)],
+            losses=[popart.IdentityLoss(l1, "idLossVal")],
             optimizer=opt0,
             patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))

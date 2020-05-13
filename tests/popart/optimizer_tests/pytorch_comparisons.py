@@ -128,8 +128,8 @@ def test_against_pytorch():
 
     mm0 = builder.aiOnnx.mul([input0, w0])
     mm1 = builder.aiOnnx.add([mm0, w1])
-    builder.addOutputTensor(mm1)
-    loss1 = popart.L1Loss(mm1, "l1LossVal1", lambda1)
+    l1 = builder.aiGraphcore.l1loss([mm1], lambda1)
+    loss1 = popart.IdentityLoss(l1, "l1LossVal1")
     dataFlow = popart.DataFlow(batchesPerStep, {})
     device = tu.create_test_device(numIpus=nIPUs, tilesPerIpu=1216)
     userOptions = popart.SessionOptions()

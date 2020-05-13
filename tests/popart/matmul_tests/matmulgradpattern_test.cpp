@@ -10,6 +10,7 @@
 #include <popart/graph.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/op/reshape.hpp>
@@ -90,6 +91,7 @@ BOOST_AUTO_TEST_CASE(MatMulGradPatternScheduleTest_0) {
   TensorId E_id = bder->customOp(
       Onnx::AiOnnx::OpSet11::MatMul, 11, {D_id, C_id}, 1, {}, "MatMul")[0];
 
+  auto l1            = bder->aiGraphcoreOpset1().l1loss({E_id}, 0.1);
   auto proto         = bder->getModelProto();
   auto modelProto    = io::getModelFromString(proto);
   auto art           = AnchorReturnType("All");
@@ -99,9 +101,9 @@ BOOST_AUTO_TEST_CASE(MatMulGradPatternScheduleTest_0) {
   std::map<popart::TensorId, popart::IArray &> inputs  = {};
   std::map<popart::TensorId, popart::IArray &> anchors = {};
 
-  std::unique_ptr<popart::L1Loss> l1Loss(
-      new popart::L1Loss(E_id, "l1LossVal", 0.1f, popart::ReductionType::Mean));
-  std::vector<popart::Loss *> losses{l1Loss.get()};
+  std::unique_ptr<popart::IdentityLoss> idLoss(
+      new popart::IdentityLoss(E_id, "l1LossVal", popart::ReductionType::Mean));
+  std::vector<popart::Loss *> losses{idLoss.get()};
 
   auto optimizer = popart::ConstSGD(0.01f);
 

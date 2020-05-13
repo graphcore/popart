@@ -102,7 +102,7 @@ def ipu_op_tester(tmpdir):
             else:
                 optimizer = None
 
-            losses = [popart.L1Loss(anchorIds[0], "l1LossVal", 0.1)]
+            losses = [popart.IdentityLoss(anchorIds[0], "idLossVal")]
             proto = bld.getModelProto()
 
             opts = popart.SessionOptions()

@@ -24,18 +24,11 @@ OpId SoftmaxGradDirect::moveMergedIntoIr(Op *opRoot) const {
   Graph &graph       = opRoot->getGraph();
   NllGradOp *nllgrad = dynamic_cast<NllGradOp *>(opRoot);
 
-  if (nllgrad->hasIgnoreIndex()) {
-    return graph.moveIntoGraph(
-        std::unique_ptr<Op>(new SoftmaxGradDirectOp(nllgrad->getLossTensorId(),
-                                                    nllgrad->getIgnoreIndex(),
-                                                    nllgrad->getReductionType(),
-                                                    nllgrad->getSettings())));
-  } else {
-    return graph.moveIntoGraph(
-        std::unique_ptr<Op>(new SoftmaxGradDirectOp(nllgrad->getLossTensorId(),
-                                                    nllgrad->getReductionType(),
-                                                    nllgrad->getSettings())));
-  }
+  return graph.moveIntoGraph(std::unique_ptr<Op>(
+      new SoftmaxGradDirectOp(nllgrad->getLossTensorId(),
+                              nllgrad->getOptionalIgnoreIndex(),
+                              nllgrad->getReductionType(),
+                              nllgrad->getSettings())));
 }
 
 namespace {

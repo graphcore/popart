@@ -23,7 +23,7 @@ def test_train_then_infer_via_file():
                               strides=[1, 1])
     o = builder.aiOnnx.relu([act])
 
-    builder.addOutputTensor(o)
+    l1 = builder.aiGraphcore.l1loss([o], 0.1)
 
     anchor_names = [
         o,
@@ -72,7 +72,7 @@ def test_train_then_infer_via_file():
     training_session = popart.TrainingSession(
         fnModel=builder.getModelProto(),
         dataFeed=training_dataFlow,
-        losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
+        losses=[popart.IdentityLoss(l1, "l1LossVal")],
         optimizer=popart.ConstSGD(0.01),
         userOptions=opts,
         deviceInfo=device)
@@ -184,6 +184,7 @@ def test_modelToHost_calls_resetHostWeights():
                               pads=[1, 1, 1, 1],
                               strides=[1, 1])
     o = builder.aiOnnx.relu([act])
+    l1 = builder.aiGraphcore.l1loss([o], 0.1)
 
     builder.addOutputTensor(o)
 
@@ -203,7 +204,7 @@ def test_modelToHost_calls_resetHostWeights():
     session = popart.TrainingSession(
         fnModel=builder.getModelProto(),
         dataFeed=data_flow,
-        losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
+        losses=[popart.IdentityLoss(l1, "l1LossVal")],
         optimizer=popart.ConstSGD(0.1),
         userOptions=opts,
         deviceInfo=device)

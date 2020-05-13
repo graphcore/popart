@@ -789,7 +789,7 @@ def test_set_weights_from_host():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     optimizer = popart.ConstSGD(0.01)
-    losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
+    losses = [popart.IdentityLoss(o, "idLossVal")]
 
     session = popart.TrainingSession(fnModel=proto,
                                      dataFeed=dataFlow,
@@ -1262,7 +1262,7 @@ def test_load_onnx_model_from_file(tmpdir):
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
     optimizer = popart.ConstSGD(0.01)
-    losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
+    losses = [popart.IdentityLoss(o, "idLossVal")]
 
     proto = builder2.getModelProto()
 

@@ -111,8 +111,9 @@ def test_full_recompute_pipelining(tmpdir):
             o = builder.aiOnnx.matmul([o, qkv_3])
             o = attention_onnx(builder, o, mask, batch_size, sequence_length,
                                hidden_size, attention_heads, qkv_length)
+            l1 = builder.aiGraphcore.l1loss([o], 0.1)
 
-        loss = popart.L1Loss(o, "l1LossVal", 0.1)
+        loss = popart.IdentityLoss(l1, "l1LossVal")
         loss.virtualGraph(2)
         loss.pipelineStage(2)
 

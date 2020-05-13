@@ -49,7 +49,7 @@ def _get_ir(pingpong_enabled, virtualgraph_enabled, pipeline_enabled):
 
     proto = builder.getModelProto()
 
-    loss = popart.L1Loss(out, 'l1LossVal', 0.1)
+    loss = popart.IdentityLoss(out, 'idLossVal')
     if virtualgraph_enabled:
         loss.virtualGraph(3)
 

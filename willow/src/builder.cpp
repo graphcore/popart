@@ -560,7 +560,6 @@ TensorId AiGraphcoreOpset1::l1loss(const std::vector<TensorId> &args,
                                    const float lambda,
                                    const ReductionType reduction,
                                    const std::string &name) {
-  logging::info("DEBUG :: 0");
   std::string reductionString = LossOp::reductionTypeToString(reduction);
   return impl
       ->op(Onnx::AiGraphcore::OpSet1::L1,
@@ -573,27 +572,21 @@ TensorId AiGraphcoreOpset1::l1loss(const std::vector<TensorId> &args,
 
 TensorId AiGraphcoreOpset1::nllloss(const std::vector<TensorId> &args,
                                     const ReductionType reduction,
+                                    const boost::optional<int> ignoreIndex,
                                     const std::string &name) {
   std::string reductionString = LossOp::reductionTypeToString(reduction);
-  return impl
-      ->op(Onnx::AiGraphcore::OpSet1::Nll,
-           getOpsetVersion(),
-           args,
-           {{"reduction", reductionString}},
-           name)
-      .at(0);
-}
 
-TensorId AiGraphcoreOpset1::nllloss(const std::vector<TensorId> &args,
-                                    const ReductionType reduction,
-                                    const int ignoreIndex,
-                                    const std::string &name) {
-  std::string reductionString = LossOp::reductionTypeToString(reduction);
+  std::map<std::string, boost::any> attributes = {
+      {"reduction", reductionString}};
+  if (ignoreIndex) {
+    attributes.emplace("ignoreIndex", ignoreIndex.get());
+  }
+
   return impl
       ->op(Onnx::AiGraphcore::OpSet1::Nll,
            getOpsetVersion(),
            args,
-           {{"ignoreIndex", ignoreIndex}, {"reduction", reductionString}},
+           attributes,
            name)
       .at(0);
 }

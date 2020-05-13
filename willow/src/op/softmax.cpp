@@ -110,18 +110,11 @@ void SoftmaxGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 }
 
 SoftmaxGradDirectOp::SoftmaxGradDirectOp(const TensorId lossId,
-                                         const int ignoreIndex,
+                                         const boost::optional<int> ignoreIndex,
                                          const ReductionType reduction,
                                          const Op::Settings &settings)
     : Op(Onnx::CustomGradOperators::SoftmaxGradDirect, settings),
-      lossId_(lossId), reduction_(reduction), ignoreIndex_(ignoreIndex),
-      hasIgnoreIndex_(true) {}
-
-SoftmaxGradDirectOp::SoftmaxGradDirectOp(const TensorId lossId,
-                                         const ReductionType reduction,
-                                         const Op::Settings &settings)
-    : Op(Onnx::CustomGradOperators::SoftmaxGradDirect, settings),
-      lossId_(lossId), reduction_(reduction), hasIgnoreIndex_(false) {}
+      lossId_(lossId), reduction_(reduction), ignoreIndex_(ignoreIndex) {}
 
 std::unique_ptr<Op> SoftmaxGradDirectOp::clone() const {
   throw error("Unexpected (but valid) request to clone SoftmaxGradDirectOp");
@@ -170,22 +163,16 @@ void SoftmaxGradDirectOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("reduction_type", static_cast<int64_t>(reduction_));
   if (hasIgnoreIndex()) {
-    os.appendAttribute("ignore_index", static_cast<int64_t>(ignoreIndex_));
+    os.appendAttribute("ignore_index", static_cast<int64_t>(*ignoreIndex_));
   }
 }
 
 NlllWithSoftmaxGradDirectOp::NlllWithSoftmaxGradDirectOp(
-    const int ignoreIndex,
+    const boost::optional<int> ignoreIndex,
     const ReductionType reduction,
     const Op::Settings &settings)
     : Op(Onnx::CustomGradOperators::NlllWithSoftmaxGradDirect, settings),
-      reduction_(reduction), ignoreIndex_(ignoreIndex), hasIgnoreIndex_(true) {}
-
-NlllWithSoftmaxGradDirectOp::NlllWithSoftmaxGradDirectOp(
-    const ReductionType reduction,
-    const Op::Settings &settings)
-    : Op(Onnx::CustomGradOperators::NlllWithSoftmaxGradDirect, settings),
-      reduction_(reduction), hasIgnoreIndex_(false) {}
+      reduction_(reduction), ignoreIndex_(ignoreIndex) {}
 
 std::unique_ptr<Op> NlllWithSoftmaxGradDirectOp::clone() const {
   return std::make_unique<NlllWithSoftmaxGradDirectOp>(*this);
@@ -223,7 +210,7 @@ void NlllWithSoftmaxGradDirectOp::appendOutlineAttributes(
   Op::appendOutlineAttributes(os);
   os.appendAttribute("reduction_type", static_cast<int64_t>(reduction_));
   if (hasIgnoreIndex()) {
-    os.appendAttribute("ignore_index", static_cast<int64_t>(ignoreIndex_));
+    os.appendAttribute("ignore_index", static_cast<int64_t>(*ignoreIndex_));
   }
 }
 

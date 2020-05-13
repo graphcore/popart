@@ -66,7 +66,7 @@ def conv_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
     training_session = popart.TrainingSession(
         fnModel=builder.getModelProto(),
         dataFeed=training_dataFlow,
-        losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
+        losses=[popart.IdentityLoss(o, "idLossVal")],
         optimizer=popart.ConstSGD(0.01),
         userOptions=opts,
         deviceInfo=device)
@@ -141,7 +141,7 @@ def matmul_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
     training_session = popart.TrainingSession(
         fnModel=builder.getModelProto(),
         dataFeed=training_dataFlow,
-        losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
+        losses=[popart.IdentityLoss(o, "idLossVal")],
         optimizer=popart.ConstSGD(0.01),
         userOptions=opts,
         deviceInfo=device)

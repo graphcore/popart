@@ -16,6 +16,7 @@
 #include <popart/names.hpp>
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op/add.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
@@ -52,8 +53,9 @@ BOOST_AUTO_TEST_CASE(test) {
                             const std::array<float, 6 * 2>
                                 &vWeight, // initial weights
                             bool doInplace) {
-    auto builder = Builder::create();
-    auto aiOnnx  = builder->aiOnnxOpset9();
+    auto builder     = Builder::create();
+    auto aiOnnx      = builder->aiOnnxOpset9();
+    auto aiGraphcore = builder->aiGraphcoreOpset1();
 
     int batchSize = 1;
 
@@ -83,19 +85,17 @@ BOOST_AUTO_TEST_CASE(test) {
         aiOnnx.slice({mmOut}, {1, 4, 1}, {0, 0, 0}, {0, 1, 2}, "slc0");
     auto reshape0 = builder->reshape_const(aiOnnx, {slice0}, {1, 4}, "rsh0");
     auto sm0      = aiOnnx.softmax({reshape0}, 1, "sm0");
-    builder->addOutputTensor(sm0);
-    auto label0 = builder->addInputTensor(labelSampleInfo);
-    auto loss0 =
-        std::make_unique<NllLoss>(sm0, label0, "loss0", ReductionType::Mean);
+    auto label0   = builder->addInputTensor(labelSampleInfo);
+    auto nll0     = aiGraphcore.nllloss({sm0, label0}, ReductionType::Mean);
+    auto loss0 = std::make_unique<IdentityLoss>(nll0, "l0", ReductionType::Sum);
 
     auto slice1 =
         aiOnnx.slice({mmOut}, {1, 4, 2}, {0, 0, 1}, {0, 1, 2}, "slc1");
     auto reshape1 = builder->reshape_const(aiOnnx, {slice1}, {1, 4}, "rsh1");
     auto sm1      = aiOnnx.softmax({reshape1}, 1, "sm1");
-    builder->addOutputTensor(sm1);
-    auto label1 = builder->addInputTensor(labelSampleInfo);
-    auto loss1 =
-        std::make_unique<NllLoss>(sm1, label1, "loss1", ReductionType::Mean);
+    auto label1   = builder->addInputTensor(labelSampleInfo);
+    auto nll1     = aiGraphcore.nllloss({sm1, label1}, ReductionType::Mean);
+    auto loss1 = std::make_unique<IdentityLoss>(nll1, "l1", ReductionType::Sum);
 
     auto device = createTestDevice(TEST_TARGET, 1, 20);
 

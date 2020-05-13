@@ -9,6 +9,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/session.hpp>
@@ -136,8 +137,9 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
     for (int i = 1; i < 7; ++i) {
       actOut = addLayer(actOut, i);
     }
-    builder->addOutputTensor(actOut);
-    auto proto = builder->getModelProto();
+    float lambda = 1;
+    actOut       = builder->aiGraphcoreOpset1().l1loss({actOut}, lambda);
+    auto proto   = builder->getModelProto();
 
     // -------------- Losses, anchors, etc ----------------------
     std::map<TensorId, AnchorReturnType> anchorMap;
@@ -147,9 +149,8 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
     auto dataFlow   = DataFlow(batchesPerStep, anchorMap);
     float learnRate = 1;
     auto optimizer  = ConstSGD(learnRate);
-    float lambda    = 1;
     auto loss       = std::unique_ptr<Loss>(
-        new L1Loss(actOut, "l1LossVal", lambda, ReductionType::Sum));
+        new IdentityLoss(actOut, "l1LossVal", ReductionType::Sum));
 
     auto device = createTestDevice(TEST_TARGET, 2);
 

@@ -39,7 +39,7 @@ def test_reset_host_weights_with_extra_tensor_in_onnx_model():
     device = tu.create_test_device()
     tr_builder = getModelWithRandomWeights()
     o = tr_builder.getOutputTensorIds()[0]
-    losses = [popart.L1Loss(o, "loss", 0.1)]
+    losses = [popart.IdentityLoss(o, "loss")]
 
     # 1. & 2.
     # Training

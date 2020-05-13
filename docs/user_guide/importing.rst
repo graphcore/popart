@@ -52,9 +52,9 @@ An example of creating a session object from an ONNX model is shown below.
   :language: python
 
 
-In this example, when the ``Session`` object is asked to train the graph, an ``NllLoss``
-node will be added to the end of the graph, and a ``ConstSGD`` optimiser will
-be used to optimise the parameters in the network.
+In this example, when the ``Session`` object is asked to train the graph, an Nll
+loss node will be added to the end of the graph, and a ``ConstSGD`` optimiser
+will be used to optimise the parameters in the network.
 
 Session control options
 ~~~~~~~~~~~~~~~~~~~~~~~

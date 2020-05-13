@@ -88,7 +88,8 @@ def test_manual_serialization():
     graph_transformer.convertAllFixedPointInitializersToConstants()
     builder = popart.Builder(graph_transformer.getModelProto())
 
-    loss1 = popart.L1Loss(Z, "l1LossVal1", 0.2)
+    l1 = builder.aiGraphcore.l1loss([Z], 0.2)
+    loss1 = popart.IdentityLoss(l1, "l1LossVal1")
     dataFlow = popart.DataFlow(1, {})
     device = tu.create_test_device()
     userOptions = popart.SessionOptions()

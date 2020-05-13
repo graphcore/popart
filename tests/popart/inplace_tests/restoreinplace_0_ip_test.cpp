@@ -8,7 +8,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
-#include <popart/op/l1.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
@@ -62,7 +62,7 @@ BOOST_AUTO_TEST_CASE(test0) {
 
   auto output = aiOnnx.identity({t2});
 
-  auto loss = L1Loss(output, "idLossVal", 0.1, ReductionType::Sum);
+  auto loss = IdentityLoss(output, "idLossVal", ReductionType::Sum);
 
   auto opts             = SessionOptions();
   opts.virtualGraphMode = VirtualGraphMode::Manual;
@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE(test0) {
   ir.prepare({io::getModelFromString(builder->getModelProto()),
               InputShapeInfo(),
               DataFlow(3, anchorIds),
-              {std::make_shared<L1Loss>(loss)},
+              {std::make_shared<IdentityLoss>(loss)},
               &optimizer,
               *device,
               opts,

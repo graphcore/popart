@@ -40,7 +40,7 @@ def test_pipeline_boundary():
             r0, {"ReshapeInplace": 10 if inplaceReshape else -10})
         opts = popart.SessionOptions()
 
-        loss = popart.L1Loss(actIn, actIn + "/loss", 0.1)
+        loss = popart.IdentityLoss(actIn, actIn + "/loss")
         loss.virtualGraph(1)
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
         opts.enablePipelining = True

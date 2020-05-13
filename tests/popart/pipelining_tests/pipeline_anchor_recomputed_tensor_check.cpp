@@ -15,6 +15,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/restore.hpp>
@@ -82,8 +83,9 @@ BOOST_AUTO_TEST_CASE(PipelineAnchorRecomputedTensor0) {
 
     auto sig          = aiOnnx.sigmoid({input0});
     auto scale        = aiGraphcore.scale({sig}, 2.0f);
-    TensorId actFinal = scale;
-    auto loss         = L1Loss(actFinal, "l1LossVal", 0.1, ReductionType::Sum);
+    auto l1           = aiGraphcore.l1loss({scale}, 0.1);
+    TensorId actFinal = l1;
+    auto loss         = IdentityLoss(actFinal, "l1LossVal", ReductionType::Sum);
 
     int nIPUs = (rt != RunType::SingleDevice ? 2 : 1);
     std::map<std::string, std::string> deviceOpts{
@@ -97,6 +99,7 @@ BOOST_AUTO_TEST_CASE(PipelineAnchorRecomputedTensor0) {
 
       builder->virtualGraph(sig, 0);
       builder->virtualGraph(scale, 0);
+      builder->virtualGraph(l1, nIPUs - 1);
       loss.virtualGraph(nIPUs - 1);
     }
     auto art      = AnchorReturnType("All");

@@ -72,7 +72,7 @@ def test_weight_update(op_tester):
         # forward
         o = module([a])
 
-        loss = torch.nn.L1Loss(reduction="mean")
+        loss = torch.nn.L1Loss(reduction="sum")
         target = torch.zeros(o.size())
         output = 0.1 * loss(o, target)
         output.backward()
@@ -87,7 +87,7 @@ def test_weight_update(op_tester):
     op_tester.device = tu.create_test_device()
     op_tester.numIPUs = 1
     op_tester.patterns = ['GemmDecomposition', 'PreUniRepl', 'MatMulRhsGradOp']
-    op_tester.loss_reduction_type = popart.ReductionType.Mean
+    op_tester.loss_reduction_type = popart.ReductionType.Sum
     op_tester.run(init_builder,
                   reference,
                   'train',
@@ -163,9 +163,9 @@ def test_weight_update_replicated(op_tester):
             # adding n as offset, as op_tester expects
             o = module([a + n])
             outputs = outputs + (o, )
-            loss = torch.nn.L1Loss(reduction="mean")
+            loss = torch.nn.L1Loss(reduction="sum")
             target = torch.zeros(o.size())
-            output = 0.1 * loss(o, target) / replicationFactor
+            output = 0.1 * loss(o, target)
             output.backward()
 
         # Update the weights
@@ -190,7 +190,7 @@ def test_weight_update_replicated(op_tester):
             "Failed to acquire IPU device in training graph replication test")
 
     op_tester.numIPUs = replicationFactor
-    op_tester.loss_reduction_type = popart.ReductionType.Mean
+    op_tester.loss_reduction_type = popart.ReductionType.Sum
     op_tester.run(init_builder,
                   reference,
                   'train',

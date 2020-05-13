@@ -12,6 +12,7 @@
 #include <popart/graphtransformer.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/tensor.hpp>
@@ -34,12 +35,13 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape0) {
   ConstVoidData outShapeData = {outShape.data(), {"INT64", outShapeSize}};
 
   // Build an onnx model
-  auto builder    = Builder::create();
-  auto aiOnnx     = builder->aiOnnxOpset9();
-  auto newShapeId = aiOnnx.constant(outShapeData, "outShapeData");
-  auto inId       = builder->addInputTensor(inInfo);
-  auto outId      = aiOnnx.reshape({inId, newShapeId});
-  builder->addOutputTensor(outId);
+  auto builder     = Builder::create();
+  auto aiOnnx      = builder->aiOnnxOpset9();
+  auto aiGraphcore = builder->aiGraphcoreOpset1();
+  auto newShapeId  = aiOnnx.constant(outShapeData, "outShapeData");
+  auto inId        = builder->addInputTensor(inInfo);
+  auto outId       = aiOnnx.reshape({inId, newShapeId});
+  auto lossId      = aiGraphcore.l1loss({outId}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
@@ -49,7 +51,7 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape0) {
   auto dataFlow  = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
   std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(outId, "l1LossVal", 0.1, ReductionType::Sum)};
+      std::make_shared<IdentityLoss>(lossId, "l1LossVal", ReductionType::Sum)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -79,11 +81,13 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape_Initializer) {
   ConstVoidData outShapeData = {outShape.data(), {"INT64", outShapeSize}};
   auto builder               = Builder::create();
   auto aiOnnx                = builder->aiOnnxOpset9();
+  auto aiGraphcore           = builder->aiGraphcoreOpset1();
   auto newShapeId            = builder->addInitializedInputTensor(outShapeData);
 
-  auto inId  = builder->addInputTensor(inInfo);
-  auto outId = aiOnnx.reshape({inId, newShapeId});
-  builder->addOutputTensor(outId);
+  auto inId   = builder->addInputTensor(inInfo);
+  auto outId  = aiOnnx.reshape({inId, newShapeId});
+  auto lossId = aiGraphcore.l1loss({outId}, 0.1);
+
   auto proto = builder->getModelProto();
 
   // The new Shape Tensor is not a weight initializer, and should
@@ -97,8 +101,8 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape_Initializer) {
   auto art        = AnchorReturnType("All");
   auto dataFlow   = DataFlow(1, {{outId, art}});
   auto optimizer  = ConstSGD(0.01);
-  std::vector<std::shared_ptr<Loss>> losses{std::shared_ptr<Loss>(
-      new L1Loss(outId, "l1LossVal", 0.1, ReductionType::Sum))};
+  std::vector<std::shared_ptr<Loss>> losses{
+      std::make_shared<IdentityLoss>(lossId, "l1LossVal", ReductionType::Sum)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;

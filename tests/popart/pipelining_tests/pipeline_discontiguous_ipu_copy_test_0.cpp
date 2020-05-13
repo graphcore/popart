@@ -14,6 +14,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
@@ -141,17 +142,17 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
     // sum of the 2 branch outputs
     auto actFinal = aiOnnx.add({actFinal0, actFinal1}, "finalAct");
 
-    builder->addOutputTensor(actFinal);
-    auto proto = builder->getModelProto();
-    // No anchors
-    auto dataFlow = DataFlow(batchesPerStep);
-
     float learnRate = 0.01;
     auto optimizer  = ConstSGD(learnRate);
 
     float lambda = 0.1;
-    auto loss    = std::make_shared<L1Loss>(
-        actFinal, "l1LossVal", lambda, ReductionType::Sum);
+    actFinal     = builder->aiGraphcoreOpset1().l1loss({actFinal}, lambda);
+    auto loss    = std::make_shared<IdentityLoss>(
+        actFinal, "l1LossVal", ReductionType::Sum);
+
+    auto proto = builder->getModelProto();
+    // No anchors
+    auto dataFlow = DataFlow(batchesPerStep);
 
     auto device = createTestDevice(TEST_TARGET, 7);
 
@@ -192,8 +193,8 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
             std::make_tuple(cop->getSourceIpu(), cop->getDestIpu()));
       }
 
-      loss = std::make_shared<L1Loss>(
-          actFinal, "l1LossVal", lambda, ReductionType::Sum);
+      loss = std::make_shared<IdentityLoss>(
+          actFinal, "l1LossVal", ReductionType::Sum);
 
       userOptions.enablePipelining = false;
       Ir irWithoutPipe;

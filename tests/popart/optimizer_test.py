@@ -21,15 +21,16 @@ def trainSession(anchors, optimizer, stepSize):
                              dilations=[1, 1],
                              pads=[1, 1, 1, 1],
                              strides=[1, 1])
-    o = builder.aiOnnx.conv([c1, i2],
-                            dilations=[1, 1],
-                            pads=[1, 1, 1, 1],
-                            strides=[1, 1])
+    c2 = builder.aiOnnx.conv([c1, i2],
+                             dilations=[1, 1],
+                             pads=[1, 1, 1, 1],
+                             strides=[1, 1])
+    o = builder.aiGraphcore.l1loss([c2], 0.1)
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
 
-    losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
+    losses = [popart.IdentityLoss(o, "idLossVal")]
 
     opts = popart.SessionOptions()
 
@@ -122,7 +123,7 @@ def test_constsgd_vs_sgd():
     We show that if the learning rates match, the training updates are 
     identical, otherwise they differ.
     """
-    anchorNames = {"l1LossVal": popart.AnchorReturnType("All")}
+    anchorNames = {"idLossVal": popart.AnchorReturnType("All")}
     lr = 0.01
     wd = 0.01
     ls = 1000
@@ -170,14 +171,14 @@ def test_constsgd_vs_sgd():
         if step == numSteps - 1:
             # We expect to see the diverging losses on the second forward pass
             # after updating the optimizer
-            assert (np.array_equal(anchorsArraysUserSgd["l1LossVal"][0],
-                                   anchorsArraysConstSgd["l1LossVal"][0]))
-            assert (np.array_equal(anchorsArraysUserSgd["l1LossVal"][1],
-                                   anchorsArraysConstSgd["l1LossVal"][1]) is
+            assert (np.array_equal(anchorsArraysUserSgd["idLossVal"][0],
+                                   anchorsArraysConstSgd["idLossVal"][0]))
+            assert (np.array_equal(anchorsArraysUserSgd["idLossVal"][1],
+                                   anchorsArraysConstSgd["idLossVal"][1]) is
                     False)
         else:
-            assert (np.array_equal(anchorsArraysUserSgd["l1LossVal"],
-                                   anchorsArraysConstSgd["l1LossVal"]))
+            assert (np.array_equal(anchorsArraysUserSgd["idLossVal"],
+                                   anchorsArraysConstSgd["idLossVal"]))
 
 
 def test_sgd_with_float16_model():
@@ -211,7 +212,7 @@ def test_sgd_with_float16_model():
         "defaultWeightDecay": (0.1, False),
         "lossScaling": (1000, False)
     })
-    losses = [popart.L1Loss(out, "l1LossVal", 0.1)]
+    losses = [popart.IdentityLoss(out, "idLossVal")]
 
     anchorNames = {
         popart.reservedGradientPrefix() + inid1:
@@ -256,11 +257,8 @@ def test_sgd_with_zero_learning_rate():
     # Get the initial weights:
     fn = "init.onnx"
     session.modelToHost(fn)
-    builder = popart.Builder(fn)
     wId = "init_input"
-    weights = {
-        wId: np.empty(shape=builder.getTensorShape(wId), dtype=np.float32)
-    }
+    weights = {wId: np.empty(shape=[2, 2, 3, 3], dtype=np.float32)}
     weightsio = popart.PyWeightsIO(weights)
     session.readWeights(weightsio)
     init_weights = np.copy(weights[wId])

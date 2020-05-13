@@ -9,6 +9,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/session.hpp>
@@ -118,8 +119,8 @@ BOOST_AUTO_TEST_CASE(ContinuousEquivalentTest0) {
   ConstVoidData w5Data = {w5Vals.data(), sampleInfo};
   auto w5              = builder->addInitializedInputTensor(w5Data);
   auto act5            = aiOnnx.add({w5, act4}, "act5");
-
-  builder->addOutputTensor(act5);
+  float lambda         = 0.1;
+  auto l1              = builder->aiGraphcoreOpset1().l1loss({act5}, lambda);
 
   auto proto = builder->getModelProto();
 
@@ -135,9 +136,8 @@ BOOST_AUTO_TEST_CASE(ContinuousEquivalentTest0) {
   float learnRate = 0.01;
   auto optimizer  = ConstSGD(learnRate);
 
-  float lambda = 0.1;
-  auto loss    = std::unique_ptr<Loss>(
-      new L1Loss(act5, "l1LossVal", lambda, ReductionType::Sum));
+  auto loss = std::unique_ptr<Loss>(
+      new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
 
   auto device = createTestDevice(TEST_TARGET, 3);
 

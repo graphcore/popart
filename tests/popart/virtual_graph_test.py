@@ -97,8 +97,7 @@ def test_virtual_graph3():
     with builder.virtualGraph(2):
         o3 = builder.aiOnnx.add([o1, o2])
         o = builder.aiOnnx.add([i1, o3])
-
-    builder.addOutputTensor(o)
+        o = builder.aiGraphcore.l1loss([o], 0.1)
 
     proto = builder.getModelProto()
 
@@ -116,7 +115,7 @@ def test_virtual_graph3():
             popart.AnchorReturnType("All")
         })
 
-    losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
+    losses = [popart.IdentityLoss(o, "l1LossVal")]
     #Make sure that the loss is also assigned to a virtual graph
     losses[0].virtualGraph(1)
     optimizer = popart.SGD({"defaultLearningRate": (0.01, True)})
@@ -158,13 +157,13 @@ def test_virtual_graph4():
 
     with builder.virtualGraph(3):
         o1 = builder.aiOnnx.add([i1, i2])
+        o1l1 = builder.aiGraphcore.l1loss([o1], 0.1)
         o2 = builder.aiOnnx.add([i3, o1])
+        o2l1 = builder.aiGraphcore.l1loss([o2], 0.1)
 
     with builder.virtualGraph(2):
         o3 = builder.aiOnnx.mul([i1, i3])
-
-    builder.addOutputTensor(o2)
-    builder.addOutputTensor(o3)
+        o3l1 = builder.aiGraphcore.l1loss([o3], 0.1)
 
     proto = builder.getModelProto()
 
@@ -183,9 +182,9 @@ def test_virtual_graph4():
         })
 
     losses = [
-        popart.L1Loss(o1, "l1LossVal_1", 0.1),
-        popart.L1Loss(o2, "l1LossVal_2", 0.1),
-        popart.L1Loss(o3, "l1LossVal_3", 0.1)
+        popart.IdentityLoss(o1l1, "l1LossVal_1"),
+        popart.IdentityLoss(o2l1, "l1LossVal_2"),
+        popart.IdentityLoss(o3l1, "l1LossVal_3")
     ]
     #Make sure that the loss is also assigned to a virtual graph
     losses[0].virtualGraph(3)
@@ -280,18 +279,18 @@ def test_streaming_optimizer_tensors():
         if enablePipelining:
             builder.virtualGraph(o2, 2)
 
-        o = o2
-        builder.addOutputTensor(o)
+        o2l1 = builder.aiGraphcore.l1loss([o2], 0.1)
+        if enablePipelining:
+            builder.virtualGraph(o2l1, 2)
 
         proto = builder.getModelProto()
 
         anchorId = popart.reservedDefaultScaledLearningRate0Prefix() + "FLOAT"
 
         # Need to anchor the output of the backward pass to stop it being pruned
-        dataFlow = popart.DataFlow(bps,
-                                   {anchorId: popart.AnchorReturnType("All")})
+        dataFlow = popart.DataFlow(bps, [anchorId])
 
-        losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
+        losses = [popart.IdentityLoss(o2l1, "l1LossVal")]
         # Make sure that the loss is also assigned to a virtual graph
         if enablePipelining:
             losses[0].virtualGraph(2)

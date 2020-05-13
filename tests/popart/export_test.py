@@ -38,7 +38,7 @@ def test_constants_preserved():
 
     optimizer = popart.ConstSGD(0.01)
 
-    losses = [popart.L1Loss(o2, "l1LossVal", 0.1)]
+    losses = [popart.IdentityLoss(o2, "idLossVal")]
 
     opts = popart.SessionOptions()
 
@@ -95,7 +95,7 @@ def test_no_prepare_device():
 
     optimizer = popart.ConstSGD(0.01)
 
-    losses = [popart.L1Loss(o2, "l1LossVal", 0.1)]
+    losses = [popart.IdentityLoss(o2, "idLossVal")]
 
     opts = popart.SessionOptions()
 

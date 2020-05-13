@@ -13,6 +13,7 @@
 #include <popart/ndarraywrapper.hpp>
 #include <popart/onnxutil.hpp>
 #include <popart/op.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/opmanager.hpp>
@@ -122,13 +123,13 @@ BOOST_AUTO_TEST_CASE(Basic0) {
         builder.customOp(CustomOperators::DontTrain, 1, {conv0}, 1, {}).at(0);
     auto add0   = aiOnnx.add({donttrain0, conv1});
     auto output = aiOnnx.identity({add0});
+    auto l1     = builder.aiGraphcoreOpset1().l1loss({output}, 0.1);
 
     inputs.push_back(
         TestTensor::create<float>(input, {1, 2, 3, 4}, inputInfo.shape()));
     outputs.push_back(TestTensor::create<float>(output, inputInfo.shape()));
 
-    runner.losses.push_back(
-        new L1Loss(output, "l1LossVal", 0.1, ReductionType::Sum));
+    runner.losses.push_back(new IdentityLoss(l1, "loss", ReductionType::Sum));
 
     return output;
   });
@@ -194,13 +195,13 @@ BOOST_AUTO_TEST_CASE(Basic1) {
         builder.customOp(CustomOperators::DontTrain, 1, {conv0}, 1, {}).at(0);
     auto add0   = aiOnnx.add({donttrain0, conv0});
     auto output = aiOnnx.identity({add0});
+    auto l1     = builder.aiGraphcoreOpset1().l1loss({output}, 0.1);
 
     inputs.push_back(
         TestTensor::create<float>(input, {1, 2, 3, 4}, inputInfo.shape()));
     outputs.push_back(TestTensor::create<float>(output, inputInfo.shape()));
 
-    runner.losses.push_back(
-        new L1Loss(output, "l1LossVal", 0.1, ReductionType::Sum));
+    runner.losses.push_back(new IdentityLoss(l1, "loss", ReductionType::Sum));
 
     return output;
   });
@@ -271,13 +272,14 @@ BOOST_AUTO_TEST_CASE(Basic2) {
         builder.customOp(CustomOperators::DontTrain, 1, {conv1}, 1, {}).at(0);
 
     auto output = aiOnnx.add({conv0, donttrain0});
+    auto l1     = builder.aiGraphcoreOpset1().l1loss({output}, 0.1);
 
     inputs.push_back(
         TestTensor::create<float>(input, {1, 2, 3, 4}, inputInfo.shape()));
     outputs.push_back(TestTensor::create<float>(output, inputInfo.shape()));
 
     runner.losses.push_back(
-        new L1Loss(output, "l1LossVal", 0.1, ReductionType::Sum));
+        new IdentityLoss(output, "loss", ReductionType::Sum));
 
     return output;
   });

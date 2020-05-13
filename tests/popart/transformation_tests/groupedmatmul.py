@@ -57,7 +57,7 @@ def test_matmul_1d(tmpdir):
             fnModel=proto,
             dataFeed=dataFlow,
             userOptions=opts,
-            losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
+            losses=[popart.IdentityLoss(o, "idLossVal")],
             optimizer=popart.ConstSGD(0.01),
             patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
@@ -278,7 +278,7 @@ def test_matmul_grouping_test_2(tmpdir):
             dataFeed=dataFlow,
             userOptions=opts,
             patterns=pat,
-            losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
+            losses=[popart.IdentityLoss(o, "idLossVal")],
             optimizer=popart.ConstSGD(0.01),
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
@@ -376,7 +376,7 @@ def test_matmul_grouping_test_3(tmpdir):
             dataFeed=dataFlow,
             userOptions=opts,
             patterns=pat,
-            losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
+            losses=[popart.IdentityLoss(o, "idLossVal")],
             optimizer=popart.ConstSGD(0.01),
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
@@ -493,7 +493,7 @@ def test_matmul_grouping_test_4(tmpdir):
             dataFeed=dataFlow,
             userOptions=opts,
             patterns=pat,
-            losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
+            losses=[popart.IdentityLoss(o, "idLossVal")],
             optimizer=popart.ConstSGD(0.01),
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 

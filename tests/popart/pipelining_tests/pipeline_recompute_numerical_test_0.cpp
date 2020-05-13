@@ -16,6 +16,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/restore.hpp>
@@ -155,17 +156,19 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeNumericalTest0x) {
       userOptions.enableGradientAccumulation = true;
     }
 
-    builder->addOutputTensor(actFinal);
-    auto proto    = builder->getModelProto();
-    auto dataFlow = DataFlow(batchesPerStep);
-
     // Changing this to SGD does not work, learning rate is not correct I think.
     auto optimizer = ConstSGD(0.04);
 
     float lambda = 0.159;
-    auto loss    = std::unique_ptr<Loss>(
-        new L1Loss(actFinal, "l1LossVal", lambda, ReductionType::Sum));
+    actFinal     = builder->aiGraphcoreOpset1().l1loss({actFinal}, lambda);
+    builder->virtualGraph(actFinal, nIPUs - 1);
+
+    auto loss = std::unique_ptr<Loss>(
+        new IdentityLoss(actFinal, "l1LossVal", ReductionType::Sum));
     loss->virtualGraph(nIPUs - 1);
+
+    auto proto    = builder->getModelProto();
+    auto dataFlow = DataFlow(batchesPerStep);
 
     int64_t stepDataElms = accumulationFactor * microBatchElms * batchesPerStep;
 

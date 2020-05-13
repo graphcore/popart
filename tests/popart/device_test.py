@@ -53,5 +53,5 @@ def test_default_connection_type():
 def test_on_demand_connection_type():
     deviceManager = popart.DeviceManager()
     device = deviceManager.acquireAvailableDevice(
-        1, connectionType=popart.DeviceConnectionType.ON_DEMAND)
+        1, connectionType=popart.DeviceConnectionType.OnDemand)
     assert device.connectionType == popart.DeviceConnectionType.OnDemand

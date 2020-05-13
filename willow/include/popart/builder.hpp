@@ -277,8 +277,8 @@ public:
    */
   TensorId l1loss(const std::vector<TensorId> &args,
                   const float lamda,
-                  const ReductionType reduction,
-                  const std::string &name = {});
+                  const ReductionType reduction = ReductionType::Sum,
+                  const std::string &name       = {});
 
   /**
    * Add a negative log-likelihood loss operation to the model
@@ -288,28 +288,14 @@ public:
    *
    * \param args [probs, target]
    * \param reduction Type of reduction to perform on the individual losses
-   * \param name Optional identifier for operation
-   * \return The name of the result tensor
-   */
-  TensorId nllloss(const std::vector<TensorId> &args,
-                   const ReductionType reduction,
-                   const std::string &name = {});
-
-  /**
-   * Add a negative log-likelihood loss operation to the model
-   *
-   * As above, but with an additional ignoreIndex parameter
-   *
-   * \param args [probs, target]
-   * \param reduction Type of reduction to perform on the individual losses
    * \param ignoreIndex Optional class index to ignore in loss calculation
    * \param name Optional identifier for operation
    * \return The name of the result tensor
    */
   TensorId nllloss(const std::vector<TensorId> &args,
-                   const ReductionType reduction,
-                   const int ignoreIndex,
-                   const std::string &name = {});
+                   const ReductionType reduction          = ReductionType::Sum,
+                   const boost::optional<int> ignoreIndex = boost::none,
+                   const std::string &name                = {});
 };
 
 /**

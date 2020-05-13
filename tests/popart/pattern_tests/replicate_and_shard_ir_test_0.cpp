@@ -9,6 +9,7 @@
 #include <popart/dataflow.hpp>
 #include <popart/filereader.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/testdevice.hpp>
@@ -35,7 +36,7 @@ BOOST_AUTO_TEST_CASE(SplitToSliceTest0) {
     act = aiOnnx.relu({act});
   }
 
-  builder->addOutputTensor(act);
+  auto l1 = builder->aiGraphcoreOpset1().l1loss({act}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
@@ -50,7 +51,7 @@ BOOST_AUTO_TEST_CASE(SplitToSliceTest0) {
   auto optimizer = ConstSGD(0.01);
 
   auto loss =
-      std::make_shared<L1Loss>(act, "l1LossVal", 0.1, ReductionType::Sum);
+      std::make_shared<IdentityLoss>(l1, "l1LossVal", ReductionType::Sum);
 
   auto device = createTestDevice(TEST_TARGET, 8);
 

@@ -13,6 +13,7 @@
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/session.hpp>
@@ -51,11 +52,11 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Gemm_Decomposition0) {
   auto builder = Builder::create();
   auto aiOnnx  = builder->aiOnnxOpset9();
   // The two fixed-point tensors which are Constants
-  auto a_id   = aiOnnx.constant(a_data, "aData");
-  auto c_id   = aiOnnx.constant(c_data, "cData");
-  auto b_id   = builder->addInputTensor(tinfo);
-  auto out_id = aiOnnx.gemm({a_id, b_id, c_id}, 1., 1., 0, 0);
-  builder->addOutputTensor(out_id);
+  auto a_id    = aiOnnx.constant(a_data, "aData");
+  auto c_id    = aiOnnx.constant(c_data, "cData");
+  auto b_id    = builder->addInputTensor(tinfo);
+  auto out_id  = aiOnnx.gemm({a_id, b_id, c_id}, 1., 1., 0, 0);
+  auto loss_id = builder->aiGraphcoreOpset1().l1loss({out_id}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
@@ -65,7 +66,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Gemm_Decomposition0) {
   auto dataFlow  = DataFlow(1, {{out_id, art}});
   auto optimizer = ConstSGD(0.01);
   std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(out_id, "l1LossVal", 0.1, ReductionType::Sum)};
+      std::make_shared<IdentityLoss>(loss_id, "l1LossVal", ReductionType::Sum)};
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
