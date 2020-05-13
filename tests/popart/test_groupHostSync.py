@@ -44,6 +44,7 @@ def test_groupHostSync():
     stepio = popart.PyStepIO({a: input_a}, anchors)
     session.run(stepio)
     summaryReport = session.getSummaryReport()
+
     lines = summaryReport.split('\n')
     order = []
     first = False
@@ -71,6 +72,7 @@ def test_groupHostSync():
             countSeq += 1
             if countSeq >= 7:
                 break
+        if re.search(r"OnTileExecute: 104/Op/Add", l):
             order.append(1)
             first = True
         if re.search(r"OnTileExecute: 101/abs/Op/Absolute", l):
