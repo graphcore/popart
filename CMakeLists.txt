@@ -9,6 +9,9 @@ include(GNUInstallDirs)
 # All C++ code in this project will be compiled as C++14
 set (CMAKE_CXX_STANDARD 14)
 
+# Generate compile_commands.json file for IDE integration
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # colorful ninja, idea from
 # medium.com/@alasher/colored-c-compiler-output-with-ninja-clang-gcc-10bfe7f2b949
 option (FORCE_COLORED_OUTPUT "Always produce ANSI-colored output (GNU/Clang only)." TRUE)
