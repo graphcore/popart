@@ -92,6 +92,30 @@ private:
 const std::map<TensorType, TensorTypeInfo> &getTensorTypeInfoMap();
 std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap();
 
+class CacheInfo {
+public:
+  void setCached(bool cached_) { cached = cached_; }
+  bool isCached() const { return cached; }
+
+  void setSharded(bool sharded_) { sharded = sharded_; }
+
+  bool isSharded() const { return sharded; }
+
+  void setRemoteBufferInfo(RemoteBufferId rbId, RemoteBufferIndex index) {
+    remoteBufferInfo = {rbId, index};
+  }
+
+  const std::pair<RemoteBufferId, RemoteBufferIndex>
+  getRemoteBufferInfo() const {
+    return remoteBufferInfo;
+  }
+
+private:
+  bool cached{false};
+  bool sharded{false};
+  std::pair<RemoteBufferId, RemoteBufferIndex> remoteBufferInfo;
+};
+
 class Tensor : public Vertex {
 public:
   // The type of replication to use if a Stream tensor
@@ -127,19 +151,17 @@ public:
   // shape and data type. Not to be used before inferShape of pir has run
   TensorInfo info;
 
+  // information about tensor cached status
+  CacheInfo cacheInfo;
+
   // Similar to getProducer, but the user must handle the nullptr
   Op *getProducerUnsafe() const;
   Op *getProducer() const;
   void setProducer(Op *);
   void resetProducer(Op *);
   bool hasProducer() const;
-  void setCached(bool);
-  bool isCached() const;
   void setImplicitLoopInput(bool);
   bool isImplicitLoopInput() const;
-  void setRemoteBufferInfo(RemoteBufferId, RemoteBufferIndex);
-  const std::pair<RemoteBufferId, RemoteBufferIndex>
-  getRemoteBufferInfo() const;
   // Returns true for stream tensors that are optimizer tensors, as
   // well as their copies
   bool isOptimizerTensor() const;
@@ -197,9 +219,7 @@ protected:
   Graph &graph;
   Op *producer;
   const TensorTypeInfo *tensorTypeInfo;
-  bool cached;
   bool implicitLoopInput;
-  std::pair<RemoteBufferId, RemoteBufferIndex> remoteBufferInfo;
 
   // By default stream tensors are replicated
   ReplicatedStreamMode replicatedStreamMode = ReplicatedStreamMode::Replicate;

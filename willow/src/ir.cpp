@@ -1740,7 +1740,7 @@ bool Ir::streamingIsDisabledForTensor(const TensorId &tensorId) const {
   }
 
   // 3. The tensor is cached
-  if (getTensors().get(tensorId)->isCached()) {
+  if (getTensors().get(tensorId)->cacheInfo.isCached()) {
     return true;
   }
 

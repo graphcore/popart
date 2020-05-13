@@ -219,10 +219,12 @@ public:
                           double val,
                           const std::string &name);
 
+  bool hasRemoteBuffer(RemoteBufferId) const;
+
   const std::pair<poplar::RemoteBuffer, boost::optional<poplar::Tensor>> &
       getRemoteBuffer(RemoteBufferId) const;
 
-  void setRemoteBufferTensor(RemoteBufferId, poplar::Tensor);
+  void createRemoteBuffer(RemoteBufferId, poplar::Tensor);
 
   std::shared_ptr<CollectiveBalancedReorder>
   getCollectiveBalancedReorder(TensorId tensor_id);
@@ -293,8 +295,6 @@ private:
   poplar::Tensor randomSeedTensor;
 
   PipelineInfo pInfo;
-
-  void createRemoteBuffers();
 
   std::map<PipelineStage, VGraphId> getPipelineToVGraphIdMap() const;
 

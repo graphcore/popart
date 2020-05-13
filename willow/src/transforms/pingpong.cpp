@@ -138,7 +138,7 @@ bool PingPong::apply(Graph &graph) const {
     // TODO: Offer more refined scheme
     for (TensorId id : graph.getTensors().getIds(TensorType::Variable)) {
       auto tensor = graph.getTensors().get(id);
-      tensor->setCached(true);
+      tensor->cacheInfo.setCached(true);
     }
 
     float cumulative_cost = 0.f;
@@ -357,7 +357,7 @@ bool PingPong::apply(Graph &graph) const {
           ((producerOp &&
             producerOp->settings.recomputeType != RecomputeType::Recompute &&
             producerOp->settings.cacheType == CacheType::Cached));
-      cached |= (!producerOp && tensor->isCached());
+      cached |= (!producerOp && tensor->cacheInfo.isCached());
 
       // Disabling factors
       cached &= !tensor->isOptimizerTensor();
@@ -505,7 +505,7 @@ bool PingPong::apply(Graph &graph) const {
                           RecomputeType::Recompute &&
                       producerOp->settings.cacheType == CacheType::Cached) &&
                      (abs(producerPingPongPhase - consumerPingPongPhase) > 2));
-          cached |= (!producerOp && tensor->isCached());
+          cached |= (!producerOp && tensor->cacheInfo.isCached());
 
           // Disabling factors
           cached &= !tensor->isOptimizerTensor();

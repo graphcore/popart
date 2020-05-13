@@ -85,9 +85,10 @@ bool CacheSetup::apply(Graph &graph) const {
               traceFront.push_back(t);
             }
           } else {
-            throw(logging::format("[CacheSetup] Unsupported op {} in path from "
-                                  "CacheArg Tensor.",
-                                  consumer->opid));
+            logging::warn("[CacheSetup] Unsupported Op {} in path from"
+                          "CacheArg tensor {}.",
+                          consumer->debugName(),
+                          tensor->id);
           }
         }
       }
@@ -177,10 +178,10 @@ bool CacheSetup::apply(Graph &graph) const {
   // Cached (weight) tensors
   for (TensorId &tensor_id : graph.getTensors().getAllTensorIds()) {
     Tensor *tensor = graph.getTensors().get(tensor_id);
-    if (tensor->isCached()) {
+    if (tensor->cacheInfo.isCached()) {
       auto arg_tensor_id = getCacheArgTensorId(tensor_id);
-      tensor->setRemoteBufferInfo(argBufferMap[arg_tensor_id].first,
-                                  argBufferMap[arg_tensor_id].second);
+      tensor->cacheInfo.setRemoteBufferInfo(argBufferMap[arg_tensor_id].first,
+                                            argBufferMap[arg_tensor_id].second);
     }
   }
 

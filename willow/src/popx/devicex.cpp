@@ -567,16 +567,44 @@ void Devicex::weightsToHost() {
 void Devicex::remoteBufferWeightsToHost() {
   for (auto initId : ir().getTensorIds(TensorType::Variable)) {
     Tensor *tensor = ir().getTensor(initId);
-    if (tensor->isCached()) {
+    if (tensor->cacheInfo.isCached()) {
       logging::devicex::debug("remoteBufferWeightsToHost: {}", initId);
-      auto remoteBufferInfo = tensor->getRemoteBufferInfo();
+      auto remoteBufferInfo = tensor->cacheInfo.getRemoteBufferInfo();
       char *data0           = d2hWeightBuffers[initId].data();
-      // Weight should be the same for each replica, only return 0
-      pEngine->copyFromRemoteBuffer(
-          getRemoteBuffer(remoteBufferInfo.first).first,
-          data0,
-          static_cast<int>(remoteBufferInfo.second),
-          0);
+
+      if (tensor->cacheInfo.isSharded()) {
+        // Replicated weight sharding, each replica holds 1/repfactor
+        // parts of the weight
+        auto cbr =
+            getCollectiveBalancedReorder(getCacheArgTensorId(tensor->id));
+
+        auto elemSize = cbr->getElementByteSize();
+        auto nelms    = cbr->getNumRearrangedTensorElems();
+
+        // Temporary buffer that can hold the padded weight shards
+        // from all replicas
+        std::vector<char> tmp(nelms * elemSize);
+
+        for (unsigned replica_id = 0; replica_id < getReplicationFactor();
+             ++replica_id) {
+          pEngine->copyFromRemoteBuffer(
+              getRemoteBuffer(remoteBufferInfo.first).first,
+              &tmp[replica_id * nelms / getReplicationFactor() * elemSize],
+              static_cast<int>(remoteBufferInfo.second),
+              replica_id);
+        }
+
+        // Rearrange collected weights into d2h buffer
+        cbr->undoRearrangeForCollective(&tmp[0], data0);
+      } else {
+        // Weight should be the same for each replica if not using sharded,
+        // only return weights from replica_id == 0
+        pEngine->copyFromRemoteBuffer(
+            getRemoteBuffer(remoteBufferInfo.first).first,
+            data0,
+            static_cast<int>(remoteBufferInfo.second),
+            0);
+      }
     }
   }
 }
@@ -633,7 +661,7 @@ void Devicex::weightsToHost(
     // addresses on onnxModelData
     for (auto id : ir().getTensorIds(TensorType::Variable)) {
       if (!ir().streamingIsDisabledForTensor(id) ||
-          ir().getTensor(id)->isCached()) {
+          ir().getTensor(id)->cacheInfo.isCached()) {
         auto found = onnxModelData.find(id);
         if (found == onnxModelData.end()) {
           std::ostringstream oss;
@@ -871,18 +899,46 @@ void Devicex::weightsFromHost() {
 void Devicex::remoteBufferWeightsFromHost() {
   for (auto initId : ir().getTensorIds(TensorType::Variable)) {
     Tensor *tensor = ir().getTensor(initId);
-    if (tensor->isCached()) {
+    if (tensor->cacheInfo.isCached()) {
       logging::devicex::debug("remoteBufferWeightsFromHost: {}", initId);
+      auto remoteBufferInfo = tensor->cacheInfo.getRemoteBufferInfo();
       char *data0           = static_cast<char *>(tensor->tensorData()->data());
-      auto remoteBufferInfo = tensor->getRemoteBufferInfo();
-      for (unsigned replica_id = 0; replica_id < getReplicationFactor();
-           ++replica_id) {
-        // Weights to every replica
-        pEngine->copyToRemoteBuffer(
-            data0,
-            getRemoteBuffer(remoteBufferInfo.first).first,
-            static_cast<int>(remoteBufferInfo.second),
-            replica_id);
+
+      if (tensor->cacheInfo.isSharded()) {
+        // Replicated weight sharding, each replica holds 1/repfactor
+        // parts of the weight
+        auto cbr =
+            getCollectiveBalancedReorder(getCacheArgTensorId(tensor->id));
+
+        auto elemSize = cbr->getElementByteSize();
+        auto nelms    = cbr->getNumRearrangedTensorElems();
+
+        // Temporary buffer that can hold the padded weight shards
+        // for all replicas
+        std::vector<char> tmp(nelms * elemSize);
+
+        // Rearrange weights into tmp buffer
+        cbr->rearrangeForCollective(data0, &tmp[0]);
+
+        for (unsigned replica_id = 0; replica_id < getReplicationFactor();
+             ++replica_id) {
+          // 1/repfactor weight shard to each replica
+          pEngine->copyToRemoteBuffer(
+              &tmp[replica_id * nelms / getReplicationFactor() * elemSize],
+              getRemoteBuffer(remoteBufferInfo.first).first,
+              static_cast<int>(remoteBufferInfo.second),
+              replica_id);
+        }
+      } else {
+        for (unsigned replica_id = 0; replica_id < getReplicationFactor();
+             ++replica_id) {
+          // Identical weights to each replica
+          pEngine->copyToRemoteBuffer(
+              data0,
+              getRemoteBuffer(remoteBufferInfo.first).first,
+              static_cast<int>(remoteBufferInfo.second),
+              replica_id);
+        }
       }
     }
   }
@@ -1711,34 +1767,33 @@ PriTask Devicex::streamToHostTask(Tensor *tensor, bool isAnchorStream) {
   };
 }
 
+bool Devicex::hasRemoteBuffer(RemoteBufferId id) const {
+  return remoteBuffers.find(id) != remoteBuffers.end();
+}
+
 const std::pair<poplar::RemoteBuffer, boost::optional<poplar::Tensor>> &
 Devicex::getRemoteBuffer(RemoteBufferId id) const {
   return remoteBuffers.at(id);
 }
 
-void Devicex::setRemoteBufferTensor(RemoteBufferId id, poplar::Tensor tensor) {
-  remoteBuffers.at(id).second = tensor;
-}
+void Devicex::createRemoteBuffer(RemoteBufferId id, poplar::Tensor tensor) {
+  auto info    = ir().getRemoteBufferInfo(id);
+  auto name    = "RB_" + std::to_string(id);
+  auto type    = tensor.elementType();
+  auto size    = tensor.numElements();
+  auto repeats = info.repeats;
 
-void Devicex::createRemoteBuffers() {
-  for (auto info : ir().getAllRemoteBufferInfos()) {
-    auto name    = "RB_" + std::to_string(info.first);
-    auto type    = popType(info.second.info);
-    auto size    = info.second.info.nelms();
-    auto repeats = info.second.repeats;
+  logging::devicex::info(
+      "Creating remote buffer {}, type {}, size {}, repeats {}",
+      name,
+      type,
+      size,
+      repeats);
 
-    logging::devicex::info(
-        "Creating remote buffer {}, type {}, size {}, repeats {}",
-        name,
-        type,
-        size,
-        repeats);
-
-    remoteBuffers.insert(
-        {info.first,
-         {graph().addRemoteBuffer(name, type, size, repeats, true),
-          boost::optional<poplar::Tensor>()}});
-  }
+  remoteBuffers.insert(
+      {id,
+       {graph().addRemoteBuffer(name, type, size, repeats, true),
+        boost::optional<poplar::Tensor>(tensor)}});
 }
 
 std::shared_ptr<CollectiveBalancedReorder>
@@ -2463,7 +2518,7 @@ void Devicex::reconnectInputStreams() {
   for (Tensor *tensor : ir().dataStreamTensors()) {
     // The data stream for a tensor won't exist if using synthetic data, so
     // don't try and recreate them.
-    if (!ir().useSyntheticData() && !tensor->isCached()) {
+    if (!ir().useSyntheticData() && !tensor->cacheInfo.isCached()) {
       engineToInputStreamWithCallback(tensor, fromHostStreams.at(tensor->id));
     }
   }
@@ -2532,9 +2587,6 @@ void Devicex::prepare() {
   // Initialize the liveness analyzer
   livenessAnalyzer.reset(new liveness::LivenessAnalyzer(&ir()));
   livenessAnalyzer->apply();
-
-  // Initialize remote buffer objects
-  createRemoteBuffers();
 
   if (ir().virtualGraphsEnabled()) {
     auto numIPUs     = graph().getTarget().getNumIPUs();
@@ -2641,7 +2693,7 @@ void Devicex::prepare() {
   // 2) set initial value (if using synthetic data).
   for (auto id : ir().getTensorIds(TensorType::Variable)) {
     Tensor *tensor = ir().getTensor(id);
-    if (tensor->isCached())
+    if (tensor->cacheInfo.isCached())
       continue;
 
     // 1

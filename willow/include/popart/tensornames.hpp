@@ -51,6 +51,7 @@ std::vector<std::string> reservedOptimizerPrefixes();
 std::vector<std::string> reservedPrefixes();
 
 TensorId getCacheArgTensorId(TensorId base_id);
+constexpr const char *reservedCacheArgPrefix() { return "CacheArg___"; }
 
 TensorId createRecomputedTensorId(TensorId base_id);
 

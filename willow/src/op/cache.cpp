@@ -111,7 +111,7 @@ static OpCreator<CacheLoadOp> cacheLoadOpCreator(
     },
     true);
 
-static OpCreator<CacheLoadOp> cacheStoreOpCreator(
+static OpCreator<CacheStoreOp> cacheStoreOpCreator(
     OpDefinitions({{Onnx::CustomOperators::CacheStore, cacheStoreOpDef}}),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,

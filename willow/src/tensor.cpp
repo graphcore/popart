@@ -294,24 +294,11 @@ void Tensor::resetProducer(Op *op) {
   producer = op;
 }
 
-void Tensor::setCached(bool cached_) { cached = cached_; }
-
-bool Tensor::isCached() const { return cached; }
-
 void Tensor::setImplicitLoopInput(bool implicit_) {
   implicitLoopInput = implicit_;
 }
 
 bool Tensor::isImplicitLoopInput() const { return implicitLoopInput; }
-
-void Tensor::setRemoteBufferInfo(RemoteBufferId rbId, RemoteBufferIndex index) {
-  remoteBufferInfo = {rbId, index};
-}
-
-const std::pair<RemoteBufferId, RemoteBufferIndex>
-Tensor::getRemoteBufferInfo() const {
-  return remoteBufferInfo;
-}
 
 int Consumers::getTotal() const {
   //  using X = decltype(consumers_m.begin());
@@ -328,8 +315,8 @@ int Consumers::getTotal() const {
 // https://stackoverflow.com/questions/5058349
 Tensor::Tensor(TensorId n, TensorType t, Graph &g)
     : Vertex(), id(n), consumers(this), graph(g), producer(nullptr),
-      tensorTypeInfo(&getTensorTypeInfoMap().at(t)), cached(false),
-      implicitLoopInput(false), data_(nullptr) {
+      tensorTypeInfo(&getTensorTypeInfoMap().at(t)), implicitLoopInput(false),
+      data_(nullptr) {
   // graph is currently unused - this removes the compiler warning
   (void)graph;
 }
@@ -370,7 +357,7 @@ bool Tensor::isOptimizerTensor() const {
 }
 
 bool Tensor::isCacheArgTensor() const {
-  std::size_t found = id.find("_CacheArg");
+  std::size_t found = id.find(reservedCacheArgPrefix());
   if (found != std::string::npos) {
     return true;
   }

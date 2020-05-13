@@ -101,7 +101,7 @@ void Tensors::removeIsolated(bool retainCached) {
   for (auto &id : getAllTensorIds()) {
     Tensor *tensor = M[id].get();
     if (tensor->hasProducer() == false && tensor->consumers.getTotal() == 0 &&
-        !(retainCached && tensor->isCached())) {
+        !(retainCached && tensor->cacheInfo.isCached())) {
       M.erase(id);
       logging::ir::debug("Removing isolated Tensor {}", id);
     }
