@@ -8,9 +8,9 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/add.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/ipucopy.hpp>
-#include <popart/op/l1.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/tensorinfo.hpp>
@@ -76,7 +76,7 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithVGraphs) {
       }
     }
 
-    auto loss = new L1Loss(act, "l1Loss", 0.1, ReductionType::Mean);
+    auto loss = new IdentityLoss(act, "idLoss", ReductionType::Mean);
     loss->virtualGraph((2 * N - 1) % 2);
 
     runner.opts.batchSerializationFactor = K;
@@ -197,7 +197,7 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithVGraphsOutlined) {
       }
     }
 
-    auto loss = new L1Loss(act, "l1Loss", 0.1, ReductionType::Mean);
+    auto loss = new IdentityLoss(act, "idLoss", ReductionType::Mean);
     loss->virtualGraph((2 * N - 1) % 2);
 
     runner.opts.batchSerializationFactor = K;

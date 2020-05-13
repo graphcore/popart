@@ -10,7 +10,6 @@ import re
 from tempfile import TemporaryDirectory
 from torchvision import transforms, datasets
 from popart.torch import torchwriter
-from popart import NllLoss, L1Loss
 import tempfile
 
 # `import test_util` requires adding to sys.path
@@ -94,9 +93,16 @@ def _run_impl(torchWriter, patterns, outputdir, cifarInIndices, device,
     def getFnModel0():
         return os.path.join(outputdir, "runId%d_model0.onnx" % (baseId, ))
 
+    def getIdentityLosses(lossIds):
+        idLosses = []
+        for loss in lossIds:
+            idLoss = popart.IdentityLoss(loss, loss + "/out")
+            idLosses.append(idLoss)
+        return idLosses
+
     dataFeed = torchWriter.dataFeed
     inputShapeInfo = torchWriter.inputShapeInfo
-    validModes = ["infer", "evaluate", "train"]
+    validModes = ["infer", "train"]
     if mode not in validModes:
         raise Exception("mode must be one of " + str(validModes))
 
@@ -210,19 +216,12 @@ def _run_impl(torchWriter, patterns, outputdir, cifarInIndices, device,
                                           patterns=patterns,
                                           userOptions=opts,
                                           deviceInfo=device)
-    elif mode == 'evaluate':
-        session = popart.InferenceSession(fnModel=modelProtoX,
-                                          inputShapeInfo=inputShapeInfo,
-                                          dataFeed=dataFeed,
-                                          losses=torchWriter.losses,
-                                          patterns=patterns,
-                                          userOptions=opts,
-                                          deviceInfo=device)
     else:
         session = popart.TrainingSession(fnModel=modelProtoX,
                                          inputShapeInfo=inputShapeInfo,
                                          dataFeed=dataFeed,
-                                         losses=torchWriter.losses,
+                                         losses=getIdentityLosses(
+                                             torchWriter.outNames),
                                          optimizer=torchWriter.optimizer,
                                          patterns=patterns,
                                          userOptions=opts,
@@ -279,17 +278,15 @@ def _run_impl(torchWriter, patterns, outputdir, cifarInIndices, device,
     def getLossesFromAnchors(torchWriter, anchorArrays):
         # Check all losses are anchored
         for loss in torchWriter.losses:
-            lossId = loss.output(0)
             assertStr = "All loss tensors mist be anchored"
-            assert (torchWriter.dataFeed.isAnchored(lossId)), assertStr
+            assert (torchWriter.dataFeed.isAnchored(loss)), assertStr
 
         # Check all losses have the same anchor return type
-        fisrtLossId = torchWriter.losses[0].output(0)
+        fisrtLossId = torchWriter.losses[0]
         firstLossArtId = torchWriter.dataFeed.art(fisrtLossId).id()
         if (len(torchWriter.losses) > 1):
             for loss in torchWriter.losses:
-                lossId = loss.output(0)
-                lossArtId = torchWriter.dataFeed.art(lossId).id()
+                lossArtId = torchWriter.dataFeed.art(loss).id()
                 assertStr = "All losses must have the same return type"
                 assert (lossArtId == firstLossArtId), assertStr
 
@@ -297,7 +294,7 @@ def _run_impl(torchWriter, patterns, outputdir, cifarInIndices, device,
         lossShape = np.shape(getAnchorTensor(fisrtLossId, anchorArrays))
         pLosses = np.zeros(lossShape)
         for loss in torchWriter.losses:
-            pLosses_ = getAnchorTensor(loss.output(0), anchorArrays)
+            pLosses_ = getAnchorTensor(loss, anchorArrays)
             pLosses = np.add(pLosses, pLosses_)
 
         return pLosses
@@ -401,26 +398,6 @@ def _run_impl(torchWriter, patterns, outputdir, cifarInIndices, device,
             # One relative error calculated per weight tensor
             for tId, relerror in nr.getRelativeErrors().items():
                 checkResult(relerror, margin)
-
-        elif mode == "evaluate":
-            # take batchesPerStep passes (1 step), Torch
-            # returns scalar for each sample
-            torchLosses = torchWriter.evaluate(inputs)
-
-            # take batchesPerStep passes (1 step), PopArt
-            pystepio = popart.PyStepIO(inputs, anchorArrays)
-            session.run(pystepio)
-            pLosses = getLossesFromAnchors(torchWriter, anchorArrays)
-
-            # Compare torch loss tensors with popart loss from
-            # anchor tensor map.
-            # Torch losses returned for all samples, whereas
-            # anchors are returned as specified by the user.
-            # Subsample torch outputs to match dimensions
-            torchLosses = subsampleBatches(torchLosses, np.shape(pLosses))
-            result = getTensorError(torchLosses, pLosses)
-            print(reportTensorError(0, result))
-            checkResult(result, margin)
 
         elif mode == "infer":
             # take batchesPerStep passes (1 step), Torch

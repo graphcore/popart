@@ -14,7 +14,6 @@ nChans = 3
 samplesPerBatch = 2
 batchesPerStep = 4
 anchors = {
-    "l1LossVal": popart.AnchorReturnType("All"),
     "out": popart.AnchorReturnType("Final"),
     "image0": popart.AnchorReturnType("All")
 }
@@ -25,7 +24,6 @@ inputShapeInfo.add(
 
 inNames = ["image0"]
 outNames = ["out"]
-losses = [popart.L1Loss("out", "l1LossVal", 0.1)]
 optimizer = None
 
 #cifar training data loader : at index 0 : image, at index 1 : label.
@@ -44,10 +42,11 @@ class Module0(torch.nn.Module):
         self.relu = torch.nn.functional.relu
 
     def forward(self, inputs):
-        """out = relu(conv(in))"""
+        """out = l1loss(relu(conv(in)))"""
         image0 = inputs[0]
         x = self.conv1(image0)
         x = self.relu(x)
+        x = 0.1 * torch.abs(x)  # l1loss
         return x
 
 
@@ -58,7 +57,6 @@ torch.manual_seed(1)
 torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
-    losses=losses,
     optimizer=optimizer,
     inputShapeInfo=inputShapeInfo,
     dataFeed=dataFeed,
@@ -73,4 +71,4 @@ c10driver.run(torchWriter=torchWriter,
               cifarInIndices=cifarInIndices,
               device=args.device,
               device_hw_id=args.hw_id,
-              mode="evaluate")
+              mode="infer")

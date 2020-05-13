@@ -32,13 +32,18 @@ def get_trainset():
 
 
 def get_session(fnModel, inputShapeInfo, dataFeed, torchWriter, passes, opts):
+    idLosses = []
+    for loss in torchWriter.outNames:
+        idLoss = popart.IdentityLoss(loss, loss + "/out")
+        idLosses.append(idLoss)
+
     # Reads ONNX model from file and creates backwards graph,
     # performs Ir optimisations
     session = popart.TrainingSession(
         fnModel=fnModel,
         inputShapeInfo=inputShapeInfo,
         dataFeed=dataFeed,
-        losses=torchWriter.losses,
+        losses=idLosses,
         optimizer=torchWriter.optimizer,
         patterns=passes,
         userOptions=opts,
@@ -172,11 +177,9 @@ samplesPerBatch = 2
 batchesPerStep = 3
 
 # anchors and how to return them : in this example,
-# return the l1 loss "l1LossVal",
-# the tensor to which the loss is applied "out",
+# return the l1 loss "out",
 # and the input tensor "image0"
 anchors = {
-    "l1LossVal": popart.AnchorReturnType("Final"),
     "out": popart.AnchorReturnType("Final"),
     "image0": popart.AnchorReturnType("Final")
 }
@@ -191,17 +194,10 @@ inputShapeInfo.add(
     "image0", popart.TensorInfo("FLOAT", [samplesPerBatch, nChans, 32, 32]))
 
 inNames = ["image0"]
-
-# outNames: not the same as anchors,
-# outNames: not the same as anchors,
-# these are the Tensors which will be
-# connected to the loss layers
 outNames = ["out"]
 
 # cifar training data loader : at index 0 : image, at index 1 : label.
 cifarInIndices = {"image0": 0}
-
-losses = [popart.L1Loss("out", "l1LossVal", 0.1)]
 
 # The optimization passes to run in the Ir, see patterns.hpp
 willowOptPasses = popart.Patterns()
@@ -223,6 +219,7 @@ class Module0(torch.nn.Module):
         image0 = inputs[0]
         x = self.conv1(image0)
         x = self.relu(x)
+        x = torch.sum(0.1 * torch.abs(x))  # l1loss
         return x
 
 
@@ -233,7 +230,6 @@ torch.manual_seed(1)
 torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
-    losses=losses,
     optimizer=popart.ConstSGD(0.001),
     inputShapeInfo=inputShapeInfo,
     dataFeed=dataFeed,

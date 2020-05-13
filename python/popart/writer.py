@@ -13,8 +13,6 @@ class NetWriter():
             A list (in order) of all the inputs to the ONNX Model.
         outNames:
             names of the outputs of the ONNX Model.
-        losses:
-            A list of PopART Loss objects
         optimizer:
             An optimizer (ConstSGD, SGD, etc) or ``None`` if
             in evaluation mode.
@@ -31,12 +29,10 @@ class NetWriter():
 
     """
 
-    def __init__(self, inNames, outNames, losses, optimizer, dataFeed,
-                 inputShapeInfo):
+    def __init__(self, inNames, outNames, optimizer, dataFeed, inputShapeInfo):
 
         self.inNames = inNames
         self.outNames = outNames
-        self.losses = losses
         self.optimizer = optimizer
         self.dataFeed = dataFeed
         self.inputShapeInfo = inputShapeInfo

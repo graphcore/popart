@@ -40,6 +40,9 @@ def test_3d_nll_loss_input():
     lshape = [Batchsize, ExtraDim]
     flat_lshape = [Batchsize * ExtraDim]
 
+    ip_data = np.random.rand(Batchsize, ExtraDim, Classes).astype(np.float32)
+    lb_data = np.random.randint(Classes, size=lshape)
+
     ###
     # Popart
     ###

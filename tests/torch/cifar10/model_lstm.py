@@ -27,12 +27,10 @@ batchesPerStep = 4
 # Last batch in step, all samples in step,
 # every N batches in a step? See ir.hpp for details.
 # In this example:
-# the l1 loss "l1LossVal",
-# the tensor to which the loss is applied "out",
+# the l1 loss "out",
 # and the input tensor "image0"
 anchors = {
-    "l1LossVal": popart.AnchorReturnType("EveryN", 2),
-    "out": popart.AnchorReturnType("Final"),
+    "out": popart.AnchorReturnType("EveryN", 2),
     "image0": popart.AnchorReturnType("All")
 }
 
@@ -46,16 +44,10 @@ inputShapeInfo.add("image0",
                    popart.TensorInfo("FLOAT", [batchSize, nChans, 32, 32]))
 
 inNames = ["image0"]
-
-# outNames: not the same as anchors,
-# these are the Tensors which will be
-# connected to the loss layers
 outNames = ["out"]
 
 #cifar training data loader : at index 0 : image, at index 1 : label.
 cifarInIndices = {"image0": 0}
-
-losses = [popart.L1Loss("out", "l1LossVal", 0.1)]
 
 layers = 1
 batch_size = 32
@@ -83,7 +75,9 @@ class Module0(torch.nn.Module):
         c0 = b[1:2, 0:4].view(1, 1, 4)
         x = self.lstm(a, (h0, c0))
         result = torch.cat((x[0], x[1][0], x[1][1]))
-        return result
+        l1loss = torch.sum(0.1 * torch.abs(result))
+
+        return l1loss
 
 
 # Set arbitrary seed so model weights are initialized to the
@@ -93,7 +87,6 @@ torch.manual_seed(1)
 torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
-    losses=losses,
     optimizer=popart.ConstSGD(0.001),
     inputShapeInfo=inputShapeInfo,
     dataFeed=dataFeed,
@@ -101,5 +94,6 @@ torchWriter = torchwriter.PytorchNetWriter(
     module=Module0(),
     samplesPerBatch=batchSize)
 
-c10driver.run(torchWriter, popart.Patterns(['PreUniRepl']), args.outputdir,
-              cifarInIndices, args.device, args.hw_id)
+c10driver.run(torchWriter,
+              popart.Patterns(['PreUniRepl', 'MulArgGradOp', 'AbsGradOp']),
+              args.outputdir, cifarInIndices, args.device, args.hw_id)

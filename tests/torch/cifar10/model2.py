@@ -18,10 +18,7 @@ nInChans = 3
 nOutChans = 10
 batchSize = 2
 batchesPerStep = 3
-anchors = {
-    "l1LossVal": popart.AnchorReturnType("Final"),
-    "out": popart.AnchorReturnType("Final")
-}
+anchors = {"out": popart.AnchorReturnType("Final")}
 dataFeed = popart.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = popart.InputShapeInfo()
 inputShapeInfo.add("image0",
@@ -29,7 +26,6 @@ inputShapeInfo.add("image0",
 inNames = ["image0"]
 cifarInIndices = {"image0": 0}
 outNames = ["out"]
-losses = [popart.L1Loss("out", "l1LossVal", 0.1)]
 
 
 class Module0(torch.nn.Module):
@@ -51,7 +47,8 @@ class Module0(torch.nn.Module):
         x = torch.nn.functional.avg_pool2d(x, kernel_size=window_size)
         x = torch.squeeze(x)
         # This is the where the GEMM happens:
-        out = self.linear(x)
+        x = self.linear(x)
+        out = torch.sum(0.1 * torch.abs(x))
         return out
 
 
@@ -62,7 +59,6 @@ torch.manual_seed(1)
 torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
-    losses=losses,
     # large weight_decay term to test that it is definitely working
     optimizer=popart.ConstSGD(learning_rate=0.001, weight_decay=10),
     inputShapeInfo=inputShapeInfo,

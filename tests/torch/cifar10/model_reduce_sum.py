@@ -23,11 +23,9 @@ batchSize = 2
 batchesPerStep = 3
 
 # anchors, and how they are returned: in this example,
-# return the l1 loss "l1LossVal",
-# the tensor to which the loss is applied "out",
+# return the l1 loss "out",
 # and the input tensor "image0"
 anchors = {
-    "l1LossVal": popart.AnchorReturnType("Final"),
     "out": popart.AnchorReturnType("Final"),
     "image0": popart.AnchorReturnType("Final")
 }
@@ -41,17 +39,10 @@ inputShapeInfo.add("image0",
                    popart.TensorInfo("FLOAT", [batchSize, nChans, 32, 32]))
 
 inNames = ["image0"]
-
-# outNames: not the same as anchors,
-# outNames: not the same as anchors,
-# these are the Tensors which will be
-# connected to the loss layers
 outNames = ["out"]
 
 #cifar training data loader : at index 0 : image, at index 1 : label.
 cifarInIndices = {"image0": 0}
-
-losses = [popart.L1Loss("out", "l1LossVal", 0.1)]
 
 
 class Module0(torch.nn.Module):
@@ -69,6 +60,7 @@ class Module0(torch.nn.Module):
         image0 = inputs[0]
         x = self.conv1(image0)
         x = torch.sum(x, dim=1)
+        x = torch.sum(0.1 * torch.abs(x))
         return x
 
 
@@ -79,7 +71,6 @@ torch.manual_seed(1)
 torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
-    losses=losses,
     optimizer=popart.ConstSGD(0.001),
     inputShapeInfo=inputShapeInfo,
     dataFeed=dataFeed,

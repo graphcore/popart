@@ -23,27 +23,24 @@ nInChans = 3
 nOutChans = 10
 batchSize = 2
 batchesPerStep = 3
-anchors = {
-    # setting these as anchors guarantees that the softmax-grad-direct
-    # pattern is not run
-    popart.reservedGradientPrefix() + "probs":
-    popart.AnchorReturnType("Final"),
-    popart.reservedGradientPrefix() + "pre_probs":
-    popart.AnchorReturnType("Final"),
-}
+anchors = {}
 dataFeed = popart.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = popart.InputShapeInfo()
 inputShapeInfo.add("image0",
                    popart.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
 inputShapeInfo.add("label", popart.TensorInfo("INT32", [batchSize]))
 
-inNames = ["image0"]
+inNames = ["image0", "label"]
 cifarInIndices = {"image0": 0, "label": 1}
-
-outNames = ["pre_probs", "probs"]
-losses = [popart.NllLoss("probs", "label", "nllLossVal")]
+outNames = ["loss"]
 
 willowOptPasses = popart.Patterns(popart.PatternsLevel.All)
+
+
+def nllloss(logprobs, targets):
+    targets = targets.unsqueeze(1)
+    loss = torch.gather(logprobs, 1, targets)
+    return -loss.sum()
 
 
 class Module0(torch.nn.Module):
@@ -66,16 +63,10 @@ class Module0(torch.nn.Module):
         window_size = (int(x.size()[2]), int(x.size()[3]))
         x = torch.nn.functional.avg_pool2d(x, kernel_size=window_size)
         pre_probs = torch.squeeze(x)
-        # probabilities:
-        # Note that for Nll, Pytorch requires logsoftmax input.
-        # We do this separately the framework dependant section,
-        # torchwriter.py
         probs = self.softmax(pre_probs)
-        # -> currently no support from pytorch
-        # -> for gather or log (pytorch 0.4.1)
-        # x = torch.gather(input = x, dim = 1, index= labels)
-        # loss = torch.log(x)
-        return pre_probs, probs
+        logprobs = torch.log(probs)
+        loss = nllloss(logprobs, inputs[1])
+        return loss
 
 
 # Set arbitrary seed so model weights are initialized to the
@@ -85,7 +76,6 @@ torch.manual_seed(1)
 torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
-    losses=losses,
     optimizer=popart.ConstSGD(0.001),
     inputShapeInfo=inputShapeInfo,
     dataFeed=dataFeed,

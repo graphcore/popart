@@ -18,9 +18,7 @@ nOutChans = 10
 batchSize = 2
 batchesPerStep = 3
 anchors = {
-    "l1LossVal": popart_core.AnchorReturnType("Final"),
-    "nllLossVal": popart_core.AnchorReturnType("Final"),
-    "probs": popart_core.AnchorReturnType("Final")
+    "loss": popart_core.AnchorReturnType("Final"),
 }
 dataFeed = popart_core.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = popart_core.InputShapeInfo()
@@ -29,16 +27,18 @@ inputShapeInfo.add("image0",
 inputShapeInfo.add("image1",
                    popart.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
 inputShapeInfo.add("label", popart.TensorInfo("INT32", [batchSize]))
-inNames = ["image0", "image1"]
+inNames = ["image0", "image1", "label"]
 cifarInIndices = {"image0": 0, "image1": 0, "label": 1}
-outNames = ["preProbSquared", "probs"]
-losses = [
-    popart_core.NllLoss("probs", "label", "nllLossVal"),
-    popart_core.L1Loss("preProbSquared", "l1LossVal", 0.01)
-]
+outNames = ["loss"]
 
 willowOptPatterns = popart.Patterns()
 willowOptPatterns.OpToIdentity = True
+
+
+def nllloss(logprobs, targets):
+    targets = targets.unsqueeze(1)
+    loss = torch.gather(logprobs, 1, targets)
+    return -torch.sum(loss)
 
 
 class Module0(torch.nn.Module):
@@ -54,26 +54,24 @@ class Module0(torch.nn.Module):
     def forward(self, inputs):
         image0 = inputs[0]
         image1 = inputs[1]
+        labels = inputs[2]
         x = image0 - image1
 
         x = self.conv1(x)
         x = self.relu(x)
         x = self.conv2(x)
         preProbSquared = x + x
+        l1loss = torch.sum(0.01 * torch.abs(preProbSquared))
 
         window_size = (int(x.size()[2]), int(x.size()[3]))
         x = torch.nn.functional.avg_pool2d(x, kernel_size=window_size)
         x = torch.squeeze(x)
-        # probabilities:
-        # Note that for Nll, Pytorch requires logsoftmax input.
-        # We do this separately the framework dependant section,
-        # torchwriter.py
         probs = self.softmax(x)
-        # -> currently no support from pytorch
-        # -> for gather or log (pytorch 0.4.1)
-        # x = torch.gather(input = x, dim = 1, index= labels)
-        # loss = torch.log(x)
-        return preProbSquared, probs
+        logprobs = torch.log(probs)
+        nll = nllloss(logprobs, labels)
+
+        loss = l1loss + nll
+        return loss
 
 
 # Set arbitrary seed so model weights are initialized to the
@@ -83,7 +81,6 @@ torch.manual_seed(1)
 torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
-    losses=losses,
     optimizer=popart_core.ConstSGD(0.001),
     inputShapeInfo=inputShapeInfo,
     dataFeed=dataFeed,

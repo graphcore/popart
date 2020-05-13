@@ -36,7 +36,7 @@ void ScatterOp::setup() {
   int64_t axis_max = inShape(dataInIndex()).size() - 1;
   if (axis_min > axis || axis > axis_max) {
     throw error(
-        "GatherOp::setup axis = {} is outside the acceptable range [{}, {}]",
+        "ScatterOp::setup axis = {} is outside the acceptable range [{}, {}]",
         axis,
         axis_min,
         axis_max);

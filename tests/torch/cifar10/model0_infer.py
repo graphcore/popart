@@ -21,7 +21,6 @@ inputShapeInfo.add(
 
 inNames = ["image0"]
 outNames = ["out"]
-losses = []
 optimizer = None
 
 #cifar training data loader : at index 0 : image, at index 1 : label.
@@ -54,7 +53,6 @@ torch.manual_seed(1)
 torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
-    losses=losses,
     optimizer=optimizer,
     inputShapeInfo=inputShapeInfo,
     dataFeed=dataFeed,
