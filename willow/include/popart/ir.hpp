@@ -122,7 +122,7 @@ public:
 class Ir {
 
 public:
-  enum class ExecutionMode { Inference, Evaluation, Training };
+  enum class ExecutionMode { Inference, Training };
 
   enum class SerialiseFormat { JSON };
 
@@ -176,7 +176,6 @@ public:
   // Onnx refers to Inference as testing.
   bool isTraining() { return executionMode == ExecutionMode::Training; }
   bool isTesting() { return executionMode == ExecutionMode::Inference; }
-  bool isEvaluation() { return executionMode == ExecutionMode::Evaluation; }
 
   // Log the IR in a human readable format.
   void logIr();
@@ -306,10 +305,6 @@ public:
 
   // Can the IR be used for inference.
   bool canInfer() const;
-
-  // Can the IR be used for evaluation.
-  // This is true when there are losses to compute.
-  bool canEvaluate() const;
 
   // Can the IR be used for training.
   // This is true when there are losses and an optimizer.

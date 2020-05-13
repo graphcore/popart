@@ -297,7 +297,7 @@ def test_expand_mul():
             dataFeed=popart.DataFlow(1, anchor_returns),
             deviceInfo=tu.create_test_device(),
             optimizer=popart.ConstSGD(0.1),
-            losses=[popart.L1Loss(o, "loss", 0.1)],
+            losses=[popart.IdentityLoss(o, "loss")],
             userOptions=opts)
 
         anchors = session.initAnchorArrays()
@@ -306,7 +306,6 @@ def test_expand_mul():
 
         session.prepareDevice()
         session.weightsFromHost()
-        session.optimizerFromHost()
         return session, stepio, anchors, anchor_returns
 
     sess1, stepio1, anch1, arts1 = get_session(True)

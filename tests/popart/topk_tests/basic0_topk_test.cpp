@@ -96,7 +96,6 @@ BOOST_AUTO_TEST_CASE(Basic0TopK_Opset9) {
       proto,
       dataFlow,
       device,
-      {},
       popart::InputShapeInfo(),
       opts,
       popart::Patterns(PatternsLevel::NoPatterns));
@@ -218,7 +217,6 @@ BOOST_AUTO_TEST_CASE(Basic0TopK_Opset10) {
       proto,
       dataFlow,
       device,
-      {},
       popart::InputShapeInfo(),
       opts,
       popart::Patterns(PatternsLevel::NoPatterns));

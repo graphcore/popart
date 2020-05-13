@@ -287,7 +287,6 @@ InferenceSession::~InferenceSession() = default;
 void InferenceSession::configureFromOnnx(
     const std::string &modelProtoOrFilename,
     const DataFlow &df,
-    const std::vector<Loss *> &losses,
     const InputShapeInfo &perk,
     std::shared_ptr<DeviceInfo> deviceInfo,
     const SessionOptions &userOptions,
@@ -297,21 +296,14 @@ void InferenceSession::configureFromOnnx(
 
   auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
 
-  ir.prepare({modelProto,
-              perk,
-              df,
-              cloneLosses(losses),
-              nullptr,
-              *deviceInfo,
-              userOptions,
-              patterns});
+  ir.prepare(
+      {modelProto, perk, df, {}, nullptr, *deviceInfo, userOptions, patterns});
 }
 
 std::unique_ptr<InferenceSession>
 InferenceSession::createFromOnnxModel(const std::string &model,
                                       const DataFlow &dataFlow,
                                       std::shared_ptr<DeviceInfo> deviceInfo,
-                                      const std::vector<Loss *> &losses,
                                       const InputShapeInfo &inputShapeInfo,
                                       const SessionOptions &userOptions,
                                       const Patterns &patterns) {
@@ -324,13 +316,8 @@ InferenceSession::createFromOnnxModel(const std::string &model,
   }
 
   auto session = std::unique_ptr<InferenceSession>(new InferenceSession());
-  session->configureFromOnnx(model,
-                             dataFlow,
-                             losses,
-                             inputShapeInfo,
-                             deviceInfo,
-                             userOptions,
-                             patterns);
+  session->configureFromOnnx(
+      model, dataFlow, inputShapeInfo, deviceInfo, userOptions, patterns);
 
   session->setDevice(deviceInfo);
 

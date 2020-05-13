@@ -57,7 +57,6 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose1) {
       proto,
       dataFlow,
       device,
-      {},
       popart::InputShapeInfo(),
       {},
       popart::Patterns({popart::PreAliasPatternType::PostNRepl}));
@@ -130,7 +129,6 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose2) {
       proto,
       dataFlow,
       device,
-      {},
       popart::InputShapeInfo(),
       {},
       popart::Patterns({popart::PreAliasPatternType::PostNRepl}));

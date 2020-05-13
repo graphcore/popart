@@ -97,12 +97,10 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_0) {
 
   if (device != nullptr) {
     auto opts = SessionOptions();
-    std::vector<Loss *> losses{};
     auto session = popart::InferenceSession::createFromOnnxModel(
         proto,
         dataFlow,
         device,
-        losses,
         popart::InputShapeInfo(),
         opts,
         popart::Patterns(PatternsLevel::Default));
@@ -228,12 +226,10 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_1) {
 
   if (device != nullptr) {
     auto opts = SessionOptions();
-    std::vector<Loss *> losses{};
     auto session = popart::InferenceSession::createFromOnnxModel(
         proto,
         dataFlow,
         device,
-        losses,
         popart::InputShapeInfo(),
         opts,
         popart::Patterns(PatternsLevel::Default));
@@ -335,12 +331,10 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadOutlineTest) {
     opts.outlineThreshold = -1.0;
     opts.enableOutlining  = true;
 
-    std::vector<Loss *> losses{};
     auto session = popart::InferenceSession::createFromOnnxModel(
         proto,
         dataFlow,
         device,
-        losses,
         popart::InputShapeInfo(),
         opts,
         popart::Patterns(PatternsLevel::Default));

@@ -82,7 +82,6 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
         proto,
         dataFlow,
         device,
-        {},
         popart::InputShapeInfo(),
         opts,
         popart::Patterns(PatternsLevel::NoPatterns).enableInPlace(inplace));

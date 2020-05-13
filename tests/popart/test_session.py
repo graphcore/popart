@@ -71,9 +71,9 @@ class PopartTestSession:
             return session_type(**session_args)
 
         if self.mode == 'inference':
-            return create_session(('fnModel', 'dataFeed', 'losses',
-                                   'deviceInfo', 'passes', 'userOptions'),
-                                  popart.InferenceSession)
+            return create_session(
+                ('fnModel', 'dataFeed', 'deviceInfo', 'passes', 'userOptions'),
+                popart.InferenceSession)
         elif self.mode == 'train':
             return create_session(
                 ('fnModel', 'dataFeed', 'losses', 'optimizer', 'deviceInfo',

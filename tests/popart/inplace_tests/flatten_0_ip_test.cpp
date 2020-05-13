@@ -88,7 +88,6 @@ BOOST_AUTO_TEST_CASE(Inplace_flatten0) {
         proto,
         dataFlow,
         device,
-        {},
         popart::InputShapeInfo(),
         opts,
         popart::Patterns(PatternsLevel::NoPatterns).enableInPlace(true));

@@ -75,7 +75,6 @@ BOOST_AUTO_TEST_CASE(StepIOTest_BufferInput) {
       proto,
       dataFlow,
       device,
-      {},
       popart::InputShapeInfo(),
       {},
       popart::Patterns({popart::PreAliasPatternType::PostNRepl}));
@@ -155,7 +154,6 @@ BOOST_AUTO_TEST_CASE(StepIOTest_BufferInput_Ipu,
       proto,
       dataFlow,
       ipuDevice,
-      {},
       popart::InputShapeInfo(),
       {},
       popart::Patterns({popart::PreAliasPatternType::PostNRepl}));
@@ -228,7 +226,6 @@ BOOST_AUTO_TEST_CASE(StepIOTest_CallbackInput) {
       proto,
       dataFlow,
       device,
-      {},
       popart::InputShapeInfo(),
       {},
       popart::Patterns({popart::PreAliasPatternType::PostNRepl}));
@@ -333,7 +330,6 @@ BOOST_AUTO_TEST_CASE(StepIOTest_CallbackInput_Ipu,
       proto,
       dataFlow,
       ipuDevice,
-      {},
       popart::InputShapeInfo(),
       {},
       popart::Patterns({popart::PreAliasPatternType::PostNRepl}));

@@ -68,9 +68,7 @@ void DropoutOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 }
 
 // Dropout in testing mode can be replaced by the identity
-bool DropoutOp::canBeReplacedByIdentity() {
-  return (getIr().isTesting() || getIr().isEvaluation());
-}
+bool DropoutOp::canBeReplacedByIdentity() { return (getIr().isTesting()); }
 
 DropoutGradOp::DropoutGradOp(const DropoutOp &fwdOp)
     : DropoutOp(fwdOp.opid,

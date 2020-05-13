@@ -818,7 +818,6 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("model"),
             py::arg("dataFlow").none(),
             py::arg("deviceInfo"),
-            py::arg("losses"),
             py::arg("inputShapeInfo"),
             py::arg("userOptions"),
             py::arg("patterns"));

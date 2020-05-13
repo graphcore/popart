@@ -26,7 +26,6 @@ def test_all_constexpr():
     session = popart.InferenceSession(
         fnModel=builder.getModelProto(),
         dataFeed=popart.DataFlow(1, {out: popart.AnchorReturnType("All")}),
-        losses=[],
         patterns=popart.Patterns(popart.PatternsLevel.All),
         deviceInfo=tu.create_test_device())
 

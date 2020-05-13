@@ -47,7 +47,6 @@ BOOST_AUTO_TEST_CASE(CorrectBufferNElmsTest0) {
       proto,
       dataFlow,
       device,
-      {},
       popart::InputShapeInfo(),
       opts,
       popart::Patterns(PatternsLevel::NoPatterns));

@@ -15,7 +15,7 @@ class NetWriter():
             names of the outputs of the ONNX Model.
         optimizer:
             An optimizer (ConstSGD, SGD, etc) or ``None`` if
-            in evaluation mode.
+            in inference mode.
         anchors:
             Only relevant if in training mode: the names of tensors
             which must be computed and returned. If not in training
@@ -51,15 +51,6 @@ class NetWriter():
     def train(self, inputsMap):
         """
         Perform ``batchesPerStep`` training steps. This function
-        only needs to be implemented by frameworks which will
-        be used to verify PopART. See ``torchwriter.py`` for an
-        example implementation.
-        """
-        raise NotImplementedError()
-
-    def eval(self, inputsMap):
-        """
-        Perform ``batchesPerStep`` evaluation steps. This function
         only needs to be implemented by frameworks which will
         be used to verify PopART. See ``torchwriter.py`` for an
         example implementation.

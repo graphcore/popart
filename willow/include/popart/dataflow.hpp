@@ -79,13 +79,12 @@ public:
   std::size_t hash() const;
 
 private:
-  /// The number of batches processed by the backend in one call to train,
-  /// evaluate or infer.
+  /// The number of batches processed by the backend in one call to train
+  /// or infer.
   int batchesPerStep_;
 
   /// The set of tensors to return to the user after execution, and how
-  /// frequently they are returned during multi-batch training, inference,
-  /// or evaluation
+  /// frequently they are returned during multi-batch training or inference
   std::map<TensorId, AnchorReturnType> m_anchors;
 
   /// The set of anchor tensors

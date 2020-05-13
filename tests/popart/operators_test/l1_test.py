@@ -25,12 +25,10 @@ def test_l1(op_tester):
 
         print(dtype, shape)
 
-        def init_builder(builder, losses):
+        def init_builder(builder):
             tensor = builder.addInputTensor(data)
             l1 = builder.aiGraphcore.l1loss([tensor], scale)
-            out = popart.IdentityLoss(l1, "out")
-            losses.append(out)
-            return [out.output(0)]
+            return [l1]
 
         def reference(ref_data):
             result = []
@@ -60,14 +58,12 @@ def test_l1_training(op_tester):
         data[np.where(data < 0.5)] -= 1.0
         scale = np.random.rand() - 0.5
 
-        def init_builder(builder, losses):
+        def init_builder(builder):
             result = []
             axes_reduce = []
             tensor = builder.addInputTensor(data)
             l1 = builder.aiGraphcore.l1loss([tensor], scale)
-            out = popart.IdentityLoss(l1, "out")
-            losses.append(out)
-            result.append(out.output(0))
+            result.append(l1)
             result.append(popart.reservedGradientPrefix() + tensor)
             return result
 

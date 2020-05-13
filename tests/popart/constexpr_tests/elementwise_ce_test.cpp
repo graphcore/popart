@@ -310,7 +310,6 @@ template <typename T> void ConstExprTest_Add_Type(std::string type) {
       proto,
       dataFlow,
       device,
-      {}, // no losses
       InputShapeInfo(),
       {}, // no SessionOptions
       Patterns({PreAliasPatternType::PostNRepl}));

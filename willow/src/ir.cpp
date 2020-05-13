@@ -194,10 +194,9 @@ void Ir::setOnnxModel(const ONNX_NAMESPACE::ModelProto &model) {
 }
 
 void Ir::setDataFlow(const DataFlow &df) {
-  // Inference and evaluation modes require an anchor
+  // Inference  mode require an anchor
   if (!canTrain() && df.nAnchors() == 0) {
-    throw error("User must specify an anchor tensor when doing inference or "
-                "evalulation.");
+    throw error("User must specify an anchor tensor when doing inference.");
   } else {
     dataFlow = df;
   }
@@ -713,7 +712,7 @@ std::set<Tensor *> Ir::getRootInputsToOp(Op *op) {
 // Verify ConstExpr folding has removed input tensors that should have
 // been removed:
 //  - that initializer inputs are removed when possible in
-//    inference and eval modes
+//    inference mode
 //  - that constant inputs are removed when possible in all modes
 //
 // 1. Get only the tensors we care about checking
@@ -799,10 +798,8 @@ void Ir::prepareImpl(const IrBundle &gb) {
 
   if (gb.optimizer) {
     setExecutionMode(ExecutionMode::Training);
-  } else if (gb.losses.empty()) {
-    setExecutionMode(ExecutionMode::Inference);
   } else {
-    setExecutionMode(ExecutionMode::Evaluation);
+    setExecutionMode(ExecutionMode::Inference);
   }
 
   setDataFlow(gb.dataFlow);
@@ -873,7 +870,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
     applyTransform(InferPipelineStages::id(), getMainGraph());
   }
 
-  if (canEvaluate()) {
+  if (canTrain()) {
     growFinalLoss(gb.losses);
     updateVertices();
   }
@@ -885,7 +882,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
     updateVertices();
   }
 
-  if (canEvaluate()) {
+  if (canTrain()) {
     setNEdgesToLoss();
   }
 
@@ -926,7 +923,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
     applyPreAliasPatterns(graph);
   }
 
-  if (canEvaluate()) {
+  if (canTrain()) {
     setNEdgesToLoss();
   }
 
@@ -1499,10 +1496,8 @@ void Ir::registerInputTensors(
       logging::info("Not creating Tensor for unused initializer, {}", tenId);
       unusedInitializers.emplace(tenId);
     } else {
-      // If inference or evaluation mode add initializers as constants if option
-      // enabled
-      if ((getExecutionMode() == ExecutionMode::Inference ||
-           getExecutionMode() == ExecutionMode::Evaluation) &&
+      // If inference mode add initializers as constants if option enabled
+      if (getExecutionMode() == ExecutionMode::Inference &&
           getSessionOptions().constantWeights == true) {
         logCreationInfo("Constant", tenId);
         getTensors().addConstInit(tenId, &initializer);
@@ -1644,7 +1639,7 @@ bool Ir::applyPreAliasPattern(const PreAliasPattern *pattern, Graph &graph) {
 
     // If the ir will construct a loss, but hasn't yet, check that the pattern
     // doesn't touch the inputs to the loss.
-    if (this->canEvaluate() && !this->constructedFinalLoss &&
+    if (this->canTrain() && !this->constructedFinalLoss &&
         touchesInputToLoss(op)) {
       return false;
     }
@@ -3016,11 +3011,7 @@ bool Ir::isSchedulable(const OpsBeforeKey &gCons) const {
 Ir::ExecutionMode Ir::getExecutionMode() const { return executionMode; }
 
 bool Ir::canInfer() const {
-  return getExecutionMode() == ExecutionMode::Inference || canEvaluate();
-}
-
-bool Ir::canEvaluate() const {
-  return getExecutionMode() == ExecutionMode::Evaluation || canTrain();
+  return getExecutionMode() == ExecutionMode::Inference || canTrain();
 }
 
 bool Ir::canTrain() const {

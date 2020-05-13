@@ -229,7 +229,6 @@ public:
    *              containing an ONNX model protobuf
    * \param inputShapeInfo Information about the shapes of input and output
    *                       tensors
-   * \param losses An optional list of loss layers to use after inference
    * \param dataFlow Configuration for the data feeds and fetches
    * \param userOptions String to configure session options
    * \param patterns Optimization patterns to apply
@@ -239,7 +238,6 @@ public:
   createFromOnnxModel(const std::string &model,
                       const DataFlow &dataFlow,
                       std::shared_ptr<DeviceInfo> deviceInfo,
-                      const std::vector<Loss *> &losses    = {},
                       const InputShapeInfo &inputShapeInfo = InputShapeInfo(),
                       const SessionOptions &userOptions    = SessionOptions(),
                       const Patterns &patterns             = Patterns());
@@ -247,7 +245,6 @@ public:
 private:
   void configureFromOnnx(const std::string &model,
                          const DataFlow &dataFlow,
-                         const std::vector<Loss *> &losses,
                          const InputShapeInfo &inputShapeInfo,
                          std::shared_ptr<DeviceInfo> deviceInfo,
                          const SessionOptions &userOptions,

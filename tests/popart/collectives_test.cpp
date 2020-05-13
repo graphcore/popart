@@ -92,12 +92,10 @@ BOOST_AUTO_TEST_CASE(ReplicatedAllReduceInplaceTest) {
     opts.enableReplicatedGraphs = true;
     opts.replicatedGraphCount   = replicationFactor;
 
-    std::vector<Loss *> losses{};
     auto session = popart::InferenceSession::createFromOnnxModel(
         proto,
         dataFlow,
         device,
-        losses,
         popart::InputShapeInfo(),
         opts,
         popart::Patterns(PatternsLevel::Default));
@@ -172,12 +170,10 @@ BOOST_AUTO_TEST_CASE(ReplicatedAllReduceTest) {
     opts.enableReplicatedGraphs = true;
     opts.replicatedGraphCount   = replicationFactor;
 
-    std::vector<Loss *> losses{};
     auto session = popart::InferenceSession::createFromOnnxModel(
         proto,
         dataFlow,
         device,
-        losses,
         popart::InputShapeInfo(),
         opts,
         popart::Patterns(PatternsLevel::Default));
@@ -257,12 +253,10 @@ BOOST_AUTO_TEST_CASE(ReplicatedAllReduceIOTileTest) {
     opts.replicatedGraphCount   = replicationFactor;
     opts.numIOTiles             = 128;
 
-    std::vector<Loss *> losses{};
     auto session = popart::InferenceSession::createFromOnnxModel(
         proto,
         dataFlow,
         device,
-        losses,
         popart::InputShapeInfo(),
         opts,
         popart::Patterns(PatternsLevel::Default));
@@ -347,12 +341,10 @@ BOOST_AUTO_TEST_CASE(ReplicatedReduceScatter) {
     opts.enableReplicatedGraphs = true;
     opts.replicatedGraphCount   = replicationFactor;
 
-    std::vector<Loss *> losses{};
     auto session = popart::InferenceSession::createFromOnnxModel(
         proto,
         dataFlow,
         device,
-        losses,
         popart::InputShapeInfo(),
         opts,
         popart::Patterns(PatternsLevel::Default));
@@ -431,12 +423,10 @@ BOOST_AUTO_TEST_CASE(ReplicatedAllGather) {
     opts.enableReplicatedGraphs = true;
     opts.replicatedGraphCount   = replicationFactor;
 
-    std::vector<Loss *> losses{};
     auto session = popart::InferenceSession::createFromOnnxModel(
         proto,
         dataFlow,
         device,
-        losses,
         popart::InputShapeInfo(),
         opts,
         popart::Patterns(PatternsLevel::Default));

@@ -42,7 +42,6 @@ def nllloss(logprobs, targets):
     loss = torch.gather(logprobs, 1, targets)
     return -loss.sum()
 
-
 class Module0(torch.nn.Module):
     def __init__(self):
         torch.nn.Module.__init__(self)

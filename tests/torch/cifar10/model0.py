@@ -29,7 +29,7 @@ batchesPerStep = 4
 # the l1 loss "out",
 # and the input tensor "image0"
 anchors = {
-    "out": popart.AnchorReturnType("EvernyN", 2),
+    "out": popart.AnchorReturnType("EveryN", 2),
     "image0": popart.AnchorReturnType("All")
 }
 

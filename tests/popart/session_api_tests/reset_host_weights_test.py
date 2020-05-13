@@ -58,8 +58,7 @@ def test_reset_host_weights_with_extra_tensor_in_onnx_model():
     va_opts = popart.SessionOptions()
     va_opts.constantWeights = False
     va_sess = popart.InferenceSession(fnModel=va_builder.getModelProto(),
-                                      dataFeed=popart.DataFlow(1, ["loss"]),
-                                      losses=losses,
+                                      dataFeed=popart.DataFlow(1, [o]),
                                       deviceInfo=device,
                                       userOptions=va_opts)
     va_sess.prepareDevice()

@@ -49,7 +49,6 @@ BOOST_AUTO_TEST_CASE(Basic0SessionApi) {
       proto,
       dataFlow,
       device,
-      {},
       popart::InputShapeInfo(),
       opts,
       popart::Patterns(PatternsLevel::NoPatterns));

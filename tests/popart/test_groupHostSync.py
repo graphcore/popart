@@ -12,11 +12,10 @@ def test_groupHostSync():
     w = builder.addInitializedInputTensor(np.ones([1], np.float16))
     o = builder.aiOnnx.add([w, a])
     l1 = builder.aiGraphcore.l1loss([o], 0.1)
-    loss = popart.IdentityLoss(l1, "l1_loss")
 
     anchor_config = {
         o: popart.AnchorReturnType("All"),
-        "l1_loss": popart.AnchorReturnType("All")
+        l1: popart.AnchorReturnType("All")
     }
     dataFlow = popart.DataFlow(1, anchor_config)
 
@@ -33,7 +32,6 @@ def test_groupHostSync():
     }
 
     session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                      losses=[loss],
                                       dataFeed=dataFlow,
                                       deviceInfo=tu.create_test_device(),
                                       userOptions=options)
@@ -73,7 +71,6 @@ def test_groupHostSync():
             countSeq += 1
             if countSeq >= 7:
                 break
-        if re.search(r"OnTileExecute: 110/Op/Add", l):
             order.append(1)
             first = True
         if re.search(r"OnTileExecute: 101/abs/Op/Absolute", l):

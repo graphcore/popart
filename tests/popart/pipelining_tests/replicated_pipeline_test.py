@@ -58,7 +58,7 @@ def get_model_anchors(doSharding,
     art = popart.AnchorReturnType("All")
     loss = popart.IdentityLoss(nll, "loss")
 
-    anchor_map = {"loss": art, w0: art, e0: art}
+    anchor_map = {nll: art, w0: art, e0: art}
     if doTraining is True:
         anchor_map[popart.reservedGradientPrefix() + d0] = art
         if doPipelining is True and anchorRestoredTensors is True:
@@ -106,7 +106,6 @@ def get_model_anchors(doSharding,
         session = popart.InferenceSession(fnModel=builder.getModelProto(),
                                           dataFeed=popart.DataFlow(
                                               batchesPerStep, anchor_map),
-                                          losses=[loss],
                                           userOptions=opts,
                                           deviceInfo=device)
 

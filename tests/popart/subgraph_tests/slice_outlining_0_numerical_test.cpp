@@ -75,7 +75,6 @@ BOOST_AUTO_TEST_CASE(SliceTest0) {
         proto,
         dataFlow,
         device,
-        {},
         popart::InputShapeInfo(),
         opts,
         popart::Patterns(PatternsLevel::NoPatterns).enableInPlace(inplace));

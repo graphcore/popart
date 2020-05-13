@@ -51,8 +51,6 @@ def op_tester(tmpdir):
             return tensor_id
 
         def addInitializedInputTensor(self, data):
-            shape = popart.TensorInfo(data)
-
             tensor_id = self._builder.addInitializedInputTensor(data)
             self._init_input_map[tensor_id] = data
 
@@ -89,7 +87,6 @@ def op_tester(tmpdir):
             self.rtol = 1e-05
             self.atol = 1e-08
             self.check_shapes = True
-            self.loss_reduction_type = popart.ReductionType.Sum
             self.equal_nan = False
             self.inplacing = True
 
@@ -120,8 +117,7 @@ def op_tester(tmpdir):
                 reference,
                 step_type='infer',
                 opsets=None,
-                optimizer=popart.ConstSGD(0.01),
-                losses=None):
+                optimizer=popart.ConstSGD(0.01)):
             assert step_type in ('infer', 'train')
 
             bld = Builder(opsets=opsets)
@@ -130,9 +126,7 @@ def op_tester(tmpdir):
 
             # Allows to pass additional arguments to init_builder, if required
             # by the specific init_builder function implementation.
-            if losses is None:
-                losses = []
-            kwargs = {'losses': losses}
+            kwargs = {}
             kwargs = tu.filter_dict(kwargs, init_builder)
             anchorIds = init_builder(bld, **kwargs)
 
@@ -141,14 +135,6 @@ def op_tester(tmpdir):
                     anchors[anchorId] = popart.AnchorReturnType("All")
 
             dataFlow = popart.DataFlow(1, anchors)
-
-            if len(losses) == 0:
-                l1 = bld.aiGraphcore.l1loss([anchorIds[0]], 0.1)
-                losses = [
-                    popart.IdentityLoss(l1, "idLossVal",
-                                        self.loss_reduction_type)
-                ]
-            proto = bld.getModelProto()
 
             self.options.logDir = self.logging_dir
 
@@ -159,15 +145,18 @@ def op_tester(tmpdir):
             patterns.InPlace = self.inplacing
 
             if step_type == 'infer':
-                session = popart.InferenceSession(fnModel=proto,
+                session = popart.InferenceSession(fnModel=bld.getModelProto(),
                                                   dataFeed=dataFlow,
-                                                  losses=losses,
                                                   deviceInfo=device,
                                                   patterns=popart.Patterns(
                                                       self.patterns),
                                                   userOptions=self.options)
             else:
-                session = popart.TrainingSession(fnModel=proto,
+                # Apply l1 loss to the output, assumed to be the first anchorId
+                l1 = bld.aiGraphcore.l1loss([anchorIds[0]], 0.1)
+                losses = [popart.IdentityLoss(l1, "idLossVal")]
+
+                session = popart.TrainingSession(fnModel=bld.getModelProto(),
                                                  dataFeed=dataFlow,
                                                  losses=losses,
                                                  optimizer=optimizer,

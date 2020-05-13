@@ -47,8 +47,8 @@ outNames = ["out"]
 cifarInIndices = {"image0": 0}  # not used in test: "label": 1}
 
 # The optimization passes to run in the Ir, see patterns.hpp
-willowOptPasses = popart.Patterns()
-willowOptPasses.OpToIdentity = True
+willowOptPatterns = popart.Patterns()
+willowOptPatterns.OpToIdentity = True
 
 
 class Module0(torch.nn.Module):

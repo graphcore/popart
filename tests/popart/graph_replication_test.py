@@ -87,7 +87,6 @@ def test_weight_update(op_tester):
     op_tester.device = tu.create_test_device()
     op_tester.numIPUs = 1
     op_tester.patterns = ['GemmDecomposition', 'PreUniRepl', 'MatMulRhsGradOp']
-    op_tester.loss_reduction_type = popart.ReductionType.Sum
     op_tester.run(init_builder,
                   reference,
                   'train',
@@ -190,7 +189,6 @@ def test_weight_update_replicated(op_tester):
             "Failed to acquire IPU device in training graph replication test")
 
     op_tester.numIPUs = replicationFactor
-    op_tester.loss_reduction_type = popart.ReductionType.Sum
     op_tester.run(init_builder,
                   reference,
                   'train',

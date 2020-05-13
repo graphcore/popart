@@ -103,7 +103,6 @@ class InferenceSession(_InferenceSessionCore):
         dataFeed: Configuration for the data feeds and fetches.
         deviceInfo: ``DeviceInfo`` object specifying device type.
             (one of ``IPU``, ``IPUModel`` or ``CPU``) and count.
-        losses: A list of loss layers to use when training. Default: [].
         inputShapeInfo: Information about the shapes of input and output
             tensors. Default: ``popart.InputShapeInfo()``.
         patterns: Patterns to be run for optimization etc.
@@ -125,7 +124,6 @@ class InferenceSession(_InferenceSessionCore):
             fnModel: bytes,
             dataFeed: Dict[int, Dict],
             deviceInfo: popart.DeviceInfo,
-            losses: List[popart.Loss] = [],
             inputShapeInfo: popart.InputShapeInfo = popart.InputShapeInfo(),
             patterns: popart.Patterns = None,
             userOptions: popart.SessionOptions = popart.SessionOptions()
@@ -135,8 +133,8 @@ class InferenceSession(_InferenceSessionCore):
             patterns = popart.Patterns()
 
         super(InferenceSession,
-              self).__init__(fnModel, dataFeed, deviceInfo, losses,
-                             inputShapeInfo, userOptions, patterns)
+              self).__init__(fnModel, dataFeed, deviceInfo, inputShapeInfo,
+                             userOptions, patterns)
 
         self.dataFeed = dataFeed
         self.replicationFactor = userOptions.replicatedGraphCount if \

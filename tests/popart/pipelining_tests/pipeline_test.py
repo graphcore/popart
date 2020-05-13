@@ -18,7 +18,7 @@ def test_disabled_virtual_graphs():
     In this test we check that an error is thrown when doing pipelining
     if enableVirtualGraph session option is not set to true
     """
-    builder, op0_out, op1_out, op2_out, op3_out, anchor_map, loss = get_simple_linear_model(
+    builder, op0_out, op1_out, op2_out, op3_out, anchor_map = get_simple_linear_model(
     )
 
     opts = popart.SessionOptions()
@@ -30,7 +30,6 @@ def test_disabled_virtual_graphs():
                                           dataFeed=popart.DataFlow(
                                               10, anchor_map),
                                           userOptions=opts,
-                                          losses=[loss],
                                           deviceInfo=tu.create_test_device())
     assert e_info.value.args[0].startswith("Pipelining requires more than")
 
@@ -50,7 +49,6 @@ def test_one_ipu():
     op1_out = builder.aiOnnx.exp([d1], "r0")
     op2_out = builder.aiOnnx.mul([op0_out, op1_out], "m0")
     builder.addOutputTensor(op2_out)
-    loss = popart.IdentityLoss(op2_out, "loss")
     opts = popart.SessionOptions()
     opts.enablePipelining = True
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual  # i.e. use 1 ipu
@@ -60,14 +58,12 @@ def test_one_ipu():
     builder.virtualGraph(op1_out, 0)
     builder.pipelineStage(op2_out, 1)
     builder.virtualGraph(op2_out, 0)
-    loss.pipelineStage(1)
-    loss.virtualGraph(0)
+
     with pytest.raises(popart.popart_exception) as e_info:
         session = popart.InferenceSession(fnModel=builder.getModelProto(),
                                           dataFeed=popart.DataFlow(
                                               10, [op2_out, "loss"]),
                                           userOptions=opts,
-                                          losses=[loss],
                                           deviceInfo=tu.create_test_device())
         session.prepareDevice()
     assert e_info.value.args[0].startswith("Pipelining requires more than")
@@ -79,7 +75,7 @@ def test_enabled_recomputation():
     In this test we check that NO error is thrown when doing pipelining
     if recomputation is enabled
     """
-    builder, op0_out, op1_out, op2_out, op3_out, anchor_map, loss = get_simple_linear_model(
+    builder, op0_out, op1_out, op2_out, op3_out, anchor_map = get_simple_linear_model(
     )
 
     opts = popart.SessionOptions()
@@ -91,12 +87,10 @@ def test_enabled_recomputation():
     builder.virtualGraph(op1_out, 1)
     builder.virtualGraph(op2_out, 1)
     builder.virtualGraph(op3_out, 1)
-    loss.virtualGraph(1)
 
     session = popart.InferenceSession(fnModel=builder.getModelProto(),
                                       dataFeed=popart.DataFlow(10, anchor_map),
                                       userOptions=opts,
-                                      losses=[loss],
                                       deviceInfo=tu.create_test_device(
                                           numIpus=2, tilesPerIpu=20))
 
@@ -110,7 +104,7 @@ def test_stream_tensors_to_multiple_ipus():
     IPU, then copied across to the other IPUs where they are needed.
     Leaving this test in to verify that this remains the case
     """
-    builder, op0_out, op1_out, op2_out, op3_out, anchor_map, loss = get_simple_linear_model(
+    builder, op0_out, op1_out, op2_out, op3_out, anchor_map = get_simple_linear_model(
         streamInputToOp1AndOp2=True)
 
     opts = popart.SessionOptions()
@@ -121,12 +115,10 @@ def test_stream_tensors_to_multiple_ipus():
     builder.virtualGraph(op1_out, 1)
     builder.virtualGraph(op2_out, 1)
     builder.virtualGraph(op3_out, 1)
-    loss.virtualGraph(1)
 
     session = popart.InferenceSession(fnModel=builder.getModelProto(),
                                       dataFeed=popart.DataFlow(10, anchor_map),
                                       userOptions=opts,
-                                      losses=[loss],
                                       deviceInfo=tu.create_test_device(
                                           numIpus=2, tilesPerIpu=20))
 
@@ -151,10 +143,6 @@ def test_sharding_multi_source():
     op2_out = builder.aiOnnx.mul([op0_out, op1_out], "m0")
     nll = builder.aiGraphcore.nllloss([op2_out, l0])
 
-    art = popart.AnchorReturnType("All")
-    loss = popart.IdentityLoss(nll, "loss")
-    anchor_map = {op2_out: art, "loss": art}
-
     opts = popart.SessionOptions()
     opts.enablePipelining = True
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
@@ -163,12 +151,10 @@ def test_sharding_multi_source():
     builder.virtualGraph(op1_out, 1)
     builder.virtualGraph(op2_out, 2)
     builder.virtualGraph(nll, 2)
-    loss.virtualGraph(2)
 
     session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                      dataFeed=popart.DataFlow(10, anchor_map),
+                                      dataFeed=popart.DataFlow(10, [op2_out]),
                                       userOptions=opts,
-                                      losses=[loss],
                                       deviceInfo=tu.create_test_device(
                                           numIpus=3, tilesPerIpu=20))
 
@@ -622,7 +608,7 @@ def get_model_anchors(doSharding,
     art = popart.AnchorReturnType("All")
     loss = popart.IdentityLoss(nll, "loss")
 
-    anchor_map = {"loss": art, w0: art, e0: art}
+    anchor_map = {nll: art, w0: art, e0: art}
     if doTraining is True:
         anchor_map[popart.reservedGradientPrefix() + d0] = art
         if doPipelining is True and anchorRestoredTensors is True:
@@ -659,7 +645,6 @@ def get_model_anchors(doSharding,
         session = popart.InferenceSession(
             fnModel=builder.getModelProto(),
             dataFeed=popart.DataFlow(batchesPerStep, anchor_map),
-            losses=[loss],
             userOptions=opts,
             deviceInfo=tu.create_test_device(numIpus=numIPUs, tilesPerIpu=20))
 
@@ -711,10 +696,9 @@ def get_simple_linear_model(streamInputToOp1AndOp2=False):
     builder.addOutputTensor(op3_out)
 
     art = popart.AnchorReturnType("All")
-    loss = popart.IdentityLoss(op3_out, "loss")
-    anchor_map = {op3_out: art, "loss": art}
+    anchor_map = {op3_out: art}
 
-    return builder, op0_out, op1_out, op2_out, op3_out, anchor_map, loss
+    return builder, op0_out, op1_out, op2_out, op3_out, anchor_map
 
 
 def test_pipeline_stage_errors():

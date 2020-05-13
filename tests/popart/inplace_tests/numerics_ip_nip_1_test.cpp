@@ -221,7 +221,6 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip1) {
         proto,
         dataFlow,
         cpuDevice,
-        {},
         popart::InputShapeInfo(),
         opts,
         popart::Patterns(PatternsLevel::NoPatterns)

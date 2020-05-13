@@ -158,8 +158,8 @@ def test_distributed_replicated_weight_update():
     D = builder.addInitializedInputTensor(D_init, "D")
     E = builder.aiOnnx.matmul([A, B])
     F = builder.aiOnnx.matmul([E, C])
-    G = builder.aiOnnx.matmul([F, D])
-    builder.addOutputTensor(G)
+    loss = builder.aiGraphcore.l1loss([G], lossLambda)
+    builder.addOutputTensor(loss)
     proto = builder.getModelProto()
 
     outputs = {
@@ -172,7 +172,7 @@ def test_distributed_replicated_weight_update():
 
     dataFlow = popart.DataFlow(1, outputs)
     optimizer = popart.ConstSGD(1.0)
-    losses = [popart.L1Loss(G, "l1LossVal", lossLambda)]
+    losses = [popart.IdentityLoss(loss, "loss")]
 
     opts = popart.SessionOptions()
     opts.enableReplicatedGraphs = False
@@ -267,7 +267,8 @@ def test_distributed_hierarchical_replicated_weight_update():
     E = builder.aiOnnx.matmul([A, B])
     F = builder.aiOnnx.matmul([E, C])
     G = builder.aiOnnx.matmul([F, D])
-    builder.addOutputTensor(G)
+    loss = builder.aiGraphcore.l1loss([G], lossLambda)
+    builder.addOutputTensor(loss)
     proto = builder.getModelProto()
 
     outputs = {
@@ -280,7 +281,7 @@ def test_distributed_hierarchical_replicated_weight_update():
 
     dataFlow = popart.DataFlow(1, outputs)
     optimizer = popart.ConstSGD(1.0)
-    losses = [popart.L1Loss(G, "l1LossVal", lossLambda)]
+    losses = [popart.IdentityLoss(loss, "loss")]
 
     opts = popart.SessionOptions()
     opts.enableReplicatedGraphs = True

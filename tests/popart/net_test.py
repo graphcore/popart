@@ -45,7 +45,7 @@ def test_net_from_file(tmpdir):
 
 
 def test_net_failure1(tmpdir):
-    # Anchor tensor required in inference and eval modes
+    # Anchor tensor required in inference mode
 
     builder = popart.Builder()
 
@@ -64,10 +64,8 @@ def test_net_failure1(tmpdir):
                                 deviceInfo=tu.create_test_device())
 
     assert (e_info.type == popart.popart_exception)
-    assert (
-        e_info.value.args[0] ==
-        "User must specify an anchor tensor when doing inference or evalulation."
-    )
+    assert (e_info.value.args[0] ==
+            "User must specify an anchor tensor when doing inference.")
 
 
 def test_net_failure2(tmpdir):

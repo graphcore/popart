@@ -74,8 +74,12 @@ public:
       session        = TrainingSession::createFromOnnxModel(
           proto, dataFlow, losses, optimizer, cpuDevice, {}, opts, patterns);
     } else {
+      if (losses.size()) {
+        throw error(
+            "Test runner: InferenceSession does not take 'losses' argument");
+      }
       session = InferenceSession::createFromOnnxModel(
-          proto, dataFlow, cpuDevice, losses, {}, opts, patterns);
+          proto, dataFlow, cpuDevice, {}, opts, patterns);
     }
 
     irChecker(session->ir);
