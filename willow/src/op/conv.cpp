@@ -215,7 +215,10 @@ ConvWeightsGradOp::ConvWeightsGradOp(const ConvOp &op_)
     : Op(Onnx::GradOperators::ConvWeightsGrad, op_.getSettings()),
       cloneOfCreator(op_.clone()),
       weightsInfo(op_.inInfo(ConvOp::getWeightsInIndex())) {
-  settings.schedulePriority = std::numeric_limits<double>::lowest();
+  if (getIr().getSessionOptions().pingPongPhases < 2 &&
+      getIr().getSessionOptions().batchSerializationFactor < 2) {
+    settings.schedulePriority = std::numeric_limits<double>::lowest();
+  }
 }
 
 std::unique_ptr<Op> ConvWeightsGradOp::clone() const {

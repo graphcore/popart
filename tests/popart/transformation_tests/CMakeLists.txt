@@ -14,6 +14,9 @@ add_popart_cpp_unit_test(hostreduce_transform hostreduce_transformation_test.cpp
 
 add_popart_cpp_unit_test(explicit_recomputation explicit_recomputation_test.cpp)
 
+add_popart_cpp_unit_test(batchserialize_ir batchserialize_ir_test.cpp)
+
+
 add_subdirectory(mergevarupdates)
 
 add_popart_py_unit_test(serializematmul)

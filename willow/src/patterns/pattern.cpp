@@ -33,6 +33,9 @@ void Pattern::transferBaseProperties(Op *from, Op *to) const {
   if (from->hasPipelineStage()) {
     to->setPipelineStage(from->getPipelineStage());
   }
+  if (from->hasBatchSerializedPhase()) {
+    to->setBatchSerializedPhase(from->getBatchSerializedPhase());
+  }
 
   to->settings.recomputeType    = from->settings.recomputeType;
   to->settings.cacheType        = from->settings.cacheType;

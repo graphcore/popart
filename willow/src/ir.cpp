@@ -1102,6 +1102,19 @@ void Ir::prepareImpl(const IrBundle &gb) {
     updateAliases();
     applyTransform(SubgraphOutline::id(), getMainGraph());
     updateVertices();
+
+    if (getSessionOptions().batchSerializationFactor > 1) {
+      // Run a second outlining step.
+      // This is necessary because in the first outlining pass we help the
+      // outlining algorithm by inserting boundaries between
+      // batch serialization phases.
+      // Because batch serialization phases are not copied from the ops to their
+      // parent subgraph, the second pass will ignore batch serialization phases
+      // and outline the repeated per-batch-element subgraphs/ops.
+      updateAliases();
+      applyTransform(SubgraphOutline::id(), getMainGraph());
+      updateVertices();
+    }
   }
 
   // AliasZeroCopy: Reduce tensor liveness and outline call copy
@@ -3397,6 +3410,13 @@ TensorId Ir::createBatchConcatTensorId(TensorId base_id) {
   logging::ir::trace("Generating tensor id {}", concat_id);
   ++intermediate_tensor_counter;
   return concat_id;
+}
+
+GraphId Ir::createUniqueSubgraphId(GraphId base_id) {
+  auto next_id =
+      logging::format("{}_subgraph({})", base_id, subgraph_id_counter);
+  ++subgraph_id_counter;
+  return next_id;
 }
 
 } // namespace popart

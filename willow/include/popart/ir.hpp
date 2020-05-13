@@ -553,8 +553,11 @@ public:
   // Create a new intermediate batch slice tensor id with a unique name
   TensorId createBatchConcatTensorId(TensorId base_id);
 
+  GraphId createUniqueSubgraphId(GraphId base_id);
+
 private:
   uint64_t intermediate_tensor_counter{0};
+  uint64_t subgraph_id_counter{0};
 };
 
 } // namespace popart

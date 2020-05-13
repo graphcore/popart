@@ -130,7 +130,7 @@ public:
 private:
   // Using cumulative to accelerate to make this O(1)
   void setVal(Match &match) final {
-    auto val =
+    double val =
         cumVals[match.starts[0] + match.length] - cumVals[match.starts[0]];
     match.setValue(val);
   }
@@ -148,7 +148,7 @@ private:
   }
 
   RinseMatcherBase<T> rmb;
-  std::vector<float> cumVals;
+  std::vector<double> cumVals;
 };
 
 } // namespace algo1

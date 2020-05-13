@@ -20,7 +20,7 @@ namespace subgraph {
 
 std::vector<Match> applyIncrementalThreshold(const std::vector<Match> &dfm,
                                              int schedule_size,
-                                             float threshold);
+                                             double threshold);
 
 template <typename T>
 std::vector<int> getIntSchedule(const std::vector<T *> &schedule) {
@@ -48,7 +48,7 @@ std::vector<int> getIntSchedule(const std::vector<T *> &schedule) {
 // the value of match, currently just the sum of the values of the nodes
 template <class T>
 void setValue(Match &match, const std::vector<T *> &schedule) {
-  float value = 0;
+  double value = 0;
   for (int i = 0; i < match.length; ++i) {
     value += schedule.at(match.starts[0] + i)->getSubgraphValue();
   }
@@ -56,8 +56,8 @@ void setValue(Match &match, const std::vector<T *> &schedule) {
 }
 
 template <class T>
-std::vector<float> getCumVals(const std::vector<T *> &sched) {
-  std::vector<float> cumVals(sched.size() + 1, 0.0f);
+std::vector<double> getCumVals(const std::vector<T *> &sched) {
+  std::vector<double> cumVals(sched.size() + 1, 0.0f);
   for (int i = 0; i < sched.size(); ++i) {
     cumVals[i + 1] = cumVals[i] + sched.at(i)->getSubgraphValue();
   }
