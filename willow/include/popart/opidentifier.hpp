@@ -341,8 +341,6 @@ const static AiGraphcoreOpIdV1 DynamicZeroInplace("DynamicZeroInplace", 2, 1);
 const static AiGraphcoreOpIdV1 DynamicAdd_1("DynamicAdd", 3, 1);
 const static AiGraphcoreOpIdV1 DynamicAddInplace("DynamicAddInplace", 3, 1);
 
-const static AiGraphcoreOpIdV1 RecomputePrereq("RecomputePrereq");
-
 const static AiGraphcoreOpIdV1 SGD0VarUpdate("SGD0VarUpdate");
 const static AiGraphcoreOpIdV1 SGD1Combo("SGD1Combo");
 const static AiGraphcoreOpIdV1 SGD1VarUpdate("SGD1VarUpdate");

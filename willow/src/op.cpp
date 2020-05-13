@@ -339,6 +339,9 @@ void Op::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("recompute", recomputeString);
   os.appendAttribute(sVirtualGraphAttribute, getOptionalVirtualGraphId());
   os.appendAttribute("useIoTiles", settings.useIoTiles);
+  for (auto attribute : settings.extraOutlineAttributes) {
+    os.appendAttribute(attribute.first, attribute.second);
+  }
 }
 
 std::vector<const Graph *> Op::getCalledGraphs() const { return {}; }

@@ -229,6 +229,11 @@ struct SessionOptions {
   // Enable explicit recomputation
   bool explicitRecomputation = false;
 
+  // Enable replicated weight sharding
+  bool replicatedWeightSharding = false;
+  // Only enable RWS for tensors with more than 8192 elements
+  size_t replicatedWeightShardingMinNumElements = 8192;
+
   // Number of IO tiles
   int numIOTiles = 0;
 

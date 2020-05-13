@@ -7,10 +7,6 @@
 
 namespace popart {
 
-using IpuNumber = int64_t;
-
-IpuNumber getIpuNumber(const Op *op);
-
 class PingPong : public Transform {
 public:
   static std::size_t id(int);
@@ -22,17 +18,40 @@ public:
 
   virtual std::size_t getId() const final { return id(pass); }
 
-  TensorId generateInitTensorId(Tensor *tensor) const;
-
-  TensorId generateLoadedTensorId(Tensor *tensor, int64_t load_index) const;
-
-  TensorId generateCacheArgTensorId(TensorId tid, VGraphId vgid) const;
-
   virtual std::string getName() const final {
     return "PingPong " + std::to_string(pass);
   }
 
+private:
+  TensorId generateInitTensorId(Tensor *tensor) const;
+
+  TensorId generateLoadedTensorId(Tensor *tensor, int64_t load_index) const;
+
+  TensorId generateGatheredTensorId(Tensor *tensor, int64_t load_index) const;
+
+  TensorId generateCacheArgTensorId(TensorId tid, VGraphId vgid) const;
+
   float costFn(Op *op) const;
+
+  void verifyPlacementConsistency(const Op *op,
+                                  const unsigned num_stages) const;
+
+  void verifyPingPongPhases(Graph &graph) const;
+
+  void getModifiersInPhase(PingPongPhase phase,
+                           Tensor *t,
+                           std::vector<Op *> &modifyingConsumerOps) const;
+
+  void
+  getAliasedModifiersInPhase(Graph &graph,
+                             PingPongPhase phase,
+                             Tensor *t,
+                             std::vector<Op *> &modifyingConsumerOps) const;
+
+  void sanitizePlacementAnnotation(const Graph &graph,
+                                   Op *op,
+                                   PingPongPhase phase,
+                                   unsigned num_stages) const;
 
 private:
   int pass;

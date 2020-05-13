@@ -41,7 +41,6 @@
 
 // The transformations
 #include <popart/recompute.hpp>
-#include <popart/transforms/aliaszerocopy.hpp>
 #include <popart/transforms/auto_virtual_graph.hpp>
 #include <popart/transforms/batchserialize.hpp>
 #include <popart/transforms/cachesetup.hpp>
@@ -856,8 +855,8 @@ void Ir::prepareImpl(const IrBundle &gb) {
   applyTransform(AutoVirtualGraph::id(), getMainGraph());
 
   // Required transform order for PingPong is:
-  // FWD -> PingPong1 -> Loss -> PingPong1 -> BWD -> PingPong2 -> IpuCopy ->
-  // PingPong3 -> Outline -> AliasZeroCopy -> CacheSetup
+  // FWD -> PingPong1 -> Loss -> PingPong2 -> BWD -> PingPong3 -> IpuCopy ->
+  // PingPong4 -> Outline -> CacheSetup
 
   // First ping pong transformation pass (fwd)
   if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
@@ -886,7 +885,8 @@ void Ir::prepareImpl(const IrBundle &gb) {
     setNEdgesToLoss();
   }
 
-  if (autoRecomputationEnabled() && getMainGraph().hasUserRecomputeOps()) {
+  if (autoRecomputationEnabled() && getMainGraph().hasUserRecomputeOps() &&
+      getSessionOptions().pingPongPhases < 2) {
     throw error("A mixture of auto and manual recomputaion is not supported");
   }
 
@@ -945,13 +945,6 @@ void Ir::prepareImpl(const IrBundle &gb) {
     // Transform from implicit to explicit recomputation
     applyTransform(ExplicitRecompute::id(), getMainGraph());
     updateVertices();
-  }
-
-  // Third ping pong transformation pass (bwd)
-  if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
-      userOptions.pingPongPhases > 1) {
-    applyTransform(PingPong::id(3), getMainGraph());
-    verifyVirtualGraphIds(true, false);
   }
 
   // Dynamicoptransform decomposes grad sums that contain
@@ -1071,8 +1064,13 @@ void Ir::prepareImpl(const IrBundle &gb) {
   // Fourth ping pong transformation pass (cut)
   if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
       userOptions.pingPongPhases > 1) {
-    applyTransform(PingPong::id(4), getMainGraph());
+    // PingPong transformation 3 needs up-to-date aliasing information
+    updateAliases();
+
+    applyTransform(PingPong::id(3), getMainGraph());
     verifyVirtualGraphIds(true, false);
+    // Remove extra CacheLoad, CacheStore and Replicated ops that are not used
+    applyTransform(Prune::id(), getMainGraph());
   }
 
   updateVertices();
@@ -1114,14 +1112,8 @@ void Ir::prepareImpl(const IrBundle &gb) {
     }
   }
 
-  // AliasZeroCopy: Reduce tensor liveness and outline call copy
-  if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
-      userOptions.pingPongPhases > 1) {
-    updateAliases();
-    applyTransform(AliasZeroCopy::id(), getMainGraph());
-    removeIsolatedTensors(true);
-    updateVertices();
-  }
+  removeIsolatedTensors(true);
+  updateVertices();
 
   if (autoRecomputationEnabled() && !getSessionOptions().enablePipelining &&
       !getSessionOptions().explicitRecomputation &&
@@ -1159,6 +1151,9 @@ void Ir::prepareImpl(const IrBundle &gb) {
     }
     updateVertices();
   }
+
+  // Update aliases a final time
+  updateAliases();
 
   applyTransform(CacheSetup::id(), getMainGraph());
 
@@ -1914,8 +1909,14 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
     //
     // gradOp->settings.schedulePriority = 0.0;
 
+    if (gradOp->hasPingPongPhase()) {
+      // Remap from forward to backward pingpong phase
+      gradOp->setPingPongPhase(2 * getSessionOptions().pingPongPhases - 2 -
+                               gradOp->getPingPongPhase());
+    }
+
     if (nonGradOp->settings.recomputeType == RecomputeType::Recompute &&
-        autoRecomputationEnabled()) {
+        autoRecomputationEnabled() && getSessionOptions().pingPongPhases < 2) {
       throw error("Grad Ops should be grown before recompute annotation");
     }
 
@@ -2260,14 +2261,22 @@ void Ir::updateVertices() {
     } else {
       op->scheduledPreLoss = ScheduledPreLoss::Yes;
     }
-    if (op->scheduledPreLoss == ScheduledPreLoss::No) {
+    if (op->scheduledPreLoss == ScheduledPreLoss::No &&
+        op->settings.recomputeType != RecomputeType::Recomputed) {
       op->settings.recomputeType = RecomputeType::Checkpoint;
     }
   }
 
   logging::ir::debug("setting scheduledPreLoss for Tensors in updateVertices");
-  // 3.2) scheduledPreLoss for Tensors
+  // 3.2) scheduledPreLoss for Tensors and any ops occuring post the loss
+  // in the schedule
+  bool postLoss = false;
   for (auto op : getMainGraph().getOpSchedule({})) {
+    postLoss |= op->scheduledPreLoss == ScheduledPreLoss::No;
+    if (postLoss) {
+      // The loss has been crossed, everything ScheduledPreLoss::No from here on
+      op->scheduledPreLoss = ScheduledPreLoss::No;
+    }
     for (auto tensor : op->input->tensors()) {
       // inputs to pre-loss are pre-loss
       if (op->scheduledPreLoss == ScheduledPreLoss::Yes) {
@@ -2288,9 +2297,11 @@ void Ir::updateVertices() {
 }
 
 void Ir::updateAliases() {
-  getTensors().clearAliases();
-  for (auto &op : getMainGraphOps()) {
-    getTensors().updateAliases(op.second.get());
+  for (auto &graph : graphs) {
+    graph.second->getTensors().clearAliases();
+    for (auto &op : graph.second->getOps()) {
+      graph.second->getTensors().updateAliases(op.second.get());
+    }
   }
 }
 

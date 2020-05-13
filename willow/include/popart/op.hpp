@@ -117,6 +117,10 @@ public:
     // default : 0.0
     double schedulePriority{0.0};
 
+    // Extra attributes to differentiate ops for outlining
+    // Ops with different outline attributes are not outlined together
+    std::map<std::string, std::string> extraOutlineAttributes;
+
     // This method will append the optional attributes (vgraphId, etc)
     // depending on whether the attribute has been
     // set in the onnx model.

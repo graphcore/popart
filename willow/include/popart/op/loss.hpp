@@ -52,12 +52,19 @@ public:
   bool hasPipelineStage() const;
   PipelineStage getPipelineStage() const;
 
+  void pingPongPhase(PingPongPhase pingpong_phase) {
+    pingPongPhase_ = pingpong_phase;
+  }
+  bool hasPingPongPhase() const;
+  PingPongPhase getPingPongPhase() const;
+
 protected:
   // Identify on which vgraph the loss should be executed. This is
   // an optional setting and may not be valid when virtual graph's are not
   // enabled
-  boost::optional<int64_t> vgraphId;
+  boost::optional<VGraphId> vgraphId;
   boost::optional<PipelineStage> pipelineStage_;
+  boost::optional<PingPongPhase> pingPongPhase_;
 
 private:
   // The names of the input tensors, same

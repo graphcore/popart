@@ -29,6 +29,7 @@ class TopoCons {
 public:
   // remove all topological constraints with op in it
   void remove(Op *op);
+  void remove(Op *before, Op *after);
 
   // insert the constraint "before -> after"
   // if already present, do nothing

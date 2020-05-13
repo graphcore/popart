@@ -514,6 +514,7 @@ PYBIND11_MODULE(popart_core, m) {
       cls.def("getInputId", &IdentityLoss::getInputId);
       cls.def("pipelineStage", &IdentityLoss::pipelineStage);
       cls.def("virtualGraph", &IdentityLoss::virtualGraph);
+      cls.def("pingPongPhase", &IdentityLoss::pingPongPhase);
     }
   }
   {
@@ -590,6 +591,10 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("rearrangeAnchorsOnHost",
                       &SessionOptions::rearrangeAnchorsOnHost);
     cls.def_readwrite("pingPongPhases", &SessionOptions::pingPongPhases);
+    cls.def_readwrite("replicatedWeightSharding",
+                      &SessionOptions::replicatedWeightSharding);
+    cls.def_readwrite("replicatedWeightShardingMinNumElements",
+                      &SessionOptions::replicatedWeightShardingMinNumElements);
     cls.def_readwrite("numIOTiles", &SessionOptions::numIOTiles);
     cls.def_readwrite("explicitRecomputation",
                       &SessionOptions::explicitRecomputation);

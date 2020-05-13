@@ -81,6 +81,18 @@ PipelineStage Loss::getPipelineStage() const {
   return *pipelineStage_;
 }
 
+bool Loss::hasPingPongPhase() const { return pingPongPhase_ != boost::none; }
+
+PipelineStage Loss::getPingPongPhase() const {
+  if (!hasPingPongPhase()) {
+    throw error(
+        "Cannot return ping pong phase for Loss {}. It has not had this "
+        "attribute set",
+        input_);
+  }
+  return *pingPongPhase_;
+}
+
 LossOp::LossOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : Op(_opid, settings_) {}
 

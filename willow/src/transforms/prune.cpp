@@ -12,7 +12,6 @@
 #include <popart/op/boundary.hpp>
 #include <popart/op/cache.hpp>
 #include <popart/op/init.hpp>
-#include <popart/op/recomputeprereq.hpp>
 #include <popart/transforms/prune.hpp>
 
 namespace popart {
@@ -150,8 +149,7 @@ bool Prune::apply(Graph &graph) const {
     Op *op = id_op.second.get();
     // TODO: Better mechanism to preserve special ops
     if (required.count(op) == 0 && !dynamic_cast<CacheStoreOp *>(op) &&
-        !dynamic_cast<BoundaryOp *>(op) &&
-        !dynamic_cast<RecomputePrereqOp *>(op)) {
+        !dynamic_cast<BoundaryOp *>(op)) {
       opsToDelete.push_back(op);
       for (auto &t_inds : op->output->indicesMap()) {
         tensorsToDelete.push_back(t_inds.first);

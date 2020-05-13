@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+// Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -6,11 +6,15 @@
 #include <popart/op.hpp>
 #include <popart/op/boundary.hpp>
 #include <popart/op/cache.hpp>
+#include <popart/op/collectives/replicatedallgather.hpp>
+#include <popart/op/collectives/replicatedallreduce.hpp>
+#include <popart/op/collectives/replicatedreducescatter.hpp>
 #include <popart/op/getrandomseed.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/loss.hpp>
-#include <popart/op/recomputeprereq.hpp>
+#include <popart/op/sgd0varupdate.hpp>
+#include <popart/op/varupdate.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
@@ -18,6 +22,15 @@
 #include <popart/transforms/pingpong.hpp>
 
 namespace popart {
+
+static constexpr const double maxCompressedPriority = 9000;
+static constexpr const double initPriority          = -9996.0;
+static constexpr const double cacheLoadPriority     = -9997.0;
+static constexpr const double allGatherPriority     = -9997.0;
+static constexpr const double ipuCopyPriority       = -9998.0;
+static constexpr const double allReducePriority     = -9999.0;
+static constexpr const double varUpdatePriority     = -9999.0;
+static constexpr const double cacheStorePriority    = -10000.0;
 
 std::size_t PingPong::id(int pass) {
   return typeid(PingPong).hash_code() + pass;
@@ -36,6 +49,14 @@ TensorId PingPong::generateLoadedTensorId(Tensor *tensor,
   // multiple phases
   TensorId loadedTensorId = tensor->id + "_l" + std::to_string(load_index);
   return loadedTensorId;
+}
+
+TensorId PingPong::generateGatheredTensorId(Tensor *tensor,
+                                            int64_t load_index) const {
+  // The copiedTensor id needs to be unique as the same tensor may be copied to
+  // multiple phases
+  TensorId gatheredTensorId = tensor->id + "_g" + std::to_string(load_index);
+  return gatheredTensorId;
 }
 
 // The cost of an Op, simplified to only account for weights
@@ -57,27 +78,9 @@ float PingPong::costFn(Op *op) const {
 
 namespace {
 
-// Make sure the op has no phase higher than any succeeding ops
-PingPongPhase
-getSanitizedPingPongPhase(const Graph &graph, Op *op, PingPongPhase phase) {
-  for (Tensor *input : op->input->tensors()) {
-    if (input->hasProducer() && input->getProducer()->hasPingPongPhase()) {
-      phase = std::max(phase, input->getProducer()->getPingPongPhase());
-    }
-  }
-  for (Op *before : graph.topoCons->getBefores(op)) {
-    if (before->hasPingPongPhase()) {
-      phase = std::max(phase, before->getPingPongPhase());
-    }
-  }
-  return phase;
-}
-
 // Compress priorities so that nothing is using priorities outside the range
 // -9000 to +9000
 void compressPriorities(Graph &graph) {
-  double max_pri = 9000;
-
   std::map<double, std::set<Op *, POpCmp>, std::greater<double>> pPriOpsMap;
   std::map<double, std::set<Op *, POpCmp>, std::less<double>> nPriOpsMap;
   for (auto &op : graph.getOps()) {
@@ -90,52 +93,229 @@ void compressPriorities(Graph &graph) {
   }
 
   {
-    double pri = max_pri;
+    double pri = maxCompressedPriority;
     for (auto &priOp : pPriOpsMap) {
       for (Op *op : priOp.second) {
         op->settings.schedulePriority = pri;
       }
-      pri -= max_pri / pPriOpsMap.size();
+      pri -= maxCompressedPriority / pPriOpsMap.size();
     }
   }
 
   {
-    double pri = -max_pri;
+    double pri = -maxCompressedPriority;
     for (auto &priOp : nPriOpsMap) {
       for (Op *op : priOp.second) {
         op->settings.schedulePriority = pri;
       }
-      pri += max_pri / nPriOpsMap.size();
+      pri += maxCompressedPriority / nPriOpsMap.size();
     }
   }
 }
 
+bool isConstOrCopyOfConst(Tensor *tensor) {
+  do {
+    if (tensor->tensorType() == TensorType::Const)
+      return true;
+    if (tensor->hasProducer()) {
+      Op *prod = tensor->getProducer();
+      if (prod->isIpuCopyOp()) {
+        tensor = prod->input->tensor(0);
+      } else {
+        return false;
+      }
+    }
+  } while (tensor->hasProducer());
+  return false;
+}
+
 } // namespace
 
+void PingPong::verifyPlacementConsistency(const Op *op,
+                                          const unsigned num_stages) const {
+  if (op->hasVirtualGraphId() && op->hasPingPongPhase()) {
+    if (op->getPingPongPhase() % num_stages !=
+        op->getVirtualGraphId() % num_stages) {
+      throw error("[PingPong] Op {} inconsistent PingPong phase {} "
+                  "and virtual graph ID {}",
+                  op->debugName(),
+                  op->getPingPongPhase(),
+                  op->getVirtualGraphId());
+    }
+  }
+}
+
+void PingPong::verifyPingPongPhases(Graph &graph) const {
+  // Verify pingpong phase annotations
+  for (auto &op : graph.getOps()) {
+    Op *op0 = op.second.get();
+    if (op0->hasPingPongPhase()) {
+      auto phase0 = op0->getPingPongPhase();
+      for (Tensor *input : op0->input->tensors()) {
+        if (input->hasProducer() && input->getProducer()->hasPingPongPhase()) {
+          Op *op1     = input->getProducer();
+          auto phase1 = op1->getPingPongPhase();
+          if (phase1 > phase0) {
+            throw error("[PingPong] Op {} {} (I/O) before op {} {}, "
+                        "but pingpong phases disagree ({} vs. {})",
+                        op1->id,
+                        op1->debugName(),
+                        op0->id,
+                        op0->debugName(),
+                        phase1,
+                        phase0);
+          }
+        }
+      }
+      for (Op *op1 : graph.topoCons->getBefores(op0)) {
+        auto phase1 = op1->getPingPongPhase();
+        if (phase1 > phase0) {
+          logging::transform::warn(
+              "[PingPong] Op {} {} (topologically) before op {} {}, "
+              "but pingpong phases disagree ({} vs. {}). "
+              "Removing constraint.",
+              op1->id,
+              op1->debugName(),
+              op0->id,
+              op0->debugName(),
+              phase1,
+              phase0);
+          graph.topoCons->remove(op1, op0);
+        }
+      }
+    }
+  }
+}
+
+// Make sure the op has a valid placement annotation
+void PingPong::sanitizePlacementAnnotation(const Graph &graph,
+                                           Op *op,
+                                           PingPongPhase phase,
+                                           unsigned num_stages) const {
+  for (Tensor *input : op->input->tensors()) {
+    if (input->hasProducer() && input->getProducer()->hasPingPongPhase()) {
+      phase = std::max(phase, input->getProducer()->getPingPongPhase());
+    }
+  }
+  for (Op *before : graph.topoCons->getBefores(op)) {
+    if (before->hasPingPongPhase()) {
+      phase = std::max(phase, before->getPingPongPhase());
+    }
+  }
+
+  bool remapPhase = !op->hasPingPongPhase() || op->getPingPongPhase() < phase;
+
+  IpuCopyOp *copy = dynamic_cast<IpuCopyOp *>(op);
+  if (copy &&
+      copy->getSourceIpu() % num_stages != copy->getDestIpu() % num_stages) {
+    // Inter-phase copy, needs to be associated with the
+    // source pingpong phase and virtual graph
+    if (copy->getSourceIpu() % num_stages != phase % num_stages) {
+      phase -= 1;
+      remapPhase = true;
+    }
+  }
+
+  if (remapPhase) {
+    logging::transform::debug(
+        "[PingPong] Mapping operator {} to phase {} -> {}",
+        op->debugName(),
+        op->hasPingPongPhase() ? op->getPingPongPhase() : unusedPingPongPhase,
+        phase);
+    op->setPingPongPhase(phase);
+  }
+  if (!op->hasVirtualGraphId() && !op->isIpuCopyOp()) {
+    VGraphId vgid = phase % num_stages;
+    logging::transform::debug("[PingPong] Mapping operator {} to VGID {} -> {}",
+                              op->debugName(),
+                              op->hasVirtualGraphId() ? op->getVirtualGraphId()
+                                                      : unusedVGraphId,
+                              vgid);
+    op->setVirtualGraphId(vgid);
+  }
+  verifyPlacementConsistency(op, num_stages);
+}
+
+void PingPong::getModifiersInPhase(
+    PingPongPhase phase,
+    Tensor *t,
+    std::vector<Op *> &modifyingConsumerOps) const {
+  for (Op *consumer : t->consumers.getOps()) {
+    for (InIndex in : consumer->input->indices(t)) {
+      auto regions = consumer->modifies(in);
+      if (!std::all_of(regions.begin(),
+                       regions.end(),
+                       [](const view::Region &r) {
+                         return r.isEmpty() ||
+                                r.getAccessType() == view::AccessType::Read;
+                       }) &&
+          consumer->hasPingPongPhase() &&
+          consumer->getPingPongPhase() == phase) {
+        if (std::find(modifyingConsumerOps.begin(),
+                      modifyingConsumerOps.end(),
+                      consumer) == modifyingConsumerOps.end()) {
+          modifyingConsumerOps.push_back(consumer);
+        }
+      }
+    }
+  }
+}
+
+void PingPong::getAliasedModifiersInPhase(
+    Graph &graph,
+    PingPongPhase phase,
+    Tensor *t,
+    std::vector<Op *> &modifyingConsumerOps) const {
+  getModifiersInPhase(phase, t, modifyingConsumerOps);
+  auto aliasedTensorMap = graph.getTensors().aliasChainsFrom(t);
+  auto fullRegion       = view::Region::getFull(t->info.shape());
+  for (auto &chain : aliasedTensorMap) {
+    auto regions = chain.second.apply(fullRegion);
+    bool nonEmptyAlias =
+        std::any_of(regions.begin(), regions.end(), [](view::Region &r) {
+          return !r.isEmpty();
+        });
+    if (nonEmptyAlias) {
+      getModifiersInPhase(phase, chain.first, modifyingConsumerOps);
+    }
+  }
+}
+
 bool PingPong::apply(Graph &graph) const {
-  auto &ir                = graph.getIr();
-  auto &sessionOptions    = ir.getSessionOptions();
-  auto replicationDivisor = sessionOptions.enableReplicatedGraphs
-                                ? sessionOptions.replicatedGraphCount
-                                : 1;
-  const auto num_ipus = ir.getDeviceInfo()->getNumIpus() / replicationDivisor;
+  auto &ir               = graph.getIr();
+  auto &sessionOptions   = ir.getSessionOptions();
+  auto replicationFactor = sessionOptions.enableReplicatedGraphs
+                               ? sessionOptions.replicatedGraphCount
+                               : 1;
+  bool replicatedWeightSharding =
+      ir.getSessionOptions().replicatedWeightSharding;
+  size_t rwsMinNumElems =
+      ir.getSessionOptions().replicatedWeightShardingMinNumElements;
+  auto numIOTiles           = sessionOptions.numIOTiles;
+  const auto total_num_ipus = ir.getDeviceInfo()->getNumIpus();
+  const auto num_ipus       = total_num_ipus / replicationFactor;
+
   // const auto training = ir.canTrain();
   const auto num_phases = sessionOptions.pingPongPhases;
 
+  // Left and right pingpong stage
+  const auto num_stages = 2;
+
   if (graph.getOps().size() == 0 || num_phases < 2) {
-    return true;
+    return false;
   }
 
   logging::transform::debug(
-      "[PingPong] pingpong scheme with {} phases, {} ipus",
+      "[PingPong] pingpong scheme with {} phases, {} ({}) ipus",
       num_phases,
-      num_ipus);
+      num_ipus,
+      total_num_ipus);
 
   if (pass == 1 || pass == 2) {
     auto schedule = graph.getOpSchedule({});
 
     // Set all variable tensors to cached.
-    // TODO: Offer more refined scheme
+    // TODO T19644: Offer more refined scheme
     for (TensorId id : graph.getTensors().getIds(TensorType::Variable)) {
       auto tensor = graph.getTensors().get(id);
       tensor->cacheInfo.setCached(true);
@@ -149,8 +329,8 @@ bool PingPong::apply(Graph &graph) const {
 
     float cost_per_phase = cumulative_cost / static_cast<float>(num_phases);
 
-    // Eager claiming of ops per phase according to execution schedule
-    // TODO: Find better graph-cut algorithm for phase splitting
+    // Greedy claiming of ops per phase according to execution schedule
+    // TODO T10602: Find better graph-cut algorithm for phase splitting
     PingPongPhase phase = 0;
     float phase_cost    = 0;
     for (Op *op : schedule) {
@@ -164,29 +344,27 @@ bool PingPong::apply(Graph &graph) const {
       }
       phase_cost += cost;
 
-      bool has_phase    = op->hasPingPongPhase();
-      auto actual_phase = getSanitizedPingPongPhase(
-          graph, op, has_phase ? op->getPingPongPhase() : phase);
+      bool has_phase = op->hasPingPongPhase();
 
-      logging::transform::debug(
-          "[PingPong] (FWD) mapping operator {} to {} phase {}",
-          op->opid,
-          has_phase ? "(existing)" : "",
-          actual_phase);
-      op->setPingPongPhase(actual_phase);
-      if (!op->hasVirtualGraphId() && !dynamic_cast<IpuCopyOp *>(op))
-        op->setVirtualGraphId(actual_phase % num_ipus);
-      logging::transform::debug(
-          "[PingPong] (FWD) mapping operator {} to VGID {}",
-          op->opid,
-          op->hasVirtualGraphId() ? op->getVirtualGraphId() : -1);
+      if (has_phase && op->getPingPongPhase() >= num_phases) {
+        throw error("[PingPong] Maximum phase is {}, but op {} has phase {}.",
+                    num_phases - 1,
+                    op->debugName(),
+                    op->getPingPongPhase());
+      }
+
+      sanitizePlacementAnnotation(
+          graph, op, has_phase ? op->getPingPongPhase() : phase, num_stages);
     }
 
     // Put the user defined losses on the final virtual graph.
     // Losses should occur on the same virtual graph as the last FWD operators.
-    if (pass == 1) {
-      for (auto &loss : graph.getLosses()) {
-        loss->virtualGraph((num_phases - 1) % num_ipus);
+    for (auto &loss : graph.getLosses()) {
+      if (!loss->hasPingPongPhase()) {
+        loss->pingPongPhase((num_phases - 1));
+      }
+      if (!loss->hasVirtualGraphId()) {
+        loss->virtualGraph((num_phases - 1) % num_stages);
       }
     }
 
@@ -207,7 +385,7 @@ bool PingPong::apply(Graph &graph) const {
       }
       // Recompute everything else (fwd) not set by the user by default
       if (op.second->settings.recomputeType == RecomputeType::Undefined) {
-        if (!op.second->isIpuCopyOp() &&
+        if (ir.autoRecomputationEnabled() && !op.second->isIpuCopyOp() &&
             !dynamic_cast<GetRandomSeedOp *>(op.second.get())) {
           op.second->settings.recomputeType = RecomputeType::Recompute;
           logging::transform::trace("[PingPong] {} set to Recompute",
@@ -219,92 +397,21 @@ bool PingPong::apply(Graph &graph) const {
     }
   }
 
-  if (pass == 3) {
-    // Remap backward pass to the right phase
-    for (Op *op : graph.getOpSchedule({})) {
-      if (op->fromLoss == PathFromLoss::Yes) {
-        if (op->hasPingPongPhase()) {
-          // By virtue of creating backward ops (copying fwd ops settings),
-          // the initial phase will be the same as the forward phase
-          auto producer_phase = op->getOptionalPingPongPhase().get();
-
-          // Remap to correct phase
-          PingPongPhase phase = 2 * num_phases - 2 - producer_phase;
-
-          // Make sure phase adheres to producer/consumer and topological
-          // constraints
-          phase = getSanitizedPingPongPhase(graph, op, phase);
-
-          logging::transform::debug(
-              "[PingPong] (BWD) mapping operator {} to phase {}",
-              op->opid,
-              phase);
-          op->setPingPongPhase(phase);
-          if (!op->hasVirtualGraphId() && !dynamic_cast<IpuCopyOp *>(op))
-            op->setVirtualGraphId(phase % num_ipus);
-          logging::transform::debug(
-              "[PingPong] (BWD) mapping operator {} to VGID {}",
-              op->opid,
-              op->hasVirtualGraphId() ? op->getVirtualGraphId() : -1);
-        }
-      }
-    }
-  }
-
   // Figure out the right phase for ops that did not get a phase yet
   while (true) {
     int num_ops_without_phase = 0;
+    // Need to get the schedule every time,
+    // because setting phases can change schedule order
     for (Op *op : graph.getOpSchedule({})) {
-      if (!static_cast<bool>(op->getOptionalPingPongPhase())) {
+      if (!op->hasPingPongPhase()) {
         // Check which phase the consumers of the output are in
-        bool has_phase      = false;
-        PingPongPhase phase = 0;
+        op->inheritPlacementAttributes(true);
 
-        for (auto input : op->input->tensorMap()) {
-          Tensor *tensor = input.second;
-          Op *producerOp = tensor->getProducerUnsafe();
-          if (producerOp &&
-              static_cast<bool>(producerOp->getOptionalPingPongPhase())) {
-            auto op_phase = producerOp->getOptionalPingPongPhase().get();
-            phase         = has_phase ? std::max(op_phase, phase) : op_phase;
-            has_phase     = true;
-          }
-        }
-
-        for (auto output : op->output->tensorMap()) {
-          Tensor *tensor = output.second;
-          for (Op *consumerOp : tensor->consumers.getOps()) {
-            if (static_cast<bool>(consumerOp->getOptionalPingPongPhase())) {
-              PingPongPhase op_phase =
-                  consumerOp->getOptionalPingPongPhase().get();
-              if (op->isIpuCopyOp()) {
-                // Ensure the IPU copy is enrolled in the phase
-                // before the first consumer
-                op_phase--;
-              }
-              phase     = has_phase ? std::min(op_phase, phase) : op_phase;
-              has_phase = true;
-            }
-          }
-        }
-
-        if (has_phase) {
-
+        if (op->hasPingPongPhase()) {
           // Make sure phase adheres to producer/consumer and topological
           // constraints
-          phase = getSanitizedPingPongPhase(graph, op, phase);
-
-          logging::transform::debug(
-              "[PingPong] (REM) mapping operator {} to phase {}",
-              op->opid,
-              phase);
-          op->setPingPongPhase(phase);
-          if (!op->hasVirtualGraphId() && !dynamic_cast<IpuCopyOp *>(op))
-            op->setVirtualGraphId(phase % num_ipus);
-          logging::transform::debug(
-              "[PingPong] (REM) mapping operator {} to VGID {}",
-              op->opid,
-              op->hasVirtualGraphId() ? op->getVirtualGraphId() : -1);
+          sanitizePlacementAnnotation(
+              graph, op, op->getPingPongPhase(), num_stages);
         } else {
           ++num_ops_without_phase;
         }
@@ -316,91 +423,49 @@ bool PingPong::apply(Graph &graph) const {
   }
 
   // Tensor cache store/load inserted in the third ping-pong pass only
-  if (pass == 4) {
-    ir.setPingPongPhasesReady();
-
+  if (pass == 3) {
     // Make sure no priorities outside of the range needed by
     // pingpong are being used.
     compressPriorities(graph);
 
-    for (auto &op : graph.getOps()) {
-      // Assign correct priority to all Inter-IPU copies
-      if (op.second->isIpuCopyOp()) {
-        // TODO: T13885 differentiate between IPU copies between same-phase IPUs
-        //       and different-phase IPUs (8 vs. 8)
+    for (Op *op : graph.getOpSchedule({})) {
+      sanitizePlacementAnnotation(
+          graph, op, op->getPingPongPhase(), num_stages);
+      // Assign correct schedulePriority to all inter-IPU copies
+      if (op->isIpuCopyOp()) {
         // Special type of IPUCopy between PingPong phases
-        // Priority before CacheStore but after CacheLoad
-        IpuCopyOp *copy = dynamic_cast<IpuCopyOp *>(op.second.get());
-        if (!op.second->copiesOptimizerTensors() &&
-            copy->getDestIpu() % 2 != copy->getSourceIpu() % 2) {
-          op.second->settings.schedulePriority = -9999.0;
+        // schedulePriority before CacheStore but after CacheLoad
+        IpuCopyOp *copy = dynamic_cast<IpuCopyOp *>(op);
+        if (!op->copiesOptimizerTensors() &&
+            copy->getSourceIpu() % num_stages !=
+                copy->getDestIpu() % num_stages) {
+          // Inter-phase copy
+          op->settings.schedulePriority = ipuCopyPriority;
+        } else {
+          op->settings.schedulePriority = 0.0;
         }
         // Always keep IPU copy checkpointed
-        if (op.second->settings.recomputeType == RecomputeType::Undefined) {
-          op.second->settings.recomputeType = RecomputeType::Checkpoint;
+        if (op->settings.recomputeType == RecomputeType::Undefined) {
+          op->settings.recomputeType = RecomputeType::Checkpoint;
           logging::transform::trace("[PingPong] {} set to Checkpoint",
-                                    op.second->debugName());
+                                    op->debugName());
+        }
+      }
+      // Cached everything not set by the user by default
+      if (op->settings.cacheType == CacheType::Undefined) {
+        if (op->opid == Onnx::CustomOperators::GetRandomSeed) {
+          op->settings.cacheType = CacheType::Uncached;
+          logging::transform::trace("[PingPong] {} set to Uncached",
+                                    op->debugName());
+        } else {
+          op->settings.cacheType = CacheType::Cached;
+          logging::transform::trace("[PingPong] {} set to Cached",
+                                    op->debugName());
         }
       }
     }
 
-    // Insert, for every bwd phase, dummy consumers for recomputation
-    logging::transform::debug(
-        "[PingPong] Recomputation prerequirement dummy consumers");
-    std::map<int64_t, std::set<TensorId>> bwdRecomputePrereqs;
-    for (TensorId tensor_id : graph.getTensors().getAllTensorIds()) {
-      Tensor *tensor = graph.getTensors().get(tensor_id);
-      Op *producerOp = tensor->hasProducer() ? tensor->getProducer() : nullptr;
-      bool cached    = false;
-      // Enabling factors
-      cached |=
-          ((producerOp &&
-            producerOp->settings.recomputeType != RecomputeType::Recompute &&
-            producerOp->settings.cacheType == CacheType::Cached));
-      cached |= (!producerOp && tensor->cacheInfo.isCached());
-
-      // Disabling factors
-      cached &= !tensor->isOptimizerTensor();
-
-      // If we have a cached tensor ...
-      if (cached) {
-        for (Op *consumer : tensor->consumers.getOps()) {
-          // ... and a consumer of that tensor that is set to recompute ...
-          if (consumer->settings.recomputeType == RecomputeType::Recompute &&
-              (consumer->toLoss == PathToLoss::Yes ||
-               consumer->scheduledPreLoss == ScheduledPreLoss::Yes) &&
-              consumer->fromLoss != PathFromLoss::Yes) {
-            // ... then we need to ensure that tensor is stored and loaded
-            // by inserting operations as backward pass recompute
-            // prerequisites
-            bwdRecomputePrereqs[2 * num_phases - 2 -
-                                consumer->getPingPongPhase()]
-                .insert(tensor->id);
-          }
-        }
-      }
-    }
-
-    for (auto &entry : bwdRecomputePrereqs) {
-      auto recomputePrereqOp =
-          std::make_unique<RecomputePrereqOp>(Op::Settings(graph, ""));
-      auto recomputePrereq = recomputePrereqOp.get();
-      // Very high priority on prerequisites (at the start of a phase)
-      recomputePrereq->settings.schedulePriority = 10000.0;
-      recomputePrereq->fromLoss                  = PathFromLoss::Yes;
-      recomputePrereq->toLoss                    = PathToLoss::No;
-      recomputePrereq->setPingPongPhase(entry.first);
-      VGraphId vgid = entry.first % num_ipus;
-      recomputePrereq->setVirtualGraphId(vgid);
-      graph.moveIntoGraph(std::move(recomputePrereqOp));
-      int i = 0;
-      for (TensorId id : entry.second) {
-        recomputePrereq->connectInTensor(i, id);
-        i++;
-      }
-    }
-
-    // Remove tensors and CACHED from memory as needed
+    // Remove tensors and Cached from memory as needed
     // If two ops are on the same virtual graph,
     // and their phase is non-adjacently different,
     // then the tensor should be disconnected and backed up / restored
@@ -410,16 +475,14 @@ bool PingPong::apply(Graph &graph) const {
 
     std::map<std::pair<TensorId, int64_t>, std::pair<TensorId, CacheStoreOp *>>
         tensorStoreMap;
-    std::map<std::pair<TensorId, int64_t>, std::pair<TensorId, CacheLoadOp *>>
+    std::map<std::pair<TensorId, int64_t>,
+             std::tuple<TensorId, TensorId, CacheLoadOp *>>
         tensorLoadMap;
 
     auto getCacheArg = [&graph, &cacheArgIds](TensorId tensorId) -> TensorId {
       auto arg_tensor_id = getCacheArgTensorId(tensorId);
-
       TensorInfo argTensorInfo(DataType::INT32, {1});
-
       std::vector<int> idData(1, 0);
-
       if (std::find(cacheArgIds.begin(), cacheArgIds.end(), arg_tensor_id) ==
           cacheArgIds.end()) {
         graph.getTensors().addConstInit(
@@ -437,7 +500,7 @@ bool PingPong::apply(Graph &graph) const {
       int64_t last_phase = -1;
       for (auto &elem : tensorLoadMap) {
         if (elem.first.first == id && elem.first.second > last_phase) {
-          prev_id    = elem.second.first;
+          prev_id    = std::get<0>(elem.second);
           last_phase = elem.first.second;
         }
       }
@@ -448,17 +511,54 @@ bool PingPong::apply(Graph &graph) const {
         "[PingPong] Processing tensors across PingPong phases");
     Tensors &tensors = graph.getTensors();
     for (TensorId id : tensors.getAllTensorIds()) {
-      Tensor *tensor = tensors.get(id);
-
+      Tensor *tensor  = tensors.get(id);
       auto producerOp = tensor->getProducerUnsafe();
 
-      PathFromLoss producerPathFromLoss = PathFromLoss::Undefined;
-      PathToLoss producerPathToLoss     = PathToLoss::Undefined;
-      int64_t producerPingPongPhase     = -1;
-      if (producerOp && producerOp->getOptionalPingPongPhase()) {
-        producerPathFromLoss  = producerOp->fromLoss;
-        producerPathToLoss    = producerOp->toLoss;
-        producerPingPongPhase = producerOp->getOptionalPingPongPhase().get();
+      // Phases are not adjacent or the tensor does not have a producer
+      // and is explicitly cached
+      // Recomputation is not enabled on the producer
+      // Cached is enabled on the producer
+      bool cached = false;
+
+      // Enabling factors
+      cached |=
+          ((producerOp &&
+            producerOp->settings.recomputeType != RecomputeType::Recompute &&
+            producerOp->settings.cacheType == CacheType::Cached));
+
+      // Weights that have isCached set
+      cached |= (!producerOp && tensor->cacheInfo.isCached());
+
+      // Disabling factors
+      // Do not cache optimizer tensors
+      cached &= !tensor->isOptimizerTensor();
+
+      // Do not cache copies of const tensors and const tensors
+      cached &= !isConstOrCopyOfConst(tensor);
+
+      if (!cached) {
+        // Do not process this tensor further
+        continue;
+      }
+
+      boost::optional<PingPongPhase> producerPingPongPhase;
+      boost::optional<VGraphId> loadStoreVGID;
+
+      if (producerOp) {
+        if (producerOp->getOptionalPingPongPhase()) {
+          producerPingPongPhase = producerOp->getOptionalPingPongPhase();
+        }
+        if (IpuCopyOp *copy = dynamic_cast<IpuCopyOp *>(producerOp)) {
+          if (copy->getSourceIpu() % num_stages !=
+              copy->getDestIpu() % num_stages) {
+            // Inter-phase copy, special case where the producer
+            // phase is moved
+            producerPingPongPhase = producerPingPongPhase.get() + 1;
+          }
+          loadStoreVGID = copy->getDestIpu();
+        } else {
+          loadStoreVGID = producerOp->getVirtualGraphId();
+        }
       }
 
       auto consumerOps = tensor->consumers.getOps();
@@ -472,295 +572,458 @@ bool PingPong::apply(Graph &graph) const {
                    (rhs->hasPingPongPhase() ? rhs->getPingPongPhase() : -1);
           });
 
+      // Set if the tensor is live in the current phase
+      std::set<PingPongPhase> livePhases;
+      // Set of modifying ops per phase
+      std::map<PingPongPhase, std::vector<Op *>> modifiersInPhase;
+      // Set of consuming ops per phase
+      std::map<PingPongPhase, std::vector<Op *>> consumersInPhase;
+      // Set of phases that load or store
+      std::map<PingPongPhase, std::pair<bool, bool>> loadStoreInPhase;
+
+      if (producerPingPongPhase.is_initialized()) {
+        livePhases.insert(producerPingPongPhase.get());
+        // Do not load in producer phase
+        loadStoreInPhase[producerPingPongPhase.get()].first = false;
+        // Store in producer phase
+        loadStoreInPhase[producerPingPongPhase.get()].second = true;
+      }
+
       for (auto consumerOp : consumerOps) {
-        if (consumerOp->getOptionalPingPongPhase()) {
-          PathFromLoss consumerPathFromLoss = consumerOp->fromLoss;
-          PathToLoss consumerPathToLoss     = consumerOp->toLoss;
-          auto consumerPingPongPhase =
-              consumerOp->getOptionalPingPongPhase().get();
 
-          // Check if the consumer OP modifies the tensor, e.g. for weights
-          // if yes, then the tensor requires to be backed-up at the end of the
-          // phase
-          bool consumerModifiesTensor = false;
-          for (InIndex index : consumerOp->input->indices(tensor)) {
-            auto modified = consumerOp->modifies(index);
-            if (!std::all_of(
-                    modified.begin(),
-                    modified.end(),
-                    [](const view::Region &r) { return r.isEmpty(); })) {
-              consumerModifiesTensor = true;
-            }
+        boost::optional<VGraphId> consumerVGID =
+            consumerOp->getOptionalVirtualGraphId();
+        if (IpuCopyOp *copyOp = dynamic_cast<IpuCopyOp *>(consumerOp)) {
+          consumerVGID = copyOp->getSourceIpu();
+        }
+
+        // Pick correct VGID for loading/storing the tensor,
+        // if no producer exists
+        if (!loadStoreVGID.is_initialized()) {
+          loadStoreVGID = consumerVGID;
+        } else if (!tensor->hasProducer() && consumerVGID.is_initialized()) {
+          loadStoreVGID = std::min(loadStoreVGID.get(), consumerVGID.get());
+        }
+
+        auto consumerPingPongPhase =
+            consumerOp->getOptionalPingPongPhase().get();
+
+        if (livePhases.find(consumerPingPongPhase - num_stages) !=
+            livePhases.end()) {
+          // Live in adjacent previous phase, do not load in current phase
+          loadStoreInPhase[consumerPingPongPhase].first = false;
+          if (loadStoreInPhase[consumerPingPongPhase - num_stages].second) {
+            // Move store from adjacent previous phase to current phase
+            loadStoreInPhase[consumerPingPongPhase].second              = true;
+            loadStoreInPhase[consumerPingPongPhase - num_stages].second = false;
           }
+        } else if (producerPingPongPhase.is_initialized() &&
+                   producerPingPongPhase == consumerPingPongPhase) {
+          // Current phase is producer phase, do not load in current phase
+          loadStoreInPhase[consumerPingPongPhase].first = false;
+        } else {
+          // Not live, load in current phase
+          loadStoreInPhase[consumerPingPongPhase].first = true;
+        }
 
-          // Phases are not adjacent or the tensor does not have a producer
-          // and is explicitly cached
-          // Recomputation is not enabled on the producer
-          // CACHED is enabled on the producer
-          bool cached = false;
+        if (modifiersInPhase.find(consumerPingPongPhase) ==
+            modifiersInPhase.end()) {
+          // Check if the consumer OP modifies the tensor, e.g. for weights
+          // if yes, then the tensor requires to be backed-up at the end of
+          // the phase
+          getAliasedModifiersInPhase(graph,
+                                     consumerPingPongPhase,
+                                     tensor,
+                                     modifiersInPhase[consumerPingPongPhase]);
+          if (!modifiersInPhase[consumerPingPongPhase].empty()) {
+            // Storing in this phase
+            loadStoreInPhase[consumerPingPongPhase].second = true;
+            // Not storing in previous phase
+            loadStoreInPhase[consumerPingPongPhase - num_stages].second = false;
+          }
+        }
+        livePhases.insert(consumerPingPongPhase);
+        consumersInPhase[consumerPingPongPhase].push_back(consumerOp);
+      }
 
-          // Enabling factors
-          cached |= ((producerOp &&
-                      producerOp->settings.recomputeType !=
-                          RecomputeType::Recompute &&
-                      producerOp->settings.cacheType == CacheType::Cached) &&
-                     (abs(producerPingPongPhase - consumerPingPongPhase) > 2));
-          cached |= (!producerOp && tensor->cacheInfo.isCached());
+      if (logging::shouldLog(logging::Module::transform,
+                             logging::Level::Trace)) {
+        std::stringstream ss;
+        ss << tensor->id << " phase liveness status: ";
+        for (PingPongPhase p = 0; p < num_phases * 2 - 1; ++p) {
+          ss << "| ";
+          ss << "(" << p << ") ";
+          if (p == producerPingPongPhase) {
+            // Produced in this phase
+            ss << "P";
+          }
+          if (loadStoreInPhase[p].first) {
+            // Loaded in this phase
+            ss << "L";
+          }
+          if (loadStoreInPhase[p].second) {
+            // Stored in this phase
+            ss << "S";
+          }
+          if (livePhases.find(p) != livePhases.end()) {
+            // Live in this phase
+            ss << "A ";
+          } else {
+            ss << "_ ";
+          }
+        }
+        ss << "|";
+        logging::transform::trace(ss.str());
+      }
 
-          // Disabling factors
-          cached &= !tensor->isOptimizerTensor();
+      bool loadRequired = false;
+      for (auto &phaseLoadStore : loadStoreInPhase) {
+        loadRequired |= phaseLoadStore.second.first;
+      }
+      if (!loadRequired) {
+        // Tensor never loaded, so caching is disabled
+        continue;
+      }
 
-          if (cached) {
-            // Do we need to store the tensor in the producer phase?
-            // (Only if it wasn't stored in the producer phase yet)
-            CacheStoreOp *cacheStoreProducer = nullptr;
-            if (producerOp) {
-              auto storePhase = producerPingPongPhase;
-              // Special case when the producer is an IPUCopy from
-              // the previous phase
-              if (dynamic_cast<IpuCopyOp *>(producerOp))
-                storePhase += 1;
+      bool tensorUseIoTiles = replicatedWeightSharding &&
+                              tensor->tensorType() == TensorType::Variable &&
+                              numIOTiles > 0;
+      bool tensorReplicatedWeightSharding = false;
+      if (replicatedWeightSharding && tensor->info.nelms() > rwsMinNumElems &&
+          tensor->tensorType() == TensorType::Variable) {
+        tensorReplicatedWeightSharding = true;
+        tensor->cacheInfo.setSharded(tensorReplicatedWeightSharding);
+        logging::transform::debug(
+            "[PingPong] Enabling replica-sharded loading of tensor {}",
+            tensor->id);
+      }
 
-              auto tensorStoreMapEntry =
-                  tensorStoreMap.find({tensor->id, storePhase});
-              if (tensorStoreMapEntry == tensorStoreMap.end()) {
-                auto cacheStoreOp = std::make_unique<CacheStoreOp>(
-                    Onnx::CustomOperators::CacheStore, settings);
-                cacheStoreProducer = cacheStoreOp.get();
-                // Very low priority on stores (at the end of a phase)
-                cacheStoreProducer->settings.schedulePriority = -10000.0;
-                cacheStoreProducer->fromLoss = producerPathFromLoss;
-                cacheStoreProducer->toLoss   = producerPathToLoss;
-                cacheStoreProducer->settings.recomputeType =
-                    RecomputeType::Checkpoint;
-                cacheStoreProducer->setPingPongPhase(storePhase);
-                VGraphId vgid = consumerPingPongPhase % num_ipus;
-                cacheStoreProducer->setVirtualGraphId(vgid);
-                graph.moveIntoGraph(std::move(cacheStoreOp));
+      TensorId loadedTensorId   = tensor->id;
+      TensorId gatheredTensorId = tensor->id;
 
-                cacheStoreProducer->connectInTensor(
-                    CacheStoreOp::getRemoteBufferOffsetInIndex(),
-                    getCacheArg(tensor->id));
-                cacheStoreProducer->connectInTensor(
-                    CacheStoreOp::getCachedTensorInIndex(), tensor->id);
-                cacheStoreProducer->setup();
-                tensorStoreMap.emplace(
-                    std::pair<TensorId, int64_t>(tensor->id, storePhase),
-                    std::pair<TensorId, CacheStoreOp *>(tensor->id,
-                                                        cacheStoreProducer));
-              } else {
-                cacheStoreProducer = tensorStoreMapEntry->second.second;
+      for (auto &phaseLoadStore : loadStoreInPhase) {
+        PingPongPhase currentPingPongPhase = phaseLoadStore.first;
+        CacheLoadOp *cacheLoad             = nullptr;
+        CacheStoreOp *cacheStore           = nullptr;
+
+        // Load
+        if (phaseLoadStore.second.first) {
+          logging::transform::trace(
+              "[PingPong] Adding cache load of {} ({}) in phase {}",
+              loadedTensorId,
+              tensor->id,
+              currentPingPongPhase);
+          auto tensorLoadMapEntry =
+              tensorLoadMap.find({tensor->id, currentPingPongPhase});
+          if (tensorLoadMapEntry == tensorLoadMap.end()) {
+            auto cacheLoadOp = std::make_unique<CacheLoadOp>(
+                Onnx::CustomOperators::CacheLoad, settings);
+            cacheLoad = cacheLoadOp.get();
+            // Very low schedulePriority on loads (at the end of the previous
+            // phase)
+            cacheLoad->settings.schedulePriority = cacheLoadPriority;
+            cacheLoad->settings.recomputeType    = RecomputeType::Checkpoint;
+            // CacheLoad at the end of the previous phase, so that load
+            // is executed before inter-IPU copy
+            cacheLoad->setPingPongPhase(currentPingPongPhase - 1);
+            cacheLoad->setVirtualGraphId(loadStoreVGID);
+            graph.moveIntoGraph(std::move(cacheLoadOp));
+
+            cacheLoad->connectInTensor(
+                CacheStoreOp::getRemoteBufferOffsetInIndex(),
+                getCacheArg(tensor->id));
+
+            TensorId initTensorId = generateInitTensorId(tensor);
+            loadedTensorId =
+                generateLoadedTensorId(tensor, currentPingPongPhase);
+            TensorId inTensorId;
+
+            if (auto prevLoadId = getPreviousLoadedTensorId(tensor->id)) {
+              // Tensor might not have a true producer op, but was previously
+              // loaded by a CacheLoad
+              inTensorId = prevLoadId.get();
+            } else if (producerOp) {
+              // Tensor has a true producer op
+              inTensorId = tensor->id;
+            } else {
+              TensorInfo initInfo = tensor->info;
+
+              if (tensorReplicatedWeightSharding) {
+                initInfo.set(initInfo.dataType(),
+                             {(initInfo.nelms() - 1) / replicationFactor + 1});
               }
-            }
 
-            // Do we need to load the tensor in the consumer phase?
-            // (Only if it wasn't loaded in the consumer phase yet)
-            CacheLoadOp *cacheLoad = nullptr;
-            TensorId loadedTensorId;
-            auto tensorLoadMapEntry =
-                tensorLoadMap.find({tensor->id, consumerPingPongPhase});
-            if (tensorLoadMapEntry == tensorLoadMap.end()) {
-              auto cacheLoadOp = std::make_unique<CacheLoadOp>(
-                  Onnx::CustomOperators::CacheLoad, settings);
-              cacheLoad = cacheLoadOp.get();
-              // Very low priority on loads (at the end of the previous phase)
-              cacheLoad->settings.schedulePriority = -9998.0;
-              cacheLoad->fromLoss                  = consumerPathFromLoss;
-              cacheLoad->toLoss                    = consumerPathToLoss;
-              cacheLoad->settings.recomputeType    = RecomputeType::Checkpoint;
+              // InitOp as a "producer" op
+              auto initOp =
+                  std::make_unique<InitOp>(Onnx::CustomOperators::Init_1,
+                                           initInfo,
+                                           TensorType::Cache,
+                                           InitType::NoInit,
+                                           settings);
+              Op *init                        = initOp.get();
+              init->settings.schedulePriority = initPriority;
+              init->setPingPongPhase(currentPingPongPhase - 1);
+              init->setVirtualGraphId(loadStoreVGID);
+              graph.moveIntoGraph(std::move(initOp));
+              init->createAndConnectOutTensor(InitOp::getOutIndex(),
+                                              initTensorId);
+              init->setup();
+              inTensorId = initTensorId;
+
+              // Do Init on IO tiles
+              init->settings.useIoTiles = tensorUseIoTiles;
+            }
+            // CacheLoad always needs both an input and an output,
+            // for outlining and aliasing purposes
+
+            // CacheLoad updates the inTensorId...
+            cacheLoad->connectInTensor(CacheLoadOp::getCachedTensorInIndex(),
+                                       inTensorId);
+            // ... and aliases it under loadedTensorId
+            cacheLoad->createAndConnectOutTensor(
+                CacheLoadOp::getCachedTensorOutIndex(), loadedTensorId);
+
+            cacheLoad->setup();
+
+            // Do CacheLoad on IO tiles
+            cacheLoad->settings.useIoTiles = tensorUseIoTiles;
+
+            if (tensorReplicatedWeightSharding) {
+              // Execute replicated allgather to collect the full weight
+              // tensor from the individual replicas
+              auto replicatedAllGatherOp =
+                  std::make_unique<ReplicatedAllGatherOp>(
+                      Onnx::CustomOperators::ReplicatedAllGather,
+                      settings,
+                      tensor->info);
+              auto replicatedAllGather = replicatedAllGatherOp.get();
+              replicatedAllGather->settings.schedulePriority =
+                  allGatherPriority;
+              replicatedAllGather->settings.recomputeType =
+                  RecomputeType::Checkpoint;
               // CacheLoad at the end of the previous phase, so that load
               // is executed before inter-IPU copy
-              cacheLoad->setPingPongPhase(consumerPingPongPhase - 1);
-              VGraphId cLoadVgid = consumerPingPongPhase % num_ipus;
-              cacheLoad->setVirtualGraphId(cLoadVgid);
-              graph.moveIntoGraph(std::move(cacheLoadOp));
+              replicatedAllGather->setPingPongPhase(currentPingPongPhase - 1);
+              replicatedAllGather->setVirtualGraphId(loadStoreVGID);
+              graph.moveIntoGraph(std::move(replicatedAllGatherOp));
 
-              cacheLoad->connectInTensor(
-                  CacheStoreOp::getRemoteBufferOffsetInIndex(),
+              replicatedAllGather->connectInTensor(
+                  ReplicatedAllGatherOp::getInIndex(), loadedTensorId);
+
+              replicatedAllGather->connectInTensor(
+                  ReplicatedAllGatherOp::getCollectiveLinkedIndex(),
                   getCacheArg(tensor->id));
 
-              TensorId initTensorId = generateInitTensorId(tensor);
-              loadedTensorId =
-                  generateLoadedTensorId(tensor, consumerPingPongPhase);
-              TensorId inTensorId;
+              gatheredTensorId =
+                  generateGatheredTensorId(tensor, currentPingPongPhase);
 
-              if (auto prevLoadId = getPreviousLoadedTensorId(tensor->id)) {
-                // Tensor might not have a true producer op, but was previously
-                // loaded by a CacheLoad
-                inTensorId = prevLoadId.get();
-              } else if (producerOp) {
-                // Tensor has a true producer op
-                inTensorId = tensor->id;
-              } else {
-                // InitOp as a "producer" op
-                auto initOp =
-                    std::make_unique<InitOp>(Onnx::CustomOperators::Init_1,
-                                             tensor->info,
-                                             TensorType::Cache,
-                                             InitType::NoInit,
-                                             settings);
-                Op *init                        = initOp.get();
-                init->settings.schedulePriority = -9997.0;
-                init->fromLoss                  = consumerPathFromLoss;
-                init->toLoss                    = consumerPathToLoss;
-                init->setPingPongPhase(consumerPingPongPhase - 1);
-                VGraphId cAllVgid = consumerPingPongPhase % num_ipus;
-                init->setVirtualGraphId(cAllVgid);
-                graph.moveIntoGraph(std::move(initOp));
-                init->createAndConnectOutTensor(InitOp::getOutIndex(),
-                                                initTensorId);
-                init->setup();
-                inTensorId = initTensorId;
-              }
-              // CacheLoad always needs both an input and an output,
-              // for outlining and aliasing purposes
+              replicatedAllGather->createAndConnectOutTensor(
+                  ReplicatedAllGatherOp::getOutIndex(), gatheredTensorId);
 
-              // CacheLoad updates the inTensorId...
-              cacheLoad->connectInTensor(CacheLoadOp::getCachedTensorInIndex(),
-                                         inTensorId);
-              // ... and aliases it under loadedTensorId
-              cacheLoad->createAndConnectOutTensor(
-                  CacheLoadOp::getCachedTensorOutIndex(), loadedTensorId);
+              replicatedAllGather->setup();
+              graph.topoCons->insert(cacheLoad, replicatedAllGather, true);
 
-              cacheLoad->setup();
+              // Avoid outlining CacheLoad Ops that result in a
+              // different final gathered tensor shape together,
+              // because it can have adverse effects due to copying tensors
+              // with different final tile mapping using the same host
+              // exchange
+              std::string gatheredShapeString =
+                  "[" +
+                  logging::join(tensor->info.shape().begin(),
+                                tensor->info.shape().end(),
+                                ",") +
+                  "]";
+              cacheLoad->settings.extraOutlineAttributes.insert(
+                  {"gatheredSize", gatheredShapeString});
 
-              tensorLoadMap.emplace(std::pair<TensorId, int64_t>(
-                                        tensor->id, consumerPingPongPhase),
-                                    std::pair<TensorId, CacheLoadOp *>(
-                                        loadedTensorId, cacheLoad));
+              // Do AllGather on IO tiles
+              replicatedAllGather->settings.useIoTiles = tensorUseIoTiles;
+
             } else {
-              loadedTensorId = tensorLoadMapEntry->second.first;
-              cacheLoad      = tensorLoadMapEntry->second.second;
-
-              // Cache loads always belong to the lowest consumer phase
-              if (cacheLoad->toLoss != PathToLoss::Yes &&
-                  consumerPathToLoss == PathToLoss::Yes) {
-                cacheLoad->toLoss   = PathToLoss::Yes;
-                cacheLoad->fromLoss = PathFromLoss::No;
-              }
+              // Gathered and loaded tensor are the same
+              gatheredTensorId = loadedTensorId;
             }
 
-            // Do we need to store the tensor in the consumer phase?
-            // (Only if it wasn't stored in the consumer phase yet,
-            // and has been modified by the consumer)
-            CacheStoreOp *cacheStoreConsumer = nullptr;
-            if (consumerModifiesTensor) {
-              auto tensorStoreMapEntry =
-                  tensorStoreMap.find({tensor->id, consumerPingPongPhase});
-              if (tensorStoreMapEntry == tensorStoreMap.end()) {
-                auto cacheStoreOp = std::make_unique<CacheStoreOp>(
-                    Onnx::CustomOperators::CacheStore, settings);
-                cacheStoreConsumer = cacheStoreOp.get();
-                // Very low priority on stores (at the end of a phase)
-                cacheStoreConsumer->settings.schedulePriority = -10000.0;
-                cacheStoreConsumer->fromLoss = consumerPathFromLoss;
-                cacheStoreConsumer->toLoss   = consumerPathToLoss;
-                cacheStoreConsumer->settings.recomputeType =
-                    RecomputeType::Checkpoint;
-                cacheStoreConsumer->setPingPongPhase(consumerPingPongPhase);
-                VGraphId cStoreVgid = consumerPingPongPhase % num_ipus;
-                cacheStoreConsumer->setVirtualGraphId(cStoreVgid);
-                graph.moveIntoGraph(std::move(cacheStoreOp));
+            tensorLoadMap.emplace(
+                std::pair<TensorId, int64_t>(tensor->id, currentPingPongPhase),
+                std::tuple<TensorId, TensorId, CacheLoadOp *>(
+                    loadedTensorId, gatheredTensorId, cacheLoad));
+          } else {
+            loadedTensorId   = std::get<0>(tensorLoadMapEntry->second);
+            gatheredTensorId = std::get<1>(tensorLoadMapEntry->second);
+            cacheLoad        = std::get<2>(tensorLoadMapEntry->second);
+          }
+        }
 
-                cacheStoreConsumer->connectInTensor(
-                    CacheStoreOp::getRemoteBufferOffsetInIndex(),
-                    getCacheArg(tensor->id));
-                cacheStoreConsumer->connectInTensor(
-                    CacheStoreOp::getCachedTensorInIndex(), loadedTensorId);
-                cacheStoreConsumer->setup();
-                tensorStoreMap.emplace(std::pair<TensorId, int64_t>(
-                                           tensor->id, consumerPingPongPhase),
-                                       std::pair<TensorId, CacheStoreOp *>(
-                                           loadedTensorId, cacheStoreConsumer));
-              } else {
-                cacheStoreConsumer = tensorStoreMapEntry->second.second;
+        // Store
+        if (phaseLoadStore.second.second) {
+          logging::transform::trace(
+              "[PingPong] Adding cache store of {} ({}) in phase {}",
+              loadedTensorId,
+              tensor->id,
+              currentPingPongPhase);
+          auto tensorStoreMapEntry =
+              tensorStoreMap.find({tensor->id, currentPingPongPhase});
+          if (tensorStoreMapEntry == tensorStoreMap.end()) {
+            auto cacheStoreOp = std::make_unique<CacheStoreOp>(
+                Onnx::CustomOperators::CacheStore, settings);
+            cacheStore = cacheStoreOp.get();
+            // Very low schedulePriority on stores (at the end of a phase)
+            cacheStore->settings.schedulePriority = cacheStorePriority;
+            cacheStore->settings.recomputeType    = RecomputeType::Checkpoint;
+            cacheStore->setPingPongPhase(currentPingPongPhase);
+            cacheStore->setVirtualGraphId(loadStoreVGID);
+            graph.moveIntoGraph(std::move(cacheStoreOp));
 
-                // Cache stores always belong to the highest consumer phase
-                if (cacheStoreConsumer->fromLoss != PathFromLoss::Yes &&
-                    consumerPathFromLoss == PathFromLoss::Yes) {
-                  cacheStoreConsumer->toLoss   = PathToLoss::No;
-                  cacheStoreConsumer->fromLoss = PathFromLoss::Yes;
+            cacheStore->connectInTensor(
+                CacheStoreOp::getRemoteBufferOffsetInIndex(),
+                getCacheArg(tensor->id));
+            cacheStore->connectInTensor(CacheStoreOp::getCachedTensorInIndex(),
+                                        loadedTensorId);
+            cacheStore->setup();
+
+            // Do allgather on IO tiles
+            cacheStore->settings.useIoTiles = tensorUseIoTiles;
+
+            tensorStoreMap.emplace(
+                std::pair<TensorId, int64_t>(tensor->id, currentPingPongPhase),
+                std::pair<TensorId, CacheStoreOp *>(loadedTensorId,
+                                                    cacheStore));
+          } else {
+            cacheStore = tensorStoreMapEntry->second.second;
+          }
+        }
+
+        // Cache load has to take place before associated cache store
+        if (cacheLoad && cacheStore) {
+          graph.topoCons.get()->insert(cacheLoad, cacheStore);
+        }
+
+        if (cacheStore) {
+          // Any modification has to take place before the cache store
+          for (Op *modifyingOp : modifiersInPhase[currentPingPongPhase]) {
+            graph.topoCons.get()->insert(modifyingOp, cacheStore);
+          }
+        }
+
+        for (Op *consumerOp : consumersInPhase[currentPingPongPhase]) {
+          if (cacheLoad) {
+            // Loading has to take place before the consumption
+            graph.topoCons.get()->insert(cacheLoad, consumerOp);
+          }
+
+          // Logging graph change
+          if (producerOp) {
+            logging::transform::debug(
+                "[PingPong] Disconnecting tensor {} between ops {} and {}",
+                tensor->id,
+                producerOp->debugName(),
+                consumerOp->debugName());
+          } else {
+            logging::transform::debug(
+                "[PingPong] Disconnecting tensor {} at op {} (modified: {})",
+                tensor->id,
+                consumerOp->debugName(),
+                !modifiersInPhase[currentPingPongPhase].empty());
+          }
+
+          // Disconnect original tensor and wire up loaded tensor
+          auto indices = consumerOp->input->indices(tensor);
+          for (auto i : indices) {
+            auto *copyOp          = dynamic_cast<IpuCopyOp *>(consumerOp);
+            auto *sgd0VarUpdateOp = dynamic_cast<SGD0VarUpdateOp *>(consumerOp);
+
+            if (copyOp) {
+              auto sourceIpu = copyOp->getSourceIpus().at(tensor->id);
+              copyOp->disconnectInTensor(i, tensor);
+              copyOp->connectInTensor(i, gatheredTensorId, sourceIpu);
+            } else if (sgd0VarUpdateOp &&
+                       sgd0VarUpdateOp->input
+                               ->tensor(
+                                   SGD0VarUpdateOp::getVarToUpdateInIndex())
+                               ->id == tensor->id) {
+              sgd0VarUpdateOp->disconnectInTensor(i, tensor);
+              sgd0VarUpdateOp->connectInTensor(i, loadedTensorId);
+              sgd0VarUpdateOp->settings.schedulePriority = varUpdatePriority;
+              sgd0VarUpdateOp->settings.useIoTiles       = tensorUseIoTiles;
+
+              if (sgd0VarUpdateOp->input->hasIndex(
+                      SGD0VarUpdateOp::getUpdaterInIndex())) {
+                Tensor *grad = sgd0VarUpdateOp->input->tensor(
+                    SGD0VarUpdateOp::getUpdaterInIndex());
+                Op *producer = grad->getProducer();
+
+                if (ReplicatedAllReduceOp *replicatedAllReduce =
+                        dynamic_cast<ReplicatedAllReduceOp *>(producer)) {
+
+                  replicatedAllReduce->settings.schedulePriority =
+                      allReducePriority;
+                  replicatedAllReduce->settings.useIoTiles = tensorUseIoTiles;
+
+                  if (tensorReplicatedWeightSharding) {
+                    auto replicatedReduceScatterOp =
+                        std::make_unique<ReplicatedReduceScatterOp>(
+                            Onnx::CustomOperators::ReplicatedReduceScatter,
+                            replicatedAllReduce->settings);
+                    auto replicatedReduceScatter =
+                        replicatedReduceScatterOp.get();
+                    replicatedReduceScatter->fromLoss =
+                        replicatedAllReduce->fromLoss;
+                    replicatedReduceScatter->toLoss =
+                        replicatedAllReduce->toLoss;
+                    graph.moveIntoGraph(std::move(replicatedReduceScatterOp));
+
+                    TensorId inId =
+                        replicatedAllReduce->input
+                            ->tensor(ReplicatedAllReduceOp::getInIndex())
+                            ->id;
+                    TensorId outId =
+                        replicatedAllReduce->output
+                            ->tensor(ReplicatedAllReduceOp::getOutIndex())
+                            ->id;
+                    replicatedAllReduce->disconnectAllInputs();
+                    replicatedAllReduce->disconnectAllOutputs();
+                    replicatedAllReduce->getGraph().eraseOp(
+                        replicatedAllReduce->id);
+
+                    replicatedReduceScatter->connectInTensor(
+                        ReplicatedAllReduceOp::getInIndex(), inId);
+
+                    replicatedReduceScatter->connectInTensor(
+                        ReplicatedAllGatherOp::getCollectiveLinkedIndex(),
+                        getCacheArg(tensor->id));
+
+                    replicatedReduceScatter->connectOutTensor(
+                        ReplicatedAllReduceOp::getOutIndex(), outId);
+
+                    replicatedReduceScatter->setup();
+
+                    replicatedReduceScatter->settings.schedulePriority =
+                        allReducePriority;
+                    replicatedReduceScatter->settings.useIoTiles =
+                        tensorUseIoTiles;
+
+                    // Tie the reduction operation to the SGD0VarUpdate to get
+                    // the same schedule behaviour as if the reduction was
+                    // still integrated into SGD0VarUpdate
+                    graph.topoCons->insert(
+                        replicatedReduceScatter, sgd0VarUpdateOp, true);
+                  }
                 }
               }
-            }
-
-            // Set up the correct topology
-            if (producerOp) {
-              logging::transform::debug(
-                  "[PingPong] Disconnecting tensor {} between ops {} and {}",
-                  tensor->id,
-                  producerOp->opid,
-                  consumerOp->opid);
-              // Load has to be scheduled after the associated store,
-              // if the store precedes the load in the DAG
-              if (cacheStoreProducer != nullptr && cacheLoad != nullptr &&
-                  producerPingPongPhase < consumerPingPongPhase)
-                graph.topoCons.get()->insert(cacheStoreProducer, cacheLoad);
+              sgd0VarUpdateOp->setup();
             } else {
-              logging::transform::debug(
-                  "[PingPong] Disconnecting tensor {} at op {} (modified: {})",
-                  tensor->id,
-                  consumerOp->opid,
-                  consumerModifiesTensor);
-            }
-            if (consumerModifiesTensor) {
-              // Consumer-modified tensor; in this case we have to store also
-              // if the consumer has modified the tensor, and in that case the
-              // load precedes the store
-              if (cacheLoad != nullptr && cacheStoreConsumer != nullptr)
-                graph.topoCons.get()->insert(cacheLoad, cacheStoreConsumer);
-
-              if (consumerOp != nullptr && cacheStoreConsumer != nullptr)
-                graph.topoCons.get()->insert(consumerOp, cacheStoreConsumer);
-            }
-            graph.topoCons.get()->insert(cacheLoad, consumerOp);
-            // Disconnect original tensor and wire up loaded tensor
-            auto indices = consumerOp->input->indices(tensor);
-            for (auto i : indices) {
-              auto *copyOp = dynamic_cast<IpuCopyOp *>(consumerOp);
-              if (copyOp) {
-                auto sourceIpu = copyOp->getSourceIpus().at(tensor->id);
-                copyOp->disconnectInTensor(i, tensor);
-                copyOp->connectInTensor(i, loadedTensorId, sourceIpu);
-              } else {
-                consumerOp->disconnectInTensor(i, tensor);
-                consumerOp->connectInTensor(i, loadedTensorId);
-              }
+              consumerOp->disconnectInTensor(i, tensor);
+              consumerOp->connectInTensor(i, gatheredTensorId);
             }
           }
         }
       }
     }
-
-    // Insert boundaries to stop the subgraph outlining algorithm
-    // 2x at the end of each phase
-    if (sessionOptions.enableOutlining) {
-      for (PingPongPhase phase = 0; phase < 2 * num_phases - 2; ++phase) {
-        {
-          auto boundaryOp = std::make_unique<BoundaryOp>(
-              Op::Settings(graph, "PhaseBoundary"));
-          auto boundary = boundaryOp.get();
-          boundary->setPingPongPhase(phase);
-          // Before CacheAlloc/CacheStore/CacheLoad
-          boundary->settings.schedulePriority = -9996.0;
-          VGraphId bdVgid                     = phase % num_ipus;
-          boundary->setVirtualGraphId(bdVgid);
-          graph.moveIntoGraph(std::move(boundaryOp));
-        }
-        {
-          auto boundaryOp = std::make_unique<BoundaryOp>(
-              Op::Settings(graph, "PhaseBoundary"));
-          auto boundary = boundaryOp.get();
-          boundary->setPingPongPhase(phase);
-          // After CacheAlloc/CacheStore/CacheLoad
-          boundary->settings.schedulePriority = -10001.0;
-          VGraphId bdVgid                     = phase % num_ipus;
-          boundary->setVirtualGraphId(bdVgid);
-          graph.moveIntoGraph(std::move(boundaryOp));
-        }
-      }
-    }
+    ir.setPingPongPhasesReady();
   }
+  verifyPingPongPhases(graph);
   return true;
 }
 
@@ -769,10 +1032,8 @@ namespace {
 bool init1 = Transform::registerTransform(new PingPong(1));
 // PingPong 2: Map forward + loss pass to phases
 bool init2 = Transform::registerTransform(new PingPong(2));
-// PingPong 3: Map backward pass to phases
-bool init3 = Transform::registerTransform(new PingPong(3));
 // PingPong 3: Map remaining ops to phases, cut graph and insert cache ops.
-bool init4 = Transform::registerTransform(new PingPong(4));
+bool init3 = Transform::registerTransform(new PingPong(3));
 } // namespace
 
 } // namespace popart

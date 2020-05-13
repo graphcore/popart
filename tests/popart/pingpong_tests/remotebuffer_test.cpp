@@ -12,6 +12,7 @@
 #include <popart/op/cache.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/dynamic/dynamicslice.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/opmanager.hpp>
@@ -96,7 +97,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_0) {
   };
 
   if (device != nullptr) {
-    auto opts = SessionOptions();
+    auto opts    = SessionOptions();
     auto session = popart::InferenceSession::createFromOnnxModel(
         proto,
         dataFlow,
@@ -225,7 +226,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_1) {
   };
 
   if (device != nullptr) {
-    auto opts = SessionOptions();
+    auto opts    = SessionOptions();
     auto session = popart::InferenceSession::createFromOnnxModel(
         proto,
         dataFlow,
@@ -368,4 +369,288 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadOutlineTest) {
       }
     }
   }
+}
+
+// Test:
+// C = matmul (A, B) + D where A, B and D are cached weight matrices,
+// loss = lambda*|C|_1
+static void remoteBufferPingPongWeightTestBase(SessionOptions opts,
+                                               int K     = 6,
+                                               int M     = 7,
+                                               int N     = 8,
+                                               float eps = 1e-2) {
+
+  auto R = opts.replicatedGraphCount;
+
+  // we will generate random initializations
+  int seed = 1013;
+  DefaultRandomEngine eng(seed);
+  UniformRealDistribution<float> fdis(-4.f, 4.f);
+
+  // prepare a Builder for creating onnx model
+  auto bder   = Builder::create();
+  auto aiOnnx = bder->aiOnnxOpset9();
+
+  // matrix A of shape M x K
+  TensorInfo A_info{"FLOAT", std::vector<int64_t>{M, K}};
+  TensorInfo A_anch_info{"FLOAT", std::vector<int64_t>{R, M, K}};
+  std::vector<float> v_A_init(A_info.nelms());
+  for (auto &val : v_A_init) {
+    val = fdis(eng);
+  }
+  TensorId A_id = bder->addInitializedInputTensor({v_A_init.data(), A_info});
+
+  // matrix B of shape K x N
+  TensorInfo B_info{"FLOAT", std::vector<int64_t>{K, N}};
+  TensorInfo B_anch_info{"FLOAT", std::vector<int64_t>{R, K, N}};
+  std::vector<float> v_B_init(B_info.nelms());
+  for (auto &val : v_B_init) {
+    val = fdis(eng);
+  }
+  TensorId B_id = bder->addInitializedInputTensor({v_B_init.data(), B_info});
+
+  // bias matrix D of shape M x N
+  TensorInfo D_info{"FLOAT", std::vector<int64_t>{M, N}};
+  TensorInfo D_anch_info{"FLOAT", std::vector<int64_t>{R, M, N}};
+  std::vector<float> v_D_init(D_info.nelms());
+  for (auto &val : v_D_init) {
+    val = fdis(eng);
+  }
+  TensorId D_id = bder->addInitializedInputTensor({v_D_init.data(), D_info});
+
+  // matrix C = A * B (output of network)
+  TensorInfo C_info{"FLOAT", std::vector<int64_t>{M, N}};
+  TensorInfo C_anch_info{"FLOAT", std::vector<int64_t>{R, M, N}};
+
+  TensorId E_id = bder->customOp(Onnx::AiOnnx::OpSet9::MatMul,
+                                 9,
+                                 {A_id, B_id},
+                                 1,
+                                 {{"__ping_pong_phase", 0}},
+                                 "MatMul")[0];
+
+  TensorId C_id = bder->customOp(Onnx::AiOnnx::OpSet9::Add,
+                                 9,
+                                 {E_id, D_id},
+                                 1,
+                                 {{"__ping_pong_phase", 1}},
+                                 "Add")[0];
+
+  bder->addOutputTensor(C_id);
+
+  // l1 loss with penalty term, will be applied to C
+  float lossLambda = 0.26;
+  auto l1          = bder->aiGraphcoreOpset1().l1loss({C_id}, lossLambda);
+
+  // compute the baseline
+  std::vector<float> v_C_data(C_info.nelms());
+  std::vector<float> v_C_grad(C_info.nelms());
+  for (int m = 0; m < M; ++m) {
+    for (int n = 0; n < N; ++n) {
+      int index       = m * N + n;
+      v_C_data[index] = 0;
+      for (int k = 0; k < K; ++k) {
+        v_C_data[index] += v_A_init[m * K + k] * v_B_init[k * N + n];
+      }
+      v_C_data[index] += v_D_init[index];
+      v_C_grad[index] = 2 * (v_C_data[index] > 0) - 1;
+      v_C_grad[index] *= lossLambda;
+    }
+  }
+
+  // gradients of A, B, D
+  // dA = dC.BT
+  // dB = AT.dC
+  std::vector<float> v_A_grad(A_info.nelms(), 0);
+  std::vector<float> v_B_grad(B_info.nelms(), 0);
+  std::vector<float> v_D_grad(D_info.nelms(), 0);
+  for (int m = 0; m < M; ++m) {
+    for (int n = 0; n < N; ++n) {
+      int index = m * N + n;
+      for (int k = 0; k < K; ++k) {
+        v_A_grad[m * K + k] += v_C_grad[index] * v_B_init[k * N + n];
+        v_B_grad[k * N + n] += v_C_grad[index] * v_A_init[m * K + k];
+      }
+      v_D_grad[index] = v_C_grad[index];
+    }
+  }
+
+  auto proto      = bder->getModelProto();
+  auto modelProto = io::getModelFromString(proto);
+  auto art        = AnchorReturnType("All");
+  // one batch per step
+  int batchesPerStep = 1;
+  auto dataFlow      = DataFlow(batchesPerStep,
+                           {{C_id, art},
+                            {reservedGradientPrefix() + A_id, art},
+                            {reservedGradientPrefix() + B_id, art},
+                            {reservedGradientPrefix() + D_id, art}});
+
+  auto device = createTestDevice(TestDeviceType::Hw,
+                                 2 * opts.replicatedGraphCount,
+                                 1216,
+                                 SyncPattern::Full);
+
+  opts.virtualGraphMode      = VirtualGraphMode::PingPong;
+  opts.explicitRecomputation = true;
+  opts.pingPongPhases        = 2;
+
+  // training info
+  float learnRate = 0.321;
+
+  // R replicas doing the same work: compensate by dividing learning rate by R
+  auto optimizer = ConstSGD(learnRate / R);
+  std::unique_ptr<Loss> l1_loss(
+      new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
+  std::vector<Loss *> losses{l1_loss.get()};
+
+  auto session = popart::TrainingSession::createFromOnnxModel(
+      proto,
+      dataFlow,
+      losses,
+      optimizer,
+      device,
+      popart::InputShapeInfo(),
+      opts,
+      popart::Patterns(PatternsLevel::Default));
+
+  // prepare the anchors. We have the output C,
+  std::vector<float> raw_C_out(C_anch_info.nelms());
+  popart::NDArrayWrapper<float> C_wrapper(raw_C_out.data(),
+                                          C_anch_info.shape());
+
+  // the gradient of A,
+  std::vector<float> raw_A_grad_out(A_anch_info.nelms());
+  popart::NDArrayWrapper<float> A_grad_wrapper(raw_A_grad_out.data(),
+                                               A_anch_info.shape());
+  // and the gradient of B.
+  std::vector<float> raw_B_grad_out(B_anch_info.nelms());
+  popart::NDArrayWrapper<float> B_grad_wrapper(raw_B_grad_out.data(),
+                                               B_anch_info.shape());
+
+  // and the gradient of D.
+  std::vector<float> raw_D_grad_out(D_anch_info.nelms());
+  popart::NDArrayWrapper<float> D_grad_wrapper(raw_D_grad_out.data(),
+                                               D_anch_info.shape());
+
+  std::map<popart::TensorId, popart::IArray &> anchors = {
+      {C_id, C_wrapper},
+      {reservedGradientPrefix() + A_id, A_grad_wrapper},
+      {reservedGradientPrefix() + B_id, B_grad_wrapper},
+      {reservedGradientPrefix() + D_id, D_grad_wrapper}};
+
+  session->prepareDevice();
+
+  std::map<popart::TensorId, popart::IArray &> inputs = {};
+  popart::StepIO stepio(inputs, anchors);
+
+  session->weightsFromHost();
+  session->run(stepio);
+
+  // confirm the gradient values agree
+  for (size_t i = 0; i < v_C_data.size(); ++i) {
+    BOOST_CHECK_CLOSE(v_C_data.at(i), raw_C_out.at(i), eps);
+  }
+
+  for (size_t i = 0; i < v_A_grad.size(); ++i) {
+    BOOST_CHECK_CLOSE(v_A_grad.at(i), raw_A_grad_out.at(i), eps);
+  }
+
+  for (size_t i = 0; i < v_B_grad.size(); ++i) {
+    BOOST_CHECK_CLOSE(v_B_grad.at(i), raw_B_grad_out.at(i), eps);
+  }
+
+  for (size_t i = 0; i < v_D_grad.size(); ++i) {
+    BOOST_CHECK_CLOSE(v_D_grad.at(i), raw_D_grad_out.at(i), eps);
+  }
+
+  // we will read the updated weights back, and check that they are correct
+  std::vector<float> v_A_updated_baseline = v_A_init;
+  std::vector<float> v_B_updated_baseline = v_B_init;
+  std::vector<float> v_D_updated_baseline = v_D_init;
+  for (int k = 0; k < K; ++k) {
+    for (int n = 0; n < N; ++n) {
+      v_B_updated_baseline[k * N + n] -= learnRate * v_B_grad[k * N + n];
+    }
+
+    for (int m = 0; m < M; ++m) {
+      v_A_updated_baseline[m * K + k] -= learnRate * v_A_grad[m * K + k];
+    }
+  }
+  for (int n = 0; n < N; ++n) {
+    for (int m = 0; m < M; ++m) {
+      v_D_updated_baseline[m * N + n] -= learnRate * v_D_grad[m * N + n];
+    }
+  }
+
+  WeightsIO weightsRead;
+  // to be readback:
+  std::vector<float> A_readback(A_info.nelms(), -1.0f);
+  std::vector<float> B_readback(B_info.nelms(), -1.0f);
+  std::vector<float> D_readback(D_info.nelms(), -1.0f);
+  weightsRead.insert(A_id, {A_readback.data(), A_info});
+  weightsRead.insert(B_id, {B_readback.data(), B_info});
+  weightsRead.insert(D_id, {D_readback.data(), D_info});
+
+  session->weightsToHost();
+  session->readWeights(weightsRead);
+
+  for (size_t i = 0; i < v_A_updated_baseline.size(); ++i) {
+    BOOST_CHECK_CLOSE(v_A_updated_baseline.at(i), A_readback.at(i), eps);
+  }
+
+  for (size_t i = 0; i < v_B_updated_baseline.size(); ++i) {
+    BOOST_CHECK_CLOSE(v_B_updated_baseline.at(i), B_readback.at(i), eps);
+  }
+
+  for (size_t i = 0; i < v_D_updated_baseline.size(); ++i) {
+    BOOST_CHECK_CLOSE(v_D_updated_baseline.at(i), D_readback.at(i), eps);
+  }
+}
+
+// Test pingpong training
+BOOST_AUTO_TEST_CASE(RemoteBufferPingPongWeightTest_0) {
+  auto opts            = SessionOptions();
+  opts.enableOutlining = false;
+  remoteBufferPingPongWeightTestBase(opts, 8, 4, 6);
+}
+
+// Test pingpong replicated training
+BOOST_AUTO_TEST_CASE(RemoteBufferPingPongWeightReplicaTest_0) {
+  auto opts                     = SessionOptions();
+  opts.enableOutlining          = false;
+  opts.replicatedGraphCount     = 4;
+  opts.enableReplicatedGraphs   = true;
+  opts.replicatedWeightSharding = false;
+  remoteBufferPingPongWeightTestBase(opts, 7, 3, 5);
+  remoteBufferPingPongWeightTestBase(opts, 113, 103, 89, 1e-0);
+  remoteBufferPingPongWeightTestBase(opts, 32, 13, 128, 1e-0);
+}
+
+// Test pingpong replicated weight sharding without I/O tiles
+BOOST_AUTO_TEST_CASE(RemoteBufferPingPongWeightReplicaShardedTest_0) {
+  auto opts                                   = SessionOptions();
+  opts.enableOutlining                        = false;
+  opts.replicatedGraphCount                   = 4;
+  opts.enableReplicatedGraphs                 = true;
+  opts.replicatedWeightSharding               = true;
+  opts.replicatedWeightShardingMinNumElements = 0;
+  opts.numIOTiles                             = 0;
+  remoteBufferPingPongWeightTestBase(opts, 7, 3, 5);
+  remoteBufferPingPongWeightTestBase(opts, 113, 103, 89, 1e-0);
+  remoteBufferPingPongWeightTestBase(opts, 32, 13, 128, 1e-0);
+}
+
+// Test pingpong replicated weight sharding with I/O tiles
+BOOST_AUTO_TEST_CASE(RemoteBufferPingPongWeightReplicaShardedTest_1) {
+  auto opts                                   = SessionOptions();
+  opts.enableOutlining                        = false;
+  opts.replicatedGraphCount                   = 4;
+  opts.enableReplicatedGraphs                 = true;
+  opts.replicatedWeightSharding               = true;
+  opts.replicatedWeightShardingMinNumElements = 0;
+  opts.numIOTiles                             = 128;
+  remoteBufferPingPongWeightTestBase(opts, 7, 3, 5);
+  remoteBufferPingPongWeightTestBase(opts, 113, 103, 89, 1e-0);
+  remoteBufferPingPongWeightTestBase(opts, 32, 13, 128, 1e-0);
 }
