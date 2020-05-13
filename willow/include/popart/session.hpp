@@ -58,7 +58,7 @@ public:
   /**
    * Copy the cycle count tensor to host from the device
    */
-  uint64_t getCycleCount();
+  uint64_t getCycleCount(std::string id = "");
 
   /**
    * Perform one step.

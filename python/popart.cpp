@@ -841,7 +841,8 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("setRandomSeed",
             &InferenceSession::setRandomSeed,
             py::arg("seedValue"));
-    cls.def("getCycleCount", &InferenceSession::getCycleCount);
+    cls.def(
+        "getCycleCount", &InferenceSession::getCycleCount, py::arg("id") = "");
     cls.def("weightsFromHost", &InferenceSession::weightsFromHost);
     cls.def("writeWeights", &TrainingSession::writeWeights);
     cls.def("run", &InferenceSession::run);

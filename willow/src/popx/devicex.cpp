@@ -680,26 +680,30 @@ void Devicex::weightsToHost(
   }
 }
 
-const std::string Devicex::cycleCountStreamId() const {
-  return "d2h_" + std::string(cycleCountPrefix());
+const std::string Devicex::cycleCountStreamId(std::string id) const {
+  return "d2h_" + std::string(cycleCountPrefix()) + "_" + id;
 }
 
-void Devicex::instrumentWithHardwareCycleCounter(
-    poplar::program::Sequence &sq) {
+void Devicex::instrumentWithHardwareCycleCounter(poplar::program::Sequence &sq,
+                                                 int64_t tileId,
+                                                 std::string id) {
   poplar::Tensor cycleCountTensor =
-      poplar::cycleCount(graph(), sq, 0, cycleCountPrefix());
+      poplar::cycleCount(graph(), sq, tileId, cycleCountPrefix());
 
   // Create stream
-  auto st = graph().addDeviceToHostFIFO(cycleCountStreamId(),
+  auto st = graph().addDeviceToHostFIFO(cycleCountStreamId(id),
                                         cycleCountTensor.elementType(),
                                         cycleCountTensor.numElements());
+
+  // Allocate host side buffer for cycle count
+  cycleCount[id] = 0;
 
   // Add program fragment to copy to host stream
   auto cyclesToHostStream = poplar::program::Copy(cycleCountTensor, st, true);
   progs.cycleCountTensorToHostFragment().add(cyclesToHostStream);
 }
 
-uint64_t Devicex::cycleCountTensorToHost() {
+std::map<std::string, uint64_t> Devicex::cycleCountTensorToHost() {
   if (ir().getSessionOptions().instrumentWithHardwareCycleCounter) {
     // Calls the copy from device to host
     logging::devicex::debug("Writing cycle count to host");
@@ -2494,8 +2498,10 @@ void Devicex::loadEngineAndConnectStreams() {
   // Hardware cycle counter - connect stream even if synthetic data mode is
   // not off
   if (ir().getSessionOptions().instrumentWithHardwareCycleCounter) {
-    pEngine->connectStream(cycleCountStreamId(),
-                           static_cast<void *>(&cycleCount));
+    for (auto &kv : cycleCount) {
+      pEngine->connectStream(cycleCountStreamId(kv.first),
+                             static_cast<void *>(&kv.second));
+    }
   }
 }
 

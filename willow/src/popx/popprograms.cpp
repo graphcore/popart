@@ -354,6 +354,17 @@ poplar::program::Sequence PopPrograms::program() const {
       prog.add(accumulateOuterFragment());
     }
 
+    if (dv_p->ir().getSessionOptions().instrumentWithHardwareCycleCounter) {
+      // Instrument first tile of every IPU for inner program
+      for (size_t i = 0; i < dv_p->getDeviceInfo()->getNumIpus(); ++i) {
+        std::stringstream ss;
+        // String to identify instrumentation
+        ss << "inner_ipu_" << i;
+        dv_p->instrumentWithHardwareCycleCounter(
+            prog, i * dv_p->getDeviceInfo()->getTilesPerIpu(), ss.str());
+      }
+    }
+
     // BatchesPerStep loop
     outer.add(poplar::program::Repeat(dv_p->ir().getDataFlow().batchesPerStep(),
                                       prog));

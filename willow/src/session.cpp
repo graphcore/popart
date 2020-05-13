@@ -49,12 +49,12 @@ void Session::setRandomSeed(uint64_t seedValue) {
   device_->setRandomSeedFromHost();
 }
 
-uint64_t Session::getCycleCount() {
+uint64_t Session::getCycleCount(std::string id) {
   logging::session::trace("Session::getCycleCount()");
   if (!runCalled) {
     throw error("Must call run before getCycleCount.");
   }
-  return device_->cycleCountTensorToHost();
+  return device_->cycleCountTensorToHost().at(id);
 }
 
 // get the TensorInfo on a Tensor

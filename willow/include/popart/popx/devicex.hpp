@@ -93,9 +93,11 @@ public:
   // Streams the random seed value from host, and sets the rng registers on
   // the device
   void setRandomSeedFromHost();
-  const std::string cycleCountStreamId() const;
-  void instrumentWithHardwareCycleCounter(poplar::program::Sequence &);
-  uint64_t cycleCountTensorToHost();
+  const std::string cycleCountStreamId(std::string id) const;
+  void instrumentWithHardwareCycleCounter(poplar::program::Sequence &,
+                                          int64_t tileId = 0,
+                                          std::string id = "");
+  std::map<std::string, uint64_t> cycleCountTensorToHost();
   void run(IStepIO &);
 
 private:
@@ -273,6 +275,8 @@ public:
   const liveness::LivenessAnalyzer *getLivenessAnalyzer() const {
     return livenessAnalyzer.get();
   }
+
+  const DeviceInfo *getDeviceInfo() { return deviceInfo.get(); }
 
 private:
   std::unique_ptr<poplar::Graph> pGraph{nullptr};
@@ -510,8 +514,8 @@ private:
   std::map<TensorId, std::vector<char>> d2hWeightBuffers;
   std::map<TensorId, std::vector<char>> chBuffers;
 
-  // Buffer for storing the hardware cycle count
-  uint64_t cycleCount = 0;
+  // Buffers for storing the hardware cycle count
+  std::map<std::string, uint64_t> cycleCount;
 
   // Wrapper for calls to poplar Engine API calls: loading
   // engine onto the poplar device and connecting streams.
