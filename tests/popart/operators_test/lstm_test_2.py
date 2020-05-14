@@ -420,7 +420,7 @@ def test_import_torch_lstm_train(tmpdir):
             errors += 1
             print('tensors {} are not matching shapes'.format(key))
             print()
-        elif not np.allclose(po, to):
+        elif not np.allclose(po, to, atol=1e-07):
             errors += 1
             print('tensors {} are not close'.format(key))
             print('  popart')
