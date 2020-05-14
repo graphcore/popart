@@ -175,6 +175,18 @@ bool Prune::apply(Graph &graph) const {
     graph.getTensors().remove(tensor->id);
   }
 
+  if (graph.getOps().size() == 0) {
+    // The graph is empty, nothing to do. Error message depends on whether this
+    // is the top-level graph.
+    if (graph.id == graph.getIr().getMainGraph().id) {
+      throw error(
+          "All operations in the main graph were pruned, nothing to compute");
+    } else {
+      throw error("All operations in graph {} were pruned, nothing to compute",
+                  graph.id.str());
+    }
+  }
+
   return true;
 }
 
