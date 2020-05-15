@@ -28,11 +28,11 @@ described in the following sections and in :any:`popart_executing`.
 
   # Create a runtime environment
   anchors = {o : popart.AnchorReturnType("ALL")}
-  dataFeed = popart.DataFlow(1, anchors)
+  dataFlow = popart.DataFlow(1, anchors)
   device = popart.DeviceManager().createCpuDevice()
 
   # Create the session from the graph, data feed and device information
-  session = popart.InferenceSession(proto, dataFeed, device)
+  session = popart.InferenceSession(proto, dataFlow, device)
 
 The DataFlow object is described in more detail in :any:`popart_executing`.
 

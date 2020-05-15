@@ -177,7 +177,7 @@ def test_detach_grad_branches(detach_branch_popart, detach_branch_pytorch):
     opts = popart.SessionOptions()
     session = popart.TrainingSession(
         fnModel=builder.getModelProto(),
-        dataFeed=dataFlow,
+        dataFlow=dataFlow,
         losses=[popart.IdentityLoss(loss, "loss")],
         optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
         userOptions=opts,
@@ -316,7 +316,7 @@ def test_detach_error():
     with pytest.raises(popart.popart_exception) as e_info:
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),
-            dataFeed=dataFlow,
+            dataFlow=dataFlow,
             losses=[popart.IdentityLoss(loss, "loss")],
             optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
             userOptions=opts,

@@ -59,7 +59,7 @@ def test_sgd_mixed_mode(tmpdir):
 
         session = popart.TrainingSession(
             fnModel=proto,
-            dataFeed=dataFlow,\
+            dataFlow=dataFlow,\
             userOptions=opts,
             losses=[popart.IdentityLoss(l1, "idLossVal")],
             optimizer=opt0,

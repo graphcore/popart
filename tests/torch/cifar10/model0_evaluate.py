@@ -17,7 +17,7 @@ anchors = {
     "out": popart.AnchorReturnType("Final"),
     "image0": popart.AnchorReturnType("All")
 }
-dataFeed = popart.DataFlow(batchesPerStep, anchors)
+dataFlow = popart.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = popart.InputShapeInfo()
 inputShapeInfo.add(
     "image0", popart.TensorInfo("FLOAT", [samplesPerBatch, nChans, 32, 32]))
@@ -59,7 +59,7 @@ torchWriter = torchwriter.PytorchNetWriter(
     outNames=outNames,
     optimizer=optimizer,
     inputShapeInfo=inputShapeInfo,
-    dataFeed=dataFeed,
+    dataFlow=dataFlow,
     ### Torch specific:
     module=Module0(),
     samplesPerBatch=samplesPerBatch)

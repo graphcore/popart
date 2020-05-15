@@ -99,7 +99,7 @@ def _run_model(model, inputs, output, batchesPerStep=1):
     dataFlow = popart.DataFlow(batchesPerStep,
                                {output: popart.AnchorReturnType("All")})
     session = popart.InferenceSession(fnModel=model,
-                                      dataFeed=dataFlow,
+                                      dataFlow=dataFlow,
                                       deviceInfo=tu.create_test_device())
 
     session.prepareDevice()

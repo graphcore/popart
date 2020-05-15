@@ -54,7 +54,7 @@ def test_decompose_gradient_sum():
 
             device = tu.create_test_device(numIpus=numIpus)
             session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                             dataFeed=popart.DataFlow(1, [w0]),
+                                             dataFlow=popart.DataFlow(1, [w0]),
                                              deviceInfo=device,
                                              optimizer=popart.ConstSGD(0.1),
                                              losses=[loss],

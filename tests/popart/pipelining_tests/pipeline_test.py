@@ -27,7 +27,7 @@ def test_disabled_virtual_graphs():
 
     with pytest.raises(popart.popart_exception) as e_info:
         session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                          dataFeed=popart.DataFlow(
+                                          dataFlow=popart.DataFlow(
                                               10, anchor_map),
                                           userOptions=opts,
                                           deviceInfo=tu.create_test_device())
@@ -61,7 +61,7 @@ def test_one_ipu():
 
     with pytest.raises(popart.popart_exception) as e_info:
         session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                          dataFeed=popart.DataFlow(
+                                          dataFlow=popart.DataFlow(
                                               10, [op2_out, "loss"]),
                                           userOptions=opts,
                                           deviceInfo=tu.create_test_device())
@@ -89,7 +89,7 @@ def test_enabled_recomputation():
     builder.virtualGraph(op3_out, 1)
 
     session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                      dataFeed=popart.DataFlow(10, anchor_map),
+                                      dataFlow=popart.DataFlow(10, anchor_map),
                                       userOptions=opts,
                                       deviceInfo=tu.create_test_device(
                                           numIpus=2, tilesPerIpu=20))
@@ -117,7 +117,7 @@ def test_stream_tensors_to_multiple_ipus():
     builder.virtualGraph(op3_out, 1)
 
     session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                      dataFeed=popart.DataFlow(10, anchor_map),
+                                      dataFlow=popart.DataFlow(10, anchor_map),
                                       userOptions=opts,
                                       deviceInfo=tu.create_test_device(
                                           numIpus=2, tilesPerIpu=20))
@@ -153,7 +153,7 @@ def test_sharding_multi_source():
     builder.virtualGraph(nll, 2)
 
     session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                      dataFeed=popart.DataFlow(10, [op2_out]),
+                                      dataFlow=popart.DataFlow(10, [op2_out]),
                                       userOptions=opts,
                                       deviceInfo=tu.create_test_device(
                                           numIpus=3, tilesPerIpu=20))
@@ -395,7 +395,7 @@ def test_pipelined_dropout():
         userOptions.enablePipelining = do_pipelining
 
         session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                         dataFeed=dataFlow,
+                                         dataFlow=dataFlow,
                                          optimizer=popart.ConstSGD(0.1),
                                          losses=[loss],
                                          userOptions=userOptions,
@@ -530,7 +530,7 @@ def test_pipelined_recomputed_dropout():
     userOptions.autoRecomputation = popart.RecomputationType.Pipeline
 
     session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                     dataFeed=dataFlow,
+                                     dataFlow=dataFlow,
                                      optimizer=popart.ConstSGD(0.1),
                                      losses=[loss],
                                      userOptions=userOptions,
@@ -636,7 +636,7 @@ def get_model_anchors(doSharding,
     if doTraining is True:
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(batchesPerStep, anchor_map),
+            dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
             losses=[loss],
             optimizer=popart.ConstSGD(0.01),
             userOptions=opts,
@@ -644,7 +644,7 @@ def get_model_anchors(doSharding,
     else:
         session = popart.InferenceSession(
             fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(batchesPerStep, anchor_map),
+            dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
             userOptions=opts,
             deviceInfo=tu.create_test_device(numIpus=numIPUs, tilesPerIpu=20))
 

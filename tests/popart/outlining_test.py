@@ -46,7 +46,7 @@ def test_weight_update(tmpdir):
 
         session = popart.TrainingSession(
             fnModel=proto,
-            dataFeed=popart.DataFlow(1, dfAnchors),
+            dataFlow=popart.DataFlow(1, dfAnchors),
             optimizer=popart.ConstSGD(0.1),
             losses=[popart.IdentityLoss(out, "idLossVal")],
             patterns=popart.Patterns(popart.PatternsLevel.All),
@@ -117,7 +117,7 @@ def test_batches_per_step_greater_than_one():
 
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(batches_per_step, dfAnchors),
+            dataFlow=popart.DataFlow(batches_per_step, dfAnchors),
             optimizer=popart.ConstSGD(0.1),
             losses=[popart.IdentityLoss(out, "idLossVal")],
             patterns=popart.Patterns(popart.PatternsLevel.All),

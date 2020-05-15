@@ -89,7 +89,7 @@ def test_distributed_replicated_allreduce():
 
     device = tu.create_test_device(numIpus=numIpus)
     session = popart.InferenceSession(fnModel=proto,
-                                      dataFeed=dataFlow,
+                                      dataFlow=dataFlow,
                                       userOptions=opts,
                                       deviceInfo=device)
 
@@ -185,7 +185,7 @@ def test_distributed_replicated_weight_update():
 
     device = tu.create_test_device(numIpus=numIpus)
     session = popart.TrainingSession(fnModel=proto,
-                                     dataFeed=dataFlow,
+                                     dataFlow=dataFlow,
                                      losses=losses,
                                      optimizer=optimizer,
                                      deviceInfo=device,
@@ -295,7 +295,7 @@ def test_distributed_hierarchical_replicated_weight_update():
 
     device = tu.create_test_device(numIpus=numIpus)
     session = popart.TrainingSession(fnModel=proto,
-                                     dataFeed=dataFlow,
+                                     dataFlow=dataFlow,
                                      losses=losses,
                                      optimizer=optimizer,
                                      deviceInfo=device,

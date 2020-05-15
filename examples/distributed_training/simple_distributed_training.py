@@ -70,7 +70,7 @@ def init_session(proto, loss, dataFlow, userOpts, device):
                                      losses=[loss],
                                      deviceInfo=device,
                                      optimizer=optimizer,
-                                     dataFeed=dataFlow,
+                                     dataFlow=dataFlow,
                                      userOptions=userOpts)
 
     session.prepareDevice()

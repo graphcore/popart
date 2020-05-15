@@ -792,7 +792,7 @@ def test_set_weights_from_host():
     losses = [popart.IdentityLoss(o, "idLossVal")]
 
     session = popart.TrainingSession(fnModel=proto,
-                                     dataFeed=dataFlow,
+                                     dataFlow=dataFlow,
                                      losses=losses,
                                      optimizer=optimizer,
                                      deviceInfo=getDevice())
@@ -1200,7 +1200,7 @@ def test_load_onnx_model_from_other_builder(tmpdir):
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     session = popart.InferenceSession(fnModel=proto,
-                                      dataFeed=dataFlow,
+                                      dataFlow=dataFlow,
                                       deviceInfo=getDevice())
 
     anchors = session.initAnchorArrays()
@@ -1224,7 +1224,7 @@ def test_load_onnx_model_from_other_builder(tmpdir):
 
     proto2 = builder.getModelProto()
     session = popart.InferenceSession(fnModel=proto2,
-                                      dataFeed=dataFlow,
+                                      dataFlow=dataFlow,
                                       deviceInfo=getDevice())
 
     anchors = session.initAnchorArrays()
@@ -1267,7 +1267,7 @@ def test_load_onnx_model_from_file(tmpdir):
     proto = builder2.getModelProto()
 
     session = popart.InferenceSession(fnModel=proto,
-                                      dataFeed=dataFlow,
+                                      dataFlow=dataFlow,
                                       deviceInfo=getDevice())
 
     anchors = session.initAnchorArrays()

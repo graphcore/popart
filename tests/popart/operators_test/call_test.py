@@ -387,7 +387,7 @@ def test_call_grad_3():
         trainingOptions = popart.SessionOptions()
         trainingSession = popart.TrainingSession(
             fnModel=builder.getModelProto(),
-            dataFeed=dataFlow,
+            dataFlow=dataFlow,
             losses=[popart.IdentityLoss(nll, "loss")],
             optimizer=popart.ConstSGD(0.001),
             userOptions=trainingOptions,
@@ -592,7 +592,7 @@ def test_stacked_subgraphs_2():
         opts = popart.SessionOptions()
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(1, anchor_returns),
+            dataFlow=popart.DataFlow(1, anchor_returns),
             deviceInfo=tu.create_test_device(),
             optimizer=popart.ConstSGD(0.1),
             losses=[popart.IdentityLoss(actIn, actIn + "/loss")],
@@ -656,7 +656,7 @@ def test_stacked_subgraphs_2():
 #     # This should throw some exception, as the grad subgraph is empty
 #     session = popart.TrainingSession(
 #       fnModel=builder.getModelProto(),
-#       dataFeed=popart.DataFlow(1, anchorMap),
+#       dataFlow=popart.DataFlow(1, anchorMap),
 #       deviceInfo=tu.create_test_device(),
 #       optimizer=popart.ConstSGD(0.1),
 #       losses=[popart.IdentityLoss(out, out+"/loss")])

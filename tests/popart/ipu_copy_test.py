@@ -31,7 +31,7 @@ def test_ipu_copy_bca1():
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
-                                dataFeed=dataFlow,
+                                dataFlow=dataFlow,
                                 userOptions=opts,
                                 deviceInfo=tu.create_test_device(numIpus=3))
 
@@ -65,7 +65,7 @@ def test_ipu_copy_aca1():
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
-                                dataFeed=dataFlow,
+                                dataFlow=dataFlow,
                                 userOptions=opts,
                                 deviceInfo=tu.create_test_device(numIpus=3))
 
@@ -108,7 +108,7 @@ def test_ipu_copy_bca4():
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
-                                dataFeed=dataFlow,
+                                dataFlow=dataFlow,
                                 userOptions=opts,
                                 deviceInfo=tu.create_test_device(numIpus=3))
 
@@ -149,7 +149,7 @@ def test_ipu_copy_bca2():
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
-                                dataFeed=dataFlow,
+                                dataFlow=dataFlow,
                                 userOptions=opts,
                                 deviceInfo=tu.create_test_device(numIpus=3))
 
@@ -182,7 +182,7 @@ def test_ipu_copy_bca3():
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
-                                dataFeed=dataFlow,
+                                dataFlow=dataFlow,
                                 userOptions=opts,
                                 deviceInfo=tu.create_test_device(numIpus=2))
 
@@ -220,7 +220,7 @@ def test_ipu_copy_bca5():
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
-                                dataFeed=dataFlow,
+                                dataFlow=dataFlow,
                                 userOptions=opts,
                                 deviceInfo=tu.create_test_device(numIpus=3))
 
@@ -265,7 +265,7 @@ def test_copy_to_op_with_duplicate_inputs():
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
-                                dataFeed=dataFlow,
+                                dataFlow=dataFlow,
                                 userOptions=opts,
                                 deviceInfo=tu.create_test_device(numIpus=3))
 

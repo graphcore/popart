@@ -21,7 +21,7 @@ class NetWriter():
             which must be computed and returned. If not in training
             mode, then outputs of forward are the (only) tensors
             to return.
-        dataFeed:
+        dataFlow:
             Configuration for the data feeds and fetches.
         inputShapeInfo:
             For every loss stream input and standard input: the shape,
@@ -29,16 +29,16 @@ class NetWriter():
 
     """
 
-    def __init__(self, inNames, outNames, optimizer, dataFeed, inputShapeInfo):
+    def __init__(self, inNames, outNames, optimizer, dataFlow, inputShapeInfo):
 
         self.inNames = inNames
         self.outNames = outNames
         self.optimizer = optimizer
-        self.dataFeed = dataFeed
+        self.dataFlow = dataFlow
         self.inputShapeInfo = inputShapeInfo
         self.trainMode = optimizer != None
 
-        print(self.dataFeed.nAnchors())
+        print(self.dataFlow.nAnchors())
 
     def saveModel(self, filename):
         """

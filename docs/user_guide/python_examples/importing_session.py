@@ -13,7 +13,7 @@ torch.onnx.export(model, input_, "alexnet.onnx", output_names=[output_name])
 
 # Create a runtime environment
 anchors = {output_name: popart.AnchorReturnType("All")}
-dataFeed = popart.DataFlow(100, anchors)
+dataFlow = popart.DataFlow(100, anchors)
 
 # Append an Nll loss operation to the model
 builder = popart.Builder("alexnet.onnx")
@@ -27,6 +27,6 @@ optimizer = popart.ConstSGD(0.001)
 device = popart.DeviceManager().createCpuDevice()
 session = popart.TrainingSession(builder.getModelProto(),
                                  deviceInfo=device,
-                                 dataFeed=dataFeed,
+                                 dataFlow=dataFlow,
                                  losses=losses,
                                  optimizer=optimizer)

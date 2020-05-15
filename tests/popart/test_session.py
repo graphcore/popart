@@ -31,7 +31,7 @@ class PopartTestSession:
         optimizer = popart.ConstSGD(0.01)
 
         self._session = self._get_session(fnModel=proto,
-                                          dataFeed=dataFlow,
+                                          dataFlow=dataFlow,
                                           losses=losses,
                                           optimizer=optimizer,
                                           deviceInfo=device,
@@ -71,12 +71,12 @@ class PopartTestSession:
             return session_type(**session_args)
 
         if self.mode == 'inference':
-            return create_session(('fnModel', 'dataFeed', 'deviceInfo',
+            return create_session(('fnModel', 'dataFlow', 'deviceInfo',
                                    'patterns', 'userOptions'),
                                   popart.InferenceSession)
         elif self.mode == 'train':
             return create_session(
-                ('fnModel', 'dataFeed', 'losses', 'optimizer', 'deviceInfo',
+                ('fnModel', 'dataFlow', 'losses', 'optimizer', 'deviceInfo',
                  'patterns', 'userOptions'), popart.TrainingSession)
 
     def _get_device(self):

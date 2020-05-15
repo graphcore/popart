@@ -85,7 +85,7 @@ def test_load_externally_saved_tensors():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
     session = popart.InferenceSession(
         fnModel=builder.getModelProto(),
-        dataFeed=dataFlow,
+        dataFlow=dataFlow,
         deviceInfo=popart.DeviceManager().createCpuDevice())
     anchors = session.initAnchorArrays()
     session.prepareDevice()
@@ -137,7 +137,7 @@ def test_save_back_externally_saved_tensors():
     opts = popart.SessionOptions()
     session = popart.TrainingSession(
         fnModel=builder.getModelProto(),
-        dataFeed=popart.DataFlow(1, anchorsDef),
+        dataFlow=popart.DataFlow(1, anchorsDef),
         deviceInfo=popart.DeviceManager().createCpuDevice(),
         optimizer=popart.ConstSGD(10),
         losses=[popart.IdentityLoss(out, out + "/loss")])

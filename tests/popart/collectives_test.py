@@ -23,7 +23,7 @@ def test_replicated_allreduce():
 
     device = tu.create_test_device(numIpus=numIpus)
     session = popart.InferenceSession(fnModel=proto,
-                                      dataFeed=dataFlow,
+                                      dataFlow=dataFlow,
                                       userOptions=opts,
                                       deviceInfo=device)
 

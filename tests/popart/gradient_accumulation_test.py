@@ -163,13 +163,13 @@ def run_graph(input_shape, initial_onnx_model, input_tensor_name,
     # only for test purposes, inference with gradient_accumulation should never work
     if inference_mode:
         popart.InferenceSession(fnModel=initial_onnx_model,
-                                dataFeed=popart.DataFlow(
+                                dataFlow=popart.DataFlow(
                                     batches_per_step, anchorNames),
                                 userOptions=opts,
                                 deviceInfo=device)
 
     session = popart.TrainingSession(fnModel=initial_onnx_model,
-                                     dataFeed=popart.DataFlow(
+                                     dataFlow=popart.DataFlow(
                                          batches_per_step, anchorNames),
                                      deviceInfo=device,
                                      losses=losses,
@@ -622,7 +622,7 @@ def test_loading_saved_gradient_accumulationt_tesors():
         opts.accumulationFactor = accl_factor
         opts.disableGradAccumulationTensorStreams = False
         sess = popart.TrainingSession(fnModel=fn,
-                                      dataFeed=popart.DataFlow(1, {}),
+                                      dataFlow=popart.DataFlow(1, {}),
                                       deviceInfo=tu.create_test_device(),
                                       losses=losses,
                                       optimizer=optimizer,

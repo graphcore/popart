@@ -36,7 +36,7 @@ def test_stepio_bufferinput_ipu(tmpdir):
         })
 
     session = popart.InferenceSession(fnModel=proto,
-                                      dataFeed=dataFlow,
+                                      dataFlow=dataFlow,
                                       deviceInfo=tu.create_test_device(1))
 
     session.prepareDevice()
@@ -93,7 +93,7 @@ def test_stepio_callbackinput_ipu(tmpdir):
         })
 
     session = popart.InferenceSession(fnModel=proto,
-                                      dataFeed=dataFlow,
+                                      dataFlow=dataFlow,
                                       deviceInfo=tu.create_test_device(1))
 
     session.prepareDevice()

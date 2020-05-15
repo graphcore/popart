@@ -138,7 +138,7 @@ def test_against_pytorch():
 
     session = popart.TrainingSession(
         fnModel=builder.getModelProto(),
-        dataFeed=dataFlow,
+        dataFlow=dataFlow,
         userOptions=userOptions,
         losses=[loss1],
         optimizer=popart.SGD(optMap0),

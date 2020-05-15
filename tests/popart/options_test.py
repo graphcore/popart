@@ -92,7 +92,7 @@ def test_engine_options_passed_to_engine(tmpdir):
     opts.engineOptions = {'option': 'value'}
 
     session = popart.InferenceSession(fnModel=proto,
-                                      dataFeed=dataFlow,
+                                      dataFlow=dataFlow,
                                       userOptions=opts,
                                       deviceInfo=tu.create_test_device())
 

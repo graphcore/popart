@@ -22,7 +22,7 @@ anchors = {
     "loss": popart.AnchorReturnType("EveryN", 2),
     "image0": popart.AnchorReturnType("All")
 }
-dataFeed = popart.DataFlow(batchesPerStep, anchors)
+dataFlow = popart.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = popart.InputShapeInfo()
 inputShapeInfo.add("image0",
                    popart.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
@@ -40,6 +40,7 @@ def nllloss(logprobs, targets):
     targets = targets.unsqueeze(1)
     loss = torch.gather(logprobs, 1, targets)
     return -torch.sum(loss)
+
 
 class Module0(torch.nn.Module):
     def __init__(self):
@@ -82,7 +83,7 @@ torchWriter = torchwriter.PytorchNetWriter(
     outNames=outNames,
     optimizer=popart.ConstSGD(0.001),
     inputShapeInfo=inputShapeInfo,
-    dataFeed=dataFeed,
+    dataFlow=dataFlow,
     ### Torch specific:
     module=Module0(),
     samplesPerBatch=batchSize)

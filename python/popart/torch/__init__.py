@@ -99,10 +99,10 @@ class InferenceSession(_InferenceSessionCore):
         if patterns is None:
             patterns = popart.Patterns()
 
-        self.dataFeed = self.createDataFeed()
+        self.dataFlow = self.createdataFlow()
 
         super(InferenceSession,
-              self).__init__(proto, self.dataFeed, self.deviceInfo, losses,
+              self).__init__(proto, self.dataFlow, self.deviceInfo, losses,
                              self.inputShapeInfo, userOptions, patterns)
 
         self.replicationFactor = userOptions.replicatedGraphCount if \
@@ -121,7 +121,7 @@ class InferenceSession(_InferenceSessionCore):
                 "Only Identity loss with manual loss construction is currently supported."
             )
 
-    def createDataFeed(self):
+    def createdataFlow(self):
         return popart.DataFlow(self.batches_per_step, self.anchor_returns)
 
     def createProto(self):
@@ -236,10 +236,10 @@ class TrainingSession(_TrainingSessionCore):
         if patterns is None:
             patterns = popart.Patterns()
 
-        self.dataFeed = self.createDataFeed()
+        self.dataFlow = self.createdataFlow()
 
         super(TrainingSession,
-              self).__init__(proto, self.dataFeed, losses,
+              self).__init__(proto, self.dataFlow, losses,
                              self.createOptimizer(), self.deviceInfo,
                              self.inputShapeInfo, userOptions, patterns)
 
@@ -259,7 +259,7 @@ class TrainingSession(_TrainingSessionCore):
                 "Only Identity loss with manual loss construction is currently supported."
             )
 
-    def createDataFeed(self):
+    def createdataFlow(self):
         return popart.DataFlow(self.batches_per_step, self.anchor_returns)
 
     def createProto(self):

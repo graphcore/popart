@@ -206,7 +206,7 @@ def test_import_torch_lstm(tmpdir):
         dataFlow = popart.DataFlow(1, outputs)
         device = tu.create_test_device(1, 1216, opts={"tilesPerIPU": 1216})
         s = popart.InferenceSession(fnModel=onnx_file_name,
-                                    dataFeed=dataFlow,
+                                    dataFlow=dataFlow,
                                     deviceInfo=device)
 
         anchor_map = s.initAnchorArrays()
@@ -352,7 +352,7 @@ def test_import_torch_lstm_train(tmpdir):
         device = tu.create_test_device(1, 1216, opts={"tilesPerIPU": 1216})
         print('Creating session')
         s = popart.TrainingSession(fnModel=onnx_file_name,
-                                   dataFeed=dataFlow,
+                                   dataFlow=dataFlow,
                                    optimizer=optimizer,
                                    losses=losses,
                                    patterns=popart.Patterns(["PreUniRepl"]),
@@ -504,7 +504,7 @@ def test_import_torch_lstm_multi_run(tmpdir):
         dataFlow = popart.DataFlow(1, outputs)
         device = tu.create_test_device(1, 1216, opts={"tilesPerIPU": 1216})
         s = popart.InferenceSession(fnModel=onnx_file_name,
-                                    dataFeed=dataFlow,
+                                    dataFlow=dataFlow,
                                     deviceInfo=device)
 
         anchor_map = s.initAnchorArrays()
@@ -594,11 +594,11 @@ def test_lstm_export_with_constantofshape(tmpdir):
     inputShapeInfo.add("data", popart.TensorInfo("FLOAT", [1, 100, 18]))
 
     anchors = {"tag": popart.AnchorReturnType("All")}
-    dataFeed = popart.DataFlow(1, anchors)
+    dataFlow = popart.DataFlow(1, anchors)
     device = tu.create_test_device()
 
     session = popart.InferenceSession(export_name,
-                                      dataFeed,
+                                      dataFlow,
                                       device,
                                       inputShapeInfo=inputShapeInfo)
 

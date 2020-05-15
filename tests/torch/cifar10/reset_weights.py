@@ -31,7 +31,7 @@ def get_trainset():
     return trainset
 
 
-def get_session(fnModel, inputShapeInfo, dataFeed, torchWriter, patterns,
+def get_session(fnModel, inputShapeInfo, dataFlow, torchWriter, patterns,
                 opts):
     idLosses = []
     for loss in torchWriter.outNames:
@@ -43,7 +43,7 @@ def get_session(fnModel, inputShapeInfo, dataFeed, torchWriter, patterns,
     session = popart.TrainingSession(
         fnModel=fnModel,
         inputShapeInfo=inputShapeInfo,
-        dataFeed=dataFeed,
+        dataFlow=dataFlow,
         losses=idLosses,
         optimizer=torchWriter.optimizer,
         patterns=patterns,
@@ -78,7 +78,7 @@ def compare_models(model_A0, model_A1, model_B0, model_B1):
 
 
 def run(torchWriter, patterns, outputdir, cifarInIndices):
-    dataFeed = torchWriter.dataFeed
+    dataFlow = torchWriter.dataFlow
     inputShapeInfo = torchWriter.inputShapeInfo
 
     fnModel0 = os.path.join(outputdir, "model0.onnx")
@@ -93,7 +93,7 @@ def run(torchWriter, patterns, outputdir, cifarInIndices):
         # the amount of data loaded for each step.
         # note this is not the batch size, it's the "step" size
         # (samples per step)
-        batch_size=torchWriter.samplesPerBatch * dataFeed.batchesPerStep(),
+        batch_size=torchWriter.samplesPerBatch * dataFlow.batchesPerStep(),
         shuffle=False)
 
     popart.getLogger().setLevel("TRACE")
@@ -103,7 +103,7 @@ def run(torchWriter, patterns, outputdir, cifarInIndices):
     opts.logDir = outputdir
     opts.constantWeights = False
 
-    session = get_session(fnModel0, inputShapeInfo, dataFeed, torchWriter,
+    session = get_session(fnModel0, inputShapeInfo, dataFlow, torchWriter,
                           patterns, opts)
 
     def addStepDimension(data, batchesPerStep):
@@ -125,7 +125,7 @@ def run(torchWriter, patterns, outputdir, cifarInIndices):
             for tenId in cifarInIndices.keys():
                 inputs[tenId] = \
                     addStepDimension(data[cifarInIndices[tenId]].numpy(),
-                                     session.dataFeed.batchesPerStep())
+                                     session.dataFlow.batchesPerStep())
             stepi += 1
 
             torchWriter.train(inputs)
@@ -185,7 +185,7 @@ anchors = {
     "image0": popart.AnchorReturnType("Final")
 }
 
-dataFeed = popart.DataFlow(batchesPerStep, anchors)
+dataFlow = popart.DataFlow(batchesPerStep, anchors)
 
 # willow is non-dynamic. All input Tensor shapes and
 # types must be fed into the Session constructor.
@@ -233,7 +233,7 @@ torchWriter = torchwriter.PytorchNetWriter(
     outNames=outNames,
     optimizer=popart.ConstSGD(0.001),
     inputShapeInfo=inputShapeInfo,
-    dataFeed=dataFeed,
+    dataFlow=dataFlow,
     # Torch specific:
     module=Module0(),
     samplesPerBatch=samplesPerBatch)

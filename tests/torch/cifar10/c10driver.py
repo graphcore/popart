@@ -100,7 +100,7 @@ def _run_impl(torchWriter, patterns, outputdir, cifarInIndices, device,
             idLosses.append(idLoss)
         return idLosses
 
-    dataFeed = torchWriter.dataFeed
+    dataFlow = torchWriter.dataFlow
     inputShapeInfo = torchWriter.inputShapeInfo
     validModes = ["infer", "train"]
     if mode not in validModes:
@@ -145,7 +145,7 @@ def _run_impl(torchWriter, patterns, outputdir, cifarInIndices, device,
         # the amount of data loaded for each step.
         # note this is not the batch size, it's the "step" size
         # (samples per step)
-        batch_size=torchWriter.samplesPerBatch * dataFeed.batchesPerStep(),
+        batch_size=torchWriter.samplesPerBatch * dataFlow.batchesPerStep(),
         #non-random data loading
         shuffle=False,
         num_workers=0)
@@ -212,14 +212,14 @@ def _run_impl(torchWriter, patterns, outputdir, cifarInIndices, device,
     if mode == 'infer':
         session = popart.InferenceSession(fnModel=modelProtoX,
                                           inputShapeInfo=inputShapeInfo,
-                                          dataFeed=dataFeed,
+                                          dataFlow=dataFlow,
                                           patterns=patterns,
                                           userOptions=opts,
                                           deviceInfo=device)
     else:
         session = popart.TrainingSession(fnModel=modelProtoX,
                                          inputShapeInfo=inputShapeInfo,
-                                         dataFeed=dataFeed,
+                                         dataFlow=dataFlow,
                                          losses=getIdentityLosses(
                                              torchWriter.outNames),
                                          optimizer=torchWriter.optimizer,
@@ -279,14 +279,14 @@ def _run_impl(torchWriter, patterns, outputdir, cifarInIndices, device,
         # Check all losses are anchored
         for loss in torchWriter.losses:
             assertStr = "All loss tensors mist be anchored"
-            assert (torchWriter.dataFeed.isAnchored(loss)), assertStr
+            assert (torchWriter.dataFlow.isAnchored(loss)), assertStr
 
         # Check all losses have the same anchor return type
         fisrtLossId = torchWriter.losses[0]
-        firstLossArtId = torchWriter.dataFeed.art(fisrtLossId).id()
+        firstLossArtId = torchWriter.dataFlow.art(fisrtLossId).id()
         if (len(torchWriter.losses) > 1):
             for loss in torchWriter.losses:
-                lossArtId = torchWriter.dataFeed.art(loss).id()
+                lossArtId = torchWriter.dataFlow.art(loss).id()
                 assertStr = "All losses must have the same return type"
                 assert (lossArtId == firstLossArtId), assertStr
 
@@ -346,7 +346,7 @@ def _run_impl(torchWriter, patterns, outputdir, cifarInIndices, device,
         for tenId in cifarInIndices.keys():
             inputs[tenId] = \
                 addStepDimension(stepData[cifarInIndices[tenId]].numpy(),
-                                 session.dataFeed.batchesPerStep())
+                                 session.dataFlow.batchesPerStep())
 
         if mode == "train":
             # take batchesPerStep passes (1 step), Torch

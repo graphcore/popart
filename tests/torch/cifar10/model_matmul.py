@@ -33,7 +33,7 @@ anchors = ["l1LossVal", "out"]
 # sum over samples in step? See ir.hpp for details.
 art = popart_core.AnchorReturnType.ALL
 
-dataFeed = popart_core.DataFlow(batchesPerStep, anchors, art)
+dataFlow = popart_core.DataFlow(batchesPerStep, anchors, art)
 
 # willow is non-dynamic. All input Tensor shapes and
 # types must be fed into the WillowNet constructor.
@@ -81,7 +81,7 @@ torchWriter = torchwriter.PytorchNetWriter(
     losses=losses,
     optimizer=popart_core.ConstSGD(0.001),
     inputShapeInfo=inputShapeInfo,
-    dataFeed=dataFeed,
+    dataFlow=dataFlow,
     ### Torch specific:
     module=Module0())
 

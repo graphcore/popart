@@ -51,7 +51,7 @@ def test_pipeline_boundary():
 
         device = tu.create_test_device(numIpus=numIpus)
         session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                         dataFeed=popart.DataFlow(4, [actIn]),
+                                         dataFlow=popart.DataFlow(4, [actIn]),
                                          deviceInfo=device,
                                          optimizer=popart.ConstSGD(0.1),
                                          losses=[loss],

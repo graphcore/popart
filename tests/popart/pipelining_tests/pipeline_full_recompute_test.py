@@ -141,7 +141,7 @@ def test_full_recompute_pipelining(tmpdir):
         pat = popart.Patterns(popart.PatternsLevel.Default)
 
         session = popart.TrainingSession(fnModel=proto,
-                                         dataFeed=dataFlow,
+                                         dataFlow=dataFlow,
                                          userOptions=opts,
                                          losses=[loss],
                                          optimizer=popart.ConstSGD(1e-9),

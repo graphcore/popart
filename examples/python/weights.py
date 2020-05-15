@@ -36,7 +36,7 @@ inferenceOptions.constantWeights = False
 
 inferenceSession = popart.InferenceSession(
     fnModel=builder.getModelProto(),
-    dataFeed=dataFlow,
+    dataFlow=dataFlow,
     userOptions=inferenceOptions,
     deviceInfo=popart.DeviceManager().createIpuModelDevice({}))
 
@@ -51,7 +51,7 @@ inferenceAnchors = inferenceSession.initAnchorArrays()
 trainingOptions = popart.SessionOptions()
 trainingSession = popart.TrainingSession(
     fnModel=builder.getModelProto(),
-    dataFeed=dataFlow,
+    dataFlow=dataFlow,
     losses=[popart.IdentityLoss(o, "loss")],
     optimizer=popart.ConstSGD(0.001),
     userOptions=trainingOptions,

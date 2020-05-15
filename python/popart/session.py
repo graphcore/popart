@@ -19,15 +19,15 @@ def _initAnchorArrays(sess: Union["InferenceSession", "TrainingSession"]
     """
 
     anchorArrays = {}
-    for anchor in sess.dataFeed.anchors():
+    for anchor in sess.dataFlow.anchors():
         anchorInfo = sess.getInfo(anchor)
 
         # Anchor tensor shape corresponds to a single input sample. The
         # anchor array, as returned to the user, has a shape which is a
         # function of sample shape, step size, and return type
         anchorShape = anchorInfo.shape()
-        batchesPerStep = sess.dataFeed.batchesPerStep()
-        artId = sess.dataFeed.art(anchor).id()
+        batchesPerStep = sess.dataFlow.batchesPerStep()
+        artId = sess.dataFlow.art(anchor).id()
 
         # There are some conditions where the output is a single sample,
         # and therefore has the same shape as the anchor tensor
@@ -43,11 +43,11 @@ def _initAnchorArrays(sess: Union["InferenceSession", "TrainingSession"]
             anchorArrayShape.insert(0, sess.accumulationFactor)
             anchorArrayShape.insert(0, batchesPerStep)
         elif artId == popart.AnchorReturnTypeId.EveryN:
-            if batchesPerStep % sess.dataFeed.art(anchor).rp() != 0:
+            if batchesPerStep % sess.dataFlow.art(anchor).rp() != 0:
                 raise RuntimeError(
                     "Invalid anchor period, does not divide batchesPerStep")
 
-            arp = sess.dataFeed.art(anchor).rp()
+            arp = sess.dataFlow.art(anchor).rp()
             anchorArrayShape.insert(0, sess.accumulationFactor)
             anchorArrayShape.insert(0, batchesPerStep // arp)
 
@@ -100,7 +100,7 @@ class InferenceSession(_InferenceSessionCore):
     Arguments:
         fnModel: ONNX model proto. Usually a loaded ONNX model, or from
             ``builder.getModelProto()``.
-        dataFeed: Configuration for the data feeds and fetches.
+        dataFlow: Configuration for the data feeds and fetches.
         deviceInfo: ``DeviceInfo`` object specifying device type.
             (one of ``IPU``, ``IPUModel`` or ``CPU``) and count.
         inputShapeInfo: Information about the shapes of input and output
@@ -122,7 +122,7 @@ class InferenceSession(_InferenceSessionCore):
     def __init__(
             self,
             fnModel: bytes,
-            dataFeed: Dict[int, Dict],
+            dataFlow: Dict[int, Dict],
             deviceInfo: popart.DeviceInfo,
             inputShapeInfo: popart.InputShapeInfo = popart.InputShapeInfo(),
             patterns: popart.Patterns = None,
@@ -133,10 +133,10 @@ class InferenceSession(_InferenceSessionCore):
             patterns = popart.Patterns()
 
         super(InferenceSession,
-              self).__init__(fnModel, dataFeed, deviceInfo, inputShapeInfo,
+              self).__init__(fnModel, dataFlow, deviceInfo, inputShapeInfo,
                              userOptions, patterns)
 
-        self.dataFeed = dataFeed
+        self.dataFlow = dataFlow
         self.replicationFactor = userOptions.replicatedGraphCount if \
             userOptions.enableReplicatedGraphs else 1
         self.accumulationFactor = userOptions.accumulationFactor if \
@@ -178,7 +178,7 @@ class TrainingSession(_TrainingSessionCore):
         Arguments:
             fnModel: ONNX model proto. Usually a loaded ONNX model,
                 or from ``builder.getModelProto()``.
-            dataFeed: Configuration for the data feeds and fetches.
+            dataFlow: Configuration for the data feeds and fetches.
             losses: A list of loss layers to use when training.
             optimizer: The type of optimizer to use when training
                 and it's properties.
@@ -197,7 +197,7 @@ class TrainingSession(_TrainingSessionCore):
     def __init__(
             self,
             fnModel: bytes,
-            dataFeed: Dict[int, Dict],
+            dataFlow: Dict[int, Dict],
             losses: List[popart.Loss],
             optimizer: popart.Optimizer,
             deviceInfo: popart.DeviceInfo,
@@ -210,10 +210,10 @@ class TrainingSession(_TrainingSessionCore):
             patterns = popart.Patterns()
 
         super(TrainingSession,
-              self).__init__(fnModel, dataFeed, losses, optimizer, deviceInfo,
+              self).__init__(fnModel, dataFlow, losses, optimizer, deviceInfo,
                              inputShapeInfo, userOptions, patterns)
 
-        self.dataFeed = dataFeed
+        self.dataFlow = dataFlow
         self.replicationFactor = userOptions.replicatedGraphCount if \
             userOptions.enableReplicatedGraphs else 1
         self.accumulationFactor = userOptions.accumulationFactor if \

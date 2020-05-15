@@ -294,7 +294,7 @@ def test_expand_mul():
         opts = popart.SessionOptions()
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(1, anchor_returns),
+            dataFlow=popart.DataFlow(1, anchor_returns),
             deviceInfo=tu.create_test_device(),
             optimizer=popart.ConstSGD(0.1),
             losses=[popart.IdentityLoss(o, "loss")],

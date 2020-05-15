@@ -27,7 +27,7 @@ batchesPerStep = 3
 # return the l1 loss "l1LossVal",
 # the tensor to which the loss is applied "out"
 anchors = {"out": popart_core.AnchorReturnType("Final")}
-dataFeed = popart_core.DataFlow(batchesPerStep, anchors)
+dataFlow = popart_core.DataFlow(batchesPerStep, anchors)
 
 # willow is non-dynamic. All input Tensor shapes and
 # types must be fed into the WillowNet constructor.
@@ -89,7 +89,7 @@ torchWriter = torchwriter.PytorchNetWriter(
     outNames=outNames,
     optimizer=popart_core.ConstSGD(0.001),
     inputShapeInfo=inputShapeInfo,
-    dataFeed=dataFeed,
+    dataFlow=dataFlow,
     ### Torch specific:
     module=Module0(),
     samplesPerBatch=batchSize)

@@ -128,7 +128,7 @@ def test_average_pool_with_count_include_pad(op_tester):
 
     with pytest.raises(popart.popart_exception) as e_info:
         popart.TrainingSession(fnModel=proto,
-                               dataFeed=dataFlow,
+                               dataFlow=dataFlow,
                                losses=losses,
                                optimizer=optimizer,
                                userOptions=opts,

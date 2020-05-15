@@ -155,7 +155,7 @@ graph_transformer.prepareNodesForTraining()
 trainingOptions = popart.SessionOptions()
 trainingSession = popart.TrainingSession(
     fnModel=graph_transformer.getModelProto(),
-    dataFeed=popart.DataFlow(batches_per_step,
+    dataFlow=popart.DataFlow(batches_per_step,
                              {output: popart.AnchorReturnType("All")}),
     losses=[popart.IdentityLoss(nll, "loss")],
     optimizer=popart.ConstSGD(0.001),

@@ -173,7 +173,7 @@ def get_model_anchors_model1(doSharding,
     if doTraining is True:
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(batchesPerStep, anchor_map),
+            dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
             losses=losses,
             optimizer=popart.ConstSGD(0.01),
             userOptions=opts,
@@ -181,7 +181,7 @@ def get_model_anchors_model1(doSharding,
     else:
         session = popart.InferenceSession(
             fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(batchesPerStep, anchor_map),
+            dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
             losses=losses,
             userOptions=opts,
             deviceInfo=tu.create_test_device(numIpus=numIPUs))
@@ -297,7 +297,7 @@ def get_model_anchors_model2(doSharding,
     if doTraining is True:
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(batchesPerStep, anchor_map),
+            dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
             losses=[loss],
             optimizer=popart.ConstSGD(0.01),
             userOptions=opts,
@@ -305,7 +305,7 @@ def get_model_anchors_model2(doSharding,
     else:
         session = popart.InferenceSession(
             fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(batchesPerStep, anchor_map),
+            dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
             losses=[loss],
             userOptions=opts,
             deviceInfo=tu.create_test_device(numIpus=numIPUs))

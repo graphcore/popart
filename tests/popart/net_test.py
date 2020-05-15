@@ -19,7 +19,7 @@ def test_net_from_string(tmpdir):
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     popart.InferenceSession(fnModel=proto,
-                            dataFeed=dataFlow,
+                            dataFlow=dataFlow,
                             deviceInfo=tu.create_test_device())
 
 
@@ -40,7 +40,7 @@ def test_net_from_file(tmpdir):
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     popart.InferenceSession(fnModel="test.onnx",
-                            dataFeed=dataFlow,
+                            dataFlow=dataFlow,
                             deviceInfo=tu.create_test_device())
 
 
@@ -60,7 +60,7 @@ def test_net_failure1(tmpdir):
 
     with pytest.raises(popart.popart_exception) as e_info:
         popart.InferenceSession(fnModel=proto,
-                                dataFeed=dataFlow,
+                                dataFlow=dataFlow,
                                 deviceInfo=tu.create_test_device())
 
     assert (e_info.type == popart.popart_exception)
@@ -74,7 +74,7 @@ def test_net_failure2(tmpdir):
 
     with pytest.raises(popart.popart_exception) as e_info:
         popart.InferenceSession(fnModel="nothing",
-                                dataFeed=dataFlow,
+                                dataFlow=dataFlow,
                                 deviceInfo=tu.create_test_device())
 
     assert (e_info.type == popart.popart_exception)

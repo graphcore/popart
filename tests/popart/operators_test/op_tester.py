@@ -146,7 +146,7 @@ def op_tester(tmpdir):
 
             if step_type == 'infer':
                 session = popart.InferenceSession(fnModel=bld.getModelProto(),
-                                                  dataFeed=dataFlow,
+                                                  dataFlow=dataFlow,
                                                   deviceInfo=device,
                                                   patterns=popart.Patterns(
                                                       self.patterns),
@@ -160,7 +160,7 @@ def op_tester(tmpdir):
                                         reduction=popart.ReductionType.Sum)
                 ]
                 session = popart.TrainingSession(fnModel=bld.getModelProto(),
-                                                 dataFeed=dataFlow,
+                                                 dataFlow=dataFlow,
                                                  losses=losses,
                                                  optimizer=optimizer,
                                                  deviceInfo=device,

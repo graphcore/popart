@@ -31,7 +31,7 @@ def test_basic(tmpdir, capfd):
     opts.enableOutliningCopyCostPruning = False
 
     session = popart.InferenceSession(fnModel=proto,
-                                      dataFeed=dataFlow,
+                                      dataFlow=dataFlow,
                                       userOptions=opts,
                                       deviceInfo=tu.create_test_device())
 
@@ -102,7 +102,7 @@ def test_train(tmpdir, capfd):
 
     session = popart.TrainingSession(
         fnModel=proto,
-        dataFeed=dataFlow,
+        dataFlow=dataFlow,
         userOptions=opts,
         optimizer=popart.ConstSGD(0.1),
         losses=[popart.IdentityLoss(l1, "idLossVal")],

@@ -59,7 +59,7 @@ def test_train_then_infer_via_file():
 
     inference_session = popart.InferenceSession(
         fnModel=builder.getModelProto(),
-        dataFeed=inference_dataFlow,
+        dataFlow=inference_dataFlow,
         userOptions=opts,
         deviceInfo=device)
 
@@ -71,7 +71,7 @@ def test_train_then_infer_via_file():
     # Prepare the Training session
     training_session = popart.TrainingSession(
         fnModel=builder.getModelProto(),
-        dataFeed=training_dataFlow,
+        dataFlow=training_dataFlow,
         losses=[popart.IdentityLoss(l1, "l1LossVal")],
         optimizer=popart.ConstSGD(0.01),
         userOptions=opts,
@@ -148,7 +148,7 @@ def test_cannot_call_resethostweights_with_constant_weights():
 
     inference_session = popart.InferenceSession(
         fnModel=builder.getModelProto(),
-        dataFeed=inference_dataFlow,
+        dataFlow=inference_dataFlow,
         userOptions=opts,
         deviceInfo=device)
 
@@ -203,7 +203,7 @@ def test_modelToHost_calls_resetHostWeights():
     # Prepare the Training session
     session = popart.TrainingSession(
         fnModel=builder.getModelProto(),
-        dataFeed=data_flow,
+        dataFlow=data_flow,
         losses=[popart.IdentityLoss(l1, "l1LossVal")],
         optimizer=popart.ConstSGD(0.1),
         userOptions=opts,

@@ -30,7 +30,7 @@ def identity_inference_session(tmpdir, inputShape, inputArray, BPS, art, R=1):
     device = tu.create_test_device(numIpus=R)
 
     session = popart.InferenceSession(fnModel=proto,
-                                      dataFeed=dataFlow,
+                                      dataFlow=dataFlow,
                                       deviceInfo=device,
                                       userOptions=opts)
 
@@ -72,7 +72,7 @@ def simple_training_session(tmpdir, inputShape, inputArray, BPS, art, GA=1):
     opts.enableGradientAccumulation = GA > 1
 
     session = popart.TrainingSession(fnModel=proto,
-                                     dataFeed=dataFlow,
+                                     dataFlow=dataFlow,
                                      deviceInfo=tu.create_test_device(),
                                      userOptions=opts,
                                      losses=[loss],

@@ -105,7 +105,7 @@ class IpuBackend(onnx.backend.base.Backend):
 
         session = popart.InferenceSession(
             fnModel=model.SerializeToString(),
-            dataFeed=popart.DataFlow(1, anchors),
+            dataFlow=popart.DataFlow(1, anchors),
             deviceInfo=popart.DeviceManager().createCpuDevice(),
             # deviceInfo=popart.DeviceManager().createIpuModelDevice({}),
             userOptions=opts)

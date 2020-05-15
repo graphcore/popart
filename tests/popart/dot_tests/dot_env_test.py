@@ -30,7 +30,7 @@ def test_basic(tmpdir):
 
             session = popart.InferenceSession(
                 fnModel=proto,
-                dataFeed=dataFlow,
+                dataFlow=dataFlow,
                 userOptions=opts,
                 deviceInfo=tu.create_test_device())
 

@@ -153,7 +153,7 @@ def test_attention_pingpong(tmpdir):
                                        pattern=popart.SyncPattern.Full)
 
         session = popart.TrainingSession(fnModel=proto,
-                                         dataFeed=dataFlow,
+                                         dataFlow=dataFlow,
                                          userOptions=opts,
                                          losses=[loss],
                                          optimizer=popart.ConstSGD(0.1),

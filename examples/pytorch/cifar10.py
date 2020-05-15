@@ -143,7 +143,7 @@ def main():
 
         inferenceSession = popart.InferenceSession(
             fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(
+            dataFlow=popart.DataFlow(
                 batches_per_step,
                 {"output_0": popart.AnchorReturnType("All")}),
             deviceInfo=popart.DeviceManager().acquireAvailableDevice(1))

@@ -96,7 +96,7 @@ def get_model_anchors(doSharding,
 
     if doTraining is True:
         session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                         dataFeed=popart.DataFlow(
+                                         dataFlow=popart.DataFlow(
                                              batchesPerStep, anchor_map),
                                          losses=[loss],
                                          optimizer=popart.ConstSGD(0.01),
@@ -104,7 +104,7 @@ def get_model_anchors(doSharding,
                                          deviceInfo=device)
     else:
         session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                          dataFeed=popart.DataFlow(
+                                          dataFlow=popart.DataFlow(
                                               batchesPerStep, anchor_map),
                                           userOptions=opts,
                                           deviceInfo=device)

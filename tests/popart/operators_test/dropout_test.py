@@ -390,7 +390,7 @@ def get_replicated_dropout_session(replication_factor=4,
 
     session = popart.TrainingSession(
         fnModel=builder.getModelProto(),
-        dataFeed=popart.DataFlow(batches_per_step, dfAnchors),
+        dataFlow=popart.DataFlow(batches_per_step, dfAnchors),
         optimizer=popart.ConstSGD(0.1),
         losses=[popart.IdentityLoss(out, "idLossVal")],
         userOptions=opts,
@@ -434,7 +434,7 @@ def get_session(anchorIds, proto, device, output, bps=1):
 
     session = popart.TrainingSession(
         fnModel=proto,
-        dataFeed=popart.DataFlow(bps, dfAnchors),
+        dataFlow=popart.DataFlow(bps, dfAnchors),
         optimizer=popart.ConstSGD(0.1),
         losses=[popart.IdentityLoss(output, "idLossVal")],
         patterns=popart.Patterns(popart.PatternsLevel.All),

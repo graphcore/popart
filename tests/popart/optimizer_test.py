@@ -36,7 +36,7 @@ def trainSession(anchors, optimizer, stepSize):
 
     session = popart.TrainingSession(
         fnModel=proto,
-        dataFeed=popart.DataFlow(stepSize, anchors),
+        dataFlow=popart.DataFlow(stepSize, anchors),
         losses=losses,
         optimizer=optimizer,
         deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
@@ -223,7 +223,7 @@ def test_sgd_with_float16_model():
 
     session = popart.TrainingSession(
         fnModel=proto,
-        dataFeed=popart.DataFlow(1, anchorNames),
+        dataFlow=popart.DataFlow(1, anchorNames),
         losses=losses,
         optimizer=optimizer,
         deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))

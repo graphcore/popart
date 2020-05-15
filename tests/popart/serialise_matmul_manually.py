@@ -100,7 +100,7 @@ def test_manual_serialization():
     patterns = popart.Patterns()
 
     session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                     dataFeed=dataFlow,
+                                     dataFlow=dataFlow,
                                      optimizer=popart.SGD(
                                          {"defaultLearningRate": (0.1, True)}),
                                      losses=[loss1],

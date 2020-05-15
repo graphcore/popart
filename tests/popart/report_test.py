@@ -20,7 +20,7 @@ def test_summary_report_before_execution(tmpdir):
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     session = popart.InferenceSession(fnModel=proto,
-                                      dataFeed=dataFlow,
+                                      dataFlow=dataFlow,
                                       deviceInfo=tu.create_test_device())
 
     session.initAnchorArrays()
@@ -47,7 +47,7 @@ def test_graph_report_before_execution(tmpdir):
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     session = popart.InferenceSession(fnModel=proto,
-                                      dataFeed=dataFlow,
+                                      dataFlow=dataFlow,
                                       deviceInfo=tu.create_test_device())
 
     session.initAnchorArrays()
@@ -74,7 +74,7 @@ def test_execution_report_before_execution(tmpdir):
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     session = popart.InferenceSession(fnModel=proto,
-                                      dataFeed=dataFlow,
+                                      dataFlow=dataFlow,
                                       deviceInfo=tu.create_test_device())
 
     session.initAnchorArrays()
@@ -104,7 +104,7 @@ def test_compilation_report(tmpdir):
 
     session = popart.InferenceSession(
         fnModel=proto,
-        dataFeed=dataFlow,
+        dataFlow=dataFlow,
         deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     anchors = session.initAnchorArrays()
@@ -132,7 +132,7 @@ def test_compilation_report_cbor(tmpdir):
 
     session = popart.InferenceSession(
         fnModel=proto,
-        dataFeed=dataFlow,
+        dataFlow=dataFlow,
         deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     anchors = session.initAnchorArrays()
@@ -160,7 +160,7 @@ def test_execution_report(tmpdir):
 
     session = popart.InferenceSession(
         fnModel=proto,
-        dataFeed=dataFlow,
+        dataFlow=dataFlow,
         deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     anchors = session.initAnchorArrays()
@@ -197,7 +197,7 @@ def test_execution_report_reset(tmpdir):
 
     session = popart.InferenceSession(
         fnModel=proto,
-        dataFeed=dataFlow,
+        dataFlow=dataFlow,
         deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     anchors = session.initAnchorArrays()
@@ -233,7 +233,7 @@ def test_execution_report_cbor(tmpdir):
 
     session = popart.InferenceSession(
         fnModel=proto,
-        dataFeed=dataFlow,
+        dataFlow=dataFlow,
         deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     anchors = session.initAnchorArrays()
@@ -267,7 +267,7 @@ def test_tensor_tile_mapping(tmpdir):
 
     session = popart.InferenceSession(
         fnModel=proto,
-        dataFeed=dataFlow,
+        dataFlow=dataFlow,
         deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     anchors = session.initAnchorArrays()
@@ -343,7 +343,7 @@ def test_serialized_graph_report(tmpdir):
     dataFlow = popart.DataFlow(1, {out: popart.AnchorReturnType("All")})
 
     session = popart.InferenceSession(fnModel=proto,
-                                      dataFeed=dataFlow,
+                                      dataFlow=dataFlow,
                                       deviceInfo=tu.create_test_device())
 
     anchors = session.initAnchorArrays()

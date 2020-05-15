@@ -33,7 +33,7 @@ def test_virtual_graph():
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
-                                dataFeed=dataFlow,
+                                dataFlow=dataFlow,
                                 userOptions=opts,
                                 deviceInfo=tu.create_test_device(numIpus=2))
 
@@ -71,7 +71,7 @@ def test_virtual_graph2():
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
-                                dataFeed=dataFlow,
+                                dataFlow=dataFlow,
                                 userOptions=opts,
                                 deviceInfo=tu.create_test_device(numIpus=2))
 
@@ -124,7 +124,7 @@ def test_virtual_graph3():
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.TrainingSession(fnModel=proto,
-                               dataFeed=dataFlow,
+                               dataFlow=dataFlow,
                                losses=losses,
                                optimizer=optimizer,
                                userOptions=opts,
@@ -196,7 +196,7 @@ def test_virtual_graph4():
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.TrainingSession(fnModel=proto,
-                               dataFeed=dataFlow,
+                               dataFlow=dataFlow,
                                losses=losses,
                                optimizer=optimizer,
                                userOptions=opts,
@@ -242,7 +242,7 @@ def test_virtual_graph_bad_index():
     # opts = popart.SessionOptions()
     # opts.virtualGraphMode = popart.VirtualGraphMode.Manual
     #
-    # s = popart.TrainingSession(fnModel=proto, dataFeed=dataFlow, userOptions=opts, deviceInfo=tu.create_test_device(numIpus = 2))
+    # s = popart.TrainingSession(fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=tu.create_test_device(numIpus = 2))
     # s.prepareDevice()
 
     pass
@@ -308,7 +308,7 @@ def test_streaming_optimizer_tensors():
 
         session = popart.TrainingSession(
             fnModel=proto,
-            dataFeed=dataFlow,
+            dataFlow=dataFlow,
             losses=losses,
             optimizer=optimizer,
             userOptions=opts,

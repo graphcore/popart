@@ -54,7 +54,7 @@ def _get_ir(pingpong_enabled, virtualgraph_enabled, pipeline_enabled):
         loss.virtualGraph(3)
 
     session = popart.TrainingSession(fnModel=proto,
-                                     dataFeed=popart.DataFlow(1, dfAnchors),
+                                     dataFlow=popart.DataFlow(1, dfAnchors),
                                      optimizer=popart.ConstSGD(0.1),
                                      losses=[loss],
                                      patterns=popart.Patterns(

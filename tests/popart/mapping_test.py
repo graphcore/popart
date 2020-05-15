@@ -24,7 +24,7 @@ def test_basic_mapping(tmpdir):
 
     session = popart.InferenceSession(
         fnModel=proto,
-        dataFeed=dataFlow,
+        dataFlow=dataFlow,
         deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     anchors = session.initAnchorArrays()
@@ -65,7 +65,7 @@ def test_environment_mapping(tmpdir):
 
     session = popart.InferenceSession(
         fnModel=proto,
-        dataFeed=dataFlow,
+        dataFlow=dataFlow,
         userOptions=opts,
         deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 

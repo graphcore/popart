@@ -48,7 +48,7 @@ def test_auto_virtual_graph_subgraphs_2():
     device = tu.create_test_device(numIpus=ipus)
 
     popart.InferenceSession(fnModel=proto,
-                            dataFeed=dataFlow,
+                            dataFlow=dataFlow,
                             userOptions=opts,
                             deviceInfo=device)
 
@@ -96,7 +96,7 @@ def test_auto_virtual_graph_subgraphs_4():
     device = tu.create_test_device(numIpus=ipus)
 
     popart.InferenceSession(fnModel=proto,
-                            dataFeed=dataFlow,
+                            dataFlow=dataFlow,
                             userOptions=opts,
                             deviceInfo=device)
 
@@ -129,7 +129,7 @@ def test_auto_virtual_graph_inf_2():
     device = tu.create_test_device(numIpus=ipus)
 
     popart.InferenceSession(fnModel=proto,
-                            dataFeed=dataFlow,
+                            dataFlow=dataFlow,
                             userOptions=opts,
                             deviceInfo=device)
 
@@ -162,7 +162,7 @@ def test_auto_virtual_graph_inf_many():
     device = tu.create_test_device(numIpus=ipus)
 
     popart.InferenceSession(fnModel=proto,
-                            dataFeed=dataFlow,
+                            dataFlow=dataFlow,
                             userOptions=opts,
                             deviceInfo=device)
 
@@ -198,7 +198,7 @@ def test_auto_virtual_graph_train():
     device = tu.create_test_device(numIpus=ipus)
 
     popart.TrainingSession(fnModel=proto,
-                           dataFeed=dataFlow,
+                           dataFlow=dataFlow,
                            userOptions=opts,
                            losses=[loss],
                            optimizer=popart.SGD(
@@ -235,7 +235,7 @@ def test_auto_virtual_graph_not_enough_splits():
 
     with pytest.raises(popart.popart_exception) as e_info:
         popart.InferenceSession(fnModel=proto,
-                                dataFeed=dataFlow,
+                                dataFlow=dataFlow,
                                 userOptions=opts,
                                 deviceInfo=device)
 

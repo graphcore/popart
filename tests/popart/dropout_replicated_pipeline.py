@@ -182,7 +182,7 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation):
 
     session = popart.TrainingSession(
         fnModel=builder.getModelProto(),
-        dataFeed=dataFlow,
+        dataFlow=dataFlow,
         optimizer=popart.SGD({
             "defaultLearningRate": (defaultLearningRate0, False),
             "defaultMomentum": (defaultMomentum0, False),

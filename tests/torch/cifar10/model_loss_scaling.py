@@ -28,7 +28,7 @@ anchors = {
     nllGradTensorId: popart.AnchorReturnType("Final"),
     l1GradTensorId: popart.AnchorReturnType("Final")
 }
-dataFeed = popart.DataFlow(batchesPerStep, anchors)
+dataFlow = popart.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = popart.InputShapeInfo()
 inputShapeInfo.add("image0",
                    popart.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
@@ -106,7 +106,7 @@ anchors_1 = c10driver.run(
         # default loss scaling (1.0f)
         optimizer=popart.SGD({"defaultLearningRate": (0.001, True)}),
         inputShapeInfo=inputShapeInfo,
-        dataFeed=dataFeed,
+        dataFlow=dataFlow,
         ### Torch specific:
         module=Module0(),
         samplesPerBatch=batchSize),
@@ -127,7 +127,7 @@ anchors_2 = c10driver.run(
             "lossScaling": (100, False)
         }),
         inputShapeInfo=inputShapeInfo,
-        dataFeed=dataFeed,
+        dataFlow=dataFlow,
         ### Torch specific:
         module=Module0(),
         samplesPerBatch=batchSize),
@@ -148,7 +148,7 @@ anchors_3 = c10driver.run(
             "lossScaling": (100, False)
         }),
         inputShapeInfo=inputShapeInfo,
-        dataFeed=dataFeed,
+        dataFlow=dataFlow,
         ### Torch specific:
         module=Module0(),
         samplesPerBatch=batchSize),
@@ -170,7 +170,7 @@ anchors_4 = c10driver.run(
             "lossScaling": (100, False)
         }),
         inputShapeInfo=inputShapeInfo,
-        dataFeed=dataFeed,
+        dataFlow=dataFlow,
         ### Torch specific:
         module=Module0(),
         samplesPerBatch=batchSize),

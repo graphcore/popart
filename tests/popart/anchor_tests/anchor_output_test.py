@@ -104,7 +104,7 @@ def test_anchor_output():
         pytest.skip("Test needs to run on IPU, but none are available")
 
     session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                     dataFeed=data_flow,
+                                     dataFlow=data_flow,
                                      losses=[popart.IdentityLoss(nll, "loss")],
                                      optimizer=popart.ConstSGD(LEARNING_RATE),
                                      userOptions=opts,

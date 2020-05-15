@@ -13,7 +13,7 @@ args = cmdline.parse()
 nChans = 3
 batchesPerStep = 4
 anchors = {"out": popart.AnchorReturnType("EveryN", 2)}
-dataFeed = popart.DataFlow(batchesPerStep, anchors)
+dataFlow = popart.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = popart.InputShapeInfo()
 samplesPerBatch = 6
 inputShapeInfo.add(
@@ -55,7 +55,7 @@ torchWriter = torchwriter.PytorchNetWriter(
     outNames=outNames,
     optimizer=optimizer,
     inputShapeInfo=inputShapeInfo,
-    dataFeed=dataFeed,
+    dataFlow=dataFlow,
     ### Torch specific:
     module=Module0(),
     samplesPerBatch=samplesPerBatch)

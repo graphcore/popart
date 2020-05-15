@@ -55,7 +55,7 @@ def test_matmul_1d(tmpdir):
 
         session = popart.TrainingSession(
             fnModel=proto,
-            dataFeed=dataFlow,
+            dataFlow=dataFlow,
             userOptions=opts,
             losses=[popart.IdentityLoss(o, "idLossVal")],
             optimizer=popart.ConstSGD(0.01),
@@ -151,7 +151,7 @@ def test_matmul_grouping_test_1(tmpdir):
 
         session = popart.InferenceSession(
             fnModel=proto,
-            dataFeed=dataFlow,
+            dataFlow=dataFlow,
             userOptions=opts,
             patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
@@ -275,7 +275,7 @@ def test_matmul_grouping_test_2(tmpdir):
 
         session = popart.TrainingSession(
             fnModel=proto,
-            dataFeed=dataFlow,
+            dataFlow=dataFlow,
             userOptions=opts,
             patterns=pat,
             losses=[popart.IdentityLoss(o, "idLossVal")],
@@ -373,7 +373,7 @@ def test_matmul_grouping_test_3(tmpdir):
 
         session = popart.TrainingSession(
             fnModel=proto,
-            dataFeed=dataFlow,
+            dataFlow=dataFlow,
             userOptions=opts,
             patterns=pat,
             losses=[popart.IdentityLoss(o, "idLossVal")],
@@ -490,7 +490,7 @@ def test_matmul_grouping_test_4(tmpdir):
 
         session = popart.TrainingSession(
             fnModel=proto,
-            dataFeed=dataFlow,
+            dataFlow=dataFlow,
             userOptions=opts,
             patterns=pat,
             losses=[popart.IdentityLoss(o, "idLossVal")],

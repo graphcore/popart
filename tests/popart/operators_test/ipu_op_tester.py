@@ -113,14 +113,14 @@ def ipu_op_tester(tmpdir):
 
             if (step_type == 'infer'):
                 session = popart.InferenceSession(fnModel=proto,
-                                                  dataFeed=dataFlow,
+                                                  dataFlow=dataFlow,
                                                   deviceInfo=device,
                                                   patterns=popart.Patterns(
                                                       self.patterns),
                                                   userOptions=opts)
             elif (step_type == 'train'):
                 session = popart.TrainingSession(fnModel=proto,
-                                                 dataFeed=dataFlow,
+                                                 dataFlow=dataFlow,
                                                  losses=losses,
                                                  optimizer=optimizer,
                                                  deviceInfo=device,

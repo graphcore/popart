@@ -32,7 +32,7 @@ def test_groupHostSync():
     }
 
     session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                      dataFeed=dataFlow,
+                                      dataFlow=dataFlow,
                                       deviceInfo=tu.create_test_device(),
                                       userOptions=options)
 

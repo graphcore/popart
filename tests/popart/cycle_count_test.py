@@ -28,7 +28,7 @@ def get_simple_model_cycle_count(bps):
 
     session = popart.InferenceSession(
         fnModel=builder.getModelProto(),
-        dataFeed=popart.DataFlow(bps, {out: popart.AnchorReturnType("All")}),
+        dataFlow=popart.DataFlow(bps, {out: popart.AnchorReturnType("All")}),
         userOptions=opts,
         deviceInfo=tu.create_test_device(),
         patterns=popart.Patterns(popart.PatternsLevel.NoPatterns))
@@ -78,7 +78,7 @@ def test_get_cycle_count_requires_run():
     opts.instrumentWithHardwareCycleCounter = True
 
     session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                      dataFeed=popart.DataFlow(
+                                      dataFlow=popart.DataFlow(
                                           1,
                                           {p: popart.AnchorReturnType("All")}),
                                       userOptions=opts,
@@ -99,7 +99,7 @@ def test_get_cycle_count_requires_instrumentation_option():
 
     # Default SessionOptions - cycle count instrumentation off
     session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                      dataFeed=popart.DataFlow(
+                                      dataFlow=popart.DataFlow(
                                           1,
                                           {p: popart.AnchorReturnType("All")}),
                                       deviceInfo=tu.create_test_device())

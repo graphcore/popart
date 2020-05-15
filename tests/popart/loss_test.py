@@ -96,7 +96,7 @@ def run_3d_nll_loss_input(popart_reduction_type, with_patterns):
                 if with_patterns else popart.PatternsLevel.NoPatterns)
 
     session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                     dataFeed=popart.DataFlow(
+                                     dataFlow=popart.DataFlow(
                                          1, ["loss", out]),
                                      optimizer=popart.ConstSGD(
                                          LEARNING_RATE, WEIGHT_DECAY),
@@ -175,7 +175,7 @@ def run_nll_loss_with_ignored_index(popart_reduction_type, with_patterns):
 
     session = popart.TrainingSession(
         fnModel=builder.getModelProto(),
-        dataFeed=popart.DataFlow(1, {"loss": popart.AnchorReturnType("All")}),
+        dataFlow=popart.DataFlow(1, {"loss": popart.AnchorReturnType("All")}),
         optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
         losses=[
             popart.IdentityLoss(nll, "loss", popart.ReductionType.NoReduction)
@@ -255,7 +255,7 @@ def run_nll_loss_grad_with_ignored_index(popart_reduction_type):
     def getPreparesSession(patterns):
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(1,
+            dataFlow=popart.DataFlow(1,
                                      [popart.reservedGradientPrefix() + ip]),
             optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
             losses=[popart.IdentityLoss(nll, "loss")],

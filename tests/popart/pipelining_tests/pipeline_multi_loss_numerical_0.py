@@ -129,7 +129,7 @@ def run_test_multi_loss_pipeline(same_vgraph=True):
 
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),
-            dataFeed=dataFlow,
+            dataFlow=dataFlow,
             optimizer=popart.SGD({
                 "defaultLearningRate": (defaultLearningRate0, False),
                 "defaultMomentum": (defaultMomentum0, False),

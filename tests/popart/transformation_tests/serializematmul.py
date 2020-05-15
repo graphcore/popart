@@ -121,7 +121,7 @@ def test_matmul_serialization_invalid_factor(tmpdir):
     with pytest.raises(popart.popart_exception) as e_info:
         session = popart.InferenceSession(
             fnModel=proto,
-            dataFeed=dataFlow,
+            dataFlow=dataFlow,
             userOptions=opts,
             patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
@@ -168,7 +168,7 @@ def test_matmul_serialization_inference(tmpdir):
 
         session = popart.InferenceSession(
             fnModel=proto,
-            dataFeed=dataFlow,
+            dataFlow=dataFlow,
             userOptions=opts,
             patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
@@ -301,7 +301,7 @@ def test_matmul_serialization_training_1(tmpdir):
 
         session = popart.TrainingSession(
             fnModel=proto,
-            dataFeed=dataFlow,
+            dataFlow=dataFlow,
             userOptions=opts,
             losses=[popart.IdentityLoss(o, "idLossVal")],
             optimizer=popart.ConstSGD(0.01),
@@ -553,7 +553,7 @@ def test_matmul_serialization_training_2(tmpdir):
 
         session = popart.TrainingSession(
             fnModel=proto,
-            dataFeed=dataFlow,
+            dataFlow=dataFlow,
             userOptions=opts,
             losses=[popart.IdentityLoss(o, "idLossVal")],
             optimizer=popart.ConstSGD(0.01),
@@ -809,7 +809,7 @@ def test_matmul_serialization_precision(tmpdir):
 
         session = popart.TrainingSession(
             fnModel=proto,
-            dataFeed=dataFlow,
+            dataFlow=dataFlow,
             userOptions=opts,
             losses=[popart.IdentityLoss(o, "idLossVal")],
             optimizer=popart.ConstSGD(0.01),
@@ -1075,7 +1075,7 @@ def test_matmul_serialization_training_with_gradient_accumlation(tmpdir):
 
         session = popart.TrainingSession(
             fnModel=proto,
-            dataFeed=dataFlow,
+            dataFlow=dataFlow,
             userOptions=opts,
             losses=[popart.IdentityLoss(o, "idLossVal")],
             optimizer=popart.ConstSGD(0.01),

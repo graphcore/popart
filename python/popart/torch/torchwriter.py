@@ -19,7 +19,7 @@ def conv3x3(in_planes, out_planes, stride=1):
 
 
 class PytorchNetWriter(NetWriter):
-    def __init__(self, inNames, outNames, optimizer, dataFeed, inputShapeInfo,
+    def __init__(self, inNames, outNames, optimizer, dataFlow, inputShapeInfo,
                  module, samplesPerBatch):
         """
         module:
@@ -32,7 +32,7 @@ class PytorchNetWriter(NetWriter):
                            outNames=outNames,
                            optimizer=optimizer,
                            inputShapeInfo=inputShapeInfo,
-                           dataFeed=dataFeed)
+                           dataFlow=dataFlow)
 
         self.module = module
         self.samplesPerBatch = samplesPerBatch
@@ -89,14 +89,14 @@ class PytorchNetWriter(NetWriter):
         self.module.train()
 
         # if batchesPerStep is 1, a dimension will be missing
-        if self.dataFeed.batchesPerStep() == 1:
+        if self.dataFlow.batchesPerStep() == 1:
             inMap = _add_dimension(inMap)
 
         # perform forwards - backwards - update
         # for each of the substeps (substep = batch)
 
         stepParameterMap = []
-        for substepi in range(self.dataFeed.batchesPerStep()):
+        for substepi in range(self.dataFlow.batchesPerStep()):
 
             substepParameterMap = {}
             substepOutMap = {}
@@ -138,7 +138,7 @@ class PytorchNetWriter(NetWriter):
         self.module.eval()
 
         # if batchesPerStep is 1, a dimension will be missing
-        if self.dataFeed.batchesPerStep() == 1:
+        if self.dataFlow.batchesPerStep() == 1:
             inMap = _add_dimension(inMap)
 
         # perform forwards pass for each substep
@@ -146,7 +146,7 @@ class PytorchNetWriter(NetWriter):
         for outName in self.outNames:
             stepOutMap[outName] = []
 
-        for substepi in range(self.dataFeed.batchesPerStep()):
+        for substepi in range(self.dataFlow.batchesPerStep()):
 
             substepTorchInputs = [
                 torch.Tensor(inMap[inId][substepi][0:])

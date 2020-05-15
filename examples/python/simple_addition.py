@@ -22,7 +22,7 @@ dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 # Create a session to compile and execute the graph
 session = popart.InferenceSession(
     fnModel=proto,
-    dataFeed=dataFlow,
+    dataFlow=dataFlow,
     deviceInfo=popart.DeviceManager().createIpuModelDevice({}))
 
 # Compile graph

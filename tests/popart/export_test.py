@@ -43,7 +43,7 @@ def test_constants_preserved():
     opts = popart.SessionOptions()
 
     session = popart.TrainingSession(fnModel=proto,
-                                     dataFeed=dataFlow,
+                                     dataFlow=dataFlow,
                                      userOptions=opts,
                                      losses=losses,
                                      optimizer=optimizer,
@@ -100,7 +100,7 @@ def test_no_prepare_device():
     opts = popart.SessionOptions()
 
     session = popart.TrainingSession(fnModel=proto,
-                                     dataFeed=dataFlow,
+                                     dataFlow=dataFlow,
                                      userOptions=opts,
                                      losses=losses,
                                      optimizer=optimizer,

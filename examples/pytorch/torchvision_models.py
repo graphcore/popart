@@ -216,7 +216,7 @@ def train_process(opts):
             builder = popart.Builder(onnx_path)
             inferenceSession = popart.InferenceSession(
                 fnModel=builder.getModelProto(),
-                dataFeed=popart.DataFlow(
+                dataFlow=popart.DataFlow(
                     opts.batches_per_step,
                     {"output_0": popart.AnchorReturnType("All")}),
                 deviceInfo=get_device(opts.num_ipus, opts.simulation),

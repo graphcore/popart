@@ -47,7 +47,7 @@ def test_convolution_cached_by_default():
 
     session = popart.TrainingSession(
         fnModel=proto,
-        dataFeed=dataFlow,
+        dataFlow=dataFlow,
         losses=losses,
         optimizer=optimizer,
         userOptions=opts,
@@ -125,7 +125,7 @@ def test_convolution_disable_all():
 
     session = popart.TrainingSession(
         fnModel=proto,
-        dataFeed=dataFlow,
+        dataFlow=dataFlow,
         losses=losses,
         optimizer=optimizer,
         userOptions=opts,
@@ -201,7 +201,7 @@ def test_matmul_infer_cached_by_default():
 
     session = popart.InferenceSession(
         fnModel=proto,
-        dataFeed=dataFlow,
+        dataFlow=dataFlow,
         userOptions=opts,
         deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
@@ -294,7 +294,7 @@ def test_matmul_train_cached_by_default():
 
     session = popart.TrainingSession(
         fnModel=proto,
-        dataFeed=dataFlow,
+        dataFlow=dataFlow,
         losses=losses,
         optimizer=optimizer,
         userOptions=opts,
@@ -387,7 +387,7 @@ def test_gemm_train_cached_by_default():
 
     session = popart.TrainingSession(
         fnModel=proto,
-        dataFeed=dataFlow,
+        dataFlow=dataFlow,
         losses=losses,
         optimizer=optimizer,
         userOptions=opts,
@@ -471,7 +471,7 @@ def test_outlining_bca1():
 
     session = popart.InferenceSession(
         fnModel=proto,
-        dataFeed=dataFlow,
+        dataFlow=dataFlow,
         userOptions=opts,
         deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
@@ -554,7 +554,7 @@ def test_outlining_bca2():
 
     session = popart.InferenceSession(
         fnModel=proto,
-        dataFeed=dataFlow,
+        dataFlow=dataFlow,
         userOptions=opts,
         deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
@@ -645,7 +645,7 @@ def test_outlining_bca3():
 
     session = popart.TrainingSession(
         fnModel=proto,
-        dataFeed=dataFlow,
+        dataFlow=dataFlow,
         losses=losses,
         optimizer=optimizer,
         userOptions=opts,
@@ -743,7 +743,7 @@ def test_outlining_bca4():
 
     session = popart.TrainingSession(
         fnModel=proto,
-        dataFeed=dataFlow,
+        dataFlow=dataFlow,
         losses=losses,
         optimizer=optimizer,
         userOptions=opts,

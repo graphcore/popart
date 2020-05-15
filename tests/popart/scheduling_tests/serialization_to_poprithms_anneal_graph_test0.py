@@ -29,7 +29,7 @@ def test_add_serialization(tmpdir):
     opts.serializedPoprithmsAnnealGraphsDir = str(tmpdir)
 
     session = popart.InferenceSession(fnModel=proto,
-                                      dataFeed=dataFlow,
+                                      dataFlow=dataFlow,
                                       userOptions=opts,
                                       deviceInfo=tu.create_test_device())
 

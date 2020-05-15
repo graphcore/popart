@@ -19,7 +19,7 @@ nOutChans = 10
 batchSize = 2
 batchesPerStep = 3
 anchors = {"out": popart.AnchorReturnType("Final")}
-dataFeed = popart.DataFlow(batchesPerStep, anchors)
+dataFlow = popart.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = popart.InputShapeInfo()
 inputShapeInfo.add("image0",
                    popart.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
@@ -62,7 +62,7 @@ torchWriter = torchwriter.PytorchNetWriter(
     # large weight_decay term to test that it is definitely working
     optimizer=popart.ConstSGD(learning_rate=0.001, weight_decay=10),
     inputShapeInfo=inputShapeInfo,
-    dataFeed=dataFeed,
+    dataFlow=dataFlow,
     ### Torch specific:
     module=Module0(),
     samplesPerBatch=batchSize)

@@ -47,7 +47,7 @@ dataflow = popart.DataFlow(1, {y: art, cube: art, w: art})
 options = popart.SessionOptions()
 device = popart.DeviceManager().createIpuModelDevice({})
 session = popart.TrainingSession(fnModel=proto,
-                                 dataFeed=dataflow,
+                                 dataFlow=dataflow,
                                  losses=[popart.IdentityLoss(l1, "l1LossVal")],
                                  optimizer=popart.ConstSGD(0.001),
                                  userOptions=options,

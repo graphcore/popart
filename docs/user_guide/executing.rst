@@ -85,7 +85,7 @@ The device must be passed into the session constructor.
 
   df = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
   device = popart.DeviceManager().createCpuDevice()
-  s = popart.InferenceSession("onnx.pb", deviceInfo=device, dataFeed=df)
+  s = popart.InferenceSession("onnx.pb", deviceInfo=device, dataFlow=df)
 
 The device manager can enumerate the available devices with the ``enumerateDevices``
 method. The  ``acquireAvailableDevice`` method will acquire the
