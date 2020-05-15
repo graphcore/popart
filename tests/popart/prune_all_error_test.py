@@ -30,7 +30,7 @@ def test_prune_all_error():
     with pytest.raises(popart.popart_exception) as e_info:
         session = popart.InferenceSession(fnModel=model,
                                           deviceInfo=deviceInfo,
-                                          dataFeed=popart.DataFlow(
+                                          dataFlow=popart.DataFlow(
                                               batchesPerStep, anchors))
 
     assert (e_info.value.args[0] ==
