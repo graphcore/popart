@@ -21,23 +21,25 @@ bool GradPartial::operator<(const GradPartial &other) const {
   // Consider annotations that imply an order
   // (pipeline stage, pingpong phase, batch serialized phase)
   // If an attribute is not set, assume that the Op comes before any of the
-  // Ops that have the attribute set by using -2
-  // (possible because -2 is not used as an actual phase index).
+  // Ops that have the attribute set by using the unused stage/phase.
 
   // TODO(T17524): Abstract inferring operation order so that this
   // transform does not require knowledge of the attributes
   std::tuple<PipelineStage, PingPongPhase, BatchSerializedPhase, size_t> order(
-      op->hasPipelineStage() ? op->getPipelineStage() : -2,
-      op->hasPingPongPhase() ? op->getPingPongPhase() : -2,
-      op->hasBatchSerializedPhase() ? op->getBatchSerializedPhase() : -2,
+      op->hasPipelineStage() ? op->getPipelineStage() : unusedPipelineStage,
+      op->hasPingPongPhase() ? op->getPingPongPhase() : unusedPingPongPhase,
+      op->hasBatchSerializedPhase() ? op->getBatchSerializedPhase()
+                                    : unusedBatchSerializedPhase,
       pathLengthFromLoss());
 
   std::tuple<PipelineStage, PingPongPhase, BatchSerializedPhase, size_t>
-      otherOrder(otherOp->hasPipelineStage() ? otherOp->getPipelineStage() : -2,
-                 otherOp->hasPingPongPhase() ? otherOp->getPingPongPhase() : -2,
+      otherOrder(otherOp->hasPipelineStage() ? otherOp->getPipelineStage()
+                                             : unusedPipelineStage,
+                 otherOp->hasPingPongPhase() ? otherOp->getPingPongPhase()
+                                             : unusedPingPongPhase,
                  otherOp->hasBatchSerializedPhase()
                      ? otherOp->getBatchSerializedPhase()
-                     : -2,
+                     : unusedBatchSerializedPhase,
                  other.pathLengthFromLoss());
 
   return order < otherOrder;
