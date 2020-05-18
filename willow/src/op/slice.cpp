@@ -379,6 +379,8 @@ void SliceGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   std::vector<int64_t> starts(slices.size());
   std::vector<int64_t> ends(slices.size());
   std::vector<int64_t> axes(slices.size());
+  std::vector<int64_t> lower_pad(lower_padding.size());
+  std::vector<int64_t> upper_pad(upper_padding.size());
 
   for (size_t i = 0; i < slices.size(); ++i) {
     starts[i] = slices[i].start;
@@ -386,11 +388,16 @@ void SliceGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
     axes[i]   = slices[i].axis;
   }
 
+  for (size_t i = 0; i < lower_padding.size(); ++i) {
+    lower_pad[i] = lower_padding[i];
+    upper_pad[i] = upper_padding[i];
+  }
+
   os.appendAttribute("_starts", starts);
   os.appendAttribute("_ends", ends);
   os.appendAttribute("_axes", axes);
-  os.appendAttribute("_lower_padding", lower_padding);
-  os.appendAttribute("_upper_padding", upper_padding);
+  os.appendAttribute("_lower_padding", lower_pad);
+  os.appendAttribute("_upper_padding", upper_pad);
 }
 
 namespace {
