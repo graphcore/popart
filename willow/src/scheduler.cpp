@@ -67,7 +67,7 @@ public:
   }
 
   void minSumLivenessAnneal(const std::map<std::string, std::string> &a) {
-    auto ll = logging::Level::Debug;
+    auto ll = logging::Level::Trace;
     std::string strBefore;
     if (logging::shouldLog(logging::Module::ir, ll)) {
       strBefore = g.getLivenessString();

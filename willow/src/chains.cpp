@@ -139,15 +139,12 @@ Chains::Chains(const std::vector<Chain> &chains) : chain_union(chains) {}
 
 Chains Chains::parallel(const Chains &chains) const {
   std::vector<Chain> new_chain_union;
-  logging::trace("[Chains] Existing size: {}", chain_union.size());
-  logging::trace("[Chains] Adding size: {}", chains.chain_union.size());
   new_chain_union.insert(
       new_chain_union.end(), chain_union.begin(), chain_union.end());
   new_chain_union.insert(new_chain_union.end(),
                          chains.chain_union.begin(),
                          chains.chain_union.end());
   auto filtered = filter(new_chain_union);
-  logging::trace("[Chains] Unfiltered size: {}", new_chain_union.size());
   return filtered;
 }
 
@@ -155,28 +152,11 @@ Regions Chain::apply(const Region &regIn) const {
   Regions currentRegions(1, regIn);
   Regions nextRegions;
 
-  if (logging::shouldLog(logging::Module::transform, logging::Level::Trace)) {
-    std::ostringstream oss;
-    oss << "[Chain::apply] Will apply " << links.size() << " Link(s) to "
-        << currentRegions.size() << " Region(s).";
-    oss << " The links have filters\n";
-    for (const Link &link : links) {
-      oss << "      " << link.getFilter() << "\n";
-    }
-    oss << " And the Region(s) to apply the Chain to are:\n ";
-    for (auto r0 : currentRegions) {
-      oss << "      " << r0 << "\n";
-    }
-    logging::trace(oss.str());
-  }
-
   for (const Link &link : links) {
     for (auto r0 : currentRegions) {
-      logging::trace("Applying {} to Region {}", link, r0);
       auto regions = link.apply(r0);
       nextRegions.insert(nextRegions.end(), regions.begin(), regions.end());
     }
-    logging::trace("[Chain::apply] #regions after: {}", nextRegions.size());
     currentRegions = mergeRegions(nextRegions);
     nextRegions.clear();
     if (std::all_of(currentRegions.begin(),
@@ -238,9 +218,6 @@ bool Chain::contains(const Chain &rhs) const {
 
 Regions Chains::apply(const Region &regIn) const {
   Regions regions;
-  logging::trace("[Chains::apply] Applying {} chains to Region {}.",
-                 chain_union.size(),
-                 regIn);
   for (const Chain &chain : chain_union) {
     Regions rs = chain.apply(regIn);
     for (Region r : rs) {
