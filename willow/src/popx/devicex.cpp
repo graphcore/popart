@@ -1409,6 +1409,11 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
   if (candidate) {
 
     auto f = [this, candidate, tensor]() {
+      // Try if an existing Poplar tensor can be reused
+      if (tryInitTensorByPostIRAliasing(tensor->id)) {
+        return SequenceMap();
+      }
+
       logging::devicex::debug(
           "Creating poplar::Tensor {}, with layout allocated by {}",
           tensor->id,
@@ -1449,6 +1454,11 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
   } else {
 
     auto f = [this, tensor]() {
+      // Try if an existing Poplar tensor can be reused
+      if (tryInitTensorByPostIRAliasing(tensor->id)) {
+        return SequenceMap();
+      }
+
       logging::devicex::debug("Creating poplar::Tensor '{}' linearly. No "
                               "operator specific allocator found",
                               tensor->id);
@@ -1932,11 +1942,7 @@ void Devicex::addOpTasks(PriTasks &tasks) {
       for (int i = 0; i < opInputs.size(); i++) {
         auto graphInput = graph->getInputId(i);
         if (!tasks.contains(initTensorTaskId(graphInput))) {
-          if (graph->isMarkedAsZeroCopy(graphInput)) {
-            tasks.add(initTensorByAliasingTask(op, opInputs.at(i), graphInput));
-          } else {
-            tasks.add(initTensorByCloningTask(op, opInputs.at(i), graphInput));
-          }
+          tasks.add(initTensorByCloningTask(op, opInputs.at(i), graphInput));
         }
       }
 
@@ -1968,11 +1974,41 @@ void Devicex::addOpTasks(PriTasks &tasks) {
   }
 }
 
+bool Devicex::tryInitTensorByPostIRAliasing(TensorId dstId) {
+  for (Tensor *aliased :
+       aliasZeroCopy->getPostIRAliases(ir().getTensor(dstId))) {
+    if (tensors.contains(aliased->id)) {
+      if (tensors.canAlias(aliased->id)) {
+        logging::devicex::debug("Creating poplar::Tensor '{}' "
+                                "by aliasing from poplar::Tensor '{}'",
+                                dstId,
+                                aliased->id);
+        tensors.insertAliased(dstId, aliased->id);
+        efficientlyCreatedInputTensors.insert(dstId);
+        aliasZeroCopy->activateAlias(aliased, ir().getTensor(dstId));
+        return true;
+      } else {
+        logging::devicex::trace("[PopTensors] Rejecting aliasing of {} due to "
+                                "constant or aliased region",
+                                aliased->id);
+        // Tensor can't be aliased
+        aliasZeroCopy->removePostIRAliases(ir().getTensor(aliased->id));
+      }
+    }
+  }
+  return false;
+}
+
 PriTask
 Devicex::initTensorByCloningTask(Op *op, TensorId srcId, TensorId dstId) {
   Opx *opx = getOpx(op->id);
 
   auto f = [srcId, dstId, opx, this]() {
+    // Try if an existing Poplar tensor can be reused
+    if (tryInitTensorByPostIRAliasing(dstId)) {
+      return SequenceMap();
+    }
+
     logging::debug("Cloning tensor {} to {}", srcId, dstId);
     auto src = opx->get(srcId);
     auto dst = opx->graph().clone(src, dstId);
@@ -1993,8 +2029,7 @@ Devicex::initTensorByAliasingTask(Op *op, TensorId srcId, TensorId dstId) {
 
   auto f = [srcId, dstId, opx, this]() {
     logging::debug("Aliasing tensor {} to {}", srcId, dstId);
-    auto src = opx->get(srcId);
-    tensors.insert(dstId, src);
+    tensors.insertAliased(dstId, srcId);
     return SequenceMap();
   };
 
@@ -2599,7 +2634,14 @@ void Devicex::prepare() {
 
   // Initialize the liveness analyzer
   livenessAnalyzer.reset(new liveness::LivenessAnalyzer(&ir()));
+  aliasZeroCopy.reset(
+      new liveness::AliasZeroCopy(&ir(), livenessAnalyzer.get()));
+
   livenessAnalyzer->apply();
+
+  if (ir().getSessionOptions().aliasZeroCopy) {
+    aliasZeroCopy->apply();
+  }
 
   if (ir().virtualGraphsEnabled()) {
     auto numIPUs     = graph().getTarget().getNumIPUs();

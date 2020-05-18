@@ -188,20 +188,6 @@ std::vector<const Graph *> Graph::getCalledGraphs() const {
   return called;
 }
 
-void Graph::markAsZeroCopy(const TensorId &tensorId) {
-  if (!getTensors().contains(tensorId)) {
-    throw error("Could not find tensor '{}' to mark as zero copy", tensorId);
-  }
-  if (std::find(zero_copy.begin(), zero_copy.end(), tensorId) ==
-      zero_copy.end())
-    zero_copy.push_back(tensorId);
-}
-
-bool Graph::isMarkedAsZeroCopy(const TensorId &tensorId) const {
-  return std::find(zero_copy.begin(), zero_copy.end(), tensorId) !=
-         zero_copy.end();
-}
-
 void Graph::constructFromOnnxGraph(
     const ONNX_NAMESPACE::GraphProto &onnx_graph) {
   for (const auto &node : onnx_graph.node()) {

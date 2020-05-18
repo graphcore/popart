@@ -176,6 +176,7 @@ public:
   std::string serializeIr(IrSerializationFormat format);
 
   const Ir &getIr() const { return ir; }
+  const popx::Devicex &getDevice() const { return *device_; }
 
 protected:
   /**

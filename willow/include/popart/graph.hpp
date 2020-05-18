@@ -125,9 +125,6 @@ public:
   void removeOutput(const TensorId &);
   TensorId getOutputId(OutIndex idx) const { return graph_outputs.at(idx); }
 
-  void markAsZeroCopy(const TensorId &);
-  bool isMarkedAsZeroCopy(const TensorId &) const;
-
   TensorId addScope(const TensorId &) const;
   TensorId removeScope(const TensorId &) const;
   Scope getScope() const;
@@ -156,7 +153,6 @@ private:
   std::map<OpId, std::unique_ptr<Op>> ops;
   std::vector<TensorId> graph_inputs;
   std::vector<TensorId> graph_outputs;
-  std::vector<TensorId> zero_copy;
   std::unique_ptr<Scheduler> scheduler;
   std::vector<GradInOutMapper> gradInInfo;
 

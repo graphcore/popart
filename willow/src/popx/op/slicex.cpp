@@ -106,6 +106,7 @@ void SliceGradOpx::grow(poplar::program::Sequence &prog) const {
                             sliceGradOp->getUpperPadding(),
                             0,
                             popops::padding::MappingMethod::EDGE);
+    outTensor        = cloneNcopy(prog, outTensor);
   }
 
   setOutTensor(SliceGradOp::getOutIndex(), outTensor);

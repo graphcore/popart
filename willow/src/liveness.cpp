@@ -30,15 +30,21 @@ void LivenessAnalyzer::addToSchedule(const Graph *graphToAdd,
 
     // Insert the actual op ("enter" location for subgraphing ops)
 
-    if (calledGraphs.empty()) {
-      opSchedule.push_back({current, OpStatus::Normal});
-    } else {
-      opSchedule.push_back({current, OpStatus::Enter});
-    }
+    int64_t enter_location = 0;
 
-    int64_t enter_location = opSchedule.size() - 1;
-
+    enter_location = opSchedule.size();
     opScheduleMap[op].push_back(enter_location);
+
+    if (calledGraphs.empty()) {
+      opSchedule.push_back({current, OpStatus::Normal, 0});
+    } else {
+      opSchedule.push_back({current, OpStatus::Enter, 0});
+      for (const Graph *subgraph : calledGraphs) {
+        for (InIndex i = 0; i < subgraph->getInputIds().size(); ++i) {
+          opSchedule.push_back({current, OpStatus::CopyInput, i});
+        }
+      }
+    }
 
     // Inspect subgraphs
     for (const Graph *subgraph : calledGraphs) {
@@ -49,7 +55,19 @@ void LivenessAnalyzer::addToSchedule(const Graph *graphToAdd,
       }
       addToSchedule(subgraph, current);
       // Insert the "exit" locations of subgraphs into the schedule
-      opSchedule.push_back({current, OpStatus::Exit});
+      for (OutIndex i = 0; i < subgraph->getOutputIds().size(); ++i) {
+        opSchedule.push_back({current, OpStatus::CopyOutput, i});
+      }
+      for (OutIndex i = 0; i < subgraph->getInputIds().size(); ++i) {
+        // Check for subgraph modified input
+        auto modifiedRegions = current.back()->modifies(i);
+        if (std::any_of(modifiedRegions.begin(),
+                        modifiedRegions.end(),
+                        [](const view::Region &r) { return !r.isEmpty(); })) {
+          opSchedule.push_back({current, OpStatus::CopyModified, i});
+        }
+      }
+      opSchedule.push_back({current, OpStatus::Exit, 0});
       callSiteLinks[enter_location].push_back(opSchedule.size() - 1);
     }
   }

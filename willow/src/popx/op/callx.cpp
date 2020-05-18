@@ -1,5 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 
+#include <popart/aliaszerocopy.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/call.hpp>
@@ -32,11 +33,16 @@ void CallOpx::copyModified(poplar::program::Sequence &prog) const {
       TensorId call_input_id = callop.inId(i);
       auto call_input        = get(call_input_id);
       auto graph_input       = get(graph_input_id);
-      logging::opx::trace("[CallOpx] Copying modified input {}->{}",
-                          graph_input_id,
-                          callop.inId(i));
-      poplar::program::Copy copy_prog(graph_input, call_input);
-      prog.add(copy_prog);
+      auto aliases = getDevicex()->getAliasZeroCopy()->getActiveAliasedTensors(
+          {callop.input->tensor(i)}, true);
+      if (aliases.find(callop.getIr().getTensor(graph_input_id)) ==
+          aliases.end()) {
+        logging::opx::trace("[CallOpx] Copying modified input {}->{}",
+                            graph_input_id,
+                            callop.inId(i));
+        poplar::program::Copy copy_prog(graph_input, call_input);
+        prog.add(copy_prog);
+      }
     }
   }
 }
@@ -50,6 +56,9 @@ void CallOpx::copyInputs(poplar::program::Sequence &prog) const {
     TensorId graph_input_id = callop.getCalledGraph().getInputId(i);
     auto graph_input        = get(graph_input_id);
 
+    auto aliases = getDevicex()->getAliasZeroCopy()->getActiveAliasedTensors(
+        {callop.input->tensor(i)}, true);
+
     view::AccessType accessType = view::AccessType::None;
     for (auto &r : callop.modifies(i)) {
       accessType = view::combine({accessType, r.getAccessType()});
@@ -57,20 +66,25 @@ void CallOpx::copyInputs(poplar::program::Sequence &prog) const {
 
     // Only copy inputs if
     // a.) It is not aliased (no call by reference; call by value instead)
-    //     (will be added with T14781)
     // b.) The access type is not write-only (at least one consumer of the
     //     unmodified input tensor in the subgraph will read the contents
     //     of the tensor)
-    if (accessType != view::AccessType::Write) {
-      logging::opx::trace(
-          "[CallOpx] Copying input {}->{}", call_input_id, graph_input_id);
-      poplar::program::Copy copy_prog(call_input, graph_input);
-      prog.add(copy_prog);
+    if (aliases.find(callop.getIr().getTensor(graph_input_id)) ==
+        aliases.end()) {
+      if (accessType != view::AccessType::Write) {
+        logging::opx::trace(
+            "[CallOpx] Copying input {}->{}", call_input_id, graph_input_id);
+        poplar::program::Copy copy_prog(call_input, graph_input);
+        prog.add(copy_prog);
+      } else {
+        logging::opx::trace("[CallOpx] Skipping copy input {}->{} "
+                            "(tensor not read in subgraph)",
+                            call_input_id,
+                            graph_input_id);
+      }
     } else {
-      logging::opx::trace("[CallOpx] Skipping copy input {}->{} "
-                          "(tensor not read in subgraph)",
-                          call_input_id,
-                          graph_input_id);
+      logging::opx::trace(
+          "[CallOpx] Aliasing input {}->{}", call_input_id, graph_input_id);
     }
     if (accessType == view::AccessType::Write) {
       logging::opx::trace("[CallOpx] Write undef tensor {}", graph_input_id);
@@ -87,9 +101,12 @@ void CallOpx::copyOutputs(poplar::program::Sequence &prog) const {
     auto graph_output_id    = callop.getCalledGraph().getOutputId(i);
     auto graph_output       = get(graph_output_id);
 
+    auto aliases = getDevicex()->getAliasZeroCopy()->getActiveAliasedTensors(
+        {callop.getIr().getTensor(graph_output_id)}, true);
+
     // Post IR aliased between subgraph output and CallOp output
-    // TODO: T14781
-    bool aliased = false;
+    bool aliased = (aliases.find(callop.getIr().getTensor(call_output_id)) !=
+                    aliases.end());
 
     for (int j = 0; j < callop.input->n(); j++) {
       auto input = get(callop.inId(j));

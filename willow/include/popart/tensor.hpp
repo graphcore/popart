@@ -207,6 +207,12 @@ public:
 
   bool consumersAllPreLoss() const;
 
+  // Any of the consumers modify this tensor
+  bool isModified() const;
+
+  // Any of the consumers alias this tensor
+  bool isAliased() const;
+
   const void *getTensorData() const;
 
   // Backtrack through input ops in order to get data from initializer tensors

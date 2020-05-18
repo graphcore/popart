@@ -601,6 +601,7 @@ PYBIND11_MODULE(popart_core, m) {
                       &SessionOptions::explicitRecomputation);
     cls.def_readwrite("batchSerializationFactor",
                       &SessionOptions::batchSerializationFactor);
+    cls.def_readwrite("aliasZeroCopy", &SessionOptions::aliasZeroCopy);
     cls.def_readwrite("enablePrefetchDatastreams",
                       &SessionOptions::enablePrefetchDatastreams);
     cls.def_readwrite("virtualGraphMode", &SessionOptions::virtualGraphMode);

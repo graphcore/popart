@@ -13,6 +13,7 @@
 #include <poplin/MatMul.hpp>
 #include <poputil/TileMapping.hpp>
 
+#include <popart/aliaszerocopy.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/popx/creatorx.hpp>
 #include <popart/popx/enigma.hpp>
@@ -277,6 +278,10 @@ public:
     return livenessAnalyzer.get();
   }
 
+  liveness::AliasZeroCopy *getAliasZeroCopy() const {
+    return aliasZeroCopy.get();
+  }
+
   const DeviceInfo *getDeviceInfo() { return deviceInfo.get(); }
 
 private:
@@ -309,6 +314,7 @@ private:
   PriTask initTensorByCloningTask(Op *op, TensorId srcId, TensorId dstId);
   PriTask initTensorByAliasingTask(Op *op, TensorId srcId, TensorId dstId);
   TaskId initTensorTaskId(TensorId) const;
+  bool tryInitTensorByPostIRAliasing(TensorId dstId);
 
   PriTask initRandomSeed();
   TaskId initRandomSeedTaskId() const;
@@ -598,6 +604,9 @@ private:
 
   // Helper class to analyze the global IR schedule and tensor liveness
   std::unique_ptr<liveness::LivenessAnalyzer> livenessAnalyzer;
+
+  // Helper class to reuse tensors and call subgraphs by reference
+  std::unique_ptr<liveness::AliasZeroCopy> aliasZeroCopy;
 
 public:
   bool getOuterLoopFragEmpty() const { return outerLoopFragEmpty; }

@@ -141,8 +141,7 @@ def test_attention_pingpong(tmpdir):
                                  if options["pingPong"] else
                                  popart.VirtualGraphMode.Manual)
         opts.explicitRecomputation = options["explicitRecomputation"]
-        # TODO: T14781
-        #opts.aliasZeroCopy = options["aliasZeroCopy"]
+        opts.aliasZeroCopy = options["aliasZeroCopy"]
         opts.batchSerializationFactor = options["batchSerialize"]
 
         pat = popart.Patterns(popart.PatternsLevel.Default)

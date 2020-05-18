@@ -237,8 +237,15 @@ struct SessionOptions {
   // Number of IO tiles
   int numIOTiles = 0;
 
+  // Enable zero-copy for subgraphs
+  bool aliasZeroCopy = false;
+
   // Enable batch serialization
   int batchSerializationFactor = 0;
+
+  // Delay var updates as much as possible
+  // TODO: Remove with T19212
+  bool delayVarUpdates = true;
 
   // Enable the global fullyConnectedPass option for matmuls
   bool enableFullyConnectedPass = true;

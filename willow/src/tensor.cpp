@@ -30,6 +30,40 @@ bool Tensor::consumersAllPreLoss() const {
   return true;
 }
 
+bool Tensor::isAliased() const {
+  for (Op *consumer : consumers.getOps()) {
+    for (InIndex in : consumer->input->indices(graph.getTensors().get(id))) {
+      for (auto outEntry : consumer->output->indicesMap()) {
+        for (OutIndex out : outEntry.second) {
+          auto regions = consumer->aliases(in, out);
+          if (!std::all_of(regions.begin(),
+                           regions.end(),
+                           [](const view::Region &r) { return r.isEmpty(); })) {
+            return true;
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
+bool Tensor::isModified() const {
+  for (Op *consumer : consumers.getOps()) {
+    for (InIndex in : consumer->input->indices(graph.getTensors().get(id))) {
+      auto regions = consumer->modifies(in);
+      if (!std::all_of(
+              regions.begin(), regions.end(), [](const view::Region &r) {
+                return r.isEmpty() ||
+                       r.getAccessType() == view::AccessType::Read;
+              })) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 VGraphId Tensor::getVirtualGraphIdUnsafe() const {
   return getVirtualGraphIdAndIoTileUnsafe().first;
 }
