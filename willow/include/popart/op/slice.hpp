@@ -114,6 +114,8 @@ public:
   std::unique_ptr<Op> clone() const final;
   void setup() final;
 
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
+
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 

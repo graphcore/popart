@@ -307,7 +307,7 @@ std::vector<std::unique_ptr<Op>> SliceInplaceOp::getGradOps() {
       str());
 }
 
-view::Regions SliceInplaceOp::aliases(InIndex in, OutIndex) const {
+view::Regions SliceInplaceOp::aliases(InIndex in, OutIndex out) const {
   if (in != 0) {
     throw internal_error("[SliceInplaceOp::aliases] "
                          "BaseSliceOp has no input index {}, only 0 permitted. "
@@ -315,7 +315,7 @@ view::Regions SliceInplaceOp::aliases(InIndex in, OutIndex) const {
                          in,
                          str());
   }
-  return {getFullInRegion()};
+  return bwdRegMap(in, out)(view::Region::getFull(outShape(out)));
 }
 
 void BaseSliceOp::appendOutlineAttributes(OpSerialiserBase &os) const {
@@ -371,6 +371,26 @@ const std::map<int, int> &SliceGradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {
       {getOutIndex(), SliceOp::getInIndex()}};
   return outInfo;
+}
+
+void SliceGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
+
+  std::vector<int64_t> starts(slices.size());
+  std::vector<int64_t> ends(slices.size());
+  std::vector<int64_t> axes(slices.size());
+
+  for (size_t i = 0; i < slices.size(); ++i) {
+    starts[i] = slices[i].start;
+    ends[i]   = slices[i].end;
+    axes[i]   = slices[i].axis;
+  }
+
+  os.appendAttribute("_starts", starts);
+  os.appendAttribute("_ends", ends);
+  os.appendAttribute("_axes", axes);
+  os.appendAttribute("_lower_padding", lower_padding);
+  os.appendAttribute("_upper_padding", upper_padding);
 }
 
 namespace {
