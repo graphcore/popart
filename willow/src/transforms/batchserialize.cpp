@@ -642,10 +642,11 @@ bool BatchSerialize::apply(Graph &graph) const {
     std::map<std::pair<Op *, Op *>, int64_t> cachedIsoScores;
 
     std::function<int64_t(
-        std::pair<Op *, Op *>, std::set<std::pair<Op *, Op *>> &, bool)>
+        std::pair<Op *, Op *>, std::set<std::pair<Op *, Op *>> &, int, bool)>
         localIsoScore = [&cachedIsoScores, &localIsoScore, &opSubgraphEquivId](
                             std::pair<Op *, Op *> ops,
                             std::set<std::pair<Op *, Op *>> &visitedOps,
+                            int maxDepth,
                             bool cached) {
           if (cached) {
             auto it = cachedIsoScores.find(ops);
@@ -655,7 +656,7 @@ bool BatchSerialize::apply(Graph &graph) const {
           }
 
           int64_t score = 0;
-          if (visitedOps.find(ops) != visitedOps.end()) {
+          if (visitedOps.find(ops) != visitedOps.end() || maxDepth == 0) {
             return score;
           }
           visitedOps.insert(ops);
@@ -672,7 +673,8 @@ bool BatchSerialize::apply(Graph &graph) const {
                 Op *pfirst  = tfirst->getProducer();
                 Op *psecond = tsecond->getProducer();
                 if (opSubgraphEquivId[pfirst] == opSubgraphEquivId[psecond]) {
-                  score += localIsoScore({pfirst, psecond}, visitedOps, false);
+                  score += localIsoScore(
+                      {pfirst, psecond}, visitedOps, maxDepth - 1, false);
                 }
               }
             }
@@ -691,8 +693,8 @@ bool BatchSerialize::apply(Graph &graph) const {
               for (Op *cfirst : csfirst) {
                 for (Op *csecond : cssecond) {
                   if (opSubgraphEquivId[cfirst] == opSubgraphEquivId[csecond]) {
-                    score +=
-                        localIsoScore({cfirst, csecond}, visitedOps, false);
+                    score += localIsoScore(
+                        {cfirst, csecond}, visitedOps, maxDepth - 1, false);
                   }
                 }
               }
@@ -700,7 +702,9 @@ bool BatchSerialize::apply(Graph &graph) const {
           }
 
           if (cached) {
-            cachedIsoScores[ops] = score;
+            for (auto &vops : visitedOps) {
+              cachedIsoScores[vops] = score;
+            }
           }
           return score;
         };
@@ -818,8 +822,8 @@ bool BatchSerialize::apply(Graph &graph) const {
               ops.begin(), ops.end(), [&localIsoScore, &op0](Op *lhs, Op *rhs) {
                 std::set<std::pair<Op *, Op *>> visitedOpsLhs;
                 std::set<std::pair<Op *, Op *>> visitedOpsRhs;
-                return localIsoScore({op0, lhs}, visitedOpsLhs, true) >
-                       localIsoScore({op0, rhs}, visitedOpsRhs, true);
+                return localIsoScore({op0, lhs}, visitedOpsLhs, 5, true) >
+                       localIsoScore({op0, rhs}, visitedOpsRhs, 5, true);
               });
           // Iterate through potentially isomorphic ops
           for (Op *op1 : ops) {
