@@ -13,6 +13,7 @@
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/session.hpp>
@@ -51,33 +52,31 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Gemm_Decomposition0) {
   auto builder = Builder::create();
   auto aiOnnx  = builder->aiOnnxOpset9();
   // The two fixed-point tensors which are Constants
-  auto a_id   = aiOnnx.constant(a_data, "aData");
-  auto c_id   = aiOnnx.constant(c_data, "cData");
-  auto b_id   = builder->addInputTensor(tinfo);
-  auto out_id = aiOnnx.gemm({a_id, b_id, c_id}, 1., 1., 0, 0);
-  builder->addOutputTensor(out_id);
+  auto a_id    = aiOnnx.constant(a_data, "aData");
+  auto c_id    = aiOnnx.constant(c_data, "cData");
+  auto b_id    = builder->addInputTensor(tinfo);
+  auto out_id  = aiOnnx.gemm({a_id, b_id, c_id}, 1., 1., 0, 0);
+  auto loss_id = builder->aiGraphcoreOpset1().l1loss({out_id}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR, adding out_id as an anchor
-  auto art       = AnchorReturnType("ALL");
+  auto art       = AnchorReturnType("All");
   auto dataFlow  = DataFlow(1, {{out_id, art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(out_id, "l1LossVal", 0.1, ReductionType::SUM)};
-  auto device = createTestDevice(TEST_TARGET);
+  auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              losses,
+              loss_id,
               &optimizer,
               *device,
               {}, // no SessionOptions
-              Patterns({PreAliasPatternType::POSTNREPL,
-                        PreAliasPatternType::GEMMDECOMPOSITION})});
+              Patterns({PreAliasPatternType::PostNRepl,
+                        PreAliasPatternType::GemmDecomposition})});
 
   // Check the ir
   // 1) there should only be 1 scale op,

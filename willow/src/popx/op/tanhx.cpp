@@ -24,7 +24,7 @@ void TanhOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 InputCreatorType TanhOpx::getInputCreatorType(InIndex) const {
-  return InputCreatorType::CANUNWIND;
+  return InputCreatorType::CanUnwind;
 }
 
 poplar::Tensor

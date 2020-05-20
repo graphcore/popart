@@ -30,7 +30,7 @@ NegativeOneScalePattern::sequence(Op *op) const {
 
 namespace {
 static PatternCreator<NegativeOneScalePattern>
-    negativeOneScalePatern(PreAliasPatternType::NEGATIVEONESCALE,
+    negativeOneScalePatern(PreAliasPatternType::NegativeOneScale,
                            "NegativeOneScalePattern");
 }
 

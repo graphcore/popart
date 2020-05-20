@@ -36,7 +36,7 @@ BOOST_AUTO_TEST_CASE(InplaceGraphOutputTest1) {
 
   auto superIn0 = superBuilder->addInputTensor(shape0);
 
-  builder->addInputTensorFromHigherScope(superIn0);
+  builder->addInputTensorFromParentGraph(superIn0);
 
   // can inplace
   auto sc0 = aiGraphcore.scale({superIn0}, 1.5, "sc0");
@@ -60,7 +60,7 @@ BOOST_AUTO_TEST_CASE(InplaceGraphOutputTest1) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto dataFlow = DataFlow(1, {{acts[1], AnchorReturnType("ALL")}});
+  auto dataFlow = DataFlow(1, {{acts[1], AnchorReturnType("All")}});
   auto device   = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -71,7 +71,7 @@ BOOST_AUTO_TEST_CASE(InplaceGraphOutputTest1) {
               nullptr,
               *device,
               {},
-              Patterns(PatternsLevel::NONE).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
 
   auto sched      = ir.getOpSchedule({});
   auto graphSched = ir.getGraphSchedule();
@@ -116,7 +116,7 @@ BOOST_AUTO_TEST_CASE(InplaceGraphOutputTest2) {
 
   auto superIn0 = superBuilder->addInputTensor(shape0);
 
-  builder->addInputTensorFromHigherScope(superIn0);
+  builder->addInputTensorFromParentGraph(superIn0);
 
   auto t0 = aiOnnx.transpose({superIn0});
   builder->setInplacePreferences(t0, {{"TransposeInplace", 300}});
@@ -135,7 +135,7 @@ BOOST_AUTO_TEST_CASE(InplaceGraphOutputTest2) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto dataFlow = DataFlow(1, {{acts[1], AnchorReturnType("ALL")}});
+  auto dataFlow = DataFlow(1, {{acts[1], AnchorReturnType("All")}});
   auto device   = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -146,7 +146,7 @@ BOOST_AUTO_TEST_CASE(InplaceGraphOutputTest2) {
               nullptr,
               *device,
               {},
-              Patterns(PatternsLevel::NONE).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
 
   auto sched      = ir.getOpSchedule({});
   auto graphSched = ir.getGraphSchedule();
@@ -193,7 +193,7 @@ BOOST_AUTO_TEST_CASE(InplaceSubGraphOutputTest1) {
 
   auto superIn0 = superBuilder->addInputTensor(shape0);
 
-  builder->addInputTensorFromHigherScope(superIn0);
+  builder->addInputTensorFromParentGraph(superIn0);
 
   auto t0 = aiOnnx.transpose({superIn0});
   builder->setInplacePreferences(t0, {{"TransposeInplace", 10}});
@@ -230,7 +230,7 @@ BOOST_AUTO_TEST_CASE(InplaceSubGraphOutputTest1) {
               nullptr,
               *device,
               {},
-              Patterns(PatternsLevel::NONE).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
 
   auto sched      = ir.getOpSchedule({});
   auto graphSched = ir.getGraphSchedule();
@@ -280,7 +280,7 @@ BOOST_AUTO_TEST_CASE(InplaceSubGraphOutputTest2) {
 
   auto superIn0 = superBuilder->addInputTensor(shape0);
 
-  builder->addInputTensorFromHigherScope(superIn0);
+  builder->addInputTensorFromParentGraph(superIn0);
 
   auto t0 = aiOnnx.transpose({superIn0});
   builder->setInplacePreferences(t0, {{"TransposeInplace", 50}});
@@ -317,7 +317,7 @@ BOOST_AUTO_TEST_CASE(InplaceSubGraphOutputTest2) {
               nullptr,
               *device,
               {},
-              Patterns(PatternsLevel::NONE).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
 
   auto sched      = ir.getOpSchedule({});
   auto graphSched = ir.getGraphSchedule();
@@ -366,7 +366,7 @@ BOOST_AUTO_TEST_CASE(InplaceSubGraphOutputTest3) {
 
   auto superIn0 = superBuilder->addInputTensor(shape0);
 
-  builder->addInputTensorFromHigherScope(superIn0);
+  builder->addInputTensorFromParentGraph(superIn0);
 
   auto t0 = aiOnnx.transpose({superIn0});
   builder->setInplacePreferences(t0, {{"TransposeInplace", 80}});
@@ -403,7 +403,7 @@ BOOST_AUTO_TEST_CASE(InplaceSubGraphOutputTest3) {
               nullptr,
               *device,
               {},
-              Patterns(PatternsLevel::NONE).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
 
   auto sched      = ir.getOpSchedule({});
   auto graphSched = ir.getGraphSchedule();
@@ -452,7 +452,7 @@ BOOST_AUTO_TEST_CASE(InplaceSubGraphOutputTest4) {
 
   auto superIn0 = superBuilder->addInputTensor(shape0);
 
-  builder->addInputTensorFromHigherScope(superIn0);
+  builder->addInputTensorFromParentGraph(superIn0);
 
   auto t0 = aiOnnx.transpose({superIn0});
   builder->setInplacePreferences(t0, {{"TransposeInplace", 80}});
@@ -489,7 +489,7 @@ BOOST_AUTO_TEST_CASE(InplaceSubGraphOutputTest4) {
               nullptr,
               *device,
               {},
-              Patterns(PatternsLevel::NONE).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
 
   auto sched      = ir.getOpSchedule({});
   auto graphSched = ir.getGraphSchedule();

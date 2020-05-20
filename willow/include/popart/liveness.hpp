@@ -17,7 +17,10 @@ enum class OpStatus {
   Normal = 0,
   // Subgraph entering
   Enter,
+  CopyInput,
   // Subgraph exiting
+  CopyOutput,
+  CopyModified,
   Exit
 };
 
@@ -53,7 +56,7 @@ public:
 
   // Return the call stack (e.g. X->Y->F),
   // at a given schedule position (e.g. 7)
-  const std::pair<std::vector<Op *>, OpStatus> &
+  const std::tuple<std::vector<Op *>, OpStatus, int> &
   getOpScheduleAt(int64_t scheduleIndex) const {
     return opSchedule.at(scheduleIndex);
   }
@@ -85,7 +88,7 @@ private:
   std::map<GraphId, std::vector<Op *>> graphOpSchedule;
 
   // Global schedule (over all graphs) in final schedule order
-  std::vector<std::pair<std::vector<Op *>, OpStatus>> opSchedule;
+  std::vector<std::tuple<std::vector<Op *>, OpStatus, int>> opSchedule;
 
   // Map of all schedule positions where an Op is called
   std::map<Op *, std::vector<int64_t>> opScheduleMap;

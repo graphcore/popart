@@ -79,7 +79,7 @@ BOOST_AUTO_TEST_CASE(Inplace_pad0) {
     auto modelProto = io::getModelFromString(proto);
 
     // Create the IR
-    auto dataFlow = DataFlow(1, {{sum, AnchorReturnType("ALL")}});
+    auto dataFlow = DataFlow(1, {{sum, AnchorReturnType("All")}});
     auto device   = createTestDevice(TEST_TARGET);
 
     auto opts = SessionOptions();
@@ -88,10 +88,9 @@ BOOST_AUTO_TEST_CASE(Inplace_pad0) {
         proto,
         dataFlow,
         device,
-        {},
         popart::InputShapeInfo(),
         opts,
-        popart::Patterns(PatternsLevel::NONE).enableInPlace(true));
+        popart::Patterns(PatternsLevel::NoPatterns).enableInPlace(true));
 
     std::vector<float> vdata0{1.0, 1.0};
     popart::NDArrayWrapper<float> data0(vdata0.data(), info0);

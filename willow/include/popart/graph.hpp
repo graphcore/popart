@@ -32,11 +32,11 @@ public:
 
   static const int64_t NoVGraph;
 
-  // Obtain a set of all vitual graphs Id used across ops (and losses)
-  const std::set<int64_t> getAllVirtualGraphIds(bool includeLosses) const;
+  // Obtain a set of all vitual graphs Id used across ops
+  const std::set<int64_t> getAllVirtualGraphIds() const;
 
-  // Obtain counts for each vitual graphs Id used across ops (and losses)
-  const std::map<int64_t, int> getVirtualGraphCounts(bool includeLosses) const;
+  // Obtain counts for each vitual graphs Id used across ops
+  const std::map<int64_t, int> getVirtualGraphCounts() const;
 
   Op *getOp(OpId opId);
 
@@ -46,11 +46,9 @@ public:
   const Ir &getIr() const { return ir; }
   Ir &getIr() { return ir; }
 
-  const std::vector<std::shared_ptr<Loss>> &getLosses() const { return losses; }
+  const TensorId &getLoss() const { return loss; }
 
-  void setLosses(const std::vector<std::shared_ptr<Loss>> &losses_) {
-    losses = losses_;
-  }
+  void setLoss(const TensorId &loss_) { loss = loss_; }
 
   void constructFromOnnxGraph(const ONNX_NAMESPACE::GraphProto &onnx_graph);
   Op *growFromNode(const Node &node);
@@ -125,9 +123,6 @@ public:
   void removeOutput(const TensorId &);
   TensorId getOutputId(OutIndex idx) const { return graph_outputs.at(idx); }
 
-  void markAsZeroCopy(const TensorId &);
-  bool isMarkedAsZeroCopy(const TensorId &) const;
-
   TensorId addScope(const TensorId &) const;
   TensorId removeScope(const TensorId &) const;
   Scope getScope() const;
@@ -156,16 +151,14 @@ private:
   std::map<OpId, std::unique_ptr<Op>> ops;
   std::vector<TensorId> graph_inputs;
   std::vector<TensorId> graph_outputs;
-  std::vector<TensorId> zero_copy;
   std::unique_ptr<Scheduler> scheduler;
   std::vector<GradInOutMapper> gradInInfo;
 
   Ir &ir;
-  std::vector<std::shared_ptr<Loss>> losses;
+  TensorId loss;
 
-  // Get the virtual graph Id from an op or loss (NoVGraph if not set)
+  // Get the virtual graph Id from an op (NoVGraph if not set)
   static int64_t getVirtualGraphId(const Op &op);
-  static int64_t getVirtualGraphId(const Loss &loss);
 };
 
 template <typename T>

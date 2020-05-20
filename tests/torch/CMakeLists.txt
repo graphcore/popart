@@ -95,35 +95,40 @@ set_tests_properties(model0_infer PROPERTIES FIXTURES_REQUIRED cifar10)
 #
 #  set_tests_properties(model1 PROPERTIES FIXTURES_REQUIRED cifar10)
 
-add_test(NAME model2
-		WORKING_DIRECTORY ${INSTALL_TESTS}
-		COMMAND ${Python3_EXECUTABLE} torch/cifar10/model2.py)
-set_tests_properties(model2 PROPERTIES FIXTURES_REQUIRED cifar10)
+# TODO: T20968
+# add_test(NAME model2
+# 		WORKING_DIRECTORY ${INSTALL_TESTS}
+# 		COMMAND ${Python3_EXECUTABLE} torch/cifar10/model2.py)
+# set_tests_properties(model2 PROPERTIES FIXTURES_REQUIRED cifar10)
 
-add_test(NAME model5
-		WORKING_DIRECTORY ${INSTALL_TESTS}
-		COMMAND ${Python3_EXECUTABLE} torch/cifar10/model5.py)
-set_tests_properties(model5 PROPERTIES FIXTURES_REQUIRED cifar10)
+# TODO: T19915 enable once conversion code has landed
+# add_test(NAME model5
+# 		WORKING_DIRECTORY ${INSTALL_TESTS}
+# 		COMMAND ${Python3_EXECUTABLE} torch/cifar10/model5.py)
+# set_tests_properties(model5 PROPERTIES FIXTURES_REQUIRED cifar10)
 
-add_test(NAME model6
-		WORKING_DIRECTORY ${INSTALL_TESTS}
-		COMMAND ${Python3_EXECUTABLE} torch/cifar10/model6.py)
-set_tests_properties(model6 PROPERTIES FIXTURES_REQUIRED cifar10)
+# TODO: T19915 enable once conversion code has landed
+# add_test(NAME model6
+# 		WORKING_DIRECTORY ${INSTALL_TESTS}
+# 		COMMAND ${Python3_EXECUTABLE} torch/cifar10/model6.py)
+# set_tests_properties(model6 PROPERTIES FIXTURES_REQUIRED cifar10)
 
 add_test(NAME model_reduce_sum
 		WORKING_DIRECTORY ${INSTALL_TESTS}
 		COMMAND ${Python3_EXECUTABLE} torch/cifar10/model_reduce_sum.py)
 set_tests_properties(model_reduce_sum PROPERTIES FIXTURES_REQUIRED cifar10)
 
-add_test(NAME model7
-		WORKING_DIRECTORY ${INSTALL_TESTS}
-		COMMAND ${Python3_EXECUTABLE} torch/cifar10/model7.py)
-set_tests_properties(model7 PROPERTIES FIXTURES_REQUIRED cifar10)
+# TODO: T20968
+# add_test(NAME model7
+# 		WORKING_DIRECTORY ${INSTALL_TESTS}
+# 		COMMAND ${Python3_EXECUTABLE} torch/cifar10/model7.py)
+# set_tests_properties(model7 PROPERTIES FIXTURES_REQUIRED cifar10)
 
-add_test(NAME model8
-		WORKING_DIRECTORY ${INSTALL_TESTS}
-		COMMAND ${Python3_EXECUTABLE} torch/cifar10/model8.py)
-set_tests_properties(model8 PROPERTIES FIXTURES_REQUIRED cifar10)
+# TODO: T19915 enable once conversion code has landed
+# add_test(NAME model8
+# 		WORKING_DIRECTORY ${INSTALL_TESTS}
+# 		COMMAND ${Python3_EXECUTABLE} torch/cifar10/model8.py)
+# set_tests_properties(model8 PROPERTIES FIXTURES_REQUIRED cifar10)
 
 add_test(NAME model_conv_bias
 		WORKING_DIRECTORY ${INSTALL_TESTS}
@@ -135,30 +140,34 @@ add_test(NAME reset_weights
 		COMMAND ${Python3_EXECUTABLE} torch/cifar10/reset_weights.py)
 set_tests_properties(reset_weights PROPERTIES FIXTURES_REQUIRED cifar10)
 
-add_test(NAME model_reshape
-		WORKING_DIRECTORY ${INSTALL_TESTS}
-		COMMAND ${Python3_EXECUTABLE} torch/cifar10/model_reshape.py)
-set_tests_properties(model_reshape PROPERTIES FIXTURES_REQUIRED cifar10)
+# TODO: T20968
+# add_test(NAME model_reshape
+# 		WORKING_DIRECTORY ${INSTALL_TESTS}
+# 		COMMAND ${Python3_EXECUTABLE} torch/cifar10/model_reshape.py)
+# set_tests_properties(model_reshape PROPERTIES FIXTURES_REQUIRED cifar10)
 
 add_test(NAME model_cat
 		WORKING_DIRECTORY ${INSTALL_TESTS}
 		COMMAND ${Python3_EXECUTABLE} torch/cifar10/model_cat.py)
 set_tests_properties(model_cat PROPERTIES FIXTURES_REQUIRED cifar10)
 
-add_test(NAME model_softmax
-		WORKING_DIRECTORY ${INSTALL_TESTS}
-		COMMAND ${Python3_EXECUTABLE} torch/cifar10/model_softmax.py)
-set_tests_properties(model_softmax PROPERTIES FIXTURES_REQUIRED cifar10)
+# TODO: T20968
+# add_test(NAME model_softmax
+# 		WORKING_DIRECTORY ${INSTALL_TESTS}
+# 		COMMAND ${Python3_EXECUTABLE} torch/cifar10/model_softmax.py)
+# set_tests_properties(model_softmax PROPERTIES FIXTURES_REQUIRED cifar10)
 
-add_test(NAME model_nll
-		WORKING_DIRECTORY ${INSTALL_TESTS}
-		COMMAND ${Python3_EXECUTABLE} torch/cifar10/model_nll.py)
-set_tests_properties(model_nll PROPERTIES FIXTURES_REQUIRED cifar10)
+# TODO: T19915 enable once conversion code has landed
+# add_test(NAME model_nll
+# 		WORKING_DIRECTORY ${INSTALL_TESTS}
+# 		COMMAND ${Python3_EXECUTABLE} torch/cifar10/model_nll.py)
+# set_tests_properties(model_nll PROPERTIES FIXTURES_REQUIRED cifar10)
 
-add_test(NAME model_matmul_bcast
-		WORKING_DIRECTORY ${INSTALL_TESTS}
-		COMMAND ${Python3_EXECUTABLE} torch/cifar10/model_matmul_bcast.py)
-set_tests_properties(model_matmul_bcast PROPERTIES FIXTURES_REQUIRED cifar10)
+# TODO: T20968
+# add_test(NAME model_matmul_bcast
+# 		WORKING_DIRECTORY ${INSTALL_TESTS}
+# 		COMMAND ${Python3_EXECUTABLE} torch/cifar10/model_matmul_bcast.py)
+# set_tests_properties(model_matmul_bcast PROPERTIES FIXTURES_REQUIRED cifar10)
 
 add_test(NAME model_lstm
 		WORKING_DIRECTORY ${INSTALL_TESTS}

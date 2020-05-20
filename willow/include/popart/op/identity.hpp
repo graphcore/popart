@@ -26,7 +26,7 @@ public:
 class IdentityInplaceOp : public IdentityOp {
 public:
   IdentityInplaceOp(const OperatorIdentifier &_opid,
-                    const Op::Settings &settings);
+                    const Op::Settings &settings_);
   IdentityInplaceOp(const IdentityOp &concatOp);
 
   std::unique_ptr<Op> clone() const override;
@@ -37,7 +37,7 @@ public:
 class IdentityGradOp : public IdentityOp {
 public:
   IdentityGradOp(const IdentityOp &fwdOp);
-  IdentityGradOp(const Settings &settings);
+  IdentityGradOp(const Settings &settings_);
   std::unique_ptr<Op> clone() const final;
 
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
@@ -47,40 +47,24 @@ public:
   static OutIndex getOutIndex() { return 0; }
 };
 
-class IdentityLoss : public Loss {
-public:
-  // where input = output, both rank 0 (per sample)
-  IdentityLoss(TensorId input, TensorId output, ReductionType rt);
-  // There are no tensors streamed into this loss layer (unlike NLL for
-  // example which has a label streamed in)
-  std::vector<TensorId> getStreamTensorNames() const final;
-  std::unique_ptr<Op> getOp(const Op::Settings &settings_) const final;
-  const OperatorIdentifier &op_type() const final;
-  TensorId getInputId() const;
-
-  std::unique_ptr<Loss> clone() const final {
-    return std::unique_ptr<Loss>(new IdentityLoss(*this));
-  }
-};
-
 class IdentityLossOp : public LossOp {
 public:
   IdentityLossOp(const OperatorIdentifier &_opid,
-                 const IdentityLoss *identityloss,
+                 const ReductionType &reduction,
                  const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
-  bool canBeReplacedByIdentity();
-  const IdentityLoss *identityl() const;
+  bool canBeReplacedByIdentity() override;
 
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 
+  ReductionType getReductionType() const { return reduction_type_; }
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
-  const IdentityLoss *identityloss_;
+  const ReductionType reduction_type_;
 };
 
 class IdentityLossGradOp : public Op {
@@ -90,18 +74,17 @@ public:
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
-  const IdentityLoss *identityl() const;
   std::unique_ptr<Op> clone() const final;
+  bool canBeReplacedByIdentity() override;
 
   static InIndex getInIndex() { return 0; }
-  static InIndex getGradInIndex() { return 1; }
-
   static OutIndex getOutIndex() { return 0; }
 
+  ReductionType getReductionType() const { return reduction_type_; }
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
-  const IdentityLoss *identityloss_;
+  const ReductionType reduction_type_;
 };
 
 } // namespace popart

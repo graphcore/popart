@@ -1,11 +1,11 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE PipelineRecomputeNumericalTest0
 
+#include <../random_util.hpp>
 #include <algorithm>
 #include <boost/test/unit_test.hpp>
 #include <fstream>
 #include <map>
-#include <random>
 #include <tuple>
 #include <vector>
 
@@ -16,6 +16,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/restore.hpp>
@@ -92,8 +93,8 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeNumericalTest0x) {
     int64_t batchesPerStep = microBatchesPerStep / accumulationFactor;
 
     int seed = 1011;
-    std::default_random_engine eng(seed);
-    std::uniform_real_distribution<float> fdis(-1, 1);
+    DefaultRandomEngine eng(seed);
+    UniformRealDistribution<float> fdis(-1.f, +1.f);
 
     int64_t microBatchSize = 2;
     int64_t sampleHeight   = 8;
@@ -138,7 +139,7 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeNumericalTest0x) {
 
     SessionOptions userOptions;
 
-    userOptions.enableVirtualGraphs = true;
+    userOptions.virtualGraphMode = VirtualGraphMode::Manual;
 
     userOptions.reportOptions.insert({"showExecutionSteps", "true"});
 
@@ -155,17 +156,15 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeNumericalTest0x) {
       userOptions.enableGradientAccumulation = true;
     }
 
-    builder->addOutputTensor(actFinal);
-    auto proto    = builder->getModelProto();
-    auto dataFlow = DataFlow(batchesPerStep);
-
     // Changing this to SGD does not work, learning rate is not correct I think.
     auto optimizer = ConstSGD(0.04);
 
     float lambda = 0.159;
-    auto loss    = std::unique_ptr<Loss>(
-        new L1Loss(actFinal, "l1LossVal", lambda, ReductionType::SUM));
-    loss->virtualGraph(nIPUs - 1);
+    actFinal     = builder->aiGraphcoreOpset1().l1loss({actFinal}, lambda);
+    builder->virtualGraph(actFinal, nIPUs - 1);
+
+    auto proto    = builder->getModelProto();
+    auto dataFlow = DataFlow(batchesPerStep);
 
     int64_t stepDataElms = accumulationFactor * microBatchElms * batchesPerStep;
 
@@ -174,12 +173,12 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeNumericalTest0x) {
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
         dataFlow,
-        {loss.get()},
+        actFinal,
         optimizer,
         device,
         InputShapeInfo(),
         userOptions,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
 
     auto opSchedule = session->ir.getOpSchedule({});
     int nRestore    = 0;

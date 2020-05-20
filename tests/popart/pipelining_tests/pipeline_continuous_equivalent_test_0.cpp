@@ -1,6 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE PipelineTrainingTest0
 
+#include <../random_util.hpp>
 #include <boost/test/unit_test.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
@@ -8,6 +9,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/session.hpp>
@@ -17,7 +19,6 @@
 
 #include <algorithm>
 #include <map>
-#include <random>
 #include <tuple>
 #include <vector>
 
@@ -27,11 +28,10 @@
 //
 BOOST_AUTO_TEST_CASE(ContinuousEquivalentTest0) {
 
-  int seed = 1011;
-  std::default_random_engine eng(seed);
-  std::uniform_real_distribution<float> fdis(0, 1);
-
   using namespace popart;
+  int seed = 1011;
+  DefaultRandomEngine eng(seed);
+  UniformRealDistribution<float> fdis(0.f, 1.f);
 
   auto builder     = Builder::create();
   auto aiOnnx      = builder->aiOnnxOpset9();
@@ -119,13 +119,14 @@ BOOST_AUTO_TEST_CASE(ContinuousEquivalentTest0) {
   ConstVoidData w5Data = {w5Vals.data(), sampleInfo};
   auto w5              = builder->addInitializedInputTensor(w5Data);
   auto act5            = aiOnnx.add({w5, act4}, "act5");
-
-  builder->addOutputTensor(act5);
+  float lambda         = 0.1;
+  auto l1 =
+      builder->aiGraphcoreOpset1().l1loss({act5}, lambda, ReductionType::Sum);
 
   auto proto = builder->getModelProto();
 
   // Setting anchors as act5
-  auto dataFlow = DataFlow(batchesPerStep, {{act5, AnchorReturnType("ALL")}});
+  auto dataFlow = DataFlow(batchesPerStep, {{act5, AnchorReturnType("All")}});
 
   // shard over 3 IPUs, and enable pipelining
   SessionOptions userOptions;
@@ -136,21 +137,17 @@ BOOST_AUTO_TEST_CASE(ContinuousEquivalentTest0) {
   float learnRate = 0.01;
   auto optimizer  = ConstSGD(learnRate);
 
-  float lambda = 0.1;
-  auto loss    = std::unique_ptr<Loss>(
-      new L1Loss(act5, "l1LossVal", lambda, ReductionType::SUM));
-
   auto device = createTestDevice(TEST_TARGET, 3);
 
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      {loss.get()},
+      l1,
       optimizer,
       device,
       InputShapeInfo(),
       userOptions,
-      popart::Patterns(PatternsLevel::DEFAULT));
+      popart::Patterns(PatternsLevel::Default));
 
   session->prepareDevice();
 

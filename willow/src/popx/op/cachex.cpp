@@ -25,30 +25,32 @@ void CacheStoreOpx::grow(poplar::program::Sequence &prog) const {
       cacheStoreOp.input->tensor(CacheStoreOp::getCachedTensorInIndex())->id,
       cacheStoreOp.getRemoteBufferId());
 
-  auto buffer   = dv_p->getRemoteBuffer(cacheStoreOp.getRemoteBufferId());
   auto inTensor = getInTensor(CacheStoreOp::getCachedTensorInIndex());
 
-  auto rbTensor = buffer.second;
+  poplar::Tensor rbTensor;
 
-  if (!rbTensor.is_initialized()) {
+  if (!dv_p->hasRemoteBuffer(cacheStoreOp.getRemoteBufferId())) {
     rbTensor =
         graph().clone(inTensor,
-                      inTensorId + "_CacheLoadTmp",
+                      inTensorId + "_CacheTmp",
                       poplar::TensorCloneMethod::PRESERVE_ORDER_AND_ALIASES);
-    dv_p->setRemoteBufferTensor(cacheStoreOp.getRemoteBufferId(),
-                                rbTensor.get());
+    dv_p->createRemoteBuffer(cacheStoreOp.getRemoteBufferId(), rbTensor);
   }
 
-  poplar::program::Copy tmp_copy_prog(inTensor, rbTensor.get());
+  auto buffer = dv_p->getRemoteBuffer(cacheStoreOp.getRemoteBufferId());
+
+  rbTensor = buffer.second.get();
+
+  poplar::program::Copy tmp_copy_prog(inTensor, rbTensor);
   prog.add(tmp_copy_prog);
 
   if (cacheStoreOp.input->hasIndex(
           CacheStoreOp::getRemoteBufferOffsetInIndex())) {
     auto offset = getInTensor(CacheStoreOp::getRemoteBufferOffsetInIndex());
-    poplar::program::Copy copy_prog(rbTensor.get(), buffer.first, offset);
+    poplar::program::Copy copy_prog(rbTensor, buffer.first, offset);
     prog.add(copy_prog);
   } else {
-    poplar::program::Copy copy_prog(rbTensor.get(), buffer.first);
+    poplar::program::Copy copy_prog(rbTensor, buffer.first);
     prog.add(copy_prog);
   }
 }
@@ -71,39 +73,45 @@ void CacheLoadOpx::grow(poplar::program::Sequence &prog) const {
       cacheLoadOp.output->tensor(CacheLoadOp::getCachedTensorOutIndex())->id,
       cacheLoadOp.getRemoteBufferId());
 
-  auto buffer = dv_p->getRemoteBuffer(cacheLoadOp.getRemoteBufferId());
   poplar::Tensor outTensor = getInTensor(CacheLoadOp::getCachedTensorInIndex());
 
-  auto rbTensor = buffer.second;
+  poplar::Tensor rbTensor;
 
-  if (!rbTensor.is_initialized()) {
+  if (!dv_p->hasRemoteBuffer(cacheLoadOp.getRemoteBufferId())) {
     rbTensor =
         graph().clone(outTensor,
-                      outTensorId + "_CacheLoadTmp",
+                      outTensorId + "_CacheTmp",
                       poplar::TensorCloneMethod::PRESERVE_ORDER_AND_ALIASES);
-    dv_p->setRemoteBufferTensor(cacheLoadOp.getRemoteBufferId(),
-                                rbTensor.get());
+    dv_p->createRemoteBuffer(cacheLoadOp.getRemoteBufferId(), rbTensor);
   }
+
+  auto buffer = dv_p->getRemoteBuffer(cacheLoadOp.getRemoteBufferId());
+  rbTensor    = buffer.second.get();
 
   if (cacheLoadOp.input->hasIndex(
           CacheLoadOp::getRemoteBufferOffsetInIndex())) {
     auto offset = getInTensor(CacheLoadOp::getRemoteBufferOffsetInIndex());
-    poplar::program::Copy copy_prog(buffer.first, rbTensor.get(), offset);
+    poplar::program::Copy copy_prog(buffer.first, rbTensor, offset);
     prog.add(copy_prog);
   } else {
-    poplar::program::Copy copy_prog(buffer.first, rbTensor.get());
+    poplar::program::Copy copy_prog(buffer.first, rbTensor);
     prog.add(copy_prog);
   }
 
-  poplar::program::Copy tmp_copy_prog(rbTensor.get(), outTensor);
+  poplar::program::Copy tmp_copy_prog(rbTensor, outTensor);
   prog.add(tmp_copy_prog);
 
+  if (hasInViewChangers(CacheLoadOp::getCachedTensorInIndex())) {
+    setOutViewChangers(
+        CacheLoadOp::getCachedTensorOutIndex(),
+        getInViewChangers(CacheLoadOp::getCachedTensorInIndex()));
+  }
   setOutTensor(CacheLoadOp::getCachedTensorOutIndex(), outTensor);
 }
 
 InputCreatorType CacheLoadOpx::getInputCreatorType(InIndex index) const {
   return index == CacheLoadOp::getCachedTensorInIndex()
-             ? InputCreatorType::CANUNWIND
+             ? InputCreatorType::CanUnwind
              : Opx::getInputCreatorType(index);
 }
 

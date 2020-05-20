@@ -134,5 +134,5 @@ def test_reshape_neg_one_and_zeros_grad(op_tester):
 
         return [o, a.grad, None]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')

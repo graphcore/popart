@@ -15,6 +15,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/restore.hpp>
@@ -106,14 +107,11 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTest0) {
     auto add0 = aiOnnx.add({w0Id, input0});
     auto add1 = aiOnnx.add({w1Id, add0});
     auto add2 = aiOnnx.add({w2Id, add1});
+    auto l1   = builder->aiGraphcoreOpset1().l1loss({add2}, 1.0);
 
     builder->addOutputTensor(add2);
     auto proto    = builder->getModelProto();
     auto dataFlow = DataFlow(stepSize);
-
-    float lambda = 1.0;
-    auto loss    = std::unique_ptr<Loss>(
-        new L1Loss(add2, "l1LossVal", lambda, ReductionType::SUM));
 
     SessionOptions userOptions;
 
@@ -122,12 +120,12 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTest0) {
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
         dataFlow,
-        {loss.get()},
+        l1,
         opt0, // construct with opt0, will switch to opt1 later
         device,
         InputShapeInfo(),
         SessionOptions(),
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
 
     session->prepareDevice();
     std::vector<float> v_input_x(stepDataInfo.nelms(), 3.1415);
@@ -143,12 +141,11 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTest0) {
     session->weightsFromHost();
 
     // run 1 with opt0
-    session->optimizerFromHost();
     session->run(stepio);
 
     // run 2 with opt1
-    session->updateOptimizer(&opt1);
-    session->optimizerFromHost();
+    session->updateOptimizerFromHost(&opt1);
+
     session->run(stepio);
 
     // read final weights back

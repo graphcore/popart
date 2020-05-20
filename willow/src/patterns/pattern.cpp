@@ -23,7 +23,6 @@ bool PreAliasPattern::touchesAnchored(Op *op) const {
   return false;
 };
 
-
 void Pattern::transferBaseProperties(Op *from, Op *to) const {
   if (from->hasVirtualGraphId()) {
     to->setVirtualGraphId(from->getVirtualGraphId());
@@ -33,6 +32,9 @@ void Pattern::transferBaseProperties(Op *from, Op *to) const {
   }
   if (from->hasPipelineStage()) {
     to->setPipelineStage(from->getPipelineStage());
+  }
+  if (from->hasBatchSerializedPhase()) {
+    to->setBatchSerializedPhase(from->getBatchSerializedPhase());
   }
 
   to->settings.recomputeType    = from->settings.recomputeType;

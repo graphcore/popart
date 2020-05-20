@@ -37,13 +37,14 @@ void GradCopyToHostOpx::grow(poplar::program::Sequence &prog) const {
   // If accumulation is enabled then the replicatedAllReduce is run from
   // SGD1AcclReduceOp
   if (dv_p->getReplicationFactor() > 1 && dv_p->getAccumulationFactor() == 1) {
-    weightDeltas =
-        popops::replicatedAllReduce(graph(),
-                                    weightDeltas,
-                                    popops::Operation::ADD,
-                                    prog,
-                                    debugPrefix("allReduce_Add"),
-                                    {{"useReplicatedImplementation", "true"}});
+    poplar::OptionFlags allReduceOptions = dv_p->gclOptions;
+    allReduceOptions.set("useReplicatedImplementation", "true");
+    weightDeltas = popops::replicatedAllReduce(graph(),
+                                               weightDeltas,
+                                               popops::Operation::ADD,
+                                               prog,
+                                               debugPrefix("allReduce_Add"),
+                                               allReduceOptions);
   }
 
   if (op_p->getIr().getSessionOptions().hostAllReduceRemoteBuffer) {

@@ -66,7 +66,7 @@ bool PreUniRepl::apply(Op *op) const {
 
 namespace {
 static PatternCreator<PreUniRepl>
-    PreUniReplPattern(PreAliasPatternType::PREUNIREPL, "PreUniRepl");
+    PreUniReplPattern(PreAliasPatternType::PreUniRepl, "PreUniRepl");
 }
 
 } // namespace popart

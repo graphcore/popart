@@ -99,7 +99,7 @@ def test_batchnorm_train_0_errorcases(op_tester):
 
         return [o_y]
 
-    op_tester.passes = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
 
     # Case 0 input tensor has less than 4 dimensions
     with pytest.raises(popart.popart_exception) as e_info:
@@ -194,7 +194,7 @@ def test_batchnorm_train_0(op_tester):
 
         return [_y, _input.grad, d__o]
 
-    op_tester.passes = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
     op_tester.atol *= 10
     op_tester.run(init_builder, reference, 'train')
 
@@ -275,7 +275,7 @@ def test_batchnorm_train_1(op_tester):
 
             return [_y, _input.grad, d__o]
 
-        op_tester.passes = ['PreUniRepl', 'ReciprocalGradOp']
+        op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
         session = op_tester.run(init_builder, reference, 'train')
 
         onnx_filename = "test_batchnorm_train_1.onnx"
@@ -352,7 +352,7 @@ def test_batchnorm_train_2(op_tester):
 
         return [_y, None, None]
 
-    op_tester.passes = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -412,7 +412,7 @@ def test_batchnorm_train_3(op_tester):
 
         return [_y, _input.grad, d__o]
 
-    op_tester.passes = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
 
     with pytest.raises(popart.popart_exception) as e_info:
         op_tester.run(init_builder, reference, 'train')
@@ -452,7 +452,7 @@ def test_batchnorm_train_3(op_tester):
 
 #         return [_input, None, None]
 
-#     op_tester.passes = ['PreUniRepl', 'ReciprocalGradOp']
+#     op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
 #     op_tester.run(init_builder, reference, 'train')
 
 
@@ -503,7 +503,7 @@ def test_batchnorm_test_0(op_tester):
 
         return [_y]
 
-    op_tester.passes = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -551,7 +551,7 @@ def test_batchnorm_test_1(op_tester):
 
         return [_y]
 
-    op_tester.passes = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -598,7 +598,7 @@ def test_batchnorm_test_2(op_tester):
 
         return [_y]
 
-    op_tester.passes = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -630,7 +630,7 @@ def test_batchnorm_test_3(op_tester):
         _input = torch.tensor(d1, requires_grad=False)
         return [_input]
 
-    op_tester.passes = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
     op_tester.check_shapes = False
     op_tester.run(init_builder, reference, 'infer')
 
@@ -658,7 +658,7 @@ def test_batchnorm_repeated():
     builder.addOutputTensor(o_y)
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o_y: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o_y: popart.AnchorReturnType("All")})
 
     device = tu.create_test_device()
 
@@ -666,7 +666,7 @@ def test_batchnorm_repeated():
     options.enableStochasticRounding = False
 
     session = popart.InferenceSession(fnModel=proto,
-                                      dataFeed=dataFlow,
+                                      dataFlow=dataFlow,
                                       deviceInfo=device,
                                       userOptions=options)
 

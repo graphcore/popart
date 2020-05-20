@@ -40,7 +40,7 @@ def test_auto_virtual_graph_subgraphs_2():
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("FINAL")})
+    dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("Final")})
 
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
@@ -48,7 +48,7 @@ def test_auto_virtual_graph_subgraphs_2():
     device = tu.create_test_device(numIpus=ipus)
 
     popart.InferenceSession(fnModel=proto,
-                            dataFeed=dataFlow,
+                            dataFlow=dataFlow,
                             userOptions=opts,
                             deviceInfo=device)
 
@@ -88,7 +88,7 @@ def test_auto_virtual_graph_subgraphs_4():
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("FINAL")})
+    dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("Final")})
 
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
@@ -96,7 +96,7 @@ def test_auto_virtual_graph_subgraphs_4():
     device = tu.create_test_device(numIpus=ipus)
 
     popart.InferenceSession(fnModel=proto,
-                            dataFeed=dataFlow,
+                            dataFlow=dataFlow,
                             userOptions=opts,
                             deviceInfo=device)
 
@@ -121,7 +121,7 @@ def test_auto_virtual_graph_inf_2():
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("FINAL")})
+    dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("Final")})
 
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
@@ -129,7 +129,7 @@ def test_auto_virtual_graph_inf_2():
     device = tu.create_test_device(numIpus=ipus)
 
     popart.InferenceSession(fnModel=proto,
-                            dataFeed=dataFlow,
+                            dataFlow=dataFlow,
                             userOptions=opts,
                             deviceInfo=device)
 
@@ -154,7 +154,7 @@ def test_auto_virtual_graph_inf_many():
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("FINAL")})
+    dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("Final")})
 
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
@@ -162,7 +162,7 @@ def test_auto_virtual_graph_inf_many():
     device = tu.create_test_device(numIpus=ipus)
 
     popart.InferenceSession(fnModel=proto,
-                            dataFeed=dataFlow,
+                            dataFlow=dataFlow,
                             userOptions=opts,
                             deviceInfo=device)
 
@@ -185,14 +185,11 @@ def test_auto_virtual_graph_train():
     output = x
     builder.addOutputTensor(output)
 
-    label = builder.addInputTensor(popart.TensorInfo("INT32", [1]))
-
-    loss = popart.NllLoss(output, label, "nllLossVal")
+    loss = builder.aiGraphcore.identityloss([output])
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(
-        1, {loss.output(0): popart.AnchorReturnType("FINAL")})
+    dataFlow = popart.DataFlow(1, {loss: popart.AnchorReturnType("Final")})
 
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
@@ -200,9 +197,9 @@ def test_auto_virtual_graph_train():
     device = tu.create_test_device(numIpus=ipus)
 
     popart.TrainingSession(fnModel=proto,
-                           dataFeed=dataFlow,
+                           dataFlow=dataFlow,
                            userOptions=opts,
-                           losses=[loss],
+                           loss=loss,
                            optimizer=popart.SGD(
                                {"defaultLearningRate": (0.01, True)}),
                            deviceInfo=device)
@@ -228,7 +225,7 @@ def test_auto_virtual_graph_not_enough_splits():
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("FINAL")})
+    dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("Final")})
 
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
@@ -237,7 +234,7 @@ def test_auto_virtual_graph_not_enough_splits():
 
     with pytest.raises(popart.popart_exception) as e_info:
         popart.InferenceSession(fnModel=proto,
-                                dataFeed=dataFlow,
+                                dataFlow=dataFlow,
                                 userOptions=opts,
                                 deviceInfo=device)
 

@@ -223,7 +223,7 @@ std::unique_ptr<Op> ConcatGradOp::clone() const {
 
 const std::vector<GradInOutMapper> &ConcatGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), ConcatOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getInIndex(), ConcatOp::getOutIndex(), GradOpInType::GradOut}};
 
   return inInfo;
 }

@@ -44,8 +44,8 @@ std::unique_ptr<Op> IdentityInplaceOp::clone() const {
 IdentityGradOp::IdentityGradOp(const IdentityOp &fwdOp)
     : IdentityOp(Onnx::GradOperators::IdentityGrad, fwdOp.getSettings()) {}
 
-IdentityGradOp::IdentityGradOp(const Settings &settings)
-    : IdentityOp(Onnx::GradOperators::IdentityGrad, settings) {}
+IdentityGradOp::IdentityGradOp(const Settings &settings_)
+    : IdentityOp(Onnx::GradOperators::IdentityGrad, settings_) {}
 
 std::unique_ptr<Op> IdentityGradOp::clone() const {
   return std::make_unique<IdentityGradOp>(*this);
@@ -53,7 +53,7 @@ std::unique_ptr<Op> IdentityGradOp::clone() const {
 
 const std::vector<GradInOutMapper> &IdentityGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), IdentityOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getInIndex(), IdentityOp::getOutIndex(), GradOpInType::GradOut}};
 
   return inInfo;
 }
@@ -75,59 +75,39 @@ std::vector<std::unique_ptr<Op>> IdentityLossOp::getGradOps() {
   return upops;
 }
 
-std::unique_ptr<Op> IdentityLoss::getOp(const Op::Settings &settings_) const {
-  Op::Settings copiedSettings  = settings_;
-  copiedSettings.vgraphId      = vgraphId;
-  copiedSettings.pipelineStage = pipelineStage_;
-  return std::unique_ptr<Op>(
-      new IdentityLossOp(op_type(), this, copiedSettings));
-}
-
-const OperatorIdentifier &IdentityLoss::op_type() const {
-  return Onnx::Operators::Identity_1;
-}
-
-std::vector<TensorId> IdentityLoss::getStreamTensorNames() const { return {}; }
-
-IdentityLoss::IdentityLoss(TensorId in_, TensorId out_, ReductionType rt_)
-    : Loss({in_}, out_, rt_) {}
-
-TensorId IdentityLoss::getInputId() const { return input(0); }
-
-const IdentityLoss *IdentityLossOp::identityl() const { return identityloss_; }
-const IdentityLoss *IdentityLossGradOp::identityl() const {
-  return identityloss_;
+bool IdentityLossOp::canBeReplacedByIdentity() {
+  return getReductionType() == ReductionType::NoReduction;
 }
 
 IdentityLossOp::IdentityLossOp(const OperatorIdentifier &_opid,
-                               const IdentityLoss *n,
+                               const ReductionType &reduction,
                                const Op::Settings &settings_)
-    : LossOp(_opid, settings_), identityloss_(n) {}
+    : LossOp(_opid, settings_), reduction_type_(reduction) {}
+
+void IdentityLossOp::setup() {
+  TensorInfo info0 = inInfo(getInIndex());
+
+  Shape outShape({});
+
+  if (getReductionType() == ReductionType::NoReduction) {
+    outShape = info0.shape();
+  }
+
+  outInfo(getOutIndex()).set(info0.dataType(), outShape);
+}
+
+IdentityLossGradOp::IdentityLossGradOp(const IdentityLossOp &op_)
+    : Op(Onnx::GradOperators::IdentityLossGrad, op_.getSettings()),
+      reduction_type_(op_.getReductionType()) {}
 
 void IdentityLossGradOp::setup() {
   // gradient of input has same shape as input to Id
   outInfo(getOutIndex()) = inInfo(getInIndex());
 }
 
-void IdentityLossOp::setup() {
-  if (inInfo(getInIndex()).rank() != 1) {
-    throw error(
-        "The identity loss {} (shape {}) is expecting a tensor of losses, 1 "
-        "per sample of shape [batch_size]. Please check prior loss calculation "
-        "ops to see if you have calculated the loss per-sample correctly.",
-        debugName(),
-        inInfo(getInIndex()).shape());
-  }
-  // output is a vector of length=batchsize, of the same type as input
-  TensorInfo info0 = inInfo(getInIndex());
-  outInfo(getOutIndex()).set(info0.dataType(), info0.shape());
+bool IdentityLossGradOp::canBeReplacedByIdentity() {
+  return getReductionType() == ReductionType::NoReduction;
 }
-
-bool IdentityLossOp::canBeReplacedByIdentity() { return true; }
-
-IdentityLossGradOp::IdentityLossGradOp(const IdentityLossOp &op_)
-    : Op(Onnx::GradOperators::IdentityLossGrad, op_.getSettings()),
-      identityloss_(op_.identityl()) {}
 
 std::unique_ptr<Op> IdentityLossGradOp::clone() const {
   return std::make_unique<IdentityLossGradOp>(*this);
@@ -137,7 +117,7 @@ const std::vector<GradInOutMapper> &IdentityLossGradOp::gradInputInfo() const {
   // Input at index 0 of this grad op is the input at index 0 of the identity
   // non-grad op.
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), IdentityLossOp::getInIndex(), GradOpInType::IN}};
+      {getInIndex(), IdentityLossOp::getInIndex(), GradOpInType::In}};
   return inInfo;
 }
 
@@ -163,12 +143,25 @@ static OpDefinition::DataTypes T = {DataType::UINT8,
                                     DataType::BOOL};
 
 // Do we support more types for this?
-static OpDefinition identityOpDef({OpDefinition::Inputs({{"input", T}}),
-                                   OpDefinition::Outputs({{"output", T}}),
-                                   OpDefinition::Attributes({})});
+static OpDefinition
+    identityOpDef({OpDefinition::Inputs({{"input", T}}),
+                   OpDefinition::Outputs({{"output", T}}),
+                   OpDefinition::Attributes({{"reduction", {"*"}}})});
 
 static OpCreator<IdentityOp> identityOpCreator(
     OpDefinitions({{Onnx::Operators::Identity_1, identityOpDef}}));
+static OpCreator<IdentityLossOp> identityLossOpCreator(
+    OpDefinitions({{Onnx::CustomOperators::IdentityLoss, identityOpDef}}),
+    [](const OperatorIdentifier &_opid,
+       const Op::Settings &settings,
+       const Attributes &attr = {}) -> std::unique_ptr<Op> {
+      std::string reductionStr =
+          attr.getAttribute<Attributes::String>("reduction");
+      ReductionType reduction = LossOp::reductionTypeFromString(reductionStr);
+      return std::unique_ptr<IdentityLossOp>(
+          new IdentityLossOp(_opid, reduction, settings));
+    },
+    true);
 } // namespace
 
 } // namespace popart

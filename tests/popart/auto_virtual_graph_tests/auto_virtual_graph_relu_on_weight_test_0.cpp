@@ -1,6 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE PipelineTrainingTest0
 
+#include <../random_util.hpp>
 #include <boost/test/unit_test.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
@@ -8,6 +9,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/session.hpp>
@@ -17,7 +19,6 @@
 
 #include <algorithm>
 #include <map>
-#include <random>
 #include <tuple>
 #include <vector>
 
@@ -27,8 +28,8 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
 
   // weights will be initiliased randomly
   int seed = 1011;
-  std::default_random_engine eng(seed);
-  std::uniform_real_distribution<float> fdis(0, 1);
+  DefaultRandomEngine eng(seed);
+  UniformRealDistribution<float> fdis(0.f, 1.f);
 
   // --------- Defining Tensor sizes ----------
   //
@@ -129,7 +130,9 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
   actOut      = addLayer(actOut, 5);
   actOut      = addLayer(actOut, 6);
 
-  builder->addOutputTensor(actOut);
+  float lambda = 1;
+  actOut =
+      builder->aiGraphcoreOpset1().l1loss({actOut}, lambda, ReductionType::Sum);
 
   auto proto = builder->getModelProto();
 
@@ -143,10 +146,6 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
   float learnRate = 1;
   auto optimizer  = ConstSGD(learnRate);
 
-  float lambda = 1;
-  auto loss    = std::unique_ptr<Loss>(
-      new L1Loss(actOut, "l1LossVal", lambda, ReductionType::SUM));
-
   auto device = createTestDevice(TEST_TARGET, 3);
 
   SessionOptions userOptions;
@@ -158,12 +157,12 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      {loss.get()},
+      actOut,
       optimizer,
       device,
       InputShapeInfo(),
       userOptions,
-      popart::Patterns(PatternsLevel::DEFAULT));
+      popart::Patterns(PatternsLevel::Default));
 
   session->prepareDevice();
 

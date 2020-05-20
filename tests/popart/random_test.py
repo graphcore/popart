@@ -13,16 +13,16 @@ def test_set_random_seed_error():
 
     i1 = builder.addInputTensor(popart.TensorInfo("FLOAT", [10]))
     [o] = builder.aiOnnx.dropout([i1], num_outputs=1, ratio=0.3)
-    builder.addOutputTensor(o)
+    loss = builder.aiGraphcore.identityloss([o])
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     s = popart.TrainingSession(fnModel=proto,
-                               dataFeed=dataFlow,
+                               dataFlow=dataFlow,
                                optimizer=popart.ConstSGD(0.1),
-                               losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
+                               loss=loss,
                                userOptions=popart.SessionOptions(),
                                deviceInfo=tu.create_test_device(numIpus=2))
 
@@ -52,23 +52,23 @@ def test_stochastic_rounding():
     iVar = builder.addInitializedInputTensor(var)
     [o_y, o_mean, o_var, o_smean, o_svar] = builder.aiOnnx.batchnormalization(
         [i1, iScale, iB, iMean, iVar], 5, epsilon, momentum)
+    loss = builder.aiGraphcore.identityloss([o_y])
     builder.addOutputTensor(o_y)
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o_y: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o_y: popart.AnchorReturnType("All")})
 
     device = tu.create_test_device()
 
     options = popart.SessionOptions()
     options.enableStochasticRounding = True
 
-    sess = popart.TrainingSession(
-        fnModel=proto,
-        optimizer=popart.ConstSGD(0.1),
-        losses=[popart.L1Loss(o_y, "l1LossVal", 0.1)],
-        dataFeed=dataFlow,
-        deviceInfo=device,
-        userOptions=options)
+    sess = popart.TrainingSession(fnModel=proto,
+                                  optimizer=popart.ConstSGD(0.1),
+                                  loss=loss,
+                                  dataFlow=dataFlow,
+                                  deviceInfo=device,
+                                  userOptions=options)
 
     anchors = sess.initAnchorArrays()
     sess.prepareDevice()
@@ -93,7 +93,7 @@ def test_stochastic_rounding_behaviour():
     opts.enableStochasticRounding = True
     session = popart.InferenceSession(
         fnModel=builder.getModelProto(),
-        dataFeed=popart.DataFlow(1, {out: popart.AnchorReturnType("ALL")}),
+        dataFlow=popart.DataFlow(1, {out: popart.AnchorReturnType("All")}),
         userOptions=opts,
         deviceInfo=tu.create_test_device())
 

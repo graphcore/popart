@@ -18,18 +18,22 @@ nOutChans = 10
 batchSize = 3
 batchesPerStep = 2
 anchors = {
-    "nllLossVal": popart.AnchorReturnType("FINAL"),
-    "probs": popart.AnchorReturnType("FINAL")
+    "nllLossVal": popart.AnchorReturnType("Final"),
 }
-dataFeed = popart.DataFlow(batchesPerStep, anchors)
+dataFlow = popart.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = popart.InputShapeInfo()
 inputShapeInfo.add("image0",
                    popart.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
 inputShapeInfo.add("label", popart.TensorInfo("INT32", [batchSize]))
-inNames = ["image0"]
+inNames = ["image0", "label"]
 cifarInIndices = {"image0": 0, "label": 1}
-outNames = ["probs"]
-losses = [popart.NllLoss("probs", "label", "nllLossVal")]
+outNames = ["nllLossVal"]
+
+
+def nllloss(logprobs, targets):
+    targets = targets.unsqueeze(1)
+    loss = torch.gather(logprobs, 1, targets)
+    return -loss.sum()
 
 
 class Module0(torch.nn.Module):
@@ -46,16 +50,10 @@ class Module0(torch.nn.Module):
         window_size = (int(x.size()[2]), int(x.size()[3]))
         x = torch.nn.functional.avg_pool2d(x, kernel_size=window_size)
         preprobs = torch.squeeze(x)
-        # probabilities:
-        # Note that for Nll, Pytorch requires logsoftmax input.
-        # We do this separately in the framework specfic code,
-        # torchwriter.py
         probs = self.softmax(preprobs)
-        # -> currently no support from pytorch
-        # -> for gather or log (pytorch 0.4.1)
-        # x = torch.gather(input = x, dim = 1, index= labels)
-        # loss = torch.log(x)
-        return probs
+        logprobs = torch.log(probs)
+        loss = nllloss(logprobs, inputs[1])
+        return loss
 
 
 # Set arbitrary seed so model weights are initialized to the
@@ -65,14 +63,13 @@ torch.manual_seed(1)
 torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
-    losses=losses,
     # large weight_decay term to test that it is definitely working
     optimizer=popart.SGD({
         "defaultLearningRate": (0.001, False),
         "defaultWeightDecay": (10.0, False)
     }),
     inputShapeInfo=inputShapeInfo,
-    dataFeed=dataFeed,
+    dataFlow=dataFlow,
     ### Torch specific:
     module=Module0(),
     samplesPerBatch=batchSize)

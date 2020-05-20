@@ -27,6 +27,7 @@ def conv_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
                               pads=[1, 1, 1, 1],
                               strides=[1, 1])
     o = builder.aiOnnx.relu([act])
+    loss = builder.aiGraphcore.identityloss([o])
 
     # Apply the setAvailableMemoryProportion to the convolution
     if apply_to_conv:
@@ -37,8 +38,6 @@ def conv_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
     else:
         builder.setAvailableMemoryProportion(o, avail_mem_prop)
 
-    builder.addOutputTensor(o)
-
     anchor_names = [
         o,
         popart.reservedGradientPrefix() + input_,
@@ -46,9 +45,9 @@ def conv_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
     ]
     training_dataFlow = popart.DataFlow(
         1, {
-            anchor_names[0]: popart.AnchorReturnType("ALL"),
-            anchor_names[1]: popart.AnchorReturnType("ALL"),
-            anchor_names[2]: popart.AnchorReturnType("ALL")
+            anchor_names[0]: popart.AnchorReturnType("All"),
+            anchor_names[1]: popart.AnchorReturnType("All"),
+            anchor_names[2]: popart.AnchorReturnType("All")
         })
 
     opts = popart.SessionOptions()
@@ -63,20 +62,18 @@ def conv_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
         np.float32)
 
     # Prepare the Training session
-    training_session = popart.TrainingSession(
-        fnModel=builder.getModelProto(),
-        dataFeed=training_dataFlow,
-        losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
-        optimizer=popart.ConstSGD(0.01),
-        userOptions=opts,
-        deviceInfo=device)
+    training_session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                              dataFlow=training_dataFlow,
+                                              loss=loss,
+                                              optimizer=popart.ConstSGD(0.01),
+                                              userOptions=opts,
+                                              deviceInfo=device)
 
     # Compile the training graph
     training_session.prepareDevice()
 
     # Run the training session
     training_session.weightsFromHost()
-    training_session.optimizerFromHost()
 
     training_anchors = training_session.initAnchorArrays()
     training_inputs = {input_: input_data}
@@ -103,6 +100,7 @@ def matmul_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
     weights = builder.addInitializedInputTensor(weight_data)
     act = builder.aiOnnx.matmul([input_, weights])
     o = builder.aiOnnx.relu([act])
+    loss = builder.aiGraphcore.identityloss([o])
 
     # Apply the setAvailableMemoryProportion to the matmul
     if apply_to_conv:
@@ -113,8 +111,6 @@ def matmul_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
     else:
         builder.setAvailableMemoryProportion(o, avail_mem_prop)
 
-    builder.addOutputTensor(o)
-
     anchor_names = [
         o,
         popart.reservedGradientPrefix() + input_,
@@ -122,9 +118,9 @@ def matmul_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
     ]
     training_dataFlow = popart.DataFlow(
         1, {
-            anchor_names[0]: popart.AnchorReturnType("ALL"),
-            anchor_names[1]: popart.AnchorReturnType("ALL"),
-            anchor_names[2]: popart.AnchorReturnType("ALL")
+            anchor_names[0]: popart.AnchorReturnType("All"),
+            anchor_names[1]: popart.AnchorReturnType("All"),
+            anchor_names[2]: popart.AnchorReturnType("All")
         })
 
     opts = popart.SessionOptions()
@@ -139,20 +135,18 @@ def matmul_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
         np.float32)
 
     # Prepare the Training session
-    training_session = popart.TrainingSession(
-        fnModel=builder.getModelProto(),
-        dataFeed=training_dataFlow,
-        losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
-        optimizer=popart.ConstSGD(0.01),
-        userOptions=opts,
-        deviceInfo=device)
+    training_session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                              dataFlow=training_dataFlow,
+                                              loss=loss,
+                                              optimizer=popart.ConstSGD(0.01),
+                                              userOptions=opts,
+                                              deviceInfo=device)
 
     # Compile the training graph
     training_session.prepareDevice()
 
     # Run the training session
     training_session.weightsFromHost()
-    training_session.optimizerFromHost()
 
     training_anchors = training_session.initAnchorArrays()
     training_inputs = {input_: input_data}

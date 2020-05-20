@@ -5,7 +5,6 @@
 #include <popart/logging.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
-#include <popart/op/loss.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/transforms/auto_virtual_graph.hpp>
@@ -70,7 +69,7 @@ float AutoVirtualGraph::costFn(Op *op,
         // the input at index 'indexGrad' to gradOp is
         switch (type) {
         // An input to the fwd Op. Ignore weights seen previously.
-        case GradOpInType::IN: {
+        case GradOpInType::In: {
           bool exists = inputs_seen.insert(indexFwd).second;
           if (exists) {
             // This will need checking
@@ -82,7 +81,7 @@ float AutoVirtualGraph::costFn(Op *op,
         }
 
         //  An output from the fwd Op.
-        case GradOpInType::OUT: {
+        case GradOpInType::Out: {
           bool exists = outputs_seen.insert(indexFwd).second;
           if (exists) {
             total +=
@@ -95,7 +94,7 @@ float AutoVirtualGraph::costFn(Op *op,
         // This is the data that passes through the backwards pass.
         // Unless the VarUpdate is done as a single compute_set
         // This input can be ignored as not 'always live'
-        case GradOpInType::GRADOUT: {
+        case GradOpInType::GradOut: {
           break;
         }
         }
@@ -378,10 +377,6 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
     }
   }
 
-  // Put the user defined losses on the final virtual graph.
-  for (auto &loss : graph.getLosses()) {
-    loss->virtualGraph(virtual_graph_id);
-  }
   return true;
 }
 

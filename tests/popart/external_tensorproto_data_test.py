@@ -82,10 +82,10 @@ def test_load_externally_saved_tensors():
 
     # Create builder from onnx model
     builder = popart.Builder(tmpfile_model)
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
     session = popart.InferenceSession(
         fnModel=builder.getModelProto(),
-        dataFeed=dataFlow,
+        dataFlow=dataFlow,
         deviceInfo=popart.DeviceManager().createCpuDevice())
     anchors = session.initAnchorArrays()
     session.prepareDevice()
@@ -119,9 +119,10 @@ def test_save_back_externally_saved_tensors():
         w_init = np.random.rand(*shape).astype('float32')
         initWeights.append(w_init)
         weightsIds.append(builder.addInitializedInputTensor(w_init))
-        anchorsDef[weightsIds[layer]] = popart.AnchorReturnType("ALL")
+        anchorsDef[weightsIds[layer]] = popart.AnchorReturnType("All")
         out = builder.aiOnnx.matmul([out, weightsIds[layer]])
 
+    loss = builder.aiGraphcore.identityloss([out])
     tmpdir = tempfile.mkdtemp()
     tmpfile_weights = os.path.join(tmpdir, "weights.onnx")
     builder.saveInitializersExternally(weightsIds, tmpfile_weights)
@@ -137,10 +138,10 @@ def test_save_back_externally_saved_tensors():
     opts = popart.SessionOptions()
     session = popart.TrainingSession(
         fnModel=builder.getModelProto(),
-        dataFeed=popart.DataFlow(1, anchorsDef),
+        dataFlow=popart.DataFlow(1, anchorsDef),
         deviceInfo=popart.DeviceManager().createCpuDevice(),
         optimizer=popart.ConstSGD(10),
-        losses=[popart.L1Loss(out, out + "/loss", 0.1)])
+        loss=loss)
 
     anchors = session.initAnchorArrays()
     inputs = {in0: np.random.rand(*shape).astype('float32')}
@@ -148,7 +149,7 @@ def test_save_back_externally_saved_tensors():
 
     session.prepareDevice()
     session.weightsFromHost()
-    session.optimizerFromHost()
+
     session.run(stepio)
 
     # Check the weights have been updated

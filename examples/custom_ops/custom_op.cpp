@@ -184,8 +184,8 @@ public:
   //
   virtual const std::vector<popart::GradInOutMapper> &gradInputInfo() const {
     static const std::vector<popart::GradInOutMapper> inInfo = {
-        {0, 0, popart::GradOpInType::GRADOUT},
-        {1, 0, popart::GradOpInType::OUT}};
+        {0, 0, popart::GradOpInType::GradOut},
+        {1, 0, popart::GradOpInType::Out}};
     return inInfo;
   }
 

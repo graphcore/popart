@@ -11,6 +11,7 @@
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/session.hpp>
@@ -64,28 +65,26 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add0) {
   auto inId       = builder->addInputTensor(inInfo);
   auto outShapeId = aiOnnx.add({shape0Id, shape1Id});
   auto outId      = aiOnnx.reshape({inId, outShapeId});
-  builder->addOutputTensor(outId);
+  auto l1         = builder->aiGraphcoreOpset1().l1loss({outId}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto art       = AnchorReturnType("ALL");
+  auto art       = AnchorReturnType("All");
   auto dataFlow  = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(outId, "l1LossVal", 0.1, ReductionType::SUM)};
-  auto device = createTestDevice(TEST_TARGET);
+  auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              losses,
+              l1,
               &optimizer,
               *device,
               {}, // no SessionOptions
-              Patterns({PreAliasPatternType::POSTNREPL})});
+              Patterns({PreAliasPatternType::PostNRepl})});
 
   // Check the ir
   // 1) that the Reshape Op is present,
@@ -151,18 +150,16 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add1) {
   auto a2      = aiOnnx.add({a0, a1}, "a2");
   auto inputId = builder->addInputTensor(inputInfo);
   auto outId   = aiOnnx.matmul({a2, inputId});
-  builder->addOutputTensor(outId);
+  auto l1      = builder->aiGraphcoreOpset1().l1loss({outId}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto art       = AnchorReturnType("ALL");
+  auto art       = AnchorReturnType("All");
   auto dataFlow  = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(outId, "l1LossVal", 0.1, ReductionType::SUM)};
-  auto device = createTestDevice(TEST_TARGET);
+  auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
@@ -172,7 +169,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add1) {
               {}, // no optimizer
               *device,
               {}, // no SessionOptions
-              Patterns({PreAliasPatternType::POSTNREPL})});
+              Patterns({PreAliasPatternType::PostNRepl})});
 
   // Check that the Add Op is has been removed from the IR
   // by ConstExpr folding
@@ -234,7 +231,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add2) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto art      = AnchorReturnType("ALL");
+  auto art      = AnchorReturnType("All");
   auto dataFlow = DataFlow(1, {{o, art}});
   auto device   = createTestDevice(TEST_TARGET);
 
@@ -246,7 +243,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add2) {
               {}, // no optimizer
               *device,
               {}, // no SessionOptions
-              Patterns({PreAliasPatternType::POSTNREPL})});
+              Patterns({PreAliasPatternType::PostNRepl})});
 
   // Check that the producer of a1 Add Op is has been removed from the IR
   // by ConstExpr folding
@@ -300,7 +297,7 @@ template <typename T> void ConstExprTest_Add_Type(std::string type) {
 
   auto proto = builder->getModelProto();
 
-  auto art      = AnchorReturnType("ALL");
+  auto art      = AnchorReturnType("All");
   auto dataFlow = DataFlow(1, {{outId, art}});
 
   auto device = popart::createTestDevice(TEST_TARGET);
@@ -309,10 +306,9 @@ template <typename T> void ConstExprTest_Add_Type(std::string type) {
       proto,
       dataFlow,
       device,
-      {}, // no losses
       InputShapeInfo(),
       {}, // no SessionOptions
-      Patterns({PreAliasPatternType::POSTNREPL}));
+      Patterns({PreAliasPatternType::PostNRepl}));
 
   T rawInputData[4] = {(T)1.1f, 2, 3, 4};
   popart::NDArrayWrapper<T> inData(rawInputData, {2, 2});
@@ -372,28 +368,26 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Div0) {
   auto inId       = builder->addInputTensor(inInfo);
   auto outShapeId = aiOnnx.div({shape0Id, shape1Id});
   auto outId      = aiOnnx.reshape({inId, outShapeId});
-  builder->addOutputTensor(outId);
+  auto l1         = builder->aiGraphcoreOpset1().l1loss({outId}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto art       = AnchorReturnType("ALL");
+  auto art       = AnchorReturnType("All");
   auto dataFlow  = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(outId, "l1LossVal", 0.1, ReductionType::SUM)};
-  auto device = createTestDevice(TEST_TARGET);
+  auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              losses,
+              l1,
               &optimizer,
               *device,
               {}, // no SessionOptions
-              Patterns({PreAliasPatternType::POSTNREPL})});
+              Patterns({PreAliasPatternType::PostNRepl})});
 
   // Check the ir
   // 1) that the Reshape Op is present,
@@ -463,28 +457,26 @@ void ConstExprTest_Elementwise_Test(
   auto outShapeId = elementWiseFn(builder, {in0Id, in1Id});
 
   auto outId = aiOnnx.add({dataId, outShapeId});
-  builder->addOutputTensor(outId);
+  auto l1    = builder->aiGraphcoreOpset1().l1loss({outId}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto art       = AnchorReturnType("ALL");
+  auto art       = AnchorReturnType("All");
   auto dataFlow  = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(outId, "l1LossVal", 0.1, ReductionType::SUM)};
-  auto device = createTestDevice(TEST_TARGET);
+  auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              losses,
+              l1,
               &optimizer,
               *device,
               {}, // no SessionOptions
-              Patterns({PreAliasPatternType::POSTNREPL})});
+              Patterns({PreAliasPatternType::PostNRepl})});
 
   // Check the ir
   // 1) that the Add Op is present,

@@ -29,8 +29,8 @@ const std::map<int, int> &AbsGradOp::gradOutToNonGradIn() const {
 
 const std::vector<GradInOutMapper> &AbsGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getGradInIndex(), AbsOp::getOutIndex(), GradOpInType::GRADOUT},
-      {getFwdArgInIndex(), AbsOp::getInIndex(), GradOpInType::IN}};
+      {getGradInIndex(), AbsOp::getOutIndex(), GradOpInType::GradOut},
+      {getFwdArgInIndex(), AbsOp::getInIndex(), GradOpInType::In}};
   return inInfo;
 }
 

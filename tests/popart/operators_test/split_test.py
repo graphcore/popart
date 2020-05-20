@@ -75,5 +75,5 @@ def test_split_grad(op_tester):
 
         return [out, x.grad, None]
 
-    op_tester.passes = ['SplitGradOpToConcat']
+    op_tester.patterns = ['SplitGradOpToConcat']
     op_tester.run(init_builder, reference, 'train')

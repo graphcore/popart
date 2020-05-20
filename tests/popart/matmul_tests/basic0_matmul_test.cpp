@@ -74,8 +74,8 @@ BOOST_AUTO_TEST_CASE(MatMul_Case1) {
 
       auto gradInfo = lhsGradOp->gradInputInfo();
       std::vector<GradInOutMapper> expectedGradInfo = {
-          {0, 0, popart::GradOpInType::GRADOUT},
-          {1, 1, popart::GradOpInType::IN}};
+          {0, 0, popart::GradOpInType::GradOut},
+          {1, 1, popart::GradOpInType::In}};
       BOOST_CHECK(gradInfo == expectedGradInfo);
 
       auto mapping                       = lhsGradOp->gradOutToNonGradIn();
@@ -98,8 +98,8 @@ BOOST_AUTO_TEST_CASE(MatMul_Case1) {
 
       auto gradInfo = rhsGradOp->gradInputInfo();
       std::vector<GradInOutMapper> expectedGradInfo = {
-          {0, 0, popart::GradOpInType::GRADOUT},
-          {1, 0, popart::GradOpInType::IN}};
+          {0, 0, popart::GradOpInType::GradOut},
+          {1, 0, popart::GradOpInType::In}};
 
       BOOST_CHECK(gradInfo == expectedGradInfo);
 
@@ -177,8 +177,8 @@ BOOST_AUTO_TEST_CASE(MatMul_Case2) {
 
       auto gradInfo = lhsGradOp->gradInputInfo();
       std::vector<GradInOutMapper> expectedGradInfo = {
-          {0, 0, popart::GradOpInType::GRADOUT},
-          {1, 1, popart::GradOpInType::IN}};
+          {0, 0, popart::GradOpInType::GradOut},
+          {1, 1, popart::GradOpInType::In}};
       BOOST_CHECK(gradInfo == expectedGradInfo);
 
       auto mapping                       = lhsGradOp->gradOutToNonGradIn();
@@ -201,8 +201,8 @@ BOOST_AUTO_TEST_CASE(MatMul_Case2) {
 
       auto gradInfo = rhsGradOp->gradInputInfo();
       std::vector<GradInOutMapper> expectedGradInfo = {
-          {0, 0, popart::GradOpInType::GRADOUT},
-          {1, 0, popart::GradOpInType::IN}};
+          {0, 0, popart::GradOpInType::GradOut},
+          {1, 0, popart::GradOpInType::In}};
 
       BOOST_CHECK(gradInfo == expectedGradInfo);
 

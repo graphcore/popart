@@ -104,10 +104,10 @@ const std::vector<GradInOutMapper> &DynamicZeroGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
       {getUpdateInIndex(),
        DynamicBinaryBaseOp::getOutIndex(),
-       GradOpInType::GRADOUT},
+       GradOpInType::GradOut},
       {getIndexInIndex(),
        DynamicBinaryBaseOp::getIndexInIndex(),
-       GradOpInType::IN}};
+       GradOpInType::In}};
   return inInfo;
 }
 

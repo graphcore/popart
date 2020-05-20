@@ -15,10 +15,10 @@ namespace popart {
 // returned for a tensor, currently the 3 options are:
 
 enum class AnchorReturnTypeId {
-  FINAL = 0, // return just the final micro-batch(es) of the step
-  EVERYN,    // return every Nth batch in the step
-  ALL,       // return all batches in the step.
-  SUM, // return the same shape as FINAL, with accumulation over all aditional
+  Final = 0, // return just the final micro-batch(es) of the step
+  EveryN,    // return every Nth batch in the step
+  All,       // return all batches in the step.
+  Sum, // return the same shape as FINAL, with accumulation over all aditional
        // Tensor dimensions.
 };
 
@@ -64,7 +64,7 @@ public:
   DataFlow(int batchesPerStep, const std::map<TensorId, AnchorReturnType> &);
   DataFlow(int batchesPerStep,
            const std::vector<TensorId> tIds,
-           const AnchorReturnType &art = AnchorReturnType("ALL"));
+           const AnchorReturnType &art = AnchorReturnType("All"));
 
   DataFlow(const DataFlow &rhs) = default;
   DataFlow &operator=(const DataFlow &rhs) = default;
@@ -79,13 +79,12 @@ public:
   std::size_t hash() const;
 
 private:
-  /// The number of batches processed by the backend in one call to train,
-  /// evaluate or infer.
+  /// The number of batches processed by the backend in one call to train
+  /// or infer.
   int batchesPerStep_;
 
   /// The set of tensors to return to the user after execution, and how
-  /// frequently they are returned during multi-batch training, inference,
-  /// or evaluation
+  /// frequently they are returned during multi-batch training or inference
   std::map<TensorId, AnchorReturnType> m_anchors;
 
   /// The set of anchor tensors

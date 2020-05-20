@@ -57,9 +57,9 @@ public:
   // rhs maps to this in a repeated way.
   bool fitsCleanly(const Match &rhs) const;
 
-  void setValue(float v) { value = v; }
+  void setValue(double v) { value = v; }
 
-  float getValue() const { return value; }
+  double getValue() const { return value; }
 
   // the indices in a schedule at which the sequences start at
   std::vector<Start> starts;
@@ -68,7 +68,7 @@ public:
   int length;
 
 private:
-  float value = -1;
+  double value = -1;
 };
 
 // true iff  v1 is a subset of v0

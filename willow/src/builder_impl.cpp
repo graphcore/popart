@@ -255,7 +255,7 @@ TensorId BuilderImpl::addUntypedInputTensor(const std::string &debugPrefix) {
   return id;
 }
 
-void BuilderImpl::addInputTensorFromHigherScope(const TensorId &tensorId) {
+void BuilderImpl::addInputTensorFromParentGraph(const TensorId &tensorId) {
 
   // Should we check for uniqueness of name? TODO T8278
 

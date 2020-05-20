@@ -1,6 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Train0MatmulTest
 
+#include <../random_util.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/test/unit_test.hpp>
 #include <popart/builder.hpp>
@@ -9,6 +10,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/session.hpp>
@@ -18,7 +20,6 @@
 
 #include <algorithm>
 #include <map>
-#include <random>
 #include <tuple>
 #include <vector>
 
@@ -38,8 +39,8 @@ BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
 
     // we will generate random initializations
     int seed = 1013;
-    std::default_random_engine eng(seed);
-    std::uniform_real_distribution<float> fdis(-4, 4);
+    DefaultRandomEngine eng(seed);
+    UniformRealDistribution<float> fdis(-4.f, 4.f);
 
     // prepare a Builder for creating onnx model
     auto bder   = Builder::create();
@@ -64,10 +65,11 @@ BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
     // matrix C = A * B (output of network)
     TensorInfo C_info{"FLOAT", std::vector<int64_t>{M, N}};
     TensorId C_id = aiOnnx.matmul({A_id, B_id});
-    bder->addOutputTensor(C_id);
 
     // l1 loss with penalty term, will be applied to C
     float lossLambda = 0.26;
+    auto l1          = bder->aiGraphcoreOpset1().l1loss(
+        {C_id}, lossLambda, ReductionType::Sum);
 
     // compute the baseline
     std::vector<float> v_C_data(C_info.nelms());
@@ -100,7 +102,7 @@ BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
 
     auto proto      = bder->getModelProto();
     auto modelProto = io::getModelFromString(proto);
-    auto art        = AnchorReturnType("ALL");
+    auto art        = AnchorReturnType("All");
     // one batch per step
     int batchesPerStep = 1;
     auto dataFlow      = DataFlow(batchesPerStep,
@@ -115,7 +117,7 @@ BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
     if (genPdf) {
       opts.firstDotOp = 0;
       opts.finalDotOp = 100;
-      opts.dotChecks.insert(DotCheck::FINAL);
+      opts.dotChecks.insert(DotCheck::Final);
       opts.logDir = "./dotfiles";
       if (!boost::filesystem::exists(opts.logDir)) {
         boost::filesystem::create_directory(opts.logDir);
@@ -125,19 +127,16 @@ BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
     // training info
     float learnRate = 0.321;
     auto optimizer  = ConstSGD(learnRate);
-    std::unique_ptr<Loss> l1_loss(
-        new L1Loss(C_id, "l1LossVal", lossLambda, ReductionType::SUM));
-    std::vector<Loss *> losses{l1_loss.get()};
 
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
         dataFlow,
-        losses,
+        l1,
         optimizer,
         device,
         popart::InputShapeInfo(),
         opts,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
 
     // prepare the anchors. We have the output C,
     std::vector<float> raw_C_out(C_info.nelms());

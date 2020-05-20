@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(allocator_conv_control) {
   Ir ir;
   ir.prepare({io::getModelFromString(builder->getModelProto()),
               InputShapeInfo(),
-              DataFlow(1, {{o, AnchorReturnType("ALL")}}),
+              DataFlow(1, {{o, AnchorReturnType("All")}}),
               {},         // no losses
               {},         // no optimizer
               *cpuDevice, // no deviceInfo
@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE(allocator_single_input_viewchanging_conv) {
   Ir ir;
   ir.prepare({io::getModelFromString(builder->getModelProto()),
               InputShapeInfo(),
-              DataFlow(1, {{o, AnchorReturnType("ALL")}}),
+              DataFlow(1, {{o, AnchorReturnType("All")}}),
               {},         // no losses
               {},         // no optimizer
               *cpuDevice, // noDeviceInfo

@@ -102,7 +102,7 @@ bool areIntersecting(int seq_length0,
 // whose incremental value is below threshold
 std::vector<Match> applyIncrementalThreshold(const std::vector<Match> &dfm,
                                              int schedule_size,
-                                             float threshold) {
+                                             double threshold) {
 
   // pointers into dfm, this vector contains the starts
   // of all covering Matches. Recall we start from the
@@ -123,9 +123,9 @@ std::vector<Match> applyIncrementalThreshold(const std::vector<Match> &dfm,
   std::vector<Match> final_matches;
 
   for (int i = 0; i < dfm.size(); ++i) {
-    Start start0    = dfm[i].starts[0];
-    int len         = dfm[i].length;
-    float vChildren = 0.0f;
+    Start start0     = dfm[i].starts[0];
+    int len          = dfm[i].length;
+    double vChildren = 0.0f;
     for (int j = start0; j < start0 + len; ++j) {
       if (blanket[j]) {
         vChildren += blanket[j]->getValue();

@@ -11,8 +11,8 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
-#include <popart/op/nll.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
@@ -34,27 +34,25 @@ BOOST_AUTO_TEST_CASE(Inplace_basic0) {
   builder->setInplacePreferences(h0, {{"ReluInplace", 1e8}});
   auto h1  = aiOnnx.relu({h0});
   auto out = aiOnnx.relu({h1});
-  builder->addOutputTensor(out);
+  auto l1  = builder->aiGraphcoreOpset1().l1loss({out}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+  auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("All")}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(out, "l1LossVal", 0.1, ReductionType::SUM)};
-  auto device = createTestDevice(TEST_TARGET);
+  auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              losses,
+              l1,
               &optimizer,
               *device,
               {},
-              Patterns(PatternsLevel::NONE).enableInPlace(false)});
+              Patterns(PatternsLevel::NoPatterns).enableInPlace(false)});
 
   // Check the ir
   auto opsOfTypeRelu = ir.opsOfType(Onnx::AiOnnx::OpSet9::Relu);
@@ -86,18 +84,16 @@ BOOST_AUTO_TEST_CASE(Inplace_basic1) {
 
   auto out = aiOnnx.relu({h1});
   builder->virtualGraph(out, 4);
-  builder->addOutputTensor(out);
+  auto l1 = builder->aiGraphcoreOpset1().l1loss({out}, 0.1);
+  builder->virtualGraph(l1, 4);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+  auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("All")}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(out, "l1LossVal", 0.1, ReductionType::SUM)};
-  losses[0]->virtualGraph(0);
-  auto device = createTestDevice(TEST_TARGET);
+  auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
 
@@ -106,11 +102,11 @@ BOOST_AUTO_TEST_CASE(Inplace_basic1) {
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              losses,
+              l1,
               &optimizer,
               *device,
               opts,
-              Patterns(PatternsLevel::NONE).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
 
   // Check the ir
   // first check that all 3 relus have been inplaced

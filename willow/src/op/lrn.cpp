@@ -59,8 +59,8 @@ std::unique_ptr<Op> LRNGradOp::clone() const {
 
 const std::vector<GradInOutMapper> &LRNGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), LRNOp::getOutIndex(), GradOpInType::GRADOUT},
-      {getFwdInInIndex(), LRNOp::getInIndex(), GradOpInType::IN}};
+      {getInIndex(), LRNOp::getOutIndex(), GradOpInType::GradOut},
+      {getFwdInInIndex(), LRNOp::getInIndex(), GradOpInType::In}};
   return inInfo;
 }
 

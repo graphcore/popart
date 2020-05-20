@@ -16,10 +16,10 @@ def test_net_from_string(tmpdir):
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     popart.InferenceSession(fnModel=proto,
-                            dataFeed=dataFlow,
+                            dataFlow=dataFlow,
                             deviceInfo=tu.create_test_device())
 
 
@@ -37,15 +37,15 @@ def test_net_from_file(tmpdir):
     with open("test.onnx", "wb") as f:
         f.write(proto)
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     popart.InferenceSession(fnModel="test.onnx",
-                            dataFeed=dataFlow,
+                            dataFlow=dataFlow,
                             deviceInfo=tu.create_test_device())
 
 
 def test_net_failure1(tmpdir):
-    # Anchor tensor required in inference and eval modes
+    # Anchor tensor required in inference mode
 
     builder = popart.Builder()
 
@@ -60,14 +60,12 @@ def test_net_failure1(tmpdir):
 
     with pytest.raises(popart.popart_exception) as e_info:
         popart.InferenceSession(fnModel=proto,
-                                dataFeed=dataFlow,
+                                dataFlow=dataFlow,
                                 deviceInfo=tu.create_test_device())
 
     assert (e_info.type == popart.popart_exception)
-    assert (
-        e_info.value.args[0] ==
-        "User must specify an anchor tensor when doing inference or evalulation."
-    )
+    assert (e_info.value.args[0] ==
+            "User must specify an anchor tensor when doing inference.")
 
 
 def test_net_failure2(tmpdir):
@@ -76,7 +74,7 @@ def test_net_failure2(tmpdir):
 
     with pytest.raises(popart.popart_exception) as e_info:
         popart.InferenceSession(fnModel="nothing",
-                                dataFeed=dataFlow,
+                                dataFlow=dataFlow,
                                 deviceInfo=tu.create_test_device())
 
     assert (e_info.type == popart.popart_exception)

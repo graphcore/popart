@@ -38,7 +38,7 @@ def test_dynamicslice(op_tester):
             result.append(data[:, sliceid * 3:(sliceid + 1) * 3, :])
         return result
 
-    op_tester.passes = popart.PatternsLevel.ALL
+    op_tester.patterns = popart.PatternsLevel.All
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -94,7 +94,7 @@ def test_dynamicslice_training(op_tester):
         result = [sum, torch.tensor(d__o), tensor.grad] + result
         return result
 
-    op_tester.passes = popart.PatternsLevel.ALL
+    op_tester.patterns = popart.PatternsLevel.All
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -151,12 +151,12 @@ def test_dynamicslice_overlap_wrong(op_tester):
         # but dynamicslice with noOverlap=True gives a wrong gradient result
         # due to overlapping slices
         tensor.grad += torch.tensor(
-            np.asarray([0.0, 0.0, 0.0, -0.1, -0.1, 0.0, 0.0, 0.0, 0.0, 0.0]))
+            np.asarray([0.0, 0.0, 0.0, -1.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
 
         result = [sum, torch.tensor(d__o), tensor.grad] + result
         return result
 
-    op_tester.passes = popart.PatternsLevel.ALL
+    op_tester.patterns = popart.PatternsLevel.All
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -217,5 +217,5 @@ def test_dynamicslice_overlap_correct(op_tester):
         result = [sum, torch.tensor(d__o), tensor.grad] + result
         return result
 
-    op_tester.passes = popart.PatternsLevel.ALL
+    op_tester.patterns = popart.PatternsLevel.All
     op_tester.run(init_builder, reference, 'train')

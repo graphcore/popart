@@ -40,13 +40,13 @@ ReduceLogSumExpGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
       {getInIndex(),
        ReduceLogSumExpGradOp::getOutIndex(),
-       GradOpInType::GRADOUT},
+       GradOpInType::GradOut},
       {getFwdInInIndex(),
        ReduceLogSumExpGradOp::getInIndex(),
-       GradOpInType::IN},
+       GradOpInType::In},
       {getFwdOutInIndex(),
        ReduceLogSumExpGradOp::getOutIndex(),
-       GradOpInType::OUT}};
+       GradOpInType::Out}};
 
   return inInfo;
 }

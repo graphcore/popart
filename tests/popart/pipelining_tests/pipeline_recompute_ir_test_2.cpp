@@ -10,6 +10,7 @@
 #include <popart/filereader.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/nll.hpp>
@@ -127,11 +128,11 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest2) {
     act = getPipe(act, 2);
     act = getPipe(act, 3);
 
-    builder->addOutputTensor(act);
+    auto l1 = builder->aiGraphcoreOpset1().l1loss({act}, 0.1);
 
     auto proto      = builder->getModelProto();
     auto modelProto = io::getModelFromString(proto);
-    auto dataFlow   = DataFlow(100, {{act, AnchorReturnType("ALL")}});
+    auto dataFlow   = DataFlow(100, {{act, AnchorReturnType("All")}});
 
     SessionOptions userOptions;
     userOptions.virtualGraphMode     = VirtualGraphMode::Auto;
@@ -149,12 +150,9 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest2) {
 
     auto optimizer = ConstSGD(0.01);
 
-    auto loss1 =
-        std::make_shared<L1Loss>(act, "l1LossVal_1", 0.1, ReductionType::MEAN);
-
     auto device = createTestDevice(TEST_TARGET, nIpus);
 
-    Patterns patterns(PatternsLevel::DEFAULT);
+    Patterns patterns(PatternsLevel::Default);
     patterns.enableMatMulOp(false);
     patterns.enableMatMulLhsGradOp(false);
     patterns.enableMatMulRhsGradOp(false);
@@ -163,7 +161,7 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest2) {
     ir.prepare({modelProto,
                 InputShapeInfo(),
                 dataFlow,
-                {loss1},
+                l1,
                 &optimizer,
                 *device,
                 userOptions,
@@ -177,9 +175,9 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest2) {
         ++stashIpus[op->getVirtualGraphId()];
       }
 
-      // Backwards pass Ops must not be RECOMPUTE
+      // Backwards pass Ops must not be Recompute
       if (op->fromLoss == PathFromLoss::Yes) {
-        BOOST_CHECK(op->settings.recomputeType == RecomputeType::CHECKPOINT);
+        BOOST_CHECK(op->settings.recomputeType == RecomputeType::Checkpoint);
       }
     }
 

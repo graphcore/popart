@@ -48,7 +48,7 @@ def test_softmax_grad(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -160,5 +160,5 @@ def _test_softmax_grad(op_tester, data, axis):
 
         return [mult_softmax_out, reshaped_softmax_out, torch_data.grad, None]
 
-    op_tester.passes = op_tester.passes = ['PreUniRepl', 'MulArgGradOp']
+    op_tester.patterns = op_tester.patterns = ['PreUniRepl', 'MulArgGradOp']
     op_tester.run(init_builder, reference, 'train')

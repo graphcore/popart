@@ -83,12 +83,12 @@ def test_anchor_output():
         [micro_batch_size, CHANNELS * DATA_LEN * DATA_LEN])
     o = builder.aiOnnx.relu([o])
     o = builder.aiOnnx.softmax([o])
-    builder.addOutputTensor(o)
+    nll = builder.aiGraphcore.nllloss([o, lb])
 
     GRAD = popart.reservedGradientPrefix() + w
     ACCL = popart.reservedAcclToAccumulatorPrefix(
     ) + popart.reservedGradientPrefix() + w
-    art = popart.AnchorReturnType("ALL")
+    art = popart.AnchorReturnType("All")
     data_flow = popart.DataFlow(BATCHES_PER_STEP, {
         o: art,
         a: art,
@@ -104,8 +104,8 @@ def test_anchor_output():
         pytest.skip("Test needs to run on IPU, but none are available")
 
     session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                     dataFeed=data_flow,
-                                     losses=[popart.NllLoss(o, lb, "loss")],
+                                     dataFlow=data_flow,
+                                     loss=nll,
                                      optimizer=popart.ConstSGD(LEARNING_RATE),
                                      userOptions=opts,
                                      deviceInfo=device)

@@ -36,7 +36,7 @@ std::vector<std::unique_ptr<Op>> PrintTensorOp::getGradOps() {
 
 const std::vector<GradInOutMapper> &PrintTensorOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), PrintTensorOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getInIndex(), PrintTensorOp::getOutIndex(), GradOpInType::GradOut}};
   return inInfo;
 }
 

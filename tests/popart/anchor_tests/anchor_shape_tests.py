@@ -95,7 +95,7 @@ def return_anchors(anchorDict, label_array):
     o = builder.reshape_const(
         builder.aiOnnx, [o],
         [micro_batch_size, CHANNELS * DATA_LEN * DATA_LEN])
-    builder.addOutputTensor(o)
+    nll = builder.aiGraphcore.nllloss([o, lb])
 
     anchors = {}
     anchors[o] = popart.AnchorReturnType(anchorDict["ReturnType"])
@@ -113,8 +113,8 @@ def return_anchors(anchorDict, label_array):
         return None
 
     session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                     dataFeed=data_flow,
-                                     losses=[popart.NllLoss(o, lb, "loss")],
+                                     dataFlow=data_flow,
+                                     loss=nll,
                                      optimizer=popart.SGD({
                                          "defaultLearningRate":
                                          (LEARNING_RATE, True),
@@ -147,7 +147,7 @@ def return_anchors(anchorDict, label_array):
             lb: label_array
         }, anchors)
     session.weightsFromHost()
-    session.optimizerFromHost()
+
     session.run(inference_stepio)
 
     return anchors
@@ -183,7 +183,7 @@ def test_all_anchor_returns():
             ACCL: [DATA_LEN, DATA_LEN]
         }
 
-        # Add in BPS if all batches are requested. (AnchorReturnType("ALL"))
+        # Add in BPS if all batches are requested. (AnchorReturnType("All"))
         # Add in a replication dimension if needed.
         if d["ReplicationFactor"] > 1:
             for k in expected_shapes:

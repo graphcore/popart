@@ -15,11 +15,11 @@ nOutChans = 8
 batchSize = 2
 batchesPerStep = 4
 anchors = {
-    "l1LossVal": popart.AnchorReturnType("EVERYN", 2),
-    "out": popart.AnchorReturnType("FINAL"),
-    "im0": popart.AnchorReturnType("ALL")
+    "l1LossVal": popart.AnchorReturnType("EveryN", 2),
+    "out": popart.AnchorReturnType("Final"),
+    "im0": popart.AnchorReturnType("All")
 }
-dataFeed = popart.DataFlow(batchesPerStep, anchors)
+dataFlow = popart.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = popart.InputShapeInfo()
 inputShapeInfo.add("im0",
                    popart.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
@@ -64,7 +64,7 @@ torchWriter = torchwriter.PytorchNetWriter(
     losses=losses,
     optimizer=popart.ConstSGD(0.001),
     inputShapeInfo=inputShapeInfo,
-    dataFeed=dataFeed,
+    dataFlow=dataFlow,
     ### Torch specific:
     module=Module0(),
     samplesPerBatch=batchSize)

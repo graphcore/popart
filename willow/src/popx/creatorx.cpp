@@ -206,7 +206,8 @@ view::Regions InputCreatorCandidate::unwind(popart::view::Region region) {
   return rqueue;
 }
 
-poplar::Tensor InputCreatorCandidate::unwind(poplar::Tensor input) {
+std::pair<poplar::Tensor, ViewChangers>
+InputCreatorCandidate::unwind(poplar::Tensor input) {
 
   // Reverse the path,
   // The first element is now the Opx producing a tensor consumed by
@@ -268,6 +269,14 @@ poplar::Tensor InputCreatorCandidate::unwind(poplar::Tensor input) {
     input = opxOnPath.opx->unwindTensorLayout(
         input, opxOnPath.inIndex, opxOnPath.outIndex);
 
+    if (opxOnPath.opx->hasCreatorViewChangers(opxOnPath.inIndex)) {
+      // Early stop unwinding; tensor has view change
+      logging::devicex::debug(
+          "[creatorx] Early stopping unwinding due to view-changing at Op {}",
+          opxOnPath.opx->getOp<Op>().debugName());
+      return {input, opxOnPath.opx->getCreatorViewChangers(opxOnPath.inIndex)};
+    }
+
     logging::devicex::trace("[creatorx] Tensor shape after unwind: {}",
                             input.shape());
 
@@ -312,11 +321,15 @@ poplar::Tensor InputCreatorCandidate::unwind(poplar::Tensor input) {
                             input.shape());
   }
 
-  return input;
+  return {input, ViewChangers()};
 }
 
-poplar::Tensor InputCreatorCandidate::createInput(const std::string &name) {
+std::pair<poplar::Tensor, ViewChangers>
+InputCreatorCandidate::createInput(const std::string &name) {
   poplar::Tensor t = getOpx()->createInput(getIndex(), name);
+  if (getOpx()->hasCreatorViewChangers(getIndex())) {
+    return {t, getOpx()->getCreatorViewChangers(getIndex())};
+  }
   return unwind(t);
 }
 
@@ -361,7 +374,8 @@ view::Regions InputMultiCreatorCandidate::unwind(popart::view::Region) {
   throw("Not expected to unwind on InputMultiCreatorCandidate");
 }
 
-poplar::Tensor InputMultiCreatorCandidate::unwind(poplar::Tensor) {
+std::pair<poplar::Tensor, ViewChangers>
+InputMultiCreatorCandidate::unwind(poplar::Tensor) {
   throw("Not expected to unwind on InputMultiCreatorCandidate");
 }
 
@@ -396,15 +410,16 @@ int64_t InputMultiCreatorCandidate::getNumElems() {
 }
 
 // Create tensor by composing parts created by candidates
-poplar::Tensor
+std::pair<poplar::Tensor, ViewChangers>
 InputMultiCreatorCandidate::createInput(const std::string &name) {
   auto candidateIdx = 0;
 
   std::vector<std::pair<view::Region, poplar::Tensor>> currentTensorRegions;
 
   for (auto &candidate : candidates) {
-    poplar::Tensor tensor = candidate.first->createInput(
+    auto tensorAndView = candidate.first->createInput(
         name + "_fragment_" + std::to_string(candidateIdx));
+    auto tensor = tensorAndView.first;
     logging::devicex::trace("Accepted candidate regions: {}, tensor shape: {}",
                             candidate.second,
                             tensor.shape());
@@ -420,7 +435,8 @@ InputMultiCreatorCandidate::createInput(const std::string &name) {
   auto fullRegion = view::Region::getFull(shape);
   auto fullTensor = currentTensorRegions.front().second;
 
-  return compose(currentTensorRegions, fullRegion, fullTensor);
+  return {compose(currentTensorRegions, fullRegion, fullTensor),
+          ViewChangers()};
 }
 
 std::string InputMultiCreatorCandidate::str() {

@@ -31,12 +31,12 @@ batchesPerStep = 4
 # the tensor to which the loss is applied "out",
 # and the input tensor "image0"
 anchors = {
-    "l1LossVal": popart.AnchorReturnType("EVERYN", 2),
-    "out": popart.AnchorReturnType("FINAL"),
-    "image0": popart.AnchorReturnType("ALL")
+    "l1LossVal": popart.AnchorReturnType("EveryN", 2),
+    "out": popart.AnchorReturnType("Final"),
+    "image0": popart.AnchorReturnType("All")
 }
 
-dataFeed = popart.DataFlow(batchesPerStep, anchors)
+dataFlow = popart.DataFlow(batchesPerStep, anchors)
 
 # willow is non-dynamic. All input Tensor shapes and
 # types must be fed into the Session constructor.
@@ -96,7 +96,7 @@ torchWriter = torchwriter.PytorchNetWriter(
     losses=losses,
     optimizer=popart.ConstSGD(0.001),
     inputShapeInfo=inputShapeInfo,
-    dataFeed=dataFeed,
+    dataFlow=dataFlow,
     ### Torch specific:
     module=Module0(),
     samplesPerBatch=batchSize)

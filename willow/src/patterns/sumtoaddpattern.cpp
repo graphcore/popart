@@ -41,7 +41,7 @@ bool SumToAddPattern::apply(Op *op) const {
 
 namespace {
 static PatternCreator<SumToAddPattern>
-    SumToAddPattern(PreAliasPatternType::SUMTOADD, "SumToAdd");
+    SumToAddPattern(PreAliasPatternType::SumtoAdd, "SumToAdd");
 }
 
 } // namespace popart

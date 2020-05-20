@@ -44,20 +44,34 @@ std::vector<int64_t> getBoundariesCrossed(int64_t start,
                                           int64_t end,
                                           const std::vector<Op *> &schedule) {
   std::vector<int64_t> crossing;
-  PingPongPhase phase{-1LL};
-  PingPongPhase last_phase{-1LL};
-  RecomputeType recompute      = RecomputeType::UNDEFINED;
-  RecomputeType last_recompute = RecomputeType::UNDEFINED;
+
+  boost::optional<VGraphId> vgid;
+  boost::optional<VGraphId> last_vgid;
+
+  boost::optional<PingPongPhase> phase;
+  boost::optional<PingPongPhase> last_phase;
+
+  boost::optional<BatchSerializedPhase> batchserial;
+  boost::optional<BatchSerializedPhase> last_batchserial;
+
+  RecomputeType recompute      = RecomputeType::Undefined;
+  RecomputeType last_recompute = RecomputeType::Undefined;
 
   for (int64_t i = start; i < end; ++i) {
-    Op *op         = schedule[i];
-    last_phase     = phase;
-    last_recompute = recompute;
-    phase          = op->hasPingPongPhase() ? op->getPingPongPhase() : -1;
-    recompute      = op->settings.recomputeType == RecomputeType::RECOMPUTE
-                    ? RecomputeType::RECOMPUTE
-                    : RecomputeType::CHECKPOINT;
-    if (i > start && (phase != last_phase || recompute != last_recompute)) {
+    Op *op           = schedule[i];
+    last_vgid        = vgid;
+    last_phase       = phase;
+    last_batchserial = batchserial;
+    last_recompute   = recompute;
+    vgid             = op->getOptionalVirtualGraphId();
+    phase            = op->getOptionalPingPongPhase();
+    batchserial      = op->getOptionalBatchSerializedPhase();
+    recompute        = op->settings.recomputeType == RecomputeType::Recompute
+                    ? RecomputeType::Recompute
+                    : RecomputeType::Checkpoint;
+    if (i > start &&
+        (vgid != last_vgid || phase != last_phase ||
+         batchserial != last_batchserial || recompute != last_recompute)) {
       crossing.push_back(i - start);
     }
   }
@@ -83,51 +97,15 @@ void insertBoundariesOps(const std::vector<Op *> &schedule) {
         VGraphId vgid = 0;
         boundary->setVirtualGraphId(vgid);
         graph.moveIntoGraph(std::move(boundaryOp));
+        // Insert topo cons to pin boundary between ops
         graph.topoCons.get()->insert(schedule[i], boundary);
         graph.topoCons.get()->insert(boundary, schedule[i + 1]);
+        // Ensures inserting boundaries does not mess with priorities
+        boundary->settings.schedulePriority =
+            schedule[i]->settings.schedulePriority;
       }
     }
   }
-}
-
-std::vector<Match> separateTopLevelMatches(const std::vector<Match> &inMatches,
-                                           size_t scheduleSize) {
-  logging::trace("[SubgraphOutline] Separate top level matches start.");
-  std::vector<Match> filtered;
-
-  std::vector<int64_t> covered(scheduleSize, 0);
-
-  std::map<int, std::vector<Match>> matchesByLength;
-  for (auto &match : inMatches) {
-    matchesByLength[match.length].push_back(match);
-  }
-
-  for (auto iter = matchesByLength.rbegin(); iter != matchesByLength.rend();
-       ++iter) {
-    for (auto &match : iter->second) {
-      std::vector<Start> topLevelStarts;
-      std::vector<Start> coveredStarts;
-      for (Start start : match.starts) {
-        if (covered[start] > 0) {
-          coveredStarts.push_back(start);
-        } else {
-          topLevelStarts.push_back(start);
-        }
-        for (Start i = start; i < start + match.length; ++i) {
-          covered[i] += 1;
-        }
-      }
-      if (topLevelStarts.size() > 0) {
-        if (coveredStarts.size() > 0) {
-          // Mix of top level and covered starts; repeat top level matches
-          filtered.push_back(Match(topLevelStarts, match.length));
-        }
-      }
-      filtered.push_back(match);
-    }
-  }
-  logging::trace("[SubgraphOutline] Separate top level matches end.");
-  return filtered;
 }
 } // namespace
 
@@ -268,9 +246,10 @@ void updateTopoCons(const std::vector<OpId> &ops,
       graph_ops.push_back(graph.getOp(opid)->debugName());
     }
 
-    logging::trace("[SubgraphOutline] Updating TopoCons for {} ops {}",
-                   graph.getOp(replacement_op)->debugName(),
-                   graph_ops);
+    logging::transform::trace(
+        "[SubgraphOutline] Updating TopoCons for {} ops {}",
+        graph.getOp(replacement_op)->debugName(),
+        graph_ops);
   }
 
   // dont include any of the ops being replaced
@@ -362,10 +341,14 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
   // constructor
   auto up_call_op =
       std::make_unique<CallOp>(Onnx::CustomOperators::Call_1, graph, subgraph);
-  auto call_op_id         = graph.moveIntoGraph(std::move(up_call_op));
-  CallOp *call_op         = dynamic_cast<CallOp *>(graph.getOp(call_op_id));
-  call_op->settings.scope = scope.get();
-  call_op->settings.recomputeType = recompute.get();
+  auto call_op_id = graph.moveIntoGraph(std::move(up_call_op));
+  CallOp *call_op = dynamic_cast<CallOp *>(graph.getOp(call_op_id));
+  if (scope.is_initialized()) {
+    call_op->settings.scope = scope.get();
+  }
+  if (recompute.is_initialized()) {
+    call_op->settings.recomputeType = recompute.get();
+  }
   call_op->setVirtualGraphId(vgid);
   call_op->setPingPongPhase(phase);
   call_op->setPipelineStage(pipeline_stage);
@@ -413,7 +396,7 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
            const std::pair<Op *, int64_t> &b) { return a.second < b.second; });
 
     view::Regions modifiedRegions;
-    view::AccessType accessType = view::AccessType::NONE;
+    view::AccessType accessType = view::AccessType::None;
 
     // As soon as a consumer modified the whole input, we can stop
     for (auto &consumerOrdered : consumersOrdered) {
@@ -424,8 +407,11 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
 
         // If an op consumes the tensor without specifying modifies we assume
         // (conservatively) full read access to the tensor
-        if (regions.empty() || regions.front().isEmpty()) {
-          accessType = view::combine({accessType, view::AccessType::READ});
+        if (regions.empty() ||
+            std::any_of(regions.begin(),
+                        regions.end(),
+                        [](const view::Region &r) { return r.isEmpty(); })) {
+          accessType = view::combine({accessType, view::AccessType::Read});
         }
 
         modifiedRegions.insert(
@@ -433,12 +419,17 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
       }
       modifiedRegions = view::mergeRegions(modifiedRegions);
       for (auto &r : modifiedRegions) {
-        accessType = view::combine({accessType, r.getAccessType()});
+        view::AccessType regionAccessType = r.getAccessType();
+        if (!r.isEmpty() && (regionAccessType == view::AccessType::None ||
+                             regionAccessType == view::AccessType::Read)) {
+          throw error("Unexpected modified region access type None or Read");
+        }
+        accessType = view::combine({accessType, regionAccessType});
       }
       if (modifiedRegions.size() > 0 &&
           modifiedRegions.front() ==
               view::Region::getFull(inTensor->info.shape()) &&
-          accessType == view::AccessType::WRITE) {
+          accessType == view::AccessType::Write) {
         // The whole input tensor has been touched, conclude
         //  If the whole tensor has been write-accessed first, we say that
         //  the CallOp consumes the tensor write-only.
@@ -516,14 +507,10 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
     graph.eraseOp(opid);
   }
 
+  call_op->setup();
+
   return call_op->id;
 }
-
-static int subgraph_uid = 0;
-
-void reset_subgraph_id() { subgraph_uid = 0; }
-
-int generate_subgraph_unique_id() { return subgraph_uid++; }
 
 class InstanceConstraints {
 public:
@@ -652,9 +639,8 @@ void verifyMatchInstances(const Match &match) {
 
 Graph &createSubgraph(const Match &match, Graph &graph) {
 
-  auto &ir         = graph.getIr();
-  auto subgraph_id = logging::format(
-      "{}_subgraph({})", graph.id, generate_subgraph_unique_id());
+  auto &ir            = graph.getIr();
+  auto subgraph_id    = ir.createUniqueSubgraphId(graph.id);
   auto &subgraph      = ir.createGraph(subgraph_id);
   auto subgraph_scope = subgraph.getScope();
   auto &instance      = match.instances[0];
@@ -673,12 +659,12 @@ Graph &createSubgraph(const Match &match, Graph &graph) {
                  ? op->getOptionalPingPongPhase().get()
                  : -1);
     }
-    logging::trace("[SubgraphOutline] Creating subgraph: {}, "
-                   "replacing {} instances, "
-                   "with ops: [{}]",
-                   subgraph_id,
-                   match.instances.size(),
-                   ss.str());
+    logging::transform::trace("[SubgraphOutline] Creating subgraph: {}, "
+                              "replacing {} instances, "
+                              "with ops: [{}]",
+                              subgraph_id,
+                              match.instances.size(),
+                              ss.str());
   }
 
   // clone all the ops and move into subgraph
@@ -690,7 +676,7 @@ Graph &createSubgraph(const Match &match, Graph &graph) {
     auto clone                    = op->clone();
     clone->settings.graph         = subgraph;
     clone->settings.scope         = subgraph_scope;
-    clone->settings.recomputeType = RecomputeType::CHECKPOINT;
+    clone->settings.recomputeType = RecomputeType::Checkpoint;
     auto cloneid                  = subgraph.moveIntoGraph(std::move(clone));
     Op *clone_op                  = subgraph.getOp(cloneid);
     clone_map.insert({op, clone_op});
@@ -736,14 +722,15 @@ Graph &createSubgraph(const Match &match, Graph &graph) {
 
   // create graph inputs
   for (auto tensor : instance.external_inputs) {
-    auto input_id = subgraph.addInput(tensor->info);
-    auto t        = subgraph.getTensors().get(input_id);
+    auto input_id = subgraph.addScope(tensor->id);
+    subgraph.addInput(input_id, tensor->info);
+    auto t = subgraph.getTensors().get(input_id);
     if (tensor_map.find(tensor) != tensor_map.end()) {
       throw error(
           "tensor {} is already in tensor map, cannot rebind to {} -> {}",
           tensor->id,
           tensor->id,
-          t->id);
+          input_id);
     }
     tensor_map.insert({tensor, t});
   }
@@ -811,25 +798,25 @@ static std::vector<Replacement> applyMatch(const Match &match, Graph &graph) {
 // sorted so the smallest matches are at the back
 std::vector<Match> getRinseMatches(const std::vector<Op *> &ops,
                                    float threshold,
-                                   bool copyCostPruning,
-                                   bool topLevelSeparation) {
+                                   bool copyCostPruning) {
 
   if (logging::shouldLog(logging::Module::transform, logging::Level::Trace)) {
     std::vector<int> intSchedule = fwtools::subgraph::getIntSchedule(ops);
     for (size_t i = 0; i < ops.size(); ++i) {
       Op *op = ops[i];
-      logging::trace("[SubgraphOutline] "
-                     "Index: {}, ID: {}, Op: {}, "
-                     "VGID: {}, PingPong phase: {}",
-                     i,
-                     intSchedule[i],
-                     op->debugName(),
-                     op->hasVirtualGraphId() ? op->getVirtualGraphId() : -1,
-                     op->getOptionalPingPongPhase()
-                         ? op->getOptionalPingPongPhase().get()
-                         : -1);
+      logging::transform::trace(
+          "[SubgraphOutline] "
+          "Index: {}, ID: {}, Op: {}, "
+          "VGID: {}, PingPong phase: {}",
+          i,
+          intSchedule[i],
+          op->debugName(),
+          op->hasVirtualGraphId() ? op->getVirtualGraphId() : -1,
+          op->getOptionalPingPongPhase() ? op->getOptionalPingPongPhase().get()
+                                         : -1);
     }
-    logging::trace("[SubgraphOutline] Int schedule: {}", intSchedule);
+    logging::transform::trace("[SubgraphOutline] Int schedule: {}",
+                              intSchedule);
   }
 
   auto fw_matches = fwtools::subgraph::getRinseMatches(
@@ -845,22 +832,13 @@ std::vector<Match> getRinseMatches(const std::vector<Op *> &ops,
   }
   int64_t num_matches_1 = fw_matches.size();
 
-  // TODO: Enable this only when aliasZeroCopy is enabled, which requires
-  // separation of top-level and non-top-level matches currently.
-  if (topLevelSeparation) {
-    fw_matches = localoutline::separateTopLevelMatches(fw_matches, ops.size());
-  }
-  int64_t num_matches_2 = fw_matches.size();
-
   // Remove the offsets caused by the boundary OPs from the matches
   // outline::removeBoundariesOps(fw_matches, opsWithBoundaries);
 
-  logging::trace("[SubgraphOutline] Matches before pruning: {}, "
-                 "matches after IOSize: {}, "
-                 "matches after TopLevel: {}",
-                 num_matches_0,
-                 num_matches_1,
-                 num_matches_2);
+  logging::transform::trace("[SubgraphOutline] Matches before pruning: {}, "
+                            "matches after IOSize: {} ",
+                            num_matches_0,
+                            num_matches_1);
 
   // Sort the matches so the smallest subgraphs are at the back.
   // `matches' is treated like a stack, so this will ensure the smallest
@@ -871,9 +849,9 @@ std::vector<Match> getRinseMatches(const std::vector<Op *> &ops,
   std::vector<Match> matches;
 
   for (auto &match : fw_matches) {
-    logging::trace("[SubgraphOutline] Match length: {}, starts: {}",
-                   match.length,
-                   match.starts);
+    logging::transform::trace("[SubgraphOutline] Match length: {}, starts: {}",
+                              match.length,
+                              match.starts);
     matches.emplace_back(match, ops);
   }
 
@@ -918,9 +896,6 @@ void applyReplacements(std::vector<Match> &matches,
 
 bool SubgraphOutline::apply(Graph &graph) const {
 
-  // Make sure we start with a 0 subgraph id
-  reset_subgraph_id();
-
   auto &ir = graph.getIr();
 
   std::vector<Op *> schedule = graph.getOpSchedule({});
@@ -934,8 +909,7 @@ bool SubgraphOutline::apply(Graph &graph) const {
   auto matches =
       getRinseMatches(schedule,
                       ir.getSessionOptions().outlineThreshold,
-                      ir.getSessionOptions().enableOutliningCopyCostPruning,
-                      ir.getSessionOptions().pingPongPhases > 1);
+                      ir.getSessionOptions().enableOutliningCopyCostPruning);
 
   if (logging::shouldLog(logging::Module::none, logging::Level::Trace)) {
     unsigned i = 0;
@@ -946,7 +920,7 @@ bool SubgraphOutline::apply(Graph &graph) const {
            << logging::join(instance.ops.begin(), instance.ops.end(), ", ")
            << "]";
       }
-      logging::trace("[SubgraphOutline] Match {}: {}", i, ss.str());
+      logging::transform::trace("[SubgraphOutline] Match {}: {}", i, ss.str());
       ++i;
     }
   }

@@ -51,7 +51,7 @@ private:
 
 class TestRunner {
 public:
-  TestRunner() : patterns(PatternsLevel::NONE) {}
+  TestRunner() : patterns(PatternsLevel::NoPatterns) {}
 
   template <typename ModelBuilder>
   void buildModel(ModelBuilder &&modelBuilder) {
@@ -65,17 +65,21 @@ public:
     auto modelProto = io::getModelFromString(proto);
 
     // Create the IR
-    anchors.insert({outId, AnchorReturnType("ALL")});
+    anchors.insert({outId, AnchorReturnType("All")});
     auto dataFlow  = DataFlow(1, anchors);
     auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
     if (isTraining) {
       auto optimizer = ConstSGD(0.1);
       session        = TrainingSession::createFromOnnxModel(
-          proto, dataFlow, losses, optimizer, cpuDevice, {}, opts, patterns);
+          proto, dataFlow, loss, optimizer, cpuDevice, {}, opts, patterns);
     } else {
+      if (loss != "") {
+        throw error(
+            "Test runner: InferenceSession does not take 'loss' argument");
+      }
       session = InferenceSession::createFromOnnxModel(
-          proto, dataFlow, cpuDevice, losses, {}, opts, patterns);
+          proto, dataFlow, cpuDevice, {}, opts, patterns);
     }
 
     irChecker(session->ir);
@@ -137,7 +141,7 @@ public:
   SessionOptions opts;
   Patterns patterns;
   bool isTraining = false;
-  std::vector<Loss *> losses;
+  TensorId loss   = "";
   std::map<TensorId, AnchorReturnType> anchors;
 
 private:

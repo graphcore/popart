@@ -33,33 +33,32 @@ def test_matmul_1d(tmpdir):
         t1 = builder.aiOnnx.matmul([lhs, rhs])
 
         o = builder.aiOnnx.add([z, t1])
-
-        builder.addOutputTensor(o)
+        o = builder.aiGraphcore.identityloss([o])
 
         proto = builder.getModelProto()
 
         dataFlow = popart.DataFlow(
             1, {
                 o:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + lhs:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + rhs:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
             })
 
         opts = popart.SessionOptions()
         opts.reportOptions = {"showExecutionSteps": "true"}
 
-        pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
+        pat = popart.Patterns(popart.PatternsLevel.Default)
 
         session = popart.TrainingSession(
             fnModel=proto,
-            dataFeed=dataFlow,
+            dataFlow=dataFlow,
             userOptions=opts,
-            losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
+            loss=o,
             optimizer=popart.ConstSGD(0.01),
-            passes=pat,
+            patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
         session.prepareDevice()
@@ -136,24 +135,22 @@ def test_matmul_grouping_test_1(tmpdir):
 
         o = builder.aiOnnx.matmul([r1, r2_t])
 
-        builder.addOutputTensor(o)
-
         proto = builder.getModelProto()
 
-        dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+        dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
         opts = popart.SessionOptions()
         opts.reportOptions = {"showExecutionSteps": "true"}
         opts.enableOutlining = False
         opts.enableGroupedMatmuls = groupingEnabled
 
-        pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
+        pat = popart.Patterns(popart.PatternsLevel.Default)
 
         session = popart.InferenceSession(
             fnModel=proto,
-            dataFeed=dataFlow,
+            dataFlow=dataFlow,
             userOptions=opts,
-            passes=pat,
+            patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
         session.prepareDevice()
@@ -248,21 +245,21 @@ def test_matmul_grouping_test_2(tmpdir):
 
         o = builder.aiOnnx.matmul([r1, r2], "END")
 
-        builder.addOutputTensor(o)
+        loss = builder.aiGraphcore.identityloss([o])
 
         proto = builder.getModelProto()
 
         dataFlow = popart.DataFlow(
             1, {
-                o: popart.AnchorReturnType("ALL"),
+                o: popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + a:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + b:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + c:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + d:
-                popart.AnchorReturnType("ALL")
+                popart.AnchorReturnType("All")
             })
 
         opts = popart.SessionOptions()
@@ -271,14 +268,14 @@ def test_matmul_grouping_test_2(tmpdir):
         opts.enableGroupedMatmuls = groupingEnabled
         opts.dotOpNames = True
 
-        pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
+        pat = popart.Patterns(popart.PatternsLevel.Default)
 
         session = popart.TrainingSession(
             fnModel=proto,
-            dataFeed=dataFlow,
+            dataFlow=dataFlow,
             userOptions=opts,
-            passes=pat,
-            losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
+            patterns=pat,
+            loss=loss,
             optimizer=popart.ConstSGD(0.01),
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
@@ -346,21 +343,21 @@ def test_matmul_grouping_test_3(tmpdir):
 
         o = builder.aiOnnx.matmul([r1, r2], "END")
 
-        builder.addOutputTensor(o)
+        loss = builder.aiGraphcore.identityloss([o])
 
         proto = builder.getModelProto()
 
         dataFlow = popart.DataFlow(
             1, {
-                o: popart.AnchorReturnType("ALL"),
+                o: popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + a:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + b:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + c:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + d:
-                popart.AnchorReturnType("ALL")
+                popart.AnchorReturnType("All")
             })
 
         opts = popart.SessionOptions()
@@ -369,14 +366,14 @@ def test_matmul_grouping_test_3(tmpdir):
         opts.enableGroupedMatmuls = groupingEnabled
         opts.dotOpNames = True
 
-        pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
+        pat = popart.Patterns(popart.PatternsLevel.Default)
 
         session = popart.TrainingSession(
             fnModel=proto,
-            dataFeed=dataFlow,
+            dataFlow=dataFlow,
             userOptions=opts,
-            passes=pat,
-            losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
+            patterns=pat,
+            loss=loss,
             optimizer=popart.ConstSGD(0.01),
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
@@ -463,21 +460,21 @@ def test_matmul_grouping_test_4(tmpdir):
 
         o = builder.aiOnnx.add([r1, r2], "END")
 
-        builder.addOutputTensor(o)
+        loss = builder.aiGraphcore.identityloss([o])
 
         proto = builder.getModelProto()
 
         dataFlow = popart.DataFlow(
             1, {
-                o: popart.AnchorReturnType("ALL"),
+                o: popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + a:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + b:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + c:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + d:
-                popart.AnchorReturnType("ALL")
+                popart.AnchorReturnType("All")
             })
 
         opts = popart.SessionOptions()
@@ -486,14 +483,14 @@ def test_matmul_grouping_test_4(tmpdir):
         opts.enableGroupedMatmuls = groupingEnabled
         opts.dotOpNames = True
 
-        pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
+        pat = popart.Patterns(popart.PatternsLevel.Default)
 
         session = popart.TrainingSession(
             fnModel=proto,
-            dataFeed=dataFlow,
+            dataFlow=dataFlow,
             userOptions=opts,
-            passes=pat,
-            losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
+            patterns=pat,
+            loss=loss,
             optimizer=popart.ConstSGD(0.01),
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 

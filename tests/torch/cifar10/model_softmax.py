@@ -22,10 +22,8 @@ nInChans = 3
 nOutChans = 4
 batchSize = 2
 batchesPerStep = 3
-anchors = {
-    "l1LossVal0": popart.AnchorReturnType("FINAL"),
-}
-dataFeed = popart.DataFlow(batchesPerStep, anchors)
+anchors = {"l1loss": popart.AnchorReturnType("Final")}
+dataFlow = popart.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = popart.InputShapeInfo()
 inputShapeInfo.add("image0",
                    popart.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
@@ -33,10 +31,9 @@ inputShapeInfo.add("image0",
 inNames = ["image0"]
 cifarInIndices = {"image0": 0}
 
-outNames = ["probs"]
-losses = [popart.L1Loss("probs", "l1LossVal0", 0.1)]
+outNames = ["l1loss"]
 
-willowOptPasses = popart.Patterns(popart.PatternsLevel.ALL)
+willowOptPasses = popart.Patterns(popart.PatternsLevel.All)
 
 
 class Module0(torch.nn.Module):
@@ -68,7 +65,8 @@ class Module0(torch.nn.Module):
         # -> for gather or log (pytorch 0.4.1)
         # x = torch.gather(input = x, dim = 1, index= labels)
         # loss = torch.log(x)
-        return probs
+        l1loss = torch.sum(0.1 * torch.abs(probs))
+        return l1loss
 
 
 # Set arbitrary seed so model weights are initialized to the
@@ -78,10 +76,9 @@ torch.manual_seed(1)
 torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
-    losses=losses,
     optimizer=popart.ConstSGD(0.001),
     inputShapeInfo=inputShapeInfo,
-    dataFeed=dataFeed,
+    dataFlow=dataFlow,
     ### Torch specific:
     module=Module0(),
     samplesPerBatch=batchSize)

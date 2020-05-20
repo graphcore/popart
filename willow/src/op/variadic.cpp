@@ -62,9 +62,9 @@ NonLinearVariadicGradOp::NonLinearVariadicGradOp(
     : VariadicGradOp(_opid, op_, inputIndex) {
 
   gradInputInfoVec = {
-      {getGradInIndex(), VariadicOp::getOutIndex(), GradOpInType::GRADOUT},
-      {getFwdInIndex(), getFwdIndex(), GradOpInType::IN},
-      {getFwdOutInIndex(), VariadicOp::getOutIndex(), GradOpInType::OUT}};
+      {getGradInIndex(), VariadicOp::getOutIndex(), GradOpInType::GradOut},
+      {getFwdInIndex(), getFwdIndex(), GradOpInType::In},
+      {getFwdOutInIndex(), VariadicOp::getOutIndex(), GradOpInType::Out}};
 }
 
 const std::map<int, int> &VariadicGradOp::gradOutToNonGradIn() const {

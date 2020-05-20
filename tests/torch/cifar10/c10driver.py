@@ -10,7 +10,6 @@ import re
 from tempfile import TemporaryDirectory
 from torchvision import transforms, datasets
 from popart.torch import torchwriter
-from popart import NllLoss, L1Loss
 import tempfile
 
 # `import test_util` requires adding to sys.path
@@ -26,7 +25,7 @@ class TestFailureError(Exception):
 
 
 def run(torchWriter,
-        passes,
+        patterns,
         outputdir,
         cifarInIndices,
         device,
@@ -43,7 +42,7 @@ def run(torchWriter,
     if outputdir is None:
         with TemporaryDirectory() as outputdir:
             return _run_impl(torchWriter,
-                             passes,
+                             patterns,
                              outputdir,
                              cifarInIndices,
                              device,
@@ -58,7 +57,7 @@ def run(torchWriter,
             os.mkdir(outputdir)
 
         return _run_impl(torchWriter,
-                         passes,
+                         patterns,
                          outputdir,
                          cifarInIndices,
                          device,
@@ -70,7 +69,7 @@ def run(torchWriter,
                          printAnchorArrays=printAnchorArrays)
 
 
-def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
+def _run_impl(torchWriter, patterns, outputdir, cifarInIndices, device,
               device_hw_id, mode, syntheticData, transformations, epochs,
               printAnchorArrays):
 
@@ -94,9 +93,9 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
     def getFnModel0():
         return os.path.join(outputdir, "runId%d_model0.onnx" % (baseId, ))
 
-    dataFeed = torchWriter.dataFeed
+    dataFlow = torchWriter.dataFlow
     inputShapeInfo = torchWriter.inputShapeInfo
-    validModes = ["infer", "evaluate", "train"]
+    validModes = ["infer", "train"]
     if mode not in validModes:
         raise Exception("mode must be one of " + str(validModes))
 
@@ -139,7 +138,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
         # the amount of data loaded for each step.
         # note this is not the batch size, it's the "step" size
         # (samples per step)
-        batch_size=torchWriter.samplesPerBatch * dataFeed.batchesPerStep(),
+        batch_size=torchWriter.samplesPerBatch * dataFlow.batchesPerStep(),
         #non-random data loading
         shuffle=False,
         num_workers=0)
@@ -206,25 +205,25 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
     if mode == 'infer':
         session = popart.InferenceSession(fnModel=modelProtoX,
                                           inputShapeInfo=inputShapeInfo,
-                                          dataFeed=dataFeed,
-                                          passes=passes,
-                                          userOptions=opts,
-                                          deviceInfo=device)
-    elif mode == 'evaluate':
-        session = popart.InferenceSession(fnModel=modelProtoX,
-                                          inputShapeInfo=inputShapeInfo,
-                                          dataFeed=dataFeed,
-                                          losses=torchWriter.losses,
-                                          passes=passes,
+                                          dataFlow=dataFlow,
+                                          patterns=patterns,
                                           userOptions=opts,
                                           deviceInfo=device)
     else:
-        session = popart.TrainingSession(fnModel=modelProtoX,
+        if len(torchWriter.outNames) != 1:
+            raise RuntimeError("Expecting single scalar loss tensor")
+
+        # Append output with an identity loss, to reduce to scalar if
+        # necessary
+        bder = popart.Builder(modelProtoX)
+        loss = bder.aiGraphcore.identityloss(
+            [torchWriter.outNames[0]], reduction=popart.ReductionType.Sum)
+        session = popart.TrainingSession(fnModel=bder.getModelProto(),
                                          inputShapeInfo=inputShapeInfo,
-                                         dataFeed=dataFeed,
-                                         losses=torchWriter.losses,
+                                         dataFlow=dataFlow,
+                                         loss=loss,
                                          optimizer=torchWriter.optimizer,
-                                         passes=passes,
+                                         patterns=patterns,
                                          userOptions=opts,
                                          deviceInfo=device)
 
@@ -255,7 +254,6 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
         session.weightsFromHost()
 
         print("Writing Optimizer tensors to device, if there are any")
-        session.optimizerFromHost()
 
     def addStepDimension(data, batchesPerStep):
         if batchesPerStep == 1:
@@ -276,32 +274,6 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
         assertStr = "Tensor" + tId + " must be specified as an anchor"
         assert (tId in anchorArrays.keys()), assertStr
         return anchorArrays[tId]
-
-    def getLossesFromAnchors(torchWriter, anchorArrays):
-        # Check all losses are anchored
-        for loss in torchWriter.losses:
-            lossId = loss.output(0)
-            assertStr = "All loss tensors mist be anchored"
-            assert (torchWriter.dataFeed.isAnchored(lossId)), assertStr
-
-        # Check all losses have the same anchor return type
-        fisrtLossId = torchWriter.losses[0].output(0)
-        firstLossArtId = torchWriter.dataFeed.art(fisrtLossId).id()
-        if (len(torchWriter.losses) > 1):
-            for loss in torchWriter.losses:
-                lossId = loss.output(0)
-                lossArtId = torchWriter.dataFeed.art(lossId).id()
-                assertStr = "All losses must have the same return type"
-                assert (lossArtId == firstLossArtId), assertStr
-
-        # Return sum over losses for each sample
-        lossShape = np.shape(getAnchorTensor(fisrtLossId, anchorArrays))
-        pLosses = np.zeros(lossShape)
-        for loss in torchWriter.losses:
-            pLosses_ = getAnchorTensor(loss.output(0), anchorArrays)
-            pLosses = np.add(pLosses, pLosses_)
-
-        return pLosses
 
     def subsampleBatches(array, refShape):
         arrayShape = np.shape(array)
@@ -350,7 +322,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
         for tenId in cifarInIndices.keys():
             inputs[tenId] = \
                 addStepDimension(stepData[cifarInIndices[tenId]].numpy(),
-                                 session.dataFeed.batchesPerStep())
+                                 session.dataFlow.batchesPerStep())
 
         if mode == "train":
             # take batchesPerStep passes (1 step), Torch
@@ -402,26 +374,6 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
             # One relative error calculated per weight tensor
             for tId, relerror in nr.getRelativeErrors().items():
                 checkResult(relerror, margin)
-
-        elif mode == "evaluate":
-            # take batchesPerStep passes (1 step), Torch
-            # returns scalar for each sample
-            torchLosses = torchWriter.evaluate(inputs)
-
-            # take batchesPerStep passes (1 step), PopArt
-            pystepio = popart.PyStepIO(inputs, anchorArrays)
-            session.run(pystepio)
-            pLosses = getLossesFromAnchors(torchWriter, anchorArrays)
-
-            # Compare torch loss tensors with popart loss from
-            # anchor tensor map.
-            # Torch losses returned for all samples, whereas
-            # anchors are returned as specified by the user.
-            # Subsample torch outputs to match dimensions
-            torchLosses = subsampleBatches(torchLosses, np.shape(pLosses))
-            result = getTensorError(torchLosses, pLosses)
-            print(reportTensorError(0, result))
-            checkResult(result, margin)
 
         elif mode == "infer":
             # take batchesPerStep passes (1 step), Torch

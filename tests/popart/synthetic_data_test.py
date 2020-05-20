@@ -22,7 +22,7 @@ def run_pt_session(syntheticDataMode):
     opts.syntheticDataMode = syntheticDataMode
 
     session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                      dataFeed=popart.DataFlow(1, [p]),
+                                      dataFlow=popart.DataFlow(1, [p]),
                                       userOptions=opts,
                                       deviceInfo=tu.create_test_device())
 
@@ -80,7 +80,7 @@ def test_supported_input_type_float16():
             fnModel=builder.getModelProto(),
             userOptions=opts,
             deviceInfo=popart.DeviceManager().createCpuDevice(),
-            dataFeed=popart.DataFlow(1, [out]))
+            dataFlow=popart.DataFlow(1, [out]))
 
     run_with_input_of_type("FLOAT16")
     run_with_input_of_type("FLOAT")

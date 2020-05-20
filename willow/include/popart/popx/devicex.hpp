@@ -13,6 +13,7 @@
 #include <poplin/MatMul.hpp>
 #include <poputil/TileMapping.hpp>
 
+#include <popart/aliaszerocopy.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/popx/creatorx.hpp>
 #include <popart/popx/enigma.hpp>
@@ -21,6 +22,7 @@
 #include <popart/popx/popprograms.hpp>
 #include <popart/popx/poptensors.hpp>
 #include <popart/popx/pritask.hpp>
+#include <popart/popx/virtualgraph.hpp>
 
 #include <set>
 #include <popart/names.hpp>
@@ -40,6 +42,7 @@ using PopStreamId = std::string;
 
 class Opx;
 class GraphCachex;
+class CollectiveBalancedReorder;
 
 // A class containing the tensors needed to track the
 // state of the pipeline
@@ -91,9 +94,11 @@ public:
   // Streams the random seed value from host, and sets the rng registers on
   // the device
   void setRandomSeedFromHost();
-  const std::string cycleCountStreamId() const;
-  void instrumentWithHardwareCycleCounter(poplar::program::Sequence &);
-  uint64_t cycleCountTensorToHost();
+  const std::string cycleCountStreamId(std::string id) const;
+  void instrumentWithHardwareCycleCounter(poplar::program::Sequence &,
+                                          int64_t tileId = 0,
+                                          std::string id = "");
+  std::map<std::string, uint64_t> cycleCountTensorToHost();
   void run(IStepIO &);
 
 private:
@@ -136,7 +141,10 @@ public:
   poplar::Graph &graph();
   const poplar::Graph &graph() const;
 
-  poplar::Graph &getVirtualGraph(VGraphId virtualGraphIndex);
+  // Return virtual graph mapping to IPU virtualGraphIndex,
+  // ioTileGraph selects between compute and IO tile graph.
+  poplar::Graph &getVirtualGraph(VGraphId virtualGraphIndex,
+                                 IsIoTile ioTileGraph = false);
 
   // Return the name of the task which initializes/creates a poplar::Tensor in a
   // poplar::Graph. This is NOT about creating a poplar::Program.
@@ -155,6 +163,7 @@ public:
   poplar::OptionFlags engineOptions, reportOptions;
   poplar::OptionFlags pooling_options;
   poplar::OptionFlags lstmOptions;
+  poplar::OptionFlags gclOptions;
 
   PopTensors tensors;
 
@@ -214,10 +223,17 @@ public:
                           double val,
                           const std::string &name);
 
+  bool hasRemoteBuffer(RemoteBufferId) const;
+
   const std::pair<poplar::RemoteBuffer, boost::optional<poplar::Tensor>> &
       getRemoteBuffer(RemoteBufferId) const;
 
-  void setRemoteBufferTensor(RemoteBufferId, poplar::Tensor);
+  void createRemoteBuffer(RemoteBufferId, poplar::Tensor);
+
+  std::shared_ptr<CollectiveBalancedReorder>
+  getCollectiveBalancedReorder(TensorId tensor_id);
+  void setCollectiveBalancedReorder(TensorId tensor_id,
+                                    std::shared_ptr<CollectiveBalancedReorder>);
 
   poplar::Tensor getScalarVariable(poplar::Graph &graph,
                                    const poplar::Type &type,
@@ -262,13 +278,19 @@ public:
     return livenessAnalyzer.get();
   }
 
+  liveness::AliasZeroCopy *getAliasZeroCopy() const {
+    return aliasZeroCopy.get();
+  }
+
+  const DeviceInfo *getDeviceInfo() { return deviceInfo.get(); }
+
 private:
   std::unique_ptr<poplar::Graph> pGraph{nullptr};
 
   std::unique_ptr<poplar::Engine> pEngine{nullptr};
   std::unique_ptr<poplar::Target> pTarget{nullptr};
 
-  std::vector<poplar::Graph> virtualGraphs;
+  std::vector<VirtualGraph> virtualGraphs;
 
   std::shared_ptr<DeviceInfo> deviceInfo;
 
@@ -284,8 +306,6 @@ private:
 
   PipelineInfo pInfo;
 
-  void createRemoteBuffers();
-
   std::map<PipelineStage, VGraphId> getPipelineToVGraphIdMap() const;
 
   // Task to create a poplar::Tensor from nothing, choosing
@@ -294,6 +314,7 @@ private:
   PriTask initTensorByCloningTask(Op *op, TensorId srcId, TensorId dstId);
   PriTask initTensorByAliasingTask(Op *op, TensorId srcId, TensorId dstId);
   TaskId initTensorTaskId(TensorId) const;
+  bool tryInitTensorByPostIRAliasing(TensorId dstId);
 
   PriTask initRandomSeed();
   TaskId initRandomSeedTaskId() const;
@@ -388,8 +409,8 @@ public:
   // index of first appearance of Op in series
   std::map<Op *, int, POpCmp> getMainGraphOpSeriesNums() const;
 
-  // number of appearances of each Op. Expectation: RECOMPUTE Ops appear twice
-  // and CHECKPOINT Ops appear once
+  // number of appearances of each Op. Expectation: Recompute Ops appear twice
+  // and Checkpoint Ops appear once
   std::map<Op *, int, POpCmp> getMainGraphOpCounts() const;
 
   // A summary string of the Op series, with annotation for recomputation
@@ -482,6 +503,10 @@ private:
            std::pair<poplar::RemoteBuffer, boost::optional<poplar::Tensor>>>
       remoteBuffers;
 
+  // Collective balanced reordering information for replicated ops
+  std::map<TensorId, std::shared_ptr<CollectiveBalancedReorder>>
+      collectiveReorders;
+
   // Streams for doing allreduce on host side
 
   std::map<TensorId, poplar::RemoteBuffer> hostReduceRemoteBuffers;
@@ -496,8 +521,8 @@ private:
   std::map<TensorId, std::vector<char>> d2hWeightBuffers;
   std::map<TensorId, std::vector<char>> chBuffers;
 
-  // Buffer for storing the hardware cycle count
-  uint64_t cycleCount = 0;
+  // Buffers for storing the hardware cycle count
+  std::map<std::string, uint64_t> cycleCount;
 
   // Wrapper for calls to poplar Engine API calls: loading
   // engine onto the poplar device and connecting streams.
@@ -579,6 +604,9 @@ private:
 
   // Helper class to analyze the global IR schedule and tensor liveness
   std::unique_ptr<liveness::LivenessAnalyzer> livenessAnalyzer;
+
+  // Helper class to reuse tensors and call subgraphs by reference
+  std::unique_ptr<liveness::AliasZeroCopy> aliasZeroCopy;
 
 public:
   bool getOuterLoopFragEmpty() const { return outerLoopFragEmpty; }

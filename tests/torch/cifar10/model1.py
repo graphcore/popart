@@ -19,15 +19,15 @@ nOutChans = 10
 batchSize = 2
 batchesPerStep = 3
 anchors = {
-    "imageSum": popart.AnchorReturnType("ALL"),
-    "postConv0": popart.AnchorReturnType("ALL"),
-    "preProbSquared": popart.AnchorReturnType("ALL"),
-    "l1LossVal": popart.AnchorReturnType("ALL"),
-    "nllLossVal": popart.AnchorReturnType("ALL"),
-    "probs": popart.AnchorReturnType("ALL")
+    "imageSum": popart.AnchorReturnType("All"),
+    "postConv0": popart.AnchorReturnType("All"),
+    "preProbSquared": popart.AnchorReturnType("All"),
+    "l1LossVal": popart.AnchorReturnType("All"),
+    "nllLossVal": popart.AnchorReturnType("All"),
+    "probs": popart.AnchorReturnType("All")
 }
 
-dataFeed = popart.DataFlow(batchesPerStep, anchors)
+dataFlow = popart.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = popart.InputShapeInfo()
 inputShapeInfo.add("image0",
                    popart.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
@@ -44,7 +44,7 @@ losses = [
     popart.L1Loss("preProbSquared", "l1LossVal", 0.01)
 ]
 
-willowOptPasses = popart.Patterns(popart.PatternsLevel.ALL)
+willowOptPatterns = popart.Patterns(popart.PatternsLevel.All)
 
 
 class Module0(torch.nn.Module):
@@ -105,7 +105,7 @@ torchWriter = torchwriter.PytorchNetWriter(
     losses=losses,
     optimizer=popart.ConstSGD(0.001),
     inputShapeInfo=inputShapeInfo,
-    dataFeed=dataFeed,
+    dataFlow=dataFlow,
     ### Torch specific:
     module=Module0(),
     samplesPerBatch=batchSize)
@@ -115,7 +115,7 @@ torchWriter = torchwriter.PytorchNetWriter(
 #args.outputdir="/path/to/logging/dir/where/models/written/"
 
 c10driver.run(torchWriter,
-              willowOptPasses,
+              willowOptPatterns,
               args.outputdir,
               cifarInIndices,
               args.device,

@@ -37,7 +37,7 @@ class InferenceSession(_InferenceSessionCore):
                  batch_size=1,
                  batches_per_step=1,
                  inputShapeInfo=popart.InputShapeInfo(),
-                 passes=popart.Patterns(),
+                 patterns=popart.Patterns(),
                  userOptions=popart.SessionOptions()):
 
         self.torchModel = torchModel
@@ -93,17 +93,17 @@ class InferenceSession(_InferenceSessionCore):
             losses.append(
                 self.createLosses(self.losses, out, f"target_{idx}",
                                   f"loss_{idx}"))
-            self.anchor_returns[out] = popart.AnchorReturnType("ALL")
-            self.anchor_returns[f"loss_{idx}"] = popart.AnchorReturnType("ALL")
+            self.anchor_returns[out] = popart.AnchorReturnType("All")
+            self.anchor_returns[f"loss_{idx}"] = popart.AnchorReturnType("All")
 
-        if passes is None:
-            passes = popart.Patterns()
+        if patterns is None:
+            patterns = popart.Patterns()
 
-        self.dataFeed = self.createDataFeed()
+        self.dataFlow = self.createdataFlow()
 
         super(InferenceSession,
-              self).__init__(proto, self.dataFeed, self.deviceInfo, losses,
-                             self.inputShapeInfo, userOptions, passes)
+              self).__init__(proto, self.dataFlow, self.deviceInfo, losses,
+                             self.inputShapeInfo, userOptions, patterns)
 
         self.replicationFactor = userOptions.replicatedGraphCount if \
             userOptions.enableReplicatedGraphs else 1
@@ -113,21 +113,15 @@ class InferenceSession(_InferenceSessionCore):
     def createLosses(self, loss, output, label=None, name="loss"):
         self.inputNames.append(label)
         if label:
-            self.anchor_returns[label] = popart.AnchorReturnType("ALL")
-        if isinstance(loss, torch.nn.NLLLoss):
-            return popart.NllLoss(output, label, name)
-        elif isinstance(loss, torch.nn.L1Loss):
-            return popart.L1Loss(output, name)
-        elif isinstance(loss, torch.nn.Identity):
-            return popart.IdentityLoss(output, name)
-        elif isinstance(loss, torch.Tensor):
+            self.anchor_returns[label] = popart.AnchorReturnType("All")
+        if isinstance(loss, torch.Tensor):
             return popart.IdentityLoss(output, name)
         else:
             raise RuntimeError(
-                "Only NLLLoss, L1Loss or Identity loss with manual "
-                "loss construction are currently supported.")
+                "Only Identity loss with manual loss construction is currently supported."
+            )
 
-    def createDataFeed(self):
+    def createdataFlow(self):
         return popart.DataFlow(self.batches_per_step, self.anchor_returns)
 
     def createProto(self):
@@ -179,7 +173,7 @@ class TrainingSession(_TrainingSessionCore):
                  batch_size=1,
                  batches_per_step=1,
                  inputShapeInfo=popart.InputShapeInfo(),
-                 passes=popart.Patterns(),
+                 patterns=popart.Patterns(),
                  userOptions=popart.SessionOptions()):
 
         self.torchModel = torchModel
@@ -236,18 +230,18 @@ class TrainingSession(_TrainingSessionCore):
             losses.append(
                 self.createLosses(self.losses, out, f"target_{idx}",
                                   f"loss_{idx}"))
-            self.anchor_returns[out] = popart.AnchorReturnType("ALL")
-            self.anchor_returns[f"loss_{idx}"] = popart.AnchorReturnType("ALL")
+            self.anchor_returns[out] = popart.AnchorReturnType("All")
+            self.anchor_returns[f"loss_{idx}"] = popart.AnchorReturnType("All")
 
-        if passes is None:
-            passes = popart.Patterns()
+        if patterns is None:
+            patterns = popart.Patterns()
 
-        self.dataFeed = self.createDataFeed()
+        self.dataFlow = self.createdataFlow()
 
         super(TrainingSession,
-              self).__init__(proto, self.dataFeed, losses,
+              self).__init__(proto, self.dataFlow, losses,
                              self.createOptimizer(), self.deviceInfo,
-                             self.inputShapeInfo, userOptions, passes)
+                             self.inputShapeInfo, userOptions, patterns)
 
         self.replicationFactor = userOptions.replicatedGraphCount if \
             userOptions.enableReplicatedGraphs else 1
@@ -257,21 +251,15 @@ class TrainingSession(_TrainingSessionCore):
     def createLosses(self, loss, output, label=None, name="loss"):
         self.inputNames.append(label)
         if label:
-            self.anchor_returns[label] = popart.AnchorReturnType("ALL")
-        if isinstance(loss, torch.nn.NLLLoss):
-            return popart.NllLoss(output, label, name)
-        elif isinstance(loss, torch.nn.L1Loss):
-            return popart.L1Loss(output, name)
-        elif isinstance(loss, torch.nn.Identity):
-            return popart.IdentityLoss(output, name)
-        elif isinstance(loss, torch.Tensor):
+            self.anchor_returns[label] = popart.AnchorReturnType("All")
+        if isinstance(loss, torch.Tensor):
             return popart.IdentityLoss(output, name)
         else:
             raise RuntimeError(
-                "Only NLLLoss, L1Loss or Identity loss with manual "
-                "loss construction are currently supported.")
+                "Only Identity loss with manual loss construction is currently supported."
+            )
 
-    def createDataFeed(self):
+    def createdataFlow(self):
         return popart.DataFlow(self.batches_per_step, self.anchor_returns)
 
     def createProto(self):

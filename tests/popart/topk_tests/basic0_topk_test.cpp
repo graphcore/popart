@@ -1,6 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Basic0TopkTest
 
+#include <../random_util.hpp>
 #include <boost/test/unit_test.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
@@ -13,7 +14,6 @@
 #include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>
 
-#include <random>
 #include <vector>
 
 BOOST_AUTO_TEST_CASE(Basic0TopK_Opset9) {
@@ -22,8 +22,8 @@ BOOST_AUTO_TEST_CASE(Basic0TopK_Opset9) {
 
   // generate random input data
   int seed = 1013;
-  std::default_random_engine eng(seed);
-  std::uniform_real_distribution<float> fdis(-4, 4);
+  DefaultRandomEngine eng(seed);
+  UniformRealDistribution<float> fdis(-4.f, +4.f);
 
   // prepare to build an onnx model
   auto builder = Builder::create();
@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(Basic0TopK_Opset9) {
   auto modelProto = io::getModelFromString(proto);
 
   // create the IR
-  auto art      = AnchorReturnType("ALL");
+  auto art      = AnchorReturnType("All");
   auto dataFlow = DataFlow(1, {{values, art}, {indices, art}});
 
   auto device = popart::createTestDevice(TEST_TARGET);
@@ -96,10 +96,9 @@ BOOST_AUTO_TEST_CASE(Basic0TopK_Opset9) {
       proto,
       dataFlow,
       device,
-      {},
       popart::InputShapeInfo(),
       opts,
-      popart::Patterns(PatternsLevel::NONE));
+      popart::Patterns(PatternsLevel::NoPatterns));
 
   // prepare the anchors
   std::vector<float> rawOutputValues(outValuesInfo.nelms());
@@ -138,8 +137,8 @@ BOOST_AUTO_TEST_CASE(Basic0TopK_Opset10) {
 
   // generate random input data
   int seed = 1013;
-  std::default_random_engine eng(seed);
-  std::uniform_real_distribution<float> fdis(-4, 4);
+  DefaultRandomEngine eng(seed);
+  UniformRealDistribution<float> fdis(-4.f, +4.f);
 
   // prepare to build an onnx model
   auto builder = Builder::create();
@@ -207,7 +206,7 @@ BOOST_AUTO_TEST_CASE(Basic0TopK_Opset10) {
   auto modelProto = io::getModelFromString(proto);
 
   // create the IR
-  auto art      = AnchorReturnType("ALL");
+  auto art      = AnchorReturnType("All");
   auto dataFlow = DataFlow(1, {{values, art}, {indices, art}});
 
   auto device = popart::createTestDevice(TEST_TARGET);
@@ -218,10 +217,9 @@ BOOST_AUTO_TEST_CASE(Basic0TopK_Opset10) {
       proto,
       dataFlow,
       device,
-      {},
       popart::InputShapeInfo(),
       opts,
-      popart::Patterns(PatternsLevel::NONE));
+      popart::Patterns(PatternsLevel::NoPatterns));
 
   // prepare the anchors
   std::vector<float> rawOutputValues(outValuesInfo.nelms());

@@ -34,7 +34,7 @@ public:
 
   TensorId addUntypedInputTensor(const std::string &debugPrefix = "");
 
-  void addInputTensorFromHigherScope(const TensorId &tensorId);
+  void addInputTensorFromParentGraph(const TensorId &tensorId);
 
   TensorId addInitializedInputTensor(const ConstVoidData &initData,
                                      const std::string &debugPrefix = "");

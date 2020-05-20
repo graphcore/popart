@@ -87,7 +87,7 @@ Patterns::Patterns(PatternsLevel level) {
   switch (level) {
 
   // add the default patterns
-  case PatternsLevel::DEFAULT: {
+  case PatternsLevel::Default: {
     for (auto &ti_info : PreAliasPatternManager::getPatternInfos()) {
       auto &ti   = ti_info.first;
       auto &info = ti_info.second;
@@ -98,7 +98,7 @@ Patterns::Patterns(PatternsLevel level) {
   }
 
   // add all of the patterns
-  case PatternsLevel::ALL: {
+  case PatternsLevel::All: {
     for (auto &ti_info : PreAliasPatternManager::getPatternInfos()) {
       auto &ti = ti_info.first;
       settings.insert({ti, true});
@@ -108,7 +108,7 @@ Patterns::Patterns(PatternsLevel level) {
   }
 
   // add none of the patterns
-  case PatternsLevel::NONE: {
+  case PatternsLevel::NoPatterns: {
     break;
   }
   };
@@ -128,7 +128,7 @@ Patterns::Patterns(std::vector<PreAliasPatternType> types) {
 }
 
 Patterns Patterns::create(std::vector<std::string> strings) {
-  Patterns patterns(PatternsLevel::NONE);
+  Patterns patterns(PatternsLevel::NoPatterns);
 
   for (auto p : strings) {
     if (p == "InPlace") {

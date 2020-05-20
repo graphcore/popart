@@ -97,7 +97,7 @@ BOOST_AUTO_TEST_CASE(Inplace_Scale1) {
     auto modelProto = io::getModelFromString(proto);
 
     // Create the IR
-    auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+    auto dataFlow = DataFlow(1, {{out, AnchorReturnType("All")}});
 
     auto device = createTestDevice(TEST_TARGET);
 
@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE(Inplace_Scale1) {
                 nullptr,
                 *device,
                 {},
-                Patterns(PatternsLevel::NONE).enableInPlace(true)});
+                Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
 
     BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Concat).size() == 1);
     BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::ConcatInplace).size() == 0);

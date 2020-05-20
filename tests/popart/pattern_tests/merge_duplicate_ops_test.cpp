@@ -11,6 +11,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/testdevice.hpp>
@@ -52,27 +53,25 @@ BOOST_AUTO_TEST_CASE(MergeDuplicates0) {
   auto h2  = aiOnnx.relu({in0});
   auto h3  = aiOnnx.add({h0, h1});
   auto out = aiOnnx.add({h2, h3});
-  builder->addOutputTensor(out);
+  auto l1  = builder->aiGraphcoreOpset1().l1loss({out}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+  auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("All")}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(out, "l1LossVal", 0.1, ReductionType::SUM)};
-  auto device = createTestDevice(TEST_TARGET);
+  auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              losses,
+              l1,
               &optimizer,
               *device,
               {},
-              Patterns(PatternsLevel::NONE).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
 
   // Check the ir
   // All 3 relus have been merged and the remaining one will have been inplaced.

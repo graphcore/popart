@@ -51,8 +51,6 @@ def op_tester(tmpdir):
             return tensor_id
 
         def addInitializedInputTensor(self, data):
-            shape = popart.TensorInfo(data)
-
             tensor_id = self._builder.addInitializedInputTensor(data)
             self._init_input_map[tensor_id] = data
 
@@ -82,16 +80,16 @@ def op_tester(tmpdir):
     class OpTester:
         def __init__(self, logging_dir):
             np.random.seed(0)
-            self.passes = []
+            self.patterns = []
             self.options = popart.SessionOptions()
             self.logging_dir = logging_dir
             self.numIPUs = 1
             self.rtol = 1e-05
             self.atol = 1e-08
             self.check_shapes = True
-            self.loss_reduction_type = popart.ReductionType.Sum
             self.equal_nan = False
             self.inplacing = True
+            self.lossReduction = popart.ReductionType.Mean
 
         def verifyTensor(self, t1, ref):
             if self.check_shapes:
@@ -120,8 +118,7 @@ def op_tester(tmpdir):
                 reference,
                 step_type='infer',
                 opsets=None,
-                optimizer=popart.ConstSGD(0.01),
-                losses=None):
+                optimizer=popart.ConstSGD(0.01)):
             assert step_type in ('infer', 'train')
 
             bld = Builder(opsets=opsets)
@@ -130,49 +127,46 @@ def op_tester(tmpdir):
 
             # Allows to pass additional arguments to init_builder, if required
             # by the specific init_builder function implementation.
-            if losses is None:
-                losses = []
-            kwargs = {'losses': losses}
+            kwargs = {}
             kwargs = tu.filter_dict(kwargs, init_builder)
             anchorIds = init_builder(bld, **kwargs)
 
             for anchorId in anchorIds:
                 if anchorId not in bld._init_input_map:
-                    anchors[anchorId] = popart.AnchorReturnType("ALL")
+                    anchors[anchorId] = popart.AnchorReturnType("All")
 
             dataFlow = popart.DataFlow(1, anchors)
-
-            if len(losses) == 0:
-                losses = [
-                    popart.L1Loss(anchorIds[0], "l1LossVal", 0.1,
-                                  self.loss_reduction_type)
-                ]
-            proto = bld.getModelProto()
 
             self.options.logDir = self.logging_dir
 
             device = tu.create_test_device(numIpus=self.numIPUs)
             print(f"Created device {device} with {self.numIPUs} IPUs")
 
-            patterns = popart.Patterns(self.passes)
+            patterns = popart.Patterns(self.patterns)
             patterns.InPlace = self.inplacing
 
             if step_type == 'infer':
-                session = popart.InferenceSession(fnModel=proto,
-                                                  dataFeed=dataFlow,
-                                                  losses=losses,
+                session = popart.InferenceSession(fnModel=bld.getModelProto(),
+                                                  dataFlow=dataFlow,
                                                   deviceInfo=device,
-                                                  passes=popart.Patterns(
-                                                      self.passes),
+                                                  patterns=popart.Patterns(
+                                                      self.patterns),
                                                   userOptions=self.options)
             else:
-                session = popart.TrainingSession(fnModel=proto,
-                                                 dataFeed=dataFlow,
-                                                 losses=losses,
+                assert step_type == 'train'
+                # Apply reduction to output (assumed to be the
+                # first anchorId) to ensure it is scalar
+                lossId = anchorIds[0]
+                lossId = bld.aiGraphcore.identityloss(
+                    [lossId], reduction=self.lossReduction)
+
+                session = popart.TrainingSession(fnModel=bld.getModelProto(),
+                                                 dataFlow=dataFlow,
+                                                 loss=lossId,
                                                  optimizer=optimizer,
                                                  deviceInfo=device,
-                                                 passes=popart.Patterns(
-                                                     self.passes),
+                                                 patterns=popart.Patterns(
+                                                     self.patterns),
                                                  userOptions=self.options)
 
             anchor_map = session.initAnchorArrays()
@@ -208,7 +202,6 @@ def op_tester(tmpdir):
 
             if (step_type == 'train'):
                 session.weightsFromHost()
-                session.optimizerFromHost()
 
             session.run(stepio)
 

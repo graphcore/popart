@@ -1,6 +1,7 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE MatMulGradPatternTest
 
+#include <../random_util.hpp>
 #include <boost/test/unit_test.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
@@ -9,6 +10,7 @@
 #include <popart/graph.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/op/reshape.hpp>
@@ -27,7 +29,6 @@
 #include <algorithm>
 #include <chrono>
 #include <map>
-#include <random>
 #include <tuple>
 #include <vector>
 
@@ -50,8 +51,8 @@ BOOST_AUTO_TEST_CASE(MatMulGradPatternScheduleTest_0) {
 
   // we will generate random initializations
   int seed = 1337;
-  std::default_random_engine eng(seed);
-  std::uniform_real_distribution<float> fdis(-4, 4);
+  DefaultRandomEngine eng(seed);
+  UniformRealDistribution<float> fdis(-4.f, +4.f);
 
   auto bder        = Builder::create();
   auto aiOnnx      = bder->aiOnnxOpset9();
@@ -90,18 +91,15 @@ BOOST_AUTO_TEST_CASE(MatMulGradPatternScheduleTest_0) {
   TensorId E_id = bder->customOp(
       Onnx::AiOnnx::OpSet11::MatMul, 11, {D_id, C_id}, 1, {}, "MatMul")[0];
 
+  auto l1            = bder->aiGraphcoreOpset1().l1loss({E_id}, 0.1);
   auto proto         = bder->getModelProto();
   auto modelProto    = io::getModelFromString(proto);
-  auto art           = AnchorReturnType("ALL");
+  auto art           = AnchorReturnType("All");
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{B_id, art}});
 
   std::map<popart::TensorId, popart::IArray &> inputs  = {};
   std::map<popart::TensorId, popart::IArray &> anchors = {};
-
-  std::unique_ptr<popart::L1Loss> l1Loss(
-      new popart::L1Loss(E_id, "l1LossVal", 0.1f, popart::ReductionType::MEAN));
-  std::vector<popart::Loss *> losses{l1Loss.get()};
 
   auto optimizer = popart::ConstSGD(0.01f);
 
@@ -109,20 +107,20 @@ BOOST_AUTO_TEST_CASE(MatMulGradPatternScheduleTest_0) {
   // Disable outlining
   opts.enableOutlining = false;
 
-  auto passes = popart::Patterns(PatternsLevel::DEFAULT);
+  auto patterns = popart::Patterns(PatternsLevel::Default);
   // Disable inplacing since this could affect the scheduler
-  passes.enableInPlace(false);
+  patterns.enableInPlace(false);
 
   auto device = createTestDevice(TEST_TARGET);
   auto session =
       popart::TrainingSession::createFromOnnxModel(proto,
                                                    dataFlow,
-                                                   losses,
+                                                   l1,
                                                    optimizer,
                                                    device,
                                                    popart::InputShapeInfo(),
                                                    opts,
-                                                   passes);
+                                                   patterns);
   session->prepareDevice();
   popart::StepIO stepio(inputs, anchors);
 

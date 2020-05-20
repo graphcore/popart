@@ -76,7 +76,7 @@ def ipu_op_tester(tmpdir):
     class OpTester:
         def __init__(self, logging_dir):
             np.random.seed(0)
-            self.passes = []
+            self.patterns = []
             self.logging_dir = logging_dir
             self.rtol = 1e-05
             self.atol = 1e-08
@@ -93,7 +93,7 @@ def ipu_op_tester(tmpdir):
             anchorIds = init_builder(bld)
             for anchorId in anchorIds:
                 if anchorId not in bld._init_input_map:
-                    anchors[anchorId] = popart.AnchorReturnType("ALL")
+                    anchors[anchorId] = popart.AnchorReturnType("All")
 
             dataFlow = popart.DataFlow(1, anchors)
 
@@ -102,7 +102,6 @@ def ipu_op_tester(tmpdir):
             else:
                 optimizer = None
 
-            losses = [popart.L1Loss(anchorIds[0], "l1LossVal", 0.1)]
             proto = bld.getModelProto()
 
             opts = popart.SessionOptions()
@@ -113,19 +112,24 @@ def ipu_op_tester(tmpdir):
 
             if (step_type == 'infer'):
                 session = popart.InferenceSession(fnModel=proto,
-                                                  dataFeed=dataFlow,
+                                                  dataFlow=dataFlow,
                                                   deviceInfo=device,
-                                                  passes=popart.Patterns(
-                                                      self.passes),
+                                                  patterns=popart.Patterns(
+                                                      self.patterns),
                                                   userOptions=opts)
             elif (step_type == 'train'):
-                session = popart.TrainingSession(fnModel=proto,
-                                                 dataFeed=dataFlow,
-                                                 losses=losses,
+                # Apply reduction to output (assumed to be the
+                # first anchorId) to ensure it is scalar
+                lossId = anchorIds[0]
+                lossId = bld.aiGraphcore.identityloss([lossId])
+
+                session = popart.TrainingSession(fnModel=bld.getModelProto(),
+                                                 dataFlow=dataFlow,
+                                                 loss=lossId,
                                                  optimizer=optimizer,
                                                  deviceInfo=device,
-                                                 passes=popart.Patterns(
-                                                     self.passes),
+                                                 patterns=popart.Patterns(
+                                                     self.patterns),
                                                  userOptions=opts)
 
             anchor_map = session.initAnchorArrays()

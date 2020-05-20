@@ -32,7 +32,7 @@ def test_reducemean(op_tester):
             result.append(np.mean(data, axis=tuple(axes), keepdims=keepdims))
         return result
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -91,5 +91,5 @@ def test_reducemean_training(op_tester):
         result = [sum, sum.grad] + result
         return result
 
-    op_tester.passes = ['OpToIdentity']
+    op_tester.patterns = ['OpToIdentity']
     op_tester.run(init_builder, reference, 'train')

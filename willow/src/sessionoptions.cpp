@@ -13,11 +13,11 @@ namespace {
 std::array<std::string, NDotChecks> getDotCheckIds() {
 
   std::array<std::string, NDotChecks> V;
-  V[static_cast<int>(DotCheck::FWD0)]     = "fwd0";
-  V[static_cast<int>(DotCheck::FWD1)]     = "fwd1";
-  V[static_cast<int>(DotCheck::BWD0)]     = "bwd0";
-  V[static_cast<int>(DotCheck::PREALIAS)] = "prealias";
-  V[static_cast<int>(DotCheck::FINAL)]    = "final";
+  V[static_cast<int>(DotCheck::Fwd0)]     = "fwd0";
+  V[static_cast<int>(DotCheck::Fwd1)]     = "fwd1";
+  V[static_cast<int>(DotCheck::Bwd0)]     = "bwd0";
+  V[static_cast<int>(DotCheck::PreAlias)] = "prealias";
+  V[static_cast<int>(DotCheck::Final)]    = "final";
 
   // verify that we have registered all the DotChecks
   // c++, when will we be able to make this constexpr?
@@ -39,11 +39,11 @@ std::string getDotCheckString(DotCheck d) {
 
 DotCheck dotCheckFromString(const std::string &s) {
   const static std::map<std::string, DotCheck> dotCheckStringsMap{
-      {"FWD0", DotCheck::FWD0},
-      {"FWD1", DotCheck::FWD1},
-      {"BWD0", DotCheck::BWD0},
-      {"PREALIAS", DotCheck::PREALIAS},
-      {"FINAL", DotCheck::FINAL}};
+      {"FWD0", DotCheck::Fwd0},
+      {"FWD1", DotCheck::Fwd1},
+      {"BWD0", DotCheck::Bwd0},
+      {"PREALIAS", DotCheck::PreAlias},
+      {"FINAL", DotCheck::Final}};
 
   auto found = dotCheckStringsMap.find(s);
   if (found != dotCheckStringsMap.end()) {

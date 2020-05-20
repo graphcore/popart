@@ -14,7 +14,7 @@ enum class DeviceType { IpuModel = 0, Cpu, Ipu, Sim };
 
 enum class SyncPattern { Full = 0, SinglePipeline, PingPong };
 
-enum class DeviceConnectionType { ALWAYS = 0, ON_DEMAND, NEVER };
+enum class DeviceConnectionType { Always = 0, OnDemand, Never };
 
 class DeviceProvider;
 
@@ -28,7 +28,7 @@ public:
   DeviceInfo(
       DeviceProvider &_provider,
       DeviceType _type,
-      DeviceConnectionType _connectionType = DeviceConnectionType::ALWAYS)
+      DeviceConnectionType _connectionType = DeviceConnectionType::Always)
       : provider(_provider), type(_type), connectionType(_connectionType) {
     (void)provider;
   }
@@ -44,24 +44,24 @@ public:
 
   virtual void createVirtualGraph(int tilesPerIpu) = 0;
 
-  /// Get the type of the device
+  /// Get the type of the device.
   DeviceType getType() const { return type; }
 
-  /// Get the connection type of the device
+  /// Get the connection type of the device.
   DeviceConnectionType getConnectionType() const { return connectionType; }
 
-  /// Return a description of the device
+  /// Return a description of the device.
   std::string toString() const;
 
-  /// Get the device id
+  /// Get the device id.
   virtual int getId() const = 0;
-  /// Get the version of the software on the ipu
+  /// Get the version of the software on the IPU.
   virtual std::string getVersion() const = 0;
-  /// Get the number of ipus
+  /// Get the number of IPUs in the device.
   virtual int getNumIpus() const = 0;
-  /// Get the number tiles per ipu
+  /// Get the number of tiles per IPU.
   virtual int getTilesPerIpu() const = 0;
-  /// Get the number work contexts per tile
+  /// Get the number of worker contexts per tile.
   virtual int getNumWorkerContexts() const = 0;
 
   virtual std::vector<unsigned> getDriverIds() const = 0;
@@ -74,8 +74,8 @@ private:
 
 std::ostream &operator<<(std::ostream &os, const DeviceInfo &di);
 
-/// The interface for device provides which are registered with the device
-/// manager
+/// The interface for device providers which are registered with the device
+/// manager.
 class DeviceProvider {
 public:
   virtual ~DeviceProvider() {}
@@ -104,19 +104,19 @@ public:
                    const std::map<std::string, std::string> &options) = 0;
 };
 
-/// The class for
+/// A class to manage devices.
 ///
 class DeviceManager {
 
   std::vector<DeviceProvider *> providers;
 
 public:
-  /** Accessor for the device manager
+  /** Accessor for the device manager.
    * \return A reference to the DeviceManager
    */
   static DeviceManager &createDeviceManager();
 
-  /** Used to register a device provider
+  /** Used to register a device provider.
    * \param provider A provider
    */
   void registerDeviceProvider(DeviceProvider *provider);
@@ -131,25 +131,23 @@ public:
   std::shared_ptr<DeviceInfo>
   getDevice(SyncPattern syncPattern             = SyncPattern::Full,
             uint32_t deviceManagerId            = 0,
-            DeviceConnectionType connectionType = DeviceConnectionType::ALWAYS);
+            DeviceConnectionType connectionType = DeviceConnectionType::Always);
 
   /**
    * Get the list of all devices fulfilling the specified criteria.
    *
    * \param pattern Sync pattern.
-   * \param replication_factor Number of times to replicate.
    * \param numIpus Number of IPUs to request.
    * \param deviceType Type of device required.
    * \return List of requested IPUs.
    */
   std::vector<std::shared_ptr<DeviceInfo>> enumerateDevices(
       SyncPattern pattern                 = SyncPattern::Full,
-      uint32_t replication_factor         = 1,
       int numIpus                         = 1,
       DeviceType deviceType               = DeviceType::Ipu,
-      DeviceConnectionType connectionType = DeviceConnectionType::ALWAYS);
+      DeviceConnectionType connectionType = DeviceConnectionType::Always);
 
-  /** Finds the first available hardware device, that a certain number of IPUs.
+  /** Finds the first available hardware device, with a certain number of IPUs.
    * This method will attach to the device.
    * \param numIpus The number of IPUs on the device [=1]
    * \param tilesPerIpu The number of tiles on the IPU [=1216]
@@ -160,40 +158,44 @@ public:
       int numIpus                         = 1,
       int tilesPerIpu                     = 1216,
       SyncPattern pattern                 = SyncPattern::Full,
-      uint32_t replication_factor         = 1,
-      DeviceConnectionType connectionType = DeviceConnectionType::ALWAYS);
+      DeviceConnectionType connectionType = DeviceConnectionType::Always);
 
   /** Allocates the hardware device by id. This id can be found running 'gc-info
-   *  -l' This method will attach to the device
+   *  -l'. This method will attach to the device.
    * \param id The index of the IPU to be used
    * \return A device. Will return nullptr if the device is not available
    */
   std::shared_ptr<DeviceInfo> acquireDeviceById(
       int id,
       SyncPattern pattern                 = SyncPattern::Full,
-      uint32_t replication_factor         = 1,
-      DeviceConnectionType connectionType = DeviceConnectionType::ALWAYS);
+      DeviceConnectionType connectionType = DeviceConnectionType::Always);
 
-  /** Create a 'simulated' CPU device
+  /** Create a 'simulated' CPU device.
    * \return A device
    */
   std::shared_ptr<DeviceInfo> createCpuDevice();
 
-  /** Create a 'simulated' IPU Model device
-   * The following options are supported :
-   * | numIPUs     | The number of ipus to simulate |
-   * | tilesPerIPU | The number of tiles per ipu |
-   * | compileIPUCode | Whether or note to compile read Ipu code for modelling|
+  /** Create a 'simulated' IPU Model device.
+   * The following options are supported:
+   *
+   * * ``numIPUs``:         The number of IPUs to simulate [=1]
+   * * ``tilesPerIPU``:     The number of tiles per IPU [=1216]
+   * * ``compileIPUCode``:  Whether or not to compile real IPU code for
+   *   modelling
+   *
    * \param options Configuration settings for the IPU Model
    * \return A device
    */
   std::shared_ptr<DeviceInfo>
   createIpuModelDevice(std::map<std::string, std::string> &options);
 
-  /** Create a 'simulated' Sim device
-   * The following options are supported :
-   * | numIPUs     | The number of ipus to simulate |
-   * | tilesPerIPU | The number of tiles per ipu |
+  /* [INTERNAL]
+   * Create a 'simulated' Sim device.
+   * The following options are supported:
+   *
+   * * ``numIPUs``:         The number of IPUs to simulate
+   * * ``tilesPerIPU``:     The number of tiles per IPU
+   *
    * \param options Configuration settings for the Sim
    * \return A device
    */
@@ -201,19 +203,19 @@ public:
   createSimDevice(std::map<std::string, std::string> &options);
 };
 
-/** Write a representation of a DeviceType to an output stream
+/** Write a representation of a DeviceType to an output stream.
  *
- * \param os output stream
- * \param dt device type reference
- * \return the same output stream for chaining
+ * \param os Output stream
+ * \param dt Device type reference
+ * \return The same output stream for chaining
  */
 std::ostream &operator<<(std::ostream &os, const DeviceType &dt);
 
-/** Write a representation of a DeviceConnectionType to an output stream
+/** Write a representation of a DeviceConnectionType to an output stream.
  *
- * \param os output stream
- * \param dct device connection type reference
- * \return the same output stream for chaining
+ * \param os Output stream
+ * \param dct Device connection type reference
+ * \return The same output stream for chaining
  */
 std::ostream &operator<<(std::ostream &os, const DeviceConnectionType &dct);
 

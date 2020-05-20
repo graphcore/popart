@@ -1,6 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE MergeVarUpdatesSGD1Transformation0
 
+#include <../../random_util.hpp>
 #include <boost/test/unit_test.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
@@ -8,6 +9,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/session.hpp>
@@ -18,7 +20,6 @@
 #include <algorithm>
 #include <map>
 #include <memory>
-#include <random>
 #include <tuple>
 #include <vector>
 
@@ -46,8 +47,8 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD1) {
   auto test = [](MergeVarUpdateType mvu, std::string dtype) {
     // we will generate random input data
     int seed = 1013;
-    std::default_random_engine eng(seed);
-    std::uniform_real_distribution<float> fdis(-4, 4);
+    DefaultRandomEngine eng(seed);
+    UniformRealDistribution<float> fdis(-4.f, +4.f);
 
     // construct onnx model
     auto builder = Builder::create();
@@ -102,12 +103,14 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD1) {
       nInChans      = nOutChans;
     }
 
-    auto reduced      = aiOnnx.reducesum({actIds[nConv]}, {1, 2, 3});
+    auto reduced     = aiOnnx.reducesum({actIds[nConv]}, {1, 2, 3});
+    float lossLambda = 0.26;
+    auto l1 = builder->aiGraphcoreOpset1().l1loss({reduced}, lossLambda);
     std::string proto = builder->getModelProto();
     auto modelProto   = io::getModelFromString(proto);
 
     // create the IR
-    auto art      = AnchorReturnType("ALL");
+    auto art      = AnchorReturnType("All");
     auto dataFlow = DataFlow(1, {{reduced, art}});
 
     auto device = popart::createTestDevice(TEST_TARGET);
@@ -120,7 +123,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD1) {
     opts.swapLimitScheduler = 20;
     opts.firstDotOp         = 0;
     opts.finalDotOp         = 200;
-    opts.dotChecks.insert(DotCheck::FINAL);
+    opts.dotChecks.insert(DotCheck::Final);
     opts.logDir                     = ".";
     opts.mergeVarUpdate             = mvu;
     opts.mergeVarUpdateMemThreshold = mvu == MergeVarUpdateType::AutoLoose
@@ -128,7 +131,6 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD1) {
                                           : 24; // 24 bytes = 7 floats
     opts.looseThresholdAtPeak = 10000;
 
-    float lossLambda   = 0.26;
     float learningRate = 0.1;
 
     // Use a relatively complex SGD optimizer.
@@ -138,15 +140,12 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD1) {
                           {"defaultVelocityScaling", {0.25f, true}},
                           {"lossScaling", {0.2f, true}},
                           {"defaultMomentum", {0.9f, false}}});
-    ;
-    std::vector<std::shared_ptr<Loss>> losses{std::make_shared<L1Loss>(
-        reduced, "l1LossVal", lossLambda, ReductionType::SUM)};
 
     Ir ir;
     ir.prepare({modelProto,
                 InputShapeInfo(),
                 dataFlow,
-                losses,
+                l1,
                 &optimizer,
                 *device,
                 opts,

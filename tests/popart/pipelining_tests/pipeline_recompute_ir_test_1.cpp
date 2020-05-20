@@ -10,6 +10,7 @@
 #include <popart/filereader.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/nll.hpp>
@@ -106,11 +107,12 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest1) {
   // to stash on IPU 3 : none, as it it the final IPU.
   act = getPipe(act, 3);
 
-  builder->addOutputTensor(act);
+  act = builder->aiGraphcoreOpset1().l1loss({act}, 0.1);
+  builder->virtualGraph(act, 3);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
-  auto dataFlow   = DataFlow(100, {{act, AnchorReturnType("ALL")}});
+  auto dataFlow   = DataFlow(100, {{act, AnchorReturnType("All")}});
 
   SessionOptions userOptions;
   userOptions.virtualGraphMode  = VirtualGraphMode::Manual;
@@ -121,22 +123,17 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest1) {
 
   auto optimizer = ConstSGD(0.01);
 
-  auto loss1 =
-      std::make_shared<L1Loss>(act, "l1LossVal_1", 0.1, ReductionType::MEAN);
-
-  loss1->virtualGraph(3);
-
   auto device = createTestDevice(TEST_TARGET, nIpus);
 
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              {loss1},
+              act,
               &optimizer,
               *device,
               userOptions,
-              Patterns(PatternsLevel::DEFAULT)});
+              Patterns(PatternsLevel::Default)});
 
   auto sched = ir.getMainGraph().getOpSchedule({});
 
@@ -149,9 +146,9 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest1) {
       stashIpus.push_back(op->getVirtualGraphId());
     }
 
-    // Backwards pass Ops must not be RECOMPUTE
+    // Backwards pass Ops must not be Recompute
     if (op->fromLoss == PathFromLoss::Yes) {
-      BOOST_CHECK(op->settings.recomputeType == RecomputeType::CHECKPOINT);
+      BOOST_CHECK(op->settings.recomputeType == RecomputeType::Checkpoint);
     }
   }
 

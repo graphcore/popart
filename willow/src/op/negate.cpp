@@ -30,7 +30,7 @@ std::unique_ptr<Op> NegateGradOp::clone() const {
 
 const std::vector<GradInOutMapper> &NegateGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), NegateOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getInIndex(), NegateOp::getOutIndex(), GradOpInType::GradOut}};
 
   return inInfo;
 }

@@ -34,8 +34,8 @@ def test_basic(tmpdir):
         proto = builder.getModelProto()
 
         dataFlow = popart.DataFlow(1, {
-            c1: popart.AnchorReturnType("ALL"),
-            o: popart.AnchorReturnType("ALL")
+            c1: popart.AnchorReturnType("All"),
+            o: popart.AnchorReturnType("All")
         })
 
         opts = popart.SessionOptions()
@@ -43,7 +43,7 @@ def test_basic(tmpdir):
         opts.enableOutliningCopyCostPruning = False
 
         session = popart.InferenceSession(fnModel=proto,
-                                          dataFeed=dataFlow,
+                                          dataFlow=dataFlow,
                                           userOptions=opts,
                                           deviceInfo=tu.create_test_device())
 

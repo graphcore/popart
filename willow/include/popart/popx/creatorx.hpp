@@ -41,7 +41,8 @@ public:
   virtual ~ICreatorCandidate() = default;
 
   // Creates an input tensor
-  virtual poplar::Tensor createInput(const std::string &name) = 0;
+  virtual std::pair<poplar::Tensor, ViewChangers>
+  createInput(const std::string &name) = 0;
 
   // Returns the list of tensors that must be created before this one
   virtual std::vector<TensorId> mustExistBeforeCreate() = 0;
@@ -54,7 +55,12 @@ public:
 
   virtual std::string str() = 0;
 
-  virtual poplar::Tensor unwind(poplar::Tensor)                          = 0;
+  // Return unwound tensor and the view changer that can be applied to the
+  // unwound tensor if the tensor does not match IR specifications.
+  // Unwinding will currently stop and return when an unwinding Opx that
+  // supplies a ViewChanger is reached
+  virtual std::pair<poplar::Tensor, ViewChangers> unwind(poplar::Tensor) = 0;
+
   virtual std::vector<popart::view::Region> unwind(popart::view::Region) = 0;
   virtual std::vector<popart::view::Region> unwind()                     = 0;
 
@@ -72,7 +78,8 @@ public:
   InputCreatorCandidate()                   = default;
   virtual ~InputCreatorCandidate() override = default;
 
-  poplar::Tensor createInput(const std::string &name) override;
+  std::pair<poplar::Tensor, ViewChangers>
+  createInput(const std::string &name) override;
 
   std::vector<TensorId> mustExistBeforeCreate() override;
 
@@ -90,7 +97,7 @@ public:
     pathFromInput = value;
   }
 
-  poplar::Tensor unwind(poplar::Tensor) override;
+  std::pair<poplar::Tensor, ViewChangers> unwind(poplar::Tensor) override;
   std::vector<popart::view::Region> unwind(popart::view::Region) override;
   std::vector<popart::view::Region> unwind() override;
 
@@ -125,7 +132,8 @@ public:
   InputMultiCreatorCandidate();
   virtual ~InputMultiCreatorCandidate() override = default;
 
-  poplar::Tensor createInput(const std::string &name) override;
+  std::pair<poplar::Tensor, ViewChangers>
+  createInput(const std::string &name) override;
   std::vector<TensorId> mustExistBeforeCreate() override;
 
   double getMaxCreatorPriority() override;
@@ -138,7 +146,7 @@ public:
   // Returns the unwind path from the tensor to the creator
   std::vector<std::vector<OpxInAndOutIndex>> getPathsFromInput() final;
 
-  poplar::Tensor unwind(poplar::Tensor) override;
+  std::pair<poplar::Tensor, ViewChangers> unwind(poplar::Tensor) override;
   std::vector<popart::view::Region> unwind(popart::view::Region) override;
   std::vector<popart::view::Region> unwind() override;
 

@@ -1,11 +1,11 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE PipelineQuadraticEpsilonTesto0
 
+#include <../random_util.hpp>
 #include <algorithm>
 #include <boost/filesystem.hpp>
 #include <boost/test/unit_test.hpp>
 #include <map>
-#include <random>
 #include <tuple>
 #include <vector>
 
@@ -16,6 +16,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/restore.hpp>
@@ -103,8 +104,8 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
   auto getResults = [exportFinalDotFiles](bool continuous) {
     // input stream samples weights are generated randomly
     int seed = 1011;
-    std::mt19937 eng(seed);
-    std::uniform_real_distribution<float> fdis(-1, 1);
+    DefaultRandomEngine eng(seed);
+    UniformRealDistribution<float> fdis(-1.f, +1.f);
 
     int64_t batchSize      = 4;
     int64_t batchesPerStep = 160;
@@ -194,22 +195,19 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
     // sum of the 2 branch outputs
     auto actFinal = aiOnnx.add({actFinal0, actFinal1}, "finalAct");
 
-    builder->addOutputTensor(actFinal);
+    float lambda  = 0.1;
+    auto l1       = builder->aiGraphcoreOpset1().l1loss({actFinal}, lambda);
     auto proto    = builder->getModelProto();
     auto dataFlow = DataFlow(batchesPerStep);
 
     float learnRate = 0.005;
     auto optimizer  = ConstSGD(learnRate);
 
-    float lambda = 0.1;
-    auto loss    = std::unique_ptr<Loss>(
-        new L1Loss(actFinal, "l1LossVal", lambda, ReductionType::SUM));
-
     SessionOptions userOptions;
     unsigned numIpus = 1;
 
     if (exportFinalDotFiles) {
-      userOptions.dotChecks.insert(DotCheck::FINAL);
+      userOptions.dotChecks.insert(DotCheck::Final);
       userOptions.logDir = "./dotTestContinuous_" + std::to_string(continuous);
       boost::filesystem::create_directory(userOptions.logDir);
     }
@@ -225,12 +223,12 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
         dataFlow,
-        {loss.get()},
+        l1,
         optimizer,
         device,
         InputShapeInfo(),
         userOptions,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
 
     session->prepareDevice();
 

@@ -155,7 +155,7 @@ def test_call_grad_1(op_tester):
 
         return [o, d__o, t0.grad, t1.grad, t2.grad]
 
-    op_tester.passes = popart.PatternsLevel.DEFAULT
+    op_tester.patterns = popart.PatternsLevel.Default
     op_tester.run(get_init_builder("untyped"), reference, 'train')
     op_tester.run(get_init_builder("with_info"), reference, 'train')
     op_tester.run(get_init_builder("from_higher_scope"), reference, 'train')
@@ -334,7 +334,7 @@ def test_call_grad_2(op_tester):
 
         return [r, r__o, d0_t.grad, d1_t.grad]
 
-    op_tester.passes = popart.PatternsLevel.DEFAULT
+    op_tester.patterns = popart.PatternsLevel.Default
 
     op_tester.run(init_builder, reference, 'train')
 
@@ -368,14 +368,12 @@ def test_call_grad_3():
 
             call = builder.aiGraphcore.call([relu], 1, subgraph_builder,
                                             "call_subgraph")[0]
-            builder.addOutputTensor(call)
-            losses = [popart.NllLoss(call, lb, "loss")]
+            nll = builder.aiGraphcore.nllloss([call, lb])
         else:
             sm = builder.aiOnnx.softmax([relu])
-            builder.addOutputTensor(sm)
-            losses = [popart.NllLoss(sm, lb, "loss")]
+            nll = builder.aiGraphcore.nllloss([sm, lb])
 
-        art = popart.AnchorReturnType("ALL")
+        art = popart.AnchorReturnType("All")
         dataFlow = popart.DataFlow(
             1, {
                 ip: art,
@@ -389,12 +387,12 @@ def test_call_grad_3():
         trainingOptions = popart.SessionOptions()
         trainingSession = popart.TrainingSession(
             fnModel=builder.getModelProto(),
-            dataFeed=dataFlow,
-            losses=losses,
+            dataFlow=dataFlow,
+            loss=nll,
             optimizer=popart.ConstSGD(0.001),
             userOptions=trainingOptions,
             deviceInfo=tu.create_test_device(),
-            passes=popart.Patterns(popart.PatternsLevel.DEFAULT))
+            patterns=popart.Patterns(popart.PatternsLevel.Default))
 
         # Compile graph
         trainingSession.prepareDevice()
@@ -470,7 +468,7 @@ def test_call_grad_scoped(op_tester):
 
         return [r, r__o, d0_t.grad, d1_t.grad]
 
-    op_tester.passes = popart.PatternsLevel.DEFAULT
+    op_tester.patterns = popart.PatternsLevel.Default
 
     op_tester.run(init_builder, reference, 'train')
 
@@ -544,7 +542,7 @@ def test_stacked_subgraphs(op_tester):
 
         return [r, r__o, in_t.grad, w_t.grad]
 
-    op_tester.passes = popart.PatternsLevel.DEFAULT
+    op_tester.patterns = popart.PatternsLevel.Default
 
     op_tester.run(init_builder, reference, 'train')
 
@@ -583,8 +581,9 @@ def test_stacked_subgraphs_2():
                                               "mm_layer" + str(layer))
                 actIn = builder.aiOnnx.relu([actIn], "relu_layer" + str(layer))
 
+        actIn = builder.aiGraphcore.identityloss([actIn])
         builder.addOutputTensor(actIn)
-        art = popart.AnchorReturnType("ALL")
+        art = popart.AnchorReturnType("All")
         anchor_returns = {
             w0: art,
             popart.reservedGradientPrefix() + w0: art,
@@ -592,13 +591,13 @@ def test_stacked_subgraphs_2():
             popart.reservedGradientPrefix() + in0: art
         }
         opts = popart.SessionOptions()
-        session = popart.TrainingSession(
-            fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(1, anchor_returns),
-            deviceInfo=tu.create_test_device(),
-            optimizer=popart.ConstSGD(0.1),
-            losses=[popart.L1Loss(actIn, actIn + "/loss", 0.1)],
-            userOptions=opts)
+        session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                         dataFlow=popart.DataFlow(
+                                             1, anchor_returns),
+                                         deviceInfo=tu.create_test_device(),
+                                         optimizer=popart.ConstSGD(0.1),
+                                         loss=actIn,
+                                         userOptions=opts)
 
         anchors = session.initAnchorArrays()
 
@@ -607,7 +606,7 @@ def test_stacked_subgraphs_2():
 
         session.prepareDevice()
         session.weightsFromHost()
-        session.optimizerFromHost()
+
         for _ in range(steps):
             session.run(stepio)
         return anchors
@@ -651,14 +650,14 @@ def test_stacked_subgraphs_2():
 #     out = builder.aiGraphcore.call([i0, i1], 1, subgraph_builder)[0]
 #
 #     anchorMap = {
-#         popart.reservedGradientPrefix() + i0: popart.AnchorReturnType("ALL"),
-#         popart.reservedGradientPrefix() + i1: popart.AnchorReturnType("ALL")
+#         popart.reservedGradientPrefix() + i0: popart.AnchorReturnType("All"),
+#         popart.reservedGradientPrefix() + i1: popart.AnchorReturnType("All")
 #     }
 #
 #     # This should throw some exception, as the grad subgraph is empty
 #     session = popart.TrainingSession(
 #       fnModel=builder.getModelProto(),
-#       dataFeed=popart.DataFlow(1, anchorMap),
+#       dataFlow=popart.DataFlow(1, anchorMap),
 #       deviceInfo=tu.create_test_device(),
 #       optimizer=popart.ConstSGD(0.1),
-#       losses=[popart.L1Loss(out, out+"/loss", 0.1)])
+#       losses=[popart.IdentityLoss(out, out+"/loss")])

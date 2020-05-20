@@ -51,8 +51,8 @@ std::unique_ptr<Op> ExpGradOp::clone() const {
 
 const std::vector<GradInOutMapper> &ExpGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getGradInIndex(), ExpOp::getOutIndex(), GradOpInType::GRADOUT},
-      {getFwdOutInIndex(), ExpOp::getOutIndex(), GradOpInType::OUT}};
+      {getGradInIndex(), ExpOp::getOutIndex(), GradOpInType::GradOut},
+      {getFwdOutInIndex(), ExpOp::getOutIndex(), GradOpInType::Out}};
 
   return inInfo;
 }

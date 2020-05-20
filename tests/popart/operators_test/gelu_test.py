@@ -52,7 +52,7 @@ def test_gelu_inplace(op_tester):
         m = torch_gelu(torch_test_data)
         return [m]
 
-    op_tester.passes = ['InPlace']
+    op_tester.patterns = ['InPlace']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -73,7 +73,7 @@ def test_gelu_torch(op_tester):
         m = torch_gelu(torch_test_data)
         return [m]
 
-    op_tester.passes = ['InPlace']
+    op_tester.patterns = ['InPlace']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -82,7 +82,7 @@ def test_gelu_training(op_tester):
     # I increase the dimension of the tensor in order to avoid segfaul.
     input_data = np.asarray([np.linspace(-10, 10, 100, dtype=np.float32)])
 
-    op_tester.atol = 1e-6
+    op_tester.atol = 1e-5
 
     def init_builder(builder):
         i1 = builder.addInputTensor(input_data)
@@ -103,7 +103,7 @@ def test_gelu_training(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.passes = ['OpToIdentity']
+    op_tester.patterns = ['OpToIdentity']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -132,5 +132,5 @@ def test_gelu_torch_training(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.passes = ['OpToIdentity']
+    op_tester.patterns = ['OpToIdentity']
     op_tester.run(init_builder, reference, 'train')

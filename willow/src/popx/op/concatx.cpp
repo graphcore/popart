@@ -21,7 +21,7 @@ ConcatOpx::ConcatOpx(Op *op_, Devicex *devicex)
 }
 
 InputCreatorType BaseConcatOpx::getInputCreatorType(InIndex) const {
-  return InputCreatorType::CANUNWIND;
+  return InputCreatorType::CanUnwind;
 }
 
 poplar::Tensor BaseConcatOpx::unwindTensorLayout(poplar::Tensor tensor,

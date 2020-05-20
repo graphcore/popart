@@ -21,28 +21,25 @@ def trainSession(anchors, optimizer, stepSize):
                              dilations=[1, 1],
                              pads=[1, 1, 1, 1],
                              strides=[1, 1])
-    o = builder.aiOnnx.conv([c1, i2],
-                            dilations=[1, 1],
-                            pads=[1, 1, 1, 1],
-                            strides=[1, 1])
-    builder.addOutputTensor(o)
+    c2 = builder.aiOnnx.conv([c1, i2],
+                             dilations=[1, 1],
+                             pads=[1, 1, 1, 1],
+                             strides=[1, 1])
+    o = builder.aiGraphcore.l1loss([c2], 0.1)
 
     proto = builder.getModelProto()
-
-    losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
 
     opts = popart.SessionOptions()
 
     session = popart.TrainingSession(
         fnModel=proto,
-        dataFeed=popart.DataFlow(stepSize, anchors),
-        losses=losses,
+        dataFlow=popart.DataFlow(stepSize, anchors),
+        loss=o,
         optimizer=optimizer,
         deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     session.prepareDevice()
     session.weightsFromHost()
-    session.optimizerFromHost()
 
     # add step dimension to infeed
     infeedShape = dataShape.shape()
@@ -64,9 +61,9 @@ def test_sgd_param_check():
     lsName = popart.reservedLossScalingPrefix() + "FLOAT"
 
     anchorNames = {
-        lrName: popart.AnchorReturnType("ALL"),
-        wdName: popart.AnchorReturnType("ALL"),
-        lsName: popart.AnchorReturnType("ALL")
+        lrName: popart.AnchorReturnType("All"),
+        wdName: popart.AnchorReturnType("All"),
+        lsName: popart.AnchorReturnType("All")
     }
 
     # Just a placeholder optimizer. We overwrite the hyper-parameters in this
@@ -93,13 +90,12 @@ def test_sgd_param_check():
         stepLr = learningRate[step]
         stepWd = weightDecay[step]
         stepLs = lossScaling[step]
-        session.updateOptimizer(
+        session.updateOptimizerFromHost(
             popart.SGD({
                 "defaultLearningRate": (stepLr, False),
                 "defaultWeightDecay": (stepWd, False),
                 "lossScaling": (stepLs, False)
             }))
-        session.optimizerFromHost()
 
         stepio = popart.PyStepIO(inputsUserSgd, anchorsArrays)
 
@@ -124,7 +120,7 @@ def test_constsgd_vs_sgd():
     We show that if the learning rates match, the training updates are 
     identical, otherwise they differ.
     """
-    anchorNames = {"l1LossVal": popart.AnchorReturnType("ALL")}
+    anchorNames = {"L1:0": popart.AnchorReturnType("All")}
     lr = 0.01
     wd = 0.01
     ls = 1000
@@ -159,13 +155,12 @@ def test_constsgd_vs_sgd():
         stepioUserSgd = popart.PyStepIO(inputsUserSgd, anchorsArraysUserSgd)
 
         if step == numSteps - 1:
-            sessionUserSgd.updateOptimizer(
+            sessionUserSgd.updateOptimizerFromHost(
                 popart.SGD({
                     "defaultLearningRate": (2 * lr, False),
                     "defaultWeightDecay": (2 * wd, False),
                     "lossScaling": (2 * ls, False)
                 }))
-            sessionUserSgd.optimizerFromHost()
 
         sessionConstSgd.run(stepioConstSgd)
         sessionUserSgd.run(stepioUserSgd)
@@ -173,14 +168,13 @@ def test_constsgd_vs_sgd():
         if step == numSteps - 1:
             # We expect to see the diverging losses on the second forward pass
             # after updating the optimizer
-            assert (np.array_equal(anchorsArraysUserSgd["l1LossVal"][0],
-                                   anchorsArraysConstSgd["l1LossVal"][0]))
-            assert (np.array_equal(anchorsArraysUserSgd["l1LossVal"][1],
-                                   anchorsArraysConstSgd["l1LossVal"][1]) is
-                    False)
+            assert (np.array_equal(anchorsArraysUserSgd["L1:0"][0],
+                                   anchorsArraysConstSgd["L1:0"][0]))
+            assert (np.array_equal(anchorsArraysUserSgd["L1:0"][1],
+                                   anchorsArraysConstSgd["L1:0"][1]) is False)
         else:
-            assert (np.array_equal(anchorsArraysUserSgd["l1LossVal"],
-                                   anchorsArraysConstSgd["l1LossVal"]))
+            assert (np.array_equal(anchorsArraysUserSgd["L1:0"],
+                                   anchorsArraysConstSgd["L1:0"]))
 
 
 def test_sgd_with_float16_model():
@@ -204,8 +198,8 @@ def test_sgd_with_float16_model():
                              pads=[1, 1, 1, 1],
                              strides=[1, 1])
 
-    out = c2
-    builder.addOutputTensor(out)
+    # Reduce to scalar
+    out = builder.aiGraphcore.identityloss([c2])
 
     proto = builder.getModelProto()
 
@@ -214,25 +208,23 @@ def test_sgd_with_float16_model():
         "defaultWeightDecay": (0.1, False),
         "lossScaling": (1000, False)
     })
-    losses = [popart.L1Loss(out, "l1LossVal", 0.1)]
 
     anchorNames = {
         popart.reservedGradientPrefix() + inid1:
-        popart.AnchorReturnType("ALL"),
+        popart.AnchorReturnType("All"),
     }
 
     opts = popart.SessionOptions()
 
     session = popart.TrainingSession(
         fnModel=proto,
-        dataFeed=popart.DataFlow(1, anchorNames),
-        losses=losses,
+        dataFlow=popart.DataFlow(1, anchorNames),
+        loss=out,
         optimizer=optimizer,
         deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     session.prepareDevice()
     session.weightsFromHost()
-    session.optimizerFromHost()
 
     anchorArrays = session.initAnchorArrays()
 
@@ -260,11 +252,8 @@ def test_sgd_with_zero_learning_rate():
     # Get the initial weights:
     fn = "init.onnx"
     session.modelToHost(fn)
-    builder = popart.Builder(fn)
     wId = "init_input"
-    weights = {
-        wId: np.empty(shape=builder.getTensorShape(wId), dtype=np.float32)
-    }
+    weights = {wId: np.empty(shape=[2, 2, 3, 3], dtype=np.float32)}
     weightsio = popart.PyWeightsIO(weights)
     session.readWeights(weightsio)
     init_weights = np.copy(weights[wId])
@@ -280,48 +269,14 @@ def test_sgd_with_zero_learning_rate():
     # Update optimizer with zero lr, (only valid if variable)
     optSettings["defaultLearningRate"] = (0.0, True)
     with pytest.raises(popart.popart_exception) as e_info:
-        session.updateOptimizer(popart.SGD(optSettings))
+        session.updateOptimizerFromHost(popart.SGD(optSettings))
     assert e_info.value.args[0].startswith(
         "Constant, zero learning rate in SGD")
 
     # Run a training step, and confirm the weights haven't updated
     optSettings["defaultLearningRate"] = (0.0, False)
-    session.updateOptimizer(popart.SGD(optSettings))
-    session.optimizerFromHost()
+    session.updateOptimizerFromHost(popart.SGD(optSettings))
+
     session.weightsToHost()
     session.readWeights(weightsio)
     assert np.array_equal(weights[wId], updated_weights)
-
-
-def test_check_optimizer_written_to_device():
-    """
-    In this test we check that the user can't mistakenly update the optimizer
-    on host without also updating on the device, before calling run
-    """
-
-    # Create the session with a variable SGD optimizer
-    optSettings = {
-        "defaultLearningRate": (0.5, False),
-        "defaultWeightDecay": (0.6, False)
-    }
-    session, inputsUserSgd = trainSession({}, popart.SGD(optSettings), 2)
-
-    # Run for a signle step. We haven't updated the optimizer between steps, so
-    # both run without error
-    stepio = popart.PyStepIO(inputsUserSgd, session.initAnchorArrays())
-    session.run(stepio)
-    session.run(stepio)
-
-    # Update optimizer on host
-    optSettings["defaultLearningRate"] = (0.4, False)
-    session.updateOptimizer(popart.SGD(optSettings))
-
-    # Try to run session, without updating optimizer on device
-    with pytest.raises(popart.popart_exception) as e_info:
-        session.run(stepio)
-    assert e_info.value.args[0].startswith(
-        "Must call optimizerFromHost before run")
-
-    # Try again after updating optimizer on device
-    session.optimizerFromHost()
-    session.run(stepio)

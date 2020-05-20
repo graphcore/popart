@@ -410,5 +410,5 @@ def test_matmul_broadcasting(op_tester):
                 return [r, r__o, t1.grad, t2.grad]
 
         # Test with the MatMulXXGradOp to MatMulOp pass
-        op_tester.passes = ['MatMulLhsGradOp', 'MatMulRhsGradOp']
+        op_tester.patterns = ['MatMulLhsGradOp', 'MatMulRhsGradOp']
         op_tester.run(init_builder, reference, 'train')

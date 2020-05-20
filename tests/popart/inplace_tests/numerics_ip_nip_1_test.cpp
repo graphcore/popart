@@ -1,9 +1,10 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE NumericsInplaceVsNot1Test
 
+#include <../random_util.hpp>
+
 #include <climits>
 #include <cmath>
-#include <random>
 #include <utility>
 
 #include <boost/filesystem.hpp>
@@ -43,7 +44,7 @@ using namespace popart;
 //    choose 2 from active, remove them from active, and insert their sum into
 //    active.
 
-enum class RunMode { SCALE = 0, SCALE_IN_PLACE, MUL };
+enum class RunMode { Scale = 0, ScaleInPlace, Mul };
 
 BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip1) {
 
@@ -97,9 +98,10 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip1) {
     }
 
     // Use seeded random number generators
-    std::default_random_engine eng(seed);
-    std::uniform_int_distribution<unsigned int> dis;
-    std::uniform_real_distribution<float> fdisPref(0, +10.0);
+    DefaultRandomEngine eng(seed);
+    UniformIntDistribution<unsigned int> dis(
+        0, std::numeric_limits<unsigned int>::max());
+    UniformRealDistribution<float> fdisPref(0.f, +10.0f);
 
     // Function for adding a new op
     auto addNewOp = [H,
@@ -120,13 +122,12 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip1) {
 
         TensorId scaledTensor;
 
-        if (runMode == RunMode::MUL) {
+        if (runMode == RunMode::Mul) {
           auto randScl =
               scaleFactorTensors[dis(eng) % scaleFactorTensors.size()];
           scaledTensor = aiOnnx.mul({randomTensor, randScl});
         } else {
-          assert(runMode == RunMode::SCALE ||
-                 runMode == RunMode::SCALE_IN_PLACE);
+          assert(runMode == RunMode::Scale || runMode == RunMode::ScaleInPlace);
           auto randScl = scaleFactors[dis(eng) % scaleFactorTensors.size()];
           scaledTensor = aiGraphcore.scale({randomTensor}, randScl);
           builder->setInplacePreferences(
@@ -167,7 +168,9 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip1) {
 
         if (second_idx != first_idx) {
           activeTensors.pop_back();
-          activeTensors[second_idx] = activeTensors.back();
+          if (second_idx < activeTensors.size()) {
+            activeTensors[second_idx] = activeTensors.back();
+          }
         }
         activeTensors.back() = sum;
       }
@@ -193,12 +196,12 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip1) {
     // ONNX_NAMESPACE::checker::check_model(modelProto);
 
     // Create the IR, adding outId as an anchor
-    auto art      = AnchorReturnType("ALL");
+    auto art      = AnchorReturnType("All");
     auto dataFlow = DataFlow(1, {{finalSum, art}});
 
     auto opts = SessionOptions();
     // opts.dotChecks.insert(DotCheck::BWD0);
-    // opts.dotChecks.insert(DotCheck::FWD0);
+    // opts.dotChecks.insert(DotCheck::Fwd0);
     // opts.dotChecks.insert(DotCheck::FINAL);
     // opts.dotOpNames      = false;
     // opts.logDir          = "./dotfiles";
@@ -218,11 +221,10 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip1) {
         proto,
         dataFlow,
         cpuDevice,
-        {},
         popart::InputShapeInfo(),
         opts,
-        popart::Patterns(PatternsLevel::NONE)
-            .enableInPlace(runMode == RunMode::SCALE_IN_PLACE));
+        popart::Patterns(PatternsLevel::NoPatterns)
+            .enableInPlace(runMode == RunMode::ScaleInPlace));
 
     // prepare the anchors
     std::vector<float> rawOutputData(H * W, 0);
@@ -236,7 +238,7 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip1) {
     session->prepareDevice();
 
     // generate random input data in the range [0 )
-    std::uniform_int_distribution<int> fdisInit(-5, +5);
+    UniformIntDistribution<int> fdisInit(-5, 5);
     float perturbFactor = perturbInput ? perturbSize : 0.0;
     std::vector<float> vInData(inInfo.nelms(), 0);
 
@@ -266,20 +268,20 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip1) {
 
   auto runTest = [&getValue, &perturbSize](int seed) {
     // scale
-    auto v000 = getValue(RunMode::SCALE, seed, false, false);
+    auto v000 = getValue(RunMode::Scale, seed, false, false);
     // scale+outline
-    auto v010 = getValue(RunMode::SCALE, seed, true, false);
+    auto v010 = getValue(RunMode::Scale, seed, true, false);
     // scale+inplace
-    auto v100 = getValue(RunMode::SCALE_IN_PLACE, seed, false, false);
+    auto v100 = getValue(RunMode::ScaleInPlace, seed, false, false);
     // scale+inplace+outline
-    auto v110 = getValue(RunMode::SCALE_IN_PLACE, seed, true, false);
+    auto v110 = getValue(RunMode::ScaleInPlace, seed, true, false);
     // mul
-    auto v200 = getValue(RunMode::SCALE_IN_PLACE, seed, false, false);
+    auto v200 = getValue(RunMode::ScaleInPlace, seed, false, false);
     // mul+outline
-    auto v210 = getValue(RunMode::SCALE_IN_PLACE, seed, true, false);
+    auto v210 = getValue(RunMode::ScaleInPlace, seed, true, false);
 
     // scale+perturb
-    auto v001 = getValue(RunMode::SCALE, seed, false, true);
+    auto v001 = getValue(RunMode::Scale, seed, false, true);
 
     std::cout << std::scientific << "Final value with Vanilla is " << v000
               << ". Some discrepencies : "

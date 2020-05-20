@@ -21,15 +21,6 @@ Session option flags
 Training operations
 -------------------
 
-Losses
-......
-
-.. doxygenclass:: popart::L1Loss
-  :members:
-
-.. doxygenclass:: popart::NllLoss
-  :members:
-
 Optimisers
 ..........
 

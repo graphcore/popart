@@ -108,7 +108,7 @@ poplar::Tensor BaseSortOpx::createInput(InIndex inIndex,
 
 InputCreatorType BaseSortOpx::getInputCreatorType(InIndex inIndex) const {
   if (inIndex == BaseSortOp::getInIndex()) {
-    return InputCreatorType::CANCREATE;
+    return InputCreatorType::CanCreate;
   } else {
     return Opx::getInputCreatorType(inIndex);
   }

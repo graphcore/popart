@@ -23,7 +23,7 @@ def test_train_then_infer_via_file():
                               strides=[1, 1])
     o = builder.aiOnnx.relu([act])
 
-    builder.addOutputTensor(o)
+    l1 = builder.aiGraphcore.l1loss([o], 0.1)
 
     anchor_names = [
         o,
@@ -32,9 +32,9 @@ def test_train_then_infer_via_file():
     ]
     training_dataFlow = popart.DataFlow(
         1, {
-            anchor_names[0]: popart.AnchorReturnType("ALL"),
-            anchor_names[1]: popart.AnchorReturnType("ALL"),
-            anchor_names[2]: popart.AnchorReturnType("ALL")
+            anchor_names[0]: popart.AnchorReturnType("All"),
+            anchor_names[1]: popart.AnchorReturnType("All"),
+            anchor_names[2]: popart.AnchorReturnType("All")
         })
 
     opts = popart.SessionOptions()
@@ -55,11 +55,11 @@ def test_train_then_infer_via_file():
 
     # Prepare the Inference session
     inference_dataFlow = popart.DataFlow(1,
-                                         {o: popart.AnchorReturnType("ALL")})
+                                         {o: popart.AnchorReturnType("All")})
 
     inference_session = popart.InferenceSession(
         fnModel=builder.getModelProto(),
-        dataFeed=inference_dataFlow,
+        dataFlow=inference_dataFlow,
         userOptions=opts,
         deviceInfo=device)
 
@@ -69,13 +69,12 @@ def test_train_then_infer_via_file():
     # ----------------------------------------------
 
     # Prepare the Training session
-    training_session = popart.TrainingSession(
-        fnModel=builder.getModelProto(),
-        dataFeed=training_dataFlow,
-        losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
-        optimizer=popart.ConstSGD(0.01),
-        userOptions=opts,
-        deviceInfo=device)
+    training_session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                              dataFlow=training_dataFlow,
+                                              loss=l1,
+                                              optimizer=popart.ConstSGD(0.01),
+                                              userOptions=opts,
+                                              deviceInfo=device)
 
     # Compile the training graph
     training_session.prepareDevice()
@@ -84,7 +83,6 @@ def test_train_then_infer_via_file():
 
     # Run the training session
     training_session.weightsFromHost()
-    training_session.optimizerFromHost()
 
     training_anchors = training_session.initAnchorArrays()
     training_inputs = {input: input_data}
@@ -145,11 +143,11 @@ def test_cannot_call_resethostweights_with_constant_weights():
 
     # Prepare the Inference session
     inference_dataFlow = popart.DataFlow(1,
-                                         {o: popart.AnchorReturnType("ALL")})
+                                         {o: popart.AnchorReturnType("All")})
 
     inference_session = popart.InferenceSession(
         fnModel=builder.getModelProto(),
-        dataFeed=inference_dataFlow,
+        dataFlow=inference_dataFlow,
         userOptions=opts,
         deviceInfo=device)
 
@@ -185,12 +183,13 @@ def test_modelToHost_calls_resetHostWeights():
                               pads=[1, 1, 1, 1],
                               strides=[1, 1])
     o = builder.aiOnnx.relu([act])
+    l1 = builder.aiGraphcore.l1loss([o], 0.1)
 
     builder.addOutputTensor(o)
 
     anchor_names = [o]
     data_flow = popart.DataFlow(
-        1, {i: popart.AnchorReturnType("ALL")
+        1, {i: popart.AnchorReturnType("All")
             for i in anchor_names})
 
     opts = popart.SessionOptions()
@@ -201,19 +200,17 @@ def test_modelToHost_calls_resetHostWeights():
     device.attach()
 
     # Prepare the Training session
-    session = popart.TrainingSession(
-        fnModel=builder.getModelProto(),
-        dataFeed=data_flow,
-        losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
-        optimizer=popart.ConstSGD(0.1),
-        userOptions=opts,
-        deviceInfo=device)
+    session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                     dataFlow=data_flow,
+                                     loss=l1,
+                                     optimizer=popart.ConstSGD(0.1),
+                                     userOptions=opts,
+                                     deviceInfo=device)
 
     # Compile the training graph
     session.prepareDevice()
 
     session.weightsFromHost()
-    session.optimizerFromHost()
 
     anchors = session.initAnchorArrays()
     inputs = {input: input_data}

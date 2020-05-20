@@ -70,8 +70,8 @@ const std::map<int, int> &MulArg0GradOp::gradOutToNonGradIn() const {
 
 const std::vector<GradInOutMapper> &MulArg0GradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {0, getOutIndex(), GradOpInType::GRADOUT},
-      {1, MulOp::getArg1InIndex(), GradOpInType::IN}};
+      {0, getOutIndex(), GradOpInType::GradOut},
+      {1, MulOp::getArg1InIndex(), GradOpInType::In}};
   return inInfo;
 }
 
@@ -94,8 +94,8 @@ const std::map<int, int> &MulArg1GradOp::gradOutToNonGradIn() const {
 
 const std::vector<GradInOutMapper> &MulArg1GradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {0, getOutIndex(), GradOpInType::GRADOUT},
-      {1, MulOp::getArg0InIndex(), GradOpInType::IN}};
+      {0, getOutIndex(), GradOpInType::GradOut},
+      {1, MulOp::getArg0InIndex(), GradOpInType::In}};
   return inInfo;
 }
 

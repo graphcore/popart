@@ -13,17 +13,15 @@ class NetWriter():
             A list (in order) of all the inputs to the ONNX Model.
         outNames:
             names of the outputs of the ONNX Model.
-        losses:
-            A list of PopART Loss objects
         optimizer:
             An optimizer (ConstSGD, SGD, etc) or ``None`` if
-            in evaluation mode.
+            in inference mode.
         anchors:
             Only relevant if in training mode: the names of tensors
             which must be computed and returned. If not in training
             mode, then outputs of forward are the (only) tensors
             to return.
-        dataFeed:
+        dataFlow:
             Configuration for the data feeds and fetches.
         inputShapeInfo:
             For every loss stream input and standard input: the shape,
@@ -31,18 +29,16 @@ class NetWriter():
 
     """
 
-    def __init__(self, inNames, outNames, losses, optimizer, dataFeed,
-                 inputShapeInfo):
+    def __init__(self, inNames, outNames, optimizer, dataFlow, inputShapeInfo):
 
         self.inNames = inNames
         self.outNames = outNames
-        self.losses = losses
         self.optimizer = optimizer
-        self.dataFeed = dataFeed
+        self.dataFlow = dataFlow
         self.inputShapeInfo = inputShapeInfo
         self.trainMode = optimizer != None
 
-        print(self.dataFeed.nAnchors())
+        print(self.dataFlow.nAnchors())
 
     def saveModel(self, filename):
         """
@@ -55,15 +51,6 @@ class NetWriter():
     def train(self, inputsMap):
         """
         Perform ``batchesPerStep`` training steps. This function
-        only needs to be implemented by frameworks which will
-        be used to verify PopART. See ``torchwriter.py`` for an
-        example implementation.
-        """
-        raise NotImplementedError()
-
-    def eval(self, inputsMap):
-        """
-        Perform ``batchesPerStep`` evaluation steps. This function
         only needs to be implemented by frameworks which will
         be used to verify PopART. See ``torchwriter.py`` for an
         example implementation.

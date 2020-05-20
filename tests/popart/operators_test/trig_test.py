@@ -44,7 +44,7 @@ def test_sin_grad(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.passes = ['PreUniRepl', 'SinGradOp']
+    op_tester.patterns = ['PreUniRepl', 'SinGradOp']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -87,7 +87,7 @@ def test_cos_grad(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.passes = ['PreUniRepl', 'CosGradOp']
+    op_tester.patterns = ['PreUniRepl', 'CosGradOp']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -106,7 +106,7 @@ def test_tan(op_tester):
         b = torch.tan(a)
         return [b]
 
-    op_tester.passes = ['TanToSinOverCos']
+    op_tester.patterns = ['TanToSinOverCos']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -131,7 +131,7 @@ def test_tan_grad(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.passes = [
+    op_tester.patterns = [
         'PreUniRepl', 'TanToSinOverCos', 'DivArg0GradOp', 'DivArg1GradOp',
         'SinGradOp', 'CosGradOp'
     ]
@@ -153,7 +153,7 @@ def test_cosh(op_tester):
         b = torch.cosh(a)
         return [b]
 
-    op_tester.passes = ['PreUniRepl', 'CoshOp']
+    op_tester.patterns = ['PreUniRepl', 'CoshOp']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -178,7 +178,7 @@ def test_cosh_grad(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.passes = ['PreUniRepl', 'CoshOp', 'ExpGradOp']
+    op_tester.patterns = ['PreUniRepl', 'CoshOp', 'ExpGradOp']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -221,5 +221,5 @@ def test_tanh_grad(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')

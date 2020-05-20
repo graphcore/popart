@@ -45,7 +45,7 @@ def test_sgd_mixed_mode(tmpdir):
         add1 = builder.aiOnnx.add([w1Id, add0])
         add2 = builder.aiOnnx.add([w2Id, add1])
 
-        builder.addOutputTensor(add2)
+        l1 = builder.aiGraphcore.l1loss([add2], 1.0)
 
         proto = builder.getModelProto()
 
@@ -55,15 +55,15 @@ def test_sgd_mixed_mode(tmpdir):
         opts.reportOptions = {"showExecutionSteps": "true"}
         opts.enableGroupedMatmuls = False
 
-        pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
+        pat = popart.Patterns(popart.PatternsLevel.Default)
 
         session = popart.TrainingSession(
             fnModel=proto,
-            dataFeed=dataFlow,\
+            dataFlow=dataFlow,\
             userOptions=opts,
-            losses=[popart.L1Loss(add2, "l1LossVal", 1.0)],
+            loss=l1,
             optimizer=opt0,
-            passes=pat,
+            patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
         session.prepareDevice()
@@ -75,11 +75,11 @@ def test_sgd_mixed_mode(tmpdir):
         input0Data = np.array([3.1415], dtype=np.float32)
 
         stepio = popart.PyStepIO({input0: input0Data}, anchors)
-        session.optimizerFromHost()
+
         session.run(stepio)
 
-        session.updateOptimizer(opt1)
-        session.optimizerFromHost()
+        session.updateOptimizerFromHost(opt1)
+
         session.run(stepio)
 
         session.weightsToHost()

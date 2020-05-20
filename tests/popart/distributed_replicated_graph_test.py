@@ -77,7 +77,7 @@ def test_distributed_replicated_allreduce():
     builder.addOutputTensor(o)
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
     opts = popart.SessionOptions()
     opts.enableReplicatedGraphs = False
     opts.enableDistributedReplicatedGraphs = True
@@ -89,7 +89,7 @@ def test_distributed_replicated_allreduce():
 
     device = tu.create_test_device(numIpus=numIpus)
     session = popart.InferenceSession(fnModel=proto,
-                                      dataFeed=dataFlow,
+                                      dataFlow=dataFlow,
                                       userOptions=opts,
                                       deviceInfo=device)
 
@@ -158,21 +158,20 @@ def test_distributed_replicated_weight_update():
     D = builder.addInitializedInputTensor(D_init, "D")
     E = builder.aiOnnx.matmul([A, B])
     F = builder.aiOnnx.matmul([E, C])
-    G = builder.aiOnnx.matmul([F, D])
-    builder.addOutputTensor(G)
+    loss = builder.aiGraphcore.l1loss([G], lossLambda)
+    builder.addOutputTensor(loss)
     proto = builder.getModelProto()
 
     outputs = {
-        A: popart.AnchorReturnType("ALL"),
-        B: popart.AnchorReturnType("ALL"),
-        C: popart.AnchorReturnType("ALL"),
-        D: popart.AnchorReturnType("ALL"),
-        G: popart.AnchorReturnType("ALL")
+        A: popart.AnchorReturnType("All"),
+        B: popart.AnchorReturnType("All"),
+        C: popart.AnchorReturnType("All"),
+        D: popart.AnchorReturnType("All"),
+        G: popart.AnchorReturnType("All")
     }
 
     dataFlow = popart.DataFlow(1, outputs)
     optimizer = popart.ConstSGD(1.0)
-    losses = [popart.L1Loss(G, "l1LossVal", lossLambda)]
 
     opts = popart.SessionOptions()
     opts.enableReplicatedGraphs = False
@@ -185,8 +184,8 @@ def test_distributed_replicated_weight_update():
 
     device = tu.create_test_device(numIpus=numIpus)
     session = popart.TrainingSession(fnModel=proto,
-                                     dataFeed=dataFlow,
-                                     losses=losses,
+                                     dataFlow=dataFlow,
+                                     loss=loss,
                                      optimizer=optimizer,
                                      deviceInfo=device,
                                      userOptions=opts)
@@ -199,7 +198,7 @@ def test_distributed_replicated_weight_update():
     stepio = popart.PyStepIO(inputs, anchors)
 
     session.weightsFromHost()
-    session.optimizerFromHost()
+
     session.run(stepio)
 
     torch_ground_truth = ground_truth()
@@ -267,20 +266,20 @@ def test_distributed_hierarchical_replicated_weight_update():
     E = builder.aiOnnx.matmul([A, B])
     F = builder.aiOnnx.matmul([E, C])
     G = builder.aiOnnx.matmul([F, D])
-    builder.addOutputTensor(G)
+    loss = builder.aiGraphcore.l1loss([G], lossLambda)
+    builder.addOutputTensor(loss)
     proto = builder.getModelProto()
 
     outputs = {
-        A: popart.AnchorReturnType("ALL"),
-        B: popart.AnchorReturnType("ALL"),
-        C: popart.AnchorReturnType("ALL"),
-        D: popart.AnchorReturnType("ALL"),
-        G: popart.AnchorReturnType("ALL")
+        A: popart.AnchorReturnType("All"),
+        B: popart.AnchorReturnType("All"),
+        C: popart.AnchorReturnType("All"),
+        D: popart.AnchorReturnType("All"),
+        G: popart.AnchorReturnType("All")
     }
 
     dataFlow = popart.DataFlow(1, outputs)
     optimizer = popart.ConstSGD(1.0)
-    losses = [popart.L1Loss(G, "l1LossVal", lossLambda)]
 
     opts = popart.SessionOptions()
     opts.enableReplicatedGraphs = True
@@ -294,8 +293,8 @@ def test_distributed_hierarchical_replicated_weight_update():
 
     device = tu.create_test_device(numIpus=numIpus)
     session = popart.TrainingSession(fnModel=proto,
-                                     dataFeed=dataFlow,
-                                     losses=losses,
+                                     dataFlow=dataFlow,
+                                     loss=loss,
                                      optimizer=optimizer,
                                      deviceInfo=device,
                                      userOptions=opts)
@@ -308,7 +307,7 @@ def test_distributed_hierarchical_replicated_weight_update():
     stepio = popart.PyStepIO(inputs, anchors)
 
     session.weightsFromHost()
-    session.optimizerFromHost()
+
     session.run(stepio)
 
     torch_ground_truth = ground_truth()

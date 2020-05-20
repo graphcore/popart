@@ -28,17 +28,17 @@ BOOST_AUTO_TEST_CASE(LogicalIf_namescope0) {
 
   // non-existant name
   BOOST_CHECK_EXCEPTION(
-      child3.addInputTensorFromHigherScope("thisNameDoesNotExistInHigherScope"),
+      child3.addInputTensorFromParentGraph("thisNameDoesNotExistInHigherScope"),
       popart::error,
       invalidHigherInput);
 
   // name exists in higher scope
-  child3.addInputTensorFromHigherScope(in0);
+  child3.addInputTensorFromParentGraph(in0);
 
   auto in3 = child3.addInputTensor(info, "userChosenDebugString");
 
   // can't add a name from a lower scope
-  BOOST_CHECK_EXCEPTION(child1.addInputTensorFromHigherScope(in3),
+  BOOST_CHECK_EXCEPTION(child1.addInputTensorFromParentGraph(in3),
                         popart::error,
                         invalidHigherInput);
 
@@ -46,6 +46,6 @@ BOOST_AUTO_TEST_CASE(LogicalIf_namescope0) {
   Builder &child5 = child4.createSubgraphBuilder();
 
   // names exist in higher scope
-  child5.addInputTensorFromHigherScope(in0);
-  child5.addInputTensorFromHigherScope(in3);
+  child5.addInputTensorFromParentGraph(in0);
+  child5.addInputTensorFromParentGraph(in3);
 }

@@ -19,12 +19,12 @@ def test_no_virtual_graph():
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
 
     popart.InferenceSession(fnModel=proto,
-                            dataFeed=dataFlow,
+                            dataFlow=dataFlow,
                             userOptions=opts,
                             deviceInfo=tu.create_test_device())
 
@@ -48,13 +48,13 @@ def test_all_virtual_graph():
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     popart.InferenceSession(fnModel=proto,
-                            dataFeed=dataFlow,
+                            dataFlow=dataFlow,
                             userOptions=opts,
                             deviceInfo=tu.create_test_device())
 
@@ -77,14 +77,14 @@ def test_mixed_virtual_graph():
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     with pytest.raises(popart.popart_exception) as e_info:
         popart.InferenceSession(fnModel=proto,
-                                dataFeed=dataFlow,
+                                dataFlow=dataFlow,
                                 userOptions=opts,
                                 deviceInfo=tu.create_test_device())
 

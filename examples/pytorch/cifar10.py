@@ -94,7 +94,7 @@ def main():
 
     print("Compiling model...")
     torchSession.prepareDevice()
-    torchSession.optimizerFromHost()
+
     torchSession.weightsFromHost()
 
     for epoch in range(10):  # loop over the dataset multiple times
@@ -143,9 +143,9 @@ def main():
 
         inferenceSession = popart.InferenceSession(
             fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(
+            dataFlow=popart.DataFlow(
                 batches_per_step,
-                {"output_0": popart.AnchorReturnType("ALL")}),
+                {"output_0": popart.AnchorReturnType("All")}),
             deviceInfo=popart.DeviceManager().acquireAvailableDevice(1))
 
         print("Compiling test model...")

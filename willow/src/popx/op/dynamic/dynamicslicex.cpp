@@ -43,7 +43,7 @@ void DynamicSliceOpx::grow(poplar::program::Sequence &prog) const {
 
 InputCreatorType DynamicSliceOpx::getInputCreatorType(InIndex index) const {
   return index == DynamicSliceBaseOp::getInIndex()
-             ? InputCreatorType::CANCREATE_OR_UNWIND
+             ? InputCreatorType::CanCreateOrUnwind
              : Opx::getInputCreatorType(index);
 }
 

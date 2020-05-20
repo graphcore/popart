@@ -11,6 +11,7 @@
 #include <popart/filereader.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/sessionoptions.hpp>
@@ -44,16 +45,15 @@ BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
       act = conv(builder.get(), act, weight_data);
       act = aiOnnx.relu({act});
     }
+    auto l1 = builder->aiGraphcoreOpset1().l1loss({act}, 0.1);
 
     auto proto      = builder->getModelProto();
     auto modelProto = io::getModelFromString(proto);
 
     // Add the last tensor, and the 3rd tensor as anchors
-    auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("ALL")}});
+    auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("All")}});
     auto optimizer = ConstSGD(0.01);
-    std::vector<std::shared_ptr<Loss>> losses{
-        std::make_shared<L1Loss>(act, "l1LossVal", 0.1, ReductionType::SUM)};
-    auto device = createTestDevice(TEST_TARGET);
+    auto device    = createTestDevice(TEST_TARGET);
 
     SessionOptions opts;
     opts.autoRecomputation              = RecomputationType::None;
@@ -66,19 +66,19 @@ BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
     ir.prepare({modelProto,
                 InputShapeInfo(),
                 dataFlow,
-                losses,
+                l1,
                 &optimizer,
                 *device,
                 opts,
-                Patterns({PreAliasPatternType::OPTOIDENTITY,
-                          PreAliasPatternType::POSTNREPL})});
+                Patterns({PreAliasPatternType::OptoIdentity,
+                          PreAliasPatternType::PostNRepl})});
 
     auto opSchedule = ir.getOpSchedule({});
 
     // Check that there is no recomputation
     BOOST_CHECK(
         std::all_of(opSchedule.cbegin(), opSchedule.cend(), [](const Op *op) {
-          return op->settings.recomputeType != RecomputeType::RECOMPUTE;
+          return op->settings.recomputeType != RecomputeType::Recompute;
         }));
     return opSchedule.size();
   };

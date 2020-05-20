@@ -20,8 +20,8 @@
 
 namespace popart {
 
-enum class RecomputeType { UNDEFINED = 0, CHECKPOINT, RECOMPUTE, RECOMPUTED };
-enum class CacheType { UNDEFINED = 0, UNCACHED, CACHED };
+enum class RecomputeType { Undefined = 0, Checkpoint, Recompute, Recomputed };
+enum class CacheType { Undefined = 0, Uncached, Cached };
 
 std::ostream &operator<<(std::ostream &, const RecomputeType &);
 
@@ -32,7 +32,7 @@ class OpSerialiserBase;
 // design note: it's not possible for an input to a
 // grad-op to NOT be directly related to
 // the corresponding non-grad-op.
-enum class GradOpInType { IN = 0, OUT, GRADOUT };
+enum class GradOpInType { In = 0, Out, GradOut };
 
 class GradInOutMapper {
 public:
@@ -84,8 +84,8 @@ public:
     std::string name = "";
 
     Scope scope;
-    RecomputeType recomputeType = RecomputeType::UNDEFINED;
-    CacheType cacheType         = CacheType::UNDEFINED;
+    RecomputeType recomputeType = RecomputeType::Undefined;
+    CacheType cacheType         = CacheType::Undefined;
 
     // optional inplace priorities, to take precedence over the default
     // priorities. A negative priority gurarantees no inplacing
@@ -105,6 +105,9 @@ public:
 
     boost::optional<BatchSerializedPhase> batchSerializedPhase;
 
+    // If the OP should be placed on I/O tiles instead of regular tiles
+    IsIoTile useIoTiles{false};
+
     // Tensor layout mapping should be inferred "to" tensor <- "from" tensor
     std::map<InIndex, InIndex> inferTensorMappingToFrom;
 
@@ -113,6 +116,10 @@ public:
     // topological ordering.
     // default : 0.0
     double schedulePriority{0.0};
+
+    // Extra attributes to differentiate ops for outlining
+    // Ops with different outline attributes are not outlined together
+    std::map<std::string, std::string> extraOutlineAttributes;
 
     // This method will append the optional attributes (vgraphId, etc)
     // depending on whether the attribute has been
@@ -129,8 +136,8 @@ public:
 
   const boost::optional<int64_t> getOptionalVirtualGraphId() const;
   VGraphId getVirtualGraphId() const;
-  virtual VGraphId getIntrospectionInVirtualGraphId(InIndex) const;
-  virtual VGraphId getIntrospectionOutVirtualGraphId(OutIndex) const;
+  virtual VGraphIdAndIoTile getIntrospectionInVirtualGraphId(InIndex) const;
+  virtual VGraphIdAndIoTile getIntrospectionOutVirtualGraphId(OutIndex) const;
   void setVirtualGraphId(const boost::optional<VGraphId>);
   bool hasVirtualGraphId() const;
 
@@ -152,12 +159,12 @@ public:
   PipelineStage getPipelineStage() const;
   boost::optional<PipelineStage> getOptionalPipelineStage() const;
 
-  // Loop over the producers of inputs. Check the particular
-  // Settings property. The maximum value is chosen
-  void optionallySetVGraphIdFromMaxOfInputProducers();
-  void optionallySetPipelineStageFromMaxOfInputProducers();
-  void optionallySetPingPongPhaseFromMaxOfInputProducers();
-  void optionallySetBatchSerializedPhaseFromMaxOfInputProducers();
+  // Inherit placement attributes:
+  // - Pipeline stage
+  // - Pingpong phase
+  // - Virtual graph ID
+  // - Batch serial phase
+  void inheritPlacementAttributes(bool inheritSerializations);
 
   Ir &getIr();
   const Ir &getIr() const;

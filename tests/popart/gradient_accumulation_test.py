@@ -69,14 +69,15 @@ def get_mm_model(accl_factor, enable_multi_ipu):
             else:
                 builder.virtualGraph(x, 0)
 
-    output_tensor_name = x
-    builder.addOutputTensor(output_tensor_name)
-    label_shape = [micro_batch_size]
-    label_tensor_name = builder.addInputTensor(
-        popart.TensorInfo("INT32", label_shape))
+    label_tensor_name = builder.addInputTensor("INT32", [micro_batch_size])
+    x = builder.aiGraphcore.nllloss([x, label_tensor_name],
+                                    reduction=popart.ReductionType.Sum)
+    if enable_multi_ipu:
+        builder.virtualGraph(x, 1)
+
     initial_onnx_model = builder.getModelProto()
 
-    return initial_onnx_model, input_tensor_name, output_tensor_name, label_tensor_name
+    return initial_onnx_model, input_tensor_name, x, label_tensor_name
 
 
 def get_complex_model(accl_factor):
@@ -105,9 +106,10 @@ def get_complex_model(accl_factor):
                              debugPrefix="c0")
 
     r0 = builder.reshape_const(builder.aiOnnx, [c0], [micro_batch_size, 32])
-    output_tensor_name = builder.aiOnnx.softmax([r0],
-                                                axis=1,
-                                                debugPrefix="sfm")
+    sm = builder.aiOnnx.softmax([r0], axis=1, debugPrefix="sfm")
+    output_tensor_name = builder.aiGraphcore.identityloss(
+        [sm], reduction=popart.ReductionType.Sum)
+
     builder.addOutputTensor(output_tensor_name)
     label_shape = [micro_batch_size]
     label_tensor_name = builder.addInputTensor(
@@ -123,16 +125,8 @@ def run_graph(input_shape, initial_onnx_model, input_tensor_name,
               final_proto_filename, enable_multi_ipu, full_anchorage,
               inference_mode):
 
-    losses = [
-        popart.NllLoss(output_tensor_name, label_tensor_name, "NllLossVal")
-    ]
-
-    # Loss on the last IPU
-    if enable_multi_ipu:
-        losses[0].virtualGraph(1)
-
-    art = popart.AnchorReturnType("ALL")
-    anchorNames = {losses[0].output(0): art}
+    art = popart.AnchorReturnType("All")
+    anchorNames = {output_tensor_name: art}
 
     if full_anchorage:
         w0 = onnx.load_from_string(
@@ -165,22 +159,21 @@ def run_graph(input_shape, initial_onnx_model, input_tensor_name,
     # only for test purposes, inference with gradient_accumulation should never work
     if inference_mode:
         popart.InferenceSession(fnModel=initial_onnx_model,
-                                dataFeed=popart.DataFlow(
+                                dataFlow=popart.DataFlow(
                                     batches_per_step, anchorNames),
                                 userOptions=opts,
                                 deviceInfo=device)
 
     session = popart.TrainingSession(fnModel=initial_onnx_model,
-                                     dataFeed=popart.DataFlow(
+                                     dataFlow=popart.DataFlow(
                                          batches_per_step, anchorNames),
                                      deviceInfo=device,
-                                     losses=losses,
+                                     loss=output_tensor_name,
                                      optimizer=optimizer,
                                      userOptions=opts)
 
     session.prepareDevice()
     session.weightsFromHost()
-    session.optimizerFromHost()
 
     anchor_arrays = session.initAnchorArrays()
 
@@ -619,19 +612,18 @@ def test_loading_saved_gradient_accumulationt_tesors():
         assert grad_accl_prefix not in name
 
     def getTrainingSession(fn):
-        losses = [popart.NllLoss(output_name, lb_name, "NlllVal")]
         opts = popart.SessionOptions()
         opts.enableGradientAccumulation = True
         opts.accumulationFactor = accl_factor
         opts.disableGradAccumulationTensorStreams = False
         sess = popart.TrainingSession(fnModel=fn,
-                                      dataFeed=popart.DataFlow(1, {}),
+                                      dataFlow=popart.DataFlow(1, {}),
                                       deviceInfo=tu.create_test_device(),
-                                      losses=losses,
+                                      loss=output_name,
                                       optimizer=optimizer,
                                       userOptions=opts)
         sess.prepareDevice()
-        sess.optimizerFromHost()
+
         sess.weightsFromHost()
         return sess
 

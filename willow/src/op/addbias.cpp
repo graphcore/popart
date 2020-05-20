@@ -157,7 +157,7 @@ const std::map<int, int> &AddBiasBiasGradOp::gradOutToNonGradIn() const {
 
 const std::vector<GradInOutMapper> &AddBiasBiasGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), AddBiasOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getInIndex(), AddBiasOp::getOutIndex(), GradOpInType::GradOut}};
 
   return inInfo;
 }
@@ -168,7 +168,7 @@ AddBiasDataGradOp::AddBiasDataGradOp(const AddBiasOp &op)
 
 const std::vector<GradInOutMapper> &AddBiasDataGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), AddBiasOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getInIndex(), AddBiasOp::getOutIndex(), GradOpInType::GradOut}};
 
   return inInfo;
 }

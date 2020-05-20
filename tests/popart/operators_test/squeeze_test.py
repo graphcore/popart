@@ -74,7 +74,7 @@ def test_squeeze_grad(op_tester):
         o.backward(torch.tensor(d__o))
         return [o, i1.grad, None]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -98,5 +98,5 @@ def test_squeeze_limited_grad(op_tester):
         o.backward(torch.tensor(d__o))
         return [o, i1.grad, None]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')

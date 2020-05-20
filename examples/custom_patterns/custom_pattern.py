@@ -17,11 +17,11 @@ builder.addOutputTensor(o)
 
 proto = builder.getModelProto()
 
-dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
 opts = popart.SessionOptions()
 
 popart.InferenceSession(fnModel=proto,
-                        dataFeed=dataFlow,
+                        dataFlow=dataFlow,
                         userOptions=opts,
                         deviceInfo=popart.DeviceManager().createCpuDevice())

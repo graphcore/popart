@@ -60,9 +60,9 @@ const std::map<int, int> &PowArg0GradOp::gradOutToNonGradIn() const {
 
 const std::vector<GradInOutMapper> &PowArg0GradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {0, getOutIndex(), GradOpInType::GRADOUT},
-      {1, PowOp::getArg0InIndex(), GradOpInType::IN},
-      {2, PowOp::getArg1InIndex(), GradOpInType::IN}};
+      {0, getOutIndex(), GradOpInType::GradOut},
+      {1, PowOp::getArg0InIndex(), GradOpInType::In},
+      {2, PowOp::getArg1InIndex(), GradOpInType::In}};
   return inInfo;
 }
 
@@ -85,9 +85,9 @@ const std::map<int, int> &PowArg1GradOp::gradOutToNonGradIn() const {
 
 const std::vector<GradInOutMapper> &PowArg1GradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {0, getOutIndex(), GradOpInType::GRADOUT},
-      {1, PowOp::getArg0InIndex(), GradOpInType::IN},
-      {2, PowOp::getOutIndex(), GradOpInType::OUT}};
+      {0, getOutIndex(), GradOpInType::GradOut},
+      {1, PowOp::getArg0InIndex(), GradOpInType::In},
+      {2, PowOp::getOutIndex(), GradOpInType::Out}};
   return inInfo;
 } // namespace popart
 

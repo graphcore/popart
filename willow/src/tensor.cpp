@@ -30,14 +30,52 @@ bool Tensor::consumersAllPreLoss() const {
   return true;
 }
 
+bool Tensor::isAliased() const {
+  for (Op *consumer : consumers.getOps()) {
+    for (InIndex in : consumer->input->indices(graph.getTensors().get(id))) {
+      for (auto outEntry : consumer->output->indicesMap()) {
+        for (OutIndex out : outEntry.second) {
+          auto regions = consumer->aliases(in, out);
+          if (!std::all_of(regions.begin(),
+                           regions.end(),
+                           [](const view::Region &r) { return r.isEmpty(); })) {
+            return true;
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
+bool Tensor::isModified() const {
+  for (Op *consumer : consumers.getOps()) {
+    for (InIndex in : consumer->input->indices(graph.getTensors().get(id))) {
+      auto regions = consumer->modifies(in);
+      if (!std::all_of(
+              regions.begin(), regions.end(), [](const view::Region &r) {
+                return r.isEmpty() ||
+                       r.getAccessType() == view::AccessType::Read;
+              })) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 VGraphId Tensor::getVirtualGraphIdUnsafe() const {
+  return getVirtualGraphIdAndIoTileUnsafe().first;
+}
+
+VGraphIdAndIoTile Tensor::getVirtualGraphIdAndIoTileUnsafe() const {
 
   // If this Tensor has a Producer, use its VirtualGraphId if it has one
   if (hasProducer()) {
     // special case of IPUCopy producer
     auto ipucopy = dynamic_cast<IpuCopyOp *>(getProducer());
     if (ipucopy) {
-      return ipucopy->getDestIpu();
+      return {ipucopy->getDestIpu(), ipucopy->settings.useIoTiles};
     } else if (getProducer()->hasVirtualGraphId()) {
       for (auto &indices : getProducer()->output->indicesMap()) {
         if (indices.first == this) {
@@ -65,24 +103,32 @@ VGraphId Tensor::getVirtualGraphIdUnsafe() const {
   for (Op *consumer : consumers.getOps()) {
     auto ipucopy = dynamic_cast<IpuCopyOp *>(consumer);
     if (ipucopy) {
-      return ipucopy->getSourceIpus().at(id);
+      return {ipucopy->getSourceIpus().at(id), ipucopy->settings.useIoTiles};
     }
   }
 
   // No virtual graph Id determined
-  return -1;
+  return {unusedVGraphId, false};
 }
 
-VGraphId Tensor::getVirtualGraphId() const {
-  auto vid = getVirtualGraphIdUnsafe();
-  if (vid == -1) {
+VGraphIdAndIoTile Tensor::getVirtualGraphIdAndIoTile() const {
+  auto vid = getVirtualGraphIdAndIoTileUnsafe();
+  if (vid == VGraphIdAndIoTile(unusedVGraphId, false)) {
     throw error("Invalid call to getVirtualGraphId, Tensor does not have one");
   }
   return vid;
 }
 
+VGraphId Tensor::getVirtualGraphId() const {
+  auto vid = getVirtualGraphIdAndIoTileUnsafe();
+  if (vid == VGraphIdAndIoTile(unusedVGraphId, false)) {
+    throw error("Invalid call to getVirtualGraphId, Tensor does not have one");
+  }
+  return vid.first;
+}
+
 bool Tensor::hasVirtualGraphId() const {
-  return getVirtualGraphIdUnsafe() != -1;
+  return getVirtualGraphIdUnsafe() != unusedVGraphId;
 }
 
 const void *Tensor::getTensorData() const {
@@ -95,8 +141,6 @@ const void *Tensor::getTensorData() const {
 
 std::vector<char> Tensor::getDataViaRecursion() const {
   if (hasProducer()) {
-    Op *producer = getProducer();
-
     if (ConstExprOpManager::hasConstExprOp(producer)) {
       //
       for (auto inTensor : producer->input->tensors()) {
@@ -284,24 +328,11 @@ void Tensor::resetProducer(Op *op) {
   producer = op;
 }
 
-void Tensor::setCached(bool cached_) { cached = cached_; }
-
-bool Tensor::isCached() const { return cached; }
-
 void Tensor::setImplicitLoopInput(bool implicit_) {
   implicitLoopInput = implicit_;
 }
 
 bool Tensor::isImplicitLoopInput() const { return implicitLoopInput; }
-
-void Tensor::setRemoteBufferInfo(RemoteBufferId rbId, RemoteBufferIndex index) {
-  remoteBufferInfo = {rbId, index};
-}
-
-const std::pair<RemoteBufferId, RemoteBufferIndex>
-Tensor::getRemoteBufferInfo() const {
-  return remoteBufferInfo;
-}
 
 int Consumers::getTotal() const {
   //  using X = decltype(consumers_m.begin());
@@ -318,8 +349,8 @@ int Consumers::getTotal() const {
 // https://stackoverflow.com/questions/5058349
 Tensor::Tensor(TensorId n, TensorType t, Graph &g)
     : Vertex(), id(n), consumers(this), graph(g), producer(nullptr),
-      tensorTypeInfo(&getTensorTypeInfoMap().at(t)), cached(false),
-      implicitLoopInput(false), data_(nullptr) {
+      tensorTypeInfo(&getTensorTypeInfoMap().at(t)), implicitLoopInput(false),
+      data_(nullptr) {
   // graph is currently unused - this removes the compiler warning
   (void)graph;
 }
@@ -360,7 +391,7 @@ bool Tensor::isOptimizerTensor() const {
 }
 
 bool Tensor::isCacheArgTensor() const {
-  std::size_t found = id.find("_CacheArg");
+  std::size_t found = id.find(reservedCacheArgPrefix());
   if (found != std::string::npos) {
     return true;
   }

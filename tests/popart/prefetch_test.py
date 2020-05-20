@@ -35,9 +35,9 @@ def get_model(batches_per_step, replication_factor, batch_size, channels,
         [micro_batch_size, channels * data_len * data_len])
     o = builder.aiOnnx.relu([o])
     o = builder.aiOnnx.softmax([o])
-    builder.addOutputTensor(o)
+    o = builder.aiGraphcore.nllloss([o, lb])
 
-    art = popart.AnchorReturnType("ALL")
+    art = popart.AnchorReturnType("All")
     data_flow = popart.DataFlow(batches_per_step, {ip: art, lb: art})
 
     opts = popart.SessionOptions()
@@ -51,11 +51,11 @@ def get_model(batches_per_step, replication_factor, batch_size, channels,
     assert device
 
     if synthetic_data:
-        opts.ignoreData = True
+        opts.syntheticDataMode = popart.SyntheticDataMode.Zeros
 
     session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                     dataFeed=data_flow,
-                                     losses=[popart.NllLoss(o, lb, "loss")],
+                                     dataFlow=data_flow,
+                                     loss=o,
                                      optimizer=popart.ConstSGD(1.0),
                                      userOptions=opts,
                                      deviceInfo=device)

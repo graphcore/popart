@@ -45,7 +45,7 @@ def test_lrelu_inf(op_tester, inplace, alpha, use_torch):
         return [m]
 
     if (inplace):
-        op_tester.passes = ['InPlace']
+        op_tester.patterns = ['InPlace']
 
     op_tester.run(init_builder, reference, 'infer')
 
@@ -82,8 +82,8 @@ def test_lrelu_train(op_tester, alpha, inplace):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.passes = ['OpToIdentity']
+    op_tester.patterns = ['OpToIdentity']
     if (inplace):
-        op_tester.passes.append('InPlace')
+        op_tester.patterns.append('InPlace')
 
     op_tester.run(init_builder, reference, 'train')

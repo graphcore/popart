@@ -9,6 +9,7 @@
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/tensor.hpp>
@@ -43,24 +44,22 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Slice0) {
   auto slice_node = aiOnnx.slice({const_node}, {2, 3}, {1, 0}, {0, 1});
   auto in_id      = builder->addInputTensor(in_info);
   auto out_id     = aiOnnx.add({slice_node, in_id});
-  builder->addOutputTensor(out_id);
+  auto l1         = builder->aiGraphcoreOpset1().l1loss({out_id}, 0.1);
 
   auto proto       = builder->getModelProto();
   auto model_proto = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto art       = AnchorReturnType("ALL");
+  auto art       = AnchorReturnType("All");
   auto data_flow = DataFlow(1, {{out_id, art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(out_id, "l1LossVal", 0.1, ReductionType::SUM)};
-  auto device = createTestDevice(TEST_TARGET);
+  auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({model_proto,
               InputShapeInfo(),
               data_flow,
-              losses,
+              l1,
               &optimizer,
               *device,
               {}, // no SessionOptions
@@ -107,24 +106,22 @@ template <typename T> void ConstExprTest_Slice0_Type() {
   auto slice_node = aiOnnx.slice({const_node}, {2, 3}, {1, 0}, {0, 1});
   auto in_id      = builder->addInputTensor(in_info);
   auto out_id     = aiOnnx.add({slice_node, in_id});
-  builder->addOutputTensor(out_id);
+  auto l1         = builder->aiGraphcoreOpset1().l1loss({out_id}, 0.1);
 
   auto proto       = builder->getModelProto();
   auto model_proto = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto art       = AnchorReturnType("ALL");
+  auto art       = AnchorReturnType("All");
   auto data_flow = DataFlow(1, {{out_id, art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(out_id, "l1LossVal", 0.1, ReductionType::SUM)};
-  auto device = createTestDevice(TEST_TARGET);
+  auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({model_proto,
               InputShapeInfo(),
               data_flow,
-              losses,
+              l1,
               &optimizer,
               *device,
               {}, // no SessionOptions

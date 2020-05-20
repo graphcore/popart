@@ -31,7 +31,7 @@ std::vector<std::unique_ptr<Op>> LSTMOp::getGradOps() {
 }
 
 bool LSTMOp::isTraining() const {
-  return getGraph().getIr().getExecutionMode() == Ir::ExecutionMode::TRAINING;
+  return getGraph().getIr().getExecutionMode() == Ir::ExecutionMode::Training;
 }
 
 void LSTMOp::trySetOutInfo(OutIndex index, const TensorInfo &info) {
@@ -190,37 +190,37 @@ const std::vector<GradInOutMapper> &LSTMGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
       {getInitStateOutputInIndex(),
        LSTMOp::getInitStateOutputPassThroughIndex(),
-       GradOpInType::OUT},
+       GradOpInType::Out},
       {getInitStateCellStateInIndex(),
        LSTMOp::getInitStateCellStatePassThroughIndex(),
-       GradOpInType::OUT},
+       GradOpInType::Out},
       {getIntermediatesInIndex(),
        LSTMOp::getIntermediatesPassThroughIndex(),
-       GradOpInType::OUT},
+       GradOpInType::Out},
       {getInputWeightsInIndex(),
        LSTMOp::getInputWeightsPassThroughIndex(),
-       GradOpInType::OUT},
+       GradOpInType::Out},
       {getOutputWeightsInIndex(),
        LSTMOp::getOutputWeightsPassThroughIndex(),
-       GradOpInType::OUT},
+       GradOpInType::Out},
       {getBiasesInIndex(),
        LSTMOp::getBiasesPassThroughIndex(),
-       GradOpInType::OUT},
+       GradOpInType::Out},
       {getInputInIndex(),
        LSTMOp::getInputPassThroughIndex(),
-       GradOpInType::OUT},
+       GradOpInType::Out},
       {getOutputInIndex(),
        LSTMOp::getOutputPassThroughIndex(),
-       GradOpInType::OUT},
+       GradOpInType::Out},
       {getCellStateOutputGradInIndex(),
        LSTMOp::getCellStateOutIndex(),
-       GradOpInType::GRADOUT},
+       GradOpInType::GradOut},
       {getHiddenStateOutputGradInIndex(),
        LSTMOp::getHiddenStateOutIndex(),
-       GradOpInType::GRADOUT},
+       GradOpInType::GradOut},
       {getOutputGradInIndex(),
        LSTMOp::getOutputOutIndex(),
-       GradOpInType::GRADOUT}};
+       GradOpInType::GradOut}};
   return inInfo;
 }
 
@@ -254,10 +254,11 @@ std::vector<std::unique_ptr<Op>> PopartLSTMOp::getGradOps() {
 }
 
 void PopartLSTMOp::setup() {
-  auto verifyShape = [this](InIndex inIndex, Shape refShape, std::string id) {
+  auto verifyShape = [this](
+                         InIndex inIndex, Shape refShape, std::string idStr) {
     auto inputShape = inShape(inIndex);
     if (inputShape != refShape) {
-      throw error("Bad {} shape {}, should be {}", id, inIndex, refShape);
+      throw error("Bad {} shape {}, should be {}", idStr, inIndex, refShape);
     }
   };
 
@@ -372,24 +373,24 @@ const std::vector<GradInOutMapper> &PopartLSTMGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
       {getInitialStateInIndex(),
        PopartLSTMOp::getInitialStateInIndex(),
-       GradOpInType::IN},
+       GradOpInType::In},
       {getIntermediatesInIndex(),
        PopartLSTMOp::getIntermediatesOutIndex(),
-       GradOpInType::OUT},
+       GradOpInType::Out},
       {getWeightsInIndex(),
        PopartLSTMOp::getWeightsInIndex(),
-       GradOpInType::IN},
-      {getBiasesInIndex(), PopartLSTMOp::getBiasesInIndex(), GradOpInType::IN},
-      {getInputInIndex(), PopartLSTMOp::getInputInIndex(), GradOpInType::IN},
+       GradOpInType::In},
+      {getBiasesInIndex(), PopartLSTMOp::getBiasesInIndex(), GradOpInType::In},
+      {getInputInIndex(), PopartLSTMOp::getInputInIndex(), GradOpInType::In},
       {getFwdOutputInIndex(),
        PopartLSTMOp::getOutputOutIndex(),
-       GradOpInType::OUT},
+       GradOpInType::Out},
       {getFwdOutputGradInIndex(),
        PopartLSTMOp::getOutputOutIndex(),
-       GradOpInType::GRADOUT},
+       GradOpInType::GradOut},
       {getFwdCellStateGradInIndex(),
        PopartLSTMOp::getCellStateOutIndex(),
-       GradOpInType::GRADOUT}};
+       GradOpInType::GradOut}};
 
   return inInfo;
 }

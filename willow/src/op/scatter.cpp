@@ -36,7 +36,7 @@ void ScatterOp::setup() {
   int64_t axis_max = inShape(dataInIndex()).size() - 1;
   if (axis_min > axis || axis > axis_max) {
     throw error(
-        "GatherOp::setup axis = {} is outside the acceptable range [{}, {}]",
+        "ScatterOp::setup axis = {} is outside the acceptable range [{}, {}]",
         axis,
         axis_min,
         axis_max);
@@ -63,8 +63,8 @@ std::unique_ptr<Op> ScatterDataGradOp::clone() const {
 
 const std::vector<GradInOutMapper> &ScatterDataGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {gradInIndex(), ScatterOp::outIndex(), GradOpInType::GRADOUT},
-      {indicesInIndex(), ScatterOp::indicesInIndex(), GradOpInType::IN}};
+      {gradInIndex(), ScatterOp::outIndex(), GradOpInType::GradOut},
+      {indicesInIndex(), ScatterOp::indicesInIndex(), GradOpInType::In}};
 
   return inInfo;
 }
@@ -97,8 +97,8 @@ std::unique_ptr<Op> ScatterUpdateGradOp::clone() const {
 
 const std::vector<GradInOutMapper> &ScatterUpdateGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {gradInIndex(), ScatterOp::outIndex(), GradOpInType::GRADOUT},
-      {indicesInIndex(), ScatterOp::indicesInIndex(), GradOpInType::IN}};
+      {gradInIndex(), ScatterOp::outIndex(), GradOpInType::GradOut},
+      {indicesInIndex(), ScatterOp::indicesInIndex(), GradOpInType::In}};
 
   return inInfo;
 }

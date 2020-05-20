@@ -1,10 +1,10 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE BasicDotTest
 
+#include <../random_util.hpp>
 #include <algorithm>
 #include <boost/filesystem.hpp>
 #include <boost/test/unit_test.hpp>
-#include <random>
 #include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
@@ -23,24 +23,6 @@
 
 using namespace popart;
 
-std::string random_string(size_t length) {
-
-  std::default_random_engine eng((std::random_device())());
-  std::uniform_int_distribution<uint64_t> idis(
-      0, std::numeric_limits<uint64_t>::max());
-
-  auto randchar = [&idis, &eng]() -> char {
-    const char charset[] = "0123456789"
-                           "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                           "abcdefghijklmnopqrstuvwxyz";
-    const size_t max_index = (sizeof(charset) - 1);
-    return charset[idis(eng) % max_index];
-  };
-  std::string str(length, 0);
-  std::generate_n(str.begin(), length, randchar);
-  return str;
-}
-
 BOOST_AUTO_TEST_CASE(Dot_basic0) {
 
   // Consider the series of Ops:
@@ -54,11 +36,11 @@ BOOST_AUTO_TEST_CASE(Dot_basic0) {
   auto aiOnnx  = builder->aiOnnxOpset9();
 
   auto opts = SessionOptions();
-  opts.dotChecks.insert(DotCheck::FWD0);
-  opts.dotChecks.insert(DotCheck::FWD1);
-  opts.dotChecks.insert(DotCheck::FINAL);
+  opts.dotChecks.insert(DotCheck::Fwd0);
+  opts.dotChecks.insert(DotCheck::Fwd1);
+  opts.dotChecks.insert(DotCheck::Final);
 
-  opts.logDir = "./dotTestTmp" + random_string(14);
+  opts.logDir = "./dotTestTmp" + randomString(14);
   boost::filesystem::create_directory(opts.logDir);
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{1}};
@@ -72,7 +54,7 @@ BOOST_AUTO_TEST_CASE(Dot_basic0) {
   auto modelProto = io::getModelFromString(proto);
 
   out           = modelProto.graph().output(0).name();
-  auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+  auto dataFlow = DataFlow(1, {{out, AnchorReturnType("All")}});
   auto device   = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -83,7 +65,7 @@ BOOST_AUTO_TEST_CASE(Dot_basic0) {
               nullptr, // and no optimizer
               *device,
               opts,
-              Patterns(PatternsLevel::NONE).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
 
   // verify that there are 3 newly created dot_files
   auto dotFileNames =
@@ -108,9 +90,9 @@ BOOST_AUTO_TEST_CASE(Dot_dotOpNames0) {
     auto aiOnnx  = builder->aiOnnxOpset9();
     auto opts    = SessionOptions();
     // just the one .dot file will be written
-    opts.dotChecks.insert(DotCheck::BWD0);
+    opts.dotChecks.insert(DotCheck::Bwd0);
     opts.dotOpNames = dotOpNames;
-    opts.logDir     = "./dotTestTmp" + random_string(14);
+    opts.logDir     = "./dotTestTmp" + randomString(14);
     boost::filesystem::create_directory(opts.logDir);
     TensorInfo shape{"FLOAT", std::vector<int64_t>{1}};
     auto in0   = builder->addInputTensor(shape);
@@ -120,7 +102,7 @@ BOOST_AUTO_TEST_CASE(Dot_dotOpNames0) {
     auto proto      = builder->getModelProto();
     auto modelProto = io::getModelFromString(proto);
     out             = modelProto.graph().output(0).name();
-    auto dataFlow   = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+    auto dataFlow   = DataFlow(1, {{out, AnchorReturnType("All")}});
     Ir ir;
     auto device = createTestDevice(TEST_TARGET);
 
@@ -133,7 +115,7 @@ BOOST_AUTO_TEST_CASE(Dot_dotOpNames0) {
                 nullptr, // and no optimizer
                 *device,
                 opts,
-                Patterns(PatternsLevel::NONE)});
+                Patterns(PatternsLevel::NoPatterns)});
 
     // verify that there is 1 newly created dot_file
     auto dotFileNames =
@@ -185,11 +167,11 @@ BOOST_AUTO_TEST_CASE(Dot_dotStartEnd) {
         auto opts    = SessionOptions();
 
         // just the one .dot file will be written
-        opts.dotChecks.insert(DotCheck::BWD0);
+        opts.dotChecks.insert(DotCheck::Bwd0);
         opts.dotOpNames = true;
         opts.firstDotOp = start;
         opts.finalDotOp = end;
-        opts.logDir     = "./dotTestTmp" + random_string(14);
+        opts.logDir     = "./dotTestTmp" + randomString(14);
         boost::filesystem::create_directory(opts.logDir);
         TensorInfo shape{"FLOAT", std::vector<int64_t>{1}};
 
@@ -205,7 +187,7 @@ BOOST_AUTO_TEST_CASE(Dot_dotStartEnd) {
         auto proto      = builder->getModelProto();
         auto modelProto = io::getModelFromString(proto);
         out             = modelProto.graph().output(0).name();
-        auto dataFlow   = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+        auto dataFlow   = DataFlow(1, {{out, AnchorReturnType("All")}});
         auto device     = createTestDevice(TEST_TARGET);
         Ir ir;
 
@@ -218,7 +200,7 @@ BOOST_AUTO_TEST_CASE(Dot_dotStartEnd) {
                     nullptr, // and no optimizer
                     *device,
                     opts,
-                    Patterns(PatternsLevel::NONE)});
+                    Patterns(PatternsLevel::NoPatterns)});
 
         // verify that there is 1 newly created dot_file
         auto dotFileNames =

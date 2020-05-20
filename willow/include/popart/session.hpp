@@ -58,7 +58,7 @@ public:
   /**
    * Copy the cycle count tensor to host from the device
    */
-  uint64_t getCycleCount();
+  uint64_t getCycleCount(std::string id = "");
 
   /**
    * Perform one step.
@@ -176,14 +176,9 @@ public:
   std::string serializeIr(IrSerializationFormat format);
 
   const Ir &getIr() const { return ir; }
+  const popx::Devicex &getDevice() const { return *device_; }
 
 protected:
-  /**
-   * Clone all losses into share_ptrs
-   */
-  static std::vector<std::shared_ptr<Loss>>
-  cloneLosses(const std::vector<Loss *> &losses);
-
   /**
    * Select a device type.
    *
@@ -213,12 +208,6 @@ protected:
    * Flag to indicate if run has been called
    */
   bool runCalled = false;
-
-  /**
-   * Flag to indicate if optimizerFromHost has been called since and
-   * optimizer was last created/updated on the host
-   */
-  bool optimizerFromHostCalledSinceLastUpdate = false;
 };
 
 class InferenceSession : public Session {
@@ -235,7 +224,6 @@ public:
    *              containing an ONNX model protobuf
    * \param inputShapeInfo Information about the shapes of input and output
    *                       tensors
-   * \param losses An optional list of loss layers to use after inference
    * \param dataFlow Configuration for the data feeds and fetches
    * \param userOptions String to configure session options
    * \param patterns Optimization patterns to apply
@@ -245,7 +233,6 @@ public:
   createFromOnnxModel(const std::string &model,
                       const DataFlow &dataFlow,
                       std::shared_ptr<DeviceInfo> deviceInfo,
-                      const std::vector<Loss *> &losses    = {},
                       const InputShapeInfo &inputShapeInfo = InputShapeInfo(),
                       const SessionOptions &userOptions    = SessionOptions(),
                       const Patterns &patterns             = Patterns());
@@ -253,7 +240,6 @@ public:
 private:
   void configureFromOnnx(const std::string &model,
                          const DataFlow &dataFlow,
-                         const std::vector<Loss *> &losses,
                          const InputShapeInfo &inputShapeInfo,
                          std::shared_ptr<DeviceInfo> deviceInfo,
                          const SessionOptions &userOptions,
@@ -275,7 +261,7 @@ public:
    * \param inputShapeInfo Information about the shapes of input and output
    *                       tensors
    * \param dataFlow Configuration for the data feeds and fetches
-   * \param losses A list of loss layers to use when training
+   * \param loss The TensorId of the final scalar loss tensor for training
    * \param optimizer The name of an optimizer to use when training
    * \param userOptions String to configure session options
    * \param patterns Optimization patterns to apply
@@ -284,31 +270,26 @@ public:
   static std::unique_ptr<TrainingSession>
   createFromOnnxModel(const std::string &model,
                       const DataFlow &dataFlow,
-                      const std::vector<Loss *> &losses,
+                      const TensorId &loss,
                       const Optimizer &optimizer,
                       std::shared_ptr<DeviceInfo> deviceInfo,
                       const InputShapeInfo &inputShapeInfo = InputShapeInfo(),
                       const SessionOptions &userOptions    = SessionOptions(),
                       const Patterns &patterns             = Patterns());
 
-  /** Update the optimizer.
+  /** Update the optimizer, as well as writing whatever optimizer tensors
+   * (learning rates, momentum, initial momentum tensors (zero)) there are to
+   * device.
    *
    * Note that the optimizer passed in must be compatible with that passed to
    * the constructor. For example, you cannot update to an Optimizer which uses
    * momentum here, if the Optimizer passed to the constructor did not have
    * momentum. Reason: The Ir would need to change to incorporate momentum, but
-   * the Ir is frozen once constructed. NB: Must call optimizerFromHost for this
-   * update to take effect on the device.
+   * the Ir is frozen once constructed.
    *
    * \param optimizer A pointer to a popart::Optimizer
    */
-  void updateOptimizer(const Optimizer *optimizer);
-
-  /**
-   * write whatever optimizer tensors (learning rates,
-   * momentum, initial momentum tensors (zero)) there are to device
-   */
-  void optimizerFromHost();
+  void updateOptimizerFromHost(const Optimizer *optimizer);
 
   /**
    * Access the stream IDs for variables that are involved in host side
@@ -359,7 +340,7 @@ public:
 private:
   void configureFromOnnx(const std::string &model,
                          const DataFlow &dataFlow,
-                         const std::vector<Loss *> &losses,
+                         const TensorId &loss,
                          const Optimizer &optimizer,
                          const InputShapeInfo &inputShapeInfo,
                          std::shared_ptr<DeviceInfo> deviceInfo,

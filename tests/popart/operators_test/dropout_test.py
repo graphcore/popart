@@ -32,7 +32,7 @@ def test_dropout_testing(op_tester):
     op_tester.run(init_builder, reference, 'infer')
 
     # ... and with identity pattern
-    op_tester.passes = ['OpToIdentity']
+    op_tester.patterns = ['OpToIdentity']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -49,13 +49,14 @@ def test_dropout_training1():
     d__ip = popart.reservedGradientPrefix() + ip
 
     [o1, o2] = builder.aiOnnx.dropout([ip], num_outputs=2, ratio=ratio)
+    out = builder.aiGraphcore.identityloss([o1])
     builder.addOutputTensor(o1)
     builder.addOutputTensor(o2)
 
     session, anchors = get_session(anchorIds=[o1, o2, ip, d__ip],
                                    proto=builder.getModelProto(),
                                    device=tu.create_test_device(),
-                                   output=o1)
+                                   loss=out)
 
     stepio = popart.PyStepIO({ip: d1}, anchors)
     session.run(stepio)
@@ -121,6 +122,7 @@ def test_dropout_training4():
     # of random mask on the layout of the 'reference' dropout tensor
     w = builder.addInitializedInputTensor(np.ones([dsize, dsize], np.float32))
     out = builder.aiOnnx.matmul([d1, w])
+    out = builder.aiGraphcore.identityloss([out])
     builder.addOutputTensor(out)
 
     device = tu.create_test_device()
@@ -128,7 +130,7 @@ def test_dropout_training4():
     session, anchors = get_session(anchorIds=[d1, d__ip],
                                    proto=builder.getModelProto(),
                                    device=device,
-                                   output=out)
+                                   loss=out)
 
     # Ensure inputs in range [1.0, 2.0] to ensure comparing with 0 is valid
     ip_data = np.random.random_sample((dsize, dsize)).astype(np.float32) + 1
@@ -223,6 +225,7 @@ def test_dropout_training7():
     [d1] = builder.aiOnnx.dropout([ip], num_outputs=1, ratio=ratio)
     [d2] = builder.aiOnnx.dropout([ip], num_outputs=1, ratio=ratio)
     out = builder.aiOnnx.add([d1, d2])
+    out = builder.aiGraphcore.identityloss([out])
     builder.addOutputTensor(out)
 
     if tu.ipu_available():
@@ -233,7 +236,7 @@ def test_dropout_training7():
     session, anchors = get_session(anchorIds=[d1, d2],
                                    proto=builder.getModelProto(),
                                    device=device,
-                                   output=out)
+                                   loss=out)
 
     # Same data for each batch
     ip_data = np.random.random_sample(dsize).astype(np.float32)
@@ -377,24 +380,25 @@ def get_replicated_dropout_session(replication_factor=4,
     out = ip
     for layer in range(num_layers):
         [out] = builder.aiOnnx.dropout([out], num_outputs=1, ratio=ratio)
-    builder.addOutputTensor(out)
+    loss = builder.aiGraphcore.identityloss([out])
+    builder.addOutputTensor(loss)
 
     device = tu.create_test_device(replication_factor)
 
     dfAnchors = [out, ip, d__ip]
-    dfAnchors = {i: popart.AnchorReturnType("ALL") for i in dfAnchors}
+    dfAnchors = {i: popart.AnchorReturnType("All") for i in dfAnchors}
 
     opts = popart.SessionOptions()
     opts.enableReplicatedGraphs = True
     opts.replicatedGraphCount = replication_factor
 
-    session = popart.TrainingSession(
-        fnModel=builder.getModelProto(),
-        dataFeed=popart.DataFlow(batches_per_step, dfAnchors),
-        optimizer=popart.ConstSGD(0.1),
-        losses=[popart.L1Loss(out, "l1LossVal", 0.1)],
-        userOptions=opts,
-        deviceInfo=device)
+    session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                     dataFlow=popart.DataFlow(
+                                         batches_per_step, dfAnchors),
+                                     optimizer=popart.ConstSGD(0.1),
+                                     loss=loss,
+                                     userOptions=opts,
+                                     deviceInfo=device)
 
     session.prepareDevice()
     session.weightsFromHost()
@@ -414,31 +418,32 @@ def get_dropout_session(dsize=100,
     out = ip
     for numl in range(num_layers):
         [out] = builder.aiOnnx.dropout([out], num_outputs=1, ratio=ratio)
-    builder.addOutputTensor(out)
+    loss = builder.aiGraphcore.identityloss([out])
+    builder.addOutputTensor(loss)
 
     device = tu.create_test_device()
 
     session, anchors = get_session(anchorIds=[out, ip, d__ip],
                                    proto=builder.getModelProto(),
                                    device=device,
-                                   output=out,
+                                   loss=loss,
                                    bps=bps)
 
     return session, ip, out, d__ip, anchors
 
 
-def get_session(anchorIds, proto, device, output, bps=1):
+def get_session(anchorIds, proto, device, loss, bps=1):
     dfAnchors = {}
     for anchorId in anchorIds:
-        dfAnchors.update({anchorId: popart.AnchorReturnType("ALL")})
+        dfAnchors.update({anchorId: popart.AnchorReturnType("All")})
 
-    session = popart.TrainingSession(
-        fnModel=proto,
-        dataFeed=popart.DataFlow(bps, dfAnchors),
-        optimizer=popart.ConstSGD(0.1),
-        losses=[popart.L1Loss(output, "l1LossVal", 0.1)],
-        passes=popart.Patterns(popart.PatternsLevel.ALL),
-        deviceInfo=device)
+    session = popart.TrainingSession(fnModel=proto,
+                                     dataFlow=popart.DataFlow(bps, dfAnchors),
+                                     optimizer=popart.ConstSGD(0.1),
+                                     loss=loss,
+                                     patterns=popart.Patterns(
+                                         popart.PatternsLevel.All),
+                                     deviceInfo=device)
 
     session.prepareDevice()
     session.weightsFromHost()

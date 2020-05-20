@@ -8,7 +8,6 @@
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
 #include <popart/onnxutil.hpp>
-#include <popart/op/loss.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/session.hpp>
 #include <popart/sessionoptions.hpp>
@@ -49,12 +48,12 @@ void Session::setRandomSeed(uint64_t seedValue) {
   device_->setRandomSeedFromHost();
 }
 
-uint64_t Session::getCycleCount() {
+uint64_t Session::getCycleCount(std::string id) {
   logging::session::trace("Session::getCycleCount()");
   if (!runCalled) {
     throw error("Must call run before getCycleCount.");
   }
-  return device_->cycleCountTensorToHost();
+  return device_->cycleCountTensorToHost().at(id);
 }
 
 // get the TensorInfo on a Tensor
@@ -123,13 +122,6 @@ void Session::run(IStepIO &stepio) {
     throw error(
         "Must call weightsFromHost before run as the model has initializers "
         "and the session has been created in training mode");
-  }
-
-  if (!ir.optimizerTensors().empty() && ir.isTraining() &&
-      optimizerFromHostCalledSinceLastUpdate == false) {
-    throw error(
-        "Must call optimizerFromHost before run as the optimizer tensor values "
-        "have not been written to the device");
   }
 
   device_->run(stepio);
@@ -221,7 +213,7 @@ void Session::modelToHost(const std::string &fn) {
   io::writeModel(model, fn);
 
   if (!ir.getSessionOptions().constantWeights ||
-      ir.getExecutionMode() != Ir::ExecutionMode::INFERENCE) {
+      ir.getExecutionMode() != Ir::ExecutionMode::Inference) {
     // Weights in ir, device, and disk now all match
     ir.resetWeights(model);
   }
@@ -259,7 +251,7 @@ void Session::resetHostWeights(
     const bool ignoreWeightsInModelWithoutCorrespondingHostWeight) {
   logging::session::trace("Session::resetHostWeights");
   if (ir.getSessionOptions().constantWeights &&
-      ir.getExecutionMode() == Ir::ExecutionMode::INFERENCE) {
+      ir.getExecutionMode() == Ir::ExecutionMode::Inference) {
     throw error("Cannot call resetHostWeights when constantWeights is set");
   }
   auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
@@ -277,16 +269,6 @@ std::string Session::serializeIr(IrSerializationFormat format) {
   return ss.str();
 }
 
-std::vector<std::shared_ptr<Loss>>
-Session::cloneLosses(const std::vector<Loss *> &losses) {
-
-  std::vector<std::shared_ptr<Loss>> lossesCloned;
-  for (auto &loss : losses) {
-    lossesCloned.push_back(std::move(loss->clone()));
-  }
-  return lossesCloned;
-}
-
 InferenceSession::InferenceSession() : Session() {}
 
 InferenceSession::~InferenceSession() = default;
@@ -294,7 +276,6 @@ InferenceSession::~InferenceSession() = default;
 void InferenceSession::configureFromOnnx(
     const std::string &modelProtoOrFilename,
     const DataFlow &df,
-    const std::vector<Loss *> &losses,
     const InputShapeInfo &perk,
     std::shared_ptr<DeviceInfo> deviceInfo,
     const SessionOptions &userOptions,
@@ -304,21 +285,14 @@ void InferenceSession::configureFromOnnx(
 
   auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
 
-  ir.prepare({modelProto,
-              perk,
-              df,
-              cloneLosses(losses),
-              nullptr,
-              *deviceInfo,
-              userOptions,
-              patterns});
+  ir.prepare(
+      {modelProto, perk, df, {}, nullptr, *deviceInfo, userOptions, patterns});
 }
 
 std::unique_ptr<InferenceSession>
 InferenceSession::createFromOnnxModel(const std::string &model,
                                       const DataFlow &dataFlow,
                                       std::shared_ptr<DeviceInfo> deviceInfo,
-                                      const std::vector<Loss *> &losses,
                                       const InputShapeInfo &inputShapeInfo,
                                       const SessionOptions &userOptions,
                                       const Patterns &patterns) {
@@ -331,13 +305,8 @@ InferenceSession::createFromOnnxModel(const std::string &model,
   }
 
   auto session = std::unique_ptr<InferenceSession>(new InferenceSession());
-  session->configureFromOnnx(model,
-                             dataFlow,
-                             losses,
-                             inputShapeInfo,
-                             deviceInfo,
-                             userOptions,
-                             patterns);
+  session->configureFromOnnx(
+      model, dataFlow, inputShapeInfo, deviceInfo, userOptions, patterns);
 
   session->setDevice(deviceInfo);
 
@@ -350,7 +319,7 @@ TrainingSession::~TrainingSession() = default;
 
 void TrainingSession::configureFromOnnx(const std::string &modelProtoOrFilename,
                                         const DataFlow &df,
-                                        const std::vector<Loss *> &lossesIn,
+                                        const TensorId &lossIn,
                                         const Optimizer &optimizerIn,
                                         const InputShapeInfo &perk,
                                         std::shared_ptr<DeviceInfo> deviceInfo,
@@ -364,7 +333,7 @@ void TrainingSession::configureFromOnnx(const std::string &modelProtoOrFilename,
   ir.prepare({modelProto,
               perk,
               df,
-              cloneLosses(lossesIn),
+              lossIn,
               &optimizerIn,
               *deviceInfo,
               userOptions,
@@ -374,7 +343,7 @@ void TrainingSession::configureFromOnnx(const std::string &modelProtoOrFilename,
 std::unique_ptr<TrainingSession>
 TrainingSession::createFromOnnxModel(const std::string &model,
                                      const DataFlow &dataFlow,
-                                     const std::vector<Loss *> &losses,
+                                     const TensorId &loss,
                                      const Optimizer &optimizer,
                                      std::shared_ptr<DeviceInfo> deviceInfo,
                                      const InputShapeInfo &inputShapeInfo,
@@ -391,7 +360,7 @@ TrainingSession::createFromOnnxModel(const std::string &model,
   auto session = std::unique_ptr<TrainingSession>(new TrainingSession());
   session->configureFromOnnx(model,
                              dataFlow,
-                             losses,
+                             loss,
                              optimizer,
                              inputShapeInfo,
                              deviceInfo,
@@ -403,23 +372,17 @@ TrainingSession::createFromOnnxModel(const std::string &model,
   return session;
 }
 
-void TrainingSession::updateOptimizer(const Optimizer *optimizer) {
-  logging::session::trace("TrainingSession::updateOptimizer");
+void TrainingSession::updateOptimizerFromHost(const Optimizer *optimizer) {
+  logging::session::trace("TrainingSession::updateOptimizerFromHost");
   ir.updateOptimizer(*optimizer);
 
   // There has been a change to the TensorData of the optimizer tensors
   // on the host, but there wont be an equivalent update to the device-side
   // tensors until optimizerFromHost() is called.
-  optimizerFromHostCalledSinceLastUpdate = false;
-}
 
-// write whatever optimizer tensors (learning rates,
-// momentum, initial momentum tensors) there are to device
-void TrainingSession::optimizerFromHost() {
-  logging::session::trace("TrainingSession::optimizerFromHost");
-
+  // write whatever optimizer tensors (learning rates,
+  // momentum, initial momentum tensors) there are to device
   device_->optimizerFromHost();
-  optimizerFromHostCalledSinceLastUpdate = true;
 }
 
 const std::vector<std::string> &

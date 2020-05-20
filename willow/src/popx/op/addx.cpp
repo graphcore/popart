@@ -72,12 +72,12 @@ InputCreatorType AddOpx::getInputCreatorType(InIndex index) const {
   // once fixed.
   if (!(op_p->getIr().getSessionOptions().decomposeGradSum ||
         op_p->getIr().getSessionOptions().batchSerializationFactor > 0)) {
-    return InputCreatorType::DEADEND;
+    return InputCreatorType::Deadend;
   }
 
   // Check shape doesn't change due to numpy-style broadcasting.
   if (op_p->inInfo(index) != op_p->outInfo(AddOp::getOutIndex())) {
-    return InputCreatorType::DEADEND;
+    return InputCreatorType::Deadend;
   }
 
   auto itArg0 =
@@ -94,21 +94,21 @@ InputCreatorType AddOpx::getInputCreatorType(InIndex index) const {
 
   if (index == AddOp::getArg0InIndex()) {
     if (inferArg0FromArg1) {
-      return InputCreatorType::CANCREATE_OR_UNWIND;
+      return InputCreatorType::CanCreateOrUnwind;
     } else if (inferArg1FromArg0) {
-      return InputCreatorType::DEADEND;
+      return InputCreatorType::Deadend;
     } else {
-      return InputCreatorType::CANUNWIND;
+      return InputCreatorType::CanUnwind;
     }
   }
 
   if (index == AddOp::getArg1InIndex()) {
     if (inferArg1FromArg0) {
-      return InputCreatorType::CANCREATE_OR_UNWIND;
+      return InputCreatorType::CanCreateOrUnwind;
     } else if (inferArg0FromArg1) {
-      return InputCreatorType::DEADEND;
+      return InputCreatorType::Deadend;
     } else {
-      return InputCreatorType::CANUNWIND;
+      return InputCreatorType::CanUnwind;
     }
   }
 

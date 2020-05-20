@@ -8,11 +8,11 @@ namespace popart {
 
 class SGD0VarUpdateOpBase : public VarUpdateWithUpdaterOp {
 public:
-  SGD0VarUpdateOpBase(const OperatorIdentifier &opid,
+  SGD0VarUpdateOpBase(const OperatorIdentifier &_opid,
                       const TensorId &varToUpdate,
                       OptimizerValue initialSlr0,
                       OptimizerValue initialWdsf0,
-                      const Op::Settings &settings);
+                      const Op::Settings &settings_);
 
   // If the scaled learning rate is not constant, this is the index at which it
   // will be consumed by this Op

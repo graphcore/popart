@@ -41,8 +41,8 @@ def test_model_with_unspecified_dim_params(tmpdir):
     with pytest.raises(popart.popart_exception) as e_info:
         session = popart.InferenceSession(
             fnModel=proto,
-            dataFeed=popart.DataFlow(1,
-                                     {outId: popart.AnchorReturnType("ALL")}),
+            dataFlow=popart.DataFlow(1,
+                                     {outId: popart.AnchorReturnType("All")}),
             deviceInfo=tu.create_test_device())
 
     assert e_info.value.args[0] == (
@@ -58,6 +58,6 @@ def test_model_with_specified_dim_params(tmpdir):
 
     session = popart.InferenceSession(
         fnModel=proto,
-        dataFeed=popart.DataFlow(1, {outId: popart.AnchorReturnType("ALL")}),
+        dataFlow=popart.DataFlow(1, {outId: popart.AnchorReturnType("All")}),
         deviceInfo=tu.create_test_device(),
         inputShapeInfo=inputShapeInfo)

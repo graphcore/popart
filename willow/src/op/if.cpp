@@ -106,20 +106,20 @@ std::vector<TensorId> IfOp::getGradOpInputIds(const Graph &gradThenGraph,
   auto addInputTensors = [&](const Graph &fwdGraph, const Graph &gradGraph) {
     for (auto m : gradGraph.gradInputInfo()) {
       switch (m.type) {
-      case GradOpInType::IN: {
+      case GradOpInType::In: {
         auto scopedId   = fwdGraph.getInputId(m.iNonGrad);
         auto unscopedId = fwdGraph.removeScope(scopedId);
         requiredGradOpInputs.insert(unscopedId);
         break;
       }
-      case GradOpInType::GRADOUT: {
+      case GradOpInType::GradOut: {
         auto scopedId = getThenGraph().getOutputId(m.iNonGrad);
         auto opOutId  = branchOutIdToOpOutId.at(scopedId);
         auto gradId   = getGradId(opOutId);
         requiredGradOpInputs.insert(gradId);
         break;
       }
-      case GradOpInType::OUT:
+      case GradOpInType::Out:
       default:
         throw error("Unsupported GradOpInType {}", m.type);
       }
@@ -143,21 +143,21 @@ IfOp::getOpInIdToBwdGraphInIndexMap(const Graph &fwdGraph,
   std::map<TensorId, int> result;
   for (auto m : bwdGraph.gradInputInfo()) {
     switch (m.type) {
-    case GradOpInType::IN: {
+    case GradOpInType::In: {
       // branch input to tensor id
       auto branchInId = fwdGraph.getInputId(m.iNonGrad);
       auto opInId     = fwdGraph.removeScope(branchInId);
       result.insert({opInId, m.iGrad});
       break;
     }
-    case GradOpInType::GRADOUT: {
+    case GradOpInType::GradOut: {
       auto branchOutId = fwdGraph.getOutputId(m.iNonGrad);
       auto opOutId     = branchOutIdToOpOutId.at(branchOutId);
       auto gradId      = getGradId(opOutId);
       result.insert({gradId, m.iGrad});
       break;
     }
-    case GradOpInType::OUT:
+    case GradOpInType::Out:
     default:
       throw error("Unsupported GradOpInType {}", m.type);
     }
@@ -176,7 +176,7 @@ IfOp::getGradInInfo(const std::vector<TensorId> &gradOpInputIds) const {
       int idx     = idx_tensor.first;
       auto tensor = idx_tensor.second;
       if (gradOpInId == tensor->id) {
-        gradInInfo.push_back({gradOpInIdx, idx, GradOpInType::IN});
+        gradInInfo.push_back({gradOpInIdx, idx, GradOpInType::In});
         return true;
       }
     }
@@ -190,7 +190,7 @@ IfOp::getGradInInfo(const std::vector<TensorId> &gradOpInputIds) const {
       auto tensor = idx_tensor.second;
       auto gradId = getGradId(tensor->id);
       if (gradOpInId == gradId) {
-        gradInInfo.push_back({gradOpInIdx, idx, GradOpInType::GRADOUT});
+        gradInInfo.push_back({gradOpInIdx, idx, GradOpInType::GradOut});
         return true;
       }
     }
@@ -365,7 +365,7 @@ IfConditionGradOp::IfConditionGradOp(const IfOp &fwdOp)
 
 const std::vector<GradInOutMapper> &IfConditionGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), IfOp::getConditionInIndex(), GradOpInType::IN}};
+      {getInIndex(), IfOp::getConditionInIndex(), GradOpInType::In}};
 
   return inInfo;
 }

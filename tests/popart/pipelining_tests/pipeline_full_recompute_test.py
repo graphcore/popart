@@ -111,23 +111,20 @@ def test_full_recompute_pipelining(tmpdir):
             o = builder.aiOnnx.matmul([o, qkv_3])
             o = attention_onnx(builder, o, mask, batch_size, sequence_length,
                                hidden_size, attention_heads, qkv_length)
-
-        loss = popart.L1Loss(o, "l1LossVal", 0.1)
-        loss.virtualGraph(2)
-        loss.pipelineStage(2)
+            l1 = builder.aiGraphcore.l1loss([o], 0.1)
 
         proto = builder.getModelProto()
 
         dataFlow = popart.DataFlow(
             batches_per_step, {
                 o:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + qkv_1:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + qkv_2:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 popart.reservedGradientPrefix() + qkv_3:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
             })
 
         opts = popart.SessionOptions()
@@ -137,14 +134,14 @@ def test_full_recompute_pipelining(tmpdir):
             opts.autoRecomputation = mode
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-        pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
+        pat = popart.Patterns(popart.PatternsLevel.Default)
 
         session = popart.TrainingSession(fnModel=proto,
-                                         dataFeed=dataFlow,
+                                         dataFlow=dataFlow,
                                          userOptions=opts,
-                                         losses=[loss],
+                                         loss=l1,
                                          optimizer=popart.ConstSGD(1e-9),
-                                         passes=pat,
+                                         patterns=pat,
                                          deviceInfo=tu.create_test_device(
                                              numIpus=3,
                                              opts={"compileIPUCode": False}))
@@ -152,7 +149,6 @@ def test_full_recompute_pipelining(tmpdir):
         session.prepareDevice()
 
         session.weightsFromHost()
-        session.optimizerFromHost()
 
         anchors = session.initAnchorArrays()
 

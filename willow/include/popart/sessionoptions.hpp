@@ -11,11 +11,11 @@ namespace popart {
 
 // Stages of Ir construction where .dot files can be written
 enum class DotCheck {
-  FWD0 = 0, // after construction of the forward pass
-  FWD1,     // after running pre-aliasing patterns
-  BWD0,     // after backwards construction
-  PREALIAS, // after all transformations, patterns, except the aliasing
-  FINAL,    // after running aliasing patterns (the final Ir)
+  Fwd0 = 0, // after construction of the forward pass
+  Fwd1,     // after running pre-aliasing patterns
+  Bwd0,     // after backwards construction
+  PreAlias, // after all transformations, patterns, except the aliasing
+  Final,    // after running aliasing patterns (the final Ir)
   N         // the number of DotChecks, must appear as the final enum
 };
 
@@ -159,10 +159,6 @@ struct SessionOptions {
   /// non-stable version instead for speed-up
   bool enableNonStableSoftmax = false;
 
-  /// Enable placement of operations on individual IPUs by creating a 'virtual
-  /// graph' for each IPU
-  bool enableVirtualGraphs = false;
-
   /// Enable replication of graphs
   bool enableReplicatedGraphs = false;
 
@@ -182,23 +178,15 @@ struct SessionOptions {
   /// varUpdate.
   int64_t accumulationFactor = 1;
 
-  /// Enable transformation pass that attempts to automatically place ops on
-  /// virtual graphs to achieve model parallelism.
-  bool autoVirtualGraph = false;
-
+  /// This option allows you to place ops on virtual graphs to achieve model
+  /// parallelism - either manually using model annotations, or automatically
   VirtualGraphMode virtualGraphMode = VirtualGraphMode::Off;
 
   /// Enable pipelining of virtual graphs
   bool enablePipelining = false;
 
   /// Use synthetic data i.e. disable data transfer to/from the host
-  /// Set to 'true' to use synthetic data, 'false' to use real data.
-  /// This option is deprecated, please use syntheticDataMode.
-  bool ignoreData = false;
-
-  /// Use synthetic data i.e. disable data transfer to/from the host
   /// Set to 'Off' to use real data
-  /// Note: this will be overriden by the legacy option 'ignoreData'.
   SyntheticDataMode syntheticDataMode = SyntheticDataMode::Off;
 
   /// Add instrumentation to your program to count the number of device cycles
@@ -241,8 +229,23 @@ struct SessionOptions {
   // Enable explicit recomputation
   bool explicitRecomputation = false;
 
+  // Enable replicated weight sharding
+  bool replicatedWeightSharding = false;
+  // Only enable RWS for tensors with more than 8192 elements
+  size_t replicatedWeightShardingMinNumElements = 8192;
+
+  // Number of IO tiles
+  int numIOTiles = 0;
+
+  // Enable zero-copy for subgraphs
+  bool aliasZeroCopy = false;
+
   // Enable batch serialization
   int batchSerializationFactor = 0;
+
+  // Delay var updates as much as possible
+  // TODO: Remove with T19212
+  bool delayVarUpdates = true;
 
   // Enable the global fullyConnectedPass option for matmuls
   bool enableFullyConnectedPass = true;

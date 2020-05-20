@@ -10,6 +10,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/optimizer.hpp>
@@ -49,27 +50,25 @@ BOOST_AUTO_TEST_CASE(Inplace_concat0) {
   auto cou   = aiOnnx.concat({radd, rsub}, 1);
   auto rin1  = aiOnnx.relu({in1});
   auto out   = aiOnnx.add({rin1, cou});
-  builder->addOutputTensor(out);
+  auto l1    = builder->aiGraphcoreOpset1().l1loss({out}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+  auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("All")}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(out, "l1LossVal", 0.1, ReductionType::SUM)};
-  auto device = createTestDevice(TEST_TARGET);
+  auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              losses,
+              l1,
               &optimizer,
               *device,
               {},
-              Patterns(PatternsLevel::NONE).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
 
   // Check the ir
   // All the Relus have been optimised out,

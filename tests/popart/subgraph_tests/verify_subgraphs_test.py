@@ -29,6 +29,6 @@ def test_verify_subgraph():
     with pytest.raises(popart.popart_exception) as e_info:
         session = popart.InferenceSession(
             fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(1, {out: popart.AnchorReturnType("ALL")}),
+            dataFlow=popart.DataFlow(1, {out: popart.AnchorReturnType("All")}),
             deviceInfo=tu.create_test_device())
     assert (e_info.value.args[0].endswith("are not outlineable"))

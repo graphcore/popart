@@ -21,17 +21,16 @@ nOutChans = 10
 batchSize = 2
 batchesPerStep = 3
 anchors = {
-    "l1LossVal": popart.AnchorReturnType("ALL"),
+    "l1LossVal": popart.AnchorReturnType("All"),
 }
 
-dataFeed = popart.DataFlow(batchesPerStep, anchors)
+dataFlow = popart.DataFlow(batchesPerStep, anchors)
 earlyInfo = popart.InputShapeInfo()
 earlyInfo.add("image0",
               popart.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
 inNames = ["image0"]
 cifarInIndices = {"image0": 0}
-outNames = ["preProbSquared"]
-losses = [popart.L1Loss("preProbSquared", "l1LossVal", 0.01)]
+outNames = ["l1LossVal"]
 willowOptPasses = [
     "PreUniRepl", "PostNRepl", "SoftmaxGradDirect", "OpToIdentity", "Inplace0"
 ]
@@ -60,7 +59,8 @@ class Module0(torch.nn.Module):
         # this would add a Flatten:
         # x = x.view(nSamples, nChans)
         preProbSquared = x + x
-        return preProbSquared
+        l1loss = torch.sum(0.1 * torch.abs(preProbSquared))
+        return l1loss
 
 
 # Set arbitrary seed so model weights are initialized to the
@@ -70,10 +70,9 @@ torch.manual_seed(1)
 torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
-    losses=losses,
     optimizer=popart.ConstSGD(0.001),
     inputShapeInfo=earlyInfo,
-    dataFeed=dataFeed,
+    dataFlow=dataFlow,
     ### Torch specific:
     module=Module0(),
     samplesPerBatch=batchSize)

@@ -1,12 +1,12 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE MultiNll0InplaceTest
 
+#include <../random_util.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/test/unit_test.hpp>
 #include <chrono>
 #include <complex>
 #include <iostream>
-#include <random>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/devicemanager.hpp>
@@ -16,6 +16,7 @@
 #include <popart/names.hpp>
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op/add.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
@@ -52,8 +53,9 @@ BOOST_AUTO_TEST_CASE(test) {
                             const std::array<float, 6 * 2>
                                 &vWeight, // initial weights
                             bool doInplace) {
-    auto builder = Builder::create();
-    auto aiOnnx  = builder->aiOnnxOpset9();
+    auto builder     = Builder::create();
+    auto aiOnnx      = builder->aiOnnxOpset9();
+    auto aiGraphcore = builder->aiGraphcoreOpset1();
 
     int batchSize = 1;
 
@@ -83,31 +85,29 @@ BOOST_AUTO_TEST_CASE(test) {
         aiOnnx.slice({mmOut}, {1, 4, 1}, {0, 0, 0}, {0, 1, 2}, "slc0");
     auto reshape0 = builder->reshape_const(aiOnnx, {slice0}, {1, 4}, "rsh0");
     auto sm0      = aiOnnx.softmax({reshape0}, 1, "sm0");
-    builder->addOutputTensor(sm0);
-    auto label0 = builder->addInputTensor(labelSampleInfo);
-    auto loss0 =
-        std::make_unique<NllLoss>(sm0, label0, "loss0", ReductionType::MEAN);
+    auto label0   = builder->addInputTensor(labelSampleInfo);
+    auto nll0     = aiGraphcore.nllloss({sm0, label0}, ReductionType::Mean);
 
     auto slice1 =
         aiOnnx.slice({mmOut}, {1, 4, 2}, {0, 0, 1}, {0, 1, 2}, "slc1");
     auto reshape1 = builder->reshape_const(aiOnnx, {slice1}, {1, 4}, "rsh1");
     auto sm1      = aiOnnx.softmax({reshape1}, 1, "sm1");
-    builder->addOutputTensor(sm1);
-    auto label1 = builder->addInputTensor(labelSampleInfo);
-    auto loss1 =
-        std::make_unique<NllLoss>(sm1, label1, "loss1", ReductionType::MEAN);
+    auto label1   = builder->addInputTensor(labelSampleInfo);
+    auto nll1     = aiGraphcore.nllloss({sm1, label1}, ReductionType::Mean);
+
+    auto finalLoss = aiOnnx.sum({nll0, nll1});
 
     auto device = createTestDevice(TEST_TARGET, 1, 20);
 
     auto session = popart::TrainingSession::createFromOnnxModel(
         builder->getModelProto(),
         DataFlow(batchesPerStep),
-        {loss0.get(), loss1.get()},
+        finalLoss,
         ConstSGD(1.0),
         device,
         InputShapeInfo(),
         SessionOptions(),
-        popart::Patterns(PatternsLevel::DEFAULT).enableInPlace(doInplace));
+        popart::Patterns(PatternsLevel::Default).enableInPlace(doInplace));
 
     auto sched = session->ir.getOpSchedule({});
     std::cout << "The op schedule with inplace=" << doInplace << " is :\n";
@@ -137,9 +137,9 @@ BOOST_AUTO_TEST_CASE(test) {
     session->prepareDevice();
 
     auto seed = 1011;
-    std::default_random_engine eng(seed);
-    std::uniform_real_distribution<float> fdis(0, 0.5);
-    std::uniform_int_distribution<uint64_t> idis(0, 3);
+    DefaultRandomEngine eng(seed);
+    UniformRealDistribution<float> fdis(0.f, 0.5f);
+    UniformIntDistribution<int> idis(0, 3);
 
     WeightsIO weightsRead;
     std::vector<float> readBackWeights(weightInfo.nelms(), -777.0f);
@@ -171,7 +171,6 @@ BOOST_AUTO_TEST_CASE(test) {
     popart::StepIO stepio(inputs, {});
 
     session->weightsFromHost();
-    session->optimizerFromHost();
 
     session->run(stepio);
     session->weightsToHost();
@@ -182,8 +181,8 @@ BOOST_AUTO_TEST_CASE(test) {
 
   // generate random input data
   auto seed = 1011;
-  std::default_random_engine eng(seed);
-  std::uniform_real_distribution<float> fdis(0, 0.5);
+  DefaultRandomEngine eng(seed);
+  UniformRealDistribution<float> fdis(0.f, 0.5f);
   std::array<float, 6 * 2> vWeight;
   for (auto &val : vWeight) {
     val = fdis(eng);

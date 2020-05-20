@@ -69,9 +69,9 @@ InputCreatorType SumOpx::getInputCreatorType(InIndex index) const {
   // definitely unwind through this opx, and it will also be efficient
   // when performing the op.
   if (op_p->inInfo(index) == op_p->outInfo(SumOp::getOutIndex())) {
-    return InputCreatorType::CANUNWIND;
+    return InputCreatorType::CanUnwind;
   } else {
-    return InputCreatorType::DEADEND;
+    return InputCreatorType::Deadend;
   }
 }
 

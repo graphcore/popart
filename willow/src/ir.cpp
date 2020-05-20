@@ -9,6 +9,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include <boost/random/normal_distribution.hpp>
+
 #include <popart/builder.hpp>
 #include <popart/ces/constexpr.hpp>
 #include <popart/ces/onnxconstexpr.hpp>
@@ -39,17 +41,18 @@
 
 // The transformations
 #include <popart/recompute.hpp>
-#include <popart/transforms/aliaszerocopy.hpp>
 #include <popart/transforms/auto_virtual_graph.hpp>
 #include <popart/transforms/batchserialize.hpp>
 #include <popart/transforms/cachesetup.hpp>
 #include <popart/transforms/decomposegradsum.hpp>
+#include <popart/transforms/devicereduce.hpp>
 #include <popart/transforms/dynamicoptransform.hpp>
 #include <popart/transforms/explicitrecompute.hpp>
 #include <popart/transforms/groupmatmuls.hpp>
 #include <popart/transforms/hostreduce.hpp>
 #include <popart/transforms/inferpipelinestages.hpp>
 #include <popart/transforms/interipucopy.hpp>
+#include <popart/transforms/iocomputetilecopy.hpp>
 #include <popart/transforms/mergecopies.hpp>
 #include <popart/transforms/mergeduplicateops.hpp>
 #include <popart/transforms/mergevarupdates.hpp>
@@ -138,19 +141,6 @@ void Ir::dotCheckpoint(DotCheck check) const {
   viz.write();
 }
 
-bool Ir::isInputToLoss(const Tensor *t,
-                       const std::vector<std::shared_ptr<Loss>> &losses) const {
-  for (auto &loss : losses) {
-    for (int i = 0; i < loss->input_size(); i++) {
-      auto input = loss->input(i);
-      if (input == t->id) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
 void Ir::confirmNoReservedIds() const {
 
   auto &onnxGraph = onnxModel->graph();
@@ -171,13 +161,13 @@ void Ir::confirmNoReservedIds() const {
 IrBundle::IrBundle(const ONNX_NAMESPACE::ModelProto &modelProto_,
                    const InputShapeInfo &inputShapeInfo_,
                    const DataFlow &dataFlow_,
-                   const std::vector<std::shared_ptr<Loss>> &losses_,
+                   const TensorId &loss_,
                    const Optimizer *optimizer_,
                    DeviceInfo &deviceInfo_,
                    const SessionOptions &userOptions_,
                    const Patterns &patterns_)
     : modelProto(modelProto_), inputShapeInfo(inputShapeInfo_),
-      dataFlow(dataFlow_), losses(losses_), optimizer(optimizer_),
+      dataFlow(dataFlow_), loss(loss_), optimizer(optimizer_),
       deviceInfo(deviceInfo_), userOptions(userOptions_), patterns(patterns_) {}
 
 Ir::Ir() : onnxModel(nullptr) {
@@ -190,10 +180,9 @@ void Ir::setOnnxModel(const ONNX_NAMESPACE::ModelProto &model) {
 }
 
 void Ir::setDataFlow(const DataFlow &df) {
-  // Inference and evaluation modes require an anchor
+  // Inference  mode require an anchor
   if (!canTrain() && df.nAnchors() == 0) {
-    throw error("User must specify an anchor tensor when doing inference or "
-                "evalulation.");
+    throw error("User must specify an anchor tensor when doing inference.");
   } else {
     dataFlow = df;
   }
@@ -211,43 +200,8 @@ bool Ir::useSyntheticData() const {
   return syntheticDataMode() != SyntheticDataMode::Off;
 }
 
-void Ir::setUserOptions(const SessionOptions &flags) {
-  userOptions = flags;
+void Ir::setUserOptions(const SessionOptions &flags) { userOptions = flags; }
 
-  // Warn the user if they are using the enableVirtualGraphs or autoVirtualGraph
-  // options.
-  if (userOptions.enableVirtualGraphs) {
-    logging::ir::warn(
-        "The options enableVirtualGraphs is deprecated and will be removed in "
-        "a future release. Please use virtualGraphMode instead");
-  }
-  if (userOptions.autoVirtualGraph) {
-    logging::ir::warn(
-        "The options autoVirtualGraph is deprecated and will be removed in a "
-        "future release. Please use virtualGraphMode instead");
-  }
-  if (userOptions.ignoreData) {
-    // TODO: T13474 remove this option.
-    logging::ir::warn(
-        "The options ignoreData is deprecated and will be removed in a future "
-        "release. Please use syntheticDataMode instead. Setting "
-        "syntheticDataMode to 'Zeros'.");
-    userOptions.syntheticDataMode = SyntheticDataMode::Zeros;
-  }
-
-  // If the user has not set virtualGraphMode (assuming default value Off means
-  // the user left it unset), check the enableVirtualGraphs and
-  // autoVirtualGraphs options.
-  if (userOptions.virtualGraphMode == VirtualGraphMode::Off) {
-    if (userOptions.enableVirtualGraphs) {
-      if (userOptions.autoVirtualGraph) {
-        userOptions.virtualGraphMode = VirtualGraphMode::Auto;
-      } else {
-        userOptions.virtualGraphMode = VirtualGraphMode::Manual;
-      }
-    }
-  }
-}
 void Ir::setInputShapeInfo(const InputShapeInfo &info) {
   inputShapeInfo = info;
 }
@@ -258,11 +212,11 @@ void Ir::setPatterns(const Patterns &p) {
 }
 
 std::string Ir::getPatternLevelStr(const Patterns &p) {
-  if (isPatternsLevel(p, PatternsLevel::ALL)) {
+  if (isPatternsLevel(p, PatternsLevel::All)) {
     return "all";
-  } else if (isPatternsLevel(p, PatternsLevel::DEFAULT)) {
+  } else if (isPatternsLevel(p, PatternsLevel::Default)) {
     return "default";
-  } else if (isPatternsLevel(p, PatternsLevel::NONE)) {
+  } else if (isPatternsLevel(p, PatternsLevel::NoPatterns)) {
     return "no";
   } else {
     return "custom";
@@ -412,10 +366,8 @@ void Ir::verifyPipelineSettings() const {
 void Ir::verifyPingPongSettings() const {
   // check for mismatched settings
   if (userOptions.pingPongPhases > 1 &&
-      (userOptions.autoVirtualGraph ||
-       userOptions.virtualGraphMode != VirtualGraphMode::PingPong)) {
-    throw error("PingPong phases > 1 requires VirtualGraphMode::PingPong, "
-                "and autoVirtualGraph disabled");
+      userOptions.virtualGraphMode != VirtualGraphMode::PingPong) {
+    throw error("PingPong phases > 1 requires VirtualGraphMode::PingPong");
   }
 
   // if pingpong is enabled
@@ -645,10 +597,10 @@ void Ir::verifySubgraphs() const {
 
 void Ir::verifyRecomputeAttributes() const noexcept(false) {
   // If explicit recomputation is turned on
-  // No op is allowed to have its recompute type set to RECOMPUTE
+  // No op is allowed to have its recompute type set to Recompute
   if (userOptions.explicitRecomputation) {
     for (auto op : getAllOps()) {
-      if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
+      if (op->settings.recomputeType == RecomputeType::Recompute) {
         throw error("Explicit recomputation is turned on for op '{}', but its "
                     "recompute type is set to '{}'",
                     op->debugName(),
@@ -746,7 +698,7 @@ std::set<Tensor *> Ir::getRootInputsToOp(Op *op) {
 // Verify ConstExpr folding has removed input tensors that should have
 // been removed:
 //  - that initializer inputs are removed when possible in
-//    inference and eval modes
+//    inference mode
 //  - that constant inputs are removed when possible in all modes
 //
 // 1. Get only the tensors we care about checking
@@ -825,22 +777,15 @@ void Ir::prepareImpl(const IrBundle &gb) {
     throw error("Ir::prepare called more than once");
   }
 
-  // Require gb.losses.empty() => !gb.optimizer
-  if (gb.losses.empty() && gb.optimizer) {
-    throw error("An optimizer is set without any losses");
-  }
-
   if (gb.optimizer) {
-    setExecutionMode(ExecutionMode::TRAINING);
-  } else if (gb.losses.empty()) {
-    setExecutionMode(ExecutionMode::INFERENCE);
+    setExecutionMode(ExecutionMode::Training);
   } else {
-    setExecutionMode(ExecutionMode::EVALUATION);
+    setExecutionMode(ExecutionMode::Inference);
   }
 
   setDataFlow(gb.dataFlow);
-  setUserOptions(gb.userOptions);
   setInputShapeInfo(gb.inputShapeInfo);
+  setUserOptions(gb.userOptions);
   setPatterns(gb.patterns);
   setOnnxModel(gb.modelProto);
 
@@ -851,11 +796,13 @@ void Ir::prepareImpl(const IrBundle &gb) {
     }
   }
 
-  getMainGraph().setLosses(gb.losses);
+  if (canTrain()) {
+    getMainGraph().setLoss(gb.loss);
+  }
 
   confirmNoReservedIds();
 
-  registerInputTensors(gb.losses);
+  registerInputTensors();
 
   if (!canTrain() && getSessionOptions().enableGradientAccumulation) {
     throw error("Gradient Accumulation only available when training.");
@@ -871,17 +818,17 @@ void Ir::prepareImpl(const IrBundle &gb) {
   }
 
   // Check virtual graph settings and annotations are consistent
-  verifyVirtualGraphIds(false, true);
+  verifyVirtualGraphIds(false);
   verifyPipelineSettings();
   verifyPingPongSettings();
 
-  dotCheckpoint(DotCheck::FWD0);
+  dotCheckpoint(DotCheck::Fwd0);
 
   for (auto &id_graph : graphs) {
     auto &graph = getGraph(id_graph.first);
     applyPreAliasPatterns(graph);
   }
-  dotCheckpoint(DotCheck::FWD1);
+  dotCheckpoint(DotCheck::Fwd1);
 
   if (requiresRandomSeed()) {
     initRandomSeed();
@@ -892,22 +839,22 @@ void Ir::prepareImpl(const IrBundle &gb) {
   applyTransform(AutoVirtualGraph::id(), getMainGraph());
 
   // Required transform order for PingPong is:
-  // FWD -> PingPong1 -> Loss -> PingPong1 -> BWD -> PingPong2 -> IpuCopy ->
-  // PingPong3 -> Outline -> AliasZeroCopy -> CacheSetup
+  // FWD -> PingPong1 -> Loss -> PingPong2 -> BWD -> PingPong3 -> IpuCopy ->
+  // PingPong4 -> Outline -> CacheSetup
 
   // First ping pong transformation pass (fwd)
   if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
       userOptions.pingPongPhases > 1) {
     applyTransform(PingPong::id(1), getMainGraph());
-    verifyVirtualGraphIds(true, true);
+    verifyVirtualGraphIds(true);
   }
 
   if (getSessionOptions().enablePipelining) {
     applyTransform(InferPipelineStages::id(), getMainGraph());
   }
 
-  if (canEvaluate()) {
-    growFinalLoss(gb.losses);
+  if (canTrain()) {
+    growFinalLoss(gb.loss);
     updateVertices();
   }
 
@@ -918,11 +865,12 @@ void Ir::prepareImpl(const IrBundle &gb) {
     updateVertices();
   }
 
-  if (canEvaluate()) {
+  if (canTrain()) {
     setNEdgesToLoss();
   }
 
-  if (autoRecomputationEnabled() && getMainGraph().hasUserRecomputeOps()) {
+  if (autoRecomputationEnabled() && getMainGraph().hasUserRecomputeOps() &&
+      getSessionOptions().pingPongPhases < 2) {
     throw error("A mixture of auto and manual recomputaion is not supported");
   }
 
@@ -940,7 +888,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
       userOptions.pingPongPhases > 1) {
     applyTransform(PingPong::id(2), getMainGraph());
-    verifyVirtualGraphIds(true, false);
+    verifyVirtualGraphIds(true);
   }
 
   updateVertices();
@@ -950,7 +898,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   }
 
   updateVertices();
-  dotCheckpoint(DotCheck::BWD0);
+  dotCheckpoint(DotCheck::Bwd0);
 
   applyTransform(Prune::id(), getMainGraph());
 
@@ -959,7 +907,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
     applyPreAliasPatterns(graph);
   }
 
-  if (canEvaluate()) {
+  if (canTrain()) {
     setNEdgesToLoss();
   }
 
@@ -981,13 +929,6 @@ void Ir::prepareImpl(const IrBundle &gb) {
     // Transform from implicit to explicit recomputation
     applyTransform(ExplicitRecompute::id(), getMainGraph());
     updateVertices();
-  }
-
-  // Third ping pong transformation pass (bwd)
-  if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
-      userOptions.pingPongPhases > 1) {
-    applyTransform(PingPong::id(3), getMainGraph());
-    verifyVirtualGraphIds(true, false);
   }
 
   // Dynamicoptransform decomposes grad sums that contain
@@ -1063,6 +1004,37 @@ void Ir::prepareImpl(const IrBundle &gb) {
   SGD1Decompose sgd1Decomposer;
   applyPreAliasPattern(&sgd1Decomposer, getMainGraph());
 
+  if (getSessionOptions().hostWeightUpdate &&
+      !getSessionOptions().hostAllReduce) {
+    throw error(
+        "Host weight update can't be enabled without enabling hostAllReduce.");
+  }
+
+  if (getSessionOptions().hostAllReduce) {
+    if (canTrain()) {
+      if (getSessionOptions().hostWeightUpdate &&
+          !getSessionOptions().hostAllReduce) {
+        throw error("Host weight update can't be enabled without enabling "
+                    "hostAllReduce.");
+      }
+      if (userOptions.mergeVarUpdate != MergeVarUpdateType::None) {
+        throw error("hostAllReduce does not work with MergeVarUpdates");
+      }
+
+      applyTransform(HostReduce::id(), getMainGraph());
+      updateVertices();
+    } else {
+      logging::ir::info("Skipping hostAllReduce transform when running "
+                        "inference or evaluation");
+    }
+  } else {
+    if (getSessionOptions().enableReplicatedGraphs ||
+        getSessionOptions().enableDistributedReplicatedGraphs) {
+      applyTransform(DeviceReduce::id(), getMainGraph());
+      updateVertices();
+    }
+  }
+
   // Add internal ops to copy tensors between ipu's as needed
   applyTransform(InterIpuCopy::id(), getMainGraph());
 
@@ -1076,8 +1048,13 @@ void Ir::prepareImpl(const IrBundle &gb) {
   // Fourth ping pong transformation pass (cut)
   if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
       userOptions.pingPongPhases > 1) {
-    applyTransform(PingPong::id(4), getMainGraph());
-    verifyVirtualGraphIds(true, false);
+    // PingPong transformation 3 needs up-to-date aliasing information
+    updateAliases();
+
+    applyTransform(PingPong::id(3), getMainGraph());
+    verifyVirtualGraphIds(true);
+    // Remove extra CacheLoad, CacheStore and Replicated ops that are not used
+    applyTransform(Prune::id(), getMainGraph());
   }
 
   updateVertices();
@@ -1088,6 +1065,9 @@ void Ir::prepareImpl(const IrBundle &gb) {
     updateVertices();
   }
 
+  applyTransform(IoComputeTileCopy::id(), getMainGraph());
+  updateVertices();
+
   for (auto &id_graph : graphs) {
     auto &graph = getGraph(id_graph.first);
     applyPreAliasPatterns(graph);
@@ -1095,22 +1075,29 @@ void Ir::prepareImpl(const IrBundle &gb) {
 
   updateVertices();
 
-  dotCheckpoint(DotCheck::PREALIAS);
+  dotCheckpoint(DotCheck::PreAlias);
 
   if (getSessionOptions().enableOutlining) {
     updateAliases();
     applyTransform(SubgraphOutline::id(), getMainGraph());
     updateVertices();
+
+    if (getSessionOptions().batchSerializationFactor > 1) {
+      // Run a second outlining step.
+      // This is necessary because in the first outlining pass we help the
+      // outlining algorithm by inserting boundaries between
+      // batch serialization phases.
+      // Because batch serialization phases are not copied from the ops to their
+      // parent subgraph, the second pass will ignore batch serialization phases
+      // and outline the repeated per-batch-element subgraphs/ops.
+      updateAliases();
+      applyTransform(SubgraphOutline::id(), getMainGraph());
+      updateVertices();
+    }
   }
 
-  // AliasZeroCopy: Reduce tensor liveness and outline call copy
-  if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
-      userOptions.pingPongPhases > 1) {
-    updateAliases();
-    applyTransform(AliasZeroCopy::id(), getMainGraph());
-    removeIsolatedTensors(true);
-    updateVertices();
-  }
+  removeIsolatedTensors(true);
+  updateVertices();
 
   if (autoRecomputationEnabled() && !getSessionOptions().enablePipelining &&
       !getSessionOptions().explicitRecomputation &&
@@ -1132,25 +1119,6 @@ void Ir::prepareImpl(const IrBundle &gb) {
     updateVertices();
   }
 
-  if (getSessionOptions().hostAllReduce) {
-    if (canTrain()) {
-      if (getSessionOptions().hostWeightUpdate &&
-          !getSessionOptions().hostAllReduce) {
-        throw error("Host weight update can't be enabled without enabling "
-                    "hostAllReduce.");
-      }
-      if (userOptions.mergeVarUpdate != MergeVarUpdateType::None) {
-        throw error("hostAllReduce does not work with MergeVarUpdates");
-      }
-
-      applyTransform(HostReduce::id(), getMainGraph());
-      updateVertices();
-    } else {
-      logging::ir::info("Skipping hostAllReduce transform when running "
-                        "inference or evaluation");
-    }
-  }
-
   applyTransform(MergeDuplicateOps::id(), getMainGraph());
 
   // Now, we apply the Patterns which can handle and create
@@ -1168,6 +1136,9 @@ void Ir::prepareImpl(const IrBundle &gb) {
     updateVertices();
   }
 
+  // Update aliases a final time
+  updateAliases();
+
   applyTransform(CacheSetup::id(), getMainGraph());
 
   // confirm that all the anchor names provided
@@ -1176,7 +1147,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   // We allow duplicates.
   validateAnchors();
 
-  dotCheckpoint(DotCheck::FINAL);
+  dotCheckpoint(DotCheck::Final);
   logIr();
 
   // some checks, now that prepare is complete
@@ -1192,7 +1163,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   verifyConstExprFolding();
   verifyConnectivity();
   verifyTensorIds();
-  verifyVirtualGraphIds(true, false);
+  verifyVirtualGraphIds(true);
   verifyVertexAttributesOnlyInMain();
   verifySubgraphs();
   verifyRecomputeAttributes();
@@ -1237,22 +1208,15 @@ void Ir::verifyVertexAttributesOnlyInMain() const {
   }
 }
 
-void Ir::verifyVirtualGraphIds(bool postAutoVirtualGraphTransform,
-                               bool includeLosses) const {
+void Ir::verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const {
   if (!virtualGraphsEnabled()) {
     verifyVirualGraphIdsNotInitialized();
     return;
   }
 
-  if (includeLosses) {
-    logging::ir::debug(
-        "Verifying virtual graph id consistency (ops and losses)");
-  } else {
-    logging::ir::debug("Verifying virtual graph id consistency (ops)");
-  }
+  logging::ir::debug("Verifying virtual graph id consistency");
 
-  const std::set<int64_t> &vgraphs(
-      getMainGraph().getAllVirtualGraphIds(includeLosses));
+  const std::set<int64_t> &vgraphs(getMainGraph().getAllVirtualGraphIds());
 
   // a mix of annotated and not annotated Ops : suggests a problem
   if (vgraphs.count(Graph::NoVGraph) != 0 && vgraphs.size() > 1) {
@@ -1262,7 +1226,7 @@ void Ir::verifyVirtualGraphIds(bool postAutoVirtualGraphTransform,
          << "graph ids set, or none must. Op count per virtual graph id\n";
 
     std::map<int64_t, int> vgraph_op_count(
-        getMainGraph().getVirtualGraphCounts(includeLosses));
+        getMainGraph().getVirtualGraphCounts());
 
     for (auto &id_size : vgraph_op_count) {
       errm << "  " << id_size.first << " : " << id_size.second << "\n";
@@ -1276,16 +1240,6 @@ void Ir::verifyVirtualGraphIds(bool postAutoVirtualGraphTransform,
       }
     }
 
-    if (includeLosses) {
-      errm << "Losses with no virtual graph id : \n";
-      for (auto &loss : getMainGraph().getLosses()) {
-        if (!loss->hasVirtualGraphId()) {
-          errm << "  "
-               << "Loss"
-               << "\n";
-        }
-      }
-    }
     throw error(errm.str());
   }
 
@@ -1410,8 +1364,7 @@ void checkForDimParams(const TensorId &id, const ONNX_NAMESPACE::TypeProto &t) {
 
 } // namespace
 
-void Ir::registerInputTensors(
-    const std::vector<std::shared_ptr<Loss>> &losses) {
+void Ir::registerInputTensors() {
 
   auto &onnxGraph = onnxModel->graph();
 
@@ -1504,10 +1457,8 @@ void Ir::registerInputTensors(
       logging::info("Not creating Tensor for unused initializer, {}", tenId);
       unusedInitializers.emplace(tenId);
     } else {
-      // If inference or evaluation mode add initializers as constants if option
-      // enabled
-      if ((getExecutionMode() == ExecutionMode::INFERENCE ||
-           getExecutionMode() == ExecutionMode::EVALUATION) &&
+      // If inference mode add initializers as constants if option enabled
+      if (getExecutionMode() == ExecutionMode::Inference &&
           getSessionOptions().constantWeights == true) {
         logCreationInfo("Constant", tenId);
         getTensors().addConstInit(tenId, &initializer);
@@ -1528,14 +1479,9 @@ void Ir::registerInputTensors(
       bool allowUnusedStreamTensors = true;
       if (consumerTypes.find(id) == consumerTypes.end() &&
           !allowUnusedStreamTensors) {
-        throw error(
-            "Request to create popart Stream Tensor {} failed, "
-            "as it has no consumers in the ONNX GraphProto. "
-            "If Tensor {} is only used as an input "
-            "to a Loss, then it should not be included in the ONNX Model, "
-            "but its TensorInfo should be in the InputShapeInfo object passed "
-            "to the Ir/Session constructor.",
-            id);
+        throw error("Request to create popart Stream Tensor {} failed, "
+                    "as it has no consumers in the ONNX GraphProto. ",
+                    id);
       }
       logCreationInfo("Stream", id);
       if (inputShapeInfo.has(id)) {
@@ -1565,9 +1511,11 @@ void Ir::registerInputTensors(
           break;
         }
         case SyntheticDataMode::RandomNormal: {
-          // Radom normal number generator: mean 0, variance 1
-          std::default_random_engine generator;
-          std::normal_distribution<float> normalDistribution(0.0, 1.0);
+          // Random normal number generator: mean 0, variance 1
+          // Boost Random ensures numerical consistency across implementations
+          std::mt19937 generator;
+          boost::random::normal_distribution<float> normalDistribution(0.0,
+                                                                       1.0);
           for (auto &val : vals) {
             val = normalDistribution(generator);
           }
@@ -1584,21 +1532,6 @@ void Ir::registerInputTensors(
           data.insert(data.end(), convertedData.begin(), convertedData.end());
         }
         synStreamTensor->setTensorData(info, data.data());
-      }
-    }
-  }
-
-  // other true inputs are for the loss calculation (class labels, etc)
-  for (const auto &loss : losses) {
-    for (const auto &tenId : loss->getStreamTensorNames()) {
-      // another loss might have already registered this tensor
-      if (!getTensors().contains(tenId)) {
-        getTensors().addStream(tenId, inputShapeInfo.get(tenId));
-      } else {
-        Tensor *tensorAlreadyPresent = getTensors().get(tenId);
-        if (tensorAlreadyPresent->tensorType() != TensorType::Stream) {
-          throw error("type mismatch for tensor " + tenId);
-        }
       }
     }
   }
@@ -1630,10 +1563,12 @@ void Ir::validateAnchors() const {
 bool Ir::applyPreAliasPattern(const PreAliasPattern *pattern, Graph &graph) {
   bool result = false;
 
-  auto touchesInputToLoss = [this, &graph, pattern](Op *op) {
+  auto touchesInputToLoss = [&graph, pattern](Op *op) {
     for (auto &tensor : pattern->touches(op)) {
-      if (this->isInputToLoss(tensor, graph.getLosses())) {
-        return true;
+      if (graph.getTensors().contains(graph.getLoss())) {
+        if (graph.getLoss() == tensor->id) {
+          return true;
+        }
       }
     }
     return false;
@@ -1647,7 +1582,7 @@ bool Ir::applyPreAliasPattern(const PreAliasPattern *pattern, Graph &graph) {
 
     // If the ir will construct a loss, but hasn't yet, check that the pattern
     // doesn't touch the inputs to the loss.
-    if (this->canEvaluate() && !this->constructedFinalLoss &&
+    if (this->canTrain() && !this->constructedFinalLoss &&
         touchesInputToLoss(op)) {
       return false;
     }
@@ -1756,7 +1691,7 @@ bool Ir::streamingIsDisabledForTensor(const TensorId &tensorId) const {
   }
 
   // 3. The tensor is cached
-  if (getTensors().get(tensorId)->isCached()) {
+  if (getTensors().get(tensorId)->cacheInfo.isCached()) {
     return true;
   }
 
@@ -1843,33 +1778,6 @@ Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
                           getMainGraph(),
                           getGradSumOpNamePrefix());
 
-  if (getSessionOptions().enablePipelining) {
-    // Get all the producers pipeline stages and use the highest
-    // one for the grad sum op.
-    std::set<std::pair<PipelineStage, VGraphId>> ps;
-    for (auto t : toSum) {
-      // Pipeline stage will not be set if user has not explicitly set it.
-      auto prod = t->getProducer();
-      if (prod->hasPipelineStage()) {
-        ps.insert({prod->getPipelineStage(), prod->getVirtualGraphId()});
-      }
-    }
-
-    if (ps.size() > 0) {
-      auto chosen =
-          std::max_element(ps.begin(),
-                           ps.end(),
-                           [](std::pair<PipelineStage, VGraphId> lhs,
-                              std::pair<PipelineStage, VGraphId> rhs) {
-                             return lhs.first < rhs.first;
-                           });
-      gradSum->setPipelineStage(chosen->first);
-      gradSum->setVirtualGraphId(chosen->second);
-    }
-  } else if (virtualGraphsEnabled()) {
-    gradSum->setVirtualGraphId(getVirtualGraphIdFromTensorProducers(toSum));
-  }
-
   OpId opId = getMainGraph().moveIntoGraph(std::move(gradSum));
 
   std::vector<TensorId> inputs;
@@ -1884,7 +1792,7 @@ Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
   getMainGraph().connectOutputs(OutputVecWrapper(outputs), opId);
   Op *op = getMainGraph().getOps()[opId].get();
   op->setup();
-
+  op->inheritPlacementAttributes(true);
   return op;
 }
 
@@ -1949,13 +1857,19 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
     //
     // gradOp->settings.schedulePriority = 0.0;
 
-    if (nonGradOp->settings.recomputeType == RecomputeType::RECOMPUTE &&
-        autoRecomputationEnabled()) {
+    if (gradOp->hasPingPongPhase()) {
+      // Remap from forward to backward pingpong phase
+      gradOp->setPingPongPhase(2 * getSessionOptions().pingPongPhases - 2 -
+                               gradOp->getPingPongPhase());
+    }
+
+    if (nonGradOp->settings.recomputeType == RecomputeType::Recompute &&
+        autoRecomputationEnabled() && getSessionOptions().pingPongPhases < 2) {
       throw error("Grad Ops should be grown before recompute annotation");
     }
 
-    // No gradOp should be of type RECOMPUTE.
-    gradOp->settings.recomputeType = RecomputeType::CHECKPOINT;
+    // No gradOp should be of type Recompute.
+    gradOp->settings.recomputeType = RecomputeType::Checkpoint;
 
     if (nonGradOp->hasPipelineStage()) {
       gradOp->setPipelineStage(maxPipelineStage -
@@ -1979,7 +1893,7 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
         // the input at index 'indexGrad' to gradOp is
         switch (type) {
         //  (1) the INPUT at index 'indexFwd' of nonGradOp
-        case GradOpInType::IN: {
+        case GradOpInType::In: {
           if (nonGradOp->input->hasIndex(indexFwd)) {
             m_inputs[indexGrad] = nonGradOp->input->tensor(indexFwd)->id;
           } else if (isInputOptional(nonGradOp, indexFwd)) {
@@ -1996,7 +1910,7 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
         }
 
         //  (2) the OUTPUT at index 'indexFwd' of nonGradOp
-        case GradOpInType::OUT: {
+        case GradOpInType::Out: {
           if (!nonGradOp->output->hasIndex(indexFwd)) {
             throw error("Invalid configuration of gradOp {}. nonGradOp ({}) "
                         "OUTPUT {} is not defined ",
@@ -2010,7 +1924,7 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
 
         //  (3) the GRADIENT of the OUTPUT
         //      at index 'indexFwd' of nonGradOp.
-        case GradOpInType::GRADOUT: {
+        case GradOpInType::GradOut: {
           if (!nonGradOp->output->hasIndex(indexFwd)) {
             throw error("Invalid configuration of gradOp {}. nonGradOp ({}) "
                         "OUTPUT {} is not defined ",
@@ -2295,14 +2209,22 @@ void Ir::updateVertices() {
     } else {
       op->scheduledPreLoss = ScheduledPreLoss::Yes;
     }
-    if (op->scheduledPreLoss == ScheduledPreLoss::No) {
-      op->settings.recomputeType = RecomputeType::CHECKPOINT;
+    if (op->scheduledPreLoss == ScheduledPreLoss::No &&
+        op->settings.recomputeType != RecomputeType::Recomputed) {
+      op->settings.recomputeType = RecomputeType::Checkpoint;
     }
   }
 
   logging::ir::debug("setting scheduledPreLoss for Tensors in updateVertices");
-  // 3.2) scheduledPreLoss for Tensors
+  // 3.2) scheduledPreLoss for Tensors and any ops occuring post the loss
+  // in the schedule
+  bool postLoss = false;
   for (auto op : getMainGraph().getOpSchedule({})) {
+    postLoss |= op->scheduledPreLoss == ScheduledPreLoss::No;
+    if (postLoss) {
+      // The loss has been crossed, everything ScheduledPreLoss::No from here on
+      op->scheduledPreLoss = ScheduledPreLoss::No;
+    }
     for (auto tensor : op->input->tensors()) {
       // inputs to pre-loss are pre-loss
       if (op->scheduledPreLoss == ScheduledPreLoss::Yes) {
@@ -2323,9 +2245,11 @@ void Ir::updateVertices() {
 }
 
 void Ir::updateAliases() {
-  getTensors().clearAliases();
-  for (auto &op : getMainGraphOps()) {
-    getTensors().updateAliases(op.second.get());
+  for (auto &graph : graphs) {
+    graph.second->getTensors().clearAliases();
+    for (auto &op : graph.second->getOps()) {
+      graph.second->getTensors().updateAliases(op.second.get());
+    }
   }
 }
 
@@ -2454,7 +2378,7 @@ void Ir::constructBackwards() {
 
   // grad-ops which have created edge-gradients, but the
   // edge-gradients haven't signalled their existance.
-  // initialised as the gradients of the individual losses
+  // initialised as the gradients of the loss
   std::vector<GradNonGradPair> opsToRegister = growLossGradients();
 
   while (!opsToRegister.empty() || !tensor_grad_registry.complete.empty()) {
@@ -2623,29 +2547,7 @@ void Ir::ensureOptimizerTensorCreated(const TensorId &optId,
 }
 
 void Ir::growVarUpdateOpInternal(OpId opId) {
-
-  Op *op = getMainGraph().getOps()[opId].get();
-
-  if (virtualGraphsEnabled()) {
-    op->setVirtualGraphId(
-        getVirtualGraphIdFromTensorProducers(op->input->tensors()));
-  }
-
-  if (getSessionOptions().enablePipelining) {
-    // Get the pipeline stages from the inputs producers.
-    std::set<PipelineStage> stages;
-    for (auto input : op->input->tensors()) {
-      if (input->hasProducer() && input->getProducer()->hasPipelineStage()) {
-        stages.insert(input->getProducer()->getPipelineStage());
-      }
-    }
-
-    // Set the op to the highest pipeline stage if there is one.
-    if (stages.size() > 0) {
-      op->setPipelineStage(*std::max_element(stages.begin(), stages.end()));
-    }
-  }
-
+  Op *op           = getMainGraph().getOps()[opId].get();
   auto varUpdateOp = dynamic_cast<VarUpdateOp *>(op);
   if (varUpdateOp == nullptr) {
     throw internal_error("Op {} expected to be a VarUpdateOp", op->str());
@@ -2654,6 +2556,7 @@ void Ir::growVarUpdateOpInternal(OpId opId) {
   std::vector<TensorId> outputs{updatedVarId};
   getMainGraph().connectOutputs(OutputVecWrapper(outputs), opId);
   op->setup();
+  op->inheritPlacementAttributes(false);
 }
 
 std::set<Op *> Ir::getTrainTargetOps() const {
@@ -2666,101 +2569,39 @@ std::set<Op *> Ir::getTrainTargetOps() const {
   return trainTargets;
 }
 
-void Ir::growFinalLoss(const std::vector<std::shared_ptr<Loss>> &losses) {
-  if (losses.size() == 0) {
-    throw error("In Ir::growFinalLoss, but losses vector is empty");
-  }
+void Ir::growFinalLoss(const TensorId &loss) {
+  logging::ir::info("Growing final loss");
 
-  logging::ir::info("growing final loss");
-
-  std::vector<Op *> lossOps;
-  // first, grow each of the individual losses from the user
-  for (auto &loss : losses) {
-    OpId opId = getMainGraph().moveIntoGraph(loss->getOp({getMainGraph(), ""}));
-    Op *lossOp = getMainGraph().getOps()[opId].get();
-    getMainGraph().connectInputs(*loss, opId);
-    getMainGraph().connectOutputs(*loss, opId);
-
-    if (!virtualGraphsEnabled()) {
-      lossOp->setVirtualGraphId(boost::none);
+  if (getMainGraph().getTensors().contains(loss)) {
+    if (getMainGraph().getTensors().get(loss)->info.nelms() > 1) {
+      throw error("Loss tensor, '{}', must be a scalar tensor", loss);
     }
 
-    lossOps.push_back(lossOp);
-    lossOp->setup();
-    lossOp->toLoss = PathToLoss::Yes;
-    // there is no path from the final loss to this pre-final loss op
-    lossOp->fromLoss = PathFromLoss::No;
-    logging::trace("Growing loss: {} VGID: {}",
-                   lossOp->debugName(),
-                   lossOp->hasVirtualGraphId() ? lossOp->getVirtualGraphId()
-                                               : -1);
+    std::unique_ptr<popart::Op> finalLossOp =
+        OpManager::createOp(Onnx::CustomOperators::IdentityLoss,
+                            getMainGraph(),
+                            std::string("FinalLoss"),
+                            OpManager::getAttributesFromAnyMap(
+                                {{"reduction", std::string("None")}}));
+
+    // The final Loss Op is the only Op which (we say) has both
+    // paths to and from
+    finalLossOp->toLoss   = PathToLoss::Yes;
+    finalLossOp->fromLoss = PathFromLoss::Yes;
+
+    finalLossOpId = getMainGraph().moveIntoGraph(std::move(finalLossOp));
+    std::vector<TensorId> inputs{loss};
+    std::vector<TensorId> outputs{getFinalLossId()};
+    getMainGraph().connectInputs(InputVecWrapper(inputs), finalLossOpId);
+    getMainGraph().connectOutputs(OutputVecWrapper(outputs), finalLossOpId);
+    getMainGraph().getOps()[finalLossOpId]->setup();
+    getMainGraph().getOps()[finalLossOpId]->inheritPlacementAttributes(false);
+
+    logging::ir::trace("Final loss Op id set to {}", finalLossOpId);
+  } else {
+    throw error("Could not find loss tensor '{}' in main graph tensors", loss);
   }
 
-  // now growing the FINAL loss (sum of individual losses)
-  std::unique_ptr<popart::Op> finalLossSum =
-      OpManager::createOp(Domain::ai_onnx,
-                          "Sum",
-                          getOpSetVersionFromModel(Domain::ai_onnx),
-                          getMainGraph(),
-                          "FinalLoss");
-
-  if (getSessionOptions().enablePipelining) {
-    // Get the pipeline stages of the losses and use the highest one for the
-    // final loss sum.
-    std::set<PipelineStage> lossPipelineStages;
-    for (auto &op : lossOps) {
-      if (op->hasPipelineStage()) {
-        lossPipelineStages.insert(op->getPipelineStage());
-      }
-    }
-
-    if (lossPipelineStages.size() > 0) {
-      PipelineStage finalLossPipelineStage = *std::max_element(
-          lossPipelineStages.begin(), lossPipelineStages.end());
-      finalLossSum->setPipelineStage(finalLossPipelineStage);
-      // Set the virtual graph id for the final loss to be equal
-      // to the one of the other ops in the same pipeline stage.
-      for (auto &op : lossOps) {
-        if (op->hasPipelineStage() && op->hasVirtualGraphId()) {
-          if (op->getPipelineStage() == finalLossPipelineStage) {
-            finalLossSum->setVirtualGraphId(op->getVirtualGraphId());
-            break;
-          }
-        }
-      }
-    }
-  }
-
-  // The final Loss Op is the only Op which (we say) has both paths to and from
-  finalLossSum->toLoss   = PathToLoss::Yes;
-  finalLossSum->fromLoss = PathFromLoss::Yes;
-
-  if (virtualGraphsEnabled() && !finalLossSum->hasVirtualGraphId()) {
-    std::vector<Tensor *> lossTensors;
-    for (auto &op : lossOps) {
-      lossTensors.push_back(op->output->tensor(0));
-    }
-    finalLossSum->setVirtualGraphId(
-        getVirtualGraphIdFromTensorProducers(lossTensors));
-  }
-
-  finalLossOpId = getMainGraph().moveIntoGraph(std::move(finalLossSum));
-
-  std::vector<TensorId> inputs;
-  inputs.reserve(lossOps.size());
-  for (auto &op : lossOps) {
-    // Assume that tensor(0) is always valid
-    inputs.push_back(op->output->tensor(0)->id);
-  }
-  std::vector<TensorId> outputs{getFinalLossId()};
-  getMainGraph().connectInputs(InputVecWrapper(inputs), finalLossOpId);
-  getMainGraph().connectOutputs(OutputVecWrapper(outputs), finalLossOpId);
-  getMainGraph().getOps()[finalLossOpId]->setup();
-
-  // Not necessary to set the phase here (it will be done in
-  // updateVertices). To check our logic though, we do this here
-  // and then check that we agree in updateVertices()
-  logging::ir::trace("Final loss Op id set to {}", finalLossOpId);
   constructedFinalLoss = true;
 }
 
@@ -2937,13 +2778,9 @@ std::vector<GradNonGradPair> Ir::growLossGradients() {
   auto finalLossOpFound = getMainGraph().getOps().find(finalLossOpId);
   if (finalLossOpFound != getMainGraph().getOps().end()) {
     std::vector<GradNonGradPair> pairs;
-    for (auto &t_inds : finalLossOpFound->second->input->indicesMap()) {
-      Tensor *t = t_inds.first;
-      // a Loss Op going into the final Sum
-      Op *lossOp = t->getProducer();
-      for (Op *gradOp : growGradOps(lossOp)) {
-        pairs.push_back({gradOp, lossOp});
-      }
+    auto finalLossOp = getMainGraph().getOp(finalLossOpId);
+    for (Op *gradOp : growGradOps(finalLossOp)) {
+      pairs.push_back({gradOp, finalLossOp});
     }
     return pairs;
   } else {
@@ -3102,15 +2939,11 @@ bool Ir::isSchedulable(const OpsBeforeKey &gCons) const {
 Ir::ExecutionMode Ir::getExecutionMode() const { return executionMode; }
 
 bool Ir::canInfer() const {
-  return getExecutionMode() == ExecutionMode::INFERENCE || canEvaluate();
-}
-
-bool Ir::canEvaluate() const {
-  return getExecutionMode() == ExecutionMode::EVALUATION || canTrain();
+  return getExecutionMode() == ExecutionMode::Inference || canTrain();
 }
 
 bool Ir::canTrain() const {
-  return getExecutionMode() == ExecutionMode::TRAINING;
+  return getExecutionMode() == ExecutionMode::Training;
 }
 
 bool Ir::hasConstructedBackwards() const { return constructedBackwards; }
@@ -3496,6 +3329,13 @@ TensorId Ir::createBatchConcatTensorId(TensorId base_id) {
   logging::ir::trace("Generating tensor id {}", concat_id);
   ++intermediate_tensor_counter;
   return concat_id;
+}
+
+GraphId Ir::createUniqueSubgraphId(GraphId base_id) {
+  auto next_id =
+      logging::format("{}_subgraph({})", base_id, subgraph_id_counter);
+  ++subgraph_id_counter;
+  return next_id;
 }
 
 } // namespace popart

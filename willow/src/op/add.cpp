@@ -206,7 +206,7 @@ const std::map<int, int> &AddArg0GradOp::gradOutToNonGradIn() const {
 
 const std::vector<GradInOutMapper> &AddArg0GradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), AddOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getInIndex(), AddOp::getOutIndex(), GradOpInType::GradOut}};
   return inInfo;
 }
 
@@ -231,7 +231,7 @@ const std::vector<GradInOutMapper> &AddArg1GradOp::gradInputInfo() const {
   // might need to reduce across certain axes of this
   // if numpy broadcasting happened
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), AddOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getInIndex(), AddOp::getOutIndex(), GradOpInType::GradOut}};
   return inInfo;
 }
 

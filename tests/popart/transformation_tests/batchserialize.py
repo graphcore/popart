@@ -30,7 +30,7 @@ def test_weight_update(tmpdir):
         m2 = add_layer(m1)
         m3 = add_layer(m2)
 
-        out = m3
+        out = builder.aiGraphcore.l1loss([m3], 0.1)
         builder.addOutputTensor(out)
 
         device = tu.create_test_device(1)
@@ -45,10 +45,10 @@ def test_weight_update(tmpdir):
 
         session = popart.TrainingSession(
             fnModel=proto,
-            dataFeed=popart.DataFlow(1, dfAnchors),
+            dataFlow=popart.DataFlow(1, dfAnchors),
             optimizer=popart.ConstSGD(0.1),
-            losses=[popart.L1Loss(out, "l1LossVal", 0.1)],
-            passes=popart.Patterns(popart.PatternsLevel.ALL),
+            loss=out,
+            patterns=popart.Patterns(popart.PatternsLevel.All),
             userOptions=opts,
             deviceInfo=device)
 

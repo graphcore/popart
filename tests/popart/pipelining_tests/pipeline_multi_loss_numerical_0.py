@@ -78,11 +78,16 @@ def run_test_multi_loss_pipeline(same_vgraph=True):
         scale1 = builder.aiGraphcore.scale([mm1], scaleFactor)
         skipOut = builder.aiOnnx.add([mm0, scale1])
 
-    builder.addOutputTensor(scale1)
-    builder.addOutputTensor(skipOut)
+    with builder.virtualGraph(1 if same_vgraph else 0):
+        loss2 = builder.aiGraphcore.l1loss([skipOut],
+                                           lambda2,
+                                           reduction=popart.ReductionType.Sum)
 
-    loss1 = popart.L1Loss(scale1, "l1LossVal1", lambda1)
-    loss2 = popart.L1Loss(skipOut, "l1LossVal2", lambda2)
+    with builder.virtualGraph(1):
+        loss1 = builder.aiGraphcore.l1loss([scale1],
+                                           lambda1,
+                                           reduction=popart.ReductionType.Sum)
+        finalLoss = builder.aiOnnx.sum([loss1, loss2])
 
     # input0  w0
     #    |    |
@@ -108,9 +113,6 @@ def run_test_multi_loss_pipeline(same_vgraph=True):
     # - - - - - - - - - - -|
     #
 
-    loss1.virtualGraph(1)
-    loss2.virtualGraph(1 if same_vgraph else 0)
-
     anchors = {}
     dataFlow = popart.DataFlow(batchesPerStep, anchors)
 
@@ -126,13 +128,13 @@ def run_test_multi_loss_pipeline(same_vgraph=True):
 
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),
-            dataFeed=dataFlow,
+            dataFlow=dataFlow,
             optimizer=popart.SGD({
                 "defaultLearningRate": (defaultLearningRate0, False),
                 "defaultMomentum": (defaultMomentum0, False),
                 "defaultDampening": (defaultDampening0, False)
             }),
-            losses=[loss1, loss2],
+            loss=finalLoss,
             userOptions=userOptions,
             deviceInfo=device)
 
@@ -140,7 +142,7 @@ def run_test_multi_loss_pipeline(same_vgraph=True):
 
         session.prepareDevice()
         session.weightsFromHost()
-        session.optimizerFromHost()
+
         stepio = popart.PyStepIO({input0: inputVals}, anchorArrays)
         session.run(stepio)
         session.weightsToHost()

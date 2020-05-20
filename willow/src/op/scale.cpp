@@ -73,7 +73,7 @@ std::unique_ptr<Op> ScaleGradOp::clone() const {
 
 const std::vector<GradInOutMapper> &ScaleGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), ScaleOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getInIndex(), ScaleOp::getOutIndex(), GradOpInType::GradOut}};
 
   return inInfo;
 }

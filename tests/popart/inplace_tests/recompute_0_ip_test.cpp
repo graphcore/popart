@@ -42,19 +42,19 @@ BOOST_AUTO_TEST_CASE(InplaceRecomputeTest) {
 
   // not inplacable as consumes an input Tensor
   auto sc0 = aiGraphcore.scale({in0}, 1.5);
-  builder->recomputeOutputInBackwardPass(sc0, RecomputeType::RECOMPUTE);
+  builder->recomputeOutputInBackwardPass(sc0, RecomputeType::Recompute);
 
   // consumes a recompute, so can be inplace
   auto sc1 = aiGraphcore.scale({sc0}, 2.0);
-  builder->recomputeOutputInBackwardPass(sc1, RecomputeType::RECOMPUTE);
+  builder->recomputeOutputInBackwardPass(sc1, RecomputeType::Recompute);
 
   // anchor consuming a recompute, can be inplace
   auto sc2 = aiGraphcore.scale({sc1}, 2.5);
-  builder->recomputeOutputInBackwardPass(sc2, RecomputeType::CHECKPOINT);
+  builder->recomputeOutputInBackwardPass(sc2, RecomputeType::Checkpoint);
 
   // recompute consuming an anchor, can be inplace
   auto sc3 = aiGraphcore.scale({sc2}, 3.0);
-  builder->recomputeOutputInBackwardPass(sc3, RecomputeType::RECOMPUTE);
+  builder->recomputeOutputInBackwardPass(sc3, RecomputeType::Recompute);
 
   builder->addOutputTensor(sc2);
 
@@ -62,7 +62,7 @@ BOOST_AUTO_TEST_CASE(InplaceRecomputeTest) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto dataFlow = DataFlow(1, {{sc3, AnchorReturnType("ALL")}});
+  auto dataFlow = DataFlow(1, {{sc3, AnchorReturnType("All")}});
   auto device   = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE(InplaceRecomputeTest) {
               nullptr,
               *device,
               {},
-              Patterns(PatternsLevel::NONE).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
 
   auto sched = ir.getOpSchedule({});
   BOOST_CHECK(sched.size() == 4);

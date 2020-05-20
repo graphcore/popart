@@ -35,11 +35,11 @@ y = builder.aiOnnx.conv([cube, w],
                         pads=[1, 1, 1, 1],
                         strides=[1, 1])
 
-builder.addOutputTensor(y)
+l1 = builder.aiGraphcore.l1loss([y], 0.1)
 
 proto = builder.getModelProto()
 
-art = popart.AnchorReturnType("ALL")
+art = popart.AnchorReturnType("All")
 # Describe how to run the model
 dataflow = popart.DataFlow(1, {y: art, cube: art, w: art})
 
@@ -47,8 +47,8 @@ dataflow = popart.DataFlow(1, {y: art, cube: art, w: art})
 options = popart.SessionOptions()
 device = popart.DeviceManager().createIpuModelDevice({})
 session = popart.TrainingSession(fnModel=proto,
-                                 dataFeed=dataflow,
-                                 losses=[popart.L1Loss(y, "l1LossVal", 0.1)],
+                                 dataFlow=dataflow,
+                                 loss=l1,
                                  optimizer=popart.ConstSGD(0.001),
                                  userOptions=options,
                                  deviceInfo=device)

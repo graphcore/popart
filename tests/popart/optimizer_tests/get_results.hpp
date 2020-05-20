@@ -17,6 +17,7 @@
 #include <popart/half.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/restore.hpp>
@@ -172,14 +173,11 @@ getResults(const popart::SGD &opt0, // initial Optimizer
 
   auto add0 = aiOnnx.add({w0Id, input0});
   auto add1 = aiOnnx.add({w1Id, add0});
-  builder->addOutputTensor(add1);
+  auto l1 =
+      builder->aiGraphcoreOpset1().l1loss({add1}, 1.0, ReductionType::Sum);
 
   auto proto    = builder->getModelProto();
   auto dataFlow = DataFlow(batchesPerStep);
-
-  float lambda = 1.0;
-  auto loss    = std::unique_ptr<Loss>(
-      new L1Loss(add1, "l1LossVal", lambda, ReductionType::SUM));
 
   SessionOptions userOptions;
   std::map<std::string, std::string> deviceOpts{{"numIPUs", "1"}};
@@ -231,12 +229,12 @@ getResults(const popart::SGD &opt0, // initial Optimizer
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      {loss.get()},
+      l1,
       opt0, // construct with opt0, will switch to opt1, opt2 later
       device,
       InputShapeInfo(),
       userOptions,
-      popart::Patterns(PatternsLevel::DEFAULT));
+      popart::Patterns(PatternsLevel::Default));
 
   session->prepareDevice();
   std::vector<T> v_input_x(stepDataInfo.nelms(), 3.1415);
@@ -251,17 +249,16 @@ getResults(const popart::SGD &opt0, // initial Optimizer
   session->weightsFromHost();
 
   // run 1 with opt0
-  session->optimizerFromHost();
   session->run(stepio);
 
   // run 2 with opt1
-  session->updateOptimizer(&opt1);
-  session->optimizerFromHost();
+  session->updateOptimizerFromHost(&opt1);
+
   session->run(stepio);
 
   // run 3 with opt2
-  session->updateOptimizer(&opt2);
-  session->optimizerFromHost();
+  session->updateOptimizerFromHost(&opt2);
+
   session->run(stepio);
 
   // read final weights back

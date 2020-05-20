@@ -12,7 +12,6 @@
 #include <popart/op/boundary.hpp>
 #include <popart/op/cache.hpp>
 #include <popart/op/init.hpp>
-#include <popart/op/recomputeprereq.hpp>
 #include <popart/transforms/prune.hpp>
 
 namespace popart {
@@ -150,8 +149,7 @@ bool Prune::apply(Graph &graph) const {
     Op *op = id_op.second.get();
     // TODO: Better mechanism to preserve special ops
     if (required.count(op) == 0 && !dynamic_cast<CacheStoreOp *>(op) &&
-        !dynamic_cast<BoundaryOp *>(op) &&
-        !dynamic_cast<RecomputePrereqOp *>(op)) {
+        !dynamic_cast<BoundaryOp *>(op)) {
       opsToDelete.push_back(op);
       for (auto &t_inds : op->output->indicesMap()) {
         tensorsToDelete.push_back(t_inds.first);
@@ -175,6 +173,18 @@ bool Prune::apply(Graph &graph) const {
   for (Tensor *tensor : tensorsToDelete) {
     logging::transform::debug("[Prune] Pruning tensor {}", tensor->id);
     graph.getTensors().remove(tensor->id);
+  }
+
+  if (graph.getOps().size() == 0) {
+    // The graph is empty, nothing to do. Error message depends on whether this
+    // is the top-level graph.
+    if (graph.id == graph.getIr().getMainGraph().id) {
+      throw error(
+          "All operations in the main graph were pruned, nothing to compute");
+    } else {
+      throw error("All operations in graph {} were pruned, nothing to compute",
+                  graph.id.str());
+    }
   }
 
   return true;

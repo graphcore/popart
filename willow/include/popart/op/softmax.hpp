@@ -68,21 +68,30 @@ public:
   // where Op in this constructor must be a SoftmaxOp
   // where this is created by a merger between the Op
   // and an NllGradOp
-  SoftmaxGradDirectOp(const NllLoss, const Op::Settings &);
+  SoftmaxGradDirectOp(const TensorId lossId,
+                      const boost::optional<int> ignoreIndex,
+                      const ReductionType reduction,
+                      const Op::Settings &settings);
   std::unique_ptr<Op> clone() const final;
   void setup() final;
-  const NllLoss &nlll() const;
   bool hasNlllFwdOp() const;
   Op *nlllFwdOp() const;
 
-  static InIndex getInIndex() { return 0; }
+  static InIndex getProbsInIndex() { return 0; }
+  static InIndex getLabelInIndex() { return 1; }
   static OutIndex getOutIndex() { return 0; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
+  ReductionType getReductionType() const { return reduction_; }
+  bool hasIgnoreIndex() const { return ignoreIndex_ != boost::none; }
+  boost::optional<int> getOptionalIgnoreIndex() const { return ignoreIndex_; }
+  int getIgnoreIndex() const { return ignoreIndex_.get(); }
   virtual void appendOutlineAttributes(OpSerialiserBase &) const final;
 
 private:
-  const NllLoss nllloss_;
+  TensorId lossId_;
+  ReductionType reduction_;
+  boost::optional<int> ignoreIndex_;
 };
 
 class NlllWithSoftmaxGradDirectOp : public Op {
@@ -90,10 +99,12 @@ public:
   // where Op in this constructor must be a SoftmaxOp
   // where this is created by a merger between the Op
   // and an NllGradOp
-  NlllWithSoftmaxGradDirectOp(const NllLoss, const Op::Settings &);
+  NlllWithSoftmaxGradDirectOp(const boost::optional<int> ignoreIndex,
+                              const ReductionType reduction,
+                              const Op::Settings &settings);
+
   std::unique_ptr<Op> clone() const final;
   void setup() final;
-  const NllLoss &nlll() const;
   Op *nlllFwdOp() const;
 
   static InIndex getProbsInIndex() { return 0; }
@@ -104,10 +115,14 @@ public:
   static OutIndex getGradOutIndex() { return 1; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
+  ReductionType getReductionType() const { return reduction_; }
+  bool hasIgnoreIndex() const { return ignoreIndex_ != boost::none; }
+  int getIgnoreIndex() const { return ignoreIndex_.get(); }
   virtual void appendOutlineAttributes(OpSerialiserBase &) const final;
 
 private:
-  const NllLoss nllloss_;
+  ReductionType reduction_;
+  boost::optional<int> ignoreIndex_;
 };
 
 } // namespace popart

@@ -98,7 +98,7 @@ def test_average_pool_4(op_tester):
     def reference(ref_data):
         return [d1]
 
-    op_tester.passes = ['OpToIdentity']
+    op_tester.patterns = ['OpToIdentity']
     op_tester.run(init_builder, reference)
 
 
@@ -119,23 +119,36 @@ def test_average_pool_with_count_include_pad(op_tester):
     builder.removeNodeAttribute("count_include_pad", set([o]))
     builder.addNodeAttribute("count_include_pad", 1, set([o]))
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
     optimizer = popart.ConstSGD(0.01)
-    losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
+    loss = builder.aiGraphcore.l1loss([o], 0.1)
     proto = builder.getModelProto()
 
     opts = popart.SessionOptions()
 
     with pytest.raises(popart.popart_exception) as e_info:
         popart.TrainingSession(fnModel=proto,
-                               dataFeed=dataFlow,
-                               losses=losses,
+                               dataFlow=dataFlow,
+                               loss=loss,
                                optimizer=optimizer,
                                userOptions=opts,
                                deviceInfo=tu.create_test_device())
 
     assert (e_info.value.args[0].startswith(
         "`count_include_pad` is not supported"))
+
+
+def test_average_pool_invalid_params(op_tester):
+    builder = popart.Builder()
+    i1 = builder.addInputTensor("FLOAT", [1, 1, 14, 14])
+    with pytest.raises(popart.popart_exception) as e_info:
+        builder.aiOnnx.averagepool([i1],
+                                   kernel_shape=[3, 3],
+                                   count_include_pad=1,
+                                   pads=[0, 0, 0, 0, 0],
+                                   strides=[2, 2])
+    assert (e_info.value.args[0].startswith(
+        "Padding vector (length 5) does not have"))
 
 
 def test_maxpool_1(op_tester):
@@ -250,7 +263,7 @@ def test_maxpool_5(op_tester):
     def reference(ref_data):
         return [d1]
 
-    op_tester.passes = ['OpToIdentity']
+    op_tester.patterns = ['OpToIdentity']
     op_tester.run(init_builder, reference)
 
 
@@ -280,7 +293,7 @@ def test_maxpool_grad(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, t1.grad, None]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl', 'OpToIdentity']
     op_tester.run(init_builder, reference, step_type='train')
 
 
@@ -299,7 +312,7 @@ def test_globalmaxpool_2d(op_tester):
         out = globalmaxpool(t1)
         return [out]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, step_type='infer')
 
 
@@ -324,7 +337,7 @@ def test_globalmaxpool_grad_2d(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, t1.grad, None]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl', 'OpToIdentity']
     op_tester.run(init_builder, reference, step_type='train')
 
 
@@ -344,7 +357,7 @@ def test_globalmaxpool_3d(op_tester):
         out = globalmaxpool(t1)
         return [out]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, step_type='infer')
 
 
@@ -363,7 +376,7 @@ def test_globalaveragepool_2d(op_tester):
         out = globalaveragepool(t1)
         return [out]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, step_type='infer')
 
 
@@ -388,5 +401,5 @@ def test_globalaveragepool_grad_2d(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, t1.grad, None]
 
-    op_tester.passes = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl', 'OpToIdentity']
     op_tester.run(init_builder, reference, step_type='train')

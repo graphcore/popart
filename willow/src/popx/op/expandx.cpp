@@ -16,7 +16,7 @@ ExpandOpx::ExpandOpx(Op *op_, Devicex *devicex) : BaseExpandOpx(op_, devicex) {
 }
 
 InputCreatorType BaseExpandOpx::getInputCreatorType(InIndex) const {
-  return InputCreatorType::CANUNWIND;
+  return InputCreatorType::CanUnwind;
 }
 
 poplar::Tensor BaseExpandOpx::unwindTensorLayout(poplar::Tensor tensor,

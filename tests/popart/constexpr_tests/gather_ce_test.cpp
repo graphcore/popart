@@ -93,7 +93,7 @@ template <typename T> void ConstExprTest_Gather_Type(std::string type) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto art      = AnchorReturnType("ALL");
+  auto art      = AnchorReturnType("All");
   auto dataFlow = DataFlow(1, {{outId, art}});
   auto device   = createTestDevice(TEST_TARGET);
 
@@ -101,10 +101,9 @@ template <typename T> void ConstExprTest_Gather_Type(std::string type) {
       proto,
       dataFlow,
       device,
-      {}, // no losses
       InputShapeInfo(),
       {}, // no SessionOptions
-      Patterns({PreAliasPatternType::POSTNREPL}));
+      Patterns({PreAliasPatternType::PostNRepl}));
 
   session->prepareDevice();
   popart::StepIO stepio({}, anchors);

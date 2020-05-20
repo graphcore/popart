@@ -6,8 +6,6 @@
 
 namespace popart {
 
-class NllLoss;
-
 class LogSoftmaxOp : public ElementWiseUnaryOp {
 public:
   LogSoftmaxOp(const OperatorIdentifier &_opid,

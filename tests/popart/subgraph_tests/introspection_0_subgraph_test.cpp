@@ -8,9 +8,8 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/call.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
-#include <popart/op/l1.hpp>
-#include <popart/op/nll.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
@@ -56,11 +55,16 @@ BOOST_AUTO_TEST_CASE(Introspection0_Subgraph) {
     builder->virtualGraph(out[ipu * 4], ipu);
   }
 
+  auto finalSum = aiOnnx.sum({out[0], out[4]});
+  builder->virtualGraph(finalSum, 1);
+  auto finalLoss = aiGraphcore.l1loss({finalSum}, 0.1);
+  builder->virtualGraph(finalLoss, 1);
+
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
   auto dataFlow   = DataFlow(
       100,
-      {{out[0], AnchorReturnType("ALL")}, {out[4], AnchorReturnType("ALL")}});
+      {{out[0], AnchorReturnType("All")}, {out[4], AnchorReturnType("All")}});
 
   SessionOptions userOptions;
   userOptions.virtualGraphMode               = VirtualGraphMode::Manual;
@@ -74,24 +78,17 @@ BOOST_AUTO_TEST_CASE(Introspection0_Subgraph) {
 
   auto optimizer = ConstSGD(0.01);
 
-  auto loss0 =
-      std::make_shared<L1Loss>(out[0], "l1LossVal_0", 0.1, ReductionType::MEAN);
-  loss0->virtualGraph(0);
-  auto loss1 =
-      std::make_shared<L1Loss>(out[4], "l1LossVal_1", 0.1, ReductionType::MEAN);
-  loss1->virtualGraph(1);
-
   auto device = createTestDevice(TEST_TARGET, nIpus);
 
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              {loss0, loss1},
+              finalLoss,
               &optimizer,
               *device,
               userOptions,
-              Patterns(PatternsLevel::NONE)});
+              Patterns(PatternsLevel::NoPatterns)});
 
   auto sched = ir.getMainGraph().getOpSchedule({});
 
@@ -113,13 +110,13 @@ BOOST_AUTO_TEST_CASE(Introspection0_Subgraph) {
       if (tensor->id == "w0" || tensor->id == "input0") {
         BOOST_CHECK(tensor->getVirtualGraphId() == 0);
         auto index = op->input->indicesMap().at(tensor)[0];
-        BOOST_CHECK(op->getIntrospectionInVirtualGraphId(index) == 0);
+        BOOST_CHECK(op->getIntrospectionInVirtualGraphId(index).first == 0);
       }
 
       if (tensor->id == "w1" || tensor->id == "input1") {
         BOOST_CHECK(tensor->getVirtualGraphId() == 1);
         auto index = op->input->indicesMap().at(tensor)[0];
-        BOOST_CHECK(op->getIntrospectionInVirtualGraphId(index) == 1);
+        BOOST_CHECK(op->getIntrospectionInVirtualGraphId(index).first == 1);
       }
     }
   }

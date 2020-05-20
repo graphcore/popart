@@ -44,7 +44,7 @@ then these must be written to the device. For example:
 .. code-block:: python
 
   session.weightsFromHost()
-  session.optimizerFromHost()
+
 
 These can also be updated between executions.
 
@@ -52,8 +52,8 @@ These can also be updated between executions.
 
   # Update learning rate parameter between training steps
   stepLr = learningRate[step]
-  session.updateOptimizer(popart.SGD(stepLr))
-  session.optimizerFromHost()
+  session.updateOptimizerFromHost(popart.SGD(stepLr))
+
 
 Retrieving results
 ~~~~~~~~~~~~~~~~~~
@@ -85,7 +85,7 @@ The device must be passed into the session constructor.
 
   df = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
   device = popart.DeviceManager().createCpuDevice()
-  s = popart.InferenceSession("onnx.pb", deviceInfo=device, dataFeed=df)
+  s = popart.InferenceSession("onnx.pb", deviceInfo=device, dataFlow=df)
 
 The device manager can enumerate the available devices with the ``enumerateDevices``
 method. The  ``acquireAvailableDevice`` method will acquire the

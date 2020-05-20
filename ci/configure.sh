@@ -68,6 +68,7 @@ pip install torchvision
 pip install pyyaml
 pip install requests
 pip install protobuf
+pip install ./view/ # Install the graphcore-view package
 
 # Create a directory for building
 rm -rf build

@@ -10,7 +10,7 @@ class PopartTestSession:
         self.device = 'cpu'
         self.numIPUs = 1
         self.mode = 'inference'
-        self.passes = None
+        self.patterns = None
         self.batchesPerStep = 1
 
     def prepare_and_run(self, init_builder, ins=None):
@@ -25,17 +25,17 @@ class PopartTestSession:
 
         dataFlow = popart.DataFlow(self.batchesPerStep, anchors)
         proto = self._builder.getModelProto()
-        losses = self._get_losses(anchorIds)
+        loss = self._get_loss(anchorIds)
         device = self._get_device()
 
         optimizer = popart.ConstSGD(0.01)
 
         self._session = self._get_session(fnModel=proto,
-                                          dataFeed=dataFlow,
-                                          losses=losses,
+                                          dataFlow=dataFlow,
+                                          loss=loss,
                                           optimizer=optimizer,
                                           deviceInfo=device,
-                                          passes=self.passes,
+                                          patterns=self.patterns,
                                           userOptions=self.options)
         self._device_prepared = False
 
@@ -51,16 +51,13 @@ class PopartTestSession:
         self._session.run(stepio)
         return _anchor_map
 
-    def _get_losses(self, anchorIds):
-        if self._builder._losses:
-            print(f'Returning losses from builder {self._builder._losses}')
-            return self._builder._losses
+    def _get_loss(self, anchorIds):
+        if self._builder._loss:
+            print(f'Returning loss from builder {self._builder._loss}')
+            return self._builder._loss
         else:
-            print(f'Returning default losses')
-            return [
-                popart.L1Loss(anchorIds[0], "l1LossVal", 0.1,
-                              popart.ReductionType.Sum)
-            ]
+            print(f'Returning default loss')
+            return anchorIds[0]
 
     def _get_session(self, **kwargs):
         def create_session(valid_args, session_type):
@@ -71,13 +68,13 @@ class PopartTestSession:
             return session_type(**session_args)
 
         if self.mode == 'inference':
-            return create_session(('fnModel', 'dataFeed', 'losses',
-                                   'deviceInfo', 'passes', 'userOptions'),
+            return create_session(('fnModel', 'dataFlow', 'deviceInfo',
+                                   'patterns', 'userOptions'),
                                   popart.InferenceSession)
         elif self.mode == 'train':
-            return create_session(
-                ('fnModel', 'dataFeed', 'losses', 'optimizer', 'deviceInfo',
-                 'passes', 'userOptions'), popart.TrainingSession)
+            return create_session(('fnModel', 'dataFlow', 'loss', 'optimizer',
+                                   'deviceInfo', 'patterns', 'userOptions'),
+                                  popart.TrainingSession)
 
     def _get_device(self):
         return tu.create_test_device(numIpus=self.numIPUs)
@@ -115,7 +112,7 @@ class _Builder:
         self._input_map = {}
         self._init_input_map = {}
         self._outputs = []
-        self._losses = []
+        self._loss = []
 
     def addInputTensor(self, data, debug_prefix=None):
         shape = popart.TensorInfo(data)
@@ -142,13 +139,12 @@ class _Builder:
 
         return tensor_id
 
-    def addL1Loss(self, *args):
-        self._losses.append(popart.L1Loss(*args))
-        return self._losses[-1]
-
     def addOutputTensor(self, tensorId):
         self._outputs.append(tensorId)
         self._builder.addOutputTensor(tensorId)
+
+    def setLoss(self, tensorId):
+        self._loss = tensorId
 
     def __getattr__(self, attr):
         return getattr(self._builder, attr)
@@ -170,6 +166,6 @@ def _get_anchors(anchorIds, builder):
     anchors = {}
     for anchorId in anchorIds:
         if anchorId not in builder._init_input_map:
-            anchors[anchorId] = popart.AnchorReturnType('ALL')
+            anchors[anchorId] = popart.AnchorReturnType('All')
 
     return anchors

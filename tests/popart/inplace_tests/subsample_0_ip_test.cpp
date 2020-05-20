@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE(Inplace_subsample0) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto dataFlow = DataFlow(1, {{dotOut, AnchorReturnType("ALL")}});
+  auto dataFlow = DataFlow(1, {{dotOut, AnchorReturnType("All")}});
   auto device   = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE(Inplace_subsample0) {
               nullptr,
               *device,
               {},
-              Patterns(PatternsLevel::NONE).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
 
   auto opsOfTypeSubsample = ir.opsOfType(Onnx::AiGraphcore::OpSet1::Subsample);
   BOOST_CHECK(opsOfTypeSubsample.size() == 0);

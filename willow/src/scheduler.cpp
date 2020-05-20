@@ -67,7 +67,7 @@ public:
   }
 
   void minSumLivenessAnneal(const std::map<std::string, std::string> &a) {
-    auto ll = logging::Level::Debug;
+    auto ll = logging::Level::Trace;
     std::string strBefore;
     if (logging::shouldLog(logging::Module::ir, ll)) {
       strBefore = g.getLivenessString();
@@ -206,23 +206,23 @@ public:
       auto op_priority    = op->settings.schedulePriority;
 
       // Pingpong -1 to N are reserved
-      // -2 : No pingpong phase set
+      // -2 : No pingpong phase set (unusedBatchSerializedPhase)
       // -1 : Load weights of phase 0
       // 0 - N: Compute phase n, load weights of phase n+1
       auto op_pingpong_or =
           op_pingpong && pg.getIr().getSessionOptions().pingPongPhases > 1
               ? *op_pingpong
-              : -2;
+              : unusedPingPongPhase;
 
       // Batchserial -1 to N are reserved
-      // -2 : No batchserial phase set
+      // -2 : No batchserial phase set (unusedBatchSerializedPhase)
       // -1 : Init accumulator and updatee tensors
       // 0 - N : Compute batch element n
       auto op_batchserial_or =
           op_batchserial &&
                   pg.getIr().getSessionOptions().batchSerializationFactor > 1
               ? *op_batchserial
-              : -2;
+              : unusedBatchSerializedPhase;
 
       auto op_priority_pre_or =
           op_batchserial.is_initialized() ? 0.0 : op_priority;

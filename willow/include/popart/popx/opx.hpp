@@ -24,23 +24,24 @@ using UnwindEndpointPtr = std::shared_ptr<UnwindEndpoint>;
 struct OpxInAndOutIndex;
 
 class Devicex;
+class ViewChangers;
 
 enum class InputCreatorType {
   // Opx has a poplar call to a function that can
   // lay out the input tensor on the device
-  CANCREATE = 0,
+  CanCreate = 0,
   // Cannot create the input tensor, but can
   // allow an Opx downstream in the graph to
   // create it
-  CANUNWIND,
+  CanUnwind,
   // Can create or unwind
-  CANCREATE_OR_UNWIND,
+  CanCreateOrUnwind,
   // Cannot create tensor, nor can it allow a
   // a downstream Opx to create the tensor
-  DEADEND,
+  Deadend,
   // Has a potential creator, but can also allow an Opx downstream in the graph
   // to create it instead.
-  CANDELEGATE
+  CanDelegate
 };
 
 class Opx {
@@ -74,6 +75,12 @@ public:
   virtual poplar::Tensor
   unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const;
   virtual view::RegMap unwindRegion(InIndex, OutIndex) const;
+
+  // If the created or unwound tensor does not conform with the IR specs,
+  // an Opx may supply a view transformation that transforms that tensor into
+  // IR specs
+  virtual bool hasCreatorViewChangers(InIndex index) const;
+  virtual ViewChangers getCreatorViewChangers(InIndex index) const;
 
   // To create a poplar::Tensor for input index index0, which
   // poplar::Tensors must already exist?
@@ -109,6 +116,8 @@ public:
   poplar::Graph &graph() const;
   // shortcut for dv_p->tensors.get
   const poplar::Tensor &get(TensorId) const;
+  // shortcut for dv_p->tensors.getView
+  const poplar::Tensor &getView(TensorId) const;
   // shortcut for dv_p->tensors.insert
   void insert(TensorId, const poplar::Tensor &) const;
 
@@ -185,8 +194,23 @@ public:
   bool hasInput(InIndex) const;
   bool hasOutput(OutIndex) const;
 
+  // Return underlying Poplar input tensor
   const poplar::Tensor &getInTensor(InIndex index) const;
+
+  // Return underlying Poplar output tensor
   const poplar::Tensor &getOutTensor(OutIndex index) const;
+
+  // Return input tensor with shape matching IR specifications
+  // (aliases getInTensor, but has any respective ViewChangers applied)
+  const poplar::Tensor &getInView(InIndex index) const;
+
+  // Return output tensor with shape matching IR specifications
+  // (aliases getOutTensor, but has any respective ViewChangers applied)
+  const poplar::Tensor &getOutView(OutIndex index) const;
+
+  bool hasInViewChangers(InIndex index) const;
+  const ViewChangers &getInViewChangers(InIndex index) const;
+  void setOutViewChangers(OutIndex index, const ViewChangers &changers) const;
 
   void setOutTensor(OutIndex index, const poplar::Tensor &tensor) const;
 

@@ -12,8 +12,8 @@ output_name = "output"
 torch.onnx.export(model, input_, "alexnet.onnx", output_names=[output_name])
 
 # Create a runtime environment
-anchors = {output_name: popart.AnchorReturnType("ALL")}
-dataFeed = popart.DataFlow(100, anchors)
+anchors = {output_name: popart.AnchorReturnType("All")}
+dataFlow = popart.DataFlow(100, anchors)
 device = popart.DeviceManager().createCpuDevice()
 
-session = popart.InferenceSession("alexnet.onnx", dataFeed, device)
+session = popart.InferenceSession("alexnet.onnx", dataFlow, device)

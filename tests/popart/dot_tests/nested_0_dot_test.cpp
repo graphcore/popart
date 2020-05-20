@@ -1,10 +1,10 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE NestedDotTest
 
+#include <../random_util.hpp>
 #include <algorithm>
 #include <boost/filesystem.hpp>
 #include <boost/test/unit_test.hpp>
-#include <random>
 #include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
@@ -23,24 +23,6 @@
 
 using namespace popart;
 
-std::string random_string(size_t length) {
-
-  std::default_random_engine eng((std::random_device())());
-  std::uniform_int_distribution<uint64_t> idis(
-      0, std::numeric_limits<uint64_t>::max());
-
-  auto randchar = [&idis, &eng]() -> char {
-    const char charset[] = "0123456789"
-                           "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                           "abcdefghijklmnopqrstuvwxyz";
-    const size_t max_index = (sizeof(charset) - 1);
-    return charset[idis(eng) % max_index];
-  };
-  std::string str(length, 0);
-  std::generate_n(str.begin(), length, randchar);
-  return str;
-}
-
 BOOST_AUTO_TEST_CASE(Dot_nested0) {
 
   auto getDotFiles = [](bool separateCallOpPdfs) {
@@ -53,9 +35,9 @@ BOOST_AUTO_TEST_CASE(Dot_nested0) {
     opts.outlineThreshold   = 0.00001;
     opts.dotOpNames         = true;
     opts.separateCallOpPdfs = separateCallOpPdfs;
-    opts.dotChecks.insert(DotCheck::FINAL);
+    opts.dotChecks.insert(DotCheck::Final);
 
-    opts.logDir = "./nestedDotTest" + random_string(14);
+    opts.logDir = "./nestedDotTest" + randomString(14);
     boost::filesystem::create_directory(opts.logDir);
 
     TensorInfo shape{"FLOAT", std::vector<int64_t>{1}};
@@ -85,7 +67,7 @@ BOOST_AUTO_TEST_CASE(Dot_nested0) {
     auto modelProto = io::getModelFromString(proto);
 
     out           = modelProto.graph().output(0).name();
-    auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+    auto dataFlow = DataFlow(1, {{out, AnchorReturnType("All")}});
     auto device   = createTestDevice(TEST_TARGET);
 
     Ir ir;

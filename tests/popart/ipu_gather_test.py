@@ -23,5 +23,5 @@ def test_gather(ipu_op_tester):
         out = np.take(d1, d2, axis=axis)
         return [out]
 
-    ipu_op_tester.passes = ['PreUniRepl', 'SplitGather']
+    ipu_op_tester.patterns = ['PreUniRepl', 'SplitGather']
     ipu_op_tester.run(init_builder, reference, 'infer')

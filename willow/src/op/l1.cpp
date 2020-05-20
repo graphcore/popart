@@ -21,33 +21,11 @@ std::vector<std::unique_ptr<Op>> L1Op::getGradOps() {
   return upops;
 }
 
-std::unique_ptr<Op> L1Loss::getOp(const Op::Settings &settings_) const {
-  Op::Settings copiedSettings  = settings_;
-  copiedSettings.vgraphId      = vgraphId;
-  copiedSettings.pipelineStage = pipelineStage_;
-  return std::unique_ptr<Op>(new L1Op(op_type(), this, copiedSettings));
-}
-
-const OperatorIdentifier &L1Loss::op_type() const {
-  return Onnx::CustomOperators::L1;
-}
-
-std::vector<TensorId> L1Loss::getStreamTensorNames() const { return {}; }
-
-L1Loss::L1Loss(TensorId in_, TensorId out_, float lmb, ReductionType rt_)
-    : Loss({in_}, out_, rt_), lambda(lmb) {}
-
-TensorId L1Loss::getInputId() const { return input(0); }
-
-float L1Loss::getLambda() const { return lambda; }
-
-const L1Loss *L1Op::l1l() const { return l1loss_; }
-const L1Loss *L1GradOp::l1l() const { return l1loss_; }
-
 L1Op::L1Op(const OperatorIdentifier &_opid,
-           const L1Loss *n,
+           const float lambda_,
+           const ReductionType reduction_,
            const Op::Settings &settings_)
-    : LossOp(_opid, settings_), l1loss_(n) {}
+    : LossOp(_opid, settings_), lambda(lambda_), reduction(reduction_) {}
 
 void L1GradOp::setup() {
 
@@ -63,18 +41,22 @@ void L1GradOp::setup() {
 }
 
 void L1Op::setup() {
-  // output is a vector of length=batchsize, of the same type as input
   TensorInfo info0 = inInfo(getInIndex());
   if (info0.rank() == 0) {
     throw error("L1Op not valid for rank-0 tensor (scalar)");
   }
-  int64_t batchsize = info0.dim(0);
-  outInfo(getOutIndex()).set(info0.dataType(), {batchsize});
+
+  Shape outShape({});
+  if (getReductionType() == ReductionType::NoReduction) {
+    outShape = info0.shape();
+  }
+
+  outInfo(getOutIndex()).set(info0.dataType(), outShape);
 }
 
 L1GradOp::L1GradOp(const L1Op &op_)
     : Op(Onnx::CustomGradOperators::L1Grad, op_.getSettings()),
-      l1loss_(op_.l1l()) {}
+      lambda(op_.getLambda()), reduction(op_.getReductionType()) {}
 
 std::unique_ptr<Op> L1GradOp::clone() const {
   return std::make_unique<L1GradOp>(*this);
@@ -84,7 +66,7 @@ const std::vector<GradInOutMapper> &L1GradOp::gradInputInfo() const {
   // input at index 0 of this grad op is the input at index 0 of the L1
   // non-grad op.
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), L1Op::getInIndex(), GradOpInType::IN}};
+      {getInIndex(), L1Op::getInIndex(), GradOpInType::In}};
   return inInfo;
 }
 
@@ -95,6 +77,32 @@ const std::map<int, int> &L1GradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
-namespace {} // namespace
+namespace {
+
+static OpDefinition::DataTypes T = {DataType::FLOAT16,
+                                    DataType::FLOAT,
+                                    DataType::INT32,
+                                    DataType::UINT32};
+
+static OpDefinition l1lossOpDef(
+    {OpDefinition::Inputs({{"A", T}}),
+     OpDefinition::Outputs({{"B", T}}),
+     OpDefinition::Attributes({{"lambda", {"*"}}, {"reduction", {"*"}}})});
+
+static OpCreator<L1Op> l1lossOpCreator(
+    OpDefinitions({{Onnx::CustomOperators::L1, l1lossOpDef}}),
+    [](const OperatorIdentifier &_opid,
+       const Op::Settings &settings,
+       const Attributes &attr = {}) -> std::unique_ptr<Op> {
+      float lambda = attr.getAttribute<Attributes::Float>("lambda");
+      std::string reductionStr =
+          attr.getAttribute<Attributes::String>("reduction");
+      ReductionType reduction = LossOp::reductionTypeFromString(reductionStr);
+      return std::unique_ptr<L1Op>(
+          new L1Op(_opid, lambda, reduction, settings));
+    },
+    true);
+
+} // namespace
 
 } // namespace popart

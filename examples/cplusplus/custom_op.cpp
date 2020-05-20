@@ -14,6 +14,7 @@
 #include <popart/logging.hpp>
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
@@ -102,8 +103,8 @@ public:
   //
   virtual const std::vector<popart::GradInOutMapper> &gradInputInfo() const {
     static const std::vector<popart::GradInOutMapper> inInfo = {
-        {0, 0, popart::GradOpInType::GRADOUT},
-        {1, 0, popart::GradOpInType::OUT}};
+        {0, 0, popart::GradOpInType::GradOut},
+        {1, 0, popart::GradOpInType::Out}};
     return inInfo;
   }
 
@@ -221,7 +222,8 @@ auto main(int argc, char **argv) -> int {
   // step 1 : generate an ONNX inference Model which uses Cube.
   // The simple mode will be : input->Cube->output
   //
-  auto builder = popart::Builder::create();
+  auto builder     = popart::Builder::create();
+  auto aiGraphcore = builder->aiGraphcoreOpset1();
 
   // The input Tensor will be of type FLOAT, and will
   // be a rank-1 tensor with 2 elements
@@ -232,7 +234,7 @@ auto main(int argc, char **argv) -> int {
   auto outputs =
       builder->customOp(Onnx::CustomOperators::Cube, 1, {input}, 1, {});
 
-  builder->addOutputTensor(outputs[0]);
+  auto l1 = aiGraphcore.l1loss({outputs[0]}, 0.1f, popart::ReductionType::Sum);
 
   auto proto = builder->getModelProto();
 
@@ -241,13 +243,7 @@ auto main(int argc, char **argv) -> int {
   // 2.1 an Optimiser.
   auto optimizer = popart::ConstSGD(0.01f);
 
-  // 2.2 Loss(es).
-  // 2.2.1 l1 loss : 0.1 * |output|_1
-  std::unique_ptr<popart::L1Loss> l1Loss(new popart::L1Loss(
-      outputs[0], "l1LossVal", 0.1f, popart::ReductionType::SUM));
-  std::vector<popart::Loss *> losses{l1Loss.get()};
-
-  // 2.3 Data streaming.
+  // 2.2 Data streaming.
   // We will stream
   // 1) the output tensor back to host every iteration
   // 2) the gradient of input tensor back to host every iteration
@@ -256,9 +252,9 @@ auto main(int argc, char **argv) -> int {
                           // have an equivalent in other standard frameworks
                           // like Tensorflow. It is the number of batches to
                           // process when session->run(.) is called. (see below)
-                       {{outputs[0], popart::AnchorReturnType("ALL")},
+                       {{outputs[0], popart::AnchorReturnType("All")},
                         {popart::reservedGradientPrefix() + input,
-                         popart::AnchorReturnType("ALL")}});
+                         popart::AnchorReturnType("All")}});
 
   auto cpuDevice =
       popart::DeviceManager::createDeviceManager().createCpuDevice();
@@ -267,16 +263,16 @@ auto main(int argc, char **argv) -> int {
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      losses,
+      l1,
       optimizer,
       cpuDevice,
       popart::InputShapeInfo(),
       {},
-      popart::Patterns({popart::PreAliasPatternType::PREUNIREPL}));
+      popart::Patterns({popart::PreAliasPatternType::PreUniRepl}));
 
-  // prepare the anchors buffers. The anchors are what were specified in 2.3
+  // prepare the anchors buffers. The anchors are what were specified in 2.2
   // for data streaming: the tensors which will be returned from the device
-  // to the host. We specified 2 such tensors in 2.3,
+  // to the host. We specified 2 such tensors in 2.2,
   // 1) the output tensor (i.e. the output of the forward pass)
   float rawOutputData[2] = {0, 0};
   popart::NDArrayWrapper<float> outData(rawOutputData, {2});
@@ -299,7 +295,7 @@ auto main(int argc, char **argv) -> int {
   popart::StepIO stepio(inputs, anchors);
 
   session->weightsFromHost();
-  session->optimizerFromHost();
+
   session->run(stepio);
 
   popart::logging::ir::err("input : {}", inData);

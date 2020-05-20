@@ -1,6 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE HostReduceTransformationTest
 
+#include <../random_util.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/test/unit_test.hpp>
 #include <popart/builder.hpp>
@@ -11,6 +12,7 @@
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op/hostreducevarupdate.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/sync.hpp>
 #include <popart/optimizer.hpp>
@@ -22,7 +24,6 @@
 
 #include <algorithm>
 #include <map>
-#include <random>
 #include <tuple>
 #include <vector>
 
@@ -131,8 +132,8 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
 
   // we will generate random initializations
   int seed = 1013;
-  std::default_random_engine eng(seed);
-  std::uniform_real_distribution<float> fdis(-4, 4);
+  DefaultRandomEngine eng(seed);
+  UniformRealDistribution<float> fdis(-4.f, +4.f);
 
   // prepare a Builder for creating onnx model
   auto bder   = Builder::create();
@@ -157,10 +158,11 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
   // matrix C = A * B (output of network)
   TensorInfo C_info{"FLOAT", std::vector<int64_t>{M, N}};
   TensorId C_id = aiOnnx.matmul({A_id, B_id});
-  bder->addOutputTensor(C_id);
 
   // l1 loss with penalty term, will be applied to C
   float lossLambda = 0.26;
+  auto l1 =
+      bder->aiGraphcoreOpset1().l1loss({C_id}, lossLambda, ReductionType::Sum);
 
   // compute the baseline
   std::vector<float> v_C_data(C_info.nelms());
@@ -193,7 +195,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
 
   auto proto      = bder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
-  auto art        = AnchorReturnType("ALL");
+  auto art        = AnchorReturnType("All");
   // one batch per step
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}});
@@ -206,19 +208,16 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
 
   // training info
   auto optimizer = SGD({{"defaultLearningRate", {0.01, false}}});
-  std::unique_ptr<Loss> l1_loss(
-      new L1Loss(C_id, "l1LossVal", lossLambda, ReductionType::SUM));
-  std::vector<Loss *> losses{l1_loss.get()};
 
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      losses,
+      l1,
       optimizer,
       device,
       popart::InputShapeInfo(),
       opts,
-      popart::Patterns(PatternsLevel::DEFAULT));
+      popart::Patterns(PatternsLevel::Default));
 
   // prepare the anchors. We have the output C,
   std::vector<float> raw_C_out(C_info.nelms());
@@ -292,7 +291,6 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
   auto ops       = ir.getOpSchedule({});
   checkOpSchedule(ops, opts);
 
-  session->optimizerFromHost();
   session->weightsFromHost();
   session->run(stepio);
 
@@ -335,8 +333,8 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
 
   // we will generate random initializations
   int seed = 1013;
-  std::default_random_engine eng(seed);
-  std::uniform_real_distribution<float> fdis(-4, 4);
+  DefaultRandomEngine eng(seed);
+  UniformRealDistribution<float> fdis(-4.f, +4.f);
 
   // prepare a Builder for creating onnx model
   auto bder   = Builder::create();
@@ -388,14 +386,15 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
   TensorInfo G_info{"FLOAT", std::vector<int64_t>{M, N}};
   TensorId G_id = aiOnnx.matmul({F_id, D_id});
 
-  bder->addOutputTensor(G_id);
-
   // l1 loss with penalty term, will be applied to C
   float lossLambda = 0.26;
 
+  auto l1 =
+      bder->aiGraphcoreOpset1().l1loss({G_id}, lossLambda, ReductionType::Sum);
+
   auto proto      = bder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
-  auto art        = AnchorReturnType("ALL");
+  auto art        = AnchorReturnType("All");
   // one batch per step
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{G_id, art}});
@@ -408,19 +407,16 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
 
   // training info
   auto optimizer = SGD({{"defaultLearningRate", {0.01, false}}});
-  std::unique_ptr<Loss> l1_loss(
-      new L1Loss(G_id, "l1LossVal", lossLambda, ReductionType::SUM));
-  std::vector<Loss *> losses{l1_loss.get()};
 
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      losses,
+      l1,
       optimizer,
       device,
       popart::InputShapeInfo(),
       opts,
-      popart::Patterns(PatternsLevel::DEFAULT));
+      popart::Patterns(PatternsLevel::Default));
 
   // prepare the anchors. We have the output C,
   std::vector<float> raw_G_out(G_info.nelms());
@@ -482,7 +478,6 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
 
   popart::StepIO stepio(inputs, anchors);
 
-  session->optimizerFromHost();
   session->weightsFromHost();
   session->run(stepio);
 
@@ -583,13 +578,13 @@ BOOST_AUTO_TEST_CASE(HostReduceHierarchicalReductionWithReplicatedGraphs) {
   TensorInfo G_info{"FLOAT", std::vector<int64_t>{M, N}};
   TensorId G_id = aiOnnx.matmul({F_id, D_id});
 
-  bder->addOutputTensor(G_id);
-
   float lossLambda = 0.1f;
+  auto l1 =
+      bder->aiGraphcoreOpset1().l1loss({G_id}, lossLambda, ReductionType::Sum);
 
   auto proto      = bder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
-  auto art        = AnchorReturnType("ALL");
+  auto art        = AnchorReturnType("All");
   // one batch per step
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{G_id, art}});
@@ -606,19 +601,16 @@ BOOST_AUTO_TEST_CASE(HostReduceHierarchicalReductionWithReplicatedGraphs) {
     // training info
     const float learningRate = 0.01f;
     auto optimizer = SGD({{"defaultLearningRate", {learningRate, false}}});
-    std::unique_ptr<Loss> l1_loss(
-        new L1Loss(G_id, "l1LossVal", lossLambda, ReductionType::SUM));
-    std::vector<Loss *> losses{l1_loss.get()};
 
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
         dataFlow,
-        losses,
+        l1,
         optimizer,
         device,
         popart::InputShapeInfo(),
         opts,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
 
     // prepare the anchors. We have the output C,
     std::vector<float> raw_G_out(replicationFactor * G_info.nelms());
@@ -717,7 +709,6 @@ BOOST_AUTO_TEST_CASE(HostReduceHierarchicalReductionWithReplicatedGraphs) {
     auto ops       = ir.getOpSchedule({});
     checkOpSchedule(ops, opts);
 
-    session->optimizerFromHost();
     session->weightsFromHost();
     session->run(stepio);
 
@@ -859,13 +850,13 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationGradientStoreGradientLoad) {
   TensorInfo G_info{"FLOAT", std::vector<int64_t>{M, N}};
   TensorId G_id = aiOnnx.matmul({F_id, D_id});
 
-  bder->addOutputTensor(G_id);
-
   float lossLambda = 1.0f;
+  auto l1 =
+      bder->aiGraphcoreOpset1().l1loss({G_id}, lossLambda, ReductionType::Sum);
 
   auto proto      = bder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
-  auto art        = AnchorReturnType("ALL");
+  auto art        = AnchorReturnType("All");
   // one batch per step
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{G_id, art}});
@@ -878,19 +869,16 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationGradientStoreGradientLoad) {
 
   // training info
   auto optimizer = SGD({{"defaultLearningRate", {1.0f, false}}});
-  std::unique_ptr<Loss> l1_loss(
-      new L1Loss(G_id, "l1LossVal", lossLambda, ReductionType::SUM));
-  std::vector<Loss *> losses{l1_loss.get()};
 
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      losses,
+      l1,
       optimizer,
       device,
       popart::InputShapeInfo(),
       opts,
-      popart::Patterns(PatternsLevel::DEFAULT));
+      popart::Patterns(PatternsLevel::Default));
 
   // prepare the anchors. We have the output C,
   std::vector<float> raw_G_out(G_info.nelms());
@@ -973,7 +961,6 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationGradientStoreGradientLoad) {
 
   popart::StepIO stepio(inputs, anchors);
 
-  session->optimizerFromHost();
   session->weightsFromHost();
   session->run(stepio);
 
@@ -1109,13 +1096,13 @@ BOOST_AUTO_TEST_CASE(
   TensorInfo G_info{"FLOAT", std::vector<int64_t>{M, N}};
   TensorId G_id = aiOnnx.matmul({F_id, D_id});
 
-  bder->addOutputTensor(G_id);
-
   float lossLambda = 1.0f;
+  auto l1 =
+      bder->aiGraphcoreOpset1().l1loss({G_id}, lossLambda, ReductionType::Sum);
 
   auto proto      = bder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
-  auto art        = AnchorReturnType("ALL");
+  auto art        = AnchorReturnType("All");
   // one batch per step
   int batchesPerStep = 1;
 
@@ -1132,19 +1119,16 @@ BOOST_AUTO_TEST_CASE(
 
     // training info
     auto optimizer = SGD({{"defaultLearningRate", {0.1f, false}}});
-    std::unique_ptr<Loss> l1_loss(
-        new L1Loss(G_id, "l1LossVal", lossLambda, ReductionType::SUM));
-    std::vector<Loss *> losses{l1_loss.get()};
 
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
         dataFlow,
-        losses,
+        l1,
         optimizer,
         device,
         popart::InputShapeInfo(),
         opts,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
 
     std::vector<float> raw_G_out(replicationFactor * G_info.nelms());
     popart::NDArrayWrapper<float> G_wrapper(
@@ -1230,7 +1214,6 @@ BOOST_AUTO_TEST_CASE(
     auto ops       = ir.getOpSchedule({});
     checkOpSchedule(ops, opts);
 
-    session->optimizerFromHost();
     session->weightsFromHost();
     session->run(stepio);
 
@@ -1275,8 +1258,8 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithAccumulation) {
     auto batchSize             = microBatchSize * accumulationFactor;
 
     int seed = 1011;
-    std::default_random_engine eng(seed);
-    std::uniform_real_distribution<float> fdis(-1, 1);
+    DefaultRandomEngine eng(seed);
+    UniformRealDistribution<float> fdis(-1.f, +1.f);
 
     int64_t samplesPerStep = batchesPerStep * batchSize;
 
@@ -1352,11 +1335,11 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithAccumulation) {
     ConstVoidData w5Data = {w5Vals.data(), sampleInfo};
     auto w5              = builder->addInitializedInputTensor(w5Data);
     auto act5            = aiOnnx.add({w5, act4}, "act5");
-    builder->addOutputTensor(act5);
+    auto l1              = builder->aiGraphcoreOpset1().l1loss({act5}, 1.0);
 
     auto proto = builder->getModelProto();
 
-    auto dataFlow = DataFlow(batchesPerStep, {{act5, AnchorReturnType("ALL")}});
+    auto dataFlow = DataFlow(batchesPerStep, {{act5, AnchorReturnType("All")}});
 
     SessionOptions userOptions;
     std::map<std::string, std::string> deviceOpts{{"numIPUs", "1"}};
@@ -1391,22 +1374,18 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithAccumulation) {
     float learnRate = 1.0;
     auto optimizer  = ConstSGD(learnRate);
 
-    float lambda = 1.0;
-    auto loss    = std::unique_ptr<Loss>(
-        new L1Loss(act5, "l1LossVal", lambda, ReductionType::SUM));
-
     auto device =
         DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
 
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
         dataFlow,
-        {loss.get()},
+        l1,
         optimizer,
         device,
         InputShapeInfo(),
         userOptions,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
 
     session->prepareDevice();
 
@@ -1531,8 +1510,8 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipelining) {
     const bool enablePipelining = true;
 
     int seed = 1011;
-    std::default_random_engine eng(seed);
-    std::uniform_real_distribution<float> fdis(-1, 1);
+    DefaultRandomEngine eng(seed);
+    UniformRealDistribution<float> fdis(-1.f, +1.f);
 
     int64_t samplesPerStep = batchesPerStep * batchSize;
 
@@ -1602,6 +1581,9 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipelining) {
     auto w5              = builder->addInitializedInputTensor(w5Data);
     auto act5            = aiOnnx.add({w5, a4}, "act5");
     auto a5              = aiOnnx.sigmoid({act5});
+
+    float lambda = 1.0;
+    auto l1      = builder->aiGraphcoreOpset1().l1loss({a5}, lambda);
     for (auto &x : w5Vals) {
       x = fdis(eng);
     }
@@ -1610,13 +1592,9 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipelining) {
     float learnRate = 1.0;
     auto optimizer  = ConstSGD(learnRate);
 
-    float lambda = 1.0;
-
-    auto loss = std::unique_ptr<Loss>(
-        new L1Loss(a5, "l1LossVal", lambda, ReductionType::SUM));
     auto proto = builder->getModelProto();
 
-    auto dataFlow = DataFlow(batchesPerStep, {{a5, AnchorReturnType("ALL")}});
+    auto dataFlow = DataFlow(batchesPerStep, {{a5, AnchorReturnType("All")}});
 
     SessionOptions userOptions;
     userOptions.enablePipelining = enablePipelining;
@@ -1661,14 +1639,15 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipelining) {
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
         dataFlow,
-        {loss.get()},
+        l1,
         optimizer,
         device,
         InputShapeInfo(),
         userOptions,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
 
     session->prepareDevice();
+
     const auto &ir        = session->getIr();
     const auto &mainGraph = ir.getMainGraph();
     if (userOptions.hostAllReduce) {
@@ -1786,8 +1765,8 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation) {
     const bool enablePipelining = true;
 
     int seed = 1011;
-    std::default_random_engine eng(seed);
-    std::uniform_real_distribution<float> fdis(-1, 1);
+    DefaultRandomEngine eng(seed);
+    UniformRealDistribution<float> fdis(-1.f, +1.f);
 
     int64_t samplesPerStep = batchesPerStep * batchSize;
 
@@ -1861,6 +1840,8 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation) {
     auto w5              = builder->addInitializedInputTensor(w5Data);
     auto act5            = aiOnnx.add({w5, a4}, "act5");
     auto a5              = aiOnnx.sigmoid({act5});
+    float lambda         = 1.0;
+    auto l1              = builder->aiGraphcoreOpset1().l1loss({a5}, lambda);
     for (auto &x : w5Vals) {
       x = fdis(eng);
     }
@@ -1869,13 +1850,9 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation) {
     float learnRate = 1.0;
     auto optimizer  = ConstSGD(learnRate);
 
-    float lambda = 1.0;
-
-    auto loss = std::unique_ptr<Loss>(
-        new L1Loss(a5, "l1LossVal", lambda, ReductionType::SUM));
     auto proto = builder->getModelProto();
 
-    auto dataFlow = DataFlow(batchesPerStep, {{a5, AnchorReturnType("ALL")}});
+    auto dataFlow = DataFlow(batchesPerStep, {{a5, AnchorReturnType("All")}});
 
     SessionOptions userOptions;
     userOptions.enablePipelining = enablePipelining;
@@ -1912,14 +1889,15 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation) {
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
         dataFlow,
-        {loss.get()},
+        l1,
         optimizer,
         device,
         InputShapeInfo(),
         userOptions,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
 
     session->prepareDevice();
+
     const auto &ir        = session->getIr();
     const auto &mainGraph = ir.getMainGraph();
     if (userOptions.hostAllReduce) {
@@ -2085,13 +2063,13 @@ BOOST_AUTO_TEST_CASE(OATTSimpleTest, *boost::unit_test::disabled()) {
   TensorInfo G_info{"FLOAT", std::vector<int64_t>{M, N}};
   TensorId G_id = aiOnnx.matmul({F_id, D_id});
 
-  bder->addOutputTensor(G_id);
-
   float lossLambda = 1.0f;
+  auto l1 =
+      bder->aiGraphcoreOpset1().l1loss({G_id}, lossLambda, ReductionType::Sum);
 
   auto proto      = bder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
-  auto art        = AnchorReturnType("ALL");
+  auto art        = AnchorReturnType("All");
   // one batch per step
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{G_id, art}});
@@ -2107,19 +2085,16 @@ BOOST_AUTO_TEST_CASE(OATTSimpleTest, *boost::unit_test::disabled()) {
 
   // training info
   auto optimizer = SGD({{"defaultLearningRate", {1.0f, false}}});
-  std::unique_ptr<Loss> l1_loss(
-      new L1Loss(G_id, "l1LossVal", lossLambda, ReductionType::SUM));
-  std::vector<Loss *> losses{l1_loss.get()};
 
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      losses,
+      l1,
       optimizer,
       device,
       popart::InputShapeInfo(),
       opts,
-      popart::Patterns(PatternsLevel::DEFAULT));
+      popart::Patterns(PatternsLevel::Default));
 
   // prepare the anchors. We have the output C,
   std::vector<float> raw_G_out(G_info.nelms());
@@ -2130,6 +2105,7 @@ BOOST_AUTO_TEST_CASE(OATTSimpleTest, *boost::unit_test::disabled()) {
   };
 
   session->prepareDevice();
+
   const auto &ir = session->getIr();
   auto ops       = ir.getOpSchedule({});
   // checkOpSchedule(ops, opts);
@@ -2178,7 +2154,6 @@ BOOST_AUTO_TEST_CASE(OATTSimpleTest, *boost::unit_test::disabled()) {
 
   popart::StepIO stepio(inputs, anchors);
 
-  session->optimizerFromHost();
   session->weightsFromHost();
   session->run(stepio);
 
@@ -2247,8 +2222,8 @@ BOOST_AUTO_TEST_CASE(OATTWithAccumulation, *boost::unit_test::disabled()) {
     auto batchSize             = microBatchSize * accumulationFactor;
 
     int seed = 1011;
-    std::default_random_engine eng(seed);
-    std::uniform_real_distribution<float> fdis(-1, 1);
+    DefaultRandomEngine eng(seed);
+    UniformRealDistribution<float> fdis(-1.f, +1.f);
 
     int64_t samplesPerStep = batchesPerStep * batchSize;
 
@@ -2324,11 +2299,12 @@ BOOST_AUTO_TEST_CASE(OATTWithAccumulation, *boost::unit_test::disabled()) {
     ConstVoidData w5Data = {w5Vals.data(), sampleInfo};
     auto w5              = builder->addInitializedInputTensor(w5Data);
     auto act5            = aiOnnx.add({w5, act4}, "act5");
-    builder->addOutputTensor(act5);
+    float lambda         = 1.0;
+    auto l1              = builder->aiGraphcoreOpset1().l1loss({act5}, lambda);
 
     auto proto = builder->getModelProto();
 
-    auto dataFlow = DataFlow(batchesPerStep, {{act5, AnchorReturnType("ALL")}});
+    auto dataFlow = DataFlow(batchesPerStep, {{act5, AnchorReturnType("All")}});
 
     SessionOptions userOptions;
     std::map<std::string, std::string> deviceOpts{{"numIPUs", "1"}};
@@ -2366,10 +2342,6 @@ BOOST_AUTO_TEST_CASE(OATTWithAccumulation, *boost::unit_test::disabled()) {
     float learnRate = 1.0;
     auto optimizer  = ConstSGD(learnRate);
 
-    float lambda = 1.0;
-    auto loss    = std::unique_ptr<Loss>(
-        new L1Loss(act5, "l1LossVal", lambda, ReductionType::SUM));
-
     auto device = acquireAvailableDevice();
     if (!device) {
       return std::vector<std::vector<float>>();
@@ -2378,12 +2350,12 @@ BOOST_AUTO_TEST_CASE(OATTWithAccumulation, *boost::unit_test::disabled()) {
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
         dataFlow,
-        {loss.get()},
+        l1,
         optimizer,
         device,
         InputShapeInfo(),
         userOptions,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
 
     session->prepareDevice();
 
@@ -2510,8 +2482,8 @@ BOOST_AUTO_TEST_CASE(OATTWithPipeliningAndAccumulation,
     auto batchSize             = microBatchSize * accumulationFactor;
 
     int seed = 1011;
-    std::default_random_engine eng(seed);
-    std::uniform_real_distribution<float> fdis(-1, 1);
+    DefaultRandomEngine eng(seed);
+    UniformRealDistribution<float> fdis(-1.f, +1.f);
 
     int64_t samplesPerStep = batchesPerStep * batchSize;
 
@@ -2589,18 +2561,14 @@ BOOST_AUTO_TEST_CASE(OATTWithPipeliningAndAccumulation,
     for (auto &x : w5Vals) {
       x = fdis(eng);
     }
-    builder->addOutputTensor(a5);
+    float lambda = 1.0;
+    auto l1      = builder->aiGraphcoreOpset1().l1loss({a5}, lambda);
 
     float learnRate = 1.0;
     auto optimizer  = ConstSGD(learnRate);
+    auto proto      = builder->getModelProto();
 
-    float lambda = 1.0;
-
-    auto loss = std::unique_ptr<Loss>(
-        new L1Loss(a5, "l1LossVal", lambda, ReductionType::SUM));
-    auto proto = builder->getModelProto();
-
-    auto dataFlow = DataFlow(batchesPerStep, {{a5, AnchorReturnType("ALL")}});
+    auto dataFlow = DataFlow(batchesPerStep, {{a5, AnchorReturnType("All")}});
 
     SessionOptions userOptions;
     userOptions.enablePipelining = enablePipelining;
@@ -2636,12 +2604,12 @@ BOOST_AUTO_TEST_CASE(OATTWithPipeliningAndAccumulation,
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
         dataFlow,
-        {loss.get()},
+        l1,
         optimizer,
         device,
         InputShapeInfo(),
         userOptions,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
 
     session->prepareDevice();
     const auto &ir        = session->getIr();

@@ -121,7 +121,7 @@ TileGradOp::TileGradOp(const TileOp &op_)
 const std::vector<GradInOutMapper> &TileGradOp::gradInputInfo() const {
   // input at index 0 : gradient of output of tile
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), TileOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getInIndex(), TileOp::getOutIndex(), GradOpInType::GradOut}};
   return inInfo;
 }
 

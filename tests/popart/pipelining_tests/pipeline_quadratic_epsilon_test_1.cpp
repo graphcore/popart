@@ -1,11 +1,11 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE PipelineQuadraticEpsilonTest1
 
+#include <../random_util.hpp>
 #include <algorithm>
 #include <boost/test/unit_test.hpp>
 #include <fstream>
 #include <map>
-#include <random>
 #include <tuple>
 #include <vector>
 
@@ -16,6 +16,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/restore.hpp>
@@ -99,8 +100,8 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilonTest1) {
     int64_t batchesPerStep = microBatchesPerStep / accumulationFactor;
 
     int seed = 1011;
-    std::default_random_engine eng(seed);
-    std::uniform_real_distribution<float> fdis(-1, 1);
+    DefaultRandomEngine eng(seed);
+    UniformRealDistribution<float> fdis(-1.f, +1.f);
     int64_t microBatchSize = 3;
     int64_t sampleHeight   = 8;
     std::vector<int64_t> sampleShape{sampleHeight, sampleHeight};
@@ -200,7 +201,7 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilonTest1) {
     std::map<std::string, std::string> deviceOpts{
         {"numIPUs", std::to_string(nIPUs)}};
 
-    userOptions.enableVirtualGraphs = true;
+    userOptions.virtualGraphMode = VirtualGraphMode::Manual;
 
     if (dumpPoplarTrace) {
       userOptions.reportOptions.insert({"showExecutionSteps", "true"});
@@ -221,17 +222,15 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilonTest1) {
       userOptions.enableGradientAccumulation = false;
     }
 
-    builder->addOutputTensor(actFinal);
+    float lambda = 0.1;
+    auto l1      = builder->aiGraphcoreOpset1().l1loss(
+        {actFinal}, 0.1, ReductionType::Sum);
+    builder->virtualGraph(l1, nIPUs - 1);
     auto proto    = builder->getModelProto();
     auto dataFlow = DataFlow(batchesPerStep);
 
     // The learning rate will be adjusted to the correct value at runtime
     auto optimizer = SGD({{"defaultLearningRate", {10000., false}}});
-
-    float lambda = 0.1;
-    auto loss    = std::unique_ptr<Loss>(
-        new L1Loss(actFinal, "l1LossVal", lambda, ReductionType::SUM));
-    loss->virtualGraph(nIPUs - 1);
 
     // number of "pixels" in a step
     int64_t stepDataElms = accumulationFactor * microBatchElms * batchesPerStep;
@@ -241,17 +240,17 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilonTest1) {
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
         dataFlow,
-        {loss.get()},
+        l1,
         optimizer,
         device,
         InputShapeInfo(),
         userOptions,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
 
     auto opSchedule = session->ir.getOpSchedule({});
     int nRecomp     = 0;
     for (auto op : opSchedule) {
-      if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
+      if (op->settings.recomputeType == RecomputeType::Recompute) {
         ++nRecomp;
       }
     }
@@ -289,8 +288,7 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilonTest1) {
 
       // initialize learnRate, write to device
       SGD newOptimizer({{"defaultLearningRate", {learnRate, false}}});
-      session->updateOptimizer(&newOptimizer);
-      session->optimizerFromHost();
+      session->updateOptimizerFromHost(&newOptimizer);
 
       int64_t samplesPerStep =
           batchesPerStep * accumulationFactor * microBatchSize;

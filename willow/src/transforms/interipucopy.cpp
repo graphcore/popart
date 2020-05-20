@@ -60,6 +60,10 @@ public:
   }
 
   void clear() { tensorMap.clear(); }
+
+  const std::map<TensorId, std::vector<IpuNumber>> &getTensorMap() {
+    return tensorMap;
+  }
 };
 
 std::size_t InterIpuCopy::id() { return typeid(InterIpuCopy).hash_code(); }
@@ -125,6 +129,10 @@ void InterIpuCopy::insertIpuCopy(Graph &graph,
       toIpu);
 
   Op::Settings settings(graph, "");
+
+  // Inherit important settings from the fromOp
+  // Tensor caching is inherited
+  settings.cacheType = fromOp->getSettings().cacheType;
 
   auto ipuCopy_op = std::make_unique<IpuCopyOp>(
       Onnx::CustomOperators::IpuCopy, toIpu, settings);
@@ -325,6 +333,15 @@ bool InterIpuCopy::apply(Graph &graph) const {
             copiedTensors.add(tensor->id, toIpu);
           }
         }
+      }
+    }
+  }
+
+  // Inherit placement attributes to IPUCopyOps
+  for (auto &copied : copiedTensors.getTensorMap()) {
+    for (Op *op : graph.getTensors().get(copied.first)->consumers.getOps()) {
+      if (op->isIpuCopyOp()) {
+        op->inheritPlacementAttributes(false);
       }
     }
   }

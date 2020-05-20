@@ -24,7 +24,10 @@ IpuCopyOp::IpuCopyOp(const OperatorIdentifier &_opid,
                      uint64_t _destIpu,
                      const Op::Settings &settings_)
     : Op(_opid, settings_), destIpu(_destIpu) {
-  settings.schedulePriority = std::numeric_limits<double>::lowest();
+  if (getIr().getSessionOptions().pingPongPhases < 2 &&
+      getIr().getSessionOptions().batchSerializationFactor < 2) {
+    settings.schedulePriority = std::numeric_limits<double>::lowest();
+  }
 }
 
 std::unique_ptr<Op> IpuCopyOp::clone() const {

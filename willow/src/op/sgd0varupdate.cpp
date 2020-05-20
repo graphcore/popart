@@ -33,12 +33,12 @@ float SGD0VarUpdateOp::getSubgraphValue() const {
   }
 }
 
-SGD0VarUpdateOpBase::SGD0VarUpdateOpBase(const OperatorIdentifier &opid,
+SGD0VarUpdateOpBase::SGD0VarUpdateOpBase(const OperatorIdentifier &_opid,
                                          const TensorId &varId_,
                                          OptimizerValue initialSlr0,
                                          OptimizerValue initialWdsf0,
                                          const Op::Settings &settings_)
-    : VarUpdateWithUpdaterOp(opid, varId_, settings_), initSlr0(initialSlr0),
+    : VarUpdateWithUpdaterOp(_opid, varId_, settings_), initSlr0(initialSlr0),
       initWdsf0(initialWdsf0) {}
 
 std::map<InIndex, TensorId> SGD0VarUpdateOpBase::optimizerInputs() const {

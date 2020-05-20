@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE(MergeCopies0) {
   auto model_proto  = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto data_flow = DataFlow(1, {{out_id, AnchorReturnType("ALL")}});
+  auto data_flow = DataFlow(1, {{out_id, AnchorReturnType("All")}});
 
   SessionOptions opts;
   opts.virtualGraphMode = VirtualGraphMode::Manual;
@@ -125,7 +125,7 @@ BOOST_AUTO_TEST_CASE(MergeCopies1) {
   auto model_proto  = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto data_flow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+  auto data_flow = DataFlow(1, {{out, AnchorReturnType("All")}});
 
   SessionOptions opts;
   opts.virtualGraphMode = VirtualGraphMode::Manual;
@@ -181,7 +181,7 @@ BOOST_AUTO_TEST_CASE(MergeCopies2) {
   auto model_proto  = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto data_flow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+  auto data_flow = DataFlow(1, {{out, AnchorReturnType("All")}});
 
   SessionOptions opts;
   opts.virtualGraphMode = VirtualGraphMode::Manual;
@@ -232,7 +232,7 @@ BOOST_AUTO_TEST_CASE(MergeCopies3) {
   auto model_proto  = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto data_flow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+  auto data_flow = DataFlow(1, {{out, AnchorReturnType("All")}});
 
   SessionOptions opts;
   opts.virtualGraphMode = VirtualGraphMode::Manual;
@@ -284,7 +284,7 @@ BOOST_AUTO_TEST_CASE(MergeCopies4) {
   auto model_proto  = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto data_flow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+  auto data_flow = DataFlow(1, {{out, AnchorReturnType("All")}});
 
   SessionOptions opts;
   opts.virtualGraphMode = VirtualGraphMode::Manual;

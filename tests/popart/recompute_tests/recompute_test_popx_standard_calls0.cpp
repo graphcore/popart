@@ -9,6 +9,7 @@
 #include <popart/builder.hpp>
 #include <popart/filereader.hpp>
 #include <popart/op.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 
@@ -73,19 +74,15 @@ BOOST_AUTO_TEST_CASE(RecomputeTestPopxStandardCalls0) {
     act = aiOnnx.add({act, skip});
     act = aiOnnx.sigmoid({act});
   }
-  builder->addOutputTensor(act);
+  auto l1 = builder->aiGraphcoreOpset1().l1loss({act}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto art       = AnchorReturnType("ALL");
+  auto art       = AnchorReturnType("All");
   auto dataFlow  = DataFlow(1, {{act, art}});
   auto optimizer = ConstSGD(0.01);
-
-  auto l1loss = std::unique_ptr<L1Loss>(
-      new L1Loss(act, "l1LossVal", 0.1, ReductionType::SUM));
-  std::vector<Loss *> losses{l1loss.get()};
 
   auto device = popart::createTestDevice(TEST_TARGET);
 
@@ -96,13 +93,13 @@ BOOST_AUTO_TEST_CASE(RecomputeTestPopxStandardCalls0) {
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      losses,
+      l1,
       optimizer,
       device,
       InputShapeInfo(),
       opts,
-      Patterns({popart::PreAliasPatternType::POSTNREPL,
-                popart::PreAliasPatternType::CONVDATAGRAD}));
+      Patterns({popart::PreAliasPatternType::PostNRepl,
+                popart::PreAliasPatternType::ConvDataGrad}));
   session->prepareDevice();
 
   popart::popx::Devicex *devicex =

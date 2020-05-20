@@ -1,11 +1,11 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE PipelineAnchorRecomputedTensor0
 
+#include <../random_util.hpp>
 #include <algorithm>
 #include <boost/test/unit_test.hpp>
 #include <fstream>
 #include <map>
-#include <random>
 #include <tuple>
 #include <vector>
 
@@ -15,6 +15,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/restore.hpp>
@@ -82,8 +83,8 @@ BOOST_AUTO_TEST_CASE(PipelineAnchorRecomputedTensor0) {
 
     auto sig          = aiOnnx.sigmoid({input0});
     auto scale        = aiGraphcore.scale({sig}, 2.0f);
-    TensorId actFinal = scale;
-    auto loss         = L1Loss(actFinal, "l1LossVal", 0.1, ReductionType::SUM);
+    auto l1           = aiGraphcore.l1loss({scale}, 0.1);
+    TensorId actFinal = l1;
 
     int nIPUs = (rt != RunType::SingleDevice ? 2 : 1);
     std::map<std::string, std::string> deviceOpts{
@@ -91,27 +92,27 @@ BOOST_AUTO_TEST_CASE(PipelineAnchorRecomputedTensor0) {
 
     SessionOptions userOptions;
     if (rt == RunType::ContinuousRecompPipe) {
-      userOptions.enableVirtualGraphs = true;
-      userOptions.enablePipelining    = true;
-      userOptions.autoRecomputation   = RecomputationType::Pipeline;
+      userOptions.virtualGraphMode  = VirtualGraphMode::Manual;
+      userOptions.enablePipelining  = true;
+      userOptions.autoRecomputation = RecomputationType::Pipeline;
 
       builder->virtualGraph(sig, 0);
       builder->virtualGraph(scale, 0);
-      loss.virtualGraph(nIPUs - 1);
+      builder->virtualGraph(l1, nIPUs - 1);
     }
-    auto art      = AnchorReturnType("ALL");
+    auto art      = AnchorReturnType("All");
     auto inGradId = reservedGradientPrefix() + input0;
     auto dataFlow = DataFlow(batchesPerStep, {{sig, art}, {inGradId, art}});
 
     auto session = popart::TrainingSession::createFromOnnxModel(
         builder->getModelProto(),
         dataFlow,
-        {&loss},
+        actFinal,
         ConstSGD(0.01),
         createTestDevice(TEST_TARGET, nIPUs),
         InputShapeInfo(),
         userOptions,
-        popart::Patterns(PatternsLevel::DEFAULT));
+        popart::Patterns(PatternsLevel::Default));
 
     if (rt == RunType::ContinuousRecompPipe) {
       // Check our assumption, that the Sigmoid op is
@@ -119,7 +120,7 @@ BOOST_AUTO_TEST_CASE(PipelineAnchorRecomputedTensor0) {
       auto opSchedule = session->getIr().getOpSchedule({});
       for (auto op : opSchedule) {
         if (dynamic_cast<SigmoidOp *>(op)) {
-          BOOST_CHECK(op->settings.recomputeType == RecomputeType::RECOMPUTE);
+          BOOST_CHECK(op->settings.recomputeType == RecomputeType::Recompute);
         }
       }
     }
@@ -136,8 +137,8 @@ BOOST_AUTO_TEST_CASE(PipelineAnchorRecomputedTensor0) {
         {sig, sigWrapper}, {inGradId, inGradWrapper}};
 
     // generate new samples
-    std::default_random_engine eng(101);
-    std::uniform_real_distribution<float> fdis(-1, 1);
+    DefaultRandomEngine eng(101);
+    UniformRealDistribution<float> fdis(-1.f, +1.f);
     int64_t samplesPerStep = batchesPerStep * microBatchSize;
     std::vector<float> v_input_x(stepDataElms);
     for (int i = 0; i < samplesPerStep; ++i) {

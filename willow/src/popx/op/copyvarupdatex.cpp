@@ -46,7 +46,7 @@ poplar::Tensor CopyVarUpdateOpx::createInput(int inIndex,
 
 InputCreatorType CopyVarUpdateOpx::getInputCreatorType(int inIndex) const {
   return inIndex == VarUpdateWithUpdaterOp::getUpdaterInIndex()
-             ? InputCreatorType::CANCREATE
+             ? InputCreatorType::CanCreate
              : Opx::getInputCreatorType(inIndex);
 }
 

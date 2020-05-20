@@ -20,15 +20,15 @@ nOutChans = 10
 batchSize = 2
 batchesPerStep = 3
 anchors = {
-    "conv2.weight": popart.AnchorReturnType("ALL"),
-    "l1LossVal": popart.AnchorReturnType("ALL"),
-    "nllLossVal": popart.AnchorReturnType("ALL"),
-    "probs": popart.AnchorReturnType("FINAL"),
-    "preProbSquared": popart.AnchorReturnType("FINAL"),
-    nllGradTensorId: popart.AnchorReturnType("FINAL"),
-    l1GradTensorId: popart.AnchorReturnType("FINAL")
+    "conv2.weight": popart.AnchorReturnType("All"),
+    "l1LossVal": popart.AnchorReturnType("All"),
+    "nllLossVal": popart.AnchorReturnType("All"),
+    "probs": popart.AnchorReturnType("Final"),
+    "preProbSquared": popart.AnchorReturnType("Final"),
+    nllGradTensorId: popart.AnchorReturnType("Final"),
+    l1GradTensorId: popart.AnchorReturnType("Final")
 }
-dataFeed = popart.DataFlow(batchesPerStep, anchors)
+dataFlow = popart.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = popart.InputShapeInfo()
 inputShapeInfo.add("image0",
                    popart.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
@@ -44,7 +44,7 @@ losses = [
     popart.L1Loss("preProbSquared", "l1LossVal", 0.01)
 ]
 
-willowOptPasses = popart.Patterns(popart.PatternsLevel.ALL)
+willowOptPasses = popart.Patterns(popart.PatternsLevel.All)
 
 
 class Module0(torch.nn.Module):
@@ -106,7 +106,7 @@ anchors_1 = c10driver.run(
         # default loss scaling (1.0f)
         optimizer=popart.SGD({"defaultLearningRate": (0.001, True)}),
         inputShapeInfo=inputShapeInfo,
-        dataFeed=dataFeed,
+        dataFlow=dataFlow,
         ### Torch specific:
         module=Module0(),
         samplesPerBatch=batchSize),
@@ -127,7 +127,7 @@ anchors_2 = c10driver.run(
             "lossScaling": (100, False)
         }),
         inputShapeInfo=inputShapeInfo,
-        dataFeed=dataFeed,
+        dataFlow=dataFlow,
         ### Torch specific:
         module=Module0(),
         samplesPerBatch=batchSize),
@@ -148,7 +148,7 @@ anchors_3 = c10driver.run(
             "lossScaling": (100, False)
         }),
         inputShapeInfo=inputShapeInfo,
-        dataFeed=dataFeed,
+        dataFlow=dataFlow,
         ### Torch specific:
         module=Module0(),
         samplesPerBatch=batchSize),
@@ -170,7 +170,7 @@ anchors_4 = c10driver.run(
             "lossScaling": (100, False)
         }),
         inputShapeInfo=inputShapeInfo,
-        dataFeed=dataFeed,
+        dataFlow=dataFlow,
         ### Torch specific:
         module=Module0(),
         samplesPerBatch=batchSize),

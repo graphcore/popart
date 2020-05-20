@@ -154,7 +154,7 @@ void SubsampleGradOp::setup() { output->tensor(0)->info = fwdOpInfo; }
 
 const std::vector<GradInOutMapper> &SubsampleGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), SubsampleBaseOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getInIndex(), SubsampleBaseOp::getOutIndex(), GradOpInType::GradOut}};
 
   return inInfo;
 }

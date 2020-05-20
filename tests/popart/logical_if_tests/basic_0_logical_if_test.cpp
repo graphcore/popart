@@ -7,6 +7,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/op/add.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/if.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/tensorinfo.hpp>
@@ -33,8 +34,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_basic0) {
     auto &then_branch = [in0, in1](Builder &parent_builder) -> Builder & {
       Builder &builder = parent_builder.createSubgraphBuilder();
       auto aiOnnx      = builder.aiOnnxOpset9();
-      builder.addInputTensorFromHigherScope(in0);
-      builder.addInputTensorFromHigherScope(in1);
+      builder.addInputTensorFromParentGraph(in0);
+      builder.addInputTensorFromParentGraph(in1);
       auto out = aiOnnx.add({in0, in1});
       builder.addOutputTensor(out);
       return builder;
@@ -43,8 +44,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_basic0) {
     auto &else_branch = [in0, in1](Builder &parent_builder) -> Builder & {
       Builder &builder = parent_builder.createSubgraphBuilder();
       auto aiOnnx      = builder.aiOnnxOpset9();
-      builder.addInputTensorFromHigherScope(in0);
-      builder.addInputTensorFromHigherScope(in1);
+      builder.addInputTensorFromParentGraph(in0);
+      builder.addInputTensorFromParentGraph(in1);
       auto out = aiOnnx.sub({in0, in1});
       builder.addOutputTensor(out);
       return builder;
@@ -105,8 +106,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_scopes0) {
     auto &then_branch = [in0, in1](Builder &parent_builder) -> Builder & {
       Builder &builder = parent_builder.createSubgraphBuilder();
       auto aiOnnx      = builder.aiOnnxOpset9();
-      builder.addInputTensorFromHigherScope(in0);
-      builder.addInputTensorFromHigherScope(in1);
+      builder.addInputTensorFromParentGraph(in0);
+      builder.addInputTensorFromParentGraph(in1);
       auto out = aiOnnx.add({in0, in1});
       builder.addOutputTensor(out);
       return builder;
@@ -115,8 +116,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_scopes0) {
     auto &else_branch = [in0, in1](Builder &parent_builder) -> Builder & {
       Builder &builder = parent_builder.createSubgraphBuilder();
       auto aiOnnx      = builder.aiOnnxOpset9();
-      builder.addInputTensorFromHigherScope(in0);
-      builder.addInputTensorFromHigherScope(in1);
+      builder.addInputTensorFromParentGraph(in0);
+      builder.addInputTensorFromParentGraph(in1);
       auto out = aiOnnx.add({in0, in1});
       builder.addOutputTensor(out);
       return builder;
@@ -181,8 +182,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_scopes1) {
     auto &then_branch = [in0, in1](Builder &parent_builder) -> Builder & {
       Builder &builder = parent_builder.createSubgraphBuilder();
       auto aiOnnx      = builder.aiOnnxOpset9();
-      builder.addInputTensorFromHigherScope(in0);
-      builder.addInputTensorFromHigherScope(in1);
+      builder.addInputTensorFromParentGraph(in0);
+      builder.addInputTensorFromParentGraph(in1);
       auto out = aiOnnx.add({in0, in1});
       out      = aiOnnx.add({out, out});
       builder.addOutputTensor(out);
@@ -192,8 +193,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_scopes1) {
     auto &else_branch = [in0, in1](Builder &parent_builder) -> Builder & {
       Builder &builder = parent_builder.createSubgraphBuilder();
       auto aiOnnx      = builder.aiOnnxOpset9();
-      builder.addInputTensorFromHigherScope(in0);
-      builder.addInputTensorFromHigherScope(in1);
+      builder.addInputTensorFromParentGraph(in0);
+      builder.addInputTensorFromParentGraph(in1);
       auto out = aiOnnx.add({in0, in1});
       builder.addOutputTensor(out);
       return builder;
@@ -279,8 +280,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train0) {
     auto &then_branch = [in0, in1](Builder &parent_builder) -> Builder & {
       Builder &builder = parent_builder.createSubgraphBuilder();
       auto aiOnnx      = builder.aiOnnxOpset9();
-      builder.addInputTensorFromHigherScope(in0);
-      builder.addInputTensorFromHigherScope(in1);
+      builder.addInputTensorFromParentGraph(in0);
+      builder.addInputTensorFromParentGraph(in1);
       auto out = aiOnnx.add({in0, in1});
       builder.addOutputTensor(out);
       return builder;
@@ -289,26 +290,26 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train0) {
     auto &else_branch = [in0, in1](Builder &parent_builder) -> Builder & {
       Builder &builder = parent_builder.createSubgraphBuilder();
       auto aiOnnx      = builder.aiOnnxOpset9();
-      builder.addInputTensorFromHigherScope(in0);
-      builder.addInputTensorFromHigherScope(in1);
+      builder.addInputTensorFromParentGraph(in0);
+      builder.addInputTensorFromParentGraph(in1);
       auto out = aiOnnx.add({in0, in1});
       builder.addOutputTensor(out);
       return builder;
     }(builder);
 
     out = aiOnnx.logical_if({in_condition}, 1, else_branch, then_branch)[0];
-    builder.addOutputTensor(out);
+    auto l1 =
+        builder.aiGraphcoreOpset1().l1loss({out}, 0.1, ReductionType::Sum);
 
-    runner.anchors.insert({getGradId(in0), AnchorReturnType("ALL")});
-    runner.anchors.insert({getGradId(in1), AnchorReturnType("ALL")});
+    runner.anchors.insert({getGradId(in0), AnchorReturnType("All")});
+    runner.anchors.insert({getGradId(in1), AnchorReturnType("All")});
 
     inputs.push_back(TestTensor::create<bool>(in_condition, infoBool.shape()));
     outputs.push_back(TestTensor::create<float>(out, info.shape()));
     outputs.push_back(TestTensor::create<float>(getGradId(in0), info.shape()));
     outputs.push_back(TestTensor::create<float>(getGradId(in1), info.shape()));
 
-    runner.losses.push_back(
-        new L1Loss(out, "l1LossVal", 0.1, ReductionType::SUM));
+    runner.loss = l1;
 
     return out;
   });
@@ -366,7 +367,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train1) {
   ConstVoidData in1CVData = {in1Data, info};
 
   TestRunner runner;
-  runner.opts.dotChecks.insert(DotCheck::FINAL);
+  runner.opts.dotChecks.insert(DotCheck::Final);
   runner.opts.separateCallOpPdfs = false;
   runner.patterns.enableInPlace(false);
   runner.patterns.enableSubtractArg1GradOp(true);
@@ -394,8 +395,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train1) {
     auto &then_branch = [in0, in1](Builder &parent_builder) -> Builder & {
       Builder &builder = parent_builder.createSubgraphBuilder();
       auto aiOnnx      = builder.aiOnnxOpset9();
-      builder.addInputTensorFromHigherScope(in0);
-      builder.addInputTensorFromHigherScope(in1);
+      builder.addInputTensorFromParentGraph(in0);
+      builder.addInputTensorFromParentGraph(in1);
       auto out = aiOnnx.add({in0, in1});
       builder.addOutputTensor(out);
       return builder;
@@ -404,26 +405,26 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train1) {
     auto &else_branch = [in0, in1](Builder &parent_builder) -> Builder & {
       Builder &builder = parent_builder.createSubgraphBuilder();
       auto aiOnnx      = builder.aiOnnxOpset9();
-      builder.addInputTensorFromHigherScope(in0);
-      builder.addInputTensorFromHigherScope(in1);
+      builder.addInputTensorFromParentGraph(in0);
+      builder.addInputTensorFromParentGraph(in1);
       auto out = aiOnnx.sub({in0, in1});
       builder.addOutputTensor(out);
       return builder;
     }(builder);
 
     out = aiOnnx.logical_if({in_condition}, 1, else_branch, then_branch)[0];
-    builder.addOutputTensor(out);
+    auto l1 =
+        builder.aiGraphcoreOpset1().l1loss({out}, 0.1, ReductionType::Sum);
 
-    runner.anchors.insert({getGradId(in0), AnchorReturnType("ALL")});
-    runner.anchors.insert({getGradId(in1), AnchorReturnType("ALL")});
+    runner.anchors.insert({getGradId(in0), AnchorReturnType("All")});
+    runner.anchors.insert({getGradId(in1), AnchorReturnType("All")});
 
     inputs.push_back(TestTensor::create<bool>(in_condition, infoBool.shape()));
     outputs.push_back(TestTensor::create<float>(out, info.shape()));
     outputs.push_back(TestTensor::create<float>(getGradId(in0), info.shape()));
     outputs.push_back(TestTensor::create<float>(getGradId(in1), info.shape()));
 
-    runner.losses.push_back(
-        new L1Loss(out, "l1LossVal", 0.1, ReductionType::SUM));
+    runner.loss = l1;
 
     return out;
   });
@@ -543,8 +544,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train2) {
     auto &then_branch = [in0, in1](Builder &parent_builder) -> Builder & {
       Builder &builder = parent_builder.createSubgraphBuilder();
       auto aiOnnx      = builder.aiOnnxOpset9();
-      builder.addInputTensorFromHigherScope(in0);
-      builder.addInputTensorFromHigherScope(in1);
+      builder.addInputTensorFromParentGraph(in0);
+      builder.addInputTensorFromParentGraph(in1);
       auto out = aiOnnx.add({in0, in1});
       builder.addOutputTensor(out);
       return builder;
@@ -553,26 +554,26 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train2) {
     auto &else_branch = [in0, in1](Builder &parent_builder) -> Builder & {
       Builder &builder = parent_builder.createSubgraphBuilder();
       auto aiOnnx      = builder.aiOnnxOpset9();
-      builder.addInputTensorFromHigherScope(in0);
-      builder.addInputTensorFromHigherScope(in1);
+      builder.addInputTensorFromParentGraph(in0);
+      builder.addInputTensorFromParentGraph(in1);
       auto out = aiOnnx.mul({in0, in1});
       builder.addOutputTensor(out);
       return builder;
     }(builder);
 
     out = aiOnnx.logical_if({in_condition}, 1, else_branch, then_branch)[0];
-    builder.addOutputTensor(out);
+    auto l1 =
+        builder.aiGraphcoreOpset1().l1loss({out}, 0.1, ReductionType::Sum);
 
-    runner.anchors.insert({getGradId(in0), AnchorReturnType("ALL")});
-    runner.anchors.insert({getGradId(in1), AnchorReturnType("ALL")});
+    runner.anchors.insert({getGradId(in0), AnchorReturnType("All")});
+    runner.anchors.insert({getGradId(in1), AnchorReturnType("All")});
 
     inputs.push_back(TestTensor::create<bool>(in_condition, infoBool.shape()));
     outputs.push_back(TestTensor::create<float>(out, info.shape()));
     outputs.push_back(TestTensor::create<float>(getGradId(in0), info.shape()));
     outputs.push_back(TestTensor::create<float>(getGradId(in1), info.shape()));
 
-    runner.losses.push_back(
-        new L1Loss(out, "l1LossVal", 0.1, ReductionType::SUM));
+    runner.loss = l1;
 
     return out;
   });
@@ -690,8 +691,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train3) {
     auto &then_branch = [in0, in1](Builder &parent_builder) -> Builder & {
       Builder &builder = parent_builder.createSubgraphBuilder();
       auto aiOnnx      = builder.aiOnnxOpset9();
-      builder.addInputTensorFromHigherScope(in0);
-      builder.addInputTensorFromHigherScope(in1);
+      builder.addInputTensorFromParentGraph(in0);
+      builder.addInputTensorFromParentGraph(in1);
       auto out = aiOnnx.add({in0, in1});
       builder.addOutputTensor(out);
       return builder;
@@ -700,25 +701,25 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train3) {
     auto &else_branch = [in0, in1](Builder &parent_builder) -> Builder & {
       Builder &builder = parent_builder.createSubgraphBuilder();
       auto aiOnnx      = builder.aiOnnxOpset9();
-      builder.addInputTensorFromHigherScope(in0);
+      builder.addInputTensorFromParentGraph(in0);
       auto out = aiOnnx.add({in0, in0});
       builder.addOutputTensor(out);
       return builder;
     }(builder);
 
     out = aiOnnx.logical_if({in_condition}, 1, else_branch, then_branch)[0];
-    builder.addOutputTensor(out);
+    auto l1 =
+        builder.aiGraphcoreOpset1().l1loss({out}, 0.1, ReductionType::Sum);
 
-    runner.anchors.insert({getGradId(in0), AnchorReturnType("ALL")});
-    runner.anchors.insert({getGradId(in1), AnchorReturnType("ALL")});
+    runner.anchors.insert({getGradId(in0), AnchorReturnType("All")});
+    runner.anchors.insert({getGradId(in1), AnchorReturnType("All")});
 
     inputs.push_back(TestTensor::create<bool>(in_condition, infoBool.shape()));
     outputs.push_back(TestTensor::create<float>(out, info.shape()));
     outputs.push_back(TestTensor::create<float>(getGradId(in0), info.shape()));
     outputs.push_back(TestTensor::create<float>(getGradId(in1), info.shape()));
 
-    runner.losses.push_back(
-        new L1Loss(out, "l1LossVal", 0.1, ReductionType::SUM));
+    runner.loss = l1;
 
     return out;
   });
@@ -789,7 +790,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_inputs_differ0) {
       Builder &builder = parent_builder.createSubgraphBuilder();
       // auto builder = Builder::create();
       auto aiOnnx = builder.aiOnnxOpset9();
-      builder.addInputTensorFromHigherScope(in0);
+      builder.addInputTensorFromParentGraph(in0);
       auto out = aiOnnx.add({in0, in0});
       builder.addOutputTensor(out);
       return builder;
@@ -799,8 +800,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_inputs_differ0) {
       Builder &builder = parent_builder.createSubgraphBuilder();
       // auto builder = Builder::create();
       auto aiOnnx = builder.aiOnnxOpset9();
-      builder.addInputTensorFromHigherScope(in0);
-      builder.addInputTensorFromHigherScope(in1);
+      builder.addInputTensorFromParentGraph(in0);
+      builder.addInputTensorFromParentGraph(in1);
       auto out = aiOnnx.add({in0, in1});
       builder.addOutputTensor(out);
       return builder;
@@ -871,7 +872,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_inputs_differ_train0) {
         auto &then_branch = [in0, in1](Builder &parent_builder) -> Builder & {
           Builder &builder = parent_builder.createSubgraphBuilder();
           auto aiOnnx      = builder.aiOnnxOpset9();
-          builder.addInputTensorFromHigherScope(in0);
+          builder.addInputTensorFromParentGraph(in0);
           auto out = aiOnnx.add({in0, in0});
           builder.addOutputTensor(out);
           return builder;
@@ -880,8 +881,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_inputs_differ_train0) {
         auto &else_branch = [in0, in1](Builder &parent_builder) -> Builder & {
           Builder &builder = parent_builder.createSubgraphBuilder();
           auto aiOnnx      = builder.aiOnnxOpset9();
-          builder.addInputTensorFromHigherScope(in0);
-          builder.addInputTensorFromHigherScope(in1);
+          builder.addInputTensorFromParentGraph(in0);
+          builder.addInputTensorFromParentGraph(in1);
           auto out = aiOnnx.add({in0, in1});
           builder.addOutputTensor(out);
           return builder;
@@ -889,14 +890,14 @@ BOOST_AUTO_TEST_CASE(LogicalIf_inputs_differ_train0) {
 
         auto out =
             aiOnnx.logical_if({in_condition}, 1, else_branch, then_branch)[0];
-        builder.addOutputTensor(out);
+        auto l1 =
+            builder.aiGraphcoreOpset1().l1loss({out}, 0.1, ReductionType::Sum);
 
         inputs.push_back(
             TestTensor::create<bool>(in_condition, infoBool.shape()));
         outputs.push_back(TestTensor::create<float>(out, info.shape()));
 
-        runner.losses.push_back(
-            new L1Loss(out, "l1LossVal", 0.1, ReductionType::SUM));
+        runner.loss = l1;
 
         return out;
       });

@@ -50,10 +50,9 @@ def test_out_of_memory_exception():
 
     session = popart.InferenceSession(
         fnModel=builder.getModelProto(),
-        dataFeed=popart.DataFlow(1, {out: popart.AnchorReturnType("ALL")}),
-        losses=[],
+        dataFlow=popart.DataFlow(1, {out: popart.AnchorReturnType("All")}),
         userOptions=options,
-        passes=popart.Patterns(popart.PatternsLevel.NONE),
+        patterns=popart.Patterns(popart.PatternsLevel.NoPatterns),
         deviceInfo=tu.create_test_device(1))
 
     with pytest.raises(popart.poplar_exception) as e:

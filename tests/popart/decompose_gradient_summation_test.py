@@ -44,9 +44,9 @@ def test_decompose_gradient_sum():
             opts = popart.SessionOptions()
             opts.decomposeGradSum = decomposeGradSum
 
-            loss = popart.L1Loss(actIn, actIn + "/loss", 0.1)
+            loss = builder.aiGraphcore.identityloss([actIn])
             if doSharding == True:
-                loss.virtualGraph(numLayers - 1)
+                builder.virtualGraph(loss, numLayers - 1)
                 opts.virtualGraphMode = popart.VirtualGraphMode.Manual
                 numIpus = numLayers
             else:
@@ -54,10 +54,10 @@ def test_decompose_gradient_sum():
 
             device = tu.create_test_device(numIpus=numIpus)
             session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                             dataFeed=popart.DataFlow(1, [w0]),
+                                             dataFlow=popart.DataFlow(1, [w0]),
                                              deviceInfo=device,
                                              optimizer=popart.ConstSGD(0.1),
-                                             losses=[loss],
+                                             loss=loss,
                                              userOptions=opts)
 
             anchors = session.initAnchorArrays()
@@ -67,7 +67,7 @@ def test_decompose_gradient_sum():
 
             session.prepareDevice()
             session.weightsFromHost()
-            session.optimizerFromHost()
+
             session.run(stepio)
             return anchors[w0]
 

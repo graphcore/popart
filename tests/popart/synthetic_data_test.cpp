@@ -14,6 +14,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/optimizer.hpp>
@@ -42,30 +43,28 @@ BOOST_AUTO_TEST_CASE(SyntheticData_False) {
     auto x = aiOnnx.identity({tensorIds[tensorIds.size() - 1]});
     tensorIds.push_back(x);
   }
-  builder->addOutputTensor(tensorIds.back());
+  auto l1 = builder->aiGraphcoreOpset1().l1loss({tensorIds.back()}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
-  auto art       = AnchorReturnType("ALL");
+  auto art       = AnchorReturnType("All");
   auto dataFlow  = DataFlow(1, {{tensorIds.back(), art}, {tensorIds[2], art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{
-      new L1Loss(tensorIds.back(), "l1LossVal", 0.1, ReductionType::SUM)};
 
   auto device = popart::createTestDevice(TEST_TARGET);
 
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      losses,
+      l1,
       optimizer,
       device,
       InputShapeInfo(),
       {},
-      Patterns({popart::PreAliasPatternType::POSTNREPL}));
+      Patterns({popart::PreAliasPatternType::PostNRepl}));
 
   session->prepareDevice();
 
@@ -94,18 +93,16 @@ BOOST_AUTO_TEST_CASE(SyntheticData_True) {
     auto x = aiOnnx.identity({tensorIds[tensorIds.size() - 1]});
     tensorIds.push_back(x);
   }
-  builder->addOutputTensor(tensorIds.back());
+  auto l1 = builder->aiGraphcoreOpset1().l1loss({tensorIds.back()}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
-  auto art       = AnchorReturnType("ALL");
+  auto art       = AnchorReturnType("All");
   auto dataFlow  = DataFlow(1, {{tensorIds.back(), art}, {tensorIds[2], art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{
-      new L1Loss(tensorIds.back(), "l1LossVal", 0.1, ReductionType::SUM)};
 
   SessionOptions options;
   options.syntheticDataMode = SyntheticDataMode::Zeros;
@@ -115,12 +112,12 @@ BOOST_AUTO_TEST_CASE(SyntheticData_True) {
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      losses,
+      l1,
       optimizer,
       device,
       InputShapeInfo(),
       options,
-      Patterns({popart::PreAliasPatternType::POSTNREPL}));
+      Patterns({popart::PreAliasPatternType::PostNRepl}));
 
   session->prepareDevice();
 

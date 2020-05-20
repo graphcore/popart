@@ -161,7 +161,7 @@ std::unique_ptr<Op> ExpandGradOp::clone() const {
 
 const std::vector<GradInOutMapper> &ExpandGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getDYIndex(), ExpandOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getDYIndex(), ExpandOp::getOutIndex(), GradOpInType::GradOut}};
   return inInfo;
 }
 

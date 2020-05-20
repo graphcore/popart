@@ -13,9 +13,9 @@ namespace popart {
 DynamicSliceOp::DynamicSliceOp(const OperatorIdentifier &_opid,
                                std::vector<int64_t> axes_,
                                std::vector<int64_t> sizes_,
-                               bool noOverlap,
+                               bool noOverlap_,
                                const Op::Settings &settings_)
-    : DynamicSliceBaseOp(_opid, axes_, sizes_, noOverlap, settings_) {}
+    : DynamicSliceBaseOp(_opid, axes_, sizes_, noOverlap_, settings_) {}
 
 std::unique_ptr<Op> DynamicSliceOp::clone() const {
   return std::make_unique<DynamicSliceOp>(*this);
@@ -52,8 +52,8 @@ std::unique_ptr<Op> DynamicSlicePadGradOp::clone() const {
 const std::vector<GradInOutMapper> &
 DynamicSlicePadGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), DynamicBaseOp::getOutIndex(), GradOpInType::GRADOUT},
-      {getIndexInIndex(), DynamicBaseOp::getIndexInIndex(), GradOpInType::IN}};
+      {getInIndex(), DynamicBaseOp::getOutIndex(), GradOpInType::GradOut},
+      {getIndexInIndex(), DynamicBaseOp::getIndexInIndex(), GradOpInType::In}};
   return inInfo;
 }
 

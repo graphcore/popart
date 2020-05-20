@@ -23,9 +23,9 @@ b = builder.addInitializedInputTensor(np.ones([2], np.float16))
 o = builder.aiOnnx.gemm([ip, w, b], 1., 1., False, False)
 o = builder.aiOnnx.relu([o])
 o = builder.aiOnnx.softmax([o])
-builder.addOutputTensor(o)
+o = builder.aiGraphcore.nllloss([o, lb])
 
-dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
 # Create a session to compile and the graph for inference
 #------------------------------------------------------------------------------
@@ -36,7 +36,7 @@ inferenceOptions.constantWeights = False
 
 inferenceSession = popart.InferenceSession(
     fnModel=builder.getModelProto(),
-    dataFeed=dataFlow,
+    dataFlow=dataFlow,
     userOptions=inferenceOptions,
     deviceInfo=popart.DeviceManager().createIpuModelDevice({}))
 
@@ -51,8 +51,8 @@ inferenceAnchors = inferenceSession.initAnchorArrays()
 trainingOptions = popart.SessionOptions()
 trainingSession = popart.TrainingSession(
     fnModel=builder.getModelProto(),
-    dataFeed=dataFlow,
-    losses=[popart.NllLoss(o, lb, "loss")],
+    dataFlow=dataFlow,
+    loss=o,
     optimizer=popart.ConstSGD(0.001),
     userOptions=trainingOptions,
     deviceInfo=popart.DeviceManager().createIpuModelDevice({}))

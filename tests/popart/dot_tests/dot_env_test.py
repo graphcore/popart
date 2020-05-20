@@ -21,7 +21,7 @@ def test_basic(tmpdir):
 
         proto = builder.getModelProto()
 
-        dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+        dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
         opts = popart.SessionOptions()
 
@@ -30,7 +30,7 @@ def test_basic(tmpdir):
 
             session = popart.InferenceSession(
                 fnModel=proto,
-                dataFeed=dataFlow,
+                dataFlow=dataFlow,
                 userOptions=opts,
                 deviceInfo=tu.create_test_device())
 

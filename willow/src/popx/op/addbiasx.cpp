@@ -49,8 +49,8 @@ std::vector<TensorId> AddBiasOpx::mustExistBeforeCreate(InIndex index) const {
 }
 
 InputCreatorType AddBiasOpx::getInputCreatorType(InIndex index) const {
-  return index == AddBiasOp::getBiasInIndex() ? InputCreatorType::CANCREATE
-                                              : InputCreatorType::DEADEND;
+  return index == AddBiasOp::getBiasInIndex() ? InputCreatorType::CanCreate
+                                              : InputCreatorType::Deadend;
 }
 
 poplar::Tensor AddBiasOpx::createInput(InIndex index,

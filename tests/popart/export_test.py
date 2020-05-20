@@ -28,24 +28,22 @@ def test_constants_preserved():
     c = builder.aiOnnx.constant(np.array([[1, 2], [3, 4]], dtype=np.float32))
     o1 = builder.aiOnnx.add([i1, i2])
     o2 = builder.aiOnnx.add([o1, c])
-    builder.addOutputTensor(o2)
+    loss = builder.aiGraphcore.identityloss([o2])
 
     proto = builder.getModelProto()
 
-    anchors = {o2: popart.AnchorReturnType("ALL")}
+    anchors = {o2: popart.AnchorReturnType("All")}
 
     dataFlow = popart.DataFlow(1, anchors)
 
     optimizer = popart.ConstSGD(0.01)
 
-    losses = [popart.L1Loss(o2, "l1LossVal", 0.1)]
-
     opts = popart.SessionOptions()
 
     session = popart.TrainingSession(fnModel=proto,
-                                     dataFeed=dataFlow,
+                                     dataFlow=dataFlow,
                                      userOptions=opts,
-                                     losses=losses,
+                                     loss=loss,
                                      optimizer=optimizer,
                                      deviceInfo=tu.create_test_device())
 
@@ -85,24 +83,22 @@ def test_no_prepare_device():
     c = builder.aiOnnx.constant(np.array([[1, 2], [3, 4]], dtype=np.float32))
     o1 = builder.aiOnnx.add([i1, i2])
     o2 = builder.aiOnnx.add([o1, c])
-    builder.addOutputTensor(o2)
+    loss = builder.aiGraphcore.identityloss([o2])
 
     proto = builder.getModelProto()
 
-    anchors = {o2: popart.AnchorReturnType("ALL")}
+    anchors = {o2: popart.AnchorReturnType("All")}
 
     dataFlow = popart.DataFlow(1, anchors)
 
     optimizer = popart.ConstSGD(0.01)
 
-    losses = [popart.L1Loss(o2, "l1LossVal", 0.1)]
-
     opts = popart.SessionOptions()
 
     session = popart.TrainingSession(fnModel=proto,
-                                     dataFeed=dataFlow,
+                                     dataFlow=dataFlow,
                                      userOptions=opts,
-                                     losses=losses,
+                                     loss=loss,
                                      optimizer=optimizer,
                                      deviceInfo=tu.create_test_device())
 

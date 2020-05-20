@@ -31,16 +31,24 @@ def get_trainset():
     return trainset
 
 
-def get_session(fnModel, inputShapeInfo, dataFeed, torchWriter, passes, opts):
+def get_session(fnModel, inputShapeInfo, dataFlow, torchWriter, patterns,
+                opts):
+    if len(torchWriter.outNames) > 1:
+        raise RuntimeError("Expecting single loss tensor")
+
+    # Append identity loss to output tensor
+    bder = popart.Builder(fnModel)
+    loss = bder.aiGraphcore.identityloss([torchWriter.outNames[0]])
+
     # Reads ONNX model from file and creates backwards graph,
     # performs Ir optimisations
     session = popart.TrainingSession(
-        fnModel=fnModel,
+        fnModel=bder.getModelProto(),
         inputShapeInfo=inputShapeInfo,
-        dataFeed=dataFeed,
-        losses=torchWriter.losses,
+        dataFlow=dataFlow,
+        loss=loss,
         optimizer=torchWriter.optimizer,
-        passes=passes,
+        patterns=patterns,
         userOptions=opts,
         deviceInfo=popart.DeviceManager().createCpuDevice())
 
@@ -52,7 +60,6 @@ def get_session(fnModel, inputShapeInfo, dataFeed, torchWriter, passes, opts):
     session.weightsFromHost()
 
     print("Writing Optimizer tensors to device, if there are any")
-    session.optimizerFromHost()
 
     return session
 
@@ -72,8 +79,8 @@ def compare_models(model_A0, model_A1, model_B0, model_B1):
     return difference
 
 
-def run(torchWriter, passes, outputdir, cifarInIndices):
-    dataFeed = torchWriter.dataFeed
+def run(torchWriter, patterns, outputdir, cifarInIndices):
+    dataFlow = torchWriter.dataFlow
     inputShapeInfo = torchWriter.inputShapeInfo
 
     fnModel0 = os.path.join(outputdir, "model0.onnx")
@@ -88,7 +95,7 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
         # the amount of data loaded for each step.
         # note this is not the batch size, it's the "step" size
         # (samples per step)
-        batch_size=torchWriter.samplesPerBatch * dataFeed.batchesPerStep(),
+        batch_size=torchWriter.samplesPerBatch * dataFlow.batchesPerStep(),
         shuffle=False)
 
     popart.getLogger().setLevel("TRACE")
@@ -98,8 +105,8 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
     opts.logDir = outputdir
     opts.constantWeights = False
 
-    session = get_session(fnModel0, inputShapeInfo, dataFeed, torchWriter,
-                          passes, opts)
+    session = get_session(fnModel0, inputShapeInfo, dataFlow, torchWriter,
+                          patterns, opts)
 
     def addStepDimension(data, batchesPerStep):
         if batchesPerStep == 1:
@@ -120,7 +127,7 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
             for tenId in cifarInIndices.keys():
                 inputs[tenId] = \
                     addStepDimension(data[cifarInIndices[tenId]].numpy(),
-                                     session.dataFeed.batchesPerStep())
+                                     session.dataFlow.batchesPerStep())
             stepi += 1
 
             torchWriter.train(inputs)
@@ -173,16 +180,14 @@ samplesPerBatch = 2
 batchesPerStep = 3
 
 # anchors and how to return them : in this example,
-# return the l1 loss "l1LossVal",
-# the tensor to which the loss is applied "out",
+# return the l1 loss "out",
 # and the input tensor "image0"
 anchors = {
-    "l1LossVal": popart.AnchorReturnType("FINAL"),
-    "out": popart.AnchorReturnType("FINAL"),
-    "image0": popart.AnchorReturnType("FINAL")
+    "out": popart.AnchorReturnType("Final"),
+    "image0": popart.AnchorReturnType("Final")
 }
 
-dataFeed = popart.DataFlow(batchesPerStep, anchors)
+dataFlow = popart.DataFlow(batchesPerStep, anchors)
 
 # willow is non-dynamic. All input Tensor shapes and
 # types must be fed into the Session constructor.
@@ -192,17 +197,10 @@ inputShapeInfo.add(
     "image0", popart.TensorInfo("FLOAT", [samplesPerBatch, nChans, 32, 32]))
 
 inNames = ["image0"]
-
-# outNames: not the same as anchors,
-# outNames: not the same as anchors,
-# these are the Tensors which will be
-# connected to the loss layers
 outNames = ["out"]
 
 # cifar training data loader : at index 0 : image, at index 1 : label.
 cifarInIndices = {"image0": 0}
-
-losses = [popart.L1Loss("out", "l1LossVal", 0.1)]
 
 # The optimization passes to run in the Ir, see patterns.hpp
 willowOptPasses = popart.Patterns()
@@ -224,6 +222,7 @@ class Module0(torch.nn.Module):
         image0 = inputs[0]
         x = self.conv1(image0)
         x = self.relu(x)
+        x = torch.sum(0.1 * torch.abs(x))  # l1loss
         return x
 
 
@@ -234,10 +233,9 @@ torch.manual_seed(1)
 torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
-    losses=losses,
     optimizer=popart.ConstSGD(0.001),
     inputShapeInfo=inputShapeInfo,
-    dataFeed=dataFeed,
+    dataFlow=dataFlow,
     # Torch specific:
     module=Module0(),
     samplesPerBatch=samplesPerBatch)

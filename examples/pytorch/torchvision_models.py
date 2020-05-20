@@ -105,7 +105,6 @@ def get_options(opts):
 
     # Enable auto-sharding
     if opts.num_ipus > 1 and opts.num_ipus > opts.replication_factor:
-        options.enableVirtualGraphs = True
         options.virtualGraphMode = popart.VirtualGraphMode.Auto
 
     # Enable pipelining
@@ -162,7 +161,7 @@ def train_process(opts):
     anchors = torchSession.initAnchorArrays()
 
     torchSession.prepareDevice()
-    torchSession.optimizerFromHost()
+
     torchSession.weightsFromHost()
     print("Compiling popart model took {:.2f}s".format(time.time() - start))
     for epoch in range(opts.epochs):  # loop over the dataset multiple times
@@ -217,9 +216,9 @@ def train_process(opts):
             builder = popart.Builder(onnx_path)
             inferenceSession = popart.InferenceSession(
                 fnModel=builder.getModelProto(),
-                dataFeed=popart.DataFlow(
+                dataFlow=popart.DataFlow(
                     opts.batches_per_step,
-                    {"output_0": popart.AnchorReturnType("ALL")}),
+                    {"output_0": popart.AnchorReturnType("All")}),
                 deviceInfo=get_device(opts.num_ipus, opts.simulation),
                 userOptions=inferenceOpts)
 

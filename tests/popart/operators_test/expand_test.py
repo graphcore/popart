@@ -26,7 +26,7 @@ def grad(dY, X, dt):
 
 def run_and_test_value(op_tester, inplace, init_builder, reference, mode):
     if inplace:
-        op_tester.passes = ['InPlace']
+        op_tester.patterns = ['InPlace']
     session = op_tester.run(init_builder, reference, mode, {
         "ai.onnx": 8,
         "ai.graphcore": 1
@@ -194,7 +194,7 @@ def expand_non_one_smaller_output(op_tester, inplace):
 
     with pytest.raises(popart.popart_exception) as e_info:
         if inplace:
-            op_tester.passes = ['InPlace']
+            op_tester.patterns = ['InPlace']
         session = op_tester.run(init_builder, None, 'infer')
         if inplace:
             ir = json.loads(
@@ -284,6 +284,8 @@ def test_expand_mul():
             o = builder.aiOnnx.mul([mul, ones_in])
 
         builder.addOutputTensor(o)
+        loss = builder.aiGraphcore.identityloss([o])
+
         anchor_returns = [
             o,
             popart.reservedGradientPrefix() + o,
@@ -292,13 +294,13 @@ def test_expand_mul():
         ]
 
         opts = popart.SessionOptions()
-        session = popart.TrainingSession(
-            fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(1, anchor_returns),
-            deviceInfo=tu.create_test_device(),
-            optimizer=popart.ConstSGD(0.1),
-            losses=[popart.L1Loss(o, "loss", 0.1)],
-            userOptions=opts)
+        session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                         dataFlow=popart.DataFlow(
+                                             1, anchor_returns),
+                                         deviceInfo=tu.create_test_device(),
+                                         optimizer=popart.ConstSGD(0.1),
+                                         loss=loss,
+                                         userOptions=opts)
 
         anchors = session.initAnchorArrays()
         inputs = {i1: in_}
@@ -306,7 +308,6 @@ def test_expand_mul():
 
         session.prepareDevice()
         session.weightsFromHost()
-        session.optimizerFromHost()
         return session, stepio, anchors, anchor_returns
 
     sess1, stepio1, anch1, arts1 = get_session(True)

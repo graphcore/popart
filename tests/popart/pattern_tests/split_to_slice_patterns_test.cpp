@@ -31,9 +31,9 @@ BOOST_AUTO_TEST_CASE(SplitToSliceTest0) {
 
   // Create the IR
   auto dataFlow = DataFlow(1,
-                           {{outs.at(0), AnchorReturnType("ALL")},
-                            {outs.at(1), AnchorReturnType("ALL")},
-                            {outs.at(2), AnchorReturnType("ALL")}});
+                           {{outs.at(0), AnchorReturnType("All")},
+                            {outs.at(1), AnchorReturnType("All")},
+                            {outs.at(2), AnchorReturnType("All")}});
 
   SessionOptions userOptions;
   userOptions.virtualGraphMode = VirtualGraphMode::Off;
@@ -48,7 +48,7 @@ BOOST_AUTO_TEST_CASE(SplitToSliceTest0) {
               nullptr,
               *device,
               userOptions,
-              Patterns({PreAliasPatternType::SPLITOP})});
+              Patterns({PreAliasPatternType::SplitOp})});
 
   BOOST_CHECK(ir.opsOfType(Onnx::Operators::Slice_1).size() == 3);
   BOOST_CHECK(ir.opsOfType(Onnx::Operators::Split_2).size() == 0);

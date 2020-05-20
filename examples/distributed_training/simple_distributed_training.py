@@ -27,17 +27,14 @@ def create_model():
     a = builder.aiOnnx.add([h, b])
 
     output = a
-    builder.addOutputTensor(output)
     probs = builder.aiOnnx.softmax([output])
-
     label_shape = popart.TensorInfo("INT32", [batch_size])
     label = builder.addInputTensor(label_shape)
-
-    loss = popart.NllLoss(probs, label, "nllLossVal")
+    nll = popart.aiGraphcore.nllloss([output, label])
 
     proto = builder.getModelProto()
 
-    return builder, proto, x, label, output, loss
+    return builder, proto, x, label, output, nll
 
 
 def get_device(simulation=True):
@@ -68,10 +65,10 @@ def init_session(proto, loss, dataFlow, userOpts, device):
     # Create a session to compile and execute the graph
     optimizer = popart.SGD({"defaultLearningRate": (0.1, False)})
     session = popart.TrainingSession(fnModel=proto,
-                                     losses=[loss],
+                                     loss=loss,
                                      deviceInfo=device,
                                      optimizer=optimizer,
-                                     dataFeed=dataFlow,
+                                     dataFlow=dataFlow,
                                      userOptions=userOpts)
 
     session.prepareDevice()
@@ -84,12 +81,12 @@ def init_session(proto, loss, dataFlow, userOpts, device):
 
 
 def train():
-    builder, proto, data_in, labels_in, output, loss, = create_model()
+    builder, proto, data_in, labels_in, output, loss = create_model()
 
     batches_per_step = 32
     anchor_desc = {
-        output: popart.AnchorReturnType("ALL"),
-        loss.output(0): popart.AnchorReturnType("ALL")
+        output: popart.AnchorReturnType("All"),
+        loss: popart.AnchorReturnType("All")
     }
     dataFlow = popart.DataFlow(batches_per_step, anchor_desc)
 
@@ -109,7 +106,6 @@ def train():
         hvd.broadcast_weights(training.session, root_rank=0)
 
     training.session.weightsFromHost()
-    training.session.optimizerFromHost()
 
     # Synthetic data
     data = np.random.normal(size=(batches_per_step, batch_size, 784)).astype(

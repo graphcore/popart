@@ -12,7 +12,7 @@ public:
   // converted to normal matmuls in preperation for outlining,
   // they remember what they where originally so we can use the
   // correct poplar fullyConnectedPass option
-  enum class Phase { Fwd, BwdLhs, BwdRhs };
+  enum class Phase { Fwd, BwdLHS, BwdRHS };
 
   struct SerialiseSettings {
     enum class Mode { None, InputChannels, ReducingDim, OutputChannels };

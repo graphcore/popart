@@ -51,9 +51,6 @@ void transfer(Op *from, Op *to) {
   for (auto &input : inputMap) {
     for (auto &index : input.second) {
       from->disconnectInTensor(index, input.first);
-      if (index > 0 && dynamic_cast<IdentityOp *>(to)) {
-        continue;
-      }
       to->connectInTensor(index, input.first->id);
     }
   }
@@ -74,7 +71,6 @@ void transfer(Op *from, Op *to) {
 
 bool DynamicOpTransform::apply(Graph &graph) const {
   logging::transform::debug("[DynamicOpTransform] Started.");
-  Inplace inplace;
 
   auto &ir      = graph.getIr();
   auto schedule = graph.getOpSchedule({});
@@ -141,15 +137,22 @@ bool DynamicOpTransform::apply(Graph &graph) const {
     if (DynamicUpdateToUpdateGradOp *oldOp =
             dynamic_cast<DynamicUpdateToUpdateGradOp *>(op)) {
       if (oldOp->isNotOverlapping()) {
-        std::unique_ptr<IdentityOp> newOp = std::make_unique<IdentityOp>(
-            Onnx::AiOnnx::OpSet11::Identity, op->getSettings());
-        op = newOp.get();
-        graph.moveIntoGraph(std::move(newOp));
-        transfer(oldOp, op);
-        op->setup();
-        schedule[i] = op;
+        Tensor *input = oldOp->input->tensor(
+            DynamicUpdateToUpdateGradOp::getUpdateInIndex());
+        Tensor *output = oldOp->output->tensors().front();
+        for (Op *consumer : output->consumers.getOps()) {
+          auto indices = consumer->input->indices(output);
+          consumer->disconnectInTensor(output);
+          for (auto index : indices) {
+            consumer->connectInTensor(index, input->id);
+          }
+        }
+        oldOp->disconnectAllInputs();
+        oldOp->disconnectAllOutputs();
+        oldOp->getGraph().eraseOp(oldOp->id);
+        op          = nullptr;
+        schedule[i] = nullptr;
       } else {
-
         std::unique_ptr<DynamicZeroOp> newOp = std::make_unique<DynamicZeroOp>(
             Onnx::CustomOperators::DynamicZero_1,
             oldOp->getAxes(),
@@ -179,8 +182,7 @@ bool DynamicOpTransform::apply(Graph &graph) const {
     }
 
     // Dynamic update tensor layout preference is Update <- In
-    if (DynamicTernaryBaseOp *dynamicTernary =
-            dynamic_cast<DynamicTernaryBaseOp *>(op)) {
+    if (dynamic_cast<DynamicTernaryBaseOp *>(op)) {
       if (op->settings.inferTensorMappingToFrom.empty()) {
         op->settings.inferTensorMappingToFrom.insert(
             {DynamicTernaryBaseOp::getUpdateInIndex(),
@@ -212,13 +214,15 @@ void DynamicOpTransform::gradSumToGradChain(
       auto initOp = std::make_unique<InitOp>(Onnx::CustomOperators::Init_1,
                                              gradTensor->info,
                                              TensorType::ActGrad,
-                                             InitType::ZERO,
+                                             InitType::Zero,
                                              kv.second.front()->getSettings());
       Op *init    = initOp.get();
       init->setName("GradInit_" + gradTensor->id);
       if (kv.second.front()->hasBatchSerializedPhase()) {
         init->setBatchSerializedPhase(-1);
       }
+      init->toLoss   = PathToLoss::No;
+      init->fromLoss = PathFromLoss::Yes;
       ir.getMainGraph().moveIntoGraph(std::move(initOp));
       init->createAndConnectOutTensor(InitOp::getOutIndex(), lastId);
       init->setup();
@@ -238,45 +242,8 @@ void DynamicOpTransform::gradSumToGradChain(
       }
     }
 
-    // Loop over the remaining producers of inputs to SumOp
-    // Check PingPongPhase, BatchSerializedPhase and PipelineStage.
-    // The maximum value of each of these is applied to the sum
     if (sumRequired) {
-      auto tensorMap = sumOp->input->tensorMap();
-      boost::optional<PingPongPhase> ppp;
-      boost::optional<BatchSerializedPhase> bsp;
-      boost::optional<PipelineStage> ps;
-
-      for (auto indexAndTensor : tensorMap) {
-        if (indexAndTensor.second->hasProducer()) {
-          Op *producerOp = indexAndTensor.second->getProducer();
-          if (producerOp->hasBatchSerializedPhase()) {
-            if (bsp.is_initialized()) {
-              bsp = std::max(bsp.get(), producerOp->getBatchSerializedPhase());
-            } else {
-              bsp = producerOp->getBatchSerializedPhase();
-            }
-          }
-          if (producerOp->hasPingPongPhase()) {
-            if (ppp.is_initialized()) {
-              ppp = std::max(ppp.get(), producerOp->getPingPongPhase());
-            } else {
-              ppp = producerOp->getPingPongPhase();
-            }
-          }
-          if (producerOp->hasPipelineStage()) {
-            if (ps.is_initialized()) {
-              ps = std::max(ps.get(), producerOp->getPipelineStage());
-            } else {
-              ps = producerOp->getPipelineStage();
-            }
-          }
-        }
-      }
-
-      sumOp->setPingPongPhase(ppp);
-      sumOp->setBatchSerializedPhase(bsp);
-      sumOp->setPipelineStage(ps);
+      sumOp->inheritPlacementAttributes(true);
       sumOp->setup();
     } else {
       ir.getMainGraph().eraseOp(sumOp->id);

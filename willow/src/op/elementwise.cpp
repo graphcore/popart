@@ -31,8 +31,8 @@ ElementWiseNonLinearUnaryGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
       {getGradInIndex(),
        ElementWiseUnaryOp::getOutIndex(),
-       GradOpInType::GRADOUT},
-      {getFwdArgInIndex(), ElementWiseUnaryOp::getInIndex(), GradOpInType::IN}};
+       GradOpInType::GradOut},
+      {getFwdArgInIndex(), ElementWiseUnaryOp::getInIndex(), GradOpInType::In}};
 
   return inInfo;
 }

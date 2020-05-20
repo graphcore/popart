@@ -43,7 +43,7 @@ BOOST_AUTO_TEST_CASE(InplaceAnchortest1) {
 
   // Create the IR
   auto dataFlow = DataFlow(
-      1, {{sc0, AnchorReturnType("ALL")}, {sc2, AnchorReturnType("ALL")}});
+      1, {{sc0, AnchorReturnType("All")}, {sc2, AnchorReturnType("All")}});
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(InplaceAnchortest1) {
               nullptr,
               *device,
               {},
-              Patterns(PatternsLevel::NONE).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
 
   auto sched = ir.getOpSchedule({});
   BOOST_CHECK(sched.size() == 3);
@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE(InplaceAnchorTest2) {
 
   // Create the IR
   auto dataFlow = DataFlow(
-      1, {{A, AnchorReturnType("ALL")}, {out, AnchorReturnType("ALL")}});
+      1, {{A, AnchorReturnType("All")}, {out, AnchorReturnType("All")}});
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE(InplaceAnchorTest2) {
               nullptr,
               *device,
               {},
-              Patterns(PatternsLevel::NONE).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
 
   auto sched = ir.getOpSchedule({});
   BOOST_CHECK(sched.size() == 4);
@@ -160,7 +160,7 @@ BOOST_AUTO_TEST_CASE(InplaceAnchorTest3) {
 
   // Create the IR
   auto dataFlow = DataFlow(
-      1, {{s0, AnchorReturnType("ALL")}, {s1, AnchorReturnType("ALL")}});
+      1, {{s0, AnchorReturnType("All")}, {s1, AnchorReturnType("All")}});
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
@@ -171,7 +171,7 @@ BOOST_AUTO_TEST_CASE(InplaceAnchorTest3) {
               nullptr,
               *device,
               {},
-              Patterns(PatternsLevel::NONE).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
 
   auto sched = ir.getOpSchedule({});
   BOOST_CHECK(sched.size() == 5);

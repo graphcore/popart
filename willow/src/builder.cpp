@@ -51,13 +51,13 @@ static void verifyWindowParameters(std::unique_ptr<BuilderImpl> &impl,
   if (padding.size() != num_spatial_dims * 2) {
     throw error("Padding vector (length {}) does not have 2 values for each "
                 "spatial dimension {}",
-                strides.size(),
+                padding.size(),
                 num_spatial_dims);
   }
   if (dilation.size() != 0 && dilation.size() != num_spatial_dims) {
     throw error(
         "Length of dilations vector {} != number of spatial dimensions {}",
-        strides.size(),
+        dilation.size(),
         num_spatial_dims);
   }
 
@@ -173,6 +173,32 @@ static void verify_AiOnnxOpset7_AveragePool_7(
           attributes["kernel_shape"]));
 }
 
+static void verify_AiOnnxOpset10_AveragePool_10(
+    std::unique_ptr<BuilderImpl> &impl,
+    std::vector<TensorId> inputs,
+    std::map<std::string, boost::any> attributes) {
+  verifyWindowParameters(
+      impl,
+      inputs[0],
+      boost::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
+      boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
+      boost::any_cast<const std::vector<int64_t> &>(
+          attributes["kernel_shape"]));
+}
+
+static void verify_AiOnnxOpset11_AveragePool_11(
+    std::unique_ptr<BuilderImpl> &impl,
+    std::vector<TensorId> inputs,
+    std::map<std::string, boost::any> attributes) {
+  verifyWindowParameters(
+      impl,
+      inputs[0],
+      boost::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
+      boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
+      boost::any_cast<const std::vector<int64_t> &>(
+          attributes["kernel_shape"]));
+}
+
 static void
 verify_AiOnnxOpset6_MaxPool_1(std::unique_ptr<BuilderImpl> &impl,
                               std::vector<TensorId> inputs,
@@ -213,7 +239,19 @@ verify_AiOnnxOpset10_MaxPool_10(std::unique_ptr<BuilderImpl> &impl,
 }
 
 static void
-verify_AiOnnxOpset6_Pad_2(std::unique_ptr<BuilderImpl> &impl,
+verify_AiOnnxOpset11_MaxPool_11(std::unique_ptr<BuilderImpl> &impl,
+                                std::vector<TensorId> inputs,
+                                std::map<std::string, boost::any> attributes) {
+  verifyWindowParameters(
+      impl,
+      inputs[0],
+      boost::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
+      boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
+      boost::any_cast<const std::vector<int64_t> &>(
+          attributes["kernel_shape"]));
+}
+
+static void verifyPadBase(std::unique_ptr<BuilderImpl> &impl,
                           std::vector<TensorId> inputs,
                           std::map<std::string, boost::any> attributes) {
 
@@ -227,6 +265,20 @@ verify_AiOnnxOpset6_Pad_2(std::unique_ptr<BuilderImpl> &impl,
         pads.size(),
         rank);
   }
+}
+
+static void
+verify_AiOnnxOpset6_Pad_2(std::unique_ptr<BuilderImpl> &impl,
+                          std::vector<TensorId> inputs,
+                          std::map<std::string, boost::any> attributes) {
+  verifyPadBase(impl, inputs, attributes);
+}
+
+static void
+verify_AiOnnxOpset11_Pad_11(std::unique_ptr<BuilderImpl> &impl,
+                            std::vector<TensorId> inputs,
+                            std::map<std::string, boost::any> attributes) {
+  verifyPadBase(impl, inputs, attributes);
 }
 
 #include "builder.cpp.gen"
@@ -279,8 +331,8 @@ TensorId Builder::addUntypedInputTensor(const std::string &debugPrefix) {
   return impl_->addUntypedInputTensor(debugPrefix);
 }
 
-void Builder::addInputTensorFromHigherScope(const TensorId &tensorId) {
-  impl_->addInputTensorFromHigherScope(tensorId);
+void Builder::addInputTensorFromParentGraph(const TensorId &tensorId) {
+  impl_->addInputTensorFromParentGraph(tensorId);
 }
 
 TensorId Builder::addInitializedInputTensor(const ConstVoidData &initData,
@@ -500,6 +552,54 @@ AiGraphcoreOpset1::replicatedallreduce(const std::vector<TensorId> &args,
            getOpsetVersion(),
            args,
            {},
+           name)
+      .at(0);
+}
+
+TensorId AiGraphcoreOpset1::l1loss(const std::vector<TensorId> &args,
+                                   const float lambda,
+                                   const ReductionType reduction,
+                                   const std::string &name) {
+  std::string reductionString = LossOp::reductionTypeToString(reduction);
+  return impl
+      ->op(Onnx::AiGraphcore::OpSet1::L1,
+           getOpsetVersion(),
+           args,
+           {{"lambda", lambda}, {"reduction", reductionString}},
+           name)
+      .at(0);
+}
+
+TensorId AiGraphcoreOpset1::nllloss(const std::vector<TensorId> &args,
+                                    const ReductionType reduction,
+                                    const boost::optional<int> ignoreIndex,
+                                    const std::string &name) {
+  std::string reductionString = LossOp::reductionTypeToString(reduction);
+
+  std::map<std::string, boost::any> attributes = {
+      {"reduction", reductionString}};
+  if (ignoreIndex) {
+    attributes.emplace("ignoreIndex", ignoreIndex.get());
+  }
+
+  return impl
+      ->op(Onnx::AiGraphcore::OpSet1::Nll,
+           getOpsetVersion(),
+           args,
+           attributes,
+           name)
+      .at(0);
+}
+
+TensorId AiGraphcoreOpset1::identityloss(const std::vector<TensorId> &args,
+                                         const ReductionType reduction,
+                                         const std::string &name) {
+  std::string reductionString = LossOp::reductionTypeToString(reduction);
+  return impl
+      ->op(Onnx::AiGraphcore::OpSet1::IdentityLoss,
+           getOpsetVersion(),
+           args,
+           {{"reduction", reductionString}},
            name)
       .at(0);
 }

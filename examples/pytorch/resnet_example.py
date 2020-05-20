@@ -39,7 +39,6 @@ def main():
     inputs, labels = iter(trainloader).next()
 
     opts = popart.SessionOptions()
-    opts.enableVirtualGraphs = True
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
 
     start = time.process_time()
@@ -60,7 +59,7 @@ def main():
     anchors = torchSession.initAnchorArrays()
 
     torchSession.prepareDevice()
-    torchSession.optimizerFromHost()
+
     torchSession.weightsFromHost()
 
     for epoch in range(10):  # loop over the dataset multiple times

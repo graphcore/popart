@@ -6,6 +6,7 @@
 #include <popart/dataflow.hpp>
 #include <popart/filereader.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/nll.hpp>
@@ -57,9 +58,10 @@ void prepareIr1(popart::Ir &ir) {
   auto act2 = aiOnnx.add({w2, act1}, "act2");
   act2      = aiOnnx.relu({act2});
 
-  auto w3   = builder->addInitializedInputTensor(wData);
-  auto act3 = aiOnnx.add({w2, act2}, "act3");
-  act3      = aiOnnx.relu({act3});
+  auto w3      = builder->addInitializedInputTensor(wData);
+  auto act3    = aiOnnx.add({w3, act2}, "act3");
+  act3         = aiOnnx.relu({act3});
+  auto act3nll = aiGraphcore.nllloss({act3, l0}, ReductionType::Mean);
 
   auto act4 = aiOnnx.add({act2, act3});
 
@@ -77,28 +79,28 @@ void prepareIr1(popart::Ir &ir) {
   // to handle this extension:
   //  act6 = aiOnnx.mul({act6, input1});
   //  act6 = aiOnnx.mul({act6, input3});
+  auto act6l1 = aiGraphcore.l1loss({act6}, 0.1, ReductionType::Mean);
 
   auto act7 = aiOnnx.sin({act6});
   act7      = aiOnnx.sigmoid({act6});
   act7      = aiOnnx.add({act6, act7});
 
-  auto act8 = aiOnnx.mul({act7, act7});
-  auto w6   = builder->addInitializedInputTensor(wData);
-  act8      = aiOnnx.mul({act8, w6});
-  act8      = aiOnnx.add({act8, input3});
+  auto act8   = aiOnnx.mul({act7, act7});
+  auto w6     = builder->addInitializedInputTensor(wData);
+  act8        = aiOnnx.mul({act8, w6});
+  act8        = aiOnnx.add({act8, input3});
+  auto act8l1 = aiGraphcore.l1loss({act8}, 0.2, ReductionType::Sum);
 
-  auto act9 = aiOnnx.relu({act8});
-  act9      = aiOnnx.softmax({act9});
+  auto act9    = aiOnnx.relu({act8});
+  act9         = aiOnnx.softmax({act9});
+  auto act9nll = aiGraphcore.nllloss({act9, l1}, ReductionType::Sum);
 
-  builder->addOutputTensor(act6);
-  builder->addOutputTensor(act3);
-  builder->addOutputTensor(act8);
-  builder->addOutputTensor(act9);
+  auto finalLoss = aiOnnx.sum({act6l1, act8l1, act3nll, act9nll});
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
 
-  auto dataFlow = DataFlow(10, {{act4, AnchorReturnType("ALL")}});
+  auto dataFlow = DataFlow(10, {{act4, AnchorReturnType("All")}});
 
   SessionOptions userOptions;
   userOptions.virtualGraphMode = VirtualGraphMode::Auto;
@@ -106,28 +108,16 @@ void prepareIr1(popart::Ir &ir) {
 
   auto optimizer = ConstSGD(0.01);
 
-  auto loss1 =
-      std::make_shared<L1Loss>(act6, "l1LossVal_1", 0.1, ReductionType::MEAN);
-
-  auto loss2 =
-      std::make_shared<L1Loss>(act8, "l1LossVal_2", 0.2, ReductionType::SUM);
-
-  auto loss3 =
-      std::make_shared<NllLoss>(act3, l0, "nllLossVal_1", ReductionType::MEAN);
-
-  auto loss4 =
-      std::make_shared<NllLoss>(act9, l1, "nllLossVal_2", ReductionType::SUM);
-
   auto device = createTestDevice(TEST_TARGET, 3);
 
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              {loss1, loss2, loss3, loss4},
+              finalLoss,
               &optimizer,
               *device,
               userOptions,
-              Patterns(PatternsLevel::DEFAULT)});
+              Patterns(PatternsLevel::Default)});
 }
 
 void prepareIr0(popart::Ir &ir) {
@@ -185,12 +175,12 @@ void prepareIr0(popart::Ir &ir) {
   auto act5            = aiOnnx.add({w5, act4}, "act5");
   act5                 = aiOnnx.relu({act5});
 
-  builder->addOutputTensor(act5);
+  auto l1 = builder->aiGraphcoreOpset1().l1loss({act5}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
 
-  auto dataFlow = DataFlow(10, {{act0, AnchorReturnType("ALL")}});
+  auto dataFlow = DataFlow(10, {{act0, AnchorReturnType("All")}});
 
   SessionOptions userOptions;
   userOptions.virtualGraphMode = VirtualGraphMode::Auto;
@@ -198,19 +188,16 @@ void prepareIr0(popart::Ir &ir) {
 
   auto optimizer = ConstSGD(0.01);
 
-  auto loss =
-      std::make_shared<L1Loss>(act5, "l1LossVal", 0.1, ReductionType::SUM);
-
   auto device = createTestDevice(TEST_TARGET, 3);
 
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              {loss},
+              l1,
               &optimizer,
               *device,
               userOptions,
-              Patterns(PatternsLevel::DEFAULT)});
+              Patterns(PatternsLevel::Default)});
 }
 
 // We check that the topological constraints on Stash and Restore are satisfied

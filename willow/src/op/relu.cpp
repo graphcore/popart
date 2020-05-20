@@ -62,8 +62,8 @@ const std::vector<GradInOutMapper> &ReluGradOp::gradInputInfo() const {
   // The 0's below : As there is only 1 output of Relu, it
   // is output at index 0.
   static const std::vector<GradInOutMapper> inInfo = {
-      {getGradReludInIndex(), ReluOp::getOutIndex(), GradOpInType::GRADOUT},
-      {getReludInIndex(), ReluOp::getOutIndex(), GradOpInType::OUT}};
+      {getGradReludInIndex(), ReluOp::getOutIndex(), GradOpInType::GradOut},
+      {getReludInIndex(), ReluOp::getOutIndex(), GradOpInType::Out}};
   return inInfo;
 }
 

@@ -89,8 +89,8 @@ const std::vector<GradInOutMapper> &SoftmaxGradOp::gradInputInfo() const {
   // input at index 1 (actsIn()): input of softmax (activations before p)
   // the (1-sparse) gradient of the output will be used
   static const std::vector<GradInOutMapper> inInfo = {
-      {getGradProbsInIndex(), SoftmaxOp::getOutIndex(), GradOpInType::GRADOUT},
-      {getActsInIndex(), SoftmaxOp::getInIndex(), GradOpInType::IN}};
+      {getGradProbsInIndex(), SoftmaxOp::getOutIndex(), GradOpInType::GradOut},
+      {getActsInIndex(), SoftmaxOp::getInIndex(), GradOpInType::In}};
   return inInfo;
 }
 
@@ -109,12 +109,12 @@ void SoftmaxGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("axis", axis);
 }
 
-SoftmaxGradDirectOp::SoftmaxGradDirectOp(const NllLoss nls,
-                                         const Op::Settings &settings_)
-    : Op(Onnx::CustomGradOperators::SoftmaxGradDirect, settings_),
-      nllloss_(nls) {}
-
-const NllLoss &SoftmaxGradDirectOp::nlll() const { return nllloss_; }
+SoftmaxGradDirectOp::SoftmaxGradDirectOp(const TensorId lossId,
+                                         const boost::optional<int> ignoreIndex,
+                                         const ReductionType reduction,
+                                         const Op::Settings &settings)
+    : Op(Onnx::CustomGradOperators::SoftmaxGradDirect, settings),
+      lossId_(lossId), reduction_(reduction), ignoreIndex_(ignoreIndex) {}
 
 std::unique_ptr<Op> SoftmaxGradDirectOp::clone() const {
   throw error("Unexpected (but valid) request to clone SoftmaxGradDirectOp");
@@ -122,20 +122,12 @@ std::unique_ptr<Op> SoftmaxGradDirectOp::clone() const {
 
 void SoftmaxGradDirectOp::setup() {
   // gradient of activations has same shape as probabilities
-  outInfo(getOutIndex()) = inInfo(getInIndex());
-
-  // When replacing a SoftmaxGradOp with a SoftmaxGradDirectOp, we are
-  // disconnecting the path from the final loss to the ops downstream.
-  // However, we don't want updateVertices() alter the attributes of these
-  // ops after performing the SoftmaxGradDirectOp transform. So here we
-  // 'pretend' that the SoftmaxGradDirectOp has a path from the final loss.
-  fromLoss = PathFromLoss::Yes;
+  outInfo(getOutIndex()) = inInfo(getProbsInIndex());
 }
 
 bool SoftmaxGradDirectOp::hasNlllFwdOp() const {
-  TensorId lossTensorName = nlll().output(NllLoss::getOutIndex());
-  if (getGraph().getTensors().contains(lossTensorName)) {
-    auto t = getGraph().getTensors().get(lossTensorName);
+  if (getGraph().getTensors().contains(lossId_)) {
+    auto t = getGraph().getTensors().get(lossId_);
     return t->hasProducer();
   }
   return false;
@@ -151,12 +143,10 @@ Op *SoftmaxGradDirectOp::nlllFwdOp() const {
                 id);
   }
 
-  TensorId lossTensorName = nlll().output(NllLoss::getOutIndex());
-
   // Find the op producing the loss tensor, i.e. the
   // corresponding fwd loss op whose bwd op has merged
   // with the SoftmaxGradOp
-  Tensor *lossTensor = getGraph().getTensors().get(lossTensorName);
+  Tensor *lossTensor = getGraph().getTensors().get(lossId_);
   Op *fwdLossOp      = lossTensor->getProducer();
 
   return fwdLossOp;
@@ -164,18 +154,18 @@ Op *SoftmaxGradDirectOp::nlllFwdOp() const {
 
 void SoftmaxGradDirectOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
-  os.appendAttribute("reduction_type",
-                     static_cast<int64_t>(nlll().getReductionType()));
-  os.appendAttribute("has_ignore", nlll().hasIgnoreIndex());
+  os.appendAttribute("reduction_type", static_cast<int64_t>(reduction_));
+  if (hasIgnoreIndex()) {
+    os.appendAttribute("ignore_index", static_cast<int64_t>(*ignoreIndex_));
+  }
 }
 
 NlllWithSoftmaxGradDirectOp::NlllWithSoftmaxGradDirectOp(
-    const NllLoss nls,
-    const Op::Settings &settings_)
-    : Op(Onnx::CustomGradOperators::NlllWithSoftmaxGradDirect, settings_),
-      nllloss_(nls) {}
-
-const NllLoss &NlllWithSoftmaxGradDirectOp::nlll() const { return nllloss_; }
+    const boost::optional<int> ignoreIndex,
+    const ReductionType reduction,
+    const Op::Settings &settings)
+    : Op(Onnx::CustomGradOperators::NlllWithSoftmaxGradDirect, settings),
+      reduction_(reduction), ignoreIndex_(ignoreIndex) {}
 
 std::unique_ptr<Op> NlllWithSoftmaxGradDirectOp::clone() const {
   return std::make_unique<NlllWithSoftmaxGradDirectOp>(*this);
@@ -187,33 +177,28 @@ void NlllWithSoftmaxGradDirectOp::setup() {
   if (!getIr().getOptimizer().lossScaling().isConst()) {
     connectInTensor(NlllWithSoftmaxGradDirectOp::getLossScalingInIndex(),
                     getIr().getOptimizer().getLossScalingTensorId(
-                        inInfo(nlll().getProbsInIndex()).dataType()));
+                        inInfo(getProbsInIndex()).dataType()));
   }
 
   // gradient of activations has same shape as probabilities
   outInfo(getGradOutIndex()) = inInfo(getProbsInIndex());
 
-  // Outputs a loss for each label index.
-  // Same shape as label input, same datatype as probs input
-  outInfo(getLossOutIndex())
-      .set(inInfo(getProbsInIndex()).dataType(),
-           inInfo(getLabelInIndex()).shape());
+  Shape outShape({});
+  if (getReductionType() == ReductionType::NoReduction) {
+    outShape = inInfo(getLabelInIndex()).shape();
+  }
 
-  // When replacing a Nlll and SoftmaxGradOp with a NlllWithSoftmaxGradDirectOp,
-  // we are disconnecting the path from the final loss to the ops downstream.
-  // However, we don't want updateVertices() alter the attributes of these
-  // ops after performing the NlllWithSoftmaxGradDirectOp transform. So here we
-  // 'pretend' that the NlllWithSoftmaxGradDirectOp has a path from the final
-  // loss.
-  fromLoss = PathFromLoss::Yes;
+  outInfo(getLossOutIndex())
+      .set(inInfo(getProbsInIndex()).dataType(), outShape);
 }
 
 void NlllWithSoftmaxGradDirectOp::appendOutlineAttributes(
     OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
-  os.appendAttribute("reduction_type",
-                     static_cast<int64_t>(nlll().getReductionType()));
-  os.appendAttribute("has_ignore", nlll().hasIgnoreIndex());
+  os.appendAttribute("reduction_type", static_cast<int64_t>(reduction_));
+  if (hasIgnoreIndex()) {
+    os.appendAttribute("ignore_index", static_cast<int64_t>(*ignoreIndex_));
+  }
 }
 
 namespace {

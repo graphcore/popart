@@ -12,7 +12,7 @@
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/ndarraywrapper.hpp>
-#include <popart/op/l1.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/session.hpp>
 #include <popart/tensordata.hpp>
@@ -84,15 +84,17 @@ std::string getTestModelProto(DataType type) {
   auto aiOnnx      = builder->aiOnnxOpset9();
   auto aiGraphcore = builder->aiGraphcoreOpset1();
 
-  auto x4 = aiOnnx.constant(const_data, "x4");
-  auto x0 = builder->addInputTensor(in_info);
-  auto x1 = builder->addInputTensor(in_info);
-  auto x2 = aiOnnx.matmul({x0, x1});
-  auto x3 = aiGraphcore.scale({x2}, 0.5);
-  auto x5 = aiGraphcore.scale({x4}, 0.5);
-  auto c0 = aiOnnx.cast({x5}, "FLOAT");
-  auto x6 = aiOnnx.add({x3, c0});
+  auto x4   = aiOnnx.constant(const_data, "x4");
+  auto x0   = builder->addInputTensor(in_info);
+  auto x1   = builder->addInputTensor(in_info);
+  auto x2   = aiOnnx.matmul({x0, x1});
+  auto x3   = aiGraphcore.scale({x2}, 0.5);
+  auto x5   = aiGraphcore.scale({x4}, 0.5);
+  auto c0   = aiOnnx.cast({x5}, "FLOAT");
+  auto x6   = aiOnnx.add({x3, c0});
+  auto loss = aiGraphcore.identityloss({x6});
   builder->addOutputTensor(x6);
+  builder->addOutputTensor(loss);
 
   auto proto = builder->getModelProto();
   return proto;
@@ -106,19 +108,17 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Scale0) {
   auto model_proto = io::getModelFromString(proto);
 
   // Create the IR
-  auto art       = AnchorReturnType("ALL");
-  TensorId outId = model_proto.graph().output(0).name();
+  auto art       = AnchorReturnType("All");
+  TensorId outId = model_proto.graph().output(1).name();
   auto data_flow = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(outId, "l1LossVal", 0.1, ReductionType::SUM)};
-  auto device = createTestDevice(TEST_TARGET);
+  auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({model_proto,
               InputShapeInfo(),
               data_flow,
-              losses,
+              outId,
               &optimizer,
               *device,
               {}, // no SessionOptions
@@ -142,11 +142,10 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Scale1) {
     auto model_proto = io::getModelFromString(proto);
 
     // Create the IR
-    auto art       = AnchorReturnType("ALL");
+    auto art       = AnchorReturnType("All");
     TensorId outId = model_proto.graph().output(0).name();
     auto data_flow = DataFlow(1, {{outId, art}});
     auto optimizer = ConstSGD(0.01);
-    std::vector<Loss *> losses{};
 
     auto device = popart::createTestDevice(TEST_TARGET);
 
@@ -154,7 +153,6 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Scale1) {
         popart::InferenceSession::createFromOnnxModel(proto,
                                                       data_flow,
                                                       device,
-                                                      {}, // no losses
                                                       popart::InputShapeInfo(),
                                                       {}, // no session options
                                                       Patterns() // no patterns

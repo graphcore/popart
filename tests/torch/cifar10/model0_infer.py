@@ -12,8 +12,8 @@ args = cmdline.parse()
 
 nChans = 3
 batchesPerStep = 4
-anchors = {"out": popart.AnchorReturnType("EVERYN", 2)}
-dataFeed = popart.DataFlow(batchesPerStep, anchors)
+anchors = {"out": popart.AnchorReturnType("EveryN", 2)}
+dataFlow = popart.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = popart.InputShapeInfo()
 samplesPerBatch = 6
 inputShapeInfo.add(
@@ -21,7 +21,6 @@ inputShapeInfo.add(
 
 inNames = ["image0"]
 outNames = ["out"]
-losses = []
 optimizer = None
 
 #cifar training data loader : at index 0 : image, at index 1 : label.
@@ -54,17 +53,16 @@ torch.manual_seed(1)
 torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
-    losses=losses,
     optimizer=optimizer,
     inputShapeInfo=inputShapeInfo,
-    dataFeed=dataFeed,
+    dataFlow=dataFlow,
     ### Torch specific:
     module=Module0(),
     samplesPerBatch=samplesPerBatch)
 
 # Passes if torch and popart models match
 c10driver.run(torchWriter=torchWriter,
-              passes=None,
+              patterns=None,
               outputdir=args.outputdir,
               cifarInIndices=cifarInIndices,
               device=args.device,

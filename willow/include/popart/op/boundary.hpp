@@ -9,7 +9,8 @@ namespace popart {
 // Dummy Op to signal boundaries
 class BoundaryOp : public Op {
 public:
-  BoundaryOp(Settings settings) : Op(OperatorIdentifier("", "", 0), settings) {}
+  BoundaryOp(const Op::Settings &settings_)
+      : Op(OperatorIdentifier("", "", 0), settings_) {}
   std::unique_ptr<Op> clone() const override {
     return std::make_unique<BoundaryOp>(*this);
   }

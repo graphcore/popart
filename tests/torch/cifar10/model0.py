@@ -26,18 +26,16 @@ batchesPerStep = 4
 # Last batch in step, all samples in step,
 # every N batches in a step? See ir.hpp for details.
 # In this example:
-# the l1 loss "l1LossVal",
-# the tensor to which the loss is applied "out",
+# the l1 loss "out",
 # and the input tensor "image0"
 anchors = {
-    "l1LossVal": popart.AnchorReturnType("EVERYN", 2),
-    "out": popart.AnchorReturnType("FINAL"),
-    "image0": popart.AnchorReturnType("ALL")
+    "out": popart.AnchorReturnType("EveryN", 2),
+    "image0": popart.AnchorReturnType("All")
 }
 
-dataFeed = popart.DataFlow(batchesPerStep, anchors)
+dataFlow = popart.DataFlow(batchesPerStep, anchors)
 
-# willow is non-dynamic. All input Tensor shapes and
+# PopART is non-dynamic. All input Tensor shapes and
 # types must be fed into the Session constructor.
 # In this example there is 1 streamed input, image0.
 inputShapeInfo = popart.InputShapeInfo()
@@ -47,14 +45,14 @@ inputShapeInfo.add("image0",
 inNames = ["image0"]
 
 # outNames: not the same as anchors,
-# these are the Tensors which will be
-# connected to the loss layers
+# these are the outputs of the onnx
+# model. In training these are the
+# this is the scalar loss on which
+# 'backward' is called
 outNames = ["out"]
 
 #cifar training data loader : at index 0 : image, at index 1 : label.
 cifarInIndices = {"image0": 0}
-
-losses = [popart.L1Loss("out", "l1LossVal", 0.1)]
 
 
 class Module0(torch.nn.Module):
@@ -69,10 +67,11 @@ class Module0(torch.nn.Module):
         self.relu = torch.nn.functional.relu
 
     def forward(self, inputs):
-        """out = relu(conv(in))"""
+        """out = l1loss(relu(conv(in)))"""
         image0 = inputs[0]
         x = self.conv1(image0)
         x = self.relu(x)
+        x = torch.sum(0.1 * torch.abs(x))  # l1loss
         return x
 
 
@@ -83,10 +82,9 @@ torch.manual_seed(1)
 torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
-    losses=losses,
     optimizer=popart.ConstSGD(0.001),
     inputShapeInfo=inputShapeInfo,
-    dataFeed=dataFeed,
+    dataFlow=dataFlow,
     ### Torch specific:
     module=Module0(),
     samplesPerBatch=batchSize)

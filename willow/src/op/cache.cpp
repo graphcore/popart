@@ -11,8 +11,8 @@ namespace popart {
 
 CacheStoreOp::CacheStoreOp(const OperatorIdentifier &_opid,
                            const Op::Settings &settings_,
-                           RemoteBufferId id)
-    : Op(_opid, settings_), remotebuffer_id(id) {}
+                           RemoteBufferId rbid_)
+    : Op(_opid, settings_), remotebuffer_id(rbid_) {}
 
 std::unique_ptr<Op> CacheStoreOp::clone() const {
   return std::make_unique<CacheStoreOp>(*this);
@@ -25,8 +25,8 @@ void CacheStoreOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 
 CacheLoadOp::CacheLoadOp(const OperatorIdentifier &_opid,
                          const Op::Settings &settings_,
-                         RemoteBufferId id)
-    : Op(_opid, settings_), remotebuffer_id(id) {}
+                         RemoteBufferId rbid_)
+    : Op(_opid, settings_), remotebuffer_id(rbid_) {}
 
 std::unique_ptr<Op> CacheLoadOp::clone() const {
   return std::make_unique<CacheLoadOp>(*this);
@@ -43,7 +43,7 @@ void CacheLoadOp::setup() {
 
 view::Regions CacheLoadOp::modifies(InIndex index) const {
   if (index == getCachedTensorInIndex()) {
-    return {view::Region::getFull(inShape(index), view::AccessType::WRITE)};
+    return {view::Region::getFull(inShape(index), view::AccessType::Write)};
   } else if (index == getRemoteBufferOffsetInIndex()) {
     return {view::Region::getEmpty(inRank(index))};
   } else {
@@ -53,7 +53,7 @@ view::Regions CacheLoadOp::modifies(InIndex index) const {
 
 view::Regions CacheLoadOp::aliases(InIndex in, OutIndex) const {
   if (in == getCachedTensorInIndex()) {
-    return {view::Region::getFull(inShape(in), view::AccessType::WRITE)};
+    return {view::Region::getFull(inShape(in), view::AccessType::Write)};
   } else if (in == getRemoteBufferOffsetInIndex()) {
     return {view::Region::getEmpty(inRank(in))};
   } else {
@@ -111,7 +111,7 @@ static OpCreator<CacheLoadOp> cacheLoadOpCreator(
     },
     true);
 
-static OpCreator<CacheLoadOp> cacheStoreOpCreator(
+static OpCreator<CacheStoreOp> cacheStoreOpCreator(
     OpDefinitions({{Onnx::CustomOperators::CacheStore, cacheStoreOpDef}}),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,

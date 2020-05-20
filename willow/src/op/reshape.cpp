@@ -171,7 +171,7 @@ ReshapeGradOp::ReshapeGradOp(const ReshapeOp &op_)
 const std::vector<GradInOutMapper> &ReshapeGradOp::gradInputInfo() const {
   // input at index 0 : gradient of output of reshape
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), ReshapeOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getInIndex(), ReshapeOp::getOutIndex(), GradOpInType::GradOut}};
   return inInfo;
 }
 

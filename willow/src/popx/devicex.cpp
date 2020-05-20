@@ -7,6 +7,7 @@
 #include <random>
 #include <set>
 #include <tuple>
+#include <utility>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/range/algorithm/find.hpp>
@@ -37,6 +38,7 @@
 #include <popart/op/getrandomseed.hpp>
 #include <popart/op/if.hpp>
 #include <popart/op/init.hpp>
+#include <popart/op/iotilecopy.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/restore.hpp>
 #include <popart/op/subgraphop.hpp>
@@ -45,6 +47,7 @@
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/devicexmanager.hpp>
 #include <popart/popx/op/callx.hpp>
+#include <popart/popx/op/collectives/collectivesx.hpp>
 #include <popart/popx/opx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/popx/poplaroptionsx.hpp>
@@ -171,7 +174,7 @@ private:
             (op->getIr().getSessionOptions().pingPongPhases >= 2 &&
              op->hasPingPongPhase() && x->hasPingPongPhase() &&
              op->getPingPongPhase() == x->getPingPongPhase());
-        if (x->settings.recomputeType == RecomputeType::RECOMPUTE &&
+        if (x->settings.recomputeType == RecomputeType::Recompute &&
             alreadySeen.find({x, opPhase}) == alreadySeen.end() &&
             !samePingPongPhase) {
           toRerun.insert(x);
@@ -187,7 +190,7 @@ private:
   std::set<Op *> getPipelineRecomputeOps(Op *op, PingPongPhase opPhase) {
     std::set<Op *> toRerun;
     walkProducers(op, [&toRerun, &op, opPhase, this](Op *x) {
-      if (x->settings.recomputeType == RecomputeType::RECOMPUTE &&
+      if (x->settings.recomputeType == RecomputeType::Recompute &&
           alreadySeen.find({x, opPhase}) == alreadySeen.end() &&
           x->getPipelineStage() != op->getPipelineStage()) {
         toRerun.insert(x);
@@ -498,7 +501,7 @@ Devicex::getMainGraphOpString(const std::vector<TaskId> &taskOrder) const {
         type = "preL";
       } else if (found != 0) {
         type = "re.1";
-      } else if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
+      } else if (op->settings.recomputeType == RecomputeType::Recompute) {
         type = "re.0";
       } else {
         std::ostringstream ss2;
@@ -507,7 +510,7 @@ Devicex::getMainGraphOpString(const std::vector<TaskId> &taskOrder) const {
         type = ss2.str();
       }
       type +=
-          op->settings.recomputeType == RecomputeType::RECOMPUTED ? "-R" : "-F";
+          op->settings.recomputeType == RecomputeType::Recomputed ? "-R" : "-F";
       if (logging::shouldLog(logging::Module::devicex, logging::Level::Trace)) {
         ss << type << "  " << seriesNums[op] << "  " << op->debugName()
            << "  PingPong: "
@@ -554,7 +557,7 @@ void Devicex::weightsToHost() {
     logging::devicex::debug("Writing weights to host");
     pEngine->disableExecutionProfiling();
     // Weights on the IPU
-    run(PopPrograms::ProgramIndex::WEIGHTSTOHOST);
+    run(PopPrograms::ProgramIndex::WeightstoHost);
     // Weights in the remote buffers
     remoteBufferWeightsToHost();
     logging::devicex::debug("Writing weights to host complete.");
@@ -564,16 +567,44 @@ void Devicex::weightsToHost() {
 void Devicex::remoteBufferWeightsToHost() {
   for (auto initId : ir().getTensorIds(TensorType::Variable)) {
     Tensor *tensor = ir().getTensor(initId);
-    if (tensor->isCached()) {
+    if (tensor->cacheInfo.isCached()) {
       logging::devicex::debug("remoteBufferWeightsToHost: {}", initId);
-      auto remoteBufferInfo = tensor->getRemoteBufferInfo();
+      auto remoteBufferInfo = tensor->cacheInfo.getRemoteBufferInfo();
       char *data0           = d2hWeightBuffers[initId].data();
-      // Weight should be the same for each replica, only return 0
-      pEngine->copyFromRemoteBuffer(
-          getRemoteBuffer(remoteBufferInfo.first).first,
-          data0,
-          static_cast<int>(remoteBufferInfo.second),
-          0);
+
+      if (tensor->cacheInfo.isSharded()) {
+        // Replicated weight sharding, each replica holds 1/repfactor
+        // parts of the weight
+        auto cbr =
+            getCollectiveBalancedReorder(getCacheArgTensorId(tensor->id));
+
+        auto elemSize = cbr->getElementByteSize();
+        auto nelms    = cbr->getNumRearrangedTensorElems();
+
+        // Temporary buffer that can hold the padded weight shards
+        // from all replicas
+        std::vector<char> tmp(nelms * elemSize);
+
+        for (unsigned replica_id = 0; replica_id < getReplicationFactor();
+             ++replica_id) {
+          pEngine->copyFromRemoteBuffer(
+              getRemoteBuffer(remoteBufferInfo.first).first,
+              &tmp[replica_id * nelms / getReplicationFactor() * elemSize],
+              static_cast<int>(remoteBufferInfo.second),
+              replica_id);
+        }
+
+        // Rearrange collected weights into d2h buffer
+        cbr->undoRearrangeForCollective(&tmp[0], data0);
+      } else {
+        // Weight should be the same for each replica if not using sharded,
+        // only return weights from replica_id == 0
+        pEngine->copyFromRemoteBuffer(
+            getRemoteBuffer(remoteBufferInfo.first).first,
+            data0,
+            static_cast<int>(remoteBufferInfo.second),
+            0);
+      }
     }
   }
 }
@@ -621,7 +652,7 @@ void Devicex::weightsToHost(
 
     pEngine->disableExecutionProfiling();
     // Weights on the IPU
-    run(PopPrograms::ProgramIndex::WEIGHTSTOHOST);
+    run(PopPrograms::ProgramIndex::WeightstoHost);
     // Weights in the remote buffers
     remoteBufferWeightsToHost();
 
@@ -630,7 +661,7 @@ void Devicex::weightsToHost(
     // addresses on onnxModelData
     for (auto id : ir().getTensorIds(TensorType::Variable)) {
       if (!ir().streamingIsDisabledForTensor(id) ||
-          ir().getTensor(id)->isCached()) {
+          ir().getTensor(id)->cacheInfo.isCached()) {
         auto found = onnxModelData.find(id);
         if (found == onnxModelData.end()) {
           std::ostringstream oss;
@@ -649,31 +680,35 @@ void Devicex::weightsToHost(
   }
 }
 
-const std::string Devicex::cycleCountStreamId() const {
-  return "d2h_" + std::string(cycleCountPrefix());
+const std::string Devicex::cycleCountStreamId(std::string id) const {
+  return "d2h_" + std::string(cycleCountPrefix()) + "_" + id;
 }
 
-void Devicex::instrumentWithHardwareCycleCounter(
-    poplar::program::Sequence &sq) {
+void Devicex::instrumentWithHardwareCycleCounter(poplar::program::Sequence &sq,
+                                                 int64_t tileId,
+                                                 std::string id) {
   poplar::Tensor cycleCountTensor =
-      poplar::cycleCount(graph(), sq, 0, cycleCountPrefix());
+      poplar::cycleCount(graph(), sq, tileId, cycleCountPrefix());
 
   // Create stream
-  auto st = graph().addDeviceToHostFIFO(cycleCountStreamId(),
+  auto st = graph().addDeviceToHostFIFO(cycleCountStreamId(id),
                                         cycleCountTensor.elementType(),
                                         cycleCountTensor.numElements());
+
+  // Allocate host side buffer for cycle count
+  cycleCount[id] = 0;
 
   // Add program fragment to copy to host stream
   auto cyclesToHostStream = poplar::program::Copy(cycleCountTensor, st, true);
   progs.cycleCountTensorToHostFragment().add(cyclesToHostStream);
 }
 
-uint64_t Devicex::cycleCountTensorToHost() {
+std::map<std::string, uint64_t> Devicex::cycleCountTensorToHost() {
   if (ir().getSessionOptions().instrumentWithHardwareCycleCounter) {
     // Calls the copy from device to host
     logging::devicex::debug("Writing cycle count to host");
     pEngine->disableExecutionProfiling();
-    run(PopPrograms::ProgramIndex::CYCLECOUNTTENSORTOHOST);
+    run(PopPrograms::ProgramIndex::CycleCountTensortoHost);
     logging::devicex::debug("Writing cycle count to host complete.");
 
     return cycleCount;
@@ -753,13 +788,26 @@ bool PipelineInfo::doStage(PipelineCycle pCycle, PipelineStage pStage) const {
 poplar::Graph &Devicex::graph() { return *pGraph; }
 const poplar::Graph &Devicex::graph() const { return *pGraph; }
 
-poplar::Graph &Devicex::getVirtualGraph(VGraphId virtualGraphIndex) {
+poplar::Graph &Devicex::getVirtualGraph(VGraphId virtualGraphIndex,
+                                        IsIoTile ioTileGraph) {
   if (virtualGraphIndex < 0 || virtualGraphIndex >= virtualGraphs.size()) {
     throw error("Invalid virtual graph index {} ({} available)",
                 virtualGraphIndex,
                 virtualGraphs.size());
   }
-  return virtualGraphs.at(virtualGraphIndex);
+  VirtualGraph &vg = virtualGraphs.at(virtualGraphIndex);
+
+  if (ioTileGraph) {
+    if (!vg.hasIoTilesGraph()) {
+      throw error("No IO tile graph for index {}", virtualGraphIndex);
+    }
+    return vg.getIoTilesGraph();
+  } else {
+    if (!vg.hasComputeTilesGraph()) {
+      throw error("No compute tile graph for index {}", virtualGraphIndex);
+    }
+    return vg.getComputeTilesGraph();
+  }
 }
 Devicex::~Devicex() = default;
 
@@ -782,7 +830,7 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
     wuConvOptions.options[it.first]  = it.second;
   }
 
-  if (ir.getExecutionMode() == Ir::ExecutionMode::TRAINING) {
+  if (ir.getExecutionMode() == Ir::ExecutionMode::Training) {
     fwdConvOptions.options["pass"] = "TRAINING_FWD";
     lstmOptions.set("inferenceOnly", "false");
   } else {
@@ -838,6 +886,13 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
         "Setting report option {} = {}", it.first, it.second);
     reportOptions.set(it.first, it.second);
   }
+
+  if (std::getenv("GCL_REAL_COLLECTIVES")) {
+    gclOptions.set("useGclCollectives", "true");
+  }
+  if (auto *val = std::getenv("GCL_MAX_BYTES_PER_TILE")) {
+    gclOptions.set("maxBytesPerTile", val);
+  }
 }
 
 void Devicex::weightsFromHost() {
@@ -845,7 +900,7 @@ void Devicex::weightsFromHost() {
     logging::devicex::debug("Writing weights from host, ");
     pEngine->disableExecutionProfiling();
     // Weights on the IPU
-    run(PopPrograms::ProgramIndex::WEIGHTSFROMHOST);
+    run(PopPrograms::ProgramIndex::WeightsFromHost);
     // Weights in the remote buffers
     remoteBufferWeightsFromHost();
     logging::devicex::debug("done.");
@@ -855,18 +910,46 @@ void Devicex::weightsFromHost() {
 void Devicex::remoteBufferWeightsFromHost() {
   for (auto initId : ir().getTensorIds(TensorType::Variable)) {
     Tensor *tensor = ir().getTensor(initId);
-    if (tensor->isCached()) {
+    if (tensor->cacheInfo.isCached()) {
       logging::devicex::debug("remoteBufferWeightsFromHost: {}", initId);
+      auto remoteBufferInfo = tensor->cacheInfo.getRemoteBufferInfo();
       char *data0           = static_cast<char *>(tensor->tensorData()->data());
-      auto remoteBufferInfo = tensor->getRemoteBufferInfo();
-      for (unsigned replica_id = 0; replica_id < getReplicationFactor();
-           ++replica_id) {
-        // Weights to every replica
-        pEngine->copyToRemoteBuffer(
-            data0,
-            getRemoteBuffer(remoteBufferInfo.first).first,
-            static_cast<int>(remoteBufferInfo.second),
-            replica_id);
+
+      if (tensor->cacheInfo.isSharded()) {
+        // Replicated weight sharding, each replica holds 1/repfactor
+        // parts of the weight
+        auto cbr =
+            getCollectiveBalancedReorder(getCacheArgTensorId(tensor->id));
+
+        auto elemSize = cbr->getElementByteSize();
+        auto nelms    = cbr->getNumRearrangedTensorElems();
+
+        // Temporary buffer that can hold the padded weight shards
+        // for all replicas
+        std::vector<char> tmp(nelms * elemSize);
+
+        // Rearrange weights into tmp buffer
+        cbr->rearrangeForCollective(data0, &tmp[0]);
+
+        for (unsigned replica_id = 0; replica_id < getReplicationFactor();
+             ++replica_id) {
+          // 1/repfactor weight shard to each replica
+          pEngine->copyToRemoteBuffer(
+              &tmp[replica_id * nelms / getReplicationFactor() * elemSize],
+              getRemoteBuffer(remoteBufferInfo.first).first,
+              static_cast<int>(remoteBufferInfo.second),
+              replica_id);
+        }
+      } else {
+        for (unsigned replica_id = 0; replica_id < getReplicationFactor();
+             ++replica_id) {
+          // Identical weights to each replica
+          pEngine->copyToRemoteBuffer(
+              data0,
+              getRemoteBuffer(remoteBufferInfo.first).first,
+              static_cast<int>(remoteBufferInfo.second),
+              replica_id);
+        }
       }
     }
   }
@@ -876,7 +959,7 @@ void Devicex::optimizerFromHost() {
   if (ir().useSyntheticData() == false) {
     logging::devicex::debug("Writing optimizer from host, ");
     pEngine->disableExecutionProfiling();
-    run(PopPrograms::ProgramIndex::OPTIMIZERFROMHOST);
+    run(PopPrograms::ProgramIndex::OptimizerFromHost);
     logging::devicex::debug("done.");
   }
 }
@@ -966,7 +1049,7 @@ void Devicex::run(IStepIO &stepio) {
   anchorsHostFromHostStreams(stepio);
 
   pEngine->enableExecutionProfiling();
-  run(PopPrograms::ProgramIndex::PROGRAM);
+  run(PopPrograms::ProgramIndex::Program);
 
   ++nCallsToRun;
 }
@@ -1009,14 +1092,15 @@ std::pair<TaskId, DependencyType> Devicex::taskWhichCreates(TensorId id) {
   // tasks These tasks are a TENSOR rather than an OUTPUT dependency.
   if (!tensor->hasProducer() ||
       dynamic_cast<SubgraphOp *>(tensor->getProducer()) ||
-      dynamic_cast<InitOp *>(tensor->getProducer())) {
-    return {initTensorTaskId(id), DependencyType::TENSOR};
+      dynamic_cast<InitOp *>(tensor->getProducer()) ||
+      dynamic_cast<IoTileCopyOp *>(tensor->getProducer())) {
+    return {initTensorTaskId(id), DependencyType::Tensor};
   }
 
   // Tensors with producer Ops are created (added to a Graph) by their
   // producer's OpTask
   else {
-    return {opTaskId(tensor->getProducer()), DependencyType::TENSOR};
+    return {opTaskId(tensor->getProducer()), DependencyType::Tensor};
   }
 }
 
@@ -1150,14 +1234,14 @@ Devicex::getCreatorEndpoints(const Tensor *startTensor,
         switch (opx->getInputCreatorType(inIndex)) {
         // Opx has poplar call to layout tensor at this
         // inIndex
-        case InputCreatorType::CANCREATE: {
+        case InputCreatorType::CanCreate: {
           logging::devicex::trace("{} can create, path depth {}",
                                   op->debugName(),
                                   pathFromInput.size());
           f_create();
           break;
         }
-        case InputCreatorType::CANDELEGATE: {
+        case InputCreatorType::CanDelegate: {
           logging::devicex::trace("{} can delegate, path depth {}",
                                   op->debugName(),
                                   pathFromInput.size());
@@ -1166,14 +1250,14 @@ Devicex::getCreatorEndpoints(const Tensor *startTensor,
         }
         // Recursively search the DAG downstream of the op until we
         // have set of endpoints that can create the tensor
-        case InputCreatorType::CANUNWIND: {
+        case InputCreatorType::CanUnwind: {
           logging::devicex::trace("{} can unwind, path depth {}",
                                   op->debugName(),
                                   pathFromInput.size());
           f_unwind();
           break;
         }
-        case InputCreatorType::CANCREATE_OR_UNWIND: {
+        case InputCreatorType::CanCreateOrUnwind: {
           logging::devicex::trace("{} can create or unwind, path depth {}",
                                   op->debugName(),
                                   pathFromInput.size());
@@ -1182,7 +1266,7 @@ Devicex::getCreatorEndpoints(const Tensor *startTensor,
           break;
         }
         // Consuming op can't create tensor
-        case InputCreatorType::DEADEND: {
+        case InputCreatorType::Deadend: {
           f_deadend();
           break;
         }
@@ -1325,15 +1409,28 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
   if (candidate) {
 
     auto f = [this, candidate, tensor]() {
+      // Try if an existing Poplar tensor can be reused
+      if (tryInitTensorByPostIRAliasing(tensor->id)) {
+        return SequenceMap();
+      }
+
       logging::devicex::debug(
           "Creating poplar::Tensor {}, with layout allocated by {}",
           tensor->id,
           candidate->str());
 
+      auto inputAndView = candidate->createInput(tensor->str() + "_tmp");
+
+      if (!inputAndView.second.empty()) {
+        // Underlying poplar::Tensor does not match IR expectations, supply
+        // view-changing transformation
+        tensors.setViewChangers(tensor->id, inputAndView.second);
+      }
+
       // The clone makes sure to only keep the necessary parts of the unwound
-      // tensor alive, reducing IPU memory liveness (see T18661)
-      poplar::Tensor input = graph().clone(
-          candidate->createInput(tensor->str() + "_tmp"), tensor->str());
+      // tensor alive, and contiguate it,
+      // reducing IPU memory liveness and fragmentation (see T18661)
+      poplar::Tensor input = graph().clone(inputAndView.first);
 
       tensors.insert(tensor->id, input);
       efficientlyCreatedInputTensors.insert(tensor->id);
@@ -1357,6 +1454,11 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
   } else {
 
     auto f = [this, tensor]() {
+      // Try if an existing Poplar tensor can be reused
+      if (tryInitTensorByPostIRAliasing(tensor->id)) {
+        return SequenceMap();
+      }
+
       logging::devicex::debug("Creating poplar::Tensor '{}' linearly. No "
                               "operator specific allocator found",
                               tensor->id);
@@ -1384,7 +1486,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
             ss << std::endl
                << "    {" << op.first->debugName() << ", VGID: "
                << (op.first->hasVirtualGraphId()
-                       ? op.first->getIntrospectionInVirtualGraphId(index)
+                       ? op.first->getIntrospectionInVirtualGraphId(index).first
                        : -1)
                << "}";
           }
@@ -1398,7 +1500,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
 
       std::vector<VGraphId> ipus;
       for (auto &op : relatedOps) {
-        VGraphId vgid = -1;
+        VGraphIdAndIoTile vgid{-1, false};
         if (op.first->hasVirtualGraphId()) {
           if (op.second) {
             // Consumer OP
@@ -1408,7 +1510,8 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
             vgid       = op.first->getIntrospectionInVirtualGraphId(index);
           } else {
             // Producer OP
-            vgid = op.first->getVirtualGraphId();
+            vgid = {op.first->getVirtualGraphId(),
+                    op.first->settings.useIoTiles};
           }
         }
 
@@ -1416,10 +1519,11 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
         // have been copied to the ipu from another op
         if (op.first->opid != Onnx::CustomOperators::IpuCopy) {
 
-          if (ipus.end() == std::find(ipus.begin(), ipus.end(), vgid)) {
+          if (ipus.end() == std::find(ipus.begin(), ipus.end(), vgid.first)) {
 
-            auto &graph = vgid > -1 ? getVirtualGraph(vgid)
-                                    : getOpx(op.first->id)->graph();
+            auto &graph = vgid.first > -1
+                              ? getVirtualGraph(vgid.first, vgid.second)
+                              : getOpx(op.first->id)->graph();
 
             auto newTensor = graph.addVariable(
                 popType(tensor->info), tensor->info.shape_szt(), tensor->str());
@@ -1427,7 +1531,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
 
             tensors.insert(tensor->id, newTensor);
             linearlyCreatedInputTensors.insert(tensor->id);
-            ipus.push_back(vgid);
+            ipus.push_back(vgid.first);
           }
         }
       }
@@ -1459,7 +1563,7 @@ PriTask Devicex::initRandomSeed() {
   std::vector<std::pair<TaskId, DependencyType>> deps;
   deps.push_back(taskWhichCreates(updatedSeedId));
   // Stream the seed tensor to device before using to set PRNGs
-  deps.push_back({fromHostTaskId(streamedSeedId), DependencyType::SCHEDULER});
+  deps.push_back({fromHostTaskId(streamedSeedId), DependencyType::Scheduler});
 
   return {
       +1e6,                   // high priority
@@ -1496,7 +1600,7 @@ void Devicex::connectRandomSeedStream() {
 void Devicex::setRandomSeedFromHost() {
   if (ir().useSyntheticData() == false) {
     pEngine->disableExecutionProfiling();
-    run(PopPrograms::ProgramIndex::SETRANDOMSEEDFROMHOST);
+    run(PopPrograms::ProgramIndex::SetRandomSeedFromHost);
   }
 }
 
@@ -1576,7 +1680,7 @@ PriTask Devicex::setInitTensorValTask(Tensor *tensor) {
           setInitTensorValTaskId(tensor->id),
           // poplar::Tensor must exist. Other that this, this task can be
           // performed any time
-          {{initTensorTaskId(tensor->id), DependencyType::TENSOR}},
+          {{initTensorTaskId(tensor->id), DependencyType::Tensor}},
           f};
 }
 
@@ -1596,7 +1700,7 @@ PriTask Devicex::streamFromHostTask(Tensor *tensor) {
           // VirtualGraphId with subgraph call introspection
           // for the current tensor
           auto index = op->input->indicesMap().at(tensor)[0];
-          vgid       = op->getIntrospectionInVirtualGraphId(index);
+          vgid       = op->getIntrospectionInVirtualGraphId(index).first;
         }
 
         // Only stream the tensor once for all op's that consume it on an ipu
@@ -1607,7 +1711,8 @@ PriTask Devicex::streamFromHostTask(Tensor *tensor) {
               tensor->id,
               vgid);
 
-          poplar::ReplicatedStreamMode mode;
+          poplar::ReplicatedStreamMode mode =
+              poplar::ReplicatedStreamMode::BROADCAST;
 
           if (tensor->tensorType() == TensorType::Variable) {
             // If it is a variable we 'broadcast' the same tensor
@@ -1649,7 +1754,7 @@ PriTask Devicex::streamFromHostTask(Tensor *tensor) {
       0,                                // priority unimportant
       streamFromHostTaskId(tensor->id), // name of this task
       // poplar::Tensor must exist
-      {{initTensorTaskId(tensor->id), DependencyType::TENSOR}},
+      {{initTensorTaskId(tensor->id), DependencyType::Tensor}},
       f // what to run when the task is executed
   };
 }
@@ -1683,34 +1788,43 @@ PriTask Devicex::streamToHostTask(Tensor *tensor, bool isAnchorStream) {
   };
 }
 
+bool Devicex::hasRemoteBuffer(RemoteBufferId id) const {
+  return remoteBuffers.find(id) != remoteBuffers.end();
+}
+
 const std::pair<poplar::RemoteBuffer, boost::optional<poplar::Tensor>> &
 Devicex::getRemoteBuffer(RemoteBufferId id) const {
   return remoteBuffers.at(id);
 }
 
-void Devicex::setRemoteBufferTensor(RemoteBufferId id, poplar::Tensor tensor) {
-  remoteBuffers.at(id).second = tensor;
+void Devicex::createRemoteBuffer(RemoteBufferId id, poplar::Tensor tensor) {
+  auto info    = ir().getRemoteBufferInfo(id);
+  auto name    = "RB_" + std::to_string(id);
+  auto type    = tensor.elementType();
+  auto size    = tensor.numElements();
+  auto repeats = info.repeats;
+
+  logging::devicex::info(
+      "Creating remote buffer {}, type {}, size {}, repeats {}",
+      name,
+      type,
+      size,
+      repeats);
+
+  remoteBuffers.insert(
+      {id,
+       {graph().addRemoteBuffer(name, type, size, repeats, true),
+        boost::optional<poplar::Tensor>(tensor)}});
 }
 
-void Devicex::createRemoteBuffers() {
-  for (auto info : ir().getAllRemoteBufferInfos()) {
-    auto name    = "RB_" + std::to_string(info.first);
-    auto type    = popType(info.second.info);
-    auto size    = info.second.info.nelms();
-    auto repeats = info.second.repeats;
-
-    logging::devicex::info(
-        "Creating remote buffer {}, type {}, size {}, repeats {}",
-        name,
-        type,
-        size,
-        repeats);
-
-    remoteBuffers.insert(
-        {info.first,
-         {graph().addRemoteBuffer(name, type, size, repeats, true),
-          boost::optional<poplar::Tensor>()}});
-  }
+std::shared_ptr<CollectiveBalancedReorder>
+Devicex::getCollectiveBalancedReorder(TensorId tensor_id) {
+  return collectiveReorders[tensor_id];
+}
+void Devicex::setCollectiveBalancedReorder(
+    TensorId tensor_id,
+    std::shared_ptr<CollectiveBalancedReorder> cbr) {
+  collectiveReorders[tensor_id] = cbr;
 }
 
 bool Devicex::containsFragment(const Graph &graph) const {
@@ -1762,11 +1876,11 @@ PriTask Devicex::pipelinedCopyTask(Op *op, TaskId prevTaskId) {
   if (!prevTaskId.empty()) {
     // Ensure the ops are scheduled in the order we're iterating through them
     // here.
-    deps.push_back({prevTaskId, DependencyType::SCHEDULER});
+    deps.push_back({prevTaskId, DependencyType::Scheduler});
   }
 
   // The ops opTask needs to run first to create the destination tensor.
-  deps.push_back({opTaskId(op), DependencyType::OUTPUT});
+  deps.push_back({opTaskId(op), DependencyType::Output});
 
   return {-100, pipelinedCopyTaskId(op), deps, f};
 }
@@ -1802,8 +1916,8 @@ void Devicex::addOpTasks(PriTasks &tasks) {
       for (auto calledGraph : op->getCalledGraphs()) {
         addGraph(calledGraph);
       }
-      if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
-        throw internal_error("non-main Graph Op which is RECOMPUTE");
+      if (op->settings.recomputeType == RecomputeType::Recompute) {
+        throw internal_error("non-main Graph Op which is Recompute");
       }
       allOps.push_back(op);
     }
@@ -1828,11 +1942,7 @@ void Devicex::addOpTasks(PriTasks &tasks) {
       for (int i = 0; i < opInputs.size(); i++) {
         auto graphInput = graph->getInputId(i);
         if (!tasks.contains(initTensorTaskId(graphInput))) {
-          if (graph->isMarkedAsZeroCopy(graphInput)) {
-            tasks.add(initTensorByAliasingTask(op, opInputs.at(i), graphInput));
-          } else {
-            tasks.add(initTensorByCloningTask(op, opInputs.at(i), graphInput));
-          }
+          tasks.add(initTensorByCloningTask(op, opInputs.at(i), graphInput));
         }
       }
 
@@ -1864,11 +1974,41 @@ void Devicex::addOpTasks(PriTasks &tasks) {
   }
 }
 
+bool Devicex::tryInitTensorByPostIRAliasing(TensorId dstId) {
+  for (Tensor *aliased :
+       aliasZeroCopy->getPostIRAliases(ir().getTensor(dstId))) {
+    if (tensors.contains(aliased->id)) {
+      if (tensors.canAlias(aliased->id)) {
+        logging::devicex::debug("Creating poplar::Tensor '{}' "
+                                "by aliasing from poplar::Tensor '{}'",
+                                dstId,
+                                aliased->id);
+        tensors.insertAliased(dstId, aliased->id);
+        efficientlyCreatedInputTensors.insert(dstId);
+        aliasZeroCopy->activateAlias(aliased, ir().getTensor(dstId));
+        return true;
+      } else {
+        logging::devicex::trace("[PopTensors] Rejecting aliasing of {} due to "
+                                "constant or aliased region",
+                                aliased->id);
+        // Tensor can't be aliased
+        aliasZeroCopy->removePostIRAliases(ir().getTensor(aliased->id));
+      }
+    }
+  }
+  return false;
+}
+
 PriTask
 Devicex::initTensorByCloningTask(Op *op, TensorId srcId, TensorId dstId) {
   Opx *opx = getOpx(op->id);
 
   auto f = [srcId, dstId, opx, this]() {
+    // Try if an existing Poplar tensor can be reused
+    if (tryInitTensorByPostIRAliasing(dstId)) {
+      return SequenceMap();
+    }
+
     logging::debug("Cloning tensor {} to {}", srcId, dstId);
     auto src = opx->get(srcId);
     auto dst = opx->graph().clone(src, dstId);
@@ -1889,8 +2029,7 @@ Devicex::initTensorByAliasingTask(Op *op, TensorId srcId, TensorId dstId) {
 
   auto f = [srcId, dstId, opx, this]() {
     logging::debug("Aliasing tensor {} to {}", srcId, dstId);
-    auto src = opx->get(srcId);
-    tensors.insert(dstId, src);
+    tensors.insertAliased(dstId, srcId);
     return SequenceMap();
   };
 
@@ -1915,7 +2054,7 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
         taskWhichCreates(tensor->id);
 
     std::pair<TaskId, DependencyType> populatorTask = {
-        taskWhichPopulates(tensor->id), DependencyType::SCHEDULER};
+        taskWhichPopulates(tensor->id), DependencyType::Scheduler};
 
     // Make sure we only add the creatorTask once in the dependency list
     if (std::find(deps.begin(), deps.end(), creatorTask) == deps.end()) {
@@ -1929,7 +2068,8 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
   // For InitOp and SubgraphOp,
   // the output tensor is created externally, and must
   // thereby exist before InitOp/SubgraphOp is grown.
-  if (dynamic_cast<InitOp *>(op) || dynamic_cast<SubgraphOp *>(op)) {
+  if (dynamic_cast<InitOp *>(op) || dynamic_cast<SubgraphOp *>(op) ||
+      dynamic_cast<IoTileCopyOp *>(op)) {
     for (auto t_inds : op->output->indicesMap()) {
       Tensor *tensor = t_inds.first;
 
@@ -1939,7 +2079,7 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
                               tensor->id);
 
       std::pair<TaskId, DependencyType> creatorTask = {
-          initTensorTaskId(tensor->id), DependencyType::TENSOR};
+          initTensorTaskId(tensor->id), DependencyType::Tensor};
 
       // Make sure we only add the creatorTask once in the dependency list
       if (std::find(deps.begin(), deps.end(), creatorTask) == deps.end()) {
@@ -1951,7 +2091,7 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
   auto addGraphOpsToDeps = [&](const Graph *graph) {
     for (auto graphOp : graph->getOpSchedule({})) {
       std::pair<TaskId, DependencyType> taskId = {opTaskId(graphOp),
-                                                  DependencyType::SUBGRAPH};
+                                                  DependencyType::SubGraph};
       if (std::find(deps.begin(), deps.end(), taskId) == deps.end()) {
         deps.push_back(taskId);
       }
@@ -1966,7 +2106,7 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
   // Note: the first opTask has no previous opTask
   if (prevOpTaskId != "") {
     std::pair<TaskId, DependencyType> prevTask = {prevOpTaskId,
-                                                  DependencyType::SCHEDULER};
+                                                  DependencyType::Scheduler};
     // Add dependency only if not already added
     if (std::find(deps.begin(), deps.end(), prevTask) == deps.end()) {
       deps.push_back(prevTask);
@@ -2022,15 +2162,15 @@ void Devicex::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
   else if (op->scheduledPreLoss == ScheduledPreLoss::Yes) {
 
     // Pre-loss, not recompute
-    if (op->settings.recomputeType == RecomputeType::CHECKPOINT ||
-        op->settings.recomputeType == RecomputeType::UNDEFINED ||
-        op->settings.recomputeType == RecomputeType::RECOMPUTED) {
+    if (op->settings.recomputeType == RecomputeType::Checkpoint ||
+        op->settings.recomputeType == RecomputeType::Undefined ||
+        op->settings.recomputeType == RecomputeType::Recomputed) {
       logging::devicex::debug("Adding checkpoint Op {}", op->debugName());
       growOpx(opx, seqs[&progs.forwardFragment()]);
     }
 
     // Pre-loss, recompute
-    else if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
+    else if (op->settings.recomputeType == RecomputeType::Recompute) {
       logging::devicex::debug("Adding (first) {} Op {}",
                               op->settings.recomputeType,
                               op->debugName());
@@ -2048,7 +2188,7 @@ void Devicex::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
 
   // post-loss
   else if (op->scheduledPreLoss == ScheduledPreLoss::No) {
-    if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
+    if (op->settings.recomputeType == RecomputeType::Recompute) {
       std::stringstream oss;
       op->append(oss);
       throw internal_error("Recompute Op which is ScheduledPreLoss::No is "
@@ -2153,8 +2293,8 @@ void Devicex::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
       // Restore Operations are required to run at the start of a pipelineStage
       growOpx(opx,
               progs.pipelineRestoreFragment(op->getPipelineStage(), op->str()));
-    } else if (op->settings.recomputeType == RecomputeType::CHECKPOINT ||
-               op->settings.recomputeType == RecomputeType::UNDEFINED) {
+    } else if (op->settings.recomputeType == RecomputeType::Checkpoint ||
+               op->settings.recomputeType == RecomputeType::Undefined) {
       logging::devicex::debug(
           "Adding post-turning check-point Op {} {} in pipelinedOpTaskFunc",
           op->str(),
@@ -2172,7 +2312,7 @@ void Devicex::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
           "Growing {} {} in pipelinedOpTaskFunc", op->str(), op->debugName());
 
       growOpx(opx, found_->second);
-    } else if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
+    } else if (op->settings.recomputeType == RecomputeType::Recompute) {
       logging::devicex::debug("Adding (first) recompute Op {}",
                               op->debugName());
 
@@ -2276,7 +2416,7 @@ void Devicex::loadEngineAndConnectStreams() {
   di.previouslyLoadedDevicexs.insert(this);
   setEngineIsLoaded(true);
 
-  if (di.getConnectionType() == DeviceConnectionType::ON_DEMAND) {
+  if (di.getConnectionType() == DeviceConnectionType::OnDemand) {
     logging::devicex::debug("Attaching to device on demand");
     if (!di.attach()) {
       throw error("Failed to attach to device");
@@ -2400,8 +2540,10 @@ void Devicex::loadEngineAndConnectStreams() {
   // Hardware cycle counter - connect stream even if synthetic data mode is
   // not off
   if (ir().getSessionOptions().instrumentWithHardwareCycleCounter) {
-    pEngine->connectStream(cycleCountStreamId(),
-                           static_cast<void *>(&cycleCount));
+    for (auto &kv : cycleCount) {
+      pEngine->connectStream(cycleCountStreamId(kv.first),
+                             static_cast<void *>(&kv.second));
+    }
   }
 }
 
@@ -2424,7 +2566,7 @@ void Devicex::reconnectInputStreams() {
   for (Tensor *tensor : ir().dataStreamTensors()) {
     // The data stream for a tensor won't exist if using synthetic data, so
     // don't try and recreate them.
-    if (!ir().useSyntheticData() && !tensor->isCached()) {
+    if (!ir().useSyntheticData() && !tensor->cacheInfo.isCached()) {
       engineToInputStreamWithCallback(tensor, fromHostStreams.at(tensor->id));
     }
   }
@@ -2492,46 +2634,65 @@ void Devicex::prepare() {
 
   // Initialize the liveness analyzer
   livenessAnalyzer.reset(new liveness::LivenessAnalyzer(&ir()));
+  aliasZeroCopy.reset(
+      new liveness::AliasZeroCopy(&ir(), livenessAnalyzer.get()));
+
   livenessAnalyzer->apply();
 
-  // Initialize remote buffer objects
-  createRemoteBuffers();
+  if (ir().getSessionOptions().aliasZeroCopy) {
+    aliasZeroCopy->apply();
+  }
 
   if (ir().virtualGraphsEnabled()) {
     auto numIPUs     = graph().getTarget().getNumIPUs();
     auto tilesPerIPU = graph().getTarget().getTilesPerIPU();
 
-    int numIOTiles = 0;
+    int numIOTiles = ir().getSessionOptions().numIOTiles;
 
     if (const char *env_p = std::getenv("GCL_NUM_IO_TILES")) {
       numIOTiles = boost::lexical_cast<int>(env_p);
+    }
+
+    if (numIOTiles) {
+
       if (numIOTiles < 32 || numIOTiles > 192 || (numIOTiles % 2 != 0)) {
         throw error(
             "{} is an invalid number of IO tiles. "
-            "Number of IO tiles must be an even number between 32 and 192",
+            "Number of IO tiles must be an even number in range [32, 192]",
             numIOTiles);
       }
       logging::devicex::info(
           "Reserving {} IO tiles for GCL collective operations on each IPU",
           numIOTiles);
-    }
 
-    if (numIOTiles) {
       const auto computeTiles =
-          gcl::perIPUTiles(graph(), numIOTiles, tilesPerIPU - numIOTiles);
-      for (unsigned ipu = 0; ipu < numIPUs; ++ipu) {
-        unsigned startTile = ipu * tilesPerIPU;
-        unsigned endTile   = (ipu + 1) * tilesPerIPU;
+          gcl::perIPUTiles(graph(), numIOTiles, tilesPerIPU - numIOTiles, true);
+
+      std::vector<unsigned> ioTiles;
+      ioTiles.reserve(numIOTiles);
+      unsigned j = 0;
+      for (unsigned i = 0; i < tilesPerIPU; ++i) {
+        if (j < computeTiles.size() && computeTiles[j] == i) {
+          ++j;
+        } else {
+          ioTiles.push_back(i);
+        }
+      }
+
+      for (VGraphId ipu = 0; ipu < numIPUs; ++ipu) {
+        unsigned startTile = static_cast<unsigned>(ipu) * tilesPerIPU;
+        unsigned endTile   = (static_cast<unsigned>(ipu) + 1) * tilesPerIPU;
         auto ipuGraph      = graph().createVirtualGraph(startTile, endTile);
-        virtualGraphs.emplace_back(ipuGraph.createVirtualGraph(computeTiles));
+        virtualGraphs.emplace_back(ipuGraph.createVirtualGraph(computeTiles),
+                                   ipuGraph.createVirtualGraph(ioTiles));
         logging::devicex::info("Created virtual graph {} with {} tiles",
                                ipu,
                                tilesPerIPU - numIOTiles);
       }
     } else {
-      for (unsigned ipu = 0; ipu < numIPUs; ++ipu) {
-        unsigned startTile = ipu * tilesPerIPU;
-        unsigned endTile   = (ipu + 1) * tilesPerIPU;
+      for (VGraphId ipu = 0; ipu < numIPUs; ++ipu) {
+        unsigned startTile = static_cast<unsigned>(ipu) * tilesPerIPU;
+        unsigned endTile   = (static_cast<unsigned>(ipu) + 1) * tilesPerIPU;
         virtualGraphs.emplace_back(
             graph().createVirtualGraph(startTile, endTile));
         logging::devicex::info(
@@ -2587,7 +2748,7 @@ void Devicex::prepare() {
   // 2) set initial value (if using synthetic data).
   for (auto id : ir().getTensorIds(TensorType::Variable)) {
     Tensor *tensor = ir().getTensor(id);
-    if (tensor->isCached())
+    if (tensor->cacheInfo.isCached())
       continue;
 
     // 1
@@ -2629,6 +2790,14 @@ void Devicex::prepare() {
                               init->debugName(),
                               init->output->tensor(InitOp::getOutIndex())->id);
       tasks.add(initTensorTask(init->output->tensor(InitOp::getOutIndex())));
+    }
+    if (IoTileCopyOp *iocopy = dynamic_cast<IoTileCopyOp *>(op)) {
+      logging::devicex::trace(
+          "Adding IoTileCopyOp {} output initTensorTask for {}",
+          iocopy->debugName(),
+          iocopy->output->tensor(IoTileCopyOp::getOutIndex())->id);
+      tasks.add(
+          initTensorTask(iocopy->output->tensor(IoTileCopyOp::getOutIndex())));
     }
   }
 
@@ -2680,14 +2849,14 @@ void Devicex::prepare() {
       // 2
       switch (ir().getDataFlow().art(anchorId).id()) {
       // Copy program runs after every batch
-      case (AnchorReturnTypeId::ALL): {
+      case (AnchorReturnTypeId::All): {
         tasks.add(toHostTask(tensor,
                              getAnchorReturnFragment(tensor),
                              ToHostStreamType::NonSumAnchor));
         break;
       }
       // Copy program runs at the end of every N batches
-      case (AnchorReturnTypeId::EVERYN): {
+      case (AnchorReturnTypeId::EveryN): {
         if (ir().getSessionOptions().enablePipelining) {
           throw error(
               "AnchorReturnType::EVERYN is not valid for pipelined models");
@@ -2702,13 +2871,13 @@ void Devicex::prepare() {
         break;
       }
       // Copy program runs at the end of the step
-      case (AnchorReturnTypeId::FINAL): {
+      case (AnchorReturnTypeId::Final): {
         tasks.add(toHostTask(tensor,
                              progs.toHostFinalCopyFragment(),
                              ToHostStreamType::NonSumAnchor));
         break;
       }
-      case (AnchorReturnTypeId::SUM): {
+      case (AnchorReturnTypeId::Sum): {
         tasks.add(
             anchorReturnTypeSumTask(tensor, getAnchorReturnFragment(tensor)));
         tasks.add(toHostTask(tensor,
@@ -2843,15 +3012,15 @@ void Devicex::prepare() {
 
   logging::devicex::debug("Creating linear task schedule with OUTPUT, "
                           "SUBGRAPH and TENSOR dependencies.");
-  auto createSchedule = tasks.getLinearised({DependencyType::OUTPUT,
-                                             DependencyType::SUBGRAPH,
-                                             DependencyType::TENSOR});
+  auto createSchedule = tasks.getLinearised({DependencyType::Output,
+                                             DependencyType::SubGraph,
+                                             DependencyType::Tensor});
 
   logging::devicex::debug("Creating linear task schedule with OUTPUT, "
                           "SUBGRAPH and SCHEDULER dependencies.");
-  auto emplaceSchedule = tasks.getLinearised({DependencyType::OUTPUT,
-                                              DependencyType::SUBGRAPH,
-                                              DependencyType::SCHEDULER});
+  auto emplaceSchedule = tasks.getLinearised({DependencyType::Output,
+                                              DependencyType::SubGraph,
+                                              DependencyType::Scheduler});
 
   auto emplaceTaskSeqs = [&](std::set<TaskId> filter) {
     // 2.) Add intermediate sequences in final sequence
@@ -2884,7 +3053,7 @@ void Devicex::prepare() {
   for (auto &createTask : createSchedule) {
     logging::devicex::debug("Creating sequence for task {}", createTask.name);
     std::set<TaskId> subgraphTaskNames =
-        createTask.getDependenciesOfTypes({DependencyType::SUBGRAPH});
+        createTask.getDependenciesOfTypes({DependencyType::SubGraph});
     if (subgraphTaskNames.size() > 0) {
       // Make sure the subgraph sequences are emplaced before the scopeFragments
       // of the called graphs are constructed.
@@ -2950,6 +3119,8 @@ void Devicex::prepare() {
                            // no randomness)
 
   trySaveTensorTileMap();
+
+  optimizerFromHost();
 
   prepareHasBeenCalled_ = true;
 }
@@ -3182,9 +3353,9 @@ PriTask Devicex::fromHostTask(Tensor *tensor,
           fromHostTaskId(tensor->id),
           {
               {streamFromHostTaskId(tensor->id),
-               DependencyType::TENSOR}, // poplar::Stream created
+               DependencyType::Tensor}, // poplar::Stream created
               {initTensorTaskId(tensor->id),
-               DependencyType::TENSOR} // poplar::Tensor created
+               DependencyType::Tensor} // poplar::Tensor created
           },
           f};
 }
@@ -3245,12 +3416,12 @@ PriTask Devicex::toHostTask(Tensor *tensor,
       // the dependencies:
       // poplar::Stream creation task,
       {streamToHostTaskId(tensor->id, stype != ToHostStreamType::NonAnchor),
-       DependencyType::OUTPUT},
+       DependencyType::Output},
       // poplar::Tensor has its final values
-      {finalPopulator, DependencyType::SCHEDULER}};
+      {finalPopulator, DependencyType::Scheduler}};
 
   if (stype == ToHostStreamType::SumAnchor) {
-    deps.push_back({anchorSumTaskId(tensor->id), DependencyType::TENSOR});
+    deps.push_back({anchorSumTaskId(tensor->id), DependencyType::Tensor});
   }
   double priority;
   if (ir().getSessionOptions().groupHostSync) {
@@ -3300,9 +3471,9 @@ PriTask Devicex::anchorReturnTypeSumTask(Tensor *tensor,
           taskId,
           {// the dependencies:
            // poplar::Stream creation task,
-           {streamToHostTaskId(tensor->id, true), DependencyType::OUTPUT},
+           {streamToHostTaskId(tensor->id, true), DependencyType::Output},
            // poplar::Tensor has its final values
-           {finalPopulator, DependencyType::SCHEDULER}},
+           {finalPopulator, DependencyType::Scheduler}},
           f};
 }
 
@@ -3375,7 +3546,7 @@ PriTask Devicex::updateBatchCountTask(poplar::program::Sequence &sq) {
           updateBatchCountTaskId(),
           {
               {initBatchCounterTensorsTaskId(),
-               DependencyType::TENSOR} // poplar::Tensor creation task
+               DependencyType::Tensor} // poplar::Tensor creation task
           },
           f};
 }
@@ -3438,11 +3609,11 @@ PriTask Devicex::toHostEveryNBatchesTask(Tensor *tensor,
       toHostTaskId(tensor->id, isAnchorStream),
       {// the dependencies:
        // updating poplar::Tensor task,
-       {updateBatchCountTaskId(), DependencyType::OUTPUT},
+       {updateBatchCountTaskId(), DependencyType::Output},
        // poplar::Stream creation task,
-       {streamToHostTaskId(tensor->id, isAnchorStream), DependencyType::OUTPUT},
+       {streamToHostTaskId(tensor->id, isAnchorStream), DependencyType::Output},
        // poplar::Tensor value setting task
-       {taskWhichPopulates(tensor->id), DependencyType::SCHEDULER}},
+       {taskWhichPopulates(tensor->id), DependencyType::Scheduler}},
       f};
 }
 
@@ -3472,9 +3643,13 @@ void Devicex::initPoplarGraph() {
                             replicationFactor);
     switch (deviceInfo->getType()) {
     case DeviceType::Ipu: {
-      popTarget = poplar::Target::createIPUTarget(globalNumIpus, ipuSystemType);
+      popTarget = poplar::Target::createIPUTarget(
+          static_cast<unsigned>(globalNumIpus), ipuSystemType);
       break;
     }
+    case DeviceType::Cpu:
+    case DeviceType::IpuModel:
+    case DeviceType::Sim:
     default:
       throw error(
           "Only IPU Hardware devices supported with distributed replicated "
@@ -3564,7 +3739,7 @@ TensorTileMap Devicex::getTensorTileMap() const {
 
   for (const auto &t : tensors.getTensors()) {
     std::vector<TensorIntervalList> mapping;
-    for (auto tile : graph().getTileMapping(t.second)) {
+    for (auto tile : graph().getTileMapping(*t.second.get())) {
       TensorIntervalList intervalList;
       std::transform(tile.begin(),
                      tile.end(),

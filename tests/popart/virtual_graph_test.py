@@ -27,13 +27,13 @@ def test_virtual_graph():
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
-                                dataFeed=dataFlow,
+                                dataFlow=dataFlow,
                                 userOptions=opts,
                                 deviceInfo=tu.create_test_device(numIpus=2))
 
@@ -65,13 +65,13 @@ def test_virtual_graph2():
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
-                                dataFeed=dataFlow,
+                                dataFlow=dataFlow,
                                 userOptions=opts,
                                 deviceInfo=tu.create_test_device(numIpus=2))
 
@@ -97,36 +97,32 @@ def test_virtual_graph3():
     with builder.virtualGraph(2):
         o3 = builder.aiOnnx.add([o1, o2])
         o = builder.aiOnnx.add([i1, o3])
-
-    builder.addOutputTensor(o)
+        o = builder.aiGraphcore.l1loss([o], 0.1)
 
     proto = builder.getModelProto()
 
     # Need to anchor the output of the backward pass to stop it being pruned
     dataFlow = popart.DataFlow(
         1, {
-            o: popart.AnchorReturnType("ALL"),
+            o: popart.AnchorReturnType("All"),
             popart.reservedGradientPrefix() + i1:
-            popart.AnchorReturnType("ALL"),
+            popart.AnchorReturnType("All"),
             popart.reservedGradientPrefix() + i2:
-            popart.AnchorReturnType("ALL"),
+            popart.AnchorReturnType("All"),
             popart.reservedGradientPrefix() + i3:
-            popart.AnchorReturnType("ALL"),
+            popart.AnchorReturnType("All"),
             popart.reservedGradientPrefix() + i4:
-            popart.AnchorReturnType("ALL")
+            popart.AnchorReturnType("All")
         })
 
-    losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
-    #Make sure that the loss is also assigned to a virtual graph
-    losses[0].virtualGraph(1)
     optimizer = popart.SGD({"defaultLearningRate": (0.01, True)})
 
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.TrainingSession(fnModel=proto,
-                               dataFeed=dataFlow,
-                               losses=losses,
+                               dataFlow=dataFlow,
+                               loss=o,
                                optimizer=optimizer,
                                userOptions=opts,
                                deviceInfo=tu.create_test_device(numIpus=4))
@@ -158,47 +154,41 @@ def test_virtual_graph4():
 
     with builder.virtualGraph(3):
         o1 = builder.aiOnnx.add([i1, i2])
+        o1l1 = builder.aiGraphcore.l1loss([o1], 0.1)
         o2 = builder.aiOnnx.add([i3, o1])
+        o2l1 = builder.aiGraphcore.l1loss([o2], 0.1)
 
     with builder.virtualGraph(2):
         o3 = builder.aiOnnx.mul([i1, i3])
+        o3l1 = builder.aiGraphcore.l1loss([o3], 0.1)
 
-    builder.addOutputTensor(o2)
-    builder.addOutputTensor(o3)
+    with builder.virtualGraph(3):
+        loss = builder.aiOnnx.sum([o1l1, o2l1, o3l1])
 
     proto = builder.getModelProto()
 
     # Need to anchor the output of the backward pass to stop it being pruned
     dataFlow = popart.DataFlow(
         1, {
-            o1: popart.AnchorReturnType("ALL"),
-            o2: popart.AnchorReturnType("ALL"),
-            o3: popart.AnchorReturnType("ALL"),
+            o1: popart.AnchorReturnType("All"),
+            o2: popart.AnchorReturnType("All"),
+            o3: popart.AnchorReturnType("All"),
             popart.reservedGradientPrefix() + i1:
-            popart.AnchorReturnType("ALL"),
+            popart.AnchorReturnType("All"),
             popart.reservedGradientPrefix() + i2:
-            popart.AnchorReturnType("ALL"),
+            popart.AnchorReturnType("All"),
             popart.reservedGradientPrefix() + i3:
-            popart.AnchorReturnType("ALL")
+            popart.AnchorReturnType("All")
         })
 
-    losses = [
-        popart.L1Loss(o1, "l1LossVal_1", 0.1),
-        popart.L1Loss(o2, "l1LossVal_2", 0.1),
-        popart.L1Loss(o3, "l1LossVal_3", 0.1)
-    ]
-    #Make sure that the loss is also assigned to a virtual graph
-    losses[0].virtualGraph(3)
-    losses[1].virtualGraph(3)
-    losses[2].virtualGraph(2)
     optimizer = popart.ConstSGD(0.01)
 
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.TrainingSession(fnModel=proto,
-                               dataFeed=dataFlow,
-                               losses=losses,
+                               dataFlow=dataFlow,
+                               loss=loss,
                                optimizer=optimizer,
                                userOptions=opts,
                                deviceInfo=tu.create_test_device(numIpus=4))
@@ -238,12 +228,12 @@ def test_virtual_graph_bad_index():
     #
     # proto = builder.getModelProto()
     #
-    # dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    # dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
     #
     # opts = popart.SessionOptions()
     # opts.virtualGraphMode = popart.VirtualGraphMode.Manual
     #
-    # s = popart.TrainingSession(fnModel=proto, dataFeed=dataFlow, userOptions=opts, deviceInfo=tu.create_test_device(numIpus = 2))
+    # s = popart.TrainingSession(fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=tu.create_test_device(numIpus = 2))
     # s.prepareDevice()
 
     pass
@@ -280,21 +270,16 @@ def test_streaming_optimizer_tensors():
         if enablePipelining:
             builder.virtualGraph(o2, 2)
 
-        o = o2
-        builder.addOutputTensor(o)
+        o2l1 = builder.aiGraphcore.l1loss([o2], 0.1)
+        if enablePipelining:
+            builder.virtualGraph(o2l1, 2)
 
         proto = builder.getModelProto()
 
         anchorId = popart.reservedDefaultScaledLearningRate0Prefix() + "FLOAT"
 
         # Need to anchor the output of the backward pass to stop it being pruned
-        dataFlow = popart.DataFlow(bps,
-                                   {anchorId: popart.AnchorReturnType("ALL")})
-
-        losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
-        # Make sure that the loss is also assigned to a virtual graph
-        if enablePipelining:
-            losses[0].virtualGraph(2)
+        dataFlow = popart.DataFlow(bps, [anchorId])
 
         optimizer = popart.SGD({"defaultLearningRate": (1.0, False)})
 
@@ -309,8 +294,8 @@ def test_streaming_optimizer_tensors():
 
         session = popart.TrainingSession(
             fnModel=proto,
-            dataFeed=dataFlow,
-            losses=losses,
+            dataFlow=dataFlow,
+            loss=o2l1,
             optimizer=optimizer,
             userOptions=opts,
             deviceInfo=tu.create_test_device(numIpus=numIPUs))
@@ -323,16 +308,14 @@ def test_streaming_optimizer_tensors():
         stepio = popart.PyStepIO(inputs, anchors)
 
         session.weightsFromHost()
-        session.optimizerFromHost()
 
         # run 2 steps, changing the optimizer halfway through
         result = []
         session.run(stepio)
         result.append(np.copy(anchors[anchorId]))
 
-        session.updateOptimizer(
+        session.updateOptimizerFromHost(
             popart.SGD({"defaultLearningRate": (0.5, False)}))
-        session.optimizerFromHost()
 
         session.run(stepio)
         result.append(np.copy(anchors[anchorId]))

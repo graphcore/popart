@@ -125,7 +125,7 @@ void DropoutOpx::grow(poplar::program::Sequence &prog) const {
       setOutTensor(op.getOutIndex(), dropout);
     }
   } else {
-    // In inference/evaluation mode, dropout is an identity function
+    // In inference mode, dropout is an identity function
     setOutTensor(DropoutOp::getOutIndex(),
                  getInTensor(DropoutOp::getInIndex()));
     // In inference mask is just a tensor of true values.

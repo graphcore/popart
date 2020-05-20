@@ -28,8 +28,8 @@ std::unique_ptr<Op> TanhGradOp::clone() const {
 
 const std::vector<GradInOutMapper> &TanhGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getGradInIndex(), TanhOp::getOutIndex(), GradOpInType::GRADOUT},
-      {getFwdOutInIndex(), TanhOp::getOutIndex(), GradOpInType::OUT}};
+      {getGradInIndex(), TanhOp::getOutIndex(), GradOpInType::GradOut},
+      {getFwdOutInIndex(), TanhOp::getOutIndex(), GradOpInType::Out}};
 
   return inInfo;
 }

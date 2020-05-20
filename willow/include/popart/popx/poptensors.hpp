@@ -5,6 +5,7 @@
 #include <set>
 
 #include <popart/names.hpp>
+#include <popart/popx/viewchangers.hpp>
 
 #include <poplar/Tensor.hpp>
 
@@ -14,17 +15,30 @@ namespace popx {
 class PopTensors {
 public:
   PopTensors(const Ir &);
+  // Insert a new poplar::Tensor
   void insert(TensorId, const poplar::Tensor &);
+  // Reuse poplar::Tensor "from" as "to"
+  void insertAliased(TensorId to, TensorId from);
   // The same as insert but without any checks against the IR
   void insertUnsafe(TensorId id, const poplar::Tensor &pt);
   const poplar::Tensor &get(TensorId) const;
+  const poplar::Tensor &getView(TensorId) const;
+
+  bool hasViewChangers(TensorId) const;
+  const ViewChangers &getViewChangers(TensorId);
+  void setViewChangers(TensorId, const ViewChangers &viewChangers);
+
   bool contains(TensorId) const;
-  const std::map<TensorId, poplar::Tensor> &getTensors() const;
-  void addAlias(TensorId, TensorId);
+  const std::map<TensorId, std::shared_ptr<poplar::Tensor>> &getTensors() const;
+
+  bool canAlias(TensorId) const;
 
 private:
-  std::map<TensorId, poplar::Tensor> tensors_;
-  std::map<TensorId, std::set<TensorId>> tensorAliases_;
+  void verify(TensorId, const poplar::Tensor &);
+
+  std::map<TensorId, std::shared_ptr<poplar::Tensor>> tensors_;
+  std::map<TensorId, std::shared_ptr<poplar::Tensor>> views_;
+  std::map<TensorId, std::shared_ptr<ViewChangers>> viewChangers_;
   const Ir &ir;
 };
 

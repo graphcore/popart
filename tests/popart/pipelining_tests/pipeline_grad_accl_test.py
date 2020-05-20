@@ -135,20 +135,15 @@ def get_model_anchors_model1(doSharding,
                 f"weight_2_{i}")
             if i == 1: w0 = w
             x = builder.aiOnnx.matmul([x, w])
+        label = builder.addInputTensor("INT32", [micro_batch_size])
+        x = builder.aiGraphcore.nllloss([x, label])
+
     output = x
 
     builder.addOutputTensor(output)
 
-    label_shape = [micro_batch_size]
-    label = builder.addInputTensor(popart.TensorInfo("INT32", label_shape))
-
-    art = popart.AnchorReturnType("ALL")
-    losses = [popart.NllLoss(output, label, "NllLossVal")]
-
-    # Loss on the last IPU
-    losses[0].virtualGraph(2 if doSharding else 0)
-
-    anchor_map = {losses[0].output(0): art, w0: art}
+    art = popart.AnchorReturnType("All")
+    anchor_map = {x: art, w0: art}
     if doTraining is True:
         anchor_map[popart.reservedGradientPrefix() + x] = art
         if doPipelining is True and anchorRestoredTensors is True:
@@ -173,16 +168,15 @@ def get_model_anchors_model1(doSharding,
     if doTraining is True:
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(batchesPerStep, anchor_map),
-            losses=losses,
+            dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
+            loss=output,
             optimizer=popart.ConstSGD(0.01),
             userOptions=opts,
             deviceInfo=tu.create_test_device(numIpus=numIPUs))
     else:
         session = popart.InferenceSession(
             fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(batchesPerStep, anchor_map),
-            losses=losses,
+            dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
             userOptions=opts,
             deviceInfo=tu.create_test_device(numIpus=numIPUs))
 
@@ -214,8 +208,6 @@ def get_model_anchors_model1(doSharding,
         }, anchors)
 
     session.weightsFromHost()
-    if doTraining is True:
-        session.optimizerFromHost()
 
     session.run(stepio)
 
@@ -257,16 +249,15 @@ def get_model_anchors_model2(doSharding,
                              debugPrefix="c0")
     r0 = builder.reshape_const(builder.aiOnnx, [c0], [micro_batch_size, 32])
     out = builder.aiOnnx.softmax([r0], axis=1, debugPrefix="sfm")
-    builder.addOutputTensor(out)
 
     label_shape = [micro_batch_size]
     l0 = builder.addInputTensor(popart.TensorInfo("INT32", label_shape),
                                 "label")
+    nll = builder.aiGraphcore.nllloss([out, l0])
 
-    art = popart.AnchorReturnType("ALL")
-    loss = popart.NllLoss(out, l0, "loss")
+    art = popart.AnchorReturnType("All")
 
-    anchor_map = {"loss": art, w0: art, e0: art, s0: art, c0: art}
+    anchor_map = {nll: art, w0: art, e0: art, s0: art, c0: art}
     if doTraining is True:
         anchor_map[popart.reservedGradientPrefix() + d0] = art
         if doPipelining is True and anchorRestoredTensors is True:
@@ -293,21 +284,20 @@ def get_model_anchors_model2(doSharding,
         builder.virtualGraph(c0, 1)
         builder.virtualGraph(r0, 2)
         builder.virtualGraph(out, 2)
-        loss.virtualGraph(2)
+        builder.virtualGraph(nll, 2)
 
     if doTraining is True:
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(batchesPerStep, anchor_map),
-            losses=[loss],
+            dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
+            loss=nll,
             optimizer=popart.ConstSGD(0.01),
             userOptions=opts,
             deviceInfo=tu.create_test_device(numIpus=numIPUs))
     else:
         session = popart.InferenceSession(
             fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(batchesPerStep, anchor_map),
-            losses=[loss],
+            dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
             userOptions=opts,
             deviceInfo=tu.create_test_device(numIpus=numIPUs))
 
@@ -341,8 +331,6 @@ def get_model_anchors_model2(doSharding,
     stepio = popart.PyStepIO(inputs, anchors)
 
     session.weightsFromHost()
-    if doTraining is True:
-        session.optimizerFromHost()
 
     for i in range(6):
         session.run(stepio)

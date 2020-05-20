@@ -36,7 +36,7 @@ def test_mul(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, t1.grad, t2.grad, None]
 
-    op_tester.passes = ['PreUniRepl', 'MulArgGradOp']
+    op_tester.patterns = ['PreUniRepl', 'MulArgGradOp']
     op_tester.run(init_builder, reference, step_type='train')
 
 
@@ -64,5 +64,5 @@ def test_broadcast_mul(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, t1.grad, t2.grad, None]
 
-    op_tester.passes = ['PreUniRepl', 'MulArgGradOp']
+    op_tester.patterns = ['PreUniRepl', 'MulArgGradOp']
     op_tester.run(init_builder, reference, step_type='train')

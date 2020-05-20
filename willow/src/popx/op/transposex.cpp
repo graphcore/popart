@@ -26,7 +26,7 @@ void TransposeOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 InputCreatorType TransposeOpx::getInputCreatorType(InIndex) const {
-  return InputCreatorType::CANUNWIND;
+  return InputCreatorType::CanUnwind;
 }
 
 poplar::Tensor TransposeOpx::unwindTensorLayout(poplar::Tensor tensor,
@@ -57,7 +57,7 @@ TransposeInplaceOpx::TransposeInplaceOpx(Op *op, Devicex *devicex)
 }
 
 InputCreatorType TransposeInplaceOpx::getInputCreatorType(InIndex) const {
-  return InputCreatorType::CANUNWIND;
+  return InputCreatorType::CanUnwind;
 }
 
 poplar::Tensor TransposeInplaceOpx::unwindTensorLayout(poplar::Tensor tensor,

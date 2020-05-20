@@ -58,7 +58,7 @@ bool TanToSinOverCosPattern::apply(Op *op) const {
 
 namespace {
 static PatternCreator<TanToSinOverCosPattern>
-    TanToSinOverCosPattern(PreAliasPatternType::TANTOSINOVERCOS,
+    TanToSinOverCosPattern(PreAliasPatternType::TanToSinOverCos,
                            "TanToSinOverCos");
 }
 

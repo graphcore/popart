@@ -26,7 +26,7 @@ def test_onehot_2d_with_axis_testing(op_tester):
     def reference(ref_data):
         return [output]
 
-    op_tester.passes = ['OpToIdentity']
+    op_tester.patterns = ['OpToIdentity']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -52,7 +52,7 @@ def test_onehot_2d_without_axis_testing(op_tester):
     def reference(ref_data):
         return [output]
 
-    op_tester.passes = ['OpToIdentity']
+    op_tester.patterns = ['OpToIdentity']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -66,11 +66,10 @@ def test_onehot_2d_with_axis_training(op_tester):
                        [values[0], values[0]], [values[0],
                                                 values[1]]]).astype(np.float32)
 
-    output_grad = np.array([[-0.1, -0.1], [0.1, -0.1], [-0.1, -0.1],
-                            [-0.1, -0.1], [-0.1, -0.1],
-                            [-0.1, 0.1]]).astype(np.float32)
+    output_grad = np.array([[1.0, 1.0], [1.0, 1.0], [1.0, 1.0], [1.0, 1.0],
+                            [1.0, 1.0], [1.0, 1.0]]).astype(np.float32)
 
-    values_grad = np.array([-1, 0.2]).astype(np.float32)
+    values_grad = np.array([10.0, 2.0]).astype(np.float32)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(indices)
@@ -87,14 +86,14 @@ def test_onehot_2d_with_axis_training(op_tester):
     def reference(ref_data):
         return [output, output_grad, values_grad]
 
-    op_tester.passes = ['OpToIdentity']
+    op_tester.lossReduction = popart.ReductionType.Sum
+    op_tester.patterns = ['OpToIdentity']
     op_tester.run(init_builder, reference, 'train')
 
 
 def test_onehot_2d_without_axis_training(op_tester):
     indices = np.array([1, 5]).astype(np.int32)
     depth = np.array(6).astype(np.uint8)
-
     values = np.array([-0.5, 0.5]).astype(np.float32)
 
     output = np.array(
@@ -102,11 +101,10 @@ def test_onehot_2d_without_axis_training(op_tester):
          [values[0], values[0], values[0], values[0], values[0],
           values[1]]]).astype(np.float32)
 
-    output_grad = np.array([[-0.1, 0.1, -0.1, -0.1, -0.1, -0.1],
-                            [-0.1, -0.1, -0.1, -0.1, -0.1,
-                             0.1]]).astype(np.float32)
+    output_grad = np.array([[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+                            [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]).astype(np.float32)
 
-    values_grad = np.array([-1, 0.2]).astype(np.float32)
+    values_grad = np.array([10.0, 2.0]).astype(np.float32)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(indices)
@@ -123,7 +121,8 @@ def test_onehot_2d_without_axis_training(op_tester):
     def reference(ref_data):
         return [output, output_grad, values_grad]
 
-    op_tester.passes = ['OpToIdentity']
+    op_tester.lossReduction = popart.ReductionType.Sum
+    op_tester.patterns = ['OpToIdentity']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -147,7 +146,7 @@ def test_onehot_3d_without_axis_testing(op_tester):
     def reference(ref_data):
         return [output]
 
-    op_tester.passes = ['OpToIdentity']
+    op_tester.patterns = ['OpToIdentity']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -171,5 +170,5 @@ def test_onehot_3d_with_axis_testing(op_tester):
     def reference(ref_data):
         return [output]
 
-    op_tester.passes = ['OpToIdentity']
+    op_tester.patterns = ['OpToIdentity']
     op_tester.run(init_builder, reference, 'infer')

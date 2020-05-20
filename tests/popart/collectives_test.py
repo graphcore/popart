@@ -15,7 +15,7 @@ def test_replicated_allreduce():
     builder.addOutputTensor(o)
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
     opts = popart.SessionOptions()
     opts.enableReplicatedGraphs = True
     opts.replicatedGraphCount = replicatedGraphCount
@@ -23,7 +23,7 @@ def test_replicated_allreduce():
 
     device = tu.create_test_device(numIpus=numIpus)
     session = popart.InferenceSession(fnModel=proto,
-                                      dataFeed=dataFlow,
+                                      dataFlow=dataFlow,
                                       userOptions=opts,
                                       deviceInfo=device)
 

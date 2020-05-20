@@ -74,9 +74,9 @@ InputCreatorType PopartLSTMOpx::getInputCreatorType(InIndex index) const {
       index == PopartLSTMOp::getWeightsInIndex() ||
       index == PopartLSTMOp::getBiasesInIndex() ||
       index == PopartLSTMOp::getInitialStateInIndex()) {
-    return InputCreatorType::CANCREATE;
+    return InputCreatorType::CanCreate;
   } else {
-    return InputCreatorType::DEADEND;
+    return InputCreatorType::Deadend;
   }
 }
 

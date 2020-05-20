@@ -5,7 +5,7 @@ import torch.utils
 import torch.utils.data
 import popart
 from popart.writer import NetWriter
-from popart import TensorInfo, DataFlow, NllLoss, L1Loss, SGD, ConstSGD
+from popart import TensorInfo, DataFlow, SGD, ConstSGD
 
 
 def conv3x3(in_planes, out_planes, stride=1):
@@ -19,8 +19,8 @@ def conv3x3(in_planes, out_planes, stride=1):
 
 
 class PytorchNetWriter(NetWriter):
-    def __init__(self, inNames, outNames, losses, optimizer, dataFeed,
-                 inputShapeInfo, module, samplesPerBatch):
+    def __init__(self, inNames, outNames, optimizer, dataFlow, inputShapeInfo,
+                 module, samplesPerBatch):
         """
         module:
           -- pytorch module (whose forward does not have the loss layers)
@@ -30,10 +30,9 @@ class PytorchNetWriter(NetWriter):
         NetWriter.__init__(self,
                            inNames=inNames,
                            outNames=outNames,
-                           losses=losses,
                            optimizer=optimizer,
                            inputShapeInfo=inputShapeInfo,
-                           dataFeed=dataFeed)
+                           dataFlow=dataFlow)
 
         self.module = module
         self.samplesPerBatch = samplesPerBatch
@@ -52,34 +51,6 @@ class PytorchNetWriter(NetWriter):
         else:
             raise RuntimeError("unrecognised optimizer")
 
-    def getTorchLossTarget(self, streamMap, outMap):
-        """
-        Build the torch extension for computing the
-        loss described by popart's losses
-        """
-        lossValues = []
-        for loss in self.losses:
-            if isinstance(loss, NllLoss):
-                # note that pytorch documentation has this to
-                # say about softmax:
-                # Use LogSoftmax instead (it’s faster and has
-                # better numerical properties)
-                criterion = torch.nn.NLLLoss(reduction="sum")
-                logsoftmax = torch.log(outMap[loss.probsTensorId()])
-                longlabels = torch.LongTensor(streamMap[loss.labelTensorId()])
-                nll_loss = criterion(logsoftmax, longlabels)
-                lossValues.append(nll_loss)
-
-            elif isinstance(loss, L1Loss):
-                lossValues.append(loss.getLambda() *
-                                  torch.norm(outMap[loss.getInputId()], 1))
-
-            else:
-                raise RuntimeError(
-                    "unrecognised loss, cannot get equivalent Torch version")
-
-        return sum(lossValues)
-
     def saveModel(self, fnModel):
         print("Writing ONNX model to protobuf file %s" % (fnModel, ))
         # jump into eval mode, just to write the onnx model.
@@ -87,11 +58,13 @@ class PytorchNetWriter(NetWriter):
         self.module.eval()
 
         inputDataInfos = [self.inputShapeInfo.get(tid) for tid in self.inNames]
-        inputData = [
-            torch.from_numpy(
-                np.ones(shape=x.shape(), dtype=x.data_type_lcase()))
-            for x in inputDataInfos
-        ]
+        inputData = []
+        for info in inputDataInfos:
+            shape = info.shape()
+            dt = info.data_type_lcase()
+            if dt == "int32":
+                dt = "int64"  # torch labels must be 'long'
+            inputData.append(torch.from_numpy(np.ones(shape=shape, dtype=dt)))
 
         torch.onnx.export(self.module,
                           inputData,
@@ -99,6 +72,14 @@ class PytorchNetWriter(NetWriter):
                           verbose=False,
                           input_names=self.inNames,
                           output_names=self.outNames)
+
+        # TODO: T19915 uncomment conversion code.
+        # If the model contains 'long' tensors (e.g. in case of exporting
+        # nllloss), they must be converted to int32
+        # graph_transformer = popart.GraphTransformer(fnModel)
+        # graph_transformer.convertINT64ToINT32()
+        # proto = graph_transformer.getModelProto()
+        # popart.Builder(proto).saveModelProto(fnModel)
 
     def train(self, inMap):
         """
@@ -108,14 +89,14 @@ class PytorchNetWriter(NetWriter):
         self.module.train()
 
         # if batchesPerStep is 1, a dimension will be missing
-        if self.dataFeed.batchesPerStep() == 1:
+        if self.dataFlow.batchesPerStep() == 1:
             inMap = _add_dimension(inMap)
 
         # perform forwards - backwards - update
         # for each of the substeps (substep = batch)
 
         stepParameterMap = []
-        for substepi in range(self.dataFeed.batchesPerStep()):
+        for substepi in range(self.dataFlow.batchesPerStep()):
 
             substepParameterMap = {}
             substepOutMap = {}
@@ -124,23 +105,22 @@ class PytorchNetWriter(NetWriter):
                 substepInMap[inId] = inMap[inId][substepi][0:]
 
             torchOptimizer.zero_grad()
-            substepInputs = [
-                torch.Tensor(substepInMap[name]) for name in self.inNames
-            ]
+            substepInputs = []
+            for name in self.inNames:
+                dt = self.inputShapeInfo.get(name).data_type_lcase()
+                if dt == "int32":
+                    dt = "int64"  # torch labels must be 'long'
+                substepInputs.append(
+                    torch.tensor(substepInMap[name].astype(dt)))
 
             # forward pass
-            substepOutputs = self.module(substepInputs)
+            substepOutput = self.module(substepInputs)
 
-            if len(self.outNames) == 1:
-                substepOutMap[self.outNames[0]] = substepOutputs
-            else:
-                for j, outName in enumerate(self.outNames):
-                    substepOutMap[outName] = substepOutputs[j]
+            if len(self.outNames) != 1:
+                raise RuntimeError("Expecting single scalar loss")
 
             # backwards pass
-            lossTarget = self.getTorchLossTarget(substepInMap, substepOutMap)
-
-            lossTarget.backward()
+            substepOutput.backward()
             torchOptimizer.step()
 
             for name, param in self.module.named_parameters():
@@ -151,53 +131,6 @@ class PytorchNetWriter(NetWriter):
         # parameters of the model processed at the substep
         return stepParameterMap
 
-    def evaluate(self, inMap):
-        """
-        Does evaluation (i.e. forward pass and loss calculation, but no
-        backward pass)
-        """
-        self.module.eval()
-
-        # if batchesPerStep is 1, a dimension will be missing
-        if self.dataFeed.batchesPerStep() == 1:
-            inMap = _add_dimension(inMap)
-
-        # perform forwards pass for each batch
-        losses = []
-        for substepi in range(self.dataFeed.batchesPerStep()):
-            sampleLosses = []
-
-            for samplei in range(self.samplesPerBatch):
-                sampleInMap = {}
-                sampleOutMap = {}
-
-                for inId in inMap.keys():
-                    sampleInMap[inId] = inMap[inId][substepi][samplei:samplei +
-                                                              1]
-
-                sampleInputs = [
-                    torch.Tensor(sampleInMap[name]) for name in self.inNames
-                ]
-
-                # forward pass
-                sampleOutputs = self.module(sampleInputs)
-
-                if len(self.outNames) == 1:
-                    sampleOutMap[self.outNames[0]] = sampleOutputs
-                else:
-                    for j, outName in enumerate(self.outNames):
-                        sampleOutMap[outName] = sampleOutputs[j]
-
-                # calculate loss, as in backwards pass, but don't update
-                # model
-                lossTarget = self.getTorchLossTarget(sampleInMap, sampleOutMap)
-                sampleLosses.append(lossTarget.item())
-
-            losses.append(sampleLosses)
-
-        # returning: list with loss scalar per sample
-        return losses
-
     def infer(self, inMap):
         """
         Does inference (i.e. forward pass only)
@@ -205,7 +138,7 @@ class PytorchNetWriter(NetWriter):
         self.module.eval()
 
         # if batchesPerStep is 1, a dimension will be missing
-        if self.dataFeed.batchesPerStep() == 1:
+        if self.dataFlow.batchesPerStep() == 1:
             inMap = _add_dimension(inMap)
 
         # perform forwards pass for each substep
@@ -213,7 +146,7 @@ class PytorchNetWriter(NetWriter):
         for outName in self.outNames:
             stepOutMap[outName] = []
 
-        for substepi in range(self.dataFeed.batchesPerStep()):
+        for substepi in range(self.dataFlow.batchesPerStep()):
 
             substepTorchInputs = [
                 torch.Tensor(inMap[inId][substepi][0:])

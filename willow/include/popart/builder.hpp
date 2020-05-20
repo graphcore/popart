@@ -9,6 +9,7 @@
 
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/op/loss.hpp>
 #include <popart/opidentifier.hpp>
 #include <popart/tensorinfo.hpp>
 
@@ -261,6 +262,55 @@ public:
    */
   TensorId replicatedallreduce(const std::vector<TensorId> &args,
                                const std::string &name = {});
+
+  /**
+   * Add an l1 loss operation to the model
+   *
+   * Calculates the mean absolute error between each element in the input with
+   * a zero target
+   *
+   * \param args [tensor]
+   * \param lamda Scale factor of L1 loss
+   * \param reduction Type of reduction to perform on the individual losses
+   * \param name Optional identifier for operation
+   * \return The name of the result tensor
+   */
+  TensorId l1loss(const std::vector<TensorId> &args,
+                  const float lamda,
+                  const ReductionType reduction = ReductionType::Mean,
+                  const std::string &name       = {});
+
+  /**
+   * Add a negative log-likelihood loss operation to the model
+   *
+   * Calculates the nll loss given a probability tensor over classes, and
+   * a target tensor containing class labels
+   *
+   * \param args [probs, target]
+   * \param reduction Type of reduction to perform on the individual losses
+   * \param ignoreIndex Optional class index to ignore in loss calculation
+   * \param name Optional identifier for operation
+   * \return The name of the result tensor
+   */
+  TensorId nllloss(const std::vector<TensorId> &args,
+                   const ReductionType reduction          = ReductionType::Mean,
+                   const boost::optional<int> ignoreIndex = boost::none,
+                   const std::string &name                = {});
+
+  /**
+   * Add an identity loss operation to the model
+   *
+   * Calculates the nll loss given a probability tensor over classes, and
+   * a target tensor containing class labels
+   *
+   * \param args [tensor]
+   * \param reduction Type of reduction to perform on the individual losses
+   * \param name Optional identifier for operation
+   * \return The name of the result tensor
+   */
+  TensorId identityloss(const std::vector<TensorId> &args,
+                        const ReductionType reduction = ReductionType::Mean,
+                        const std::string &name       = {});
 };
 
 /**
@@ -330,7 +380,7 @@ public:
    * must already exist in the parent GraphProto's name scope and must appear
    * topologically before this sub-graph.
    */
-  void addInputTensorFromHigherScope(const TensorId &tensorId);
+  void addInputTensorFromParentGraph(const TensorId &tensorId);
 
   /**
    * Add a new preinitialized input tensor to the model
@@ -448,7 +498,7 @@ public:
    */
   void recomputeOutputInBackwardPass(
       const TensorId &nodeOutputName,
-      RecomputeType value = RecomputeType::RECOMPUTE) {
+      RecomputeType value = RecomputeType::Recompute) {
     addNodeAttribute(sRecomputeOutputAttribute,
                      static_cast<int64_t>(value),
                      {nodeOutputName});
@@ -463,7 +513,7 @@ public:
    */
   void recomputeOutputInBackwardPass(
       const std::set<TensorId> &nodeOutputNames,
-      RecomputeType value = RecomputeType::RECOMPUTE) {
+      RecomputeType value = RecomputeType::Recompute) {
     addNodeAttribute(sRecomputeOutputAttribute,
                      static_cast<int64_t>(value),
                      nodeOutputNames);

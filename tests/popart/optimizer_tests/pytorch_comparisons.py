@@ -128,8 +128,7 @@ def test_against_pytorch():
 
     mm0 = builder.aiOnnx.mul([input0, w0])
     mm1 = builder.aiOnnx.add([mm0, w1])
-    builder.addOutputTensor(mm1)
-    loss1 = popart.L1Loss(mm1, "l1LossVal1", lambda1)
+    l1 = builder.aiGraphcore.l1loss([mm1], lambda1)
     dataFlow = popart.DataFlow(batchesPerStep, {})
     device = tu.create_test_device(numIpus=nIPUs, tilesPerIpu=1216)
     userOptions = popart.SessionOptions()
@@ -138,9 +137,9 @@ def test_against_pytorch():
 
     session = popart.TrainingSession(
         fnModel=builder.getModelProto(),
-        dataFeed=dataFlow,
+        dataFlow=dataFlow,
         userOptions=userOptions,
-        losses=[loss1],
+        loss=l1,
         optimizer=popart.SGD(optMap0),
         deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
@@ -149,17 +148,16 @@ def test_against_pytorch():
     session.prepareDevice()
     session.weightsFromHost()
 
-    session.optimizerFromHost()
     stepio = popart.PyStepIO({input0: inputVals[0]}, anchorArrays)
     session.run(stepio)
 
-    session.updateOptimizer(popart.SGD(optMap1))
-    session.optimizerFromHost()
+    session.updateOptimizerFromHost(popart.SGD(optMap1))
+
     stepio = popart.PyStepIO({input0: inputVals[1]}, anchorArrays)
     session.run(stepio)
 
-    session.updateOptimizer(popart.SGD(optMap2))
-    session.optimizerFromHost()
+    session.updateOptimizerFromHost(popart.SGD(optMap2))
+
     stepio = popart.PyStepIO({input0: inputVals[2]}, anchorArrays)
     session.run(stepio)
 
@@ -213,7 +211,7 @@ def test_against_pytorch():
 
         for i in range(batchesPerStep):
             out = net(torch.from_numpy(inputVals[step][i]), i)
-            loss = lambda1 * torch.sum(torch.abs(out))
+            loss = lambda1 * torch.mean(torch.abs(out))
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()

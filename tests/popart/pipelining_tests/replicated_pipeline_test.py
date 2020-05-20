@@ -53,12 +53,12 @@ def get_model_anchors(doSharding,
         out = builder.aiOnnx.softmax([do0], axis=1, debugPrefix="sfm")
     else:
         out = builder.aiOnnx.softmax([r0], axis=1, debugPrefix="sfm")
-    builder.addOutputTensor(out)
+    nll = builder.aiGraphcore.nllloss([out, l0],
+                                      reduction=popart.ReductionType.Sum)
 
-    art = popart.AnchorReturnType("ALL")
-    loss = popart.NllLoss(out, l0, "loss")
+    art = popart.AnchorReturnType("All")
 
-    anchor_map = {"loss": art, w0: art, e0: art}
+    anchor_map = {nll: art, w0: art, e0: art}
     if doTraining is True:
         anchor_map[popart.reservedGradientPrefix() + d0] = art
         if doPipelining is True and anchorRestoredTensors is True:
@@ -76,7 +76,7 @@ def get_model_anchors(doSharding,
     if doSharding is False:
         numIpus = 1 * replicated_graph_count
     else:
-        opts.enableVirtualGraphs = True
+        opts.virtualGraphMode = popart.VirtualGraphMode.Manual
         numIpus = 2 * replicated_graph_count
         builder.virtualGraph(s0, 0)
         builder.virtualGraph(e0, 0)
@@ -85,8 +85,8 @@ def get_model_anchors(doSharding,
         if doDropout:
             builder.virtualGraph(do0, 1)
         builder.virtualGraph(out, 1)
+        builder.virtualGraph(nll, 1)
 
-        loss.virtualGraph(1)
     if replicated_graph_count > 1:
         opts.replicatedGraphCount = replicated_graph_count
         opts.enableReplicatedGraphs = True
@@ -95,17 +95,16 @@ def get_model_anchors(doSharding,
 
     if doTraining is True:
         session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                         dataFeed=popart.DataFlow(
+                                         dataFlow=popart.DataFlow(
                                              batchesPerStep, anchor_map),
-                                         losses=[loss],
+                                         loss=nll,
                                          optimizer=popart.ConstSGD(0.01),
                                          userOptions=opts,
                                          deviceInfo=device)
     else:
         session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                          dataFeed=popart.DataFlow(
+                                          dataFlow=popart.DataFlow(
                                               batchesPerStep, anchor_map),
-                                          losses=[loss],
                                           userOptions=opts,
                                           deviceInfo=device)
 
@@ -151,8 +150,6 @@ def get_model_anchors(doSharding,
     stepio.enableRuntimeAsserts(False)
 
     session.weightsFromHost()
-    if doTraining is True:
-        session.optimizerFromHost()
 
     session.run(stepio)
 

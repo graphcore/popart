@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE(StepIOTest_BufferInput) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto art      = AnchorReturnType("ALL");
+  auto art      = AnchorReturnType("All");
   auto dataFlow = DataFlow(1, {{out, art}});
 
   auto device = popart::createTestDevice(TEST_TARGET);
@@ -75,10 +75,9 @@ BOOST_AUTO_TEST_CASE(StepIOTest_BufferInput) {
       proto,
       dataFlow,
       device,
-      {},
       popart::InputShapeInfo(),
       {},
-      popart::Patterns({popart::PreAliasPatternType::POSTNREPL}));
+      popart::Patterns({popart::PreAliasPatternType::PostNRepl}));
 
   // prepare the anchors
   int rawOutputData[10];
@@ -146,7 +145,7 @@ BOOST_AUTO_TEST_CASE(StepIOTest_BufferInput_Ipu,
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto art      = AnchorReturnType("ALL");
+  auto art      = AnchorReturnType("All");
   auto dataFlow = DataFlow(1, {{out, art}});
 
   auto ipuDevice = acquireIpu();
@@ -155,10 +154,9 @@ BOOST_AUTO_TEST_CASE(StepIOTest_BufferInput_Ipu,
       proto,
       dataFlow,
       ipuDevice,
-      {},
       popart::InputShapeInfo(),
       {},
-      popart::Patterns({popart::PreAliasPatternType::POSTNREPL}));
+      popart::Patterns({popart::PreAliasPatternType::PostNRepl}));
 
   // prepare the anchors
   int rawOutputData[10];
@@ -219,7 +217,7 @@ BOOST_AUTO_TEST_CASE(StepIOTest_CallbackInput) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto art      = AnchorReturnType("ALL");
+  auto art      = AnchorReturnType("All");
   auto dataFlow = DataFlow(1, {{out, art}});
 
   auto device = popart::createTestDevice(TEST_TARGET);
@@ -228,10 +226,9 @@ BOOST_AUTO_TEST_CASE(StepIOTest_CallbackInput) {
       proto,
       dataFlow,
       device,
-      {},
       popart::InputShapeInfo(),
       {},
-      popart::Patterns({popart::PreAliasPatternType::POSTNREPL}));
+      popart::Patterns({popart::PreAliasPatternType::PostNRepl}));
 
   // prepare the anchors
   int rawOutputData[10];
@@ -324,7 +321,7 @@ BOOST_AUTO_TEST_CASE(StepIOTest_CallbackInput_Ipu,
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto art      = AnchorReturnType("ALL");
+  auto art      = AnchorReturnType("All");
   auto dataFlow = DataFlow(1, {{out, art}});
 
   auto ipuDevice = acquireIpu();
@@ -333,10 +330,9 @@ BOOST_AUTO_TEST_CASE(StepIOTest_CallbackInput_Ipu,
       proto,
       dataFlow,
       ipuDevice,
-      {},
       popart::InputShapeInfo(),
       {},
-      popart::Patterns({popart::PreAliasPatternType::POSTNREPL}));
+      popart::Patterns({popart::PreAliasPatternType::PostNRepl}));
 
   // prepare the anchors
   int rawOutputData[10];

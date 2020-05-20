@@ -11,12 +11,11 @@ def test_groupHostSync():
     a = builder.addInputTensor(popart.TensorInfo("FLOAT16", [1]))
     w = builder.addInitializedInputTensor(np.ones([1], np.float16))
     o = builder.aiOnnx.add([w, a])
-    builder.addOutputTensor(o)
-    loss = popart.L1Loss(o, "l1_loss", 1.0)
+    l1 = builder.aiGraphcore.l1loss([o], 0.1)
 
     anchor_config = {
-        o: popart.AnchorReturnType("ALL"),
-        "l1_loss": popart.AnchorReturnType("ALL")
+        o: popart.AnchorReturnType("All"),
+        l1: popart.AnchorReturnType("All")
     }
     dataFlow = popart.DataFlow(1, anchor_config)
 
@@ -33,8 +32,7 @@ def test_groupHostSync():
     }
 
     session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                      losses=[loss],
-                                      dataFeed=dataFlow,
+                                      dataFlow=dataFlow,
                                       deviceInfo=tu.create_test_device(),
                                       userOptions=options)
 
@@ -46,6 +44,7 @@ def test_groupHostSync():
     stepio = popart.PyStepIO({a: input_a}, anchors)
     session.run(stepio)
     summaryReport = session.getSummaryReport()
+
     lines = summaryReport.split('\n')
     order = []
     first = False
@@ -73,7 +72,7 @@ def test_groupHostSync():
             countSeq += 1
             if countSeq >= 7:
                 break
-        if re.search(r"OnTileExecute: 105/Op/Add", l):
+        if re.search(r"OnTileExecute: 104/Op/Add", l):
             order.append(1)
             first = True
         if re.search(r"OnTileExecute: 101/abs/Op/Absolute", l):
@@ -83,6 +82,7 @@ def test_groupHostSync():
         if re.search(r"StreamCopy", l) and first:
             order.append(4)
             countStreams += 1
+
     # The streamcopy to host should only happen at the end (after ReduceExpression)
     # Expected list with the option enabled: [1,2,3,4,4]
     # Expected list without the option: [1,4,4,2,3,4,4]

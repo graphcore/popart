@@ -24,14 +24,14 @@ def test_basic(tmpdir, capfd):
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
     opts.enableOutlining = False
     opts.enableOutliningCopyCostPruning = False
 
     session = popart.InferenceSession(fnModel=proto,
-                                      dataFeed=dataFlow,
+                                      dataFlow=dataFlow,
                                       userOptions=opts,
                                       deviceInfo=tu.create_test_device())
 
@@ -90,23 +90,24 @@ def test_train(tmpdir, capfd):
 
     # c1 will be printed, but d__c1 will not
     o = builder.aiGraphcore.printtensor([c1], print_gradient=0)
-    builder.addOutputTensor(o)
+    l1 = builder.aiGraphcore.l1loss([o],
+                                    0.1,
+                                    reduction=popart.ReductionType.Sum)
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
     opts.enableOutlining = False
     opts.enableOutliningCopyCostPruning = False
 
-    session = popart.TrainingSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        userOptions=opts,
-        optimizer=popart.ConstSGD(0.1),
-        losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
-        deviceInfo=tu.create_test_device())
+    session = popart.TrainingSession(fnModel=proto,
+                                     dataFlow=dataFlow,
+                                     userOptions=opts,
+                                     optimizer=popart.ConstSGD(0.1),
+                                     loss=l1,
+                                     deviceInfo=tu.create_test_device())
 
     session.prepareDevice()
 

@@ -1,6 +1,7 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <vector>
+#include <poprithms/util/stringutil.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/error.hpp>
 
@@ -8,7 +9,7 @@ namespace popart {
 
 AnchorReturnType::AnchorReturnType(std::string artString)
     : artStr_(artString), artId_(getIdFromStr(artString)), returnPeriod_(0) {
-  if (id() == AnchorReturnTypeId::EVERYN) {
+  if (id() == AnchorReturnTypeId::EveryN) {
     throw error("Must specify return period with option 'EVERYN'");
   }
 }
@@ -16,7 +17,7 @@ AnchorReturnType::AnchorReturnType(std::string artString)
 AnchorReturnType::AnchorReturnType(std::string artString, int returnPeriod)
     : artStr_(artString), artId_(getIdFromStr(artString)),
       returnPeriod_(returnPeriod) {
-  if (id() == AnchorReturnTypeId::EVERYN) {
+  if (id() == AnchorReturnTypeId::EveryN) {
     if (returnPeriod_ <= 0) {
       throw error("Anchor return period must be greater than zero");
     }
@@ -27,7 +28,7 @@ AnchorReturnType::AnchorReturnType(std::string artString, int returnPeriod)
 }
 
 int AnchorReturnType::rp() const {
-  if (id() == AnchorReturnTypeId::EVERYN)
+  if (id() == AnchorReturnTypeId::EveryN)
     return returnPeriod_;
   else
     throw error("A return period should not be supplied for this anchor "
@@ -35,37 +36,38 @@ int AnchorReturnType::rp() const {
 }
 
 AnchorReturnTypeId AnchorReturnType::getIdFromStr(std::string artString) {
-  if (artString == "FINAL")
-    return AnchorReturnTypeId::FINAL;
-  else if (artString == "EVERYN")
-    return AnchorReturnTypeId::EVERYN;
-  else if (artString == "ALL")
-    return AnchorReturnTypeId::ALL;
-  else if (artString == "SUM")
-    return AnchorReturnTypeId::SUM;
+  auto tempStr = poprithms::util::lowercase(artString);
+  if (tempStr == "final")
+    return AnchorReturnTypeId::Final;
+  else if (tempStr == "everyn")
+    return AnchorReturnTypeId::EveryN;
+  else if (tempStr == "all")
+    return AnchorReturnTypeId::All;
+  else if (tempStr == "sum")
+    return AnchorReturnTypeId::Sum;
   else
     throw error("Invalid anchor return type ID supplied: " + artString);
 }
 
 std::ostream &operator<<(std::ostream &oss, AnchorReturnTypeId art) {
   switch (art) {
-  case (AnchorReturnTypeId::FINAL): {
-    oss << "FINAL";
+  case (AnchorReturnTypeId::Final): {
+    oss << "Final";
     break;
   }
 
-  case (AnchorReturnTypeId::SUM): {
-    oss << "SUM";
+  case (AnchorReturnTypeId::Sum): {
+    oss << "Sum";
     break;
   }
 
-  case (AnchorReturnTypeId::EVERYN): {
-    oss << "EVERYN";
+  case (AnchorReturnTypeId::EveryN): {
+    oss << "EveryN";
     break;
   }
 
-  case (AnchorReturnTypeId::ALL): {
-    oss << "ALL";
+  case (AnchorReturnTypeId::All): {
+    oss << "All";
     break;
   }
   }
@@ -96,7 +98,7 @@ DataFlow::DataFlow(int bps, const std::map<TensorId, AnchorReturnType> &m)
     // used when building the graph so that a minimum of Tensors
     // are added to track batch count.
     // Don't track batch count for 'ALL' or 'FINAL' return types
-    if (id_rt.second.id() == AnchorReturnTypeId::EVERYN) {
+    if (id_rt.second.id() == AnchorReturnTypeId::EveryN) {
       int rp = id_rt.second.rp();
       if (std::find(v_rps.begin(), v_rps.end(), rp) == v_rps.end()) {
         v_rps.push_back(rp);
@@ -136,7 +138,7 @@ AnchorReturnType DataFlow::art(TensorId anchorId) const {
 
 void DataFlow::isValidAnchorReturnPeriod(TensorId anchorId,
                                          int batchesPerStep) {
-  if (art(anchorId).id() == AnchorReturnTypeId::EVERYN) {
+  if (art(anchorId).id() == AnchorReturnTypeId::EveryN) {
     if (art(anchorId).rp() > batchesPerStep) {
       throw error("Return period must be <= to the number of batches per step");
     } else if (batchesPerStep % art(anchorId).rp() != 0) {

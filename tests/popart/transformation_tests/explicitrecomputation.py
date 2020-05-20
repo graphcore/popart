@@ -42,14 +42,14 @@ def test_explicit_recomputation(tmpdir):
         for i in (ip, m1, m2, m3):
             anchorIds.append(popart.reservedGradientPrefix() + i)
 
-        out = m3
+        out = builder.aiGraphcore.identityloss([m3])
         builder.addOutputTensor(out)
 
         device = tu.create_test_device()
 
         dataflow_anchors = {}
         for anchorId in anchorIds:
-            dataflow_anchors.update({anchorId: popart.AnchorReturnType("ALL")})
+            dataflow_anchors.update({anchorId: popart.AnchorReturnType("All")})
 
         opts = popart.SessionOptions()
         opts.explicitRecomputation = explicit_recompute
@@ -58,10 +58,10 @@ def test_explicit_recomputation(tmpdir):
 
         session = popart.TrainingSession(
             fnModel=proto,
-            dataFeed=popart.DataFlow(1, dataflow_anchors),
+            dataFlow=popart.DataFlow(1, dataflow_anchors),
             optimizer=popart.ConstSGD(0.01),
-            losses=[popart.L1Loss(out, "l1LossVal", 0.1)],
-            passes=popart.Patterns(popart.PatternsLevel.ALL),
+            loss=out,
+            patterns=popart.Patterns(popart.PatternsLevel.All),
             userOptions=opts,
             deviceInfo=device)
 

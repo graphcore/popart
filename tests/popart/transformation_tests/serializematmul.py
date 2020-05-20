@@ -112,7 +112,7 @@ def test_matmul_serialization_invalid_factor(tmpdir):
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = getBaseOptions()
 
@@ -121,9 +121,9 @@ def test_matmul_serialization_invalid_factor(tmpdir):
     with pytest.raises(popart.popart_exception) as e_info:
         session = popart.InferenceSession(
             fnModel=proto,
-            dataFeed=dataFlow,
+            dataFlow=dataFlow,
             userOptions=opts,
-            passes=pat,
+            patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
     assert (e_info.value.args[0].startswith(
@@ -159,7 +159,7 @@ def test_matmul_serialization_inference(tmpdir):
 
         proto = builder.getModelProto()
 
-        dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+        dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
         opts = getBaseOptions()
 
@@ -168,9 +168,9 @@ def test_matmul_serialization_inference(tmpdir):
 
         session = popart.InferenceSession(
             fnModel=proto,
-            dataFeed=dataFlow,
+            dataFlow=dataFlow,
             userOptions=opts,
-            passes=pat,
+            patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
         session.prepareDevice()
@@ -280,38 +280,39 @@ def test_matmul_serialization_training_1(tmpdir):
         builder.setSerializeMatMul({o}, matmul_serialization_mode,
                                    matmul_serialization_factor)
 
+        loss = builder.aiGraphcore.identityloss([o])
+
         proto = builder.getModelProto()
 
         dataFlow = popart.DataFlow(
             1,
             {
                 o:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 rhs:
-                popart.AnchorReturnType("FINAL"),
+                popart.AnchorReturnType("Final"),
                 popart.reservedGradientPrefix() + lhs:
-                popart.AnchorReturnType("ALL"),
-                #popart.reservedGradientPrefix() + rhs: popart.AnchorReturnType("ALL"), << T11469
+                popart.AnchorReturnType("All"),
+                #popart.reservedGradientPrefix() + rhs: popart.AnchorReturnType("All"), << T11469
             })
 
         opts = getBaseOptions()
 
         pat = popart.Patterns(
-            ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp'])
+            ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp', 'OpToIdentity'])
 
         session = popart.TrainingSession(
             fnModel=proto,
-            dataFeed=dataFlow,
+            dataFlow=dataFlow,
             userOptions=opts,
-            losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
+            loss=loss,
             optimizer=popart.ConstSGD(0.01),
-            passes=pat,
+            patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
         session.prepareDevice()
 
         session.weightsFromHost()
-        session.optimizerFromHost()
 
         anchors = session.initAnchorArrays()
 
@@ -535,36 +536,37 @@ def test_matmul_serialization_training_2(tmpdir):
             builder.aiOnnx, [o],
             [lhs_group_dim, input_channels, output_channels])
 
+        loss = builder.aiGraphcore.identityloss([o_reshape])
+
         proto = builder.getModelProto()
 
         dataFlow = popart.DataFlow(
             1, {
                 o_reshape:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 rhs:
-                popart.AnchorReturnType("FINAL"),
+                popart.AnchorReturnType("Final"),
                 popart.reservedGradientPrefix() + lhs:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
             })
 
         opts = getBaseOptions()
 
         pat = popart.Patterns(
-            ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp'])
+            ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp', 'OpToIdentity'])
 
         session = popart.TrainingSession(
             fnModel=proto,
-            dataFeed=dataFlow,
+            dataFlow=dataFlow,
             userOptions=opts,
-            losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
+            loss=loss,
             optimizer=popart.ConstSGD(0.01),
-            passes=pat,
+            patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
         session.prepareDevice()
 
         session.weightsFromHost()
-        session.optimizerFromHost()
 
         anchors = session.initAnchorArrays()
 
@@ -790,38 +792,39 @@ def test_matmul_serialization_precision(tmpdir):
                                    matmul_serialization_factor,
                                    keep_precision=True)
 
+        loss = builder.aiGraphcore.identityloss([o])
+
         proto = builder.getModelProto()
 
         dataFlow = popart.DataFlow(
             1,
             {
                 o:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 rhs:
-                popart.AnchorReturnType("FINAL"),
+                popart.AnchorReturnType("Final"),
                 popart.reservedGradientPrefix() + lhs:
-                popart.AnchorReturnType("ALL"),
-                #popart.reservedGradientPrefix() + rhs: popart.AnchorReturnType("ALL"), << T11469
+                popart.AnchorReturnType("All"),
+                #popart.reservedGradientPrefix() + rhs: popart.AnchorReturnType("All"), << T11469
             })
 
         opts = getBaseOptions()
 
         pat = popart.Patterns(
-            ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp'])
+            ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp', 'OpToIdentity'])
 
         session = popart.TrainingSession(
             fnModel=proto,
-            dataFeed=dataFlow,
+            dataFlow=dataFlow,
             userOptions=opts,
-            losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
+            loss=loss,
             optimizer=popart.ConstSGD(0.01),
-            passes=pat,
+            patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
         session.prepareDevice()
 
         session.weightsFromHost()
-        session.optimizerFromHost()
 
         anchors = session.initAnchorArrays()
 
@@ -1051,6 +1054,8 @@ def test_matmul_serialization_training_with_gradient_accumlation(tmpdir):
 
         o = builder.aiOnnx.matmul([lhs, rhs])
 
+        loss = builder.aiGraphcore.identityloss([o])
+
         builder.setSerializeMatMul({o}, matmul_serialization_mode,
                                    matmul_serialization_factor)
 
@@ -1060,12 +1065,12 @@ def test_matmul_serialization_training_with_gradient_accumlation(tmpdir):
             20,
             {
                 o:
-                popart.AnchorReturnType("ALL"),
+                popart.AnchorReturnType("All"),
                 rhs:
-                popart.AnchorReturnType("FINAL"),
+                popart.AnchorReturnType("Final"),
                 popart.reservedGradientPrefix() + lhs:
-                popart.AnchorReturnType("ALL"),
-                #popart.reservedGradientPrefix() + rhs: popart.AnchorReturnType("ALL"), << T11469
+                popart.AnchorReturnType("All"),
+                #popart.reservedGradientPrefix() + rhs: popart.AnchorReturnType("All"), << T11469
             })
 
         opts = getBaseOptions()
@@ -1074,21 +1079,20 @@ def test_matmul_serialization_training_with_gradient_accumlation(tmpdir):
         opts.accumulationFactor = 5
 
         pat = popart.Patterns(
-            ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp'])
+            ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp', 'OpToIdentity'])
 
         session = popart.TrainingSession(
             fnModel=proto,
-            dataFeed=dataFlow,
+            dataFlow=dataFlow,
             userOptions=opts,
-            losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
+            loss=loss,
             optimizer=popart.ConstSGD(0.01),
-            passes=pat,
+            patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
         session.prepareDevice()
 
         session.weightsFromHost()
-        session.optimizerFromHost()
 
         anchors = session.initAnchorArrays()
 

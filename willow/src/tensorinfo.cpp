@@ -112,6 +112,39 @@ static std::string npOutExceptionMessage(const std::vector<int64_t> &s0,
   return ss.str();
 }
 
+bool npBroadcastable(const std::vector<int64_t> &s0,
+                     const std::vector<int64_t> &s1) {
+  size_t overlap;
+  return npBroadcastable(s0, s1, overlap);
+}
+
+bool npBroadcastable(const std::vector<int64_t> &s0,
+                     const std::vector<int64_t> &s1,
+                     size_t &overlap) {
+  // Calculate the length of the overlap between `s0` and `s1` in `result`.
+  //
+  // In the given example:
+  // overlap := min(|s0|, |s1|) = 3
+  overlap = std::min(s0.size(), s1.size());
+
+  bool broadcastable = std::inner_product(s0.rbegin(),
+                                          std::next(s0.rbegin(), overlap),
+                                          s1.rbegin(),
+                                          true,
+                                          std::logical_and<bool>(),
+                                          isBroadcastableDims);
+
+  return broadcastable;
+}
+
+bool npBroadcastable(const TensorInfo &i0, const TensorInfo &i1) {
+  if (i0.dataType() != i1.dataType()) {
+    return false;
+  }
+
+  return npBroadcastable(i0.shape(), i1.shape());
+}
+
 // Calculate the numpy broadcast shape as described in
 // https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
 //
@@ -123,17 +156,18 @@ static std::string npOutExceptionMessage(const std::vector<int64_t> &s0,
 std::vector<int64_t> npOut(const std::vector<int64_t> &s0,
                            const std::vector<int64_t> &s1,
                            const std::string &debugName) {
+
+  // Check that the overlapping region is numpy broadcastable.
+  size_t overlap;
+  if (!npBroadcastable(s0, s1, overlap)) {
+    throw error(npOutExceptionMessage(s0, s1, debugName));
+  }
+
   // In the given example:
   // s0      = {   1, 4, 5} &
   // s1      = {2, 3, 4, 5} =>
   // result := {1, 1, 1, 1}
   std::vector<int64_t> result(std::max(s0.size(), s1.size()), 1);
-
-  // Calculate the length of the overlap between `s0` and `s1` in `result`.
-  //
-  // In the given example:
-  // overlap := min(|s0|, |s1|) = 3
-  const auto overlap = std::min(s0.size(), s1.size());
 
   // If the lengths of `s0` and `s1` mismatch, copy the prefix of the longer
   // shape into `result`. At least one of these copies will be a no-op.

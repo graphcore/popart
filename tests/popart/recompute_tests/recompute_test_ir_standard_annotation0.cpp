@@ -11,6 +11,7 @@
 #include <popart/filereader.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/sessionoptions.hpp>
@@ -54,16 +55,15 @@ BOOST_AUTO_TEST_CASE(StandardRecomputeTest) {
       act = conv(builder.get(), act, weight_data);
       act = aiOnnx.relu({act});
     }
+    auto l1 = builder->aiGraphcoreOpset1().l1loss({act}, 0.1);
 
     auto proto      = builder->getModelProto();
     auto modelProto = io::getModelFromString(proto);
 
     // Add the last tensor as an anchor
-    auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("ALL")}});
+    auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("All")}});
     auto optimizer = ConstSGD(0.01);
-    std::vector<std::shared_ptr<Loss>> losses{
-        std::make_shared<L1Loss>(act, "l1LossVal", 0.1, ReductionType::SUM)};
-    auto device = createTestDevice(TEST_TARGET);
+    auto device    = createTestDevice(TEST_TARGET);
 
     SessionOptions opts;
     opts.autoRecomputation = RecomputationType::Standard;
@@ -88,14 +88,14 @@ BOOST_AUTO_TEST_CASE(StandardRecomputeTest) {
     ir.prepare({modelProto,
                 InputShapeInfo(),
                 dataFlow,
-                losses,
+                l1,
                 &optimizer,
                 *device,
                 opts,
-                Patterns({PreAliasPatternType::OPTOIDENTITY,
-                          PreAliasPatternType::POSTNREPL})});
+                Patterns({PreAliasPatternType::OptoIdentity,
+                          PreAliasPatternType::PostNRepl})});
 
-    // RECOMPUTE and RECOMPUTED counters
+    // Recompute and Recomputed counters
     int nRecompute  = 0;
     int nRecomputed = 0;
 
@@ -103,77 +103,77 @@ BOOST_AUTO_TEST_CASE(StandardRecomputeTest) {
 
       if (recomputation && enableOutlining) {
         // Enabling outlining means the CallOp replaces the other Ops
-        // No Op cannot be RECOMPUTE
-        BOOST_CHECK(op->settings.recomputeType != RecomputeType::RECOMPUTE);
+        // No Op cannot be Recompute
+        BOOST_CHECK(op->settings.recomputeType != RecomputeType::Recompute);
 
         // All other Ops except Relu are replaced by CallOp
-        // Relu and Call should have at least type set to RECOMPUTED
-        if (op->settings.recomputeType == RecomputeType::RECOMPUTED) {
+        // Relu and Call should have at least type set to Recomputed
+        if (op->settings.recomputeType == RecomputeType::Recomputed) {
           if ((op->opid.type == "Relu") || (op->opid.type == "Call")) {
             nRecomputed++;
           }
         }
 
-        // All Grads should have recomputeType set to CHECKPOINT
+        // All Grads should have recomputeType set to Checkpoint
         if (op->fromLoss == PathFromLoss::Yes) {
-          BOOST_CHECK(op->settings.recomputeType == RecomputeType::CHECKPOINT);
+          BOOST_CHECK(op->settings.recomputeType == RecomputeType::Checkpoint);
         }
       }
 
       if (!recomputation && enableOutlining) {
-        // Recomputation has been disabled. RECOMPUTED must nost exist
-        BOOST_CHECK(op->settings.recomputeType != RecomputeType::RECOMPUTED);
+        // Recomputation has been disabled. Recomputed must nost exist
+        BOOST_CHECK(op->settings.recomputeType != RecomputeType::Recomputed);
 
-        if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
+        if (op->settings.recomputeType == RecomputeType::Recompute) {
           if (op->opid.type == "Call") {
             nRecompute++;
           }
         }
 
-        // All Grads should have recompute type set to CHECKPOINT
+        // All Grads should have recompute type set to Checkpoint
         if (op->fromLoss == PathFromLoss::Yes) {
-          BOOST_CHECK(op->settings.recomputeType == RecomputeType::CHECKPOINT);
+          BOOST_CHECK(op->settings.recomputeType == RecomputeType::Checkpoint);
         }
       }
 
       if (recomputation && !enableOutlining) {
-        // We can accept CHECKPOINT or UNDEFINED or non RECOMPUTE types
-        BOOST_CHECK(op->settings.recomputeType == RecomputeType::CHECKPOINT ||
-                    op->settings.recomputeType == RecomputeType::UNDEFINED ||
-                    op->settings.recomputeType != RecomputeType::RECOMPUTE);
+        // We can accept Checkpoint or UNDEFINED or non Recompute types
+        BOOST_CHECK(op->settings.recomputeType == RecomputeType::Checkpoint ||
+                    op->settings.recomputeType == RecomputeType::Undefined ||
+                    op->settings.recomputeType != RecomputeType::Recompute);
 
         // Outlining is disabled, CallOp must not exists
         BOOST_CHECK(op->opid.type != "Call");
 
         // Same as when both recomputation and outlining is enabled
         // Except Conv replaces CallOp
-        if (op->settings.recomputeType == RecomputeType::RECOMPUTED) {
+        if (op->settings.recomputeType == RecomputeType::Recomputed) {
           if ((op->opid.type == "Relu") || (op->opid.type == "Call")) {
             nRecomputed++;
           }
         }
 
-        // All Grads must have recompute type set to CHECKPOINT
+        // All Grads must have recompute type set to Checkpoint
         if (op->fromLoss == PathFromLoss::Yes) {
-          BOOST_CHECK(op->settings.recomputeType == RecomputeType::CHECKPOINT);
+          BOOST_CHECK(op->settings.recomputeType == RecomputeType::Checkpoint);
         }
       }
 
       if (!recomputation && !enableOutlining) {
 
-        // Recomputation has been disabled. RECOMPUTED must nost exist
-        BOOST_CHECK(op->settings.recomputeType != RecomputeType::RECOMPUTED);
+        // Recomputation has been disabled. Recomputed must nost exist
+        BOOST_CHECK(op->settings.recomputeType != RecomputeType::Recomputed);
 
         // Outlining is disabled, CallOp must not exists
         BOOST_CHECK(op->opid.type != "Call");
 
-        if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
+        if (op->settings.recomputeType == RecomputeType::Recompute) {
           ++nRecompute;
         }
 
-        // All Grads must have recompute type set to CHECKPOINT
+        // All Grads must have recompute type set to Checkpoint
         if (op->fromLoss == PathFromLoss::Yes) {
-          BOOST_CHECK(op->settings.recomputeType == RecomputeType::CHECKPOINT);
+          BOOST_CHECK(op->settings.recomputeType == RecomputeType::Checkpoint);
         }
       }
     }

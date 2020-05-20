@@ -321,10 +321,13 @@ const static AiGraphcoreOpIdV1 ShrinkInplace("ShrinkInplace");
 const static AiGraphcoreOpIdV1 Stash("Stash");
 const static AiGraphcoreOpIdV1 ExpInplace("ExpInplace");
 const static AiGraphcoreOpIdV1 EluInplace("EluInplace");
-const static AiGraphcoreOpIdV1 L1("L1");
-const static AiGraphcoreOpIdV1 Nll("Nll");
+
+const static AiGraphcoreOpIdV1 L1("L1", 1, 1);
+const static AiGraphcoreOpIdV1 Nll("Nll", 2, 1);
+const static AiGraphcoreOpIdV1 IdentityLoss("IdentityLoss", 1, 1);
 
 const static AiGraphcoreOpIdV1 IpuCopy("IpuCopy");
+const static AiGraphcoreOpIdV1 IoTileCopy("IoTileCopy");
 
 const static AiGraphcoreOpIdV1 Init_1("Init", 0, 1);
 const static AiGraphcoreOpIdV1 CacheStore("CacheStore", {1, 2}, 0);
@@ -338,8 +341,6 @@ const static AiGraphcoreOpIdV1 DynamicZero_1("DynamicZero", 2, 1);
 const static AiGraphcoreOpIdV1 DynamicZeroInplace("DynamicZeroInplace", 2, 1);
 const static AiGraphcoreOpIdV1 DynamicAdd_1("DynamicAdd", 3, 1);
 const static AiGraphcoreOpIdV1 DynamicAddInplace("DynamicAddInplace", 3, 1);
-
-const static AiGraphcoreOpIdV1 RecomputePrereq("RecomputePrereq");
 
 const static AiGraphcoreOpIdV1 SGD0VarUpdate("SGD0VarUpdate");
 const static AiGraphcoreOpIdV1 SGD1Combo("SGD1Combo");
@@ -357,6 +358,7 @@ const static AiGraphcoreOpIdV1
 const static AiGraphcoreOpIdV1 ReplicatedAllReduce("ReplicatedAllReduce", 1, 1);
 const static AiGraphcoreOpIdV1
     ReplicatedReduceScatter("ReplicatedReduceScatter");
+const static AiGraphcoreOpIdV1 ReplicatedAllGather("ReplicatedAllGather");
 
 const static AiGraphcoreOpIdV1 CopyVarUpdate("CopyVarUpdate");
 const static AiGraphcoreOpIdV1 FlattenInplace("FlattenInplace");
@@ -398,6 +400,9 @@ const static OperatorIdentifier DynamicAdd  = CustomOperators::DynamicAdd_1;
 const static OperatorIdentifier Call        = CustomOperators::Call_1;
 const static OperatorIdentifier ReplicatedAllReduce =
     CustomOperators::ReplicatedAllReduce;
+const static OperatorIdentifier L1           = CustomOperators::L1;
+const static OperatorIdentifier Nll          = CustomOperators::Nll;
+const static OperatorIdentifier IdentityLoss = CustomOperators::IdentityLoss;
 } // namespace OpSet1
 } // namespace AiGraphcore
 

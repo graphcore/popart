@@ -13,7 +13,7 @@
 namespace popart {
 namespace view {
 
-enum class AccessType { NONE = 0, READ = 1, WRITE = 2, READ_WRITE = 3 };
+enum class AccessType { None = 0, Read = 1, Write = 2, ReadWrite = 3 };
 
 AccessType combine(std::set<AccessType> accessTypes);
 
@@ -47,7 +47,7 @@ public:
   void checks() const;
   static Region getEmpty(int64_t r);
   static Region getFull(const Shape &s,
-                        AccessType accessType = AccessType::READ_WRITE);
+                        AccessType accessType = AccessType::ReadWrite);
   bool operator==(const Region &) const;
   bool operator!=(const Region &) const;
   const std::vector<int64_t> &getLower() const { return lower; }
@@ -64,7 +64,7 @@ private:
   // by looking for equal lower and upper bounds
   bool isEmptyRank0{false};
 
-  AccessType accessType{AccessType::NONE};
+  AccessType accessType{AccessType::None};
 
   Region(const std::vector<int64_t> &lower_,
          const std::vector<int64_t> &upper_,

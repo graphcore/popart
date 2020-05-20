@@ -11,6 +11,7 @@
 #include <popart/filereader.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/sessionoptions.hpp>
@@ -38,7 +39,7 @@ TensorId batchnormalization(Builder *b, TensorId act, ConstVoidData bndata) {
 
 BOOST_AUTO_TEST_CASE(NormOnlyRecomputeTest) {
 
-  // Test that norms are RECOMPUTE
+  // Test that norms are Recompute
 
   // The model:
   //
@@ -61,13 +62,14 @@ BOOST_AUTO_TEST_CASE(NormOnlyRecomputeTest) {
 
     auto act = builder->addInputTensor(input_shape);
 
-    act = conv(builder.get(), act, weight_data);
-    act = batchnormalization(builder.get(), act, bn_data);
-    act = aiOnnx.relu({act});
-    act = conv(builder.get(), act, weight_data);
-    act = aiOnnx.relu({act});
-    act = conv(builder.get(), act, weight_data);
-    act = batchnormalization(builder.get(), act, bn_data);
+    act     = conv(builder.get(), act, weight_data);
+    act     = batchnormalization(builder.get(), act, bn_data);
+    act     = aiOnnx.relu({act});
+    act     = conv(builder.get(), act, weight_data);
+    act     = aiOnnx.relu({act});
+    act     = conv(builder.get(), act, weight_data);
+    act     = batchnormalization(builder.get(), act, bn_data);
+    auto l1 = builder->aiGraphcoreOpset1().l1loss({act}, 0.1);
 
     int nBNs = 2;
 
@@ -75,11 +77,9 @@ BOOST_AUTO_TEST_CASE(NormOnlyRecomputeTest) {
     auto modelProto = io::getModelFromString(proto);
 
     // Add the last tensor, and the 3rd tensor as anchors
-    auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("ALL")}});
+    auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("All")}});
     auto optimizer = ConstSGD(0.01);
-    std::vector<std::shared_ptr<Loss>> losses{
-        std::make_shared<L1Loss>(act, "l1LossVal", 0.1, ReductionType::SUM)};
-    auto device = createTestDevice(TEST_TARGET);
+    auto device    = createTestDevice(TEST_TARGET);
 
     SessionOptions opts;
     if (explicitRecomputation) {
@@ -95,29 +95,29 @@ BOOST_AUTO_TEST_CASE(NormOnlyRecomputeTest) {
     ir.prepare({modelProto,
                 InputShapeInfo(),
                 dataFlow,
-                losses,
+                l1,
                 &optimizer,
                 *device,
                 opts,
-                Patterns({PreAliasPatternType::OPTOIDENTITY,
-                          PreAliasPatternType::POSTNREPL})});
+                Patterns({PreAliasPatternType::OptoIdentity,
+                          PreAliasPatternType::PostNRepl})});
 
     int nRecompute = 0;
     for (auto op : ir.getOpSchedule({})) {
       if (explicitRecomputation) {
-        if ((op->settings.recomputeType == RecomputeType::RECOMPUTED) &&
+        if ((op->settings.recomputeType == RecomputeType::Recomputed) &&
             (!op->opid.type.compare("BatchNormalization"))) {
           nRecompute++;
         } else {
-          BOOST_CHECK(op->settings.recomputeType == RecomputeType::CHECKPOINT);
+          BOOST_CHECK(op->settings.recomputeType == RecomputeType::Checkpoint);
         }
       } else {
         // When explicit recomputation is switched OFF, only the BNs should
-        // have their flags set to RECOMPUTE
+        // have their flags set to Recompute
         if (op->isNorm()) {
-          BOOST_CHECK(op->settings.recomputeType == RecomputeType::RECOMPUTE);
+          BOOST_CHECK(op->settings.recomputeType == RecomputeType::Recompute);
         } else {
-          BOOST_CHECK(op->settings.recomputeType == RecomputeType::CHECKPOINT);
+          BOOST_CHECK(op->settings.recomputeType == RecomputeType::Checkpoint);
         }
       }
     }

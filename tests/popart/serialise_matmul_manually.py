@@ -88,7 +88,7 @@ def test_manual_serialization():
     graph_transformer.convertAllFixedPointInitializersToConstants()
     builder = popart.Builder(graph_transformer.getModelProto())
 
-    loss1 = popart.L1Loss(Z, "l1LossVal1", 0.2)
+    l1 = builder.aiGraphcore.l1loss([Z], 0.2)
     dataFlow = popart.DataFlow(1, {})
     device = tu.create_test_device()
     userOptions = popart.SessionOptions()
@@ -99,17 +99,17 @@ def test_manual_serialization():
     patterns = popart.Patterns()
 
     session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                     dataFeed=dataFlow,
+                                     dataFlow=dataFlow,
                                      optimizer=popart.SGD(
                                          {"defaultLearningRate": (0.1, True)}),
-                                     losses=[loss1],
-                                     passes=patterns,
+                                     loss=l1,
+                                     patterns=patterns,
                                      userOptions=userOptions,
                                      deviceInfo=device)
 
     session.prepareDevice()
     session.weightsFromHost()
-    session.optimizerFromHost()
+
     inputVals = np.array(npr.randn(1 * N * C0), dtype=np.float32)
     stepio = popart.PyStepIO({X: inputVals}, {})
     session.run(stepio)
@@ -131,7 +131,7 @@ def test_manual_serialization():
     optimizer = optim.SGD(net.parameters(), lr=0.1)
 
     out = net(torch.from_numpy(inputVals.reshape([N, C0])))
-    loss = 0.2 * torch.sum(torch.abs(out))
+    loss = 0.2 * torch.mean(torch.abs(out))
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()

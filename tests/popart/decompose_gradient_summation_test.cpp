@@ -7,6 +7,7 @@
 #include <popart/builder.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/add.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/matmul.hpp>
@@ -57,12 +58,13 @@ BOOST_AUTO_TEST_CASE(Test0) {
       out = aiOnnx.matmul({out, w0}, "mm_layer" + std::to_string(layer));
       out = aiOnnx.relu({out}, "relu_layer" + std::to_string(layer));
     }
+    out = builder.aiGraphcoreOpset1().l1loss({out}, 0.1);
 
-    runner.anchors.emplace(getGradId(input), AnchorReturnType("ALL"));
+    runner.anchors.emplace(getGradId(input), AnchorReturnType("All"));
     runner.opts.enableOutlining  = false; // to make introspecting the IR easy
     runner.opts.decomposeGradSum = true;
-    runner.patterns              = Patterns(PatternsLevel::DEFAULT);
-    runner.losses.push_back(new L1Loss(out, "l1Loss", 0.1, ReductionType::SUM));
+    runner.patterns              = Patterns(PatternsLevel::Default);
+    runner.loss                  = out;
 
     return out;
   });

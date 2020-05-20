@@ -106,7 +106,7 @@ poplar::Tensor GatherOpx::createInput(int index,
 }
 
 InputCreatorType GatherOpx::getInputCreatorType(int index0) const {
-  return index0 == GatherOp::dataInIndex() ? InputCreatorType::CANCREATE
+  return index0 == GatherOp::dataInIndex() ? InputCreatorType::CanCreate
                                            : Opx::getInputCreatorType(index0);
 }
 

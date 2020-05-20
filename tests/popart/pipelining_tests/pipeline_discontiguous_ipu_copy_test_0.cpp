@@ -1,11 +1,11 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE PipelineTrainingTest0
 
+#include <../random_util.hpp>
 #include <algorithm>
 #include <boost/test/unit_test.hpp>
 #include <map>
 #include <memory>
-#include <random>
 #include <tuple>
 #include <vector>
 #include <popart/builder.hpp>
@@ -14,6 +14,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
@@ -38,8 +39,8 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
   auto test = [printStdOut](TestType tt) {
     // input stream samples are generated randomly
     int seed = 1011;
-    std::default_random_engine eng(seed);
-    std::uniform_real_distribution<float> fdis(0, 1);
+    DefaultRandomEngine eng(seed);
+    UniformRealDistribution<float> fdis(0.f, 1.f);
 
     int64_t batchSize      = 4;
     int64_t batchesPerStep = 400;
@@ -141,17 +142,16 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
     // sum of the 2 branch outputs
     auto actFinal = aiOnnx.add({actFinal0, actFinal1}, "finalAct");
 
-    builder->addOutputTensor(actFinal);
-    auto proto = builder->getModelProto();
-    // No anchors
-    auto dataFlow = DataFlow(batchesPerStep);
-
     float learnRate = 0.01;
     auto optimizer  = ConstSGD(learnRate);
 
     float lambda = 0.1;
-    auto loss    = std::make_shared<L1Loss>(
-        actFinal, "l1LossVal", lambda, ReductionType::SUM);
+    actFinal     = builder->aiGraphcoreOpset1().l1loss(
+        {actFinal}, lambda, ReductionType::Sum);
+
+    auto proto = builder->getModelProto();
+    // No anchors
+    auto dataFlow = DataFlow(batchesPerStep);
 
     auto device = createTestDevice(TEST_TARGET, 7);
 
@@ -180,11 +180,11 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
       irWithPipe.prepare({modelProto,
                           InputShapeInfo(),
                           dataFlow,
-                          {loss},
+                          actFinal,
                           &optimizer,
                           *device,
                           userOptions,
-                          Patterns(PatternsLevel::DEFAULT)});
+                          Patterns(PatternsLevel::Default)});
 
       auto copiesWithPipe = getIpuCopies(irWithPipe);
       for (auto cop : copiesWithPipe) {
@@ -192,19 +192,16 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
             std::make_tuple(cop->getSourceIpu(), cop->getDestIpu()));
       }
 
-      loss = std::make_shared<L1Loss>(
-          actFinal, "l1LossVal", lambda, ReductionType::SUM);
-
       userOptions.enablePipelining = false;
       Ir irWithoutPipe;
       irWithoutPipe.prepare({modelProto,
                              InputShapeInfo(),
                              dataFlow,
-                             {loss},
+                             actFinal,
                              &optimizer,
                              *device,
                              userOptions,
-                             Patterns(PatternsLevel::DEFAULT)});
+                             Patterns(PatternsLevel::Default)});
 
       // we are testing both discontiguous copies in the forward and backward
       // passes. So  check that we actually have both types in the graph.
@@ -281,12 +278,12 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
       auto session = popart::TrainingSession::createFromOnnxModel(
           proto,
           dataFlow,
-          {loss.get()},
+          actFinal,
           optimizer,
           device,
           InputShapeInfo(),
           userOptions,
-          popart::Patterns(PatternsLevel::DEFAULT));
+          popart::Patterns(PatternsLevel::Default));
 
       session->prepareDevice();
 

@@ -24,7 +24,7 @@ SumArgGradOp::SumArgGradOp(const SumOp &op_, InIndex inputIndex)
     : LinearVariadicGradOp(Onnx::GradOperators::SumArgGrad, op_, inputIndex) {
 
   gradInputInfoVec = {
-      {getGradInIndex(), VariadicOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getGradInIndex(), VariadicOp::getOutIndex(), GradOpInType::GradOut}};
 }
 
 std::unique_ptr<Op> SumArgGradOp::clone() const {

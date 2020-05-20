@@ -11,6 +11,7 @@
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/tensor.hpp>
@@ -60,6 +61,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_AddCastMatMul) {
   ConstVoidData i1cv = {i1.data(), {"INT32", std::vector<int64_t>{1, N}}};
   auto builder       = Builder::create();
   auto aiOnnx        = builder->aiOnnxOpset9();
+  auto aiGraphcore   = builder->aiGraphcoreOpset1();
   // The two fixed-point tensors which are added together are Constants
   auto i0Id   = aiOnnx.constant(i0cv, "i0cv");
   auto i1Id   = aiOnnx.constant(i1cv, "i1cv");
@@ -67,28 +69,27 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_AddCastMatMul) {
   auto i01Id  = aiOnnx.add({i0Id, i1Id});
   auto castId = aiOnnx.cast({i01Id}, "FLOAT");
   auto outId  = aiOnnx.matmul({dataId, castId});
-  builder->addOutputTensor(outId);
+  auto lossId = aiGraphcore.l1loss({outId}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto art       = AnchorReturnType("ALL");
+  auto art       = AnchorReturnType("All");
   auto dataFlow  = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(outId, "l1LossVal", 0.1, ReductionType::SUM)};
+
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              losses,
+              lossId,
               &optimizer,
               *device,
               {}, // no SessionOptions
-              Patterns({PreAliasPatternType::POSTNREPL})});
+              Patterns({PreAliasPatternType::PostNRepl})});
 
   // Check the ir
   // 1) The Matmul Op is present,
@@ -160,6 +161,7 @@ template <typename FROM, typename TO> void ConstExprTest_AddCastMatMul_Type() {
                         {getTypeName<FROM>(), std::vector<int64_t>{1, N}}};
   auto builder       = Builder::create();
   auto aiOnnx        = builder->aiOnnxOpset9();
+  auto aiGraphcore   = builder->aiGraphcoreOpset1();
   // The two fixed-point tensors which are added together are Constants
   auto i0Id   = aiOnnx.constant(i0cv, "i0cv");
   auto i1Id   = aiOnnx.constant(i1cv, "i1cv");
@@ -167,29 +169,27 @@ template <typename FROM, typename TO> void ConstExprTest_AddCastMatMul_Type() {
   auto i01Id  = aiOnnx.add({i0Id, i1Id});
   auto castId = aiOnnx.cast(
       {i01Id}, dataInfo.getDataTypeInfo()->name()); // DataType::FLOAT);
-  auto outId = aiOnnx.matmul({dataId, castId});
-  builder->addOutputTensor(outId);
+  auto outId  = aiOnnx.matmul({dataId, castId});
+  auto lossId = aiGraphcore.l1loss({outId}, 0.1);
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto art       = AnchorReturnType("ALL");
+  auto art       = AnchorReturnType("All");
   auto dataFlow  = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<L1Loss>(outId, "l1LossVal", 0.1, ReductionType::SUM)};
-  auto device = createTestDevice(TEST_TARGET);
+  auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              losses,
+              lossId,
               &optimizer,
               *device,
               {}, // no SessionOptions
-              Patterns({PreAliasPatternType::POSTNREPL})});
+              Patterns({PreAliasPatternType::PostNRepl})});
 
   // Check the ir
   // 1) The Matmul Op is present,

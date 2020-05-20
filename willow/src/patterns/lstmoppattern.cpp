@@ -174,7 +174,7 @@ bool LSTMPattern::apply(Op *op) const {
 // Disabled by default
 namespace {
 static PatternCreator<LSTMPattern>
-    lstmPattern(PreAliasPatternType::LSTMOP, "LSTMOp", false);
+    lstmPattern(PreAliasPatternType::LSTMOp, "LSTMOp", false);
 } // namespace
 
 } // namespace popart

@@ -24,6 +24,12 @@ overrideOP = {
     "ai.onnx.AveragePool:7": {
         "verifyInput": True,
     },
+    "ai.onnx.AveragePool:10": {
+        "verifyInput": True,
+    },
+    "ai.onnx.AveragePool:11": {
+        "verifyInput": True,
+    },
     "ai.onnx.MaxPool:1": {
         "verifyInput": True
     },
@@ -33,7 +39,13 @@ overrideOP = {
     "ai.onnx.MaxPool:10": {
         "verifyInput": True
     },
+    "ai.onnx.MaxPool:11": {
+        "verifyInput": True
+    },
     "ai.onnx.Pad:2": {
+        "verifyInput": True,
+    },
+    "ai.onnx.Pad:11": {
         "verifyInput": True,
     }
 }

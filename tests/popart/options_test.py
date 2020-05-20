@@ -23,7 +23,7 @@ def test_set_dotchecks():
     opts = popart.SessionOptions()
     assert (len(opts.dotChecks) == 0)
 
-    opts.dotChecks = {popart.DotCheck.FINAL, popart.DotCheck.FWD0}
+    opts.dotChecks = {popart.DotCheck.Final, popart.DotCheck.Fwd0}
     assert (len(opts.dotChecks) == 2)
 
 
@@ -86,13 +86,13 @@ def test_engine_options_passed_to_engine(tmpdir):
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
     opts.engineOptions = {'option': 'value'}
 
     session = popart.InferenceSession(fnModel=proto,
-                                      dataFeed=dataFlow,
+                                      dataFlow=dataFlow,
                                       userOptions=opts,
                                       deviceInfo=tu.create_test_device())
 

@@ -378,9 +378,13 @@ SGD::getOptimizerInputs(const Tensor &weight) const {
   std::vector<std::tuple<TensorId, TensorInfo>> optInputs;
   for (const auto &id : ids) {
     // empty denotes const, not an input
-    if (!id.empty()) {
-
+    if ((withAccl && smm1helper.idMatch(id)) || wdsf0helper.idMatch(id)) {
+      // Use weight dtype for momentum and weight decay, Float32 for everything
+      // else.
       auto tuppy = std::make_tuple(id, TensorInfo(weight.info.dataType(), {}));
+      optInputs.push_back(tuppy);
+    } else if (!id.empty()) {
+      auto tuppy = std::make_tuple(id, TensorInfo(DataType::FLOAT, {}));
       optInputs.push_back(tuppy);
     }
   }

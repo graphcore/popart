@@ -2,6 +2,7 @@
 #ifndef GUARD_NEURALNET_OPMANAGER_HPP
 #define GUARD_NEURALNET_OPMANAGER_HPP
 
+#include <boost/any.hpp>
 #include <functional>
 #include <map>
 #include <vector>
@@ -107,6 +108,9 @@ public:
                          const OpDefinition &details,
                          bool isPublic,
                          OpFactoryFunc func);
+
+  static Attributes
+  getAttributesFromAnyMap(std::map<std::string, boost::any> attributes);
 
   // Factory creation method
   // creates a op with matches the domain/type and has the largest version <=

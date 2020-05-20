@@ -215,7 +215,10 @@ ConvWeightsGradOp::ConvWeightsGradOp(const ConvOp &op_)
     : Op(Onnx::GradOperators::ConvWeightsGrad, op_.getSettings()),
       cloneOfCreator(op_.clone()),
       weightsInfo(op_.inInfo(ConvOp::getWeightsInIndex())) {
-  settings.schedulePriority = std::numeric_limits<double>::lowest();
+  if (getIr().getSessionOptions().pingPongPhases < 2 &&
+      getIr().getSessionOptions().batchSerializationFactor < 2) {
+    settings.schedulePriority = std::numeric_limits<double>::lowest();
+  }
 }
 
 std::unique_ptr<Op> ConvWeightsGradOp::clone() const {
@@ -232,8 +235,8 @@ const std::vector<GradInOutMapper> &ConvWeightsGradOp::gradInputInfo() const {
   // input at index getGradConvolvedIn() (0) : gradient of output of conv
   // input at index getPreConvolvedIn() (1)  : data input to conv
   static const std::vector<GradInOutMapper> inInfo = {
-      {getGradConvolvedInIndex(), ConvOp::getOutIndex(), GradOpInType::GRADOUT},
-      {getPreConvolvedInIndex(), ConvOp::getDataInIndex(), GradOpInType::IN}};
+      {getGradConvolvedInIndex(), ConvOp::getOutIndex(), GradOpInType::GradOut},
+      {getPreConvolvedInIndex(), ConvOp::getDataInIndex(), GradOpInType::In}};
   return inInfo;
 }
 
@@ -267,8 +270,8 @@ const std::vector<GradInOutMapper> &ConvDataGradOp::gradInputInfo() const {
   // input at index getGradConvolvedIn() : gradient of output of conv
   // input at index getWeightsIn()       : weights input to conv
   static const std::vector<GradInOutMapper> inInfo = {
-      {getGradConvolvedInIndex(), ConvOp::getOutIndex(), GradOpInType::GRADOUT},
-      {getWeightsInIndex(), ConvOp::getWeightsInIndex(), GradOpInType::IN}};
+      {getGradConvolvedInIndex(), ConvOp::getOutIndex(), GradOpInType::GradOut},
+      {getWeightsInIndex(), ConvOp::getWeightsInIndex(), GradOpInType::In}};
   return inInfo;
 }
 

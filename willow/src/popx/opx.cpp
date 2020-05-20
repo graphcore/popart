@@ -5,6 +5,7 @@
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/opx.hpp>
 #include <popart/popx/opxmanager.hpp>
+#include <popart/popx/viewchangers.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 
@@ -38,12 +39,13 @@ void Opx::grow(poplar::program::Sequence &) const {
 }
 
 InputCreatorType Opx::getInputCreatorType(InIndex) const {
-  return InputCreatorType::DEADEND;
+  return InputCreatorType::Deadend;
 }
 
 bool Opx::canUnwind(InIndex in, OutIndex) const {
   auto type = getInputCreatorType(in);
-  return type == InputCreatorType::CANUNWIND;
+  return type == InputCreatorType::CanUnwind ||
+         type == InputCreatorType::CanCreateOrUnwind;
 }
 
 poplar::Tensor
@@ -57,6 +59,12 @@ view::RegMap Opx::unwindRegion(InIndex, OutIndex) const {
   throw error("Opx cannot unwind the region between input "
               "and output for {}",
               op_p->opid);
+}
+
+bool Opx::hasCreatorViewChangers(InIndex) const { return false; }
+
+ViewChangers Opx::getCreatorViewChangers(InIndex) const {
+  return ViewChangers();
 }
 
 int64_t Opx::getVirtualGraphId() const {
@@ -74,7 +82,8 @@ int64_t Opx::getVirtualGraphId() const {
 
 poplar::Graph &Opx::graph() const {
   if (op_p->getIr().virtualGraphsEnabled()) {
-    return dv_p->getVirtualGraph(getVirtualGraphId());
+    return dv_p->getVirtualGraph(getVirtualGraphId(),
+                                 op_p->settings.useIoTiles);
   } else {
     return dv_p->graph();
   }
@@ -82,6 +91,10 @@ poplar::Graph &Opx::graph() const {
 
 const poplar::Tensor &Opx::get(TensorId id) const {
   return dv_p->tensors.get(id);
+}
+
+const poplar::Tensor &Opx::getView(TensorId id) const {
+  return dv_p->tensors.getView(id);
 }
 
 void Opx::insert(TensorId id, const poplar::Tensor &tensor) const {
@@ -111,6 +124,27 @@ const poplar::Tensor &Opx::getOutTensor(OutIndex index) const {
   } else {
     return get(op_p->output->id(index));
   }
+}
+
+const poplar::Tensor &Opx::getInView(InIndex index) const {
+  return getView(op_p->input->id(index));
+}
+
+const poplar::Tensor &Opx::getOutView(OutIndex index) const {
+  return getView(op_p->output->id(index));
+}
+
+bool Opx::hasInViewChangers(InIndex index) const {
+  return dv_p->tensors.hasViewChangers(op_p->input->id(index));
+}
+
+const ViewChangers &Opx::getInViewChangers(InIndex index) const {
+  return dv_p->tensors.getViewChangers(op_p->input->id(index));
+}
+
+void Opx::setOutViewChangers(OutIndex index,
+                             const ViewChangers &changers) const {
+  return dv_p->tensors.setViewChangers(op_p->output->id(index), changers);
 }
 
 void Opx::setOutTensor(OutIndex index, const poplar::Tensor &tensor) const {

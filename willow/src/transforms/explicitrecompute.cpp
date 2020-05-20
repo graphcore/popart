@@ -43,19 +43,33 @@ bool ExplicitRecompute::apply(Graph &graph) const {
   std::map<std::pair<TensorId, TensorContext>, TensorId> recomputedTensorMap;
 
   for (Op *op : schedule) {
-    if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
+    if (op->settings.recomputeType == RecomputeType::Recompute) {
       // Change every recompute op to checkpoint
-      op->settings.recomputeType = RecomputeType::CHECKPOINT;
-
-      auto context = getContext(op);
-
-      auto clone   = op->clone();
-      auto cloneid = graph.moveIntoGraph(std::move(clone));
+      op->settings.recomputeType = RecomputeType::Checkpoint;
+      auto clone                 = op->clone();
+      auto cloneid               = graph.moveIntoGraph(std::move(clone));
 
       Op *clone_op = graph.getOp(cloneid);
+
+      if (clone_op->hasPingPongPhase()) {
+        // Remap from forward to backward pingpong phase
+        PingPongPhase recomputePhase =
+            2 * ir.getSessionOptions().pingPongPhases - 2 -
+            clone_op->getPingPongPhase();
+        logging::trace(
+            "[ExplicitRecompute] Remapping {} ping pong phase {} -> {}",
+            clone_op->debugName(),
+            clone_op->getPingPongPhase(),
+            recomputePhase);
+        clone_op->setPingPongPhase(recomputePhase);
+      }
+
+      // Get context after remapping phases
+      auto context = getContext(clone_op);
+
       clone_op->disconnectAllInputs();
       clone_op->disconnectAllOutputs();
-      clone_op->settings.recomputeType = RecomputeType::RECOMPUTED;
+      clone_op->settings.recomputeType = RecomputeType::Recomputed;
 
       for (auto &in : op->input->tensorMap()) {
         auto recomputedTensor =
@@ -75,7 +89,7 @@ bool ExplicitRecompute::apply(Graph &graph) const {
       }
       clone_op->setup();
 
-      logging::transform::trace("Cloned op {} {} -> {}",
+      logging::transform::trace("[ExplicitRecompute] Cloned op {} {} -> {}",
                                 clone_op->opid,
                                 clone_op->input->getIndexShapeMap(),
                                 clone_op->output->getIndexShapeMap());
@@ -89,9 +103,8 @@ bool ExplicitRecompute::apply(Graph &graph) const {
       auto context = getContext(consumer);
       if (((consumer->toLoss == PathToLoss::No &&
             consumer->fromLoss == PathFromLoss::Yes) ||
-           consumer->settings.recomputeType == RecomputeType::RECOMPUTED)
-          /*consumer->settings.recompute)*/
-          && context == recomputedTensor.first.second) {
+           consumer->settings.recomputeType == RecomputeType::Recomputed) &&
+          context == recomputedTensor.first.second) {
         auto indices = consumer->input->indices(tensor);
         for (auto i : indices) {
           consumer->disconnectInTensor(i, tensor);

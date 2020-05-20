@@ -26,11 +26,8 @@ batchesPerStep = 3
 # anchors, and how they are returned: in this example,
 # return the l1 loss "l1LossVal",
 # the tensor to which the loss is applied "out"
-anchors = {
-    "l1LossVal": popart_core.AnchorReturnType("FINAL"),
-    "out": popart_core.AnchorReturnType("FINAL")
-}
-dataFeed = popart_core.DataFlow(batchesPerStep, anchors)
+anchors = {"out": popart_core.AnchorReturnType("Final")}
+dataFlow = popart_core.DataFlow(batchesPerStep, anchors)
 
 # willow is non-dynamic. All input Tensor shapes and
 # types must be fed into the WillowNet constructor.
@@ -49,11 +46,10 @@ outNames = ["out"]
 #cifar training data loader : at index 0 : image, at index 1 : label.
 cifarInIndices = {"image0": 0}  # not used in test: "label": 1}
 
-losses = [popart_core.L1Loss("out", "l1LossVal", 0.1)]
+# The optimization patterns to run in the Ir, see patterns.hpp
 
-# The optimization passes to run in the Ir, see patterns.hpp
-willowOptPasses = popart.Patterns()
-willowOptPasses.OpToIdentity = True
+willowOptPatterns = popart.Patterns()
+willowOptPatterns.OpToIdentity = True
 
 
 class Module0(torch.nn.Module):
@@ -78,7 +74,8 @@ class Module0(torch.nn.Module):
         x = torch.squeeze(x)
 
         weights = self.weights
-        out = self.matmul(x, weights)
+        x = self.matmul(x, weights)
+        out = torch.sum(0.1 * torch.abs(x))
 
         return out
 
@@ -90,13 +87,12 @@ torch.manual_seed(1)
 torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
-    losses=losses,
     optimizer=popart_core.ConstSGD(0.001),
     inputShapeInfo=inputShapeInfo,
-    dataFeed=dataFeed,
+    dataFlow=dataFlow,
     ### Torch specific:
     module=Module0(),
     samplesPerBatch=batchSize)
 
-c10driver.run(torchWriter, willowOptPasses, args.outputdir, cifarInIndices,
+c10driver.run(torchWriter, willowOptPatterns, args.outputdir, cifarInIndices,
               args.device, args.hw_id)

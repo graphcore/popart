@@ -87,8 +87,8 @@ std::unique_ptr<Op> ClipGradOp::clone() const {
 
 const std::vector<GradInOutMapper> &ClipGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getGradClippedInIndex(), ClipOp::getOutIndex(), GradOpInType::GRADOUT},
-      {getClippedInIndex(), ClipOp::getOutIndex(), GradOpInType::OUT}};
+      {getGradClippedInIndex(), ClipOp::getOutIndex(), GradOpInType::GradOut},
+      {getClippedInIndex(), ClipOp::getOutIndex(), GradOpInType::Out}};
   return inInfo;
 }
 

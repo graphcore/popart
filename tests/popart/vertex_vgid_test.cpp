@@ -7,6 +7,7 @@
 #include <popart/dataflow.hpp>
 #include <popart/filereader.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
@@ -46,6 +47,7 @@ BOOST_AUTO_TEST_CASE(VertexVgidTest0) {
     auto w1              = builder->addInitializedInputTensor(w1Data);
     act                  = aiOnnx.add({w1, act}, "act");
     act                  = aiOnnx.relu({act});
+    act                  = builder->aiGraphcoreOpset1().l1loss({act}, 0.1);
     builder->addOutputTensor(act);
     auto proto      = builder->getModelProto();
     auto modelProto = io::getModelFromString(proto);
@@ -62,21 +64,19 @@ BOOST_AUTO_TEST_CASE(VertexVgidTest0) {
     //
     // prepare the training graph
     //
-    auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("ALL")}});
+    auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("All")}});
     auto optimizer = ConstSGD(0.01);
-    auto loss =
-        std::make_shared<L1Loss>(act, "l1LossVal", 0.1, ReductionType::SUM);
-    auto device = createTestDevice(TEST_TARGET, 3);
+    auto device    = createTestDevice(TEST_TARGET, 3);
 
     Ir ir;
     ir.prepare({modelProto,
                 InputShapeInfo(),
                 dataFlow,
-                {loss},
+                act,
                 &optimizer,
                 *device,
                 userOptions,
-                Patterns(PatternsLevel::DEFAULT)});
+                Patterns(PatternsLevel::Default)});
     //
     // training graph prepared
     //

@@ -29,7 +29,7 @@ def test_cpu_device(tmp_path):
     proto = builder.getModelProto()
 
     # Describe how to run the model
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
     opts.enableEngineCaching = True
@@ -37,7 +37,7 @@ def test_cpu_device(tmp_path):
 
     # Create a session to compile and execute the graph
     session = popart.InferenceSession(fnModel=proto,
-                                      dataFeed=dataFlow,
+                                      dataFlow=dataFlow,
                                       userOptions=opts,
                                       deviceInfo=tu.create_test_device())
 

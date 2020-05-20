@@ -42,19 +42,20 @@ BOOST_AUTO_TEST_CASE(Inplace_slice0) {
     auto modelProto = io::getModelFromString(proto);
 
     // Create the IR
-    auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+    auto dataFlow = DataFlow(1, {{out, AnchorReturnType("All")}});
 
     auto device = createTestDevice(TEST_TARGET);
 
     Ir ir;
-    ir.prepare({modelProto,
-                InputShapeInfo(),
-                dataFlow,
-                {},
-                nullptr,
-                *device,
-                {},
-                Patterns(PatternsLevel::NONE).enableInPlace(enable_inplace)});
+    ir.prepare(
+        {modelProto,
+         InputShapeInfo(),
+         dataFlow,
+         {},
+         nullptr,
+         *device,
+         {},
+         Patterns(PatternsLevel::NoPatterns).enableInPlace(enable_inplace)});
 
     // Check the ir
     // All the Relus have been optimised out if enable_inplace

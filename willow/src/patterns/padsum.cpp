@@ -377,7 +377,7 @@ bool PadSumPattern::apply(Op *op) const {
 }
 
 namespace {
-static PatternCreator<PadSumPattern> PadSumPattern(PreAliasPatternType::PADSUM,
+static PatternCreator<PadSumPattern> PadSumPattern(PreAliasPatternType::PadSum,
                                                    "PadSum");
 }
 

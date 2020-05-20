@@ -21,7 +21,7 @@ AccessType combine(std::set<AccessType> accessTypes) {
 // Merge in approx. O(rank * 2 * n log^2 n)
 Regions mergeRegions(Regions regions) {
 
-  AccessType accessType = AccessType::NONE;
+  AccessType accessType = AccessType::None;
   for (Region &r : regions) {
     accessType = combine({r.getAccessType(), accessType});
   }
@@ -99,7 +99,7 @@ bool Region::operator==(const Region &r) const {
 bool Region::operator!=(const Region &r) const { return !(r == *this); }
 
 Region::Region(const std::vector<int64_t> &l, const std::vector<int64_t> &u)
-    : Region(l, u, AccessType::READ_WRITE, false) {}
+    : Region(l, u, AccessType::ReadWrite, false) {}
 
 Region::Region(const std::vector<int64_t> &l,
                const std::vector<int64_t> &u,
@@ -140,7 +140,7 @@ Region Region::getEmpty(int64_t r) {
   // One possible empty region
   return Region(LowBounds(r, 0),
                 UppBounds(r, 0),
-                AccessType::NONE,
+                AccessType::None,
                 r == 0 ? true : false);
 }
 

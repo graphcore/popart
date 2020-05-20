@@ -8,6 +8,7 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/session.hpp>
@@ -110,19 +111,19 @@ BOOST_AUTO_TEST_CASE(WeightAnchorTest0) {
   auto act5            = aiOnnx.add({w5, act4}, "act5");
   act5                 = aiGraphcore.scale({act5}, 0.5);
 
-  builder->addOutputTensor(act5);
+  auto l1 = builder->aiGraphcoreOpset1().l1loss({act5}, 0.1);
 
   auto proto = builder->getModelProto();
 
   // Setting anchors as act5 and a bunch of weights
   //
   auto dataFlow = DataFlow(batchesPerStep,
-                           {{act5, AnchorReturnType("ALL")},
-                            {w1, AnchorReturnType("ALL")},
-                            {w2, AnchorReturnType("ALL")},
-                            {w3, AnchorReturnType("ALL")},
-                            {w4, AnchorReturnType("ALL")},
-                            {w5, AnchorReturnType("ALL")}});
+                           {{act5, AnchorReturnType("All")},
+                            {w1, AnchorReturnType("All")},
+                            {w2, AnchorReturnType("All")},
+                            {w3, AnchorReturnType("All")},
+                            {w4, AnchorReturnType("All")},
+                            {w5, AnchorReturnType("All")}});
 
   // shard over 3 IPUs
   //
@@ -131,20 +132,17 @@ BOOST_AUTO_TEST_CASE(WeightAnchorTest0) {
 
   auto optimizer = ConstSGD(0.01);
 
-  auto loss = std::unique_ptr<Loss>(
-      new L1Loss(act5, "l1LossVal", 0.1, ReductionType::SUM));
-
   auto device = createTestDevice(TEST_TARGET, 3);
 
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      {loss.get()},
+      l1,
       optimizer,
       device,
       InputShapeInfo(),
       userOptions,
-      popart::Patterns(PatternsLevel::DEFAULT));
+      popart::Patterns(PatternsLevel::Default));
 
   session->prepareDevice();
 

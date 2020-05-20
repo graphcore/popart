@@ -171,12 +171,12 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest1) {
   Ir ir;
   ir.prepare({io::getModelFromString(builder->getModelProto()),
               InputShapeInfo(),
-              DataFlow(12, {{add4, AnchorReturnType("ALL")}}),
+              DataFlow(12, {{add4, AnchorReturnType("All")}}),
               {},      // no loss
               nullptr, // no optimizer
               *device,
               opts,
-              Patterns(PatternsLevel::DEFAULT).enablePostNRepl(false)});
+              Patterns(PatternsLevel::Default).enablePostNRepl(false)});
 
   auto copies = getIpuCopies(ir);
   std::vector<std::pair<VGraphId, VGraphId>> input0SrcDsts;

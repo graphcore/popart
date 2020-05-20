@@ -26,7 +26,7 @@ InputCreatorType BaseSliceOpx::getInputCreatorType(InIndex inIndex) const {
   if (inIndex != 0) {
     throw error("inIndex should be 0 in BaseSliceOpx");
   }
-  return InputCreatorType::CANUNWIND;
+  return InputCreatorType::CanUnwind;
 }
 
 poplar::Tensor BaseSliceOpx::unwindTensorLayout(poplar::Tensor tensor,
@@ -106,6 +106,7 @@ void SliceGradOpx::grow(poplar::program::Sequence &prog) const {
                             sliceGradOp->getUpperPadding(),
                             0,
                             popops::padding::MappingMethod::EDGE);
+    outTensor        = cloneNcopy(prog, outTensor);
   }
 
   setOutTensor(SliceGradOp::getOutIndex(), outTensor);

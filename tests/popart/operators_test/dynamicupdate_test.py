@@ -29,7 +29,7 @@ def test_dynamicupdate(op_tester):
         tensors = [tensor0, tensor1, tensor2]
         result = []
         out = builder.aiGraphcore.init([5, 12, 7], popart.DataType.FLOAT,
-                                       popart.InitType.NONE, "test_init")
+                                       popart.InitType.NoInit, "test_init")
         for sliceid in range(3):
             index = builder.addInputTensor(np.asarray([sliceid * 4],
                                                       np.uint32))
@@ -47,7 +47,7 @@ def test_dynamicupdate(op_tester):
         result.append(np.concatenate((data0, data1, data2), axis=1))
         return result
 
-    op_tester.passes = popart.PatternsLevel.ALL
+    op_tester.patterns = popart.PatternsLevel.All
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -66,7 +66,7 @@ def test_dynamicupdate_training(op_tester):
         tensors = [tensor0, tensor1, tensor2]
         result = []
         out = builder.aiGraphcore.init([5, 12, 7], popart.DataType.FLOAT,
-                                       popart.InitType.NONE, "test_init")
+                                       popart.InitType.NoInit, "test_init")
         for sliceid in range(3):
             index = builder.addInputTensor(np.asarray([sliceid * 4],
                                                       np.uint32))
@@ -112,7 +112,7 @@ def test_dynamicupdate_training(op_tester):
         ] + result
         return result
 
-    op_tester.passes = popart.PatternsLevel.ALL
+    op_tester.patterns = popart.PatternsLevel.All
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -130,7 +130,7 @@ def test_dynamicupdate_overlap_wrong(op_tester):
         tensors = [tensor0, tensor1]
         result = []
         out = builder.aiGraphcore.init([10], popart.DataType.FLOAT,
-                                       popart.InitType.NONE, "test_init")
+                                       popart.InitType.NoInit, "test_init")
         for sliceid in range(2):
             index = builder.addInputTensor(np.asarray([sliceid * 4],
                                                       np.uint32))
@@ -177,12 +177,12 @@ def test_dynamicupdate_overlap_wrong(op_tester):
         # Note: We have to adjust the value here to make the comparison equal,
         # but dynamicupdate with noOverlap=True gives a wrong gradient result
         # due to overlapping updates
-        tensor0.grad[4] += 0.1
+        tensor0.grad[4] += 1.0
 
         result = [sum, torch.tensor(d__o), tensor0.grad, tensor1.grad] + result
         return result
 
-    op_tester.passes = popart.PatternsLevel.ALL
+    op_tester.patterns = popart.PatternsLevel.All
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -200,7 +200,7 @@ def test_dynamicupdate_overlap_correct(op_tester):
         tensors = [tensor0, tensor1]
         result = []
         out = builder.aiGraphcore.init([10], popart.DataType.FLOAT,
-                                       popart.InitType.NONE, "test_init")
+                                       popart.InitType.NoInit, "test_init")
         for sliceid in range(2):
             index = builder.addInputTensor(np.asarray([sliceid * 4],
                                                       np.uint32))
@@ -254,5 +254,5 @@ def test_dynamicupdate_overlap_correct(op_tester):
         result = [sum, torch.tensor(d__o), tensor0.grad, tensor1.grad] + result
         return result
 
-    op_tester.passes = popart.PatternsLevel.ALL
+    op_tester.patterns = popart.PatternsLevel.All
     op_tester.run(init_builder, reference, 'train')

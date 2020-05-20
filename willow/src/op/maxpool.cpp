@@ -93,9 +93,9 @@ const std::vector<GradInOutMapper> &MaxPoolGradOp::gradInputInfo() const {
   // is the output of the max pool at index 0
   // etc for getPrePooledIn()
   static const std::vector<GradInOutMapper> inInfo = {
-      {getGradPooledInIndex(), MaxPoolOp::getOutIndex(), GradOpInType::GRADOUT},
-      {getPooledInIndex(), MaxPoolOp::getOutIndex(), GradOpInType::OUT},
-      {getPrePooledInIndex(), MaxPoolOp::getInIndex(), GradOpInType::IN}};
+      {getGradPooledInIndex(), MaxPoolOp::getOutIndex(), GradOpInType::GradOut},
+      {getPooledInIndex(), MaxPoolOp::getOutIndex(), GradOpInType::Out},
+      {getPrePooledInIndex(), MaxPoolOp::getInIndex(), GradOpInType::In}};
   return inInfo;
 }
 

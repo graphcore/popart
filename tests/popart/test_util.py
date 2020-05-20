@@ -29,7 +29,7 @@ def create_test_device(numIpus: int = 1,
                        opts: Dict = None,
                        pattern: popart.SyncPattern = popart.SyncPattern.Full,
                        connectionType: popart.DeviceConnectionType = popart.
-                       DeviceConnectionType.ALWAYS):
+                       DeviceConnectionType.Always):
     testDeviceType = os.environ.get("TEST_TARGET")
     if testDeviceType is None:
         testDeviceType = "Cpu"

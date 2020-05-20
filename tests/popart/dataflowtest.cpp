@@ -43,12 +43,12 @@ BOOST_AUTO_TEST_CASE(DataFlow_Case2) {
 
   auto df = popart::DataFlow(
       5,
-      {{"one", AnchorReturnType("ALL")}, {"two", AnchorReturnType("FINAL")}});
+      {{"one", AnchorReturnType("All")}, {"two", AnchorReturnType("Final")}});
 
   BOOST_CHECK(df.nAnchors() == 2);
   BOOST_CHECK(df.batchesPerStep() == 5);
-  BOOST_CHECK(df.art("one").id() == AnchorReturnTypeId::ALL);
-  BOOST_CHECK(df.art("two").id() == AnchorReturnTypeId::FINAL);
+  BOOST_CHECK(df.art("one").id() == AnchorReturnTypeId::All);
+  BOOST_CHECK(df.art("two").id() == AnchorReturnTypeId::Final);
   BOOST_CHECK(df.isAnchored("two") == true);
   BOOST_CHECK(df.isAnchored("three") == false);
 
@@ -56,8 +56,8 @@ BOOST_AUTO_TEST_CASE(DataFlow_Case2) {
 
   BOOST_CHECK(df2.nAnchors() == 2);
   BOOST_CHECK(df2.batchesPerStep() == 5);
-  BOOST_CHECK(df.art("one").id() == AnchorReturnTypeId::ALL);
-  BOOST_CHECK(df.art("two").id() == AnchorReturnTypeId::FINAL);
+  BOOST_CHECK(df.art("one").id() == AnchorReturnTypeId::All);
+  BOOST_CHECK(df.art("two").id() == AnchorReturnTypeId::Final);
   BOOST_CHECK(df2.isAnchored("two") == true);
   BOOST_CHECK(df2.isAnchored("three") == false);
   BOOST_CHECK(df2.anchors()[0] == "one");
@@ -66,8 +66,8 @@ BOOST_AUTO_TEST_CASE(DataFlow_Case2) {
 
   BOOST_CHECK(df3.nAnchors() == 2);
   BOOST_CHECK(df3.batchesPerStep() == 5);
-  BOOST_CHECK(df.art("one").id() == AnchorReturnTypeId::ALL);
-  BOOST_CHECK(df.art("two").id() == AnchorReturnTypeId::FINAL);
+  BOOST_CHECK(df.art("one").id() == AnchorReturnTypeId::All);
+  BOOST_CHECK(df.art("two").id() == AnchorReturnTypeId::Final);
   BOOST_CHECK(df3.isAnchored("two") == true);
   BOOST_CHECK(df3.isAnchored("three") == false);
   BOOST_CHECK(df3.anchors()[0] == "one");
@@ -76,8 +76,8 @@ BOOST_AUTO_TEST_CASE(DataFlow_Case2) {
 BOOST_AUTO_TEST_CASE(DataFlow_Case3) {
 
   auto df = popart::DataFlow(6,
-                             {{"one", AnchorReturnType("EVERYN", 2)},
-                              {"two", AnchorReturnType("FINAL")}});
+                             {{"one", AnchorReturnType("EveryN", 2)},
+                              {"two", AnchorReturnType("Final")}});
 
   BOOST_CHECK(df.art("one").rp() == 2);
   BOOST_CHECK_EXCEPTION(df.art("two").rp(), error, inValidReturnPeriod1);
@@ -85,14 +85,14 @@ BOOST_AUTO_TEST_CASE(DataFlow_Case3) {
 
 BOOST_AUTO_TEST_CASE(DataFlow_Case4) {
 
-  auto art = AnchorReturnType("EVERYN", 6);
+  auto art = AnchorReturnType("EveryN", 6);
   BOOST_CHECK_EXCEPTION(
       popart::DataFlow(5, {{"one", art}}), error, inValidReturnPeriod2);
 }
 
 BOOST_AUTO_TEST_CASE(DataFlow_Case5) {
 
-  auto art = AnchorReturnType("EVERYN", 3);
+  auto art = AnchorReturnType("EveryN", 3);
   BOOST_CHECK_EXCEPTION(
       popart::DataFlow(5, {{"one", art}}), error, inValidReturnPeriod3);
 }
@@ -105,14 +105,14 @@ BOOST_AUTO_TEST_CASE(DataFlow_Case6) {
   BOOST_CHECK(df.batchesPerStep() == 3);
   BOOST_CHECK(df.isAnchored("one") == true);
   BOOST_CHECK(df.isAnchored("two") == true);
-  BOOST_CHECK(df.art("one").id() == AnchorReturnTypeId::ALL);
-  BOOST_CHECK(df.art("two").id() == AnchorReturnTypeId::ALL);
+  BOOST_CHECK(df.art("one").id() == AnchorReturnTypeId::All);
+  BOOST_CHECK(df.art("two").id() == AnchorReturnTypeId::All);
 
-  auto df1 = popart::DataFlow(3, ids, AnchorReturnType("FINAL"));
+  auto df1 = popart::DataFlow(3, ids, AnchorReturnType("Final"));
   BOOST_CHECK(df1.nAnchors() == 2);
   BOOST_CHECK(df1.batchesPerStep() == 3);
   BOOST_CHECK(df1.isAnchored("one") == true);
   BOOST_CHECK(df1.isAnchored("two") == true);
-  BOOST_CHECK(df1.art("one").id() == AnchorReturnTypeId::FINAL);
-  BOOST_CHECK(df1.art("two").id() == AnchorReturnTypeId::FINAL);
+  BOOST_CHECK(df1.art("one").id() == AnchorReturnTypeId::Final);
+  BOOST_CHECK(df1.art("two").id() == AnchorReturnTypeId::Final);
 }

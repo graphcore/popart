@@ -48,7 +48,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose1) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto art      = AnchorReturnType("ALL");
+  auto art      = AnchorReturnType("All");
   auto dataFlow = DataFlow(1, {{out, art}});
 
   auto device = popart::createTestDevice(TEST_TARGET);
@@ -57,10 +57,9 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose1) {
       proto,
       dataFlow,
       device,
-      {},
       popart::InputShapeInfo(),
       {},
-      popart::Patterns({popart::PreAliasPatternType::POSTNREPL}));
+      popart::Patterns({popart::PreAliasPatternType::PostNRepl}));
 
   // prepare the anchors
   int rawOutputData[10];
@@ -121,7 +120,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose2) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto art      = AnchorReturnType("ALL");
+  auto art      = AnchorReturnType("All");
   auto dataFlow = DataFlow(1, {{out, art}});
 
   auto device = popart::createTestDevice(TEST_TARGET);
@@ -130,10 +129,9 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose2) {
       proto,
       dataFlow,
       device,
-      {},
       popart::InputShapeInfo(),
       {},
-      popart::Patterns({popart::PreAliasPatternType::POSTNREPL}));
+      popart::Patterns({popart::PreAliasPatternType::PostNRepl}));
 
   // prepare the anchors
   int rawOutputData[24];

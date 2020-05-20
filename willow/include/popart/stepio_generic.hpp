@@ -58,7 +58,6 @@ public:
     stepData.data =
         static_cast<uint8_t *>(ACCESSOR_TYPE::getDataPointer(arrayInfo.array)) +
         offset;
-    ;
 
     if (advance_) {
 

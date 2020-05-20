@@ -78,7 +78,7 @@ std::map<OpId, std::unique_ptr<Op>> &Graph::getOps() { return ops; }
 
 const int64_t Graph::NoVGraph = -1;
 
-const std::set<int64_t> Graph::getAllVirtualGraphIds(bool includeLosses) const {
+const std::set<int64_t> Graph::getAllVirtualGraphIds() const {
 
   std::set<int64_t> vGraphIds;
 
@@ -89,18 +89,10 @@ const std::set<int64_t> Graph::getAllVirtualGraphIds(bool includeLosses) const {
       vGraphIds.insert(getVirtualGraphId(*id_op.second));
     }
   }
-
-  if (includeLosses) {
-    for (auto &loss : losses) {
-      vGraphIds.insert(getVirtualGraphId(*loss));
-    }
-  }
-
   return vGraphIds;
 }
 
-const std::map<int64_t, int>
-Graph::getVirtualGraphCounts(bool includeLosses) const {
+const std::map<int64_t, int> Graph::getVirtualGraphCounts() const {
   std::map<int64_t, int> vGraphCounts;
 
   for (auto &idOp : getOps()) {
@@ -111,18 +103,6 @@ Graph::getVirtualGraphCounts(bool includeLosses) const {
     }
 
     vGraphCounts[vGraphId]++;
-  }
-
-  if (includeLosses) {
-    for (auto &loss : getLosses()) {
-      int64_t vGraphId = getVirtualGraphId(*loss);
-
-      if (vGraphCounts.count(vGraphId) == 0) {
-        vGraphCounts[vGraphId] = 0;
-      }
-
-      vGraphCounts[vGraphId]++;
-    }
   }
 
   return vGraphCounts;
@@ -186,20 +166,6 @@ std::vector<const Graph *> Graph::getCalledGraphs() const {
   }
 
   return called;
-}
-
-void Graph::markAsZeroCopy(const TensorId &tensorId) {
-  if (!getTensors().contains(tensorId)) {
-    throw error("Could not find tensor '{}' to mark as zero copy", tensorId);
-  }
-  if (std::find(zero_copy.begin(), zero_copy.end(), tensorId) ==
-      zero_copy.end())
-    zero_copy.push_back(tensorId);
-}
-
-bool Graph::isMarkedAsZeroCopy(const TensorId &tensorId) const {
-  return std::find(zero_copy.begin(), zero_copy.end(), tensorId) !=
-         zero_copy.end();
 }
 
 void Graph::constructFromOnnxGraph(
@@ -510,7 +476,7 @@ bool Graph::isSchedulable(const OpsBeforeKey &gCons,
 bool Graph::hasUserRecomputeOps() const {
   for (auto &id_op : getOps()) {
     if (id_op.second.get()->settings.recomputeType ==
-        RecomputeType::RECOMPUTE) {
+        RecomputeType::Recompute) {
       return true;
     }
   }
@@ -577,14 +543,6 @@ int64_t Graph::getVirtualGraphId(const Op &op) {
   }
 }
 
-int64_t Graph::getVirtualGraphId(const Loss &loss) {
-  if (loss.hasVirtualGraphId()) {
-    return loss.getVirtualGraphId();
-  } else {
-    return NoVGraph;
-  }
-}
-
 BackwardPassCreator::BackwardPassCreator(Graph &fwdGraph_, Graph &bwdGraph_)
     : fwdGraph(fwdGraph_), bwdGraph(bwdGraph_) {
   growGradGraph();
@@ -614,11 +572,11 @@ void BackwardPassCreator::populateGradInInfo(
   std::map<TensorId, GradInOutMapper> partialGradInfo;
   for (int i = 0; i < fwdGraph.getInputIds().size(); i++) {
     auto id = fwdGraph.getInputId(i);
-    partialGradInfo.insert({id, {-1, i, GradOpInType::IN}});
+    partialGradInfo.insert({id, {-1, i, GradOpInType::In}});
   }
   for (int i = 0; i < fwdGraph.getOutputIds().size(); i++) {
     auto id = fwdGraph.getOutputId(i);
-    partialGradInfo.insert({id, {-1, i, GradOpInType::GRADOUT}});
+    partialGradInfo.insert({id, {-1, i, GradOpInType::GradOut}});
   }
 
   auto bwdInputIds = bwdGraph.getInputIds();
@@ -844,8 +802,9 @@ std::vector<Op *> BackwardPassCreator::growGradOps(Op *nonGradOp) {
 
     gradOp->setScope(bwdGraph.getScope());
 
-    if (nonGradOp->settings.recomputeType == RecomputeType::RECOMPUTE &&
-        bwdGraph.getIr().autoRecomputationEnabled()) {
+    if (nonGradOp->settings.recomputeType == RecomputeType::Recompute &&
+        bwdGraph.getIr().autoRecomputationEnabled() &&
+        bwdGraph.getIr().getSessionOptions().pingPongPhases < 2) {
       throw error("Grad Ops should be grown before recompute annotation");
     }
 
@@ -863,7 +822,7 @@ std::vector<Op *> BackwardPassCreator::growGradOps(Op *nonGradOp) {
         switch (type) {
         //  (1) the INPUT at index 'indexFwd' of nonGradOp
         //  This will be a tensor internal to fwdGraph
-        case GradOpInType::IN: {
+        case GradOpInType::In: {
           auto fwdId          = nonGradOp->inId(indexFwd);
           auto bwdId          = bwdGraph.addScope(fwdGraph.removeScope(fwdId));
           m_inputs[indexGrad] = bwdId;
@@ -872,7 +831,7 @@ std::vector<Op *> BackwardPassCreator::growGradOps(Op *nonGradOp) {
 
         //  (2) the OUTPUT at index 'indexFwd' of nonGradOp
         //  This will be a tensor internal to fwdGraph
-        case GradOpInType::OUT: {
+        case GradOpInType::Out: {
           auto fwdId          = nonGradOp->outId(indexFwd);
           auto bwdId          = bwdGraph.addScope(fwdGraph.removeScope(fwdId));
           m_inputs[indexGrad] = bwdId;
@@ -881,7 +840,7 @@ std::vector<Op *> BackwardPassCreator::growGradOps(Op *nonGradOp) {
 
         //  (3) the GRADIENT of the OUTPUT
         //      at index 'indexFwd' of nonGradOp.
-        case GradOpInType::GRADOUT: {
+        case GradOpInType::GradOut: {
           auto fwdId = nonGradOp->outId(indexFwd);
           auto found = gradTensorMap.find(fwdId);
           if (found == gradTensorMap.end()) {

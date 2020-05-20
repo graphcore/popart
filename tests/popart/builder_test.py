@@ -529,7 +529,7 @@ def test_add_conv():
                             strides=[1, 1])
 
     assert (e_info.value.args[0].startswith(
-        "Length of dilations vector 2 != number of spatial d"))
+        "Length of dilations vector 1 != number of spatial d"))
 
 
 def test_add_conv_and_bias():
@@ -782,18 +782,17 @@ def test_set_weights_from_host():
 
     i2 = builder.addInitializedInputTensor(data)
     o = builder.aiOnnx.add([i1, i2])
-    builder.addOutputTensor(o)
+    loss = builder.aiGraphcore.identityloss([o])
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     optimizer = popart.ConstSGD(0.01)
-    losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
 
     session = popart.TrainingSession(fnModel=proto,
-                                     dataFeed=dataFlow,
-                                     losses=losses,
+                                     dataFlow=dataFlow,
+                                     loss=loss,
                                      optimizer=optimizer,
                                      deviceInfo=getDevice())
 
@@ -1197,10 +1196,10 @@ def test_load_onnx_model_from_other_builder(tmpdir):
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     session = popart.InferenceSession(fnModel=proto,
-                                      dataFeed=dataFlow,
+                                      dataFlow=dataFlow,
                                       deviceInfo=getDevice())
 
     anchors = session.initAnchorArrays()
@@ -1220,11 +1219,11 @@ def test_load_onnx_model_from_other_builder(tmpdir):
     # output is still the same
     builder2 = popart.Builder(proto)
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     proto2 = builder.getModelProto()
     session = popart.InferenceSession(fnModel=proto2,
-                                      dataFeed=dataFlow,
+                                      dataFlow=dataFlow,
                                       deviceInfo=getDevice())
 
     anchors = session.initAnchorArrays()
@@ -1260,14 +1259,13 @@ def test_load_onnx_model_from_file(tmpdir):
 
     builder2 = popart.Builder(str(filename))
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
     optimizer = popart.ConstSGD(0.01)
-    losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
 
     proto = builder2.getModelProto()
 
     session = popart.InferenceSession(fnModel=proto,
-                                      dataFeed=dataFlow,
+                                      dataFlow=dataFlow,
                                       deviceInfo=getDevice())
 
     anchors = session.initAnchorArrays()
