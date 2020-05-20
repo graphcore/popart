@@ -78,14 +78,12 @@ def run_test_multi_loss_pipeline(same_vgraph=True):
         scale1 = builder.aiGraphcore.scale([mm1], scaleFactor)
         skipOut = builder.aiOnnx.add([mm0, scale1])
 
-    with builder.virtualGraph(1):
-        l1_1 = builder.aiGraphcore.l1loss([scale1], lambda1)
-
     with builder.virtualGraph(1 if same_vgraph else 0):
-        l1_2 = builder.aiGraphcore.l1loss([skipOut], lambda2)
+        loss2 = builder.aiGraphcore.l1loss([skipOut], lambda2)
 
-    loss1 = popart.IdentityLoss(l1_1, "l1LossVal1")
-    loss2 = popart.IdentityLoss(l1_2, "l1LossVal2")
+    with builder.virtualGraph(1):
+        loss1 = builder.aiGraphcore.l1loss([scale1], lambda1)
+        finalLoss = builder.aiOnnx.sum([loss1, loss2])
 
     # input0  w0
     #    |    |
@@ -111,9 +109,6 @@ def run_test_multi_loss_pipeline(same_vgraph=True):
     # - - - - - - - - - - -|
     #
 
-    loss1.virtualGraph(1)
-    loss2.virtualGraph(1 if same_vgraph else 0)
-
     anchors = {}
     dataFlow = popart.DataFlow(batchesPerStep, anchors)
 
@@ -135,7 +130,7 @@ def run_test_multi_loss_pipeline(same_vgraph=True):
                 "defaultMomentum": (defaultMomentum0, False),
                 "defaultDampening": (defaultDampening0, False)
             }),
-            losses=[loss1, loss2],
+            loss=finalLoss,
             userOptions=userOptions,
             deviceInfo=device)
 

@@ -60,9 +60,7 @@ BOOST_AUTO_TEST_CASE(test0) {
   auto t2_shape_t = aiOnnx.constant({t2_shape.data(), {"INT64", t_shapeSize}});
   auto t2         = aiOnnx.reshape({t1, t2_shape_t});
 
-  auto output = aiOnnx.identity({t2});
-
-  auto loss = IdentityLoss(output, "idLossVal", ReductionType::Sum);
+  auto output = aiGraphcore.identityloss({t2});
 
   auto opts             = SessionOptions();
   opts.virtualGraphMode = VirtualGraphMode::Manual;
@@ -71,7 +69,6 @@ BOOST_AUTO_TEST_CASE(test0) {
   builder->virtualGraph(t1, 0);
   builder->virtualGraph(t2, 0);
   builder->virtualGraph(output, 1);
-  loss.virtualGraph(1);
 
   // Create the IR
   std::vector<TensorId> anchorIds = {reservedGradientPrefix() + input};
@@ -81,7 +78,7 @@ BOOST_AUTO_TEST_CASE(test0) {
   ir.prepare({io::getModelFromString(builder->getModelProto()),
               InputShapeInfo(),
               DataFlow(3, anchorIds),
-              {std::make_shared<IdentityLoss>(loss)},
+              output,
               &optimizer,
               *device,
               opts,

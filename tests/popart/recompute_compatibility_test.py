@@ -27,7 +27,7 @@ def test_valid_recompute_options():
             fnModel=builder.getModelProto(),
             dataFlow=popart.DataFlow(1, {o: popart.AnchorReturnType("All")}),
             optimizer=popart.ConstSGD(0.001),
-            losses=[popart.IdentityLoss(o, "idLossVal")],
+            loss=o,
             patterns=popart.Patterns([]),
             userOptions=opts,
             deviceInfo=tu.create_test_device())

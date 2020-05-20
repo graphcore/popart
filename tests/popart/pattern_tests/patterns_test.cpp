@@ -58,15 +58,13 @@ BOOST_AUTO_TEST_CASE(PostNRepl_IdentityOp) {
   auto art       = AnchorReturnType("All");
   auto dataFlow  = DataFlow(1, {{tensorIds.back(), art}, {tensorIds[2], art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<IdentityLoss>(l1, "loss", ReductionType::Sum)};
-  auto device = createTestDevice(TEST_TARGET);
+  auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              losses,
+              l1,
               &optimizer,
               *device,
               {},
@@ -113,15 +111,13 @@ BOOST_AUTO_TEST_CASE(PreUniRepl) {
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("All")}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<IdentityLoss>(l1, "loss", ReductionType::Sum)};
-  auto device = createTestDevice(TEST_TARGET);
+  auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              losses,
+              l1,
               &optimizer,
               *device,
               {},
@@ -162,15 +158,13 @@ BOOST_AUTO_TEST_CASE(OpToIdentity) {
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("All")}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<IdentityLoss>(l1, "loss", ReductionType::Sum)};
-  auto device = createTestDevice(TEST_TARGET);
+  auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              losses,
+              l1,
               &optimizer,
               *device,
               {},
@@ -208,15 +202,13 @@ BOOST_AUTO_TEST_CASE(GatherToIdentity) {
   // Create the IR
   auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("All")}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<IdentityLoss>(l1, "loss", ReductionType::Sum)};
-  auto device = createTestDevice(TEST_TARGET);
+  auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              losses,
+              l1,
               &optimizer,
               *device,
               {},
@@ -259,15 +251,13 @@ BOOST_AUTO_TEST_CASE(SplitConvBias) {
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("All")}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<IdentityLoss>(l1, "loss", ReductionType::Sum)};
-  auto device = createTestDevice(TEST_TARGET);
+  auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              losses,
+              l1,
               &optimizer,
               *device,
               {},
@@ -405,15 +395,13 @@ BOOST_AUTO_TEST_CASE(SubtractArg1GradOp) {
                             {reservedGradientPrefix() + input1, art},
                             {reservedGradientPrefix() + input2, art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<IdentityLoss>(l1, "loss", ReductionType::Sum)};
-  auto device = createTestDevice(TEST_TARGET);
+  auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              losses,
+              l1,
               &optimizer,
               *device,
               {},
@@ -452,11 +440,8 @@ BOOST_AUTO_TEST_CASE(ReciprocalGradOp) {
   // Add the last tensor, and the 3rd tensor as anchors
   auto art      = AnchorReturnType("ALL");
   auto dataFlow = DataFlow(
-      1,
-      {{output, art}, {reservedGradientPrefix() + input, art}, {"loss", art}});
+      1, {{output, art}, {reservedGradientPrefix() + input, art}, {l1, art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<IdentityLoss>(l1, "loss", ReductionType::Sum)};
 
   auto opts   = SessionOptions();
   auto device = createTestDevice(TEST_TARGET);
@@ -465,7 +450,7 @@ BOOST_AUTO_TEST_CASE(ReciprocalGradOp) {
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              losses,
+              l1,
               &optimizer,
               *device,
               opts,
@@ -526,9 +511,7 @@ BOOST_AUTO_TEST_CASE(Attribute_Inheritance) {
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("All")}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<IdentityLoss>(l1, "loss", ReductionType::Sum)};
-  losses[0]->virtualGraph(0);
+
   auto device = createTestDevice(TEST_TARGET);
 
   SessionOptions opts;
@@ -538,7 +521,7 @@ BOOST_AUTO_TEST_CASE(Attribute_Inheritance) {
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              losses,
+              l1,
               &optimizer,
               *device,
               opts,

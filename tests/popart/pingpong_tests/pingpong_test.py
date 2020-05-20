@@ -69,7 +69,7 @@ def test_weight_update(tmpdir):
             fnModel=proto,
             dataFlow=popart.DataFlow(1, dfAnchors),
             optimizer=popart.ConstSGD(0.5),
-            losses=[popart.IdentityLoss(l1, "l1LossVal")],
+            loss=l1,
             patterns=popart.Patterns(popart.PatternsLevel.All),
             userOptions=opts,
             deviceInfo=device)

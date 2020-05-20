@@ -207,13 +207,11 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
 
   // training info
   auto optimizer = SGD({{"defaultLearningRate", {0.01, false}}});
-  std::unique_ptr<Loss> l1_loss(new IdentityLoss(l1, "l1", ReductionType::Sum));
-  std::vector<Loss *> losses{l1_loss.get()};
 
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      losses,
+      l1,
       optimizer,
       device,
       popart::InputShapeInfo(),
@@ -407,14 +405,11 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
 
   // training info
   auto optimizer = SGD({{"defaultLearningRate", {0.01, false}}});
-  std::unique_ptr<Loss> l1_loss(
-      new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
-  std::vector<Loss *> losses{l1_loss.get()};
 
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      losses,
+      l1,
       optimizer,
       device,
       popart::InputShapeInfo(),
@@ -603,14 +598,11 @@ BOOST_AUTO_TEST_CASE(HostReduceHierarchicalReductionWithReplicatedGraphs) {
     // training info
     const float learningRate = 0.01f;
     auto optimizer = SGD({{"defaultLearningRate", {learningRate, false}}});
-    std::unique_ptr<Loss> l1_loss(
-        new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
-    std::vector<Loss *> losses{l1_loss.get()};
 
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
         dataFlow,
-        losses,
+        l1,
         optimizer,
         device,
         popart::InputShapeInfo(),
@@ -873,14 +865,11 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationGradientStoreGradientLoad) {
 
   // training info
   auto optimizer = SGD({{"defaultLearningRate", {1.0f, false}}});
-  std::unique_ptr<Loss> l1_loss(
-      new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
-  std::vector<Loss *> losses{l1_loss.get()};
 
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      losses,
+      l1,
       optimizer,
       device,
       popart::InputShapeInfo(),
@@ -1125,14 +1114,11 @@ BOOST_AUTO_TEST_CASE(
 
     // training info
     auto optimizer = SGD({{"defaultLearningRate", {0.1f, false}}});
-    std::unique_ptr<Loss> l1_loss(
-        new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
-    std::vector<Loss *> losses{l1_loss.get()};
 
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
         dataFlow,
-        losses,
+        l1,
         optimizer,
         device,
         popart::InputShapeInfo(),
@@ -1383,16 +1369,13 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithAccumulation) {
     float learnRate = 1.0;
     auto optimizer  = ConstSGD(learnRate);
 
-    auto loss = std::unique_ptr<Loss>(
-        new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
-
     auto device =
         DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
 
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
         dataFlow,
-        {loss.get()},
+        l1,
         optimizer,
         device,
         InputShapeInfo(),
@@ -1604,8 +1587,6 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipelining) {
     float learnRate = 1.0;
     auto optimizer  = ConstSGD(learnRate);
 
-    auto loss = std::unique_ptr<Loss>(
-        new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
     auto proto = builder->getModelProto();
 
     auto dataFlow = DataFlow(batchesPerStep, {{a5, AnchorReturnType("All")}});
@@ -1653,7 +1634,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipelining) {
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
         dataFlow,
-        {loss.get()},
+        l1,
         optimizer,
         device,
         InputShapeInfo(),
@@ -1864,8 +1845,6 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation) {
     float learnRate = 1.0;
     auto optimizer  = ConstSGD(learnRate);
 
-    auto loss = std::unique_ptr<Loss>(
-        new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
     auto proto = builder->getModelProto();
 
     auto dataFlow = DataFlow(batchesPerStep, {{a5, AnchorReturnType("All")}});
@@ -1905,7 +1884,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation) {
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
         dataFlow,
-        {loss.get()},
+        l1,
         optimizer,
         device,
         InputShapeInfo(),
@@ -2100,14 +2079,11 @@ BOOST_AUTO_TEST_CASE(OATTSimpleTest, *boost::unit_test::disabled()) {
 
   // training info
   auto optimizer = SGD({{"defaultLearningRate", {1.0f, false}}});
-  std::unique_ptr<Loss> l1_loss(
-      new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
-  std::vector<Loss *> losses{l1_loss.get()};
 
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      losses,
+      l1,
       optimizer,
       device,
       popart::InputShapeInfo(),
@@ -2360,9 +2336,6 @@ BOOST_AUTO_TEST_CASE(OATTWithAccumulation, *boost::unit_test::disabled()) {
     float learnRate = 1.0;
     auto optimizer  = ConstSGD(learnRate);
 
-    auto loss = std::unique_ptr<Loss>(
-        new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
-
     auto device = acquireAvailableDevice();
     if (!device) {
       return std::vector<std::vector<float>>();
@@ -2371,7 +2344,7 @@ BOOST_AUTO_TEST_CASE(OATTWithAccumulation, *boost::unit_test::disabled()) {
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
         dataFlow,
-        {loss.get()},
+        l1,
         optimizer,
         device,
         InputShapeInfo(),
@@ -2587,10 +2560,7 @@ BOOST_AUTO_TEST_CASE(OATTWithPipeliningAndAccumulation,
 
     float learnRate = 1.0;
     auto optimizer  = ConstSGD(learnRate);
-
-    auto loss = std::unique_ptr<Loss>(
-        new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
-    auto proto = builder->getModelProto();
+    auto proto      = builder->getModelProto();
 
     auto dataFlow = DataFlow(batchesPerStep, {{a5, AnchorReturnType("All")}});
 
@@ -2628,7 +2598,7 @@ BOOST_AUTO_TEST_CASE(OATTWithPipeliningAndAccumulation,
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
         dataFlow,
-        {loss.get()},
+        l1,
         optimizer,
         device,
         InputShapeInfo(),

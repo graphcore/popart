@@ -93,13 +93,6 @@ def _run_impl(torchWriter, patterns, outputdir, cifarInIndices, device,
     def getFnModel0():
         return os.path.join(outputdir, "runId%d_model0.onnx" % (baseId, ))
 
-    def getIdentityLosses(lossIds):
-        idLosses = []
-        for loss in lossIds:
-            idLoss = popart.IdentityLoss(loss, loss + "/out")
-            idLosses.append(idLoss)
-        return idLosses
-
     dataFlow = torchWriter.dataFlow
     inputShapeInfo = torchWriter.inputShapeInfo
     validModes = ["infer", "train"]
@@ -217,11 +210,17 @@ def _run_impl(torchWriter, patterns, outputdir, cifarInIndices, device,
                                           userOptions=opts,
                                           deviceInfo=device)
     else:
-        session = popart.TrainingSession(fnModel=modelProtoX,
+        if len(torchWriter.outNames) != 1:
+            raise RuntimeError("Expecting single scalar loss tensor")
+
+        # Append output with an identity loss, to reduce to scalar if
+        # necessary
+        bder = popart.Builder(modelProtoX)
+        loss = bder.aiGraphcore.identityloss([torchWriter.outNames[0]])
+        session = popart.TrainingSession(fnModel=bder.getModelProto(),
                                          inputShapeInfo=inputShapeInfo,
                                          dataFlow=dataFlow,
-                                         losses=getIdentityLosses(
-                                             torchWriter.outNames),
+                                         loss=loss,
                                          optimizer=torchWriter.optimizer,
                                          patterns=patterns,
                                          userOptions=opts,
@@ -274,30 +273,6 @@ def _run_impl(torchWriter, patterns, outputdir, cifarInIndices, device,
         assertStr = "Tensor" + tId + " must be specified as an anchor"
         assert (tId in anchorArrays.keys()), assertStr
         return anchorArrays[tId]
-
-    def getLossesFromAnchors(torchWriter, anchorArrays):
-        # Check all losses are anchored
-        for loss in torchWriter.losses:
-            assertStr = "All loss tensors mist be anchored"
-            assert (torchWriter.dataFlow.isAnchored(loss)), assertStr
-
-        # Check all losses have the same anchor return type
-        fisrtLossId = torchWriter.losses[0]
-        firstLossArtId = torchWriter.dataFlow.art(fisrtLossId).id()
-        if (len(torchWriter.losses) > 1):
-            for loss in torchWriter.losses:
-                lossArtId = torchWriter.dataFlow.art(loss).id()
-                assertStr = "All losses must have the same return type"
-                assert (lossArtId == firstLossArtId), assertStr
-
-        # Return sum over losses for each sample
-        lossShape = np.shape(getAnchorTensor(fisrtLossId, anchorArrays))
-        pLosses = np.zeros(lossShape)
-        for loss in torchWriter.losses:
-            pLosses_ = getAnchorTensor(loss, anchorArrays)
-            pLosses = np.add(pLosses, pLosses_)
-
-        return pLosses
 
     def subsampleBatches(array, refShape):
         arrayShape = np.shape(array)

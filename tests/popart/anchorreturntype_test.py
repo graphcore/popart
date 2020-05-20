@@ -60,8 +60,6 @@ def simple_training_session(tmpdir, inputShape, inputArray, BPS, art, GA=1):
     o = builder.aiOnnx.add([i1, w1])
     l1 = builder.aiGraphcore.l1loss([o], 0.0)
 
-    loss = popart.IdentityLoss(l1, "idLossVal")
-
     proto = builder.getModelProto()
 
     batchesPerStep = BPS
@@ -75,7 +73,7 @@ def simple_training_session(tmpdir, inputShape, inputArray, BPS, art, GA=1):
                                      dataFlow=dataFlow,
                                      deviceInfo=tu.create_test_device(),
                                      userOptions=opts,
-                                     losses=[loss],
+                                     loss=l1,
                                      optimizer=popart.ConstSGD(0.01))
 
     session.prepareDevice()

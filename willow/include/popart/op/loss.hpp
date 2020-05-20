@@ -20,62 +20,6 @@ namespace popart {
 // NoReduction : Leave the loss values as they are and do not scale the gradient
 enum class ReductionType { Sum = 0, Mean, NoReduction };
 
-enum class eLoss { NLL, L1, ID };
-std::map<std::string, eLoss> initLossMap();
-const std::map<std::string, eLoss> &lossMap();
-
-class Loss {
-public:
-  virtual ~Loss()    = default;
-  Loss(const Loss &) = default;
-  Loss &operator=(const Loss &) = delete;
-  Loss(const std::vector<TensorId> &input, TensorId output, ReductionType rt);
-  virtual std::vector<TensorId> getStreamTensorNames() const             = 0;
-  virtual std::unique_ptr<Op> getOp(const Op::Settings &settings_) const = 0;
-  const TensorId &input(InIndex i) const;
-  int input_size() const;
-  // takes in an int arg to conform
-  // with Node function (uses same template)
-  const TensorId &output(OutIndex) const;
-  int output_size() const;
-  ReductionType getReductionType() const;
-  virtual const OperatorIdentifier &op_type() const = 0;
-  virtual std::unique_ptr<Loss> clone() const       = 0;
-
-  void virtualGraph(int64_t value) { vgraphId = value; }
-  bool hasVirtualGraphId() const;
-  int64_t getVirtualGraphId() const;
-
-  void pipelineStage(PipelineStage pipeline_stage) {
-    pipelineStage_ = pipeline_stage;
-  }
-  bool hasPipelineStage() const;
-  PipelineStage getPipelineStage() const;
-
-  void pingPongPhase(PingPongPhase pingpong_phase) {
-    pingPongPhase_ = pingpong_phase;
-  }
-  bool hasPingPongPhase() const;
-  PingPongPhase getPingPongPhase() const;
-
-protected:
-  // Identify on which vgraph the loss should be executed. This is
-  // an optional setting and may not be valid when virtual graph's are not
-  // enabled
-  boost::optional<VGraphId> vgraphId;
-  boost::optional<PipelineStage> pipelineStage_;
-  boost::optional<PingPongPhase> pingPongPhase_;
-
-private:
-  // The names of the input tensors, same
-  // format as a Node : "" represents no input
-  std::vector<TensorId> input_;
-  // The name of the output tensor
-  TensorId output_;
-  // How to reduce the loss over multiple samples
-  ReductionType reduction_type_;
-};
-
 class LossOp : public Op {
 public:
   LossOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);

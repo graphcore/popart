@@ -33,8 +33,7 @@ def test_matmul_1d(tmpdir):
         t1 = builder.aiOnnx.matmul([lhs, rhs])
 
         o = builder.aiOnnx.add([z, t1])
-
-        builder.addOutputTensor(o)
+        o = builder.aiGraphcore.identityloss([o])
 
         proto = builder.getModelProto()
 
@@ -57,7 +56,7 @@ def test_matmul_1d(tmpdir):
             fnModel=proto,
             dataFlow=dataFlow,
             userOptions=opts,
-            losses=[popart.IdentityLoss(o, "idLossVal")],
+            loss=o,
             optimizer=popart.ConstSGD(0.01),
             patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
@@ -135,8 +134,6 @@ def test_matmul_grouping_test_1(tmpdir):
                                         debugPrefix="rhs.transpose")
 
         o = builder.aiOnnx.matmul([r1, r2_t])
-
-        builder.addOutputTensor(o)
 
         proto = builder.getModelProto()
 
@@ -248,7 +245,7 @@ def test_matmul_grouping_test_2(tmpdir):
 
         o = builder.aiOnnx.matmul([r1, r2], "END")
 
-        builder.addOutputTensor(o)
+        loss = builder.aiGraphcore.identityloss([o])
 
         proto = builder.getModelProto()
 
@@ -278,7 +275,7 @@ def test_matmul_grouping_test_2(tmpdir):
             dataFlow=dataFlow,
             userOptions=opts,
             patterns=pat,
-            losses=[popart.IdentityLoss(o, "idLossVal")],
+            loss=loss,
             optimizer=popart.ConstSGD(0.01),
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
@@ -346,7 +343,7 @@ def test_matmul_grouping_test_3(tmpdir):
 
         o = builder.aiOnnx.matmul([r1, r2], "END")
 
-        builder.addOutputTensor(o)
+        loss = builder.aiGraphcore.identityloss([o])
 
         proto = builder.getModelProto()
 
@@ -376,7 +373,7 @@ def test_matmul_grouping_test_3(tmpdir):
             dataFlow=dataFlow,
             userOptions=opts,
             patterns=pat,
-            losses=[popart.IdentityLoss(o, "idLossVal")],
+            loss=loss,
             optimizer=popart.ConstSGD(0.01),
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
@@ -463,7 +460,7 @@ def test_matmul_grouping_test_4(tmpdir):
 
         o = builder.aiOnnx.add([r1, r2], "END")
 
-        builder.addOutputTensor(o)
+        loss = builder.aiGraphcore.identityloss([o])
 
         proto = builder.getModelProto()
 
@@ -493,7 +490,7 @@ def test_matmul_grouping_test_4(tmpdir):
             dataFlow=dataFlow,
             userOptions=opts,
             patterns=pat,
-            losses=[popart.IdentityLoss(o, "idLossVal")],
+            loss=loss,
             optimizer=popart.ConstSGD(0.01),
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 

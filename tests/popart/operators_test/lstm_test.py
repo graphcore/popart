@@ -425,9 +425,10 @@ def test_lstm_training_onnx_vs_popart():
             out = Y
             if sum_outputs:
                 out = builder.aiOnnx.add([Y, Y_c], "sum_out_and_cell_state")
+            loss = builder.aiGraphcore.identityloss([out])
 
             return [
-                out,
+                loss,
                 popart.reservedGradientPrefix() + tData,
                 popart.reservedGradientPrefix() + tIW,
                 popart.reservedGradientPrefix() + tOW,
@@ -477,9 +478,10 @@ def test_lstm_training_onnx_vs_popart():
             if sum_outputs:
                 out = builder.aiOnnx.add([out, cell_state],
                                          "sum_out_and_cell_state")
+            loss = builder.aiGraphcore.identityloss([out])
 
             return [
-                out,
+                loss,
                 popart.reservedGradientPrefix() + data_id,
                 popart.reservedGradientPrefix() + input_weights_id,
                 popart.reservedGradientPrefix() + output_weights_id,

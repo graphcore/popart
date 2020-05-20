@@ -113,19 +113,18 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
 
     builder->addOutputTensor(out);
 
-    auto proto      = builder->getModelProto();
-    auto modelProto = io::getModelFromString(proto);
     std::unique_ptr<Optimizer> optimizer;
-    std::vector<std::shared_ptr<Loss>> up_losses;
-
-    auto dataFlow = DataFlow(1, {{out, AnchorReturnType("All")}});
-    auto device   = createTestDevice(TEST_TARGET);
+    TensorId loss;
 
     if (train) {
+      loss = l1;
       optimizer.reset(new ConstSGD(0.01));
-      up_losses.push_back(
-          std::make_shared<IdentityLoss>(l1, "l1LossVal", ReductionType::Sum));
     }
+
+    auto proto      = builder->getModelProto();
+    auto modelProto = io::getModelFromString(proto);
+    auto dataFlow   = DataFlow(1, {{out, AnchorReturnType("All")}});
+    auto device     = createTestDevice(TEST_TARGET);
 
     auto opts = SessionOptions();
     // This test tests the functionality of fwtools::subgraph::getRinseMatches,
@@ -137,10 +136,11 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
 
     Ir ir;
     opts.mergeVarUpdate = MergeVarUpdateType::None;
+
     ir.prepare({modelProto,
                 InputShapeInfo(),
                 dataFlow,
-                up_losses,
+                loss,
                 optimizer.get(),
                 *device,
                 opts,
@@ -330,7 +330,6 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
   std::unique_ptr<Optimizer> optimizer;
-  std::vector<std::shared_ptr<Loss>> up_losses;
   auto dataFlow =
       DataFlow(1,
                {{out, AnchorReturnType("All")},
@@ -341,8 +340,6 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
   auto device = createTestDevice(TEST_TARGET);
 
   optimizer.reset(new ConstSGD(0.01));
-  up_losses.push_back(
-      std::make_shared<IdentityLoss>(l1, "l1LossVal", ReductionType::Sum));
 
   std::vector<Match> expected_train_matches = {
       {{7, 13}, 6},
@@ -362,7 +359,7 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              up_losses,
+              l1,
               optimizer.get(),
               *device,
               opts,

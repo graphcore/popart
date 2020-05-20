@@ -133,13 +133,11 @@ BOOST_AUTO_TEST_CASE(Train0TopK) {
 
     float learnRate = 0.1;
     auto optimizer  = ConstSGD(learnRate);
-    std::vector<Loss *> losses{
-        new IdentityLoss(l1, "l1LossVal", ReductionType::Sum)};
 
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
         dataFlow,
-        losses,
+        l1,
         optimizer,
         device,
         popart::InputShapeInfo(),

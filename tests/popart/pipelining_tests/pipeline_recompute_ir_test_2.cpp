@@ -150,9 +150,6 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest2) {
 
     auto optimizer = ConstSGD(0.01);
 
-    auto loss1 =
-        std::make_shared<IdentityLoss>(l1, "l1LossVal_1", ReductionType::Mean);
-
     auto device = createTestDevice(TEST_TARGET, nIpus);
 
     Patterns patterns(PatternsLevel::Default);
@@ -164,7 +161,7 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest2) {
     ir.prepare({modelProto,
                 InputShapeInfo(),
                 dataFlow,
-                {loss1},
+                l1,
                 &optimizer,
                 *device,
                 userOptions,

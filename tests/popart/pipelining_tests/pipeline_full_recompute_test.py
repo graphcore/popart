@@ -113,10 +113,6 @@ def test_full_recompute_pipelining(tmpdir):
                                hidden_size, attention_heads, qkv_length)
             l1 = builder.aiGraphcore.l1loss([o], 0.1)
 
-        loss = popart.IdentityLoss(l1, "l1LossVal")
-        loss.virtualGraph(2)
-        loss.pipelineStage(2)
-
         proto = builder.getModelProto()
 
         dataFlow = popart.DataFlow(
@@ -143,7 +139,7 @@ def test_full_recompute_pipelining(tmpdir):
         session = popart.TrainingSession(fnModel=proto,
                                          dataFlow=dataFlow,
                                          userOptions=opts,
-                                         losses=[loss],
+                                         loss=l1,
                                          optimizer=popart.ConstSGD(1e-9),
                                          patterns=pat,
                                          deviceInfo=tu.create_test_device(

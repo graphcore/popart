@@ -231,10 +231,6 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilonTest1) {
     // The learning rate will be adjusted to the correct value at runtime
     auto optimizer = SGD({{"defaultLearningRate", {10000., false}}});
 
-    auto loss = std::unique_ptr<Loss>(
-        new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
-    loss->virtualGraph(nIPUs - 1);
-
     // number of "pixels" in a step
     int64_t stepDataElms = accumulationFactor * microBatchElms * batchesPerStep;
 
@@ -243,7 +239,7 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilonTest1) {
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
         dataFlow,
-        {loss.get()},
+        l1,
         optimizer,
         device,
         InputShapeInfo(),

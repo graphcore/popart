@@ -27,6 +27,7 @@ def conv_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
                               pads=[1, 1, 1, 1],
                               strides=[1, 1])
     o = builder.aiOnnx.relu([act])
+    loss = builder.aiGraphcore.identityloss([o])
 
     # Apply the setAvailableMemoryProportion to the convolution
     if apply_to_conv:
@@ -36,8 +37,6 @@ def conv_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
     # than the expected convolution op, and expect an error.
     else:
         builder.setAvailableMemoryProportion(o, avail_mem_prop)
-
-    builder.addOutputTensor(o)
 
     anchor_names = [
         o,
@@ -63,13 +62,12 @@ def conv_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
         np.float32)
 
     # Prepare the Training session
-    training_session = popart.TrainingSession(
-        fnModel=builder.getModelProto(),
-        dataFlow=training_dataFlow,
-        losses=[popart.IdentityLoss(o, "idLossVal")],
-        optimizer=popart.ConstSGD(0.01),
-        userOptions=opts,
-        deviceInfo=device)
+    training_session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                              dataFlow=training_dataFlow,
+                                              loss=loss,
+                                              optimizer=popart.ConstSGD(0.01),
+                                              userOptions=opts,
+                                              deviceInfo=device)
 
     # Compile the training graph
     training_session.prepareDevice()
@@ -102,6 +100,7 @@ def matmul_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
     weights = builder.addInitializedInputTensor(weight_data)
     act = builder.aiOnnx.matmul([input_, weights])
     o = builder.aiOnnx.relu([act])
+    loss = builder.aiGraphcore.identityloss([o])
 
     # Apply the setAvailableMemoryProportion to the matmul
     if apply_to_conv:
@@ -111,8 +110,6 @@ def matmul_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
     # than the expected convolution op, and expect an error.
     else:
         builder.setAvailableMemoryProportion(o, avail_mem_prop)
-
-    builder.addOutputTensor(o)
 
     anchor_names = [
         o,
@@ -138,13 +135,12 @@ def matmul_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
         np.float32)
 
     # Prepare the Training session
-    training_session = popart.TrainingSession(
-        fnModel=builder.getModelProto(),
-        dataFlow=training_dataFlow,
-        losses=[popart.IdentityLoss(o, "idLossVal")],
-        optimizer=popart.ConstSGD(0.01),
-        userOptions=opts,
-        deviceInfo=device)
+    training_session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                              dataFlow=training_dataFlow,
+                                              loss=loss,
+                                              optimizer=popart.ConstSGD(0.01),
+                                              userOptions=opts,
+                                              deviceInfo=device)
 
     # Compile the training graph
     training_session.prepareDevice()

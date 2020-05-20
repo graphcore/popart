@@ -79,16 +79,13 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_AddCastMatMul) {
   auto dataFlow  = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
 
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<IdentityLoss>(lossId, "l1LossVal", ReductionType::Sum)};
-
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              losses,
+              lossId,
               &optimizer,
               *device,
               {}, // no SessionOptions
@@ -182,15 +179,13 @@ template <typename FROM, typename TO> void ConstExprTest_AddCastMatMul_Type() {
   auto art       = AnchorReturnType("All");
   auto dataFlow  = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<IdentityLoss>(lossId, "l1LossVal", ReductionType::Sum)};
-  auto device = createTestDevice(TEST_TARGET);
+  auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              losses,
+              lossId,
               &optimizer,
               *device,
               {}, // no SessionOptions

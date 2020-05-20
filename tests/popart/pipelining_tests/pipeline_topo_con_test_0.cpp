@@ -95,6 +95,8 @@ void prepareIr1(popart::Ir &ir) {
   act9         = aiOnnx.softmax({act9});
   auto act9nll = aiGraphcore.nllloss({act9, l1}, ReductionType::Sum);
 
+  auto finalLoss = aiOnnx.sum({act6l1, act8l1, act3nll, act9nll});
+
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
 
@@ -106,21 +108,12 @@ void prepareIr1(popart::Ir &ir) {
 
   auto optimizer = ConstSGD(0.01);
 
-  auto loss1 =
-      std::make_shared<IdentityLoss>(act6l1, "l1LossVal_1", ReductionType::Sum);
-  auto loss2 =
-      std::make_shared<IdentityLoss>(act8l1, "l1LossVal_2", ReductionType::Sum);
-  auto loss3 = std::make_shared<IdentityLoss>(
-      act3nll, "nllLossVal_1", ReductionType::Sum);
-  auto loss4 = std::make_shared<IdentityLoss>(
-      act9nll, "nllLossVal_2", ReductionType::Sum);
-
   auto device = createTestDevice(TEST_TARGET, 3);
 
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              {loss1, loss2, loss3, loss4},
+              finalLoss,
               &optimizer,
               *device,
               userOptions,
@@ -195,15 +188,12 @@ void prepareIr0(popart::Ir &ir) {
 
   auto optimizer = ConstSGD(0.01);
 
-  auto loss =
-      std::make_shared<IdentityLoss>(l1, "l1LossVal", ReductionType::Sum);
-
   auto device = createTestDevice(TEST_TARGET, 3);
 
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              {loss},
+              l1,
               &optimizer,
               *device,
               userOptions,

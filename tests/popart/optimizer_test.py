@@ -26,18 +26,15 @@ def trainSession(anchors, optimizer, stepSize):
                              pads=[1, 1, 1, 1],
                              strides=[1, 1])
     o = builder.aiGraphcore.l1loss([c2], 0.1)
-    builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
-
-    losses = [popart.IdentityLoss(o, "idLossVal")]
 
     opts = popart.SessionOptions()
 
     session = popart.TrainingSession(
         fnModel=proto,
         dataFlow=popart.DataFlow(stepSize, anchors),
-        losses=losses,
+        loss=o,
         optimizer=optimizer,
         deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 
@@ -123,7 +120,7 @@ def test_constsgd_vs_sgd():
     We show that if the learning rates match, the training updates are 
     identical, otherwise they differ.
     """
-    anchorNames = {"idLossVal": popart.AnchorReturnType("All")}
+    anchorNames = {"L1:0": popart.AnchorReturnType("All")}
     lr = 0.01
     wd = 0.01
     ls = 1000
@@ -171,14 +168,13 @@ def test_constsgd_vs_sgd():
         if step == numSteps - 1:
             # We expect to see the diverging losses on the second forward pass
             # after updating the optimizer
-            assert (np.array_equal(anchorsArraysUserSgd["idLossVal"][0],
-                                   anchorsArraysConstSgd["idLossVal"][0]))
-            assert (np.array_equal(anchorsArraysUserSgd["idLossVal"][1],
-                                   anchorsArraysConstSgd["idLossVal"][1]) is
-                    False)
+            assert (np.array_equal(anchorsArraysUserSgd["L1:0"][0],
+                                   anchorsArraysConstSgd["L1:0"][0]))
+            assert (np.array_equal(anchorsArraysUserSgd["L1:0"][1],
+                                   anchorsArraysConstSgd["L1:0"][1]) is False)
         else:
-            assert (np.array_equal(anchorsArraysUserSgd["idLossVal"],
-                                   anchorsArraysConstSgd["idLossVal"]))
+            assert (np.array_equal(anchorsArraysUserSgd["L1:0"],
+                                   anchorsArraysConstSgd["L1:0"]))
 
 
 def test_sgd_with_float16_model():
@@ -202,8 +198,8 @@ def test_sgd_with_float16_model():
                              pads=[1, 1, 1, 1],
                              strides=[1, 1])
 
-    out = c2
-    builder.addOutputTensor(out)
+    # Reduce to scalar
+    out = builder.aiGraphcore.identityloss([c2])
 
     proto = builder.getModelProto()
 
@@ -212,7 +208,6 @@ def test_sgd_with_float16_model():
         "defaultWeightDecay": (0.1, False),
         "lossScaling": (1000, False)
     })
-    losses = [popart.IdentityLoss(out, "idLossVal")]
 
     anchorNames = {
         popart.reservedGradientPrefix() + inid1:
@@ -224,7 +219,7 @@ def test_sgd_with_float16_model():
     session = popart.TrainingSession(
         fnModel=proto,
         dataFlow=popart.DataFlow(1, anchorNames),
-        losses=losses,
+        loss=out,
         optimizer=optimizer,
         deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
 

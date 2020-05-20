@@ -55,6 +55,11 @@ BOOST_AUTO_TEST_CASE(Introspection0_Subgraph) {
     builder->virtualGraph(out[ipu * 4], ipu);
   }
 
+  auto finalSum = aiOnnx.sum({out[0], out[4]});
+  builder->virtualGraph(finalSum, 1);
+  auto finalLoss = aiGraphcore.l1loss({finalSum}, 0.1);
+  builder->virtualGraph(finalLoss, 1);
+
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
   auto dataFlow   = DataFlow(
@@ -73,20 +78,13 @@ BOOST_AUTO_TEST_CASE(Introspection0_Subgraph) {
 
   auto optimizer = ConstSGD(0.01);
 
-  auto loss0 =
-      std::make_shared<IdentityLoss>(out[0], "lossVal_0", ReductionType::Mean);
-  loss0->virtualGraph(0);
-  auto loss1 =
-      std::make_shared<IdentityLoss>(out[4], "lossVal_1", ReductionType::Mean);
-  loss1->virtualGraph(1);
-
   auto device = createTestDevice(TEST_TARGET, nIpus);
 
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              {loss0, loss1},
+              finalLoss,
               &optimizer,
               *device,
               userOptions,

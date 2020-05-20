@@ -76,8 +76,8 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithVGraphs) {
       }
     }
 
-    auto loss = new IdentityLoss(act, "idLoss", ReductionType::Mean);
-    loss->virtualGraph((2 * N - 1) % 2);
+    auto loss = builder.aiGraphcoreOpset1().l1loss({act}, 0.1);
+    builder.virtualGraph(loss, (2 * N - 1) % 2);
 
     runner.opts.batchSerializationFactor = K;
     // Disable outlining (tested separately)
@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithVGraphs) {
     runner.patterns              = Patterns(PatternsLevel::Default);
     // Disable so that no false negatives (rhs vs. lhs inplace) exist
     runner.patterns.inplaceEnabled = false;
-    runner.losses.push_back(loss);
+    runner.loss                    = loss;
 
     return act;
   });
@@ -197,8 +197,8 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithVGraphsOutlined) {
       }
     }
 
-    auto loss = new IdentityLoss(act, "idLoss", ReductionType::Mean);
-    loss->virtualGraph((2 * N - 1) % 2);
+    auto loss = builder.aiGraphcoreOpset1().l1loss({act}, 0.1);
+    builder.virtualGraph(loss, (2 * N - 1) % 2);
 
     runner.opts.batchSerializationFactor = K;
     // Enable outlining with no restrictions
@@ -210,7 +210,7 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithVGraphsOutlined) {
     runner.patterns = Patterns(PatternsLevel::Default);
     // Disable so that no false negatives (rhs vs. lhs inplace) exist
     runner.patterns.inplaceEnabled = false;
-    runner.losses.push_back(loss);
+    runner.loss                    = loss;
 
     return act;
   });

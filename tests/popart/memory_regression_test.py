@@ -165,13 +165,14 @@ def test_mini_resnet_like():
     # Create the onnx session
     opts = popart.SessionOptions()
 
-    session = popart.TrainingSession(
-        fnModel=proto,
-        dataFlow=popart.DataFlow(1, {"loss": popart.AnchorReturnType("All")}),
-        optimizer=popart.ConstSGD(0.001),
-        losses=[popart.IdentityLoss(op, "loss")],
-        deviceInfo=tu.create_test_device(),
-        userOptions=opts)
+    session = popart.TrainingSession(fnModel=proto,
+                                     dataFlow=popart.DataFlow(
+                                         1,
+                                         {op: popart.AnchorReturnType("All")}),
+                                     optimizer=popart.ConstSGD(0.001),
+                                     loss=op,
+                                     deviceInfo=tu.create_test_device(),
+                                     userOptions=opts)
 
     session.prepareDevice()
 

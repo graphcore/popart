@@ -13,7 +13,6 @@
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
-#include <popart/op/loss.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/transforms/prune.hpp>
@@ -59,11 +58,10 @@ BOOST_AUTO_TEST_CASE(PruneTest) {
                             {tensorIds[2], AnchorReturnType("All")}});
 
   Ir ir;
-  const std::vector<std::shared_ptr<Loss>> emptyLosses;
 
   ir.setOnnxModel(modelProto);
   ir.setDataFlow(dataFlow);
-  ir.registerInputTensors(emptyLosses);
+  ir.registerInputTensors();
   ir.constructForwards();
   ir.applyTransform(Prune::id(), ir.getMainGraph());
 
@@ -99,11 +97,10 @@ BOOST_AUTO_TEST_CASE(SelectivePruning) {
   auto dataFlow = DataFlow(1, {{c0, AnchorReturnType("All")}});
 
   Ir ir;
-  const std::vector<std::shared_ptr<Loss>> emptyLosses;
 
   ir.setOnnxModel(modelProto);
   ir.setDataFlow(dataFlow);
-  ir.registerInputTensors(emptyLosses);
+  ir.registerInputTensors();
   ir.constructForwards();
 
   auto c1Tensor         = ir.getMainGraph().getTensors().get(c1);

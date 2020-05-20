@@ -34,8 +34,9 @@ def _get_ir(pingpong_enabled, virtualgraph_enabled, pipeline_enabled):
 
         anchorIds.append(popart.reservedGradientPrefix() + x)
 
-    out = x
-    builder.addOutputTensor(out)
+    out = builder.aiGraphcore.identityloss([x])
+    if virtualgraph_enabled:
+        builder.virtualGraph(out, 3)
 
     device = tu.create_test_device()
 
@@ -49,14 +50,10 @@ def _get_ir(pingpong_enabled, virtualgraph_enabled, pipeline_enabled):
 
     proto = builder.getModelProto()
 
-    loss = popart.IdentityLoss(out, 'idLossVal')
-    if virtualgraph_enabled:
-        loss.virtualGraph(3)
-
     session = popart.TrainingSession(fnModel=proto,
                                      dataFlow=popart.DataFlow(1, dfAnchors),
                                      optimizer=popart.ConstSGD(0.1),
-                                     losses=[loss],
+                                     loss=out,
                                      patterns=popart.Patterns(
                                          popart.PatternsLevel.All),
                                      userOptions=opts,

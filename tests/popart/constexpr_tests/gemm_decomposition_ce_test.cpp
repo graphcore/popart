@@ -65,15 +65,13 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Gemm_Decomposition0) {
   auto art       = AnchorReturnType("All");
   auto dataFlow  = DataFlow(1, {{out_id, art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<IdentityLoss>(loss_id, "l1LossVal", ReductionType::Sum)};
-  auto device = createTestDevice(TEST_TARGET);
+  auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              losses,
+              loss_id,
               &optimizer,
               *device,
               {}, // no SessionOptions

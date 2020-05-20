@@ -8,7 +8,6 @@
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
 #include <popart/onnxutil.hpp>
-#include <popart/op/loss.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/session.hpp>
 #include <popart/sessionoptions.hpp>
@@ -270,16 +269,6 @@ std::string Session::serializeIr(IrSerializationFormat format) {
   return ss.str();
 }
 
-std::vector<std::shared_ptr<Loss>>
-Session::cloneLosses(const std::vector<Loss *> &losses) {
-
-  std::vector<std::shared_ptr<Loss>> lossesCloned;
-  for (auto &loss : losses) {
-    lossesCloned.push_back(std::move(loss->clone()));
-  }
-  return lossesCloned;
-}
-
 InferenceSession::InferenceSession() : Session() {}
 
 InferenceSession::~InferenceSession() = default;
@@ -330,7 +319,7 @@ TrainingSession::~TrainingSession() = default;
 
 void TrainingSession::configureFromOnnx(const std::string &modelProtoOrFilename,
                                         const DataFlow &df,
-                                        const std::vector<Loss *> &lossesIn,
+                                        const TensorId &lossIn,
                                         const Optimizer &optimizerIn,
                                         const InputShapeInfo &perk,
                                         std::shared_ptr<DeviceInfo> deviceInfo,
@@ -344,7 +333,7 @@ void TrainingSession::configureFromOnnx(const std::string &modelProtoOrFilename,
   ir.prepare({modelProto,
               perk,
               df,
-              cloneLosses(lossesIn),
+              lossIn,
               &optimizerIn,
               *deviceInfo,
               userOptions,
@@ -354,7 +343,7 @@ void TrainingSession::configureFromOnnx(const std::string &modelProtoOrFilename,
 std::unique_ptr<TrainingSession>
 TrainingSession::createFromOnnxModel(const std::string &model,
                                      const DataFlow &dataFlow,
-                                     const std::vector<Loss *> &losses,
+                                     const TensorId &loss,
                                      const Optimizer &optimizer,
                                      std::shared_ptr<DeviceInfo> deviceInfo,
                                      const InputShapeInfo &inputShapeInfo,
@@ -371,7 +360,7 @@ TrainingSession::createFromOnnxModel(const std::string &model,
   auto session = std::unique_ptr<TrainingSession>(new TrainingSession());
   session->configureFromOnnx(model,
                              dataFlow,
-                             losses,
+                             loss,
                              optimizer,
                              inputShapeInfo,
                              deviceInfo,

@@ -28,7 +28,7 @@ def test_constants_preserved():
     c = builder.aiOnnx.constant(np.array([[1, 2], [3, 4]], dtype=np.float32))
     o1 = builder.aiOnnx.add([i1, i2])
     o2 = builder.aiOnnx.add([o1, c])
-    builder.addOutputTensor(o2)
+    loss = builder.aiGraphcore.identityloss([o2])
 
     proto = builder.getModelProto()
 
@@ -38,14 +38,12 @@ def test_constants_preserved():
 
     optimizer = popart.ConstSGD(0.01)
 
-    losses = [popart.IdentityLoss(o2, "idLossVal")]
-
     opts = popart.SessionOptions()
 
     session = popart.TrainingSession(fnModel=proto,
                                      dataFlow=dataFlow,
                                      userOptions=opts,
-                                     losses=losses,
+                                     loss=loss,
                                      optimizer=optimizer,
                                      deviceInfo=tu.create_test_device())
 
@@ -85,7 +83,7 @@ def test_no_prepare_device():
     c = builder.aiOnnx.constant(np.array([[1, 2], [3, 4]], dtype=np.float32))
     o1 = builder.aiOnnx.add([i1, i2])
     o2 = builder.aiOnnx.add([o1, c])
-    builder.addOutputTensor(o2)
+    loss = builder.aiGraphcore.identityloss([o2])
 
     proto = builder.getModelProto()
 
@@ -95,14 +93,12 @@ def test_no_prepare_device():
 
     optimizer = popart.ConstSGD(0.01)
 
-    losses = [popart.IdentityLoss(o2, "idLossVal")]
-
     opts = popart.SessionOptions()
 
     session = popart.TrainingSession(fnModel=proto,
                                      dataFlow=dataFlow,
                                      userOptions=opts,
-                                     losses=losses,
+                                     loss=loss,
                                      optimizer=optimizer,
                                      deviceInfo=tu.create_test_device())
 

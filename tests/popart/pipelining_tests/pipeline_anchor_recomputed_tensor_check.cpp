@@ -85,7 +85,6 @@ BOOST_AUTO_TEST_CASE(PipelineAnchorRecomputedTensor0) {
     auto scale        = aiGraphcore.scale({sig}, 2.0f);
     auto l1           = aiGraphcore.l1loss({scale}, 0.1);
     TensorId actFinal = l1;
-    auto loss         = IdentityLoss(actFinal, "l1LossVal", ReductionType::Sum);
 
     int nIPUs = (rt != RunType::SingleDevice ? 2 : 1);
     std::map<std::string, std::string> deviceOpts{
@@ -100,7 +99,6 @@ BOOST_AUTO_TEST_CASE(PipelineAnchorRecomputedTensor0) {
       builder->virtualGraph(sig, 0);
       builder->virtualGraph(scale, 0);
       builder->virtualGraph(l1, nIPUs - 1);
-      loss.virtualGraph(nIPUs - 1);
     }
     auto art      = AnchorReturnType("All");
     auto inGradId = reservedGradientPrefix() + input0;
@@ -109,7 +107,7 @@ BOOST_AUTO_TEST_CASE(PipelineAnchorRecomputedTensor0) {
     auto session = popart::TrainingSession::createFromOnnxModel(
         builder->getModelProto(),
         dataFlow,
-        {&loss},
+        actFinal,
         ConstSGD(0.01),
         createTestDevice(TEST_TARGET, nIPUs),
         InputShapeInfo(),

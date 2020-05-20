@@ -63,9 +63,7 @@ BOOST_AUTO_TEST_CASE(StandardRecomputeTest) {
     // Add the last tensor as an anchor
     auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("All")}});
     auto optimizer = ConstSGD(0.01);
-    std::vector<std::shared_ptr<Loss>> losses{
-        std::make_shared<IdentityLoss>(l1, "l1LossVal", ReductionType::Sum)};
-    auto device = createTestDevice(TEST_TARGET);
+    auto device    = createTestDevice(TEST_TARGET);
 
     SessionOptions opts;
     opts.autoRecomputation = RecomputationType::Standard;
@@ -90,7 +88,7 @@ BOOST_AUTO_TEST_CASE(StandardRecomputeTest) {
     ir.prepare({modelProto,
                 InputShapeInfo(),
                 dataFlow,
-                losses,
+                l1,
                 &optimizer,
                 *device,
                 opts,

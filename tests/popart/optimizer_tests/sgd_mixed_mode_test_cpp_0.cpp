@@ -113,9 +113,6 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTest0) {
     auto proto    = builder->getModelProto();
     auto dataFlow = DataFlow(stepSize);
 
-    auto loss = std::unique_ptr<Loss>(
-        new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
-
     SessionOptions userOptions;
 
     auto device = createTestDevice(TEST_TARGET, 1);
@@ -123,7 +120,7 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTest0) {
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
         dataFlow,
-        {loss.get()},
+        l1,
         opt0, // construct with opt0, will switch to opt1 later
         device,
         InputShapeInfo(),

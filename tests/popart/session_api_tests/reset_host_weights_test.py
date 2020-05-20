@@ -33,20 +33,20 @@ def test_reset_host_weights_with_extra_tensor_in_onnx_model():
         wData = np.random.rand(*dShape).astype(np.float32)
         w0 = builder.addInitializedInputTensor(wData)
         o = builder.aiOnnx.matmul([i0, w0])
-        builder.addOutputTensor(o)
+        loss = builder.aiGraphcore.l1loss([o], 0.1)
+        builder.addOutputTensor(loss)
         return builder
 
     device = tu.create_test_device()
     tr_builder = getModelWithRandomWeights()
     o = tr_builder.getOutputTensorIds()[0]
-    losses = [popart.IdentityLoss(o, "loss")]
 
     # 1. & 2.
     # Training
     tr_opt = popart.SGD({"defaultMomentum": (0.01, True)})
     tr_sess = popart.TrainingSession(fnModel=tr_builder.getModelProto(),
                                      dataFlow=popart.DataFlow(1, []),
-                                     losses=losses,
+                                     loss=o,
                                      optimizer=tr_opt,
                                      deviceInfo=device)
     tr_sess.prepareDevice()

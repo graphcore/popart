@@ -12,7 +12,6 @@
 #include <popart/op/getrandomseed.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/ipucopy.hpp>
-#include <popart/op/loss.hpp>
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/tensor.hpp>
@@ -355,17 +354,6 @@ bool PingPong::apply(Graph &graph) const {
 
       sanitizePlacementAnnotation(
           graph, op, has_phase ? op->getPingPongPhase() : phase, num_stages);
-    }
-
-    // Put the user defined losses on the final virtual graph.
-    // Losses should occur on the same virtual graph as the last FWD operators.
-    for (auto &loss : graph.getLosses()) {
-      if (!loss->hasPingPongPhase()) {
-        loss->pingPongPhase((num_phases - 1));
-      }
-      if (!loss->hasVirtualGraphId()) {
-        loss->virtualGraph((num_phases - 1) % num_stages);
-      }
     }
 
     // Recomputation annotation

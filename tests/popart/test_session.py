@@ -25,14 +25,14 @@ class PopartTestSession:
 
         dataFlow = popart.DataFlow(self.batchesPerStep, anchors)
         proto = self._builder.getModelProto()
-        losses = self._get_losses(anchorIds)
+        loss = self._get_loss(anchorIds)
         device = self._get_device()
 
         optimizer = popart.ConstSGD(0.01)
 
         self._session = self._get_session(fnModel=proto,
                                           dataFlow=dataFlow,
-                                          losses=losses,
+                                          loss=loss,
                                           optimizer=optimizer,
                                           deviceInfo=device,
                                           patterns=self.patterns,
@@ -51,16 +51,13 @@ class PopartTestSession:
         self._session.run(stepio)
         return _anchor_map
 
-    def _get_losses(self, anchorIds):
-        if self._builder._losses:
-            print(f'Returning losses from builder {self._builder._losses}')
-            return self._builder._losses
+    def _get_loss(self, anchorIds):
+        if self._builder._loss:
+            print(f'Returning loss from builder {self._builder._loss}')
+            return self._builder._loss
         else:
-            print(f'Returning default losses')
-            return [
-                popart.IdentityLoss(anchorIds[0], "idLossVal",
-                                    popart.ReductionType.Sum)
-            ]
+            print(f'Returning default loss')
+            return anchorIds[0]
 
     def _get_session(self, **kwargs):
         def create_session(valid_args, session_type):
@@ -75,9 +72,9 @@ class PopartTestSession:
                                    'patterns', 'userOptions'),
                                   popart.InferenceSession)
         elif self.mode == 'train':
-            return create_session(
-                ('fnModel', 'dataFlow', 'losses', 'optimizer', 'deviceInfo',
-                 'patterns', 'userOptions'), popart.TrainingSession)
+            return create_session(('fnModel', 'dataFlow', 'loss', 'optimizer',
+                                   'deviceInfo', 'patterns', 'userOptions'),
+                                  popart.TrainingSession)
 
     def _get_device(self):
         return tu.create_test_device(numIpus=self.numIPUs)
@@ -115,7 +112,7 @@ class _Builder:
         self._input_map = {}
         self._init_input_map = {}
         self._outputs = []
-        self._losses = []
+        self._loss = []
 
     def addInputTensor(self, data, debug_prefix=None):
         shape = popart.TensorInfo(data)
@@ -142,13 +139,12 @@ class _Builder:
 
         return tensor_id
 
-    def addIdentityLoss(self, *args):
-        self._losses.append(popart.IdentityLoss(*args))
-        return self._losses[-1]
-
     def addOutputTensor(self, tensorId):
         self._outputs.append(tensorId)
         self._builder.addOutputTensor(tensorId)
+
+    def setLoss(self, tensorId):
+        self._loss = tensorId
 
     def __getattr__(self, attr):
         return getattr(self._builder, attr)

@@ -280,6 +280,8 @@ def test_matmul_serialization_training_1(tmpdir):
         builder.setSerializeMatMul({o}, matmul_serialization_mode,
                                    matmul_serialization_factor)
 
+        loss = builder.aiGraphcore.identityloss([o])
+
         proto = builder.getModelProto()
 
         dataFlow = popart.DataFlow(
@@ -297,13 +299,13 @@ def test_matmul_serialization_training_1(tmpdir):
         opts = getBaseOptions()
 
         pat = popart.Patterns(
-            ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp'])
+            ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp', 'OpToIdentity'])
 
         session = popart.TrainingSession(
             fnModel=proto,
             dataFlow=dataFlow,
             userOptions=opts,
-            losses=[popart.IdentityLoss(o, "idLossVal")],
+            loss=loss,
             optimizer=popart.ConstSGD(0.01),
             patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
@@ -534,6 +536,8 @@ def test_matmul_serialization_training_2(tmpdir):
             builder.aiOnnx, [o],
             [lhs_group_dim, input_channels, output_channels])
 
+        loss = builder.aiGraphcore.identityloss([o_reshape])
+
         proto = builder.getModelProto()
 
         dataFlow = popart.DataFlow(
@@ -549,13 +553,13 @@ def test_matmul_serialization_training_2(tmpdir):
         opts = getBaseOptions()
 
         pat = popart.Patterns(
-            ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp'])
+            ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp', 'OpToIdentity'])
 
         session = popart.TrainingSession(
             fnModel=proto,
             dataFlow=dataFlow,
             userOptions=opts,
-            losses=[popart.IdentityLoss(o, "idLossVal")],
+            loss=loss,
             optimizer=popart.ConstSGD(0.01),
             patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
@@ -788,6 +792,8 @@ def test_matmul_serialization_precision(tmpdir):
                                    matmul_serialization_factor,
                                    keep_precision=True)
 
+        loss = builder.aiGraphcore.identityloss([o])
+
         proto = builder.getModelProto()
 
         dataFlow = popart.DataFlow(
@@ -805,13 +811,13 @@ def test_matmul_serialization_precision(tmpdir):
         opts = getBaseOptions()
 
         pat = popart.Patterns(
-            ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp'])
+            ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp', 'OpToIdentity'])
 
         session = popart.TrainingSession(
             fnModel=proto,
             dataFlow=dataFlow,
             userOptions=opts,
-            losses=[popart.IdentityLoss(o, "idLossVal")],
+            loss=loss,
             optimizer=popart.ConstSGD(0.01),
             patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
@@ -1048,6 +1054,8 @@ def test_matmul_serialization_training_with_gradient_accumlation(tmpdir):
 
         o = builder.aiOnnx.matmul([lhs, rhs])
 
+        loss = builder.aiGraphcore.identityloss([o])
+
         builder.setSerializeMatMul({o}, matmul_serialization_mode,
                                    matmul_serialization_factor)
 
@@ -1071,13 +1079,13 @@ def test_matmul_serialization_training_with_gradient_accumlation(tmpdir):
         opts.accumulationFactor = 5
 
         pat = popart.Patterns(
-            ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp'])
+            ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp', 'OpToIdentity'])
 
         session = popart.TrainingSession(
             fnModel=proto,
             dataFlow=dataFlow,
             userOptions=opts,
-            losses=[popart.IdentityLoss(o, "idLossVal")],
+            loss=loss,
             optimizer=popart.ConstSGD(0.01),
             patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))

@@ -20,7 +20,6 @@ builder = popart.Builder("alexnet.onnx")
 labels = builder.addInputTensor("INT32", [4])
 nlll = builder.aiGraphcore.nllloss([output_name, labels])
 
-losses = [popart.IdentityLoss(nlll, "loss")]
 optimizer = popart.ConstSGD(0.001)
 
 # Run session on CPU
@@ -28,5 +27,5 @@ device = popart.DeviceManager().createCpuDevice()
 session = popart.TrainingSession(builder.getModelProto(),
                                  deviceInfo=device,
                                  dataFlow=dataFlow,
-                                 losses=losses,
+                                 loss=nlll,
                                  optimizer=optimizer)

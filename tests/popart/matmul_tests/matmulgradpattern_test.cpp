@@ -101,10 +101,6 @@ BOOST_AUTO_TEST_CASE(MatMulGradPatternScheduleTest_0) {
   std::map<popart::TensorId, popart::IArray &> inputs  = {};
   std::map<popart::TensorId, popart::IArray &> anchors = {};
 
-  std::unique_ptr<popart::IdentityLoss> idLoss(
-      new popart::IdentityLoss(E_id, "l1LossVal", popart::ReductionType::Mean));
-  std::vector<popart::Loss *> losses{idLoss.get()};
-
   auto optimizer = popart::ConstSGD(0.01f);
 
   auto opts = SessionOptions();
@@ -119,7 +115,7 @@ BOOST_AUTO_TEST_CASE(MatMulGradPatternScheduleTest_0) {
   auto session =
       popart::TrainingSession::createFromOnnxModel(proto,
                                                    dataFlow,
-                                                   losses,
+                                                   l1,
                                                    optimizer,
                                                    device,
                                                    popart::InputShapeInfo(),

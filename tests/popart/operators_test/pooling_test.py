@@ -121,7 +121,7 @@ def test_average_pool_with_count_include_pad(op_tester):
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
     optimizer = popart.ConstSGD(0.01)
-    losses = [popart.IdentityLoss(o, "idLossVal")]
+    loss = builder.aiGraphcore.l1loss([o], 0.1)
     proto = builder.getModelProto()
 
     opts = popart.SessionOptions()
@@ -129,7 +129,7 @@ def test_average_pool_with_count_include_pad(op_tester):
     with pytest.raises(popart.popart_exception) as e_info:
         popart.TrainingSession(fnModel=proto,
                                dataFlow=dataFlow,
-                               losses=losses,
+                               loss=loss,
                                optimizer=optimizer,
                                userOptions=opts,
                                deviceInfo=tu.create_test_device())
@@ -293,7 +293,7 @@ def test_maxpool_grad(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, t1.grad, None]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl', 'OpToIdentity']
     op_tester.run(init_builder, reference, step_type='train')
 
 
@@ -337,7 +337,7 @@ def test_globalmaxpool_grad_2d(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, t1.grad, None]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl', 'OpToIdentity']
     op_tester.run(init_builder, reference, step_type='train')
 
 
@@ -401,5 +401,5 @@ def test_globalaveragepool_grad_2d(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, t1.grad, None]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl', 'OpToIdentity']
     op_tester.run(init_builder, reference, step_type='train')

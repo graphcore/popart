@@ -169,7 +169,7 @@ def test_detach_grad_branches(detach_branch_popart, detach_branch_pytorch):
     loss = builder.aiGraphcore.nllloss([o, lb])
 
     dataFlow = popart.DataFlow(1, [
-        o, "loss",
+        o, loss,
         popart.reservedGradientPrefix() + o,
         popart.reservedGradientPrefix() + input_, w1, w2
     ])
@@ -178,7 +178,7 @@ def test_detach_grad_branches(detach_branch_popart, detach_branch_pytorch):
     session = popart.TrainingSession(
         fnModel=builder.getModelProto(),
         dataFlow=dataFlow,
-        losses=[popart.IdentityLoss(loss, "loss")],
+        loss=loss,
         optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
         userOptions=opts,
         deviceInfo=popart.DeviceManager().createIpuModelDevice({}))
@@ -311,13 +311,13 @@ def test_detach_error():
     loss = builder.aiGraphcore.nllloss([o, lb])
 
     dataFlow = popart.DataFlow(
-        1, [o, "loss", popart.reservedGradientPrefix() + input_])
+        1, [o, loss, popart.reservedGradientPrefix() + input_])
     opts = popart.SessionOptions()
     with pytest.raises(popart.popart_exception) as e_info:
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),
             dataFlow=dataFlow,
-            losses=[popart.IdentityLoss(loss, "loss")],
+            loss=loss,
             optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
             userOptions=opts,
             deviceInfo=popart.DeviceManager().createIpuModelDevice({}))

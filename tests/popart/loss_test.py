@@ -90,21 +90,30 @@ def run_3d_nll_loss_input(popart_reduction_type, with_patterns):
     out = builder.aiOnnx.softmax([ip], axis=np.size(lshape))
 
     nll0 = builder.aiGraphcore.nllloss([out, lb], popart_reduction_type)
-    loss = popart.IdentityLoss(nll0, "loss", popart.ReductionType.NoReduction)
 
     patterns = (popart.PatternsLevel.All
                 if with_patterns else popart.PatternsLevel.NoPatterns)
 
-    session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                     dataFlow=popart.DataFlow(
-                                         1, ["loss", out]),
-                                     optimizer=popart.ConstSGD(
-                                         LEARNING_RATE, WEIGHT_DECAY),
-                                     losses=[loss],
-                                     patterns=popart.Patterns(patterns),
-                                     userOptions=popart.SessionOptions(),
-                                     deviceInfo=tu.create_test_device())
-
+    if popart_reduction_type == popart.ReductionType.NoReduction:
+        with pytest.raises(popart.popart_exception) as e_info:
+            popart.TrainingSession(fnModel=builder.getModelProto(),
+                                   dataFlow=popart.DataFlow(1, [nll0, out]),
+                                   optimizer=popart.ConstSGD(
+                                       LEARNING_RATE, WEIGHT_DECAY),
+                                   loss=nll0,
+                                   patterns=popart.Patterns(patterns),
+                                   deviceInfo=tu.create_test_device())
+        assert (e_info.value.args[0].endswith("must be a scalar tensor"))
+        return
+    else:
+        session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                         dataFlow=popart.DataFlow(
+                                             1, [nll0, out]),
+                                         optimizer=popart.ConstSGD(
+                                             LEARNING_RATE, WEIGHT_DECAY),
+                                         loss=nll0,
+                                         patterns=popart.Patterns(patterns),
+                                         deviceInfo=tu.create_test_device())
     session.prepareDevice()
     session.weightsFromHost()
 
@@ -136,9 +145,9 @@ def run_3d_nll_loss_input(popart_reduction_type, with_patterns):
     # Compare
     ###
     print("Torch loss\n:", output.data.numpy())
-    print("Popart loss\n:", anchors["loss"])
+    print("Popart loss\n:", anchors[nll0])
 
-    result = getTensorError(output.data.numpy(), anchors["loss"])
+    result = getTensorError(output.data.numpy(), anchors[nll0])
     checkResult(result, 1e-8)
 
 
@@ -173,15 +182,25 @@ def run_nll_loss_with_ignored_index(popart_reduction_type, with_patterns):
     patterns = (popart.PatternsLevel.All
                 if with_patterns else popart.PatternsLevel.NoPatterns)
 
-    session = popart.TrainingSession(
-        fnModel=builder.getModelProto(),
-        dataFlow=popart.DataFlow(1, {"loss": popart.AnchorReturnType("All")}),
-        optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
-        losses=[
-            popart.IdentityLoss(nll, "loss", popart.ReductionType.NoReduction)
-        ],
-        patterns=popart.Patterns(patterns),
-        deviceInfo=tu.create_test_device())
+    if popart_reduction_type == popart.ReductionType.NoReduction:
+        with pytest.raises(popart.popart_exception) as e_info:
+            session = popart.TrainingSession(
+                fnModel=builder.getModelProto(),
+                dataFlow=popart.DataFlow(1, [nll]),
+                optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
+                loss=nll,
+                patterns=popart.Patterns(patterns),
+                deviceInfo=tu.create_test_device())
+        assert (e_info.value.args[0].endswith("must be a scalar tensor"))
+        return
+    else:
+        session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                         dataFlow=popart.DataFlow(1, [nll]),
+                                         optimizer=popart.ConstSGD(
+                                             LEARNING_RATE, WEIGHT_DECAY),
+                                         loss=nll,
+                                         patterns=popart.Patterns(patterns),
+                                         deviceInfo=tu.create_test_device())
 
     session.prepareDevice()
     session.weightsFromHost()
@@ -208,16 +227,7 @@ def run_nll_loss_with_ignored_index(popart_reduction_type, with_patterns):
     # Compare
     ###
     torch_loss = output.data.numpy()
-    popart_loss = anchors["loss"]
-
-    if popart_reduction_type == popart.ReductionType.NoReduction:
-        for batch_num in range(Batchsize):
-            labelInd = lb_data[batch_num]
-
-            if labelInd == ignoreInd:
-                assertStr = "losses for ignoreInd samples should be zero"
-                assert (torch_loss[batch_num] == 0), assertStr
-                assert (popart_loss[batch_num] == 0), assertStr
+    popart_loss = anchors[nll]
 
     result = getTensorError(torch_loss, popart_loss)
     checkResult(result, 1e-8)
@@ -258,7 +268,7 @@ def run_nll_loss_grad_with_ignored_index(popart_reduction_type):
             dataFlow=popart.DataFlow(1,
                                      [popart.reservedGradientPrefix() + ip]),
             optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
-            losses=[popart.IdentityLoss(nll, "loss")],
+            loss=nll,
             patterns=popart.Patterns(patterns),
             deviceInfo=tu.create_test_device())
 
@@ -312,21 +322,6 @@ def run_nll_loss_grad_with_ignored_index(popart_reduction_type):
     px_smd_ip_grad = anchors_SMD[popart.reservedGradientPrefix() + ip]
     px_no_smd_ip_grad = anchors_NoSMD[popart.reservedGradientPrefix() + ip]
 
-    if popart_reduction_type == popart.ReductionType.NoReduction:
-        for sampleInd, labelInd in enumerate(lb_data):
-            print(f"s: {sampleInd}  l {labelInd}")
-            if labelInd == ignoreInd:
-                assertStr = "loss grads for ignoreInd samples should be zero"
-                zero = np.zeros(Classes)
-                assert (np.equal(torch_ip_grad[sampleInd],
-                                 zero).all()), assertStr
-                assert (np.equal(px_smd_ip_grad[sampleInd],
-                                 zero).all()), assertStr
-                assert (np.equal(np.abs(px_no_smd_ip_grad[sampleInd]),
-                                 zero).all()), assertStr
-                assert (np.equal(np.abs(px_smd_ip_grad[sampleInd]),
-                                 zero).all()), assertStr
-
     checkResult(getTensorError(torch_ip_grad, px_smd_ip_grad), 1e-8)
     checkResult(getTensorError(torch_ip_grad, px_no_smd_ip_grad), 1e-8)
 
@@ -352,5 +347,4 @@ def test_nll_loss_with_ignored_index():
 
 def test_nll_loss_grad_with_ignored_index():
     run_nll_loss_grad_with_ignored_index(popart.ReductionType.Mean)
-    run_nll_loss_grad_with_ignored_index(popart.ReductionType.NoReduction)
     run_nll_loss_grad_with_ignored_index(popart.ReductionType.Sum)

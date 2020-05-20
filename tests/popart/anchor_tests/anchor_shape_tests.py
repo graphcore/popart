@@ -114,7 +114,7 @@ def return_anchors(anchorDict, label_array):
 
     session = popart.TrainingSession(fnModel=builder.getModelProto(),
                                      dataFlow=data_flow,
-                                     losses=[popart.IdentityLoss(nll, "loss")],
+                                     loss=nll,
                                      optimizer=popart.SGD({
                                          "defaultLearningRate":
                                          (LEARNING_RATE, True),

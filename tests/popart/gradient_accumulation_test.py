@@ -105,9 +105,9 @@ def get_complex_model(accl_factor):
                              debugPrefix="c0")
 
     r0 = builder.reshape_const(builder.aiOnnx, [c0], [micro_batch_size, 32])
-    output_tensor_name = builder.aiOnnx.softmax([r0],
-                                                axis=1,
-                                                debugPrefix="sfm")
+    sm = builder.aiOnnx.softmax([r0], axis=1, debugPrefix="sfm")
+    output_tensor_name = builder.aiGraphcore.identityloss([sm])
+
     builder.addOutputTensor(output_tensor_name)
     label_shape = [micro_batch_size]
     label_tensor_name = builder.addInputTensor(
@@ -123,14 +123,8 @@ def run_graph(input_shape, initial_onnx_model, input_tensor_name,
               final_proto_filename, enable_multi_ipu, full_anchorage,
               inference_mode):
 
-    losses = [popart.IdentityLoss(output_tensor_name, "idLossVal")]
-
-    # Loss on the last IPU
-    if enable_multi_ipu:
-        losses[0].virtualGraph(1)
-
     art = popart.AnchorReturnType("All")
-    anchorNames = {losses[0].output(0): art}
+    anchorNames = {output_tensor_name: art}
 
     if full_anchorage:
         w0 = onnx.load_from_string(
@@ -172,7 +166,7 @@ def run_graph(input_shape, initial_onnx_model, input_tensor_name,
                                      dataFlow=popart.DataFlow(
                                          batches_per_step, anchorNames),
                                      deviceInfo=device,
-                                     losses=losses,
+                                     loss=output_tensor_name,
                                      optimizer=optimizer,
                                      userOptions=opts)
 
@@ -616,7 +610,6 @@ def test_loading_saved_gradient_accumulationt_tesors():
         assert grad_accl_prefix not in name
 
     def getTrainingSession(fn):
-        losses = [popart.IdentityLoss(output_name, "NlllVal")]
         opts = popart.SessionOptions()
         opts.enableGradientAccumulation = True
         opts.accumulationFactor = accl_factor
@@ -624,7 +617,7 @@ def test_loading_saved_gradient_accumulationt_tesors():
         sess = popart.TrainingSession(fnModel=fn,
                                       dataFlow=popart.DataFlow(1, {}),
                                       deviceInfo=tu.create_test_device(),
-                                      losses=losses,
+                                      loss=output_name,
                                       optimizer=optimizer,
                                       userOptions=opts)
         sess.prepareDevice()

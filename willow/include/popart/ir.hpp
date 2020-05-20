@@ -91,7 +91,7 @@ public:
   IrBundle(const ONNX_NAMESPACE::ModelProto &modelProto,
            const InputShapeInfo &inputShapeInfo,
            const DataFlow &dataFlow,
-           const std::vector<std::shared_ptr<Loss>> &losses,
+           const TensorId &loss,
            const Optimizer *optimizer,
            DeviceInfo &deviceInfo,
            const SessionOptions &userOptions,
@@ -100,7 +100,7 @@ public:
   const ONNX_NAMESPACE::ModelProto &modelProto;
   const InputShapeInfo &inputShapeInfo;
   const DataFlow &dataFlow;
-  const std::vector<std::shared_ptr<Loss>> losses;
+  const TensorId loss;
   const Optimizer *optimizer;
   DeviceInfo &deviceInfo;
   const SessionOptions &userOptions;
@@ -253,9 +253,6 @@ public:
   // in userOptions.logDir
   void dotCheckpoint(DotCheck check) const;
 
-  bool isInputToLoss(const Tensor *,
-                     const std::vector<std::shared_ptr<Loss>> &losses) const;
-
   const ONNX_NAMESPACE::ModelProto &getModel() const;
   std::vector<TensorId> getModelInputIds() const;
 
@@ -307,7 +304,7 @@ public:
   bool canInfer() const;
 
   // Can the IR be used for training.
-  // This is true when there are losses and an optimizer.
+  // This is true when there is a loss and an optimizer.
   bool canTrain() const;
 
   // returns true if constructBackwards has finished
@@ -334,11 +331,10 @@ public:
   // pass
   void constructBackwards();
 
-  // Register the input tensors of the ONNX graph,
-  // and the inputs to the losses. For the ONNX input tensors,
-  // determines which are Stream and which are Variable
-  // Losses are required as they may contain inputs such as class labels.
-  void registerInputTensors(const std::vector<std::shared_ptr<Loss>> &losses);
+  // Register the input tensors of the ONNX graph.
+  // For the ONNX input tensors, determines which are
+  // Stream and which are Variable.
+  void registerInputTensors();
 
   // Consider the number of out edges a Vertex (Op/Tensor) has which lead to the
   // final loss Tensor is used in constructing the backwards pass. This function
@@ -377,9 +373,9 @@ public:
   // to single string might result in conflict).
   void confirmNoReservedIds() const;
 
-  // starting from losses, construct the individual loss ops
-  // as well as an op which sums them to get the final op
-  void growFinalLoss(const std::vector<std::shared_ptr<Loss>> &losses);
+  // grow an IndeityLossOp onto the user-provided loss tensor to create
+  // the final loss
+  void growFinalLoss(const TensorId &loss);
 
   // Return the default opset version for a domain
   int getDefaultOpsetVersion(const std::string &domain) const;
@@ -446,8 +442,7 @@ private:
 
   std::vector<Op *> growGradOps(Op *forwardOp);
 
-  // for each of the losses described by loss,
-  // create a grad-op. Return a vector of {gradop, lossop} pairs
+  // For each loss, create a grad-op. Return a vector of {gradop, lossop} pairs
   std::vector<GradNonGradPair> growLossGradients();
 
   void initRandomSeed();
@@ -462,8 +457,7 @@ private:
 
   // Verifies that the virtual graph IDs (if used) are valid, on ops and losses
   // if specified
-  void verifyVirtualGraphIds(bool postAutoVirtualGraphTransform,
-                             bool includeLosses) const;
+  void verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const;
 
   // Very that all virtual graph ids have not been initialised. (Used when
   // virtual graphs are disabled)

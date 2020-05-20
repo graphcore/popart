@@ -61,7 +61,7 @@ def test_sgd_mixed_mode(tmpdir):
             fnModel=proto,
             dataFlow=dataFlow,\
             userOptions=opts,
-            losses=[popart.IdentityLoss(l1, "idLossVal")],
+            loss=l1,
             optimizer=opt0,
             patterns=pat,
             deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))

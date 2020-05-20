@@ -13,7 +13,7 @@ def test_set_random_seed_error():
 
     i1 = builder.addInputTensor(popart.TensorInfo("FLOAT", [10]))
     [o] = builder.aiOnnx.dropout([i1], num_outputs=1, ratio=0.3)
-    builder.addOutputTensor(o)
+    loss = builder.aiGraphcore.identityloss([o])
 
     proto = builder.getModelProto()
 
@@ -22,7 +22,7 @@ def test_set_random_seed_error():
     s = popart.TrainingSession(fnModel=proto,
                                dataFlow=dataFlow,
                                optimizer=popart.ConstSGD(0.1),
-                               losses=[popart.IdentityLoss(o, "idLossVal")],
+                               loss=loss,
                                userOptions=popart.SessionOptions(),
                                deviceInfo=tu.create_test_device(numIpus=2))
 
@@ -52,6 +52,7 @@ def test_stochastic_rounding():
     iVar = builder.addInitializedInputTensor(var)
     [o_y, o_mean, o_var, o_smean, o_svar] = builder.aiOnnx.batchnormalization(
         [i1, iScale, iB, iMean, iVar], 5, epsilon, momentum)
+    loss = builder.aiGraphcore.identityloss([o_y])
     builder.addOutputTensor(o_y)
     proto = builder.getModelProto()
 
@@ -62,13 +63,12 @@ def test_stochastic_rounding():
     options = popart.SessionOptions()
     options.enableStochasticRounding = True
 
-    sess = popart.TrainingSession(
-        fnModel=proto,
-        optimizer=popart.ConstSGD(0.1),
-        losses=[popart.IdentityLoss(o_y, "idLossVal")],
-        dataFlow=dataFlow,
-        deviceInfo=device,
-        userOptions=options)
+    sess = popart.TrainingSession(fnModel=proto,
+                                  optimizer=popart.ConstSGD(0.1),
+                                  loss=loss,
+                                  dataFlow=dataFlow,
+                                  deviceInfo=device,
+                                  userOptions=options)
 
     anchors = sess.initAnchorArrays()
     sess.prepareDevice()

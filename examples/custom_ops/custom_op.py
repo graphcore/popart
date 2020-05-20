@@ -48,7 +48,7 @@ options = popart.SessionOptions()
 device = popart.DeviceManager().createIpuModelDevice({})
 session = popart.TrainingSession(fnModel=proto,
                                  dataFlow=dataflow,
-                                 losses=[popart.IdentityLoss(l1, "l1LossVal")],
+                                 loss=l1,
                                  optimizer=popart.ConstSGD(0.001),
                                  userOptions=options,
                                  deviceInfo=device)

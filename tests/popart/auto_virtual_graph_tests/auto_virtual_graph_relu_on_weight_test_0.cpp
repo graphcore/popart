@@ -145,9 +145,6 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
   float learnRate = 1;
   auto optimizer  = ConstSGD(learnRate);
 
-  auto loss = std::unique_ptr<Loss>(
-      new IdentityLoss(actOut, "l1LossVal", ReductionType::Sum));
-
   auto device = createTestDevice(TEST_TARGET, 3);
 
   SessionOptions userOptions;
@@ -159,7 +156,7 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      {loss.get()},
+      actOut,
       optimizer,
       device,
       InputShapeInfo(),

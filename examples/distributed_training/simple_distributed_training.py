@@ -32,11 +32,9 @@ def create_model():
     label = builder.addInputTensor(label_shape)
     nll = popart.aiGraphcore.nllloss([output, label])
 
-    loss = popart.IdentityLoss(nll, "nllLossVal")
-
     proto = builder.getModelProto()
 
-    return builder, proto, x, label, output, loss
+    return builder, proto, x, label, output, nll
 
 
 def get_device(simulation=True):
@@ -67,7 +65,7 @@ def init_session(proto, loss, dataFlow, userOpts, device):
     # Create a session to compile and execute the graph
     optimizer = popart.SGD({"defaultLearningRate": (0.1, False)})
     session = popart.TrainingSession(fnModel=proto,
-                                     losses=[loss],
+                                     loss=loss,
                                      deviceInfo=device,
                                      optimizer=optimizer,
                                      dataFlow=dataFlow,
@@ -83,12 +81,12 @@ def init_session(proto, loss, dataFlow, userOpts, device):
 
 
 def train():
-    builder, proto, data_in, labels_in, output, loss, = create_model()
+    builder, proto, data_in, labels_in, output, loss = create_model()
 
     batches_per_step = 32
     anchor_desc = {
         output: popart.AnchorReturnType("All"),
-        loss.output(0): popart.AnchorReturnType("All")
+        loss: popart.AnchorReturnType("All")
     }
     dataFlow = popart.DataFlow(batches_per_step, anchor_desc)
 

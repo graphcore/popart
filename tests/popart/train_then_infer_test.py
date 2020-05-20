@@ -69,13 +69,12 @@ def test_train_then_infer_via_file():
     # ----------------------------------------------
 
     # Prepare the Training session
-    training_session = popart.TrainingSession(
-        fnModel=builder.getModelProto(),
-        dataFlow=training_dataFlow,
-        losses=[popart.IdentityLoss(l1, "l1LossVal")],
-        optimizer=popart.ConstSGD(0.01),
-        userOptions=opts,
-        deviceInfo=device)
+    training_session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                              dataFlow=training_dataFlow,
+                                              loss=l1,
+                                              optimizer=popart.ConstSGD(0.01),
+                                              userOptions=opts,
+                                              deviceInfo=device)
 
     # Compile the training graph
     training_session.prepareDevice()
@@ -201,13 +200,12 @@ def test_modelToHost_calls_resetHostWeights():
     device.attach()
 
     # Prepare the Training session
-    session = popart.TrainingSession(
-        fnModel=builder.getModelProto(),
-        dataFlow=data_flow,
-        losses=[popart.IdentityLoss(l1, "l1LossVal")],
-        optimizer=popart.ConstSGD(0.1),
-        userOptions=opts,
-        deviceInfo=device)
+    session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                     dataFlow=data_flow,
+                                     loss=l1,
+                                     optimizer=popart.ConstSGD(0.1),
+                                     userOptions=opts,
+                                     deviceInfo=device)
 
     # Compile the training graph
     session.prepareDevice()

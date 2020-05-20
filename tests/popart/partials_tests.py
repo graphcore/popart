@@ -81,10 +81,11 @@ def test_per_op_partials_train():
         builder.setPartialsType(c2, partials_type[1])
 
         o = builder.aiOnnx.add([c1, c2])
+        loss = builder.aiGraphcore.identityloss([o])
 
         builder.addOutputTensor(o)
         return [
-            o,
+            loss,
             popart.reservedGradientPrefix() + d1,
             popart.reservedGradientPrefix() + k
         ]

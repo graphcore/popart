@@ -180,12 +180,6 @@ public:
 
 protected:
   /**
-   * Clone all losses into share_ptrs
-   */
-  static std::vector<std::shared_ptr<Loss>>
-  cloneLosses(const std::vector<Loss *> &losses);
-
-  /**
    * Select a device type.
    *
    * /param deviceInfo which defines the type of device to work on
@@ -267,7 +261,7 @@ public:
    * \param inputShapeInfo Information about the shapes of input and output
    *                       tensors
    * \param dataFlow Configuration for the data feeds and fetches
-   * \param losses A list of loss layers to use when training
+   * \param loss The TensorId of the final scalar loss tensor for training
    * \param optimizer The name of an optimizer to use when training
    * \param userOptions String to configure session options
    * \param patterns Optimization patterns to apply
@@ -276,7 +270,7 @@ public:
   static std::unique_ptr<TrainingSession>
   createFromOnnxModel(const std::string &model,
                       const DataFlow &dataFlow,
-                      const std::vector<Loss *> &losses,
+                      const TensorId &loss,
                       const Optimizer &optimizer,
                       std::shared_ptr<DeviceInfo> deviceInfo,
                       const InputShapeInfo &inputShapeInfo = InputShapeInfo(),
@@ -346,7 +340,7 @@ public:
 private:
   void configureFromOnnx(const std::string &model,
                          const DataFlow &dataFlow,
-                         const std::vector<Loss *> &losses,
+                         const TensorId &loss,
                          const Optimizer &optimizer,
                          const InputShapeInfo &inputShapeInfo,
                          std::shared_ptr<DeviceInfo> deviceInfo,

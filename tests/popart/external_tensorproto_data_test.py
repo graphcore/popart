@@ -122,6 +122,7 @@ def test_save_back_externally_saved_tensors():
         anchorsDef[weightsIds[layer]] = popart.AnchorReturnType("All")
         out = builder.aiOnnx.matmul([out, weightsIds[layer]])
 
+    loss = builder.aiGraphcore.identityloss([out])
     tmpdir = tempfile.mkdtemp()
     tmpfile_weights = os.path.join(tmpdir, "weights.onnx")
     builder.saveInitializersExternally(weightsIds, tmpfile_weights)
@@ -140,7 +141,7 @@ def test_save_back_externally_saved_tensors():
         dataFlow=popart.DataFlow(1, anchorsDef),
         deviceInfo=popart.DeviceManager().createCpuDevice(),
         optimizer=popart.ConstSGD(10),
-        losses=[popart.IdentityLoss(out, out + "/loss")])
+        loss=loss)
 
     anchors = session.initAnchorArrays()
     inputs = {in0: np.random.rand(*shape).astype('float32')}

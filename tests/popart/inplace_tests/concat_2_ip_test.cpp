@@ -43,15 +43,13 @@ BOOST_AUTO_TEST_CASE(Inplace_concat1) {
   // Create the IR
   auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("All")}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<IdentityLoss>(out, "l1LossVal", ReductionType::Sum)};
-  auto device = createTestDevice(TEST_TARGET);
+  auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              losses,
+              out,
               &optimizer,
               *device,
               {},

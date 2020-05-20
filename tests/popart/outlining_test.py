@@ -29,7 +29,7 @@ def test_weight_update(tmpdir):
         for i in (ip, m1, m2, m3):
             anchorIds.append(popart.reservedGradientPrefix() + i)
 
-        out = m3
+        out = builder.aiGraphcore.identityloss([m3])
         builder.addOutputTensor(out)
 
         device = tu.create_test_device()
@@ -48,7 +48,7 @@ def test_weight_update(tmpdir):
             fnModel=proto,
             dataFlow=popart.DataFlow(1, dfAnchors),
             optimizer=popart.ConstSGD(0.1),
-            losses=[popart.IdentityLoss(out, "idLossVal")],
+            loss=out,
             patterns=popart.Patterns(popart.PatternsLevel.All),
             userOptions=opts,
             deviceInfo=device)
@@ -103,7 +103,7 @@ def test_batches_per_step_greater_than_one():
         for i in (ip, m1, m2, m3):
             anchorIds.append(popart.reservedGradientPrefix() + i)
 
-        out = m3
+        out = builder.aiGraphcore.identityloss([m3])
         builder.addOutputTensor(out)
 
         device = tu.create_test_device()
@@ -119,7 +119,7 @@ def test_batches_per_step_greater_than_one():
             fnModel=builder.getModelProto(),
             dataFlow=popart.DataFlow(batches_per_step, dfAnchors),
             optimizer=popart.ConstSGD(0.1),
-            losses=[popart.IdentityLoss(out, "idLossVal")],
+            loss=out,
             patterns=popart.Patterns(popart.PatternsLevel.All),
             userOptions=opts,
             deviceInfo=device)

@@ -591,6 +591,19 @@ TensorId AiGraphcoreOpset1::nllloss(const std::vector<TensorId> &args,
       .at(0);
 }
 
+TensorId AiGraphcoreOpset1::identityloss(const std::vector<TensorId> &args,
+                                         const ReductionType reduction,
+                                         const std::string &name) {
+  std::string reductionString = LossOp::reductionTypeToString(reduction);
+  return impl
+      ->op(Onnx::AiGraphcore::OpSet1::IdentityLoss,
+           getOpsetVersion(),
+           args,
+           {{"reduction", reductionString}},
+           name)
+      .at(0);
+}
+
 std::vector<TensorId>
 Builder::customOp(const OperatorIdentifier &opid,
                   int opsetVersion,

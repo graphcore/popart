@@ -371,7 +371,9 @@ def test_pipelined_dropout():
         for vgraph in range(layers):
             next_layer_in = add_layer(next_layer_in, vgraph)
         out = next_layer_in
-        builder.addOutputTensor(out)
+        loss = builder.aiGraphcore.identityloss([out])
+        builder.virtualGraph(loss, layers - 1)
+        builder.addOutputTensor(loss)
 
         # TODO: use the tu.requires_ipu decorator
         if tu.ipu_available(ipus):
@@ -385,10 +387,6 @@ def test_pipelined_dropout():
 
         dataFlow = popart.DataFlow(batches_per_step, dfAnchors)
 
-        loss = popart.IdentityLoss(out, "idLossVal")
-        if do_sharding:
-            loss.virtualGraph(layers - 1)
-
         userOptions = popart.SessionOptions()
         if do_sharding:
             userOptions.virtualGraphMode = popart.VirtualGraphMode.Manual
@@ -397,7 +395,7 @@ def test_pipelined_dropout():
         session = popart.TrainingSession(fnModel=builder.getModelProto(),
                                          dataFlow=dataFlow,
                                          optimizer=popart.ConstSGD(0.1),
-                                         losses=[loss],
+                                         loss=loss,
                                          userOptions=userOptions,
                                          deviceInfo=device)
 
@@ -507,7 +505,6 @@ def test_pipelined_recomputed_dropout():
     for vgraph in range(layers):
         next_layer_in = add_layer(next_layer_in, vgraph)
     out = next_layer_in
-    builder.addOutputTensor(out)
 
     # TODO: use the tu.requires_ipu decorator
     if tu.ipu_available(ipus):
@@ -521,8 +518,8 @@ def test_pipelined_recomputed_dropout():
 
     dataFlow = popart.DataFlow(batches_per_step, dfAnchors)
 
-    loss = popart.IdentityLoss(out, "idLossVal")
-    loss.virtualGraph(layers - 1)
+    loss = builder.aiGraphcore.identityloss([out])
+    builder.virtualGraph(loss, layers - 1)
 
     userOptions = popart.SessionOptions()
     userOptions.virtualGraphMode = popart.VirtualGraphMode.Manual
@@ -532,7 +529,7 @@ def test_pipelined_recomputed_dropout():
     session = popart.TrainingSession(fnModel=builder.getModelProto(),
                                      dataFlow=dataFlow,
                                      optimizer=popart.ConstSGD(0.1),
-                                     losses=[loss],
+                                     loss=loss,
                                      userOptions=userOptions,
                                      deviceInfo=device)
 
@@ -606,7 +603,6 @@ def get_model_anchors(doSharding,
     nll = builder.aiGraphcore.nllloss([out, l0])
 
     art = popart.AnchorReturnType("All")
-    loss = popart.IdentityLoss(nll, "loss")
 
     anchor_map = {nll: art, w0: art, e0: art}
     if doTraining is True:
@@ -631,13 +627,12 @@ def get_model_anchors(doSharding,
         builder.virtualGraph(r0, 2)
         builder.virtualGraph(out, 2)
         builder.virtualGraph(nll, 2)
-        loss.virtualGraph(2)
 
     if doTraining is True:
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),
             dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
-            losses=[loss],
+            loss=nll,
             optimizer=popart.ConstSGD(0.01),
             userOptions=opts,
             deviceInfo=tu.create_test_device(numIpus=numIPUs, tilesPerIpu=20))
@@ -717,23 +712,21 @@ def test_pipeline_stage_errors():
         m0 = builder.aiOnnx.mul([s0, d0])
         e0 = builder.aiOnnx.exp([m0])
         e1 = builder.aiOnnx.exp([e0])
+        loss = builder.aiGraphcore.identityloss([e1])
 
-        builder.addOutputTensor(e1)
+        builder.addOutputTensor(loss)
 
         print(f'Setting virtual graphs to {vgraph_ids}')
-        for tid, vgid in zip((s0, m0, e0, e1), vgraph_ids):
+        for tid, vgid in zip((s0, m0, e0, e1, loss), vgraph_ids):
             if vgid is not None:
                 builder.virtualGraph(tid, vgid)
 
         print(f'Setting pipeline stages to {ps_ids}')
-        for tid, psid in zip((s0, m0, e0, e1), ps_ids):
+        for tid, psid in zip((s0, m0, e0, e1, loss), ps_ids):
             if psid is not None:
                 builder.pipelineStage(tid, psid)
 
-        loss = builder.addIdentityLoss(e1, 'idLossVal')
-        loss.virtualGraph(1)
-
-        return [e1]
+        return [loss]
 
     session = PopartTestSession()
     session.options.virtualGraphMode = popart.VirtualGraphMode.Manual
@@ -743,8 +736,8 @@ def test_pipeline_stage_errors():
     session.batchesPerStep = bps
 
     # test a pipeline stage appearing on multiple virtual graphs
-    vgraph_ids = [0, 0, 0, 1]
-    ps_ids = [0, 0, 1, 1]
+    vgraph_ids = [0, 0, 0, 1, 1]
+    ps_ids = [0, 0, 1, 1, 1]
     with pytest.raises(popart.popart_exception) as e_info:
         session.prepare(init_builder)
 
@@ -753,8 +746,8 @@ def test_pipeline_stage_errors():
                     emsg) is not None
 
     # test not all ops having a pipeline stage set
-    vgraph_ids = [0, 0, 1, 1]
-    ps_ids = [0, 0, None, 1]
+    vgraph_ids = [0, 0, 1, 1, 1]
+    ps_ids = [0, 0, None, 1, 1]
     with pytest.raises(popart.popart_exception) as e_info:
         session.prepare(init_builder)
 
@@ -776,11 +769,11 @@ def test_pipeline_stages_backwards_through_ipus():
         m0 = builder.aiOnnx.mul([s0, d0])
         e0 = builder.aiOnnx.exp([m0])
         e1 = builder.aiOnnx.exp([e0], 'output')
-
-        builder.addOutputTensor(e1)
+        loss = builder.aiGraphcore.identityloss([e1])
+        builder.addOutputTensor(loss)
 
         stage0 = [s0, m0]
-        stage1 = [e0, e1]
+        stage1 = [e0, e1, loss]
 
         stage0_vgraph = 1
         stage1_vgraph = 0
@@ -792,10 +785,6 @@ def test_pipeline_stages_backwards_through_ipus():
         for tid in stage1:
             builder.virtualGraph(tid, stage1_vgraph)
             builder.pipelineStage(tid, 1)
-
-        loss = builder.addIdentityLoss(e1, 'idLossVal')
-        loss.virtualGraph(stage1_vgraph)
-        loss.pipelineStage(1)
 
         return [e1]
 
@@ -844,20 +833,19 @@ def test_multiple_stages_per_virtual_graph_inference():
         mm0 = builder.aiOnnx.matmul([d0, w0], "mm0")
         s0 = builder.aiOnnx.sin([mm0])
         mm1 = builder.aiOnnx.matmul([s0, w0], "mm1")
+        loss = builder.aiGraphcore.identityloss([mm1])
 
-        builder.addOutputTensor(mm1)
+        builder.addOutputTensor(loss)
 
         builder.pipelineStage(mm0, 0)
         builder.pipelineStage(s0, 1)
         builder.pipelineStage(mm1, 2)
+        builder.pipelineStage(loss, 2)
 
         builder.virtualGraph(mm0, 0)
         builder.virtualGraph(s0, 1)
         builder.virtualGraph(mm1, 0)
-
-        loss = builder.addIdentityLoss(mm1, 'idLossVal')
-        loss.virtualGraph(0)
-        loss.pipelineStage(2)
+        builder.virtualGraph(loss, 0)
 
         return [mm1]
 
@@ -910,24 +898,22 @@ def test_multiple_stages_per_virtual_graph_training():
             t0 = builder.aiOnnx.matmul([d0, w0])
             t1 = builder.aiOnnx.sin([t0])
             t2 = builder.aiOnnx.matmul([t1, w0])
+            loss = builder.aiGraphcore.identityloss([t2])
 
-            builder.addOutputTensor(t2)
+            builder.addOutputTensor(loss)
 
             if set_pipeline_stages:
                 builder.pipelineStage(t0, 0)
                 builder.pipelineStage(t1, 1)
                 builder.pipelineStage(t2, 2)
+                builder.pipelineStage(loss, 2)
 
                 builder.virtualGraph(t0, 0)
                 builder.virtualGraph(t1, 1)
                 builder.virtualGraph(t2, 0)
+                builder.virtualGraph(loss, 0)
 
-            loss = builder.addIdentityLoss(t2, 'idLossVal')
-            if set_pipeline_stages:
-                loss.pipelineStage(2)
-                loss.virtualGraph(0)
-
-            return [t2]
+            return [loss]
 
         session = PopartTestSession()
         session.mode = 'train'
@@ -997,14 +983,14 @@ def test_recomputation():
             t0 = builder.aiOnnx.mul([d0, w0])
             t1 = builder.aiOnnx.sigmoid([t0])
             t2 = builder.aiGraphcore.scale([t1], 2.0)
+            loss = builder.aiGraphcore.identityloss([t2])
 
             for t in (t0, t1, t2):
                 builder.virtualGraph(t, 0)
 
-            loss = builder.addIdentityLoss(t2, 'idLossVal')
-            loss.virtualGraph(1)
+            builder.virtualGraph(loss, 1)
 
-            return [t2]
+            return [loss]
 
         session = PopartTestSession()
         session.device = 'ipu_model'
@@ -1057,17 +1043,16 @@ def test_bad_auto_staging():
         t0 = builder.aiOnnx.sin([d0])
         t1 = builder.aiOnnx.sin([t0])
         t2 = builder.aiOnnx.sin([t1])
+        loss = builder.aiGraphcore.identityloss([t2])
 
-        builder.addOutputTensor(t2)
+        builder.addOutputTensor(loss)
 
         builder.virtualGraph(t0, 0)
         builder.virtualGraph(t1, 1)
         builder.virtualGraph(t2, 0)
+        builder.virtualGraph(loss, 0)
 
-        loss = builder.addIdentityLoss(t2, 'idLossVal')
-        loss.virtualGraph(0)
-
-        return [t2]
+        return [loss]
 
     def ref(d0):
         t0 = np.sin(d0)

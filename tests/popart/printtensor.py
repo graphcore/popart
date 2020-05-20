@@ -100,13 +100,12 @@ def test_train(tmpdir, capfd):
     opts.enableOutlining = False
     opts.enableOutliningCopyCostPruning = False
 
-    session = popart.TrainingSession(
-        fnModel=proto,
-        dataFlow=dataFlow,
-        userOptions=opts,
-        optimizer=popart.ConstSGD(0.1),
-        losses=[popart.IdentityLoss(l1, "idLossVal")],
-        deviceInfo=tu.create_test_device())
+    session = popart.TrainingSession(fnModel=proto,
+                                     dataFlow=dataFlow,
+                                     userOptions=opts,
+                                     optimizer=popart.ConstSGD(0.1),
+                                     loss=l1,
+                                     deviceInfo=tu.create_test_device())
 
     session.prepareDevice()
 

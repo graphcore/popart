@@ -50,16 +50,13 @@ BOOST_AUTO_TEST_CASE(SplitToSliceTest0) {
 
   auto optimizer = ConstSGD(0.01);
 
-  auto loss =
-      std::make_shared<IdentityLoss>(l1, "l1LossVal", ReductionType::Sum);
-
   auto device = createTestDevice(TEST_TARGET, 8);
 
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              {loss},
+              l1,
               &optimizer,
               *device,
               userOptions,

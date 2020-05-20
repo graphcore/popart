@@ -145,19 +145,21 @@ probs = builder.aiOnnx.softmax([output])
 # Add the labels input - onnx model doesn't include inputs for training
 lbl_shape = popart.TensorInfo("INT32", [1])
 lb = builder.addInputTensor(lbl_shape)
+
+# Append the Nll loss operation to the model
 nll = builder.aiGraphcore.nllloss([probs, lb])
 
 graph_transformer = popart.GraphTransformer(builder.getModelProto())
 graph_transformer.convertAllFixedPointInitializersToConstants()
 graph_transformer.prepareNodesForTraining()
 
-# Create the training session and input the Nll Loss function.
+# Create the training session
 trainingOptions = popart.SessionOptions()
 trainingSession = popart.TrainingSession(
     fnModel=graph_transformer.getModelProto(),
     dataFlow=popart.DataFlow(batches_per_step,
                              {output: popart.AnchorReturnType("All")}),
-    losses=[popart.IdentityLoss(nll, "loss")],
+    loss=nll,
     optimizer=popart.ConstSGD(0.001),
     userOptions=trainingOptions,
     deviceInfo=popart.DeviceManager().createIpuModelDevice({}))

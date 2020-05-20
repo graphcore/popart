@@ -86,8 +86,7 @@ BOOST_AUTO_TEST_CASE(TestDecomposeAcrossPingPongPhases) {
     runner.opts.pingPongPhases   = numLayers * 2 - 1;
     runner.opts.virtualGraphMode = VirtualGraphMode::PingPong;
     runner.patterns              = Patterns(PatternsLevel::Default);
-    runner.losses.push_back(
-        new IdentityLoss(l1, "l1Loss", ReductionType::Mean));
+    runner.loss                  = l1;
 
     return sum;
   });

@@ -179,7 +179,7 @@ class TrainingSession(_TrainingSessionCore):
             fnModel: ONNX model proto. Usually a loaded ONNX model,
                 or from ``builder.getModelProto()``.
             dataFlow: Configuration for the data feeds and fetches.
-            losses: A list of loss layers to use when training.
+            loss: A TensorId of the final scalar loss to use when training.
             optimizer: The type of optimizer to use when training
                 and it's properties.
             deviceInfo: DeviceInfo object specifying device type
@@ -198,7 +198,7 @@ class TrainingSession(_TrainingSessionCore):
             self,
             fnModel: bytes,
             dataFlow: Dict[int, Dict],
-            losses: List[popart.Loss],
+            loss: "",
             optimizer: popart.Optimizer,
             deviceInfo: popart.DeviceInfo,
             inputShapeInfo: popart.InputShapeInfo = popart.InputShapeInfo(),
@@ -210,7 +210,7 @@ class TrainingSession(_TrainingSessionCore):
             patterns = popart.Patterns()
 
         super(TrainingSession,
-              self).__init__(fnModel, dataFlow, losses, optimizer, deviceInfo,
+              self).__init__(fnModel, dataFlow, loss, optimizer, deviceInfo,
                              inputShapeInfo, userOptions, patterns)
 
         self.dataFlow = dataFlow

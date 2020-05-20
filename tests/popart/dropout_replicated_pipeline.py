@@ -140,9 +140,6 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation):
         # see T13142: we do this so that the recomputation does not modify the anchors
         mask2 = builder.aiOnnx.identity([mask2])
 
-    loss1 = popart.IdentityLoss(l1, "l1LossVal1")
-    loss1.virtualGraph(1)
-
     anchors = {
         mask0: popart.AnchorReturnType("All"),
         mask1: popart.AnchorReturnType("All"),
@@ -191,7 +188,7 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation):
             "lossScaling": (lossScaling0, True),
             "defaultWeightDecay": (defaultWeightDecay0, True)
         }),
-        losses=[loss1],
+        loss=l1,
         patterns=patterns,
         userOptions=userOptions,
         deviceInfo=device)

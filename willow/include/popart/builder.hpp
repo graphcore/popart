@@ -296,6 +296,21 @@ public:
                    const ReductionType reduction          = ReductionType::Sum,
                    const boost::optional<int> ignoreIndex = boost::none,
                    const std::string &name                = {});
+
+  /**
+   * Add an identity loss operation to the model
+   *
+   * Calculates the nll loss given a probability tensor over classes, and
+   * a target tensor containing class labels
+   *
+   * \param args [tensor]
+   * \param reduction Type of reduction to perform on the individual losses
+   * \param name Optional identifier for operation
+   * \return The name of the result tensor
+   */
+  TensorId identityloss(const std::vector<TensorId> &args,
+                        const ReductionType reduction = ReductionType::Sum,
+                        const std::string &name       = {});
 };
 
 /**

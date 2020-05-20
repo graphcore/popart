@@ -53,15 +53,13 @@ BOOST_AUTO_TEST_CASE(SyntheticData_False) {
   auto art       = AnchorReturnType("All");
   auto dataFlow  = DataFlow(1, {{tensorIds.back(), art}, {tensorIds[2], art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{
-      new IdentityLoss(l1, "l1LossVal", ReductionType::Sum)};
 
   auto device = popart::createTestDevice(TEST_TARGET);
 
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      losses,
+      l1,
       optimizer,
       device,
       InputShapeInfo(),
@@ -105,8 +103,6 @@ BOOST_AUTO_TEST_CASE(SyntheticData_True) {
   auto art       = AnchorReturnType("All");
   auto dataFlow  = DataFlow(1, {{tensorIds.back(), art}, {tensorIds[2], art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{
-      new IdentityLoss(l1, "l1LossVal", ReductionType::Sum)};
 
   SessionOptions options;
   options.syntheticDataMode = SyntheticDataMode::Zeros;
@@ -116,7 +112,7 @@ BOOST_AUTO_TEST_CASE(SyntheticData_True) {
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      losses,
+      l1,
       optimizer,
       device,
       InputShapeInfo(),

@@ -84,10 +84,6 @@ BOOST_AUTO_TEST_CASE(RecomputeTestPopxStandardCalls0) {
   auto dataFlow  = DataFlow(1, {{act, art}});
   auto optimizer = ConstSGD(0.01);
 
-  auto l1loss = std::unique_ptr<IdentityLoss>(
-      new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
-  std::vector<Loss *> losses{l1loss.get()};
-
   auto device = popart::createTestDevice(TEST_TARGET);
 
   auto opts              = SessionOptions();
@@ -97,7 +93,7 @@ BOOST_AUTO_TEST_CASE(RecomputeTestPopxStandardCalls0) {
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      losses,
+      l1,
       optimizer,
       device,
       InputShapeInfo(),

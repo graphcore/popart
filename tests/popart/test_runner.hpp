@@ -72,11 +72,11 @@ public:
     if (isTraining) {
       auto optimizer = ConstSGD(0.1);
       session        = TrainingSession::createFromOnnxModel(
-          proto, dataFlow, losses, optimizer, cpuDevice, {}, opts, patterns);
+          proto, dataFlow, loss, optimizer, cpuDevice, {}, opts, patterns);
     } else {
-      if (losses.size()) {
+      if (loss != "") {
         throw error(
-            "Test runner: InferenceSession does not take 'losses' argument");
+            "Test runner: InferenceSession does not take 'loss' argument");
       }
       session = InferenceSession::createFromOnnxModel(
           proto, dataFlow, cpuDevice, {}, opts, patterns);
@@ -141,7 +141,7 @@ public:
   SessionOptions opts;
   Patterns patterns;
   bool isTraining = false;
-  std::vector<Loss *> losses;
+  TensorId loss   = "";
   std::map<TensorId, AnchorReturnType> anchors;
 
 private:

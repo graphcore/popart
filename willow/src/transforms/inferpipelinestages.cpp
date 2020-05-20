@@ -1,7 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-#include <popart/op/loss.hpp>
 #include <popart/transforms/inferpipelinestages.hpp>
 
 namespace popart {
@@ -78,11 +77,6 @@ bool InferPipelineStages::apply(Graph &graph) const {
     ss << logging::format(
         "\n  {}: {}", op->debugName(), op->getVirtualGraphId());
     op->setPipelineStage(op->getVirtualGraphId());
-  }
-  for (auto &loss : graph.getLosses()) {
-    ss << logging::format(
-        "\n  Loss({}): {}", loss->input(0), loss->getVirtualGraphId());
-    loss->pipelineStage(loss->getVirtualGraphId());
   }
   logging::debug("{}", ss.str());
 

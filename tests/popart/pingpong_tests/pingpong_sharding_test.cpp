@@ -86,7 +86,8 @@ BOOST_AUTO_TEST_CASE(Test2x2PingPong) {
   ConstVoidData wCVData{wData.data(), wInfo};
 
   runner.buildModel([&](auto &builder) {
-    auto aiOnnx = builder.aiOnnxOpset9();
+    auto aiOnnx      = builder.aiOnnxOpset9();
+    auto aiGraphcore = builder.aiGraphcoreOpset1();
     TensorInfo inInfo{"FLOAT", std::vector<int64_t>{1, 2 * size}};
     auto input = builder.addInputTensor(inInfo);
 
@@ -127,15 +128,16 @@ BOOST_AUTO_TEST_CASE(Test2x2PingPong) {
     builder.pingPongPhase(sum, N * 2 - 1);
     builder.virtualGraph(sum, 3);
 
-    auto loss = new IdentityLoss(sum, "l1LossVal", ReductionType::Mean);
-    loss->virtualGraph(3);
+    auto l1 = aiGraphcore.l1loss({sum}, 0.1);
+    builder.pingPongPhase(l1, N * 2 - 1);
+    builder.virtualGraph(l1, 3);
 
     // To make introspecting the IR easy
     runner.opts.enableOutlining  = false;
     runner.opts.pingPongPhases   = N * 2;
     runner.opts.virtualGraphMode = VirtualGraphMode::PingPong;
     runner.patterns              = Patterns(PatternsLevel::Default);
-    runner.losses.push_back(loss);
+    runner.loss                  = l1;
 
     return sum;
   });

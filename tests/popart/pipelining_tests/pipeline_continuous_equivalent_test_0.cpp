@@ -136,15 +136,12 @@ BOOST_AUTO_TEST_CASE(ContinuousEquivalentTest0) {
   float learnRate = 0.01;
   auto optimizer  = ConstSGD(learnRate);
 
-  auto loss = std::unique_ptr<Loss>(
-      new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
-
   auto device = createTestDevice(TEST_TARGET, 3);
 
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      {loss.get()},
+      l1,
       optimizer,
       device,
       InputShapeInfo(),

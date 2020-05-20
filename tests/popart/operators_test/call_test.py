@@ -388,7 +388,7 @@ def test_call_grad_3():
         trainingSession = popart.TrainingSession(
             fnModel=builder.getModelProto(),
             dataFlow=dataFlow,
-            losses=[popart.IdentityLoss(nll, "loss")],
+            loss=nll,
             optimizer=popart.ConstSGD(0.001),
             userOptions=trainingOptions,
             deviceInfo=tu.create_test_device(),
@@ -581,6 +581,7 @@ def test_stacked_subgraphs_2():
                                               "mm_layer" + str(layer))
                 actIn = builder.aiOnnx.relu([actIn], "relu_layer" + str(layer))
 
+        actIn = builder.aiGraphcore.identityloss([actIn])
         builder.addOutputTensor(actIn)
         art = popart.AnchorReturnType("All")
         anchor_returns = {
@@ -590,13 +591,13 @@ def test_stacked_subgraphs_2():
             popart.reservedGradientPrefix() + in0: art
         }
         opts = popart.SessionOptions()
-        session = popart.TrainingSession(
-            fnModel=builder.getModelProto(),
-            dataFlow=popart.DataFlow(1, anchor_returns),
-            deviceInfo=tu.create_test_device(),
-            optimizer=popart.ConstSGD(0.1),
-            losses=[popart.IdentityLoss(actIn, actIn + "/loss")],
-            userOptions=opts)
+        session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                         dataFlow=popart.DataFlow(
+                                             1, anchor_returns),
+                                         deviceInfo=tu.create_test_device(),
+                                         optimizer=popart.ConstSGD(0.1),
+                                         loss=actIn,
+                                         userOptions=opts)
 
         anchors = session.initAnchorArrays()
 

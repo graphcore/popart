@@ -178,9 +178,6 @@ getResults(const popart::SGD &opt0, // initial Optimizer
   auto proto    = builder->getModelProto();
   auto dataFlow = DataFlow(batchesPerStep);
 
-  auto loss = std::unique_ptr<Loss>(
-      new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
-
   SessionOptions userOptions;
   std::map<std::string, std::string> deviceOpts{{"numIPUs", "1"}};
 
@@ -231,7 +228,7 @@ getResults(const popart::SGD &opt0, // initial Optimizer
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      {loss.get()},
+      l1,
       opt0, // construct with opt0, will switch to opt1, opt2 later
       device,
       InputShapeInfo(),

@@ -782,18 +782,17 @@ def test_set_weights_from_host():
 
     i2 = builder.addInitializedInputTensor(data)
     o = builder.aiOnnx.add([i1, i2])
-    builder.addOutputTensor(o)
+    loss = builder.aiGraphcore.identityloss([o])
 
     proto = builder.getModelProto()
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     optimizer = popart.ConstSGD(0.01)
-    losses = [popart.IdentityLoss(o, "idLossVal")]
 
     session = popart.TrainingSession(fnModel=proto,
                                      dataFlow=dataFlow,
-                                     losses=losses,
+                                     loss=loss,
                                      optimizer=optimizer,
                                      deviceInfo=getDevice())
 
@@ -1262,7 +1261,6 @@ def test_load_onnx_model_from_file(tmpdir):
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
     optimizer = popart.ConstSGD(0.01)
-    losses = [popart.IdentityLoss(o, "idLossVal")]
 
     proto = builder2.getModelProto()
 

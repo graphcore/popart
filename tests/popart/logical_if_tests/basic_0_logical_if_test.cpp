@@ -308,7 +308,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train0) {
     outputs.push_back(TestTensor::create<float>(getGradId(in0), info.shape()));
     outputs.push_back(TestTensor::create<float>(getGradId(in1), info.shape()));
 
-    runner.losses.push_back(new IdentityLoss(l1, "loss", ReductionType::Sum));
+    runner.loss = l1;
 
     return out;
   });
@@ -422,7 +422,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train1) {
     outputs.push_back(TestTensor::create<float>(getGradId(in0), info.shape()));
     outputs.push_back(TestTensor::create<float>(getGradId(in1), info.shape()));
 
-    runner.losses.push_back(new IdentityLoss(l1, "loss", ReductionType::Sum));
+    runner.loss = l1;
 
     return out;
   });
@@ -570,7 +570,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train2) {
     outputs.push_back(TestTensor::create<float>(getGradId(in0), info.shape()));
     outputs.push_back(TestTensor::create<float>(getGradId(in1), info.shape()));
 
-    runner.losses.push_back(new IdentityLoss(l1, "loss", ReductionType::Sum));
+    runner.loss = l1;
 
     return out;
   });
@@ -715,7 +715,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train3) {
     outputs.push_back(TestTensor::create<float>(getGradId(in0), info.shape()));
     outputs.push_back(TestTensor::create<float>(getGradId(in1), info.shape()));
 
-    runner.losses.push_back(new IdentityLoss(l1, "loss", ReductionType::Sum));
+    runner.loss = l1;
 
     return out;
   });
@@ -892,8 +892,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_inputs_differ_train0) {
             TestTensor::create<bool>(in_condition, infoBool.shape()));
         outputs.push_back(TestTensor::create<float>(out, info.shape()));
 
-        runner.losses.push_back(
-            new IdentityLoss(l1, "loss", ReductionType::Sum));
+        runner.loss = l1;
 
         return out;
       });

@@ -185,12 +185,11 @@ def test_auto_virtual_graph_train():
     output = x
     builder.addOutputTensor(output)
 
-    loss = popart.IdentityLoss(output, "idLossVal")
+    loss = builder.aiGraphcore.identityloss([output])
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(
-        1, {loss.output(0): popart.AnchorReturnType("Final")})
+    dataFlow = popart.DataFlow(1, {loss: popart.AnchorReturnType("Final")})
 
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
@@ -200,7 +199,7 @@ def test_auto_virtual_graph_train():
     popart.TrainingSession(fnModel=proto,
                            dataFlow=dataFlow,
                            userOptions=opts,
-                           losses=[loss],
+                           loss=loss,
                            optimizer=popart.SGD(
                                {"defaultLearningRate": (0.01, True)}),
                            deviceInfo=device)

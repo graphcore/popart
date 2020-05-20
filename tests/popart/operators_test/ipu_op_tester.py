@@ -102,7 +102,6 @@ def ipu_op_tester(tmpdir):
             else:
                 optimizer = None
 
-            losses = [popart.IdentityLoss(anchorIds[0], "idLossVal")]
             proto = bld.getModelProto()
 
             opts = popart.SessionOptions()
@@ -119,9 +118,14 @@ def ipu_op_tester(tmpdir):
                                                       self.patterns),
                                                   userOptions=opts)
             elif (step_type == 'train'):
-                session = popart.TrainingSession(fnModel=proto,
+                # Apply reduction to output (assumed to be the
+                # first anchorId) to ensure it is scalar
+                lossId = anchorIds[0]
+                lossId = bld.aiGraphcore.identityloss([lossId])
+
+                session = popart.TrainingSession(fnModel=bld.getModelProto(),
                                                  dataFlow=dataFlow,
-                                                 losses=losses,
+                                                 loss=lossId,
                                                  optimizer=optimizer,
                                                  deviceInfo=device,
                                                  patterns=popart.Patterns(

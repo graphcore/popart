@@ -89,7 +89,6 @@ def test_manual_serialization():
     builder = popart.Builder(graph_transformer.getModelProto())
 
     l1 = builder.aiGraphcore.l1loss([Z], 0.2)
-    loss1 = popart.IdentityLoss(l1, "l1LossVal1")
     dataFlow = popart.DataFlow(1, {})
     device = tu.create_test_device()
     userOptions = popart.SessionOptions()
@@ -103,7 +102,7 @@ def test_manual_serialization():
                                      dataFlow=dataFlow,
                                      optimizer=popart.SGD(
                                          {"defaultLearningRate": (0.1, True)}),
-                                     losses=[loss1],
+                                     loss=l1,
                                      patterns=patterns,
                                      userOptions=userOptions,
                                      deviceInfo=device)

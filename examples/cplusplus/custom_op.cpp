@@ -243,13 +243,7 @@ auto main(int argc, char **argv) -> int {
   // 2.1 an Optimiser.
   auto optimizer = popart::ConstSGD(0.01f);
 
-  // 2.2 Loss(es).
-  // 2.2.1 l1 loss : 0.1 * |output|_1
-  std::unique_ptr<popart::IdentityLoss> idLoss(
-      new popart::IdentityLoss(l1, "l1LossVal", popart::ReductionType::Sum));
-  std::vector<popart::Loss *> losses{idLoss.get()};
-
-  // 2.3 Data streaming.
+  // 2.2 Data streaming.
   // We will stream
   // 1) the output tensor back to host every iteration
   // 2) the gradient of input tensor back to host every iteration
@@ -269,16 +263,16 @@ auto main(int argc, char **argv) -> int {
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      losses,
+      l1,
       optimizer,
       cpuDevice,
       popart::InputShapeInfo(),
       {},
       popart::Patterns({popart::PreAliasPatternType::PreUniRepl}));
 
-  // prepare the anchors buffers. The anchors are what were specified in 2.3
+  // prepare the anchors buffers. The anchors are what were specified in 2.2
   // for data streaming: the tensors which will be returned from the device
-  // to the host. We specified 2 such tensors in 2.3,
+  // to the host. We specified 2 such tensors in 2.2,
   // 1) the output tensor (i.e. the output of the forward pass)
   float rawOutputData[2] = {0, 0};
   popart::NDArrayWrapper<float> outData(rawOutputData, {2});

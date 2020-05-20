@@ -87,7 +87,6 @@ BOOST_AUTO_TEST_CASE(test) {
     auto sm0      = aiOnnx.softmax({reshape0}, 1, "sm0");
     auto label0   = builder->addInputTensor(labelSampleInfo);
     auto nll0     = aiGraphcore.nllloss({sm0, label0}, ReductionType::Mean);
-    auto loss0 = std::make_unique<IdentityLoss>(nll0, "l0", ReductionType::Sum);
 
     auto slice1 =
         aiOnnx.slice({mmOut}, {1, 4, 2}, {0, 0, 1}, {0, 1, 2}, "slc1");
@@ -95,14 +94,15 @@ BOOST_AUTO_TEST_CASE(test) {
     auto sm1      = aiOnnx.softmax({reshape1}, 1, "sm1");
     auto label1   = builder->addInputTensor(labelSampleInfo);
     auto nll1     = aiGraphcore.nllloss({sm1, label1}, ReductionType::Mean);
-    auto loss1 = std::make_unique<IdentityLoss>(nll1, "l1", ReductionType::Sum);
+
+    auto finalLoss = aiOnnx.sum({nll0, nll1});
 
     auto device = createTestDevice(TEST_TARGET, 1, 20);
 
     auto session = popart::TrainingSession::createFromOnnxModel(
         builder->getModelProto(),
         DataFlow(batchesPerStep),
-        {loss0.get(), loss1.get()},
+        finalLoss,
         ConstSGD(1.0),
         device,
         InputShapeInfo(),

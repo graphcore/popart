@@ -147,8 +147,6 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
 
     float lambda = 0.1;
     actFinal     = builder->aiGraphcoreOpset1().l1loss({actFinal}, lambda);
-    auto loss    = std::make_shared<IdentityLoss>(
-        actFinal, "l1LossVal", ReductionType::Sum);
 
     auto proto = builder->getModelProto();
     // No anchors
@@ -181,7 +179,7 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
       irWithPipe.prepare({modelProto,
                           InputShapeInfo(),
                           dataFlow,
-                          {loss},
+                          actFinal,
                           &optimizer,
                           *device,
                           userOptions,
@@ -193,15 +191,12 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
             std::make_tuple(cop->getSourceIpu(), cop->getDestIpu()));
       }
 
-      loss = std::make_shared<IdentityLoss>(
-          actFinal, "l1LossVal", ReductionType::Sum);
-
       userOptions.enablePipelining = false;
       Ir irWithoutPipe;
       irWithoutPipe.prepare({modelProto,
                              InputShapeInfo(),
                              dataFlow,
-                             {loss},
+                             actFinal,
                              &optimizer,
                              *device,
                              userOptions,
@@ -282,7 +277,7 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
       auto session = popart::TrainingSession::createFromOnnxModel(
           proto,
           dataFlow,
-          {loss.get()},
+          actFinal,
           optimizer,
           device,
           InputShapeInfo(),

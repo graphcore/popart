@@ -172,7 +172,6 @@ def test_distributed_replicated_weight_update():
 
     dataFlow = popart.DataFlow(1, outputs)
     optimizer = popart.ConstSGD(1.0)
-    losses = [popart.IdentityLoss(loss, "loss")]
 
     opts = popart.SessionOptions()
     opts.enableReplicatedGraphs = False
@@ -186,7 +185,7 @@ def test_distributed_replicated_weight_update():
     device = tu.create_test_device(numIpus=numIpus)
     session = popart.TrainingSession(fnModel=proto,
                                      dataFlow=dataFlow,
-                                     losses=losses,
+                                     loss=loss,
                                      optimizer=optimizer,
                                      deviceInfo=device,
                                      userOptions=opts)
@@ -281,7 +280,6 @@ def test_distributed_hierarchical_replicated_weight_update():
 
     dataFlow = popart.DataFlow(1, outputs)
     optimizer = popart.ConstSGD(1.0)
-    losses = [popart.IdentityLoss(loss, "loss")]
 
     opts = popart.SessionOptions()
     opts.enableReplicatedGraphs = True
@@ -296,7 +294,7 @@ def test_distributed_hierarchical_replicated_weight_update():
     device = tu.create_test_device(numIpus=numIpus)
     session = popart.TrainingSession(fnModel=proto,
                                      dataFlow=dataFlow,
-                                     losses=losses,
+                                     loss=loss,
                                      optimizer=optimizer,
                                      deviceInfo=device,
                                      userOptions=opts)

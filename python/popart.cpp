@@ -15,7 +15,6 @@
 #include <popart/op/identity.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/l1.hpp>
-#include <popart/op/loss.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
@@ -497,26 +496,10 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("has", &InputShapeInfo::has);
   }
   {
-    py::class_<Loss> loss(m, "Loss");
-    loss.def("input", &Loss::input);
-    loss.def("output", &Loss::output);
-
     py::enum_<ReductionType> en(m, "ReductionType");
     en.value("Mean", ReductionType::Mean);
     en.value("NoReduction", ReductionType::NoReduction);
     en.value("Sum", ReductionType::Sum);
-
-    {
-      py::class_<IdentityLoss> cls(m, "IdentityLoss", loss);
-      cls.def(py::init<TensorId, TensorId, ReductionType>(),
-              py::arg("input"),
-              py::arg("output"),
-              py::arg("reduction") = ReductionType::Sum);
-      cls.def("getInputId", &IdentityLoss::getInputId);
-      cls.def("pipelineStage", &IdentityLoss::pipelineStage);
-      cls.def("virtualGraph", &IdentityLoss::virtualGraph);
-      cls.def("pingPongPhase", &IdentityLoss::pingPongPhase);
-    }
   }
   {
     py::class_<OptimizerValue> optimizerValue(m, "OptimizerValue");
@@ -890,7 +873,7 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def(py::init(&TrainingSession::createFromOnnxModel),
             py::arg("model"),
             py::arg("dataFlow").none(),
-            py::arg("losses"),
+            py::arg("loss"),
             py::arg("optimizer"),
             py::arg("deviceInfo"),
             py::arg("inputShapeInfo"),
@@ -1084,6 +1067,11 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("args"),
             py::arg("reduction")   = ReductionType::Sum,
             py::arg("ignoreIndex") = pybind11::none(),
+            py::arg("debugPrefix") = std::string());
+    cls.def("identityloss",
+            &AiGraphcoreOpset1::identityloss,
+            py::arg("args"),
+            py::arg("reduction")   = ReductionType::Sum,
             py::arg("debugPrefix") = std::string());
   }
   {

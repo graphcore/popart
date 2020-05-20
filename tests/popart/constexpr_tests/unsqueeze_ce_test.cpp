@@ -54,15 +54,13 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Unsqueeze0) {
   auto art       = AnchorReturnType("All");
   auto data_flow = DataFlow(1, {{out_id, art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<IdentityLoss>(l1, "l1LossVal", ReductionType::Sum)};
-  auto device = createTestDevice(TEST_TARGET);
+  auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({model_proto,
               InputShapeInfo(),
               data_flow,
-              losses,
+              l1,
               &optimizer,
               *device,
               {}, // no SessionOptions

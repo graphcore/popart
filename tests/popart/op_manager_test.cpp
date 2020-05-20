@@ -116,15 +116,13 @@ BOOST_AUTO_TEST_CASE(OpManager_Test2) {
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow  = DataFlow(1, {{customOut[0], AnchorReturnType("All")}});
   auto optimizer = SGD({{"defaultLearningRate", {0.01, false}}});
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<IdentityLoss>(l1, "l1LossVal", ReductionType::Sum)};
-  auto device = createTestDevice(TEST_TARGET);
+  auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              losses,
+              l1,
               &optimizer,
               *device,
               {},

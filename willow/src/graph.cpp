@@ -78,7 +78,7 @@ std::map<OpId, std::unique_ptr<Op>> &Graph::getOps() { return ops; }
 
 const int64_t Graph::NoVGraph = -1;
 
-const std::set<int64_t> Graph::getAllVirtualGraphIds(bool includeLosses) const {
+const std::set<int64_t> Graph::getAllVirtualGraphIds() const {
 
   std::set<int64_t> vGraphIds;
 
@@ -89,18 +89,10 @@ const std::set<int64_t> Graph::getAllVirtualGraphIds(bool includeLosses) const {
       vGraphIds.insert(getVirtualGraphId(*id_op.second));
     }
   }
-
-  if (includeLosses) {
-    for (auto &loss : losses) {
-      vGraphIds.insert(getVirtualGraphId(*loss));
-    }
-  }
-
   return vGraphIds;
 }
 
-const std::map<int64_t, int>
-Graph::getVirtualGraphCounts(bool includeLosses) const {
+const std::map<int64_t, int> Graph::getVirtualGraphCounts() const {
   std::map<int64_t, int> vGraphCounts;
 
   for (auto &idOp : getOps()) {
@@ -111,18 +103,6 @@ Graph::getVirtualGraphCounts(bool includeLosses) const {
     }
 
     vGraphCounts[vGraphId]++;
-  }
-
-  if (includeLosses) {
-    for (auto &loss : getLosses()) {
-      int64_t vGraphId = getVirtualGraphId(*loss);
-
-      if (vGraphCounts.count(vGraphId) == 0) {
-        vGraphCounts[vGraphId] = 0;
-      }
-
-      vGraphCounts[vGraphId]++;
-    }
   }
 
   return vGraphCounts;
@@ -558,14 +538,6 @@ Graph::getLiveSets(const std::vector<Op *> &topoOps) const {
 int64_t Graph::getVirtualGraphId(const Op &op) {
   if (op.hasVirtualGraphId()) {
     return op.getVirtualGraphId();
-  } else {
-    return NoVGraph;
-  }
-}
-
-int64_t Graph::getVirtualGraphId(const Loss &loss) {
-  if (loss.hasVirtualGraphId()) {
-    return loss.getVirtualGraphId();
   } else {
     return NoVGraph;
   }

@@ -163,10 +163,6 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeNumericalTest0x) {
     actFinal     = builder->aiGraphcoreOpset1().l1loss({actFinal}, lambda);
     builder->virtualGraph(actFinal, nIPUs - 1);
 
-    auto loss = std::unique_ptr<Loss>(
-        new IdentityLoss(actFinal, "l1LossVal", ReductionType::Sum));
-    loss->virtualGraph(nIPUs - 1);
-
     auto proto    = builder->getModelProto();
     auto dataFlow = DataFlow(batchesPerStep);
 
@@ -177,7 +173,7 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeNumericalTest0x) {
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
         dataFlow,
-        {loss.get()},
+        actFinal,
         optimizer,
         device,
         InputShapeInfo(),

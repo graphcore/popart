@@ -33,18 +33,20 @@ def get_trainset():
 
 def get_session(fnModel, inputShapeInfo, dataFlow, torchWriter, patterns,
                 opts):
-    idLosses = []
-    for loss in torchWriter.outNames:
-        idLoss = popart.IdentityLoss(loss, loss + "/out")
-        idLosses.append(idLoss)
+    if len(torchWriter.outNames) > 1:
+        raise RuntimeError("Expecting single loss tensor")
+
+    # Append identity loss to output tensor
+    bder = popart.Builder(fnModel)
+    loss = bder.aiGraphcore.identityloss([torchWriter.outNames[0]])
 
     # Reads ONNX model from file and creates backwards graph,
     # performs Ir optimisations
     session = popart.TrainingSession(
-        fnModel=fnModel,
+        fnModel=bder.getModelProto(),
         inputShapeInfo=inputShapeInfo,
         dataFlow=dataFlow,
-        losses=idLosses,
+        loss=loss,
         optimizer=torchWriter.optimizer,
         patterns=patterns,
         userOptions=opts,

@@ -63,17 +63,13 @@ BOOST_AUTO_TEST_CASE(PipelineNoMultiSourceTest0) {
 
   auto optimizer = ConstSGD(0.01);
 
-  auto loss1 =
-      std::make_shared<IdentityLoss>(act, "l1LossVal_1", ReductionType::Mean);
-  loss1->virtualGraph(2);
-
   auto device = createTestDevice(TEST_TARGET, nIpus);
 
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              {loss1},
+              act,
               &optimizer,
               *device,
               userOptions,

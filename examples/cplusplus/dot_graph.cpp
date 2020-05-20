@@ -80,7 +80,7 @@ int main(int argc, char **argv) {
   auto dataFlow = DataFlow(1, {{out, AnchorReturnType("All")}});
 
   std::unique_ptr<Optimizer> optimizer;
-  std::vector<std::shared_ptr<Loss>> up_losses;
+  TensorId loss;
 
   TensorId label = "label";
   InputShapeInfo isi;
@@ -93,14 +93,10 @@ int main(int argc, char **argv) {
       throw error("Cannot call dot_graph TRAIN, model only has one output");
     }
 
-    // choosing an arbitrary shape for label, can't run shape inference now
-    isi.add(label, {"INT32", std::vector<int64_t>{7}});
-
     Builder *builder = Builder::createFromOnnxModel(modelProtoString).get();
     auto aiGraphcore = builder->aiGraphcoreOpset1();
     auto nlll        = aiGraphcore.nllloss({out, label}, ReductionType::Sum);
-    up_losses.emplace_back(
-        std::make_shared<IdentityLoss>(nlll, "nllLossVal", ReductionType::Sum));
+    loss             = nlll;
   }
 
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
@@ -109,7 +105,7 @@ int main(int argc, char **argv) {
   ir.prepare({modelProto,
               isi,
               dataFlow,
-              up_losses,
+              loss,
               optimizer.get(),
               *cpuDevice,
               session_opts,

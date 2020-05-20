@@ -104,9 +104,9 @@ def test_loss_inputs_untouched():
         w0 = builder.addInitializedInputTensor(weights_data)
 
         x = builder.aiOnnx.matmul([i0, w0])
-
+        loss = builder.aiGraphcore.identityloss([x])
         builder.addOutputTensor(x)
-        builder.addIdentityLoss(x, 'idLossVal')
+        builder.setLoss(loss)
 
         return []
 

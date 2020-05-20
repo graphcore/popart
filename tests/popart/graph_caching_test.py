@@ -27,7 +27,7 @@ def test_convolution_cached_by_default():
                             dilations=[1, 1],
                             pads=[1, 1, 1, 1],
                             strides=[1, 1])
-    builder.addOutputTensor(o)
+    loss = builder.aiGraphcore.identityloss([o])
 
     proto = builder.getModelProto()
 
@@ -40,7 +40,6 @@ def test_convolution_cached_by_default():
                          {anchor_names[0] : popart.AnchorReturnType("All"),
                           anchor_names[1] : popart.AnchorReturnType("All")})
     optimizer = popart.ConstSGD(0.01)
-    losses = [popart.IdentityLoss(o, "idLossVal")]
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
@@ -48,7 +47,7 @@ def test_convolution_cached_by_default():
     session = popart.TrainingSession(
         fnModel=proto,
         dataFlow=dataFlow,
-        losses=losses,
+        loss=loss,
         optimizer=optimizer,
         userOptions=opts,
         deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
@@ -104,7 +103,7 @@ def test_convolution_disable_all():
                             dilations=[1, 1],
                             pads=[1, 1, 1, 1],
                             strides=[1, 1])
-    builder.addOutputTensor(o)
+    loss = builder.aiGraphcore.identityloss([o])
 
     proto = builder.getModelProto()
 
@@ -117,7 +116,6 @@ def test_convolution_disable_all():
                          {anchor_names[0] : popart.AnchorReturnType("All"),
                           anchor_names[1] : popart.AnchorReturnType("All")})
     optimizer = popart.ConstSGD(0.01)
-    losses = [popart.IdentityLoss(o, "idLossVal")]
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
@@ -126,7 +124,7 @@ def test_convolution_disable_all():
     session = popart.TrainingSession(
         fnModel=proto,
         dataFlow=dataFlow,
-        losses=losses,
+        loss=loss,
         optimizer=optimizer,
         userOptions=opts,
         deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
@@ -269,7 +267,7 @@ def test_matmul_train_cached_by_default():
 
     o = builder.aiOnnx.add([a1, a2])
 
-    builder.addOutputTensor(o)
+    loss = builder.aiGraphcore.identityloss([o])
 
     proto = builder.getModelProto()
 
@@ -287,7 +285,6 @@ def test_matmul_train_cached_by_default():
             anchor_names[3]: popart.AnchorReturnType("All")
         })
     optimizer = popart.ConstSGD(0.01)
-    losses = [popart.IdentityLoss(o, "idLossVal")]
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
@@ -295,7 +292,7 @@ def test_matmul_train_cached_by_default():
     session = popart.TrainingSession(
         fnModel=proto,
         dataFlow=dataFlow,
-        losses=losses,
+        loss=loss,
         optimizer=optimizer,
         userOptions=opts,
         deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
@@ -358,7 +355,7 @@ def test_gemm_train_cached_by_default():
 
     o = builder.aiOnnx.add([c1, c2])
 
-    builder.addOutputTensor(o)
+    loss = builder.aiGraphcore.identityloss([o])
 
     proto = builder.getModelProto()
 
@@ -380,7 +377,6 @@ def test_gemm_train_cached_by_default():
             anchor_names[5]: popart.AnchorReturnType("All")
         })
     optimizer = popart.ConstSGD(0.01)
-    losses = [popart.IdentityLoss(o, "idLossVal")]
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
@@ -388,7 +384,7 @@ def test_gemm_train_cached_by_default():
     session = popart.TrainingSession(
         fnModel=proto,
         dataFlow=dataFlow,
-        losses=losses,
+        loss=loss,
         optimizer=optimizer,
         userOptions=opts,
         deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
@@ -619,7 +615,7 @@ def test_outlining_bca3():
 
     o = builder.aiOnnx.add([a1, a2])
 
-    builder.addOutputTensor(o)
+    loss = builder.aiGraphcore.identityloss([o])
 
     proto = builder.getModelProto()
 
@@ -641,12 +637,11 @@ def test_outlining_bca3():
     opts.reportOptions = {"showExecutionSteps": "true"}
 
     optimizer = popart.ConstSGD(0.01)
-    losses = [popart.IdentityLoss(o, "idLossVal")]
 
     session = popart.TrainingSession(
         fnModel=proto,
         dataFlow=dataFlow,
-        losses=losses,
+        loss=loss,
         optimizer=optimizer,
         userOptions=opts,
         deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
@@ -712,7 +707,7 @@ def test_outlining_bca4():
 
     o = builder.aiOnnx.add([a1, a2])
 
-    builder.addOutputTensor(o)
+    loss = builder.aiGraphcore.identityloss([o])
 
     proto = builder.getModelProto()
 
@@ -739,12 +734,11 @@ def test_outlining_bca4():
     opts.enableGroupedMatmuls = False
 
     optimizer = popart.ConstSGD(0.01)
-    losses = [popart.IdentityLoss(o, "idLossVal")]
 
     session = popart.TrainingSession(
         fnModel=proto,
         dataFlow=dataFlow,
-        losses=losses,
+        loss=loss,
         optimizer=optimizer,
         userOptions=opts,
         # Enable the matmul patterns

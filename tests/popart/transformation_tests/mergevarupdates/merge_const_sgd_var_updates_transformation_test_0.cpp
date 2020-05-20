@@ -102,14 +102,12 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeConstSGD0) {
 
     float learnRate = 0.1;
     auto optimizer  = ConstSGD(learnRate);
-    std::vector<std::shared_ptr<Loss>> losses{
-        std::make_shared<IdentityLoss>(l1, "l1LossVal", ReductionType::Sum)};
 
     Ir ir;
     ir.prepare({modelProto,
                 InputShapeInfo(),
                 dataFlow,
-                losses,
+                l1,
                 &optimizer,
                 *device,
                 opts,

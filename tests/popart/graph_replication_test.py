@@ -74,7 +74,7 @@ def test_weight_update(op_tester):
 
         loss = torch.nn.L1Loss(reduction="sum")
         target = torch.zeros(o.size())
-        output = 0.1 * loss(o, target)
+        output = loss(o, target)
         output.backward()
         optimizer.step()
 
@@ -164,7 +164,7 @@ def test_weight_update_replicated(op_tester):
             outputs = outputs + (o, )
             loss = torch.nn.L1Loss(reduction="sum")
             target = torch.zeros(o.size())
-            output = 0.1 * loss(o, target)
+            output = loss(o, target)
             output.backward()
 
         # Update the weights

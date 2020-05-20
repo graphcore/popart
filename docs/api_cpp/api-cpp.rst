@@ -21,12 +21,6 @@ Session option flags
 Training operations
 -------------------
 
-Losses
-......
-
-.. doxygenclass:: popart::IdentityLoss
-  :members:
-
 Optimisers
 ..........
 

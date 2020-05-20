@@ -500,14 +500,11 @@ static void remoteBufferPingPongWeightTestBase(SessionOptions opts,
 
   // R replicas doing the same work: compensate by dividing learning rate by R
   auto optimizer = ConstSGD(learnRate / R);
-  std::unique_ptr<Loss> l1_loss(
-      new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
-  std::vector<Loss *> losses{l1_loss.get()};
 
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      losses,
+      l1,
       optimizer,
       device,
       popart::InputShapeInfo(),

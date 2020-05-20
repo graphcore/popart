@@ -58,8 +58,6 @@ BOOST_AUTO_TEST_CASE(test) {
 
   auto optimizer = ConstSGD(0.01);
 
-  auto loss = std::make_shared<IdentityLoss>(nlll, "loss", ReductionType::Mean);
-
   auto art                                       = AnchorReturnType("All");
   std::map<TensorId, AnchorReturnType> anchorMap = {
       {out, art}, {reservedGradientPrefix() + d0, art}};
@@ -73,13 +71,12 @@ BOOST_AUTO_TEST_CASE(test) {
   builder->virtualGraph(r0, 2);
   builder->virtualGraph(out, 2);
   builder->virtualGraph(nlll, 2);
-  loss->virtualGraph(2);
 
   Ir ir;
   ir.prepare({io::getModelFromString(builder->getModelProto()),
               InputShapeInfo(),
               DataFlow(5, anchorMap), // We will process 5 batches
-              {loss},
+              nlll,
               &optimizer,
               *deviceInfo,
               opts,

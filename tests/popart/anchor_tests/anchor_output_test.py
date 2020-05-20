@@ -105,7 +105,7 @@ def test_anchor_output():
 
     session = popart.TrainingSession(fnModel=builder.getModelProto(),
                                      dataFlow=data_flow,
-                                     losses=[popart.IdentityLoss(nll, "loss")],
+                                     loss=nll,
                                      optimizer=popart.ConstSGD(LEARNING_RATE),
                                      userOptions=opts,
                                      deviceInfo=device)

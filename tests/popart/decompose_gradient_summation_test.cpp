@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(Test0) {
     runner.opts.enableOutlining  = false; // to make introspecting the IR easy
     runner.opts.decomposeGradSum = true;
     runner.patterns              = Patterns(PatternsLevel::Default);
-    runner.losses.push_back(new IdentityLoss(out, "loss", ReductionType::Sum));
+    runner.loss                  = out;
 
     return out;
   });

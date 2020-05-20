@@ -67,17 +67,10 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect0) {
 
     // Create the IR
     // Add the last tensor, and the 3rd tensor as anchors
-    auto art      = AnchorReturnType("All");
-    auto dataFlow = DataFlow(
-        1, {{reservedGradientPrefix() + input1, art}, {"lossVal", art}});
+    auto art = AnchorReturnType("All");
+    auto dataFlow =
+        DataFlow(1, {{reservedGradientPrefix() + input1, art}, {nlll, art}});
     auto optimizer = ConstSGD(0.01);
-
-    std::vector<std::shared_ptr<Loss>> losses{
-        std::make_shared<IdentityLoss>(nlll, "lossVal", ReductionType::Sum)};
-
-    if (sameIPU == false) {
-      losses[0]->virtualGraph(1);
-    }
 
     auto opts = SessionOptions();
     if (sameIPU == false) {
@@ -94,14 +87,8 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect0) {
     patterns.enableNlllWithSoftMaxGradDirect(enableNlllWithSoftmaxGradDirect);
 
     Ir ir;
-    ir.prepare({modelProto,
-                {},
-                dataFlow,
-                losses,
-                &optimizer,
-                *device,
-                opts,
-                patterns});
+    ir.prepare(
+        {modelProto, {}, dataFlow, nlll, &optimizer, *device, opts, patterns});
 
     // Check the ir
 

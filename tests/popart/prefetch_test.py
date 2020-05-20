@@ -55,7 +55,7 @@ def get_model(batches_per_step, replication_factor, batch_size, channels,
 
     session = popart.TrainingSession(fnModel=builder.getModelProto(),
                                      dataFlow=data_flow,
-                                     losses=[popart.IdentityLoss(o, "loss")],
+                                     loss=o,
                                      optimizer=popart.ConstSGD(1.0),
                                      userOptions=opts,
                                      deviceInfo=device)

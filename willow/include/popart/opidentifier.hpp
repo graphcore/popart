@@ -400,8 +400,9 @@ const static OperatorIdentifier DynamicAdd  = CustomOperators::DynamicAdd_1;
 const static OperatorIdentifier Call        = CustomOperators::Call_1;
 const static OperatorIdentifier ReplicatedAllReduce =
     CustomOperators::ReplicatedAllReduce;
-const static OperatorIdentifier L1  = CustomOperators::L1;
-const static OperatorIdentifier Nll = CustomOperators::Nll;
+const static OperatorIdentifier L1           = CustomOperators::L1;
+const static OperatorIdentifier Nll          = CustomOperators::Nll;
+const static OperatorIdentifier IdentityLoss = CustomOperators::IdentityLoss;
 } // namespace OpSet1
 } // namespace AiGraphcore
 

@@ -284,6 +284,8 @@ def test_expand_mul():
             o = builder.aiOnnx.mul([mul, ones_in])
 
         builder.addOutputTensor(o)
+        loss = builder.aiGraphcore.identityloss([o])
+
         anchor_returns = [
             o,
             popart.reservedGradientPrefix() + o,
@@ -292,13 +294,13 @@ def test_expand_mul():
         ]
 
         opts = popart.SessionOptions()
-        session = popart.TrainingSession(
-            fnModel=builder.getModelProto(),
-            dataFlow=popart.DataFlow(1, anchor_returns),
-            deviceInfo=tu.create_test_device(),
-            optimizer=popart.ConstSGD(0.1),
-            losses=[popart.IdentityLoss(o, "loss")],
-            userOptions=opts)
+        session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                         dataFlow=popart.DataFlow(
+                                             1, anchor_returns),
+                                         deviceInfo=tu.create_test_device(),
+                                         optimizer=popart.ConstSGD(0.1),
+                                         loss=loss,
+                                         userOptions=opts)
 
         anchors = session.initAnchorArrays()
         inputs = {i1: in_}

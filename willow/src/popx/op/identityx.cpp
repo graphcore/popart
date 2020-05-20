@@ -47,7 +47,11 @@ IdentityLossOpx::IdentityLossOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 void IdentityLossGradOpx::grow(poplar::program::Sequence &) const {
   IdentityLossGradOp &identitylossop = getOp<IdentityLossGradOp>();
   double scale;
-  switch (identitylossop.identityl()->getReductionType()) {
+  switch (identitylossop.getReductionType()) {
+  case ReductionType::NoReduction: {
+    scale = 1;
+    break;
+  }
   case ReductionType::Sum: {
     scale = 1;
     break;
@@ -75,20 +79,20 @@ InputCreatorType IdentityLossOpx::getInputCreatorType(InIndex) const {
 }
 
 void IdentityLossOpx::grow(poplar::program::Sequence &prog) const {
-  const IdentityLossOp &op         = getOp<IdentityLossOp>();
-  const IdentityLoss *identityloss = op.identityl();
-
+  const IdentityLossOp &op = getOp<IdentityLossOp>();
   const poplar::Tensor &inTensor(getInTensor(0));
 
-  if (identityloss->getReductionType() == ReductionType::NoReduction) {
-    throw error("This should have been replaced by an Identity op rather than"
-                "an IdentityLoss op");
+  if (op.getReductionType() == ReductionType::NoReduction) {
+    // throw error("This should have been replaced by an Identity op rather
+    // than"
+    //             "an IdentityLoss op");
+    setOutTensor(0, inTensor);
   } else {
 
     auto inTensor1D = inTensor.flatten();
 
     double scale;
-    switch (identityloss->getReductionType()) {
+    switch (op.getReductionType()) {
     case ReductionType::Sum: {
       scale = 1.0;
       break;

@@ -115,9 +115,6 @@ def test_virtual_graph3():
             popart.AnchorReturnType("All")
         })
 
-    losses = [popart.IdentityLoss(o, "l1LossVal")]
-    #Make sure that the loss is also assigned to a virtual graph
-    losses[0].virtualGraph(1)
     optimizer = popart.SGD({"defaultLearningRate": (0.01, True)})
 
     opts = popart.SessionOptions()
@@ -125,7 +122,7 @@ def test_virtual_graph3():
 
     s = popart.TrainingSession(fnModel=proto,
                                dataFlow=dataFlow,
-                               losses=losses,
+                               loss=o,
                                optimizer=optimizer,
                                userOptions=opts,
                                deviceInfo=tu.create_test_device(numIpus=4))
@@ -165,6 +162,9 @@ def test_virtual_graph4():
         o3 = builder.aiOnnx.mul([i1, i3])
         o3l1 = builder.aiGraphcore.l1loss([o3], 0.1)
 
+    with builder.virtualGraph(3):
+        loss = builder.aiOnnx.sum([o1l1, o2l1, o3l1])
+
     proto = builder.getModelProto()
 
     # Need to anchor the output of the backward pass to stop it being pruned
@@ -181,15 +181,6 @@ def test_virtual_graph4():
             popart.AnchorReturnType("All")
         })
 
-    losses = [
-        popart.IdentityLoss(o1l1, "l1LossVal_1"),
-        popart.IdentityLoss(o2l1, "l1LossVal_2"),
-        popart.IdentityLoss(o3l1, "l1LossVal_3")
-    ]
-    #Make sure that the loss is also assigned to a virtual graph
-    losses[0].virtualGraph(3)
-    losses[1].virtualGraph(3)
-    losses[2].virtualGraph(2)
     optimizer = popart.ConstSGD(0.01)
 
     opts = popart.SessionOptions()
@@ -197,7 +188,7 @@ def test_virtual_graph4():
 
     s = popart.TrainingSession(fnModel=proto,
                                dataFlow=dataFlow,
-                               losses=losses,
+                               loss=loss,
                                optimizer=optimizer,
                                userOptions=opts,
                                deviceInfo=tu.create_test_device(numIpus=4))
@@ -290,11 +281,6 @@ def test_streaming_optimizer_tensors():
         # Need to anchor the output of the backward pass to stop it being pruned
         dataFlow = popart.DataFlow(bps, [anchorId])
 
-        losses = [popart.IdentityLoss(o2l1, "l1LossVal")]
-        # Make sure that the loss is also assigned to a virtual graph
-        if enablePipelining:
-            losses[0].virtualGraph(2)
-
         optimizer = popart.SGD({"defaultLearningRate": (1.0, False)})
 
         opts = popart.SessionOptions()
@@ -309,7 +295,7 @@ def test_streaming_optimizer_tensors():
         session = popart.TrainingSession(
             fnModel=proto,
             dataFlow=dataFlow,
-            losses=losses,
+            loss=o2l1,
             optimizer=optimizer,
             userOptions=opts,
             deviceInfo=tu.create_test_device(numIpus=numIPUs))

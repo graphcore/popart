@@ -34,8 +34,9 @@ using namespace popart;
 
 ONNX_NAMESPACE::ModelProto getProto() {
   // Build a basic onnx model
-  auto builder = Builder::create();
-  auto aiOnnx  = builder->aiOnnxOpset9();
+  auto builder     = Builder::create();
+  auto aiOnnx      = builder->aiOnnxOpset9();
+  auto aiGraphcore = builder->aiGraphcoreOpset1();
   TensorInfo info{"FLOAT", std::vector<int64_t>{1}};
   std::vector<float> vals(1, -10.0f);
   ConstVoidData data = {vals.data(), info};
@@ -49,13 +50,11 @@ ONNX_NAMESPACE::ModelProto getProto() {
 }
 
 BOOST_AUTO_TEST_CASE(test0) {
-  auto proto = getProto();
-  auto isi   = InputShapeInfo();
-  auto inId  = proto.graph().input()[0].name();
-  auto outId = proto.graph().output()[0].name();
-  auto df0   = DataFlow(1, {{outId, AnchorReturnType("All")}});
-  std::vector<std::shared_ptr<Loss>> losses{
-      std::make_shared<IdentityLoss>(outId, "l1", ReductionType::Sum)};
+  auto proto   = getProto();
+  auto isi     = InputShapeInfo();
+  auto inId    = proto.graph().input()[0].name();
+  auto outId   = proto.graph().output()[0].name();
+  auto df0     = DataFlow(1, {{outId, AnchorReturnType("All")}});
   auto opt0    = ConstSGD(0.01);
   auto device0 = createTestDevice(TEST_TARGET, 1, 20);
 
@@ -71,52 +70,52 @@ BOOST_AUTO_TEST_CASE(test0) {
 
   // 0. The reference Ir
   Ir ir0;
-  ir0.prepare({proto, isi, df0, losses, &opt0, *device0, {}, Patterns()});
+  ir0.prepare({proto, isi, df0, outId, &opt0, *device0, {}, Patterns()});
   std::size_t irHash0_0 = std::hash<Ir>{}(ir0);
   std::size_t irHash0_1 = std::hash<Ir>{}(ir0);
 
   // 1. Same as ref, except different optimizer - Op schedule no longer the same
   Ir ir1;
   auto opt1 = SGD({{"defaultLearningRate", {0.01, false}}});
-  ir1.prepare({proto, isi, df0, losses, &opt1, *device0, {}, Patterns()});
+  ir1.prepare({proto, isi, df0, outId, &opt1, *device0, {}, Patterns()});
   std::size_t irHash1 = std::hash<Ir>{}(ir1);
 
   // 2. Same as reference, except different anchor return type
   Ir ir2;
   auto df1 = DataFlow(1, {{outId, AnchorReturnType("Final")}});
-  ir2.prepare({proto, isi, df1, losses, &opt0, *device0, {}, Patterns()});
+  ir2.prepare({proto, isi, df1, outId, &opt0, *device0, {}, Patterns()});
   std::size_t irHash2 = std::hash<Ir>{}(ir2);
 
   // 3. Same as reference, except different batches-per-step
   Ir ir3;
   auto df2 = DataFlow(2, {{outId, AnchorReturnType("All")}});
-  ir3.prepare({proto, isi, df2, losses, &opt0, *device0, {}, Patterns()});
+  ir3.prepare({proto, isi, df2, outId, &opt0, *device0, {}, Patterns()});
   std::size_t irHash3 = std::hash<Ir>{}(ir3);
 
   // 4. Same as reference, except different anchor id
   Ir ir4;
   auto df3 = DataFlow(2, {{inId, AnchorReturnType("All")}});
-  ir4.prepare({proto, isi, df3, losses, &opt0, *device0, {}, Patterns()});
+  ir4.prepare({proto, isi, df3, outId, &opt0, *device0, {}, Patterns()});
   std::size_t irHash4 = std::hash<Ir>{}(ir4);
 
   // 5. Same as reference, except different device options
   Ir ir5;
   auto device1 = createTestDevice(TEST_TARGET, 1, 40);
-  ir5.prepare({proto, isi, df0, losses, &opt0, *device1, {}, Patterns()});
+  ir5.prepare({proto, isi, df0, outId, &opt0, *device1, {}, Patterns()});
   std::size_t irHash5 = std::hash<Ir>{}(ir5);
 
   // 6. Same as reference, except different session (user) options, (1)
   Ir ir6;
   SessionOptions uopt0;
   uopt0.syntheticDataMode = SyntheticDataMode::Zeros;
-  ir6.prepare({proto, isi, df0, losses, &opt0, *device0, uopt0, Patterns()});
+  ir6.prepare({proto, isi, df0, outId, &opt0, *device0, uopt0, Patterns()});
   std::size_t irHash6 = std::hash<Ir>{}(ir6);
 
   // 7. Same as reference, except different session (user) options, (2)
   Ir ir7;
   SessionOptions uopt1;
   uopt1.rearrangeAnchorsOnHost = false;
-  ir7.prepare({proto, isi, df0, losses, &opt0, *device0, uopt1, Patterns()});
+  ir7.prepare({proto, isi, df0, outId, &opt0, *device0, uopt1, Patterns()});
   std::size_t irHash7 = std::hash<Ir>{}(ir7);
 
   // The checks

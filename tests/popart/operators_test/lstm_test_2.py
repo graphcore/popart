@@ -335,6 +335,7 @@ def test_import_torch_lstm_train(tmpdir):
     def run_lstm_popart(onnx_file_name, inputs):
         # generate a popart session
         builder = popart.Builder(onnx_file_name)
+        loss = builder.aiGraphcore.identityloss(['out'])
         outputs = builder.getOutputTensorIds()
         anchors = outputs + [
             popart.reservedGradientPrefix() + 'out',
@@ -348,13 +349,12 @@ def test_import_torch_lstm_train(tmpdir):
         ]
         dataFlow = popart.DataFlow(1, anchors)
         optimizer = popart.ConstSGD(0.1)
-        losses = [popart.IdentityLoss('out', "idLossVal")]
         device = tu.create_test_device(1, 1216, opts={"tilesPerIPU": 1216})
         print('Creating session')
-        s = popart.TrainingSession(fnModel=onnx_file_name,
+        s = popart.TrainingSession(fnModel=builder.getModelProto(),
                                    dataFlow=dataFlow,
                                    optimizer=optimizer,
-                                   losses=losses,
+                                   loss=loss,
                                    patterns=popart.Patterns(["PreUniRepl"]),
                                    deviceInfo=device)
         print('setting device')

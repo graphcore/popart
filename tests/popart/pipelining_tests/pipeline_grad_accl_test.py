@@ -143,12 +143,7 @@ def get_model_anchors_model1(doSharding,
     builder.addOutputTensor(output)
 
     art = popart.AnchorReturnType("All")
-    losses = [popart.IdentityLoss(output, "loss")]
-
-    # Loss on the last IPU
-    losses[0].virtualGraph(2 if doSharding else 0)
-
-    anchor_map = {losses[0].output(0): art, w0: art}
+    anchor_map = {x: art, w0: art}
     if doTraining is True:
         anchor_map[popart.reservedGradientPrefix() + x] = art
         if doPipelining is True and anchorRestoredTensors is True:
@@ -174,7 +169,7 @@ def get_model_anchors_model1(doSharding,
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),
             dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
-            losses=losses,
+            loss=output,
             optimizer=popart.ConstSGD(0.01),
             userOptions=opts,
             deviceInfo=tu.create_test_device(numIpus=numIPUs))
@@ -182,7 +177,6 @@ def get_model_anchors_model1(doSharding,
         session = popart.InferenceSession(
             fnModel=builder.getModelProto(),
             dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
-            losses=losses,
             userOptions=opts,
             deviceInfo=tu.create_test_device(numIpus=numIPUs))
 
@@ -262,9 +256,8 @@ def get_model_anchors_model2(doSharding,
     nll = builder.aiGraphcore.nllloss([out, l0])
 
     art = popart.AnchorReturnType("All")
-    loss = popart.IdentityLoss(nll, "loss")
 
-    anchor_map = {"loss": art, w0: art, e0: art, s0: art, c0: art}
+    anchor_map = {nll: art, w0: art, e0: art, s0: art, c0: art}
     if doTraining is True:
         anchor_map[popart.reservedGradientPrefix() + d0] = art
         if doPipelining is True and anchorRestoredTensors is True:
@@ -292,13 +285,12 @@ def get_model_anchors_model2(doSharding,
         builder.virtualGraph(r0, 2)
         builder.virtualGraph(out, 2)
         builder.virtualGraph(nll, 2)
-        loss.virtualGraph(2)
 
     if doTraining is True:
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),
             dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
-            losses=[loss],
+            loss=nll,
             optimizer=popart.ConstSGD(0.01),
             userOptions=opts,
             deviceInfo=tu.create_test_device(numIpus=numIPUs))
@@ -306,7 +298,6 @@ def get_model_anchors_model2(doSharding,
         session = popart.InferenceSession(
             fnModel=builder.getModelProto(),
             dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
-            losses=[loss],
             userOptions=opts,
             deviceInfo=tu.create_test_device(numIpus=numIPUs))
 

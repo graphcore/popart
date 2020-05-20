@@ -33,15 +33,13 @@ def test_pipeline_boundary():
             r0 = actIn
 
         with builder.virtualGraph(1):
-            actIn = builder.aiOnnx.identity([actIn], "pipelined_out")
+            loss = builder.aiGraphcore.identityloss([actIn])
 
         builder.addOutputTensor(actIn)
         builder.setInplacePreferences(
             r0, {"ReshapeInplace": 10 if inplaceReshape else -10})
         opts = popart.SessionOptions()
 
-        loss = popart.IdentityLoss(actIn, actIn + "/loss")
-        loss.virtualGraph(1)
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
         opts.enablePipelining = True
         numIpus = 2
@@ -54,7 +52,7 @@ def test_pipeline_boundary():
                                          dataFlow=popart.DataFlow(4, [actIn]),
                                          deviceInfo=device,
                                          optimizer=popart.ConstSGD(0.1),
-                                         losses=[loss],
+                                         loss=loss,
                                          userOptions=opts,
                                          patterns=patterns)
 

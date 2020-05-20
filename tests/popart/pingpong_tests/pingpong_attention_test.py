@@ -117,9 +117,6 @@ def test_attention_pingpong(tmpdir):
         with builder.virtualGraph(vgid):
             l1 = builder.aiGraphcore.l1loss([x], 0.1)
 
-        loss = popart.IdentityLoss(l1, "l1LossVal")
-        loss.virtualGraph(vgid)
-
         proto = builder.getModelProto()
 
         anchors[x] = popart.AnchorReturnType("All")
@@ -154,7 +151,7 @@ def test_attention_pingpong(tmpdir):
         session = popart.TrainingSession(fnModel=proto,
                                          dataFlow=dataFlow,
                                          userOptions=opts,
-                                         losses=[loss],
+                                         loss=l1,
                                          optimizer=popart.ConstSGD(0.1),
                                          patterns=pat,
                                          deviceInfo=device)

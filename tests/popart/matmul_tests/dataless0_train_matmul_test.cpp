@@ -126,14 +126,11 @@ BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
     // training info
     float learnRate = 0.321;
     auto optimizer  = ConstSGD(learnRate);
-    std::unique_ptr<Loss> l1_loss(
-        new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
-    std::vector<Loss *> losses{l1_loss.get()};
 
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
         dataFlow,
-        losses,
+        l1,
         optimizer,
         device,
         popart::InputShapeInfo(),

@@ -132,15 +132,12 @@ BOOST_AUTO_TEST_CASE(WeightAnchorTest0) {
 
   auto optimizer = ConstSGD(0.01);
 
-  auto loss = std::unique_ptr<Loss>(
-      new IdentityLoss(l1, "l1LossVal", ReductionType::Sum));
-
   auto device = createTestDevice(TEST_TARGET, 3);
 
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      {loss.get()},
+      l1,
       optimizer,
       device,
       InputShapeInfo(),

@@ -56,7 +56,6 @@ def get_model_anchors(doSharding,
     nll = builder.aiGraphcore.nllloss([out, l0])
 
     art = popart.AnchorReturnType("All")
-    loss = popart.IdentityLoss(nll, "loss")
 
     anchor_map = {nll: art, w0: art, e0: art}
     if doTraining is True:
@@ -87,7 +86,6 @@ def get_model_anchors(doSharding,
         builder.virtualGraph(out, 1)
         builder.virtualGraph(nll, 1)
 
-        loss.virtualGraph(1)
     if replicated_graph_count > 1:
         opts.replicatedGraphCount = replicated_graph_count
         opts.enableReplicatedGraphs = True
@@ -98,7 +96,7 @@ def get_model_anchors(doSharding,
         session = popart.TrainingSession(fnModel=builder.getModelProto(),
                                          dataFlow=popart.DataFlow(
                                              batchesPerStep, anchor_map),
-                                         losses=[loss],
+                                         loss=nll,
                                          optimizer=popart.ConstSGD(0.01),
                                          userOptions=opts,
                                          deviceInfo=device)
