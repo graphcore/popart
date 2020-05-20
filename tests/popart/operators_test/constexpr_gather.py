@@ -43,6 +43,7 @@ def test_gather_rank2_1(op_tester):
         out = np.take(d1, d2, axis=axis)
         return [out, d_d1]
 
+    op_tester.lossReduction = popart.ReductionType.Sum
     op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')
 
@@ -65,6 +66,7 @@ def test_gather_rank2_2(op_tester):
         out = np.take(d1, d2, axis=axis)
         return [out, d_d1]
 
+    op_tester.lossReduction = popart.ReductionType.Sum
     op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')
 
@@ -88,6 +90,7 @@ def test_gather_rank3_1(op_tester):
         out = np.take(d1, d2, axis=axis)
         return [out, d_d1]
 
+    op_tester.lossReduction = popart.ReductionType.Sum
     op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')
 
@@ -109,6 +112,7 @@ def test_gather_rank1_1(op_tester):
         out = np.take(d1, d2, axis=axis)
         return [out, d_d1]
 
+    op_tester.lossReduction = popart.ReductionType.Sum
     op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')
 
@@ -129,6 +133,7 @@ def test_gather_example1(op_tester):
         out = np.take(d1, d2, axis=axis)
         return [out]
 
+    op_tester.lossReduction = popart.ReductionType.Sum
     op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'infer')
 
@@ -152,6 +157,7 @@ def test_gather_example2(op_tester):
         out = np.take(d1, d2, axis=axis)
         return [out, d_d1]
 
+    op_tester.lossReduction = popart.ReductionType.Sum
     op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')
 

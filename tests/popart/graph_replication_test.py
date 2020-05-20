@@ -72,7 +72,7 @@ def test_weight_update(op_tester):
         # forward
         o = module([a])
 
-        loss = torch.nn.L1Loss(reduction="sum")
+        loss = torch.nn.L1Loss()
         target = torch.zeros(o.size())
         output = loss(o, target)
         output.backward()
@@ -180,6 +180,7 @@ def test_weight_update_replicated(op_tester):
             np.array([1, 1, 1, 1], np.float32)
         ]
 
+    op_tester.lossReduction = popart.ReductionType.Sum
     op_tester.patterns = ['GemmDecomposition', 'PreUniRepl', 'MatMulRhsGradOp']
     op_tester.options.enableReplicatedGraphs = True
     op_tester.options.replicatedGraphCount = replicationFactor

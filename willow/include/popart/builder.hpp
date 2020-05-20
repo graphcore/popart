@@ -277,7 +277,7 @@ public:
    */
   TensorId l1loss(const std::vector<TensorId> &args,
                   const float lamda,
-                  const ReductionType reduction = ReductionType::Sum,
+                  const ReductionType reduction = ReductionType::Mean,
                   const std::string &name       = {});
 
   /**
@@ -293,7 +293,7 @@ public:
    * \return The name of the result tensor
    */
   TensorId nllloss(const std::vector<TensorId> &args,
-                   const ReductionType reduction          = ReductionType::Sum,
+                   const ReductionType reduction          = ReductionType::Mean,
                    const boost::optional<int> ignoreIndex = boost::none,
                    const std::string &name                = {});
 
@@ -309,7 +309,7 @@ public:
    * \return The name of the result tensor
    */
   TensorId identityloss(const std::vector<TensorId> &args,
-                        const ReductionType reduction = ReductionType::Sum,
+                        const ReductionType reduction = ReductionType::Mean,
                         const std::string &name       = {});
 };
 

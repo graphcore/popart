@@ -223,7 +223,8 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilonTest1) {
     }
 
     float lambda = 0.1;
-    auto l1      = builder->aiGraphcoreOpset1().l1loss({actFinal}, 0.1);
+    auto l1      = builder->aiGraphcoreOpset1().l1loss(
+        {actFinal}, 0.1, ReductionType::Sum);
     builder->virtualGraph(l1, nIPUs - 1);
     auto proto    = builder->getModelProto();
     auto dataFlow = DataFlow(batchesPerStep);

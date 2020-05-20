@@ -131,7 +131,7 @@ def test_manual_serialization():
     optimizer = optim.SGD(net.parameters(), lr=0.1)
 
     out = net(torch.from_numpy(inputVals.reshape([N, C0])))
-    loss = 0.2 * torch.sum(torch.abs(out))
+    loss = 0.2 * torch.mean(torch.abs(out))
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()

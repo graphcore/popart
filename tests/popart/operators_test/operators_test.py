@@ -227,6 +227,7 @@ def test_convolution_2(op_tester):
     Test the convolution when the conv in the bwd pass is not the same as the conv in the
     forward pass
     '''
+
     def init_builder(builder):
         data = np.ones([1, 2, 4, 4], dtype=np.float32)
         filt = np.ones([4, 2, 1, 1], dtype=np.float32)
@@ -1166,11 +1167,7 @@ def test_pad_type_reflect(op_tester):
               mode='reflect')
 
 
-def _test_pad(op_tester,
-              data,
-              lower_padding,
-              upper_padding,
-              mode,
+def _test_pad(op_tester, data, lower_padding, upper_padding, mode,
               pad_value=0):
     def init_builder(builder):
         i1 = builder.addInputTensor(data)
@@ -1249,6 +1246,7 @@ def test_scatter_0(op_tester):
                               [1.0, 0.0, 0.0]]).astype(np.float32)
         return [output, data_grad, np.ones_like(updates)]
 
+    op_tester.lossReduction = popart.ReductionType.Sum
     op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')
 
@@ -1276,6 +1274,7 @@ def test_scatter_1(op_tester):
     def reference(ref_data):
         return [output, d_data, np.ones_like(updates)]
 
+    op_tester.lossReduction = popart.ReductionType.Sum
     op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')
 
@@ -1307,6 +1306,7 @@ def test_scatter_2(op_tester):
                               [1.0, 1.0, 1.0]]).astype(np.float32)
         return [output, data_grad, np.ones_like(updates)]
 
+    op_tester.lossReduction = popart.ReductionType.Sum
     op_tester.patterns = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')
 

@@ -86,6 +86,7 @@ def test_onehot_2d_with_axis_training(op_tester):
     def reference(ref_data):
         return [output, output_grad, values_grad]
 
+    op_tester.lossReduction = popart.ReductionType.Sum
     op_tester.patterns = ['OpToIdentity']
     op_tester.run(init_builder, reference, 'train')
 
@@ -120,6 +121,7 @@ def test_onehot_2d_without_axis_training(op_tester):
     def reference(ref_data):
         return [output, output_grad, values_grad]
 
+    op_tester.lossReduction = popart.ReductionType.Sum
     op_tester.patterns = ['OpToIdentity']
     op_tester.run(init_builder, reference, 'train')
 

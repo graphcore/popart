@@ -135,7 +135,9 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation):
                                                    ratio=ratio2)
 
         out = builder.aiOnnx.add([dropout2, dropout1])
-        l1 = builder.aiGraphcore.l1loss([out], lambda1)
+        l1 = builder.aiGraphcore.l1loss([out],
+                                        lambda1,
+                                        reduction=popart.ReductionType.Sum)
 
         # see T13142: we do this so that the recomputation does not modify the anchors
         mask2 = builder.aiOnnx.identity([mask2])

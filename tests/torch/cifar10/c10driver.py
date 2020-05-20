@@ -216,7 +216,8 @@ def _run_impl(torchWriter, patterns, outputdir, cifarInIndices, device,
         # Append output with an identity loss, to reduce to scalar if
         # necessary
         bder = popart.Builder(modelProtoX)
-        loss = bder.aiGraphcore.identityloss([torchWriter.outNames[0]])
+        loss = bder.aiGraphcore.identityloss(
+            [torchWriter.outNames[0]], reduction=popart.ReductionType.Sum)
         session = popart.TrainingSession(fnModel=bder.getModelProto(),
                                          inputShapeInfo=inputShapeInfo,
                                          dataFlow=dataFlow,

@@ -161,7 +161,8 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
 
   // l1 loss with penalty term, will be applied to C
   float lossLambda = 0.26;
-  auto l1          = bder->aiGraphcoreOpset1().l1loss({C_id}, lossLambda);
+  auto l1 =
+      bder->aiGraphcoreOpset1().l1loss({C_id}, lossLambda, ReductionType::Sum);
 
   // compute the baseline
   std::vector<float> v_C_data(C_info.nelms());
@@ -388,7 +389,8 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
   // l1 loss with penalty term, will be applied to C
   float lossLambda = 0.26;
 
-  auto l1 = bder->aiGraphcoreOpset1().l1loss({G_id}, lossLambda);
+  auto l1 =
+      bder->aiGraphcoreOpset1().l1loss({G_id}, lossLambda, ReductionType::Sum);
 
   auto proto      = bder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
@@ -577,7 +579,8 @@ BOOST_AUTO_TEST_CASE(HostReduceHierarchicalReductionWithReplicatedGraphs) {
   TensorId G_id = aiOnnx.matmul({F_id, D_id});
 
   float lossLambda = 0.1f;
-  auto l1          = bder->aiGraphcoreOpset1().l1loss({G_id}, lossLambda);
+  auto l1 =
+      bder->aiGraphcoreOpset1().l1loss({G_id}, lossLambda, ReductionType::Sum);
 
   auto proto      = bder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
@@ -848,7 +851,8 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationGradientStoreGradientLoad) {
   TensorId G_id = aiOnnx.matmul({F_id, D_id});
 
   float lossLambda = 1.0f;
-  auto l1          = bder->aiGraphcoreOpset1().l1loss({G_id}, lossLambda);
+  auto l1 =
+      bder->aiGraphcoreOpset1().l1loss({G_id}, lossLambda, ReductionType::Sum);
 
   auto proto      = bder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
@@ -1093,7 +1097,8 @@ BOOST_AUTO_TEST_CASE(
   TensorId G_id = aiOnnx.matmul({F_id, D_id});
 
   float lossLambda = 1.0f;
-  auto l1          = bder->aiGraphcoreOpset1().l1loss({G_id}, lossLambda);
+  auto l1 =
+      bder->aiGraphcoreOpset1().l1loss({G_id}, lossLambda, ReductionType::Sum);
 
   auto proto      = bder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
@@ -2059,7 +2064,8 @@ BOOST_AUTO_TEST_CASE(OATTSimpleTest, *boost::unit_test::disabled()) {
   TensorId G_id = aiOnnx.matmul({F_id, D_id});
 
   float lossLambda = 1.0f;
-  auto l1          = bder->aiGraphcoreOpset1().l1loss({G_id}, lossLambda);
+  auto l1 =
+      bder->aiGraphcoreOpset1().l1loss({G_id}, lossLambda, ReductionType::Sum);
 
   auto proto      = bder->getModelProto();
   auto modelProto = io::getModelFromString(proto);

@@ -440,7 +440,8 @@ static void remoteBufferPingPongWeightTestBase(SessionOptions opts,
 
   // l1 loss with penalty term, will be applied to C
   float lossLambda = 0.26;
-  auto l1          = bder->aiGraphcoreOpset1().l1loss({C_id}, lossLambda);
+  auto l1 =
+      bder->aiGraphcoreOpset1().l1loss({C_id}, lossLambda, ReductionType::Sum);
 
   // compute the baseline
   std::vector<float> v_C_data(C_info.nelms());

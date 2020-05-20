@@ -198,7 +198,9 @@ def test_detach_grad_branches(detach_branch_popart, detach_branch_pytorch):
             self.conv2 = nn.Conv2d(2, 2, 3, padding=[1, 1], bias=False)
             self.conv1.weight.data = torch.tensor(w1_data)
             self.conv2.weight.data = torch.tensor(w2_data)
-            self.sm = nn.Softmax(dim=np.size(lb_data.shape))
+            # PyTorch nll loss expects logsoftmax input
+            self.sm = nn.LogSoftmax(dim=np.size(lb_data.shape))
+            self.nll = nn.NLLLoss()
 
         def forward(self, x, y):
             x1 = self.conv1(x)
@@ -212,23 +214,16 @@ def test_detach_grad_branches(detach_branch_popart, detach_branch_pytorch):
             x2 = torch.reshape(x2, [Batchsize, Classes])
             x = x1 + x2
             x = self.sm(x)
-            # Manual calculation of Nll loss. Pytorch's reduction is different to
-            # popart, so we calculate manually.
-            x = torch.mul(x, y)
-            x = torch.sum(x, dim=[np.size(lb_data.shape)])
-            x = torch.log(x)
-            x = -1 * x
+            x = self.nll(x, y)
             return x
 
     net = Net()
-    criterion = nn.Identity(reduction="sum")
     optimizer = optim.SGD(net.parameters(),
                           lr=LEARNING_RATE,
                           weight_decay=WEIGHT_DECAY)
 
     input_t = torch.tensor(ip_data, requires_grad=True, dtype=torch.float32)
-    onehot = np.eye(Classes)[lb_data]
-    label_t = torch.tensor(onehot, requires_grad=False, dtype=torch.int32)
+    label_t = torch.tensor(lb_data, requires_grad=False, dtype=torch.long)
 
     for step in range(4):
         print(f"Step {step +1}")
@@ -237,8 +232,7 @@ def test_detach_grad_branches(detach_branch_popart, detach_branch_pytorch):
         # Torch
         #
         optimizer.zero_grad()
-        outputs = net(input_t, label_t)
-        loss = criterion(torch.sum(outputs))
+        loss = net(input_t, label_t)
         loss.backward()
         optimizer.step()
 

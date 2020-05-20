@@ -211,7 +211,7 @@ def test_against_pytorch():
 
         for i in range(batchesPerStep):
             out = net(torch.from_numpy(inputVals[step][i]), i)
-            loss = lambda1 * torch.sum(torch.abs(out))
+            loss = lambda1 * torch.mean(torch.abs(out))
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()

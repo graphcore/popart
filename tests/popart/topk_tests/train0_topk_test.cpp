@@ -118,7 +118,8 @@ BOOST_AUTO_TEST_CASE(Train0TopK) {
     auto squaredOut = aiOnnx.mul({values, values});
     auto halvedOut  = aiGraphcore.scale({squaredOut}, scaleFactor);
 
-    auto l1 = builder->aiGraphcoreOpset1().l1loss({halvedOut}, lossLambda);
+    auto l1 = builder->aiGraphcoreOpset1().l1loss(
+        {halvedOut}, lossLambda, ReductionType::Sum);
 
     auto proto      = builder->getModelProto();
     auto modelProto = io::getModelFromString(proto);

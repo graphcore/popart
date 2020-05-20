@@ -53,7 +53,8 @@ def get_model_anchors(doSharding,
         out = builder.aiOnnx.softmax([do0], axis=1, debugPrefix="sfm")
     else:
         out = builder.aiOnnx.softmax([r0], axis=1, debugPrefix="sfm")
-    nll = builder.aiGraphcore.nllloss([out, l0])
+    nll = builder.aiGraphcore.nllloss([out, l0],
+                                      reduction=popart.ReductionType.Sum)
 
     art = popart.AnchorReturnType("All")
 

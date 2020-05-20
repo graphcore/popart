@@ -146,7 +146,8 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
     auto optimizer  = ConstSGD(learnRate);
 
     float lambda = 0.1;
-    actFinal     = builder->aiGraphcoreOpset1().l1loss({actFinal}, lambda);
+    actFinal     = builder->aiGraphcoreOpset1().l1loss(
+        {actFinal}, lambda, ReductionType::Sum);
 
     auto proto = builder->getModelProto();
     // No anchors

@@ -79,10 +79,14 @@ def run_test_multi_loss_pipeline(same_vgraph=True):
         skipOut = builder.aiOnnx.add([mm0, scale1])
 
     with builder.virtualGraph(1 if same_vgraph else 0):
-        loss2 = builder.aiGraphcore.l1loss([skipOut], lambda2)
+        loss2 = builder.aiGraphcore.l1loss([skipOut],
+                                           lambda2,
+                                           reduction=popart.ReductionType.Sum)
 
     with builder.virtualGraph(1):
-        loss1 = builder.aiGraphcore.l1loss([scale1], lambda1)
+        loss1 = builder.aiGraphcore.l1loss([scale1],
+                                           lambda1,
+                                           reduction=popart.ReductionType.Sum)
         finalLoss = builder.aiOnnx.sum([loss1, loss2])
 
     # input0  w0

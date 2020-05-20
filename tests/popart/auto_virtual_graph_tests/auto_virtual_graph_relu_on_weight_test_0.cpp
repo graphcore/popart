@@ -131,7 +131,8 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
   actOut      = addLayer(actOut, 6);
 
   float lambda = 1;
-  actOut       = builder->aiGraphcoreOpset1().l1loss({actOut}, lambda);
+  actOut =
+      builder->aiGraphcoreOpset1().l1loss({actOut}, lambda, ReductionType::Sum);
 
   auto proto = builder->getModelProto();
 

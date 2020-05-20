@@ -297,8 +297,9 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train0) {
       return builder;
     }(builder);
 
-    out     = aiOnnx.logical_if({in_condition}, 1, else_branch, then_branch)[0];
-    auto l1 = builder.aiGraphcoreOpset1().l1loss({out}, 0.1);
+    out = aiOnnx.logical_if({in_condition}, 1, else_branch, then_branch)[0];
+    auto l1 =
+        builder.aiGraphcoreOpset1().l1loss({out}, 0.1, ReductionType::Sum);
 
     runner.anchors.insert({getGradId(in0), AnchorReturnType("All")});
     runner.anchors.insert({getGradId(in1), AnchorReturnType("All")});
@@ -411,8 +412,9 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train1) {
       return builder;
     }(builder);
 
-    out     = aiOnnx.logical_if({in_condition}, 1, else_branch, then_branch)[0];
-    auto l1 = builder.aiGraphcoreOpset1().l1loss({out}, 0.1);
+    out = aiOnnx.logical_if({in_condition}, 1, else_branch, then_branch)[0];
+    auto l1 =
+        builder.aiGraphcoreOpset1().l1loss({out}, 0.1, ReductionType::Sum);
 
     runner.anchors.insert({getGradId(in0), AnchorReturnType("All")});
     runner.anchors.insert({getGradId(in1), AnchorReturnType("All")});
@@ -559,8 +561,9 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train2) {
       return builder;
     }(builder);
 
-    out     = aiOnnx.logical_if({in_condition}, 1, else_branch, then_branch)[0];
-    auto l1 = builder.aiGraphcoreOpset1().l1loss({out}, 0.1);
+    out = aiOnnx.logical_if({in_condition}, 1, else_branch, then_branch)[0];
+    auto l1 =
+        builder.aiGraphcoreOpset1().l1loss({out}, 0.1, ReductionType::Sum);
 
     runner.anchors.insert({getGradId(in0), AnchorReturnType("All")});
     runner.anchors.insert({getGradId(in1), AnchorReturnType("All")});
@@ -704,8 +707,9 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train3) {
       return builder;
     }(builder);
 
-    out     = aiOnnx.logical_if({in_condition}, 1, else_branch, then_branch)[0];
-    auto l1 = builder.aiGraphcoreOpset1().l1loss({out}, 0.1);
+    out = aiOnnx.logical_if({in_condition}, 1, else_branch, then_branch)[0];
+    auto l1 =
+        builder.aiGraphcoreOpset1().l1loss({out}, 0.1, ReductionType::Sum);
 
     runner.anchors.insert({getGradId(in0), AnchorReturnType("All")});
     runner.anchors.insert({getGradId(in1), AnchorReturnType("All")});
@@ -886,7 +890,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_inputs_differ_train0) {
 
         auto out =
             aiOnnx.logical_if({in_condition}, 1, else_branch, then_branch)[0];
-        auto l1 = builder.aiGraphcoreOpset1().l1loss({out}, 0.1);
+        auto l1 =
+            builder.aiGraphcoreOpset1().l1loss({out}, 0.1, ReductionType::Sum);
 
         inputs.push_back(
             TestTensor::create<bool>(in_condition, infoBool.shape()));

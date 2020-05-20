@@ -89,6 +89,7 @@ def op_tester(tmpdir):
             self.check_shapes = True
             self.equal_nan = False
             self.inplacing = True
+            self.lossReduction = popart.ReductionType.Mean
 
         def verifyTensor(self, t1, ref):
             if self.check_shapes:
@@ -156,7 +157,8 @@ def op_tester(tmpdir):
                 # Apply reduction to output (assumed to be the
                 # first anchorId) to ensure it is scalar
                 lossId = anchorIds[0]
-                lossId = bld.aiGraphcore.identityloss([lossId])
+                lossId = bld.aiGraphcore.identityloss(
+                    [lossId], reduction=self.lossReduction)
 
                 session = popart.TrainingSession(fnModel=bld.getModelProto(),
                                                  dataFlow=dataFlow,

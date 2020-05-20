@@ -90,7 +90,9 @@ def test_train(tmpdir, capfd):
 
     # c1 will be printed, but d__c1 will not
     o = builder.aiGraphcore.printtensor([c1], print_gradient=0)
-    l1 = builder.aiGraphcore.l1loss([o], 0.1)
+    l1 = builder.aiGraphcore.l1loss([o],
+                                    0.1,
+                                    reduction=popart.ReductionType.Sum)
 
     proto = builder.getModelProto()
 

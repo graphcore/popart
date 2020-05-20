@@ -138,8 +138,9 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
       actOut = addLayer(actOut, i);
     }
     float lambda = 1;
-    actOut       = builder->aiGraphcoreOpset1().l1loss({actOut}, lambda);
-    auto proto   = builder->getModelProto();
+    actOut       = builder->aiGraphcoreOpset1().l1loss(
+        {actOut}, lambda, ReductionType::Sum);
+    auto proto = builder->getModelProto();
 
     // -------------- Losses, anchors, etc ----------------------
     std::map<TensorId, AnchorReturnType> anchorMap;

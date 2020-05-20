@@ -120,7 +120,8 @@ BOOST_AUTO_TEST_CASE(ContinuousEquivalentTest0) {
   auto w5              = builder->addInitializedInputTensor(w5Data);
   auto act5            = aiOnnx.add({w5, act4}, "act5");
   float lambda         = 0.1;
-  auto l1              = builder->aiGraphcoreOpset1().l1loss({act5}, lambda);
+  auto l1 =
+      builder->aiGraphcoreOpset1().l1loss({act5}, lambda, ReductionType::Sum);
 
   auto proto = builder->getModelProto();
 

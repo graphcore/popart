@@ -70,7 +70,8 @@ def get_mm_model(accl_factor, enable_multi_ipu):
                 builder.virtualGraph(x, 0)
 
     label_tensor_name = builder.addInputTensor("INT32", [micro_batch_size])
-    x = builder.aiGraphcore.nllloss([x, label_tensor_name])
+    x = builder.aiGraphcore.nllloss([x, label_tensor_name],
+                                    reduction=popart.ReductionType.Sum)
     if enable_multi_ipu:
         builder.virtualGraph(x, 1)
 
@@ -106,7 +107,8 @@ def get_complex_model(accl_factor):
 
     r0 = builder.reshape_const(builder.aiOnnx, [c0], [micro_batch_size, 32])
     sm = builder.aiOnnx.softmax([r0], axis=1, debugPrefix="sfm")
-    output_tensor_name = builder.aiGraphcore.identityloss([sm])
+    output_tensor_name = builder.aiGraphcore.identityloss(
+        [sm], reduction=popart.ReductionType.Sum)
 
     builder.addOutputTensor(output_tensor_name)
     label_shape = [micro_batch_size]

@@ -173,7 +173,8 @@ getResults(const popart::SGD &opt0, // initial Optimizer
 
   auto add0 = aiOnnx.add({w0Id, input0});
   auto add1 = aiOnnx.add({w1Id, add0});
-  auto l1   = builder->aiGraphcoreOpset1().l1loss({add1}, 1.0);
+  auto l1 =
+      builder->aiGraphcoreOpset1().l1loss({add1}, 1.0, ReductionType::Sum);
 
   auto proto    = builder->getModelProto();
   auto dataFlow = DataFlow(batchesPerStep);
