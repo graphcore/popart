@@ -897,7 +897,8 @@ PYBIND11_MODULE(popart_core, m) {
         py::arg("err").none());
     cls.def(
         "setRandomSeed", &TrainingSession::setRandomSeed, py::arg("seedValue"));
-    cls.def("getCycleCount", &TrainingSession::getCycleCount);
+    cls.def(
+        "getCycleCount", &TrainingSession::getCycleCount, py::arg("id") = "");
     cls.def("weightsToHost", &TrainingSession::weightsToHost);
     cls.def("weightsFromHost", &TrainingSession::weightsFromHost);
     cls.def("readWeights", &TrainingSession::readWeights);
