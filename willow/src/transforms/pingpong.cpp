@@ -22,14 +22,14 @@
 
 namespace popart {
 
-static constexpr const double maxCompressedPriority = 9000;
+static constexpr const double maxCompressedPriority = 9000.0;
 static constexpr const double initPriority          = -9996.0;
 static constexpr const double cacheLoadPriority     = -9997.0;
 static constexpr const double allGatherPriority     = -9997.0;
 static constexpr const double ipuCopyPriority       = -9998.0;
 static constexpr const double allReducePriority     = -9999.0;
 static constexpr const double varUpdatePriority     = -9999.0;
-static constexpr const double cacheStorePriority    = -10000.0;
+static constexpr const double cacheStorePriority    = -9999.0;
 
 std::size_t PingPong::id(int pass) {
   return typeid(PingPong).hash_code() + pass;
