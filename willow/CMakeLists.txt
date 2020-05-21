@@ -50,7 +50,12 @@ else()
 message( STATUS "Building WITHOUT Poplar IPU backend")
 endif()
 
-find_package(Poprithms REQUIRED)
+# Search first for poprithms-static-config.cmake
+find_package(poprithms-static CONFIG)
+if (NOT TARGET poprithms-static)
+  # For backwards compat fallback to FindPoprithms.cmake
+  find_package(Poprithms REQUIRED)
+endif ()
 
 find_package(Spdlog REQUIRED)
 message(STATUS "Spdlog include dir is " ${SPDLOG_INCLUDE_DIRS})
@@ -73,7 +78,6 @@ target_include_directories (popart SYSTEM PUBLIC
     ${CBLAS_INCLUDE_DIRS}
     ${POPLAR_INCLUDE_DIR}
     ${POPLIBS_INCLUDE_DIR}
-    ${POPRITHMS_INCLUDE_DIR}
     ${GCL_INCLUDE_DIR}
     )
 
@@ -91,11 +95,20 @@ target_link_libraries(popart
   ${POPOPS_LIB}
   ${POPRAND_LIB}
   ${POPUTIL_LIB}
-  ${POPRITHMS_LIB}
   ${GCL_LIBRARIES}
   ${CMAKE_DL_LIBS}
   ${CMAKE_THREAD_LIBS_INIT}
 )
+
+if (TARGET poprithms-static)
+  target_link_libraries(popart poprithms-static)
+else()
+  # Backwards compat for build_scripts using git tag before cmake exports of poprithms,
+  # once this tag is incremented, we can delete FindPoprithms.cmake
+  # and related ${POPRITHMS_*}, using normal cmake targets
+  target_include_directories(popart SYSTEM PUBLIC ${POPRITHMS_INCLUDE_DIR})
+  target_link_libraries(popart ${POPRITHMS_LIB})
+endif()
 
 # The following defines cause compiler warnings if not set
 target_compile_definitions(popart
