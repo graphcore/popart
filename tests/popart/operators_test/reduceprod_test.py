@@ -7,21 +7,31 @@ import pytest
 import torch.nn.functional as F
 from op_tester import op_tester
 
+USE_DEFAULT_AXES = None
+
 
 def test_reduceprod(op_tester):
     data = np.random.rand(5, 3, 7).astype(np.float32)
-    axes_list = [[0], [1], [2], [0, 1], [0, 2], [1, 2], [0, 1, 2]]
+    axes_list = [[], [0], [1], [2], [0, 1], [0, 2], [1, 2], [0, 1, 2],
+                 USE_DEFAULT_AXES]
     keepdims_list = [False, True]
 
     def init_builder(builder):
         tensor = builder.addInputTensor(data)
         result = []
         for axes, keepdims in itertools.product(axes_list, keepdims_list):
-            out = builder.aiOnnx.reduceprod(
-                [tensor],
-                axes=axes,
-                keepdims=keepdims,
-                debugPrefix="test_reduceprod_{0}_{1}".format(axes, keepdims))
+            if axes is USE_DEFAULT_AXES:
+                out = builder.aiOnnx.reduceprod(
+                    [tensor],
+                    keepdims=keepdims,
+                    debugPrefix="test_reduceprod_default_{0}".format(keepdims))
+            else:
+                out = builder.aiOnnx.reduceprod(
+                    [tensor],
+                    axes=axes,
+                    keepdims=keepdims,
+                    debugPrefix="test_reduceprod_{0}_{1}".format(
+                        axes, keepdims))
             builder.addOutputTensor(out)
             result.append(out)
         return result
@@ -29,7 +39,11 @@ def test_reduceprod(op_tester):
     def reference(ref_data):
         result = []
         for axes, keepdims in itertools.product(axes_list, keepdims_list):
-            result.append(np.prod(data, axis=tuple(axes), keepdims=keepdims))
+            result.append(
+                np.prod(
+                    data,
+                    axis=tuple(axes) if axes is not USE_DEFAULT_AXES else None,
+                    keepdims=keepdims))
         return result
 
     op_tester.patterns = ['PreUniRepl']
@@ -40,7 +54,8 @@ def test_reduceprod_training(op_tester):
     data = np.random.rand(2, 5, 3).astype(np.float32)
     # To check if implementation can handle 0.0 in the input with gradients
     data[1, 1, 1] = 0.0
-    axes_list = [[0], [1], [2], [0, 1], [0, 2], [1, 2], [0, 1, 2]]
+    axes_list = [[0], [1], [2], [0, 1], [0, 2], [1, 2], [0, 1, 2],
+                 USE_DEFAULT_AXES]
     keepdims_list = [False, True]
 
     def init_builder(builder):
@@ -48,14 +63,22 @@ def test_reduceprod_training(op_tester):
         axes_reduce = []
         for axes, keepdims in itertools.product(axes_list, keepdims_list):
             tensor = builder.addInputTensor(data)
-            out = builder.aiOnnx.reduceprod(
-                [tensor],
-                axes=axes,
-                keepdims=keepdims,
-                debugPrefix="test_reduceprod_{0}_{1}".format(axes, keepdims))
+            if axes is USE_DEFAULT_AXES:
+                out = builder.aiOnnx.reduceprod(
+                    [tensor],
+                    keepdims=keepdims,
+                    debugPrefix="test_reduceprod_default_{0}".format(keepdims))
+            else:
+                out = builder.aiOnnx.reduceprod(
+                    [tensor],
+                    axes=axes,
+                    keepdims=keepdims,
+                    debugPrefix="test_reduceprod_{0}_{1}".format(
+                        axes, keepdims))
             result.append(out)
             result.append(popart.reservedGradientPrefix() + tensor)
-            axes_reduce.append(range(3 - (0 if keepdims else len(axes))))
+            axes_len = len(axes) if axes is not USE_DEFAULT_AXES else 3
+            axes_reduce.append(range(3 - (0 if keepdims else axes_len)))
         sum = builder.aiOnnx.sum([
             builder.aiOnnx.reducesum([r],
                                      axes=axes,
@@ -79,7 +102,7 @@ def test_reduceprod_training(op_tester):
         for axes, keepdims in itertools.product(axes_list, keepdims_list):
             tensor = torch.tensor(data, requires_grad=True)
             out = tensor
-            sorted_axes = axes
+            sorted_axes = axes if axes is not USE_DEFAULT_AXES else [0, 1, 2]
             sorted_axes.sort(reverse=True)
             for dim in sorted_axes:
                 out = torch.prod(out, dim=dim, keepdim=keepdims)

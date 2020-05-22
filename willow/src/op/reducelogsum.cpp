@@ -8,10 +8,11 @@
 
 namespace popart {
 
-ReduceLogSumOp::ReduceLogSumOp(const OperatorIdentifier &_opid,
-                               const std::vector<int64_t> &axes_,
-                               const int64_t keepdims_,
-                               const Op::Settings &settings_)
+ReduceLogSumOp::ReduceLogSumOp(
+    const OperatorIdentifier &_opid,
+    const boost::optional<std::vector<int64_t>> &axes_,
+    const int64_t keepdims_,
+    const Op::Settings &settings_)
     : ReduceOp(_opid, axes_, keepdims_, settings_) {}
 
 std::unique_ptr<Op> ReduceLogSumOp::clone() const {
@@ -66,8 +67,10 @@ static OpCreator<ReduceLogSumOp> ReduceLogSumOpCreator(
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {
       int64_t keepdims = attr.getAttribute<Attributes::Int>("keepdims", 1);
-      std::vector<int64_t> axes =
-          attr.getAttribute<Attributes::Ints>("axes", {});
+      boost::optional<std::vector<int64_t>> axes;
+      if (attr.hasAttribute("axes")) {
+        axes = attr.getAttribute<Attributes::Ints>("axes");
+      }
 
       return std::unique_ptr<Op>(
           new ReduceLogSumOp(_opid, axes, keepdims, settings));

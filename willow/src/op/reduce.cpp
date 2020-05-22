@@ -9,13 +9,18 @@
 namespace popart {
 
 ReduceOp::ReduceOp(const OperatorIdentifier &_opid,
-                   const std::vector<int64_t> &axes_,
+                   const boost::optional<std::vector<int64_t>> &axes_,
                    const int64_t keepdims_,
                    const Op::Settings &settings_)
-    : Op(_opid, settings_), axes(axes_), keepdims(keepdims_) {
+    : Op(_opid, settings_), axes(), keepdims(keepdims_),
+      has_default_axes(!axes_) {
 
-  // Sorting the axes for general backend compatibility
-  std::sort(axes.begin(), axes.end());
+  if (axes_) {
+    // We do have axes on construction, copy them now.
+    axes = *axes_;
+    // Sorting the axes for general backend compatibility
+    std::sort(axes.begin(), axes.end());
+  }
 }
 
 std::unique_ptr<Op> ReduceOp::clone() const {
@@ -24,6 +29,12 @@ std::unique_ptr<Op> ReduceOp::clone() const {
 
 void ReduceOp::setup() {
   const auto input_shape = inShape(getInIndex());
+
+  if (has_default_axes) {
+    // We didn't have axes during construction, we should reduce over ALL axes.
+    axes.resize(input_shape.size());
+    std::iota(axes.begin(), axes.end(), int64_t(0));
+  }
 
   Shape output_shape;
   output_shape.reserve(input_shape.size());
@@ -49,7 +60,8 @@ const std::vector<int64_t> &ReduceOp::getAxes() const { return axes; }
 bool ReduceOp::getKeepDims() const { return keepdims; }
 
 void ReduceOp::setAxes(std::vector<int64_t> value) {
-  axes = value;
+  axes             = value;
+  has_default_axes = false;
 
   // Sorting the axes for general backend compatibility
   std::sort(axes.begin(), axes.end());

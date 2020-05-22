@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_CASE(NegPriorities_concat0) {
     auto in4 = builder->addInputTensor(shape0);
     auto c3  = aiOnnx.relu({in4});
     auto o2  = aiOnnx.concat({o1, c3}, 0);
-    auto out = aiOnnx.reducesum({o2});
+    auto out = aiOnnx.reducesum({o2}, std::vector<int64_t>{});
     auto l1  = builder->aiGraphcoreOpset1().l1loss({out}, 0.1);
 
     builder->setInplacePreferences(x3, {{"ConcatInplace", priorityValue}});

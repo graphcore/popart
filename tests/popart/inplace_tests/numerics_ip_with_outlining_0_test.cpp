@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
     auto mul0 = aiOnnx.mul({s3, s2});
     auto y    = aiOnnx.mul({mul0, s1});
     auto sub  = aiOnnx.sub({x, y});
-    auto out  = aiOnnx.reducesum({sub}, {0, 1}, false);
+    auto out  = aiOnnx.reducesum({sub}, std::vector<int64_t>{{0, 1}}, false);
     builder->addOutputTensor(out);
 
     auto proto      = builder->getModelProto();

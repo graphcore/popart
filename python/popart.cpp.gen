@@ -955,7 +955,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
   .def("reducel1",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducel1(args,
@@ -964,13 +964,13 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                                  name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducel2",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducel2(args,
@@ -979,13 +979,13 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                                  name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducelogsum",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducelogsum(args,
@@ -994,13 +994,13 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                                      name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducelogsumexp",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducelogsumexp(args,
@@ -1009,13 +1009,13 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                                         name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemax",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemax(args,
@@ -1024,13 +1024,13 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemean",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemean(args,
@@ -1039,13 +1039,13 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                                    name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemin",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemin(args,
@@ -1054,13 +1054,13 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reduceprod",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reduceprod(args,
@@ -1069,13 +1069,13 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                                    name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducesum",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducesum(args,
@@ -1084,13 +1084,13 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducesumsquare",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducesumsquare(args,
@@ -1099,7 +1099,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                                         name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("relu",
@@ -2313,7 +2313,7 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
   .def("reducel1",
        [](AiOnnxOpset7 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducel1(args,
@@ -2322,13 +2322,13 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
                                  name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducel2",
        [](AiOnnxOpset7 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducel2(args,
@@ -2337,13 +2337,13 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
                                  name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducelogsum",
        [](AiOnnxOpset7 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducelogsum(args,
@@ -2352,13 +2352,13 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
                                      name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducelogsumexp",
        [](AiOnnxOpset7 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducelogsumexp(args,
@@ -2367,13 +2367,13 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
                                         name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemax",
        [](AiOnnxOpset7 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemax(args,
@@ -2382,13 +2382,13 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemean",
        [](AiOnnxOpset7 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemean(args,
@@ -2397,13 +2397,13 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
                                    name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemin",
        [](AiOnnxOpset7 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemin(args,
@@ -2412,13 +2412,13 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reduceprod",
        [](AiOnnxOpset7 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reduceprod(args,
@@ -2427,13 +2427,13 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
                                    name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducesum",
        [](AiOnnxOpset7 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducesum(args,
@@ -2442,13 +2442,13 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducesumsquare",
        [](AiOnnxOpset7 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducesumsquare(args,
@@ -2457,7 +2457,7 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
                                         name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("relu",
@@ -3689,7 +3689,7 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
   .def("reducel1",
        [](AiOnnxOpset8 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducel1(args,
@@ -3698,13 +3698,13 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
                                  name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducel2",
        [](AiOnnxOpset8 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducel2(args,
@@ -3713,13 +3713,13 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
                                  name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducelogsum",
        [](AiOnnxOpset8 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducelogsum(args,
@@ -3728,13 +3728,13 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
                                      name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducelogsumexp",
        [](AiOnnxOpset8 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducelogsumexp(args,
@@ -3743,13 +3743,13 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
                                         name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemax",
        [](AiOnnxOpset8 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemax(args,
@@ -3758,13 +3758,13 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemean",
        [](AiOnnxOpset8 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemean(args,
@@ -3773,13 +3773,13 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
                                    name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemin",
        [](AiOnnxOpset8 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemin(args,
@@ -3788,13 +3788,13 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reduceprod",
        [](AiOnnxOpset8 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reduceprod(args,
@@ -3803,13 +3803,13 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
                                    name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducesum",
        [](AiOnnxOpset8 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducesum(args,
@@ -3818,13 +3818,13 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducesumsquare",
        [](AiOnnxOpset8 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducesumsquare(args,
@@ -3833,7 +3833,7 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
                                         name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("relu",
@@ -5219,7 +5219,7 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
   .def("reducel1",
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducel1(args,
@@ -5228,13 +5228,13 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
                                  name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducel2",
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducel2(args,
@@ -5243,13 +5243,13 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
                                  name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducelogsum",
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducelogsum(args,
@@ -5258,13 +5258,13 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
                                      name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducelogsumexp",
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducelogsumexp(args,
@@ -5273,13 +5273,13 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
                                         name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemax",
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemax(args,
@@ -5288,13 +5288,13 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemean",
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemean(args,
@@ -5303,13 +5303,13 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
                                    name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemin",
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemin(args,
@@ -5318,13 +5318,13 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reduceprod",
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reduceprod(args,
@@ -5333,13 +5333,13 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
                                    name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducesum",
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducesum(args,
@@ -5348,13 +5348,13 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducesumsquare",
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducesumsquare(args,
@@ -5363,7 +5363,7 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
                                         name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("relu",
@@ -6977,7 +6977,7 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
   .def("reducel1",
        [](AiOnnxOpset10 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducel1(args,
@@ -6986,13 +6986,13 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
                                  name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducel2",
        [](AiOnnxOpset10 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducel2(args,
@@ -7001,13 +7001,13 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
                                  name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducelogsum",
        [](AiOnnxOpset10 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducelogsum(args,
@@ -7016,13 +7016,13 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
                                      name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducelogsumexp",
        [](AiOnnxOpset10 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducelogsumexp(args,
@@ -7031,13 +7031,13 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
                                         name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemax",
        [](AiOnnxOpset10 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemax(args,
@@ -7046,13 +7046,13 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemean",
        [](AiOnnxOpset10 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemean(args,
@@ -7061,13 +7061,13 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
                                    name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemin",
        [](AiOnnxOpset10 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemin(args,
@@ -7076,13 +7076,13 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reduceprod",
        [](AiOnnxOpset10 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reduceprod(args,
@@ -7091,13 +7091,13 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
                                    name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducesum",
        [](AiOnnxOpset10 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducesum(args,
@@ -7106,13 +7106,13 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducesumsquare",
        [](AiOnnxOpset10 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducesumsquare(args,
@@ -7121,7 +7121,7 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
                                         name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("relu",
@@ -8892,7 +8892,7 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
   .def("reducel1",
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducel1(args,
@@ -8901,13 +8901,13 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
                                  name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducel2",
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducel2(args,
@@ -8916,13 +8916,13 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
                                  name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducelogsum",
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducelogsum(args,
@@ -8931,13 +8931,13 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
                                      name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducelogsumexp",
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducelogsumexp(args,
@@ -8946,13 +8946,13 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
                                         name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemax",
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemax(args,
@@ -8961,13 +8961,13 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemean",
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemean(args,
@@ -8976,13 +8976,13 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
                                    name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemin",
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemin(args,
@@ -8991,13 +8991,13 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reduceprod",
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reduceprod(args,
@@ -9006,13 +9006,13 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
                                    name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducesum",
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducesum(args,
@@ -9021,13 +9021,13 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducesumsquare",
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
-          const std::vector<int64_t>& axes,
+          boost::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducesumsquare(args,
@@ -9036,7 +9036,7 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
                                         name);
        },
        py::arg("args"),
-       py::arg("axes") = std::vector<int64_t>(),
+       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("relu",

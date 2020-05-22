@@ -103,7 +103,8 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD1) {
       nInChans      = nOutChans;
     }
 
-    auto reduced     = aiOnnx.reducesum({actIds[nConv]}, {1, 2, 3});
+    auto reduced =
+        aiOnnx.reducesum({actIds[nConv]}, std::vector<int64_t>{{1, 2, 3}});
     float lossLambda = 0.26;
     auto l1 = builder->aiGraphcoreOpset1().l1loss({reduced}, lossLambda);
     std::string proto = builder->getModelProto();

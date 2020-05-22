@@ -1199,12 +1199,12 @@ AiOnnxOpset6::reciprocal(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::reducel1(const std::vector<TensorId>& args,
-                       const std::vector<int64_t>& axes,
+                       boost::optional<std::vector<int64_t>> axes,
                        int64_t keepdims,
                        const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  if (!axes.empty()) {
-    attributes["axes"] = axes;
+  if (axes != boost::optional<std::vector<int64_t>>()) {
+    attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
     attributes["keepdims"] = keepdims;
@@ -1218,12 +1218,12 @@ AiOnnxOpset6::reducel1(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::reducel2(const std::vector<TensorId>& args,
-                       const std::vector<int64_t>& axes,
+                       boost::optional<std::vector<int64_t>> axes,
                        int64_t keepdims,
                        const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  if (!axes.empty()) {
-    attributes["axes"] = axes;
+  if (axes != boost::optional<std::vector<int64_t>>()) {
+    attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
     attributes["keepdims"] = keepdims;
@@ -1237,12 +1237,12 @@ AiOnnxOpset6::reducel2(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::reducelogsum(const std::vector<TensorId>& args,
-                           const std::vector<int64_t>& axes,
+                           boost::optional<std::vector<int64_t>> axes,
                            int64_t keepdims,
                            const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  if (!axes.empty()) {
-    attributes["axes"] = axes;
+  if (axes != boost::optional<std::vector<int64_t>>()) {
+    attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
     attributes["keepdims"] = keepdims;
@@ -1256,12 +1256,12 @@ AiOnnxOpset6::reducelogsum(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::reducelogsumexp(const std::vector<TensorId>& args,
-                              const std::vector<int64_t>& axes,
+                              boost::optional<std::vector<int64_t>> axes,
                               int64_t keepdims,
                               const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  if (!axes.empty()) {
-    attributes["axes"] = axes;
+  if (axes != boost::optional<std::vector<int64_t>>()) {
+    attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
     attributes["keepdims"] = keepdims;
@@ -1275,12 +1275,12 @@ AiOnnxOpset6::reducelogsumexp(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::reducemax(const std::vector<TensorId>& args,
-                        const std::vector<int64_t>& axes,
+                        boost::optional<std::vector<int64_t>> axes,
                         int64_t keepdims,
                         const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  if (!axes.empty()) {
-    attributes["axes"] = axes;
+  if (axes != boost::optional<std::vector<int64_t>>()) {
+    attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
     attributes["keepdims"] = keepdims;
@@ -1294,12 +1294,12 @@ AiOnnxOpset6::reducemax(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::reducemean(const std::vector<TensorId>& args,
-                         const std::vector<int64_t>& axes,
+                         boost::optional<std::vector<int64_t>> axes,
                          int64_t keepdims,
                          const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  if (!axes.empty()) {
-    attributes["axes"] = axes;
+  if (axes != boost::optional<std::vector<int64_t>>()) {
+    attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
     attributes["keepdims"] = keepdims;
@@ -1313,12 +1313,12 @@ AiOnnxOpset6::reducemean(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::reducemin(const std::vector<TensorId>& args,
-                        const std::vector<int64_t>& axes,
+                        boost::optional<std::vector<int64_t>> axes,
                         int64_t keepdims,
                         const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  if (!axes.empty()) {
-    attributes["axes"] = axes;
+  if (axes != boost::optional<std::vector<int64_t>>()) {
+    attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
     attributes["keepdims"] = keepdims;
@@ -1332,12 +1332,12 @@ AiOnnxOpset6::reducemin(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::reduceprod(const std::vector<TensorId>& args,
-                         const std::vector<int64_t>& axes,
+                         boost::optional<std::vector<int64_t>> axes,
                          int64_t keepdims,
                          const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  if (!axes.empty()) {
-    attributes["axes"] = axes;
+  if (axes != boost::optional<std::vector<int64_t>>()) {
+    attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
     attributes["keepdims"] = keepdims;
@@ -1351,12 +1351,12 @@ AiOnnxOpset6::reduceprod(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::reducesum(const std::vector<TensorId>& args,
-                        const std::vector<int64_t>& axes,
+                        boost::optional<std::vector<int64_t>> axes,
                         int64_t keepdims,
                         const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  if (!axes.empty()) {
-    attributes["axes"] = axes;
+  if (axes != boost::optional<std::vector<int64_t>>()) {
+    attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
     attributes["keepdims"] = keepdims;
@@ -1370,12 +1370,12 @@ AiOnnxOpset6::reducesum(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::reducesumsquare(const std::vector<TensorId>& args,
-                              const std::vector<int64_t>& axes,
+                              boost::optional<std::vector<int64_t>> axes,
                               int64_t keepdims,
                               const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  if (!axes.empty()) {
-    attributes["axes"] = axes;
+  if (axes != boost::optional<std::vector<int64_t>>()) {
+    attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
     attributes["keepdims"] = keepdims;
@@ -3729,12 +3729,12 @@ AiOnnxOpset11::range(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset11::reducel1(const std::vector<TensorId>& args,
-                        const std::vector<int64_t>& axes,
+                        boost::optional<std::vector<int64_t>> axes,
                         int64_t keepdims,
                         const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  if (!axes.empty()) {
-    attributes["axes"] = axes;
+  if (axes != boost::optional<std::vector<int64_t>>()) {
+    attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
     attributes["keepdims"] = keepdims;
@@ -3748,12 +3748,12 @@ AiOnnxOpset11::reducel1(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset11::reducel2(const std::vector<TensorId>& args,
-                        const std::vector<int64_t>& axes,
+                        boost::optional<std::vector<int64_t>> axes,
                         int64_t keepdims,
                         const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  if (!axes.empty()) {
-    attributes["axes"] = axes;
+  if (axes != boost::optional<std::vector<int64_t>>()) {
+    attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
     attributes["keepdims"] = keepdims;
@@ -3767,12 +3767,12 @@ AiOnnxOpset11::reducel2(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset11::reducelogsum(const std::vector<TensorId>& args,
-                            const std::vector<int64_t>& axes,
+                            boost::optional<std::vector<int64_t>> axes,
                             int64_t keepdims,
                             const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  if (!axes.empty()) {
-    attributes["axes"] = axes;
+  if (axes != boost::optional<std::vector<int64_t>>()) {
+    attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
     attributes["keepdims"] = keepdims;
@@ -3786,12 +3786,12 @@ AiOnnxOpset11::reducelogsum(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset11::reducelogsumexp(const std::vector<TensorId>& args,
-                               const std::vector<int64_t>& axes,
+                               boost::optional<std::vector<int64_t>> axes,
                                int64_t keepdims,
                                const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  if (!axes.empty()) {
-    attributes["axes"] = axes;
+  if (axes != boost::optional<std::vector<int64_t>>()) {
+    attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
     attributes["keepdims"] = keepdims;
@@ -3805,12 +3805,12 @@ AiOnnxOpset11::reducelogsumexp(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset11::reducemax(const std::vector<TensorId>& args,
-                         const std::vector<int64_t>& axes,
+                         boost::optional<std::vector<int64_t>> axes,
                          int64_t keepdims,
                          const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  if (!axes.empty()) {
-    attributes["axes"] = axes;
+  if (axes != boost::optional<std::vector<int64_t>>()) {
+    attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
     attributes["keepdims"] = keepdims;
@@ -3824,12 +3824,12 @@ AiOnnxOpset11::reducemax(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset11::reducemean(const std::vector<TensorId>& args,
-                          const std::vector<int64_t>& axes,
+                          boost::optional<std::vector<int64_t>> axes,
                           int64_t keepdims,
                           const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  if (!axes.empty()) {
-    attributes["axes"] = axes;
+  if (axes != boost::optional<std::vector<int64_t>>()) {
+    attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
     attributes["keepdims"] = keepdims;
@@ -3843,12 +3843,12 @@ AiOnnxOpset11::reducemean(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset11::reducemin(const std::vector<TensorId>& args,
-                         const std::vector<int64_t>& axes,
+                         boost::optional<std::vector<int64_t>> axes,
                          int64_t keepdims,
                          const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  if (!axes.empty()) {
-    attributes["axes"] = axes;
+  if (axes != boost::optional<std::vector<int64_t>>()) {
+    attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
     attributes["keepdims"] = keepdims;
@@ -3862,12 +3862,12 @@ AiOnnxOpset11::reducemin(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset11::reduceprod(const std::vector<TensorId>& args,
-                          const std::vector<int64_t>& axes,
+                          boost::optional<std::vector<int64_t>> axes,
                           int64_t keepdims,
                           const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  if (!axes.empty()) {
-    attributes["axes"] = axes;
+  if (axes != boost::optional<std::vector<int64_t>>()) {
+    attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
     attributes["keepdims"] = keepdims;
@@ -3881,12 +3881,12 @@ AiOnnxOpset11::reduceprod(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset11::reducesum(const std::vector<TensorId>& args,
-                         const std::vector<int64_t>& axes,
+                         boost::optional<std::vector<int64_t>> axes,
                          int64_t keepdims,
                          const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  if (!axes.empty()) {
-    attributes["axes"] = axes;
+  if (axes != boost::optional<std::vector<int64_t>>()) {
+    attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
     attributes["keepdims"] = keepdims;
@@ -3900,12 +3900,12 @@ AiOnnxOpset11::reducesum(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset11::reducesumsquare(const std::vector<TensorId>& args,
-                               const std::vector<int64_t>& axes,
+                               boost::optional<std::vector<int64_t>> axes,
                                int64_t keepdims,
                                const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  if (!axes.empty()) {
-    attributes["axes"] = axes;
+  if (axes != boost::optional<std::vector<int64_t>>()) {
+    attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
     attributes["keepdims"] = keepdims;

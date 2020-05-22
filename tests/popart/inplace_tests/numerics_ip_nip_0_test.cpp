@@ -186,8 +186,9 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
 
     TensorId singleTensor;
     if (useInitialReductionToAvoidLayoutSearch) {
-      auto reducedOnFinal = aiOnnx.reducesum({inId}, {2}, false);
-      singleTensor        = aiOnnx.sigmoid({reducedOnFinal});
+      auto reducedOnFinal =
+          aiOnnx.reducesum({inId}, std::vector<int64_t>{{2}}, false);
+      singleTensor = aiOnnx.sigmoid({reducedOnFinal});
     } else {
       singleTensor = aiOnnx.sigmoid({inId});
     }
@@ -215,7 +216,8 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
            {"AddRhsInplace", 100.0f + fdisPref(eng)}});
     }
 
-    auto out = aiOnnx.reducesum({singleTensor}, {0, 1}, false);
+    auto out =
+        aiOnnx.reducesum({singleTensor}, std::vector<int64_t>{{0, 1}}, false);
     builder->addOutputTensor(out);
 
     auto proto      = builder->getModelProto();

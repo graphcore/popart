@@ -10,7 +10,7 @@ namespace popart {
 class ReduceLogSumOp : public ReduceOp {
 public:
   ReduceLogSumOp(const OperatorIdentifier &_opid,
-                 const std::vector<int64_t> &axes,
+                 const boost::optional<std::vector<int64_t>> &axes,
                  const int64_t keepdims,
                  const Op::Settings &settings);
 
