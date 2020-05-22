@@ -61,9 +61,6 @@
 #include <popart/topocons.hpp>
 
 #include <popart/op/hostreducevarupdate.hpp>
-#include <popart/op/sgd1acclreduce.hpp>
-#include <popart/op/sgd1acclupdate.hpp>
-#include <popart/op/sgd1varupdate.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/popx/op/ipucopyx.hpp>
 #include <popart/tensornames.hpp>
@@ -154,11 +151,8 @@ private:
     std::set<Op *> toRerun;
     auto isSpecialCaseGradOp = [](Op *x) {
       return x->getIr().getSessionOptions().enableGradientAccumulation &&
-             (dynamic_cast<SGD1AcclReduceOp *>(x) ||
-              dynamic_cast<SGD1VarUpdateOp *>(x) ||
-              dynamic_cast<SGD1AcclUpdateOp *>(x) ||
-              dynamic_cast<GradCopyToHostOp *>(x) ||
-              dynamic_cast<GradCopyFromHostOp *>(x));
+             x->settings.executionContext ==
+                 ExecutionContext::AccumulateOuterFragment;
     };
 
     // Ensure op is post loss and not a special case grad op.
@@ -2202,11 +2196,8 @@ void Devicex::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
     // outside the "main" loop of the fowards and backwards passes.
     // special case Op 1:
     if (ir().getSessionOptions().enableGradientAccumulation &&
-        (dynamic_cast<SGD1AcclReduceOp *>(op) ||
-         dynamic_cast<SGD1VarUpdateOp *>(op) ||
-         dynamic_cast<SGD1AcclUpdateOp *>(op) ||
-         dynamic_cast<GradCopyToHostOp *>(op) ||
-         dynamic_cast<GradCopyFromHostOp *>(op))) {
+        op->settings.executionContext ==
+            ExecutionContext::AccumulateOuterFragment) {
       outerLoopFragEmpty = false;
       growOpx(opx, seqs[&progs.accumulateOuterFragment()]);
     }
@@ -2253,11 +2244,8 @@ void Devicex::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
   if (op->copiesOptimizerTensors()) {
     growOpx(opx, seqs[&progs.streamOptimizerFromHostFragment()]);
   } else if (ir().getSessionOptions().enableGradientAccumulation &&
-             (dynamic_cast<SGD1AcclReduceOp *>(op) ||
-              dynamic_cast<SGD1VarUpdateOp *>(op) ||
-              dynamic_cast<SGD1AcclUpdateOp *>(op) ||
-              dynamic_cast<GradCopyToHostOp *>(op) ||
-              dynamic_cast<GradCopyFromHostOp *>(op))) {
+             op->settings.executionContext ==
+                 ExecutionContext::AccumulateOuterFragment) {
     outerLoopFragEmpty = false;
     growOpx(opx, seqs[&progs.accumulateOuterFragment()]);
   } else {
