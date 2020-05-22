@@ -37,8 +37,7 @@ set(sources
 
 if (POPLAR_BACKEND)
 message( STATUS "Building WITH Poplar IPU backend")
-find_package(poplar REQUIRED CONFIG)
-find_package(poplibs REQUIRED CONFIG)
+find_package(Poplar REQUIRED)
 
 # concatenate poplar backend sources to the list of files to compile
 set(sources
@@ -77,6 +76,8 @@ target_include_directories (popart SYSTEM PUBLIC
     ${Boost_INCLUDE_DIRS}
     ${SPDLOG_INCLUDE_DIRS}
     ${CBLAS_INCLUDE_DIRS}
+    ${POPLAR_INCLUDE_DIR}
+    ${POPLIBS_INCLUDE_DIR}
     ${GCL_INCLUDE_DIR}
     )
 
@@ -88,15 +89,16 @@ target_link_libraries(popart
   ${CBLAS_LIBRARIES}
   ${Boost_LIBRARIES}
   ${SPDLOG_LIBRARIES}
+  ${POPLAR_LIB}
+  ${POPLIN_LIB}
+  ${POPNN_LIB}
+  ${POPOPS_LIB}
+  ${POPRAND_LIB}
+  ${POPUTIL_LIB}
   ${GCL_LIBRARIES}
   ${CMAKE_DL_LIBS}
   ${CMAKE_THREAD_LIBS_INIT}
 )
-
-if (POPLAR_BACKEND)
-  target_link_libraries(popart poplar)
-  target_link_libraries(popart poplin popnn popops poprand poputil)
-endif()
 
 if (TARGET poprithms-static)
   target_link_libraries(popart poprithms-static)
