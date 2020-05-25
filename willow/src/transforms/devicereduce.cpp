@@ -6,6 +6,7 @@
 #include <popart/op.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/sgd0varupdate.hpp>
+#include <popart/op/sgd1accumulate.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
@@ -26,13 +27,26 @@ bool DeviceReduce::apply(Graph &graph) const {
 
   for (Op *op : graph.getOpSchedule({})) {
 
+    InIndex inIndex = -1;
+
     const bool isVar0UpdateOp = op->isConvertibleTo<SGD0VarUpdateOp>();
-    if (!isVar0UpdateOp ||
-        !op->input->hasIndex(SGD0VarUpdateOp::getUpdaterInIndex())) {
+    if (isVar0UpdateOp &&
+        op->input->hasIndex(SGD0VarUpdateOp::getUpdaterInIndex())) {
+      inIndex = SGD0VarUpdateOp::getUpdaterInIndex();
+    }
+
+    const bool isSGD1AccumOp = op->isConvertibleTo<SGD1AccumulateOp>();
+    if (isSGD1AccumOp &&
+        !graph.getIr().getSessionOptions().enableGradientAccumulation &&
+        op->input->hasIndex(SGD1AccumulateOp::getUpdaterInIndex())) {
+      inIndex = SGD1AccumulateOp::getUpdaterInIndex();
+    }
+
+    if (inIndex < 0) {
       continue;
     }
 
-    Tensor *grad = op->input->tensor(SGD0VarUpdateOp::getUpdaterInIndex());
+    Tensor *grad = op->input->tensor(inIndex);
 
     auto settings = op->settings;
 
@@ -53,7 +67,7 @@ bool DeviceReduce::apply(Graph &graph) const {
     replicatedAllReduce->setup();
 
     op->disconnectInTensor(grad);
-    op->connectInTensor(SGD0VarUpdateOp::getUpdaterInIndex(), reducedTensorId);
+    op->connectInTensor(inIndex, reducedTensorId);
 
     logging::transform::trace("[DeviceReduce] {} -> {}",
                               replicatedAllReduce->debugName(),

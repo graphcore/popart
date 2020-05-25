@@ -569,8 +569,8 @@ void Devicex::remoteBufferWeightsToHost() {
       if (tensor->cacheInfo.isSharded()) {
         // Replicated weight sharding, each replica holds 1/repfactor
         // parts of the weight
-        auto cbr =
-            getCollectiveBalancedReorder(getCacheArgTensorId(tensor->id));
+        auto cbr = getCollectiveBalancedReorder(
+            getCacheArgTensorId(stripAllReservedPrefixes(tensor->id)));
 
         auto elemSize = cbr->getElementByteSize();
         auto nelms    = cbr->getNumRearrangedTensorElems();
@@ -654,8 +654,7 @@ void Devicex::weightsToHost(
     // copy from the host stream memory points to the
     // addresses on onnxModelData
     for (auto id : ir().getTensorIds(TensorType::Variable)) {
-      if (!ir().streamingIsDisabledForTensor(id) ||
-          ir().getTensor(id)->cacheInfo.isCached()) {
+      if (!ir().storingIsDisabledForTensor(id)) {
         auto found = onnxModelData.find(id);
         if (found == onnxModelData.end()) {
           std::ostringstream oss;
@@ -912,8 +911,8 @@ void Devicex::remoteBufferWeightsFromHost() {
       if (tensor->cacheInfo.isSharded()) {
         // Replicated weight sharding, each replica holds 1/repfactor
         // parts of the weight
-        auto cbr =
-            getCollectiveBalancedReorder(getCacheArgTensorId(tensor->id));
+        auto cbr = getCollectiveBalancedReorder(
+            getCacheArgTensorId(stripAllReservedPrefixes(tensor->id)));
 
         auto elemSize = cbr->getElementByteSize();
         auto nelms    = cbr->getNumRearrangedTensorElems();
@@ -2006,6 +2005,10 @@ Devicex::initTensorByCloningTask(Op *op, TensorId srcId, TensorId dstId) {
     logging::debug("Cloning tensor {} to {}", srcId, dstId);
     auto src = opx->get(srcId);
     auto dst = opx->graph().clone(src, dstId);
+
+    if (tensors.hasViewChangers(srcId)) {
+      tensors.setViewChangers(dstId, tensors.getViewChangers(srcId));
+    }
     tensors.insert(dstId, dst);
     return SequenceMap();
   };

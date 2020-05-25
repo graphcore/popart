@@ -715,12 +715,13 @@ bool BatchSerialize::apply(Graph &graph) const {
     bool nextSection  = false;
     for (Op *op : schedule) {
       logging::transform::trace(
-          "[BatchSerialize] BSP: {} S: {} P: {} OP: {}",
+          "[BatchSerialize] BSP: {} S: {} P: {} prio: {} OP: {}",
           op->hasBatchSerializedPhase()
               ? std::to_string(op->getBatchSerializedPhase())
               : "*",
           section,
           position,
+          op->settings.schedulePriority,
           op->debugName());
       if (op->hasBatchSerializedPhase()) {
         auto bsp = op->getBatchSerializedPhase();

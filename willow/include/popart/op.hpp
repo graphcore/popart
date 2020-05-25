@@ -328,6 +328,9 @@ public:
   // from one IPU to another
   virtual bool copiesOptimizerTensors() const;
 
+  // Op that is part of the optimizer
+  virtual bool isOptimizerOp() const;
+
   // The random seed tensor used to set the IPU's RNGs is created
   // in the IR, and connected to the Ops that require it
   virtual bool requiresRandomSeed() const;

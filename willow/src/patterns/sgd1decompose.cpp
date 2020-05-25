@@ -180,7 +180,7 @@ bool SGD1Decompose::apply(Op *op) const {
     // If we are not going to stream the accl tensors from the host,
     // don't add them to the set of additional tensors to be saved
     // in the onnx modelproto
-    if (!ir.streamingIsDisabledForTensor(acclIntoAccumulatorId)) {
+    if (!ir.storingIsDisabledForTensor(acclIntoAccumulatorId)) {
       ir.additionalModelProtoTensors.insert(acclIntoAccumulatorId);
     }
   }

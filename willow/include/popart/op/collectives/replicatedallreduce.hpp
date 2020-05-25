@@ -28,6 +28,14 @@ public:
   view::Regions aliases(InIndex, OutIndex) const override;
   std::unique_ptr<Op> clone() const final;
   void setup() final;
+
+  // TODO https://phabricator.sourcevertex.net/T12562 for outlining this
+  bool isOutlineable() const final {
+    return settings.executionContext ==
+                   ExecutionContext::AccumulateOuterFragment
+               ? false
+               : true;
+  }
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
 };
 
