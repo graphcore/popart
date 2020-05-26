@@ -148,6 +148,7 @@ BOOST_AUTO_TEST_CASE(OverlapComputeExchangeTest_0) {
       auto opts                               = SessionOptions();
       opts.virtualGraphMode                   = VirtualGraphMode::Manual;
       opts.instrumentWithHardwareCycleCounter = true;
+      opts.hardwareInstrumentations           = {Instrumentation::Inner};
 
       auto session = popart::InferenceSession::createFromOnnxModel(
           proto,
