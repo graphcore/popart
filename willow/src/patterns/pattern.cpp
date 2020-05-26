@@ -37,6 +37,7 @@ void Pattern::transferBaseProperties(Op *from, Op *to) const {
     to->setBatchSerializedPhase(from->getBatchSerializedPhase());
   }
 
+  to->settings.scope            = from->settings.scope;
   to->settings.recomputeType    = from->settings.recomputeType;
   to->settings.cacheType        = from->settings.cacheType;
   to->fromLoss                  = from->fromLoss;

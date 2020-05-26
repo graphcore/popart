@@ -11,6 +11,9 @@ add_popart_cpp_unit_test(splitgather_0_patterns_test
 add_popart_cpp_unit_test(splitgather_default_patterns_test 
                           splitgather_default_patterns_test.cpp VARIANTS "IpuModel")
 
+add_popart_cpp_unit_test(pattern_test 
+                          pattern_test.cpp)
+
 add_popart_cpp_unit_test(patterns_test 
                           patterns_test.cpp)
 
