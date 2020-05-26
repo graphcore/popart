@@ -81,7 +81,8 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip1) {
     auto inTensor    = builder->addInputTensor(inInfo);
     auto firstTensor = inTensor;
     if (useInitialReductionToAvoidLayoutSearch) {
-      firstTensor = aiOnnx.reducesum({firstTensor}, {2}, false);
+      firstTensor =
+          aiOnnx.reducesum({firstTensor}, std::vector<int64_t>{{2}}, false);
     }
 
     std::vector<TensorId> activeTensors;
@@ -187,7 +188,8 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip1) {
     }
     auto finalSum = activeTensors[0];
 
-    auto out = aiOnnx.reducesum({finalSum}, {0, 1}, false);
+    auto out =
+        aiOnnx.reducesum({finalSum}, std::vector<int64_t>{{0, 1}}, false);
     builder->addOutputTensor(out);
 
     auto proto      = builder->getModelProto();

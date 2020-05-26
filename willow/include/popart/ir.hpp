@@ -194,6 +194,7 @@ public:
   // if the tensor is returned to user (passes call to DataFlow).
   bool isAnchored(const TensorId &) const;
   bool streamingIsDisabledForTensor(const TensorId &) const;
+  bool storingIsDisabledForTensor(const TensorId &) const;
   void append(std::stringstream &) const;
 
   // Serialise the ir into the stream based on the format. In circumstances

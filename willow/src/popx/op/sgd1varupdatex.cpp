@@ -48,6 +48,15 @@ void SGD1VarUpdateOpx::grow(poplar::program::Sequence &prog) const {
                                prog,
                                debugPrefix("constScaledSubtractSGD1"));
   }
+
+  if (hasInViewChangers(SGD1VarUpdateOp::getVarToUpdateInIndex())) {
+    setOutViewChangers(
+        SGD1VarUpdateOp::getUpdatedVarOutIndex(),
+        getInViewChangers(SGD1VarUpdateOp::getVarToUpdateInIndex()));
+  }
+  // output is a reference to the updated input
+  setOutTensor(SGD1VarUpdateOp::getUpdatedVarOutIndex(),
+               getInTensor(SGD1VarUpdateOp::getVarToUpdateInIndex()));
 }
 
 namespace {

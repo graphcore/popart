@@ -333,6 +333,9 @@ PopPrograms::getMainProgramFromPipelineFragments() const {
 }
 
 poplar::program::Sequence PopPrograms::program() const {
+  auto instrumentations =
+      dv_p->ir().getSessionOptions().hardwareInstrumentations;
+
   poplar::program::Sequence outer;
   if (dv_p->ir().getSessionOptions().enablePipelining) {
     outer.add(getMainProgramFromPipelineFragments());
@@ -354,7 +357,9 @@ poplar::program::Sequence PopPrograms::program() const {
       prog.add(accumulateOuterFragment());
     }
 
-    if (dv_p->ir().getSessionOptions().instrumentWithHardwareCycleCounter) {
+    if (dv_p->ir().getSessionOptions().instrumentWithHardwareCycleCounter &&
+        instrumentations.find(Instrumentation::Inner) !=
+            instrumentations.end()) {
       // Instrument first tile of every IPU for inner program
       for (size_t i = 0; i < dv_p->getDeviceInfo()->getNumIpus(); ++i) {
         std::stringstream ss;
@@ -371,7 +376,8 @@ poplar::program::Sequence PopPrograms::program() const {
     outer.add(toHostFinalCopyFragment());
   }
 
-  if (dv_p->ir().getSessionOptions().instrumentWithHardwareCycleCounter) {
+  if (dv_p->ir().getSessionOptions().instrumentWithHardwareCycleCounter &&
+      instrumentations.find(Instrumentation::Outer) != instrumentations.end()) {
     dv_p->instrumentWithHardwareCycleCounter(outer);
   }
 

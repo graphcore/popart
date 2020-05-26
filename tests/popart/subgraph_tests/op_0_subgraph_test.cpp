@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
       mulOutIds.push_back(aiOnnx.mul({reluIds.back(), weightIds[i]}));
       reluIds.push_back(aiOnnx.relu({mulOutIds.back()}));
     }
-    auto out = aiOnnx.reducesum({reluIds.back()});
+    auto out = aiOnnx.reducesum({reluIds.back()}, std::vector<int64_t>{});
     auto l1  = builder->aiGraphcoreOpset1().l1loss({out}, 0.1);
 
     builder->addOutputTensor(out);
@@ -324,7 +324,7 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
   auto o4  = aiOnnx.conv({o3, w4}, {1, 1}, 1, {1, 1}, {0, 0, 0, 0}, {1, 1});
   auto out = aiOnnx.conv({o4, w5}, {1, 1}, 1, {1, 1}, {0, 0, 0, 0}, {1, 1});
 
-  // auto out = aiOnnx.reducesum({o1});
+  // auto out = aiOnnx.reducesum({o1}, std::vector<int64_t>{});
   auto l1 = builder->aiGraphcoreOpset1().l1loss({out}, 0.1);
 
   auto proto      = builder->getModelProto();

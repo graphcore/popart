@@ -63,6 +63,12 @@ enum class SyntheticDataMode {
   N             // The number of SyntheticDataModes, the final enum
 };
 
+enum class Instrumentation {
+  Outer = 0, // Outer loop instrumentation, graph over all IPUs
+  Inner,     // Inner loop instrumentation, graph per IPU
+  N          // The number of Instrumentations, the final enum
+};
+
 std::string toString(VirtualGraphMode);
 std::ostream &operator<<(std::ostream &, VirtualGraphMode);
 
@@ -192,7 +198,8 @@ struct SessionOptions {
   /// Add instrumentation to your program to count the number of device cycles
   /// (a single tile, on a single IPU) that your main program takes to execute.
   /// Expect this to have a small detrimental impact on performance.
-  bool instrumentWithHardwareCycleCounter = false;
+  bool instrumentWithHardwareCycleCounter            = false;
+  std::set<Instrumentation> hardwareInstrumentations = {Instrumentation::Outer};
 
   /// If true, the weight gradient tensors are not saved off the device
   /// when devicex.weightsFromHost() is called. Note: this option is

@@ -60,6 +60,11 @@ Op *HostReduce::insertGradCopyToHostOp(Op *varUpdateOp,
   gradCopyOp->settings.schedulePriority = std::numeric_limits<double>::max();
   gradCopyOp->setup();
 
+  if (gradCopyOp->getIr().getSessionOptions().enableGradientAccumulation) {
+    gradCopyOp->settings.executionContext =
+        ExecutionContext::AccumulateOuterFragment;
+  }
+
   return gradCopyOp;
 }
 
@@ -102,6 +107,11 @@ Op *HostReduce::insertGradCopyFromHostOp(Op *varUpdateOp,
 
   gradCopyOp->settings.schedulePriority = std::numeric_limits<double>::lowest();
   gradCopyOp->setup();
+
+  if (gradCopyOp->getIr().getSessionOptions().enableGradientAccumulation) {
+    gradCopyOp->settings.executionContext =
+        ExecutionContext::AccumulateOuterFragment;
+  }
 
   return gradCopyOp;
 }

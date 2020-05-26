@@ -6,9 +6,9 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/onnxutil.hpp>
+#include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/concat.hpp>
 #include <popart/op/flatten.hpp>
-#include <popart/op/sgd1acclreduce.hpp>
 #include <popart/op/sgd1acclupdate.hpp>
 #include <popart/op/sgd1accumulate.hpp>
 #include <popart/op/sgd1combo.hpp>
@@ -180,7 +180,7 @@ bool SGD1Decompose::apply(Op *op) const {
     // If we are not going to stream the accl tensors from the host,
     // don't add them to the set of additional tensors to be saved
     // in the onnx modelproto
-    if (!ir.streamingIsDisabledForTensor(acclIntoAccumulatorId)) {
+    if (!ir.storingIsDisabledForTensor(acclIntoAccumulatorId)) {
       ir.additionalModelProtoTensors.insert(acclIntoAccumulatorId);
     }
   }
@@ -197,8 +197,9 @@ bool SGD1Decompose::apply(Op *op) const {
     //
     // Outputs:
     // (2) alias of input
-    auto reduceOpUp = std::make_unique<SGD1AcclReduceOp>(
-        acclIntoReduceId, Op::Settings(graph, combo->name() + "_reduce"));
+    auto reduceOpUp = std::make_unique<ReplicatedAllReduceInplaceOp>(
+        Onnx::CustomOperators::ReplicatedAllReduceInplace,
+        Op::Settings(graph, combo->name() + "_reduce"));
     auto reduceOp = reduceOpUp.get();
     transferBaseProperties(combo, reduceOp);
     graph.moveIntoGraph(std::move(reduceOpUp));
@@ -207,15 +208,19 @@ bool SGD1Decompose::apply(Op *op) const {
     logging::pattern::trace("Connecting input {} to {} at {}",
                             acclIntoReduceId,
                             reduceOp->str(),
-                            VarUpdateOp::getVarToUpdateInIndex());
-    reduceOp->connectInTensor(VarUpdateOp::getVarToUpdateInIndex(),
+                            ReplicatedAllReduceInplaceOp::getInIndex());
+    reduceOp->connectInTensor(ReplicatedAllReduceInplaceOp::getInIndex(),
                               acclIntoReduceId);
 
     // (2)
-    reduceOp->createAndConnectOutTensor(VarUpdateOp::getUpdatedVarOutIndex(),
-                                        acclIntoUpdateId);
+    reduceOp->createAndConnectOutTensor(
+        ReplicatedAllReduceInplaceOp::getOutIndex(), acclIntoUpdateId);
 
     reduceOp->setup();
+    if (ir.getSessionOptions().enableGradientAccumulation) {
+      reduceOp->settings.executionContext =
+          ExecutionContext::AccumulateOuterFragment;
+    }
   }
 
   // AcclUpdate Op
@@ -263,6 +268,11 @@ bool SGD1Decompose::apply(Op *op) const {
                                           updatedAcclId);
   acclUpdateOp->setup();
 
+  if (ir.getSessionOptions().enableGradientAccumulation) {
+    acclUpdateOp->settings.executionContext =
+        ExecutionContext::AccumulateOuterFragment;
+  }
+
   // VarUpdate
   //
   // Inputs
@@ -302,6 +312,11 @@ bool SGD1Decompose::apply(Op *op) const {
   sgd1VarUpdateOp->connectOutTensor(VarUpdateOp::getUpdatedVarOutIndex(),
                                     updatedWeightId);
   sgd1VarUpdateOp->setup();
+
+  if (ir.getSessionOptions().enableGradientAccumulation) {
+    sgd1VarUpdateOp->settings.executionContext =
+        ExecutionContext::AccumulateOuterFragment;
+  }
 
   // var update before accl update
   graph.topoCons->insert(sgd1VarUpdateOp, acclUpdateOp);

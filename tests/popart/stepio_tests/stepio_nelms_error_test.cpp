@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE(CorrectBufferNElmsTest0) {
   auto aiGraphcore = builder->aiGraphcoreOpset1();
   auto in0         = builder->addInputTensor(inInfo);
   auto s1          = aiGraphcore.scale({in0}, 2.0);
-  auto out         = aiOnnx.reducesum({s1}, {0}, false);
+  auto out         = aiOnnx.reducesum({s1}, std::vector<int64_t>{{0}}, false);
   builder->addOutputTensor(out);
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);

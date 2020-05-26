@@ -30,6 +30,7 @@ static constexpr const double ipuCopyPriority       = -9998.0;
 static constexpr const double allReducePriority     = -9999.0;
 static constexpr const double varUpdatePriority     = -9999.0;
 static constexpr const double cacheStorePriority    = -9999.0;
+static constexpr const double acclStateLoadPriority = -9999.0;
 
 std::size_t PingPong::id(int pass) {
   return typeid(PingPong).hash_code() + pass;
@@ -310,16 +311,21 @@ bool PingPong::apply(Graph &graph) const {
       num_ipus,
       total_num_ipus);
 
-  if (pass == 1 || pass == 2) {
-    auto schedule = graph.getOpSchedule({});
+  auto schedule = graph.getOpSchedule({});
 
+  if (pass == 1 || pass == 2) {
     // Set all variable tensors to cached.
     // TODO T19644: Offer more refined scheme
     for (TensorId id : graph.getTensors().getIds(TensorType::Variable)) {
       auto tensor = graph.getTensors().get(id);
-      tensor->cacheInfo.setCached(true);
+      if (!tensor->cacheInfo.isCached()) {
+        logging::transform::debug("[PingPong] Set Variable {} to cached.", id);
+        tensor->cacheInfo.setCached(true);
+      }
     }
+  }
 
+  if (pass == 1) {
     float cumulative_cost = 0.f;
 
     for (Op *op : schedule) {
@@ -390,7 +396,7 @@ bool PingPong::apply(Graph &graph) const {
     int num_ops_without_phase = 0;
     // Need to get the schedule every time,
     // because setting phases can change schedule order
-    for (Op *op : graph.getOpSchedule({})) {
+    for (Op *op : schedule) {
       if (!op->hasPingPongPhase()) {
         // Check which phase the consumers of the output are in
         op->inheritPlacementAttributes(true);
@@ -411,12 +417,14 @@ bool PingPong::apply(Graph &graph) const {
   }
 
   // Tensor cache store/load inserted in the third ping-pong pass only
-  if (pass == 3) {
+  if (pass == 2) {
+    std::set<Op *, POpCmp> opsToSetup;
+
     // Make sure no priorities outside of the range needed by
     // pingpong are being used.
     compressPriorities(graph);
 
-    for (Op *op : graph.getOpSchedule({})) {
+    for (Op *op : schedule) {
       sanitizePlacementAnnotation(
           graph, op, op->getPingPongPhase(), num_stages);
       // Assign correct schedulePriority to all inter-IPU copies
@@ -690,9 +698,10 @@ bool PingPong::apply(Graph &graph) const {
       TensorId gatheredTensorId = tensor->id;
 
       for (auto &phaseLoadStore : loadStoreInPhase) {
-        PingPongPhase currentPingPongPhase = phaseLoadStore.first;
-        CacheLoadOp *cacheLoad             = nullptr;
-        CacheStoreOp *cacheStore           = nullptr;
+        PingPongPhase currentPingPongPhase         = phaseLoadStore.first;
+        CacheLoadOp *cacheLoad                     = nullptr;
+        CacheStoreOp *cacheStore                   = nullptr;
+        ReplicatedAllGatherOp *replicatedAllGather = nullptr;
 
         // Load
         if (phaseLoadStore.second.first) {
@@ -707,13 +716,22 @@ bool PingPong::apply(Graph &graph) const {
             auto cacheLoadOp = std::make_unique<CacheLoadOp>(
                 Onnx::CustomOperators::CacheLoad, settings);
             cacheLoad = cacheLoadOp.get();
-            // Very low schedulePriority on loads (at the end of the previous
-            // phase)
-            cacheLoad->settings.schedulePriority = cacheLoadPriority;
-            cacheLoad->settings.recomputeType    = RecomputeType::Checkpoint;
-            // CacheLoad at the end of the previous phase, so that load
-            // is executed before inter-IPU copy
-            cacheLoad->setPingPongPhase(currentPingPongPhase - 1);
+
+            if (tensor->isAcclTensor()) {
+              // Optimizer state: Load as late as possible
+              cacheLoad->settings.schedulePriority = acclStateLoadPriority;
+              // CacheLoad in current phase
+              cacheLoad->setPingPongPhase(currentPingPongPhase);
+            } else {
+              // Very low schedulePriority on loads (at the end of the previous
+              // phase)
+              cacheLoad->settings.schedulePriority = cacheLoadPriority;
+              // CacheLoad at the end of the previous phase, so that load
+              // is executed before inter-IPU copy
+              cacheLoad->setPingPongPhase(currentPingPongPhase - 1);
+            }
+
+            cacheLoad->settings.recomputeType = RecomputeType::Checkpoint;
             cacheLoad->setVirtualGraphId(loadStoreVGID);
             graph.moveIntoGraph(std::move(cacheLoadOp));
 
@@ -748,9 +766,16 @@ bool PingPong::apply(Graph &graph) const {
                                            TensorType::Cache,
                                            InitType::NoInit,
                                            settings);
-              Op *init                        = initOp.get();
-              init->settings.schedulePriority = initPriority;
-              init->setPingPongPhase(currentPingPongPhase - 1);
+              Op *init = initOp.get();
+
+              if (tensor->isAcclTensor()) {
+                init->settings.schedulePriority = acclStateLoadPriority;
+                init->setPingPongPhase(currentPingPongPhase);
+              } else {
+                init->settings.schedulePriority = initPriority;
+                init->setPingPongPhase(currentPingPongPhase - 1);
+              }
+
               init->setVirtualGraphId(loadStoreVGID);
               graph.moveIntoGraph(std::move(initOp));
               init->createAndConnectOutTensor(InitOp::getOutIndex(),
@@ -776,7 +801,7 @@ bool PingPong::apply(Graph &graph) const {
             // Do CacheLoad on IO tiles
             cacheLoad->settings.useIoTiles = tensorUseIoTiles;
 
-            if (tensorReplicatedWeightSharding) {
+            if (tensorReplicatedWeightSharding && !tensor->isAcclTensor()) {
               // Execute replicated allgather to collect the full weight
               // tensor from the individual replicas
               auto replicatedAllGatherOp =
@@ -784,7 +809,7 @@ bool PingPong::apply(Graph &graph) const {
                       Onnx::CustomOperators::ReplicatedAllGather,
                       settings,
                       tensor->info);
-              auto replicatedAllGather = replicatedAllGatherOp.get();
+              replicatedAllGather = replicatedAllGatherOp.get();
               replicatedAllGather->settings.schedulePriority =
                   allGatherPriority;
               replicatedAllGather->settings.recomputeType =
@@ -885,20 +910,29 @@ bool PingPong::apply(Graph &graph) const {
 
         // Cache load has to take place before associated cache store
         if (cacheLoad && cacheStore) {
-          graph.topoCons.get()->insert(cacheLoad, cacheStore);
+          graph.topoCons->insert(cacheLoad, cacheStore);
         }
 
         if (cacheStore) {
           // Any modification has to take place before the cache store
           for (Op *modifyingOp : modifiersInPhase[currentPingPongPhase]) {
-            graph.topoCons.get()->insert(modifyingOp, cacheStore);
+            graph.topoCons->insert(modifyingOp, cacheStore);
           }
         }
 
         for (Op *consumerOp : consumersInPhase[currentPingPongPhase]) {
-          if (cacheLoad) {
-            // Loading has to take place before the consumption
-            graph.topoCons.get()->insert(cacheLoad, consumerOp);
+          if (tensor->isAcclTensor()) {
+            if (cacheLoad) {
+              graph.topoCons->insert(cacheLoad, consumerOp, true);
+            }
+            if (replicatedAllGather) {
+              graph.topoCons->insert(replicatedAllGather, consumerOp, true);
+            }
+          } else {
+            if (cacheLoad) {
+              // Loading has to take place before the consumption
+              graph.topoCons->insert(cacheLoad, consumerOp);
+            }
           }
 
           // Logging graph change
@@ -919,88 +953,126 @@ bool PingPong::apply(Graph &graph) const {
           // Disconnect original tensor and wire up loaded tensor
           auto indices = consumerOp->input->indices(tensor);
           for (auto i : indices) {
-            auto *copyOp          = dynamic_cast<IpuCopyOp *>(consumerOp);
-            auto *sgd0VarUpdateOp = dynamic_cast<SGD0VarUpdateOp *>(consumerOp);
+            auto *copyOp = dynamic_cast<IpuCopyOp *>(consumerOp);
 
             if (copyOp) {
               auto sourceIpu = copyOp->getSourceIpus().at(tensor->id);
               copyOp->disconnectInTensor(i, tensor);
               copyOp->connectInTensor(i, gatheredTensorId, sourceIpu);
-            } else if (sgd0VarUpdateOp &&
-                       sgd0VarUpdateOp->input
-                               ->tensor(
-                                   SGD0VarUpdateOp::getVarToUpdateInIndex())
-                               ->id == tensor->id) {
-              sgd0VarUpdateOp->disconnectInTensor(i, tensor);
-              sgd0VarUpdateOp->connectInTensor(i, loadedTensorId);
-              sgd0VarUpdateOp->settings.schedulePriority = varUpdatePriority;
-              sgd0VarUpdateOp->settings.useIoTiles       = tensorUseIoTiles;
+            } else if (consumerOp->isOptimizerOp()) {
+              consumerOp->disconnectInTensor(i, tensor);
+              consumerOp->connectInTensor(i, loadedTensorId);
 
-              if (sgd0VarUpdateOp->input->hasIndex(
-                      SGD0VarUpdateOp::getUpdaterInIndex())) {
-                Tensor *grad = sgd0VarUpdateOp->input->tensor(
-                    SGD0VarUpdateOp::getUpdaterInIndex());
-                Op *producer = grad->getProducer();
+              // Check all optimizer ops connected of the current optimizer op
 
-                if (ReplicatedAllReduceOp *replicatedAllReduce =
-                        dynamic_cast<ReplicatedAllReduceOp *>(producer)) {
+              std::vector<Op *> optimizerFrontOps(1, consumerOp);
+              std::set<Op *, POpCmp> optimizerOps;
 
-                  replicatedAllReduce->settings.schedulePriority =
-                      allReducePriority;
-                  replicatedAllReduce->settings.useIoTiles = tensorUseIoTiles;
-
-                  if (tensorReplicatedWeightSharding) {
-                    auto replicatedReduceScatterOp =
-                        std::make_unique<ReplicatedReduceScatterOp>(
-                            Onnx::CustomOperators::ReplicatedReduceScatter,
-                            replicatedAllReduce->settings);
-                    auto replicatedReduceScatter =
-                        replicatedReduceScatterOp.get();
-                    replicatedReduceScatter->fromLoss =
-                        replicatedAllReduce->fromLoss;
-                    replicatedReduceScatter->toLoss =
-                        replicatedAllReduce->toLoss;
-                    graph.moveIntoGraph(std::move(replicatedReduceScatterOp));
-
-                    TensorId inId =
-                        replicatedAllReduce->input
-                            ->tensor(ReplicatedAllReduceOp::getInIndex())
-                            ->id;
-                    TensorId outId =
-                        replicatedAllReduce->output
-                            ->tensor(ReplicatedAllReduceOp::getOutIndex())
-                            ->id;
-                    replicatedAllReduce->disconnectAllInputs();
-                    replicatedAllReduce->disconnectAllOutputs();
-                    replicatedAllReduce->getGraph().eraseOp(
-                        replicatedAllReduce->id);
-
-                    replicatedReduceScatter->connectInTensor(
-                        ReplicatedAllReduceOp::getInIndex(), inId);
-
-                    replicatedReduceScatter->connectInTensor(
-                        ReplicatedAllGatherOp::getCollectiveLinkedIndex(),
-                        getCacheArg(tensor->id));
-
-                    replicatedReduceScatter->connectOutTensor(
-                        ReplicatedAllReduceOp::getOutIndex(), outId);
-
-                    replicatedReduceScatter->setup();
-
-                    replicatedReduceScatter->settings.schedulePriority =
-                        allReducePriority;
-                    replicatedReduceScatter->settings.useIoTiles =
-                        tensorUseIoTiles;
-
-                    // Tie the reduction operation to the SGD0VarUpdate to get
-                    // the same schedule behaviour as if the reduction was
-                    // still integrated into SGD0VarUpdate
-                    graph.topoCons->insert(
-                        replicatedReduceScatter, sgd0VarUpdateOp, true);
+              while (!optimizerFrontOps.empty()) {
+                Op *optFrontOp = optimizerFrontOps.back();
+                optimizerFrontOps.pop_back();
+                if (optFrontOp->isOptimizerOp() &&
+                    optimizerOps.find(optFrontOp) == optimizerOps.end()) {
+                  optimizerOps.insert(optFrontOp);
+                  for (auto tensorAndIndex : optFrontOp->input->tensorMap()) {
+                    if (tensorAndIndex.second->hasProducer()) {
+                      optimizerFrontOps.push_back(
+                          tensorAndIndex.second->getProducer());
+                    }
+                  }
+                  for (auto tensorAndIndex : optFrontOp->output->tensorMap()) {
+                    for (Op *op : tensorAndIndex.second->consumers.getOps()) {
+                      optimizerFrontOps.push_back(op);
+                    }
                   }
                 }
               }
-              sgd0VarUpdateOp->setup();
+
+              for (Op *optimizerOp : optimizerOps) {
+                opsToSetup.insert(optimizerOp);
+                optimizerOp->settings.schedulePriority = varUpdatePriority;
+                optimizerOp->settings.useIoTiles       = tensorUseIoTiles;
+
+                // If the current tensor is the weight tensor being updated,
+                // update the AllReduce / ReduceScatter operation
+                if (tensor->getTensorTypeInfo()->type() ==
+                        TensorType::Variable &&
+                    !tensor->isAcclTensor() &&
+                    optimizerOp->input->hasIndex(
+                        VarUpdateWithUpdaterOp::getUpdaterInIndex())) {
+                  Tensor *grad = optimizerOp->input->tensor(
+                      VarUpdateWithUpdaterOp::getUpdaterInIndex());
+
+                  ReplicatedAllReduceOp *replicatedAllReduce = nullptr;
+
+                  if (grad->hasProducer()) {
+                    Op *producer = grad->getProducer();
+                    replicatedAllReduce =
+                        dynamic_cast<ReplicatedAllReduceOp *>(producer);
+                  }
+
+                  if (replicatedAllReduce) {
+
+                    replicatedAllReduce->settings.schedulePriority =
+                        allReducePriority;
+                    replicatedAllReduce->settings.useIoTiles = tensorUseIoTiles;
+
+                    if (tensorReplicatedWeightSharding) {
+                      auto replicatedReduceScatterOp =
+                          std::make_unique<ReplicatedReduceScatterOp>(
+                              Onnx::CustomOperators::ReplicatedReduceScatter,
+                              replicatedAllReduce->settings);
+                      auto replicatedReduceScatter =
+                          replicatedReduceScatterOp.get();
+                      replicatedReduceScatter->fromLoss =
+                          replicatedAllReduce->fromLoss;
+                      replicatedReduceScatter->toLoss =
+                          replicatedAllReduce->toLoss;
+                      graph.moveIntoGraph(std::move(replicatedReduceScatterOp));
+
+                      TensorId inId =
+                          replicatedAllReduce->input
+                              ->tensor(ReplicatedAllReduceOp::getInIndex())
+                              ->id;
+                      TensorId outId =
+                          replicatedAllReduce->output
+                              ->tensor(ReplicatedAllReduceOp::getOutIndex())
+                              ->id;
+                      replicatedAllReduce->disconnectAllInputs();
+                      replicatedAllReduce->disconnectAllOutputs();
+
+                      graph.topoCons->transfer(replicatedAllReduce,
+                                               replicatedReduceScatter);
+
+                      replicatedAllReduce->getGraph().eraseOp(
+                          replicatedAllReduce->id);
+
+                      replicatedReduceScatter->connectInTensor(
+                          ReplicatedAllReduceOp::getInIndex(), inId);
+
+                      replicatedReduceScatter->connectInTensor(
+                          ReplicatedAllGatherOp::getCollectiveLinkedIndex(),
+                          getCacheArg(tensor->id));
+
+                      replicatedReduceScatter->connectOutTensor(
+                          ReplicatedAllReduceOp::getOutIndex(), outId);
+
+                      replicatedReduceScatter->setup();
+
+                      replicatedReduceScatter->settings.schedulePriority =
+                          allReducePriority;
+                      replicatedReduceScatter->settings.useIoTiles =
+                          tensorUseIoTiles;
+
+                      // Tie the reduction operation to the SGD0VarUpdate to get
+                      // the same schedule behaviour as if the reduction was
+                      // still integrated into SGD0VarUpdate
+                      graph.topoCons->insert(
+                          replicatedReduceScatter, optimizerOp, true);
+                    }
+                  }
+                }
+              }
             } else {
               consumerOp->disconnectInTensor(i, tensor);
               consumerOp->connectInTensor(i, gatheredTensorId);
@@ -1009,6 +1081,17 @@ bool PingPong::apply(Graph &graph) const {
         }
       }
     }
+
+    // Get new schedule
+    schedule = graph.getOpSchedule({});
+
+    // Re-setup all ops that require it (update tensor shapes)
+    for (Op *op : schedule) {
+      if (opsToSetup.find(op) != opsToSetup.end()) {
+        op->setup();
+      }
+    }
+
     ir.setPingPongPhasesReady();
   }
   verifyPingPongPhases(graph);
@@ -1016,12 +1099,11 @@ bool PingPong::apply(Graph &graph) const {
 }
 
 namespace {
-// PingPong 1: Map forward pass to phases
+// PingPong 1: Map ops to phases, enable caching on variables
 bool init1 = Transform::registerTransform(new PingPong(1));
-// PingPong 2: Map forward + loss pass to phases
+// PingPong 2: Enable caching on variables, map remaining ops to phases,
+// cut graph and insert cache ops.
 bool init2 = Transform::registerTransform(new PingPong(2));
-// PingPong 3: Map remaining ops to phases, cut graph and insert cache ops.
-bool init3 = Transform::registerTransform(new PingPong(3));
 } // namespace
 
 } // namespace popart

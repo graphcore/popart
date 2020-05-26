@@ -22,6 +22,7 @@ namespace popart {
 
 enum class RecomputeType { Undefined = 0, Checkpoint, Recompute, Recomputed };
 enum class CacheType { Undefined = 0, Uncached, Cached };
+enum class ExecutionContext { Normal = 0, AccumulateOuterFragment };
 
 std::ostream &operator<<(std::ostream &, const RecomputeType &);
 
@@ -107,6 +108,10 @@ public:
 
     // If the OP should be placed on I/O tiles instead of regular tiles
     IsIoTile useIoTiles{false};
+
+    // If the OP needs to run in a special fragment,
+    // such as gradient accumulation
+    ExecutionContext executionContext{ExecutionContext::Normal};
 
     // Tensor layout mapping should be inferred "to" tensor <- "from" tensor
     std::map<InIndex, InIndex> inferTensorMappingToFrom;
@@ -322,6 +327,9 @@ public:
   // Returns true for Ops that copy only optimizer tensors
   // from one IPU to another
   virtual bool copiesOptimizerTensors() const;
+
+  // Op that is part of the optimizer
+  virtual bool isOptimizerOp() const;
 
   // The random seed tensor used to set the IPU's RNGs is created
   // in the IR, and connected to the Ops that require it

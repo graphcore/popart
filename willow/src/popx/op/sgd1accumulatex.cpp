@@ -53,6 +53,11 @@ void SGD1AccumulateOpx::grow(poplar::program::Sequence &prog) const {
         graph(), accl, grad, dpsf, prog, debugPrefix("nonConstSGD1AcclAddTo"));
   }
 
+  if (hasInViewChangers(VarUpdateWithUpdaterOp::getUpdaterInIndex())) {
+    setOutViewChangers(
+        VarUpdateOp::getUpdatedVarOutIndex(),
+        getInViewChangers(VarUpdateWithUpdaterOp::getUpdaterInIndex()));
+  }
   // reference accl returned
   setOutTensor(VarUpdateOp::getUpdatedVarOutIndex(), accl);
 }
@@ -83,6 +88,20 @@ SGD1AccumulateOpx::mustExistBeforeCreate(int index1) const {
         "SGD1AccumulateOpx::mustExistBeforeCreate : Invalid index");
   }
   return {inId(VarUpdateWithUpdaterOp::getUpdaterInIndex())};
+}
+
+bool SGD1AccumulateOpx::hasCreatorViewChangers(InIndex index) const {
+  return (index == VarUpdateOp::getVarToUpdateInIndex()) &&
+         hasInViewChangers(VarUpdateWithUpdaterOp::getUpdaterInIndex());
+}
+
+ViewChangers SGD1AccumulateOpx::getCreatorViewChangers(InIndex index) const {
+  if (index == VarUpdateOp::getVarToUpdateInIndex()) {
+    return getInViewChangers(VarUpdateWithUpdaterOp::getUpdaterInIndex());
+  }
+  throw error(
+      "ReplicatedAllGatherOpx::getCreatorViewChangers: Invalid index = " +
+      std::to_string(index));
 }
 
 namespace {

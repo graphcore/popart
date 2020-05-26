@@ -166,7 +166,14 @@ class Attribute:
                 else:
                     return "boost::optional<int64_t>"
         elif self.type == onnx.defs.OpSchema.AttrType.INTS:
-            return 'const std::vector<int64_t>&'
+            # Special case for axes in reduce operators as we need to distinguish
+            # default params from empty params. In future we may want to
+            # all optional parameters boost::optional of some sort.
+            # TODO T21033: Investigate all other cases
+            if self.op.name.lower().find("reduce") >= 0 and self.name == "axes":
+                return "boost::optional<std::vector<int64_t>>"
+            else:
+                return 'const std::vector<int64_t>&'
         elif self.type == onnx.defs.OpSchema.AttrType.FLOAT:
             if self.required:
                 return 'float'
@@ -207,6 +214,10 @@ class Attribute:
                     return True
                 elif self.type == onnx.defs.OpSchema.AttrType.STRING:
                     return True
+        # TODO T21033: Investigate all other cases
+        if self.type == onnx.defs.OpSchema.AttrType.INTS and self.op.name.lower(
+        ).find("reduce") >= 0 and self.name == "axes":
+            return True
 
         return False
 
@@ -251,7 +262,15 @@ class Attribute:
             elif self.type == onnx.defs.OpSchema.AttrType.FLOAT:
                 return "boost::optional<float>()"
             elif self.type == onnx.defs.OpSchema.AttrType.INTS:
-                return 'std::vector<int64_t>()'
+                # Special case for axes in reduce operators as we need to distinguish
+                # default params from an empty access list. In future we may want to
+                # all optional parameters boost::optional of some sort.
+                # TODO T21033: Investigate all other cases
+                if self.op.name.lower().find(
+                        "reduce") >= 0 and self.name == "axes":
+                    return "boost::optional<std::vector<int64_t>>()"
+                else:
+                    return f'std::vector<int64_t>()'
             elif self.type == onnx.defs.OpSchema.AttrType.FLOATS:
                 return 'std::vector<float>()'
             elif self.type == onnx.defs.OpSchema.AttrType.STRINGS:
@@ -655,7 +674,7 @@ def genBuilderCpp(filename, schema):
                                 f.write("  attributes[\"{}\"] = {};\n".format(
                                     a.name, a.name))
                             else:
-                                if a.isList():
+                                if a.isList() and not a.isBoostOptional():
                                     f.write("  if (!{}.empty()) {{\n".format(
                                         a.name))
                                 elif a.isFloat() and not a.isBoostOptional():

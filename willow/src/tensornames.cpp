@@ -48,10 +48,6 @@ std::vector<std::string> reservedOptimizerPrefixes() {
 std::vector<std::string> reservedPrefixes() {
   std::vector<std::string> prefs = {reservedGradientPrefix(),
                                     reservedUpdatedVarPrefix(),
-                                    reservedAcclToAccumulatorPrefix(),
-                                    reservedAcclToReducePrefix(),
-                                    reservedAcclToUpdatePrefix(),
-                                    reservedAcclFinalOutPrefix(),
                                     reservedStashedPrefix(),
                                     reservedRestoredPrefix(),
                                     reservedRandomSeedPrefix(),
@@ -59,9 +55,36 @@ std::vector<std::string> reservedPrefixes() {
                                     cycleCountPrefix(),
                                     reservedCacheArgPrefix()};
 
-  std::vector<std::string> optPrefs = reservedOptimizerPrefixes();
+  std::vector<std::string> optPrefs;
+
+  optPrefs = reservedOptimizerPrefixes();
   prefs.insert(prefs.end(), optPrefs.begin(), optPrefs.end());
 
+  optPrefs = reservedOptimizerStatePrefixes();
+  prefs.insert(prefs.end(), optPrefs.begin(), optPrefs.end());
+
+  return prefs;
+}
+
+TensorId stripAllReservedPrefixes(TensorId id) {
+  TensorId lastId    = id;
+  TensorId currentId = id;
+  do {
+    lastId = currentId;
+    for (auto prefix : reservedPrefixes()) {
+      if (currentId.find(prefix) == 0) {
+        currentId = currentId.substr(prefix.size());
+      }
+    }
+  } while (lastId != currentId);
+  return currentId;
+}
+
+std::vector<std::string> reservedOptimizerStatePrefixes() {
+  std::vector<std::string> prefs = {reservedAcclToAccumulatorPrefix(),
+                                    reservedAcclToReducePrefix(),
+                                    reservedAcclToUpdatePrefix(),
+                                    reservedAcclFinalOutPrefix()};
   return prefs;
 }
 

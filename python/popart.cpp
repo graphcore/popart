@@ -555,6 +555,8 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("syntheticDataMode", &SessionOptions::syntheticDataMode);
     cls.def_readwrite("instrumentWithHardwareCycleCounter",
                       &SessionOptions::instrumentWithHardwareCycleCounter);
+    cls.def_readwrite("hardwareInstrumentations",
+                      &SessionOptions::hardwareInstrumentations);
     cls.def_readwrite("disableGradAccumulationTensorStreams",
                       &SessionOptions::disableGradAccumulationTensorStreams);
     cls.def_readwrite("enableOutlining", &SessionOptions::enableOutlining);
@@ -708,6 +710,11 @@ PYBIND11_MODULE(popart_core, m) {
   {
     py::enum_<IrSerializationFormat> en(m, "IrSerializationFormat");
     en.value("JSON", IrSerializationFormat::JSON);
+  }
+  {
+    py::enum_<Instrumentation> en(m, "Instrumentation");
+    en.value("Outer", Instrumentation::Outer);
+    en.value("Inner", Instrumentation::Inner);
   }
   {
     py::enum_<PreAliasPatternType> en(m, "PreAliasPatternType");

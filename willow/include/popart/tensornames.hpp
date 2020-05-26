@@ -28,9 +28,7 @@ TensorId getUpdatedVarId(const TensorId &id);
 
 constexpr const char *reservedGradientPrefix() { return "Gradient___"; }
 constexpr const char *reservedUpdatedVarPrefix() { return "UpdatedVar___"; }
-constexpr const char *reservedAcclToAccumulatorPrefix() {
-  return "AcclIntoAccumulator___";
-}
+constexpr const char *reservedAcclToAccumulatorPrefix() { return "Accl___"; }
 constexpr const char *reservedAcclToReducePrefix() {
   return "AcclIntoReduce___";
 }
@@ -48,7 +46,10 @@ constexpr const char *reservedLossScalingPrefix() { return "lossScaling_"; }
 constexpr const char *reservedRandomSeedPrefix() { return "randomSeed___"; }
 
 std::vector<std::string> reservedOptimizerPrefixes();
+std::vector<std::string> reservedOptimizerStatePrefixes();
 std::vector<std::string> reservedPrefixes();
+
+TensorId stripAllReservedPrefixes(TensorId id);
 
 TensorId getCacheArgTensorId(TensorId base_id);
 constexpr const char *reservedCacheArgPrefix() { return "CacheArg___"; }

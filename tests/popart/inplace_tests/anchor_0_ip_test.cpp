@@ -83,14 +83,14 @@ BOOST_AUTO_TEST_CASE(InplaceAnchorTest2) {
   TensorInfo shape0{"FLOAT", std::vector<int64_t>{2, 2, 2, 2}};
 
   auto in0 = builder->addInputTensor(shape0);
-  auto A   = aiOnnx.reducesum({in0}, {0, 1});
+  auto A   = aiOnnx.reducesum({in0}, std::vector<int64_t>{{0, 1}});
   auto B   = aiOnnx.transpose({A});
   builder->setInplacePreferences(B, {{"TransposeInplace", 100}});
 
   auto C = aiGraphcore.scale({B}, 2.0);
   builder->setInplacePreferences(C, {{"ScaleInplace", 10}});
 
-  auto out = aiOnnx.reducesum({C}, {0, 1});
+  auto out = aiOnnx.reducesum({C}, std::vector<int64_t>{{0, 1}});
   builder->addOutputTensor(out);
 
   auto proto      = builder->getModelProto();

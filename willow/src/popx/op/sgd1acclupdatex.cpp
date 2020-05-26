@@ -72,6 +72,10 @@ void SGD1AcclUpdateOpx::grow(poplar::program::Sequence &prog) const {
         debugPrefix("nonConstScaledAddSwd1"));
   }
 
+  if (hasInViewChangers(VarUpdateOp::getVarToUpdateInIndex())) {
+    setOutViewChangers(VarUpdateOp::getUpdatedVarOutIndex(),
+                       getInViewChangers(VarUpdateOp::getVarToUpdateInIndex()));
+  }
   // return a reference to the input
   setOutTensor(VarUpdateOp::getUpdatedVarOutIndex(), toUpdate);
 }

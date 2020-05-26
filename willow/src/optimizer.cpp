@@ -298,13 +298,16 @@ std::unique_ptr<Op> SGD::createOp(const Tensor &w, Graph &graph) const {
         opSettings);
   }
 
+  // Disable acclReduce in favor of gradReduce when using PingPong
+  bool withAcclReduce = gradientAccumulationEnabled();
+
   // velocity required
   return std::make_unique<SGD1ComboOp>(w.id,
                                        smm1helper.getFromWeightId(w.id, *this),
                                        dpsf1helper.getFromWeightId(w.id, *this),
                                        swd1helper.getFromWeightId(w.id, *this),
                                        slr1helper.getFromWeightId(w.id, *this),
-                                       getReplicatedGraphCount() > 1,
+                                       withAcclReduce,
                                        opSettings);
 }
 

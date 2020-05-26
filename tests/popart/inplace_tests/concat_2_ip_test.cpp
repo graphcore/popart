@@ -33,7 +33,7 @@ BOOST_AUTO_TEST_CASE(Inplace_concat1) {
   auto s0  = aiOnnx.sigmoid({in0});
   auto c0  = aiOnnx.concat({s0, s0, s0}, 0);
   auto s1  = aiOnnx.relu({c0});
-  auto out = aiOnnx.reducesum({s1});
+  auto out = aiOnnx.reducesum({s1}, std::vector<int64_t>{});
 
   out = builder->aiGraphcoreOpset1().l1loss({out}, 0.1);
 

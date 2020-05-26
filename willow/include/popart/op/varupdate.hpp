@@ -32,6 +32,8 @@ public:
   // Create a clone, but with a new name
   virtual std::unique_ptr<Op> cloneWithNewName(const TensorId &) const = 0;
 
+  virtual bool isOptimizerOp() const { return true; }
+
 private:
   TensorId varId;
 };

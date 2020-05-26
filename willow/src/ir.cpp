@@ -839,15 +839,8 @@ void Ir::prepareImpl(const IrBundle &gb) {
   applyTransform(AutoVirtualGraph::id(), getMainGraph());
 
   // Required transform order for PingPong is:
-  // FWD -> PingPong1 -> Loss -> PingPong2 -> BWD -> PingPong3 -> IpuCopy ->
-  // PingPong4 -> Outline -> CacheSetup
-
-  // First ping pong transformation pass (fwd)
-  if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
-      userOptions.pingPongPhases > 1) {
-    applyTransform(PingPong::id(1), getMainGraph());
-    verifyVirtualGraphIds(true);
-  }
+  // FWD -> PingPong1 -> BWD -> PingPong2 -> IpuCopy ->
+  // PingPong3 -> Outline -> CacheSetup
 
   if (getSessionOptions().enablePipelining) {
     applyTransform(InferPipelineStages::id(), getMainGraph());
@@ -856,6 +849,13 @@ void Ir::prepareImpl(const IrBundle &gb) {
   if (canTrain()) {
     growFinalLoss(gb.loss);
     updateVertices();
+  }
+
+  // First ping pong transformation pass (fwd)
+  if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
+      userOptions.pingPongPhases > 1) {
+    applyTransform(PingPong::id(1), getMainGraph());
+    verifyVirtualGraphIds(true);
   }
 
   // Batch serialisation, step 1
@@ -882,13 +882,6 @@ void Ir::prepareImpl(const IrBundle &gb) {
 
   if (gb.optimizer) {
     setOptimizer(*gb.optimizer);
-  }
-
-  // Second ping pong transformation pass (fwd + loss)
-  if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
-      userOptions.pingPongPhases > 1) {
-    applyTransform(PingPong::id(2), getMainGraph());
-    verifyVirtualGraphIds(true);
   }
 
   updateVertices();
@@ -1051,7 +1044,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
     // PingPong transformation 3 needs up-to-date aliasing information
     updateAliases();
 
-    applyTransform(PingPong::id(3), getMainGraph());
+    applyTransform(PingPong::id(2), getMainGraph());
     verifyVirtualGraphIds(true);
     // Remove extra CacheLoad, CacheStore and Replicated ops that are not used
     applyTransform(Prune::id(), getMainGraph());
@@ -1692,6 +1685,24 @@ bool Ir::streamingIsDisabledForTensor(const TensorId &tensorId) const {
 
   // 3. The tensor is cached
   if (getTensors().get(tensorId)->cacheInfo.isCached()) {
+    return true;
+  }
+
+  return false;
+}
+
+bool Ir::storingIsDisabledForTensor(const TensorId &tensorId) const {
+  // What conditions mean that this tensor should not be streamed?
+
+  // 1. Streams have been turned off globally
+  if (useSyntheticData()) {
+    return true;
+  }
+
+  // 2. The tensor is an Gradient Accl tensor, but the user
+  //    has turned off streaming for this kind of tensor
+  if (getTensors().get(tensorId)->isAcclTensor() &&
+      getSessionOptions().disableGradAccumulationTensorStreams) {
     return true;
   }
 
