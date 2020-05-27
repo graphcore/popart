@@ -48,13 +48,16 @@ void ReplicatedReduceScatterOpx::grow(poplar::program::Sequence &prog) const {
     }
   }
 
-  poplar::Tensor reducedScattered = popops::replicatedReduceScatter(
-      graph(),
-      toReduceScatter.flatten(),
-      popops::Operation::ADD,
-      prog,
-      "",
-      {{"useReplicatedImplementation", "true"}});
+  poplar::OptionFlags reduceScatterOptions = dv_p->gclOptions;
+  reduceScatterOptions.set("useReplicatedImplementation", "true");
+
+  poplar::Tensor reducedScattered =
+      popops::replicatedReduceScatter(graph(),
+                                      toReduceScatter.flatten(),
+                                      popops::Operation::ADD,
+                                      prog,
+                                      "",
+                                      reduceScatterOptions);
 
   setOutTensor(ReplicatedReduceScatterOp::getOutIndex(), reducedScattered);
 }
