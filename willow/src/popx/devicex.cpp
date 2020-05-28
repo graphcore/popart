@@ -3111,7 +3111,9 @@ void Devicex::prepare() {
 
   trySaveTensorTileMap();
 
-  optimizerFromHost();
+  if (ir().canTrain()) {
+    optimizerFromHost();
+  }
 
   prepareHasBeenCalled_ = true;
 }
