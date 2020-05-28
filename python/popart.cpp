@@ -148,8 +148,10 @@ public:
 
   void assertNumElements(const Ir &) const final {}
 
-  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
+  ConstVoidData in(TensorId id, int64_t, bool prefetch) final {
     py::array a = inputCb(id, prefetch);
+    // To ensure that array is persisted until complete is called
+    inDict[py::str(id)] = a;
 
     ConstVoidData data;
 
@@ -162,10 +164,15 @@ public:
     return data;
   }
 
-  void inComplete(TensorId id, int64_t) final { inputCompleteCb(id); }
+  void inComplete(TensorId id, int64_t) final {
+    inputCompleteCb(id);
+    inDict[py::str(id)] = py::none();
+  }
 
   MutableVoidData out(TensorId id, int64_t) final {
     py::array a = outputCb(id);
+    // To ensure that array is persisted until complete is called
+    outDict[py::str(id)] = a;
 
     MutableVoidData data;
     data.data = a.request().ptr;
@@ -173,7 +180,10 @@ public:
     return data;
   }
 
-  void outComplete(TensorId id) final { outputCompleteCb(id); }
+  void outComplete(TensorId id) final {
+    outputCompleteCb(id);
+    outDict[py::str(id)] = py::none();
+  }
 
 private:
   // user land callbacks
@@ -181,6 +191,8 @@ private:
   InputCompleteCallback inputCompleteCb;
   OutputCallback outputCb;
   OutputCompleteCallback outputCompleteCb;
+  py::dict inDict  = py::dict();
+  py::dict outDict = py::dict();
 };
 
 class PyWeightsIO : public IWeightsIO {
