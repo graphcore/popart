@@ -70,6 +70,14 @@ void TransposeBaseOp::setup() {
   // If perm is empty, set the the default value
   if (perm.empty()) {
     setDefaultPerm();
+  } else if (perm.size() != in_shape.size()) {
+    throw error(
+        "Rank of permutation tensor {}, rank {} must be equal to rank of "
+        "input tensor, shape {}, rank {}.",
+        perm,
+        perm.size(),
+        in_shape,
+        in_shape.size());
   }
 
   Shape out_shape;

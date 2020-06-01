@@ -649,6 +649,34 @@ def test_transpose_grad(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
+def test_transpose_sizes(op_tester):
+    d1 = np.random.rand(1, 3, 2, 7, 5).astype(np.float32)
+    transpose = [1, 3, 0, 4]
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.transpose([i1], transpose)
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + o
+        ]
+
+    def reference(ref_data):
+        return []
+
+    op_tester.patterns = ['PreUniRepl']
+    with pytest.raises(popart.popart_exception) as e_info:
+        op_tester.run(init_builder, reference, 'infer')
+
+    assert (
+        e_info.value.args[0] ==
+        f"Rank of permutation tensor [1 3 0 4], rank {len(transpose)} must" +
+        f" be equal to rank of input tensor, shape [1 3 2 7 5], rank {len(d1.shape)}."
+    )
+
+
 def test_asin(op_tester):
     # create test data
     d1 = ((np.random.rand(4) - 0.5) * np.pi).astype(np.float32)
