@@ -10,11 +10,13 @@
 
 namespace popart {
 
-enum class DeviceType { IpuModel = 0, Cpu, Ipu, Sim };
+enum class DeviceType { IpuModel = 0, Cpu, Ipu, OfflineIpu, Sim };
 
 enum class SyncPattern { Full = 0, SinglePipeline, PingPong };
 
 enum class DeviceConnectionType { Always = 0, OnDemand, Never };
+
+SyncPattern syncPatternFromString(const std::string &str);
 
 class DeviceProvider;
 
@@ -42,8 +44,6 @@ public:
   /// Detach from the IPU.
   virtual void detach() = 0;
 
-  virtual void createVirtualGraph(int tilesPerIpu) = 0;
-
   /// Get the type of the device.
   DeviceType getType() const { return type; }
 
@@ -65,6 +65,11 @@ public:
   virtual int getNumWorkerContexts() const = 0;
 
   virtual std::vector<unsigned> getDriverIds() const = 0;
+
+  virtual const poplar::Target &getTarget() const = 0;
+
+  // Whether the device supports offlne compilation
+  virtual bool canCompileOffline() const { return false; }
 
 private:
   DeviceProvider &provider;
@@ -101,7 +106,8 @@ public:
   /// Create a host device for testing
   virtual std::shared_ptr<DeviceInfo>
   createHostDevice(DeviceType type,
-                   const std::map<std::string, std::string> &options) = 0;
+                   const std::map<std::string, std::string> &options,
+                   SyncPattern syncPattern = SyncPattern::Full) = 0;
 };
 
 /// A class to manage devices.
@@ -202,6 +208,21 @@ public:
    */
   std::shared_ptr<DeviceInfo>
   createSimDevice(std::map<std::string, std::string> &options);
+
+  /** Create a device resembling an IPU for offline compilation
+   * The following options are supported:
+   *
+   * * ``numIPUs``:        The number of IPUs to compile for
+   * * ``tilesPerIPU``:    The number of tiles per IPU [=1216]
+   * * ``ipuVersion``:     The ipu architecture, defaults to "ipu1"
+   * * ``syncPattern``:   The sync pattern to use: full/singlePipline/pingPong,
+   *                       defaults to full
+   *
+   * \param options Configuration settings for the IPU Model
+   * \return A device
+   */
+  std::shared_ptr<DeviceInfo>
+  createOfflineIPUDevice(std::map<std::string, std::string> &options);
 };
 
 /** Write a representation of a DeviceType to an output stream.

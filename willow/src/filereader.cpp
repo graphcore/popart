@@ -6,9 +6,12 @@
 #endif
 
 #include <boost/filesystem.hpp>
+
+#include <cstdio>
 #include <fstream>
 #include <limits>
 #include <sstream>
+#include <unistd.h>
 #include <vector>
 
 #include <google/protobuf/io/coded_stream.h>
@@ -21,15 +24,72 @@
 namespace popart {
 namespace io {
 
+namespace {
+// Return a boost file_status for a path or raise an exception
+// Note that no exception is raised in the case of file_status(file_not_found)
+// and file_status(type_unknown)
+boost::filesystem::file_status statOrRaiseException(const std::string &path) {
+  try {
+    return boost::filesystem::status(path);
+  } catch (const boost::filesystem::filesystem_error &e) {
+    throw popart::error("Error reading {}: {}", path, e.what());
+  }
+}
+} // anonymous namespace
+
 // 2GB total_bytes_limit for reading protobuf coded input streams
 // see google.protobuf.io.coded_stream#CodedInputStream
 static const int protobufByteLimit = std::numeric_limits<int>::max();
 
+void assertDirectoryExists(const std::string &path) {
+  namespace bf = boost::filesystem;
+
+  auto stat = statOrRaiseException(path);
+
+  if (stat == bf::file_status(bf::file_not_found)) {
+    throw popart::error("Directory does not exist: {}", path);
+  }
+
+  if (stat == bf::file_status(bf::type_unknown)) {
+    throw popart::error("Unable to determine whether {} is a directory", path);
+  }
+
+  if (!bf::is_directory(stat)) {
+    throw popart::error("Not a directory: {}", path);
+  }
+}
+
+void assertDirectoryWritable(const std::string &path) {
+  // Sadly Boost offers no means for this so we simply try to write a file and
+  // then delete it
+
+  std::string testFilePath = path;
+  if (testFilePath.back() != '/') {
+    testFilePath += '/';
+  }
+  testFilePath += "test_file";
+
+  std::ofstream testfile(testFilePath, std::ios::out);
+  if (testfile.is_open()) {
+    testfile.close();
+    remove(testFilePath.c_str());
+  } else {
+    if (errno != EACCES) {
+      throw popart::internal_error("{} failed when trying to access {}: {}",
+                                   __PRETTY_FUNCTION__,
+                                   path,
+                                   std::strerror(errno));
+    }
+
+    throw popart::error("No write permissions for directory: {}", path);
+  }
+}
+
 std::string getCanonicalDirName(const std::string &dirName0) {
   namespace bf = boost::filesystem;
-  if (!bf::is_directory(dirName0)) {
-    throw popart::error("Directory does not exisit: {}", dirName0);
-  }
+
+  assertDirectoryExists(dirName0);
+
   bf::path p(dirName0);
   return bf::canonical(dirName0).string();
 }

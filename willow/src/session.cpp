@@ -68,6 +68,23 @@ TensorInfo Session::getInfo(TensorId id) const {
 
 Session::~Session() = default;
 
+void Session::compileAndExport(std::string executablePath,
+                               std::string weightsPath) {
+  logging::session::trace("Session::compileAndExport()");
+
+  if (executablePath.length() > 0) {
+    executablePath = io::getCanonicalDirName(executablePath);
+    io::assertDirectoryWritable(executablePath);
+  }
+
+  if (weightsPath.length() > 0) {
+    weightsPath = io::getCanonicalDirName(weightsPath);
+    io::assertDirectoryWritable(weightsPath);
+  }
+
+  device_->compileAndExport(executablePath, weightsPath);
+}
+
 void Session::prepareDevice() {
   logging::session::trace("Session::prepareDevice()");
 

@@ -148,7 +148,7 @@ class InferenceSession(_InferenceSessionCore):
         return self.anchorArrays
 
     def prepareDevice(self):
-        err = popart.PrepareDeviceError()
+        err = popart.OutOfMemoryError()
         super(InferenceSession, self).prepareDevice(err)
 
         # If an error occurred during the perpareDevice raise an exception
@@ -299,7 +299,7 @@ class TrainingSession(_TrainingSessionCore):
         return self.anchorArrays
 
     def prepareDevice(self):
-        err = popart.PrepareDeviceError()
+        err = popart.OutOfMemoryError()
         super(TrainingSession, self).prepareDevice(err)
 
         # If an error occurred during the perpareDevice raise an exception

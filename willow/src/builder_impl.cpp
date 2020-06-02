@@ -6,8 +6,6 @@
 #include <unordered_set>
 #include <vector>
 
-#include <boost/filesystem.hpp>
-
 #include <popart/builder_impl.hpp>
 #include <popart/ces/constexpr.hpp>
 #include <popart/error.hpp>

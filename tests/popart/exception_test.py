@@ -55,9 +55,9 @@ def test_out_of_memory_exception():
         patterns=popart.Patterns(popart.PatternsLevel.NoPatterns),
         deviceInfo=tu.create_test_device(1))
 
-    with pytest.raises(popart.poplar_exception) as e:
+    with pytest.raises(popart.OutOfMemoryException) as e:
         session.prepareDevice()
-        print("Caught PrepareDeviceException exception {}", e)
+        print("Caught OutOfMemoryException exception {}", e)
         print(e.getSummaryReport())
         print(e.getGraphReport())
         assert e.value.args[0].startswith(

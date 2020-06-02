@@ -5,6 +5,7 @@
 #include <poplar/DeviceManager.hpp>
 
 #include <popart/devicemanager.hpp>
+#include <popart/error.hpp>
 #include <popart/popx/devicex.hpp>
 
 namespace popart {
@@ -28,7 +29,8 @@ public:
 
   virtual std::shared_ptr<popart::DeviceInfo>
   createHostDevice(popart::DeviceType type,
-                   const std::map<std::string, std::string> &options) override;
+                   const std::map<std::string, std::string> &options,
+                   SyncPattern syncPattern = SyncPattern::Full) override;
 
 private:
 };
@@ -45,14 +47,10 @@ public:
   virtual bool attach();
   virtual void detach();
 
-  void createVirtualGraph(int tilesPerIpu);
-
-  virtual int getNumIpus() const { return device.getTarget().getNumIPUs(); }
-  virtual int getTilesPerIpu() const {
-    return device.getTarget().getTilesPerIPU();
-  }
+  virtual int getNumIpus() const { return getTarget().getNumIPUs(); }
+  virtual int getTilesPerIpu() const { return getTarget().getTilesPerIPU(); }
   virtual int getNumWorkerContexts() const {
-    return device.getTarget().getNumWorkerContexts();
+    return getTarget().getNumWorkerContexts();
   }
 
   virtual std::vector<unsigned> getDriverIds() const {
@@ -60,6 +58,10 @@ public:
   }
 
   poplar::Device &getDevice() { return device; }
+
+  virtual const poplar::Target &getTarget() const {
+    return device.getTarget();
+  };
 
   std::set<Devicex *> previouslyLoadedDevicexs;
 
@@ -72,7 +74,7 @@ public:
   DevicexCpuInfo(DeviceProvider &_provider, poplar::Device &_device)
       : DevicexInfo(_provider,
                     popart::DeviceType::Cpu,
-                    popart::DeviceConnectionType::Never,
+                    popart::DeviceConnectionType::Always,
                     _device) {}
 
   virtual int getId() const { return 0; }
@@ -83,7 +85,7 @@ public:
   DevicexSimInfo(DeviceProvider &_provider, poplar::Device &_device)
       : DevicexInfo(_provider,
                     popart::DeviceType::Sim,
-                    popart::DeviceConnectionType::Never,
+                    popart::DeviceConnectionType::Always,
                     _device) {}
 
   virtual int getId() const { return 0; }
@@ -94,7 +96,7 @@ public:
   DevicexIpuModelInfo(DeviceProvider &_provider, poplar::Device &_device)
       : DevicexInfo(_provider,
                     popart::DeviceType::IpuModel,
-                    popart::DeviceConnectionType::Never,
+                    popart::DeviceConnectionType::Always,
                     _device) {}
 
   virtual int getId() const { return 0; }
@@ -115,9 +117,42 @@ public:
   virtual int getId() const { return id; }
   virtual std::string getVersion() const;
 
+  virtual bool canCompileOffline() const { return true; }
+
 private:
   bool isAttached = false;
   int id;
+};
+
+class DevicexOfflineIpuInfo : public popart::DeviceInfo {
+public:
+  DevicexOfflineIpuInfo(DeviceProvider &_provider, poplar::Target &_target)
+      : popart::DeviceInfo(_provider,
+                           popart::DeviceType::OfflineIpu,
+                           popart::DeviceConnectionType::Never),
+        target(std::move(_target)) {}
+
+  virtual bool attach() { throw error("Cannot attach virtual device"); }
+
+  virtual void detach() { throw error("Cannot detach virtual device"); }
+
+  virtual int getId() const { return 0; }
+  virtual std::string getVersion() const { return "<offline-ipu>"; }
+
+  virtual int getNumIpus() const { return target.getNumIPUs(); }
+  virtual int getTilesPerIpu() const { return target.getTilesPerIPU(); }
+  virtual int getNumWorkerContexts() const {
+    return target.getNumWorkerContexts();
+  }
+
+  virtual std::vector<unsigned> getDriverIds() const { return {0}; }
+
+  virtual const poplar::Target &getTarget() const { return target; };
+
+  virtual bool canCompileOffline() const { return true; }
+
+protected:
+  poplar::Target target;
 };
 
 popart::DeviceType convertDeviceType(poplar::TargetType targetType);

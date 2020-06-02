@@ -85,7 +85,22 @@ public:
   const Ir &ir() const { return _ir; }
   Devicex(const Ir &, std::shared_ptr<DeviceInfo> deviceInfo);
   ~Devicex();
+
+private:
+  void trySaveTensorTileMap() const;
+
+  // Prepares the graph ready for poplar compilation
+  void prepareGraph();
+
+public:
+  // Compile the graph and export the executable and metadata to the
+  // specified paths
+  void compileAndExport(const std::string &executablePath,
+                        const std::string &weightsPath);
+
+  // Compiles the graph and then prepares the streams for running on the device
   void prepare();
+
   void weightsFromHost();
   void remoteBufferWeightsFromHost();
   void optimizerFromHost();
@@ -284,9 +299,7 @@ public:
 
 private:
   std::unique_ptr<poplar::Graph> pGraph{nullptr};
-
   std::unique_ptr<poplar::Engine> pEngine{nullptr};
-  std::unique_ptr<poplar::Target> pTarget{nullptr};
 
   std::vector<VirtualGraph> virtualGraphs;
 
@@ -586,6 +599,7 @@ private:
   std::set<TensorId> efficientlyCreatedInputTensors;
 
   bool prepareHasBeenCalled_;
+  bool prepareGraphHasBeenCalled_;
 
   nonstd::optional<poplar::Executable> cachedExecutable;
   bool usingCachedExecutable = false;

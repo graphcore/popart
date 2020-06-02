@@ -30,8 +30,6 @@
 #include <popart/tensors.hpp>
 #include <popart/version.hpp>
 
-#include <popart/popx/devicex.hpp>
-
 #include <stdexcept>
 #include <poplar/exceptions.hpp>
 #include <poputil/exceptions.hpp>
@@ -257,13 +255,12 @@ public:
   }
 };
 
-struct PrepareDeviceError {
-  bool success = true;
+struct OutOfMemoryError {
   std::unique_ptr<popart::memory_allocation_err> exception;
 
-  virtual ~PrepareDeviceError() {}
+  virtual ~OutOfMemoryError() {}
 
-  virtual bool isSuccessful() const { return success; }
+  virtual bool isSuccessful() const { return exception.get() == nullptr; }
   std::string what() const {
     if (exception) {
       return exception->what();
@@ -818,17 +815,17 @@ PYBIND11_MODULE(popart_core, m) {
     });
   }
   {
-    py::class_<PrepareDeviceError> cls(m, "PrepareDeviceError");
+    py::class_<OutOfMemoryError> cls(m, "OutOfMemoryError");
     cls.def(py::init<>());
-    cls.def("__repr__", [](const PrepareDeviceError &err) {
+    cls.def("__repr__", [](const OutOfMemoryError &err) {
       return "popart.PrepareDeviceError: " + err.what();
     });
-    cls.def("__str__", &PrepareDeviceError::what);
-    cls.def("isSuccessful", &PrepareDeviceError::isSuccessful);
-    cls.def("getSummaryReport", &PrepareDeviceError::getSummaryReport);
+    cls.def("__str__", &OutOfMemoryError::what);
+    cls.def("isSuccessful", &OutOfMemoryError::isSuccessful);
+    cls.def("getSummaryReport", &OutOfMemoryError::getSummaryReport);
     cls.def(
         "getGraphReport",
-        [](const PrepareDeviceError &error, bool useCbor) {
+        [](const OutOfMemoryError &error, bool useCbor) {
           auto report = error.getGraphReport(useCbor);
           return py::bytes(report);
         },
@@ -844,14 +841,33 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("userOptions"),
             py::arg("patterns"));
     cls.def(
+        "compileAndExport",
+        [](InferenceSession &session,
+           const std::string &executablePath,
+           const std::string &weightsPath,
+           OutOfMemoryError *status) {
+          try {
+            session.compileAndExport(executablePath, weightsPath);
+          } catch (const popart::memory_allocation_err &e) {
+            if (status != nullptr) {
+              status->exception = e.clone();
+            } else {
+              // rethrow the exception
+              throw;
+            }
+          }
+        },
+        py::arg("executablePath").none(true),
+        py::arg("weightsPath").none(true),
+        py::arg("err").none());
+    cls.def(
         "prepareDevice",
-        [](InferenceSession &session, PrepareDeviceError *status) {
+        [](InferenceSession &session, OutOfMemoryError *status) {
           try {
             session.prepareDevice();
           } catch (const popart::memory_allocation_err &e) {
             if (status != nullptr) {
               status->exception = e.clone();
-              status->success   = false;
             } else {
               // rethrow the exception
               throw;
@@ -912,14 +928,33 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("userOptions"),
             py::arg("patterns"));
     cls.def(
+        "compileAndExport",
+        [](TrainingSession &session,
+           const std::string &executablePath,
+           const std::string &weightsPath,
+           OutOfMemoryError *status) {
+          try {
+            session.compileAndExport(executablePath, weightsPath);
+          } catch (const popart::memory_allocation_err &e) {
+            if (status != nullptr) {
+              status->exception = e.clone();
+            } else {
+              // rethrow the exception
+              throw;
+            }
+          }
+        },
+        py::arg("executablePath").none(true),
+        py::arg("weightsPath").none(true),
+        py::arg("err").none());
+    cls.def(
         "prepareDevice",
-        [](TrainingSession &session, PrepareDeviceError *status) {
+        [](TrainingSession &session, OutOfMemoryError *status) {
           try {
             session.prepareDevice();
           } catch (const popart::memory_allocation_err &e) {
             if (status != nullptr) {
               status->exception = e.clone();
-              status->success   = false;
             } else {
               // rethrow the exception
               throw;
@@ -1514,6 +1549,13 @@ PYBIND11_MODULE(popart_core, m) {
       std::map<std::string, std::string> options = getDictionary(e);
       return dm.createSimDevice(options);
     });
+    cls.def(
+        "createOfflineIPUDevice",
+        [](DeviceManager &dm, py::dict e) {
+          std::map<std::string, std::string> options = getDictionary(e);
+          return dm.createOfflineIPUDevice(options);
+        },
+        py::arg("opts"));
     cls.def("enumerateDevices",
             &DeviceManager::enumerateDevices,
             py::arg("pattern")        = SyncPattern::Full,

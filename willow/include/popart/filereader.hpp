@@ -9,6 +9,12 @@
 namespace popart {
 namespace io {
 
+// Raise an exception if the directory does not exist
+void assertDirectoryExists(const std::string &path);
+
+// Raise an exception if the directory is not writable
+void assertDirectoryWritable(const std::string &path);
+
 // get the canonical directory name
 // see boost.org/doc/libs/1_33_1/libs/filesystem/doc/path.htm#Canonical
 std::string getCanonicalDirName(const std::string &dirName0);
