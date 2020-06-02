@@ -80,9 +80,9 @@ SqueezeOp::SqueezeOp(const OperatorIdentifier &_opid,
     : SqueezeBaseOp(_opid, axes_, settings_) {}
 
 std::vector<std::unique_ptr<Op>> SqueezeOp::getGradOps() {
-  std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(std::make_unique<SqueezeGradOp>(*this));
-  return upops;
+  throw error("No gradient operation for squeeze is available. Squeeze should "
+              "have been automatically replaced by a reshape operation by the "
+              "built-in OpToReshape pattern");
 }
 
 std::unique_ptr<Op> SqueezeOp::clone() const {
@@ -101,31 +101,6 @@ SqueezeOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
 std::vector<std::tuple<OperatorIdentifier, float>>
 SqueezeOp::inplacePriorityDefault() const {
   return {{Onnx::CustomOperators::SqueezeInplace, 10}};
-}
-
-void SqueezeGradOp::setup() { outInfo(getOutIndex()) = unsqueezedInfo; }
-
-std::unique_ptr<Op> SqueezeGradOp::clone() const {
-  return std::make_unique<SqueezeGradOp>(*this);
-}
-
-SqueezeGradOp::SqueezeGradOp(const SqueezeOp &op_)
-    : Op(Onnx::GradOperators::SqueezeGrad, op_.getSettings()),
-      unsqueezedInfo(op_.inInfo(SqueezeOp::getInIndex())) {}
-
-const std::vector<GradInOutMapper> &SqueezeGradOp::gradInputInfo() const {
-  // input at index 0 : gradient of output of squeeze
-  static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), SqueezeOp::getOutIndex(), GradOpInType::GradOut}};
-  return inInfo;
-}
-
-const std::map<int, int> &SqueezeGradOp::gradOutToNonGradIn() const {
-  // the grad-op output at index 0 corresponds
-  // to the non-grad-op's input at index 0
-  static const std::map<int, int> outInfo = {
-      {getOutIndex(), SqueezeOp::getInIndex()}};
-  return outInfo;
 }
 
 SqueezeInplaceOp::SqueezeInplaceOp(const SqueezeOp &op)

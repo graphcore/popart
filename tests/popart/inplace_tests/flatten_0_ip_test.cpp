@@ -90,7 +90,10 @@ BOOST_AUTO_TEST_CASE(Inplace_flatten0) {
         device,
         popart::InputShapeInfo(),
         opts,
-        popart::Patterns(PatternsLevel::NoPatterns).enableInPlace(true));
+
+        popart::Patterns(PatternsLevel::NoPatterns)
+            .enableInPlace(true)
+            .enableOpToReshape(true));
 
     // generate random input data
     int seed = 1011;
@@ -130,13 +133,13 @@ BOOST_AUTO_TEST_CASE(Inplace_flatten0) {
     session->prepareDevice();
     session->run(stepio);
     if (flattenInplacePriority < 0) {
-      BOOST_CHECK(session->ir.opsOfType(Onnx::AiOnnx::OpSet9::Flatten).size() ==
+      BOOST_CHECK(session->ir.opsOfType(Onnx::AiOnnx::OpSet9::Reshape).size() ==
                   2);
     } else if (flattenInplacePriority > std::max(s0priority, s1priority)) {
-      BOOST_CHECK(session->ir.opsOfType(Onnx::AiOnnx::OpSet9::Flatten).size() ==
+      BOOST_CHECK(session->ir.opsOfType(Onnx::AiOnnx::OpSet9::Reshape).size() ==
                   0);
     } else {
-      BOOST_CHECK(session->ir.opsOfType(Onnx::AiOnnx::OpSet9::Flatten).size() ==
+      BOOST_CHECK(session->ir.opsOfType(Onnx::AiOnnx::OpSet9::Reshape).size() ==
                   1);
     }
 

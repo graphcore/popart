@@ -46,7 +46,8 @@ enum class PreAliasPatternType {
   MatMulLHSGradOp,
   MatMulRHSGradOp,
   SGD1Decompose,
-  LSTMOp
+  LSTMOp,
+  OpToReshape
 };
 
 // Definition: A tensor is "touched" by a Pattern if

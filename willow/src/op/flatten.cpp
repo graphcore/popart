@@ -105,11 +105,9 @@ void FlattenBaseOp::setup() {
 }
 
 std::vector<std::unique_ptr<Op>> FlattenBaseOp::getGradOps() {
-  std::vector<std::unique_ptr<Op>> result;
-
-  result.push_back(std::make_unique<FlattenGradOp>(*this));
-
-  return result;
+  throw error("No gradient operation for flatten is available. Flatten should "
+              "have been automatically replaced by a reshape operation by the "
+              "built-in OpToReshape pattern");
 }
 
 int64_t FlattenBaseOp::getAxis() const { return axis; }
@@ -119,23 +117,6 @@ void FlattenBaseOp::setAxis(int64_t value) { axis = value; }
 void FlattenBaseOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
-}
-
-FlattenGradOp::FlattenGradOp(const FlattenBaseOp &fwdOp)
-    : ReshapeOp(Onnx::GradOperators::FlattenGrad,
-                fwdOp.inShape(FlattenBaseOp::getInIndex()),
-                fwdOp.getSettings()) {}
-
-const std::vector<GradInOutMapper> &FlattenGradOp::gradInputInfo() const {
-  static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), FlattenBaseOp::getOutIndex(), GradOpInType::GradOut}};
-  return inInfo;
-}
-
-const std::map<int, int> &FlattenGradOp::gradOutToNonGradIn() const {
-  static const std::map<int, int> outInfo = {
-      {getOutIndex(), FlattenBaseOp::getInIndex()}};
-  return outInfo;
 }
 
 view::Regions FlattenInplaceOp::aliases(InIndex in, OutIndex) const {

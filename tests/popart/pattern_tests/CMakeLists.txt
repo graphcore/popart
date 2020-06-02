@@ -2,6 +2,9 @@
 # to run only these tests with ctest, consider using something like,
 # `ctest -R patterns_test -j5 -VV'.
 
+add_popart_cpp_unit_test(op_to_reshape_pattern_test 
+                          op_to_reshape_pattern_test.cpp)
+
 add_popart_cpp_unit_test(softmaxgraddirect_0_patterns_test 
                           softmaxgraddirect_0_patterns_test.cpp)
 
@@ -19,7 +22,6 @@ add_popart_cpp_unit_test(patterns_test
 
 add_popart_cpp_unit_test(split_to_slice_patterns_test 
                           split_to_slice_patterns_test.cpp VARIANTS "IpuModel")
-
 
 add_popart_cpp_unit_test(replicate_and_shard_ir_test_0 
                           replicate_and_shard_ir_test_0.cpp VARIANTS "IpuModel")

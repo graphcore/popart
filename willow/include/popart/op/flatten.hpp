@@ -70,14 +70,6 @@ public:
   view::Regions aliases(InIndex in, OutIndex) const final;
 };
 
-// The gradient of a flatten is a reshape back to the original shape
-class FlattenGradOp : public ReshapeOp {
-public:
-  FlattenGradOp(const FlattenBaseOp &fwdOp);
-  const std::vector<GradInOutMapper> &gradInputInfo() const final;
-  const std::map<int, int> &gradOutToNonGradIn() const final;
-};
-
 } // namespace popart
 
 #endif

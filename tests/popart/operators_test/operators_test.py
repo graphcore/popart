@@ -979,6 +979,7 @@ def test_unsqueeze(op_tester):
             o = np.expand_dims(o, axis=i)
         return [o]
 
+    op_tester.patterns = ['OpToReshape']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -1003,7 +1004,7 @@ def test_unsqueeze_grad(op_tester):
         o.backward(torch.tensor(d__o))
         return [o, a.grad, None]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl', 'OpToReshape']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -1376,6 +1377,7 @@ def test_flatten_infer(op_tester):
         out = np.reshape(d1, new_shape)
         return [out]
 
+    op_tester.patterns = ['OpToReshape']
     op_tester.run(init_builder, reference, 'infer')
 
 
