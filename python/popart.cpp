@@ -655,7 +655,6 @@ PYBIND11_MODULE(popart_core, m) {
                       &SessionOptions::globalReplicationFactor);
     cls.def_readwrite("globalReplicaOffset",
                       &SessionOptions::globalReplicaOffset);
-    cls.def_readwrite("globalNumIpus", &SessionOptions::globalNumIpus);
     cls.def_readwrite("ipuSystemType", &SessionOptions::ipuSystemType);
     cls.def_readwrite("groupHostSync", &SessionOptions::groupHostSync);
   }

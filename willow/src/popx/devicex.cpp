@@ -3626,10 +3626,14 @@ void Devicex::initPoplarGraph() {
   unsigned replicationFactor = 0;
 
   if (ir().getSessionOptions().enableDistributedReplicatedGraphs) {
-    auto globalNumIpus  = ir().getSessionOptions().globalNumIpus;
+    auto globalReplicationFactor = getGlobalReplicationFactor();
+    auto localReplicationFactor = ir().getSessionOptions().replicatedGraphCount;
+    auto numInstances = globalReplicationFactor / localReplicationFactor;
+
+    auto globalNumIpus  = deviceInfo->getNumIpus() * numInstances;
     auto &ipuSystemType = ir().getSessionOptions().ipuSystemType;
 
-    replicationFactor = getGlobalReplicationFactor();
+    replicationFactor = globalReplicationFactor;
 
     logging::devicex::debug("Creating distributed replicated graph with global "
                             "replication factor {}",

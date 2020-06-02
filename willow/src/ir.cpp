@@ -615,7 +615,6 @@ void Ir::verifyDistributedReplicatedGraphSettings() const {
     auto localReplicationFactor  = userOptions.replicatedGraphCount;
     auto globalReplicationFactor = userOptions.globalReplicationFactor;
     auto globalReplicaOffset     = userOptions.globalReplicaOffset;
-    auto globalNumIpus           = userOptions.globalNumIpus;
     if (globalReplicationFactor < 1) {
       throw error("Invalid globalReplicationFactor value: {}, must be greater "
                   "or equal than 1",
@@ -626,12 +625,6 @@ void Ir::verifyDistributedReplicatedGraphSettings() const {
       throw error("Invalid globalReplicaOffset value: {}, must be greater or "
                   "equal than 0",
                   globalReplicaOffset);
-    }
-
-    if (globalNumIpus < 1) {
-      throw error(
-          "Invalid globalNumIpus value: {}, must be greater or equal than 1",
-          globalNumIpus);
     }
 
     if (globalReplicaOffset > globalReplicationFactor) {
@@ -821,6 +814,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   verifyVirtualGraphIds(false);
   verifyPipelineSettings();
   verifyPingPongSettings();
+  verifyDistributedReplicatedGraphSettings();
 
   dotCheckpoint(DotCheck::Fwd0);
 
