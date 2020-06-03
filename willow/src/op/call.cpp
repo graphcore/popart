@@ -285,7 +285,8 @@ static OpDefinition callOpDef({OpDefinition::Inputs({{"inputs", T}}),
 static OpCreator<CallOp> callOpCreator(
     OpDefinitions({{Onnx::CustomOperators::Call_1, callOpDef}}),
     [](const OpCreatorInfo &info) -> std::unique_ptr<Op> {
-      auto callee = info.attributes.getAttribute<Attributes::Graph>("callee");
+      ONNX_NAMESPACE::GraphProto callee =
+          info.attributes.getAttribute<Attributes::Graph>("callee");
 
       if (callee.name().empty()) {
         throw error("CallOp subgraph must be named, so that it can be "
