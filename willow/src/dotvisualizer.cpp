@@ -7,6 +7,7 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/call.hpp>
+#include <popart/op/ipucopy.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/topocons.hpp>
@@ -177,6 +178,18 @@ void DotVisualizer::write() {
       } else {
         coreNameStream << " (" << n->id << ")";
       }
+    }
+    if (n->hasVirtualGraphId()) {
+      coreNameStream << " vgid:" << n->getVirtualGraphId();
+    }
+
+    if (n->hasPingPongPhase()) {
+      coreNameStream << " pp:" << n->getPingPongPhase();
+    }
+
+    if (auto ipuCopy = dynamic_cast<IpuCopyOp *>(n)) {
+      coreNameStream << " sIpu:" << ipuCopy->getSourceIpu();
+      coreNameStream << " dIpu:" << ipuCopy->getDestIpu();
     }
 
     strm(gString) << nodeDotId(n->id) << " [shape= \"box\", label=\""
