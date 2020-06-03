@@ -3,6 +3,7 @@
 #include <onnx/onnx_pb.h>
 #include <popart/error.hpp>
 #include <popart/onnxutil.hpp>
+#include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/util.hpp>
 
@@ -83,6 +84,8 @@ static int64_t broadcastableDimSize(int64_t a, int64_t b) {
   } else {
     // Incompatible dimensions found. Throw an exception,
     // borrowing the same terminology as numpy.
+
+    // TODO: IMPROVE ERROR MESSAGE
     throw error("np broadcasting failed, frames are not aligned");
   }
 }
@@ -212,17 +215,24 @@ std::vector<int64_t> npOut(const std::vector<int64_t> &s0,
   return result;
 }
 
-TensorInfo npOut(const TensorInfo &i0, const TensorInfo &i1) {
+TensorInfo npOut(const TensorInfo &i0,
+                 const TensorInfo &i1,
+                 const std::string &debugName) {
   if (i0.dataType() != i1.dataType()) {
-    throw error(("np broadcasting failed, incompatible types {} and {} "
-                 "(shapes {} and {})"),
-                i0.data_type(),
-                i1.data_type(),
-                i0.shape(),
-                i1.shape());
+    std::stringstream ss;
+    ss << "np broadcasting failed";
+
+    if (!debugName.empty()) {
+      ss << " on " << debugName;
+    }
+
+    ss << ", incompatible types " << i0.data_type();
+    ss << " and " << i1.data_type() << " (shapes {} and {})";
+
+    throw error(ss.str(), i0.shape(), i1.shape());
   }
 
-  return {i0.dataType(), npOut(i0.shape(), i1.shape())};
+  return {i0.dataType(), npOut(i0.shape(), i1.shape(), debugName)};
 }
 
 // Compute the reduction axis for a reduction op.

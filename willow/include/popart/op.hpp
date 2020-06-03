@@ -380,6 +380,11 @@ public:
   // in the order they will be used for the graph.
   virtual std::vector<TensorId> getInputsForGraph(const Graph &) const;
 
+  // Calculate numpy broadcast shape for two shapes or generate an error if
+  // the broadcast is not aligned. The error will have operator context.
+  Shape prettyNpOut(const Shape &s0, const Shape &s1) const;
+  TensorInfo prettyNpOut(const TensorInfo &i0, const TensorInfo &i1) const;
+
 protected:
   virtual void appendMore(OpSerialiserBase &) const;
 

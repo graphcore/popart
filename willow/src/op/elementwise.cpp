@@ -55,7 +55,7 @@ ElementWiseBinaryOp::ElementWiseBinaryOp(const OperatorIdentifier &_opid,
 
 void ElementWiseBinaryOp::setup() {
   outInfo(getOutIndex()) =
-      npOut(inInfo(getArg0InIndex()), inInfo(getArg1InIndex()));
+      prettyNpOut(inInfo(getArg0InIndex()), inInfo(getArg1InIndex()));
 }
 
 BinaryComparisonOp::BinaryComparisonOp(const OperatorIdentifier &_opid,
@@ -64,8 +64,8 @@ BinaryComparisonOp::BinaryComparisonOp(const OperatorIdentifier &_opid,
 
 void BinaryComparisonOp::setup() {
   outInfo(getOutIndex()) = {DataType::BOOL,
-                            npOut(inInfo(getArg0InIndex()).shape(),
-                                  inInfo(getArg1InIndex()).shape())};
+                            prettyNpOut(inInfo(getArg0InIndex()).shape(),
+                                        inInfo(getArg1InIndex()).shape())};
 }
 
 } // namespace popart

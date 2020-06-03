@@ -351,6 +351,20 @@ std::vector<TensorId> Op::getInputsForGraph(const Graph &) const {
   throw error("Op does not call any graphs");
 }
 
+Shape Op::prettyNpOut(const Shape &s0, const Shape &s1) const {
+  std::stringstream ss;
+  ss << "Op " << str();
+
+  return npOut(s0, s1, ss.str());
+}
+
+TensorInfo Op::prettyNpOut(const TensorInfo &i0, const TensorInfo &i1) const {
+  std::stringstream ss;
+  ss << "Op " << str();
+
+  return npOut(i0, i1, ss.str());
+}
+
 const std::string &Op::name() const { return getName(); }
 
 Op::Op(const Op &op)

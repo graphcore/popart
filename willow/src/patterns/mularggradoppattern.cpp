@@ -41,7 +41,7 @@ bool MulArgGradOpPattern::apply(Op *op) const {
       op->getIr().createIntermediateTensorId(op->output->id(0));
   op->getGraph().getTensors().addActGrad(tmp_tensor_id);
   const auto tmp_tensor = op->getGraph().getTensors().get(tmp_tensor_id);
-  tmp_tensor->info      = npOut(input_0->info, input_1->info);
+  tmp_tensor->info      = op->prettyNpOut(input_0->info, input_1->info);
 
   // Remap the tensor-to-op relationships
   input_0->consumers.decrement(op);

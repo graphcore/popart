@@ -10,8 +10,10 @@ namespace popart {
 
 template <typename OPERATION> class BinaryFunctor {
 public:
-  template <typename T> std::vector<char> operator()(Tensor &in0, Tensor &in1) {
-    TensorInfo outInfo = npOut(in0.info, in1.info);
+  template <typename T>
+  std::vector<char>
+  operator()(Tensor &in0, Tensor &in1, const Op *opForDebugMsg) {
+    TensorInfo outInfo = opForDebugMsg->prettyNpOut(in0.info, in1.info);
     std::vector<char> v_out(outInfo.nbytes());
     NDArrayWrapper<T> output(reinterpret_cast<T *>(v_out.data()), outInfo);
     NDArrayWrapper<T> data0(in0);
@@ -70,7 +72,8 @@ ConstExprDiv::ConstExprDiv(Op *op_) : ConstExprOp(op_) {}
 std::vector<char> ConstExprDiv::compute() {
   Tensor *in0 = inTensor(AddOp::getArg0InIndex());
   Tensor *in1 = inTensor(AddOp::getArg1InIndex());
-  return callOpFunctor<BinaryFunctor<Div>>(in0->info.dataType(), *in0, *in1);
+  return callOpFunctor<BinaryFunctor<Div>>(
+      in0->info.dataType(), *in0, *in1, getBaseOp());
 }
 
 ConstExprAdd::ConstExprAdd(Op *op_) : ConstExprOp(op_) {}
@@ -78,7 +81,8 @@ ConstExprAdd::ConstExprAdd(Op *op_) : ConstExprOp(op_) {}
 std::vector<char> ConstExprAdd::compute() {
   Tensor *in0 = inTensor(AddOp::getArg0InIndex());
   Tensor *in1 = inTensor(AddOp::getArg1InIndex());
-  return callOpFunctor<BinaryFunctor<Add>>(in0->info.dataType(), *in0, *in1);
+  return callOpFunctor<BinaryFunctor<Add>>(
+      in0->info.dataType(), *in0, *in1, getBaseOp());
 }
 
 ConstExprMul::ConstExprMul(Op *op_) : ConstExprOp(op_) {}
@@ -86,7 +90,8 @@ ConstExprMul::ConstExprMul(Op *op_) : ConstExprOp(op_) {}
 std::vector<char> ConstExprMul::compute() {
   Tensor *in0 = inTensor(AddOp::getArg0InIndex());
   Tensor *in1 = inTensor(AddOp::getArg1InIndex());
-  return callOpFunctor<BinaryFunctor<Mul>>(in0->info.dataType(), *in0, *in1);
+  return callOpFunctor<BinaryFunctor<Mul>>(
+      in0->info.dataType(), *in0, *in1, getBaseOp());
 }
 
 ConstExprSub::ConstExprSub(Op *op_) : ConstExprOp(op_) {}
@@ -94,7 +99,8 @@ ConstExprSub::ConstExprSub(Op *op_) : ConstExprOp(op_) {}
 std::vector<char> ConstExprSub::compute() {
   Tensor *in0 = inTensor(AddOp::getArg0InIndex());
   Tensor *in1 = inTensor(AddOp::getArg1InIndex());
-  return callOpFunctor<BinaryFunctor<Sub>>(in0->info.dataType(), *in0, *in1);
+  return callOpFunctor<BinaryFunctor<Sub>>(
+      in0->info.dataType(), *in0, *in1, getBaseOp());
 }
 
 ConstExprMod::ConstExprMod(Op *op_) : ConstExprOp(op_) {}
@@ -102,7 +108,8 @@ ConstExprMod::ConstExprMod(Op *op_) : ConstExprOp(op_) {}
 std::vector<char> ConstExprMod::compute() {
   Tensor *in0 = inTensor(AddOp::getArg0InIndex());
   Tensor *in1 = inTensor(AddOp::getArg1InIndex());
-  return callOpFunctor<BinaryFunctor<Mod>>(in0->info.dataType(), *in0, *in1);
+  return callOpFunctor<BinaryFunctor<Mod>>(
+      in0->info.dataType(), *in0, *in1, getBaseOp());
 }
 
 } // namespace popart

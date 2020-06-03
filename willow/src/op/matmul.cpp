@@ -147,7 +147,7 @@ Shape MatMulOp::npMatMulOut(Shape lhs, Shape rhs) {
   rhsShape = rhs;
 
   Shape result =
-      npOut({lhs.begin(), lhs.end() - 2}, {rhs.begin(), rhs.end() - 2});
+      prettyNpOut({lhs.begin(), lhs.end() - 2}, {rhs.begin(), rhs.end() - 2});
 
   // Save the expanded output shape - minium of 3D
   outShape = result;

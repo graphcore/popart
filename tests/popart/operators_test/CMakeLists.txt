@@ -1,5 +1,6 @@
 add_popart_py_unit_test(abs_sign_test)
 add_popart_py_unit_test(batchnorm_test)
+add_popart_py_unit_test(binaryop_error_test)
 add_popart_py_unit_test(boolean_test)
 add_popart_py_unit_test(call_test)
 add_popart_py_unit_test(constexpr_2d_transpose)

@@ -122,14 +122,6 @@ std::vector<T> unsqueeze(const std::vector<T> &v, const std::vector<T> &axes) {
   return new_shape;
 }
 
-// Check if two tensors can be (numpy) broadcasted based on
-// https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
-bool npBroadcastable(const TensorInfo &i0, const TensorInfo &i1);
-
-// Calculate the numpy broadcast shape as described in
-// https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
-TensorInfo npOut(const TensorInfo &i0, const TensorInfo &i1);
-
 // FLOAT, FLOAT16, INT8 etc.
 class DataTypeInfo {
 public:
@@ -203,6 +195,15 @@ private:
 std::ostream &operator<<(std::ostream &stream, const TensorInfo &ti);
 std::ostream &operator<<(std::ostream &stream, const DataType &dt);
 
+// Check if two tensors can be (numpy) broadcasted based on
+// https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
+bool npBroadcastable(const TensorInfo &i0, const TensorInfo &i1);
+
+// Calculate the numpy broadcast shape as described in
+// https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
+TensorInfo npOut(const TensorInfo &i0,
+                 const TensorInfo &i1,
+                 const std::string &debugName = "");
 } // namespace popart
 
 #endif

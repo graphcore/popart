@@ -35,7 +35,7 @@ void VariadicOp::setup() {
   outInfo(getOutIndex()) = inInfo(0);
   // In version 8 inputs are broadcast
   for (int i = 1; i < input->n(); ++i) {
-    outInfo(getOutIndex()) = npOut(outInfo(getOutIndex()), inInfo(i));
+    outInfo(getOutIndex()) = prettyNpOut(outInfo(getOutIndex()), inInfo(i));
   }
 }
 
