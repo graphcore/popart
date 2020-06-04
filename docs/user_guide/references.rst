@@ -3,6 +3,7 @@ References
 
 - https://onnx.ai/
 - https://pytorch.org/docs/stable/index.html
-- `Poplar and Poplibs User Guide <https://documents.graphcore.ai/documents/UG1/latest>`_
+- `Poplar and PopLibs User Guide
+<https://www.graphcore.ai/docs/poplar-and-poplibs-user-guide>`_
 
 

@@ -60,16 +60,18 @@ Session control options
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 The ``userOptions`` parameter passes options to the session. The available options
-are listed in the `PopART C++ API Reference <https://documents.graphcore.ai/documents/UG11/latest>`_.
+are listed in the `PopART C++ API Reference
+<https://www.graphcore.ai/docs/popart-c-api-reference>`_.
 As well as options to control specific features of
 the PopART session, there are also some that allow you to pass options to the underlying
 Poplar functions:
 
 * ``engineOptions`` passes options to the Poplar ``Engine`` object created to run the graph.
-* ``convolutionOptions`` passes options to the Poplibs convolution functions.
+* ``convolutionOptions`` passes options to the PopLibs convolution functions.
 * ``reportOptions`` Controls the instrumentation and generation of profiling information.
 
 See :any:`popart_profiling` for examples of using some of these options.
 
 Full details of the Poplar options can be found in the
-`Poplar and Poplibs API Reference <https://documents.graphcore.ai/documents/UG2/latest>`_.
+`Poplar and PopLibs API Reference
+<https://www.graphcore.ai/docs/poplar-api-reference>`_.

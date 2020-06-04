@@ -70,5 +70,5 @@ shows four IPUs: A, B, C and D.
   IPUs can then alternate between host I/O and processing.
 
 For more information on how the sync groups are used by the Poplar framework,
-please refer to the `Poplar and Poplibs User Guide
-<https://documents.graphcore.ai/documents/UG1/latest>`_.
+please refer to the `Poplar and PopLibs User Guide
+<https://www.graphcore.ai/docs/poplar-and-poplibs-user-guide>`_.

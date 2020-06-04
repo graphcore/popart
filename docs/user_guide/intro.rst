@@ -10,9 +10,10 @@ This document describes the features of PopART. It assumes that you are familiar
 ONNX framework.
 
 An overview of the IPU architecture and programming model can be found in the
-`IPU Programmer's Manual <https://documents.graphcore.ai/documents/UG9/latest>`_.
+`IPU Programmer's Guide <https://www.graphcore.ai/docs/ipu-programmers-guide>`_.
 For more information on the Poplar framework refer to the
-`Poplar and Poplibs User Guide <https://documents.graphcore.ai/documents/UG1/latest>`_.
+`Poplar and PopLibs User Guide
+<https://www.graphcore.ai/docs/poplar-and-poplibs-user-guide>`_.
 
 PopART has three main features:
 
