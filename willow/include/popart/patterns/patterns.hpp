@@ -201,6 +201,7 @@ public:
   bool isSplitConvBiasEnabled();
   bool isSplitGatherEnabled();
   bool isOpToIdentityEnabled();
+  bool isOpToReshapeEnabled();
   bool isSubtractArg1GradOpEnabled();
   bool isMulArgGradOpEnabled();
   bool isReciprocalGradOpEnabled();
@@ -235,6 +236,7 @@ public:
   Patterns &enableSplitConvBias(bool v);
   Patterns &enableSplitGather(bool v);
   Patterns &enableOpToIdentity(bool v);
+  Patterns &enableOpToReshape(bool v);
   Patterns &enableSubtractArg1GradOp(bool v);
   Patterns &enableMulArgGradOp(bool v);
   Patterns &enableReciprocalGradOp(bool v);

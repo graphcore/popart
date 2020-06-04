@@ -1,4 +1,5 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <onnx/checker.h>
 #include <popart/builder_impl.hpp>
 #include <popart/filereader.hpp>
 #include <popart/logging.hpp>
@@ -513,8 +514,13 @@ std::vector<TensorId> AiGraphcoreOpset1::call(const std::vector<TensorId> &args,
                                               unsigned num_outputs,
                                               const Builder &callee,
                                               const std::string &name) {
-  auto calleeProto = io::getModelFromString(callee.getModelProto()).graph();
 
+  ONNX_NAMESPACE::ModelProto modelProto =
+      io::getModelFromString(callee.getModelProto());
+  // May as well check the subgraph whilst we are here.
+
+  // ONNX_NAMESPACE::checker::check_model(modelProto);
+  ONNX_NAMESPACE::GraphProto calleeProto = modelProto.graph();
   // Some checks:
   // A subgraph must have at least one input and output, and the
   // number of inputs and outputs must match that of the callee

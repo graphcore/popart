@@ -205,6 +205,8 @@ MAKE_LOG_TEMPLATE(warn, Warn)
 MAKE_LOG_TEMPLATE(err, Err)
 MAKE_LOG_TEMPLATE(crit, Critical)
 
+#undef MAKE_LOG_TEMPLATE
+
 // of the form logging::session::debug("Msg").
 // where session if the name of the log module and debug if the
 // logging level
@@ -245,16 +247,8 @@ MAKE_MODULE_TEMPLATE(opx)
 MAKE_MODULE_TEMPLATE(ces)
 MAKE_MODULE_TEMPLATE(python)
 
-// Convenience macro to create a log entry prefixed with function name e.g.:
-//    void someFunc(int i) {
-//      FUNC_LOGGER(session::info, " with i := {}", i);
-//    }
-// Then the log entry would be something like:
-// 14:30:31.00 [I] void someFunc(int): with i := 42
-// NOTE: Because of the limitations of __VA_ARGS__ this log entry must have at
-// least one parameter.
-#define FUNC_LOGGER(lvl, fmtStr, ...)                                          \
-  logging::lvl("{}: " fmtStr, __PRETTY_FUNCTION__, __VA_ARGS__)
+#undef MAKE_MODULE_LOG_TEMPLATE
+#undef MAKE_MODULE_TEMPLATE
 
 } // namespace logging
 } // namespace popart

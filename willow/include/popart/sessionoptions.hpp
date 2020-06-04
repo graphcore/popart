@@ -335,9 +335,6 @@ struct SessionOptions {
   /// The first replica index that this PopART instance is running
   int64_t globalReplicaOffset = 0;
 
-  /// The total number of IPUs across all the PopART instances
-  int64_t globalNumIpus = 1;
-
   /// The IPU SystemType
   std::string ipuSystemType = "ipu1";
 

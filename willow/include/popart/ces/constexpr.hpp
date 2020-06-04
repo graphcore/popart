@@ -32,6 +32,8 @@ protected:
 
   // Generic function to safely dynamic_cast the op to the derived type
   template <class OP> OP &getOp() const;
+  // Generic function to get a reference to the popart::Op.
+  const Op *getBaseOp() const;
 
 private:
   Op *op;

@@ -10,7 +10,7 @@ import torch
 import shutil
 import json
 
-PARTITION_NAME = 'shaurya'
+PARTITION_NAME = 'partition0'
 
 
 def mpi4py_installed():
@@ -37,7 +37,7 @@ def grad_id(tensor_id):
     return popart.reservedGradientPrefix() + tensor_id
 
 
-# TODO: We need a foolproof way of telling when we are on a IPU-Pod
+# TODO: We need a foolproof way of telling when we are on a IPU POD
 def is_running_on_ipu_pod():
     ipuof_config_found = os.getenv("IPUOF_CONFIG_PATH") is not None
     vipu_cli_found = shutil.which('vipu-cli') is not None
@@ -51,15 +51,17 @@ def is_gcd_size(size):
                                     PARTITION_NAME + '_gcd0_ipuof.conf')
     with open(gcd0_config_file, 'r') as fid:
         gcd0_config = fid.read()
-    return len(json.loads(gcd0_config)) == size
+    j = json.loads(gcd0_config)
+
+    return len(j['devices']) == size
 
 
-# For the time being these tests can only be run on an IPU-Pod
+# For the time being these tests can only be run on an IPU POD
 # To allocate a VIPU partition for this test use this command:
-# `vipu-cli create partition shaurya --size 2 --gcds 2`
+# `vipu-cli create partition partition_name --size 2 --gcds 2`
 
 # The tests need to be run with a command similar to this:
-# mpirun --tag-output -x IPUOF_CONFIG_PATH=~/.ipuof.conf.d/shaurya_gcd0_ipuof.conf -x TEST_TARGET=Hw -np 1  python -m pytest install/popart/tests/popart/distributed_replicated_graph_test.py -s : -x IPUOF_CONFIG_PATH=~/.ipuof.conf.d/shaurya_gcd1_ipuof.conf -x TEST_TARGET=Hw -np 1  python -m pytest install/popart/tests/popart/distributed_replicated_graph_test.py -s
+# mpirun --tag-output -x IPUOF_CONFIG_PATH=~/.ipuof.conf.d/partition_name_gcd0_ipuof.conf -x TEST_TARGET=Hw -np 1  python -m pytest install/popart/tests/popart/distributed_replicated_graph_test.py -s : -x IPUOF_CONFIG_PATH=~/.ipuof.conf.d/partition_name_gcd1_ipuof.conf -x TEST_TARGET=Hw -np 1  python -m pytest install/popart/tests/popart/distributed_replicated_graph_test.py -s
 
 
 @pytest.mark.skipif(
@@ -81,7 +83,6 @@ def test_distributed_replicated_allreduce():
     opts = popart.SessionOptions()
     opts.enableReplicatedGraphs = False
     opts.enableDistributedReplicatedGraphs = True
-    opts.globalNumIpus = mpi_size
     opts.globalReplicaOffset = mpi_rank
     opts.globalReplicationFactor = 2
 
@@ -158,8 +159,10 @@ def test_distributed_replicated_weight_update():
     D = builder.addInitializedInputTensor(D_init, "D")
     E = builder.aiOnnx.matmul([A, B])
     F = builder.aiOnnx.matmul([E, C])
-    loss = builder.aiGraphcore.l1loss([G], lossLambda)
-    builder.addOutputTensor(loss)
+    G = builder.aiOnnx.matmul([F, D])
+    loss = builder.aiGraphcore.l1loss([G],
+                                      lossLambda,
+                                      reduction=popart.ReductionType.Sum)
     proto = builder.getModelProto()
 
     outputs = {
@@ -176,7 +179,6 @@ def test_distributed_replicated_weight_update():
     opts = popart.SessionOptions()
     opts.enableReplicatedGraphs = False
     opts.enableDistributedReplicatedGraphs = True
-    opts.globalNumIpus = mpi_size
     opts.globalReplicaOffset = mpi_rank
     opts.globalReplicationFactor = 2
 
@@ -210,7 +212,7 @@ def test_distributed_replicated_weight_update():
 # This is a special test in which we run a hierarchical replicated graph at the instance level
 # The global replication factor is 4, the local replication factor is 2
 # To configure this system with VIRM use the following command:
-# vipu-cli create partition shaurya --size 4 --gcds 2 --gcd-sync-replicas 4
+# vipu-cli create partition partition_name --size 4 --gcds 2 --gcd-sync-replicas 4
 @pytest.mark.skipif(
     not mpi4py_installed() or not is_gcd_size(2),
     reason=
@@ -266,7 +268,9 @@ def test_distributed_hierarchical_replicated_weight_update():
     E = builder.aiOnnx.matmul([A, B])
     F = builder.aiOnnx.matmul([E, C])
     G = builder.aiOnnx.matmul([F, D])
-    loss = builder.aiGraphcore.l1loss([G], lossLambda)
+    loss = builder.aiGraphcore.l1loss([G],
+                                      lossLambda,
+                                      reduction=popart.ReductionType.Sum)
     builder.addOutputTensor(loss)
     proto = builder.getModelProto()
 
@@ -285,7 +289,6 @@ def test_distributed_hierarchical_replicated_weight_update():
     opts.enableReplicatedGraphs = True
     opts.replicatedGraphCount = 2
     opts.enableDistributedReplicatedGraphs = True
-    opts.globalNumIpus = 4
     opts.globalReplicaOffset = 0 if mpi_rank == 0 else 2
     opts.globalReplicationFactor = 4
 

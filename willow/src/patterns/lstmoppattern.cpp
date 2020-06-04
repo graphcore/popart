@@ -168,7 +168,7 @@ bool LSTMPattern::apply(Op *op) const {
                 "");
 
   op->getGraph().eraseOp(op->id);
-  return false;
+  return true;
 }
 
 // Disabled by default

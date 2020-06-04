@@ -43,7 +43,6 @@ bool PowArg1GradOpPattern::apply(Op *op) const {
   // Remove the PowArg1GradOp
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  op->getGraph().eraseOp(op->id);
 
   // Connect up the new ops
   log->connectInTensor(0, fwd_in0->id);
@@ -55,22 +54,25 @@ bool PowArg1GradOpPattern::apply(Op *op) const {
   mul_1->connectInTensor(1, log->outTensor(0)->id);
   mul_1->createAndConnectOutTensor(
       0, grad_in->getIr().createIntermediateTensorId(grad_in->id));
-  mul_1->outInfo(0) = npOut(mul_1->inInfo(0), mul_1->inInfo(1));
+  mul_1->outInfo(0) = op->prettyNpOut(mul_1->inInfo(0), mul_1->inInfo(1));
 
   mul_2->connectInTensor(0, grad_in->id);
   mul_2->connectInTensor(1, mul_1->outTensor(0)->id);
   mul_2->createAndConnectOutTensor(
       0, grad_in->getIr().createIntermediateTensorId(grad_in->id));
-  mul_2->outInfo(0) = npOut(mul_2->inInfo(0), mul_2->inInfo(1));
+  mul_2->outInfo(0) = op->prettyNpOut(mul_2->inInfo(0), mul_2->inInfo(1));
 
   reduce->connectInTensor(0, mul_2->outTensor(0)->id);
   reduce->connectOutTensor(0, grad_out->id);
+
+  // Don't delete op until after the op->prettyNpOut calls.
+  op->getGraph().eraseOp(op->id);
 
   return true;
 }
 
 namespace {
-static PatternCreator<PowArg1GradOpPattern>
+static PatternCreator<popart::PowArg1GradOpPattern>
     PowArg1GradOpPattern(PreAliasPatternType::PowArg1GradOp, "PowArg1GradOp");
 }
 

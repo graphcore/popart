@@ -23,17 +23,40 @@ std::vector<std::unique_ptr<Op>> NllOp::getGradOps() {
 
 void NllOp::setup() {
 
-  const auto &labelsInInfo = inInfo(getLabelInIndex());
-  if (!labelsInInfo.getDataTypeInfo()->isFixedPoint()) {
+  const auto &probsInInfo = inInfo(getProbsInIndex());
+  const auto &labelInInfo = inInfo(getLabelInIndex());
+
+  const auto &probsInShape = inShape(getProbsInIndex());
+  const auto &labelInShape = inShape(getLabelInIndex());
+
+  Shape expectedLabelShape{probsInShape.begin(), probsInShape.end() - 1};
+
+  // We expect the labels input to have all but the last dimension of the probs
+  // input. We check this here.
+  if (probsInShape.size() == 0) {
+    // Label input can't have the expected shape if prob input is of rank 0.
+    throw error(
+        "Invalid shape for prob tensor ({}) in Op {}. ", probsInInfo, str());
+  }
+
+  if (labelInShape != expectedLabelShape) {
+    // Label doesn't have the expected shape.
+    throw error("The label tensor ({}) must have shape {} to match all but "
+                "the final dimension of the probabilities "
+                "tensor ({}) in Op {}. ",
+                labelInInfo,
+                expectedLabelShape,
+                probsInInfo,
+                str());
+  }
+
+  if (!labelInInfo.getDataTypeInfo()->isFixedPoint()) {
     throw error(
         "Expected the label tensor NllOp to be fixed point, not the case "
         "for input with info: {}. This error for Op {}. ",
-        labelsInInfo,
+        labelInInfo,
         str());
   }
-
-  const auto &probsInInfo = inInfo(getProbsInIndex());
-  const auto &labelInInfo = inInfo(getLabelInIndex());
 
   Shape outShape({});
 

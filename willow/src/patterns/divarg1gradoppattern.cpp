@@ -46,7 +46,6 @@ bool DivArg1GradOpPattern::apply(Op *op) const {
   // Remove the DivArg1GradOp
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  op->getGraph().eraseOp(op->id);
 
   // Connect up the new ops
   square->connectInTensor(0, fwd_in1->id);
@@ -58,13 +57,13 @@ bool DivArg1GradOpPattern::apply(Op *op) const {
   mul->connectInTensor(1, fwd_in0->id);
   mul->createAndConnectOutTensor(
       0, grad_in->getIr().createIntermediateTensorId(grad_in->id));
-  mul->outInfo(0) = npOut(mul->inInfo(0), mul->inInfo(1));
+  mul->outInfo(0) = op->prettyNpOut(mul->inInfo(0), mul->inInfo(1));
 
   div->connectInTensor(0, mul->outTensor(0)->id);
   div->connectInTensor(1, square->outTensor(0)->id);
   div->createAndConnectOutTensor(
       0, grad_in->getIr().createIntermediateTensorId(grad_in->id));
-  div->outInfo(0) = npOut(div->inInfo(0), div->inInfo(1));
+  div->outInfo(0) = op->prettyNpOut(div->inInfo(0), div->inInfo(1));
 
   negate->connectInTensor(0, div->outTensor(0)->id);
   negate->createAndConnectOutTensor(
@@ -73,6 +72,9 @@ bool DivArg1GradOpPattern::apply(Op *op) const {
 
   reduce->connectInTensor(0, negate->outTensor(0)->id);
   reduce->connectOutTensor(0, grad_out->id);
+
+  // Don't delete op until after the op->prettyNpOut calls.
+  op->getGraph().eraseOp(op->id);
 
   return true;
 }

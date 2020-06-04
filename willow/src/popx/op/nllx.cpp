@@ -89,9 +89,9 @@ void NllOpx::flattenAndEncodeOneHot(const Opx &opx,
                                     poplar::Tensor &probs2D,
                                     poplar::Tensor &label1D,
                                     poplar::Tensor &oneHot) {
-  // Expect an N-d Probs tensor and (N-1)-d Label tensor. If N=2:
-  // Probs - a tensor of shape [Batchsize, NumClasses]
-  // Label - a tensor of shape [Batchsize], where each element is a
+  // Expect an N-d Probs tensor and (N-1)-d Label tensor.
+  // Probs - a tensor of shape [D1, ..., DN, NumClasses]
+  // Label - a tensor of shape [D1, ..., DN], where each element is a
   //         class index
   // If N > 2, then the inputs are flattened across all dimenions
   // (except the outer Classes dim in the case of Probs)

@@ -142,7 +142,7 @@ def test_lstm_torch_grad_all_inputs(op_tester):
 
         return [Y2, a.grad, wig, whg, b_grad, h0.grad, c0.grad, None]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl', 'OpToReshape']
     op_tester.atol = 1e-07
     op_tester.run(init_builder, reference, 'train')
 
@@ -355,7 +355,8 @@ def test_import_torch_lstm_train(tmpdir):
                                    dataFlow=dataFlow,
                                    optimizer=optimizer,
                                    loss=loss,
-                                   patterns=popart.Patterns(["PreUniRepl"]),
+                                   patterns=popart.Patterns(
+                                       ['PreUniRepl', 'OpToReshape']),
                                    deviceInfo=device)
         print('setting device')
 

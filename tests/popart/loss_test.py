@@ -326,6 +326,48 @@ def run_nll_loss_grad_with_ignored_index(popart_reduction_type):
     checkResult(getTensorError(torch_ip_grad, px_no_smd_ip_grad), 1e-8)
 
 
+def test_nll_loss_input_with_invalid_input():
+    # fix the random seed for this test
+    np.random.seed(0)
+
+    ## input data
+    Batchsize = 2
+    ExtraDim = 4  # e.g. sequence length in language model
+    Classes = 3
+
+    dshape = [Batchsize, ExtraDim, Classes]
+    lshape = [Batchsize, ExtraDim + 1]  # Doesn't match!
+
+    ip_data = np.random.rand(*dshape).astype(np.float32)
+    lb_data = np.random.randint(Classes, size=lshape)
+
+    ###
+    # Popart
+    ###
+    builder = popart.Builder()
+    ip = builder.addInitializedInputTensor(ip_data)
+    lb = builder.addInputTensor(popart.TensorInfo("INT32", lshape))
+    out = builder.aiOnnx.softmax([ip], axis=np.size(lshape))
+
+    nll0 = builder.aiGraphcore.nllloss([out, lb],
+                                       popart.ReductionType.NoReduction)
+
+    patterns = popart.PatternsLevel.NoPatterns
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                         dataFlow=popart.DataFlow(1, [nll0]),
+                                         optimizer=popart.ConstSGD(
+                                             LEARNING_RATE, WEIGHT_DECAY),
+                                         loss=nll0,
+                                         patterns=popart.Patterns(patterns),
+                                         deviceInfo=tu.create_test_device())
+
+    assert (e_info.value.args[0].startswith(
+        "The label tensor (INT32   [2 5]) must have shape [2 4] to match all but the final dimension of the probabilities tensor (FLOAT   [2 4 3])"
+    ))
+
+
 def run_all_combinations(test_fn):
     for reduction in (popart.ReductionType.Mean,
                       popart.ReductionType.NoReduction,

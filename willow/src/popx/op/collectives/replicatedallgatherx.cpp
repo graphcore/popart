@@ -21,12 +21,15 @@ ReplicatedAllGatherOpx::ReplicatedAllGatherOpx(Op *op, Devicex *devicex)
 void ReplicatedAllGatherOpx::grow(poplar::program::Sequence &prog) const {
   auto &op = getOp<ReplicatedAllGatherOp>();
 
+  poplar::OptionFlags allGatherOptions = dv_p->gclOptions;
+  allGatherOptions.set("useReplicatedImplementation", "true");
+
   poplar::Tensor gathered = popops::replicatedAllGather(
       graph(),
       getInTensor(ReplicatedAllGatherOp::getInIndex()),
       prog,
       debugPrefix("replicatedAllGather"),
-      {{"useReplicatedImplementation", "true"}});
+      allGatherOptions);
 
   if (hasInput(ReplicatedAllGatherOp::getCollectiveLinkedIndex())) {
     auto cbr = getCollectiveBalancedReorder();

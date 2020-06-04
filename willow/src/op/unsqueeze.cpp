@@ -12,9 +12,9 @@ UnsqueezeOp::UnsqueezeOp(const OperatorIdentifier &_opid,
     : Op(_opid, settings_), axes(axes_) {}
 
 std::vector<std::unique_ptr<Op>> UnsqueezeOp::getGradOps() {
-  std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(std::make_unique<UnsqueezeGradOp>(*this));
-  return upops;
+  throw error("No gradient operations for unsqueeze is available. Unsqueeze "
+              "should have been automatically replaced by a reshape operation "
+              "by the built-in OpToReshape pattern");
 }
 
 std::unique_ptr<Op> UnsqueezeOp::clone() const {
@@ -29,31 +29,6 @@ void UnsqueezeOp::setup() {
 void UnsqueezeOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("axes", axes);
-}
-
-void UnsqueezeGradOp::setup() { outInfo(getOutIndex()) = squeezedInfo; }
-
-std::unique_ptr<Op> UnsqueezeGradOp::clone() const {
-  return std::make_unique<UnsqueezeGradOp>(*this);
-}
-
-UnsqueezeGradOp::UnsqueezeGradOp(const UnsqueezeOp &op_)
-    : Op(Onnx::GradOperators::UnsqueezeGrad, op_.getSettings()),
-      squeezedInfo(op_.inInfo(UnsqueezeOp::getInIndex())) {}
-
-const std::vector<GradInOutMapper> &UnsqueezeGradOp::gradInputInfo() const {
-  // input at index 0 : gradient of output of unsqueeze
-  static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), UnsqueezeOp::getOutIndex(), GradOpInType::GradOut}};
-  return inInfo;
-}
-
-const std::map<int, int> &UnsqueezeGradOp::gradOutToNonGradIn() const {
-  // the grad-op output at index 0 corresponds
-  // to the non-grad-op's input at index 0
-  static const std::map<int, int> outInfo = {
-      {getOutIndex(), UnsqueezeOp::getInIndex()}};
-  return outInfo;
 }
 
 namespace {

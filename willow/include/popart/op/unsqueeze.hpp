@@ -26,24 +26,6 @@ private:
   std::vector<int64_t> axes;
 };
 
-class UnsqueezeGradOp : public Op {
-public:
-  UnsqueezeGradOp(const UnsqueezeOp &);
-  const std::vector<GradInOutMapper> &gradInputInfo() const final;
-  const std::map<int, int> &gradOutToNonGradIn() const final;
-  void setup() final;
-  std::unique_ptr<Op> clone() const final;
-
-  static InIndex getInIndex() { return 0; }
-  static OutIndex getOutIndex() { return 0; }
-
-  float getSubgraphValue() const final { return getLowSubgraphValue(); }
-
-private:
-  // The shape and type of the input to the constructing forward op
-  TensorInfo squeezedInfo;
-};
-
 } // namespace popart
 
 #endif

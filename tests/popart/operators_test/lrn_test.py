@@ -45,7 +45,7 @@ def test_lrn(op_tester):
             result.append(lrn_out_ref)
         return result
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl', 'OpToReshape']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -111,5 +111,5 @@ def test_lrn_training(op_tester):
         result = [sum, sum.grad] + result
         return result
 
-    op_tester.patterns = ['OpToIdentity']
+    op_tester.patterns = ['OpToIdentity', 'OpToReshape']
     op_tester.run(init_builder, reference, 'train')

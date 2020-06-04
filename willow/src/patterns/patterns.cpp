@@ -25,6 +25,7 @@
 #include <popart/patterns/negativeonescalepattern.hpp>
 #include <popart/patterns/nlllwithsoftmaxgraddirect.hpp>
 #include <popart/patterns/optoidentitypattern.hpp>
+#include <popart/patterns/optoreshapepattern.hpp>
 #include <popart/patterns/padsum.hpp>
 #include <popart/patterns/pattern.hpp>
 #include <popart/patterns/postnrepl.hpp>
@@ -208,6 +209,10 @@ bool Patterns::isOpToIdentityEnabled() {
   return isPatternEnabled<OpToIdentityPattern>();
 }
 
+bool Patterns::isOpToReshapeEnabled() {
+  return isPatternEnabled<OpToReshapePattern>();
+}
+
 bool Patterns::isSubtractArg1GradOpEnabled() {
   return isPatternEnabled<SubtractArg1GradOpPattern>();
 }
@@ -296,6 +301,10 @@ Patterns &Patterns::enableSoftMaxGradDirect(bool v) {
 
 Patterns &Patterns::enableNlllWithSoftMaxGradDirect(bool v) {
   return enablePattern<NlllWithSoftmaxGradDirect>(v);
+}
+
+Patterns &Patterns::enableOpToReshape(bool v) {
+  return enablePattern<OpToReshapePattern>(v);
 }
 
 Patterns &Patterns::enableSplitConvBias(bool v) {
@@ -409,33 +418,34 @@ Patterns &Patterns::enablePattern(PreAliasPatternType t, bool v) {
 
 std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
   static std::map<std::type_index, int> patternPriority{
-      {std::type_index(typeid(PreUniRepl)), 35},
-      {std::type_index(typeid(PostNRepl)), 34},
-      {std::type_index(typeid(SoftmaxGradDirect)), 33},
-      {std::type_index(typeid(NlllWithSoftmaxGradDirect)), 32},
-      {std::type_index(typeid(ConvBiasPattern)), 31},
-      {std::type_index(typeid(OpToIdentityPattern)), 30},
-      {std::type_index(typeid(SubtractArg1GradOpPattern)), 29},
-      {std::type_index(typeid(MulArgGradOpPattern)), 28},
-      {std::type_index(typeid(ReciprocalGradOpPattern)), 27},
-      {std::type_index(typeid(DivArg0GradOpPattern)), 26},
-      {std::type_index(typeid(DivArg1GradOpPattern)), 25},
-      {std::type_index(typeid(ElementWiseGradOpPattern<SinGradOp, CosOp>)), 24},
-      {std::type_index(typeid(CosGradOpPattern)), 23},
-      {std::type_index(typeid(TanToSinOverCosPattern)), 22},
-      {std::type_index(typeid(SqrtGradOpPattern)), 21},
-      {std::type_index(typeid(ExpGradOpPattern)), 20},
-      {std::type_index(typeid(LogGradOpPattern)), 19},
-      {std::type_index(typeid(CoshOpPattern)), 18},
-      {std::type_index(typeid(LogSoftmaxOpPattern)), 17},
-      {std::type_index(typeid(GemmDecompositionPattern)), 16},
-      {std::type_index(typeid(NegativeOneScalePattern)), 15},
-      {std::type_index(typeid(PadSumPattern)), 14},
+      {std::type_index(typeid(PreUniRepl)), 36},
+      {std::type_index(typeid(PostNRepl)), 35},
+      {std::type_index(typeid(SoftmaxGradDirect)), 34},
+      {std::type_index(typeid(NlllWithSoftmaxGradDirect)), 33},
+      {std::type_index(typeid(ConvBiasPattern)), 32},
+      {std::type_index(typeid(OpToIdentityPattern)), 31},
+      {std::type_index(typeid(SubtractArg1GradOpPattern)), 30},
+      {std::type_index(typeid(MulArgGradOpPattern)), 29},
+      {std::type_index(typeid(ReciprocalGradOpPattern)), 28},
+      {std::type_index(typeid(DivArg0GradOpPattern)), 27},
+      {std::type_index(typeid(DivArg1GradOpPattern)), 26},
+      {std::type_index(typeid(ElementWiseGradOpPattern<SinGradOp, CosOp>)), 25},
+      {std::type_index(typeid(CosGradOpPattern)), 24},
+      {std::type_index(typeid(TanToSinOverCosPattern)), 23},
+      {std::type_index(typeid(SqrtGradOpPattern)), 22},
+      {std::type_index(typeid(ExpGradOpPattern)), 21},
+      {std::type_index(typeid(LogGradOpPattern)), 20},
+      {std::type_index(typeid(CoshOpPattern)), 19},
+      {std::type_index(typeid(LogSoftmaxOpPattern)), 18},
+      {std::type_index(typeid(GemmDecompositionPattern)), 17},
+      {std::type_index(typeid(NegativeOneScalePattern)), 16},
+      {std::type_index(typeid(PadSumPattern)), 15},
       {std::type_index(typeid(ElementWiseGradOpPattern<AbsGradOp, SignOp>)),
-       13},
-      {std::type_index(typeid(SplitGatherPattern)), 12},
-      {std::type_index(typeid(ConvDataGradPattern)), 11},
-      {std::type_index(typeid(SumToAddPattern)), 10},
+       14},
+      {std::type_index(typeid(SplitGatherPattern)), 13},
+      {std::type_index(typeid(ConvDataGradPattern)), 12},
+      {std::type_index(typeid(SumToAddPattern)), 11},
+      {std::type_index(typeid(OpToReshapePattern)), 10},
       {std::type_index(typeid(SplitGradOpToConcatPattern)), 9},
       {std::type_index(typeid(SplitOpPattern)), 8},
       {std::type_index(typeid(PowArg0GradOpPattern)), 7},

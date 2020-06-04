@@ -169,9 +169,33 @@ bool CacheSetup::apply(Graph &graph) const {
 
   for (auto &mapping : remoteBufferVGIDs) {
     if (mapping.second.size() > 1) {
-      throw error(
-          "[CacheSetup] Remote buffer ID {} maps to multiple virtual graphs.",
-          mapping.first);
+      if (logging::transform::isEnabled(logging::Level::Trace)) {
+        logging::transform::trace("[CacheSetup] Remote buffer ID {} maps to "
+                                  "multiple virtual graphs {} with:",
+                                  mapping.first,
+                                  mapping.second);
+        for (auto &argBuffer : argBufferMap) {
+          auto &tensor_id         = argBuffer.first;
+          auto &remoteBufferId    = argBuffer.second.first;
+          auto &remoteBufferIndex = argBuffer.second.second;
+          if (remoteBufferId != mapping.first)
+            continue;
+          logging::transform::trace("[CacheSetup]   Tensor arg {} with:",
+                                    tensor_id);
+          for (Op *op : argOpMap[tensor_id]) {
+            logging::transform::trace(
+                "[CacheSetup]     Op {} phase {} vgid {} {}.",
+                op->opid,
+                op->getPingPongPhase(),
+                op->getVirtualGraphId(),
+                op->debugName());
+          }
+        }
+      }
+      throw error("[CacheSetup] Remote buffer ID {} maps to multiple virtual "
+                  "graphs {}.",
+                  mapping.first,
+                  mapping.second);
     }
   }
 

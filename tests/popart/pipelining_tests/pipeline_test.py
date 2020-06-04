@@ -133,7 +133,7 @@ def test_sharding_multi_source():
     """
     builder = popart.Builder()
     shape_d = [10]
-    shape_l = [1]
+    shape_l = []
     d0 = builder.addInputTensor(popart.TensorInfo("FLOAT", shape_d))
     d1 = builder.addInputTensor(popart.TensorInfo("FLOAT", shape_d))
     l0 = builder.addInputTensor(popart.TensorInfo("INT32", shape_l))

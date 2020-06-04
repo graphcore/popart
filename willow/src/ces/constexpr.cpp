@@ -57,6 +57,8 @@ void ConstExprUtil::processOp(Op *op, Graph &graph) {
   op = nullptr;
 }
 
+const Op *ConstExprOp::getBaseOp() const { return this->op; }
+
 void ConstExprUtil::foldConstants(Graph &graph) {
   // get ops that may be computable
   std::unordered_set<Op *> computable_ops;

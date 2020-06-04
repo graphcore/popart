@@ -118,5 +118,5 @@ def test_reducemin_training(op_tester):
         result = [sum, sum.grad] + result
         return result
 
-    op_tester.patterns = ['OpToIdentity']
+    op_tester.patterns = ['OpToIdentity', 'OpToReshape']
     op_tester.run(init_builder, reference, 'train')

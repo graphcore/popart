@@ -18,6 +18,7 @@ def test_squeeze(op_tester):
         o = np.squeeze(d1)
         return [o]
 
+    op_tester.patterns = ['OpToReshape']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -34,6 +35,7 @@ def test_squeeze_limited(op_tester):
         o = np.squeeze(d1, axis=1)
         return [o]
 
+    op_tester.patterns = ['OpToReshape']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -51,6 +53,7 @@ def test_squeeze_unsorted_axes(op_tester):
         o = np.squeeze(o, axis=1)
         return [o]
 
+    op_tester.patterns = ['OpToReshape']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -74,7 +77,7 @@ def test_squeeze_grad(op_tester):
         o.backward(torch.tensor(d__o))
         return [o, i1.grad, None]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl', 'OpToReshape']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -98,5 +101,5 @@ def test_squeeze_limited_grad(op_tester):
         o.backward(torch.tensor(d__o))
         return [o, i1.grad, None]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.patterns = ['PreUniRepl', 'OpToReshape']
     op_tester.run(init_builder, reference, 'train')

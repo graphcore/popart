@@ -112,7 +112,60 @@ void DetachShapeInference(InferenceContext &ctx) {
 }
 
 void CallShapeInference(InferenceContext &ctx) {
-  propagateShapeAndTypeFromFirstInput(ctx);
+  auto num_inputs = ctx.getNumInputs();
+
+  std::vector<const ONNX_NAMESPACE::TypeProto *> subgraph_input_types;
+
+  // Run inferencing on the subgraph
+  std::vector<const ONNX_NAMESPACE::TypeProto *> subgraph_output_types;
+  GraphInferencer *graphInferencer = ctx.getGraphAttributeInferencer("callee");
+  if (graphInferencer) {
+    std::vector<const ONNX_NAMESPACE::TensorProto *> input_data;
+    for (size_t i = 0; i < num_inputs; ++i) {
+      input_data.push_back(ctx.getInputData(i));
+      subgraph_input_types.push_back(ctx.getInputType(i));
+    }
+
+    subgraph_output_types =
+        graphInferencer->doInferencing(subgraph_input_types, input_data);
+  }
+
+  // if empty(), assume inferencing was skipped
+  if (!subgraph_output_types.empty()) {
+    auto num_outputs = ctx.getNumOutputs();
+
+    if (subgraph_output_types.size() != num_outputs) {
+      fail_type_inference(
+          "Graph attribute inferencing returned type information for ",
+          subgraph_output_types.size(),
+          " outputs. Expected ",
+          num_outputs);
+    }
+
+    for (size_t i = 0; i < num_outputs; ++i) {
+      auto *subgraph_output_type = subgraph_output_types[i];
+      auto *output_type          = ctx.getOutputType(i);
+
+      if (!subgraph_output_type->has_tensor_type()) {
+        fail_type_inference(
+            "Graph 'callee' subgraph outputs should all be tensors but output ",
+            i,
+            " was ",
+            subgraph_output_type->value_case());
+      }
+
+      // if there's an existing type check it matches. otherwise propagate
+      propagateElemTypeWithValidation(subgraph_output_type, output_type);
+
+      // merge shape; type already propagated
+      auto &subgraph_output_tensor_type = subgraph_output_type->tensor_type();
+      auto *mutable_call_output_tensor_type =
+          output_type->mutable_tensor_type();
+
+      mergeInShapeInfo(subgraph_output_tensor_type,
+                       *mutable_call_output_tensor_type);
+    }
+  }
 }
 
 extern size_t dbg_count_check_GroupNormalization_AiGraphcore_ver1;
