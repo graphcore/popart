@@ -28,11 +28,12 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
   double lambda = static_cast<double>(l1gradop.getLambda());
 
   // Signum : +1 of positive, -1 if negative, 0 if zero.
-  poplar::Tensor signumTensor = popops::map(graph(),
-                                            popops::expr::UnaryOpType::SIGNUM,
-                                            getInTensor(0),
-                                            prog,
-                                            debugPrefix("Signum"));
+  poplar::Tensor signumTensor =
+      popops::map(graph(),
+                  popops::expr::UnaryOpType::SIGNUM,
+                  getInTensor(L1GradOp::getFwdActInIndex()),
+                  prog,
+                  debugPrefix("Signum"));
 
   double scale = lambda;
   switch (l1gradop.getReductionType()) {
@@ -52,12 +53,15 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
 
   auto t_scale =
       getConst(getInTensor(0).elementType(), {}, scale, debugPrefix("scale"));
-  // scale the signum tensor by 'scale',
-  // so +scale if positive, -scale if negative, 0 if zero
+
+  // scale the signum tensor:
+  // - first by 'scale',  so +scale if positive, -scale if negative, 0 if zero
+  // - by loss scaling factor
+  // - then by input gradient
+
   auto gradTensor = popops::map(graph(),
-                                popops::expr::BinaryOpType::MULTIPLY,
-                                signumTensor,
-                                t_scale,
+                                pe::Mul(pe::_1, pe::_2),
+                                {signumTensor, t_scale},
                                 prog,
                                 debugPrefix("multiply"));
 
@@ -78,6 +82,13 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
         prog,
         debugPrefix("scaledLoss"));
   }
+
+  auto gradIn = getInTensor(L1GradOp::getGradInIndex());
+  popops::mapInPlace(graph(),
+                     pe::Mul(pe::_1, pe::_2),
+                     {gradTensor, gradIn},
+                     prog,
+                     debugPrefix("scaledGradIn"));
 
   setOutTensor(0, gradTensor);
 }

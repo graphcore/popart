@@ -45,8 +45,9 @@ bool NlllWithSoftmaxGradDirect::apply(Op *op) const {
   auto fwdLossOp = sfmgdOp->nlllFwdOp();
   auto &graph    = op->getGraph();
 
-  auto label    = sfmgdOp->inTensor(NllOp::getLabelInIndex());
-  auto probs    = sfmgdOp->inTensor(NllOp::getProbsInIndex());
+  auto label    = sfmgdOp->inTensor(SoftmaxGradDirectOp::getLabelInIndex());
+  auto probs    = sfmgdOp->inTensor(SoftmaxGradDirectOp::getProbsInIndex());
+  auto gradIn   = sfmgdOp->inTensor(SoftmaxGradDirectOp::getGradProbsInIndex());
   auto sfm_grad = sfmgdOp->outTensor(0);
   auto loss     = fwdLossOp->outTensor(0);
 
@@ -70,6 +71,8 @@ bool NlllWithSoftmaxGradDirect::apply(Op *op) const {
                              probs->id);
   nlllsfmgd->connectInTensor(NlllWithSoftmaxGradDirectOp::getLabelInIndex(),
                              label->id);
+  nlllsfmgd->connectInTensor(NlllWithSoftmaxGradDirectOp::getGradProbsInIndex(),
+                             gradIn->id);
   nlllsfmgd->connectOutTensor(NlllWithSoftmaxGradDirectOp::getGradOutIndex(),
                               sfm_grad->id);
   nlllsfmgd->connectOutTensor(NlllWithSoftmaxGradDirectOp::getLossOutIndex(),

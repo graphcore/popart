@@ -189,8 +189,8 @@ def test_pad_sum7(op_tester):
         s1 = builder.aiOnnx.slice([i1, s1_starts, s1_ends, s1_axes])
 
         s2_axes = builder.aiOnnx.constant(np.array([0]).astype(np.int32))
-        s2_starts = builder.aiOnnx.constant(np.array([3]).astype(np.int32))
-        s2_ends = builder.aiOnnx.constant(np.array([4]).astype(np.int32))
+        s2_starts = builder.aiOnnx.constant(np.array([1]).astype(np.int32))
+        s2_ends = builder.aiOnnx.constant(np.array([2]).astype(np.int32))
         s2 = builder.aiOnnx.slice([i1, s2_starts, s2_ends, s2_axes])
 
         s3_axes = builder.aiOnnx.constant(np.array([0]).astype(np.int64))
@@ -212,7 +212,7 @@ def test_pad_sum7(op_tester):
     def reference(ref_data):
         i1 = torch.tensor(d1, requires_grad=True)
         s1 = i1[0:1]
-        s2 = i1[3:4]
+        s2 = i1[1:2]
         s3 = i1[1:3]
         c1 = torch.cat((s1, s2, s3), 0)
         u1 = torch.unsqueeze(c1, 0)

@@ -248,7 +248,7 @@ public:
   OpId getOpsCounter() const;
   OpId getAndIncrOpsCounter();
   TensorId getFinalLossId() const;
-  // The OpId if the Op which sums all loss values from the LossOps
+  // The OpId if the Op which produces the final loss tensor
   OpId getFinalLossOpId() const;
   // if check is in userOptions.dotChecks, then write the .dot file
   // in userOptions.logDir
@@ -374,9 +374,8 @@ public:
   // to single string might result in conflict).
   void confirmNoReservedIds() const;
 
-  // grow an IndeityLossOp onto the user-provided loss tensor to create
-  // the final loss
-  void growFinalLoss(const TensorId &loss);
+  // Set the final loss
+  void setFinalLoss(const TensorId &loss);
 
   // Return the default opset version for a domain
   int getDefaultOpsetVersion(const std::string &domain) const;
@@ -510,6 +509,7 @@ private:
   // Map of ops and their root inputs
   std::map<OpId, std::set<Tensor *>> opAndRootInputs;
 
+  TensorId finalLossId;
   OpId finalLossOpId{-1000};
   bool constructedFinalLoss = false;
   bool constructedBackwards = false;

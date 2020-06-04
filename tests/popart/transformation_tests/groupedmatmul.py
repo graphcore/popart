@@ -245,7 +245,7 @@ def test_matmul_grouping_test_2(tmpdir):
 
         o = builder.aiOnnx.matmul([r1, r2], "END")
 
-        loss = builder.aiGraphcore.identityloss([o])
+        loss = builder.aiGraphcore.l1loss([o], 0.1)
 
         proto = builder.getModelProto()
 
@@ -343,7 +343,7 @@ def test_matmul_grouping_test_3(tmpdir):
 
         o = builder.aiOnnx.matmul([r1, r2], "END")
 
-        loss = builder.aiGraphcore.identityloss([o])
+        loss = builder.aiGraphcore.l1loss([o], 0.1)
 
         proto = builder.getModelProto()
 

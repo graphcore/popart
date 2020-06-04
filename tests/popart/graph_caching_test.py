@@ -103,7 +103,7 @@ def test_convolution_disable_all():
                             dilations=[1, 1],
                             pads=[1, 1, 1, 1],
                             strides=[1, 1])
-    loss = builder.aiGraphcore.identityloss([o])
+    loss = builder.aiGraphcore.l1loss([o], 0.1)
 
     proto = builder.getModelProto()
 
@@ -267,7 +267,7 @@ def test_matmul_train_cached_by_default():
 
     o = builder.aiOnnx.add([a1, a2])
 
-    loss = builder.aiGraphcore.identityloss([o])
+    loss = builder.aiGraphcore.l1loss([o], 0.1)
 
     proto = builder.getModelProto()
 
@@ -355,7 +355,7 @@ def test_gemm_train_cached_by_default():
 
     o = builder.aiOnnx.add([c1, c2])
 
-    loss = builder.aiGraphcore.identityloss([o])
+    loss = builder.aiGraphcore.l1loss([o], 0.1)
 
     proto = builder.getModelProto()
 

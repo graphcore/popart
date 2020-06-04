@@ -98,11 +98,12 @@ void IdentityLossOp::setup() {
 
 IdentityLossGradOp::IdentityLossGradOp(const IdentityLossOp &op_)
     : Op(Onnx::GradOperators::IdentityLossGrad, op_.getSettings()),
-      reduction_type_(op_.getReductionType()) {}
+      reduction_type_(op_.getReductionType()),
+      outShape_(op_.inShape(IdentityOp::getInIndex())) {}
 
 void IdentityLossGradOp::setup() {
   // gradient of input has same shape as input to Id
-  outInfo(getOutIndex()) = inInfo(getInIndex());
+  outInfo(getOutIndex()).set(inInfo(getInIndex()).dataType(), outShape_);
 }
 
 bool IdentityLossGradOp::canBeReplacedByIdentity() {
@@ -117,7 +118,7 @@ const std::vector<GradInOutMapper> &IdentityLossGradOp::gradInputInfo() const {
   // Input at index 0 of this grad op is the input at index 0 of the identity
   // non-grad op.
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), IdentityLossOp::getInIndex(), GradOpInType::In}};
+      {getInIndex(), IdentityLossOp::getOutIndex(), GradOpInType::GradOut}};
   return inInfo;
 }
 

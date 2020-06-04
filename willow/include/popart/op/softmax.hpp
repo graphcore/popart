@@ -79,6 +79,7 @@ public:
 
   static InIndex getProbsInIndex() { return 0; }
   static InIndex getLabelInIndex() { return 1; }
+  static InIndex getGradProbsInIndex() { return 2; }
   static OutIndex getOutIndex() { return 0; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
@@ -109,7 +110,8 @@ public:
 
   static InIndex getProbsInIndex() { return 0; }
   static InIndex getLabelInIndex() { return 1; }
-  static InIndex getLossScalingInIndex() { return 2; }
+  static InIndex getGradProbsInIndex() { return 2; }
+  static InIndex getLossScalingInIndex() { return 3; }
 
   static OutIndex getLossOutIndex() { return 0; }
   static OutIndex getGradOutIndex() { return 1; }

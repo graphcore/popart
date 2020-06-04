@@ -2,12 +2,18 @@
 import math
 import numpy as np
 import popart
-import test_util as tu
 import pytest
 import torch
 import torch.optim as optim
 import torch.nn as nn
 import torch.nn.functional as F
+from op_tester import op_tester
+
+# `import test_util` requires adding to sys.path
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+import test_util as tu
 
 LEARNING_RATE = 1e-3
 WEIGHT_DECAY = 1e-2
@@ -390,3 +396,71 @@ def test_nll_loss_with_ignored_index():
 def test_nll_loss_grad_with_ignored_index():
     run_nll_loss_grad_with_ignored_index(popart.ReductionType.Mean)
     run_nll_loss_grad_with_ignored_index(popart.ReductionType.Sum)
+
+
+def test_loss_scaling(op_tester):
+    nll_scale = 1.2
+    l1_scale = 1.5
+
+    for popart_reduction_type in (popart.ReductionType.Mean,
+                                  popart.ReductionType.Sum):
+
+        ## input data
+        Batchsize = 2
+        Classes = 3
+
+        dshape = [Batchsize, Classes]
+        lshape = [Batchsize]
+        flat_lshape = [Batchsize]
+
+        ip_data = np.random.rand(*dshape).astype(np.float32)
+        lb_data = np.random.randint(Classes, size=lshape)
+
+        def init_builder(builder):
+            ip = builder.addInitializedInputTensor(ip_data)
+            lb = builder.addInputTensor(lb_data.astype(np.int32))
+
+            sm = builder.aiOnnx.softmax([ip], axis=np.size(lshape))
+            nll = builder.aiGraphcore.nllloss([sm, lb],
+                                              reduction=popart_reduction_type)
+            nll_scaled = builder.aiGraphcore.scale([nll], nll_scale)
+
+            l1 = builder.aiGraphcore.l1loss([ip],
+                                            1.0,
+                                            reduction=popart_reduction_type)
+            l1_scaled = builder.aiGraphcore.scale([l1], l1_scale)
+
+            out = builder.aiOnnx.add([nll_scaled, l1_scaled])
+            builder.addOutputTensor(out)
+
+            result = [
+                out,
+                popart.reservedGradientPrefix() + ip,
+                popart.reservedGradientPrefix() + out
+            ]
+            return result
+
+        def reference(ref_data):
+            input = torch.tensor(ip_data, requires_grad=True)
+            target = torch.tensor(lb_data, requires_grad=False)
+
+            logsm = torch.nn.LogSoftmax()(input)
+            nll = get_pytorch_equivalent_loss(
+                torch.nn.NLLLoss, popart_reduction_type, [logsm, target])
+            nll_scaled = nll * nll_scale
+
+            l1 = get_pytorch_equivalent_loss(
+                torch.nn.L1Loss, popart_reduction_type,
+                [input, torch.zeros_like(input)])
+            l1_scaled = l1 * l1_scale
+
+            out = nll_scaled + l1_scaled
+
+            d__o = ref_data.getOutputTensorGrad(0)
+            out.backward(torch.tensor(d__o))
+
+            result = [out, input.grad, None]
+            return result
+
+        op_tester.patterns = []
+        op_tester.run(init_builder, reference, 'train')

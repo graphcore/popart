@@ -85,6 +85,7 @@ public:
 
 private:
   const ReductionType reduction_type_;
+  Shape outShape_;
 };
 
 } // namespace popart
