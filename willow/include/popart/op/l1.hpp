@@ -38,8 +38,9 @@ public:
   void setup() final;
   std::unique_ptr<Op> clone() const final;
 
-  static InIndex getInIndex() { return 0; }
-  static InIndex getLossScalingInIndex() { return 1; }
+  static InIndex getFwdActInIndex() { return 0; }
+  static InIndex getGradInIndex() { return 1; }
+  static InIndex getLossScalingInIndex() { return 2; }
 
   static OutIndex getOutIndex() { return 0; }
 

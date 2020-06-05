@@ -280,7 +280,7 @@ def test_matmul_serialization_training_1(tmpdir):
         builder.setSerializeMatMul({o}, matmul_serialization_mode,
                                    matmul_serialization_factor)
 
-        loss = builder.aiGraphcore.identityloss([o])
+        loss = builder.aiGraphcore.l1loss([o], 0.1)
 
         proto = builder.getModelProto()
 
@@ -536,7 +536,7 @@ def test_matmul_serialization_training_2(tmpdir):
             builder.aiOnnx, [o],
             [lhs_group_dim, input_channels, output_channels])
 
-        loss = builder.aiGraphcore.identityloss([o_reshape])
+        loss = builder.aiGraphcore.l1loss([o_reshape], 0.1)
 
         proto = builder.getModelProto()
 
@@ -792,7 +792,7 @@ def test_matmul_serialization_precision(tmpdir):
                                    matmul_serialization_factor,
                                    keep_precision=True)
 
-        loss = builder.aiGraphcore.identityloss([o])
+        loss = builder.aiGraphcore.l1loss([o], 0.1)
 
         proto = builder.getModelProto()
 
@@ -1054,7 +1054,7 @@ def test_matmul_serialization_training_with_gradient_accumlation(tmpdir):
 
         o = builder.aiOnnx.matmul([lhs, rhs])
 
-        loss = builder.aiGraphcore.identityloss([o])
+        loss = builder.aiGraphcore.l1loss([o], 0.1)
 
         builder.setSerializeMatMul({o}, matmul_serialization_mode,
                                    matmul_serialization_factor)

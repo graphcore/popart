@@ -10,6 +10,8 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensor.hpp>
 
+namespace pe = popops::expr;
+
 namespace popart {
 namespace popx {
 
@@ -44,34 +46,38 @@ IdentityLossOpx::IdentityLossOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<IdentityLossOp>(op, Onnx::CustomOperators::IdentityLoss);
 }
 
-void IdentityLossGradOpx::grow(poplar::program::Sequence &) const {
+void IdentityLossGradOpx::grow(poplar::program::Sequence &prog) const {
   IdentityLossGradOp &identitylossop = getOp<IdentityLossGradOp>();
-  double scale;
-  switch (identitylossop.getReductionType()) {
-  case ReductionType::NoReduction: {
-    scale = 1;
-    break;
+  auto output                        = getInTensor(0);
+
+  if (identitylossop.getReductionType() == ReductionType::NoReduction) {
+    // Same as IdentityGradOpx
+    setOutTensor(0, cloneNcopy(prog, getInTensor(0)));
+  } else {
+    auto output_shape = outShape(IdentityLossGradOp::getOutIndex());
+
+    if (identitylossop.getReductionType() == ReductionType::Sum) {
+      auto output = broadcast(output_shape, getInTensor(0));
+      setOutTensor(0, cloneNcopy(prog, output));
+    } else if (identitylossop.getReductionType() == ReductionType::Mean) {
+      // Divide broadcasted tensor by total number of samples
+      uint64_t totalSamples =
+          dv_p->getReplicationFactor() * output.numElements();
+      float scale = 1.0 / static_cast<float>(totalSamples);
+
+      auto output = popops::map(graph(),
+                                pe::Divide(pe::_1, pe::Const(scale)),
+                                {getInTensor(0)},
+                                prog,
+                                debugPrefix("div"));
+
+      output = broadcast(output_shape, output);
+
+      setOutTensor(0, cloneNcopy(prog, output));
+    } else {
+      throw error("Unsupported reduction type for Loss {}", debugPrefix());
+    }
   }
-  case ReductionType::Sum: {
-    scale = 1;
-    break;
-  }
-  case ReductionType::Mean: {
-    uint64_t totalSamples =
-        dv_p->getReplicationFactor() * getInTensor(0).numElements();
-    scale = 1.0 / static_cast<double>(totalSamples);
-    break;
-  }
-  default: {
-    throw error("Unsupported reduction type for Loss {}", debugPrefix());
-  }
-  }
-  poplar::Tensor ones = graph().addConstant(getInTensor(0).elementType(),
-                                            getInTensor(0).shape(),
-                                            scale,
-                                            debugPrefix("ones"));
-  graph().setTileMapping(ones, 0);
-  setOutTensor(0, ones);
 }
 
 InputCreatorType IdentityLossOpx::getInputCreatorType(InIndex) const {

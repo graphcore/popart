@@ -57,7 +57,7 @@ Broadcast the initial weights from the rank zero process to the other PopART ins
 
 Install
 ~~~~~~~
-Requirements for installing the Horovod PopART extension can be found here: `Horovod install <https://github.com/horovod/horovod/>`_.
+The Horovod PopART extension Python wheel can be found in the Poplar SDK downloaded from `<https://downloads.graphcore.ai/>`_. System prerequisites for installing the Horovod PopART extension can be found here: `Horovod install <https://horovod.readthedocs.io/en/latest/summary_include.html#install>`_.
 
 Configuring and running distributed training
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -116,9 +116,11 @@ std::unique_ptr<Op> NllGradOp::clone() const {
 const std::vector<GradInOutMapper> &NllGradOp::gradInputInfo() const {
   // input at index 0 : labelIn()
   // input at index 1 : probsIn()
+  // input at index 2 : gradIn()
   static const std::vector<GradInOutMapper> inInfo = {
       {getLabelInIndex(), NllOp::getLabelInIndex(), GradOpInType::In},
-      {getProbsInIndex(), NllOp::getProbsInIndex(), GradOpInType::In}};
+      {getProbsInIndex(), NllOp::getProbsInIndex(), GradOpInType::In},
+      {getGradInIndex(), NllOp::getOutIndex(), GradOpInType::GradOut}};
   return inInfo;
 }
 

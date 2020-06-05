@@ -261,9 +261,10 @@ NllGradOpx::NllGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 //                 ...............
 
 void NllGradOpx::grow(poplar::program::Sequence &prog) const {
-  const NllGradOp &gradOp     = getOp<NllGradOp>();
-  const poplar::Tensor &probs = getInTensor(NllOp::getProbsInIndex());
-  const poplar::Tensor &label = getInTensor(NllOp::getLabelInIndex());
+  const NllGradOp &gradOp      = getOp<NllGradOp>();
+  const poplar::Tensor &probs  = getInTensor(NllGradOp::getProbsInIndex());
+  const poplar::Tensor &label  = getInTensor(NllGradOp::getLabelInIndex());
+  const poplar::Tensor &gradIn = getInTensor(NllGradOp::getGradInIndex());
 
   // As for NllOpx, flatten outer dimenstions if rank(probs) > 2
   auto probs2D = probs.flatten(0, probs.rank() - 1);
@@ -332,6 +333,12 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
         prog,
         debugPrefix("scaledLoss"));
   }
+
+  popops::mapInPlace(graph(),
+                     pe::Mul(pe::_1, pe::_2),
+                     {oneHot, gradIn},
+                     prog,
+                     debugPrefix("scaledGradIn"));
 
   setOutTensor(0, oneHot);
 }

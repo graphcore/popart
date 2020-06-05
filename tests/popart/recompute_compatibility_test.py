@@ -10,26 +10,23 @@ def test_valid_recompute_options():
     builder = popart.Builder()
 
     i1 = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]))
-    i2 = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]))
-    o = builder.aiOnnx.add([i1, i2])
-
-    builder.addOutputTensor(o)
+    r1 = builder.aiOnnx.relu([i1])
+    o = builder.aiOnnx.relu([r1])
 
     # specify manual recomputation
-    builder.recomputeOutputInBackwardPass(o)
+    builder.recomputeOutputInBackwardPass(r1)
 
     # specify auto recomputation as well
     opts = popart.SessionOptions()
     opts.autoRecomputation = popart.RecomputationType.Standard
 
     with pytest.raises(popart.popart_exception) as e_info:
-        session = popart.TrainingSession(
-            fnModel=builder.getModelProto(),
-            dataFlow=popart.DataFlow(1, {o: popart.AnchorReturnType("All")}),
-            optimizer=popart.ConstSGD(0.001),
-            loss=o,
-            patterns=popart.Patterns([]),
-            userOptions=opts,
-            deviceInfo=tu.create_test_device())
+        session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                         dataFlow=popart.DataFlow(1, [o]),
+                                         optimizer=popart.ConstSGD(0.001),
+                                         loss=o,
+                                         patterns=popart.Patterns([]),
+                                         userOptions=opts,
+                                         deviceInfo=tu.create_test_device())
     assert (e_info.value.args[0] ==
             "A mixture of auto and manual recomputaion is not supported")

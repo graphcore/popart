@@ -60,7 +60,7 @@ BOOST_AUTO_TEST_CASE(test0) {
   auto t2_shape_t = aiOnnx.constant({t2_shape.data(), {"INT64", t_shapeSize}});
   auto t2         = aiOnnx.reshape({t1, t2_shape_t});
 
-  auto output = aiGraphcore.identityloss({t2});
+  auto output = aiGraphcore.l1loss({t2}, 0.1);
 
   auto opts             = SessionOptions();
   opts.virtualGraphMode = VirtualGraphMode::Manual;

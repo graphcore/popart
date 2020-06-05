@@ -136,6 +136,8 @@ void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
       getInTensor(SoftmaxGradDirectOp::getProbsInIndex());
   const poplar::Tensor &label =
       getInTensor(SoftmaxGradDirectOp::getLabelInIndex());
+  const poplar::Tensor &gradIn =
+      getInTensor(SoftmaxGradDirectOp::getGradProbsInIndex());
 
   poplar::Tensor probs2D;
   poplar::Tensor label1D;
@@ -167,6 +169,13 @@ void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
 
   // Output is reshaped to match probs input shape
   oneHot = oneHot.reshape(probs.shape());
+
+  // Scale by the input gradient
+  popops::mapInPlace(graph(),
+                     pe::Mul(pe::_1, pe::_2),
+                     {oneHot, gradIn},
+                     prog,
+                     debugPrefix("scaledGradIn"));
 
   setOutTensor(0, oneHot);
 }
@@ -241,6 +250,8 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
       getInTensor(NlllWithSoftmaxGradDirectOp::getProbsInIndex());
   const poplar::Tensor &label =
       getInTensor(NlllWithSoftmaxGradDirectOp::getLabelInIndex());
+  const poplar::Tensor &gradIn =
+      getInTensor(NlllWithSoftmaxGradDirectOp::getGradProbsInIndex());
   poplar::Tensor probs2D;
   poplar::Tensor label1D;
   poplar::Tensor oneHot;
@@ -304,6 +315,13 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
         prog,
         debugPrefix("scaledLoss"));
   }
+
+  // Scale by the input gradient
+  popops::mapInPlace(graph(),
+                     pe::Mul(pe::_1, pe::_2),
+                     {oneHot, gradIn},
+                     prog,
+                     debugPrefix("scaledGradIn"));
 
   setOutTensor(op.getGradOutIndex(), oneHot);
 

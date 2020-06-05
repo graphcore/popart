@@ -76,6 +76,9 @@
 
 #include <popart/dotvisualizer.hpp>
 
+// used for float to half conversion
+#include <poplar/Target.hpp>
+
 namespace popart {
 
 Ir::~Ir() = default;
@@ -841,7 +844,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   }
 
   if (canTrain()) {
-    growFinalLoss(gb.loss);
+    setFinalLoss(gb.loss);
     updateVertices();
   }
 
@@ -853,7 +856,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   }
 
   // Batch serialisation, step 1
-  // (has to occur before setNEdgesToLoss, but after growFinalLoss)
+  // (has to occur before setNEdgesToLoss, but after setFinalLoss)
   if (userOptions.batchSerializationFactor > 1) {
     applyTransform(BatchSerialize::id(1), getMainGraph());
     updateVertices();
@@ -2574,7 +2577,7 @@ std::set<Op *> Ir::getTrainTargetOps() const {
   return trainTargets;
 }
 
-void Ir::growFinalLoss(const TensorId &loss) {
+void Ir::setFinalLoss(const TensorId &loss) {
   logging::ir::info("Growing final loss");
 
   if (getMainGraph().getTensors().contains(loss)) {
@@ -2582,25 +2585,13 @@ void Ir::growFinalLoss(const TensorId &loss) {
       throw error("Loss tensor, '{}', must be a scalar tensor", loss);
     }
 
-    std::unique_ptr<popart::Op> finalLossOp =
-        OpManager::createOp(Onnx::CustomOperators::IdentityLoss,
-                            getMainGraph(),
-                            std::string("FinalLoss"),
-                            OpManager::getAttributesFromAnyMap(
-                                {{"reduction", std::string("None")}}));
-
     // The final Loss Op is the only Op which (we say) has both
     // paths to and from
+    auto finalLossOp      = getTensors().get(loss)->getProducer();
     finalLossOp->toLoss   = PathToLoss::Yes;
     finalLossOp->fromLoss = PathFromLoss::Yes;
-
-    finalLossOpId = getMainGraph().moveIntoGraph(std::move(finalLossOp));
-    std::vector<TensorId> inputs{loss};
-    std::vector<TensorId> outputs{getFinalLossId()};
-    getMainGraph().connectInputs(InputVecWrapper(inputs), finalLossOpId);
-    getMainGraph().connectOutputs(OutputVecWrapper(outputs), finalLossOpId);
-    getMainGraph().getOps()[finalLossOpId]->setup();
-    getMainGraph().getOps()[finalLossOpId]->inheritPlacementAttributes(false);
+    finalLossId           = loss;
+    finalLossOpId         = finalLossOp->id;
 
     logging::ir::trace("Final loss Op id set to {}", finalLossOpId);
   } else {
@@ -2610,7 +2601,7 @@ void Ir::growFinalLoss(const TensorId &loss) {
   constructedFinalLoss = true;
 }
 
-TensorId Ir::getFinalLossId() const { return "finalLoss"; }
+TensorId Ir::getFinalLossId() const { return finalLossId; }
 
 void Ir::append(std::stringstream &ss) const {
   ss << "\n";
@@ -2779,6 +2770,67 @@ unsigned Ir::getMaxVirtualGraphId() const {
 }
 
 std::vector<GradNonGradPair> Ir::growLossGradients() {
+  // Create a constant scalar tensor of value '1' with same type as loss.
+  // This is the start of the backpropagated gradients.
+  TensorInfo gradStarterInfo = getTensors().get(getFinalLossId())->info;
+  switch (gradStarterInfo.dataType()) {
+  case DataType::FLOAT: {
+    std::vector<float> gradStarterData(1, 1.0);
+    getTensors().addConstInit(getGradId(getFinalLossId()),
+                              gradStarterInfo,
+                              reinterpret_cast<void *>(gradStarterData.data()));
+    break;
+  }
+  case DataType::FLOAT16: {
+    std::vector<float> floatData(1, 1.0);
+    std::vector<char> gradStarterData(2);
+    poplar::copyFloatToDeviceHalf(
+        poplar::Target(), floatData.data(), gradStarterData.data(), 1);
+    getTensors().addConstInit(getGradId(getFinalLossId()),
+                              gradStarterInfo,
+                              reinterpret_cast<void *>(gradStarterData.data()));
+    break;
+  }
+  case DataType::INT16: {
+    std::vector<int16_t> gradStarterData(1, 1);
+    getTensors().addConstInit(getGradId(getFinalLossId()),
+                              gradStarterInfo,
+                              reinterpret_cast<void *>(gradStarterData.data()));
+    break;
+  }
+  case DataType::INT32: {
+    std::vector<int32_t> gradStarterData(1, 1);
+    getTensors().addConstInit(getGradId(getFinalLossId()),
+                              gradStarterInfo,
+                              reinterpret_cast<void *>(gradStarterData.data()));
+    break;
+  }
+  case DataType::INT64: {
+    std::vector<int64_t> gradStarterData(1, 1);
+    getTensors().addConstInit(getGradId(getFinalLossId()),
+                              gradStarterInfo,
+                              reinterpret_cast<void *>(gradStarterData.data()));
+    break;
+  }
+  case DataType::UINT32: {
+    std::vector<uint32_t> gradStarterData(1, 1);
+    getTensors().addConstInit(getGradId(getFinalLossId()),
+                              gradStarterInfo,
+                              reinterpret_cast<void *>(gradStarterData.data()));
+    break;
+  }
+  case DataType::UINT64: {
+    std::vector<uint64_t> gradStarterData(1, 1);
+    getTensors().addConstInit(getGradId(getFinalLossId()),
+                              gradStarterInfo,
+                              reinterpret_cast<void *>(gradStarterData.data()));
+    break;
+  }
+  default: {
+    throw error("Unexpected loss data-type, '{}'",
+                gradStarterInfo.getDataTypeInfo()->name());
+  }
+  }
 
   auto finalLossOpFound = getMainGraph().getOps().find(finalLossOpId);
   if (finalLossOpFound != getMainGraph().getOps().end()) {

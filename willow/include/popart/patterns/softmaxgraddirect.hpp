@@ -7,11 +7,11 @@
 namespace popart {
 
 // consider,
-// (label), (probs) -> [NLLGrad]
+// (label), (probs), (d_in) -> [NLLGrad]
 // [NllGrad] -> (d_probs)
 // (d_probs), (probs) -> [SoftmaxGrad] -> (d_acts).
 // This pattern replaces this with,
-// (label), (probs) -> [SoftmaxGradDirect] -> (d_acts).
+// (label), (probs), (d_in) -> [SoftmaxGradDirect] -> (d_acts).
 
 class SoftmaxGradDirect : public Fuser {
 private:

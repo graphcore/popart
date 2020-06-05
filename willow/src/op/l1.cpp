@@ -33,11 +33,11 @@ void L1GradOp::setup() {
   if (!getIr().getOptimizer().lossScaling().isConst()) {
     connectInTensor(L1GradOp::getLossScalingInIndex(),
                     getIr().getOptimizer().getLossScalingTensorId(
-                        inInfo(getInIndex()).dataType()));
+                        inInfo(getFwdActInIndex()).dataType()));
   }
 
   // gradient of input has same shape as input to L1
-  outInfo(getOutIndex()) = inInfo(getInIndex());
+  outInfo(getOutIndex()) = inInfo(getFwdActInIndex());
 }
 
 void L1Op::setup() {
@@ -65,8 +65,11 @@ std::unique_ptr<Op> L1GradOp::clone() const {
 const std::vector<GradInOutMapper> &L1GradOp::gradInputInfo() const {
   // input at index 0 of this grad op is the input at index 0 of the L1
   // non-grad op.
+  // input at index 1 of this grad op is the gradient of the output at index 0
+  // of the L1 non-grad op.
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), L1Op::getInIndex(), GradOpInType::In}};
+      {getFwdActInIndex(), L1Op::getInIndex(), GradOpInType::In},
+      {getGradInIndex(), L1Op::getOutIndex(), GradOpInType::GradOut}};
   return inInfo;
 }
 
