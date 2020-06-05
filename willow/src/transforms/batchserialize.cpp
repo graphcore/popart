@@ -656,7 +656,12 @@ bool BatchSerialize::apply(Graph &graph) const {
           }
 
           int64_t score = 0;
-          if (visitedOps.find(ops) != visitedOps.end() || maxDepth == 0) {
+          if (visitedOps.find(ops) != visitedOps.end() || maxDepth == 0 ||
+              ops.first->scheduledPreLoss != ops.second->scheduledPreLoss ||
+              (ops.first->getOptionalPingPongPhase() !=
+               ops.second->getOptionalPingPongPhase()) ||
+              (ops.first->getOptionalPipelineStage() !=
+               ops.second->getOptionalPipelineStage())) {
             return score;
           }
           visitedOps.insert(ops);
@@ -710,9 +715,9 @@ bool BatchSerialize::apply(Graph &graph) const {
         };
 
     // Find equivalence classes, derive positions
-    Section section   = 0;
+    Section section   = -1;
     Position position = 0;
-    bool nextSection  = false;
+    bool nextSection  = true;
     for (Op *op : schedule) {
       logging::transform::trace(
           "[BatchSerialize] BSP: {} S: {} P: {} prio: {} OP: {}",
@@ -747,7 +752,7 @@ bool BatchSerialize::apply(Graph &graph) const {
           nextSection = true;
         }
       } else {
-        nextSection = true;
+        // Ops with no annotated bsp that occur after a section
         opsBehindSection[section].push_back(op);
       }
     }
