@@ -1,5 +1,6 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 import numpy as np
+import re
 import popart
 import test_util as tu
 from test_session import PopartTestSession
@@ -182,18 +183,10 @@ def _check_for_conv_partials(sess, includes, excludes):
     types = [i.split()[0] for i in sr]
     for item in includes:
         # It is difficult to know which option the convolution planner will choose,
-        # so we check for both.
-        line_1 = f'poplin::ConvPartialHorizontalMac<half,{item},true>'
-        # Ignore last parameter for line_2 before D22061 gets landed
-        line_2 = f'poplin::ConvPartial1x1Out<half,{item},true,false'
-        print(f'Checking {line_1} or {line_2} is present')
-        assert (line_1 in types
-                or (len([s for s in types if line_2 in s]) != 0))
+        # so we check for any.
+        r = re.compile(f"poplin::ConvPartial.*<half,{item}.*")
+        assert (len(list(filter(r.match, types))) != 0)
 
     for item in excludes:
-        line_1 = f'poplin::ConvPartialHorizontalMac<half,{item},true>'
-        # Ignore last parameter for line_2 before D22061 gets landed
-        line_2 = f'poplin::ConvPartial1x1Out<half,{item},true,false'
-        print(f'Checking {line_1} and {line_2} is not present')
-        assert ((line_1 not in types)
-                and (len([s for s in types if line_2 in s]) == 0))
+        r = re.compile(f"poplin::ConvPartial.*<half,{item}.*")
+        assert (len(list(filter(r.match, types))) == 0)

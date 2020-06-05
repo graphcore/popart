@@ -126,4 +126,5 @@ specific IPU:
 Alternatively, for automatic placement of nodes on available IPUs, set the
 session option ``virtualGraphMode`` to ``popart.VirtualGraphMode.Auto``.
 See ``SessionOptions`` in the
-`PopART C++ API Reference <https://documents.graphcore.ai/documents/UG11/latest>`_.
+`PopART C++ API Reference
+<https://www.graphcore.ai/docs/popart-c-api-reference>`_.

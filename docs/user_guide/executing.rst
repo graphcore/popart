@@ -107,7 +107,8 @@ command-line tool. This may be a single IPU or a group of IPUs.
 
 The method ``createIpuModelDevice`` is used to create a Poplar software emulation
 of an IPU device.  Similarly, the method ``createCpuDevice`` creates a simple Poplar CPU backend.
-See `PopART C++ API Reference <https://documents.graphcore.ai/documents/UG11/latest>`_ for details.
+See the `PopART C++ API Reference
+<https://www.graphcore.ai/docs/popart-c-api-reference>`_ for details.
 
 By default the functions ``acquireAvailableDevice`` and ``acquireDeviceById`` will attach the device immediately to the running process. It is possible to defer the device attachment to the point at which it is required by PopART by passing the `DeviceConnectionType.ON_DEMAND` option to the `DeviceManager`.
 
@@ -202,7 +203,8 @@ a Concise Binary Object Representation (CBOR) formatted report.
 
 For more information on profiling control and the information returned by these functions, see the
 Profiling chapter of the
-`Poplar and Poplibs User Guide <https://documents.graphcore.ai/documents/UG1/latest>`_.
+`Poplar and PopLibs User Guide
+<https://www.graphcore.ai/docs/poplar-and-poplibs-user-guide>`_.
 
 .. _popart_logging:
 

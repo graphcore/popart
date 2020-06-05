@@ -685,7 +685,7 @@ void BuilderImpl::addNodeAttribute(const std::string &attributeName,
     attr.set_type(ONNX_NAMESPACE::AttributeProto::FLOAT);
     attr.set_f(boost::any_cast<float>(attributeValue));
   } else if (tinfo == typeid(std::vector<float>)) {
-    attr.set_type(ONNX_NAMESPACE::AttributeProto::FLOAT);
+    attr.set_type(ONNX_NAMESPACE::AttributeProto::FLOATS);
     const std::vector<float> &values =
         boost::any_cast<const std::vector<float> &>(attributeValue);
     for (auto f : values) {
