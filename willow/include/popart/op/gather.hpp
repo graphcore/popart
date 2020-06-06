@@ -12,7 +12,7 @@ public:
            int64_t axis_,
            const Op::Settings &settings_);
 
-  std::unique_ptr<Op> clone() const final;
+  std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() override;
   void setup() final;
 
