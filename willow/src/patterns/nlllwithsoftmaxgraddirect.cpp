@@ -28,8 +28,7 @@ bool NlllWithSoftmaxGradDirect::matches(Op *op) const {
 
   // 3.
   auto fwdLossOp = sfmgdOp->nlllFwdOp();
-  if (sfmgdOp->getOptionalVirtualGraphId() !=
-      fwdLossOp->getOptionalVirtualGraphId()) {
+  if (sfmgdOp->getOptionalVGraphId() != fwdLossOp->getOptionalVGraphId()) {
     return false;
   }
 

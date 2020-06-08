@@ -2,7 +2,6 @@
 #ifndef GUARD_NEURALNET_LOSS_HPP
 #define GUARD_NEURALNET_LOSS_HPP
 
-#include <boost/optional.hpp>
 #include <map>
 #include <popart/error.hpp>
 #include <popart/names.hpp>

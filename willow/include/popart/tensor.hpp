@@ -6,8 +6,6 @@
 #include <memory>
 #include <set>
 
-#include <boost/optional.hpp>
-
 #include <popart/error.hpp>
 #include <popart/istepio.hpp>
 #include <popart/names.hpp>
@@ -69,8 +67,8 @@ public:
   void append(std::stringstream &ss);
 
   std::set<PipelineStage> getPipelineStages() const;
-  boost::optional<PipelineStage> findLowestPipelineStage() const;
-  boost::optional<PipelineStage> findHighestPipelineStage() const;
+  OptionalPipelineStage findLowestPipelineStage() const;
+  OptionalPipelineStage findHighestPipelineStage() const;
 
 private:
   // The number of times an Op consumes the Tensor which

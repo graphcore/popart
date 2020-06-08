@@ -155,9 +155,9 @@ static void serializeMatMul(TransformBuilder &builder,
                             Tensor *output,
                             MatMulBaseOp *matmul,
                             std::vector<TensorId> &outputTensors,
-                            boost::optional<int64_t> virtualGraphId,
-                            boost::optional<int64_t> pipelineStage,
-                            boost::optional<int64_t> pingPongPhase,
+                            OptionalVGraphId virtualGraphId,
+                            OptionalPipelineStage pipelineStage,
+                            OptionalPingPongPhase pingPongPhase,
                             std::string name) {
 
   for (int i = 0; i < matmul->getSerialiseSettings().factor; ++i) {
@@ -250,9 +250,9 @@ static void sumByAddInplace(TransformBuilder &builder,
                             const bool cast_needed,
                             Tensor *output,
                             std::vector<TensorId> &outputTensors,
-                            boost::optional<int64_t> virtualGraphId,
-                            boost::optional<int64_t> pipelineStage,
-                            boost::optional<int64_t> pingPongPhase,
+                            OptionalVGraphId virtualGraphId,
+                            OptionalPipelineStage pipelineStage,
+                            OptionalPingPongPhase pingPongPhase,
                             std::string name) {
   auto out = outputTensors[0];
   for (size_t i = 1; i < outputTensors.size(); i++) {
@@ -310,9 +310,9 @@ static void serializeVarUpdate(int sliceDim,
                                Tensor *matMulOutput,
                                MatMulBaseOp *matmul,
                                std::vector<TensorId> &outputTensors,
-                               boost::optional<int64_t> virtualGraphId,
-                               boost::optional<int64_t> pipelineStage,
-                               boost::optional<int64_t> pingPongPhase,
+                               OptionalVGraphId virtualGraphId,
+                               OptionalPipelineStage pipelineStage,
+                               OptionalPingPongPhase pingPongPhase,
                                std::string name) {
   auto chaseme = matMulOutput;
   std::vector<Op *> path;
@@ -493,9 +493,9 @@ serializeFwdMatMul_InputChannels(TransformBuilder &builder,
                                  Tensor *output,
                                  MatMulBaseOp *matmul,
                                  std::vector<TensorId> &outputTensors,
-                                 boost::optional<int64_t> virtualGraphId,
-                                 boost::optional<int64_t> pipelineStage,
-                                 boost::optional<int64_t> pingPongPhase,
+                                 OptionalVGraphId virtualGraphId,
+                                 OptionalPipelineStage pipelineStage,
+                                 OptionalPingPongPhase pingPongPhase,
                                  std::string name) {
   serializeMatMul(builder,
                   lhs,
@@ -528,9 +528,9 @@ serializeBwdLhsMatMul_InputChannels(TransformBuilder &builder,
                                     Tensor *output,
                                     MatMulBaseOp *matmul,
                                     std::vector<TensorId> &outputTensors,
-                                    boost::optional<int64_t> virtualGraphId,
-                                    boost::optional<int64_t> pipelineStage,
-                                    boost::optional<int64_t> pingPongPhase,
+                                    OptionalVGraphId virtualGraphId,
+                                    OptionalPipelineStage pipelineStage,
+                                    OptionalPingPongPhase pingPongPhase,
                                     std::string name) {
 
   serializeMatMul(builder,
@@ -562,9 +562,9 @@ serializeBwdRhsMatMul_InputChannels(TransformBuilder &builder,
                                     Tensor *output,
                                     MatMulBaseOp *matmul,
                                     std::vector<TensorId> &outputTensors,
-                                    boost::optional<int64_t> virtualGraphId,
-                                    boost::optional<int64_t> pipelineStage,
-                                    boost::optional<int64_t> pingPongPhase,
+                                    OptionalVGraphId virtualGraphId,
+                                    OptionalPipelineStage pipelineStage,
+                                    OptionalPingPongPhase pingPongPhase,
                                     std::string name) {
   serializeMatMul(builder,
                   lhs,
@@ -589,17 +589,16 @@ serializeBwdRhsMatMul_InputChannels(TransformBuilder &builder,
                   name);
 }
 
-static void
-serializeFwdMatMul_ReducingDim(TransformBuilder &builder,
-                               Tensor *lhs,
-                               Tensor *rhs,
-                               Tensor *output,
-                               MatMulBaseOp *matmul,
-                               std::vector<TensorId> &outputTensors,
-                               boost::optional<int64_t> virtualGraphId,
-                               boost::optional<int64_t> pipelineStage,
-                               boost::optional<int64_t> pingPongPhase,
-                               std::string name) {
+static void serializeFwdMatMul_ReducingDim(TransformBuilder &builder,
+                                           Tensor *lhs,
+                                           Tensor *rhs,
+                                           Tensor *output,
+                                           MatMulBaseOp *matmul,
+                                           std::vector<TensorId> &outputTensors,
+                                           OptionalVGraphId virtualGraphId,
+                                           OptionalPipelineStage pipelineStage,
+                                           OptionalPingPongPhase pingPongPhase,
+                                           std::string name) {
 
   serializeMatMul(builder,
                   lhs,
@@ -633,9 +632,9 @@ serializeBwdLhsMatMul_ReducingDim(TransformBuilder &builder,
                                   Tensor *output,
                                   MatMulBaseOp *matmul,
                                   std::vector<TensorId> &outputTensors,
-                                  boost::optional<int64_t> virtualGraphId,
-                                  boost::optional<int64_t> pipelineStage,
-                                  boost::optional<int64_t> pingPongPhase,
+                                  OptionalVGraphId virtualGraphId,
+                                  OptionalPipelineStage pipelineStage,
+                                  OptionalPingPongPhase pingPongPhase,
                                   std::string name) {
 
   serializeMatMul(builder,
@@ -667,9 +666,9 @@ serializeBwdRhsMatMul_ReducingDim(TransformBuilder &builder,
                                   Tensor *output,
                                   MatMulBaseOp *matmul,
                                   std::vector<TensorId> &outputTensors,
-                                  boost::optional<int64_t> virtualGraphId,
-                                  boost::optional<int64_t> pipelineStage,
-                                  boost::optional<int64_t> pingPongPhase,
+                                  OptionalVGraphId virtualGraphId,
+                                  OptionalPipelineStage pipelineStage,
+                                  OptionalPingPongPhase pingPongPhase,
                                   std::string name) {
   serializeMatMul(builder,
                   lhs,
@@ -702,9 +701,9 @@ serializeFwdMatMul_OutputChannels(TransformBuilder &builder,
                                   Tensor *output,
                                   MatMulBaseOp *matmul,
                                   std::vector<TensorId> &outputTensors,
-                                  boost::optional<int64_t> virtualGraphId,
-                                  boost::optional<int64_t> pipelineStage,
-                                  boost::optional<int64_t> pingPongPhase,
+                                  OptionalVGraphId virtualGraphId,
+                                  OptionalPipelineStage pipelineStage,
+                                  OptionalPingPongPhase pingPongPhase,
                                   std::string name) {
   serializeMatMul(builder,
                   lhs,
@@ -737,9 +736,9 @@ serializeBwdLhsMatMul_OutputChannels(TransformBuilder &builder,
                                      Tensor *output,
                                      MatMulBaseOp *matmul,
                                      std::vector<TensorId> &outputTensors,
-                                     boost::optional<int64_t> virtualGraphId,
-                                     boost::optional<int64_t> pipelineStage,
-                                     boost::optional<int64_t> pingPongPhase,
+                                     OptionalVGraphId virtualGraphId,
+                                     OptionalPipelineStage pipelineStage,
+                                     OptionalPingPongPhase pingPongPhase,
                                      std::string name) {
 
   serializeMatMul(builder,
@@ -772,9 +771,9 @@ serializeBwdRhsMatMul_OutputChannels(TransformBuilder &builder,
                                      Tensor *output,
                                      MatMulBaseOp *matmul,
                                      std::vector<TensorId> &outputTensors,
-                                     boost::optional<int64_t> virtualGraphId,
-                                     boost::optional<int64_t> pipelineStage,
-                                     boost::optional<int64_t> pingPongPhase,
+                                     OptionalVGraphId virtualGraphId,
+                                     OptionalPipelineStage pipelineStage,
+                                     OptionalPingPongPhase pingPongPhase,
                                      std::string name) {
   serializeMatMul(builder,
                   lhs,
@@ -827,17 +826,17 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                       matmul->getSerialiseSettings().factor,
                       static_cast<int64_t>(matmul->getPhase()));
 
-    boost::optional<VGraphId> virtualGraphId{};
+    OptionalVGraphId virtualGraphId{};
     if (matmul->hasVirtualGraphId()) {
       virtualGraphId = matmul->getVirtualGraphId();
     }
 
-    boost::optional<PipelineStage> pipelineStage{};
+    OptionalPipelineStage pipelineStage{};
     if (matmul->hasPipelineStage()) {
       pipelineStage = matmul->getPipelineStage();
     }
 
-    boost::optional<PingPongPhase> pingPongPhase{};
+    OptionalPingPongPhase pingPongPhase{};
     if (matmul->hasPingPongPhase()) {
       pingPongPhase = matmul->getPingPongPhase();
     }

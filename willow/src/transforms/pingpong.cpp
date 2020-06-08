@@ -1,4 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <boost/optional.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -537,8 +538,8 @@ bool PingPong::apply(Graph &graph) const {
         continue;
       }
 
-      boost::optional<PingPongPhase> producerPingPongPhase;
-      boost::optional<VGraphId> loadStoreVGID;
+      OptionalPingPongPhase producerPingPongPhase;
+      OptionalVGraphId loadStoreVGID;
 
       if (producerOp) {
         if (producerOp->getOptionalPingPongPhase()) {
@@ -549,7 +550,7 @@ bool PingPong::apply(Graph &graph) const {
               copy->getDestIpu() % num_stages) {
             // Inter-phase copy, special case where the producer
             // phase is moved
-            producerPingPongPhase = producerPingPongPhase.get() + 1;
+            producerPingPongPhase = *producerPingPongPhase + 1;
           }
           loadStoreVGID = copy->getDestIpu();
         } else {
@@ -577,32 +578,30 @@ bool PingPong::apply(Graph &graph) const {
       // Set of phases that load or store
       std::map<PingPongPhase, std::pair<bool, bool>> loadStoreInPhase;
 
-      if (producerPingPongPhase.is_initialized()) {
-        livePhases.insert(producerPingPongPhase.get());
+      if (producerPingPongPhase) {
+        livePhases.insert(*producerPingPongPhase);
         // Do not load in producer phase
-        loadStoreInPhase[producerPingPongPhase.get()].first = false;
+        loadStoreInPhase[*producerPingPongPhase].first = false;
         // Store in producer phase
-        loadStoreInPhase[producerPingPongPhase.get()].second = true;
+        loadStoreInPhase[*producerPingPongPhase].second = true;
       }
 
       for (auto consumerOp : consumerOps) {
 
-        boost::optional<VGraphId> consumerVGID =
-            consumerOp->getOptionalVirtualGraphId();
+        OptionalVGraphId consumerVGID = consumerOp->getOptionalVGraphId();
         if (IpuCopyOp *copyOp = dynamic_cast<IpuCopyOp *>(consumerOp)) {
           consumerVGID = copyOp->getSourceIpu();
         }
 
         // Pick correct VGID for loading/storing the tensor,
         // if no producer exists
-        if (!loadStoreVGID.is_initialized()) {
+        if (!loadStoreVGID) {
           loadStoreVGID = consumerVGID;
-        } else if (!tensor->hasProducer() && consumerVGID.is_initialized()) {
-          loadStoreVGID = std::min(loadStoreVGID.get(), consumerVGID.get());
+        } else if (!tensor->hasProducer() && consumerVGID) {
+          loadStoreVGID = std::min(*loadStoreVGID, *consumerVGID);
         }
 
-        auto consumerPingPongPhase =
-            consumerOp->getOptionalPingPongPhase().get();
+        auto consumerPingPongPhase = *consumerOp->getOptionalPingPongPhase();
 
         if (livePhases.find(consumerPingPongPhase - num_stages) !=
             livePhases.end()) {
@@ -613,7 +612,7 @@ bool PingPong::apply(Graph &graph) const {
             loadStoreInPhase[consumerPingPongPhase].second              = true;
             loadStoreInPhase[consumerPingPongPhase - num_stages].second = false;
           }
-        } else if (producerPingPongPhase.is_initialized() &&
+        } else if (producerPingPongPhase &&
                    producerPingPongPhase == consumerPingPongPhase) {
           // Current phase is producer phase, do not load in current phase
           loadStoreInPhase[consumerPingPongPhase].first = false;

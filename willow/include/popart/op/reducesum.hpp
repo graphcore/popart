@@ -2,6 +2,7 @@
 #ifndef GUARD_NEURALNET_REDUCESUM_HPP
 #define GUARD_NEURALNET_REDUCESUM_HPP
 
+#include <boost/optional.hpp>
 #include <popart/op.hpp>
 #include <popart/op/reduce.hpp>
 

@@ -2,6 +2,7 @@
 #ifndef GUARD_NEURALNET_MATMUL_HPP
 #define GUARD_NEURALNET_MATMUL_HPP
 
+#include <boost/optional.hpp>
 #include <popart/op.hpp>
 
 namespace popart {
@@ -27,7 +28,7 @@ public:
                const Phase phase_,
                const boost::optional<float> availableMemoryProportion_,
                const SerialiseSettings &serialization_,
-               const boost::optional<DataType> outputType_,
+               const OptionalDataType outputType_,
                const bool enableFullyConnectedPass_ = true);
   MatMulBaseOp(const MatMulBaseOp &) = default;
   ~MatMulBaseOp() override           = default;
@@ -56,7 +57,7 @@ public:
 
   SerialiseSettings &getSerialiseSettings() { return serialization; }
 
-  boost::optional<DataType> getOutputType() const { return outputType; }
+  OptionalDataType getOutputType() const { return outputType; }
 
   Phase getPhase() { return phase; }
   void setPhase(Phase p) { phase = p; }
@@ -74,7 +75,7 @@ protected:
   SerialiseSettings serialization;
 
   // Using optional as the input info is not known when initialising
-  boost::optional<DataType> outputType;
+  OptionalDataType outputType;
 };
 
 class MatMulOp : public MatMulBaseOp {
@@ -83,7 +84,7 @@ public:
            const Op::Settings &settings_,
            const boost::optional<float> availableMemoryProportion,
            const SerialiseSettings &serialization_,
-           const boost::optional<DataType> outputType);
+           const OptionalDataType outputType);
   MatMulOp(const MatMulOp &) = default;
   MatMulOp &operator=(const MatMulOp &) = delete;
   ~MatMulOp() override                  = default;

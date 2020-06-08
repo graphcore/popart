@@ -2,6 +2,7 @@
 #ifndef GUARD_NEURALNET_REDUCE_HPP
 #define GUARD_NEURALNET_REDUCE_HPP
 
+#include <boost/optional.hpp>
 #include <popart/op.hpp>
 
 namespace popart {

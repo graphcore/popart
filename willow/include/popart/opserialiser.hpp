@@ -2,7 +2,10 @@
 #ifndef GUARD_NEURALNET_OPSERIALISER_HPP
 #define GUARD_NEURALNET_OPSERIALISER_HPP
 #include <boost/optional.hpp>
+#include <map>
 #include <sstream>
+#include <popart/basicoptionals.hpp>
+#include <popart/names.hpp>
 
 namespace popart {
 
@@ -14,41 +17,43 @@ class OpSerialiserBase {
 public:
   virtual ~OpSerialiserBase() {}
 
-  virtual void appendAttribute(const std::string &, float)                  = 0;
-  virtual void appendAttribute(const std::string &, int)                    = 0;
-  virtual void appendAttribute(const std::string &, int64_t)                = 0;
-  virtual void appendAttribute(const std::string &, uint32_t)               = 0;
-  virtual void appendAttribute(const std::string &, uint64_t)               = 0;
-  virtual void appendAttribute(const std::string &,
-                               const std::vector<int64_t> &)                = 0;
-  virtual void appendAttribute(const std::string &, const std::string &)    = 0;
+  void appendAttribute(const std::string &, float);
+  void appendAttribute(const std::string &, int);
+  void appendAttribute(const std::string &, int64_t);
+  void appendAttribute(const std::string &, uint32_t);
+  void appendAttribute(const std::string &, uint64_t);
+  void appendAttribute(const std::string &, const std::string &);
+  void appendAttribute(const std::string &, const std::vector<int64_t> &);
+  void appendAttribute(const std::string &, const Scope &);
+  void appendAttribute(const std::string &, bool);
+
   virtual void appendAttribute(const std::string &,
                                boost::optional<int64_t>)                    = 0;
   virtual void appendAttribute(const std::string &, boost::optional<float>) = 0;
-  virtual void appendAttribute(const std::string &, bool)                   = 0;
-  virtual void appendAttribute(const std::string &, const Scope &)          = 0;
   virtual void appendAttribute(const std::string &,
                                const std::map<TensorId, uint64_t>)          = 0;
 
+  // For OptionalPingPongPhase, OptionalVGraphId, etc.
+  template <typename T, uint32_t V>
+  void appendAttribute(const std::string &key,
+                       const BasicOptional<T, V> &value) {
+    std::ostringstream oss;
+    oss << value;
+    appendStrAttr(key, oss.str());
+  }
+
   virtual void appendForwardOp(const Op *) = 0;
+
+private:
+  virtual void appendStrAttr(const std::string &, const std::string &value) = 0;
 };
 
 class OpSerialiser : public OpSerialiserBase {
 public:
   OpSerialiser(const Op *, std::stringstream &ss_);
 
-  void appendAttribute(const std::string &, float) override;
-  void appendAttribute(const std::string &, int64_t) override;
-  void appendAttribute(const std::string &, int) override;
-  void appendAttribute(const std::string &, uint32_t) override;
-  void appendAttribute(const std::string &, uint64_t) override;
-  void appendAttribute(const std::string &,
-                       const std::vector<int64_t> &) override;
-  void appendAttribute(const std::string &, const std::string &) override;
   void appendAttribute(const std::string &, boost::optional<int64_t>) override;
   void appendAttribute(const std::string &, boost::optional<float>) override;
-  void appendAttribute(const std::string &, bool) override;
-  void appendAttribute(const std::string &, const Scope &) override;
   void appendAttribute(const std::string &,
                        const std::map<TensorId, uint64_t>) override;
 
@@ -56,8 +61,7 @@ public:
 
 private:
   template <typename T> void appendAttr(const std::string &, const T &);
-
-private:
+  void appendStrAttr(const std::string &, const std::string &value) final;
   std::stringstream &ss;
   const std::string tab = "    ";
 };
@@ -66,18 +70,8 @@ class OpJsonSerialiser : public OpSerialiserBase {
 public:
   OpJsonSerialiser(const Op *, std::stringstream &ss_);
 
-  void appendAttribute(const std::string &, float) override;
-  void appendAttribute(const std::string &, int) override;
-  void appendAttribute(const std::string &, int64_t) override;
-  void appendAttribute(const std::string &, uint32_t) override;
-  void appendAttribute(const std::string &, uint64_t) override;
-  void appendAttribute(const std::string &,
-                       const std::vector<int64_t> &) override;
-  void appendAttribute(const std::string &, const std::string &) override;
   void appendAttribute(const std::string &, boost::optional<int64_t>) override;
   void appendAttribute(const std::string &, boost::optional<float>) override;
-  void appendAttribute(const std::string &, bool) override;
-  void appendAttribute(const std::string &, const Scope &) override;
   void appendAttribute(const std::string &,
                        const std::map<TensorId, uint64_t>) override;
 
@@ -85,6 +79,7 @@ public:
 
 private:
   template <typename T> void appendAttr(const std::string &, const T &);
+  void appendStrAttr(const std::string &, const std::string &value) final;
 
   template <typename T>
   void appendKeyValue(const std::string key, T value, bool last = false);
@@ -106,18 +101,8 @@ class OpEquivIdCreator : public OpSerialiserBase {
 public:
   OpEquivIdCreator(const Op *);
 
-  void appendAttribute(const std::string &, float) override;
-  void appendAttribute(const std::string &, int) override;
-  void appendAttribute(const std::string &, int64_t) override;
-  void appendAttribute(const std::string &, uint32_t) override;
-  void appendAttribute(const std::string &, uint64_t) override;
-  void appendAttribute(const std::string &,
-                       const std::vector<int64_t> &) override;
-  void appendAttribute(const std::string &, const std::string &) override;
   void appendAttribute(const std::string &, boost::optional<int64_t>) override;
   void appendAttribute(const std::string &, boost::optional<float>) override;
-  void appendAttribute(const std::string &, bool) override;
-  void appendAttribute(const std::string &, const Scope &) override;
   void appendAttribute(const std::string &,
                        const std::map<TensorId, uint64_t>) override;
 
@@ -126,6 +111,7 @@ public:
   std::string str();
 
 private:
+  void appendStrAttr(const std::string &, const std::string &value) final;
   template <typename T> void appendAttr(const T &);
 
 private:

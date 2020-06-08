@@ -30,8 +30,6 @@
 #include <popart/stepio.hpp>
 #include <popart/tensordata.hpp>
 
-using boost::optional;
-
 namespace popart {
 namespace liveness {
 class LivenessAnalyzer;
@@ -589,7 +587,7 @@ private:
 
   bool prepareHasBeenCalled_;
 
-  optional<poplar::Executable> cachedExecutable;
+  boost::optional<poplar::Executable> cachedExecutable;
   bool usingCachedExecutable = false;
 
   // Option to trace the opx execution using printTensor. This can be useful in

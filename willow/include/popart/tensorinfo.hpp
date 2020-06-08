@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <sstream>
 #include <vector>
+#include <popart/basicoptionals.hpp>
 #include <popart/error.hpp>
 #include <popart/half.hpp>
 #include <popart/names.hpp>
@@ -38,6 +39,8 @@ enum class DataType {
   STRING,
   UNDEFINED,
 };
+
+using OptionalDataType = BasicOptional<DataType, 0>;
 
 template <typename T> DataType getDataType();
 template <> DataType getDataType<int8_t>();

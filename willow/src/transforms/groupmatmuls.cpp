@@ -153,8 +153,8 @@ GroupMatMuls::findPotentialGroupedMatMuls(Graph &graph,
             bool sameIpu   = false;
 
             // Only matmuls on the same virtual graph can be grouped
-            if (matmulInfo.op->getOptionalVirtualGraphId() ==
-                group.second[0].op->getOptionalVirtualGraphId()) {
+            if (matmulInfo.op->getOptionalVGraphId() ==
+                group.second[0].op->getOptionalVGraphId()) {
               sameIpu = true;
 
               for (auto &member : group.second) {
@@ -236,14 +236,14 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
 
   // All grouped matmul need to have the same virtual graph id so
   // we can just use the first
-  boost::optional<int64_t> virtualGraphId{};
+  OptionalVGraphId virtualGraphId{};
   if (matmulList[0].op->hasVirtualGraphId()) {
     virtualGraphId = matmulList[0].op->getVirtualGraphId();
   }
-  boost::optional<PipelineStage> pipelineStage =
+  OptionalPipelineStage pipelineStage =
       matmulList.at(0).op->getOptionalPipelineStage();
-  boost::optional<PingPongPhase> pingPongPhase =
-      matmulList.at(0).op->getOptionalPipelineStage();
+  OptionalPingPongPhase pingPongPhase =
+      matmulList.at(0).op->getOptionalPingPongPhase();
 
   // For any input that needs first to be transposed
   for (auto &info : matmulList) {
@@ -488,7 +488,7 @@ bool GroupMatMuls::apply(Graph &graph) const {
             info.op->input->tensor(MatMulOp::getLhsInIndex())->info.shape(),
             info.op->input->tensor(MatMulOp::getRhsInIndex())->info.shape(),
             info.transpose,
-            info.op->getOptionalVirtualGraphId());
+            info.op->getOptionalVGraphId());
       }
 
       // Replace the matmuls with the grouped matmul

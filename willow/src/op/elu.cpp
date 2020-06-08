@@ -89,20 +89,19 @@ static OpDefinition eluOpDef({OpDefinition::Inputs({{"input", T}}),
                               OpDefinition::Outputs({{"output", T}}),
                               OpDefinition::Attributes({{"alpha", {"*"}}})});
 
-static OpCreator<EluOp>
-    eluOpCreator(OpDefinitions({
-                     {Onnx::Operators::Elu_1, eluOpDef},
-                     {Onnx::Operators::Elu_6, eluOpDef},
-                 }),
-                 [](const OperatorIdentifier &opid,
-                    const Op::Settings &settings,
-                    const Attributes &attr) -> std::unique_ptr<Op> {
-                   float alpha =
-                       attr.getAttribute<Attributes::Float>("alpha", 1.0f);
+static OpCreator<EluOp> eluOpCreator(
+    OpDefinitions({
+        {Onnx::Operators::Elu_1, eluOpDef},
+        {Onnx::Operators::Elu_6, eluOpDef},
+    }),
+    [](const OperatorIdentifier &opid,
+       const Op::Settings &settings,
+       const Attributes &attr) -> std::unique_ptr<Op> {
+      float alpha = attr.getAttribute<Attributes::Float>("alpha", 1.0f);
 
-                   return std::unique_ptr<Op>(new EluOp(opid, alpha, settings));
-                 },
-                 true);
+      return std::unique_ptr<Op>(new EluOp(opid, alpha, settings));
+    },
+    true);
 
 } // namespace
 } // namespace popart

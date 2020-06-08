@@ -6,10 +6,7 @@
 #include <popart/popx/op/subgraphopx.hpp>
 #include <popart/popx/opx.hpp>
 
-using boost::optional;
-
 namespace popart {
-
 namespace popx {
 
 class CallOpx : public SubgraphOpx {

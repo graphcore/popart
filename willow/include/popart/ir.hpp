@@ -435,7 +435,7 @@ private:
 
   // Get the best virtual graph Id based on the graph Ids of producers of ts
   // to minimise graph<->graph communication
-  boost::optional<int64_t>
+  OptionalVGraphId
   getVirtualGraphIdFromTensorProducers(std::vector<Tensor *> ts);
 
   Op *growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum);

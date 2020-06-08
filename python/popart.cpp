@@ -148,7 +148,7 @@ public:
 
   void assertNumElements(const Ir &) const final {}
 
-  ConstVoidData in(TensorId id, int64_t, bool prefetch) final {
+  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
     py::array a = inputCb(id, prefetch);
     // To ensure that array is persisted until complete is called
     inDict[py::str(id)] = a;
@@ -330,8 +330,10 @@ public:
 // map to python types
 namespace pybind11 {
 namespace detail {
+
 template <typename T>
 struct type_caster<boost::optional<T>> : optional_caster<boost::optional<T>> {};
+
 } // namespace detail
 } // namespace pybind11
 
