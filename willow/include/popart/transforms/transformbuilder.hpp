@@ -4,7 +4,7 @@
 
 #include <popart/graph.hpp>
 
-#include <boost/any.hpp>
+#include <popart/any.hpp>
 
 namespace popart {
 
@@ -12,12 +12,12 @@ class TransformBuilder {
   Graph &graph;
 
   std::unique_ptr<Op> createOp(const OperatorIdentifier &opid,
-                               std::map<std::string, boost::any> attributes,
+                               std::map<std::string, popart::any> attributes,
                                const std::string debugPrefix);
 
   TensorId op(const OperatorIdentifier &_opid,
               std::vector<TensorId> &inputs,
-              std::map<std::string, boost::any> attributes,
+              std::map<std::string, popart::any> attributes,
               OptionalVGraphId,
               OptionalPipelineStage,
               OptionalPingPongPhase,
@@ -26,7 +26,7 @@ class TransformBuilder {
 
   void opWithOutput(const OperatorIdentifier &_opid,
                     std::vector<TensorId> &inputs,
-                    std::map<std::string, boost::any> attributes,
+                    std::map<std::string, popart::any> attributes,
                     TensorId &out,
                     OptionalVGraphId,
                     OptionalPipelineStage,
@@ -37,7 +37,7 @@ class TransformBuilder {
   multiOutputOp(const OperatorIdentifier &_opid,
                 std::vector<TensorId> &inputs,
                 OutIndex numberOfOutputs,
-                std::map<std::string, boost::any> attributes,
+                std::map<std::string, popart::any> attributes,
                 OptionalVGraphId,
                 OptionalPipelineStage,
                 OptionalPingPongPhase,
@@ -122,7 +122,7 @@ public:
                   OptionalPingPongPhase,
                   const std::string opName,
                   const std::string outputName,
-                  std::map<std::string, boost::any> attrs = {},
+                  std::map<std::string, popart::any> attrs = {},
                   const OperatorIdentifier _opid = Onnx::Operators::MatMul_1);
 
   void cast(TensorId input,

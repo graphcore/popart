@@ -24,9 +24,9 @@
 #include <popart/transforms/serializematmuls.hpp>
 #include <popart/transforms/transformbuilder.hpp>
 
-#include <boost/any.hpp>
 #include <boost/optional/optional_io.hpp>
 #include <boost/range/algorithm_ext.hpp>
+#include <popart/any.hpp>
 
 // X = [GROUP_DIM, INPUT_CHANNELS, REDUCING_DIM]
 // W = [GROUP_DIM, REDUCING_DIM, OUTPUT_CHANNELS]
@@ -207,7 +207,7 @@ static void serializeMatMul(TransformBuilder &builder,
                                      builder.getNextId(name + "_SliceRhs"));
     }
 
-    std::map<std::string, boost::any> attrs = {};
+    std::map<std::string, popart::any> attrs = {};
     if (sliceLhsDim == 2 && sliceRhsDim == 1 &&
         matmul->getSerialiseSettings().keep_precision &&
         output->info.dataType() != DataType::FLOAT) {

@@ -400,10 +400,10 @@ void BuilderImpl::op(
     int opsetVersion,
     const std::vector<TensorId> &inputs,
     const std::vector<TensorId> &outputs,
-    const std::map<std::string, boost::any> &opAttributes,
+    const std::map<std::string, popart::any> &opAttributes,
     const std::string &name,
     std::function<void(std::vector<TensorId>,
-                       std::map<std::string, boost::any>)> validateInput) {
+                       std::map<std::string, popart::any>)> validateInput) {
 
   logging::builder::debug("Adding {} to builder opset:{}, numInputs:{} "
                           "numOutputs:{} numAttributes:{} name:{}",
@@ -654,7 +654,7 @@ void BuilderImpl::addNodeAttribute(const std::string &attributeName,
 
 // TODO change any to variant
 void BuilderImpl::addNodeAttribute(const std::string &attributeName,
-                                   const boost::any &attributeValue,
+                                   const popart::any &attributeValue,
                                    ONNX_NAMESPACE::NodeProto &node) {
 
   ONNX_NAMESPACE::AttributeProto &attr =
@@ -664,58 +664,58 @@ void BuilderImpl::addNodeAttribute(const std::string &attributeName,
 
   if (tinfo == typeid(int32_t)) {
     attr.set_type(ONNX_NAMESPACE::AttributeProto::INT);
-    attr.set_i(boost::any_cast<int32_t>(attributeValue));
+    attr.set_i(popart::any_cast<int32_t>(attributeValue));
   } else if (tinfo == typeid(uint32_t)) {
     attr.set_type(ONNX_NAMESPACE::AttributeProto::INT);
-    attr.set_i(boost::any_cast<uint32_t>(attributeValue));
+    attr.set_i(popart::any_cast<uint32_t>(attributeValue));
   } else if (tinfo == typeid(int64_t)) {
     attr.set_type(ONNX_NAMESPACE::AttributeProto::INT);
-    attr.set_i(static_cast<int>(boost::any_cast<int64_t>(attributeValue)));
+    attr.set_i(static_cast<int>(popart::any_cast<int64_t>(attributeValue)));
   } else if (tinfo == typeid(uint64_t)) {
     attr.set_type(ONNX_NAMESPACE::AttributeProto::INT);
-    attr.set_i(static_cast<int>(boost::any_cast<uint64_t>(attributeValue)));
+    attr.set_i(static_cast<int>(popart::any_cast<uint64_t>(attributeValue)));
   } else if (tinfo == typeid(std::vector<int64_t>)) {
     attr.set_type(ONNX_NAMESPACE::AttributeProto::INTS);
     const std::vector<int64_t> &values =
-        boost::any_cast<const std::vector<int64_t> &>(attributeValue);
+        popart::any_cast<const std::vector<int64_t> &>(attributeValue);
     for (auto i : values) {
       attr.add_ints(i);
     }
   } else if (tinfo == typeid(float)) {
     attr.set_type(ONNX_NAMESPACE::AttributeProto::FLOAT);
-    attr.set_f(boost::any_cast<float>(attributeValue));
+    attr.set_f(popart::any_cast<float>(attributeValue));
   } else if (tinfo == typeid(std::vector<float>)) {
     attr.set_type(ONNX_NAMESPACE::AttributeProto::FLOATS);
     const std::vector<float> &values =
-        boost::any_cast<const std::vector<float> &>(attributeValue);
+        popart::any_cast<const std::vector<float> &>(attributeValue);
     for (auto f : values) {
       attr.add_floats(f);
     }
   } else if (tinfo == typeid(std::string)) {
     attr.set_type(ONNX_NAMESPACE::AttributeProto::STRING);
-    attr.set_s(boost::any_cast<std::string>(attributeValue));
+    attr.set_s(popart::any_cast<std::string>(attributeValue));
   } else if (tinfo == typeid(char *)) {
     attr.set_type(ONNX_NAMESPACE::AttributeProto::STRING);
-    attr.set_s(boost::any_cast<char *>(attributeValue));
+    attr.set_s(popart::any_cast<char *>(attributeValue));
   } else if (tinfo == typeid(std::vector<std::string>)) {
     attr.set_type(ONNX_NAMESPACE::AttributeProto::STRINGS);
     const std::vector<std::string> &values =
-        boost::any_cast<const std::vector<std::string> &>(attributeValue);
+        popart::any_cast<const std::vector<std::string> &>(attributeValue);
     for (auto &s : values) {
       attr.add_strings(s);
     }
   } else if (tinfo == typeid(bool)) {
     attr.set_type(ONNX_NAMESPACE::AttributeProto::INT);
-    attr.set_i(static_cast<int>(boost::any_cast<bool>(attributeValue)));
+    attr.set_i(static_cast<int>(popart::any_cast<bool>(attributeValue)));
   } else if (tinfo == typeid(ConstVoidData)) {
     attr.set_type(ONNX_NAMESPACE::AttributeProto::TENSOR);
     auto *t = attr.mutable_t();
     populateTensorProtoFromConstVoidData(
-        boost::any_cast<ConstVoidData>(attributeValue), attributeName, t);
+        popart::any_cast<ConstVoidData>(attributeValue), attributeName, t);
   } else if (tinfo == typeid(ONNX_NAMESPACE::GraphProto)) {
     attr.set_type(ONNX_NAMESPACE::AttributeProto::GRAPH);
     const ONNX_NAMESPACE::GraphProto &graph =
-        boost::any_cast<const ONNX_NAMESPACE::GraphProto &>(attributeValue);
+        popart::any_cast<const ONNX_NAMESPACE::GraphProto &>(attributeValue);
     auto *g = attr.mutable_g();
     *g      = graph;
   } else {
@@ -1101,11 +1101,12 @@ bool BuilderImpl::isInitializer(const TensorId &id) const {
   return false;
 }
 
-void BuilderImpl::setAttribute(const std::string &attribute, boost::any value) {
+void BuilderImpl::setAttribute(const std::string &attribute,
+                               popart::any value) {
   attributes.insert(std::make_pair(attribute, value));
 }
 
-boost::any BuilderImpl::getAttribute(const std::string &attribute) const {
+popart::any BuilderImpl::getAttribute(const std::string &attribute) const {
   auto it = attributes.find(attribute);
   if (it != attributes.end()) {
     return it->second;
@@ -1125,7 +1126,7 @@ bool BuilderImpl::hasAttribute(const std::string &attribute) {
   return attributes.find(attribute) != attributes.end();
 }
 
-boost::any BuilderImpl::getAttribute(const std::string &attribute) {
+popart::any BuilderImpl::getAttribute(const std::string &attribute) {
   return attributes.at(attribute);
 }
 

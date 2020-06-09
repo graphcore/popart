@@ -635,7 +635,7 @@ def genBuilderCpp(filename, schema):
                         spaces(len(classname)), spaces(len(op.CppName()))))
 
                     f.write(
-                        "  std::map<std::string, boost::any> attributes;\n")
+                        "  std::map<std::string, popart::any> attributes;\n")
                     for a in op.attributes:
                         if not a.isDeprecated():
                             if a.required:
@@ -718,7 +718,7 @@ def genBuilderCpp(filename, schema):
                             "                  [this](std::vector<TensorId> inputs_,\n"
                         )
                         f.write(
-                            "                         std::map<std::string, boost::any> attributes_) {\n"
+                            "                         std::map<std::string, popart::any> attributes_) {\n"
                         )
                         f.write(
                             "                     verify_{}_{}(this->impl, inputs_, attributes_);\n"

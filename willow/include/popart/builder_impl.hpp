@@ -8,7 +8,7 @@
 #include <popart/names.hpp>
 #include <popart/opidentifier.hpp>
 
-#include <boost/any.hpp>
+#include <popart/any.hpp>
 
 // The BuilderImpl class has an ONNX_NAMESPACE::ModelProto, so we cannot
 // use the forward declarations in names.hpp at this point
@@ -60,11 +60,11 @@ public:
           int opsetVersion,
           const std::vector<TensorId> &inputs,
           const std::vector<TensorId> &outputs,
-          const std::map<std::string, boost::any> &opAttributes,
+          const std::map<std::string, popart::any> &opAttributes,
           const std::string &name,
           std::function<void(std::vector<TensorId>,
-                             std::map<std::string, boost::any>)> validateInput =
-              nullptr);
+                             std::map<std::string, popart::any>)>
+              validateInput = nullptr);
 
   /**
    * Add an op to the model
@@ -83,10 +83,10 @@ public:
   op(const OperatorIdentifier &opid,
      int opsetVersion,
      const std::vector<TensorId> &inputs,
-     const std::map<std::string, boost::any> &opAttributes,
+     const std::map<std::string, popart::any> &opAttributes,
      const std::string &name,
      std::function<void(std::vector<TensorId>,
-                        std::map<std::string, boost::any>)> validateInput =
+                        std::map<std::string, popart::any>)> validateInput =
          nullptr) {
     return op(opid,
               opsetVersion,
@@ -116,10 +116,10 @@ public:
      int opsetVersion,
      const std::vector<TensorId> &inputs,
      unsigned int numOutputs,
-     const std::map<std::string, boost::any> &opAttributes,
+     const std::map<std::string, popart::any> &opAttributes,
      const std::string &name,
      std::function<void(std::vector<TensorId>,
-                        std::map<std::string, boost::any>)> validateInput =
+                        std::map<std::string, popart::any>)> validateInput =
          nullptr) {
 
     std::vector<TensorId> outputs(numOutputs);
@@ -242,12 +242,12 @@ public:
 
   bool isInitializer(const TensorId &id) const;
 
-  void setAttribute(const std::string &attribute, boost::any value);
-  boost::any getAttribute(const std::string &attribute) const;
+  void setAttribute(const std::string &attribute, popart::any value);
+  popart::any getAttribute(const std::string &attribute) const;
   bool hasAttribute(const std::string &attribute) const;
   void clearAttribute(const std::string &attribute);
   bool hasAttribute(const std::string &attribute);
-  boost::any getAttribute(const std::string &attribute);
+  popart::any getAttribute(const std::string &attribute);
 
   void pushNameScope(const std::string &name);
   void popNameScope();
@@ -306,7 +306,7 @@ private:
                    const std::set<TensorId> &nodeOutputNames);
 
   void addNodeAttribute(const std::string &attributeName,
-                        const boost::any &attributeValue,
+                        const popart::any &attributeValue,
                         ONNX_NAMESPACE::NodeProto &node);
 
   std::vector<std::string> name_scope_stack_;
@@ -325,7 +325,7 @@ private:
 
   ONNX_NAMESPACE::ModelProto model_;
 
-  std::map<std::string, boost::any> attributes;
+  std::map<std::string, popart::any> attributes;
 
   // Record which opset version we are using for each domain
   std::map<std::string, int64_t> opsetVersions;

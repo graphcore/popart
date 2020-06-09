@@ -14,21 +14,21 @@ int64_t Builder::getPipelineStage() const {
   if (!impl_->hasAttribute(sPipelineStageAttribute)) {
     throw popart::error("Pipeline stage not set in current scope.");
   }
-  return boost::any_cast<int64_t>(getAttribute(sPipelineStageAttribute));
+  return popart::any_cast<int64_t>(getAttribute(sPipelineStageAttribute));
 }
 
 int64_t Builder::getPingPongPhase() const {
   if (!impl_->hasAttribute(sPingPongPhaseAttribute)) {
     throw popart::error("PingPong phase not set in current scope.");
   }
-  return boost::any_cast<int64_t>(getAttribute(sPingPongPhaseAttribute));
+  return popart::any_cast<int64_t>(getAttribute(sPingPongPhaseAttribute));
 }
 
 int64_t Builder::getVirtualGraph() const {
   if (!impl_->hasAttribute(sVirtualGraphAttribute)) {
     throw popart::error("Virtual graph not set in current scope.");
   }
-  return boost::any_cast<int64_t>(getAttribute(sVirtualGraphAttribute));
+  return popart::any_cast<int64_t>(getAttribute(sVirtualGraphAttribute));
 }
 
 class TensorInfo;
@@ -94,7 +94,7 @@ static void verifyWindowParameters(std::unique_ptr<BuilderImpl> &impl,
 
 static void verifyConvBase(std::unique_ptr<BuilderImpl> &impl,
                            std::vector<TensorId> inputs,
-                           std::map<std::string, boost::any> attributes) {
+                           std::map<std::string, popart::any> attributes) {
   // TODO T17932 : We do not have a mechanism for infering the output shape
   // of custom ops, so this check can only be applied if the tensor shape
   // is known
@@ -112,7 +112,7 @@ static void verifyConvBase(std::unique_ptr<BuilderImpl> &impl,
     // shape from the weight tensor's shape
     if (attributes.count("kernel_shape")) {
       auto userKShape =
-          boost::any_cast<const Shape &>(attributes["kernel_shape"]);
+          popart::any_cast<const Shape &>(attributes["kernel_shape"]);
 
       if (userKShape != weightsKShape) {
         throw error(
@@ -128,137 +128,137 @@ static void verifyConvBase(std::unique_ptr<BuilderImpl> &impl,
   verifyWindowParameters(
       impl,
       inputs[0],
-      boost::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
-      boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
+      popart::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
+      popart::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
       weightsKShape,
-      boost::any_cast<std::vector<int64_t> &>(attributes["dilations"]));
+      popart::any_cast<std::vector<int64_t> &>(attributes["dilations"]));
 }
 
 static void
 verify_AiOnnxOpset6_Conv_1(std::unique_ptr<BuilderImpl> &impl,
                            std::vector<TensorId> inputs,
-                           std::map<std::string, boost::any> attributes) {
+                           std::map<std::string, popart::any> attributes) {
   verifyConvBase(impl, inputs, attributes);
 }
 
 static void
 verify_AiOnnxOpset11_Conv_11(std::unique_ptr<BuilderImpl> &impl,
                              std::vector<TensorId> inputs,
-                             std::map<std::string, boost::any> attributes) {
+                             std::map<std::string, popart::any> attributes) {
   verifyConvBase(impl, inputs, attributes);
 }
 
 static void verify_AiOnnxOpset6_AveragePool_1(
     std::unique_ptr<BuilderImpl> &impl,
     std::vector<TensorId> inputs,
-    std::map<std::string, boost::any> attributes) {
+    std::map<std::string, popart::any> attributes) {
   verifyWindowParameters(
       impl,
       inputs[0],
-      boost::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
-      boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
-      boost::any_cast<const std::vector<int64_t> &>(
+      popart::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
+      popart::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
+      popart::any_cast<const std::vector<int64_t> &>(
           attributes["kernel_shape"]));
 }
 
 static void verify_AiOnnxOpset7_AveragePool_7(
     std::unique_ptr<BuilderImpl> &impl,
     std::vector<TensorId> inputs,
-    std::map<std::string, boost::any> attributes) {
+    std::map<std::string, popart::any> attributes) {
   verifyWindowParameters(
       impl,
       inputs[0],
-      boost::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
-      boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
-      boost::any_cast<const std::vector<int64_t> &>(
+      popart::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
+      popart::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
+      popart::any_cast<const std::vector<int64_t> &>(
           attributes["kernel_shape"]));
 }
 
 static void verify_AiOnnxOpset10_AveragePool_10(
     std::unique_ptr<BuilderImpl> &impl,
     std::vector<TensorId> inputs,
-    std::map<std::string, boost::any> attributes) {
+    std::map<std::string, popart::any> attributes) {
   verifyWindowParameters(
       impl,
       inputs[0],
-      boost::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
-      boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
-      boost::any_cast<const std::vector<int64_t> &>(
+      popart::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
+      popart::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
+      popart::any_cast<const std::vector<int64_t> &>(
           attributes["kernel_shape"]));
 }
 
 static void verify_AiOnnxOpset11_AveragePool_11(
     std::unique_ptr<BuilderImpl> &impl,
     std::vector<TensorId> inputs,
-    std::map<std::string, boost::any> attributes) {
+    std::map<std::string, popart::any> attributes) {
   verifyWindowParameters(
       impl,
       inputs[0],
-      boost::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
-      boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
-      boost::any_cast<const std::vector<int64_t> &>(
+      popart::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
+      popart::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
+      popart::any_cast<const std::vector<int64_t> &>(
           attributes["kernel_shape"]));
 }
 
 static void
 verify_AiOnnxOpset6_MaxPool_1(std::unique_ptr<BuilderImpl> &impl,
                               std::vector<TensorId> inputs,
-                              std::map<std::string, boost::any> attributes) {
+                              std::map<std::string, popart::any> attributes) {
   verifyWindowParameters(
       impl,
       inputs[0],
-      boost::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
-      boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
-      boost::any_cast<const std::vector<int64_t> &>(
+      popart::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
+      popart::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
+      popart::any_cast<const std::vector<int64_t> &>(
           attributes["kernel_shape"]));
 }
 
 static void
 verify_AiOnnxOpset8_MaxPool_8(std::unique_ptr<BuilderImpl> &impl,
                               std::vector<TensorId> inputs,
-                              std::map<std::string, boost::any> attributes) {
+                              std::map<std::string, popart::any> attributes) {
   verifyWindowParameters(
       impl,
       inputs[0],
-      boost::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
-      boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
-      boost::any_cast<const std::vector<int64_t> &>(
+      popart::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
+      popart::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
+      popart::any_cast<const std::vector<int64_t> &>(
           attributes["kernel_shape"]));
 }
 
 static void
 verify_AiOnnxOpset10_MaxPool_10(std::unique_ptr<BuilderImpl> &impl,
                                 std::vector<TensorId> inputs,
-                                std::map<std::string, boost::any> attributes) {
+                                std::map<std::string, popart::any> attributes) {
   verifyWindowParameters(
       impl,
       inputs[0],
-      boost::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
-      boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
-      boost::any_cast<const std::vector<int64_t> &>(
+      popart::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
+      popart::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
+      popart::any_cast<const std::vector<int64_t> &>(
           attributes["kernel_shape"]));
 }
 
 static void
 verify_AiOnnxOpset11_MaxPool_11(std::unique_ptr<BuilderImpl> &impl,
                                 std::vector<TensorId> inputs,
-                                std::map<std::string, boost::any> attributes) {
+                                std::map<std::string, popart::any> attributes) {
   verifyWindowParameters(
       impl,
       inputs[0],
-      boost::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
-      boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
-      boost::any_cast<const std::vector<int64_t> &>(
+      popart::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
+      popart::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
+      popart::any_cast<const std::vector<int64_t> &>(
           attributes["kernel_shape"]));
 }
 
 static void verifyPadBase(std::unique_ptr<BuilderImpl> &impl,
                           std::vector<TensorId> inputs,
-                          std::map<std::string, boost::any> attributes) {
+                          std::map<std::string, popart::any> attributes) {
 
   auto rank = impl->getTensorShape(inputs[0]).size();
   auto &pads =
-      boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]);
+      popart::any_cast<const std::vector<int64_t> &>(attributes["pads"]);
   if (pads.size() != rank * 2) {
     throw error(
         "Padding vector (length {}) doesn't contain 2 entries per input "
@@ -271,14 +271,14 @@ static void verifyPadBase(std::unique_ptr<BuilderImpl> &impl,
 static void
 verify_AiOnnxOpset6_Pad_2(std::unique_ptr<BuilderImpl> &impl,
                           std::vector<TensorId> inputs,
-                          std::map<std::string, boost::any> attributes) {
+                          std::map<std::string, popart::any> attributes) {
   verifyPadBase(impl, inputs, attributes);
 }
 
 static void
 verify_AiOnnxOpset11_Pad_11(std::unique_ptr<BuilderImpl> &impl,
                             std::vector<TensorId> inputs,
-                            std::map<std::string, boost::any> attributes) {
+                            std::map<std::string, popart::any> attributes) {
   verifyPadBase(impl, inputs, attributes);
 }
 
@@ -350,7 +350,7 @@ AiGraphcoreOpset1::groupnormalization(const std::vector<TensorId> &args,
                                       int64_t num_groups,
                                       float epsilon,
                                       const std::string &name) {
-  std::map<std::string, boost::any> attributes;
+  std::map<std::string, popart::any> attributes;
 
   if (std::abs(epsilon - 1e-05f) > std::numeric_limits<float>::epsilon()) {
     attributes["epsilon"] = epsilon;
@@ -582,7 +582,7 @@ TensorId AiGraphcoreOpset1::nllloss(const std::vector<TensorId> &args,
                                     const std::string &name) {
   std::string reductionString = LossOp::reductionTypeToString(reduction);
 
-  std::map<std::string, boost::any> attributes = {
+  std::map<std::string, popart::any> attributes = {
       {"reduction", reductionString}};
   if (ignoreIndex) {
     attributes.emplace("ignoreIndex", ignoreIndex.get());
@@ -615,7 +615,7 @@ Builder::customOp(const OperatorIdentifier &opid,
                   int opsetVersion,
                   const std::vector<TensorId> &inputs,
                   const unsigned numOutputs,
-                  const std::map<std::string, boost::any> &attributes,
+                  const std::map<std::string, popart::any> &attributes,
                   const std::string &name) {
   return impl_->op(opid, opsetVersion, inputs, numOutputs, attributes, name);
 }
@@ -624,7 +624,7 @@ void Builder::customOp(const OperatorIdentifier &opid,
                        int opsetVersion,
                        const std::vector<TensorId> &inputs,
                        const std::vector<TensorId> &outputs,
-                       const std::map<std::string, boost::any> &attributes,
+                       const std::map<std::string, popart::any> &attributes,
                        const std::string &name) {
   impl_->op(opid, opsetVersion, inputs, outputs, attributes, name);
 }
@@ -778,11 +778,11 @@ bool Builder::isInitializer(const TensorId id) const {
   return impl_->isInitializer(id);
 }
 
-void Builder::setAttribute(const std::string &attribute, boost::any value) {
+void Builder::setAttribute(const std::string &attribute, popart::any value) {
   impl_->setAttribute(attribute, value);
 }
 
-boost::any Builder::getAttribute(const std::string attribute) const {
+popart::any Builder::getAttribute(const std::string attribute) const {
   return impl_->getAttribute(attribute);
 }
 
@@ -798,7 +798,7 @@ bool Builder::hasAttribute(const std::string &attribute) {
   return impl_->hasAttribute(attribute);
 }
 
-boost::any Builder::getAttribute(const std::string &attribute) {
+popart::any Builder::getAttribute(const std::string &attribute) {
   return impl_->getAttribute(attribute);
 }
 

@@ -80,13 +80,13 @@ getOptimizerValueDictionary(py::dict e) {
   return cpm;
 }
 
-std::map<std::string, boost::any> getDictionaryVar(py::dict pydict) {
-  // This attempts to convert the py::dict to a map of string, boost::any. Since
-  // we do not know the python types given by the user until runtime, we have to
-  // account for each type. See attributes.hpp for a description of possible
-  // attribute types.
+std::map<std::string, popart::any> getDictionaryVar(py::dict pydict) {
+  // This attempts to convert the py::dict to a map of string, popart::any.
+  // Since we do not know the python types given by the user until runtime, we
+  // have to account for each type. See attributes.hpp for a description of
+  // possible attribute types.
 
-  std::map<std::string, boost::any> dictionary;
+  std::map<std::string, popart::any> dictionary;
   for (auto element : pydict) {
     auto key = py::str(element.first);
     auto val = element.second;
@@ -229,20 +229,20 @@ private:
 class AttributeContextManager {
   Builder &builder;
   std::string attribute;
-  boost::any value;
-  std::vector<boost::any> prevValue;
+  popart::any value;
+  std::vector<popart::any> prevValue;
 
 public:
   AttributeContextManager(Builder &_builder,
                           const std::string &_attribute,
-                          boost::any value_)
+                          popart::any value_)
       : builder(_builder), attribute(_attribute), value(value_) {}
 
   void enter() {
     if (builder.hasAttribute(attribute)) {
       // Backup previous attribute value
       prevValue.push_back(
-          boost::any_cast<int64_t>(builder.getAttribute(attribute)));
+          popart::any_cast<int64_t>(builder.getAttribute(attribute)));
       builder.clearAttribute(attribute);
     }
     builder.setAttribute(attribute, value);

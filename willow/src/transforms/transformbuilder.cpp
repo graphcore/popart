@@ -4,6 +4,7 @@
 #include <popart/opmanager.hpp>
 #include <popart/transforms/transformbuilder.hpp>
 
+#include <popart/any.hpp>
 #include <popart/op/add.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/op/slice.hpp>
@@ -13,7 +14,7 @@ namespace popart {
 
 std::unique_ptr<Op>
 TransformBuilder::createOp(const OperatorIdentifier &opid,
-                           std::map<std::string, boost::any> attributes,
+                           std::map<std::string, popart::any> attributes,
                            const std::string debugPrefix) {
   return OpManager::createOp(
       opid, graph, debugPrefix, OpManager::getAttributesFromAnyMap(attributes));
@@ -21,7 +22,7 @@ TransformBuilder::createOp(const OperatorIdentifier &opid,
 
 TensorId TransformBuilder::op(const OperatorIdentifier &_opid,
                               std::vector<TensorId> &inputs,
-                              std::map<std::string, boost::any> attributes,
+                              std::map<std::string, popart::any> attributes,
                               OptionalVGraphId virtualGraphId,
                               OptionalPipelineStage pipelineStage,
                               OptionalPingPongPhase pingPongPhase,
@@ -54,7 +55,7 @@ TensorId TransformBuilder::op(const OperatorIdentifier &_opid,
 void TransformBuilder::opWithOutput(
     const OperatorIdentifier &_opid,
     std::vector<TensorId> &inputs,
-    std::map<std::string, boost::any> attributes,
+    std::map<std::string, popart::any> attributes,
     TensorId &out,
     OptionalVGraphId virtualGraphId,
     OptionalPipelineStage pipelineStage,
@@ -82,7 +83,7 @@ std::vector<TensorId>
 TransformBuilder::multiOutputOp(const OperatorIdentifier &_opid,
                                 std::vector<TensorId> &inputs,
                                 OutIndex numberOfOutputs,
-                                std::map<std::string, boost::any> attributes,
+                                std::map<std::string, popart::any> attributes,
                                 OptionalVGraphId virtualGraphId,
                                 OptionalPipelineStage pipelineStage,
                                 OptionalPingPongPhase pingPongPhase,
@@ -274,7 +275,7 @@ TensorId TransformBuilder::matmul(TensorId lhs,
                                   OptionalPingPongPhase pingPongPhase,
                                   const std::string opName,
                                   const std::string outputName,
-                                  std::map<std::string, boost::any> attrs,
+                                  std::map<std::string, popart::any> attrs,
                                   const OperatorIdentifier _opid) {
   std::vector<TensorId> inputs = {lhs, rhs};
   return op(_opid,
