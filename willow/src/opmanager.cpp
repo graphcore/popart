@@ -81,18 +81,18 @@ OpManager::getSupportedOperationsDefinition(bool includePrivate) {
 }
 
 Attributes OpManager::getAttributesFromAnyMap(
-    std::map<std::string, boost::any> attributes) {
+    std::map<std::string, popart::any> attributes) {
   Attributes attr;
   for (auto attribute : attributes) {
     const std::type_info &tinfo = attribute.second.type();
     if (tinfo == typeid(Attributes::Int)) {
-      auto value = boost::any_cast<Attributes::Int>(attribute.second);
+      auto value = popart::any_cast<Attributes::Int>(attribute.second);
       attr.setAttribute(attribute.first, value);
     } else if (tinfo == typeid(Attributes::Ints)) {
-      auto value = boost::any_cast<Attributes::Ints>(attribute.second);
+      auto value = popart::any_cast<Attributes::Ints>(attribute.second);
       attr.setAttribute(attribute.first, value);
     } else if (tinfo == typeid(std::string)) {
-      auto value = boost::any_cast<std::string>(attribute.second);
+      auto value = popart::any_cast<std::string>(attribute.second);
       attr.setAttribute(attribute.first, value);
     } else {
       throw error("Unsupported attribute value type {}", tinfo.name());

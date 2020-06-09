@@ -13,8 +13,8 @@
 #include <popart/opidentifier.hpp>
 #include <popart/tensorinfo.hpp>
 
-#include <boost/any.hpp>
 #include <boost/optional.hpp>
+#include <popart/any.hpp>
 
 namespace popart {
 
@@ -452,7 +452,7 @@ public:
            int opsetVersion,
            const std::vector<TensorId> &inputs,
            const unsigned numOutputs,
-           const std::map<std::string, boost::any> &attributes,
+           const std::map<std::string, popart::any> &attributes,
            const std::string &name = "");
 
   // Add a custom op to the model
@@ -461,7 +461,7 @@ public:
                 int opsetVersion,
                 const std::vector<TensorId> &inputs,
                 const std::vector<TensorId> &outputs,
-                const std::map<std::string, boost::any> &attributes,
+                const std::map<std::string, popart::any> &attributes,
                 const std::string &name = "");
 
   /**
@@ -656,12 +656,12 @@ public:
   /**
    * Set an attribute that will be set on all subsequent operations
    */
-  void setAttribute(const std::string &attribute, boost::any value);
+  void setAttribute(const std::string &attribute, popart::any value);
 
   /**
    * Get an attribute that has been set for all subsequent operations
    */
-  boost::any getAttribute(const std::string attribute) const;
+  popart::any getAttribute(const std::string attribute) const;
 
   bool hasAttribute(const std::string &attribute) const;
 
@@ -678,7 +678,7 @@ public:
   /**
    * Get current attribute value
    */
-  boost::any getAttribute(const std::string &attribute);
+  popart::any getAttribute(const std::string &attribute);
 
   /**
    * A convenience function for the pipeline stage attribute

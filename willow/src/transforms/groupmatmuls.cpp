@@ -20,9 +20,9 @@
 #include <popart/transforms/groupmatmuls.hpp>
 #include <popart/transforms/transformbuilder.hpp>
 
-#include <boost/any.hpp>
 #include <boost/optional/optional_io.hpp>
 #include <boost/range/algorithm_ext.hpp>
+#include <popart/any.hpp>
 
 namespace popart {
 
