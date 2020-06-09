@@ -3,7 +3,6 @@
 #define GUARD_NEURALNET_CONV_HPP
 
 #include <boost/optional.hpp>
-
 #include <popart/op/receptive.hpp>
 #include <popart/util.hpp>
 

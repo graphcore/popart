@@ -22,7 +22,7 @@ bool LSTMPattern::apply(Op *op) const {
   auto lstmOp         = dynamic_cast<LSTMOp *>(op);
   auto hiddenSize     = lstmOp->getHiddenSize();
   auto sequenceLength = lstmOp->getSeqLength();
-  auto vgraph         = op->getOptionalVirtualGraphId();
+  auto vgraph         = op->getOptionalVGraphId();
   auto pstage         = op->getOptionalPipelineStage();
   auto pphase         = op->getOptionalPingPongPhase();
 

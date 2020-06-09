@@ -271,7 +271,8 @@ void Ir::verifyPipelineSettings() const {
       auto &graph = id_graph.second;
       for (auto &id_op : graph->getOps()) {
         auto &op = id_op.second;
-        op->setPipelineStage(boost::none);
+        // no pipeline stage
+        op->setPipelineStage({});
       }
     }
 
@@ -384,7 +385,7 @@ void Ir::verifyPingPongSettings() const {
       auto &graph = id_graph.second;
       for (auto &id_op : graph->getOps()) {
         auto &op = id_op.second;
-        op->setPingPongPhase(boost::none);
+        op->setPingPongPhase({});
       }
     }
   }
@@ -1740,7 +1741,7 @@ OpId Ir::getAndIncrOpsCounter() {
 
 OpId Ir::getOpsCounter() const { return opsCounter; }
 
-boost::optional<int64_t>
+OptionalVGraphId
 Ir::getVirtualGraphIdFromTensorProducers(std::vector<Tensor *> ts) {
   // Count which vgraph's the producer ops are on.
   std::map<int64_t, int64_t> vgraphIdMap;
@@ -1772,7 +1773,7 @@ Ir::getVirtualGraphIdFromTensorProducers(std::vector<Tensor *> ts) {
                                return p1.second < p2.second;
                              });
 
-  return it->first;
+  return OptionalVGraphId(it->first);
 }
 
 std::string Ir::getGradSumOpNamePrefix() const { return "GradSum"; }
@@ -2270,7 +2271,8 @@ void Ir::unsetAllVirtualGraphIds() {
       auto op = id_op.second.get();
 
       if (op->hasVirtualGraphId()) {
-        op->setVirtualGraphId(boost::none);
+        // no virtual graph id
+        op->setVirtualGraphId({});
         hadToUnsetAny = true;
       }
     }

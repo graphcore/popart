@@ -38,13 +38,12 @@ std::size_t BatchSerialize::id(int pass) {
   return typeid(BatchSerialize).hash_code() + pass;
 }
 
-OpId BatchSerialize::reshapeForSlice(
-    Graph &graph,
-    Op::Settings settings,
-    TensorId inId,
-    Shape newShape,
-    TensorId newId,
-    boost::optional<BatchSerializedPhase> bsp) const {
+OpId BatchSerialize::reshapeForSlice(Graph &graph,
+                                     Op::Settings settings,
+                                     TensorId inId,
+                                     Shape newShape,
+                                     TensorId newId,
+                                     OptionalBatchSerializedPhase bsp) const {
   std::unique_ptr<ReshapeOp> reshapeOp = std::make_unique<ReshapeOp>(
       Onnx::AiOnnx::OpSet11::Reshape, newShape, settings);
   reshapeOp->setName("Batch_Reshape_" + inId);
@@ -205,7 +204,7 @@ bool BatchSerialize::apply(Graph &graph) const {
                                   entry.first->id,
                                   reshape,
                                   sliceableTensorId,
-                                  boost::none));
+                                  OptionalBatchSerializedPhase()));
 
             } else {
               sliceableTensorId = entry.first->id;
@@ -502,7 +501,7 @@ bool BatchSerialize::apply(Graph &graph) const {
                                              producer->getSettings());
                 Op *init = initOp.get();
                 init->setName("ConcatInit_" + concatId);
-                init->setBatchSerializedPhase(boost::none);
+                init->setBatchSerializedPhase(OptionalBatchSerializedPhase());
                 graph.moveIntoGraph(std::move(initOp));
                 batchSerialOps[{tensor->id, producerContext}].insert(init->id);
                 lastId = ir.createIntermediateTensorId(concatId);
@@ -565,7 +564,7 @@ bool BatchSerialize::apply(Graph &graph) const {
                                     lastId,
                                     outShape,
                                     concatId,
-                                    boost::none));
+                                    OptionalBatchSerializedPhase()));
               }
             }
           } else {

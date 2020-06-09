@@ -230,21 +230,21 @@ std::set<PipelineStage> Consumers::getPipelineStages() const {
   return stages;
 }
 
-boost::optional<PipelineStage> Consumers::findLowestPipelineStage() const {
+OptionalPipelineStage Consumers::findLowestPipelineStage() const {
   auto stages = getPipelineStages();
 
   if (stages.size() == 0) {
-    return boost::none;
+    return {};
   } else {
     return *std::min_element(stages.begin(), stages.end());
   }
 }
 
-boost::optional<PipelineStage> Consumers::findHighestPipelineStage() const {
+OptionalPipelineStage Consumers::findHighestPipelineStage() const {
   auto stages = getPipelineStages();
 
   if (stages.size() == 0) {
-    return boost::none;
+    return {};
   } else {
     return *std::max_element(stages.begin(), stages.end());
   }

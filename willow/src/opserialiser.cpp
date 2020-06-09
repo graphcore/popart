@@ -26,34 +26,49 @@ OpSerialiser::OpSerialiser(const Op *op, std::stringstream &ss_)
   ss << '\n' << tab << "attributes" << '\n';
 }
 
-void OpSerialiser::appendAttribute(const std::string &name, float value) {
-  appendAttr(name, value);
+void OpSerialiserBase::appendAttribute(const std::string &name,
+                                       const std::vector<int64_t> &v) {
+  std::ostringstream oss;
+  oss << v;
+  appendStrAttr(name, oss.str());
 }
 
-void OpSerialiser::appendAttribute(const std::string &name, int64_t value) {
-  appendAttr(name, value);
+void OpSerialiserBase::appendAttribute(const std::string &name, float value) {
+  appendStrAttr(name, std::to_string(value));
 }
 
-void OpSerialiser::appendAttribute(const std::string &name, int value) {
-  appendAttr(name, value);
+void OpSerialiserBase::appendAttribute(const std::string &name, bool value) {
+  appendStrAttr(name, value ? "true" : "false");
 }
 
-void OpSerialiser::appendAttribute(const std::string &name, uint32_t value) {
-  appendAttr(name, value);
+void OpSerialiserBase::appendAttribute(const std::string &name,
+                                       const Scope &value) {
+  std::ostringstream oss;
+  oss << value;
+  appendStrAttr(name, oss.str());
 }
 
-void OpSerialiser::appendAttribute(const std::string &name, uint64_t value) {
-  appendAttr(name, value);
+void OpSerialiserBase::appendAttribute(const std::string &name, int value) {
+  appendStrAttr(name, std::to_string(value));
 }
 
-void OpSerialiser::appendAttribute(const std::string &name,
-                                   const std::vector<int64_t> &value) {
-  appendAttr(name, value);
+void OpSerialiserBase::appendAttribute(const std::string &name, int64_t value) {
+  appendStrAttr(name, std::to_string(value));
 }
 
-void OpSerialiser::appendAttribute(const std::string &name,
-                                   const std::string &value) {
-  appendAttr(name, value);
+void OpSerialiserBase::appendAttribute(const std::string &name,
+                                       const std::string &value) {
+  appendStrAttr(name, value);
+}
+
+void OpSerialiserBase::appendAttribute(const std::string &name,
+                                       uint32_t value) {
+  appendStrAttr(name, std::to_string(value));
+}
+
+void OpSerialiserBase::appendAttribute(const std::string &name,
+                                       uint64_t value) {
+  appendStrAttr(name, std::to_string(value));
 }
 
 void OpSerialiser::appendAttribute(const std::string &name,
@@ -68,15 +83,6 @@ void OpSerialiser::appendAttribute(const std::string &name,
   if (value) {
     appendAttr(name, *value);
   }
-}
-
-void OpSerialiser::appendAttribute(const std::string &name, bool value) {
-  appendAttr(name, value ? "true" : "false");
-}
-
-void OpSerialiser::appendAttribute(const std::string &name,
-                                   const Scope &scope) {
-  appendAttr(name, scope);
 }
 
 void OpSerialiser::appendAttribute(const std::string &name,
@@ -202,38 +208,6 @@ void OpJsonSerialiser::appendKeyValues(const std::string key,
     ss << ",";
 }
 
-void OpJsonSerialiser::appendAttribute(const std::string &name, float value) {
-  appendAttr(name, value);
-}
-
-void OpJsonSerialiser::appendAttribute(const std::string &name, int64_t value) {
-  appendAttr(name, value);
-}
-
-void OpJsonSerialiser::appendAttribute(const std::string &name, int value) {
-  appendAttr(name, value);
-}
-
-void OpJsonSerialiser::appendAttribute(const std::string &name,
-                                       uint32_t value) {
-  appendAttr(name, value);
-}
-
-void OpJsonSerialiser::appendAttribute(const std::string &name,
-                                       uint64_t value) {
-  appendAttr(name, value);
-}
-
-void OpJsonSerialiser::appendAttribute(const std::string &name,
-                                       const std::vector<int64_t> &value) {
-  appendAttr(name, value);
-}
-
-void OpJsonSerialiser::appendAttribute(const std::string &name,
-                                       const std::string &value) {
-  appendAttr(name, value);
-}
-
 void OpJsonSerialiser::appendAttribute(const std::string &name,
                                        boost::optional<int64_t> value) {
   if (value) {
@@ -246,15 +220,6 @@ void OpJsonSerialiser::appendAttribute(const std::string &name,
   if (value) {
     appendAttr(name, *value);
   }
-}
-
-void OpJsonSerialiser::appendAttribute(const std::string &name, bool value) {
-  appendAttr(name, value ? "true" : "false");
-}
-
-void OpJsonSerialiser::appendAttribute(const std::string &name,
-                                       const Scope &scope) {
-  appendAttr(name, scope);
 }
 
 void OpJsonSerialiser::appendAttribute(const std::string &name,
@@ -279,36 +244,6 @@ OpEquivIdCreator::OpEquivIdCreator(const Op *op) {
   appendAttr(*op->output.get());
 }
 
-void OpEquivIdCreator::appendAttribute(const std::string &, float value) {
-  appendAttr(value);
-}
-
-void OpEquivIdCreator::appendAttribute(const std::string &, int64_t value) {
-  appendAttr(value);
-}
-
-void OpEquivIdCreator::appendAttribute(const std::string &, int value) {
-  appendAttr(value);
-}
-
-void OpEquivIdCreator::appendAttribute(const std::string &, uint32_t value) {
-  appendAttr(value);
-}
-
-void OpEquivIdCreator::appendAttribute(const std::string &, uint64_t value) {
-  appendAttr(value);
-}
-
-void OpEquivIdCreator::appendAttribute(const std::string &,
-                                       const std::vector<int64_t> &value) {
-  appendAttr(value);
-}
-
-void OpEquivIdCreator::appendAttribute(const std::string &,
-                                       const std::string &value) {
-  appendAttr(value);
-}
-
 void OpEquivIdCreator::appendAttribute(const std::string &,
                                        boost::optional<int64_t> value) {
   if (value) {
@@ -329,15 +264,6 @@ void OpEquivIdCreator::appendAttribute(const std::string &,
     // `value` when creating an equivalence id
     appendAttr('?');
   }
-}
-
-void OpEquivIdCreator::appendAttribute(const std::string &, bool value) {
-  appendAttr(value);
-}
-
-void OpEquivIdCreator::appendAttribute(const std::string &,
-                                       const Scope &scope) {
-  appendAttr(scope);
 }
 
 void OpEquivIdCreator::appendAttribute(const std::string &,
@@ -375,6 +301,21 @@ template <> void OpEquivIdCreator::appendAttr(const TensorIndexMap &tmap) {
 
 template <typename T> void OpEquivIdCreator::appendAttr(const T &value) {
   ss << value << sep;
+}
+
+void OpEquivIdCreator::appendStrAttr(const std::string &,
+                                     const std::string &value) {
+  appendAttr(value);
+}
+
+void OpSerialiser::appendStrAttr(const std::string &key,
+                                 const std::string &value) {
+  appendAttr(key, value);
+}
+
+void OpJsonSerialiser::appendStrAttr(const std::string &key,
+                                     const std::string &value) {
+  appendAttr(key, value);
 }
 
 } // namespace popart

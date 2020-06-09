@@ -22,9 +22,9 @@ TransformBuilder::createOp(const OperatorIdentifier &opid,
 TensorId TransformBuilder::op(const OperatorIdentifier &_opid,
                               std::vector<TensorId> &inputs,
                               std::map<std::string, boost::any> attributes,
-                              boost::optional<int64_t> virtualGraphId,
-                              boost::optional<int64_t> pipelineStage,
-                              boost::optional<PingPongPhase> pingPongPhase,
+                              OptionalVGraphId virtualGraphId,
+                              OptionalPipelineStage pipelineStage,
+                              OptionalPingPongPhase pingPongPhase,
                               const std::string opName,
                               const std::string outputName) {
 
@@ -56,9 +56,9 @@ void TransformBuilder::opWithOutput(
     std::vector<TensorId> &inputs,
     std::map<std::string, boost::any> attributes,
     TensorId &out,
-    boost::optional<int64_t> virtualGraphId,
-    boost::optional<int64_t> pipelineStage,
-    boost::optional<PingPongPhase> pingPongPhase,
+    OptionalVGraphId virtualGraphId,
+    OptionalPipelineStage pipelineStage,
+    OptionalPingPongPhase pingPongPhase,
     const std::string debugPrefix) {
 
   auto op = createOp(_opid, attributes, debugPrefix);
@@ -83,9 +83,9 @@ TransformBuilder::multiOutputOp(const OperatorIdentifier &_opid,
                                 std::vector<TensorId> &inputs,
                                 OutIndex numberOfOutputs,
                                 std::map<std::string, boost::any> attributes,
-                                boost::optional<int64_t> virtualGraphId,
-                                boost::optional<int64_t> pipelineStage,
-                                boost::optional<PingPongPhase> pingPongPhase,
+                                OptionalVGraphId virtualGraphId,
+                                OptionalPipelineStage pipelineStage,
+                                OptionalPingPongPhase pingPongPhase,
                                 const std::string opName) {
 
   auto op = createOp(_opid, attributes, opName);
@@ -145,9 +145,9 @@ TensorId TransformBuilder::getNextId(const std::string &name, OutIndex n) {
 
 TensorId TransformBuilder::concat(std::vector<TensorId> &inputs,
                                   int64_t axis,
-                                  boost::optional<int64_t> virtualGraphId,
-                                  boost::optional<int64_t> pipelineStage,
-                                  boost::optional<PingPongPhase> pingPongPhase,
+                                  OptionalVGraphId virtualGraphId,
+                                  OptionalPipelineStage pipelineStage,
+                                  OptionalPingPongPhase pingPongPhase,
                                   const std::string opName,
                                   const std::string outputName) {
   return op(Onnx::Operators::Concat_1,
@@ -163,9 +163,9 @@ TensorId TransformBuilder::concat(std::vector<TensorId> &inputs,
 void TransformBuilder::concat(std::vector<TensorId> &inputs,
                               int64_t axis,
                               TensorId out,
-                              boost::optional<int64_t> virtualGraphId,
-                              boost::optional<int64_t> pipelineStage,
-                              boost::optional<PingPongPhase> pingPongPhase,
+                              OptionalVGraphId virtualGraphId,
+                              OptionalPipelineStage pipelineStage,
+                              OptionalPingPongPhase pingPongPhase,
                               const std::string opName) {
   opWithOutput(Onnx::Operators::Concat_1,
                inputs,
@@ -179,9 +179,9 @@ void TransformBuilder::concat(std::vector<TensorId> &inputs,
 
 void TransformBuilder::sum(std::vector<TensorId> &inputs,
                            TensorId out,
-                           boost::optional<int64_t> virtualGraphId,
-                           boost::optional<int64_t> pipelineStage,
-                           boost::optional<PingPongPhase> pingPongPhase,
+                           OptionalVGraphId virtualGraphId,
+                           OptionalPipelineStage pipelineStage,
+                           OptionalPingPongPhase pingPongPhase,
                            const std::string opName) {
   opWithOutput(Onnx::Operators::Sum_8,
                inputs,
@@ -193,13 +193,12 @@ void TransformBuilder::sum(std::vector<TensorId> &inputs,
                opName);
 }
 
-TensorId
-TransformBuilder::addLhsInplace(std::vector<TensorId> &inputs,
-                                boost::optional<int64_t> virtualGraphId,
-                                boost::optional<int64_t> pipelineStage,
-                                boost::optional<PingPongPhase> pingPongPhase,
-                                const std::string opName,
-                                const std::string outputName) {
+TensorId TransformBuilder::addLhsInplace(std::vector<TensorId> &inputs,
+                                         OptionalVGraphId virtualGraphId,
+                                         OptionalPipelineStage pipelineStage,
+                                         OptionalPingPongPhase pingPongPhase,
+                                         const std::string opName,
+                                         const std::string outputName) {
   Op::Settings settings(graph, opName);
 
   auto op = std::make_unique<AddLhsInplaceOp>(settings);
@@ -232,13 +231,12 @@ TransformBuilder::addLhsInplace(std::vector<TensorId> &inputs,
   return _op->outTensor(0)->id;
 }
 
-void TransformBuilder::addLhsInplace(
-    std::vector<TensorId> &inputs,
-    TensorId out,
-    boost::optional<int64_t> virtualGraphId,
-    boost::optional<int64_t> pipelineStage,
-    boost::optional<PingPongPhase> pingPongPhase,
-    const std::string opName) {
+void TransformBuilder::addLhsInplace(std::vector<TensorId> &inputs,
+                                     TensorId out,
+                                     OptionalVGraphId virtualGraphId,
+                                     OptionalPipelineStage pipelineStage,
+                                     OptionalPingPongPhase pingPongPhase,
+                                     const std::string opName) {
   Op::Settings settings(graph, opName);
 
   auto op = std::make_unique<AddLhsInplaceOp>(settings);
@@ -271,9 +269,9 @@ void TransformBuilder::addLhsInplace(
 
 TensorId TransformBuilder::matmul(TensorId lhs,
                                   TensorId rhs,
-                                  boost::optional<int64_t> virtualGraphId,
-                                  boost::optional<int64_t> pipelineStage,
-                                  boost::optional<PingPongPhase> pingPongPhase,
+                                  OptionalVGraphId virtualGraphId,
+                                  OptionalPipelineStage pipelineStage,
+                                  OptionalPingPongPhase pingPongPhase,
                                   const std::string opName,
                                   const std::string outputName,
                                   std::map<std::string, boost::any> attrs,
@@ -292,9 +290,9 @@ TensorId TransformBuilder::matmul(TensorId lhs,
 void TransformBuilder::cast(TensorId input,
                             TensorId out,
                             DataType type,
-                            boost::optional<int64_t> virtualGraphId,
-                            boost::optional<int64_t> pipelineStage,
-                            boost::optional<PingPongPhase> pingPongPhase,
+                            OptionalVGraphId virtualGraphId,
+                            OptionalPipelineStage pipelineStage,
+                            OptionalPingPongPhase pingPongPhase,
                             const std::string opName) {
   std::vector<TensorId> inputs = {input};
   opWithOutput(
@@ -312,9 +310,9 @@ TensorId TransformBuilder::slice(TensorId in,
                                  const Shape &starts,
                                  const Shape &ends,
                                  const Shape &axes,
-                                 boost::optional<int64_t> virtualGraphId,
-                                 boost::optional<int64_t> pipelineStage,
-                                 boost::optional<PingPongPhase> pingPongPhase,
+                                 OptionalVGraphId virtualGraphId,
+                                 OptionalPipelineStage pipelineStage,
+                                 OptionalPingPongPhase pingPongPhase,
                                  const std::string opName,
                                  const std::string outputName) {
   std::vector<TensorId> inputs = {in};
@@ -329,16 +327,15 @@ TensorId TransformBuilder::slice(TensorId in,
             outputName);
 }
 
-TensorId
-TransformBuilder::sliceInPlace(TensorId in,
-                               const Shape &starts,
-                               const Shape &ends,
-                               const Shape &axes,
-                               boost::optional<int64_t> virtualGraphId,
-                               boost::optional<int64_t> pipelineStage,
-                               boost::optional<PingPongPhase> pingPongPhase,
-                               const std::string opName,
-                               const std::string outputName) {
+TensorId TransformBuilder::sliceInPlace(TensorId in,
+                                        const Shape &starts,
+                                        const Shape &ends,
+                                        const Shape &axes,
+                                        OptionalVGraphId virtualGraphId,
+                                        OptionalPipelineStage pipelineStage,
+                                        OptionalPingPongPhase pingPongPhase,
+                                        const std::string opName,
+                                        const std::string outputName) {
   std::vector<TensorId> inputs = {in};
 
   Op::Settings settings(graph, opName);
@@ -383,9 +380,9 @@ void TransformBuilder::slice(TensorId in,
                              const Shape &ends,
                              const Shape &axes,
                              TensorId out,
-                             boost::optional<int64_t> virtualGraphId,
-                             boost::optional<int64_t> pipelineStage,
-                             boost::optional<PingPongPhase> pingPongPhase,
+                             OptionalVGraphId virtualGraphId,
+                             OptionalPipelineStage pipelineStage,
+                             OptionalPingPongPhase pingPongPhase,
                              const std::string opName) {
   std::vector<TensorId> inputs = {in};
 
@@ -401,9 +398,9 @@ void TransformBuilder::slice(TensorId in,
 
 TensorId TransformBuilder::squeeze(TensorId in,
                                    const Shape &axes,
-                                   boost::optional<int64_t> virtualGraphId,
-                                   boost::optional<int64_t> pipelineStage,
-                                   boost::optional<PingPongPhase> pingPongPhase,
+                                   OptionalVGraphId virtualGraphId,
+                                   OptionalPipelineStage pipelineStage,
+                                   OptionalPingPongPhase pingPongPhase,
                                    const std::string opName,
                                    const std::string outputName) {
   std::vector<TensorId> inputs = {in};
@@ -421,9 +418,9 @@ TensorId TransformBuilder::squeeze(TensorId in,
 void TransformBuilder::squeeze(TensorId in,
                                const Shape &axes,
                                TensorId out,
-                               boost::optional<int64_t> virtualGraphId,
-                               boost::optional<int64_t> pipelineStage,
-                               boost::optional<PingPongPhase> pingPongPhase,
+                               OptionalVGraphId virtualGraphId,
+                               OptionalPipelineStage pipelineStage,
+                               OptionalPingPongPhase pingPongPhase,
                                const std::string opName) {
   std::vector<TensorId> inputs = {in};
 
@@ -437,14 +434,13 @@ void TransformBuilder::squeeze(TensorId in,
                opName);
 }
 
-TensorId
-TransformBuilder::transpose(TensorId in,
-                            Shape perm,
-                            boost::optional<int64_t> virtualGraphId,
-                            boost::optional<int64_t> pipelineStage,
-                            boost::optional<PingPongPhase> pingPongPhase,
-                            const std::string opName,
-                            const std::string outTensorName) {
+TensorId TransformBuilder::transpose(TensorId in,
+                                     Shape perm,
+                                     OptionalVGraphId virtualGraphId,
+                                     OptionalPipelineStage pipelineStage,
+                                     OptionalPingPongPhase pingPongPhase,
+                                     const std::string opName,
+                                     const std::string outTensorName) {
   std::vector<TensorId> inputs = {in};
   return op(Onnx::Operators::Transpose_1,
             inputs,
@@ -459,9 +455,9 @@ TransformBuilder::transpose(TensorId in,
 void TransformBuilder::transpose(TensorId in,
                                  Shape perm,
                                  TensorId out,
-                                 boost::optional<int64_t> virtualGraphId,
-                                 boost::optional<int64_t> pipelineStage,
-                                 boost::optional<PingPongPhase> pingPongPhase,
+                                 OptionalVGraphId virtualGraphId,
+                                 OptionalPipelineStage pipelineStage,
+                                 OptionalPingPongPhase pingPongPhase,
                                  const std::string opName) {
   std::vector<TensorId> inputs = {in};
   opWithOutput(Onnx::Operators::Transpose_1,
@@ -476,9 +472,9 @@ void TransformBuilder::transpose(TensorId in,
 
 TensorId TransformBuilder::reshape(TensorId in,
                                    Shape shape,
-                                   boost::optional<int64_t> virtualGraphId,
-                                   boost::optional<int64_t> pipelineStage,
-                                   boost::optional<PingPongPhase> pingPongPhase,
+                                   OptionalVGraphId virtualGraphId,
+                                   OptionalPipelineStage pipelineStage,
+                                   OptionalPingPongPhase pingPongPhase,
                                    const std::string opName,
                                    const std::string outputName) {
   auto op = createOp(Onnx::Operators::Reshape_5, {}, opName);
@@ -510,15 +506,14 @@ TensorId TransformBuilder::reshape(TensorId in,
   return _op->outTensor(0)->id;
 }
 
-TensorId
-TransformBuilder::reducesum(TensorId in,
-                            int64_t keepdims,
-                            std::vector<int64_t> axes,
-                            boost::optional<int64_t> virtualGraphId,
-                            boost::optional<int64_t> pipelineStage,
-                            boost::optional<PingPongPhase> pingPongPhase,
-                            const std::string opName,
-                            const std::string outputName) {
+TensorId TransformBuilder::reducesum(TensorId in,
+                                     int64_t keepdims,
+                                     std::vector<int64_t> axes,
+                                     OptionalVGraphId virtualGraphId,
+                                     OptionalPipelineStage pipelineStage,
+                                     OptionalPingPongPhase pingPongPhase,
+                                     const std::string opName,
+                                     const std::string outputName) {
   std::vector<TensorId> inputs = {in};
   return op(Onnx::Operators::ReduceSum_1,
             inputs,
@@ -534,9 +529,9 @@ std::vector<TensorId>
 TransformBuilder::split(TensorId in,
                         int64_t axis,
                         std::vector<int64_t> splitSizes,
-                        boost::optional<int64_t> virtualGraphId,
-                        boost::optional<int64_t> pipelineStage,
-                        boost::optional<PingPongPhase> pingPongPhase,
+                        OptionalVGraphId virtualGraphId,
+                        OptionalPipelineStage pipelineStage,
+                        OptionalPingPongPhase pingPongPhase,
                         const std::string opName) {
 
   std::vector<TensorId> inputs = {in};
@@ -551,9 +546,9 @@ TransformBuilder::split(TensorId in,
 }
 
 TensorId TransformBuilder::add(std::vector<TensorId> &inputs,
-                               boost::optional<int64_t> virtualGraphId,
-                               boost::optional<int64_t> pipelineStage,
-                               boost::optional<PingPongPhase> pingPongPhase,
+                               OptionalVGraphId virtualGraphId,
+                               OptionalPipelineStage pipelineStage,
+                               OptionalPingPongPhase pingPongPhase,
                                const std::string opName,
                                const std::string outputName) {
   return op(Onnx::Operators::Add_7,
@@ -569,9 +564,9 @@ TensorId TransformBuilder::add(std::vector<TensorId> &inputs,
 void TransformBuilder::unsqueeze(TensorId in,
                                  std::vector<int64_t> axes,
                                  TensorId out,
-                                 boost::optional<int64_t> virtualGraphId,
-                                 boost::optional<int64_t> pipelineStage,
-                                 boost::optional<PingPongPhase> pingPongPhase,
+                                 OptionalVGraphId virtualGraphId,
+                                 OptionalPipelineStage pipelineStage,
+                                 OptionalPingPongPhase pingPongPhase,
                                  const std::string opName) {
   std::vector<TensorId> inputs = {in};
   return opWithOutput(Onnx::Operators::Unsqueeze_11,

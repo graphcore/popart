@@ -8,6 +8,7 @@
 #include <set>
 #include <tuple>
 #include <utility>
+#include <popart/popx/creatorx.hpp>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/range/algorithm/find.hpp>
@@ -3159,7 +3160,7 @@ poplar::Executable Devicex::getExecutable() {
   if (cachedExecutable) {
     // return the executable in cachedExecutable while ensuring
     // cachedExecutable is set to boost::none
-    optional<poplar::Executable> result = boost::none;
+    boost::optional<poplar::Executable> result = boost::none;
     boost::swap(cachedExecutable, result);
     return std::move(result.get());
   } else {

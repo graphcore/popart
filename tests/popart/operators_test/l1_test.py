@@ -7,6 +7,12 @@ import pytest
 import torch.nn.functional as F
 from op_tester import op_tester
 
+# `import test_util` requires adding to sys.path
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+import test_util as tu
+
 
 def get_torch_reduction_type(popart_reduction_type):
     if popart_reduction_type == popart.ReductionType.Mean:
@@ -103,3 +109,48 @@ def test_l1_training(op_tester):
 
             op_tester.patterns = ['OpToIdentity']
             op_tester.run(init_builder, reference, 'train')
+
+
+def test_l1_reduction_equiv(op_tester):
+    dshapes = ([2, 3], [2, 4, 4], [5, 1, 3], [1, 1])
+    for dshape in dshapes:
+        ip_data = np.random.rand(*dshape).astype(np.float32)
+
+        def getAnchors(extraReduction):
+            builder = popart.Builder()
+            ip = builder.addInitializedInputTensor(ip_data)
+
+            if extraReduction == True:
+                l1 = builder.aiGraphcore.l1loss(
+                    [ip], 0.1, reduction=popart.ReductionType.NoReduction)
+                loss = builder.aiOnnx.reducesum([l1])
+            else:
+                loss = builder.aiGraphcore.l1loss(
+                    [ip], 0.1, reduction=popart.ReductionType.Sum)
+
+            anchors = [loss, popart.reservedGradientPrefix() + ip]
+
+            session = popart.TrainingSession(
+                fnModel=builder.getModelProto(),
+                loss=loss,
+                dataFlow=popart.DataFlow(1, anchors),
+                optimizer=popart.ConstSGD(0.1),
+                deviceInfo=tu.create_test_device(),
+                patterns=popart.Patterns([]))
+            session.prepareDevice()
+            session.weightsFromHost()
+            anchors = session.initAnchorArrays()
+            stepio = popart.PyStepIO({}, anchors)
+            session.run(stepio)
+            return anchors
+
+        # perform sum reduction of individual losses inside l1 op
+        lr_anchors = getAnchors(False)
+
+        # perform sum reduction of individual losses outside l1 op
+        er_anchors = getAnchors(True)
+
+        # check they are equivalent
+        for (id0, a0), (id1, a1) in zip(lr_anchors.items(),
+                                        er_anchors.items()):
+            assert np.allclose(a0, a1)

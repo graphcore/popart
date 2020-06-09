@@ -464,3 +464,65 @@ def test_loss_scaling(op_tester):
 
         op_tester.patterns = []
         op_tester.run(init_builder, reference, 'train')
+
+
+def test_nllloss_reduction_equiv(op_tester):
+    dshapes = ([2, 3], [2, 4, 4], [5, 1, 3], [1, 1])
+    for dshape in dshapes:
+        lshape = dshape[:-1]
+        classes = dshape[-1]
+        ip_data = np.random.rand(*dshape).astype(np.float32)
+        lb_data = np.random.randint(classes, size=lshape)
+
+        def test(patternsList):
+            def getAnchors(extraReduction):
+                builder = popart.Builder()
+                ip = builder.addInitializedInputTensor(ip_data)
+                lb = builder.addInputTensor("INT32", lshape)
+
+                sm = builder.aiOnnx.softmax([ip], axis=np.size(lshape))
+                if extraReduction == True:
+                    nll = builder.aiGraphcore.nllloss(
+                        [sm, lb], reduction=popart.ReductionType.NoReduction)
+                    loss = builder.aiOnnx.reducesum([nll])
+                else:
+                    loss = builder.aiGraphcore.nllloss(
+                        [sm, lb], reduction=popart.ReductionType.Sum)
+
+                anchors = [popart.reservedGradientPrefix() + ip]
+                # Always test 'loss' too, except for when we want to test with
+                # the SoftmaxGradDirect pattern, which requires 'loss' to be
+                # anchored
+                if 'SoftmaxGradDirect' not in patternsList or 'NlllWithSoftmaxGradDirect' in patternsList:
+                    anchors.append(loss)
+
+                session = popart.TrainingSession(
+                    fnModel=builder.getModelProto(),
+                    loss=loss,
+                    dataFlow=popart.DataFlow(1, anchors),
+                    optimizer=popart.ConstSGD(0.1),
+                    deviceInfo=tu.create_test_device(),
+                    patterns=popart.Patterns(patternsList))
+                session.prepareDevice()
+                session.weightsFromHost()
+                anchors = session.initAnchorArrays()
+                stepio = popart.PyStepIO({lb: lb_data.astype(np.int32)},
+                                         anchors)
+                session.run(stepio)
+                return anchors
+
+            # perform sum reduction of individual losses inside nllloss op
+            lr_anchors = getAnchors(False)
+
+            # perform sum reduction of individual losses outside nllloss op
+            er_anchors = getAnchors(True)
+
+            # check they are equivalent
+            for (id0, a0), (id1, a1) in zip(lr_anchors.items(),
+                                            er_anchors.items()):
+                checkResult(getTensorError(a0, a1), 1e-8)
+
+        test(['PreUniRepl'])  # Nll, NllGrad and SoftmaxGrad Ops
+        test(['PreUniRepl', 'SoftmaxGradDirect'])  # SoftmaxGradDirect Op
+        test(['PreUniRepl', 'SoftmaxGradDirect',
+              'NlllWithSoftmaxGradDirect'])  # NllWithSoftmaxGradDirect Op

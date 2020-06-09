@@ -1,4 +1,5 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <boost/optional/optional_io.hpp>
 #include <onnx/onnx_pb.h>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -338,7 +339,7 @@ void Op::appendOutlineAttributes(OpSerialiserBase &os) const {
   std::string recomputeString =
       settings.recomputeType == RecomputeType::Recompute ? "YES" : "NO";
   os.appendAttribute("recompute", recomputeString);
-  os.appendAttribute(sVirtualGraphAttribute, getOptionalVirtualGraphId());
+  os.appendAttribute(sVirtualGraphAttribute, getOptionalVGraphId());
   os.appendAttribute("useIoTiles", settings.useIoTiles);
   for (auto attribute : settings.extraOutlineAttributes) {
     os.appendAttribute(attribute.first, attribute.second);
@@ -512,11 +513,11 @@ void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {
   }
 }
 
-void Op::setVirtualGraphId(const boost::optional<int64_t> value) {
+void Op::setVirtualGraphId(const OptionalVGraphId value) {
   settings.vgraphId = value;
 }
 
-const boost::optional<VGraphId> Op::getOptionalVirtualGraphId() const {
+const OptionalVGraphId Op::getOptionalVGraphId() const {
   return settings.vgraphId;
 }
 
@@ -545,11 +546,11 @@ bool Op::hasVirtualGraphId() const {
   }
 }
 
-const boost::optional<PingPongPhase> Op::getOptionalPingPongPhase() const {
+const OptionalPingPongPhase Op::getOptionalPingPongPhase() const {
   return settings.pingPongPhase;
 }
 
-void Op::setPingPongPhase(const boost::optional<PingPongPhase> value) {
+void Op::setPingPongPhase(const OptionalPingPongPhase value) {
   settings.pingPongPhase = value;
 }
 
@@ -570,13 +571,11 @@ bool Op::hasPingPongPhase() const {
   }
 }
 
-const boost::optional<BatchSerializedPhase>
-Op::getOptionalBatchSerializedPhase() const {
+const OptionalBatchSerializedPhase Op::getOptionalBatchSerializedPhase() const {
   return settings.batchSerializedPhase;
 }
 
-void Op::setBatchSerializedPhase(
-    const boost::optional<BatchSerializedPhase> value) {
+void Op::setBatchSerializedPhase(const OptionalBatchSerializedPhase value) {
   settings.batchSerializedPhase = value;
 }
 
@@ -597,11 +596,11 @@ bool Op::hasBatchSerializedPhase() const {
   }
 }
 
-boost::optional<PipelineStage> Op::getOptionalPipelineStage() const {
+OptionalPipelineStage Op::getOptionalPipelineStage() const {
   return settings.pipelineStage;
 }
 
-void Op::setPipelineStage(boost::optional<PipelineStage> value) {
+void Op::setPipelineStage(OptionalPipelineStage value) {
   settings.pipelineStage = value;
 }
 
@@ -627,7 +626,7 @@ void Op::inheritPlacementAttributes(bool inheritSerializations) {
   };
 
   auto getOpVGID = [](Op *op, ConnectedOpRelation rel) {
-    boost::optional<VGraphId> vgid;
+    OptionalVGraphId vgid;
     if (op->isIpuCopyOp()) {
       IpuCopyOp *copyOp = dynamic_cast<IpuCopyOp *>(op);
       // If the lhsOp is a producer to the current op, the DestIpu is relevant
@@ -635,13 +634,13 @@ void Op::inheritPlacementAttributes(bool inheritSerializations) {
       vgid = rel == ConnectedOpRelation::Producer ? copyOp->getDestIpu()
                                                   : copyOp->getSourceIpu();
     } else {
-      vgid = op->getOptionalVirtualGraphId();
+      vgid = op->getOptionalVGraphId();
     }
     return vgid;
   };
 
   auto getOpPingPongPhase = [](Op *op, ConnectedOpRelation rel) {
-    boost::optional<PingPongPhase> phase;
+    OptionalPingPongPhase phase;
     if (op->isIpuCopyOp()) {
       IpuCopyOp *copyOp = dynamic_cast<IpuCopyOp *>(op);
       if (copyOp->getSourceIpu() % 2 != copyOp->getDestIpu() % 2 &&
@@ -655,7 +654,7 @@ void Op::inheritPlacementAttributes(bool inheritSerializations) {
     return phase;
   };
 
-  boost::optional<VGraphId> requiredVgid;
+  OptionalVGraphId requiredVgid;
   std::vector<std::pair<Op *, ConnectedOpRelation>> connectedOps;
 
   // Scan if the current operation modifies any weights. This modification
@@ -724,8 +723,8 @@ void Op::inheritPlacementAttributes(bool inheritSerializations) {
                         ->getIntrospectionInVirtualGraphId(indices.second[0])
                         .first;
                 if (rvgid != unusedVGraphId) {
-                  if (requiredVgid.is_initialized()) {
-                    requiredVgid = std::min(requiredVgid.get(), rvgid);
+                  if (requiredVgid) {
+                    requiredVgid = std::min(*requiredVgid, rvgid);
                   } else {
                     requiredVgid = rvgid;
                   }
@@ -788,11 +787,11 @@ void Op::inheritPlacementAttributes(bool inheritSerializations) {
             lhsProducer,
             (lhsProducer ? 1 : -1) *
                 (lhsPipeline ? lhsOp->getPipelineStage() : unusedPipelineStage),
+            (lhsProducer ? 1 : -1) * (lhsPingpong
+                                          ? *getOpPingPongPhase(lhsOp, lhsRel)
+                                          : unusedPingPongPhase),
             (lhsProducer ? 1 : -1) *
-                (lhsPingpong ? getOpPingPongPhase(lhsOp, lhsRel).get()
-                             : unusedPingPongPhase),
-            (lhsProducer ? 1 : -1) *
-                (lhsVirtual ? getOpVGID(lhsOp, lhsRel).get() : unusedVGraphId),
+                (lhsVirtual ? *getOpVGID(lhsOp, lhsRel) : unusedVGraphId),
             (lhsProducer ? 1 : -1) * (lhsOp->hasBatchSerializedPhase()
                                           ? lhsOp->getBatchSerializedPhase()
                                           : unusedBatchSerializedPhase),
@@ -808,11 +807,11 @@ void Op::inheritPlacementAttributes(bool inheritSerializations) {
             rhsProducer,
             (rhsProducer ? 1 : -1) *
                 (rhsPipeline ? rhsOp->getPipelineStage() : unusedPipelineStage),
+            (rhsProducer ? 1 : -1) * (rhsPingpong
+                                          ? *getOpPingPongPhase(rhsOp, rhsRel)
+                                          : unusedPingPongPhase),
             (rhsProducer ? 1 : -1) *
-                (rhsPingpong ? getOpPingPongPhase(rhsOp, rhsRel).get()
-                             : unusedPingPongPhase),
-            (rhsProducer ? 1 : -1) *
-                (rhsVirtual ? getOpVGID(rhsOp, rhsRel).get() : unusedVGraphId),
+                (rhsVirtual ? *getOpVGID(rhsOp, rhsRel) : unusedVGraphId),
             (rhsProducer ? 1 : -1) * (rhsOp->hasBatchSerializedPhase()
                                           ? rhsOp->getBatchSerializedPhase()
                                           : unusedBatchSerializedPhase),
@@ -870,11 +869,11 @@ void Op::inheritPlacementAttributes(bool inheritSerializations) {
   //__|________________|______ phase 2, vgid 0
   //  `------------ VarUpdate <- will inherit wrong phase and vgid
   //
-  if (requiredVgid.is_initialized() &&
-      (!hasVirtualGraphId() || getVirtualGraphId() != requiredVgid.get())) {
+  if (requiredVgid &&
+      (!hasVirtualGraphId() || getVirtualGraphId() != *requiredVgid)) {
     logging::op::debug("Changing Op {} placement to required VGID: {}",
                        debugName(),
-                       requiredVgid.get());
+                       *requiredVgid);
     setVirtualGraphId(requiredVgid);
     if (hasPingPongPhase()) {
       setPingPongPhase(getPingPongPhase() + 1);

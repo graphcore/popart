@@ -1,5 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <boost/algorithm/cxx11/any_of.hpp>
+#include <boost/optional.hpp>
 #include <boost/range/algorithm/find.hpp>
 #include <cmath>
 #include <memory>
@@ -45,14 +46,14 @@ std::vector<int64_t> getBoundariesCrossed(int64_t start,
                                           const std::vector<Op *> &schedule) {
   std::vector<int64_t> crossing;
 
-  boost::optional<VGraphId> vgid;
-  boost::optional<VGraphId> last_vgid;
+  OptionalVGraphId vgid;
+  OptionalVGraphId last_vgid;
 
-  boost::optional<PingPongPhase> phase;
-  boost::optional<PingPongPhase> last_phase;
+  OptionalPingPongPhase phase;
+  OptionalPingPongPhase last_phase;
 
-  boost::optional<BatchSerializedPhase> batchserial;
-  boost::optional<BatchSerializedPhase> last_batchserial;
+  OptionalBatchSerializedPhase batchserial;
+  OptionalBatchSerializedPhase last_batchserial;
 
   RecomputeType recompute      = RecomputeType::Undefined;
   RecomputeType last_recompute = RecomputeType::Undefined;
@@ -63,7 +64,7 @@ std::vector<int64_t> getBoundariesCrossed(int64_t start,
     last_phase       = phase;
     last_batchserial = batchserial;
     last_recompute   = recompute;
-    vgid             = op->getOptionalVirtualGraphId();
+    vgid             = op->getOptionalVGraphId();
     phase            = op->getOptionalPingPongPhase();
     batchserial      = op->getOptionalBatchSerializedPhase();
     recompute        = op->settings.recomputeType == RecomputeType::Recompute
@@ -293,43 +294,43 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
 
   // Copy some attributes with heuristics from the instance ops
   boost::optional<Scope> scope;
-  boost::optional<VGraphId> ipu_copy_vgid;
-  boost::optional<VGraphId> vgid;
-  boost::optional<PingPongPhase> phase;
-  boost::optional<BatchSerializedPhase> batchserial;
+  OptionalVGraphId ipu_copy_vgid;
+  OptionalVGraphId vgid;
+  OptionalPingPongPhase phase;
+  OptionalBatchSerializedPhase batchserial;
   bool conflicting_batchserial = false;
-  boost::optional<PipelineStage> pipeline_stage;
+  OptionalPipelineStage pipeline_stage;
   boost::optional<RecomputeType> recompute;
 
   for (const OpId &opid : instance.ops) {
     Op *op = graph.getOp(opid);
-    if (!scope.is_initialized()) {
+    if (!scope) {
       scope = op->getScope();
     }
     IpuCopyOp *copy = dynamic_cast<IpuCopyOp *>(op);
-    if (copy && !ipu_copy_vgid.is_initialized()) {
+    if (copy && !ipu_copy_vgid) {
       ipu_copy_vgid = copy->getSourceIpu();
     }
-    if (!vgid.is_initialized()) {
-      vgid = op->getOptionalVirtualGraphId();
+    if (!vgid) {
+      vgid = op->getOptionalVGraphId();
     }
-    if (!phase.is_initialized()) {
+    if (!phase) {
       phase = op->getOptionalPingPongPhase();
     }
-    if (!pipeline_stage.is_initialized()) {
+    if (!pipeline_stage) {
       pipeline_stage = op->getOptionalPipelineStage();
     }
-    if (!recompute.is_initialized()) {
+    if (!recompute) {
       recompute = op->settings.recomputeType;
     }
-    if (batchserial.is_initialized() && op->hasBatchSerializedPhase() &&
+    if (batchserial && op->hasBatchSerializedPhase() &&
         op->getBatchSerializedPhase() != batchserial) {
       conflicting_batchserial = true;
     }
   }
 
   // Fallback to IPU copy VGID
-  if (!vgid.is_initialized()) {
+  if (!vgid) {
     vgid = ipu_copy_vgid;
   }
 
@@ -343,10 +344,10 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
       std::make_unique<CallOp>(Onnx::CustomOperators::Call_1, graph, subgraph);
   auto call_op_id = graph.moveIntoGraph(std::move(up_call_op));
   CallOp *call_op = dynamic_cast<CallOp *>(graph.getOp(call_op_id));
-  if (scope.is_initialized()) {
+  if (scope) {
     call_op->settings.scope = scope.get();
   }
-  if (recompute.is_initialized()) {
+  if (recompute) {
     call_op->settings.recomputeType = recompute.get();
   }
   call_op->setVirtualGraphId(vgid);
@@ -655,9 +656,8 @@ Graph &createSubgraph(const Match &match, Graph &graph) {
          << "VGID: " << (op->hasVirtualGraphId() ? op->getVirtualGraphId() : -1)
          << ", "
          << "PingPong phase: "
-         << (op->getOptionalPingPongPhase()
-                 ? op->getOptionalPingPongPhase().get()
-                 : -1);
+         << (op->getOptionalPingPongPhase() ? *op->getOptionalPingPongPhase()
+                                            : -1);
     }
     logging::transform::trace("[SubgraphOutline] Creating subgraph: {}, "
                               "replacing {} instances, "
@@ -812,7 +812,7 @@ std::vector<Match> getRinseMatches(const std::vector<Op *> &ops,
           intSchedule[i],
           op->debugName(),
           op->hasVirtualGraphId() ? op->getVirtualGraphId() : -1,
-          op->getOptionalPingPongPhase() ? op->getOptionalPingPongPhase().get()
+          op->getOptionalPingPongPhase() ? *op->getOptionalPingPongPhase()
                                          : -1);
     }
     logging::transform::trace("[SubgraphOutline] Int schedule: {}",

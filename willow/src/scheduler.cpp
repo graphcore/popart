@@ -133,7 +133,7 @@ public:
       auto op = x.second.get();
       if (op->getOptionalPingPongPhase()) {
         auto opAddress = opAddresses[op];
-        auto phase     = op->getOptionalPingPongPhase().get();
+        auto phase     = *op->getOptionalPingPongPhase();
         if (phase < -1) {
           throw internal_error(
               "phase < -1 unexpected. This function needs adjustment");
@@ -157,7 +157,7 @@ public:
       auto op = x.second.get();
       if (op->hasPipelineStage()) {
         auto opAddress = opAddresses[op];
-        auto stage     = op->getOptionalPipelineStage().get();
+        auto stage     = *op->getOptionalPipelineStage();
         if (stage < -1) {
           throw internal_error(
               "stage < -1 unexpected. This function needs adjustment");
@@ -224,10 +224,8 @@ public:
               ? *op_batchserial
               : unusedBatchSerializedPhase;
 
-      auto op_priority_pre_or =
-          op_batchserial.is_initialized() ? 0.0 : op_priority;
-      auto op_priority_post_or =
-          op_batchserial.is_initialized() ? op_priority : 0.0;
+      auto op_priority_pre_or  = op_batchserial ? 0.0 : op_priority;
+      auto op_priority_post_or = op_batchserial ? op_priority : 0.0;
 
       // to strongly encourage Ops to be appear in
       // 1) ascending pingpong phases

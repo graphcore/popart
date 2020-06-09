@@ -18,7 +18,7 @@ MatMulBaseOp::MatMulBaseOp(
     const Phase phase_,
     const boost::optional<float> availableMemoryProportion_,
     const SerialiseSettings &serialization_,
-    const boost::optional<DataType> outputType_,
+    const OptionalDataType outputType_,
     const bool enableFullyConnectedPass_)
     : Op(_opid, settings_), phase(phase_),
       enableFullyConnectedPass(enableFullyConnectedPass_),
@@ -68,7 +68,7 @@ MatMulOp::MatMulOp(const OperatorIdentifier &_opid,
                    const Op::Settings &settings_,
                    const boost::optional<float> availableMemoryProportion_,
                    const SerialiseSettings &serialization_,
-                   const boost::optional<DataType> outputType_)
+                   const OptionalDataType outputType_)
     : MatMulBaseOp(_opid,
                    settings_,
                    Phase::Fwd,
@@ -367,7 +367,7 @@ static OpCreator<MatMulOp> matMulOpCreator(
 
       MatMulBaseOp::SerialiseSettings serialisation;
 
-      boost::optional<DataType> outputType;
+      OptionalDataType outputType;
 
       if (attr.hasAttribute(sSerializeMatMulModeAttribute)) {
 
@@ -403,7 +403,7 @@ static OpCreator<MatMulOp> matMulOpCreator(
       if (attr.hasAttribute(sOutputTypeAttribute)) {
         auto dtype_str =
             attr.getAttribute<Attributes::String>(sOutputTypeAttribute);
-        outputType = dataTypeFromString(dtype_str);
+        outputType = {dataTypeFromString(dtype_str)};
       }
 
       return std::unique_ptr<Op>(new MatMulOp(_opid,

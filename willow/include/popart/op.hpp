@@ -2,12 +2,12 @@
 #ifndef GUARD_NEURALNET_OP_HPP
 #define GUARD_NEURALNET_OP_HPP
 
-#include <boost/optional.hpp>
 #include <memory>
 #include <set>
 #include <unordered_set>
 #include <vector>
 #include <popart/attributes.hpp>
+#include <popart/basicoptionals.hpp>
 #include <popart/names.hpp>
 #include <popart/opidentifier.hpp>
 #include <popart/region.hpp>
@@ -97,14 +97,14 @@ public:
     std::unordered_set<std::string> excludePatterns;
 
     // The virtual graph this op has been assigned to if set
-    boost::optional<VGraphId> vgraphId;
+    OptionalVGraphId vgraphId;
 
-    boost::optional<PipelineStage> pipelineStage;
+    OptionalPipelineStage pipelineStage;
 
     // The ping pong phase this op has been assigned to if set
-    boost::optional<PingPongPhase> pingPongPhase;
+    OptionalPingPongPhase pingPongPhase;
 
-    boost::optional<BatchSerializedPhase> batchSerializedPhase;
+    OptionalBatchSerializedPhase batchSerializedPhase;
 
     // If the OP should be placed on I/O tiles instead of regular tiles
     IsIoTile useIoTiles{false};
@@ -139,30 +139,29 @@ public:
   Settings &getSettings() { return settings; }
   const Settings &getSettings() const { return settings; }
 
-  const boost::optional<int64_t> getOptionalVirtualGraphId() const;
+  const OptionalVGraphId getOptionalVGraphId() const;
   VGraphId getVirtualGraphId() const;
   virtual VGraphIdAndIoTile getIntrospectionInVirtualGraphId(InIndex) const;
   virtual VGraphIdAndIoTile getIntrospectionOutVirtualGraphId(OutIndex) const;
-  void setVirtualGraphId(const boost::optional<VGraphId>);
+  void setVirtualGraphId(const OptionalVGraphId);
   bool hasVirtualGraphId() const;
 
-  const boost::optional<PingPongPhase> getOptionalPingPongPhase() const;
+  const OptionalPingPongPhase getOptionalPingPongPhase() const;
   virtual PingPongPhase getPingPongPhase() const;
-  void setPingPongPhase(const boost::optional<PingPongPhase>);
+  void setPingPongPhase(const OptionalPingPongPhase);
   bool hasPingPongPhase() const;
 
-  const boost::optional<BatchSerializedPhase>
-  getOptionalBatchSerializedPhase() const;
+  const OptionalBatchSerializedPhase getOptionalBatchSerializedPhase() const;
   virtual BatchSerializedPhase getBatchSerializedPhase() const;
-  void setBatchSerializedPhase(const boost::optional<BatchSerializedPhase>);
+  void setBatchSerializedPhase(const OptionalBatchSerializedPhase);
   bool hasBatchSerializedPhase() const;
 
   bool isExcludedFromPattern(const Pattern *) const;
 
-  void setPipelineStage(boost::optional<PipelineStage>);
+  void setPipelineStage(OptionalPipelineStage);
   bool hasPipelineStage() const;
   PipelineStage getPipelineStage() const;
-  boost::optional<PipelineStage> getOptionalPipelineStage() const;
+  OptionalPipelineStage getOptionalPipelineStage() const;
 
   // Inherit placement attributes:
   // - Pipeline stage

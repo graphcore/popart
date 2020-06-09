@@ -74,7 +74,7 @@ private:
                        TensorId inId,
                        Shape newShape,
                        TensorId newId,
-                       boost::optional<BatchSerializedPhase> bsp) const;
+                       OptionalBatchSerializedPhase bsp) const;
 
   int pass;
 };
