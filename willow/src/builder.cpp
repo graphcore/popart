@@ -584,8 +584,8 @@ TensorId AiGraphcoreOpset1::nllloss(const std::vector<TensorId> &args,
 
   std::map<std::string, popart::any> attributes = {
       {"reduction", reductionString}};
-  if (ignoreIndex) {
-    attributes.emplace("ignoreIndex", ignoreIndex);
+  if (ignoreIndex.has_value()) {
+    attributes.emplace("ignoreIndex", ignoreIndex.value());
   }
 
   return impl
