@@ -1,5 +1,4 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <boost/optional.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -20,6 +19,7 @@
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/pingpong.hpp>
+#include <popart/vendored/optional.hpp>
 
 namespace popart {
 
@@ -492,8 +492,8 @@ bool PingPong::apply(Graph &graph) const {
     };
 
     auto getPreviousLoadedTensorId =
-        [&tensorLoadMap](TensorId id) -> boost::optional<std::string> {
-      boost::optional<std::string> prev_id;
+        [&tensorLoadMap](TensorId id) -> nonstd::optional<std::string> {
+      nonstd::optional<std::string> prev_id;
       int64_t last_phase = -1;
       for (auto &elem : tensorLoadMap) {
         if (elem.first.first == id && elem.first.second > last_phase) {
@@ -746,7 +746,7 @@ bool PingPong::apply(Graph &graph) const {
             if (auto prevLoadId = getPreviousLoadedTensorId(tensor->id)) {
               // Tensor might not have a true producer op, but was previously
               // loaded by a CacheLoad
-              inTensorId = prevLoadId.get();
+              inTensorId = prevLoadId.value();
             } else if (producerOp) {
               // Tensor has a true producer op
               inTensorId = tensor->id;

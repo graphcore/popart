@@ -2,15 +2,15 @@
 #ifndef GUARD_NEURALNET_REDUCE_HPP
 #define GUARD_NEURALNET_REDUCE_HPP
 
-#include <boost/optional.hpp>
 #include <popart/op.hpp>
+#include <popart/vendored/optional.hpp>
 
 namespace popart {
 
 class ReduceOp : public Op {
 public:
   ReduceOp(const OperatorIdentifier &_opid,
-           const boost::optional<std::vector<int64_t>> &axes,
+           const nonstd::optional<std::vector<int64_t>> &axes,
            const int64_t keepdims,
            const Op::Settings &settings);
 
@@ -47,7 +47,7 @@ protected:
   int64_t keepdims;
 
 private:
-  // Axes are passed in with boost::optional and hence may not
+  // Axes are passed in with nonstd::optional and hence may not
   // be set at all at time of construction. Because this does
   // not get resolved until the call to setup() the ReduceOp will
   // need to remember if default arguments were used. It does

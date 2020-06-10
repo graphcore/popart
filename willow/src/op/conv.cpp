@@ -36,7 +36,7 @@ ConvParameters canonicalizeConvParams(const ConvParameters &param);
 ConvOp::ConvOp(const OperatorIdentifier &_opid,
                int64_t group_,
                const ConvPartialsType &partialsType_,
-               boost::optional<float> availableMemoryProportion_,
+               nonstd::optional<float> availableMemoryProportion_,
                const HasReceptiveFieldOp::Settings &settings_)
     : HasReceptiveFieldOp(_opid, settings_), group(group_),
       partialsType(partialsType_),
@@ -359,7 +359,7 @@ static OpCreator<ConvOp> convOpCreator(
       int64_t group = attr.getAttribute<Attributes::Int>("group", 1);
 
       auto partialsType = ConvPartialsType::FLOAT;
-      boost::optional<float> availableMemoryProportion = boost::none;
+      nonstd::optional<float> availableMemoryProportion = nonstd::nullopt;
 
       // try set the partials from an attribute
       if (attr.hasAttribute(sPartialsTypeAttribute)) {

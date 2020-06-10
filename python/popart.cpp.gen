@@ -16,7 +16,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
   .def("add",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> axis,
+          nonstd::optional<int64_t> axis,
           int64_t broadcast,
           const std::string &name) -> TensorId{
            return opset.add(args,
@@ -25,13 +25,13 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                             name);
        },
        py::arg("args"),
-       py::arg("axis") = boost::optional<int64_t>(),
+       py::arg("axis") = nonstd::optional<int64_t>(),
        py::arg("broadcast") = 0,
        py::arg("debugPrefix") = std::string())
   .def("logical_and",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> axis,
+          nonstd::optional<int64_t> axis,
           int64_t broadcast,
           const std::string &name) -> TensorId{
            return opset.logical_and(args,
@@ -40,7 +40,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                                     name);
        },
        py::arg("args"),
-       py::arg("axis") = boost::optional<int64_t>(),
+       py::arg("axis") = nonstd::optional<int64_t>(),
        py::arg("broadcast") = 0,
        py::arg("debugPrefix") = std::string())
   .def("argmax",
@@ -241,7 +241,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
   .def("div",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> axis,
+          nonstd::optional<int64_t> axis,
           int64_t broadcast,
           const std::string &name) -> TensorId{
            return opset.div(args,
@@ -250,7 +250,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                             name);
        },
        py::arg("args"),
-       py::arg("axis") = boost::optional<int64_t>(),
+       py::arg("axis") = nonstd::optional<int64_t>(),
        py::arg("broadcast") = 0,
        py::arg("debugPrefix") = std::string())
   .def("dropout",
@@ -286,7 +286,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
   .def("equal",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> axis,
+          nonstd::optional<int64_t> axis,
           int64_t broadcast,
           const std::string &name) -> TensorId{
            return opset.equal(args,
@@ -295,7 +295,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                               name);
        },
        py::arg("args"),
-       py::arg("axis") = boost::optional<int64_t>(),
+       py::arg("axis") = nonstd::optional<int64_t>(),
        py::arg("broadcast") = 0,
        py::arg("debugPrefix") = std::string())
   .def("exp",
@@ -335,9 +335,9 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
           const std::vector<float>& activation_alpha,
           const std::vector<float>& activation_beta,
           const std::vector<std::string>& activations,
-          boost::optional<float> clip,
+          nonstd::optional<float> clip,
           const std::string& direction,
-          boost::optional<int64_t> hidden_size,
+          nonstd::optional<int64_t> hidden_size,
           int64_t linear_before_reset,
           int64_t output_sequence,
           const std::string &name) -> std::vector<TensorId>{
@@ -358,9 +358,9 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
        py::arg("activation_alpha") = std::vector<float>(),
        py::arg("activation_beta") = std::vector<float>(),
        py::arg("activations") = std::vector<std::string>(),
-       py::arg("clip") = boost::optional<float>(),
+       py::arg("clip") = nonstd::optional<float>(),
        py::arg("direction") = "forward",
-       py::arg("hidden_size") = boost::optional<int64_t>(),
+       py::arg("hidden_size") = nonstd::optional<int64_t>(),
        py::arg("linear_before_reset") = 0,
        py::arg("output_sequence") = 0,
        py::arg("debugPrefix") = std::string())
@@ -433,7 +433,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
   .def("greater",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> axis,
+          nonstd::optional<int64_t> axis,
           int64_t broadcast,
           const std::string &name) -> TensorId{
            return opset.greater(args,
@@ -442,7 +442,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                                 name);
        },
        py::arg("args"),
-       py::arg("axis") = boost::optional<int64_t>(),
+       py::arg("axis") = nonstd::optional<int64_t>(),
        py::arg("broadcast") = 0,
        py::arg("debugPrefix") = std::string())
   .def("hardsigmoid",
@@ -539,9 +539,9 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
           const std::vector<float>& activation_alpha,
           const std::vector<float>& activation_beta,
           const std::vector<std::string>& activations,
-          boost::optional<float> clip,
+          nonstd::optional<float> clip,
           const std::string& direction,
-          boost::optional<int64_t> hidden_size,
+          nonstd::optional<int64_t> hidden_size,
           int64_t input_forget,
           int64_t output_sequence,
           const std::string &name) -> std::vector<TensorId>{
@@ -562,9 +562,9 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
        py::arg("activation_alpha") = std::vector<float>(),
        py::arg("activation_beta") = std::vector<float>(),
        py::arg("activations") = std::vector<std::string>(),
-       py::arg("clip") = boost::optional<float>(),
+       py::arg("clip") = nonstd::optional<float>(),
        py::arg("direction") = "forward",
-       py::arg("hidden_size") = boost::optional<int64_t>(),
+       py::arg("hidden_size") = nonstd::optional<int64_t>(),
        py::arg("input_forget") = 0,
        py::arg("output_sequence") = 0,
        py::arg("debugPrefix") = std::string())
@@ -583,7 +583,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
   .def("less",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> axis,
+          nonstd::optional<int64_t> axis,
           int64_t broadcast,
           const std::string &name) -> TensorId{
            return opset.less(args,
@@ -592,7 +592,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                              name);
        },
        py::arg("args"),
-       py::arg("axis") = boost::optional<int64_t>(),
+       py::arg("axis") = nonstd::optional<int64_t>(),
        py::arg("broadcast") = 0,
        py::arg("debugPrefix") = std::string())
   .def("log",
@@ -739,7 +739,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
   .def("mul",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> axis,
+          nonstd::optional<int64_t> axis,
           int64_t broadcast,
           const std::string &name) -> TensorId{
            return opset.mul(args,
@@ -748,7 +748,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                             name);
        },
        py::arg("args"),
-       py::arg("axis") = boost::optional<int64_t>(),
+       py::arg("axis") = nonstd::optional<int64_t>(),
        py::arg("broadcast") = 0,
        py::arg("debugPrefix") = std::string())
   .def("neg",
@@ -772,7 +772,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
   .def("logical_or",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> axis,
+          nonstd::optional<int64_t> axis,
           int64_t broadcast,
           const std::string &name) -> TensorId{
            return opset.logical_or(args,
@@ -781,7 +781,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                                    name);
        },
        py::arg("args"),
-       py::arg("axis") = boost::optional<int64_t>(),
+       py::arg("axis") = nonstd::optional<int64_t>(),
        py::arg("broadcast") = 0,
        py::arg("debugPrefix") = std::string())
   .def("prelu",
@@ -814,7 +814,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
   .def("pow",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> axis,
+          nonstd::optional<int64_t> axis,
           int64_t broadcast,
           const std::string &name) -> TensorId{
            return opset.pow(args,
@@ -823,7 +823,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                             name);
        },
        py::arg("args"),
-       py::arg("axis") = boost::optional<int64_t>(),
+       py::arg("axis") = nonstd::optional<int64_t>(),
        py::arg("broadcast") = 0,
        py::arg("debugPrefix") = std::string())
   .def("rnn",
@@ -833,9 +833,9 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
           const std::vector<float>& activation_alpha,
           const std::vector<float>& activation_beta,
           const std::vector<std::string>& activations,
-          boost::optional<float> clip,
+          nonstd::optional<float> clip,
           const std::string& direction,
-          boost::optional<int64_t> hidden_size,
+          nonstd::optional<int64_t> hidden_size,
           int64_t output_sequence,
           const std::string &name) -> std::vector<TensorId>{
            return opset.rnn(args,
@@ -854,9 +854,9 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
        py::arg("activation_alpha") = std::vector<float>(),
        py::arg("activation_beta") = std::vector<float>(),
        py::arg("activations") = std::vector<std::string>(),
-       py::arg("clip") = boost::optional<float>(),
+       py::arg("clip") = nonstd::optional<float>(),
        py::arg("direction") = "forward",
-       py::arg("hidden_size") = boost::optional<int64_t>(),
+       py::arg("hidden_size") = nonstd::optional<int64_t>(),
        py::arg("output_sequence") = 0,
        py::arg("debugPrefix") = std::string())
   .def("randomnormal",
@@ -865,7 +865,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
           int64_t dtype,
           float mean,
           float scale,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.randomnormal(                                     shape,
                                      dtype,
@@ -878,15 +878,15 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
        py::arg("dtype") = 1,
        py::arg("mean") = 0.0f,
        py::arg("scale") = 1.0f,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("randomnormallike",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> dtype,
+          nonstd::optional<int64_t> dtype,
           float mean,
           float scale,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.randomnormallike(args,
                                          dtype,
@@ -896,10 +896,10 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                                          name);
        },
        py::arg("args"),
-       py::arg("dtype") = boost::optional<int64_t>(),
+       py::arg("dtype") = nonstd::optional<int64_t>(),
        py::arg("mean") = 0.0f,
        py::arg("scale") = 1.0f,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("randomuniform",
        [](AiOnnxOpset6 &opset,
@@ -907,7 +907,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
           int64_t dtype,
           float high,
           float low,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.randomuniform(                                      shape,
                                       dtype,
@@ -920,15 +920,15 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
        py::arg("dtype") = 1,
        py::arg("high") = 1.0f,
        py::arg("low") = 0.0f,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("randomuniformlike",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> dtype,
+          nonstd::optional<int64_t> dtype,
           float high,
           float low,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.randomuniformlike(args,
                                           dtype,
@@ -938,10 +938,10 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                                           name);
        },
        py::arg("args"),
-       py::arg("dtype") = boost::optional<int64_t>(),
+       py::arg("dtype") = nonstd::optional<int64_t>(),
        py::arg("high") = 1.0f,
        py::arg("low") = 0.0f,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("reciprocal",
        [](AiOnnxOpset6 &opset,
@@ -955,7 +955,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
   .def("reducel1",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducel1(args,
@@ -964,13 +964,13 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                                  name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducel2",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducel2(args,
@@ -979,13 +979,13 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                                  name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducelogsum",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducelogsum(args,
@@ -994,13 +994,13 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                                      name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducelogsumexp",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducelogsumexp(args,
@@ -1009,13 +1009,13 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                                         name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemax",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemax(args,
@@ -1024,13 +1024,13 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemean",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemean(args,
@@ -1039,13 +1039,13 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                                    name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemin",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemin(args,
@@ -1054,13 +1054,13 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reduceprod",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reduceprod(args,
@@ -1069,13 +1069,13 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                                    name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducesum",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducesum(args,
@@ -1084,13 +1084,13 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducesumsquare",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducesumsquare(args,
@@ -1099,7 +1099,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                                         name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("relu",
@@ -1264,7 +1264,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
   .def("sub",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> axis,
+          nonstd::optional<int64_t> axis,
           int64_t broadcast,
           const std::string &name) -> TensorId{
            return opset.sub(args,
@@ -1273,7 +1273,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                             name);
        },
        py::arg("args"),
-       py::arg("axis") = boost::optional<int64_t>(),
+       py::arg("axis") = nonstd::optional<int64_t>(),
        py::arg("broadcast") = 0,
        py::arg("debugPrefix") = std::string())
   .def("sum",
@@ -1363,7 +1363,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
   .def("logical_xor",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> axis,
+          nonstd::optional<int64_t> axis,
           int64_t broadcast,
           const std::string &name) -> TensorId{
            return opset.logical_xor(args,
@@ -1372,7 +1372,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
                                     name);
        },
        py::arg("args"),
-       py::arg("axis") = boost::optional<int64_t>(),
+       py::arg("axis") = nonstd::optional<int64_t>(),
        py::arg("broadcast") = 0,
        py::arg("debugPrefix") = std::string())
 ;
@@ -1717,9 +1717,9 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
           const std::vector<float>& activation_alpha,
           const std::vector<float>& activation_beta,
           const std::vector<std::string>& activations,
-          boost::optional<float> clip,
+          nonstd::optional<float> clip,
           const std::string& direction,
-          boost::optional<int64_t> hidden_size,
+          nonstd::optional<int64_t> hidden_size,
           int64_t linear_before_reset,
           const std::string &name) -> std::vector<TensorId>{
            return opset.gru(args,
@@ -1738,9 +1738,9 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
        py::arg("activation_alpha") = std::vector<float>(),
        py::arg("activation_beta") = std::vector<float>(),
        py::arg("activations") = std::vector<std::string>(),
-       py::arg("clip") = boost::optional<float>(),
+       py::arg("clip") = nonstd::optional<float>(),
        py::arg("direction") = "forward",
-       py::arg("hidden_size") = boost::optional<int64_t>(),
+       py::arg("hidden_size") = nonstd::optional<int64_t>(),
        py::arg("linear_before_reset") = 0,
        py::arg("debugPrefix") = std::string())
   .def("gather",
@@ -1909,9 +1909,9 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
           const std::vector<float>& activation_alpha,
           const std::vector<float>& activation_beta,
           const std::vector<std::string>& activations,
-          boost::optional<float> clip,
+          nonstd::optional<float> clip,
           const std::string& direction,
-          boost::optional<int64_t> hidden_size,
+          nonstd::optional<int64_t> hidden_size,
           int64_t input_forget,
           const std::string &name) -> std::vector<TensorId>{
            return opset.lstm(args,
@@ -1930,9 +1930,9 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
        py::arg("activation_alpha") = std::vector<float>(),
        py::arg("activation_beta") = std::vector<float>(),
        py::arg("activations") = std::vector<std::string>(),
-       py::arg("clip") = boost::optional<float>(),
+       py::arg("clip") = nonstd::optional<float>(),
        py::arg("direction") = "forward",
-       py::arg("hidden_size") = boost::optional<int64_t>(),
+       py::arg("hidden_size") = nonstd::optional<int64_t>(),
        py::arg("input_forget") = 0,
        py::arg("debugPrefix") = std::string())
   .def("leakyrelu",
@@ -2111,7 +2111,7 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
           const std::vector<TensorId> &args,
           int64_t dtype,
           int64_t sample_size,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.multinomial(args,
                                     dtype,
@@ -2122,7 +2122,7 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
        py::arg("args"),
        py::arg("dtype") = 6,
        py::arg("sample_size") = 1,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("neg",
        [](AiOnnxOpset7 &opset,
@@ -2194,9 +2194,9 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
           const std::vector<float>& activation_alpha,
           const std::vector<float>& activation_beta,
           const std::vector<std::string>& activations,
-          boost::optional<float> clip,
+          nonstd::optional<float> clip,
           const std::string& direction,
-          boost::optional<int64_t> hidden_size,
+          nonstd::optional<int64_t> hidden_size,
           const std::string &name) -> std::vector<TensorId>{
            return opset.rnn(args,
                             num_outputs,
@@ -2213,9 +2213,9 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
        py::arg("activation_alpha") = std::vector<float>(),
        py::arg("activation_beta") = std::vector<float>(),
        py::arg("activations") = std::vector<std::string>(),
-       py::arg("clip") = boost::optional<float>(),
+       py::arg("clip") = nonstd::optional<float>(),
        py::arg("direction") = "forward",
-       py::arg("hidden_size") = boost::optional<int64_t>(),
+       py::arg("hidden_size") = nonstd::optional<int64_t>(),
        py::arg("debugPrefix") = std::string())
   .def("randomnormal",
        [](AiOnnxOpset7 &opset,
@@ -2223,7 +2223,7 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
           int64_t dtype,
           float mean,
           float scale,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.randomnormal(                                     shape,
                                      dtype,
@@ -2236,15 +2236,15 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
        py::arg("dtype") = 1,
        py::arg("mean") = 0.0f,
        py::arg("scale") = 1.0f,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("randomnormallike",
        [](AiOnnxOpset7 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> dtype,
+          nonstd::optional<int64_t> dtype,
           float mean,
           float scale,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.randomnormallike(args,
                                          dtype,
@@ -2254,10 +2254,10 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
                                          name);
        },
        py::arg("args"),
-       py::arg("dtype") = boost::optional<int64_t>(),
+       py::arg("dtype") = nonstd::optional<int64_t>(),
        py::arg("mean") = 0.0f,
        py::arg("scale") = 1.0f,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("randomuniform",
        [](AiOnnxOpset7 &opset,
@@ -2265,7 +2265,7 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
           int64_t dtype,
           float high,
           float low,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.randomuniform(                                      shape,
                                       dtype,
@@ -2278,15 +2278,15 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
        py::arg("dtype") = 1,
        py::arg("high") = 1.0f,
        py::arg("low") = 0.0f,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("randomuniformlike",
        [](AiOnnxOpset7 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> dtype,
+          nonstd::optional<int64_t> dtype,
           float high,
           float low,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.randomuniformlike(args,
                                           dtype,
@@ -2296,10 +2296,10 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
                                           name);
        },
        py::arg("args"),
-       py::arg("dtype") = boost::optional<int64_t>(),
+       py::arg("dtype") = nonstd::optional<int64_t>(),
        py::arg("high") = 1.0f,
        py::arg("low") = 0.0f,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("reciprocal",
        [](AiOnnxOpset7 &opset,
@@ -2313,7 +2313,7 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
   .def("reducel1",
        [](AiOnnxOpset7 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducel1(args,
@@ -2322,13 +2322,13 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
                                  name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducel2",
        [](AiOnnxOpset7 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducel2(args,
@@ -2337,13 +2337,13 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
                                  name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducelogsum",
        [](AiOnnxOpset7 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducelogsum(args,
@@ -2352,13 +2352,13 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
                                      name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducelogsumexp",
        [](AiOnnxOpset7 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducelogsumexp(args,
@@ -2367,13 +2367,13 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
                                         name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemax",
        [](AiOnnxOpset7 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemax(args,
@@ -2382,13 +2382,13 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemean",
        [](AiOnnxOpset7 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemean(args,
@@ -2397,13 +2397,13 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
                                    name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemin",
        [](AiOnnxOpset7 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemin(args,
@@ -2412,13 +2412,13 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reduceprod",
        [](AiOnnxOpset7 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reduceprod(args,
@@ -2427,13 +2427,13 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
                                    name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducesum",
        [](AiOnnxOpset7 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducesum(args,
@@ -2442,13 +2442,13 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducesumsquare",
        [](AiOnnxOpset7 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducesumsquare(args,
@@ -2457,7 +2457,7 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
                                         name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("relu",
@@ -3087,9 +3087,9 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
           const std::vector<float>& activation_alpha,
           const std::vector<float>& activation_beta,
           const std::vector<std::string>& activations,
-          boost::optional<float> clip,
+          nonstd::optional<float> clip,
           const std::string& direction,
-          boost::optional<int64_t> hidden_size,
+          nonstd::optional<int64_t> hidden_size,
           int64_t linear_before_reset,
           const std::string &name) -> std::vector<TensorId>{
            return opset.gru(args,
@@ -3108,9 +3108,9 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
        py::arg("activation_alpha") = std::vector<float>(),
        py::arg("activation_beta") = std::vector<float>(),
        py::arg("activations") = std::vector<std::string>(),
-       py::arg("clip") = boost::optional<float>(),
+       py::arg("clip") = nonstd::optional<float>(),
        py::arg("direction") = "forward",
-       py::arg("hidden_size") = boost::optional<int64_t>(),
+       py::arg("hidden_size") = nonstd::optional<int64_t>(),
        py::arg("linear_before_reset") = 0,
        py::arg("debugPrefix") = std::string())
   .def("gather",
@@ -3279,9 +3279,9 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
           const std::vector<float>& activation_alpha,
           const std::vector<float>& activation_beta,
           const std::vector<std::string>& activations,
-          boost::optional<float> clip,
+          nonstd::optional<float> clip,
           const std::string& direction,
-          boost::optional<int64_t> hidden_size,
+          nonstd::optional<int64_t> hidden_size,
           int64_t input_forget,
           const std::string &name) -> std::vector<TensorId>{
            return opset.lstm(args,
@@ -3300,9 +3300,9 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
        py::arg("activation_alpha") = std::vector<float>(),
        py::arg("activation_beta") = std::vector<float>(),
        py::arg("activations") = std::vector<std::string>(),
-       py::arg("clip") = boost::optional<float>(),
+       py::arg("clip") = nonstd::optional<float>(),
        py::arg("direction") = "forward",
-       py::arg("hidden_size") = boost::optional<int64_t>(),
+       py::arg("hidden_size") = nonstd::optional<int64_t>(),
        py::arg("input_forget") = 0,
        py::arg("debugPrefix") = std::string())
   .def("leakyrelu",
@@ -3487,7 +3487,7 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
           const std::vector<TensorId> &args,
           int64_t dtype,
           int64_t sample_size,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.multinomial(args,
                                     dtype,
@@ -3498,7 +3498,7 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
        py::arg("args"),
        py::arg("dtype") = 6,
        py::arg("sample_size") = 1,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("neg",
        [](AiOnnxOpset8 &opset,
@@ -3570,9 +3570,9 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
           const std::vector<float>& activation_alpha,
           const std::vector<float>& activation_beta,
           const std::vector<std::string>& activations,
-          boost::optional<float> clip,
+          nonstd::optional<float> clip,
           const std::string& direction,
-          boost::optional<int64_t> hidden_size,
+          nonstd::optional<int64_t> hidden_size,
           const std::string &name) -> std::vector<TensorId>{
            return opset.rnn(args,
                             num_outputs,
@@ -3589,9 +3589,9 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
        py::arg("activation_alpha") = std::vector<float>(),
        py::arg("activation_beta") = std::vector<float>(),
        py::arg("activations") = std::vector<std::string>(),
-       py::arg("clip") = boost::optional<float>(),
+       py::arg("clip") = nonstd::optional<float>(),
        py::arg("direction") = "forward",
-       py::arg("hidden_size") = boost::optional<int64_t>(),
+       py::arg("hidden_size") = nonstd::optional<int64_t>(),
        py::arg("debugPrefix") = std::string())
   .def("randomnormal",
        [](AiOnnxOpset8 &opset,
@@ -3599,7 +3599,7 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
           int64_t dtype,
           float mean,
           float scale,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.randomnormal(                                     shape,
                                      dtype,
@@ -3612,15 +3612,15 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
        py::arg("dtype") = 1,
        py::arg("mean") = 0.0f,
        py::arg("scale") = 1.0f,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("randomnormallike",
        [](AiOnnxOpset8 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> dtype,
+          nonstd::optional<int64_t> dtype,
           float mean,
           float scale,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.randomnormallike(args,
                                          dtype,
@@ -3630,10 +3630,10 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
                                          name);
        },
        py::arg("args"),
-       py::arg("dtype") = boost::optional<int64_t>(),
+       py::arg("dtype") = nonstd::optional<int64_t>(),
        py::arg("mean") = 0.0f,
        py::arg("scale") = 1.0f,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("randomuniform",
        [](AiOnnxOpset8 &opset,
@@ -3641,7 +3641,7 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
           int64_t dtype,
           float high,
           float low,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.randomuniform(                                      shape,
                                       dtype,
@@ -3654,15 +3654,15 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
        py::arg("dtype") = 1,
        py::arg("high") = 1.0f,
        py::arg("low") = 0.0f,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("randomuniformlike",
        [](AiOnnxOpset8 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> dtype,
+          nonstd::optional<int64_t> dtype,
           float high,
           float low,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.randomuniformlike(args,
                                           dtype,
@@ -3672,10 +3672,10 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
                                           name);
        },
        py::arg("args"),
-       py::arg("dtype") = boost::optional<int64_t>(),
+       py::arg("dtype") = nonstd::optional<int64_t>(),
        py::arg("high") = 1.0f,
        py::arg("low") = 0.0f,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("reciprocal",
        [](AiOnnxOpset8 &opset,
@@ -3689,7 +3689,7 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
   .def("reducel1",
        [](AiOnnxOpset8 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducel1(args,
@@ -3698,13 +3698,13 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
                                  name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducel2",
        [](AiOnnxOpset8 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducel2(args,
@@ -3713,13 +3713,13 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
                                  name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducelogsum",
        [](AiOnnxOpset8 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducelogsum(args,
@@ -3728,13 +3728,13 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
                                      name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducelogsumexp",
        [](AiOnnxOpset8 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducelogsumexp(args,
@@ -3743,13 +3743,13 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
                                         name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemax",
        [](AiOnnxOpset8 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemax(args,
@@ -3758,13 +3758,13 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemean",
        [](AiOnnxOpset8 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemean(args,
@@ -3773,13 +3773,13 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
                                    name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemin",
        [](AiOnnxOpset8 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemin(args,
@@ -3788,13 +3788,13 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reduceprod",
        [](AiOnnxOpset8 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reduceprod(args,
@@ -3803,13 +3803,13 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
                                    name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducesum",
        [](AiOnnxOpset8 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducesum(args,
@@ -3818,13 +3818,13 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducesumsquare",
        [](AiOnnxOpset8 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducesumsquare(args,
@@ -3833,7 +3833,7 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
                                         name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("relu",
@@ -4324,14 +4324,14 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
   .def("compress",
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> axis,
+          nonstd::optional<int64_t> axis,
           const std::string &name) -> TensorId{
            return opset.compress(args,
                                  axis,
                                  name);
        },
        py::arg("args"),
-       py::arg("axis") = boost::optional<int64_t>(),
+       py::arg("axis") = nonstd::optional<int64_t>(),
        py::arg("debugPrefix") = std::string())
   .def("concat",
        [](AiOnnxOpset9 &opset,
@@ -4517,7 +4517,7 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
   .def("eyelike",
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> dtype,
+          nonstd::optional<int64_t> dtype,
           int64_t k,
           const std::string &name) -> TensorId{
            return opset.eyelike(args,
@@ -4526,7 +4526,7 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
                                 name);
        },
        py::arg("args"),
-       py::arg("dtype") = boost::optional<int64_t>(),
+       py::arg("dtype") = nonstd::optional<int64_t>(),
        py::arg("k") = 0,
        py::arg("debugPrefix") = std::string())
   .def("flatten",
@@ -4557,9 +4557,9 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
           const std::vector<float>& activation_alpha,
           const std::vector<float>& activation_beta,
           const std::vector<std::string>& activations,
-          boost::optional<float> clip,
+          nonstd::optional<float> clip,
           const std::string& direction,
-          boost::optional<int64_t> hidden_size,
+          nonstd::optional<int64_t> hidden_size,
           int64_t linear_before_reset,
           const std::string &name) -> std::vector<TensorId>{
            return opset.gru(args,
@@ -4578,9 +4578,9 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
        py::arg("activation_alpha") = std::vector<float>(),
        py::arg("activation_beta") = std::vector<float>(),
        py::arg("activations") = std::vector<std::string>(),
-       py::arg("clip") = boost::optional<float>(),
+       py::arg("clip") = nonstd::optional<float>(),
        py::arg("direction") = "forward",
-       py::arg("hidden_size") = boost::optional<int64_t>(),
+       py::arg("hidden_size") = nonstd::optional<int64_t>(),
        py::arg("linear_before_reset") = 0,
        py::arg("debugPrefix") = std::string())
   .def("gather",
@@ -4758,9 +4758,9 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
           const std::vector<float>& activation_alpha,
           const std::vector<float>& activation_beta,
           const std::vector<std::string>& activations,
-          boost::optional<float> clip,
+          nonstd::optional<float> clip,
           const std::string& direction,
-          boost::optional<int64_t> hidden_size,
+          nonstd::optional<int64_t> hidden_size,
           int64_t input_forget,
           const std::string &name) -> std::vector<TensorId>{
            return opset.lstm(args,
@@ -4779,9 +4779,9 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
        py::arg("activation_alpha") = std::vector<float>(),
        py::arg("activation_beta") = std::vector<float>(),
        py::arg("activations") = std::vector<std::string>(),
-       py::arg("clip") = boost::optional<float>(),
+       py::arg("clip") = nonstd::optional<float>(),
        py::arg("direction") = "forward",
-       py::arg("hidden_size") = boost::optional<int64_t>(),
+       py::arg("hidden_size") = nonstd::optional<int64_t>(),
        py::arg("input_forget") = 0,
        py::arg("debugPrefix") = std::string())
   .def("leakyrelu",
@@ -4996,7 +4996,7 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
           const std::vector<TensorId> &args,
           int64_t dtype,
           int64_t sample_size,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.multinomial(args,
                                     dtype,
@@ -5007,7 +5007,7 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
        py::arg("args"),
        py::arg("dtype") = 6,
        py::arg("sample_size") = 1,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("neg",
        [](AiOnnxOpset9 &opset,
@@ -5100,9 +5100,9 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
           const std::vector<float>& activation_alpha,
           const std::vector<float>& activation_beta,
           const std::vector<std::string>& activations,
-          boost::optional<float> clip,
+          nonstd::optional<float> clip,
           const std::string& direction,
-          boost::optional<int64_t> hidden_size,
+          nonstd::optional<int64_t> hidden_size,
           const std::string &name) -> std::vector<TensorId>{
            return opset.rnn(args,
                             num_outputs,
@@ -5119,9 +5119,9 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
        py::arg("activation_alpha") = std::vector<float>(),
        py::arg("activation_beta") = std::vector<float>(),
        py::arg("activations") = std::vector<std::string>(),
-       py::arg("clip") = boost::optional<float>(),
+       py::arg("clip") = nonstd::optional<float>(),
        py::arg("direction") = "forward",
-       py::arg("hidden_size") = boost::optional<int64_t>(),
+       py::arg("hidden_size") = nonstd::optional<int64_t>(),
        py::arg("debugPrefix") = std::string())
   .def("randomnormal",
        [](AiOnnxOpset9 &opset,
@@ -5129,7 +5129,7 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
           int64_t dtype,
           float mean,
           float scale,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.randomnormal(                                     shape,
                                      dtype,
@@ -5142,15 +5142,15 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
        py::arg("dtype") = 1,
        py::arg("mean") = 0.0f,
        py::arg("scale") = 1.0f,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("randomnormallike",
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> dtype,
+          nonstd::optional<int64_t> dtype,
           float mean,
           float scale,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.randomnormallike(args,
                                          dtype,
@@ -5160,10 +5160,10 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
                                          name);
        },
        py::arg("args"),
-       py::arg("dtype") = boost::optional<int64_t>(),
+       py::arg("dtype") = nonstd::optional<int64_t>(),
        py::arg("mean") = 0.0f,
        py::arg("scale") = 1.0f,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("randomuniform",
        [](AiOnnxOpset9 &opset,
@@ -5171,7 +5171,7 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
           int64_t dtype,
           float high,
           float low,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.randomuniform(                                      shape,
                                       dtype,
@@ -5184,15 +5184,15 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
        py::arg("dtype") = 1,
        py::arg("high") = 1.0f,
        py::arg("low") = 0.0f,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("randomuniformlike",
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> dtype,
+          nonstd::optional<int64_t> dtype,
           float high,
           float low,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.randomuniformlike(args,
                                           dtype,
@@ -5202,10 +5202,10 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
                                           name);
        },
        py::arg("args"),
-       py::arg("dtype") = boost::optional<int64_t>(),
+       py::arg("dtype") = nonstd::optional<int64_t>(),
        py::arg("high") = 1.0f,
        py::arg("low") = 0.0f,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("reciprocal",
        [](AiOnnxOpset9 &opset,
@@ -5219,7 +5219,7 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
   .def("reducel1",
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducel1(args,
@@ -5228,13 +5228,13 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
                                  name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducel2",
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducel2(args,
@@ -5243,13 +5243,13 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
                                  name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducelogsum",
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducelogsum(args,
@@ -5258,13 +5258,13 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
                                      name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducelogsumexp",
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducelogsumexp(args,
@@ -5273,13 +5273,13 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
                                         name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemax",
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemax(args,
@@ -5288,13 +5288,13 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemean",
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemean(args,
@@ -5303,13 +5303,13 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
                                    name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemin",
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemin(args,
@@ -5318,13 +5318,13 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reduceprod",
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reduceprod(args,
@@ -5333,13 +5333,13 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
                                    name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducesum",
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducesum(args,
@@ -5348,13 +5348,13 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducesumsquare",
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducesumsquare(args,
@@ -5363,7 +5363,7 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
                                         name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("relu",
@@ -5953,14 +5953,14 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
   .def("compress",
        [](AiOnnxOpset10 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> axis,
+          nonstd::optional<int64_t> axis,
           const std::string &name) -> TensorId{
            return opset.compress(args,
                                  axis,
                                  name);
        },
        py::arg("args"),
-       py::arg("axis") = boost::optional<int64_t>(),
+       py::arg("axis") = nonstd::optional<int64_t>(),
        py::arg("debugPrefix") = std::string())
   .def("concat",
        [](AiOnnxOpset10 &opset,
@@ -6179,7 +6179,7 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
   .def("eyelike",
        [](AiOnnxOpset10 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> dtype,
+          nonstd::optional<int64_t> dtype,
           int64_t k,
           const std::string &name) -> TensorId{
            return opset.eyelike(args,
@@ -6188,7 +6188,7 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
                                 name);
        },
        py::arg("args"),
-       py::arg("dtype") = boost::optional<int64_t>(),
+       py::arg("dtype") = nonstd::optional<int64_t>(),
        py::arg("k") = 0,
        py::arg("debugPrefix") = std::string())
   .def("flatten",
@@ -6219,9 +6219,9 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
           const std::vector<float>& activation_alpha,
           const std::vector<float>& activation_beta,
           const std::vector<std::string>& activations,
-          boost::optional<float> clip,
+          nonstd::optional<float> clip,
           const std::string& direction,
-          boost::optional<int64_t> hidden_size,
+          nonstd::optional<int64_t> hidden_size,
           int64_t linear_before_reset,
           const std::string &name) -> std::vector<TensorId>{
            return opset.gru(args,
@@ -6240,9 +6240,9 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
        py::arg("activation_alpha") = std::vector<float>(),
        py::arg("activation_beta") = std::vector<float>(),
        py::arg("activations") = std::vector<std::string>(),
-       py::arg("clip") = boost::optional<float>(),
+       py::arg("clip") = nonstd::optional<float>(),
        py::arg("direction") = "forward",
-       py::arg("hidden_size") = boost::optional<int64_t>(),
+       py::arg("hidden_size") = nonstd::optional<int64_t>(),
        py::arg("linear_before_reset") = 0,
        py::arg("debugPrefix") = std::string())
   .def("gather",
@@ -6435,9 +6435,9 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
           const std::vector<float>& activation_alpha,
           const std::vector<float>& activation_beta,
           const std::vector<std::string>& activations,
-          boost::optional<float> clip,
+          nonstd::optional<float> clip,
           const std::string& direction,
-          boost::optional<int64_t> hidden_size,
+          nonstd::optional<int64_t> hidden_size,
           int64_t input_forget,
           const std::string &name) -> std::vector<TensorId>{
            return opset.lstm(args,
@@ -6456,9 +6456,9 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
        py::arg("activation_alpha") = std::vector<float>(),
        py::arg("activation_beta") = std::vector<float>(),
        py::arg("activations") = std::vector<std::string>(),
-       py::arg("clip") = boost::optional<float>(),
+       py::arg("clip") = nonstd::optional<float>(),
        py::arg("direction") = "forward",
-       py::arg("hidden_size") = boost::optional<int64_t>(),
+       py::arg("hidden_size") = nonstd::optional<int64_t>(),
        py::arg("input_forget") = 0,
        py::arg("debugPrefix") = std::string())
   .def("leakyrelu",
@@ -6700,7 +6700,7 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
           const std::vector<TensorId> &args,
           int64_t dtype,
           int64_t sample_size,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.multinomial(args,
                                     dtype,
@@ -6711,7 +6711,7 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
        py::arg("args"),
        py::arg("dtype") = 6,
        py::arg("sample_size") = 1,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("neg",
        [](AiOnnxOpset10 &opset,
@@ -6858,9 +6858,9 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
           const std::vector<float>& activation_alpha,
           const std::vector<float>& activation_beta,
           const std::vector<std::string>& activations,
-          boost::optional<float> clip,
+          nonstd::optional<float> clip,
           const std::string& direction,
-          boost::optional<int64_t> hidden_size,
+          nonstd::optional<int64_t> hidden_size,
           const std::string &name) -> std::vector<TensorId>{
            return opset.rnn(args,
                             num_outputs,
@@ -6877,9 +6877,9 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
        py::arg("activation_alpha") = std::vector<float>(),
        py::arg("activation_beta") = std::vector<float>(),
        py::arg("activations") = std::vector<std::string>(),
-       py::arg("clip") = boost::optional<float>(),
+       py::arg("clip") = nonstd::optional<float>(),
        py::arg("direction") = "forward",
-       py::arg("hidden_size") = boost::optional<int64_t>(),
+       py::arg("hidden_size") = nonstd::optional<int64_t>(),
        py::arg("debugPrefix") = std::string())
   .def("randomnormal",
        [](AiOnnxOpset10 &opset,
@@ -6887,7 +6887,7 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
           int64_t dtype,
           float mean,
           float scale,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.randomnormal(                                     shape,
                                      dtype,
@@ -6900,15 +6900,15 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
        py::arg("dtype") = 1,
        py::arg("mean") = 0.0f,
        py::arg("scale") = 1.0f,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("randomnormallike",
        [](AiOnnxOpset10 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> dtype,
+          nonstd::optional<int64_t> dtype,
           float mean,
           float scale,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.randomnormallike(args,
                                          dtype,
@@ -6918,10 +6918,10 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
                                          name);
        },
        py::arg("args"),
-       py::arg("dtype") = boost::optional<int64_t>(),
+       py::arg("dtype") = nonstd::optional<int64_t>(),
        py::arg("mean") = 0.0f,
        py::arg("scale") = 1.0f,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("randomuniform",
        [](AiOnnxOpset10 &opset,
@@ -6929,7 +6929,7 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
           int64_t dtype,
           float high,
           float low,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.randomuniform(                                      shape,
                                       dtype,
@@ -6942,15 +6942,15 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
        py::arg("dtype") = 1,
        py::arg("high") = 1.0f,
        py::arg("low") = 0.0f,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("randomuniformlike",
        [](AiOnnxOpset10 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> dtype,
+          nonstd::optional<int64_t> dtype,
           float high,
           float low,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.randomuniformlike(args,
                                           dtype,
@@ -6960,10 +6960,10 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
                                           name);
        },
        py::arg("args"),
-       py::arg("dtype") = boost::optional<int64_t>(),
+       py::arg("dtype") = nonstd::optional<int64_t>(),
        py::arg("high") = 1.0f,
        py::arg("low") = 0.0f,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("reciprocal",
        [](AiOnnxOpset10 &opset,
@@ -6977,7 +6977,7 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
   .def("reducel1",
        [](AiOnnxOpset10 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducel1(args,
@@ -6986,13 +6986,13 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
                                  name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducel2",
        [](AiOnnxOpset10 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducel2(args,
@@ -7001,13 +7001,13 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
                                  name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducelogsum",
        [](AiOnnxOpset10 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducelogsum(args,
@@ -7016,13 +7016,13 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
                                      name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducelogsumexp",
        [](AiOnnxOpset10 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducelogsumexp(args,
@@ -7031,13 +7031,13 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
                                         name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemax",
        [](AiOnnxOpset10 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemax(args,
@@ -7046,13 +7046,13 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemean",
        [](AiOnnxOpset10 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemean(args,
@@ -7061,13 +7061,13 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
                                    name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemin",
        [](AiOnnxOpset10 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemin(args,
@@ -7076,13 +7076,13 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reduceprod",
        [](AiOnnxOpset10 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reduceprod(args,
@@ -7091,13 +7091,13 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
                                    name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducesum",
        [](AiOnnxOpset10 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducesum(args,
@@ -7106,13 +7106,13 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducesumsquare",
        [](AiOnnxOpset10 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducesumsquare(args,
@@ -7121,7 +7121,7 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
                                         name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("relu",
@@ -7414,7 +7414,7 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
           const std::vector<TensorId> &args,
           const std::string& case_change_action,
           int64_t is_case_sensitive,
-          boost::optional<std::string> locale,
+          nonstd::optional<std::string> locale,
           const std::vector<std::string>& stopwords,
           const std::string &name) -> TensorId{
            return opset.stringnormalizer(args,
@@ -7789,14 +7789,14 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
   .def("compress",
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> axis,
+          nonstd::optional<int64_t> axis,
           const std::string &name) -> TensorId{
            return opset.compress(args,
                                  axis,
                                  name);
        },
        py::arg("args"),
-       py::arg("axis") = boost::optional<int64_t>(),
+       py::arg("axis") = nonstd::optional<int64_t>(),
        py::arg("debugPrefix") = std::string())
   .def("concat",
        [](AiOnnxOpset11 &opset,
@@ -8070,7 +8070,7 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
   .def("eyelike",
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> dtype,
+          nonstd::optional<int64_t> dtype,
           int64_t k,
           const std::string &name) -> TensorId{
            return opset.eyelike(args,
@@ -8079,7 +8079,7 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
                                 name);
        },
        py::arg("args"),
-       py::arg("dtype") = boost::optional<int64_t>(),
+       py::arg("dtype") = nonstd::optional<int64_t>(),
        py::arg("k") = 0,
        py::arg("debugPrefix") = std::string())
   .def("flatten",
@@ -8110,9 +8110,9 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
           const std::vector<float>& activation_alpha,
           const std::vector<float>& activation_beta,
           const std::vector<std::string>& activations,
-          boost::optional<float> clip,
+          nonstd::optional<float> clip,
           const std::string& direction,
-          boost::optional<int64_t> hidden_size,
+          nonstd::optional<int64_t> hidden_size,
           int64_t linear_before_reset,
           const std::string &name) -> std::vector<TensorId>{
            return opset.gru(args,
@@ -8131,9 +8131,9 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
        py::arg("activation_alpha") = std::vector<float>(),
        py::arg("activation_beta") = std::vector<float>(),
        py::arg("activations") = std::vector<std::string>(),
-       py::arg("clip") = boost::optional<float>(),
+       py::arg("clip") = nonstd::optional<float>(),
        py::arg("direction") = "forward",
-       py::arg("hidden_size") = boost::optional<int64_t>(),
+       py::arg("hidden_size") = nonstd::optional<int64_t>(),
        py::arg("linear_before_reset") = 0,
        py::arg("debugPrefix") = std::string())
   .def("gather",
@@ -8347,9 +8347,9 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
           const std::vector<float>& activation_alpha,
           const std::vector<float>& activation_beta,
           const std::vector<std::string>& activations,
-          boost::optional<float> clip,
+          nonstd::optional<float> clip,
           const std::string& direction,
-          boost::optional<int64_t> hidden_size,
+          nonstd::optional<int64_t> hidden_size,
           int64_t input_forget,
           const std::string &name) -> std::vector<TensorId>{
            return opset.lstm(args,
@@ -8368,9 +8368,9 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
        py::arg("activation_alpha") = std::vector<float>(),
        py::arg("activation_beta") = std::vector<float>(),
        py::arg("activations") = std::vector<std::string>(),
-       py::arg("clip") = boost::optional<float>(),
+       py::arg("clip") = nonstd::optional<float>(),
        py::arg("direction") = "forward",
-       py::arg("hidden_size") = boost::optional<int64_t>(),
+       py::arg("hidden_size") = nonstd::optional<int64_t>(),
        py::arg("input_forget") = 0,
        py::arg("debugPrefix") = std::string())
   .def("leakyrelu",
@@ -8612,7 +8612,7 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
           const std::vector<TensorId> &args,
           int64_t dtype,
           int64_t sample_size,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.multinomial(args,
                                     dtype,
@@ -8623,7 +8623,7 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
        py::arg("args"),
        py::arg("dtype") = 6,
        py::arg("sample_size") = 1,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("neg",
        [](AiOnnxOpset11 &opset,
@@ -8764,9 +8764,9 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
           const std::vector<float>& activation_alpha,
           const std::vector<float>& activation_beta,
           const std::vector<std::string>& activations,
-          boost::optional<float> clip,
+          nonstd::optional<float> clip,
           const std::string& direction,
-          boost::optional<int64_t> hidden_size,
+          nonstd::optional<int64_t> hidden_size,
           const std::string &name) -> std::vector<TensorId>{
            return opset.rnn(args,
                             num_outputs,
@@ -8783,9 +8783,9 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
        py::arg("activation_alpha") = std::vector<float>(),
        py::arg("activation_beta") = std::vector<float>(),
        py::arg("activations") = std::vector<std::string>(),
-       py::arg("clip") = boost::optional<float>(),
+       py::arg("clip") = nonstd::optional<float>(),
        py::arg("direction") = "forward",
-       py::arg("hidden_size") = boost::optional<int64_t>(),
+       py::arg("hidden_size") = nonstd::optional<int64_t>(),
        py::arg("debugPrefix") = std::string())
   .def("randomnormal",
        [](AiOnnxOpset11 &opset,
@@ -8793,7 +8793,7 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
           int64_t dtype,
           float mean,
           float scale,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.randomnormal(                                     shape,
                                      dtype,
@@ -8806,15 +8806,15 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
        py::arg("dtype") = 1,
        py::arg("mean") = 0.0f,
        py::arg("scale") = 1.0f,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("randomnormallike",
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> dtype,
+          nonstd::optional<int64_t> dtype,
           float mean,
           float scale,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.randomnormallike(args,
                                          dtype,
@@ -8824,10 +8824,10 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
                                          name);
        },
        py::arg("args"),
-       py::arg("dtype") = boost::optional<int64_t>(),
+       py::arg("dtype") = nonstd::optional<int64_t>(),
        py::arg("mean") = 0.0f,
        py::arg("scale") = 1.0f,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("randomuniform",
        [](AiOnnxOpset11 &opset,
@@ -8835,7 +8835,7 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
           int64_t dtype,
           float high,
           float low,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.randomuniform(                                      shape,
                                       dtype,
@@ -8848,15 +8848,15 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
        py::arg("dtype") = 1,
        py::arg("high") = 1.0f,
        py::arg("low") = 0.0f,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("randomuniformlike",
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<int64_t> dtype,
+          nonstd::optional<int64_t> dtype,
           float high,
           float low,
-          boost::optional<float> seed,
+          nonstd::optional<float> seed,
           const std::string &name) -> TensorId{
            return opset.randomuniformlike(args,
                                           dtype,
@@ -8866,10 +8866,10 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
                                           name);
        },
        py::arg("args"),
-       py::arg("dtype") = boost::optional<int64_t>(),
+       py::arg("dtype") = nonstd::optional<int64_t>(),
        py::arg("high") = 1.0f,
        py::arg("low") = 0.0f,
-       py::arg("seed") = boost::optional<float>(),
+       py::arg("seed") = nonstd::optional<float>(),
        py::arg("debugPrefix") = std::string())
   .def("range",
        [](AiOnnxOpset11 &opset,
@@ -8892,7 +8892,7 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
   .def("reducel1",
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducel1(args,
@@ -8901,13 +8901,13 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
                                  name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducel2",
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducel2(args,
@@ -8916,13 +8916,13 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
                                  name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducelogsum",
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducelogsum(args,
@@ -8931,13 +8931,13 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
                                      name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducelogsumexp",
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducelogsumexp(args,
@@ -8946,13 +8946,13 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
                                         name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemax",
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemax(args,
@@ -8961,13 +8961,13 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemean",
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemean(args,
@@ -8976,13 +8976,13 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
                                    name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducemin",
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducemin(args,
@@ -8991,13 +8991,13 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reduceprod",
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reduceprod(args,
@@ -9006,13 +9006,13 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
                                    name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducesum",
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducesum(args,
@@ -9021,13 +9021,13 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
                                   name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("reducesumsquare",
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
-          boost::optional<std::vector<int64_t>> axes,
+          nonstd::optional<std::vector<int64_t>> axes,
           int64_t keepdims,
           const std::string &name) -> TensorId{
            return opset.reducesumsquare(args,
@@ -9036,7 +9036,7 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
                                         name);
        },
        py::arg("args"),
-       py::arg("axes") = boost::optional<std::vector<int64_t>>(),
+       py::arg("axes") = nonstd::optional<std::vector<int64_t>>(),
        py::arg("keepdims") = 1,
        py::arg("debugPrefix") = std::string())
   .def("relu",
@@ -9230,12 +9230,12 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
        py::arg("debugPrefix") = std::string())
   .def("sequenceempty",
        [](AiOnnxOpset11 &opset,
-          boost::optional<int64_t> dtype,
+          nonstd::optional<int64_t> dtype,
           const std::string &name) -> TensorId{
            return opset.sequenceempty(                                      dtype,
                                       name);
        },
-       py::arg("dtype") = boost::optional<int64_t>(),
+       py::arg("dtype") = nonstd::optional<int64_t>(),
        py::arg("debugPrefix") = std::string())
   .def("sequenceerase",
        [](AiOnnxOpset11 &opset,
@@ -9443,7 +9443,7 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
           const std::vector<TensorId> &args,
           const std::string& case_change_action,
           int64_t is_case_sensitive,
-          boost::optional<std::string> locale,
+          nonstd::optional<std::string> locale,
           const std::vector<std::string>& stopwords,
           const std::string &name) -> TensorId{
            return opset.stringnormalizer(args,
@@ -9586,7 +9586,7 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
           unsigned num_outputs,
-          boost::optional<int64_t> axis,
+          nonstd::optional<int64_t> axis,
           int64_t sorted,
           const std::string &name) -> std::vector<TensorId>{
            return opset.unique(args,
@@ -9597,7 +9597,7 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
        },
        py::arg("args"),
        py::arg("num_outputs"),
-       py::arg("axis") = boost::optional<int64_t>(),
+       py::arg("axis") = nonstd::optional<int64_t>(),
        py::arg("sorted") = 1,
        py::arg("debugPrefix") = std::string())
   .def("unsqueeze",

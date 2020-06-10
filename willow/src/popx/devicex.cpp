@@ -1786,7 +1786,7 @@ bool Devicex::hasRemoteBuffer(RemoteBufferId id) const {
   return remoteBuffers.find(id) != remoteBuffers.end();
 }
 
-const std::pair<poplar::RemoteBuffer, boost::optional<poplar::Tensor>> &
+const std::pair<poplar::RemoteBuffer, nonstd::optional<poplar::Tensor>> &
 Devicex::getRemoteBuffer(RemoteBufferId id) const {
   return remoteBuffers.at(id);
 }
@@ -1808,7 +1808,7 @@ void Devicex::createRemoteBuffer(RemoteBufferId id, poplar::Tensor tensor) {
   remoteBuffers.insert(
       {id,
        {graph().addRemoteBuffer(name, type, size, repeats, true),
-        boost::optional<poplar::Tensor>(tensor)}});
+        nonstd::optional<poplar::Tensor>(tensor)}});
 }
 
 std::shared_ptr<CollectiveBalancedReorder>
@@ -3159,10 +3159,10 @@ poplar::Executable Devicex::getExecutable() {
 
   if (cachedExecutable) {
     // return the executable in cachedExecutable while ensuring
-    // cachedExecutable is set to boost::none
-    boost::optional<poplar::Executable> result = boost::none;
+    // cachedExecutable is set to nonstd::nullopt
+    nonstd::optional<poplar::Executable> result = nonstd::nullopt;
     boost::swap(cachedExecutable, result);
-    return std::move(result.get());
+    return std::move(result.value());
   } else {
     auto executable = poplar::compileGraph(
         graph(), progs.progs(), engineOptions, progressLogger);

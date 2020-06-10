@@ -1,11 +1,11 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_NEURALNET_OPSERIALISER_HPP
 #define GUARD_NEURALNET_OPSERIALISER_HPP
-#include <boost/optional.hpp>
 #include <map>
 #include <sstream>
 #include <popart/basicoptionals.hpp>
 #include <popart/names.hpp>
+#include <popart/vendored/optional.hpp>
 
 namespace popart {
 
@@ -28,10 +28,11 @@ public:
   void appendAttribute(const std::string &, bool);
 
   virtual void appendAttribute(const std::string &,
-                               boost::optional<int64_t>)                    = 0;
-  virtual void appendAttribute(const std::string &, boost::optional<float>) = 0;
+                               nonstd::optional<int64_t>)          = 0;
   virtual void appendAttribute(const std::string &,
-                               const std::map<TensorId, uint64_t>)          = 0;
+                               nonstd::optional<float>)            = 0;
+  virtual void appendAttribute(const std::string &,
+                               const std::map<TensorId, uint64_t>) = 0;
 
   // For OptionalPingPongPhase, OptionalVGraphId, etc.
   template <typename T, uint32_t V>
@@ -52,8 +53,8 @@ class OpSerialiser : public OpSerialiserBase {
 public:
   OpSerialiser(const Op *, std::stringstream &ss_);
 
-  void appendAttribute(const std::string &, boost::optional<int64_t>) override;
-  void appendAttribute(const std::string &, boost::optional<float>) override;
+  void appendAttribute(const std::string &, nonstd::optional<int64_t>) override;
+  void appendAttribute(const std::string &, nonstd::optional<float>) override;
   void appendAttribute(const std::string &,
                        const std::map<TensorId, uint64_t>) override;
 
@@ -70,8 +71,8 @@ class OpJsonSerialiser : public OpSerialiserBase {
 public:
   OpJsonSerialiser(const Op *, std::stringstream &ss_);
 
-  void appendAttribute(const std::string &, boost::optional<int64_t>) override;
-  void appendAttribute(const std::string &, boost::optional<float>) override;
+  void appendAttribute(const std::string &, nonstd::optional<int64_t>) override;
+  void appendAttribute(const std::string &, nonstd::optional<float>) override;
   void appendAttribute(const std::string &,
                        const std::map<TensorId, uint64_t>) override;
 
@@ -101,8 +102,8 @@ class OpEquivIdCreator : public OpSerialiserBase {
 public:
   OpEquivIdCreator(const Op *);
 
-  void appendAttribute(const std::string &, boost::optional<int64_t>) override;
-  void appendAttribute(const std::string &, boost::optional<float>) override;
+  void appendAttribute(const std::string &, nonstd::optional<int64_t>) override;
+  void appendAttribute(const std::string &, nonstd::optional<float>) override;
   void appendAttribute(const std::string &,
                        const std::map<TensorId, uint64_t>) override;
 

@@ -33,7 +33,7 @@ void addPartialsType(const ConvPartialsType &partialsType,
 }
 
 void addAvailableMemoryProportion(
-    boost::optional<float> availableMemoryProportion,
+    nonstd::optional<float> availableMemoryProportion,
     poplar::OptionFlags &optionFlags) {
   if (availableMemoryProportion) {
     optionFlags.set("availableMemoryProportion",

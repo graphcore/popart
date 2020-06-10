@@ -109,10 +109,11 @@ void SoftmaxGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("axis", axis);
 }
 
-SoftmaxGradDirectOp::SoftmaxGradDirectOp(const TensorId lossId,
-                                         const boost::optional<int> ignoreIndex,
-                                         const ReductionType reduction,
-                                         const Op::Settings &settings)
+SoftmaxGradDirectOp::SoftmaxGradDirectOp(
+    const TensorId lossId,
+    const nonstd::optional<int> ignoreIndex,
+    const ReductionType reduction,
+    const Op::Settings &settings)
     : Op(Onnx::CustomGradOperators::SoftmaxGradDirect, settings),
       lossId_(lossId), reduction_(reduction), ignoreIndex_(ignoreIndex) {}
 
@@ -161,7 +162,7 @@ void SoftmaxGradDirectOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 }
 
 NlllWithSoftmaxGradDirectOp::NlllWithSoftmaxGradDirectOp(
-    const boost::optional<int> ignoreIndex,
+    const nonstd::optional<int> ignoreIndex,
     const ReductionType reduction,
     const Op::Settings &settings)
     : Op(Onnx::CustomGradOperators::NlllWithSoftmaxGradDirect, settings),

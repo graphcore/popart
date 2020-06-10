@@ -8,7 +8,7 @@
 #include <popart/names.hpp>
 #include <popart/opidentifier.hpp>
 
-#include <popart/any.hpp>
+#include <popart/vendored/any.hpp>
 
 // The BuilderImpl class has an ONNX_NAMESPACE::ModelProto, so we cannot
 // use the forward declarations in names.hpp at this point

@@ -10,7 +10,7 @@ namespace popart {
 class ReduceL2Op : public ReduceOp {
 public:
   ReduceL2Op(const OperatorIdentifier &_opid,
-             const boost::optional<std::vector<int64_t>> &axes,
+             const nonstd::optional<std::vector<int64_t>> &axes,
              const int64_t keepdims,
              const Op::Settings &settings);
 

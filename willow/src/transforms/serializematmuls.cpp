@@ -26,7 +26,7 @@
 
 #include <boost/optional/optional_io.hpp>
 #include <boost/range/algorithm_ext.hpp>
-#include <popart/any.hpp>
+#include <popart/vendored/any.hpp>
 
 // X = [GROUP_DIM, INPUT_CHANNELS, REDUCING_DIM]
 // W = [GROUP_DIM, REDUCING_DIM, OUTPUT_CHANNELS]

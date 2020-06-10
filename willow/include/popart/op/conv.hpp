@@ -2,9 +2,9 @@
 #ifndef GUARD_NEURALNET_CONV_HPP
 #define GUARD_NEURALNET_CONV_HPP
 
-#include <boost/optional.hpp>
 #include <popart/op/receptive.hpp>
 #include <popart/util.hpp>
+#include <popart/vendored/optional.hpp>
 
 namespace popart {
 
@@ -113,7 +113,7 @@ public:
   ConvOp(const OperatorIdentifier &_opid,
          int64_t group,
          const ConvPartialsType &partialsType_,
-         boost::optional<float> availableMemoryProportion_,
+         nonstd::optional<float> availableMemoryProportion_,
          const HasReceptiveFieldOp::Settings &settings_);
   int64_t nOutChans;
   int64_t group;
@@ -152,10 +152,10 @@ public:
 
   const ConvPartialsType &getPartialsType() const { return partialsType; }
   void setPartialsType(const ConvPartialsType &v) { partialsType = v; }
-  boost::optional<float> getAvailableMemoryProportion() const {
+  nonstd::optional<float> getAvailableMemoryProportion() const {
     return availableMemoryProportion;
   }
-  void setAvailableMemoryProportion(boost::optional<float> v) {
+  void setAvailableMemoryProportion(nonstd::optional<float> v) {
     availableMemoryProportion = v;
   }
 
@@ -169,7 +169,7 @@ private:
   Shape inputShape;
 
   ConvPartialsType partialsType;
-  boost::optional<float> availableMemoryProportion;
+  nonstd::optional<float> availableMemoryProportion;
 
   void setup0() final;
   void setSpatialK() final;
@@ -224,10 +224,10 @@ public:
 
   const ConvPartialsType &getPartialsType() const { return partialsType; }
   void setPartialsType(const ConvPartialsType &v) { partialsType = v; }
-  boost::optional<float> getAvailableMemoryProportion() const {
+  nonstd::optional<float> getAvailableMemoryProportion() const {
     return availableMemoryProportion;
   }
-  void setAvailableMemoryProportion(boost::optional<float> v) {
+  void setAvailableMemoryProportion(nonstd::optional<float> v) {
     availableMemoryProportion = v;
   }
 
@@ -236,7 +236,7 @@ public:
 private:
   ConvParameters params;
   ConvPartialsType partialsType;
-  boost::optional<float> availableMemoryProportion;
+  nonstd::optional<float> availableMemoryProportion;
 };
 
 class ConvDataGradOp : public Op {

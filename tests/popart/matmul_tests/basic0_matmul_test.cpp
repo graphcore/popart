@@ -21,7 +21,7 @@ BOOST_AUTO_TEST_CASE(MatMul_Case1) {
 
   popart::MatMulOp mm(Onnx::Operators::MatMul_9,
                       {graph, ""},
-                      boost::none,
+                      nonstd::nullopt,
                       {},
                       OptionalDataType());
 
@@ -127,7 +127,7 @@ BOOST_AUTO_TEST_CASE(MatMul_Case2) {
 
   popart::MatMulOp mm(Onnx::Operators::MatMul_9,
                       {graph, ""},
-                      boost::none,
+                      nonstd::nullopt,
                       {},
                       OptionalDataType());
 
@@ -232,7 +232,7 @@ BOOST_AUTO_TEST_CASE(MatMul_Case3) {
 
   popart::MatMulOp mm(Onnx::Operators::MatMul_9,
                       {graph, ""},
-                      boost::none,
+                      nonstd::nullopt,
                       {},
                       OptionalDataType());
 
@@ -290,7 +290,7 @@ BOOST_AUTO_TEST_CASE(MatMul_ErrorCase1) {
 
   popart::MatMulOp mm(Onnx::Operators::MatMul_9,
                       {graph, ""},
-                      boost::none,
+                      nonstd::nullopt,
                       {},
                       OptionalDataType());
 
@@ -319,7 +319,7 @@ BOOST_AUTO_TEST_CASE(MatMul_ErrorCase3) {
 
   popart::MatMulOp mm(Onnx::Operators::MatMul_9,
                       {graph, ""},
-                      boost::none,
+                      nonstd::nullopt,
                       {},
                       OptionalDataType());
 
@@ -348,7 +348,7 @@ BOOST_AUTO_TEST_CASE(MatMul_ErrorCase4) {
 
   popart::MatMulOp mm(Onnx::Operators::MatMul_9,
                       {graph, ""},
-                      boost::none,
+                      nonstd::nullopt,
                       {},
                       OptionalDataType());
 

@@ -13,7 +13,7 @@
 #include <popart/patterns/pattern.hpp>
 #include <popart/util.hpp>
 
-#include <boost/optional.hpp>
+#include <popart/vendored/optional.hpp>
 
 namespace popart {
 
@@ -117,7 +117,7 @@ public:
     return getInfo(ti).name;
   }
 
-  static boost::optional<std::type_index> tryGetTypeIndex(std::string s) {
+  static nonstd::optional<std::type_index> tryGetTypeIndex(std::string s) {
     for (auto &ti_info : getInstance().patternInfos) {
       auto &ti   = ti_info.first;
       auto &info = ti_info.second;
@@ -125,7 +125,7 @@ public:
         return ti;
       }
     }
-    return boost::none;
+    return nonstd::nullopt;
   }
 
   static std::type_index getTypeIndex(const std::string &s) {

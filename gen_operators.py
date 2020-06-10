@@ -164,14 +164,14 @@ class Attribute:
                 if self.hasDefault():
                     return 'int64_t'
                 else:
-                    return "boost::optional<int64_t>"
+                    return "nonstd::optional<int64_t>"
         elif self.type == onnx.defs.OpSchema.AttrType.INTS:
             # Special case for axes in reduce operators as we need to distinguish
             # default params from empty params. In future we may want to
-            # all optional parameters boost::optional of some sort.
+            # all optional parameters nonstd::optional of some sort.
             # TODO T21033: Investigate all other cases
             if self.op.name.lower().find("reduce") >= 0 and self.name == "axes":
-                return "boost::optional<std::vector<int64_t>>"
+                return "nonstd::optional<std::vector<int64_t>>"
             else:
                 return 'const std::vector<int64_t>&'
         elif self.type == onnx.defs.OpSchema.AttrType.FLOAT:
@@ -181,7 +181,7 @@ class Attribute:
                 if self.hasDefault():
                     return 'float'
                 else:
-                    return "boost::optional<float>"
+                    return "nonstd::optional<float>"
         elif self.type == onnx.defs.OpSchema.AttrType.FLOATS:
             return 'const std::vector<float>&'
         elif self.type == onnx.defs.OpSchema.AttrType.STRING:
@@ -191,7 +191,7 @@ class Attribute:
                 if self.hasDefault():
                     return 'const std::string&'
                 else:
-                    return "boost::optional<std::string>"
+                    return "nonstd::optional<std::string>"
         elif self.type == onnx.defs.OpSchema.AttrType.STRINGS:
             return 'const std::vector<std::string>&'
         # Special case of Loop, If, Scan where we replace
@@ -258,17 +258,17 @@ class Attribute:
 
             # Optional but not default
             if self.type == onnx.defs.OpSchema.AttrType.INT:
-                return "boost::optional<int64_t>()"
+                return "nonstd::optional<int64_t>()"
             elif self.type == onnx.defs.OpSchema.AttrType.FLOAT:
-                return "boost::optional<float>()"
+                return "nonstd::optional<float>()"
             elif self.type == onnx.defs.OpSchema.AttrType.INTS:
                 # Special case for axes in reduce operators as we need to distinguish
                 # default params from an empty access list. In future we may want to
-                # all optional parameters boost::optional of some sort.
+                # all optional parameters nonstd::optional of some sort.
                 # TODO T21033: Investigate all other cases
                 if self.op.name.lower().find(
                         "reduce") >= 0 and self.name == "axes":
-                    return "boost::optional<std::vector<int64_t>>()"
+                    return "nonstd::optional<std::vector<int64_t>>()"
                 else:
                     return f'std::vector<int64_t>()'
             elif self.type == onnx.defs.OpSchema.AttrType.FLOATS:

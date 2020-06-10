@@ -4,14 +4,14 @@
 
 #include <popart/op.hpp>
 
-#include <boost/optional.hpp>
+#include <popart/vendored/optional.hpp>
 
 namespace popart {
 
 class LSTMOp : public Op {
 public:
   LSTMOp(const OperatorIdentifier &_opid,
-         boost::optional<int64_t> hidden_size,
+         nonstd::optional<int64_t> hidden_size,
          const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
@@ -70,7 +70,7 @@ private:
   static int getNumIntermediates() { return 6; }
   void trySetOutInfo(OutIndex, const TensorInfo &);
 
-  boost::optional<int64_t> hidden_size_attribute;
+  nonstd::optional<int64_t> hidden_size_attribute;
 };
 
 class LSTMGradOp : public Op {

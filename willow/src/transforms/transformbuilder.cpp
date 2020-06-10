@@ -4,11 +4,11 @@
 #include <popart/opmanager.hpp>
 #include <popart/transforms/transformbuilder.hpp>
 
-#include <popart/any.hpp>
 #include <popart/op/add.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/op/varupdate.hpp>
+#include <popart/vendored/any.hpp>
 
 namespace popart {
 

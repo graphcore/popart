@@ -2,16 +2,16 @@
 #ifndef GUARD_NEURALNET_REDUCESUM_HPP
 #define GUARD_NEURALNET_REDUCESUM_HPP
 
-#include <boost/optional.hpp>
 #include <popart/op.hpp>
 #include <popart/op/reduce.hpp>
+#include <popart/vendored/optional.hpp>
 
 namespace popart {
 
 class ReduceSumOp : public ReduceOp {
 public:
   ReduceSumOp(const OperatorIdentifier &_opid,
-              const boost::optional<std::vector<int64_t>> &axes,
+              const nonstd::optional<std::vector<int64_t>> &axes,
               const int64_t keepdims,
               const Op::Settings &settings);
 

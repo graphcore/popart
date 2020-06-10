@@ -2,8 +2,8 @@
 #ifndef GUARD_NEURALNET_MATMUL_HPP
 #define GUARD_NEURALNET_MATMUL_HPP
 
-#include <boost/optional.hpp>
 #include <popart/op.hpp>
+#include <popart/vendored/optional.hpp>
 
 namespace popart {
 
@@ -26,7 +26,7 @@ public:
   MatMulBaseOp(const OperatorIdentifier &_opid,
                const Op::Settings &settings_,
                const Phase phase_,
-               const boost::optional<float> availableMemoryProportion_,
+               const nonstd::optional<float> availableMemoryProportion_,
                const SerialiseSettings &serialization_,
                const OptionalDataType outputType_,
                const bool enableFullyConnectedPass_ = true);
@@ -44,10 +44,10 @@ public:
   bool useFullyConnectedPass() const;
   void setUseFullyConnectedPass(bool b) { enableFullyConnectedPass = b; }
 
-  boost::optional<float> getAvailableMemoryProportion() const {
+  nonstd::optional<float> getAvailableMemoryProportion() const {
     return availableMemoryProportion;
   }
-  void setAvailableMemoryProportion(const boost::optional<float> v) {
+  void setAvailableMemoryProportion(const nonstd::optional<float> v) {
     availableMemoryProportion = v;
   }
 
@@ -70,7 +70,7 @@ protected:
 
   bool enableFullyConnectedPass;
 
-  boost::optional<float> availableMemoryProportion;
+  nonstd::optional<float> availableMemoryProportion;
 
   SerialiseSettings serialization;
 
@@ -82,7 +82,7 @@ class MatMulOp : public MatMulBaseOp {
 public:
   MatMulOp(const OperatorIdentifier &_opid,
            const Op::Settings &settings_,
-           const boost::optional<float> availableMemoryProportion,
+           const nonstd::optional<float> availableMemoryProportion,
            const SerialiseSettings &serialization_,
            const OptionalDataType outputType);
   MatMulOp(const MatMulOp &) = default;

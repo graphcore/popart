@@ -2,10 +2,10 @@
 #ifndef GUARD_NEURALNET_LSTMX_HPP
 #define GUARD_NEURALNET_LSTMX_HPP
 
-#include <boost/optional.hpp>
 #include <popnn/Lstm.hpp>
 #include <popart/names.hpp>
 #include <popart/popx/opx.hpp>
+#include <popart/vendored/optional.hpp>
 
 namespace popart {
 
@@ -40,8 +40,8 @@ private:
   void reshapeAndInsert(OutIndex index, const poplar::Tensor &) const;
   bool inputCreated(InIndex) const;
 
-  mutable boost::optional<popnn::lstm::LstmWeights> weights;
-  mutable boost::optional<popnn::lstm::LstmState> initial_state;
+  mutable nonstd::optional<popnn::lstm::LstmWeights> weights;
+  mutable nonstd::optional<popnn::lstm::LstmState> initial_state;
   mutable std::set<InIndex> createdInputs;
 };
 

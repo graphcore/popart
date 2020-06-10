@@ -72,14 +72,14 @@ void OpSerialiserBase::appendAttribute(const std::string &name,
 }
 
 void OpSerialiser::appendAttribute(const std::string &name,
-                                   boost::optional<int64_t> value) {
+                                   nonstd::optional<int64_t> value) {
   if (value) {
     appendAttr(name, *value);
   }
 }
 
 void OpSerialiser::appendAttribute(const std::string &name,
-                                   boost::optional<float> value) {
+                                   nonstd::optional<float> value) {
   if (value) {
     appendAttr(name, *value);
   }
@@ -209,14 +209,14 @@ void OpJsonSerialiser::appendKeyValues(const std::string key,
 }
 
 void OpJsonSerialiser::appendAttribute(const std::string &name,
-                                       boost::optional<int64_t> value) {
+                                       nonstd::optional<int64_t> value) {
   if (value) {
     appendAttr(name, *value);
   }
 }
 
 void OpJsonSerialiser::appendAttribute(const std::string &name,
-                                       boost::optional<float> value) {
+                                       nonstd::optional<float> value) {
   if (value) {
     appendAttr(name, *value);
   }
@@ -245,7 +245,7 @@ OpEquivIdCreator::OpEquivIdCreator(const Op *op) {
 }
 
 void OpEquivIdCreator::appendAttribute(const std::string &,
-                                       boost::optional<int64_t> value) {
+                                       nonstd::optional<int64_t> value) {
   if (value) {
     appendAttr(*value);
   } else {
@@ -256,7 +256,7 @@ void OpEquivIdCreator::appendAttribute(const std::string &,
 }
 
 void OpEquivIdCreator::appendAttribute(const std::string &,
-                                       boost::optional<float> value) {
+                                       nonstd::optional<float> value) {
   if (value) {
     appendAttr(*value);
   } else {

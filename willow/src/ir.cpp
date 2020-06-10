@@ -380,7 +380,7 @@ void Ir::verifyPingPongSettings() const {
     // Currently there are no checks for when ping pong is enabled.
   } else {
     // if pingpong is disabled, make sure all ops pingpong phases are set to
-    // boost::none.
+    // nonstd::nullopt.
     for (auto &id_graph : graphs) {
       auto &graph = id_graph.second;
       for (auto &id_op : graph->getOps()) {

@@ -16,11 +16,11 @@ AiOnnxOpset6::abs(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::add(const std::vector<TensorId>& args,
-                  boost::optional<int64_t> axis,
+                  nonstd::optional<int64_t> axis,
                   int64_t broadcast,
                   const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != boost::optional<int64_t>()) {
+  if (axis != nonstd::optional<int64_t>()) {
     attributes["axis"] = *axis;
   }
   if (broadcast != 0) {
@@ -35,11 +35,11 @@ AiOnnxOpset6::add(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::logical_and(const std::vector<TensorId>& args,
-                          boost::optional<int64_t> axis,
+                          nonstd::optional<int64_t> axis,
                           int64_t broadcast,
                           const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != boost::optional<int64_t>()) {
+  if (axis != nonstd::optional<int64_t>()) {
     attributes["axis"] = *axis;
   }
   if (broadcast != 0) {
@@ -303,11 +303,11 @@ AiOnnxOpset6::depthtospace(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::div(const std::vector<TensorId>& args,
-                  boost::optional<int64_t> axis,
+                  nonstd::optional<int64_t> axis,
                   int64_t broadcast,
                   const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != boost::optional<int64_t>()) {
+  if (axis != nonstd::optional<int64_t>()) {
     attributes["axis"] = *axis;
   }
   if (broadcast != 0) {
@@ -358,11 +358,11 @@ AiOnnxOpset6::elu(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::equal(const std::vector<TensorId>& args,
-                    boost::optional<int64_t> axis,
+                    nonstd::optional<int64_t> axis,
                     int64_t broadcast,
                     const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != boost::optional<int64_t>()) {
+  if (axis != nonstd::optional<int64_t>()) {
     attributes["axis"] = *axis;
   }
   if (broadcast != 0) {
@@ -418,9 +418,9 @@ AiOnnxOpset6::gru(const std::vector<TensorId>& args,
                   const std::vector<float>& activation_alpha,
                   const std::vector<float>& activation_beta,
                   const std::vector<std::string>& activations,
-                  boost::optional<float> clip,
+                  nonstd::optional<float> clip,
                   const std::string& direction,
-                  boost::optional<int64_t> hidden_size,
+                  nonstd::optional<int64_t> hidden_size,
                   int64_t linear_before_reset,
                   int64_t output_sequence,
                   const std::string& name) {
@@ -434,13 +434,13 @@ AiOnnxOpset6::gru(const std::vector<TensorId>& args,
   if (!activations.empty()) {
     attributes["activations"] = activations;
   }
-  if (clip != boost::optional<float>()) {
+  if (clip != nonstd::optional<float>()) {
     attributes["clip"] = *clip;
   }
   if (direction != "forward") {
     attributes["direction"] = direction;
   }
-  if (hidden_size != boost::optional<int64_t>()) {
+  if (hidden_size != nonstd::optional<int64_t>()) {
     attributes["hidden_size"] = *hidden_size;
   }
   if (linear_before_reset != 0) {
@@ -542,11 +542,11 @@ AiOnnxOpset6::globalmaxpool(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::greater(const std::vector<TensorId>& args,
-                      boost::optional<int64_t> axis,
+                      nonstd::optional<int64_t> axis,
                       int64_t broadcast,
                       const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != boost::optional<int64_t>()) {
+  if (axis != nonstd::optional<int64_t>()) {
     attributes["axis"] = *axis;
   }
   if (broadcast != 0) {
@@ -673,9 +673,9 @@ AiOnnxOpset6::lstm(const std::vector<TensorId>& args,
                    const std::vector<float>& activation_alpha,
                    const std::vector<float>& activation_beta,
                    const std::vector<std::string>& activations,
-                   boost::optional<float> clip,
+                   nonstd::optional<float> clip,
                    const std::string& direction,
-                   boost::optional<int64_t> hidden_size,
+                   nonstd::optional<int64_t> hidden_size,
                    int64_t input_forget,
                    int64_t output_sequence,
                    const std::string& name) {
@@ -689,13 +689,13 @@ AiOnnxOpset6::lstm(const std::vector<TensorId>& args,
   if (!activations.empty()) {
     attributes["activations"] = activations;
   }
-  if (clip != boost::optional<float>()) {
+  if (clip != nonstd::optional<float>()) {
     attributes["clip"] = *clip;
   }
   if (direction != "forward") {
     attributes["direction"] = direction;
   }
-  if (hidden_size != boost::optional<int64_t>()) {
+  if (hidden_size != nonstd::optional<int64_t>()) {
     attributes["hidden_size"] = *hidden_size;
   }
   if (input_forget != 0) {
@@ -729,11 +729,11 @@ AiOnnxOpset6::leakyrelu(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::less(const std::vector<TensorId>& args,
-                   boost::optional<int64_t> axis,
+                   nonstd::optional<int64_t> axis,
                    int64_t broadcast,
                    const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != boost::optional<int64_t>()) {
+  if (axis != nonstd::optional<int64_t>()) {
     attributes["axis"] = *axis;
   }
   if (broadcast != 0) {
@@ -922,11 +922,11 @@ AiOnnxOpset6::min(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::mul(const std::vector<TensorId>& args,
-                  boost::optional<int64_t> axis,
+                  nonstd::optional<int64_t> axis,
                   int64_t broadcast,
                   const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != boost::optional<int64_t>()) {
+  if (axis != nonstd::optional<int64_t>()) {
     attributes["axis"] = *axis;
   }
   if (broadcast != 0) {
@@ -963,11 +963,11 @@ AiOnnxOpset6::logical_not(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::logical_or(const std::vector<TensorId>& args,
-                         boost::optional<int64_t> axis,
+                         nonstd::optional<int64_t> axis,
                          int64_t broadcast,
                          const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != boost::optional<int64_t>()) {
+  if (axis != nonstd::optional<int64_t>()) {
     attributes["axis"] = *axis;
   }
   if (broadcast != 0) {
@@ -1018,11 +1018,11 @@ AiOnnxOpset6::pad(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::pow(const std::vector<TensorId>& args,
-                  boost::optional<int64_t> axis,
+                  nonstd::optional<int64_t> axis,
                   int64_t broadcast,
                   const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != boost::optional<int64_t>()) {
+  if (axis != nonstd::optional<int64_t>()) {
     attributes["axis"] = *axis;
   }
   if (broadcast != 0) {
@@ -1041,9 +1041,9 @@ AiOnnxOpset6::rnn(const std::vector<TensorId>& args,
                   const std::vector<float>& activation_alpha,
                   const std::vector<float>& activation_beta,
                   const std::vector<std::string>& activations,
-                  boost::optional<float> clip,
+                  nonstd::optional<float> clip,
                   const std::string& direction,
-                  boost::optional<int64_t> hidden_size,
+                  nonstd::optional<int64_t> hidden_size,
                   int64_t output_sequence,
                   const std::string& name) {
   std::map<std::string, popart::any> attributes;
@@ -1056,13 +1056,13 @@ AiOnnxOpset6::rnn(const std::vector<TensorId>& args,
   if (!activations.empty()) {
     attributes["activations"] = activations;
   }
-  if (clip != boost::optional<float>()) {
+  if (clip != nonstd::optional<float>()) {
     attributes["clip"] = *clip;
   }
   if (direction != "forward") {
     attributes["direction"] = direction;
   }
-  if (hidden_size != boost::optional<int64_t>()) {
+  if (hidden_size != nonstd::optional<int64_t>()) {
     attributes["hidden_size"] = *hidden_size;
   }
   if (output_sequence != 0) {
@@ -1081,7 +1081,7 @@ AiOnnxOpset6::randomnormal(                           const std::vector<int64_t>
                            int64_t dtype,
                            float mean,
                            float scale,
-                           boost::optional<float> seed,
+                           nonstd::optional<float> seed,
                            const std::string& name) {
   std::map<std::string, popart::any> attributes;
   if (dtype != 1) {
@@ -1093,7 +1093,7 @@ AiOnnxOpset6::randomnormal(                           const std::vector<int64_t>
   if (std::abs(scale - 1.0f) >  std::numeric_limits<float>::epsilon()) {
     attributes["scale"] = scale;
   }
-  if (seed != boost::optional<float>()) {
+  if (seed != nonstd::optional<float>()) {
     attributes["seed"] = *seed;
   }
   attributes["shape"] = shape;
@@ -1106,13 +1106,13 @@ AiOnnxOpset6::randomnormal(                           const std::vector<int64_t>
 
 TensorId
 AiOnnxOpset6::randomnormallike(const std::vector<TensorId>& args,
-                               boost::optional<int64_t> dtype,
+                               nonstd::optional<int64_t> dtype,
                                float mean,
                                float scale,
-                               boost::optional<float> seed,
+                               nonstd::optional<float> seed,
                                const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (dtype != boost::optional<int64_t>()) {
+  if (dtype != nonstd::optional<int64_t>()) {
     attributes["dtype"] = *dtype;
   }
   if (std::abs(mean - 0.0f) >  std::numeric_limits<float>::epsilon()) {
@@ -1121,7 +1121,7 @@ AiOnnxOpset6::randomnormallike(const std::vector<TensorId>& args,
   if (std::abs(scale - 1.0f) >  std::numeric_limits<float>::epsilon()) {
     attributes["scale"] = scale;
   }
-  if (seed != boost::optional<float>()) {
+  if (seed != nonstd::optional<float>()) {
     attributes["seed"] = *seed;
   }
   return impl->op(Onnx::Operators::RandomNormalLike_1,
@@ -1136,7 +1136,7 @@ AiOnnxOpset6::randomuniform(                            const std::vector<int64_
                             int64_t dtype,
                             float high,
                             float low,
-                            boost::optional<float> seed,
+                            nonstd::optional<float> seed,
                             const std::string& name) {
   std::map<std::string, popart::any> attributes;
   if (dtype != 1) {
@@ -1148,7 +1148,7 @@ AiOnnxOpset6::randomuniform(                            const std::vector<int64_
   if (std::abs(low - 0.0f) >  std::numeric_limits<float>::epsilon()) {
     attributes["low"] = low;
   }
-  if (seed != boost::optional<float>()) {
+  if (seed != nonstd::optional<float>()) {
     attributes["seed"] = *seed;
   }
   attributes["shape"] = shape;
@@ -1161,13 +1161,13 @@ AiOnnxOpset6::randomuniform(                            const std::vector<int64_
 
 TensorId
 AiOnnxOpset6::randomuniformlike(const std::vector<TensorId>& args,
-                                boost::optional<int64_t> dtype,
+                                nonstd::optional<int64_t> dtype,
                                 float high,
                                 float low,
-                                boost::optional<float> seed,
+                                nonstd::optional<float> seed,
                                 const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (dtype != boost::optional<int64_t>()) {
+  if (dtype != nonstd::optional<int64_t>()) {
     attributes["dtype"] = *dtype;
   }
   if (std::abs(high - 1.0f) >  std::numeric_limits<float>::epsilon()) {
@@ -1176,7 +1176,7 @@ AiOnnxOpset6::randomuniformlike(const std::vector<TensorId>& args,
   if (std::abs(low - 0.0f) >  std::numeric_limits<float>::epsilon()) {
     attributes["low"] = low;
   }
-  if (seed != boost::optional<float>()) {
+  if (seed != nonstd::optional<float>()) {
     attributes["seed"] = *seed;
   }
   return impl->op(Onnx::Operators::RandomUniformLike_1,
@@ -1199,11 +1199,11 @@ AiOnnxOpset6::reciprocal(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::reducel1(const std::vector<TensorId>& args,
-                       boost::optional<std::vector<int64_t>> axes,
+                       nonstd::optional<std::vector<int64_t>> axes,
                        int64_t keepdims,
                        const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axes != boost::optional<std::vector<int64_t>>()) {
+  if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
@@ -1218,11 +1218,11 @@ AiOnnxOpset6::reducel1(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::reducel2(const std::vector<TensorId>& args,
-                       boost::optional<std::vector<int64_t>> axes,
+                       nonstd::optional<std::vector<int64_t>> axes,
                        int64_t keepdims,
                        const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axes != boost::optional<std::vector<int64_t>>()) {
+  if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
@@ -1237,11 +1237,11 @@ AiOnnxOpset6::reducel2(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::reducelogsum(const std::vector<TensorId>& args,
-                           boost::optional<std::vector<int64_t>> axes,
+                           nonstd::optional<std::vector<int64_t>> axes,
                            int64_t keepdims,
                            const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axes != boost::optional<std::vector<int64_t>>()) {
+  if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
@@ -1256,11 +1256,11 @@ AiOnnxOpset6::reducelogsum(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::reducelogsumexp(const std::vector<TensorId>& args,
-                              boost::optional<std::vector<int64_t>> axes,
+                              nonstd::optional<std::vector<int64_t>> axes,
                               int64_t keepdims,
                               const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axes != boost::optional<std::vector<int64_t>>()) {
+  if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
@@ -1275,11 +1275,11 @@ AiOnnxOpset6::reducelogsumexp(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::reducemax(const std::vector<TensorId>& args,
-                        boost::optional<std::vector<int64_t>> axes,
+                        nonstd::optional<std::vector<int64_t>> axes,
                         int64_t keepdims,
                         const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axes != boost::optional<std::vector<int64_t>>()) {
+  if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
@@ -1294,11 +1294,11 @@ AiOnnxOpset6::reducemax(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::reducemean(const std::vector<TensorId>& args,
-                         boost::optional<std::vector<int64_t>> axes,
+                         nonstd::optional<std::vector<int64_t>> axes,
                          int64_t keepdims,
                          const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axes != boost::optional<std::vector<int64_t>>()) {
+  if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
@@ -1313,11 +1313,11 @@ AiOnnxOpset6::reducemean(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::reducemin(const std::vector<TensorId>& args,
-                        boost::optional<std::vector<int64_t>> axes,
+                        nonstd::optional<std::vector<int64_t>> axes,
                         int64_t keepdims,
                         const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axes != boost::optional<std::vector<int64_t>>()) {
+  if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
@@ -1332,11 +1332,11 @@ AiOnnxOpset6::reducemin(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::reduceprod(const std::vector<TensorId>& args,
-                         boost::optional<std::vector<int64_t>> axes,
+                         nonstd::optional<std::vector<int64_t>> axes,
                          int64_t keepdims,
                          const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axes != boost::optional<std::vector<int64_t>>()) {
+  if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
@@ -1351,11 +1351,11 @@ AiOnnxOpset6::reduceprod(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::reducesum(const std::vector<TensorId>& args,
-                        boost::optional<std::vector<int64_t>> axes,
+                        nonstd::optional<std::vector<int64_t>> axes,
                         int64_t keepdims,
                         const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axes != boost::optional<std::vector<int64_t>>()) {
+  if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
@@ -1370,11 +1370,11 @@ AiOnnxOpset6::reducesum(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::reducesumsquare(const std::vector<TensorId>& args,
-                              boost::optional<std::vector<int64_t>> axes,
+                              nonstd::optional<std::vector<int64_t>> axes,
                               int64_t keepdims,
                               const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axes != boost::optional<std::vector<int64_t>>()) {
+  if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
@@ -1579,11 +1579,11 @@ AiOnnxOpset6::squeeze(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::sub(const std::vector<TensorId>& args,
-                  boost::optional<int64_t> axis,
+                  nonstd::optional<int64_t> axis,
                   int64_t broadcast,
                   const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != boost::optional<int64_t>()) {
+  if (axis != nonstd::optional<int64_t>()) {
     attributes["axis"] = *axis;
   }
   if (broadcast != 0) {
@@ -1695,11 +1695,11 @@ AiOnnxOpset6::upsample(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::logical_xor(const std::vector<TensorId>& args,
-                          boost::optional<int64_t> axis,
+                          nonstd::optional<int64_t> axis,
                           int64_t broadcast,
                           const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != boost::optional<int64_t>()) {
+  if (axis != nonstd::optional<int64_t>()) {
     attributes["axis"] = *axis;
   }
   if (broadcast != 0) {
@@ -1877,9 +1877,9 @@ AiOnnxOpset7::gru(const std::vector<TensorId>& args,
                   const std::vector<float>& activation_alpha,
                   const std::vector<float>& activation_beta,
                   const std::vector<std::string>& activations,
-                  boost::optional<float> clip,
+                  nonstd::optional<float> clip,
                   const std::string& direction,
-                  boost::optional<int64_t> hidden_size,
+                  nonstd::optional<int64_t> hidden_size,
                   int64_t linear_before_reset,
                   const std::string& name) {
   std::map<std::string, popart::any> attributes;
@@ -1892,13 +1892,13 @@ AiOnnxOpset7::gru(const std::vector<TensorId>& args,
   if (!activations.empty()) {
     attributes["activations"] = activations;
   }
-  if (clip != boost::optional<float>()) {
+  if (clip != nonstd::optional<float>()) {
     attributes["clip"] = *clip;
   }
   if (direction != "forward") {
     attributes["direction"] = direction;
   }
-  if (hidden_size != boost::optional<int64_t>()) {
+  if (hidden_size != nonstd::optional<int64_t>()) {
     attributes["hidden_size"] = *hidden_size;
   }
   if (linear_before_reset != 0) {
@@ -1956,9 +1956,9 @@ AiOnnxOpset7::lstm(const std::vector<TensorId>& args,
                    const std::vector<float>& activation_alpha,
                    const std::vector<float>& activation_beta,
                    const std::vector<std::string>& activations,
-                   boost::optional<float> clip,
+                   nonstd::optional<float> clip,
                    const std::string& direction,
-                   boost::optional<int64_t> hidden_size,
+                   nonstd::optional<int64_t> hidden_size,
                    int64_t input_forget,
                    const std::string& name) {
   std::map<std::string, popart::any> attributes;
@@ -1971,13 +1971,13 @@ AiOnnxOpset7::lstm(const std::vector<TensorId>& args,
   if (!activations.empty()) {
     attributes["activations"] = activations;
   }
-  if (clip != boost::optional<float>()) {
+  if (clip != nonstd::optional<float>()) {
     attributes["clip"] = *clip;
   }
   if (direction != "forward") {
     attributes["direction"] = direction;
   }
-  if (hidden_size != boost::optional<int64_t>()) {
+  if (hidden_size != nonstd::optional<int64_t>()) {
     attributes["hidden_size"] = *hidden_size;
   }
   if (input_forget != 0) {
@@ -2017,7 +2017,7 @@ TensorId
 AiOnnxOpset7::multinomial(const std::vector<TensorId>& args,
                           int64_t dtype,
                           int64_t sample_size,
-                          boost::optional<float> seed,
+                          nonstd::optional<float> seed,
                           const std::string& name) {
   std::map<std::string, popart::any> attributes;
   if (dtype != 6) {
@@ -2026,7 +2026,7 @@ AiOnnxOpset7::multinomial(const std::vector<TensorId>& args,
   if (sample_size != 1) {
     attributes["sample_size"] = sample_size;
   }
-  if (seed != boost::optional<float>()) {
+  if (seed != nonstd::optional<float>()) {
     attributes["seed"] = *seed;
   }
   return impl->op(Onnx::Operators::Multinomial_7,
@@ -2075,9 +2075,9 @@ AiOnnxOpset7::rnn(const std::vector<TensorId>& args,
                   const std::vector<float>& activation_alpha,
                   const std::vector<float>& activation_beta,
                   const std::vector<std::string>& activations,
-                  boost::optional<float> clip,
+                  nonstd::optional<float> clip,
                   const std::string& direction,
-                  boost::optional<int64_t> hidden_size,
+                  nonstd::optional<int64_t> hidden_size,
                   const std::string& name) {
   std::map<std::string, popart::any> attributes;
   if (!activation_alpha.empty()) {
@@ -2089,13 +2089,13 @@ AiOnnxOpset7::rnn(const std::vector<TensorId>& args,
   if (!activations.empty()) {
     attributes["activations"] = activations;
   }
-  if (clip != boost::optional<float>()) {
+  if (clip != nonstd::optional<float>()) {
     attributes["clip"] = *clip;
   }
   if (direction != "forward") {
     attributes["direction"] = direction;
   }
-  if (hidden_size != boost::optional<int64_t>()) {
+  if (hidden_size != nonstd::optional<int64_t>()) {
     attributes["hidden_size"] = *hidden_size;
   }
   return impl->op(Onnx::Operators::RNN_7,
@@ -2348,10 +2348,10 @@ AiOnnxOpset9::cast(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset9::compress(const std::vector<TensorId>& args,
-                       boost::optional<int64_t> axis,
+                       nonstd::optional<int64_t> axis,
                        const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != boost::optional<int64_t>()) {
+  if (axis != nonstd::optional<int64_t>()) {
     attributes["axis"] = *axis;
   }
   return impl->op(Onnx::Operators::Compress_9,
@@ -2410,11 +2410,11 @@ AiOnnxOpset9::erf(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset9::eyelike(const std::vector<TensorId>& args,
-                      boost::optional<int64_t> dtype,
+                      nonstd::optional<int64_t> dtype,
                       int64_t k,
                       const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (dtype != boost::optional<int64_t>()) {
+  if (dtype != nonstd::optional<int64_t>()) {
     attributes["dtype"] = *dtype;
   }
   if (k != 0) {
@@ -3063,7 +3063,7 @@ TensorId
 AiOnnxOpset10::stringnormalizer(const std::vector<TensorId>& args,
                                 const std::string& case_change_action,
                                 int64_t is_case_sensitive,
-                                boost::optional<std::string> locale,
+                                nonstd::optional<std::string> locale,
                                 const std::vector<std::string>& stopwords,
                                 const std::string& name) {
   std::map<std::string, popart::any> attributes;
@@ -3228,10 +3228,10 @@ AiOnnxOpset11::clip(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset11::compress(const std::vector<TensorId>& args,
-                        boost::optional<int64_t> axis,
+                        nonstd::optional<int64_t> axis,
                         const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != boost::optional<int64_t>()) {
+  if (axis != nonstd::optional<int64_t>()) {
     attributes["axis"] = *axis;
   }
   return impl->op(Onnx::Operators::Compress_11,
@@ -3729,11 +3729,11 @@ AiOnnxOpset11::range(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset11::reducel1(const std::vector<TensorId>& args,
-                        boost::optional<std::vector<int64_t>> axes,
+                        nonstd::optional<std::vector<int64_t>> axes,
                         int64_t keepdims,
                         const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axes != boost::optional<std::vector<int64_t>>()) {
+  if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
@@ -3748,11 +3748,11 @@ AiOnnxOpset11::reducel1(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset11::reducel2(const std::vector<TensorId>& args,
-                        boost::optional<std::vector<int64_t>> axes,
+                        nonstd::optional<std::vector<int64_t>> axes,
                         int64_t keepdims,
                         const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axes != boost::optional<std::vector<int64_t>>()) {
+  if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
@@ -3767,11 +3767,11 @@ AiOnnxOpset11::reducel2(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset11::reducelogsum(const std::vector<TensorId>& args,
-                            boost::optional<std::vector<int64_t>> axes,
+                            nonstd::optional<std::vector<int64_t>> axes,
                             int64_t keepdims,
                             const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axes != boost::optional<std::vector<int64_t>>()) {
+  if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
@@ -3786,11 +3786,11 @@ AiOnnxOpset11::reducelogsum(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset11::reducelogsumexp(const std::vector<TensorId>& args,
-                               boost::optional<std::vector<int64_t>> axes,
+                               nonstd::optional<std::vector<int64_t>> axes,
                                int64_t keepdims,
                                const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axes != boost::optional<std::vector<int64_t>>()) {
+  if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
@@ -3805,11 +3805,11 @@ AiOnnxOpset11::reducelogsumexp(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset11::reducemax(const std::vector<TensorId>& args,
-                         boost::optional<std::vector<int64_t>> axes,
+                         nonstd::optional<std::vector<int64_t>> axes,
                          int64_t keepdims,
                          const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axes != boost::optional<std::vector<int64_t>>()) {
+  if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
@@ -3824,11 +3824,11 @@ AiOnnxOpset11::reducemax(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset11::reducemean(const std::vector<TensorId>& args,
-                          boost::optional<std::vector<int64_t>> axes,
+                          nonstd::optional<std::vector<int64_t>> axes,
                           int64_t keepdims,
                           const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axes != boost::optional<std::vector<int64_t>>()) {
+  if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
@@ -3843,11 +3843,11 @@ AiOnnxOpset11::reducemean(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset11::reducemin(const std::vector<TensorId>& args,
-                         boost::optional<std::vector<int64_t>> axes,
+                         nonstd::optional<std::vector<int64_t>> axes,
                          int64_t keepdims,
                          const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axes != boost::optional<std::vector<int64_t>>()) {
+  if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
@@ -3862,11 +3862,11 @@ AiOnnxOpset11::reducemin(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset11::reduceprod(const std::vector<TensorId>& args,
-                          boost::optional<std::vector<int64_t>> axes,
+                          nonstd::optional<std::vector<int64_t>> axes,
                           int64_t keepdims,
                           const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axes != boost::optional<std::vector<int64_t>>()) {
+  if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
@@ -3881,11 +3881,11 @@ AiOnnxOpset11::reduceprod(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset11::reducesum(const std::vector<TensorId>& args,
-                         boost::optional<std::vector<int64_t>> axes,
+                         nonstd::optional<std::vector<int64_t>> axes,
                          int64_t keepdims,
                          const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axes != boost::optional<std::vector<int64_t>>()) {
+  if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
@@ -3900,11 +3900,11 @@ AiOnnxOpset11::reducesum(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset11::reducesumsquare(const std::vector<TensorId>& args,
-                               boost::optional<std::vector<int64_t>> axes,
+                               nonstd::optional<std::vector<int64_t>> axes,
                                int64_t keepdims,
                                const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axes != boost::optional<std::vector<int64_t>>()) {
+  if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
   if (keepdims != 1) {
@@ -4063,10 +4063,10 @@ AiOnnxOpset11::sequenceconstruct(const std::vector<TensorId>& args,
 }
 
 TensorId
-AiOnnxOpset11::sequenceempty(                             boost::optional<int64_t> dtype,
+AiOnnxOpset11::sequenceempty(                             nonstd::optional<int64_t> dtype,
                              const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (dtype != boost::optional<int64_t>()) {
+  if (dtype != nonstd::optional<int64_t>()) {
     attributes["dtype"] = *dtype;
   }
   return impl->op(Onnx::Operators::SequenceEmpty_11,
@@ -4216,11 +4216,11 @@ AiOnnxOpset11::topk(const std::vector<TensorId>& args,
 std::vector<TensorId>
 AiOnnxOpset11::unique(const std::vector<TensorId>& args,
                       unsigned num_outputs,
-                      boost::optional<int64_t> axis,
+                      nonstd::optional<int64_t> axis,
                       int64_t sorted,
                       const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != boost::optional<int64_t>()) {
+  if (axis != nonstd::optional<int64_t>()) {
     attributes["axis"] = *axis;
   }
   if (sorted != 1) {
