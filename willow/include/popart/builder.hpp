@@ -13,8 +13,8 @@
 #include <popart/opidentifier.hpp>
 #include <popart/tensorinfo.hpp>
 
-#include <boost/optional.hpp>
-#include <popart/any.hpp>
+#include <popart/vendored/any.hpp>
+#include <popart/vendored/optional.hpp>
 
 namespace popart {
 
@@ -293,9 +293,9 @@ public:
    * \return The name of the result tensor
    */
   TensorId nllloss(const std::vector<TensorId> &args,
-                   const ReductionType reduction          = ReductionType::Mean,
-                   const boost::optional<int> ignoreIndex = boost::none,
-                   const std::string &name                = {});
+                   const ReductionType reduction = ReductionType::Mean,
+                   const nonstd::optional<int> ignoreIndex = nonstd::nullopt,
+                   const std::string &name                 = {});
 
   /**
    * Add an identity loss operation to the model

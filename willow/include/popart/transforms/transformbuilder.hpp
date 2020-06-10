@@ -4,7 +4,7 @@
 
 #include <popart/graph.hpp>
 
-#include <popart/any.hpp>
+#include <popart/vendored/any.hpp>
 
 namespace popart {
 

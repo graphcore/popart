@@ -10,7 +10,7 @@ namespace popart {
 class ReduceMaxOp : public ReduceOp {
 public:
   ReduceMaxOp(const OperatorIdentifier &_opid,
-              const boost::optional<std::vector<int64_t>> &axes,
+              const nonstd::optional<std::vector<int64_t>> &axes,
               const int64_t keepdims,
               const Op::Settings &settings);
   std::unique_ptr<Op> clone() const override;

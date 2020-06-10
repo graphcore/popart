@@ -69,7 +69,7 @@ public:
   // where this is created by a merger between the Op
   // and an NllGradOp
   SoftmaxGradDirectOp(const TensorId lossId,
-                      const boost::optional<int> ignoreIndex,
+                      const nonstd::optional<int> ignoreIndex,
                       const ReductionType reduction,
                       const Op::Settings &settings);
   std::unique_ptr<Op> clone() const final;
@@ -84,15 +84,15 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
   ReductionType getReductionType() const { return reduction_; }
-  bool hasIgnoreIndex() const { return ignoreIndex_ != boost::none; }
-  boost::optional<int> getOptionalIgnoreIndex() const { return ignoreIndex_; }
-  int getIgnoreIndex() const { return ignoreIndex_.get(); }
+  bool hasIgnoreIndex() const { return ignoreIndex_ != nonstd::nullopt; }
+  nonstd::optional<int> getOptionalIgnoreIndex() const { return ignoreIndex_; }
+  int getIgnoreIndex() const { return ignoreIndex_.value(); }
   virtual void appendOutlineAttributes(OpSerialiserBase &) const final;
 
 private:
   TensorId lossId_;
   ReductionType reduction_;
-  boost::optional<int> ignoreIndex_;
+  nonstd::optional<int> ignoreIndex_;
 };
 
 class NlllWithSoftmaxGradDirectOp : public Op {
@@ -100,7 +100,7 @@ public:
   // where Op in this constructor must be a SoftmaxOp
   // where this is created by a merger between the Op
   // and an NllGradOp
-  NlllWithSoftmaxGradDirectOp(const boost::optional<int> ignoreIndex,
+  NlllWithSoftmaxGradDirectOp(const nonstd::optional<int> ignoreIndex,
                               const ReductionType reduction,
                               const Op::Settings &settings);
 
@@ -118,13 +118,13 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
   ReductionType getReductionType() const { return reduction_; }
-  bool hasIgnoreIndex() const { return ignoreIndex_ != boost::none; }
-  int getIgnoreIndex() const { return ignoreIndex_.get(); }
+  bool hasIgnoreIndex() const { return ignoreIndex_ != nonstd::nullopt; }
+  int getIgnoreIndex() const { return ignoreIndex_.value(); }
   virtual void appendOutlineAttributes(OpSerialiserBase &) const final;
 
 private:
   ReductionType reduction_;
-  boost::optional<int> ignoreIndex_;
+  nonstd::optional<int> ignoreIndex_;
 };
 
 } // namespace popart

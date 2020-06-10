@@ -14,7 +14,7 @@
 namespace popart {
 
 LSTMOp::LSTMOp(const OperatorIdentifier &_opid,
-               boost::optional<int64_t> hidden_size,
+               nonstd::optional<int64_t> hidden_size,
                const Op::Settings &settings_)
     : Op(_opid, settings_), hidden_size_attribute(hidden_size) {
   // TODO : Use the output_sequence attribute in version 1
@@ -462,7 +462,7 @@ static OpCreator<LSTMOp> lstmOpCreator(
       }
 
       // cannot check hidden_size till inputs are connected
-      boost::optional<int64_t> hidden_size;
+      nonstd::optional<int64_t> hidden_size;
       if (attr.hasAttribute("hidden_size")) {
         hidden_size = attr.getAttribute<Attributes::Int>("hidden_size");
       }

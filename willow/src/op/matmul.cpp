@@ -16,7 +16,7 @@ MatMulBaseOp::MatMulBaseOp(
     const OperatorIdentifier &_opid,
     const Op::Settings &settings_,
     const Phase phase_,
-    const boost::optional<float> availableMemoryProportion_,
+    const nonstd::optional<float> availableMemoryProportion_,
     const SerialiseSettings &serialization_,
     const OptionalDataType outputType_,
     const bool enableFullyConnectedPass_)
@@ -66,7 +66,7 @@ const MatMulOp *MatMulBaseGradOp::getCloneOfCreator() const {
 
 MatMulOp::MatMulOp(const OperatorIdentifier &_opid,
                    const Op::Settings &settings_,
-                   const boost::optional<float> availableMemoryProportion_,
+                   const nonstd::optional<float> availableMemoryProportion_,
                    const SerialiseSettings &serialization_,
                    const OptionalDataType outputType_)
     : MatMulBaseOp(_opid,
@@ -362,8 +362,8 @@ static OpCreator<MatMulOp> matMulOpCreator(
        const Attributes &attr) -> std::unique_ptr<Op> {
       // try set the availMemAttribute from an attribute
 
-      boost::optional<float> availableMemoryProportion;
-      boost::optional<int64_t> serialize;
+      nonstd::optional<float> availableMemoryProportion;
+      nonstd::optional<int64_t> serialize;
 
       MatMulBaseOp::SerialiseSettings serialisation;
 

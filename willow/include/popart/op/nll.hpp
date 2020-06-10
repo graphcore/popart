@@ -2,16 +2,16 @@
 #ifndef GUARD_NEURALNET_NLL_HPP
 #define GUARD_NEURALNET_NLL_HPP
 
-#include <boost/optional.hpp>
 #include <popart/op.hpp>
 #include <popart/op/loss.hpp>
+#include <popart/vendored/optional.hpp>
 
 namespace popart {
 
 class NllOp : public LossOp {
 public:
   NllOp(const OperatorIdentifier &_opid,
-        const boost::optional<int> ignoreIndex,
+        const nonstd::optional<int> ignoreIndex,
         const ReductionType reduction,
         const Op::Settings &settings_);
 
@@ -25,8 +25,8 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
   ReductionType getReductionType() const { return reduction_; }
-  bool hasIgnoreIndex() const { return ignoreIndex_ != boost::none; }
-  boost::optional<int> getOptionalIgnoreIndex() const { return ignoreIndex_; }
+  bool hasIgnoreIndex() const { return ignoreIndex_ != nonstd::nullopt; }
+  nonstd::optional<int> getOptionalIgnoreIndex() const { return ignoreIndex_; }
   int getIgnoreIndex() const;
   virtual void appendOutlineAttributes(OpSerialiserBase &) const final;
 
@@ -35,7 +35,7 @@ private:
 
   // Specifies a target value that is masked when calculating the loss and
   // input gradient
-  boost::optional<int> ignoreIndex_;
+  nonstd::optional<int> ignoreIndex_;
 };
 
 class NllGradOp : public Op {
@@ -54,8 +54,8 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
   ReductionType getReductionType() const { return reduction_; }
-  bool hasIgnoreIndex() const { return ignoreIndex_ != boost::none; }
-  boost::optional<int> getOptionalIgnoreIndex() const { return ignoreIndex_; }
+  bool hasIgnoreIndex() const { return ignoreIndex_ != nonstd::nullopt; }
+  nonstd::optional<int> getOptionalIgnoreIndex() const { return ignoreIndex_; }
   int getIgnoreIndex() const;
   TensorId getLossTensorId() const { return lossId_; }
   virtual void appendOutlineAttributes(OpSerialiserBase &) const final;
@@ -63,7 +63,7 @@ public:
 private:
   TensorId lossId_;
   ReductionType reduction_;
-  boost::optional<int> ignoreIndex_;
+  nonstd::optional<int> ignoreIndex_;
 };
 
 } // namespace popart

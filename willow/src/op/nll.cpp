@@ -68,7 +68,7 @@ void NllOp::setup() {
 }
 
 NllOp::NllOp(const OperatorIdentifier &_opid,
-             const boost::optional<int> ignoreIndex,
+             const nonstd::optional<int> ignoreIndex,
              const ReductionType reduction,
              const Op::Settings &settings)
     : LossOp(_opid, settings), reduction_(reduction),
@@ -84,7 +84,7 @@ void NllOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 
 int NllOp::getIgnoreIndex() const {
   if (hasIgnoreIndex()) {
-    return ignoreIndex_.get();
+    return ignoreIndex_.value();
   } else {
     throw error("Cannot getIgnoreIndex for {}, as it has none", str());
   }
@@ -145,7 +145,7 @@ void NllGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 
 int NllGradOp::getIgnoreIndex() const {
   if (hasIgnoreIndex()) {
-    return ignoreIndex_.get();
+    return ignoreIndex_.value();
   } else {
     throw error("Cannot getIgnoreIndex for {}, as it has none", str());
   }
@@ -172,7 +172,7 @@ static OpCreator<NllOp> nlllossOpCreator(
           attr.getAttribute<Attributes::String>("reduction");
       ReductionType reduction = LossOp::reductionTypeFromString(reductionStr);
 
-      boost::optional<int> ignoreIndex;
+      nonstd::optional<int> ignoreIndex;
       if (attr.hasAttribute("ignoreIndex")) {
         ignoreIndex = attr.getAttribute<Attributes::Int>("ignoreIndex");
       }

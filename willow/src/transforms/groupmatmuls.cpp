@@ -22,7 +22,7 @@
 
 #include <boost/optional/optional_io.hpp>
 #include <boost/range/algorithm_ext.hpp>
-#include <popart/any.hpp>
+#include <popart/vendored/any.hpp>
 
 namespace popart {
 

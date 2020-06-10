@@ -9,7 +9,7 @@
 namespace popart {
 
 ReduceOp::ReduceOp(const OperatorIdentifier &_opid,
-                   const boost::optional<std::vector<int64_t>> &axes_,
+                   const nonstd::optional<std::vector<int64_t>> &axes_,
                    const int64_t keepdims_,
                    const Op::Settings &settings_)
     : Op(_opid, settings_), axes(), keepdims(keepdims_),

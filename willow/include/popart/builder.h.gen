@@ -39,7 +39,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     add(const std::vector<TensorId>& args,
-        boost::optional<int64_t> axis = boost::optional<int64_t>(),
+        nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
         int64_t broadcast = 0,
         const std::string &name = "");
 
@@ -56,7 +56,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     logical_and(const std::vector<TensorId>& args,
-                boost::optional<int64_t> axis = boost::optional<int64_t>(),
+                nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
                 int64_t broadcast = 0,
                 const std::string &name = "");
 
@@ -287,7 +287,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     div(const std::vector<TensorId>& args,
-        boost::optional<int64_t> axis = boost::optional<int64_t>(),
+        nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
         int64_t broadcast = 0,
         const std::string &name = "");
 
@@ -338,7 +338,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     equal(const std::vector<TensorId>& args,
-          boost::optional<int64_t> axis = boost::optional<int64_t>(),
+          nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
           int64_t broadcast = 0,
           const std::string &name = "");
 
@@ -407,9 +407,9 @@ class AiOnnxOpset6 : private DomainOpSet {
         const std::vector<float>& activation_alpha = std::vector<float>(),
         const std::vector<float>& activation_beta = std::vector<float>(),
         const std::vector<std::string>& activations = std::vector<std::string>(),
-        boost::optional<float> clip = boost::optional<float>(),
+        nonstd::optional<float> clip = nonstd::optional<float>(),
         const std::string& direction = "forward",
-        boost::optional<int64_t> hidden_size = boost::optional<int64_t>(),
+        nonstd::optional<int64_t> hidden_size = nonstd::optional<int64_t>(),
         int64_t linear_before_reset = 0,
         int64_t output_sequence = 0,
         const std::string &name = "");
@@ -506,7 +506,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     greater(const std::vector<TensorId>& args,
-            boost::optional<int64_t> axis = boost::optional<int64_t>(),
+            nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
             int64_t broadcast = 0,
             const std::string &name = "");
 
@@ -634,9 +634,9 @@ class AiOnnxOpset6 : private DomainOpSet {
          const std::vector<float>& activation_alpha = std::vector<float>(),
          const std::vector<float>& activation_beta = std::vector<float>(),
          const std::vector<std::string>& activations = std::vector<std::string>(),
-         boost::optional<float> clip = boost::optional<float>(),
+         nonstd::optional<float> clip = nonstd::optional<float>(),
          const std::string& direction = "forward",
-         boost::optional<int64_t> hidden_size = boost::optional<int64_t>(),
+         nonstd::optional<int64_t> hidden_size = nonstd::optional<int64_t>(),
          int64_t input_forget = 0,
          int64_t output_sequence = 0,
          const std::string &name = "");
@@ -669,7 +669,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     less(const std::vector<TensorId>& args,
-         boost::optional<int64_t> axis = boost::optional<int64_t>(),
+         nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
          int64_t broadcast = 0,
          const std::string &name = "");
 
@@ -857,7 +857,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     mul(const std::vector<TensorId>& args,
-        boost::optional<int64_t> axis = boost::optional<int64_t>(),
+        nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
         int64_t broadcast = 0,
         const std::string &name = "");
 
@@ -900,7 +900,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     logical_or(const std::vector<TensorId>& args,
-               boost::optional<int64_t> axis = boost::optional<int64_t>(),
+               nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
                int64_t broadcast = 0,
                const std::string &name = "");
 
@@ -949,7 +949,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     pow(const std::vector<TensorId>& args,
-        boost::optional<int64_t> axis = boost::optional<int64_t>(),
+        nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
         int64_t broadcast = 0,
         const std::string &name = "");
 
@@ -976,9 +976,9 @@ class AiOnnxOpset6 : private DomainOpSet {
         const std::vector<float>& activation_alpha = std::vector<float>(),
         const std::vector<float>& activation_beta = std::vector<float>(),
         const std::vector<std::string>& activations = std::vector<std::string>(),
-        boost::optional<float> clip = boost::optional<float>(),
+        nonstd::optional<float> clip = nonstd::optional<float>(),
         const std::string& direction = "forward",
-        boost::optional<int64_t> hidden_size = boost::optional<int64_t>(),
+        nonstd::optional<int64_t> hidden_size = nonstd::optional<int64_t>(),
         int64_t output_sequence = 0,
         const std::string &name = "");
 
@@ -1000,7 +1000,7 @@ class AiOnnxOpset6 : private DomainOpSet {
                  int64_t dtype = 1,
                  float mean = 0.0f,
                  float scale = 1.0f,
-                 boost::optional<float> seed = boost::optional<float>(),
+                 nonstd::optional<float> seed = nonstd::optional<float>(),
                  const std::string &name = "");
 
     /**
@@ -1018,10 +1018,10 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     randomnormallike(const std::vector<TensorId>& args,
-                     boost::optional<int64_t> dtype = boost::optional<int64_t>(),
+                     nonstd::optional<int64_t> dtype = nonstd::optional<int64_t>(),
                      float mean = 0.0f,
                      float scale = 1.0f,
-                     boost::optional<float> seed = boost::optional<float>(),
+                     nonstd::optional<float> seed = nonstd::optional<float>(),
                      const std::string &name = "");
 
     /**
@@ -1042,7 +1042,7 @@ class AiOnnxOpset6 : private DomainOpSet {
                   int64_t dtype = 1,
                   float high = 1.0f,
                   float low = 0.0f,
-                  boost::optional<float> seed = boost::optional<float>(),
+                  nonstd::optional<float> seed = nonstd::optional<float>(),
                   const std::string &name = "");
 
     /**
@@ -1060,10 +1060,10 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     randomuniformlike(const std::vector<TensorId>& args,
-                      boost::optional<int64_t> dtype = boost::optional<int64_t>(),
+                      nonstd::optional<int64_t> dtype = nonstd::optional<int64_t>(),
                       float high = 1.0f,
                       float low = 0.0f,
-                      boost::optional<float> seed = boost::optional<float>(),
+                      nonstd::optional<float> seed = nonstd::optional<float>(),
                       const std::string &name = "");
 
     /**
@@ -1092,7 +1092,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     reducel1(const std::vector<TensorId>& args,
-             boost::optional<std::vector<int64_t>> axes = boost::optional<std::vector<int64_t>>(),
+             nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
              int64_t keepdims = 1,
              const std::string &name = "");
 
@@ -1109,7 +1109,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     reducel2(const std::vector<TensorId>& args,
-             boost::optional<std::vector<int64_t>> axes = boost::optional<std::vector<int64_t>>(),
+             nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
              int64_t keepdims = 1,
              const std::string &name = "");
 
@@ -1126,7 +1126,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     reducelogsum(const std::vector<TensorId>& args,
-                 boost::optional<std::vector<int64_t>> axes = boost::optional<std::vector<int64_t>>(),
+                 nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
                  int64_t keepdims = 1,
                  const std::string &name = "");
 
@@ -1143,7 +1143,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     reducelogsumexp(const std::vector<TensorId>& args,
-                    boost::optional<std::vector<int64_t>> axes = boost::optional<std::vector<int64_t>>(),
+                    nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
                     int64_t keepdims = 1,
                     const std::string &name = "");
 
@@ -1160,7 +1160,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     reducemax(const std::vector<TensorId>& args,
-              boost::optional<std::vector<int64_t>> axes = boost::optional<std::vector<int64_t>>(),
+              nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
               int64_t keepdims = 1,
               const std::string &name = "");
 
@@ -1177,7 +1177,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     reducemean(const std::vector<TensorId>& args,
-               boost::optional<std::vector<int64_t>> axes = boost::optional<std::vector<int64_t>>(),
+               nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
                int64_t keepdims = 1,
                const std::string &name = "");
 
@@ -1194,7 +1194,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     reducemin(const std::vector<TensorId>& args,
-              boost::optional<std::vector<int64_t>> axes = boost::optional<std::vector<int64_t>>(),
+              nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
               int64_t keepdims = 1,
               const std::string &name = "");
 
@@ -1211,7 +1211,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     reduceprod(const std::vector<TensorId>& args,
-               boost::optional<std::vector<int64_t>> axes = boost::optional<std::vector<int64_t>>(),
+               nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
                int64_t keepdims = 1,
                const std::string &name = "");
 
@@ -1228,7 +1228,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     reducesum(const std::vector<TensorId>& args,
-              boost::optional<std::vector<int64_t>> axes = boost::optional<std::vector<int64_t>>(),
+              nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
               int64_t keepdims = 1,
               const std::string &name = "");
 
@@ -1245,7 +1245,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     reducesumsquare(const std::vector<TensorId>& args,
-                    boost::optional<std::vector<int64_t>> axes = boost::optional<std::vector<int64_t>>(),
+                    nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
                     int64_t keepdims = 1,
                     const std::string &name = "");
 
@@ -1466,7 +1466,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     sub(const std::vector<TensorId>& args,
-        boost::optional<int64_t> axis = boost::optional<int64_t>(),
+        nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
         int64_t broadcast = 0,
         const std::string &name = "");
 
@@ -1588,7 +1588,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     logical_xor(const std::vector<TensorId>& args,
-                boost::optional<int64_t> axis = boost::optional<int64_t>(),
+                nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
                 int64_t broadcast = 0,
                 const std::string &name = "");
 
@@ -1866,9 +1866,9 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
         const std::vector<float>& activation_alpha = std::vector<float>(),
         const std::vector<float>& activation_beta = std::vector<float>(),
         const std::vector<std::string>& activations = std::vector<std::string>(),
-        boost::optional<float> clip = boost::optional<float>(),
+        nonstd::optional<float> clip = nonstd::optional<float>(),
         const std::string& direction = "forward",
-        boost::optional<int64_t> hidden_size = boost::optional<int64_t>(),
+        nonstd::optional<int64_t> hidden_size = nonstd::optional<int64_t>(),
         int64_t linear_before_reset = 0,
         const std::string &name = "");
 
@@ -1929,9 +1929,9 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
          const std::vector<float>& activation_alpha = std::vector<float>(),
          const std::vector<float>& activation_beta = std::vector<float>(),
          const std::vector<std::string>& activations = std::vector<std::string>(),
-         boost::optional<float> clip = boost::optional<float>(),
+         nonstd::optional<float> clip = nonstd::optional<float>(),
          const std::string& direction = "forward",
-         boost::optional<int64_t> hidden_size = boost::optional<int64_t>(),
+         nonstd::optional<int64_t> hidden_size = nonstd::optional<int64_t>(),
          int64_t input_forget = 0,
          const std::string &name = "");
 
@@ -1977,7 +1977,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
     multinomial(const std::vector<TensorId>& args,
                 int64_t dtype = 6,
                 int64_t sample_size = 1,
-                boost::optional<float> seed = boost::optional<float>(),
+                nonstd::optional<float> seed = nonstd::optional<float>(),
                 const std::string &name = "");
 
     /**
@@ -2041,9 +2041,9 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
         const std::vector<float>& activation_alpha = std::vector<float>(),
         const std::vector<float>& activation_beta = std::vector<float>(),
         const std::vector<std::string>& activations = std::vector<std::string>(),
-        boost::optional<float> clip = boost::optional<float>(),
+        nonstd::optional<float> clip = nonstd::optional<float>(),
         const std::string& direction = "forward",
-        boost::optional<int64_t> hidden_size = boost::optional<int64_t>(),
+        nonstd::optional<int64_t> hidden_size = nonstd::optional<int64_t>(),
         const std::string &name = "");
 
     /**
@@ -2525,7 +2525,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
      */
     TensorId
     compress(const std::vector<TensorId>& args,
-             boost::optional<int64_t> axis = boost::optional<int64_t>(),
+             nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
              const std::string &name = "");
 
     /**
@@ -2595,7 +2595,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
      */
     TensorId
     eyelike(const std::vector<TensorId>& args,
-            boost::optional<int64_t> dtype = boost::optional<int64_t>(),
+            nonstd::optional<int64_t> dtype = nonstd::optional<int64_t>(),
             int64_t k = 0,
             const std::string &name = "");
 
@@ -3333,7 +3333,7 @@ class AiOnnxOpset10 : private AiOnnxOpset9 {
     stringnormalizer(const std::vector<TensorId>& args,
                      const std::string& case_change_action = "NONE",
                      int64_t is_case_sensitive = 0,
-                     boost::optional<std::string> locale = std::string(),
+                     nonstd::optional<std::string> locale = std::string(),
                      const std::vector<std::string>& stopwords = std::vector<std::string>(),
                      const std::string &name = "");
 
@@ -3586,7 +3586,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      */
     TensorId
     compress(const std::vector<TensorId>& args,
-             boost::optional<int64_t> axis = boost::optional<int64_t>(),
+             nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
              const std::string &name = "");
 
     /**
@@ -4042,7 +4042,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      */
     TensorId
     reducel1(const std::vector<TensorId>& args,
-             boost::optional<std::vector<int64_t>> axes = boost::optional<std::vector<int64_t>>(),
+             nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
              int64_t keepdims = 1,
              const std::string &name = "");
 
@@ -4059,7 +4059,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      */
     TensorId
     reducel2(const std::vector<TensorId>& args,
-             boost::optional<std::vector<int64_t>> axes = boost::optional<std::vector<int64_t>>(),
+             nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
              int64_t keepdims = 1,
              const std::string &name = "");
 
@@ -4076,7 +4076,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      */
     TensorId
     reducelogsum(const std::vector<TensorId>& args,
-                 boost::optional<std::vector<int64_t>> axes = boost::optional<std::vector<int64_t>>(),
+                 nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
                  int64_t keepdims = 1,
                  const std::string &name = "");
 
@@ -4093,7 +4093,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      */
     TensorId
     reducelogsumexp(const std::vector<TensorId>& args,
-                    boost::optional<std::vector<int64_t>> axes = boost::optional<std::vector<int64_t>>(),
+                    nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
                     int64_t keepdims = 1,
                     const std::string &name = "");
 
@@ -4110,7 +4110,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      */
     TensorId
     reducemax(const std::vector<TensorId>& args,
-              boost::optional<std::vector<int64_t>> axes = boost::optional<std::vector<int64_t>>(),
+              nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
               int64_t keepdims = 1,
               const std::string &name = "");
 
@@ -4127,7 +4127,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      */
     TensorId
     reducemean(const std::vector<TensorId>& args,
-               boost::optional<std::vector<int64_t>> axes = boost::optional<std::vector<int64_t>>(),
+               nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
                int64_t keepdims = 1,
                const std::string &name = "");
 
@@ -4144,7 +4144,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      */
     TensorId
     reducemin(const std::vector<TensorId>& args,
-              boost::optional<std::vector<int64_t>> axes = boost::optional<std::vector<int64_t>>(),
+              nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
               int64_t keepdims = 1,
               const std::string &name = "");
 
@@ -4161,7 +4161,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      */
     TensorId
     reduceprod(const std::vector<TensorId>& args,
-               boost::optional<std::vector<int64_t>> axes = boost::optional<std::vector<int64_t>>(),
+               nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
                int64_t keepdims = 1,
                const std::string &name = "");
 
@@ -4178,7 +4178,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      */
     TensorId
     reducesum(const std::vector<TensorId>& args,
-              boost::optional<std::vector<int64_t>> axes = boost::optional<std::vector<int64_t>>(),
+              nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
               int64_t keepdims = 1,
               const std::string &name = "");
 
@@ -4195,7 +4195,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      */
     TensorId
     reducesumsquare(const std::vector<TensorId>& args,
-                    boost::optional<std::vector<int64_t>> axes = boost::optional<std::vector<int64_t>>(),
+                    nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
                     int64_t keepdims = 1,
                     const std::string &name = "");
 
@@ -4343,7 +4343,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      * \return The normalized output tensor ids
      */
     TensorId
-    sequenceempty(                  boost::optional<int64_t> dtype = boost::optional<int64_t>(),
+    sequenceempty(                  nonstd::optional<int64_t> dtype = nonstd::optional<int64_t>(),
                   const std::string &name = "");
 
     /**
@@ -4498,7 +4498,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     std::vector<TensorId>
     unique(const std::vector<TensorId>& args,
            unsigned num_outputs,
-           boost::optional<int64_t> axis = boost::optional<int64_t>(),
+           nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
            int64_t sorted = 1,
            const std::string &name = "");
 

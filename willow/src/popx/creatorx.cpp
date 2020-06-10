@@ -109,18 +109,18 @@ poplar::Tensor compose(
 
   // Merge along dimensions
   for (int64_t d = fullRegion.rank() - 1; d >= 0; --d) {
-    boost::optional<view::Region> r;
-    boost::optional<poplar::Tensor> t;
+    nonstd::optional<view::Region> r;
+    nonstd::optional<poplar::Tensor> t;
     for (auto &tensorRegion : currentTensorRegions) {
       std::pair<int64_t, view::Region> rd(-1, view::Region({}, {}));
-      if (r.is_initialized()) {
-        rd = r.get().merge(tensorRegion.first);
+      if (r.has_value()) {
+        rd = r.value().merge(tensorRegion.first);
       }
       if (rd.first != d) {
         // Can't merge regions directly
-        if (r.is_initialized() && t.is_initialized()) {
+        if (r.has_value() && t.has_value()) {
           // Push back last region
-          nextTensorRegions.push_back({r.get(), t.get()});
+          nextTensorRegions.push_back({r.value(), t.value()});
         }
         // Load next region
         r = tensorRegion.first;
@@ -129,13 +129,13 @@ poplar::Tensor compose(
         // Merge region & concatenate tensor if possible
         if (rd.first == d) {
           t = poplar::concat(
-              t.get(), tensorRegion.second, static_cast<uint32_t>(d));
+              t.value(), tensorRegion.second, static_cast<uint32_t>(d));
           r = rd.second;
         }
       }
     }
-    if (t.is_initialized() && r.is_initialized()) {
-      nextTensorRegions.push_back({r.get(), t.get()});
+    if (t.has_value() && r.has_value()) {
+      nextTensorRegions.push_back({r.value(), t.value()});
     }
     currentTensorRegions = nextTensorRegions;
     nextTensorRegions.clear();

@@ -1,6 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <boost/algorithm/cxx11/any_of.hpp>
-#include <boost/optional.hpp>
 #include <boost/range/algorithm/find.hpp>
 #include <cmath>
 #include <memory>
@@ -19,6 +18,7 @@
 #include <popart/subgraph/subgraphutil.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/subgraphoutline.hpp>
+#include <popart/vendored/optional.hpp>
 
 using boost::find;
 using boost::algorithm::any_of;
@@ -293,14 +293,14 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
                               Graph &subgraph) {
 
   // Copy some attributes with heuristics from the instance ops
-  boost::optional<Scope> scope;
+  nonstd::optional<Scope> scope;
   OptionalVGraphId ipu_copy_vgid;
   OptionalVGraphId vgid;
   OptionalPingPongPhase phase;
   OptionalBatchSerializedPhase batchserial;
   bool conflicting_batchserial = false;
   OptionalPipelineStage pipeline_stage;
-  boost::optional<RecomputeType> recompute;
+  nonstd::optional<RecomputeType> recompute;
 
   for (const OpId &opid : instance.ops) {
     Op *op = graph.getOp(opid);
@@ -345,10 +345,10 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
   auto call_op_id = graph.moveIntoGraph(std::move(up_call_op));
   CallOp *call_op = dynamic_cast<CallOp *>(graph.getOp(call_op_id));
   if (scope) {
-    call_op->settings.scope = scope.get();
+    call_op->settings.scope = scope.value();
   }
   if (recompute) {
-    call_op->settings.recomputeType = recompute.get();
+    call_op->settings.recomputeType = recompute.value();
   }
   call_op->setVirtualGraphId(vgid);
   call_op->setPingPongPhase(phase);

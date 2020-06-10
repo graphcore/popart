@@ -39,7 +39,7 @@ void CacheStoreOpx::grow(poplar::program::Sequence &prog) const {
 
   auto buffer = dv_p->getRemoteBuffer(cacheStoreOp.getRemoteBufferId());
 
-  rbTensor = buffer.second.get();
+  rbTensor = buffer.second.value();
 
   poplar::program::Copy tmp_copy_prog(inTensor, rbTensor);
   prog.add(tmp_copy_prog);
@@ -86,7 +86,7 @@ void CacheLoadOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   auto buffer = dv_p->getRemoteBuffer(cacheLoadOp.getRemoteBufferId());
-  rbTensor    = buffer.second.get();
+  rbTensor    = buffer.second.value();
 
   if (cacheLoadOp.input->hasIndex(
           CacheLoadOp::getRemoteBufferOffsetInIndex())) {

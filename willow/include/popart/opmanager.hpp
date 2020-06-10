@@ -5,10 +5,10 @@
 #include <functional>
 #include <map>
 #include <vector>
-#include <popart/any.hpp>
 #include <popart/attributes.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/vendored/any.hpp>
 
 #include <popart/tensorinfo.hpp>
 

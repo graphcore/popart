@@ -2,9 +2,9 @@
 #ifndef GUARD_NEURALNET_CALLX_HPP
 #define GUARD_NEURALNET_CALLX_HPP
 
-#include <boost/optional.hpp>
 #include <popart/popx/op/subgraphopx.hpp>
 #include <popart/popx/opx.hpp>
+#include <popart/vendored/optional.hpp>
 
 namespace popart {
 namespace popx {

@@ -2,7 +2,7 @@
 #ifndef GUARD_NEURALNET_POPDEVICE_HPP
 #define GUARD_NEURALNET_POPDEVICE_HPP
 
-#include <boost/optional.hpp>
+#include <popart/vendored/optional.hpp>
 
 #include <poplar/DataStream.hpp>
 #include <poplar/DeviceManager.hpp>
@@ -223,7 +223,7 @@ public:
 
   bool hasRemoteBuffer(RemoteBufferId) const;
 
-  const std::pair<poplar::RemoteBuffer, boost::optional<poplar::Tensor>> &
+  const std::pair<poplar::RemoteBuffer, nonstd::optional<poplar::Tensor>> &
       getRemoteBuffer(RemoteBufferId) const;
 
   void createRemoteBuffer(RemoteBufferId, poplar::Tensor);
@@ -498,7 +498,7 @@ private:
 
   // Remote buffers
   std::map<RemoteBufferId,
-           std::pair<poplar::RemoteBuffer, boost::optional<poplar::Tensor>>>
+           std::pair<poplar::RemoteBuffer, nonstd::optional<poplar::Tensor>>>
       remoteBuffers;
 
   // Collective balanced reordering information for replicated ops
@@ -560,7 +560,7 @@ private:
   // Either return the executable in cachedExecutable
   // or compile `rootGraph' and try to save the generated executable before
   // returning it. After calling `getExecutable', `cachedExecutable' will always
-  // be set to `boost::none'.
+  // be set to `nonstd::nullopt'.
   poplar::Executable getExecutable();
 
   // Try to save the argument executable to a file at
@@ -570,7 +570,7 @@ private:
   // Try to load a poplar::Executable from a file at
   // `ir().getSessionOptions().cachePath'. If successful,
   // `this->cachedExecutable' will be set else, `this->cachedExecutable' will
-  // remain set to `boost::none'.
+  // remain set to `nonstd::nullopt'.
   void tryLoadExecutable();
 
   std::string getPoplarCachePath();
@@ -587,7 +587,7 @@ private:
 
   bool prepareHasBeenCalled_;
 
-  boost::optional<poplar::Executable> cachedExecutable;
+  nonstd::optional<poplar::Executable> cachedExecutable;
   bool usingCachedExecutable = false;
 
   // Option to trace the opx execution using printTensor. This can be useful in
