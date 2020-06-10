@@ -26,18 +26,20 @@ Regions mergeRegions(Regions regions) {
     accessType = combine({r.getAccessType(), accessType});
   }
 
-  size_t last_size = 0;
+  bool unchanged = false;
   if (regions.size() > 0) {
     Regions subRegions;
 
-    while (regions.size() != last_size || subRegions.size() > 0) {
-
-      regions.insert(regions.end(), subRegions.begin(), subRegions.end());
-      subRegions.clear();
+    while (!unchanged) {
+      unchanged = true;
 
       auto rank = regions.front().rank();
 
       for (int64_t d = 0; d < rank; ++d) {
+        regions.insert(regions.end(), subRegions.begin(), subRegions.end());
+        subRegions.clear();
+        auto last_size = regions.size();
+
         std::sort(regions.begin(),
                   regions.end(),
                   [d](const view::Region &a, const view::Region &b) -> bool {
@@ -46,15 +48,28 @@ Regions mergeRegions(Regions regions) {
 
         std::vector<bool> erase(regions.size(), false);
 
+        int64_t jstart = 0;
         for (int64_t i = 0; i < regions.size(); ++i) {
           if (regions[i].isEmpty())
             erase[i] = true;
-          if (erase[i])
+          if (erase[i]) {
             continue;
-          for (int64_t j = i + 1; j < regions.size(); ++j) {
-            if (erase[j])
+          }
+          // Using jstart brings down worst-case complexity to less than N**2
+          for (int64_t j = std::max(i + 1, jstart); j < regions.size(); ++j) {
+            if (erase[j]) {
               continue;
-            if (regions[i].getUpper()[d] < regions[j].getLower()[d]) {
+            }
+            if (regions[i].getLower()[d] == regions[j].getLower()[d] &&
+                regions[i].getUpper()[d] == regions[j].getUpper()[d]) {
+              // if i and j fully overlap, any region in [i, j] does not have
+              // to check for merges with any other region in [i, j], so we can
+              // set the next j to j + 1
+              jstart = j + 1;
+              continue;
+            } else if (regions[i].getUpper()[d] < regions[j].getLower()[d]) {
+              // j and any region after j are not connected to i and therefore
+              // can't be merged in d, advance to next i
               break;
             } else {
               // Try merge
@@ -80,8 +95,9 @@ Regions mergeRegions(Regions regions) {
                                        return erase.at(&i - regions.data());
                                      }),
                       regions.end());
+
+        unchanged &= (last_size == regions.size() && subRegions.size() == 0);
       }
-      last_size = regions.size();
     }
   }
 
@@ -338,20 +354,50 @@ Regions Region::reshape(Region fullInRegion, Region fullOutRegion) const {
     return {fullOutRegion};
   }
 
-  int64_t step_in  = 1;
-  int64_t step_out = 1;
-  int64_t cut_dim;
-  for (cut_dim = 1;
-       cut_dim <= std::min(fullInRegion.rank(), fullOutRegion.rank());
+  int64_t step_in         = 1;
+  int64_t step_out        = 1;
+  int64_t cut_dim_off_in  = 0;
+  int64_t cut_dim_off_out = 0;
+
+  // Skip trailing dimensions of size 1 in the input
+  while (fullInRegion.getUpper()[fullInRegion.rank() - cut_dim_off_in - 1] -
+                 fullInRegion
+                     .getLower()[fullInRegion.rank() - cut_dim_off_in - 1] ==
+             1 &&
+         cut_dim_off_in < fullInRegion.rank()) {
+    ++cut_dim_off_in;
+  }
+
+  // Skip trailing dimensions of size 1 in the output
+  while (fullOutRegion.getUpper()[fullOutRegion.rank() - cut_dim_off_out - 1] -
+                 fullOutRegion
+                     .getLower()[fullOutRegion.rank() - cut_dim_off_out - 1] ==
+             1 &&
+         cut_dim_off_out < fullOutRegion.rank()) {
+    ++cut_dim_off_out;
+  }
+
+  for (int64_t cut_dim = 1;
+       cut_dim <= std::min(fullInRegion.rank() - cut_dim_off_in,
+                           fullOutRegion.rank() - cut_dim_off_out);
        ++cut_dim) {
-    step_in *= fullInRegion.getUpper()[fullInRegion.rank() - cut_dim] -
-               fullInRegion.getLower()[fullInRegion.rank() - cut_dim];
-    step_out *= fullOutRegion.getUpper()[fullOutRegion.rank() - cut_dim] -
-                fullOutRegion.getLower()[fullOutRegion.rank() - cut_dim];
-    if (fullInRegion.getLower()[fullInRegion.rank() - cut_dim] !=
-            fullOutRegion.getLower()[fullOutRegion.rank() - cut_dim] ||
-        fullInRegion.getUpper()[fullInRegion.rank() - cut_dim] !=
-            fullOutRegion.getUpper()[fullOutRegion.rank() - cut_dim])
+    step_in *=
+        fullInRegion
+            .getUpper()[fullInRegion.rank() - cut_dim - cut_dim_off_in] -
+        fullInRegion.getLower()[fullInRegion.rank() - cut_dim - cut_dim_off_in];
+    step_out *=
+        fullOutRegion
+            .getUpper()[fullOutRegion.rank() - cut_dim - cut_dim_off_out] -
+        fullOutRegion
+            .getLower()[fullOutRegion.rank() - cut_dim - cut_dim_off_out];
+    if (fullInRegion
+                .getLower()[fullInRegion.rank() - cut_dim - cut_dim_off_in] !=
+            fullOutRegion
+                .getLower()[fullOutRegion.rank() - cut_dim - cut_dim_off_out] ||
+        fullInRegion
+                .getUpper()[fullInRegion.rank() - cut_dim - cut_dim_off_in] !=
+            fullOutRegion
+                .getUpper()[fullOutRegion.rank() - cut_dim - cut_dim_off_out])
       break;
   }
 

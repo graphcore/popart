@@ -149,6 +149,17 @@ BOOST_AUTO_TEST_CASE(Region_Reshape6) {
   BOOST_CHECK(r6.size() == 1 && r6.front() == r0);
 }
 
+BOOST_AUTO_TEST_CASE(Region_Reshape7) {
+  view::Region r0({0, 0, 0}, {2, 256, 106});
+  view::Region r1({0, 0, 0}, {2, 512, 106});
+  view::Region r2({0, 0, 0, 0}, {2, 512, 106, 1});
+  view::Region r3({0, 0, 0, 0}, {2, 256, 106, 1});
+
+  view::Regions r4 = r0.reshape(r1, r2);
+
+  BOOST_CHECK(r4.front() == r3);
+}
+
 BOOST_AUTO_TEST_CASE(Region_MergeRegions0) {
 
   view::Region r0({0, 0}, {3, 4}, view::AccessType::Read);
