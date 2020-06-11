@@ -204,7 +204,7 @@ def test_import_torch_lstm(tmpdir):
         builder = popart.Builder(onnx_file_name)
         outputs = builder.getOutputTensorIds()
         dataFlow = popart.DataFlow(1, outputs)
-        device = tu.create_test_device(1, 1216, opts={"tilesPerIPU": 1216})
+        device = tu.create_test_device(1)
         s = popart.InferenceSession(fnModel=onnx_file_name,
                                     dataFlow=dataFlow,
                                     deviceInfo=device)
@@ -349,7 +349,7 @@ def test_import_torch_lstm_train(tmpdir):
         ]
         dataFlow = popart.DataFlow(1, anchors)
         optimizer = popart.ConstSGD(0.1)
-        device = tu.create_test_device(1, 1216, opts={"tilesPerIPU": 1216})
+        device = tu.create_test_device(1)
         print('Creating session')
         s = popart.TrainingSession(fnModel=builder.getModelProto(),
                                    dataFlow=dataFlow,
@@ -503,7 +503,7 @@ def test_import_torch_lstm_multi_run(tmpdir):
         builder = popart.Builder(onnx_file_name)
         outputs = builder.getOutputTensorIds()
         dataFlow = popart.DataFlow(1, outputs)
-        device = tu.create_test_device(1, 1216, opts={"tilesPerIPU": 1216})
+        device = tu.create_test_device(1)
         s = popart.InferenceSession(fnModel=onnx_file_name,
                                     dataFlow=dataFlow,
                                     deviceInfo=device)

@@ -489,8 +489,7 @@ static void remoteBufferPingPongWeightTestBase(SessionOptions opts,
 
   auto device = createTestDevice(TestDeviceType::Hw,
                                  2 * opts.replicatedGraphCount,
-                                 1216,
-                                 SyncPattern::Full);
+                                 pattern = SyncPattern::Full);
 
   opts.virtualGraphMode      = VirtualGraphMode::PingPong;
   opts.explicitRecomputation = true;

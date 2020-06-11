@@ -143,7 +143,8 @@ BOOST_AUTO_TEST_CASE(OverlapComputeExchangeTest_0) {
   double ipu_1_parallel_cycles;
 
   for (auto syncPattern : {SyncPattern::Full, SyncPattern::PingPong}) {
-    auto device = createTestDevice(TestDeviceType::Hw, 2, 1216, syncPattern);
+    auto device =
+        createTestDevice(TestDeviceType::Hw, 2, pattern = syncPattern);
     if (device != nullptr) {
       auto opts                               = SessionOptions();
       opts.virtualGraphMode                   = VirtualGraphMode::Manual;

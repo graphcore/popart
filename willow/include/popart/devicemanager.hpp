@@ -150,13 +150,14 @@ public:
   /** Finds the first available hardware device, with a certain number of IPUs.
    * This method will attach to the device.
    * \param numIpus The number of IPUs on the device [=1]
-   * \param tilesPerIpu The number of tiles on the IPU [=1216]
-   * \return A device, which can be used with a session. Will return nullptr if
-   *         no device is available
+   * \param tilesPerIpu The number of tiles on the IPU (0 will match any number)
+   * [=0]
+   * \return A device, which can be used with a session. Will return
+   * nullptr if no device is available
    */
   std::shared_ptr<DeviceInfo> acquireAvailableDevice(
       int numIpus                         = 1,
-      int tilesPerIpu                     = 1216,
+      int tilesPerIpu                     = 0,
       SyncPattern pattern                 = SyncPattern::Full,
       DeviceConnectionType connectionType = DeviceConnectionType::Always);
 

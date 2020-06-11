@@ -52,7 +52,6 @@ To enforce the running with a specific device in `pytest` you need to:
 1) `import test_util as tu` - This give you access to various testing functions. The folder's `__init__.py` should have added the directory to enable you to import this.
 2) In your session use 
 `deviceInfo=tu.create_test_device(numIpus: int = 1,
-                       tilesPerIpu: int = 1216,
                        opts: Dict = None,
                        pattern: popart.SyncPattern = popart.SyncPattern.Full)` instead of `popart.DeviceManager().createIpuModelDevice(opts)`
 or whatever.

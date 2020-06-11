@@ -56,8 +56,6 @@ def run_model(tmpdir,
 
     device = tu.create_test_device(
         num_replicas * (2 if enable_pingpong else 1),
-        1216,
-        None,
         pattern=popart.SyncPattern.Full)
 
     dfAnchors = {}

@@ -54,7 +54,7 @@ def conv_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
     opts.constantWeights = False  # Allow the weights to be updated
 
     # Create the device
-    device = tu.create_test_device(1, 1216, opts={"compileIPUCode": True})
+    device = tu.create_test_device(1, opts={"compileIPUCode": True})
     device.attach()
 
     # Prepare the input data
@@ -127,7 +127,7 @@ def matmul_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
     opts.constantWeights = False  # Allow the weights to be updated
 
     # Create the device
-    device = tu.create_test_device(1, 1216, opts={"compileIPUCode": True})
+    device = tu.create_test_device(1, opts={"compileIPUCode": True})
     device.attach()
 
     # Prepare the input data

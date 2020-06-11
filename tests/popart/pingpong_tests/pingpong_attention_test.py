@@ -144,8 +144,6 @@ def test_attention_pingpong(tmpdir):
         pat = popart.Patterns(popart.PatternsLevel.Default)
 
         device = tu.create_test_device(2 if options["pingPong"] else 4,
-                                       1216,
-                                       None,
                                        pattern=popart.SyncPattern.Full)
 
         session = popart.TrainingSession(fnModel=proto,

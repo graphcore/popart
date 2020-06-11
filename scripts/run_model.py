@@ -9,7 +9,7 @@ model_file = sys.argv[1]
 
 opts = popart.SessionOptions()
 opts.logging = {'all': 'TRACE'}
-options = {"compileIPUCode": True, 'numIPUs': 1, "tilesPerIPU": 1216}
+options = {"compileIPUCode": True, 'numIPUs': 1}
 
 # currently, with both Cpu and IpuModel, we have outstanding tasks
 # T6384 and T6405, about the conv planner failing (after ~15 mins with Cpu)

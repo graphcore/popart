@@ -25,18 +25,26 @@ def filter_dict(dict_to_filter, fun):
 
 
 def create_test_device(numIpus: int = 1,
-                       tilesPerIpu: int = 1216,
+                       tilesPerIpu: int = 0,
                        opts: Dict = None,
                        pattern: popart.SyncPattern = popart.SyncPattern.Full,
                        connectionType: popart.DeviceConnectionType = popart.
                        DeviceConnectionType.Always):
     testDeviceType = os.environ.get("TEST_TARGET")
-    if testDeviceType is None:
-        testDeviceType = "Cpu"
+
+    # NOTE: This function isn't symmetric with willow/include/popart/testdevice.hpp because it doesn't
+    # pass on the number of tiles for simulated devices (perhaps it should).
+    if tilesPerIpu == 0 and testDeviceType == "IpuModel":
+        # We need a number of tiles for these device types.
+        tilesPerIpu = 1216
+
     if opts is None:
         opts = {}
     opts["numIPUs"] = numIpus
     opts["tilesPerIPU"] = tilesPerIpu
+
+    if testDeviceType is None:
+        testDeviceType = "Cpu"
     if testDeviceType == "Cpu":
         device = popart.DeviceManager().createCpuDevice()
     elif testDeviceType == "Sim":
