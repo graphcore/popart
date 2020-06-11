@@ -69,21 +69,88 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
 
   auto op = getOp<BatchNormOp>();
 
-  // OK. This is found more by trial and error. It appears that pytorch, is
-  // using an unbiased running variance But the other question is what should we
-  // do for onnx that does not state if the running_variance is biased or
-  // unbiased. The ONNX calculation for running_xxx is different than pyTorch
-
-  // Using the input/attribute names as per the onnx spec
-
-  // Inputs
+  // Using the input names as per the onnx spec.
   auto x     = getInTensor(BatchNormOp::getXInIndex());
   auto scale = getInTensor(BatchNormOp::getScaleInIndex());
   auto b     = getInTensor(BatchNormOp::getBInIndex());
   auto mean  = getInTensor(BatchNormOp::getMeanInIndex());
   auto var   = getInTensor(BatchNormOp::getVarInIndex());
 
-  // Attributes
+  // Variables to store the desired output shapes in case of spatial=False.
+  std::vector<size_t> yShape            = x.shape();
+  std::vector<size_t> otherOutputsShape = scale.shape();
+
+  if (!op.getSpatial()) {
+    // If spatial=False we must normalise every feature separately. We achieve
+    // this with by transforming the inputs, running batchnorm as if
+    // spatial=True and then transforming the output back again, e.g.:
+    //
+    // - Transforming input x from [N, C, D1, ..., Dn] to [N, CxD1x...xDn, 1].
+    // - Transforming inputs scale, b, mean, var from [C, D1, ..., Dn] to
+    // [CxD1x...xDn] (if available)
+    // - Applying batch normalization (with spatial=True) on the transformed
+    // inputs.
+    // - Transforming output y from [N, CxD1x...xDn, 1] to [N, C, D1, ..., Dn].
+    // - Transforming outputs runningMean, runningVar, batchMean, batchVar from
+    // [CxD1x...xDn] to [C, D1, ..., Dn] (if available)
+
+    const size_t NUM_FEATURES = x.numElements() / x.dim(0);
+
+    // Reshape the inputs.
+    x     = x.reshape({x.dim(0), NUM_FEATURES, 1});
+    scale = scale.reshape({NUM_FEATURES});
+    b     = b.reshape({NUM_FEATURES});
+    mean  = mean.reshape({NUM_FEATURES});
+    var   = var.reshape({NUM_FEATURES});
+  }
+
+  // Lower the batch normalization operator for spatial=True.
+  auto outputs = growSpatial(prog, op, x, scale, b, mean, var);
+
+  if (!op.getSpatial()) {
+    // As spatial=False we must transform the outputs back to their expected
+    // form (see above). Note that some outputs are optional and depend on the
+    // use case.
+    outputs.y = outputs.y.reshape(yShape);
+
+    if (outputs.mean)
+      outputs.mean = outputs.mean->reshape(otherOutputsShape);
+    if (outputs.var)
+      outputs.var = outputs.var->reshape(otherOutputsShape);
+    if (outputs.savedMean)
+      outputs.savedMean = outputs.savedMean->reshape(otherOutputsShape);
+    if (outputs.savedVar)
+      outputs.savedVar = outputs.savedVar->reshape(otherOutputsShape);
+  }
+
+  // Now we need to set the output tensors, where available.
+  setOutTensor(BatchNormOp::getYOutIndex(), outputs.y);
+
+  if (outputs.mean)
+    setOutTensor(BatchNormOp::getMeanOutIndex(), *outputs.mean);
+  if (outputs.var)
+    setOutTensor(BatchNormOp::getVarOutIndex(), *outputs.var);
+  if (outputs.savedMean)
+    setOutTensor(BatchNormOp::getSavedMeanOutIndex(), *outputs.savedMean);
+  if (outputs.savedVar)
+    setOutTensor(BatchNormOp::getSavedVarOutIndex(), *outputs.savedVar);
+}
+
+BatchNormOpx::GrowSpatialOutput
+BatchNormOpx::growSpatial(poplar::program::Sequence &prog,
+                          BatchNormOp &op,
+                          poplar::Tensor &x,
+                          poplar::Tensor &scale,
+                          poplar::Tensor &b,
+                          poplar::Tensor &mean,
+                          poplar::Tensor &var) const {
+  // OK. This is found more by trial and error. It appears that pytorch, is
+  // using an unbiased running variance But the other question is what should we
+  // do for onnx that does not state if the running_variance is biased or
+  // unbiased. The ONNX calculation for running_xxx is different than pyTorch
+  GrowSpatialOutput result;
+
+  // Using the attribute names as per the onnx spec.
   float epsilon  = op.getEpsilon();
   float momentum = op.getMomentum();
 
@@ -103,9 +170,12 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
       graph().setTileMapping(y, 0);
       graph().setTileMapping(batchMean, 0);
       graph().setTileMapping(batchVar, 0);
-      setOutTensor(BatchNormOp::getYOutIndex(), y);
-      setOutTensor(BatchNormOp::getMeanOutIndex(), batchMean);
-      setOutTensor(BatchNormOp::getVarOutIndex(), batchVar);
+
+      result = GrowSpatialOutput({y,
+                                  batchMean,
+                                  batchVar,
+                                  nonstd::optional<poplar::Tensor>(),
+                                  nonstd::optional<poplar::Tensor>()});
     } else {
       // Convert input shape to poplar rules
       poplar::Tensor xP;
@@ -167,11 +237,8 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
           debugPrefix("runningVar"));
 
       // return the results
-      setOutTensor(BatchNormOp::getYOutIndex(), y);
-      setOutTensor(BatchNormOp::getMeanOutIndex(), runningMean);
-      setOutTensor(BatchNormOp::getVarOutIndex(), runningVar);
-      setOutTensor(BatchNormOp::getSavedMeanOutIndex(), batchMean);
-      setOutTensor(BatchNormOp::getSavedVarOutIndex(), batchVar);
+      result =
+          GrowSpatialOutput({y, runningMean, runningVar, batchMean, batchVar});
     }
   } else {
     // When testing
@@ -181,7 +248,12 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
       auto y =
           graph().addConstant(x.elementType(), x.shape(), 0, debugPrefix("y"));
       graph().setTileMapping(y, 0);
-      setOutTensor(BatchNormOp::getYOutIndex(), y);
+
+      result = GrowSpatialOutput({y,
+                                  nonstd::optional<poplar::Tensor>(),
+                                  nonstd::optional<poplar::Tensor>(),
+                                  nonstd::optional<poplar::Tensor>(),
+                                  nonstd::optional<poplar::Tensor>()});
     } else {
       // Convert input shape to poplar rules
       poplar::Tensor xP;
@@ -198,9 +270,15 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
       y = convertPoplarOutputToOnnxOutput(y, nonBroadcastDims);
 
       // return the result
-      setOutTensor(BatchNormOp::getYOutIndex(), y);
+      result = GrowSpatialOutput({y,
+                                  nonstd::optional<poplar::Tensor>(),
+                                  nonstd::optional<poplar::Tensor>(),
+                                  nonstd::optional<poplar::Tensor>(),
+                                  nonstd::optional<poplar::Tensor>()});
     }
   }
+
+  return result;
 }
 
 std::tuple<poplar::Tensor, poplar::Tensor, poplar::Tensor>
@@ -254,6 +332,46 @@ void BatchNormGradOpx::grow(poplar::program::Sequence &prog) const {
   auto var   = getInTensor(BatchNormGradOp::getVarInIndex());
   auto yGrad = getInTensor(BatchNormGradOp::getYGradInIndex());
 
+  // Variables to store the desired output shapes in case of spatial=False.
+  std::vector<size_t> xShape            = yGrad.shape();
+  std::vector<size_t> otherOutputsShape = scale.shape();
+
+  if (!op.getSpatial()) {
+    // If spatial=False we must do some reshaping here (akin to BatchNormOpx).
+    const size_t NUM_FEATURES = x.numElements() / x.dim(0);
+
+    // Reshape the inputs.
+    x     = x.reshape({x.dim(0), NUM_FEATURES, 1});
+    scale = scale.reshape({NUM_FEATURES});
+    mean  = mean.reshape({NUM_FEATURES});
+    var   = var.reshape({NUM_FEATURES});
+    yGrad = yGrad.reshape({x.dim(0), NUM_FEATURES, 1});
+  }
+
+  auto outputs = growSpatial(prog, op, x, scale, mean, var, yGrad);
+
+  if (!op.getSpatial()) {
+    // As spatial=False we must undo the reshaping here (aking to BatchNormOpx).
+    outputs.xGrad     = outputs.xGrad.reshape(xShape);
+    outputs.scaleGrad = outputs.scaleGrad.reshape(otherOutputsShape);
+    outputs.bGrad     = outputs.bGrad.reshape(otherOutputsShape);
+  }
+
+  setOutTensor(BatchNormGradOp::getXOutIndex(), outputs.xGrad);
+  setOutTensor(BatchNormGradOp::getScaleOutIndex(), outputs.scaleGrad);
+  setOutTensor(BatchNormGradOp::getBOutIndex(), outputs.bGrad);
+}
+
+BatchNormGradOpx::GrowSpatialOutput
+BatchNormGradOpx::growSpatial(poplar::program::Sequence &prog,
+                              BatchNormGradOp &op,
+                              poplar::Tensor &x,
+                              poplar::Tensor &scale,
+                              poplar::Tensor &mean,
+                              poplar::Tensor &var,
+                              poplar::Tensor &yGrad) const {
+  GrowSpatialOutput result;
+
   // Attributes
   float epsilon = op.getEpsilon();
 
@@ -268,9 +386,9 @@ void BatchNormGradOpx::grow(poplar::program::Sequence &prog) const {
     graph().setTileMapping(xGrad, 0);
     graph().setTileMapping(scaleGrad, 0);
     graph().setTileMapping(bGrad, 0);
-    setOutTensor(BatchNormGradOp::getXOutIndex(), xGrad);
-    setOutTensor(BatchNormGradOp::getScaleOutIndex(), scaleGrad);
-    setOutTensor(BatchNormGradOp::getBOutIndex(), bGrad);
+    result.xGrad     = xGrad;
+    result.scaleGrad = scaleGrad;
+    result.bGrad     = bGrad;
   } else {
 
     // Convert input's shape to poplar rules
@@ -290,10 +408,12 @@ void BatchNormGradOpx::grow(poplar::program::Sequence &prog) const {
     xGrad = convertPoplarOutputToOnnxOutput(xGrad, nonBroadcastDims);
 
     // return the results
-    setOutTensor(BatchNormGradOp::getXOutIndex(), xGrad);
-    setOutTensor(BatchNormGradOp::getScaleOutIndex(), scaleGrad);
-    setOutTensor(BatchNormGradOp::getBOutIndex(), bGrad);
+    result.xGrad     = xGrad;
+    result.scaleGrad = scaleGrad;
+    result.bGrad     = bGrad;
   }
+
+  return result;
 }
 
 namespace {

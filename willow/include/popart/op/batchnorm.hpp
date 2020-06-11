@@ -49,6 +49,8 @@ public:
   bool isNorm() const override { return true; }
 
 private:
+  void validateInput(const TensorInfo &inputInfo, const std::string &inputName);
+
   bool training = false;
   bool isTest;
   float epsilon;
@@ -75,6 +77,7 @@ public:
   static OutIndex getBOutIndex() { return 2; }
 
   float getEpsilon() const { return epsilon; }
+  int64_t getSpatial() const { return spatial; }
 
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
@@ -82,6 +85,7 @@ public:
 
 private:
   float epsilon;
+  int64_t spatial;
   TensorInfo fwdInInfo, fwdScaleInInfo, fwdBInInfo;
 };
 
