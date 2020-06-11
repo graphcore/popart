@@ -6,6 +6,7 @@
 #include <popart/ces/concatce.hpp>
 #include <popart/ces/constexpr.hpp>
 #include <popart/ces/elementwisece.hpp>
+#include <popart/ces/floorce.hpp>
 #include <popart/ces/gatherce.hpp>
 #include <popart/ces/identityce.hpp>
 #include <popart/ces/reshapece.hpp>
@@ -173,6 +174,7 @@ void ConstExprOpManager::registerConstOps() {
   registerConstOp<ConstExprGather>("Gather");
   registerConstOp<ConstExprIdentity>("Flatten");
   registerConstOp<ConstExprIdentity>("FlattenInplace");
+  registerConstOp<ConstExprFloor>("Floor");
 }
 
 std::unique_ptr<ConstExprOp> ConstExprOpManager::createConstExprOp(Op *op) {
