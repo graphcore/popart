@@ -6,9 +6,11 @@
 
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
+#include <popart/error.hpp>
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
+#include <popart/names.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/optimizer.hpp>

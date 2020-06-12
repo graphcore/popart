@@ -6,6 +6,7 @@
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/matmulx.hpp>
 #include <popart/popx/opxmanager.hpp>
+#include <popart/popx/poplaroptionsx.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/util.hpp>
@@ -23,6 +24,7 @@ namespace {
 PoplarOptions getPoplarOptionsForMatMul(MatMulBaseOp &op) {
   PoplarOptions opts;
   auto &ir = op.getIr();
+
   if (op.useFullyConnectedPass()) {
     if (ir.isTraining()) {
       auto phase = op.getPhase();
@@ -37,8 +39,29 @@ PoplarOptions getPoplarOptionsForMatMul(MatMulBaseOp &op) {
       opts.options["fullyConnectedPass"] = "INFERENCE_FWD";
     }
   }
+
   return opts;
 }
+
+// Add the partials type to the poplar::OptionFlags that were computed from the
+// poplar::popx::PoplarOptions.
+void addPartialsType(const MatMulPartialsType &partialsType,
+                     poplar::OptionFlags &opts) {
+  switch (partialsType) {
+  case MatMulPartialsType::HALF: {
+    opts.set("partialsType", "half");
+    break;
+  }
+  case MatMulPartialsType::FLOAT: {
+    opts.set("partialsType", "float");
+    break;
+  }
+  default: {
+    throw error("Bad MatMulPartialsType {}", static_cast<int>(partialsType));
+  }
+  }
+}
+
 } // namespace
 
 MatMulOpx::MatMulOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -63,6 +86,11 @@ std::vector<std::size_t> MatMulOpx::getOutputShape() const {
 static void setMatMulOptions(MatMulBaseOp &op, poplar::OptionFlags &opts) {
   if (auto prop = op.getAvailableMemoryProportion()) {
     opts.set("availableMemoryProportion", std::to_string(*prop));
+  }
+
+  {
+    const auto partialsType = op.getPartialsType();
+    addPartialsType(partialsType, opts);
   }
 }
 

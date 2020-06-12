@@ -148,7 +148,7 @@ public:
 
   void assertNumElements(const Ir &) const final {}
 
-  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
+  ConstVoidData in(TensorId id, int64_t, bool prefetch) final {
     py::array a = inputCb(id, prefetch);
     // To ensure that array is persisted until complete is called
     inDict[py::str(id)] = a;
@@ -637,6 +637,8 @@ PYBIND11_MODULE(popart_core, m) {
                       &SessionOptions::enableFullyConnectedPass);
     cls.def_readwrite("enableGroupedMatmuls",
                       &SessionOptions::enableGroupedMatmuls);
+    cls.def_readwrite("partialsTypeMatMuls",
+                      &SessionOptions::partialsTypeMatMuls);
     cls.def_readwrite("enableStableNorm", &SessionOptions::enableStableNorm);
     // set in python use the python set constructor, so something like
     // mySessionOptions.dotChecks = {popart.DotCheck.FINAL}
