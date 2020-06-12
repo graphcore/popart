@@ -74,6 +74,7 @@ public:
         inputIds(_inputIds) {}
 
   const std::vector<TensorId> &getInputIds() const;
+  Tensor *getInputTensor(int index) const;
 
 private:
   const std::vector<TensorId> &inputIds;
