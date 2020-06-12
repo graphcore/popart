@@ -5,9 +5,8 @@ Distributed training with Horovod
 
 In order to scale out training with PopART across multiple machines we use
 `Horovod <https://github.com/horovod/horovod/>`_ to setup and run collective
-operations. There is currently support for the following MPI-based collective
-operations: ``Broadcast`` and ``AllReduce``. The ``Broadcast`` operation is
-typically run at the start of a training to initialise the weights to have the
+operations. There is support for the ``Broadcast`` and ``AllReduce`` collective operations.
+The ``Broadcast`` operation is typically run at the start of a training to initialise the weights to have the
 same values across the instances. Gradients produced during the backwards pass
 will be aggregated and averaged across the instances by running the
 ``AllReduce`` operation. This ensures that each rank applies the same gradients
@@ -49,6 +48,13 @@ and out of the IPU and run the Horovod ``AllReduce`` operation:
 
   distributed_optimizer = hvd.DistributedOptimizer(optimizer, training.session, userOpts)
 
+Insert the all reduce operation:
+
+.. code-block:: python
+
+  distributed_optimizer.insert_host_allreduce()
+
+
 Broadcast the initial weights from the rank zero process to the other PopART instances:
 
 .. code-block:: python
@@ -67,10 +73,20 @@ Running distributed training with the Horovod PopART extension can be done in th
 
   $ horovodrun -np 2 -H localhost:2 python train.py
 
-Additional documentation on running Horovod can be found here: `Horovod documentation <https://horovod.readthedocs.io/en/latest/>`_.
+Alternatively we can use the `Gloo <https://github.com/facebookincubator/gloo>`_ backend for the collective operations as shown below:
+
+.. code-block:: bash
+
+  $ horovodrun --gloo -np 2 -H localhost:2 python train.py
+
+Additional documentation on flags that can be passed to `horovodrun` can be found here: `Horovod documentation <https://horovod.readthedocs.io/en/latest/>`_.
 
 
 Full distributed training example
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+A small example illustrating how to use Horovod with PopART:
 
 .. literalinclude:: ../../examples/distributed_training/simple_distributed_training.py
+
+
+A more comprehensive example on a real dataset can be found in `<https://github.com/graphcore/examples/tree/master/code_examples/popart/distributed_training/horovod>`_.

@@ -101,6 +101,7 @@ def train():
 
         distributed_optimizer = hvd.DistributedOptimizer(
             optimizer, training.session, userOpts)
+        distributed_optimizer.insert_host_allreduce()
 
         # Broadcast weights to all the other processes
         hvd.broadcast_weights(training.session, root_rank=0)
