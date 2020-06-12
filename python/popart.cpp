@@ -264,7 +264,13 @@ struct PrepareDeviceError {
   virtual ~PrepareDeviceError() {}
 
   virtual bool isSuccessful() const { return success; }
-  std::string what() const { return exception->what(); }
+  std::string what() const {
+    if (exception) {
+      return exception->what();
+    } else {
+      return "No memory_allocation_err raised";
+    }
+  }
   std::string getSummaryReport() const { return exception->getSummaryReport(); }
   std::string getGraphReport(bool useCbor) const {
     return exception->getGraphReport(useCbor);
@@ -812,7 +818,10 @@ PYBIND11_MODULE(popart_core, m) {
   {
     py::class_<PrepareDeviceError> cls(m, "PrepareDeviceError");
     cls.def(py::init<>());
-    cls.def("__repr__", &PrepareDeviceError::what);
+    cls.def("__repr__", [](const PrepareDeviceError &err) {
+      return "popart.PrepareDeviceError: " + err.what();
+    });
+    cls.def("__str__", &PrepareDeviceError::what);
     cls.def("isSuccessful", &PrepareDeviceError::isSuccessful);
     cls.def("getSummaryReport", &PrepareDeviceError::getSummaryReport);
     cls.def(
