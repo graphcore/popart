@@ -158,7 +158,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD1) {
     // same learning rate, weight decay, so should all be merged into a single
     // group.
     // For all cases we chould also have:
-    // 1 SGD1Accumulate and 1 SGD1AcclUpdate for each SGD1VarUpdate.
+    // 1 Accumulate and 1 SGD1AcclUpdate for each SGD1VarUpdate.
     // 0 SGD1Combo ops.
 
     // Lambda to check the number of ops are as expected.
@@ -184,7 +184,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD1) {
 
       checkOps(Onnx::CustomOperators::SGD1VarUpdate, 1);
 
-      checkOps(Onnx::CustomOperators::SGD1Accumulate, 1);
+      checkOps(Onnx::CustomOperators::Accumulate, 1);
       checkOps(Onnx::CustomOperators::SGD1AcclUpdate, 1);
       checkOps(Onnx::CustomOperators::SGD1Combo, 0);
 
@@ -195,7 +195,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD1) {
       checkOps(Onnx::CustomOperators::SGD1VarUpdate, 3 * nConv);
       checkOps(Onnx::CustomOperators::CopyVarUpdate, 2 * nConv);
 
-      checkOps(Onnx::CustomOperators::SGD1Accumulate, 3 * nConv);
+      checkOps(Onnx::CustomOperators::Accumulate, 3 * nConv);
       checkOps(Onnx::CustomOperators::SGD1AcclUpdate, 3 * nConv);
       checkOps(Onnx::CustomOperators::SGD1Combo, 0);
 
@@ -210,7 +210,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD1) {
                 << std::endl;
       auto expectednsgd = (sgdElms * 4) / thr + ((sgdElms * 4) % thr != 0);
       checkOps(Onnx::CustomOperators::SGD1VarUpdate, expectednsgd);
-      checkOps(Onnx::CustomOperators::SGD1Accumulate, expectednsgd);
+      checkOps(Onnx::CustomOperators::Accumulate, expectednsgd);
       checkOps(Onnx::CustomOperators::SGD1AcclUpdate, expectednsgd);
 
       checkOps(Onnx::CustomOperators::SGD1Combo, 0);
@@ -223,7 +223,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD1) {
       // be just 1 SGDVarUpdate and 1 CopyVarUpdate
       checkOps(Onnx::CustomOperators::SGD1VarUpdate, 1);
 
-      checkOps(Onnx::CustomOperators::SGD1Accumulate, 1);
+      checkOps(Onnx::CustomOperators::Accumulate, 1);
       checkOps(Onnx::CustomOperators::SGD1AcclUpdate, 1);
       checkOps(Onnx::CustomOperators::SGD1Combo, 0);
 

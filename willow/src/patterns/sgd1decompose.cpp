@@ -6,11 +6,11 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/onnxutil.hpp>
+#include <popart/op/accumulate.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/concat.hpp>
 #include <popart/op/flatten.hpp>
 #include <popart/op/sgd1acclupdate.hpp>
-#include <popart/op/sgd1accumulate.hpp>
 #include <popart/op/sgd1combo.hpp>
 #include <popart/op/sgd1varupdate.hpp>
 #include <popart/op/slice.hpp>
@@ -166,8 +166,9 @@ bool SGD1Decompose::apply(Op *op) const {
   //
   // Outputs:
   // (4) an alias of acclIn
-  auto acclOpUp = std::make_unique<SGD1AccumulateOp>(
+  auto acclOpUp = std::make_unique<AccumulateOp>(
       acclIntoAccumulatorId,
+      AccumulationType::DampenedAdd,
       combo->initDpsf1,
       Op::Settings(graph, combo->name() + "_accumulate"));
   auto acclOp = acclOpUp.get();
@@ -196,7 +197,7 @@ bool SGD1Decompose::apply(Op *op) const {
   if (!combo->initDpsf1.isConst()) {
     acclOp->connectInTensor(
         // the index at which the dampening scale factor is received,
-        SGD1AccumulateOp::getDpsf1InIndex(),
+        AccumulateOp::getFactorInIndex(),
         // the name of the dampeninf scale factor, use combo to find this name
         combo->inId(SGD1ComboOp::getDpsf1InIndex()));
   }
