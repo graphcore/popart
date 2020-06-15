@@ -1355,6 +1355,40 @@ def test_builder_opsetDefaultVersions(tmpdir):
         in e_info.value.args[0])
 
 
+def test_builder_aiOnnxOpsetBuilderInterface(tmpdir):
+    # The purpose of this test is to detect any potential disconnects
+    # between the Builder Python interface (builder.py) and the
+    # corresponding C++ Builder backend (builder.cpp, builder.cpp.gen, etc.)
+    #
+    # Ops added to a popART builder with e.g. opset version 9
+    # should first instantiate a Python class called AiOnnx9
+    # (defined in builder.py) which should invoke functions implemented
+    # on the C++ AiOnnxOpset9 class
+
+    # Create a builder with opset version 9
+    builder = popart.Builder(opsets={"ai.onnx": 9, "ai.graphcore": 1})
+
+    i1 = builder.addInitializedInputTensor(np.array([1, 5], dtype=np.float32))
+    i2 = builder.addInitializedInputTensor(np.array([1, 5], dtype=np.float32))
+
+    # Assert that Add is rerouted to builder interface class AiOnnx9
+    o1 = builder.aiOnnx.add([i1, i2], 'test_add_9')
+    aiOnnxVersionAdd = f"{builder.aiOnnx}"
+    assert (aiOnnxVersionAdd == "AiOnnx9")
+
+    # Create a builder with opset version 7
+    pbuilder = popart.Builder(opsets={"ai.onnx": 7, "ai.graphcore": 1})
+
+    i1 = pbuilder.addInitializedInputTensor(np.array([1, 5], dtype=np.float32))
+    i2 = pbuilder.addInitializedInputTensor(np.array([1, 1], dtype=np.float32))
+
+    # Assert that Pow is rerouted to builder interface class AiOnnx7
+    o1 = pbuilder.aiOnnx.add([i1, i2], 'test_pow_7')
+
+    aiOnnxVersionPow = f"{pbuilder.aiOnnx}"
+    assert (aiOnnxVersionPow == "AiOnnx7")
+
+
 def test_builder_opsetDefinesVersions(tmpdir):
 
     # This will create a build with the default opsets
@@ -1382,8 +1416,8 @@ def test_builder_opset11(tmpdir):
         builder = popart.Builder(opsets={"ai.onnx": 11, "ai.graphcore": 1})
     assert (
         "ONNX Opset 11 is not yet supported in PopART. Please use opset 10 to "
-        "build your model, or convert your ONNX model to opset 10 or lower" in
-        e_info.value.args[0])
+        "build your model, or convert your ONNX model to opset 10 or lower"
+        in e_info.value.args[0])
 
 
 def test_builder_opset11_load(tmpdir):
