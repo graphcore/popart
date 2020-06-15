@@ -14,7 +14,24 @@ namespace popart {
 
 struct SessionOptions;
 
-enum class OptimizerType { SGD = 0, NTYPES };
+// Types of optimizers
+enum class OptimizerType { SGD = 0, Adam, NTYPES };
+
+// Replicated graph reduction mode (data parallel optimizer)
+// determines which replicated collective operations are inserted into the graph
+enum class OptimizerReductionType {
+  // No replicated graph reduction
+  None = 0,
+  // Gradient reduction (every iteration, after a weight's gradient is produced)
+  GradReduce,
+  // Momentum reduction (SGD1, every N-th iteration, gradient accumulation)
+  AcclReduce,
+  // Accumulator reduction (Adam, every N-th iteration, gradient accumulation)
+  AccumReduce
+};
+
+std::map<std::string, OptimizerValue>
+getOptMap(const std::map<std::string, std::pair<float, bool>> &m);
 
 // The base Optimizer class
 class Optimizer {

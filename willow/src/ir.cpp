@@ -45,7 +45,6 @@
 #include <popart/transforms/batchserialize.hpp>
 #include <popart/transforms/cachesetup.hpp>
 #include <popart/transforms/decomposegradsum.hpp>
-#include <popart/transforms/devicereduce.hpp>
 #include <popart/transforms/dynamicoptransform.hpp>
 #include <popart/transforms/explicitrecompute.hpp>
 #include <popart/transforms/groupmatmuls.hpp>
@@ -71,6 +70,7 @@
 #include <popart/op/sum.hpp>
 
 #include <popart/patterns/inplace.hpp>
+#include <popart/patterns/sgd0decompose.hpp>
 #include <popart/patterns/sgd1decompose.hpp>
 #include <popart/patterns/updateinplaceprioritiesforipu.hpp>
 
@@ -992,6 +992,8 @@ void Ir::prepareImpl(const IrBundle &gb) {
   }
 
   // Accumulator Tensor for gradient accumulation / momentum is added here
+  SGD0Decompose sgd0Decomposer;
+  applyPreAliasPattern(&sgd0Decomposer, getMainGraph());
   SGD1Decompose sgd1Decomposer;
   applyPreAliasPattern(&sgd1Decomposer, getMainGraph());
 
@@ -1017,12 +1019,6 @@ void Ir::prepareImpl(const IrBundle &gb) {
     } else {
       logging::ir::info("Skipping hostAllReduce transform when running "
                         "inference or evaluation");
-    }
-  } else {
-    if (getSessionOptions().enableReplicatedGraphs ||
-        getSessionOptions().enableDistributedReplicatedGraphs) {
-      applyTransform(DeviceReduce::id(), getMainGraph());
-      updateVertices();
     }
   }
 

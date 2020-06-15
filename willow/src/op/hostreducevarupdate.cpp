@@ -44,6 +44,7 @@ HostSGD0VarUpdate::HostSGD0VarUpdate(const TensorId &varId_,
                           varId_,
                           slr0,
                           wdsf0,
+                          OptimizerReductionType::None,
                           settings_) {}
 
 std::unique_ptr<Op> HostSGD0VarUpdate::clone() const {

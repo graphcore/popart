@@ -14,7 +14,6 @@
 
 namespace popart {
 
-namespace {
 std::map<std::string, OptimizerValue>
 getOptMap(const std::map<std::string, std::pair<float, bool>> &m) {
   std::map<std::string, OptimizerValue> mOptVals;
@@ -23,8 +22,6 @@ getOptMap(const std::map<std::string, std::pair<float, bool>> &m) {
   }
   return mOptVals;
 }
-
-} // namespace
 
 SGD SGD::fromDefaultMap(const std::map<std::string, OptimizerValue> &m) {
   return SGD(getComplete(m), 1011);
@@ -286,21 +283,35 @@ SGD::getComplete(const std::map<std::string, OptimizerValue> &m) {
 
 std::unique_ptr<Op> SGD::createOp(const Tensor &w, Graph &graph) const {
 
+  OptimizerReductionType reductionType{OptimizerReductionType::None};
+
   bool withAccl = requiresAccl(w);
 
   auto opSettings = Op::Settings(graph, "");
 
   if (!withAccl) {
+    if (getReplicatedGraphCount() > 1 &&
+        !graph.getIr().getSessionOptions().hostAllReduce) {
+      reductionType = OptimizerReductionType::GradReduce;
+    }
+
     return std::make_unique<SGD0VarUpdateOp>(
         w.id,
         slr0helper.getFromWeightId(w.id, *this),
         wdsf0helper.getFromWeightId(w.id, *this),
+        reductionType,
         opSettings);
   }
 
-  // Disable acclReduce in favor of gradReduce when using PingPong
-  bool withAcclReduce =
-      gradientAccumulationEnabled() && getReplicatedGraphCount() > 1;
+  if (getReplicatedGraphCount() > 1) {
+    if (gradientAccumulationEnabled()) {
+      reductionType = OptimizerReductionType::AcclReduce;
+    } else {
+      // Disable acclReduce in favor of gradReduce when not using gradient
+      // accumulation (e.g. PingPong)
+      reductionType = OptimizerReductionType::GradReduce;
+    }
+  }
 
   // velocity required
   return std::make_unique<SGD1ComboOp>(w.id,
@@ -308,7 +319,7 @@ std::unique_ptr<Op> SGD::createOp(const Tensor &w, Graph &graph) const {
                                        dpsf1helper.getFromWeightId(w.id, *this),
                                        swd1helper.getFromWeightId(w.id, *this),
                                        slr1helper.getFromWeightId(w.id, *this),
-                                       withAcclReduce,
+                                       reductionType,
                                        opSettings);
 }
 

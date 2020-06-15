@@ -3,6 +3,7 @@
 #define GUARD_NEURALNET_SGD1VARUPDATECOMBOOP_HPP
 
 #include <popart/op/varupdate.hpp>
+#include <popart/optimizer.hpp>
 #include <popart/optimizervalue.hpp>
 
 namespace popart {
@@ -22,7 +23,7 @@ public:
               OptimizerValue initialDpsf1,
               OptimizerValue initialSwd1,
               OptimizerValue initialSlr1,
-              bool withAcclReduce_,
+              OptimizerReductionType reductionType_,
               const Op::Settings &);
 
   std::unique_ptr<Op> clone() const final;
@@ -45,7 +46,7 @@ public:
   // scaled learning rate
   const OptimizerValue initSlr1;
 
-  const bool withAcclReduce;
+  const OptimizerReductionType reductionType;
 
   static InIndex getSmm1InIndex() { return 2; }
   static InIndex getDpsf1InIndex() { return 3; }

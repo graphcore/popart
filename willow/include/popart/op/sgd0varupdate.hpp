@@ -3,6 +3,7 @@
 #define GUARD_NEURALNET_SGD0VARUPDATE_HPP
 
 #include <popart/op/varupdate.hpp>
+#include <popart/optimizer.hpp>
 
 namespace popart {
 
@@ -12,6 +13,7 @@ public:
                       const TensorId &varToUpdate,
                       OptimizerValue initialSlr0,
                       OptimizerValue initialWdsf0,
+                      OptimizerReductionType reductionType_,
                       const Op::Settings &settings_);
 
   // If the scaled learning rate is not constant, this is the index at which it
@@ -25,11 +27,16 @@ public:
   // map of size 0/1/2, containing all non-const optimizer Tensors for this Op
   std::map<InIndex, TensorId> optimizerInputs() const final;
 
+  OptimizerReductionType getReductionType() { return reductionType; }
+
   // scaled learning rate
   const OptimizerValue initSlr0;
 
   // weight decay scaling factor
   const OptimizerValue initWdsf0;
+
+  // Reduction type
+  const OptimizerReductionType reductionType;
 
   void appendOutlineAttributes(OpSerialiserBase &) const final;
 
@@ -44,6 +51,7 @@ public:
   SGD0VarUpdateOp(const TensorId &varToUpdate,
                   OptimizerValue initialSlr0,
                   OptimizerValue initialWdsf0,
+                  OptimizerReductionType reductionType_,
                   const Op::Settings &);
 
   std::unique_ptr<Op> clone() const final;

@@ -11,13 +11,13 @@ SGD1ComboOp::SGD1ComboOp(const TensorId &varId_,
                          OptimizerValue initialDpsf1,
                          OptimizerValue initialSwd1,
                          OptimizerValue initialSlr1,
-                         bool withAcclReduce_,
+                         OptimizerReductionType reductionType_,
                          const Op::Settings &settings_)
     : VarUpdateWithUpdaterOp(Onnx::CustomOperators::SGD1Combo,
                              varId_,
                              settings_),
       initSmm1(initialSmm1), initDpsf1(initialDpsf1), initSwd1(initialSwd1),
-      initSlr1(initialSlr1), withAcclReduce(withAcclReduce_) {}
+      initSlr1(initialSlr1), reductionType(reductionType_) {}
 
 void SGD1ComboOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   if (initSmm1.isConst()) {
@@ -36,12 +36,12 @@ void SGD1ComboOp::appendOutlineAttributes(OpSerialiserBase &os) const {
     os.appendAttribute("const scaled learning rate", initSlr1.val());
   }
 
-  os.appendAttribute("with graph replication reduction", withAcclReduce);
+  os.appendAttribute("reduction type", static_cast<int>(reductionType));
 }
 
 std::unique_ptr<Op> SGD1ComboOp::cloneWithNewName(const TensorId &x) const {
   return std::make_unique<SGD1ComboOp>(
-      x, initSmm1, initDpsf1, initSwd1, initSlr1, withAcclReduce, settings);
+      x, initSmm1, initDpsf1, initSwd1, initSlr1, reductionType, settings);
 }
 
 std::unique_ptr<Op> SGD1ComboOp::clone() const {
