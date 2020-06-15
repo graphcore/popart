@@ -77,7 +77,7 @@ DevicexManager::getDevice(SyncPattern syncPattern,
   addSyncConfig(syncPattern, flags);
   auto device = deviceManager.getDevice(deviceManagerId, flags);
   return std::make_shared<DevicexIpuInfo>(
-      *this, connectionType, device.getId(), device);
+      *this, connectionType, device.getId(), device, flags);
 }
 
 void DevicexManager::enumerate(
@@ -95,7 +95,7 @@ void DevicexManager::enumerate(
       deviceManager.getDevices(convertDeviceType(type), requiredNumIPUs, flags);
   for (auto &device : popdevices) {
     std::shared_ptr<popart::DeviceInfo> ipu = std::make_shared<DevicexIpuInfo>(
-        *this, connectionType, device.getId(), device);
+        *this, connectionType, device.getId(), device, flags);
     devices.push_back(ipu);
   }
 }
@@ -210,7 +210,7 @@ std::shared_ptr<popart::DeviceInfo> DevicexManager::createHostDevice(
 
     auto ipuTarget = poplar::Target::createIPUTarget(
         mapFind(options, "numIPUs", 1), poplar::StringRef(ipuVersion), flags);
-    return std::make_shared<DevicexOfflineIpuInfo>(*this, ipuTarget);
+    return std::make_shared<DevicexOfflineIpuInfo>(*this, ipuTarget, flags);
   }
   case DeviceType::Sim: {
     checkOptions({"numIPUs", "tilesPerIPU"});

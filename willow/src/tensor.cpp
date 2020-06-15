@@ -408,11 +408,9 @@ bool Tensor::isRandomSeedTensor() const {
 
 bool Tensor::isAcclTensor() const {
   auto states = reservedOptimizerStatePrefixes();
-  if (std::any_of(
-          states.begin(), states.end(), [this](const std::string state) {
-            return id.find(reservedAcclToAccumulatorPrefix()) !=
-                   std::string::npos;
-          })) {
+  if (std::any_of(states.begin(), states.end(), [this](const std::string) {
+        return id.find(reservedAcclToAccumulatorPrefix()) != std::string::npos;
+      })) {
     // sanity check that the accl tensor is of Variable type
     if (tensorType() != TensorType::Variable) {
       throw error("Tensor {} has been identified as an Accl tensor, but it is "

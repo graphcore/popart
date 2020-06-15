@@ -40,8 +40,9 @@ public:
   DevicexInfo(DeviceProvider &_provider,
               popart::DeviceType _type,
               popart::DeviceConnectionType _connectionType,
-              poplar::Device &_device)
-      : popart::DeviceInfo(_provider, _type, _connectionType),
+              poplar::Device &_device,
+              const poplar::OptionFlags &_flags)
+      : popart::DeviceInfo(_provider, _type, _connectionType, _flags),
         device(std::move(_device)) {}
 
   virtual bool attach();
@@ -59,9 +60,7 @@ public:
 
   poplar::Device &getDevice() { return device; }
 
-  virtual const poplar::Target &getTarget() const {
-    return device.getTarget();
-  };
+  virtual const poplar::Target &getTarget() const { return device.getTarget(); }
 
   std::set<Devicex *> previouslyLoadedDevicexs;
 
@@ -75,7 +74,8 @@ public:
       : DevicexInfo(_provider,
                     popart::DeviceType::Cpu,
                     popart::DeviceConnectionType::Always,
-                    _device) {}
+                    _device,
+                    {}) {}
 
   virtual int getId() const { return 0; }
   virtual std::string getVersion() const { return "<unknown-cpu>"; }
@@ -86,7 +86,8 @@ public:
       : DevicexInfo(_provider,
                     popart::DeviceType::Sim,
                     popart::DeviceConnectionType::Always,
-                    _device) {}
+                    _device,
+                    {}) {}
 
   virtual int getId() const { return 0; }
   virtual std::string getVersion() const { return "<unknown-sim>"; }
@@ -97,7 +98,8 @@ public:
       : DevicexInfo(_provider,
                     popart::DeviceType::IpuModel,
                     popart::DeviceConnectionType::Always,
-                    _device) {}
+                    _device,
+                    {}) {}
 
   virtual int getId() const { return 0; }
   virtual std::string getVersion() const { return "<unknown-ipumodel>"; }
@@ -107,8 +109,9 @@ public:
   DevicexIpuInfo(DeviceProvider &_provider,
                  popart::DeviceConnectionType _dct,
                  int _id,
-                 poplar::Device &_device)
-      : DevicexInfo(_provider, popart::DeviceType::Ipu, _dct, _device),
+                 poplar::Device &_device,
+                 const poplar::OptionFlags &_flags)
+      : DevicexInfo(_provider, popart::DeviceType::Ipu, _dct, _device, _flags),
         id(_id) {}
 
   virtual bool attach();
@@ -126,10 +129,13 @@ private:
 
 class DevicexOfflineIpuInfo : public popart::DeviceInfo {
 public:
-  DevicexOfflineIpuInfo(DeviceProvider &_provider, poplar::Target &_target)
+  DevicexOfflineIpuInfo(DeviceProvider &_provider,
+                        poplar::Target &_target,
+                        const poplar::OptionFlags &_flags)
       : popart::DeviceInfo(_provider,
                            popart::DeviceType::OfflineIpu,
-                           popart::DeviceConnectionType::Never),
+                           popart::DeviceConnectionType::Never,
+                           _flags),
         target(std::move(_target)) {}
 
   virtual bool attach() { throw error("Cannot attach virtual device"); }
@@ -147,7 +153,7 @@ public:
 
   virtual std::vector<unsigned> getDriverIds() const { return {0}; }
 
-  virtual const poplar::Target &getTarget() const { return target; };
+  virtual const poplar::Target &getTarget() const { return target; }
 
   virtual bool canCompileOffline() const { return true; }
 

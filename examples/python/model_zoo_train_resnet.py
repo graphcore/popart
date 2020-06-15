@@ -8,8 +8,8 @@ import urllib.request
 
 import numpy as np
 from PIL import Image
-import onnx
 import popart
+import onnx
 from onnx import numpy_helper
 
 # Onnx modelzoo models are hosted on AWS as tarballs, with URL:

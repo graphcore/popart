@@ -1068,6 +1068,15 @@ public:
   std::string getTensorDtypeString(const TensorId id);
 
   /**
+   * Return a tensor type from either
+   * the input, output, or value_info lists in the GraphProto
+   *
+   * \param id Tensor id
+   * \return A tensor type
+   */
+  DataType getTensorDataType(const TensorId id);
+
+  /**
    * Push a name onto the name scope stack.
    *
    * The names of tensors and nodes added to the ONNX graph will be prefixed
