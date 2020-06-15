@@ -167,7 +167,7 @@ class InferenceSession(_InferenceSessionCore):
             exported.           not exported
 
         Raises:
-            popart.CompileAndExportException: Thrown if an invalid device is provided.
+            popart.OutOfMemoryException: If an out of memory event occurs
             OSError: Thrown in the event of any file system related errors
                      during the export
 
@@ -198,15 +198,14 @@ class InferenceSession(_InferenceSessionCore):
         ``poplar::Streams``.
 
         Raises:
-            popart.PrepareDeviceException: Thrown if an invalid device is provided.
+            popart.OutOfMemoryException: If an out of memory event occurs
         """
 
         err = popart.OutOfMemoryError()
         super(InferenceSession, self).prepareDevice(err)
 
-        # If an error occurred during the perpareDevice raise an exception
         if not err.isSuccessful():
-            raise popart.PrepareDeviceException(err)
+            raise popart.OutOfMemoryException(err)
 
 
 class TrainingSession(_TrainingSessionCore):
@@ -230,9 +229,6 @@ class TrainingSession(_TrainingSessionCore):
             patterns: Optimization patterns to apply. Default: ``None``.
             userOptions: Session options to apply.
                 Default: ``popart.SessionOptions()``.
-
-        Raises:
-            popart.PrepareDeviceException: Thrown if an invalid device is provided.
     """
     def __init__(
         self,
@@ -282,7 +278,7 @@ class TrainingSession(_TrainingSessionCore):
             exported.           not exported
 
         Raises:
-            popart.CompileAndExportException: Thrown if an invalid device is provided.
+            popart.OutOfMemoryException: If an out of memory event occurs
             OSError: Thrown in the event of any file system related errors
                      during the export
 
@@ -313,11 +309,11 @@ class TrainingSession(_TrainingSessionCore):
         ``poplar::Streams``.
 
         Raises:
-            popart.PrepareDeviceException: Thrown if an invalid device is provided.
+            popart.OutOfMemoryException: If an out of memory event occurs
         """
+
         err = popart.OutOfMemoryError()
         super(TrainingSession, self).prepareDevice(err)
 
-        # If an error occured during the perpareDevice raise an exception
         if not err.isSuccessful():
-            raise popart.PrepareDeviceException(err)
+            raise popart.OutOfMemoryException(err)

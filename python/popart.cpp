@@ -146,7 +146,7 @@ public:
 
   void assertNumElements(const Ir &) const final {}
 
-  ConstVoidData in(TensorId id, int64_t, bool prefetch) final {
+  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
     py::array a = inputCb(id, prefetch);
     // To ensure that array is persisted until complete is called
     inDict[py::str(id)] = a;
@@ -818,7 +818,7 @@ PYBIND11_MODULE(popart_core, m) {
     py::class_<OutOfMemoryError> cls(m, "OutOfMemoryError");
     cls.def(py::init<>());
     cls.def("__repr__", [](const OutOfMemoryError &err) {
-      return "popart.PrepareDeviceError: " + err.what();
+      return "popart.OutOfMemoryError: " + err.what();
     });
     cls.def("__str__", &OutOfMemoryError::what);
     cls.def("isSuccessful", &OutOfMemoryError::isSuccessful);
