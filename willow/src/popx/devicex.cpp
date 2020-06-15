@@ -807,7 +807,7 @@ Devicex::~Devicex() = default;
 
 Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
     : _ir(ir), progs(PopPrograms(this)), tensors(ir), deviceInfo(deviceInfo_),
-      prepareHasBeenCalled_(false) {
+      prepareHasBeenCalled_(false), prepareGraphHasBeenCalled_(false) {
 
   logging::devicex::info("Setting selected device: {}", *deviceInfo);
 
@@ -2597,14 +2597,28 @@ void Devicex::setStochasticRoundingBehaviour(poplar::Graph &graph) {
   }
 }
 
-// go all the way to creating the engine and connecting streams
-void Devicex::prepare() {
+void Devicex::trySaveTensorTileMap() const {
+  auto popartTensorTileMap = getPopartEnvVar("TENSOR_TILE_MAP");
+  if (popartTensorTileMap && strcmp(popartTensorTileMap, "") != 0) {
+    saveTensorTileMap(popartTensorTileMap);
+  }
+}
+
+void Devicex::prepareGraph() {
+  if (prepareGraphHasBeenCalled_) {
+    logging::devicex::info("Poplar graph has already been prepared");
+    return;
+  }
+
   logging::devicex::info("Poplar version: {}", poplar::versionString());
   logging::devicex::info("Poplar release githash: {}", poplar::packageHash());
 
   tryLoadExecutable();
+  logging::devicex::info("Loaded executable");
 
   initPoplarGraph();
+
+  logging::devicex::info("Poplar graph initialised");
 
   popops::addCodelets(graph());
   poplin::addCodelets(graph());
@@ -2720,6 +2734,8 @@ void Devicex::prepare() {
   if (opxTrace) {
     opxTraceTensor = getConst(graph(), poplar::HALF, {1}, 0, "traceTensor");
   }
+
+  logging::devicex::info("Turning Ops into Opxes");
 
   // create an Opx for every Op
   for (Op *op : ir().getOpSchedule({})) {
@@ -3074,39 +3090,54 @@ void Devicex::prepare() {
     graph().outputComputeGraph(strm, progs.progs());
   }
 
-  if (!ir().getSessionOptions().compileEngine) {
+  prepareGraphHasBeenCalled_ = true;
+}
+
+void Devicex::compileAndExport(const std::string &executablePath,
+                               const std::string &weightsPath) {
+  if (!getDeviceInfo()->canCompileOffline()) {
+    std::ostringstream oss;
+    oss << getDeviceInfo()->getType();
+
+    throw error("Offline compilation is not supported for device type {}",
+                oss.str());
+  }
+
+  prepareGraph();
+  auto executable = getExecutable();
+
+  // auto numIPUs    = graph().getTarget().getNumIPUs();
+  // logging::devicex::info("Exporting compiled executable");
+  // exportExecutable(executable,
+  //                  *this,
+  //                  engineOptions,
+  //                  SavedInfo(*this).toString(),
+  //                  numIPUs);
+  throw internal_error("Not yet implemented");
+}
+
+// go all the way to creating the engine and connecting streams
+void Devicex::prepare() {
+  prepareGraph();
+
+  if (ir().getSessionOptions().compileEngine) {
+    auto executable = getExecutable();
+    pEngine.reset(new poplar::Engine(std::move(executable), engineOptions));
+  } else {
     logging::devicex::info("Not compiling engine by request");
     return;
   }
 
-  logging::devicex::info("Starting Engine compilation");
-
-  auto trySaveTensorTileMap = [this]() {
-    auto popartTensorTileMap = getPopartEnvVar("TENSOR_TILE_MAP");
-    if (popartTensorTileMap && strcmp(popartTensorTileMap, "") != 0) {
-      saveTensorTileMap(popartTensorTileMap);
-    }
-  };
-
-  try {
-    auto executable = getExecutable();
-    pEngine.reset(new poplar::Engine(std::move(executable), engineOptions));
-  } catch (const poplar::graph_memory_allocation_error &e) {
-    // If the creation of the engine throw an exception due to memory
-    // allocation i.e. the program does not fit show graph profile and
-    // re-throw the exception In certain cases poplar will throw the error
-    // without a graph profile. The following engine option needs to be set to
-    // enable the graph profile in this case "debug.allowOutOfMemory":"true"
-
-    trySaveTensorTileMap();
-
-    logging::devicex::err("Memory allocation error : {}", e.what());
-    throw devicex_memory_allocation_err(e, reportOptions);
+  if (getDeviceInfo()->getConnectionType() == DeviceConnectionType::Never) {
+    std::ostringstream oss;
+    oss << getDeviceInfo()->getType();
+    throw error("Cannot run on an {}, use \"compileAndExport\" instead",
+                oss.str());
   }
 
-  logging::devicex::info("Engine compiled");
-
   loadEngineAndConnectStreams();
+  logging::devicex::info("Loaded engine and connect streams");
+
   setRandomSeedFromHost(); // Stream random seed value by default (prog empty if
                            // no randomness)
 
@@ -3149,6 +3180,11 @@ poplar::program::Sequence &Devicex::getAnchorReturnFragment(Tensor *tensor) {
 }
 
 poplar::Executable Devicex::getExecutable() {
+  if (!prepareGraphHasBeenCalled_) {
+    throw internal_error("Devicex::prepareGraph() must be called before"
+                         " Devicex::getExecutable() is called.");
+  }
+
   auto progressLogger = [](int progress, int total) {
     if (total != 0) {
       float percentage = std::floor(100.0f * static_cast<float>(progress) /
@@ -3162,12 +3198,32 @@ poplar::Executable Devicex::getExecutable() {
     // cachedExecutable is set to nonstd::nullopt
     nonstd::optional<poplar::Executable> result = nonstd::nullopt;
     boost::swap(cachedExecutable, result);
+    logging::devicex::info("Returing CachedExecutable");
+
     return std::move(result.value());
   } else {
-    auto executable = poplar::compileGraph(
-        graph(), progs.progs(), engineOptions, progressLogger);
-    trySaveExecutable(executable);
-    return executable;
+    try {
+      logging::devicex::info("Starting Engine compilation");
+
+      auto executable = poplar::compileGraph(
+          graph(), progs.progs(), engineOptions, progressLogger);
+
+      logging::devicex::info("Graph compiled");
+
+      trySaveExecutable(executable);
+      return executable;
+    } catch (const poplar::graph_memory_allocation_error &e) {
+      // If the compilations throws an exception due to memory
+      // allocation i.e. the program does not fit show graph profile and
+      // re-throw the exception In certain cases poplar will throw the error
+      // without a graph profile. The following engine option needs to be set to
+      // enable the graph profile in this case "debug.allowOutOfMemory":"true"
+
+      trySaveTensorTileMap();
+
+      logging::devicex::err("Memory allocation error : {}", e.what());
+      throw devicex_memory_allocation_err(e, reportOptions);
+    }
   }
 }
 
@@ -3647,6 +3703,7 @@ void Devicex::initPoplarGraph() {
     }
     case DeviceType::Cpu:
     case DeviceType::IpuModel:
+    case DeviceType::OfflineIpu:
     case DeviceType::Sim:
     default:
       throw error(
@@ -3655,9 +3712,7 @@ void Devicex::initPoplarGraph() {
           deviceInfo->toString());
     }
   } else {
-    // Do not like the dynamic_cast is there a better way to handle this?
-    auto &popDevice   = dynamic_cast<DevicexInfo &>(*deviceInfo).getDevice();
-    popTarget         = popDevice.getTarget();
+    popTarget         = deviceInfo->getTarget();
     replicationFactor = getReplicationFactor();
 
     logging::devicex::debug("Creating graph with replication factor {}",

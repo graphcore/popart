@@ -1,7 +1,6 @@
 # for more useful warnings
 include(EnableCompilerWarnings)
 
-option(POPLAR_BACKEND "Build Poplar backend (Graphcore IPU)" ON)
 include_directories("include")
 include_directories("${CMAKE_CURRENT_BINARY_DIR}/include")
 
@@ -35,8 +34,6 @@ set(sources
   ${transforms_sources}
   ${subgraph_sources})
 
-if (POPLAR_BACKEND)
-message( STATUS "Building WITH Poplar IPU backend")
 find_package(Poplar REQUIRED)
 
 # concatenate poplar backend sources to the list of files to compile
@@ -46,9 +43,6 @@ set(sources
   ${opx_sources}
   ${opx_dyn_sources}
   ${opx_collectives_sources})
-else()
-message( STATUS "Building WITHOUT Poplar IPU backend")
-endif()
 
 # Search first for poprithms-static-config.cmake
 find_package(poprithms-static CONFIG)

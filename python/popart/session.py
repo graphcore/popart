@@ -2,13 +2,15 @@
 from typing import Dict, List, Union
 
 import numpy as np
+import os
 
 import popart
 from popart_core import _InferenceSessionCore, _TrainingSessionCore
 
 
-def _initAnchorArrays(sess: Union["InferenceSession", "TrainingSession"]
-                      ) -> Dict[str, np.array]:
+def _initAnchorArrays(
+    sess: Union["InferenceSession", "TrainingSession"]
+) -> Dict[str, np.array]:
     """Create the anchor arrays to feed data back into Python with.
 
     Arguments:
@@ -60,10 +62,7 @@ def _initAnchorArrays(sess: Union["InferenceSession", "TrainingSession"]
     return anchorArrays
 
 
-class PrepareDeviceException(popart.popart_exception):
-    """Custom expection thrown by the ``devicePrepare`` call.
-    """
-
+class OutOfMemoryException(popart.popart_exception):
     def __init__(self, e: popart.popart_exception) -> None:
         """Class initializer
 
@@ -90,6 +89,13 @@ class PrepareDeviceException(popart.popart_exception):
         return self.error.getGraphReport()
 
 
+def makedirsAndCheckWritable(path):
+    os.makedirs(path, exist_ok=True)
+
+    if not os.access(path, os.W_OK):
+        raise OSError(f"Unable to write to {path}")
+
+
 class InferenceSession(_InferenceSessionCore):
     """ Create a runtime class for executing an ONNX graph on a set of IPU
     hardware for inference.
@@ -114,19 +120,15 @@ class InferenceSession(_InferenceSessionCore):
             not include the custom pattern. Default ``None``.
         userOptions: Session options to apply.
             Default: ``popart.SessionOptions()``.
-
-    Raises:
-        popart.PrepareDeviceException: Thrown if an invalid device is provided.
     """
-
     def __init__(
-            self,
-            fnModel: bytes,
-            dataFlow: Dict[int, Dict],
-            deviceInfo: popart.DeviceInfo,
-            inputShapeInfo: popart.InputShapeInfo = popart.InputShapeInfo(),
-            patterns: popart.Patterns = None,
-            userOptions: popart.SessionOptions = popart.SessionOptions()
+        self,
+        fnModel: bytes,
+        dataFlow: Dict[int, Dict],
+        deviceInfo: popart.DeviceInfo,
+        inputShapeInfo: popart.InputShapeInfo = popart.InputShapeInfo(),
+        patterns: popart.Patterns = None,
+        userOptions: popart.SessionOptions = popart.SessionOptions()
     ) -> None:
 
         if patterns == None:
@@ -150,6 +152,45 @@ class InferenceSession(_InferenceSessionCore):
         """
         return _initAnchorArrays(self)
 
+    def compileAndExport(self, executablePath=None, weightsPath=None) -> None:
+        """Compiles the graph and exports it to the specified paths.
+
+        This will form the poplar::Graph and compile the polar::Executable
+        before exporting the executable and metadata to allow offline running.
+
+        Arguments:
+            executablePath: The path to export the executable and metadata. If
+            it does not exist, it will be created. If empty, the executable is
+            not exported.
+            weightsPath: The path to export the weights. If it does
+            not exist, it will be created. If empty, the weights are not
+            exported.           not exported
+
+        Raises:
+            popart.OutOfMemoryException: If an out of memory event occurs
+            OSError: Thrown in the event of any file system related errors
+                     during the export
+
+        """
+        if executablePath:
+            executablePath = os.path.expanduser(executablePath)
+            makedirsAndCheckWritable(executablePath)
+        else:
+            executablePath = ""
+
+        if weightsPath:
+            weightsPath = os.path.expanduser(weightsPath)
+            makedirsAndCheckWritable(weightsPath)
+        else:
+            weightsPath = ""
+
+        err = popart.OutOfMemoryError()
+        super(InferenceSession, self).compileAndExport(executablePath,
+                                                       weightsPath, err)
+
+        if not err.isSuccessful():
+            raise popart.OutOfMemoryException(err)
+
     def prepareDevice(self) -> None:
         """Prepare the network for execution.
 
@@ -157,15 +198,14 @@ class InferenceSession(_InferenceSessionCore):
         ``poplar::Streams``.
 
         Raises:
-            popart.PrepareDeviceException: Thrown if an invalid device is provided.
+            popart.OutOfMemoryException: If an out of memory event occurs
         """
 
-        err = popart.PrepareDeviceError()
+        err = popart.OutOfMemoryError()
         super(InferenceSession, self).prepareDevice(err)
 
-        # If an error occurred during the perpareDevice raise an exception
         if not err.isSuccessful():
-            raise popart.PrepareDeviceException(err)
+            raise popart.OutOfMemoryException(err)
 
 
 class TrainingSession(_TrainingSessionCore):
@@ -189,21 +229,17 @@ class TrainingSession(_TrainingSessionCore):
             patterns: Optimization patterns to apply. Default: ``None``.
             userOptions: Session options to apply.
                 Default: ``popart.SessionOptions()``.
-
-        Raises:
-            popart.PrepareDeviceException: Thrown if an invalid device is provided.
     """
-
     def __init__(
-            self,
-            fnModel: bytes,
-            dataFlow: Dict[int, Dict],
-            loss: "",
-            optimizer: popart.Optimizer,
-            deviceInfo: popart.DeviceInfo,
-            inputShapeInfo: popart.InputShapeInfo = popart.InputShapeInfo(),
-            patterns: popart.Patterns = None,
-            userOptions: popart.SessionOptions = popart.SessionOptions()
+        self,
+        fnModel: bytes,
+        dataFlow: Dict[int, Dict],
+        loss: "",
+        optimizer: popart.Optimizer,
+        deviceInfo: popart.DeviceInfo,
+        inputShapeInfo: popart.InputShapeInfo = popart.InputShapeInfo(),
+        patterns: popart.Patterns = None,
+        userOptions: popart.SessionOptions = popart.SessionOptions()
     ) -> None:
 
         if patterns is None:
@@ -227,6 +263,45 @@ class TrainingSession(_TrainingSessionCore):
         """
         return _initAnchorArrays(self)
 
+    def compileAndExport(self, executablePath=None, weightsPath=None) -> None:
+        """Compiles the graph and exports it to the specified paths.
+
+        This will form the poplar::Graph and compile the polar::Executable
+        before exporting the executable and metadata to allow offline running.
+
+        Arguments:
+            executablePath: The path to export the executable and metadata. If
+            it does not exist, it will be created. If empty, the executable is
+            not exported.
+            weightsPath: The path to export the weights. If it does
+            not exist, it will be created. If empty, the weights are not
+            exported.           not exported
+
+        Raises:
+            popart.OutOfMemoryException: If an out of memory event occurs
+            OSError: Thrown in the event of any file system related errors
+                     during the export
+
+        """
+        if executablePath:
+            executablePath = os.path.expanduser(executablePath)
+            makedirsAndCheckWritable(executablePath)
+        else:
+            executablePath = ""
+
+        if weightsPath:
+            weightsPath = os.path.expanduser(weightsPath)
+            makedirsAndCheckWritable(weightsPath)
+        else:
+            weightsPath = ""
+
+        err = popart.OutOfMemoryError()
+        super(TrainingSession, self).compileAndExport(executablePath,
+                                                      weightsPath, err)
+
+        if not err.isSuccessful():
+            raise popart.OutOfMemoryException(err)
+
     def prepareDevice(self) -> None:
         """Prepare the network for execution.
 
@@ -234,11 +309,11 @@ class TrainingSession(_TrainingSessionCore):
         ``poplar::Streams``.
 
         Raises:
-            popart.PrepareDeviceException: Thrown if an invalid device is provided.
+            popart.OutOfMemoryException: If an out of memory event occurs
         """
-        err = popart.PrepareDeviceError()
+
+        err = popart.OutOfMemoryError()
         super(TrainingSession, self).prepareDevice(err)
 
-        # If an error occured during the perpareDevice raise an exception
         if not err.isSuccessful():
-            raise popart.PrepareDeviceException(err)
+            raise popart.OutOfMemoryException(err)

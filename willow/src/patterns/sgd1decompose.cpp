@@ -6,11 +6,11 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/onnxutil.hpp>
+#include <popart/op/accumulate.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/concat.hpp>
 #include <popart/op/flatten.hpp>
 #include <popart/op/sgd1acclupdate.hpp>
-#include <popart/op/sgd1accumulate.hpp>
 #include <popart/op/sgd1combo.hpp>
 #include <popart/op/sgd1varupdate.hpp>
 #include <popart/op/slice.hpp>
@@ -101,6 +101,9 @@ bool SGD1Decompose::apply(Op *op) const {
   // 4) The output of the AcclUpdateOp
   auto updatedAcclId = reservedAcclFinalOutPrefix() + weightGradId;
 
+  // 5) Reduced gradient if gradient reduction is used
+  auto reducedWeightGradId = weightGradId + "_reduced";
+
   // Create Accumulator Tensor, a Variable Tensor
   if (weightGrad->info.dataType() != weight->info.dataType()) {
     throw error("Currently, weight and weight gradient should have the same "
@@ -127,6 +130,33 @@ bool SGD1Decompose::apply(Op *op) const {
     }
   }
 
+  // Gradient reduction (mutually exclusive with accl reduction)
+  if (combo->reductionType == OptimizerReductionType::GradReduce) {
+    // GradReduceOp
+    auto reduceOpUp = std::make_unique<ReplicatedAllReduceOp>(
+        Onnx::CustomOperators::ReplicatedAllReduce,
+        Op::Settings(graph, combo->name() + "_reduce"));
+    auto reduceOp = reduceOpUp.get();
+    transferBaseProperties(combo, reduceOp);
+    graph.moveIntoGraph(std::move(reduceOpUp));
+
+    logging::pattern::trace("Connecting input {} to {} at {}",
+                            weightGradId,
+                            reduceOp->str(),
+                            ReplicatedAllReduceOp::getInIndex());
+    reduceOp->connectInTensor(ReplicatedAllReduceOp::getInIndex(),
+                              weightGradId);
+
+    reduceOp->createAndConnectOutTensor(ReplicatedAllReduceOp::getOutIndex(),
+                                        reducedWeightGradId);
+
+    reduceOp->setup();
+
+    // Will be transferred to the replacement accl update op, which does
+    // not exist yet at this point
+    graph.topoCons->insert(reduceOp, combo, true);
+  }
+
   // Accumulate Op
   //
   // Inputs:
@@ -136,8 +166,9 @@ bool SGD1Decompose::apply(Op *op) const {
   //
   // Outputs:
   // (4) an alias of acclIn
-  auto acclOpUp = std::make_unique<SGD1AccumulateOp>(
+  auto acclOpUp = std::make_unique<AccumulateOp>(
       acclIntoAccumulatorId,
+      AccumulationType::DampenedAdd,
       combo->initDpsf1,
       Op::Settings(graph, combo->name() + "_accumulate"));
   auto acclOp = acclOpUp.get();
@@ -157,21 +188,26 @@ bool SGD1Decompose::apply(Op *op) const {
                           acclOp->str(),
                           VarUpdateWithUpdaterOp::getUpdaterInIndex());
   acclOp->connectInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex(),
-                          weightGradId);
+                          combo->reductionType ==
+                                  OptimizerReductionType::GradReduce
+                              ? reducedWeightGradId
+                              : weightGradId);
 
   // (3)
   if (!combo->initDpsf1.isConst()) {
     acclOp->connectInTensor(
         // the index at which the dampening scale factor is received,
-        SGD1AccumulateOp::getDpsf1InIndex(),
+        AccumulateOp::getFactorInIndex(),
         // the name of the dampeninf scale factor, use combo to find this name
         combo->inId(SGD1ComboOp::getDpsf1InIndex()));
   }
   // (4)
   // if there is no AcclReduce, the output goes directly into the updates.
   acclOp->createAndConnectOutTensor(VarUpdateOp::getUpdatedVarOutIndex(),
-                                    combo->withAcclReduce ? acclIntoReduceId
-                                                          : acclIntoUpdateId);
+                                    combo->reductionType ==
+                                            OptimizerReductionType::AcclReduce
+                                        ? acclIntoReduceId
+                                        : acclIntoUpdateId);
 
   // T12001 better encapsulation
   if (ir.additionalModelProtoTensors.find(acclIntoAccumulatorId) ==
@@ -189,7 +225,8 @@ bool SGD1Decompose::apply(Op *op) const {
   graph.topoCons->transfer(combo, acclOp);
   acclOp->setup();
 
-  if (combo->withAcclReduce) {
+  // Accl reduction (mutually exclusive with gradient reduction)
+  if (combo->reductionType == OptimizerReductionType::AcclReduce) {
     // AcclReduceOp
     //
     // Inputs:

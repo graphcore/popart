@@ -1,6 +1,6 @@
-// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SGD1ACCUMULATETHEACCLX_HPP
-#define GUARD_NEURALNET_SGD1ACCUMULATETHEACCLX_HPP
+// Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#ifndef GUARD_NEURALNET_ACCUMULATEX_HPP
+#define GUARD_NEURALNET_ACCUMULATEX_HPP
 
 #include <popart/names.hpp>
 #include <popart/popx/op/varupdatex.hpp>
@@ -8,9 +8,9 @@
 namespace popart {
 namespace popx {
 
-class SGD1AccumulateOpx : public VarUpdateOpx {
+class AccumulateOpx : public VarUpdateOpx {
 public:
-  SGD1AccumulateOpx(Op *, Devicex *);
+  AccumulateOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
 
   // can create the accumulator input Tensor (@Var index)

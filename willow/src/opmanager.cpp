@@ -22,6 +22,11 @@ const std::vector<TensorId> &OpCreatorInfo::getInputIds() const {
   }
 }
 
+Tensor *OpCreatorInfo::getInputTensor(int index) const {
+  auto id = inputIds.at(index);
+  return settings.graph.get().getTensors().get(id);
+}
+
 OpManager &OpManager::getInstance() {
   static OpManager instance;
   return instance;

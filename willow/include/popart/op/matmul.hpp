@@ -2,10 +2,16 @@
 #ifndef GUARD_NEURALNET_MATMUL_HPP
 #define GUARD_NEURALNET_MATMUL_HPP
 
+#include <string>
 #include <popart/op.hpp>
 #include <popart/vendored/optional.hpp>
 
 namespace popart {
+
+enum class MatMulPartialsType { HALF, FLOAT };
+
+std::string toString(const MatMulPartialsType &);
+std::ostream &operator<<(std::ostream &, const MatMulPartialsType &);
 
 class MatMulBaseOp : public Op {
 public:
@@ -29,6 +35,7 @@ public:
                const nonstd::optional<float> availableMemoryProportion_,
                const SerialiseSettings &serialization_,
                const OptionalDataType outputType_,
+               const MatMulPartialsType partialsType_,
                const bool enableFullyConnectedPass_ = true);
   MatMulBaseOp(const MatMulBaseOp &) = default;
   ~MatMulBaseOp() override           = default;
@@ -65,6 +72,9 @@ public:
   void appendOutlineAttributes(OpSerialiserBase &os) const override;
   void appendMore(OpSerialiserBase &os) const override;
 
+  MatMulPartialsType getPartialsType() const { return partialsType; }
+  void setPartialsType(const MatMulPartialsType &pt) { partialsType = pt; }
+
 protected:
   Phase phase;
 
@@ -76,6 +86,8 @@ protected:
 
   // Using optional as the input info is not known when initialising
   OptionalDataType outputType;
+
+  MatMulPartialsType partialsType;
 };
 
 class MatMulOp : public MatMulBaseOp {
@@ -84,7 +96,8 @@ public:
            const Op::Settings &settings_,
            const nonstd::optional<float> availableMemoryProportion,
            const SerialiseSettings &serialization_,
-           const OptionalDataType outputType);
+           const OptionalDataType outputType,
+           const MatMulPartialsType partialsType_ = MatMulPartialsType::FLOAT);
   MatMulOp(const MatMulOp &) = default;
   MatMulOp &operator=(const MatMulOp &) = delete;
   ~MatMulOp() override                  = default;

@@ -42,43 +42,10 @@ void BatchNormOp::setup() {
                 inRank(getXInIndex()));
   }
 
-  if (spatial == 0) {
-    throw error("batch norm does not currently support spatial set to 0");
-  }
-
-  if (spatial == 1) {
-    // Add check to make sure that inputs are the right shape
-    if (inInfo(getScaleInIndex()).dim(0) != inInfo(getXInIndex()).dim(1)) {
-      throw error(
-          "batch norm scale dimension 0 ({}) does not equal x dimension 1 ({})",
-          inInfo(getScaleInIndex()).dim(0),
-          inInfo(getXInIndex()).dim(1));
-    }
-
-    if (inInfo(getBInIndex()).dim(0) != inInfo(getXInIndex()).dim(1)) {
-      throw error(
-          "batch norm b dimension 0 ({}) does not equal x dimension 1 ({})",
-          inInfo(getBInIndex()).dim(0),
-          inInfo(getXInIndex()).dim(1));
-    }
-
-    if (inInfo(getMeanInIndex()).dim(0) != inInfo(getXInIndex()).dim(1)) {
-      throw error(
-          "batch norm mean dimension 0 ({}) does not equal x dimension 1 ({})",
-          inInfo(getMeanInIndex()).dim(0),
-          inInfo(getXInIndex()).dim(1));
-    }
-
-    if (inInfo(getVarInIndex()).dim(0) != inInfo(getXInIndex()).dim(1)) {
-      throw error(
-          "batch norm var dimension 0 ({}) does not equal x dimension 1 ({})",
-          inInfo(getVarInIndex()).dim(0),
-          inInfo(getXInIndex()).dim(1));
-    }
-
-  } else {
-    // TODO : Add check when spatial is supported
-  }
+  validateInput(inInfo(getScaleInIndex()), "scale");
+  validateInput(inInfo(getBInIndex()), "B");
+  validateInput(inInfo(getMeanInIndex()), "mean");
+  validateInput(inInfo(getVarInIndex()), "var");
 
   outInfo(getYOutIndex()) = inInfo(getXInIndex());
 
@@ -127,9 +94,44 @@ void BatchNormOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("spatial", spatial);
 }
 
+void BatchNormOp::validateInput(const TensorInfo &inputInfo,
+                                const std::string &inputName) {
+
+  const TensorInfo &xInfo               = inInfo(getXInIndex());
+  const popart::Shape &xShape           = xInfo.shape();
+  const popart::Shape &actualInputShape = inputInfo.shape();
+
+  // Work out expected input shape.
+  popart::Shape expectedInputShape;
+  std::string matchDescription;
+
+  if (getSpatial()) {
+    // For spatial=True expect inputs of the shape [C] for x of shape [N, C, D1,
+    // ..., Dn].
+    expectedInputShape.push_back(xInfo.dim(1));
+    matchDescription = "dimension 1";
+  } else {
+    // For spatial=False expect inputs of the shape [C, D1, ..., Dn] for x of
+    // shape [N, C, D1, ..., Dn].
+    expectedInputShape.insert(
+        expectedInputShape.begin(), xShape.begin() + 1, xShape.end());
+    matchDescription = "all but the first dimension";
+  }
+
+  if (actualInputShape != expectedInputShape) {
+    throw error("expected shape of batch norm input tensor {} ({}) to be {} to "
+                "match {} of X ({})",
+                inputName,
+                actualInputShape,
+                expectedInputShape,
+                matchDescription,
+                xShape);
+  }
+}
+
 BatchNormGradOp::BatchNormGradOp(const BatchNormOp &op_)
     : Op(Onnx::GradOperators::BatchNormalizationGrad, op_.getSettings()),
-      epsilon(op_.getEpsilon()),
+      epsilon(op_.getEpsilon()), spatial(op_.getSpatial()),
       fwdInInfo(op_.inInfo(BatchNormOp::getXInIndex())),
       fwdScaleInInfo(op_.inInfo(BatchNormOp::getScaleInIndex())),
       fwdBInInfo(op_.inInfo(BatchNormOp::getBInIndex())) {}

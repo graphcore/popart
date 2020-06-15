@@ -130,7 +130,7 @@ def test_against_pytorch():
     mm1 = builder.aiOnnx.add([mm0, w1])
     l1 = builder.aiGraphcore.l1loss([mm1], lambda1)
     dataFlow = popart.DataFlow(batchesPerStep, {})
-    device = tu.create_test_device(numIpus=nIPUs, tilesPerIpu=1216)
+    device = tu.create_test_device(numIpus=nIPUs)
     userOptions = popart.SessionOptions()
     userOptions.enableGradientAccumulation = False
     userOptions.enablePrefetchDatastreams = False

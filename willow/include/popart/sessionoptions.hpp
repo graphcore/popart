@@ -263,6 +263,13 @@ struct SessionOptions {
   /// Enable/disable the serializing of matmuls.
   bool enableSerializedMatmuls = true;
 
+  // Set the partials type globally for matmuls. Can be overriden individually
+  // with `builder.setPartialsType()`. Possible values are defined by
+  // `fromString` in op/matmul.cpp. As of last check, those are:
+  // "float", "half" in any letter case.
+  // By default, this is not set, so no global partials type is imposed.
+  std::string partialsTypeMatMuls;
+
   /// If true, computes the mean first and subtracts the activations
   /// from it before computing the variance. The implementation with
   /// this flag set to true is slower than when set to false.

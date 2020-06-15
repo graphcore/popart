@@ -1,5 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <memory>
+#include <string>
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
@@ -19,11 +20,13 @@ MatMulBaseOp::MatMulBaseOp(
     const nonstd::optional<float> availableMemoryProportion_,
     const SerialiseSettings &serialization_,
     const OptionalDataType outputType_,
+    const MatMulPartialsType partialsType_,
     const bool enableFullyConnectedPass_)
     : Op(_opid, settings_), phase(phase_),
       enableFullyConnectedPass(enableFullyConnectedPass_),
       availableMemoryProportion(availableMemoryProportion_),
-      serialization(serialization_), outputType(outputType_) {}
+      serialization(serialization_), outputType(outputType_),
+      partialsType(partialsType_) {}
 
 bool MatMulBaseOp::useFullyConnectedPass() const {
   return getIr().getSessionOptions().enableFullyConnectedPass &&
@@ -37,6 +40,7 @@ void MatMulBaseOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("fully_connected_pass",
                      useFullyConnectedPass() ? static_cast<int64_t>(phase)
                                              : -1);
+  os.appendAttribute("partialsType", toString(partialsType));
 }
 
 void MatMulBaseOp::appendMore(OpSerialiserBase &os) const {
@@ -45,6 +49,7 @@ void MatMulBaseOp::appendMore(OpSerialiserBase &os) const {
                      static_cast<int64_t>(serialization.mode));
   os.appendAttribute("serialization_factor",
                      static_cast<int64_t>(serialization.factor));
+  os.appendAttribute("partialsType", toString(partialsType));
 }
 
 MatMulBaseGradOp::MatMulBaseGradOp(const OperatorIdentifier &_opid,
@@ -56,6 +61,7 @@ MatMulBaseGradOp::MatMulBaseGradOp(const OperatorIdentifier &_opid,
                    fwdOp.getAvailableMemoryProportion(),
                    fwdOp.getSerialiseSettings(),
                    fwdOp.getOutputType(),
+                   fwdOp.getPartialsType(),
                    fwdOp.useFullyConnectedPass()),
       fwdOpOutputGrad(fwdOp.outInfo(0)), fwdOpLhsInfo(fwdOp.lhsIn()->info),
       fwdOpRhsInfo(fwdOp.rhsIn()->info), cloneOfCreator(fwdOp.clone()) {}
@@ -68,13 +74,15 @@ MatMulOp::MatMulOp(const OperatorIdentifier &_opid,
                    const Op::Settings &settings_,
                    const nonstd::optional<float> availableMemoryProportion_,
                    const SerialiseSettings &serialization_,
-                   const OptionalDataType outputType_)
+                   const OptionalDataType outputType_,
+                   const MatMulPartialsType partialsType_)
     : MatMulBaseOp(_opid,
                    settings_,
                    Phase::Fwd,
                    availableMemoryProportion_,
                    serialization_,
-                   outputType_) {}
+                   outputType_,
+                   partialsType_) {}
 
 std::unique_ptr<Op> MatMulOp::clone() const {
   return std::make_unique<MatMulOp>(*this);
@@ -333,7 +341,43 @@ Shape MatMulRhsGradOp::getLhsInputShape() const { return fwdOpLhsInfo.shape(); }
 
 Shape MatMulRhsGradOp::getOutputShape() const { return fwdOpRhsInfo.shape(); }
 
+std::string toString(const MatMulPartialsType &pt) {
+  switch (pt) {
+  case MatMulPartialsType::HALF:
+    return "MatMulPartialsType::HALF";
+  case MatMulPartialsType::FLOAT:
+    return "MatMulPartialsType::FLOAT";
+  default:
+    throw error("Bad MatMulPartialsType '{}'", static_cast<int>(pt));
+  }
+}
+
+std::ostream &operator<<(std::ostream &os, const MatMulPartialsType &pt) {
+  os << toString(pt);
+  return os;
+}
+
 namespace {
+
+// Accepts the strings "half", "float" in any kind of letter case.
+MatMulPartialsType fromString(const std::string &user_pt) {
+  std::string lowered_pt;
+  lowered_pt.resize(user_pt.length());
+
+  std::transform(user_pt.begin(), user_pt.end(), lowered_pt.begin(), ::tolower);
+
+  if (lowered_pt == "half") {
+    return MatMulPartialsType::HALF;
+  } else if (lowered_pt == "float") {
+    return MatMulPartialsType::FLOAT;
+  } else {
+    const auto err_str_tmpl =
+        "Unable to get option 'partialsTypeMatMul' from "
+        "string '{}'. Possible values are 'float' and 'half' in any letter "
+        "case.";
+    throw error(err_str_tmpl, user_pt);
+  }
+}
 
 static OpDefinition::DataTypes T = {DataType::UINT32,
                                     DataType::UINT64,
@@ -368,6 +412,8 @@ static OpCreator<MatMulOp> matMulOpCreator(
       MatMulBaseOp::SerialiseSettings serialisation;
 
       OptionalDataType outputType;
+
+      auto partialsType = MatMulPartialsType::FLOAT;
 
       if (attr.hasAttribute(sSerializeMatMulModeAttribute)) {
 
@@ -406,11 +452,28 @@ static OpCreator<MatMulOp> matMulOpCreator(
         outputType = {dataTypeFromString(dtype_str)};
       }
 
+      // same as in ConvOp's create
+      // try set the partials from an attribute
+      if (attr.hasAttribute(sPartialsTypeAttribute)) {
+        std::string partialsTypeAttr =
+            attr.getAttribute<Attributes::String>(sPartialsTypeAttribute);
+        partialsType = fromString(partialsTypeAttr);
+      }
+      // otherwise see if partials type was set in the session options
+      else {
+        const auto &opts = settings.getIr().getSessionOptions();
+        const std::string globalPartialsTypeStr = opts.partialsTypeMatMuls;
+        if (!globalPartialsTypeStr.empty()) {
+          partialsType = fromString(globalPartialsTypeStr);
+        }
+      }
+
       return std::unique_ptr<Op>(new MatMulOp(_opid,
                                               settings,
                                               availableMemoryProportion,
                                               serialisation,
-                                              outputType));
+                                              outputType,
+                                              partialsType));
     },
     true);
 } // namespace

@@ -1,4 +1,5 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <algorithm>
 #include <onnx/checker.h>
 #include <popart/builder_impl.hpp>
 #include <popart/filereader.hpp>
@@ -814,9 +815,19 @@ void Builder::popNameScope() { impl_->popNameScope(); }
 
 void Builder::setPartialsType(const TensorId &nodeOutputName,
                               const std::string partialsType) {
-  auto nodeProto = impl_->findNodeProtoByOutputNames({nodeOutputName});
-  if (nodeProto.op_type() != "Conv") {
-    throw error("Builder::setPartialsType should only be called on Conv");
+  std::vector<std::string> supportedOps{"Conv", "MatMul"};
+
+  const auto nodeProto = impl_->findNodeProtoByOutputNames({nodeOutputName});
+  const auto opType    = nodeProto.op_type();
+
+  const bool opSupportsPartials =
+      std::find(supportedOps.begin(), supportedOps.end(), opType) !=
+      supportedOps.end();
+
+  if (!opSupportsPartials) {
+    throw error("Builder::setPartialsType should only be called on operators: "
+                "Conv, MatMul; but was given: " +
+                opType);
   }
 
   addNodeAttribute(sPartialsTypeAttribute, partialsType, {nodeOutputName});
@@ -827,6 +838,7 @@ std::string Builder::getPartialsType(const TensorId &nodeOutputName) {
     return impl_->getStringNodeAttribute(sPartialsTypeAttribute,
                                          {nodeOutputName});
   } else {
+    // Poplar default partial type.
     return "FLOAT";
   }
 }

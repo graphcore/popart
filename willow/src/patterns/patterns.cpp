@@ -417,7 +417,7 @@ Patterns &Patterns::enablePattern(PreAliasPatternType t, bool v) {
 }
 
 std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
-  static std::map<std::type_index, int> patternPriority{
+  static std::map<std::type_index, float> patternPriority{
       {std::type_index(typeid(PreUniRepl)), 36},
       {std::type_index(typeid(PostNRepl)), 35},
       {std::type_index(typeid(SoftmaxGradDirect)), 34},

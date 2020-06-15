@@ -13,6 +13,7 @@ add_popart_cpp_unit_test(concat_ce_test concat_ce_test.cpp)
 add_popart_cpp_unit_test(unsqueeze_ce_test unsqueeze_ce_test.cpp)
 add_popart_cpp_unit_test(gemm_decomposition_ce_test gemm_decomposition_ce_test.cpp)
 add_popart_cpp_unit_test(gather_ce_test gather_ce_test.cpp)
+add_popart_cpp_unit_test(floor_ce_test floor_ce_test.cpp)
 
 add_popart_py_unit_test(no_impl_test)
 add_popart_py_unit_test(test_cast_ce)

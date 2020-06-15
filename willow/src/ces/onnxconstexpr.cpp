@@ -39,7 +39,19 @@ void OnnxConstExprUtil::processConstantNode(
   // not have a gradient computed for it or be updated during training
   // We will implement a separate tool to convert between
   // Constant Operator output and initializer in ONNX models (T6213)
-  graph->getTensors().addConstInit(name, &node.attribute(0).t());
+
+  // Search the constant node for the 'value' attribute, and return the value
+  // tensor.
+  auto getValueAttribute = [](auto &node) {
+    for (auto &attr : node.attribute()) {
+      if (attr.name() == "value") {
+        return &attr.t();
+      }
+    }
+    throw error("Could not find the 'value' attribute on the constant node");
+  };
+
+  graph->getTensors().addConstInit(name, getValueAttribute(node));
 }
 
 void OnnxConstExprUtil::processShapeNode(const ONNX_NAMESPACE::NodeProto &node,

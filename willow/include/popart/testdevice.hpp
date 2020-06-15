@@ -41,13 +41,24 @@ constexpr bool isHw(TestDeviceType d) { return d == TestDeviceType::Hw; }
 std::shared_ptr<popart::DeviceInfo>
 createTestDevice(const TestDeviceType testDeviceType,
                  const unsigned numIPUs          = 1,
-                 const unsigned tilesPerIPU      = 1216,
+                 const unsigned tilesPerIPU      = 0,
                  const SyncPattern pattern       = SyncPattern::Full,
                  const poplar::OptionFlags &opts = {}) {
 
+  unsigned ipuModelTilesPerIPU = tilesPerIPU;
+
+  if (ipuModelTilesPerIPU == 0 &&
+      ((testDeviceType == TestDeviceType::Sim) ||
+       (testDeviceType == TestDeviceType::Sim2) ||
+       (testDeviceType == TestDeviceType::IpuModel) ||
+       (testDeviceType == TestDeviceType::IpuModel2))) {
+    // We need a number of tiles for these device types.
+    ipuModelTilesPerIPU = 1216;
+  }
+
   std::map<std::string, std::string> deviceOpts{
       {"numIPUs", std::to_string(numIPUs)},
-      {"tilesPerIPU", std::to_string(tilesPerIPU)}};
+      {"tilesPerIPU", std::to_string(ipuModelTilesPerIPU)}};
 
   switch (testDeviceType) {
   case TestDeviceType::Cpu:

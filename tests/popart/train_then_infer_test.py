@@ -43,7 +43,7 @@ def test_train_then_infer_via_file():
     # ----------------------------------------------
 
     # Create the device
-    device = tu.create_test_device(1, 1216, opts={"compileIPUCode": True})
+    device = tu.create_test_device(1, opts={"compileIPUCode": True})
     device.attach()
 
     # ----------------------------------------------
@@ -131,7 +131,7 @@ def test_cannot_call_resethostweights_with_constant_weights():
     # ----------------------------------------------
 
     # Create the device
-    device = tu.create_test_device(1, 1216, opts={"compileIPUCode": True})
+    device = tu.create_test_device(1, opts={"compileIPUCode": True})
     device.attach()
 
     # ----------------------------------------------
@@ -196,7 +196,7 @@ def test_modelToHost_calls_resetHostWeights():
     opts.constantWeights = False  # Allow the weights to be updated
 
     # Create the device
-    device = tu.create_test_device(1, 1216, opts={"compileIPUCode": True})
+    device = tu.create_test_device(1, opts={"compileIPUCode": True})
     device.attach()
 
     # Prepare the Training session

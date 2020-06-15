@@ -7,6 +7,20 @@
 
 namespace popart {
 
+SyncPattern syncPatternFromString(const std::string &str) {
+  if (str == "full") {
+    return SyncPattern::Full;
+  }
+  if (str == "singlePipeline") {
+    return SyncPattern::SinglePipeline;
+  }
+  if (str == "pingPong") {
+    return SyncPattern::PingPong;
+  }
+
+  throw error("Unknown syncPattern setting: {}", str);
+}
+
 DeviceManager &DeviceManager::createDeviceManager() {
   static DeviceManager deviceManager;
   return deviceManager;
@@ -22,7 +36,8 @@ DeviceManager::getDevice(SyncPattern syncPattern,
                          DeviceConnectionType connectionType) {
   if (connectionType == DeviceConnectionType::Never) {
     throw error("Trying to acquire a hardware device when connectionType is "
-                "DeviceConnectionType::Never");
+                "DeviceConnectionType::Never. For offline compilation, use "
+                "createOfflineIPUDevice");
   }
   for (auto p : providers) {
     auto device = p->getDevice(syncPattern, deviceManagerId, connectionType);
@@ -77,6 +92,19 @@ DeviceManager::createSimDevice(std::map<std::string, std::string> &options) {
         p->createHostDevice(DeviceType::Sim, options);
     if (device != nullptr)
       return device;
+  }
+  return nullptr;
+}
+
+std::shared_ptr<DeviceInfo> DeviceManager::createOfflineIPUDevice(
+    std::map<std::string, std::string> &options) {
+
+  for (auto p : providers) {
+    std::shared_ptr<DeviceInfo> device =
+        p->createHostDevice(DeviceType::OfflineIpu, options);
+    if (device != nullptr) {
+      return device;
+    }
   }
   return nullptr;
 }
@@ -148,6 +176,9 @@ std::ostream &operator<<(std::ostream &os, const DeviceType &dt) {
     break;
   case DeviceType::IpuModel:
     os << "ipu-model";
+    break;
+  case DeviceType::OfflineIpu:
+    os << "offline-ipu";
     break;
   case DeviceType::Sim:
     os << "sim";

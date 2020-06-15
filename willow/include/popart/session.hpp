@@ -35,6 +35,19 @@ public:
   void setRandomSeed(uint64_t seedValue);
 
   /**
+   * Compiles the graph and exports it to the specified path
+   *
+   * This will create a poplar::Graph and compile the poplar::Executable before
+   * exporting the executable and metadata to allow offline running.
+
+   * \arg executablePath path to output the compiled executable and associated
+   *                     metadata: if empty, these will not be exported
+   * \arg weightsPath path to output the weights: if empty, these will not be
+   *                  exported
+   */
+  void compileAndExport(std::string executablePath, std::string weightsPath);
+
+  /**
    * Prepare the network for execution.
    *
    * This will create the poplar::Graph, poplar::Engine, and setting up

@@ -216,12 +216,13 @@ bool MatMulGradPattern::apply(Op *op) const {
   auto matmulOp = dynamic_cast<MatMulOp *>(
       makeReplacementOpInIr(Onnx::Operators::MatMul_9, op));
 
-  // Copy over the matmul settings
+  // Copy over the matmul settings from original `matmulBaseOp`
   auto matmulBaseOp = dynamic_cast<MatMulBaseOp *>(op);
   matmulOp->setAvailableMemoryProportion(
       matmulBaseOp->getAvailableMemoryProportion());
   matmulOp->getSerialiseSettings() = (matmulBaseOp->getSerialiseSettings());
   matmulOp->setUseFullyConnectedPass(matmulBaseOp->useFullyConnectedPass());
+  matmulOp->setPartialsType(matmulBaseOp->getPartialsType());
 
   auto squeezeOp = dynamic_cast<SqueezeOp *>(
       makeReplacementOpInIr(Onnx::Operators::Squeeze_1, op, "Squeeze"));

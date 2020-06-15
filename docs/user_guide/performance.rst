@@ -33,7 +33,6 @@ For example, the following code shows how to set the sync configuration to
         sync_pattern = popart.SyncPattern.PingPong
     device = popart.DeviceManager().acquireAvailableDevice(
         request_ipus,
-        1216,
         pattern=sync_pattern)
 
 Sync patterns

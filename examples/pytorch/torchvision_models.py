@@ -59,11 +59,7 @@ def get_device(num_ipus, simulation=False):
     deviceManager = popart.DeviceManager()
     if simulation:
         print("Creating ipu sim")
-        ipu_options = {
-            "compileIPUCode": True,
-            'numIPUs': num_ipus,
-            "tilesPerIPU": 1216
-        }
+        ipu_options = {"compileIPUCode": True, 'numIPUs': num_ipus}
         device = deviceManager.createIpuModelDevice(ipu_options)
         if device is None:
             raise OSError("Failed to acquire IPU.")

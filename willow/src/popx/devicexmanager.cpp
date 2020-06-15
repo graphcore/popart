@@ -4,12 +4,13 @@
 #include <popart/popx/devicexmanager.hpp>
 
 #include <memory>
-#include <popart/error.hpp>
 #include <popart/util.hpp>
 
 #include <poplar/Device.hpp>
 #include <poplar/IPUModel.hpp>
 #include <poplar/OptionFlags.hpp>
+#include <poplar/StringRef.hpp>
+#include <poplar/Target.hpp>
 #include <poplar/exceptions.hpp>
 
 #include <algorithm>
@@ -34,6 +35,8 @@ popart::DeviceType convertDeviceType(poplar::TargetType targetType) {
 
 poplar::TargetType convertDeviceType(popart::DeviceType deviceType) {
   switch (deviceType) {
+  case DeviceType::OfflineIpu:
+    return poplar::TargetType::IPU;
   case DeviceType::Ipu:
     return poplar::TargetType::IPU;
   case DeviceType::IpuModel:
@@ -148,7 +151,13 @@ std::string mapFind<std::string>(const std::map<std::string, std::string> &map,
 
 std::shared_ptr<popart::DeviceInfo> DevicexManager::createHostDevice(
     popart::DeviceType type,
-    const std::map<std::string, std::string> &options) {
+    const std::map<std::string, std::string> &options,
+    SyncPattern syncPattern) {
+
+  // So far, all of these only support SyncPattern::Full
+  if (syncPattern != SyncPattern::Full) {
+    throw error("Only SyncPattern::Full is supported");
+  }
 
   auto checkOptions = [&](const std::vector<std::string> &validOptionKeys) {
     for (auto &key_value : options) {
@@ -186,6 +195,23 @@ std::shared_ptr<popart::DeviceInfo> DevicexManager::createHostDevice(
     poplar::Device device = ipuModel.createDevice();
     return std::make_shared<DevicexIpuModelInfo>(*this, device);
   }
+  case DeviceType::OfflineIpu: {
+    checkOptions({"numIPUs", "tilesPerIPU", "ipuVersion", "syncPattern"});
+
+    // Create an ipumodel, using the values set in the options map, else use the
+    // defaults
+    const std::string ipuVersion =
+        mapFind<std::string>(options, "ipuVersion", "ipu1");
+    poplar::OptionFlags flags;
+
+    addSyncConfig(syncPatternFromString(
+                      mapFind(options, "syncPattern", std::string("full"))),
+                  flags);
+
+    auto ipuTarget = poplar::Target::createIPUTarget(
+        mapFind(options, "numIPUs", 1), poplar::StringRef(ipuVersion), flags);
+    return std::make_shared<DevicexOfflineIpuInfo>(*this, ipuTarget);
+  }
   case DeviceType::Sim: {
     checkOptions({"numIPUs", "tilesPerIPU"});
     try {
@@ -214,10 +240,6 @@ std::shared_ptr<popart::DeviceInfo> DevicexManager::createHostDevice(
 bool DevicexInfo::attach() { return device.attach(); }
 
 void DevicexInfo::detach() { device.detach(); }
-
-void DevicexInfo::createVirtualGraph(int tilesPerIpu) {
-  device = device.createVirtualDevice(tilesPerIpu);
-}
 
 bool DevicexIpuInfo::attach() {
   isAttached = true;
