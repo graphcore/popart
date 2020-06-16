@@ -22,6 +22,23 @@ def test_flatten(op_tester):
     op_tester.run(init_builder, reference, 'infer')
 
 
+def test_flatten_negative(op_tester):
+    d1 = np.random.rand(2, 1, 3, 4, 5).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.flatten([i1], axis=-2)
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        o = d1.reshape(6, 20)
+        return [o]
+
+    op_tester.patterns = ['OpToReshape']
+    op_tester.run(init_builder, reference, 'infer')
+
+
 def test_flatten_grad(op_tester):
     d1 = np.random.rand(2, 1, 3, 4, 1).astype(np.float32)
 

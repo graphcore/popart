@@ -88,9 +88,13 @@ FlattenOp::FlattenOp(const OperatorIdentifier &_opid,
 
 void FlattenBaseOp::setup() {
   const auto in_shape = inInfo(getInIndex()).shape();
-  const auto begin    = in_shape.begin();
-  const auto mid      = in_shape.begin() + axis;
-  const auto end      = in_shape.end();
+
+  // Flatten can support negative indexing as per onnx spec.
+  const int64_t axisAdjusted = axis >= 0 ? axis : in_shape.size() + axis;
+
+  const auto begin = in_shape.begin();
+  const auto mid   = in_shape.begin() + axisAdjusted;
+  const auto end   = in_shape.end();
 
   // The product of the first axis dimensions to flatten
   const auto m = std::accumulate(begin, mid, 1, std::multiplies<int64_t>());
