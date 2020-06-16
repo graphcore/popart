@@ -2,6 +2,7 @@
 #ifndef GUARD_NEURALNET_ELEMENTWISEUNARY_HPP
 #define GUARD_NEURALNET_ELEMENTWISEUNARY_HPP
 
+#include <map>
 #include <popart/op.hpp>
 
 namespace popart {
@@ -72,11 +73,11 @@ public:
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };
 
-// Base class for elementwise binary operations
-class ElementWiseBinaryOp : public Op {
+// Common base class for elementwise binary operations
+class ElementWiseBinaryBaseOp : public Op {
 public:
-  ElementWiseBinaryOp(const OperatorIdentifier &_opid,
-                      const Op::Settings &_settings);
+  ElementWiseBinaryBaseOp(const OperatorIdentifier &_opid,
+                          const Op::Settings &_settings);
   void setup() final;
 
   // Current implementation places arg0 input at index 0, and arg1 input
@@ -86,6 +87,63 @@ public:
   static OutIndex getOutIndex() { return 0; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
+};
+
+// Base class for non-inplace elementwise binary operation, which may have
+// registered inplace variants for either LHS or RHS.
+class ElementWiseBinaryOp : public ElementWiseBinaryBaseOp {
+public:
+  ElementWiseBinaryOp(const OperatorIdentifier &_opid,
+                      const Op::Settings &_settings);
+
+  std::vector<std::tuple<OperatorIdentifier, float>>
+  inplacePriorityDefault() const final;
+
+  std::unique_ptr<Op> getInplaceVariant(const OperatorIdentifier &) const final;
+
+  view::RegMap fwdRegMap(InIndex, OutIndex) const final;
+  view::RegMap bwdRegMap(InIndex, OutIndex) const final;
+
+  void setInplacePriority(const OperatorIdentifier &, float);
+  float getInplacePriority(const OperatorIdentifier &) const;
+
+private:
+  virtual bool hasLhsInplaceVariant() const;
+  virtual bool hasRhsInplaceVariant() const;
+
+  virtual std::unique_ptr<Op> getLhsInplaceVariant() const;
+  virtual std::unique_ptr<Op> getRhsInplaceVariant() const;
+
+  virtual OperatorIdentifier getLhsOperatorIdentifier() const;
+  virtual OperatorIdentifier getRhsOperatorIdentifier() const;
+
+  std::map<OperatorIdentifier, float> inplacePriorities;
+};
+
+// Base class for inplace LHS for elementwise binary operations
+class ElementWiseBinaryInplaceLhsOp : public ElementWiseBinaryBaseOp {
+public:
+  ElementWiseBinaryInplaceLhsOp(const OperatorIdentifier &_opid,
+                                const Op::Settings &_settings);
+
+  view::Regions modifies(InIndex) const final;
+  view::Regions aliases(InIndex, OutIndex) const final;
+
+  view::RegMap fwdRegMap(InIndex, OutIndex) const final;
+  view::RegMap bwdRegMap(InIndex, OutIndex) const final;
+};
+
+// Base class for inplace RHS for elementwise binary operations
+class ElementWiseBinaryInplaceRhsOp : public ElementWiseBinaryBaseOp {
+public:
+  ElementWiseBinaryInplaceRhsOp(const OperatorIdentifier &_opid,
+                                const Op::Settings &_settings);
+
+  view::Regions modifies(InIndex) const final;
+  view::Regions aliases(InIndex, OutIndex) const final;
+
+  view::RegMap fwdRegMap(InIndex, OutIndex) const final;
+  view::RegMap bwdRegMap(InIndex, OutIndex) const final;
 };
 
 // Base class for comparison operations

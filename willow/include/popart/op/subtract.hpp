@@ -7,7 +7,7 @@
 
 namespace popart {
 
-class SubtractOp : public ElementWiseBinaryOp {
+class SubtractOp : public ElementWiseBinaryBaseOp {
 public:
   SubtractOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const final;

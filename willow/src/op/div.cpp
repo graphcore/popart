@@ -7,7 +7,7 @@
 namespace popart {
 
 DivOp::DivOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
-    : ElementWiseBinaryOp(_opid, settings_) {
+    : ElementWiseBinaryBaseOp(_opid, settings_) {
   // TODO : Use the attributes in Div-6
 }
 

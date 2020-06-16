@@ -312,7 +312,6 @@ Op::inplacePriorityDefault() const {
 
 std::unique_ptr<Op>
 Op::getInplaceVariant(const OperatorIdentifier &operator_id) const {
-  std::stringstream ss;
   throw error("Op {} cannot return inplace variant {} ", opid, operator_id);
 }
 

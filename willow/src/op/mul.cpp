@@ -8,7 +8,7 @@
 namespace popart {
 
 MulOp::MulOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
-    : ElementWiseBinaryOp(_opid, settings_) {
+    : ElementWiseBinaryBaseOp(_opid, settings_) {
   // TODO : Use the attributes in Mul-6
 }
 

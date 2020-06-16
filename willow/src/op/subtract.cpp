@@ -8,7 +8,7 @@ namespace popart {
 
 SubtractOp::SubtractOp(const OperatorIdentifier &_opid,
                        const Op::Settings &settings_)
-    : ElementWiseBinaryOp(_opid, settings_) {
+    : ElementWiseBinaryBaseOp(_opid, settings_) {
   // TODO : Do not broadcast in version 6
 }
 
