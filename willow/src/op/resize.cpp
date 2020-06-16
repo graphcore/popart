@@ -28,13 +28,14 @@ ResizeOp::ResizeOp(const OperatorIdentifier &opid_,
                    const Op::Settings &settings_,
                    ResizeMode mode_,
                    const std::vector<float> &scales_)
-    : Op(opid_, settings_), mode(mode_), scales(scales_) {}
+    : Op(opid_, settings_), scales(scales_), mode(mode_) {}
 
 std::unique_ptr<Op> ResizeOp::clone() const {
   return std::make_unique<ResizeOp>(*this);
 }
 std::vector<std::unique_ptr<Op>> ResizeOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
+  upops.emplace_back(std::make_unique<ResizeGradOp>(*this));
   return upops;
 }
 void ResizeOp::setup() {
@@ -70,16 +71,39 @@ void ResizeOp::connectInTensor(InIndex inIndex, TensorId tenId) {
 
 namespace {
 
-std::vector<float> inverse(const std::vector<float> scales) {
+// We cant just inverse the forward pass scales because of the floor operation.
+//   floor(3 * 2.5) = 7
+// but
+//   floor(7 * (1 / 2.5)) = 2, not 3
+std::vector<float> gradScales(const ResizeOp &op) {
+  auto inShape  = op.inShape(ResizeOp::getInIndex());
+  auto outShape = op.outShape(ResizeOp::getOutIndex());
   std::vector<float> result;
-  for (float scale : scales) {
-    result.push_back(1.0f / scale);
+  for (int i = 0; i < inShape.size(); i++) {
+    result.push_back(static_cast<float>(inShape.at(i)) / outShape.at(i));
   }
-
   return result;
 }
 
 } // namespace
+
+ResizeGradOp::ResizeGradOp(const ResizeOp &op_)
+    : ResizeOp(Onnx::GradOperators::ResizeGrad,
+               op_.getSettings(),
+               op_.getMode(),
+               gradScales(op_)) {}
+
+const std::vector<GradInOutMapper> &ResizeGradOp::gradInputInfo() const {
+  static const std::vector<GradInOutMapper> inInfo = {
+      {getInIndex(), ResizeOp::getOutIndex(), GradOpInType::GradOut}};
+  return inInfo;
+}
+
+const std::map<int, int> &ResizeGradOp::gradOutToNonGradIn() const {
+  static const std::map<int, int> outInfo = {
+      {getOutIndex(), ResizeOp::getInIndex()}};
+  return outInfo;
+}
 
 namespace {
 
@@ -123,7 +147,7 @@ static OpCreator<ResizeOp> resize10_OpCreator(
         throw error("Scales tensor has no data");
       }
       auto inputTensor = info.getInputTensor(xInputIndex);
-      auto nelms       = inputTensor->info.shape().size();
+      int nelms        = static_cast<int>(inputTensor->info.shape().size());
       std::vector<float> scales;
       if (scalesTensor->info.dataType() == DataType::FLOAT) {
         scales = scalesTensor->tensorData()->copyDataAs<float>(nelms);
