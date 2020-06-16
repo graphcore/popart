@@ -17,9 +17,6 @@ public:
   AddOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const override;
   InputCreatorType getInputCreatorType(InIndex) const override;
-  poplar::Tensor createInput(InIndex index,
-                             const std::string &name) const override;
-  std::vector<TensorId> mustExistBeforeCreate(InIndex) const override;
 };
 
 class AddLhsInplaceOpx : public AddOpx {

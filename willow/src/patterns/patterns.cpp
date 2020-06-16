@@ -16,6 +16,7 @@
 #include <popart/patterns/elementwisegradoppattern.hpp>
 #include <popart/patterns/expgradoppattern.hpp>
 #include <popart/patterns/gemmdecompositionpattern.hpp>
+#include <popart/patterns/initaccumulatepattern.hpp>
 #include <popart/patterns/inplace.hpp>
 #include <popart/patterns/loggradoppattern.hpp>
 #include <popart/patterns/logsoftmaxoppattern.hpp>
@@ -185,6 +186,10 @@ bool Patterns::isPatternEnabled(PreAliasPatternType t) {
   return isPatternEnabled(ti);
 }
 
+bool Patterns::isInitAccumulateEnabled() {
+  return isPatternEnabled<InitAccumulatePattern>();
+}
+
 bool Patterns::isPreUniReplEnabled() { return isPatternEnabled<PreUniRepl>(); }
 
 bool Patterns::isPostNReplEnabled() { return isPatternEnabled<PostNRepl>(); }
@@ -285,6 +290,10 @@ bool Patterns::isMatMulLhsGradOpEnabled() {
 
 bool Patterns::isMatMulRhsGradOpEnabled() {
   return isPatternEnabled<MatMulRhsGradPattern>();
+}
+
+Patterns &Patterns::enableInitAccumulate(bool v) {
+  return enablePattern<InitAccumulatePattern>(v);
 }
 
 Patterns &Patterns::enablePreUniRepl(bool v) {
@@ -418,6 +427,7 @@ Patterns &Patterns::enablePattern(PreAliasPatternType t, bool v) {
 
 std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
   static std::map<std::type_index, float> patternPriority{
+      {std::type_index(typeid(InitAccumulatePattern)), 37},
       {std::type_index(typeid(PreUniRepl)), 36},
       {std::type_index(typeid(PostNRepl)), 35},
       {std::type_index(typeid(SoftmaxGradDirect)), 34},

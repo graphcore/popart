@@ -65,8 +65,6 @@ void AddOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 InputCreatorType AddOpx::getInputCreatorType(InIndex index) const {
-  AddOp *op = dynamic_cast<AddOp *>(this->op_p);
-
   // TODO: T17972 Allowing add (in particular lhs, rhs inplace adds) leads to
   // inefficient sub graph copying. Investigate why, then remove the below logic
   // once fixed.
@@ -75,80 +73,7 @@ InputCreatorType AddOpx::getInputCreatorType(InIndex index) const {
     return InputCreatorType::Deadend;
   }
 
-  // Check shape doesn't change due to numpy-style broadcasting.
-  if (op_p->inInfo(index) != op_p->outInfo(AddOp::getOutIndex())) {
-    return InputCreatorType::Deadend;
-  }
-
-  auto itArg0 =
-      op->settings.inferTensorMappingToFrom.find(AddOp::getArg0InIndex());
-  auto itArg1 =
-      op->settings.inferTensorMappingToFrom.find(AddOp::getArg1InIndex());
-
-  bool inferArg0FromArg1 =
-      itArg0 != op->settings.inferTensorMappingToFrom.end() &&
-      itArg0->second == AddOp::getArg1InIndex();
-  bool inferArg1FromArg0 =
-      itArg1 != op->settings.inferTensorMappingToFrom.end() &&
-      itArg1->second == AddOp::getArg0InIndex();
-
-  if (index == AddOp::getArg0InIndex()) {
-    if (inferArg0FromArg1) {
-      return InputCreatorType::CanCreateOrUnwind;
-    } else if (inferArg1FromArg0) {
-      return InputCreatorType::Deadend;
-    } else {
-      return InputCreatorType::CanUnwind;
-    }
-  }
-
-  if (index == AddOp::getArg1InIndex()) {
-    if (inferArg1FromArg0) {
-      return InputCreatorType::CanCreateOrUnwind;
-    } else if (inferArg0FromArg1) {
-      return InputCreatorType::Deadend;
-    } else {
-      return InputCreatorType::CanUnwind;
-    }
-  }
-
-  return Opx::getInputCreatorType(index);
-}
-
-poplar::Tensor AddOpx::createInput(InIndex index,
-                                   const std::string &name) const {
-
-  if (index == AddOp::getArg0InIndex()) {
-    if (dv_p->tensors.contains(op_p->input->id(AddOp::getArg1InIndex()))) {
-      return graph().clone(getInTensor(AddOp::getArg1InIndex()), name);
-    }
-  }
-
-  if (index == AddOp::getArg1InIndex()) {
-    if (dv_p->tensors.contains(op_p->input->id(AddOp::getArg0InIndex()))) {
-      return graph().clone(getInTensor(AddOp::getArg0InIndex()), name);
-    }
-  }
-
-  throw error("AddOpx::createInput : Invalid index = " + std::to_string(index));
-}
-
-std::vector<TensorId> AddOpx::mustExistBeforeCreate(InIndex index) const {
-  AddOp *op = dynamic_cast<AddOp *>(this->op_p);
-
-  std::vector<TensorId> mustExist;
-
-  auto it = op->settings.inferTensorMappingToFrom.find(index);
-
-  if (it != op->settings.inferTensorMappingToFrom.end() &&
-      ((it->first == AddOp::getArg0InIndex() &&
-        it->second == AddOp::getArg1InIndex()) ||
-       (it->first == AddOp::getArg1InIndex() &&
-        it->second == AddOp::getArg0InIndex()))) {
-    mustExist.push_back(op->input->tensor(it->second)->id);
-  }
-
-  return mustExist;
+  return ElementWiseBinaryOpx::getInputCreatorType(index);
 }
 
 AddLhsInplaceOpx::AddLhsInplaceOpx(Op *op, Devicex *devicex)
