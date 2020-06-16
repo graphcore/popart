@@ -69,8 +69,8 @@ public:
   int64_t getThresholdMemory(const Graph &) const;
 };
 
-// Flatten, Slice, Concat, so that there are as many VarUpdates as possible of
-// size EXACTLY mergeVarUpdateMemThreshold
+// Reshape (really just a flatten to {1, nelms}), Slice, Concat, so that there
+// are as many VarUpdates as possible of size EXACTLY mergeVarUpdateMemThreshold
 class MergeTightThreshold : public MergeAuto {
 public:
   static std::size_t id();
@@ -83,7 +83,7 @@ private:
   PartitionMap getFinal(const Graph &) const final;
 };
 
-// Flatten,  Concat, so that as many VarUpdates as possible of size
+// Reshape,  Concat, so that as many VarUpdates as possible of size
 // as least mergeVarUpdateMemThreshold. That is, keep Concatenating Variables
 // until the cumulative size is above mergeVarUpdateMemThreshold, then perform
 // a VarUpdate on those concatenated Vars

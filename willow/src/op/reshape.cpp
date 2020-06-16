@@ -65,6 +65,11 @@ ReshapeInplaceOp::ReshapeInplaceOp(const ReshapeOp &op)
                     op.getOutShape(),
                     op.settings) {}
 
+ReshapeInplaceOp::ReshapeInplaceOp(const OperatorIdentifier &_opid,
+                                   const Shape &shape_,
+                                   const Op::Settings &settings_)
+    : ReshapeBaseOp(_opid, shape_, settings_) {}
+
 std::unique_ptr<Op> ReshapeInplaceOp::clone() const {
   return std::make_unique<ReshapeInplaceOp>(*this);
 }
