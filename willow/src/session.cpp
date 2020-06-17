@@ -9,6 +9,7 @@
 #include <popart/logging.hpp>
 #include <popart/onnxutil.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/exporter.hpp>
 #include <popart/session.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensor.hpp>
@@ -126,6 +127,13 @@ void Session::writeWeights(const IWeightsIO &weightsIo) {
   }
 
   device_->writeWeights(weightsIo);
+}
+
+void Session::exportInputs(IStepIO &stepIO,
+                           int64_t num_elements,
+                           const std::string &output_filename) {
+  logging::session::trace("Session::exportInputs");
+  exportStepIO(stepIO, *device_, num_elements, output_filename);
 }
 
 void Session::run(IStepIO &stepio) {

@@ -27,11 +27,12 @@ class DeviceProvider;
 class DeviceInfo {
 
 public:
-  DeviceInfo(
-      DeviceProvider &_provider,
-      DeviceType _type,
-      DeviceConnectionType _connectionType = DeviceConnectionType::Always)
-      : provider(_provider), type(_type), connectionType(_connectionType) {
+  DeviceInfo(DeviceProvider &_provider,
+             DeviceType _type,
+             DeviceConnectionType _connectionType,
+             const poplar::OptionFlags &_flags)
+      : provider(_provider), type(_type), connectionType(_connectionType),
+        flags(_flags) {
     (void)provider;
   }
 
@@ -71,10 +72,13 @@ public:
   // Whether the device supports offlne compilation
   virtual bool canCompileOffline() const { return false; }
 
+  const poplar::OptionFlags &getOptionFlags() const { return flags; }
+
 private:
   DeviceProvider &provider;
   DeviceType type;
   DeviceConnectionType connectionType;
+  const poplar::OptionFlags flags;
 };
 
 std::ostream &operator<<(std::ostream &os, const DeviceInfo &di);

@@ -775,6 +775,10 @@ std::string Builder::getTensorDtypeString(const TensorId id) {
   return impl_->getTensorDtypeString(id);
 }
 
+DataType Builder::getTensorDataType(const TensorId id) {
+  return impl_->getTensorDataType(id);
+}
+
 bool Builder::isInitializer(const TensorId id) const {
   return impl_->isInitializer(id);
 }

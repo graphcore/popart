@@ -3,6 +3,7 @@
 #include <cctype>
 #include <cstring>
 #include <fstream>
+#include <iomanip>
 #include <memory>
 #include <random>
 #include <set>
@@ -47,6 +48,7 @@
 #include <popart/patterns/pattern.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/devicexmanager.hpp>
+#include <popart/popx/exporter.hpp>
 #include <popart/popx/op/callx.hpp>
 #include <popart/popx/op/collectives/collectivesx.hpp>
 #include <popart/popx/opx.hpp>
@@ -70,6 +72,41 @@ namespace popart {
 namespace popx {
 
 namespace {
+
+void progressLogger(int progress, int total) {
+  if (total != 0) {
+    float percentage = std::floor(100.0f * static_cast<float>(progress) /
+                                  static_cast<float>(total));
+    logging::devicex::info("Engine compilation {}% complete", percentage);
+  }
+}
+
+class SavedInfo {
+public:
+  SavedInfo(const Devicex &devicex) : irHash(std::hash<Ir>{}(devicex.ir())) {}
+
+  void serialize(std::ostream &os) { os << irHash; }
+
+  static SavedInfo deserialize(std::istream &is) {
+    SavedInfo result;
+    is >> result.irHash;
+    return result;
+  }
+
+  bool operator==(const SavedInfo &rhs) const { return irHash == rhs.irHash; }
+
+  std::string toString() const {
+    std::stringstream ss;
+    ss << std::hex << std::setfill('0') << std::setw(2 * sizeof(std::size_t))
+       << irHash;
+    return ss.str();
+  }
+
+  std::size_t irHash;
+
+private:
+  SavedInfo() : irHash(0) {}
+};
 
 // Walk the producers of an ops inputs, applying function f to every producer.
 // The producers are walked in a top down fashion. If f returns false of an op,
@@ -996,7 +1033,6 @@ void Devicex::hostStreamToHost(const MutableVoidData &mv_data, TensorId id) {
 }
 
 void Devicex::anchorsHostToHostStreams(IStepIO &stepio) {
-
   if (ir().useSyntheticData() == false) {
     std::string prefix = "     ";
     logging::devicex::debug(prefix + "Copying to h2d stream address(es) ");
@@ -2023,9 +2059,7 @@ Devicex::initTensorByCloningTask(Op *op, TensorId srcId, TensorId dstId) {
 
 PriTask
 Devicex::initTensorByAliasingTask(Op *op, TensorId srcId, TensorId dstId) {
-  Opx *opx = getOpx(op->id);
-
-  auto f = [srcId, dstId, opx, this]() {
+  auto f = [srcId, dstId, this]() {
     logging::debug("Aliasing tensor {} to {}", srcId, dstId);
     tensors.insertAliased(dstId, srcId);
     return SequenceMap();
@@ -2397,6 +2431,9 @@ bool Devicex::isEngineLoaded() const { return engineIsLoaded; }
 void Devicex::setEngineIsLoaded(bool isLoaded) { engineIsLoaded = isLoaded; }
 
 void Devicex::loadEngineAndConnectStreams() {
+  if (deviceInfo->getConnectionType() == DeviceConnectionType::Never) {
+    throw error("Trying to load an engine on an offline device");
+  }
   DevicexInfo &di = dynamic_cast<DevicexInfo &>(*deviceInfo);
 
   // Let the device info know that this devicex's engine
@@ -3102,18 +3139,73 @@ void Devicex::compileAndExport(const std::string &executablePath,
     throw error("Offline compilation is not supported for device type {}",
                 oss.str());
   }
+  if (weightsPath.empty() && executablePath.empty()) {
+    throw error(
+        "At least one of weightsPath or executablePath must be provided");
+  }
+  if (!exporterIsAvailable()) {
+    throw error("Exporter not available");
+  }
 
   prepareGraph();
-  auto executable = getExecutable();
 
-  // auto numIPUs    = graph().getTarget().getNumIPUs();
-  // logging::devicex::info("Exporting compiled executable");
-  // exportExecutable(executable,
-  //                  *this,
-  //                  engineOptions,
-  //                  SavedInfo(*this).toString(),
-  //                  numIPUs);
-  throw internal_error("Not yet implemented");
+  if (!ir().getSessionOptions().compileEngine) {
+    throw error(
+        "The engine must be compiled before the executable can be exported");
+  }
+  if (!weightsPath.empty()) {
+    exportWeights(*this, weightsPath);
+  }
+  if (executablePath.empty()) {
+    return;
+  }
+  try {
+    // Regroup programs in 3 programs: HOST_TO_DEVICE / MAIN_SEQUENCE /
+    // DEVICE_TO_HOST
+    std::vector<poplar::program::Program> fusedProgs;
+    const auto programs = progs.progs();
+    poplar::program::Sequence fusedH2d, fusedMain, fusedD2h;
+
+    static_assert(PopPrograms::ProgramIndex::N == 6,
+                  "Make sure all the programs are added to one of the 3 "
+                  "sequences below.");
+
+    fusedH2d.add(programs[PopPrograms::ProgramIndex::WeightsFromHost]);
+    fusedH2d.add(programs[PopPrograms::ProgramIndex::OptimizerFromHost]);
+    fusedH2d.add(programs[PopPrograms::ProgramIndex::SetRandomSeedFromHost]);
+
+    fusedMain.add(programs[PopPrograms::ProgramIndex::Program]);
+
+    fusedD2h.add(programs[PopPrograms::ProgramIndex::WeightstoHost]);
+    fusedD2h.add(programs[PopPrograms::ProgramIndex::CycleCountTensortoHost]);
+
+    fusedProgs.push_back(fusedH2d);
+    fusedProgs.push_back(fusedMain);
+    fusedProgs.push_back(fusedD2h);
+
+    auto executable = poplar::compileGraph(
+        graph(), fusedProgs, engineOptions, progressLogger);
+    auto numIPUs = graph().getTarget().getNumIPUs();
+    logging::devicex::info("Exporting compiled executable");
+    exportExecutable(executable,
+                     *this,
+                     engineOptions,
+                     deviceInfo->getOptionFlags(),
+                     SavedInfo(*this).toString(),
+                     numIPUs,
+                     executablePath);
+  } catch (const poplar::graph_memory_allocation_error &e) {
+    // If the creation of the engine throw an exception due to memory
+    // allocation i.e. the program does not fit show graph profile and
+    // re-throw the exception In certain cases poplar will throw the error
+    // without a graph profile. The following engine option needs to be set to
+    // enable the graph profile in this case "debug.allowOutOfMemory":"true"
+
+    trySaveTensorTileMap();
+
+    logging::devicex::err("Memory allocation error : {}", e.what());
+    throw devicex_memory_allocation_err(e, reportOptions);
+  }
 }
 
 // go all the way to creating the engine and connecting streams
@@ -3121,8 +3213,21 @@ void Devicex::prepare() {
   prepareGraph();
 
   if (ir().getSessionOptions().compileEngine) {
-    auto executable = getExecutable();
-    pEngine.reset(new poplar::Engine(std::move(executable), engineOptions));
+    try {
+      auto executable = getExecutable();
+      pEngine.reset(new poplar::Engine(std::move(executable), engineOptions));
+    } catch (const poplar::graph_memory_allocation_error &e) {
+      // If the creation of the engine throw an exception due to memory
+      // allocation i.e. the program does not fit show graph profile and
+      // re-throw the exception In certain cases poplar will throw the error
+      // without a graph profile. The following engine option needs to be set to
+      // enable the graph profile in this case "debug.allowOutOfMemory":"true"
+
+      trySaveTensorTileMap();
+
+      logging::devicex::err("Memory allocation error : {}", e.what());
+      throw devicex_memory_allocation_err(e, reportOptions);
+    }
   } else {
     logging::devicex::info("Not compiling engine by request");
     return;
@@ -3185,14 +3290,6 @@ poplar::Executable Devicex::getExecutable() {
                          " Devicex::getExecutable() is called.");
   }
 
-  auto progressLogger = [](int progress, int total) {
-    if (total != 0) {
-      float percentage = std::floor(100.0f * static_cast<float>(progress) /
-                                    static_cast<float>(total));
-      logging::devicex::info("Engine compilation {}% complete", percentage);
-    }
-  };
-
   if (cachedExecutable) {
     // return the executable in cachedExecutable while ensuring
     // cachedExecutable is set to nonstd::nullopt
@@ -3226,30 +3323,6 @@ poplar::Executable Devicex::getExecutable() {
     }
   }
 }
-
-namespace {
-
-class SavedInfo {
-public:
-  SavedInfo(const Devicex &devicex) : irHash(std::hash<Ir>{}(devicex.ir())) {}
-
-  void serialize(std::ostream &os) { os << irHash; }
-
-  static SavedInfo deserialize(std::istream &is) {
-    SavedInfo result;
-    is >> result.irHash;
-    return result;
-  }
-
-  bool operator==(const SavedInfo &rhs) { return irHash == rhs.irHash; }
-
-  std::size_t irHash;
-
-private:
-  SavedInfo() : irHash(0) {}
-};
-
-} // namespace
 
 std::string Devicex::getPoplarCachePath() {
   return ir().getSessionOptions().cachePath + ".poplar";

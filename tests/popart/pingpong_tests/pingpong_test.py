@@ -111,7 +111,7 @@ def check_model(lhs_model, rhs_model):
         lhs = numpy_helper.to_array(lhs)
         rhs = rhs_model.graph.initializer[i]
         rhs = numpy_helper.to_array(rhs)
-        assert np.allclose(lhs, rhs)
+        assert np.allclose(lhs, rhs, rtol=1.e-4, atol=1.e-6)
 
 
 @tu.requires_ipu

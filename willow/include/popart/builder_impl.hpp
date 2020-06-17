@@ -240,6 +240,8 @@ public:
 
   std::string getTensorDtypeString(const TensorId &id);
 
+  DataType getTensorDataType(const TensorId &id);
+
   bool isInitializer(const TensorId &id) const;
 
   void setAttribute(const std::string &attribute, popart::any value);

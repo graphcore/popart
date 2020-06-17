@@ -118,6 +118,8 @@ private:
   // the number of times run(IStepIO &) has been called
   int nCallsToRun{0};
 
+  void compileAndExportExecutable(const poplar::OptionFlags &engine_options);
+
 public:
   // device -> host stream
   void weightsToHost();
@@ -396,16 +398,17 @@ private:
 
   PriTask pipelinedCopyTask(Op *, TaskId prevTaskId);
 
-  // The ID of the poplar::Stream host->device for poplar::Tensor
-  PopStreamId h2dId(TensorId) const;
-  // and for device->host
-  PopStreamId d2hId(TensorId, bool isAnchorStream) const;
-
   bool doRearrangeOnHost(Tensor *tensor) const;
 
   void initPoplarGraph();
 
 public:
+  // The ID of the poplar::Stream host->device for poplar::Tensor
+  PopStreamId h2dId(TensorId) const;
+
+  // and for device->host
+  PopStreamId d2hId(TensorId, bool isAnchorStream) const;
+
   std::unique_ptr<Opx> createOpx(Op *);
 
   // 1-to-1 mapping between Ops and Opxs

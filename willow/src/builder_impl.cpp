@@ -1079,12 +1079,13 @@ std::vector<int64_t> BuilderImpl::getTensorShape(const TensorId &id) {
   return shape;
 }
 
-std::string BuilderImpl::getTensorDtypeString(const TensorId &id) {
-  std::string dtype;
+DataType BuilderImpl::getTensorDataType(const TensorId &id) {
+  auto &t = getValueInfoProto(id);
+  return onnxutil::getDataType(t.type().tensor_type().elem_type());
+}
 
-  auto &t           = getValueInfoProto(id);
-  auto dataTypeInfo = &getDataTypeInfoMap().at(
-      onnxutil::getDataType(t.type().tensor_type().elem_type()));
+std::string BuilderImpl::getTensorDtypeString(const TensorId &id) {
+  auto dataTypeInfo = &getDataTypeInfoMap().at(getTensorDataType(id));
 
   return dataTypeInfo->lcasename();
 }

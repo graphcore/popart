@@ -70,9 +70,14 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules ${PROJECT_SOUR
 set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
 
 
+find_package(PoplarRunner)
 find_package(Threads REQUIRED)
 find_package(PROTOBUF REQUIRED)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
+
+if (PoplarRunner_FOUND)
+  add_definitions(-DPOPLAR_RUNNER)
+endif()
 
 # Using installed cmake find (ONNX must be installed)
 # For a hand-crafted Findonnx script, see a very early commit

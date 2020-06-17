@@ -94,6 +94,12 @@ target_link_libraries(popart
   ${CMAKE_THREAD_LIBS_INIT}
 )
 
+if (PoplarRunner_FOUND)
+  target_link_libraries(popart
+    PoplarRunner::PoplarExecutableData
+)
+endif()
+
 if (TARGET poprithms-static)
   target_link_libraries(popart poprithms-static)
 else()

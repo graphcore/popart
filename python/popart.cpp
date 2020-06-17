@@ -20,6 +20,8 @@
 #include <popart/optimizer.hpp>
 #include <popart/optimizervalue.hpp>
 #include <popart/patterns/patterns.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/exporter.hpp>
 #include <popart/pyarray_accessor.hpp>
 #include <popart/session.hpp>
 #include <popart/sessionoptions.hpp>
@@ -193,6 +195,64 @@ private:
   py::dict outDict = py::dict();
 };
 
+void exportDataset(Builder &builder,
+                   std::map<TensorId, py::iterable> inputs,
+                   int64_t numElements,
+                   std::string outputFilename,
+                   std::string metadataFilename) {
+  // Create some iterators for each input
+  std::map<TensorId, py::iterator> iterators;
+  std::vector<TensorId> feeds;
+  for (auto &input : inputs) {
+    iterators.emplace(input.first, input.second.begin());
+    feeds.push_back(input.first);
+  }
+  // Wrap the iterators in a stepio object
+  PyStepIOCallback stepio{
+      [&](std::string id, bool prefetch) {
+        if (prefetch) {
+          return py::array{};
+        }
+        auto current = iterators.at(id);
+        if (current == py::iterator::sentinel()) {
+          throw error(
+              "Unexpectedly reached the end of the StepIO for feed '{}'", id);
+        }
+        return current->cast<py::array>();
+      },
+      [&](std::string id) { ++iterators.at(id); },
+      // No outputs
+      [](std::string) { return py::array{}; },
+      [](std::string) {}};
+  popart::popx::exportStepIO(
+      builder, stepio, numElements, feeds, outputFilename, metadataFilename);
+}
+
+void exportInputs(Session &session,
+                  std::map<TensorId, py::iterable> inputs,
+                  int64_t num_elements,
+                  const std::string &output_filename) {
+  // Create some iterators for each input
+  std::map<TensorId, py::iterator> iterators;
+  for (auto &input : inputs) {
+    iterators.emplace(input.first, input.second.begin());
+  }
+
+  // Wrap the iterators in a stepio object
+  PyStepIOCallback stepio{[&](std::string id, bool prefetch) {
+                            if (prefetch) {
+                              return py::array{};
+                            }
+                            return iterators.at(id)->cast<py::array>();
+                          },
+                          [&](std::string id) { ++iterators.at(id); },
+                          // No outputs
+                          [](std::string) { return py::array{}; },
+                          [](std::string) {}};
+
+  session.exportInputs(stepio, num_elements, output_filename);
+}
+
 class PyWeightsIO : public IWeightsIO {
 public:
   PyWeightsIO(std::map<TensorId, py::array> weights_) : weights(weights_) {}
@@ -349,8 +409,8 @@ PYBIND11_MODULE(popart_core, m) {
   m.def("getLogger", &Logger::getLogger, py::arg("name") = "all");
 
   m.def("versionString", &popart::core::versionString);
+  m.def("exporterIsAvailable", &popart::popx::exporterIsAvailable);
   m.def("packageHash", &popart::core::packageHash);
-
   {
     py::class_<Logger> cls(m, "Logger");
     cls.def("setLevel", &Logger::setLevel);
@@ -875,6 +935,13 @@ PYBIND11_MODULE(popart_core, m) {
           }
         },
         py::arg("err").none());
+    cls.def("exportInputs",
+            [](InferenceSession &session,
+               std::map<TensorId, py::iterable> inputs,
+               int64_t num_elements,
+               std::string output_filename) {
+              exportInputs(session, inputs, num_elements, output_filename);
+            });
     cls.def("setRandomSeed",
             &InferenceSession::setRandomSeed,
             py::arg("seedValue"));
@@ -971,8 +1038,15 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("readWeights", &TrainingSession::readWeights);
     cls.def("writeWeights", &TrainingSession::writeWeights);
     cls.def("updateOptimizerFromHost",
-            (void (TrainingSession::*)(const Optimizer *)) &
-                TrainingSession::updateOptimizerFromHost);
+            static_cast<void (TrainingSession::*)(const Optimizer *)>(
+                &TrainingSession::updateOptimizerFromHost));
+    cls.def("exportInputs",
+            [](TrainingSession &session,
+               std::map<TensorId, py::iterable> inputs,
+               int64_t num_elements,
+               std::string outputFilename) {
+              exportInputs(session, inputs, num_elements, outputFilename);
+            });
     cls.def("run", &TrainingSession::run);
     cls.def("modelToHost", &TrainingSession::modelToHost);
     cls.def("getInfo", &TrainingSession::getInfo);
@@ -1166,6 +1240,12 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("addInputTensorFromParentGraph",
             &Builder::addInputTensorFromParentGraph,
             py::arg("tensorId"));
+    cls.def("exportDataset",
+            &exportDataset,
+            py::arg("inputs"),
+            py::arg("numElements"),
+            py::arg("outputFilename"),
+            py::arg("metadataFilename") = std::string());
     cls.def(
         "addInitializedInputTensor",
         [](Builder &builder, py::array array, std::string &debugPrefix) {

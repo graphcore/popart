@@ -82,6 +82,13 @@ public:
   void run(IStepIO &stepIO);
 
   /**
+   * Export numElements from stepIO.in
+   */
+  void exportInputs(IStepIO &stepIO,
+                    int64_t numElements,
+                    const std::string &outputFilename);
+
+  /**
    * Write current model to ONNX file
    */
   void modelToHost(const std::string &fn);

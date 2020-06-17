@@ -28,13 +28,13 @@ class MaxClique {
 public:
   // Initialize MaxClique with an edge-graph
   MaxClique(AGraph graph);
-  ~MaxClique(){};
+  ~MaxClique() {}
 
   // Get up to maxCount maximum cliques of at least minSize nodes in descending
   // order. The algorithm will repeatedly try to find the maximum clique first,
   // remove the nodes of that clique and find the next largest maximum clique.
   std::vector<std::vector<int>>
-  getMaximumCliques(int minSize, int maxCount, const float stepLimit = 0.03);
+  getMaximumCliques(int minSize, int maxCount, const float stepLimit = 0.03f);
 
   bool getEdge(int i, int j) const;
 
