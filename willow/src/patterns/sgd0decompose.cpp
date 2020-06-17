@@ -35,8 +35,8 @@ bool SGD0Decompose::apply(Op *op) const {
     InIndex inIndex = SGD0VarUpdateOp::getUpdaterInIndex();
     Tensor *grad    = sgd0->input->tensor(inIndex);
 
-    auto reduceOpUp = std::make_unique<ReplicatedAllReduceInplaceOp>(
-        Onnx::CustomOperators::ReplicatedAllReduceInplace,
+    auto reduceOpUp = std::make_unique<ReplicatedAllReduceOp>(
+        Onnx::CustomOperators::ReplicatedAllReduce,
         Op::Settings(graph, sgd0->name() + "_reduce"));
     auto reduceOp = reduceOpUp.get();
     transferBaseProperties(sgd0, reduceOp);
@@ -45,14 +45,13 @@ bool SGD0Decompose::apply(Op *op) const {
     logging::pattern::trace("Connecting input {} to {} at {}",
                             grad->id,
                             reduceOp->str(),
-                            ReplicatedAllReduceInplaceOp::getInIndex());
-    reduceOp->connectInTensor(ReplicatedAllReduceInplaceOp::getInIndex(),
-                              grad->id);
+                            ReplicatedAllReduceOp::getInIndex());
+    reduceOp->connectInTensor(ReplicatedAllReduceOp::getInIndex(), grad->id);
 
     TensorId reducedTensorId = grad->id + "_reduced";
 
-    reduceOp->createAndConnectOutTensor(
-        ReplicatedAllReduceInplaceOp::getOutIndex(), reducedTensorId);
+    reduceOp->createAndConnectOutTensor(ReplicatedAllReduceOp::getOutIndex(),
+                                        reducedTensorId);
 
     reduceOp->setup();
 
