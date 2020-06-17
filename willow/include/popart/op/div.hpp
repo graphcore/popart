@@ -9,7 +9,7 @@
 namespace popart {
 
 // arg_0 / arg_1
-class DivOp : public ElementWiseBinaryOp {
+class DivOp : public ElementWiseBinaryBaseOp {
 public:
   DivOp(const OperatorIdentifier &_opid, const Op::Settings &settings);
   std::unique_ptr<Op> clone() const final;

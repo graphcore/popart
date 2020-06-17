@@ -9,7 +9,7 @@
 
 namespace popart {
 
-class MulOp : public ElementWiseBinaryOp {
+class MulOp : public ElementWiseBinaryBaseOp {
 public:
   MulOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const final;

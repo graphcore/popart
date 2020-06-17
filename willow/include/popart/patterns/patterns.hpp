@@ -194,6 +194,7 @@ public:
   Patterns &enablePattern(const std::string &t, bool v);
   Patterns &enablePattern(PreAliasPatternType t, bool v);
 
+  bool isInitAccumulateEnabled();
   bool isPreUniReplEnabled();
   bool isPostNReplEnabled();
   bool isSoftMaxGradDirectEnabled();
@@ -229,6 +230,7 @@ public:
   // The following methods are fluent allow you to
   // Pattens().enableInPlace0(false).
   //           enablePreUniRepl(true);
+  Patterns &enableInitAccumulate(bool v);
   Patterns &enablePreUniRepl(bool v);
   Patterns &enablePostNRepl(bool v);
   Patterns &enableSoftMaxGradDirect(bool v);

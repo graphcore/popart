@@ -9,23 +9,6 @@
 
 namespace popart {
 
-template <typename T>
-static std::vector<T>
-padShape(const std::vector<T> &shape, int padded_size, T pad_value) {
-  std::vector<T> result(padded_size - shape.size(), pad_value);
-  result.insert(result.end(), shape.begin(), shape.end());
-  return result;
-}
-
-template <typename T>
-static std::vector<T> unpadShape(const std::vector<T> &shape,
-                                 int unpadded_size) {
-  std::vector<T> result;
-  auto offset = shape.size() - unpadded_size;
-  result.insert(result.begin(), shape.begin() + offset, shape.end());
-  return result;
-}
-
 // TODO : T6250 : Add support for V6 axis & broadcast attributes
 
 AddOp::AddOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
@@ -53,141 +36,48 @@ std::vector<std::unique_ptr<Op>> AddOp::getGradOps() {
   return upops;
 }
 
-std::vector<std::tuple<OperatorIdentifier, float>>
-AddOp::inplacePriorityDefault() const {
-  auto outSize  = outInfo(AddOp::getOutIndex()).nelms();
-  auto arg0Size = inInfo(AddOp::getArg0InIndex()).nelms();
-  auto arg1Size = inInfo(AddOp::getArg1InIndex()).nelms();
+bool AddOp::hasLhsInplaceVariant() const { return true; }
 
-  std::vector<std::tuple<OperatorIdentifier, float>> result;
+bool AddOp::hasRhsInplaceVariant() const { return true; }
 
-  if (outSize == arg0Size) {
-    auto lhsPriority =
-        defaultInplacePriorities.at(Onnx::CustomOperators::AddLhsInplace);
-    result.push_back({Onnx::CustomOperators::AddLhsInplace, lhsPriority});
-  }
-  if (outSize == arg1Size) {
-    auto rhsPriority =
-        defaultInplacePriorities.at(Onnx::CustomOperators::AddRhsInplace);
-    result.push_back({Onnx::CustomOperators::AddRhsInplace, rhsPriority});
-  }
-
-  return result;
+std::unique_ptr<Op> AddOp::getLhsInplaceVariant() const {
+  return std::make_unique<AddLhsInplaceOp>(*this);
 }
 
-std::unique_ptr<Op>
-AddOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
-  if (operator_id == Onnx::CustomOperators::AddLhsInplace) {
-    return std::make_unique<AddLhsInplaceOp>(*this);
-  } else if (operator_id == Onnx::CustomOperators::AddRhsInplace) {
-    return std::make_unique<AddRhsInplaceOp>(*this);
-  }
-
-  // catch remaining cases and throw an error
-  return Op::getInplaceVariant(operator_id);
+std::unique_ptr<Op> AddOp::getRhsInplaceVariant() const {
+  return std::make_unique<AddRhsInplaceOp>(*this);
 }
 
-void AddOp::setInplacePriority(const OperatorIdentifier &x, float p) {
-  defaultInplacePriorities[x] = p;
+OperatorIdentifier AddOp::getLhsOperatorIdentifier() const {
+  return Onnx::CustomOperators::AddLhsInplace;
+}
+
+OperatorIdentifier AddOp::getRhsOperatorIdentifier() const {
+  return Onnx::CustomOperators::AddRhsInplace;
 }
 
 AddLhsInplaceOp::AddLhsInplaceOp(const AddOp &op)
-    : AddOp(Onnx::CustomOperators::AddLhsInplace, op.getSettings()) {}
+    : ElementWiseBinaryInplaceLhsOp(Onnx::CustomOperators::AddLhsInplace,
+                                    op.getSettings()) {}
 
 AddLhsInplaceOp::AddLhsInplaceOp(const Op::Settings &settings_)
-    : AddOp(Onnx::CustomOperators::AddLhsInplace, settings_) {}
+    : ElementWiseBinaryInplaceLhsOp(Onnx::CustomOperators::AddLhsInplace,
+                                    settings_) {}
 
 std::unique_ptr<Op> AddLhsInplaceOp::clone() const {
   return std::make_unique<AddLhsInplaceOp>(*this);
 }
 
-view::Regions AddLhsInplaceOp::modifies(InIndex index) const {
-  if (index == getArg0InIndex()) {
-    return {view::Region::getFull(inShape(index))};
-  } else if (index == getArg1InIndex()) {
-    return {view::Region::getEmpty(inRank(index))};
-  } else {
-    throw error("Invalid index passed to AddLhsInplaceOp::modifies");
-  }
-}
-
-view::Regions AddLhsInplaceOp::aliases(InIndex in, OutIndex) const {
-  if (in == getArg0InIndex()) {
-    return {view::Region::getFull(inShape(in))};
-  } else if (in == getArg1InIndex()) {
-    return {view::Region::getEmpty(inRank(in))};
-  } else {
-    throw error("Invalid index passed to AddLhsInplaceOp::modifies");
-  }
-}
-
 AddRhsInplaceOp::AddRhsInplaceOp(const AddOp &op)
-    : AddOp(Onnx::CustomOperators::AddRhsInplace, op.getSettings()) {}
+    : ElementWiseBinaryInplaceRhsOp(Onnx::CustomOperators::AddRhsInplace,
+                                    op.getSettings()) {}
+
+AddRhsInplaceOp::AddRhsInplaceOp(const Op::Settings &settings_)
+    : ElementWiseBinaryInplaceRhsOp(Onnx::CustomOperators::AddRhsInplace,
+                                    settings_) {}
 
 std::unique_ptr<Op> AddRhsInplaceOp::clone() const {
   return std::make_unique<AddRhsInplaceOp>(*this);
-}
-
-view::Regions AddRhsInplaceOp::modifies(InIndex index) const {
-  if (index == getArg0InIndex()) {
-    return {view::Region::getEmpty(inRank(index))};
-  } else if (index == getArg1InIndex()) {
-    return {view::Region::getFull(inShape(index))};
-  } else {
-    throw error("Invalid index passed to AddRhsInplaceOp::modifies");
-  }
-}
-
-view::Regions AddRhsInplaceOp::aliases(InIndex in, OutIndex) const {
-  if (in == getArg0InIndex()) {
-    return {view::Region::getEmpty(inRank(in))};
-  } else if (in == getArg1InIndex()) {
-    return {view::Region::getFull(inShape(in))};
-  } else {
-    throw error("Invalid index passed to AddRhsInplaceOp::modifies");
-  }
-}
-
-view::RegMap AddOp::fwdRegMap(InIndex argIndex, OutIndex) const {
-
-  auto out_shape = outShape(AddOp::getOutIndex());
-  auto in_shape  = inShape(argIndex);
-  return [out_shape, in_shape](const view::Region &r) {
-    auto out_size  = static_cast<int>(out_shape.size());
-    auto arg_shape = padShape(in_shape, out_size, int64_t{1});
-    auto lower     = padShape(r.getLower(), out_size, int64_t{0});
-    auto upper     = padShape(r.getUpper(), out_size, int64_t{1});
-
-    // broadcasting
-    for (int i = 0; i < out_shape.size(); i++) {
-      if (arg_shape[i] == 1 && out_shape[i] > 1) {
-        upper[i] = out_shape[i];
-      }
-    }
-
-    return view::Regions(1, view::Region{lower, upper});
-  };
-}
-
-view::RegMap AddOp::bwdRegMap(InIndex argIndex, OutIndex) const {
-
-  auto arg_shape = inShape(argIndex);
-  auto arg_size  = static_cast<int>(arg_shape.size());
-  auto out_shape = unpadShape(outShape(AddOp::getOutIndex()), arg_size);
-  return [arg_size, out_shape, arg_shape](const view::Region &r) {
-    auto lower = unpadShape(r.getLower(), arg_size);
-    auto upper = unpadShape(r.getUpper(), arg_size);
-
-    // unbroadcasting
-    for (int i = 0; i < out_shape.size(); i++) {
-      if (arg_shape[i] == 1 && out_shape[i] > 1) {
-        lower[i] = 0;
-        upper[i] = 1;
-      }
-    }
-
-    return view::Regions(1, view::Region{lower, upper});
-  };
 }
 
 AddArg0GradOp::AddArg0GradOp(const AddOp &op_,

@@ -5,7 +5,7 @@
 #include <popart/ir.hpp>
 #include <popart/op/concat.hpp>
 #include <popart/op/copyvarupdate.hpp>
-#include <popart/op/flatten.hpp>
+#include <popart/op/reshape.hpp>
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/sgd1combo.hpp>
 #include <popart/op/slice.hpp>
@@ -24,7 +24,7 @@ std::string getConcatWeightsPrefix() { return "concatWeights___"; }
 
 std::string getConcatGradsPrefix() { return "concatGrads___"; }
 
-std::string getFlattenedPrefix() { return "flattened___"; }
+std::string getReshapedPrefix() { return "flattened___"; }
 
 std::string getSlicedPrefix() { return "sliced___"; }
 } // namespace
@@ -499,8 +499,6 @@ bool MergeVarUpdates::apply(Graph &graph) const {
   // Will become true if any partition is not a singleton.
   bool changed = false;
 
-  // flatten to shape (1, ni) for all tensors,
-  const int flattenAxis = 0;
   // then concat to shape (1, n1 + n2 + ... + nT)
   const int concatAxis = 1;
 
@@ -545,8 +543,8 @@ bool MergeVarUpdates::apply(Graph &graph) const {
       //
       //   W0           W1      dW0         dW1
       //   |            |        |           |
-      // FlattenInplace |  FlattenInplace    |
-      //   |     FlattenInplace |     FlattenInplace
+      // ReshapeInplace |  ReshapeInplace    |
+      //   |     ReshapeInplace |     ReshapeInplace
       //   |            |       |            |
       //   \           /        \           /
       //   ConcatInplace        ConcatInplace
@@ -559,14 +557,19 @@ bool MergeVarUpdates::apply(Graph &graph) const {
       //
       //  Similarly for non-const SGDVarUpdates and CopyUpdate.
       //
-      //  It might be that a weight is flattened and then sliced, so that
-      //  only a part of it is updated (the rest being updated elsewhere)
+      //  The ReshapeInplace ops, are actually just flattening to {1. nelms} as
+      //  we prefer a reshape op as there is no Flatten* Opx implementation in
+      //  PopART.
+      //
+      //  It might be that a weight is reshaped (flattened) and then sliced, so
+      //  that only a part of it is updated (the rest being updated elsewhere)
 
-      // The Ops which flatten (and possibly slice) the Variable Tensors
-      std::vector<Op *> flattenWeightOps;
-      // The Ops which flatten (and possibly slice) the Updater Tensors
+      // The Ops which reshape (flatten, and possibly slice) the Variable
+      // Tensors
+      std::vector<Op *> reshapeWeightOps;
+      // The Ops which reshape (flatten, and possibly slice) the Updater Tensors
       // (grads, sources of copies)
-      std::vector<Op *> flattenUpdaterOps;
+      std::vector<Op *> reshapeUpdaterOps;
 
       // Build up the name of the ConcatInplaceOp for the weight concat.
       std::stringstream concatWeightsNameStream;
@@ -575,7 +578,7 @@ bool MergeVarUpdates::apply(Graph &graph) const {
       std::stringstream concatUpdatersNameStream;
       concatUpdatersNameStream << getConcatGradsPrefix();
 
-      Op::Settings canonSettings = target[0].vop->settings;
+      const Op::Settings &canonSettings = target[0].vop->settings;
 
       // optimizer specific input tensor names
       auto optimizerInputs =
@@ -586,32 +589,31 @@ bool MergeVarUpdates::apply(Graph &graph) const {
 
       for (auto opStartEnd : target) {
 
-        auto makeFlattened = [canonSettings, flattenAxis, &graph](
-                                 const Tensor *tensor,
-                                 VarUpdateStartEnd::Start start,
-                                 VarUpdateStartEnd::End end) {
-          // create FlattenInplaceOp
-          auto tempFlattenOp = std::make_unique<FlattenInplaceOp>(
-              Onnx::CustomOperators::FlattenInplace,
-              flattenAxis,
-              canonSettings);
+        auto makeReshaped = [canonSettings,
+                             &graph](const Tensor *tensor,
+                                     VarUpdateStartEnd::Start start,
+                                     VarUpdateStartEnd::End end) {
+          const Shape &outShape = {1, tensor->info.nelms()};
+          // create ReshapeInplaceOp
+          auto tempReshapeOp = std::make_unique<ReshapeInplaceOp>(
+              Onnx::CustomOperators::ReshapeInplace, outShape, canonSettings);
 
-          // connect FlattenInplaceOp with input, create output
+          // connect ReshapeInplaceOp with input, create output
           //
-          auto flattenOp = tempFlattenOp.get();
+          auto reshapeOp = tempReshapeOp.get();
 
-          graph.moveIntoGraph(std::move(tempFlattenOp));
+          graph.moveIntoGraph(std::move(tempReshapeOp));
 
-          flattenOp->connectInTensor(FlattenBaseOp::getInIndex(), tensor->id);
+          reshapeOp->connectInTensor(ReshapeBaseOp::getInIndex(), tensor->id);
 
-          auto flattenOutId = getFlattenedPrefix() + tensor->id + "_s" +
+          auto reshapeOutId = getReshapedPrefix() + tensor->id + "_s" +
                               std::to_string(start) + "_e" +
                               std::to_string(end);
 
-          flattenOp->createAndConnectOutTensor(FlattenBaseOp::getOutIndex(),
-                                               flattenOutId);
+          reshapeOp->createAndConnectOutTensor(ReshapeBaseOp::getOutIndex(),
+                                               reshapeOutId);
 
-          flattenOp->setup();
+          reshapeOp->setup();
 
           // create slice if necessary
           if (end - start != tensor->info.nelms()) {
@@ -627,11 +629,11 @@ bool MergeVarUpdates::apply(Graph &graph) const {
 
             graph.moveIntoGraph(std::move(tempSliceOp));
 
-            sliceOp->connectInTensor(BaseSliceOp::getInIndex(), flattenOutId);
+            sliceOp->connectInTensor(BaseSliceOp::getInIndex(), reshapeOutId);
 
             std::ostringstream sliceOutIdSs;
             sliceOutIdSs << getSlicedPrefix() << "_s" << start << "-e" << end
-                         << "_id" << flattenOutId;
+                         << "_id" << reshapeOutId;
 
             sliceOp->createAndConnectOutTensor(BaseSliceOp::getOutIndex(),
                                                sliceOutIdSs.str());
@@ -640,26 +642,26 @@ bool MergeVarUpdates::apply(Graph &graph) const {
 
             return dynamic_cast<Op *>(sliceOp);
           }
-          return dynamic_cast<Op *>(flattenOp);
+          return dynamic_cast<Op *>(reshapeOp);
         };
 
-        // create FlattenInplaceOp (and possible SliceInplaceOp)
+        // create ReshapeInplaceOp (and possible SliceInplaceOp)
         // for the weight being updated
         auto weightIn =
             opStartEnd.vop->inTensor(VarUpdateOp::getVarToUpdateInIndex());
 
-        auto flWeOp = makeFlattened(weightIn, opStartEnd.start, opStartEnd.end);
+        auto flWeOp = makeReshaped(weightIn, opStartEnd.start, opStartEnd.end);
 
-        flattenWeightOps.push_back(flWeOp);
+        reshapeWeightOps.push_back(flWeOp);
         concatWeightsNameStream << '_' << weightIn->id << "_"
                                 << opStartEnd.start << "-" << opStartEnd.end;
 
-        // create FlattenInplaceOp (and possibly SliceInplaceOp) for the
+        // create ReshapeInplaceOp (and possibly SliceInplaceOp) for the
         // gradient, or source of copy
         auto gIn = opStartEnd.vop->inTensor(
             VarUpdateWithUpdaterOp::getUpdaterInIndex());
-        auto flGrOp = makeFlattened(gIn, opStartEnd.start, opStartEnd.end);
-        flattenUpdaterOps.push_back(flGrOp);
+        auto flGrOp = makeReshaped(gIn, opStartEnd.start, opStartEnd.end);
+        reshapeUpdaterOps.push_back(flGrOp);
         concatUpdatersNameStream << '_' << gIn->id << "_" << opStartEnd.start
                                  << "-" << opStartEnd.end;
 
@@ -669,17 +671,17 @@ bool MergeVarUpdates::apply(Graph &graph) const {
         toRemove.emplace(opStartEnd.vop);
       }
 
-      auto getConcatInplace = [&graph, canonSettings](
-                                  const std::vector<Op *> &flattened,
-                                  TensorId newId) {
-        // create ConcatInplaceOp for the flattened input tensors
+      auto getConcatInplace = [&graph,
+                               canonSettings](const std::vector<Op *> &reshaped,
+                                              TensorId newId) {
+        // create ConcatInplaceOp for the reshaped input tensors
         auto tempOp =
             std::unique_ptr<Op>(new ConcatInplaceOp(concatAxis, canonSettings));
         auto concatOp = tempOp.get();
         graph.moveIntoGraph(std::move(tempOp));
-        for (int i = 0; i < flattened.size(); ++i) {
+        for (int i = 0; i < reshaped.size(); ++i) {
           concatOp->connectInTensor(
-              i, flattened[i]->outTensor(FlattenBaseOp::getOutIndex())->id);
+              i, reshaped[i]->outTensor(ReshapeBaseOp::getOutIndex())->id);
         }
 
         concatOp->createAndConnectOutTensor(ConcatOp::getOutIndex(), newId);
@@ -687,15 +689,15 @@ bool MergeVarUpdates::apply(Graph &graph) const {
         return concatOp;
       };
 
-      // create ConcatInplaceOp for the flattened weights
+      // create ConcatInplaceOp for the reshaped weights
       auto concatWeightsOp =
-          getConcatInplace(flattenWeightOps, concatWeightsNameStream.str());
+          getConcatInplace(reshapeWeightOps, concatWeightsNameStream.str());
       auto concatedWeightsTensorId =
           concatWeightsOp->outTensor(ConcatOp::getOutIndex())->id;
 
-      // create ConcatInplaceOp for the flattened grads (or sources op copies)
+      // create ConcatInplaceOp for the reshaped grads (or sources op copies)
       auto concatGradsOp =
-          getConcatInplace(flattenUpdaterOps, concatUpdatersNameStream.str());
+          getConcatInplace(reshapeUpdaterOps, concatUpdatersNameStream.str());
       auto concatedGradsTensorId =
           concatGradsOp->outTensor(ConcatOp::getOutIndex())->id;
 

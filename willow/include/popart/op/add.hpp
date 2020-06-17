@@ -13,64 +13,31 @@ public:
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
 
-  std::vector<std::tuple<OperatorIdentifier, float>>
-  inplacePriorityDefault() const override;
-
-  std::unique_ptr<Op>
-  getInplaceVariant(const OperatorIdentifier &) const override;
-
-  view::RegMap fwdRegMap(InIndex, OutIndex) const override;
-  view::RegMap bwdRegMap(InIndex, OutIndex) const override;
-
-  void setInplacePriority(const OperatorIdentifier &, float);
-
 private:
-  std::map<OperatorIdentifier, float> defaultInplacePriorities{
-      {Onnx::CustomOperators::AddLhsInplace, 10.0f},
-      {Onnx::CustomOperators::AddRhsInplace, 10.0f}};
+  bool hasLhsInplaceVariant() const final;
+  bool hasRhsInplaceVariant() const final;
+
+  std::unique_ptr<Op> getLhsInplaceVariant() const final;
+  std::unique_ptr<Op> getRhsInplaceVariant() const final;
+
+  OperatorIdentifier getLhsOperatorIdentifier() const final;
+  OperatorIdentifier getRhsOperatorIdentifier() const final;
 };
 
-class AddLhsInplaceOp : public AddOp {
+class AddLhsInplaceOp : public ElementWiseBinaryInplaceLhsOp {
 public:
   AddLhsInplaceOp(const AddOp &addOp);
   AddLhsInplaceOp(const Op::Settings &settings_);
 
   std::unique_ptr<Op> clone() const override;
-
-  std::vector<std::tuple<OperatorIdentifier, float>>
-  inplacePriorityDefault() const final {
-    return {};
-  }
-
-  std::unique_ptr<Op>
-  getInplaceVariant(const OperatorIdentifier &o) const final {
-    // this throws an error
-    return Op::getInplaceVariant(o);
-  }
-
-  view::Regions modifies(InIndex) const override;
-  view::Regions aliases(InIndex, OutIndex) const override;
 };
 
-class AddRhsInplaceOp : public AddOp {
+class AddRhsInplaceOp : public ElementWiseBinaryInplaceRhsOp {
 public:
   AddRhsInplaceOp(const AddOp &addOp);
+  AddRhsInplaceOp(const Op::Settings &settings_);
 
   std::unique_ptr<Op> clone() const override;
-
-  std::vector<std::tuple<OperatorIdentifier, float>>
-  inplacePriorityDefault() const final {
-    return {};
-  }
-
-  std::unique_ptr<Op>
-  getInplaceVariant(const OperatorIdentifier &o) const final {
-    // this throws an error
-    return Op::getInplaceVariant(o);
-  }
-
-  view::Regions modifies(InIndex) const override;
-  view::Regions aliases(InIndex, OutIndex) const override;
 };
 
 class AddArg0GradOp : public ReduceSumOp {

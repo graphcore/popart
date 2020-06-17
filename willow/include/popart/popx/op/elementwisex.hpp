@@ -72,6 +72,9 @@ class ElementWiseBinaryOpx : public Opx {
 public:
   ElementWiseBinaryOpx(Op *, Devicex *);
   InputCreatorType getInputCreatorType(InIndex) const override;
+  std::vector<TensorId> mustExistBeforeCreate(InIndex) const override;
+  poplar::Tensor createInput(InIndex index,
+                             const std::string &name) const override;
   poplar::Tensor
   unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const override;
   view::RegMap unwindRegion(InIndex, OutIndex) const override;

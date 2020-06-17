@@ -160,13 +160,13 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
       BOOST_CHECK(count == expected);
     };
     if (mvu == MergeVarUpdateType::All) {
-      // 10 flattens per layer are:
+      // 10 reshapes per layer are:
       // 3) conv filters, bn bias, bn scale
       // 3) grads of each of the above
       // 2) running mean & variance
       // 2) updates for each of the above
 
-      checkOps(Onnx::CustomOperators::FlattenInplace, nConv * 10);
+      checkOps(Onnx::CustomOperators::ReshapeInplace, nConv * 10);
 
       // 4 ConcatInplace
       checkOps(Onnx::CustomOperators::ConcatInplace, 4);
@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
     } else if (mvu == MergeVarUpdateType::None) {
       checkOps(Onnx::CustomOperators::SGD0VarUpdate, 3 * nConv);
       checkOps(Onnx::CustomOperators::CopyVarUpdate, 2 * nConv);
-      checkOps(Onnx::CustomOperators::FlattenInplace, 0);
+      checkOps(Onnx::CustomOperators::ReshapeInplace, 0);
       checkOps(Onnx::CustomOperators::ConcatInplace, 0);
     }
 

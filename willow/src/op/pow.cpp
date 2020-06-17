@@ -8,7 +8,7 @@
 namespace popart {
 
 PowOp::PowOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
-    : ElementWiseBinaryOp(_opid, settings_) {}
+    : ElementWiseBinaryBaseOp(_opid, settings_) {}
 
 std::unique_ptr<Op> PowOp::clone() const {
   return std::make_unique<PowOp>(*this);

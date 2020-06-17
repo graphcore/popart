@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeConstSGD0) {
     if (mvu == MergeVarUpdateType::All) {
       BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::SGD0VarUpdate).size() ==
                   1);
-      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::FlattenInplace).size() ==
+      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::ReshapeInplace).size() ==
                   nConv * 2);
 
       // 2 ConcatInplace, one for all the Vars and one for all the Grads
@@ -135,7 +135,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeConstSGD0) {
     } else if (mvu == MergeVarUpdateType::None) {
       BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::SGD0VarUpdate).size() ==
                   nConv);
-      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::FlattenInplace).size() ==
+      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::ReshapeInplace).size() ==
                   0);
       BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::ConcatInplace).size() ==
                   0);

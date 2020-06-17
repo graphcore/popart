@@ -89,15 +89,19 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
   // 0: Define constants
   auto trueConst =
       graph().addConstant(poplar::BOOL, {}, true, debugPrefix("trueConst"));
+  poputil::mapTensorLinearly(graph(), trueConst);
   auto falseConst =
       graph().addConstant(poplar::BOOL, {}, false, debugPrefix("falseConst"));
+  poputil::mapTensorLinearly(graph(), falseConst);
 
   // 1: Create a poplar only iterator variable i
   auto iterTensor = graph().addVariable(poplar::INT, {}, debugPrefix("i"));
+  poputil::mapTensorLinearly(graph(), iterTensor);
   popops::zero(graph(), iterTensor, prog, debugPrefix("zeroIterator"));
 
   // 2: Create a poplar only boolean variable exit
   auto exit = graph().addVariable(poplar::BOOL, {}, debugPrefix("exit"));
+  poputil::mapTensorLinearly(graph(), exit);
   poplar::program::Copy exitFalse(falseConst, exit);
   prog.add(exitFalse);
 
@@ -124,6 +128,7 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
   startThenProg.add(loopBody);
 
   auto condOut = graph().addVariable(poplar::BOOL, {}, debugPrefix("condOut"));
+  poputil::mapTensorLinearly(graph(), condOut);
   poplar::program::Copy startElseCopyProg(trueConst, condOut);
   startElseProg.add(startElseCopyProg);
 

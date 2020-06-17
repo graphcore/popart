@@ -171,6 +171,7 @@ void ConstExprOpManager::registerConstOps() {
   registerConstOp<ConstExprSqueeze>("Squeeze");
   registerConstOp<ConstExprIdentity>("Identity");
   registerConstOp<ConstExprReshape>("Reshape");
+  registerConstOp<ConstExprReshape>("ReshapeInplace");
   registerConstOp<ConstExprGather>("Gather");
   registerConstOp<ConstExprIdentity>("Flatten");
   registerConstOp<ConstExprIdentity>("FlattenInplace");
