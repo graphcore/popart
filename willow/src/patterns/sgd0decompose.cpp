@@ -55,6 +55,9 @@ bool SGD0Decompose::apply(Op *op) const {
 
     reduceOp->setup();
 
+    sgd0->disconnectInTensor(grad);
+    sgd0->connectInTensor(inIndex, reducedTensorId);
+
     logging::transform::trace(
         "[SGD0Decompose] {} -> {}", reduceOp->debugName(), op->debugName());
 
