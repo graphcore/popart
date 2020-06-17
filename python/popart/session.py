@@ -8,9 +8,8 @@ import popart
 from popart_core import _InferenceSessionCore, _TrainingSessionCore
 
 
-def _initAnchorArrays(
-    sess: Union["InferenceSession", "TrainingSession"]
-) -> Dict[str, np.array]:
+def _initAnchorArrays(sess: Union["InferenceSession", "TrainingSession"]
+                      ) -> Dict[str, np.array]:
     """Create the anchor arrays to feed data back into Python with.
 
     Arguments:
@@ -121,14 +120,15 @@ class InferenceSession(_InferenceSessionCore):
         userOptions: Session options to apply.
             Default: ``popart.SessionOptions()``.
     """
+
     def __init__(
-        self,
-        fnModel: bytes,
-        dataFlow: Dict[int, Dict],
-        deviceInfo: popart.DeviceInfo,
-        inputShapeInfo: popart.InputShapeInfo = popart.InputShapeInfo(),
-        patterns: popart.Patterns = None,
-        userOptions: popart.SessionOptions = popart.SessionOptions()
+            self,
+            fnModel: bytes,
+            dataFlow: Dict[int, Dict],
+            deviceInfo: popart.DeviceInfo,
+            inputShapeInfo: popart.InputShapeInfo = popart.InputShapeInfo(),
+            patterns: popart.Patterns = None,
+            userOptions: popart.SessionOptions = popart.SessionOptions()
     ) -> None:
 
         if patterns == None:
@@ -230,16 +230,17 @@ class TrainingSession(_TrainingSessionCore):
             userOptions: Session options to apply.
                 Default: ``popart.SessionOptions()``.
     """
+
     def __init__(
-        self,
-        fnModel: bytes,
-        dataFlow: Dict[int, Dict],
-        loss: "",
-        optimizer: popart.Optimizer,
-        deviceInfo: popart.DeviceInfo,
-        inputShapeInfo: popart.InputShapeInfo = popart.InputShapeInfo(),
-        patterns: popart.Patterns = None,
-        userOptions: popart.SessionOptions = popart.SessionOptions()
+            self,
+            fnModel: bytes,
+            dataFlow: Dict[int, Dict],
+            loss: "",
+            optimizer: popart.Optimizer,
+            deviceInfo: popart.DeviceInfo,
+            inputShapeInfo: popart.InputShapeInfo = popart.InputShapeInfo(),
+            patterns: popart.Patterns = None,
+            userOptions: popart.SessionOptions = popart.SessionOptions()
     ) -> None:
 
         if patterns is None:
