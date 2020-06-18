@@ -36,21 +36,21 @@ class TensorInfo;
 
 static void verifyWindowParameters(std::unique_ptr<BuilderImpl> &impl,
                                    TensorId input,
-                                   const std::vector<int64_t> strides,
-                                   const std::vector<int64_t> padding,
+                                   std::vector<int64_t> strides,
+                                   std::vector<int64_t> padding,
                                    const std::vector<int64_t> kernel_shape,
                                    std::vector<int64_t> dilation = {}) {
   auto num_spatial_dims = impl->getTensorShape(input).size() - 2;
   if (num_spatial_dims < 1) {
     throw error("Input tensor has no spatial dimensions");
   }
-  if (strides.size() != num_spatial_dims) {
+  if (strides.size() != 0 && strides.size() != num_spatial_dims) {
     throw error(
         "Length of strides vector {} != number of spatial dimensions {}",
         strides.size(),
         num_spatial_dims);
   }
-  if (padding.size() != num_spatial_dims * 2) {
+  if (padding.size() != 0 && padding.size() != num_spatial_dims * 2) {
     throw error("Padding vector (length {}) does not have 2 values for each "
                 "spatial dimension {}",
                 padding.size(),
@@ -72,9 +72,16 @@ static void verifyWindowParameters(std::unique_ptr<BuilderImpl> &impl,
     Shape inShape = impl->getTensorShape(input);
     inShape.erase(inShape.begin(), inShape.begin() + 2);
 
+    // Default 'zeros'
+    if (padding.empty()) {
+      padding.resize(impl->getTensorShape(input).size(), 0);
+    }
     // Default 'ones'
     if (dilation.empty()) {
       dilation.resize(num_spatial_dims, 1);
+    }
+    if (strides.empty()) {
+      strides.resize(num_spatial_dims, 1);
     }
 
     Shape spatialOutShape = HasReceptiveFieldOp::getSpatialOutShape(
@@ -124,6 +131,20 @@ static void verifyConvBase(std::unique_ptr<BuilderImpl> &impl,
             weightsKShape);
       }
     }
+  }
+
+  // Prepare attributes for verifyWindowParameters:
+  // If attributes are unspecified (i.e. they do not
+  // exist in the 'attributes' map) then set as empty
+  std::vector<int64_t> emptyVec;
+  if (!attributes.count("strides")) {
+    attributes["strides"] = emptyVec;
+  }
+  if (!attributes.count("pads")) {
+    attributes["pads"] = emptyVec;
+  }
+  if (!attributes.count("dilations")) {
+    attributes["dilations"] = emptyVec;
   }
 
   verifyWindowParameters(
