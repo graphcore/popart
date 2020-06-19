@@ -122,7 +122,7 @@ void GraphTransformerImpl::convertUINT8ToINT32() {
       model, [](ONNX_NAMESPACE::TensorProto &initializer) {
         if (initializer.data_type() ==
             ONNX_NAMESPACE::TensorProto_DataType_UINT8) {
-          convertFloatTensorToHalf(initializer);
+          convertUINT8TensorToINT32(initializer);
         }
       });
 
@@ -183,7 +183,7 @@ void GraphTransformerImpl::convertUINT16ToINT32() {
       model, [](ONNX_NAMESPACE::TensorProto &initializer) {
         if (initializer.data_type() ==
             ONNX_NAMESPACE::TensorProto_DataType_UINT16) {
-          convertFloatTensorToHalf(initializer);
+          convertUINT16TensorToINT32(initializer);
         }
       });
 
@@ -243,7 +243,7 @@ void GraphTransformerImpl::convertINT8ToINT32() {
       model, [](ONNX_NAMESPACE::TensorProto &initializer) {
         if (initializer.data_type() ==
             ONNX_NAMESPACE::TensorProto_DataType_INT8) {
-          convertFloatTensorToHalf(initializer);
+          convertINT8TensorToINT32(initializer);
         }
       });
 
@@ -303,7 +303,7 @@ void GraphTransformerImpl::convertINT16ToINT32() {
       model, [](ONNX_NAMESPACE::TensorProto &initializer) {
         if (initializer.data_type() ==
             ONNX_NAMESPACE::TensorProto_DataType_INT16) {
-          convertFloatTensorToHalf(initializer);
+          convertINT16TensorToINT32(initializer);
         }
       });
 
@@ -363,7 +363,7 @@ void GraphTransformerImpl::convertINT64ToINT32() {
       model, [](ONNX_NAMESPACE::TensorProto &initializer) {
         if (initializer.data_type() ==
             ONNX_NAMESPACE::TensorProto_DataType_INT64) {
-          convertFloatTensorToHalf(initializer);
+          convertINT64TensorToINT32(initializer);
         }
       });
 
@@ -424,7 +424,7 @@ void GraphTransformerImpl::convertDoublesToFloats() {
       model, [](ONNX_NAMESPACE::TensorProto &initializer) {
         if (initializer.data_type() ==
             ONNX_NAMESPACE::TensorProto_DataType_DOUBLE) {
-          convertFloatTensorToHalf(initializer);
+          convertDoubleTensorToFloat(initializer);
         }
       });
 
@@ -485,7 +485,7 @@ void GraphTransformerImpl::convertBFloats16ToFloat32() {
       model, [](ONNX_NAMESPACE::TensorProto &initializer) {
         if (initializer.data_type() ==
             ONNX_NAMESPACE::TensorProto_DataType_BFLOAT16) {
-          convertFloatTensorToHalf(initializer);
+          convertBFloat16TensorToFloat32(initializer);
         }
       });
 
@@ -546,7 +546,7 @@ void GraphTransformerImpl::convertDoublesToHalfs() {
       model, [](ONNX_NAMESPACE::TensorProto &initializer) {
         if (initializer.data_type() ==
             ONNX_NAMESPACE::TensorProto_DataType_DOUBLE) {
-          convertFloatTensorToHalf(initializer);
+          convertDoubleTensorToHalf(initializer);
         }
       });
 

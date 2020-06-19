@@ -134,10 +134,6 @@ if (BUILD_DOCS)
     DESTINATION docs/pdf
     COMPONENT popart-docs)
 
-  install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/
-    DESTINATION docs/popart_api_cpp/doxygen
-    COMPONENT popart-docs)
-
 else()
   install(FILES)
 endif()

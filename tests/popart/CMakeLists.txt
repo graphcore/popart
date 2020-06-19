@@ -268,6 +268,11 @@ add_popart_py_unit_test(virtual_graph_check_test)
 add_popart_py_unit_test(virtual_graph_test VARIANTS IpuModel)
 add_popart_py_unit_test(type_casting_test)
 
+# Test to check for boost in popart headers.
+set(POPART_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/willow/include)
+add_test(NAME "boost_free_interface_test"
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/boost_free_interface_test.py ${POPART_INCLUDE_DIR})
+
 # device_test should be run serially as it tests that it can attach to each
 # IPU available on the machine it is run on.
 if ("Hw" IN_LIST ENABLED_TEST_VARIANTS)

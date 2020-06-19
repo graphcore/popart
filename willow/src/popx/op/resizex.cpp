@@ -32,7 +32,7 @@ void ResizeOpx::grow(poplar::program::Sequence &prog) const {
 
 namespace {
 
-std::vector<poplar::Tensor> split(poplar::Tensor &input, int dim) {
+std::vector<poplar::Tensor> split(const poplar::Tensor &input, int dim) {
   std::vector<poplar::Tensor> result;
   for (int i = 0; i < input.dim(dim); i++) {
     result.push_back(input.slice(i, i + 1, dim));
@@ -43,21 +43,94 @@ std::vector<poplar::Tensor> split(poplar::Tensor &input, int dim) {
 } // namespace
 
 poplar::Tensor
-ResizeOpx::resize_nearest(poplar::Tensor &input, int dim, int size) const {
+ResizeOpx::resize_nearest(poplar::Tensor &input, int dim, int64_t size) const {
   auto slices = split(input, dim);
 
   std::vector<poplar::Tensor> toConcat;
   float k = static_cast<float>(input.dim(dim)) / static_cast<float>(size);
   for (int i = 0; i < size; i++) {
-    int idx = std::floor(i * k);
+    int idx = static_cast<int>(std::floor(i * k));
     toConcat.push_back(slices.at(idx));
   }
 
   return poplar::concat(toConcat, dim);
 }
 
+ResizeGradOpx::ResizeGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+  verifyOp<ResizeGradOp>(op);
+}
+
+void ResizeGradOpx::grow(poplar::program::Sequence &prog) const {
+  auto &op   = getOp<ResizeGradOp>();
+  auto input = getInTensor(ResizeGradOp::getInIndex());
+
+  auto inShape  = op.inShape(ResizeGradOp::getInIndex());
+  auto outShape = op.outShape(ResizeGradOp::getOutIndex());
+
+  auto result = cloneNcopy(prog, input);
+  for (int dimension = 0; dimension < inShape.size(); dimension++) {
+    auto inDim  = inShape.at(dimension);
+    auto outDim = outShape.at(dimension);
+    if (inDim > outDim) {
+      result = reduceDimension(prog, result, dimension, outDim);
+    } else if (inDim < outDim) {
+      result = padDimension(prog, result, dimension, outDim);
+    }
+  }
+
+  setOutTensor(ResizeGradOp::getOutIndex(), result);
+}
+
+poplar::Tensor ResizeGradOpx::reduceDimension(poplar::program::Sequence &prog,
+                                              const poplar::Tensor &input,
+                                              int dimension,
+                                              int64_t newSize) const {
+  auto slices = split(input, dimension);
+  float k     = static_cast<float>(newSize) / input.shape().at(dimension);
+
+  std::map<int, poplar::Tensor> resultMap;
+  for (int i = 0; i < slices.size(); i++) {
+    int idx = static_cast<int>(std::floor(i * k));
+    if (resultMap.find(idx) == resultMap.end()) {
+      resultMap[idx] = slices[i];
+    } else {
+      resultMap[idx] = popops::map(graph(),
+                                   popops::expr::BinaryOpType::ADD,
+                                   resultMap[idx],
+                                   slices[i],
+                                   prog);
+    }
+  }
+
+  std::vector<poplar::Tensor> toConcat;
+  for (int i = 0; i < resultMap.size(); i++) {
+    toConcat.push_back(resultMap.at(i));
+  }
+  return poplar::concat(toConcat, dimension);
+}
+
+poplar::Tensor ResizeGradOpx::padDimension(poplar::program::Sequence &prog,
+                                           const poplar::Tensor &input,
+                                           int dimension,
+                                           int64_t newSize) const {
+  auto slices = split(input, dimension);
+  float k     = static_cast<float>(newSize) / input.shape().at(dimension);
+  auto paddingTensor =
+      graph().addVariable(input.elementType(), slices.at(0).shape());
+  popops::zero(graph(), paddingTensor, prog, debugPrefix("zeroPadding"));
+
+  std::vector<poplar::Tensor> toConcat(newSize, paddingTensor);
+  for (int i = 0; i < slices.size(); i++) {
+    int idx          = static_cast<int>(std::floor(i * k));
+    toConcat.at(idx) = slices.at(i);
+  }
+
+  return poplar::concat(toConcat, dimension);
+}
+
 namespace {
 OpxCreator<ResizeOpx> resizeOpxCreator(Onnx::Operators::Resize_10);
+OpxCreator<ResizeGradOpx> resizeGradOpxCreator(Onnx::GradOperators::ResizeGrad);
 } // namespace
 
 } // namespace popx

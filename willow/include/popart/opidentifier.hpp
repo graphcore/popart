@@ -242,6 +242,7 @@ const static AiGraphcoreOpIdV1 ReduceL1Grad("ReduceL1Grad");
 const static AiGraphcoreOpIdV1 ReduceL2Grad("ReduceL2Grad");
 const static AiGraphcoreOpIdV1 ReluGrad("ReluGrad");
 const static AiGraphcoreOpIdV1 ReshapeGrad("ReshapeGrad");
+const static AiGraphcoreOpIdV1 ResizeGrad("ResizeGrad");
 const static AiGraphcoreOpIdV1 LRNGrad("LRNGrad");
 // constexpr static char Scan[] = "Scan";
 const static AiGraphcoreOpIdV1 ScatterDataGrad("ScatterDataGrad");

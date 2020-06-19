@@ -7,8 +7,6 @@
 
 namespace popart {
 
-class ResizeOp;
-
 namespace popx {
 
 class ResizeOpx : public Opx {
@@ -17,7 +15,24 @@ public:
   void grow(poplar::program::Sequence &) const final;
 
 private:
-  poplar::Tensor resize_nearest(poplar::Tensor &input, int dim, int size) const;
+  poplar::Tensor
+  resize_nearest(poplar::Tensor &input, int dim, int64_t size) const;
+};
+
+class ResizeGradOpx : public Opx {
+public:
+  ResizeGradOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
+
+private:
+  poplar::Tensor reduceDimension(poplar::program::Sequence &,
+                                 const poplar::Tensor &input,
+                                 int dimension,
+                                 int64_t newSize) const;
+  poplar::Tensor padDimension(poplar::program::Sequence &,
+                              const poplar::Tensor &input,
+                              int dimension,
+                              int64_t newSize) const;
 };
 
 } // namespace popx

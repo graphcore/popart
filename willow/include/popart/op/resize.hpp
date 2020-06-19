@@ -36,6 +36,13 @@ private:
   const ResizeMode mode;
 };
 
+class ResizeGradOp : public ResizeOp {
+public:
+  ResizeGradOp(const ResizeOp &);
+  const std::vector<GradInOutMapper> &gradInputInfo() const final;
+  const std::map<int, int> &gradOutToNonGradIn() const final;
+};
+
 } // namespace popart
 
 #endif
