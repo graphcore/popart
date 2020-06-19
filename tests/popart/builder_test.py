@@ -594,6 +594,53 @@ def test_add_gemm():
     assert (e_info.value.args[0].startswith("gemm(): incompatible function"))
 
 
+def test_add_identityloss():
+
+    builder = popart.Builder()
+
+    i = builder.addInputTensor(popart.TensorInfo("FLOAT", [10, 2, 3]))
+
+    o1 = builder.aiGraphcore.identityloss([i],
+                                          reduction=popart.ReductionType.Mean)
+    o2 = builder.aiGraphcore.identityloss([i],
+                                          reduction=popart.ReductionType.Sum)
+    o3 = builder.aiGraphcore.identityloss(
+        [i], reduction=popart.ReductionType.NoReduction)
+
+    assert (builder.getTensorShape(o1) == [])
+    assert (builder.getTensorShape(o2) == [])
+    assert (builder.getTensorShape(o3) == [10, 2, 3])
+
+    assert (builder.getTensorDtypeString(o1) == "float32")
+    assert (builder.getTensorDtypeString(o2) == "float32")
+    assert (builder.getTensorDtypeString(o3) == "float32")
+
+
+def test_add_l1loss():
+
+    builder = popart.Builder()
+
+    i = builder.addInputTensor(popart.TensorInfo("FLOAT", [10, 2, 3]))
+
+    o1 = builder.aiGraphcore.l1loss([i],
+                                    1.0,
+                                    reduction=popart.ReductionType.Mean)
+    o2 = builder.aiGraphcore.l1loss([i],
+                                    1.0,
+                                    reduction=popart.ReductionType.Sum)
+    o3 = builder.aiGraphcore.l1loss([i],
+                                    1.0,
+                                    reduction=popart.ReductionType.NoReduction)
+
+    assert (builder.getTensorShape(o1) == [])
+    assert (builder.getTensorShape(o2) == [])
+    assert (builder.getTensorShape(o3) == [10, 2, 3])
+
+    assert (builder.getTensorDtypeString(o1) == "float32")
+    assert (builder.getTensorDtypeString(o2) == "float32")
+    assert (builder.getTensorDtypeString(o3) == "float32")
+
+
 def test_add_matmul():
 
     builder = popart.Builder()
@@ -620,6 +667,29 @@ def test_add_matmul():
         builder.aiOnnx.matmul(0, 0, 0, 0, 0, 0, 0)
 
     assert (e_info.value.args[0].startswith("matmul(): incompatible function"))
+
+
+def test_add_nllloss():
+
+    builder = popart.Builder()
+
+    i1 = builder.addInputTensor(popart.TensorInfo("FLOAT", [10, 2, 3]))
+    i2 = builder.addInputTensor(popart.TensorInfo("INT32", [2, 3]))
+
+    o1 = builder.aiGraphcore.nllloss([i1, i2],
+                                     reduction=popart.ReductionType.Mean)
+    o2 = builder.aiGraphcore.nllloss([i1, i2],
+                                     reduction=popart.ReductionType.Sum)
+    o3 = builder.aiGraphcore.nllloss(
+        [i1, i2], reduction=popart.ReductionType.NoReduction)
+
+    assert (builder.getTensorShape(o1) == [])
+    assert (builder.getTensorShape(o2) == [])
+    assert (builder.getTensorShape(o3) == [2, 3])
+
+    assert (builder.getTensorDtypeString(o1) == "float32")
+    assert (builder.getTensorDtypeString(o2) == "float32")
+    assert (builder.getTensorDtypeString(o3) == "float32")
 
 
 def test_add_reshape():

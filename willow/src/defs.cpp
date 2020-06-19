@@ -1,6 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <functional>
 
+#include <popart/error.hpp>
 #include <popart/names.hpp>
 #include <popart/opidentifier.hpp>
 
@@ -22,7 +23,6 @@ void LSTMShapeInference(InferenceContext &ctx);
 void GeluShapeInference(InferenceContext &ctx);
 void DetachShapeInference(InferenceContext &ctx);
 void CallShapeInference(InferenceContext &ctx);
-void L1ShapeInference(InferenceContext &ctx);
 void DynamicUpdateShapeInference(InferenceContext &ctx);
 void DynamicSliceInference(InferenceContext &ctx);
 void DynamicZeroShapeInference(InferenceContext &ctx);
@@ -201,18 +201,6 @@ void CallShapeInference(InferenceContext &ctx) {
   }
 }
 
-void L1ShapeInference(InferenceContext &ctx) {
-  propagateElemTypeFromInputToOutput(ctx, 0, 0);
-  std::string reduction = getAttribute(ctx, "reduction", "mean");
-  if (reduction.compare("none") == 0) {
-    if (hasInputShape(ctx, 1)) {
-      propagateShapeFromInputToOutput(ctx, 1, 0);
-    }
-  } else {
-    updateOutputShape(ctx, 0, TensorShapeProto());
-  }
-}
-
 void DynamicUpdateShapeInference(InferenceContext &ctx) {
   propagateShapeAndTypeFromFirstInput(ctx);
 }
@@ -227,6 +215,25 @@ void DynamicZeroShapeInference(InferenceContext &ctx) {
 
 void DynamicAddShapeInference(InferenceContext &ctx) {
   propagateShapeAndTypeFromFirstInput(ctx);
+}
+
+template <unsigned int infer_shape_index>
+void LossShapeInference(InferenceContext &ctx) {
+  propagateElemTypeFromInputToOutput(ctx, 0, 0);
+  std::string reduction = getAttribute(ctx, "reduction", "Mean");
+
+  if (reduction == "None") {
+    if (hasInputShape(ctx, infer_shape_index)) {
+      propagateShapeFromInputToOutput(ctx, infer_shape_index, 0);
+    }
+  } else {
+    if (reduction != "Mean" && reduction != "Sum") {
+      throw popart::internal_error("No loss reduction type for {}", reduction);
+    }
+
+    // Scalar output
+    updateOutputShape(ctx, 0, TensorShapeProto());
+  }
 }
 
 extern size_t dbg_count_check_GroupNormalization_AiGraphcore_ver1;
@@ -439,31 +446,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(CallShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-    L1,
-    AiGraphcore,
-    popart::Domain::ai_graphcore,
-    1,
-    false,
-    OpSchema()
-        .SetDoc("Calculates the mean absolute error between each element in "
-                "the input with a zero target")
-        .Input(0, "A", "Input tensor", "T")
-        .Output(0, "C", "Output tensor", "T")
-        .TypeConstraint(
-            "T",
-            {"tensor(float)",
-             "tensor(float16)",
-             "tensor(uint32)",
-             "tensor(int32)"},
-            "Constrain input and output types to float and int32 tensors.")
-        .Attr("lambda", "Regularization rate", AttributeProto::FLOAT, true)
-        .Attr("reduction",
-              "Reduction type (Mean, Sum, NoReduction)",
-              AttributeProto::STRING,
-              true)
-        .TypeAndShapeInferenceFunction(L1ShapeInference))
-
-ONNX_OPERATOR_SET_SCHEMA_EX(
     DynamicUpdate,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -582,6 +564,109 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               true)
         .TypeAndShapeInferenceFunction(DynamicAddShapeInference))
 
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    L1,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("Calculates the absolute values of each element in the input "
+                "and optionally mean/sum reduce the output")
+        .Input(
+            0,
+            "input",
+            "Any shape tensor for which to calculate to calculate the scaled "
+            "absolute values or l1 norm",
+            "T")
+        .Output(0, "output", "The scaled absolute values / l1 norm", "T")
+        .TypeConstraint(
+            "T",
+            {"tensor(float)",
+             "tensor(float16)",
+             "tensor(uint32)",
+             "tensor(int32)"},
+            "Constrain input and output types to float(32/16) and (u)int32 "
+            "tensors.")
+        .Attr("lambda",
+              "Scaling factor for the loss",
+              AttributeProto::FLOAT,
+              true)
+        .Attr("reduction",
+              "Reduction type: None, Mean or Sum",
+              AttributeProto::STRING)
+        .TypeAndShapeInferenceFunction(LossShapeInference<0>))
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    Nll,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("Calculates the negative likelihood loss on based on the "
+                "probability and label inputs")
+        .Input(0, "probs", "Tensor of shape [D1, ..., DN, NumClasses]", "T")
+        .Input(1,
+               "label",
+               "Tensor of shape [D1, ..., DN] where each element is a class "
+               "index",
+               "Tind")
+        .Output(0,
+                "output",
+                "The negative log likelihood loss, possibly "
+                "sum/mean reduced",
+                "T")
+        .TypeConstraint("T",
+                        {"tensor(float16)", "tensor(float)"},
+                        "Floating Point Tensors")
+        .TypeConstraint("Tind",
+                        {"tensor(int16)", "tensor(int32)"},
+                        "Integer types")
+        .Attr("reduction",
+              "Reduction type: None, Mean or Sum",
+              AttributeProto::STRING,
+              true)
+        .Attr("ignoreIndex",
+              "If non negative, ignores targets with the same index so that "
+              "they do not contribute to the loss",
+              AttributeProto::INT,
+              false)
+        .TypeAndShapeInferenceFunction(LossShapeInference<1>))
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    IdentityLoss,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("Outputs the identity of the inputs, or the sum or mean "
+                "of the inputs: generally used as a utility to provide the "
+                "reduction of other losses")
+        .Input(0, "input", "Tensor inputs to the loss", "T")
+        .Output(0,
+                "outputs",
+                "A Tensor (identical to input) or scalar output depending on "
+                "whether reduction is specified",
+                "T")
+        .TypeConstraint(
+            "T",
+            {"tensor(float16)",
+             "tensor(float)",
+             "tensor(int16)",
+             "tensor(int32)",
+             "tensor(uint8)",
+             "tensor(uint16)",
+             "tensor(uint32)",
+             "tensor(bool)"},
+            "Input and output types can be any type supported by the IPU.")
+        .Attr("reduction",
+              "Reduction type: None, Mean or Sum",
+              AttributeProto::STRING,
+              true)
+        .TypeAndShapeInferenceFunction(LossShapeInference<0>))
+
 static bool registerOps() {
   auto &d = ONNX_NAMESPACE::OpSchemaRegistry::DomainToVersionRange::Instance();
   d.AddDomainToVersion(popart::Domain::ai_graphcore, 1, 1);
@@ -613,14 +698,21 @@ static bool registerOps() {
           AiGraphcore, 1, Detach)>());
 
   ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, DynamicUpdate)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(AiGraphcore, 1, Call)>());
 
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(AiGraphcore, 1, L1)>());
 
   ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(AiGraphcore, 1, Nll)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
-          AiGraphcore, 1, DynamicUpdate)>());
+          AiGraphcore, 1, IdentityLoss)>());
 
   return true;
 }
