@@ -49,9 +49,9 @@ if (BUILD_DOCS)
 
   add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pdfgen
-    COMMAND ${GCDOC} -v -r ${VERSION} --onesided -b pdf ${CMAKE_CURRENT_SOURCE_DIR}/user_guide ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_user_guide.pdf
-    COMMAND ${GCDOC} -v -x ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile -r ${VERSION} --onesided -b pdf ${CMAKE_CURRENT_SOURCE_DIR}/api_cpp ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_cpp.pdf
-    COMMAND bash ${CMAKE_CURRENT_BINARY_DIR}/gen_docs.sh ${GCDOC} -v -r ${VERSION} --onesided -b pdf ${CMAKE_CURRENT_SOURCE_DIR}/api_python ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_python.pdf
+    COMMAND ${GCDOC} -v -r ${DOCS_VERSION} --onesided -b pdf ${CMAKE_CURRENT_SOURCE_DIR}/user_guide ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_user_guide.pdf
+    COMMAND ${GCDOC} -v -x ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile -r ${DOCS_VERSION} --onesided -b pdf ${CMAKE_CURRENT_SOURCE_DIR}/api_cpp ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_cpp.pdf
+    COMMAND bash ${CMAKE_CURRENT_BINARY_DIR}/gen_docs.sh ${GCDOC} -v -r ${DOCS_VERSION} --onesided -b pdf ${CMAKE_CURRENT_SOURCE_DIR}/api_python ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_python.pdf
     COMMENT "Building PDF documentation"
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
@@ -65,7 +65,7 @@ if (BUILD_DOCS)
 
   add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/html/popart_user_guide
-    COMMAND ${GCDOC} -v -r ${VERSION} -b singlehtml ${CMAKE_CURRENT_SOURCE_DIR}/user_guide ${CMAKE_CURRENT_BINARY_DIR}/html/popart_user_guide
+    COMMAND ${GCDOC} -v -r ${DOCS_VERSION} -b singlehtml ${CMAKE_CURRENT_SOURCE_DIR}/user_guide ${CMAKE_CURRENT_BINARY_DIR}/html/popart_user_guide
     COMMENT "Building html user guide documentation"
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS ${SUPPORTED_OPS_GEN}
@@ -75,7 +75,7 @@ if (BUILD_DOCS)
 
   add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_cpp
-    COMMAND ${GCDOC} -v -x ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile -r ${VERSION} -b singlehtml ${CMAKE_CURRENT_SOURCE_DIR}/api_cpp ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_cpp
+    COMMAND ${GCDOC} -v -x ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile -r ${DOCS_VERSION} -b singlehtml ${CMAKE_CURRENT_SOURCE_DIR}/api_cpp ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_cpp
     COMMENT "Building html C++ API documentation"
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
@@ -86,7 +86,7 @@ if (BUILD_DOCS)
 
   add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_python
-    COMMAND bash ${CMAKE_CURRENT_BINARY_DIR}/gen_docs.sh ${GCDOC} -v -r ${VERSION} -b singlehtml ${CMAKE_CURRENT_SOURCE_DIR}/api_python ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_python
+    COMMAND bash ${CMAKE_CURRENT_BINARY_DIR}/gen_docs.sh ${GCDOC} -v -r ${DOCS_VERSION} -b singlehtml ${CMAKE_CURRENT_SOURCE_DIR}/api_python ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_python
     COMMENT "Building html Python API documentation"
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gen_docs.sh

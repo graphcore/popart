@@ -1116,11 +1116,6 @@ private:
    */
   void loadModelProto(const std::string &modelProtoOrFilename);
 
-  void verifyWindowParameters(TensorId input,
-                              const std::vector<int64_t> strides,
-                              const std::vector<int64_t> padding,
-                              const std::vector<int64_t> dilation = {});
-
   std::unique_ptr<BuilderImpl> impl_;
   std::map<int, std::unique_ptr<Builder>> children;
   int nChildren{0};
