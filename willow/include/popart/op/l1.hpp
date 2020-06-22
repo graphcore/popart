@@ -40,7 +40,6 @@ public:
 
   static InIndex getFwdActInIndex() { return 0; }
   static InIndex getGradInIndex() { return 1; }
-  static InIndex getLossScalingInIndex() { return 2; }
 
   static OutIndex getOutIndex() { return 0; }
 

@@ -315,25 +315,6 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
   // Output is reshaped to match probs input shape
   oneHot = oneHot.reshape(probs.shape());
 
-  // TODO T11263 base class to reduce code duplication
-  if (dv_p->ir().getOptimizer().lossScaling().isConst()) {
-    auto lossScaling = dv_p->ir().getOptimizer().lossScaling().val();
-    if (lossScaling > 1.0f || lossScaling < 1.0f) {
-      popops::mapInPlace(graph(),
-                         pe::Mul(pe::_1, pe::Const(lossScaling)),
-                         {oneHot},
-                         prog,
-                         debugPrefix("scaledLoss"));
-    }
-  } else {
-    popops::mapInPlace(
-        graph(),
-        pe::Mul(pe::_1, pe::_2),
-        {oneHot, getInTensor(NllGradOp::getLossScalingInIndex())},
-        prog,
-        debugPrefix("scaledLoss"));
-  }
-
   // To ensure gradIn has a broadcastable shape, add extra singleton dimensions
   for (unsigned dim = 0; dim < oneHot.rank(); dim++) {
     if (dim > gradIn.rank() - 1) {
