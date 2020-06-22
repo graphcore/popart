@@ -91,14 +91,6 @@ int NllOp::getIgnoreIndex() const {
 }
 
 void NllGradOp::setup() {
-
-  // connect the loss scaling tensor if is non-const
-  if (!getIr().getOptimizer().lossScaling().isConst()) {
-    connectInTensor(NllGradOp::getLossScalingInIndex(),
-                    getIr().getOptimizer().getLossScalingTensorId(
-                        inInfo(getProbsInIndex()).dataType()));
-  }
-
   // gradient of probs has same shape as probs
   outInfo(getOutIndex()) = inInfo(getProbsInIndex());
 }

@@ -28,14 +28,6 @@ L1Op::L1Op(const OperatorIdentifier &_opid,
     : LossOp(_opid, settings_), lambda(lambda_), reduction(reduction_) {}
 
 void L1GradOp::setup() {
-
-  // connect the loss scaling tensor if is non-const
-  if (!getIr().getOptimizer().lossScaling().isConst()) {
-    connectInTensor(L1GradOp::getLossScalingInIndex(),
-                    getIr().getOptimizer().getLossScalingTensorId(
-                        inInfo(getFwdActInIndex()).dataType()));
-  }
-
   // gradient of input has same shape as input to L1
   outInfo(getOutIndex()) = inInfo(getFwdActInIndex());
 }
