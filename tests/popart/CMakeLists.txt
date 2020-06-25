@@ -264,6 +264,7 @@ add_popart_py_unit_test(variable_inference_test)
 add_popart_py_unit_test(virtual_graph_check_test)
 add_popart_py_unit_test(virtual_graph_test VARIANTS IpuModel)
 add_popart_py_unit_test(type_casting_test)
+add_popart_py_unit_test(supported_ops_test)
 
 # Test to check for boost in popart headers.
 set(POPART_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/willow/include)
