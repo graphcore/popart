@@ -39,7 +39,8 @@ static void verifyWindowParameters(std::unique_ptr<BuilderImpl> &impl,
                                    const std::vector<int64_t> strides,
                                    const std::vector<int64_t> padding,
                                    const std::vector<int64_t> kernel_shape,
-                                   std::vector<int64_t> dilation = {}) {
+                                   std::vector<int64_t> dilation = {},
+                                   const std::string &auto_pad   = "NOTSET") {
   auto num_spatial_dims = impl->getTensorShape(input).size() - 2;
   if (num_spatial_dims < 1) {
     throw error("Input tensor has no spatial dimensions");
@@ -78,7 +79,12 @@ static void verifyWindowParameters(std::unique_ptr<BuilderImpl> &impl,
     }
 
     Shape spatialOutShape = HasReceptiveFieldOp::getSpatialOutShape(
-        inShape, kernel_shape, padding, strides, dilation);
+        inShape,
+        kernel_shape,
+        padding,
+        strides,
+        dilation,
+        HasReceptiveFieldOp::getAutoPad(auto_pad));
 
     if (std::any_of(spatialOutShape.begin(),
                     spatialOutShape.end(),
@@ -88,6 +94,37 @@ static void verifyWindowParameters(std::unique_ptr<BuilderImpl> &impl,
                   spatialOutShape);
     }
   }
+}
+
+static void verifyPoolBase(std::unique_ptr<BuilderImpl> &impl,
+                           std::vector<TensorId> inputs,
+                           std::map<std::string, popart::any> attributes) {
+  // Prepare attributes for verifyWindowParameters:
+  // If attributes are unspecified (i.e. they do not
+  // exist in the 'attributes' map) then set as empty
+  std::vector<int64_t> emptyVec;
+  if (!attributes.count("strides")) {
+    attributes["strides"] = emptyVec;
+  }
+  if (!attributes.count("pads")) {
+    attributes["pads"] = emptyVec;
+  }
+  if (!attributes.count("dilations")) {
+    attributes["dilations"] = emptyVec;
+  }
+  std::string emptyString;
+  if (!attributes.count("auto_pad")) {
+    attributes["auto_pad"] = emptyString;
+  }
+
+  verifyWindowParameters(
+      impl,
+      inputs[0],
+      popart::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
+      popart::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
+      popart::any_cast<std::vector<int64_t> &>(attributes["kernel_shape"]),
+      popart::any_cast<std::vector<int64_t> &>(attributes["dilations"]),
+      popart::any_cast<std::string>(attributes["auto_pad"]));
 }
 
 // Functions that are expected by the generated code when the verifyInput
@@ -100,7 +137,7 @@ static void verifyConvBase(std::unique_ptr<BuilderImpl> &impl,
   // of custom ops, so this check can only be applied if the tensor shape
   // is known
   Shape weightsKShape;
-  if (impl->hasTensorShape(inputs[1])) {
+  if ((inputs.size() > 1) && impl->hasTensorShape(inputs[1])) {
     if (inputs.size() < 2) {
       throw error("Conv requires at least two inputs: data, and weights. {} "
                   "inputs provided.",
@@ -126,13 +163,32 @@ static void verifyConvBase(std::unique_ptr<BuilderImpl> &impl,
     }
   }
 
+  // Prepare attributes for verifyWindowParameters:
+  // If attributes are unspecified (i.e. they do not
+  // exist in the 'attributes' map) then set as empty
+  std::vector<int64_t> emptyVec;
+  if (!attributes.count("strides")) {
+    attributes["strides"] = emptyVec;
+  }
+  if (!attributes.count("pads")) {
+    attributes["pads"] = emptyVec;
+  }
+  if (!attributes.count("dilations")) {
+    attributes["dilations"] = emptyVec;
+  }
+  std::string emptyString;
+  if (!attributes.count("auto_pad")) {
+    attributes["auto_pad"] = emptyString;
+  }
+
   verifyWindowParameters(
       impl,
       inputs[0],
       popart::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
       popart::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
       weightsKShape,
-      popart::any_cast<std::vector<int64_t> &>(attributes["dilations"]));
+      popart::any_cast<std::vector<int64_t> &>(attributes["dilations"]),
+      popart::any_cast<std::string>(attributes["auto_pad"]));
 }
 
 static void
@@ -153,104 +209,56 @@ static void verify_AiOnnxOpset6_AveragePool_1(
     std::unique_ptr<BuilderImpl> &impl,
     std::vector<TensorId> inputs,
     std::map<std::string, popart::any> attributes) {
-  verifyWindowParameters(
-      impl,
-      inputs[0],
-      popart::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
-      popart::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
-      popart::any_cast<const std::vector<int64_t> &>(
-          attributes["kernel_shape"]));
+  verifyPoolBase(impl, inputs, attributes);
 }
 
 static void verify_AiOnnxOpset7_AveragePool_7(
     std::unique_ptr<BuilderImpl> &impl,
     std::vector<TensorId> inputs,
     std::map<std::string, popart::any> attributes) {
-  verifyWindowParameters(
-      impl,
-      inputs[0],
-      popart::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
-      popart::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
-      popart::any_cast<const std::vector<int64_t> &>(
-          attributes["kernel_shape"]));
+  verifyPoolBase(impl, inputs, attributes);
 }
 
 static void verify_AiOnnxOpset10_AveragePool_10(
     std::unique_ptr<BuilderImpl> &impl,
     std::vector<TensorId> inputs,
     std::map<std::string, popart::any> attributes) {
-  verifyWindowParameters(
-      impl,
-      inputs[0],
-      popart::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
-      popart::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
-      popart::any_cast<const std::vector<int64_t> &>(
-          attributes["kernel_shape"]));
+  verifyPoolBase(impl, inputs, attributes);
 }
 
 static void verify_AiOnnxOpset11_AveragePool_11(
     std::unique_ptr<BuilderImpl> &impl,
     std::vector<TensorId> inputs,
     std::map<std::string, popart::any> attributes) {
-  verifyWindowParameters(
-      impl,
-      inputs[0],
-      popart::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
-      popart::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
-      popart::any_cast<const std::vector<int64_t> &>(
-          attributes["kernel_shape"]));
+  verifyPoolBase(impl, inputs, attributes);
 }
 
 static void
 verify_AiOnnxOpset6_MaxPool_1(std::unique_ptr<BuilderImpl> &impl,
                               std::vector<TensorId> inputs,
                               std::map<std::string, popart::any> attributes) {
-  verifyWindowParameters(
-      impl,
-      inputs[0],
-      popart::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
-      popart::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
-      popart::any_cast<const std::vector<int64_t> &>(
-          attributes["kernel_shape"]));
+  verifyPoolBase(impl, inputs, attributes);
 }
 
 static void
 verify_AiOnnxOpset8_MaxPool_8(std::unique_ptr<BuilderImpl> &impl,
                               std::vector<TensorId> inputs,
                               std::map<std::string, popart::any> attributes) {
-  verifyWindowParameters(
-      impl,
-      inputs[0],
-      popart::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
-      popart::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
-      popart::any_cast<const std::vector<int64_t> &>(
-          attributes["kernel_shape"]));
+  verifyPoolBase(impl, inputs, attributes);
 }
 
 static void
 verify_AiOnnxOpset10_MaxPool_10(std::unique_ptr<BuilderImpl> &impl,
                                 std::vector<TensorId> inputs,
                                 std::map<std::string, popart::any> attributes) {
-  verifyWindowParameters(
-      impl,
-      inputs[0],
-      popart::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
-      popart::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
-      popart::any_cast<const std::vector<int64_t> &>(
-          attributes["kernel_shape"]));
+  verifyPoolBase(impl, inputs, attributes);
 }
 
 static void
 verify_AiOnnxOpset11_MaxPool_11(std::unique_ptr<BuilderImpl> &impl,
                                 std::vector<TensorId> inputs,
                                 std::map<std::string, popart::any> attributes) {
-  verifyWindowParameters(
-      impl,
-      inputs[0],
-      popart::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
-      popart::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
-      popart::any_cast<const std::vector<int64_t> &>(
-          attributes["kernel_shape"]));
+  verifyPoolBase(impl, inputs, attributes);
 }
 
 static void verifyPadBase(std::unique_ptr<BuilderImpl> &impl,

@@ -6,6 +6,8 @@
 
 namespace popart {
 
+enum class AutoPad { NOTSET = 0, SAME_UPPER, SAME_LOWER, VALID };
+
 // Examples of Ops with receptive fields include
 // ConvOp and AveragePoolOp
 class HasReceptiveFieldOp : public Op {
@@ -18,14 +20,13 @@ public:
     std::vector<int64_t> pads;
     std::vector<int64_t> strides;
     std::vector<int64_t> dilations;
+    std::string auto_pad;
 
     void setFromAttributes(const Attributes &attributes) override;
   };
 
   HasReceptiveFieldOp(const OperatorIdentifier &_opid,
                       const HasReceptiveFieldOp::Settings &settings);
-
-  // C++ rule of 3 for destructor, copy con, assignment op.
 
   int nSpatialDims;
   int64_t batchSize;
@@ -39,6 +40,17 @@ public:
   std::vector<int64_t> pads;
   std::vector<int64_t> strides;
   std::vector<int64_t> dilations;
+
+  AutoPad padType;
+
+  static AutoPad getAutoPad(const std::string &autoPadStr);
+  std::string getAutoPadStr(const AutoPad &x) const;
+
+  void alterPads(Shape OutShape_,
+                 Shape spatialD_,
+                 Shape spatialK_,
+                 std::vector<int64_t> strides_);
+
   // the spatial dimensions of the operator
   //   : kernel size for convolution
   //   : window size for pooling
@@ -46,6 +58,8 @@ public:
   // the spatial dimensions of the data
   std::vector<int64_t> spatialD;
   DataType outType;
+  // the spatial dimensions of the output
+  std::vector<int64_t> spatialO;
 
   void setup() override;
   virtual int64_t getNOutChans() const = 0;
@@ -78,7 +92,8 @@ public:
                                   Shape spatialK_,
                                   std::vector<int64_t> pads_,
                                   std::vector<int64_t> strides_,
-                                  std::vector<int64_t> dilations_);
+                                  std::vector<int64_t> dilations_,
+                                  AutoPad auto_pad_);
 
 private:
   // set the public vector "spatialK"
