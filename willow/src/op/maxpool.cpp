@@ -121,29 +121,27 @@ namespace {
 static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
 static OpDefinition::DataTypes I = {DataType::INT64};
 
-static OpDefinition
-    maxPoolOpV1Def({OpDefinition::Inputs({{"X", T}}),
-                    OpDefinition::Outputs({{"Y", T}}),
-                    OpDefinition::Attributes({
-                        //{"auto_pad", {"NOTSET"}}, // Not supported
-                        {"kernel_shape", {"*"}},
-                        {"pads", {"*"}},
-                        {"strides", {"*"}},
-                    })});
+static OpDefinition maxPoolOpV1Def({OpDefinition::Inputs({{"X", T}}),
+                                    OpDefinition::Outputs({{"Y", T}}),
+                                    OpDefinition::Attributes({
+                                        {"auto_pad", {"NOTSET"}},
+                                        {"kernel_shape", {"*"}},
+                                        {"pads", {"*"}},
+                                        {"strides", {"*"}},
+                                    })});
 
-static OpDefinition
-    maxPoolOpV8Def({OpDefinition::Inputs({{"X", T}}),
-                    OpDefinition::Outputs({
-                        {"Y", T},
-                        //{"Indices", I } Not supported?
-                    }),
-                    OpDefinition::Attributes({
-                        {"auto_pad", {"NOTSET"}}, // Not supported
-                        {"kernel_shape", {"*"}},
-                        {"pads", {"*"}},
-                        {"storage_order", {"1"}},
-                        {"strides", {"*"}},
-                    })});
+static OpDefinition maxPoolOpV8Def({OpDefinition::Inputs({{"X", T}}),
+                                    OpDefinition::Outputs({
+                                        {"Y", T},
+                                        //{"Indices", I } Not supported?
+                                    }),
+                                    OpDefinition::Attributes({
+                                        {"auto_pad", {"NOTSET"}},
+                                        {"kernel_shape", {"*"}},
+                                        {"pads", {"*"}},
+                                        {"storage_order", {"1"}},
+                                        {"strides", {"*"}},
+                                    })});
 
 static OpDefinition maxPoolOpDef({OpDefinition::Inputs({{"X", T}}),
                                   OpDefinition::Outputs({

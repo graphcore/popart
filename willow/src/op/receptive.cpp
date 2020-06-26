@@ -1,5 +1,8 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <iostream>
+#include <math.h>
 #include <memory>
+#include <unordered_map>
 #include <popart/error.hpp>
 #include <popart/op/receptive.hpp>
 #include <popart/opmanager.hpp>
@@ -13,7 +16,7 @@ HasReceptiveFieldOp::HasReceptiveFieldOp(
     const OperatorIdentifier &_opid,
     const HasReceptiveFieldOp::Settings &settings_)
     : Op(_opid, settings_), pads(settings_.pads), strides(settings_.strides),
-      dilations(settings_.dilations) {}
+      dilations(settings_.dilations), padType(getAutoPad(settings_.auto_pad)) {}
 
 void HasReceptiveFieldOp::setup() {
 
@@ -26,6 +29,7 @@ void HasReceptiveFieldOp::setup() {
   for (int i = 0; i < nSpatialDims; ++i) {
     spatialD[i] = inputInfo.dim(i + 2);
   }
+  spatialO.resize(nSpatialDims);
 
   // default values:
   pads.resize(nSpatialDims * 2, 0);
@@ -38,6 +42,15 @@ void HasReceptiveFieldOp::setup() {
   // need to be careful with the ordering here.
   setup0();
 
+  Shape outShape = getOutShape();
+  for (int i = 0; i < nSpatialDims; ++i) {
+    spatialO[i] = outShape[i + 2];
+  }
+
+  if (padType == AutoPad::SAME_LOWER || padType == AutoPad::SAME_UPPER) {
+    alterPads(spatialO, spatialD, spatialK, strides);
+  }
+
   // we assume that the output type is the same as the input type
   outType = inputInfo.dataType();
 
@@ -45,11 +58,51 @@ void HasReceptiveFieldOp::setup() {
 }
 
 std::vector<int64_t> HasReceptiveFieldOp::lowerPads() const {
-  return std::vector<int64_t>(pads.begin(), pads.begin() + nSpatialDims);
+  if (padType == AutoPad::SAME_UPPER) {
+    auto v = std::vector<int64_t>(pads.begin(), pads.begin() + nSpatialDims);
+    for (auto i = 0; i < v.size(); i++) {
+      v[i] = int64_t(pads[i] / 2);
+    }
+    return v;
+  } else if (padType == AutoPad::SAME_LOWER) {
+    auto v = std::vector<int64_t>(pads.begin(), pads.begin() + nSpatialDims);
+    for (auto i = 0; i < v.size(); i++) {
+      v[i] = int64_t(pads[i] - (pads[i] / 2));
+    }
+    return v;
+  } else {
+    return std::vector<int64_t>(pads.begin(), pads.begin() + nSpatialDims);
+  }
 }
 
 std::vector<int64_t> HasReceptiveFieldOp::upperPads() const {
-  return std::vector<int64_t>(pads.begin() + nSpatialDims, pads.end());
+
+  // For odd values of total padding, add more padding at the 'right' side
+  // of the given dimension.
+  if (padType == AutoPad::SAME_UPPER) {
+    auto v = std::vector<int64_t>(pads.begin() + nSpatialDims, pads.end());
+    for (auto i = 0; i < v.size(); i++) {
+      v[i] = int64_t(pads[i] - (pads[i] / 2));
+    }
+    return v;
+  } else if (padType == AutoPad::SAME_LOWER) {
+    auto v = std::vector<int64_t>(pads.begin() + nSpatialDims, pads.end());
+    for (auto i = 0; i < v.size(); i++) {
+      v[i] = int64_t(pads[i] / 2);
+    }
+    return v;
+  } else {
+    return std::vector<int64_t>(pads.begin() + nSpatialDims, pads.end());
+  }
+}
+
+void HasReceptiveFieldOp::alterPads(Shape spatialO_,
+                                    Shape spatialD_,
+                                    Shape spatialK_,
+                                    std::vector<int64_t> strides_) {
+  for (auto i = 0; i < nSpatialDims; i++) {
+    pads[i] = (spatialO_[i] - 1) * strides_[i] + spatialK_[i] - spatialD_[i];
+  }
 }
 
 Shape HasReceptiveFieldOp::getOutShape() const {
@@ -58,7 +111,7 @@ Shape HasReceptiveFieldOp::getOutShape() const {
   outShape[1] = getNOutChans();
 
   Shape spatialOutShape =
-      getSpatialOutShape(spatialD, spatialK, pads, strides, dilations);
+      getSpatialOutShape(spatialD, spatialK, pads, strides, dilations, padType);
 
   for (int spDim = 0; spDim < nSpatialDims; ++spDim) {
     outShape[spDim + 2] = spatialOutShape[spDim];
@@ -75,20 +128,35 @@ Shape HasReceptiveFieldOp::getSpatialOutShape(Shape spatialD_,
                                               Shape spatialK_,
                                               std::vector<int64_t> pads_,
                                               std::vector<int64_t> strides_,
-                                              std::vector<int64_t> dilations_) {
+                                              std::vector<int64_t> dilations_,
+                                              AutoPad auto_pad_) {
 
   Shape spatialOutShape;
   int64_t numSpatialDims = spatialD_.size();
 
   for (int spDim = 0; spDim < numSpatialDims; ++spDim) {
     int64_t dimSize = spatialD_[spDim];
-    dimSize += pads_[spDim] + pads_[numSpatialDims + spDim] - 1;
-    dimSize -= dilations_[spDim] * (spatialK_[spDim] - 1);
-    dimSize /= strides_[spDim];
-    dimSize += 1;
+    switch (auto_pad_) {
+    case AutoPad::VALID: {
+      dimSize = int(ceil(float(spatialD_[spDim] - (spatialK_[spDim] - 1)) /
+                         float(strides_[spDim])));
+      break;
+    }
+    case AutoPad::SAME_LOWER:
+    case AutoPad::SAME_UPPER: {
+      dimSize = int(ceil(float(spatialD_[spDim]) / float(strides_[spDim])));
+      break;
+    }
+    case AutoPad::NOTSET: // default
+    default: {
+      dimSize += pads_[spDim] + pads_[numSpatialDims + spDim] - 1;
+      dimSize -= dilations_[spDim] * (spatialK_[spDim] - 1);
+      dimSize /= strides_[spDim];
+      dimSize += 1;
+    }
+    }
     spatialOutShape.push_back(dimSize);
   }
-
   return spatialOutShape;
 }
 
@@ -129,6 +197,37 @@ void HasReceptiveFieldOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("pads", pads);
   os.appendAttribute("strides", strides);
   os.appendAttribute("dilations", dilations);
+  os.appendAttribute("auto_pad", getAutoPadStr(padType));
+}
+
+AutoPad HasReceptiveFieldOp::getAutoPad(const std::string &autoPadStr) {
+
+  if (autoPadStr == "SAME_UPPER")
+    return AutoPad::SAME_UPPER;
+  if (autoPadStr == "SAME_LOWER")
+    return AutoPad::SAME_LOWER;
+  if (autoPadStr == "VALID")
+    return AutoPad::VALID;
+  if (autoPadStr == "NOTSET")
+    return AutoPad::NOTSET;
+  if (autoPadStr == "")
+    return AutoPad::NOTSET;
+  throw error("Invalid auto_pad provied: {}", autoPadStr);
+}
+
+std::string HasReceptiveFieldOp::getAutoPadStr(const AutoPad &x) const {
+  switch (x) {
+  case AutoPad::VALID:
+    return "VALID";
+  case AutoPad::SAME_UPPER:
+    return "SAME_UPPER";
+  case AutoPad::SAME_LOWER:
+    return "SAME_LOWER";
+  case AutoPad::NOTSET:
+    return "NOTSET";
+  default:
+    throw error("Bad AutoPad '{}'", static_cast<int>(x));
+  }
 }
 
 void HasReceptiveFieldOp::Settings::setFromAttributes(
@@ -138,15 +237,7 @@ void HasReceptiveFieldOp::Settings::setFromAttributes(
   attributes.setIfPresent(pads, "pads");
   attributes.setIfPresent(strides, "strides");
   attributes.setIfPresent(dilations, "dilations");
-
-  if (attributes.hasAttribute("auto_pad")) {
-    std::string autoPad =
-        attributes.getAttribute<Attributes::String>("auto_pad", "NOTSET");
-    if (autoPad != "NOTSET") {
-      throw error(
-          "auto_pad is set, but is deprecated and unsupported by popart");
-    }
-  }
+  attributes.setIfPresent(auto_pad, "auto_pad");
 }
 
 } // namespace popart

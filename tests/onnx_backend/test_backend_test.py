@@ -260,11 +260,6 @@ backend_test.exclude('maxpool_2d_dilations')
 backend_test.exclude('averagepool_2d_pads_count_include_pad')
 backend_test.exclude('averagepool_2d_precomputed_pads_count_include_pad')
 
-# T6603
-backend_test.exclude('averagepool_2d_precomputed_same_upper')
-backend_test.exclude('averagepool_2d_same_lower')
-backend_test.exclude('averagepool_2d_same_upper')
-
 # T???? Add new ceil param
 backend_test.exclude('averagepool_2d_ceil')
 
