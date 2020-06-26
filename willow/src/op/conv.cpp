@@ -335,7 +335,7 @@ static OpDefinition convOpDef(
      }),
      OpDefinition::Outputs({{"Y", {{DataType::FLOAT, DataType::FLOAT16}}}}),
      OpDefinition::Attributes({
-         {"auto_pad", {"NOTSET"}}, // don't support. auto pad does not seem
+         {"auto_pad", {"NOTSET"}},
          // deprecated from conv
          {"dilations", {"*"}},
          {"group", {"*"}},

@@ -66,6 +66,7 @@ void AveragePoolOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("kernel_shape", kernelShape);
   os.appendAttribute("count_include_pad", countIncludePad);
   os.appendAttribute("ceil_mode", ceilMode);
+  os.appendAttribute("auto_pad", getAutoPadStr(padType));
 }
 
 bool AveragePoolOp::canBeReplacedByIdentity() {
@@ -132,7 +133,7 @@ static OpDefinition
     averagePoolOpDef({OpDefinition::Inputs({{"X", T}}),
                       OpDefinition::Outputs({{"Y", T}}),
                       OpDefinition::Attributes({// Deprecated
-                                                // {"auto_pad", {"*"}},
+                                                {"auto_pad", {"NOTSET"}},
                                                 // Not currently supported
                                                 // {"ceil_mode", {"*"}},
                                                 // {"count_include_pad", {"*"}},
