@@ -7826,17 +7826,14 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
        py::arg("new_axis") = 0,
        py::arg("debugPrefix") = std::string())
   .def("constant",
-       [](AiOnnxOpset11 &opset, py::array array, py::array sparse_array, const std::string& name) {
+       [](AiOnnxOpset11 &opset, py::array array, bool is_value_sparse, const std::string& name) {
           ConstVoidData initData;
           initData.data = array.request().ptr;
           initData.info = getTensorInfo(array);
-          ConstVoidData sparseInitData;
-          sparseInitData.data = sparse_array.request().ptr;
-          sparseInitData.info = getTensorInfo(sparse_array);
-          return opset.constant(initData, sparseInitData, name);
+          return opset.constant(initData, is_value_sparse, name);
        },
-       py::arg("sparse_value"),
        py::arg("value"),
+       py::arg("is_value_sparse") = false,
        py::arg("debugPrefix") = std::string())
   .def("constantofshape",
       [](AiOnnxOpset11 &opset,                           const std::vector<TensorId> &args,                           py::array array,                           const std::string &name) {                            ConstVoidData initData;                            initData.data = array.request().ptr;                            initData.info = getTensorInfo(array);                            return opset.constantofshape(args, initData, name);                        },       py::arg("args"),

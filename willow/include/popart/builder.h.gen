@@ -3626,15 +3626,15 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      *
      * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Constant
      *
-     * \param sparse_value The 'sparse_value' attribute 
-     * \param value The 'value' attribute 
+     * \param value The 'value' attribute"
+     * \param is_value_sparse If true, set the 'sparse_value' attribute
      * \param name Optional identifier for the operation
      * \return The normalized output tensor ids
      */
-    TensorId
-    constant(             const ConstVoidData&  sparse_value,
-             const ConstVoidData&  value,
-             const std::string &name = "");
+     TensorId
+     constant(const ConstVoidData&  value,
+              bool is_value_sparse = false,
+              const std::string &name = "");
 
     /**
      * Add the 'Conv' to the model
