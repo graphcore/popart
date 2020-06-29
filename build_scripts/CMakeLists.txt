@@ -58,7 +58,7 @@ ExternalProject_Add(poprithms
   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}/poprithms
              -DBOOST_ROOT=${INSTALL_DIR}/boost
   GIT_REPOSITORY git@github.com:graphcore/poprithms.git
-  GIT_TAG a40232c16891f49be10bfc46a8ef3441897ae0f6
+  GIT_TAG origin/master
   DEPENDS boost)
 
 ExternalProject_Add(popart
