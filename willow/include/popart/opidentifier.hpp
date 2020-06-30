@@ -382,6 +382,8 @@ const static AiGraphcoreOpIdV1 ResetAccumulation("ResetAccl");
 
 const static AiGraphcoreOpIdV1 Sync("Sync");
 
+const static AiGraphcoreOpIdV1 MulLhsInplace("MulLhsInplace");
+const static AiGraphcoreOpIdV1 MulRhsInplace("MulRhsInplace");
 } // namespace CustomOperators
 
 namespace AiGraphcore {

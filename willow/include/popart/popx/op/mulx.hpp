@@ -12,10 +12,36 @@ class MulOp;
 
 namespace popx {
 
-class MulOpx : public ElementWiseBinaryOpx {
+class MulComputex : public EwbComputex {
+public:
+  explicit MulComputex(EwbComputex::InplacePolicy ip);
+
+  poplar::Tensor outplace(poplar::program::Sequence &,
+                          poplar::Graph &,
+                          const poplar::Tensor &,
+                          const poplar::Tensor &,
+                          const std::string &) const final;
+
+  void inplace(poplar::program::Sequence &,
+               poplar::Graph &,
+               const poplar::Tensor &,
+               const poplar::Tensor &,
+               const std::string &) const final;
+};
+
+class MulOpx : public ElementWiseBinaryOutplaceOpx {
 public:
   MulOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+};
+
+class MulLhsInplaceOpx : public ElementWiseBinaryInplaceOpx {
+public:
+  MulLhsInplaceOpx(Op *, Devicex *);
+};
+
+class MulRhsInplaceOpx : public ElementWiseBinaryInplaceOpx {
+public:
+  MulRhsInplaceOpx(Op *, Devicex *);
 };
 
 } // namespace popx

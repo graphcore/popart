@@ -12,23 +12,37 @@ class AddOp;
 
 namespace popx {
 
-class AddOpx : public ElementWiseBinaryOpx {
+class AddComputex : public EwbComputex {
+public:
+  explicit AddComputex(EwbComputex::InplacePolicy ip);
+
+  poplar::Tensor outplace(poplar::program::Sequence &,
+                          poplar::Graph &,
+                          const poplar::Tensor &,
+                          const poplar::Tensor &,
+                          const std::string &) const final;
+
+  void inplace(poplar::program::Sequence &,
+               poplar::Graph &,
+               const poplar::Tensor &,
+               const poplar::Tensor &,
+               const std::string &) const final;
+};
+
+class AddOpx : public ElementWiseBinaryOutplaceOpx {
 public:
   AddOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const override;
   InputCreatorType getInputCreatorType(InIndex) const override;
 };
 
-class AddLhsInplaceOpx : public AddOpx {
+class AddLhsInplaceOpx : public ElementWiseBinaryInplaceOpx {
 public:
   AddLhsInplaceOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
 };
 
-class AddRhsInplaceOpx : public AddOpx {
+class AddRhsInplaceOpx : public ElementWiseBinaryInplaceOpx {
 public:
   AddRhsInplaceOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
 };
 
 class AddArg0GradOpx : public ReduceSumOpx {

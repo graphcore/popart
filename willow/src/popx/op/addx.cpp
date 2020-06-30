@@ -14,54 +14,34 @@
 namespace popart {
 namespace popx {
 
-const unsigned max_tile_imbalance = 150000;
+AddComputex::AddComputex(EwbComputex::InplacePolicy ip) : EwbComputex(ip) {}
 
-static poplar::Tensor addInplace(poplar::Graph &graph,
-                                 const poplar::Tensor &t_inout,
-                                 const poplar::Tensor &t_in,
-                                 poplar::program::Sequence &prog,
-                                 const std::string debug_id) {
-  bool can_do_inplace = true;
-  if (!t_inout.isParallelWriteable()) {
-    logging::debug(
-        "Unable to inplace add operation {}, tensor is not parallel writeable",
-        debug_id);
-    can_do_inplace = false;
-  } else if (poputil::getTileImbalance(graph, t_inout) > max_tile_imbalance) {
-    logging::debug("Unable to inplace add operation {}, tensor tile imbalance "
-                   "({}) is too high",
-                   debug_id,
-                   poputil::getTileImbalance(graph, t_inout));
-    can_do_inplace = false;
-  }
-
-  if (can_do_inplace) {
-    popops::mapInPlace(
-        graph, popops::expr::BinaryOpType::ADD, t_inout, t_in, prog, debug_id);
-    return t_inout;
-  } else {
-    return popops::map(
-        graph, popops::expr::BinaryOpType::ADD, t_inout, t_in, prog, debug_id);
-  }
+poplar::Tensor AddComputex::outplace(poplar::program::Sequence &prog,
+                                     poplar::Graph &graph,
+                                     const poplar::Tensor &a,
+                                     const poplar::Tensor &b,
+                                     const std::string &debugStr) const {
+  return popops::add(graph, a, b, prog, debugStr);
 }
 
-AddOpx::AddOpx(Op *op, Devicex *devicex) : ElementWiseBinaryOpx(op, devicex) {
+void AddComputex::inplace(poplar::program::Sequence &prog,
+                          poplar::Graph &graph,
+                          const poplar::Tensor &tInOut,
+                          const poplar::Tensor &tIn,
+                          const std::string &debugStr) const {
+  popops::addInPlace(graph, tInOut, tIn, prog, debugStr);
+}
+
+AddOpx::AddOpx(Op *op, Devicex *devicex)
+    : ElementWiseBinaryOutplaceOpx(
+          op,
+          devicex,
+          std::make_unique<AddComputex>(EwbComputex::InplacePolicy::NEVER)) {
   verifyOp<AddOp>(op,
                   {Onnx::Operators::Add_6,
                    Onnx::Operators::Add_7,
                    Onnx::CustomOperators::AddLhsInplace,
                    Onnx::CustomOperators::AddRhsInplace});
-}
-
-void AddOpx::grow(poplar::program::Sequence &prog) const {
-
-  setOutTensor(AddOp::getOutIndex(),
-               popops::map(graph(),
-                           popops::expr::BinaryOpType::ADD,
-                           getInTensor(AddOp::getArg0InIndex()),
-                           getInTensor(AddOp::getArg1InIndex()),
-                           prog,
-                           debugPrefix()));
 }
 
 InputCreatorType AddOpx::getInputCreatorType(InIndex index) const {
@@ -77,35 +57,19 @@ InputCreatorType AddOpx::getInputCreatorType(InIndex index) const {
 }
 
 AddLhsInplaceOpx::AddLhsInplaceOpx(Op *op, Devicex *devicex)
-    : AddOpx(op, devicex) {
+    : ElementWiseBinaryInplaceOpx(
+          op,
+          devicex,
+          std::make_unique<AddComputex>(EwbComputex::InplacePolicy::LHS)) {
   verifyOp<AddLhsInplaceOp>(op);
 }
 
-void AddLhsInplaceOpx::grow(poplar::program::Sequence &prog) const {
-  auto out = addInplace(graph(),
-                        getInTensor(AddLhsInplaceOp::getArg0InIndex()),
-                        getInTensor(AddLhsInplaceOp::getArg1InIndex()),
-                        prog,
-                        debugPrefix());
-
-  out = out.reshape(outInfo(AddLhsInplaceOp::getOutIndex()).shape_szt());
-  setOutTensor(AddLhsInplaceOp::getOutIndex(), out);
-}
-
 AddRhsInplaceOpx::AddRhsInplaceOpx(Op *op, Devicex *devicex)
-    : AddOpx(op, devicex) {
+    : ElementWiseBinaryInplaceOpx(
+          op,
+          devicex,
+          std::make_unique<AddComputex>(EwbComputex::InplacePolicy::RHS)) {
   verifyOp<AddRhsInplaceOp>(op);
-}
-
-void AddRhsInplaceOpx::grow(poplar::program::Sequence &prog) const {
-  auto out = addInplace(graph(),
-                        getInTensor(AddRhsInplaceOp::getArg1InIndex()),
-                        getInTensor(AddRhsInplaceOp::getArg0InIndex()),
-                        prog,
-                        debugPrefix());
-
-  out = out.reshape(outInfo(AddRhsInplaceOp::getOutIndex()).shape_szt());
-  setOutTensor(AddRhsInplaceOp::getOutIndex(), out);
 }
 
 AddArg0GradOpx::AddArg0GradOpx(Op *op, Devicex *devicex)
