@@ -20,7 +20,7 @@ namespace popart {
 
 // In CMakeLists.txt there is a regex on "Hw*" so be
 // careful when adding new enums that begin with Hw:
-enum class TestDeviceType { Cpu, Sim, Sim2, Hw, IpuModel, IpuModel2 };
+enum class TestDeviceType { Cpu, Sim, Sim2, Hw, IpuModel };
 
 // Slight hack to stop IDEs complaining the TEST_TARGET is not defined.
 #ifndef TEST_TARGET
@@ -28,13 +28,10 @@ static TestDeviceType TEST_TARGET;
 #endif
 
 constexpr bool isSimulator(TestDeviceType d) {
-  return d == TestDeviceType::Sim || d == TestDeviceType::Sim2;
+  return d == TestDeviceType::Sim;
 }
 constexpr bool isIpuModel(TestDeviceType d) {
-  return d == TestDeviceType::IpuModel || d == TestDeviceType::IpuModel2;
-}
-constexpr bool isMk2(TestDeviceType d) {
-  return d == TestDeviceType::Sim2 || d == TestDeviceType::IpuModel2;
+  return d == TestDeviceType::IpuModel;
 }
 constexpr bool isHw(TestDeviceType d) { return d == TestDeviceType::Hw; }
 
@@ -49,9 +46,7 @@ createTestDevice(const TestDeviceType testDeviceType,
 
   if (ipuModelTilesPerIPU == 0 &&
       ((testDeviceType == TestDeviceType::Sim) ||
-       (testDeviceType == TestDeviceType::Sim2) ||
-       (testDeviceType == TestDeviceType::IpuModel) ||
-       (testDeviceType == TestDeviceType::IpuModel2))) {
+       (testDeviceType == TestDeviceType::IpuModel))) {
     // We need a number of tiles for these device types.
     ipuModelTilesPerIPU = 1216;
   }
@@ -65,15 +60,10 @@ createTestDevice(const TestDeviceType testDeviceType,
     return DeviceManager::createDeviceManager().createCpuDevice();
   case TestDeviceType::Sim:
     return DeviceManager::createDeviceManager().createSimDevice(deviceOpts);
-  case TestDeviceType::Sim2:
-    return DeviceManager::createDeviceManager().createSimDevice(deviceOpts);
   case TestDeviceType::Hw:
     return DeviceManager::createDeviceManager().acquireAvailableDevice(
         numIPUs, tilesPerIPU, pattern);
   case TestDeviceType::IpuModel:
-    return DeviceManager::createDeviceManager().createIpuModelDevice(
-        deviceOpts);
-  case TestDeviceType::IpuModel2:
     return DeviceManager::createDeviceManager().createIpuModelDevice(
         deviceOpts);
   default:
@@ -87,12 +77,8 @@ inline const char *asString(const TestDeviceType &TestDeviceType) {
     return "Cpu";
   case TestDeviceType::IpuModel:
     return "IpuModel";
-  case TestDeviceType::IpuModel2:
-    return "IpuModel2";
   case TestDeviceType::Sim:
     return "Sim";
-  case TestDeviceType::Sim2:
-    return "Sim2";
   case TestDeviceType::Hw:
     return "Hw";
   default:
@@ -108,17 +94,13 @@ inline std::istream &operator>>(std::istream &is, TestDeviceType &type) {
     type = TestDeviceType::Cpu;
   else if (token == "IpuModel")
     type = TestDeviceType::IpuModel;
-  else if (token == "IpuModel2")
-    type = TestDeviceType::IpuModel2;
   else if (token == "Sim")
     type = TestDeviceType::Sim;
-  else if (token == "Sim2")
-    type = TestDeviceType::Sim2;
   else if (token == "Hw")
     type = TestDeviceType::Hw;
   else
     throw error("Unsupported device type <{}>; must be one of ('Cpu', "
-                "'IpuModel', 'IpuModel2', 'Sim', 'Sim2' or 'Hw')XX",
+                "'IpuModel', 'Sim' or 'Hw')XX",
                 token);
   return is;
 }
