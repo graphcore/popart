@@ -18,6 +18,29 @@
 #include <popart/op/restore.hpp>
 #include <popart/op/varupdate.hpp>
 
+namespace {
+using namespace popart;
+
+// Shared implementation for Op::fwdRegMap and Op::bwdRegMap methods
+view::RegMap defaultRegMapImpl(const Op &op,
+                               InIndex i,
+                               OutIndex o,
+                               const std::string &methodName) {
+  logging::op::trace("[{}] for OP {} index {}", methodName, op.debugName(), i);
+  if (!op.input->hasIndex(i) || !op.output->hasIndex(o)) {
+    throw error("invalid index in {}", methodName);
+  } else if (!op.output->hasIndex(o)) {
+    throw error("{} called for op with no zero output", methodName);
+  } else if (op.inShape(i) != op.outShape(0)) {
+    throw error("default {} not valid : should be specialised for {}",
+                methodName,
+                op.str());
+  }
+  return [](const view::Region &r) { return view::Regions(1, r); };
+}
+
+} // namespace
+
 namespace popart {
 
 GradInOutMapper::GradInOutMapper(int iG, int iNG, GradOpInType t)
@@ -65,29 +88,11 @@ view::Regions Op::aliases(InIndex in, OutIndex) const {
 };
 
 view::RegMap Op::fwdRegMap(InIndex i, OutIndex o) const {
-  // TODO : merge these errors with those in bwdRegMap (T7107)
-  logging::op::trace("[fwdRegMap] for OP {} index {}", debugName(), i);
-  if (!input->hasIndex(i) || !output->hasIndex(o)) {
-    throw error("invalid index in fwdRegMap");
-  } else if (!output->hasIndex(o)) {
-    throw error("fwdMapReg called for op with no zero output");
-  } else if (inShape(i) != outShape(0)) {
-    throw error("default fwdRegMap not valid : should be specialised for {}",
-                str());
-  }
-  return [](const view::Region &r) { return view::Regions(1, r); };
+  return defaultRegMapImpl(*this, i, o, "fwdRegMap");
 }
 
 view::RegMap Op::bwdRegMap(InIndex i, OutIndex o) const {
-  logging::op::trace("[bwdRegMap] for OP {} index {}", debugName(), i);
-  if (!input->hasIndex(i) || !output->hasIndex(o)) {
-    throw error("invalid index in bwdRegMap");
-  } else if (!output->hasIndex(o)) {
-    throw error("bwdMapReg called for op with no zero output");
-  } else if (inShape(i) != outShape(o)) {
-    throw error("default bwdRegMap not valid : should be specialised");
-  }
-  return [](const view::Region &r) { return view::Regions(1, r); };
+  return defaultRegMapImpl(*this, i, o, "bwdRegMap");
 }
 
 bool Op::isLossOp() const { return false; }
