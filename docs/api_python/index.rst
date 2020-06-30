@@ -17,4 +17,5 @@ PopART Python API Reference
 
     intro
     api-python
+    api-changes
     legal

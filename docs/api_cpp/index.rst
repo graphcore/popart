@@ -17,4 +17,5 @@ PopART C++ API Reference
 
     intro
     api-cpp
+    api-changes
     legal
