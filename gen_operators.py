@@ -832,6 +832,7 @@ def genPythonBuilderBinds(filename, schema):
                         if (op.version == 11):
                             x = f"""
                                 []({classname} &opset, py::array array, bool is_value_sparse, const std::string& name) {{
+                                   array = makeContiguous(array);
                                    ConstVoidData initData;
                                    initData.data = array.request().ptr;
                                    initData.info = getTensorInfo(array);
@@ -848,6 +849,8 @@ def genPythonBuilderBinds(filename, schema):
                             f.write(
                                 "       []({} &opset, py::array array, const std::string& name) {{\n"
                                 .format(classname))
+                            f.write(
+                                "          array = makeContiguous(array);\n")
                             f.write("          ConstVoidData initData;\n")
                             f.write(
                                 "          initData.data = array.request().ptr;\n"
