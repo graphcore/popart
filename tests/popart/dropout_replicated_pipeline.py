@@ -19,7 +19,7 @@ nVirtualGraphs = 2
 nIPUs = replicationFactor * nVirtualGraphs
 
 
-def runTest(forceAddOutOfPlace, pipelineRecomputation):
+def runTest(forceAddOutOfPlace, pipelineRecomputation, hostRearrangeOnly):
     """
     Test of pipelining with dropout, recomputation, graph replication, 
     gradient accumulation
@@ -169,12 +169,14 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation):
         userOptions.replicatedGraphCount = replicationFactor
     userOptions.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-    # TODO https://phabricator.sourcevertex.net/T14035
+    # Test "hostRearrangeOnly" switches because of T14035
     userOptions.enablePrefetchDatastreams = False
-    #  passes:
-    userOptions.engineOptions = {"exchange.streamBufferOverlap": "any"}
-    #  fails:
-    #  userOptions.engineOptions = {"exchange.streamBufferOverlap" : "hostRearrangeOnly"}
+    if hostRearrangeOnly:
+        userOptions.engineOptions = {
+            "exchange.streamBufferOverlap": "hostRearrangeOnly"
+        }
+    else:
+        userOptions.engineOptions = {"exchange.streamBufferOverlap": "any"}
 
     patterns = popart.Patterns()
     patterns.InPlace = True
@@ -297,7 +299,12 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation):
 @tu.requires_ipu
 def test_all_cases():
     # this unit test checks a previously failing case
-    runTest(forceAddOutOfPlace=False, pipelineRecomputation=False)
+    runTest(forceAddOutOfPlace=False,
+            pipelineRecomputation=False,
+            hostRearrangeOnly=True)
+    runTest(forceAddOutOfPlace=False,
+            pipelineRecomputation=False,
+            hostRearrangeOnly=False)
 
     # TODO T19948 : fix and enable this test
     # with all features on,

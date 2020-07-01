@@ -177,6 +177,86 @@ poplar::Tensor EwuComputex::outplace(poplar::program::Sequence &prog,
   return out_tensor;
 }
 
+bool EwbComputex::inplaceSupported() const {
+  return inplacePolicy != EwbComputex::InplacePolicy::NEVER;
+}
+
+InIndex EwbComputex::getInplaceArgInIndex() const {
+  if (inplacePolicy == InplacePolicy::LHS) {
+    return ElementWiseBinaryBaseOp::getArg0InIndex();
+  } else if (inplacePolicy == InplacePolicy::RHS) {
+    return ElementWiseBinaryBaseOp::getArg1InIndex();
+  } else {
+    throw internal_error(
+        "Invalid InplacePolicy. This class instance was not configured for "
+        "inplacing and is attempting to compute in-place");
+  }
+}
+
+InIndex EwbComputex::getOutplaceArgInIndex() const {
+  // The out-of-place index is the input that isn't in-place
+  const auto inplaceIdx = getInplaceArgInIndex();
+  const auto arg0Idx    = ElementWiseBinaryBaseOp::getArg0InIndex();
+  const auto arg1Idx    = ElementWiseBinaryBaseOp::getArg1InIndex();
+  return inplaceIdx == arg0Idx ? arg1Idx : arg0Idx;
+}
+
+void ElementWiseBinaryOutplaceOpx::grow(poplar::program::Sequence &prog) const {
+  if (cx->inplaceSupported()) {
+    throw internal_error(
+        "Operation {} was configured for inplacing and attempting "
+        "to compute out-of-place",
+        debugPrefix());
+  }
+
+  const auto arg0Idx = ElementWiseBinaryBaseOp::getArg0InIndex();
+  const auto arg1Idx = ElementWiseBinaryBaseOp::getArg1InIndex();
+  const auto outIdx  = ElementWiseBinaryBaseOp::getOutIndex();
+
+  auto outTensor = cx->outplace(
+      prog, graph(), getInTensor(arg0Idx), getInTensor(arg1Idx), debugPrefix());
+  setOutTensor(outIdx, outTensor);
+}
+
+void ElementWiseBinaryInplaceOpx::grow(poplar::program::Sequence &prog) const {
+  if (!cx->inplaceSupported()) {
+    throw error("Invalid operation {} was not configured for inplacing and "
+                "attempting to compute in-place",
+                debugPrefix());
+  }
+
+  constexpr unsigned maxTileImbalance = 150000;
+  bool canComputeInplace              = true;
+
+  auto tInOut    = getInTensor(cx->getInplaceArgInIndex());
+  const auto tIn = getInTensor(cx->getOutplaceArgInIndex());
+  auto &g        = graph();
+
+  if (!tInOut.isParallelWriteable()) {
+    logging::debug(
+        "Unable to inplace operation {}, tensor is not parallel writeable",
+        debugPrefix());
+    canComputeInplace = false;
+  } else if (poputil::getTileImbalance(g, tInOut) > maxTileImbalance) {
+    logging::debug("Unable to inplace operation {}, tensor tile imbalance ({}) "
+                   "is too high",
+                   debugPrefix(),
+                   poputil::getTileImbalance(g, tInOut));
+    canComputeInplace = false;
+  }
+
+  const auto outIdx = ElementWiseBinaryBaseOp::getOutIndex();
+
+  if (canComputeInplace) {
+    cx->inplace(prog, g, tInOut, tIn, debugPrefix());
+    tInOut = tInOut.reshape(outInfo(outIdx).shape_szt());
+  } else {
+    tInOut = cx->outplace(prog, g, tInOut, tIn, debugPrefix());
+  }
+
+  setOutTensor(outIdx, tInOut);
+}
+
 BinaryComparisonOpx::BinaryComparisonOpx(Op *op, Devicex *devicex)
     : Opx(op, devicex) {}
 

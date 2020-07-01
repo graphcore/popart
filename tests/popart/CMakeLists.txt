@@ -117,8 +117,6 @@ function(add_popart_cpp_unit_test name)
 
   sanitise_variants(test_args_VARIANTS)
   extract_targets(test_args_VARIANTS TARGETS)
-  message(STATUS
-    "Adding cpp test '${name}' with variants: ${test_args_VARIANTS}")
 
   foreach(TEST_TARGET ${TARGETS})
     set(executable_name "${TEST_TARGET}_${name}")
@@ -193,8 +191,6 @@ function(add_popart_py_unit_test name)
 
   sanitise_variants(test_args_VARIANTS)
   extract_targets(test_args_VARIANTS TARGETS)
-  message(STATUS
-    "Adding python test '${name}' with variants: ${test_args_VARIANTS}")
 
   foreach(VARIANT ${test_args_VARIANTS})
     extract_target(VARIANT TEST_TARGET)
@@ -239,6 +235,7 @@ add_popart_py_unit_test(import_test)
 add_popart_py_unit_test(ipu_copy_test VARIANTS IpuModel)
 add_popart_py_unit_test(ipu_gather_test)
 add_popart_py_unit_test(loader_test)
+add_popart_py_unit_test(loss_scaling_test)
 add_popart_py_unit_test(mapping_test VARIANTS IpuModel)
 add_popart_py_unit_test(memory_regression_test VARIANTS IpuModel)
 add_popart_py_unit_test(net_test)
@@ -267,6 +264,7 @@ add_popart_py_unit_test(variable_inference_test)
 add_popart_py_unit_test(virtual_graph_check_test)
 add_popart_py_unit_test(virtual_graph_test VARIANTS IpuModel)
 add_popart_py_unit_test(type_casting_test)
+add_popart_py_unit_test(supported_ops_test)
 
 # Test to check for boost in popart headers.
 set(POPART_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/willow/include)

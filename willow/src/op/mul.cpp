@@ -8,7 +8,7 @@
 namespace popart {
 
 MulOp::MulOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
-    : ElementWiseBinaryBaseOp(_opid, settings_) {
+    : ElementWiseBinaryOp(_opid, settings_) {
   // TODO : Use the attributes in Mul-6
 }
 
@@ -36,6 +36,46 @@ OperatorIdentifier MulOp::getOpId(const Ir &ir) {
   } else {
     return Onnx::Operators::Mul_6;
   }
+}
+
+std::unique_ptr<Op> MulOp::getLhsInplaceVariant() const {
+  return std::make_unique<MulLhsInplaceOp>(*this);
+}
+
+std::unique_ptr<Op> MulOp::getRhsInplaceVariant() const {
+  return std::make_unique<MulRhsInplaceOp>(*this);
+}
+
+OperatorIdentifier MulOp::getLhsOperatorIdentifier() const {
+  return Onnx::CustomOperators::MulLhsInplace;
+}
+
+OperatorIdentifier MulOp::getRhsOperatorIdentifier() const {
+  return Onnx::CustomOperators::MulRhsInplace;
+}
+
+MulLhsInplaceOp::MulLhsInplaceOp(const MulOp &op)
+    : ElementWiseBinaryInplaceLhsOp(Onnx::CustomOperators::MulLhsInplace,
+                                    op.getSettings()) {}
+
+MulLhsInplaceOp::MulLhsInplaceOp(const Op::Settings &settings_)
+    : ElementWiseBinaryInplaceLhsOp(Onnx::CustomOperators::MulLhsInplace,
+                                    settings_) {}
+
+std::unique_ptr<Op> MulLhsInplaceOp::clone() const {
+  return std::make_unique<MulLhsInplaceOp>(*this);
+}
+
+MulRhsInplaceOp::MulRhsInplaceOp(const MulOp &op)
+    : ElementWiseBinaryInplaceRhsOp(Onnx::CustomOperators::MulRhsInplace,
+                                    op.getSettings()) {}
+
+MulRhsInplaceOp::MulRhsInplaceOp(const Op::Settings &settings_)
+    : ElementWiseBinaryInplaceRhsOp(Onnx::CustomOperators::MulRhsInplace,
+                                    settings_) {}
+
+std::unique_ptr<Op> MulRhsInplaceOp::clone() const {
+  return std::make_unique<MulRhsInplaceOp>(*this);
 }
 
 MulArgGradOp::MulArgGradOp(const OperatorIdentifier &_opid,

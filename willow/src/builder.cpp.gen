@@ -3272,12 +3272,15 @@ AiOnnxOpset11::concatfromsequence(const std::vector<TensorId>& args,
 }
 
 TensorId
-AiOnnxOpset11::constant(                        const ConstVoidData&  sparse_value,
-                        const ConstVoidData&  value,
+AiOnnxOpset11::constant(const ConstVoidData&  value,
+                        bool is_value_sparse,
                         const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  attributes["sparse_value"] = sparse_value;
-  attributes["value"] = value;
+  if (is_value_sparse) {
+      throw error("Attributes of type `sparse_tensor' are currently not supported.");
+  } else {
+      attributes["value"] = value;
+  }
   return impl->op(Onnx::Operators::Constant_11,
                   getOpsetVersion(),
                   {},

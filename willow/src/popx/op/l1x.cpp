@@ -65,24 +65,6 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
                                 prog,
                                 debugPrefix("multiply"));
 
-  if (dv_p->ir().getOptimizer().lossScaling().isConst()) {
-    auto lossScaling = dv_p->ir().getOptimizer().lossScaling().val();
-    if (lossScaling > 1.0f || lossScaling < 1.0f) {
-      popops::mapInPlace(graph(),
-                         pe::Mul(pe::_1, pe::Const(lossScaling)),
-                         {gradTensor},
-                         prog,
-                         debugPrefix("scaledLoss"));
-    }
-  } else {
-    popops::mapInPlace(
-        graph(),
-        pe::Mul(pe::_1, pe::_2),
-        {gradTensor, getInTensor(L1GradOp::getLossScalingInIndex())},
-        prog,
-        debugPrefix("scaledLoss"));
-  }
-
   auto gradIn = getInTensor(L1GradOp::getGradInIndex());
   popops::mapInPlace(graph(),
                      pe::Mul(pe::_1, pe::_2),

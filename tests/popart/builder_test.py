@@ -1416,8 +1416,8 @@ def test_builder_opset11(tmpdir):
         builder = popart.Builder(opsets={"ai.onnx": 11, "ai.graphcore": 1})
     assert (
         "ONNX Opset 11 is not yet supported in PopART. Please use opset 10 to "
-        "build your model, or convert your ONNX model to opset 10 or lower"
-        in e_info.value.args[0])
+        "build your model, or convert your ONNX model to opset 10 or lower" in
+        e_info.value.args[0])
 
 
 def test_builder_opset11_load(tmpdir):

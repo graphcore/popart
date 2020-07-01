@@ -2768,66 +2768,109 @@ unsigned Ir::getMaxVirtualGraphId() const {
 }
 
 std::vector<GradNonGradPair> Ir::growLossGradients() {
-  // Create a constant scalar tensor of value '1' with same type as loss.
-  // This is the start of the backpropagated gradients.
+
+  float lossScale            = 1.0f;
+  TensorId gradStarterId     = getGradId(getFinalLossId());
   TensorInfo gradStarterInfo = getTensors().get(getFinalLossId())->info;
-  switch (gradStarterInfo.dataType()) {
-  case DataType::FLOAT: {
-    std::vector<float> gradStarterData(1, 1.0);
-    getTensors().addConstInit(getGradId(getFinalLossId()),
-                              gradStarterInfo,
-                              reinterpret_cast<void *>(gradStarterData.data()));
-    break;
-  }
-  case DataType::FLOAT16: {
-    std::vector<float> floatData(1, 1.0);
-    std::vector<char> gradStarterData(2);
-    poplar::copyFloatToDeviceHalf(
-        poplar::Target(), floatData.data(), gradStarterData.data(), 1);
-    getTensors().addConstInit(getGradId(getFinalLossId()),
-                              gradStarterInfo,
-                              reinterpret_cast<void *>(gradStarterData.data()));
-    break;
-  }
-  case DataType::INT16: {
-    std::vector<int16_t> gradStarterData(1, 1);
-    getTensors().addConstInit(getGradId(getFinalLossId()),
-                              gradStarterInfo,
-                              reinterpret_cast<void *>(gradStarterData.data()));
-    break;
-  }
-  case DataType::INT32: {
-    std::vector<int32_t> gradStarterData(1, 1);
-    getTensors().addConstInit(getGradId(getFinalLossId()),
-                              gradStarterInfo,
-                              reinterpret_cast<void *>(gradStarterData.data()));
-    break;
-  }
-  case DataType::INT64: {
-    std::vector<int64_t> gradStarterData(1, 1);
-    getTensors().addConstInit(getGradId(getFinalLossId()),
-                              gradStarterInfo,
-                              reinterpret_cast<void *>(gradStarterData.data()));
-    break;
-  }
-  case DataType::UINT32: {
-    std::vector<uint32_t> gradStarterData(1, 1);
-    getTensors().addConstInit(getGradId(getFinalLossId()),
-                              gradStarterInfo,
-                              reinterpret_cast<void *>(gradStarterData.data()));
-    break;
-  }
-  case DataType::UINT64: {
-    std::vector<uint64_t> gradStarterData(1, 1);
-    getTensors().addConstInit(getGradId(getFinalLossId()),
-                              gradStarterInfo,
-                              reinterpret_cast<void *>(gradStarterData.data()));
-    break;
-  }
-  default: {
-    throw error("Unexpected loss data-type, '{}'",
-                gradStarterInfo.getDataTypeInfo()->name());
-  }
+
+  // If our optimiser uses loss scaling we need to multiply our loss gradient by
+  // the loss scale. If the loss scale is a constant then we can do this here to
+  // avoid doing an additional operation.
+
+  if (optimizer->lossScaling().isConst()) {
+    // By default this will be 1.0f.
+    lossScale = optimizer->lossScaling().val();
+
+    switch (gradStarterInfo.dataType()) {
+    case DataType::FLOAT: {
+      std::vector<float> gradStarterData(1, lossScale);
+      getTensors().addConstInit(
+          gradStarterId,
+          gradStarterInfo,
+          reinterpret_cast<void *>(gradStarterData.data()));
+      break;
+    }
+    case DataType::FLOAT16: {
+      std::vector<float> floatData(1, lossScale);
+      std::vector<char> gradStarterData(2);
+      poplar::copyFloatToDeviceHalf(
+          poplar::Target(), floatData.data(), gradStarterData.data(), 1);
+      getTensors().addConstInit(
+          gradStarterId,
+          gradStarterInfo,
+          reinterpret_cast<void *>(gradStarterData.data()));
+      break;
+    }
+    case DataType::INT16: {
+      std::vector<int16_t> gradStarterData(1, static_cast<int16_t>(lossScale));
+      getTensors().addConstInit(
+          gradStarterId,
+          gradStarterInfo,
+          reinterpret_cast<void *>(gradStarterData.data()));
+      break;
+    }
+    case DataType::INT32: {
+      std::vector<int32_t> gradStarterData(1, static_cast<int32_t>(lossScale));
+      getTensors().addConstInit(
+          gradStarterId,
+          gradStarterInfo,
+          reinterpret_cast<void *>(gradStarterData.data()));
+      break;
+    }
+    case DataType::INT64: {
+      std::vector<int64_t> gradStarterData(1, static_cast<int64_t>(lossScale));
+      getTensors().addConstInit(
+          gradStarterId,
+          gradStarterInfo,
+          reinterpret_cast<void *>(gradStarterData.data()));
+      break;
+    }
+    case DataType::UINT32: {
+      std::vector<uint32_t> gradStarterData(1,
+                                            static_cast<uint32_t>(lossScale));
+      getTensors().addConstInit(
+          gradStarterId,
+          gradStarterInfo,
+          reinterpret_cast<void *>(gradStarterData.data()));
+      break;
+    }
+    case DataType::UINT64: {
+      std::vector<uint64_t> gradStarterData(1,
+                                            static_cast<uint64_t>(lossScale));
+      getTensors().addConstInit(
+          gradStarterId,
+          gradStarterInfo,
+          reinterpret_cast<void *>(gradStarterData.data()));
+      break;
+    }
+    default: {
+      throw error("Unexpected loss data-type, '{}'",
+                  gradStarterInfo.getDataTypeInfo()->name());
+    }
+    }
+  } else {
+    // In the case where the user wants to apply loss scaling with a scaling
+    // factor that is not constant we need to apply scaling differently. We need
+    // the finalLossOp gradient tensor to match the optimizer's loss scaling
+    // tensor.
+    TensorId lossScalingId =
+        optimizer->getLossScalingTensorId(gradStarterInfo.dataType());
+    std::unique_ptr<popart::Op> lossScalingInputOp =
+        OpManager::createOp(Domain::ai_onnx,
+                            "Identity",
+                            getOpSetVersionFromModel(Domain::ai_onnx),
+                            getMainGraph());
+
+    OpId lossScalingInputOpId =
+        getMainGraph().moveIntoGraph(std::move(lossScalingInputOp));
+
+    std::vector<TensorId> inputs{lossScalingId};
+    std::vector<TensorId> outputs{getGradId(getFinalLossId())};
+    getMainGraph().connectInputs(InputVecWrapper(inputs), lossScalingInputOpId);
+    getMainGraph().connectOutputs(OutputVecWrapper(outputs),
+                                  lossScalingInputOpId);
+    Op *op = getMainGraph().getOp(lossScalingInputOpId);
+    op->setup();
   }
 
   auto finalLossOpFound = getMainGraph().getOps().find(finalLossOpId);

@@ -5,7 +5,37 @@
 #include <poplar/exceptions.hpp>
 #include <poputil/exceptions.hpp>
 
+#ifdef POPART_USE_STACKTRACE
+#include <boost/stacktrace.hpp>
+#endif
+
 namespace popart {
+
+void error::logMessage() {
+  std::ostringstream oss;
+  oss << what();
+
+#ifdef POPART_USE_STACKTRACE
+  static constexpr size_t numFramesToSkip = 3;
+  static constexpr size_t maxDepth        = 8;
+  boost::stacktrace::stacktrace st(numFramesToSkip, maxDepth);
+  std::ostringstream stackreport;
+
+  for (size_t i = 0; i < st.size(); i++) {
+    if (st[i].name().empty()) {
+      // empty name -> truncate stack report
+      break;
+    }
+    stackreport << "[" << i << "] " << st[i].name() << "\n";
+  }
+
+  if (stackreport.tellp() > 0) {
+    oss << "\n\n" << stackreport.str() << "\n\n";
+  }
+#endif
+
+  logging::err(oss.str());
+}
 
 ErrorSource getErrorSource(const std::exception &e) {
   if (dynamic_cast<const popart::internal_error *>(&e)) {

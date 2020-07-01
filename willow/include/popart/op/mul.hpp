@@ -9,13 +9,39 @@
 
 namespace popart {
 
-class MulOp : public ElementWiseBinaryBaseOp {
+class MulOp : public ElementWiseBinaryOp {
 public:
   MulOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
 
   static OperatorIdentifier getOpId(const Ir &ir);
+
+private:
+  bool hasLhsInplaceVariant() const { return true; }
+  bool hasRhsInplaceVariant() const { return true; }
+
+  std::unique_ptr<Op> getLhsInplaceVariant() const final;
+  std::unique_ptr<Op> getRhsInplaceVariant() const final;
+
+  OperatorIdentifier getLhsOperatorIdentifier() const final;
+  OperatorIdentifier getRhsOperatorIdentifier() const final;
+};
+
+class MulLhsInplaceOp : public ElementWiseBinaryInplaceLhsOp {
+public:
+  MulLhsInplaceOp(const MulOp &mulOp);
+  MulLhsInplaceOp(const Op::Settings &settings_);
+
+  std::unique_ptr<Op> clone() const override;
+};
+
+class MulRhsInplaceOp : public ElementWiseBinaryInplaceRhsOp {
+public:
+  MulRhsInplaceOp(const MulOp &mulOp);
+  MulRhsInplaceOp(const Op::Settings &settings_);
+
+  std::unique_ptr<Op> clone() const override;
 };
 
 class MulArgGradOp : public Op {

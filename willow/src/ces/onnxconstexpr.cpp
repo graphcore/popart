@@ -5,6 +5,7 @@
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/onnxutil.hpp>
+#include <popart/opmanager.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
 
@@ -121,5 +122,83 @@ void OnnxConstExprUtil::processConstantOfShapeNode(
         name, resultInfo, reinterpret_cast<void *>(resultData.data()));
   }
 }
+
+namespace {
+
+static OpDefinition::DataTypes T = {
+    DataType::UINT8,
+    DataType::INT8,
+    DataType::UINT16,
+    DataType::INT16,
+    DataType::INT32,
+    DataType::INT64,
+    DataType::UINT32,
+    DataType::UINT64,
+    DataType::BOOL,
+    DataType::FLOAT,
+    DataType::FLOAT16,
+    DataType::BFLOAT16,
+    DataType::DOUBLE,
+    DataType::COMPLEX64,
+    DataType::COMPLEX128,
+    DataType::STRING,
+};
+
+static OpDefinition
+    constantOpV9Def({OpDefinition::Inputs({}),
+                     OpDefinition::Outputs({{"output", T}}),
+                     OpDefinition::Attributes({{"value", {"*"}}})});
+
+class ConstantOp {};
+
+internal_error dummyOpError(const std::string &opName) {
+  return internal_error("Can not create op of type '{}'. This op should be "
+                        "handled by OnnxConstExprUtil",
+                        opName);
+}
+
+static OpCreator<ConstantOp> constantOpCreator(
+    OpDefinitions({{Onnx::Operators::Constant_9, constantOpV9Def}}),
+    [](const OperatorIdentifier &opid_,
+       const Op::Settings &settings,
+       const Attributes &attr) -> std::unique_ptr<Op> {
+      throw dummyOpError("Constant");
+    },
+    true);
+
+static OpDefinition
+    shapeOpV1Def({OpDefinition::Inputs({{"data", T}}),
+                  OpDefinition::Outputs({{"output", {DataType::INT64}}}),
+                  OpDefinition::Attributes()});
+
+class Shape {};
+
+static OpCreator<Shape> shapeOpCreator(
+    OpDefinitions({{Onnx::Operators::Shape_1, shapeOpV1Def}}),
+    [](const OperatorIdentifier &opid_,
+       const Op::Settings &settings,
+       const Attributes &attr) -> std::unique_ptr<Op> {
+      throw dummyOpError("Shape");
+    },
+    true);
+
+static OpDefinition constantOfShapeOpV9Def(
+    {OpDefinition::Inputs({{"input", {DataType::INT64}}}),
+     OpDefinition::Outputs({{"output", T}}),
+     OpDefinition::Attributes({{"value", {"*"}}})});
+
+class ConstantOfShape {};
+
+static OpCreator<Shape> constantOfShape(
+    OpDefinitions({{Onnx::Operators::ConstantOfShape_9,
+                    constantOfShapeOpV9Def}}),
+    [](const OperatorIdentifier &opid_,
+       const Op::Settings &settings,
+       const Attributes &attr) -> std::unique_ptr<Op> {
+      throw dummyOpError("ConstantOfShape");
+    },
+    true);
+
+} // namespace
 
 } // namespace popart

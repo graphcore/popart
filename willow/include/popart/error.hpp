@@ -23,39 +23,48 @@ class error : public std::runtime_error {
   // Constructors that do not throw exception, used in the case that the
   // fmt::format function throws an exception
   explicit error(const _empty &, const char *s) : std::runtime_error(s) {
-    logging::err(what());
+    logMessage();
   }
 
   explicit error(const _empty &, const std::string &s) : std::runtime_error(s) {
-    logging::err(what());
+    logMessage();
   }
 
 public:
   /// Variadic constructor for error which allows the user to use a fmt string
-  /// for the message. As the fmt::format function can throw an exception itself
-  /// and it is used in the initilization list we have to use the unusally C++
-  /// syntax to catch that exception and convert it to a popart exception
+  /// for the message.
   ///
   /// throw error("This is an error reason {}", 42);
-
   template <typename... Args>
-  explicit error(const char *s, const Args &... args) try : std
-    ::runtime_error(logging::format(s, args...)) { logging::err(what()); }
-  catch (const logging::FormatError &e) {
-    std::string reason =
-        std::string("Popart exception format error ") + std::string(e.what());
-    error _e(_empty(), reason);
-    throw _e;
+  explicit error(const char *s, const Args &... args)
+      : std ::runtime_error(formatMessage(s, args...)) {
+    logMessage();
   }
 
   template <typename... Args>
-  explicit error(const std::string &s, const Args &... args) try : std
-    ::runtime_error(logging::format(s, args...)) { logging::err(what()); }
-  catch (const logging::FormatError &e) {
-    std::string reason =
-        std::string("Popart exception format error:") + std::string(e.what());
-    throw error(_empty(), reason);
+  explicit error(const std::string &s, const Args &... args)
+      : std ::runtime_error(formatMessage(s, args...)) {
+    logMessage();
   }
+
+private:
+  /// As the fmt::format function can throw an exception itself we catch
+  /// the FormatError exception here and convert it to a popart exception.
+  template <typename... Args>
+  static std::string formatMessage(const Args &... args) {
+    try {
+      return logging::format(args...);
+    } catch (const logging::FormatError &e) {
+      std::string reason =
+          std::string("Popart exception format error ") + std::string(e.what());
+      error _e(_empty(), reason);
+      throw _e;
+    }
+  }
+
+  /// Log the exception message
+  //  Optionally appends a stacktrace depending on the build configuration.
+  void logMessage();
 };
 
 /**

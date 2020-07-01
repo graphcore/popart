@@ -59,7 +59,35 @@ void SubsampleShapeInference(InferenceContext &ctx) {
 
 // Do the same as BatchNormalization & InstanceNormalization in onnx
 void GroupNormalizationShapeInference(InferenceContext &ctx) {
-  propagateShapeAndTypeFromFirstInput(ctx);
+  const unsigned int X_IN = 0;
+
+  const unsigned int Y_OUT    = 0;
+  const unsigned int MEAN_OUT = 1;
+  const unsigned int STD_OUT  = 2;
+
+  const unsigned int NUM_OUTPUTS = 3;
+  for (unsigned int i = 0; i < NUM_OUTPUTS; i++) {
+    propagateElemTypeFromInputToOutput(ctx, X_IN, i);
+  }
+
+  propagateShapeFromInputToOutput(ctx, X_IN, 0);
+
+  int32_t num_groups = 1;
+  getAttribute(ctx, "num_groups", num_groups);
+
+  auto input_shape = ctx.getInputType(X_IN)->tensor_type().shape();
+
+  if (input_shape.dim(0).has_dim_value()) {
+    auto *output_shape_mean =
+        ctx.getOutputType(MEAN_OUT)->mutable_tensor_type()->mutable_shape();
+    output_shape_mean->add_dim()->set_dim_value(num_groups *
+                                                input_shape.dim(0).dim_value());
+
+    auto *output_shape_stdev =
+        ctx.getOutputType(STD_OUT)->mutable_tensor_type()->mutable_shape();
+    output_shape_stdev->add_dim()->set_dim_value(
+        num_groups * input_shape.dim(0).dim_value());
+  }
 }
 
 void PrintTensorShapeInference(InferenceContext &ctx) {

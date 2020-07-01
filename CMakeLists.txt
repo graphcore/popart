@@ -12,19 +12,6 @@ set (CMAKE_CXX_STANDARD 14)
 # Generate compile_commands.json file for IDE integration
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# colorful ninja, idea from
-# medium.com/@alasher/colored-c-compiler-output-with-ninja-clang-gcc-10bfe7f2b949
-option (FORCE_COLORED_OUTPUT "Always produce ANSI-colored output (GNU/Clang only)." TRUE)
-if (${FORCE_COLORED_OUTPUT})
-    MESSAGE(STATUS "CMAKE_CXX_COMPILER_ID is \""   ${CMAKE_CXX_COMPILER_ID} "\"")
-    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-       add_compile_options (-fdiagnostics-color=always)
-     elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang" OR
-             "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" )
-       add_compile_options (-fcolor-diagnostics)
-    endif ()
-endif ()
-
 if(${CMAKE_SYSTEM_NAME} STREQUAL Darwin)
   set(OS_TYPE osx)
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL Linux)
@@ -65,6 +52,9 @@ add_definitions(-DONNX_NAMESPACE=onnx)
 
 #Where to find Findxxxx.cmake files
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules ${PROJECT_SOURCE_DIR}/cmake)
+
+# cmake option definitions for popart
+include(DefineOptions)
 
 # Prefer to find static libraries
 set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})

@@ -42,7 +42,7 @@ public:
   view::RegMap unwindRegion(InIndex, OutIndex) const override;
 };
 
-// non-inplace
+// non-inplace elementwise unary operations
 class ElementWiseUnaryOutplaceOpx : public ElementWiseUnaryOpx {
 public:
   ElementWiseUnaryOutplaceOpx(Op *,
@@ -54,7 +54,7 @@ private:
   std::unique_ptr<EwuComputex> cx;
 };
 
-// inplace
+// inplace elementwise unary operations
 class ElementWiseUnaryInplaceOpx : public ElementWiseUnaryOpx {
 public:
   ElementWiseUnaryInplaceOpx(Op *op,
@@ -65,6 +65,68 @@ public:
 
 private:
   std::unique_ptr<EwuComputex> cx;
+};
+
+// Base class for computing either in-place or out-of-place elementwise binary
+// operations. There are various factors that determine whether the operation
+// will be evaluated in-place:
+//   * An Opx implementation can "opt out" of in-placing so that it is always
+//   evaluated out-of-place. This is expected to be known at compile-time.
+//   * At runtime, supported operations may be evaluated in-place when the
+//   input-output tensor isParallelWriteable.
+//   * The current tile imbalance at runtime is also compared to a fixed
+//   threshold to determine whether to compute supported operations in-place.
+class EwbComputex {
+public:
+  // The inplacing policy that this class will use.
+  enum class InplacePolicy {
+    // Never evaluate the operation in-place
+    NEVER,
+    // Possibly evaluate the operation with the LHS (input arg 0) in-place
+    LHS,
+    // Possibly evaluate the operation with the RHS (input arg 1) in-place
+    RHS
+  };
+
+  explicit EwbComputex(InplacePolicy ip = InplacePolicy::NEVER)
+      : inplacePolicy(ip) {}
+
+  virtual ~EwbComputex() = default;
+
+  // Check whether this class might support in-place evaluation
+  bool inplaceSupported() const;
+
+  // Get the InIndex for the argument that will be in-placed
+  // e.g. Using InplacePolicy::LHS -> 0
+  //            InplacePolicy::RHS -> 1
+  // An internal_error is raised when this class is configured with
+  // InplacePolicy::NEVER
+  InIndex getInplaceArgInIndex() const;
+
+  // Get the InIndex for the argument that will be out-of-place
+  // e.g. Using InplacePolicy::LHS -> 1
+  //            InplacePolicy::RHS -> 0
+  // An internal_error is raised when this class is configured with
+  // InplacePolicy::NEVER
+  InIndex getOutplaceArgInIndex() const;
+
+  // Evaluate the operation out-of-place
+  virtual poplar::Tensor outplace(poplar::program::Sequence &,
+                                  poplar::Graph &,
+                                  const poplar::Tensor &,
+                                  const poplar::Tensor &,
+                                  const std::string &) const = 0;
+
+  // Evaluate the operation in-place
+  // Assigns the result to the first tensor input
+  virtual void inplace(poplar::program::Sequence &,
+                       poplar::Graph &,
+                       const poplar::Tensor &,
+                       const poplar::Tensor &,
+                       const std::string &) const = 0;
+
+private:
+  InplacePolicy inplacePolicy;
 };
 
 // Base class for elementwise binary operations
@@ -78,6 +140,34 @@ public:
   poplar::Tensor
   unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const override;
   view::RegMap unwindRegion(InIndex, OutIndex) const override;
+};
+
+// non-inplace elementwise binary operations
+class ElementWiseBinaryOutplaceOpx : public ElementWiseBinaryOpx {
+public:
+  ElementWiseBinaryOutplaceOpx(Op *op,
+                               Devicex *devx,
+                               std::unique_ptr<EwbComputex> cx_)
+      : ElementWiseBinaryOpx(op, devx), cx(std::move(cx_)) {}
+
+  void grow(poplar::program::Sequence &) const final;
+
+private:
+  std::unique_ptr<EwbComputex> cx;
+};
+
+// inplace elementwise binary operations
+class ElementWiseBinaryInplaceOpx : public ElementWiseBinaryOpx {
+public:
+  ElementWiseBinaryInplaceOpx(Op *op,
+                              Devicex *devx,
+                              std::unique_ptr<EwbComputex> cx_)
+      : ElementWiseBinaryOpx(op, devx), cx(std::move(cx_)) {}
+
+  void grow(poplar::program::Sequence &) const final;
+
+private:
+  std::unique_ptr<EwbComputex> cx;
 };
 
 // Base class for binary comparison operations

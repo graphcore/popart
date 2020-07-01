@@ -4,6 +4,17 @@ import io
 import numpy as np  # type: ignore
 import textwrap
 
+
+# Remove leading new lines and then set the identation on a
+# multi line string.
+def format_method(x, indent=0):
+    if x.startswith('\n'):
+        x = x[1:]
+    x = textwrap.dedent(x)
+    x = textwrap.indent(x, ' ' * indent)
+    return x
+
+
 overrideOP = {
     "ai.onnx.AveragePool:7": {
         "attributes": {
@@ -542,10 +553,19 @@ def genBuilderHpp(filename, schema):
                             "     * \param num_outputs The number of output tensor ids\n"
                         )
 
-                    for a in sorted(op.attributes,
-                                    key=lambda x: x.hasDefault()):
-                        if not a.isDeprecated():
-                            f.write("     * \param {} The '{}' attribute \n".
+                    if int(opset_version) == 11 and op.name == 'Constant':
+                        f.write(
+                            format_method(
+                                """
+                            * \param value The 'value' attribute"
+                            * \param is_value_sparse If true, set the 'sparse_value' attribute
+                            """, 5))
+                    else:
+                        for a in sorted(op.attributes,
+                                        key=lambda x: x.hasDefault()):
+                            if not a.isDeprecated():
+                                f.write(
+                                    "     * \param {} The '{}' attribute \n".
                                     format(a.name, a.name))
                     f.write(
                         "     * \param name Optional identifier for the operation\n"
@@ -559,34 +579,49 @@ def genBuilderHpp(filename, schema):
                             "     * \\return The normalized output tensor ids\n"
                         )
                     f.write("     */\n")
-                    if op.max_output == 1:
-                        f.write("    TensorId\n")
+
+                    # Handle special case Constant_11
+                    if int(opset_version) == 11 and op.name == 'Constant':
+                        x = """
+                            TensorId
+                            constant(const ConstVoidData&  value,
+                                     bool is_value_sparse = false,
+                                     const std::string &name = "");
+                            """
+                        x = format_method(x, 5)
+                        f.write(x)
+                        f.write('\n')
                     else:
-                        f.write("    std::vector<TensorId>\n")
+                        if op.max_output == 1:
+                            f.write("    TensorId\n")
+                        else:
+                            f.write("    std::vector<TensorId>\n")
 
-                    f.write("    {}(".format(op.CppName()))
-                    if op.inputs > 0:
-                        f.write("const std::vector<TensorId>& args,\n".format(
-                            op.CppName()))
+                        f.write("    {}(".format(op.CppName()))
+                        if op.inputs > 0:
+                            f.write(
+                                "const std::vector<TensorId>& args,\n".format(
+                                    op.CppName()))
 
-                    # In the case of a variable number outputs, set the number of ouputs
-                    if op.min_output != op.max_output:
-                        f.write("     {}unsigned num_outputs,\n".format(
-                            spaces(len(op.CppName()))))
+                        # In the case of a variable number outputs, set the number of ouputs
+                        if op.min_output != op.max_output:
+                            f.write("     {}unsigned num_outputs,\n".format(
+                                spaces(len(op.CppName()))))
 
-                    for a in sorted(
-                            op.attributes,
-                            key=lambda x: x.hasDefault() or not x.required):
-                        if not a.isDeprecated():
-                            f.write("     {}{} {}".format(
-                                spaces(len(op.CppName())), a.CppType(),
-                                a.name))
-                            if a.hasDefaultValue():
-                                f.write(" = {}".format(a.DefaultValue()))
-                            f.write(",\n")
-                    f.write("     {}const std::string &name = \"\");\n".format(
-                        spaces(len(op.CppName()))))
-                    f.write("\n")
+                        for a in sorted(op.attributes,
+                                        key=lambda x: x.hasDefault() or not x.
+                                        required):
+                            if not a.isDeprecated():
+                                f.write("     {}{} {}".format(
+                                    spaces(len(op.CppName())), a.CppType(),
+                                    a.name))
+                                if a.hasDefaultValue():
+                                    f.write(" = {}".format(a.DefaultValue()))
+                                f.write(",\n")
+                        f.write(
+                            "     {}const std::string &name = \"\");\n".format(
+                                spaces(len(op.CppName()))))
+                        f.write("\n")
 
                 f.write("};\n")
                 f.write("\n")
@@ -607,7 +642,29 @@ def genBuilderCpp(filename, schema):
                 classname = v.CppName() + "Opset" + opset_version
 
                 for op in sorted(opset.operators):
-
+                    if int(opset_version) == 11 and op.name == 'Constant':
+                        x = """
+                            TensorId
+                            AiOnnxOpset11::constant(const ConstVoidData&  value,
+                                                    bool is_value_sparse,
+                                                    const std::string& name) {
+                              std::map<std::string, popart::any> attributes;
+                              if (is_value_sparse) {
+                                  throw error("Attributes of type `sparse_tensor' are currently not supported.");
+                              } else {
+                                  attributes["value"] = value;
+                              }
+                              return impl->op(Onnx::Operators::Constant_11,
+                                              getOpsetVersion(),
+                                              {},
+                                              attributes,
+                                              name)[0];
+                            }
+                            """
+                        x = format_method(x)
+                        f.write(x)
+                        f.write('\n')
+                        continue
                     if op.max_output == 1:
                         f.write("TensorId\n")
                     else:
@@ -773,38 +830,20 @@ def genPythonBuilderBinds(filename, schema):
                     # Special case of the constant operator
                     if op.name == "Constant":
                         if (op.version == 11):
-                            '''
-                            f.write("       []({} &opset, py::array array, const std::string& name) {{\n".format(classname))
-                            f.write("          ConstVoidData initData;\n")
-                            f.write("          initData.data = array.request().ptr;\n")
-                            f.write("          initData.info = getTensorInfo(array);\n")
-                            f.write("          return opset.constant(initData, name);\n")
-                            f.write("       },\n")
-                            '''
-
-                            f.write(
-                                "       []({} &opset, py::array array, py::array sparse_array, const std::string& name) {{\n"
-                                .format(classname))
-                            f.write("          ConstVoidData initData;\n")
-                            f.write(
-                                "          initData.data = array.request().ptr;\n"
-                            )
-                            f.write(
-                                "          initData.info = getTensorInfo(array);\n"
-                            )
-                            f.write(
-                                "          ConstVoidData sparseInitData;\n")
-                            f.write(
-                                "          sparseInitData.data = sparse_array.request().ptr;\n"
-                            )
-                            f.write(
-                                "          sparseInitData.info = getTensorInfo(sparse_array);\n"
-                            )
-                            f.write(
-                                "          return opset.constant(initData, sparseInitData, name);\n"
-                            )
-                            f.write("       },\n")
-
+                            x = f"""
+                                []({classname} &opset, py::array array, bool is_value_sparse, const std::string& name) {{
+                                   ConstVoidData initData;
+                                   initData.data = array.request().ptr;
+                                   initData.info = getTensorInfo(array);
+                                   return opset.constant(initData, is_value_sparse, name);
+                                }},
+                                py::arg("value"),
+                                py::arg("is_value_sparse") = false,
+                                py::arg("debugPrefix") = std::string())
+                                """
+                            x = format_method(x, 7)
+                            f.write(x)
+                            continue
                         else:
                             f.write(
                                 "       []({} &opset, py::array array, const std::string& name) {{\n"
