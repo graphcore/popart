@@ -23,7 +23,7 @@ VE="${PWD}/../external/popart_build_python_${PYBIN}"
 source ${VE}/bin/activate
 
 cd build
-./test.sh popart -VV
+./test.sh popart --output-on-failure
 
 cd build/popart
 make popart_run_examples
