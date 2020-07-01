@@ -1036,10 +1036,8 @@ void Devicex::anchorsHostToHostStreams(IStepIO &stepio) {
   if (ir().useSyntheticData() == false) {
     std::string prefix = "     ";
     logging::devicex::debug(prefix + "Copying to h2d stream address(es) ");
-    if (stepIoSplitter) {
-      stepIoSplitter->reset(&stepio);
-    } else {
-      throw error("StepIO splitter has not been initialised");
+    for (Tensor *tensor : ir().dataStreamTensors()) {
+      inputStreams.at(tensor->id)->setStepIO(&stepio);
     }
   }
 }
@@ -1049,10 +1047,8 @@ void Devicex::anchorsHostFromHostStreams(IStepIO &stepio) {
   if (ir().useSyntheticData() == false) {
     std::string prefix = "     ";
     logging::devicex::debug(prefix + "Copying from d2h stream address(es) ");
-    if (stepIoSplitter) {
-      stepIoSplitter->reset(&stepio);
-    } else {
-      throw error("StepIO splitter has not been initialised");
+    for (TensorId anchorId : ir().getDataFlow().anchors()) {
+      outputStreams.at(anchorId)->setStepIO(&stepio);
     }
   }
 }
@@ -2482,54 +2478,34 @@ void Devicex::loadEngineAndConnectStreams() {
       pEngine->connectStream(h2dId(tensor->id), tensor->tensorData()->data());
     }
 
-    stepIoSplitter = std::make_unique<StepIOSplitter>(getReplicationFactor());
+    auto engineToInputStreamWithCallback =
+        [&pEngine = pEngine, this](Tensor *tensor, PopStreamId streamId) {
+          std::shared_ptr<InputDatastream> ds =
+              std::make_shared<InputDatastream>(tensor, streamId);
+          this->inputStreams[tensor->id] = ds;
 
-    auto engineToInputStreamWithCallback = [&pEngine = pEngine,
-                                            this](Tensor *tensor,
-                                                  PopStreamId streamId) {
-      auto replicationFactor = getReplicationFactor();
-      for (auto replicationIndex = 0; replicationIndex < replicationFactor;
-           ++replicationIndex) {
+          auto replicationFactor = getReplicationFactor();
+          for (auto replicationIndex = 0; replicationIndex < replicationFactor;
+               ++replicationIndex) {
 
-        logging::devicex::debug(
-            "Connecting input stream {}@{}", tensor->id, replicationIndex);
-
-        IStepIO *downstreamIo =
-            stepIoSplitter->getDownstreamStepIO(tensor->id, replicationIndex);
-
-        std::shared_ptr<InputDatastream> ds =
-            std::make_shared<InputDatastream>(tensor, streamId);
-        ds->setStepIO(downstreamIo);
-
-        this->inputStreams[std::make_tuple(tensor->id, replicationIndex)] = ds;
-
-        auto callback = std::make_unique<PrefetchCallback>(ds);
-        pEngine->connectStreamToCallback(
-            streamId, replicationIndex, std::move(callback));
-      }
-    };
+            auto callback = std::make_unique<PrefetchCallback>(ds);
+            pEngine->connectStreamToCallback(
+                streamId, replicationIndex, std::move(callback));
+          }
+        };
 
     auto engineToOutputStreamWithCallback = [&pEngine = pEngine,
                                              this](Tensor *tensor,
                                                    PopStreamId streamId) {
+      std::shared_ptr<OutputDatastream> ds =
+          std::make_shared<OutputDatastream>(tensor, streamId);
+      this->outputStreams[tensor->id] = ds;
+
+      auto callback = [ds](void *ptr) mutable { ds->write(ptr); };
+
       auto replicationFactor = getReplicationFactor();
       for (auto replicationIndex = 0; replicationIndex < replicationFactor;
            ++replicationIndex) {
-
-        logging::devicex::debug(
-            "Connecting output stream {}@{}", tensor->id, replicationIndex);
-
-        IStepIO *downstreamIo =
-            stepIoSplitter->getDownstreamStepIO(tensor->id, replicationIndex);
-
-        std::shared_ptr<OutputDatastream> ds =
-            std::make_shared<OutputDatastream>(tensor, streamId);
-        ds->setStepIO(downstreamIo);
-
-        this->outputStreams[std::make_tuple(tensor->id, replicationIndex)] = ds;
-
-        auto callback = [ds](void *ptr) mutable { ds->write(ptr); };
-
         pEngine->connectStreamToCallback(streamId, replicationIndex, callback);
       }
     };
@@ -2539,12 +2515,9 @@ void Devicex::loadEngineAndConnectStreams() {
     // callback for every replicant. So here we will only return replicant 0.
     auto engineToStreamVariables =
         [&pEngine = pEngine, replicationFactor = getReplicationFactor()](
-            char *data0, int64_t n_bytes, PopStreamId streamId, TensorId id) {
+            char *data0, int64_t n_bytes, PopStreamId streamId) {
           for (uint16_t replicaId = 0; replicaId < replicationFactor;
                ++replicaId) {
-
-            logging::devicex::debug(
-                "Connecting stream variable {}@{}", id, replicaId);
 
             auto callback = [replicaId, data0, n_bytes](void *ptr) mutable {
               if (replicaId == 0) {
@@ -2585,7 +2558,7 @@ void Devicex::loadEngineAndConnectStreams() {
         bool isAnchorStream  = false;
         PopStreamId streamId = d2hId(initId, isAnchorStream);
         logging::devicex::debug(" {}", initId);
-        engineToStreamVariables(data0, n_bytes, streamId, tensor->id);
+        engineToStreamVariables(data0, n_bytes, streamId);
         logging::devicex::debug("Created buffer (size {} B) and stream for {}",
                                 n_bytes,
                                 tensor->id);
@@ -2606,22 +2579,18 @@ void Devicex::loadEngineAndConnectStreams() {
 void Devicex::reconnectInputStreams() {
   logging::devicex::debug(
       "Reconnecting input streams, invalidating prefetches.");
+  auto engineToInputStreamWithCallback =
+      [&pEngine = pEngine, this](Tensor *tensor, poplar::DataStream &stream) {
+        auto replicationFactor = getReplicationFactor();
+        for (auto replicationIndex = 0; replicationIndex < replicationFactor;
+             ++replicationIndex) {
 
-  auto engineToInputStreamWithCallback = [&pEngine = pEngine,
-                                          this](Tensor *tensor,
-                                                poplar::DataStream &stream) {
-    auto replicationFactor = getReplicationFactor();
-    for (auto replicationIndex = 0; replicationIndex < replicationFactor;
-         ++replicationIndex) {
-      logging::devicex::debug(
-          "Reconnecting input stream {}@{}", tensor->id, replicationIndex);
-
-      auto callback = std::make_unique<PrefetchCallback>(
-          this->inputStreams[std::make_tuple(tensor->id, replicationIndex)]);
-      pEngine->connectStreamToCallback(
-          stream, replicationIndex, std::move(callback));
-    }
-  };
+          auto callback = std::make_unique<PrefetchCallback>(
+              this->inputStreams[tensor->id]);
+          pEngine->connectStreamToCallback(
+              stream, replicationIndex, std::move(callback));
+        }
+      };
 
   for (Tensor *tensor : ir().dataStreamTensors()) {
     // The data stream for a tensor won't exist if using synthetic data, so

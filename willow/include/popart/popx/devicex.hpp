@@ -25,11 +25,9 @@
 #include <popart/popx/virtualgraph.hpp>
 
 #include <set>
-#include <tuple>
 #include <popart/names.hpp>
 // MutableVoidData is defined in here:
 #include <popart/stepio.hpp>
-#include <popart/stepiosplitter.hpp>
 #include <popart/tensordata.hpp>
 
 namespace popart {
@@ -500,13 +498,9 @@ private:
     void write(void *ptr);
   };
 
-  // Splits one IStepIO into one for each replica.
-  std::unique_ptr<StepIOSplitter> stepIoSplitter;
-
-  // Map from TensorId,replicationIndex to the data streams
-  using StreamId = std::tuple<TensorId, unsigned>;
-  std::map<StreamId, std::shared_ptr<InputDatastream>> inputStreams;
-  std::map<StreamId, std::shared_ptr<OutputDatastream>> outputStreams;
+  // Map of tensors to the the data streams
+  std::map<TensorId, std::shared_ptr<InputDatastream>> inputStreams;
+  std::map<TensorId, std::shared_ptr<OutputDatastream>> outputStreams;
 
   // T11630: should we combine the above with the below
 
