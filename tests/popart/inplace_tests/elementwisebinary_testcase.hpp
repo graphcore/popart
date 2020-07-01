@@ -57,6 +57,12 @@ public:
 
   virtual ~ElementWiseBinaryTestCase() {}
 
+  // Check if the basic op has not been replaced by either the LHS or RHS
+  // inplace variants
+  bool isNotInplaced(Ir &ir) const {
+    return numBasicOps(ir) == 1 && numLhsOps(ir) == 0 && numRhsOps(ir) == 0;
+  }
+
   // Check if the basic op has been replaced by the LHS inplace variant
   bool isLhsInplaced(Ir &ir) const {
     return numBasicOps(ir) == 0 && numLhsOps(ir) == 1 && numRhsOps(ir) == 0;
@@ -78,6 +84,12 @@ public:
   // LHS or RHS inplace variants
   void checkBasicOpIsInplaced(const TestData &data) const {
     checkBasicOpInplacing(data, &ElementWiseBinaryTestCase::isInplaced);
+  }
+
+  // Test method that verifies that the basic op has not been replaced by either
+  // the LHS or RHS inplace variants
+  void checkBasicOpIsNotInplaced(const TestData &data) const {
+    checkBasicOpInplacing(data, &ElementWiseBinaryTestCase::isNotInplaced);
   }
 
   // Test method that verifies that the basic op has been replaced by the LHS
