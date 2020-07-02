@@ -2,7 +2,7 @@
 # Run make in the custom_ops folder to build. 
 cmake_minimum_required(VERSION 3.4)
 
-project(custom_op.so)
+project(cube.so)
 
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -26,23 +26,24 @@ add_definitions(-DONNX_NAMESPACE=onnx)
 message(STATUS "Linking Onnx...")
 find_package(ONNX REQUIRED)
 
-# Add the executable to the project.
-add_executable(custom_op.so custom_op.cpp)
+# Add the shared library to the project
+add_library(cube SHARED custom_op.cpp)
+
+# Copy the python script to build folder
+configure_file(custom_op.py custom_op.py COPYONLY)
 
 # Link all the required libraries. If you do not require all the Poplar 
 # (poplin, popops etc) libraries, you can remove them without issue.
 # However, PopART and Poplar will be required in all cases.
 message(STATUS "Linking PopART...")
-target_link_libraries(custom_op.so popart)
+target_link_libraries(cube popart)
 message(STATUS "Linking Poplar...")
-target_link_libraries(custom_op.so poplar)
+target_link_libraries(cube poplar)
 message(STATUS "Linking Popops...")
-target_link_libraries(custom_op.so popops)
+target_link_libraries(cube popops)
 message(STATUS "Linking Poplin...")
-target_link_libraries(custom_op.so poplin)
+target_link_libraries(cube poplin)
 message(STATUS "Linking Popnn...")
-target_link_libraries(custom_op.so popnn)
+target_link_libraries(cube popnn)
 message(STATUS "Linking Poprand...")
-target_link_libraries(custom_op.so poprand)
-
-set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(cube poprand)

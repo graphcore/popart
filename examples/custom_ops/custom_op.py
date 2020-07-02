@@ -5,7 +5,7 @@ import ctypes
 import os
 
 # Load the .so file in the same directory.
-myso = os.path.join(os.path.dirname(os.path.realpath(__file__)), "cube.so")
+myso = os.path.join(os.path.dirname(os.path.realpath(__file__)), "libcube.so")
 myop = ctypes.cdll.LoadLibrary(myso)
 
 # Create a builder
@@ -22,7 +22,7 @@ w = builder.addInitializedInputTensor(weights, "weights/1")
 # same shape as the input
 cube = builder.customOp(opName="Cube",
                         opVersion=1,
-                        domain="ai.acme",
+                        domain="com.acme",
                         inputs=[x],
                         attributes={})[0]
 

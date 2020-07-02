@@ -16,7 +16,6 @@
 #include <popart/builder.hpp>
 #include <popart/devicemanager.hpp>
 
-// #include <popart/filereader.hpp>
 #include <popart/ir.hpp>
 
 #include <popart/logging.hpp>
@@ -84,66 +83,8 @@ class CubeGradOp;
 class CubeOpx;
 class CubeGradOpx;
 
-// The forward Op
-
-class CubeOp : public popart::Op {
-
-public:
-  CubeOp(const popart::OperatorIdentifier &_opid,
-         const popart::Op::Settings &settings_)
-      : popart::Op(_opid, settings_) {}
-
-  // Configure the output popart Tensor
-  virtual void setup() { outInfo(0) = inInfo(0); }
-
-  std::unique_ptr<Op> clone() const final { return make_unique<CubeOp>(*this); }
-
-  // An estimate of how valuable sub-graph matching will be
-  float getSubgraphValue() const final { return getLowSubgraphValue(); }
-};
-
-static std::unique_ptr<popart::Op>
-cubeOpFactory(const popart::OperatorIdentifier &_opid,
-              const popart::Op::Settings &settings,
-              const popart::Attributes &attr) {
-
-  return make_unique<CubeOp>(_opid, settings);
-}
-
-static popart::OpCreator<CubeOp>
-    cubeOpCreator({Onnx::CustomOperators::Cube}, cubeOpFactory, true);
-
-// The forward Opx (poplar implementation of the forward Op)
-
-class CubeOpx : public popart::popx::Opx {
-
-public:
-  CubeOpx(popart::Op *op, popart::popx::Devicex *devicex)
-      : popart::popx::Opx(op, devicex) {
-
-    // Not strictly necessary, we check that op is castable to a CubeOp *.
-    verifyOp<CubeOp>(op, Onnx::CustomOperators::Cube);
-  }
-
-  void grow(poplar::program::Sequence &prog) const {
-
-    auto &op = getOp<CubeOp>();
-
-    auto input = getInTensor(0);
-
-    auto output = popops::map(
-        graph(),
-        popops::expr::Mul(popops::expr::Mul(popops::expr::_1, popops::expr::_1),
-                          popops::expr::_1),
-        {getInTensor(0)},
-        prog,
-        debugPrefix());
-
-    setOutTensor(0, output);
-  }
-};
-
 // The gradient Op
+// This is defined first as the CubeOp::getGradOps requires it.
 class CubeGradOp : public popart::Op {
 public:
   CubeGradOp(const popart::Op &fwdOp)
@@ -198,6 +139,72 @@ public:
 
   // an estimate of how valuable sub-graph matching will be
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
+};
+
+// The forward Op
+class CubeOp : public popart::Op {
+
+public:
+  CubeOp(const popart::OperatorIdentifier &_opid,
+         const popart::Op::Settings &settings_)
+      : popart::Op(_opid, settings_) {}
+
+  // Configure the output popart Tensor
+  void setup() final { outInfo(0) = inInfo(0); }
+
+  std::unique_ptr<Op> clone() const final { return make_unique<CubeOp>(*this); }
+
+  // There is only one Gradient Op for CubeOp, a CubeGradOp
+  std::vector<std::unique_ptr<popart::Op>> getGradOps() final {
+    std::vector<std::unique_ptr<Op>> upops;
+    upops.emplace_back(new CubeGradOp(*this));
+    return upops;
+  }
+
+  // An estimate of how valuable sub-graph matching will be
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+};
+
+// describe the inputs and outputs that are supported by the operation
+static popart::OpDefinition::DataTypes T = {popart::DataType::FLOAT16,
+                                            popart::DataType::FLOAT};
+
+static popart::OpDefinition
+    cubeOpDef({popart::OpDefinition::Inputs({{"input", T}}),
+               popart::OpDefinition::Outputs({{"output", T}}),
+               popart::OpDefinition::Attributes({})});
+
+static popart::OpCreator<CubeOp>
+    cubeOpCreator({{Onnx::CustomOperators::Cube, cubeOpDef}});
+
+// The forward Opx (poplar implementation of the forward Op)
+
+class CubeOpx : public popart::popx::Opx {
+
+public:
+  CubeOpx(popart::Op *op, popart::popx::Devicex *devicex)
+      : popart::popx::Opx(op, devicex) {
+
+    // Not strictly necessary, we check that op is castable to a CubeOp *.
+    verifyOp<CubeOp>(op, Onnx::CustomOperators::Cube);
+  }
+
+  void grow(poplar::program::Sequence &prog) const {
+
+    auto &op = getOp<CubeOp>();
+
+    auto input = getInTensor(0);
+
+    auto output = popops::map(
+        graph(),
+        popops::expr::Mul(popops::expr::Mul(popops::expr::_1, popops::expr::_1),
+                          popops::expr::_1),
+        {getInTensor(0)},
+        prog,
+        debugPrefix());
+
+    setOutTensor(0, output);
+  }
 };
 
 class CubeGradOpx : public popart::popx::Opx {
@@ -267,5 +274,3 @@ static bool registerOps() {
 static bool ret = registerOps();
 
 } // namespace ONNX_NAMESPACE
-
-int main() { return 0; }
