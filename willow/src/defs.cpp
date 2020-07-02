@@ -104,26 +104,34 @@ void ScaleShapeInference(InferenceContext &ctx) {
 }
 
 void LSTMShapeInference(InferenceContext &ctx) {
-  propagateElemTypeFromInputToOutput(ctx, 0, 0);
+  const unsigned int X_IN       = 0;
+  const unsigned int WEIGHTS_IN = 1;
+
+  const unsigned int OUTPUT_OUT     = 0;
+  const unsigned int CELL_STATE_OUT = 1;
+
+  propagateElemTypeFromInputToOutput(ctx, X_IN, OUTPUT_OUT);
+  propagateElemTypeFromInputToOutput(ctx, X_IN, CELL_STATE_OUT);
 
   // we need the first 2 input shapes for this inference.
   if (!hasNInputShapes(ctx, 2)) {
     return;
   }
 
-  auto input_shape   = ctx.getInputType(0)->tensor_type().shape();
-  auto weights_shape = ctx.getInputType(0)->tensor_type().shape();
+  auto input_shape   = ctx.getInputType(X_IN)->tensor_type().shape();
+  auto weights_shape = ctx.getInputType(WEIGHTS_IN)->tensor_type().shape();
 
-  auto seq_length  = input_shape.dim(0);
-  auto batch_size  = input_shape.dim(1);
-  auto input_size  = input_shape.dim(2);
+  auto seq_length = input_shape.dim(0);
+  auto batch_size = input_shape.dim(1);
+  auto input_size = input_shape.dim(2);
+
   auto hidden_size = weights_shape.dim(2);
 
   int64_t output_full_sequence = 1;
   getAttribute(ctx, "output_full_sequence", output_full_sequence);
 
   auto *output_shape =
-      ctx.getOutputType(0)->mutable_tensor_type()->mutable_shape();
+      ctx.getOutputType(OUTPUT_OUT)->mutable_tensor_type()->mutable_shape();
   if (output_full_sequence != 0) {
     *output_shape->add_dim() = seq_length;
   }
@@ -131,7 +139,7 @@ void LSTMShapeInference(InferenceContext &ctx) {
   *output_shape->add_dim() = hidden_size;
 
   auto *cell_state_shape =
-      ctx.getOutputType(0)->mutable_tensor_type()->mutable_shape();
+      ctx.getOutputType(CELL_STATE_OUT)->mutable_tensor_type()->mutable_shape();
   *cell_state_shape->add_dim() = batch_size;
   *cell_state_shape->add_dim() = hidden_size;
 }
@@ -358,6 +366,7 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .Input(0, "InitState", "The initial state", "T")
         .Output(0, "Output", "Output tensor", "T")
         .Output(1, "CellState", "The lstm cell state", "T")
+        // Optional (training) output 2 ignored
         .TypeConstraint("T",
                         {"tensor(float)", "tensor(float16)"},
                         "Constrain input and output types to float tensors.")

@@ -228,6 +228,17 @@ def test_lstm_onnx_vs_popart():
                 output_ids = builder.aiOnnx.lstm(input_ids, 3, clip=None)
             elif lstm_type == 'popart':
                 output_ids = builder.aiGraphcore.lstm(input_ids)
+                [Y, Y_c] = output_ids
+                assert builder.getTensorDtypeString(Y) == "float32"
+                assert builder.getTensorDtypeString(Y_c) == "float32"
+
+                assert builder.getTensorShape(Y) == [
+                    inputs[0].shape[0], inputs[0].shape[1], inputs[1].shape[2]
+                ]
+                assert builder.getTensorShape(Y_c) == [
+                    inputs[0].shape[1], inputs[1].shape[2]
+                ]
+
             else:
                 raise SystemError(f"unhandled lstm type '{lstm_type}'")
             return [output_ids[0]]
@@ -328,6 +339,9 @@ def test_lstm_onnx_vs_popart_2():
 
             tIW = reshape_weights(tIW)
             tOW = reshape_weights(tOW)
+
+            # NB shape inference is not yet possible with aiOnnx.split
+
             tWeights = builder.aiOnnx.concat([tIW, tOW], 1)
 
             tBiases = builder.addInputTensor(biases, 'biases')
@@ -344,6 +358,10 @@ def test_lstm_onnx_vs_popart_2():
 
             input_ids = [tData, tWeights, tBiases, tInitState]
             output_ids = builder.aiGraphcore.lstm(input_ids)
+            [Y, Y_c] = output_ids
+            assert builder.getTensorDtypeString(Y) == "float32"
+            assert builder.getTensorDtypeString(Y_c) == "float32"
+
             return [output_ids[0]]
 
         session = PopartTestSession()
@@ -463,6 +481,9 @@ def test_lstm_training_onnx_vs_popart():
 
             tIW = reshape_weights(tIW)
             tOW = reshape_weights(tOW)
+
+            # NB shape inference is not yet possible with aiOnnx.split
+
             tWeights = builder.aiOnnx.concat([tIW, tOW], 1)
 
             tBiases = builder.aiOnnx.split([tBiases], 8, 1, [hidden_size] * 8)
@@ -476,6 +497,8 @@ def test_lstm_training_onnx_vs_popart():
 
             input_ids = [tData, tWeights, tBiases, tInitState]
             out, cell_state = builder.aiGraphcore.lstm(input_ids)
+            assert builder.getTensorDtypeString(out) == "float32"
+            assert builder.getTensorDtypeString(cell_state) == "float32"
 
             if sum_outputs:
                 out = builder.aiOnnx.add([out, cell_state],
