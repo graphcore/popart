@@ -567,6 +567,6 @@ template <> struct hash<popart::Ir> {
            std::hash<popart::SessionOptions>{}(ir.getSessionOptions());
   }
 };
-}; // namespace std
+} // namespace std
 
 #endif

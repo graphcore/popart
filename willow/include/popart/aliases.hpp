@@ -14,7 +14,8 @@ namespace popart {
 class Aliases {
 public:
   Aliases() {}
-  ~Aliases() = default;
+  virtual ~Aliases() = default;
+  Aliases &operator=(const Aliases &rhs) = default;
 
   void clearAliases();
   void updateAliases(Tensor *t1,

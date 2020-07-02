@@ -43,8 +43,8 @@ void OnnxConstExprUtil::processConstantNode(
 
   // Search the constant node for the 'value' attribute, and return the value
   // tensor.
-  auto getValueAttribute = [](auto &node) {
-    for (auto &attr : node.attribute()) {
+  auto getValueAttribute = [](auto &nodeLocal) {
+    for (auto &attr : nodeLocal.attribute()) {
       if (attr.name() == "value") {
         return &attr.t();
       }
@@ -94,8 +94,8 @@ void OnnxConstExprUtil::processConstantOfShapeNode(
     throw error("the tensor `" + inputId + "` does not have data");
   }
   TensorData *tensorData = inputTensor->tensorData();
-  Shape outputShape =
-      tensorData->copyDataAs<int64_t>(inputTensor->info.nelms());
+  Shape outputShape      = tensorData->copyDataAs<int64_t>(
+      static_cast<int>(inputTensor->info.nelms()));
 
   if (node.attribute().size() == 0) {
     // if no value provided, use DataType::FLOAT and value 0.0f

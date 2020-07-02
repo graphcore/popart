@@ -70,8 +70,8 @@ void NllOp::setup() {
 NllOp::NllOp(const OperatorIdentifier &_opid,
              const nonstd::optional<int> ignoreIndex,
              const ReductionType reduction,
-             const Op::Settings &settings)
-    : LossOp(_opid, settings), reduction_(reduction),
+             const Op::Settings &_settings)
+    : LossOp(_opid, _settings), reduction_(reduction),
       ignoreIndex_(ignoreIndex) {}
 
 void NllOp::appendOutlineAttributes(OpSerialiserBase &os) const {

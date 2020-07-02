@@ -57,19 +57,19 @@ getValsOrEmpty(Op *key,
 
 std::vector<Op *> TopoCons::getAfters(Op *before) const {
   return getValsOrEmpty(before, valsAfter, false);
-};
+}
 
 std::vector<Op *> TopoCons::getBefores(Op *after) const {
   return getValsOrEmpty(after, valsBefore, false);
-};
+}
 
 std::vector<Op *> TopoCons::getTiedAfters(Op *before) const {
   return getValsOrEmpty(before, valsAfter, true);
-};
+}
 
 std::vector<Op *> TopoCons::getTiedBefores(Op *after) const {
   return getValsOrEmpty(after, valsBefore, true);
-};
+}
 
 void TopoCons::transfer(Op *beforeTransfer, Op *afterTransfer) {
   transferToMultiple(beforeTransfer, {afterTransfer});

@@ -4,7 +4,6 @@ include(EnableCompilerWarnings)
 
 # expansion of pybind macro, impossible to declare name 
 # of certain classes in headers
-add_compile_options("-Wno-missing-prototypes")
 
 include_directories("../willow/include")
 include_directories("${PROJECT_BINARY_DIR}/willow/include")

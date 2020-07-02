@@ -119,6 +119,9 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
       scale = lambda / totalSamples;
       break;
     }
+    // Making it explicit which data types we're not handling. Note that
+    // the logic will fall through to the error.
+    case ReductionType::NoReduction:
     default: {
       throw error("Unsupported reduction type for Loss {}", debugPrefix());
     }

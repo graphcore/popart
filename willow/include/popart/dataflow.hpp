@@ -113,6 +113,6 @@ template <> struct hash<popart::AnchorReturnType> {
     return art.hash();
   }
 };
-}; // namespace std
+} // namespace std
 
 #endif

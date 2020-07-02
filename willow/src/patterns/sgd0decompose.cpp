@@ -24,7 +24,6 @@ std::vector<const Tensor *> SGD0Decompose::touches(Op *) const { return {}; }
 
 bool SGD0Decompose::apply(Op *op) const {
 
-  auto &ir    = op->getIr();
   auto &graph = op->getGraph();
 
   // matches must have verified the correctness before this call

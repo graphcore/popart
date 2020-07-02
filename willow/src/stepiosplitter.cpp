@@ -249,11 +249,10 @@ IStepIO *StepIOSplitter::getDownstreamStepIO(TensorId id,
   } else {
     // Create new adapter in new replicaMap.
     auto &adapter = downstreamIoMap[id][replicationIndex];
-    adapter       = std::move(
-        std::make_unique<StepIOSplitterAdapter>(this, replicationIndex, id));
+    adapter =
+        std::make_unique<StepIOSplitterAdapter>(this, replicationIndex, id);
     return adapter.get();
   }
-  return nullptr;
 }
 
 } // namespace popart

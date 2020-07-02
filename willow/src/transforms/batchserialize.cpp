@@ -164,7 +164,7 @@ bool BatchSerialize::apply(Graph &graph) const {
           for (unsigned i = 0; i < shape.size(); ++i) {
             if (shape[i] >= batchSerFactor) {
               axis             = i;
-              batch_slice_size = shape[i] / batchSerFactor;
+              batch_slice_size = static_cast<int>(shape[i] / batchSerFactor);
               break;
             }
           }
@@ -259,11 +259,14 @@ bool BatchSerialize::apply(Graph &graph) const {
                 slice->setPipelineStage(std::get<2>(consumerContext));
               slice->connectInTensor(SliceOp::getInIndex(), sliceableTensorId);
               if (dynamicSlicing) {
-                slice->connectInTensor(DynamicSliceOp::getIndexInIndex(),
-                                       createOrGetIndexTensor(graph, b));
+                slice->connectInTensor(
+                    DynamicSliceOp::getIndexInIndex(),
+                    createOrGetIndexTensor(graph, static_cast<uint32_t>(b)));
               }
               TensorId sliceId =
-                  ir.createBatchSliceTensorId(entry.first->id, b, b + 1);
+                  ir.createBatchSliceTensorId(entry.first->id,
+                                              static_cast<unsigned int>(b),
+                                              static_cast<unsigned int>(b + 1));
               slice->createAndConnectOutTensor(SliceOp::getOutIndex(), sliceId);
               slice->setup();
 
@@ -334,7 +337,9 @@ bool BatchSerialize::apply(Graph &graph) const {
         }
         for (auto &out : op->output->tensorMap()) {
           TensorId sliceId =
-              ir.createBatchSliceTensorId(out.second->id, b, b + 1);
+              ir.createBatchSliceTensorId(out.second->id,
+                                          static_cast<unsigned int>(b),
+                                          static_cast<unsigned int>(b + 1));
           serializedTensorMap[{out.second->id, consumerContext}].push_back(
               sliceId);
           clone_op->createAndConnectOutTensor(out.first, sliceId);
@@ -534,8 +539,9 @@ bool BatchSerialize::apply(Graph &graph) const {
 
               update->connectInTensor(DynamicUpdateOp::getInIndex(),
                                       toUpdateSliceTensorId);
-              update->connectInTensor(DynamicUpdateOp::getIndexInIndex(),
-                                      createOrGetIndexTensor(graph, b));
+              update->connectInTensor(
+                  DynamicUpdateOp::getIndexInIndex(),
+                  createOrGetIndexTensor(graph, static_cast<uint32_t>(b)));
               update->connectInTensor(DynamicUpdateOp::getUpdateInIndex(),
                                       lastId);
 
@@ -582,7 +588,8 @@ bool BatchSerialize::apply(Graph &graph) const {
             if (std::get<2>(producerContext) > -1)
               concat->setPipelineStage(std::get<2>(producerContext));
             for (size_t b = 0; b < serializedTensor.second.size(); ++b) {
-              concat->connectInTensor(b, serializedTensor.second[b]);
+              concat->connectInTensor(static_cast<popart::InIndex>(b),
+                                      serializedTensor.second[b]);
             }
             concat->createAndConnectOutTensor(ConcatOp::getOutIndex(),
                                               concatId);
@@ -738,7 +745,7 @@ bool BatchSerialize::apply(Graph &graph) const {
           positionToOp[{section, bsp}][position] = op;
           opSectionLookup[op]                    = section;
 
-          if (DynamicSliceOp *slice = dynamic_cast<DynamicSliceOp *>(op)) {
+          if (dynamic_cast<DynamicSliceOp *>(op)) {
             std::vector<Tensor *> traceFront(
                 batchSerFactor,
                 op->input->tensor(DynamicSliceOp::getInIndex()));
@@ -871,15 +878,15 @@ bool BatchSerialize::apply(Graph &graph) const {
                                    visited.end();
                           });
           if (alreadyVisited || nextFront.second.size() != batchSerFactor) {
-            std::vector<TensorId> ids;
+            std::vector<TensorId> idsLocal;
             for (Tensor *tx : nextFront.second) {
-              ids.push_back(tx->id);
+              idsLocal.push_back(tx->id);
             }
             logging::transform::trace(
                 "[BatchSerialization] Front {}{} size {} is a deadend",
-                ids,
+                idsLocal,
                 alreadyVisited ? " (already visited)" : "",
-                ids.size());
+                idsLocal.size());
           } else {
             // All front tensors for the different BSPs have been found
             parallelTraceFront.push_back(

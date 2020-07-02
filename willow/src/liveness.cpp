@@ -7,7 +7,7 @@
 namespace popart {
 namespace liveness {
 
-LivenessAnalyzer::LivenessAnalyzer(const Ir *ir_) : ir(ir_){};
+LivenessAnalyzer::LivenessAnalyzer(const Ir *ir_) : ir(ir_) {}
 
 void LivenessAnalyzer::apply() {
   // Global schedule including all subgraphs recursively

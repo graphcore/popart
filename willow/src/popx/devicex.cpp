@@ -718,8 +718,8 @@ const std::string Devicex::cycleCountStreamId(std::string id) const {
 void Devicex::instrumentWithHardwareCycleCounter(poplar::program::Sequence &sq,
                                                  int64_t tileId,
                                                  std::string id) {
-  poplar::Tensor cycleCountTensor =
-      poplar::cycleCount(graph(), sq, tileId, cycleCountPrefix());
+  poplar::Tensor cycleCountTensor = poplar::cycleCount(
+      graph(), sq, static_cast<unsigned int>(tileId), cycleCountPrefix());
 
   // Create stream
   auto st = graph().addDeviceToHostFIFO(cycleCountStreamId(id),
@@ -2185,7 +2185,7 @@ void Devicex::growOpx(Opx *opx, poplar::program::Sequence &seq) {
   } else {
     opx->grow(seq);
   }
-};
+}
 
 void Devicex::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
   Opx *opx = getOpx(op->id);
@@ -3923,7 +3923,7 @@ void Devicex::saveTensorTileMap(const std::string &mapFileName) const {
   }
 
   writeJSON(tt, ofs);
-};
+}
 
 poplar::Type popType(const TensorInfo &info) {
   switch (info.dataType()) {

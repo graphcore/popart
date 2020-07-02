@@ -52,13 +52,11 @@ public:
 private:
   AGraph agraph_;
   int numVerices_;
-  bool dynamic_;
   Vertices vertices_;
   ColorGroups colors_;
   ColorGroup groupColor_;
   ColorGroup maxGroupColor_;
   int steps_;
-  int depth_;
   float stepLimit_;
   std::vector<std::pair<int, int>> stepCount_;
 };

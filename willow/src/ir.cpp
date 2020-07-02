@@ -2843,6 +2843,18 @@ std::vector<GradNonGradPair> Ir::growLossGradients() {
           reinterpret_cast<void *>(gradStarterData.data()));
       break;
     }
+    // Making it explicit which data types we're not handling. Note that
+    // the logic will fall through to the error.
+    case DataType::UINT8:
+    case DataType::INT8:
+    case DataType::UINT16:
+    case DataType::BOOL:
+    case DataType::BFLOAT16:
+    case DataType::DOUBLE:
+    case DataType::COMPLEX64:
+    case DataType::COMPLEX128:
+    case DataType::STRING:
+    case DataType::UNDEFINED:
     default: {
       throw error("Unexpected loss data-type, '{}'",
                   gradStarterInfo.getDataTypeInfo()->name());

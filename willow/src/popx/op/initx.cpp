@@ -29,7 +29,9 @@ void InitOpx::grow(poplar::program::Sequence &prog) const {
     break;
   default:
     throw error("[InitOpx] Unexpected InitType.");
-    break;
+    // NOTE: Unreachable code. Commenting out the break so that we can enable
+    // the warning so in future we can catch cases where code is unexpectedly
+    // unreachable. break;
   }
 }
 

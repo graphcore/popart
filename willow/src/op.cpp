@@ -81,11 +81,11 @@ view::Regions Op::uses(InIndex index) const {
 
 view::Regions Op::modifies(InIndex index) const {
   return view::Regions(1, view::Region::getEmpty(inRank(index)));
-};
+}
 
 view::Regions Op::aliases(InIndex in, OutIndex) const {
   return view::Regions(1, view::Region::getEmpty(inRank(in)));
-};
+}
 
 view::RegMap Op::fwdRegMap(InIndex i, OutIndex o) const {
   return defaultRegMapImpl(*this, i, o, "fwdRegMap");

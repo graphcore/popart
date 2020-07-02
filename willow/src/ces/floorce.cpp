@@ -20,7 +20,7 @@ public:
     auto output = reinterpret_cast<T *>(v_out.data());
     for (int i = 0; i < outInfo.nelms(); ++i) {
       T inval   = input[i];
-      T outval  = std::floor(inval);
+      T outval  = static_cast<T>(std::floor(inval));
       output[i] = outval;
     }
     return v_out;

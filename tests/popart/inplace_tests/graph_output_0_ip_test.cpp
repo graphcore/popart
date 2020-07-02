@@ -171,7 +171,7 @@ BOOST_AUTO_TEST_CASE(InplaceSubGraphOutputTest1) {
 
   //
   //  in -- transpose0 -- transpose1 -- out
-  //           \                       
+  //           \
   //          scale0 -- scale1 -- out
   //
   //
@@ -258,7 +258,7 @@ BOOST_AUTO_TEST_CASE(InplaceSubGraphOutputTest2) {
 
   //
   //  in -- transpose0 -- transpose1 -- out
-  //           \                       
+  //           \
   //          scale0 -- scale1 -- out
   //
   //
@@ -344,7 +344,7 @@ BOOST_AUTO_TEST_CASE(InplaceSubGraphOutputTest3) {
 
   //
   //  in -- transpose0 -- transpose1 -- out
-  //           \                       
+  //           \
   //          scale0 -- scale1 -- out
   //
   //
@@ -430,7 +430,7 @@ BOOST_AUTO_TEST_CASE(InplaceSubGraphOutputTest4) {
 
   //
   //  in -- transpose0 -- transpose1 -- out
-  //           \                       
+  //           \
   //          scale0 -- scale1 -- out
   //
   //

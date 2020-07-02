@@ -57,7 +57,7 @@ void setValue(Match &match, const std::vector<T *> &schedule) {
 
 template <class T>
 std::vector<double> getCumVals(const std::vector<T *> &sched) {
-  std::vector<double> cumVals(sched.size() + 1, 0.0f);
+  std::vector<double> cumVals(sched.size() + 1, 0.0);
   for (int i = 0; i < sched.size(); ++i) {
     cumVals[i + 1] = cumVals[i] + sched.at(i)->getSubgraphValue();
   }

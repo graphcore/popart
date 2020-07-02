@@ -187,7 +187,7 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
     TensorId singleTensor;
     if (useInitialReductionToAvoidLayoutSearch) {
       auto reducedOnFinal =
-          aiOnnx.reducesum({inId}, std::vector<int64_t>{{2}}, false);
+          aiOnnx.reducesum({inId}, std::vector<int64_t>{2}, false);
       singleTensor = aiOnnx.sigmoid({reducedOnFinal});
     } else {
       singleTensor = aiOnnx.sigmoid({inId});

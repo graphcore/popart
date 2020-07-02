@@ -263,6 +263,6 @@ template <> struct hash<popart::DeviceInfo> {
            std::hash<int>()(di.getNumWorkerContexts());
   }
 };
-}; // namespace std
+} // namespace std
 
 #endif

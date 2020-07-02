@@ -125,6 +125,6 @@ std::ostream &operator<<(std::ostream &ost, const BasicOptional<T, V> &bo) {
   return ost;
 }
 
-}; // namespace popart
+} // namespace popart
 
 #endif

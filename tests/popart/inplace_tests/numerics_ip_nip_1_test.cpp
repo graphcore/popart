@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip1) {
     auto firstTensor = inTensor;
     if (useInitialReductionToAvoidLayoutSearch) {
       firstTensor =
-          aiOnnx.reducesum({firstTensor}, std::vector<int64_t>{{2}}, false);
+          aiOnnx.reducesum({firstTensor}, std::vector<int64_t>{2}, false);
     }
 
     std::vector<TensorId> activeTensors;

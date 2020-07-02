@@ -18,7 +18,7 @@ public:
       : boost::adjacency_matrix<boost::undirectedS>(other) {}
 };
 
-AGraph::AGraph(int size_) : pimpl(new AGraphImpl(size_)){};
+AGraph::AGraph(int size_) : pimpl(new AGraphImpl(size_)) {}
 
 AGraph::AGraph(AGraph const &other)
     : pimpl(std::make_unique<AGraphImpl>(*other.pimpl)) {}
@@ -27,7 +27,9 @@ AGraph::~AGraph() {}
 
 void AGraph::addEdge(int i, int j) { boost::add_edge(i, j, *pimpl); }
 
-int AGraph::numVertices() const { return boost::num_vertices(*pimpl); }
+int AGraph::numVertices() const {
+  return static_cast<int>(boost::num_vertices(*pimpl));
+}
 
 bool AGraph::getEdge(int i, int j) const { return pimpl->get_edge(i, j); }
 
@@ -105,7 +107,7 @@ MaxClique::getMaximumCliques(int minSize, int maxCount, const float stepLimit) {
            numVerices_ > 0);
 
   return cliques;
-};
+}
 
 void MaxClique::updateDegree(Vertices &vs) {
   for (int i = 0; i < vs.size(); i++) {
@@ -138,7 +140,8 @@ void MaxClique::setColorsToDegrees(Vertices &vs) {
 void MaxClique::sortByColor(Vertices &vs) {
   int j       = 0;
   int upper_k = 1;
-  int lower_k = maxGroupColor_.size() - groupColor_.size() + 1;
+  int lower_k =
+      static_cast<int>(maxGroupColor_.size() - groupColor_.size()) + 1;
   colors_[1].clear();
   colors_[2].clear();
   int k = 1;

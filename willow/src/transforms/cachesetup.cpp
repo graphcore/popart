@@ -175,10 +175,9 @@ bool CacheSetup::apply(Graph &graph) const {
                                   mapping.first,
                                   mapping.second);
         for (auto &argBuffer : argBufferMap) {
-          auto &tensor_id         = argBuffer.first;
-          auto &remoteBufferId    = argBuffer.second.first;
-          auto &remoteBufferIndex = argBuffer.second.second;
-          if (remoteBufferId != mapping.first)
+          auto &tensor_id       = argBuffer.first;
+          auto &remoteBufferId_ = argBuffer.second.first;
+          if (remoteBufferId_ != mapping.first)
             continue;
           logging::transform::trace("[CacheSetup]   Tensor arg {} with:",
                                     tensor_id);

@@ -156,7 +156,7 @@ bool ICreatorCandidate::greaterThan(ICreatorCandidatePtr icc1,
          std::tuple<double, int64_t, int64_t>(icc2->getMaxCreatorPriority(),
                                               icc2->getNumElems(),
                                               icc1->getScheduleIndex());
-};
+}
 
 InputCreatorCandidate::InputCreatorCandidate(
     InIndex index_,

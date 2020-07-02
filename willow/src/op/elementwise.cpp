@@ -154,19 +154,20 @@ view::RegMap ElementWiseBinaryOp::bwdRegMap(InIndex argIndex, OutIndex) const {
   return binaryBwdRegMapImpl(*this, argIndex);
 }
 
-void ElementWiseBinaryOp::setInplacePriority(const OperatorIdentifier &opid,
-                                             float priority) {
-  inplacePriorities[opid] = priority;
+void ElementWiseBinaryOp::setInplacePriority(
+    const OperatorIdentifier &opidParam,
+    float priority) {
+  inplacePriorities[opidParam] = priority;
 }
 
 float ElementWiseBinaryOp::getInplacePriority(
-    const OperatorIdentifier &opid) const {
+    const OperatorIdentifier &opidParam) const {
   constexpr float defaultPriority = 10.0f;
 
-  if (inplacePriorities.count(opid) == 0) {
+  if (inplacePriorities.count(opidParam) == 0) {
     return defaultPriority;
   } else {
-    return inplacePriorities.at(opid);
+    return inplacePriorities.at(opidParam);
   }
 }
 

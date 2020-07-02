@@ -232,7 +232,7 @@ IfOp::getBwdGraphBranchInfo(const Graph &fwdGraph,
   auto bwdOutputIndicesMap = getOutIndicesMapForGradOp(fwdInputIndicesMap);
 
   return {bwdGraph.id, bwdInputIndicesMap, bwdOutputIndicesMap};
-};
+}
 
 std::vector<std::unique_ptr<Op>> IfOp::getGradOps() {
   auto bwdThenGraphId = generateSubgraphUniqueId("thenGrad");

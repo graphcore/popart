@@ -225,7 +225,7 @@ void NllOpx::handleLossOutReducedToScalar(const Opx &opx,
   if (meanReduce) {
     if (hasIgnoreIndex) {
       auto lossMask = applyMaskInPlaceForIgnoredIndex(
-          opx, reduction, label1D, ignoreIndex, prog);
+          opx, reduction, label1D, static_cast<int>(ignoreIndex), prog);
       applyScalingInPlaceForMeanReductionWithIgnoreIndex(
           opx, reduction, lossMask, prog);
       // Leave scale as 1.0 as already scaled

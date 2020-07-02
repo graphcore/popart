@@ -234,7 +234,7 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               "The epsilon value to use to avoid division by zero.",
               AttributeProto::FLOAT,
               1e-5f)
-        .TypeAndShapeInferenceFunction(GroupNormalizationShapeInference));
+        .TypeAndShapeInferenceFunction(GroupNormalizationShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
     Subsample,
@@ -254,7 +254,7 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               "Strides in each of the dimensions.",
               AttributeProto::INTS,
               false)
-        .TypeAndShapeInferenceFunction(SubsampleShapeInference));
+        .TypeAndShapeInferenceFunction(SubsampleShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
     PrintTensor,
@@ -274,7 +274,7 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               "Should the gradient tensor also be printed.",
               AttributeProto::INT,
               true)
-        .TypeAndShapeInferenceFunction(PrintTensorShapeInference));
+        .TypeAndShapeInferenceFunction(PrintTensorShapeInference))
 
 static const char scaleDoc[] =
     "Scale takes one input data (Tensor<float>) and produces one output data "
@@ -295,7 +295,7 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
             {"tensor(float)", "tensor(int32)", "tensor(float16)"},
             "Constrain input and output types to signed numeric tensors.")
         .Attr("scale", "The scale to apply", AttributeProto::FLOAT, true)
-        .TypeAndShapeInferenceFunction(ScaleShapeInference));
+        .TypeAndShapeInferenceFunction(ScaleShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
     LSTM,
@@ -319,7 +319,7 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               "otherwise it just returns the final output.",
               AttributeProto::INT,
               static_cast<int64_t>(1))
-        .TypeAndShapeInferenceFunction(LSTMShapeInference));
+        .TypeAndShapeInferenceFunction(LSTMShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
     Gelu,
@@ -334,7 +334,7 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeConstraint("T",
                         {"tensor(float)", "tensor(float16)"},
                         "Constrain input and output types to float tensors.")
-        .TypeAndShapeInferenceFunction(GeluShapeInference));
+        .TypeAndShapeInferenceFunction(GeluShapeInference))
 
 static const char detachDoc[] =
     "An IdentityOp that doesn't return any grad ops. This allows you to "
@@ -360,7 +360,7 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               "pass_through_creation",
               AttributeProto::INT,
               true)
-        .TypeAndShapeInferenceFunction(DetachShapeInference));
+        .TypeAndShapeInferenceFunction(DetachShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
     Call,
@@ -396,7 +396,7 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               "The subgraph to call into.",
               AttributeProto::GRAPH,
               true)
-        .TypeAndShapeInferenceFunction(CallShapeInference));
+        .TypeAndShapeInferenceFunction(CallShapeInference))
 
 static bool registerOps() {
   auto &d = ONNX_NAMESPACE::OpSchemaRegistry::DomainToVersionRange::Instance();

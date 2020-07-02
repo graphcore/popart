@@ -62,4 +62,4 @@ std::string Vertex::wrtLossStr() const {
   return ss.str();
 }
 
-}; // namespace popart
+} // namespace popart

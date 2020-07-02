@@ -280,7 +280,7 @@ const poplar::Tensor &CollectiveBalancedReorder::getReferenceTensor() const {
 }
 
 CollectivesBaseOpx::CollectivesBaseOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex){};
+    : Opx(op, devicex) {}
 
 std::pair<std::set<TensorId>, std::vector<Op *>>
 CollectivesBaseOpx::getCollectiveLinkedGroup() const {

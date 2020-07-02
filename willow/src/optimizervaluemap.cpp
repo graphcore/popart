@@ -21,7 +21,7 @@ OptimizerValue OptimizerValueMap::get(const TensorId &id) const {
     return found->second;
   }
   return defaultOptVal;
-};
+}
 
 bool OptimizerValueMap::validReplacement(const OptimizerValueMap &ovm) const {
 

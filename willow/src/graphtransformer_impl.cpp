@@ -8,6 +8,8 @@
 
 #include <onnx/checker.h>
 
+#include <popart/logging.hpp>
+
 namespace popart {
 
 GraphTransformerImpl::GraphTransformerImpl(
@@ -628,14 +630,13 @@ void GraphTransformerImpl::convertDoubleTensorToFloat(
 
   auto n_elms = mutableData.info.nelms();
 
-  float floatData[n_elms];
-  std::copy(doubleData, doubleData + n_elms, floatData);
+  for (int i = 0; i < n_elms; i++)
+    tp.add_float_data(static_cast<float>(doubleData[i]));
+  tp.set_data_type(ONNX_NAMESPACE::TensorProto_DataType_FLOAT);
 
+  // Don't clear while we're using it.
   tp.clear_double_data();
   tp.clear_raw_data();
-  for (int i = 0; i < n_elms; i++)
-    tp.add_float_data(floatData[i]);
-  tp.set_data_type(ONNX_NAMESPACE::TensorProto_DataType_FLOAT);
 }
 
 void GraphTransformerImpl::convertUINT8TensorToINT32(
@@ -650,13 +651,12 @@ void GraphTransformerImpl::convertUINT8TensorToINT32(
 
   auto n_elms = mutableData.info.nelms();
 
-  int32_t int32Data[n_elms];
-  std::copy(uint8Data, uint8Data + n_elms, int32Data);
-
-  tp.clear_raw_data();
   for (int i = 0; i < n_elms; i++)
-    tp.add_int32_data(int32Data[i]);
+    tp.add_int32_data(static_cast<int32_t>(uint8Data[i]));
   tp.set_data_type(ONNX_NAMESPACE::TensorProto_DataType_INT32);
+
+  // Don't clear while we're using it.
+  tp.clear_raw_data();
 }
 
 void GraphTransformerImpl::convertUINT16TensorToINT32(
@@ -671,13 +671,12 @@ void GraphTransformerImpl::convertUINT16TensorToINT32(
 
   auto n_elms = mutableData.info.nelms();
 
-  int32_t int32Data[n_elms];
-  std::copy(uint16Data, uint16Data + n_elms, int32Data);
-
-  tp.clear_raw_data();
   for (int i = 0; i < n_elms; i++)
-    tp.add_int32_data(int32Data[i]);
+    tp.add_int32_data(static_cast<int32_t>(uint16Data[i]));
   tp.set_data_type(ONNX_NAMESPACE::TensorProto_DataType_INT32);
+
+  // Don't clear while we're using it.
+  tp.clear_raw_data();
 }
 
 void GraphTransformerImpl::convertINT8TensorToINT32(
@@ -692,13 +691,12 @@ void GraphTransformerImpl::convertINT8TensorToINT32(
 
   auto n_elms = mutableData.info.nelms();
 
-  int32_t int32Data[n_elms];
-  std::copy(int8Data, int8Data + n_elms, int32Data);
-
-  tp.clear_raw_data();
   for (int i = 0; i < n_elms; i++)
-    tp.add_int32_data(int32Data[i]);
+    tp.add_int32_data(static_cast<int32_t>(int8Data[i]));
   tp.set_data_type(ONNX_NAMESPACE::TensorProto_DataType_INT32);
+
+  // Don't clear while we're using it.
+  tp.clear_raw_data();
 }
 
 void GraphTransformerImpl::convertINT16TensorToINT32(
@@ -713,13 +711,12 @@ void GraphTransformerImpl::convertINT16TensorToINT32(
 
   auto n_elms = mutableData.info.nelms();
 
-  int32_t int32Data[n_elms];
-  std::copy(int16Data, int16Data + n_elms, int32Data);
-
-  tp.clear_raw_data();
   for (int i = 0; i < n_elms; i++)
-    tp.add_int32_data(int32Data[i]);
+    tp.add_int32_data(static_cast<int32_t>(int16Data[i]));
   tp.set_data_type(ONNX_NAMESPACE::TensorProto_DataType_INT32);
+
+  // Don't clear while we're using it.
+  tp.clear_raw_data();
 }
 
 void GraphTransformerImpl::convertINT64TensorToINT32(
@@ -742,14 +739,13 @@ void GraphTransformerImpl::convertINT64TensorToINT32(
     }
   }
 
-  int32_t int32Data[n_elms];
-  std::copy(int64Data, int64Data + n_elms, int32Data);
-
-  tp.clear_raw_data();
-  tp.clear_int64_data();
   for (int i = 0; i < n_elms; i++)
-    tp.add_int32_data(int32Data[i]);
+    tp.add_int32_data(static_cast<int32_t>(int64Data[i]));
   tp.set_data_type(ONNX_NAMESPACE::TensorProto_DataType_INT32);
+
+  // Don't clear while we're using it.
+  tp.clear_int64_data();
+  tp.clear_raw_data();
 }
 
 void GraphTransformerImpl::convertBFloat16TensorToFloat32(
@@ -767,20 +763,23 @@ void GraphTransformerImpl::convertBFloat16TensorToFloat32(
 
   // Initialize the recipient float32 array
   auto n_elms = mutableData.info.nelms();
-  float floatData[n_elms];
+
+  // The code below assumes floats are 32-bit. Let's check that. Note this is a
+  // compile-time warning, not a run-time one.
+  static_assert(sizeof(float) == sizeof(int32_t),
+                "Expected floats to be 32-bit.");
 
   // To convert from bfloat to float32 we simply append 16 zeros (2 bytes)
   for (int i = 0; i < n_elms; i++) {
-    int32_t buffer    = (int32_t)int16Data[i];
+    int32_t buffer    = static_cast<int32_t>(int16Data[i]);
     buffer            = (buffer << 16);
     float floatBuffer = *reinterpret_cast<float *>(&buffer);
-    floatData[i]      = floatBuffer;
+    tp.add_float_data(floatBuffer);
   }
-
-  tp.clear_raw_data();
-  for (int i = 0; i < n_elms; i++)
-    tp.add_float_data(floatData[i]);
   tp.set_data_type(ONNX_NAMESPACE::TensorProto_DataType_FLOAT);
+
+  // Don't clear while we're using it.
+  tp.clear_raw_data();
 }
 
 void GraphTransformerImpl::convertInitializersToConstants(

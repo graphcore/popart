@@ -115,7 +115,7 @@ void AliasZeroCopy::apply() {
         // number of call sites
         graphIOPriorityMap.insert(
             {{i,
-              bytes / (1024.f * 1024.f) * callSiteOps.size(),
+              bytes / (1024.0 * 1024.0) * callSiteOps.size(),
               graph0,
               in,
               -1},
@@ -128,7 +128,7 @@ void AliasZeroCopy::apply() {
         // number of call sites
         graphIOPriorityMap.insert(
             {{i,
-              bytes / (1024.f * 1024.f) * callSiteOps.size(),
+              bytes / (1024.0 * 1024.0) * callSiteOps.size(),
               graph0,
               -1,
               out},
@@ -259,7 +259,7 @@ int64_t AliasZeroCopy::findStart(Tensor *consumedTensor,
     case OpStatus::Enter: {
       throw error("[AliasZeroCopy] findStart: OpStatus {} unexpected.",
                   static_cast<int>(status));
-      break;
+      // break;
     }
     case OpStatus::Exit: {
       OutIndex outIndex = producer->output->indices(consumedTensor).front();
@@ -308,7 +308,7 @@ int64_t AliasZeroCopy::findStart(Tensor *consumedTensor,
       return index;
     }
   }
-};
+}
 
 int64_t AliasZeroCopy::findFront(Tensor *consumedTensor,
                                  int64_t scheduleIndex,
@@ -359,7 +359,7 @@ int64_t AliasZeroCopy::findFront(Tensor *consumedTensor,
       return index;
     }
   }
-};
+}
 
 Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
   Intervals intervals;
@@ -444,14 +444,10 @@ Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
     // Overwrite: The consumer will overwrite the tensor without reading it
     bool overwrite = false;
 
-    // Modified: The consumer will read and then modify the tensor
-    bool modified = false;
-
     for (auto index : indices) {
       auto modifies = op->modifies(index);
 
       if (modifies.size() > 0 && !modifies.front().isEmpty()) {
-        modified  = true;
         overwrite = true;
       }
 
@@ -540,7 +536,7 @@ void AliasZeroCopy::activateAlias(Tensor *ta, Tensor *tb) {
       {view::Region::getFull(ta->info.shape())},
       [](const view::Region &r) { return view::Regions(1, r); },
       [](const view::Region &r) { return view::Regions(1, r); });
-};
+}
 
 void AliasZeroCopy::insertAlias(Tensor *ta, Tensor *tb) {
   bool excluded = false;
@@ -566,7 +562,7 @@ void AliasZeroCopy::insertAlias(Tensor *ta, Tensor *tb) {
   } else {
     printLivenessIntervals({ta, tb});
   }
-};
+}
 
 void AliasZeroCopy::removePostIRAliases(Tensor *t0) {
   auto it0 = postIRAliases.find(t0);
@@ -646,7 +642,7 @@ Intervals AliasZeroCopy::getCandidateLivenessIntervals(Tensor *startTensor) {
   }
 
   return combinedIntervals;
-};
+}
 
 bool AliasZeroCopy::checkCandidatesCompatible(Tensor *ta, Tensor *tb) {
   bool compatible =
@@ -664,7 +660,7 @@ bool AliasZeroCopy::checkCandidatesCompatible(Tensor *ta, Tensor *tb) {
   bool overlapping = AliasZeroCopy::doOverlap(
       getCandidateLivenessIntervals(ta), getCandidateLivenessIntervals(tb));
   return !overlapping;
-};
+}
 
 bool AliasZeroCopy::checkSubgraphInputCompatible(Tensor *ta, Tensor *tb) {
   bool compatible =
@@ -750,7 +746,7 @@ bool AliasZeroCopy::checkSubgraphInputCompatible(Tensor *ta, Tensor *tb) {
     }
   }
   return false;
-};
+}
 
 bool AliasZeroCopy::checkSubgraphOutputCompatible(Tensor *ta, Tensor *tb) {
   bool compatible =
@@ -783,7 +779,7 @@ bool AliasZeroCopy::checkSubgraphOutputCompatible(Tensor *ta, Tensor *tb) {
     }
   }
   return false;
-};
+}
 
 std::vector<Tensor *> AliasZeroCopy::processTensorAliasGroups(
     std::set<Tensor *, PTensorCmp> proposedTensor) {
@@ -828,10 +824,10 @@ std::vector<Tensor *> AliasZeroCopy::processTensorAliasGroups(
       postFiltered,
       (*acceptedTensors.begin())->info.nelms());
 
-  graphclique::AGraph ag(acceptedTensors.size());
+  graphclique::AGraph ag(static_cast<int>(acceptedTensors.size()));
 
-  for (size_t i = 0; i < acceptedTensors.size(); ++i) {
-    for (size_t j = 0; j < i; ++j) {
+  for (int i = 0; i < acceptedTensors.size(); ++i) {
+    for (int j = 0; j < i; ++j) {
       if (checkCandidatesCompatible(acceptedTensors[i], acceptedTensors[j])) {
         ag.addEdge(i, j);
       }
@@ -872,7 +868,7 @@ std::vector<Tensor *> AliasZeroCopy::processTensorAliasGroups(
                           cliques.front().size());
   // Return the largest maximum clique
   return cliques.front();
-};
+}
 
 Tensor *AliasZeroCopy::findAliasableTensor(Tensor *t) {
   while (t->hasProducer() && !dynamic_cast<SubgraphOp *>(t->getProducer()) &&
@@ -903,7 +899,7 @@ Tensor *AliasZeroCopy::findAliasableTensor(Tensor *t) {
 
   // t is aliasable
   return t;
-};
+}
 
 void AliasZeroCopy::printLivenessIntervals(
     std::set<Tensor *, PTensorCmp> tensors) {
@@ -949,7 +945,7 @@ void AliasZeroCopy::printLivenessIntervals(
     }
     logging::devicex::trace("[AliasZeroCopy] Liveness intervals {}", ss.str());
   }
-};
+}
 
 bool AliasZeroCopy::doOverlap(const Intervals &aIntervals,
                               const Intervals &bIntervals) {

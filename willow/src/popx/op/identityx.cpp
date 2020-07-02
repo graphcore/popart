@@ -57,19 +57,19 @@ void IdentityLossGradOpx::grow(poplar::program::Sequence &prog) const {
     auto output_shape = outShape(IdentityLossGradOp::getOutIndex());
 
     if (identitylossop.getReductionType() == ReductionType::Sum) {
-      auto output = broadcast(output_shape, getInTensor(0));
+      output = broadcast(output_shape, getInTensor(0));
       setOutTensor(0, cloneNcopy(prog, output));
     } else if (identitylossop.getReductionType() == ReductionType::Mean) {
       // Divide broadcasted tensor by total number of samples
       uint64_t totalSamples =
           dv_p->getReplicationFactor() * output.numElements();
-      float scale = 1.0 / static_cast<float>(totalSamples);
+      float scale = 1.0f / static_cast<float>(totalSamples);
 
-      auto output = popops::map(graph(),
-                                pe::Divide(pe::_1, pe::Const(scale)),
-                                {getInTensor(0)},
-                                prog,
-                                debugPrefix("div"));
+      output = popops::map(graph(),
+                           pe::Divide(pe::_1, pe::Const(scale)),
+                           {getInTensor(0)},
+                           prog,
+                           debugPrefix("div"));
 
       output = broadcast(output_shape, output);
 
@@ -109,6 +109,9 @@ void IdentityLossOpx::grow(poplar::program::Sequence &prog) const {
       scale = 1.0 / totalSamples;
       break;
     }
+    // Making it explicit which data types we're not handling. Note that
+    // the logic will fall through to the error.
+    case ReductionType::NoReduction:
     default: {
       throw error("Unsupported reduction type for Loss {}", debugPrefix());
     }

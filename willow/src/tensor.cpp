@@ -161,7 +161,7 @@ std::vector<char> Tensor::getDataViaRecursion() const {
     throw error("Tensor {} has no producer, so can't work back to find data.",
                 id);
   }
-};
+}
 
 std::set<PipelineStage> Tensor::getPipelineStages() const {
   auto result = consumers.getPipelineStages();

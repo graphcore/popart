@@ -33,7 +33,7 @@ poplar::Tensor BaseExpandOpx::unwindTensorLayout(poplar::Tensor tensor,
         tensor =
             tensor.slice(static_cast<std::size_t>(0),
                          static_cast<std::size_t>(input_shape_of_current_dim),
-                         static_cast<std::size_t>(dim));
+                         static_cast<unsigned int>(dim));
       }
     }
   }

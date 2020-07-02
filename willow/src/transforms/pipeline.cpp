@@ -635,7 +635,7 @@ GetRandomSeedOp *findGetRandomSeedOp(Graph &graph) {
     }
   }
   throw error("Could not find an instance of GetRandomSeedOp in graph");
-};
+}
 
 TensorId createStashableRandomSeed(GetRandomSeedOp *randomSeedOp) {
   auto randomSeed =

@@ -85,7 +85,7 @@ Scope Scope::getCommonParent(const std::vector<Op *> &ops) {
   }
 
   return new_scope;
-};
+}
 
 std::ostream &operator<<(std::ostream &ss, const Scope &scope) {
   ss << scope.str();

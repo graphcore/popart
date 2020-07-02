@@ -54,6 +54,8 @@ TensorId stripAllReservedPrefixes(TensorId id);
 TensorId getCacheArgTensorId(TensorId base_id);
 constexpr const char *reservedCacheArgPrefix() { return "CacheArg___"; }
 
+TensorId getNonCacheArgTensorId(const TensorId &id);
+
 TensorId createRecomputedTensorId(TensorId base_id);
 
 constexpr const char *reservedDefaultWeightDecayScaleFactor0Prefix() {

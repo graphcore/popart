@@ -16,7 +16,7 @@ ViewChangers::ViewChangers() {}
 
 ViewChangers::ViewChangers(
     std::vector<std::shared_ptr<ViewChanger>> viewChangers_)
-    : viewChangers(viewChangers_){};
+    : viewChangers(viewChangers_) {}
 
 } // namespace popx
 } // namespace popart
