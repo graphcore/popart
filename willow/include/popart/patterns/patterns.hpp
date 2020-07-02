@@ -17,7 +17,6 @@
 
 namespace popart {
 
-// FFS : add gcc like levels O2, O3, OS etc
 enum class PatternsLevel { NoPatterns, Default, All };
 
 class PatternNames {
@@ -171,8 +170,6 @@ public:
 };
 
 // A class to hold which patterns are enabled/disabled
-// FFS : Should this be renamed PatternSettings. i.e. it represents the graph
-// 'optimization' settings
 class Patterns {
 private:
   template <typename PATTERN> bool isPatternEnabled();

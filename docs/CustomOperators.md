@@ -1,5 +1,5 @@
 ## Custom Operator Schemas
-* This file is manually created - FFS to figure out how to automate it
+* This file is manually created.
 
 * ai.graphcore
   * <a href="#GroupNormalization">GroupNormalization</a>

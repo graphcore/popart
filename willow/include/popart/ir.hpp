@@ -115,10 +115,6 @@ public:
   uint64_t repeats;
 };
 
-// FFS : Use a factory method to create the IR class and return a pointer
-//       Then the constructor can be private.
-// ie. static std::unique_ptr<Ir> create(const IrBundle&);
-
 class Ir {
 
 public:
@@ -146,7 +142,7 @@ public:
   void setInputShapeInfo(const InputShapeInfo &info);
 
   // Set the optimizer and add optimizer tensors
-  // FFS could this be combined with updateOptimizerFromHost?
+  // NOTE: could this be combined with updateOptimizerFromHost?
   void setOptimizer(const Optimizer &);
 
   void ensureOptimizerTensorCreated(const TensorId &optId,

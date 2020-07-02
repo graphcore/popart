@@ -142,7 +142,6 @@ public:
   Op *op_p;
 
   // Generic function to cast the op to it derived type
-  // FFS : Use it to replace all the getXXX member function with dynamic_cast
   template <class OP> OP &getOp() const {
     OP *d_op = dynamic_cast<OP *>(op_p);
     if (d_op == nullptr) {
