@@ -68,24 +68,24 @@ void SGD0VarUpdateOpx::grow(poplar::program::Sequence &prog) const {
 
   // non-const scaled learning rate case
   if (!vu_op.initSlr0.isConst()) {
-    popops::scaledSubtractFrom(
+    popops::scaledAddTo(
         graph(),
         getInTensor(SGD0VarUpdateOp::getVarToUpdateInIndex()), // weights
         weightDeltas,                                          // weightDeltas
-        getInTensor(SGD0VarUpdateOp::getSlr0InIndex()),
+        popops::neg(
+            graph(), getInTensor(SGD0VarUpdateOp::getSlr0InIndex()), prog),
         prog,
         debugPrefix("nonConstScaledSubtract"));
   }
 
   // const scaled learning rate case
   else {
-    popops::scaledSubtractFrom(
-        graph(),
-        getInTensor(vu_op.getVarToUpdateInIndex()), // weights
-        weightDeltas,                               // weightDeltas
-        vu_op.initSlr0.val(),
-        prog,
-        debugPrefix("scaledSubtract"));
+    popops::scaledAddTo(graph(),
+                        getInTensor(vu_op.getVarToUpdateInIndex()), // weights
+                        weightDeltas, // weightDeltas
+                        -vu_op.initSlr0.val(),
+                        prog,
+                        debugPrefix("scaledSubtract"));
   }
 
   if (hasInViewChangers(SGD0VarUpdateOp::getVarToUpdateInIndex())) {

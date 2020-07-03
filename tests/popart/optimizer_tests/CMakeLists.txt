@@ -14,3 +14,4 @@ add_popart_cpp_unit_test(sgd_mixed_mode_compatibility_test_0 sgd_mixed_mode_comp
 
 add_popart_py_unit_test(pytorch_comparisons VARIANTS IpuModel)
 add_popart_py_unit_test(sgd_mixed_mode_test_py_0)
+add_popart_py_unit_test(sgd_mixed_mode_test_py_1)
