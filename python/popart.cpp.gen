@@ -165,6 +165,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
        py::arg("debugPrefix") = std::string())
   .def("constant",
        [](AiOnnxOpset6 &opset, py::array array, const std::string& name) {
+          array = makeContiguous(array);
           ConstVoidData initData;
           initData.data = array.request().ptr;
           initData.info = getTensorInfo(array);
@@ -1553,6 +1554,7 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
        py::arg("debugPrefix") = std::string())
   .def("constant",
        [](AiOnnxOpset7 &opset, py::array array, const std::string& name) {
+          array = makeContiguous(array);
           ConstVoidData initData;
           initData.data = array.request().ptr;
           initData.info = getTensorInfo(array);
@@ -2914,6 +2916,7 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
        py::arg("debugPrefix") = std::string())
   .def("constant",
        [](AiOnnxOpset8 &opset, py::array array, const std::string& name) {
+          array = makeContiguous(array);
           ConstVoidData initData;
           initData.data = array.request().ptr;
           initData.info = getTensorInfo(array);
@@ -4347,6 +4350,7 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
        py::arg("debugPrefix") = std::string())
   .def("constant",
        [](AiOnnxOpset9 &opset, py::array array, const std::string& name) {
+          array = makeContiguous(array);
           ConstVoidData initData;
           initData.data = array.request().ptr;
           initData.info = getTensorInfo(array);
@@ -5976,6 +5980,7 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
        py::arg("debugPrefix") = std::string())
   .def("constant",
        [](AiOnnxOpset10 &opset, py::array array, const std::string& name) {
+          array = makeContiguous(array);
           ConstVoidData initData;
           initData.data = array.request().ptr;
           initData.info = getTensorInfo(array);
@@ -7827,6 +7832,7 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
        py::arg("debugPrefix") = std::string())
   .def("constant",
        [](AiOnnxOpset11 &opset, py::array array, bool is_value_sparse, const std::string& name) {
+          array = makeContiguous(array);
           ConstVoidData initData;
           initData.data = array.request().ptr;
           initData.info = getTensorInfo(array);

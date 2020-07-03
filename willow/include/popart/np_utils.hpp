@@ -45,6 +45,23 @@ TensorInfo getTensorInfo(pybind11::array npArr) {
   return TensorInfo(getDataTypeFromNpType(typeString), shape);
 }
 
+// Check if npArr is c-contiguous in memory.
+bool isContiguous(pybind11::array npArr) {
+  return npArr.flags() & pybind11::array::c_style;
+}
+
+// Check return an array with the same underlying data as npArr and is
+// guaranteed to be c-contiguous.
+pybind11::array makeContiguous(pybind11::array npArr) {
+  pybind11::array result = npArr;
+  if (!isContiguous(result)) {
+    // Ensure array is contiguous.
+    pybind11::module np = pybind11::module::import("numpy");
+    result              = np.attr("ascontiguousarray")(result);
+  }
+  return result;
+}
+
 } // namespace popart
 
 #endif

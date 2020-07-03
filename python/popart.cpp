@@ -119,11 +119,27 @@ public:
   PyStepIO(std::map<TensorId, py::array> inputs,
            std::map<TensorId, py::array> outputs) {
     for (auto p : inputs) {
-      inputsInfo.insert({p.first, {p.second, 0}});
+      if (isContiguous(p.second)) {
+        inputsInfo.insert({p.first, {p.second, 0}});
+      } else {
+        throw error("PyStepIO is unable to use the numpy input array for "
+                    "tensor '{}' as it is not c-contiguous (a data conversion "
+                    "here could have a significant impact on performance and "
+                    "hence is not allowed)",
+                    p.first);
+      }
     }
 
     for (auto p : outputs) {
-      outputsInfo.insert({p.first, {p.second, 0}});
+      if (isContiguous(p.second)) {
+        outputsInfo.insert({p.first, {p.second, 0}});
+      } else {
+        throw error("PyStepIO is unable to use the numpy output array for "
+                    "tensor '{}' as it is not c-contiguous (a data conversion "
+                    "here could have a significant impact on performance and "
+                    "hence is not allowed)",
+                    p.first);
+      }
     }
   }
 };
@@ -150,6 +166,13 @@ public:
 
   ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
     py::array a = inputCb(id, prefetch);
+    if (!isContiguous(a)) {
+      throw error(
+          "PyStepIO is unable to use the numpy input array for tensor "
+          "'{}' as it is not c-contiguous (a data conversion here could have a "
+          "significant impact on performance and hence is not allowed)",
+          id);
+    }
     // To ensure that array is persisted until complete is called
     inDict[py::str(id)] = a;
 
@@ -171,6 +194,14 @@ public:
 
   MutableVoidData out(TensorId id, int64_t) final {
     py::array a = outputCb(id);
+    if (!isContiguous(a)) {
+      throw error(
+          "PyStepIO is unable to use the numpy output array for tensor "
+          "'{}' as it is not c-contiguous (a data conversion here could have a "
+          "significant impact on performance and hence is not allowed)",
+          id);
+    }
+
     // To ensure that array is persisted until complete is called
     outDict[py::str(id)] = a;
 
@@ -1249,6 +1280,7 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def(
         "addInitializedInputTensor",
         [](Builder &builder, py::array array, std::string &debugPrefix) {
+          array = makeContiguous(array);
           ConstVoidData initData;
           initData.data = array.request().ptr;
           initData.info = getTensorInfo(array);

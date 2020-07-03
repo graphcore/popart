@@ -8,7 +8,7 @@
 namespace popart {
 
 PowOp::PowOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
-    : ElementWiseBinaryBaseOp(_opid, settings_) {}
+    : ElementWiseBinaryOp(_opid, settings_) {}
 
 std::unique_ptr<Op> PowOp::clone() const {
   return std::make_unique<PowOp>(*this);
@@ -26,6 +26,26 @@ std::vector<std::unique_ptr<Op>> PowOp::getGradOps() {
   upops.emplace_back(std::make_unique<PowArg1GradOp>(
       *this, npReductionAxis(shape_in_1, shape_output)));
   return upops;
+}
+
+std::unique_ptr<Op> PowOp::getLhsInplaceVariant() const {
+  return std::make_unique<PowLhsInplaceOp>(*this);
+}
+
+OperatorIdentifier PowOp::getLhsOperatorIdentifier() const {
+  return Onnx::CustomOperators::PowLhsInplace;
+}
+
+PowLhsInplaceOp::PowLhsInplaceOp(const PowOp &op)
+    : ElementWiseBinaryInplaceLhsOp(Onnx::CustomOperators::PowLhsInplace,
+                                    op.getSettings()) {}
+
+PowLhsInplaceOp::PowLhsInplaceOp(const Op::Settings &settings_)
+    : ElementWiseBinaryInplaceLhsOp(Onnx::CustomOperators::PowLhsInplace,
+                                    settings_) {}
+
+std::unique_ptr<Op> PowLhsInplaceOp::clone() const {
+  return std::make_unique<PowLhsInplaceOp>(*this);
 }
 
 PowArgGradOp::PowArgGradOp(const OperatorIdentifier &_opid,

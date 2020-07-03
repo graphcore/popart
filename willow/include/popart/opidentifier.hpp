@@ -384,6 +384,7 @@ const static AiGraphcoreOpIdV1 Sync("Sync");
 
 const static AiGraphcoreOpIdV1 MulLhsInplace("MulLhsInplace");
 const static AiGraphcoreOpIdV1 MulRhsInplace("MulRhsInplace");
+const static AiGraphcoreOpIdV1 PowLhsInplace("PowLhsInplace");
 } // namespace CustomOperators
 
 namespace AiGraphcore {

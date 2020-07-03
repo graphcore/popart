@@ -12,10 +12,31 @@ class PowOp;
 
 namespace popx {
 
-class PowOpx : public ElementWiseBinaryOpx {
+class PowComputex : public EwbComputex {
+public:
+  explicit PowComputex(EwbComputex::InplacePolicy ip);
+
+  poplar::Tensor outplace(poplar::program::Sequence &,
+                          poplar::Graph &,
+                          const poplar::Tensor &,
+                          const poplar::Tensor &,
+                          const std::string &) const final;
+
+  void inplace(poplar::program::Sequence &,
+               poplar::Graph &,
+               const poplar::Tensor &,
+               const poplar::Tensor &,
+               const std::string &) const final;
+};
+
+class PowOpx : public ElementWiseBinaryOutplaceOpx {
 public:
   PowOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+};
+
+class PowLhsInplaceOpx : public ElementWiseBinaryInplaceOpx {
+public:
+  PowLhsInplaceOpx(Op *, Devicex *);
 };
 
 } // namespace popx

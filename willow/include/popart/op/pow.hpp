@@ -9,13 +9,26 @@
 namespace popart {
 
 // arg_0 / arg_1
-class PowOp : public ElementWiseBinaryBaseOp {
+class PowOp : public ElementWiseBinaryOp {
 public:
   PowOp(const OperatorIdentifier &_opid, const Op::Settings &settings);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
 
   static OperatorIdentifier getOpId(const Ir &ir);
+
+private:
+  bool hasLhsInplaceVariant() const final { return true; }
+  std::unique_ptr<Op> getLhsInplaceVariant() const final;
+  OperatorIdentifier getLhsOperatorIdentifier() const final;
+};
+
+class PowLhsInplaceOp : public ElementWiseBinaryInplaceLhsOp {
+public:
+  PowLhsInplaceOp(const PowOp &powOp);
+  PowLhsInplaceOp(const Op::Settings &setting_);
+
+  std::unique_ptr<Op> clone() const final;
 };
 
 // Base class for PowArg grad ops
