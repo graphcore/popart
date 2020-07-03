@@ -11,7 +11,26 @@ ConstExprGather::ConstExprGather(Op *op_) : ConstExprOp(op_) {}
 
 class GatherFunctor {
 public:
-  template <typename T>
+  template <typename DATA_IN_TYPE>
+  std::vector<char> operator()(Tensor &dataIn,
+                               Tensor &indicesIn,
+                               int64_t axis,
+                               const TensorInfo &outInfo) {
+
+    DataType indicesType = indicesIn.info.dataType();
+    if (indicesType == DataType::INT32) {
+      return operator()<DATA_IN_TYPE, int32_t>(
+          dataIn, indicesIn, axis, outInfo);
+    } else if (indicesType == DataType::INT64) {
+      return operator()<DATA_IN_TYPE, int64_t>(
+          dataIn, indicesIn, axis, outInfo);
+    } else {
+      throw error("Gather indices must be of type int32 or int64");
+    }
+  }
+
+private:
+  template <typename DATA_IN_TYPE, typename INDICES_TYPE>
   std::vector<char> operator()(Tensor &dataIn,
                                Tensor &indicesIn,
                                int64_t axis,
@@ -19,9 +38,9 @@ public:
 
     auto inShape = dataIn.info.shape();
     std::vector<char> v_out(outInfo.nbytes());
-    T *output = reinterpret_cast<T *>(v_out.data());
-    NDArrayWrapper<T> data0(dataIn);
-    NDArrayWrapper<int64_t> data1(indicesIn);
+    DATA_IN_TYPE *output = reinterpret_cast<DATA_IN_TYPE *>(v_out.data());
+    NDArrayWrapper<DATA_IN_TYPE> data0(dataIn);
+    NDArrayWrapper<INDICES_TYPE> data1(indicesIn);
 
     const int64_t axis_size     = inShape[axis];
     const int64_t indices_count = indicesIn.info.nelms();
@@ -44,8 +63,8 @@ public:
       for (int64_t i = 0; i < indices_count; ++i) {
         // All inner elements can be copied contiguously
         for (int64_t j = 0; j < inner_size; ++j) {
-          output[(outer * indices_count + i) * inner_size] =
-              data0[(outer * axis_size + data1[i]) * inner_size];
+          output[((outer * indices_count + i) * inner_size) + j] =
+              data0[((outer * axis_size + data1[i]) * inner_size) + j];
         }
       }
     }

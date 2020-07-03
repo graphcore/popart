@@ -22,10 +22,12 @@
 
 using namespace popart;
 
-template <typename T> void ConstExprTest_Gather_Type(std::string type) {
+template <typename DATA_IN_TYPE, typename INDICES_TYPE>
+void ConstExprTest_Gather_Type(std::string data_in_type,
+                               std::string indices_type) {
   // The compute graph :
   //
-  // data ---- GATHER ----> output
+  // data ---- GATHER ----> Add([0]) ----> output
 
   // We will gather a rank-4 tensor:
   Shape inShape = {2, 5, 3, 4};
@@ -34,20 +36,20 @@ template <typename T> void ConstExprTest_Gather_Type(std::string type) {
   // Gather along axis 1
   int64_t axis = 1;
 
-  TensorInfo inDataInfo{type, inShape};
-  std::vector<T> inData(inDataInfo.nelms());
+  TensorInfo inDataInfo{data_in_type, inShape};
+  std::vector<DATA_IN_TYPE> inData(inDataInfo.nelms());
   for (int64_t i = 0; i < inDataInfo.nelms(); ++i) {
     // Fill the array with the indices as value
-    inData[i] = static_cast<T>(i);
+    inData[i] = static_cast<DATA_IN_TYPE>(i);
   }
 
   Shape indicesShape = {2, 3};
-  TensorInfo inIndicesInfo{"INT32", indicesShape};
-  std::vector<int32_t> indices({1, 3, 0, 2, 4, 1});
+  TensorInfo inIndicesInfo{indices_type, indicesShape};
+  std::vector<INDICES_TYPE> indices({1, 3, 0, 2, 4, 1});
 
-  TensorInfo expectedOutdataInfo{type, expectedOutShape};
-  std::vector<T> outData(expectedOutdataInfo.nelms());
-  std::vector<T> expectedOutData(expectedOutdataInfo.nelms());
+  TensorInfo expectedOutdataInfo{data_in_type, expectedOutShape};
+  std::vector<DATA_IN_TYPE> outData(expectedOutdataInfo.nelms());
+  std::vector<DATA_IN_TYPE> expectedOutData(expectedOutdataInfo.nelms());
   for (int64_t d0 = 0; d0 < expectedOutShape[0]; ++d0) {
     for (int64_t d1 = 0; d1 < expectedOutShape[1]; ++d1) {
       for (int64_t d2 = 0; d2 < expectedOutShape[2]; ++d2) {
@@ -68,7 +70,7 @@ template <typename T> void ConstExprTest_Gather_Type(std::string type) {
                                    (d2 + expectedOutShape[2] *
                                              (d1 + expectedOutShape[1] * d0)));
 
-            expectedOutData[index] = static_cast<T>(value);
+            expectedOutData[index] = static_cast<DATA_IN_TYPE>(value);
           }
         }
       }
@@ -79,14 +81,26 @@ template <typename T> void ConstExprTest_Gather_Type(std::string type) {
   ConstVoidData constIndicesData = {indices.data(), inIndicesInfo};
 
   // Build an onnx model
-  auto builder   = Builder::create();
-  auto aiOnnx    = builder->aiOnnxOpset9();
-  auto inId      = aiOnnx.constant(constInData, "constInData");
-  auto indicesId = aiOnnx.constant(constIndicesData, "constIndicesData");
-  auto outId     = aiOnnx.gather({inId, indicesId}, axis);
+  auto builder     = Builder::create();
+  auto aiOnnx      = builder->aiOnnxOpset9();
+  auto inId        = aiOnnx.constant(constInData, "constInData");
+  auto indicesId   = aiOnnx.constant(constIndicesData, "constIndicesData");
+  auto gatherOutId = aiOnnx.gather({inId, indicesId}, axis);
+
+  // Dummy add op appended at the end since gather will not be folded if the
+  // output is an anchor
+  Shape add0Shape = {1};
+  TensorInfo add0DataInfo(data_in_type, add0Shape);
+  std::vector<DATA_IN_TYPE> add0Data(1);
+  add0Data[0]                 = static_cast<DATA_IN_TYPE>(0);
+  ConstVoidData constAdd0Data = {add0Data.data(), add0DataInfo};
+
+  auto add0Id = aiOnnx.constant(constAdd0Data, "constAdd0Data");
+  auto outId  = aiOnnx.add({gatherOutId, add0Id});
+
   builder->addOutputTensor(outId);
 
-  popart::NDArrayWrapper<T> output(outData.data(), expectedOutShape);
+  popart::NDArrayWrapper<DATA_IN_TYPE> output(outData.data(), expectedOutShape);
   std::map<popart::TensorId, popart::IArray &> anchors = {{outId, output}};
 
   auto proto      = builder->getModelProto();
@@ -119,9 +133,12 @@ template <typename T> void ConstExprTest_Gather_Type(std::string type) {
 BOOST_AUTO_TEST_CASE(ConstExprTest_Gather_Types) {
   // ConstExprTest_Gather_Type<uint32_t>("UINT32");
   // ConstExprTest_Gather_Type<uint64_t>("UINT64");
-  ConstExprTest_Gather_Type<int32_t>("INT32");
+  ConstExprTest_Gather_Type<int32_t, int32_t>("INT32", "INT32");
+  ConstExprTest_Gather_Type<int32_t, int64_t>("INT32", "INT64");
   // ConstExprTest_Gather_Type<int64_t>("INT64");
-  ConstExprTest_Gather_Type<popart::float16_t>("FLOAT16");
-  ConstExprTest_Gather_Type<float>("FLOAT");
+  ConstExprTest_Gather_Type<popart::float16_t, int32_t>("FLOAT16", "INT32");
+  ConstExprTest_Gather_Type<popart::float16_t, int64_t>("FLOAT16", "INT64");
+  ConstExprTest_Gather_Type<float, int32_t>("FLOAT", "INT32");
+  ConstExprTest_Gather_Type<float, int64_t>("FLOAT", "INT64");
   // ConstExprTest_Gather_Type<double>("DOUBLE");
 }
