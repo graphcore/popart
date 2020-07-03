@@ -150,8 +150,7 @@ def get_model_anchors_model1(doSharding,
             anchor_map[popart.reservedRestoredPrefix() + x] = art
             anchor_map[popart.reservedRestoredPrefix() + w0] = art
         if doGradAccl is True:
-            anchor_map[popart.reservedAcclToUpdatePrefix() +
-                       popart.reservedGradientPrefix() + w0] = art
+            anchor_map[popart.reservedAcclToUpdatePrefix() + w0] = art
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
@@ -265,8 +264,7 @@ def get_model_anchors_model2(doSharding,
             anchor_map[d0] = art
             anchor_map[popart.reservedRestoredPrefix() + d0] = art
         if doGradAccl is True:
-            anchor_map[popart.reservedAcclToUpdatePrefix() +
-                       popart.reservedGradientPrefix() + w0] = art
+            anchor_map[popart.reservedAcclToUpdatePrefix() + w0] = art
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}

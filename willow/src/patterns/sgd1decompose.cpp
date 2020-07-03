@@ -90,19 +90,19 @@ bool SGD1Decompose::apply(Op *op) const {
   // memory)
   //
   // 1) Input to SGD1Accumulate
-  auto acclIntoAccumulatorId = reservedAcclPrefix() + weightGradId;
+  auto acclIntoAccumulatorId = reservedAcclPrefix() + weightId;
 
   // 2) input to AcclReduce (if reduction across across replicas required)
-  auto acclIntoReduceId = reservedAcclToReducePrefix() + weightGradId;
+  auto acclIntoReduceId = reservedAcclToReducePrefix() + weightId;
 
   // 3) input to AcclUpdate and VarUpdate
-  auto acclIntoUpdateId = reservedAcclToUpdatePrefix() + weightGradId;
+  auto acclIntoUpdateId = reservedAcclToUpdatePrefix() + weightId;
 
   // 4) The output of the AcclUpdateOp
-  auto updatedAcclId = reservedAcclFinalOutPrefix() + weightGradId;
+  auto updatedAcclId = reservedAcclFinalOutPrefix() + weightId;
 
   // 5) Reduced gradient if gradient reduction is used
-  auto reducedWeightGradId = weightGradId + "_reduced";
+  auto reducedWeightGradId = weightId + "_reducedGrad";
 
   // Create Accumulator Tensor, a Variable Tensor
   if (weightGrad->info.dataType() != weight->info.dataType()) {

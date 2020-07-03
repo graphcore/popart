@@ -41,8 +41,7 @@ adam_optimizer = popart.Adam({
     "defaultEps": (1e-6, True),
 })
 
-grad_accl_prefix = popart.reservedAcclPrefix() + popart.reservedGradientPrefix(
-)
+grad_accl_prefix = popart.reservedAcclPrefix()
 
 
 def get_micro_batch_size(accum_factor):
@@ -149,11 +148,8 @@ def run_graph(optimizer, input_shape, initial_onnx_model, input_tensor_name,
         anchorNames[popart.reservedGradientPrefix() + w0] = art
 
         if enable_accum:
-            anchorNames[popart.reservedAcclPrefix() +
-                        popart.reservedGradientPrefix() + w0] = art
-
-            anchorNames[popart.reservedAcclToUpdatePrefix() +
-                        popart.reservedGradientPrefix() + w0] = art
+            anchorNames[popart.reservedAcclPrefix() + w0] = art
+            anchorNames[popart.reservedAcclToUpdatePrefix() + w0] = art
 
     opts = popart.SessionOptions()
     opts.enableGradientAccumulation = enable_accum
@@ -529,7 +525,7 @@ def test_gradient_accumulation_anchors():
     full_batch_grad = no_accl_anchor_arrays[popart.reservedGradientPrefix() +
                                             w0_name]
     accl_grad = accl_anchor_arrays[popart.reservedAcclToUpdatePrefix() +
-                                   popart.reservedGradientPrefix() + w0_name]
+                                   w0_name]
 
     print("full batch grad shape is ")
     print(full_batch_grad.shape)

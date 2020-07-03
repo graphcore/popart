@@ -67,8 +67,7 @@ def test_reset_host_weights_with_extra_tensor_in_onnx_model():
         w for w in va_builder.getInputTensorIds()
         if va_builder.isInitializer(w)
     ][0]
-    missing_tensor_name = popart.reservedAcclPrefix(
-    ) + popart.reservedGradientPrefix() + wId
+    missing_tensor_name = popart.reservedAcclPrefix() + wId
     with pytest.raises(popart.popart_exception) as e_info:
         va_sess.resetHostWeights(tmpfile)
     # 4.
