@@ -26,7 +26,7 @@ def test_pad_sum1(op_tester):
         i2 = np.pad(d2, [(0, 0), (0, 2), (0, 0)], 'constant')
         return [i1 + i2]
 
-    op_tester.patterns = ['PadSum']
+    op_tester.setPatterns(['PadSum'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -49,7 +49,7 @@ def test_pad_sum2(op_tester):
         i2 = np.pad(d2, [(0, 2), (0, 0), (0, 0)], 'constant')
         return [i1 + i2]
 
-    op_tester.patterns = ['PadSum']
+    op_tester.setPatterns(['PadSum'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -72,7 +72,7 @@ def test_pad_sum3(op_tester):
         i2 = np.pad(d2, [(0, 0), (0, 0), (0, 2)], 'constant')
         return [i1 + i2]
 
-    op_tester.patterns = ['PadSum']
+    op_tester.setPatterns(['PadSum'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -95,7 +95,7 @@ def test_pad_sum4(op_tester):
         i2 = np.pad(d2, [(0, 0), (0, 0), (0, 3)], 'constant')
         return [i1 + i2]
 
-    op_tester.patterns = ['PadSum']
+    op_tester.setPatterns(['PadSum'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -122,7 +122,7 @@ def test_pad_sum5(op_tester):
         i3 = np.pad(d3, [(6, 2)], 'constant')
         return [i1 + i2 + i3]
 
-    op_tester.patterns = ['PadSum']
+    op_tester.setPatterns(['PadSum'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -173,7 +173,7 @@ def test_pad_sum6(op_tester):
 
         return [i1 + i2 + i3 + i4]
 
-    op_tester.patterns = ['PadSum']
+    op_tester.setPatterns(['PadSum'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -222,5 +222,6 @@ def test_pad_sum7(op_tester):
         o.backward(torch.tensor(d__o))
         return [o, i1.grad, None]
 
-    op_tester.patterns = ['PadSum', 'OpToReshape']
+    op_tester.setPatterns(['PadSum', 'OpToReshape'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')

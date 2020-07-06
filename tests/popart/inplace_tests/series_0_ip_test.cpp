@@ -76,7 +76,9 @@ BOOST_AUTO_TEST_CASE(Inplace_series0) {
               &optimizer,
               *device,
               {},
-              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns)
+                  .enableRuntimeAsserts(false)
+                  .enableInPlace(true)});
 
   // Check the ir
   // All the Relus and Exps have been optimised out,
@@ -128,7 +130,9 @@ BOOST_AUTO_TEST_CASE(Inplace_series_changedPreferences) {
               &optimizer,
               *device,
               {},
-              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns)
+                  .enableRuntimeAsserts(false)
+                  .enableInPlace(true)});
 
   // All the Relus have been optimised out,
   // except the one which CONSUMES an anchors.

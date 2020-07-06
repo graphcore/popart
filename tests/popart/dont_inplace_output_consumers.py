@@ -54,5 +54,5 @@ def test_careful_inplacing(op_tester):
     def reference(ref_data):
         return [np.array([72., 72.]).astype(np.float32)]
 
-    op_tester.patterns = ['InPlace']
+    op_tester.setPatterns(['InPlace'], enableRuntimeAsserts=False)
     op_tester.run(get_init_builder(), reference, 'infer')

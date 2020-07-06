@@ -51,7 +51,7 @@ BOOST_AUTO_TEST_CASE(Basic0SessionApi) {
       device,
       popart::InputShapeInfo(),
       opts,
-      popart::Patterns(PatternsLevel::NoPatterns));
+      popart::Patterns(PatternsLevel::NoPatterns).enableRuntimeAsserts(false));
 
   // create anchor and co.
   std::vector<float> rawOutputValues(xInfo.nelms());

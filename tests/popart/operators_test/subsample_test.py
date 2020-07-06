@@ -19,7 +19,8 @@ def _subsample_helper(op_tester, input, strides, output, grad_ouput):
         return [output, grad_ouput]
 
     op_tester.lossReduction = popart.ReductionType.Sum
-    op_tester.patterns = ['PreUniRepl', 'SqrtGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'SqrtGradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 

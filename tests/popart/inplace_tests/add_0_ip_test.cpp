@@ -119,6 +119,8 @@ BOOST_AUTO_TEST_CASE(Inplace_add5) {
     TensorInfo info_1122{"FLOAT", std::vector<int64_t>{1, 1, 2, 2}};
 
     TestRunner runner;
+    runner.patterns =
+        Patterns(PatternsLevel::NoPatterns).enableRuntimeAsserts(false);
     runner.patterns.enableInPlace(true);
     runner.patterns.enableUpdateInplacePrioritiesForIpu(true);
 

@@ -112,7 +112,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeConstSGD0) {
                 &optimizer,
                 *device,
                 opts,
-                Patterns({})});
+                Patterns({}).enableRuntimeAsserts(false)});
 
     // Check the ir
     //

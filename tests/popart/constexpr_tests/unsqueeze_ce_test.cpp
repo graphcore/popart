@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Unsqueeze0) {
               &optimizer,
               *device,
               {}, // no SessionOptions
-              Patterns({})});
+              Patterns({}).enableRuntimeAsserts(false)});
 
   // Check the ir
   // 1) that the Add Op is present,

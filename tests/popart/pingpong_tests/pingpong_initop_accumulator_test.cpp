@@ -123,7 +123,7 @@ BOOST_AUTO_TEST_CASE(TestInitOpAccumulator) {
       {}, // no optimizer
       *testDev,
       session_opts,
-      {}, // Patterns({})
+      {}, // Patterns({}).enableRuntimeAsserts(false)
   });
 
   // Compile.

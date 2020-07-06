@@ -65,7 +65,9 @@ BOOST_AUTO_TEST_CASE(Dot_basic0) {
               nullptr, // and no optimizer
               *device,
               opts,
-              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns)
+                  .enableRuntimeAsserts(false)
+                  .enableInPlace(true)});
 
   // verify that there are 3 newly created dot_files
   auto dotFileNames =
@@ -108,14 +110,15 @@ BOOST_AUTO_TEST_CASE(Dot_dotOpNames0) {
 
     // note that we are not in training mode,
     // but BWD0 is still a valid checkpoint
-    ir.prepare({modelProto,
-                InputShapeInfo(),
-                dataFlow,
-                {},      // in inference mode, so no losses,
-                nullptr, // and no optimizer
-                *device,
-                opts,
-                Patterns(PatternsLevel::NoPatterns)});
+    ir.prepare(
+        {modelProto,
+         InputShapeInfo(),
+         dataFlow,
+         {},      // in inference mode, so no losses,
+         nullptr, // and no optimizer
+         *device,
+         opts,
+         Patterns(PatternsLevel::NoPatterns).enableRuntimeAsserts(false)});
 
     // verify that there is 1 newly created dot_file
     auto dotFileNames =
@@ -193,14 +196,15 @@ BOOST_AUTO_TEST_CASE(Dot_dotStartEnd) {
 
         // note that we are not in training mode,
         // but BWD0 is still a valid checkpoint
-        ir.prepare({modelProto,
-                    InputShapeInfo(),
-                    dataFlow,
-                    {},      // in inference mode, so no losses,
-                    nullptr, // and no optimizer
-                    *device,
-                    opts,
-                    Patterns(PatternsLevel::NoPatterns)});
+        ir.prepare(
+            {modelProto,
+             InputShapeInfo(),
+             dataFlow,
+             {},      // in inference mode, so no losses,
+             nullptr, // and no optimizer
+             *device,
+             opts,
+             Patterns(PatternsLevel::NoPatterns).enableRuntimeAsserts(false)});
 
         // verify that there is 1 newly created dot_file
         auto dotFileNames =

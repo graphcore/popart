@@ -117,7 +117,7 @@ void ConstExprTest_Gather_Type(std::string data_in_type,
       device,
       InputShapeInfo(),
       {}, // no SessionOptions
-      Patterns({PreAliasPatternType::PostNRepl}));
+      Patterns({PreAliasPatternType::PostNRepl}).enableRuntimeAsserts(false));
 
   session->prepareDevice();
   popart::StepIO stepio({}, anchors);

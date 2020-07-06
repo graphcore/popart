@@ -80,7 +80,7 @@ def op_tester(tmpdir):
     class OpTester:
         def __init__(self, logging_dir):
             np.random.seed(0)
-            self.patterns = []
+            self.patterns = popart.Patterns(popart.PatternsLevel.Minimal)
             self.options = popart.SessionOptions()
             self.logging_dir = logging_dir
             self.numIPUs = 1
@@ -113,6 +113,18 @@ def op_tester(tmpdir):
 
             assert np.allclose(t1, ref, self.rtol, self.atol, self.equal_nan)
 
+        def setPatterns(self, patterns, enableRuntimeAsserts=None):
+            """ Accept either a Patterns instance, a list of strings or a PatternsLevel. If enableRuntimeAsserts 
+                is set you will get an error if you don't enable all mandatory patterns.
+            """
+            if isinstance(patterns, popart.Patterns):
+                self.patterns = patterns
+            else:
+                self.patterns = popart.Patterns(patterns)
+
+            if enableRuntimeAsserts is not None:
+                self.patterns.enableRuntimeAsserts(enableRuntimeAsserts)
+
         def run(self,
                 init_builder,
                 reference,
@@ -142,15 +154,12 @@ def op_tester(tmpdir):
             device = tu.create_test_device(numIpus=self.numIPUs)
             print(f"Created device {device} with {self.numIPUs} IPUs")
 
-            patterns = popart.Patterns(self.patterns)
-            patterns.InPlace = self.inplacing
-
+            self.patterns.InPlace = self.inplacing
             if step_type == 'infer':
                 session = popart.InferenceSession(fnModel=bld.getModelProto(),
                                                   dataFlow=dataFlow,
                                                   deviceInfo=device,
-                                                  patterns=popart.Patterns(
-                                                      self.patterns),
+                                                  patterns=self.patterns,
                                                   userOptions=self.options)
             else:
                 assert step_type == 'train'
@@ -165,8 +174,7 @@ def op_tester(tmpdir):
                                                  loss=lossId,
                                                  optimizer=optimizer,
                                                  deviceInfo=device,
-                                                 patterns=popart.Patterns(
-                                                     self.patterns),
+                                                 patterns=self.patterns,
                                                  userOptions=self.options)
 
             anchor_map = session.initAnchorArrays()

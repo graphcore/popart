@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE(Basic0TopK_Opset9) {
       device,
       popart::InputShapeInfo(),
       opts,
-      popart::Patterns(PatternsLevel::NoPatterns));
+      popart::Patterns(PatternsLevel::NoPatterns).enableRuntimeAsserts(false));
 
   // prepare the anchors
   std::vector<float> rawOutputValues(outValuesInfo.nelms());
@@ -219,7 +219,7 @@ BOOST_AUTO_TEST_CASE(Basic0TopK_Opset10) {
       device,
       popart::InputShapeInfo(),
       opts,
-      popart::Patterns(PatternsLevel::NoPatterns));
+      popart::Patterns(PatternsLevel::NoPatterns).enableRuntimeAsserts(false));
 
   // prepare the anchors
   std::vector<float> rawOutputValues(outValuesInfo.nelms());

@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Scale0) {
               &optimizer,
               *device,
               {}, // no SessionOptions
-              Patterns({})});
+              Patterns({}).enableRuntimeAsserts(false)});
 
   // only the one scale (after the matmul) should remain
   BOOST_CHECK(ir.opsOfType(Onnx::AiGraphcore::OpSet1::Scale).size() == 1);
@@ -149,14 +149,15 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Scale1) {
 
     auto device = popart::createTestDevice(TEST_TARGET);
 
-    auto session =
-        popart::InferenceSession::createFromOnnxModel(proto,
-                                                      data_flow,
-                                                      device,
-                                                      popart::InputShapeInfo(),
-                                                      {}, // no session options
-                                                      Patterns() // no patterns
-        );
+    auto session = popart::InferenceSession::createFromOnnxModel(
+        proto,
+        data_flow,
+        device,
+        popart::InputShapeInfo(),
+        {}, // no session options
+        Patterns(PatternsLevel::NoPatterns)
+            .enableRuntimeAsserts(false) // no patterns
+    );
 
     // prepare the anchors
     std::vector<float> rawOutputData(4);

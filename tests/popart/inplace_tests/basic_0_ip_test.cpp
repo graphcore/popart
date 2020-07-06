@@ -52,7 +52,9 @@ BOOST_AUTO_TEST_CASE(Inplace_basic0) {
               &optimizer,
               *device,
               {},
-              Patterns(PatternsLevel::NoPatterns).enableInPlace(false)});
+              Patterns(PatternsLevel::NoPatterns)
+                  .enableRuntimeAsserts(false)
+                  .enableInPlace(false)});
 
   // Check the ir
   auto opsOfTypeRelu = ir.opsOfType(Onnx::AiOnnx::OpSet9::Relu);
@@ -106,7 +108,9 @@ BOOST_AUTO_TEST_CASE(Inplace_basic1) {
               &optimizer,
               *device,
               opts,
-              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns)
+                  .enableRuntimeAsserts(false)
+                  .enableInPlace(true)});
 
   // Check the ir
   // first check that all 3 relus have been inplaced

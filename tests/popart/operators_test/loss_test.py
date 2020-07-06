@@ -97,8 +97,9 @@ def run_3d_nll_loss_input(popart_reduction_type, with_patterns):
 
     nll0 = builder.aiGraphcore.nllloss([out, lb], popart_reduction_type)
 
-    patterns = (popart.PatternsLevel.All
-                if with_patterns else popart.PatternsLevel.NoPatterns)
+    patterns = (popart.Patterns(
+        popart.PatternsLevel.All) if with_patterns else popart.Patterns(
+            popart.PatternsLevel.NoPatterns).enableRuntimeAsserts(False))
 
     if popart_reduction_type == popart.ReductionType.NoReduction:
         with pytest.raises(popart.popart_exception) as e_info:
@@ -107,7 +108,7 @@ def run_3d_nll_loss_input(popart_reduction_type, with_patterns):
                                    optimizer=popart.ConstSGD(
                                        LEARNING_RATE, WEIGHT_DECAY),
                                    loss=nll0,
-                                   patterns=popart.Patterns(patterns),
+                                   patterns=patterns,
                                    deviceInfo=tu.create_test_device())
         assert (e_info.value.args[0].endswith("must be a scalar tensor"))
         return
@@ -118,7 +119,7 @@ def run_3d_nll_loss_input(popart_reduction_type, with_patterns):
                                          optimizer=popart.ConstSGD(
                                              LEARNING_RATE, WEIGHT_DECAY),
                                          loss=nll0,
-                                         patterns=popart.Patterns(patterns),
+                                         patterns=patterns,
                                          deviceInfo=tu.create_test_device())
     session.prepareDevice()
     session.weightsFromHost()
@@ -185,8 +186,9 @@ def run_nll_loss_with_ignored_index(popart_reduction_type, with_patterns):
                                       ignoreIndex=ignoreInd,
                                       reduction=popart_reduction_type)
 
-    patterns = (popart.PatternsLevel.All
-                if with_patterns else popart.PatternsLevel.NoPatterns)
+    patterns = (popart.Patterns(
+        popart.PatternsLevel.All) if with_patterns else popart.Patterns(
+            popart.PatternsLevel.NoPatterns).enableRuntimeAsserts(False))
 
     if popart_reduction_type == popart.ReductionType.NoReduction:
         with pytest.raises(popart.popart_exception) as e_info:
@@ -195,7 +197,7 @@ def run_nll_loss_with_ignored_index(popart_reduction_type, with_patterns):
                 dataFlow=popart.DataFlow(1, [nll]),
                 optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
                 loss=nll,
-                patterns=popart.Patterns(patterns),
+                patterns=patterns,
                 deviceInfo=tu.create_test_device())
         assert (e_info.value.args[0].endswith("must be a scalar tensor"))
         return
@@ -205,7 +207,7 @@ def run_nll_loss_with_ignored_index(popart_reduction_type, with_patterns):
                                          optimizer=popart.ConstSGD(
                                              LEARNING_RATE, WEIGHT_DECAY),
                                          loss=nll,
-                                         patterns=popart.Patterns(patterns),
+                                         patterns=patterns,
                                          deviceInfo=tu.create_test_device())
 
     session.prepareDevice()
@@ -275,7 +277,7 @@ def run_nll_loss_grad_with_ignored_index(popart_reduction_type):
                                      [popart.reservedGradientPrefix() + ip]),
             optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
             loss=nll,
-            patterns=popart.Patterns(patterns),
+            patterns=patterns,
             deviceInfo=tu.create_test_device())
 
         session.prepareDevice()
@@ -286,13 +288,16 @@ def run_nll_loss_grad_with_ignored_index(popart_reduction_type):
     inputs = {lb: lb_data.astype(np.int32)}
 
     # 1)
-    session_SMD = getPreparesSession(["PreUniRepl", "SoftmaxGradDirect"])
+    session_SMD = getPreparesSession(
+        popart.Patterns(["PreUniRepl",
+                         "SoftmaxGradDirect"]).enableRuntimeAsserts(False))
     anchors_SMD = session_SMD.initAnchorArrays()
     stepio_SMD = popart.PyStepIO(inputs, anchors_SMD)
     session_SMD.run(stepio_SMD)
 
     # 2)
-    session_NoSMD = getPreparesSession(["PreUniRepl"])
+    session_NoSMD = getPreparesSession(
+        popart.Patterns(["PreUniRepl"]).enableRuntimeAsserts(False))
     anchors_NoSMD = session_NoSMD.initAnchorArrays()
     stepio_NoSMD = popart.PyStepIO(inputs, anchors_NoSMD)
     session_NoSMD.run(stepio_NoSMD)
@@ -361,13 +366,13 @@ def test_nll_loss_input_with_invalid_input():
     patterns = popart.PatternsLevel.NoPatterns
 
     with pytest.raises(popart.popart_exception) as e_info:
-        session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                         dataFlow=popart.DataFlow(1, [nll0]),
-                                         optimizer=popart.ConstSGD(
-                                             LEARNING_RATE, WEIGHT_DECAY),
-                                         loss=nll0,
-                                         patterns=popart.Patterns(patterns),
-                                         deviceInfo=tu.create_test_device())
+        session = popart.TrainingSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=popart.DataFlow(1, [nll0]),
+            optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
+            loss=nll0,
+            patterns=popart.Patterns(patterns).enableRuntimeAsserts(False),
+            deviceInfo=tu.create_test_device())
 
     assert (e_info.value.args[0].startswith(
         "The label tensor (INT32   [2 5]) must have shape [2 4] to match all but the final dimension of the probabilities tensor (FLOAT   [2 4 3])"
@@ -462,7 +467,7 @@ def test_loss_scaling(op_tester):
             result = [out, input.grad, None]
             return result
 
-        op_tester.patterns = []
+        op_tester.setPatterns([], enableRuntimeAsserts=False)
         op_tester.run(init_builder, reference, 'train')
 
 
@@ -502,7 +507,8 @@ def test_nllloss_reduction_equiv(op_tester):
                     dataFlow=popart.DataFlow(1, anchors),
                     optimizer=popart.ConstSGD(0.1),
                     deviceInfo=tu.create_test_device(),
-                    patterns=popart.Patterns(patternsList))
+                    patterns=popart.Patterns(
+                        patternsList).enableRuntimeAsserts(False))
                 session.prepareDevice()
                 session.weightsFromHost()
                 anchors = session.initAnchorArrays()

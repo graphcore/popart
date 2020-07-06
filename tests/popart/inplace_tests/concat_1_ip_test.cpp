@@ -59,7 +59,9 @@ BOOST_AUTO_TEST_CASE(Inplace_replConcat) {
               &optimizer,
               *device,
               {},
-              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns)
+                  .enableRuntimeAsserts(false)
+                  .enableInPlace(true)});
 
   // Check the ir
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Concat).size() == 0);

@@ -49,7 +49,7 @@ def test_max_training(op_tester):
 
         return [out, t1.grad, t2.grad, t3.grad, t4.grad, t5.grad, d__o]
 
-    op_tester.patterns = ['OpToIdentity']
+    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -80,7 +80,7 @@ def test_min_training_0(op_tester):
 
         return [out, t1.grad, t2.grad, d__o]
 
-    op_tester.patterns = ['OpToIdentity']
+    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -126,5 +126,5 @@ def test_min_training_1(op_tester):
 
         return [out, t1.grad, t2.grad, t3.grad, t4.grad, t5.grad, d__o]
 
-    op_tester.patterns = ['OpToIdentity']
+    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')

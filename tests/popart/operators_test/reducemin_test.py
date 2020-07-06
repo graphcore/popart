@@ -46,7 +46,7 @@ def test_reducemin(op_tester):
                     keepdims=keepdims))
         return result
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -118,5 +118,6 @@ def test_reducemin_training(op_tester):
         result = [sum, sum.grad] + result
         return result
 
-    op_tester.patterns = ['OpToIdentity', 'OpToReshape']
+    op_tester.setPatterns(['OpToIdentity', 'OpToReshape'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')

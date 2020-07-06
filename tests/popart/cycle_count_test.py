@@ -31,7 +31,8 @@ def get_simple_model_cycle_count(bps):
         dataFlow=popart.DataFlow(bps, {out: popart.AnchorReturnType("All")}),
         userOptions=opts,
         deviceInfo=tu.create_test_device(),
-        patterns=popart.Patterns(popart.PatternsLevel.NoPatterns))
+        patterns=popart.Patterns(popart.PatternsLevel.NoPatterns,
+                                 enableRuntimeAsserts=False))
 
     session.prepareDevice()
     anchors = session.initAnchorArrays()

@@ -260,15 +260,17 @@ auto main(int argc, char **argv) -> int {
       popart::DeviceManager::createDeviceManager().createCpuDevice();
 
   // Create the session
-  auto session = popart::TrainingSession::createFromOnnxModel(
-      proto,
-      dataFlow,
-      l1,
-      optimizer,
-      cpuDevice,
-      popart::InputShapeInfo(),
-      {},
-      popart::Patterns({popart::PreAliasPatternType::PreUniRepl}));
+  auto patterns =
+      popart::Patterns(popart::PatternsLevel::Minimal).enablePreUniRepl(true);
+  auto session =
+      popart::TrainingSession::createFromOnnxModel(proto,
+                                                   dataFlow,
+                                                   l1,
+                                                   optimizer,
+                                                   cpuDevice,
+                                                   popart::InputShapeInfo(),
+                                                   {},
+                                                   patterns);
 
   // prepare the anchors buffers. The anchors are what were specified in 2.2
   // for data streaming: the tensors which will be returned from the device

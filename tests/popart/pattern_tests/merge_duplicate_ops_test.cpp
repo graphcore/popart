@@ -71,7 +71,9 @@ BOOST_AUTO_TEST_CASE(MergeDuplicates0) {
               &optimizer,
               *device,
               {},
-              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns)
+                  .enableRuntimeAsserts(false)
+                  .enableInPlace(true)});
 
   // Check the ir
   // All 3 relus have been merged and the remaining one will have been inplaced.

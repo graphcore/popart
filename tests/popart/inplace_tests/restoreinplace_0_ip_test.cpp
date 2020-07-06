@@ -82,7 +82,9 @@ BOOST_AUTO_TEST_CASE(test0) {
               &optimizer,
               *device,
               opts,
-              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns)
+                  .enableRuntimeAsserts(false)
+                  .enableInPlace(true)});
 
   auto sched = ir.getOpSchedule({});
   BOOST_CHECK(sched[1]->opid == Onnx::CustomOperators::Stash);

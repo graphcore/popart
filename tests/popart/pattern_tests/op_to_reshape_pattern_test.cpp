@@ -56,7 +56,8 @@ BOOST_AUTO_TEST_CASE(OpToReshapeTest0) {
                 nullptr,
                 *device,
                 userOptions,
-                Patterns({PreAliasPatternType::OpToReshape})});
+                Patterns({PreAliasPatternType::OpToReshape})
+                    .enableRuntimeAsserts(false)});
 
     BOOST_CHECK(ir.opsOfType(Onnx::Operators::Squeeze_1).size() == 0);
     BOOST_CHECK(ir.opsOfType(Onnx::Operators::Squeeze_11).size() == 0);
@@ -76,6 +77,7 @@ BOOST_AUTO_TEST_CASE(OpToReshapeTest1) {
   // check that the pattern is only on for level ALL and DEFAULT
 
   Patterns noPatterns(PatternsLevel::NoPatterns);
+  noPatterns.enableRuntimeAsserts(false);
   BOOST_CHECK(noPatterns.isOpToReshapeEnabled() == false);
 
   Patterns defPatterns(PatternsLevel::Default);

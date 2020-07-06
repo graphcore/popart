@@ -51,7 +51,7 @@ private:
 
 class TestRunner {
 public:
-  TestRunner() : patterns(PatternsLevel::NoPatterns) {}
+  TestRunner() : patterns(PatternsLevel::Minimal) {}
 
   template <typename ModelBuilder>
   void buildModel(ModelBuilder &&modelBuilder) {

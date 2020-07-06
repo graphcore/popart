@@ -50,15 +50,16 @@ BOOST_AUTO_TEST_CASE(Inplace_sequeeze0) {
     auto device = createTestDevice(TEST_TARGET);
 
     Ir ir;
-    ir.prepare(
-        {modelProto,
-         InputShapeInfo(),
-         dataFlow,
-         {},
-         nullptr,
-         *device,
-         {},
-         Patterns(PatternsLevel::NoPatterns).enableInPlace(enable_inplace)});
+    ir.prepare({modelProto,
+                InputShapeInfo(),
+                dataFlow,
+                {},
+                nullptr,
+                *device,
+                {},
+                Patterns(PatternsLevel::NoPatterns)
+                    .enableRuntimeAsserts(false)
+                    .enableInPlace(enable_inplace)});
 
     // Check the ir
     // All the Relus have been optimised out if enable_inplace

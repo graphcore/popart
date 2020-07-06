@@ -121,7 +121,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Floor0) {
               nullptr,
               *device,
               {}, // no SessionOptions
-              Patterns({})});
+              Patterns({}).enableRuntimeAsserts(false)});
 
   // only the one floor (after the matmul) should remain
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Floor).size() == 1);
@@ -146,14 +146,15 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Floor1) {
 
     auto device = popart::createTestDevice(TEST_TARGET);
 
-    auto session =
-        popart::InferenceSession::createFromOnnxModel(proto,
-                                                      data_flow,
-                                                      device,
-                                                      popart::InputShapeInfo(),
-                                                      {}, // no session options
-                                                      Patterns() // no patterns
-        );
+    auto session = popart::InferenceSession::createFromOnnxModel(
+        proto,
+        data_flow,
+        device,
+        popart::InputShapeInfo(),
+        {}, // no session options
+        Patterns(PatternsLevel::NoPatterns)
+            .enableRuntimeAsserts(false) // no patterns
+    );
 
     // prepare the anchors
     std::vector<float> rawOutputData(4);

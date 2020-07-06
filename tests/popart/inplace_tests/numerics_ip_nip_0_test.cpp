@@ -249,7 +249,9 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
         device,
         popart::InputShapeInfo(),
         opts,
-        popart::Patterns(PatternsLevel::NoPatterns).enableInPlace(inp));
+        popart::Patterns(PatternsLevel::NoPatterns)
+            .enableRuntimeAsserts(false)
+            .enableInPlace(inp));
 
     // prepare the anchors
     float rawOutputData;

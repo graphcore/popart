@@ -226,6 +226,7 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip1) {
         popart::InputShapeInfo(),
         opts,
         popart::Patterns(PatternsLevel::NoPatterns)
+            .enableRuntimeAsserts(false)
             .enableInPlace(runMode == RunMode::ScaleInPlace));
 
     // prepare the anchors

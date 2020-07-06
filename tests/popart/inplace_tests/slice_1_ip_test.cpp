@@ -92,7 +92,9 @@ BOOST_AUTO_TEST_CASE(Inplace_SlicesOverlap) {
                 nullptr,
                 *device,
                 {},
-                Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
+                Patterns(PatternsLevel::NoPatterns)
+                    .enableRuntimeAsserts(false)
+                    .enableInPlace(true)});
 
     // get the index of the first op of type "identifier"
     auto getFirstPtrIndex = [](OperatorIdentifier identifier,

@@ -44,9 +44,8 @@ def test_lrelu_inf(op_tester, inplace, alpha, use_torch):
             m = leaky_relu(input_data, alpha)
         return [m]
 
-    if (inplace):
-        op_tester.patterns = ['InPlace']
-
+    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
+    op_tester.inplacing = inplace
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -82,8 +81,6 @@ def test_lrelu_train(op_tester, alpha, inplace):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.patterns = ['OpToIdentity']
-    if (inplace):
-        op_tester.patterns.append('InPlace')
-
+    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
+    op_tester.inplacing = inplace
     op_tester.run(init_builder, reference, 'train')

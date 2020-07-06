@@ -31,7 +31,7 @@ def test_sum(op_tester):
         out = d1 + d2 + d3
         return [out]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -47,7 +47,7 @@ def test_sum_1_input(op_tester):
     def reference(ref_data):
         return [d1]
 
-    op_tester.patterns = []
+    op_tester.setPatterns([], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -108,7 +108,7 @@ def test_X_training(op_tester, X="mean"):
 
         return [out, t1.grad, t2.grad, t3.grad, t4.grad, t5.grad, d__o]
 
-    op_tester.patterns = ['OpToIdentity']
+    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -165,7 +165,7 @@ def test_mean_training_2(op_tester):
 
         return [out, t1.grad, t2.grad, t3.grad, t4.grad, t5.grad, d__o]
 
-    op_tester.patterns = ['OpToIdentity']
+    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train', {
         "ai.onnx": 7,
         "ai.graphcore": 1
@@ -217,7 +217,7 @@ def test_mean_training_3(op_tester):
 
         return [out, t1.grad, t2.grad, t3.grad, t4.grad, t5.grad, d__o]
 
-    op_tester.patterns = ['OpToIdentity']
+    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
 
     with pytest.raises(popart.popart_exception) as e_info:
         op_tester.run(init_builder, reference, 'train', {

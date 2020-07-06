@@ -65,7 +65,9 @@ BOOST_AUTO_TEST_CASE(Inplace_Scale0) {
                 nullptr,
                 *device,
                 {},
-                Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
+                Patterns(PatternsLevel::NoPatterns)
+                    .enableRuntimeAsserts(false)
+                    .enableInPlace(true)});
 
     BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::MatMul).size() == 1);
     BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Slice).size() == 0);

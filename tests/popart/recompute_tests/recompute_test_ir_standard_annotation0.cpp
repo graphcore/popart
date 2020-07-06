@@ -93,7 +93,8 @@ BOOST_AUTO_TEST_CASE(StandardRecomputeTest) {
                 *device,
                 opts,
                 Patterns({PreAliasPatternType::OptoIdentity,
-                          PreAliasPatternType::PostNRepl})});
+                          PreAliasPatternType::PostNRepl})
+                    .enableRuntimeAsserts(false)});
 
     // Recompute and Recomputed counters
     int nRecompute  = 0;

@@ -10,7 +10,7 @@ def test_cos_grad_error(op_tester):
     d2 = np.random.rand(2, 7).astype(np.float32)
 
     # No pattern passes, grad op will not be created.
-    op_tester.patterns = []
+    op_tester.setPatterns([], enableRuntimeAsserts=False)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
@@ -37,7 +37,7 @@ def test_reciprocal_grad_error(op_tester):
     d2 = np.random.rand(2, 7).astype(np.float32) + 1
 
     # No pattern passes, grad op will not be created.
-    op_tester.patterns = []
+    op_tester.setPatterns([], enableRuntimeAsserts=False)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
@@ -63,7 +63,7 @@ def test_sqrt_grad_error(op_tester):
     d2 = np.random.rand(2, 7).astype(np.float32)
 
     # No pattern passes, grad op will not be created.
-    op_tester.patterns = []
+    op_tester.setPatterns([], enableRuntimeAsserts=False)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
@@ -89,7 +89,7 @@ def test_subtract_grad_error(op_tester):
     d2 = np.random.rand(2, 7).astype(np.float32)
 
     # No pattern passes, grad op will not be created.
-    op_tester.patterns = []
+    op_tester.setPatterns([], enableRuntimeAsserts=False)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
@@ -114,7 +114,7 @@ def test_exp_grad_error(op_tester):
     d2 = np.random.rand(2, 7).astype(np.float32)
 
     # No pattern passes, grad op will not be created.
-    op_tester.patterns = []
+    op_tester.setPatterns([], enableRuntimeAsserts=False)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
@@ -151,7 +151,7 @@ def test_gemm_grad_error(op_tester):
     transB = False
 
     # No pattern passes, op will be try to be created.
-    op_tester.patterns = []
+    op_tester.setPatterns([], enableRuntimeAsserts=False)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
@@ -176,7 +176,7 @@ def test_tan_grad_error(op_tester):
     d2 = np.random.rand(2, 7).astype(np.float32)
 
     # No pattern passes, op will be try to be created.
-    op_tester.patterns = []
+    op_tester.setPatterns([], enableRuntimeAsserts=False)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
@@ -201,7 +201,7 @@ def test_cosh_grad_error(op_tester):
     d2 = np.random.rand(2, 7).astype(np.float32)
 
     # No pattern passes, op will be try to be created.
-    op_tester.patterns = []
+    op_tester.setPatterns([], enableRuntimeAsserts=False)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
@@ -225,7 +225,7 @@ def test_logsoftmax_grad_error(op_tester):
     d1 = np.random.rand(2, 7).astype(np.float32)
     d2 = np.random.rand(2, 7).astype(np.float32)
 
-    op_tester.patterns = []
+    op_tester.setPatterns([], enableRuntimeAsserts=False)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)

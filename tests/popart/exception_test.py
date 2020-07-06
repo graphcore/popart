@@ -52,7 +52,8 @@ def test_out_of_memory_exception():
         fnModel=builder.getModelProto(),
         dataFlow=popart.DataFlow(1, {out: popart.AnchorReturnType("All")}),
         userOptions=options,
-        patterns=popart.Patterns(popart.PatternsLevel.NoPatterns),
+        patterns=popart.Patterns(popart.PatternsLevel.NoPatterns,
+                                 enableRuntimeAsserts=False),
         deviceInfo=tu.create_test_device(1))
 
     with pytest.raises(popart.OutOfMemoryException) as e:

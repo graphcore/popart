@@ -90,7 +90,9 @@ BOOST_AUTO_TEST_CASE(Inplace_pad0) {
         device,
         popart::InputShapeInfo(),
         opts,
-        popart::Patterns(PatternsLevel::NoPatterns).enableInPlace(true));
+        popart::Patterns(PatternsLevel::NoPatterns)
+            .enableRuntimeAsserts(false)
+            .enableInPlace(true));
 
     std::vector<float> vdata0{1.0, 1.0};
     popart::NDArrayWrapper<float> data0(vdata0.data(), info0);

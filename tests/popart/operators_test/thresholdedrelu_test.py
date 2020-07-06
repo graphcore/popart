@@ -25,7 +25,7 @@ def test_thresholdedrelu(op_tester):
             builder.addOutputTensor(o)
             result = [o]
             if builder_settings is 'InPlace':
-                op_tester.patterns = ['InPlace']
+                op_tester.setPatterns(['InPlace'], enableRuntimeAsserts=False)
             elif builder_settings is 'backward':
                 result = [
                     o,

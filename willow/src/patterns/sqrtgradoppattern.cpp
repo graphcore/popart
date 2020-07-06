@@ -53,7 +53,10 @@ bool SqrtGradOpPattern::apply(Op *op) const {
 
 namespace {
 static PatternCreator<SqrtGradOpPattern>
-    SqrtGradOpPattern(PreAliasPatternType::SqrtGradOp, "SqrtGradOp");
+    SqrtGradOpPattern(PreAliasPatternType::SqrtGradOp,
+                      "SqrtGradOp",
+                      true,
+                      true);
 }
 
 } // namespace popart

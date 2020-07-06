@@ -74,7 +74,9 @@ BOOST_AUTO_TEST_CASE(Inplace_subsample0) {
               nullptr,
               *device,
               {},
-              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns)
+                  .enableRuntimeAsserts(false)
+                  .enableInPlace(true)});
 
   auto opsOfTypeSubsample = ir.opsOfType(Onnx::AiGraphcore::OpSet1::Subsample);
   BOOST_CHECK(opsOfTypeSubsample.size() == 0);

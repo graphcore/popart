@@ -26,7 +26,7 @@ def test_onehot_2d_with_axis_testing(op_tester):
     def reference(ref_data):
         return [output]
 
-    op_tester.patterns = ['OpToIdentity']
+    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -52,7 +52,7 @@ def test_onehot_2d_without_axis_testing(op_tester):
     def reference(ref_data):
         return [output]
 
-    op_tester.patterns = ['OpToIdentity']
+    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -87,7 +87,7 @@ def test_onehot_2d_with_axis_training(op_tester):
         return [output, output_grad, values_grad]
 
     op_tester.lossReduction = popart.ReductionType.Sum
-    op_tester.patterns = ['OpToIdentity']
+    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -122,7 +122,7 @@ def test_onehot_2d_without_axis_training(op_tester):
         return [output, output_grad, values_grad]
 
     op_tester.lossReduction = popart.ReductionType.Sum
-    op_tester.patterns = ['OpToIdentity']
+    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -146,7 +146,7 @@ def test_onehot_3d_without_axis_testing(op_tester):
     def reference(ref_data):
         return [output]
 
-    op_tester.patterns = ['OpToIdentity']
+    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -170,5 +170,5 @@ def test_onehot_3d_with_axis_testing(op_tester):
     def reference(ref_data):
         return [output]
 
-    op_tester.patterns = ['OpToIdentity']
+    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')

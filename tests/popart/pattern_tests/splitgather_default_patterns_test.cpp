@@ -12,6 +12,7 @@ BOOST_AUTO_TEST_CASE(SplitGatherTest1) {
   // check that SPLITGATHER is only on for level ALL
 
   Patterns noPatterns(PatternsLevel::NoPatterns);
+  noPatterns.enableRuntimeAsserts(false);
   BOOST_CHECK(noPatterns.isSplitGatherEnabled() == false);
 
   Patterns defPatterns(PatternsLevel::Default);

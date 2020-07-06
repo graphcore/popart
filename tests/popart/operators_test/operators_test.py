@@ -69,7 +69,7 @@ def test_add(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, t1.grad, t2.grad, None]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -112,7 +112,8 @@ def test_cast_grad(op_tester):
         d_i1 = c.grad.numpy().astype(np.int32)
         return [out, d_i1, d_o]
 
-    op_tester.patterns = ['PreUniRepl', 'PostNRepl', 'SqrtGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'PostNRepl', 'SqrtGradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -227,6 +228,7 @@ def test_convolution_2(op_tester):
     Test the convolution when the conv in the bwd pass is not the same as the conv in the
     forward pass
     '''
+
     def init_builder(builder):
         data = np.ones([1, 2, 4, 4], dtype=np.float32)
         filt = np.ones([4, 2, 1, 1], dtype=np.float32)
@@ -245,7 +247,7 @@ def test_convolution_2(op_tester):
                             dtype=np.float32)
         return [expected, None]
 
-    op_tester.patterns = ["ConvDataGrad"]
+    op_tester.setPatterns(["ConvDataGrad"], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, step_type='train')
 
 
@@ -386,7 +388,7 @@ def test_convolution_5(op_tester):
 
         return [o, dg, None]
 
-    op_tester.patterns = ['ConvDataGrad']
+    op_tester.setPatterns(['ConvDataGrad'], enableRuntimeAsserts=False)
     op_tester.run(init_builder0, reference, step_type='train')
     op_tester.run(init_builder1, reference, step_type='train')
 
@@ -454,7 +456,7 @@ def test_convolution_default_train(op_tester):
 
         return [o, dg, None]
 
-    op_tester.patterns = ['ConvDataGrad']
+    op_tester.setPatterns(['ConvDataGrad'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, step_type='train')
 
 
@@ -490,7 +492,7 @@ def test_div(op_tester):
         out = d1 / d2
         return [out]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -514,7 +516,8 @@ def test_div_grad(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, t1.grad, t2.grad, None]
 
-    op_tester.patterns = ['PreUniRepl', 'DivArg0GradOp', 'DivArg1GradOp']
+    op_tester.setPatterns(['PreUniRepl', 'DivArg0GradOp', 'DivArg1GradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -539,7 +542,8 @@ def test_reciprocal_grad(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -558,7 +562,7 @@ def test_sqrt(op_tester):
         out = torch.sqrt(a)
         return [out]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -583,7 +587,8 @@ def test_sqrt_grad(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, a.grad, None]
 
-    op_tester.patterns = ['PreUniRepl', 'SqrtGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'SqrtGradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -626,7 +631,8 @@ def test_exp_grad(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.patterns = ['PreUniRepl', 'ExpGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'ExpGradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -669,7 +675,7 @@ def test_sigmoid_grad(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -711,7 +717,7 @@ def test_transpose_grad(op_tester):
 
         return [o, a.grad, None]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -732,7 +738,7 @@ def test_transpose_sizes(op_tester):
     def reference(ref_data):
         return []
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     with pytest.raises(popart.popart_exception) as e_info:
         op_tester.run(init_builder, reference, 'infer')
 
@@ -758,7 +764,7 @@ def test_asin(op_tester):
         out = torch.asin(a)
         return [out]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -777,7 +783,7 @@ def test_asin_inplace(op_tester):
         out = torch.asin(a)
         return [out]
 
-    op_tester.patterns = ['InPlace']
+    op_tester.setPatterns(['InPlace'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -803,7 +809,7 @@ def test_asin_grad(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, a.grad, None]
 
-    # op_tester.patterns = ['OpToIdentity']
+    # op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -824,7 +830,7 @@ def test_atan(op_tester):
         out = torch.atan(a)
         return [out]
 
-    # op_tester.patterns = ['PreUniRepl']
+    # op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -843,7 +849,7 @@ def test_atan_inplace(op_tester):
         out = torch.atan(a)
         return [out]
 
-    op_tester.patterns = ['InPlace']
+    op_tester.setPatterns(['InPlace'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -869,7 +875,7 @@ def test_atan_grad(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, a.grad, None]
 
-    # op_tester.patterns = ['OpToIdentity']
+    # op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -888,7 +894,7 @@ def test_sinh(op_tester):
         out = torch.sinh(a)
         return [out]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -907,7 +913,7 @@ def test_sinh_inplace(op_tester):
         out = torch.sinh(a)
         return [out]
 
-    op_tester.patterns = ['InPlace']
+    op_tester.setPatterns(['InPlace'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -932,7 +938,7 @@ def test_sinh_grad(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, a.grad, None]
 
-    op_tester.patterns = ['OpToIdentity']
+    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -975,7 +981,8 @@ def test_log_grad(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.patterns = ['PreUniRepl', 'LogGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'LogGradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -999,7 +1006,8 @@ def test_logsoftmax(op_tester):
         b = lsm(a)
         return [b]
 
-    op_tester.patterns = ['LogSoftmaxOp', 'LogGradOp']
+    op_tester.setPatterns(['LogSoftmaxOp', 'LogGradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -1026,7 +1034,8 @@ def test_logsoftmax_grad(op_tester):
         return [b, a.grad, None]
 
     op_tester.atol *= 10
-    op_tester.patterns = ['PreUniRepl', 'LogSoftmaxOp', 'LogGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'LogSoftmaxOp', 'LogGradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -1045,7 +1054,7 @@ def test_unsqueeze(op_tester):
             o = np.expand_dims(o, axis=i)
         return [o]
 
-    op_tester.patterns = ['OpToReshape']
+    op_tester.setPatterns(['OpToReshape'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -1070,7 +1079,8 @@ def test_unsqueeze_grad(op_tester):
         o.backward(torch.tensor(d__o))
         return [o, a.grad, None]
 
-    op_tester.patterns = ['PreUniRepl', 'OpToReshape']
+    op_tester.setPatterns(['PreUniRepl', 'OpToReshape'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -1193,7 +1203,7 @@ def test_slice_grad(op_tester):
 
         return [o, a.grad, None]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -1215,7 +1225,7 @@ def test_slice_error_start_input(op_tester):
     def reference(ref_data):
         return []
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     with pytest.raises(popart.popart_exception) as e_info:
         op_tester.run(init_builder, reference, 'train')
 
@@ -1262,11 +1272,7 @@ def test_pad_type_reflect(op_tester):
               mode='reflect')
 
 
-def _test_pad(op_tester,
-              data,
-              lower_padding,
-              upper_padding,
-              mode,
+def _test_pad(op_tester, data, lower_padding, upper_padding, mode,
               pad_value=0):
     def init_builder(builder):
         i1 = builder.addInputTensor(data)
@@ -1286,7 +1292,7 @@ def _test_pad(op_tester,
 
         return [o]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -1314,7 +1320,7 @@ def test_pad_grad(op_tester):
 
         return [o, a.grad, d__o]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -1346,7 +1352,7 @@ def test_scatter_0(op_tester):
         return [output, data_grad, np.ones_like(updates)]
 
     op_tester.lossReduction = popart.ReductionType.Sum
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -1374,7 +1380,7 @@ def test_scatter_1(op_tester):
         return [output, d_data, np.ones_like(updates)]
 
     op_tester.lossReduction = popart.ReductionType.Sum
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -1406,7 +1412,7 @@ def test_scatter_2(op_tester):
         return [output, data_grad, np.ones_like(updates)]
 
     op_tester.lossReduction = popart.ReductionType.Sum
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -1447,7 +1453,7 @@ def test_flatten_infer(op_tester):
         out = np.reshape(d1, new_shape)
         return [out]
 
-    op_tester.patterns = ['OpToReshape']
+    op_tester.setPatterns(['OpToReshape'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -1564,7 +1570,7 @@ def test_ceil_inplace(op_tester):
         result = np.exp(np.ceil(np.log(d1)))
         return [result.astype(np.float32)]
 
-    op_tester.patterns = ['InPlace']
+    op_tester.setPatterns(['InPlace'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -1622,7 +1628,7 @@ def test_floor_inplace(op_tester):
         result = np.exp(np.floor(np.log(d1)))
         return [result.astype(np.float32)]
 
-    op_tester.patterns = ['InPlace']
+    op_tester.setPatterns(['InPlace'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -1682,7 +1688,7 @@ def test_clip_inplace(op_tester):
         result = torch.exp(torch.clamp(torch.log(a), min=4, max=7))
         return [result]
 
-    op_tester.patterns = ['InPlace']
+    op_tester.setPatterns(['InPlace'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -1710,7 +1716,7 @@ def test_clip_grad(op_tester):
         print("b grad", b.grad)
         return [b, a.grad, None]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -1802,7 +1808,8 @@ def test_instancenorm_grad(op_tester):
         return [out, normed, i_data.grad, m.weight.grad, m.bias.grad, None]
 
     op_tester.atol *= 10
-    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp', 'MulArgGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp', 'MulArgGradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 

@@ -44,7 +44,8 @@ def test_sin_grad(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.patterns = ['PreUniRepl', 'SinGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'SinGradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -87,7 +88,8 @@ def test_cos_grad(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.patterns = ['PreUniRepl', 'CosGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'CosGradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -106,7 +108,7 @@ def test_tan(op_tester):
         b = torch.tan(a)
         return [b]
 
-    op_tester.patterns = ['TanToSinOverCos']
+    op_tester.setPatterns(['TanToSinOverCos'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -131,10 +133,11 @@ def test_tan_grad(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.patterns = [
+    op_tester.setPatterns([
         'PreUniRepl', 'TanToSinOverCos', 'DivArg0GradOp', 'DivArg1GradOp',
         'SinGradOp', 'CosGradOp'
-    ]
+    ],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -153,7 +156,7 @@ def test_cosh(op_tester):
         b = torch.cosh(a)
         return [b]
 
-    op_tester.patterns = ['PreUniRepl', 'CoshOp']
+    op_tester.setPatterns(['PreUniRepl', 'CoshOp'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -178,7 +181,8 @@ def test_cosh_grad(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.patterns = ['PreUniRepl', 'CoshOp', 'ExpGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'CoshOp', 'ExpGradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -221,5 +225,5 @@ def test_tanh_grad(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')

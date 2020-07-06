@@ -126,7 +126,7 @@ def test_tile_grad(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder,
                   reference,
                   'train',

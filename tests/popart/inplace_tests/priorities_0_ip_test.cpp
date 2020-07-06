@@ -96,7 +96,9 @@ BOOST_AUTO_TEST_CASE(NegPriorities_concat0) {
                 &optimizer,
                 *device,
                 {},
-                Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
+                Patterns(PatternsLevel::NoPatterns)
+                    .enableRuntimeAsserts(false)
+                    .enableInPlace(true)});
 
     // .... Tests ....
     // irrespective of priority x1, x2, o2 should be inplace concats,

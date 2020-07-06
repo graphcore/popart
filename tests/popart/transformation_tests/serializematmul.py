@@ -117,6 +117,7 @@ def test_matmul_serialization_invalid_factor(tmpdir):
     opts = getBaseOptions()
 
     pat = popart.Patterns(['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp'])
+    pat.enableRuntimeAsserts(False)
 
     with pytest.raises(popart.popart_exception) as e_info:
         session = popart.InferenceSession(
@@ -165,6 +166,7 @@ def test_matmul_serialization_inference(tmpdir):
 
         pat = popart.Patterns(
             ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp'])
+        pat.enableRuntimeAsserts(False)
 
         session = popart.InferenceSession(
             fnModel=proto,
@@ -300,6 +302,7 @@ def test_matmul_serialization_training_1(tmpdir):
 
         pat = popart.Patterns(
             ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp', 'OpToIdentity'])
+        pat.enableRuntimeAsserts(False)
 
         session = popart.TrainingSession(
             fnModel=proto,
@@ -554,6 +557,7 @@ def test_matmul_serialization_training_2(tmpdir):
 
         pat = popart.Patterns(
             ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp', 'OpToIdentity'])
+        pat.enableRuntimeAsserts(False)
 
         session = popart.TrainingSession(
             fnModel=proto,
@@ -812,6 +816,7 @@ def test_matmul_serialization_precision(tmpdir):
 
         pat = popart.Patterns(
             ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp', 'OpToIdentity'])
+        pat.enableRuntimeAsserts(False)
 
         session = popart.TrainingSession(
             fnModel=proto,
@@ -1080,6 +1085,7 @@ def test_matmul_serialization_training_with_gradient_accumlation(tmpdir):
 
         pat = popart.Patterns(
             ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp', 'OpToIdentity'])
+        pat.enableRuntimeAsserts(False)
 
         session = popart.TrainingSession(
             fnModel=proto,

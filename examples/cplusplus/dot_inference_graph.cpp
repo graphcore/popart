@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
               nullptr, // and no optimizer.
               *cpuDevice,
               sessionOpts,
-              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
+              Patterns(PatternsLevel::Minimal).enableInPlace(true)});
 
   // verify that the dot files have been created
   auto dotFileNames =

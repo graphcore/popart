@@ -126,7 +126,8 @@ BOOST_AUTO_TEST_CASE(OpManager_Test2) {
               &optimizer,
               *device,
               {},
-              Patterns({PreAliasPatternType::PreUniRepl})});
+              Patterns({PreAliasPatternType::PreUniRepl})
+                  .enableRuntimeAsserts(false)});
 
   // Check the ir
   BOOST_CHECK(ir.opsOfType({"ai_simon", "MyAdd2", 1}).size() == 1);

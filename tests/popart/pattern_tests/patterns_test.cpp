@@ -61,14 +61,15 @@ BOOST_AUTO_TEST_CASE(PostNRepl_IdentityOp) {
   auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
-  ir.prepare({modelProto,
-              InputShapeInfo(),
-              dataFlow,
-              l1,
-              &optimizer,
-              *device,
-              {},
-              Patterns({PreAliasPatternType::PostNRepl})});
+  ir.prepare(
+      {modelProto,
+       InputShapeInfo(),
+       dataFlow,
+       l1,
+       &optimizer,
+       *device,
+       {},
+       Patterns({PreAliasPatternType::PostNRepl}).enableRuntimeAsserts(false)});
 
   // Check the ir
   // All but one of the identityOps should have been removed from the ir
@@ -121,7 +122,8 @@ BOOST_AUTO_TEST_CASE(PreUniRepl) {
               &optimizer,
               *device,
               {},
-              Patterns({PreAliasPatternType::PreUniRepl})});
+              Patterns({PreAliasPatternType::PreUniRepl})
+                  .enableRuntimeAsserts(false)});
 
   // Check the ir
   // the PadOp should have been removed
@@ -168,7 +170,8 @@ BOOST_AUTO_TEST_CASE(OpToIdentity) {
               &optimizer,
               *device,
               {},
-              Patterns({PreAliasPatternType::OptoIdentity})});
+              Patterns({PreAliasPatternType::OptoIdentity})
+                  .enableRuntimeAsserts(false)});
 
   // Check the ir
   // the PadOp should have been replaced with an IdentityOp
@@ -212,7 +215,8 @@ BOOST_AUTO_TEST_CASE(GatherToIdentity) {
               &optimizer,
               *device,
               {},
-              Patterns({PreAliasPatternType::OptoIdentity})});
+              Patterns({PreAliasPatternType::OptoIdentity})
+                  .enableRuntimeAsserts(false)});
 
   // Check the ir
   // the GatherOp should have been replaced with an IdentityOp
@@ -261,7 +265,8 @@ BOOST_AUTO_TEST_CASE(SplitConvBias) {
               &optimizer,
               *device,
               {},
-              Patterns({PreAliasPatternType::SplitConvBias})});
+              Patterns({PreAliasPatternType::SplitConvBias})
+                  .enableRuntimeAsserts(false)});
 
   // Check the ir
   // Input 1 should connect to ConvOp
@@ -315,7 +320,8 @@ BOOST_AUTO_TEST_CASE(ScaleByOne) {
               nullptr,
               *device,
               {},
-              Patterns({PreAliasPatternType::OptoIdentity})});
+              Patterns({PreAliasPatternType::OptoIdentity})
+                  .enableRuntimeAsserts(false)});
 
   // Check the ir
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Identity).size() == 1);
@@ -358,7 +364,8 @@ BOOST_AUTO_TEST_CASE(ScaleByNegativeOne) {
               nullptr,
               *device,
               {},
-              Patterns({PreAliasPatternType::NegativeOneScale})});
+              Patterns({PreAliasPatternType::NegativeOneScale})
+                  .enableRuntimeAsserts(false)});
 
   // Check the ir
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Neg).size() == 1);
@@ -405,7 +412,8 @@ BOOST_AUTO_TEST_CASE(SubtractArg1GradOp) {
               &optimizer,
               *device,
               {},
-              Patterns({PreAliasPatternType::SubtractArg1GradOp})});
+              Patterns({PreAliasPatternType::SubtractArg1GradOp})
+                  .enableRuntimeAsserts(false)});
 
   // Check the ir
   // SubtractArg1Grad should have been replaced with Negate and ReduceSum
@@ -454,7 +462,8 @@ BOOST_AUTO_TEST_CASE(ReciprocalGradOp) {
               &optimizer,
               *device,
               opts,
-              Patterns({PreAliasPatternType::ReciprocalGradOp})});
+              Patterns({PreAliasPatternType::ReciprocalGradOp})
+                  .enableRuntimeAsserts(false)});
 
   // Check the ir
   // ReciprocalGradOp should have been replace with SquareOp, ReciprocalOp,
@@ -525,7 +534,8 @@ BOOST_AUTO_TEST_CASE(Attribute_Inheritance) {
               &optimizer,
               *device,
               opts,
-              Patterns({PreAliasPatternType::OptoIdentity})});
+              Patterns({PreAliasPatternType::OptoIdentity})
+                  .enableRuntimeAsserts(false)});
 
   // Check the PadOp has been removed
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Pad).size() == 0);
@@ -575,14 +585,15 @@ BOOST_AUTO_TEST_CASE(PadSumPatternTest) {
   auto device   = createTestDevice(TEST_TARGET);
 
   Ir ir;
-  ir.prepare({modelProto,
-              InputShapeInfo(),
-              dataFlow,
-              {},
-              nullptr,
-              *device,
-              {},
-              Patterns({PreAliasPatternType::PadSum})});
+  ir.prepare(
+      {modelProto,
+       InputShapeInfo(),
+       dataFlow,
+       {},
+       nullptr,
+       *device,
+       {},
+       Patterns({PreAliasPatternType::PadSum}).enableRuntimeAsserts(false)});
 
   // Check the ir
   // Sum op should have been replaced with a concat
@@ -625,7 +636,8 @@ BOOST_AUTO_TEST_CASE(PreUniRepl_0) {
               nullptr,
               *device,
               {},
-              Patterns({PreAliasPatternType::PreUniRepl})});
+              Patterns({PreAliasPatternType::PreUniRepl})
+                  .enableRuntimeAsserts(false)});
 }
 
 BOOST_AUTO_TEST_CASE(SumToAddTest) {
@@ -653,14 +665,15 @@ BOOST_AUTO_TEST_CASE(SumToAddTest) {
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
-  ir.prepare({modelProto,
-              InputShapeInfo(),
-              dataFlow,
-              {},
-              nullptr,
-              *device,
-              userOptions,
-              Patterns({PreAliasPatternType::SumtoAdd})});
+  ir.prepare(
+      {modelProto,
+       InputShapeInfo(),
+       dataFlow,
+       {},
+       nullptr,
+       *device,
+       userOptions,
+       Patterns({PreAliasPatternType::SumtoAdd}).enableRuntimeAsserts(false)});
 
   BOOST_CHECK(ir.opsOfType(Onnx::Operators::Sum_8).size() == 0);
   BOOST_CHECK(ir.opsOfType(Onnx::Operators::Add_7).size() == 1);

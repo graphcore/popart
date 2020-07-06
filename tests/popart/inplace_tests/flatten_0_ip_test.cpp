@@ -92,6 +92,7 @@ BOOST_AUTO_TEST_CASE(Inplace_flatten0) {
         opts,
 
         popart::Patterns(PatternsLevel::NoPatterns)
+            .enableRuntimeAsserts(false)
             .enableInPlace(true)
             .enableOpToReshape(true));
 

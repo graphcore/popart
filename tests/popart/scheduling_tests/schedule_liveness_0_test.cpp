@@ -94,7 +94,7 @@ void setIr(uint64_t N, Ir &ir) {
               nullptr,
               *device,
               opts,
-              Patterns({})});
+              Patterns({}).enableRuntimeAsserts(false)});
 }
 
 BOOST_AUTO_TEST_CASE(ScheduleLiveness0Test) {

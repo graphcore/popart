@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE(CorrectBufferNElmsTest0) {
       device,
       popart::InputShapeInfo(),
       opts,
-      popart::Patterns(PatternsLevel::NoPatterns));
+      popart::Patterns(PatternsLevel::NoPatterns).enableRuntimeAsserts(false));
   float rawOutputData;
   Shape outShape{};
   popart::NDArrayWrapper<float> outData(&rawOutputData, outShape);

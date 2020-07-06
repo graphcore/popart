@@ -54,7 +54,9 @@ BOOST_AUTO_TEST_CASE(InplaceAnchortest1) {
               nullptr,
               *device,
               {},
-              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns)
+                  .enableRuntimeAsserts(false)
+                  .enableInPlace(true)});
 
   auto sched = ir.getOpSchedule({});
   BOOST_CHECK(sched.size() == 3);
@@ -109,7 +111,9 @@ BOOST_AUTO_TEST_CASE(InplaceAnchorTest2) {
               nullptr,
               *device,
               {},
-              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns)
+                  .enableRuntimeAsserts(false)
+                  .enableInPlace(true)});
 
   auto sched = ir.getOpSchedule({});
   BOOST_CHECK(sched.size() == 4);
@@ -171,7 +175,9 @@ BOOST_AUTO_TEST_CASE(InplaceAnchorTest3) {
               nullptr,
               *device,
               {},
-              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns)
+                  .enableRuntimeAsserts(false)
+                  .enableInPlace(true)});
 
   auto sched = ir.getOpSchedule({});
   BOOST_CHECK(sched.size() == 5);

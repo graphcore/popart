@@ -797,6 +797,7 @@ PYBIND11_MODULE(popart_core, m) {
     py::enum_<PatternsLevel> en(m, "PatternsLevel");
     en.value("All", PatternsLevel::All);
     en.value("Default", PatternsLevel::Default);
+    en.value("Minimal", PatternsLevel::Minimal);
     en.value("NoPatterns", PatternsLevel::NoPatterns);
   }
   {
@@ -892,10 +893,9 @@ PYBIND11_MODULE(popart_core, m) {
   {
     py::class_<Patterns> cls(m, "Patterns");
     cls.def(py::init<>());
-    cls.def(py::init<PatternsLevel>());
-    cls.def(py::init<std::vector<PreAliasPatternType>>());
-    cls.def(py::init(
-        [](std::vector<std::string> l) { return Patterns::create(l); }));
+    cls.def(py::init<PatternsLevel>(), py::arg("level"));
+    cls.def(py::init<std::vector<PreAliasPatternType>>(), py::arg("types"));
+    cls.def(py::init<std::vector<std::string>>(), py::arg("patterns"));
     cls.def_property("PreUniRepl",
                      &Patterns::isPreUniReplEnabled,
                      &Patterns::enablePreUniRepl);
@@ -940,6 +940,7 @@ PYBIND11_MODULE(popart_core, m) {
       ss << p;
       return ss.str();
     });
+    cls.def("enableRuntimeAsserts", &Patterns::enableRuntimeAsserts);
   }
   {
     py::class_<OutOfMemoryError> cls(m, "OutOfMemoryError");

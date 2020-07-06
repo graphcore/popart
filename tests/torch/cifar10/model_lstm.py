@@ -93,9 +93,8 @@ torchWriter = torchwriter.PytorchNetWriter(
     ### Torch specific:
     module=Module0(),
     samplesPerBatch=batchSize)
-
-c10driver.run(
-    torchWriter,
-    popart.Patterns(['PreUniRepl', 'MulArgGradOp', 'AbsGradOp',
-                     'OpToReshape']), args.outputdir, cifarInIndices,
-    args.device, args.hw_id)
+patterns = popart.Patterns(
+    ['PreUniRepl', 'MulArgGradOp', 'AbsGradOp', 'OpToReshape'])
+patterns.enableRuntimeAsserts(False)
+c10driver.run(torchWriter, patterns, args.outputdir, cifarInIndices,
+              args.device, args.hw_id)

@@ -85,7 +85,9 @@ BOOST_AUTO_TEST_CASE(Inplace_parallel0) {
               &optimizer,
               *device,
               {},
-              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns)
+                  .enableRuntimeAsserts(false)
+                  .enableInPlace(true)});
 
   // Check the ir
   // Just the Relu has been inplaced
@@ -141,7 +143,9 @@ BOOST_AUTO_TEST_CASE(Inplace_parallel1) {
               nullptr,
               *device,
               {},
-              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns)
+                  .enableRuntimeAsserts(false)
+                  .enableInPlace(true)});
 
   // Check the ir
   // Only the Exp has been inplaced

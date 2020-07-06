@@ -100,7 +100,8 @@ BOOST_AUTO_TEST_CASE(NormOnlyRecomputeTest) {
                 *device,
                 opts,
                 Patterns({PreAliasPatternType::OptoIdentity,
-                          PreAliasPatternType::PostNRepl})});
+                          PreAliasPatternType::PostNRepl})
+                    .enableRuntimeAsserts(false)});
 
     int nRecompute = 0;
     for (auto op : ir.getOpSchedule({})) {

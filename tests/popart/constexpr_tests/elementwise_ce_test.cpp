@@ -77,14 +77,15 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add0) {
   auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
-  ir.prepare({modelProto,
-              InputShapeInfo(),
-              dataFlow,
-              l1,
-              &optimizer,
-              *device,
-              {}, // no SessionOptions
-              Patterns({PreAliasPatternType::PostNRepl})});
+  ir.prepare(
+      {modelProto,
+       InputShapeInfo(),
+       dataFlow,
+       l1,
+       &optimizer,
+       *device,
+       {}, // no SessionOptions
+       Patterns({PreAliasPatternType::PostNRepl}).enableRuntimeAsserts(false)});
 
   // Check the ir
   // 1) that the Reshape Op is present,
@@ -162,14 +163,15 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add1) {
   auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
-  ir.prepare({modelProto,
-              InputShapeInfo(),
-              dataFlow,
-              {}, // no loss
-              {}, // no optimizer
-              *device,
-              {}, // no SessionOptions
-              Patterns({PreAliasPatternType::PostNRepl})});
+  ir.prepare(
+      {modelProto,
+       InputShapeInfo(),
+       dataFlow,
+       {}, // no loss
+       {}, // no optimizer
+       *device,
+       {}, // no SessionOptions
+       Patterns({PreAliasPatternType::PostNRepl}).enableRuntimeAsserts(false)});
 
   // Check that the Add Op is has been removed from the IR
   // by ConstExpr folding
@@ -236,14 +238,15 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add2) {
   auto device   = createTestDevice(TEST_TARGET);
 
   Ir ir;
-  ir.prepare({modelProto,
-              InputShapeInfo(),
-              dataFlow,
-              {}, // no loss
-              {}, // no optimizer
-              *device,
-              {}, // no SessionOptions
-              Patterns({PreAliasPatternType::PostNRepl})});
+  ir.prepare(
+      {modelProto,
+       InputShapeInfo(),
+       dataFlow,
+       {}, // no loss
+       {}, // no optimizer
+       *device,
+       {}, // no SessionOptions
+       Patterns({PreAliasPatternType::PostNRepl}).enableRuntimeAsserts(false)});
 
   // Check that the producer of a1 Add Op is has been removed from the IR
   // by ConstExpr folding
@@ -308,7 +311,7 @@ template <typename T> void ConstExprTest_Add_Type(std::string type) {
       device,
       InputShapeInfo(),
       {}, // no SessionOptions
-      Patterns({PreAliasPatternType::PostNRepl}));
+      Patterns({PreAliasPatternType::PostNRepl}).enableRuntimeAsserts(false));
 
   T rawInputData[4] = {(T)1.1f, 2, 3, 4};
   popart::NDArrayWrapper<T> inData(rawInputData, {2, 2});
@@ -380,14 +383,15 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Div0) {
   auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
-  ir.prepare({modelProto,
-              InputShapeInfo(),
-              dataFlow,
-              l1,
-              &optimizer,
-              *device,
-              {}, // no SessionOptions
-              Patterns({PreAliasPatternType::PostNRepl})});
+  ir.prepare(
+      {modelProto,
+       InputShapeInfo(),
+       dataFlow,
+       l1,
+       &optimizer,
+       *device,
+       {}, // no SessionOptions
+       Patterns({PreAliasPatternType::PostNRepl}).enableRuntimeAsserts(false)});
 
   // Check the ir
   // 1) that the Reshape Op is present,
@@ -469,14 +473,15 @@ void ConstExprTest_Elementwise_Test(
   auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
-  ir.prepare({modelProto,
-              InputShapeInfo(),
-              dataFlow,
-              l1,
-              &optimizer,
-              *device,
-              {}, // no SessionOptions
-              Patterns({PreAliasPatternType::PostNRepl})});
+  ir.prepare(
+      {modelProto,
+       InputShapeInfo(),
+       dataFlow,
+       l1,
+       &optimizer,
+       *device,
+       {}, // no SessionOptions
+       Patterns({PreAliasPatternType::PostNRepl}).enableRuntimeAsserts(false)});
 
   // Check the ir
   // 1) that the Add Op is present,

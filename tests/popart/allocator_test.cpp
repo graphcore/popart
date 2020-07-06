@@ -60,7 +60,7 @@ BOOST_AUTO_TEST_CASE(allocator_conv_control) {
               {},         // no optimizer
               *cpuDevice, // no deviceInfo
               {},         // no SessionOptions
-              Patterns({})});
+              Patterns({}).enableRuntimeAsserts(false)});
 
   std::unique_ptr<popx::Devicex> device;
   device.reset(new popx::Devicex(ir, cpuDevice));
@@ -116,7 +116,7 @@ BOOST_AUTO_TEST_CASE(allocator_single_input_viewchanging_conv) {
               {},         // no optimizer
               *cpuDevice, // noDeviceInfo
               {},         // no SessionOptions
-              Patterns({})});
+              Patterns({}).enableRuntimeAsserts(false)});
 
   std::unique_ptr<popx::Devicex> device;
   device.reset(new popx::Devicex(ir, cpuDevice));

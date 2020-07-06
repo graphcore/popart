@@ -220,6 +220,8 @@ std::string Ir::getPatternLevelStr(const Patterns &p) {
     return "all";
   } else if (isPatternsLevel(p, PatternsLevel::Default)) {
     return "default";
+  } else if (isPatternsLevel(p, PatternsLevel::Minimal)) {
+    return "minimal";
   } else if (isPatternsLevel(p, PatternsLevel::NoPatterns)) {
     return "no";
   } else {

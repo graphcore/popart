@@ -19,5 +19,5 @@ def test_gather_big(op_tester):
         out = np.take(d1, d2, axis=axis)
         return [out]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')

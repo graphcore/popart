@@ -28,7 +28,7 @@ def test_slice_basic(op_tester):
         result = np.asarray([[5, 6, 7]], dtype=np.float32)
         return [result]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -53,7 +53,7 @@ def test_slice_complex(op_tester):
         result = dummy + s
         return [result]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 

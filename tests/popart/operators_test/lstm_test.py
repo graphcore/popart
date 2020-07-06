@@ -160,7 +160,8 @@ def test_lstm_popart(op_tester):
         return [Y, Y_h, Y_c]
 
     op_tester.device = tu.create_test_device()
-    op_tester.patterns = ['LSTMOp', 'SplitGradOpToConcat', 'OpToReshape']
+    op_tester.setPatterns(['LSTMOp', 'SplitGradOpToConcat', 'OpToReshape'],
+                          enableRuntimeAsserts=False)
     session = op_tester.run(init_builder, reference, 'train')
 
     ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
@@ -198,7 +199,8 @@ def test_lstm_outlining(op_tester):
         return [None]
 
     op_tester.device = tu.create_test_device()
-    op_tester.patterns = ['LSTMOp', 'SplitGradOpToConcat', 'OpToReshape']
+    op_tester.setPatterns(['LSTMOp', 'SplitGradOpToConcat', 'OpToReshape'],
+                          enableRuntimeAsserts=False)
     session = op_tester.run(init_builder, reference, 'train')
 
     ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
@@ -573,7 +575,8 @@ def test_lstm_torch(op_tester):
 
         return [Y, Y_h, Y_c]
 
-    op_tester.patterns = ['PreUniRepl', 'OpToReshape']
+    op_tester.setPatterns(['PreUniRepl', 'OpToReshape'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -651,7 +654,8 @@ def test_lstm_torch_grad(op_tester):
 
         return [Y2, a.grad, wig, whg, None]
 
-    op_tester.patterns = ['PreUniRepl', 'OpToReshape']
+    op_tester.setPatterns(['PreUniRepl', 'OpToReshape'],
+                          enableRuntimeAsserts=False)
     # relaxing the numerical precision required for this test:
     op_tester.atol = 1e-06
     op_tester.rtol = 1e-03

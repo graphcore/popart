@@ -98,7 +98,7 @@ def test_average_pool_4(op_tester):
     def reference(ref_data):
         return [d1]
 
-    op_tester.patterns = ['OpToIdentity']
+    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference)
 
 
@@ -263,7 +263,7 @@ def test_maxpool_5(op_tester):
     def reference(ref_data):
         return [d1]
 
-    op_tester.patterns = ['OpToIdentity']
+    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference)
 
 
@@ -293,7 +293,8 @@ def test_maxpool_grad(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, t1.grad, None]
 
-    op_tester.patterns = ['PreUniRepl', 'OpToIdentity']
+    op_tester.setPatterns(['PreUniRepl', 'OpToIdentity'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, step_type='train')
 
 
@@ -312,7 +313,7 @@ def test_globalmaxpool_2d(op_tester):
         out = globalmaxpool(t1)
         return [out]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, step_type='infer')
 
 
@@ -337,7 +338,8 @@ def test_globalmaxpool_grad_2d(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, t1.grad, None]
 
-    op_tester.patterns = ['PreUniRepl', 'OpToIdentity']
+    op_tester.setPatterns(['PreUniRepl', 'OpToIdentity'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, step_type='train')
 
 
@@ -357,7 +359,7 @@ def test_globalmaxpool_3d(op_tester):
         out = globalmaxpool(t1)
         return [out]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, step_type='infer')
 
 
@@ -376,7 +378,7 @@ def test_globalaveragepool_2d(op_tester):
         out = globalaveragepool(t1)
         return [out]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, step_type='infer')
 
 
@@ -401,5 +403,6 @@ def test_globalaveragepool_grad_2d(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, t1.grad, None]
 
-    op_tester.patterns = ['PreUniRepl', 'OpToIdentity']
+    op_tester.setPatterns(['PreUniRepl', 'OpToIdentity'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, step_type='train')

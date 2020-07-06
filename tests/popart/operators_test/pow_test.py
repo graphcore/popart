@@ -81,5 +81,6 @@ def test_pow_grad(op_tester):
 
     # Need to have NaN == NaN to mirror numpy's functionality
     op_tester.equal_nan = True
-    op_tester.patterns = ["PreUniRepl", "PowArg0GradOp", "PowArg1GradOp"]
+    op_tester.setPatterns(["PreUniRepl", "PowArg0GradOp", "PowArg1GradOp"],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')

@@ -32,7 +32,7 @@ def test_dropout_testing(op_tester):
     op_tester.run(init_builder, reference, 'infer')
 
     # ... and with identity pattern
-    op_tester.patterns = ['OpToIdentity']
+    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 

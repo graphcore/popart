@@ -87,7 +87,8 @@ def _test_gemm(op_tester, A, B, C, alpha, beta, transA, transB):
         o = alpha * np.dot(a, b) + beta * c
         return [o]
 
-    op_tester.patterns = ['GemmDecomposition', 'OpToReshape']
+    op_tester.setPatterns(['GemmDecomposition', 'OpToReshape'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -124,8 +125,9 @@ def _test_gemm_grad(op_tester, A, B, C, alpha, beta, transA, transB):
         o.backward(torch.tensor(d__o))
         return [o, a.grad, b.grad, c.grad, None]
 
-    op_tester.patterns = [
+    op_tester.setPatterns([
         'GemmDecomposition', 'PreUniRepl', 'MatMulLhsGradOp',
         'MatMulRhsGradOp', 'OpToReshape'
-    ]
+    ],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')

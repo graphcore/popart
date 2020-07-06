@@ -85,7 +85,7 @@ PreAliasPatternManager &PreAliasPatternManager::getInstance() {
   return instance;
 }
 
-Patterns::Patterns(PatternsLevel level) {
+Patterns::Patterns(PatternsLevel level) : runtimeAssertsOn{true} {
   switch (level) {
 
   // add the default patterns
@@ -109,6 +109,19 @@ Patterns::Patterns(PatternsLevel level) {
     break;
   }
 
+  // add all mandatory patterns
+  case PatternsLevel::Minimal: {
+    for (auto &ti_info : PreAliasPatternManager::getPatternInfos()) {
+      auto &ti   = ti_info.first;
+      auto &info = ti_info.second;
+      if (info.mandatory) {
+        settings.insert({ti, true});
+      }
+    }
+    inplaceEnabled = true;
+    break;
+  }
+
   // add none of the patterns
   case PatternsLevel::NoPatterns: {
     break;
@@ -116,7 +129,8 @@ Patterns::Patterns(PatternsLevel level) {
   };
 }
 
-Patterns::Patterns(std::vector<PreAliasPatternType> types) {
+Patterns::Patterns(std::vector<PreAliasPatternType> types)
+    : runtimeAssertsOn{true} {
   logging::pattern::warn(
       "`Patterns::Patterns(std::vector<PreAliasPatternType> types)' "
       "constructor is deprecated and will be removed in a future release. "
@@ -128,17 +142,15 @@ Patterns::Patterns(std::vector<PreAliasPatternType> types) {
     settings.insert({ti, true});
   }
 }
-
-Patterns Patterns::create(std::vector<std::string> strings) {
-  Patterns patterns(PatternsLevel::NoPatterns);
+Patterns::Patterns(std::vector<std::string> strings) : runtimeAssertsOn{true} {
 
   for (auto p : strings) {
     if (p == "InPlace") {
-      patterns.enableInPlace(true);
+      enableInPlace(true);
     } else {
       auto ti = PreAliasPatternManager::tryGetTypeIndex(p);
       if (ti) {
-        patterns.settings.insert({*ti, true});
+        settings.insert({*ti, true});
       } else {
         if (p == "Inplace") {
           throw error("Unknown pattern {}, did you mean InPlace?", p);
@@ -148,8 +160,10 @@ Patterns Patterns::create(std::vector<std::string> strings) {
       }
     }
   }
+}
 
-  return patterns;
+Patterns Patterns::create(std::vector<std::string> strings) {
+  return Patterns(strings);
 }
 
 template <typename PATTERN> bool Patterns::isPatternEnabled() {
@@ -407,6 +421,21 @@ Patterns &Patterns::enableMatMulRhsGradOp(bool v) {
 Patterns &Patterns::enablePattern(const std::type_index &t, bool v) {
   logging::pattern::warn(
       "Pattern {} {}", PreAliasPatternManager::getPatternName(t), v);
+  if (!v) {
+    // Check the user is not disabling a mandatory pattern.
+    const auto &patternInfosMap   = PreAliasPatternManager::getPatternInfos();
+    const auto &patternInfosMapIt = patternInfosMap.find(t);
+    if (patternInfosMapIt != patternInfosMap.end()) {
+      const auto &mandatory = patternInfosMapIt->second.mandatory;
+      if (mandatory) {
+        throw error("Pattern '{}' is mandatory and cannot be disabled",
+                    PreAliasPatternManager::getPatternName(t));
+      }
+    } else {
+      throw error("Unable to find pattern information for pattern '{}'",
+                  PreAliasPatternManager::getPatternName(t));
+    }
+  }
   settings[t] = v;
   return *this;
 }
@@ -425,7 +454,29 @@ Patterns &Patterns::enablePattern(PreAliasPatternType t, bool v) {
   return enablePattern(ti, v);
 }
 
+void Patterns::ensureAllMandatoryPreAliasPatternsAreEnabled() const {
+  const auto &patternInfosMap = PreAliasPatternManager::getPatternInfos();
+  for (const auto &patternInfosMapIt : patternInfosMap) {
+    const auto &typeIndex = patternInfosMapIt.first;
+    const auto &mandatory = patternInfosMapIt.second.mandatory;
+
+    const auto &settingsFindIt = settings.find(typeIndex);
+    const bool enabled =
+        settingsFindIt != settings.end() && settingsFindIt->second;
+
+    if (mandatory && !enabled) {
+      throw error("Pattern '{}' must be enabled",
+                  PreAliasPatternManager::getPatternName(typeIndex));
+    }
+  }
+}
+
 std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
+
+  if (runtimeAssertsOn) {
+    ensureAllMandatoryPreAliasPatternsAreEnabled();
+  }
+
   static std::map<std::type_index, float> patternPriority{
       {std::type_index(typeid(InitAccumulatePattern)), 37},
       {std::type_index(typeid(PreUniRepl)), 36},
@@ -471,6 +522,7 @@ std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
   for (auto &typeIndex_enabled : settings) {
     auto &typeIndex = typeIndex_enabled.first;
     auto enabled    = typeIndex_enabled.second;
+
     if (enabled) {
       patternTypes.push_back(typeIndex);
     }

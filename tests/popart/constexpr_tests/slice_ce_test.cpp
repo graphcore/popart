@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Slice0) {
               &optimizer,
               *device,
               {}, // no SessionOptions
-              Patterns({})});
+              Patterns({}).enableRuntimeAsserts(false)});
 
   // Check the ir
   // 1) that the Add Op is present,
@@ -125,7 +125,7 @@ template <typename T> void ConstExprTest_Slice0_Type() {
               &optimizer,
               *device,
               {}, // no SessionOptions
-              Patterns({})});
+              Patterns({}).enableRuntimeAsserts(false)});
 
   // Check the ir
   // 1) that the Add Op is present,

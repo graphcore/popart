@@ -92,7 +92,8 @@ def test_groupnorm_0(op_tester):
 
         return [_y, _mean, _invstd, None, None, None, d__o]
 
-    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp', 'MulArgGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp', 'MulArgGradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -165,7 +166,8 @@ def test_groupnorm_1(op_tester):
             _y, _mean, _invstd, _input.grad, m.weight.grad, m.bias.grad, d__o
         ]
 
-    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp', 'MulArgGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp', 'MulArgGradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -216,7 +218,7 @@ def test_groupnorm_2(op_tester):
 
         return [_y, _mean, _invstd]
 
-    op_tester.patterns = ['PreUniRepl']
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -291,7 +293,8 @@ def test_groupnorm_3(op_tester):
             _y, _mean, _invstd, _input.grad, m.weight.grad, m.bias.grad, d__o
         ]
 
-    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp', 'MulArgGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp', 'MulArgGradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -335,7 +338,8 @@ def test_groupnorm_4(op_tester):
     # fp16 outputs might be slightly off.
     op_tester.atol = 1e-6
     op_tester.rtol = 1e-3
-    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -510,5 +514,6 @@ def test_groupnorm_5(op_tester):
     # Calculation is still pretty iffy at such large mean / std dev ratio.
     op_tester.rtol = 1e-3
     op_tester.atol = 1e-5
-    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp', 'MulArgGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp', 'MulArgGradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')

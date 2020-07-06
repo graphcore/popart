@@ -88,7 +88,7 @@ BOOST_AUTO_TEST_CASE(Introspection0_Subgraph) {
               &optimizer,
               *device,
               userOptions,
-              Patterns(PatternsLevel::NoPatterns)});
+              Patterns(PatternsLevel::NoPatterns).enableRuntimeAsserts(false)});
 
   auto sched = ir.getMainGraph().getOpSchedule({});
 

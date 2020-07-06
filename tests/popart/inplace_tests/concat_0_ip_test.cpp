@@ -68,7 +68,9 @@ BOOST_AUTO_TEST_CASE(Inplace_concat0) {
               &optimizer,
               *device,
               {},
-              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns)
+                  .enableRuntimeAsserts(false)
+                  .enableInPlace(true)});
 
   // Check the ir
   // All the Relus have been optimised out,

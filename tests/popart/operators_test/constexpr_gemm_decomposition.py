@@ -41,5 +41,5 @@ def test_gemm_basic(op_tester):
         o = alpha * np.dot(a, b) + beta * c
         return [o]
 
-    op_tester.patterns = ['GemmDecomposition']
+    op_tester.setPatterns(['GemmDecomposition'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')

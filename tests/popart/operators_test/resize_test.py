@@ -103,7 +103,7 @@ def test_resize_nearest_grad_1d(op_tester):
             print('-' * 60)
             return [o, a.grad, None]
 
-        op_tester.patterns = ['MulArgGradOp']
+        op_tester.setPatterns(['MulArgGradOp'], enableRuntimeAsserts=False)
         op_tester.run(init_builder, reference, 'train')
 
     run_test(2)
@@ -156,7 +156,7 @@ def test_resize_nearest_grad_2d(op_tester):
             print('-' * 60)
             return [o, a.grad, None]
 
-        op_tester.patterns = ['MulArgGradOp']
+        op_tester.setPatterns(['MulArgGradOp'], enableRuntimeAsserts=False)
         op_tester.run(init_builder, reference, 'train')
 
     run_test(2, 2)
@@ -205,7 +205,7 @@ def test_upsample_nearest_grad(op_tester):
             o.backward(torch.tensor(d__o))
             return [o, a.grad, None]
 
-        op_tester.patterns = ['MulArgGradOp']
+        op_tester.setPatterns(['MulArgGradOp'], enableRuntimeAsserts=False)
         op_tester.run(init_builder, reference, 'train')
 
     run_test([2, 2], [2.0, 3.0])
@@ -249,7 +249,7 @@ def test_downsample_nearest_grad(op_tester):
             o.backward(torch.tensor(d__o))
             return [o, a.grad, None]
 
-        op_tester.patterns = ['MulArgGradOp']
+        op_tester.setPatterns(['MulArgGradOp'], enableRuntimeAsserts=False)
         op_tester.run(init_builder, reference, 'train')
 
     run_test([2, 4], [0.5, 0.5])

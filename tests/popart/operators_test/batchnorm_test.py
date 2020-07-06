@@ -115,7 +115,8 @@ def test_batchnorm_train_0_errorcases(op_tester):
 
         return [o_y]
 
-    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp'],
+                          enableRuntimeAsserts=False)
 
     # Case 0 input tensor has less than 4 dimensions
     with pytest.raises(popart.popart_exception) as e_info:
@@ -233,7 +234,8 @@ def test_batchnorm_train_0(op_tester):
 
         return [_y, _input.grad, d__o]
 
-    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.atol *= 10
     op_tester.run(init_builder, reference, 'train')
 
@@ -314,7 +316,8 @@ def test_batchnorm_train_1(op_tester):
 
             return [_y, _input.grad, d__o]
 
-        op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
+        op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp'],
+                              enableRuntimeAsserts=False)
         session = op_tester.run(init_builder, reference, 'train')
 
         onnx_filename = "test_batchnorm_train_1.onnx"
@@ -391,7 +394,8 @@ def test_batchnorm_train_2(op_tester):
 
         return [_y, None, None]
 
-    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -451,7 +455,8 @@ def test_batchnorm_train_3(op_tester):
 
         return [_y, _input.grad, d__o]
 
-    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp'],
+                          enableRuntimeAsserts=False)
 
     with pytest.raises(popart.popart_exception) as e_info:
         op_tester.run(init_builder, reference, 'train')
@@ -533,7 +538,8 @@ def test_batchnorm_train_nonspatial(op_tester):
     # x=random, scale=1, bias=0, mean=0 and variance=1 to see this exaggerated.
     op_tester.atol = 1e-06
     op_tester.rtol = 1e-03
-    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder,
                   reference,
                   'train',
@@ -623,7 +629,8 @@ def test_batchnorm_train_nonspatial_2(op_tester):
             ref_data.getOutputTensor(2)
         ]
 
-    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder,
                   reference,
                   'infer',
@@ -666,7 +673,7 @@ def test_batchnorm_train_nonspatial_2(op_tester):
 
 #         return [_input, None, None]
 
-#     op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
+#     op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp'], enableRuntimeAsserts=False)
 #     op_tester.run(init_builder, reference, 'train')
 
 
@@ -717,7 +724,8 @@ def test_batchnorm_test_0(op_tester):
 
         return [_y]
 
-    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -766,7 +774,8 @@ def test_batchnorm_test_1(op_tester):
 
         return [_y]
 
-    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -814,7 +823,8 @@ def test_batchnorm_test_2(op_tester):
 
         return [_y]
 
-    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -846,7 +856,8 @@ def test_batchnorm_test_3(op_tester):
         _input = torch.tensor(d1, requires_grad=False)
         return [_input]
 
-    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.check_shapes = False
     op_tester.run(init_builder, reference, 'infer')
 
@@ -903,7 +914,8 @@ def test_batchnorm_test_nonspatial(op_tester):
 
         return [_y]
 
-    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder,
                   reference,
                   'infer',
@@ -973,7 +985,8 @@ def test_batchnorm_test_nonspatial_2(op_tester):
     def reference(ref_data):
         return [ref_data.getOutputTensor(1), ref_data.getOutputTensor(0)]
 
-    op_tester.patterns = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder,
                   reference,
                   'infer',

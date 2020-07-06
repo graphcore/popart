@@ -17,7 +17,7 @@
 
 namespace popart {
 
-enum class PatternsLevel { NoPatterns, Default, All };
+enum class PatternsLevel { NoPatterns, Minimal, Default, All };
 
 class PatternNames {
 public:
@@ -53,6 +53,7 @@ class PreAliasPatternManager {
 private:
   struct PreAliasPatternInfo {
     bool enabledByDefault;
+    bool mandatory;
     std::string name;
     std::function<std::unique_ptr<PreAliasPattern>()> factory;
   };
@@ -72,9 +73,10 @@ public:
                   const std::type_index &ti,
                   std::string name,
                   bool enabled,
+                  bool mandatory,
                   std::function<std::unique_ptr<PreAliasPattern>()> func) {
     getInstance().patternInfos.insert(
-        {ti, PreAliasPatternInfo{enabled, name, func}});
+        {ti, PreAliasPatternInfo{enabled, mandatory, name, func}});
     getInstance().patternTypeToTypeIndex.insert({type, ti});
   }
 
@@ -82,9 +84,10 @@ public:
   registerPattern(const std::type_index &ti,
                   std::string name,
                   bool enabled,
+                  bool mandatory,
                   std::function<std::unique_ptr<PreAliasPattern>()> func) {
     getInstance().patternInfos.insert(
-        {ti, PreAliasPatternInfo{enabled, name, func}});
+        {ti, PreAliasPatternInfo{enabled, mandatory, name, func}});
   }
 
   static const std::map<std::type_index, PreAliasPatternInfo> &
@@ -148,20 +151,32 @@ template <class PATTERN> class PatternCreator {
 public:
   PatternCreator(PreAliasPatternType type,
                  std::string name,
-                 bool enabled = true) {
+                 bool enabled   = true,
+                 bool mandatory = false) {
     auto ti = std::type_index(typeid(PATTERN));
     PreAliasPatternManager::registerPattern(
-        type, ti, name, enabled, [name]() -> std::unique_ptr<PreAliasPattern> {
+        type,
+        ti,
+        name,
+        enabled,
+        mandatory,
+        [name]() -> std::unique_ptr<PreAliasPattern> {
           auto pattern = std::unique_ptr<PATTERN>(new PATTERN());
           return std::move(pattern);
         });
     AddPatternName<PATTERN> registerName(name);
   }
 
-  PatternCreator(std::string name, bool enabled = true) {
+  PatternCreator(std::string name,
+                 bool enabled   = true,
+                 bool mandatory = false) {
     auto ti = std::type_index(typeid(PATTERN));
     PreAliasPatternManager::registerPattern(
-        ti, name, enabled, [name]() -> std::unique_ptr<PreAliasPattern> {
+        ti,
+        name,
+        enabled,
+        mandatory,
+        [name]() -> std::unique_ptr<PreAliasPattern> {
           auto pattern = std::unique_ptr<PATTERN>(new PATTERN());
           return std::move(pattern);
         });
@@ -178,8 +193,8 @@ private:
 
 public:
   Patterns(std::vector<PreAliasPatternType> types);
-
   Patterns(PatternsLevel level = PatternsLevel::Default);
+  Patterns(std::vector<std::string> patterns);
 
   static Patterns create(std::vector<std::string> patterns);
 
@@ -263,19 +278,27 @@ public:
   Patterns &enableMatMulOp(bool v);
   Patterns &enableMatMulLhsGradOp(bool v);
   Patterns &enableMatMulRhsGradOp(bool v);
-
+  Patterns &enableRuntimeAsserts(bool b) {
+    runtimeAssertsOn = b;
+    return *this;
+  }
   std::vector<std::unique_ptr<PreAliasPattern>> getPreAliasList();
 
   bool operator==(const Patterns &p) const;
   friend std::ostream &operator<<(std::ostream &os, const Patterns &patterns);
 
 private:
+  void ensureAllMandatoryPreAliasPatternsAreEnabled() const;
+
   // Map of which settings are enabled, indexed by value of std::type_index
   std::map<std::type_index, bool> settings;
 
   // the one pattern which is not a PreAliasPattern
   bool inplaceEnabled{false};
   bool updateInplacePrioritiesForIpuEnabled{false};
+
+  // If set we throw an error if a mandatory pattern is disabled.
+  bool runtimeAssertsOn{true};
 };
 
 std::ostream &operator<<(std::ostream &os, const Patterns &patterns);

@@ -76,7 +76,8 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Gemm_Decomposition0) {
               *device,
               {}, // no SessionOptions
               Patterns({PreAliasPatternType::PostNRepl,
-                        PreAliasPatternType::GemmDecomposition})});
+                        PreAliasPatternType::GemmDecomposition})
+                  .enableRuntimeAsserts(false)});
 
   // Check the ir
   // 1) there should only be 1 scale op,

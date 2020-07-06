@@ -107,7 +107,7 @@ def test_l1_training(op_tester):
                 result[1::2] = [r.grad for r in result[1::2]]
                 return result
 
-            op_tester.patterns = ['OpToIdentity']
+            op_tester.setPatterns(["OpToIdentity"], enableRuntimeAsserts=False)
             op_tester.run(init_builder, reference, 'train')
 
 
@@ -136,7 +136,9 @@ def test_l1_reduction_equiv(op_tester):
                 dataFlow=popart.DataFlow(1, anchors),
                 optimizer=popart.ConstSGD(0.1),
                 deviceInfo=tu.create_test_device(),
-                patterns=popart.Patterns([]))
+                patterns=popart.Patterns(
+                    popart.PatternsLevel.NoPatterns).enableRuntimeAsserts(
+                        False))
             session.prepareDevice()
             session.weightsFromHost()
             anchors = session.initAnchorArrays()

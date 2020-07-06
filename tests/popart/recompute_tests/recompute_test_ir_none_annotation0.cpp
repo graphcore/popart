@@ -71,7 +71,8 @@ BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
                 *device,
                 opts,
                 Patterns({PreAliasPatternType::OptoIdentity,
-                          PreAliasPatternType::PostNRepl})});
+                          PreAliasPatternType::PostNRepl})
+                    .enableRuntimeAsserts(false)});
 
     auto opSchedule = ir.getOpSchedule({});
 

@@ -71,7 +71,9 @@ BOOST_AUTO_TEST_CASE(InplaceGraphOutputTest1) {
               nullptr,
               *device,
               {},
-              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns)
+                  .enableRuntimeAsserts(false)
+                  .enableInPlace(true)});
 
   auto sched      = ir.getOpSchedule({});
   auto graphSched = ir.getGraphSchedule();
@@ -146,7 +148,9 @@ BOOST_AUTO_TEST_CASE(InplaceGraphOutputTest2) {
               nullptr,
               *device,
               {},
-              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns)
+                  .enableRuntimeAsserts(false)
+                  .enableInPlace(true)});
 
   auto sched      = ir.getOpSchedule({});
   auto graphSched = ir.getGraphSchedule();
@@ -230,7 +234,9 @@ BOOST_AUTO_TEST_CASE(InplaceSubGraphOutputTest1) {
               nullptr,
               *device,
               {},
-              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns)
+                  .enableRuntimeAsserts(false)
+                  .enableInPlace(true)});
 
   auto sched      = ir.getOpSchedule({});
   auto graphSched = ir.getGraphSchedule();
@@ -317,7 +323,9 @@ BOOST_AUTO_TEST_CASE(InplaceSubGraphOutputTest2) {
               nullptr,
               *device,
               {},
-              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns)
+                  .enableRuntimeAsserts(false)
+                  .enableInPlace(true)});
 
   auto sched      = ir.getOpSchedule({});
   auto graphSched = ir.getGraphSchedule();
@@ -403,7 +411,9 @@ BOOST_AUTO_TEST_CASE(InplaceSubGraphOutputTest3) {
               nullptr,
               *device,
               {},
-              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns)
+                  .enableRuntimeAsserts(false)
+                  .enableInPlace(true)});
 
   auto sched      = ir.getOpSchedule({});
   auto graphSched = ir.getGraphSchedule();
@@ -489,7 +499,9 @@ BOOST_AUTO_TEST_CASE(InplaceSubGraphOutputTest4) {
               nullptr,
               *device,
               {},
-              Patterns(PatternsLevel::NoPatterns).enableInPlace(true)});
+              Patterns(PatternsLevel::NoPatterns)
+                  .enableRuntimeAsserts(false)
+                  .enableInPlace(true)});
 
   auto sched      = ir.getOpSchedule({});
   auto graphSched = ir.getGraphSchedule();
