@@ -61,7 +61,7 @@ void SubsampleShapeInference(InferenceContext &ctx) {
 void GroupNormalizationShapeInference(InferenceContext &ctx) {
   const unsigned int X_IN = 0;
 
-  const unsigned int Y_OUT    = 0;
+  // Unused: const unsigned int Y_OUT    = 0;
   const unsigned int MEAN_OUT = 1;
   const unsigned int STD_OUT  = 2;
 
