@@ -21,6 +21,18 @@ SyncPattern syncPatternFromString(const std::string &str) {
   throw error("Unknown syncPattern setting: {}", str);
 }
 
+std::string syncPatternToString(SyncPattern pattern) {
+  switch (pattern) {
+  case SyncPattern::Full:
+    return "full";
+  case SyncPattern::SinglePipeline:
+    return "singlePipeline";
+  case SyncPattern::PingPong:
+    return "pingPong";
+  }
+  throw error("Unknown syncPattern setting: {}", static_cast<int>(pattern));
+}
+
 DeviceManager &DeviceManager::createDeviceManager() {
   static DeviceManager deviceManager;
   return deviceManager;

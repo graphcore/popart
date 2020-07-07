@@ -204,9 +204,10 @@ std::shared_ptr<popart::DeviceInfo> DevicexManager::createHostDevice(
         mapFind<std::string>(options, "ipuVersion", "ipu1");
     poplar::OptionFlags flags;
 
-    addSyncConfig(syncPatternFromString(
-                      mapFind(options, "syncPattern", std::string("full"))),
-                  flags);
+    addSyncConfig(
+        syncPatternFromString(mapFind(
+            options, "syncPattern", syncPatternToString(SyncPattern::Full))),
+        flags);
 
     auto ipuTarget = poplar::Target::createIPUTarget(
         mapFind(options, "numIPUs", 1), poplar::StringRef(ipuVersion), flags);

@@ -17,6 +17,7 @@ enum class SyncPattern { Full = 0, SinglePipeline, PingPong };
 enum class DeviceConnectionType { Always = 0, OnDemand, Never };
 
 SyncPattern syncPatternFromString(const std::string &str);
+std::string syncPatternToString(SyncPattern pattern);
 
 class DeviceProvider;
 
