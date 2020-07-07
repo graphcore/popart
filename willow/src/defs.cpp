@@ -22,6 +22,11 @@ void LSTMShapeInference(InferenceContext &ctx);
 void GeluShapeInference(InferenceContext &ctx);
 void DetachShapeInference(InferenceContext &ctx);
 void CallShapeInference(InferenceContext &ctx);
+void L1ShapeInference(InferenceContext &ctx);
+void DynamicUpdateShapeInference(InferenceContext &ctx);
+void DynamicSliceInference(InferenceContext &ctx);
+void DynamicZeroShapeInference(InferenceContext &ctx);
+void DynamicAddShapeInference(InferenceContext &ctx);
 
 void SubsampleShapeInference(InferenceContext &ctx) {
   propagateElemTypeFromInputToOutput(ctx, 0, 0);
@@ -196,6 +201,34 @@ void CallShapeInference(InferenceContext &ctx) {
   }
 }
 
+void L1ShapeInference(InferenceContext &ctx) {
+  propagateElemTypeFromInputToOutput(ctx, 0, 0);
+  std::string reduction = getAttribute(ctx, "reduction", "mean");
+  if (reduction.compare("none") == 0) {
+    if (hasInputShape(ctx, 1)) {
+      propagateShapeFromInputToOutput(ctx, 1, 0);
+    }
+  } else {
+    updateOutputShape(ctx, 0, TensorShapeProto());
+  }
+}
+
+void DynamicUpdateShapeInference(InferenceContext &ctx) {
+  propagateShapeAndTypeFromFirstInput(ctx);
+}
+
+void DynamicSliceShapeInference(InferenceContext &ctx) {
+  propagateShapeAndTypeFromFirstInput(ctx);
+}
+
+void DynamicZeroShapeInference(InferenceContext &ctx) {
+  propagateShapeAndTypeFromFirstInput(ctx);
+}
+
+void DynamicAddShapeInference(InferenceContext &ctx) {
+  propagateShapeAndTypeFromFirstInput(ctx);
+}
+
 extern size_t dbg_count_check_GroupNormalization_AiGraphcore_ver1;
 extern size_t dbg_count_check_Subsample_AiGraphcore_ver1;
 extern size_t dbg_count_check_PrintTensor_AiGraphcore_ver1;
@@ -204,9 +237,15 @@ extern size_t dbg_count_check_LSTM_AiGraphcore_ver1;
 extern size_t dbg_count_check_Gelu_AiGraphcore_ver1;
 extern size_t dbg_count_check_Detach_AiGraphcore_ver1;
 extern size_t dbg_count_check_Call_AiGraphcore_ver1;
+extern size_t dbg_count_check_L1_AiGraphcore_ver1;
+extern size_t dbg_count_check_DynamicUpdate_AiGraphcore_ver1;
+extern size_t dbg_count_check_DynamicSlice_AiGraphcore_ver1;
+extern size_t dbg_count_check_DynamicZero_AiGraphcore_ver1;
+extern size_t dbg_count_check_DynamicAdd_AiGraphcore_ver1;
 
 static const char groupnormalizationDoc[] =
-    "GroupNormalization applies Group Normalization over a mini-batch of input";
+    "GroupNormalization applies Group Normalization over a mini-batch of "
+    "input";
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
     GroupNormalization,
@@ -278,7 +317,8 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
 
 static const char scaleDoc[] =
     "Scale takes one input data (Tensor<float>) and produces one output data "
-    "(Tensor<float>) whose value is the input data tensor scaled element-wise.";
+    "(Tensor<float>) whose value is the input data tensor scaled "
+    "element-wise.";
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
     Scale,
@@ -398,6 +438,150 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               true)
         .TypeAndShapeInferenceFunction(CallShapeInference))
 
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    L1,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("Calculates the mean absolute error between each element in "
+                "the input with a zero target")
+        .Input(0, "A", "Input tensor", "T")
+        .Output(0, "C", "Output tensor", "T")
+        .TypeConstraint(
+            "T",
+            {"tensor(float)",
+             "tensor(float16)",
+             "tensor(uint32)",
+             "tensor(int32)"},
+            "Constrain input and output types to float and int32 tensors.")
+        .Attr("lambda", "Regularization rate", AttributeProto::FLOAT, true)
+        .Attr("reduction",
+              "Reduction type (Mean, Sum, NoReduction)",
+              AttributeProto::STRING,
+              true)
+        .TypeAndShapeInferenceFunction(L1ShapeInference))
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    DynamicUpdate,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("Update a subtensor at offsets read from a tensor.")
+        .Input(0, "tensor", "Input tensor", "T")
+        .Input(1, "offset", "Offset tensor", "T")
+        .Input(2, "slice", "Slice tensor", "T")
+        .Output(0, "output", "TensorId of the output", "T")
+        .TypeConstraint(
+            "T",
+            {"tensor(float16)",
+             "tensor(float)",
+             "tensor(int8)",
+             "tensor(int16)",
+             "tensor(int32)",
+             "tensor(uint8)",
+             "tensor(uint16)",
+             "tensor(uint32)",
+             "tensor(bool)"},
+            "Input and output types can be any type supported by the IPU.")
+        .Attr("axes", "Axes along which to update.", AttributeProto::INTS, true)
+        .Attr("size",
+              "Size of the slice in each axis.",
+              AttributeProto::INTS,
+              true)
+        .Attr("noOverlap", ".", AttributeProto::INT, true)
+        .TypeAndShapeInferenceFunction(DynamicUpdateShapeInference))
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    DynamicSlice,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("Slice a tensor based on offsets specified by a tensor.")
+        .Input(0, "tensor", "Input tensor", "T")
+        .Input(1, "index", "Index tensor", "T")
+        .Output(0, "output", "TensorId of the output", "T")
+        .TypeConstraint(
+            "T",
+            {"tensor(float16)",
+             "tensor(float)",
+             "tensor(int8)",
+             "tensor(int16)",
+             "tensor(int32)",
+             "tensor(uint8)",
+             "tensor(uint16)",
+             "tensor(uint32)",
+             "tensor(bool)"},
+            "Input and output types can be any type supported by the IPU.")
+        .Attr("axes", "Axes along which to update.", AttributeProto::INTS, true)
+        .Attr("size",
+              "Size of the slice in each axis.",
+              AttributeProto::INTS,
+              true)
+        .Attr("noOverlap", ".", AttributeProto::INT, true)
+        .TypeAndShapeInferenceFunction(DynamicSliceShapeInference))
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    DynamicZero,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("Creates a copy of 'tensor' with a slice at 'offset' set to "
+                "zero, e.g. out = tensor, out[offset] = 0.0")
+        .Input(0, "tensor", "Input tensor", "T")
+        .Input(1, "offset", "Offset tensor", "T")
+        .Input(2, "slice", "Slice tensor", "T")
+        .Output(0, "output", "TensorId of the output", "T")
+        .TypeConstraint(
+            "T",
+            {"tensor(float16)",
+             "tensor(float)",
+             "tensor(int8)",
+             "tensor(int16)",
+             "tensor(int32)"},
+            "Constrain input and output types to signed numeric tensors.")
+        .Attr("axes", "Axes along which to erase.", AttributeProto::INTS, true)
+        .Attr("size",
+              "Size of the slice in each axis.",
+              AttributeProto::INTS,
+              true)
+        .TypeAndShapeInferenceFunction(DynamicZeroShapeInference))
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    DynamicAdd,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("Creates a copy of 'tensor' with 'slice' added at 'offset', "
+                "e.g. out = tensor, out[offset] += slice")
+        .Input(0, "tensor", "Input tensor", "T")
+        .Input(1, "offset", "Offset tensor", "T")
+        .Input(2, "slice", "Slice tensor", "T")
+        .Output(0, "output", "TensorId of the output", "T")
+        .TypeConstraint(
+            "T",
+            {"tensor(float16)",
+             "tensor(float)",
+             "tensor(int8)",
+             "tensor(int16)",
+             "tensor(int32)"},
+            "Constrain input and output types to signed numeric tensors.")
+        .Attr("axes", "Axes along which to add.", AttributeProto::INTS, true)
+        .Attr("size",
+              "Size of the slice in each axis.",
+              AttributeProto::INTS,
+              true)
+        .TypeAndShapeInferenceFunction(DynamicAddShapeInference))
+
 static bool registerOps() {
   auto &d = ONNX_NAMESPACE::OpSchemaRegistry::DomainToVersionRange::Instance();
   d.AddDomainToVersion(popart::Domain::ai_graphcore, 1, 1);
@@ -430,6 +614,13 @@ static bool registerOps() {
 
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(AiGraphcore, 1, Call)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(AiGraphcore, 1, L1)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, DynamicUpdate)>());
 
   return true;
 }

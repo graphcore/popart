@@ -6,6 +6,14 @@ import torch
 import pytest
 import torch.nn.functional as F
 from op_tester import op_tester
+from unittest.mock import Mock
+
+# importing test_session and test_util requires adding to sys.path
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+from test_session import PopartTestSession
+import test_util as tu
 
 
 # Test a chain of non-overlapping dynamic updates
@@ -256,3 +264,180 @@ def test_dynamicupdate_overlap_correct(op_tester):
 
     op_tester.patterns = popart.PatternsLevel.All
     op_tester.run(init_builder, reference, 'train')
+
+
+def test_dynamicupdate_shape():
+    """ A test taken from the deepvoice model, that tests the dynamicupdate
+output shape is correctly inferred inside a call op. Previously this would fail
+as the shape inference for the dynamicupdate, and thus the subgraph would not run.
+"""
+
+    def get_test_conf():
+        conf = Mock()
+        conf.samples_per_device_for_inference = 2
+        conf.decoder_channels = 256
+        conf.attention_hidden_size = 256
+        conf.inference_look_ahead = 3
+        conf.max_text_sequence_length = 80
+        return conf
+
+    def get_subbuilder(builder, conf):
+
+        subbuilder = builder.createSubgraphBuilder()
+
+        h_q_shape = popart.TensorInfo(
+            "FLOAT",
+            [conf.samples_per_device_for_inference, conf.decoder_channels, 1])
+        query_positional_encoding_shape = popart.TensorInfo(
+            "FLOAT",
+            [conf.samples_per_device_for_inference, conf.decoder_channels, 1])
+        query_projection_weights_shape = popart.TensorInfo(
+            "FLOAT", [conf.attention_hidden_size, conf.decoder_channels])
+        Q_k_shape = popart.TensorInfo("FLOAT", [
+            conf.samples_per_device_for_inference, conf.attention_hidden_size,
+            conf.max_text_sequence_length
+        ])
+        Q_v_shape = popart.TensorInfo("FLOAT", [
+            conf.samples_per_device_for_inference, conf.attention_hidden_size,
+            conf.max_text_sequence_length
+        ])
+        num_time_steps_shape = popart.TensorInfo("FLOAT", [1])
+        context_vec_projections_weights_shape = popart.TensorInfo(
+            "FLOAT", [conf.decoder_channels, conf.attention_hidden_size])
+
+        h_q = subbuilder.addInputTensor(h_q_shape)
+        query_positional_encoding = subbuilder.addInputTensor(
+            query_positional_encoding_shape)
+        query_projection_weights = subbuilder.addInputTensor(
+            query_projection_weights_shape)
+        Q_k = subbuilder.addInputTensor(Q_k_shape)
+        Q_v = subbuilder.addInputTensor(Q_v_shape)
+        num_time_steps = subbuilder.addInputTensor(num_time_steps_shape)
+        context_vec_projections_weights = subbuilder.addInputTensor(
+            context_vec_projections_weights_shape)
+
+        # forced monotonic attention elements
+        large_negative_tensor = subbuilder.addInputTensor(
+            popart.TensorInfo("FLOAT", [1, 1, conf.max_text_sequence_length]))
+        zeros_mask = subbuilder.addInputTensor(
+            popart.TensorInfo("FLOAT", [1, 1, conf.inference_look_ahead]))
+        last_attended = [
+            subbuilder.addInputTensor(popart.TensorInfo("INT32", [1]))
+            for _ in range(conf.samples_per_device_for_inference)
+        ]
+
+        # add positional encoding to queries
+        h_q = subbuilder.aiOnnx.add([h_q, query_positional_encoding])
+        Q_q = subbuilder.aiOnnx.matmul([query_projection_weights, h_q])
+
+        # transposing Q_q
+        Q_q_t = subbuilder.aiOnnx.transpose(
+            [Q_q], perm=[0, 2, 1])  # 1 X attention_hidden_size
+
+        # getting transformed query key dot products (1 X Tk)
+        attention_scores = subbuilder.aiOnnx.matmul([Q_q_t, Q_k])
+
+        # forced monotonic attention
+        attention_scores_split = subbuilder.aiOnnx.split(
+            [attention_scores],
+            num_outputs=conf.samples_per_device_for_inference,
+            axis=0)
+        for sample_ind in range(conf.samples_per_device_for_inference):
+            update_mask = subbuilder.aiGraphcore.dynamicupdate(
+                [large_negative_tensor, last_attended[sample_ind], zeros_mask],
+                axes=[2],
+                sizes=[conf.inference_look_ahead],
+                noOverlap=True)
+            attention_scores_split[sample_ind] = subbuilder.aiOnnx.add(
+                [attention_scores_split[sample_ind], update_mask])
+        attention_scores = subbuilder.aiOnnx.concat(attention_scores_split,
+                                                    axis=0)
+
+        attention_scores = subbuilder.aiOnnx.softmax([attention_scores],
+                                                     axis=2)
+
+        last_attended = subbuilder.aiOnnx.argmax([attention_scores], axis=2)
+
+        attention_scores = subbuilder.aiOnnx.transpose([attention_scores],
+                                                       perm=[0, 2,
+                                                             1])  # (Tk X 1)
+
+        # getting weighted average of value vectors to get context vectors
+        context_vector = subbuilder.aiOnnx.matmul(
+            [Q_v, attention_scores])  # (v X 1)
+
+        # dividing by sqrt of num-steps
+        context_vector = subbuilder.aiOnnx.div(
+            [context_vector,
+             subbuilder.aiOnnx.sqrt([num_time_steps])])
+
+        context_vector = subbuilder.aiOnnx.matmul(
+            [context_vec_projections_weights, context_vector])
+
+        context_vector = subbuilder.aiOnnx.relu([context_vector])
+
+        subbuilder.addOutputTensor(context_vector)
+        subbuilder.addOutputTensor(attention_scores)
+        subbuilder.addOutputTensor(last_attended)
+
+        return subbuilder
+
+    builder = popart.Builder()
+    conf = get_test_conf()
+    subbuilder = get_subbuilder(builder, conf)
+
+    h_q = builder.addInputTensor(
+        popart.TensorInfo(
+            "FLOAT",
+            [conf.samples_per_device_for_inference, conf.decoder_channels, 1]))
+    query_positional_encoding = builder.addInputTensor(
+        popart.TensorInfo(
+            "FLOAT",
+            [conf.samples_per_device_for_inference, conf.decoder_channels, 1]))
+    query_projection_weights = builder.addInputTensor(
+        popart.TensorInfo("FLOAT",
+                          [conf.attention_hidden_size, conf.decoder_channels]))
+    Q_k = builder.addInputTensor(
+        popart.TensorInfo("FLOAT", [
+            conf.samples_per_device_for_inference, conf.attention_hidden_size,
+            conf.max_text_sequence_length
+        ]))
+    Q_v = builder.addInputTensor(
+        popart.TensorInfo("FLOAT", [
+            conf.samples_per_device_for_inference, conf.attention_hidden_size,
+            conf.max_text_sequence_length
+        ]))
+    num_time_steps = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]))
+    context_vec_projections_weights = builder.addInputTensor(
+        popart.TensorInfo("FLOAT",
+                          [conf.decoder_channels, conf.attention_hidden_size]))
+    large_negative_tensor = builder.addInputTensor(
+        popart.TensorInfo("FLOAT", [1, 1, conf.max_text_sequence_length]))
+    zeros_mask = builder.addInputTensor(
+        popart.TensorInfo("FLOAT", [1, 1, conf.inference_look_ahead]))
+    last_attended = [
+        builder.addInputTensor(popart.TensorInfo("INT32", [1]))
+        for _ in range(conf.samples_per_device_for_inference)
+    ]
+
+    context_vector, attention_scores, last_attended = builder.aiGraphcore.call(
+        [
+            h_q, query_positional_encoding, query_projection_weights, Q_k, Q_v,
+            num_time_steps, context_vec_projections_weights,
+            large_negative_tensor, zeros_mask
+        ] + last_attended,
+        3,
+        callee=subbuilder)
+
+    print(builder.getTensorShape(context_vector))
+    print(builder.getTensorShape(attention_scores))
+    print(builder.getTensorShape(last_attended))
+    assert (builder.getTensorShape(context_vector) == [
+        conf.samples_per_device_for_inference, conf.decoder_channels, 1
+    ])
+    assert (builder.getTensorShape(attention_scores) == [
+        conf.samples_per_device_for_inference, conf.max_text_sequence_length, 1
+    ])
+    assert (builder.getTensorShape(last_attended) == [
+        conf.samples_per_device_for_inference, 1, 1
+    ])
