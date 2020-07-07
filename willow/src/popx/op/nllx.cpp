@@ -53,15 +53,22 @@ void NllOpx::grow(poplar::program::Sequence &prog) const {
                                             debugPrefix("reduce"));
 
   // Create an epsilon value
+  double eps_f = 1.0e-7;
+
+  // if using fp16, increase the eps to avoid underfloat
+  if (probs.elementType() == poplar::HALF)
+    eps_f = 6.104e-05;
+
   poplar::Tensor eps =
-      getConst(probs.elementType(), {1}, 1.0e-7, debugPrefix("epsilon"));
-  // Add eps (1.0e-7 const value) to reduction make sure it does not have any
+      getConst(probs.elementType(), {1}, eps_f, debugPrefix("epsilon"));
+
+  // Take max of prob and eps to reduction make sure it does not have any
   // 0's and log it,
   popops::mapInPlace(graph(),
-                     pe::Log(pe::Add(pe::_1, pe::_2)),
+                     pe::Log(pe::Max(pe::_1, pe::_2)),
                      {reduction, eps},
                      prog,
-                     debugPrefix("AddEpsLog"));
+                     debugPrefix("LogMax"));
 
   if (op.hasIgnoreIndex()) {
     auto lossMask = applyMaskInPlaceForIgnoredIndex(
@@ -272,6 +279,13 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
 
   // inverse probabilities, we take max(eps, p) to make division safe
   float eps = 1e-10f;
+
+  // If working with float16 increase the eps to avoid underfloat
+  // Note that because of the division we would ideally use 1/65500
+  // but this will underflow.
+  if (probs.elementType() == poplar::HALF)
+    eps = 6.104e-05f;
+
   auto smallConst =
       graph().addConstant(probs.elementType(), {1}, eps, debugPrefix("eps"));
   graph().setTileMapping(smallConst, 0);

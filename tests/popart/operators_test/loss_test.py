@@ -526,3 +526,46 @@ def test_nllloss_reduction_equiv(op_tester):
         test(['PreUniRepl', 'SoftmaxGradDirect'])  # SoftmaxGradDirect Op
         test(['PreUniRepl', 'SoftmaxGradDirect',
               'NlllWithSoftmaxGradDirect'])  # NllWithSoftmaxGradDirect Op
+
+
+@tu.requires_ipu_model
+def test_nll_no_underflow():
+    dtype = np.float16
+
+    # Input probabilities
+    probs_np = np.array(
+        [[1., 0., 0., 0., 0.], [0.5, 0.5, 0., 0., 0.],
+         [1 / 3.0, 1 / 3.0, 1 / 3.0, 0., 0.], [0.25, 0.25, 0.25, 0.25, 0.],
+         [0.2, 0.2, 0.2, 0.2, 0.2]],
+        dtype=dtype)
+
+    labels_np = np.array([0, 1, 2, 3, 4], dtype=np.int32)
+
+    builder = popart.Builder()
+    probs = builder.addInitializedInputTensor(probs_np, "probs")
+    builder.addOutputTensor(builder.aiOnnx.identity([probs]))
+    dprobs = popart.reservedGradientPrefix() + probs
+    labels = builder.addInputTensor(popart.TensorInfo("INT32", [5]))
+    loss = builder.aiGraphcore.nllloss([probs, labels],
+                                       popart.ReductionType.Sum,
+                                       debugPrefix="nllLossVal")
+
+    anchor_desc = {
+        dprobs: popart.AnchorReturnType("ALL"),
+        loss: popart.AnchorReturnType("ALL")
+    }
+    dataFlow = popart.DataFlow(1, anchor_desc)
+    session = popart.TrainingSession(
+        fnModel=builder.getModelProto(),
+        loss=loss,
+        deviceInfo=popart.DeviceManager().createIpuModelDevice({}),
+        optimizer=popart.ConstSGD(0.00001),
+        dataFlow=dataFlow)
+    session.prepareDevice()
+    session.weightsFromHost()
+    anchors = session.initAnchorArrays()
+    stepio = popart.PyStepIO({labels: labels_np}, anchors)
+    session.run(stepio)
+
+    assert not np.isnan(anchors[loss]).any()
+    assert not np.isnan(anchors[dprobs]).any()
