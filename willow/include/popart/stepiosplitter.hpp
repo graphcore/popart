@@ -20,7 +20,8 @@ public:
   // Constructor.
   StepIOSplitterAdapter(StepIOSplitter *splitter,
                         unsigned replicationIndex,
-                        TensorId id);
+                        TensorId id,
+                        const TensorInfo &info);
   // Destructor.
   virtual ~StepIOSplitterAdapter() = default;
   // Get next data element for reading from adapter.
@@ -53,6 +54,8 @@ private:
   std::list<ConstVoidData> inData;
   // Buffer of elements to write into.
   std::list<MutableVoidData> outData;
+  // Void data to return if input with prefetch fails.
+  ConstVoidData emptyVoidData;
 };
 
 // A class that splits one StepIO interface into multiple StepIO interfaces that
@@ -73,20 +76,33 @@ public:
   // Reset the log and set the upstream IStepIO.
   void reset(IStepIO *upstreamIo);
 
-  // Fetch in data from upstream.
-  void getInData(TensorId id, int64_t numElements);
-  // Fetch out data from upstream.
-  void getOutData(TensorId id, int64_t numElements);
+  // Fetch data from upstream for a specific replica (getting data for preceding
+  // replicas first, if necessary, to avoid calling the upstream IStepIO out of
+  // order).
+  void getInData(TensorId id,
+                 int64_t numElements,
+                 unsigned replicationIndex,
+                 bool prefetch);
+  // Fetch output buffer from upstream for a specific replica (getting data for
+  // preceding replicas first, if necessary, to avoid calling the upstream
+  // IStepIO out of order).
+  void getOutData(TensorId id, int64_t numElements, unsigned replicationIndex);
 
   // Check number of elements in upstream IStepIO.
   virtual void assertNumElements(const Ir &) const;
 
   // Get access to the 'split' data stream.
-  IStepIO *getDownstreamStepIO(TensorId id, unsigned replicationIndex);
+  IStepIO *getDownstreamStepIO(TensorId id,
+                               const TensorInfo &info,
+                               unsigned replicationIndex);
 
 private:
   // The number of replications.
   unsigned replicationFactor;
+  // The replica index that is next in line to receive 'in' data.
+  unsigned inIndex;
+  // The replica index that is next in line to receive 'out' data.
+  unsigned outIndex;
 
   // The upstream datastream.
   IStepIO *upstreamIo;

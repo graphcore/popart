@@ -2496,30 +2496,30 @@ void Devicex::loadEngineAndConnectStreams() {
 
     stepIoSplitter = std::make_unique<StepIOSplitter>(getReplicationFactor());
 
-    auto engineToInputStreamWithCallback = [&pEngine = pEngine,
-                                            this](Tensor *tensor,
-                                                  PopStreamId streamId) {
-      auto replicationFactor = getReplicationFactor();
-      for (auto replicationIndex = 0; replicationIndex < replicationFactor;
-           ++replicationIndex) {
+    auto engineToInputStreamWithCallback =
+        [&pEngine = pEngine, this](Tensor *tensor, PopStreamId streamId) {
+          auto replicationFactor = getReplicationFactor();
+          for (auto replicationIndex = 0; replicationIndex < replicationFactor;
+               ++replicationIndex) {
 
-        logging::devicex::debug(
-            "Connecting input stream {}@{}", tensor->id, replicationIndex);
+            logging::devicex::debug(
+                "Connecting input stream {}@{}", tensor->id, replicationIndex);
 
-        IStepIO *downstreamIo =
-            stepIoSplitter->getDownstreamStepIO(tensor->id, replicationIndex);
+            IStepIO *downstreamIo = stepIoSplitter->getDownstreamStepIO(
+                tensor->id, tensor->info, replicationIndex);
 
-        std::shared_ptr<InputDatastream> ds =
-            std::make_shared<InputDatastream>(tensor, streamId);
-        ds->setStepIO(downstreamIo);
+            std::shared_ptr<InputDatastream> ds =
+                std::make_shared<InputDatastream>(tensor, streamId);
+            ds->setStepIO(downstreamIo);
 
-        this->inputStreams[std::make_tuple(tensor->id, replicationIndex)] = ds;
+            this->inputStreams[std::make_tuple(tensor->id, replicationIndex)] =
+                ds;
 
-        auto callback = std::make_unique<PrefetchCallback>(ds);
-        pEngine->connectStreamToCallback(
-            streamId, replicationIndex, std::move(callback));
-      }
-    };
+            auto callback = std::make_unique<PrefetchCallback>(ds);
+            pEngine->connectStreamToCallback(
+                streamId, replicationIndex, std::move(callback));
+          }
+        };
 
     auto engineToOutputStreamWithCallback = [&pEngine = pEngine,
                                              this](Tensor *tensor,
@@ -2531,8 +2531,8 @@ void Devicex::loadEngineAndConnectStreams() {
         logging::devicex::debug(
             "Connecting output stream {}@{}", tensor->id, replicationIndex);
 
-        IStepIO *downstreamIo =
-            stepIoSplitter->getDownstreamStepIO(tensor->id, replicationIndex);
+        IStepIO *downstreamIo = stepIoSplitter->getDownstreamStepIO(
+            tensor->id, tensor->info, replicationIndex);
 
         std::shared_ptr<OutputDatastream> ds =
             std::make_shared<OutputDatastream>(tensor, streamId);
