@@ -912,6 +912,16 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
     engineOptions.set(it.first, it.second);
   }
 
+  if (ir.getSessionOptions().engineOptions.find("autoReport.directory") ==
+      ir.getSessionOptions().engineOptions.end()) {
+    const std::string directory{
+        (ir.getExecutionMode() == Ir::ExecutionMode::Training) ? "training"
+                                                               : "inference"};
+    logging::devicex::info(
+        "Setting engine option {} = {}", "autoReport.directory", directory);
+    engineOptions.set("autoReport.directory", directory);
+  }
+
   for (auto it : ir.getSessionOptions().reportOptions) {
     logging::devicex::info(
         "Setting report option {} = {}", it.first, it.second);
