@@ -344,13 +344,18 @@ const static AiGraphcoreOpIdV1 DynamicAdd_1("DynamicAdd", 3, 1);
 const static AiGraphcoreOpIdV1 DynamicAddInplace("DynamicAddInplace", 3, 1);
 
 const static AiGraphcoreOpIdV1 Accumulate("Accumulate");
+const static AiGraphcoreOpIdV1 AccumulatorUpdate("AccumulatorUpdate");
 
 const static AiGraphcoreOpIdV1 SGD0VarUpdate("SGD0VarUpdate");
 const static AiGraphcoreOpIdV1 SGD1Combo("SGD1Combo");
 const static AiGraphcoreOpIdV1 SGD1VarUpdate("SGD1VarUpdate");
 const static AiGraphcoreOpIdV1 SGD1AcclUpdate("SGD1AcclUpdate");
-const static AiGraphcoreOpIdV1 SGD1AcclReduce("SGD1AcclReduce");
-const static AiGraphcoreOpIdV1 SGD1Accumulate("SGD1Accumulate");
+
+const static AiGraphcoreOpIdV1 AdamCombo("AdamCombo");
+const static AiGraphcoreOpIdV1 AdamUpdater("AdamUpdater");
+const static AiGraphcoreOpIdV1 AdamVarUpdate("AdamVarUpdate");
+const static AiGraphcoreOpIdV1 LambSquare("LambSquare");
+const static AiGraphcoreOpIdV1 LambR2Square("LambR2Square");
 
 const static AiGraphcoreOpIdV1 GradCopyToHost("GradCopyToHost");
 const static AiGraphcoreOpIdV1 GradCopyFromHost("GradCopyFromHost");

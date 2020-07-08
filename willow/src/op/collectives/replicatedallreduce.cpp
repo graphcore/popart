@@ -33,7 +33,7 @@ void ReplicatedAllReduceOp::setup() {
 ReplicatedAllReduceInplaceOp::ReplicatedAllReduceInplaceOp(
     const OperatorIdentifier &_opid,
     const Op::Settings &settings_)
-    : CollectivesBaseOp(_opid, settings_) {}
+    : ReplicatedAllReduceOp(_opid, settings_) {}
 
 ReplicatedAllReduceInplaceOp::ReplicatedAllReduceInplaceOp(
     const ReplicatedAllReduceOp &rop)

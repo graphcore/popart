@@ -28,7 +28,11 @@ TensorId getUpdatedVarId(const TensorId &id);
 
 constexpr const char *reservedGradientPrefix() { return "Gradient___"; }
 constexpr const char *reservedUpdatedVarPrefix() { return "UpdatedVar___"; }
-constexpr const char *reservedAcclToAccumulatorPrefix() { return "Accl___"; }
+constexpr const char *reservedAccumPrefix() { return "Accum___"; }
+constexpr const char *reservedAcclPrefix() { return "Accl___"; }
+constexpr const char *reservedAccl1Prefix() { return "Accl1___"; }
+constexpr const char *reservedAccl2Prefix() { return "Accl2___"; }
+constexpr const char *reservedStepPrefix() { return "Step___"; }
 constexpr const char *reservedAcclToReducePrefix() {
   return "AcclIntoReduce___";
 }
@@ -38,6 +42,10 @@ constexpr const char *reservedAcclToUpdatePrefix() {
 constexpr const char *reservedAcclFinalOutPrefix() {
   return "AcclOutOfAcclUpdate___";
 }
+constexpr const char *reservedAdamUpdaterPrefix() { return "AdamUpdater___"; }
+constexpr const char *reservedLambR1SqPrefix() { return "LambR1Sq___"; }
+constexpr const char *reservedLambR2SqPrefix() { return "LambR2Sq___"; }
+
 constexpr const char *reservedStashedPrefix() { return "Stashed___"; }
 constexpr const char *reservedRestoredPrefix() { return "Restored___"; }
 
@@ -98,6 +106,55 @@ constexpr const char *reservedDefaultScaledMomentum1Prefix() {
 }
 constexpr const char *reservedSpecificScaledMomentum1Prefix() {
   return "scaledMomentum1___specific___";
+}
+
+constexpr const char *reservedDefaultLearningRatePrefix() {
+  return "learningRate___default___";
+}
+constexpr const char *reservedSpecificLearningRatePrefix() {
+  return "learningRate___specific___";
+}
+
+constexpr const char *reservedDefaultWeightDecayPrefix() {
+  return "weightDecay___default___";
+}
+constexpr const char *reservedSpecificWeightDecayPrefix() {
+  return "weightDecay___specific___";
+}
+
+constexpr const char *reservedDefaultLossScalingPrefix() {
+  return "lossScaling___default___";
+}
+constexpr const char *reservedSpecificLossScalingPrefix() {
+  return "lossScaling___specific___";
+}
+
+constexpr const char *reservedDefaultAdamBeta1Prefix() {
+  return "adamBeta1___default___";
+}
+constexpr const char *reservedSpecificAdamBeta1Prefix() {
+  return "adamBeta1___specific___";
+}
+
+constexpr const char *reservedDefaultAdamBeta2Prefix() {
+  return "adamBeta2___default___";
+}
+constexpr const char *reservedSpecificAdamBeta2Prefix() {
+  return "adamBeta2___specific___";
+}
+
+constexpr const char *reservedDefaultAdamEpsPrefix() {
+  return "adamEps___default___";
+}
+constexpr const char *reservedSpecificAdamEpsPrefix() {
+  return "adamEps___specific___";
+}
+
+constexpr const char *reservedDefaultStepPrefix() {
+  return "step___default___";
+}
+constexpr const char *reservedSpecificStepPrefix() {
+  return "step___specific___";
 }
 
 constexpr const char *hostReduceGradCopyPrefix() {

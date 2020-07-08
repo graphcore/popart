@@ -90,7 +90,7 @@ bool SGD1Decompose::apply(Op *op) const {
   // memory)
   //
   // 1) Input to SGD1Accumulate
-  auto acclIntoAccumulatorId = reservedAcclToAccumulatorPrefix() + weightGradId;
+  auto acclIntoAccumulatorId = reservedAcclPrefix() + weightGradId;
 
   // 2) input to AcclReduce (if reduction across across replicas required)
   auto acclIntoReduceId = reservedAcclToReducePrefix() + weightGradId;

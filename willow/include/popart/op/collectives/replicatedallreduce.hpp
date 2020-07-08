@@ -11,14 +11,14 @@ public:
   ReplicatedAllReduceOp(const OperatorIdentifier &_opid,
                         const Op::Settings &settings_);
 
-  std::unique_ptr<Op> clone() const final;
+  std::unique_ptr<Op> clone() const override;
   virtual std::unique_ptr<Op>
-  getInplaceVariant(const OperatorIdentifier &) const;
-  void setup() final;
+  getInplaceVariant(const OperatorIdentifier &) const override;
+  void setup() override;
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
 };
 
-class ReplicatedAllReduceInplaceOp : public CollectivesBaseOp {
+class ReplicatedAllReduceInplaceOp : public ReplicatedAllReduceOp {
 public:
   ReplicatedAllReduceInplaceOp(const OperatorIdentifier &_opid,
                                const Op::Settings &settings_);
@@ -36,7 +36,6 @@ public:
                ? false
                : true;
   }
-  float getSubgraphValue() const final { return getHighSubgraphValue(); }
 };
 
 } // namespace popart

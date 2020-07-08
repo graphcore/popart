@@ -24,7 +24,7 @@ def run_model(tmpdir,
               num_iterations=1,
               num_replicas=1,
               replicated_weight_sharding=False,
-              optimizer_dict={"defaultLearningRate": (0.5, False)}):
+              optimizer=popart.SGD({"defaultLearningRate": (0.5, False)})):
 
     np.random.seed(10911)
     matmul_serialization_mode = 'output_channels'
@@ -67,9 +67,7 @@ def run_model(tmpdir,
     opts.enableReplicatedGraphs = True if num_replicas > 1 else False
     opts.replicatedGraphCount = num_replicas
     opts.replicatedWeightSharding = replicated_weight_sharding
-    opts.replicatedWeightShardingMinNumElements = 0
-
-    optimizer = popart.SGD(optimizer_dict)
+    opts.replicatedWeightShardingMinNumElements = 8
 
     if (enable_pingpong):
         opts.pingPongPhases = num_layers
@@ -181,21 +179,113 @@ def test_replicated_sgd1_weight_update(tmpdir):
               batch_size=2,
               num_replicas=1,
               num_iterations=5,
-              optimizer_dict=optimizer_dict)
+              optimizer=popart.SGD(optimizer_dict))
     run_model(tmpdir,
               'pingpong_replicated.onnx',
               enable_pingpong=True,
               batch_size=1,
               num_replicas=2,
               num_iterations=5,
-              optimizer_dict=optimizer_dict)
+              optimizer=popart.SGD(optimizer_dict))
     run_model(tmpdir,
               'pingpong_replicated_rws.onnx',
               enable_pingpong=True,
               batch_size=1,
               num_replicas=2,
               num_iterations=5,
-              optimizer_dict=optimizer_dict,
+              optimizer=popart.SGD(optimizer_dict),
+              replicated_weight_sharding=True)
+
+    pingpong = onnx.load(str(tmpdir / 'pingpong.onnx'))
+    pingpong_replicated = onnx.load(str(tmpdir / 'pingpong_replicated.onnx'))
+    pingpong_replicated_rws = onnx.load(
+        str(tmpdir / 'pingpong_replicated_rws.onnx'))
+
+    check_model(pingpong, pingpong_replicated)
+    check_model(pingpong, pingpong_replicated_rws)
+
+
+# Check that 2 batches on 1 replica or 1 batch per replica on 2 replicas
+# results in the same updated weight with SGD1
+@tu.requires_ipu
+def test_replicated_adam_weight_update(tmpdir):
+
+    optimizer_dict = {
+        "defaultLearningRate": (0.005, True),
+        "defaultBeta1": (0.7, True),
+        "defaultBeta2": (0.8, True),
+        "defaultWeightDecay": (0.1, True),
+        "defaultEps": (1e-6, True),
+        "lossScaling": (10.0, True),
+    }
+
+    run_model(tmpdir,
+              'pingpong.onnx',
+              enable_pingpong=True,
+              batch_size=2,
+              num_replicas=1,
+              num_iterations=5,
+              optimizer=popart.Adam(optimizer_dict))
+    run_model(tmpdir,
+              'pingpong_replicated.onnx',
+              enable_pingpong=True,
+              batch_size=1,
+              num_replicas=2,
+              num_iterations=5,
+              optimizer=popart.Adam(optimizer_dict))
+    run_model(tmpdir,
+              'pingpong_replicated_rws.onnx',
+              enable_pingpong=True,
+              batch_size=1,
+              num_replicas=2,
+              num_iterations=5,
+              optimizer=popart.Adam(optimizer_dict),
+              replicated_weight_sharding=True)
+
+    pingpong = onnx.load(str(tmpdir / 'pingpong.onnx'))
+    pingpong_replicated = onnx.load(str(tmpdir / 'pingpong_replicated.onnx'))
+    pingpong_replicated_rws = onnx.load(
+        str(tmpdir / 'pingpong_replicated_rws.onnx'))
+
+    check_model(pingpong, pingpong_replicated)
+    check_model(pingpong, pingpong_replicated_rws)
+
+
+# Check that 2 batches on 1 replica or 1 batch per replica on 2 replicas
+# results in the same updated weight with SGD1
+@tu.requires_ipu
+def test_replicated_lamb_weight_update(tmpdir):
+
+    optimizer_dict = {
+        "defaultLearningRate": (0.005, True),
+        "defaultBeta1": (0.7, True),
+        "defaultBeta2": (0.8, True),
+        "defaultWeightDecay": (0.1, True),
+        "defaultEps": (1e-6, True),
+        "lossScaling": (10.0, True),
+    }
+
+    run_model(tmpdir,
+              'pingpong.onnx',
+              enable_pingpong=True,
+              batch_size=2,
+              num_replicas=1,
+              num_iterations=5,
+              optimizer=popart.Adam(optimizer_dict, popart.AdamMode.Lamb))
+    run_model(tmpdir,
+              'pingpong_replicated.onnx',
+              enable_pingpong=True,
+              batch_size=1,
+              num_replicas=2,
+              num_iterations=5,
+              optimizer=popart.Adam(optimizer_dict, popart.AdamMode.Lamb))
+    run_model(tmpdir,
+              'pingpong_replicated_rws.onnx',
+              enable_pingpong=True,
+              batch_size=1,
+              num_replicas=2,
+              num_iterations=5,
+              optimizer=popart.Adam(optimizer_dict, popart.AdamMode.Lamb),
               replicated_weight_sharding=True)
 
     pingpong = onnx.load(str(tmpdir / 'pingpong.onnx'))

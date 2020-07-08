@@ -5,6 +5,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include <popart/adam.hpp>
 #include <popart/builder.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/error.hpp>
@@ -651,6 +652,41 @@ PYBIND11_MODULE(popart_core, m) {
                 py::arg("weight_decay") = 0.0f,
                 py::arg("loss_scaling") = 1.0f);
       }
+    }
+    {
+      {
+        py::enum_<AdamMode> en(m, "AdamMode");
+        en.value("Adam", AdamMode::Adam);
+        en.value("AdamNoBias", AdamMode::AdamNoBias);
+        en.value("Lamb", AdamMode::Lamb);
+        en.value("LambNoBias", AdamMode::LambNoBias);
+      }
+      py::class_<Adam> adam(m, "Adam", optimizer);
+      adam.def(py::init([](py::dict pyd,
+                           AdamMode mode,
+                           DataType accumType,
+                           DataType accl1Type,
+                           DataType accl2Type) {
+                 auto cppm = getOptimizerValueDictionary(pyd);
+                 return Adam(cppm, mode, accumType, accl1Type, accl2Type);
+               }),
+               py::arg("values"),
+               py::arg("mode") = AdamMode::Adam,
+               // Choose same data type as weight for the accumulator by default
+               py::arg("accum_type") = DataType::UNDEFINED,
+               // Momentums in FP32 by default
+               py::arg("accl1_type") = DataType::FLOAT,
+               py::arg("accl2_type") = DataType::FLOAT);
+
+      adam.def("insertSpecific", [](Adam &self, TensorId id, py::dict pyd) {
+        self.insertSpecific(id, getOptimizerValueDictionary(pyd));
+      });
+
+      adam.def("learningRates", &Adam::learningRates);
+      adam.def("weightDecays", &Adam::weightDecays);
+      adam.def("beta1s", &Adam::beta1s);
+      adam.def("beta2s", &Adam::beta1s);
+      adam.def("epss", &Adam::epss);
     }
   }
   {
@@ -1698,7 +1734,11 @@ PYBIND11_MODULE(popart_core, m) {
   m.def("reservedGradientPrefix", &reservedGradientPrefix);
   m.def("reservedUpdatedVarPrefix", &reservedUpdatedVarPrefix);
 
-  m.def("reservedAcclToAccumulatorPrefix", &reservedAcclToAccumulatorPrefix);
+  m.def("reservedAccumPrefix", &reservedAccumPrefix);
+  m.def("reservedAcclPrefix", &reservedAcclPrefix);
+  m.def("reservedAccl1Prefix", &reservedAccl1Prefix);
+  m.def("reservedAccl2Prefix", &reservedAccl2Prefix);
+  m.def("reservedStepPrefix", &reservedStepPrefix);
   m.def("reservedAcclToReducePrefix", &reservedAcclToReducePrefix);
   m.def("reservedAcclToUpdatePrefix", &reservedAcclToUpdatePrefix);
   m.def("reservedAcclFinalOutPrefix", &reservedAcclFinalOutPrefix);

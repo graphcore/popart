@@ -25,7 +25,6 @@ def test_reset_host_weights_with_extra_tensor_in_onnx_model():
     5. Try again, but with ignoreWeightsInModelWithoutCorrespondingHostWeight.
     6. Observe that it succeeds
     """
-
     def getModelWithRandomWeights():
         builder = popart.Builder()
         dShape = [2, 2]
@@ -68,7 +67,7 @@ def test_reset_host_weights_with_extra_tensor_in_onnx_model():
         w for w in va_builder.getInputTensorIds()
         if va_builder.isInitializer(w)
     ][0]
-    missing_tensor_name = popart.reservedAcclToAccumulatorPrefix(
+    missing_tensor_name = popart.reservedAcclPrefix(
     ) + popart.reservedGradientPrefix() + wId
     with pytest.raises(popart.popart_exception) as e_info:
         va_sess.resetHostWeights(tmpfile)

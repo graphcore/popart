@@ -22,34 +22,48 @@ lr = 0.12
 #weight decay
 wd = 0.08
 
-optimizer = popart.SGD({
+# beta 1 (Adam)
+b1 = 0.9
+
+# beta 2 (Adam)
+b2 = 0.999
+
+sgd_optimizer = popart.SGD({
     "defaultLearningRate": (lr, False),
     "defaultWeightDecay": (wd, False)
 })
 
-grad_accl_prefix = popart.reservedAcclToAccumulatorPrefix(
-) + popart.reservedGradientPrefix()
+adam_optimizer = popart.Adam({
+    "defaultLearningRate": (lr, False),
+    "defaultBeta1": (b1, False),
+    "defaultBeta2": (b2, False),
+    "defaultWeightDecay": (wd, False),
+    "defaultEps": (1e-6, True),
+})
+
+grad_accl_prefix = popart.reservedAcclPrefix() + popart.reservedGradientPrefix(
+)
 
 
-def get_micro_batch_size(accl_factor):
+def get_micro_batch_size(accum_factor):
     """
     no data replication, so micro batch size = batch size / accumlation factor
     """
-    if (batch_size % accl_factor is not 0):
-        raise RuntimeError("accl_factor is not a factor of batch_size")
+    if (batch_size % accum_factor is not 0):
+        raise RuntimeError("accum_factor is not a factor of batch_size")
 
-    micro_batch_size = batch_size // accl_factor
+    micro_batch_size = batch_size // accum_factor
     return micro_batch_size
 
 
-def get_mm_model(accl_factor, enable_multi_ipu):
+def get_mm_model(accum_factor, enable_multi_ipu):
     """
     out = mm(mm(mm(mm(mm(mm(in)))))) all mm are hidden_size x hidden_size
     """
 
     np.random.seed(1234)
 
-    micro_batch_size = get_micro_batch_size(accl_factor)
+    micro_batch_size = get_micro_batch_size(accum_factor)
 
     builder = popart.Builder()
     input_shape = [micro_batch_size, hidden_size]
@@ -80,14 +94,14 @@ def get_mm_model(accl_factor, enable_multi_ipu):
     return initial_onnx_model, input_tensor_name, x, label_tensor_name
 
 
-def get_complex_model(accl_factor):
+def get_complex_model(accum_factor):
     """
     out = softmax(reshape(conv(exp(sin(x)), weights))
     """
 
     np.random.seed(1234)
 
-    micro_batch_size = get_micro_batch_size(accl_factor)
+    micro_batch_size = get_micro_batch_size(accum_factor)
 
     builder = popart.Builder()
     input_shape = [micro_batch_size, 2, 4, 4]
@@ -119,9 +133,9 @@ def get_complex_model(accl_factor):
     return initial_onnx_model, input_tensor_name, output_tensor_name, label_tensor_name
 
 
-def run_graph(input_shape, initial_onnx_model, input_tensor_name,
-              output_tensor_name, label_tensor_name, label_array, accl_factor,
-              enable_accl, batches_per_step, number_of_steps,
+def run_graph(optimizer, input_shape, initial_onnx_model, input_tensor_name,
+              output_tensor_name, label_tensor_name, label_array, accum_factor,
+              enable_accum, batches_per_step, number_of_steps,
               final_proto_filename, enable_multi_ipu, full_anchorage,
               inference_mode):
 
@@ -134,16 +148,16 @@ def run_graph(input_shape, initial_onnx_model, input_tensor_name,
 
         anchorNames[popart.reservedGradientPrefix() + w0] = art
 
-        if enable_accl:
-            anchorNames[popart.reservedAcclToAccumulatorPrefix() +
+        if enable_accum:
+            anchorNames[popart.reservedAcclPrefix() +
                         popart.reservedGradientPrefix() + w0] = art
 
             anchorNames[popart.reservedAcclToUpdatePrefix() +
                         popart.reservedGradientPrefix() + w0] = art
 
     opts = popart.SessionOptions()
-    opts.enableGradientAccumulation = enable_accl
-    opts.accumulationFactor = accl_factor
+    opts.enableGradientAccumulation = enable_accum
+    opts.accumulationFactor = accum_factor
     opts.enableOutlining = False
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual if enable_multi_ipu else popart.VirtualGraphMode.Off
 
@@ -181,9 +195,10 @@ def run_graph(input_shape, initial_onnx_model, input_tensor_name,
     if batches_per_step > 1:
         outer_dim *= batches_per_step
         label_array = np.repeat(label_array[np.newaxis], batches_per_step, 0)
-    if accl_factor > 1:
-        outer_dim *= accl_factor
-        label_array = label_array.reshape([accl_factor * batches_per_step, -1])
+    if accum_factor > 1:
+        outer_dim *= accum_factor
+        label_array = label_array.reshape(
+            [accum_factor * batches_per_step, -1])
     if outer_dim > 1:
         input_shape = [outer_dim] + input_shape
 
@@ -204,25 +219,26 @@ def run_graph(input_shape, initial_onnx_model, input_tensor_name,
     return final_proto_filename, anchor_arrays
 
 
-def run_complex_graph(label_array, accl_factor, enable_accl, batches_per_step,
-                      number_of_steps, final_proto_filename, enable_multi_ipu,
-                      full_anchorage):
+def run_complex_graph(optimizer, label_array, accum_factor, enable_accum,
+                      batches_per_step, number_of_steps, final_proto_filename,
+                      enable_multi_ipu, full_anchorage):
 
     if (enable_multi_ipu):
         raise RuntimeError("Cannot enable multi ipu in complex graph")
 
     initial_onnx_model, input_tensor_name, output_tensor_name, label_tensor_name = get_complex_model(
-        accl_factor)
+        accum_factor)
 
     final_proto_filename, anchor_arrays = run_graph(
-        input_shape=[get_micro_batch_size(accl_factor), 2, 4, 4],
+        optimizer,
+        input_shape=[get_micro_batch_size(accum_factor), 2, 4, 4],
         initial_onnx_model=initial_onnx_model,
         input_tensor_name=input_tensor_name,
         output_tensor_name=output_tensor_name,
         label_tensor_name=label_tensor_name,
         label_array=label_array,
-        accl_factor=accl_factor,
-        enable_accl=enable_accl,
+        accum_factor=accum_factor,
+        enable_accum=enable_accum,
         batches_per_step=batches_per_step,
         number_of_steps=number_of_steps,
         final_proto_filename=final_proto_filename,
@@ -233,9 +249,10 @@ def run_complex_graph(label_array, accl_factor, enable_accl, batches_per_step,
     return initial_onnx_model, final_proto_filename, anchor_arrays
 
 
-def run_mm_graph(label_array,
-                 accl_factor,
-                 enable_accl,
+def run_mm_graph(optimizer,
+                 label_array,
+                 accum_factor,
+                 enable_accum,
                  batches_per_step,
                  number_of_steps,
                  final_proto_filename,
@@ -244,17 +261,18 @@ def run_mm_graph(label_array,
                  inference_mode=False):
 
     initial_onnx_model, input_tensor_name, output_tensor_name, label_tensor_name = get_mm_model(
-        accl_factor, enable_multi_ipu)
+        accum_factor, enable_multi_ipu)
 
     final_proto_filename, anchor_arrays = run_graph(
-        input_shape=[get_micro_batch_size(accl_factor), hidden_size],
+        optimizer,
+        input_shape=[get_micro_batch_size(accum_factor), hidden_size],
         initial_onnx_model=initial_onnx_model,
         input_tensor_name=input_tensor_name,
         output_tensor_name=output_tensor_name,
         label_tensor_name=label_tensor_name,
         label_array=label_array,
-        accl_factor=accl_factor,
-        enable_accl=enable_accl,
+        accum_factor=accum_factor,
+        enable_accum=enable_accum,
         batches_per_step=batches_per_step,
         number_of_steps=number_of_steps,
         final_proto_filename=final_proto_filename,
@@ -279,7 +297,11 @@ def check_models(model_init, modelA_fn, modelB_fn):
     for w_i, weightA in enumerate(modelA.graph.initializer):
         # We need to avoid the gradient accl initializers as these won't be present
         # in the non grad accl models.
-        if (popart.reservedAcclToAccumulatorPrefix() not in weightA.name):
+        if (popart.reservedAcclPrefix() not in weightA.name
+                and popart.reservedAccl1Prefix() not in weightA.name
+                and popart.reservedAccl2Prefix() not in weightA.name
+                and popart.reservedStepPrefix() not in weightA.name
+                and popart.reservedAccumPrefix() not in weightA.name):
             # where A, B, C are weight tensors,
             # |A - B|_1
             l1AB = 0
@@ -298,7 +320,7 @@ def check_models(model_init, modelA_fn, modelB_fn):
 
             relative_error = l1AB / (l1AC)
             print(
-                "l1AB = %.2e,  l1AC = %.2e, l1BC = %.2e, relative error = %.2e"
+                f"{weightA.name}: l1AB = %.2e,  l1AC = %.2e, l1BC = %.2e, relative error = %.2e"
                 % (l1AB, l1AC, l1BC, relative_error))
 
             # check that the weights have moved enough for this to be a valid
@@ -322,9 +344,10 @@ def test_gradient_accumulation_base():
         label_array = np.random.randint(0, hidden_size, batch_size)
 
         accl_initial_proto, accl_proto_filename, accl_anchor_arrays = graph_runner(
+            sgd_optimizer,
             label_array=label_array,
-            accl_factor=4,
-            enable_accl=True,
+            accum_factor=4,
+            enable_accum=True,
             batches_per_step=1,
             number_of_steps=1,
             final_proto_filename="accl",
@@ -332,9 +355,10 @@ def test_gradient_accumulation_base():
             full_anchorage=False)
 
         no_accl_initial_proto, no_accl_proto_filename, no_accl_anchor_arrays = graph_runner(
+            sgd_optimizer,
             label_array=label_array,
-            accl_factor=1,
-            enable_accl=False,
+            accum_factor=1,
+            enable_accum=False,
             batches_per_step=1,
             number_of_steps=1,
             final_proto_filename="noAcc",
@@ -356,9 +380,10 @@ def test_gradient_accumulation_multi_batch():
         label_array = np.random.randint(0, hidden_size, batch_size)
 
         accl_initial_proto, accl_proto_filename, accl_anchor_arrays = run_mm_graph(
+            sgd_optimizer,
             label_array=label_array,
-            accl_factor=4,
-            enable_accl=True,
+            accum_factor=4,
+            enable_accum=True,
             batches_per_step=5,
             number_of_steps=3,
             final_proto_filename="accl5batches3steps",
@@ -366,9 +391,10 @@ def test_gradient_accumulation_multi_batch():
             full_anchorage=False)
 
         no_accl_initial_proto, no_accl_proto_filename, no_accl_anchor_arrays = run_mm_graph(
+            sgd_optimizer,
             label_array=label_array,
-            accl_factor=1,
-            enable_accl=False,
+            accum_factor=1,
+            enable_accum=False,
             batches_per_step=5,
             number_of_steps=3,
             final_proto_filename="noAccl5batches3steps",
@@ -388,9 +414,10 @@ def test_gradient_accumulation_multi_ipu():
     label_array = np.random.randint(0, hidden_size, batch_size)
 
     accl_initial_proto, accl_proto_filename, accl_anchor_arrays = run_mm_graph(
+        sgd_optimizer,
         label_array=label_array,
-        accl_factor=4,
-        enable_accl=True,
+        accum_factor=4,
+        enable_accum=True,
         batches_per_step=5,
         number_of_steps=3,
         final_proto_filename="accl5batches3steps",
@@ -398,9 +425,10 @@ def test_gradient_accumulation_multi_ipu():
         full_anchorage=False)
 
     no_accl_initial_proto, no_accl_proto_filename, no_accl_anchor_arrays = run_mm_graph(
+        sgd_optimizer,
         label_array=label_array,
-        accl_factor=1,
-        enable_accl=False,
+        accum_factor=1,
+        enable_accum=False,
         batches_per_step=5,
         number_of_steps=3,
         final_proto_filename="noAccl5batches3steps",
@@ -421,9 +449,10 @@ def test_gradient_accumulation_error_inference():
     label_array = np.random.randint(0, hidden_size, batch_size)
     with pytest.raises(popart.popart_exception) as e_info:
 
-        a, b, c = run_mm_graph(label_array=label_array,
-                               accl_factor=4,
-                               enable_accl=True,
+        a, b, c = run_mm_graph(sgd_optimizer,
+                               label_array=label_array,
+                               accum_factor=4,
+                               enable_accum=True,
                                batches_per_step=5,
                                number_of_steps=3,
                                final_proto_filename="accl5batches3steps",
@@ -436,16 +465,17 @@ def test_gradient_accumulation_error_inference():
 
 
 @tu.requires_ipu_model
-def test_gradient_accumulation_error_accl_factor_invalid():
+def test_gradient_accumulation_error_accum_factor_invalid():
     """
-    confirm that enable_accl = False => accl_factor = 1
+    confirm that enable_accum = False => accum_factor = 1
     """
     label_array = np.random.randint(0, hidden_size, batch_size)
     with pytest.raises(popart.popart_exception) as e_info:
 
-        a, b, c = run_mm_graph(label_array=label_array,
-                               accl_factor=4,
-                               enable_accl=False,
+        a, b, c = run_mm_graph(sgd_optimizer,
+                               label_array=label_array,
+                               accum_factor=4,
+                               enable_accum=False,
                                batches_per_step=5,
                                number_of_steps=3,
                                final_proto_filename="accl5batches3steps",
@@ -470,9 +500,10 @@ def test_gradient_accumulation_anchors():
     batches_per_step = 1
 
     accl_initial_proto, accl_proto_filename, accl_anchor_arrays = run_mm_graph(
+        sgd_optimizer,
         label_array=label_array,
-        accl_factor=4,
-        enable_accl=True,
+        accum_factor=4,
+        enable_accum=True,
         batches_per_step=batches_per_step,
         number_of_steps=1,
         final_proto_filename="accl5batches3stepsAnchorsTest",
@@ -481,9 +512,10 @@ def test_gradient_accumulation_anchors():
         inference_mode=False)
 
     no_accl_initial_proto, no_accl_proto_filename, no_accl_anchor_arrays = run_mm_graph(
+        sgd_optimizer,
         label_array=label_array,
-        accl_factor=1,
-        enable_accl=False,
+        accum_factor=1,
+        enable_accum=False,
         batches_per_step=batches_per_step,
         number_of_steps=1,
         final_proto_filename="noAccl5batches3stepsAnchorsTest",
@@ -548,9 +580,10 @@ def test_gradient_accumulation_model_proto():
     np.random.seed(1234)
     label_array = np.random.randint(0, hidden_size, batch_size)
     accl_initial_proto, accl_proto_filename, accl_anchor_arrays = run_mm_graph(
+        sgd_optimizer,
         label_array=label_array,
-        accl_factor=4,
-        enable_accl=True,
+        accum_factor=4,
+        enable_accum=True,
         batches_per_step=5,
         number_of_steps=3,
         final_proto_filename="accl5batches3steps",
@@ -601,9 +634,9 @@ def test_loading_saved_gradient_accumulationt_tesors():
     """
 
     # 1.
-    accl_factor = 4
+    accum_factor = 4
     [onnx_model, input_name, output_name,
-     lb_name] = get_mm_model(accl_factor=accl_factor, enable_multi_ipu=False)
+     lb_name] = get_mm_model(accum_factor=accum_factor, enable_multi_ipu=False)
 
     # 2.
     model = onnx.load_from_string(onnx_model)
@@ -614,13 +647,13 @@ def test_loading_saved_gradient_accumulationt_tesors():
     def getTrainingSession(fn):
         opts = popart.SessionOptions()
         opts.enableGradientAccumulation = True
-        opts.accumulationFactor = accl_factor
+        opts.accumulationFactor = accum_factor
         opts.disableGradAccumulationTensorStreams = False
         sess = popart.TrainingSession(fnModel=fn,
                                       dataFlow=popart.DataFlow(1, {}),
                                       deviceInfo=tu.create_test_device(),
                                       loss=output_name,
-                                      optimizer=optimizer,
+                                      optimizer=sgd_optimizer,
                                       userOptions=opts)
         sess.prepareDevice()
 
@@ -644,7 +677,7 @@ def test_loading_saved_gradient_accumulationt_tesors():
         t_accl = np.asarray(accls[grad_accl_prefix + name])
 
     # 4.
-    input_shape = [accl_factor] + sess.getInfo(input_name).shape()
+    input_shape = [accum_factor] + sess.getInfo(input_name).shape()
     stepio = popart.PyStepIO(
         {
             input_name: npr.rand(*input_shape).astype(np.float32),
@@ -669,3 +702,270 @@ def test_loading_saved_gradient_accumulationt_tesors():
     for t in model.graph.initializer:
         if grad_accl_prefix in t.name:
             assert np.array_equal(up_accls[t.name], np.asarray(t.float_data))
+
+
+@tu.requires_ipu_model
+def test_adam_gradient_accumulation_base():
+    """
+    base test (as simple as possible)
+    """
+
+    for graph_runner in [run_complex_graph, run_mm_graph]:
+
+        np.random.seed(1234)
+        label_array = np.random.randint(0, hidden_size, batch_size)
+
+        accum_initial_proto, accum_proto_filename, accum_anchor_arrays = graph_runner(
+            adam_optimizer,
+            label_array=label_array,
+            accum_factor=4,
+            enable_accum=True,
+            batches_per_step=1,
+            number_of_steps=1,
+            final_proto_filename="adamAccum",
+            enable_multi_ipu=False,
+            full_anchorage=False)
+
+        no_accum_initial_proto, no_accum_proto_filename, no_accum_anchor_arrays = graph_runner(
+            adam_optimizer,
+            label_array=label_array,
+            accum_factor=1,
+            enable_accum=False,
+            batches_per_step=1,
+            number_of_steps=1,
+            final_proto_filename="adamNoAccum",
+            enable_multi_ipu=False,
+            full_anchorage=False)
+
+        check_models(accum_initial_proto, accum_proto_filename,
+                     no_accum_proto_filename)
+
+
+@tu.requires_ipu_model
+def test_adam_gradient_accumulation_multi_batch():
+    """
+    from _base: increase batches per step and number of steps
+    """
+
+    for graph_runner in [run_mm_graph, run_complex_graph]:
+        np.random.seed(1234)
+        label_array = np.random.randint(0, hidden_size, batch_size)
+
+        accum_initial_proto, accum_proto_filename, accum_anchor_arrays = run_mm_graph(
+            adam_optimizer,
+            label_array=label_array,
+            accum_factor=4,
+            enable_accum=True,
+            batches_per_step=5,
+            number_of_steps=3,
+            final_proto_filename="adamAccum5batches3steps",
+            enable_multi_ipu=False,
+            full_anchorage=False)
+
+        no_accum_initial_proto, no_accum_proto_filename, no_accum_anchor_arrays = run_mm_graph(
+            adam_optimizer,
+            label_array=label_array,
+            accum_factor=1,
+            enable_accum=False,
+            batches_per_step=5,
+            number_of_steps=3,
+            final_proto_filename="adamNoAccum5batches3steps",
+            enable_multi_ipu=False,
+            full_anchorage=False)
+
+        check_models(accum_initial_proto, accum_proto_filename,
+                     no_accum_proto_filename)
+
+
+@tu.requires_ipu_model
+def test_adam_gradient_accumulation_multi_ipu():
+    """
+    from _multi_batch: enable multi ipus
+    """
+    np.random.seed(1234)
+    label_array = np.random.randint(0, hidden_size, batch_size)
+
+    accum_initial_proto, accum_proto_filename, accum_anchor_arrays = run_mm_graph(
+        adam_optimizer,
+        label_array=label_array,
+        accum_factor=4,
+        enable_accum=True,
+        batches_per_step=5,
+        number_of_steps=3,
+        final_proto_filename="adamAccum5batches3steps",
+        enable_multi_ipu=True,
+        full_anchorage=False)
+
+    no_accum_initial_proto, no_accum_proto_filename, no_accum_anchor_arrays = run_mm_graph(
+        adam_optimizer,
+        label_array=label_array,
+        accum_factor=1,
+        enable_accum=False,
+        batches_per_step=5,
+        number_of_steps=3,
+        final_proto_filename="adamNoAccum5batches3steps",
+        # we do not enable multiple IPUs in the baseline
+        enable_multi_ipu=False,
+        full_anchorage=False)
+
+    check_models(accum_initial_proto, accum_proto_filename,
+                 no_accum_proto_filename)
+
+
+@tu.requires_ipu_model
+def test_adam_gradient_accumulation_model_proto():
+    batches_per_step = 5
+    for steps in [0, 3]:
+        np.random.seed(1234)
+        label_array = np.random.randint(0, hidden_size, batch_size)
+        accl_initial_proto, accl_proto_filename, accl_anchor_arrays = run_mm_graph(
+            adam_optimizer,
+            label_array=label_array,
+            accum_factor=4,
+            enable_accum=True,
+            batches_per_step=batches_per_step,
+            number_of_steps=steps,
+            final_proto_filename="accl5batches3steps",
+            enable_multi_ipu=False,
+            full_anchorage=False)
+
+        model = onnx.load(accl_proto_filename)
+        names = [t.name for t in model.graph.initializer]
+
+        weight_names = []
+        accum_names = []
+        accl1_names = []
+        accl2_names = []
+        step_names = []
+
+        for name in names:
+            if popart.reservedAccumPrefix() in name:
+                accum_names.append(name)
+            elif popart.reservedAccl1Prefix() in name:
+                accl1_names.append(name)
+            elif popart.reservedAccl2Prefix() in name:
+                accl2_names.append(name)
+            elif popart.reservedStepPrefix() in name:
+                step_names.append(name)
+            elif "weight" in name:
+                weight_names.append(name)
+
+        # Model should have 6 weight tensors
+        assert len(weight_names) == 6
+        assert len(accum_names) == len(weight_names)
+        assert len(accl1_names) == len(weight_names)
+        assert len(accl2_names) == len(weight_names)
+        assert len(step_names) == len(weight_names)
+
+        tensor_mapping = {}
+        for tensor in model.graph.initializer:
+            tensor_mapping[tensor.name] = tensor
+
+        for w_name in weight_names:
+            assert popart.reservedAccumPrefix() + w_name in accum_names
+            assert popart.reservedAccl1Prefix() + w_name in accl1_names
+            assert popart.reservedAccl2Prefix() + w_name in accl2_names
+            assert popart.reservedStepPrefix() + w_name in step_names
+
+        if steps == 0:
+            for name in accum_names + accl1_names + accl2_names + step_names:
+                tensor = tensor_mapping[name]
+                # All Adam states are initialized to zero
+                assert np.allclose(tensor.float_data, 0.0)
+        else:
+            for name in step_names:
+                tensor = tensor_mapping[name]
+                # Steps counted correctly
+                assert tensor.float_data[0] == steps * batches_per_step
+
+
+def test_adam_loading_saved_gradient_accumulationt_tesors():
+    """
+    1. Build a model with matmuls, no grad accumulation
+    2. Write out onnx model, verify initializers contain no accum tensors
+    3. Create session with model, verify accl tensors initialised correctly
+    4. Do session.run(), write out model, verify accl tensors have been updated
+    5. Create new session with same model. This time before run, write out model
+       and check tensors are still there, with the same value
+    """
+
+    # 1.
+    accum_factor = 4
+    [onnx_model, input_name, output_name,
+     lb_name] = get_mm_model(accum_factor=accum_factor, enable_multi_ipu=False)
+
+    # 2.
+    model = onnx.load_from_string(onnx_model)
+    names = [t.name for t in model.graph.initializer]
+    for name in names:
+        assert popart.reservedAccumPrefix() not in name
+
+    def getTrainingSession(fn):
+        opts = popart.SessionOptions()
+        opts.enableGradientAccumulation = True
+        opts.accumulationFactor = accum_factor
+        opts.disableGradAccumulationTensorStreams = False
+        sess = popart.TrainingSession(fnModel=fn,
+                                      dataFlow=popart.DataFlow(1, {}),
+                                      deviceInfo=tu.create_test_device(),
+                                      loss=output_name,
+                                      optimizer=adam_optimizer,
+                                      userOptions=opts)
+        sess.prepareDevice()
+
+        sess.weightsFromHost()
+        return sess
+
+    # 3.
+    sess = getTrainingSession(onnx_model)
+    fn = "withInitZeroAccumTensors.onnx"
+    sess.modelToHost(fn)
+    model = onnx.load(fn)
+    weights = {}
+    optstates = {}
+    for t in model.graph.initializer:
+        if (popart.reservedAccumPrefix() in t.name
+                or popart.reservedAccl1Prefix() in t.name
+                or popart.reservedAccl2Prefix() in t.name
+                or popart.reservedStepPrefix() in t.name):
+            optstates[t.name] = t.float_data
+            assert np.allclose(np.asarray(t.float_data), 0.0)
+        else:
+            weights[t.name] = t.float_data
+
+    # 4.
+    input_shape = [accum_factor] + sess.getInfo(input_name).shape()
+    stepio = popart.PyStepIO(
+        {
+            input_name: npr.rand(*input_shape).astype(np.float32),
+            lb_name: np.ones(batch_size).astype(np.int32),
+        }, sess.initAnchorArrays())
+    sess.run(stepio)
+    fn = "withUpdatedAcclTensors.onnx"
+    sess.modelToHost(fn)
+    model = onnx.load(fn)
+    for t in model.graph.initializer:
+        if (popart.reservedAccl1Prefix() in t.name
+                or popart.reservedAccl2Prefix() in t.name
+                or popart.reservedStepPrefix() in t.name):
+            # Nonzero, updated accl1, accl2 and step tensors
+            assert np.allclose(np.asarray(t.float_data),
+                               optstates[t.name]) is False
+            optstates[t.name] = np.asarray(t.float_data)
+        elif popart.reservedAccumPrefix() in t.name:
+            # Because the accumulator is always set to zero after being applied
+            # to accl1 and accl2
+            assert np.allclose(np.asarray(t.float_data), 0.0)
+            optstates[t.name] = np.asarray(t.float_data)
+
+    # 5.
+    sess = getTrainingSession(fn)
+    fn = "withUpdatedAcclTensors_check.onnx"
+    sess.modelToHost(fn)
+    model = onnx.load(fn)
+    for t in model.graph.initializer:
+        if (popart.reservedAccumPrefix() in t.name
+                or popart.reservedAccl1Prefix() in t.name
+                or popart.reservedAccl2Prefix() in t.name
+                or popart.reservedStepPrefix() in t.name):
+            assert np.array_equal(optstates[t.name], np.asarray(t.float_data))

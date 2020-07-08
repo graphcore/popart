@@ -19,8 +19,7 @@ CollectiveBalancedReorder::CollectiveBalancedReorder(
     unsigned replicationFactor_)
     : graph(graph_), replicationFactor(replicationFactor_) {
   referenceTensor = graph.clone(tensor_);
-  elemByteSize = graph.getTarget().getTypeSize(referenceTensor.elementType());
-  auto flat    = tensor_.flatten();
+  auto flat       = tensor_.flatten();
 
   int64_t minRegionSize = 1;
 
@@ -205,6 +204,7 @@ poplar::Tensor CollectiveBalancedReorder::undoRearrangeForCollective(
 
 void CollectiveBalancedReorder::rearrange(const char *in,
                                           char *out,
+                                          int64_t elemByteSize,
                                           bool forCollective) const {
   auto reorder = reordering;
 
@@ -260,14 +260,18 @@ void CollectiveBalancedReorder::rearrange(const char *in,
   }
 }
 
-void CollectiveBalancedReorder::rearrangeForCollective(const char *in,
-                                                       char *out) const {
-  rearrange(in, out, true);
+void CollectiveBalancedReorder::rearrangeForCollective(
+    const char *in,
+    char *out,
+    int64_t elemByteSize) const {
+  rearrange(in, out, elemByteSize, true);
 }
 
-void CollectiveBalancedReorder::undoRearrangeForCollective(const char *in,
-                                                           char *out) const {
-  rearrange(in, out, false);
+void CollectiveBalancedReorder::undoRearrangeForCollective(
+    const char *in,
+    char *out,
+    int64_t elemByteSize) const {
+  rearrange(in, out, elemByteSize, false);
 }
 
 poplar::Tensor

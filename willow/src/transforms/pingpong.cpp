@@ -12,6 +12,7 @@
 #include <popart/op/getrandomseed.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/op/lamb.hpp>
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/tensor.hpp>
@@ -1069,6 +1070,50 @@ bool PingPong::apply(Graph &graph) const {
                       graph.topoCons->insert(
                           replicatedReduceScatter, optimizerOp, true);
                     }
+                  }
+                }
+
+                // Lamb + replicated weight sharding:
+                // Distributed L2 norm of the weight and updater tensor
+                if (tensor->getTensorTypeInfo()->type() ==
+                        TensorType::Variable &&
+                    !tensor->isAcclTensor() && tensorReplicatedWeightSharding &&
+                    dynamic_cast<LambSquareOp *>(optimizerOp)) {
+
+                  Tensor *out =
+                      optimizerOp->output->tensor(LambSquareOp::getOutIndex());
+
+                  // Make sure reduction is only added once
+                  auto lambSqConsumers = out->consumers.getOps();
+                  if (!std::any_of(
+                          lambSqConsumers.begin(),
+                          lambSqConsumers.end(),
+                          [](Op *op) {
+                            return dynamic_cast<ReplicatedAllReduceOp *>(op);
+                          })) {
+
+                    TensorId lambIntoReduceId =
+                        ir.createIntermediateTensorId(out->id);
+
+                    optimizerOp->disconnectOutTensor(out);
+                    optimizerOp->createAndConnectOutTensor(
+                        ReplicatedAllReduceOp::getOutIndex(), lambIntoReduceId);
+                    optimizerOp->setup();
+
+                    auto reduceOpUp =
+                        std::make_unique<ReplicatedAllReduceInplaceOp>(
+                            Onnx::CustomOperators::ReplicatedAllReduceInplace,
+                            optimizerOp->settings);
+                    auto reduceOp = reduceOpUp.get();
+                    graph.moveIntoGraph(std::move(reduceOpUp));
+
+                    reduceOp->connectInTensor(
+                        ReplicatedAllReduceInplaceOp::getInIndex(),
+                        lambIntoReduceId);
+                    reduceOp->connectOutTensor(
+                        ReplicatedAllReduceInplaceOp::getOutIndex(), out->id);
+
+                    reduceOp->setup();
                   }
                 }
               }

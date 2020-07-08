@@ -28,11 +28,13 @@ TensorId getEdgeGradId(TensorId tenId, OpId opId, int index) {
 }
 
 std::vector<std::string> reservedOptimizerPrefixes() {
-  return {reservedDefaultScaledLearningRate0Prefix(),
+  return {// Optimizer
+          reservedLossScalingPrefix(),
+          // SGD0 / SGD1
+          reservedDefaultScaledLearningRate0Prefix(),
           reservedSpecificScaledLearningRate0Prefix(),
           reservedDefaultWeightDecayScaleFactor0Prefix(),
           reservedSpecificWeightDecayScaleFactor0Prefix(),
-
           reservedDefaultScaledLearningRate1Prefix(),
           reservedSpecificScaledLearningRate1Prefix(),
           reservedDefaultScaledWeightDecay1Prefix(),
@@ -41,8 +43,17 @@ std::vector<std::string> reservedOptimizerPrefixes() {
           reservedSpecificDampeningScaleFactor1Prefix(),
           reservedDefaultScaledMomentum1Prefix(),
           reservedSpecificScaledMomentum1Prefix(),
-
-          reservedLossScalingPrefix()};
+          // Adam / Lamb
+          reservedDefaultAdamBeta1Prefix(),
+          reservedSpecificAdamBeta1Prefix(),
+          reservedDefaultAdamBeta2Prefix(),
+          reservedSpecificAdamBeta2Prefix(),
+          reservedDefaultLearningRatePrefix(),
+          reservedSpecificLearningRatePrefix(),
+          reservedDefaultAdamEpsPrefix(),
+          reservedSpecificAdamEpsPrefix(),
+          reservedDefaultWeightDecayPrefix(),
+          reservedSpecificWeightDecayPrefix()};
 }
 
 std::vector<std::string> reservedPrefixes() {
@@ -81,7 +92,11 @@ TensorId stripAllReservedPrefixes(TensorId id) {
 }
 
 std::vector<std::string> reservedOptimizerStatePrefixes() {
-  std::vector<std::string> prefs = {reservedAcclToAccumulatorPrefix(),
+  std::vector<std::string> prefs = {reservedAccumPrefix(),
+                                    reservedAcclPrefix(),
+                                    reservedAccl1Prefix(),
+                                    reservedAccl2Prefix(),
+                                    reservedStepPrefix(),
                                     reservedAcclToReducePrefix(),
                                     reservedAcclToUpdatePrefix(),
                                     reservedAcclFinalOutPrefix()};

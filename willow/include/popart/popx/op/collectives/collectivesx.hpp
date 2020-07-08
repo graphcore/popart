@@ -45,19 +45,19 @@ public:
   poplar::Tensor undoRearrangeForCollective(poplar::Tensor tensor) const;
 
   // Balanced reorder the tensor in a collective-friendly manner (host-side)
-  void rearrangeForCollective(const char *in, char *out) const;
+  void
+  rearrangeForCollective(const char *in, char *out, int64_t elemByteSize) const;
 
   // Reorder tensor back into the expected IR tensor shape and order (host-side)
-  void undoRearrangeForCollective(const char *in, char *out) const;
+  void undoRearrangeForCollective(const char *in,
+                                  char *out,
+                                  int64_t elemByteSize) const;
 
   // Get a clone of the tensor that was used to create the CBR object
   poplar::Tensor getReferenceTensorClone(std::string name) const;
 
   // Get the tensor that was used to create the CBR object
   const poplar::Tensor &getReferenceTensor() const;
-
-  // Tensor element size in bytes
-  size_t getElementByteSize() const { return elemByteSize; }
 
   // Number of elements in the collective balanced (reordered) tensor
   size_t getNumRearrangedTensorElems() const {
@@ -66,7 +66,10 @@ public:
 
 private:
   // Host tensor rearrangement routine
-  void rearrange(const char *in, char *out, bool forCollective) const;
+  void rearrange(const char *in,
+                 char *out,
+                 int64_t elemByteSize,
+                 bool forCollective) const;
 
   // Graph or subgraph on which the tensor and reordered tensor are allocated
   poplar::Graph &graph;
@@ -74,7 +77,6 @@ private:
   unsigned replicationFactor;
 
   poplar::Tensor referenceTensor;
-  size_t elemByteSize;
   size_t numRearrangedTensorElems;
 
   // Tuple of: original offset, rearranged offset, size and tile

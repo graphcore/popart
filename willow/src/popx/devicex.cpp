@@ -610,8 +610,9 @@ void Devicex::remoteBufferWeightsToHost() {
         auto cbr = getCollectiveBalancedReorder(
             getCacheArgTensorId(stripAllReservedPrefixes(tensor->id)));
 
-        auto elemSize = cbr->getElementByteSize();
-        auto nelms    = cbr->getNumRearrangedTensorElems();
+        auto elemSize =
+            static_cast<int64_t>(tensor->info.getDataTypeInfo()->nbytes());
+        auto nelms = cbr->getNumRearrangedTensorElems();
 
         // Temporary buffer that can hold the padded weight shards
         // from all replicas
@@ -627,7 +628,7 @@ void Devicex::remoteBufferWeightsToHost() {
         }
 
         // Rearrange collected weights into d2h buffer
-        cbr->undoRearrangeForCollective(&tmp[0], data0);
+        cbr->undoRearrangeForCollective(&tmp[0], data0, elemSize);
       } else {
         // Weight should be the same for each replica if not using sharded,
         // only return weights from replica_id == 0
@@ -962,15 +963,16 @@ void Devicex::remoteBufferWeightsFromHost() {
         auto cbr = getCollectiveBalancedReorder(
             getCacheArgTensorId(stripAllReservedPrefixes(tensor->id)));
 
-        auto elemSize = cbr->getElementByteSize();
-        auto nelms    = cbr->getNumRearrangedTensorElems();
+        auto elemSize =
+            static_cast<int64_t>(tensor->info.getDataTypeInfo()->nbytes());
+        auto nelms = cbr->getNumRearrangedTensorElems();
 
         // Temporary buffer that can hold the padded weight shards
         // for all replicas
         std::vector<char> tmp(nelms * elemSize);
 
         // Rearrange weights into tmp buffer
-        cbr->rearrangeForCollective(data0, &tmp[0]);
+        cbr->rearrangeForCollective(data0, &tmp[0], elemSize);
 
         for (unsigned replica_id = 0; replica_id < getReplicationFactor();
              ++replica_id) {
