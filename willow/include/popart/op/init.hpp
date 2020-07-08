@@ -34,13 +34,13 @@ public:
 
   static InIndex getOutIndex() { return 0; }
 
-  TensorInfo getTensorInfo() { return tensor_info; }
-  TensorType getTensorType() { return tensor_type; }
-  InitType getInitType() { return init_type; }
+  TensorInfo getTensorInfo() const { return tensor_info; }
+  TensorType getTensorType() const { return tensor_type; }
+  InitType getInitType() const { return init_type; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
-
   bool isOutlineable() const final { return tensor_type != TensorType::Cache; }
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
 private:
   TensorInfo tensor_info;

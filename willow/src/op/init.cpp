@@ -26,6 +26,11 @@ void InitOp::setup() {
   output->tensor(getOutIndex())->setTensorType(tensor_type);
 }
 
+void InitOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
+  os.appendAttribute("inittype", static_cast<int>(getInitType()));
+}
+
 static OpDefinition::DataTypes T = {DataType::FLOAT,
                                     DataType::FLOAT16,
                                     DataType::INT32,
