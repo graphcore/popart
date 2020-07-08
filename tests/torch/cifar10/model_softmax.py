@@ -54,7 +54,9 @@ class Module0(torch.nn.Module):
         preProbSquared = x + x
 
         window_size = (int(x.size()[2]), int(x.size()[3]))
-        x = torch.nn.functional.avg_pool2d(x, kernel_size=window_size)
+        x = torch.nn.functional.avg_pool2d(x,
+                                           kernel_size=window_size,
+                                           stride=window_size)
         x = torch.squeeze(x)
         # probabilities:
         # Note that for Nll, Pytorch requires logsoftmax input.

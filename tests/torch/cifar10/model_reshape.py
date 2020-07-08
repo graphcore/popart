@@ -51,7 +51,9 @@ class Module0(torch.nn.Module):
         nSamples = int(x.size()[0])
         nChans = int(x.size()[1])
         window_size = (int(x.size()[2]), int(x.size()[3]))
-        x = torch.nn.functional.avg_pool2d(x, kernel_size=window_size)
+        x = torch.nn.functional.avg_pool2d(x,
+                                           kernel_size=window_size,
+                                           stride=window_size)
         # squeeze out the 1s in the shape
         x = torch.squeeze(x)
         # this introduces a Reshape:

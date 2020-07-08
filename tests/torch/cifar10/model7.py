@@ -70,7 +70,9 @@ class Module0(torch.nn.Module):
         x = self.relu(x)
         x = self.conv2(x)
         window_size = (int(x.size()[2]), int(x.size()[3]))
-        x = torch.nn.functional.avg_pool2d(x, kernel_size=window_size)
+        x = torch.nn.functional.avg_pool2d(x,
+                                           kernel_size=window_size,
+                                           stride=window_size)
         x = torch.squeeze(x)
 
         weights = self.weights
