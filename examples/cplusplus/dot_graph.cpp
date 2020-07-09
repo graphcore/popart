@@ -93,7 +93,7 @@ int main(int argc, char **argv) {
       throw error("Cannot call dot_graph TRAIN, model only has one output");
     }
 
-    Builder *builder = Builder::createFromOnnxModel(modelProtoString).get();
+    auto builder     = Builder::createFromOnnxModel(modelProtoString);
     auto aiGraphcore = builder->aiGraphcoreOpset1();
     auto nlll        = aiGraphcore.nllloss({out, label}, ReductionType::Sum);
     loss             = nlll;
