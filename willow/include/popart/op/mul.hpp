@@ -18,8 +18,8 @@ public:
   static OperatorIdentifier getOpId(const Ir &ir);
 
 private:
-  bool hasLhsInplaceVariant() const { return true; }
-  bool hasRhsInplaceVariant() const { return true; }
+  bool hasLhsInplaceVariant() const final { return true; }
+  bool hasRhsInplaceVariant() const final { return true; }
 
   std::unique_ptr<Op> getLhsInplaceVariant() const final;
   std::unique_ptr<Op> getRhsInplaceVariant() const final;
