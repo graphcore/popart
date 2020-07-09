@@ -131,18 +131,9 @@ bool Tensor::hasVirtualGraphId() const {
   return getVirtualGraphIdUnsafe() != unusedVGraphId;
 }
 
-const void *Tensor::getTensorData() const {
-  if (hasTensorData()) {
-    return tensorData()->data();
-  } else {
-    return getDataViaRecursion().data();
-  }
-}
-
 std::vector<char> Tensor::getDataViaRecursion() const {
   if (hasProducer()) {
     if (ConstExprOpManager::hasConstExprOp(producer)) {
-      //
       for (auto inTensor : producer->input->tensors()) {
         if (!inTensor->hasTensorData()) {
           auto outTemp = inTensor->getDataViaRecursion();
