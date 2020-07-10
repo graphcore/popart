@@ -438,8 +438,9 @@ private:
 
   std::vector<Op *> growGradOps(Op *forwardOp);
 
-  // For each loss, create a grad-op. Return a vector of {gradop, lossop} pairs
-  std::vector<GradNonGradPair> growLossGradients();
+  // Grow loss operands. Return pointer to Op introduced for non-const loss
+  // scaling, if one was needed.
+  Op *growLossGradients();
 
   void initRandomSeed();
 

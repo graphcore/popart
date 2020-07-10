@@ -2387,10 +2387,25 @@ void Ir::constructBackwards() {
     }
   };
 
+  // Link up loss / loss scaling ops.
+  Op *nonConstLossScaleOp = growLossGradients();
+
   // grad-ops which have created edge-gradients, but the
   // edge-gradients haven't signalled their existance.
   // initialised as the gradients of the loss
-  std::vector<GradNonGradPair> opsToRegister = growLossGradients();
+  std::vector<GradNonGradPair> opsToRegister;
+
+  // Add loss op gradients.
+  auto finalLossOpFound = getMainGraph().getOps().find(finalLossOpId);
+  if (finalLossOpFound != getMainGraph().getOps().end()) {
+    std::vector<GradNonGradPair> pairs;
+    auto finalLossOp = getMainGraph().getOp(finalLossOpId);
+    for (Op *gradOp : growGradOps(finalLossOp)) {
+      opsToRegister.push_back({gradOp, finalLossOp});
+    }
+  } else {
+    throw error("Call to growLossGradients, but finalLossOpId not found");
+  }
 
   while (!opsToRegister.empty() || !tensor_grad_registry.complete.empty()) {
 
@@ -2452,6 +2467,15 @@ void Ir::constructBackwards() {
         }
       }
     }
+  }
+
+  if (nonConstLossScaleOp) {
+    // Only now inherit attributes for the non-const loss scaling op, if there
+    // was one. The reason we do it here is because the inherit function relies
+    // on the op having input or output tensors linked to it to inherit the
+    // attributes from, but at the time growLossGradients is called this op's
+    // outputs have yet to be grown.
+    nonConstLossScaleOp->inheritPlacementAttributes(true);
   }
 
   logging::ir::info("Creating Variable Tensor update Ops");
@@ -2772,7 +2796,7 @@ unsigned Ir::getMaxVirtualGraphId() const {
   return maxVirtualGraphId;
 }
 
-std::vector<GradNonGradPair> Ir::growLossGradients() {
+Op *Ir::growLossGradients() {
 
   float lossScale            = 1.0f;
   TensorId gradStarterId     = getGradId(getFinalLossId());
@@ -2865,6 +2889,8 @@ std::vector<GradNonGradPair> Ir::growLossGradients() {
                   gradStarterInfo.getDataTypeInfo()->name());
     }
     }
+
+    return nullptr;
   } else {
     // In the case where the user wants to apply loss scaling with a scaling
     // factor that is not constant we need to apply scaling differently. We need
@@ -2888,18 +2914,7 @@ std::vector<GradNonGradPair> Ir::growLossGradients() {
                                   lossScalingInputOpId);
     Op *op = getMainGraph().getOp(lossScalingInputOpId);
     op->setup();
-  }
-
-  auto finalLossOpFound = getMainGraph().getOps().find(finalLossOpId);
-  if (finalLossOpFound != getMainGraph().getOps().end()) {
-    std::vector<GradNonGradPair> pairs;
-    auto finalLossOp = getMainGraph().getOp(finalLossOpId);
-    for (Op *gradOp : growGradOps(finalLossOp)) {
-      pairs.push_back({gradOp, finalLossOp});
-    }
-    return pairs;
-  } else {
-    throw error("Call to growLossGradients, but finalLossOpId not found");
+    return op;
   }
 }
 
