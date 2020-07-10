@@ -3151,7 +3151,11 @@ void Ir::applyInplacePattern(Graph &graph) {
       return std::get<2>(a) > std::get<2>(b);
     }
     // if same priority, fall back to ID to keep it deterministic
-    return std::get<0>(a) > std::get<0>(b);
+    if (std::get<0>(a) != std::get<0>(b)) {
+      return std::get<0>(a) > std::get<0>(b);
+    }
+    // need lhs to go before rhs (see also T23594)
+    return std::get<1>(a) < std::get<1>(b);
   };
 
   if (priorities.size() != 0) {
