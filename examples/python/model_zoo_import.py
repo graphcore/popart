@@ -55,10 +55,15 @@ except urllib.request.HTTPError:
 
 # Make base 'modelzoo' dir for downloading and extracting model
 tmpdir = tempfile.gettempdir()
-modeldir = os.path.abspath(os.path.join(tmpdir, 'modelzoo'))
-if (not os.path.exists(modeldir)):
-    print("Creating directory %s" % (modeldir))
-    os.mkdir(modeldir)
+
+modelzoo_dir = os.path.abspath(os.path.join(tmpdir, 'modelzoo'))
+if (not os.path.exists(modelzoo_dir)):
+    print("Creating directory %s" % (modelzoo_dir))
+    os.mkdir(modelzoo_dir)
+
+modeldir_obj = tempfile.TemporaryDirectory(dir=modelzoo_dir)
+modeldir = modeldir_obj.name
+print(f"The model was extracted to: {modeldir}")
 
 # Download and extract
 fn = url.split('/')[-1]
@@ -73,10 +78,7 @@ if (not os.path.exists(download_path)):
 with tarfile.open(download_path) as tar:
     extract_path = tar.extractall(path=modeldir)
 
-file_tar, file_tar_ext = os.path.splitext(download_path)
-file_untar, file_untar_ext = os.path.splitext(file_tar)
-
-filenames = glob.glob(os.path.join(file_tar, file_untar, "**"), recursive=True)
+filenames = glob.glob(os.path.join(modeldir, "**"), recursive=True)
 onnx_model = [f for f in filenames if ".onnx" in f][-1]
 onnx_model = os.path.join(modeldir, onnx_model)
 print("ONNX model:", onnx_model)
