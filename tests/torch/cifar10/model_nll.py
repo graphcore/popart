@@ -61,7 +61,9 @@ class Module0(torch.nn.Module):
         preProbSquared = x + x
 
         window_size = (int(x.size()[2]), int(x.size()[3]))
-        x = torch.nn.functional.avg_pool2d(x, kernel_size=window_size)
+        x = torch.nn.functional.avg_pool2d(x,
+                                           kernel_size=window_size,
+                                           stride=window_size)
         pre_probs = torch.squeeze(x)
         probs = self.softmax(pre_probs)
         logprobs = torch.log(probs)

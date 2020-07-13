@@ -6,6 +6,7 @@ import torch.utils.data
 import popart
 from popart.writer import NetWriter
 from popart import TensorInfo, DataFlow, SGD, ConstSGD
+import onnx
 
 
 def conv3x3(in_planes, out_planes, stride=1):
@@ -59,11 +60,13 @@ class PytorchNetWriter(NetWriter):
 
         inputDataInfos = [self.inputShapeInfo.get(tid) for tid in self.inNames]
         inputData = []
+        containsint64 = False
         for info in inputDataInfos:
             shape = info.shape()
             dt = info.data_type_lcase()
             if dt == "int32":
                 dt = "int64"  # torch labels must be 'long'
+                containsint64 = True
             inputData.append(torch.from_numpy(np.ones(shape=shape, dtype=dt)))
 
         torch.onnx.export(self.module,
@@ -73,13 +76,19 @@ class PytorchNetWriter(NetWriter):
                           input_names=self.inNames,
                           output_names=self.outNames)
 
-        # TODO: T19915 uncomment conversion code.
         # If the model contains 'long' tensors (e.g. in case of exporting
         # nllloss), they must be converted to int32
-        # graph_transformer = popart.GraphTransformer(fnModel)
-        # graph_transformer.convertINT64ToINT32()
-        # proto = graph_transformer.getModelProto()
-        # popart.Builder(proto).saveModelProto(fnModel)
+        # Note: in models with reshape ops, the 'shape' tensor will be converted
+        # to int32 by the blanket conversion. This leads to a technically invalid
+        # onnx model. So we only convert when we know we definitely have int64 tensors.
+        if containsint64:
+            graph_transformer = popart.GraphTransformer(fnModel)
+            graph_transformer.convertINT64ToINT32()
+            graph_transformer.convertAllFixedPointInitializersToConstants()
+            proto = graph_transformer.getModelProto()
+            popart.Builder(proto).saveModelProto(fnModel)
+
+        onnx.checker.check_model(fnModel)
 
     def train(self, inMap):
         """

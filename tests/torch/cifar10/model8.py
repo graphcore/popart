@@ -29,7 +29,7 @@ inputShapeInfo.add("image0",
 inputShapeInfo.add("image1",
                    popart.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
 inputShapeInfo.add("label", popart.TensorInfo("INT32", [batchSize]))
-inNames = ["image0", "image1"]
+inNames = ["image0", "image1", "label"]
 cifarInIndices = {"image0": 0, "image1": 0, "label": 1}
 outNames = ["loss"]
 
@@ -55,6 +55,7 @@ class Module0(torch.nn.Module):
     def forward(self, inputs):
         image0 = inputs[0]
         image1 = inputs[1]
+        labels = inputs[2]
         x = image0 * image1
 
         x = self.conv1(x)
@@ -64,7 +65,9 @@ class Module0(torch.nn.Module):
         l1loss = torch.sum(0.01 * torch.abs(preProbSquared))
 
         window_size = (int(x.size()[2]), int(x.size()[3]))
-        x = torch.nn.functional.avg_pool2d(x, kernel_size=window_size)
+        x = torch.nn.functional.avg_pool2d(x,
+                                           kernel_size=window_size,
+                                           stride=window_size)
         x = torch.squeeze(x)
         probs = self.softmax(x)
         logprobs = torch.log(probs)

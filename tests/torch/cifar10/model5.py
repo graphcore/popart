@@ -48,7 +48,9 @@ class Module0(torch.nn.Module):
         image0 = inputs[0]
         x = self.conv1(image0)
         window_size = (int(x.size()[2]), int(x.size()[3]))
-        x = torch.nn.functional.avg_pool2d(x, kernel_size=window_size)
+        x = torch.nn.functional.avg_pool2d(x,
+                                           kernel_size=window_size,
+                                           stride=window_size)
         preprobs = torch.squeeze(x)
         probs = self.softmax(preprobs)
         logprobs = torch.log(probs)

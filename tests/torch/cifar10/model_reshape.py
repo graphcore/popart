@@ -31,9 +31,7 @@ earlyInfo.add("image0",
 inNames = ["image0"]
 cifarInIndices = {"image0": 0}
 outNames = ["l1LossVal"]
-willowOptPasses = [
-    "PreUniRepl", "PostNRepl", "SoftmaxGradDirect", "OpToIdentity", "Inplace0"
-]
+willowOptPatterns = popart.Patterns(popart.PatternsLevel.All)
 
 
 class Module0(torch.nn.Module):
@@ -79,5 +77,5 @@ torchWriter = torchwriter.PytorchNetWriter(
     module=Module0(),
     samplesPerBatch=batchSize)
 
-c10driver.run(torchWriter, None, args.outputdir, cifarInIndices, args.device,
-              args.hw_id)
+c10driver.run(torchWriter, willowOptPatterns, args.outputdir, cifarInIndices,
+              args.device, args.hw_id)
