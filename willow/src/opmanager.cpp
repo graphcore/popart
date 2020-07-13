@@ -27,6 +27,27 @@ Tensor *OpCreatorInfo::getInputTensor(int index) const {
   return settings.graph.get().getTensors().get(id);
 }
 
+TensorData *OpCreatorInfo::getInputTensorData(int index) const {
+  auto id     = inputIds.at(index);
+  auto &graph = settings.graph.get();
+
+  if (!graph.getTensors().contains(id)) {
+    throw error("The tensor `{}` is not defined", id);
+  }
+
+  auto *tensor = graph.getTensors().get(id);
+
+  if (!tensor->hasTensorData()) {
+    throw error("The tensor `{}` does not have data", id);
+  }
+
+  return tensor->tensorData();
+}
+
+TensorInfo &OpCreatorInfo::getInputTensorInfo(int index) const {
+  return getInputTensor(index)->info;
+}
+
 OpManager &OpManager::getInstance() {
   static OpManager instance;
   return instance;

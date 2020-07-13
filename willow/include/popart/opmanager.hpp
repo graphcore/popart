@@ -10,6 +10,7 @@
 #include <popart/op.hpp>
 #include <popart/vendored/any.hpp>
 
+#include <popart/tensordata.hpp>
 #include <popart/tensorinfo.hpp>
 
 namespace popart {
@@ -75,6 +76,28 @@ public:
 
   const std::vector<TensorId> &getInputIds() const;
   Tensor *getInputTensor(int index) const;
+  TensorData *getInputTensorData(int index) const;
+  TensorInfo &getInputTensorInfo(int index) const;
+
+  template <typename T> std::vector<T> getInputData(int index) const {
+    auto tensorData  = getInputTensorData(index);
+    auto &tensorInfo = getInputTensorInfo(index);
+
+    if (tensorInfo.rank() != 1) {
+      throw error(
+          "Can only return data for rank 1 tensors. Tensor is of rank {}",
+          tensorInfo.rank());
+    }
+
+    if (getDataType<T>() == tensorInfo.dataType()) {
+      return tensorData->copyDataAs<T>(tensorInfo.nelms());
+    } else {
+      throw error("Trying to get data as incorrect type. Trying to get data as "
+                  "{} but it is of type {}",
+                  getDataType<T>(),
+                  tensorInfo.dataType());
+    }
+  }
 
 private:
   const std::vector<TensorId> &inputIds;

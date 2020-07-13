@@ -62,6 +62,8 @@ public:
 
   std::unique_ptr<Op>
   getInplaceVariant(const OperatorIdentifier &) const override;
+
+  void connectInTensor(InIndex inIndex, TensorId tenId) final;
 };
 
 class PadInplaceOp : public BasePadOp {

@@ -49,6 +49,13 @@ PadOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   return Op::getInplaceVariant(operator_id);
 }
 
+void PadOp::connectInTensor(InIndex inIndex, TensorId tenId) {
+  // Ignore all but the first input
+  if (inIndex == getInIndex()) {
+    Op::connectInTensor(inIndex, tenId);
+  }
+}
+
 view::RegMap BasePadOp::fwdRegMap(InIndex inIndex, OutIndex outIndex) const {
   if (inIndex != 0 || outIndex != 0) {
     throw internal_error("[BasePadOp::fwdRegMap] "
@@ -285,10 +292,8 @@ static OpDefinition padOpV11Def({OpDefinition::Inputs({
                                      {"mode", {"constant|reflect|edge"}},
                                  })});
 
-static OpCreator<PadOp> padCreator(
-    OpDefinitions({{Onnx::Operators::Pad_2, padOpV2Def},
-                   {Onnx::Operators::Pad_11, padOpV11Def}}),
-    //{Onnx::Operators::Pad_2, Onnx::Operators::Pad_11},
+static OpCreator<PadOp> pad2Creator(
+    OpDefinitions({{Onnx::Operators::Pad_2, padOpV2Def}}),
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {
@@ -298,6 +303,34 @@ static OpCreator<PadOp> padCreator(
           attr.getAttribute<Attributes::String>("mode", "constant");
 
       return std::unique_ptr<Op>(new PadOp(_opid, pads, value, mode, settings));
+    },
+    true);
+
+static OpCreator<PadOp> pad11Creator(
+    OpDefinitions({{Onnx::Operators::Pad_11, padOpV11Def}}),
+    [](const OpCreatorInfo &info) -> std::unique_ptr<Op> {
+      int padsInputIndex  = 1;
+      int valueInputIndex = 2;
+
+      std::vector<int64_t> pads = info.getInputData<int64_t>(padsInputIndex);
+      float value               = 0.0;
+      if (info.getInputIds().at(valueInputIndex) != "") {
+        std::vector<float> values = info.getInputData<float>(valueInputIndex);
+        if (values.size() != 1) {
+          throw error(
+              "Expected only 1 value in 'constant_value' input, got {}'",
+              values.size());
+        }
+        value = values.at(0);
+      }
+
+      std::string mode = "constant";
+      if (info.attributes.hasAttribute("mode")) {
+        mode = info.attributes.getAttribute<Attributes::String>("mode");
+      }
+
+      return std::unique_ptr<Op>(
+          new PadOp(info.opid, pads, value, mode, info.settings));
     },
     true);
 } // namespace

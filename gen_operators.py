@@ -55,9 +55,6 @@ overrideOP = {
     },
     "ai.onnx.Pad:2": {
         "verifyInput": True,
-    },
-    "ai.onnx.Pad:11": {
-        "verifyInput": True,
     }
 }
 

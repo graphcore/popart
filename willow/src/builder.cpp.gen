@@ -3712,11 +3712,7 @@ AiOnnxOpset11::pad(const std::vector<TensorId>& args,
                   getOpsetVersion(),
                   args,
                   attributes,
-                  name,
-                  [this](std::vector<TensorId> inputs_,
-                         std::map<std::string, popart::any> attributes_) {
-                     verify_AiOnnxOpset11_Pad_11(this->impl, inputs_, attributes_);
-                  })[0];
+                  name)[0];
 }
 
 TensorId

@@ -1272,7 +1272,42 @@ def test_pad_type_reflect(op_tester):
               mode='reflect')
 
 
-def _test_pad(op_tester, data, lower_padding, upper_padding, mode,
+def test_pad11(op_tester):
+    data = np.array([[[1., 2.], [3., 4.]]]).astype(np.float32)
+    pads = np.array([2, 1, 1, 1, 0, 2]).astype(np.int64)
+    pad_value = 1.0
+    value = np.array([pad_value]).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(data)
+        p = builder.aiOnnx.constant(pads, False)
+        v = builder.aiOnnx.constant(value, False)
+        o = builder.aiOnnx.pad([i1, p, v], mode='constant')
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        padding = tuple(zip(pads, pads[len(pads) // 2:]))
+        o = np.pad(data, padding, 'constant', constant_values=pad_value)
+        print(o)
+
+        return [o]
+
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
+    op_tester.run(init_builder,
+                  reference,
+                  'infer',
+                  opsets={
+                      "ai.onnx": 11,
+                      "ai.graphcore": 1
+                  })
+
+
+def _test_pad(op_tester,
+              data,
+              lower_padding,
+              upper_padding,
+              mode,
               pad_value=0):
     def init_builder(builder):
         i1 = builder.addInputTensor(data)

@@ -291,13 +291,6 @@ verify_AiOnnxOpset6_Pad_2(std::unique_ptr<BuilderImpl> &impl,
   verifyPadBase(impl, inputs, attributes);
 }
 
-static void
-verify_AiOnnxOpset11_Pad_11(std::unique_ptr<BuilderImpl> &impl,
-                            std::vector<TensorId> inputs,
-                            std::map<std::string, popart::any> attributes) {
-  verifyPadBase(impl, inputs, attributes);
-}
-
 #include "builder.cpp.gen"
 
 Builder::Builder() : impl_(new BuilderImpl()) {}
