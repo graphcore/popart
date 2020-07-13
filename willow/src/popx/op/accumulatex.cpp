@@ -128,14 +128,11 @@ poplar::Tensor AccumulateOpx::createInput(int inIndex,
                 "only create the var to update input Tensor",
                 inIndex);
   }
-  auto info = inInfo(inIndex);
-  poplar::Tensor inTensor =
-      graph().addVariable(popType(info), info.shape_szt(), name);
-  graph().setTileMapping(inTensor,
-                         graph().getTileMapping(getInTensor(
-                             VarUpdateWithUpdaterOp::getUpdaterInIndex())));
-
-  return inTensor;
+  poplar::Tensor inTensor;
+  auto accumulatorInfo = inInfo(inIndex);
+  return graph().clone(popType(accumulatorInfo),
+                       getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex()),
+                       name);
 }
 
 InputCreatorType AccumulateOpx::getInputCreatorType(int inIndex) const {
