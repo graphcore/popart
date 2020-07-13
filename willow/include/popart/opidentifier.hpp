@@ -189,6 +189,7 @@ constexpr static char IsNaN[] = "IsNan";
 const static AiGraphcoreOpIdV1 LRN("LRN");
 const static AiGraphcoreOpIdV1 LSTMGrad("LSTMGrad");
 const static AiGraphcoreOpIdV1 PopartLSTMGrad("PopartLSTMGrad");
+const static AiGraphcoreOpIdV1 GRUGrad("GRUGrad");
 const static AiGraphcoreOpIdV1 LeakyReluGrad("LeakyReluGrad");
 // constexpr static char Less[] = "Less";
 const static AiGraphcoreOpIdV1 LogGrad("LogGrad");

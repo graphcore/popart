@@ -26,6 +26,7 @@ add_popart_py_unit_test(gather_test)
 add_popart_py_unit_test(gelu_test)
 add_popart_py_unit_test(gemm_test)
 add_popart_py_unit_test(groupnorm_test)
+add_popart_py_unit_test(gru_test)
 add_popart_py_unit_test(gt_lt_test)
 add_popart_py_unit_test(hardsigmoid_test)
 # add_popart_py_unit_test(ipu_op_tester) Utility
