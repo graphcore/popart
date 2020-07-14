@@ -11,16 +11,16 @@ import numpy as np
 import onnx
 from onnx import numpy_helper
 
-# Onnx modelzoo models are hosted on AWS as tarballs, with URL:
-# https://s3.amazonaws.com/download.onnx/models/opset_<VER>/<MODEL_NAME>.tar.gz
-# Some specific examples have non-standard urls e.g. resnet-18 URL is:
-# https://s3.amazonaws.com/onnx-model-zoo/resnet/resnet18v1/resnet18v1.tar.gz
+# Onnx modelzoo models are hosted on GitHub as tarballs, with URL:
+# https://github.com/onnx/models/blob/master/vision/classification/<MODEL_NAME>/model/<MODEL_NAME>.tar.gz
+# Example:
+# https://github.com/onnx/models/blob/master/vision/classification/resnet/model/resnet101-v1-7.tar.gz
 #
 # Here we test that we can load these popular models into the Popart Ir and test against the
 # given input / output data:
-# 1. Download the tarball to /tmp/modelzoo/
-# 2. Tarball extracts to /tmp/modelzoo/<MODEL_NAME>
-# 3. Onnx model path is /tmp/modelzoo/<MODEL_NAME>/model.onnx
+# 1. Download the tarball to /tmp/modelzoo/<temporary_folder>
+# 2. Tarball extracts to /tmp/modelzoo/<temporary_folder>/<archived_folder_name>
+# 3. Onnx model path is /tmp/modelzoo/<temporary_folder>/<archived_folder_name>/model.onnx
 # 4. Read onnx proto into a Popart Session
 # 5. Create the Popart Ir
 # 6. Get the output and compare tensors against the downloaded output
@@ -63,7 +63,6 @@ if (not os.path.exists(modelzoo_dir)):
 
 modeldir_obj = tempfile.TemporaryDirectory(dir=modelzoo_dir)
 modeldir = modeldir_obj.name
-print(f"The model was extracted to: {modeldir}")
 
 # Download and extract
 fn = url.split('/')[-1]
@@ -77,6 +76,8 @@ if (not os.path.exists(download_path)):
 # # Get onnx model from extracted tar
 with tarfile.open(download_path) as tar:
     extract_path = tar.extractall(path=modeldir)
+
+print(f"The model was extracted to: {modeldir}")
 
 filenames = glob.glob(os.path.join(modeldir, "**"), recursive=True)
 onnx_model = [f for f in filenames if ".onnx" in f][-1]
