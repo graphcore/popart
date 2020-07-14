@@ -245,6 +245,8 @@ public:
   const std::pair<poplar::RemoteBuffer, nonstd::optional<poplar::Tensor>> &
       getRemoteBuffer(RemoteBufferId) const;
 
+  const std::string getRemoteBufferName(RemoteBufferId) const;
+
   void createRemoteBuffer(RemoteBufferId, poplar::Tensor);
 
   std::shared_ptr<CollectiveBalancedReorder>

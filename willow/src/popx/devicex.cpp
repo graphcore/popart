@@ -621,7 +621,7 @@ void Devicex::remoteBufferWeightsToHost() {
         for (unsigned replica_id = 0; replica_id < getReplicationFactor();
              ++replica_id) {
           pEngine->copyFromRemoteBuffer(
-              getRemoteBuffer(remoteBufferInfo.first).first,
+              getRemoteBufferName(remoteBufferInfo.first),
               &tmp[replica_id * nelms / getReplicationFactor() * elemSize],
               static_cast<int>(remoteBufferInfo.second),
               replica_id);
@@ -633,7 +633,7 @@ void Devicex::remoteBufferWeightsToHost() {
         // Weight should be the same for each replica if not using sharded,
         // only return weights from replica_id == 0
         pEngine->copyFromRemoteBuffer(
-            getRemoteBuffer(remoteBufferInfo.first).first,
+            getRemoteBufferName(remoteBufferInfo.first),
             data0,
             static_cast<int>(remoteBufferInfo.second),
             0);
@@ -979,7 +979,7 @@ void Devicex::remoteBufferWeightsFromHost() {
           // 1/repfactor weight shard to each replica
           pEngine->copyToRemoteBuffer(
               &tmp[replica_id * nelms / getReplicationFactor() * elemSize],
-              getRemoteBuffer(remoteBufferInfo.first).first,
+              getRemoteBufferName(remoteBufferInfo.first),
               static_cast<int>(remoteBufferInfo.second),
               replica_id);
         }
@@ -989,7 +989,7 @@ void Devicex::remoteBufferWeightsFromHost() {
           // Identical weights to each replica
           pEngine->copyToRemoteBuffer(
               data0,
-              getRemoteBuffer(remoteBufferInfo.first).first,
+              getRemoteBufferName(remoteBufferInfo.first),
               static_cast<int>(remoteBufferInfo.second),
               replica_id);
         }
@@ -1838,6 +1838,10 @@ bool Devicex::hasRemoteBuffer(RemoteBufferId id) const {
   return remoteBuffers.find(id) != remoteBuffers.end();
 }
 
+const std::string Devicex::getRemoteBufferName(RemoteBufferId id) const {
+  return "RB_" + std::to_string(id);
+}
+
 const std::pair<poplar::RemoteBuffer, nonstd::optional<poplar::Tensor>> &
 Devicex::getRemoteBuffer(RemoteBufferId id) const {
   return remoteBuffers.at(id);
@@ -1845,7 +1849,7 @@ Devicex::getRemoteBuffer(RemoteBufferId id) const {
 
 void Devicex::createRemoteBuffer(RemoteBufferId id, poplar::Tensor tensor) {
   auto info    = ir().getRemoteBufferInfo(id);
-  auto name    = "RB_" + std::to_string(id);
+  auto name    = getRemoteBufferName(id);
   auto type    = tensor.elementType();
   auto size    = tensor.numElements();
   auto repeats = info.repeats;
