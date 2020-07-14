@@ -17,6 +17,8 @@ TensorId getEdgeGradId(TensorId tenId, OpId opId, int index);
 // total gradient of a forward tensor
 TensorId getGradId(const TensorId &tenId);
 
+bool isGradId(const TensorId &);
+
 // inverse of previous function (non-grad name of grad tensor)
 TensorId getNonGradId(const TensorId &tenId);
 

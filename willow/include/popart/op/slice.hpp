@@ -3,16 +3,10 @@
 #define GUARD_NEURALNET_SLICE_HPP
 
 #include <popart/op.hpp>
+#include <popart/op/pad.hpp>
+#include <popart/slicestruct.hpp>
 
 namespace popart {
-
-struct Slice {
-  int64_t start;
-  int64_t end;
-  int64_t axis;
-
-  Slice(int64_t start_, int64_t end_, int64_t axis_);
-};
 
 class BaseSliceOp : public Op {
 
@@ -54,6 +48,7 @@ public:
   std::vector<Slice> getSlices(std::vector<int64_t> input_shape) const;
   // assume input_shape is the shape of the input to this op:
   std::vector<Slice> getSlices() const;
+  std::vector<int64_t> getPads() const;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
@@ -108,31 +103,30 @@ public:
   // "modifies" is still the empty region
 };
 
-class SliceGradOp : public Op {
+// The gradient of a Slice is a Pad-by-zero.
+//
+// Example:
+//
+//    1210               0
+//    3235 ->  slice  -> 5 --->  ...  >--.
+//    4247               7               |
+//                                     loss
+//    0002     slice     2               |
+//    0001 <-    -    <- 1 <---  ...  <--.
+//    0001     grad      1
+//
+// By inheriting from BasePadOutplaceOp, we make use of certain optimizations
+// implemented for BasePadOutplaceOp, such as having a pre-registered Inplace Op
+// (PadInplaceOp), as well as having a Pattern to convert sums of sparse
+// outputs of Pads into concats where possible (see the padsum Pattern).
+class SliceGradOp : public BasePadOutplaceOp {
 public:
   SliceGradOp(const SliceOp &);
-  std::unique_ptr<Op> clone() const final;
-  void setup() final;
 
   void appendOutlineAttributes(OpSerialiserBase &) const override;
-
-  static InIndex getInIndex() { return 0; }
-  static OutIndex getOutIndex() { return 0; }
-
+  std::unique_ptr<Op> clone() const final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
-
-  std::vector<Slice> getSlices() const { return slices; }
-  void setPadding(const SliceOp &slice_op);
-  std::vector<std::ptrdiff_t> getLowerPadding() const { return lower_padding; }
-  std::vector<std::ptrdiff_t> getUpperPadding() const { return upper_padding; }
-  float getSubgraphValue() const final { return getLowSubgraphValue(); }
-
-private:
-  std::vector<Slice> slices;
-  std::vector<std::ptrdiff_t> lower_padding;
-  std::vector<std::ptrdiff_t> upper_padding;
-  TensorInfo preSlicedInInfo;
 };
 
 } // namespace popart

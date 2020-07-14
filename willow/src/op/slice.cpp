@@ -9,8 +9,16 @@
 
 namespace popart {
 
-Slice::Slice(int64_t start_, int64_t end_, int64_t axis_)
-    : start(start_), end(end_), axis(axis_) {}
+std::vector<int64_t> BaseSliceOp::getPads() const {
+  auto t_rank   = inInfo(getInIndex()).rank();
+  auto in_shape = inInfo(getInIndex()).shape();
+  std::vector<int64_t> pads(t_rank * 2, 0);
+  for (auto slice : getSlices()) {
+    pads[slice.axis]          = slice.start;
+    pads[slice.axis + t_rank] = in_shape[slice.axis] - slice.end;
+  }
+  return pads;
+}
 
 TensorInfo BaseSliceOp::createOutInfo() const {
   auto in_info      = inInfo(getInIndex());
@@ -333,35 +341,19 @@ void BaseSliceOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 }
 
 SliceGradOp::SliceGradOp(const SliceOp &op_)
-    : Op(Onnx::GradOperators::SliceGrad, op_.getSettings()),
-      slices(op_.getSlices()),
-      preSlicedInInfo(op_.inInfo(SliceOp::getInIndex())) {
-  setPadding(op_);
-}
+    : BasePadOutplaceOp(Onnx::GradOperators::SliceGrad,
+                        op_.getPads(),
+                        0.0f, // the padding constant
+                        "constant",
+                        op_.getSettings()) {}
 
 std::unique_ptr<Op> SliceGradOp::clone() const {
   return std::make_unique<SliceGradOp>(*this);
 }
 
-void SliceGradOp::setup() { outInfo(getOutIndex()) = preSlicedInInfo; }
-
-void SliceGradOp::setPadding(const SliceOp &slice_op) {
-  auto t_rank   = slice_op.inInfo(SliceOp::getInIndex()).rank();
-  auto in_shape = slice_op.inInfo(SliceOp::getInIndex()).shape();
-  std::vector<int64_t> pads(t_rank * 2, 0);
-
-  for (auto slice : slice_op.getSlices()) {
-    pads[slice.axis]          = slice.start;
-    pads[slice.axis + t_rank] = in_shape[slice.axis] - slice.end;
-  }
-
-  for (int i = 0; i < t_rank; i++) {
-    lower_padding.push_back(pads[i]);
-    upper_padding.push_back(pads[t_rank + i]);
-  }
-}
-
 const std::vector<GradInOutMapper> &SliceGradOp::gradInputInfo() const {
+  // The Tensor at the (only) input index, is the gradient of the (only) output
+  // of the corresponding Slice Op:
   static const std::vector<GradInOutMapper> inInfo = {
       {getInIndex(), SliceOp::getOutIndex(), GradOpInType::GradOut}};
   return inInfo;
@@ -375,6 +367,10 @@ const std::map<int, int> &SliceGradOp::gradOutToNonGradIn() const {
 
 void SliceGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
+
+  const auto slices        = getSlices();
+  const auto lower_padding = getLowerPadding();
+  const auto upper_padding = getUpperPadding();
 
   std::vector<int64_t> starts(slices.size());
   std::vector<int64_t> ends(slices.size());

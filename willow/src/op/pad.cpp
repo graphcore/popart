@@ -16,12 +16,55 @@ BasePadOp::BasePadOp(const OperatorIdentifier &_opid,
                      const Op::Settings &settings_)
     : Op(_opid, settings_), pads(_pads), pad_value(value_), mode(_mode) {}
 
+BasePadOutplaceOp::BasePadOutplaceOp(const OperatorIdentifier &_opid,
+                                     const std::vector<int64_t> &_pads,
+                                     float value_,
+                                     const std::string &_mode,
+                                     const Op::Settings &settings_)
+    : BasePadOp(_opid, _pads, value_, _mode, settings_) {}
+
 PadOp::PadOp(const OperatorIdentifier &_opid,
              const std::vector<int64_t> &_pads,
              float value_,
              const std::string &_mode,
              const Op::Settings &settings_)
-    : BasePadOp(_opid, _pads, value_, _mode, settings_) {}
+    : BasePadOutplaceOp(_opid, _pads, value_, _mode, settings_) {}
+
+// check pads are even, and check than rank agrees with input tensor
+void BasePadOp::runtimeConfirmShapes() const {
+  if (pads.size() != 2 * inInfo(getInIndex()).rank()) {
+    std::ostringstream oss;
+    oss << "Failure in BasePadOp::runtimeConfirmShapes, for " << str()
+        << ". This with pads of size " << pads.size()
+        << ", and input tensor of rank " << inInfo(getInIndex()).rank()
+        << ". Expected pads to be exactly 2x the unput Tensor's rank. ";
+    throw error(oss.str());
+  }
+}
+
+std::vector<std::ptrdiff_t> BasePadOp::getPadRange(size_t startIndex) const {
+  runtimeConfirmShapes();
+  std::vector<std::ptrdiff_t> subPadding;
+  subPadding.reserve(getRank());
+  for (auto iter = std::next(pads.cbegin(), startIndex);
+       iter != std::next(pads.cbegin(), getRank() + startIndex);
+       ++iter) {
+    subPadding.push_back(*iter);
+  }
+  return subPadding;
+}
+
+std::vector<Slice> BasePadOp::getSlices() const {
+  const auto lowerPadding = getLowerPadding();
+  const auto upperPadding = getUpperPadding();
+  std::vector<Slice> slices;
+  slices.reserve(getRank());
+  for (auto i = 0ULL; i < getRank(); ++i) {
+    slices.push_back(
+        {lowerPadding[i], upperPadding[i], static_cast<int64_t>(i)});
+  }
+  return slices;
+}
 
 std::unique_ptr<Op> PadOp::clone() const {
   return std::make_unique<PadOp>(*this);
@@ -35,13 +78,14 @@ std::vector<std::unique_ptr<Op>> PadOp::getGradOps() {
   } else {
     // TODO : T6631 Add support for other grad op when mode is "Reflect" &
     // "Edge". May define different pad grad op classes for the different modes
-    throw error("Do not support PadGradOp when mode is not \"constant\"");
+    throw error("At this time, PopART does not support PadGradOp when mode is "
+                "not \"constant\".");
   }
   return upops;
 }
 
-std::unique_ptr<Op>
-PadOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
+std::unique_ptr<Op> BasePadOutplaceOp::getInplaceVariant(
+    const OperatorIdentifier &operator_id) const {
   if (operator_id == Onnx::CustomOperators::PadInplace) {
     return std::make_unique<PadInplaceOp>(*this);
   }
@@ -102,16 +146,13 @@ view::RegMap BasePadOp::bwdRegMap(InIndex inIndex, OutIndex outIndex) const {
   };
 }
 
-PadInplaceOp::PadInplaceOp(const PadOp &padOp)
+PadInplaceOp::PadInplaceOp(const BasePadOutplaceOp &padOp)
     : BasePadOp(Onnx::CustomOperators::PadInplace,
                 padOp.getPads(),
                 padOp.getPadValue(),
                 padOp.getMode(),
                 padOp.getSettings()) {}
 
-view::Regions PadInplaceOp::modifies(InIndex index) const {
-  return uses(index);
-}
 view::Regions PadInplaceOp::aliases(InIndex in, OutIndex) const {
   return uses(in);
 }
@@ -127,21 +168,18 @@ std::unique_ptr<Op> PadInplaceOp::clone() const {
 }
 
 std::vector<std::tuple<OperatorIdentifier, float>>
-PadOp::inplacePriorityDefault() const {
+BasePadOutplaceOp::inplacePriorityDefault() const {
   // see T6768: choosing default inplace priorities
   return {{Onnx::CustomOperators::PadInplace, 20}};
 }
 
 void BasePadOp::setup() {
 
-  int tRank = inRank(getInIndex());
-  if (getPads().size() != 2 * tRank) {
-    throw error("Tensor rank not half padding size");
-  }
+  runtimeConfirmShapes();
 
-  Shape outShape(tRank, 0);
-  for (int i = 0; i < tRank; ++i) {
-    outShape[i] = inInfo(getInIndex()).dim(i) + pads[i] + pads[i + tRank];
+  Shape outShape(getRank(), 0);
+  for (auto i = 0; i < getRank(); ++i) {
+    outShape[i] = inInfo(getInIndex()).dim(i) + pads[i] + pads[i + getRank()];
   }
 
   outInfo(getOutIndex()) = {inInfo(getInIndex()).dataType(), outShape};
@@ -152,32 +190,25 @@ bool BasePadOp::padSizeZero() const {
       pads.cbegin(), pads.cend(), [](int64_t p) { return p == 0; });
 }
 
-const std::vector<int64_t> &BasePadOp::getPads() const { return pads; }
-
-float BasePadOp::getPadValue() const { return pad_value; }
-
-const std::string &BasePadOp::getMode() const { return mode; }
-
 void BasePadOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
-
   os.appendAttribute("pads", pads);
   os.appendAttribute("value", pad_value);
   os.appendAttribute("mode", mode);
 }
 
 view::Region BasePadOp::valueRegion() const {
-  std::vector<int64_t> lower(pads.size() / 2);
-  std::vector<int64_t> upper(pads.size() / 2);
+  std::vector<int64_t> lower(getRank());
+  std::vector<int64_t> upper(getRank());
 
   const auto shape = outShape(getOutIndex());
 
-  for (int i = 0; i < pads.size() / 2; ++i) {
+  for (int i = 0; i < getRank(); ++i) {
     lower[i] = std::max<int64_t>(pads[i], 0);
   }
 
-  for (int i = 0; i < pads.size() / 2; ++i) {
-    auto idx = (pads.size() / 2) + i;
+  for (int i = 0; i < getRank(); ++i) {
+    auto idx = getRank() + i;
     upper[i] = shape[i] - std::max<int64_t>(pads[idx], 0);
   }
 
@@ -185,25 +216,14 @@ view::Region BasePadOp::valueRegion() const {
 }
 
 std::vector<int64_t> BasePadOp::padDimensions() const {
-  std::set<int64_t> dimensions;
-
-  for (int i = 0; i < pads.size() / 2; ++i) {
-    if (pads[i] != 0) {
-      dimensions.insert(i);
+  std::vector<int64_t> dimensions;
+  for (int i = 0; i < getRank(); ++i) {
+    if (getLowerPadding(i) != 0 || getUpperPadding(i) != 0) {
+      dimensions.push_back(i);
     }
   }
-
-  for (int i = 0; i < pads.size() / 2; ++i) {
-    if (pads[(pads.size() / 2) + i] != 0) {
-      dimensions.insert(i);
-    }
-  }
-
-  return {dimensions.begin(), dimensions.end()};
+  return dimensions;
 }
-
-// If pad has no padding it can be replaced by identity
-bool PadOp::canBeReplacedByIdentity() { return padSizeZero(); }
 
 PadGradOp::PadGradOp(const PadOp &fwdOp)
     : SliceOp(Onnx::GradOperators::PadGrad,
@@ -232,22 +252,22 @@ const std::map<int, int> &PadGradOp::gradOutToNonGradIn() const {
 
 std::vector<int64_t> PadGradOp::calculateStarts(const PadOp &padOp) {
 
-  std::vector<int64_t> starts(padOp.getPads().size() / 2);
+  std::vector<int64_t> starts(padOp.getRank());
 
   // Set the starts to the 'index' after the 'begin' padding
-  for (int i = 0; i < padOp.getPads().size() / 2; ++i) {
-    starts[i] = (padOp.getPads()[i]);
+  for (int i = 0; i < padOp.getRank(); ++i) {
+    starts[i] = (padOp.getLowerPadding(i));
   }
 
   return starts;
 }
 
 std::vector<int64_t> PadGradOp::calculateEnds(const PadOp &padOp) {
-  std::vector<int64_t> ends(padOp.getPads().size() / 2);
+  std::vector<int64_t> ends(padOp.getRank());
 
   // Set the ends to the 'index' where the original input would have ended
-  for (int i = 0; i < padOp.getPads().size() / 2; ++i) {
-    ends[i] = padOp.getPads()[i] + padOp.inShape(padOp.getInIndex())[i];
+  for (int i = 0; i < padOp.getRank(); ++i) {
+    ends[i] = padOp.getLowerPadding(i) + padOp.inShape(padOp.getInIndex())[i];
   }
 
   return ends;

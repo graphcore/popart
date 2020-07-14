@@ -41,7 +41,7 @@ bool PadSumPattern::matches(Op *op) const {
   }
 
   const auto padPredicate = [](Op *producer) -> bool {
-    auto pad = dynamic_cast<PadOp *>(producer);
+    auto pad = dynamic_cast<BasePadOutplaceOp *>(producer);
 
     return pad != nullptr && pad->getPadValue() == 0.0f &&
            pad->getMode() == "constant";
@@ -55,8 +55,8 @@ bool PadSumPattern::matches(Op *op) const {
 
   // Require all pads to have the same dimension
   const auto dimensionPredicate = [&inputProducers](Op *producer) -> bool {
-    auto first = dynamic_cast<PadOp *>(inputProducers[0]);
-    auto pad   = dynamic_cast<PadOp *>(producer);
+    auto first = dynamic_cast<BasePadOutplaceOp *>(inputProducers[0]);
+    auto pad   = dynamic_cast<BasePadOutplaceOp *>(producer);
 
     return first->padDimensions() == pad->padDimensions() &&
            pad->padDimensions().size() == 1;
@@ -72,7 +72,7 @@ bool PadSumPattern::matches(Op *op) const {
   view::Regions regions;
   regions.reserve(inputProducers.size());
   for (auto producer : inputProducers) {
-    auto pad = dynamic_cast<PadOp *>(producer);
+    auto pad = dynamic_cast<BasePadOutplaceOp *>(producer);
 
     regions.push_back(pad->valueRegion());
   }
@@ -111,8 +111,10 @@ static std::vector<int> computeConcatOrder(Op *op) {
   // lexicographical_compare works here because we assume the tensors are padded
   // on the same dimension.
   const auto compPredicate = [&](int i, int k) -> bool {
-    auto left  = dynamic_cast<PadOp *>(op->input->tensor(i)->getProducer());
-    auto right = dynamic_cast<PadOp *>(op->input->tensor(k)->getProducer());
+    auto left =
+        dynamic_cast<BasePadOutplaceOp *>(op->input->tensor(i)->getProducer());
+    auto right =
+        dynamic_cast<BasePadOutplaceOp *>(op->input->tensor(k)->getProducer());
 
     return boost::lexicographical_compare(left->getPads(), right->getPads());
   };
@@ -123,36 +125,37 @@ static std::vector<int> computeConcatOrder(Op *op) {
   return order;
 }
 
-static std::vector<PadOp *> getProducerOps(Op *op,
-                                           const std::vector<int> &order) {
-  std::vector<PadOp *> producers;
+static std::vector<BasePadOutplaceOp *>
+getProducerOps(Op *op, const std::vector<int> &order) {
+  std::vector<BasePadOutplaceOp *> producers;
   producers.reserve(op->input->n());
 
   for (int i = 0; i < op->input->n(); ++i) {
-    producers.push_back(
-        dynamic_cast<PadOp *>(op->input->tensor(order[i])->getProducer()));
+    producers.push_back(dynamic_cast<BasePadOutplaceOp *>(
+        op->input->tensor(order[i])->getProducer()));
   }
 
   return producers;
 }
 
 static std::vector<const Tensor *>
-getInputTensors(const std::vector<PadOp *> &producers) {
+getInputTensors(const std::vector<BasePadOutplaceOp *> &producers) {
   std::vector<const Tensor *> inputs(producers.size());
 
-  boost::transform(producers, inputs.begin(), [](PadOp *pad) {
+  boost::transform(producers, inputs.begin(), [](BasePadOutplaceOp *pad) {
     return pad->input->tensor(PadOp::getInIndex());
   });
 
   return inputs;
 }
 
-static int64_t findConcatAxis(const std::vector<PadOp *> &producers) {
+static int64_t
+findConcatAxis(const std::vector<BasePadOutplaceOp *> &producers) {
   // When actually looking for the concat axis, we look for the first dimension
   // to have a non-zero value. We must look through at least half of the pad ops
   // to find the actual min.
   const auto nonZeroDim = [](int64_t dim) { return dim != 0; };
-  const auto findAxis   = [nonZeroDim](int64_t m, PadOp *pad) {
+  const auto findAxis   = [nonZeroDim](int64_t m, BasePadOutplaceOp *pad) {
     auto &pads = pad->getPads();
     auto found = boost::find_if<boost::return_begin_found>(pads, nonZeroDim);
     return std::min<int64_t>(m, boost::distance(found));
@@ -165,12 +168,13 @@ static int64_t findConcatAxis(const std::vector<PadOp *> &producers) {
 
 static std::vector<boost::numeric::interval<int64_t>>
 computeInputIntervals(int64_t axis,
-                      const std::vector<PadOp *> &producers,
+                      const std::vector<BasePadOutplaceOp *> &producers,
                       const std::vector<const Tensor *> &inputs) {
   std::vector<boost::numeric::interval<int64_t>> intervals(producers.size());
 
   const auto computeInputInterval =
-      [axis](PadOp *pad, const Tensor *t) -> boost::numeric::interval<int64_t> {
+      [axis](BasePadOutplaceOp *pad,
+             const Tensor *t) -> boost::numeric::interval<int64_t> {
     return {pad->getPads()[axis],
             pad->getPads()[axis] + t->info.dim(static_cast<int>(axis))};
   };
@@ -318,7 +322,7 @@ static void insertConcat(Graph &graph, std::unique_ptr<ConcatOp> &concat) {
 }
 
 static void removeProducers(Graph &graph,
-                            const std::vector<PadOp *> &producers) {
+                            const std::vector<BasePadOutplaceOp *> &producers) {
   for (auto &producer : producers) {
     producer->disconnectAllInputs();
     producer->disconnectAllOutputs();

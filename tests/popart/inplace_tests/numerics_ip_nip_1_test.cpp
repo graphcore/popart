@@ -3,6 +3,7 @@
 
 #include <../random_util.hpp>
 
+#include <cassert>
 #include <climits>
 #include <cmath>
 #include <utility>
@@ -81,8 +82,9 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip1) {
     auto inTensor    = builder->addInputTensor(inInfo);
     auto firstTensor = inTensor;
     if (useInitialReductionToAvoidLayoutSearch) {
-      firstTensor =
-          aiOnnx.reducesum({firstTensor}, std::vector<int64_t>{2}, false);
+      const std::vector<int64_t> redAxes(1, 2);
+      assert(redAxes.size() == 1);
+      firstTensor = aiOnnx.reducesum({firstTensor}, redAxes, false);
     }
 
     std::vector<TensorId> activeTensors;

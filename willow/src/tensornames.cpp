@@ -16,6 +16,12 @@ TensorId getNonGradId(const TensorId &id) {
   return id.substr(std::string(reservedGradientPrefix()).size());
 }
 
+bool isGradId(const TensorId &id) {
+  const std::string pref = reservedGradientPrefix();
+  const auto prefSize    = pref.size();
+  return id.size() > prefSize && id.substr(0, prefSize) == pref;
+}
+
 TensorId getEdgeGradId(TensorId tenId, OpId opId, int index) {
   // we don't need the name of the tensor which this is an edge-grad of,
   // the edge-gradient is uniquely defined by the the edge it flows on
@@ -107,10 +113,6 @@ TensorId getCacheArgTensorId(TensorId base_id) {
   auto ca_id = logging::format("{}{}", reservedCacheArgPrefix(), base_id);
   logging::ir::trace("Generating tensor id {}", ca_id);
   return ca_id;
-}
-
-TensorId getNonCacheArgTensorId(const TensorId &id) {
-  return id.substr(std::string(reservedCacheArgPrefix()).size());
 }
 
 TensorId createRecomputedTensorId(TensorId base_id) {

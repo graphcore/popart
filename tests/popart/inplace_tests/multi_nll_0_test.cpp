@@ -46,8 +46,7 @@ BOOST_AUTO_TEST_CASE(test) {
   //                   |--Add-- (the gradient of the output of matmul).
   //   ... sliceGrad---|
   //
-  //  the above assumes that we have not implemented a smarter gradient
-  //  for slice than simply padding (see T12632)
+  // We disable PadSum pattern to retain the slice grads.
 
   auto getFinalWeights = [](int batchesPerStep,
                             const std::array<float, 6 * 2>
@@ -107,7 +106,9 @@ BOOST_AUTO_TEST_CASE(test) {
         device,
         InputShapeInfo(),
         SessionOptions(),
-        popart::Patterns(PatternsLevel::Default).enableInPlace(doInplace));
+        popart::Patterns(PatternsLevel::Default)
+            .enableInPlace(doInplace)
+            .enablePattern("PadSum", false));
 
     auto sched = session->ir.getOpSchedule({});
     std::cout << "The op schedule with inplace=" << doInplace << " is :\n";
