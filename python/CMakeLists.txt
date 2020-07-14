@@ -11,7 +11,16 @@ include_directories("${PROJECT_BINARY_DIR}/willow/include")
 find_package(pybind11 REQUIRED)
 find_package(Poplar REQUIRED)
 
-pybind11_add_module(popart_core popart.cpp)
+pybind11_add_module(popart_core 
+                    popart.cpp 
+                    popart_opset6.gen.cpp 
+                    popart_opset7.gen.cpp 
+                    popart_opset8.gen.cpp 
+                    popart_opset9.gen.cpp 
+                    popart_opset10.gen.cpp 
+                    popart_opset11.gen.cpp
+                    np_utils.cpp)
+
 
 target_include_directories (popart_core SYSTEM PUBLIC
   ${pybind11_INCLUDE_DIR}

@@ -1,10 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_NP_UTILS_HPP
-#define GUARD_NEURALNET_NP_UTILS_HPP
-
-#include <pybind11/numpy.h>
-
+#include "np_utils.hpp"
 #include <popart/tensorinfo.hpp>
+
 namespace popart {
 
 std::map<std::string, DataType> initNpTypeMap() {
@@ -63,5 +60,3 @@ pybind11::array makeContiguous(pybind11::array npArr) {
 }
 
 } // namespace popart
-
-#endif

@@ -5,13 +5,14 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "np_utils.hpp"
+#include "pyarray_accessor.hpp"
 #include <popart/adam.hpp>
 #include <popart/builder.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/error.hpp>
 #include <popart/graphtransformer.hpp>
 #include <popart/ir.hpp>
-#include <popart/np_utils.hpp>
 #include <popart/numerics.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/init.hpp>
@@ -23,7 +24,6 @@
 #include <popart/patterns/patterns.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/exporter.hpp>
-#include <popart/pyarray_accessor.hpp>
 #include <popart/session.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/stepio_generic.hpp>
@@ -41,6 +41,13 @@
 
 namespace py = pybind11;
 using namespace popart;
+
+void init_ex6(py::module &);
+void init_ex7(py::module &);
+void init_ex8(py::module &);
+void init_ex9(py::module &);
+void init_ex10(py::module &);
+void init_ex11(py::module &);
 
 // The following code attempts to convert the python dictionary
 // (py::dict) into a map of strings for keys and values. The default
@@ -421,20 +428,15 @@ public:
   }
 };
 
-// The following code allow boost optional to be used in the C++ interface and
-// map to python types
-namespace pybind11 {
-namespace detail {
-
-template <typename T>
-struct type_caster<nonstd::optional<T>> : optional_caster<nonstd::optional<T>> {
-};
-
-} // namespace detail
-} // namespace pybind11
-
 PYBIND11_MODULE(popart_core, m) {
   m.doc() = "binding for C++ popart library";
+
+  init_ex6(m);
+  init_ex7(m);
+  init_ex8(m);
+  init_ex9(m);
+  init_ex10(m);
+  init_ex11(m);
 
   m.def("getTensorInfo", &getTensorInfo);
 
@@ -1184,9 +1186,6 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("ids"),
             py::arg("filename"));
   }
-
-// Include the generated poponx.cpp code
-#include "popart.cpp.gen"
   {
     py::class_<AiGraphcoreOpset1> cls(m, "AiGraphcoreOpset1");
     cls.def("groupnormalization",
