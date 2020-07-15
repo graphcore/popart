@@ -282,13 +282,13 @@ public:
 
   LinearMapper &getLinearMapper() { return linearMapper; }
 
-  void copyFromRemoteBuffer(const poplar::RemoteBuffer &buffer,
+  void copyFromRemoteBuffer(const PopStreamId buffer,
                             void *w,
                             int repeat_index,
                             unsigned replication_index = 0);
 
   void copyToRemoteBuffer(void *w,
-                          const poplar::RemoteBuffer &buffer,
+                          const PopStreamId buffer,
                           int repeat_index,
                           unsigned replication_index = 0);
 

@@ -2112,7 +2112,6 @@ BOOST_AUTO_TEST_CASE(OATTSimpleTest, *boost::unit_test::disabled()) {
 
   std::vector<std::string> callback_handles;
   std::vector<float> temp_buffer(N * N);
-  auto &remoteBuffers = session->getHostReduceRemoteBuffers();
   for (const auto &stream_id : session->getHostReduceStreamIds()) {
     if (stream_id.compare(0,
                           strlen(gradientStoreStreamPrefix),
@@ -2121,8 +2120,7 @@ BOOST_AUTO_TEST_CASE(OATTSimpleTest, *boost::unit_test::disabled()) {
         callback_handles.push_back(stream_id);
         const auto grad_id =
             stream_id.substr(strlen(gradientStoreStreamPrefix));
-        auto &remoteBuffer = remoteBuffers.at(grad_id);
-        session->copyFromRemoteBuffer(remoteBuffer, temp_buffer.data(), 0);
+        session->copyFromRemoteBuffer(grad_id, temp_buffer.data(), 0);
         idToGradVal[grad_id] = temp_buffer[0];
       });
     } else if (stream_id.compare(0,
@@ -2131,11 +2129,10 @@ BOOST_AUTO_TEST_CASE(OATTSimpleTest, *boost::unit_test::disabled()) {
       session->connectStreamToCallback(stream_id, [&, stream_id](void *g) {
         callback_handles.push_back(stream_id);
         const auto grad_id = stream_id.substr(strlen(gradientLoadStreamPrefix));
-        auto &remoteBuffer = remoteBuffers.at(grad_id);
 
         const float grad_val = idToGradVal.at(grad_id);
         std::fill(temp_buffer.begin(), temp_buffer.end(), grad_val);
-        session->copyToRemoteBuffer(temp_buffer.data(), remoteBuffer, 0);
+        session->copyToRemoteBuffer(temp_buffer.data(), grad_id, 0);
       });
     }
   }
@@ -2388,7 +2385,6 @@ BOOST_AUTO_TEST_CASE(OATTWithAccumulation, *boost::unit_test::disabled()) {
     weightsRead.insert(w5, {w5_readback.data(), weightInfo});
 
     session->weightsFromHost();
-    auto &remoteBuffers = session->getHostReduceRemoteBuffers();
     std::vector<std::string> callback_handles;
     for (const auto &stream_id : session->getHostReduceStreamIds()) {
       if (stream_id.compare(0,
@@ -2398,9 +2394,8 @@ BOOST_AUTO_TEST_CASE(OATTWithAccumulation, *boost::unit_test::disabled()) {
           callback_handles.push_back(stream_id);
           const auto grad_id =
               stream_id.substr(strlen(gradientStoreStreamPrefix));
-          auto &remoteBuffer = remoteBuffers.at(grad_id);
-          auto &grad         = idToGrad.at(grad_id);
-          session->copyFromRemoteBuffer(remoteBuffer, grad.data(), 0);
+          auto &grad = idToGrad.at(grad_id);
+          session->copyFromRemoteBuffer(grad_id, grad.data(), 0);
         });
       } else if (stream_id.compare(0,
                                    strlen(gradientLoadStreamPrefix),
@@ -2409,9 +2404,8 @@ BOOST_AUTO_TEST_CASE(OATTWithAccumulation, *boost::unit_test::disabled()) {
           callback_handles.push_back(stream_id);
           const auto grad_id =
               stream_id.substr(strlen(gradientLoadStreamPrefix));
-          auto &grad         = idToGrad.at(grad_id);
-          auto &remoteBuffer = remoteBuffers.at(grad_id);
-          session->copyToRemoteBuffer(grad.data(), remoteBuffer, 0);
+          auto &grad = idToGrad.at(grad_id);
+          session->copyToRemoteBuffer(grad.data(), grad_id, 0);
         });
       }
     }
@@ -2642,7 +2636,6 @@ BOOST_AUTO_TEST_CASE(OATTWithPipeliningAndAccumulation,
     weightsRead.insert(w5, {w5_readback.data(), weightInfo});
 
     session->weightsFromHost();
-    auto &remoteBuffers = session->getHostReduceRemoteBuffers();
     std::vector<std::string> callback_handles;
     for (const auto &stream_id : session->getHostReduceStreamIds()) {
       if (stream_id.compare(0,
@@ -2652,9 +2645,8 @@ BOOST_AUTO_TEST_CASE(OATTWithPipeliningAndAccumulation,
           callback_handles.push_back(stream_id);
           const auto grad_id =
               stream_id.substr(strlen(gradientStoreStreamPrefix));
-          auto &remoteBuffer = remoteBuffers.at(grad_id);
-          auto &grad         = idToGrad.at(grad_id);
-          session->copyFromRemoteBuffer(remoteBuffer, grad.data(), 0);
+          auto &grad = idToGrad.at(grad_id);
+          session->copyFromRemoteBuffer(grad_id, grad.data(), 0);
         });
       } else if (stream_id.compare(0,
                                    strlen(gradientLoadStreamPrefix),
@@ -2663,9 +2655,8 @@ BOOST_AUTO_TEST_CASE(OATTWithPipeliningAndAccumulation,
           callback_handles.push_back(stream_id);
           const auto grad_id =
               stream_id.substr(strlen(gradientLoadStreamPrefix));
-          auto &grad         = idToGrad.at(grad_id);
-          auto &remoteBuffer = remoteBuffers.at(grad_id);
-          session->copyToRemoteBuffer(grad.data(), remoteBuffer, 0);
+          auto &grad = idToGrad.at(grad_id);
+          session->copyToRemoteBuffer(grad.data(), grad_id, 0);
         });
       }
     }

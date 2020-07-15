@@ -427,7 +427,7 @@ void TrainingSession::connectStreamToCallback(
   device_->connectStreamToCallback(streamHandle, callback, index);
 }
 
-void TrainingSession::copyFromRemoteBuffer(const poplar::RemoteBuffer &buffer,
+void TrainingSession::copyFromRemoteBuffer(const std::string &buffer,
                                            void *w,
                                            int repeat_index,
                                            unsigned replication_index) {
@@ -435,7 +435,7 @@ void TrainingSession::copyFromRemoteBuffer(const poplar::RemoteBuffer &buffer,
 }
 
 void TrainingSession::copyToRemoteBuffer(void *w,
-                                         const poplar::RemoteBuffer &buffer,
+                                         const std::string &buffer,
                                          int repeat_index,
                                          unsigned replication_index) {
   device_->copyToRemoteBuffer(w, buffer, repeat_index, replication_index);

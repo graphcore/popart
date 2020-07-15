@@ -342,7 +342,7 @@ public:
    * This can be useful when we run larger models with host side
    * reductions since HEXOPT is currently limited to 128 MB
    */
-  void copyFromRemoteBuffer(const poplar::RemoteBuffer &buffer,
+  void copyFromRemoteBuffer(const std::string &buffer,
                             void *w,
                             int repeat_index,
                             unsigned replication_index = 0);
@@ -353,7 +353,7 @@ public:
    * reductions since HEXOPT is currently limited to 128 MB
    */
   void copyToRemoteBuffer(void *w,
-                          const poplar::RemoteBuffer &buffer,
+                          const std::string &buffer,
                           int repeat_index,
                           unsigned replication_index = 0);
 

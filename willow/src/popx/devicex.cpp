@@ -4098,7 +4098,7 @@ void Devicex::connectStreamToCallback(const std::string &streamHandle,
   pEngine->connectStreamToCallback(streamHandle, index, callback);
 }
 
-void Devicex::copyFromRemoteBuffer(const poplar::RemoteBuffer &buffer,
+void Devicex::copyFromRemoteBuffer(const PopStreamId buffer,
                                    void *w,
                                    int repeat_index,
                                    unsigned replication_index) {
@@ -4106,7 +4106,7 @@ void Devicex::copyFromRemoteBuffer(const poplar::RemoteBuffer &buffer,
 }
 
 void Devicex::copyToRemoteBuffer(void *w,
-                                 const poplar::RemoteBuffer &buffer,
+                                 const PopStreamId buffer,
                                  int repeat_index,
                                  unsigned replication_index) {
   pEngine->copyToRemoteBuffer(w, buffer, repeat_index, replication_index);
