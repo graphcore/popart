@@ -176,7 +176,6 @@ public:
   poplin::PlanningCache convCache;
   poplin::matmul::PlanningCache matmulCache;
 
-  PoplarOptions fwdConvOptions, bwdConvOptions, wuConvOptions;
   poplar::OptionFlags engineOptions, reportOptions;
   poplar::OptionFlags pooling_options;
   poplar::OptionFlags lstmOptions;

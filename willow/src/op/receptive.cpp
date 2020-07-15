@@ -48,7 +48,7 @@ void HasReceptiveFieldOp::setup() {
   }
 
   if (padType == AutoPad::SAME_LOWER || padType == AutoPad::SAME_UPPER) {
-    alterPads(spatialO, spatialD, spatialK, strides);
+    alterPads(pads, spatialO, spatialD, spatialK, strides);
   }
 
   // we assume that the output type is the same as the input type
@@ -58,50 +58,63 @@ void HasReceptiveFieldOp::setup() {
 }
 
 std::vector<int64_t> HasReceptiveFieldOp::lowerPads() const {
-  if (padType == AutoPad::SAME_UPPER) {
-    auto v = std::vector<int64_t>(pads.begin(), pads.begin() + nSpatialDims);
+  return lowerPads(pads, nSpatialDims, padType);
+}
+
+std::vector<int64_t> HasReceptiveFieldOp::lowerPads(Shape pads_,
+                                                    int nSpatialDims_,
+                                                    AutoPad padType_) {
+  if (padType_ == AutoPad::SAME_UPPER) {
+    auto v = std::vector<int64_t>(pads_.begin(), pads_.begin() + nSpatialDims_);
     for (auto i = 0; i < v.size(); i++) {
-      v[i] = int64_t(pads[i] / 2);
+      v[i] = int64_t(pads_[i] / 2);
     }
     return v;
-  } else if (padType == AutoPad::SAME_LOWER) {
-    auto v = std::vector<int64_t>(pads.begin(), pads.begin() + nSpatialDims);
+  } else if (padType_ == AutoPad::SAME_LOWER) {
+    auto v = std::vector<int64_t>(pads_.begin(), pads_.begin() + nSpatialDims_);
     for (auto i = 0; i < v.size(); i++) {
-      v[i] = int64_t(pads[i] - (pads[i] / 2));
+      v[i] = int64_t(pads_[i] - (pads_[i] / 2));
     }
     return v;
   } else {
-    return std::vector<int64_t>(pads.begin(), pads.begin() + nSpatialDims);
+    return std::vector<int64_t>(pads_.begin(), pads_.begin() + nSpatialDims_);
   }
 }
 
 std::vector<int64_t> HasReceptiveFieldOp::upperPads() const {
+  return upperPads(pads, nSpatialDims, padType);
+}
+
+std::vector<int64_t> HasReceptiveFieldOp::upperPads(Shape pads_,
+                                                    int nSpatialDims_,
+                                                    AutoPad padType_) {
 
   // For odd values of total padding, add more padding at the 'right' side
   // of the given dimension.
-  if (padType == AutoPad::SAME_UPPER) {
-    auto v = std::vector<int64_t>(pads.begin() + nSpatialDims, pads.end());
+  if (padType_ == AutoPad::SAME_UPPER) {
+    auto v = std::vector<int64_t>(pads_.begin() + nSpatialDims_, pads_.end());
     for (auto i = 0; i < v.size(); i++) {
-      v[i] = int64_t(pads[i] - (pads[i] / 2));
+      v[i] = int64_t(pads_[i] - (pads_[i] / 2));
     }
     return v;
-  } else if (padType == AutoPad::SAME_LOWER) {
-    auto v = std::vector<int64_t>(pads.begin() + nSpatialDims, pads.end());
+  } else if (padType_ == AutoPad::SAME_LOWER) {
+    auto v = std::vector<int64_t>(pads_.begin() + nSpatialDims_, pads_.end());
     for (auto i = 0; i < v.size(); i++) {
-      v[i] = int64_t(pads[i] / 2);
+      v[i] = int64_t(pads_[i] / 2);
     }
     return v;
   } else {
-    return std::vector<int64_t>(pads.begin() + nSpatialDims, pads.end());
+    return std::vector<int64_t>(pads_.begin() + nSpatialDims_, pads_.end());
   }
 }
 
-void HasReceptiveFieldOp::alterPads(Shape spatialO_,
+void HasReceptiveFieldOp::alterPads(Shape &pads_,
+                                    Shape spatialO_,
                                     Shape spatialD_,
                                     Shape spatialK_,
                                     std::vector<int64_t> strides_) {
-  for (auto i = 0; i < nSpatialDims; i++) {
-    pads[i] = (spatialO_[i] - 1) * strides_[i] + spatialK_[i] - spatialD_[i];
+  for (auto i = 0; i < spatialO_.size(); i++) {
+    pads_[i] = (spatialO_[i] - 1) * strides_[i] + spatialK_[i] - spatialD_[i];
   }
 }
 

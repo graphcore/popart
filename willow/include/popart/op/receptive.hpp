@@ -9,7 +9,7 @@ namespace popart {
 enum class AutoPad { NOTSET = 0, SAME_UPPER, SAME_LOWER, VALID };
 
 // Examples of Ops with receptive fields include
-// ConvOp and AveragePoolOp
+// MaxPoolOp and AveragePoolOp
 class HasReceptiveFieldOp : public Op {
 public:
   struct Settings : public Op::Settings {
@@ -46,10 +46,11 @@ public:
   static AutoPad getAutoPad(const std::string &autoPadStr);
   std::string getAutoPadStr(const AutoPad &x) const;
 
-  void alterPads(Shape OutShape_,
-                 Shape spatialD_,
-                 Shape spatialK_,
-                 std::vector<int64_t> strides_);
+  static void alterPads(Shape &pads_,
+                        Shape OutShape_,
+                        Shape spatialD_,
+                        Shape spatialK_,
+                        std::vector<int64_t> strides_);
 
   // the spatial dimensions of the operator
   //   : kernel size for convolution
@@ -65,8 +66,13 @@ public:
   virtual int64_t getNOutChans() const = 0;
   // return the nSpatialDims lower pads (pads left, bottom)
   std::vector<int64_t> lowerPads() const;
+  static std::vector<int64_t>
+  lowerPads(Shape pads, int nSpatialDims, AutoPad padType);
+
   // return the nSpatialDims upper pads (pads right, top)
   std::vector<int64_t> upperPads() const;
+  static std::vector<int64_t>
+  upperPads(Shape pads, int nSpatialDims, AutoPad padType);
 
   // backend might prefer a different number format.
   // These convenience functions reduce backend boilerplate.

@@ -327,10 +327,40 @@ Attributes::String Attributes::getAttribute(const std::string &key) const {
   throw error("no attribute key {}", key);
 }
 template <>
+Attributes::Strings Attributes::getAttribute(const std::string &key) const {
+  auto found = att_map.find(key);
+  if (found != att_map.end()) {
+    Attributes::Strings vs;
+    vs.resize(0);
+    vs.reserve(found->second->strings_size());
+    for (auto &v : found->second->strings()) {
+      vs.push_back(v);
+    }
+    return vs;
+  }
+
+  throw error("no attribute key {}", key);
+}
+template <>
 Attributes::Float Attributes::getAttribute(const std::string &key) const {
   auto found = att_map.find(key);
   if (found != att_map.end()) {
     return found->second->f();
+  }
+
+  throw error("no attribute key {}", key);
+}
+template <>
+Attributes::Floats Attributes::getAttribute(const std::string &key) const {
+  auto found = att_map.find(key);
+  if (found != att_map.end()) {
+    Attributes::Floats vs;
+    vs.resize(0);
+    vs.reserve(found->second->floats_size());
+    for (auto &v : found->second->floats()) {
+      vs.push_back(v);
+    }
+    return vs;
   }
 
   throw error("no attribute key {}", key);

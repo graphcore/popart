@@ -15,11 +15,13 @@ namespace popart {
 class Attributes {
 public:
   // The types of attributes as defined in the onnx spec
-  using Ints   = std::vector<int64_t>;
-  using Int    = int64_t;
-  using Float  = float;
-  using String = std::string;
-  using Graph  = ONNX_NAMESPACE::GraphProto;
+  using Ints    = std::vector<int64_t>;
+  using Int     = int64_t;
+  using Floats  = std::vector<float>;
+  using Float   = float;
+  using Strings = std::vector<std::string>;
+  using String  = std::string;
+  using Graph   = ONNX_NAMESPACE::GraphProto;
 
   Attributes(const NodeAttributes &);
   Attributes() = default;
@@ -118,7 +120,11 @@ Attributes::Int Attributes::getAttribute(const std::string &key) const;
 template <>
 Attributes::String Attributes::getAttribute(const std::string &key) const;
 template <>
+Attributes::Strings Attributes::getAttribute(const std::string &key) const;
+template <>
 Attributes::Float Attributes::getAttribute(const std::string &key) const;
+template <>
+Attributes::Floats Attributes::getAttribute(const std::string &key) const;
 template <>
 Attributes::Graph Attributes::getAttribute(const std::string &key) const;
 

@@ -67,6 +67,19 @@ using RemoteBufferId = int64_t;
 // The index within a remote buffer
 using RemoteBufferIndex = int64_t;
 
+// For decreasing the verbosity of MultiConv Op parameter names
+using ConvInputs    = std::vector<TensorId>;
+using ConvDilations = std::vector<int64_t>;
+using ConvGroup     = int64_t;
+using ConvPads      = std::vector<int64_t>;
+using ConvStrides   = std::vector<int64_t>;
+
+using MultiConvInputs    = std::vector<ConvInputs>;
+using MultiConvDilations = std::vector<ConvDilations>;
+using MultiConvGroups    = std::vector<ConvGroup>;
+using MultiConvPads      = std::vector<ConvPads>;
+using MultiConvStrides   = std::vector<ConvStrides>;
+
 // forward declaring several popart classes
 class DataFlow;
 class InputShapeInfo;

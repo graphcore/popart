@@ -1,0 +1,301 @@
+// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#ifndef GUARD_NEURALNET_MULTICONVBASE_HPP
+#define GUARD_NEURALNET_MULTICONVBASE_HPP
+
+#include <cmath>
+
+#include <popart/op.hpp>
+#include <popart/op/receptive.hpp>
+#include <popart/util.hpp>
+#include <popart/vendored/optional.hpp>
+
+namespace popart {
+
+// The detailed conv parameters at the ir level
+struct ConvParameters {
+
+  DataType type;
+  int64_t batchSize;
+
+  int64_t numInChannelsPerGroup;
+  int64_t numOutChannelsPerGroup;
+  int64_t numGroups;
+
+  Shape inputShape;
+  Shape kernelShape;
+
+  struct Input {
+    std::vector<int64_t> lowerTruncation;
+    std::vector<int64_t> upperTruncation;
+    std::vector<int64_t> dilation;
+    std::vector<int64_t> lowerPadding;
+    std::vector<int64_t> upperPadding;
+    std::vector<bool> flip;
+  } inputTransformation, kernelTransformation;
+
+  struct Output {
+    std::vector<int64_t> lowerTruncation;
+    std::vector<int64_t> upperTruncation;
+    std::vector<int64_t> stride;
+    std::vector<int64_t> lowerPadding;
+    std::vector<int64_t> upperPadding;
+  } outputTransformation;
+};
+
+inline bool operator==(const ConvParameters::Input &a,
+                       const ConvParameters::Input &b) {
+  return std::tie(a.lowerTruncation,
+                  a.upperTruncation,
+                  a.dilation,
+                  a.lowerPadding,
+                  a.upperPadding,
+                  a.flip) == std::tie(b.lowerTruncation,
+                                      b.upperTruncation,
+                                      b.dilation,
+                                      b.lowerPadding,
+                                      b.upperPadding,
+                                      b.flip);
+}
+
+inline bool operator!=(const ConvParameters::Input &a,
+                       const ConvParameters::Input &b) {
+  return !(a == b);
+}
+
+inline bool operator==(const ConvParameters::Output &a,
+                       const ConvParameters::Output &b) {
+  return std::tie(a.lowerTruncation,
+                  a.upperTruncation,
+                  a.stride,
+                  a.lowerPadding,
+                  a.upperPadding) == std::tie(b.lowerTruncation,
+                                              b.upperTruncation,
+                                              b.stride,
+                                              b.lowerPadding,
+                                              b.upperPadding);
+}
+
+inline bool operator!=(const ConvParameters::Output &a,
+                       const ConvParameters::Output &b) {
+  return !(a == b);
+}
+
+inline bool operator==(const ConvParameters &a, const ConvParameters &b) {
+  return std::tie(a.type,
+                  a.batchSize,
+                  a.numInChannelsPerGroup,
+                  a.numOutChannelsPerGroup,
+                  a.numGroups,
+                  a.inputShape,
+                  a.kernelShape,
+                  a.inputTransformation,
+                  a.kernelTransformation,
+                  a.outputTransformation) == std::tie(b.type,
+                                                      b.batchSize,
+                                                      b.numInChannelsPerGroup,
+                                                      b.numOutChannelsPerGroup,
+                                                      b.numGroups,
+                                                      b.inputShape,
+                                                      b.kernelShape,
+                                                      b.inputTransformation,
+                                                      b.kernelTransformation,
+                                                      b.outputTransformation);
+}
+
+inline bool operator!=(const ConvParameters &a, const ConvParameters &b) {
+  return !(a == b);
+}
+
+// The user-options that control the performance of the convolution
+class MultiConvOptions {
+public:
+  // ConvOptions();
+  MultiConvOptions(const std::map<std::string, std::string> sessionConvOptions,
+                   const Attributes &attr);
+  std::map<std::string, std::string> getConvOptions(int convIndex) const;
+  std::map<std::string, std::string> getGlobalOptions() const;
+
+  // Per-conv options
+  std::vector<float> availableMemoryProportions;
+  std::vector<std::string> partialsTypes;
+
+  // Global options
+  nonstd::optional<std::string> planType;
+  nonstd::optional<int> perConvReservedTiles;
+  nonstd::optional<float> cycleBackOff;
+};
+
+class MultiConvBaseOp : public Op {
+public:
+  MultiConvBaseOp(const OperatorIdentifier &_opid,
+                  const Op::Settings &settings_,
+                  std::vector<int64_t> flatStrides_,
+                  std::vector<int64_t> flatPads_,
+                  std::vector<int64_t> flatDilations_,
+                  const AutoPad &padType_,
+                  const MultiConvOptions &convOpts_);
+
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
+  static void appendConvParameterAttributes(const ConvParameters &,
+                                            const std::string &,
+                                            OpSerialiserBase &);
+  void setup() override;
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
+
+  static InIndex getDataInIndex(int convIndex) { return 2 * convIndex; }
+  static InIndex getWeightsInIndex(int convIndex) {
+    return (2 * convIndex) + 1;
+  }
+  static OutIndex getOutIndex(int convIndex) { return convIndex; }
+  static int getConvIndexFromInIndex(InIndex index) {
+    return static_cast<int>(std::floor(index / 2));
+  }
+
+  virtual int numConvs() const { return static_cast<int>(inTensorCount() / 2); }
+  int64_t getNSpatialDims(int convIndex) const {
+    return inRank(getDataInIndex(convIndex)) - 2;
+  }
+  Shape getSpatialD(int convIndex) const {
+    Shape dataShape = inShape(getDataInIndex(convIndex));
+    return {dataShape.begin() + 2, dataShape.end()};
+  }
+  Shape getSpatialK(int convIndex) const {
+    Shape kernelShape = inShape(getWeightsInIndex(convIndex));
+    return {kernelShape.begin() + 2, kernelShape.end()};
+  }
+  int64_t getGroups(int convIndex) const {
+    return inInfo(getDataInIndex(convIndex)).dim(1) /
+           inInfo(getWeightsInIndex(convIndex)).dim(1);
+  }
+  int64_t getNOutChans(int convIndex) const {
+    return inInfo(getWeightsInIndex(convIndex)).dim(0);
+  }
+  int64_t getNInChans(int convIndex) const {
+    return inInfo(getDataInIndex(convIndex)).dim(1);
+  }
+  Shape lowerPads(int convIndex) const {
+    return HasReceptiveFieldOp::lowerPads(
+        pads[convIndex], static_cast<int>(getNSpatialDims(convIndex)), padType);
+  }
+  Shape upperPads(int convIndex) const {
+    return HasReceptiveFieldOp::upperPads(
+        pads[convIndex], static_cast<int>(getNSpatialDims(convIndex)), padType);
+  }
+  Shape getOutShape(int convIndex) const;
+
+  const ConvParameters &getParameters(int convIndex) const {
+    return params[convIndex];
+  }
+
+  void setupFromDataGradOp(const Op *dataGradOp);
+  const MultiConvOptions &getConvOptions() const { return convOpts; }
+  void setConvOptions(const MultiConvOptions &opts) { convOpts = opts; }
+
+  // Directly passed in from onnx model attributes
+  ConvStrides flatStrides;
+  ConvPads flatPads;
+  ConvDilations flatDilations;
+
+  // Re-packaged on a per-conv basis
+  MultiConvStrides strides;
+  MultiConvPads pads;
+  MultiConvDilations dilations;
+
+  // Above per-conv parameters, packaged into a single struct
+  std::vector<ConvParameters> params;
+
+  // Encapsulates per-conv and global options
+  MultiConvOptions convOpts;
+
+  AutoPad padType;
+};
+
+class MultiConvWeightsGradBaseOp : public Op {
+public:
+  MultiConvWeightsGradBaseOp(const MultiConvBaseOp &,
+                             const OperatorIdentifier &);
+  const std::vector<GradInOutMapper> &gradInputInfo() const final {
+    return inInfo;
+  }
+  const std::map<int, int> &gradOutToNonGradIn() const final {
+    return gradOutInfo;
+  }
+  void setup() final;
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
+
+  // The input indices where the gradients of
+  // the output of convolutions are inserted to this Op
+  static InIndex getGradConvolvedInIndex(int convIndex) {
+    return 2 * convIndex;
+  }
+  // The input indices where the inputs to the
+  // convolutions are inserted to this Op
+  static InIndex getPreConvolvedInIndex(int convIndex) {
+    return (2 * convIndex) + 1;
+  }
+  static OutIndex getOutIndex(int convIndex) { return convIndex; }
+
+  virtual int numConvs() const { return static_cast<int>(inTensorCount() / 2); }
+  const ConvParameters &getParameters(int convIndex) const {
+    return params[convIndex];
+  }
+  const MultiConvOptions &getConvOptions() const { return convOpts; }
+
+private:
+  std::vector<GradInOutMapper> inInfo;
+  std::map<int, int> gradOutInfo;
+  std::vector<TensorInfo> weightsInfo;
+
+  // Per conv
+  std::vector<ConvParameters> params;
+
+  // Encapsulates per-conv and global options
+  MultiConvOptions convOpts;
+};
+
+class MultiConvDataGradBaseOp : public Op {
+public:
+  MultiConvDataGradBaseOp(const MultiConvBaseOp &, const OperatorIdentifier &);
+  void setup() final;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
+
+  const std::vector<GradInOutMapper> &gradInputInfo() const final {
+    return inInfo;
+  }
+  const std::map<int, int> &gradOutToNonGradIn() const final {
+    return gradOutInfo;
+  }
+
+  // The input indices where the weight tensors are inserted
+  static InIndex getWeightsInIndex(int convIndex) { return 2 * convIndex; }
+  // The input indices where the gradient of the outputs are inserted
+  static InIndex getGradConvolvedInIndex(int convIndex) {
+    return (2 * convIndex) + 1;
+  }
+  static OutIndex getOutIndex(int convIndex) { return convIndex; }
+  const ConvParameters &getParameters(int convIndex) const {
+    return params[convIndex];
+  }
+  virtual int numConvs() const { return static_cast<int>(inTensorCount() / 2); }
+
+  const MultiConvOptions &getConvOptions() const { return convOpts; }
+  void setConvOptions(const MultiConvOptions &opts) { convOpts = opts; }
+  TensorInfo getDataInfo(int convIndex) const { return dataInfo[convIndex]; }
+
+private:
+  std::vector<GradInOutMapper> inInfo;
+  std::map<int, int> gradOutInfo;
+  std::vector<TensorInfo> dataInfo;
+
+  // Per conv
+  std::vector<ConvParameters> params;
+
+  // Encapsulates per-conv and global options
+  MultiConvOptions convOpts;
+};
+
+} // namespace popart
+
+#endif

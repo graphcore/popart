@@ -853,25 +853,11 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
   auto POPART_OPX_TRACE = getPopartEnvVar("OPX_TRACE");
   opxTrace = POPART_OPX_TRACE ? strncmp(POPART_OPX_TRACE, "1", 1) == 0 : false;
 
-  // TODO (see T5100) : if inference, forward should be INFERENCE_FWD
-  for (auto it : ir.getSessionOptions().convolutionOptions) {
-    logging::devicex::info(
-        "Setting user convolution option {} = {}", it.first, it.second);
-    fwdConvOptions.options[it.first] = it.second;
-    bwdConvOptions.options[it.first] = it.second;
-    wuConvOptions.options[it.first]  = it.second;
-  }
-
   if (ir.getExecutionMode() == Ir::ExecutionMode::Training) {
-    fwdConvOptions.options["pass"] = "TRAINING_FWD";
     lstmOptions.set("inferenceOnly", "false");
   } else {
-    fwdConvOptions.options["pass"] = "INFERENCE_FWD";
     lstmOptions.set("inferenceOnly", "true");
   }
-
-  bwdConvOptions.options["pass"] = "TRAINING_BWD";
-  wuConvOptions.options["pass"]  = "TRAINING_WU";
 
   if (ir.getSessionOptions().enablePipelining) {
     pInfo =
