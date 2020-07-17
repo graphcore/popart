@@ -124,13 +124,11 @@ static OpDefinition
 static OpCreator<SplitOp> splitOpCreator(
     OpDefinitions({{Onnx::Operators::Split_2, splitOpDef},
                    {Onnx::Operators::Split_11, splitOpDef}}),
-    [](const OperatorIdentifier &opid_,
-       const Op::Settings &settings_,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      auto axis  = attr.getAttribute<Attributes::Int>("axis", 0);
-      auto split = attr.getAttribute<Attributes::Ints>("split", {});
+    [](const OpCreatorInfo &info) {
+      auto axis  = info.attributes.getAttribute<Attributes::Int>("axis", 0);
+      auto split = info.attributes.getAttribute<Attributes::Ints>("split", {});
 
-      return std::make_unique<SplitOp>(opid_, axis, split, settings_);
+      return std::make_unique<SplitOp>(info.opid, axis, split, info.settings);
     },
     true);
 } // namespace

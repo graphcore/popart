@@ -100,16 +100,17 @@ static OpCreator<LRNOp> lrnOpCreator(
     OpDefinitions({
         {Onnx::Operators::LRN_1, lrnOpDef},
     }),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      float alpha  = attr.getAttribute<Attributes::Float>("alpha", 1e-4f);
-      float beta   = attr.getAttribute<Attributes::Float>("beta", 0.75f);
-      float bias   = attr.getAttribute<Attributes::Float>("bias", 1.0f);
-      int64_t size = attr.getAttribute<Attributes::Int>("size");
+    [](const OpCreatorInfo &info) {
+      float alpha =
+          info.attributes.getAttribute<Attributes::Float>("alpha", 1e-4f);
+      float beta =
+          info.attributes.getAttribute<Attributes::Float>("beta", 0.75f);
+      float bias =
+          info.attributes.getAttribute<Attributes::Float>("bias", 1.0f);
+      int64_t size = info.attributes.getAttribute<Attributes::Int>("size");
 
       return std::unique_ptr<Op>(
-          new LRNOp(_opid, alpha, beta, bias, size, settings));
+          new LRNOp(info.opid, alpha, beta, bias, size, info.settings));
     },
     true);
 

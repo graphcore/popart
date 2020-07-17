@@ -401,9 +401,7 @@ static OpDefinition
 static OpCreator<MatMulOp> matMulOpCreator(
     OpDefinitions({{Onnx::Operators::MatMul_1, matmulOpDef},
                    {Onnx::Operators::MatMul_9, matmulOpDef}}),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
+    [](const OpCreatorInfo &info) {
       // try set the availMemAttribute from an attribute
 
       nonstd::optional<float> availableMemoryProportion;
@@ -415,9 +413,9 @@ static OpCreator<MatMulOp> matMulOpCreator(
 
       auto partialsType = MatMulPartialsType::FLOAT;
 
-      if (attr.hasAttribute(sSerializeMatMulModeAttribute)) {
+      if (info.attributes.hasAttribute(sSerializeMatMulModeAttribute)) {
 
-        std::string mode = attr.getAttribute<Attributes::String>(
+        std::string mode = info.attributes.getAttribute<Attributes::String>(
             sSerializeMatMulModeAttribute, sSerializeMatMulMode_None);
         if (mode == sSerializeMatMulMode_InputChannels) {
           serialisation.mode =
@@ -434,42 +432,44 @@ static OpCreator<MatMulOp> matMulOpCreator(
           throw error("Unsupport matmul serialisation mode {}", mode);
         }
 
-        serialisation.factor =
-            attr.getAttribute<Attributes::Int>(sSerializeMatMulFactorAttribute);
+        serialisation.factor = info.attributes.getAttribute<Attributes::Int>(
+            sSerializeMatMulFactorAttribute);
 
-        serialisation.keep_precision = attr.getAttribute<Attributes::Int>(
-            sSerializeMatMulPrecisionAttribute);
+        serialisation.keep_precision =
+            info.attributes.getAttribute<Attributes::Int>(
+                sSerializeMatMulPrecisionAttribute);
       }
 
-      if (attr.hasAttribute(sAvailMemAttribute)) {
+      if (info.attributes.hasAttribute(sAvailMemAttribute)) {
         availableMemoryProportion =
-            attr.getAttribute<Attributes::Float>(sAvailMemAttribute);
+            info.attributes.getAttribute<Attributes::Float>(sAvailMemAttribute);
       }
 
-      if (attr.hasAttribute(sOutputTypeAttribute)) {
-        auto dtype_str =
-            attr.getAttribute<Attributes::String>(sOutputTypeAttribute);
+      if (info.attributes.hasAttribute(sOutputTypeAttribute)) {
+        auto dtype_str = info.attributes.getAttribute<Attributes::String>(
+            sOutputTypeAttribute);
         outputType = {dataTypeFromString(dtype_str)};
       }
 
       // same as in ConvOp's create
       // try set the partials from an attribute
-      if (attr.hasAttribute(sPartialsTypeAttribute)) {
+      if (info.attributes.hasAttribute(sPartialsTypeAttribute)) {
         std::string partialsTypeAttr =
-            attr.getAttribute<Attributes::String>(sPartialsTypeAttribute);
+            info.attributes.getAttribute<Attributes::String>(
+                sPartialsTypeAttribute);
         partialsType = fromString(partialsTypeAttr);
       }
       // otherwise see if partials type was set in the session options
       else {
-        const auto &opts = settings.getIr().getSessionOptions();
+        const auto &opts = info.settings.getIr().getSessionOptions();
         const std::string globalPartialsTypeStr = opts.partialsTypeMatMuls;
         if (!globalPartialsTypeStr.empty()) {
           partialsType = fromString(globalPartialsTypeStr);
         }
       }
 
-      return std::unique_ptr<Op>(new MatMulOp(_opid,
-                                              settings,
+      return std::unique_ptr<Op>(new MatMulOp(info.opid,
+                                              info.settings,
                                               availableMemoryProportion,
                                               serialisation,
                                               outputType,

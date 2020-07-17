@@ -135,13 +135,11 @@ static OpCreator<SqueezeOp> squeezeOpCreator(
         {Onnx::Operators::Squeeze_1, squeezeOpDef},
         {Onnx::Operators::Squeeze_11, squeezeOpDef},
     }),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
+    [](const OpCreatorInfo &info) {
       std::vector<int64_t> axes =
-          attr.getAttribute<Attributes::Ints>("axes", {});
+          info.attributes.getAttribute<Attributes::Ints>("axes", {});
 
-      return std::unique_ptr<Op>(new SqueezeOp(_opid, axes, settings));
+      return std::unique_ptr<Op>(new SqueezeOp(info.opid, axes, info.settings));
     },
     true);
 } // namespace

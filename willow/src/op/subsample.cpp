@@ -186,13 +186,12 @@ static OpDefinition
 
 static OpCreator<SubsampleOp> subsampleOpCreator(
     OpDefinitions({{Onnx::CustomOperators::Subsample_1, subsampleOpDef}}),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
+    [](const OpCreatorInfo &info) {
       std::vector<int64_t> strides =
-          attr.getAttribute<Attributes::Ints>("strides", {});
+          info.attributes.getAttribute<Attributes::Ints>("strides", {});
 
-      return std::unique_ptr<Op>(new SubsampleOp(_opid, strides, settings));
+      return std::unique_ptr<Op>(
+          new SubsampleOp(info.opid, strides, info.settings));
     },
     true);
 } // namespace

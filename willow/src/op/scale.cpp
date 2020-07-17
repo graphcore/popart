@@ -96,12 +96,11 @@ static OpDefinition scaleOpDef({OpDefinition::Inputs({{"X", T}}),
 
 static OpCreator<ScaleOp> scaleOpCreator(
     OpDefinitions({{Onnx::CustomOperators::Scale_1, scaleOpDef}}),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      float scale = attr.getAttribute<Attributes::Float>("scale", 1.0f);
+    [](const OpCreatorInfo &info) {
+      float scale =
+          info.attributes.getAttribute<Attributes::Float>("scale", 1.0f);
 
-      return std::unique_ptr<Op>(new ScaleOp(_opid, scale, settings));
+      return std::unique_ptr<Op>(new ScaleOp(info.opid, scale, info.settings));
     },
     true);
 

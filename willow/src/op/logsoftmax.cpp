@@ -34,12 +34,10 @@ static OpDefinition logSoftmaxOpDef({OpDefinition::Inputs({{"input", T}}),
 static OpCreator<LogSoftmaxOp> logSoftmaxOpCreator(
     OpDefinitions({{Onnx::Operators::LogSoftmax_1, logSoftmaxOpDef},
                    {Onnx::Operators::LogSoftmax_11, logSoftmaxOpDef}}),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      int64_t axis = attr.getAttribute<Attributes::Int>("axis", 1);
+    [](const OpCreatorInfo &info) {
+      int64_t axis = info.attributes.getAttribute<Attributes::Int>("axis", 1);
 
-      return std::make_unique<LogSoftmaxOp>(_opid, axis, settings);
+      return std::make_unique<LogSoftmaxOp>(info.opid, axis, info.settings);
     },
     true);
 

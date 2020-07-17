@@ -108,13 +108,13 @@ static OpCreator<InstanceNormOp> instanceNormOpCreator(
     OpDefinitions({
         {Onnx::Operators::InstanceNormalization_6, instanceNormOpDef},
     }),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
+    [](const OpCreatorInfo &info) {
       // default epsilon is 10**(-5)
-      float epsilon = attr.getAttribute<Attributes::Float>("epsilon", 1e-5f);
+      float epsilon =
+          info.attributes.getAttribute<Attributes::Float>("epsilon", 1e-5f);
 
-      return std::unique_ptr<Op>(new InstanceNormOp(_opid, epsilon, settings));
+      return std::unique_ptr<Op>(
+          new InstanceNormOp(info.opid, epsilon, info.settings));
     },
     true);
 

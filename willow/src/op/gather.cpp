@@ -125,12 +125,10 @@ static OpDefinition
 static OpCreator<GatherOp> gatherOpCreator(
     OpDefinitions({{Onnx::Operators::Gather_1, gatherOpDef},
                    {Onnx::Operators::Gather_11, gatherOpDef}}),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      int64_t axis = attr.getAttribute<Attributes::Int>("axis", 0);
+    [](const OpCreatorInfo &info) {
+      int64_t axis = info.attributes.getAttribute<Attributes::Int>("axis", 0);
 
-      return std::unique_ptr<Op>(new GatherOp(_opid, axis, settings));
+      return std::unique_ptr<Op>(new GatherOp(info.opid, axis, info.settings));
     },
     true);
 } // namespace

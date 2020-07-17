@@ -114,15 +114,14 @@ namespace {
 static OpCreator<ClipOp> clipOpCreator(
     OpDefinitions({{Onnx::Operators::Clip_6, clipOpV6Def},
                    {Onnx::Operators::Clip_11, clipOpV11Def}}),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      float min = attr.getAttribute<Attributes::Float>(
+    [](const OpCreatorInfo &info) {
+      float min = info.attributes.getAttribute<Attributes::Float>(
           "min", std::numeric_limits<float>::lowest());
-      float max = attr.getAttribute<Attributes::Float>(
+      float max = info.attributes.getAttribute<Attributes::Float>(
           "max", std::numeric_limits<float>::max());
 
-      return std::unique_ptr<Op>(new ClipOp(_opid, min, max, settings));
+      return std::unique_ptr<Op>(
+          new ClipOp(info.opid, min, max, info.settings));
     },
     true);
 

@@ -432,23 +432,22 @@ static OpCreator<SliceOp> sliceOpCreator(
     OpDefinitions({{Onnx::Operators::Slice_1, sliceOpV1Def},
                    {Onnx::Operators::Slice_10, sliceOpDef},
                    {Onnx::Operators::Slice_11, sliceOpDef}}),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      if (_opid.version < 10) {
+    [](const OpCreatorInfo &info) {
+      if (info.opid.version < 10) {
         // Before version 10 the slice parameters were attributes
         std::vector<int64_t> starts =
-            attr.getAttribute<Attributes::Ints>("starts", {});
+            info.attributes.getAttribute<Attributes::Ints>("starts", {});
         std::vector<int64_t> ends =
-            attr.getAttribute<Attributes::Ints>("ends", {});
+            info.attributes.getAttribute<Attributes::Ints>("ends", {});
         std::vector<int64_t> axes =
-            attr.getAttribute<Attributes::Ints>("axes", {});
+            info.attributes.getAttribute<Attributes::Ints>("axes", {});
 
         return std::unique_ptr<Op>(
-            new SliceOp(_opid, starts, ends, axes, settings));
+            new SliceOp(info.opid, starts, ends, axes, info.settings));
       } else {
         // Slice parameters are now inputs
-        return std::unique_ptr<Op>(new SliceOp(_opid, {}, {}, {}, settings));
+        return std::unique_ptr<Op>(
+            new SliceOp(info.opid, {}, {}, {}, info.settings));
       }
     },
     true);

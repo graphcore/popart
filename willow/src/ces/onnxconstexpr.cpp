@@ -159,9 +159,7 @@ internal_error dummyOpError(const std::string &opName) {
 
 static OpCreator<ConstantOp> constantOpCreator(
     OpDefinitions({{Onnx::Operators::Constant_9, constantOpV9Def}}),
-    [](const OperatorIdentifier &opid_,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
+    [](const OpCreatorInfo &info) -> std::unique_ptr<Op> {
       throw dummyOpError("Constant");
     },
     true);
@@ -175,9 +173,7 @@ class Shape {};
 
 static OpCreator<Shape> shapeOpCreator(
     OpDefinitions({{Onnx::Operators::Shape_1, shapeOpV1Def}}),
-    [](const OperatorIdentifier &opid_,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
+    [](const OpCreatorInfo &info) -> std::unique_ptr<Op> {
       throw dummyOpError("Shape");
     },
     true);
@@ -192,9 +188,7 @@ class ConstantOfShape {};
 static OpCreator<Shape> constantOfShape(
     OpDefinitions({{Onnx::Operators::ConstantOfShape_9,
                     constantOfShapeOpV9Def}}),
-    [](const OperatorIdentifier &opid_,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
+    [](const OpCreatorInfo &info) -> std::unique_ptr<Op> {
       throw dummyOpError("ConstantOfShape");
     },
     true);

@@ -103,16 +103,16 @@ static OpCreator<GroupNormOp> groupNormOpCreator(
     OpDefinitions({
         {Onnx::CustomOperators::GroupNormalization_1, groupNormOpDef},
     }),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      int64_t num_groups = attr.getAttribute<Attributes::Int>("num_groups");
+    [](const OpCreatorInfo &info) {
+      int64_t num_groups =
+          info.attributes.getAttribute<Attributes::Int>("num_groups");
 
       // default epsilon is 10**(-5)
-      float epsilon = attr.getAttribute<Attributes::Float>("epsilon", 1e-5f);
+      float epsilon =
+          info.attributes.getAttribute<Attributes::Float>("epsilon", 1e-5f);
 
       return std::unique_ptr<Op>(
-          new GroupNormOp(_opid, num_groups, epsilon, settings));
+          new GroupNormOp(info.opid, num_groups, epsilon, info.settings));
     },
     true);
 

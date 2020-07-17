@@ -185,11 +185,10 @@ static OpCreator<TransposeOp> transposeOpCreator(
     OpDefinitions({
         {Onnx::Operators::Transpose_1, transposeOpDef},
     }),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      Shape perm = attr.getAttribute<Attributes::Ints>("perm", {});
-      return std::unique_ptr<Op>(new TransposeOp(_opid, perm, settings));
+    [](const OpCreatorInfo &info) {
+      Shape perm = info.attributes.getAttribute<Attributes::Ints>("perm", {});
+      return std::unique_ptr<Op>(
+          new TransposeOp(info.opid, perm, info.settings));
     },
     true);
 } // namespace

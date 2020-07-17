@@ -165,21 +165,20 @@ static OpCreator<MaxPoolOp> maxPoolOpCreator(
         {Onnx::Operators::MaxPool_10, maxPoolOpDef},
         {Onnx::Operators::MaxPool_11, maxPoolOpDef},
     }),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
+    [](const OpCreatorInfo &info) {
       HasReceptiveFieldOp::Settings receptiveSettings(
-          settings.graph, settings.name, settings.scope);
-      receptiveSettings.setFromAttributes(attr);
+          info.settings.graph, info.settings.name, info.settings.scope);
+      receptiveSettings.setFromAttributes(info.attributes);
 
       int64_t storageOrder =
-          attr.getAttribute<Attributes::Int>("storage_order", 0);
-      int64_t ceilMode = attr.getAttribute<Attributes::Int>("ceil_mode", 0);
+          info.attributes.getAttribute<Attributes::Int>("storage_order", 0);
+      int64_t ceilMode =
+          info.attributes.getAttribute<Attributes::Int>("ceil_mode", 0);
       std::vector<int64_t> kernelShape =
-          attr.getAttribute<Attributes::Ints>("kernel_shape", {});
+          info.attributes.getAttribute<Attributes::Ints>("kernel_shape", {});
 
       return std::unique_ptr<Op>(new MaxPoolOp(
-          _opid, kernelShape, ceilMode, storageOrder, receptiveSettings));
+          info.opid, kernelShape, ceilMode, storageOrder, receptiveSettings));
     },
     true);
 } // namespace

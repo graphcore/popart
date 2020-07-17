@@ -71,14 +71,12 @@ static OpCreator<PrintTensorOp> printtensorOpCreator(
     OpDefinitions({
         {Onnx::CustomOperators::PrintTensor_1, printTensorOpDef},
     }),
-    [](const OperatorIdentifier &opid_,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      bool printGradient =
-          attr.getAttribute<Attributes::Int>("print_gradient", true) != 0;
+    [](const OpCreatorInfo &info) {
+      bool printGradient = info.attributes.getAttribute<Attributes::Int>(
+                               "print_gradient", true) != 0;
 
       return std::unique_ptr<Op>(
-          new PrintTensorOp(opid_, true, printGradient, settings));
+          new PrintTensorOp(info.opid, true, printGradient, info.settings));
     },
     true);
 } // namespace

@@ -81,11 +81,9 @@ static OpDefinition ReplicatedAllReduceOpDef({OpDefinition::Inputs({{"X", T}}),
 static OpCreator<ReplicatedAllReduceOp> ReplicatedAllReduceOpCreator(
     OpDefinitions({{Onnx::CustomOperators::ReplicatedAllReduce,
                     ReplicatedAllReduceOpDef}}),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes & = {}) -> std::unique_ptr<Op> {
+    [](const OpCreatorInfo &info) {
       return std::unique_ptr<ReplicatedAllReduceOp>(
-          new ReplicatedAllReduceOp(_opid, settings));
+          new ReplicatedAllReduceOp(info.opid, info.settings));
     },
     true);
 
@@ -98,11 +96,9 @@ static OpCreator<ReplicatedAllReduceInplaceOp>
     ReplicatedAllReduceInplaceOpCreator(
         OpDefinitions({{Onnx::CustomOperators::ReplicatedAllReduceInplace,
                         ReplicatedAllReduceInplaceOpDef}}),
-        [](const OperatorIdentifier &_opid,
-           const Op::Settings &settings,
-           const Attributes & = {}) -> std::unique_ptr<Op> {
+        [](const OpCreatorInfo &info) {
           return std::unique_ptr<ReplicatedAllReduceInplaceOp>(
-              new ReplicatedAllReduceInplaceOp(_opid, settings));
+              new ReplicatedAllReduceInplaceOp(info.opid, info.settings));
         },
         true);
 

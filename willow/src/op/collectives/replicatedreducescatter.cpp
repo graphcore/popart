@@ -45,11 +45,9 @@ static OpDefinition
 static OpCreator<ReplicatedReduceScatterOp> ReplicatedReduceScatterOpCreator(
     OpDefinitions({{Onnx::CustomOperators::ReplicatedReduceScatter,
                     ReplicatedReduceScatterOpDef}}),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes & = {}) -> std::unique_ptr<Op> {
+    [](const OpCreatorInfo &info) {
       return std::unique_ptr<ReplicatedReduceScatterOp>(
-          new ReplicatedReduceScatterOp(_opid, settings));
+          new ReplicatedReduceScatterOp(info.opid, info.settings));
     },
     true);
 

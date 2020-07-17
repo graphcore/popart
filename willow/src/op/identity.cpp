@@ -153,14 +153,12 @@ static OpCreator<IdentityOp> identityOpCreator(
     OpDefinitions({{Onnx::Operators::Identity_1, identityOpDef}}));
 static OpCreator<IdentityLossOp> identityLossOpCreator(
     OpDefinitions({{Onnx::CustomOperators::IdentityLoss, identityOpDef}}),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr = {}) -> std::unique_ptr<Op> {
+    [](const OpCreatorInfo &info) {
       std::string reductionStr =
-          attr.getAttribute<Attributes::String>("reduction");
+          info.attributes.getAttribute<Attributes::String>("reduction");
       ReductionType reduction = LossOp::reductionTypeFromString(reductionStr);
       return std::unique_ptr<IdentityLossOp>(
-          new IdentityLossOp(_opid, reduction, settings));
+          new IdentityLossOp(info.opid, reduction, info.settings));
     },
     true);
 } // namespace

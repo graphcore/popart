@@ -145,15 +145,16 @@ static OpDefinition
 
 static OpCreator<DynamicUpdateOp> dynamicZeroOpCreator(
     OpDefinitions({{Onnx::CustomOperators::DynamicZero_1, dynamicZeroOpDef}}),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr = {}) -> std::unique_ptr<Op> {
-      std::vector<int64_t> axes  = attr.getAttribute<Attributes::Ints>("axes");
-      std::vector<int64_t> sizes = attr.getAttribute<Attributes::Ints>("sizes");
-      bool noOverlap             = attr.hasAttribute("noOverlap") &&
-                       attr.getAttribute<Attributes::Int>("noOverlap");
+    [](const OpCreatorInfo &info) {
+      std::vector<int64_t> axes =
+          info.attributes.getAttribute<Attributes::Ints>("axes");
+      std::vector<int64_t> sizes =
+          info.attributes.getAttribute<Attributes::Ints>("sizes");
+      bool noOverlap =
+          info.attributes.hasAttribute("noOverlap") &&
+          info.attributes.getAttribute<Attributes::Int>("noOverlap");
       return std::unique_ptr<DynamicZeroOp>(
-          new DynamicZeroOp(_opid, axes, sizes, noOverlap, settings));
+          new DynamicZeroOp(info.opid, axes, sizes, noOverlap, info.settings));
     },
     true);
 } // namespace popart

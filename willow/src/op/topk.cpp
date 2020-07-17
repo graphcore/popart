@@ -117,27 +117,25 @@ const TensorInfo &TopKGradOp::getGradOutInfo() const { return gradOutInfo; }
 void TopKGradOp::setup() { outInfo(gradOutIndex()) = gradOutInfo; }
 
 namespace {
-std::unique_ptr<Op> topKFactory(const OperatorIdentifier &_opid,
-                                const Op::Settings &settings,
-                                const Attributes &attr) {
+std::unique_ptr<Op> topKFactory(const OpCreatorInfo &info) {
 
-  if (_opid.version == 1) {
+  if (info.opid.version == 1) {
     // K is required
-    int64_t K = attr.getAttribute<Attributes::Int>("k", 1);
+    int64_t K = info.attributes.getAttribute<Attributes::Int>("k", 1);
     // axis is optional
-    int64_t axis = attr.getAttribute<Attributes::Int>("axis", 0);
+    int64_t axis = info.attributes.getAttribute<Attributes::Int>("axis", 0);
 
-    return std::make_unique<TopKOp>(_opid, K, axis, settings);
-  } else if (_opid.version == 10) {
+    return std::make_unique<TopKOp>(info.opid, K, axis, info.settings);
+  } else if (info.opid.version == 10) {
     // K is now an input, which we will attend to determine in the setup
     // method
 
     // axis is optional
-    int64_t axis = attr.getAttribute<Attributes::Int>("axis", 0);
+    int64_t axis = info.attributes.getAttribute<Attributes::Int>("axis", 0);
 
-    return std::make_unique<TopKOp>(_opid, -1, axis, settings);
+    return std::make_unique<TopKOp>(info.opid, -1, axis, info.settings);
   } else {
-    throw error("Unsupported operator version {} for topK", _opid.version);
+    throw error("Unsupported operator version {} for topK", info.opid.version);
   }
 }
 

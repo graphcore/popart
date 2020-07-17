@@ -45,11 +45,9 @@ static OpDefinition ReplicatedAllGatherOpDef({OpDefinition::Inputs({{"X", T}}),
 static OpCreator<ReplicatedAllGatherOp> ReplicatedAllGatherOpCreator(
     OpDefinitions({{Onnx::CustomOperators::ReplicatedAllGather,
                     ReplicatedAllGatherOpDef}}),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes & = {}) -> std::unique_ptr<Op> {
+    [](const OpCreatorInfo &info) {
       return std::unique_ptr<ReplicatedAllGatherOp>(
-          new ReplicatedAllGatherOp(_opid, settings));
+          new ReplicatedAllGatherOp(info.opid, info.settings));
     },
     true);
 

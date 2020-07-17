@@ -91,19 +91,21 @@ static OpCreator<GemmOp> gemmOpCreator(
         {Onnx::Operators::Gemm_9, gemmOpDef},
         {Onnx::Operators::Gemm_11, gemmOpDef},
     }),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      float alpha = attr.getAttribute<Attributes::Float>("alpha", 1.0);
-      float beta  = attr.getAttribute<Attributes::Float>("beta", 1.0);
-      bool transA = attr.getAttribute<Attributes::Int>("transA", false);
-      bool transB = attr.getAttribute<Attributes::Int>("transB", false);
+    [](const OpCreatorInfo &info) {
+      float alpha =
+          info.attributes.getAttribute<Attributes::Float>("alpha", 1.0);
+      float beta = info.attributes.getAttribute<Attributes::Float>("beta", 1.0);
+      bool transA =
+          info.attributes.getAttribute<Attributes::Int>("transA", false);
+      bool transB =
+          info.attributes.getAttribute<Attributes::Int>("transB", false);
 
       // broadcast is only valid for version 6
-      bool broadcast = attr.getAttribute<Attributes::Int>("broadcast", false);
+      bool broadcast =
+          info.attributes.getAttribute<Attributes::Int>("broadcast", false);
 
-      return std::unique_ptr<Op>(
-          new GemmOp(_opid, alpha, beta, transA, transB, broadcast, settings));
+      return std::unique_ptr<Op>(new GemmOp(
+          info.opid, alpha, beta, transA, transB, broadcast, info.settings));
     },
     true);
 

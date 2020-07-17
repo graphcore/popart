@@ -176,6 +176,7 @@ add_popart_cpp_unit_test(syntheticdatatest synthetic_data_test.cpp)
 add_popart_cpp_unit_test(transformtest transform_test.cpp)
 add_popart_cpp_unit_test(vertex_vgid_test vertex_vgid_test.cpp VARIANTS "IpuModel")
 add_popart_cpp_unit_test(viewchangingtest view_changing_test.cpp)
+add_popart_cpp_unit_test(op_factory_funcs_test op_factory_funcs_test.cpp)
 
 # Add a test that targets c++11 to check that the popart interface is c++11.
 # If the interface is not c++11, the build should fail.

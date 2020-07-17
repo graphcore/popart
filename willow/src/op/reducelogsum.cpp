@@ -63,17 +63,16 @@ static OpDefinition reduceLogSumOpDef(
 static OpCreator<ReduceLogSumOp> ReduceLogSumOpCreator(
     OpDefinitions({{Onnx::Operators::ReduceLogSum_1, reduceLogSumOpDef},
                    {Onnx::Operators::ReduceLogSum_11, reduceLogSumOpDef}}),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      int64_t keepdims = attr.getAttribute<Attributes::Int>("keepdims", 1);
+    [](const OpCreatorInfo &info) {
+      int64_t keepdims =
+          info.attributes.getAttribute<Attributes::Int>("keepdims", 1);
       nonstd::optional<std::vector<int64_t>> axes;
-      if (attr.hasAttribute("axes")) {
-        axes = attr.getAttribute<Attributes::Ints>("axes");
+      if (info.attributes.hasAttribute("axes")) {
+        axes = info.attributes.getAttribute<Attributes::Ints>("axes");
       }
 
       return std::unique_ptr<Op>(
-          new ReduceLogSumOp(_opid, axes, keepdims, settings));
+          new ReduceLogSumOp(info.opid, axes, keepdims, info.settings));
     },
     true);
 } // namespace

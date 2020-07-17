@@ -47,19 +47,18 @@ static OpDefinition initOpDef({OpDefinition::Inputs({}),
 
 static OpCreator<InitOp> initOpCreator(
     OpDefinitions({{Onnx::CustomOperators::Init_1, initOpDef}}),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr = {}) -> std::unique_ptr<Op> {
-      std::vector<int64_t> shape = attr.getAttribute<Attributes::Ints>("shape");
-      DataType data_type         = static_cast<DataType>(
-          attr.getAttribute<Attributes::Int>("data_type"));
+    [](const OpCreatorInfo &info) {
+      std::vector<int64_t> shape =
+          info.attributes.getAttribute<Attributes::Ints>("shape");
+      DataType data_type = static_cast<DataType>(
+          info.attributes.getAttribute<Attributes::Int>("data_type"));
       TensorType tensor_type = static_cast<TensorType>(
-          attr.getAttribute<Attributes::Int>("tensor_type"));
+          info.attributes.getAttribute<Attributes::Int>("tensor_type"));
       InitType init_type = static_cast<InitType>(
-          attr.getAttribute<Attributes::Int>("init_type"));
-      TensorInfo info(data_type, shape);
+          info.attributes.getAttribute<Attributes::Int>("init_type"));
+      TensorInfo tInfo(data_type, shape);
       return std::unique_ptr<InitOp>(
-          new InitOp(_opid, info, tensor_type, init_type, settings));
+          new InitOp(info.opid, tInfo, tensor_type, init_type, info.settings));
     },
     true);
 

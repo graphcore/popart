@@ -50,6 +50,10 @@ set(CMAKE_INSTALL_RPATH "${POPLAR_INSTALL_DIR}/lib")
 #with cmake >= 3.12 this should be add_compile_definitions(ONNX_NAMESPACE=onnx)
 add_definitions(-DONNX_NAMESPACE=onnx)
 
+# This allows us to deprecate the legacy op factory functions
+# in our own code without breaking customers code.
+add_definitions(-DDEPRECATE_LEGACY_OP_FACTORY=1)
+
 #Where to find Findxxxx.cmake files
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules ${PROJECT_SOURCE_DIR}/cmake)
 

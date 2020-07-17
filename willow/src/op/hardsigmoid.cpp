@@ -100,14 +100,14 @@ static OpCreator<HardSigmoidOp> hardsigmoidOpCreator(
         {Onnx::Operators::HardSigmoid_1, hardsigmoidOpDef},
         {Onnx::Operators::HardSigmoid_6, hardsigmoidOpDef},
     }),
-    [](const OperatorIdentifier &opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      float alpha = attr.getAttribute<Attributes::Float>("alpha", 0.2f);
-      float beta  = attr.getAttribute<Attributes::Float>("beta", 0.5f);
+    [](const OpCreatorInfo &info) {
+      float alpha =
+          info.attributes.getAttribute<Attributes::Float>("alpha", 0.2f);
+      float beta =
+          info.attributes.getAttribute<Attributes::Float>("beta", 0.5f);
 
       return std::unique_ptr<Op>(
-          new HardSigmoidOp(opid, alpha, beta, settings));
+          new HardSigmoidOp(info.opid, alpha, beta, info.settings));
     },
     true);
 

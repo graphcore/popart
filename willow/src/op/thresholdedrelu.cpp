@@ -95,12 +95,12 @@ static OpCreator<ThresholdedReluOp> thresholdedreluOpCreator(
     OpDefinitions({
         {Onnx::Operators::ThresholdedRelu_10, thresholdedreluOpDef},
     }),
-    [](const OperatorIdentifier &opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      float alpha = attr.getAttribute<Attributes::Float>("alpha", 1.0f);
+    [](const OpCreatorInfo &info) {
+      float alpha =
+          info.attributes.getAttribute<Attributes::Float>("alpha", 1.0f);
 
-      return std::unique_ptr<Op>(new ThresholdedReluOp(opid, alpha, settings));
+      return std::unique_ptr<Op>(
+          new ThresholdedReluOp(info.opid, alpha, info.settings));
     },
     true);
 

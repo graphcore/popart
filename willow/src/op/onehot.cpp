@@ -167,12 +167,10 @@ static OpCreator<OnehotOp> onehotOpCreator(
         {Onnx::Operators::OneHot_9, onehotOpDef},
         {Onnx::Operators::OneHot_11, onehotOpDef},
     }),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      int64_t axis = attr.getAttribute<Attributes::Int>("axis", -1);
+    [](const OpCreatorInfo &info) {
+      int64_t axis = info.attributes.getAttribute<Attributes::Int>("axis", -1);
 
-      return std::unique_ptr<Op>(new OnehotOp(_opid, axis, settings));
+      return std::unique_ptr<Op>(new OnehotOp(info.opid, axis, info.settings));
     },
     true);
 

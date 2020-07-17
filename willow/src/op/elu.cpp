@@ -94,12 +94,11 @@ static OpCreator<EluOp> eluOpCreator(
         {Onnx::Operators::Elu_1, eluOpDef},
         {Onnx::Operators::Elu_6, eluOpDef},
     }),
-    [](const OperatorIdentifier &opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      float alpha = attr.getAttribute<Attributes::Float>("alpha", 1.0f);
+    [](const OpCreatorInfo &info) {
+      float alpha =
+          info.attributes.getAttribute<Attributes::Float>("alpha", 1.0f);
 
-      return std::unique_ptr<Op>(new EluOp(opid, alpha, settings));
+      return std::unique_ptr<Op>(new EluOp(info.opid, alpha, info.settings));
     },
     true);
 

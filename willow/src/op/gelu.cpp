@@ -64,10 +64,8 @@ static OpDefinition geluOpDef({OpDefinition::Inputs({{"input", T}}),
 
 static OpCreator<GeluOp> geluOpCreator(
     OpDefinitions({{Onnx::CustomOperators::Gelu_1, geluOpDef}}),
-    [](const OperatorIdentifier &opid,
-       const Op::Settings &settings,
-       const Attributes &) -> std::unique_ptr<Op> {
-      return std::unique_ptr<Op>(new GeluOp(opid, settings));
+    [](const OpCreatorInfo &info) {
+      return std::unique_ptr<Op>(new GeluOp(info.opid, info.settings));
     },
     true);
 

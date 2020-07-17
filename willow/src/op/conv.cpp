@@ -138,22 +138,23 @@ static OpCreator<ConvOp> convOpCreator(
         {Onnx::Operators::Conv_1, convOpDef},
         {Onnx::Operators::Conv_11, convOpDef},
     }),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      auto strides   = attr.getAttribute<Attributes::Ints>("strides", {});
-      auto pads      = attr.getAttribute<Attributes::Ints>("pads", {});
-      auto dilations = attr.getAttribute<Attributes::Ints>("dilations", {});
-      auto group     = attr.getAttribute<Attributes::Int>("group", 1);
-      auto padType =
-          attr.getAttribute<Attributes::String>("auto_pad", "NOTSET");
+    [](const OpCreatorInfo &info) -> std::unique_ptr<Op> {
+      auto strides =
+          info.attributes.getAttribute<Attributes::Ints>("strides", {});
+      auto pads = info.attributes.getAttribute<Attributes::Ints>("pads", {});
+      auto dilations =
+          info.attributes.getAttribute<Attributes::Ints>("dilations", {});
+      auto group   = info.attributes.getAttribute<Attributes::Int>("group", 1);
+      auto padType = info.attributes.getAttribute<Attributes::String>(
+          "auto_pad", "NOTSET");
 
-      auto sessOpts = settings.getIr().getSessionOptions().convolutionOptions;
-      auto convOpts = MultiConvOptions(sessOpts, attr);
+      auto sessOpts =
+          info.settings.getIr().getSessionOptions().convolutionOptions;
+      auto convOpts = MultiConvOptions(sessOpts, info.attributes);
 
       return std::unique_ptr<Op>(
-          new ConvOp(_opid,
-                     settings,
+          new ConvOp(info.opid,
+                     info.settings,
                      strides,
                      pads,
                      dilations,

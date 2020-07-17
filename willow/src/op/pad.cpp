@@ -314,15 +314,16 @@ static OpDefinition padOpV11Def({OpDefinition::Inputs({
 
 static OpCreator<PadOp> pad2Creator(
     OpDefinitions({{Onnx::Operators::Pad_2, padOpV2Def}}),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      std::vector<int64_t> pads = attr.getAttribute<Attributes::Ints>("pads");
-      float value = attr.getAttribute<Attributes::Float>("value", 0.0);
+    [](const OpCreatorInfo &info) {
+      std::vector<int64_t> pads =
+          info.attributes.getAttribute<Attributes::Ints>("pads");
+      float value =
+          info.attributes.getAttribute<Attributes::Float>("value", 0.0);
       std::string mode =
-          attr.getAttribute<Attributes::String>("mode", "constant");
+          info.attributes.getAttribute<Attributes::String>("mode", "constant");
 
-      return std::unique_ptr<Op>(new PadOp(_opid, pads, value, mode, settings));
+      return std::unique_ptr<Op>(
+          new PadOp(info.opid, pads, value, mode, info.settings));
     },
     true);
 

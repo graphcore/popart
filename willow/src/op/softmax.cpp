@@ -206,12 +206,10 @@ static OpDefinition softmaxOpDef({OpDefinition::Inputs({{"input", T}}),
 static OpCreator<SoftmaxOp> softmaxOpCreator(
     OpDefinitions({{Onnx::Operators::Softmax_1, softmaxOpDef},
                    {Onnx::Operators::Softmax_11, softmaxOpDef}}),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      int64_t axis = attr.getAttribute<Attributes::Int>("axis", 1);
+    [](const OpCreatorInfo &info) {
+      int64_t axis = info.attributes.getAttribute<Attributes::Int>("axis", 1);
 
-      return std::unique_ptr<Op>(new SoftmaxOp(_opid, axis, settings));
+      return std::unique_ptr<Op>(new SoftmaxOp(info.opid, axis, info.settings));
     },
     true);
 

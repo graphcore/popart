@@ -435,39 +435,40 @@ static OpDefinition
 static OpCreator<LSTMOp> lstmOpCreator(
     OpDefinitions({{Onnx::Operators::LSTM_1, lstmOpDef},
                    {Onnx::Operators::LSTM_7, lstmOpDef}}),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      if (attr.hasAttribute("activations")) {
+    [](const OpCreatorInfo &info) {
+      if (info.attributes.hasAttribute("activations")) {
         throw error("LSTMOp attribute `activations' is not supported");
       }
-      if (attr.hasAttribute("activation_alpha")) {
+      if (info.attributes.hasAttribute("activation_alpha")) {
         throw error("LSTMOp attribute `activation_alpha' is not supported");
       }
-      if (attr.hasAttribute("activation_beta")) {
+      if (info.attributes.hasAttribute("activation_beta")) {
         throw error("LSTMOp attribute `activation_alpha' is not supported");
       }
 
-      if (attr.hasAttribute("clip")) {
+      if (info.attributes.hasAttribute("clip")) {
         throw error("LSTMOp attribute `clip' is not supported");
       }
 
-      if (attr.getAttribute<Attributes::String>("direction", "forward") !=
-          "forward") {
+      if (info.attributes.getAttribute<Attributes::String>(
+              "direction", "forward") != "forward") {
         throw error("LSTMOp attribute `direction' must be unset or `forward'");
       }
 
-      if (attr.getAttribute<Attributes::Int>("input_forget", 0) != 0) {
+      if (info.attributes.getAttribute<Attributes::Int>("input_forget", 0) !=
+          0) {
         throw error("LSTMOp attribute `input_forget' must be set to 0");
       }
 
       // cannot check hidden_size till inputs are connected
       nonstd::optional<int64_t> hidden_size;
-      if (attr.hasAttribute("hidden_size")) {
-        hidden_size = attr.getAttribute<Attributes::Int>("hidden_size");
+      if (info.attributes.hasAttribute("hidden_size")) {
+        hidden_size =
+            info.attributes.getAttribute<Attributes::Int>("hidden_size");
       }
 
-      return std::unique_ptr<Op>(new LSTMOp(_opid, hidden_size, settings));
+      return std::unique_ptr<Op>(
+          new LSTMOp(info.opid, hidden_size, info.settings));
     },
     true);
 
@@ -483,14 +484,12 @@ static OpDefinition popartLstmOpDef(
 
 static OpCreator<PopartLSTMOp> popartLSTMOpCreator(
     OpDefinitions({{Onnx::CustomOperators::LSTM_1, popartLstmOpDef}}),
-    [](const OperatorIdentifier &opid,
-       const Op::Settings &settings,
-       const Attributes &attr) {
-      bool outputFullSequence =
-          attr.getAttribute<Attributes::Int>("output_full_sequence", 1) != 0;
+    [](const OpCreatorInfo &info) {
+      bool outputFullSequence = info.attributes.getAttribute<Attributes::Int>(
+                                    "output_full_sequence", 1) != 0;
 
       return std::unique_ptr<Op>(
-          new PopartLSTMOp(opid, outputFullSequence, settings));
+          new PopartLSTMOp(info.opid, outputFullSequence, info.settings));
     },
     true);
 

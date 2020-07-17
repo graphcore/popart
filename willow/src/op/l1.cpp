@@ -86,15 +86,13 @@ static OpDefinition l1lossOpDef(
 
 static OpCreator<L1Op> l1lossOpCreator(
     OpDefinitions({{Onnx::CustomOperators::L1, l1lossOpDef}}),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr = {}) -> std::unique_ptr<Op> {
-      float lambda = attr.getAttribute<Attributes::Float>("lambda");
+    [](const OpCreatorInfo &info) {
+      float lambda = info.attributes.getAttribute<Attributes::Float>("lambda");
       std::string reductionStr =
-          attr.getAttribute<Attributes::String>("reduction");
+          info.attributes.getAttribute<Attributes::String>("reduction");
       ReductionType reduction = LossOp::reductionTypeFromString(reductionStr);
       return std::unique_ptr<L1Op>(
-          new L1Op(_opid, lambda, reduction, settings));
+          new L1Op(info.opid, lambda, reduction, info.settings));
     },
     true);
 

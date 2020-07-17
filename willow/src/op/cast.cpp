@@ -79,15 +79,13 @@ static OpCreator<CastOp> castOpCreator(
         {Onnx::Operators::Cast_6, castOpDef},
         {Onnx::Operators::Cast_9, castOpDef},
     }),
-    [](const OperatorIdentifier &opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
+    [](const OpCreatorInfo &info) {
       int64_t i64_to;
-      attr.set(i64_to, "to");
+      info.attributes.set(i64_to, "to");
       auto tpdt_to = static_cast<ONNX_NAMESPACE::TensorProto_DataType>(i64_to);
       DataType dt_to = onnxutil::getDataType(tpdt_to);
 
-      return std::make_unique<CastOp>(opid, dt_to, settings);
+      return std::make_unique<CastOp>(info.opid, dt_to, info.settings);
     },
     true);
 } // namespace

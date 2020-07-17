@@ -63,10 +63,8 @@ static OpCreator<DetachOp> detachOpCreator(
     OpDefinitions({
         {Onnx::CustomOperators::Detach_1, detachOpDef},
     }),
-    [](const OperatorIdentifier &opid_,
-       const Op::Settings &settings,
-       const Attributes &) -> std::unique_ptr<Op> {
-      return std::unique_ptr<Op>(new DetachOp(opid_, settings));
+    [](const OpCreatorInfo &info) {
+      return std::unique_ptr<Op>(new DetachOp(info.opid, info.settings));
     },
     true);
 

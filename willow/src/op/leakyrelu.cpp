@@ -108,13 +108,11 @@ static OpDefinition
 static OpCreator<LeakyReluOp> leakyReluOpCreator(
     popart::OpDefinitions({{Onnx::Operators::LeakyRelu_1, leakyReluOpDef},
                            {Onnx::Operators::LeakyRelu_6, leakyReluOpDef}}),
-    [](const popart::OperatorIdentifier &_opid,
-       const popart::Op::Settings &settings,
-       const popart::Attributes &attr) -> std::unique_ptr<popart::Op> {
-      float alpha = attr.getAttribute<popart::Attributes::Float>(
+    [](const OpCreatorInfo &info) {
+      float alpha = info.attributes.getAttribute<popart::Attributes::Float>(
           ALPHA_ATTRIBUTE, ALPHA_DEFAULT);
 
-      return std::make_unique<LeakyReluOp>(_opid, alpha, settings);
+      return std::make_unique<LeakyReluOp>(info.opid, alpha, info.settings);
     },
     true);
 } // namespace

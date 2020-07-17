@@ -32,13 +32,12 @@ static OpDefinition argMaxOpDef(
      OpDefinition::Outputs({{"reduced", T1}}),
      OpDefinition::Attributes({{"axis", {"*"}}, {"keepdims", {"0..1"}}})});
 
-std::unique_ptr<Op> argMaxFactory(const OperatorIdentifier &_opid,
-                                  const Op::Settings &settings,
-                                  const Attributes &attr) {
-  int64_t axis     = attr.getAttribute<Attributes::Int>("axis", 0);
-  int64_t keepdims = attr.getAttribute<Attributes::Int>("keepdims", 1);
+std::unique_ptr<Op> argMaxFactory(const OpCreatorInfo &info) {
+  int64_t axis = info.attributes.getAttribute<Attributes::Int>("axis", 0);
+  int64_t keepdims =
+      info.attributes.getAttribute<Attributes::Int>("keepdims", 1);
 
-  return std::make_unique<ArgMaxOp>(_opid, axis, keepdims, settings);
+  return std::make_unique<ArgMaxOp>(info.opid, axis, keepdims, info.settings);
 }
 
 static OpCreator<ArgMaxOp>

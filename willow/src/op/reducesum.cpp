@@ -50,17 +50,16 @@ static OpDefinition reduceSumOpDef(
 static OpCreator<ReduceSumOp> reduceSumOpCreator(
     OpDefinitions({{Onnx::Operators::ReduceSum_1, reduceSumOpDef},
                    {Onnx::Operators::ReduceSum_11, reduceSumOpDef}}),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      int64_t keepdims = attr.getAttribute<Attributes::Int>("keepdims", 1);
+    [](const OpCreatorInfo &info) {
+      int64_t keepdims =
+          info.attributes.getAttribute<Attributes::Int>("keepdims", 1);
       nonstd::optional<std::vector<int64_t>> axes;
-      if (attr.hasAttribute("axes")) {
-        axes = attr.getAttribute<Attributes::Ints>("axes");
+      if (info.attributes.hasAttribute("axes")) {
+        axes = info.attributes.getAttribute<Attributes::Ints>("axes");
       }
 
       return std::unique_ptr<Op>(
-          new ReduceSumOp(_opid, axes, keepdims, settings));
+          new ReduceSumOp(info.opid, axes, keepdims, info.settings));
     },
     true);
 } // namespace

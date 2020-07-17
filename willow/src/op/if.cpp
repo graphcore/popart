@@ -401,17 +401,17 @@ static OpDefinition ifOpDef({OpDefinition::Inputs({{"cond", B}}),
 static OpCreator<IfOp> ifOpCreator(
     OpDefinitions({{Onnx::Operators::If_1, ifOpDef},
                    {Onnx::Operators::If_11, ifOpDef}}),
-    [](const OperatorIdentifier &opid_,
-       const Op::Settings &settings_,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      auto elseBranch = attr.getAttribute<Attributes::Graph>("else_branch");
-      auto thenBranch = attr.getAttribute<Attributes::Graph>("then_branch");
+    [](const OpCreatorInfo &info) {
+      auto elseBranch =
+          info.attributes.getAttribute<Attributes::Graph>("else_branch");
+      auto thenBranch =
+          info.attributes.getAttribute<Attributes::Graph>("then_branch");
 
       if (elseBranch.output().size() != thenBranch.output().size()) {
         throw error("IfOp: else_branch and then_branch have different outputs");
       }
 
-      auto &tensors = settings_.graph.get().getTensors();
+      auto &tensors = info.settings.graph.get().getTensors();
       std::map<TensorId, TensorInfo> inputInfos;
 
       // Collect all input names
@@ -444,7 +444,7 @@ static OpCreator<IfOp> ifOpCreator(
                              : elseBranch.name();
 
       // Construct then graph
-      auto &ir        = settings_.graph.get().getIr();
+      auto &ir        = info.settings.graph.get().getIr();
       auto &thenGraph = ir.createGraph(thenGraphId);
       for (auto id : thenInputIds) {
         auto scopedId = thenGraph.addScope(id);
@@ -501,16 +501,14 @@ static OpCreator<IfOp> ifOpCreator(
         thenAndElseOutputIndicesMap.insert({i, i});
       }
 
-      auto op = std::make_unique<IfOp>(
-          opid_,
+      return std::make_unique<IfOp>(
+          info.opid,
           inputIds,
           BranchInfo{
               thenGraphId, thenInputIndicesMap, thenAndElseOutputIndicesMap},
           BranchInfo{
               elseGraphId, elseInputIndicesMap, thenAndElseOutputIndicesMap},
-          settings_);
-
-      return std::move(op);
+          info.settings);
     },
     true);
 } // namespace

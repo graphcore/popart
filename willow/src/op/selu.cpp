@@ -99,15 +99,14 @@ static OpCreator<SeluOp> seluOpCreator(
         {Onnx::Operators::Selu_1, seluOpDef},
         {Onnx::Operators::Selu_6, seluOpDef},
     }),
-    [](const OperatorIdentifier &opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      float alpha = attr.getAttribute<Attributes::Float>(
+    [](const OpCreatorInfo &info) {
+      float alpha = info.attributes.getAttribute<Attributes::Float>(
           "alpha", 1.67326319217681884765625f);
-      float gamma = attr.getAttribute<Attributes::Float>(
+      float gamma = info.attributes.getAttribute<Attributes::Float>(
           "gamma", 1.05070102214813232421875f);
 
-      return std::unique_ptr<Op>(new SeluOp(opid, alpha, gamma, settings));
+      return std::unique_ptr<Op>(
+          new SeluOp(info.opid, alpha, gamma, info.settings));
     },
     true);
 

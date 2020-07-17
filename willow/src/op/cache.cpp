@@ -102,23 +102,21 @@ static OpDefinition
 
 static OpCreator<CacheLoadOp> cacheLoadOpCreator(
     OpDefinitions({{Onnx::CustomOperators::CacheLoad, cacheLoadOpDef}}),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr = {}) -> std::unique_ptr<Op> {
-      int64_t bufferid = attr.getAttribute<Attributes::Int>("bufferid");
+    [](const OpCreatorInfo &info) {
+      int64_t bufferid =
+          info.attributes.getAttribute<Attributes::Int>("bufferid");
       return std::unique_ptr<CacheLoadOp>(
-          new CacheLoadOp(_opid, settings, bufferid));
+          new CacheLoadOp(info.opid, info.settings, bufferid));
     },
     true);
 
 static OpCreator<CacheStoreOp> cacheStoreOpCreator(
     OpDefinitions({{Onnx::CustomOperators::CacheStore, cacheStoreOpDef}}),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr = {}) -> std::unique_ptr<Op> {
-      int64_t bufferid = attr.getAttribute<Attributes::Int>("bufferid");
+    [](const OpCreatorInfo &info) {
+      int64_t bufferid =
+          info.attributes.getAttribute<Attributes::Int>("bufferid");
       return std::unique_ptr<CacheStoreOp>(
-          new CacheStoreOp(_opid, settings, bufferid));
+          new CacheStoreOp(info.opid, info.settings, bufferid));
     },
     true);
 

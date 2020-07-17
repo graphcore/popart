@@ -59,17 +59,16 @@ static OpDefinition reduceProdOpDef(
 static OpCreator<ReduceProdOp> ReduceProdOpCreator(
     OpDefinitions({{Onnx::Operators::ReduceProd_1, reduceProdOpDef},
                    {Onnx::Operators::ReduceProd_11, reduceProdOpDef}}),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      int64_t keepdims = attr.getAttribute<Attributes::Int>("keepdims", 1);
+    [](const OpCreatorInfo &info) {
+      int64_t keepdims =
+          info.attributes.getAttribute<Attributes::Int>("keepdims", 1);
       nonstd::optional<std::vector<int64_t>> axes;
-      if (attr.hasAttribute("axes")) {
-        axes = attr.getAttribute<Attributes::Ints>("axes");
+      if (info.attributes.hasAttribute("axes")) {
+        axes = info.attributes.getAttribute<Attributes::Ints>("axes");
       }
 
       return std::unique_ptr<Op>(
-          new ReduceProdOp(_opid, axes, keepdims, settings));
+          new ReduceProdOp(info.opid, axes, keepdims, info.settings));
     },
     true);
 } // namespace

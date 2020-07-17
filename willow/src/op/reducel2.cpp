@@ -58,17 +58,16 @@ static OpDefinition reduceL2OpDef(
 static OpCreator<ReduceL2Op> reduceL2OpCreator(
     OpDefinitions({{Onnx::Operators::ReduceL2_1, reduceL2OpDef},
                    {Onnx::Operators::ReduceL2_11, reduceL2OpDef}}),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      int64_t keepdims = attr.getAttribute<Attributes::Int>("keepdims", 1);
+    [](const OpCreatorInfo &info) {
+      int64_t keepdims =
+          info.attributes.getAttribute<Attributes::Int>("keepdims", 1);
       nonstd::optional<std::vector<int64_t>> axes;
-      if (attr.hasAttribute("axes")) {
-        axes = attr.getAttribute<Attributes::Ints>("axes");
+      if (info.attributes.hasAttribute("axes")) {
+        axes = info.attributes.getAttribute<Attributes::Ints>("axes");
       }
 
       return std::unique_ptr<Op>(
-          new ReduceL2Op(_opid, axes, keepdims, settings));
+          new ReduceL2Op(info.opid, axes, keepdims, info.settings));
     },
     true);
 } // namespace

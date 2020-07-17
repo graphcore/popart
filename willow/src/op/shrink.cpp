@@ -99,13 +99,14 @@ static OpCreator<ShrinkOp> shrinkOpCreator(
     OpDefinitions({
         {Onnx::Operators::Shrink_9, shrinkOpDef},
     }),
-    [](const OperatorIdentifier &opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      float lambd = attr.getAttribute<Attributes::Float>("lambd", 0.5f);
-      float bias  = attr.getAttribute<Attributes::Float>("bias", 0.0f);
+    [](const OpCreatorInfo &info) {
+      float lambd =
+          info.attributes.getAttribute<Attributes::Float>("lambd", 0.5f);
+      float bias =
+          info.attributes.getAttribute<Attributes::Float>("bias", 0.0f);
 
-      return std::unique_ptr<Op>(new ShrinkOp(opid, lambd, bias, settings));
+      return std::unique_ptr<Op>(
+          new ShrinkOp(info.opid, lambd, bias, info.settings));
     },
     true);
 

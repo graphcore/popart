@@ -148,21 +148,23 @@ static OpCreator<AveragePoolOp> averagePoolOpCreator(
         {Onnx::Operators::AveragePool_10, averagePoolOpDef},
         {Onnx::Operators::AveragePool_11, averagePoolOpDef},
     }),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
+    [](const OpCreatorInfo &info) {
       HasReceptiveFieldOp::Settings receptiveSettings(
-          settings.graph, settings.name, settings.scope);
-      receptiveSettings.setFromAttributes(attr);
+          info.settings.graph, info.settings.name, info.settings.scope);
+      receptiveSettings.setFromAttributes(info.attributes);
 
       std::vector<int64_t> kernelShape =
-          attr.getAttribute<Attributes::Ints>("kernel_shape", {});
+          info.attributes.getAttribute<Attributes::Ints>("kernel_shape", {});
       int64_t countIncludePad =
-          attr.getAttribute<Attributes::Int>("count_include_pad", 0);
-      int64_t ceilMode = attr.getAttribute<Attributes::Int>("ceil_mode", 0);
+          info.attributes.getAttribute<Attributes::Int>("count_include_pad", 0);
+      int64_t ceilMode =
+          info.attributes.getAttribute<Attributes::Int>("ceil_mode", 0);
 
-      return std::unique_ptr<Op>(new AveragePoolOp(
-          _opid, countIncludePad, ceilMode, kernelShape, receptiveSettings));
+      return std::unique_ptr<Op>(new AveragePoolOp(info.opid,
+                                                   countIncludePad,
+                                                   ceilMode,
+                                                   kernelShape,
+                                                   receptiveSettings));
     },
     true);
 } // namespace

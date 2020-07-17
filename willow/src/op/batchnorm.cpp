@@ -198,16 +198,17 @@ static OpCreator<BatchNormOp> batchNormOpCreator(
         {Onnx::Operators::BatchNormalization_7, batchNormOpDef},
         {Onnx::Operators::BatchNormalization_9, batchNormOpDef},
     }),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
+    [](const OpCreatorInfo &info) {
       // default epsilon is 10**(-5)
-      float epsilon   = attr.getAttribute<Attributes::Float>("epsilon", 1e-5f);
-      float momentum  = attr.getAttribute<Attributes::Float>("momentum", 0.9f);
-      int64_t spatial = attr.getAttribute<Attributes::Int>("spatial", 1);
+      float epsilon =
+          info.attributes.getAttribute<Attributes::Float>("epsilon", 1e-5f);
+      float momentum =
+          info.attributes.getAttribute<Attributes::Float>("momentum", 0.9f);
+      int64_t spatial =
+          info.attributes.getAttribute<Attributes::Int>("spatial", 1);
 
-      return std::unique_ptr<Op>(
-          new BatchNormOp(_opid, epsilon, momentum, spatial, settings));
+      return std::unique_ptr<Op>(new BatchNormOp(
+          info.opid, epsilon, momentum, spatial, info.settings));
     },
     true);
 

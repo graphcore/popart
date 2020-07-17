@@ -146,11 +146,9 @@ static OpDefinition
                    OpDefinition::Outputs({{"output", T}}),
                    OpDefinition::Attributes({{"axis", {"*"}}})});
 
-static std::unique_ptr<Op> flattenOpFactory(const OperatorIdentifier &_opid,
-                                            const Op::Settings &settings,
-                                            const Attributes &attr) {
-  int64_t axis = attr.getAttribute<Attributes::Int>("axis", 1);
-  return std::make_unique<FlattenOp>(_opid, axis, settings);
+static std::unique_ptr<Op> flattenOpFactory(const OpCreatorInfo &info) {
+  int64_t axis = info.attributes.getAttribute<Attributes::Int>("axis", 1);
+  return std::make_unique<FlattenOp>(info.opid, axis, info.settings);
 }
 
 static OpCreator<FlattenOp>

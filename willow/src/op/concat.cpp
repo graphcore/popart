@@ -272,12 +272,10 @@ static OpCreator<ConcatOp> concatOpCreator(
     OpDefinitions({{Onnx::Operators::Concat_1, concatOpDef},
                    {Onnx::Operators::Concat_4, concatOpDef},
                    {Onnx::Operators::Concat_11, concatOpDef}}),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      int64_t axis = attr.getAttribute<Attributes::Int>("axis");
+    [](const OpCreatorInfo &info) {
+      int64_t axis = info.attributes.getAttribute<Attributes::Int>("axis");
 
-      return std::unique_ptr<Op>(new ConcatOp(_opid, axis, settings));
+      return std::unique_ptr<Op>(new ConcatOp(info.opid, axis, info.settings));
     },
     true);
 } // namespace

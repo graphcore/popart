@@ -110,18 +110,18 @@ static OpCreator<DropoutOp> dropoutOpCreator(
     OpDefinitions({{Onnx::Operators::Dropout_6, dropoutOpDef},
                    {Onnx::Operators::Dropout_7, dropoutOpDef},
                    {Onnx::Operators::Dropout_10, dropoutOpDef}}),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      float ratio = attr.getAttribute<Attributes::Float>("ratio", 0.5f);
+    [](const OpCreatorInfo &info) {
+      float ratio =
+          info.attributes.getAttribute<Attributes::Float>("ratio", 0.5f);
       // If invalid probability for ratio supplied, throw error.
       if (ratio <= float(0.) || ratio >= float(1.)) {
         throw error("{} ratio value {} is not valid. Please use a value in the "
                     "interval (0,1)",
-                    _opid,
+                    info.opid,
                     ratio);
       }
-      return std::unique_ptr<Op>(new DropoutOp(_opid, ratio, settings));
+      return std::unique_ptr<Op>(
+          new DropoutOp(info.opid, ratio, info.settings));
     },
     true);
 

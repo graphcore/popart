@@ -249,36 +249,37 @@ static OpDefinition gruOpDef({OpDefinition::Inputs({
 static OpCreator<GRUOp> gruOpCreator(
     OpDefinitions({{Onnx::Operators::GRU_3, gruOpDef},
                    {Onnx::Operators::GRU_7, gruOpDef}}),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      if (attr.hasAttribute("activations")) {
+    [](const OpCreatorInfo &info) {
+      if (info.attributes.hasAttribute("activations")) {
         throw error("GRUOp attribute `activations' is not supported");
       }
-      if (attr.hasAttribute("activation_alpha")) {
+      if (info.attributes.hasAttribute("activation_alpha")) {
         throw error("GRUOp attribute `activation_alpha' is not supported");
       }
-      if (attr.hasAttribute("activation_beta")) {
+      if (info.attributes.hasAttribute("activation_beta")) {
         throw error("GRUOp attribute `activation_alpha' is not supported");
       }
-      if (attr.hasAttribute("clip")) {
+      if (info.attributes.hasAttribute("clip")) {
         throw error("GRUOp attribute `clip' is not supported");
       }
-      if (attr.getAttribute<Attributes::Int>("input_forget", 0) != 0) {
+      if (info.attributes.getAttribute<Attributes::Int>("input_forget", 0) !=
+          0) {
         throw error("GRUOp attribute `input_forget' must be set to 0");
       }
       std::string direction = "forward";
-      if (attr.hasAttribute("direction")) {
-        direction = attr.getAttribute<Attributes::String>("direction");
+      if (info.attributes.hasAttribute("direction")) {
+        direction =
+            info.attributes.getAttribute<Attributes::String>("direction");
       }
       // cannot check hidden_size till inputs are connected
       nonstd::optional<int64_t> hidden_size;
-      if (attr.hasAttribute("hidden_size")) {
-        hidden_size = attr.getAttribute<Attributes::Int>("hidden_size");
+      if (info.attributes.hasAttribute("hidden_size")) {
+        hidden_size =
+            info.attributes.getAttribute<Attributes::Int>("hidden_size");
       }
 
       return std::unique_ptr<Op>(
-          new GRUOp(_opid, hidden_size, direction, settings));
+          new GRUOp(info.opid, hidden_size, direction, info.settings));
     },
     true);
 

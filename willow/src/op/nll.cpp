@@ -157,19 +157,18 @@ static OpDefinition
 
 static OpCreator<NllOp> nlllossOpCreator(
     OpDefinitions({{Onnx::CustomOperators::Nll, nlllossOpDef}}),
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr = {}) -> std::unique_ptr<Op> {
+    [](const OpCreatorInfo &info) {
       std::string reductionStr =
-          attr.getAttribute<Attributes::String>("reduction");
+          info.attributes.getAttribute<Attributes::String>("reduction");
       ReductionType reduction = LossOp::reductionTypeFromString(reductionStr);
 
       nonstd::optional<int> ignoreIndex;
-      if (attr.hasAttribute("ignoreIndex")) {
-        ignoreIndex = attr.getAttribute<Attributes::Int>("ignoreIndex");
+      if (info.attributes.hasAttribute("ignoreIndex")) {
+        ignoreIndex =
+            info.attributes.getAttribute<Attributes::Int>("ignoreIndex");
       }
       return std::unique_ptr<NllOp>(
-          new NllOp(_opid, ignoreIndex, reduction, settings));
+          new NllOp(info.opid, ignoreIndex, reduction, info.settings));
     },
     true);
 
