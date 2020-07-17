@@ -228,7 +228,6 @@ def test_convolution_2(op_tester):
     Test the convolution when the conv in the bwd pass is not the same as the conv in the
     forward pass
     '''
-
     def init_builder(builder):
         data = np.ones([1, 2, 4, 4], dtype=np.float32)
         filt = np.ones([4, 2, 1, 1], dtype=np.float32)
@@ -1233,6 +1232,96 @@ def test_slice_error_start_input(op_tester):
         e_info.value.args[0] ==
         "Need the value of the ai.onnx.Slice:10 input 'starts' to detemine the output shape, but was unable because the tensor `input/1` does not have data"
     )
+
+
+def test_slice_start_out_of_bounds(op_tester):
+    """
+    The slice bounds tests follow the behaviour asserted by the Onnx tests,
+    which follow the behaviour of numpy.
+    https://github.com/onnx/onnx/blob/master/onnx/backend/test/case/node/slice.py
+
+    For a dimension of size n, any slice index of m > n, becomes n. That is, a
+    slice 10:21 on a dimension of size 20, becomes 10:20.
+
+    Note further that an a:b slice is the open-closed interval [a, b), so in the
+    above example, a slice of 10:20 is valid.
+
+    A slice of 20:20, though, is also valid in numpy; it becomes a dimension of
+    size 0 (but the other dimensions are not affected). The array will have zero
+    elements.
+    """
+
+    d1 = np.random.randn(20, 10, 5).astype(np.float32)
+
+    # Will create a zero-dim slice, as 1000:1000 becomes 10:10.
+    axesV = np.array([1], dtype=np.int64)
+    startsV = np.array([1000], np.int64)
+    endsV = np.array([1000], np.int64)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        axes = builder.aiOnnx.constant(axesV)
+        starts = builder.aiOnnx.constant(startsV)
+        ends = builder.aiOnnx.constant(endsV)
+
+        o = builder.aiOnnx.slice([i1, starts, ends, axes])
+        builder.addOutputTensor(o)
+
+        return [o, popart.reservedGradientPrefix() + i1]
+
+    def reference(ref_data):
+        o = d1[:, 1000:1000]
+        i1_grad = np.zeros(d1.shape)
+
+        return [o, i1_grad]
+
+    op_tester.run(init_builder, reference, 'train')
+
+
+def test_slice_end_out_of_bounds(op_tester):
+    """
+    The slice bounds tests follow the behaviour asserted by the Onnx tests,
+    which follow the behaviour of numpy.
+    https://github.com/onnx/onnx/blob/master/onnx/backend/test/case/node/slice.py
+
+    For a dimension of size n, any slice index of m > n, becomes n. That is, a
+    slice 10:21 on a dimension of size 20, becomes 10:20.
+
+    Note further that an a:b slice is the open-closed interval [a, b), so in the
+    above example, a slice of 10:20 is valid.
+
+    A slice of 20:20, though, is also valid in numpy; it becomes a dimension of
+    size 0 (but the other dimensions are not affected). The array will have zero
+    elements.
+    """
+
+    d1 = np.random.randn(20, 10, 5).astype(np.float32)
+
+    # Will create a (20, 9, 5)-dim slice, as 1:1000 becomes 1:10.
+    axesV = np.array([1], dtype=np.int64)
+    startsV = np.array([1], dtype=np.int64)
+    endsV = np.array([1000], dtype=np.int64)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        axes = builder.aiOnnx.constant(axesV)
+        starts = builder.aiOnnx.constant(startsV)
+        ends = builder.aiOnnx.constant(endsV)
+
+        o = builder.aiOnnx.slice([i1, starts, ends, axes])
+        builder.addOutputTensor(o)
+
+        return [o, popart.reservedGradientPrefix() + i1]
+
+    def reference(ref_data):
+        o = d1[:, 1:1000]
+
+        o_grad = np.ones(o.shape)
+        i1_grad = np.pad(o_grad, [(0, 0), (1, 0), (0, 0)], constant_values=0.)
+
+        return [o, i1_grad]
+
+    op_tester.run(init_builder, reference, 'train')
 
 
 def test_pad(op_tester):

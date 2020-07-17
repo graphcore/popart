@@ -174,29 +174,42 @@ poplar::Tensor
 BasePadOpx::constantModePadGrow(poplar::Tensor inTensor,
                                 poplar::program::Sequence &) const {
 
-  auto &&padBaseOp = getBasePadOp();
-
-  // can we find a good layout for the constant padding?
-  auto propitious = getPropitiousPadLayout();
-  poplar::Tensor outTensor;
-  if (propitious.first) {
-    outTensor = padWithTargetMapping(inTensor, propitious.second);
-  }
-
-  else {
-
+  auto mk_padded =
+      [this, &inTensor](const popops::padding::MappingMethod mappingMethod)
+      -> poplar::Tensor {
+    auto &&padBaseOp        = getBasePadOp();
     const auto lowerPadding = padBaseOp.getLowerPadding();
     const auto upperPadding = padBaseOp.getUpperPadding();
     const auto padValue     = padBaseOp.getPadValue();
 
-    outTensor = popops::pad(Opx::graph(),
-                            inTensor,
-                            lowerPadding,
-                            upperPadding,
-                            padValue,
-                            popops::padding::MappingMethod::EDGE);
+    return popops::pad(Opx::graph(),
+                       inTensor,
+                       lowerPadding,
+                       upperPadding,
+                       padValue,
+                       mappingMethod);
+  };
+
+  // If padding a tensor with a dim of size 0, the original tensor must have no
+  // elements, so "edge" mapping is not possible and we must do it ourselves.
+  // Note a tensor has 0 elements iff it has a zero-sized dimension.
+  if (inTensor.numElements() == 0) {
+    auto outTensor = mk_padded(popops::padding::MappingMethod::NONE);
+
+    dv_p->getLinearMapper().mapTensor(Opx::graph(), outTensor);
+
+    return outTensor;
   }
-  return outTensor;
+
+  // Can we find a good layout for the constant padding?
+  auto propitious = getPropitiousPadLayout();
+  if (propitious.first) {
+    return padWithTargetMapping(inTensor, propitious.second);
+  }
+
+  else {
+    return mk_padded(popops::padding::MappingMethod::EDGE);
+  }
 }
 
 poplar::Tensor BasePadOpx::padGrow(poplar::Tensor inTensor,
