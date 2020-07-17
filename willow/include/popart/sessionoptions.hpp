@@ -349,6 +349,13 @@ struct SessionOptions {
   /// to host at the end, this trades off sum-liveness efficiency for cycle
   /// efficiency.
   bool groupHostSync = false;
+
+  /// Strict op version checks will throw an error if the exact version of an op
+  /// required for the models opset is not supported. Turning this check off
+  /// will cause popart to fall back to the latest implementation of the op that
+  /// is supported. Warning, turning off these checks may cause undefined
+  /// behaviour.
+  bool strictOpVersions = true;
 };
 
 } // namespace popart

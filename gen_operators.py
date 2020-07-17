@@ -1043,6 +1043,76 @@ def genOpIdentifiersHpp(filename, schema):
         f.write("}\n")
 
 
+# Given a domain, return the highest version of each op
+# whose version is lower than or equal to the opsetVersion.
+def getOpsInOpset(domain, opsetVersion):
+    result = {}
+    for op in domain.operations:
+        if op.version <= opsetVersion:
+            if op.name not in result:
+                result[op.name] = op.version
+            elif result[op.name] < op.version:
+                result[op.name] = op.version
+
+    return sorted([(name, version) for name, version in result.items()],
+                  key=lambda x: x[0])
+
+
+def genOpsetsCpp(filename, schema):
+    with open(filename, 'w') as f:
+        addHeader(f)
+
+        f.write("""
+#include <map>
+#include <popart/names.hpp>
+#include <popart/opidentifier.hpp>
+
+namespace popart {
+using OpTypeMap = std::map<OpType, OperatorIdentifier>;
+using OpsetMap = std::map<std::pair<OpDomain, OpVersion>, OpTypeMap>;
+
+// Using the getOpsets function protects us from error with the static initialization order.
+// If `opsets` were some static class, we could not guarantee
+// that it would be initialized before all the static
+// OperatorIdentifiers it uses.
+// But the return of `getOpsets` can be stored to a static
+// variable, after we know the OperatorIdentifiers have been
+// initialized.
+OpsetMap getOpsets() {
+  OpsetMap opsets;
+""")
+
+        for domain_name, domain in schema.domains.items():
+            if domain_name != 'ai.onnx':
+                continue
+
+            ops = sorted(domain.operations, key=lambda x: x.name)
+            domain_name = domain_name.replace('.', '_')
+
+            for opset_version, opset in domain.opsets.items():
+                ops = getOpsInOpset(domain, int(opset_version))
+
+                f.write(
+                    f'  opsets[{{"{domain_name.replace("_", ".")}", {opset_version}}}] = {{\n'
+                )
+
+                def format_entry(x):
+                    name = x[0]
+                    version = x[1]
+                    return f'{{"{name}", Onnx::AiOnnx::OpSet{opset_version}::{name}}}'
+
+                entries = [format_entry(x) for x in ops]
+                entries = ',\n    '.join(entries)
+                f.write('    ' + entries)
+                f.write('};\n\n')
+
+        f.write("""
+  return opsets;
+}
+} // namespace popart
+""")
+
+
 def main():
 
     schema = parseDefinitions()
@@ -1052,6 +1122,7 @@ def main():
     genBuilderCpp('willow/src/builder.cpp.gen', schema)
     genOpIdentifiersHpp('willow/include/popart/opidentifier.hpp.gen', schema)
     genPythonBuilderBinds(schema)
+    genOpsetsCpp('willow/src/opsets.cpp.gen', schema)
 
 
 if __name__ == '__main__':

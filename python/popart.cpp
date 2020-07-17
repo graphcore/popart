@@ -794,6 +794,7 @@ PYBIND11_MODULE(popart_core, m) {
                       &SessionOptions::globalReplicaOffset);
     cls.def_readwrite("ipuSystemType", &SessionOptions::ipuSystemType);
     cls.def_readwrite("groupHostSync", &SessionOptions::groupHostSync);
+    cls.def_readwrite("strictOpVersions", &SessionOptions::strictOpVersions);
   }
   {
     py::enum_<PatternsLevel> en(m, "PatternsLevel");

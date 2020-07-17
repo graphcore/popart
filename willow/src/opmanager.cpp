@@ -1,7 +1,9 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 
 #include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/opmanager.hpp>
+#include <popart/opsets.hpp>
 
 namespace popart {
 
@@ -156,6 +158,22 @@ std::unique_ptr<Op> OpManager::createOp(const OpDomain &opDomain,
         version = it3.first;
         opInfo  = &it3.second;
       }
+    }
+  }
+
+  auto &ir = graph.getIr();
+  // Check the version we have for the op matches the version in the opset.
+  if (ir.getSessionOptions().strictOpVersions && domain == Domain::ai_onnx) {
+    auto opid = getOpid(opDomain, opsetVersion, type);
+    if (opid.version != version) {
+      throw error("For an opset {} Model, the ONNX spec stipulates that a {} "
+                  "op must be version {}. The highest version we have "
+                  "implemented less than or equal to {} is {}, so bailing.",
+                  opsetVersion,
+                  type,
+                  opid.version,
+                  opid.version,
+                  version);
     }
   }
 
