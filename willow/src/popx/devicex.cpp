@@ -11,6 +11,7 @@
 #include <utility>
 #include <popart/popx/creatorx.hpp>
 
+#include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/range/algorithm/find.hpp>
 #include <boost/range/algorithm_ext.hpp>
@@ -3371,6 +3372,19 @@ void Devicex::trySaveExecutable(poplar::Executable &executable) {
 
   if (cacheEnabled && !cachePath.empty() &&
       deviceInfo->getType() == DeviceType::Ipu) {
+
+    // If target directory does not exist, create it
+    auto cachePathObj = boost::filesystem::path(cachePath);
+    if (cachePathObj.has_parent_path()) {
+      auto cacheDir = cachePathObj.parent_path();
+      if (!boost::filesystem::exists(cacheDir)) {
+        logging::devicex::debug("Specified cache directory not found. "
+                                "Creating {} directory ",
+                                cacheDir);
+        if (!boost::filesystem::create_directory(cacheDir))
+          throw error("Cannot create cache directory. Aborting.");
+      }
+    }
     // save the poplar executable
     auto poplarCachePath = getPoplarCachePath();
     std::ofstream poplarFs(poplarCachePath, std::ofstream::binary);
