@@ -289,6 +289,12 @@ std::unique_ptr<Op> SGD::createOp(const Tensor &w, Graph &graph) const {
 
   auto opSettings = Op::Settings(graph, "");
 
+  for (Op *op : w.consumers.getOps()) {
+    for (auto &outlineAttribute : op->settings.extraOutlineAttributes) {
+      opSettings.extraOutlineAttributes.insert(outlineAttribute);
+    }
+  }
+
   if (!withAccl) {
     if (getReplicatedGraphCount() > 1 &&
         !graph.getIr().getSessionOptions().hostAllReduce) {

@@ -147,6 +147,7 @@ static constexpr const char *sOutputTypeAttribute      = "__output_type";
 static constexpr const char *sExcludePatternsAttribute = "__exclude_patterns";
 static constexpr const char *sSchedulePriority         = "__schedule_priority";
 static constexpr const char *sIOTilesAttribute         = "__io_tiles";
+static constexpr const char *sOutlineAttribute         = "__outline";
 
 static constexpr const char *sSerializeMatMulModeAttribute =
     "__serialize_matmul_mode";

@@ -346,7 +346,8 @@ void Op::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute(sVirtualGraphAttribute, getOptionalVGraphId());
   os.appendAttribute("useIoTiles", settings.useIoTiles);
   for (auto attribute : settings.extraOutlineAttributes) {
-    os.appendAttribute(attribute.first, attribute.second);
+    os.appendAttribute(attribute.first,
+                       attribute.first + ":" + attribute.second);
   }
 }
 
@@ -513,6 +514,15 @@ void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {
         throw error("Invalid pattern name '{}' in Op::excludePatterns",
                     patternName);
       }
+    }
+  }
+
+  if (attributes.hasAttribute(sOutlineAttribute)) {
+    std::vector<std::string> outlineAttributes;
+    attributes.set(outlineAttributes, sOutlineAttribute);
+    for (size_t i = 0; i < outlineAttributes.size(); i += 2) {
+      extraOutlineAttributes.insert(
+          {outlineAttributes[i], outlineAttributes[i + 1]});
     }
   }
 }

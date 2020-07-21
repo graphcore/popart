@@ -354,6 +354,59 @@ public:
   }
 };
 
+class KeyValueContextManager {
+  Builder &builder;
+  std::string attribute;
+  std::map<std::string, std::string> value;
+  std::vector<std::map<std::string, std::string>> prevValue;
+
+public:
+  KeyValueContextManager(Builder &_builder,
+                         const std::string &_attribute,
+                         std::map<std::string, std::string> value_)
+      : builder(_builder), attribute(_attribute), value(value_) {}
+
+  void enter() {
+    if (builder.hasAttribute(attribute)) {
+      auto prevKeyValuePairs = popart::any_cast<std::vector<std::string>>(
+          builder.getAttribute(attribute));
+      // Backup previous attribute values
+      prevValue.emplace_back();
+      for (size_t i = 0; i < prevKeyValuePairs.size(); i += 2) {
+        prevValue.back().insert(
+            {prevKeyValuePairs[i], prevKeyValuePairs[i + 1]});
+      }
+      builder.clearAttribute(attribute);
+    }
+    std::map<std::string, std::string> map;
+    if (!prevValue.empty()) {
+      map.insert(prevValue.back().begin(), prevValue.back().end());
+    }
+    map.insert(value.begin(), value.end());
+
+    std::vector<std::string> keyValuePairs;
+    for (auto &kv : map) {
+      keyValuePairs.push_back(kv.first);
+      keyValuePairs.push_back(kv.second);
+    }
+
+    builder.setAttribute(attribute, keyValuePairs);
+  }
+  void exit() {
+    builder.clearAttribute(attribute);
+    if (!prevValue.empty()) {
+      // Restore previous attribute value
+      std::vector<std::string> keyValuePairs;
+      for (auto &kv : prevValue.back()) {
+        keyValuePairs.push_back(kv.first);
+        keyValuePairs.push_back(kv.second);
+      }
+      builder.setAttribute(attribute, keyValuePairs);
+      prevValue.pop_back();
+    }
+  }
+};
+
 struct OutOfMemoryError {
   std::unique_ptr<popart::memory_allocation_err> exception;
 
@@ -1518,6 +1571,12 @@ PYBIND11_MODULE(popart_core, m) {
           return acm;
         },
         py::arg("value") = 0);
+    cls.def("outlineAttributes",
+            [](Builder &self, py::dict pyd) -> KeyValueContextManager {
+              KeyValueContextManager kvcm(
+                  self, sOutlineAttribute, getDictionary(pyd));
+              return kvcm;
+            });
     cls.def(
         "getPingPongPhase",
         static_cast<int64_t (Builder::*)() const>(&Builder::getPingPongPhase));
@@ -1664,6 +1723,15 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("__enter__", &AttributeContextManager::enter);
     cls.def("__exit__",
             [](AttributeContextManager &self,
+               py::object &,
+               py::object &,
+               py::object &) { self.exit(); });
+  }
+  {
+    py::class_<KeyValueContextManager> cls(m, "KeyValueContextManager");
+    cls.def("__enter__", &KeyValueContextManager::enter);
+    cls.def("__exit__",
+            [](KeyValueContextManager &self,
                py::object &,
                py::object &,
                py::object &) { self.exit(); });

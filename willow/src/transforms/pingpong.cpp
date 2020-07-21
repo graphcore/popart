@@ -713,6 +713,18 @@ bool PingPong::apply(Graph &graph) const {
 
       auto consumerOps = tensor->consumers.getOps();
 
+      // Inherit settings from producer or consumer
+      if (producerOp) {
+        settings = producerOp->settings;
+      } else {
+        if (!consumerOps.empty()) {
+          settings = consumerOps.front()->settings;
+        }
+      }
+      settings.name.clear();
+      settings.recomputeType = RecomputeType::Checkpoint;
+      settings.cacheType     = CacheType::Undefined;
+
       // Process consumers in ascending order of phases
       std::sort(
           consumerOps.begin(),

@@ -241,6 +241,12 @@ std::unique_ptr<Op> Adam::createOp(const Tensor &w, Graph &graph) const {
 
   auto opSettings = Op::Settings(graph, "");
 
+  for (Op *op : w.consumers.getOps()) {
+    for (auto &outlineAttribute : op->settings.extraOutlineAttributes) {
+      opSettings.extraOutlineAttributes.insert(outlineAttribute);
+    }
+  }
+
   OptimizerReductionType reductionType{OptimizerReductionType::None};
 
   if (getReplicatedGraphCount() > 1) {
