@@ -1,5 +1,5 @@
 # Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-
+import os
 import popart
 import numpy as np
 import torch
@@ -18,6 +18,9 @@ def run_model(tmpdir,
               enable_pingpong=False,
               enable_matmul_serialization=False,
               enable_outlining=False,
+              activation_cache_settings=None,
+              weight_cache_settings=None,
+              optimizer_state_cache_settings=None,
               num_layers=3,
               dsize=48,
               batch_size=1,
@@ -68,7 +71,12 @@ def run_model(tmpdir,
     opts.replicatedGraphCount = num_replicas
     opts.replicatedWeightSharding = replicated_weight_sharding
     opts.replicatedWeightShardingMinNumElements = 8
-
+    if activation_cache_settings is not None:
+        opts.activationCacheSettings = activation_cache_settings
+    if weight_cache_settings is not None:
+        opts.weightCacheSettings = weight_cache_settings
+    if optimizer_state_cache_settings is not None:
+        opts.optimizerStateCacheSettings = optimizer_state_cache_settings
     if (enable_pingpong):
         opts.pingPongPhases = num_layers
         opts.autoRecomputation = popart.RecomputationType.NoRecompute
@@ -98,7 +106,6 @@ def run_model(tmpdir,
 
     print("anchors:")
     print(anchors)
-
     session.modelToHost(str(tmpdir / model_file_name))
 
 
@@ -126,6 +133,33 @@ def test_weight_update(tmpdir):
 
     check_model(without_pingpong, with_pingpong)
     check_model(without_pingpong, with_pingpong_serialized)
+
+
+@tu.requires_ipu
+def test_onchip_memory(tmpdir):
+    onchip_settings = popart.CacheSettings(popart.CacheType.OnChip, 0)
+    run_model(tmpdir, 'model_normal.onnx', enable_pingpong=False)
+    run_model(tmpdir,
+              'model_onchip_act.onnx',
+              enable_pingpong=True,
+              activation_cache_settings=onchip_settings)
+    run_model(tmpdir,
+              'model_onchip_weights.onnx',
+              enable_pingpong=True,
+              weight_cache_settings=onchip_settings)
+    run_model(tmpdir,
+              'model_onchip_opt_state.onnx',
+              enable_pingpong=True,
+              optimizer_state_cache_settings=onchip_settings)
+
+    normal = onnx.load(str(tmpdir / 'model_normal.onnx'))
+    onchip_act = onnx.load(str(tmpdir / 'model_onchip_act.onnx'))
+    onchip_weights = onnx.load(str(tmpdir / 'model_onchip_weights.onnx'))
+    onchip_opt_state = onnx.load(str(tmpdir / 'model_onchip_opt_state.onnx'))
+
+    check_model(normal, onchip_act)
+    check_model(normal, onchip_weights)
+    check_model(normal, onchip_opt_state)
 
 
 # Check that 2 batches on 1 replica or 1 batch per replica on 2 replicas

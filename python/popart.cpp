@@ -692,6 +692,16 @@ PYBIND11_MODULE(popart_core, m) {
     }
   }
   {
+    py::class_<CacheSettings> cls(m, "CacheSettings");
+    cls.def(py::init<>());
+    cls.def(py::init<CacheType, int>(),
+            py::arg("cacheType"),
+            py::arg("minElementsForOffChip"));
+    cls.def_readwrite("cacheType", &CacheSettings::cacheType);
+    cls.def_readwrite("minElementsForOffChip",
+                      &CacheSettings::minElementsForOffChip);
+  }
+  {
     py::class_<SessionOptions> cls(m, "SessionOptions");
     cls.def(py::init<>());
     cls.def_readwrite("logDir", &SessionOptions::logDir);
@@ -795,6 +805,14 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("ipuSystemType", &SessionOptions::ipuSystemType);
     cls.def_readwrite("groupHostSync", &SessionOptions::groupHostSync);
     cls.def_readwrite("strictOpVersions", &SessionOptions::strictOpVersions);
+    cls.def_readwrite("activationCacheSettings",
+                      &SessionOptions::activationCacheSettings);
+    cls.def_readwrite("weightCacheSettings",
+                      &SessionOptions::weightCacheSettings);
+    cls.def_readwrite("optimizerStateCacheSettings",
+                      &SessionOptions::optimizerStateCacheSettings);
+    cls.def_readwrite("cacheSettingOverride",
+                      &SessionOptions::cacheSettingOverride);
   }
   {
     py::enum_<PatternsLevel> en(m, "PatternsLevel");
@@ -828,8 +846,11 @@ PYBIND11_MODULE(popart_core, m) {
   {
     py::enum_<CacheType> en(m, "CacheType");
     en.value("Undefined", CacheType::Undefined);
-    en.value("Uncached", CacheType::Uncached);
-    en.value("Cached", CacheType::Cached);
+    en.value("OnChip", CacheType::OnChip);
+    en.value("OffChip", CacheType::OffChip);
+    // Deprecated options:
+    en.value("Uncached", CacheType::OnChip);
+    en.value("Cached", CacheType::OffChip);
   }
   {
     py::enum_<SyncPattern> en(m, "SyncPattern");
@@ -1744,17 +1765,62 @@ PYBIND11_MODULE(popart_core, m) {
   m.def("reservedAcclToUpdatePrefix", &reservedAcclToUpdatePrefix);
   m.def("reservedAcclFinalOutPrefix", &reservedAcclFinalOutPrefix);
 
+  m.def("reservedAdamUpdaterPrefix", &reservedAdamUpdaterPrefix);
+  m.def("reservedLambR1SqPrefix", &reservedLambR1SqPrefix);
+  m.def("reservedLambR2SqPrefix", &reservedLambR2SqPrefix);
+
   m.def("reservedStashedPrefix", &reservedStashedPrefix);
   m.def("reservedRestoredPrefix", &reservedRestoredPrefix);
   m.def("reservedLossScalingPrefix", &reservedLossScalingPrefix);
-  m.def("reservedDefaultScaledLearningRate0Prefix",
-        &reservedDefaultScaledLearningRate0Prefix);
+  m.def("reservedRandomSeedPrefix", &reservedRandomSeedPrefix);
+
+  m.def("reservedCacheArgPrefix", &reservedCacheArgPrefix);
+
   m.def("reservedDefaultWeightDecayScaleFactor0Prefix",
         &reservedDefaultWeightDecayScaleFactor0Prefix);
-  m.def("reservedSpecificScaledLearningRate0Prefix",
-        &reservedSpecificScaledLearningRate0Prefix);
   m.def("reservedSpecificWeightDecayScaleFactor0Prefix",
         &reservedSpecificWeightDecayScaleFactor0Prefix);
+  m.def("reservedDefaultScaledLearningRate0Prefix",
+        &reservedDefaultScaledLearningRate0Prefix);
+  m.def("reservedSpecificScaledLearningRate0Prefix",
+        &reservedSpecificScaledLearningRate0Prefix);
+
+  m.def("reservedDefaultScaledWeightDecay1Prefix",
+        &reservedDefaultScaledWeightDecay1Prefix);
+  m.def("reservedSpecificScaledWeightDecay1Prefix",
+        &reservedSpecificScaledWeightDecay1Prefix);
+  m.def("reservedDefaultScaledLearningRate1Prefix",
+        &reservedDefaultScaledLearningRate1Prefix);
+  m.def("reservedSpecificScaledLearningRate1Prefix",
+        &reservedSpecificScaledLearningRate1Prefix);
+  m.def("reservedDefaultDampeningScaleFactor1Prefix",
+        &reservedDefaultDampeningScaleFactor1Prefix);
+  m.def("reservedSpecificDampeningScaleFactor1Prefix",
+        &reservedSpecificDampeningScaleFactor1Prefix);
+  m.def("reservedDefaultScaledMomentum1Prefix",
+        &reservedDefaultScaledMomentum1Prefix);
+  m.def("reservedSpecificScaledMomentum1Prefix",
+        &reservedSpecificScaledMomentum1Prefix);
+  m.def("reservedDefaultLearningRatePrefix",
+        &reservedDefaultLearningRatePrefix);
+  m.def("reservedSpecificLearningRatePrefix",
+        &reservedSpecificLearningRatePrefix);
+  m.def("reservedDefaultWeightDecayPrefix", &reservedDefaultWeightDecayPrefix);
+  m.def("reservedSpecificWeightDecayPrefix",
+        &reservedSpecificWeightDecayPrefix);
+  m.def("reservedDefaultLossScalingPrefix", &reservedDefaultLossScalingPrefix);
+  m.def("reservedSpecificLossScalingPrefix",
+        &reservedSpecificLossScalingPrefix);
+  m.def("reservedDefaultAdamBeta1Prefix", &reservedDefaultAdamBeta1Prefix);
+  m.def("reservedSpecificAdamBeta1Prefix", &reservedSpecificAdamBeta1Prefix);
+  m.def("reservedDefaultAdamBeta2Prefix", &reservedDefaultAdamBeta2Prefix);
+  m.def("reservedSpecificAdamBeta2Prefix", &reservedSpecificAdamBeta2Prefix);
+  m.def("reservedDefaultAdamEpsPrefix", &reservedDefaultAdamEpsPrefix);
+  m.def("reservedSpecificAdamEpsPrefix", &reservedSpecificAdamEpsPrefix);
+  m.def("reservedDefaultStepPrefix", &reservedDefaultStepPrefix);
+  m.def("reservedSpecificStepPrefix", &reservedSpecificStepPrefix);
+  m.def("hostReduceGradCopyPrefix", &hostReduceGradCopyPrefix);
+  m.def("hostReduceVarCopyPrefix", &hostReduceVarCopyPrefix);
 
   // Exceptions are processed explicitly to allow the main dynamic library
   // to do the type inference.  This prevents some inter dynamic library type

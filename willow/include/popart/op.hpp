@@ -21,7 +21,14 @@
 namespace popart {
 
 enum class RecomputeType { Undefined = 0, Checkpoint, Recompute, Recomputed };
-enum class CacheType { Undefined = 0, Uncached, Cached };
+enum class CacheType {
+  Undefined = 0,
+  OnChip    = 1,
+  OffChip   = 2,
+  // Deprecated.
+  Uncached = OnChip,
+  Cached   = OffChip
+};
 enum class ExecutionContext { Normal = 0, AccumulateOuterFragment };
 
 std::ostream &operator<<(std::ostream &, const RecomputeType &);

@@ -64,12 +64,12 @@ BOOST_AUTO_TEST_CASE(Pattern_transferBaseProperties) {
   Op::Settings op1Settings{graph, "test_op1"};
   op1Settings.scope         = Scope{} / "scope_1";
   op1Settings.recomputeType = RecomputeType::Checkpoint;
-  op1Settings.cacheType     = CacheType::Cached;
+  op1Settings.cacheType     = CacheType::OffChip;
 
   Op::Settings op2Settings{graph, "test_op2"};
   op2Settings.scope         = Scope{} / "scope_2";
   op2Settings.recomputeType = RecomputeType::Recompute;
-  op2Settings.cacheType     = CacheType::Uncached;
+  op2Settings.cacheType     = CacheType::OnChip;
 
   TestOp op1{opId, op1Settings};
   TestOp op2{opId, op2Settings};

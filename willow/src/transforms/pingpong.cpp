@@ -263,6 +263,185 @@ void PingPong::getModifiersInPhase(
   }
 }
 
+bool PingPong::isValidCacheType(const CacheType cacheType) const {
+  return (cacheType == CacheType::OffChip) || (cacheType == CacheType::OnChip);
+}
+
+bool PingPong::tooSmallForOffChip(const CacheSettings &cacheSettings,
+                                  Tensor *tensor) const {
+  return (tensor->info.nelms() < cacheSettings.minElementsForOffChip);
+}
+
+const char *PingPong::cacheTypeToStr(const CacheType cacheType) const {
+  const char *result = "";
+  switch (cacheType) {
+  case CacheType::Undefined: {
+    result = "Undefined";
+    break;
+  }
+  case CacheType::OffChip: {
+    result = "OffChip";
+    break;
+  }
+  case CacheType::OnChip: {
+    result = "OnChip";
+    break;
+  }
+  default: {
+    throw error(
+        "[PingPong] Unexpected value for cacheType in cacheTypeToStr ({})",
+        static_cast<int>(cacheType));
+  }
+  }
+
+  return result;
+}
+
+CacheType PingPong::determineCacheType(Graph &graph, Tensor *tensor) const {
+  auto &ir             = graph.getIr();
+  auto &sessionOptions = ir.getSessionOptions();
+  auto id              = tensor->id;
+  auto type            = tensor->tensorType();
+  auto producerOp      = tensor->getProducerUnsafe();
+  auto isActivation    = type == TensorType::ActGrad;
+  auto isWeight = type == TensorType::Variable && !tensor->isAcclTensor();
+  auto isOptimizerState =
+      type == TensorType::Variable && tensor->isAcclTensor();
+
+  // Result variable.
+  CacheType result      = CacheType::Undefined;
+  const char *logReason = "";
+
+  const auto overrideIt = sessionOptions.cacheSettingOverride.find(id);
+  bool haveCacheSettingOverride =
+      (overrideIt != sessionOptions.cacheSettingOverride.end());
+
+  if (haveCacheSettingOverride && isValidCacheType(overrideIt->second)) {
+
+    // If we have a valid cacheSettingOverride then the user is telling us
+    // explicitly where to put this tensor, so use that.
+
+    result    = overrideIt->second;
+    logReason = "cacheSettingOverride in SessionOptions";
+
+  } else {
+
+    // If we don't have an entry for the tensor in cacheSettingOverride then
+    // check to see if the operator that produces this tensor (if known) was
+    // created with an 'cacheOutput' attribute. If so, ue that. If not, see
+    // if the tensor's type has associated cache settings and use that. If
+    // all else fails, offload.
+
+    if (result == CacheType::Undefined && producerOp) {
+
+      // If a producing operator is known and it is set to have a cache type
+      // (and is not set to recompute), use that.
+
+      if (isValidCacheType(producerOp->settings.cacheType)) {
+        if (producerOp->settings.recomputeType == RecomputeType::Recompute) {
+          logging::transform::warn(
+              "[PingPong] Ignoring cache attribute on tensor {} because the "
+              "tensor is set to recompute",
+              id);
+        } else {
+          result    = producerOp->settings.cacheType;
+          logReason = "builder attribute";
+        }
+      }
+    }
+
+    if (result == CacheType::Undefined) {
+
+      // If we still don't have a cache setting and the tensor belongs to a
+      // group we have cache settings for, use those cache settings.
+
+      if (isActivation &&
+          isValidCacheType(sessionOptions.activationCacheSettings.cacheType)) {
+        // Use activation cache settings.
+        result    = sessionOptions.activationCacheSettings.cacheType;
+        logReason = "activationCacheSettings.cacheType in SessionOptions";
+      }
+
+      if (isWeight &&
+          isValidCacheType(sessionOptions.weightCacheSettings.cacheType)) {
+        // Use weight cache settings.
+        result    = sessionOptions.weightCacheSettings.cacheType;
+        logReason = "weightCacheSettings.cacheType in SessionOptions";
+      }
+
+      if (isOptimizerState &&
+          isValidCacheType(
+              sessionOptions.optimizerStateCacheSettings.cacheType)) {
+        // Use optimizer state cache settings.
+        result    = sessionOptions.optimizerStateCacheSettings.cacheType;
+        logReason = "weightCacheSettings.cacheType in SessionOptions";
+      }
+    }
+
+    if (result == CacheType::OffChip) {
+
+      // If we are planning to offload the tensor to off-chip memory but the
+      // tensor belongs to a group of tensors for which we have a cache setting
+      // that specifies a minimum size for offloading and this tensor is smaller
+      // than this minimum size, revert back to on-chip.
+
+      if (isActivation &&
+          tooSmallForOffChip(sessionOptions.activationCacheSettings, tensor)) {
+        result = CacheType::OnChip;
+        logReason =
+            "activationCacheSettings.minElementsForOffChip in SessionOptions";
+      }
+
+      if (isWeight &&
+          tooSmallForOffChip(sessionOptions.weightCacheSettings, tensor)) {
+        result = CacheType::OnChip;
+        logReason =
+            "weightCacheSettings.minElementsForOffChip in SessionOptions";
+      }
+
+      if (isOptimizerState &&
+          tooSmallForOffChip(sessionOptions.optimizerStateCacheSettings,
+                             tensor)) {
+        result    = CacheType::OnChip;
+        logReason = "optimizerStateCacheSettings.minElementsForOffChip in "
+                    "SessionOptions";
+      }
+    }
+
+    if (result != CacheType::OnChip && tensor->isOptimizerTensor()) {
+
+      // Don't offload optimizer tensors to off-chip memory.
+      result    = CacheType::OnChip;
+      logReason = "it being an optimizer tensor";
+    }
+
+    if (result != CacheType::OnChip && isConstOrCopyOfConst(tensor)) {
+
+      // Don't offload constant (or copy of constant) tensors to off-chip
+      // memory.
+      result    = CacheType::OnChip;
+      logReason = "it being an constant or copy-of-constant tensor";
+    }
+  }
+
+  // Finally, it's possible at this point nothing has set the result
+  // yet, in which case we default to CacheType::OffChip.
+
+  if (result == CacheType::Undefined) {
+    result    = CacheType::OnChip;
+    logReason = "absence of cache settings";
+  }
+
+  // Log the result.
+  logging::transform::debug(
+      "[PingPong] Determined tensor {} should use cache type {} (due to {})",
+      id,
+      cacheTypeToStr(result),
+      logReason);
+
+  return result;
+}
+
 void PingPong::getAliasedModifiersInPhase(
     Graph &graph,
     PingPongPhase phase,
@@ -316,14 +495,14 @@ bool PingPong::apply(Graph &graph) const {
   auto schedule = graph.getOpSchedule({});
 
   if (pass == 1 || pass == 2) {
-    // Set all variable tensors to cached.
-    // TODO T19644: Offer more refined scheme
-    for (TensorId id : graph.getTensors().getIds(TensorType::Variable)) {
-      auto tensor = graph.getTensors().get(id);
-      if (!tensor->cacheInfo.isCached()) {
-        logging::transform::debug("[PingPong] Set Variable {} to cached.", id);
-        tensor->cacheInfo.setCached(true);
-      }
+    for (Tensor *tensor : graph.getTensors().getOfType(TensorType::Variable)) {
+      // The mechanism by which we handle offloaded (off-chip) tensors of type
+      // TensorType::Variable is setting a flag in cacheInfo.
+      CacheType cacheType = determineCacheType(graph, tensor);
+      tensor->cacheInfo.setCached(cacheType == CacheType::OffChip);
+      logging::transform::debug("[PingPong] Set Variable {} to {}.",
+                                tensor->id,
+                                cacheTypeToStr(cacheType));
     }
   }
 
@@ -372,10 +551,6 @@ bool PingPong::apply(Graph &graph) const {
         if (op.second->opid == Onnx::CustomOperators::GetRandomSeed) {
           op.second->settings.cacheType = CacheType::Uncached;
           logging::transform::trace("[PingPong] {} set to Uncached",
-                                    op.second->debugName());
-        } else {
-          op.second->settings.cacheType = CacheType::Cached;
-          logging::transform::trace("[PingPong] {} set to Cached",
                                     op.second->debugName());
         }
       }
@@ -452,12 +627,8 @@ bool PingPong::apply(Graph &graph) const {
       // Cached everything not set by the user by default
       if (op->settings.cacheType == CacheType::Undefined) {
         if (op->opid == Onnx::CustomOperators::GetRandomSeed) {
-          op->settings.cacheType = CacheType::Uncached;
-          logging::transform::trace("[PingPong] {} set to Uncached",
-                                    op->debugName());
-        } else {
-          op->settings.cacheType = CacheType::Cached;
-          logging::transform::trace("[PingPong] {} set to Cached",
+          op->settings.cacheType = CacheType::OnChip;
+          logging::transform::trace("[PingPong] {} set to OnChip",
                                     op->debugName());
         }
       }
@@ -512,29 +683,10 @@ bool PingPong::apply(Graph &graph) const {
       Tensor *tensor  = tensors.get(id);
       auto producerOp = tensor->getProducerUnsafe();
 
-      // Phases are not adjacent or the tensor does not have a producer
-      // and is explicitly cached
-      // Recomputation is not enabled on the producer
-      // Cached is enabled on the producer
-      bool cached = false;
+      // Determine cache type for this tensor.
+      CacheType cacheType = determineCacheType(graph, tensor);
 
-      // Enabling factors
-      cached |=
-          ((producerOp &&
-            producerOp->settings.recomputeType != RecomputeType::Recompute &&
-            producerOp->settings.cacheType == CacheType::Cached));
-
-      // Weights that have isCached set
-      cached |= (!producerOp && tensor->cacheInfo.isCached());
-
-      // Disabling factors
-      // Do not cache optimizer tensors
-      cached &= !tensor->isOptimizerTensor();
-
-      // Do not cache copies of const tensors and const tensors
-      cached &= !isConstOrCopyOfConst(tensor);
-
-      if (!cached) {
+      if (cacheType == CacheType::OnChip) {
         // Do not process this tensor further
         continue;
       }

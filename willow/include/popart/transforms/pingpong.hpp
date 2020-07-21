@@ -54,6 +54,15 @@ private:
                                    unsigned num_stages) const;
 
 private:
+  bool isValidCacheType(const CacheType cacheType) const;
+
+  bool tooSmallForOffChip(const CacheSettings &cacheSettings,
+                          Tensor *tensor) const;
+
+  const char *cacheTypeToStr(const CacheType cacheType) const;
+
+  CacheType determineCacheType(Graph &graph, Tensor *tensor) const;
+
   int pass;
 };
 

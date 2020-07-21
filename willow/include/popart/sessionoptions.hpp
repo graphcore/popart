@@ -7,6 +7,8 @@
 #include <set>
 #include <string>
 
+#include <popart/op.hpp>
+
 namespace popart {
 
 // Stages of Ir construction where .dot files can be written
@@ -74,6 +76,24 @@ std::ostream &operator<<(std::ostream &, VirtualGraphMode);
 
 std::string toString(RecomputationType);
 std::ostream &operator<<(std::ostream &, RecomputationType);
+
+/**
+ * A structure containing user configuration for cache/offloading settings.
+ */
+struct CacheSettings {
+
+  CacheSettings() = default;
+  CacheSettings(CacheType cacheType_, int minElementsForOffChip_)
+      : cacheType{cacheType_}, minElementsForOffChip{minElementsForOffChip_} {}
+
+  CacheSettings &operator=(const CacheSettings &rhs) = default;
+
+  // The default cache behaviour for this tensor type.
+  CacheType cacheType;
+
+  // A minimum number of elements below which offloading won't be considered.
+  int minElementsForOffChip;
+};
 
 /**
  * A structure containing user configuration options for the Session class
@@ -356,6 +376,17 @@ struct SessionOptions {
   /// is supported. Warning, turning off these checks may cause undefined
   /// behaviour.
   bool strictOpVersions = true;
+
+  // Cache settings for activation/gradient tensors.
+  CacheSettings activationCacheSettings = CacheSettings{CacheType::OffChip, 2};
+  // Cache settings for weight tensors.
+  CacheSettings weightCacheSettings = CacheSettings{CacheType::OffChip, 2};
+  // Cache settings for optimizer state tensors.
+  CacheSettings optimizerStateCacheSettings =
+      CacheSettings{CacheType::OffChip, 2};
+
+  // Overriding cache type settings for specific tensors.
+  std::map<TensorId, CacheType> cacheSettingOverride;
 };
 
 } // namespace popart
