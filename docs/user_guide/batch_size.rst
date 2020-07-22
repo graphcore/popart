@@ -3,7 +3,7 @@ Glossary
 
 Sample
 ~~~~~~
-The smallest division of a data set. 
+The smallest division of a data set.
 
 Micro-batch size
 ~~~~~~~~~~~~~~~~
@@ -29,21 +29,22 @@ Accumulation can be thought of as doing replication on a single device.
 
 Batch size
 ~~~~~~~~~~
-This is defined as `micro-batch size * replication factor * accumulation factor`.
+This is defined as ``micro-batch size * replication factor * accumulation
+factor``.
 This is the number of samples per weight update.
 
 Batches per step
 ~~~~~~~~~~~~~~~~
-The number of batches to run in a single call to `Session::run`.
+The number of batches to run in a single call to ``Session::run``.
 
 Step size
 ~~~~~~~~~
-This is defined as `batch size * batches per step`.
+This is defined as ``batch size * batches per step``.
 This is the number of samples per step.
 
 Input data shape
 ~~~~~~~~~~~~~~~~
-Inputs to a `session.run()` call are read in with the assumption that data is
+Inputs to a ``session.run()`` call are read in with the assumption that data is
 arranged in the shape:
 
 [batches_per_step, accl_factor, repl_factor, micro_batch_size, *sample_shape]

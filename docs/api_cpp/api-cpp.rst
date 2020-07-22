@@ -59,6 +59,10 @@ Device manager
 
 .. doxygenenum:: popart::DeviceType
 
+.. doxygenenum:: popart::DeviceConnectionType
+
+.. doxygenenum:: popart::SyncPattern
+
 .. doxygenclass:: popart::DeviceInfo
    :members:
 

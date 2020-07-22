@@ -110,12 +110,15 @@ of an IPU device.  Similarly, the method ``createCpuDevice`` creates a simple Po
 See the `PopART C++ API Reference
 <https://www.graphcore.ai/docs/popart-c-api-reference>`_ for details.
 
-By default the functions ``acquireAvailableDevice`` and ``acquireDeviceById`` will attach the device immediately to the running process. It is possible to defer the device attachment to the point at which it is required by PopART by passing the `DeviceConnectionType.ON_DEMAND` option to the `DeviceManager`.
+By default the functions ``acquireAvailableDevice`` and ``acquireDeviceById``
+will attach the device immediately to the running process. You can pass the
+``DeviceConnectionType.OnDemand`` option to the ``DeviceManager`` to defer the
+device attachment until it is required by PopART.
 
 .. code-block:: python
 
   # Acquire four IPUs on demand
-  connectionType=DeviceConnectionType.ON_DEMAND
+  connectionType=DeviceConnectionType.OnDemand
   dev = popart.DeviceManager().acquireAvailableDevice(4, connectionType=connectionType)
 
 Executing a session
