@@ -392,6 +392,110 @@ def test_convolution_5(op_tester):
     op_tester.run(init_builder1, reference, step_type='train')
 
 
+def test_convolution_3d(op_tester):
+    batch_size = 1
+    chans_in = 2
+    chans_out = 3
+    size = 4
+    kernel_size = 3
+    padding = 1
+
+    data = np.ones([batch_size, chans_in, size, size, size], dtype=np.float32)
+    filt = np.ones(
+        [chans_out, chans_in, kernel_size, kernel_size, kernel_size],
+        dtype=np.float32)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(data)
+        f = builder.addInputTensor(filt)
+        o = builder.aiOnnx.conv([d, f],
+                                dilations=[1, 1, 1],
+                                pads=[padding] * 6,
+                                strides=[1, 1, 1])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        d = torch.tensor(data)
+        conv = torch.nn.Conv3d(chans_in,
+                               chans_out,
+                               kernel_size,
+                               padding=[padding] * 3)
+        conv.weight.data = torch.tensor(filt)
+        conv.bias.data = torch.tensor([0.0 for i in range(chans_out)])
+        o = conv(d)
+        return [o]
+
+    op_tester.run(init_builder, reference, step_type='infer')
+
+
+def test_convolution_3d_2(op_tester):
+    batch_size = 1
+    size = 4
+    kernel_size = 3
+    padding = 1
+    groups = 5
+    # chans_in/out must be divisible by groups
+    chans_in = groups * 11
+    chans_out = groups * 7
+
+    data = np.random.rand(batch_size, chans_in, size, size,
+                          size).astype(np.float32)
+
+    filt = np.random.rand(chans_out, chans_in // groups, kernel_size,
+                          kernel_size, kernel_size).astype(np.float32)
+
+    def init_builder0(builder):
+        d = builder.addInputTensor(data)
+        f = builder.addInputTensor(filt)
+        o = builder.aiOnnx.conv([d, f],
+                                dilations=[1, 1, 1],
+                                pads=[padding] * 6,
+                                strides=[1, 1, 1],
+                                group=groups)
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + d,
+            popart.reservedGradientPrefix() + o
+        ]
+
+    def init_builder1(builder):
+        d = builder.addInputTensor(data)
+        f = builder.addInitializedInputTensor(filt)
+        o = builder.aiOnnx.conv([d, f],
+                                dilations=[1, 1, 1],
+                                pads=[padding] * 6,
+                                strides=[1, 1, 1],
+                                group=groups)
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + d,
+            popart.reservedGradientPrefix() + o
+        ]
+
+    def reference(ref_data):
+        d = torch.tensor(data, requires_grad=True)
+        conv = torch.nn.Conv3d(chans_in,
+                               chans_out,
+                               kernel_size,
+                               padding=[padding] * 3,
+                               groups=groups)
+        conv.weight.data = torch.tensor(filt)
+        conv.bias.data = torch.tensor([0.0 for i in range(chans_out)])
+        o = conv(d)
+        d__o = ref_data.getOutputTensorGrad(0)
+        o.backward(torch.tensor(d__o))
+        dg = d.grad
+
+        return [o, dg, None]
+
+    op_tester.setPatterns(['ConvDataGrad'], enableRuntimeAsserts=False)
+    op_tester.run(init_builder0, reference, step_type='train')
+    op_tester.run(init_builder1, reference, step_type='train')
+
+
 def test_convolution_default_infer(op_tester):
     batch_size = 1
     chans_in = 2
@@ -1392,11 +1496,7 @@ def test_pad11(op_tester):
                   })
 
 
-def _test_pad(op_tester,
-              data,
-              lower_padding,
-              upper_padding,
-              mode,
+def _test_pad(op_tester, data, lower_padding, upper_padding, mode,
               pad_value=0):
     def init_builder(builder):
         i1 = builder.addInputTensor(data)

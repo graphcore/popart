@@ -91,7 +91,7 @@ poplar::Tensor MultiConvBaseOpx::createInput(InIndex index,
     // So if we want to support the case where the user's input shape results
     // in a 4D weight tensor, then we need to squeeze the 0th dimension from
     // the tensor returned from createWeights:
-    if (input.rank() == 5 && op_p->inRank(index) == 4) {
+    if (input.rank() == op_p->inRank(index) + 1) {
       // Check that the shapes are compatible.
       // They should be related as shown below:
       //   IR shape :            [        a,        b, c, d]
@@ -199,7 +199,7 @@ void MultiConvWeightsGradBaseOpx::grow(poplar::program::Sequence &prog) const {
     // match the Ir tensor shape
     auto fwdShape =
         op.outInfo(MultiConvWeightsGradBaseOp::getOutIndex(i)).shape_szt();
-    if (outTensors[i].rank() == 5 && fwdShape.size() == 4) {
+    if (outTensors[i].rank() == fwdShape.size() + 1) {
       auto wGradShape = outTensors[i].shape();
       if (std::equal(
               wGradShape.begin() + 2, wGradShape.end(), fwdShape.begin() + 1) &&
