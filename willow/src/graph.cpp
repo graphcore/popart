@@ -188,15 +188,9 @@ void Graph::constructFromOnnxGraph(
 }
 
 Op *Graph::growFromNode(const Node &node) {
-  OpId opId = moveIntoGraph(addOp(node));
-  connectInputs(node, opId);
-  connectOutputs(node, opId);
-
-  // finally, set the output tensor info for the output
-  // tensors, and any other Op specific class variables
-  Op *fromNodeOp = ops.at(opId).get();
-  fromNodeOp->setup();
-  return fromNodeOp;
+  Op *op = OpManager::createOpInGraph(node, *this);
+  op->setup();
+  return op;
 }
 
 Scope Graph::getScope() const { return Scope() / id.str(); }
@@ -265,36 +259,6 @@ void Graph::connectInputsFromInputMapWrapper(const InputMapWrapper &in,
 void Graph::connectOutputsFromOutputMapWrapper(const OutputMapWrapper &out,
                                                OpId opid) {
   connectOutputs(out, opid);
-}
-
-std::unique_ptr<Op> Graph::addOp(const Node &node) {
-  std::vector<TensorId> inputIds;
-  for (int i = 0; i < node.input_size(); i++) {
-    inputIds.push_back(node.input(i));
-  }
-
-  int version = ir.getOpSetVersionFromModel(node.domain());
-
-  std::unique_ptr<Op> p = OpManager::createOp(node.domain(),
-                                              node.op_type(),
-                                              version,
-                                              *this,
-                                              node.name(),
-                                              getScope(),
-                                              node.attribute(),
-                                              inputIds);
-  if (p != nullptr)
-    return p;
-  else {
-    if (node.op_type() == Onnx::AiOnnx::OpSet9::Constant.type) {
-      throw internal_error("Constant Ops are not to be added");
-    } else {
-      throw error("No class for {}.{}:{}",
-                  (node.domain() == "" ? Domain::ai_onnx : node.domain()),
-                  node.op_type(),
-                  version);
-    }
-  }
 }
 
 void Graph::eraseOp(OpId opid) {

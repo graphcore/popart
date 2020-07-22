@@ -70,11 +70,13 @@ public:
   OpCreatorInfo(const OperatorIdentifier &_opid,
                 const Op::Settings &_settings,
                 const Attributes &_attributes,
-                const std::vector<TensorId> &_inputIds)
+                const std::vector<TensorId> &_inputIds,
+                const std::vector<TensorId> &_outputIds)
       : opid(_opid), settings(_settings), attributes(_attributes),
-        inputIds(_inputIds) {}
+        inputIds(_inputIds), outputIds(_outputIds) {}
 
   const std::vector<TensorId> &getInputIds() const;
+  const std::vector<TensorId> &getOutputIds() const;
   Tensor *getInputTensor(int index) const;
   TensorData *getInputTensorData(int index) const;
   TensorInfo &getInputTensorInfo(int index) const;
@@ -99,41 +101,97 @@ public:
     }
   }
 
+  template <typename T> T getInputScalarValue(int index) const {
+    std::vector<T> values = getInputData<T>(index);
+    if (values.size() != 1) {
+      throw error(
+          "Expected input at index {} to has a shape of [1]. It has shape [{}]",
+          index,
+          values.size());
+    }
+    return values.at(0);
+  }
+
+  template <typename T> T getInputScalarValue(int index, T defaultValue) const {
+    if (inputIds.size() > index && inputIds.at(index) != "") {
+      std::vector<T> values = getInputData<T>(index);
+      if (values.size() != 1) {
+        throw error("Expected input at index {} to has a shape of [1]. It has "
+                    "shape [{}]",
+                    index,
+                    values.size());
+      }
+      return values.at(0);
+    } else {
+      return defaultValue;
+    }
+  }
+
 private:
   const std::vector<TensorId> &inputIds;
+  const std::vector<TensorId> &outputIds;
 };
 
 class OpManager {
 
 public:
+  // The basic op factory function is responsible for creating and returning a
+  // unique_ptr to an instance of an op.
   using OpFactoryFunc =
       std::function<std::unique_ptr<Op>(const OpCreatorInfo &)>;
 
 #ifndef DEPRECATE_LEGACY_OP_FACTORY
+  // This has the same role as the OpFactoryFunction, but is an old function
+  // signature. The signature was changed to OpCreatorInfo, as OpCreatorInfo
+  // could be extended without requiring changes to OpFactoryFunction.
   using LegacyOpFactoryFunc =
       std::function<std::unique_ptr<Op>(const OperatorIdentifier &_opid,
                                         const Op::Settings &settings,
                                         const Attributes &_attr)>;
 #endif
 
-  struct OpInfo {
-    OpInfo(const OperatorIdentifier &_id)
-        : isPublic(false), id(_id), f1(nullptr), details({}) {}
+  // The complex op factory function is responsible for creating an op, adding
+  // it to the graph, and connecting the inputs and outputs. Graph could have
+  // been an attribute of OpCreatorInfo, but having the two factory funcs with
+  // the same arguments and difference return types was causing errors like
+  // "call to constructor of 'OpCreator<...>' is ambiguous".
+  using ComplexOpFactoryFunc =
+      std::function<Op *(const OpCreatorInfo &, Graph &graph)>;
+
+  class OpInfo {
+  public:
+    OpInfo(const OperatorIdentifier &_id,
+           bool _isPublic,
+           const OpDefinition &_details,
+           OpFactoryFunc _f1)
+        : isPublic(_isPublic), id(_id), details(_details), simpleFactory(_f1),
+          complexFactory(BasicOptional<ComplexOpFactoryFunc>()) {}
+
+    OpInfo(const OperatorIdentifier &_id,
+           bool _isPublic,
+           const OpDefinition &_details,
+           ComplexOpFactoryFunc _f2)
+        : isPublic(_isPublic), id(_id), details(_details),
+          simpleFactory(BasicOptional<OpFactoryFunc>()), complexFactory(_f2) {}
+
     // Does popart expose the Op in its public API ?
     bool isPublic;
     const OperatorIdentifier id;
-    OpFactoryFunc f1;
     OpDefinition details;
+
+    OpFactoryFunc &getSimpleFactory();
+    ComplexOpFactoryFunc &getComplexFactory();
+    bool hasComplexFactory();
+
+  private:
+    BasicOptional<OpFactoryFunc> simpleFactory;
+    BasicOptional<ComplexOpFactoryFunc> complexFactory;
   };
 
   OpManager() = default;
 
 public:
-  // Registration method
-  static void registerOp(const OperatorIdentifier &opid,
-                         const OpDefinition &details,
-                         bool isPublic,
-                         OpFactoryFunc func);
+  static void registerOp(const OpInfo &opInfo);
 
   static Attributes
   getAttributesFromAnyMap(std::map<std::string, popart::any> attributes);
@@ -146,16 +204,20 @@ public:
            const OpType &type,
            const int opsetVersion,
            Graph &graph,
-           const std::string &name               = "",
-           const Scope &scope                    = {},
-           const Attributes &_attr               = {},
-           const std::vector<TensorId> &inputIds = {});
+           const std::string &name                = "",
+           const Scope &scope                     = {},
+           const Attributes &_attr                = {},
+           const std::vector<TensorId> &inputIds  = {},
+           const std::vector<TensorId> &outputIds = {});
 
   // creates a op with matches the opid
   static std::unique_ptr<Op> createOp(const OperatorIdentifier &opid,
                                       Graph &graph,
                                       const std::string &name = "",
                                       const Attributes &_attr = {});
+
+  // Creates an op from the onnx node and adds it to the graph.
+  static Op *createOpInGraph(const Node &node, Graph &graph);
 
   // Get the list of registered op's, should this return an OperatorIdentifier
   static const std::vector<OperatorIdentifier>
@@ -175,9 +237,32 @@ private:
                              const Scope &scope,
                              const Attributes &_attr,
                              const std::vector<TensorId> &inputIds,
+                             const std::vector<TensorId> &outputIds,
                              OpFactoryFunc func);
+
+  Op *create(const OperatorIdentifier &opid,
+             Graph &graph,
+             const std::string &name,
+             const Scope &scope,
+             const Attributes &_attr,
+             const std::vector<TensorId> &inputIds,
+             const std::vector<TensorId> &outputIds,
+             ComplexOpFactoryFunc func);
+
   // Singleton
   static OpManager &getInstance();
+
+  // Search opMap for the OpInfo with the highest version that is less than or
+  // equal to the opsetVersion. This method will return null if a suitable op is
+  // not found.
+  OpInfo *
+  findOpInfo(const OpDomain &domain, const OpType &type, int opsetVersion);
+
+  // Check the version of `opInfo` and make sure it matches the version of the
+  // op found in the onnx opset of `opsetVersion`.
+  void checkOpVersionAgainstOpset(const OpInfo *opInfo,
+                                  int opsetVersion,
+                                  Graph &graph);
 
   // Map of domain/type to the list of supported versions and the opInfo
   std::map<std::pair<OpDomain, OpType>, std::map<int, OpInfo>> opMap;
@@ -187,23 +272,14 @@ private:
 // OpManager
 
 template <class OP> class OpCreator {
-
-  void registerOp(const OperatorIdentifier &opid,
-                  const OpDefinition &details,
-                  bool isPublic) {
-    OpManager::registerOp(opid,
-                          details,
-                          isPublic,
-                          [](const OpCreatorInfo &info) -> std::unique_ptr<Op> {
-                            return std::unique_ptr<OP>(
-                                new OP(info.opid, info.settings));
-                          });
-  }
-
 public:
   OpCreator(const OpDefinitions &opDefinitions, bool isPublic = true) {
     for (const auto &version : opDefinitions) {
-      registerOp(version.first, version.second, isPublic);
+      OpManager::OpFactoryFunc func =
+          [](const OpCreatorInfo &info) -> std::unique_ptr<Op> {
+        return std::unique_ptr<OP>(new OP(info.opid, info.settings));
+      };
+      OpManager::registerOp({version.first, isPublic, version.second, func});
     }
   }
 
@@ -211,7 +287,7 @@ public:
             OpManager::OpFactoryFunc func,
             bool isPublic = true) {
     for (const auto &version : opDefinitions) {
-      OpManager::registerOp(version.first, version.second, isPublic, func);
+      OpManager::registerOp({version.first, isPublic, version.second, func});
     }
   }
 
@@ -231,10 +307,18 @@ public:
     };
 
     for (const auto &version : opDefinitions) {
-      OpManager::registerOp(version.first, version.second, isPublic, wrapper);
+      OpManager::registerOp({version.first, isPublic, version.second, wrapper});
     }
   }
 #endif
+
+  OpCreator(const OpDefinitions &opDefinitions,
+            OpManager::ComplexOpFactoryFunc func,
+            bool isPublic = true) {
+    for (const auto &version : opDefinitions) {
+      OpManager::registerOp({version.first, isPublic, version.second, func});
+    }
+  }
 };
 
 } // namespace popart

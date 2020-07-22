@@ -58,6 +58,9 @@ public:
   // and returns the Op's OpId
   OpId moveIntoGraph(std::unique_ptr<Op> op);
 
+  // Create an op in this graph.
+  template <typename OP, typename... Args> Op *createOp(Args &&... args);
+
   std::vector<const Graph *> getCalledGraphs() const;
 
   // called from growFromNode and many other places where Ops created
@@ -69,8 +72,6 @@ public:
 
   void connectInputsFromInputMapWrapper(const InputMapWrapper &in, OpId id);
   void connectOutputsFromOutputMapWrapper(const OutputMapWrapper &, OpId opId);
-
-  std::unique_ptr<Op> addOp(const Node &node);
 
   void eraseOp(OpId id);
 
@@ -182,6 +183,12 @@ void Graph::connectInputs(const T &inContainer, OpId opId) {
       op->connectInTensor(inIndex, scopedName);
     }
   }
+}
+
+template <typename OP, typename... Args> Op *Graph::createOp(Args &&... args) {
+  auto ptr  = std::unique_ptr<Op>(new OP(std::forward<Args>(args)...));
+  auto opId = moveIntoGraph(std::move(ptr));
+  return getOp(opId);
 }
 
 template <typename T>

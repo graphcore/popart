@@ -32,7 +32,7 @@ BOOST_AUTO_TEST_CASE(OpManager_Test1) {
   BOOST_CHECK(a != nullptr);
 
   // This will fail as we do not have the custom op
-  auto c = OpManager::createOp({"ai_simon", "MyAdd", 2}, ir.getMainGraph());
+  auto c = OpManager::createOp({"ai_foo", "MyAdd", 2}, ir.getMainGraph());
   BOOST_CHECK(c == nullptr);
 
   // register the new op, (but it is just an AddOp)
@@ -44,22 +44,22 @@ BOOST_AUTO_TEST_CASE(OpManager_Test1) {
            {{"output", {{DataType::FLOAT, DataType::FLOAT16}}}}),
        OpDefinition::Attributes({})});
 
-  OpManager::registerOp({"ai_simon", "MyAdd", 2},
-                        opDef,
-                        false,
-                        [](const OpCreatorInfo &info) -> std::unique_ptr<Op> {
-                          return std::unique_ptr<AddOp>(
-                              new AddOp(info.opid, info.settings));
-                        });
+  OpManager::registerOp({{"ai_foo", "MyAdd", 2},
+                         false,
+                         opDef,
+                         [](const OpCreatorInfo &info) -> std::unique_ptr<Op> {
+                           return std::unique_ptr<AddOp>(
+                               new AddOp(info.opid, info.settings));
+                         }});
 
   // Now we do...
-  auto b = OpManager::createOp({"ai_simon", "MyAdd", 2}, ir.getMainGraph());
+  auto b = OpManager::createOp({"ai_foo", "MyAdd", 2}, ir.getMainGraph());
   BOOST_CHECK(b != nullptr);
 
   // test that we can query for the new operation
   auto ops = OpManager::getSupportedOperations(true);
   auto it  = std::find(
-      ops.begin(), ops.end(), OperatorIdentifier("ai_simon", "MyAdd", 2));
+      ops.begin(), ops.end(), OperatorIdentifier("ai_foo", "MyAdd", 2));
   BOOST_CHECK(it != ops.end());
 }
 
@@ -84,13 +84,13 @@ BOOST_AUTO_TEST_CASE(OpManager_Test2) {
            {{"output", {{DataType::FLOAT, DataType::FLOAT16}}}}),
        OpDefinition::Attributes({})});
 
-  OpManager::registerOp({"ai_simon", "MyAdd2", 1},
-                        opDef,
-                        false,
-                        [](const OpCreatorInfo &info) -> std::unique_ptr<Op> {
-                          return std::unique_ptr<AddOp>(
-                              new AddOp(info.opid, info.settings));
-                        });
+  OpManager::registerOp({{"ai_foo", "MyAdd2", 1},
+                         false,
+                         opDef,
+                         [](const OpCreatorInfo &info) -> std::unique_ptr<Op> {
+                           return std::unique_ptr<AddOp>(
+                               new AddOp(info.opid, info.settings));
+                         }});
 
   auto builder = Builder::create();
   auto aiOnnx  = builder->aiOnnxOpset9();
@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE(OpManager_Test2) {
   auto input1 = builder->addInputTensor(shape);
   auto input2 = builder->addInputTensor(shape);
 
-  auto customOut = builder->customOp({"ai_simon", "MyAdd2", 1},
+  auto customOut = builder->customOp({"ai_foo", "MyAdd2", 1},
                                      1,
                                      {input1, input2},
                                      1,
@@ -130,7 +130,7 @@ BOOST_AUTO_TEST_CASE(OpManager_Test2) {
                   .enableRuntimeAsserts(false)});
 
   // Check the ir
-  BOOST_CHECK(ir.opsOfType({"ai_simon", "MyAdd2", 1}).size() == 1);
+  BOOST_CHECK(ir.opsOfType({"ai_foo", "MyAdd2", 1}).size() == 1);
 }
 
 // Tests that the input tensor ids are available to the op factory func.
@@ -151,25 +151,25 @@ BOOST_AUTO_TEST_CASE(OpManager_Test3) {
   bool factory_func_executed = false;
 
   OpManager::registerOp(
-      {"ai_test", "MyAdd2", 1},
-      opDef,
-      false,
-      // Check that the input ids have been passed to the ops factory function.
-      [&factory_func_executed](
-          const OpCreatorInfo &info) -> std::unique_ptr<Op> {
-        std::cout << "In factory func for MyAdd2.\nInput ids are:\n";
-        auto &inputIds = info.getInputIds();
-        for (auto &id : inputIds) {
-          std::cout << "  " << id << "\n";
-        }
+      {{"ai_test", "MyAdd2", 1},
+       false,
+       opDef,
+       // Check that the input ids have been passed to the ops factory function.
+       [&factory_func_executed](
+           const OpCreatorInfo &info) -> std::unique_ptr<Op> {
+         std::cout << "In factory func for MyAdd2.\nInput ids are:\n";
+         auto &inputIds = info.getInputIds();
+         for (auto &id : inputIds) {
+           std::cout << "  " << id << "\n";
+         }
 
-        BOOST_CHECK_EQUAL(inputIds.size(), 2);
-        BOOST_CHECK_EQUAL(inputIds.at(0), "foo");
-        BOOST_CHECK_EQUAL(inputIds.at(1), "bar");
-        factory_func_executed = true;
+         BOOST_CHECK_EQUAL(inputIds.size(), 2);
+         BOOST_CHECK_EQUAL(inputIds.at(0), "foo");
+         BOOST_CHECK_EQUAL(inputIds.at(1), "bar");
+         factory_func_executed = true;
 
-        return std::unique_ptr<AddOp>(new AddOp(info.opid, info.settings));
-      });
+         return std::unique_ptr<AddOp>(new AddOp(info.opid, info.settings));
+       }});
 
   auto builder = Builder::create();
   auto aiOnnx  = builder->aiOnnxOpset9();

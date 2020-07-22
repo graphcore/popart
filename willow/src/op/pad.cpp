@@ -1,6 +1,7 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <memory>
+#include <popart/graph.hpp>
 #include <popart/op/pad.hpp>
 #include <popart/op/padgrad.hpp>
 #include <popart/opmanager.hpp>
@@ -329,29 +330,28 @@ static OpCreator<PadOp> pad2Creator(
 
 static OpCreator<PadOp> pad11Creator(
     OpDefinitions({{Onnx::Operators::Pad_11, padOpV11Def}}),
-    [](const OpCreatorInfo &info) -> std::unique_ptr<Op> {
+    [](const OpCreatorInfo &info, Graph &graph) {
       int padsInputIndex  = 1;
       int valueInputIndex = 2;
 
       std::vector<int64_t> pads = info.getInputData<int64_t>(padsInputIndex);
-      float value               = 0.0;
-      if (info.getInputIds().at(valueInputIndex) != "") {
-        std::vector<float> values = info.getInputData<float>(valueInputIndex);
-        if (values.size() != 1) {
-          throw error(
-              "Expected only 1 value in 'constant_value' input, got {}'",
-              values.size());
-        }
-        value = values.at(0);
-      }
+      float value = info.getInputScalarValue<float>(valueInputIndex, 0.0);
 
       std::string mode = "constant";
       if (info.attributes.hasAttribute("mode")) {
         mode = info.attributes.getAttribute<Attributes::String>("mode");
       }
 
-      return std::unique_ptr<Op>(
-          new PadOp(info.opid, pads, value, mode, info.settings));
+      // Create the op in the graph.
+      Op *op =
+          graph.createOp<PadOp>(info.opid, pads, value, mode, info.settings);
+
+      // Connect only the first of the two inputs.
+      op->connectInTensor(PadOp::getInIndex(), info.getInputIds().at(0));
+      op->createAndConnectOutTensor(PadOp::getOutIndex(),
+                                    info.getOutputIds().at(0));
+
+      return op;
     },
     true);
 } // namespace
