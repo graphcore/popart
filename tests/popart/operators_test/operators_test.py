@@ -1618,7 +1618,32 @@ def test_argmin_keepdims(op_tester):
     op_tester.run(init_builder, reference, 'infer')
 
 
-def _test_argmax(op_tester, data, axis, keepdims):
+def test_argmin_negative_axis(op_tester):
+    d1 = np.random.rand(5, 7, 11, 13).astype(np.float32)
+    axis = -1
+    keepdims = 1
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.argmin([i1], axis, keepdims, "test_argmin")
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        result = np.argmin(d1, axis=axis)
+        result = np.expand_dims(result, axis)
+        return [result.astype(np.int32)]
+
+    op_tester.run(init_builder,
+                  reference,
+                  'infer',
+                  opsets={
+                      "ai.onnx": 11,
+                      "ai.graphcore": 1
+                  })
+
+
+def _test_argmax(op_tester, data, axis, keepdims, opsets):
     def init_builder(builder):
         i1 = builder.addInputTensor(data)
         o = builder.aiOnnx.argmax([i1], axis, keepdims, "test_argmax")
@@ -1631,15 +1656,21 @@ def _test_argmax(op_tester, data, axis, keepdims):
             result = np.expand_dims(result, axis)
         return [result.astype(np.int32)]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, 'infer', opsets=opsets)
 
 
 def test_argmax_2d(op_tester):
     data = np.random.rand(5, 6).astype(np.float32)
-    _test_argmax(op_tester, data, 0, 1)
-    _test_argmax(op_tester, data, 0, 0)
-    _test_argmax(op_tester, data, 1, 1)
-    _test_argmax(op_tester, data, 1, 0)
+    opsets = {"ai.onnx": 9, "ai.graphcore": 1}
+    _test_argmax(op_tester, data, 0, 1, opsets)
+    _test_argmax(op_tester, data, 0, 0, opsets)
+    _test_argmax(op_tester, data, 1, 1, opsets)
+    _test_argmax(op_tester, data, 1, 0, opsets)
+
+    # Test negative axis index for onnx opset 11
+    opsets = {"ai.onnx": 11, "ai.graphcore": 1}
+    _test_argmax(op_tester, data, -1, 0, opsets)
+    _test_argmax(op_tester, data, -2, 0, opsets)
 
 
 def test_argmax_no_keepdims(op_tester):

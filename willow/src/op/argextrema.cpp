@@ -48,17 +48,34 @@ void ArgExtremaOp::validateAxis() const {
                 str());
   }
 
-  if (shape.size() <= axis) {
+  if (shape.size() <= getAxis()) {
     throw error("Cannot compute ArgExtremaOp on axis {} when input rank is {}, "
                 "invalid ArgExtremaOp {}.",
                 axis,
                 shape.size(),
                 str());
   }
+
+  // From the onnx spec:
+  //   Accepted range is [-r, r-1] where r = rank(data).
+  if (axis > static_cast<int64_t>(shape.size()) - 1 ||
+      axis < -static_cast<int64_t>(shape.size())) {
+    throw error("Axis {} is out of acceptable range [{}, {}]",
+                axis,
+                -static_cast<int64_t>(shape.size()),
+                shape.size() - 1);
+  }
 }
 
 int64_t ArgExtremaOp::getKeepDims() const { return keepdims; }
 
-int64_t ArgExtremaOp::getAxis() const { return axis; }
+int64_t ArgExtremaOp::getAxis() const {
+  // Onnx 11 supports negative axis indexing for argmin and argmax.
+  if (axis >= 0) {
+    return axis;
+  } else {
+    return inInfo(getInIndex()).rank() + axis;
+  }
+}
 
 } // namespace popart
