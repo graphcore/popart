@@ -3289,7 +3289,9 @@ void Ir::applyInplacePattern(Graph &graph) {
 
       // finally, we check if there are cycles with the new topological
       // constraints
-      if (!graph.isSchedulable(newTopoCons)) {
+      const bool isPingPong =
+          (userOptions.virtualGraphMode == VirtualGraphMode::PingPong);
+      if (!graph.isSchedulable(newTopoCons, isPingPong)) {
         std::ostringstream oss;
         oss << "[Inplacing] The new topological constraints prevent Op "
             << op->id << " from being inplaced, as they would created a cycle ";

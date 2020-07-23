@@ -162,6 +162,21 @@ def test_onchip_memory(tmpdir):
     check_model(normal, onchip_opt_state)
 
 
+@tu.requires_ipu
+def test_inplacing_pingpong_constraints(tmpdir):
+    # This used to fail, see T23985
+    run_model(tmpdir,
+              'pingpong.onnx',
+              enable_pingpong=True,
+              num_layers=5,
+              optimizer=popart.SGD({
+                  "defaultLearningRate": (0.1, True),
+                  "defaultMomentum": (0.0, False),
+                  "defaultWeightDecay": (0.0, False),
+                  "defaultDampening": (0.0, True)
+              }))
+
+
 # Check that 2 batches on 1 replica or 1 batch per replica on 2 replicas
 # results in the same updated weight with SGD0
 @tu.requires_ipu
