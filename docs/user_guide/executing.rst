@@ -219,20 +219,20 @@ compilation and execution.
 
 Logging information is generated from the following modules:
 
-.. TODO: get descriptions of the remaining modules
-
-=========  =================================
-session	   The ONNX session (the PopART API)
-ir	       The intermediate representation
-devicex	   The poplar backend
-transform
-pattern
-builder
-op
-opx
-ces
-python
-=========  =================================
+=========   =================================
+popart      Generic PopART module, if no module specified
+session     The ONNX session (the PopART API)
+ir          The intermediate representation
+devicex     The Poplar backend
+transform   The transform module
+pattern     The pattern module
+builder     The builder module
+op          The op module
+opx         The opx module
+ces         The constant expression module
+python      The Python module
+none        An unidentified module
+=========   =================================
 
 
 The logging levels, in decreasing verbosity, are shown below.
