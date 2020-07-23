@@ -175,3 +175,27 @@ def test_stepio_callbackinput(tmpdir):
 
     expected_result = i1_data + i2_data
     assert (np.allclose(anchors[o], expected_result))
+
+
+def test_steio_correct_inputs():
+    builder = popart.Builder()
+    in0 = builder.addInputTensor("FLOAT", [4])
+    sqrt = builder.aiOnnx.sqrt([in0])
+
+    data0 = np.array([1, 4, 9, 16]).astype(np.float32)
+
+    s = popart.InferenceSession(
+        fnModel=builder.getModelProto(),
+        deviceInfo=popart.DeviceManager().createCpuDevice(),
+        dataFlow=popart.DataFlow(1, [sqrt]))
+    s.prepareDevice()
+    anchors = s.initAnchorArrays()
+
+    stepio0 = popart.PyStepIO({in0: data0, "foo": np.zeros(4)}, anchors)
+    stepio1 = popart.PyStepIO({in0: data0, sqrt: np.zeros(4)}, anchors)
+    # s.run(stepio0)  # fails, as expected
+    with pytest.raises(popart.popart_exception) as e_info:
+        s.run(stepio1)
+        assert e_info.value.args[0].startswith(
+            f"The tensor '{sqrt}'  has been provided as one of the inputs to the stepIO"
+        )

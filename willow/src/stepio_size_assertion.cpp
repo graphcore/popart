@@ -30,6 +30,15 @@ void CorrectnessAsserter::throwMissingInput(const TensorId &id) const {
   throw error(oss.str());
 }
 
+void CorrectnessAsserter::throwIncorrectInput(const TensorId &id) const {
+  std::ostringstream oss;
+  oss << "The tensor '" << id
+      << "' has been provided as one of the inputs to the stepIO, but it is "
+         "not registered as one of the inputs to the model. Please check this "
+         "tensor and your stepIO.";
+  throw error(oss.str());
+}
+
 void CorrectnessAsserter::throwBadOutputSize(const TensorId &id,
                                              int64_t expected,
                                              int64_t nElms,

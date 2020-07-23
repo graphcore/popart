@@ -37,6 +37,9 @@ public:
         std::ostringstream oss;
         if (nElms != expected) {
           throwBadInputSize(id, expected, nElms);
+        } else if (std::find(onnxIns.cbegin(), onnxIns.cend(), id) ==
+                   onnxIns.cend()) {
+          throwIncorrectInput(id);
         }
       } else if (std::find(onnxIns.cbegin(), onnxIns.cend(), id) !=
                  onnxIns.cend()) {
@@ -87,6 +90,7 @@ private:
                                        AnchorReturnType art) const;
 
   [[noreturn]] void throwMissingInput(const TensorId &) const;
+  [[noreturn]] void throwIncorrectInput(const TensorId &) const;
   [[noreturn]] void throwMissingOutput(const TensorId &) const;
 
   void warnOfUnunsedInput(const TensorId &) const;
