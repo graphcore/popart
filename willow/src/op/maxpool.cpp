@@ -23,6 +23,10 @@ void MaxPoolOp::setup0() {
   if (storageOrder != 0) {
     throw error("storage_order != 0, not supported");
   }
+
+  if (ceilMode != 0) {
+    throw error("ceil_mode != 0, not supported");
+  }
 }
 
 void MaxPoolOp::setSpatialK() {
@@ -177,8 +181,22 @@ static OpCreator<MaxPoolOp> maxPoolOpCreator(
       std::vector<int64_t> kernelShape =
           info.attributes.getAttribute<Attributes::Ints>("kernel_shape", {});
 
+      if (info.opid.version >= 10) {
+        // opset 10 introduced the dilations parameter, but poplibs pooling does
+        // not appear to support this.
+        std::vector<int64_t> dilations =
+            info.attributes.getAttribute<Attributes::Ints>("dilations", {});
+        for (auto d : dilations) {
+          if (d != 1) {
+            throw error("MaxPool has dilations {}. Dilations of value other "
+                        "than 1 are currently not supported.",
+                        dilations);
+          }
+        }
+      }
+
       return std::unique_ptr<Op>(new MaxPoolOp(
-          info.opid, kernelShape, ceilMode, storageOrder, receptiveSettings));
+          info.opid, kernelShape, storageOrder, ceilMode, receptiveSettings));
     },
     true);
 } // namespace

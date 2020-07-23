@@ -298,6 +298,67 @@ def test_maxpool_grad(op_tester):
     op_tester.run(init_builder, reference, step_type='train')
 
 
+def test_maxpool10_dilations(op_tester):
+    d1 = np.random.rand(1, 1, 16, 16).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        (o, ) = builder.aiOnnxOpset10.maxpool([i1],
+                                              num_outputs=1,
+                                              kernel_shape=[2, 2],
+                                              ceil_mode=0,
+                                              dilations=[2, 2],
+                                              pads=[0, 0, 0, 0],
+                                              storage_order=0,
+                                              strides=[2, 2])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        t1 = torch.tensor(d1, requires_grad=True)
+        avgpool = torch.nn.MaxPool2d(kernel_size=2,
+                                     stride=2,
+                                     padding=0,
+                                     dilation=2)
+        out = avgpool(t1)
+        return [out]
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        op_tester.run(init_builder, reference, step_type='infer')
+    assert ("Dilations of value other than 1 are currently not supported." in
+            e_info.value.args[0])
+
+
+def test_maxpool10_ceil_mode(op_tester):
+    d1 = np.random.rand(1, 1, 16, 16).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        (o, ) = builder.aiOnnxOpset10.maxpool([i1],
+                                              num_outputs=1,
+                                              kernel_shape=[3, 3],
+                                              ceil_mode=1,
+                                              pads=[0, 0, 0, 0],
+                                              storage_order=0,
+                                              strides=[2, 2])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        t1 = torch.tensor(d1, requires_grad=True)
+        avgpool = torch.nn.MaxPool2d(kernel_size=3,
+                                     stride=2,
+                                     padding=0,
+                                     ceil_mode=True)
+        out = avgpool(t1)
+        print(out)
+        return [out]
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        op_tester.run(init_builder, reference, step_type='infer')
+    assert "ceil_mode != 0, not supported" in e_info.value.args[0]
+
+
 def test_globalmaxpool_2d(op_tester):
     d1 = np.random.rand(1, 1, 6, 6).astype(np.float32)
 
