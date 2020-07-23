@@ -50,6 +50,7 @@ view::RegMap AddBiasOp::fwdRegMap(InIndex argIndex, OutIndex) const {
     // data input maps directly to the output
     return [](const view::Region &r) { return view::Regions(1, r); };
   } else if (argIndex == getBiasInIndex()) {
+    // e.g. for 2D conv
     // output is shape [_, x, _, _]
     // biasIn is shape [x]
     // the biasIn slice [a:b]
@@ -58,14 +59,15 @@ view::RegMap AddBiasOp::fwdRegMap(InIndex argIndex, OutIndex) const {
     auto upper_capture = outShape(getOutIndex());
     return [out_shape, upper_capture](const view::Region &r) {
       auto upper = upper_capture;
-      if (out_shape.size() != 4) {
+      // Minimum rank 3: batch_size, output_channels, spatial dim(s)
+      if (out_shape.size() < 3) {
         throw error("unexpected output shape for AddBiasInplace");
       }
       if (r.getLower().size() != 1) {
         throw error("unexpected region shape for AddBiasInplace");
       }
 
-      std::vector<int64_t> lower{0, 0, 0, 0};
+      auto lower = std::vector<int64_t>(out_shape.size(), 0);
 
       lower.at(1) = r.getLower().at(0);
       upper.at(1) = r.getUpper().at(0);

@@ -563,6 +563,44 @@ def test_convolution_default_train(op_tester):
     op_tester.run(init_builder, reference, step_type='train')
 
 
+def test_convolution_with_bias_1d(op_tester):
+    batch_size = 1
+    chans_in = 2
+    chans_out = 3
+    size = 4
+    kernel_size = 3
+    padding = 1
+
+    data = np.ones([batch_size, chans_in, size], dtype=np.float32)
+    filt = np.ones([chans_out, chans_in, kernel_size], dtype=np.float32)
+    bias = np.arange(chans_out, dtype=np.float32)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(data)
+        f = builder.addInputTensor(filt)
+        b = builder.addInputTensor(bias)
+        o = builder.aiOnnx.conv([d, f, b],
+                                dilations=[1],
+                                pads=[padding] * 2,
+                                strides=[1])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        d = torch.tensor(data)
+        conv = torch.nn.Conv1d(chans_in,
+                               chans_out,
+                               kernel_size,
+                               padding=[padding])
+        conv.weight.data = torch.tensor(filt)
+        conv.bias.data = torch.tensor(bias)
+        o = conv(d)
+        return [o]
+
+    op_tester.setPatterns(['SplitConvBias'], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, step_type='infer')
+
+
 def test_reciprocal(op_tester):
     # create test data
     d1 = np.random.rand(4).astype(np.float32)
@@ -1255,7 +1293,11 @@ def test_pad11(op_tester):
                   })
 
 
-def _test_pad(op_tester, data, lower_padding, upper_padding, mode,
+def _test_pad(op_tester,
+              data,
+              lower_padding,
+              upper_padding,
+              mode,
               pad_value=0):
     def init_builder(builder):
         i1 = builder.addInputTensor(data)
