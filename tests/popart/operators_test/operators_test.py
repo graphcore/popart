@@ -1776,6 +1776,89 @@ def test_clip_grad(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
+def test_clip11(op_tester):
+    d1 = np.random.rand(2, 7).astype(np.float32)
+    d1 = d1 * 6 - 3  # numbers in range [-3, 3]
+    d_min = np.array([-1.5], dtype=np.float32)
+    d_max = np.array([1.5], dtype=np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        t_min = builder.aiOnnx.constant(d_min, False)
+        t_max = builder.aiOnnx.constant(d_max, False)
+        o = builder.aiOnnx.clip([i1, t_min, t_max])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1)
+        result = torch.clamp(a, min=d_min[0], max=d_max[0])
+        return [result]
+
+    op_tester.run(init_builder,
+                  reference,
+                  'infer',
+                  opsets={
+                      "ai.onnx": 11,
+                      "ai.graphcore": 1
+                  })
+
+
+def test_clip11_default_min(op_tester):
+    d1 = np.random.rand(2, 7).astype(np.float32)
+    d1 = d1 * 6 - 3  # numbers in range [-3, 3]
+    d_max = np.array([1.5], dtype=np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        t_max = builder.aiOnnx.constant(d_max, False)
+        o = builder.aiOnnx.clip([i1, '', t_max])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1)
+        result = torch.clamp(a,
+                             min=torch.finfo(torch.float32).min,
+                             max=d_max[0])
+        return [result]
+
+    op_tester.run(init_builder,
+                  reference,
+                  'infer',
+                  opsets={
+                      "ai.onnx": 11,
+                      "ai.graphcore": 1
+                  })
+
+
+def test_clip11_default_max(op_tester):
+    d1 = np.random.rand(2, 7).astype(np.float32)
+    d1 = d1 * 6 - 3  # numbers in range [-3, 3]
+    d_min = np.array([-1.5], dtype=np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        t_min = builder.aiOnnx.constant(d_min, False)
+        o = builder.aiOnnx.clip([i1, t_min])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1)
+        # result = torch.clamp(a, min=d_min[0], max=torch.finfo(torch.float32).max)
+        result = torch.clamp(a, min=d_min[0], max=100)
+        return [result]
+
+    op_tester.run(init_builder,
+                  reference,
+                  'infer',
+                  opsets={
+                      "ai.onnx": 11,
+                      "ai.graphcore": 1
+                  })
+
+
 def test_argmax_keepdims(op_tester):
     d1 = np.random.rand(5, 7, 11, 13).astype(np.float32)
     axis = 0

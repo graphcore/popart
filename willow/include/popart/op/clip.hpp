@@ -29,6 +29,9 @@ public:
   std::unique_ptr<Op> getInplaceVariant(const OperatorIdentifier &) const final;
   bool canBeReplacedByIdentity() override;
 
+  static InIndex clip11MinInputIndex() { return 1; }
+  static InIndex clip11MaxInputIndex() { return 2; }
+
 private:
   float min;
   float max;

@@ -1,5 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <memory>
+#include <popart/graph.hpp>
 #include <popart/op/clip.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
@@ -111,9 +112,8 @@ static OpDefinition
                   OpDefinition::Attributes({})});
 
 namespace {
-static OpCreator<ClipOp> clipOpCreator(
-    OpDefinitions({{Onnx::Operators::Clip_6, clipOpV6Def},
-                   {Onnx::Operators::Clip_11, clipOpV11Def}}),
+static OpCreator<ClipOp> clip6OpCreator(
+    OpDefinitions({{Onnx::Operators::Clip_6, clipOpV6Def}}),
     [](const OpCreatorInfo &info) {
       float min = info.attributes.getAttribute<Attributes::Float>(
           "min", std::numeric_limits<float>::lowest());
@@ -122,6 +122,27 @@ static OpCreator<ClipOp> clipOpCreator(
 
       return std::unique_ptr<Op>(
           new ClipOp(info.opid, min, max, info.settings));
+    },
+    true);
+
+static OpCreator<ClipOp> clip11OpCreator(
+    OpDefinitions({{Onnx::Operators::Clip_11, clipOpV11Def}}),
+    [](const OpCreatorInfo &info, Graph &graph) {
+      float minValue = info.getInputScalarValue<float>(
+          ClipOp::clip11MinInputIndex(), std::numeric_limits<float>::lowest());
+      float maxValue = info.getInputScalarValue<float>(
+          ClipOp::clip11MaxInputIndex(), std::numeric_limits<float>::max());
+
+      // Create the op in the graph.
+      Op *op =
+          graph.createOp<ClipOp>(info.opid, minValue, maxValue, info.settings);
+
+      // Connect only the first of the three inputs.
+      op->connectInTensor(ClipOp::getInIndex(), info.getInputIds().at(0));
+      op->createAndConnectOutTensor(ClipOp::getOutIndex(),
+                                    info.getOutputIds().at(0));
+
+      return op;
     },
     true);
 

@@ -101,6 +101,11 @@ public:
     }
   }
 
+  // Gets a single scalar value from the input at `index`.
+  // This will throw an error if:
+  //   * The input does not exist.
+  //   * The input tensor is not rank 1.
+  //   * The input tensor does not contains exactly 1 value.
   template <typename T> T getInputScalarValue(int index) const {
     std::vector<T> values = getInputData<T>(index);
     if (values.size() != 1) {
@@ -112,16 +117,13 @@ public:
     return values.at(0);
   }
 
+  // Gets a single scalar value from the input at `index`, or return the default
+  // value if the input is not present. This will throw an error if:
+  //   * The input tensor is not rank 1.
+  //   * The input tensor does not contains exactly 1 value.
   template <typename T> T getInputScalarValue(int index, T defaultValue) const {
     if (inputIds.size() > index && inputIds.at(index) != "") {
-      std::vector<T> values = getInputData<T>(index);
-      if (values.size() != 1) {
-        throw error("Expected input at index {} to has a shape of [1]. It has "
-                    "shape [{}]",
-                    index,
-                    values.size());
-      }
-      return values.at(0);
+      return getInputScalarValue<T>(index);
     } else {
       return defaultValue;
     }
