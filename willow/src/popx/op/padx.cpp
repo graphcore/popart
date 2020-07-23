@@ -242,6 +242,12 @@ poplar::Tensor BasePadOpx::padGrow(poplar::Tensor inTensor,
 void PadOpx::grow(poplar::program::Sequence &prog) const {
   auto in0      = Opx::getInTensor(BasePadOp::getInIndex());
   auto inTensor = cloneNcopy(prog, in0);
+
+  auto &&padBaseOp = getBasePadOp();
+  for (const unsigned &flip : padBaseOp.getFlips()) {
+    inTensor = inTensor.reverse(flip);
+  }
+
   setOutTensor(BasePadOp::getOutIndex(), padGrow(inTensor, prog));
 }
 
@@ -249,6 +255,12 @@ void PadInplaceOpx::grow(poplar::program::Sequence &prog) const {
 
   auto in0      = Opx::getInTensor(BasePadOp::getInIndex());
   auto inTensor = cloneNcopy(prog, in0);
+
+  auto &&padBaseOp = getBasePadOp();
+  for (const unsigned &flip : padBaseOp.getFlips()) {
+    inTensor = inTensor.reverse(flip);
+  }
+
   setOutTensor(BasePadOp::getOutIndex(), padGrow(inTensor, prog));
 }
 

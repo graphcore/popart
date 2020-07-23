@@ -242,6 +242,7 @@ bool BatchSerialize::apply(Graph &graph) const {
                                               startsv,
                                               endsv,
                                               axesv,
+                                              std::vector<int64_t>{}, // steps
                                               op->getSettings());
                 sliceOp->setName("BatchSlice_" + entry.first->id);
                 slice = sliceOp.get();

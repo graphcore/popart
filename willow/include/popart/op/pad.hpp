@@ -11,6 +11,7 @@ class BasePadOp : public Op {
 public:
   BasePadOp(const OperatorIdentifier &_opid,
             const std::vector<int64_t> &_pads,
+            const std::vector<unsigned> &_flips,
             float value_,
             const std::string &_mode,
             const Op::Settings &settings_);
@@ -64,11 +65,15 @@ public:
   }
 
   const std::vector<int64_t> &getPads() const { return pads; }
+  const std::vector<unsigned> &getFlips() const { return flips; }
 
 private:
   // all lower and upper padding values. The first inRank values are the lower
   // padding values, the final inRank values are the upper padding values.
   std::vector<int64_t> pads;
+
+  // A vector of axes along which to flip the input tensor before padding
+  std::vector<unsigned> flips;
 
   float pad_value;
   std::string mode;
@@ -81,6 +86,7 @@ class BasePadOutplaceOp : public BasePadOp {
 public:
   BasePadOutplaceOp(const OperatorIdentifier &_opid,
                     const std::vector<int64_t> &_pads,
+                    const std::vector<unsigned> &_flips,
                     float value_,
                     const std::string &_mode,
                     const Op::Settings &settings_);
@@ -98,6 +104,7 @@ class PadOp : public BasePadOutplaceOp {
 public:
   PadOp(const OperatorIdentifier &_opid,
         const std::vector<int64_t> &_pads,
+        const std::vector<unsigned> &_flips,
         float value_,
         const std::string &_mode,
         const Op::Settings &settings_);

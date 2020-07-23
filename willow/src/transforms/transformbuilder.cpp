@@ -346,6 +346,7 @@ TensorId TransformBuilder::sliceInPlace(TensorId in,
                                        std::vector<int64_t>{starts}, // starts
                                        std::vector<int64_t>{ends},   // ends
                                        std::vector<int64_t>{axes},   // axes
+                                       std::vector<int64_t>{},       // flips
                                        settings);
 
   if (op == nullptr) {

@@ -75,6 +75,7 @@ bool SplitOpPattern::apply(Op *op) const {
     sliceOp->setStarts(starts);
     sliceOp->setEnds(ends);
     sliceOp->setAxes(axes);
+    sliceOp->setSteps(std::vector<int64_t>(axes.size(), 1));
     sliceOp->connectInTensor(SliceOp::getInIndex(), inputTensor->id);
     sliceOp->connectOutTensor(SliceOp::getOutIndex(), outTensor->id);
     sliceOp->setup();

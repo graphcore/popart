@@ -623,6 +623,7 @@ bool MergeVarUpdates::apply(Graph &graph) const {
                 std::vector<int64_t>{start}, // starts
                 std::vector<int64_t>{end},   // ends
                 std::vector<int64_t>{1},     // axes
+                std::vector<int64_t>{},      // flips
                 canonSettings);
 
             auto sliceOp = tempSliceOp.get();

@@ -12,24 +12,28 @@ namespace popart {
 
 BasePadOp::BasePadOp(const OperatorIdentifier &_opid,
                      const std::vector<int64_t> &_pads,
+                     const std::vector<unsigned> &_flips,
                      float value_,
                      const std::string &_mode,
                      const Op::Settings &settings_)
-    : Op(_opid, settings_), pads(_pads), pad_value(value_), mode(_mode) {}
+    : Op(_opid, settings_), pads(_pads), flips(_flips), pad_value(value_),
+      mode(_mode) {}
 
 BasePadOutplaceOp::BasePadOutplaceOp(const OperatorIdentifier &_opid,
                                      const std::vector<int64_t> &_pads,
+                                     const std::vector<unsigned> &_flips,
                                      float value_,
                                      const std::string &_mode,
                                      const Op::Settings &settings_)
-    : BasePadOp(_opid, _pads, value_, _mode, settings_) {}
+    : BasePadOp(_opid, _pads, _flips, value_, _mode, settings_) {}
 
 PadOp::PadOp(const OperatorIdentifier &_opid,
              const std::vector<int64_t> &_pads,
+             const std::vector<unsigned> &_flips,
              float value_,
              const std::string &_mode,
              const Op::Settings &settings_)
-    : BasePadOutplaceOp(_opid, _pads, value_, _mode, settings_) {}
+    : BasePadOutplaceOp(_opid, _pads, _flips, value_, _mode, settings_) {}
 
 // check pads are even, and check than rank agrees with input tensor
 void BasePadOp::runtimeConfirmShapes() const {
@@ -150,6 +154,7 @@ view::RegMap BasePadOp::bwdRegMap(InIndex inIndex, OutIndex outIndex) const {
 PadInplaceOp::PadInplaceOp(const BasePadOutplaceOp &padOp)
     : BasePadOp(Onnx::CustomOperators::PadInplace,
                 padOp.getPads(),
+                padOp.getFlips(),
                 padOp.getPadValue(),
                 padOp.getMode(),
                 padOp.getSettings()) {}
@@ -231,6 +236,7 @@ PadGradOp::PadGradOp(const PadOp &fwdOp)
               calculateStarts(fwdOp),
               calculateEnds(fwdOp),
               calculateAxes(fwdOp),
+              {}, // empty steps
               fwdOp.getSettings()) {}
 
 std::unique_ptr<Op> PadGradOp::clone() const {
@@ -324,7 +330,7 @@ static OpCreator<PadOp> pad2Creator(
           info.attributes.getAttribute<Attributes::String>("mode", "constant");
 
       return std::unique_ptr<Op>(
-          new PadOp(info.opid, pads, value, mode, info.settings));
+          new PadOp(info.opid, pads, {}, value, mode, info.settings));
     },
     true);
 
@@ -343,8 +349,8 @@ static OpCreator<PadOp> pad11Creator(
       }
 
       // Create the op in the graph.
-      Op *op =
-          graph.createOp<PadOp>(info.opid, pads, value, mode, info.settings);
+      Op *op = graph.createOp<PadOp>(
+          info.opid, pads, std::vector<unsigned>{}, value, mode, info.settings);
 
       // Connect only the first of the two inputs.
       op->connectInTensor(PadOp::getInIndex(), info.getInputIds().at(0));

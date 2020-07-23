@@ -275,8 +275,12 @@ static std::vector<std::unique_ptr<PadOp>> createPadOps(
                                             paddingIntervals.end());
     }
 
-    result[i] = std::make_unique<PadOp>(
-        Onnx::Operators::Pad_2, padding, 0, "constant", settings);
+    result[i] = std::make_unique<PadOp>(Onnx::Operators::Pad_2,
+                                        padding,
+                                        std::vector<unsigned>{},
+                                        0,
+                                        "constant",
+                                        settings);
   }
 
   for (int i = 0; i < result.size(); ++i) {

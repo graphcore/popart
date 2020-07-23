@@ -117,9 +117,10 @@ createSlices(const int64_t count, const int64_t stride, Op::Settings settings) {
     const std::vector<int64_t> starts_ = {i * stride};
     const std::vector<int64_t> ends_   = {(i + 1) * stride};
     const std::vector<int64_t> axes_   = {1};
+    const std::vector<int64_t> steps_  = {};
 
     slices.push_back(std::make_unique<SliceOp>(
-        Onnx::Operators::Slice_1, starts_, ends_, axes_, settings));
+        Onnx::Operators::Slice_1, starts_, ends_, axes_, steps_, settings));
   }
 
   return slices;

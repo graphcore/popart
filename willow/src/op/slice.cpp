@@ -20,6 +20,16 @@ std::vector<int64_t> BaseSliceOp::getPads() const {
   return pads;
 }
 
+std::vector<unsigned> BaseSliceOp::getFlips() const {
+  std::vector<unsigned> flips;
+  for (auto slice : getSlices()) {
+    if (slice.flip) {
+      flips.push_back(static_cast<unsigned>(slice.axis));
+    }
+  }
+  return flips;
+}
+
 TensorInfo BaseSliceOp::createOutInfo() const {
   auto in_info      = inInfo(getInIndex());
   auto output_shape = in_info.shape();
@@ -156,14 +166,36 @@ BaseSliceOp::getSlices(std::vector<int64_t> input_shape) const {
     }
 
     auto dim_size = input_shape[axis];
-    auto begin    = normalizeIndex(starts[i], dim_size);
-    auto end      = normalizeIndex(ends[i], dim_size);
+    auto step     = steps[i];
 
-    if (begin > end) {
+    bool flip;
+    if (step == 1) {
+      flip = false;
+    } else if (step == -1) {
+      flip = true;
+    } else {
+      throw error("Invalid 'step' value, {}, in BaseSliceOp::getSlices. "
+                  "Only steps of '1' or '-1' are supported. "
+                  "This error is for Op {}.",
+                  step,
+                  str());
+    }
+
+    auto start = normalizeIndex(starts[i], dim_size, flip);
+    auto end   = normalizeIndex(ends[i], dim_size, flip);
+
+    if (flip) {
+      // swap indices, and shift by 1
+      auto tmp_start = start;
+      start          = end + 1;
+      end            = tmp_start + 1;
+    }
+
+    if (start > end) {
       throw error("BaseSliceOp::getSlices: begin = {} and end = {}. "
                   "The input was starts[{}] = {}, end [{}] = {}. "
                   "This error for Op {}",
-                  begin,
+                  start,
                   end,
                   i,
                   starts[i],
@@ -172,7 +204,7 @@ BaseSliceOp::getSlices(std::vector<int64_t> input_shape) const {
                   str());
     }
 
-    slices.emplace_back(begin, end, axis);
+    slices.emplace_back(start, end, axis, flip);
   }
 
   return slices;
@@ -181,18 +213,19 @@ BaseSliceOp::getSlices(std::vector<int64_t> input_shape) const {
 // In the ONNX Slice Implerator
 // If `index > dim_size` it is treated as `index == dim_size`
 // and negative indexing is also supported.
-int64_t BaseSliceOp::normalizeIndex(int64_t index, int64_t dim_size) const {
+int64_t
+BaseSliceOp::normalizeIndex(int64_t index, int64_t dim_size, bool flip) const {
+  // clip index with upper bound
   index = std::min(index, dim_size);
 
-  if (index < 0) {
-    if (dim_size + index < 0) {
-      throw error("index {} is out of bounds for axis with size {}. "
-                  "This error for Op {} in BaseSliceOp::normalizeIndex",
-                  index,
-                  dim_size,
-                  str());
-    }
+  // clip index with lower bound
+  auto min_index = dim_size * -1;
+  if (flip) {
+    min_index--;
+  }
+  index = std::max(index, min_index);
 
+  if (index < 0) {
     index = dim_size + index;
   }
 
@@ -203,24 +236,28 @@ BaseSliceOp::BaseSliceOp(const OperatorIdentifier &_opid,
                          const std::vector<int64_t> &starts_,
                          const std::vector<int64_t> &ends_,
                          const std::vector<int64_t> &axes_,
+                         const std::vector<int64_t> &steps_,
                          const Op::Settings &settings_)
 
     : Op(_opid, settings_), starts(starts_), ends(ends_),
-      axes(sanitizeAxes(starts_, axes_)) {}
+      axes(sanitizeAxes(starts_, axes_)),
+      steps(sanitizeSteps(starts_, steps_)) {}
 
 SliceOp::SliceOp(const OperatorIdentifier &_opid,
                  const std::vector<int64_t> &starts_,
                  const std::vector<int64_t> &ends_,
                  const std::vector<int64_t> &axes_,
+                 const std::vector<int64_t> &steps_,
                  const Op::Settings &settings_)
-    : BaseSliceOp(_opid, starts_, ends_, axes_, settings_) {}
+    : BaseSliceOp(_opid, starts_, ends_, axes_, steps_, settings_) {}
 
 SliceInplaceOp::SliceInplaceOp(const OperatorIdentifier &_opid,
                                const std::vector<int64_t> &starts_,
                                const std::vector<int64_t> &ends_,
                                const std::vector<int64_t> &axes_,
+                               const std::vector<int64_t> &steps_,
                                const Op::Settings &settings_)
-    : BaseSliceOp(_opid, starts_, ends_, axes_, settings_) {}
+    : BaseSliceOp(_opid, starts_, ends_, axes_, steps_, settings_) {}
 
 std::vector<int64_t>
 BaseSliceOp::sanitizeAxes(const std::vector<int64_t> &starts,
@@ -233,11 +270,21 @@ BaseSliceOp::sanitizeAxes(const std::vector<int64_t> &starts,
   return axes;
 }
 
+std::vector<int64_t>
+BaseSliceOp::sanitizeSteps(const std::vector<int64_t> &starts,
+                           std::vector<int64_t> steps) {
+  if (steps.size() == 0) {
+    steps.resize(starts.size(), 1);
+  }
+  return steps;
+}
+
 SliceInplaceOp::SliceInplaceOp(const SliceOp &op)
     : BaseSliceOp(Onnx::CustomOperators::SliceInplace,
                   op.getStarts(),
                   op.getEnds(),
                   op.getAxes(),
+                  op.getSteps(),
                   op.getSettings()) {
   unwindConcatDim = op.unwindConcatDim;
 }
@@ -277,7 +324,8 @@ void BaseSliceOp::connectInTensor(InIndex inIndex, TensorId tenId) {
                     opid,
                     err.what());
       }
-      axes = sanitizeAxes(starts, {});
+      axes  = sanitizeAxes(starts, {});
+      steps = sanitizeSteps(starts, {});
     } else if (inIndex == getEndsInIndex()) {
       try {
         getInTensorData(tenId, ends, {DataType::INT32, DataType::INT64});
@@ -295,6 +343,17 @@ void BaseSliceOp::connectInTensor(InIndex inIndex, TensorId tenId) {
       } catch (popart::error &err) {
         throw error("Need the value of the {} input 'axes' to detemine the "
                     "output shape, but was unable because {}",
+                    opid,
+                    err.what());
+      }
+    } else if (inIndex == getStepsInIndex()) {
+      try {
+        std::vector<int64_t> _steps;
+        getInTensorData(tenId, _steps, {DataType::INT32, DataType::INT64});
+        steps = sanitizeSteps(starts, _steps);
+      } catch (popart::error &err) {
+        throw error("Need the value of the {} input 'steps' to detemine the "
+                    "slicing direction, but was unable because {}",
                     opid,
                     err.what());
       }
@@ -343,6 +402,7 @@ void BaseSliceOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 SliceGradOp::SliceGradOp(const SliceOp &op_)
     : BasePadOutplaceOp(Onnx::GradOperators::SliceGrad,
                         op_.getPads(),
+                        op_.getFlips(),
                         0.0f, // the padding constant
                         "constant",
                         op_.getSettings()) {}
@@ -422,8 +482,7 @@ static OpDefinition sliceOpDef({OpDefinition::Inputs({
                                     {"starts", Tind, true},
                                     {"ends", Tind, true},
                                     {"axes", Tind, true},
-                                    // Not supported
-                                    //{"steps", Tind true} },
+                                    {"steps", Tind, true},
                                 }),
                                 OpDefinition::Outputs({{"output", T}}),
                                 OpDefinition::Attributes({})});
@@ -441,13 +500,15 @@ static OpCreator<SliceOp> sliceOpCreator(
             info.attributes.getAttribute<Attributes::Ints>("ends", {});
         std::vector<int64_t> axes =
             info.attributes.getAttribute<Attributes::Ints>("axes", {});
+        std::vector<int64_t> steps =
+            info.attributes.getAttribute<Attributes::Ints>("steps", {});
 
         return std::unique_ptr<Op>(
-            new SliceOp(info.opid, starts, ends, axes, info.settings));
+            new SliceOp(info.opid, starts, ends, axes, steps, info.settings));
       } else {
         // Slice parameters are now inputs
         return std::unique_ptr<Op>(
-            new SliceOp(info.opid, {}, {}, {}, info.settings));
+            new SliceOp(info.opid, {}, {}, {}, {}, info.settings));
       }
     },
     true);

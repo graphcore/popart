@@ -49,6 +49,9 @@ void SliceOpx::grow(poplar::program::Sequence &prog) const {
   auto t = getInTensor(SliceOp::getInIndex());
   for (auto slice : getSliceOp()->getSlices()) {
     t = t.slice(slice.start, slice.end, static_cast<unsigned>(slice.axis));
+    if (slice.flip) {
+      t = t.reverse(static_cast<unsigned>(slice.axis));
+    }
   }
   // we clone and copy t, as this in not an inplace op
   setOutTensor(SliceOp::getOutIndex(), cloneNcopy(prog, t));
@@ -60,6 +63,9 @@ void SliceInplaceOpx::grow(poplar::program::Sequence &) const {
   auto t = getInTensor(SliceOp::getInIndex());
   for (auto slice : getSliceInplaceOp()->getSlices()) {
     t = t.slice(slice.start, slice.end, static_cast<unsigned>(slice.axis));
+    if (slice.flip) {
+      t = t.reverse(static_cast<unsigned>(slice.axis));
+    }
   }
   setOutTensor(SliceOp::getOutIndex(), t);
 }
