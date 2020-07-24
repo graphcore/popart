@@ -25,14 +25,15 @@ def get_simple_model_cycle_count(bps):
     # Verify that we can still measure cycles when data streams
     # (inuts/weights/anchors) are off
     opts.syntheticDataMode = popart.SyntheticDataMode.Zeros
+    patterns = popart.Patterns(popart.PatternsLevel.NoPatterns)
+    patterns.enableRuntimeAsserts(False)
 
     session = popart.InferenceSession(
         fnModel=builder.getModelProto(),
         dataFlow=popart.DataFlow(bps, {out: popart.AnchorReturnType("All")}),
         userOptions=opts,
         deviceInfo=tu.create_test_device(),
-        patterns=popart.Patterns(popart.PatternsLevel.NoPatterns,
-                                 enableRuntimeAsserts=False))
+        patterns=patterns)
 
     session.prepareDevice()
     anchors = session.initAnchorArrays()

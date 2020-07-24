@@ -86,7 +86,7 @@ def test_anchor_output():
     nll = builder.aiGraphcore.nllloss([o, lb])
 
     GRAD = popart.reservedGradientPrefix() + w
-    ACCL = popart.reservedAcclPrefix() + popart.reservedGradientPrefix() + w
+    ACCL = popart.reservedAcclPrefix() + w
     art = popart.AnchorReturnType("All")
     data_flow = popart.DataFlow(BATCHES_PER_STEP, {
         o: art,

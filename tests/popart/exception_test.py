@@ -47,21 +47,23 @@ def test_out_of_memory_exception():
 
     options = popart.SessionOptions()
     options.engineOptions = {"debug.allowOutOfMemory": "true"}
+    patterns = popart.Patterns(popart.PatternsLevel.NoPatterns)
+    patterns.enableRuntimeAsserts(False)
 
     session = popart.InferenceSession(
         fnModel=builder.getModelProto(),
         dataFlow=popart.DataFlow(1, {out: popart.AnchorReturnType("All")}),
         userOptions=options,
-        patterns=popart.Patterns(popart.PatternsLevel.NoPatterns,
-                                 enableRuntimeAsserts=False),
+        patterns=patterns,
         deviceInfo=tu.create_test_device(1))
 
-    with pytest.raises(popart.OutOfMemoryException) as e:
+    with pytest.raises(popart.poplar_exception) as e:
         session.prepareDevice()
         print("Caught OutOfMemoryException exception {}", e)
         print(e.getSummaryReport())
         print(e.getGraphReport())
         assert e.value.args[0].startswith(
-            "Cannot allocate buffers for all streams")
+            "Out of memory. Data-stream is larger than remaining host buffer 1 memory."
+        )
 
     session.getTensorTileMap()

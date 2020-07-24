@@ -29,7 +29,7 @@ INPUT = "input"
 WEIGHTS = "init_input"
 ACTIVATION = "Reshape:0"
 GRADIENT = popart.reservedGradientPrefix() + WEIGHTS
-ACCL = popart.reservedAcclPrefix() + popart.reservedGradientPrefix() + WEIGHTS
+ACCL = popart.reservedAcclPrefix() + WEIGHTS
 
 
 def dict_product(d):
