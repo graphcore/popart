@@ -15,6 +15,10 @@ set(DEFAULT_TEST_VARIANTS "Cpu" CACHE STRING
 # Will enable all tests - note that you need to use '$<SEMICOLON>' not ';'
 set(ENABLED_TEST_VARIANTS "Cpu;IpuModel" CACHE STRING "Default (non-hw) test variants")
 
+# TODO : T24381. Remove Hw tests until they take a reasonable amount of time
+# on the hw buildbot machine
+list(REMOVE_ITEM ENABLED_TEST_VARIANTS Hw)
+
 # Remove any requested variants not present in ${ENABLED_TEST_VARIANTS}
 # If no variants were requested filtered ${DEFAULT_TEST_VARIANTS} are returned.
 function(sanitise_variants variant_name)
