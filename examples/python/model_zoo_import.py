@@ -1,6 +1,7 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 import argparse
 import glob
+import json
 import os
 import tarfile
 import tempfile
@@ -27,6 +28,58 @@ from onnx import numpy_helper
 
 # Get download url and test number from args
 
+def is_json_load_ok(report):
+    is_report_ok = True
+    try:
+        report_json = json.loads(report)
+    except ValueError:
+        is_report_ok = False
+    return is_report_ok, report_json
+
+def save_report(zoo_test_dir, execution_report, graph_report):
+    if (not os.path.exists(zoo_test_dir)):
+        print("Creating directory %s" % (zoo_test_dir))
+        os.mkdir(zoo_test_dir)
+
+    is_execution_report_ok, execution_report_json = is_json_load_ok(
+        execution_report)
+    is_graph_report_ok, graph_report_json = is_json_load_ok(graph_report)
+
+    if is_execution_report_ok:
+        execution_report_file = os.path.join(zoo_test_dir,
+                                             "execution_report.json")
+        with open(execution_report_file, 'w') as f:
+            json.dump(execution_report_json, f)
+
+    if is_graph_report_ok:
+        graph_report_file = os.path.join(zoo_test_dir, "graph_report.json")
+        with open(graph_report_file, 'w') as f:
+            json.dump(graph_report_json, f)
+
+def total_execution_cycles(execution_report):
+    is_execution_report_ok, execution_report_json = is_json_load_ok(
+        execution_report)
+
+    if is_execution_report_ok and 'simulation' in execution_report_json:
+        if 'cycles' in execution_report_json['simulation']:
+            print('cycles: ', execution_report_json['simulation']['cycles'])
+
+        if 'steps' in execution_report_json['simulation']:
+            sum_cycles = sum(
+                step['cycles']
+                for step in execution_report_json['simulation']['steps']
+                if 'cycles' in step)
+            print("sum_cycles: ", sum_cycles)
+
+def total_tile_sizes(graph_report):
+    is_graph_report_ok, graph_report_json = is_json_load_ok(graph_report)
+    
+    if is_graph_report_ok and 'memory' in graph_report_json and \
+        'byTile' in graph_report_json['memory'] and \
+        'total' in graph_report_json['memory']['byTile']:
+        sum_tile_sizes = sum(graph_report_json['memory']['byTile']['total'])
+        print('sum_tile_sizes: ', sum_tile_sizes)
+
 parser = argparse.ArgumentParser()
 parser.add_argument("url", type=str, help="URL for the tar file download")
 parser.add_argument("test_number",
@@ -42,6 +95,10 @@ parser.add_argument("--output_tensor",
                     type=str,
                     help="Specify the input tensor ID, "
                     "sometimes required if tensors are not in order.")
+parser.add_argument("--model_zoo_test_dir",
+                    required=False,
+                    type=str,
+                    help="Specify directory for execution and graph reports.")
 args = parser.parse_args()
 
 url = args.url
@@ -146,6 +203,13 @@ stepio = popart.PyStepIO({input_: inputs[0]}, inferenceAnchors)
 
 # Run the inference graph
 session.run(stepio)
+
+total_execution_cycles(session.getExecutionReport())
+total_tile_sizes(session.getGraphReport())
+
+if args.model_zoo_test_dir:
+    save_report(args.model_zoo_test_dir, session.getExecutionReport(), 
+                session.getGraphReport())
 
 # Check the output from the test data is approximately equal to our inference
 try:
