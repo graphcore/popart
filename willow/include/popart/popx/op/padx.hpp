@@ -31,17 +31,21 @@ class BasePadOp;
 // The padding values (the '.'s above) should be rewritten to their constant
 // value (we're assuming constant padding here, not edge or reflect) every run
 // of the Pad Op, otherwise if they are modified inplace they will be incorrect
-// in subsequent iterations. However, with the current implementation, we do not
-// need to reset the padding values, because they are poplar constant Tensors
-// and therefore cannot be modified by downstream consumers, even if the Ir
-// claims that they are modified inplace.
+// in subsequent iterations.
 //
-// Thus we do:
+// Two options to ensure they are always correct:
 //
-// A) nothing, no need to reset the .s as they are poplar constants.
-// B) nothing.
-// C) copy the xs, no need to reset the .s as they are poplar constants.
-// D) copy the xs.
+// 1) make them poplar constant Tensors, which cannot (by definition) be
+// modified by downstream consumers, even if the Ir claims that they are
+// modified inplace.
+//
+// 2) run a program to set them to the constant value everytime that pad's grow
+// function is called.
+//
+// We have oscillated between the 2 approaches, the current approach is 2. We
+// ensure the padding is set to the correct value every iteration. See the
+// member "cloneNcopyEdges".
+//
 //
 namespace popx {
 
@@ -53,7 +57,6 @@ public:
                          poplar::program::Sequence &) const;
 
 private:
-  bool mustRewritePadding() const { return true; }
   poplar::Tensor constantModePadGrow(poplar::Tensor inTensor,
                                      poplar::program::Sequence &) const;
 
@@ -64,9 +67,35 @@ private:
   std::pair<bool, poplar::Tensor> getPropitiousPadLayout() const;
 
   // TODO T22336  : move this functionality to poplibs
+  // Pad the tensor "toPad", so that it has the same shape as toMapEdgesFrom,
+  // and the padding added has the same tile mapping as the corresponding
+  // element of toMapEdgesFrom. toMapEdgesFrom must be of the correct shape, as
+  // specified by the Ir PadOp.
   poplar::Tensor
   padWithTargetMapping(const poplar::Tensor &toPad,
                        const poplar::Tensor &toMapEdgesFrom) const;
+
+  // Return a Tensor of the same shape as inTensor, which is an alias of
+  // inTensor at the core, and a copy of inTensor on the padding edges.
+  poplar::Tensor cloneNcopyEdges(poplar::Tensor inTensor,
+                                 poplar::program::Sequence &) const;
+
+  struct Chisseled {
+    Chisseled(poplar::Tensor c,
+              const std::vector<poplar::Tensor> &l,
+              const std::vector<poplar::Tensor> &u)
+        : core(c), lows(l), upps(u) {}
+    poplar::Tensor core;
+    std::vector<poplar::Tensor> lows;
+    std::vector<poplar::Tensor> upps;
+  };
+
+  Chisseled getChisseled(const poplar::Tensor &) const;
+
+  poplar::Tensor flip(const poplar::Tensor &) const;
+
+  poplar::Tensor unflippedPadGrow(poplar::Tensor inTensor,
+                                  poplar::program::Sequence &) const;
 };
 
 class PadOpx : public BasePadOpx {
