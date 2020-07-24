@@ -21,7 +21,7 @@ public:
   void convertUINT16ToINT32();
   void convertINT8ToINT32();
   void convertINT16ToINT32();
-  void convertINT64ToINT32();
+  void convertINT64ToINT32(bool clip);
   void convertDoublesToFloats();
   void convertDoublesToHalfs();
   void convertBFloats16ToFloat32();
@@ -40,7 +40,8 @@ private:
   static void convertUINT16TensorToINT32(ONNX_NAMESPACE::TensorProto &tp);
   static void convertINT8TensorToINT32(ONNX_NAMESPACE::TensorProto &tp);
   static void convertINT16TensorToINT32(ONNX_NAMESPACE::TensorProto &tp);
-  static void convertINT64TensorToINT32(ONNX_NAMESPACE::TensorProto &tp);
+  static void convertINT64TensorToINT32(ONNX_NAMESPACE::TensorProto &tp,
+                                        bool clip);
   static void convertDoubleTensorToFloat(ONNX_NAMESPACE::TensorProto &tp);
   static void convertBFloat16TensorToFloat32(ONNX_NAMESPACE::TensorProto &tp);
   static void convertDoubleTensorToHalf(ONNX_NAMESPACE::TensorProto &tp);

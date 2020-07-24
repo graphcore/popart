@@ -24,7 +24,9 @@ void GraphTransformer::convertINT8ToINT32() { impl->convertINT8ToINT32(); }
 
 void GraphTransformer::convertINT16ToINT32() { impl->convertINT16ToINT32(); }
 
-void GraphTransformer::convertINT64ToINT32() { impl->convertINT64ToINT32(); }
+void GraphTransformer::convertINT64ToINT32(bool clip) {
+  impl->convertINT64ToINT32(clip);
+}
 
 void GraphTransformer::convertDoublesToFloats() {
   impl->convertDoublesToFloats();

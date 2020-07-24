@@ -36,8 +36,11 @@ public:
 
   /**
    * Convert the graph from int64 to int32
+   *
+   * \param clip If tensor data are outside of the numerical range
+   *        expressible by int32, clip to max and min numeric limits
    */
-  void convertINT64ToINT32();
+  void convertINT64ToINT32(bool clip = false);
 
   /**
    * Convert the graph from int8 to int32

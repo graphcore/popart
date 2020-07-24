@@ -327,8 +327,8 @@ void GraphTransformerImpl::convertINT16ToINT32() {
       });
 }
 
-void GraphTransformerImpl::convertINT64ToINT32() {
-  onnxutil::visitModelNodes(model, [](ONNX_NAMESPACE::NodeProto &node) {
+void GraphTransformerImpl::convertINT64ToINT32(bool clip) {
+  onnxutil::visitModelNodes(model, [&clip](ONNX_NAMESPACE::NodeProto &node) {
     for (unsigned att_i = 0; att_i < node.attribute_size(); ++att_i) {
       auto ptr_att                        = node.mutable_attribute(att_i);
       ONNX_NAMESPACE::AttributeProto &att = *ptr_att;
@@ -348,7 +348,7 @@ void GraphTransformerImpl::convertINT64ToINT32() {
         }
         if (att.t().data_type() == ONNX_NAMESPACE::TensorProto_DataType_INT64) {
           auto &tensor = *att.mutable_t();
-          convertINT64TensorToINT32(tensor);
+          convertINT64TensorToINT32(tensor, clip);
         }
       } else if (type == ONNX_NAMESPACE::AttributeProto_AttributeType_GRAPH ||
                  type == ONNX_NAMESPACE::AttributeProto_AttributeType_GRAPHS) {
@@ -362,10 +362,10 @@ void GraphTransformerImpl::convertINT64ToINT32() {
   });
 
   onnxutil::visitModelInitializers(
-      model, [](ONNX_NAMESPACE::TensorProto &initializer) {
+      model, [&clip](ONNX_NAMESPACE::TensorProto &initializer) {
         if (initializer.data_type() ==
             ONNX_NAMESPACE::TensorProto_DataType_INT64) {
-          convertINT64TensorToINT32(initializer);
+          convertINT64TensorToINT32(initializer, clip);
         }
       });
 
@@ -720,7 +720,8 @@ void GraphTransformerImpl::convertINT16TensorToINT32(
 }
 
 void GraphTransformerImpl::convertINT64TensorToINT32(
-    ONNX_NAMESPACE::TensorProto &tp) {
+    ONNX_NAMESPACE::TensorProto &tp,
+    bool clip) {
   if (tp.data_type() != ONNX_NAMESPACE::TensorProto_DataType_INT64) {
     auto descriptor     = ONNX_NAMESPACE::TensorProto_DataType_descriptor();
     auto data_type_name = descriptor->FindValueByNumber(tp.data_type())->name();
@@ -733,14 +734,22 @@ void GraphTransformerImpl::convertINT64TensorToINT32(
 
   // Make sure data is within acceptable bounds for an int32 not to overflow
   for (int i = 0; i < n_elms; i++) {
-    if (int64Data[i] > INT_MAX || int64Data[i] < INT_MIN) {
-      throw error("In convertINT64TensorToINT32, cannot cast int64 to "
-                  "int32: number is too large.");
+    auto data = int64Data[i];
+    if (clip) {
+      data = std::max(
+          data, static_cast<int64_t>(std::numeric_limits<int32_t>::min()));
+      data = std::min(
+          data, static_cast<int64_t>(std::numeric_limits<int32_t>::max()));
+    } else {
+      if (data > INT_MAX || data < INT_MIN) {
+        throw error(
+            "In convertINT64TensorToINT32, cannot cast int64 to "
+            "int32: number is too large. If you are sure you want still want "
+            "to convert your tensor data, you can set 'clip' to 'true'.");
+      }
     }
+    tp.add_int32_data(static_cast<int32_t>(data));
   }
-
-  for (int i = 0; i < n_elms; i++)
-    tp.add_int32_data(static_cast<int32_t>(int64Data[i]));
   tp.set_data_type(ONNX_NAMESPACE::TensorProto_DataType_INT32);
 
   // Don't clear while we're using it.

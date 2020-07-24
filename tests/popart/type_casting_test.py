@@ -720,3 +720,68 @@ def test_type_cast_BFloatToFloat():
     assert np.allclose(
         modified_onnx_model.graph.node[0].attribute[0].t.float_data,
         float_again), "Data was not conserved by cast"
+
+
+def test_type_cast_INT64ToINT32_clip():
+    """
+    The model:
+
+                     starts,ends,axes (int64)
+                             |
+    t0 -----------.------- Slice -- t1 ------.
+                  |                          |
+    indices ---- Gather ----------- t2 ----- Add - o
+     (int64)
+
+    - Gather takes two inputs:
+      - Constant int64 'indices'
+      - 't0'. A data input
+    - It cannot be evaluated on host by the const expression util, as it takes
+      a variable input
+    - The IPU does not support int64. Therefore we must convert the int64
+      tensors of the onnx model to int32
+    - But conversion is only possible if all int64 tensor data is within the
+      range of int32, unless we clip the tensor data to int32's numeric limits
+    - In this case the 'starts' tensor of the slice is valid according to the
+      onnxspec, but out of range of int32.
+    - But we know in this case it is safe to clip it, as we will still get the
+      same result
+    """
+    d1 = np.array([[-1, -2, -3], [4, 5, 6], [7, 8, 9]]).astype(np.float32)
+    d2 = np.array([0, 1]).astype(np.int64)
+    axis = 0
+
+    axesV = np.array([0], dtype=np.int64)
+    # Out of range value for int32!
+    startsV = np.array([-9223372036854775807], dtype=np.int64)
+    endsV = np.array([2], dtype=np.int64)
+
+    builder = popart.Builder()
+
+    i1 = builder.addInputTensor("FLOAT", d1.shape)
+    i2 = builder.addInputTensor("INT64", d2.shape)
+    g = builder.aiOnnx.gather([i1, i2], axis)
+
+    axes = builder.aiOnnx.constant(axesV)
+    starts = builder.aiOnnx.constant(startsV)
+    ends = builder.aiOnnx.constant(endsV)
+    s = builder.aiOnnx.slice([i1, starts, ends, axes])
+
+    o = builder.aiOnnx.add([g, s])
+
+    int64_proto = builder.getModelProto()
+    graph_transformer = popart.GraphTransformer(int64_proto)
+    graph_transformer.convertINT64ToINT32(clip=True)
+    int32_proto = graph_transformer.getModelProto()
+
+    session = popart.InferenceSession(fnModel=int32_proto,
+                                      dataFlow=popart.DataFlow(1, [o]),
+                                      deviceInfo=tu.create_test_device())
+    session.prepareDevice()
+
+    anchors = session.initAnchorArrays()
+    stepio = popart.PyStepIO({i1: d1, i2: d2}, anchors)
+    session.run(stepio)
+
+    reference = 2 * np.take(d1, d2, axis=axis)
+    assert np.allclose(anchors[o], reference)

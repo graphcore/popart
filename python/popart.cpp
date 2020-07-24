@@ -1192,7 +1192,9 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("convertUINT16ToINT32", &GraphTransformer::convertUINT16ToINT32);
     cls.def("convertINT8ToINT32", &GraphTransformer::convertINT8ToINT32);
     cls.def("convertINT16ToINT32", &GraphTransformer::convertINT16ToINT32);
-    cls.def("convertINT64ToINT32", &GraphTransformer::convertINT64ToINT32);
+    cls.def("convertINT64ToINT32",
+            &GraphTransformer::convertINT64ToINT32,
+            py::arg("clip") = false);
     cls.def("convertDoublesToFloats",
             &GraphTransformer::convertDoublesToFloats);
     cls.def("convertDoublesToHalfs", &GraphTransformer::convertDoublesToHalfs);
