@@ -91,6 +91,13 @@ public:
           const std::vector<int64_t> &axes_,
           const std::vector<int64_t> &steps_,
           const Op::Settings &settings_);
+
+  SliceOp(const OperatorIdentifier &_opid,
+          const std::vector<int64_t> &starts_,
+          const std::vector<int64_t> &ends_,
+          const std::vector<int64_t> &axes_,
+          const Op::Settings &settings_);
+
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
 

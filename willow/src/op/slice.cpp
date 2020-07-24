@@ -251,6 +251,18 @@ SliceOp::SliceOp(const OperatorIdentifier &_opid,
                  const Op::Settings &settings_)
     : BaseSliceOp(_opid, starts_, ends_, axes_, steps_, settings_) {}
 
+SliceOp::SliceOp(const OperatorIdentifier &_opid,
+                 const std::vector<int64_t> &starts_,
+                 const std::vector<int64_t> &ends_,
+                 const std::vector<int64_t> &axes_,
+                 const Op::Settings &settings_)
+    : BaseSliceOp(_opid,
+                  starts_,
+                  ends_,
+                  axes_,
+                  std::vector<int64_t>(),
+                  settings_) {}
+
 SliceInplaceOp::SliceInplaceOp(const OperatorIdentifier &_opid,
                                const std::vector<int64_t> &starts_,
                                const std::vector<int64_t> &ends_,
