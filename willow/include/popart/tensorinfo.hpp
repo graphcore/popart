@@ -3,6 +3,7 @@
 #define GUARD_NEURALNET_TENSORINFO_HPP
 
 #include <algorithm>
+#include <numeric>
 #include <sstream>
 #include <vector>
 #include <popart/basicoptionals.hpp>
@@ -174,11 +175,25 @@ public:
   // A helper functions for back-ends which
   // prefer the size as (unsigned) size_t.
   std::vector<size_t> shape_szt() const;
-  Rank rank() const;
-  int64_t nelms() const;
+  // Defined in-header to encourage inlining (it's called a lot).
+  Rank rank() const { return static_cast<int>(shape_v.size()); }
+  // Defined in-header to encourage inlining (it's called a lot).
+  int64_t nelms() const {
+    return std::accumulate(shape_v.begin(),
+                           shape_v.end(),
+                           static_cast<int64_t>(1),
+                           std::multiplies<int64_t>());
+  }
   // total bytes of tensor
   int64_t nbytes() const;
-  int64_t dim(int i) const;
+  // Defined in-header to encourage inlining (it's called a lot).
+  int64_t dim(int i) const {
+    if (i >= shape_v.size()) {
+      throw error(
+          "Invalid input dimension {}, tensor of rank {}", i, shape_v.size());
+    }
+    return shape_v[i];
+  }
   DataType dataType() const;
   const std::string &data_type() const;
   const std::string &data_type_lcase() const;

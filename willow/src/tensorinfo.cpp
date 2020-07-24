@@ -323,25 +323,8 @@ const std::string &TensorInfo::data_type_lcase() const {
 
 const Shape &TensorInfo::shape() const { return shape_v; }
 
-Rank TensorInfo::rank() const { return static_cast<int>(shape_v.size()); }
-
-int64_t TensorInfo::nelms() const {
-  return std::accumulate(shape_v.begin(),
-                         shape_v.end(),
-                         static_cast<int64_t>(1),
-                         std::multiplies<int64_t>());
-}
-
 int64_t TensorInfo::nbytes() const {
   return nelms() * static_cast<int64_t>(dataTypeInfo->nbytes());
-}
-
-int64_t TensorInfo::dim(int i) const {
-  if (i >= shape_v.size()) {
-    throw error(
-        "Invalid input dimension {}, tensor of rank {}", i, shape_v.size());
-  }
-  return shape_v[i];
 }
 
 DataType TensorInfo::dataType() const { return dataTypeInfo->type(); }
