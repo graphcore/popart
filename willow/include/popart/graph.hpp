@@ -139,6 +139,30 @@ public:
   // At most num call sites are returned if num > 0.
   std::vector<Op *> getCallSiteOps(size_t num) const;
 
+  // Computes the "edge map" of Op-wise dependencies of this graph, including
+  // those described in `this->topoCons`.
+  //
+  // Returns:
+  //   `edges`: std::map<OpId, std::unordered_set<OpId>>
+  //            s.t. if there is a direct dependence from OpId a to OpId b in
+  //            the graph, then `b` is in `edges[a]`
+  //
+  // Design note: For the type of container used for the edge map, we need a
+  // container that is:
+  //   1. Orderable (by key), as it is very useful for some callers.
+  //   2. Can handle non-contiguous, non-starting-at-zero OpIds.
+  //   3. Fast lookup. Modification not a concern.
+  //   4. Multiple values per key, which are unique and (explicitly) unordered.
+  //
+  // `std::multimap<OpId, OpId>`, since C++11, does enforce an ordering on the
+  // values - their insertion order - thus we must use a
+  // `std::map<OpId, unordered_set<OpId>>`.
+  //
+  // We do not know that this method is a performance bottleneck, so do not need
+  // to consider the performance benefits vs design implications of using a more
+  // lightweight container, like `std::vector`.
+  std::map<OpId, std::unordered_set<OpId>> getEdgeMap() const;
+
 private:
   std::vector<Op *>
   growGradOps(Op *nonGradOp, const std::map<TensorId, TensorId> &gradTensorMap);

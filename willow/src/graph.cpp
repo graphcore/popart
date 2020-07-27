@@ -1,4 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/range/algorithm.hpp>
 #include <onnx/onnx_pb.h>
@@ -26,6 +28,17 @@
 #include <popart/op/sgd1acclupdate.hpp>
 #include <popart/op/sgd1varupdate.hpp>
 #include <popart/op/varupdate.hpp>
+
+// Prototypes
+namespace {
+using namespace popart;
+
+// For some Op A with OpId a: (a, A) -> (a, [consumer OpIds of a]).
+std::pair<OpId, std::unordered_set<OpId>> getConsumerOpIdsInGraph(
+    const Graph *graph,
+    const std::pair<const OpId, std::unique_ptr<Op>> &opid_op);
+
+} // namespace
 
 namespace popart {
 
@@ -939,4 +952,58 @@ std::vector<Op *> Graph::getCallSiteOps(size_t num) const {
   return ops_;
 }
 
+std::map<OpId, std::unordered_set<OpId>> Graph::getEdgeMap() const {
+  const auto &opid_op_map = this->getOps();
+
+  const auto getConsumerOpIds = [this](const auto &opid_op) {
+    return getConsumerOpIdsInGraph(this, opid_op);
+  };
+
+  std::map<OpId, std::unordered_set<OpId>> edges;
+
+  std::transform(opid_op_map.cbegin(),
+                 opid_op_map.cend(),
+                 std::inserter(edges, edges.end()),
+                 getConsumerOpIds);
+
+  return edges;
+}
+
 } // namespace popart
+
+namespace {
+using namespace popart;
+
+std::pair<OpId, std::unordered_set<OpId>> getConsumerOpIdsInGraph(
+    const Graph *graph,
+    const std::pair<const OpId, std::unique_ptr<Op>> &opid_op) {
+  const auto opid = opid_op.first;
+  auto *op        = opid_op.second.get();
+
+  std::unordered_set<OpId> consumers;
+
+  const auto addAllIdsToConsumers = [&consumers](const auto &ops) -> void {
+    std::transform(ops.cbegin(),
+                   ops.cend(),
+                   std::inserter(consumers, consumers.end()),
+                   [](Op *const &op) { return op->id; });
+  };
+
+  // 1. Add all topoCons consumers.
+
+  const auto topoConsConsumerOps = graph->topoCons->getAfters(op);
+
+  addAllIdsToConsumers(topoConsConsumerOps);
+
+  // 2. Add all graph consumers.
+
+  for (const auto *t_out : op->output->tensors()) {
+    const auto graphConsumerOps = t_out->consumers.getOps();
+
+    addAllIdsToConsumers(graphConsumerOps);
+  }
+
+  return {opid, consumers};
+}
+
+} // namespace
