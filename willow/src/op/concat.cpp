@@ -81,7 +81,14 @@ std::unique_ptr<Op> ConcatInplaceOp::clone() const {
   return std::make_unique<ConcatInplaceOp>(*this);
 }
 
-int64_t ConcatOp::getAxis() const { return axis; }
+int64_t ConcatOp::getAxis() const {
+  // Onnx 11 supports negative axis indexing for argmin and argmax.
+  if (axis >= 0) {
+    return axis;
+  } else {
+    return inInfo(getInIndex(0)).rank() + axis;
+  }
+}
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 ConcatOp::inplacePriorityDefault() const {
@@ -135,7 +142,19 @@ Shape ConcatOp::getOutputShape(int64_t axis,
   return outShape;
 }
 
+void ConcatOp::validateAxis() const {
+  auto r = static_cast<int64_t>(inShape(InIndex(0)).size());
+  if (axis < -r || axis > r - 1) {
+    throw error("Attribute 'axis' of ConcatOp, {}, is outside of acceptable "
+                "range [{}, {}]",
+                -r,
+                r - 1);
+  }
+}
+
 void ConcatOp::setup() {
+  validateAxis();
+
   const auto input_count = input->n();
 
   if (input_count == 0) {
@@ -150,7 +169,7 @@ void ConcatOp::setup() {
   }
   Shape outShape;
   try {
-    outShape = getOutputShape(axis, inputs);
+    outShape = getOutputShape(getAxis(), inputs);
   } catch (const error &) {
     logging::op::err(
         "Error trying to calculate output shape for concat {}({}, {})",
@@ -163,7 +182,7 @@ void ConcatOp::setup() {
   outOffsets = {0};
   for (int i = 0; i < input_count; ++i) {
     const auto shape = inShape(getInIndex(i));
-    outOffsets.push_back(outOffsets.back() + shape[axis]);
+    outOffsets.push_back(outOffsets.back() + shape[getAxis()]);
   }
 
   outInfo(getOutIndex()) = TensorInfo(outType, outShape);
@@ -188,18 +207,18 @@ ConcatGradOp::ConcatGradOp(const ConcatOp &fwd, InIndex inputIndex)
       axis(fwd.getAxis()), start(0), end(0), fwdInput(inputIndex) {
   for (int i = 0; i < inputIndex; ++i) {
     auto shape = fwd.inShape(ConcatOp::getInIndex(i));
-    start += shape[axis];
+    start += shape[getAxis()];
   }
 
   for (int i = 0; i <= inputIndex; ++i) {
     auto shape = fwd.inShape(ConcatOp::getInIndex(i));
-    end += shape[axis];
+    end += shape[getAxis()];
   }
 
   const DataType outType =
       fwd.inInfo(ConcatOp::getInIndex(fwdInput)).dataType();
-  Shape outShape = fwd.inShape(ConcatOp::getInIndex(fwdInput));
-  outShape[axis] = end - start;
+  Shape outShape      = fwd.inShape(ConcatOp::getInIndex(fwdInput));
+  outShape[getAxis()] = end - start;
 
   gradInfo               = TensorInfo(outType, outShape);
   gradOutToNonGradInInfo = {{getOutIndex(), ConcatOp::getInIndex(fwdInput)}};

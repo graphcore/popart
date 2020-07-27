@@ -1970,3 +1970,39 @@ def test_constantofshape(op_tester):
         return [out]
 
     op_tester.run(init_builder, reference, 'infer')
+
+
+def test_concat(op_tester):
+    values = [np.random.rand(1, 2, 3).astype(np.float32) for i in range(4)]
+
+    def init_builder(builder):
+        i = [builder.addInputTensor(v) for v in values]
+        c = builder.aiOnnx.concat(i, 1)
+        o = builder.aiOnnx.identity([c])
+
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        out = np.concatenate(values, 1)
+        return [out]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_concat_negative_axis(op_tester):
+    values = [np.random.rand(1, 2, 2, 2).astype(np.float32) for i in range(4)]
+
+    def init_builder(builder):
+        i = [builder.addInputTensor(v) for v in values]
+        c = builder.aiOnnx.concat(i, -1)
+        o = builder.aiOnnx.identity([c])
+
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        out = np.concatenate(values, -1)
+        return [out]
+
+    op_tester.run(init_builder, reference, 'infer')

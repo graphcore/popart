@@ -45,6 +45,8 @@ public:
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
+  void validateAxis() const;
+
   int64_t axis = 0;
 
   // suppose input tensors have shapes,
