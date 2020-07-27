@@ -3,6 +3,7 @@
 
 #include <popart/error.hpp>
 #include <popart/names.hpp>
+#include <popart/op/receptive.hpp>
 #include <popart/opidentifier.hpp>
 
 #include <onnx/defs/schema.h>
@@ -27,6 +28,7 @@ void DynamicUpdateShapeInference(InferenceContext &ctx);
 void DynamicSliceInference(InferenceContext &ctx);
 void DynamicZeroShapeInference(InferenceContext &ctx);
 void DynamicAddShapeInference(InferenceContext &ctx);
+void MultiConvShapeInference(InferenceContext &ctx);
 
 void SubsampleShapeInference(InferenceContext &ctx) {
   propagateElemTypeFromInputToOutput(ctx, 0, 0);
@@ -244,6 +246,82 @@ void LossShapeInference(InferenceContext &ctx) {
   }
 }
 
+void MultiConvShapeInference(InferenceContext &ctx) {
+  auto num_outputs              = ctx.getNumOutputs();
+  int64_t cumulativeSpatialDims = 0;
+
+  popart::Shape flatPads;
+  popart::Shape flatStrides;
+  popart::Shape flatDilations;
+  getRepeatedAttribute(ctx, "pads", flatPads);
+  getRepeatedAttribute(ctx, "strides", flatStrides);
+  getRepeatedAttribute(ctx, "dilations", flatDilations);
+
+  for (size_t outIdx = 0; outIdx < num_outputs; ++outIdx) {
+    size_t dataIdx    = (2 * outIdx);
+    size_t weightsIdx = (2 * outIdx) + 1;
+
+    propagateElemTypeFromInputToOutput(ctx, dataIdx, outIdx);
+
+    auto dataShape    = ctx.getInputType(dataIdx)->tensor_type().shape();
+    auto weightsShape = ctx.getInputType(weightsIdx)->tensor_type().shape();
+
+    auto *outputShape =
+        ctx.getOutputType(outIdx)->mutable_tensor_type()->mutable_shape();
+
+    *outputShape->add_dim() = dataShape.dim(0);    // batch size
+    *outputShape->add_dim() = weightsShape.dim(0); // num output channels
+
+    auto dataSize    = dataShape.dim_size();
+    auto spatialSize = dataSize - 2;
+
+    // Unflatten parameters
+    popart::Shape pads;
+    popart::Shape strides;
+    popart::Shape dilations;
+    if (flatPads.empty()) {
+      pads.assign(spatialSize * 2, 0);
+    } else {
+      const auto cumulativePads = cumulativeSpatialDims * 2;
+      pads                      = {flatPads.begin() + cumulativePads,
+              flatPads.begin() + cumulativePads + (spatialSize * 2)};
+    }
+    if (flatStrides.empty()) {
+      strides.assign(spatialSize, 1);
+    } else {
+      strides = {flatStrides.begin() + cumulativeSpatialDims,
+                 flatStrides.begin() + cumulativeSpatialDims + spatialSize};
+    }
+    if (flatDilations.empty()) {
+      dilations.assign(spatialSize, 1);
+    } else {
+      dilations = {flatDilations.begin() + cumulativeSpatialDims,
+                   flatDilations.begin() + cumulativeSpatialDims + spatialSize};
+    }
+    cumulativeSpatialDims += spatialSize;
+
+    popart::Shape spatialDShape;
+    popart::Shape spatialKShape;
+    for (int i = 2; i < dataSize; i++) {
+      spatialDShape.push_back(dataShape.dim(i).dim_value());
+      spatialKShape.push_back(weightsShape.dim(i).dim_value());
+    }
+
+    popart::Shape spatialOutShape =
+        popart::HasReceptiveFieldOp::getSpatialOutShape(
+            spatialDShape,
+            spatialKShape,
+            pads,
+            strides,
+            dilations,
+            popart::AutoPad::NOTSET);
+
+    for (auto dim : spatialOutShape) {
+      outputShape->add_dim()->set_dim_value(dim);
+    }
+  }
+}
+
 extern size_t dbg_count_check_GroupNormalization_AiGraphcore_ver1;
 extern size_t dbg_count_check_Subsample_AiGraphcore_ver1;
 extern size_t dbg_count_check_PrintTensor_AiGraphcore_ver1;
@@ -257,6 +335,7 @@ extern size_t dbg_count_check_DynamicUpdate_AiGraphcore_ver1;
 extern size_t dbg_count_check_DynamicSlice_AiGraphcore_ver1;
 extern size_t dbg_count_check_DynamicZero_AiGraphcore_ver1;
 extern size_t dbg_count_check_DynamicAdd_AiGraphcore_ver1;
+extern size_t dbg_count_check_MultiConv_AiGraphcore_ver1;
 
 static const char groupnormalizationDoc[] =
     "GroupNormalization applies Group Normalization over a mini-batch of "
@@ -676,6 +755,69 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               true)
         .TypeAndShapeInferenceFunction(LossShapeInference<0>))
 
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    MultiConv,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("MultiConv comprises multiple convolution operations that can "
+                "be run in parallel")
+        .Input(0,
+               "inputs",
+               "List of inputs to the convolutions, in pairwise 'data, "
+               "weights' order",
+               "T",
+               OpSchema::Variadic)
+        .Output(0,
+                "outputs",
+                "List of outputs from the convolutions",
+                "T",
+                OpSchema::Variadic)
+        .TypeConstraint(
+            "T",
+            {"tensor(float16)", "tensor(float)"},
+            "Input and output types can be any type supported by the IPU.")
+        .Attr("strides",
+              "The concatenated strides for each convoltion.",
+              AttributeProto::INTS,
+              true)
+        .Attr("pads",
+              "The concatenated pads for each convoltion.",
+              AttributeProto::INTS,
+              true)
+        .Attr("dilations",
+              "The concatenated dilations for each convoltion.",
+              AttributeProto::INTS,
+              true)
+        .Attr("planType", "The plan type.", AttributeProto::STRING, true)
+        .Attr("perConvReservedTiles",
+              "The number of tiles reserved per convolution.",
+              AttributeProto::INT,
+              true)
+        .Attr("perConvReservedTiles",
+              "The number of tiles reserved per convolution.",
+              AttributeProto::INT,
+              true)
+        .Attr("cycleBackOff",
+              "The cycle back-off proportion.",
+              AttributeProto::FLOAT,
+              true)
+        .Attr(popart::sAvailMemAttribute,
+              "The available memory proportion per convolution.",
+              AttributeProto::FLOATS,
+              true)
+        .Attr(popart::sPartialsTypeAttribute,
+              "The partials type when computing each convolution.",
+              AttributeProto::FLOATS,
+              true)
+        .Attr("numConvs",
+              "The number convolutions that the MultiConv comprises.",
+              AttributeProto::INT,
+              true)
+        .TypeAndShapeInferenceFunction(MultiConvShapeInference))
+
 static bool registerOps() {
   auto &d = ONNX_NAMESPACE::OpSchemaRegistry::DomainToVersionRange::Instance();
   d.AddDomainToVersion(popart::Domain::ai_graphcore, 1, 1);
@@ -722,6 +864,10 @@ static bool registerOps() {
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
           AiGraphcore, 1, IdentityLoss)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, MultiConv)>());
 
   return true;
 }

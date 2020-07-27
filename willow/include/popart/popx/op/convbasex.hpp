@@ -25,13 +25,15 @@ public:
 
   virtual std::vector<poplar::Tensor>
   convolve(poplar::program::Sequence &prog,
-           std::vector<poplar::Tensor> weights) const {
+           const std::vector<poplar::Tensor> &weights) const {
     throw error("No 'convolve' implementation for {}", op_p->opid);
   }
-  virtual poplar::Tensor createDataInput(const std::string &, int) const {
+  virtual poplar::Tensor createDataInput(const std::string &name,
+                                         int convIndex) const {
     throw error("No 'createDataInput' implementation for {}", op_p->opid);
   }
-  virtual poplar::Tensor createWeightsInput(const std::string &, int) const {
+  virtual poplar::Tensor createWeightsInput(const std::string &name,
+                                            int convIndex) const {
     throw error("No 'createWeightsInput' implementation for {}", op_p->opid);
   }
   bool isWeightsInIndex(InIndex) const;

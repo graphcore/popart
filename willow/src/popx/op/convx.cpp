@@ -35,7 +35,7 @@ poplar::Tensor ConvOpx::createDataInput(const std::string &name,
 
 std::vector<poplar::Tensor>
 ConvOpx::convolve(poplar::program::Sequence &prog,
-                  std::vector<poplar::Tensor> weights) const {
+                  const std::vector<poplar::Tensor> &weights) const {
   ConvOp &op     = getOp<ConvOp>();
   auto outTensor = poplin::convolution(graph(),
                                        getInTensor(ConvOp::getDataInIndex()),

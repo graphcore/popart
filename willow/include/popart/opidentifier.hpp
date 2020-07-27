@@ -207,6 +207,8 @@ const static AiGraphcoreOpIdV1 MeanArgGrad("MeanArgGrad");
 const static AiGraphcoreOpIdV1 MinArgGrad("MinArgGrad");
 const static AiGraphcoreOpIdV1 MulArg0Grad("MulArg0Grad");
 const static AiGraphcoreOpIdV1 MulArg1Grad("MulArg1Grad");
+const static AiGraphcoreOpIdV1 MultiConvDataGrad("MultiConvDataGrad");
+const static AiGraphcoreOpIdV1 MultiConvWeightsGrad("MultiConvWeightsGrad");
 // constexpr static char Multinomial[] = "Multinomial";
 const static AiGraphcoreOpIdV1 NegGrad("NegGrad");
 // constexpr static char Not[] = "Not";
@@ -307,6 +309,7 @@ const static AiGraphcoreOpIdV1 Gelu_1("Gelu", 1, 1);
 const static AiGraphcoreOpIdV1 GeluInplace("GeluInplace");
 const static AiGraphcoreOpIdV1 Detach_1("Detach", 1, 1);
 const static AiGraphcoreOpIdV1 DetachInplace("DetachInplace");
+const static AiGraphcoreOpIdV1 MultiConv_1("MultiConv");
 
 const static AiGraphcoreOpIdV1 ReluInplace("ReluInplace");
 const static AiGraphcoreOpIdV1 LeakyReluInplace("LeakyReluInplace");
@@ -404,6 +407,7 @@ const static OperatorIdentifier LSTM         = CustomOperators::LSTM_1;
 const static OperatorIdentifier Gelu         = CustomOperators::Gelu_1;
 const static OperatorIdentifier Init         = CustomOperators::Init_1;
 const static OperatorIdentifier Detach       = CustomOperators::Detach_1;
+const static OperatorIdentifier MultiConv    = CustomOperators::MultiConv_1;
 const static OperatorIdentifier DynamicSlice = CustomOperators::DynamicSlice_1;
 const static OperatorIdentifier DynamicUpdate =
     CustomOperators::DynamicUpdate_1;

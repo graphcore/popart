@@ -1359,6 +1359,18 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("args"),
             py::arg("reduction")   = ReductionType::Mean,
             py::arg("debugPrefix") = std::string());
+    cls.def("multiconv",
+            &AiGraphcoreOpset1::multiconv,
+            py::arg("args"),
+            py::arg("dilations")                  = py::list(),
+            py::arg("pads")                       = py::list(),
+            py::arg("strides")                    = py::list(),
+            py::arg("availableMemoryProportions") = py::list(),
+            py::arg("partialsTypes")              = py::list(),
+            py::arg("planType")                   = pybind11::none(),
+            py::arg("perConvReservedTiles")       = pybind11::none(),
+            py::arg("cycleBackOff")               = pybind11::none(),
+            py::arg("debugPrefix")                = std::string());
   }
   {
     py::class_<Builder> cls(m, "_BuilderCore");

@@ -43,6 +43,7 @@ add_popart_py_unit_test(lstm_test_2 VARIANTS IpuModel)
 # add_popart_py_unit_test(matmul_test)
 add_popart_py_unit_test(min_max_test)
 add_popart_py_unit_test(mul_test)
+add_popart_py_unit_test(multiconv_test)
 add_popart_py_unit_test(onehot_test)
 # add_popart_py_unit_test(op_tester) Utility
 add_popart_py_unit_test(operators_test)

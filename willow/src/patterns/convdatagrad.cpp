@@ -13,7 +13,8 @@
 namespace popart {
 
 bool ConvDataGradPattern::matches(Op *op) const {
-  return (op->opid == Onnx::GradOperators::ConvDataGrad);
+  return (op->opid == Onnx::GradOperators::ConvDataGrad ||
+          op->opid == Onnx::GradOperators::MultiConvDataGrad);
 }
 
 std::vector<const Tensor *> ConvDataGradPattern::touches(Op *) const {
@@ -22,41 +23,59 @@ std::vector<const Tensor *> ConvDataGradPattern::touches(Op *) const {
 
 bool ConvDataGradPattern::apply(Op *op) const {
 
-  auto weights_in     = op->inTensor(ConvDataGradOp::getWeightsInIndex());
-  auto gradConvIn_out = op->inTensor(ConvDataGradOp::getGradConvolvedInIndex());
-  auto grad_out       = op->outTensor(ConvDataGradOp::getOutIndex());
+  const auto gradOp = dynamic_cast<MultiConvDataGradBaseOp *>(op);
 
-  const auto gradOp = dynamic_cast<ConvDataGradOp *>(op);
+  OperatorIdentifier gradOpId = Onnx::CustomOperators::MultiConv_1;
+  if (op->opid == Onnx::GradOperators::ConvDataGrad) {
+    gradOpId = Onnx::Operators::Conv_1;
+  }
 
-  auto flip = dynamic_cast<ConvFlipWeightsOp *>(
-      makeReplacementOpInIr(Onnx::CustomOperators::ConvFlipWeights, op));
-  auto conv = dynamic_cast<ConvOp *>(
-      makeReplacementOpInIr(Onnx::Operators::Conv_1, op));
+  auto conv =
+      dynamic_cast<MultiConvBaseOp *>(makeReplacementOpInIr(gradOpId, op));
 
-  // Inherit the options from the forward op
-  flip->setConvOptions(gradOp->getConvOptions());
   conv->setConvOptions(gradOp->getConvOptions());
 
-  gradOp->disconnectAllInputs();
-  gradOp->disconnectAllOutputs();
+  auto numConvs = gradOp->numConvs();
+  for (int i = 0; i < numConvs; i++) {
+    auto weights_in =
+        gradOp->inTensor(MultiConvDataGradBaseOp::getWeightsInIndex(i));
+    auto gradConvIn_out =
+        gradOp->inTensor(MultiConvDataGradBaseOp::getGradConvolvedInIndex(i));
+    auto grad_out = gradOp->outTensor(MultiConvDataGradBaseOp::getOutIndex(i));
+    gradOp->disconnectInTensor(MultiConvDataGradBaseOp::getWeightsInIndex(i),
+                               weights_in);
+    gradOp->disconnectInTensor(
+        MultiConvDataGradBaseOp::getGradConvolvedInIndex(i), gradConvIn_out);
+    gradOp->disconnectOutTensor(grad_out);
 
-  // Configure the flip weight op
-  flip->connectInTensor(ConvFlipWeightsOp::getInIndex(), weights_in->id);
-  flip->createAndConnectOutTensor(
-      ConvFlipWeightsOp::getOutIndex(),
-      weights_in->getIr().createIntermediateTensorId(weights_in->id));
-  flip->setup();
-  flip->setParameters(gradOp->getParameters());
+    auto flip = dynamic_cast<ConvFlipWeightsOp *>(
+        makeReplacementOpInIr(Onnx::CustomOperators::ConvFlipWeights, op));
 
-  // Configure the conv op for the bwd pass
-  conv->connectInTensor(ConvOp::getWeightsInIndex(),
-                        flip->outTensor(ConvFlipWeightsOp::getOutIndex())->id);
-  conv->connectInTensor(ConvOp::getDataInIndex(), gradConvIn_out->id);
-  conv->connectOutTensor(ConvOp::getOutIndex(), grad_out->id);
+    // Inherit the options from the forward op
+    flip->setConvOptions(gradOp->getConvOptions());
+
+    // Configure the flip weight op
+    flip->connectInTensor(ConvFlipWeightsOp::getInIndex(), weights_in->id);
+    flip->createAndConnectOutTensor(
+        ConvFlipWeightsOp::getOutIndex(),
+        weights_in->getIr().createIntermediateTensorId(weights_in->id));
+
+    flip->setup();
+    flip->setParameters(gradOp->getParameters(i));
+
+    // Configure the conv op for the bwd pass
+    conv->connectInTensor(
+        MultiConvBaseOp::getWeightsInIndex(i),
+        flip->outTensor(ConvFlipWeightsOp::getOutIndex())->id);
+    conv->connectInTensor(MultiConvBaseOp::getDataInIndex(i),
+                          gradConvIn_out->id);
+    conv->connectOutTensor(MultiConvBaseOp::getOutIndex(i), grad_out->id);
+  }
+
   conv->setupFromDataGradOp(gradOp);
 
-  // Remove the ConvGradOp
-  gradOp->getGraph().eraseOp(gradOp->id);
+  // Remove the MultiConvGradOp
+  op->getGraph().eraseOp(op->id);
 
   return true;
 }

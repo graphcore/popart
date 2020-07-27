@@ -75,7 +75,7 @@ static void verifyWindowParameters(std::unique_ptr<BuilderImpl> &impl,
 
     // Default 'zeros'
     if (padding.empty()) {
-      padding.resize(impl->getTensorShape(input).size(), 0);
+      padding.resize(2 * num_spatial_dims, 0);
     }
     // Default 'ones'
     if (dilation.empty()) {
@@ -371,6 +371,130 @@ AiGraphcoreOpset1::groupnormalization(const std::vector<TensorId> &args,
                   getOpsetVersion(),
                   args,
                   attributes,
+                  name);
+}
+
+std::vector<TensorId> AiGraphcoreOpset1::multiconv(
+    const MultiConvInputs &tensors,
+    const MultiConvDilations &dilations,
+    const MultiConvPads &pads,
+    const MultiConvStrides &strides,
+    const std::vector<float> &availableMemoryProportions,
+    const std::vector<std::string> &partialsTypes,
+    const nonstd::optional<std::string> planType,
+    const nonstd::optional<int> perConvReservedTiles,
+    const nonstd::optional<float> cycleBackOff,
+    const std::string &name) {
+
+  // Some checks:
+
+  // 1. A multiconv must comprise at least one conv
+  const auto numConvs = tensors.size();
+  if (numConvs < 1) {
+    throw error("MultiConvOp '{}' has no input tensors. Provide at least one "
+                "set of inputs",
+                name);
+  }
+
+  // 2. Each conv must have exactly two inputs. An optional third bias
+  //    input is not supported for multiconv
+  for (size_t i = 0; i < numConvs; i++) {
+    auto numConvInputs = tensors[i].size();
+    if (numConvInputs != 2) {
+      throw error("Each convolution of MultiConvOp '{}' must have exactly two "
+                  "inputs - data and weights",
+                  name);
+    }
+  }
+
+  // 3. The number of parameters must equal the number of inputs,
+  //    unless empty, in which case they take default values
+  auto checkParamSize = [&numConvs, &name](int64_t paramsSize,
+                                           std::string param) {
+    if (paramsSize != 0 && paramsSize != numConvs) {
+      throw error("For MultiConvOp '{}', number of {} parameter sets ({}) "
+                  "does not match the number of input sets ({})",
+                  name,
+                  param,
+                  paramsSize,
+                  numConvs);
+    }
+  };
+  checkParamSize(dilations.size(), "dilations");
+  checkParamSize(pads.size(), "pads");
+  checkParamSize(strides.size(), "strides");
+  checkParamSize(availableMemoryProportions.size(),
+                 "availableMemoryProportions");
+  checkParamSize(partialsTypes.size(), "partialsTypes");
+
+  // 4. Check the parameters of each conv individually
+  std::vector<int64_t> emptyParams;
+  for (size_t i = 0; i < numConvs; i++) {
+    std::map<std::string, popart::any> attributes;
+    attributes["strides"]   = strides.empty() ? emptyParams : strides[i];
+    attributes["pads"]      = pads.empty() ? emptyParams : pads[i];
+    attributes["dilations"] = dilations.empty() ? emptyParams : dilations[i];
+    verifyConvBase(impl, tensors[i], attributes);
+  }
+
+  // The the 'receptive field op' parameters - dilations, pads and
+  // strides - are passed in as 'vectors of vectors'.
+  // But ONNX does not support 'vector of vectors' as attributes.
+  // For this reason, we flatten the parameters here to a 1D vector,
+  // which is how they are represented in the ONNX model, and then
+  // unflatten again in MultiConvBaseOp::setup().
+  //
+  // Similarly, for 'tensors'
+  // tensors: {{data0, w0}, {data1, w1}, {data2, w2}}
+  // flatTensors: {data0, w0, data1, w1, data2, w2}
+  ConvInputs flatTensors;
+  ConvDilations flatDilations;
+  ConvPads flatPads;
+  ConvStrides flatStrides;
+  for (size_t i = 0; i < numConvs; i++) {
+    flatTensors.insert(
+        flatTensors.end(), tensors[i].cbegin(), tensors[i].cend());
+
+    // Flatten if not empty
+    if (!dilations.empty()) {
+      flatDilations.insert(
+          end(flatDilations), begin(dilations[i]), end(dilations[i]));
+    }
+    if (!pads.empty()) {
+      flatPads.insert(end(flatPads), begin(pads[i]), end(pads[i]));
+    }
+    if (!strides.empty()) {
+      flatStrides.insert(end(flatStrides), begin(strides[i]), end(strides[i]));
+    }
+  }
+
+  std::map<std::string, popart::any> finalAttributes;
+  finalAttributes["strides"]   = flatStrides;
+  finalAttributes["pads"]      = flatPads;
+  finalAttributes["dilations"] = flatDilations;
+
+  if (planType) {
+    finalAttributes["planType"] = *planType;
+  }
+  if (perConvReservedTiles) {
+    finalAttributes["perConvReservedTiles"] = *perConvReservedTiles;
+  }
+  if (cycleBackOff) {
+    finalAttributes["cycleBackOff"] = *cycleBackOff;
+  }
+  if (availableMemoryProportions.size()) {
+    finalAttributes[sAvailMemAttribute] = availableMemoryProportions;
+  }
+  if (partialsTypes.size()) {
+    finalAttributes[sPartialsTypeAttribute] = partialsTypes;
+  }
+  finalAttributes["numConvs"] = static_cast<int64_t>(numConvs);
+
+  return impl->op(Onnx::AiGraphcore::OpSet1::MultiConv,
+                  getOpsetVersion(),
+                  flatTensors,
+                  static_cast<unsigned>(numConvs), // number of outputs
+                  finalAttributes,
                   name);
 }
 

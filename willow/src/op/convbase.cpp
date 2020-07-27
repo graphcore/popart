@@ -238,42 +238,31 @@ void MultiConvBaseOp::setup() {
   dilations.resize(numConvs());
   params.resize(numConvs());
 
-  // Check the assumption that all inputs are of the same rank
-  auto firstDataRank = inRank(getDataInIndex(0));
+  // Check that all parameters are either empty, or unpackable (i.e. they
+  // contain N * sum(nSpatialDims) elements each, where N == 1 for dilantions
+  // and strides, and N == 2 for pads.
+  int64_t totalNumSpatialDims = 0;
   for (int i = 0; i < numConvs(); i++) {
-    if (inRank(getDataInIndex(i)) != firstDataRank ||
-        inRank(getWeightsInIndex(i)) != firstDataRank) {
-      throw error("MultiConvOp '{}' does not satisfy the constraint that all "
-                  "inputs must have the same rank",
+    totalNumSpatialDims += getNSpatialDims(i);
+  }
+  if (!flatStrides.empty()) {
+    if (flatStrides.size() != totalNumSpatialDims) {
+      throw error(
+          "Unexpected number of stride parameters for convolution op '{}'",
+          str());
+    }
+  }
+  if (!flatPads.empty()) {
+    if (flatPads.size() != totalNumSpatialDims * 2) {
+      throw error("Unexpected number of pad parameters for convolution op '{}'",
                   str());
     }
   }
-  int64_t nSpatialDims = getNSpatialDims(0);
-
-  // Check that all parameters are either empty, or unpackable (i.e. they
-  // contain N * nSpatialDims elements each, where N == 1 for dilantions and
-  // stries, and N == 2 for pads.
-  for (int i = 0; i < numConvs(); i++) {
-    if (!flatStrides.empty()) {
-      if (flatStrides.size() != numConvs() * nSpatialDims) {
-        throw error(
-            "Unexpected number of stride parameters for convolution op '{}'",
-            str());
-      }
-    }
-    if (!flatPads.empty()) {
-      if (flatPads.size() != numConvs() * nSpatialDims * 2) {
-        throw error(
-            "Unexpected number of pad parameters for convolution op '{}'",
-            str());
-      }
-    }
-    if (!flatDilations.empty()) {
-      if (flatDilations.size() != numConvs() * nSpatialDims) {
-        throw error(
-            "Unexpected number of dilation parameters for convolution op '{}'",
-            str());
-      }
+  if (!flatDilations.empty()) {
+    if (flatDilations.size() != totalNumSpatialDims) {
+      throw error(
+          "Unexpected number of dilation parameters for convolution op '{}'",
+          str());
     }
   }
 
@@ -282,30 +271,41 @@ void MultiConvBaseOp::setup() {
   // pads - 0 along each input axis
   // strides - 1 along each spatial axis
   // Otherwise, unpack.
+
+  // Keep track of sizes of each conv of multiconv, for unpacking
+  int64_t cumulativeSpatialDims = 0;
+
   for (int i = 0; i < numConvs(); i++) {
+    const auto nSpatialDims = getNSpatialDims(i);
+
     if (flatStrides.empty()) {
       strides[i].resize(nSpatialDims, 1);
     } else {
-      strides[i] = {flatStrides.begin() + i * nSpatialDims,
-                    flatStrides.begin() + (i + 1) * nSpatialDims};
+      strides[i] = {flatStrides.begin() + cumulativeSpatialDims,
+                    flatStrides.begin() + cumulativeSpatialDims + nSpatialDims};
     }
     if (flatPads.empty()) {
       pads[i].resize(2 * nSpatialDims, 0);
     } else {
-      pads[i] = {flatPads.begin() + i * nSpatialDims * 2,
-                 flatPads.begin() + (i + 1) * nSpatialDims * 2};
+      const auto cumulativePads = cumulativeSpatialDims * 2;
+      pads[i]                   = {flatPads.begin() + cumulativePads,
+                 flatPads.begin() + cumulativePads + (nSpatialDims * 2)};
     }
     if (flatDilations.empty()) {
       dilations[i].resize(nSpatialDims, 1);
     } else {
-      dilations[i] = {flatDilations.begin() + i * nSpatialDims,
-                      flatDilations.begin() + (i + 1) * nSpatialDims};
+      dilations[i] = {flatDilations.begin() + cumulativeSpatialDims,
+                      flatDilations.begin() + cumulativeSpatialDims +
+                          nSpatialDims};
     }
+
+    cumulativeSpatialDims += nSpatialDims;
   }
 
   // Alter pads if necessary, based on AutoPad type
   for (int i = 0; i < numConvs(); i++) {
-    auto outShape = getOutShape(i);
+    const auto nSpatialDims = getNSpatialDims(i);
+    const auto outShape     = getOutShape(i);
     Shape spatialO(nSpatialDims, 0);
     for (int j = 0; j < nSpatialDims; ++j) {
       spatialO[j] = outShape[j + 2];
@@ -317,11 +317,12 @@ void MultiConvBaseOp::setup() {
   }
 
   // Set up the conv parameters
-  std::vector<int64_t> zeros(nSpatialDims, 0);
-  std::vector<int64_t> ones(nSpatialDims, 1);
-  std::vector<bool> falses(nSpatialDims, false);
-
   for (int i = 0; i < numConvs(); i++) {
+    const auto nSpatialDims = getNSpatialDims(i);
+    std::vector<int64_t> zeros(nSpatialDims, 0);
+    std::vector<int64_t> ones(nSpatialDims, 1);
+    std::vector<bool> falses(nSpatialDims, false);
+
     params[i].type        = inInfo(getDataInIndex(i)).dataType();
     params[i].batchSize   = inInfo(getDataInIndex(i)).dim(0);
     params[i].inputShape  = getSpatialD(i);

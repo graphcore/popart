@@ -81,6 +81,73 @@ public:
                                            const std::string &name = {});
 
   /**
+   * Add a multi-convolution to the model
+   *
+   * Using this multi-convolution API ensures that the convolutions are
+   * executed in parallel on the device,
+   *
+   * Functionally, a multi-convolution is equivalent to a series of single
+   * convolutions. Using this multi-convolution API is always equivalent to
+   * calling the single-convolution API (conv) once for each argument.
+   *
+   * For example, calling
+   *
+   * > A0 = conv({X0, W0})
+   * > A1 = conv({X1, W1})
+   *
+   * is functionally equivalent to calling
+   *
+   * > {A0, A1} = multiconv({{X0, W0}, {X1, Q1}).
+   *
+   * It is possible that any two convolutions cannot be executed in parallel
+   * due to topological constraints. For example,
+   *
+   * >  B = conv({A, W0});
+   * >  C = B + A
+   * >  D = conv({C, W1});
+   *
+   * cannot be converted to,
+   *
+   * > {B, D} = multiconv({{A, W0}, {C, W1}}).
+   *
+   * Note that it is not possible to create such a cycle by adding a
+   * multi-convolution with this API.
+   *
+   * Calls to multiconv eventually map to PopLibs'
+   * poplin::multiconv::convolution
+   *
+   *
+   * \param tensors List of {DataTensorId, WeightTensorId}
+   * \param dilations The dilations attributes for each convolution.
+   * \param pads The pads for each convolution.
+   * \param strides The strides for each convolution.
+   * \param availableMemoryProportions The available memory proportions per
+            conv, each [0, 1).
+   * \param partialsTypes The partials type per conv
+   * \param planType Run convolutions in parallel or series.
+   * \param perConvReservedTiles Tiles to reserve per convolution when planning.
+   * \param cycleBackOff Cycle back off proportion, [0, 1).
+   * \param name Optional identifier for the operation
+   *
+   * All input vectors must be either empty, or equal in length to
+   * the number of convolutions.
+   *
+   * \return The TensorId of the output Tensor from each convolution.
+   *
+   */
+  std::vector<TensorId>
+  multiconv(const MultiConvInputs &tensors,
+            const MultiConvDilations &dilations                  = {},
+            const MultiConvPads &pads                            = {},
+            const MultiConvStrides &strides                      = {},
+            const std::vector<float> &availableMemoryProportions = {},
+            const std::vector<std::string> &partialsTypes        = {},
+            const nonstd::optional<std::string> planType     = nonstd::nullopt,
+            const nonstd::optional<int> perConvReservedTiles = nonstd::nullopt,
+            const nonstd::optional<float> cycleBackOff       = nonstd::nullopt,
+            const std::string &name                          = {});
+
+  /**
    * Add a subsample operation to the model
    *
    * This is a poplar extension

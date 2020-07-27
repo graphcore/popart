@@ -14,7 +14,7 @@ def test_per_op_partials():
     kernel = np.random.rand(3, 2, kernel_size, kernel_size).astype(np.float16)
     partials_type = ['', '']
 
-    def init_builder(builder):
+    def init_builder0(builder):
         d1 = builder.addInputTensor(datas, 'data_in')
         k = builder.addInputTensor(kernel)
 
@@ -35,25 +35,46 @@ def test_per_op_partials():
         builder.addOutputTensor(o)
         return [o]
 
+    def init_builder1(builder):
+        d1 = builder.addInputTensor(datas, 'data_in')
+        k = builder.addInputTensor(kernel)
+
+        [c1, c2] = builder.aiGraphcore.multiconv([[d1, k], [d1, k]],
+                                                 dilations=[[1, 1], [1, 1]],
+                                                 pads=[[1, 1, 1, 1],
+                                                       [1, 1, 1, 1]],
+                                                 strides=[[1, 1], [1, 1]],
+                                                 partialsTypes=partials_type)
+        o = builder.aiOnnx.add([c1, c2])
+
+        builder.addOutputTensor(o)
+        return [o]
+
     session = PopartTestSession()
     session.device = 'ipu_model'
 
     # check both convs are using half partials
     partials_type[0] = 'HALF'
     partials_type[1] = 'HALF'
-    session.prepare_and_run(init_builder)
+    session.prepare_and_run(init_builder0)
+    _check_for_conv_partials(session, ['half'], ['float'])
+    session.prepare_and_run(init_builder1)
     _check_for_conv_partials(session, ['half'], ['float'])
 
     # check both convs are using float partials
     partials_type[0] = 'FLOAT'
     partials_type[1] = 'FLOAT'
-    session.prepare_and_run(init_builder)
+    session.prepare_and_run(init_builder0)
+    _check_for_conv_partials(session, ['float'], ['half'])
+    session.prepare_and_run(init_builder1)
     _check_for_conv_partials(session, ['float'], ['half'])
 
     # check both float and half partials are used
     partials_type[0] = 'HALF'
     partials_type[1] = 'FLOAT'
-    session.prepare_and_run(init_builder)
+    session.prepare_and_run(init_builder0)
+    _check_for_conv_partials(session, ['half', 'float'], [])
+    session.prepare_and_run(init_builder1)
     _check_for_conv_partials(session, ['half', 'float'], [])
 
 
@@ -121,7 +142,7 @@ def test_global_partials():
     datas = np.random.rand(1, 2, data_size, data_size).astype(np.float16)
     kernel = np.random.rand(3, 2, kernel_size, kernel_size).astype(np.float16)
 
-    def init_builder(builder):
+    def init_builder0(builder):
         d1 = builder.addInputTensor(datas, 'data_in')
         k = builder.addInputTensor(kernel)
 
@@ -133,17 +154,30 @@ def test_global_partials():
         builder.addOutputTensor(o)
         return [o]
 
+    def init_builder1(builder):
+        d1 = builder.addInputTensor(datas, 'data_in')
+        k = builder.addInputTensor(kernel)
+
+        [o] = builder.aiGraphcore.multiconv([[d1, k]], pads=[[1, 1, 1, 1]])
+
+        builder.addOutputTensor(o)
+        return [o]
+
     session = PopartTestSession()
     session.device = 'ipu_model'
 
     # check convs are using half partials
     session.options.convolutionOptions = {'partialsType': 'half'}
-    session.prepare_and_run(init_builder)
+    session.prepare_and_run(init_builder0)
+    _check_for_conv_partials(session, ['half'], ['float'])
+    session.prepare_and_run(init_builder1)
     _check_for_conv_partials(session, ['half'], ['float'])
 
     # check convs are using float partials
     session.options.convolutionOptions = {'partialsType': 'float'}
-    session.prepare_and_run(init_builder)
+    session.prepare_and_run(init_builder0)
+    _check_for_conv_partials(session, ['float'], ['half'])
+    session.prepare_and_run(init_builder1)
     _check_for_conv_partials(session, ['float'], ['half'])
 
 

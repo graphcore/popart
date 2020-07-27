@@ -1,46 +1,46 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_CONVX_HPP
-#define GUARD_NEURALNET_CONVX_HPP
+#ifndef GUARD_NEURALNET_MULTICONVX_HPP
+#define GUARD_NEURALNET_MULTICONVX_HPP
 
 #include <popart/names.hpp>
-#include <popart/op/conv.hpp>
 #include <popart/popx/enigma.hpp>
 #include <popart/popx/op/convbasex.hpp>
 #include <popart/popx/opx.hpp>
 
-#include <poplin/Convolution.hpp>
+#include <poplin/MultiConvolution.hpp>
 
 namespace popart {
 
-class ConvOp;
-class ConvWeightsGradOp;
-class ConvDataGradOp;
+class MultiConvOp;
 
 namespace popx {
 
-class ConvOpx : public MultiConvBaseOpx {
+class MultiConvOpx : public MultiConvBaseOpx {
 public:
-  ConvOpx(Op *, Devicex *);
+  MultiConvOpx(Op *, Devicex *);
+
   poplar::Tensor createWeightsInput(const std::string &name,
                                     int convIndex) const final;
   poplar::Tensor createDataInput(const std::string &name,
                                  int convIndex) const final;
   std::vector<poplar::Tensor>
   convolve(poplar::program::Sequence &,
-           const std::vector<poplar::Tensor> &weights) const final;
+           const std::vector<poplar::Tensor> &) const final;
+
+private:
+  std::vector<poplin::multiconv::CreateTensorArgs>
+  getCreateTensorArgs(const std::string &name) const;
+  poplar::OptionFlags getGlobalOptions() const;
 };
 
-class ConvWeightsGradOpx : public MultiConvWeightsGradBaseOpx {
+class MultiConvWeightsGradOpx : public MultiConvWeightsGradBaseOpx {
 public:
-  ConvWeightsGradOpx(Op *, Devicex *);
+  MultiConvWeightsGradOpx(Op *, Devicex *);
   std::vector<poplar::Tensor>
   calculateWeightDeltas(poplar::program::Sequence &) const final;
-};
 
-class ConvFlipWeightsGradOpx : public Opx {
-public:
-  ConvFlipWeightsGradOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+private:
+  poplar::OptionFlags getGlobalOptions() const;
 };
 
 } // namespace popx

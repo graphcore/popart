@@ -400,9 +400,9 @@ void Graph::setVarUpdateConstraints() {
 // T12001 don't use topoCons
 void Graph::setConvFlipWeightConstraints() {
   // The ConvFlipWeights op is used exclusively in the backwards pass as an
-  // input to the bwd conv op. Since it acts only on an input to the graph,
-  // it has no dependencies. Constrain it to schedule after all other ops
-  // producing tensors consumed by the bwd conv.
+  // input to the bwd conv or multiconv op. Since it acts only on an input
+  // to the graph, it has no dependencies. Constrain it to schedule after all
+  // other ops producing tensors consumed by the bwd conv.
   for (auto &id_op : getOps()) {
     auto op = id_op.second.get();
     if (op->isConvertibleTo<ConvFlipWeightsOp>()) {
@@ -416,8 +416,13 @@ void Graph::setConvFlipWeightConstraints() {
               // Apply constraint: All other ops producing tensors
               // consumed by the bwd conv must happen before the
               // flipweights
+              // Note: don't insert dependecies on other ConvFlipWeights ops
+              // that produce inputs to the MultiConvOp, so as not to create
+              // a cycle in the graph.
               Op *producerToBwdConvOp = consumedByBwdConvT->getProducer();
-              topoCons->insert(producerToBwdConvOp, op);
+              if (!producerToBwdConvOp->isConvertibleTo<ConvFlipWeightsOp>()) {
+                topoCons->insert(producerToBwdConvOp, op);
+              }
             }
           }
         } else {
