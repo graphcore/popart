@@ -109,7 +109,7 @@ void ExpandOp::connectInTensor(InIndex inIndex, TensorId tenId) {
   } else if (inIndex == 1) {
     // we attempt to set outputInfo
     try {
-      getInTensorData(tenId, outShape);
+      getInTensorData(tenId, outShape, {DataType::INT32, DataType::INT64});
       finaliseShape();
     } catch (popart::error &err) {
       throw error("Need the value of the {} input 'shape' to detemine the "
@@ -184,7 +184,7 @@ static OpDefinition::DataTypes T  = {DataType::UINT8,
                                     DataType::FLOAT16,
                                     DataType::FLOAT,
                                     DataType::BOOL};
-static OpDefinition::DataTypes T1 = {DataType::INT64};
+static OpDefinition::DataTypes T1 = {DataType::INT64, DataType::INT32};
 
 static OpDefinition
     expandOpDef({OpDefinition::Inputs({{"input", T}, {"out_shape", T1, true}}),

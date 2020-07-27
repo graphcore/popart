@@ -41,9 +41,9 @@ def run_and_test_value(op_tester, inplace, init_builder, reference, mode):
         assert inplace[0]['domain'] == 'ai.graphcore'
 
 
-def expand(op_tester, inplace):
+def expand(op_tester, inplace, int_type):
     d1 = np.random.rand(3, 1).astype(np.float32)
-    d2 = np.array([2, 1, 6]).astype(np.int64)
+    d2 = np.array([2, 1, 6]).astype(int_type)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
@@ -76,9 +76,9 @@ def expand(op_tester, inplace):
     run_and_test_value(op_tester, inplace, init_builder, reference, mode)
 
 
-def expand_unwind(op_tester, inplace):
+def expand_unwind(op_tester, inplace, int_type):
     d1 = np.random.rand(6).astype(np.float32)
-    d2 = np.array([3, 6]).astype(np.int64)
+    d2 = np.array([3, 6]).astype(int_type)
     d3 = np.random.rand(6, 3).astype(np.float32)
 
     def init_builder(builder):
@@ -103,9 +103,9 @@ def expand_unwind(op_tester, inplace):
     run_and_test_value(op_tester, inplace, init_builder, reference, 'infer')
 
 
-def expand_scalar(op_tester, inplace):
+def expand_scalar(op_tester, inplace, int_type):
     d1 = np.array((3.0), dtype=np.float32)
-    d2 = np.array([2, 1, 6]).astype(np.int64)
+    d2 = np.array([2, 1, 6]).astype(int_type)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
@@ -138,9 +138,9 @@ def expand_scalar(op_tester, inplace):
     run_and_test_value(op_tester, inplace, init_builder, reference, mode)
 
 
-def expand_smaller_output(op_tester, inplace):
+def expand_smaller_output(op_tester, inplace, int_type):
     d1 = np.random.rand(3, 1).astype(np.float32)
-    d2 = np.array([2, 1, 1]).astype(np.int64)
+    d2 = np.array([2, 1, 1]).astype(int_type)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
@@ -173,9 +173,9 @@ def expand_smaller_output(op_tester, inplace):
     run_and_test_value(op_tester, inplace, init_builder, reference, mode)
 
 
-def expand_non_one_smaller_output(op_tester, inplace):
+def expand_non_one_smaller_output(op_tester, inplace, int_type):
     d1 = np.random.rand(5, 4, 3).astype(np.float32)
-    d2 = np.array([3, 4, 2]).astype(np.int64)
+    d2 = np.array([3, 4, 2]).astype(int_type)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
@@ -211,39 +211,48 @@ def expand_non_one_smaller_output(op_tester, inplace):
 
 
 def test_expand(op_tester):
-    expand(op_tester, False)
+    expand(op_tester, False, np.int64)
+    expand(op_tester, False, np.int32)
 
 
 def test_expand_inplace(op_tester):
-    expand(op_tester, True)
+    expand(op_tester, True, np.int64)
+    expand(op_tester, True, np.int32)
 
 
 def test_expand_smaller_output(op_tester):
-    expand_smaller_output(op_tester, False)
+    expand_smaller_output(op_tester, False, np.int64)
+    expand_smaller_output(op_tester, False, np.int32)
 
 
 def test_expand_smaller_output_inplace(op_tester):
-    expand_smaller_output(op_tester, True)
+    expand_smaller_output(op_tester, True, np.int64)
+    expand_smaller_output(op_tester, True, np.int32)
 
 
 def test_expand_non_one_smaller_output(op_tester):
-    expand_non_one_smaller_output(op_tester, False)
+    expand_non_one_smaller_output(op_tester, False, np.int64)
+    expand_non_one_smaller_output(op_tester, False, np.int32)
 
 
 def test_expand_non_one_smaller_output_inplace(op_tester):
-    expand_non_one_smaller_output(op_tester, True)
+    expand_non_one_smaller_output(op_tester, True, np.int64)
+    expand_non_one_smaller_output(op_tester, True, np.int32)
 
 
 def test_expand_scalar(op_tester):
-    expand_scalar(op_tester, False)
+    expand_scalar(op_tester, False, np.int64)
+    expand_scalar(op_tester, False, np.int32)
 
 
 def test_expand_scalar_inplace(op_tester):
-    expand_scalar(op_tester, True)
+    expand_scalar(op_tester, True, np.int64)
+    expand_scalar(op_tester, True, np.int32)
 
 
 def test_expand_unwind(op_tester):
-    expand_unwind(op_tester, False)
+    expand_unwind(op_tester, False, np.int64)
+    expand_unwind(op_tester, False, np.int32)
 
 
 #  Model1:            Model2:
@@ -263,10 +272,11 @@ def test_expand_unwind(op_tester):
 #   out                out
 #
 # Where ones = np.ones(shape=c)
-def test_expand_mul():
+@pytest.mark.parametrize("int_type", [np.int32, np.int64])
+def test_expand_mul(int_type):
     in_ = np.random.random_sample([3, 1]).astype(np.float32)
     w = np.random.random_sample([3, 3]).astype(np.float32)
-    const = np.array([2, 1, 6]).astype(np.int64)
+    const = np.array([2, 1, 6]).astype(int_type)
 
     def get_session(expand_op=True):
         builder = popart.Builder()
