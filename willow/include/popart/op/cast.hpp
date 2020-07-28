@@ -22,6 +22,8 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
+  bool canShard() const override { return true; }
+
 private:
   DataType to;
 };

@@ -20,6 +20,8 @@ public:
   // Making this function override and not final, as there
   // may be a more / less expensive to compute non-linearity.
   float getSubgraphValue() const override { return getLowSubgraphValue(); }
+
+  bool canShard() const override { return true; }
 };
 
 // Base class for elementwise unary boolean output operations
@@ -35,6 +37,8 @@ public:
   // Making this function override and not final, as there
   // may be a more / less expensive to compute non-linearity.
   float getSubgraphValue() const override { return getLowSubgraphValue(); }
+
+  bool canShard() const override { return true; }
 };
 
 class ElementWiseInplaceUnaryOp : public ElementWiseUnaryOp {
@@ -71,6 +75,8 @@ public:
   static OutIndex getOutIndex() { return 0; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
+  bool canShard() const override { return true; }
 };
 
 // Common base class for elementwise binary operations
@@ -87,6 +93,8 @@ public:
   static OutIndex getOutIndex() { return 0; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
+  bool canShard() const override { return true; }
 };
 
 // Base class for non-inplace elementwise binary operation, which may have
@@ -160,6 +168,8 @@ public:
   static OutIndex getOutIndex() { return 0; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
+  bool canShard() const override { return true; }
 };
 
 } // namespace popart

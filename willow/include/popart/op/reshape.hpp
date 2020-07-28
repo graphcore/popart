@@ -37,6 +37,9 @@ public:
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
   void connectInTensor(InIndex inIndex, TensorId tenId) final;
 
+  bool canShard() const override { return true; }
+  void configureShardedOp(Op *const shardedOp, int shardIndex) const override;
+
 protected:
   // The shape of the data output tensor
   Shape outShape;

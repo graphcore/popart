@@ -75,6 +75,8 @@ public:
   MatMulPartialsType getPartialsType() const { return partialsType; }
   void setPartialsType(const MatMulPartialsType &pt) { partialsType = pt; }
 
+  bool canShard() const override { return true; }
+
 protected:
   Phase phase;
 

@@ -2,12 +2,17 @@
 #include <memory>
 #include <sstream>
 #include <popart/error.hpp>
+#include <popart/graph.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/mean.hpp>
 #include <popart/op/nll.hpp>
+#include <popart/op/sum.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/tensor.hpp>
+#include <popart/tensors.hpp>
+#include <popart/topocons.hpp>
 
 namespace popart {
 
@@ -88,6 +93,55 @@ int NllOp::getIgnoreIndex() const {
   } else {
     throw error("Cannot getIgnoreIndex for {}, as it has none", str());
   }
+}
+
+std::map<TensorId, std::vector<TensorId>>
+NllOp::shard(const std::map<TensorId, std::vector<TensorId>> &inputs) {
+  std::map<TensorId, std::vector<TensorId>> outputs = Op::shard(inputs);
+
+  switch (getReductionType()) {
+  case ReductionType::Sum: {
+    auto sumOpUp = std::make_unique<SumOp>(Onnx::Operators::Sum_8, settings);
+    Op *sumOp    = sumOpUp.get();
+    getGraph().moveIntoGraph(std::move(sumOpUp));
+    auto nllOutId = outId(NllOp::getOutIndex());
+    disconnectOutTensor(outTensor(NllOp::getOutIndex()));
+
+    InIndex i = 0;
+    for (auto nllShardOutId : outputs[nllOutId]) {
+      sumOp->connectInTensor(i, nllShardOutId);
+      ++i;
+    }
+
+    sumOp->connectOutTensor(SumOp::getOutIndex(), nllOutId);
+    sumOp->setup();
+    outputs[nllOutId] = {nllOutId};
+    break;
+  }
+  case ReductionType::Mean: {
+    auto meanOpUp = std::make_unique<MeanOp>(Onnx::Operators::Mean_8, settings);
+    Op *meanOp    = meanOpUp.get();
+    getGraph().moveIntoGraph(std::move(meanOpUp));
+    auto nllOutId = outId(NllOp::getOutIndex());
+    disconnectOutTensor(outTensor(NllOp::getOutIndex()));
+
+    InIndex i = 0;
+    for (auto nllShardOutId : outputs[nllOutId]) {
+      meanOp->connectInTensor(i, nllShardOutId);
+      ++i;
+    }
+
+    meanOp->connectOutTensor(MeanOp::getOutIndex(), nllOutId);
+    meanOp->setup();
+    outputs[nllOutId] = {nllOutId};
+    break;
+  }
+  case ReductionType::NoReduction:
+  default:
+    break;
+  }
+
+  return outputs;
 }
 
 void NllGradOp::setup() {

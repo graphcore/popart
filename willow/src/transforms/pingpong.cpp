@@ -720,6 +720,7 @@ bool PingPong::apply(Graph &graph) const {
         if (!consumerOps.empty()) {
           settings = consumerOps.front()->settings;
         }
+        settings.batchSerializedPhase.reset();
       }
       settings.name.clear();
       settings.recomputeType = RecomputeType::Checkpoint;

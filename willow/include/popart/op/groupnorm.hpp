@@ -37,6 +37,8 @@ public:
 
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
 
+  bool canShard() const override { return true; }
+
 private:
   int64_t num_groups;
   float epsilon;

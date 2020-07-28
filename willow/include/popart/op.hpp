@@ -436,6 +436,19 @@ public:
   bool consumesGraphOutput() const;
   bool producesGraphOutput() const;
 
+  // Test if the operation can be sharded into multiple operations
+  // TODO: T16743: extend support for other dimensions than the batch
+  virtual bool canShard() const;
+
+  // Shard operation into multiple operations according to the new,
+  // already sharded input tensors. Returns the sharded output tensors.
+  // TODO: T16743: extend support for other dimensions than the batch
+  virtual std::map<TensorId, std::vector<TensorId>>
+  shard(const std::map<TensorId, std::vector<TensorId>> &inputs);
+
+  // Configure attributes/settings on sharded op
+  virtual void configureShardedOp(Op *const shardedOp, int shardIndex) const;
+
 protected:
   // Attempt to get the data of an input tensor. This method will throw an
   // exception if it could not access the data.

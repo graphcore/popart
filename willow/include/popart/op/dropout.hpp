@@ -47,6 +47,8 @@ public:
 
   float getSubgraphValue() const override;
 
+  bool canShard() const override { return true; }
+
 protected:
   float ratio;
   uint32_t seedModifier;

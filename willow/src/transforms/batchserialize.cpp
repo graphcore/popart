@@ -32,6 +32,19 @@ TensorId createOrGetIndexTensor(Graph &graph, uint32_t index) {
   }
   return id;
 }
+
+void connectOutTensor(Ir &ir, Op *op, TensorId id, OutIndex index) {
+  if (ir.containsTensor(id)) {
+    auto t = ir.getTensor(id);
+    if (t->hasProducer()) {
+      t->getProducer()->disconnectOutTensor(t);
+    }
+    op->connectOutTensor(index, id);
+  } else {
+    op->createAndConnectOutTensor(index, id);
+  }
+}
+
 } // namespace
 
 std::size_t BatchSerialize::id(int pass) {
@@ -42,7 +55,7 @@ OpId BatchSerialize::reshapeForSlice(Graph &graph,
                                      Op::Settings settings,
                                      TensorId inId,
                                      Shape newShape,
-                                     TensorId newId,
+                                     TensorId outId,
                                      OptionalBatchSerializedPhase bsp) const {
   std::unique_ptr<ReshapeOp> reshapeOp = std::make_unique<ReshapeOp>(
       Onnx::AiOnnx::OpSet11::Reshape, newShape, settings);
@@ -52,7 +65,7 @@ OpId BatchSerialize::reshapeForSlice(Graph &graph,
   graph.moveIntoGraph(std::move(reshapeOp));
 
   reshape->connectInTensor(ReshapeOp::getInIndex(), inId);
-  reshape->createAndConnectOutTensor(ReshapeOp::getOutIndex(), newId);
+  connectOutTensor(graph.getIr(), reshape, outId, ReshapeOp::getOutIndex());
   reshape->setup();
   return reshape->id;
 }
@@ -85,49 +98,53 @@ bool BatchSerialize::apply(Graph &graph) const {
 
   // FWD
   if (pass == 1) {
+    std::set<TensorId> tensorsWithBatch;
     std::set<Op *> serializedOps;
     std::map<std::pair<TensorId, TensorContext>, std::vector<TensorId>>
         serializedTensorMap;
     std::map<std::pair<TensorId, TensorContext>, TensorId> concatTensorMap;
 
-    std::set<Op *> blacklistedOps;
-
-    // Blacklist producer OPs whose outputs are anchors
-    for (TensorId id : ir.getDataFlow().anchors()) {
-      if (ir.containsTensor(id) && ir.getTensor(id)->hasProducer()) {
-        blacklistedOps.insert(ir.getTensor(id)->getProducer());
-      }
+    for (TensorId id : ir.getTensorIds(TensorType::Stream)) {
+      tensorsWithBatch.insert(id);
     }
 
     for (Op *op : schedule) {
       // Context in which the tensors are consumed
       TensorContext consumerContext = getContext(op);
 
+      auto opInTensorIdxIds  = op->input->tensorIdMap();
+      auto opOutTensorIdxIds = op->output->tensorIdMap();
+
+      // TODO T20169: Improve: Pick up batch size/dimension from
+      // previously serialized tensors.
+      if (std::any_of(opInTensorIdxIds.begin(),
+                      opInTensorIdxIds.end(),
+                      [&tensorsWithBatch](
+                          const std::pair<const InIndex, TensorId> &idxId) {
+                        return tensorsWithBatch.find(idxId.second) !=
+                               tensorsWithBatch.end();
+                      })) {
+        for (auto &outTensorIdxId : opOutTensorIdxIds) {
+          tensorsWithBatch.insert(outTensorIdxId.second);
+        }
+      }
+
       // Unsupported ops
-      if (op->opid == Onnx::CustomOperators::Init_1 ||
-          op->opid == Onnx::CustomOperators::CacheLoad ||
-          op->opid == Onnx::CustomOperators::CacheStore ||
-          op->opid == Onnx::CustomOperators::IpuCopy ||
-          op->opid == Onnx::AiOnnx::OpSet11::BatchNormalization ||
-          op->opid == Onnx::AiOnnx::OpSet8::BatchNormalization ||
-          op->opid == Onnx::AiOnnx::OpSet6::BatchNormalization ||
-          op->opid == Onnx::CustomOperators::GetRandomSeed || op->isLossOp() ||
-          (op->toLoss == PathToLoss::Yes &&
-           op->fromLoss == PathFromLoss::Yes)) {
+      if (!op->canShard() || (op->toLoss == PathToLoss::Yes &&
+                              op->fromLoss == PathFromLoss::Yes)) {
+        logging::transform::trace("[BatchSerialize] Can not serialize {}",
+                                  op->debugName());
         continue;
+      } else {
+        logging::transform::trace("[BatchSerialize] Serializing {}",
+                                  op->debugName());
       }
-
-      if (blacklistedOps.find(op) != blacklistedOps.end()) {
-        continue;
-      }
-
-      logging::transform::trace("[BatchSerialize] Serializing {}",
-                                op->debugName());
 
       bool op_has_batch = false;
       for (auto &entry : op->input->indicesMap()) {
         auto type  = entry.first->getTensorTypeInfo()->type();
         auto shape = entry.first->info.shape();
+        auto nelms = entry.first->info.nelms();
 
         auto producerContext = entry.first->hasProducer()
                                    ? getContext(entry.first->getProducer())
@@ -147,17 +164,20 @@ bool BatchSerialize::apply(Graph &graph) const {
             serializedItProducer != serializedTensorMap.end(),
             serializedItConsumer != serializedTensorMap.end());
 
-        if ((type == TensorType::ActGrad || type == TensorType::Stream) &&
+        // a.) Tensor can be serialized on the batch dimension
+        // b.) Tensor has no producer, or is not yet registered in the
+        // serialized tensor map
+        if (tensorsWithBatch.find(entry.first->id) != tensorsWithBatch.end() &&
             (!entry.first->hasProducer() ||
-             serializedItProducer != serializedTensorMap.end() ||
-             serializedItConsumer != serializedTensorMap.end())) {
+             serializedItProducer == serializedTensorMap.end() ||
+             serializedItConsumer == serializedTensorMap.end())) {
 
           // TODO T20169: Improve: Pick up batch size/dimension from
           // previously serialized tensors.
           // TODO T20169: Currently assuming all streams and actgrad
           // have batch dim
 
-          op_has_batch = true;
+          op_has_batch |= nelms >= batchSerFactor;
 
           int batch_slice_size = 1;
           int axis             = -1;
@@ -171,6 +191,7 @@ bool BatchSerialize::apply(Graph &graph) const {
 
           // TODO T20169: Support if batch dimension is not first.
 
+          // c.) Tensor is not yet serialized in consumer context
           if (serializedItConsumer == serializedTensorMap.end()) {
 
             TensorId sliceableTensorId;
@@ -310,75 +331,43 @@ bool BatchSerialize::apply(Graph &graph) const {
                     .push_back(sliceId);
               }
             }
+            if (consumerContext == producerContext) {
+              concatTensorMap[{entry.first->id, producerContext}] =
+                  entry.first->id;
+            }
           }
+        } else if (serializedItProducer != serializedTensorMap.end() ||
+                   serializedItConsumer != serializedTensorMap.end()) {
+          // Input already serialized
+          op_has_batch |= true;
         }
       }
 
       // Operations not affected by the batch size can skip this part
-      if (!op_has_batch)
-        continue;
+      if (op_has_batch) {
+        std::map<TensorId, std::vector<TensorId>> shardInputs;
 
-      std::vector<Op *> cloneOps;
-      for (int64_t b = 0; b < batchSerFactor; ++b) {
-        auto clone   = op->clone();
-        auto cloneid = graph.moveIntoGraph(std::move(clone));
-        Op *clone_op = graph.getOp(cloneid);
-        clone_op->disconnectAllInputs();
-        clone_op->disconnectAllOutputs();
         for (auto &in : op->input->tensorMap()) {
           auto serializedTensor =
               serializedTensorMap.find({in.second->id, consumerContext});
-          if (serializedTensor == serializedTensorMap.end()) {
-            // Tensors not split along batch dimension, such as weights
-            clone_op->connectInTensor(in.first, in.second->id);
-          } else {
+          if (serializedTensor != serializedTensorMap.end()) {
             // Tensors split along batch dimension
-            clone_op->connectInTensor(in.first, serializedTensor->second[b]);
-          }
-        }
-        for (auto &out : op->output->tensorMap()) {
-          TensorId sliceId =
-              ir.createBatchSliceTensorId(out.second->id,
-                                          static_cast<unsigned int>(b),
-                                          static_cast<unsigned int>(b + 1));
-          serializedTensorMap[{out.second->id, consumerContext}].push_back(
-              sliceId);
-          clone_op->createAndConnectOutTensor(out.first, sliceId);
-        }
-        clone_op->setBatchSerializedPhase(b);
-
-        if (auto reshape = dynamic_cast<ReshapeBaseOp *>(clone_op)) {
-          Shape outShape = reshape->getOutShape();
-
-          auto factor = (op->inInfo(ReshapeBaseOp::getInIndex()).nelms() /
-                         reshape->inInfo(ReshapeBaseOp::getInIndex()).nelms());
-
-          // TODO T20169: Improve heuristics
-          for (unsigned i = 0; i < outShape.size(); ++i) {
-            if (outShape[i] >= factor) {
-              outShape[i] /= factor;
-              break;
+            for (int64_t b = 0; b < batchSerFactor; ++b) {
+              shardInputs[in.second->id].push_back(serializedTensor->second[b]);
             }
           }
-          logging::transform::trace(
-              "Reshape: {}, {}, {}, {}, {}",
-              op->inInfo(ReshapeBaseOp::getInIndex()).shape(),
-              reshape->inInfo(ReshapeBaseOp::getInIndex()).shape(),
-              reshape->getOutShape(),
-              outShape,
-              factor);
-          reshape->setOutShape(outShape);
         }
 
-        clone_op->setup();
+        auto shardOutputs = op->shard(shardInputs);
 
-        logging::transform::trace("[BatchSerialize] Cloned op {} {} -> {}",
-                                  clone_op->opid,
-                                  clone_op->input->getIndexShapeMap(),
-                                  clone_op->output->getIndexShapeMap());
+        for (auto &idkv : shardOutputs) {
+          if (idkv.second.size() == batchSerFactor) {
+            serializedTensorMap[{idkv.first, consumerContext}] = idkv.second;
+          }
+        }
+
+        toErase.insert(op);
       }
-      graph.topoCons->transferToMultiple(op, cloneOps);
-      toErase.insert(op);
     }
 
     // Make sure nobody consumes the original tensors of a serialized tensor.
@@ -395,28 +384,17 @@ bool BatchSerialize::apply(Graph &graph) const {
         continue;
       }
 
-      for (auto consumer : tensor->consumers.getOps()) {
-
-        // Not important what OPs that are going to be removed are consuming
-        if (toErase.find(consumer) != toErase.end())
-          continue;
-
-        auto batchSerialOpsForTensor =
-            batchSerialOps.find(serializedTensor.first);
-        if (batchSerialOpsForTensor != batchSerialOps.end()) {
-          // Consumers involved in producing the serialized tensor are extempt
-          if (batchSerialOpsForTensor->second.find(consumer->id) !=
-              batchSerialOpsForTensor->second.end()) {
-            continue;
-          }
-        }
-
-        logging::transform::trace(
-            "[BatchSerialize] Consumer {} is still consuming {}.",
-            consumer->debugName(),
-            tensor->id);
-
-        auto indices = consumer->input->indices(tensor);
+      auto concatIfNecessary = [this,
+                                &tensor,
+                                &producer,
+                                &ir,
+                                &graph,
+                                &concatTensorMap,
+                                &producerContext,
+                                &serializedTensor,
+                                &batchSerialOps,
+                                &dynamicConcat,
+                                &batchSerFactor]() {
         if (concatTensorMap.find({tensor->id, producerContext}) ==
             concatTensorMap.end()) {
           // TODO T20169: Different axis support
@@ -430,8 +408,7 @@ bool BatchSerialize::apply(Graph &graph) const {
             }
           }
 
-          TensorId concatId =
-              ir.createBatchConcatTensorId(serializedTensor.first.first);
+          TensorId concatId = serializedTensor.first.first;
 
           if (dynamicConcat) {
             Tensor *t = graph.getTensors().get(serializedTensor.first.first);
@@ -554,7 +531,8 @@ bool BatchSerialize::apply(Graph &graph) const {
                         batch_slice_size == 1)
                            ? concatId
                            : ir.createIntermediateTensorId(concatId);
-              update->createAndConnectOutTensor(SliceOp::getOutIndex(), lastId);
+              connectOutTensor(
+                  ir, update, lastId, DynamicUpdateOp::getOutIndex());
               update->setup();
 
               if (b == serializedTensor.second.size() - 1 &&
@@ -600,6 +578,40 @@ bool BatchSerialize::apply(Graph &graph) const {
           concatTensorMap[{serializedTensor.first.first, producerContext}] =
               concatId;
         }
+      };
+
+      // Anchors that need the concatenated tensor
+      auto &anchors = ir.getDataFlow().anchors();
+      if (std::find(anchors.begin(), anchors.end(), tensor->id) !=
+          anchors.end()) {
+        concatIfNecessary();
+      }
+
+      // Consumers that need the concatenated tensor
+      for (auto consumer : tensor->consumers.getOps()) {
+
+        // Not important what OPs that are going to be removed are consuming
+        if (toErase.find(consumer) != toErase.end())
+          continue;
+
+        auto batchSerialOpsForTensor =
+            batchSerialOps.find(serializedTensor.first);
+        if (batchSerialOpsForTensor != batchSerialOps.end()) {
+          // Consumers involved in producing the serialized tensor are exempt
+          if (batchSerialOpsForTensor->second.find(consumer->id) !=
+              batchSerialOpsForTensor->second.end()) {
+            continue;
+          }
+        }
+
+        logging::transform::trace(
+            "[BatchSerialize] Consumer {} is still consuming {}.",
+            consumer->debugName(),
+            tensor->id);
+
+        auto indices = consumer->input->indices(tensor);
+
+        concatIfNecessary();
 
         // Add concatenated tensor
         for (auto i : indices) {
@@ -884,7 +896,7 @@ bool BatchSerialize::apply(Graph &graph) const {
               idsLocal.push_back(tx->id);
             }
             logging::transform::trace(
-                "[BatchSerialization] Front {}{} size {} is a deadend",
+                "[BatchSerialize] Front {}{} size {} is a deadend",
                 idsLocal,
                 alreadyVisited ? " (already visited)" : "",
                 idsLocal.size());
@@ -901,7 +913,7 @@ bool BatchSerialize::apply(Graph &graph) const {
     for (auto &positions : positionToOp) {
       Op *prev = nullptr;
       for (auto &pos : positions.second) {
-        logging::transform::trace("[BatchSerialization] Fixed: {} {} {} {}",
+        logging::transform::trace("[BatchSerialize] Fixed: {} {} {} {}",
                                   positions.first.first,
                                   positions.first.second,
                                   pos.first,

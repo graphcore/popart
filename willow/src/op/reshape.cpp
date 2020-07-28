@@ -4,10 +4,13 @@
 #include <onnx/onnx_pb.h>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
 #include <popart/tensors.hpp>
+#include <popart/topocons.hpp>
 
 namespace popart {
 
@@ -190,6 +193,35 @@ const std::map<int, int> &ReshapeGradOp::gradOutToNonGradIn() const {
 
 bool ReshapeBaseOp::canBeReplacedByIdentity() {
   return inShape(getInIndex()) == outShape;
+}
+
+void ReshapeBaseOp::configureShardedOp(Op *const shardOp,
+                                       int shardIndex) const {
+  Op::configureShardedOp(shardOp, shardIndex);
+  if (auto reshape = dynamic_cast<ReshapeBaseOp *>(shardOp)) {
+    Shape outShape = reshape->getOutShape();
+
+    auto factor = (inInfo(ReshapeBaseOp::getInIndex()).nelms() /
+                   shardOp->inInfo(ReshapeBaseOp::getInIndex()).nelms());
+
+    // TODO T20169: Improve heuristics
+    // In general, it is hard to tell where the batch dimension within a reshape
+    // is. Here, we assume the batch is always the outer part of the outermost
+    // dimension, e.g. a flat tensor of shape [10, 12] at batch size 2
+    // is assumed to be [2, 5, 12]
+    // This logic will fail if the batch dimension is not included in the
+    // outermost dimension larger than the serialization factor.
+    for (unsigned i = 0; i < outShape.size(); ++i) {
+      if (outShape[i] >= factor) {
+        outShape[i] /= factor;
+        break;
+      }
+    }
+    reshape->setOutShape(outShape);
+  } else {
+    throw error(
+        "[ReshapeBaseOp] Expected sharded op to be of type ReshapeBaseOp");
+  }
 }
 
 namespace {

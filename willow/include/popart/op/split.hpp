@@ -25,6 +25,8 @@ public:
 
   static InIndex getInIndex() { return 0; }
 
+  bool canShard() const override { return true; }
+
 private:
   const int64_t axis;
   const std::vector<int64_t> split;

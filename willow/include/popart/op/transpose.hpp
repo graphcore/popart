@@ -32,6 +32,8 @@ public:
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 
+  bool canShard() const override { return true; }
+
 private:
   // the new permutation of the tensor axes
   Shape perm;

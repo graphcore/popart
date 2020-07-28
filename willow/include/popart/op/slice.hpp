@@ -59,6 +59,8 @@ public:
   // The dimension to concatentate on when unwinding the creator
   int unwindConcatDim = 0;
 
+  bool canShard() const override { return true; }
+
 private:
   std::vector<int64_t> starts;
   std::vector<int64_t> ends;

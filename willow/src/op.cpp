@@ -9,7 +9,9 @@
 #include <popart/region.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
+#include <popart/tensorindex.hpp>
 #include <popart/tensors.hpp>
+#include <popart/topocons.hpp>
 #include <popart/util.hpp>
 
 // The layers:
@@ -1225,6 +1227,67 @@ bool Op::inputsUnmodifiable() const {
       // Graph output tensors must not be modified to ensure the correct value
       // is returned at the end of the computation
       || consumesGraphOutput();
+}
+
+bool Op::canShard() const { return false; }
+
+std::map<TensorId, std::vector<TensorId>>
+Op::shard(const std::map<TensorId, std::vector<TensorId>> &inputs) {
+  std::map<TensorId, std::vector<TensorId>> outputs;
+  size_t num_shards = 1;
+  for (auto &idkv : inputs) {
+    num_shards = std::max(num_shards, idkv.second.size());
+  }
+
+  auto &graph = getGraph();
+  std::vector<Op *> cloneOps;
+  for (size_t b = 0; b < num_shards; ++b) {
+    auto clonedOpUp = clone();
+    auto cloneId    = graph.moveIntoGraph(std::move(clonedOpUp));
+    Op *clonedOp    = graph.getOp(cloneId);
+    clonedOp->disconnectAllInputs();
+    clonedOp->disconnectAllOutputs();
+    for (const auto &in : input->tensorMap()) {
+      auto serializedTensor = inputs.find(in.second->id);
+      if (serializedTensor == inputs.end()) {
+        // Tensors not split
+        clonedOp->connectInTensor(in.first, in.second->id);
+      } else {
+        if (serializedTensor->second.size() == num_shards) {
+          // Tensors split dimension
+          clonedOp->connectInTensor(in.first, serializedTensor->second[b]);
+        } else if (serializedTensor->second.size() == 1) {
+          // Tensors not split
+          clonedOp->connectInTensor(in.first, serializedTensor->second[0]);
+        } else {
+          throw error("[Op] Number of input tensors must be 1 or match the "
+                      "serialziation factor {}",
+                      num_shards);
+        }
+      }
+    }
+    for (const auto &out : output->tensorMap()) {
+      TensorId sliceId =
+          getIr().createBatchSliceTensorId(out.second->id,
+                                           static_cast<unsigned>(b),
+                                           static_cast<unsigned>(b + 1));
+      clonedOp->createAndConnectOutTensor(out.first, sliceId);
+      outputs[out.second->id].push_back(sliceId);
+    }
+    configureShardedOp(clonedOp, b);
+    clonedOp->setup();
+
+    logging::op::trace("[Op::shard] Cloned op {} {} -> {}",
+                       clonedOp->opid,
+                       clonedOp->input->getIndexShapeMap(),
+                       clonedOp->output->getIndexShapeMap());
+  }
+  graph.topoCons->transferToMultiple(this, cloneOps);
+  return outputs;
+}
+
+void Op::configureShardedOp(Op *const shardOp, int shardIndex) const {
+  shardOp->setBatchSerializedPhase(shardIndex);
 }
 
 } // namespace popart
