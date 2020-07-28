@@ -169,7 +169,8 @@ void Op::connectOutTensor(OutIndex outIndex, TensorId tenId) {
 }
 
 void Op::disconnectInTensor(Tensor *tensor) {
-  for (auto i : input->indicesMap().at(tensor)) {
+  std::vector<int> indices = input->indicesMap().at(tensor);
+  for (auto i : indices) {
     disconnectInTensor(i, tensor);
   }
 }
