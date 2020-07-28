@@ -342,6 +342,8 @@ public:
   virtual bool requiresRandomSeed() const;
   virtual InIndex getSeedInIndex() const;
 
+  bool hasInput(InIndex index) const;
+
   // helper functions, access fields of input and output
   Tensor *inTensor(InIndex index);
   const Tensor *inTensor(InIndex index) const;

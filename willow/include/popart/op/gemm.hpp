@@ -35,6 +35,8 @@ public:
 
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
 
+  std::set<InIndex> optionalInputs() const final { return {getCInIndex()}; }
+
 private:
   float alpha = 1.0;
   float beta  = 1.0;

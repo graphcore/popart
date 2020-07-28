@@ -65,12 +65,43 @@ def test_gemm_grad_scale(op_tester):
     _test_gemm_grad(op_tester, A, B, C, alpha, beta, False, False)
 
 
-def _test_gemm(op_tester, A, B, C, alpha, beta, transA, transB):
+def test_gemm_no_C(op_tester):
+    A = np.random.rand(2, 4).astype(np.float32)
+    B = np.random.rand(4, 6).astype(np.float32)
+    _test_gemm(op_tester, A, B, None, 1.0, 1.0, False, False, onnx_version=11)
+
+
+def test_gemm_grad_no_C(op_tester):
+    A = np.random.rand(2, 4).astype(np.float32)
+    B = np.random.rand(4, 6).astype(np.float32)
+    _test_gemm_grad(op_tester,
+                    A,
+                    B,
+                    None,
+                    1.0,
+                    1.0,
+                    False,
+                    False,
+                    onnx_version=11)
+
+
+def _test_gemm(op_tester,
+               A,
+               B,
+               C,
+               alpha,
+               beta,
+               transA,
+               transB,
+               onnx_version=None):
     def init_builder(builder):
         i1 = builder.addInputTensor(A)
         i2 = builder.addInputTensor(B)
-        i3 = builder.addInputTensor(C)
-        o = builder.aiOnnx.gemm([i1, i2, i3], alpha, beta, transA, transB)
+        if C is not None:
+            i3 = builder.addInputTensor(C)
+            o = builder.aiOnnx.gemm([i1, i2, i3], alpha, beta, transA, transB)
+        else:
+            o = builder.aiOnnx.gemm([i1, i2], alpha, beta, transA, transB)
         builder.addOutputTensor(o)
         return [o]
 
@@ -84,50 +115,85 @@ def _test_gemm(op_tester, A, B, C, alpha, beta, transA, transB):
         if transB:
             b = np.transpose(b)
 
-        o = alpha * np.dot(a, b) + beta * c
+        o = alpha * np.dot(a, b)
+        if C is not None:
+            o += beta * c
         return [o]
 
     op_tester.setPatterns(['GemmDecomposition', 'OpToReshape'],
                           enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+
+    opsets = None
+    if onnx_version is not None:
+        opsets = {'ai.onnx': onnx_version, 'ai.graphcore': 1}
+
+    op_tester.run(init_builder, reference, 'infer', opsets=opsets)
 
 
-def _test_gemm_grad(op_tester, A, B, C, alpha, beta, transA, transB):
+def _test_gemm_grad(op_tester,
+                    A,
+                    B,
+                    C,
+                    alpha,
+                    beta,
+                    transA,
+                    transB,
+                    onnx_version=10):
     alpha = float(alpha)
     beta = float(beta)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(A)
         i2 = builder.addInputTensor(B)
-        i3 = builder.addInputTensor(C)
-        o = builder.aiOnnx.gemm([i1, i2, i3], alpha, beta, transA, transB)
+        if C is not None:
+            i3 = builder.addInputTensor(C)
+            o = builder.aiOnnx.gemm([i1, i2, i3], alpha, beta, transA, transB)
+        else:
+            o = builder.aiOnnx.gemm([i1, i2], alpha, beta, transA, transB)
         builder.addOutputTensor(o)
-        return [
+
+        result = [
             o,
             popart.reservedGradientPrefix() + i1,
             popart.reservedGradientPrefix() + i2,
-            popart.reservedGradientPrefix() + i3,
-            popart.reservedGradientPrefix() + o
         ]
+        if C is not None:
+            result.append(popart.reservedGradientPrefix() + i3)
+        result.append(popart.reservedGradientPrefix() + o)
+        return result
 
     def reference(ref_data):
         a = torch.tensor(A, requires_grad=True)
         b = torch.tensor(B, requires_grad=True)
-        c = torch.tensor(C, requires_grad=True)
 
         if transA:
             a = a.permute(1, 0)
         if transB:
             b = b.permute(1, 0)
 
-        o = alpha * torch.matmul(a, b) + beta * c
+        o = alpha * torch.matmul(a, b)
+        if C is not None:
+            c = torch.tensor(C, requires_grad=True)
+            o += beta * c
+
         d__o = ref_data.getOutputTensorGrad(0)
         o.backward(torch.tensor(d__o))
-        return [o, a.grad, b.grad, c.grad, None]
+
+        result = [o, a.grad, b.grad]
+        if C is not None:
+            result.append(c.grad)
+        result.append(None)
+        return result
+        # return [o, a.grad, b.grad, c.grad, None]
 
     op_tester.setPatterns([
         'GemmDecomposition', 'PreUniRepl', 'MatMulLhsGradOp',
         'MatMulRhsGradOp', 'OpToReshape'
     ],
                           enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+
+    opsets = None
+    if onnx_version is not None:
+        opsets = {'ai.onnx': onnx_version, 'ai.graphcore': 1}
+
+    op_tester.run(init_builder, reference, 'train', opsets=opsets)

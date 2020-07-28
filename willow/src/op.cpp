@@ -380,6 +380,8 @@ Op::Op(const Op &op)
   // input, output: empty.
 }
 
+bool Op::hasInput(InIndex index) const { return input->hasIndex(index); }
+
 Tensor *Op::inTensor(InIndex index) { return input->tensor(index); }
 const Tensor *Op::inTensor(InIndex index) const { return input->tensor(index); }
 Tensor *Op::outTensor(OutIndex index) { return output->tensor(index); }

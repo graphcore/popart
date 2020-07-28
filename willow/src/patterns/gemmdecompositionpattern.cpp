@@ -23,59 +23,74 @@ std::vector<const Tensor *> GemmDecompositionPattern::touches(Op *) const {
 
 // output = add(scale(matmul(in_a, in_b), alpha), scale(in_c, beta))
 bool GemmDecompositionPattern::apply(Op *op) const {
-  auto in_a   = op->inTensor(GemmOp::getAInIndex());
-  auto in_b   = op->inTensor(GemmOp::getBInIndex());
-  auto in_c   = op->inTensor(GemmOp::getCInIndex());
   auto output = op->outTensor(GemmOp::getOutIndex());
+  op->disconnectOutTensor(output);
 
   // we assume this dynamic_cast call has been confirmed
   // to be valid via a previous call to GemmDecompositionPattern::matches
   auto gemm_op = dynamic_cast<GemmOp *>(op);
-  auto alpha   = gemm_op->getAlpha();
-  auto beta    = gemm_op->getBeta();
-  auto transA  = gemm_op->getTransA();
-  auto transB  = gemm_op->getTransB();
 
-  // create the new ops
-  auto matmul = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::MatMul, op);
-  auto add    = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Add, op);
+  auto &ir = op->getIr();
 
-  op->disconnectAllInputs();
-  op->disconnectAllOutputs();
-
+  // Get the first two inputs and transpose if necessary.
+  auto in_a = op->inTensor(GemmOp::getAInIndex());
+  op->disconnectInTensor(in_a);
   auto A = in_a->id;
-  if (transA) {
-    auto tA = matmul->getIr().createIntermediateTensorId(A);
+  if (gemm_op->getTransA()) {
+    auto tA = ir.createIntermediateTensorId(A);
     transposeTensor(A, tA, op);
     A = tA;
   }
 
+  auto in_b = op->inTensor(GemmOp::getBInIndex());
+  op->disconnectInTensor(in_b);
   auto B = in_b->id;
-  if (transB) {
-    auto tB = in_b->getIr().createIntermediateTensorId(B);
+  if (gemm_op->getTransB()) {
+    auto tB = ir.createIntermediateTensorId(B);
     transposeTensor(B, tB, op);
     B = tB;
   }
 
-  // Connect up the new ops
+  // Create and connect up the matmul op.
+  auto matmul = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::MatMul, op);
   matmul->connectInTensor(MatMulOp::getLhsInIndex(), A);
   matmul->connectInTensor(MatMulOp::getRhsInIndex(), B);
-  matmul->createAndConnectOutTensor(
-      MatMulOp::getOutIndex(),
-      matmul->getIr().createIntermediateTensorId(in_a->id));
+  matmul->createAndConnectOutTensor(MatMulOp::getOutIndex(),
+                                    ir.createIntermediateTensorId(in_a->id));
   matmul->setup();
 
-  auto scale1_out = in_a->getIr().createIntermediateTensorId(in_a->id);
-  scaleTensor(
-      matmul->outTensor(MatMulOp::getOutIndex())->id, scale1_out, alpha, op);
+  if (op->hasInput(GemmOp::getCInIndex())) {
+    // Scale the matmul by alpha.
+    auto matmul_scale_out = ir.createIntermediateTensorId(in_a->id);
+    scaleTensor(matmul->outTensor(MatMulOp::getOutIndex())->id,
+                matmul_scale_out,
+                gemm_op->getAlpha(),
+                op);
 
-  auto scale2_out = matmul->getIr().createIntermediateTensorId(in_a->id);
-  scaleTensor(in_c->id, scale2_out, beta, op);
+    // Scale in_c by beta
+    auto in_c           = op->inTensor(GemmOp::getCInIndex());
+    auto in_c_scale_out = ir.createIntermediateTensorId(in_a->id);
+    op->disconnectInTensor(in_c);
+    auto beta = gemm_op->getBeta();
+    scaleTensor(in_c->id, in_c_scale_out, beta, op);
 
-  add->connectInTensor(AddOp::getArg0InIndex(), scale1_out);
-  add->connectInTensor(AddOp::getArg1InIndex(), scale2_out);
-  add->connectOutTensor(AddOp::getOutIndex(), output->id);
+    // Add the matmul output by the scaled in_c
+    auto add = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Add, op);
+    add->connectInTensor(AddOp::getArg0InIndex(), matmul_scale_out);
+    add->connectInTensor(AddOp::getArg1InIndex(), in_c_scale_out);
+    add->connectOutTensor(AddOp::getOutIndex(), output->id);
+  } else {
+    // Scale the matmul by alpha.
+    scaleTensor(matmul->outTensor(MatMulOp::getOutIndex())->id,
+                output->id,
+                gemm_op->getAlpha(),
+                op);
+  }
 
+  if (op->input->n() > 0 || op->output->n() > 0) {
+    throw internal_error(
+        "All inputs and outputs of GemmOp should have been disconnected.");
+  }
   // Remove the GemmOp
   op->getGraph().eraseOp(op->id);
 
@@ -91,7 +106,12 @@ void GemmDecompositionPattern::scaleTensor(const TensorId &input,
   scale->setScaleFactor(scale_factor);
 
   scale->connectInTensor(ScaleOp::getInIndex(), input);
-  scale->createAndConnectOutTensor(ScaleOp::getOutIndex(), output);
+  if (op->getGraph().getTensors().contains(output)) {
+    scale->connectOutTensor(ScaleOp::getOutIndex(), output);
+  } else {
+    scale->createAndConnectOutTensor(ScaleOp::getOutIndex(), output);
+  }
+
   scale->setup();
 }
 
