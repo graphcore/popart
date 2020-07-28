@@ -1152,6 +1152,31 @@ def test_logsoftmax(op_tester):
     op_tester.run(init_builder, reference, 'infer')
 
 
+def test_logsoftmax_negative_axis(op_tester):
+    # create test data
+    # Note: poplar implementation of softmax
+    # requires outer 'batch' dimension
+    d1 = np.random.rand(1, 4).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.logsoftmax([i1], axis=-1)
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        # 'dim' corresponds to dim index over which
+        # to perform softmax
+        lsm = torch.nn.LogSoftmax(dim=-1)
+        b = lsm(a)
+        return [b]
+
+    op_tester.setPatterns(['LogSoftmaxOp', 'LogGradOp'],
+                          enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'infer')
+
+
 def test_logsoftmax_grad(op_tester):
     # create test data
     d1 = np.random.rand(1, 10).astype(np.float32)

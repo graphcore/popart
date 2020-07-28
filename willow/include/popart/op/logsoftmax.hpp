@@ -14,7 +14,7 @@ public:
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   std::unique_ptr<Op> clone() const final;
 
-  int64_t getAxis() { return axis; }
+  int64_t getAxis() const;
 
 private:
   int64_t axis;

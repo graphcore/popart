@@ -21,6 +21,22 @@ std::vector<std::unique_ptr<Op>> LogSoftmaxOp::getGradOps() {
               "call to getGradOps");
 }
 
+int64_t LogSoftmaxOp::getAxis() const {
+  auto r = static_cast<int64_t>(inShape(getInIndex()).size());
+  if (axis < -r || axis > r - 1) {
+    throw error("LogSoftmax axis, {}, is outside of acceptable range [{}, {}]",
+                axis,
+                -r,
+                r - 1);
+  }
+
+  if (axis < 0) {
+    return r + axis;
+  } else {
+    return axis;
+  }
+}
+
 namespace {
 
 static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
