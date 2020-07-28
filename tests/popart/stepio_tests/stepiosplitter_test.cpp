@@ -178,7 +178,7 @@ BOOST_AUTO_TEST_CASE(StepIOSplitter_Order) {
 
   // Set up StepIOSplitter.
   StepIOSplitter splitter(NUM_REPLICAS);
-  splitter.reset(&upstreamIo);
+  splitter.setUpstreamIo(&upstreamIo);
 
   // Get downstream StepIOs from splitter.
   std::vector<IStepIO *> downstreamIos;
@@ -298,7 +298,7 @@ BOOST_AUTO_TEST_CASE(StepIOSplitter_PrefetchFlag) {
 
   // Set up StepIOSplitter.
   StepIOSplitter splitter(NUM_REPLICAS);
-  splitter.reset(&upstreamIo);
+  splitter.setUpstreamIo(&upstreamIo);
 
   // Get downstream StepIOs from splitter.
   std::vector<IStepIO *> downstreamIos;

@@ -58,6 +58,21 @@ private:
   ConstVoidData emptyVoidData;
 };
 
+// Helper class to store state for every tensor.
+class SplitIOTensorInfo {
+public:
+  // Default constructor.
+  SplitIOTensorInfo();
+
+  // The replica index that is next in line to receive 'in' data.
+  unsigned inIndex;
+  // The replica index that is next in line to receive 'out' data.
+  unsigned outIndex;
+
+  // Map from replication indices to IStepIO adapters
+  std::map<unsigned, std::unique_ptr<StepIOSplitterAdapter>> adapterMap;
+};
+
 // A class that splits one StepIO interface into multiple StepIO interfaces that
 // can be read/written to by multiple replicas separately.
 class StepIOSplitter {
@@ -73,8 +88,8 @@ public:
 
   // Reset the logic.
   void reset();
-  // Reset the log and set the upstream IStepIO.
-  void reset(IStepIO *upstreamIo);
+  // Set the upstream IStepIO.
+  void setUpstreamIo(IStepIO *upstreamIo);
 
   // Fetch data from upstream for a specific replica (getting data for preceding
   // replicas first, if necessary, to avoid calling the upstream IStepIO out of
@@ -99,16 +114,11 @@ public:
 private:
   // The number of replications.
   unsigned replicationFactor;
-  // The replica index that is next in line to receive 'in' data.
-  unsigned inIndex;
-  // The replica index that is next in line to receive 'out' data.
-  unsigned outIndex;
 
   // The upstream datastream.
   IStepIO *upstreamIo;
   // Map tuples TensorId to a map from replication indices to IStepIO adapters.
-  std::map<TensorId, std::map<unsigned, std::unique_ptr<StepIOSplitterAdapter>>>
-      downstreamIoMap;
+  std::map<TensorId, SplitIOTensorInfo> downstreamIoMap;
 };
 
 } // namespace popart

@@ -124,22 +124,23 @@ void StepIOSplitterAdapter::reset() {
   outData.clear();
 }
 
+SplitIOTensorInfo::SplitIOTensorInfo()
+    : inIndex(0u), outIndex(0u), adapterMap{} {}
+
 StepIOSplitter::StepIOSplitter(unsigned replicationFactor_)
-    : replicationFactor(replicationFactor_), inIndex(0u), outIndex(0u),
-      upstreamIo(nullptr), downstreamIoMap() {}
+    : replicationFactor(replicationFactor_), upstreamIo(nullptr),
+      downstreamIoMap() {}
 
 void StepIOSplitter::reset() {
   for (auto &entry1 : downstreamIoMap) {
-    for (auto &entry2 : entry1.second) {
+    for (auto &entry2 : entry1.second.adapterMap) {
       auto &adapter = entry2.second;
       adapter->reset();
     }
   }
 }
 
-void StepIOSplitter::reset(IStepIO *upstreamIo_) {
-  logging::devicex::debug("[StepIOSplitter] Reset");
-  reset();
+void StepIOSplitter::setUpstreamIo(IStepIO *upstreamIo_) {
   upstreamIo = upstreamIo_;
 }
 
@@ -159,32 +160,34 @@ void StepIOSplitter::getInData(TensorId id,
     throw error("No downstream StepIOs set");
   }
 
-  unsigned lastInIndex = 0;
-  auto &adapterMap     = it->second;
+  unsigned lastInIndex    = 0;
+  auto &splitIoTensorInfo = it->second;
 
   do {
     // Remember the index we're getting data for as it is used in the loop
     // condition and the value of inIndex may or may not change when we get
     // data.
-    lastInIndex = inIndex;
+    lastInIndex = splitIoTensorInfo.inIndex;
 
     // Determine if we are fetching for the requested index. If so, we'll want
     // to stick to the prefetch flag. If not, we are fetching data for an
     // earlier replica because we can't get data for the requested replica until
     // we have data for all preceding replicas.
-    const bool isPrefetch = (inIndex == replicationIndex) ? prefetch : false;
+    const bool isPrefetch =
+        (splitIoTensorInfo.inIndex == replicationIndex) ? prefetch : false;
 
-    auto adapterMapIt = adapterMap.find(inIndex);
-    if (adapterMapIt != adapterMap.end()) {
+    auto adapterMapIt =
+        splitIoTensorInfo.adapterMap.find(splitIoTensorInfo.inIndex);
+    if (adapterMapIt != splitIoTensorInfo.adapterMap.end()) {
 
       // If we got data, populate downstream adapter and update state.
       // Get the downstream adapter.
       auto &adapter = adapterMapIt->second;
 
       logging::devicex::debug("[StepIOSplitter] Fetching input data for "
-                              "tensor {} for {} adapter(s){}",
+                              "tensor {}@{} {}",
                               id,
-                              replicationFactor,
+                              splitIoTensorInfo.inIndex,
                               isPrefetch ? " (prefetch)" : "");
 
       // Ask for data.
@@ -199,13 +202,14 @@ void StepIOSplitter::getInData(TensorId id,
         // replicationIndex.
         upstreamIo->inComplete(id, numElements);
         // Update inData.
-        inIndex = (inIndex + 1) % replicationFactor;
+        splitIoTensorInfo.inIndex =
+            (splitIoTensorInfo.inIndex + 1) % replicationFactor;
 
         logging::devicex::debug(
             "[StepIOSplitter] Added data to back of input buffer for adapter "
             "{}@{} (buffer now has {} element(s))",
             id,
-            replicationIndex,
+            splitIoTensorInfo.inIndex,
             adapter->getInData().size());
       } else {
         // If we didn't get data it's an error unless we are prefetching.
@@ -219,9 +223,9 @@ void StepIOSplitter::getInData(TensorId id,
     } else {
       // We can't do much without a downstream adapter.
       throw error("[StepIOSplitter] No downstream adapter found for input "
-                  "tensor {}, replica {}",
+                  "tensor {}@{}",
                   id,
-                  inIndex);
+                  splitIoTensorInfo.inIndex);
     }
   } while (lastInIndex != replicationIndex);
 }
@@ -241,24 +245,25 @@ void StepIOSplitter::getOutData(TensorId id,
     throw error("No downstream StepIOs set");
   }
 
-  unsigned lastOutIndex = 0;
-  auto &adapterMap      = it->second;
+  unsigned lastOutIndex   = 0;
+  auto &splitIoTensorInfo = it->second;
 
   do {
     // Remember the index we're getting data for as it is updated in the loop.
-    lastOutIndex = outIndex;
+    lastOutIndex = splitIoTensorInfo.outIndex;
 
-    auto adapterMapIt = adapterMap.find(outIndex);
-    if (adapterMapIt != adapterMap.end()) {
+    auto adapterMapIt =
+        splitIoTensorInfo.adapterMap.find(splitIoTensorInfo.outIndex);
+    if (adapterMapIt != splitIoTensorInfo.adapterMap.end()) {
 
       // If we got data, populate downstream adapter and update state.
       // Get the downstream adapter.
       auto &adapter = adapterMapIt->second;
 
       logging::devicex::debug("[StepIOSplitter] Getting output data for "
-                              "tensor {} for {} adapter(s)",
+                              "tensor {}@{} adapter(s)",
                               id,
-                              replicationFactor);
+                              splitIoTensorInfo.outIndex);
 
       // Ask for data.
       const auto data = upstreamIo->out(id, numElements);
@@ -272,13 +277,14 @@ void StepIOSplitter::getOutData(TensorId id,
         // replicationIndex.
         upstreamIo->outComplete(id);
         // Update inData.
-        outIndex = (outIndex + 1) % replicationFactor;
+        splitIoTensorInfo.outIndex =
+            (splitIoTensorInfo.outIndex + 1) % replicationFactor;
 
         logging::devicex::debug(
             "[StepIOSplitter] Added data to back of output buffer for adapter "
             "{}@{} (buffer now has {} element(s))",
             id,
-            replicationIndex,
+            splitIoTensorInfo.outIndex,
             adapter->getOutData().size());
       } else {
         // This is always an error.
@@ -290,9 +296,9 @@ void StepIOSplitter::getOutData(TensorId id,
     } else {
       // We can't do much without a downstream adapter.
       throw error("[StepIOSplitter] No downstream adapter found for output "
-                  "tensor {}, replica {}",
+                  "tensor {}@{}",
                   id,
-                  outIndex);
+                  splitIoTensorInfo.outIndex);
     }
   } while (lastOutIndex != replicationIndex);
 }
@@ -310,22 +316,23 @@ IStepIO *StepIOSplitter::getDownstreamStepIO(TensorId id,
                                              unsigned replicationIndex) {
   auto it1 = downstreamIoMap.find(id);
   if (it1 != downstreamIoMap.end()) {
-    auto &replicaMap = it1->second;
-    auto it2         = replicaMap.find(replicationIndex);
-    if (it2 != replicaMap.end()) {
-      // Return an adapter we have already.
+    auto &splitIoTensorInfo = it1->second;
+    auto it2 = splitIoTensorInfo.adapterMap.find(replicationIndex);
+    if (it2 != splitIoTensorInfo.adapterMap.end()) {
+      // We already have an adapter.
       return it2->second.get();
     } else {
-      // Create a new adapter for replication index for existing replicaMap.
-      auto &adapter = replicaMap[replicationIndex];
+      // We have a StepIOTensorInfo but no adapter for this replication index.
+      auto &adapter = splitIoTensorInfo.adapterMap[replicationIndex];
       adapter       = std::make_unique<StepIOSplitterAdapter>(
           this, replicationIndex, id, info);
       return adapter.get();
     }
   } else {
-    // Create new adapter in new replicaMap.
-    auto &adapter = downstreamIoMap[id][replicationIndex];
-    adapter       = std::make_unique<StepIOSplitterAdapter>(
+    // We don't even have a StepIOTensorInfo for this tensor yet.
+    auto &splitIoTensorInfo = downstreamIoMap[id];
+    auto &adapter           = splitIoTensorInfo.adapterMap[replicationIndex];
+    adapter                 = std::make_unique<StepIOSplitterAdapter>(
         this, replicationIndex, id, info);
     return adapter.get();
   }

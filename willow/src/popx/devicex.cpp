@@ -1036,7 +1036,7 @@ void Devicex::anchorsHostToHostStreams(IStepIO &stepio) {
     std::string prefix = "     ";
     logging::devicex::debug(prefix + "Copying to h2d stream address(es) ");
     if (stepIoSplitter) {
-      stepIoSplitter->reset(&stepio);
+      stepIoSplitter->setUpstreamIo(&stepio);
     } else {
       throw error("StepIO splitter has not been initialised");
     }
@@ -1049,7 +1049,7 @@ void Devicex::anchorsHostFromHostStreams(IStepIO &stepio) {
     std::string prefix = "     ";
     logging::devicex::debug(prefix + "Copying from d2h stream address(es) ");
     if (stepIoSplitter) {
-      stepIoSplitter->reset(&stepio);
+      stepIoSplitter->setUpstreamIo(&stepio);
     } else {
       throw error("StepIO splitter has not been initialised");
     }
