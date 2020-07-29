@@ -1,3 +1,5 @@
+// Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+
 #include <popart/aliaszerocopy.hpp>
 #include <popart/chains.hpp>
 #include <popart/error.hpp>
@@ -299,8 +301,9 @@ int64_t AliasZeroCopy::findStart(Tensor *consumedTensor,
         // this can be an Exit or Enter depending on which subgraph of an
         // op this is
         --index;
-        if (index < 0)
+        if (index < 0) {
           throw error("[AliasZeroCopy] Schedule index below 0 (no producer)");
+        }
         opScheduleEntry = &analyzer->getOpScheduleAt(index);
       } while (std::get<0>(*opScheduleEntry).size() >= callStackSize ||
                std::get<1>(*opScheduleEntry) != OpStatus::CopyInput ||
@@ -426,6 +429,62 @@ Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
           // Find producer index
           int64_t startIndex = findStart(t, index);
           insertInterval(startIndex, index);
+        }
+      }
+    }
+  }
+
+  // Handle modified graph inputs
+  auto graphInputIds = t->getGraph().getInputIds();
+  for (OutIndex inIndex = 0; inIndex < graphInputIds.size(); ++inIndex) {
+    TensorId inId = graphInputIds[inIndex];
+    if (t->id == inId) {
+      auto &callSiteOps = analyzer->getGraphCallSites(t->getGraph().id);
+      for (Op *callSiteOp : callSiteOps) {
+        auto &scheduleIndices = analyzer->getScheduleIndices(callSiteOp);
+        for (int64_t scheduleIndex : scheduleIndices) {
+          // TODO: This code is over-conservative for multiple subgraphs
+          // (e.g. if operation).
+
+          // Last exit entry
+          auto callSiteLinks   = analyzer->getCallSiteLinksAt(scheduleIndex);
+          int64_t index        = callSiteLinks.back();
+          auto opScheduleEntry = &analyzer->getOpScheduleAt(index);
+          auto &callStack      = std::get<0>(*opScheduleEntry);
+          auto callStackSize   = callStack.size();
+
+          auto copyModifiedIndex = index;
+
+          auto regions =
+              dynamic_cast<CallOp *>(std::get<0>(*opScheduleEntry).back())
+                  ->modifies(inIndex);
+
+          if (std::any_of(regions.begin(), regions.end(), [](view::Region &r) {
+                return !r.isEmpty();
+              })) {
+            // Walk backwards to find OpStatus::CopyModified for that input
+            do {
+              --copyModifiedIndex;
+              if (copyModifiedIndex < 0)
+                throw error("[AliasZeroCopy] Schedule index below 0 (no copy "
+                            "modified)");
+              opScheduleEntry = &analyzer->getOpScheduleAt(copyModifiedIndex);
+            } while (std::get<1>(*opScheduleEntry) != OpStatus::CopyModified ||
+                     std::get<2>(*opScheduleEntry) != inIndex);
+
+            // Move index into the subgraph
+            do {
+              --index;
+              if (index < 0)
+                throw error("[AliasZeroCopy] Schedule index below 0 (no copy "
+                            "input)");
+              opScheduleEntry = &analyzer->getOpScheduleAt(index);
+            } while (std::get<0>(*opScheduleEntry).size() <= callStackSize);
+
+            auto copyInputIndex = findStart(t, index);
+
+            insertInterval(copyInputIndex, index);
+          }
         }
       }
     }
