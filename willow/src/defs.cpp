@@ -82,7 +82,7 @@ void GroupNormalizationShapeInference(InferenceContext &ctx) {
 
   auto input_shape = ctx.getInputType(X_IN)->tensor_type().shape();
 
-  if (input_shape.dim(0).has_dim_value()) {
+  if (input_shape.dim_size() > 0 && input_shape.dim(0).has_dim_value()) {
     auto *output_shape_mean =
         ctx.getOutputType(MEAN_OUT)->mutable_tensor_type()->mutable_shape();
     output_shape_mean->add_dim()->set_dim_value(num_groups *
