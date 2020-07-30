@@ -6,10 +6,10 @@
 #include <popart/maxclique.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
-#include <popart/op/cache.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/op/remote.hpp>
 #include <popart/region.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>

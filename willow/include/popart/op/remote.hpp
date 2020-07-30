@@ -1,17 +1,17 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_CACHE_HPP
-#define GUARD_NEURALNET_CACHE_HPP
+#ifndef GUARD_NEURALNET_REMOTE_HPP
+#define GUARD_NEURALNET_REMOTE_HPP
 
 #include <popart/op.hpp>
 #include <popart/op/elementwise.hpp>
 
 namespace popart {
 
-class CacheStoreOp : public Op {
+class RemoteStoreOp : public Op {
 public:
-  CacheStoreOp(const OperatorIdentifier &,
-               const Op::Settings &,
-               RemoteBufferId rbid_ = -1UL);
+  RemoteStoreOp(const OperatorIdentifier &,
+                const Op::Settings &,
+                RemoteBufferId rbid_ = -1UL);
 
   std::unique_ptr<Op> clone() const final;
   void setup() final {}
@@ -32,11 +32,11 @@ private:
   RemoteBufferId remotebuffer_id;
 };
 
-class CacheLoadOp : public Op {
+class RemoteLoadOp : public Op {
 public:
-  CacheLoadOp(const OperatorIdentifier &,
-              const Op::Settings &,
-              RemoteBufferId rbid_ = -1UL);
+  RemoteLoadOp(const OperatorIdentifier &,
+               const Op::Settings &,
+               RemoteBufferId rbid_ = -1UL);
 
   std::unique_ptr<Op> clone() const final;
   void setup() final;

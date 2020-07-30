@@ -2,66 +2,66 @@
 #include <algorithm>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-#include <popart/op/cache.hpp>
+#include <popart/op/remote.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/tensor.hpp>
 
 namespace popart {
 
-CacheStoreOp::CacheStoreOp(const OperatorIdentifier &_opid,
+RemoteStoreOp::RemoteStoreOp(const OperatorIdentifier &_opid,
+                             const Op::Settings &settings_,
+                             RemoteBufferId rbid_)
+    : Op(_opid, settings_), remotebuffer_id(rbid_) {}
+
+std::unique_ptr<Op> RemoteStoreOp::clone() const {
+  return std::make_unique<RemoteStoreOp>(*this);
+}
+
+void RemoteStoreOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
+  os.appendAttribute("bufferid", remotebuffer_id);
+}
+
+RemoteLoadOp::RemoteLoadOp(const OperatorIdentifier &_opid,
                            const Op::Settings &settings_,
                            RemoteBufferId rbid_)
     : Op(_opid, settings_), remotebuffer_id(rbid_) {}
 
-std::unique_ptr<Op> CacheStoreOp::clone() const {
-  return std::make_unique<CacheStoreOp>(*this);
+std::unique_ptr<Op> RemoteLoadOp::clone() const {
+  return std::make_unique<RemoteLoadOp>(*this);
 }
 
-void CacheStoreOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+void RemoteLoadOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("bufferid", remotebuffer_id);
 }
 
-CacheLoadOp::CacheLoadOp(const OperatorIdentifier &_opid,
-                         const Op::Settings &settings_,
-                         RemoteBufferId rbid_)
-    : Op(_opid, settings_), remotebuffer_id(rbid_) {}
-
-std::unique_ptr<Op> CacheLoadOp::clone() const {
-  return std::make_unique<CacheLoadOp>(*this);
-}
-
-void CacheLoadOp::appendOutlineAttributes(OpSerialiserBase &os) const {
-  Op::appendOutlineAttributes(os);
-  os.appendAttribute("bufferid", remotebuffer_id);
-}
-
-void CacheLoadOp::setup() {
+void RemoteLoadOp::setup() {
   outInfo(getCachedTensorOutIndex()) = inInfo(getCachedTensorInIndex());
 }
 
-view::Regions CacheLoadOp::modifies(InIndex index) const {
+view::Regions RemoteLoadOp::modifies(InIndex index) const {
   if (index == getCachedTensorInIndex()) {
     return {view::Region::getFull(inShape(index), view::AccessType::Write)};
   } else if (index == getRemoteBufferOffsetInIndex()) {
     return {view::Region::getEmpty(inRank(index))};
   } else {
-    throw error("Invalid index passed to CacheLoadOp::modifies");
+    throw error("Invalid index passed to RemoteLoadOp::modifies");
   }
 }
 
-view::Regions CacheLoadOp::aliases(InIndex in, OutIndex) const {
+view::Regions RemoteLoadOp::aliases(InIndex in, OutIndex) const {
   if (in == getCachedTensorInIndex()) {
     return {view::Region::getFull(inShape(in), view::AccessType::Write)};
   } else if (in == getRemoteBufferOffsetInIndex()) {
     return {view::Region::getEmpty(inRank(in))};
   } else {
-    throw error("Invalid index passed to CacheLoadOp::aliases");
+    throw error("Invalid index passed to RemoteLoadOp::aliases");
   }
 }
 
-view::RegMap CacheLoadOp::fwdRegMap(InIndex inIndex, OutIndex outIndex) const {
+view::RegMap RemoteLoadOp::fwdRegMap(InIndex inIndex, OutIndex outIndex) const {
   if (inIndex == getRemoteBufferOffsetInIndex() &&
       output->hasIndex(getCachedTensorOutIndex())) {
     auto emptyRegion =
@@ -73,7 +73,7 @@ view::RegMap CacheLoadOp::fwdRegMap(InIndex inIndex, OutIndex outIndex) const {
   return Op::fwdRegMap(inIndex, outIndex);
 }
 
-view::RegMap CacheLoadOp::bwdRegMap(InIndex inIndex, OutIndex outIndex) const {
+view::RegMap RemoteLoadOp::bwdRegMap(InIndex inIndex, OutIndex outIndex) const {
   if (inIndex == getRemoteBufferOffsetInIndex() &&
       output->hasIndex(getCachedTensorOutIndex())) {
     auto emptyRegion =
@@ -91,32 +91,32 @@ static OpDefinition::DataTypes T = {DataType::FLOAT,
                                     DataType::UINT32};
 
 static OpDefinition
-    cacheLoadOpDef({OpDefinition::Inputs({{"X", T}, {"O", {DataType::INT32}}}),
-                    OpDefinition::Outputs({{"Y", T}}),
-                    OpDefinition::Attributes({})});
-
-static OpDefinition
-    cacheStoreOpDef({OpDefinition::Inputs({{"X", T}, {"O", {DataType::INT32}}}),
-                     OpDefinition::Outputs({}),
+    remoteLoadOpDef({OpDefinition::Inputs({{"X", T}, {"O", {DataType::INT32}}}),
+                     OpDefinition::Outputs({{"Y", T}}),
                      OpDefinition::Attributes({})});
 
-static OpCreator<CacheLoadOp> cacheLoadOpCreator(
-    OpDefinitions({{Onnx::CustomOperators::CacheLoad, cacheLoadOpDef}}),
+static OpDefinition remoteStoreOpDef(
+    {OpDefinition::Inputs({{"X", T}, {"O", {DataType::INT32}}}),
+     OpDefinition::Outputs({}),
+     OpDefinition::Attributes({})});
+
+static OpCreator<RemoteLoadOp> remoteLoadOpCreator(
+    OpDefinitions({{Onnx::CustomOperators::RemoteLoad, remoteLoadOpDef}}),
     [](const OpCreatorInfo &info) {
       int64_t bufferid =
           info.attributes.getAttribute<Attributes::Int>("bufferid");
-      return std::unique_ptr<CacheLoadOp>(
-          new CacheLoadOp(info.opid, info.settings, bufferid));
+      return std::unique_ptr<RemoteLoadOp>(
+          new RemoteLoadOp(info.opid, info.settings, bufferid));
     },
     true);
 
-static OpCreator<CacheStoreOp> cacheStoreOpCreator(
-    OpDefinitions({{Onnx::CustomOperators::CacheStore, cacheStoreOpDef}}),
+static OpCreator<RemoteStoreOp> remoteStoreOpCreator(
+    OpDefinitions({{Onnx::CustomOperators::RemoteStore, remoteStoreOpDef}}),
     [](const OpCreatorInfo &info) {
       int64_t bufferid =
           info.attributes.getAttribute<Attributes::Int>("bufferid");
-      return std::unique_ptr<CacheStoreOp>(
-          new CacheStoreOp(info.opid, info.settings, bufferid));
+      return std::unique_ptr<RemoteStoreOp>(
+          new RemoteStoreOp(info.opid, info.settings, bufferid));
     },
     true);
 

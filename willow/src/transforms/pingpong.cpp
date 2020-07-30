@@ -5,7 +5,6 @@
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/op/boundary.hpp>
-#include <popart/op/cache.hpp>
 #include <popart/op/collectives/replicatedallgather.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/collectives/replicatedreducescatter.hpp>
@@ -13,6 +12,7 @@
 #include <popart/op/init.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/lamb.hpp>
+#include <popart/op/remote.hpp>
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/tensor.hpp>
@@ -26,12 +26,12 @@ namespace popart {
 
 static constexpr const double maxCompressedPriority = 9000.0;
 static constexpr const double initPriority          = -9996.0;
-static constexpr const double cacheLoadPriority     = -9997.0;
+static constexpr const double remoteLoadPriority    = -9997.0;
 static constexpr const double allGatherPriority     = -9997.0;
 static constexpr const double ipuCopyPriority       = -9998.0;
 static constexpr const double allReducePriority     = -9999.0;
 static constexpr const double varUpdatePriority     = -9999.0;
-static constexpr const double cacheStorePriority    = -9999.0;
+static constexpr const double remoteStorePriority   = -9999.0;
 static constexpr const double acclStateLoadPriority = -9999.0;
 
 std::size_t PingPong::id(int pass) {
@@ -607,7 +607,7 @@ bool PingPong::apply(Graph &graph) const {
       // Assign correct schedulePriority to all inter-IPU copies
       if (op->isIpuCopyOp()) {
         // Special type of IPUCopy between PingPong phases
-        // schedulePriority before CacheStore but after CacheLoad
+        // schedulePriority before RemoteStore but after RemoteLoad
         IpuCopyOp *copy = dynamic_cast<IpuCopyOp *>(op);
         if (!op->copiesOptimizerTensors() &&
             copy->getSourceIpu() % num_stages !=
@@ -642,10 +642,10 @@ bool PingPong::apply(Graph &graph) const {
 
     std::vector<TensorId> cacheArgIds;
 
-    std::map<std::pair<TensorId, int64_t>, std::pair<TensorId, CacheStoreOp *>>
+    std::map<std::pair<TensorId, int64_t>, std::pair<TensorId, RemoteStoreOp *>>
         tensorStoreMap;
     std::map<std::pair<TensorId, int64_t>,
-             std::tuple<TensorId, TensorId, CacheLoadOp *>>
+             std::tuple<TensorId, TensorId, RemoteLoadOp *>>
         tensorLoadMap;
 
     auto getCacheArg = [&graph, &cacheArgIds](TensorId tensorId) -> TensorId {
@@ -864,8 +864,8 @@ bool PingPong::apply(Graph &graph) const {
 
       for (auto &phaseLoadStore : loadStoreInPhase) {
         PingPongPhase currentPingPongPhase         = phaseLoadStore.first;
-        CacheLoadOp *cacheLoad                     = nullptr;
-        CacheStoreOp *cacheStore                   = nullptr;
+        RemoteLoadOp *remoteLoad                   = nullptr;
+        RemoteStoreOp *remoteStore                 = nullptr;
         ReplicatedAllGatherOp *replicatedAllGather = nullptr;
 
         // Load
@@ -878,30 +878,30 @@ bool PingPong::apply(Graph &graph) const {
           auto tensorLoadMapEntry =
               tensorLoadMap.find({tensor->id, currentPingPongPhase});
           if (tensorLoadMapEntry == tensorLoadMap.end()) {
-            auto cacheLoadOp = std::make_unique<CacheLoadOp>(
-                Onnx::CustomOperators::CacheLoad, settings);
-            cacheLoad = cacheLoadOp.get();
+            auto remoteLoadOp = std::make_unique<RemoteLoadOp>(
+                Onnx::CustomOperators::RemoteLoad, settings);
+            remoteLoad = remoteLoadOp.get();
 
             if (tensor->isAcclTensor()) {
               // Optimizer state: Load as late as possible
-              cacheLoad->settings.schedulePriority = acclStateLoadPriority;
-              // CacheLoad in current phase
-              cacheLoad->setPingPongPhase(currentPingPongPhase);
+              remoteLoad->settings.schedulePriority = acclStateLoadPriority;
+              // RemoteLoad in current phase
+              remoteLoad->setPingPongPhase(currentPingPongPhase);
             } else {
               // Very low schedulePriority on loads (at the end of the previous
               // phase)
-              cacheLoad->settings.schedulePriority = cacheLoadPriority;
-              // CacheLoad at the end of the previous phase, so that load
+              remoteLoad->settings.schedulePriority = remoteLoadPriority;
+              // RemoteLoad at the end of the previous phase, so that load
               // is executed before inter-IPU copy
-              cacheLoad->setPingPongPhase(currentPingPongPhase - 1);
+              remoteLoad->setPingPongPhase(currentPingPongPhase - 1);
             }
 
-            cacheLoad->settings.recomputeType = RecomputeType::Checkpoint;
-            cacheLoad->setVirtualGraphId(loadStoreVGID);
-            graph.moveIntoGraph(std::move(cacheLoadOp));
+            remoteLoad->settings.recomputeType = RecomputeType::Checkpoint;
+            remoteLoad->setVirtualGraphId(loadStoreVGID);
+            graph.moveIntoGraph(std::move(remoteLoadOp));
 
-            cacheLoad->connectInTensor(
-                CacheStoreOp::getRemoteBufferOffsetInIndex(),
+            remoteLoad->connectInTensor(
+                RemoteStoreOp::getRemoteBufferOffsetInIndex(),
                 getCacheArg(tensor->id));
 
             TensorId initTensorId = generateInitTensorId(tensor);
@@ -911,7 +911,7 @@ bool PingPong::apply(Graph &graph) const {
 
             if (auto prevLoadId = getPreviousLoadedTensorId(tensor->id)) {
               // Tensor might not have a true producer op, but was previously
-              // loaded by a CacheLoad
+              // loaded by a RemoteLoad
               inTensorId = prevLoadId.value();
             } else if (producerOp) {
               // Tensor has a true producer op
@@ -951,20 +951,20 @@ bool PingPong::apply(Graph &graph) const {
               // Do Init on IO tiles
               init->settings.useIoTiles = tensorUseIoTiles;
             }
-            // CacheLoad always needs both an input and an output,
+            // RemoteLoad always needs both an input and an output,
             // for outlining and aliasing purposes
 
-            // CacheLoad updates the inTensorId...
-            cacheLoad->connectInTensor(CacheLoadOp::getCachedTensorInIndex(),
-                                       inTensorId);
+            // RemoteLoad updates the inTensorId...
+            remoteLoad->connectInTensor(RemoteLoadOp::getCachedTensorInIndex(),
+                                        inTensorId);
             // ... and aliases it under loadedTensorId
-            cacheLoad->createAndConnectOutTensor(
-                CacheLoadOp::getCachedTensorOutIndex(), loadedTensorId);
+            remoteLoad->createAndConnectOutTensor(
+                RemoteLoadOp::getCachedTensorOutIndex(), loadedTensorId);
 
-            cacheLoad->setup();
+            remoteLoad->setup();
 
-            // Do CacheLoad on IO tiles
-            cacheLoad->settings.useIoTiles = tensorUseIoTiles;
+            // Do RemoteLoad on IO tiles
+            remoteLoad->settings.useIoTiles = tensorUseIoTiles;
 
             if (tensorReplicatedWeightSharding && !tensor->isAcclTensor()) {
               // Execute replicated allgather to collect the full weight
@@ -979,7 +979,7 @@ bool PingPong::apply(Graph &graph) const {
                   allGatherPriority;
               replicatedAllGather->settings.recomputeType =
                   RecomputeType::Checkpoint;
-              // CacheLoad at the end of the previous phase, so that load
+              // RemoteLoad at the end of the previous phase, so that load
               // is executed before inter-IPU copy
               replicatedAllGather->setPingPongPhase(currentPingPongPhase - 1);
               replicatedAllGather->setVirtualGraphId(loadStoreVGID);
@@ -999,9 +999,9 @@ bool PingPong::apply(Graph &graph) const {
                   ReplicatedAllGatherOp::getOutIndex(), gatheredTensorId);
 
               replicatedAllGather->setup();
-              graph.topoCons->insert(cacheLoad, replicatedAllGather, true);
+              graph.topoCons->insert(remoteLoad, replicatedAllGather, true);
 
-              // Avoid outlining CacheLoad Ops that result in a
+              // Avoid outlining RemoteLoad Ops that result in a
               // different final gathered tensor shape together,
               // because it can have adverse effects due to copying tensors
               // with different final tile mapping using the same host
@@ -1012,7 +1012,7 @@ bool PingPong::apply(Graph &graph) const {
                                 tensor->info.shape().end(),
                                 ",") +
                   "]";
-              cacheLoad->settings.extraOutlineAttributes.insert(
+              remoteLoad->settings.extraOutlineAttributes.insert(
                   {"gatheredSize", gatheredShapeString});
 
               // Do AllGather on IO tiles
@@ -1025,12 +1025,12 @@ bool PingPong::apply(Graph &graph) const {
 
             tensorLoadMap.emplace(
                 std::pair<TensorId, int64_t>(tensor->id, currentPingPongPhase),
-                std::tuple<TensorId, TensorId, CacheLoadOp *>(
-                    loadedTensorId, gatheredTensorId, cacheLoad));
+                std::tuple<TensorId, TensorId, RemoteLoadOp *>(
+                    loadedTensorId, gatheredTensorId, remoteLoad));
           } else {
             loadedTensorId   = std::get<0>(tensorLoadMapEntry->second);
             gatheredTensorId = std::get<1>(tensorLoadMapEntry->second);
-            cacheLoad        = std::get<2>(tensorLoadMapEntry->second);
+            remoteLoad       = std::get<2>(tensorLoadMapEntry->second);
           }
         }
 
@@ -1044,59 +1044,59 @@ bool PingPong::apply(Graph &graph) const {
           auto tensorStoreMapEntry =
               tensorStoreMap.find({tensor->id, currentPingPongPhase});
           if (tensorStoreMapEntry == tensorStoreMap.end()) {
-            auto cacheStoreOp = std::make_unique<CacheStoreOp>(
-                Onnx::CustomOperators::CacheStore, settings);
-            cacheStore = cacheStoreOp.get();
+            auto remoteStoreOp = std::make_unique<RemoteStoreOp>(
+                Onnx::CustomOperators::RemoteStore, settings);
+            remoteStore = remoteStoreOp.get();
             // Very low schedulePriority on stores (at the end of a phase)
-            cacheStore->settings.schedulePriority = cacheStorePriority;
-            cacheStore->settings.recomputeType    = RecomputeType::Checkpoint;
-            cacheStore->setPingPongPhase(currentPingPongPhase);
-            cacheStore->setVirtualGraphId(loadStoreVGID);
-            graph.moveIntoGraph(std::move(cacheStoreOp));
+            remoteStore->settings.schedulePriority = remoteStorePriority;
+            remoteStore->settings.recomputeType    = RecomputeType::Checkpoint;
+            remoteStore->setPingPongPhase(currentPingPongPhase);
+            remoteStore->setVirtualGraphId(loadStoreVGID);
+            graph.moveIntoGraph(std::move(remoteStoreOp));
 
-            cacheStore->connectInTensor(
-                CacheStoreOp::getRemoteBufferOffsetInIndex(),
+            remoteStore->connectInTensor(
+                RemoteStoreOp::getRemoteBufferOffsetInIndex(),
                 getCacheArg(tensor->id));
-            cacheStore->connectInTensor(CacheStoreOp::getCachedTensorInIndex(),
-                                        loadedTensorId);
-            cacheStore->setup();
+            remoteStore->connectInTensor(
+                RemoteStoreOp::getCachedTensorInIndex(), loadedTensorId);
+            remoteStore->setup();
 
             // Do allgather on IO tiles
-            cacheStore->settings.useIoTiles = tensorUseIoTiles;
+            remoteStore->settings.useIoTiles = tensorUseIoTiles;
 
             tensorStoreMap.emplace(
                 std::pair<TensorId, int64_t>(tensor->id, currentPingPongPhase),
-                std::pair<TensorId, CacheStoreOp *>(loadedTensorId,
-                                                    cacheStore));
+                std::pair<TensorId, RemoteStoreOp *>(loadedTensorId,
+                                                     remoteStore));
           } else {
-            cacheStore = tensorStoreMapEntry->second.second;
+            remoteStore = tensorStoreMapEntry->second.second;
           }
         }
 
         // Cache load has to take place before associated cache store
-        if (cacheLoad && cacheStore) {
-          graph.topoCons->insert(cacheLoad, cacheStore);
+        if (remoteLoad && remoteStore) {
+          graph.topoCons->insert(remoteLoad, remoteStore);
         }
 
-        if (cacheStore) {
+        if (remoteStore) {
           // Any modification has to take place before the cache store
           for (Op *modifyingOp : modifiersInPhase[currentPingPongPhase]) {
-            graph.topoCons->insert(modifyingOp, cacheStore);
+            graph.topoCons->insert(modifyingOp, remoteStore);
           }
         }
 
         for (Op *consumerOp : consumersInPhase[currentPingPongPhase]) {
           if (tensor->isAcclTensor()) {
-            if (cacheLoad) {
-              graph.topoCons->insert(cacheLoad, consumerOp, true);
+            if (remoteLoad) {
+              graph.topoCons->insert(remoteLoad, consumerOp, true);
             }
             if (replicatedAllGather) {
               graph.topoCons->insert(replicatedAllGather, consumerOp, true);
             }
           } else {
-            if (cacheLoad) {
+            if (remoteLoad) {
               // Loading has to take place before the consumption
-              graph.topoCons->insert(cacheLoad, consumerOp);
+              graph.topoCons->insert(remoteLoad, consumerOp);
             }
           }
 

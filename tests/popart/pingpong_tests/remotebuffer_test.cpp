@@ -9,12 +9,12 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
-#include <popart/op/cache.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/dynamic/dynamicslice.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/l1.hpp>
+#include <popart/op/remote.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_0) {
   TensorId A_id =
       bder->addInitializedInputTensor({v_A_init.data(), A_info}, "A");
 
-  bder->customOp(Onnx::CustomOperators::CacheStore,
+  bder->customOp(Onnx::CustomOperators::RemoteStore,
                  1,
                  {A_id},
                  0,
@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_0) {
                                    static_cast<int64_t>(InitType::NoInit));
 
   TensorInfo B_info{"FLOAT", std::vector<int64_t>{K, N, N}};
-  TensorId B_id = bder->customOp(Onnx::CustomOperators::CacheLoad,
+  TensorId B_id = bder->customOp(Onnx::CustomOperators::RemoteLoad,
                                  1,
                                  {C_id},
                                  1,
@@ -186,7 +186,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_1) {
   TensorId B_cc2_id =
       aiGraphcore.dynamicupdate({B_cc1_id, idx2_id, mmb2_id}, {0}, {1}, true);
 
-  bder->customOp(Onnx::CustomOperators::CacheStore,
+  bder->customOp(Onnx::CustomOperators::RemoteStore,
                  1,
                  {B_cc2_id},
                  0,
@@ -195,7 +195,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_1) {
 
   TensorInfo B_info{"FLOAT", std::vector<int64_t>{K, N, N}};
   TensorId B_l_id =
-      bder->customOp(Onnx::CustomOperators::CacheLoad,
+      bder->customOp(Onnx::CustomOperators::RemoteLoad,
                      1,
                      {A_id},
                      1,
@@ -250,13 +250,13 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_1) {
   }
 }
 
-// Overwrite A and B with CacheLoad, aliased as C and D
+// Overwrite A and B with RemoteLoad, aliased as C and D
 // Check if subgraph and main tensors are aliased correctly
 // Before outlining:
-// A -> CacheLoad -> C (C aliases A)
-// B -> CacheLoad -> D (B aliases D)
+// A -> RemoteLoad -> C (C aliases A)
+// B -> RemoteLoad -> D (B aliases D)
 // After outlining (threshold -1):
-// X: A' -> CacheLoad -> C' (C' aliases A')
+// X: A' -> RemoteLoad -> C' (C' aliases A')
 // A -> Call(X) -> C (C aliases A)
 // B -> Call(X) -> D (B aliases D)
 BOOST_AUTO_TEST_CASE(RemoteBufferLoadOutlineTest) {
@@ -291,7 +291,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadOutlineTest) {
       bder->addInitializedInputTensor({v_B_init.data(), B_info}, "B");
 
   TensorInfo C_info{"FLOAT", std::vector<int64_t>{K, N, N}};
-  TensorId C_id = bder->customOp(Onnx::CustomOperators::CacheLoad,
+  TensorId C_id = bder->customOp(Onnx::CustomOperators::RemoteLoad,
                                  1,
                                  {A_id},
                                  1,
@@ -299,7 +299,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadOutlineTest) {
                                  "load")[0];
 
   TensorInfo D_info{"FLOAT", std::vector<int64_t>{K, N, N}};
-  TensorId D_id = bder->customOp(Onnx::CustomOperators::CacheLoad,
+  TensorId D_id = bder->customOp(Onnx::CustomOperators::RemoteLoad,
                                  1,
                                  {B_id},
                                  1,
@@ -346,7 +346,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadOutlineTest) {
     auto &ir = session->getIr();
 
     // Check that the CallOp has inherited access types, modified and aliases
-    // from the CacheLoadOp that are executed in the subgraph.
+    // from the RemoteLoadOp that are executed in the subgraph.
     for (Op *op : ir.getAllOps()) {
       if (CallOp *callOp = dynamic_cast<CallOp *>(op)) {
         BOOST_CHECK(callOp->aliases(0, 0).front() ==
@@ -356,16 +356,18 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadOutlineTest) {
         BOOST_CHECK(callOp->modifies(0).front().getAccessType() ==
                     view::AccessType::Write);
       }
-      if (CacheLoadOp *cacheLoadOp = dynamic_cast<CacheLoadOp *>(op)) {
-        BOOST_CHECK(cacheLoadOp
-                        ->aliases(CacheLoadOp::getCachedTensorInIndex(),
-                                  CacheLoadOp::getCachedTensorOutIndex())
+      if (RemoteLoadOp *remoteLoadOp = dynamic_cast<RemoteLoadOp *>(op)) {
+        BOOST_CHECK(remoteLoadOp
+                        ->aliases(RemoteLoadOp::getCachedTensorInIndex(),
+                                  RemoteLoadOp::getCachedTensorOutIndex())
                         .front() == view::Region::getFull(A_info.shape()));
-        BOOST_CHECK(cacheLoadOp->modifies(CacheLoadOp::getCachedTensorInIndex())
-                        .front() == view::Region::getFull(A_info.shape()));
-        BOOST_CHECK(cacheLoadOp->modifies(CacheLoadOp::getCachedTensorInIndex())
-                        .front()
-                        .getAccessType() == view::AccessType::Write);
+        BOOST_CHECK(
+            remoteLoadOp->modifies(RemoteLoadOp::getCachedTensorInIndex())
+                .front() == view::Region::getFull(A_info.shape()));
+        BOOST_CHECK(
+            remoteLoadOp->modifies(RemoteLoadOp::getCachedTensorInIndex())
+                .front()
+                .getAccessType() == view::AccessType::Write);
       }
     }
   }

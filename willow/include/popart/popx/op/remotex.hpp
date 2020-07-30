@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_CACHEX_HPP
-#define GUARD_NEURALNET_CACHEX_HPP
+#ifndef GUARD_NEURALNET_REMOTEX_HPP
+#define GUARD_NEURALNET_REMOTEX_HPP
 
 #include <popart/popx/opx.hpp>
 
@@ -8,15 +8,15 @@ namespace popart {
 
 namespace popx {
 
-class CacheStoreOpx : public Opx {
+class RemoteStoreOpx : public Opx {
 public:
-  CacheStoreOpx(Op *, Devicex *);
+  RemoteStoreOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
 };
 
-class CacheLoadOpx : public Opx {
+class RemoteLoadOpx : public Opx {
 public:
-  CacheLoadOpx(Op *, Devicex *);
+  RemoteLoadOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
   InputCreatorType getInputCreatorType(InIndex index) const final;
   poplar::Tensor

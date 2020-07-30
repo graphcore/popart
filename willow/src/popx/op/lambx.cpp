@@ -35,7 +35,7 @@ void LambSquareOpx::grow(poplar::program::Sequence &prog) const {
 
 namespace {
 OpxCreator<LambSquareOpx>
-    cacheStoreOpxCreator(Onnx::CustomOperators::LambSquare);
+    lambSquareOpxCreator(Onnx::CustomOperators::LambSquare);
 } // namespace
 } // namespace popx
 } // namespace popart

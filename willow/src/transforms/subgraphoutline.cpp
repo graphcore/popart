@@ -439,7 +439,7 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
         //  Read-only does not make sense, since we ask about modified regions.
         // Examples:
         //  1.) VarUpdate will cause read-write access to modified input.
-        //  2.) CacheLoad will cause write-only access to modified input.
+        //  2.) RemoteLoad will cause write-only access to modified input.
         break;
       }
     }

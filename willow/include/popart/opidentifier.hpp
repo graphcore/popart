@@ -335,8 +335,8 @@ const static AiGraphcoreOpIdV1 IpuCopy("IpuCopy");
 const static AiGraphcoreOpIdV1 IoTileCopy("IoTileCopy");
 
 const static AiGraphcoreOpIdV1 Init_1("Init", 0, 1);
-const static AiGraphcoreOpIdV1 CacheStore("CacheStore", {1, 2}, 0);
-const static AiGraphcoreOpIdV1 CacheLoad("CacheLoad", {1, 2}, 1);
+const static AiGraphcoreOpIdV1 RemoteStore("RemoteStore", {1, 2}, 0);
+const static AiGraphcoreOpIdV1 RemoteLoad("RemoteLoad", {1, 2}, 1);
 
 const static AiGraphcoreOpIdV1 DynamicSlice_1("DynamicSlice", 2, 1);
 const static AiGraphcoreOpIdV1 DynamicUpdate_1("DynamicUpdate", 3, 1);

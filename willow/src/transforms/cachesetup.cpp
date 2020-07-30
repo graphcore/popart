@@ -4,9 +4,9 @@
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
-#include <popart/op/cache.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/op/remote.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
@@ -22,26 +22,26 @@ bool CacheSetup::apply(Graph &graph) const {
   Ir &ir                 = graph.getIr();
   int64_t remoteBufferId = 0;
 
-  // Create remote buffer info for CacheLoad/CacheStore ops with set buffer ID
+  // Create remote buffer info for RemoteLoad/RemoteStore ops with set buffer ID
   for (Op *op : ir.getAllOps()) {
-    if (CacheLoadOp *loadOp = dynamic_cast<CacheLoadOp *>(op)) {
+    if (RemoteLoadOp *loadOp = dynamic_cast<RemoteLoadOp *>(op)) {
       auto allRemoteBufferIds = ir.getAllRemoteBufferInfos();
       RemoteBufferId id       = loadOp->getRemoteBufferId();
       if (id > -1 && allRemoteBufferIds.find(id) == allRemoteBufferIds.end()) {
         auto info = RemoteBufferInfo(
-            loadOp->output->tensor(CacheLoadOp::getCachedTensorOutIndex())
+            loadOp->output->tensor(RemoteLoadOp::getCachedTensorOutIndex())
                 ->info,
             1);
         ir.setRemoteBufferInfo(id, info);
         remoteBufferId = std::max(remoteBufferId, id + 1);
       }
     }
-    if (CacheStoreOp *storeOp = dynamic_cast<CacheStoreOp *>(op)) {
+    if (RemoteStoreOp *storeOp = dynamic_cast<RemoteStoreOp *>(op)) {
       auto allRemoteBufferIds = ir.getAllRemoteBufferInfos();
       RemoteBufferId id       = storeOp->getRemoteBufferId();
       if (id > -1 && allRemoteBufferIds.find(id) == allRemoteBufferIds.end()) {
         auto info = RemoteBufferInfo(
-            storeOp->input->tensor(CacheStoreOp::getCachedTensorInIndex())
+            storeOp->input->tensor(RemoteStoreOp::getCachedTensorInIndex())
                 ->info,
             1);
         ir.setRemoteBufferInfo(id, info);
@@ -70,9 +70,9 @@ bool CacheSetup::apply(Graph &graph) const {
         traceFront.pop_back();
         for (Op *consumer : front->consumers.getOps()) {
           // Only certain ops can be on the path between CacheArg and
-          // CacheLoad/Store.
-          if (consumer->opid == Onnx::CustomOperators::CacheLoad ||
-              consumer->opid == Onnx::CustomOperators::CacheStore) {
+          // RemoteLoad/Store.
+          if (consumer->opid == Onnx::CustomOperators::RemoteLoad ||
+              consumer->opid == Onnx::CustomOperators::RemoteStore) {
             argOpMap[tensor_id].insert(consumer);
             opArgMap[consumer].insert(tensor_id);
           } else if (consumer->opid == Onnx::CustomOperators::Call_1) {
@@ -131,7 +131,7 @@ bool CacheSetup::apply(Graph &graph) const {
                        remoteBufferId,
                        remoteBufferIndex);
         for (Op *op : argOpMap[tensor_id]) {
-          if (CacheStoreOp *cs = dynamic_cast<CacheStoreOp *>(op)) {
+          if (RemoteStoreOp *cs = dynamic_cast<RemoteStoreOp *>(op)) {
             cs->setRemoteBufferId(remoteBufferId);
             tensorInfo = cs->input->tensor(cs->getCachedTensorInIndex())->info;
             remoteBufferVGIDs[remoteBufferId].insert(
@@ -141,9 +141,9 @@ bool CacheSetup::apply(Graph &graph) const {
                 "Tensor info {}.",
                 cs->debugName(),
                 remoteBufferId,
-                cs->inInfo(CacheStoreOp::getCachedTensorInIndex()));
+                cs->inInfo(RemoteStoreOp::getCachedTensorInIndex()));
           }
-          if (CacheLoadOp *cl = dynamic_cast<CacheLoadOp *>(op)) {
+          if (RemoteLoadOp *cl = dynamic_cast<RemoteLoadOp *>(op)) {
             cl->setRemoteBufferId(remoteBufferId);
             tensorInfo =
                 cl->output->tensor(cl->getCachedTensorOutIndex())->info;
@@ -154,7 +154,7 @@ bool CacheSetup::apply(Graph &graph) const {
                 "Tensor info {}.",
                 cl->debugName(),
                 remoteBufferId,
-                cl->outInfo(CacheLoadOp::getCachedTensorOutIndex()));
+                cl->outInfo(RemoteLoadOp::getCachedTensorOutIndex()));
           }
         }
         remoteBufferIndex++;

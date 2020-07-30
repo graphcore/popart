@@ -1045,7 +1045,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
 
     applyTransform(PingPong::id(2), getMainGraph());
     verifyVirtualGraphIds(true);
-    // Remove extra CacheLoad, CacheStore and Replicated ops that are not used
+    // Remove extra RemoteLoad, RemoteStore and Replicated ops that are not used
     applyTransform(Prune::id(), getMainGraph());
   }
 

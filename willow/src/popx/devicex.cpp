@@ -36,11 +36,11 @@
 #include <popart/liveness.hpp>
 #include <popart/logging.hpp>
 #include <popart/op.hpp>
-#include <popart/op/cache.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/getrandomseed.hpp>
 #include <popart/op/if.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/op/remote.hpp>
 #include <popart/op/restore.hpp>
 #include <popart/op/subgraphop.hpp>
 #include <popart/op/varupdate.hpp>
@@ -2999,7 +2999,7 @@ void Devicex::prepareGraph() {
   //                |         |
   //         weight_init    bias_init
   //                |         |
-  //           CacheLoad    CacheLoad
+  //           RemoteLoad    RemoteLoad
   //                |         |
   //       weight_loaded    bias_loaded
   //      (graph output)    (graph output)
@@ -3056,14 +3056,14 @@ void Devicex::prepareGraph() {
   // For growing Opx, we can ignore SCHEDULE dependencies, because data paths
   // flowing through subgraphs (from A to B in the example above):
   //
-  // InitOp->weight_init->CacheLoad->weight_loaded->weight->Convolution->...
+  // InitOp->weight_init->RemoteLoad->weight_loaded->weight->Convolution->...
   //
   // can be grown independently from growing Call(A), thereby removing the
   // circular dependency.
   //
   // The linearized order in which Opx are grown for the example above becomes:
-  // InitOp(x) > CacheLoad(x) > Convolution > InitOp(y) > CacheLoad(y) > AddBias
-  // > Call(A) > Call(B) > Call(B)
+  // InitOp(x) > RemoteLoad(x) > Convolution > InitOp(y) > RemoteLoad(y) >
+  // AddBias > Call(A) > Call(B) > Call(B)
   //
   // Step 2:
   // As soon as all data paths in a given graph (here A, B or C) are grown,
@@ -3077,7 +3077,7 @@ void Devicex::prepareGraph() {
   //
   // The linearized order in which sequences are emplaced for the example above
   // becomes:
-  // InitOp(x) > CacheLoad(x) > InitOp(y) > CacheLoad(y) > Call(A)
+  // InitOp(x) > RemoteLoad(x) > InitOp(y) > RemoteLoad(y) > Call(A)
   // > Convolution > AddBias > Call(B) > Call(B)
 
   // Mappings for each task from final sequence to intermediate sequence

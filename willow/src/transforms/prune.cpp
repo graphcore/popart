@@ -10,8 +10,8 @@
 #include <popart/topocons.hpp>
 
 #include <popart/op/boundary.hpp>
-#include <popart/op/cache.hpp>
 #include <popart/op/init.hpp>
+#include <popart/op/remote.hpp>
 #include <popart/transforms/prune.hpp>
 
 namespace popart {
@@ -83,15 +83,15 @@ bool Prune::apply(Graph &graph) const {
     tensorFront.push_back(t);
     tensorsVisited.insert(t);
   }
-  // - CacheStore inputs
-  // CacheStore have no outputs and no consumers thereafter,
+  // - RemoteStore inputs
+  // RemoteStore have no outputs and no consumers thereafter,
   // so they will be pruned even though they do something necessary
   // (e.g. store an updated weight tensor).
   // This may no longer be necessary once we have host-tensor representations
-  // in the IR instead, that can represent the output of a CacheStore op
+  // in the IR instead, that can represent the output of a RemoteStore op
   // TODO: T17309
   for (Op *op : ir.getAllOps()) {
-    if (CacheStoreOp *store = dynamic_cast<CacheStoreOp *>(op)) {
+    if (RemoteStoreOp *store = dynamic_cast<RemoteStoreOp *>(op)) {
       for (auto &tensor : store->input->tensorMap()) {
         tensorFront.push_back(tensor.second);
         tensorsVisited.insert(tensor.second);
@@ -148,7 +148,7 @@ bool Prune::apply(Graph &graph) const {
   for (auto &id_op : graph.getOps()) {
     Op *op = id_op.second.get();
     // TODO: Better mechanism to preserve special ops
-    if (required.count(op) == 0 && !dynamic_cast<CacheStoreOp *>(op) &&
+    if (required.count(op) == 0 && !dynamic_cast<RemoteStoreOp *>(op) &&
         !dynamic_cast<BoundaryOp *>(op)) {
       opsToDelete.push_back(op);
       for (auto &t_inds : op->output->indicesMap()) {

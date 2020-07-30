@@ -12,7 +12,7 @@ namespace popart {
 
 // None: Do not populate tensor in each iteration;
 //       only safe if tensor is overwritten by it's consumer before use.
-//       For example CacheLoad and DynamicUpdate are safe consumers, while
+//       For example RemoteLoad and DynamicUpdate are safe consumers, while
 //       DynamicAdd needs a zero-initialised tensor.
 // Zero: Populate tensor with zeros in each iteration (like np.zeros)
 enum class InitType { NoInit = 0, Zero };
