@@ -41,6 +41,14 @@ void OnnxConstExprUtil::processConstantNode(
   // We will implement a separate tool to convert between
   // Constant Operator output and initializer in ONNX models (T6213)
 
+  // Check for the `sparse_value` attribute.
+  // `sparse_value` was introduces in opset 11 and is not curently supported.
+  for (auto &attr : node.attribute()) {
+    if (attr.name() == "sparse_value") {
+      throw error("The Constant op attribute 'sparse_value' is not supported.");
+    }
+  }
+
   // Search the constant node for the 'value' attribute, and return the value
   // tensor.
   auto getValueAttribute = [](auto &nodeLocal) {
@@ -149,6 +157,11 @@ static OpDefinition
                      OpDefinition::Outputs({{"output", T}}),
                      OpDefinition::Attributes({{"value", {"*"}}})});
 
+static OpDefinition constantOpV11Def(
+    {OpDefinition::Inputs({}),
+     OpDefinition::Outputs({{"output", T}}),
+     OpDefinition::Attributes({{"value", {"*"}}, {"value", {"*"}}})});
+
 class ConstantOp {};
 
 internal_error dummyOpError(const std::string &opName) {
@@ -158,7 +171,8 @@ internal_error dummyOpError(const std::string &opName) {
 }
 
 static OpCreator<ConstantOp> constantOpCreator(
-    OpDefinitions({{Onnx::Operators::Constant_9, constantOpV9Def}}),
+    OpDefinitions({{Onnx::Operators::Constant_9, constantOpV9Def},
+                   {Onnx::Operators::Constant_11, constantOpV11Def}}),
     [](const OpCreatorInfo &info) -> std::unique_ptr<Op> {
       throw dummyOpError("Constant");
     },
