@@ -598,16 +598,16 @@ void Devicex::weightsToHost() {
 void Devicex::remoteBufferWeightsToHost() {
   for (auto initId : ir().getTensorIds(TensorType::Variable)) {
     Tensor *tensor = ir().getTensor(initId);
-    if (tensor->cacheInfo.isCached()) {
+    if (tensor->tensorLocationInfo.isRemote()) {
       logging::devicex::debug("remoteBufferWeightsToHost: {}", initId);
-      auto remoteBufferInfo = tensor->cacheInfo.getRemoteBufferInfo();
+      auto remoteBufferInfo = tensor->tensorLocationInfo.getRemoteBufferInfo();
       char *data0           = d2hWeightBuffers[initId].data();
 
-      if (tensor->cacheInfo.isSharded()) {
+      if (tensor->tensorLocationInfo.isSharded()) {
         // Replicated weight sharding, each replica holds 1/repfactor
         // parts of the weight
         auto cbr = getCollectiveBalancedReorder(
-            getCacheArgTensorId(stripAllReservedPrefixes(tensor->id)));
+            getRemoteArgTensorId(stripAllReservedPrefixes(tensor->id)));
 
         auto elemSize =
             static_cast<int64_t>(tensor->info.getDataTypeInfo()->nbytes());
@@ -937,16 +937,16 @@ void Devicex::weightsFromHost() {
 void Devicex::remoteBufferWeightsFromHost() {
   for (auto initId : ir().getTensorIds(TensorType::Variable)) {
     Tensor *tensor = ir().getTensor(initId);
-    if (tensor->cacheInfo.isCached()) {
+    if (tensor->tensorLocationInfo.isRemote()) {
       logging::devicex::debug("remoteBufferWeightsFromHost: {}", initId);
-      auto remoteBufferInfo = tensor->cacheInfo.getRemoteBufferInfo();
+      auto remoteBufferInfo = tensor->tensorLocationInfo.getRemoteBufferInfo();
       char *data0           = static_cast<char *>(tensor->tensorData()->data());
 
-      if (tensor->cacheInfo.isSharded()) {
+      if (tensor->tensorLocationInfo.isSharded()) {
         // Replicated weight sharding, each replica holds 1/repfactor
         // parts of the weight
         auto cbr = getCollectiveBalancedReorder(
-            getCacheArgTensorId(stripAllReservedPrefixes(tensor->id)));
+            getRemoteArgTensorId(stripAllReservedPrefixes(tensor->id)));
 
         auto elemSize =
             static_cast<int64_t>(tensor->info.getDataTypeInfo()->nbytes());
@@ -2625,7 +2625,7 @@ void Devicex::reconnectInputStreams() {
   for (Tensor *tensor : ir().dataStreamTensors()) {
     // The data stream for a tensor won't exist if using synthetic data, so
     // don't try and recreate them.
-    if (!ir().useSyntheticData() && !tensor->cacheInfo.isCached()) {
+    if (!ir().useSyntheticData() && !tensor->tensorLocationInfo.isRemote()) {
       engineToInputStreamWithCallback(tensor, tensor->id);
     }
   }
@@ -2823,7 +2823,7 @@ void Devicex::prepareGraph() {
   // 2) set initial value (if using synthetic data).
   for (auto id : ir().getTensorIds(TensorType::Variable)) {
     Tensor *tensor = ir().getTensor(id);
-    if (tensor->cacheInfo.isCached())
+    if (tensor->tensorLocationInfo.isRemote())
       continue;
 
     // 1

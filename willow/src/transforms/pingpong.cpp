@@ -263,41 +263,46 @@ void PingPong::getModifiersInPhase(
   }
 }
 
-bool PingPong::isValidCacheType(const CacheType cacheType) const {
-  return (cacheType == CacheType::OffChip) || (cacheType == CacheType::OnChip);
+bool PingPong::isValidTensorLocation(
+    const TensorLocation tensorLocation) const {
+  return (tensorLocation == TensorLocation::OffChip) ||
+         (tensorLocation == TensorLocation::OnChip);
 }
 
-bool PingPong::tooSmallForOffChip(const CacheSettings &cacheSettings,
-                                  Tensor *tensor) const {
-  return (tensor->info.nelms() < cacheSettings.minElementsForOffChip);
+bool PingPong::tooSmallForOffChip(
+    const TensorLocationSettings &tensorLocationSettings,
+    Tensor *tensor) const {
+  return (tensor->info.nelms() < tensorLocationSettings.minElementsForOffChip);
 }
 
-const char *PingPong::cacheTypeToStr(const CacheType cacheType) const {
+const char *
+PingPong::tensorLocationToStr(const TensorLocation tensorLocation) const {
   const char *result = "";
-  switch (cacheType) {
-  case CacheType::Undefined: {
+  switch (tensorLocation) {
+  case TensorLocation::Undefined: {
     result = "Undefined";
     break;
   }
-  case CacheType::OffChip: {
+  case TensorLocation::OffChip: {
     result = "OffChip";
     break;
   }
-  case CacheType::OnChip: {
+  case TensorLocation::OnChip: {
     result = "OnChip";
     break;
   }
   default: {
-    throw error(
-        "[PingPong] Unexpected value for cacheType in cacheTypeToStr ({})",
-        static_cast<int>(cacheType));
+    throw error("[PingPong] Unexpected value for tensorLocation in "
+                "tensorLocationToStr ({})",
+                static_cast<int>(tensorLocation));
   }
   }
 
   return result;
 }
 
-CacheType PingPong::determineCacheType(Graph &graph, Tensor *tensor) const {
+TensorLocation PingPong::determineTensorLocation(Graph &graph,
+                                                 Tensor *tensor) const {
   auto &ir             = graph.getIr();
   auto &sessionOptions = ir.getSessionOptions();
   auto id              = tensor->id;
@@ -309,135 +314,149 @@ CacheType PingPong::determineCacheType(Graph &graph, Tensor *tensor) const {
       type == TensorType::Variable && tensor->isAcclTensor();
 
   // Result variable.
-  CacheType result      = CacheType::Undefined;
+  TensorLocation result = TensorLocation::Undefined;
   const char *logReason = "";
 
-  const auto overrideIt = sessionOptions.cacheSettingOverride.find(id);
-  bool haveCacheSettingOverride =
-      (overrideIt != sessionOptions.cacheSettingOverride.end());
+  const auto overrideIt =
+      sessionOptions.tensorLocationSettingsOverride.find(id);
+  bool haveTensorLocationSettingOverride =
+      (overrideIt != sessionOptions.tensorLocationSettingsOverride.end());
 
-  if (haveCacheSettingOverride && isValidCacheType(overrideIt->second)) {
+  if (haveTensorLocationSettingOverride &&
+      isValidTensorLocation(overrideIt->second)) {
 
-    // If we have a valid cacheSettingOverride then the user is telling us
-    // explicitly where to put this tensor, so use that.
+    // If we have a valid tensorLocationSettingsOverride then the user is
+    // telling us explicitly where to put this tensor, so use that.
 
     result    = overrideIt->second;
-    logReason = "cacheSettingOverride in SessionOptions";
+    logReason = "tensorLocationSettingsOverride in SessionOptions";
 
   } else {
 
-    // If we don't have an entry for the tensor in cacheSettingOverride then
-    // check to see if the operator that produces this tensor (if known) was
-    // created with an 'cacheOutput' attribute. If so, ue that. If not, see
-    // if the tensor's type has associated cache settings and use that. If
+    // If we don't have an entry for the tensor in
+    // tensorLocationSettingsOverride then check to see if the operator that
+    // produces this tensor (if known) was created with an
+    // 'outputTensorLocation' attribute. If so, ue that. If not, see if the
+    // tensor's type has associated tensor location settings and use that. If
     // all else fails, offload.
 
-    if (result == CacheType::Undefined && producerOp) {
+    if (result == TensorLocation::Undefined && producerOp) {
 
-      // If a producing operator is known and it is set to have a cache type
-      // (and is not set to recompute), use that.
+      // If a producing operator is known and it is set to have a tensor
+      // location (and is not set to recompute), use that.
 
-      if (isValidCacheType(producerOp->settings.cacheType)) {
+      if (isValidTensorLocation(producerOp->settings.tensorLocation)) {
         if (producerOp->settings.recomputeType == RecomputeType::Recompute) {
-          logging::transform::warn(
-              "[PingPong] Ignoring cache attribute on tensor {} because the "
-              "tensor is set to recompute",
-              id);
+          logging::transform::warn("[PingPong] Ignoring output tensor location "
+                                   "attribute on tensor {} because the "
+                                   "tensor is set to recompute",
+                                   id);
         } else {
-          result    = producerOp->settings.cacheType;
+          result    = producerOp->settings.tensorLocation;
           logReason = "builder attribute";
         }
       }
     }
 
-    if (result == CacheType::Undefined) {
+    if (result == TensorLocation::Undefined) {
 
-      // If we still don't have a cache setting and the tensor belongs to a
-      // group we have cache settings for, use those cache settings.
+      // If we still don't have a tensor location setting and the tensor belongs
+      // to a group we have tensor location settings for, use those tensor
+      // location settings.
 
       if (isActivation &&
-          isValidCacheType(sessionOptions.activationCacheSettings.cacheType)) {
-        // Use activation cache settings.
-        result    = sessionOptions.activationCacheSettings.cacheType;
-        logReason = "activationCacheSettings.cacheType in SessionOptions";
+          isValidTensorLocation(
+              sessionOptions.activationTensorLocationSettings.tensorLocation)) {
+        // Use activation tensor location settings.
+        result = sessionOptions.activationTensorLocationSettings.tensorLocation;
+        logReason =
+            "activationTensorLocationSettings.tensorLocation in SessionOptions";
       }
 
       if (isWeight &&
-          isValidCacheType(sessionOptions.weightCacheSettings.cacheType)) {
-        // Use weight cache settings.
-        result    = sessionOptions.weightCacheSettings.cacheType;
-        logReason = "weightCacheSettings.cacheType in SessionOptions";
+          isValidTensorLocation(
+              sessionOptions.weightTensorLocationSettings.tensorLocation)) {
+        // Use weight tensor location settings.
+        result = sessionOptions.weightTensorLocationSettings.tensorLocation;
+        logReason =
+            "weightTensorLocationSettings.tensorLocation in SessionOptions";
       }
 
       if (isOptimizerState &&
-          isValidCacheType(
-              sessionOptions.optimizerStateCacheSettings.cacheType)) {
-        // Use optimizer state cache settings.
-        result    = sessionOptions.optimizerStateCacheSettings.cacheType;
-        logReason = "weightCacheSettings.cacheType in SessionOptions";
+          isValidTensorLocation(
+              sessionOptions.optimizerStateTensorLocationSettings
+                  .tensorLocation)) {
+        // Use optimizer state tensor location settings.
+        result =
+            sessionOptions.optimizerStateTensorLocationSettings.tensorLocation;
+        logReason =
+            "weightTensorLocationSettings.tensorLocation in SessionOptions";
       }
     }
 
-    if (result == CacheType::OffChip) {
+    if (result == TensorLocation::OffChip) {
 
       // If we are planning to offload the tensor to off-chip memory but the
-      // tensor belongs to a group of tensors for which we have a cache setting
-      // that specifies a minimum size for offloading and this tensor is smaller
-      // than this minimum size, revert back to on-chip.
+      // tensor belongs to a group of tensors for which we have a tensor
+      // location setting that specifies a minimum size for offloading and this
+      // tensor is smaller than this minimum size, revert back to on-chip.
 
       if (isActivation &&
-          tooSmallForOffChip(sessionOptions.activationCacheSettings, tensor)) {
-        result = CacheType::OnChip;
-        logReason =
-            "activationCacheSettings.minElementsForOffChip in SessionOptions";
+          tooSmallForOffChip(sessionOptions.activationTensorLocationSettings,
+                             tensor)) {
+        result    = TensorLocation::OnChip;
+        logReason = "activationTensorLocationSettings.minElementsForOffChip in "
+                    "SessionOptions";
       }
 
       if (isWeight &&
-          tooSmallForOffChip(sessionOptions.weightCacheSettings, tensor)) {
-        result = CacheType::OnChip;
-        logReason =
-            "weightCacheSettings.minElementsForOffChip in SessionOptions";
+          tooSmallForOffChip(sessionOptions.weightTensorLocationSettings,
+                             tensor)) {
+        result    = TensorLocation::OnChip;
+        logReason = "weightTensorLocationSettings.minElementsForOffChip in "
+                    "SessionOptions";
       }
 
       if (isOptimizerState &&
-          tooSmallForOffChip(sessionOptions.optimizerStateCacheSettings,
-                             tensor)) {
-        result    = CacheType::OnChip;
-        logReason = "optimizerStateCacheSettings.minElementsForOffChip in "
-                    "SessionOptions";
+          tooSmallForOffChip(
+              sessionOptions.optimizerStateTensorLocationSettings, tensor)) {
+        result = TensorLocation::OnChip;
+        logReason =
+            "optimizerStateTensorLocationSettings.minElementsForOffChip in "
+            "SessionOptions";
       }
     }
 
-    if (result != CacheType::OnChip && tensor->isOptimizerTensor()) {
+    if (result != TensorLocation::OnChip && tensor->isOptimizerTensor()) {
 
       // Don't offload optimizer tensors to off-chip memory.
-      result    = CacheType::OnChip;
+      result    = TensorLocation::OnChip;
       logReason = "it being an optimizer tensor";
     }
 
-    if (result != CacheType::OnChip && isConstOrCopyOfConst(tensor)) {
+    if (result != TensorLocation::OnChip && isConstOrCopyOfConst(tensor)) {
 
       // Don't offload constant (or copy of constant) tensors to off-chip
       // memory.
-      result    = CacheType::OnChip;
+      result    = TensorLocation::OnChip;
       logReason = "it being an constant or copy-of-constant tensor";
     }
   }
 
   // Finally, it's possible at this point nothing has set the result
-  // yet, in which case we default to CacheType::OffChip.
+  // yet, in which case we default to TensorLocation::OffChip.
 
-  if (result == CacheType::Undefined) {
-    result    = CacheType::OnChip;
-    logReason = "absence of cache settings";
+  if (result == TensorLocation::Undefined) {
+    result    = TensorLocation::OnChip;
+    logReason = "absence of tensor location settings";
   }
 
   // Log the result.
-  logging::transform::debug(
-      "[PingPong] Determined tensor {} should use cache type {} (due to {})",
-      id,
-      cacheTypeToStr(result),
-      logReason);
+  logging::transform::debug("[PingPong] Determined tensor {} should use tensor "
+                            "location {} (due to {})",
+                            id,
+                            tensorLocationToStr(result),
+                            logReason);
 
   return result;
 }
@@ -497,12 +516,13 @@ bool PingPong::apply(Graph &graph) const {
   if (pass == 1 || pass == 2) {
     for (Tensor *tensor : graph.getTensors().getOfType(TensorType::Variable)) {
       // The mechanism by which we handle offloaded (off-chip) tensors of type
-      // TensorType::Variable is setting a flag in cacheInfo.
-      CacheType cacheType = determineCacheType(graph, tensor);
-      tensor->cacheInfo.setCached(cacheType == CacheType::OffChip);
+      // TensorType::Variable is setting a flag in tensorLocationInfo.
+      TensorLocation tensorLocation = determineTensorLocation(graph, tensor);
+      tensor->tensorLocationInfo.setRemote(tensorLocation ==
+                                           TensorLocation::OffChip);
       logging::transform::debug("[PingPong] Set Variable {} to {}.",
                                 tensor->id,
-                                cacheTypeToStr(cacheType));
+                                tensorLocationToStr(tensorLocation));
     }
   }
 
@@ -544,13 +564,14 @@ bool PingPong::apply(Graph &graph) const {
     }
 
     // Recomputation annotation
-    logging::transform::debug("[PingPong] Recomputation & Cache annotation");
+    logging::transform::debug(
+        "[PingPong] Recomputation & Tensor Location annotation");
     for (auto &op : graph.getOps()) {
-      // Cached everything not set by the user by default
-      if (op.second->settings.cacheType == CacheType::Undefined) {
+      // Mark any random seed operators as OnChip.
+      if (op.second->settings.tensorLocation == TensorLocation::Undefined) {
         if (op.second->opid == Onnx::CustomOperators::GetRandomSeed) {
-          op.second->settings.cacheType = CacheType::Uncached;
-          logging::transform::trace("[PingPong] {} set to Uncached",
+          op.second->settings.tensorLocation = TensorLocation::OnChip;
+          logging::transform::trace("[PingPong] {} set to OnChip",
                                     op.second->debugName());
         }
       }
@@ -593,7 +614,7 @@ bool PingPong::apply(Graph &graph) const {
     }
   }
 
-  // Tensor cache store/load inserted in the third ping-pong pass only
+  // Tensor remote store/load inserted in the third ping-pong pass only
   if (pass == 2) {
     std::set<Op *, POpCmp> opsToSetup;
 
@@ -624,10 +645,10 @@ bool PingPong::apply(Graph &graph) const {
                                     op->debugName());
         }
       }
-      // Cached everything not set by the user by default
-      if (op->settings.cacheType == CacheType::Undefined) {
+      // OnChip random seed operator if not set by the user
+      if (op->settings.tensorLocation == TensorLocation::Undefined) {
         if (op->opid == Onnx::CustomOperators::GetRandomSeed) {
-          op->settings.cacheType = CacheType::OnChip;
+          op->settings.tensorLocation = TensorLocation::OnChip;
           logging::transform::trace("[PingPong] {} set to OnChip",
                                     op->debugName());
         }
@@ -640,7 +661,7 @@ bool PingPong::apply(Graph &graph) const {
     // then the tensor should be disconnected and backed up / restored
     Op::Settings settings(graph, "");
 
-    std::vector<TensorId> cacheArgIds;
+    std::vector<TensorId> remoteArgIds;
 
     std::map<std::pair<TensorId, int64_t>, std::pair<TensorId, RemoteStoreOp *>>
         tensorStoreMap;
@@ -648,17 +669,17 @@ bool PingPong::apply(Graph &graph) const {
              std::tuple<TensorId, TensorId, RemoteLoadOp *>>
         tensorLoadMap;
 
-    auto getCacheArg = [&graph, &cacheArgIds](TensorId tensorId) -> TensorId {
-      auto arg_tensor_id = getCacheArgTensorId(tensorId);
+    auto getRemoteArg = [&graph, &remoteArgIds](TensorId tensorId) -> TensorId {
+      auto arg_tensor_id = getRemoteArgTensorId(tensorId);
       TensorInfo argTensorInfo(DataType::INT32, {1});
       std::vector<int> idData(1, 0);
-      if (std::find(cacheArgIds.begin(), cacheArgIds.end(), arg_tensor_id) ==
-          cacheArgIds.end()) {
+      if (std::find(remoteArgIds.begin(), remoteArgIds.end(), arg_tensor_id) ==
+          remoteArgIds.end()) {
         graph.getTensors().addConstInit(
             arg_tensor_id,
             argTensorInfo,
             reinterpret_cast<void *>(idData.data()));
-        cacheArgIds.push_back(arg_tensor_id);
+        remoteArgIds.push_back(arg_tensor_id);
       }
       return arg_tensor_id;
     };
@@ -683,10 +704,10 @@ bool PingPong::apply(Graph &graph) const {
       Tensor *tensor  = tensors.get(id);
       auto producerOp = tensor->getProducerUnsafe();
 
-      // Determine cache type for this tensor.
-      CacheType cacheType = determineCacheType(graph, tensor);
+      // Determine tensor location for this tensor.
+      TensorLocation tensorLocation = determineTensorLocation(graph, tensor);
 
-      if (cacheType == CacheType::OnChip) {
+      if (tensorLocation == TensorLocation::OnChip) {
         // Do not process this tensor further
         continue;
       }
@@ -723,8 +744,8 @@ bool PingPong::apply(Graph &graph) const {
         settings.batchSerializedPhase.reset();
       }
       settings.name.clear();
-      settings.recomputeType = RecomputeType::Checkpoint;
-      settings.cacheType     = CacheType::Undefined;
+      settings.recomputeType  = RecomputeType::Checkpoint;
+      settings.tensorLocation = TensorLocation::Undefined;
 
       // Process consumers in ascending order of phases
       std::sort(
@@ -853,7 +874,7 @@ bool PingPong::apply(Graph &graph) const {
       if (replicatedWeightSharding && tensor->info.nelms() > rwsMinNumElems &&
           tensor->tensorType() == TensorType::Variable) {
         tensorReplicatedWeightSharding = true;
-        tensor->cacheInfo.setSharded(tensorReplicatedWeightSharding);
+        tensor->tensorLocationInfo.setSharded(tensorReplicatedWeightSharding);
         logging::transform::debug(
             "[PingPong] Enabling replica-sharded loading of tensor {}",
             tensor->id);
@@ -871,7 +892,7 @@ bool PingPong::apply(Graph &graph) const {
         // Load
         if (phaseLoadStore.second.first) {
           logging::transform::trace(
-              "[PingPong] Adding cache load of {} ({}) in phase {}",
+              "[PingPong] Adding remote load of {} ({}) in phase {}",
               loadedTensorId,
               tensor->id,
               currentPingPongPhase);
@@ -902,7 +923,7 @@ bool PingPong::apply(Graph &graph) const {
 
             remoteLoad->connectInTensor(
                 RemoteStoreOp::getRemoteBufferOffsetInIndex(),
-                getCacheArg(tensor->id));
+                getRemoteArg(tensor->id));
 
             TensorId initTensorId = generateInitTensorId(tensor);
             loadedTensorId =
@@ -955,11 +976,11 @@ bool PingPong::apply(Graph &graph) const {
             // for outlining and aliasing purposes
 
             // RemoteLoad updates the inTensorId...
-            remoteLoad->connectInTensor(RemoteLoadOp::getCachedTensorInIndex(),
+            remoteLoad->connectInTensor(RemoteLoadOp::getLocalTensorInIndex(),
                                         inTensorId);
             // ... and aliases it under loadedTensorId
             remoteLoad->createAndConnectOutTensor(
-                RemoteLoadOp::getCachedTensorOutIndex(), loadedTensorId);
+                RemoteLoadOp::getLocalTensorOutIndex(), loadedTensorId);
 
             remoteLoad->setup();
 
@@ -990,7 +1011,7 @@ bool PingPong::apply(Graph &graph) const {
 
               replicatedAllGather->connectInTensor(
                   ReplicatedAllGatherOp::getCollectiveLinkedIndex(),
-                  getCacheArg(tensor->id));
+                  getRemoteArg(tensor->id));
 
               gatheredTensorId =
                   generateGatheredTensorId(tensor, currentPingPongPhase);
@@ -1037,7 +1058,7 @@ bool PingPong::apply(Graph &graph) const {
         // Store
         if (phaseLoadStore.second.second) {
           logging::transform::trace(
-              "[PingPong] Adding cache store of {} ({}) in phase {}",
+              "[PingPong] Adding remote store of {} ({}) in phase {}",
               loadedTensorId,
               tensor->id,
               currentPingPongPhase);
@@ -1056,9 +1077,9 @@ bool PingPong::apply(Graph &graph) const {
 
             remoteStore->connectInTensor(
                 RemoteStoreOp::getRemoteBufferOffsetInIndex(),
-                getCacheArg(tensor->id));
-            remoteStore->connectInTensor(
-                RemoteStoreOp::getCachedTensorInIndex(), loadedTensorId);
+                getRemoteArg(tensor->id));
+            remoteStore->connectInTensor(RemoteStoreOp::getLocalTensorInIndex(),
+                                         loadedTensorId);
             remoteStore->setup();
 
             // Do allgather on IO tiles
@@ -1073,13 +1094,13 @@ bool PingPong::apply(Graph &graph) const {
           }
         }
 
-        // Cache load has to take place before associated cache store
+        // Remote load has to take place before associated remote store
         if (remoteLoad && remoteStore) {
           graph.topoCons->insert(remoteLoad, remoteStore);
         }
 
         if (remoteStore) {
-          // Any modification has to take place before the cache store
+          // Any modification has to take place before the remote store
           for (Op *modifyingOp : modifiersInPhase[currentPingPongPhase]) {
             graph.topoCons->insert(modifyingOp, remoteStore);
           }
@@ -1217,7 +1238,7 @@ bool PingPong::apply(Graph &graph) const {
 
                       replicatedReduceScatter->connectInTensor(
                           ReplicatedAllGatherOp::getCollectiveLinkedIndex(),
-                          getCacheArg(tensor->id));
+                          getRemoteArg(tensor->id));
 
                       replicatedReduceScatter->connectOutTensor(
                           ReplicatedAllReduceOp::getOutIndex(), outId);

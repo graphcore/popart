@@ -41,10 +41,10 @@ void transfer(Op *from, Op *to) {
     to->setBatchSerializedPhase(from->getBatchSerializedPhase());
   }
 
-  to->settings.recomputeType = from->settings.recomputeType;
-  to->settings.cacheType     = from->settings.cacheType;
-  to->fromLoss               = from->fromLoss;
-  to->toLoss                 = from->toLoss;
+  to->settings.recomputeType  = from->settings.recomputeType;
+  to->settings.tensorLocation = from->settings.tensorLocation;
+  to->fromLoss                = from->fromLoss;
+  to->toLoss                  = from->toLoss;
 
   // Non-ref copy of input map, because inputs are modified in the loop
   auto inputMap = from->input->indicesMap();

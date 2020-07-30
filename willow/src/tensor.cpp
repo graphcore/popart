@@ -381,8 +381,8 @@ bool Tensor::isOptimizerTensor() const {
   return false;
 }
 
-bool Tensor::isCacheArgTensor() const {
-  std::size_t found = id.find(reservedCacheArgPrefix());
+bool Tensor::isRemoteArgTensor() const {
+  std::size_t found = id.find(reservedRemoteArgPrefix());
   if (found != std::string::npos) {
     return true;
   }

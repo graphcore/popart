@@ -43,7 +43,6 @@
 #include <popart/recompute.hpp>
 #include <popart/transforms/auto_virtual_graph.hpp>
 #include <popart/transforms/batchserialize.hpp>
-#include <popart/transforms/cachesetup.hpp>
 #include <popart/transforms/decomposegradsum.hpp>
 #include <popart/transforms/dynamicoptransform.hpp>
 #include <popart/transforms/explicitrecompute.hpp>
@@ -58,6 +57,7 @@
 #include <popart/transforms/pingpong.hpp>
 #include <popart/transforms/pipeline.hpp>
 #include <popart/transforms/prune.hpp>
+#include <popart/transforms/remotesetup.hpp>
 #include <popart/transforms/serializematmuls.hpp>
 #include <popart/transforms/subgraphoutline.hpp>
 
@@ -841,7 +841,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
 
   // Required transform order for PingPong is:
   // FWD -> PingPong1 -> BWD -> PingPong2 -> IpuCopy ->
-  // PingPong3 -> Outline -> CacheSetup
+  // PingPong3 -> Outline -> RemoteSetup
 
   if (getSessionOptions().enablePipelining) {
     applyTransform(InferPipelineStages::id(), getMainGraph());
@@ -1131,7 +1131,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   // Update aliases a final time
   updateAliases();
 
-  applyTransform(CacheSetup::id(), getMainGraph());
+  applyTransform(RemoteSetup::id(), getMainGraph());
 
   // confirm that all the anchor names provided
   // are indeed real tensor names. This is a check
@@ -1683,7 +1683,7 @@ bool Ir::streamingIsDisabledForTensor(const TensorId &tensorId) const {
   }
 
   // 3. The tensor is cached
-  if (getTensors().get(tensorId)->cacheInfo.isCached()) {
+  if (getTensors().get(tensorId)->tensorLocationInfo.isRemote()) {
     return true;
   }
 

@@ -9,5 +9,5 @@ add_popart_cpp_unit_test(pingpong_sharding_test pingpong_sharding_test.cpp VARIA
 add_popart_cpp_unit_test(pingpong_initop_accumulator_test pingpong_initop_accumulator_test.cpp VARIANTS "IpuModel")
 
 add_popart_py_unit_test(pingpong_test VARIANTS "Hw")
-add_popart_py_unit_test(pingpong_cache_test VARIANTS "Hw")
+add_popart_py_unit_test(pingpong_tensor_location_test VARIANTS "Hw")
 add_popart_py_unit_test(pingpong_attention_test VARIANTS "Hw")

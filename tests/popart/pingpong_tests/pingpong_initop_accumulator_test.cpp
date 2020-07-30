@@ -146,9 +146,9 @@ BOOST_AUTO_TEST_CASE(TestInitOpAccumulator) {
   print("Linear:", linear);
 
   // Check the linearly mapped set.
-  // Only "CacheArg" or "Constant" should appear here.
+  // Only "RemoteArg" or "Constant" should appear here.
   for (auto &&t : linear) {
-    if (t.find("CacheArg") == std::string::npos &&
+    if (t.find("RemoteArg") == std::string::npos &&
         t.find("Constant") == std::string::npos)
       BOOST_ERROR(
           logging::format("Tensor should not be mapped linearly: {}", t));

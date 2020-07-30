@@ -139,10 +139,11 @@ static constexpr const char *sInplaceOpNames         = "__inplace_op_names";
 static constexpr const char *sInplaceOpPriorities = "__inplace_op_priorities";
 static constexpr const char *sRecomputeOutputAttribute =
     "__recompute_output_in_backward_pass";
-static constexpr const char *sPartialsTypeAttribute    = "__partials_type";
-static constexpr const char *sAvailMemAttribute        = "__available_memory";
-static constexpr const char *sPipelineStageAttribute   = "__pipeline_stage";
-static constexpr const char *sCacheOutputAttribute     = "__cache_output";
+static constexpr const char *sPartialsTypeAttribute  = "__partials_type";
+static constexpr const char *sAvailMemAttribute      = "__available_memory";
+static constexpr const char *sPipelineStageAttribute = "__pipeline_stage";
+static constexpr const char *sOutputTensorLocationAttribute =
+    "__output_tensor_location";
 static constexpr const char *sOutputTypeAttribute      = "__output_type";
 static constexpr const char *sExcludePatternsAttribute = "__exclude_patterns";
 static constexpr const char *sSchedulePriority         = "__schedule_priority";

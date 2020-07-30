@@ -90,10 +90,10 @@ private:
 const std::map<TensorType, TensorTypeInfo> &getTensorTypeInfoMap();
 std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap();
 
-class CacheInfo {
+class TensorLocationInfo {
 public:
-  void setCached(bool cached_) { cached = cached_; }
-  bool isCached() const { return cached; }
+  void setRemote(bool remote_) { remote = remote_; }
+  bool isRemote() const { return remote; }
 
   void setSharded(bool sharded_) { sharded = sharded_; }
 
@@ -109,7 +109,7 @@ public:
   }
 
 private:
-  bool cached{false};
+  bool remote{false};
   bool sharded{false};
   std::pair<RemoteBufferId, RemoteBufferIndex> remoteBufferInfo;
 };
@@ -150,7 +150,7 @@ public:
   TensorInfo info;
 
   // information about tensor cached status
-  CacheInfo cacheInfo;
+  TensorLocationInfo tensorLocationInfo;
 
   // Similar to getProducer, but the user must handle the nullptr
   Op *getProducerUnsafe() const;
@@ -163,7 +163,7 @@ public:
   // Returns true for stream tensors that are optimizer tensors, as
   // well as their copies
   bool isOptimizerTensor() const;
-  bool isCacheArgTensor() const;
+  bool isRemoteArgTensor() const;
   bool isRandomSeedTensor() const;
   bool isAcclTensor() const;
   bool hasTensorData() const;

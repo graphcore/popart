@@ -288,7 +288,7 @@ CollectivesBaseOpx::CollectivesBaseOpx(Op *op, Devicex *devicex)
 
 std::pair<std::set<TensorId>, std::vector<Op *>>
 CollectivesBaseOpx::getCollectiveLinkedGroup() const {
-  // Mapping from each CacheArg to it's final consumers
+  // Mapping from each RemoteArg to it's final consumers
   std::map<TensorId, std::set<Op *>> linkOpMap;
   std::map<Op *, std::set<TensorId>> opLinkMap;
 

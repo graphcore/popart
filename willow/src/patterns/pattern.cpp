@@ -39,7 +39,7 @@ void Pattern::transferBaseProperties(Op *from, Op *to) const {
 
   to->settings.scope            = from->settings.scope;
   to->settings.recomputeType    = from->settings.recomputeType;
-  to->settings.cacheType        = from->settings.cacheType;
+  to->settings.tensorLocation   = from->settings.tensorLocation;
   to->fromLoss                  = from->fromLoss;
   to->toLoss                    = from->toLoss;
   to->settings.schedulePriority = from->settings.schedulePriority;

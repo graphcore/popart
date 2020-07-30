@@ -58,7 +58,7 @@ void IoComputeTileCopy::insertIoTileCopy(Graph &graph,
 
   // Inherit important settings from the fromOp
   // Tensor caching is inherited
-  settings.cacheType = fromOp->getSettings().cacheType;
+  settings.tensorLocation = fromOp->getSettings().tensorLocation;
 
   auto ioCopyOp = std::make_unique<IoTileCopyOp>(
       Onnx::CustomOperators::IoTileCopy, settings);

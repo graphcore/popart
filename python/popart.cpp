@@ -745,14 +745,15 @@ PYBIND11_MODULE(popart_core, m) {
     }
   }
   {
-    py::class_<CacheSettings> cls(m, "CacheSettings");
+    py::class_<TensorLocationSettings> cls(m, "TensorLocationSettings");
     cls.def(py::init<>());
-    cls.def(py::init<CacheType, int>(),
-            py::arg("cacheType"),
+    cls.def(py::init<TensorLocation, int>(),
+            py::arg("tensorLocation"),
             py::arg("minElementsForOffChip"));
-    cls.def_readwrite("cacheType", &CacheSettings::cacheType);
+    cls.def_readwrite("tensorLocation",
+                      &TensorLocationSettings::tensorLocation);
     cls.def_readwrite("minElementsForOffChip",
-                      &CacheSettings::minElementsForOffChip);
+                      &TensorLocationSettings::minElementsForOffChip);
   }
   {
     py::class_<SessionOptions> cls(m, "SessionOptions");
@@ -858,14 +859,14 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("ipuSystemType", &SessionOptions::ipuSystemType);
     cls.def_readwrite("groupHostSync", &SessionOptions::groupHostSync);
     cls.def_readwrite("strictOpVersions", &SessionOptions::strictOpVersions);
-    cls.def_readwrite("activationCacheSettings",
-                      &SessionOptions::activationCacheSettings);
-    cls.def_readwrite("weightCacheSettings",
-                      &SessionOptions::weightCacheSettings);
-    cls.def_readwrite("optimizerStateCacheSettings",
-                      &SessionOptions::optimizerStateCacheSettings);
-    cls.def_readwrite("cacheSettingOverride",
-                      &SessionOptions::cacheSettingOverride);
+    cls.def_readwrite("activationTensorLocationSettings",
+                      &SessionOptions::activationTensorLocationSettings);
+    cls.def_readwrite("weightTensorLocationSettings",
+                      &SessionOptions::weightTensorLocationSettings);
+    cls.def_readwrite("optimizerStateTensorLocationSettings",
+                      &SessionOptions::optimizerStateTensorLocationSettings);
+    cls.def_readwrite("tensorLocationSettingsOverride",
+                      &SessionOptions::tensorLocationSettingsOverride);
   }
   {
     py::enum_<PatternsLevel> en(m, "PatternsLevel");
@@ -897,13 +898,13 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("Recomputed", RecomputeType::Recomputed);
   }
   {
-    py::enum_<CacheType> en(m, "CacheType");
-    en.value("Undefined", CacheType::Undefined);
-    en.value("OnChip", CacheType::OnChip);
-    en.value("OffChip", CacheType::OffChip);
+    py::enum_<TensorLocation> en(m, "TensorLocation");
+    en.value("Undefined", TensorLocation::Undefined);
+    en.value("OnChip", TensorLocation::OnChip);
+    en.value("OffChip", TensorLocation::OffChip);
     // Deprecated options:
-    en.value("Uncached", CacheType::OnChip);
-    en.value("Cached", CacheType::OffChip);
+    en.value("Uncached", TensorLocation::OnChip);
+    en.value("Cached", TensorLocation::OffChip);
   }
   {
     py::enum_<SyncPattern> en(m, "SyncPattern");
@@ -1609,19 +1610,21 @@ PYBIND11_MODULE(popart_core, m) {
           return acm;
         },
         py::arg("value") = RecomputeType::Undefined);
-    cls.def("cacheOutput",
-            static_cast<void (Builder::*)(const TensorId &, CacheType value)>(
-                &Builder::cacheOutput),
-            py::arg("nodeOutputNames"),
-            py::arg("value") = CacheType::Undefined);
     cls.def(
-        "cacheOutput",
-        [](Builder &self, CacheType value) -> AttributeContextManager {
-          AttributeContextManager acm(
-              self, sCacheOutputAttribute, static_cast<int64_t>(value));
+        "outputTensorLocation",
+        static_cast<void (Builder::*)(const TensorId &, TensorLocation value)>(
+            &Builder::outputTensorLocation),
+        py::arg("nodeOutputNames"),
+        py::arg("value") = TensorLocation::Undefined);
+    cls.def(
+        "outputTensorLocation",
+        [](Builder &self, TensorLocation value) -> AttributeContextManager {
+          AttributeContextManager acm(self,
+                                      sOutputTensorLocationAttribute,
+                                      static_cast<int64_t>(value));
           return acm;
         },
-        py::arg("value") = CacheType::Undefined);
+        py::arg("value") = TensorLocation::Undefined);
     cls.def("pipelineStage",
             static_cast<void (Builder::*)(const TensorId &, int64_t value)>(
                 &Builder::pipelineStage),
@@ -1856,7 +1859,7 @@ PYBIND11_MODULE(popart_core, m) {
   m.def("reservedLossScalingPrefix", &reservedLossScalingPrefix);
   m.def("reservedRandomSeedPrefix", &reservedRandomSeedPrefix);
 
-  m.def("reservedCacheArgPrefix", &reservedCacheArgPrefix);
+  m.def("reservedRemoteArgPrefix", &reservedRemoteArgPrefix);
 
   m.def("reservedDefaultWeightDecayScaleFactor0Prefix",
         &reservedDefaultWeightDecayScaleFactor0Prefix);

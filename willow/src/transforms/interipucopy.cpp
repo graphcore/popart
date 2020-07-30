@@ -132,7 +132,7 @@ void InterIpuCopy::insertIpuCopy(Graph &graph,
 
   // Inherit important settings from the fromOp
   // Tensor caching is inherited
-  settings.cacheType = fromOp->getSettings().cacheType;
+  settings.tensorLocation = fromOp->getSettings().tensorLocation;
 
   auto ipuCopy_op = std::make_unique<IpuCopyOp>(
       Onnx::CustomOperators::IpuCopy, toIpu, settings);

@@ -18,9 +18,9 @@ def run_model(tmpdir,
               enable_pingpong=False,
               enable_matmul_serialization=False,
               enable_outlining=False,
-              activation_cache_settings=None,
-              weight_cache_settings=None,
-              optimizer_state_cache_settings=None,
+              activation_tensor_location_settings=None,
+              weight_tensor_location_settings=None,
+              optimizer_state_tensor_location_settings=None,
               num_layers=3,
               dsize=48,
               batch_size=1,
@@ -71,12 +71,12 @@ def run_model(tmpdir,
     opts.replicatedGraphCount = num_replicas
     opts.replicatedWeightSharding = replicated_weight_sharding
     opts.replicatedWeightShardingMinNumElements = 8
-    if activation_cache_settings is not None:
-        opts.activationCacheSettings = activation_cache_settings
-    if weight_cache_settings is not None:
-        opts.weightCacheSettings = weight_cache_settings
-    if optimizer_state_cache_settings is not None:
-        opts.optimizerStateCacheSettings = optimizer_state_cache_settings
+    if activation_tensor_location_settings is not None:
+        opts.activationTensorLocationSettings = activation_tensor_location_settings
+    if weight_tensor_location_settings is not None:
+        opts.weightTensorLocationSettings = weight_tensor_location_settings
+    if optimizer_state_tensor_location_settings is not None:
+        opts.optimizerStateTensorLocationSettings = optimizer_state_tensor_location_settings
     if (enable_pingpong):
         opts.pingPongPhases = num_layers
         opts.autoRecomputation = popart.RecomputationType.NoRecompute
@@ -137,20 +137,21 @@ def test_weight_update(tmpdir):
 
 @tu.requires_ipu
 def test_onchip_memory(tmpdir):
-    onchip_settings = popart.CacheSettings(popart.CacheType.OnChip, 0)
+    onchip_settings = popart.TensorLocationSettings(
+        popart.TensorLocation.OnChip, 0)
     run_model(tmpdir, 'model_normal.onnx', enable_pingpong=False)
     run_model(tmpdir,
               'model_onchip_act.onnx',
               enable_pingpong=True,
-              activation_cache_settings=onchip_settings)
+              activation_tensor_location_settings=onchip_settings)
     run_model(tmpdir,
               'model_onchip_weights.onnx',
               enable_pingpong=True,
-              weight_cache_settings=onchip_settings)
+              weight_tensor_location_settings=onchip_settings)
     run_model(tmpdir,
               'model_onchip_opt_state.onnx',
               enable_pingpong=True,
-              optimizer_state_cache_settings=onchip_settings)
+              optimizer_state_tensor_location_settings=onchip_settings)
 
     normal = onnx.load(str(tmpdir / 'model_normal.onnx'))
     onchip_act = onnx.load(str(tmpdir / 'model_onchip_act.onnx'))

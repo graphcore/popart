@@ -21,7 +21,7 @@
 namespace popart {
 
 enum class RecomputeType { Undefined = 0, Checkpoint, Recompute, Recomputed };
-enum class CacheType {
+enum class TensorLocation {
   Undefined = 0,
   OnChip    = 1,
   OffChip   = 2,
@@ -92,8 +92,8 @@ public:
     std::string name = "";
 
     Scope scope;
-    RecomputeType recomputeType = RecomputeType::Undefined;
-    CacheType cacheType         = CacheType::Undefined;
+    RecomputeType recomputeType   = RecomputeType::Undefined;
+    TensorLocation tensorLocation = TensorLocation::Undefined;
 
     // optional inplace priorities, to take precedence over the default
     // priorities. A negative priority gurarantees no inplacing

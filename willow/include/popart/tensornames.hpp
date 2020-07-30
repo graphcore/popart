@@ -61,10 +61,10 @@ std::vector<std::string> reservedPrefixes();
 
 TensorId stripAllReservedPrefixes(TensorId id);
 
-TensorId getCacheArgTensorId(TensorId base_id);
-constexpr const char *reservedCacheArgPrefix() { return "CacheArg___"; }
+TensorId getRemoteArgTensorId(TensorId base_id);
+constexpr const char *reservedRemoteArgPrefix() { return "RemoteArg___"; }
 
-TensorId getNonCacheArgTensorId(const TensorId &id);
+TensorId getNonRemoteArgTensorId(const TensorId &id);
 
 TensorId createRecomputedTensorId(TensorId base_id);
 

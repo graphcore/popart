@@ -70,7 +70,7 @@ std::vector<std::string> reservedPrefixes() {
                                     reservedRandomSeedPrefix(),
                                     anchorSumPrefix(),
                                     cycleCountPrefix(),
-                                    reservedCacheArgPrefix()};
+                                    reservedRemoteArgPrefix()};
 
   std::vector<std::string> optPrefs;
 
@@ -109,8 +109,8 @@ std::vector<std::string> reservedOptimizerStatePrefixes() {
   return prefs;
 }
 
-TensorId getCacheArgTensorId(TensorId base_id) {
-  auto ca_id = logging::format("{}{}", reservedCacheArgPrefix(), base_id);
+TensorId getRemoteArgTensorId(TensorId base_id) {
+  auto ca_id = logging::format("{}{}", reservedRemoteArgPrefix(), base_id);
   logging::ir::trace("Generating tensor id {}", ca_id);
   return ca_id;
 }

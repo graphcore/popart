@@ -29,7 +29,7 @@ private:
 
   TensorId generateGatheredTensorId(Tensor *tensor, int64_t load_index) const;
 
-  TensorId generateCacheArgTensorId(TensorId tid, VGraphId vgid) const;
+  TensorId generateRemoteArgTensorId(TensorId tid, VGraphId vgid) const;
 
   float costFn(Op *op) const;
 
@@ -54,14 +54,14 @@ private:
                                    unsigned num_stages) const;
 
 private:
-  bool isValidCacheType(const CacheType cacheType) const;
+  bool isValidTensorLocation(const TensorLocation tensorLocation) const;
 
-  bool tooSmallForOffChip(const CacheSettings &cacheSettings,
+  bool tooSmallForOffChip(const TensorLocationSettings &tensorLocationSettings,
                           Tensor *tensor) const;
 
-  const char *cacheTypeToStr(const CacheType cacheType) const;
+  const char *tensorLocationToStr(const TensorLocation tensorLocation) const;
 
-  CacheType determineCacheType(Graph &graph, Tensor *tensor) const;
+  TensorLocation determineTensorLocation(Graph &graph, Tensor *tensor) const;
 
   int pass;
 };

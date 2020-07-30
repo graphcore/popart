@@ -459,10 +459,10 @@ void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {
     recomputeType = static_cast<RecomputeType>(recomputeTypeTmp);
   }
 
-  if (attributes.hasAttribute(sCacheOutputAttribute)) {
-    int64_t cacheTypeTmp;
-    attributes.set(cacheTypeTmp, sCacheOutputAttribute);
-    cacheType = static_cast<CacheType>(cacheTypeTmp);
+  if (attributes.hasAttribute(sOutputTensorLocationAttribute)) {
+    int64_t tensorLocationTmp;
+    attributes.set(tensorLocationTmp, sOutputTensorLocationAttribute);
+    tensorLocation = static_cast<TensorLocation>(tensorLocationTmp);
   }
 
   if (attributes.hasAttribute(sSchedulePriority)) {

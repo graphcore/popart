@@ -80,16 +80,19 @@ std::ostream &operator<<(std::ostream &, RecomputationType);
 /**
  * A structure containing user configuration for cache/offloading settings.
  */
-struct CacheSettings {
+struct TensorLocationSettings {
 
-  CacheSettings() = default;
-  CacheSettings(CacheType cacheType_, int minElementsForOffChip_)
-      : cacheType{cacheType_}, minElementsForOffChip{minElementsForOffChip_} {}
+  TensorLocationSettings() = default;
+  TensorLocationSettings(TensorLocation tensorLocation_,
+                         int minElementsForOffChip_)
+      : tensorLocation{tensorLocation_}, minElementsForOffChip{
+                                             minElementsForOffChip_} {}
 
-  CacheSettings &operator=(const CacheSettings &rhs) = default;
+  TensorLocationSettings &
+  operator=(const TensorLocationSettings &rhs) = default;
 
-  // The default cache behaviour for this tensor type.
-  CacheType cacheType;
+  // The default tensor location for this tensor type.
+  TensorLocation tensorLocation;
 
   // A minimum number of elements below which offloading won't be considered.
   int minElementsForOffChip;
@@ -377,16 +380,18 @@ struct SessionOptions {
   /// behaviour.
   bool strictOpVersions = true;
 
-  // Cache settings for activation/gradient tensors.
-  CacheSettings activationCacheSettings = CacheSettings{CacheType::OffChip, 2};
-  // Cache settings for weight tensors.
-  CacheSettings weightCacheSettings = CacheSettings{CacheType::OffChip, 2};
-  // Cache settings for optimizer state tensors.
-  CacheSettings optimizerStateCacheSettings =
-      CacheSettings{CacheType::OffChip, 2};
+  // Tensor location settings for activation/gradient tensors.
+  TensorLocationSettings activationTensorLocationSettings =
+      TensorLocationSettings{TensorLocation::OffChip, 2};
+  // Tensor location for weight tensors.
+  TensorLocationSettings weightTensorLocationSettings =
+      TensorLocationSettings{TensorLocation::OffChip, 2};
+  // Tensor location for optimizer state tensors.
+  TensorLocationSettings optimizerStateTensorLocationSettings =
+      TensorLocationSettings{TensorLocation::OffChip, 2};
 
-  // Overriding cache type settings for specific tensors.
-  std::map<TensorId, CacheType> cacheSettingOverride;
+  // Overriding tensor location for specific tensors.
+  std::map<TensorId, TensorLocation> tensorLocationSettingsOverride;
 };
 
 } // namespace popart

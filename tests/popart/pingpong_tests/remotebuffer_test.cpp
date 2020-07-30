@@ -358,14 +358,14 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadOutlineTest) {
       }
       if (RemoteLoadOp *remoteLoadOp = dynamic_cast<RemoteLoadOp *>(op)) {
         BOOST_CHECK(remoteLoadOp
-                        ->aliases(RemoteLoadOp::getCachedTensorInIndex(),
-                                  RemoteLoadOp::getCachedTensorOutIndex())
+                        ->aliases(RemoteLoadOp::getLocalTensorInIndex(),
+                                  RemoteLoadOp::getLocalTensorOutIndex())
                         .front() == view::Region::getFull(A_info.shape()));
         BOOST_CHECK(
-            remoteLoadOp->modifies(RemoteLoadOp::getCachedTensorInIndex())
+            remoteLoadOp->modifies(RemoteLoadOp::getLocalTensorInIndex())
                 .front() == view::Region::getFull(A_info.shape()));
         BOOST_CHECK(
-            remoteLoadOp->modifies(RemoteLoadOp::getCachedTensorInIndex())
+            remoteLoadOp->modifies(RemoteLoadOp::getLocalTensorInIndex())
                 .front()
                 .getAccessType() == view::AccessType::Write);
       }

@@ -17,10 +17,10 @@ def get_ir(model_file_name='model.onnx',
            enable_pingpong=True,
            enable_matmul_serialization=False,
            enable_outlining=False,
-           activation_cache_settings=None,
-           weight_cache_settings=None,
-           optimizer_state_cache_settings=None,
-           cache_setting_override={},
+           activation_tensor_location_settings=None,
+           weight_tensor_location_settings=None,
+           optimizer_state_tensor_location_settings=None,
+           tensor_location_setting_override={},
            num_layers=3,
            dsize=48,
            batch_size=1,
@@ -72,14 +72,14 @@ def get_ir(model_file_name='model.onnx',
     opts.replicatedWeightSharding = replicated_weight_sharding
     opts.replicatedWeightShardingMinNumElements = 8
 
-    if activation_cache_settings is not None:
-        opts.activationCacheSettings = activation_cache_settings
-    if weight_cache_settings is not None:
-        opts.weightCacheSettings = weight_cache_settings
-    if optimizer_state_cache_settings is not None:
-        opts.optimizerStateCacheSettings = optimizer_state_cache_settings
+    if activation_tensor_location_settings is not None:
+        opts.activationTensorLocationSettings = activation_tensor_location_settings
+    if weight_tensor_location_settings is not None:
+        opts.weightTensorLocationSettings = weight_tensor_location_settings
+    if optimizer_state_tensor_location_settings is not None:
+        opts.optimizerStateTensorLocationSettings = optimizer_state_tensor_location_settings
 
-    opts.cacheSettingOverride = cache_setting_override
+    opts.tensorLocationSettingsOverride = tensor_location_setting_override
 
     if (enable_pingpong):
         opts.pingPongPhases = num_layers
@@ -114,7 +114,7 @@ def get_ir(model_file_name='model.onnx',
 
 def check_ir(ir, check_onchip, check_offchip):
     """ We expect check_onchip / check_offchip to be lists of tensor ids that we need to assert were on-chip / off-chip, 
-        respectively. Note that we check this by looking for the presence / absence of tensors 'CacheArg___<id>' in the IR.
+        respectively. Note that we check this by looking for the presence / absence of tensors 'RemoteArg___<id>' in the IR.
     """
 
     # Extract all tensors from IR.
@@ -125,144 +125,160 @@ def check_ir(ir, check_onchip, check_offchip):
         for outp in op['outputs']:
             ir_tensors.add(outp['name'])
 
-    cached_ir_tensors = [
-        t for t in ir_tensors if t.startswith(popart.reservedCacheArgPrefix())
+    off_chip_ir_tensors = [
+        t for t in ir_tensors if t.startswith(popart.reservedRemoteArgPrefix())
     ]
 
     #print("All tensors: %s" % ir_tensors)
-    #print("All cached tensors: %s" % [t for t in ir_tensors if t.startswith(popart.reservedCacheArgPrefix())])
+    #print("All off chip tensors: %s" % [t for t in ir_tensors if t.startswith(popart.reservedRemoteArgPrefix())])
 
     # Check all tensors we need to check.
     for tensor in check_onchip:
-        cached_tensor_name = popart.reservedCacheArgPrefix() + tensor
-        assert cached_tensor_name not in cached_ir_tensors, "Expected %s to be OnChip but a tensor named %s was found in the IR, indicating it's OffChip" % (
-            tensor, cached_tensor_name)
+        off_chip_tensor_name = popart.reservedRemoteArgPrefix() + tensor
+        assert off_chip_tensor_name not in off_chip_ir_tensors, "Expected %s to be OnChip but a tensor named %s was found in the IR, indicating it's OffChip" % (
+            tensor, off_chip_tensor_name)
 
     for tensor in check_offchip:
-        cached_tensor_name = popart.reservedCacheArgPrefix() + tensor
-        assert cached_tensor_name in cached_ir_tensors, "Expected %s to be OffChip but no tensor named %s was found in the IR, indicating it's OnChip" % (
-            tensor, cached_tensor_name)
+        off_chip_tensor_name = popart.reservedRemoteArgPrefix() + tensor
+        assert off_chip_tensor_name in off_chip_ir_tensors, "Expected %s to be OffChip but no tensor named %s was found in the IR, indicating it's OnChip" % (
+            tensor, off_chip_tensor_name)
 
 
-def test_weight_cache_settings():
-    # Check weight cache settings work.
-    ir = get_ir(weight_cache_settings=None)
+def test_weight_tensor_location_settings():
+    # Check weight tensor location settings work.
+    ir = get_ir(weight_tensor_location_settings=None)
     check_ir(ir, check_onchip=[], check_offchip=['W0', 'W1', 'W2'])
 
-    ir = get_ir(weight_cache_settings=popart.CacheSettings(
-        popart.CacheType.OffChip, 0))
+    ir = get_ir(weight_tensor_location_settings=popart.TensorLocationSettings(
+        popart.TensorLocation.OffChip, 0))
     check_ir(ir, check_onchip=[], check_offchip=['W0', 'W1', 'W2'])
 
-    ir = get_ir(
-        weight_cache_settings=popart.CacheSettings(popart.CacheType.OnChip, 0))
+    ir = get_ir(weight_tensor_location_settings=popart.TensorLocationSettings(
+        popart.TensorLocation.OnChip, 0))
     check_ir(ir, check_onchip=['W0', 'W1', 'W2'], check_offchip=[])
 
 
-def test_weight_cache_settings_plus_override():
-    # Check weight cache settings work.
-    ir = get_ir(weight_cache_settings=popart.CacheSettings(
-        popart.CacheType.OffChip, 0),
-                cache_setting_override={'W2': popart.CacheType.OnChip})
+def test_weight_tensor_location_settings_plus_override():
+    # Check weight tensor location settings work.
+    ir = get_ir(
+        weight_tensor_location_settings=popart.TensorLocationSettings(
+            popart.TensorLocation.OffChip, 0),
+        tensor_location_setting_override={'W2': popart.TensorLocation.OnChip})
     check_ir(ir, check_onchip=['W2'], check_offchip=['W0', 'W1'])
 
-    ir = get_ir(weight_cache_settings=popart.CacheSettings(
-        popart.CacheType.OnChip, 0),
-                cache_setting_override={'W1': popart.CacheType.OffChip})
+    ir = get_ir(
+        weight_tensor_location_settings=popart.TensorLocationSettings(
+            popart.TensorLocation.OnChip, 0),
+        tensor_location_setting_override={'W1': popart.TensorLocation.OffChip})
     check_ir(ir, check_onchip=['W0', 'W2'], check_offchip=['W1'])
 
 
-def test_activation_cache_settings():
-    # Check weight cache settings work.
-    ir = get_ir(num_layers=5, activation_cache_settings=None)
+def test_activation_tensor_location_settings():
+    # Check weight tensor location settings work.
+    ir = get_ir(num_layers=5, activation_tensor_location_settings=None)
     check_ir(ir,
              check_onchip=[],
              check_offchip=['MatMul:0/1__t6', 'MatMul:0__t3'])
 
-    ir = get_ir(num_layers=5,
-                activation_cache_settings=popart.CacheSettings(
-                    popart.CacheType.OffChip, 0))
+    ir = get_ir(
+        num_layers=5,
+        activation_tensor_location_settings=popart.TensorLocationSettings(
+            popart.TensorLocation.OffChip, 0))
     check_ir(ir,
              check_onchip=[],
              check_offchip=['MatMul:0/1__t6', 'MatMul:0__t3'])
 
-    ir = get_ir(num_layers=5,
-                activation_cache_settings=popart.CacheSettings(
-                    popart.CacheType.OnChip, 0))
+    ir = get_ir(
+        num_layers=5,
+        activation_tensor_location_settings=popart.TensorLocationSettings(
+            popart.TensorLocation.OnChip, 0))
     check_ir(ir,
              check_onchip=['MatMul:0/1__t6', 'MatMul:0__t3'],
              check_offchip=[])
 
 
-def test_activation_cache_settings_plus_override():
-    # Check weight cache settings work.
+def test_activation_tensor_location_settings_plus_override():
+    # Check weight tensor location settings work.
     ir = get_ir(
         num_layers=5,
-        activation_cache_settings=popart.CacheSettings(
-            popart.CacheType.OffChip, 0),
-        cache_setting_override={'MatMul:0/1__t6': popart.CacheType.OnChip})
+        activation_tensor_location_settings=popart.TensorLocationSettings(
+            popart.TensorLocation.OffChip, 0),
+        tensor_location_setting_override={
+            'MatMul:0/1__t6': popart.TensorLocation.OnChip
+        })
     check_ir(ir,
              check_onchip=['MatMul:0/1__t6'],
              check_offchip=['MatMul:0__t3'])
 
     ir = get_ir(
         num_layers=5,
-        activation_cache_settings=popart.CacheSettings(popart.CacheType.OnChip,
-                                                       0),
-        cache_setting_override={'MatMul:0/1__t6': popart.CacheType.OffChip})
+        activation_tensor_location_settings=popart.TensorLocationSettings(
+            popart.TensorLocation.OnChip, 0),
+        tensor_location_setting_override={
+            'MatMul:0/1__t6': popart.TensorLocation.OffChip
+        })
     check_ir(ir,
              check_onchip=['MatMul:0__t3'],
              check_offchip=['MatMul:0/1__t6'])
 
 
-def test_optimizer_state_cache_settings():
-    # Check optimizer state cache settings work.
+def test_optimizer_state_tensor_location_settings():
+    # Check optimizer state tensor location settings work.
     optimizer_with_state = popart.SGD({
         "defaultLearningRate": (0.1, True),
         "defaultMomentum": (0.0, False),
         "defaultWeightDecay": (0.0, False),
         "defaultDampening": (0.0, True)
     })
-    ir = get_ir(optimizer_state_cache_settings=None,
+    ir = get_ir(optimizer_state_tensor_location_settings=None,
                 optimizer=optimizer_with_state)
     check_ir(ir,
              check_onchip=[],
              check_offchip=['Accl___W1', 'Accl___W2', 'Accl___W0'])
 
-    ir = get_ir(optimizer_state_cache_settings=popart.CacheSettings(
-        popart.CacheType.OffChip, 0),
-                optimizer=optimizer_with_state)
+    ir = get_ir(
+        optimizer_state_tensor_location_settings=popart.TensorLocationSettings(
+            popart.TensorLocation.OffChip, 0),
+        optimizer=optimizer_with_state)
     check_ir(ir,
              check_onchip=[],
              check_offchip=['Accl___W1', 'Accl___W2', 'Accl___W0'])
 
-    ir = get_ir(optimizer_state_cache_settings=popart.CacheSettings(
-        popart.CacheType.OnChip, 0),
-                optimizer=optimizer_with_state)
+    ir = get_ir(
+        optimizer_state_tensor_location_settings=popart.TensorLocationSettings(
+            popart.TensorLocation.OnChip, 0),
+        optimizer=optimizer_with_state)
     check_ir(ir,
              check_onchip=['Accl___W1', 'Accl___W2', 'Accl___W0'],
              check_offchip=[])
 
 
-def test_optimizer_state_cache_settings_plus_override():
-    # Check optimizer state cache settings work
+def test_optimizer_state_tensor_location_settings_plus_override():
+    # Check optimizer state tensor location settings work
     optimizer_with_state = popart.SGD({
         "defaultLearningRate": (0.1, True),
         "defaultMomentum": (0.0, False),
         "defaultWeightDecay": (0.0, False),
         "defaultDampening": (0.0, True)
     })
-    ir = get_ir(optimizer_state_cache_settings=popart.CacheSettings(
-        popart.CacheType.OffChip, 0),
-                cache_setting_override={'Accl___W1': popart.CacheType.OnChip},
-                optimizer=optimizer_with_state)
+    ir = get_ir(
+        optimizer_state_tensor_location_settings=popart.TensorLocationSettings(
+            popart.TensorLocation.OffChip, 0),
+        tensor_location_setting_override={
+            'Accl___W1': popart.TensorLocation.OnChip
+        },
+        optimizer=optimizer_with_state)
     check_ir(ir,
              check_onchip=['Accl___W1'],
              check_offchip=['Accl___W2', 'Accl___W0'])
 
-    ir = get_ir(optimizer_state_cache_settings=popart.CacheSettings(
-        popart.CacheType.OnChip, 0),
-                cache_setting_override={'Accl___W1': popart.CacheType.OffChip},
-                optimizer=optimizer_with_state)
+    ir = get_ir(
+        optimizer_state_tensor_location_settings=popart.TensorLocationSettings(
+            popart.TensorLocation.OnChip, 0),
+        tensor_location_setting_override={
+            'Accl___W1': popart.TensorLocation.OffChip
+        },
+        optimizer=optimizer_with_state)
     check_ir(ir,
              check_onchip=['Accl___W2', 'Accl___W0'],
              check_offchip=['Accl___W1'])

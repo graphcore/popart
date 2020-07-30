@@ -17,22 +17,22 @@ void RemoteStoreOpx::grow(poplar::program::Sequence &prog) const {
   auto &remoteStoreOp = getOp<RemoteStoreOp>();
 
   TensorId inTensorId =
-      remoteStoreOp.input->tensor(RemoteStoreOp::getCachedTensorInIndex())->id;
+      remoteStoreOp.input->tensor(RemoteStoreOp::getLocalTensorInIndex())->id;
 
   logging::debug(
       "[RemoteStoreOpx] Growing RemoteStore for tensor {}, "
       "using RemoteBuffer {}",
-      remoteStoreOp.input->tensor(RemoteStoreOp::getCachedTensorInIndex())->id,
+      remoteStoreOp.input->tensor(RemoteStoreOp::getLocalTensorInIndex())->id,
       remoteStoreOp.getRemoteBufferId());
 
-  auto inTensor = getInTensor(RemoteStoreOp::getCachedTensorInIndex());
+  auto inTensor = getInTensor(RemoteStoreOp::getLocalTensorInIndex());
 
   poplar::Tensor rbTensor;
 
   if (!dv_p->hasRemoteBuffer(remoteStoreOp.getRemoteBufferId())) {
     rbTensor =
         graph().clone(inTensor,
-                      inTensorId + "_CacheTmp",
+                      inTensorId + "_RemoteTmp",
                       poplar::TensorCloneMethod::PRESERVE_ORDER_AND_ALIASES);
     dv_p->createRemoteBuffer(remoteStoreOp.getRemoteBufferId(), rbTensor);
   }
@@ -63,25 +63,24 @@ void RemoteLoadOpx::grow(poplar::program::Sequence &prog) const {
   auto &remoteLoadOp = getOp<RemoteLoadOp>();
 
   TensorId outTensorId =
-      remoteLoadOp.output->tensor(RemoteLoadOp::getCachedTensorOutIndex())->id;
+      remoteLoadOp.output->tensor(RemoteLoadOp::getLocalTensorOutIndex())->id;
 
   // Tensor completely overwritten
   logging::debug(
       "[RemoteLoadOpx] Growing RemoteLoad for tensor {} -> {}, "
       "using RemoteBuffer {}",
-      remoteLoadOp.input->tensor(RemoteLoadOp::getCachedTensorInIndex())->id,
-      remoteLoadOp.output->tensor(RemoteLoadOp::getCachedTensorOutIndex())->id,
+      remoteLoadOp.input->tensor(RemoteLoadOp::getLocalTensorInIndex())->id,
+      remoteLoadOp.output->tensor(RemoteLoadOp::getLocalTensorOutIndex())->id,
       remoteLoadOp.getRemoteBufferId());
 
-  poplar::Tensor outTensor =
-      getInTensor(RemoteLoadOp::getCachedTensorInIndex());
+  poplar::Tensor outTensor = getInTensor(RemoteLoadOp::getLocalTensorInIndex());
 
   poplar::Tensor rbTensor;
 
   if (!dv_p->hasRemoteBuffer(remoteLoadOp.getRemoteBufferId())) {
     rbTensor =
         graph().clone(outTensor,
-                      outTensorId + "_CacheTmp",
+                      outTensorId + "_RemoteTmp",
                       poplar::TensorCloneMethod::PRESERVE_ORDER_AND_ALIASES);
     dv_p->createRemoteBuffer(remoteLoadOp.getRemoteBufferId(), rbTensor);
   }
@@ -102,16 +101,16 @@ void RemoteLoadOpx::grow(poplar::program::Sequence &prog) const {
   poplar::program::Copy tmp_copy_prog(rbTensor, outTensor);
   prog.add(tmp_copy_prog);
 
-  if (hasInViewChangers(RemoteLoadOp::getCachedTensorInIndex())) {
+  if (hasInViewChangers(RemoteLoadOp::getLocalTensorInIndex())) {
     setOutViewChangers(
-        RemoteLoadOp::getCachedTensorOutIndex(),
-        getInViewChangers(RemoteLoadOp::getCachedTensorInIndex()));
+        RemoteLoadOp::getLocalTensorOutIndex(),
+        getInViewChangers(RemoteLoadOp::getLocalTensorInIndex()));
   }
-  setOutTensor(RemoteLoadOp::getCachedTensorOutIndex(), outTensor);
+  setOutTensor(RemoteLoadOp::getLocalTensorOutIndex(), outTensor);
 }
 
 InputCreatorType RemoteLoadOpx::getInputCreatorType(InIndex index) const {
-  return index == RemoteLoadOp::getCachedTensorInIndex()
+  return index == RemoteLoadOp::getLocalTensorInIndex()
              ? InputCreatorType::CanUnwind
              : Opx::getInputCreatorType(index);
 }

@@ -28,7 +28,7 @@ using namespace popart;
 
 BOOST_AUTO_TEST_CASE(Pattern_transferBaseProperties) {
   // Check that Pattern::transferBaseProperties transfers scope, recomputeType
-  // and cacheType.
+  // and tensorLocation.
 
   // Subclass from Pattern to make transferBaseProperties visible.
   class TestPattern : public Pattern {
@@ -62,14 +62,14 @@ BOOST_AUTO_TEST_CASE(Pattern_transferBaseProperties) {
   Graph graph{ir, graphId};
 
   Op::Settings op1Settings{graph, "test_op1"};
-  op1Settings.scope         = Scope{} / "scope_1";
-  op1Settings.recomputeType = RecomputeType::Checkpoint;
-  op1Settings.cacheType     = CacheType::OffChip;
+  op1Settings.scope          = Scope{} / "scope_1";
+  op1Settings.recomputeType  = RecomputeType::Checkpoint;
+  op1Settings.tensorLocation = TensorLocation::OffChip;
 
   Op::Settings op2Settings{graph, "test_op2"};
-  op2Settings.scope         = Scope{} / "scope_2";
-  op2Settings.recomputeType = RecomputeType::Recompute;
-  op2Settings.cacheType     = CacheType::OnChip;
+  op2Settings.scope          = Scope{} / "scope_2";
+  op2Settings.recomputeType  = RecomputeType::Recompute;
+  op2Settings.tensorLocation = TensorLocation::OnChip;
 
   TestOp op1{opId, op1Settings};
   TestOp op2{opId, op2Settings};
@@ -78,11 +78,11 @@ BOOST_AUTO_TEST_CASE(Pattern_transferBaseProperties) {
 
   BOOST_CHECK(op1.settings.scope != op2.settings.scope);
   BOOST_CHECK(op1.settings.recomputeType != op2.settings.recomputeType);
-  BOOST_CHECK(op1.settings.cacheType != op2.settings.cacheType);
+  BOOST_CHECK(op1.settings.tensorLocation != op2.settings.tensorLocation);
 
   pattern.testTransferBaseProperties(&op1, &op2);
 
   BOOST_CHECK(op1.settings.scope == op2.settings.scope);
   BOOST_CHECK(op1.settings.recomputeType == op2.settings.recomputeType);
-  BOOST_CHECK(op1.settings.cacheType == op2.settings.cacheType);
+  BOOST_CHECK(op1.settings.tensorLocation == op2.settings.tensorLocation);
 }

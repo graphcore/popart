@@ -97,11 +97,11 @@ std::vector<TensorId> Tensors::getAllTensorIds() const {
 }
 
 // remove all Tensors with no producer and no consumers
-void Tensors::removeIsolated(bool retainCached) {
+void Tensors::removeIsolated(bool retainRemote) {
   for (auto &id : getAllTensorIds()) {
     Tensor *tensor = M[id].get();
     if (tensor->hasProducer() == false && tensor->consumers.getTotal() == 0 &&
-        !(retainCached && tensor->cacheInfo.isCached())) {
+        !(retainRemote && tensor->tensorLocationInfo.isRemote())) {
       M.erase(id);
       logging::ir::debug("Removing isolated Tensor {}", id);
     }

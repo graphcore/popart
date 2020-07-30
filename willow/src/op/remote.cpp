@@ -38,11 +38,11 @@ void RemoteLoadOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 }
 
 void RemoteLoadOp::setup() {
-  outInfo(getCachedTensorOutIndex()) = inInfo(getCachedTensorInIndex());
+  outInfo(getLocalTensorOutIndex()) = inInfo(getLocalTensorInIndex());
 }
 
 view::Regions RemoteLoadOp::modifies(InIndex index) const {
-  if (index == getCachedTensorInIndex()) {
+  if (index == getLocalTensorInIndex()) {
     return {view::Region::getFull(inShape(index), view::AccessType::Write)};
   } else if (index == getRemoteBufferOffsetInIndex()) {
     return {view::Region::getEmpty(inRank(index))};
@@ -52,7 +52,7 @@ view::Regions RemoteLoadOp::modifies(InIndex index) const {
 }
 
 view::Regions RemoteLoadOp::aliases(InIndex in, OutIndex) const {
-  if (in == getCachedTensorInIndex()) {
+  if (in == getLocalTensorInIndex()) {
     return {view::Region::getFull(inShape(in), view::AccessType::Write)};
   } else if (in == getRemoteBufferOffsetInIndex()) {
     return {view::Region::getEmpty(inRank(in))};
@@ -63,9 +63,9 @@ view::Regions RemoteLoadOp::aliases(InIndex in, OutIndex) const {
 
 view::RegMap RemoteLoadOp::fwdRegMap(InIndex inIndex, OutIndex outIndex) const {
   if (inIndex == getRemoteBufferOffsetInIndex() &&
-      output->hasIndex(getCachedTensorOutIndex())) {
+      output->hasIndex(getLocalTensorOutIndex())) {
     auto emptyRegion =
-        view::Region::getEmpty(outRank(getCachedTensorOutIndex()));
+        view::Region::getEmpty(outRank(getLocalTensorOutIndex()));
     return [emptyRegion](const view::Region &) {
       return view::Regions(1, emptyRegion);
     };
@@ -75,7 +75,7 @@ view::RegMap RemoteLoadOp::fwdRegMap(InIndex inIndex, OutIndex outIndex) const {
 
 view::RegMap RemoteLoadOp::bwdRegMap(InIndex inIndex, OutIndex outIndex) const {
   if (inIndex == getRemoteBufferOffsetInIndex() &&
-      output->hasIndex(getCachedTensorOutIndex())) {
+      output->hasIndex(getLocalTensorOutIndex())) {
     auto emptyRegion =
         view::Region::getEmpty(inRank(getRemoteBufferOffsetInIndex()));
     return [emptyRegion](const view::Region &) {

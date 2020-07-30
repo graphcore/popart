@@ -22,7 +22,7 @@ class BuilderImpl;
 class Builder;
 class TensorInfo;
 enum class DataType;
-enum class CacheType;
+enum class TensorLocation;
 enum class RecomputeType;
 
 class DomainOpSet {
@@ -541,7 +541,8 @@ public:
     return t.reshape({args[0], newShape}, name);
   }
 
-  void cacheOutput(const TensorId &nodeOutputName, CacheType value) {
+  void outputTensorLocation(const TensorId &nodeOutputName,
+                            TensorLocation value) {
     addNodeAttribute(
         sPingPongPhaseAttribute, static_cast<int64_t>(value), {nodeOutputName});
   }
