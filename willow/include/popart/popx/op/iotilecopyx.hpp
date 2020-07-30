@@ -17,6 +17,7 @@ public:
   poplar::Tensor
       unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const final;
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
+  bool outputCreatedExternally(OutIndex) const final { return true; }
 };
 
 } // namespace popx

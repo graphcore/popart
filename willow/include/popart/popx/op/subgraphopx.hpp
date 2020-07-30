@@ -11,6 +11,7 @@ namespace popx {
 class SubgraphOpx : public Opx {
 public:
   SubgraphOpx(Op *, Devicex *);
+  bool outputCreatedExternally(OutIndex) const final { return true; }
 
 private:
 };

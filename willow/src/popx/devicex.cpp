@@ -40,8 +40,6 @@
 #include <popart/op/call.hpp>
 #include <popart/op/getrandomseed.hpp>
 #include <popart/op/if.hpp>
-#include <popart/op/init.hpp>
-#include <popart/op/iotilecopy.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/restore.hpp>
 #include <popart/op/subgraphop.hpp>
@@ -1121,19 +1119,20 @@ const Opx *Devicex::getOpx(OpId id) const { return opxs.at(id).get(); }
 // The Id of the task which adds a Tensor to a poplar::Graph
 std::pair<TaskId, DependencyType> Devicex::taskWhichCreates(TensorId id) {
   Tensor *tensor = ir().getTensor(id);
-  // Tensors without producers, or produced by an InitOp are created by special
-  // tasks These tasks are a TENSOR rather than an OUTPUT dependency.
-  if (!tensor->hasProducer() ||
-      dynamic_cast<SubgraphOp *>(tensor->getProducer()) ||
-      dynamic_cast<InitOp *>(tensor->getProducer()) ||
-      dynamic_cast<IoTileCopyOp *>(tensor->getProducer())) {
+  if (!tensor->hasProducer()) {
+    // Tensors without producers are created by special tasks
     return {initTensorTaskId(id), DependencyType::Tensor};
-  }
-
-  // Tensors with producer Ops are created (added to a Graph) by their
-  // producer's OpTask
-  else {
-    return {opTaskId(tensor->getProducer()), DependencyType::Tensor};
+  } else {
+    auto producer  = tensor->getProducer();
+    OutIndex index = producer->output->indices(tensor).front();
+    if (getOpx(producer->id)->outputCreatedExternally(index)) {
+      // Tensors with producers but requirements to create a special task
+      return {initTensorTaskId(id), DependencyType::Tensor};
+    } else {
+      // Tensors with producer Ops are created (added to a Graph) by their
+      // producer's OpTask
+      return {opTaskId(tensor->getProducer()), DependencyType::Tensor};
+    }
   }
 }
 
@@ -2104,12 +2103,10 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
     }
   }
 
-  // For InitOp and SubgraphOp,
-  // the output tensor is created externally, and must
-  // thereby exist before InitOp/SubgraphOp is grown.
-  if (dynamic_cast<InitOp *>(op) || dynamic_cast<SubgraphOp *>(op) ||
-      dynamic_cast<IoTileCopyOp *>(op)) {
-    for (auto t_inds : op->output->indicesMap()) {
+  // Add initTensorTask dependencies for externally created output tensors
+  Opx *opx = getOpx(op->id);
+  for (auto t_inds : op->output->indicesMap()) {
+    if (opx->outputCreatedExternally(t_inds.second.front())) {
       Tensor *tensor = t_inds.first;
 
       logging::devicex::trace("Operation {} depends on it's output tensor {} "
@@ -2860,22 +2857,21 @@ void Devicex::prepareGraph() {
     tasks.add(setInitTensorValTask(tensor));
   }
 
-  // InitOp outputs:
+  // Externally created outputs:
   // 1) ActGrad tensors
   for (Op *op : ir().getAllOps()) {
-    if (InitOp *init = dynamic_cast<InitOp *>(op)) {
-      logging::devicex::trace("Adding InitOp {} output initTensorTask for {}",
-                              init->debugName(),
-                              init->output->tensor(InitOp::getOutIndex())->id);
-      tasks.add(initTensorTask(init->output->tensor(InitOp::getOutIndex())));
+    if (dynamic_cast<SubgraphOp *>(op)) {
+      // Separate procedure for subgraph output tensor initTensorTasks
+      continue;
     }
-    if (IoTileCopyOp *iocopy = dynamic_cast<IoTileCopyOp *>(op)) {
-      logging::devicex::trace(
-          "Adding IoTileCopyOp {} output initTensorTask for {}",
-          iocopy->debugName(),
-          iocopy->output->tensor(IoTileCopyOp::getOutIndex())->id);
-      tasks.add(
-          initTensorTask(iocopy->output->tensor(IoTileCopyOp::getOutIndex())));
+    Opx *opx = getOpx(op->id);
+    for (auto t_inds : op->output->indicesMap()) {
+      if (opx->outputCreatedExternally(t_inds.second.front())) {
+        logging::devicex::trace("Adding {} output initTensorTask for {}",
+                                op->debugName(),
+                                t_inds.first->id);
+        tasks.add(initTensorTask(t_inds.first));
+      }
     }
   }
 

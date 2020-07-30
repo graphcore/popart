@@ -82,6 +82,12 @@ public:
   virtual bool hasCreatorViewChangers(InIndex index) const;
   virtual ViewChangers getCreatorViewChangers(InIndex index) const;
 
+  // For some ops (e.g. InitOpx, SubgraphOpx, IoTileCopyOpx)
+  // the output tensor is created externally, and must
+  // therefore exist before the Opx is grown.
+  // Lets an Opx implementation specify which outputs need an external creator
+  virtual bool outputCreatedExternally(OutIndex index) const;
+
   // To create a poplar::Tensor for input index index0, which
   // poplar::Tensors must already exist?
   virtual std::vector<TensorId> mustExistBeforeCreate(int index0) const;

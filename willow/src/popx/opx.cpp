@@ -67,6 +67,8 @@ ViewChangers Opx::getCreatorViewChangers(InIndex) const {
   return ViewChangers();
 }
 
+bool Opx::outputCreatedExternally(OutIndex index) const { return false; }
+
 int64_t Opx::getVirtualGraphId() const {
   if (op_p->hasVirtualGraphId()) {
     return op_p->getVirtualGraphId();

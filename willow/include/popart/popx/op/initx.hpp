@@ -11,6 +11,7 @@ class InitOpx : public Opx {
 public:
   InitOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
+  bool outputCreatedExternally(OutIndex) const final { return true; }
 };
 
 } // namespace popx
