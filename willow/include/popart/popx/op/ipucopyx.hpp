@@ -21,6 +21,17 @@ public:
   // `growPipelined` add the copy program to the input Sequence. This is called
   // for every pipeline cycle the copy appears in.
   void growPipelined(poplar::program::Sequence &) const;
+
+  InputCreatorType getInputCreatorType(InIndex index) const final {
+    return InputCreatorType::CanUnwind;
+  }
+  bool canUnwind(InIndex in, OutIndex out) const final { return in == out; }
+  poplar::Tensor
+      unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const final;
+  view::RegMap unwindRegion(InIndex, OutIndex) const final;
+
+  poplar::Graph &srcGraph(InIndex) const final;
+  poplar::Graph &dstGraph(OutIndex) const final;
 };
 
 } // namespace popx

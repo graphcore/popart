@@ -91,6 +91,10 @@ poplar::Graph &Opx::graph() const {
   }
 }
 
+poplar::Graph &Opx::srcGraph(InIndex) const { return graph(); }
+
+poplar::Graph &Opx::dstGraph(OutIndex) const { return graph(); }
+
 const poplar::Tensor &Opx::get(TensorId id) const {
   return dv_p->tensors.get(id);
 }

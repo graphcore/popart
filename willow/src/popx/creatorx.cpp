@@ -242,11 +242,13 @@ InputCreatorCandidate::unwind(poplar::Tensor input) {
 
     auto outInfo = opxOnPath.opx->getOp<Op>().outInfo(opxOnPath.outIndex);
 
-    auto fullTensor = opxOnPath.opx->graph().addVariable(
-        popType(outInfo), outInfo.shape_szt(), "");
+    auto fullTensor =
+        opxOnPath.opx->dstGraph(opxOnPath.outIndex)
+            .addVariable(popType(outInfo), outInfo.shape_szt(), "");
 
     // Map it linearly
-    poputil::mapTensorLinearly(opxOnPath.opx->graph(), fullTensor);
+    poputil::mapTensorLinearly(opxOnPath.opx->dstGraph(opxOnPath.outIndex),
+                               fullTensor);
 
     logging::devicex::trace("[creatorx] Tensor shape before compose: {}",
                             input.shape());
@@ -297,11 +299,14 @@ InputCreatorCandidate::unwind(poplar::Tensor input) {
     auto inInfo =
         pathToInput.back().opx->getOp<Op>().inInfo(pathToInput.back().inIndex);
 
-    auto fullTensor = pathToInput.back().opx->graph().addVariable(
-        popType(inInfo), inInfo.shape_szt(), "");
+    auto fullTensor = pathToInput.back()
+                          .opx->srcGraph(pathToInput.back().inIndex)
+                          .addVariable(popType(inInfo), inInfo.shape_szt(), "");
 
     // Map it linearly
-    poputil::mapTensorLinearly(pathToInput.back().opx->graph(), fullTensor);
+    poputil::mapTensorLinearly(
+        pathToInput.back().opx->srcGraph(pathToInput.back().inIndex),
+        fullTensor);
 
     logging::devicex::trace("[creatorx] Tensor shape before final compose: {}",
                             input.shape());

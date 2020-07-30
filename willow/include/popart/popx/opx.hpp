@@ -119,7 +119,14 @@ public:
   // dv_p->getVirtualGraphId(). Defaults to 0 if virtualGraph is not enabled
   int64_t getVirtualGraphId() const;
   // Returns the virtual graph if enabled, else returns the dv_p->graph
-  poplar::Graph &graph() const;
+  virtual poplar::Graph &graph() const;
+  // The default assumes all Opx input and output tensors are laid out on the
+  // same virtual graph. These methods should be overridden when this is not
+  // the case, such as for IpuCopyOpx.
+  // Returns the virtual graph for the tensor at InIndex, defaults to graph()
+  virtual poplar::Graph &srcGraph(InIndex) const;
+  // Returns the virtual graph for the tensor at OutIndex, defaults to graph()
+  virtual poplar::Graph &dstGraph(OutIndex) const;
   // shortcut for dv_p->tensors.get
   const poplar::Tensor &get(TensorId) const;
   // shortcut for dv_p->tensors.getView
