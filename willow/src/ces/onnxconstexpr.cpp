@@ -91,19 +91,32 @@ void OnnxConstExprUtil::processConstantOfShapeNode(
   auto inputTensor = graph->getTensors().get(inputId);
   TensorId name    = node.output(0);
 
-  // Check the input tensor is of type INT64 and has data.
-  if (inputTensor->info.dataType() != DataType::INT64) {
-    throw error("expected data type {} but input tensor `{}` has data type {}.",
-                DataType::INT64,
-                inputId,
-                inputTensor->info.dataType());
-  }
+  // Check the input tensor has data.
   if (!inputTensor->hasTensorData()) {
     throw error("the tensor `" + inputId + "` does not have data");
   }
+
+  // If the data is int32 or int64, get the shape.
+  // Otherwise error.
   TensorData *tensorData = inputTensor->tensorData();
-  Shape outputShape      = tensorData->copyDataAs<int64_t>(
-      static_cast<int>(inputTensor->info.nelms()));
+  Shape outputShape;
+  if (inputTensor->info.dataType() == DataType::INT64) {
+    outputShape = tensorData->copyDataAs<int64_t>(
+        static_cast<int>(inputTensor->info.nelms()));
+  } else if (inputTensor->info.dataType() == DataType::INT32) {
+    std::vector<int32_t> shapeData = tensorData->copyDataAs<int32_t>(
+        static_cast<int>(inputTensor->info.nelms()));
+    for (int32_t i : shapeData) {
+      outputShape.push_back(i);
+    }
+  } else {
+    throw error(
+        "expected data type {} or {}, but input tensor `{}` has data type {}.",
+        DataType::INT64,
+        DataType::INT32,
+        inputId,
+        inputTensor->info.dataType());
+  }
 
   if (node.attribute().size() == 0) {
     // if no value provided, use DataType::FLOAT and value 0.0f

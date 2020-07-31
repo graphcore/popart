@@ -2031,3 +2031,45 @@ def test_concat_negative_axis(op_tester):
         return [out]
 
     op_tester.run(init_builder, reference, 'infer')
+
+
+def test_constant_of_shape(op_tester):
+    data = np.random.rand(2, 2).astype(np.float32)
+    shape_data = np.array([2, 2]).astype(np.int64)
+
+    def init_builder(builder):
+        in0 = builder.addInputTensor(data)
+        c0 = builder.aiOnnx.constant(shape_data)
+        c = builder.aiOnnx.constantofshape([c0], np.array([5],
+                                                          dtype=np.float32))
+        o = builder.aiOnnx.add([in0, c])
+
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        o = data + np.array([5], dtype=np.float32)
+        return [o]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_constant_of_shape_int32(op_tester):
+    data = np.random.rand(2, 2).astype(np.float32)
+    shape_data = np.array([2, 2]).astype(np.int32)
+
+    def init_builder(builder):
+        in0 = builder.addInputTensor(data)
+        c0 = builder.aiOnnx.constant(shape_data)
+        c = builder.aiOnnx.constantofshape([c0], np.array([5],
+                                                          dtype=np.float32))
+        o = builder.aiOnnx.add([in0, c])
+
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        o = data + np.array([5], dtype=np.float32)
+        return [o]
+
+    op_tester.run(init_builder, reference, 'infer')
