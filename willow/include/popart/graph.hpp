@@ -144,8 +144,10 @@ public:
   //
   // Returns:
   //   `edges`: std::map<OpId, std::unordered_set<OpId>>
-  //            s.t. if there is a direct dependence from OpId a to OpId b in
-  //            the graph, then `b` is in `edges[a]`
+  //            Map from every OpId to its consumer OpIds. If there is a
+  //            dependency from a to b in the graph, then b will be in edges[a].
+  //            If a has no dependents in the graph, then a will map to the
+  //            empty set (so all OpIds are always in the mapping).
   //
   // Design note: For the type of container used for the edge map, we need a
   // container that is:

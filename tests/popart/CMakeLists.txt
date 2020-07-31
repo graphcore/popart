@@ -176,6 +176,7 @@ add_popart_cpp_unit_test(nogradoptest no_gradop_test.cpp)
 add_popart_cpp_unit_test(numpybroadcastshapetest numpybroadcastshapetest.cpp)
 add_popart_cpp_unit_test(opmanagertest op_manager_test.cpp)
 add_popart_cpp_unit_test(outliningirtest outlining_ir_test.cpp)
+add_popart_cpp_unit_test(poprithmstransitiveclosuretest poprithmstransitiveclosure_test.cpp)
 add_popart_cpp_unit_test(prunetest prune_test.cpp)
 # add_popart_cpp_unit_test(syncpatterntest sync_pattern_test.cpp VARIANTS "Hw") # TODO: Fix this T23920
 add_popart_cpp_unit_test(syntheticdatatest synthetic_data_test.cpp)
