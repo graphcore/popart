@@ -442,7 +442,7 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .Input(0, "X", "The input tensor", "T")
         .Input(1, "Weights", "The concatenated input and output weights", "T")
         .Input(2, "Bias", "The biases", "T")
-        .Input(0, "InitState", "The initial state", "T")
+        .Input(3, "InitState", "The initial state", "T")
         .Output(0, "Output", "Output tensor", "T")
         .Output(1, "CellState", "The lstm cell state", "T")
         // Optional (training) output 2 ignored
