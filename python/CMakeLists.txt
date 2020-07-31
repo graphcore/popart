@@ -70,11 +70,6 @@ install(DIRECTORY
   popart
   DESTINATION ${INSTALL_PYDIR})
 
-# poponnx aliases popart, for backwards compatibility
-install(DIRECTORY
-  poponnx
-  DESTINATION ${INSTALL_PYDIR})
-
 configure_file(__init__.py.in
   ${CMAKE_CURRENT_BINARY_DIR}/popart/__init__.py
   @ONLY)
