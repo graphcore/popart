@@ -129,10 +129,9 @@ void ElementWiseUnaryInplaceOpx::grow(poplar::program::Sequence &prog) const {
   // use a non-inplace version.  See T7110 for a possible improvement
   if (!outTensor.isParallelWriteable()) {
     outTensor = cx->outplace(
-        prog, graph(), outTensor, debugPrefix("nonLinearityInplace"));
-  } else {
-    cx->inplace(
         prog, graph(), outTensor, debugPrefix("nonLinearityOutplaceFallback"));
+  } else {
+    cx->inplace(prog, graph(), outTensor, debugPrefix("nonLinearityInplace"));
   }
   outTensor = cx->reshape(outTensor);
   setOutTensor(ElementWiseUnaryOp::getOutIndex(), outTensor);
