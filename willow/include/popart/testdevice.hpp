@@ -48,7 +48,9 @@ createTestDevice(const TestDeviceType testDeviceType,
       ((testDeviceType == TestDeviceType::Sim) ||
        (testDeviceType == TestDeviceType::IpuModel))) {
     // We need a number of tiles for these device types.
-    ipuModelTilesPerIPU = 1216;
+    // Using 4 significantly reduces compile time, as compared to a more
+    // realistic (1000+) number of tiles.
+    ipuModelTilesPerIPU = 4;
   }
 
   std::map<std::string, std::string> deviceOpts{
