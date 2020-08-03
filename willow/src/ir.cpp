@@ -3424,9 +3424,9 @@ const Tensors &Ir::getMainGraphTensors() const {
   return getMainGraph().getTensors();
 }
 
-uint32_t Ir::getAndIncrementDropoutSeedModifier() {
-  dropoutSeedModifier += 1;
-  return dropoutSeedModifier;
+uint32_t Ir::getAndIncrementSeedModifier() {
+  seedModifier += 1;
+  return seedModifier;
 }
 
 void Ir::setRemoteBufferInfo(RemoteBufferId id, RemoteBufferInfo info) {

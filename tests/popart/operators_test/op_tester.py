@@ -130,7 +130,8 @@ def op_tester(tmpdir):
                 reference,
                 step_type='infer',
                 opsets=None,
-                optimizer=popart.ConstSGD(0.01)):
+                optimizer=popart.ConstSGD(0.01),
+                seed=None):
             assert step_type in ('infer', 'train')
 
             bld = Builder(opsets=opsets)
@@ -180,6 +181,9 @@ def op_tester(tmpdir):
             anchor_map = session.initAnchorArrays()
 
             session.prepareDevice()
+
+            if seed is not None:
+                session.setRandomSeed(seed)
 
             for k, v in bld._input_map.items():
                 if not v.flags['C_CONTIGUOUS']:

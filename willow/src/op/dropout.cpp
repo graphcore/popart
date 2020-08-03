@@ -31,7 +31,7 @@ DropoutOp::DropoutOp(const OperatorIdentifier &_opid,
                      const Op::Settings &settings_)
     : DropoutOp(_opid,
                 ratio_,
-                settings_.getIr().getAndIncrementDropoutSeedModifier(),
+                settings_.getIr().getAndIncrementSeedModifier(),
                 false,
                 settings_) {}
 

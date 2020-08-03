@@ -394,7 +394,7 @@ public:
   // The model requires a user-settable random seed tensor
   bool hasRandomOps() const;
   bool requiresRandomSeed() const;
-  uint32_t getAndIncrementDropoutSeedModifier();
+  uint32_t getAndIncrementSeedModifier();
 
   void setRemoteBufferInfo(RemoteBufferId, RemoteBufferInfo);
   const RemoteBufferInfo getRemoteBufferInfo(RemoteBufferId) const;
@@ -519,7 +519,7 @@ private:
   // enable/disable a transform stage
   void enableTransform(std::size_t transformId, bool enable);
 
-  uint32_t dropoutSeedModifier = 0;
+  uint32_t seedModifier = 0;
 
   std::map<RemoteBufferId, RemoteBufferInfo> remoteBufferInfoMap;
 
