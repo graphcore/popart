@@ -35,8 +35,10 @@ void SGD1VarUpdateOpx::grow(poplar::program::Sequence &prog) const {
         graph(),
         weights,
         velocity,
-        popops::neg(
-            graph(), getInTensor(SGD1VarUpdateOp::getSlr1InIndex()), prog),
+        popops::neg(graph(),
+                    getInTensor(SGD1VarUpdateOp::getSlr1InIndex()),
+                    prog,
+                    debugPrefix("neg")),
         prog,
         debugPrefix("nonConstScaledSubtractSGD1"));
   }
