@@ -133,7 +133,10 @@ StepIOSplitter::StepIOSplitter(unsigned replicationFactor_)
 
 void StepIOSplitter::reset() {
   for (auto &entry1 : downstreamIoMap) {
-    for (auto &entry2 : entry1.second.adapterMap) {
+    auto &splitIoTensorInfo    = entry1.second;
+    splitIoTensorInfo.inIndex  = 0u;
+    splitIoTensorInfo.outIndex = 0u;
+    for (auto &entry2 : splitIoTensorInfo.adapterMap) {
       auto &adapter = entry2.second;
       adapter->reset();
     }
@@ -142,6 +145,8 @@ void StepIOSplitter::reset() {
 
 void StepIOSplitter::setUpstreamIo(IStepIO *upstreamIo_) {
   upstreamIo = upstreamIo_;
+  logging::devicex::debug("[StepIOSplitter] Reset upstream StepIO.");
+  reset();
 }
 
 void StepIOSplitter::getInData(TensorId id,
