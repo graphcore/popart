@@ -337,10 +337,10 @@ def _run_impl(torchWriter, patterns, outputdir, cifarInIndices, device,
                     "\nAnchor arrays (being printed as printAnchorArrays==True):"
                 )
                 for name in anchorArrays.keys():
-                    print("\nAnchored Array Name=", name, " and Size=",
-                          arr.size())
-
                     arr = anchorArrays[name]
+                    print("\nAnchored Array Name=", name, " and Size=",
+                          arr.size)
+
                     if (arr.size < 10):
                         print("\nArray (of size < 10) values are")
                         print(arr)

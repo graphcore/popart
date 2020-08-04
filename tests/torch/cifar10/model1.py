@@ -19,12 +19,7 @@ nOutChans = 10
 batchSize = 2
 batchesPerStep = 3
 anchors = {
-    "imageSum": popart.AnchorReturnType("All"),
-    "postConv0": popart.AnchorReturnType("All"),
-    "preProbSquared": popart.AnchorReturnType("All"),
-    "l1LossVal": popart.AnchorReturnType("All"),
-    "nllLossVal": popart.AnchorReturnType("All"),
-    "probs": popart.AnchorReturnType("All")
+    "loss": popart.AnchorReturnType("All"),
 }
 
 dataFlow = popart.DataFlow(batchesPerStep, anchors)
@@ -35,16 +30,17 @@ inputShapeInfo.add("image1",
                    popart.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
 inputShapeInfo.add("label", popart.TensorInfo("INT32", [batchSize]))
 
-inNames = ["image0", "image1"]
+inNames = ["image0", "image1", "label"]
 cifarInIndices = {"image0": 0, "image1": 0, "label": 1}
-outNames = ["imageSum", "postConv0", "preProbSquared", "probs"]
-
-losses = [
-    popart.NllLoss("probs", "label", "nllLossVal"),
-    popart.L1Loss("preProbSquared", "l1LossVal", 0.01)
-]
+outNames = ["loss"]
 
 willowOptPatterns = popart.Patterns(popart.PatternsLevel.All)
+
+
+def nllloss(logprobs, targets):
+    targets = targets.unsqueeze(1)
+    loss = torch.gather(logprobs, 1, targets)
+    return -loss.sum()
 
 
 class Module0(torch.nn.Module):
@@ -56,7 +52,7 @@ class Module0(torch.nn.Module):
         self.pad = torch.nn.functional.pad
         # for softmax dim -1 is correct for [sample][class],
         # gives class probabilities for each sample.
-        self.softmax = torch.nn.Softmax(dim=-1)
+        self.softmax = torch.nn.LogSoftmax(dim=-1)
 
     def forward(self, inputs):
         image0 = inputs[0]
@@ -73,11 +69,13 @@ class Module0(torch.nn.Module):
 
         x = postConv1
         window_size = (int(x.size()[2]), int(x.size()[3]))
-        postPool = torch.nn.functional.avg_pool2d(x, kernel_size=window_size)
+        postPool = torch.nn.functional.avg_pool2d(x,
+                                                  kernel_size=window_size,
+                                                  stride=window_size)
         postSqueeze = torch.squeeze(postPool)
 
         x = postSqueeze
-        # if batchSize == 1, the above sqeeze removes too many dimensions
+        # if batchSize == 1, the above squeeze removes too many dimensions
         if batchSize == 1:
             # mapping x.shape to int prevents pytorch tracking it
             # and trying to insert ops we don't support into the graph
@@ -90,9 +88,9 @@ class Module0(torch.nn.Module):
         probs = self.softmax(x)
         # -> currently no support from pytorch
         # -> for gather or log (pytorch 0.4.1)
-        # x = torch.gather(input = x, dim = 1, index= labels)
-        # loss = torch.log(x)
-        return imageSum, postConv0, preProbSquared, probs
+        # print(x.shape, inputs[2].shape)
+        loss = nllloss(probs, inputs[2])
+        return loss
 
 
 # Set arbitrary seed so model weights are initialized to the
@@ -102,7 +100,6 @@ torch.manual_seed(1)
 torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
-    losses=losses,
     optimizer=popart.ConstSGD(0.001),
     inputShapeInfo=inputShapeInfo,
     dataFlow=dataFlow,
