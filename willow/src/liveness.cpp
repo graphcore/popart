@@ -7,6 +7,66 @@
 namespace popart {
 namespace liveness {
 
+LivenessNode::LivenessNode(std::vector<Op *> callStack_,
+                           const OpStatus status_,
+                           int index_)
+    : callStack(callStack_), status(status_), index(index_) {}
+
+std::pair<TensorId, TensorId> LivenessNode::getTensorIds() const {
+  switch (status) {
+  case OpStatus::CopyInput:
+  case OpStatus::CopyModified:
+    return {getOp()->inId(index),
+            getOp()->getCalledGraphs().front()->getInputId(index)};
+  case OpStatus::CopyOutput:
+    return {getOp()->outId(index),
+            getOp()->getCalledGraphs().front()->getOutputId(index)};
+  case OpStatus::Normal:
+  case OpStatus::Enter:
+  case OpStatus::Exit:
+  default:
+    return {"", ""};
+  }
+}
+
+bool LivenessNode::isProducerOf(Tensor *t) const {
+  switch (status) {
+  case OpStatus::CopyInput:
+    // Produces tensor inside subgraph
+    return t->id == getTensorIds().second;
+  case OpStatus::CopyModified:
+    // Produces tensor outside subgraph
+    return t->id == getTensorIds().first;
+  case OpStatus::CopyOutput:
+  case OpStatus::Normal:
+    return t->hasProducer() && t->getProducer() == getOp();
+  case OpStatus::Enter:
+  case OpStatus::Exit:
+  default:
+    return false;
+  }
+}
+
+bool LivenessNode::isConsumerOf(Tensor *t) const {
+  switch (status) {
+  case OpStatus::CopyInput:
+    // Consumes tensor outside subgraph
+    return t->id == getTensorIds().first;
+  case OpStatus::CopyModified:
+    // Consumes tensor inside subgraph
+    return t->id == getTensorIds().second;
+  case OpStatus::CopyOutput:
+    // Consumes tensor inside subgraph
+    return t->id == getTensorIds().second;
+  case OpStatus::Normal:
+    return getOp()->input->contains(t);
+  case OpStatus::Enter:
+  case OpStatus::Exit:
+  default:
+    return false;
+  }
+}
+
 LivenessAnalyzer::LivenessAnalyzer(const Ir *ir_) : ir(ir_) {}
 
 void LivenessAnalyzer::apply() {
@@ -36,9 +96,9 @@ void LivenessAnalyzer::addToSchedule(const Graph *graphToAdd,
     opScheduleMap[op].push_back(enter_location);
 
     if (calledGraphs.empty()) {
-      opSchedule.push_back({current, OpStatus::Normal, 0});
+      opSchedule.emplace_back(current, OpStatus::Normal, 0);
     } else {
-      opSchedule.push_back({current, OpStatus::Enter, 0});
+      opSchedule.emplace_back(current, OpStatus::Enter, 0);
       for (const Graph *subgraph : calledGraphs) {
         for (InIndex i = 0; i < subgraph->getInputIds().size(); ++i) {
           opSchedule.push_back({current, OpStatus::CopyInput, i});
@@ -56,7 +116,7 @@ void LivenessAnalyzer::addToSchedule(const Graph *graphToAdd,
       addToSchedule(subgraph, current);
       // Insert the "exit" locations of subgraphs into the schedule
       for (OutIndex i = 0; i < subgraph->getOutputIds().size(); ++i) {
-        opSchedule.push_back({current, OpStatus::CopyOutput, i});
+        opSchedule.emplace_back(current, OpStatus::CopyOutput, i);
       }
       for (OutIndex i = 0; i < subgraph->getInputIds().size(); ++i) {
         // Check for subgraph modified input
@@ -67,7 +127,7 @@ void LivenessAnalyzer::addToSchedule(const Graph *graphToAdd,
           opSchedule.push_back({current, OpStatus::CopyModified, i});
         }
       }
-      opSchedule.push_back({current, OpStatus::Exit, 0});
+      opSchedule.emplace_back(current, OpStatus::Exit, 0);
       callSiteLinks[enter_location].push_back(opSchedule.size() - 1);
     }
   }

@@ -24,7 +24,7 @@
 namespace popart {
 namespace liveness {
 
-// Closed intervals of tensor liveness
+// Right-open intervals of tensor liveness
 typedef boost::icl::interval_set<int64_t> BoostInterval;
 class IntervalsImpl : public BoostInterval {};
 typedef boost::icl::interval_set<int64_t>::interval_type IntervalImpl;
@@ -234,92 +234,40 @@ void AliasZeroCopy::apply() {
 int64_t AliasZeroCopy::findStart(Tensor *consumedTensor,
                                  int64_t scheduleIndex) const {
 
-  if (consumedTensor->hasProducer()) {
-    // Producer: Find producer OP on schedule
-    auto index = scheduleIndex;
-    // Walk back on schedule until the closest previous
-    // tensor producer is found
-    // Note that the producer can exist multiple times in the schedule,
-    // if the producer is located in a subgraph
-    auto opScheduleEntry = &analyzer->getOpScheduleAt(index);
-    do {
-      --index;
-      if (index < 0)
-        throw error("[AliasZeroCopy] Schedule index below 0 (producer)");
-      opScheduleEntry = &analyzer->getOpScheduleAt(index);
-    } while (std::get<0>(*opScheduleEntry).back() !=
-                 consumedTensor->getProducer() ||
-             (std::get<1>(*opScheduleEntry) != OpStatus::Exit &&
-              std::get<1>(*opScheduleEntry) != OpStatus::Normal));
-    // Verify this is a normal or exit entry
-    Op *producer = std::get<0>(analyzer->getOpScheduleAt(index)).back();
-    auto status  = std::get<1>(analyzer->getOpScheduleAt(index));
-    switch (status) {
-    case OpStatus::CopyInput:
-    case OpStatus::CopyOutput:
-    case OpStatus::CopyModified:
-    case OpStatus::Enter: {
-      throw error("[AliasZeroCopy] findStart: OpStatus {} unexpected.",
-                  static_cast<int>(status));
-      // break;
+  // Producer: Find producer OP on schedule
+  auto index = scheduleIndex;
+  // Walk back on schedule until the closest previous
+  // tensor producer or consumer is found
+  // Note that the node/op can exist multiple times in the schedule,
+  // if the node/op is located in a subgraph
+  auto opScheduleEntry = &analyzer->getOpScheduleAt(index);
+  do {
+    --index;
+    if (index < 0) {
+      return 0;
     }
-    case OpStatus::Exit: {
-      OutIndex outIndex = producer->output->indices(consumedTensor).front();
-      do {
-        --index;
-      } while (std::get<2>(analyzer->getOpScheduleAt(index)) != outIndex);
-      break;
-    }
-    case OpStatus::Normal: {
-      break;
-    }
-    }
+    opScheduleEntry = &analyzer->getOpScheduleAt(index);
+  } while (!opScheduleEntry->isProducerOf(consumedTensor) &&
+           !opScheduleEntry->isConsumerOf(consumedTensor));
 
-    return index;
-  } else {
-    if (consumedTensor->getGraph().id == ir->getMainGraph().id) {
-      // No producer: main graph input tensor
-      // Main graph start in schedule
-      return 0L;
-    } else {
-      InIndex inIndex = 0;
-      // No producer: non-main graph input tensor
-      auto &subgraphInputIds = consumedTensor->getGraph().getInputIds();
-      for (InIndex i = 0; i < subgraphInputIds.size(); ++i) {
-        if (subgraphInputIds[i] == consumedTensor->id) {
-          inIndex = i;
-        }
-      }
+  // Verify this is not an enter or exit entry
+  auto status = analyzer->getOpScheduleAt(index).getStatus();
 
-      auto &callStack = std::get<0>(analyzer->getOpScheduleAt(scheduleIndex));
-      auto callStackSize   = callStack.size();
-      int64_t index        = scheduleIndex;
-      auto opScheduleEntry = &analyzer->getOpScheduleAt(index);
-      do {
-        // Walk back on schedule until call site
-        // (caller of the current subgraph) is found
-        // this can be an Exit or Enter depending on which subgraph of an
-        // op this is
-        --index;
-        if (index < 0) {
-          throw error("[AliasZeroCopy] Schedule index below 0 (no producer)");
-        }
-        opScheduleEntry = &analyzer->getOpScheduleAt(index);
-      } while (std::get<0>(*opScheduleEntry).size() >= callStackSize ||
-               std::get<1>(*opScheduleEntry) != OpStatus::CopyInput ||
-               std::get<2>(*opScheduleEntry) != inIndex);
-      return index;
-    }
+  if (status == OpStatus::Enter || status == OpStatus::Exit) {
+    throw error("[AliasZeroCopy] findStart: OpStatus {} unexpected.",
+                static_cast<int>(status));
+    // break;
   }
+
+  return index;
 }
 
 int64_t AliasZeroCopy::findFront(Tensor *consumedTensor,
-                                 int64_t scheduleIndex,
-                                 bool modified) const {
+                                 int64_t scheduleIndex) const {
 
   auto opScheduleEntry = &analyzer->getOpScheduleAt(scheduleIndex);
-  Op *consumer         = std::get<0>(*opScheduleEntry).back();
-  OpStatus status      = std::get<1>(*opScheduleEntry);
+  Op *consumer         = opScheduleEntry->getOp();
+  OpStatus status      = opScheduleEntry->getStatus();
   auto inIndices       = consumer->input->indices(consumedTensor);
 
   if (status != OpStatus::Normal && status != OpStatus::Enter) {
@@ -332,35 +280,17 @@ int64_t AliasZeroCopy::findFront(Tensor *consumedTensor,
     return scheduleIndex;
   } else {
     // Subgraphing Op
-    if (modified) {
-      // Get last entry for subgraph (OpStatus::Exit)
-      auto index = analyzer->getCallSiteLinksAt(scheduleIndex).back();
-      // Verify end is an exit entry
-      if (std::get<1>(analyzer->getOpScheduleAt(index)) != OpStatus::Exit) {
-        throw error("[AliasZeroCopy] OpStatus::Exit expected.");
-      }
-      // Walk back to find OpStatus::CopyModified for that input
-      do {
-        --index;
-        if (index < 0)
-          throw error("[AliasZeroCopy] Schedule index below 0 (no producer)");
-        opScheduleEntry = &analyzer->getOpScheduleAt(index);
-      } while (std::get<1>(*opScheduleEntry) != OpStatus::CopyModified ||
-               std::get<2>(*opScheduleEntry) != inIndices.front());
-      return index;
-    } else {
-      // Walk forward to find OpStatus::CopyInput for that input
-      auto index = scheduleIndex;
-      do {
-        ++index;
-        if (index >= analyzer->getOpScheduleSize())
-          throw error("[AliasZeroCopy] Schedule index above schedule size ({})",
-                      analyzer->getOpScheduleSize());
-        opScheduleEntry = &analyzer->getOpScheduleAt(index);
-      } while (std::get<1>(*opScheduleEntry) != OpStatus::CopyInput ||
-               std::get<2>(*opScheduleEntry) != inIndices.front());
-      return index;
-    }
+    // Walk forward to find OpStatus::CopyInput for that input
+    auto index = scheduleIndex;
+    do {
+      ++index;
+      if (index >= analyzer->getOpScheduleSize())
+        throw error("[AliasZeroCopy] Schedule index above schedule size ({})",
+                    analyzer->getOpScheduleSize());
+      opScheduleEntry = &analyzer->getOpScheduleAt(index);
+    } while (opScheduleEntry->getStatus() != OpStatus::CopyInput ||
+             opScheduleEntry->getIndex() != inIndices.front());
+    return index;
   }
 }
 
@@ -416,19 +346,21 @@ Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
           int64_t index        = callSiteLinks.back();
           auto opScheduleEntry = &analyzer->getOpScheduleAt(index);
 
+          auto copyOutputIndex = index;
+
           // Walk backwards to find OpStatus::CopyOutput for that output
           do {
-            --index;
-            if (index < 0)
+            --copyOutputIndex;
+            if (copyOutputIndex < 0)
               throw error(
                   "[AliasZeroCopy] Schedule index below 0 (no copy output)");
-            opScheduleEntry = &analyzer->getOpScheduleAt(index);
-          } while (std::get<1>(*opScheduleEntry) != OpStatus::CopyOutput ||
-                   std::get<2>(*opScheduleEntry) != outIndex);
+            opScheduleEntry = &analyzer->getOpScheduleAt(copyOutputIndex);
+          } while (opScheduleEntry->getStatus() != OpStatus::CopyOutput ||
+                   opScheduleEntry->getIndex() != outIndex);
 
           // Find producer index
-          int64_t startIndex = findStart(t, index);
-          insertInterval(startIndex, index);
+          int64_t startIndex = findStart(t, copyOutputIndex);
+          insertInterval(startIndex, copyOutputIndex);
         }
       }
     }
@@ -450,14 +382,13 @@ Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
           auto callSiteLinks   = analyzer->getCallSiteLinksAt(scheduleIndex);
           int64_t index        = callSiteLinks.back();
           auto opScheduleEntry = &analyzer->getOpScheduleAt(index);
-          auto &callStack      = std::get<0>(*opScheduleEntry);
+          auto &callStack      = opScheduleEntry->getCallStack();
           auto callStackSize   = callStack.size();
 
           auto copyModifiedIndex = index;
 
-          auto regions =
-              dynamic_cast<CallOp *>(std::get<0>(*opScheduleEntry).back())
-                  ->modifies(inIndex);
+          auto regions = dynamic_cast<CallOp *>(opScheduleEntry->getOp())
+                             ->modifies(inIndex);
 
           if (std::any_of(regions.begin(), regions.end(), [](view::Region &r) {
                 return !r.isEmpty();
@@ -469,8 +400,8 @@ Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
                 throw error("[AliasZeroCopy] Schedule index below 0 (no copy "
                             "modified)");
               opScheduleEntry = &analyzer->getOpScheduleAt(copyModifiedIndex);
-            } while (std::get<1>(*opScheduleEntry) != OpStatus::CopyModified ||
-                     std::get<2>(*opScheduleEntry) != inIndex);
+            } while (opScheduleEntry->getStatus() != OpStatus::CopyModified ||
+                     opScheduleEntry->getIndex() != inIndex);
 
             // Move index into the subgraph
             do {
@@ -479,11 +410,11 @@ Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
                 throw error("[AliasZeroCopy] Schedule index below 0 (no copy "
                             "input)");
               opScheduleEntry = &analyzer->getOpScheduleAt(index);
-            } while (std::get<0>(*opScheduleEntry).size() <= callStackSize);
+            } while (opScheduleEntry->getCallStack().size() <= callStackSize);
 
-            auto copyInputIndex = findStart(t, index);
+            auto startIndex = findStart(t, index);
 
-            insertInterval(copyInputIndex, index);
+            insertInterval(startIndex, copyModifiedIndex);
           }
         }
       }
@@ -523,11 +454,11 @@ Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
       }
     }
 
-    int64_t front = findFront(consumedTensor, consumer.first, false);
+    int64_t front = findFront(consumedTensor, consumer.first);
     int64_t start = std::max(last_overwrite, findStart(consumedTensor, front));
 
     if (overwrite) {
-      last_overwrite = findFront(consumedTensor, consumer.first, true);
+      last_overwrite = findFront(consumedTensor, consumer.first);
     } else {
       insertInterval(start, front);
     }
@@ -726,8 +657,9 @@ bool AliasZeroCopy::checkSubgraphInputCompatible(Tensor *ta, Tensor *tb) {
       (ta->info.shape() == tb->info.shape() &&
        ta->info.dataType() == tb->info.dataType() &&
        ta->getVirtualGraphIdUnsafe() == tb->getVirtualGraphIdUnsafe());
-  if (!compatible)
+  if (!compatible) {
     return false;
+  }
 
   bool overlapping = AliasZeroCopy::doOverlap(
       getCandidateLivenessIntervals(ta), getCandidateLivenessIntervals(tb));
@@ -744,9 +676,8 @@ bool AliasZeroCopy::checkSubgraphInputCompatible(Tensor *ta, Tensor *tb) {
             tb->id,
             callSiteOps.size());
 
-        bool conflict            = false;
-        bool modified            = false;
-        bool fullyCallerModified = false;
+        bool conflict = false;
+        bool modified = false;
 
         for (auto index : indices) {
           if (sgraph->getInputId(index) == tb->id) {
@@ -768,7 +699,7 @@ bool AliasZeroCopy::checkSubgraphInputCompatible(Tensor *ta, Tensor *tb) {
             }
 
             if (overlapping) {
-              // If tb is modified or aliased in the subgraph,
+              // If tb is modified in the subgraph,
               // and the parent graph and subgraph tensors are live
               // at the same time, they can't be aliased.
 
@@ -782,25 +713,15 @@ bool AliasZeroCopy::checkSubgraphInputCompatible(Tensor *ta, Tensor *tb) {
               modified = std::any_of(aliases.begin(),
                                      aliases.end(),
                                      [](Tensor *t) { return t->isModified(); });
-
-              auto callerModifiedRegions = c->modifies(index);
-              fullyCallerModified |=
-                  callerModifiedRegions.size() > 0 &&
-                  (callerModifiedRegions.front().getAccessType() ==
-                       view::AccessType::ReadWrite ||
-                   callerModifiedRegions.front().getAccessType() ==
-                       view::AccessType::Write) &&
-                  callerModifiedRegions.front().nelms() == ta->info.nelms();
             }
           }
         }
         logging::devicex::trace("[AliasZeroCopy] Overlapping: {} {}, "
-                                "modified: {}, caller modified: {}",
+                                "modified: {}",
                                 ta->id,
                                 tb->id,
-                                modified,
-                                fullyCallerModified);
-        return !conflict && (!modified || fullyCallerModified);
+                                modified);
+        return !conflict && (!overlapping || !modified);
       }
     }
   }
@@ -968,7 +889,7 @@ void AliasZeroCopy::printLivenessIntervals(
     ss << std::endl;
 
     for (size_t i = 0; i < analyzer->getOpScheduleSize(); ++i) {
-      ss << std::min(9UL, std::get<0>(analyzer->getOpScheduleAt(i)).size());
+      ss << std::min(9UL, analyzer->getOpScheduleAt(i).getCallStack().size());
     }
 
     ss << std::endl;

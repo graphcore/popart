@@ -24,6 +24,40 @@ enum class OpStatus {
   Exit
 };
 
+class LivenessNode {
+public:
+  LivenessNode(std::vector<Op *> callStack_,
+               const OpStatus status_,
+               int index_);
+
+  // Operation associated with this node
+  Op *getOp() const { return callStack.back(); }
+
+  // Call stack of operators that call each other
+  const std::vector<Op *> &getCallStack() const { return callStack; }
+
+  // Operation type and function in the global schedule
+  OpStatus getStatus() const { return status; }
+
+  // Input or output index of the Op associated with this node
+  int getIndex() const { return index; }
+
+  // Pair of matching tensors inside/outside of the subgraph associated with the
+  // index returned by getIndex on CopyOutput, CopyInput and CopyModified nodes
+  std::pair<TensorId, TensorId> getTensorIds() const;
+
+  // If the operation produces or fully modifies t
+  bool isProducerOf(Tensor *t) const;
+
+  // If the operation consumes t
+  bool isConsumerOf(Tensor *t) const;
+
+private:
+  std::vector<Op *> callStack;
+  OpStatus status;
+  int index;
+};
+
 // Build global schedule for liveness and call site analysis:
 //
 // A, B, C, D, E, ... : Non-subgraphing Op
@@ -56,8 +90,7 @@ public:
 
   // Return the call stack (e.g. X->Y->F),
   // at a given schedule position (e.g. 7)
-  const std::tuple<std::vector<Op *>, OpStatus, int> &
-  getOpScheduleAt(int64_t scheduleIndex) const {
+  const LivenessNode &getOpScheduleAt(int64_t scheduleIndex) const {
     return opSchedule.at(scheduleIndex);
   }
 
@@ -88,7 +121,7 @@ private:
   std::map<GraphId, std::vector<Op *>> graphOpSchedule;
 
   // Global schedule (over all graphs) in final schedule order
-  std::vector<std::tuple<std::vector<Op *>, OpStatus, int>> opSchedule;
+  std::vector<LivenessNode> opSchedule;
 
   // Map of all schedule positions where an Op is called
   std::map<Op *, std::vector<int64_t>> opScheduleMap;

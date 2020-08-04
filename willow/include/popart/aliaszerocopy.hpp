@@ -113,8 +113,7 @@ private:
   int64_t findStart(Tensor *consumedTensor, int64_t scheduleIndex) const;
 
   // Find the liveness front of a consumed tensor
-  int64_t
-  findFront(Tensor *consumedTensor, int64_t scheduleIndex, bool modified) const;
+  int64_t findFront(Tensor *consumedTensor, int64_t scheduleIndex) const;
 
   // Returns when the tensor needs to be live in the schedule
   Intervals getLivenessIntervals(Tensor *);
