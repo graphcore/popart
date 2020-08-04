@@ -780,10 +780,10 @@ void GraphTransformerImpl::convertBFloat16TensorToFloat32(
 
   // To convert from bfloat to float32 we simply append 16 zeros (2 bytes)
   for (int i = 0; i < n_elms; i++) {
-    int32_t buffer    = static_cast<int32_t>(int16Data[i]);
-    buffer            = (buffer << 16);
-    float floatBuffer = *reinterpret_cast<float *>(&buffer);
-    tp.add_float_data(floatBuffer);
+    int32_t buffer     = static_cast<int32_t>(int16Data[i]);
+    buffer             = (buffer << 16);
+    float *floatBuffer = reinterpret_cast<float *>(&buffer);
+    tp.add_float_data(*floatBuffer);
   }
   tp.set_data_type(ONNX_NAMESPACE::TensorProto_DataType_FLOAT);
 

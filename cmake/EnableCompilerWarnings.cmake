@@ -36,10 +36,6 @@ else()
 
         if (CMAKE_${COMPILER}_COMPILER_ID MATCHES "Clang")
             list(APPEND CMAKE_COMPILER_WARNINGS
-                # Turn on undefined interpret-cast for clang, as warning.
-                -Wundefined-reinterpret-cast
-                -Wno-error=undefined-reinterpret-cast
-
                 # Adding these to clang only as g++ doesn't have these warnings.
                 -Wextra-semi
 
