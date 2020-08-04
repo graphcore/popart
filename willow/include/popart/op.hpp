@@ -29,7 +29,12 @@ enum class TensorLocation {
   Uncached = OnChip,
   Cached   = OffChip
 };
-enum class ExecutionContext { Normal = 0, AccumulateOuterFragment };
+enum class ExecutionContext {
+  Normal = 0,
+  AccumulateOuterFragment,
+  WeightsFromHostFragment,
+  WeightsToHostFragment
+};
 
 std::ostream &operator<<(std::ostream &, const RecomputeType &);
 

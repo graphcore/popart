@@ -134,7 +134,7 @@ bool isConstOrCopyOfConst(Tensor *tensor) {
 } // namespace
 
 void PingPong::verifyPlacementConsistency(const Op *op,
-                                          const unsigned num_stages) const {
+                                          unsigned num_stages) const {
   if (op->hasVirtualGraphId() && op->hasPingPongPhase()) {
     if (op->getPingPongPhase() % num_stages !=
         op->getVirtualGraphId() % num_stages) {
@@ -481,7 +481,157 @@ void PingPong::getAliasedModifiersInPhase(
   }
 }
 
+std::vector<Op *> PingPong::getSortedConsumerOps(const Tensor *tensor) {
+
+  auto consumerOps = tensor->consumers.getOps();
+
+  // Process consumers in ascending order of phases
+  std::sort(
+      consumerOps.begin(), consumerOps.end(), [](const Op *lhs, const Op *rhs) {
+        return (lhs->hasPingPongPhase() ? lhs->getPingPongPhase() : -1) <
+               (rhs->hasPingPongPhase() ? rhs->getPingPongPhase() : -1);
+      });
+
+  return consumerOps;
+}
+
+PingPong::TensorStatus
+PingPong::determineTensorStatus(Graph &graph,
+                                Tensor *tensor,
+                                const std::vector<Op *> &consumerOps,
+                                unsigned num_stages) const {
+
+  TensorStatus status;
+
+  auto producerOp = tensor->getProducerUnsafe();
+
+  // Set producer PingPongPhase.
+  if (producerOp) {
+    if (producerOp->getOptionalPingPongPhase()) {
+      status.producerPingPongPhase = producerOp->getOptionalPingPongPhase();
+    }
+    if (IpuCopyOp *copy = dynamic_cast<IpuCopyOp *>(producerOp)) {
+      if (copy->getSourceIpu() % num_stages !=
+          copy->getDestIpu() % num_stages) {
+        // Inter-phase copy, special case where the producer
+        // phase is moved
+        status.producerPingPongPhase = *status.producerPingPongPhase + 1;
+      }
+      status.loadStoreVGID = copy->getDestIpu();
+    } else {
+      status.loadStoreVGID = producerOp->getVirtualGraphId();
+    }
+  }
+
+  if (status.producerPingPongPhase) {
+    status.livePhases.insert(*status.producerPingPongPhase);
+    // Do not load in producer phase
+    status.loadStoreInPhase[*status.producerPingPongPhase].first = false;
+    // Store in producer phase
+    status.loadStoreInPhase[*status.producerPingPongPhase].second = true;
+  }
+
+  for (auto consumerOp : consumerOps) {
+
+    OptionalVGraphId consumerVGID = consumerOp->getOptionalVGraphId();
+    if (IpuCopyOp *copyOp = dynamic_cast<IpuCopyOp *>(consumerOp)) {
+      consumerVGID = copyOp->getSourceIpu();
+    }
+
+    // Pick correct VGID for loading/storing the tensor,
+    // if no producer exists
+    if (!status.loadStoreVGID) {
+      status.loadStoreVGID = consumerVGID;
+    } else if (!tensor->hasProducer() && consumerVGID) {
+      status.loadStoreVGID = std::min(*status.loadStoreVGID, *consumerVGID);
+    }
+
+    auto consumerPingPongPhase = *consumerOp->getOptionalPingPongPhase();
+
+    if (status.livePhases.find(consumerPingPongPhase - num_stages) !=
+        status.livePhases.end()) {
+      // Live in adjacent previous phase, do not load in current phase
+      status.loadStoreInPhase[consumerPingPongPhase].first = false;
+      if (status.loadStoreInPhase[consumerPingPongPhase - num_stages].second) {
+        // Move store from adjacent previous phase to current phase
+        status.loadStoreInPhase[consumerPingPongPhase].second = true;
+        status.loadStoreInPhase[consumerPingPongPhase - num_stages].second =
+            false;
+      }
+    } else if (status.producerPingPongPhase &&
+               status.producerPingPongPhase == consumerPingPongPhase) {
+      // Current phase is producer phase, do not load in current phase
+      status.loadStoreInPhase[consumerPingPongPhase].first = false;
+    } else {
+      // Not live, load in current phase
+      status.loadStoreInPhase[consumerPingPongPhase].first = true;
+    }
+
+    if (status.modifiersInPhase.find(consumerPingPongPhase) ==
+        status.modifiersInPhase.end()) {
+      // Check if the consumer OP modifies the tensor, e.g. for weights
+      // if yes, then the tensor requires to be backed-up at the end of
+      // the phase
+      getAliasedModifiersInPhase(
+          graph,
+          consumerPingPongPhase,
+          tensor,
+          status.modifiersInPhase[consumerPingPongPhase]);
+      if (!status.modifiersInPhase[consumerPingPongPhase].empty()) {
+        // Storing in this phase
+        status.loadStoreInPhase[consumerPingPongPhase].second = true;
+        // Not storing in previous phase
+        status.loadStoreInPhase[consumerPingPongPhase - num_stages].second =
+            false;
+      }
+    }
+    status.livePhases.insert(consumerPingPongPhase);
+    status.consumersInPhase[consumerPingPongPhase].push_back(consumerOp);
+  }
+
+  return status;
+}
+
+void PingPong::logTensorStatus(const Tensor *tensor,
+                               int num_phases,
+                               TensorStatus &status) {
+
+  if (logging::shouldLog(logging::Module::transform, logging::Level::Trace)) {
+
+    std::stringstream ss;
+    ss << tensor->id << " phase liveness status: ";
+    for (PingPongPhase p = 0; p < num_phases * 2 - 1; ++p) {
+      ss << "| ";
+      ss << "(" << p << ") ";
+      if (p == status.producerPingPongPhase) {
+        // Produced in this phase
+        ss << "P";
+      }
+      if (status.loadStoreInPhase[p].first) {
+        // Loaded in this phase
+        ss << "L";
+      }
+      if (status.loadStoreInPhase[p].second) {
+        // Stored in this phase
+        ss << "S";
+      }
+      if (status.livePhases.find(p) != status.livePhases.end()) {
+        // Live in this phase
+        ss << "A ";
+      } else {
+        ss << "_ ";
+      }
+    }
+    ss << "|";
+    logging::transform::trace(ss.str());
+  }
+}
+
 bool PingPong::apply(Graph &graph) const {
+
+  // Left and right pingpong stage.
+  const unsigned num_stages = 2;
+
   auto &ir               = graph.getIr();
   auto &sessionOptions   = ir.getSessionOptions();
   auto replicationFactor = sessionOptions.enableReplicatedGraphs
@@ -497,9 +647,6 @@ bool PingPong::apply(Graph &graph) const {
 
   // const auto training = ir.canTrain();
   const auto num_phases = sessionOptions.pingPongPhases;
-
-  // Left and right pingpong stage
-  const auto num_stages = 2;
 
   if (graph.getOps().size() == 0 || num_phases < 2) {
     return false;
@@ -712,27 +859,7 @@ bool PingPong::apply(Graph &graph) const {
         continue;
       }
 
-      OptionalPingPongPhase producerPingPongPhase;
-      OptionalVGraphId loadStoreVGID;
-
-      if (producerOp) {
-        if (producerOp->getOptionalPingPongPhase()) {
-          producerPingPongPhase = producerOp->getOptionalPingPongPhase();
-        }
-        if (IpuCopyOp *copy = dynamic_cast<IpuCopyOp *>(producerOp)) {
-          if (copy->getSourceIpu() % num_stages !=
-              copy->getDestIpu() % num_stages) {
-            // Inter-phase copy, special case where the producer
-            // phase is moved
-            producerPingPongPhase = *producerPingPongPhase + 1;
-          }
-          loadStoreVGID = copy->getDestIpu();
-        } else {
-          loadStoreVGID = producerOp->getVirtualGraphId();
-        }
-      }
-
-      auto consumerOps = tensor->consumers.getOps();
+      auto consumerOps = getSortedConsumerOps(tensor);
 
       // Inherit settings from producer or consumer
       if (producerOp) {
@@ -747,119 +874,15 @@ bool PingPong::apply(Graph &graph) const {
       settings.recomputeType  = RecomputeType::Checkpoint;
       settings.tensorLocation = TensorLocation::Undefined;
 
-      // Process consumers in ascending order of phases
-      std::sort(
-          consumerOps.begin(),
-          consumerOps.end(),
-          [](const Op *lhs, const Op *rhs) {
-            return (lhs->hasPingPongPhase() ? lhs->getPingPongPhase() : -1) <
-                   (rhs->hasPingPongPhase() ? rhs->getPingPongPhase() : -1);
-          });
+      // Determine the tensor's status.
+      TensorStatus status =
+          determineTensorStatus(graph, tensor, consumerOps, num_stages);
 
-      // Set if the tensor is live in the current phase
-      std::set<PingPongPhase> livePhases;
-      // Set of modifying ops per phase
-      std::map<PingPongPhase, std::vector<Op *>> modifiersInPhase;
-      // Set of consuming ops per phase
-      std::map<PingPongPhase, std::vector<Op *>> consumersInPhase;
-      // Set of phases that load or store
-      std::map<PingPongPhase, std::pair<bool, bool>> loadStoreInPhase;
-
-      if (producerPingPongPhase) {
-        livePhases.insert(*producerPingPongPhase);
-        // Do not load in producer phase
-        loadStoreInPhase[*producerPingPongPhase].first = false;
-        // Store in producer phase
-        loadStoreInPhase[*producerPingPongPhase].second = true;
-      }
-
-      for (auto consumerOp : consumerOps) {
-
-        OptionalVGraphId consumerVGID = consumerOp->getOptionalVGraphId();
-        if (IpuCopyOp *copyOp = dynamic_cast<IpuCopyOp *>(consumerOp)) {
-          consumerVGID = copyOp->getSourceIpu();
-        }
-
-        // Pick correct VGID for loading/storing the tensor,
-        // if no producer exists
-        if (!loadStoreVGID) {
-          loadStoreVGID = consumerVGID;
-        } else if (!tensor->hasProducer() && consumerVGID) {
-          loadStoreVGID = std::min(*loadStoreVGID, *consumerVGID);
-        }
-
-        auto consumerPingPongPhase = *consumerOp->getOptionalPingPongPhase();
-
-        if (livePhases.find(consumerPingPongPhase - num_stages) !=
-            livePhases.end()) {
-          // Live in adjacent previous phase, do not load in current phase
-          loadStoreInPhase[consumerPingPongPhase].first = false;
-          if (loadStoreInPhase[consumerPingPongPhase - num_stages].second) {
-            // Move store from adjacent previous phase to current phase
-            loadStoreInPhase[consumerPingPongPhase].second              = true;
-            loadStoreInPhase[consumerPingPongPhase - num_stages].second = false;
-          }
-        } else if (producerPingPongPhase &&
-                   producerPingPongPhase == consumerPingPongPhase) {
-          // Current phase is producer phase, do not load in current phase
-          loadStoreInPhase[consumerPingPongPhase].first = false;
-        } else {
-          // Not live, load in current phase
-          loadStoreInPhase[consumerPingPongPhase].first = true;
-        }
-
-        if (modifiersInPhase.find(consumerPingPongPhase) ==
-            modifiersInPhase.end()) {
-          // Check if the consumer OP modifies the tensor, e.g. for weights
-          // if yes, then the tensor requires to be backed-up at the end of
-          // the phase
-          getAliasedModifiersInPhase(graph,
-                                     consumerPingPongPhase,
-                                     tensor,
-                                     modifiersInPhase[consumerPingPongPhase]);
-          if (!modifiersInPhase[consumerPingPongPhase].empty()) {
-            // Storing in this phase
-            loadStoreInPhase[consumerPingPongPhase].second = true;
-            // Not storing in previous phase
-            loadStoreInPhase[consumerPingPongPhase - num_stages].second = false;
-          }
-        }
-        livePhases.insert(consumerPingPongPhase);
-        consumersInPhase[consumerPingPongPhase].push_back(consumerOp);
-      }
-
-      if (logging::shouldLog(logging::Module::transform,
-                             logging::Level::Trace)) {
-        std::stringstream ss;
-        ss << tensor->id << " phase liveness status: ";
-        for (PingPongPhase p = 0; p < num_phases * 2 - 1; ++p) {
-          ss << "| ";
-          ss << "(" << p << ") ";
-          if (p == producerPingPongPhase) {
-            // Produced in this phase
-            ss << "P";
-          }
-          if (loadStoreInPhase[p].first) {
-            // Loaded in this phase
-            ss << "L";
-          }
-          if (loadStoreInPhase[p].second) {
-            // Stored in this phase
-            ss << "S";
-          }
-          if (livePhases.find(p) != livePhases.end()) {
-            // Live in this phase
-            ss << "A ";
-          } else {
-            ss << "_ ";
-          }
-        }
-        ss << "|";
-        logging::transform::trace(ss.str());
-      }
+      // Log tensor status.
+      logTensorStatus(tensor, num_phases, status);
 
       bool loadRequired = false;
-      for (auto &phaseLoadStore : loadStoreInPhase) {
+      for (auto &phaseLoadStore : status.loadStoreInPhase) {
         loadRequired |= phaseLoadStore.second.first;
       }
       if (!loadRequired) {
@@ -883,7 +906,7 @@ bool PingPong::apply(Graph &graph) const {
       TensorId loadedTensorId   = tensor->id;
       TensorId gatheredTensorId = tensor->id;
 
-      for (auto &phaseLoadStore : loadStoreInPhase) {
+      for (auto &phaseLoadStore : status.loadStoreInPhase) {
         PingPongPhase currentPingPongPhase         = phaseLoadStore.first;
         RemoteLoadOp *remoteLoad                   = nullptr;
         RemoteStoreOp *remoteStore                 = nullptr;
@@ -918,7 +941,7 @@ bool PingPong::apply(Graph &graph) const {
             }
 
             remoteLoad->settings.recomputeType = RecomputeType::Checkpoint;
-            remoteLoad->setVirtualGraphId(loadStoreVGID);
+            remoteLoad->setVirtualGraphId(status.loadStoreVGID);
             graph.moveIntoGraph(std::move(remoteLoadOp));
 
             remoteLoad->connectInTensor(
@@ -962,7 +985,7 @@ bool PingPong::apply(Graph &graph) const {
                 init->setPingPongPhase(currentPingPongPhase - 1);
               }
 
-              init->setVirtualGraphId(loadStoreVGID);
+              init->setVirtualGraphId(status.loadStoreVGID);
               graph.moveIntoGraph(std::move(initOp));
               init->createAndConnectOutTensor(InitOp::getOutIndex(),
                                               initTensorId);
@@ -1003,7 +1026,7 @@ bool PingPong::apply(Graph &graph) const {
               // RemoteLoad at the end of the previous phase, so that load
               // is executed before inter-IPU copy
               replicatedAllGather->setPingPongPhase(currentPingPongPhase - 1);
-              replicatedAllGather->setVirtualGraphId(loadStoreVGID);
+              replicatedAllGather->setVirtualGraphId(status.loadStoreVGID);
               graph.moveIntoGraph(std::move(replicatedAllGatherOp));
 
               replicatedAllGather->connectInTensor(
@@ -1072,7 +1095,7 @@ bool PingPong::apply(Graph &graph) const {
             remoteStore->settings.schedulePriority = remoteStorePriority;
             remoteStore->settings.recomputeType    = RecomputeType::Checkpoint;
             remoteStore->setPingPongPhase(currentPingPongPhase);
-            remoteStore->setVirtualGraphId(loadStoreVGID);
+            remoteStore->setVirtualGraphId(status.loadStoreVGID);
             graph.moveIntoGraph(std::move(remoteStoreOp));
 
             remoteStore->connectInTensor(
@@ -1101,12 +1124,13 @@ bool PingPong::apply(Graph &graph) const {
 
         if (remoteStore) {
           // Any modification has to take place before the remote store
-          for (Op *modifyingOp : modifiersInPhase[currentPingPongPhase]) {
+          for (Op *modifyingOp :
+               status.modifiersInPhase[currentPingPongPhase]) {
             graph.topoCons->insert(modifyingOp, remoteStore);
           }
         }
 
-        for (Op *consumerOp : consumersInPhase[currentPingPongPhase]) {
+        for (Op *consumerOp : status.consumersInPhase[currentPingPongPhase]) {
           if (tensor->isAcclTensor()) {
             if (remoteLoad) {
               graph.topoCons->insert(remoteLoad, consumerOp, true);
@@ -1133,7 +1157,7 @@ bool PingPong::apply(Graph &graph) const {
                 "[PingPong] Disconnecting tensor {} at op {} (modified: {})",
                 tensor->id,
                 consumerOp->debugName(),
-                !modifiersInPhase[currentPingPongPhase].empty());
+                !status.modifiersInPhase[currentPingPongPhase].empty());
           }
 
           // Disconnect original tensor and wire up loaded tensor

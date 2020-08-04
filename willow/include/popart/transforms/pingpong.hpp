@@ -33,8 +33,7 @@ private:
 
   float costFn(Op *op) const;
 
-  void verifyPlacementConsistency(const Op *op,
-                                  const unsigned num_stages) const;
+  void verifyPlacementConsistency(const Op *op, unsigned num_stages) const;
 
   void verifyPingPongPhases(Graph &graph) const;
 
@@ -54,6 +53,16 @@ private:
                                    unsigned num_stages) const;
 
 private:
+  class TensorStatus {
+  public:
+    OptionalPingPongPhase producerPingPongPhase;
+    OptionalVGraphId loadStoreVGID;
+    std::set<PingPongPhase> livePhases;
+    std::map<PingPongPhase, std::vector<Op *>> modifiersInPhase;
+    std::map<PingPongPhase, std::vector<Op *>> consumersInPhase;
+    std::map<PingPongPhase, std::pair<bool, bool>> loadStoreInPhase;
+  };
+
   bool isValidTensorLocation(const TensorLocation tensorLocation) const;
 
   bool tooSmallForOffChip(const TensorLocationSettings &tensorLocationSettings,
@@ -62,6 +71,15 @@ private:
   const char *tensorLocationToStr(const TensorLocation tensorLocation) const;
 
   TensorLocation determineTensorLocation(Graph &graph, Tensor *tensor) const;
+  TensorStatus determineTensorStatus(Graph &graph,
+                                     Tensor *tensor,
+                                     const std::vector<Op *> &consumerOps,
+                                     unsigned num_stages) const;
+
+  static void
+  logTensorStatus(const Tensor *tensor, int num_phases, TensorStatus &status);
+
+  static std::vector<Op *> getSortedConsumerOps(const Tensor *tensor);
 
   int pass;
 };
