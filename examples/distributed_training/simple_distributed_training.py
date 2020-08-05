@@ -30,7 +30,7 @@ def create_model():
     probs = builder.aiOnnx.softmax([output])
     label_shape = popart.TensorInfo("INT32", [batch_size])
     label = builder.addInputTensor(label_shape)
-    nll = popart.aiGraphcore.nllloss([output, label])
+    nll = builder.aiGraphcore.nllloss([output, label])
 
     proto = builder.getModelProto()
 
