@@ -17,7 +17,7 @@
 #include <popart/tensorinfo.hpp>
 #include <popart/topocons.hpp>
 
-#include "dummy_test_graphs.hpp"
+#include <testutil/test_graphs/graphs.hpp>
 
 using namespace popart;
 
@@ -100,9 +100,41 @@ struct DiamondTestCase : EdgeMapTestCase<DiamondTestCase> {
   }
 };
 
+struct ComplexTestCase : EdgeMapTestCase<ComplexTestCase> {
+  void initTestGraph_() {
+    test_graphs::initMultiInputMultiOutputComplexTestCase(graph);
+  }
+
+  EdgeMap mkExpectedEdges_() {
+    // clang-format off
+    return {
+        mp(0, {1, 2, 3, 4, 13, 14}),
+        mp(1, {2, 4}),
+        mp(2, {}),
+        mp(3, {5}),
+        mp(4, {5, 6, 7}),
+        mp(5, {6}),
+        mp(6, {7, 8}),
+        mp(7, {10, 11, 13}),
+        mp(8, {9}),
+        mp(9, {10}),
+        mp(10, {12}),
+        mp(11, {12}), 
+        mp(12, {}),
+        mp(13, {8, 12}),
+        mp(14, {}),
+        mp(15, {5, 6}),
+        mp(16, {17, 18}),
+        mp(17, {7, 18}),
+        mp(18, {12})
+    }; // clang-format on
+  }
+};
+
 } // namespace
 
-using TestCaseTypes = std::tuple<SingleOpTestCase, DiamondTestCase>;
+using TestCaseTypes =
+    std::tuple<SingleOpTestCase, DiamondTestCase, ComplexTestCase>;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(GraphEdgeMapTest, TestCase, TestCaseTypes) {
   TestCase tc;

@@ -15,7 +15,7 @@
 #include <popart/tensorinfo.hpp>
 #include <popart/topocons.hpp>
 
-#include "dummy_test_graphs.hpp"
+#include <testutil/test_graphs/graphs.hpp>
 
 #include <poprithms/schedule/transitiveclosure/transitiveclosure.hpp>
 

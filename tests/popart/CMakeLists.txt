@@ -74,16 +74,36 @@ function(extract_targets variants targets)
   set(${targets} ${extracted_targets} PARENT_SCOPE)
 endfunction()
 
+# Usage: add_test_exectuable(<exe_name> <src1> ... TESTUTILS <util1> ...)
+# 
+# `exe_name`: name of executable.
+#
+# `TESTUTILS`, optional:
+#     are target names of test util libraries added in `tests/testutil` that a
+#     test may use. It is an optional argument.
+#
 function(add_test_executable name)
-    add_executable(${name} ${ARGN})
+  set(options "")
+  set(oneValueKeywords "")
+  set(multiValueKeywords "FILES;TEST_UTILS")
+  set(argsWithFilesKeyword "FILES;${ARGN}")
+
+  cmake_parse_arguments(add_test_exe
+    "${options}" "${oneValueKeywords}" "${multiValueKeywords}" 
+    "${argsWithFilesKeyword}"
+  )
+
+  add_executable(${name} ${add_test_exe_FILES})
   target_include_directories(${name}
       PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}
       $<TARGET_PROPERTY:popart,INCLUDE_DIRECTORIES>)
   target_link_libraries(${name}
-    popart
-    ${CMAKE_THREAD_LIBS_INIT}
-    ${Boost_LIBRARIES}
+    PRIVATE
+      popart
+      ${CMAKE_THREAD_LIBS_INIT}
+      ${Boost_LIBRARIES}
+      ${add_test_exe_TEST_UTILS}
   )
   if (NOT Boost_UNIT_TEST_FRAMEWORK_LIBRARY MATCHES "\\.a$")
     target_compile_definitions(${name} PRIVATE -DBOOST_TEST_DYN_LINK)
@@ -114,17 +134,28 @@ endfunction()
 # DUAL
 # A variation specification must be of the form "target:[config]"
 #
+# TEST_UTILS
+# The target names of test utils that this test will require. To see the target
+# names of the test utils, look in /tests/testutil/CMakeLists.txt, where they
+# are created.
+# 
 function(add_popart_cpp_unit_test name)
-  set(oneValueArgs "VARIANTS;LABELS")
+  set(oneValueArgs "VARIANTS;LABELS;TEST_UTILS")
   cmake_parse_arguments(test_args "" "FILES" "${oneValueArgs}" "FILES;${ARGN}")
   set(FILES "${test_args_FILES}")
 
   sanitise_variants(test_args_VARIANTS)
   extract_targets(test_args_VARIANTS TARGETS)
 
+  if(DEFINED test_args_TEST_UTILS)
+    set(TEST_UTILS_ARGS "TEST_UTILS;${test_args_TEST_UTILS}")
+  else()
+    set(TEST_UTILS_ARGS "")
+  endif()
+
   foreach(TEST_TARGET ${TARGETS})
     set(executable_name "${TEST_TARGET}_${name}")
-    add_test_executable(${executable_name} ${FILES})
+    add_test_executable(${executable_name} ${FILES} ${TEST_UTILS_ARGS})
   endforeach()
 
   foreach(VARIANT ${test_args_VARIANTS})
@@ -163,7 +194,7 @@ add_popart_cpp_unit_test(collectivestest collectives_test.cpp VARIANTS "Hw")
 add_popart_cpp_unit_test(custompatterntest custom_pattern_test.cpp)
 add_popart_cpp_unit_test(dataflowtest dataflowtest.cpp)
 add_popart_cpp_unit_test(decomposegradientsummationtest decompose_gradient_summation_test.cpp)
-add_popart_cpp_unit_test(graphedgemaptest graph_edgemap_test.cpp)
+add_popart_cpp_unit_test(graphedgemaptest graph_edgemap_test.cpp TEST_UTILS test-graphs-test-util)
 add_popart_cpp_unit_test(exceptiontest exceptiontest.cpp)
 add_popart_cpp_unit_test(inputshapeinfotest inputshapeinfotest.cpp)
 add_popart_cpp_unit_test(irhashtest ir_hash_test.cpp VARIANTS "IpuModel")
@@ -176,7 +207,7 @@ add_popart_cpp_unit_test(nogradoptest no_gradop_test.cpp)
 add_popart_cpp_unit_test(numpybroadcastshapetest numpybroadcastshapetest.cpp)
 add_popart_cpp_unit_test(opmanagertest op_manager_test.cpp)
 add_popart_cpp_unit_test(outliningirtest outlining_ir_test.cpp)
-add_popart_cpp_unit_test(poprithmstransitiveclosuretest poprithmstransitiveclosure_test.cpp)
+add_popart_cpp_unit_test(poprithmstransitiveclosuretest poprithmstransitiveclosure_test.cpp TEST_UTILS test-graphs-test-util)
 add_popart_cpp_unit_test(prunetest prune_test.cpp)
 # add_popart_cpp_unit_test(syncpatterntest sync_pattern_test.cpp VARIANTS "Hw") # TODO: Fix this T23920
 add_popart_cpp_unit_test(syntheticdatatest synthetic_data_test.cpp)
