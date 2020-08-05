@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_RANDOMUNIFORMX_HPP
-#define GUARD_NEURALNET_RANDOMUNIFORMX_HPP
+#ifndef GUARD_NEURALNET_RANDOMNORMALX_HPP
+#define GUARD_NEURALNET_RANDOMNORMALX_HPP
 
 #include <popart/names.hpp>
 #include <popart/popx/devicex.hpp>
@@ -13,9 +13,9 @@ namespace popart {
 
 namespace popx {
 
-class RandomUniformOpx : public Opx {
+class RandomNormalOpx : public Opx {
 public:
-  RandomUniformOpx(Op *, Devicex *);
+  RandomNormalOpx(Op *, Devicex *);
 
   void grow(poplar::program::Sequence &) const final;
 };
