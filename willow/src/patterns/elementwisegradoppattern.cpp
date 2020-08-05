@@ -17,13 +17,19 @@ namespace {
 // (fwd_in) -> [Sign] -> (tmp1)
 // {(tmp1), (grad_in)} -> [Mul] -> (grad_out)
 static PatternCreator<ElementWiseGradOpPattern<AbsGradOp, SignOp>>
-    sinGradOpPattern(PreAliasPatternType::AbsGradOp, "AbsGradOp");
+    sinGradOpPattern(PreAliasPatternType::AbsGradOp,
+                     "AbsGradOp",
+                     /* enabled = */ true,
+                     /* mandatory = */ true);
 
 // Replace a SinGradOp with
 // (fwd_in) -> [Cos] -> (tmp1)
 // {(tmp1), (grad_in)} -> [Mul] -> (grad_out)
 static PatternCreator<ElementWiseGradOpPattern<SinGradOp, CosOp>>
-    absGradOpPattern(PreAliasPatternType::SinGradOp, "SinGradOp");
+    absGradOpPattern(PreAliasPatternType::SinGradOp,
+                     "SinGradOp",
+                     /* enabled = */ true,
+                     /* mandatory = */ true);
 
 } // namespace
 

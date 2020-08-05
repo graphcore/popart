@@ -193,7 +193,8 @@ private:
 
 public:
   Patterns(std::vector<PreAliasPatternType> types);
-  Patterns(PatternsLevel level = PatternsLevel::Default);
+  Patterns(PatternsLevel level);
+  Patterns() : Patterns(PatternsLevel::Default) {}
   Patterns(std::vector<std::string> patterns);
 
   static Patterns create(std::vector<std::string> patterns);

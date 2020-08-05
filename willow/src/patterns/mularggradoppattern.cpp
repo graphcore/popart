@@ -70,7 +70,10 @@ bool MulArgGradOpPattern::apply(Op *op) const {
 
 namespace {
 static PatternCreator<MulArgGradOpPattern>
-    MulArgGradOpPattern(PreAliasPatternType::MulArgGradOp, "MulArgGradOp");
+    MulArgGradOpPattern(PreAliasPatternType::MulArgGradOp,
+                        "MulArgGradOp",
+                        /* enabled = */ true,
+                        /* mandatory = */ true);
 }
 
 } // namespace popart

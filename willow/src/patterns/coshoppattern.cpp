@@ -78,7 +78,9 @@ bool CoshOpPattern::apply(Op *op) const {
 
 namespace {
 static PatternCreator<CoshOpPattern> CoshOpPattern(PreAliasPatternType::CoshOp,
-                                                   "CoshOp");
+                                                   "CoshOp",
+                                                   /* enabled = */ true,
+                                                   /* mandatory = */ true);
 }
 
 } // namespace popart

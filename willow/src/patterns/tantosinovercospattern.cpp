@@ -59,7 +59,10 @@ bool TanToSinOverCosPattern::apply(Op *op) const {
 namespace {
 static PatternCreator<TanToSinOverCosPattern>
     TanToSinOverCosPattern(PreAliasPatternType::TanToSinOverCos,
-                           "TanToSinOverCos");
+                           "TanToSinOverCos",
+                           /* enabled = */ true,
+                           /* mandatory = */ true);
+
 }
 
 } // namespace popart

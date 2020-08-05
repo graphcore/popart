@@ -73,7 +73,10 @@ bool PowArg1GradOpPattern::apply(Op *op) const {
 
 namespace {
 static PatternCreator<popart::PowArg1GradOpPattern>
-    PowArg1GradOpPattern(PreAliasPatternType::PowArg1GradOp, "PowArg1GradOp");
+    PowArg1GradOpPattern(PreAliasPatternType::PowArg1GradOp,
+                         "PowArg1GradOp",
+                         /* enabled = */ true,
+                         /* mandatory = */ true);
 }
 
 } // namespace popart

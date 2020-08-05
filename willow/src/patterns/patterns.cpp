@@ -117,9 +117,11 @@ Patterns::Patterns(PatternsLevel level) : runtimeAssertsOn{true} {
       auto &info = ti_info.second;
       if (info.mandatory) {
         settings.insert({ti, true});
+      } else {
+        settings.insert({ti, false});
       }
     }
-    inplaceEnabled = true;
+    inplaceEnabled = false;
     break;
   }
 

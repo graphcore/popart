@@ -25,6 +25,7 @@ def test_reset_host_weights_with_extra_tensor_in_onnx_model():
     5. Try again, but with ignoreWeightsInModelWithoutCorrespondingHostWeight.
     6. Observe that it succeeds
     """
+
     def getModelWithRandomWeights():
         builder = popart.Builder()
         dShape = [2, 2]

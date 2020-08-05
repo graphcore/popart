@@ -49,7 +49,10 @@ bool ConvBiasPattern::apply(Op *op) const {
 
 namespace {
 static PatternCreator<ConvBiasPattern>
-    convBiasPattern(PreAliasPatternType::SplitConvBias, "SplitConvBias");
+    convBiasPattern(PreAliasPatternType::SplitConvBias,
+                    "SplitConvBias",
+                    /* enabled = */ true,
+                    /* mandatory = */ true);
 }
 
 } // namespace popart

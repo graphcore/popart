@@ -57,7 +57,10 @@ bool DivArg0GradOpPattern::apply(Op *op) const {
 
 namespace {
 static PatternCreator<DivArg0GradOpPattern>
-    DivArg0GradOpPattern(PreAliasPatternType::DivArg0GradOp, "DivArg0GradOp");
+    DivArg0GradOpPattern(PreAliasPatternType::DivArg0GradOp,
+                         "DivArg0GradOp",
+                         /* enabled = */ true,
+                         /* mandatory = */ true);
 }
 
 } // namespace popart
