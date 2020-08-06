@@ -35,9 +35,9 @@ bool LivenessNode::isProducerOf(Tensor *t) const {
     // Produces tensor inside subgraph
     return t->id == getTensorIds().second;
   case OpStatus::CopyModified:
+  case OpStatus::CopyOutput:
     // Produces tensor outside subgraph
     return t->id == getTensorIds().first;
-  case OpStatus::CopyOutput:
   case OpStatus::Normal:
     return t->hasProducer() && t->getProducer() == getOp();
   case OpStatus::Enter:
