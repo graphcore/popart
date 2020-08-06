@@ -132,7 +132,9 @@ bool BatchSerialize::apply(Graph &graph) const {
                                tensorsWithBatch.end();
                       })) {
         for (auto &outTensorIdxId : opOutTensorIdxIds) {
-          tensorsWithBatch.insert(outTensorIdxId.second);
+          if (op->getOutBatchAxis(outTensorIdxId.first) != -1) {
+            tensorsWithBatch.insert(outTensorIdxId.second);
+          }
         }
       }
 
@@ -157,7 +159,7 @@ bool BatchSerialize::apply(Graph &graph) const {
         bool isProducerInitOp = false;
         if (entry.first->hasProducer()) {
           isProducerInitOp =
-              entry.first->getProducer()->opid == Onnx::CustomOperators::Init_1;
+              entry.first->getProducer()->isConvertibleTo<InitOp>();
         }
 
         auto producerContext = entry.first->hasProducer()

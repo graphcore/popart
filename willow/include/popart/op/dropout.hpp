@@ -49,6 +49,9 @@ public:
 
   bool canShard() const override { return true; }
 
+  std::map<TensorId, std::vector<TensorId>>
+  shard(const std::map<TensorId, std::vector<TensorId>> &inputs) override;
+
 protected:
   float ratio;
   uint32_t seedModifier;

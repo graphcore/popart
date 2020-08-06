@@ -70,6 +70,18 @@ void DropoutOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 // Dropout in testing mode can be replaced by the identity
 bool DropoutOp::canBeReplacedByIdentity() { return (getIr().isTesting()); }
 
+std::map<TensorId, std::vector<TensorId>>
+DropoutOp::shard(const std::map<TensorId, std::vector<TensorId>> &inputs) {
+  auto outputs = Op::shard(inputs);
+  for (auto shard_outs : outputs.begin()->second) {
+    auto sharded_dropout =
+        dynamic_cast<DropoutOp *>(getIr().getTensor(shard_outs)->getProducer());
+    // Fetch a unique seed modifier
+    sharded_dropout->setSeedModifier(getIr().getAndIncrementSeedModifier());
+  }
+  return outputs;
+}
+
 DropoutGradOp::DropoutGradOp(const DropoutOp &fwdOp)
     : DropoutOp(fwdOp.opid,
                 fwdOp.getRatio(),

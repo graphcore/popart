@@ -17,6 +17,9 @@ public:
   InIndex getSeedInIndex() const override { return 0; }
   static OutIndex getUpdatedSeedOutIndex() { return 0; }
 
+  // Seeds are never batched
+  int getOutBatchAxis(OutIndex) const override { return -1; }
+
   static TensorId getStreamedSeedTensorId() {
     return reservedRandomSeedPrefix() + std::string("fromHost");
   }

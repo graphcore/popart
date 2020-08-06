@@ -197,7 +197,7 @@ int Tensor::getBatchAxisFromOp(Op *op,
     }
   }
   // Sanity check the value
-  if (proposedAxis < 0 || proposedAxis >= info.rank()) {
+  if (proposedAxis >= info.rank()) {
     throw error(
         "Batch axis {} is out of range for tensor {}", proposedAxis, id);
   }
