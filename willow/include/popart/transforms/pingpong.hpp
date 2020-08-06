@@ -23,12 +23,6 @@ public:
   }
 
 private:
-  TensorId generateInitTensorId(Tensor *tensor) const;
-
-  TensorId generateLoadedTensorId(Tensor *tensor, int64_t load_index) const;
-
-  TensorId generateGatheredTensorId(Tensor *tensor, int64_t load_index) const;
-
   TensorId generateRemoteArgTensorId(TensorId tid, VGraphId vgid) const;
 
   float costFn(Op *op) const;
@@ -47,40 +41,7 @@ private:
                              Tensor *t,
                              std::vector<Op *> &modifyingConsumerOps) const;
 
-  void sanitizePlacementAnnotation(const Graph &graph,
-                                   Op *op,
-                                   PingPongPhase phase,
-                                   unsigned num_stages) const;
-
 private:
-  class TensorStatus {
-  public:
-    OptionalPingPongPhase producerPingPongPhase;
-    OptionalVGraphId loadStoreVGID;
-    std::set<PingPongPhase> livePhases;
-    std::map<PingPongPhase, std::vector<Op *>> modifiersInPhase;
-    std::map<PingPongPhase, std::vector<Op *>> consumersInPhase;
-    std::map<PingPongPhase, std::pair<bool, bool>> loadStoreInPhase;
-  };
-
-  bool isValidTensorLocation(const TensorLocation tensorLocation) const;
-
-  bool tooSmallForOffChip(const TensorLocationSettings &tensorLocationSettings,
-                          Tensor *tensor) const;
-
-  const char *tensorLocationToStr(const TensorLocation tensorLocation) const;
-
-  TensorLocation determineTensorLocation(Graph &graph, Tensor *tensor) const;
-  TensorStatus determineTensorStatus(Graph &graph,
-                                     Tensor *tensor,
-                                     const std::vector<Op *> &consumerOps,
-                                     unsigned num_stages) const;
-
-  static void
-  logTensorStatus(const Tensor *tensor, int num_phases, TensorStatus &status);
-
-  static std::vector<Op *> getSortedConsumerOps(const Tensor *tensor);
-
   int pass;
 };
 

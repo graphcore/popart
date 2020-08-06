@@ -431,6 +431,36 @@ std::ostream &operator<<(std::ostream &ost, const RecomputeType &rt) {
   return ost;
 }
 
+const char *tensorLocationToStr(const TensorLocation tensorLocation) {
+  const char *result = "";
+  switch (tensorLocation) {
+  case TensorLocation::Undefined: {
+    result = "Undefined";
+    break;
+  }
+  case TensorLocation::OffChip: {
+    result = "OffChip";
+    break;
+  }
+  case TensorLocation::OnChip: {
+    result = "OnChip";
+    break;
+  }
+  default: {
+    throw error("Unexpected value for tensorLocation in "
+                "tensorLocationToStr ({})",
+                static_cast<int>(tensorLocation));
+  }
+  }
+
+  return result;
+}
+
+bool isValidTensorLocation(const TensorLocation tensorLocation) {
+  return (tensorLocation == TensorLocation::OffChip) ||
+         (tensorLocation == TensorLocation::OnChip);
+}
+
 void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {
 
   if (attributes.hasAttribute(sPingPongPhaseAttribute)) {

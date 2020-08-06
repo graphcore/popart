@@ -36,6 +36,10 @@ enum class ExecutionContext {
   WeightsToHostFragment
 };
 
+// Helper functions for tensor locations.
+const char *tensorLocationToStr(const TensorLocation tensorLocation);
+bool isValidTensorLocation(const TensorLocation tensorLocation);
+
 std::ostream &operator<<(std::ostream &, const RecomputeType &);
 
 class OpSerialiserBase;
