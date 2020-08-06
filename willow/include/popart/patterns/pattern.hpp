@@ -48,7 +48,8 @@ enum class PreAliasPatternType {
   SGD1Decompose,
   LSTMOp,
   OpToReshape,
-  InitAccumulate
+  InitAccumulate,
+  UpsampleToResize
 };
 
 // Definition: A tensor is "touched" by a Pattern if

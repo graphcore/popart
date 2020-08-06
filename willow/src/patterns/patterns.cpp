@@ -45,6 +45,7 @@
 #include <popart/patterns/sumtoaddpattern.hpp>
 #include <popart/patterns/tantosinovercospattern.hpp>
 #include <popart/patterns/updateinplaceprioritiesforipu.hpp>
+#include <popart/patterns/upsampletoresizepattern.hpp>
 
 namespace popart {
 
@@ -232,6 +233,10 @@ bool Patterns::isOpToReshapeEnabled() {
   return isPatternEnabled<OpToReshapePattern>();
 }
 
+bool Patterns::isUpsampleToResizeEnabled() {
+  return isPatternEnabled<UpsampleToResizePattern>();
+}
+
 bool Patterns::isSubtractArg1GradOpEnabled() {
   return isPatternEnabled<SubtractArg1GradOpPattern>();
 }
@@ -328,6 +333,10 @@ Patterns &Patterns::enableNlllWithSoftMaxGradDirect(bool v) {
 
 Patterns &Patterns::enableOpToReshape(bool v) {
   return enablePattern<OpToReshapePattern>(v);
+}
+
+Patterns &Patterns::enableUpsampleToResize(bool v) {
+  return enablePattern<UpsampleToResizePattern>(v);
 }
 
 Patterns &Patterns::enableSplitConvBias(bool v) {
@@ -478,6 +487,7 @@ std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
   }
 
   static std::map<std::type_index, float> patternPriority{
+      {std::type_index(typeid(UpsampleToResizePattern)), 38},
       {std::type_index(typeid(InitAccumulatePattern)), 37},
       {std::type_index(typeid(PreUniRepl)), 36},
       {std::type_index(typeid(PostNRepl)), 35},

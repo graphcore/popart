@@ -215,6 +215,7 @@ public:
   bool isSplitGatherEnabled();
   bool isOpToIdentityEnabled();
   bool isOpToReshapeEnabled();
+  bool isUpsampleToResizeEnabled();
   bool isSubtractArg1GradOpEnabled();
   bool isMulArgGradOpEnabled();
   bool isReciprocalGradOpEnabled();
@@ -251,6 +252,7 @@ public:
   Patterns &enableSplitGather(bool v);
   Patterns &enableOpToIdentity(bool v);
   Patterns &enableOpToReshape(bool v);
+  Patterns &enableUpsampleToResize(bool v);
   Patterns &enableSubtractArg1GradOp(bool v);
   Patterns &enableMulArgGradOp(bool v);
   Patterns &enableReciprocalGradOp(bool v);
