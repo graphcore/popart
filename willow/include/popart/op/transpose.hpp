@@ -34,6 +34,8 @@ public:
 
   bool canShard() const override { return true; }
 
+  int getOutBatchAxis(OutIndex) const override;
+
 private:
   // the new permutation of the tensor axes
   Shape perm;

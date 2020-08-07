@@ -13,9 +13,11 @@ InitOp::InitOp(const OperatorIdentifier &_opid,
                const TensorInfo &tensor_info_,
                const TensorType &tensor_type_,
                const InitType &init_type_,
-               const Op::Settings &settings_)
+               const Op::Settings &settings_,
+               const int batch_axis_)
     : Op(_opid, settings_), tensor_info(tensor_info_),
-      tensor_type(tensor_type_), init_type(init_type_) {}
+      tensor_type(tensor_type_), init_type(init_type_),
+      batch_axis(batch_axis_) {}
 
 std::unique_ptr<Op> InitOp::clone() const {
   return std::make_unique<InitOp>(*this);
@@ -43,6 +45,7 @@ static OpDefinition initOpDef({OpDefinition::Inputs({}),
                                    {"data_type", {"*"}},
                                    {"tensor_type", {"*"}},
                                    {"init_type", {"*"}},
+                                   {"batch_axis", {"*"}},
                                })});
 
 static OpCreator<InitOp> initOpCreator(
@@ -56,9 +59,14 @@ static OpCreator<InitOp> initOpCreator(
           info.attributes.getAttribute<Attributes::Int>("tensor_type"));
       InitType init_type = static_cast<InitType>(
           info.attributes.getAttribute<Attributes::Int>("init_type"));
+      int batch_axis =
+          info.attributes.hasAttribute("batch_axis")
+              ? static_cast<int>(
+                    info.attributes.getAttribute<Attributes::Int>("batch_axis"))
+              : -1;
       TensorInfo tInfo(data_type, shape);
-      return std::unique_ptr<InitOp>(
-          new InitOp(info.opid, tInfo, tensor_type, init_type, info.settings));
+      return std::unique_ptr<InitOp>(new InitOp(
+          info.opid, tInfo, tensor_type, init_type, info.settings, batch_axis));
     },
     true);
 

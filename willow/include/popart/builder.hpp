@@ -224,6 +224,22 @@ public:
    * \param shape Shape of the tensor to initialise
    * \param data_type Data type to initialise tensor with
    * \param init_type Mode of tensor initialisations
+   * \param batch_axis Axis relative to batch size
+   * \param name Optional identifier for operation
+   * \return The name of the result tensor
+   */
+  TensorId init(Attributes::Ints shape,
+                Attributes::Int data_type,
+                Attributes::Int init_type,
+                Attributes::Int batch_axis,
+                const std::string &name = {});
+
+  /**
+   * Add an init operation to the model
+   *
+   * \param shape Shape of the tensor to initialise
+   * \param data_type Data type to initialise tensor with
+   * \param init_type Mode of tensor initialisations
    * \param name Optional identifier for operation
    * \return The name of the result tensor
    */

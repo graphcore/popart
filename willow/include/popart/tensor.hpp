@@ -203,6 +203,9 @@ public:
   // return the virtual graph id, or {-1, false} if there is not one
   VGraphIdAndIoTile getVirtualGraphIdAndIoTileUnsafe() const;
 
+  // Determine the batch axis for this Tensor
+  int getBatchAxis() const;
+
   bool consumersAllPreLoss() const;
 
   // Any of the consumers modify this tensor
@@ -231,6 +234,8 @@ protected:
   // c++ note : we cannot initialise this as {nullptr} with gcc
   // when using pimpl, it must be initialised in the .cpp constructor
   std::unique_ptr<TensorData> data_;
+
+  int getBatchAxisFromOp(Op *, bool, int) const;
 };
 
 class VariableTensor : public Tensor {

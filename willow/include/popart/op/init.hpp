@@ -27,7 +27,8 @@ public:
          const TensorInfo &,
          const TensorType &,
          const InitType &,
-         const Op::Settings &);
+         const Op::Settings &,
+         const int = -1);
 
   std::unique_ptr<Op> clone() const final;
   void setup() final;
@@ -42,10 +43,13 @@ public:
   bool isOutlineable() const final { return tensor_type != TensorType::Cache; }
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
+  int getOutBatchAxis(OutIndex) const override { return batch_axis; }
+
 private:
   TensorInfo tensor_info;
   TensorType tensor_type;
   InitType init_type;
+  int batch_axis;
 };
 
 } // namespace popart

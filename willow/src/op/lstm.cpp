@@ -146,6 +146,23 @@ void LSTMOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("hidden_size", hidden_size_attribute);
 }
 
+int LSTMOp::getInBatchAxis(InIndex index) const {
+  if (index == getInputInIndex() || index == getInitialHInIndex() ||
+      index == getInitialCInIndex()) {
+    return 1;
+  }
+  return 0;
+}
+
+int LSTMOp::getOutBatchAxis(OutIndex index) const {
+  if (index == getOutputOutIndex()) {
+    return 2;
+  } else if (index == getHiddenStateOutIndex() || getCellStateOutIndex()) {
+    return 1;
+  }
+  return 0;
+}
+
 LSTMGradOp::LSTMGradOp(const LSTMOp &fwd_op)
     : Op(Onnx::GradOperators::LSTMGrad, fwd_op.getSettings()),
       forward_op(fwd_op) {}
@@ -323,6 +340,22 @@ int64_t PopartLSTMOp::getInputSize() const {
 
 int64_t PopartLSTMOp::getHiddenSize() const {
   return inShape(getWeightsInIndex()).at(2);
+}
+
+int PopartLSTMOp::getInBatchAxis(InIndex index) const {
+  if (index == getInputInIndex() || index == getInitialStateInIndex()) {
+    return 1;
+  }
+  return 0;
+}
+
+int PopartLSTMOp::getOutBatchAxis(OutIndex index) const {
+  if (index == getOutputOutIndex() && outputFullSequence) {
+    return 1;
+  } else if (index == getIntermediatesOutIndex()) {
+    return 2;
+  }
+  return 0;
 }
 
 PopartLSTMGradOp::PopartLSTMGradOp(const PopartLSTMOp &fwdOp)

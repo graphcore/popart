@@ -570,6 +570,7 @@ TensorId AiGraphcoreOpset1::detach(const std::vector<TensorId> &args,
 TensorId AiGraphcoreOpset1::init(Attributes::Ints shape,
                                  Attributes::Int data_type,
                                  Attributes::Int init_type,
+                                 Attributes::Int batch_axis,
                                  const std::string &name) {
   return impl
       ->op(Onnx::AiGraphcore::OpSet1::Init,
@@ -578,9 +579,17 @@ TensorId AiGraphcoreOpset1::init(Attributes::Ints shape,
            {{"shape", shape},
             {"data_type", data_type},
             {"tensor_type", static_cast<int64_t>(TensorType::ActGrad)},
-            {"init_type", init_type}},
+            {"init_type", init_type},
+            {"batch_axis", batch_axis}},
            name)
       .at(0);
+}
+
+TensorId AiGraphcoreOpset1::init(Attributes::Ints shape,
+                                 Attributes::Int data_type,
+                                 Attributes::Int init_type,
+                                 const std::string &name) {
+  return AiGraphcoreOpset1::init(shape, data_type, init_type, -1, name);
 }
 
 TensorId AiGraphcoreOpset1::dynamicslice(const std::vector<TensorId> &args,

@@ -179,6 +179,9 @@ public:
   PipelineStage getPipelineStage() const;
   OptionalPipelineStage getOptionalPipelineStage() const;
 
+  virtual int getInBatchAxis(InIndex) const { return 0; }
+  virtual int getOutBatchAxis(OutIndex) const { return 0; }
+
   // Inherit placement attributes:
   // - Pipeline stage
   // - Pingpong phase

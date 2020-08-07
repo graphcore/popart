@@ -168,6 +168,57 @@ std::set<PipelineStage> Tensor::getPipelineStages() const {
   return result;
 }
 
+int Tensor::getBatchAxisFromOp(Op *op,
+                               bool isConsumer,
+                               int proposedAxis) const {
+  std::vector<int> indices;
+  // All the input (output) indices relative to this tensor
+  if (isConsumer) {
+    indices = op->input->indices(graph.getTensors().get(id));
+  } else {
+    indices = op->output->indices(graph.getTensors().get(id));
+  }
+  for (int idx : indices) {
+    int axis = isConsumer ? op->getInBatchAxis(idx) : op->getOutBatchAxis(idx);
+    if (proposedAxis == -1) {
+      // Not yet set
+      proposedAxis = axis;
+    } else if (axis != proposedAxis) {
+      // Inconcistency between different indices
+      std::stringstream ss;
+      ss << "Batch axis inconsistent for tensor " << id;
+      ss << ". It's set to both " << proposedAxis << " and " << axis;
+      if (isConsumer) {
+        ss << ". There may be an inconsistency between the consumer Ops.";
+      } else {
+        ss << " from producer Op " << op->opid << ".";
+      }
+      throw error(ss.str());
+    }
+  }
+  // Sanity check the value
+  if (proposedAxis < 0 || proposedAxis >= info.rank()) {
+    throw error(
+        "Batch axis {} is out of range for tensor {}", proposedAxis, id);
+  }
+  return proposedAxis;
+}
+
+int Tensor::getBatchAxis() const {
+  int proposedAxis = -1;
+  // If this Tensor has a Producer, get the batch axis from it
+  if (hasProducer()) {
+    proposedAxis = getBatchAxisFromOp(getProducer(), false, proposedAxis);
+    return proposedAxis;
+  }
+
+  // Check the value of batch axis for this tensor from the consumers
+  for (Op *consumer : consumers.getOps()) {
+    proposedAxis = getBatchAxisFromOp(consumer, true, proposedAxis);
+  }
+  return proposedAxis;
+}
+
 std::ostream &operator<<(std::ostream &os, const TensorType &tt) {
   switch (tt) {
   case TensorType::ActGrad:

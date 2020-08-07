@@ -146,6 +146,13 @@ bool BatchSerialize::apply(Graph &graph) const {
         auto shape = entry.first->info.shape();
         auto nelms = entry.first->info.nelms();
 
+        // Check whether the producer is an init Op, if it has one
+        bool isProducerInitOp = false;
+        if (entry.first->hasProducer()) {
+          isProducerInitOp =
+              entry.first->getProducer()->opid == Onnx::CustomOperators::Init_1;
+        }
+
         auto producerContext = entry.first->hasProducer()
                                    ? getContext(entry.first->getProducer())
                                    : TensorContext(-1, -1, -1);
@@ -164,13 +171,15 @@ bool BatchSerialize::apply(Graph &graph) const {
             serializedItProducer != serializedTensorMap.end(),
             serializedItConsumer != serializedTensorMap.end());
 
+        bool hasBatch =
+            tensorsWithBatch.find(entry.first->id) != tensorsWithBatch.end() ||
+            (isProducerInitOp && entry.first->getBatchAxis() != -1);
         // a.) Tensor can be serialized on the batch dimension
         // b.) Tensor has no producer, or is not yet registered in the
         // serialized tensor map
-        if (tensorsWithBatch.find(entry.first->id) != tensorsWithBatch.end() &&
-            (!entry.first->hasProducer() ||
-             serializedItProducer == serializedTensorMap.end() ||
-             serializedItConsumer == serializedTensorMap.end())) {
+        if (hasBatch && (!entry.first->hasProducer() ||
+                         serializedItProducer == serializedTensorMap.end() ||
+                         serializedItConsumer == serializedTensorMap.end())) {
 
           // TODO T20169: Improve: Pick up batch size/dimension from
           // previously serialized tensors.
@@ -179,20 +188,26 @@ bool BatchSerialize::apply(Graph &graph) const {
 
           op_has_batch |= nelms >= batchSerFactor;
 
-          int batch_slice_size = 1;
-          int axis             = -1;
-          for (unsigned i = 0; i < shape.size(); ++i) {
-            if (shape[i] >= batchSerFactor) {
-              axis             = i;
-              batch_slice_size = static_cast<int>(shape[i] / batchSerFactor);
-              break;
-            }
-          }
-
           // TODO T20169: Support if batch dimension is not first.
 
           // c.) Tensor is not yet serialized in consumer context
           if (serializedItConsumer == serializedTensorMap.end()) {
+
+            // Get the batch axis for this tensor
+            int axis = entry.first->getBatchAxis();
+            if (shape[axis] < batchSerFactor) {
+              throw error("Batch axis: {} is smaller than the "
+                          "batch serialisation factor: {} for tensor {}",
+                          shape[axis],
+                          batchSerFactor,
+                          entry.first->id);
+            }
+            logging::transform::trace(
+                "[BatchSerialize] batch axis for {} is {}",
+                entry.first->id,
+                axis);
+            int batch_slice_size =
+                static_cast<int>(shape[axis] / batchSerFactor);
 
             TensorId sliceableTensorId;
 
@@ -358,7 +373,20 @@ bool BatchSerialize::apply(Graph &graph) const {
           }
         }
 
-        auto shardOutputs = op->shard(shardInputs);
+        std::map<TensorId, std::vector<TensorId>> shardOutputs;
+        // The following will throw an error if batch serialisation failed
+        // to slice a tensor. Return a sensible error message.
+        try {
+          shardOutputs = op->shard(shardInputs);
+        } catch (error &e) {
+          std::stringstream ss;
+          ss << "Batch serialisation failed while processing op " << op->opid;
+          ss << ". The inputs to this op are: ";
+          for (unsigned j = 0; j < op->inTensorCount(); j++) {
+            ss << op->inId(j) << ((j < op->inTensorCount() - 1) ? ", " : ".");
+          }
+          throw error(ss.str());
+        }
 
         for (auto &idkv : shardOutputs) {
           if (idkv.second.size() == batchSerFactor) {

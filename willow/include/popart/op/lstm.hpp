@@ -63,6 +63,9 @@ public:
 
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
 
+  int getInBatchAxis(InIndex) const override;
+  int getOutBatchAxis(OutIndex) const override;
+
 private:
   void createPassThroughOutput(const TensorId &new_id,
                                OutIndex pass_through_index,
@@ -163,6 +166,9 @@ public:
   int64_t getHiddenSize() const;
 
   static int64_t getNumIntermediates() { return 6; }
+
+  int getInBatchAxis(InIndex) const override;
+  int getOutBatchAxis(OutIndex) const override;
 
   const bool outputFullSequence;
 };

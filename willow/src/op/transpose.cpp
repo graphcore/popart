@@ -108,6 +108,15 @@ void TransposeBaseOp::setDefaultPerm() {
   }
 }
 
+int TransposeBaseOp::getOutBatchAxis(OutIndex index) const {
+  int inBatchAxis = inTensor(getInIndex())->getBatchAxis();
+  // Retrieve the batch axis post transposition:
+  // it will be given by the index of inBatchAxis in the perm vector
+  auto it          = std::find(perm.begin(), perm.end(), inBatchAxis);
+  int outBatchAxis = it - perm.begin();
+  return outBatchAxis;
+}
+
 void TransposeOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("perm", getPerm());
