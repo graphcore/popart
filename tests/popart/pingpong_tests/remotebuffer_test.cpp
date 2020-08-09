@@ -492,9 +492,9 @@ static void remoteBufferPingPongWeightTestBase(SessionOptions opts,
   auto device = createTestDevice(
       TestDeviceType::Hw, 2 * opts.replicatedGraphCount, 0, SyncPattern::Full);
 
-  opts.virtualGraphMode      = VirtualGraphMode::PingPong;
-  opts.explicitRecomputation = true;
-  opts.pingPongPhases        = 2;
+  opts.virtualGraphMode        = VirtualGraphMode::PingPong;
+  opts.explicitRecomputation   = true;
+  opts.pingPongSettings.phases = 2;
 
   // training info
   float learnRate = 0.321;
@@ -619,7 +619,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferPingPongWeightReplicaTest_0) {
   opts.enableOutlining          = false;
   opts.replicatedGraphCount     = 4;
   opts.enableReplicatedGraphs   = true;
-  opts.replicatedWeightSharding = false;
+  opts.replicatedTensorSharding = false;
   remoteBufferPingPongWeightTestBase(opts, 7, 3, 5);
   remoteBufferPingPongWeightTestBase(opts, 113, 103, 89, 1e-0);
   remoteBufferPingPongWeightTestBase(opts, 32, 13, 128, 1e-0);
@@ -631,8 +631,8 @@ BOOST_AUTO_TEST_CASE(RemoteBufferPingPongWeightReplicaShardedTest_0) {
   opts.enableOutlining                        = false;
   opts.replicatedGraphCount                   = 4;
   opts.enableReplicatedGraphs                 = true;
-  opts.replicatedWeightSharding               = true;
-  opts.replicatedWeightShardingMinNumElements = 0;
+  opts.replicatedTensorSharding               = true;
+  opts.replicatedTensorShardingMinNumElements = 0;
   opts.numIOTiles                             = 0;
   remoteBufferPingPongWeightTestBase(opts, 7, 3, 5);
   remoteBufferPingPongWeightTestBase(opts, 113, 103, 89, 1e-0);
@@ -645,8 +645,8 @@ BOOST_AUTO_TEST_CASE(RemoteBufferPingPongWeightReplicaShardedTest_1) {
   opts.enableOutlining                        = false;
   opts.replicatedGraphCount                   = 4;
   opts.enableReplicatedGraphs                 = true;
-  opts.replicatedWeightSharding               = true;
-  opts.replicatedWeightShardingMinNumElements = 0;
+  opts.replicatedTensorSharding               = true;
+  opts.replicatedTensorShardingMinNumElements = 0;
   opts.numIOTiles                             = 128;
   remoteBufferPingPongWeightTestBase(opts, 7, 3, 5);
   remoteBufferPingPongWeightTestBase(opts, 113, 103, 89, 1e-0);

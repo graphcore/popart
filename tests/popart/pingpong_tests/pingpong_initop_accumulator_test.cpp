@@ -109,8 +109,8 @@ BOOST_AUTO_TEST_CASE(TestInitOpAccumulator) {
   // it will only unwind if decomposeGradSum or batchSerialization is enabled.
   session_opts.decomposeGradSum = true;
 
-  session_opts.pingPongPhases   = N * 2;
-  session_opts.virtualGraphMode = VirtualGraphMode::PingPong;
+  session_opts.pingPongSettings.phases = N * 2;
+  session_opts.virtualGraphMode        = VirtualGraphMode::PingPong;
 
   auto testDev = createTestDevice(TEST_TARGET, 2);
 

@@ -196,13 +196,13 @@ private:
     if (op->scheduledPreLoss == ScheduledPreLoss::No &&
         !isSpecialCaseGradOp(op)) {
       if (op->hasPingPongPhase() &&
-          op->getIr().getSessionOptions().pingPongPhases >= 2) {
+          op->getIr().getSessionOptions().pingPongSettings.phases >= 2) {
         opPhase = op->getPingPongPhase();
       }
 
       walkProducers(op, [&toRerun, &op, opPhase, this](Op *x) {
         bool samePingPongPhase =
-            (op->getIr().getSessionOptions().pingPongPhases >= 2 &&
+            (op->getIr().getSessionOptions().pingPongSettings.phases >= 2 &&
              op->hasPingPongPhase() && x->hasPingPongPhase() &&
              op->getPingPongPhase() == x->getPingPongPhase());
         if (x->settings.recomputeType == RecomputeType::Recompute &&
@@ -2258,7 +2258,8 @@ void Devicex::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
           mainGraphOpRegistry[taskId].push_back(opToRerun);
           PingPongPhase phase =
               op->hasPingPongPhase() &&
-                      this->ir().getSessionOptions().pingPongPhases >= 2
+                      this->ir().getSessionOptions().pingPongSettings.phases >=
+                          2
                   ? op->getPingPongPhase()
                   : -1;
           progs.recordRecomputed(opToRerun->id, phase);

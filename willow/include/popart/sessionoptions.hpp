@@ -83,19 +83,99 @@ std::ostream &operator<<(std::ostream &, RecomputationType);
 struct TensorLocationSettings {
 
   TensorLocationSettings() = default;
-  TensorLocationSettings(TensorLocation tensorLocation_,
-                         int minElementsForOffChip_)
-      : tensorLocation{tensorLocation_}, minElementsForOffChip{
-                                             minElementsForOffChip_} {}
+  TensorLocationSettings(TensorLocation location_,
+                         int minElementsForOffChip_                  = 2,
+                         int minElementsForReplicatedTensorSharding_ = 8192);
+
+  TensorLocationSettings(TensorStorage storage_,
+                         int minElementsForOffChip_                  = 2,
+                         int minElementsForReplicatedTensorSharding_ = 8192);
 
   TensorLocationSettings &
   operator=(const TensorLocationSettings &rhs) = default;
 
   // The default tensor location for this tensor type.
-  TensorLocation tensorLocation;
+  TensorLocation location = TensorLocation();
 
   // A minimum number of elements below which offloading won't be considered.
-  int minElementsForOffChip;
+  int minElementsForOffChip = 2;
+
+  // Only enable RTS for tensors with more than 8192 elements
+  int minElementsForReplicatedTensorSharding = 8192;
+};
+
+/**
+ * A structure containing batch serialization settings.
+ */
+struct BatchSerializationSettings {
+  BatchSerializationSettings() = default;
+  BatchSerializationSettings(int factor_,
+                             bool concatOnVirtualGraphChange_,
+                             bool concatOnPingPongPhaseChange_,
+                             bool concatOnPipelineStageChange_);
+
+  BatchSerializationSettings &
+  operator=(const BatchSerializationSettings &rhs) = default;
+
+  int factor                       = 0;
+  bool concatOnVirtualGraphChange  = true;
+  bool concatOnPingPongPhaseChange = true;
+  bool concatOnPipelineStageChange = true;
+};
+
+enum class PingPongIOSchedule {
+  // Preload tensors in previous phase for use in current phase
+  Preload = 0,
+  // Load tensors just before they are required
+  OnDemand,
+};
+
+enum class PingPongOptimizerSchedule {
+  // The optimizer steps for pingpong consists of:
+  // 1. Copy to IO tiles if necessary
+  // 2. Run collective operations if necessary
+  // 3. Load and update optimizer state
+  // 4. Apply optimizer
+  // 5. Store updated tensor if necessary
+
+  // Process above steps for one weight at a time (12345, 12345)
+  Interleaving = 0,
+  // Process above steps for all weights together (11, 22, 33, 44, 55)
+  Batch
+};
+
+/**
+ * A structure containing PingPong settings.
+ */
+struct PingPongSettings {
+  PingPongSettings() = default;
+  PingPongSettings(int phases_,
+                   bool stages_,
+                   PingPongIOSchedule weightIOSchedule_,
+                   PingPongIOSchedule activationIOSchedule_,
+                   PingPongIOSchedule optimizerIOSchedule_,
+                   PingPongOptimizerSchedule optimizerSchedule_)
+      : phases{phases_}, stages{stages_}, weightIOSchedule{weightIOSchedule_},
+        activationIOSchedule{activationIOSchedule_},
+        optimizerIOSchedule{optimizerIOSchedule_}, optimizerSchedule{
+                                                       optimizerSchedule_} {}
+
+  PingPongSettings &operator=(const PingPongSettings &rhs) = default;
+
+  // Number of PingPongPhases for the whole model
+  int phases = 0;
+
+  // Number of overlapping stages
+  // 1: Parallel streaming memory, default for 1 IPU / replica
+  // 2: PingPong between 2 IPUs, default for >= 2 IPUs / replica
+  int stages = 2;
+
+  PingPongIOSchedule weightIOSchedule     = PingPongIOSchedule::Preload;
+  PingPongIOSchedule activationIOSchedule = PingPongIOSchedule::Preload;
+  PingPongIOSchedule optimizerIOSchedule  = PingPongIOSchedule::OnDemand;
+
+  PingPongOptimizerSchedule optimizerSchedule =
+      PingPongOptimizerSchedule::Interleaving;
 };
 
 /**
@@ -253,16 +333,11 @@ struct SessionOptions {
   // Enable stochastic rounding
   bool enableStochasticRounding = false;
 
-  // Enable ping pong transformation (0/1: disabled, >=2: enabled)
-  int pingPongPhases = 0;
+  // Configure PingPong
+  PingPongSettings pingPongSettings;
 
   // Enable explicit recomputation
   bool explicitRecomputation = false;
-
-  // Enable replicated weight sharding
-  bool replicatedWeightSharding = false;
-  // Only enable RWS for tensors with more than 8192 elements
-  size_t replicatedWeightShardingMinNumElements = 8192;
 
   // Number of IO tiles
   int numIOTiles = 0;
@@ -270,8 +345,8 @@ struct SessionOptions {
   // Enable zero-copy for subgraphs
   bool aliasZeroCopy = false;
 
-  // Enable batch serialization
-  int batchSerializationFactor = 0;
+  // Configure batch serialization
+  BatchSerializationSettings batchSerializationSettings;
 
   // Delay var updates as much as possible
   // TODO: Remove with T19212
@@ -382,13 +457,21 @@ struct SessionOptions {
 
   // Tensor location settings for activation/gradient tensors.
   TensorLocationSettings activationTensorLocationSettings =
-      TensorLocationSettings{TensorLocation::OffChip, 2};
+      TensorLocationSettings{
+          TensorLocation(TensorStorage::OffChip, false, false, false),
+          2,
+          8192};
   // Tensor location for weight tensors.
-  TensorLocationSettings weightTensorLocationSettings =
-      TensorLocationSettings{TensorLocation::OffChip, 2};
+  TensorLocationSettings weightTensorLocationSettings = TensorLocationSettings{
+      TensorLocation(TensorStorage::OffChip, true, true, false),
+      2,
+      8192};
   // Tensor location for optimizer state tensors.
   TensorLocationSettings optimizerStateTensorLocationSettings =
-      TensorLocationSettings{TensorLocation::OffChip, 2};
+      TensorLocationSettings{
+          TensorLocation(TensorStorage::OffChip, true, true, false),
+          2,
+          8192};
 
   // Overriding tensor location for specific tensors.
   std::map<TensorId, TensorLocation> tensorLocationSettingsOverride;

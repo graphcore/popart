@@ -76,8 +76,10 @@ private:
   public:
     // Constructor.
     TensorConfig(Graph &graph)
-        : tensor{}, producerOp{}, consumerOps{}, location{}, phaseConfig{},
-          settings{graph, ""}, useIoTiles{false}, replicatedWeightSharding{} {}
+        : tensor{}, producerOp{}, consumerOps{}, location{},
+          phaseConfig{}, settings{graph, ""},
+          ioSchedule(PingPongIOSchedule::Preload),
+          optimizerSchedule(PingPongOptimizerSchedule::Interleaving) {}
 
     // The tensor affected.
     Tensor *tensor;
@@ -91,10 +93,10 @@ private:
     TensorPhaseConfig phaseConfig;
     // The settings to use for new ops.
     Op::Settings settings;
-    // Whether to use the IO tiles.
-    bool useIoTiles;
-    // Whether RWS should be used.
-    bool replicatedWeightSharding;
+    // The input/output schedule for the tensor
+    PingPongIOSchedule ioSchedule;
+    // The optimizer schedule for the tensor (for weights)
+    PingPongOptimizerSchedule optimizerSchedule;
   };
 
   // Add streaming memory operations pertaining to one tensor.
@@ -102,6 +104,7 @@ private:
 
   // Helper functions to populate tensor config (the functions
   // below and TensorConfig could possibly be put in their own class.)
+  void getTensorSchedule(Tensor *tensor, TensorConfig &tensorConfig) const;
   void getTensorConfig(Tensor *tensor, TensorConfig &tensorConfig) const;
   void getOrderedConsumerOps(Tensor *tensor, Ops &consumerOps) const;
   void getTensorLocation(Tensor *tensor, TensorLocation &location) const;
@@ -154,6 +157,9 @@ private:
   static bool
   tooSmallForOffChip(const TensorLocationSettings &tensorLocationSettings,
                      Tensor *tensor);
+  static bool tooSmallForReplicatedTensorSharding(
+      const TensorLocationSettings &tensorLocationSettings,
+      Tensor *tensor);
 
   // The graph the transform operates on.
   Graph &graph;

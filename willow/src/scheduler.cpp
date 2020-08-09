@@ -210,7 +210,8 @@ public:
       // -1 : Load weights of phase 0
       // 0 - N: Compute phase n, load weights of phase n+1
       auto op_pingpong_or =
-          op_pingpong && pg.getIr().getSessionOptions().pingPongPhases > 1
+          op_pingpong &&
+                  pg.getIr().getSessionOptions().pingPongSettings.phases > 1
               ? *op_pingpong
               : unusedPingPongPhase;
 
@@ -219,8 +220,9 @@ public:
       // -1 : Init accumulator and updatee tensors
       // 0 - N : Compute batch element n
       auto op_batchserial_or =
-          op_batchserial &&
-                  pg.getIr().getSessionOptions().batchSerializationFactor > 1
+          op_batchserial && pg.getIr()
+                                    .getSessionOptions()
+                                    .batchSerializationSettings.factor > 1
               ? *op_batchserial
               : unusedBatchSerializedPhase;
 
@@ -316,7 +318,7 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
   grower->setBasic();
   grower->appendGCons(gCons);
   if (respectPingPongPhases &&
-      pg.getIr().getSessionOptions().pingPongPhases > 1) {
+      pg.getIr().getSessionOptions().pingPongSettings.phases > 1) {
     grower->annotatePingPongPhase();
   }
   if (pg.getIr().getSessionOptions().enablePipelining) {
@@ -420,7 +422,7 @@ bool Scheduler::isSchedulable(const OpsBeforeKey &gCons,
   grower.setBasic();
   grower.appendGCons(gCons);
   if (respectPingPongPhases &&
-      pg.getIr().getSessionOptions().pingPongPhases > 1) {
+      pg.getIr().getSessionOptions().pingPongSettings.phases > 1) {
     grower.annotatePingPongPhase();
   }
   if (pg.getIr().getSessionOptions().enablePipelining) {

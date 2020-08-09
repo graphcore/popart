@@ -745,15 +745,78 @@ PYBIND11_MODULE(popart_core, m) {
     }
   }
   {
+    py::class_<TensorLocation> cls(m, "TensorLocation");
+    cls.def(py::init<>());
+    cls.def(py::init<TensorStorage>(), py::arg("storage"));
+    cls.def(py::init<TensorStorage, bool, bool, bool>(),
+            py::arg("storage"),
+            py::arg("loadOnIOTiles"),
+            py::arg("storeOnIOTiles"),
+            py::arg("replicatedTensorSharding"));
+    cls.def_readwrite("storage", &TensorLocation::storage);
+    cls.def_readwrite("loadOnIOTiles", &TensorLocation::loadOnIOTiles);
+    cls.def_readwrite("storeOnIOTiles", &TensorLocation::storeOnIOTiles);
+    cls.def_readwrite("replicatedTensorSharding",
+                      &TensorLocation::replicatedTensorSharding);
+  }
+  {
     py::class_<TensorLocationSettings> cls(m, "TensorLocationSettings");
     cls.def(py::init<>());
-    cls.def(py::init<TensorLocation, int>(),
-            py::arg("tensorLocation"),
-            py::arg("minElementsForOffChip"));
-    cls.def_readwrite("tensorLocation",
-                      &TensorLocationSettings::tensorLocation);
+    cls.def(py::init<TensorLocation, int, int>(),
+            py::arg("location"),
+            py::arg("minElementsForOffChip")                  = 2,
+            py::arg("minElementsForReplicatedTensorSharding") = 8192);
+    cls.def(py::init<TensorStorage, int, int>(),
+            py::arg("storage"),
+            py::arg("minElementsForOffChip")                  = 2,
+            py::arg("minElementsForReplicatedTensorSharding") = 8192);
+    cls.def_readwrite("location", &TensorLocationSettings::location);
     cls.def_readwrite("minElementsForOffChip",
                       &TensorLocationSettings::minElementsForOffChip);
+    cls.def_readwrite(
+        "minElementsForReplicatedTensorSharding",
+        &TensorLocationSettings::minElementsForReplicatedTensorSharding);
+  }
+  {
+    py::class_<BatchSerializationSettings> cls(m, "BatchSerializationSettings");
+    cls.def(py::init<>());
+    cls.def(py::init<int, bool, bool, bool>(),
+            py::arg("factor"),
+            py::arg("concatOnVirtualGraphChange"),
+            py::arg("concatOnPingPongPhaseChange"),
+            py::arg("concatOnPipelineStageChange"));
+    cls.def_readwrite("factor", &BatchSerializationSettings::factor);
+    cls.def_readwrite("concatOnVirtualGraphChange",
+                      &BatchSerializationSettings::concatOnVirtualGraphChange);
+    cls.def_readwrite("concatOnPingPongPhaseChange",
+                      &BatchSerializationSettings::concatOnPingPongPhaseChange);
+    cls.def_readwrite("concatOnPipelineStageChange",
+                      &BatchSerializationSettings::concatOnPipelineStageChange);
+  }
+  {
+    py::class_<PingPongSettings> cls(m, "PingPongSettings");
+    cls.def(py::init<>());
+    cls.def(py::init<int,
+                     int,
+                     PingPongIOSchedule,
+                     PingPongIOSchedule,
+                     PingPongIOSchedule,
+                     PingPongOptimizerSchedule>(),
+            py::arg("phases"),
+            py::arg("stages"),
+            py::arg("weightIOSchedule"),
+            py::arg("activationIOSchedule"),
+            py::arg("optimizerIOSchedule"),
+            py::arg("optimizerSchedule"));
+    cls.def_readwrite("phases", &PingPongSettings::phases);
+    cls.def_readwrite("stages", &PingPongSettings::stages);
+    cls.def_readwrite("weightIOSchedule", &PingPongSettings::weightIOSchedule);
+    cls.def_readwrite("activationIOSchedule",
+                      &PingPongSettings::activationIOSchedule);
+    cls.def_readwrite("optimizerIOSchedule",
+                      &PingPongSettings::optimizerIOSchedule);
+    cls.def_readwrite("optimizerSchedule",
+                      &PingPongSettings::optimizerSchedule);
   }
   {
     py::class_<SessionOptions> cls(m, "SessionOptions");
@@ -787,16 +850,12 @@ PYBIND11_MODULE(popart_core, m) {
                       &SessionOptions::mergeVarUpdateMemThreshold);
     cls.def_readwrite("rearrangeAnchorsOnHost",
                       &SessionOptions::rearrangeAnchorsOnHost);
-    cls.def_readwrite("pingPongPhases", &SessionOptions::pingPongPhases);
-    cls.def_readwrite("replicatedWeightSharding",
-                      &SessionOptions::replicatedWeightSharding);
-    cls.def_readwrite("replicatedWeightShardingMinNumElements",
-                      &SessionOptions::replicatedWeightShardingMinNumElements);
+    cls.def_readwrite("pingPongSettings", &SessionOptions::pingPongSettings);
     cls.def_readwrite("numIOTiles", &SessionOptions::numIOTiles);
     cls.def_readwrite("explicitRecomputation",
                       &SessionOptions::explicitRecomputation);
-    cls.def_readwrite("batchSerializationFactor",
-                      &SessionOptions::batchSerializationFactor);
+    cls.def_readwrite("batchSerializationSettings",
+                      &SessionOptions::batchSerializationSettings);
     cls.def_readwrite("aliasZeroCopy", &SessionOptions::aliasZeroCopy);
     cls.def_readwrite("enablePrefetchDatastreams",
                       &SessionOptions::enablePrefetchDatastreams);
@@ -898,13 +957,20 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("Recomputed", RecomputeType::Recomputed);
   }
   {
-    py::enum_<TensorLocation> en(m, "TensorLocation");
-    en.value("Undefined", TensorLocation::Undefined);
-    en.value("OnChip", TensorLocation::OnChip);
-    en.value("OffChip", TensorLocation::OffChip);
-    // Deprecated options:
-    en.value("Uncached", TensorLocation::OnChip);
-    en.value("Cached", TensorLocation::OffChip);
+    py::enum_<TensorStorage> en(m, "TensorStorage");
+    en.value("Undefined", TensorStorage::Undefined);
+    en.value("OnChip", TensorStorage::OnChip);
+    en.value("OffChip", TensorStorage::OffChip);
+  }
+  {
+    py::enum_<PingPongIOSchedule> en(m, "PingPongIOSchedule");
+    en.value("Preload", PingPongIOSchedule::Preload);
+    en.value("OnDemand", PingPongIOSchedule::OnDemand);
+  }
+  {
+    py::enum_<PingPongOptimizerSchedule> en(m, "PingPongOptimizerSchedule");
+    en.value("Interleaving", PingPongOptimizerSchedule::Interleaving);
+    en.value("Batch", PingPongOptimizerSchedule::Batch);
   }
   {
     py::enum_<SyncPattern> en(m, "SyncPattern");
@@ -1629,16 +1695,15 @@ PYBIND11_MODULE(popart_core, m) {
         static_cast<void (Builder::*)(const TensorId &, TensorLocation value)>(
             &Builder::outputTensorLocation),
         py::arg("nodeOutputNames"),
-        py::arg("value") = TensorLocation::Undefined);
+        py::arg("value") = TensorLocation());
     cls.def(
         "outputTensorLocation",
         [](Builder &self, TensorLocation value) -> AttributeContextManager {
-          AttributeContextManager acm(self,
-                                      sOutputTensorLocationAttribute,
-                                      static_cast<int64_t>(value));
+          AttributeContextManager acm(
+              self, sOutputTensorLocationAttribute, value.serialize());
           return acm;
         },
-        py::arg("value") = TensorLocation::Undefined);
+        py::arg("value") = TensorLocation());
     cls.def("pipelineStage",
             static_cast<void (Builder::*)(const TensorId &, int64_t value)>(
                 &Builder::pipelineStage),

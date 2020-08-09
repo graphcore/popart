@@ -90,7 +90,7 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithVGraphs) {
     auto loss = builder.aiGraphcoreOpset1().l1loss({act}, 0.1);
     builder.virtualGraph(loss, (2 * N - 1) % 2);
 
-    runner.opts.batchSerializationFactor = K;
+    runner.opts.batchSerializationSettings.factor = K;
     // Disable outlining (tested separately)
     runner.opts.enableOutlining  = false;
     runner.opts.virtualGraphMode = VirtualGraphMode::Manual;
@@ -211,7 +211,7 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithVGraphsOutlined) {
     auto loss = builder.aiGraphcoreOpset1().l1loss({act}, 0.1);
     builder.virtualGraph(loss, (2 * N - 1) % 2);
 
-    runner.opts.batchSerializationFactor = K;
+    runner.opts.batchSerializationSettings.factor = K;
     // Enable outlining with no restrictions
     runner.opts.explicitRecomputation          = false;
     runner.opts.enableOutlining                = true;
@@ -337,7 +337,7 @@ BOOST_AUTO_TEST_CASE(NllBatchSerializedTest) {
     auto sessionOptions = SessionOptions();
 
     if (batchSerialize) {
-      sessionOptions.batchSerializationFactor = batchSize;
+      sessionOptions.batchSerializationSettings.factor = batchSize;
     }
 
     sessionOptions.enableOutlining = false;

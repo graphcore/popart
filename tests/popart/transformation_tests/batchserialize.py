@@ -39,7 +39,7 @@ def test_weight_update(tmpdir):
 
         opts = popart.SessionOptions()
         opts.enableOutlining = True
-        opts.batchSerializationFactor = batchSerializationFactor
+        opts.batchSerializationSettings.factor = batchSerializationFactor
 
         proto = builder.getModelProto()
 

@@ -24,8 +24,8 @@ IpuCopyOp::IpuCopyOp(const OperatorIdentifier &_opid,
                      uint64_t _destIpu,
                      const Op::Settings &settings_)
     : Op(_opid, settings_), destIpu(_destIpu) {
-  if (getIr().getSessionOptions().pingPongPhases < 2 &&
-      getIr().getSessionOptions().batchSerializationFactor < 2) {
+  if (getIr().getSessionOptions().pingPongSettings.phases < 2 &&
+      getIr().getSessionOptions().batchSerializationSettings.factor < 2) {
     settings.schedulePriority = std::numeric_limits<double>::lowest();
   }
 }
@@ -42,7 +42,7 @@ void IpuCopyOp::setup() {
 }
 
 bool IpuCopyOp::isOutlineable() const {
-  return getGraph().getIr().getSessionOptions().pingPongPhases > 1;
+  return getGraph().getIr().getSessionOptions().pingPongSettings.phases > 1;
 }
 
 const SourceIpuMap &IpuCopyOp::getSourceIpus() const { return sourceIpus; }

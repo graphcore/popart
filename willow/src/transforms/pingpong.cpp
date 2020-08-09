@@ -90,19 +90,17 @@ void PingPong::verifyPingPongPhases(Graph &graph) const {
 
 bool PingPong::apply(Graph &graph) const {
 
-  // Left and right pingpong stage.
-  const unsigned num_stages = 2;
-
-  auto &ir               = graph.getIr();
-  auto &sessionOptions   = ir.getSessionOptions();
-  auto replicationFactor = sessionOptions.enableReplicatedGraphs
-                               ? sessionOptions.replicatedGraphCount
-                               : 1;
-  const auto total_num_ipus = ir.getDeviceInfo()->getNumIpus();
-  const auto num_ipus       = total_num_ipus / replicationFactor;
+  auto &ir                    = graph.getIr();
+  auto &sessionOptions        = ir.getSessionOptions();
+  const int replicationFactor = sessionOptions.enableReplicatedGraphs
+                                    ? sessionOptions.replicatedGraphCount
+                                    : 1;
+  const int total_num_ipus = ir.getDeviceInfo()->getNumIpus();
+  const int num_ipus       = total_num_ipus / replicationFactor;
 
   // const auto training = ir.canTrain();
-  const auto num_phases = sessionOptions.pingPongPhases;
+  const auto num_stages = sessionOptions.pingPongSettings.stages;
+  const auto num_phases = sessionOptions.pingPongSettings.phases;
 
   // Tensor remote store/load inserted in the third ping-pong pass only
   StreamingMemoryOpInserter opInserter{
@@ -126,8 +124,8 @@ bool PingPong::apply(Graph &graph) const {
       // TensorType::Variable is setting a flag in tensorLocationInfo.
       TensorLocation tensorLocation =
           opInserter.determineTensorLocation(tensor);
-      tensor->tensorLocationInfo.setRemote(tensorLocation ==
-                                           TensorLocation::OffChip);
+      tensor->tensorLocationInfo.setRemote(tensorLocation.storage ==
+                                           TensorStorage::OffChip);
       logging::transform::debug("[PingPong] Set Variable {} to {}.",
                                 tensor->id,
                                 tensorLocationToStr(tensorLocation));
@@ -176,9 +174,10 @@ bool PingPong::apply(Graph &graph) const {
         "[PingPong] Recomputation & Tensor Location annotation");
     for (auto &op : graph.getOps()) {
       // Mark any random seed operators as OnChip.
-      if (op.second->settings.tensorLocation == TensorLocation::Undefined) {
+      if (op.second->settings.tensorLocation.storage ==
+          TensorStorage::Undefined) {
         if (op.second->opid == Onnx::CustomOperators::GetRandomSeed) {
-          op.second->settings.tensorLocation = TensorLocation::OnChip;
+          op.second->settings.tensorLocation.storage = TensorStorage::OnChip;
           logging::transform::trace("[PingPong] {} set to OnChip",
                                     op.second->debugName());
         }

@@ -21,8 +21,8 @@ namespace popart {
 class BuilderImpl;
 class Builder;
 class TensorInfo;
+class TensorLocation;
 enum class DataType;
-enum class TensorLocation;
 enum class RecomputeType;
 
 class DomainOpSet {
@@ -560,7 +560,7 @@ public:
   void outputTensorLocation(const TensorId &nodeOutputName,
                             TensorLocation value) {
     addNodeAttribute(
-        sPingPongPhaseAttribute, static_cast<int64_t>(value), {nodeOutputName});
+        sPingPongPhaseAttribute, value.serialize(), {nodeOutputName});
   }
 
   void recomputeOutput(const TensorId &nodeOutputName, RecomputeType value) {

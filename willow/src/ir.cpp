@@ -372,14 +372,14 @@ void Ir::verifyPipelineSettings() const {
 
 void Ir::verifyPingPongSettings() const {
   // check for mismatched settings
-  if (userOptions.pingPongPhases > 1 &&
+  if (userOptions.pingPongSettings.phases > 1 &&
       userOptions.virtualGraphMode != VirtualGraphMode::PingPong) {
     throw error("PingPong phases > 1 requires VirtualGraphMode::PingPong");
   }
 
   // if pingpong is enabled
   if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
-      userOptions.pingPongPhases > 1) {
+      userOptions.pingPongSettings.phases > 1) {
     // Currently there are no checks for when ping pong is enabled.
   } else {
     // if pingpong is disabled, make sure all ops pingpong phases are set to
@@ -854,14 +854,14 @@ void Ir::prepareImpl(const IrBundle &gb) {
 
   // First ping pong transformation pass (fwd)
   if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
-      userOptions.pingPongPhases > 1) {
+      userOptions.pingPongSettings.phases > 1) {
     applyTransform(PingPong::id(1), getMainGraph());
     verifyVirtualGraphIds(true);
   }
 
   // Batch serialisation, step 1
   // (has to occur before setNEdgesToLoss, but after setFinalLoss)
-  if (userOptions.batchSerializationFactor > 1) {
+  if (userOptions.batchSerializationSettings.factor > 1) {
     applyTransform(BatchSerialize::id(1), getMainGraph());
     updateVertices();
   }
@@ -871,7 +871,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   }
 
   if (autoRecomputationEnabled() && getMainGraph().hasUserRecomputeOps() &&
-      getSessionOptions().pingPongPhases < 2) {
+      getSessionOptions().pingPongSettings.phases < 2) {
     throw error("A mixture of auto and manual recomputaion is not supported");
   }
 
@@ -915,7 +915,8 @@ void Ir::prepareImpl(const IrBundle &gb) {
         "WARNING: Enabling explicit recomputation. This option is deprecated "
         "and will be removed in a future version. Future versions will enable "
         "this option by default.");
-    if (autoRecomputationEnabled() && getSessionOptions().pingPongPhases < 2) {
+    if (autoRecomputationEnabled() &&
+        getSessionOptions().pingPongSettings.phases < 2) {
       logging::transform::info("Auto-annotating Ops for recomputation");
       recompute::autoAnnotate(getMainGraph(),
                               getSessionOptions().autoRecomputation);
@@ -931,7 +932,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
 
   // DecomposeGradSum decomposes remaining grad sums
   if (getSessionOptions().decomposeGradSum ||
-      getSessionOptions().batchSerializationFactor > 1) {
+      getSessionOptions().batchSerializationSettings.factor > 1) {
     applyTransform(DecomposeGradSum::id(), getMainGraph());
   }
 
@@ -1039,7 +1040,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
 
   // Fourth ping pong transformation pass (cut)
   if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
-      userOptions.pingPongPhases > 1) {
+      userOptions.pingPongSettings.phases > 1) {
     // PingPong transformation 3 needs up-to-date aliasing information
     updateAliases();
 
@@ -1052,7 +1053,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   updateVertices();
 
   // Batch serialisation, step 2
-  if (userOptions.batchSerializationFactor > 1) {
+  if (userOptions.batchSerializationSettings.factor > 1) {
     applyTransform(BatchSerialize::id(2), getMainGraph());
     updateVertices();
   }
@@ -1074,7 +1075,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
     applyTransform(SubgraphOutline::id(), getMainGraph());
     updateVertices();
 
-    if (getSessionOptions().batchSerializationFactor > 1) {
+    if (getSessionOptions().batchSerializationSettings.factor > 1) {
       // Run a second outlining step.
       // This is necessary because in the first outlining pass we help the
       // outlining algorithm by inserting boundaries between
@@ -1093,7 +1094,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
 
   if (autoRecomputationEnabled() && !getSessionOptions().enablePipelining &&
       !getSessionOptions().explicitRecomputation &&
-      getSessionOptions().pingPongPhases < 2) {
+      getSessionOptions().pingPongSettings.phases < 2) {
     updateVertices();
     logging::transform::info("Auto-annotating Ops for recomputation");
     recompute::autoAnnotate(getMainGraph(),
@@ -1869,12 +1870,13 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
 
     if (gradOp->hasPingPongPhase()) {
       // Remap from forward to backward pingpong phase
-      gradOp->setPingPongPhase(2 * getSessionOptions().pingPongPhases - 2 -
-                               gradOp->getPingPongPhase());
+      gradOp->setPingPongPhase(2 * getSessionOptions().pingPongSettings.phases -
+                               2 - gradOp->getPingPongPhase());
     }
 
     if (nonGradOp->settings.recomputeType == RecomputeType::Recompute &&
-        autoRecomputationEnabled() && getSessionOptions().pingPongPhases < 2) {
+        autoRecomputationEnabled() &&
+        getSessionOptions().pingPongSettings.phases < 2) {
       throw error("Grad Ops should be grown before recompute annotation");
     }
 

@@ -26,7 +26,7 @@ def run_model(tmpdir,
               batch_size=1,
               num_iterations=1,
               num_replicas=1,
-              replicated_weight_sharding=False,
+              replicated_tensor_sharding=False,
               optimizer=popart.SGD({"defaultLearningRate": (0.5, False)})):
 
     np.random.seed(10911)
@@ -69,8 +69,7 @@ def run_model(tmpdir,
     opts.enableOutlining = enable_outlining
     opts.enableReplicatedGraphs = True if num_replicas > 1 else False
     opts.replicatedGraphCount = num_replicas
-    opts.replicatedWeightSharding = replicated_weight_sharding
-    opts.replicatedWeightShardingMinNumElements = 8
+
     if activation_tensor_location_settings is not None:
         opts.activationTensorLocationSettings = activation_tensor_location_settings
     if weight_tensor_location_settings is not None:
@@ -78,10 +77,15 @@ def run_model(tmpdir,
     if optimizer_state_tensor_location_settings is not None:
         opts.optimizerStateTensorLocationSettings = optimizer_state_tensor_location_settings
     if (enable_pingpong):
-        opts.pingPongPhases = num_layers
+        opts.pingPongSettings.phases = num_layers
         opts.autoRecomputation = popart.RecomputationType.NoRecompute
         opts.virtualGraphMode = popart.VirtualGraphMode.PingPong
         opts.explicitRecomputation = False
+
+    opts.weightTensorLocationSettings.minElementsForReplicatedTensorSharding = 8
+    opts.weightTensorLocationSettings.location.replicatedTensorSharding = replicated_tensor_sharding
+    opts.optimizerStateTensorLocationSettings.minElementsForReplicatedTensorSharding = 8
+    opts.optimizerStateTensorLocationSettings.location.replicatedTensorSharding = replicated_tensor_sharding
 
     proto = builder.getModelProto()
 
@@ -138,7 +142,7 @@ def test_weight_update(tmpdir):
 @tu.requires_ipu
 def test_onchip_memory(tmpdir):
     onchip_settings = popart.TensorLocationSettings(
-        popart.TensorLocation.OnChip, 0)
+        popart.TensorStorage.OnChip, 0)
     run_model(tmpdir, 'model_normal.onnx', enable_pingpong=False)
     run_model(tmpdir,
               'model_onchip_act.onnx',
@@ -198,7 +202,7 @@ def test_replicated_sgd0_weight_update(tmpdir):
               enable_pingpong=True,
               batch_size=1,
               num_replicas=2,
-              replicated_weight_sharding=True)
+              replicated_tensor_sharding=True)
 
     pingpong = onnx.load(str(tmpdir / 'pingpong.onnx'))
     pingpong_replicated = onnx.load(str(tmpdir / 'pingpong_replicated.onnx'))
@@ -244,7 +248,7 @@ def test_replicated_sgd1_weight_update(tmpdir):
               num_replicas=2,
               num_iterations=5,
               optimizer=popart.SGD(optimizer_dict),
-              replicated_weight_sharding=True)
+              replicated_tensor_sharding=True)
 
     pingpong = onnx.load(str(tmpdir / 'pingpong.onnx'))
     pingpong_replicated = onnx.load(str(tmpdir / 'pingpong_replicated.onnx'))
@@ -290,7 +294,7 @@ def test_replicated_adam_weight_update(tmpdir):
               num_replicas=2,
               num_iterations=5,
               optimizer=popart.Adam(optimizer_dict),
-              replicated_weight_sharding=True)
+              replicated_tensor_sharding=True)
 
     pingpong = onnx.load(str(tmpdir / 'pingpong.onnx'))
     pingpong_replicated = onnx.load(str(tmpdir / 'pingpong_replicated.onnx'))
@@ -336,7 +340,7 @@ def test_replicated_lamb_weight_update(tmpdir):
               num_replicas=2,
               num_iterations=5,
               optimizer=popart.Adam(optimizer_dict, popart.AdamMode.Lamb),
-              replicated_weight_sharding=True)
+              replicated_tensor_sharding=True)
 
     pingpong = onnx.load(str(tmpdir / 'pingpong.onnx'))
     pingpong_replicated = onnx.load(str(tmpdir / 'pingpong_replicated.onnx'))

@@ -78,8 +78,7 @@ def test_pingpong_momentum(tmpdir):
         options.virtualGraphMode = popart.VirtualGraphMode.PingPong
         options.explicitRecomputation = True
         options.aliasZeroCopy = aliaszerocopy
-        options.batchSerializationFactor = 1
-        options.pingPongPhases = 5
+        options.pingPongSettings.phases = 5
         request_ipus = 2
 
         device = tu.create_test_device(2, pattern=popart.SyncPattern.Full)

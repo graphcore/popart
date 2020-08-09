@@ -32,6 +32,31 @@ std::array<std::string, NDotChecks> getDotCheckIds() {
 
 } // namespace
 
+TensorLocationSettings::TensorLocationSettings(
+    TensorLocation location_,
+    int minElementsForOffChip_,
+    int minElementsForReplicatedTensorSharding_)
+    : location{location_}, minElementsForOffChip{minElementsForOffChip_},
+      minElementsForReplicatedTensorSharding{
+          minElementsForReplicatedTensorSharding_} {}
+
+TensorLocationSettings::TensorLocationSettings(
+    TensorStorage storage_,
+    int minElementsForOffChip_,
+    int minElementsForReplicatedTensorSharding_)
+    : location{storage_}, minElementsForOffChip{minElementsForOffChip_},
+      minElementsForReplicatedTensorSharding{
+          minElementsForReplicatedTensorSharding_} {}
+
+BatchSerializationSettings::BatchSerializationSettings(
+    int factor_,
+    bool concatOnVirtualGraphChange_,
+    bool concatOnPingPongPhaseChange_,
+    bool concatOnPipelineStageChange_)
+    : factor{factor_}, concatOnVirtualGraphChange{concatOnVirtualGraphChange_},
+      concatOnPingPongPhaseChange{concatOnPingPongPhaseChange_},
+      concatOnPipelineStageChange{concatOnPipelineStageChange_} {}
+
 std::string getDotCheckString(DotCheck d) {
   const static std::array<std::string, NDotChecks> V = getDotCheckIds();
   return V[static_cast<int>(d)];

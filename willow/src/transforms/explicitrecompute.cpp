@@ -30,7 +30,8 @@ bool ExplicitRecompute::apply(Graph &graph) const {
   auto getContext = [&ir](Op *op) -> TensorContext {
     VGraphId vgid = op->hasVirtualGraphId() ? op->getVirtualGraphId() : -1;
     PingPongPhase pingPongPhase =
-        (ir.getSessionOptions().pingPongPhases > 1 && op->hasPingPongPhase())
+        (ir.getSessionOptions().pingPongSettings.phases > 1 &&
+         op->hasPingPongPhase())
             ? op->getPingPongPhase()
             : -1;
     PipelineStage pipelineStage =
@@ -54,7 +55,7 @@ bool ExplicitRecompute::apply(Graph &graph) const {
       if (clone_op->hasPingPongPhase()) {
         // Remap from forward to backward pingpong phase
         PingPongPhase recomputePhase =
-            2 * ir.getSessionOptions().pingPongPhases - 2 -
+            2 * ir.getSessionOptions().pingPongSettings.phases - 2 -
             clone_op->getPingPongPhase();
         logging::trace(
             "[ExplicitRecompute] Remapping {} ping pong phase {} -> {}",

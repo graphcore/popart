@@ -21,14 +21,41 @@
 namespace popart {
 
 enum class RecomputeType { Undefined = 0, Checkpoint, Recompute, Recomputed };
-enum class TensorLocation {
+
+enum class TensorStorage {
   Undefined = 0,
   OnChip    = 1,
   OffChip   = 2,
-  // Deprecated.
-  Uncached = OnChip,
-  Cached   = OffChip
 };
+
+class TensorLocation {
+public:
+  TensorLocation();
+  TensorLocation(TensorStorage storage_);
+  TensorLocation(std::vector<int64_t> serialized);
+  TensorLocation(TensorStorage storage_,
+                 bool loadOnIOTiles_,
+                 bool storeOnIOTiles_,
+                 bool replicatedTensorSharding_);
+
+  TensorLocation &operator=(const TensorLocation &rhs) = default;
+  bool operator==(const TensorLocation &rhs);
+  bool operator!=(const TensorLocation &rhs);
+
+  std::vector<int64_t> serialize() const;
+
+  // Permanent tensor storage: OnChip or OffChip
+  TensorStorage storage;
+  // Load tensor through IO tiles
+  bool loadOnIOTiles;
+  // If OnChip: Store on IO tiles
+  // (relevant for replicated tensor sharded tensors)
+  bool storeOnIOTiles;
+  // Enable replicated tensor sharding
+  // (relevant for weights and optimizer states)
+  bool replicatedTensorSharding;
+};
+
 enum class ExecutionContext {
   Normal = 0,
   AccumulateOuterFragment,
@@ -102,7 +129,7 @@ public:
 
     Scope scope;
     RecomputeType recomputeType   = RecomputeType::Undefined;
-    TensorLocation tensorLocation = TensorLocation::Undefined;
+    TensorLocation tensorLocation = TensorLocation();
 
     // optional inplace priorities, to take precedence over the default
     // priorities. A negative priority gurarantees no inplacing

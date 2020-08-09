@@ -23,10 +23,16 @@ static constexpr const double initPriority          = -9996.0;
 static constexpr const double remoteLoadPriority    = -9997.0;
 static constexpr const double allGatherPriority     = -9997.0;
 static constexpr const double ipuCopyPriority       = -9998.0;
-static constexpr const double allReducePriority     = -9999.0;
-static constexpr const double varUpdatePriority     = -9999.0;
-static constexpr const double remoteStorePriority   = -9999.0;
-static constexpr const double acclStateLoadPriority = -9999.0;
+
+static constexpr const double allReducePriorityInterleave          = -9999.0;
+static constexpr const double optimizerStateLoadPriorityInterleave = -9999.0;
+static constexpr const double varUpdatePriorityInterleave          = -9999.0;
+static constexpr const double remoteStorePriorityInterleave        = -9999.0;
+
+static constexpr const double allReducePriorityBatch          = -9999.0;
+static constexpr const double optimizerStateLoadPriorityBatch = -10000.0;
+static constexpr const double varUpdatePriorityBatch          = -10001.0;
+static constexpr const double remoteStorePriorityBatch        = -10002.0;
 
 // Compress priorities so that nothing is using priorities outside the range
 // -9000 to +9000
@@ -133,7 +139,7 @@ void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
   getTensorConfig(tensor, tensorConfig);
 
   // Nothing to for this tensor if it's not remote.
-  if (tensorConfig.location == TensorLocation::OnChip) {
+  if (tensorConfig.location.storage == TensorStorage::OnChip) {
     return;
   }
 
@@ -255,8 +261,17 @@ void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
 
           for (Op *optimizerOp : optimizerOps) {
             opsToSetup.insert(optimizerOp);
-            optimizerOp->settings.schedulePriority = varUpdatePriority;
-            optimizerOp->settings.useIoTiles       = tensorConfig.useIoTiles;
+
+            if (tensorConfig.optimizerSchedule ==
+                PingPongOptimizerSchedule::Interleaving) {
+              optimizerOp->settings.schedulePriority =
+                  varUpdatePriorityInterleave;
+            } else if (tensorConfig.optimizerSchedule ==
+                       PingPongOptimizerSchedule::Batch) {
+              optimizerOp->settings.schedulePriority = varUpdatePriorityBatch;
+            }
+            optimizerOp->settings.useIoTiles =
+                tensorConfig.location.storeOnIOTiles;
 
             // If the current tensor is the weight tensor being updated,
             // update the AllReduce / ReduceScatter operation
@@ -277,12 +292,19 @@ void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
 
               if (replicatedAllReduce) {
 
-                replicatedAllReduce->settings.schedulePriority =
-                    allReducePriority;
+                if (tensorConfig.optimizerSchedule ==
+                    PingPongOptimizerSchedule::Interleaving) {
+                  replicatedAllReduce->settings.schedulePriority =
+                      allReducePriorityInterleave;
+                } else if (tensorConfig.optimizerSchedule ==
+                           PingPongOptimizerSchedule::Batch) {
+                  replicatedAllReduce->settings.schedulePriority =
+                      allReducePriorityBatch;
+                }
                 replicatedAllReduce->settings.useIoTiles =
-                    tensorConfig.useIoTiles;
+                    tensorConfig.location.storeOnIOTiles;
 
-                if (tensorConfig.replicatedWeightSharding) {
+                if (tensorConfig.location.replicatedTensorSharding) {
                   auto replicatedReduceScatterOp =
                       std::make_unique<ReplicatedReduceScatterOp>(
                           Onnx::CustomOperators::ReplicatedReduceScatter,
@@ -323,10 +345,17 @@ void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
 
                   replicatedReduceScatter->setup();
 
-                  replicatedReduceScatter->settings.schedulePriority =
-                      allReducePriority;
+                  if (tensorConfig.optimizerSchedule ==
+                      PingPongOptimizerSchedule::Interleaving) {
+                    replicatedReduceScatter->settings.schedulePriority =
+                        allReducePriorityInterleave;
+                  } else if (tensorConfig.optimizerSchedule ==
+                             PingPongOptimizerSchedule::Batch) {
+                    replicatedReduceScatter->settings.schedulePriority =
+                        allReducePriorityBatch;
+                  }
                   replicatedReduceScatter->settings.useIoTiles =
-                      tensorConfig.useIoTiles;
+                      tensorConfig.location.storeOnIOTiles;
 
                   // Tie the reduction operation to the SGD0VarUpdate to get
                   // the same schedule behaviour as if the reduction was
@@ -341,7 +370,7 @@ void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
             // Distributed L2 norm of the weight and updater tensor
             if (tensor->getTensorTypeInfo()->type() == TensorType::Variable &&
                 !tensor->isAcclTensor() &&
-                tensorConfig.replicatedWeightSharding &&
+                tensorConfig.location.replicatedTensorSharding &&
                 dynamic_cast<LambSquareOp *>(optimizerOp)) {
 
               Tensor *out =
@@ -390,6 +419,26 @@ void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
   }
 }
 
+void StreamingMemoryOpInserter::getTensorSchedule(
+    Tensor *tensor,
+    TensorConfig &tensorConfig) const {
+  auto &sessionOptions = graph.getIr().getSessionOptions();
+  if (tensor->getTensorTypeInfo()->type() == TensorType::Variable) {
+    if (tensor->isAcclTensor()) {
+      tensorConfig.ioSchedule =
+          sessionOptions.pingPongSettings.optimizerIOSchedule;
+    } else {
+      tensorConfig.ioSchedule =
+          sessionOptions.pingPongSettings.weightIOSchedule;
+    }
+  } else {
+    tensorConfig.ioSchedule =
+        sessionOptions.pingPongSettings.activationIOSchedule;
+  }
+  tensorConfig.optimizerSchedule =
+      sessionOptions.pingPongSettings.optimizerSchedule;
+}
+
 void StreamingMemoryOpInserter::getTensorConfig(
     Tensor *tensor,
     TensorConfig &tensorConfig) const {
@@ -405,23 +454,12 @@ void StreamingMemoryOpInserter::getTensorConfig(
       tensor, producerOp, tensorConfig.consumerOps, tensorConfig.phaseConfig);
   getTensorSettings(
       tensor, producerOp, tensorConfig.consumerOps, tensorConfig.settings);
+  getTensorSchedule(tensor, tensorConfig);
 
-  auto &sessionOptions    = graph.getIr().getSessionOptions();
-  tensorConfig.useIoTiles = sessionOptions.replicatedWeightSharding &&
-                            tensor->tensorType() == TensorType::Variable &&
-                            sessionOptions.numIOTiles > 0;
-
-  if (sessionOptions.replicatedWeightSharding &&
-      tensor->info.nelms() >
-          sessionOptions.replicatedWeightShardingMinNumElements &&
-      tensor->tensorType() == TensorType::Variable) {
-    // Only apply weight sharding in some circumstances.
-    tensorConfig.replicatedWeightSharding = true;
+  if (tensorConfig.location.replicatedTensorSharding) {
     tensor->tensorLocationInfo.setSharded(true);
     logging::transform::debug(
         "[PingPong] Enabling replica-sharded loading of tensor {}", tensor->id);
-  } else {
-    tensorConfig.replicatedWeightSharding = false;
   }
 }
 
@@ -442,7 +480,10 @@ void StreamingMemoryOpInserter::getOrderedConsumerOps(Tensor *tensor,
 void StreamingMemoryOpInserter::getTensorLocation(
     Tensor *tensor,
     TensorLocation &location) const {
-  location = determineTensorLocation(tensor);
+  location             = determineTensorLocation(tensor);
+  auto &sessionOptions = graph.getIr().getSessionOptions();
+  location.loadOnIOTiles &= sessionOptions.numIOTiles > 0;
+  location.storeOnIOTiles &= sessionOptions.numIOTiles > 0;
 }
 
 void StreamingMemoryOpInserter::getTensorPhaseConfig(
@@ -499,16 +540,14 @@ void StreamingMemoryOpInserter::getTensorPhaseConfig(
 
     auto consumerPingPongPhase = *consumerOp->getOptionalPingPongPhase();
 
-    if (phaseConfig.livePhases.find(consumerPingPongPhase - num_stages) !=
+    if (phaseConfig.livePhases.find(consumerPingPongPhase - 2) !=
         phaseConfig.livePhases.end()) {
       // Live in adjacent previous phase, do not load in current phase
       phaseConfig.loadStoreInPhase[consumerPingPongPhase].first = false;
-      if (phaseConfig.loadStoreInPhase[consumerPingPongPhase - num_stages]
-              .second) {
+      if (phaseConfig.loadStoreInPhase[consumerPingPongPhase - 2].second) {
         // Move store from adjacent previous phase to current phase
-        phaseConfig.loadStoreInPhase[consumerPingPongPhase].second = true;
-        phaseConfig.loadStoreInPhase[consumerPingPongPhase - num_stages]
-            .second = false;
+        phaseConfig.loadStoreInPhase[consumerPingPongPhase].second     = true;
+        phaseConfig.loadStoreInPhase[consumerPingPongPhase - 2].second = false;
       }
     } else if (phaseConfig.producerPingPongPhase &&
                phaseConfig.producerPingPongPhase == consumerPingPongPhase) {
@@ -532,8 +571,7 @@ void StreamingMemoryOpInserter::getTensorPhaseConfig(
         // Storing in this phase
         phaseConfig.loadStoreInPhase[consumerPingPongPhase].second = true;
         // Not storing in previous phase
-        phaseConfig.loadStoreInPhase[consumerPingPongPhase - num_stages]
-            .second = false;
+        phaseConfig.loadStoreInPhase[consumerPingPongPhase - 2].second = false;
       }
     }
     phaseConfig.livePhases.insert(consumerPingPongPhase);
@@ -557,8 +595,8 @@ void StreamingMemoryOpInserter::getTensorSettings(
     settings.batchSerializedPhase.reset();
   }
   settings.name.clear();
-  settings.recomputeType  = RecomputeType::Checkpoint;
-  settings.tensorLocation = TensorLocation::Undefined;
+  settings.recomputeType          = RecomputeType::Checkpoint;
+  settings.tensorLocation.storage = TensorStorage::Undefined;
 }
 
 void StreamingMemoryOpInserter::getModifiersInPhase(
@@ -629,12 +667,22 @@ StreamingMemoryOpInserter::insertRemoteLoadOp(
         Onnx::CustomOperators::RemoteLoad, tensorConfig.settings);
     remoteLoad = remoteLoadOp.get();
 
-    if (tensorConfig.tensor->isAcclTensor()) {
-      // Optimizer state: Load as late as possible
-      remoteLoad->settings.schedulePriority = acclStateLoadPriority;
+    if (tensorConfig.ioSchedule == PingPongIOSchedule::OnDemand) {
       // RemoteLoad in current phase
       remoteLoad->setPingPongPhase(currentPingPongPhase);
-    } else {
+      if (tensorConfig.tensor->isAcclTensor()) {
+        // Optimizer state: Load as late as possible
+        if (tensorConfig.optimizerSchedule ==
+            PingPongOptimizerSchedule::Interleaving) {
+          remoteLoad->settings.schedulePriority =
+              optimizerStateLoadPriorityInterleave;
+        } else if (tensorConfig.optimizerSchedule ==
+                   PingPongOptimizerSchedule::Batch) {
+          remoteLoad->settings.schedulePriority =
+              optimizerStateLoadPriorityBatch;
+        }
+      }
+    } else if (tensorConfig.ioSchedule == PingPongIOSchedule::Preload) {
       // Very low schedulePriority on loads (at the end of the previous
       // phase)
       remoteLoad->settings.schedulePriority = remoteLoadPriority;
@@ -665,7 +713,7 @@ StreamingMemoryOpInserter::insertRemoteLoadOp(
     } else {
       TensorInfo initInfo = tensorConfig.tensor->info;
 
-      if (tensorConfig.replicatedWeightSharding) {
+      if (tensorConfig.location.replicatedTensorSharding) {
         initInfo.set(initInfo.dataType(),
                      {(initInfo.nelms() - 1) / replicationFactor + 1});
       }
@@ -679,7 +727,15 @@ StreamingMemoryOpInserter::insertRemoteLoadOp(
       Op *init    = initOp.get();
 
       if (tensorConfig.tensor->isAcclTensor()) {
-        init->settings.schedulePriority = acclStateLoadPriority;
+        if (tensorConfig.optimizerSchedule ==
+            PingPongOptimizerSchedule::Interleaving) {
+          remoteLoad->settings.schedulePriority =
+              optimizerStateLoadPriorityInterleave;
+        } else if (tensorConfig.optimizerSchedule ==
+                   PingPongOptimizerSchedule::Batch) {
+          remoteLoad->settings.schedulePriority =
+              optimizerStateLoadPriorityBatch;
+        }
         init->setPingPongPhase(currentPingPongPhase);
       } else {
         init->settings.schedulePriority = initPriority;
@@ -693,7 +749,7 @@ StreamingMemoryOpInserter::insertRemoteLoadOp(
       inTensorId = initTensorId;
 
       // Do Init on IO tiles
-      init->settings.useIoTiles = tensorConfig.useIoTiles;
+      init->settings.useIoTiles = tensorConfig.location.loadOnIOTiles;
     }
     // RemoteLoad always needs both an input and an output,
     // for outlining and aliasing purposes
@@ -708,9 +764,9 @@ StreamingMemoryOpInserter::insertRemoteLoadOp(
     remoteLoad->setup();
 
     // Do RemoteLoad on IO tiles
-    remoteLoad->settings.useIoTiles = tensorConfig.useIoTiles;
+    remoteLoad->settings.useIoTiles = tensorConfig.location.loadOnIOTiles;
 
-    if (tensorConfig.replicatedWeightSharding &&
+    if (tensorConfig.location.replicatedTensorSharding &&
         !tensorConfig.tensor->isAcclTensor()) {
       // Execute replicated allgather to collect the full weight
       // tensor from the individual replicas
@@ -759,7 +815,8 @@ StreamingMemoryOpInserter::insertRemoteLoadOp(
           {"gatheredSize", gatheredShapeString});
 
       // Do AllGather on IO tiles
-      replicatedAllGather->settings.useIoTiles = tensorConfig.useIoTiles;
+      replicatedAllGather->settings.useIoTiles =
+          tensorConfig.location.loadOnIOTiles;
 
     } else {
       // Gathered and loaded tensor are the same
@@ -798,10 +855,21 @@ RemoteStoreOp *StreamingMemoryOpInserter::insertRemoteStoreOp(
     auto remoteStoreOp = std::make_unique<RemoteStoreOp>(
         Onnx::CustomOperators::RemoteStore, tensorConfig.settings);
     remoteStore = remoteStoreOp.get();
-    // Very low schedulePriority on stores (at the end of a phase)
-    remoteStore->settings.schedulePriority = remoteStorePriority;
-    remoteStore->settings.recomputeType    = RecomputeType::Checkpoint;
+
     remoteStore->setPingPongPhase(currentPingPongPhase);
+    if (tensorConfig.ioSchedule == PingPongIOSchedule::Preload ||
+        (tensorConfig.ioSchedule == PingPongIOSchedule::OnDemand &&
+         tensorConfig.tensor->isAcclTensor())) {
+      // Very low schedulePriority on stores (at the end of a phase)
+      if (tensorConfig.optimizerSchedule ==
+          PingPongOptimizerSchedule::Interleaving) {
+        remoteStore->settings.schedulePriority = remoteStorePriorityInterleave;
+      } else {
+        remoteStore->settings.schedulePriority = remoteStorePriorityBatch;
+      }
+    }
+
+    remoteStore->settings.recomputeType = RecomputeType::Checkpoint;
     remoteStore->setVirtualGraphId(tensorConfig.phaseConfig.loadStoreVGID);
     graph.moveIntoGraph(std::move(remoteStoreOp));
 
@@ -812,7 +880,7 @@ RemoteStoreOp *StreamingMemoryOpInserter::insertRemoteStoreOp(
     remoteStore->setup();
 
     // Do allgather on IO tiles
-    remoteStore->settings.useIoTiles = tensorConfig.useIoTiles;
+    remoteStore->settings.useIoTiles = tensorConfig.location.loadOnIOTiles;
 
     tensorStoreMap.emplace(
         std::pair<TensorId, int64_t>(tensorConfig.tensor->id,
@@ -852,9 +920,9 @@ void StreamingMemoryOpInserter::sanitizeOps() const {
       }
     }
     // OnChip random seed operator if not set by the user
-    if (op->settings.tensorLocation == TensorLocation::Undefined) {
+    if (op->settings.tensorLocation.storage == TensorStorage::Undefined) {
       if (op->opid == Onnx::CustomOperators::GetRandomSeed) {
-        op->settings.tensorLocation = TensorLocation::OnChip;
+        op->settings.tensorLocation.storage = TensorStorage::OnChip;
         logging::transform::trace("[PingPong] {} set to OnChip",
                                   op->debugName());
       }
@@ -888,7 +956,7 @@ StreamingMemoryOpInserter::determineTensorLocation(Tensor *tensor) const {
       type == TensorType::Variable && tensor->isAcclTensor();
 
   // Result variable.
-  TensorLocation result = TensorLocation::Undefined;
+  TensorLocation result = TensorLocation();
   const char *logReason = "";
 
   const auto overrideIt =
@@ -910,11 +978,11 @@ StreamingMemoryOpInserter::determineTensorLocation(Tensor *tensor) const {
     // If we don't have an entry for the tensor in
     // tensorLocationSettingsOverride then check to see if the operator that
     // produces this tensor (if known) was created with an
-    // 'outputTensorLocation' attribute. If so, ue that. If not, see if the
+    // 'outputTensorLocation' attribute. If so, use that. If not, see if the
     // tensor's type has associated tensor location settings and use that. If
     // all else fails, offload.
 
-    if (result == TensorLocation::Undefined && producerOp) {
+    if (result.storage == TensorStorage::Undefined && producerOp) {
 
       // If a producing operator is known and it is set to have a tensor
       // location (and is not set to recompute), use that.
@@ -932,7 +1000,7 @@ StreamingMemoryOpInserter::determineTensorLocation(Tensor *tensor) const {
       }
     }
 
-    if (result == TensorLocation::Undefined) {
+    if (result.storage == TensorStorage::Undefined) {
 
       // If we still don't have a tensor location setting and the tensor belongs
       // to a group we have tensor location settings for, use those tensor
@@ -940,35 +1008,31 @@ StreamingMemoryOpInserter::determineTensorLocation(Tensor *tensor) const {
 
       if (isActivation &&
           isValidTensorLocation(
-              sessionOptions.activationTensorLocationSettings.tensorLocation)) {
+              sessionOptions.activationTensorLocationSettings.location)) {
         // Use activation tensor location settings.
-        result = sessionOptions.activationTensorLocationSettings.tensorLocation;
+        result = sessionOptions.activationTensorLocationSettings.location;
         logReason =
-            "activationTensorLocationSettings.tensorLocation in SessionOptions";
+            "activationTensorLocationSettings.location in SessionOptions";
       }
 
       if (isWeight &&
           isValidTensorLocation(
-              sessionOptions.weightTensorLocationSettings.tensorLocation)) {
+              sessionOptions.weightTensorLocationSettings.location)) {
         // Use weight tensor location settings.
-        result = sessionOptions.weightTensorLocationSettings.tensorLocation;
-        logReason =
-            "weightTensorLocationSettings.tensorLocation in SessionOptions";
+        result    = sessionOptions.weightTensorLocationSettings.location;
+        logReason = "weightTensorLocationSettings.location in SessionOptions";
       }
 
       if (isOptimizerState &&
           isValidTensorLocation(
-              sessionOptions.optimizerStateTensorLocationSettings
-                  .tensorLocation)) {
+              sessionOptions.optimizerStateTensorLocationSettings.location)) {
         // Use optimizer state tensor location settings.
-        result =
-            sessionOptions.optimizerStateTensorLocationSettings.tensorLocation;
-        logReason =
-            "weightTensorLocationSettings.tensorLocation in SessionOptions";
+        result = sessionOptions.optimizerStateTensorLocationSettings.location;
+        logReason = "weightTensorLocationSettings.location in SessionOptions";
       }
     }
 
-    if (result == TensorLocation::OffChip) {
+    if (result.storage == TensorStorage::OffChip) {
 
       // If we are planning to offload the tensor to off-chip memory but the
       // tensor belongs to a group of tensors for which we have a tensor
@@ -978,7 +1042,7 @@ StreamingMemoryOpInserter::determineTensorLocation(Tensor *tensor) const {
       if (isActivation &&
           tooSmallForOffChip(sessionOptions.activationTensorLocationSettings,
                              tensor)) {
-        result    = TensorLocation::OnChip;
+        result    = TensorStorage::OnChip;
         logReason = "activationTensorLocationSettings.minElementsForOffChip in "
                     "SessionOptions";
       }
@@ -986,7 +1050,7 @@ StreamingMemoryOpInserter::determineTensorLocation(Tensor *tensor) const {
       if (isWeight &&
           tooSmallForOffChip(sessionOptions.weightTensorLocationSettings,
                              tensor)) {
-        result    = TensorLocation::OnChip;
+        result    = TensorStorage::OnChip;
         logReason = "weightTensorLocationSettings.minElementsForOffChip in "
                     "SessionOptions";
       }
@@ -994,35 +1058,53 @@ StreamingMemoryOpInserter::determineTensorLocation(Tensor *tensor) const {
       if (isOptimizerState &&
           tooSmallForOffChip(
               sessionOptions.optimizerStateTensorLocationSettings, tensor)) {
-        result = TensorLocation::OnChip;
+        result = TensorStorage::OnChip;
         logReason =
             "optimizerStateTensorLocationSettings.minElementsForOffChip in "
             "SessionOptions";
       }
     }
 
-    if (result != TensorLocation::OnChip && tensor->isOptimizerTensor()) {
-
-      // Don't offload optimizer tensors to off-chip memory.
-      result    = TensorLocation::OnChip;
-      logReason = "it being an optimizer tensor";
+    if (result.replicatedTensorSharding) {
+      if (isActivation) {
+        result.replicatedTensorSharding = false;
+      }
+      if (isWeight &&
+          tooSmallForReplicatedTensorSharding(
+              sessionOptions.weightTensorLocationSettings, tensor)) {
+        result.replicatedTensorSharding = false;
+      }
+      if (isOptimizerState &&
+          tooSmallForReplicatedTensorSharding(
+              sessionOptions.optimizerStateTensorLocationSettings, tensor)) {
+        result.replicatedTensorSharding = false;
+      }
     }
 
-    if (result != TensorLocation::OnChip && isConstOrCopyOfConst(tensor)) {
+    if (result.storage != TensorStorage::OnChip &&
+        tensor->isOptimizerTensor()) {
+
+      // Don't offload optimizer tensors to off-chip memory.
+      result.storage = TensorStorage::OnChip;
+      logReason      = "it being an optimizer tensor";
+    }
+
+    if (result.storage != TensorStorage::OnChip &&
+        isConstOrCopyOfConst(tensor)) {
 
       // Don't offload constant (or copy of constant) tensors to off-chip
       // memory.
-      result    = TensorLocation::OnChip;
-      logReason = "it being an constant or copy-of-constant tensor";
+      result.storage = TensorStorage::OnChip;
+      logReason      = "it being an constant or copy-of-constant tensor";
     }
   }
 
   // Finally, it's possible at this point nothing has set the result
-  // yet, in which case we default to TensorLocation::OffChip.
+  // yet, in which case we default to TensorStorage::OnChip.
 
-  if (result == TensorLocation::Undefined) {
-    result    = TensorLocation::OnChip;
-    logReason = "absence of tensor location settings";
+  if (result.storage == TensorStorage::Undefined) {
+    result.storage = TensorStorage::OnChip;
+    logReason      = "absence of tensor location settings";
   }
 
   // Log the result.
@@ -1188,6 +1270,13 @@ bool StreamingMemoryOpInserter::tooSmallForOffChip(
     const TensorLocationSettings &tensorLocationSettings,
     Tensor *tensor) {
   return (tensor->info.nelms() < tensorLocationSettings.minElementsForOffChip);
+}
+
+bool StreamingMemoryOpInserter::tooSmallForReplicatedTensorSharding(
+    const TensorLocationSettings &tensorLocationSettings,
+    Tensor *tensor) {
+  return (tensor->info.nelms() <
+          tensorLocationSettings.minElementsForReplicatedTensorSharding);
 }
 
 } // namespace popart

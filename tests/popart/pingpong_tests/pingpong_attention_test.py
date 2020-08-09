@@ -103,18 +103,20 @@ def test_attention_pingpong(tmpdir):
             anchors[popart.reservedGradientPrefix() +
                     qkv] = popart.AnchorReturnType("All")
 
-            vgid = (i % 2) if options['pingPong'] else i
+            vgid = (i % options['stages']) if options['pingPong'] else i
 
-            with builder.virtualGraph(vgid), builder.pingPongPhase(i):
+            with builder.virtualGraph(vgid), builder.pingPongPhase(
+                    i * int(2 / options['stages'])):
                 x = builder.aiOnnx.matmul([x, qkv])
                 x = attention_onnx(builder, x, mask, batch_size,
                                    sequence_length, hidden_size,
                                    attention_heads, qkv_length)
 
-        vgid = ((options['numLayers'] - 1) %
-                2) if options['pingPong'] else options['numLayers'] - 1
+        vgid = ((options['numLayers'] - 1) % options['stages']
+                ) if options['pingPong'] else options['numLayers'] - 1
 
-        with builder.virtualGraph(vgid):
+        with builder.virtualGraph(vgid), builder.pingPongPhase(
+            (options['numLayers'] - 1) * int(2 / options['stages'])):
             l1 = builder.aiGraphcore.l1loss([x], 0.1)
 
         proto = builder.getModelProto()
@@ -124,7 +126,9 @@ def test_attention_pingpong(tmpdir):
         dataFlow = popart.DataFlow(batches_per_step, anchors)
 
         opts = popart.SessionOptions()
-        opts.pingPongPhases = options['numLayers'] if options["pingPong"] else 0
+        opts.pingPongSettings.stages = options['stages']
+        opts.pingPongSettings.phases = options['numLayers'] * int(
+            2 / options['stages']) if options["pingPong"] else 0
         opts.enableOutlining = options["outlining"]
 
         # PingPong currently does its own recompute annotations
@@ -139,11 +143,12 @@ def test_attention_pingpong(tmpdir):
                                  popart.VirtualGraphMode.Manual)
         opts.explicitRecomputation = options["explicitRecomputation"]
         opts.aliasZeroCopy = options["aliasZeroCopy"]
-        opts.batchSerializationFactor = options["batchSerialize"]
+        opts.batchSerializationSettings.factor = options["batchSerialize"]
 
         pat = popart.Patterns(popart.PatternsLevel.Default)
 
-        device = tu.create_test_device(2 if options["pingPong"] else 4,
+        device = tu.create_test_device(options['stages'] if options["pingPong"]
+                                       else options['numLayers'] + 1,
                                        pattern=popart.SyncPattern.Full)
 
         session = popart.TrainingSession(fnModel=proto,
@@ -181,6 +186,7 @@ def test_attention_pingpong(tmpdir):
 
     # Ground truth variant
     test_variants.append({
+        "stages": 2,
         "numLayers": 3,
         "pingPong": False,
         "outlining": False,
@@ -190,6 +196,7 @@ def test_attention_pingpong(tmpdir):
     })
 
     test_variants.append({
+        "stages": 2,
         "numLayers": 3,
         "pingPong": False,
         "outlining": False,
@@ -199,6 +206,7 @@ def test_attention_pingpong(tmpdir):
     })
 
     test_variants.append({
+        "stages": 2,
         "numLayers": 3,
         "pingPong": True,
         "outlining": False,
@@ -208,6 +216,7 @@ def test_attention_pingpong(tmpdir):
     })
 
     test_variants.append({
+        "stages": 2,
         "numLayers": 3,
         "pingPong": True,
         "outlining": True,
@@ -217,6 +226,7 @@ def test_attention_pingpong(tmpdir):
     })
 
     test_variants.append({
+        "stages": 2,
         "numLayers": 3,
         "pingPong": True,
         "outlining": True,
@@ -226,12 +236,23 @@ def test_attention_pingpong(tmpdir):
     })
 
     test_variants.append({
+        "stages": 2,
         "numLayers": 3,
         "pingPong": True,
         "outlining": True,
         "explicitRecomputation": True,
         "aliasZeroCopy": True,
         "batchSerialize": 1
+    })
+
+    test_variants.append({
+        "stages": 1,
+        "numLayers": 3,
+        "pingPong": True,
+        "outlining": True,
+        "explicitRecomputation": True,
+        "aliasZeroCopy": True,
+        "batchSerialize": 3
     })
 
     index = 0

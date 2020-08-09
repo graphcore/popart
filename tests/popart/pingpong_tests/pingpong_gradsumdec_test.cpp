@@ -83,10 +83,10 @@ BOOST_AUTO_TEST_CASE(TestDecomposeAcrossPingPongPhases) {
     // Enable feature-under-test
     runner.opts.decomposeGradSum = true;
     // Use every second pingpong phase only (maps to one IPU)
-    runner.opts.pingPongPhases   = numLayers * 2 - 1;
-    runner.opts.virtualGraphMode = VirtualGraphMode::PingPong;
-    runner.patterns              = Patterns(PatternsLevel::Default);
-    runner.loss                  = l1;
+    runner.opts.pingPongSettings.phases = numLayers * 2 - 1;
+    runner.opts.virtualGraphMode        = VirtualGraphMode::PingPong;
+    runner.patterns                     = Patterns(PatternsLevel::Default);
+    runner.loss                         = l1;
 
     return sum;
   });

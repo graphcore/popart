@@ -45,6 +45,42 @@ view::RegMap defaultRegMapImpl(const Op &op,
 
 namespace popart {
 
+TensorLocation::TensorLocation()
+    : storage(TensorStorage::Undefined), loadOnIOTiles(false),
+      storeOnIOTiles(false), replicatedTensorSharding(false) {}
+
+TensorLocation::TensorLocation(TensorStorage storage_)
+    : storage(storage_), loadOnIOTiles(false), storeOnIOTiles(false),
+      replicatedTensorSharding(false) {}
+
+TensorLocation::TensorLocation(std::vector<int64_t> serialized)
+    : storage(static_cast<TensorStorage>(serialized[0])),
+      loadOnIOTiles(serialized[1]), storeOnIOTiles(serialized[2]),
+      replicatedTensorSharding(serialized[3]) {}
+
+TensorLocation::TensorLocation(TensorStorage storage_,
+                               bool loadOnIOTiles_,
+                               bool storeOnIOTiles_,
+                               bool replicatedTensorSharding_)
+    : storage(storage_), loadOnIOTiles(loadOnIOTiles_),
+      storeOnIOTiles(storeOnIOTiles_),
+      replicatedTensorSharding(replicatedTensorSharding_) {}
+
+bool TensorLocation::operator==(const TensorLocation &rhs) {
+  return serialize() == rhs.serialize();
+}
+
+bool TensorLocation::operator!=(const TensorLocation &rhs) {
+  return serialize() != rhs.serialize();
+}
+
+std::vector<int64_t> TensorLocation::serialize() const {
+  return {static_cast<int64_t>(storage),
+          static_cast<int64_t>(loadOnIOTiles),
+          static_cast<int64_t>(storeOnIOTiles),
+          static_cast<int64_t>(replicatedTensorSharding)};
+}
+
 GradInOutMapper::GradInOutMapper(int iG, int iNG, GradOpInType t)
     : iGrad(iG), iNonGrad(iNG), type(t) {}
 
@@ -433,23 +469,23 @@ std::ostream &operator<<(std::ostream &ost, const RecomputeType &rt) {
 
 const char *tensorLocationToStr(const TensorLocation tensorLocation) {
   const char *result = "";
-  switch (tensorLocation) {
-  case TensorLocation::Undefined: {
+  switch (tensorLocation.storage) {
+  case TensorStorage::Undefined: {
     result = "Undefined";
     break;
   }
-  case TensorLocation::OffChip: {
+  case TensorStorage::OffChip: {
     result = "OffChip";
     break;
   }
-  case TensorLocation::OnChip: {
+  case TensorStorage::OnChip: {
     result = "OnChip";
     break;
   }
   default: {
     throw error("Unexpected value for tensorLocation in "
                 "tensorLocationToStr ({})",
-                static_cast<int>(tensorLocation));
+                static_cast<int>(tensorLocation.storage));
   }
   }
 
@@ -457,8 +493,8 @@ const char *tensorLocationToStr(const TensorLocation tensorLocation) {
 }
 
 bool isValidTensorLocation(const TensorLocation tensorLocation) {
-  return (tensorLocation == TensorLocation::OffChip) ||
-         (tensorLocation == TensorLocation::OnChip);
+  return (tensorLocation.storage == TensorStorage::OffChip) ||
+         (tensorLocation.storage == TensorStorage::OnChip);
 }
 
 void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {
@@ -490,9 +526,9 @@ void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {
   }
 
   if (attributes.hasAttribute(sOutputTensorLocationAttribute)) {
-    int64_t tensorLocationTmp;
+    std::vector<int64_t> tensorLocationTmp;
     attributes.set(tensorLocationTmp, sOutputTensorLocationAttribute);
-    tensorLocation = static_cast<TensorLocation>(tensorLocationTmp);
+    tensorLocation = TensorLocation(tensorLocationTmp);
   }
 
   if (attributes.hasAttribute(sSchedulePriority)) {
@@ -787,7 +823,7 @@ void Op::inheritPlacementAttributes(bool inheritSerializations) {
   }
 
   bool pipeline = ir.getSessionOptions().enablePipelining;
-  bool pingpong = ir.getSessionOptions().pingPongPhases > 1;
+  bool pingpong = ir.getSessionOptions().pingPongSettings.phases > 1;
   bool vgraphs =
       ir.getSessionOptions().virtualGraphMode != VirtualGraphMode::Off;
 

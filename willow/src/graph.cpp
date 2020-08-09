@@ -786,7 +786,7 @@ std::vector<Op *> BackwardPassCreator::growGradOps(Op *nonGradOp) {
 
     if (nonGradOp->settings.recomputeType == RecomputeType::Recompute &&
         bwdGraph.getIr().autoRecomputationEnabled() &&
-        bwdGraph.getIr().getSessionOptions().pingPongPhases < 2) {
+        bwdGraph.getIr().getSessionOptions().pingPongSettings.phases < 2) {
       throw error("Grad Ops should be grown before recompute annotation");
     }
 

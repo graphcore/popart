@@ -49,7 +49,8 @@ InputCreatorType AddOpx::getInputCreatorType(InIndex index) const {
   // inefficient sub graph copying. Investigate why, then remove the below logic
   // once fixed.
   if (!(op_p->getIr().getSessionOptions().decomposeGradSum ||
-        op_p->getIr().getSessionOptions().batchSerializationFactor > 0)) {
+        op_p->getIr().getSessionOptions().batchSerializationSettings.factor >
+            0)) {
     return InputCreatorType::Deadend;
   }
 
