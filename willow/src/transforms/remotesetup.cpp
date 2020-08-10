@@ -202,9 +202,20 @@ bool RemoteSetup::apply(Graph &graph) const {
     Tensor *tensor = graph.getTensors().get(tensor_id);
     if (tensor->tensorLocationInfo.isRemote()) {
       auto arg_tensor_id = getRemoteArgTensorId(tensor_id);
-      tensor->tensorLocationInfo.setRemoteBufferInfo(
-          argBufferMap[arg_tensor_id].first,
-          argBufferMap[arg_tensor_id].second);
+      auto info          = argBufferMap.find(arg_tensor_id);
+      if (info != argBufferMap.end()) {
+        tensor->tensorLocationInfo.setRemoteBufferInfo(info->second.first,
+                                                       info->second.second);
+        logging::transform::trace("Setting Tensor location info {} -> {}@{}",
+                                  tensor_id,
+                                  info->second.first,
+                                  info->second.second);
+      } else {
+        // If the Tensor did not have an argBuffer value it must not have been a
+        // required remote tensor for the graph. Remove it's protected "remote"
+        // status so it can be pruned by ir::removeIsolated later.
+        tensor->tensorLocationInfo.setRemote(false);
+      }
     }
   }
 

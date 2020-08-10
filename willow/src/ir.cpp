@@ -1135,6 +1135,8 @@ void Ir::prepareImpl(const IrBundle &gb) {
 
   applyTransform(RemoteSetup::id(), getMainGraph());
 
+  removeIsolatedTensors(true);
+
   // confirm that all the anchor names provided
   // are indeed real tensor names. This is a check
   // that the user has not provided incorrect names.
