@@ -415,6 +415,10 @@ DataType dataTypeFromString(const std::string &s) {
   return found->second;
 }
 
+int64_t getONNXDataTypeAsInt(const DataType dtype) {
+  return static_cast<int64_t>(onnxutil::getTPDataType(dtype));
+}
+
 // expects shape to be "(1 2 400 3)" or "(5)", so no spaces allowed.
 Shape TensorInfo::shapeFromString(const std::string &s) const {
   if (s.size() < 2 || s[0] != '(' || s[s.size() - 1] != ')') {

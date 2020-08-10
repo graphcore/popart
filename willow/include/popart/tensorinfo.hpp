@@ -160,6 +160,8 @@ std::string initAllONNXTypesString();
 
 DataType dataTypeFromString(const std::string &s);
 
+int64_t getONNXDataTypeAsInt(const DataType dtype);
+
 class TensorInfo {
 public:
   TensorInfo(DataType, const Shape &);
