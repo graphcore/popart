@@ -92,7 +92,7 @@ def test_enabled_recomputation():
                                       dataFlow=popart.DataFlow(10, anchor_map),
                                       userOptions=opts,
                                       deviceInfo=tu.create_test_device(
-                                          numIpus=2, tilesPerIpu=20))
+                                          numIpus=2, tilesPerIPU=20))
 
 
 def test_stream_tensors_to_multiple_ipus():
@@ -120,7 +120,7 @@ def test_stream_tensors_to_multiple_ipus():
                                       dataFlow=popart.DataFlow(10, anchor_map),
                                       userOptions=opts,
                                       deviceInfo=tu.create_test_device(
-                                          numIpus=2, tilesPerIpu=20))
+                                          numIpus=2, tilesPerIPU=20))
 
 
 def test_sharding_multi_source():
@@ -156,7 +156,7 @@ def test_sharding_multi_source():
                                       dataFlow=popart.DataFlow(10, [op2_out]),
                                       userOptions=opts,
                                       deviceInfo=tu.create_test_device(
-                                          numIpus=3, tilesPerIpu=20))
+                                          numIpus=3, tilesPerIPU=20))
 
 
 def test_inference_min_batches():
@@ -635,13 +635,13 @@ def get_model_anchors(doSharding,
             loss=nll,
             optimizer=popart.ConstSGD(0.01),
             userOptions=opts,
-            deviceInfo=tu.create_test_device(numIpus=numIPUs, tilesPerIpu=20))
+            deviceInfo=tu.create_test_device(numIpus=numIPUs, tilesPerIPU=20))
     else:
         session = popart.InferenceSession(
             fnModel=builder.getModelProto(),
             dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
             userOptions=opts,
-            deviceInfo=tu.create_test_device(numIpus=numIPUs, tilesPerIpu=20))
+            deviceInfo=tu.create_test_device(numIpus=numIPUs, tilesPerIPU=20))
 
     if doDevicex is False:
         return None

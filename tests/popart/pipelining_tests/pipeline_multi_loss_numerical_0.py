@@ -118,7 +118,7 @@ def run_test_multi_loss_pipeline(same_vgraph=True):
 
     def getWeights(withPipelining):
 
-        device = tu.create_test_device(numIpus=nIPUs, tilesPerIpu=1216)
+        device = tu.create_test_device(numIpus=nIPUs, tilesPerIPU=1216)
         userOptions = popart.SessionOptions()
         userOptions.enableOutlining = False
         userOptions.enablePipelining = withPipelining

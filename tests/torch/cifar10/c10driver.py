@@ -152,12 +152,12 @@ def _run_impl(torchWriter, patterns, outputdir, cifarInIndices, device,
     # Create an IPU Model device
     elif device == "ipu_model":
 
-        options = {"compileIPUCode": True, 'numIPUs': 1}
+        options = {"compileIPUCode": True, 'numIPUs': 1, 'tilesPerIPU': 4}
         device = deviceManager.createIpuModelDevice(options)
 
     # Create an Simulator
     elif device == "sim":
-        options = {"numIpus": 1, "tilesPerIpu": 1216}
+        options = {"numIpus": 1, "tilesPerIPU": 4}
         device = deviceManager.createSimDevice(options)
 
     # Get a Hardware Device

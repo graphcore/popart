@@ -25,23 +25,29 @@ def filter_dict(dict_to_filter, fun):
 
 
 def create_test_device(numIpus: int = 1,
-                       tilesPerIpu: int = 0,
+                       tilesPerIPU: int = 0,
                        opts: Dict = None,
                        pattern: popart.SyncPattern = popart.SyncPattern.Full,
                        connectionType: popart.DeviceConnectionType = popart.
                        DeviceConnectionType.Always):
     testDeviceType = os.environ.get("TEST_TARGET")
 
+    if opts:
+        if tilesPerIPU != 0 and "tilesPerIPU" in opts.keys():
+            raise RuntimeError("Cannot set tilesPerIPU in 2 ways")
+
     # NOTE: This function isn't symmetric with willow/include/popart/testdevice.hpp because it doesn't
     # pass on the number of tiles for simulated devices (perhaps it should).
-    if tilesPerIpu == 0 and testDeviceType == "IpuModel":
+    if tilesPerIPU == 0 and (testDeviceType == "IpuModel"
+                             or testDeviceType == "Sim"):
         # We need a number of tiles for these device types.
-        tilesPerIpu = 1216
+        tilesPerIPU = 4
 
     if opts is None:
         opts = {}
+
     opts["numIPUs"] = numIpus
-    opts["tilesPerIPU"] = tilesPerIpu
+    opts["tilesPerIPU"] = tilesPerIPU
 
     if testDeviceType is None:
         testDeviceType = "Cpu"
@@ -52,7 +58,7 @@ def create_test_device(numIpus: int = 1,
     elif testDeviceType == "Hw":
         device = popart.DeviceManager().acquireAvailableDevice(
             numIpus=numIpus,
-            tilesPerIpu=tilesPerIpu,
+            tilesPerIPU=tilesPerIPU,
             pattern=pattern,
             connectionType=connectionType)
     elif testDeviceType == "IpuModel":
@@ -62,7 +68,7 @@ def create_test_device(numIpus: int = 1,
 
     if device is None:
         return pytest.fail(
-            f"Tried to acquire device {testDeviceType} : {numIpus} IPUs, {tilesPerIpu} tiles,"
+            f"Tried to acquire device {testDeviceType} : {numIpus} IPUs, {tilesPerIPU} tiles,"
             f" {pattern} pattern, {connectionType} connection, but none were availaible"
         )
     return device

@@ -1870,7 +1870,7 @@ PYBIND11_MODULE(popart_core, m) {
                 int, int, SyncPattern, DeviceConnectionType)>(
                 &DeviceManager::acquireAvailableDevice),
             py::arg("numIpus")        = 1,
-            py::arg("tilesPerIpu")    = 0,
+            py::arg("tilesPerIPU")    = 0,
             py::arg("pattern")        = SyncPattern::Full,
             py::arg("connectionType") = DeviceConnectionType::Always);
     cls.def("acquireDeviceById",
@@ -1910,7 +1910,8 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_property_readonly("version", &DeviceInfo::getVersion);
     cls.def_property_readonly("id", &DeviceInfo::getId);
     cls.def_property_readonly("numIpus", &DeviceInfo::getNumIpus);
-    cls.def_property_readonly("tilesPerIpu", &DeviceInfo::getTilesPerIpu);
+    cls.def_property_readonly("tilesPerIPU", &DeviceInfo::getTilesPerIPU);
+    cls.def_property_readonly("tilesPerIpu", &DeviceInfo::getTilesPerIPU);
     cls.def_property_readonly("driverIds", &DeviceInfo::getDriverIds);
 
     cls.def_property_readonly("numWorkerContexts",

@@ -45,14 +45,13 @@ def test_upsample_grad(op_tester):
 
         op_tester.setPatterns(['MulArgGradOp', 'UpsampleToResize'],
                               enableRuntimeAsserts=False)
-        op_tester.run(
-            init_builder,
-            reference,
-            'train',
-            opsets={
-                "ai.onnx": 9,
-                "ai.graphcore": 1
-            })
+        op_tester.run(init_builder,
+                      reference,
+                      'train',
+                      opsets={
+                          "ai.onnx": 9,
+                          "ai.graphcore": 1
+                      })
 
     run_test([2, 2], [2.0, 3.0])
     run_test([2, 2], [2.5, 2.5])

@@ -123,7 +123,7 @@ std::shared_ptr<DeviceInfo> DeviceManager::createOfflineIPUDevice(
 
 std::shared_ptr<DeviceInfo>
 DeviceManager::acquireAvailableDevice(int numIpus,
-                                      int tilesPerIpu,
+                                      int tilesPerIPU,
                                       SyncPattern pattern,
                                       DeviceConnectionType connectionType) {
   if (numIpus > 0 && ((numIpus & (numIpus - 1)) != 0)) {
@@ -140,7 +140,7 @@ DeviceManager::acquireAvailableDevice(int numIpus,
       enumerateDevices(pattern, numIpus, DeviceType::Ipu, connectionType);
 
   for (auto &device : devices) {
-    if ((!tilesPerIpu || tilesPerIpu == device->getTilesPerIpu())) {
+    if ((!tilesPerIPU || tilesPerIPU == device->getTilesPerIPU())) {
       // Attach to the device. Will succeed if available
       if (connectionType == DeviceConnectionType::Always) {
         if (device->attach()) {
@@ -222,7 +222,7 @@ std::string DeviceInfo::toString() const {
   ss << "Device Type:" << getType()
      << " Connection Type:" << getConnectionType() << " Id:" << getId()
      << " Version:" << getVersion() << " NumIPUs:" << getNumIpus()
-     << " NumTilesPerIPU:" << getTilesPerIpu();
+     << " NumTilesPerIPU:" << getTilesPerIPU();
 
   ss << " DeviceIds: {";
   std::string sep;

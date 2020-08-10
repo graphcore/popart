@@ -2741,6 +2741,12 @@ void Devicex::prepareGraph() {
           "Reserving {} IO tiles for GCL collective operations on each IPU",
           numIOTiles);
 
+      if (numIOTiles > tilesPerIPU) {
+        throw error("Number of IO tiles {} exceeds tiles per IPU {}. ",
+                    numIOTiles,
+                    tilesPerIPU);
+      }
+
       const auto computeTiles =
           gcl::perIPUTiles(graph(), numIOTiles, tilesPerIPU - numIOTiles, true);
 

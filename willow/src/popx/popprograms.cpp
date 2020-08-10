@@ -366,7 +366,7 @@ poplar::program::Sequence PopPrograms::program() const {
         // String to identify instrumentation
         ss << "inner_ipu_" << i;
         dv_p->instrumentWithHardwareCycleCounter(
-            prog, i * dv_p->getDeviceInfo()->getTilesPerIpu(), ss.str());
+            prog, i * dv_p->getDeviceInfo()->getTilesPerIPU(), ss.str());
       }
     }
 

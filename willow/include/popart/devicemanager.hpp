@@ -62,7 +62,7 @@ public:
   /// Get the number of IPUs in the device.
   virtual int getNumIpus() const = 0;
   /// Get the number of tiles per IPU.
-  virtual int getTilesPerIpu() const = 0;
+  virtual int getTilesPerIPU() const = 0;
   /// Get the number of worker contexts per tile.
   virtual int getNumWorkerContexts() const = 0;
 
@@ -161,14 +161,14 @@ public:
   /** Finds the first available hardware device, with a certain number of IPUs.
    * This method will attach to the device.
    * \param numIpus The number of IPUs on the device [=1]
-   * \param tilesPerIpu The number of tiles on the IPU (0 will match any number)
+   * \param tilesPerIPU The number of tiles per IPU (0 will match any number)
    * [=0]
    * \return A device, which can be used with a session. Will return
    * nullptr if no device is available
    */
   std::shared_ptr<DeviceInfo> acquireAvailableDevice(
       int numIpus                         = 1,
-      int tilesPerIpu                     = 0,
+      int tilesPerIPU                     = 0,
       SyncPattern pattern                 = SyncPattern::Full,
       DeviceConnectionType connectionType = DeviceConnectionType::Always);
 
@@ -191,7 +191,7 @@ public:
    * The following options are supported:
    *
    * * ``numIPUs``:         The number of IPUs to simulate [=1]
-   * * ``tilesPerIPU``:     The number of tiles per IPU [=1216]
+   * * ``ge``:     The number of tiles per IPU [=defaultFewTiles]
    * * ``compileIPUCode``:  Whether or not to compile real IPU code for
    *   modelling
    *
@@ -206,7 +206,7 @@ public:
    * The following options are supported:
    *
    * * ``numIPUs``:         The number of IPUs to simulate
-   * * ``tilesPerIPU``:     The number of tiles per IPU
+   * * ``ge``:     The number of tiles per IPU [=defaultFewTiles]
    *
    * \param options Configuration settings for the Sim
    * \return A device
@@ -218,7 +218,7 @@ public:
    * The following options are supported:
    *
    * * ``numIPUs``:        The number of IPUs to compile for
-   * * ``tilesPerIPU``:    The number of tiles per IPU [=1216]
+   * * ``ge``:    The number of tiles per IPU [=defaultManyTiles]
    * * ``ipuVersion``:     The ipu architecture, defaults to "ipu1"
    * * ``syncPattern``:    The sync pattern to use:
    *                       full/singlePipline/replicaAndLadder,
@@ -261,7 +261,7 @@ template <> struct hash<popart::DeviceInfo> {
     return std::hash<std::string>()(ss.str()) ^
            std::hash<std::string>()(di.getVersion()) ^
            std::hash<int>()(di.getNumIpus()) ^
-           std::hash<int>()(di.getTilesPerIpu()) ^
+           std::hash<int>()(di.getTilesPerIPU()) ^
            std::hash<int>()(di.getNumWorkerContexts());
   }
 };

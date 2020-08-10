@@ -49,7 +49,7 @@ public:
   virtual void detach();
 
   virtual int getNumIpus() const { return getTarget().getNumIPUs(); }
-  virtual int getTilesPerIpu() const { return getTarget().getTilesPerIPU(); }
+  virtual int getTilesPerIPU() const { return getTarget().getTilesPerIPU(); }
   virtual int getNumWorkerContexts() const {
     return getTarget().getNumWorkerContexts();
   }
@@ -146,7 +146,7 @@ public:
   virtual std::string getVersion() const { return "<offline-ipu>"; }
 
   virtual int getNumIpus() const { return target.getNumIPUs(); }
-  virtual int getTilesPerIpu() const { return target.getTilesPerIPU(); }
+  virtual int getTilesPerIPU() const { return target.getTilesPerIPU(); }
   virtual int getNumWorkerContexts() const {
     return target.getNumWorkerContexts();
   }

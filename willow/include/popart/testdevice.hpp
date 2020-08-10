@@ -9,6 +9,7 @@
 #include <poplar/OptionFlags.hpp>
 #include <poplar/Target.hpp>
 #include <poplar/TargetType.hpp>
+#include <popart/defaulttilecount.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 
@@ -38,24 +39,19 @@ constexpr bool isHw(TestDeviceType d) { return d == TestDeviceType::Hw; }
 std::shared_ptr<popart::DeviceInfo>
 createTestDevice(const TestDeviceType testDeviceType,
                  const unsigned numIPUs          = 1,
-                 const unsigned tilesPerIPU      = 0,
+                 unsigned tilesPerIPU            = 0,
                  const SyncPattern pattern       = SyncPattern::Full,
                  const poplar::OptionFlags &opts = {}) {
 
-  unsigned ipuModelTilesPerIPU = tilesPerIPU;
-
-  if (ipuModelTilesPerIPU == 0 &&
-      ((testDeviceType == TestDeviceType::Sim) ||
-       (testDeviceType == TestDeviceType::IpuModel))) {
+  if (tilesPerIPU == 0 && ((testDeviceType == TestDeviceType::Sim) ||
+                           (testDeviceType == TestDeviceType::IpuModel))) {
     // We need a number of tiles for these device types.
-    // Using 4 significantly reduces compile time, as compared to a more
-    // realistic (1000+) number of tiles.
-    ipuModelTilesPerIPU = 4;
+    tilesPerIPU = defaultFewTiles;
   }
 
   std::map<std::string, std::string> deviceOpts{
       {"numIPUs", std::to_string(numIPUs)},
-      {"tilesPerIPU", std::to_string(ipuModelTilesPerIPU)}};
+      {"tilesPerIPU", std::to_string(tilesPerIPU)}};
 
   switch (testDeviceType) {
   case TestDeviceType::Cpu:

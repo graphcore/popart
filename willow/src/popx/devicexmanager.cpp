@@ -4,6 +4,7 @@
 #include <popart/popx/devicexmanager.hpp>
 
 #include <memory>
+#include <popart/defaulttilecount.hpp>
 #include <popart/util.hpp>
 
 #include <poplar/Device.hpp>
@@ -187,12 +188,13 @@ std::shared_ptr<popart::DeviceInfo> DevicexManager::createHostDevice(
     const std::string ipuVersion =
         mapFind<std::string>(options, "ipuVersion", "ipu1");
     poplar::IPUModel ipuModel(ipuVersion.c_str());
-    ipuModel.numIPUs = mapFind(options, "numIPUs", int(ipuModel.numIPUs));
-    ipuModel.tilesPerIPU =
-        mapFind(options, "tilesPerIPU", int(ipuModel.tilesPerIPU));
+    ipuModel.numIPUs     = mapFind(options, "numIPUs", int(ipuModel.numIPUs));
+    ipuModel.tilesPerIPU = mapFind(options, "tilesPerIPU", defaultFewTiles);
+    // int(ipuModel.tilesPerIPU));
     ipuModel.compileIPUCode = mapFind(options, "compileIPUCode", true);
 
     poplar::Device device = ipuModel.createDevice();
+
     return std::make_shared<DevicexIpuModelInfo>(*this, device);
   }
   case DeviceType::OfflineIpu: {
@@ -219,7 +221,7 @@ std::shared_ptr<popart::DeviceInfo> DevicexManager::createHostDevice(
 
       // Use the values from the options map or use the defaults.
       int numIPUs     = mapFind(options, "numIPUs", 1);
-      int tilesPerIPU = mapFind(options, "tilesPerIPU", 20);
+      int tilesPerIPU = mapFind(options, "tilesPerIPU", defaultFewTiles);
 
       auto target = poplar::Target::createIPUTarget(
           numIPUs, tilesPerIPU, "_VIRTUAL_GRAPH_TEST_16");

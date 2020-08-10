@@ -265,10 +265,13 @@ def test_tensor_tile_mapping(tmpdir):
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
-    session = popart.InferenceSession(
-        fnModel=proto,
-        dataFlow=dataFlow,
-        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+    session = popart.InferenceSession(fnModel=proto,
+                                      dataFlow=dataFlow,
+                                      deviceInfo=tu.create_test_device(
+                                          tilesPerIPU=128,
+                                          opts={
+                                              "compileIPUCode": False,
+                                          }))
 
     anchors = session.initAnchorArrays()
 
@@ -279,8 +282,7 @@ def test_tensor_tile_mapping(tmpdir):
     assert (len(m) == 3)
     assert (sorted(list(m.keys())) == sorted([i1, i2, o]))
 
-    # Assume a 1216 tile device, and mapping a scalar will put it on tile 0
-    assert (len(m[o]) == 1216)
+    assert (len(m[o]) == 128)
 
     # There should only be one tile with a non zero interval
     non_zero_intervals = [(tile, i) for tile, i in enumerate(m[o])

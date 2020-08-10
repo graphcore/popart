@@ -28,6 +28,9 @@ b1 = 0.9
 # beta 2 (Adam)
 b2 = 0.999
 
+# setting this to, say, 100, and the test fails, see T24563
+testTilesPerIPU = 1216
+
 sgd_optimizer = popart.SGD({
     "defaultLearningRate": (lr, False),
     "defaultWeightDecay": (wd, False)
@@ -159,11 +162,13 @@ def run_graph(optimizer, input_shape, initial_onnx_model, input_tensor_name,
 
     if enable_multi_ipu:
         device = tu.create_test_device(numIpus=num_ipus,
+                                       tilesPerIPU=testTilesPerIPU,
                                        opts={"compileIPUCode": False})
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     else:
-        device = tu.create_test_device(opts={"compileIPUCode": False})
+        device = tu.create_test_device(tilesPerIPU=testTilesPerIPU,
+                                       opts={"compileIPUCode": False})
         opts.virtualGraphMode = popart.VirtualGraphMode.Off
 
     # only for test purposes, inference with gradient_accumulation should never work
@@ -645,12 +650,13 @@ def test_loading_saved_gradient_accumulationt_tesors():
         opts.enableGradientAccumulation = True
         opts.accumulationFactor = accum_factor
         opts.disableGradAccumulationTensorStreams = False
-        sess = popart.TrainingSession(fnModel=fn,
-                                      dataFlow=popart.DataFlow(1, {}),
-                                      deviceInfo=tu.create_test_device(),
-                                      loss=output_name,
-                                      optimizer=sgd_optimizer,
-                                      userOptions=opts)
+        sess = popart.TrainingSession(
+            fnModel=fn,
+            dataFlow=popart.DataFlow(1, {}),
+            deviceInfo=tu.create_test_device(tilesPerIPU=testTilesPerIPU),
+            loss=output_name,
+            optimizer=sgd_optimizer,
+            userOptions=opts)
         sess.prepareDevice()
 
         sess.weightsFromHost()
@@ -901,12 +907,13 @@ def test_adam_loading_saved_gradient_accumulationt_tesors():
         opts.enableGradientAccumulation = True
         opts.accumulationFactor = accum_factor
         opts.disableGradAccumulationTensorStreams = False
-        sess = popart.TrainingSession(fnModel=fn,
-                                      dataFlow=popart.DataFlow(1, {}),
-                                      deviceInfo=tu.create_test_device(),
-                                      loss=output_name,
-                                      optimizer=adam_optimizer,
-                                      userOptions=opts)
+        sess = popart.TrainingSession(
+            fnModel=fn,
+            dataFlow=popart.DataFlow(1, {}),
+            deviceInfo=tu.create_test_device(tilesPerIPU=testTilesPerIPU),
+            loss=output_name,
+            optimizer=adam_optimizer,
+            userOptions=opts)
         sess.prepareDevice()
 
         sess.weightsFromHost()
