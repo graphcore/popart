@@ -34,7 +34,7 @@ public:
   virtual void appendAttribute(const std::string &,
                                const std::map<TensorId, uint64_t>) = 0;
 
-  // For OptionalPingPongPhase, OptionalVGraphId, etc.
+  // For OptionalExecutionPhase, OptionalVGraphId, etc.
   template <typename T, uint32_t V>
   void appendAttribute(const std::string &key,
                        const BasicOptional<T, V> &value) {

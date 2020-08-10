@@ -1,5 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#define BOOST_TEST_MODULE PingPongGradSumDecTest
+#define BOOST_TEST_MODULE ExecutionPhaseGradSumDecTest
 
 #include <../test_runner.hpp>
 #include <boost/test/unit_test.hpp>
@@ -17,7 +17,7 @@
 
 using namespace popart;
 
-// Model: N parallel matmuls, sharing weights, separate pingpong phases
+// Model: N parallel matmuls, sharing weights, separate execution phases
 // _________________________________________
 // phase 0:
 // in0 -
@@ -48,7 +48,7 @@ using namespace popart;
 // 2. Add to w0-grad in phase 6 (Matmul1)
 // 3. Add to w0-grad in phase 8 (Matmul0)
 
-BOOST_AUTO_TEST_CASE(TestDecomposeAcrossPingPongPhases) {
+BOOST_AUTO_TEST_CASE(TestDecomposeAcrossExecutionPhases) {
   TestRunner runner;
   runner.isTraining = true;
   int numLayers     = 3;
@@ -69,24 +69,24 @@ BOOST_AUTO_TEST_CASE(TestDecomposeAcrossPingPongPhases) {
     for (int layer = 0; layer < numLayers; layer++) {
       auto input = builder.addInputTensor(inInfo);
       auto out = aiOnnx.matmul({input, w0}, "mm_layer" + std::to_string(layer));
-      builder.pingPongPhase(out, layer * 2);
+      builder.executionPhase(out, layer * 2);
       out = aiOnnx.relu({out}, "relu_layer" + std::to_string(layer));
-      builder.pingPongPhase(out, layer * 2);
+      builder.executionPhase(out, layer * 2);
       outVec.push_back(out);
     }
     auto sum = aiOnnx.sum(outVec);
     auto l1  = builder.aiGraphcoreOpset1().l1loss({sum}, 0.1);
-    builder.pingPongPhase(l1, (numLayers - 1) * 2);
+    builder.executionPhase(l1, (numLayers - 1) * 2);
 
     // To make introspecting the IR easy
     runner.opts.enableOutlining = false;
     // Enable feature-under-test
     runner.opts.decomposeGradSum = true;
-    // Use every second pingpong phase only (maps to one IPU)
-    runner.opts.pingPongSettings.phases = numLayers * 2 - 1;
-    runner.opts.virtualGraphMode        = VirtualGraphMode::PingPong;
-    runner.patterns                     = Patterns(PatternsLevel::Default);
-    runner.loss                         = l1;
+    // Use every second execution phase only (maps to one IPU)
+    runner.opts.executionPhaseSettings.phases = numLayers * 2 - 1;
+    runner.opts.virtualGraphMode = VirtualGraphMode::ExecutionPhases;
+    runner.patterns              = Patterns(PatternsLevel::Default);
+    runner.loss                  = l1;
 
     return sum;
   });
@@ -107,13 +107,13 @@ BOOST_AUTO_TEST_CASE(TestDecomposeAcrossPingPongPhases) {
         size_t mmLayer         = numLayers - 1 - addOpNumber;
         std::string mmLayerStr = "mm_layer" + std::to_string(mmLayer);
 
-        PingPongPhase expectedPhase = numLayers + 1 + addOpNumber * 2;
+        ExecutionPhase expectedPhase = numLayers + 1 + addOpNumber * 2;
         // Check that the add occurs in the expected phase (4, 6, 8)
-        BOOST_CHECK(op->getPingPongPhase() == expectedPhase);
+        BOOST_CHECK(op->getExecutionPhase() == expectedPhase);
 
         // Check that the rhs input is produced in the same phase
         BOOST_CHECK(
-            op->input->tensor(addRhs)->getProducer()->getPingPongPhase() ==
+            op->input->tensor(addRhs)->getProducer()->getExecutionPhase() ==
             expectedPhase);
 
         // Check that the add comes as soon as possible

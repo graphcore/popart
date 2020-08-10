@@ -51,10 +51,10 @@ TensorLocationSettings::TensorLocationSettings(
 BatchSerializationSettings::BatchSerializationSettings(
     int factor_,
     bool concatOnVirtualGraphChange_,
-    bool concatOnPingPongPhaseChange_,
+    bool concatOnExecutionPhaseChange_,
     bool concatOnPipelineStageChange_)
     : factor{factor_}, concatOnVirtualGraphChange{concatOnVirtualGraphChange_},
-      concatOnPingPongPhaseChange{concatOnPingPongPhaseChange_},
+      concatOnExecutionPhaseChange{concatOnExecutionPhaseChange_},
       concatOnPipelineStageChange{concatOnPipelineStageChange_} {}
 
 std::string getDotCheckString(DotCheck d) {
@@ -86,8 +86,8 @@ std::string toString(VirtualGraphMode v) {
     return "VirtualGraphMode::Manual";
   case VirtualGraphMode::Auto:
     return "VirtualGraphMode::Auto";
-  case VirtualGraphMode::PingPong:
-    return "VirtualGraphMode::PingPong";
+  case VirtualGraphMode::ExecutionPhases:
+    return "VirtualGraphMode::ExecutionPhases";
   case VirtualGraphMode::N:
     throw error("Bad VirtualGraphMode {}", static_cast<int>(v));
   default:

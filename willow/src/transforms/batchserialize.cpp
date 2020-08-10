@@ -19,7 +19,7 @@ namespace popart {
 
 namespace {
 
-using TensorContext = std::tuple<VGraphId, PingPongPhase, PipelineStage>;
+using TensorContext = std::tuple<VGraphId, ExecutionPhase, PipelineStage>;
 enum class TraceDirection { Forward = 0, Backward };
 
 TensorId createOrGetIndexTensor(Graph &graph, uint32_t index) {
@@ -86,10 +86,10 @@ bool BatchSerialize::apply(Graph &graph) const {
 
   auto getContext = [&](Op *op) {
     VGraphId vgid = op->hasVirtualGraphId() ? op->getVirtualGraphId() : -1;
-    PingPongPhase pingPongPhase =
-        (ir.getSessionOptions().pingPongSettings.phases > 1 &&
-         op->hasPingPongPhase())
-            ? op->getPingPongPhase()
+    ExecutionPhase executionPhase =
+        (ir.getSessionOptions().executionPhaseSettings.phases > 1 &&
+         op->hasExecutionPhase())
+            ? op->getExecutionPhase()
             : -1;
     PipelineStage pipelineStage =
         (ir.getSessionOptions().enablePipelining && op->hasPipelineStage())
@@ -97,8 +97,8 @@ bool BatchSerialize::apply(Graph &graph) const {
             : -1;
     return TensorContext(
         settings.concatOnVirtualGraphChange ? vgid : unusedVGraphId,
-        settings.concatOnPingPongPhaseChange ? pingPongPhase
-                                             : unusedPingPongPhase,
+        settings.concatOnExecutionPhaseChange ? executionPhase
+                                              : unusedExecutionPhase,
         settings.concatOnPipelineStageChange ? pipelineStage
                                              : unusedPipelineStage);
   };
@@ -298,7 +298,7 @@ bool BatchSerialize::apply(Graph &graph) const {
               if (std::get<0>(consumerContext) > -1)
                 slice->setVirtualGraphId(std::get<0>(consumerContext));
               if (std::get<1>(consumerContext) > -1)
-                slice->setPingPongPhase(std::get<1>(consumerContext));
+                slice->setExecutionPhase(std::get<1>(consumerContext));
               if (std::get<2>(consumerContext) > -1)
                 slice->setPipelineStage(std::get<2>(consumerContext));
               slice->connectInTensor(SliceOp::getInIndex(), sliceableTensorId);
@@ -546,7 +546,7 @@ bool BatchSerialize::apply(Graph &graph) const {
               if (std::get<0>(producerContext) > -1)
                 update->setVirtualGraphId(std::get<0>(producerContext));
               if (std::get<1>(producerContext) > -1)
-                update->setPingPongPhase(std::get<1>(producerContext));
+                update->setExecutionPhase(std::get<1>(producerContext));
               if (std::get<2>(producerContext) > -1)
                 update->setPipelineStage(std::get<2>(producerContext));
 
@@ -598,7 +598,7 @@ bool BatchSerialize::apply(Graph &graph) const {
             if (std::get<0>(producerContext) > -1)
               concat->setVirtualGraphId(std::get<0>(producerContext));
             if (std::get<1>(producerContext) > -1)
-              concat->setPingPongPhase(std::get<1>(producerContext));
+              concat->setExecutionPhase(std::get<1>(producerContext));
             if (std::get<2>(producerContext) > -1)
               concat->setPipelineStage(std::get<2>(producerContext));
             for (size_t b = 0; b < serializedTensor.second.size(); ++b) {
@@ -712,8 +712,8 @@ bool BatchSerialize::apply(Graph &graph) const {
           int64_t score = 0;
           if (visitedOps.find(ops) != visitedOps.end() || maxDepth == 0 ||
               ops.first->scheduledPreLoss != ops.second->scheduledPreLoss ||
-              (ops.first->getOptionalPingPongPhase() !=
-               ops.second->getOptionalPingPongPhase()) ||
+              (ops.first->getOptionalExecutionPhase() !=
+               ops.second->getOptionalExecutionPhase()) ||
               (ops.first->getOptionalPipelineStage() !=
                ops.second->getOptionalPipelineStage())) {
             return score;

@@ -127,13 +127,13 @@ public:
     }
   }
 
-  void annotatePingPongPhase() {
+  void annotateExecutionPhase() {
     std::vector<std::vector<OpAddress>> bins;
     for (const auto &x : pg.getOps()) {
       auto op = x.second.get();
-      if (op->getOptionalPingPongPhase()) {
+      if (op->getOptionalExecutionPhase()) {
         auto opAddress = opAddresses[op];
-        auto phase     = *op->getOptionalPingPongPhase();
+        auto phase     = *op->getOptionalExecutionPhase();
         if (phase < -1) {
           throw internal_error(
               "phase < -1 unexpected. This function needs adjustment");
@@ -145,7 +145,7 @@ public:
         bins[binIndex].push_back(opAddress);
       }
     }
-    g.insertBinConstraints(bins, "pingPongPhaseStart_");
+    g.insertBinConstraints(bins, "executionPhaseStart_");
   }
 
   void annotatePipelineStages() {
@@ -190,7 +190,8 @@ public:
     // A priority which takes precedence over memory liveness:
     using OpPriority = double;
     std::vector<
-        std::tuple<PingPongPhase, OpPriority, BatchSerializedPhase, OpPriority>>
+        std::
+            tuple<ExecutionPhase, OpPriority, BatchSerializedPhase, OpPriority>>
         super;
 
     // A priority which is secondary to memory liveness:
@@ -202,18 +203,19 @@ public:
     for (const auto &x : pg.getOps()) {
       auto op             = x.second.get();
       auto op_batchserial = op->getOptionalBatchSerializedPhase();
-      auto op_pingpong    = op->getOptionalPingPongPhase();
+      auto op_phase       = op->getOptionalExecutionPhase();
       auto op_priority    = op->settings.schedulePriority;
 
-      // Pingpong -1 to N are reserved
-      // -2 : No pingpong phase set (unusedBatchSerializedPhase)
+      // Executuion phase -1 to N are reserved
+      // -2 : No execution phase set (unusedExecutionPhase)
       // -1 : Load weights of phase 0
       // 0 - N: Compute phase n, load weights of phase n+1
-      auto op_pingpong_or =
-          op_pingpong &&
-                  pg.getIr().getSessionOptions().pingPongSettings.phases > 1
-              ? *op_pingpong
-              : unusedPingPongPhase;
+      auto op_phase_or =
+          op_phase &&
+                  pg.getIr().getSessionOptions().executionPhaseSettings.phases >
+                      1
+              ? *op_phase
+              : unusedExecutionPhase;
 
       // Batchserial -1 to N are reserved
       // -2 : No batchserial phase set (unusedBatchSerializedPhase)
@@ -230,11 +232,11 @@ public:
       auto op_priority_post_or = op_batchserial ? op_priority : 0.0;
 
       // to strongly encourage Ops to be appear in
-      // 1) ascending pingpong phases
+      // 1) ascending execution phases
       // 2) descending priority for ops without batch-serial phase
       // 3) ascending batch-serial phase
       // 4) descending priority within batch-serial phase
-      super.push_back({-op_pingpong_or,
+      super.push_back({-op_phase_or,
                        op_priority_pre_or,
                        -op_batchserial_or,
                        op_priority_post_or});
@@ -297,7 +299,7 @@ private:
 std::vector<Op *>
 Scheduler::getSchedule(const OpsBeforeKey &gCons,
                        const Graph &pg,
-                       bool respectPingPongPhases,
+                       bool respectExecutionPhases,
                        double timeLimitSeconds,
                        int64_t swapLimitCount,
                        const std::string &kahnTieBreakerString) {
@@ -317,9 +319,9 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
 
   grower->setBasic();
   grower->appendGCons(gCons);
-  if (respectPingPongPhases &&
-      pg.getIr().getSessionOptions().pingPongSettings.phases > 1) {
-    grower->annotatePingPongPhase();
+  if (respectExecutionPhases &&
+      pg.getIr().getSessionOptions().executionPhaseSettings.phases > 1) {
+    grower->annotateExecutionPhase();
   }
   if (pg.getIr().getSessionOptions().enablePipelining) {
     grower->annotatePipelineStages();
@@ -416,14 +418,14 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
 
 bool Scheduler::isSchedulable(const OpsBeforeKey &gCons,
                               const Graph &pg,
-                              bool respectPingPongPhases) const {
+                              bool respectExecutionPhases) const {
 
   GraphGrower grower(pg);
   grower.setBasic();
   grower.appendGCons(gCons);
-  if (respectPingPongPhases &&
-      pg.getIr().getSessionOptions().pingPongSettings.phases > 1) {
-    grower.annotatePingPongPhase();
+  if (respectExecutionPhases &&
+      pg.getIr().getSessionOptions().executionPhaseSettings.phases > 1) {
+    grower.annotateExecutionPhase();
   }
   if (pg.getIr().getSessionOptions().enablePipelining) {
     grower.annotatePipelineStages();

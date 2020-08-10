@@ -26,7 +26,7 @@ float SGD0VarUpdateOp::getSubgraphValue() const {
   // If we have replicated graphs then outline VaruUdates, if possible
   // The motivation for this is the (code) cost of inter-IPU copies
   if (getIr().getSessionOptions().enableReplicatedGraphs ||
-      getIr().getSessionOptions().pingPongSettings.phases > 1) {
+      getIr().getSessionOptions().executionPhaseSettings.phases > 1) {
     return getHighSubgraphValue();
   } else {
     return getLowSubgraphValue();

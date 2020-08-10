@@ -15,7 +15,7 @@ VarUpdateOp::VarUpdateOp(const OperatorIdentifier &_opid,
                          const Op::Settings &settings_)
     : Op(_opid, settings_), varId(varId_) {
   // TODO: Remove with T19212
-  if (getIr().getSessionOptions().pingPongSettings.phases < 2 &&
+  if (getIr().getSessionOptions().executionPhaseSettings.phases < 2 &&
       getIr().getSessionOptions().batchSerializationSettings.factor < 2 &&
       getIr().getSessionOptions().delayVarUpdates) {
     settings.schedulePriority = std::numeric_limits<double>::lowest();

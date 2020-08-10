@@ -27,8 +27,8 @@ void Pattern::transferBaseProperties(Op *from, Op *to) const {
   if (from->hasVirtualGraphId()) {
     to->setVirtualGraphId(from->getVirtualGraphId());
   }
-  if (from->hasPingPongPhase()) {
-    to->setPingPongPhase(from->getPingPongPhase());
+  if (from->hasExecutionPhase()) {
+    to->setExecutionPhase(from->getExecutionPhase());
   }
   if (from->hasPipelineStage()) {
     to->setPipelineStage(from->getPipelineStage());

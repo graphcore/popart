@@ -92,7 +92,7 @@ public:
 
   // Do all the Ops with all their dependencies form a DAG?
   bool isSchedulable(const OpsBeforeKey &,
-                     bool respectPingPongPhases = false) const;
+                     bool respectExecutionPhases = false) const;
 
   // There are ops in the graph with the recompute attribute, derived
   // from user-specified onnx node attribute

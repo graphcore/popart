@@ -560,12 +560,13 @@ public:
   void outputTensorLocation(const TensorId &nodeOutputName,
                             TensorLocation value) {
     addNodeAttribute(
-        sPingPongPhaseAttribute, value.serialize(), {nodeOutputName});
+        sExecutionPhaseAttribute, value.serialize(), {nodeOutputName});
   }
 
   void recomputeOutput(const TensorId &nodeOutputName, RecomputeType value) {
-    addNodeAttribute(
-        sPingPongPhaseAttribute, static_cast<int64_t>(value), {nodeOutputName});
+    addNodeAttribute(sExecutionPhaseAttribute,
+                     static_cast<int64_t>(value),
+                     {nodeOutputName});
   }
 
   /**
@@ -633,12 +634,12 @@ public:
   }
 
   /**
-   * Set the ping pong phase that computes the given node.
+   * Set the execution phase that computes the given node.
    * \param nodeOutputName Name of the output tensor of the ONNX node
    * \param value The index of the virtual graph that computes this node
    */
-  void pingPongPhase(const TensorId &nodeOutputName, int64_t value = 0) {
-    addNodeAttribute(sPingPongPhaseAttribute, value, {nodeOutputName});
+  void executionPhase(const TensorId &nodeOutputName, int64_t value = 0) {
+    addNodeAttribute(sExecutionPhaseAttribute, value, {nodeOutputName});
   }
 
   void pipelineStage(const TensorId &nodeOutputName, int64_t value) {
@@ -765,9 +766,9 @@ public:
   int64_t getPipelineStage() const;
 
   /**
-   * A convenience function for the ping pong phase attribute
+   * A convenience function for the execution phase attribute
    */
-  int64_t getPingPongPhase() const;
+  int64_t getExecutionPhase() const;
 
   /**
    * A convenience function for the virtual graph attribute
@@ -786,9 +787,9 @@ public:
     addNodeAttribute(sVirtualGraphAttribute, value, nodeOutputNames);
   }
 
-  void pingPongPhase(const std::set<TensorId> &nodeOutputNames,
-                     int64_t value = 0) {
-    addNodeAttribute(sPingPongPhaseAttribute, value, nodeOutputNames);
+  void executionPhase(const std::set<TensorId> &nodeOutputNames,
+                      int64_t value = 0) {
+    addNodeAttribute(sExecutionPhaseAttribute, value, nodeOutputNames);
   }
 
   /**
@@ -1062,12 +1063,12 @@ public:
     return getInt64NodeAttribute(sVirtualGraphAttribute, nodeOutputNames);
   }
 
-  int64_t getPingPongPhase(const TensorId &nodeOutputName) {
-    return getInt64NodeAttribute(sPingPongPhaseAttribute, {nodeOutputName});
+  int64_t getExecutionPhase(const TensorId &nodeOutputName) {
+    return getInt64NodeAttribute(sExecutionPhaseAttribute, {nodeOutputName});
   }
 
-  int64_t getPingPongPhase(const std::set<TensorId> &nodeOutputNames) {
-    return getInt64NodeAttribute(sPingPongPhaseAttribute, nodeOutputNames);
+  int64_t getExecutionPhase(const std::set<TensorId> &nodeOutputNames) {
+    return getInt64NodeAttribute(sExecutionPhaseAttribute, nodeOutputNames);
   }
 
   /**

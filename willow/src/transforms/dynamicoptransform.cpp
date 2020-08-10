@@ -19,7 +19,7 @@
 
 namespace popart {
 
-using TensorContext = std::tuple<VGraphId, PingPongPhase, PipelineStage>;
+using TensorContext = std::tuple<VGraphId, ExecutionPhase, PipelineStage>;
 
 std::size_t DynamicOpTransform::id() {
   return typeid(DynamicOpTransform).hash_code();
@@ -31,8 +31,8 @@ void transfer(Op *from, Op *to) {
   if (from->hasVirtualGraphId()) {
     to->setVirtualGraphId(from->getVirtualGraphId());
   }
-  if (from->hasPingPongPhase()) {
-    to->setPingPongPhase(from->getPingPongPhase());
+  if (from->hasExecutionPhase()) {
+    to->setExecutionPhase(from->getExecutionPhase());
   }
   if (from->hasPipelineStage()) {
     to->setPipelineStage(from->getPipelineStage());

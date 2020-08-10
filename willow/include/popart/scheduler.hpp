@@ -21,7 +21,7 @@ public:
   // - graph
   // the Graph whose Ops are to be scheduled
   //
-  // - respectPingPongPhase
+  // - respectExecutionPhase
   // if true: Ops must appear in ascending order of ping-pong phase
   //
   // - timeLimitSeconds
@@ -38,7 +38,7 @@ public:
   //
   std::vector<Op *> getSchedule(const OpsBeforeKey &opsBeforeKey,
                                 const Graph &graph,
-                                bool respectPingPongPhase,
+                                bool respectExecutionPhase,
                                 double timeLimitSeconds,
                                 int64_t swapLimitCount,
                                 const std::string &kahnTieBreaker);
@@ -49,7 +49,7 @@ public:
   // executes significantly faster than getSchedule
   bool isSchedulable(const OpsBeforeKey &,
                      const Graph &,
-                     bool respectPingPongPhase) const;
+                     bool respectExecutionPhase) const;
 
 private:
   std::unique_ptr<ScheduleCacher> cacher;

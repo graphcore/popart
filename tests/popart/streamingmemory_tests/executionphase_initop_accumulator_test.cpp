@@ -1,5 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#define BOOST_TEST_MODULE PingPongInitOpAccumulatorTest
+#define BOOST_TEST_MODULE ExecutionPhaseInitOpAccumulatorTest
 
 #include <boost/test/unit_test.hpp>
 #include <iostream>
@@ -16,10 +16,10 @@
 using namespace popart;
 using namespace std;
 
-// This test simulates matmul with accumulation over multiple pingpong phases.
+// This test simulates matmul with accumulation over multiple execution phases.
 // It checks that the InitOp tensor layout is efficient for this use-case.
 //
-// 1/ the even and odd ping pong phases accumulate their own matmul result.
+// 1/ the even and odd execution phases accumulate their own matmul result.
 // 2/ a final reduce is made to sum even and odd results.
 //
 // The initOp should be laid out efficiently to minimise internal exchange
@@ -48,7 +48,7 @@ BOOST_AUTO_TEST_CASE(TestInitOpAccumulator) {
                                 static_cast<int64_t>(DataType::FLOAT),
                                 static_cast<int64_t>(InitType::Zero),
                                 "even_accumulator");
-  builder->pingPongPhase(init0, 0);
+  builder->executionPhase(init0, 0);
   builder->virtualGraph(init0, 0);
 
   // Odd Accumulations are [size, size]
@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE(TestInitOpAccumulator) {
                                 static_cast<int64_t>(DataType::FLOAT),
                                 static_cast<int64_t>(InitType::Zero),
                                 "odd_accumulator");
-  builder->pingPongPhase(init1, 1);
+  builder->executionPhase(init1, 1);
   builder->virtualGraph(init1, 1);
 
   // 2N phases
@@ -69,32 +69,32 @@ BOOST_AUTO_TEST_CASE(TestInitOpAccumulator) {
     // inputs x w
     auto out = aiOnnx.matmul(
         {input, w}, logging::format("CHECKOP_MM: [{} {}]", n, vgid % 2));
-    builder->pingPongPhase(out, n);
+    builder->executionPhase(out, n);
     builder->virtualGraph(out, vgid);
 
     out = aiOnnx.relu({out},
                       logging::format("CHECKOP_RELU: [{} {}]", n, vgid % 2));
-    builder->pingPongPhase(out, n);
+    builder->executionPhase(out, n);
     builder->virtualGraph(out, vgid);
 
     if (n % 2) {
       // Odd phase accumulation
       init1 = aiOnnx.add({init1, out},
                          logging::format("CHECKOP_ACC: [{} {}]", n, vgid % 2));
-      builder->pingPongPhase(init1, n);
+      builder->executionPhase(init1, n);
       builder->virtualGraph(init1, vgid);
     } else {
       // Even phase accumulation (swapped operand order)
       init0 = aiOnnx.add({out, init0},
                          logging::format("CHECKOP_ACC: [{} {}]", n, vgid % 2));
-      builder->pingPongPhase(init0, n);
+      builder->executionPhase(init0, n);
       builder->virtualGraph(init0, vgid);
     }
   }
 
   // Reduce by adding even and odd accumulators together (within final phase)
   auto init = aiOnnx.add({init0, init1}, "reduce_add");
-  builder->pingPongPhase(init, N * 2 - 1);
+  builder->executionPhase(init, N * 2 - 1);
   builder->virtualGraph(init, 1);
 
   SessionOptions session_opts;
@@ -109,8 +109,8 @@ BOOST_AUTO_TEST_CASE(TestInitOpAccumulator) {
   // it will only unwind if decomposeGradSum or batchSerialization is enabled.
   session_opts.decomposeGradSum = true;
 
-  session_opts.pingPongSettings.phases = N * 2;
-  session_opts.virtualGraphMode        = VirtualGraphMode::PingPong;
+  session_opts.executionPhaseSettings.phases = N * 2;
+  session_opts.virtualGraphMode = VirtualGraphMode::ExecutionPhases;
 
   auto testDev = createTestDevice(TEST_TARGET, 2);
 

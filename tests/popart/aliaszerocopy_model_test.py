@@ -9,7 +9,7 @@ import onnx
 from onnx import numpy_helper
 
 
-def test_pingpong_momentum(tmpdir):
+def test_streamingmemory_momentum(tmpdir):
     def model():
         np.random.seed(1984)
         input_data = np.random.randint(0, 20, (8, )).astype(np.uint32)
@@ -22,13 +22,13 @@ def test_pingpong_momentum(tmpdir):
 
         w0 = builder.addInitializedInputTensor(weight_data, 'weight0')
 
-        with builder.pingPongPhase(0), builder.virtualGraph(
+        with builder.executionPhase(0), builder.virtualGraph(
                 0), builder.nameScope("pp0"):
             w0_t = builder.aiOnnx.transpose([w0])
             x = builder.aiOnnx.gather([w0_t, d0])
             x = builder.aiGraphcore.detach([x])
 
-        with builder.pingPongPhase(1), builder.virtualGraph(
+        with builder.executionPhase(1), builder.virtualGraph(
                 1), builder.nameScope("pp1"):
             x = builder.aiOnnx.add([
                 x,
@@ -36,7 +36,7 @@ def test_pingpong_momentum(tmpdir):
                     np.random.rand(4).astype(np.float32), 'weight1')
             ])
 
-        with builder.pingPongPhase(2), builder.virtualGraph(
+        with builder.executionPhase(2), builder.virtualGraph(
                 0), builder.nameScope("pp2"):
             x = builder.aiOnnx.sub([
                 x,
@@ -44,7 +44,7 @@ def test_pingpong_momentum(tmpdir):
                     np.random.rand(4).astype(np.float32), 'weight2')
             ])
 
-        with builder.pingPongPhase(3), builder.virtualGraph(
+        with builder.executionPhase(3), builder.virtualGraph(
                 1), builder.nameScope("pp3"):
             x = builder.aiOnnx.mul([
                 x,
@@ -52,7 +52,7 @@ def test_pingpong_momentum(tmpdir):
                     np.random.rand(4).astype(np.float32), 'weight3')
             ])
 
-        with builder.pingPongPhase(4), builder.virtualGraph(
+        with builder.executionPhase(4), builder.virtualGraph(
                 0), builder.nameScope("pp4"):
             x = builder.aiOnnx.matmul([x, w0])
             loss = builder.aiGraphcore.l1loss([x], 0.1, debugPrefix='loss')
@@ -75,10 +75,10 @@ def test_pingpong_momentum(tmpdir):
         options.outlineThreshold = -np.inf
         options.enableOutliningCopyCostPruning = False
         options.autoRecomputation = popart.RecomputationType.Standard
-        options.virtualGraphMode = popart.VirtualGraphMode.PingPong
+        options.virtualGraphMode = popart.VirtualGraphMode.ExecutionPhases
         options.explicitRecomputation = True
         options.aliasZeroCopy = aliaszerocopy
-        options.pingPongSettings.phases = 5
+        options.executionPhaseSettings.phases = 5
         request_ipus = 2
 
         device = tu.create_test_device(2, pattern=popart.SyncPattern.Full)

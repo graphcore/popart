@@ -14,8 +14,8 @@ SyncPattern syncPatternFromString(const std::string &str) {
   if (str == "singlePipeline") {
     return SyncPattern::SinglePipeline;
   }
-  if (str == "pingPong") {
-    return SyncPattern::PingPong;
+  if (str == "replicaAndLadder") {
+    return SyncPattern::ReplicaAndLadder;
   }
 
   throw error("Unknown syncPattern setting: {}", str);
@@ -27,8 +27,8 @@ std::string syncPatternToString(SyncPattern pattern) {
     return "full";
   case SyncPattern::SinglePipeline:
     return "singlePipeline";
-  case SyncPattern::PingPong:
-    return "pingPong";
+  case SyncPattern::ReplicaAndLadder:
+    return "replicaAndLadder";
   }
   throw error("Unknown syncPattern setting: {}", static_cast<int>(pattern));
 }

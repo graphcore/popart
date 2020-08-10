@@ -15,7 +15,7 @@
 
 namespace popart {
 
-using TensorContext = std::tuple<VGraphId, PingPongPhase, PipelineStage>;
+using TensorContext = std::tuple<VGraphId, ExecutionPhase, PipelineStage>;
 
 std::size_t ExplicitRecompute::id() {
   return typeid(ExplicitRecompute).hash_code();
@@ -29,16 +29,16 @@ bool ExplicitRecompute::apply(Graph &graph) const {
 
   auto getContext = [&ir](Op *op) -> TensorContext {
     VGraphId vgid = op->hasVirtualGraphId() ? op->getVirtualGraphId() : -1;
-    PingPongPhase pingPongPhase =
-        (ir.getSessionOptions().pingPongSettings.phases > 1 &&
-         op->hasPingPongPhase())
-            ? op->getPingPongPhase()
+    ExecutionPhase executionPhase =
+        (ir.getSessionOptions().executionPhaseSettings.phases > 1 &&
+         op->hasExecutionPhase())
+            ? op->getExecutionPhase()
             : -1;
     PipelineStage pipelineStage =
         (ir.getSessionOptions().enablePipelining && op->hasPipelineStage())
             ? op->getPipelineStage()
             : -1;
-    return TensorContext(vgid, pingPongPhase, pipelineStage);
+    return TensorContext(vgid, executionPhase, pipelineStage);
   };
 
   std::map<std::pair<TensorId, TensorContext>, TensorId> recomputedTensorMap;
@@ -52,17 +52,17 @@ bool ExplicitRecompute::apply(Graph &graph) const {
 
       Op *clone_op = graph.getOp(cloneid);
 
-      if (clone_op->hasPingPongPhase()) {
-        // Remap from forward to backward pingpong phase
-        PingPongPhase recomputePhase =
-            2 * ir.getSessionOptions().pingPongSettings.phases - 2 -
-            clone_op->getPingPongPhase();
+      if (clone_op->hasExecutionPhase()) {
+        // Remap from forward to backward execution phase
+        ExecutionPhase recomputePhase =
+            2 * ir.getSessionOptions().executionPhaseSettings.phases - 2 -
+            clone_op->getExecutionPhase();
         logging::trace(
-            "[ExplicitRecompute] Remapping {} ping pong phase {} -> {}",
+            "[ExplicitRecompute] Remapping {} execiton phase {} -> {}",
             clone_op->debugName(),
-            clone_op->getPingPongPhase(),
+            clone_op->getExecutionPhase(),
             recomputePhase);
-        clone_op->setPingPongPhase(recomputePhase);
+        clone_op->setExecutionPhase(recomputePhase);
       }
 
       // Get context after remapping phases

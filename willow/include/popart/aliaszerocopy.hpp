@@ -14,8 +14,8 @@
 // all their call sites.
 //
 // Case 1: Reusing cached tensors:
-//    InitOp can create tensors of type TensorType::Cache, which can be used as
-//    not always live TensorType::Variable tensors in PingPong mode.
+//    InitOp can create tensors which can be used as not always live
+//    TensorType::Variable tensors with streaming memory mode.
 //    If two Cache-tensors are shape, type and liveness compatible, they will,
 //    during lowering to Poplar, reuse the same underlying Poplar::Tensor.
 //

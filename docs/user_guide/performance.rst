@@ -29,8 +29,8 @@ For example, the following code shows how to set the sync configuration to
 .. code-block:: python
 
     sync_pattern = popart.SyncPattern.Full
-    if args.execution_mode == "PINGPONG":
-        sync_pattern = popart.SyncPattern.PingPong
+    if args.execution_mode == "PHASED":
+        sync_pattern = popart.SyncPattern.ReplicaAndLadder
     device = popart.DeviceManager().acquireAvailableDevice(
         request_ipus,
         pattern=sync_pattern)
@@ -63,10 +63,11 @@ shows four IPUs: A, B, C and D.
   This allows any IPU to be doing host IO, for example, while others are
   processing data.
 
-* **PingPong:** One sync group contains all the IPUs. The other sync group is
-  used independently by sets of IPUs, for example A+C and B+D. This means that
-  each subset can communicate independently of each other. The two groups of
-  IPUs can then alternate between host I/O and processing.
+* **ReplicaAndLadder:** One sync group contains all the IPUs.
+  The other sync group is used independently by sets of IPUs,
+  for example A+C and B+D. This means that each subset can communicate
+  independently of each other. The two groups of IPUs can then alternate
+  between host I/O and processing.
 
 For more information on how the sync groups are used by the Poplar framework,
 please refer to the `Poplar and PopLibs User Guide

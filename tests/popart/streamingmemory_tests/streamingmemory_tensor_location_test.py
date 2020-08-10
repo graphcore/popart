@@ -14,7 +14,7 @@ import test_util as tu
 
 
 def get_ir(model_file_name='model.onnx',
-           enable_pingpong=True,
+           enable_executionphases=True,
            enable_matmul_serialization=False,
            enable_outlining=False,
            activation_tensor_location_settings=None,
@@ -47,7 +47,7 @@ def get_ir(model_file_name='model.onnx',
 
     out = ip
     for i in range(num_layers):
-        with builder.pingPongPhase(i):
+        with builder.executionPhase(i):
             out = add_layer(i, out)
 
     l1 = builder.aiGraphcore.l1loss([out], 0.1)
@@ -57,7 +57,7 @@ def get_ir(model_file_name='model.onnx',
     builder.addOutputTensor(out)
 
     device = tu.create_test_device(
-        num_replicas * (2 if enable_pingpong else 1),
+        num_replicas * (2 if enable_executionphases else 1),
         pattern=popart.SyncPattern.Full)
 
     dfAnchors = {}
@@ -78,10 +78,10 @@ def get_ir(model_file_name='model.onnx',
 
     opts.tensorLocationSettingsOverride = tensor_location_setting_override
 
-    if (enable_pingpong):
-        opts.pingPongSettings.phases = num_layers
+    if (enable_executionphases):
+        opts.executionPhaseSettings.phases = num_layers
         opts.autoRecomputation = popart.RecomputationType.NoRecompute
-        opts.virtualGraphMode = popart.VirtualGraphMode.PingPong
+        opts.virtualGraphMode = popart.VirtualGraphMode.ExecutionPhases
         opts.explicitRecomputation = False
 
     proto = builder.getModelProto()

@@ -183,8 +183,8 @@ void DotVisualizer::write() {
       coreNameStream << " vgid:" << n->getVirtualGraphId();
     }
 
-    if (n->hasPingPongPhase()) {
-      coreNameStream << " pp:" << n->getPingPongPhase();
+    if (n->hasExecutionPhase()) {
+      coreNameStream << " pp:" << n->getExecutionPhase();
     }
 
     if (auto ipuCopy = dynamic_cast<IpuCopyOp *>(n)) {

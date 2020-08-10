@@ -18,11 +18,11 @@ int64_t Builder::getPipelineStage() const {
   return popart::any_cast<int64_t>(getAttribute(sPipelineStageAttribute));
 }
 
-int64_t Builder::getPingPongPhase() const {
-  if (!impl_->hasAttribute(sPingPongPhaseAttribute)) {
-    throw popart::error("PingPong phase not set in current scope.");
+int64_t Builder::getExecutionPhase() const {
+  if (!impl_->hasAttribute(sExecutionPhaseAttribute)) {
+    throw popart::error("Execution phase not set in current scope.");
   }
-  return popart::any_cast<int64_t>(getAttribute(sPingPongPhaseAttribute));
+  return popart::any_cast<int64_t>(getAttribute(sExecutionPhaseAttribute));
 }
 
 int64_t Builder::getVirtualGraph() const {

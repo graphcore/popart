@@ -9,7 +9,7 @@
 // starting from data inputs. The data/activation path is sliced along the
 // batch dimension, and concatenated again for ops that do not support batch
 // serialization, such as Losses and BatchNorm.
-// Crossing boundaries such as PingPong phases, VirtualGraphs and Pipeline
+// Crossing boundaries such as ExecutionPhases, VirtualGraphs and Pipeline
 // stages also causes the batch to be concatenated again.
 // The backward pass is grown as normal, but the second batch serialization pass
 // will look for local graph isomorphisms to ensure each batch serialized

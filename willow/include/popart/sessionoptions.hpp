@@ -47,11 +47,11 @@ enum class MergeVarUpdateType {
 };
 
 enum class VirtualGraphMode {
-  Off = 0,  // virtual graphs are not enabled
-  Manual,   // user must set the virtualGraph attribute on all ops and losses
-  Auto,     // autoVirtualGraph transform is used
-  PingPong, // pingPong transform
-  N         // The number of VirtualGraphModes, must appear as the final enum
+  Off = 0, // virtual graphs are not enabled
+  Manual,  // user must set the virtualGraph attribute on all ops and losses
+  Auto,    // autoVirtualGraph transform is used
+  ExecutionPhases, // virtual graphs are tied to execution phases
+  N // The number of VirtualGraphModes, must appear as the final enum
 };
 
 enum class IrSerializationFormat {
@@ -111,27 +111,27 @@ struct BatchSerializationSettings {
   BatchSerializationSettings() = default;
   BatchSerializationSettings(int factor_,
                              bool concatOnVirtualGraphChange_,
-                             bool concatOnPingPongPhaseChange_,
+                             bool concatOnExecutionPhaseChange_,
                              bool concatOnPipelineStageChange_);
 
   BatchSerializationSettings &
   operator=(const BatchSerializationSettings &rhs) = default;
 
-  int factor                       = 0;
-  bool concatOnVirtualGraphChange  = true;
-  bool concatOnPingPongPhaseChange = true;
-  bool concatOnPipelineStageChange = true;
+  int factor                        = 0;
+  bool concatOnVirtualGraphChange   = true;
+  bool concatOnExecutionPhaseChange = true;
+  bool concatOnPipelineStageChange  = true;
 };
 
-enum class PingPongIOSchedule {
+enum class ExecutionPhaseIOSchedule {
   // Preload tensors in previous phase for use in current phase
   Preload = 0,
   // Load tensors just before they are required
   OnDemand,
 };
 
-enum class PingPongOptimizerSchedule {
-  // The optimizer steps for pingpong consists of:
+enum class ExecutionPhaseOptimizerSchedule {
+  // The optimizer steps for phased execution consists of:
   // 1. Copy to IO tiles if necessary
   // 2. Run collective operations if necessary
   // 3. Load and update optimizer state
@@ -145,24 +145,25 @@ enum class PingPongOptimizerSchedule {
 };
 
 /**
- * A structure containing PingPong settings.
+ * A structure containing ExecutionPhase settings.
  */
-struct PingPongSettings {
-  PingPongSettings() = default;
-  PingPongSettings(int phases_,
-                   bool stages_,
-                   PingPongIOSchedule weightIOSchedule_,
-                   PingPongIOSchedule activationIOSchedule_,
-                   PingPongIOSchedule optimizerIOSchedule_,
-                   PingPongOptimizerSchedule optimizerSchedule_)
+struct ExecutionPhaseSettings {
+  ExecutionPhaseSettings() = default;
+  ExecutionPhaseSettings(int phases_,
+                         bool stages_,
+                         ExecutionPhaseIOSchedule weightIOSchedule_,
+                         ExecutionPhaseIOSchedule activationIOSchedule_,
+                         ExecutionPhaseIOSchedule optimizerIOSchedule_,
+                         ExecutionPhaseOptimizerSchedule optimizerSchedule_)
       : phases{phases_}, stages{stages_}, weightIOSchedule{weightIOSchedule_},
         activationIOSchedule{activationIOSchedule_},
         optimizerIOSchedule{optimizerIOSchedule_}, optimizerSchedule{
                                                        optimizerSchedule_} {}
 
-  PingPongSettings &operator=(const PingPongSettings &rhs) = default;
+  ExecutionPhaseSettings &
+  operator=(const ExecutionPhaseSettings &rhs) = default;
 
-  // Number of PingPongPhases for the whole model
+  // Number of ExecutionPhases for the whole model
   int phases = 0;
 
   // Number of overlapping stages
@@ -170,12 +171,14 @@ struct PingPongSettings {
   // 2: PingPong between 2 IPUs, default for >= 2 IPUs / replica
   int stages = 2;
 
-  PingPongIOSchedule weightIOSchedule     = PingPongIOSchedule::Preload;
-  PingPongIOSchedule activationIOSchedule = PingPongIOSchedule::Preload;
-  PingPongIOSchedule optimizerIOSchedule  = PingPongIOSchedule::OnDemand;
+  ExecutionPhaseIOSchedule weightIOSchedule = ExecutionPhaseIOSchedule::Preload;
+  ExecutionPhaseIOSchedule activationIOSchedule =
+      ExecutionPhaseIOSchedule::Preload;
+  ExecutionPhaseIOSchedule optimizerIOSchedule =
+      ExecutionPhaseIOSchedule::OnDemand;
 
-  PingPongOptimizerSchedule optimizerSchedule =
-      PingPongOptimizerSchedule::Interleaving;
+  ExecutionPhaseOptimizerSchedule optimizerSchedule =
+      ExecutionPhaseOptimizerSchedule::Interleaving;
 };
 
 /**
@@ -333,8 +336,8 @@ struct SessionOptions {
   // Enable stochastic rounding
   bool enableStochasticRounding = false;
 
-  // Configure PingPong
-  PingPongSettings pingPongSettings;
+  // Configure execution phases
+  ExecutionPhaseSettings executionPhaseSettings;
 
   // Enable explicit recomputation
   bool explicitRecomputation = false;

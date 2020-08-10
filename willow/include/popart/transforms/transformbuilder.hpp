@@ -20,7 +20,7 @@ class TransformBuilder {
               std::map<std::string, popart::any> attributes,
               OptionalVGraphId,
               OptionalPipelineStage,
-              OptionalPingPongPhase,
+              OptionalExecutionPhase,
               const std::string opName,
               const std::string outputName);
 
@@ -30,7 +30,7 @@ class TransformBuilder {
                     TensorId &out,
                     OptionalVGraphId,
                     OptionalPipelineStage,
-                    OptionalPingPongPhase,
+                    OptionalExecutionPhase,
                     const std::string debugPrefix);
 
   std::vector<TensorId>
@@ -40,7 +40,7 @@ class TransformBuilder {
                 std::map<std::string, popart::any> attributes,
                 OptionalVGraphId,
                 OptionalPipelineStage,
-                OptionalPingPongPhase,
+                OptionalExecutionPhase,
                 const std::string opName);
 
 public:
@@ -57,7 +57,7 @@ public:
                   int64_t axis,
                   OptionalVGraphId virtualGraphId,
                   OptionalPipelineStage,
-                  OptionalPingPongPhase,
+                  OptionalExecutionPhase,
                   const std::string opName,
                   const std::string outputName);
 
@@ -66,20 +66,20 @@ public:
               TensorId out,
               OptionalVGraphId,
               OptionalPipelineStage,
-              OptionalPingPongPhase,
+              OptionalExecutionPhase,
               const std::string opName);
 
   TensorId concat(std::vector<TensorId> &inputs,
                   OptionalVGraphId virtualGraphId,
                   OptionalPipelineStage pipelineStage,
-                  OptionalPingPongPhase pingPongPhase,
+                  OptionalExecutionPhase executionPhase,
                   const std::string opName,
                   const std::string outputName) {
     return concat(inputs,
                   0,
                   virtualGraphId,
                   pipelineStage,
-                  pingPongPhase,
+                  executionPhase,
                   opName,
                   outputName);
   }
@@ -88,23 +88,23 @@ public:
               TensorId out,
               OptionalVGraphId virtualGraphId,
               OptionalPipelineStage pipelineStage,
-              OptionalPingPongPhase pingPongPhase,
+              OptionalExecutionPhase executionPhase,
               const std::string opName) {
     concat(
-        inputs, 0, out, virtualGraphId, pipelineStage, pingPongPhase, opName);
+        inputs, 0, out, virtualGraphId, pipelineStage, executionPhase, opName);
   }
 
   void sum(std::vector<TensorId> &inputs,
            TensorId out,
            OptionalVGraphId,
            OptionalPipelineStage,
-           OptionalPingPongPhase,
+           OptionalExecutionPhase,
            const std::string opName);
 
   TensorId addLhsInplace(std::vector<TensorId> &inputs,
                          OptionalVGraphId,
                          OptionalPipelineStage,
-                         OptionalPingPongPhase,
+                         OptionalExecutionPhase,
                          const std::string opName,
                          const std::string outputName);
 
@@ -112,14 +112,14 @@ public:
                      TensorId out,
                      OptionalVGraphId,
                      OptionalPipelineStage,
-                     OptionalPingPongPhase,
+                     OptionalExecutionPhase,
                      const std::string opName);
 
   TensorId matmul(TensorId lhs,
                   TensorId rhs,
                   OptionalVGraphId,
                   OptionalPipelineStage,
-                  OptionalPingPongPhase,
+                  OptionalExecutionPhase,
                   const std::string opName,
                   const std::string outputName,
                   std::map<std::string, popart::any> attrs = {},
@@ -130,14 +130,14 @@ public:
             DataType type,
             OptionalVGraphId,
             OptionalPipelineStage,
-            OptionalPingPongPhase,
+            OptionalExecutionPhase,
             const std::string opName);
 
   TensorId squeeze(TensorId in,
                    const Shape &axes,
                    OptionalVGraphId,
                    OptionalPipelineStage,
-                   OptionalPingPongPhase,
+                   OptionalExecutionPhase,
                    const std::string opName,
                    const std::string outputName);
 
@@ -146,7 +146,7 @@ public:
                TensorId out,
                OptionalVGraphId,
                OptionalPipelineStage,
-               OptionalPingPongPhase,
+               OptionalExecutionPhase,
                const std::string opName);
 
   TensorId slice(TensorId in,
@@ -155,7 +155,7 @@ public:
                  const Shape &axes,
                  OptionalVGraphId,
                  OptionalPipelineStage,
-                 OptionalPingPongPhase,
+                 OptionalExecutionPhase,
                  const std::string opName,
                  const std::string outputName);
 
@@ -165,7 +165,7 @@ public:
                         const Shape &axes,
                         OptionalVGraphId,
                         OptionalPipelineStage,
-                        OptionalPingPongPhase,
+                        OptionalExecutionPhase,
                         const std::string opName,
                         const std::string outputName);
 
@@ -176,14 +176,14 @@ public:
              TensorId out,
              OptionalVGraphId,
              OptionalPipelineStage,
-             OptionalPingPongPhase,
+             OptionalExecutionPhase,
              const std::string opName);
 
   TensorId transpose(TensorId in,
                      Shape perm,
                      OptionalVGraphId,
                      OptionalPipelineStage,
-                     OptionalPingPongPhase,
+                     OptionalExecutionPhase,
                      const std::string opName,
                      const std::string outTensorName);
 
@@ -192,14 +192,14 @@ public:
                  TensorId out,
                  OptionalVGraphId,
                  OptionalPipelineStage,
-                 OptionalPingPongPhase,
+                 OptionalExecutionPhase,
                  const std::string opName);
 
   TensorId reshape(TensorId in,
                    Shape shape,
                    OptionalVGraphId,
                    OptionalPipelineStage,
-                   OptionalPingPongPhase,
+                   OptionalExecutionPhase,
                    const std::string opName,
                    const std::string outputName);
 
@@ -208,7 +208,7 @@ public:
                      std::vector<int64_t> axes,
                      OptionalVGraphId,
                      OptionalPipelineStage,
-                     OptionalPingPongPhase,
+                     OptionalExecutionPhase,
                      const std::string opName,
                      const std::string outputName);
 
@@ -217,13 +217,13 @@ public:
                               std::vector<int64_t> splitSizes,
                               OptionalVGraphId,
                               OptionalPipelineStage,
-                              OptionalPingPongPhase,
+                              OptionalExecutionPhase,
                               const std::string opName);
 
   TensorId add(std::vector<TensorId> &inputs,
                OptionalVGraphId,
                OptionalPipelineStage,
-               OptionalPingPongPhase,
+               OptionalExecutionPhase,
                const std::string opName,
                const std::string outputName);
 
@@ -232,7 +232,7 @@ public:
                  TensorId out,
                  OptionalVGraphId,
                  OptionalPipelineStage,
-                 OptionalPingPongPhase,
+                 OptionalExecutionPhase,
                  const std::string opName);
 };
 

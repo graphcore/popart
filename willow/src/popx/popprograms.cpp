@@ -438,12 +438,12 @@ poplar::Function &PopPrograms::getFragmentFunction(const Graph &called_graph,
   return funcs.at(called_graph.id.str());
 }
 
-bool PopPrograms::hasBeenRecomputed(OpId id, PingPongPhase phase) const {
+bool PopPrograms::hasBeenRecomputed(OpId id, ExecutionPhase phase) const {
   auto itHas = (beenRecomputed.find({id, phase}) != beenRecomputed.end());
   return itHas;
 }
 
-void PopPrograms::recordRecomputed(OpId id, PingPongPhase phase) {
+void PopPrograms::recordRecomputed(OpId id, ExecutionPhase phase) {
   beenRecomputed.insert({id, phase});
 }
 

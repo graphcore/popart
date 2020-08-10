@@ -443,7 +443,7 @@ void Graph::setConvFlipWeightConstraints() {
 std::vector<Op *> Graph::getOpSchedule(const OpsBeforeKey &gCons) const {
   return scheduler->getSchedule(gCons,
                                 *this,
-                                ir.getPingPongPhasesReady(),
+                                ir.getExecutionPhasesReady(),
                                 getIr().getSessionOptions().timeLimitScheduler,
                                 getIr().getSessionOptions().swapLimitScheduler,
                                 getIr().getSessionOptions().kahnTieBreaker);
@@ -451,8 +451,8 @@ std::vector<Op *> Graph::getOpSchedule(const OpsBeforeKey &gCons) const {
 
 // Are the Ops with all the dependencies a DAG?
 bool Graph::isSchedulable(const OpsBeforeKey &gCons,
-                          bool respectPingPongPhases) const {
-  return scheduler->isSchedulable(gCons, *this, respectPingPongPhases);
+                          bool respectExecutionPhases) const {
+  return scheduler->isSchedulable(gCons, *this, respectExecutionPhases);
 }
 
 bool Graph::hasUserRecomputeOps() const {
@@ -786,7 +786,8 @@ std::vector<Op *> BackwardPassCreator::growGradOps(Op *nonGradOp) {
 
     if (nonGradOp->settings.recomputeType == RecomputeType::Recompute &&
         bwdGraph.getIr().autoRecomputationEnabled() &&
-        bwdGraph.getIr().getSessionOptions().pingPongSettings.phases < 2) {
+        bwdGraph.getIr().getSessionOptions().executionPhaseSettings.phases <
+            2) {
       throw error("Grad Ops should be grown before recompute annotation");
     }
 

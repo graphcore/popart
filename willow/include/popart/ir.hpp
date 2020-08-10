@@ -401,8 +401,8 @@ public:
   const std::map<RemoteBufferId, RemoteBufferInfo>
   getAllRemoteBufferInfos() const;
 
-  void setPingPongPhasesReady() { pingPongPhasesReady = true; }
-  bool getPingPongPhasesReady() { return pingPongPhasesReady; }
+  void setExecutionPhasesReady() { executionPhasesReady = true; }
+  bool getExecutionPhasesReady() { return executionPhasesReady; }
 
   PipelineStage getNumPipelineStages() const;
 
@@ -462,7 +462,7 @@ private:
 
   void verifyVertexAttributesOnlyInMain() const;
   void verifyPipelineSettings() const;
-  void verifyPingPongSettings() const;
+  void verifyExecutionPhaseSettings() const;
   void verifySubgraphs() const;
   void verifyRecomputeAttributes() const noexcept(false);
   void verifyDistributedReplicatedGraphSettings() const;
@@ -513,8 +513,8 @@ private:
 
   ExecutionMode executionMode = ExecutionMode::Training;
 
-  bool pingPongPhasesReady = false;
-  bool isPrepared          = false;
+  bool executionPhasesReady = false;
+  bool isPrepared           = false;
 
   // enable/disable a transform stage
   void enableTransform(std::size_t transformId, bool enable);

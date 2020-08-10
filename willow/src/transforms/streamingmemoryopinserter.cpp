@@ -99,7 +99,7 @@ void StreamingMemoryOpInserter::apply() {
   std::set<Op *, POpCmp> opsToSetup;
 
   // Make sure no priorities outside of the range needed by
-  // pingpong are being used.
+  // phased execution are being used.
   compressPriorities(graph);
   sanitizeOps();
 
@@ -109,7 +109,7 @@ void StreamingMemoryOpInserter::apply() {
   // then the tensor should be disconnected and backed up / restored
 
   logging::transform::debug(
-      "[PingPong] Processing tensors across PingPong phases");
+      "[StreamingMemory] Processing tensors across execution phases");
   Tensors &tensors = graph.getTensors();
 
   for (TensorId id : tensors.getAllTensorIds()) {
@@ -128,7 +128,7 @@ void StreamingMemoryOpInserter::apply() {
     }
   }
 
-  graph.getIr().setPingPongPhasesReady();
+  graph.getIr().setExecutionPhasesReady();
 }
 
 void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
@@ -156,15 +156,17 @@ void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
   TensorId gatheredTensorId = tensor->id;
 
   for (auto &phaseLoadStore : tensorConfig.phaseConfig.loadStoreInPhase) {
-    PingPongPhase currentPingPongPhase         = phaseLoadStore.first;
+    ExecutionPhase currentExecutionPhase       = phaseLoadStore.first;
     RemoteLoadOp *remoteLoad                   = nullptr;
     RemoteStoreOp *remoteStore                 = nullptr;
     ReplicatedAllGatherOp *replicatedAllGather = nullptr;
 
     // Load
     if (phaseLoadStore.second.first) {
-      auto res = insertRemoteLoadOp(
-          tensorConfig, currentPingPongPhase, loadedTensorId, gatheredTensorId);
+      auto res = insertRemoteLoadOp(tensorConfig,
+                                    currentExecutionPhase,
+                                    loadedTensorId,
+                                    gatheredTensorId);
       // Unpack result.
       remoteLoad          = std::get<0>(res);
       replicatedAllGather = std::get<1>(res);
@@ -173,7 +175,7 @@ void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
     // Store
     if (phaseLoadStore.second.second) {
       remoteStore = insertRemoteStoreOp(
-          tensorConfig, currentPingPongPhase, loadedTensorId);
+          tensorConfig, currentExecutionPhase, loadedTensorId);
     }
 
     // Remote load has to take place before associated remote store
@@ -184,13 +186,13 @@ void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
     if (remoteStore) {
       // Any modification has to take place before the remote store
       for (Op *modifyingOp :
-           tensorConfig.phaseConfig.modifiersInPhase[currentPingPongPhase]) {
+           tensorConfig.phaseConfig.modifiersInPhase[currentExecutionPhase]) {
         graph.topoCons->insert(modifyingOp, remoteStore);
       }
     }
 
     for (Op *consumerOp :
-         tensorConfig.phaseConfig.consumersInPhase[currentPingPongPhase]) {
+         tensorConfig.phaseConfig.consumersInPhase[currentExecutionPhase]) {
       if (tensor->isAcclTensor()) {
         if (remoteLoad) {
           graph.topoCons->insert(remoteLoad, consumerOp, true);
@@ -208,16 +210,16 @@ void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
       // Logging graph change
       if (tensorConfig.producerOp) {
         logging::transform::debug(
-            "[PingPong] Disconnecting tensor {} between ops {} and {}",
+            "[StreamingMemory] Disconnecting tensor {} between ops {} and {}",
             tensor->id,
             tensorConfig.producerOp->debugName(),
             consumerOp->debugName());
       } else {
         logging::transform::debug(
-            "[PingPong] Disconnecting tensor {} at op {} (modified: {})",
+            "[StreamingMemory] Disconnecting tensor {} at op {} (modified: {})",
             tensor->id,
             consumerOp->debugName(),
-            !tensorConfig.phaseConfig.modifiersInPhase[currentPingPongPhase]
+            !tensorConfig.phaseConfig.modifiersInPhase[currentExecutionPhase]
                  .empty());
       }
 
@@ -263,11 +265,11 @@ void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
             opsToSetup.insert(optimizerOp);
 
             if (tensorConfig.optimizerSchedule ==
-                PingPongOptimizerSchedule::Interleaving) {
+                ExecutionPhaseOptimizerSchedule::Interleaving) {
               optimizerOp->settings.schedulePriority =
                   varUpdatePriorityInterleave;
             } else if (tensorConfig.optimizerSchedule ==
-                       PingPongOptimizerSchedule::Batch) {
+                       ExecutionPhaseOptimizerSchedule::Batch) {
               optimizerOp->settings.schedulePriority = varUpdatePriorityBatch;
             }
             optimizerOp->settings.useIoTiles =
@@ -293,11 +295,11 @@ void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
               if (replicatedAllReduce) {
 
                 if (tensorConfig.optimizerSchedule ==
-                    PingPongOptimizerSchedule::Interleaving) {
+                    ExecutionPhaseOptimizerSchedule::Interleaving) {
                   replicatedAllReduce->settings.schedulePriority =
                       allReducePriorityInterleave;
                 } else if (tensorConfig.optimizerSchedule ==
-                           PingPongOptimizerSchedule::Batch) {
+                           ExecutionPhaseOptimizerSchedule::Batch) {
                   replicatedAllReduce->settings.schedulePriority =
                       allReducePriorityBatch;
                 }
@@ -346,11 +348,11 @@ void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
                   replicatedReduceScatter->setup();
 
                   if (tensorConfig.optimizerSchedule ==
-                      PingPongOptimizerSchedule::Interleaving) {
+                      ExecutionPhaseOptimizerSchedule::Interleaving) {
                     replicatedReduceScatter->settings.schedulePriority =
                         allReducePriorityInterleave;
                   } else if (tensorConfig.optimizerSchedule ==
-                             PingPongOptimizerSchedule::Batch) {
+                             ExecutionPhaseOptimizerSchedule::Batch) {
                     replicatedReduceScatter->settings.schedulePriority =
                         allReducePriorityBatch;
                   }
@@ -426,17 +428,17 @@ void StreamingMemoryOpInserter::getTensorSchedule(
   if (tensor->getTensorTypeInfo()->type() == TensorType::Variable) {
     if (tensor->isAcclTensor()) {
       tensorConfig.ioSchedule =
-          sessionOptions.pingPongSettings.optimizerIOSchedule;
+          sessionOptions.executionPhaseSettings.optimizerIOSchedule;
     } else {
       tensorConfig.ioSchedule =
-          sessionOptions.pingPongSettings.weightIOSchedule;
+          sessionOptions.executionPhaseSettings.weightIOSchedule;
     }
   } else {
     tensorConfig.ioSchedule =
-        sessionOptions.pingPongSettings.activationIOSchedule;
+        sessionOptions.executionPhaseSettings.activationIOSchedule;
   }
   tensorConfig.optimizerSchedule =
-      sessionOptions.pingPongSettings.optimizerSchedule;
+      sessionOptions.executionPhaseSettings.optimizerSchedule;
 }
 
 void StreamingMemoryOpInserter::getTensorConfig(
@@ -459,7 +461,8 @@ void StreamingMemoryOpInserter::getTensorConfig(
   if (tensorConfig.location.replicatedTensorSharding) {
     tensor->tensorLocationInfo.setSharded(true);
     logging::transform::debug(
-        "[PingPong] Enabling replica-sharded loading of tensor {}", tensor->id);
+        "[StreamingMemory] Enabling replica-sharded loading of tensor {}",
+        tensor->id);
   }
 }
 
@@ -472,8 +475,8 @@ void StreamingMemoryOpInserter::getOrderedConsumerOps(Tensor *tensor,
   // Process consumers in ascending order of phases
   std::sort(
       consumerOps.begin(), consumerOps.end(), [](const Op *lhs, const Op *rhs) {
-        return (lhs->hasPingPongPhase() ? lhs->getPingPongPhase() : -1) <
-               (rhs->hasPingPongPhase() ? rhs->getPingPongPhase() : -1);
+        return (lhs->hasExecutionPhase() ? lhs->getExecutionPhase() : -1) <
+               (rhs->hasExecutionPhase() ? rhs->getExecutionPhase() : -1);
       });
 }
 
@@ -492,19 +495,19 @@ void StreamingMemoryOpInserter::getTensorPhaseConfig(
     const Ops &consumerOps,
     TensorPhaseConfig &phaseConfig) const {
 
-  // Set producer PingPongPhase.
+  // Set producer ExecutionPhase.
   if (producerOp) {
-    if (producerOp->getOptionalPingPongPhase()) {
-      phaseConfig.producerPingPongPhase =
-          producerOp->getOptionalPingPongPhase();
+    if (producerOp->getOptionalExecutionPhase()) {
+      phaseConfig.producerExecutionPhase =
+          producerOp->getOptionalExecutionPhase();
     }
     if (const IpuCopyOp *copy = dynamic_cast<const IpuCopyOp *>(producerOp)) {
       if (copy->getSourceIpu() % num_stages !=
           copy->getDestIpu() % num_stages) {
         // Inter-phase copy, special case where the producer
         // phase is moved
-        phaseConfig.producerPingPongPhase =
-            *phaseConfig.producerPingPongPhase + 1;
+        phaseConfig.producerExecutionPhase =
+            *phaseConfig.producerExecutionPhase + 1;
       }
       phaseConfig.loadStoreVGID = copy->getDestIpu();
     } else {
@@ -512,13 +515,13 @@ void StreamingMemoryOpInserter::getTensorPhaseConfig(
     }
   }
 
-  if (phaseConfig.producerPingPongPhase) {
-    phaseConfig.livePhases.insert(*phaseConfig.producerPingPongPhase);
+  if (phaseConfig.producerExecutionPhase) {
+    phaseConfig.livePhases.insert(*phaseConfig.producerExecutionPhase);
     // Do not load in producer phase
-    phaseConfig.loadStoreInPhase[*phaseConfig.producerPingPongPhase].first =
+    phaseConfig.loadStoreInPhase[*phaseConfig.producerExecutionPhase].first =
         false;
     // Store in producer phase
-    phaseConfig.loadStoreInPhase[*phaseConfig.producerPingPongPhase].second =
+    phaseConfig.loadStoreInPhase[*phaseConfig.producerExecutionPhase].second =
         true;
   }
 
@@ -538,44 +541,44 @@ void StreamingMemoryOpInserter::getTensorPhaseConfig(
           std::min(*phaseConfig.loadStoreVGID, *consumerVGID);
     }
 
-    auto consumerPingPongPhase = *consumerOp->getOptionalPingPongPhase();
+    auto consumerExecutionPhase = *consumerOp->getOptionalExecutionPhase();
 
-    if (phaseConfig.livePhases.find(consumerPingPongPhase - 2) !=
+    if (phaseConfig.livePhases.find(consumerExecutionPhase - 2) !=
         phaseConfig.livePhases.end()) {
       // Live in adjacent previous phase, do not load in current phase
-      phaseConfig.loadStoreInPhase[consumerPingPongPhase].first = false;
-      if (phaseConfig.loadStoreInPhase[consumerPingPongPhase - 2].second) {
+      phaseConfig.loadStoreInPhase[consumerExecutionPhase].first = false;
+      if (phaseConfig.loadStoreInPhase[consumerExecutionPhase - 2].second) {
         // Move store from adjacent previous phase to current phase
-        phaseConfig.loadStoreInPhase[consumerPingPongPhase].second     = true;
-        phaseConfig.loadStoreInPhase[consumerPingPongPhase - 2].second = false;
+        phaseConfig.loadStoreInPhase[consumerExecutionPhase].second     = true;
+        phaseConfig.loadStoreInPhase[consumerExecutionPhase - 2].second = false;
       }
-    } else if (phaseConfig.producerPingPongPhase &&
-               phaseConfig.producerPingPongPhase == consumerPingPongPhase) {
+    } else if (phaseConfig.producerExecutionPhase &&
+               phaseConfig.producerExecutionPhase == consumerExecutionPhase) {
       // Current phase is producer phase, do not load in current phase
-      phaseConfig.loadStoreInPhase[consumerPingPongPhase].first = false;
+      phaseConfig.loadStoreInPhase[consumerExecutionPhase].first = false;
     } else {
       // Not live, load in current phase
-      phaseConfig.loadStoreInPhase[consumerPingPongPhase].first = true;
+      phaseConfig.loadStoreInPhase[consumerExecutionPhase].first = true;
     }
 
-    if (phaseConfig.modifiersInPhase.find(consumerPingPongPhase) ==
+    if (phaseConfig.modifiersInPhase.find(consumerExecutionPhase) ==
         phaseConfig.modifiersInPhase.end()) {
       // Check if the consumer OP modifies the tensor, e.g. for weights
       // if yes, then the tensor requires to be backed-up at the end of
       // the phase
       getAliasedModifiersInPhase(
           tensor,
-          consumerPingPongPhase,
-          phaseConfig.modifiersInPhase[consumerPingPongPhase]);
-      if (!phaseConfig.modifiersInPhase[consumerPingPongPhase].empty()) {
+          consumerExecutionPhase,
+          phaseConfig.modifiersInPhase[consumerExecutionPhase]);
+      if (!phaseConfig.modifiersInPhase[consumerExecutionPhase].empty()) {
         // Storing in this phase
-        phaseConfig.loadStoreInPhase[consumerPingPongPhase].second = true;
+        phaseConfig.loadStoreInPhase[consumerExecutionPhase].second = true;
         // Not storing in previous phase
-        phaseConfig.loadStoreInPhase[consumerPingPongPhase - 2].second = false;
+        phaseConfig.loadStoreInPhase[consumerExecutionPhase - 2].second = false;
       }
     }
-    phaseConfig.livePhases.insert(consumerPingPongPhase);
-    phaseConfig.consumersInPhase[consumerPingPongPhase].push_back(consumerOp);
+    phaseConfig.livePhases.insert(consumerExecutionPhase);
+    phaseConfig.consumersInPhase[consumerExecutionPhase].push_back(consumerOp);
   }
 }
 
@@ -601,7 +604,7 @@ void StreamingMemoryOpInserter::getTensorSettings(
 
 void StreamingMemoryOpInserter::getModifiersInPhase(
     Tensor *t,
-    const PingPongPhase phase,
+    const ExecutionPhase phase,
     Ops &modifyingConsumerOps) const {
   for (Op *consumer : t->consumers.getOps()) {
     for (InIndex in : consumer->input->indices(t)) {
@@ -612,8 +615,8 @@ void StreamingMemoryOpInserter::getModifiersInPhase(
                          return r.isEmpty() ||
                                 r.getAccessType() == view::AccessType::Read;
                        }) &&
-          consumer->hasPingPongPhase() &&
-          consumer->getPingPongPhase() == phase) {
+          consumer->hasExecutionPhase() &&
+          consumer->getExecutionPhase() == phase) {
         if (std::find(modifyingConsumerOps.begin(),
                       modifyingConsumerOps.end(),
                       consumer) == modifyingConsumerOps.end()) {
@@ -626,7 +629,7 @@ void StreamingMemoryOpInserter::getModifiersInPhase(
 
 void StreamingMemoryOpInserter::getAliasedModifiersInPhase(
     Tensor *tensor,
-    const PingPongPhase phase,
+    const ExecutionPhase phase,
     Ops &modifyingConsumerOps) const {
   getModifiersInPhase(tensor, phase, modifyingConsumerOps);
   auto aliasedTensorMap = graph.getTensors().aliasChainsFrom(tensor);
@@ -646,7 +649,7 @@ void StreamingMemoryOpInserter::getAliasedModifiersInPhase(
 std::tuple<RemoteLoadOp *, ReplicatedAllGatherOp *>
 StreamingMemoryOpInserter::insertRemoteLoadOp(
     const TensorConfig &tensorConfig,
-    const PingPongPhase currentPingPongPhase,
+    const ExecutionPhase currentExecutionPhase,
     TensorId &loadedTensorId,
     TensorId &gatheredTensorId) {
 
@@ -654,41 +657,41 @@ StreamingMemoryOpInserter::insertRemoteLoadOp(
   ReplicatedAllGatherOp *replicatedAllGather = nullptr;
 
   logging::transform::trace(
-      "[PingPong] Adding remote load of {} ({}) in phase {}",
+      "[StreamingMemory] Adding remote load of {} ({}) in phase {}",
       loadedTensorId,
       tensorConfig.tensor->id,
-      currentPingPongPhase);
+      currentExecutionPhase);
 
   auto tensorLoadMapEntry =
-      tensorLoadMap.find({tensorConfig.tensor->id, currentPingPongPhase});
+      tensorLoadMap.find({tensorConfig.tensor->id, currentExecutionPhase});
 
   if (tensorLoadMapEntry == tensorLoadMap.end()) {
     auto remoteLoadOp = std::make_unique<RemoteLoadOp>(
         Onnx::CustomOperators::RemoteLoad, tensorConfig.settings);
     remoteLoad = remoteLoadOp.get();
 
-    if (tensorConfig.ioSchedule == PingPongIOSchedule::OnDemand) {
+    if (tensorConfig.ioSchedule == ExecutionPhaseIOSchedule::OnDemand) {
       // RemoteLoad in current phase
-      remoteLoad->setPingPongPhase(currentPingPongPhase);
+      remoteLoad->setExecutionPhase(currentExecutionPhase);
       if (tensorConfig.tensor->isAcclTensor()) {
         // Optimizer state: Load as late as possible
         if (tensorConfig.optimizerSchedule ==
-            PingPongOptimizerSchedule::Interleaving) {
+            ExecutionPhaseOptimizerSchedule::Interleaving) {
           remoteLoad->settings.schedulePriority =
               optimizerStateLoadPriorityInterleave;
         } else if (tensorConfig.optimizerSchedule ==
-                   PingPongOptimizerSchedule::Batch) {
+                   ExecutionPhaseOptimizerSchedule::Batch) {
           remoteLoad->settings.schedulePriority =
               optimizerStateLoadPriorityBatch;
         }
       }
-    } else if (tensorConfig.ioSchedule == PingPongIOSchedule::Preload) {
+    } else if (tensorConfig.ioSchedule == ExecutionPhaseIOSchedule::Preload) {
       // Very low schedulePriority on loads (at the end of the previous
       // phase)
       remoteLoad->settings.schedulePriority = remoteLoadPriority;
       // RemoteLoad at the end of the previous phase, so that load
       // is executed before inter-IPU copy
-      remoteLoad->setPingPongPhase(currentPingPongPhase - 1);
+      remoteLoad->setExecutionPhase(currentExecutionPhase - 1);
     }
 
     remoteLoad->settings.recomputeType = RecomputeType::Checkpoint;
@@ -700,7 +703,7 @@ StreamingMemoryOpInserter::insertRemoteLoadOp(
 
     TensorId initTensorId = generateInitTensorId(tensorConfig.tensor);
     loadedTensorId =
-        generateLoadedTensorId(tensorConfig.tensor, currentPingPongPhase);
+        generateLoadedTensorId(tensorConfig.tensor, currentExecutionPhase);
     TensorId inTensorId;
 
     if (auto prevLoadId = getPreviousLoadedTensorId(tensorConfig.tensor->id)) {
@@ -728,18 +731,18 @@ StreamingMemoryOpInserter::insertRemoteLoadOp(
 
       if (tensorConfig.tensor->isAcclTensor()) {
         if (tensorConfig.optimizerSchedule ==
-            PingPongOptimizerSchedule::Interleaving) {
+            ExecutionPhaseOptimizerSchedule::Interleaving) {
           remoteLoad->settings.schedulePriority =
               optimizerStateLoadPriorityInterleave;
         } else if (tensorConfig.optimizerSchedule ==
-                   PingPongOptimizerSchedule::Batch) {
+                   ExecutionPhaseOptimizerSchedule::Batch) {
           remoteLoad->settings.schedulePriority =
               optimizerStateLoadPriorityBatch;
         }
-        init->setPingPongPhase(currentPingPongPhase);
+        init->setExecutionPhase(currentExecutionPhase);
       } else {
         init->settings.schedulePriority = initPriority;
-        init->setPingPongPhase(currentPingPongPhase - 1);
+        init->setExecutionPhase(currentExecutionPhase - 1);
       }
 
       init->setVirtualGraphId(tensorConfig.phaseConfig.loadStoreVGID);
@@ -779,7 +782,7 @@ StreamingMemoryOpInserter::insertRemoteLoadOp(
       replicatedAllGather->settings.recomputeType = RecomputeType::Checkpoint;
       // RemoteLoad at the end of the previous phase, so that load
       // is executed before inter-IPU copy
-      replicatedAllGather->setPingPongPhase(currentPingPongPhase - 1);
+      replicatedAllGather->setExecutionPhase(currentExecutionPhase - 1);
       replicatedAllGather->setVirtualGraphId(
           tensorConfig.phaseConfig.loadStoreVGID);
       graph.moveIntoGraph(std::move(replicatedAllGatherOp));
@@ -792,7 +795,7 @@ StreamingMemoryOpInserter::insertRemoteLoadOp(
           getRemoteArg(tensorConfig.tensor->id));
 
       gatheredTensorId =
-          generateGatheredTensorId(tensorConfig.tensor, currentPingPongPhase);
+          generateGatheredTensorId(tensorConfig.tensor, currentExecutionPhase);
 
       replicatedAllGather->createAndConnectOutTensor(
           ReplicatedAllGatherOp::getOutIndex(), gatheredTensorId);
@@ -824,7 +827,7 @@ StreamingMemoryOpInserter::insertRemoteLoadOp(
     }
 
     tensorLoadMap.emplace(
-        TensorPhase(tensorConfig.tensor->id, currentPingPongPhase),
+        TensorPhase(tensorConfig.tensor->id, currentExecutionPhase),
         RemoteLoadOpData(loadedTensorId, gatheredTensorId, remoteLoad));
   } else {
     loadedTensorId   = std::get<0>(tensorLoadMapEntry->second);
@@ -838,31 +841,31 @@ StreamingMemoryOpInserter::insertRemoteLoadOp(
 
 RemoteStoreOp *StreamingMemoryOpInserter::insertRemoteStoreOp(
     const TensorConfig &tensorConfig,
-    const PingPongPhase currentPingPongPhase,
+    const ExecutionPhase currentExecutionPhase,
     const TensorId &loadedTensorId) {
   RemoteStoreOp *remoteStore = nullptr;
 
   logging::transform::trace(
-      "[PingPong] Adding remote store of {} ({}) in phase {}",
+      "[StreamingMemory] Adding remote store of {} ({}) in phase {}",
       loadedTensorId,
       tensorConfig.tensor->id,
-      currentPingPongPhase);
+      currentExecutionPhase);
 
   auto tensorStoreMapEntry =
-      tensorStoreMap.find({tensorConfig.tensor->id, currentPingPongPhase});
+      tensorStoreMap.find({tensorConfig.tensor->id, currentExecutionPhase});
 
   if (tensorStoreMapEntry == tensorStoreMap.end()) {
     auto remoteStoreOp = std::make_unique<RemoteStoreOp>(
         Onnx::CustomOperators::RemoteStore, tensorConfig.settings);
     remoteStore = remoteStoreOp.get();
 
-    remoteStore->setPingPongPhase(currentPingPongPhase);
-    if (tensorConfig.ioSchedule == PingPongIOSchedule::Preload ||
-        (tensorConfig.ioSchedule == PingPongIOSchedule::OnDemand &&
+    remoteStore->setExecutionPhase(currentExecutionPhase);
+    if (tensorConfig.ioSchedule == ExecutionPhaseIOSchedule::Preload ||
+        (tensorConfig.ioSchedule == ExecutionPhaseIOSchedule::OnDemand &&
          tensorConfig.tensor->isAcclTensor())) {
       // Very low schedulePriority on stores (at the end of a phase)
       if (tensorConfig.optimizerSchedule ==
-          PingPongOptimizerSchedule::Interleaving) {
+          ExecutionPhaseOptimizerSchedule::Interleaving) {
         remoteStore->settings.schedulePriority = remoteStorePriorityInterleave;
       } else {
         remoteStore->settings.schedulePriority = remoteStorePriorityBatch;
@@ -884,7 +887,7 @@ RemoteStoreOp *StreamingMemoryOpInserter::insertRemoteStoreOp(
 
     tensorStoreMap.emplace(
         std::pair<TensorId, int64_t>(tensorConfig.tensor->id,
-                                     currentPingPongPhase),
+                                     currentExecutionPhase),
         std::pair<TensorId, RemoteStoreOp *>(loadedTensorId, remoteStore));
   } else {
     remoteStore = tensorStoreMapEntry->second.second;
@@ -898,10 +901,10 @@ void StreamingMemoryOpInserter::sanitizeOps() const {
   auto schedule = graph.getOpSchedule({});
 
   for (Op *op : schedule) {
-    sanitizePlacementAnnotation(op, op->getPingPongPhase());
+    sanitizePlacementAnnotation(op, op->getExecutionPhase());
     // Assign correct schedulePriority to all inter-IPU copies
     if (op->isIpuCopyOp()) {
-      // Special type of IPUCopy between PingPong phases
+      // Special type of IPUCopy between execution phases
       // schedulePriority before RemoteStore but after RemoteLoad
       IpuCopyOp *copy = dynamic_cast<IpuCopyOp *>(op);
       if (!op->copiesOptimizerTensors() &&
@@ -915,7 +918,7 @@ void StreamingMemoryOpInserter::sanitizeOps() const {
       // Always keep IPU copy checkpointed
       if (op->settings.recomputeType == RecomputeType::Undefined) {
         op->settings.recomputeType = RecomputeType::Checkpoint;
-        logging::transform::trace("[PingPong] {} set to Checkpoint",
+        logging::transform::trace("[StreamingMemory] {} set to Checkpoint",
                                   op->debugName());
       }
     }
@@ -923,7 +926,7 @@ void StreamingMemoryOpInserter::sanitizeOps() const {
     if (op->settings.tensorLocation.storage == TensorStorage::Undefined) {
       if (op->opid == Onnx::CustomOperators::GetRandomSeed) {
         op->settings.tensorLocation.storage = TensorStorage::OnChip;
-        logging::transform::trace("[PingPong] {} set to OnChip",
+        logging::transform::trace("[StreamingMemory] {} set to OnChip",
                                   op->debugName());
       }
     }
@@ -931,13 +934,13 @@ void StreamingMemoryOpInserter::sanitizeOps() const {
 }
 
 void StreamingMemoryOpInserter::verifyPlacementConsistency(const Op *op) const {
-  if (op->hasVirtualGraphId() && op->hasPingPongPhase()) {
-    if (op->getPingPongPhase() % num_stages !=
+  if (op->hasVirtualGraphId() && op->hasExecutionPhase()) {
+    if (op->getExecutionPhase() % num_stages !=
         op->getVirtualGraphId() % num_stages) {
-      throw error("[PingPong] Op {} inconsistent PingPong phase {} "
+      throw error("[StreamingMemory] Op {} inconsistent execution phase {} "
                   "and virtual graph ID {}",
                   op->debugName(),
-                  op->getPingPongPhase(),
+                  op->getExecutionPhase(),
                   op->getVirtualGraphId());
     }
   }
@@ -989,10 +992,11 @@ StreamingMemoryOpInserter::determineTensorLocation(Tensor *tensor) const {
 
       if (isValidTensorLocation(producerOp->settings.tensorLocation)) {
         if (producerOp->settings.recomputeType == RecomputeType::Recompute) {
-          logging::transform::warn("[PingPong] Ignoring output tensor location "
-                                   "attribute on tensor {} because the "
-                                   "tensor is set to recompute",
-                                   id);
+          logging::transform::warn(
+              "[StreamingMemory] Ignoring output tensor location "
+              "attribute on tensor {} because the "
+              "tensor is set to recompute",
+              id);
         } else {
           result    = producerOp->settings.tensorLocation;
           logReason = "builder attribute";
@@ -1108,11 +1112,12 @@ StreamingMemoryOpInserter::determineTensorLocation(Tensor *tensor) const {
   }
 
   // Log the result.
-  logging::transform::debug("[PingPong] Determined tensor {} should use tensor "
-                            "location {} (due to {})",
-                            id,
-                            tensorLocationToStr(result),
-                            logReason);
+  logging::transform::debug(
+      "[StreamingMemory] Determined tensor {} should use tensor "
+      "location {} (due to {})",
+      id,
+      tensorLocationToStr(result),
+      logReason);
 
   return result;
 }
@@ -1120,25 +1125,25 @@ StreamingMemoryOpInserter::determineTensorLocation(Tensor *tensor) const {
 // Make sure the op has a valid placement annotation
 void StreamingMemoryOpInserter::sanitizePlacementAnnotation(
     Op *op,
-    PingPongPhase phase) const {
+    ExecutionPhase phase) const {
   for (Tensor *input : op->input->tensors()) {
-    if (input->hasProducer() && input->getProducer()->hasPingPongPhase()) {
-      phase = std::max(phase, input->getProducer()->getPingPongPhase());
+    if (input->hasProducer() && input->getProducer()->hasExecutionPhase()) {
+      phase = std::max(phase, input->getProducer()->getExecutionPhase());
     }
   }
   for (Op *before : graph.topoCons->getBefores(op)) {
-    if (before->hasPingPongPhase()) {
-      phase = std::max(phase, before->getPingPongPhase());
+    if (before->hasExecutionPhase()) {
+      phase = std::max(phase, before->getExecutionPhase());
     }
   }
 
-  bool remapPhase = !op->hasPingPongPhase() || op->getPingPongPhase() < phase;
+  bool remapPhase = !op->hasExecutionPhase() || op->getExecutionPhase() < phase;
 
   IpuCopyOp *copy = dynamic_cast<IpuCopyOp *>(op);
   if (copy &&
       copy->getSourceIpu() % num_stages != copy->getDestIpu() % num_stages) {
     // Inter-phase copy, needs to be associated with the
-    // source pingpong phase and virtual graph
+    // source execution phase and virtual graph
     if (copy->getSourceIpu() % num_stages != phase % num_stages) {
       phase -= 1;
       remapPhase = true;
@@ -1147,19 +1152,20 @@ void StreamingMemoryOpInserter::sanitizePlacementAnnotation(
 
   if (remapPhase) {
     logging::transform::debug(
-        "[PingPong] Mapping operator {} to phase {} -> {}",
+        "[StreamingMemory] Mapping operator {} to phase {} -> {}",
         op->debugName(),
-        op->hasPingPongPhase() ? op->getPingPongPhase() : unusedPingPongPhase,
+        op->hasExecutionPhase() ? op->getExecutionPhase()
+                                : unusedExecutionPhase,
         phase);
-    op->setPingPongPhase(phase);
+    op->setExecutionPhase(phase);
   }
   if (!op->hasVirtualGraphId() && !op->isIpuCopyOp()) {
     VGraphId vgid = phase % num_stages;
-    logging::transform::debug("[PingPong] Mapping operator {} to VGID {} -> {}",
-                              op->debugName(),
-                              op->hasVirtualGraphId() ? op->getVirtualGraphId()
-                                                      : unusedVGraphId,
-                              vgid);
+    logging::transform::debug(
+        "[StreamingMemory] Mapping operator {} to VGID {} -> {}",
+        op->debugName(),
+        op->hasVirtualGraphId() ? op->getVirtualGraphId() : unusedVGraphId,
+        vgid);
     op->setVirtualGraphId(vgid);
   }
   verifyPlacementConsistency(op);
@@ -1175,10 +1181,10 @@ void StreamingMemoryOpInserter::logTensorPhaseConfig(
 
     std::stringstream ss;
     ss << tensor->id << " phase liveness status: ";
-    for (PingPongPhase p = 0; p < num_phases * 2 - 1; ++p) {
+    for (ExecutionPhase p = 0; p < num_phases * 2 - 1; ++p) {
       ss << "| ";
       ss << "(" << p << ") ";
-      if (p == phaseConfig.producerPingPongPhase) {
+      if (p == phaseConfig.producerExecutionPhase) {
         // Produced in this phase
         ss << "P";
       }

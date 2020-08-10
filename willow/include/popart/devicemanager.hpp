@@ -12,7 +12,7 @@ namespace popart {
 
 enum class DeviceType { IpuModel = 0, Cpu, Ipu, OfflineIpu, Sim };
 
-enum class SyncPattern { Full = 0, SinglePipeline, PingPong };
+enum class SyncPattern { Full = 0, SinglePipeline, ReplicaAndLadder };
 
 enum class DeviceConnectionType { Always = 0, OnDemand, Never };
 
@@ -220,7 +220,8 @@ public:
    * * ``numIPUs``:        The number of IPUs to compile for
    * * ``tilesPerIPU``:    The number of tiles per IPU [=1216]
    * * ``ipuVersion``:     The ipu architecture, defaults to "ipu1"
-   * * ``syncPattern``:   The sync pattern to use: full/singlePipline/pingPong,
+   * * ``syncPattern``:    The sync pattern to use:
+   *                       full/singlePipline/replicaAndLadder,
    *                       defaults to full
    *
    * \param options Configuration settings for the IPU Model

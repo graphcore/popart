@@ -15,7 +15,7 @@ import test_util as tu
 
 def run_model(tmpdir,
               model_file_name,
-              enable_pingpong=False,
+              enable_executionphases=False,
               enable_matmul_serialization=False,
               enable_outlining=False,
               activation_tensor_location_settings=None,
@@ -48,7 +48,7 @@ def run_model(tmpdir,
 
     out = ip
     for i in range(num_layers):
-        with builder.pingPongPhase(i):
+        with builder.executionPhase(i):
             out = add_layer(i, out)
 
     l1 = builder.aiGraphcore.l1loss([out], 0.1)
@@ -58,7 +58,7 @@ def run_model(tmpdir,
     builder.addOutputTensor(out)
 
     device = tu.create_test_device(
-        num_replicas * (2 if enable_pingpong else 1),
+        num_replicas * (2 if enable_executionphases else 1),
         pattern=popart.SyncPattern.Full)
 
     dfAnchors = {}
@@ -76,10 +76,10 @@ def run_model(tmpdir,
         opts.weightTensorLocationSettings = weight_tensor_location_settings
     if optimizer_state_tensor_location_settings is not None:
         opts.optimizerStateTensorLocationSettings = optimizer_state_tensor_location_settings
-    if (enable_pingpong):
-        opts.pingPongSettings.phases = num_layers
+    if (enable_executionphases):
+        opts.executionPhaseSettings.phases = num_layers
         opts.autoRecomputation = popart.RecomputationType.NoRecompute
-        opts.virtualGraphMode = popart.VirtualGraphMode.PingPong
+        opts.virtualGraphMode = popart.VirtualGraphMode.ExecutionPhases
         opts.explicitRecomputation = False
 
     opts.weightTensorLocationSettings.minElementsForReplicatedTensorSharding = 8
@@ -126,35 +126,35 @@ def check_model(lhs_model, rhs_model):
 @tu.requires_ipu
 def test_weight_update(tmpdir):
 
-    run_model(tmpdir, 'without_pingpong.onnx', False, True)
-    run_model(tmpdir, 'with_pingpong.onnx', True, False)
-    run_model(tmpdir, 'with_pingpong_serialized.onnx', True, True)
+    run_model(tmpdir, 'without_phased.onnx', False, True)
+    run_model(tmpdir, 'with_phased.onnx', True, False)
+    run_model(tmpdir, 'with_phased_serialized.onnx', True, True)
 
-    without_pingpong = onnx.load(str(tmpdir / 'without_pingpong.onnx'))
-    with_pingpong = onnx.load(str(tmpdir / 'with_pingpong.onnx'))
-    with_pingpong_serialized = onnx.load(
-        str(tmpdir / 'with_pingpong_serialized.onnx'))
+    without_phased = onnx.load(str(tmpdir / 'without_phased.onnx'))
+    with_phased = onnx.load(str(tmpdir / 'with_phased.onnx'))
+    with_phased_serialized = onnx.load(
+        str(tmpdir / 'with_phased_serialized.onnx'))
 
-    check_model(without_pingpong, with_pingpong)
-    check_model(without_pingpong, with_pingpong_serialized)
+    check_model(without_phased, with_phased)
+    check_model(without_phased, with_phased_serialized)
 
 
 @tu.requires_ipu
 def test_onchip_memory(tmpdir):
     onchip_settings = popart.TensorLocationSettings(
         popart.TensorStorage.OnChip, 0)
-    run_model(tmpdir, 'model_normal.onnx', enable_pingpong=False)
+    run_model(tmpdir, 'model_normal.onnx', enable_executionphases=False)
     run_model(tmpdir,
               'model_onchip_act.onnx',
-              enable_pingpong=True,
+              enable_executionphases=True,
               activation_tensor_location_settings=onchip_settings)
     run_model(tmpdir,
               'model_onchip_weights.onnx',
-              enable_pingpong=True,
+              enable_executionphases=True,
               weight_tensor_location_settings=onchip_settings)
     run_model(tmpdir,
               'model_onchip_opt_state.onnx',
-              enable_pingpong=True,
+              enable_executionphases=True,
               optimizer_state_tensor_location_settings=onchip_settings)
 
     normal = onnx.load(str(tmpdir / 'model_normal.onnx'))
@@ -168,11 +168,11 @@ def test_onchip_memory(tmpdir):
 
 
 @tu.requires_ipu
-def test_inplacing_pingpong_constraints(tmpdir):
+def test_inplacing_phased_constraints(tmpdir):
     # This used to fail, see T23985
     run_model(tmpdir,
-              'pingpong.onnx',
-              enable_pingpong=True,
+              'phased.onnx',
+              enable_executionphases=True,
               num_layers=5,
               optimizer=popart.SGD({
                   "defaultLearningRate": (0.1, True),
@@ -188,29 +188,29 @@ def test_inplacing_pingpong_constraints(tmpdir):
 def test_replicated_sgd0_weight_update(tmpdir):
 
     run_model(tmpdir,
-              'pingpong.onnx',
-              enable_pingpong=True,
+              'phased.onnx',
+              enable_executionphases=True,
               batch_size=2,
               num_replicas=1)
     run_model(tmpdir,
-              'pingpong_replicated.onnx',
-              enable_pingpong=True,
+              'phased_replicated.onnx',
+              enable_executionphases=True,
               batch_size=1,
               num_replicas=2)
     run_model(tmpdir,
-              'pingpong_replicated_rws.onnx',
-              enable_pingpong=True,
+              'phased_replicated_rws.onnx',
+              enable_executionphases=True,
               batch_size=1,
               num_replicas=2,
               replicated_tensor_sharding=True)
 
-    pingpong = onnx.load(str(tmpdir / 'pingpong.onnx'))
-    pingpong_replicated = onnx.load(str(tmpdir / 'pingpong_replicated.onnx'))
-    pingpong_replicated_rws = onnx.load(
-        str(tmpdir / 'pingpong_replicated_rws.onnx'))
+    phased = onnx.load(str(tmpdir / 'phased.onnx'))
+    phased_replicated = onnx.load(str(tmpdir / 'phased_replicated.onnx'))
+    phased_replicated_rws = onnx.load(
+        str(tmpdir / 'phased_replicated_rws.onnx'))
 
-    check_model(pingpong, pingpong_replicated)
-    check_model(pingpong, pingpong_replicated_rws)
+    check_model(phased, phased_replicated)
+    check_model(phased, phased_replicated_rws)
 
 
 # Check that 2 batches on 1 replica or 1 batch per replica on 2 replicas
@@ -228,35 +228,35 @@ def test_replicated_sgd1_weight_update(tmpdir):
     }
 
     run_model(tmpdir,
-              'pingpong.onnx',
-              enable_pingpong=True,
+              'phased.onnx',
+              enable_executionphases=True,
               batch_size=2,
               num_replicas=1,
               num_iterations=5,
               optimizer=popart.SGD(optimizer_dict))
     run_model(tmpdir,
-              'pingpong_replicated.onnx',
-              enable_pingpong=True,
+              'phased_replicated.onnx',
+              enable_executionphases=True,
               batch_size=1,
               num_replicas=2,
               num_iterations=5,
               optimizer=popart.SGD(optimizer_dict))
     run_model(tmpdir,
-              'pingpong_replicated_rws.onnx',
-              enable_pingpong=True,
+              'phased_replicated_rws.onnx',
+              enable_executionphases=True,
               batch_size=1,
               num_replicas=2,
               num_iterations=5,
               optimizer=popart.SGD(optimizer_dict),
               replicated_tensor_sharding=True)
 
-    pingpong = onnx.load(str(tmpdir / 'pingpong.onnx'))
-    pingpong_replicated = onnx.load(str(tmpdir / 'pingpong_replicated.onnx'))
-    pingpong_replicated_rws = onnx.load(
-        str(tmpdir / 'pingpong_replicated_rws.onnx'))
+    phased = onnx.load(str(tmpdir / 'phased.onnx'))
+    phased_replicated = onnx.load(str(tmpdir / 'phased_replicated.onnx'))
+    phased_replicated_rws = onnx.load(
+        str(tmpdir / 'phased_replicated_rws.onnx'))
 
-    check_model(pingpong, pingpong_replicated)
-    check_model(pingpong, pingpong_replicated_rws)
+    check_model(phased, phased_replicated)
+    check_model(phased, phased_replicated_rws)
 
 
 # Check that 2 batches on 1 replica or 1 batch per replica on 2 replicas
@@ -274,35 +274,35 @@ def test_replicated_adam_weight_update(tmpdir):
     }
 
     run_model(tmpdir,
-              'pingpong.onnx',
-              enable_pingpong=True,
+              'phased.onnx',
+              enable_executionphases=True,
               batch_size=2,
               num_replicas=1,
               num_iterations=5,
               optimizer=popart.Adam(optimizer_dict))
     run_model(tmpdir,
-              'pingpong_replicated.onnx',
-              enable_pingpong=True,
+              'phased_replicated.onnx',
+              enable_executionphases=True,
               batch_size=1,
               num_replicas=2,
               num_iterations=5,
               optimizer=popart.Adam(optimizer_dict))
     run_model(tmpdir,
-              'pingpong_replicated_rws.onnx',
-              enable_pingpong=True,
+              'phased_replicated_rws.onnx',
+              enable_executionphases=True,
               batch_size=1,
               num_replicas=2,
               num_iterations=5,
               optimizer=popart.Adam(optimizer_dict),
               replicated_tensor_sharding=True)
 
-    pingpong = onnx.load(str(tmpdir / 'pingpong.onnx'))
-    pingpong_replicated = onnx.load(str(tmpdir / 'pingpong_replicated.onnx'))
-    pingpong_replicated_rws = onnx.load(
-        str(tmpdir / 'pingpong_replicated_rws.onnx'))
+    phased = onnx.load(str(tmpdir / 'phased.onnx'))
+    phased_replicated = onnx.load(str(tmpdir / 'phased_replicated.onnx'))
+    phased_replicated_rws = onnx.load(
+        str(tmpdir / 'phased_replicated_rws.onnx'))
 
-    check_model(pingpong, pingpong_replicated)
-    check_model(pingpong, pingpong_replicated_rws)
+    check_model(phased, phased_replicated)
+    check_model(phased, phased_replicated_rws)
 
 
 # Check that 2 batches on 1 replica or 1 batch per replica on 2 replicas
@@ -320,32 +320,32 @@ def test_replicated_lamb_weight_update(tmpdir):
     }
 
     run_model(tmpdir,
-              'pingpong.onnx',
-              enable_pingpong=True,
+              'phased.onnx',
+              enable_executionphases=True,
               batch_size=2,
               num_replicas=1,
               num_iterations=5,
               optimizer=popart.Adam(optimizer_dict, popart.AdamMode.Lamb))
     run_model(tmpdir,
-              'pingpong_replicated.onnx',
-              enable_pingpong=True,
+              'phased_replicated.onnx',
+              enable_executionphases=True,
               batch_size=1,
               num_replicas=2,
               num_iterations=5,
               optimizer=popart.Adam(optimizer_dict, popart.AdamMode.Lamb))
     run_model(tmpdir,
-              'pingpong_replicated_rws.onnx',
-              enable_pingpong=True,
+              'phased_replicated_rws.onnx',
+              enable_executionphases=True,
               batch_size=1,
               num_replicas=2,
               num_iterations=5,
               optimizer=popart.Adam(optimizer_dict, popart.AdamMode.Lamb),
               replicated_tensor_sharding=True)
 
-    pingpong = onnx.load(str(tmpdir / 'pingpong.onnx'))
-    pingpong_replicated = onnx.load(str(tmpdir / 'pingpong_replicated.onnx'))
-    pingpong_replicated_rws = onnx.load(
-        str(tmpdir / 'pingpong_replicated_rws.onnx'))
+    phased = onnx.load(str(tmpdir / 'phased.onnx'))
+    phased_replicated = onnx.load(str(tmpdir / 'phased_replicated.onnx'))
+    phased_replicated_rws = onnx.load(
+        str(tmpdir / 'phased_replicated_rws.onnx'))
 
-    check_model(pingpong, pingpong_replicated)
-    check_model(pingpong, pingpong_replicated_rws)
+    check_model(phased, phased_replicated)
+    check_model(phased, phased_replicated_rws)

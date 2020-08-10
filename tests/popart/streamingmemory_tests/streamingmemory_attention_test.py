@@ -59,7 +59,7 @@ def attention_onnx(builder, qkv, mask, batch_size, sequence_length,
 
 
 @tu.requires_ipu
-def test_attention_pingpong(tmpdir):
+def test_attention_streamingmemory(tmpdir):
     np.random.seed(0XDEAD1337)
     batches_per_step = 5
     batch_size = 3
@@ -103,9 +103,9 @@ def test_attention_pingpong(tmpdir):
             anchors[popart.reservedGradientPrefix() +
                     qkv] = popart.AnchorReturnType("All")
 
-            vgid = (i % options['stages']) if options['pingPong'] else i
+            vgid = (i % options['stages']) if options['phasedExecution'] else i
 
-            with builder.virtualGraph(vgid), builder.pingPongPhase(
+            with builder.virtualGraph(vgid), builder.executionPhase(
                     i * int(2 / options['stages'])):
                 x = builder.aiOnnx.matmul([x, qkv])
                 x = attention_onnx(builder, x, mask, batch_size,
@@ -113,9 +113,9 @@ def test_attention_pingpong(tmpdir):
                                    attention_heads, qkv_length)
 
         vgid = ((options['numLayers'] - 1) % options['stages']
-                ) if options['pingPong'] else options['numLayers'] - 1
+                ) if options['phasedExecution'] else options['numLayers'] - 1
 
-        with builder.virtualGraph(vgid), builder.pingPongPhase(
+        with builder.virtualGraph(vgid), builder.executionPhase(
             (options['numLayers'] - 1) * int(2 / options['stages'])):
             l1 = builder.aiGraphcore.l1loss([x], 0.1)
 
@@ -126,20 +126,20 @@ def test_attention_pingpong(tmpdir):
         dataFlow = popart.DataFlow(batches_per_step, anchors)
 
         opts = popart.SessionOptions()
-        opts.pingPongSettings.stages = options['stages']
-        opts.pingPongSettings.phases = options['numLayers'] * int(
-            2 / options['stages']) if options["pingPong"] else 0
+        opts.executionPhaseSettings.stages = options['stages']
+        opts.executionPhaseSettings.phases = options['numLayers'] * int(
+            2 / options['stages']) if options["phasedExecution"] else 0
         opts.enableOutlining = options["outlining"]
 
-        # PingPong currently does its own recompute annotations
+        # Phased execution currently does its own recompute annotations
         opts.autoRecomputation = (popart.RecomputationType.Standard
                                   if options["explicitRecomputation"] else
                                   popart.RecomputationType.NoRecompute)
 
         opts.outlineThreshold = -np.inf
         opts.enableOutliningCopyCostPruning = False
-        opts.virtualGraphMode = (popart.VirtualGraphMode.PingPong
-                                 if options["pingPong"] else
+        opts.virtualGraphMode = (popart.VirtualGraphMode.ExecutionPhases
+                                 if options["phasedExecution"] else
                                  popart.VirtualGraphMode.Manual)
         opts.explicitRecomputation = options["explicitRecomputation"]
         opts.aliasZeroCopy = options["aliasZeroCopy"]
@@ -147,9 +147,10 @@ def test_attention_pingpong(tmpdir):
 
         pat = popart.Patterns(popart.PatternsLevel.Default)
 
-        device = tu.create_test_device(options['stages'] if options["pingPong"]
-                                       else options['numLayers'] + 1,
-                                       pattern=popart.SyncPattern.Full)
+        device = tu.create_test_device(
+            options['stages']
+            if options["phasedExecution"] else options['numLayers'] + 1,
+            pattern=popart.SyncPattern.Full)
 
         session = popart.TrainingSession(fnModel=proto,
                                          dataFlow=dataFlow,
@@ -171,7 +172,8 @@ def test_attention_pingpong(tmpdir):
         for __ in range(10):
             session.run(stepio)
 
-        session.modelToHost(str(tmpdir / f"pingpong_attention_{index}.onnx"))
+        session.modelToHost(
+            str(tmpdir / f"streamingmemory_attention_{index}.onnx"))
 
         return anchors
 
@@ -179,7 +181,7 @@ def test_attention_pingpong(tmpdir):
 
     # AliasZeroCopy only supported with explicit recomputation, but not with
     # standard recomputation
-    # PingPong only supported with explicit recomputaton, but not with
+    # Phased execution only supported with explicit recomputaton, but not with
     # standard recomputation
 
     test_variants = []
@@ -188,7 +190,7 @@ def test_attention_pingpong(tmpdir):
     test_variants.append({
         "stages": 2,
         "numLayers": 3,
-        "pingPong": False,
+        "phasedExecution": False,
         "outlining": False,
         "explicitRecomputation": False,
         "aliasZeroCopy": False,
@@ -198,7 +200,7 @@ def test_attention_pingpong(tmpdir):
     test_variants.append({
         "stages": 2,
         "numLayers": 3,
-        "pingPong": False,
+        "phasedExecution": False,
         "outlining": False,
         "explicitRecomputation": False,
         "aliasZeroCopy": False,
@@ -208,7 +210,7 @@ def test_attention_pingpong(tmpdir):
     test_variants.append({
         "stages": 2,
         "numLayers": 3,
-        "pingPong": True,
+        "phasedExecution": True,
         "outlining": False,
         "explicitRecomputation": False,
         "aliasZeroCopy": False,
@@ -218,7 +220,7 @@ def test_attention_pingpong(tmpdir):
     test_variants.append({
         "stages": 2,
         "numLayers": 3,
-        "pingPong": True,
+        "phasedExecution": True,
         "outlining": True,
         "explicitRecomputation": False,
         "aliasZeroCopy": False,
@@ -228,7 +230,7 @@ def test_attention_pingpong(tmpdir):
     test_variants.append({
         "stages": 2,
         "numLayers": 3,
-        "pingPong": True,
+        "phasedExecution": True,
         "outlining": True,
         "explicitRecomputation": True,
         "aliasZeroCopy": False,
@@ -238,7 +240,7 @@ def test_attention_pingpong(tmpdir):
     test_variants.append({
         "stages": 2,
         "numLayers": 3,
-        "pingPong": True,
+        "phasedExecution": True,
         "outlining": True,
         "explicitRecomputation": True,
         "aliasZeroCopy": True,
@@ -248,7 +250,7 @@ def test_attention_pingpong(tmpdir):
     test_variants.append({
         "stages": 1,
         "numLayers": 3,
-        "pingPong": True,
+        "phasedExecution": True,
         "outlining": True,
         "explicitRecomputation": True,
         "aliasZeroCopy": True,
@@ -261,7 +263,7 @@ def test_attention_pingpong(tmpdir):
         test_results.append(run_test(index, test_option))
         index += 1
 
-    gt_onnx = onnx.load(str(tmpdir / f"pingpong_attention_0.onnx"))
+    gt_onnx = onnx.load(str(tmpdir / f"streamingmemory_attention_0.onnx"))
 
     for i in range(1, index):
         print(f"Testing run {i}: {test_variants[i]}")
@@ -269,7 +271,8 @@ def test_attention_pingpong(tmpdir):
             assert np.all(
                 np.isclose(test_results[0][key], test_results[i][key]))
 
-        val_onnx = onnx.load(str(tmpdir / f"pingpong_attention_{i}.onnx"))
+        val_onnx = onnx.load(
+            str(tmpdir / f"streamingmemory_attention_{i}.onnx"))
         for j in range(len(gt_onnx.graph.initializer)):
             print(f"Checking initializer {j}")
             gt = gt_onnx.graph.initializer[j]

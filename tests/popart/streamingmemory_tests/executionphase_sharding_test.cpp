@@ -1,5 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#define BOOST_TEST_MODULE PingPongShardingTest
+#define BOOST_TEST_MODULE ExecutionPhaseShardingTest
 
 #include <../test_runner.hpp>
 #include <boost/test/unit_test.hpp>
@@ -17,11 +17,11 @@
 #include <popart/op/reshape.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
-#include <popart/transforms/pingpong.hpp>
+#include <popart/transforms/streamingmemory.hpp>
 
 using namespace popart;
 
-// Model: 2x2 S1 PingPong, repeated N times:
+// Model: 2x2 S1 ExecutionPhase, repeated N times:
 // _____________________________________________________________________________
 // phase 0:            IPU 0            |                       IPU 2
 // in0 ---- Slice/Slice -----------------------------.
@@ -73,7 +73,7 @@ using namespace popart;
 //            +------------------------------------ Sum ----- L1Loss
 //______________________________________|_______________________________________
 
-BOOST_AUTO_TEST_CASE(Test2x2S1PingPong) {
+BOOST_AUTO_TEST_CASE(Test2x2S1ExecutionPhase) {
   TestRunner runner;
   runner.isTraining = true;
   int N             = 5;
@@ -98,8 +98,8 @@ BOOST_AUTO_TEST_CASE(Test2x2S1PingPong) {
     insl0[0] = aiOnnx.slice({input}, {size}, {0}, {1}, "CHECKOP_SL0");
     insl0[1] = aiOnnx.slice({input}, {2 * size}, {size}, {1}, "CHECKOP_SL1");
 
-    builder.pingPongPhase(insl0.at(0), 0);
-    builder.pingPongPhase(insl0.at(1), 0);
+    builder.executionPhase(insl0.at(0), 0);
+    builder.executionPhase(insl0.at(1), 0);
     builder.virtualGraph(insl0.at(0), 0);
     builder.virtualGraph(insl0.at(1), 0);
 
@@ -113,11 +113,11 @@ BOOST_AUTO_TEST_CASE(Test2x2S1PingPong) {
           auto out      = aiOnnx.matmul(
               {insl0[ipu], w},
               logging::format("CHECKOP_MM: [{} {}]", n, vgid % 2));
-          builder.pingPongPhase(out, n);
+          builder.executionPhase(out, n);
           builder.virtualGraph(out, vgid);
           out = aiOnnx.relu(
               {out}, logging::format("CHECKOP_RELU: [{} {}]", n, vgid % 2));
-          builder.pingPongPhase(out, n);
+          builder.executionPhase(out, n);
           builder.virtualGraph(out, vgid);
 
           // Cross over between IPUs (intra- or inter-phase)
@@ -127,26 +127,26 @@ BOOST_AUTO_TEST_CASE(Test2x2S1PingPong) {
       }
     }
     auto sum = aiOnnx.sum(insl0);
-    builder.pingPongPhase(sum, N * 2 - 1);
+    builder.executionPhase(sum, N * 2 - 1);
     builder.virtualGraph(sum, 3);
 
     auto l1 = aiGraphcore.l1loss({sum}, 0.1);
-    builder.pingPongPhase(l1, N * 2 - 1);
+    builder.executionPhase(l1, N * 2 - 1);
     builder.virtualGraph(l1, 3);
 
     // To make introspecting the IR easy
-    runner.opts.enableOutlining         = false;
-    runner.opts.pingPongSettings.phases = N * 2;
-    runner.opts.pingPongSettings.stages = 2;
-    runner.opts.virtualGraphMode        = VirtualGraphMode::PingPong;
-    runner.patterns                     = Patterns(PatternsLevel::Default);
-    runner.loss                         = l1;
+    runner.opts.enableOutlining               = false;
+    runner.opts.executionPhaseSettings.phases = N * 2;
+    runner.opts.executionPhaseSettings.stages = 2;
+    runner.opts.virtualGraphMode = VirtualGraphMode::ExecutionPhases;
+    runner.patterns              = Patterns(PatternsLevel::Default);
+    runner.loss                  = l1;
 
     return sum;
   });
 
-  // Testing that the schedule makes sense for 2x2 PingPong execution:
-  // 1.) VGIDs and PingPongPhases of the MatMul and ReLU stay consistent
+  // Testing that the schedule makes sense for 2x2 ExecutionPhase execution:
+  // 1.) VGIDs and ExecutionPhases of the MatMul and ReLU stay consistent
   // 2.) Inter- and intra-phase IpuCopyOps are placed correctly
   // 3.) Initial SliceOps is placed correctly
   // 4.) Final loss op is placed correctly
@@ -158,8 +158,8 @@ BOOST_AUTO_TEST_CASE(Test2x2S1PingPong) {
 
       // 1.)
       if (op->getName().find("CHECKOP_MM") != std::string::npos) {
-        PingPongPhase n = op->getPingPongPhase();
-        VGraphId vgid   = op->getVirtualGraphId();
+        ExecutionPhase n = op->getExecutionPhase();
+        VGraphId vgid    = op->getVirtualGraphId();
         if (op->toLoss == PathToLoss::Yes) {
           BOOST_CHECK(op->getName().find(logging::format(
                           "CHECKOP_MM: [{} {}]", n, vgid % 2)) !=
@@ -172,8 +172,8 @@ BOOST_AUTO_TEST_CASE(Test2x2S1PingPong) {
         }
       }
       if (op->getName().find("CHECKOP_RELU") != std::string::npos) {
-        PingPongPhase n = op->getPingPongPhase();
-        VGraphId vgid   = op->getVirtualGraphId();
+        ExecutionPhase n = op->getExecutionPhase();
+        VGraphId vgid    = op->getVirtualGraphId();
         if (op->toLoss == PathToLoss::Yes) {
           BOOST_CHECK(op->getName().find(logging::format(
                           "CHECKOP_RELU: [{} {}]", n, vgid % 2)) !=
@@ -194,7 +194,7 @@ BOOST_AUTO_TEST_CASE(Test2x2S1PingPong) {
         if (copy) {
           if (copy->getSourceIpu() % 2 != copy->getDestIpu() % 2) {
             // Inter-phase
-            // See pingpong.cpp ipuCopyPriority
+            // See streamingmemoryopinserter.cpp ipuCopyPriority
             BOOST_CHECK(copy->settings.schedulePriority == -9998.0);
           } else {
             // Intra-phase
@@ -207,21 +207,21 @@ BOOST_AUTO_TEST_CASE(Test2x2S1PingPong) {
       if (op->getName().find("CHECKOP_SL0") != std::string::npos ||
           op->getName().find("CHECKOP_SL1") != std::string::npos) {
         BOOST_CHECK(op->getVirtualGraphId() == 0);
-        BOOST_CHECK(op->getPingPongPhase() == 0);
+        BOOST_CHECK(op->getExecutionPhase() == 0);
       }
 
       // 4.)
       if (op->isLossOp()) {
         BOOST_CHECK(op->getVirtualGraphId() == 3);
-        BOOST_CHECK(op->getPingPongPhase() == N * 2 - 1);
+        BOOST_CHECK(op->getExecutionPhase() == N * 2 - 1);
       }
     }
   });
 }
 
-// Model: 1x0 S2 PingPong, repeated N times
+// Model: 1x0 S2 ExecutionPhase, repeated N times
 // Keeps activations between adjacent phases (phase stride 2)
-BOOST_AUTO_TEST_CASE(Test1x0S2PingPong) {
+BOOST_AUTO_TEST_CASE(Test1x0S2ExecutionPhase) {
   TestRunner runner;
   runner.isTraining  = true;
   int batchSize      = 8;
@@ -248,10 +248,10 @@ BOOST_AUTO_TEST_CASE(Test1x0S2PingPong) {
       auto w = builder.addInitializedInputTensor(wCVData);
       auto out =
           aiOnnx.matmul({input, w}, logging::format("CHECKOP_MM: [{}]", n));
-      builder.pingPongPhase(out, n * 2);
+      builder.executionPhase(out, n * 2);
       builder.virtualGraph(out, 0);
       out = aiOnnx.relu({out}, logging::format("CHECKOP_RELU: [{}]", n));
-      builder.pingPongPhase(out, n * 2);
+      builder.executionPhase(out, n * 2);
       builder.virtualGraph(out, 0);
 
       // Cross over between IPUs (intra-phase)
@@ -259,19 +259,19 @@ BOOST_AUTO_TEST_CASE(Test1x0S2PingPong) {
     }
 
     auto l1 = aiGraphcore.l1loss({input}, 0.1);
-    builder.pingPongPhase(l1, N * 2 - 2);
+    builder.executionPhase(l1, N * 2 - 2);
     builder.virtualGraph(l1, 0);
 
     // To make introspecting the IR easy
     runner.opts.enableOutlining                   = false;
     runner.opts.batchSerializationSettings.factor = batchSerialize;
-    runner.opts.batchSerializationSettings.concatOnVirtualGraphChange  = false;
-    runner.opts.batchSerializationSettings.concatOnPingPongPhaseChange = false;
-    runner.opts.pingPongSettings.phases = N * 2 - 1;
-    runner.opts.pingPongSettings.stages = 1;
-    runner.opts.pingPongSettings.activationIOSchedule =
-        PingPongIOSchedule::OnDemand;
-    runner.opts.virtualGraphMode = VirtualGraphMode::PingPong;
+    runner.opts.batchSerializationSettings.concatOnVirtualGraphChange   = false;
+    runner.opts.batchSerializationSettings.concatOnExecutionPhaseChange = false;
+    runner.opts.executionPhaseSettings.phases = N * 2 - 1;
+    runner.opts.executionPhaseSettings.stages = 1;
+    runner.opts.executionPhaseSettings.activationIOSchedule =
+        ExecutionPhaseIOSchedule::OnDemand;
+    runner.opts.virtualGraphMode = VirtualGraphMode::ExecutionPhases;
     runner.patterns              = Patterns(PatternsLevel::Default);
     runner.loss                  = l1;
 
@@ -279,14 +279,14 @@ BOOST_AUTO_TEST_CASE(Test1x0S2PingPong) {
   });
 
   runner.checkIr([&](Ir &ir) {
-    std::map<PingPongPhase, std::tuple<int, int, int, int>> remoteOpsPerPhase;
+    std::map<ExecutionPhase, std::tuple<int, int, int, int>> remoteOpsPerPhase;
 
     std::vector<Op *> schedule = ir.getOpSchedule({});
     for (size_t i = 0; i < schedule.size(); i++) {
       Op *op = schedule.at(i);
       logging::trace("Op: {}", op->debugName());
 
-      PingPongPhase phase = op->getPingPongPhase();
+      ExecutionPhase phase = op->getExecutionPhase();
       if (op->isConvertibleTo<RemoteLoadOp>()) {
         if (op->settings.schedulePriority == 0.0) {
           std::get<0>(remoteOpsPerPhase[phase]) += 1;
@@ -342,9 +342,9 @@ BOOST_AUTO_TEST_CASE(Test1x0S2PingPong) {
   });
 }
 
-// Model: 1x0 S4 PingPong, repeated N times
+// Model: 1x0 S4 ExecutionPhase, repeated N times
 // Stores and loads activations between all phases (phase stride 4)
-BOOST_AUTO_TEST_CASE(Test1x0S4PingPong) {
+BOOST_AUTO_TEST_CASE(Test1x0S4ExecutionPhase) {
   auto run_test = [](bool activationsThroughIOTiles) {
     TestRunner runner;
     runner.isTraining  = true;
@@ -372,10 +372,10 @@ BOOST_AUTO_TEST_CASE(Test1x0S4PingPong) {
         auto w = builder.addInitializedInputTensor(wCVData);
         auto out =
             aiOnnx.matmul({input, w}, logging::format("CHECKOP_MM: [{}]", n));
-        builder.pingPongPhase(out, n * 4);
+        builder.executionPhase(out, n * 4);
         builder.virtualGraph(out, 0);
         out = aiOnnx.relu({out}, logging::format("CHECKOP_RELU: [{}]", n));
-        builder.pingPongPhase(out, n * 4);
+        builder.executionPhase(out, n * 4);
         builder.virtualGraph(out, 0);
 
         // Cross over between IPUs (intra-phase)
@@ -383,20 +383,20 @@ BOOST_AUTO_TEST_CASE(Test1x0S4PingPong) {
       }
 
       auto l1 = aiGraphcore.l1loss({input}, 0.1);
-      builder.pingPongPhase(l1, N * 4 - 4);
+      builder.executionPhase(l1, N * 4 - 4);
       builder.virtualGraph(l1, 0);
 
       // To make introspecting the IR easy
       runner.opts.enableOutlining                   = false;
       runner.opts.batchSerializationSettings.factor = batchSerialize;
       runner.opts.batchSerializationSettings.concatOnVirtualGraphChange = false;
-      runner.opts.batchSerializationSettings.concatOnPingPongPhaseChange =
+      runner.opts.batchSerializationSettings.concatOnExecutionPhaseChange =
           false;
-      runner.opts.pingPongSettings.phases = N * 4 - 3;
-      runner.opts.pingPongSettings.stages = 1;
-      runner.opts.pingPongSettings.activationIOSchedule =
-          PingPongIOSchedule::OnDemand;
-      runner.opts.virtualGraphMode = VirtualGraphMode::PingPong;
+      runner.opts.executionPhaseSettings.phases = N * 4 - 3;
+      runner.opts.executionPhaseSettings.stages = 1;
+      runner.opts.executionPhaseSettings.activationIOSchedule =
+          ExecutionPhaseIOSchedule::OnDemand;
+      runner.opts.virtualGraphMode = VirtualGraphMode::ExecutionPhases;
       runner.patterns              = Patterns(PatternsLevel::Default);
       runner.loss                  = l1;
 
@@ -419,15 +419,16 @@ BOOST_AUTO_TEST_CASE(Test1x0S4PingPong) {
     });
 
     runner.checkIr([&](Ir &ir) {
-      std::map<PingPongPhase, std::tuple<int, int, int, int>> remoteOpsPerPhase;
-      std::map<PingPongPhase, int> ioTileCopyOpsPerPhase;
+      std::map<ExecutionPhase, std::tuple<int, int, int, int>>
+          remoteOpsPerPhase;
+      std::map<ExecutionPhase, int> ioTileCopyOpsPerPhase;
 
       std::vector<Op *> schedule = ir.getOpSchedule({});
       for (size_t i = 0; i < schedule.size(); i++) {
         Op *op = schedule.at(i);
         logging::trace("Op: {}", op->debugName());
 
-        PingPongPhase phase = op->getPingPongPhase();
+        ExecutionPhase phase = op->getExecutionPhase();
         if (op->isConvertibleTo<RemoteLoadOp>()) {
           if (op->settings.schedulePriority == 0.0) {
             std::get<0>(remoteOpsPerPhase[phase]) += 1;
@@ -512,8 +513,8 @@ BOOST_AUTO_TEST_CASE(Test1x0S4PingPong) {
   run_test(true);
 }
 
-// Model: 2x0 S2 PingPong, repeated N times
-BOOST_AUTO_TEST_CASE(Test2x0S2PingPong) {
+// Model: 2x0 S2 ExecutionPhase, repeated N times
+BOOST_AUTO_TEST_CASE(Test2x0S2ExecutionPhase) {
   TestRunner runner;
   runner.isTraining  = true;
   int batchSize      = 8;
@@ -540,8 +541,8 @@ BOOST_AUTO_TEST_CASE(Test2x0S2PingPong) {
     insl0[0] = aiOnnx.slice({input}, {size}, {0}, {1}, "CHECKOP_SL0");
     insl0[1] = aiOnnx.slice({input}, {2 * size}, {size}, {1}, "CHECKOP_SL1");
 
-    builder.pingPongPhase(insl0.at(0), 0);
-    builder.pingPongPhase(insl0.at(1), 0);
+    builder.executionPhase(insl0.at(0), 0);
+    builder.executionPhase(insl0.at(1), 0);
     builder.virtualGraph(insl0.at(0), 0);
     builder.virtualGraph(insl0.at(1), 0);
 
@@ -554,11 +555,11 @@ BOOST_AUTO_TEST_CASE(Test2x0S2PingPong) {
           auto out = aiOnnx.matmul(
               {insl0[vgid], w},
               logging::format("CHECKOP_MM: [{} {}]", n, vgid % 2));
-          builder.pingPongPhase(out, n * 2);
+          builder.executionPhase(out, n * 2);
           builder.virtualGraph(out, vgid);
           out = aiOnnx.relu(
               {out}, logging::format("CHECKOP_RELU: [{} {}]", n, vgid % 2));
-          builder.pingPongPhase(out, n * 2);
+          builder.executionPhase(out, n * 2);
           builder.virtualGraph(out, vgid);
 
           // Cross over between IPUs (intra-phase)
@@ -568,23 +569,23 @@ BOOST_AUTO_TEST_CASE(Test2x0S2PingPong) {
       }
     }
     auto sum = aiOnnx.sum(insl0);
-    builder.pingPongPhase(sum, N * 4 - 2);
+    builder.executionPhase(sum, N * 4 - 2);
     builder.virtualGraph(sum, 0);
 
     auto l1 = aiGraphcore.l1loss({sum}, 0.1);
-    builder.pingPongPhase(l1, N * 4 - 2);
+    builder.executionPhase(l1, N * 4 - 2);
     builder.virtualGraph(l1, 0);
 
     // To make introspecting the IR easy
     runner.opts.enableOutlining                   = false;
     runner.opts.batchSerializationSettings.factor = batchSerialize;
-    runner.opts.batchSerializationSettings.concatOnVirtualGraphChange  = false;
-    runner.opts.batchSerializationSettings.concatOnPingPongPhaseChange = false;
-    runner.opts.pingPongSettings.phases = N * 4 - 1;
-    runner.opts.pingPongSettings.stages = 1;
-    runner.opts.pingPongSettings.activationIOSchedule =
-        PingPongIOSchedule::OnDemand;
-    runner.opts.virtualGraphMode = VirtualGraphMode::PingPong;
+    runner.opts.batchSerializationSettings.concatOnVirtualGraphChange   = false;
+    runner.opts.batchSerializationSettings.concatOnExecutionPhaseChange = false;
+    runner.opts.executionPhaseSettings.phases = N * 4 - 1;
+    runner.opts.executionPhaseSettings.stages = 1;
+    runner.opts.executionPhaseSettings.activationIOSchedule =
+        ExecutionPhaseIOSchedule::OnDemand;
+    runner.opts.virtualGraphMode = VirtualGraphMode::ExecutionPhases;
     runner.patterns              = Patterns(PatternsLevel::Default);
     runner.loss                  = l1;
 
@@ -592,14 +593,14 @@ BOOST_AUTO_TEST_CASE(Test2x0S2PingPong) {
   });
 
   runner.checkIr([&](Ir &ir) {
-    std::map<PingPongPhase, std::tuple<int, int, int, int>> remoteOpsPerPhase;
+    std::map<ExecutionPhase, std::tuple<int, int, int, int>> remoteOpsPerPhase;
 
     std::vector<Op *> schedule = ir.getOpSchedule({});
     for (size_t i = 0; i < schedule.size(); i++) {
       Op *op = schedule.at(i);
       logging::trace("Op: {}", op->debugName());
 
-      PingPongPhase phase = op->getPingPongPhase();
+      ExecutionPhase phase = op->getExecutionPhase();
       if (op->isConvertibleTo<RemoteLoadOp>()) {
         if (op->settings.schedulePriority == 0.0) {
           std::get<0>(remoteOpsPerPhase[phase]) += 1;

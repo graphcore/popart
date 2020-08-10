@@ -32,9 +32,9 @@
 using namespace popart;
 
 // Run a PopART graph that allows overlapping compute/exchange with 2 IPUs.
-// Run Full and PingPong sync configurations and check that the
-// IPU cycles on the parallel (PingPong) execution is at least 30% lower than
-// the serial (Full) execution mode.
+// Run Full and ReplicaAndLadder sync configurations and check that the
+// IPU cycles on the parallel (ReplicaAndLadder) execution is at least
+// 30% lower than the serial (Full) execution mode.
 BOOST_AUTO_TEST_CASE(OverlapComputeExchangeTest_0) {
 
   int64_t N = 128;
@@ -142,7 +142,7 @@ BOOST_AUTO_TEST_CASE(OverlapComputeExchangeTest_0) {
   double ipu_0_parallel_cycles;
   double ipu_1_parallel_cycles;
 
-  for (auto syncPattern : {SyncPattern::Full, SyncPattern::PingPong}) {
+  for (auto syncPattern : {SyncPattern::Full, SyncPattern::ReplicaAndLadder}) {
     auto device = createTestDevice(TestDeviceType::Hw, 2, 0, syncPattern);
     if (device != nullptr) {
       auto opts                               = SessionOptions();

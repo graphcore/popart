@@ -52,10 +52,10 @@ static constexpr const VGraphId unusedVGraphId = -1;
 using PipelineStage                            = int64_t;
 // Pipeline stages are counted from 0
 static constexpr const PipelineStage unusedPipelineStage = -1;
-using PingPongPhase                                      = int64_t;
+using ExecutionPhase                                     = int64_t;
 // Phase -1 is used for loading weights to phase 0, phase -2 is unused
-static constexpr const PingPongPhase unusedPingPongPhase = -2;
-using BatchSerializedPhase                               = int64_t;
+static constexpr const ExecutionPhase unusedExecutionPhase = -2;
+using BatchSerializedPhase                                 = int64_t;
 // Phase -1 is used to initialize accumulators, phase -2 is unused
 static constexpr const BatchSerializedPhase unusedBatchSerializedPhase = -2;
 using StashIndex        = int64_t;
@@ -133,9 +133,9 @@ using OnnxTensorPtrs = std::map<TensorId, const ONNX_NAMESPACE::TensorProto *>;
 using OpsBeforeKey   = std::map<Op *, std::vector<Op *>, POpCmp>;
 
 // Custom node attribute names
-static constexpr const char *sVirtualGraphAttribute  = "__ipu_number";
-static constexpr const char *sPingPongPhaseAttribute = "__ping_pong_phase";
-static constexpr const char *sInplaceOpNames         = "__inplace_op_names";
+static constexpr const char *sVirtualGraphAttribute   = "__ipu_number";
+static constexpr const char *sExecutionPhaseAttribute = "__execution_phase";
+static constexpr const char *sInplaceOpNames          = "__inplace_op_names";
 static constexpr const char *sInplaceOpPriorities = "__inplace_op_priorities";
 static constexpr const char *sRecomputeOutputAttribute =
     "__recompute_output_in_backward_pass";

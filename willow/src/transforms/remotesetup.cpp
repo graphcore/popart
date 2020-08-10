@@ -184,7 +184,7 @@ bool RemoteSetup::apply(Graph &graph) const {
             logging::transform::trace(
                 "[RemoteSetup]     Op {} phase {} vgid {} {}.",
                 op->opid,
-                op->getPingPongPhase(),
+                op->getExecutionPhase(),
                 op->getVirtualGraphId(),
                 op->debugName());
           }

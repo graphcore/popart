@@ -376,11 +376,11 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadOutlineTest) {
 // Test:
 // C = matmul (A, B) + D where A, B and D are cached weight matrices,
 // loss = lambda*|C|_1
-static void remoteBufferPingPongWeightTestBase(SessionOptions opts,
-                                               int K     = 6,
-                                               int M     = 7,
-                                               int N     = 8,
-                                               float eps = 1e-2) {
+static void remoteBufferWeightTestBase(SessionOptions opts,
+                                       int K     = 6,
+                                       int M     = 7,
+                                       int N     = 8,
+                                       float eps = 1e-2) {
 
   auto R = opts.replicatedGraphCount;
 
@@ -428,14 +428,14 @@ static void remoteBufferPingPongWeightTestBase(SessionOptions opts,
                                  9,
                                  {A_id, B_id},
                                  1,
-                                 {{"__ping_pong_phase", 0}},
+                                 {{"__execution_phase", 0}},
                                  "MatMul")[0];
 
   TensorId C_id = bder->customOp(Onnx::AiOnnx::OpSet9::Add,
                                  9,
                                  {E_id, D_id},
                                  1,
-                                 {{"__ping_pong_phase", 1}},
+                                 {{"__execution_phase", 1}},
                                  "Add")[0];
 
   bder->addOutputTensor(C_id);
@@ -492,9 +492,9 @@ static void remoteBufferPingPongWeightTestBase(SessionOptions opts,
   auto device = createTestDevice(
       TestDeviceType::Hw, 2 * opts.replicatedGraphCount, 0, SyncPattern::Full);
 
-  opts.virtualGraphMode        = VirtualGraphMode::PingPong;
-  opts.explicitRecomputation   = true;
-  opts.pingPongSettings.phases = 2;
+  opts.virtualGraphMode              = VirtualGraphMode::ExecutionPhases;
+  opts.explicitRecomputation         = true;
+  opts.executionPhaseSettings.phases = 2;
 
   // training info
   float learnRate = 0.321;
@@ -606,49 +606,63 @@ static void remoteBufferPingPongWeightTestBase(SessionOptions opts,
   }
 }
 
-// Test pingpong training
-BOOST_AUTO_TEST_CASE(RemoteBufferPingPongWeightTest_0) {
+// Test training
+BOOST_AUTO_TEST_CASE(RemoteBufferWeightTest_0) {
   auto opts            = SessionOptions();
   opts.enableOutlining = false;
-  remoteBufferPingPongWeightTestBase(opts, 8, 4, 6);
+  remoteBufferWeightTestBase(opts, 8, 4, 6);
 }
 
-// Test pingpong replicated training
-BOOST_AUTO_TEST_CASE(RemoteBufferPingPongWeightReplicaTest_0) {
-  auto opts                     = SessionOptions();
-  opts.enableOutlining          = false;
-  opts.replicatedGraphCount     = 4;
-  opts.enableReplicatedGraphs   = true;
-  opts.replicatedTensorSharding = false;
-  remoteBufferPingPongWeightTestBase(opts, 7, 3, 5);
-  remoteBufferPingPongWeightTestBase(opts, 113, 103, 89, 1e-0);
-  remoteBufferPingPongWeightTestBase(opts, 32, 13, 128, 1e-0);
+// Test replicated training
+BOOST_AUTO_TEST_CASE(RemoteBufferWeightReplicaTest_0) {
+  auto opts                   = SessionOptions();
+  opts.enableOutlining        = false;
+  opts.replicatedGraphCount   = 4;
+  opts.enableReplicatedGraphs = true;
+  opts.weightTensorLocationSettings.location.replicatedTensorSharding = false;
+  opts.optimizerStateTensorLocationSettings.location.replicatedTensorSharding =
+      false;
+  remoteBufferWeightTestBase(opts, 7, 3, 5);
+  remoteBufferWeightTestBase(opts, 113, 103, 89, 1e-0);
+  remoteBufferWeightTestBase(opts, 32, 13, 128, 1e-0);
 }
 
-// Test pingpong replicated weight sharding without I/O tiles
-BOOST_AUTO_TEST_CASE(RemoteBufferPingPongWeightReplicaShardedTest_0) {
-  auto opts                                   = SessionOptions();
-  opts.enableOutlining                        = false;
-  opts.replicatedGraphCount                   = 4;
-  opts.enableReplicatedGraphs                 = true;
-  opts.replicatedTensorSharding               = true;
-  opts.replicatedTensorShardingMinNumElements = 0;
+// Test replicated weight sharding without I/O tiles
+BOOST_AUTO_TEST_CASE(RemoteBufferWeightReplicaShardedTest_0) {
+  auto opts                   = SessionOptions();
+  opts.enableOutlining        = false;
+  opts.replicatedGraphCount   = 4;
+  opts.enableReplicatedGraphs = true;
+  opts.weightTensorLocationSettings.location.replicatedTensorSharding = true;
+  opts.weightTensorLocationSettings.minElementsForOffChip             = 0;
+  opts.weightTensorLocationSettings.minElementsForReplicatedTensorSharding = 0;
+  opts.optimizerStateTensorLocationSettings.location.replicatedTensorSharding =
+      true;
+  opts.optimizerStateTensorLocationSettings.minElementsForOffChip = 0;
+  opts.optimizerStateTensorLocationSettings
+      .minElementsForReplicatedTensorSharding = 0;
   opts.numIOTiles                             = 0;
-  remoteBufferPingPongWeightTestBase(opts, 7, 3, 5);
-  remoteBufferPingPongWeightTestBase(opts, 113, 103, 89, 1e-0);
-  remoteBufferPingPongWeightTestBase(opts, 32, 13, 128, 1e-0);
+  remoteBufferWeightTestBase(opts, 7, 3, 5);
+  remoteBufferWeightTestBase(opts, 113, 103, 89, 1e-0);
+  remoteBufferWeightTestBase(opts, 32, 13, 128, 1e-0);
 }
 
-// Test pingpong replicated weight sharding with I/O tiles
-BOOST_AUTO_TEST_CASE(RemoteBufferPingPongWeightReplicaShardedTest_1) {
-  auto opts                                   = SessionOptions();
-  opts.enableOutlining                        = false;
-  opts.replicatedGraphCount                   = 4;
-  opts.enableReplicatedGraphs                 = true;
-  opts.replicatedTensorSharding               = true;
-  opts.replicatedTensorShardingMinNumElements = 0;
+// Test replicated weight sharding with I/O tiles
+BOOST_AUTO_TEST_CASE(RemoteBufferWeightReplicaShardedTest_1) {
+  auto opts                   = SessionOptions();
+  opts.enableOutlining        = false;
+  opts.replicatedGraphCount   = 4;
+  opts.enableReplicatedGraphs = true;
+  opts.weightTensorLocationSettings.location.replicatedTensorSharding = true;
+  opts.weightTensorLocationSettings.minElementsForOffChip             = 0;
+  opts.weightTensorLocationSettings.minElementsForReplicatedTensorSharding = 0;
+  opts.optimizerStateTensorLocationSettings.location.replicatedTensorSharding =
+      true;
+  opts.optimizerStateTensorLocationSettings.minElementsForOffChip = 0;
+  opts.optimizerStateTensorLocationSettings
+      .minElementsForReplicatedTensorSharding = 0;
   opts.numIOTiles                             = 128;
-  remoteBufferPingPongWeightTestBase(opts, 7, 3, 5);
-  remoteBufferPingPongWeightTestBase(opts, 113, 103, 89, 1e-0);
-  remoteBufferPingPongWeightTestBase(opts, 32, 13, 128, 1e-0);
+  remoteBufferWeightTestBase(opts, 7, 3, 5);
+  remoteBufferWeightTestBase(opts, 113, 103, 89, 1e-0);
+  remoteBufferWeightTestBase(opts, 32, 13, 128, 1e-0);
 }

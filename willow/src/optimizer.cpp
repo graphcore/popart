@@ -314,7 +314,7 @@ std::unique_ptr<Op> SGD::createOp(const Tensor &w, Graph &graph) const {
       reductionType = OptimizerReductionType::AcclReduce;
     } else {
       // Disable acclReduce in favor of gradReduce when not using gradient
-      // accumulation (e.g. PingPong)
+      // accumulation
       reductionType = OptimizerReductionType::GradReduce;
     }
   }

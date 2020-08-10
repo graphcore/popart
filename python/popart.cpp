@@ -783,40 +783,42 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def(py::init<int, bool, bool, bool>(),
             py::arg("factor"),
             py::arg("concatOnVirtualGraphChange"),
-            py::arg("concatOnPingPongPhaseChange"),
+            py::arg("concatOnExecutionPhaseChange"),
             py::arg("concatOnPipelineStageChange"));
     cls.def_readwrite("factor", &BatchSerializationSettings::factor);
     cls.def_readwrite("concatOnVirtualGraphChange",
                       &BatchSerializationSettings::concatOnVirtualGraphChange);
-    cls.def_readwrite("concatOnPingPongPhaseChange",
-                      &BatchSerializationSettings::concatOnPingPongPhaseChange);
+    cls.def_readwrite(
+        "concatOnExecutionPhaseChange",
+        &BatchSerializationSettings::concatOnExecutionPhaseChange);
     cls.def_readwrite("concatOnPipelineStageChange",
                       &BatchSerializationSettings::concatOnPipelineStageChange);
   }
   {
-    py::class_<PingPongSettings> cls(m, "PingPongSettings");
+    py::class_<ExecutionPhaseSettings> cls(m, "ExecutionPhaseSettings");
     cls.def(py::init<>());
     cls.def(py::init<int,
                      int,
-                     PingPongIOSchedule,
-                     PingPongIOSchedule,
-                     PingPongIOSchedule,
-                     PingPongOptimizerSchedule>(),
+                     ExecutionPhaseIOSchedule,
+                     ExecutionPhaseIOSchedule,
+                     ExecutionPhaseIOSchedule,
+                     ExecutionPhaseOptimizerSchedule>(),
             py::arg("phases"),
             py::arg("stages"),
             py::arg("weightIOSchedule"),
             py::arg("activationIOSchedule"),
             py::arg("optimizerIOSchedule"),
             py::arg("optimizerSchedule"));
-    cls.def_readwrite("phases", &PingPongSettings::phases);
-    cls.def_readwrite("stages", &PingPongSettings::stages);
-    cls.def_readwrite("weightIOSchedule", &PingPongSettings::weightIOSchedule);
+    cls.def_readwrite("phases", &ExecutionPhaseSettings::phases);
+    cls.def_readwrite("stages", &ExecutionPhaseSettings::stages);
+    cls.def_readwrite("weightIOSchedule",
+                      &ExecutionPhaseSettings::weightIOSchedule);
     cls.def_readwrite("activationIOSchedule",
-                      &PingPongSettings::activationIOSchedule);
+                      &ExecutionPhaseSettings::activationIOSchedule);
     cls.def_readwrite("optimizerIOSchedule",
-                      &PingPongSettings::optimizerIOSchedule);
+                      &ExecutionPhaseSettings::optimizerIOSchedule);
     cls.def_readwrite("optimizerSchedule",
-                      &PingPongSettings::optimizerSchedule);
+                      &ExecutionPhaseSettings::optimizerSchedule);
   }
   {
     py::class_<SessionOptions> cls(m, "SessionOptions");
@@ -850,7 +852,8 @@ PYBIND11_MODULE(popart_core, m) {
                       &SessionOptions::mergeVarUpdateMemThreshold);
     cls.def_readwrite("rearrangeAnchorsOnHost",
                       &SessionOptions::rearrangeAnchorsOnHost);
-    cls.def_readwrite("pingPongSettings", &SessionOptions::pingPongSettings);
+    cls.def_readwrite("executionPhaseSettings",
+                      &SessionOptions::executionPhaseSettings);
     cls.def_readwrite("numIOTiles", &SessionOptions::numIOTiles);
     cls.def_readwrite("explicitRecomputation",
                       &SessionOptions::explicitRecomputation);
@@ -963,20 +966,21 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("OffChip", TensorStorage::OffChip);
   }
   {
-    py::enum_<PingPongIOSchedule> en(m, "PingPongIOSchedule");
-    en.value("Preload", PingPongIOSchedule::Preload);
-    en.value("OnDemand", PingPongIOSchedule::OnDemand);
+    py::enum_<ExecutionPhaseIOSchedule> en(m, "ExecutionPhaseIOSchedule");
+    en.value("Preload", ExecutionPhaseIOSchedule::Preload);
+    en.value("OnDemand", ExecutionPhaseIOSchedule::OnDemand);
   }
   {
-    py::enum_<PingPongOptimizerSchedule> en(m, "PingPongOptimizerSchedule");
-    en.value("Interleaving", PingPongOptimizerSchedule::Interleaving);
-    en.value("Batch", PingPongOptimizerSchedule::Batch);
+    py::enum_<ExecutionPhaseOptimizerSchedule> en(
+        m, "ExecutionPhaseOptimizerSchedule");
+    en.value("Interleaving", ExecutionPhaseOptimizerSchedule::Interleaving);
+    en.value("Batch", ExecutionPhaseOptimizerSchedule::Batch);
   }
   {
     py::enum_<SyncPattern> en(m, "SyncPattern");
     en.value("Full", SyncPattern::Full);
     en.value("SinglePipeline", SyncPattern::SinglePipeline);
-    en.value("PingPong", SyncPattern::PingPong);
+    en.value("ReplicaAndLadder", SyncPattern::ReplicaAndLadder);
   }
   {
     py::enum_<MergeVarUpdateType> en(m, "MergeVarUpdateType");
@@ -990,7 +994,7 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("Off", VirtualGraphMode::Off);
     en.value("Manual", VirtualGraphMode::Manual);
     en.value("Auto", VirtualGraphMode::Auto);
-    en.value("PingPong", VirtualGraphMode::PingPong);
+    en.value("ExecutionPhases", VirtualGraphMode::ExecutionPhases);
   }
   {
     py::enum_<SyntheticDataMode> en(m, "SyntheticDataMode");
@@ -1652,15 +1656,15 @@ PYBIND11_MODULE(popart_core, m) {
           return acm;
         },
         py::arg("value"));
-    cls.def("pingPongPhase",
+    cls.def("executionPhase",
             static_cast<void (Builder::*)(const TensorId &, int64_t phase)>(
-                &Builder::pingPongPhase),
+                &Builder::executionPhase),
             py::arg("nodeOutputNames"),
             py::arg("value") = 0);
     cls.def(
-        "pingPongPhase",
+        "executionPhase",
         [](Builder &self, int64_t phase) -> AttributeContextManager {
-          AttributeContextManager acm(self, sPingPongPhaseAttribute, phase);
+          AttributeContextManager acm(self, sExecutionPhaseAttribute, phase);
           return acm;
         },
         py::arg("value") = 0);
@@ -1671,10 +1675,10 @@ PYBIND11_MODULE(popart_core, m) {
               return kvcm;
             });
     cls.def(
-        "getPingPongPhase",
-        static_cast<int64_t (Builder::*)() const>(&Builder::getPingPongPhase));
-    cls.def("hasPingPongPhase", [](Builder &self) -> bool {
-      return self.hasAttribute(sPingPongPhaseAttribute);
+        "getExecutionPhase",
+        static_cast<int64_t (Builder::*)() const>(&Builder::getExecutionPhase));
+    cls.def("hasExecutionPhase", [](Builder &self) -> bool {
+      return self.hasAttribute(sExecutionPhaseAttribute);
     });
     cls.def(
         "recomputeOutput",

@@ -24,7 +24,7 @@ bool LSTMPattern::apply(Op *op) const {
   auto sequenceLength = lstmOp->getSeqLength();
   auto vgraph         = op->getOptionalVGraphId();
   auto pstage         = op->getOptionalPipelineStage();
-  auto pphase         = op->getOptionalPingPongPhase();
+  auto pphase         = op->getOptionalExecutionPhase();
 
   const int onnxInputGateIndex  = 0;
   const int onnxOutputGateIndex = 1;

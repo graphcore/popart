@@ -254,7 +254,7 @@ std::unique_ptr<Op> Adam::createOp(const Tensor &w, Graph &graph) const {
       reductionType = OptimizerReductionType::AccumReduce;
     } else {
       // Disable acclReduce in favor of gradReduce when not using gradient
-      // accumulation (e.g. PingPong)
+      // accumulation
       reductionType = OptimizerReductionType::GradReduce;
     }
   }

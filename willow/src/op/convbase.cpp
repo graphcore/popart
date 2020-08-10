@@ -388,7 +388,7 @@ MultiConvWeightsGradBaseOp::MultiConvWeightsGradBaseOp(
     params.push_back(op_.getParameters(i));
   }
 
-  if (getIr().getSessionOptions().pingPongSettings.phases < 2 &&
+  if (getIr().getSessionOptions().executionPhaseSettings.phases < 2 &&
       getIr().getSessionOptions().batchSerializationSettings.factor < 2) {
     settings.schedulePriority = std::numeric_limits<double>::lowest();
   }

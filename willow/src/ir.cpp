@@ -54,11 +54,11 @@
 #include <popart/transforms/mergecopies.hpp>
 #include <popart/transforms/mergeduplicateops.hpp>
 #include <popart/transforms/mergevarupdates.hpp>
-#include <popart/transforms/pingpong.hpp>
 #include <popart/transforms/pipeline.hpp>
 #include <popart/transforms/prune.hpp>
 #include <popart/transforms/remotesetup.hpp>
 #include <popart/transforms/serializematmuls.hpp>
+#include <popart/transforms/streamingmemory.hpp>
 #include <popart/transforms/subgraphoutline.hpp>
 
 // The layers required to construct the backwards pass
@@ -370,25 +370,26 @@ void Ir::verifyPipelineSettings() const {
   }
 }
 
-void Ir::verifyPingPongSettings() const {
+void Ir::verifyExecutionPhaseSettings() const {
   // check for mismatched settings
-  if (userOptions.pingPongSettings.phases > 1 &&
-      userOptions.virtualGraphMode != VirtualGraphMode::PingPong) {
-    throw error("PingPong phases > 1 requires VirtualGraphMode::PingPong");
+  if (userOptions.executionPhaseSettings.phases > 1 &&
+      userOptions.virtualGraphMode != VirtualGraphMode::ExecutionPhases) {
+    throw error(
+        "> 1 Execution phases requires VirtualGraphMode::ExecutionPhases");
   }
 
-  // if pingpong is enabled
-  if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
-      userOptions.pingPongSettings.phases > 1) {
-    // Currently there are no checks for when ping pong is enabled.
+  // if phased execution is enabled
+  if (userOptions.virtualGraphMode == VirtualGraphMode::ExecutionPhases &&
+      userOptions.executionPhaseSettings.phases > 1) {
+    // Currently there are no checks for when phased execution is enabled.
   } else {
-    // if pingpong is disabled, make sure all ops pingpong phases are set to
-    // nonstd::nullopt.
+    // if phased execution is disabled, make sure all ops execution phases
+    // are set to nonstd::nullopt.
     for (auto &id_graph : graphs) {
       auto &graph = id_graph.second;
       for (auto &id_op : graph->getOps()) {
         auto &op = id_op.second;
-        op->setPingPongPhase({});
+        op->setExecutionPhase({});
       }
     }
   }
@@ -820,7 +821,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   // Check virtual graph settings and annotations are consistent
   verifyVirtualGraphIds(false);
   verifyPipelineSettings();
-  verifyPingPongSettings();
+  verifyExecutionPhaseSettings();
   verifyDistributedReplicatedGraphSettings();
 
   dotCheckpoint(DotCheck::Fwd0);
@@ -839,9 +840,9 @@ void Ir::prepareImpl(const IrBundle &gb) {
                   userOptions.virtualGraphMode == VirtualGraphMode::Auto);
   applyTransform(AutoVirtualGraph::id(), getMainGraph());
 
-  // Required transform order for PingPong is:
-  // FWD -> PingPong1 -> BWD -> PingPong2 -> IpuCopy ->
-  // PingPong3 -> Outline -> RemoteSetup
+  // Required transform order for StreamingMemory is:
+  // FWD -> StreamingMemory1 -> BWD -> IpuCopy -> StreamingMemory2 ->
+  // Outline -> RemoteSetup
 
   if (getSessionOptions().enablePipelining) {
     applyTransform(InferPipelineStages::id(), getMainGraph());
@@ -852,10 +853,10 @@ void Ir::prepareImpl(const IrBundle &gb) {
     updateVertices();
   }
 
-  // First ping pong transformation pass (fwd)
-  if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
-      userOptions.pingPongSettings.phases > 1) {
-    applyTransform(PingPong::id(1), getMainGraph());
+  // First streaming memory transformation pass (fwd)
+  if (userOptions.virtualGraphMode == VirtualGraphMode::ExecutionPhases &&
+      userOptions.executionPhaseSettings.phases > 1) {
+    applyTransform(StreamingMemory::id(1), getMainGraph());
     verifyVirtualGraphIds(true);
   }
 
@@ -871,14 +872,14 @@ void Ir::prepareImpl(const IrBundle &gb) {
   }
 
   if (autoRecomputationEnabled() && getMainGraph().hasUserRecomputeOps() &&
-      getSessionOptions().pingPongSettings.phases < 2) {
+      getSessionOptions().executionPhaseSettings.phases < 2) {
     throw error("A mixture of auto and manual recomputaion is not supported");
   }
 
   // tensors with no producer and no consumers are removed
   // at this point. We may want something more subtle.
-  // (For pingpong the subtle thing here is to not remove cached tensors,
-  // those special little snowflakes *)
+  // (For streaming memory, the subtle thing here is to not remove
+  // cached tensors, even though they are not consumed by IR ops)
   removeIsolatedTensors(true);
 
   if (gb.optimizer) {
@@ -916,7 +917,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
         "and will be removed in a future version. Future versions will enable "
         "this option by default.");
     if (autoRecomputationEnabled() &&
-        getSessionOptions().pingPongSettings.phases < 2) {
+        getSessionOptions().executionPhaseSettings.phases < 2) {
       logging::transform::info("Auto-annotating Ops for recomputation");
       recompute::autoAnnotate(getMainGraph(),
                               getSessionOptions().autoRecomputation);
@@ -1038,13 +1039,13 @@ void Ir::prepareImpl(const IrBundle &gb) {
 
   updateVertices();
 
-  // Fourth ping pong transformation pass (cut)
-  if (userOptions.virtualGraphMode == VirtualGraphMode::PingPong &&
-      userOptions.pingPongSettings.phases > 1) {
-    // PingPong transformation 3 needs up-to-date aliasing information
+  // Second streaming memory transformation pass (cut)
+  if (userOptions.virtualGraphMode == VirtualGraphMode::ExecutionPhases &&
+      userOptions.executionPhaseSettings.phases > 1) {
+    // Streaming memory transformation 2 needs up-to-date aliasing information
     updateAliases();
 
-    applyTransform(PingPong::id(2), getMainGraph());
+    applyTransform(StreamingMemory::id(2), getMainGraph());
     verifyVirtualGraphIds(true);
     // Remove extra RemoteLoad, RemoteStore and Replicated ops that are not used
     applyTransform(Prune::id(), getMainGraph());
@@ -1094,7 +1095,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
 
   if (autoRecomputationEnabled() && !getSessionOptions().enablePipelining &&
       !getSessionOptions().explicitRecomputation &&
-      getSessionOptions().pingPongSettings.phases < 2) {
+      getSessionOptions().executionPhaseSettings.phases < 2) {
     updateVertices();
     logging::transform::info("Auto-annotating Ops for recomputation");
     recompute::autoAnnotate(getMainGraph(),
@@ -1868,15 +1869,16 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
     //
     // gradOp->settings.schedulePriority = 0.0;
 
-    if (gradOp->hasPingPongPhase()) {
-      // Remap from forward to backward pingpong phase
-      gradOp->setPingPongPhase(2 * getSessionOptions().pingPongSettings.phases -
-                               2 - gradOp->getPingPongPhase());
+    if (gradOp->hasExecutionPhase()) {
+      // Remap from forward to backward execution phase
+      gradOp->setExecutionPhase(
+          2 * getSessionOptions().executionPhaseSettings.phases - 2 -
+          gradOp->getExecutionPhase());
     }
 
     if (nonGradOp->settings.recomputeType == RecomputeType::Recompute &&
         autoRecomputationEnabled() &&
-        getSessionOptions().pingPongSettings.phases < 2) {
+        getSessionOptions().executionPhaseSettings.phases < 2) {
       throw error("Grad Ops should be grown before recompute annotation");
     }
 
@@ -3291,9 +3293,9 @@ void Ir::applyInplacePattern(Graph &graph) {
 
       // finally, we check if there are cycles with the new topological
       // constraints
-      const bool isPingPong =
-          (userOptions.virtualGraphMode == VirtualGraphMode::PingPong);
-      if (!graph.isSchedulable(newTopoCons, isPingPong)) {
+      const bool isPhased =
+          (userOptions.virtualGraphMode == VirtualGraphMode::ExecutionPhases);
+      if (!graph.isSchedulable(newTopoCons, isPhased)) {
         std::ostringstream oss;
         oss << "[Inplacing] The new topological constraints prevent Op "
             << op->id << " from being inplaced, as they would created a cycle ";

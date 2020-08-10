@@ -373,7 +373,7 @@ int64_t Op::memOfOutputs() const {
 
 void Op::appendAttributes(OpSerialiserBase &os) const {
   appendOutlineAttributes(os);
-  os.appendAttribute(sPingPongPhaseAttribute, settings.pingPongPhase);
+  os.appendAttribute(sExecutionPhaseAttribute, settings.executionPhase);
   os.appendAttribute(sPipelineStageAttribute, settings.pipelineStage);
   os.appendAttribute("scope", getScope());
 }
@@ -499,10 +499,10 @@ bool isValidTensorLocation(const TensorLocation tensorLocation) {
 
 void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {
 
-  if (attributes.hasAttribute(sPingPongPhaseAttribute)) {
+  if (attributes.hasAttribute(sExecutionPhaseAttribute)) {
     int64_t value;
-    attributes.set(value, sPingPongPhaseAttribute);
-    pingPongPhase = value;
+    attributes.set(value, sExecutionPhaseAttribute);
+    executionPhase = value;
   }
 
   if (attributes.hasAttribute(sVirtualGraphAttribute)) {
@@ -631,25 +631,25 @@ bool Op::hasVirtualGraphId() const {
   }
 }
 
-const OptionalPingPongPhase Op::getOptionalPingPongPhase() const {
-  return settings.pingPongPhase;
+const OptionalExecutionPhase Op::getOptionalExecutionPhase() const {
+  return settings.executionPhase;
 }
 
-void Op::setPingPongPhase(const OptionalPingPongPhase value) {
-  settings.pingPongPhase = value;
+void Op::setExecutionPhase(const OptionalExecutionPhase value) {
+  settings.executionPhase = value;
 }
 
-PingPongPhase Op::getPingPongPhase() const {
-  if (!hasPingPongPhase()) {
-    throw error("Cannot return PingPongPhase for Op {}. "
+ExecutionPhase Op::getExecutionPhase() const {
+  if (!hasExecutionPhase()) {
+    throw error("Cannot return ExecutionPhase for Op {}. "
                 "It has not had this attribute set",
                 debugName());
   }
-  return *(settings.pingPongPhase);
+  return *(settings.executionPhase);
 }
 
-bool Op::hasPingPongPhase() const {
-  if (settings.pingPongPhase) {
+bool Op::hasExecutionPhase() const {
+  if (settings.executionPhase) {
     return true;
   } else {
     return false;
@@ -724,18 +724,18 @@ void Op::inheritPlacementAttributes(bool inheritSerializations) {
     return vgid;
   };
 
-  auto getOpPingPongPhase = [](Op *op, ConnectedOpRelation rel) {
-    OptionalPingPongPhase phase;
+  auto getOpExecutionPhase = [](Op *op, ConnectedOpRelation rel) {
+    OptionalExecutionPhase phase;
     if (op->isIpuCopyOp()) {
       IpuCopyOp *copyOp = dynamic_cast<IpuCopyOp *>(op);
       if (copyOp->getSourceIpu() % 2 != copyOp->getDestIpu() % 2 &&
-          rel == ConnectedOpRelation::Producer && op->hasPingPongPhase()) {
+          rel == ConnectedOpRelation::Producer && op->hasExecutionPhase()) {
         // Inter-phase copy: Destination phase
-        phase = op->getPingPongPhase() + 1;
+        phase = op->getExecutionPhase() + 1;
         return phase;
       }
     }
-    phase = op->getOptionalPingPongPhase();
+    phase = op->getOptionalExecutionPhase();
     return phase;
   };
 
@@ -823,7 +823,8 @@ void Op::inheritPlacementAttributes(bool inheritSerializations) {
   }
 
   bool pipeline = ir.getSessionOptions().enablePipelining;
-  bool pingpong = ir.getSessionOptions().pingPongSettings.phases > 1;
+  bool executionphased =
+      ir.getSessionOptions().executionPhaseSettings.phases > 1;
   bool vgraphs =
       ir.getSessionOptions().virtualGraphMode != VirtualGraphMode::Off;
 
@@ -832,39 +833,39 @@ void Op::inheritPlacementAttributes(bool inheritSerializations) {
   // - Producers of inputs before consumers of outputs
   // - Producers in descending order of
   //    - PipelineStage
-  //    - PingPongPhase
+  //    - ExecutionPhase
   //    - VGID
   //    - BatchSerializedPhase
   // - Consumers in ascending order of
   //    - PipelineStage
-  //    - PingPongPhase
+  //    - ExecutionPhase
   //    - VGID
   //    - BatchSerializedPhase
   auto opSorter = [pipeline,
-                   pingpong,
+                   executionphased,
                    vgraphs,
                    &getOpVGID,
-                   &getOpPingPongPhase](
+                   &getOpExecutionPhase](
                       const std::pair<Op *, ConnectedOpRelation> &lhs,
                       const std::pair<Op *, ConnectedOpRelation> &rhs) {
     Op *lhsOp                  = lhs.first;
     ConnectedOpRelation lhsRel = lhs.second;
     bool lhsProducer           = lhsRel != ConnectedOpRelation::Consumer;
     bool lhsPipeline           = pipeline && lhsOp->hasPipelineStage();
-    bool lhsPingpong           = pingpong && lhsOp->hasPingPongPhase();
+    bool lhsExecutionphase     = executionphased && lhsOp->hasExecutionPhase();
     bool lhsVirtual =
         vgraphs && (lhsOp->hasVirtualGraphId() || lhsOp->isIpuCopyOp());
     Op *rhsOp                  = rhs.first;
     ConnectedOpRelation rhsRel = rhs.second;
     bool rhsProducer           = rhsRel != ConnectedOpRelation::Consumer;
     bool rhsPipeline           = pipeline && rhsOp->hasPipelineStage();
-    bool rhsPingpong           = pingpong && rhsOp->hasPingPongPhase();
+    bool rhsExecutionphase     = executionphased && rhsOp->hasExecutionPhase();
     bool rhsVirtual =
         vgraphs && (rhsOp->hasVirtualGraphId() || rhsOp->isIpuCopyOp());
 
     std::tuple<bool,
                PipelineStage,
-               PingPongPhase,
+               ExecutionPhase,
                VGraphId,
                BatchSerializedPhase,
                OpId>
@@ -872,9 +873,9 @@ void Op::inheritPlacementAttributes(bool inheritSerializations) {
             lhsProducer,
             (lhsProducer ? 1 : -1) *
                 (lhsPipeline ? lhsOp->getPipelineStage() : unusedPipelineStage),
-            (lhsProducer ? 1 : -1) * (lhsPingpong
-                                          ? *getOpPingPongPhase(lhsOp, lhsRel)
-                                          : unusedPingPongPhase),
+            (lhsProducer ? 1 : -1) * (lhsExecutionphase
+                                          ? *getOpExecutionPhase(lhsOp, lhsRel)
+                                          : unusedExecutionPhase),
             (lhsProducer ? 1 : -1) *
                 (lhsVirtual ? *getOpVGID(lhsOp, lhsRel) : unusedVGraphId),
             (lhsProducer ? 1 : -1) * (lhsOp->hasBatchSerializedPhase()
@@ -884,7 +885,7 @@ void Op::inheritPlacementAttributes(bool inheritSerializations) {
 
     std::tuple<bool,
                PipelineStage,
-               PingPongPhase,
+               ExecutionPhase,
                VGraphId,
                BatchSerializedPhase,
                OpId>
@@ -892,9 +893,9 @@ void Op::inheritPlacementAttributes(bool inheritSerializations) {
             rhsProducer,
             (rhsProducer ? 1 : -1) *
                 (rhsPipeline ? rhsOp->getPipelineStage() : unusedPipelineStage),
-            (rhsProducer ? 1 : -1) * (rhsPingpong
-                                          ? *getOpPingPongPhase(rhsOp, rhsRel)
-                                          : unusedPingPongPhase),
+            (rhsProducer ? 1 : -1) * (rhsExecutionphase
+                                          ? *getOpExecutionPhase(rhsOp, rhsRel)
+                                          : unusedExecutionPhase),
             (rhsProducer ? 1 : -1) *
                 (rhsVirtual ? *getOpVGID(rhsOp, rhsRel) : unusedVGraphId),
             (rhsProducer ? 1 : -1) * (rhsOp->hasBatchSerializedPhase()
@@ -928,8 +929,8 @@ void Op::inheritPlacementAttributes(bool inheritSerializations) {
       setPipelineStage(op->getOptionalPipelineStage());
     }
 
-    if (pingpong) {
-      setPingPongPhase(getOpPingPongPhase(op, rel));
+    if (executionphased) {
+      setExecutionPhase(getOpExecutionPhase(op, rel));
     }
 
     if (vgraphs && !isIpuCopyOp()) {
@@ -960,8 +961,8 @@ void Op::inheritPlacementAttributes(bool inheritSerializations) {
                        debugName(),
                        *requiredVgid);
     setVirtualGraphId(requiredVgid);
-    if (hasPingPongPhase()) {
-      setPingPongPhase(getPingPongPhase() + 1);
+    if (hasExecutionPhase()) {
+      setExecutionPhase(getExecutionPhase() + 1);
     }
     inherited = true;
   }

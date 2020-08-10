@@ -51,7 +51,7 @@ public:
   const VectorAndSet &getConstIds() const { return constIds; }
   void insertConstId(const std::string &);
   // remove all Tensors which have no producer and no consumers
-  void removeIsolated(bool retainCached);
+  void removeIsolated(bool retainRemote);
 
   const Aliases &getAliases() const { return aliases; }
   void clearAliases();

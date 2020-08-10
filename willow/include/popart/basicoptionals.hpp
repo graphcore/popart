@@ -112,7 +112,7 @@ bool operator!=(T a, const BasicOptional<T, V> &b) {
 
 using OptionalVGraphId             = BasicOptional<VGraphId, 2>;
 using OptionalPipelineStage        = BasicOptional<PipelineStage, 3>;
-using OptionalPingPongPhase        = BasicOptional<PingPongPhase, 5>;
+using OptionalExecutionPhase       = BasicOptional<ExecutionPhase, 5>;
 using OptionalBatchSerializedPhase = BasicOptional<BatchSerializedPhase, 7>;
 
 template <typename T, uint32_t V>

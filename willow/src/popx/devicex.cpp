@@ -160,7 +160,7 @@ public:
   //   finder.getRequiredRecomputeOps(OpB) -> [C, D]
   //   finder.getRequiredRecomputeOps(OpA) -> []
   std::vector<Op *> getRequiredRecomputeOps(Op *op) {
-    PingPongPhase opPhase = -1;
+    ExecutionPhase opPhase = -1;
 
     std::set<Op *> toRerun;
     if (op->getIr().getSessionOptions().enablePipelining) {
@@ -184,7 +184,7 @@ public:
   }
 
 private:
-  std::set<Op *> getRecomputeOps(Op *op, PingPongPhase &opPhase) {
+  std::set<Op *> getRecomputeOps(Op *op, ExecutionPhase &opPhase) {
     std::set<Op *> toRerun;
     auto isSpecialCaseGradOp = [](Op *x) {
       return x->getIr().getSessionOptions().enableGradientAccumulation &&
@@ -195,19 +195,20 @@ private:
     // Ensure op is post loss and not a special case grad op.
     if (op->scheduledPreLoss == ScheduledPreLoss::No &&
         !isSpecialCaseGradOp(op)) {
-      if (op->hasPingPongPhase() &&
-          op->getIr().getSessionOptions().pingPongSettings.phases >= 2) {
-        opPhase = op->getPingPongPhase();
+      if (op->hasExecutionPhase() &&
+          op->getIr().getSessionOptions().executionPhaseSettings.phases >= 2) {
+        opPhase = op->getExecutionPhase();
       }
 
       walkProducers(op, [&toRerun, &op, opPhase, this](Op *x) {
-        bool samePingPongPhase =
-            (op->getIr().getSessionOptions().pingPongSettings.phases >= 2 &&
-             op->hasPingPongPhase() && x->hasPingPongPhase() &&
-             op->getPingPongPhase() == x->getPingPongPhase());
+        bool sameExecutionPhase =
+            (op->getIr().getSessionOptions().executionPhaseSettings.phases >=
+                 2 &&
+             op->hasExecutionPhase() && x->hasExecutionPhase() &&
+             op->getExecutionPhase() == x->getExecutionPhase());
         if (x->settings.recomputeType == RecomputeType::Recompute &&
             alreadySeen.find({x, opPhase}) == alreadySeen.end() &&
-            !samePingPongPhase) {
+            !sameExecutionPhase) {
           toRerun.insert(x);
           return true;
         } else {
@@ -218,7 +219,7 @@ private:
     return toRerun;
   }
 
-  std::set<Op *> getPipelineRecomputeOps(Op *op, PingPongPhase opPhase) {
+  std::set<Op *> getPipelineRecomputeOps(Op *op, ExecutionPhase opPhase) {
     std::set<Op *> toRerun;
     walkProducers(op, [&toRerun, &op, opPhase, this](Op *x) {
       if (x->settings.recomputeType == RecomputeType::Recompute &&
@@ -233,7 +234,7 @@ private:
     return toRerun;
   }
 
-  std::set<std::pair<Op *, PingPongPhase>> alreadySeen;
+  std::set<std::pair<Op *, ExecutionPhase>> alreadySeen;
   const std::vector<Op *> &opSchedule;
 };
 
@@ -544,8 +545,8 @@ Devicex::getMainGraphOpString(const std::vector<TaskId> &taskOrder) const {
           op->settings.recomputeType == RecomputeType::Recomputed ? "-R" : "-F";
       if (logging::shouldLog(logging::Module::devicex, logging::Level::Trace)) {
         ss << type << "  " << seriesNums[op] << "  " << op->debugName()
-           << "  PingPong: "
-           << (op->hasPingPongPhase() ? op->getPingPongPhase() : -1)
+           << "  ExecutionPhase: "
+           << (op->hasExecutionPhase() ? op->getExecutionPhase() : -1)
            << "  Pipeline: "
            << (op->hasPipelineStage() ? op->getPipelineStage() : -1)
            << "  VGID: "
@@ -1969,7 +1970,7 @@ void Devicex::addOpTasks(PriTasks &tasks) {
   double priority     = 0.0;
   TaskId prevOpTaskId = "";
 
-  std::set<std::pair<Op *, PingPongPhase>> seenRecomputeOps;
+  std::set<std::pair<Op *, ExecutionPhase>> seenRecomputeOps;
   FindRequiredRecomputes recomputeFinder(allOps);
   // Iterate through Ops according to the Ir's schedule
   for (auto op : allOps) {
@@ -2256,11 +2257,12 @@ void Devicex::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
           seqs[&progs.backwardFragment()].add(
               progs.recomputeFragment(opToRerun->id));
           mainGraphOpRegistry[taskId].push_back(opToRerun);
-          PingPongPhase phase =
-              op->hasPingPongPhase() &&
-                      this->ir().getSessionOptions().pingPongSettings.phases >=
-                          2
-                  ? op->getPingPongPhase()
+          ExecutionPhase phase =
+              op->hasExecutionPhase() &&
+                      this->ir()
+                              .getSessionOptions()
+                              .executionPhaseSettings.phases >= 2
+                  ? op->getExecutionPhase()
                   : -1;
           progs.recordRecomputed(opToRerun->id, phase);
         }

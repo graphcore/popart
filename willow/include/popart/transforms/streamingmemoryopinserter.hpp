@@ -32,10 +32,10 @@ public:
   // Add streaming memory operations.
   void apply();
 
-  // Determine where to place a tensor (user by PingPong).
+  // Determine where to place a tensor (used by StreamingMemory).
   TensorLocation determineTensorLocation(Tensor *tensor) const;
-  // Sanity checking helper function (used by PingPong).
-  void sanitizePlacementAnnotation(Op *op, PingPongPhase phase) const;
+  // Sanity checking helper function (used by StreamingMemory).
+  void sanitizePlacementAnnotation(Op *op, ExecutionPhase phase) const;
 
 private:
   // Types used.
@@ -50,22 +50,22 @@ private:
 
   class TensorPhaseConfig {
   public:
-    // Pingpong phase of of the op that produced the tensor, if available/set.
+    // Execution phase of of the op that produced the tensor, if available/set.
     // This field is used to derive other fields and is logged.
-    OptionalPingPongPhase producerPingPongPhase;
+    OptionalExecutionPhase producerExecutionPhase;
     // Virtual graph ID for this tensor.
     OptionalVGraphId loadStoreVGID;
-    // The pingpong phases in which this tensor is 'live'.
-    std::set<PingPongPhase> livePhases;
-    // A mapping from pingpong phases to a list of ops that modify this tensor
-    // in the respective pingpong phase.
-    std::map<PingPongPhase, Ops> modifiersInPhase;
-    // A mapping from pingpong phases to lists of consumer ops that are computed
-    // in the respective phases.
-    std::map<PingPongPhase, Ops> consumersInPhase;
-    // A mapping from the various pingpong phases to flags that denote whether
-    // the tensor needs to be loaded/store in that phase of pingpong.
-    std::map<PingPongPhase, std::pair<bool, bool>> loadStoreInPhase;
+    // The execution phases in which this tensor is 'live'.
+    std::set<ExecutionPhase> livePhases;
+    // A mapping from execution phases to a list of ops that modify this tensor
+    // in the respective execution phase.
+    std::map<ExecutionPhase, Ops> modifiersInPhase;
+    // A mapping from execution phases to lists of consumer ops that are
+    // computed in the respective phases.
+    std::map<ExecutionPhase, Ops> consumersInPhase;
+    // A mapping from the various execution phases to flags that denote whether
+    // the tensor needs to be loaded/store in that phase of execution.
+    std::map<ExecutionPhase, std::pair<bool, bool>> loadStoreInPhase;
     // True if we need to load/store the tensor outside of the main loop. This
     // is used for RWS + OnChip weights.
     bool loadStoreOutOfPhase;
@@ -78,8 +78,8 @@ private:
     TensorConfig(Graph &graph)
         : tensor{}, producerOp{}, consumerOps{}, location{},
           phaseConfig{}, settings{graph, ""},
-          ioSchedule(PingPongIOSchedule::Preload),
-          optimizerSchedule(PingPongOptimizerSchedule::Interleaving) {}
+          ioSchedule(ExecutionPhaseIOSchedule::Preload),
+          optimizerSchedule(ExecutionPhaseOptimizerSchedule::Interleaving) {}
 
     // The tensor affected.
     Tensor *tensor;
@@ -89,14 +89,14 @@ private:
     Ops consumerOps;
     // The desired tensor location.
     TensorLocation location;
-    // The pingpong config of the tensor.
+    // The execution phase config of the tensor.
     TensorPhaseConfig phaseConfig;
     // The settings to use for new ops.
     Op::Settings settings;
     // The input/output schedule for the tensor
-    PingPongIOSchedule ioSchedule;
+    ExecutionPhaseIOSchedule ioSchedule;
     // The optimizer schedule for the tensor (for weights)
-    PingPongOptimizerSchedule optimizerSchedule;
+    ExecutionPhaseOptimizerSchedule optimizerSchedule;
   };
 
   // Add streaming memory operations pertaining to one tensor.
@@ -117,22 +117,22 @@ private:
                          const Ops &consumerOps,
                          Op::Settings &settings) const;
   void getModifiersInPhase(Tensor *t,
-                           const PingPongPhase phase,
+                           const ExecutionPhase phase,
                            Ops &modifyingConsumerOps) const;
   void getAliasedModifiersInPhase(Tensor *t,
-                                  const PingPongPhase phase,
+                                  const ExecutionPhase phase,
                                   Ops &modifyingConsumerOps) const;
 
   // Helper functions to insert a RemoteLoadOp.
   std::tuple<RemoteLoadOp *, ReplicatedAllGatherOp *>
   insertRemoteLoadOp(const TensorConfig &tensorConfig,
-                     const PingPongPhase currentPingPongPhase,
+                     const ExecutionPhase currentExecutionPhase,
                      TensorId &loadedTensorId,
                      TensorId &gatheredTensorId);
 
   // Helper functions to insert a RemoteStoreOp.
   RemoteStoreOp *insertRemoteStoreOp(const TensorConfig &tensorConfig,
-                                     const PingPongPhase currentPingPongPhase,
+                                     const ExecutionPhase currentExecutionPhase,
                                      const TensorId &loadedTensorId);
 
   // Sanity checking functions.
@@ -168,7 +168,7 @@ private:
   const int64_t replicationFactor;
   // Number of sets of IPUs.
   const int num_stages;
-  // Number of pingpong phases.
+  // Number of execution phases.
   const int num_phases;
 
   // A list of remote buffer pointer tensor ids.

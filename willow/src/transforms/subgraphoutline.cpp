@@ -49,8 +49,8 @@ std::vector<int64_t> getBoundariesCrossed(int64_t start,
   OptionalVGraphId vgid;
   OptionalVGraphId last_vgid;
 
-  OptionalPingPongPhase phase;
-  OptionalPingPongPhase last_phase;
+  OptionalExecutionPhase phase;
+  OptionalExecutionPhase last_phase;
 
   OptionalBatchSerializedPhase batchserial;
   OptionalBatchSerializedPhase last_batchserial;
@@ -65,7 +65,7 @@ std::vector<int64_t> getBoundariesCrossed(int64_t start,
     last_batchserial = batchserial;
     last_recompute   = recompute;
     vgid             = op->getOptionalVGraphId();
-    phase            = op->getOptionalPingPongPhase();
+    phase            = op->getOptionalExecutionPhase();
     batchserial      = op->getOptionalBatchSerializedPhase();
     recompute        = op->settings.recomputeType == RecomputeType::Recompute
                     ? RecomputeType::Recompute
@@ -84,7 +84,7 @@ std::vector<int64_t> getBoundariesCrossed(int64_t start,
 namespace {
 //  Outlining matches are not supposed to cross certain boundaries:
 // a.) Across recompute/non-recompute operators
-// b.) Across PingPong phases
+// b.) Across execution phases
 void insertBoundariesOps(const std::vector<Op *> &schedule) {
   if (!schedule.empty()) {
     for (int64_t i = 0; i < schedule.size() - 1; ++i) {
@@ -93,8 +93,8 @@ void insertBoundariesOps(const std::vector<Op *> &schedule) {
         auto &graph     = schedule[i]->getGraph();
         auto boundaryOp = std::make_unique<BoundaryOp>(Op::Settings(graph, ""));
         auto boundary   = boundaryOp.get();
-        auto phase      = schedule[i]->getOptionalPingPongPhase();
-        boundary->setPingPongPhase(phase);
+        auto phase      = schedule[i]->getOptionalExecutionPhase();
+        boundary->setExecutionPhase(phase);
         VGraphId vgid = 0;
         boundary->setVirtualGraphId(vgid);
         graph.moveIntoGraph(std::move(boundaryOp));
@@ -296,7 +296,7 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
   nonstd::optional<Scope> scope;
   OptionalVGraphId ipu_copy_vgid;
   OptionalVGraphId vgid;
-  OptionalPingPongPhase phase;
+  OptionalExecutionPhase phase;
   OptionalBatchSerializedPhase batchserial;
   bool conflicting_batchserial = false;
   OptionalPipelineStage pipeline_stage;
@@ -315,7 +315,7 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
       vgid = op->getOptionalVGraphId();
     }
     if (!phase) {
-      phase = op->getOptionalPingPongPhase();
+      phase = op->getOptionalExecutionPhase();
     }
     if (!pipeline_stage) {
       pipeline_stage = op->getOptionalPipelineStage();
@@ -351,7 +351,7 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
     call_op->settings.recomputeType = recompute.value();
   }
   call_op->setVirtualGraphId(vgid);
-  call_op->setPingPongPhase(phase);
+  call_op->setExecutionPhase(phase);
   call_op->setPipelineStage(pipeline_stage);
   call_op->setBatchSerializedPhase(batchserial);
 
@@ -655,9 +655,9 @@ Graph &createSubgraph(const Match &match, Graph &graph) {
          << "    " << op->debugName() << ", "
          << "VGID: " << (op->hasVirtualGraphId() ? op->getVirtualGraphId() : -1)
          << ", "
-         << "PingPong phase: "
-         << (op->getOptionalPingPongPhase() ? *op->getOptionalPingPongPhase()
-                                            : -1);
+         << "ExecutionPhase: "
+         << (op->getOptionalExecutionPhase() ? *op->getOptionalExecutionPhase()
+                                             : -1);
     }
     logging::transform::trace("[SubgraphOutline] Creating subgraph: {}, "
                               "replacing {} instances, "
@@ -807,13 +807,13 @@ std::vector<Match> getRinseMatches(const std::vector<Op *> &ops,
       logging::transform::trace(
           "[SubgraphOutline] "
           "Index: {}, ID: {}, Op: {}, "
-          "VGID: {}, PingPong phase: {}",
+          "VGID: {}, execution phase: {}",
           i,
           intSchedule[i],
           op->debugName(),
           op->hasVirtualGraphId() ? op->getVirtualGraphId() : -1,
-          op->getOptionalPingPongPhase() ? *op->getOptionalPingPongPhase()
-                                         : -1);
+          op->getOptionalExecutionPhase() ? *op->getOptionalExecutionPhase()
+                                          : -1);
     }
     logging::transform::trace("[SubgraphOutline] Int schedule: {}",
                               intSchedule);

@@ -144,8 +144,8 @@ public:
 
     OptionalPipelineStage pipelineStage;
 
-    // The ping pong phase this op has been assigned to if set
-    OptionalPingPongPhase pingPongPhase;
+    // The execution phase this op has been assigned to if set
+    OptionalExecutionPhase executionPhase;
 
     OptionalBatchSerializedPhase batchSerializedPhase;
 
@@ -189,10 +189,10 @@ public:
   void setVirtualGraphId(const OptionalVGraphId);
   bool hasVirtualGraphId() const;
 
-  const OptionalPingPongPhase getOptionalPingPongPhase() const;
-  virtual PingPongPhase getPingPongPhase() const;
-  void setPingPongPhase(const OptionalPingPongPhase);
-  bool hasPingPongPhase() const;
+  const OptionalExecutionPhase getOptionalExecutionPhase() const;
+  virtual ExecutionPhase getExecutionPhase() const;
+  void setExecutionPhase(const OptionalExecutionPhase);
+  bool hasExecutionPhase() const;
 
   const OptionalBatchSerializedPhase getOptionalBatchSerializedPhase() const;
   virtual BatchSerializedPhase getBatchSerializedPhase() const;
@@ -211,7 +211,7 @@ public:
 
   // Inherit placement attributes:
   // - Pipeline stage
-  // - Pingpong phase
+  // - Execution phase
   // - Virtual graph ID
   // - Batch serial phase
   void inheritPlacementAttributes(bool inheritSerializations);
