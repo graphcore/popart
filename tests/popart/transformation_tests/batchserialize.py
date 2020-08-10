@@ -133,7 +133,7 @@ def test_init(tmpdir):
 
         opts = popart.SessionOptions()
         opts.enableOutlining = True
-        opts.batchSerializationFactor = 4
+        opts.batchSerializationSettings.factor = 4
 
         proto = builder.getModelProto()
 
@@ -194,7 +194,7 @@ def test_lstm(tmpdir):
         dfAnchors = {out: popart.AnchorReturnType("All")}
 
         opts = popart.SessionOptions()
-        opts.batchSerializationFactor = 2
+        opts.batchSerializationSettings.factor = 2
 
         proto = builder.getModelProto()
 
