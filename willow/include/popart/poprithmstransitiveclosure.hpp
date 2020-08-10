@@ -10,7 +10,7 @@
 namespace popart {
 
 /**
- * This is an adapter class for constructing a
+ * This is an adapter class for constructing a CONST
  * `poprithms::schedule::transitiveclosure::TransitiveClosure` from a
  * `popart::Graph`.
  *
@@ -50,15 +50,17 @@ public:
 
   // Accessors for underlying poprithms TransitiveClosure functionality.
 
-  poprithms::schedule::transitiveclosure::TransitiveClosure *operator->() {
+  const poprithms::schedule::transitiveclosure::TransitiveClosure *
+  operator->() const {
     return &rithmicTC;
   }
 
-  poprithms::schedule::transitiveclosure::TransitiveClosure &operator*() {
+  const poprithms::schedule::transitiveclosure::TransitiveClosure &
+  operator*() const {
     return rithmicTC;
   }
 
-  poprithms::schedule::transitiveclosure::TransitiveClosure &get() {
+  const poprithms::schedule::transitiveclosure::TransitiveClosure &get() const {
     return rithmicTC;
   }
 
