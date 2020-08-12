@@ -307,6 +307,9 @@ public:
   // returns true if constructBackwards has finished
   bool hasConstructedBackwards() const;
 
+  // returns true if the various optimizer Decomposer patterns have finished
+  bool hasDecomposedOptimizers() const;
+
   // returns true if there are initializers in the onnx model
   bool containsInitialisers();
 
@@ -510,6 +513,7 @@ private:
   OpId finalLossOpId{-1000};
   bool constructedFinalLoss = false;
   bool constructedBackwards = false;
+  bool decomposedOptimizers = false;
 
   ExecutionMode executionMode = ExecutionMode::Training;
 

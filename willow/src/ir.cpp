@@ -1003,6 +1003,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   applyPreAliasPattern(&sgd1Decomposer, getMainGraph());
   AdamDecompose adamDecomposer;
   applyPreAliasPattern(&adamDecomposer, getMainGraph());
+  decomposedOptimizers = true;
 
   if (getSessionOptions().hostWeightUpdate &&
       !getSessionOptions().hostAllReduce) {
@@ -3083,6 +3084,8 @@ bool Ir::canTrain() const {
 }
 
 bool Ir::hasConstructedBackwards() const { return constructedBackwards; }
+
+bool Ir::hasDecomposedOptimizers() const { return decomposedOptimizers; }
 
 bool Ir::containsInitialisers() {
   return !(onnxModel->graph().initializer().empty());
