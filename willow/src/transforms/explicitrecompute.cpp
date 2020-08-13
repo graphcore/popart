@@ -58,7 +58,7 @@ bool ExplicitRecompute::apply(Graph &graph) const {
             2 * ir.getSessionOptions().executionPhaseSettings.phases - 2 -
             clone_op->getExecutionPhase();
         logging::trace(
-            "[ExplicitRecompute] Remapping {} execiton phase {} -> {}",
+            "[ExplicitRecompute] Remapping {} execution phase {} -> {}",
             clone_op->debugName(),
             clone_op->getExecutionPhase(),
             recomputePhase);

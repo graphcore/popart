@@ -44,6 +44,8 @@ public:
 
   std::vector<int64_t> serialize() const;
 
+  bool isRemote() const;
+
   // Permanent tensor storage: OnChip or OffChip
   TensorStorage storage;
   // Load tensor through IO tiles
@@ -64,10 +66,11 @@ enum class ExecutionContext {
 };
 
 // Helper functions for tensor locations.
-const char *tensorLocationToStr(const TensorLocation tensorLocation);
+std::string tensorLocationToStr(const TensorLocation tensorLocation);
 bool isValidTensorLocation(const TensorLocation tensorLocation);
 
 std::ostream &operator<<(std::ostream &, const RecomputeType &);
+std::ostream &operator<<(std::ostream &, const ExecutionContext &);
 
 class OpSerialiserBase;
 

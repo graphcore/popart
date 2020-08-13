@@ -81,6 +81,10 @@ std::vector<int64_t> TensorLocation::serialize() const {
           static_cast<int64_t>(replicatedTensorSharding)};
 }
 
+bool TensorLocation::isRemote() const {
+  return (replicatedTensorSharding || (storage == TensorStorage::OffChip));
+}
+
 GradInOutMapper::GradInOutMapper(int iG, int iNG, GradOpInType t)
     : iGrad(iG), iNonGrad(iNG), type(t) {}
 
@@ -467,19 +471,44 @@ std::ostream &operator<<(std::ostream &ost, const RecomputeType &rt) {
   return ost;
 }
 
-const char *tensorLocationToStr(const TensorLocation tensorLocation) {
-  const char *result = "";
+std::ostream &operator<<(std::ostream &ost, const ExecutionContext &rt) {
+  switch (rt) {
+  case (ExecutionContext::Normal): {
+    ost << "Normal";
+    break;
+  }
+  case (ExecutionContext::AccumulateOuterFragment): {
+    ost << "AccumulateOuterFragment";
+    break;
+  }
+  case (ExecutionContext::WeightsFromHostFragment): {
+    ost << "WeightsFromHostFragment";
+    break;
+  }
+  case (ExecutionContext::WeightsToHostFragment): {
+    ost << "WeightsToHostFragment";
+    break;
+  }
+  }
+  return ost;
+}
+
+std::string tensorLocationToStr(const TensorLocation tensorLocation) {
+  std::ostringstream ss;
+
+  ss << "(";
+
   switch (tensorLocation.storage) {
   case TensorStorage::Undefined: {
-    result = "Undefined";
+    ss << "Undefined";
     break;
   }
   case TensorStorage::OffChip: {
-    result = "OffChip";
+    ss << "OffChip";
     break;
   }
   case TensorStorage::OnChip: {
-    result = "OnChip";
+    ss << "OnChip";
     break;
   }
   default: {
@@ -489,7 +518,12 @@ const char *tensorLocationToStr(const TensorLocation tensorLocation) {
   }
   }
 
-  return result;
+  ss << ", loadOnIOTiles=" << tensorLocation.loadOnIOTiles;
+  ss << ", storeOnIOTiles=" << tensorLocation.storeOnIOTiles;
+  ss << ", RTS=" << tensorLocation.replicatedTensorSharding;
+  ss << ")";
+
+  return ss.str();
 }
 
 bool isValidTensorLocation(const TensorLocation tensorLocation) {

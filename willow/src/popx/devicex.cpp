@@ -546,11 +546,14 @@ Devicex::getMainGraphOpString(const std::vector<TaskId> &taskOrder) const {
       if (logging::shouldLog(logging::Module::devicex, logging::Level::Trace)) {
         ss << type << "  " << seriesNums[op] << "  " << op->debugName()
            << "  ExecutionPhase: "
-           << (op->hasExecutionPhase() ? op->getExecutionPhase() : -1)
+           << (op->hasExecutionPhase() ? op->getExecutionPhase()
+                                       : unusedExecutionPhase)
            << "  Pipeline: "
-           << (op->hasPipelineStage() ? op->getPipelineStage() : -1)
+           << (op->hasPipelineStage() ? op->getPipelineStage()
+                                      : unusedPipelineStage)
            << "  VGID: "
-           << (op->hasVirtualGraphId() ? op->getVirtualGraphId() : -1)
+           << (op->hasVirtualGraphId() ? op->getVirtualGraphId()
+                                       : unusedVGraphId)
            << "  priority: " << op->settings.schedulePriority << std::endl;
       } else {
         ss << type << "  " << seriesNums[op] << "  " << op->str() << std::endl;
@@ -2244,9 +2247,16 @@ void Devicex::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
       outerLoopFragEmpty = false;
       growOpx(opx, seqs[&progs.accumulateOuterFragment()]);
     }
-
-    // post-loss, not special gradient accumulation case,
-    else {
+    // Special case for running operators before the main loop.
+    else if (op->settings.executionContext ==
+             ExecutionContext::WeightsFromHostFragment) {
+      growOpx(opx, seqs[&progs.streamWeightsFromHostFragment()]);
+    }
+    // Special case for running operators before the main loop.
+    else if (op->settings.executionContext ==
+             ExecutionContext::WeightsToHostFragment) {
+      growOpx(opx, seqs[&progs.weightsToHostFragment()]);
+    } else {
       auto found = requiredRecomputes.find(taskId);
       if (found != requiredRecomputes.end()) {
         auto &rerunSchedule = found->second;
@@ -2293,6 +2303,14 @@ void Devicex::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
                  ExecutionContext::AccumulateOuterFragment) {
     outerLoopFragEmpty = false;
     growOpx(opx, seqs[&progs.accumulateOuterFragment()]);
+  } else if (op->settings.executionContext ==
+             ExecutionContext::WeightsFromHostFragment) {
+    // Special case for running operators before the main loop.
+    growOpx(opx, seqs[&progs.streamWeightsFromHostFragment()]);
+  } else if (op->settings.executionContext ==
+             ExecutionContext::WeightsToHostFragment) {
+    // Special case for running operators before the main loop.
+    growOpx(opx, seqs[&progs.weightsToHostFragment()]);
   } else {
     auto found = requiredRecomputes.find(taskId);
     if (found != requiredRecomputes.end()) {

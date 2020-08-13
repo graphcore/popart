@@ -44,7 +44,7 @@ private:
   using TensorIds         = std::vector<TensorId>;
   using TensorPhase       = std::pair<TensorId, int64_t>;
   using RemoteStoreOpData = std::pair<TensorId, RemoteStoreOp *>;
-  using RemoteLoadOpData  = std::tuple<TensorId, TensorId, RemoteLoadOp *>;
+  using RemoteLoadOpData  = std::pair<TensorId, RemoteLoadOp *>;
   using TensorStoreMap    = std::map<TensorPhase, RemoteStoreOpData>;
   using TensorLoadMap     = std::map<TensorPhase, RemoteLoadOpData>;
 
@@ -65,7 +65,9 @@ private:
     std::map<ExecutionPhase, Ops> consumersInPhase;
     // A mapping from the various execution phases to flags that denote whether
     // the tensor needs to be loaded/store in that phase of execution.
-    std::map<ExecutionPhase, std::pair<bool, bool>> loadStoreInPhase;
+    std::map<ExecutionPhase, bool> loadInPhase;
+    std::map<ExecutionPhase, bool> storeInPhase;
+    std::map<ExecutionPhase, bool> gatherInPhase;
     // True if we need to load/store the tensor outside of the main loop. This
     // is used for RWS + OnChip weights.
     bool loadStoreOutOfPhase;
@@ -108,9 +110,18 @@ private:
   void getTensorConfig(Tensor *tensor, TensorConfig &tensorConfig) const;
   void getOrderedConsumerOps(Tensor *tensor, Ops &consumerOps) const;
   void getTensorLocation(Tensor *tensor, TensorLocation &location) const;
+  void
+  getTensorProducerExecutionPhase(Tensor *tensor,
+                                  const Op *producerOp,
+                                  OptionalExecutionPhase &producerPhase) const;
+  void getTensorOptionalVGraphId(Tensor *tensor,
+                                 const Op *producerOp,
+                                 const Ops &consumerOps,
+                                 OptionalVGraphId &loadStoreVGID) const;
   void getTensorPhaseConfig(Tensor *tensor,
                             const Op *producerOp,
                             const Ops &consumerOps,
+                            const TensorLocation &location,
                             TensorPhaseConfig &phaseConfig) const;
   void getTensorSettings(Tensor *tensor,
                          const Op *producerOp,
@@ -124,16 +135,21 @@ private:
                                   Ops &modifyingConsumerOps) const;
 
   // Helper functions to insert a RemoteLoadOp.
-  std::tuple<RemoteLoadOp *, ReplicatedAllGatherOp *>
-  insertRemoteLoadOp(const TensorConfig &tensorConfig,
-                     const ExecutionPhase currentExecutionPhase,
-                     TensorId &loadedTensorId,
-                     TensorId &gatheredTensorId);
+  RemoteLoadOp *insertRemoteLoadOp(const TensorConfig &tensorConfig,
+                                   const OptionalExecutionPhase phase,
+                                   TensorId &loadedTensorId);
 
   // Helper functions to insert a RemoteStoreOp.
   RemoteStoreOp *insertRemoteStoreOp(const TensorConfig &tensorConfig,
-                                     const ExecutionPhase currentExecutionPhase,
+                                     const OptionalExecutionPhase phase,
                                      const TensorId &loadedTensorId);
+
+  // Helper function to insert a ReplicatedAllGatherOp.
+  ReplicatedAllGatherOp *
+  insertReplicatedAllGatherOp(const TensorConfig &tensorConfig,
+                              const ExecutionPhase phase,
+                              const TensorId &loadedTensorId,
+                              TensorId &gatheredTensorId);
 
   // Sanity checking functions.
   void sanitizeOps() const;
@@ -149,8 +165,10 @@ private:
 
   // Helper functions for generating tensor IDs.
   static TensorId generateInitTensorId(Tensor *tensor);
-  static TensorId generateLoadedTensorId(Tensor *tensor, int64_t load_index);
-  static TensorId generateGatheredTensorId(Tensor *tensor, int64_t load_index);
+  static TensorId generateLoadedTensorId(Tensor *tensor,
+                                         OptionalExecutionPhase phase);
+  static TensorId generateGatheredTensorId(Tensor *tensor,
+                                           ExecutionPhase phase);
 
   // Static helper functions.
   static bool isLoadRequired(const TensorPhaseConfig &phaseConfig);

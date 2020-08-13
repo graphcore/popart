@@ -50,38 +50,45 @@ void StreamingMemory::verifyExecutionPhases(Graph &graph) const {
   // Verify execution phase annotations
   for (auto &op : graph.getOps()) {
     Op *op0 = op.second.get();
-    if (op0->hasExecutionPhase()) {
-      auto phase0 = op0->getExecutionPhase();
-      for (Tensor *input : op0->input->tensors()) {
-        if (input->hasProducer() && input->getProducer()->hasExecutionPhase()) {
-          Op *op1     = input->getProducer();
-          auto phase1 = op1->getExecutionPhase();
-          if (phase1 > phase0) {
-            throw error("[StreamingMemory] Op {} {} (I/O) before op {} {}, "
-                        "but execution phases disagree ({} vs. {})",
-                        op1->id,
-                        op1->debugName(),
-                        op0->id,
-                        op0->debugName(),
-                        phase1,
-                        phase0);
+    if (op0->settings.executionContext == ExecutionContext::Normal) {
+      if (op0->hasExecutionPhase()) {
+        auto phase0 = op0->getExecutionPhase();
+        for (Tensor *input : op0->input->tensors()) {
+          if (input->hasProducer() &&
+              input->getProducer()->settings.executionContext ==
+                  ExecutionContext::Normal &&
+              input->getProducer()->hasExecutionPhase()) {
+            Op *op1     = input->getProducer();
+            auto phase1 = op1->getExecutionPhase();
+            if (phase1 > phase0) {
+              throw error("[StreamingMemory] Op {} {} (I/O) before op {} {}, "
+                          "but execution phases disagree ({} vs. {})",
+                          op1->id,
+                          op1->debugName(),
+                          op0->id,
+                          op0->debugName(),
+                          phase1,
+                          phase0);
+            }
           }
         }
-      }
-      for (Op *op1 : graph.topoCons->getBefores(op0)) {
-        auto phase1 = op1->getExecutionPhase();
-        if (phase1 > phase0) {
-          logging::transform::warn(
-              "[StreamingMemory] Op {} {} (topologically) before op {} {}, "
-              "but execution phases disagree ({} vs. {}). "
-              "Removing constraint.",
-              op1->id,
-              op1->debugName(),
-              op0->id,
-              op0->debugName(),
-              phase1,
-              phase0);
-          graph.topoCons->remove(op1, op0);
+        for (Op *op1 : graph.topoCons->getBefores(op0)) {
+          if (op1->settings.executionContext == ExecutionContext::Normal) {
+            auto phase1 = op1->getExecutionPhase();
+            if (phase1 > phase0) {
+              logging::transform::warn(
+                  "[StreamingMemory] Op {} {} (topologically) before op {} {}, "
+                  "but execution phases disagree ({} vs. {}). "
+                  "Removing constraint.",
+                  op1->id,
+                  op1->debugName(),
+                  op0->id,
+                  op0->debugName(),
+                  phase1,
+                  phase0);
+              graph.topoCons->remove(op1, op0);
+            }
+          }
         }
       }
     }
@@ -124,8 +131,7 @@ bool StreamingMemory::apply(Graph &graph) const {
       // TensorType::Variable is setting a flag in tensorLocationInfo.
       TensorLocation tensorLocation =
           opInserter.determineTensorLocation(tensor);
-      tensor->tensorLocationInfo.setRemote(tensorLocation.storage ==
-                                           TensorStorage::OffChip);
+      tensor->tensorLocationInfo.setRemote(tensorLocation.isRemote());
       logging::transform::debug("[StreamingMemory] Set Variable {} to {}.",
                                 tensor->id,
                                 tensorLocationToStr(tensorLocation));

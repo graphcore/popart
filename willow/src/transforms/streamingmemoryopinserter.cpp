@@ -139,12 +139,17 @@ void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
   getTensorConfig(tensor, tensorConfig);
 
   // Nothing to for this tensor if it's not remote.
-  if (tensorConfig.location.storage == TensorStorage::OnChip) {
+  if (!tensorConfig.location.isRemote()) {
+    logging::transform::trace(
+        "[StreamingMemory] Skipping tensor {} (not remote)", tensor->id);
     return;
   }
 
   // Nothing to do for this tensor if there are no loads.
-  if (!isLoadRequired(tensorConfig.phaseConfig)) {
+  if (!tensorConfig.phaseConfig.loadStoreOutOfPhase &&
+      !isLoadRequired(tensorConfig.phaseConfig)) {
+    logging::transform::trace(
+        "[StreamingMemory] Skipping tensor {} (no load required)", tensor->id);
     return;
   }
 
@@ -155,27 +160,55 @@ void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
   TensorId loadedTensorId   = tensor->id;
   TensorId gatheredTensorId = tensor->id;
 
-  for (auto &phaseLoadStore : tensorConfig.phaseConfig.loadStoreInPhase) {
-    ExecutionPhase currentExecutionPhase       = phaseLoadStore.first;
-    RemoteLoadOp *remoteLoad                   = nullptr;
-    RemoteStoreOp *remoteStore                 = nullptr;
-    ReplicatedAllGatherOp *replicatedAllGather = nullptr;
+  RemoteLoadOp *remoteLoad   = nullptr;
+  RemoteStoreOp *remoteStore = nullptr;
 
-    // Load
-    if (phaseLoadStore.second.first) {
-      auto res = insertRemoteLoadOp(tensorConfig,
-                                    currentExecutionPhase,
-                                    loadedTensorId,
-                                    gatheredTensorId);
-      // Unpack result.
-      remoteLoad          = std::get<0>(res);
-      replicatedAllGather = std::get<1>(res);
+  auto &phaseConfig = tensorConfig.phaseConfig;
+
+  if (phaseConfig.loadStoreOutOfPhase) {
+    // Insert RemoteLoadOp/RemoteStoreOp out of phase.
+    remoteLoad = insertRemoteLoadOp(
+        tensorConfig, OptionalExecutionPhase(), loadedTensorId);
+    remoteStore = insertRemoteStoreOp(
+        tensorConfig, OptionalExecutionPhase(), loadedTensorId);
+  }
+
+  for (ExecutionPhase phase = 0; phase < num_phases * 2 - 1; ++phase) {
+
+    if (!phaseConfig.loadStoreOutOfPhase) {
+      // Reset these pointers.
+      remoteLoad  = nullptr;
+      remoteStore = nullptr;
+
+      // Create RemoteLoadOp for this phase if we need to.
+      if (phaseConfig.loadInPhase[phase]) {
+        remoteLoad = insertRemoteLoadOp(tensorConfig, phase, loadedTensorId);
+      }
+
+      // Create RemoteStoreOp for this phase if we need to.
+      if (phaseConfig.storeInPhase[phase]) {
+        remoteStore = insertRemoteStoreOp(tensorConfig, phase, loadedTensorId);
+      }
     }
 
-    // Store
-    if (phaseLoadStore.second.second) {
-      remoteStore = insertRemoteStoreOp(
-          tensorConfig, currentExecutionPhase, loadedTensorId);
+    // Gathers will happen in-phase regardless of whether loads/stores are
+    // in-phase. After this part of the code the gatheredTensorId should point
+    // the ID of the complete tensor.
+    ReplicatedAllGatherOp *allGather = nullptr;
+
+    if (phaseConfig.gatherInPhase[phase]) {
+      allGather = insertReplicatedAllGatherOp(
+          tensorConfig, phase, loadedTensorId, gatheredTensorId);
+    } else {
+      gatheredTensorId = loadedTensorId;
+    }
+
+    // Add constraints to ensure new operations are scheduled in the right
+    // order.
+
+    // Load must happen before the all-gather.
+    if (remoteLoad && allGather) {
+      graph.topoCons->insert(remoteLoad, allGather, true);
     }
 
     // Remote load has to take place before associated remote store
@@ -185,20 +218,18 @@ void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
 
     if (remoteStore) {
       // Any modification has to take place before the remote store
-      for (Op *modifyingOp :
-           tensorConfig.phaseConfig.modifiersInPhase[currentExecutionPhase]) {
+      for (Op *modifyingOp : tensorConfig.phaseConfig.modifiersInPhase[phase]) {
         graph.topoCons->insert(modifyingOp, remoteStore);
       }
     }
 
-    for (Op *consumerOp :
-         tensorConfig.phaseConfig.consumersInPhase[currentExecutionPhase]) {
+    for (Op *consumerOp : tensorConfig.phaseConfig.consumersInPhase[phase]) {
       if (tensor->isAcclTensor()) {
         if (remoteLoad) {
           graph.topoCons->insert(remoteLoad, consumerOp, true);
         }
-        if (replicatedAllGather) {
-          graph.topoCons->insert(replicatedAllGather, consumerOp, true);
+        if (allGather) {
+          graph.topoCons->insert(allGather, consumerOp, true);
         }
       } else {
         if (remoteLoad) {
@@ -219,8 +250,7 @@ void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
             "[StreamingMemory] Disconnecting tensor {} at op {} (modified: {})",
             tensor->id,
             consumerOp->debugName(),
-            !tensorConfig.phaseConfig.modifiersInPhase[currentExecutionPhase]
-                 .empty());
+            !tensorConfig.phaseConfig.modifiersInPhase[phase].empty());
       }
 
       // Disconnect original tensor and wire up loaded tensor
@@ -452,8 +482,11 @@ void StreamingMemoryOpInserter::getTensorConfig(
 
   getOrderedConsumerOps(tensor, tensorConfig.consumerOps);
   getTensorLocation(tensor, tensorConfig.location);
-  getTensorPhaseConfig(
-      tensor, producerOp, tensorConfig.consumerOps, tensorConfig.phaseConfig);
+  getTensorPhaseConfig(tensor,
+                       producerOp,
+                       tensorConfig.consumerOps,
+                       tensorConfig.location,
+                       tensorConfig.phaseConfig);
   getTensorSettings(
       tensor, producerOp, tensorConfig.consumerOps, tensorConfig.settings);
   getTensorSchedule(tensor, tensorConfig);
@@ -489,44 +522,23 @@ void StreamingMemoryOpInserter::getTensorLocation(
   location.storeOnIOTiles &= sessionOptions.numIOTiles > 0;
 }
 
-void StreamingMemoryOpInserter::getTensorPhaseConfig(
+void StreamingMemoryOpInserter::getTensorOptionalVGraphId(
     Tensor *tensor,
     const Op *producerOp,
     const Ops &consumerOps,
-    TensorPhaseConfig &phaseConfig) const {
+    OptionalVGraphId &loadStoreVGID) const {
 
-  // Set producer ExecutionPhase.
+  // If we have a producer op, use the VGID of the producer.
   if (producerOp) {
-    if (producerOp->getOptionalExecutionPhase()) {
-      phaseConfig.producerExecutionPhase =
-          producerOp->getOptionalExecutionPhase();
-    }
     if (const IpuCopyOp *copy = dynamic_cast<const IpuCopyOp *>(producerOp)) {
-      if (copy->getSourceIpu() % num_stages !=
-          copy->getDestIpu() % num_stages) {
-        // Inter-phase copy, special case where the producer
-        // phase is moved
-        phaseConfig.producerExecutionPhase =
-            *phaseConfig.producerExecutionPhase + 1;
-      }
-      phaseConfig.loadStoreVGID = copy->getDestIpu();
+      loadStoreVGID = copy->getDestIpu();
     } else {
-      phaseConfig.loadStoreVGID = producerOp->getVirtualGraphId();
+      loadStoreVGID = producerOp->getVirtualGraphId();
     }
   }
 
-  if (phaseConfig.producerExecutionPhase) {
-    phaseConfig.livePhases.insert(*phaseConfig.producerExecutionPhase);
-    // Do not load in producer phase
-    phaseConfig.loadStoreInPhase[*phaseConfig.producerExecutionPhase].first =
-        false;
-    // Store in producer phase
-    phaseConfig.loadStoreInPhase[*phaseConfig.producerExecutionPhase].second =
-        true;
-  }
-
+  // If we don't have a producer op, use the smallest consumer op VGID.
   for (auto consumerOp : consumerOps) {
-
     OptionalVGraphId consumerVGID = consumerOp->getOptionalVGraphId();
     if (IpuCopyOp *copyOp = dynamic_cast<IpuCopyOp *>(consumerOp)) {
       consumerVGID = copyOp->getSourceIpu();
@@ -534,51 +546,162 @@ void StreamingMemoryOpInserter::getTensorPhaseConfig(
 
     // Pick correct VGID for loading/storing the tensor,
     // if no producer exists
-    if (!phaseConfig.loadStoreVGID) {
-      phaseConfig.loadStoreVGID = consumerVGID;
+    if (!loadStoreVGID) {
+      loadStoreVGID = consumerVGID;
     } else if (!tensor->hasProducer() && consumerVGID) {
-      phaseConfig.loadStoreVGID =
-          std::min(*phaseConfig.loadStoreVGID, *consumerVGID);
+      loadStoreVGID = std::min(*loadStoreVGID, *consumerVGID);
     }
+  }
+}
 
-    auto consumerExecutionPhase = *consumerOp->getOptionalExecutionPhase();
-
-    if (phaseConfig.livePhases.find(consumerExecutionPhase - 2) !=
-        phaseConfig.livePhases.end()) {
-      // Live in adjacent previous phase, do not load in current phase
-      phaseConfig.loadStoreInPhase[consumerExecutionPhase].first = false;
-      if (phaseConfig.loadStoreInPhase[consumerExecutionPhase - 2].second) {
-        // Move store from adjacent previous phase to current phase
-        phaseConfig.loadStoreInPhase[consumerExecutionPhase].second     = true;
-        phaseConfig.loadStoreInPhase[consumerExecutionPhase - 2].second = false;
+void StreamingMemoryOpInserter::getTensorProducerExecutionPhase(
+    Tensor *tensor,
+    const Op *producerOp,
+    OptionalExecutionPhase &producerExecutionPhase) const {
+  if (producerOp) {
+    if (producerOp->getOptionalExecutionPhase()) {
+      producerExecutionPhase = producerOp->getOptionalExecutionPhase();
+    }
+    // Special case for IpuCopyOp.
+    if (const IpuCopyOp *copy = dynamic_cast<const IpuCopyOp *>(producerOp)) {
+      if (copy->getSourceIpu() % num_stages !=
+          copy->getDestIpu() % num_stages) {
+        // Inter-phase copy, special case where the producer
+        // phase is moved
+        producerExecutionPhase = *producerExecutionPhase + 1;
       }
-    } else if (phaseConfig.producerExecutionPhase &&
-               phaseConfig.producerExecutionPhase == consumerExecutionPhase) {
-      // Current phase is producer phase, do not load in current phase
-      phaseConfig.loadStoreInPhase[consumerExecutionPhase].first = false;
+    }
+  }
+}
+
+void StreamingMemoryOpInserter::getTensorPhaseConfig(
+    Tensor *tensor,
+    const Op *producerOp,
+    const Ops &consumerOps,
+    const TensorLocation &location,
+    TensorPhaseConfig &phaseConfig) const {
+
+  // Set phaseConfig.producerExecutionPhase if possible.
+  getTensorProducerExecutionPhase(
+      tensor, producerOp, phaseConfig.producerExecutionPhase);
+  // Set phaseConfig.loadStoreVGID.
+  getTensorOptionalVGraphId(
+      tensor, producerOp, consumerOps, phaseConfig.loadStoreVGID);
+
+  // Set phaseConfig.consumersInPhase.
+  for (auto consumerOp : consumerOps) {
+    const auto consumerExecutionPhase =
+        *consumerOp->getOptionalExecutionPhase();
+    phaseConfig.consumersInPhase[consumerExecutionPhase].push_back(consumerOp);
+  }
+
+  // If the user requests to keep the tensor OnChip but also wants to shard the
+  // tensor between replica sets then we will load/store the tensor out of the
+  // training loop (e.g. only once) to keep the tensor in memory as much as
+  // possible.
+  phaseConfig.loadStoreOutOfPhase =
+      (location.storage == TensorStorage::OnChip &&
+       location.replicatedTensorSharding);
+
+  // Set phaseConfig.livePhases (only used for logging, really).
+  if (phaseConfig.producerExecutionPhase) {
+    // Live in producer phase.
+    phaseConfig.livePhases.insert(*phaseConfig.producerExecutionPhase);
+  }
+  for (auto consumerOp : consumerOps) {
+    // Live in consumer phases.
+    const auto consumerExecutionPhase =
+        *consumerOp->getOptionalExecutionPhase();
+    phaseConfig.livePhases.insert(consumerExecutionPhase);
+  }
+
+  // TODO T25043: The remaining code in this function is non-trivial and would
+  // benefit from unit testing.
+
+  // Set phaseConfig.{load,store,reduce}InPhase.
+
+  // Set everything to false to begin with.
+  for (ExecutionPhase p = 0; p < num_phases * 2 - 1; ++p) {
+    phaseConfig.loadInPhase[p]   = false;
+    phaseConfig.storeInPhase[p]  = false;
+    phaseConfig.gatherInPhase[p] = false;
+  }
+
+  // We first set's set {load,store}InPhase assuming we are loading/storing
+  // everything in-phase. This is because we may need to insert an
+  // replicationAllGather in these phases. Note that we do this by means of an
+  // incremental algorithm which processes phases in order by iterating over
+  // consumer ops in execution phase order.
+
+  if (phaseConfig.producerExecutionPhase) {
+    // The tensor is stored in the producing phase.
+    phaseConfig.storeInPhase[*phaseConfig.producerExecutionPhase] = true;
+  }
+
+  for (auto consumerOp : consumerOps) {
+    // Phase of this consumer.
+    const auto phase           = *consumerOp->getOptionalExecutionPhase();
+    const auto isProducerPhase = phaseConfig.producerExecutionPhase &&
+                                 (phaseConfig.producerExecutionPhase == phase);
+
+    // With the current implementation IPUs always are associated with alternate
+    // phases, irregardless of num_stages. Last phase relevant to this IPU was
+    // two phases ago.
+    const auto previousPhase = phase - 2;
+
+    if (phaseConfig.livePhases.find(previousPhase) !=
+        phaseConfig.livePhases.end()) {
+      // The tensor is live in the previous phase. Instead of storing it in the
+      // previous phase and loading it in again in this phase we are going to
+      // keep it live.
+      phaseConfig.loadInPhase[phase] = false;
+      // If tensor was stored in the previous phase, defer storing until the
+      // current phase.
+      if (phaseConfig.storeInPhase[previousPhase]) {
+        phaseConfig.storeInPhase[phase]         = true;
+        phaseConfig.storeInPhase[previousPhase] = false;
+      }
+    } else if (isProducerPhase) {
+      // Current phase is producer phase -- there is no need to load in current
+      // phase
     } else {
       // Not live, load in current phase
-      phaseConfig.loadStoreInPhase[consumerExecutionPhase].first = true;
+      phaseConfig.loadInPhase[phase] = true;
     }
 
-    if (phaseConfig.modifiersInPhase.find(consumerExecutionPhase) ==
+    if (phaseConfig.modifiersInPhase.find(phase) ==
         phaseConfig.modifiersInPhase.end()) {
       // Check if the consumer OP modifies the tensor, e.g. for weights
       // if yes, then the tensor requires to be backed-up at the end of
       // the phase
       getAliasedModifiersInPhase(
-          tensor,
-          consumerExecutionPhase,
-          phaseConfig.modifiersInPhase[consumerExecutionPhase]);
-      if (!phaseConfig.modifiersInPhase[consumerExecutionPhase].empty()) {
+          tensor, phase, phaseConfig.modifiersInPhase[phase]);
+      if (!phaseConfig.modifiersInPhase[phase].empty()) {
         // Storing in this phase
-        phaseConfig.loadStoreInPhase[consumerExecutionPhase].second = true;
+        phaseConfig.storeInPhase[phase] = true;
         // Not storing in previous phase
-        phaseConfig.loadStoreInPhase[consumerExecutionPhase - 2].second = false;
+        phaseConfig.storeInPhase[previousPhase] = false;
       }
     }
-    phaseConfig.livePhases.insert(consumerExecutionPhase);
-    phaseConfig.consumersInPhase[consumerExecutionPhase].push_back(consumerOp);
+  }
+
+  // Tensors that are sharded must be gathered wherever they are set to be
+  // loaded as per the current loadInPhase settings. This is true even if
+  // we load out of phase. Accumulated tensors are never gathered.
+  if (location.replicatedTensorSharding && !tensor->isAcclTensor()) {
+    for (ExecutionPhase p = 0; p < num_phases * 2 - 1; ++p) {
+      phaseConfig.gatherInPhase[p] = phaseConfig.loadInPhase[p];
+    }
+  }
+
+  // If we are loading/storing out of phase then we don't actually want to
+  // remember all the load/store in phase flags at all, but we do need the
+  // gathers.
+  if (phaseConfig.loadStoreOutOfPhase) {
+    for (ExecutionPhase p = 0; p < num_phases * 2 - 1; ++p) {
+      phaseConfig.loadInPhase[p]  = false;
+      phaseConfig.storeInPhase[p] = false;
+    }
   }
 }
 
@@ -646,33 +769,57 @@ void StreamingMemoryOpInserter::getAliasedModifiersInPhase(
   }
 }
 
-std::tuple<RemoteLoadOp *, ReplicatedAllGatherOp *>
-StreamingMemoryOpInserter::insertRemoteLoadOp(
+RemoteLoadOp *StreamingMemoryOpInserter::insertRemoteLoadOp(
     const TensorConfig &tensorConfig,
-    const ExecutionPhase currentExecutionPhase,
-    TensorId &loadedTensorId,
-    TensorId &gatheredTensorId) {
+    const OptionalExecutionPhase phase,
+    TensorId &loadedTensorId) {
 
-  RemoteLoadOp *remoteLoad                   = nullptr;
-  ReplicatedAllGatherOp *replicatedAllGather = nullptr;
+  RemoteLoadOp *remoteLoad = nullptr;
 
-  logging::transform::trace(
-      "[StreamingMemory] Adding remote load of {} ({}) in phase {}",
-      loadedTensorId,
-      tensorConfig.tensor->id,
-      currentExecutionPhase);
+  if (!tensorConfig.phaseConfig.loadStoreOutOfPhase) {
+    // Phase must be set when storing in phase.
+    if (!phase) {
+      throw internal_error(
+          "Expected phase to be set when inserting RemoteLoadOp in-phase.");
+    }
+  }
 
-  auto tensorLoadMapEntry =
-      tensorLoadMap.find({tensorConfig.tensor->id, currentExecutionPhase});
+  // Log this.
+  if (tensorConfig.phaseConfig.loadStoreOutOfPhase) {
+    logging::transform::trace(
+        "[StreamingMemory] Adding remote load of {} ({}) out of phase",
+        loadedTensorId,
+        tensorConfig.tensor->id);
+  } else {
+    logging::transform::trace(
+        "[StreamingMemory] Adding remote load of {} ({}) in phase {}",
+        loadedTensorId,
+        tensorConfig.tensor->id,
+        *phase);
+  }
 
-  if (tensorLoadMapEntry == tensorLoadMap.end()) {
-    auto remoteLoadOp = std::make_unique<RemoteLoadOp>(
-        Onnx::CustomOperators::RemoteLoad, tensorConfig.settings);
-    remoteLoad = remoteLoadOp.get();
+  if (!tensorConfig.phaseConfig.loadStoreOutOfPhase) {
+    auto tensorLoadMapEntry =
+        tensorLoadMap.find({tensorConfig.tensor->id, *phase});
 
+    if (tensorLoadMapEntry != tensorLoadMap.end()) {
+      loadedTensorId = tensorLoadMapEntry->second.first;
+      remoteLoad     = tensorLoadMapEntry->second.second;
+
+      return remoteLoad;
+    }
+  }
+
+  auto remoteLoadOp = std::make_unique<RemoteLoadOp>(
+      Onnx::CustomOperators::RemoteLoad, tensorConfig.settings);
+  remoteLoad = remoteLoadOp.get();
+
+  if (!tensorConfig.phaseConfig.loadStoreOutOfPhase) {
     if (tensorConfig.ioSchedule == ExecutionPhaseIOSchedule::OnDemand) {
       // RemoteLoad in current phase
-      remoteLoad->setExecutionPhase(currentExecutionPhase);
+      if (phase) {
+        remoteLoad->setExecutionPhase(phase);
+      }
       if (tensorConfig.tensor->isAcclTensor()) {
         // Optimizer state: Load as late as possible
         if (tensorConfig.optimizerSchedule ==
@@ -691,44 +838,57 @@ StreamingMemoryOpInserter::insertRemoteLoadOp(
       remoteLoad->settings.schedulePriority = remoteLoadPriority;
       // RemoteLoad at the end of the previous phase, so that load
       // is executed before inter-IPU copy
-      remoteLoad->setExecutionPhase(currentExecutionPhase - 1);
+      if (phase) {
+        remoteLoad->setExecutionPhase(*phase - 1);
+      }
+    }
+  } else {
+    remoteLoad->setExecutionPhase({});
+    remoteLoad->settings.schedulePriority = 0.0f;
+  }
+
+  remoteLoad->settings.recomputeType = RecomputeType::Checkpoint;
+  remoteLoad->setVirtualGraphId(tensorConfig.phaseConfig.loadStoreVGID);
+  graph.moveIntoGraph(std::move(remoteLoadOp));
+
+  remoteLoad->connectInTensor(RemoteStoreOp::getRemoteBufferOffsetInIndex(),
+                              getRemoteArg(tensorConfig.tensor->id));
+
+  TensorId initTensorId = generateInitTensorId(tensorConfig.tensor);
+  loadedTensorId        = generateLoadedTensorId(tensorConfig.tensor, phase);
+  TensorId inTensorId;
+
+  if (tensorConfig.phaseConfig.loadStoreOutOfPhase) {
+    // Setting the execution context ensures it's scheduled out of the main
+    // loop.
+    remoteLoad->settings.executionContext =
+        ExecutionContext::WeightsFromHostFragment;
+  }
+
+  if (auto prevLoadId = getPreviousLoadedTensorId(tensorConfig.tensor->id)) {
+    // Tensor might not have a true producer op, but was previously
+    // loaded by a RemoteLoad
+    inTensorId = prevLoadId.value();
+  } else if (tensorConfig.producerOp) {
+    // Tensor has a true producer op
+    inTensorId = tensorConfig.tensor->id;
+  } else {
+    TensorInfo initInfo = tensorConfig.tensor->info;
+
+    if (tensorConfig.location.replicatedTensorSharding) {
+      initInfo.set(initInfo.dataType(),
+                   {(initInfo.nelms() - 1) / replicationFactor + 1});
     }
 
-    remoteLoad->settings.recomputeType = RecomputeType::Checkpoint;
-    remoteLoad->setVirtualGraphId(tensorConfig.phaseConfig.loadStoreVGID);
-    graph.moveIntoGraph(std::move(remoteLoadOp));
+    // InitOp as a "producer" op
+    auto initOp = std::make_unique<InitOp>(Onnx::CustomOperators::Init_1,
+                                           initInfo,
+                                           TensorType::Cache,
+                                           InitType::NoInit,
+                                           tensorConfig.settings);
+    Op *init    = initOp.get();
 
-    remoteLoad->connectInTensor(RemoteStoreOp::getRemoteBufferOffsetInIndex(),
-                                getRemoteArg(tensorConfig.tensor->id));
-
-    TensorId initTensorId = generateInitTensorId(tensorConfig.tensor);
-    loadedTensorId =
-        generateLoadedTensorId(tensorConfig.tensor, currentExecutionPhase);
-    TensorId inTensorId;
-
-    if (auto prevLoadId = getPreviousLoadedTensorId(tensorConfig.tensor->id)) {
-      // Tensor might not have a true producer op, but was previously
-      // loaded by a RemoteLoad
-      inTensorId = prevLoadId.value();
-    } else if (tensorConfig.producerOp) {
-      // Tensor has a true producer op
-      inTensorId = tensorConfig.tensor->id;
-    } else {
-      TensorInfo initInfo = tensorConfig.tensor->info;
-
-      if (tensorConfig.location.replicatedTensorSharding) {
-        initInfo.set(initInfo.dataType(),
-                     {(initInfo.nelms() - 1) / replicationFactor + 1});
-      }
-
-      // InitOp as a "producer" op
-      auto initOp = std::make_unique<InitOp>(Onnx::CustomOperators::Init_1,
-                                             initInfo,
-                                             TensorType::Cache,
-                                             InitType::NoInit,
-                                             tensorConfig.settings);
-      Op *init    = initOp.get();
-
+    if (!tensorConfig.phaseConfig.loadStoreOutOfPhase) {
       if (tensorConfig.tensor->isAcclTensor()) {
         if (tensorConfig.optimizerSchedule ==
             ExecutionPhaseOptimizerSchedule::Interleaving) {
@@ -739,127 +899,166 @@ StreamingMemoryOpInserter::insertRemoteLoadOp(
           remoteLoad->settings.schedulePriority =
               optimizerStateLoadPriorityBatch;
         }
-        init->setExecutionPhase(currentExecutionPhase);
+        init->setExecutionPhase(phase);
       } else {
         init->settings.schedulePriority = initPriority;
-        init->setExecutionPhase(currentExecutionPhase - 1);
+        init->setExecutionPhase(*phase - 1);
       }
-
-      init->setVirtualGraphId(tensorConfig.phaseConfig.loadStoreVGID);
-      graph.moveIntoGraph(std::move(initOp));
-      init->createAndConnectOutTensor(InitOp::getOutIndex(), initTensorId);
-      init->setup();
-      inTensorId = initTensorId;
-
-      // Do Init on IO tiles
-      init->settings.useIoTiles = tensorConfig.location.loadOnIOTiles;
-    }
-    // RemoteLoad always needs both an input and an output,
-    // for outlining and aliasing purposes
-
-    // RemoteLoad updates the inTensorId...
-    remoteLoad->connectInTensor(RemoteLoadOp::getLocalTensorInIndex(),
-                                inTensorId);
-    // ... and aliases it under loadedTensorId
-    remoteLoad->createAndConnectOutTensor(
-        RemoteLoadOp::getLocalTensorOutIndex(), loadedTensorId);
-
-    remoteLoad->setup();
-
-    // Do RemoteLoad on IO tiles
-    remoteLoad->settings.useIoTiles = tensorConfig.location.loadOnIOTiles;
-
-    if (tensorConfig.location.replicatedTensorSharding &&
-        !tensorConfig.tensor->isAcclTensor()) {
-      // Execute replicated allgather to collect the full weight
-      // tensor from the individual replicas
-      auto replicatedAllGatherOp = std::make_unique<ReplicatedAllGatherOp>(
-          Onnx::CustomOperators::ReplicatedAllGather,
-          tensorConfig.settings,
-          tensorConfig.tensor->info);
-      replicatedAllGather = replicatedAllGatherOp.get();
-      replicatedAllGather->settings.schedulePriority = allGatherPriority;
-      replicatedAllGather->settings.recomputeType = RecomputeType::Checkpoint;
-      // RemoteLoad at the end of the previous phase, so that load
-      // is executed before inter-IPU copy
-      replicatedAllGather->setExecutionPhase(currentExecutionPhase - 1);
-      replicatedAllGather->setVirtualGraphId(
-          tensorConfig.phaseConfig.loadStoreVGID);
-      graph.moveIntoGraph(std::move(replicatedAllGatherOp));
-
-      replicatedAllGather->connectInTensor(ReplicatedAllGatherOp::getInIndex(),
-                                           loadedTensorId);
-
-      replicatedAllGather->connectInTensor(
-          ReplicatedAllGatherOp::getCollectiveLinkedIndex(),
-          getRemoteArg(tensorConfig.tensor->id));
-
-      gatheredTensorId =
-          generateGatheredTensorId(tensorConfig.tensor, currentExecutionPhase);
-
-      replicatedAllGather->createAndConnectOutTensor(
-          ReplicatedAllGatherOp::getOutIndex(), gatheredTensorId);
-
-      replicatedAllGather->setup();
-      graph.topoCons->insert(remoteLoad, replicatedAllGather, true);
-
-      // Avoid outlining RemoteLoad Ops that result in a
-      // different final gathered tensor shape together,
-      // because it can have adverse effects due to copying tensors
-      // with different final tile mapping using the same host
-      // exchange
-      std::string gatheredShapeString =
-          "[" +
-          logging::join(tensorConfig.tensor->info.shape().begin(),
-                        tensorConfig.tensor->info.shape().end(),
-                        ",") +
-          "]";
-      remoteLoad->settings.extraOutlineAttributes.insert(
-          {"gatheredSize", gatheredShapeString});
-
-      // Do AllGather on IO tiles
-      replicatedAllGather->settings.useIoTiles =
-          tensorConfig.location.loadOnIOTiles;
-
     } else {
-      // Gathered and loaded tensor are the same
-      gatheredTensorId = loadedTensorId;
+      init->setExecutionPhase({});
+      init->settings.schedulePriority = 0.0f;
     }
 
-    tensorLoadMap.emplace(
-        TensorPhase(tensorConfig.tensor->id, currentExecutionPhase),
-        RemoteLoadOpData(loadedTensorId, gatheredTensorId, remoteLoad));
-  } else {
-    loadedTensorId   = std::get<0>(tensorLoadMapEntry->second);
-    gatheredTensorId = std::get<1>(tensorLoadMapEntry->second);
-    remoteLoad       = std::get<2>(tensorLoadMapEntry->second);
+    if (tensorConfig.phaseConfig.loadStoreOutOfPhase) {
+      // Setting the execution context ensures it's scheduled out of the main
+      // loop.
+      init->settings.executionContext =
+          ExecutionContext::WeightsFromHostFragment;
+    }
+
+    init->setVirtualGraphId(tensorConfig.phaseConfig.loadStoreVGID);
+    graph.moveIntoGraph(std::move(initOp));
+    init->createAndConnectOutTensor(InitOp::getOutIndex(), initTensorId);
+    init->setup();
+    inTensorId = initTensorId;
+
+    // Do Init on IO tiles
+    init->settings.useIoTiles = tensorConfig.location.loadOnIOTiles;
+  }
+  // RemoteLoad always needs both an input and an output,
+  // for outlining and aliasing purposes
+
+  // RemoteLoad updates the inTensorId...
+  remoteLoad->connectInTensor(RemoteLoadOp::getLocalTensorInIndex(),
+                              inTensorId);
+  // ... and aliases it under loadedTensorId
+  remoteLoad->createAndConnectOutTensor(RemoteLoadOp::getLocalTensorOutIndex(),
+                                        loadedTensorId);
+
+  remoteLoad->setup();
+
+  // Do RemoteLoad on IO tiles
+  remoteLoad->settings.useIoTiles = tensorConfig.location.loadOnIOTiles;
+
+  if (tensorConfig.location.replicatedTensorSharding) {
+    // Avoid outlining RemoteLoad Ops that result in a
+    // different final gathered tensor shape together,
+    // because it can have adverse effects due to copying tensors
+    // with different final tile mapping using the same host
+    // exchange
+    std::string gatheredShapeString =
+        "[" +
+        logging::join(tensorConfig.tensor->info.shape().begin(),
+                      tensorConfig.tensor->info.shape().end(),
+                      ",") +
+        "]";
+    remoteLoad->settings.extraOutlineAttributes.insert(
+        {"gatheredSize", gatheredShapeString});
   }
 
-  return std::tuple<RemoteLoadOp *, ReplicatedAllGatherOp *>(
-      remoteLoad, replicatedAllGather);
+  // If this tensor is loaded in-phase it may be loaded in multiple phases. In
+  // this case getPreviousLoadedTensorId is used to 'chain' the tensor inputs.
+  // This is necessary to allow be able to outline the RemoteLoadOp code. For
+  // this to work we need to populate the tensorLoadMap here.
+  if (!tensorConfig.phaseConfig.loadStoreOutOfPhase) {
+    tensorLoadMap.emplace(TensorPhase(tensorConfig.tensor->id, *phase),
+                          RemoteLoadOpData(loadedTensorId, remoteLoad));
+  }
+
+  return remoteLoad;
+}
+
+ReplicatedAllGatherOp *StreamingMemoryOpInserter::insertReplicatedAllGatherOp(
+    const TensorConfig &tensorConfig,
+    const ExecutionPhase phase,
+    const TensorId &loadedTensorId,
+    TensorId &gatheredTensorId) {
+  ReplicatedAllGatherOp *allGather = nullptr;
+
+  logging::transform::trace(
+      "[StreamingMemory] Adding replicated all gather of {} ({}) in phase {}",
+      loadedTensorId,
+      tensorConfig.tensor->id,
+      phase);
+
+  // Execute replicated allgather to collect the full weight
+  // tensor from the individual replicas
+  auto allGatherOp = std::make_unique<ReplicatedAllGatherOp>(
+      Onnx::CustomOperators::ReplicatedAllGather,
+      tensorConfig.settings,
+      tensorConfig.tensor->info);
+  allGather                            = allGatherOp.get();
+  allGather->settings.schedulePriority = allGatherPriority;
+  allGather->settings.recomputeType    = RecomputeType::Checkpoint;
+  // RemoteLoad at the end of the previous phase, so that load
+  // is executed before inter-IPU copy
+  allGather->setExecutionPhase(phase - 1);
+  allGather->setVirtualGraphId(tensorConfig.phaseConfig.loadStoreVGID);
+  graph.moveIntoGraph(std::move(allGatherOp));
+
+  allGather->connectInTensor(ReplicatedAllGatherOp::getInIndex(),
+                             loadedTensorId);
+
+  allGather->connectInTensor(ReplicatedAllGatherOp::getCollectiveLinkedIndex(),
+                             getRemoteArg(tensorConfig.tensor->id));
+
+  gatheredTensorId = generateGatheredTensorId(tensorConfig.tensor, phase);
+
+  allGather->createAndConnectOutTensor(ReplicatedAllGatherOp::getOutIndex(),
+                                       gatheredTensorId);
+
+  allGather->setup();
+
+  // Do AllGather on IO tiles
+  allGather->settings.useIoTiles = tensorConfig.location.loadOnIOTiles;
+
+  return allGather;
 }
 
 RemoteStoreOp *StreamingMemoryOpInserter::insertRemoteStoreOp(
     const TensorConfig &tensorConfig,
-    const ExecutionPhase currentExecutionPhase,
+    const OptionalExecutionPhase phase,
     const TensorId &loadedTensorId) {
   RemoteStoreOp *remoteStore = nullptr;
 
-  logging::transform::trace(
-      "[StreamingMemory] Adding remote store of {} ({}) in phase {}",
-      loadedTensorId,
-      tensorConfig.tensor->id,
-      currentExecutionPhase);
+  if (!tensorConfig.phaseConfig.loadStoreOutOfPhase) {
+    // Phase must be set when storing in phase.
+    if (!phase) {
+      throw internal_error(
+          "Expected phase to be set when inserting RemoteLoadOp in-phase.");
+    }
+  }
 
-  auto tensorStoreMapEntry =
-      tensorStoreMap.find({tensorConfig.tensor->id, currentExecutionPhase});
+  // Log this.
+  if (tensorConfig.phaseConfig.loadStoreOutOfPhase) {
+    logging::transform::trace(
+        "[StreamingMemory] Adding remote store of {} ({}) out of phase",
+        loadedTensorId,
+        tensorConfig.tensor->id);
+  } else {
+    logging::transform::trace(
+        "[StreamingMemory] Adding remote store of {} ({}) in phase {}",
+        loadedTensorId,
+        tensorConfig.tensor->id,
+        phase);
+  }
 
-  if (tensorStoreMapEntry == tensorStoreMap.end()) {
-    auto remoteStoreOp = std::make_unique<RemoteStoreOp>(
-        Onnx::CustomOperators::RemoteStore, tensorConfig.settings);
-    remoteStore = remoteStoreOp.get();
+  if (!tensorConfig.phaseConfig.loadStoreOutOfPhase) {
+    auto tensorStoreMapEntry =
+        tensorStoreMap.find({tensorConfig.tensor->id, *phase});
 
-    remoteStore->setExecutionPhase(currentExecutionPhase);
+    if (tensorStoreMapEntry != tensorStoreMap.end()) {
+      remoteStore = tensorStoreMapEntry->second.second;
+      return remoteStore;
+    }
+  }
+
+  auto remoteStoreOp = std::make_unique<RemoteStoreOp>(
+      Onnx::CustomOperators::RemoteStore, tensorConfig.settings);
+  remoteStore = remoteStoreOp.get();
+
+  if (!tensorConfig.phaseConfig.loadStoreOutOfPhase) {
+    remoteStore->setExecutionPhase(phase);
     if (tensorConfig.ioSchedule == ExecutionPhaseIOSchedule::Preload ||
         (tensorConfig.ioSchedule == ExecutionPhaseIOSchedule::OnDemand &&
          tensorConfig.tensor->isAcclTensor())) {
@@ -871,26 +1070,35 @@ RemoteStoreOp *StreamingMemoryOpInserter::insertRemoteStoreOp(
         remoteStore->settings.schedulePriority = remoteStorePriorityBatch;
       }
     }
-
-    remoteStore->settings.recomputeType = RecomputeType::Checkpoint;
-    remoteStore->setVirtualGraphId(tensorConfig.phaseConfig.loadStoreVGID);
-    graph.moveIntoGraph(std::move(remoteStoreOp));
-
-    remoteStore->connectInTensor(RemoteStoreOp::getRemoteBufferOffsetInIndex(),
-                                 getRemoteArg(tensorConfig.tensor->id));
-    remoteStore->connectInTensor(RemoteStoreOp::getLocalTensorInIndex(),
-                                 loadedTensorId);
-    remoteStore->setup();
-
-    // Do allgather on IO tiles
-    remoteStore->settings.useIoTiles = tensorConfig.location.loadOnIOTiles;
-
-    tensorStoreMap.emplace(
-        std::pair<TensorId, int64_t>(tensorConfig.tensor->id,
-                                     currentExecutionPhase),
-        std::pair<TensorId, RemoteStoreOp *>(loadedTensorId, remoteStore));
   } else {
-    remoteStore = tensorStoreMapEntry->second.second;
+    remoteStore->setExecutionPhase({});
+    remoteStore->settings.schedulePriority = 0.0f;
+  }
+
+  remoteStore->settings.recomputeType = RecomputeType::Checkpoint;
+  remoteStore->setVirtualGraphId(tensorConfig.phaseConfig.loadStoreVGID);
+  graph.moveIntoGraph(std::move(remoteStoreOp));
+
+  remoteStore->connectInTensor(RemoteStoreOp::getRemoteBufferOffsetInIndex(),
+                               getRemoteArg(tensorConfig.tensor->id));
+  remoteStore->connectInTensor(RemoteStoreOp::getLocalTensorInIndex(),
+                               loadedTensorId);
+
+  if (tensorConfig.phaseConfig.loadStoreOutOfPhase) {
+    // Setting the execution context ensures it's scheduled out of the main
+    // loop.
+    remoteStore->settings.executionContext =
+        ExecutionContext::WeightsToHostFragment;
+  }
+
+  remoteStore->setup();
+
+  // Do allgather on IO tiles
+  remoteStore->settings.useIoTiles = tensorConfig.location.loadOnIOTiles;
+
+  if (!tensorConfig.phaseConfig.loadStoreOutOfPhase) {
+    tensorStoreMap.emplace(TensorPhase(tensorConfig.tensor->id, *phase),
+                           RemoteStoreOpData(loadedTensorId, remoteStore));
   }
 
   return remoteStore;
@@ -1189,13 +1397,16 @@ void StreamingMemoryOpInserter::logTensorPhaseConfig(
         ss << "P";
       }
       // Using std::map::find as it can be used on a const map.
-      auto phaseIt = phaseConfig.loadStoreInPhase.find(p);
-      if (phaseIt != phaseConfig.loadStoreInPhase.end()) {
-        if (phaseIt->second.first) {
+      auto loadIt = phaseConfig.loadInPhase.find(p);
+      if (loadIt != phaseConfig.loadInPhase.end()) {
+        if (loadIt->second) {
           // Loaded in this phase
           ss << "L";
         }
-        if (phaseIt->second.second) {
+      }
+      auto storeIt = phaseConfig.storeInPhase.find(p);
+      if (storeIt != phaseConfig.storeInPhase.end()) {
+        if (storeIt->second) {
           // Stored in this phase
           ss << "S";
         }
@@ -1246,28 +1457,32 @@ TensorId StreamingMemoryOpInserter::generateInitTensorId(Tensor *tensor) {
   return initTensorId;
 }
 
-TensorId StreamingMemoryOpInserter::generateLoadedTensorId(Tensor *tensor,
-                                                           int64_t load_index) {
+TensorId StreamingMemoryOpInserter::generateLoadedTensorId(
+    Tensor *tensor,
+    OptionalExecutionPhase phase) {
   // The copiedTensor id needs to be unique as the same tensor may be copied to
   // multiple phases
-  TensorId loadedTensorId = tensor->id + "_l" + std::to_string(load_index);
+  TensorId loadedTensorId = tensor->id + "_l";
+  if (phase) {
+    loadedTensorId += std::to_string(*phase);
+  }
   return loadedTensorId;
 }
 
 TensorId
 StreamingMemoryOpInserter::generateGatheredTensorId(Tensor *tensor,
-                                                    int64_t load_index) {
+                                                    ExecutionPhase phase) {
   // The copiedTensor id needs to be unique as the same tensor may be copied to
   // multiple phases
-  TensorId gatheredTensorId = tensor->id + "_g" + std::to_string(load_index);
+  TensorId gatheredTensorId = tensor->id + "_g" + std::to_string(phase);
   return gatheredTensorId;
 }
 
 bool StreamingMemoryOpInserter::isLoadRequired(
     const TensorPhaseConfig &phaseConfig) {
   bool loadRequired = false;
-  for (auto &phaseLoadStore : phaseConfig.loadStoreInPhase) {
-    loadRequired |= phaseLoadStore.second.first;
+  for (auto &loadStore : phaseConfig.loadInPhase) {
+    loadRequired |= loadStore.second;
   }
   return loadRequired;
 }

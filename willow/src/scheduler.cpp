@@ -128,24 +128,68 @@ public:
   }
 
   void annotateExecutionPhase() {
-    std::vector<std::vector<OpAddress>> bins;
-    for (const auto &x : pg.getOps()) {
-      auto op = x.second.get();
-      if (op->getOptionalExecutionPhase()) {
-        auto opAddress = opAddresses[op];
-        auto phase     = *op->getOptionalExecutionPhase();
-        if (phase < -1) {
-          throw internal_error(
-              "phase < -1 unexpected. This function needs adjustment");
+    // Insert bin constraints to ensure ops are sorted by execution phase.
+    {
+      std::vector<std::vector<OpAddress>> bins;
+      for (const auto &x : pg.getOps()) {
+        auto op = x.second.get();
+        if (op->getOptionalExecutionPhase()) {
+          auto opAddress = opAddresses[op];
+          auto phase     = *op->getOptionalExecutionPhase();
+          if (phase < -1) {
+            throw internal_error(
+                "phase < -1 unexpected. This function needs adjustment");
+          }
+          uint64_t binIndex = static_cast<uint64_t>(1LL + phase);
+          if (binIndex >= bins.size()) {
+            bins.resize(binIndex + 1);
+          }
+          bins[binIndex].push_back(opAddress);
         }
-        uint64_t binIndex = static_cast<uint64_t>(1LL + phase);
-        if (binIndex >= bins.size()) {
-          bins.resize(binIndex + 1);
-        }
-        bins[binIndex].push_back(opAddress);
       }
+      g.insertBinConstraints(bins, "executionPhaseStart_");
     }
-    g.insertBinConstraints(bins, "executionPhaseStart_");
+
+    // Insert bin constraints to ensure ops are sorted by fragment.
+    {
+      std::vector<OpAddress> normalOps;
+      std::vector<OpAddress> weightsToOps;
+      std::vector<OpAddress> weightsFromOps;
+      for (const auto &x : pg.getOps()) {
+        auto op        = x.second.get();
+        auto opAddress = opAddresses[op];
+        switch (op->settings.executionContext) {
+        case (ExecutionContext::Normal):
+        case (ExecutionContext::AccumulateOuterFragment): {
+          normalOps.push_back(opAddress);
+          break;
+        }
+        case (ExecutionContext::WeightsFromHostFragment): {
+          weightsFromOps.push_back(opAddress);
+          break;
+        }
+        case (ExecutionContext::WeightsToHostFragment): {
+          weightsToOps.push_back(opAddress);
+          break;
+        }
+        default: {
+          throw error("Unsupported ExecutionContext ({})",
+                      op->settings.executionContext);
+        }
+        }
+      }
+      std::vector<std::vector<OpAddress>> bins;
+      if (!weightsFromOps.empty()) {
+        bins.push_back(weightsFromOps);
+      }
+      if (!normalOps.empty()) {
+        bins.push_back(normalOps);
+      }
+      if (!weightsToOps.empty()) {
+        bins.push_back(weightsToOps);
+      }
+      g.insertBinConstraints(bins, "executionContext_");
+    }
   }
 
   void annotatePipelineStages() {
