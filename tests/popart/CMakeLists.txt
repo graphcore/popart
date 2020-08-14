@@ -218,6 +218,7 @@ add_popart_cpp_unit_test(viewchangingtest view_changing_test.cpp)
 add_popart_cpp_unit_test(op_factory_funcs_test op_factory_funcs_test.cpp)
 
 add_popart_cpp_unit_test(constop_test constop_test.cpp)
+add_popart_cpp_unit_test(opsetcheck_test opset_check_test.cpp)
 
 # Add a test that targets c++11 to check that the popart interface is c++11.
 # If the interface is not c++11, the build should fail.
@@ -333,8 +334,6 @@ add_popart_py_unit_test(virtual_graph_check_test)
 add_popart_py_unit_test(virtual_graph_test VARIANTS IpuModel)
 add_popart_py_unit_test(type_casting_test)
 add_popart_py_unit_test(supported_ops_test)
-#Temporarily disables, see T24714.
-#add_popart_py_unit_test(opset_check_test)
 add_popart_py_unit_test(constant_op_test)
 
 # Test to check for boost in popart headers.
