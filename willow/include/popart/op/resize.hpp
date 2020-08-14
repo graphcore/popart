@@ -23,8 +23,6 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
-  void connectInTensor(InIndex inIndex, TensorId tenId) final;
-
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 

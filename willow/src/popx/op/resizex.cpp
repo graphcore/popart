@@ -129,7 +129,7 @@ poplar::Tensor ResizeGradOpx::padDimension(poplar::program::Sequence &prog,
 }
 
 namespace {
-OpxCreator<ResizeOpx> resizeOpxCreator(Onnx::Operators::Resize_10);
+OpxCreator<ResizeOpx> resizeOpxCreator(Onnx::CustomOperators::Resize);
 OpxCreator<ResizeGradOpx> resizeGradOpxCreator(Onnx::GradOperators::ResizeGrad);
 } // namespace
 

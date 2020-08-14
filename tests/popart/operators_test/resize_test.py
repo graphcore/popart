@@ -5,6 +5,9 @@ import popart
 import torch
 import torch.nn.functional as F
 from op_tester import op_tester
+import test_util as tu
+import os
+os.environ['POPART_LOG_LEVEL'] = 'TRACE'
 
 
 def test_upsample_nearest(op_tester):
@@ -256,3 +259,61 @@ def test_downsample_nearest_grad(op_tester):
     run_test([2, 8], [1.0, 3 / 8])
     run_test([5, 4], [0.5, 0.5])
     run_test([5, 3], [0.3, 0.5])
+
+
+def test_resize_11(op_tester):
+    data = np.random.rand(1, 1, 2, 2).astype(np.float32)
+    roi = np.array([], dtype=np.float32)
+    scales = np.array([1.0, 1.0, 2.0, 3.0], dtype=np.float32)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(data)
+        s = builder.aiOnnxOpset11.constant(scales, False)
+        r = builder.aiOnnxOpset11.constant(roi, False)
+        o = builder.aiOnnxOpset11.resize([d, r, s])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        x = torch.tensor(data)
+        s = [int(i * scale) for i, scale in zip(data.shape[2:], scales[2:])]
+        o = F.interpolate(x, s)
+        return [o]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_resize_11_debug():
+    data = np.random.rand(1, 1, 2, 2).astype(np.float32)
+    roi = np.array([], dtype=np.float32)
+    scales = np.array([1.0, 1.0, 2.0, 3.0], dtype=np.float32)
+
+    builder = popart.Builder()
+    d = builder.addInputTensor(popart.TensorInfo("FLOAT", [1, 1, 2, 2]))
+    s = builder.aiOnnxOpset11.constant(scales, False)
+    r = builder.aiOnnxOpset11.constant(roi, False)
+    o = builder.aiOnnxOpset11.resize([d, r, s])
+    builder.addOutputTensor(o)
+
+    proto = builder.getModelProto()
+    print(f'Proto: {proto}')
+
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
+
+    print('Creating session')
+    sess = popart.InferenceSession(proto, dataFlow, tu.create_test_device())
+
+    print(f'Initializing anchor arrays')
+    anchors = sess.initAnchorArrays()
+
+    print(f'Preparinng device')
+    sess.prepareDevice()
+
+    print(f'Creating stepio')
+    inputs = {d: data}
+    stepio = popart.PyStepIO(inputs, anchors)
+
+    print(f'Running model')
+    sess.run(stepio)
+
+    print(f'Fin')
