@@ -61,7 +61,8 @@ AliasZeroCopy::AliasZeroCopy(const Ir *ir_, const LivenessAnalyzer *analyzer_)
 
   // Selectively turn off alias zero copy of tensors containing certain strings
   // helps debugging aliasing issues
-  // excludeTensorByName.insert("Z/Reshape:0/1__t6__re");
+  // excludeTensorByName.insert("Attention");
+  // excludeTensorByName.insert("Dense");
 }
 
 void AliasZeroCopy::apply() {
@@ -76,10 +77,10 @@ void AliasZeroCopy::apply() {
 
   std::map<const Graph *, int64_t> beforeGraphMap;
 
-  std::map<std::tuple<int64_t, double, const Graph *, InIndex, OutIndex>,
-           std::vector<Op *>,
-           std::greater<
-               std::tuple<int64_t, double, const Graph *, InIndex, OutIndex>>>
+  std::map<
+      std::tuple<int64_t, double, InIndex, OutIndex, GraphId>,
+      std::vector<Op *>,
+      std::greater<std::tuple<int64_t, double, InIndex, OutIndex, GraphId>>>
       graphIOPriorityMap;
 
   for (const Graph *graph0 : ir->getGraphSchedule()) {
@@ -92,7 +93,7 @@ void AliasZeroCopy::apply() {
   graphQueue.push(&(ir->getMainGraph()));
 
   {
-    int64_t i = 0;
+    int64_t i = ir->getGraphSchedule().size();
     while (!graphQueue.empty()) {
       const Graph *graph0 = graphQueue.front();
       graphQueue.pop();
@@ -118,9 +119,9 @@ void AliasZeroCopy::apply() {
         graphIOPriorityMap.insert(
             {{i,
               bytes / (1024.0 * 1024.0) * callSiteOps.size(),
-              graph0,
               in,
-              -1},
+              -1,
+              graph0->id},
              callSiteOps});
       }
       for (OutIndex out = 0; out < num_outputs; ++out) {
@@ -131,13 +132,13 @@ void AliasZeroCopy::apply() {
         graphIOPriorityMap.insert(
             {{i,
               bytes / (1024.0 * 1024.0) * callSiteOps.size(),
-              graph0,
               -1,
-              out},
+              out,
+              graph0->id},
              callSiteOps});
       }
       // Next graph has lower priority for being processed
-      i--;
+      --i;
     }
   }
 
@@ -160,9 +161,9 @@ void AliasZeroCopy::apply() {
 
   // Graph input/output aliasing
   for (auto &priorityEntry : graphIOPriorityMap) {
-    const Graph *sgraph           = std::get<2>(priorityEntry.first);
-    InIndex inIndex               = std::get<3>(priorityEntry.first);
-    OutIndex outIndex             = std::get<4>(priorityEntry.first);
+    InIndex inIndex     = std::get<2>(priorityEntry.first);
+    OutIndex outIndex   = std::get<3>(priorityEntry.first);
+    const Graph *sgraph = &ir->getGraph(std::get<4>(priorityEntry.first));
     std::vector<Op *> callSiteOps = priorityEntry.second;
 
     if (inIndex >= 0) {
@@ -226,7 +227,7 @@ void AliasZeroCopy::apply() {
     }
   }
 
-  generatePostIRAliases();
+  logPostIRAliases();
 
   logging::devicex::debug("[AliasZeroCopy] Done.");
 }
@@ -323,9 +324,60 @@ Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
     return intervals;
   }
 
+  auto &anchors = ir->getDataFlow().anchors();
+  if (std::find(anchors.begin(), anchors.end(), t->id) != anchors.end()) {
+    // Being conservative and keeping anchored tensors always live
+    insertInterval(0, analyzer->getOpScheduleSize());
+    return intervals;
+  }
+
+  auto &mainOutputs = ir->getMainGraph().getOutputIds();
+  if (std::find(mainOutputs.begin(), mainOutputs.end(), t->id) !=
+      mainOutputs.end()) {
+    // Being conservative and keeping main graph output tensors always live
+    insertInterval(0, analyzer->getOpScheduleSize());
+    return intervals;
+  }
+
+  if (t->hasProducer() &&
+      t->getProducer()->settings.executionContext != ExecutionContext::Normal) {
+    // Being conservative and keeping tensors that are touched outside the
+    // training loop always live
+    insertInterval(0, analyzer->getOpScheduleSize());
+    return intervals;
+  }
+
   for (Op *c : t->consumers.getOps()) {
     for (auto &scheduleIndex : analyzer->getScheduleIndices(c)) {
       consumers.insert({scheduleIndex, {c, c->input->indices(t)}});
+      if (c->settings.executionContext != ExecutionContext::Normal) {
+        // Being conservative and keeping tensors that are touched outside the
+        // training loop always live
+        insertInterval(0, analyzer->getOpScheduleSize());
+        return intervals;
+      }
+    }
+  }
+
+  // Handle producers
+  if (t->hasProducer()) {
+    Op *p = t->getProducer();
+    for (auto &scheduleIndex : analyzer->getScheduleIndices(p)) {
+      auto opScheduleEntry = &analyzer->getOpScheduleAt(scheduleIndex);
+      if (opScheduleEntry->getStatus() == OpStatus::Normal) {
+        insertInterval(scheduleIndex, scheduleIndex + 1);
+      } else if (opScheduleEntry->getStatus() == OpStatus::Enter) {
+        auto index = scheduleIndex;
+        do {
+          ++index;
+          opScheduleEntry = &analyzer->getOpScheduleAt(index);
+        } while (opScheduleEntry->getStatus() != OpStatus::CopyOutput ||
+                 opScheduleEntry->getTensorIds().first != t->id);
+        insertInterval(index, index + 1);
+      } else {
+        throw error("[AliasZeroCopy] OpStatus {} unexpected.",
+                    static_cast<int>(opScheduleEntry->getStatus()));
+      }
     }
   }
 
@@ -421,8 +473,8 @@ Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
     }
   }
 
+  // Handle consumers
   int64_t last_overwrite = 0;
-  // Iterate over consumers in order
   for (auto consumer : consumers) {
     // Establish the consumed tensor
     Tensor *consumedTensor =
@@ -430,6 +482,28 @@ Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
 
     auto indices = consumer.second.second;
     Op *op       = consumer.second.first;
+
+    // Handle subgraphing op input & modified liveness
+    auto callEnterIndex  = consumer.first;
+    auto opScheduleEntry = &analyzer->getOpScheduleAt(callEnterIndex);
+    if (opScheduleEntry->getStatus() == OpStatus::Enter) {
+      auto callExitIndex = analyzer->getCallSiteLinksAt(callEnterIndex).back();
+      auto scheduleIndex = callEnterIndex + 1;
+      while (scheduleIndex < callExitIndex) {
+        auto opScheduleEntry = &analyzer->getOpScheduleAt(scheduleIndex);
+        if (opScheduleEntry->getStatus() == OpStatus::CopyInput &&
+            opScheduleEntry->getTensorIds().first == consumedTensor->id) {
+          // Ensure tensor is live before CopyInput
+          insertInterval(scheduleIndex - 1, scheduleIndex);
+        }
+        if (opScheduleEntry->getStatus() == OpStatus::CopyModified &&
+            opScheduleEntry->getTensorIds().first == consumedTensor->id) {
+          // Ensure tensor is live after CopyModified
+          insertInterval(scheduleIndex, scheduleIndex + 1);
+        }
+        ++scheduleIndex;
+      }
+    }
 
     // Overwrite: The consumer will overwrite the tensor without reading it
     bool overwrite = false;
@@ -458,7 +532,7 @@ Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
     int64_t start = std::max(last_overwrite, findStart(consumedTensor, front));
 
     if (overwrite) {
-      last_overwrite = findFront(consumedTensor, consumer.first);
+      last_overwrite = front;
     } else {
       insertInterval(start, front);
     }
@@ -472,29 +546,36 @@ AliasZeroCopy::getAliasedTensors(Aliases &aliases,
                                  std::set<Tensor *, PTensorCmp> tensors,
                                  bool fullyAliased) {
   std::set<Tensor *, PTensorCmp> aliased;
-  for (Tensor *t : tensors) {
-    aliased.insert(t);
+  for (Tensor *t0 : tensors) {
+    aliased.insert(t0);
 
-    auto aliasedTensorMap = aliases.aliasChainsFrom(t);
+    auto aliasedTensorMap = aliases.aliasChainsFrom(t0);
     for (auto &chain : aliasedTensorMap) {
-      auto fullRegion = view::Region::getFull(t->info.shape());
-      auto regions    = chain.second.apply(fullRegion);
+      Tensor *t1 = chain.first;
+
+      auto fullRegion0 = view::Region::getFull(t0->info.shape());
+      auto regions0    = chain.second.apply(fullRegion0);
+      auto fullRegion1 = view::Region::getFull(t1->info.shape());
+      auto regions1    = aliases.getChainsFromTo(t1, t0).apply(fullRegion1);
 
       bool accepted = false;
 
       if (fullyAliased) {
         accepted = true;
-        accepted &= t->info.shape() == chain.first->info.shape();
-        accepted &= view::mergeRegions(regions).front() ==
-                    view::Region::getFull(chain.first->info.shape());
+        accepted &= t0->info.shape() == t1->info.shape();
+        accepted &= view::mergeRegions(regions0).front() == fullRegion1;
+        accepted &= view::mergeRegions(regions1).front() == fullRegion0;
       } else {
-        accepted = std::any_of(regions.begin(),
-                               regions.end(),
+        accepted = std::any_of(regions0.begin(),
+                               regions0.end(),
+                               [](view::Region &r) { return !r.isEmpty(); }) ||
+                   std::any_of(regions1.begin(),
+                               regions1.end(),
                                [](view::Region &r) { return !r.isEmpty(); });
       }
 
       if (accepted) {
-        aliased.insert(chain.first);
+        aliased.insert(t1);
       }
     }
   }
@@ -549,6 +630,8 @@ void AliasZeroCopy::insertAlias(Tensor *ta, Tensor *tb) {
         {view::Region::getFull(ta->info.shape())},
         [](const view::Region &r) { return view::Regions(1, r); },
         [](const view::Region &r) { return view::Regions(1, r); });
+    postIRAliases[ta].insert(tb);
+    postIRAliases[tb].insert(ta);
   } else {
     printLivenessIntervals({ta, tb});
   }
@@ -587,12 +670,7 @@ AliasZeroCopy::getTensorsWithPostIRAliases() const {
   return aliases;
 }
 
-void AliasZeroCopy::generatePostIRAliases() {
-  for (Tensor *tensor : proposedAliases.getTensors()) {
-    auto aliases = getProposedAliasedTensors({tensor}, true);
-    postIRAliases[tensor].insert(aliases.begin(), aliases.end());
-  }
-
+void AliasZeroCopy::logPostIRAliases() {
   // Report post-IR aliased tensors
   if (logging::shouldLog(logging::Module::devicex, logging::Level::Debug)) {
     for (Tensor *t0 : getTensorsWithPostIRAliases()) {
@@ -702,17 +780,14 @@ bool AliasZeroCopy::checkSubgraphInputCompatible(Tensor *ta, Tensor *tb) {
               // If tb is modified in the subgraph,
               // and the parent graph and subgraph tensors are live
               // at the same time, they can't be aliased.
-
-              // Sufficient to only check IR aliased,
-              // since post IR aliasing won't have touched tb yet at this point
-              // (due to graphs being processed top-level to bottom-level)
               auto aliases = getProposedAliasedTensors({tb}, false);
               aliases.insert(tb);
 
               // If any region of tb or it's aliases is modified
-              modified = std::any_of(aliases.begin(),
-                                     aliases.end(),
-                                     [](Tensor *t) { return t->isModified(); });
+              modified |=
+                  std::any_of(aliases.begin(), aliases.end(), [](Tensor *t) {
+                    return t->isModified();
+                  });
             }
           }
         }
@@ -733,15 +808,17 @@ bool AliasZeroCopy::checkSubgraphOutputCompatible(Tensor *ta, Tensor *tb) {
       (ta->info.shape() == tb->info.shape() &&
        ta->info.dataType() == tb->info.dataType() &&
        ta->getVirtualGraphIdUnsafe() == tb->getVirtualGraphIdUnsafe());
-  if (!compatible)
+  if (!compatible) {
     return false;
+  }
 
   // If ta overlaps with tb
   bool overlapping = AliasZeroCopy::doOverlap(
       getCandidateLivenessIntervals(ta), getCandidateLivenessIntervals(tb));
 
-  if (!tb->hasProducer() || !dynamic_cast<SubgraphOp *>(tb->getProducer()))
+  if (!tb->hasProducer() || !dynamic_cast<SubgraphOp *>(tb->getProducer())) {
     return false;
+  }
 
   Op *producer = tb->getProducer();
   auto index   = producer->output->indices(tb).front();

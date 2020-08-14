@@ -153,7 +153,7 @@ private:
 
   Tensor *findAliasableTensor(Tensor *);
 
-  void generatePostIRAliases();
+  void logPostIRAliases();
 
   // Debug printing liveness intervals
   void printLivenessIntervals(std::set<Tensor *, PTensorCmp> tensors);

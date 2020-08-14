@@ -66,7 +66,7 @@ void compare(const std::vector<std::vector<float>> &a,
 // Test zero-copy through aliasing behaviour
 // Test models from ZeroCopyTestModel
 // Verify that the right subgraph input/output tensors are aliased and
-// that the weight update result is numerically idential to the same graph
+// that the weight update result is numerically identical to the same graph
 // trained without alias zero copy enabled
 BOOST_AUTO_TEST_CASE(AliasZeroCopyTest0) {
   auto test = [](bool aliasZeroCopy, ZeroCopyTestModel model) {
@@ -287,26 +287,26 @@ BOOST_AUTO_TEST_CASE(AliasZeroCopyTest0) {
               checkAliased(call, outTensor(0), true); // X1
             }
             if (callIndex == 2) {
-              checkAliased(call, inTensor(0), false); // X0
-              checkAliased(call, inTensor(1), true);  // X1
-              checkAliased(call, outTensor(0), true); // X2
+              checkAliased(call, inTensor(0), false);  // X0
+              checkAliased(call, inTensor(1), true);   // X1
+              checkAliased(call, outTensor(0), false); // X2
             }
             if (callIndex == 3) {
-              checkAliased(call, inTensor(0), false);  // grad_X2
-              checkAliased(call, inTensor(1), false);  // X0
-              checkAliased(call, inTensor(2), false);  // C
-              checkAliased(call, outTensor(0), false); // grad_X1
+              checkAliased(call, inTensor(0), false); // grad_X2
+              checkAliased(call, inTensor(1), false); // X0
+              checkAliased(call, inTensor(2), false); // C
+              checkAliased(call, outTensor(0), true); // grad_X1
             }
             if (callIndex == 4) {
-              checkAliased(call, inTensor(0), false); // grad_X2
-              checkAliased(call, inTensor(1), false); // grad_X1
-              checkAliased(call, outTensor(0), true); // grad_X0
+              checkAliased(call, inTensor(0), false);  // grad_X2
+              checkAliased(call, inTensor(1), false);  // grad_X1
+              checkAliased(call, outTensor(0), false); // grad_X0
             }
             if (callIndex == 5) {
-              checkAliased(call, inTensor(0), false);  // grad_X0
-              checkAliased(call, inTensor(1), false);  // A
-              checkAliased(call, inTensor(2), false);  // B
-              checkAliased(call, outTensor(0), false); // grad_A
+              checkAliased(call, inTensor(0), false); // grad_X0
+              checkAliased(call, inTensor(1), false); // A
+              checkAliased(call, inTensor(2), false); // B
+              checkAliased(call, outTensor(0), true); // grad_A
             }
             break;
           };
