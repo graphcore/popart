@@ -36,7 +36,7 @@ def attention_onnx(builder, qkv, mask, batch_size, sequence_length,
     q, kt, v = [extract_heads(qkv, i, hidden_size, i == 1) for i in range(3)]
 
     # Attention calculation
-    with builder.nameScope('Z'):
+    with builder.nameScope("Z"):
         x = builder.aiOnnx.matmul([q, kt])
 
         c = builder.aiOnnx.constant(
@@ -62,7 +62,7 @@ def attention_onnx(builder, qkv, mask, batch_size, sequence_length,
 def test_attention_streamingmemory(tmpdir):
     np.random.seed(0XDEAD1337)
     batches_per_step = 5
-    batch_size = 3
+    batch_size = 4
     hidden_size = 16
     sequence_length = 8
     attention_heads = 4
@@ -85,50 +85,58 @@ def test_attention_streamingmemory(tmpdir):
         0, 0.02, [batches_per_step] + input_shape).astype(np.float32)
 
     def run_test(index, options):
+        per_replica_batch_size = batch_size / options["replication"]
+        model_input_shape = input_shape[:]
+        model_input_shape[0] = int(
+            model_input_shape[0] / options["replication"])
+        model_mask_shape = mask_shape[:]
+        model_mask_shape[0] = int(model_mask_shape[0] / options["replication"])
+
         builder = popart.Builder(opsets={
             "ai.onnx": 9,
             "ai.onnx.ml": 1,
             "ai.graphcore": 1
         })
 
-        mask = builder.addInputTensor(popart.TensorInfo("FLOAT", mask_shape),
-                                      "mask")
-        x_in = builder.addInputTensor(popart.TensorInfo("FLOAT", input_shape),
-                                      "x_in")
+        mask = builder.addInputTensor(
+            popart.TensorInfo("FLOAT", model_mask_shape), "mask")
+        x_in = builder.addInputTensor(
+            popart.TensorInfo("FLOAT", model_input_shape), "x_in")
 
         anchors = {}
         x = x_in
-        for i in range(options['numLayers']):
+        for i in range(options["numLayers"]):
             qkv = builder.addInitializedInputTensor(qkv_data, f"qkv_{i}")
             anchors[popart.reservedGradientPrefix() +
                     qkv] = popart.AnchorReturnType("All")
 
-            vgid = (i % options['stages']) if options['phasedExecution'] else i
+            vgid = (i % options["stages"]) if options["phasedExecution"] else i
 
             with builder.virtualGraph(vgid), builder.executionPhase(
-                    i * int(2 / options['stages'])):
+                    i * int(2 / options["stages"])):
                 x = builder.aiOnnx.matmul([x, qkv])
-                x = attention_onnx(builder, x, mask, batch_size,
+                x = attention_onnx(builder, x, mask, per_replica_batch_size,
                                    sequence_length, hidden_size,
                                    attention_heads, qkv_length)
 
-        vgid = ((options['numLayers'] - 1) % options['stages']
-                ) if options['phasedExecution'] else options['numLayers'] - 1
+        vgid = ((options["numLayers"] - 1) % options["stages"]
+                ) if options["phasedExecution"] else options["numLayers"] - 1
 
         with builder.virtualGraph(vgid), builder.executionPhase(
-            (options['numLayers'] - 1) * int(2 / options['stages'])):
+            (options["numLayers"] - 1) * int(2 / options["stages"])):
             l1 = builder.aiGraphcore.l1loss([x], 0.1)
 
         proto = builder.getModelProto()
 
+        gradient_keys = list(anchors.keys())
         anchors[x] = popart.AnchorReturnType("All")
 
         dataFlow = popart.DataFlow(batches_per_step, anchors)
 
         opts = popart.SessionOptions()
-        opts.executionPhaseSettings.stages = options['stages']
-        opts.executionPhaseSettings.phases = options['numLayers'] * int(
-            2 / options['stages']) if options["phasedExecution"] else 0
+        opts.executionPhaseSettings.stages = options["stages"]
+        opts.executionPhaseSettings.phases = options["numLayers"] * int(
+            2 / options["stages"]) if options["phasedExecution"] else 0
         opts.enableOutlining = options["outlining"]
 
         # Phased execution currently does its own recompute annotations
@@ -144,13 +152,22 @@ def test_attention_streamingmemory(tmpdir):
         opts.explicitRecomputation = options["explicitRecomputation"]
         opts.aliasZeroCopy = options["aliasZeroCopy"]
         opts.batchSerializationSettings.factor = options["batchSerialize"]
+        if options["weightTensorLocationSettings"]:
+            opts.weightTensorLocationSettings = options[
+                "weightTensorLocationSettings"]
+        if options["replication"] > 1:
+            opts.replicatedGraphCount = options["replication"]
+            opts.enableReplicatedGraphs = True
 
         pat = popart.Patterns(popart.PatternsLevel.Default)
-
-        device = tu.create_test_device(
-            options['stages']
-            if options["phasedExecution"] else options['numLayers'] + 1,
-            pattern=popart.SyncPattern.Full)
+        if options["phasedExecution"]:
+            numIpus = options["stages"]
+        else:
+            numIpus = options["numLayers"] + 1
+        if options["replication"]:
+            numIpus = numIpus * 2
+        device = tu.create_test_device(numIpus,
+                                       pattern=popart.SyncPattern.Full)
 
         session = popart.TrainingSession(fnModel=proto,
                                          dataFlow=dataFlow,
@@ -165,6 +182,8 @@ def test_attention_streamingmemory(tmpdir):
         session.weightsFromHost()
 
         anchors = session.initAnchorArrays()
+        for k, v in anchors.items():
+            print(f"anchor_before {k}={v.shape}")
 
         inputs = {x_in: input_data, mask: mask_data}
         stepio = popart.PyStepIO(inputs, anchors)
@@ -174,6 +193,20 @@ def test_attention_streamingmemory(tmpdir):
 
         session.modelToHost(
             str(tmpdir / f"streamingmemory_attention_{index}.onnx"))
+
+        if options["replication"] > 1:
+            for k, v in anchors.items():
+                if k in gradient_keys:
+                    # The gradient anchors will have an additional replication axis.
+                    anchors[k] = np.sum(v, 1)
+                else:
+                    # Output tensor needs reshaping.
+                    anchors[k] = np.reshape(anchors[k], [
+                        batches_per_step, sequence_length * batch_size,
+                        hidden_size
+                    ])
+            for k, v in anchors.items():
+                print(f"anchor_after {k}={v.shape}")
 
         return anchors
 
@@ -194,7 +227,9 @@ def test_attention_streamingmemory(tmpdir):
         "outlining": False,
         "explicitRecomputation": False,
         "aliasZeroCopy": False,
-        "batchSerialize": 1
+        "batchSerialize": 1,
+        "replication": 1,
+        "weightTensorLocationSettings": None
     })
 
     test_variants.append({
@@ -204,7 +239,9 @@ def test_attention_streamingmemory(tmpdir):
         "outlining": False,
         "explicitRecomputation": False,
         "aliasZeroCopy": False,
-        "batchSerialize": 3
+        "batchSerialize": 4,
+        "replication": 1,
+        "weightTensorLocationSettings": None
     })
 
     test_variants.append({
@@ -214,7 +251,9 @@ def test_attention_streamingmemory(tmpdir):
         "outlining": False,
         "explicitRecomputation": False,
         "aliasZeroCopy": False,
-        "batchSerialize": 1
+        "batchSerialize": 1,
+        "replication": 1,
+        "weightTensorLocationSettings": None
     })
 
     test_variants.append({
@@ -224,7 +263,9 @@ def test_attention_streamingmemory(tmpdir):
         "outlining": True,
         "explicitRecomputation": False,
         "aliasZeroCopy": False,
-        "batchSerialize": 1
+        "batchSerialize": 1,
+        "replication": 1,
+        "weightTensorLocationSettings": None
     })
 
     test_variants.append({
@@ -234,7 +275,9 @@ def test_attention_streamingmemory(tmpdir):
         "outlining": True,
         "explicitRecomputation": True,
         "aliasZeroCopy": False,
-        "batchSerialize": 1
+        "batchSerialize": 1,
+        "replication": 1,
+        "weightTensorLocationSettings": None
     })
 
     test_variants.append({
@@ -244,7 +287,9 @@ def test_attention_streamingmemory(tmpdir):
         "outlining": True,
         "explicitRecomputation": True,
         "aliasZeroCopy": True,
-        "batchSerialize": 1
+        "batchSerialize": 1,
+        "replication": 1,
+        "weightTensorLocationSettings": None
     })
 
     test_variants.append({
@@ -254,7 +299,65 @@ def test_attention_streamingmemory(tmpdir):
         "outlining": True,
         "explicitRecomputation": True,
         "aliasZeroCopy": True,
-        "batchSerialize": 3
+        "batchSerialize": 4,
+        "replication": 1,
+        "weightTensorLocationSettings": None
+    })
+
+    # Test replicated tensor sharding + on chip (no outlining).
+    test_variants.append({
+        "stages":
+        2,
+        "numLayers":
+        3,
+        "phasedExecution":
+        True,
+        "outlining":
+        False,
+        "explicitRecomputation":
+        False,
+        "aliasZeroCopy":
+        False,
+        "batchSerialize":
+        1,
+        "replication":
+        2,
+        "weightTensorLocationSettings":
+        popart.TensorLocationSettings(location=popart.TensorLocation(
+            storage=popart.TensorStorage.OnChip,
+            loadOnIOTiles=False,
+            storeOnIOTiles=False,
+            replicatedTensorSharding=True),
+                                      minElementsForOffChip=0,
+                                      minElementsForReplicatedTensorSharding=0)
+    })
+
+    # Test replicated tensor sharding + off chip (no outlining).
+    test_variants.append({
+        "stages":
+        2,
+        "numLayers":
+        3,
+        "phasedExecution":
+        True,
+        "outlining":
+        False,
+        "explicitRecomputation":
+        False,
+        "aliasZeroCopy":
+        False,
+        "batchSerialize":
+        1,
+        "replication":
+        2,
+        "weightTensorLocationSettings":
+        popart.TensorLocationSettings(location=popart.TensorLocation(
+            storage=popart.TensorStorage.OffChip,
+            loadOnIOTiles=False,
+            storeOnIOTiles=False,
+            replicatedTensorSharding=True),
+                                      minElementsForOffChip=0,
+                                      minElementsForReplicatedTensorSharding=0)
     })
 
     index = 0
@@ -269,7 +372,11 @@ def test_attention_streamingmemory(tmpdir):
         print(f"Testing run {i}: {test_variants[i]}")
         for key in test_results[0].keys():
             assert np.all(
-                np.isclose(test_results[0][key], test_results[i][key]))
+                np.isclose(test_results[0][key],
+                           test_results[i][key],
+                           rtol=1.e-3,
+                           atol=1.e-5,
+                           equal_nan=False))
 
         val_onnx = onnx.load(
             str(tmpdir / f"streamingmemory_attention_{i}.onnx"))
@@ -279,4 +386,8 @@ def test_attention_streamingmemory(tmpdir):
             gt = numpy_helper.to_array(gt)
             val = val_onnx.graph.initializer[j]
             val = numpy_helper.to_array(val)
-            assert np.allclose(gt, val)
+            assert np.allclose(gt,
+                               val,
+                               rtol=1.e-3,
+                               atol=1.e-5,
+                               equal_nan=False)
