@@ -88,11 +88,12 @@ def set_up_session(onnx_model):
     graph_transformer.convertAllFixedPointInitializersToConstants()
     model_name = non_common_shape_info_model_name(onnx_model)
 
+    device = popart.DeviceManager().createIpuModelDevice({"tilesPerIPU": 20})
     if model_name == "common":
         session = popart.InferenceSession(
         fnModel=graph_transformer.getModelProto(),
         dataFlow=popart.DataFlow(1, {output: popart.AnchorReturnType("All")}),
-        deviceInfo=popart.DeviceManager().createIpuModelDevice({}))
+        deviceInfo=device)
     else:
         assert len(model_name) != 0 
         shape_info = get_in_shape_info(model_name)        
@@ -103,7 +104,7 @@ def set_up_session(onnx_model):
         session = popart.InferenceSession(
         fnModel=graph_transformer.getModelProto(),
         dataFlow=popart.DataFlow(1, {output: popart.AnchorReturnType("All")}),
-        deviceInfo=popart.DeviceManager().createIpuModelDevice({}),
+        deviceInfo=device,
         inputShapeInfo=inputShapeInfo)
 
     return session
