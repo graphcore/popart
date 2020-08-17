@@ -162,9 +162,17 @@ void checkOpsPipelineStage(Graph &graph) {
         // (1) set pipeline stage
         setIPUCopyPipelineStage(copyOp);
         // (2) insert topological constraint
+        std::vector<Op *> nonCopyOps =
+            pipelineStages.at(copyOp->getPipelineStage());
+        std::vector<Op *> mainProgramOps;
+        for (auto op : nonCopyOps) {
+          if (op->settings.executionContext == ExecutionContext::Normal) {
+            mainProgramOps.push_back(op);
+          }
+        }
         graph.topoCons->insert({{
-            copyOp,                                       // Key
-            pipelineStages.at(copyOp->getPipelineStage()) // OpsBeforeKey
+            copyOp,        // Key
+            mainProgramOps // OpsBeforeKey
         }});
       }
     }

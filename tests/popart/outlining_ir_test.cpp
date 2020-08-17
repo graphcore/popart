@@ -7,12 +7,28 @@
 #include <popart/builder.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
+#include <popart/names.hpp>
 #include <popart/op/add.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
+
+std::map<GraphId, size_t> getNumCallsToSubgraph(Ir &ir) {
+  std::vector<Op *> schedule = ir.getMainGraph().getOpSchedule({});
+
+  std::map<GraphId, size_t> numCallsToSubgraph;
+
+  // Testing that the schedule is as expected for outlining contexts:
+  for (size_t i = 0; i < schedule.size(); i++) {
+    Op *op = schedule.at(i);
+    for (auto subgraph : op->getCalledGraphs()) {
+      ++numCallsToSubgraph[subgraph->id];
+    }
+  }
+  return numCallsToSubgraph;
+}
 
 BOOST_AUTO_TEST_CASE(TestOutliningWithExtraAttributes) {
   auto test = [](int numOutliningContexts = 1) {
@@ -66,15 +82,7 @@ BOOST_AUTO_TEST_CASE(TestOutliningWithExtraAttributes) {
     runner.checkIr([&](Ir &ir) {
       std::vector<Op *> schedule = ir.getMainGraph().getOpSchedule({});
 
-      std::map<GraphId, size_t> numCallsToSubgraph;
-
-      // Testing that the schedule is as expected for outlining contexts:
-      for (size_t i = 0; i < schedule.size(); i++) {
-        Op *op = schedule.at(i);
-        for (auto subgraph : op->getCalledGraphs()) {
-          ++numCallsToSubgraph[subgraph->id];
-        }
-      }
+      std::map<GraphId, size_t> numCallsToSubgraph = getNumCallsToSubgraph(ir);
 
       BOOST_CHECK(numCallsToSubgraph.find(GraphId("_subgraph(0)")) !=
                   numCallsToSubgraph.end());
@@ -138,4 +146,176 @@ BOOST_AUTO_TEST_CASE(TestOutliningWithExtraAttributes) {
   test(1);
   test(3);
   test(4);
+}
+
+BOOST_AUTO_TEST_CASE(TestOutliningAcrossBoundaries) {
+
+  enum AttributeToSet { None = 0, OutlineContext, ExecutionContext };
+
+  int N    = 8;
+  int B    = 8;
+  int K    = 4;
+  int size = 100;
+  // Test that, for certain op attributes, changes in these attributes prevents
+  // outlining from outlining a group of ops.
+  auto test = [&](AttributeToSet attributeToSet,
+                  std::function<int(int)> partitioner,
+                  int expectedNumberOfSubgraphs) {
+    TestRunner runner;
+    runner.isTraining = false;
+
+    runner.buildModel([&](auto &builder) {
+      auto aiOnnx = builder.aiOnnxOpset9();
+      TensorInfo inInfo{"FLOAT", std::vector<int64_t>{B, 1, size}};
+      auto act = builder.addInputTensor(inInfo);
+
+      auto genAttrs = [&](auto &n) -> std::map<std::string, popart::any> {
+        int partition = partitioner(n);
+        switch (attributeToSet) {
+        case OutlineContext: {
+          auto value =
+              std::vector<std::string>{"context", std::to_string(partition)};
+          return {{sOutlineAttribute, value}};
+        }
+        case ExecutionContext: {
+          int64_t value = 0ull;
+          switch (partition) {
+          case 0: {
+            value =
+                static_cast<int64_t>(ExecutionContext::WeightsFromHostFragment);
+            break;
+          }
+          case 1: {
+            value = static_cast<int64_t>(ExecutionContext::Normal);
+            break;
+          }
+          case 2: {
+            value =
+                static_cast<int64_t>(ExecutionContext::AccumulateOuterFragment);
+            break;
+          }
+          case 3: {
+            value =
+                static_cast<int64_t>(ExecutionContext::WeightsToHostFragment);
+            break;
+          }
+          default:
+            BOOST_ASSERT(
+                false); // Can't test with paritions >3 for ExecutionContext.
+          }
+          return {{sExecutionContextAttribute, value}};
+        }
+        case None:
+        default: {
+          // do nothing.
+          return {};
+        }
+        }
+      };
+
+      // N layers
+      for (int n = 0; n < N; ++n) {
+        // Note we change tensor sizes with period 4 to avoid outlining
+        // per-iteration.
+        TensorInfo wInfo{
+            "FLOAT",
+            std::vector<int64_t>{1, size + (n % 4), size + ((n + 1) % 4)}};
+        std::vector<TestTensor> inputs;
+        std::vector<TestTensor> outputs;
+        std::vector<float> wData(wInfo.nelms(), 0);
+        ConstVoidData wCVData{wData.data(), wInfo};
+        auto w     = builder.addInitializedInputTensor(wCVData);
+        auto attrs = genAttrs(n);
+        act        = builder.customOp(Onnx::AiOnnx::OpSet9::MatMul,
+                               9,
+                               {act, w},
+                               1,
+                               attrs,
+                               logging::format("CHECKOP_MM: [{}]", n))[0];
+        act        = builder.customOp(Onnx::AiOnnx::OpSet9::Relu,
+                               9,
+                               {act},
+                               1,
+                               attrs,
+                               logging::format("CHECKOP_RELU: [{}]", n))[0];
+      }
+
+      // Enable outlining with no restrictions
+      runner.opts.explicitRecomputation          = false;
+      runner.opts.enableOutlining                = true;
+      runner.opts.outlineThreshold               = 1.0;
+      runner.opts.enableOutliningCopyCostPruning = false;
+      // runner.opts.virtualGraphMode               = VirtualGraphMode::Manual;
+      runner.patterns = Patterns(PatternsLevel::Default);
+      // Disable so that no false negatives (rhs vs. lhs inplace) exist
+      runner.patterns.inplaceEnabled = false;
+
+      return act;
+    });
+
+    // Testing that the schedule is as expected for batch serialization:
+    runner.checkIr([&](Ir &ir) {
+      std::vector<Op *> schedule = ir.getMainGraph().getOpSchedule({});
+
+      std::map<GraphId, size_t> numCallsToSubgraph = getNumCallsToSubgraph(ir);
+
+      BOOST_CHECK_EQUAL(expectedNumberOfSubgraphs, numCallsToSubgraph.size());
+    });
+  };
+
+  // These functions parition the ops in two sets in different ways. Each set is
+  // labelled with different attribute values (depending on other parameters to
+  // test).
+  auto all_false     = [](int n) -> int { return false; };
+  auto split         = [&](int n) -> int { return n >= N / 2; };
+  auto alternate     = [](int n) -> int { return n % 2 == 0; };
+  auto alternate_two = [](int n) -> int { return (n >> 1) % 2 == 0; };
+  auto increment     = [](int n) -> int { return n; };
+  auto increment_two = [](int n) -> int { return (n >> 1); };
+
+  // In text below we describe the two ops within one iteration of the test
+  // sequences of letters a b c d a b c d. Note that pairs of ops that are
+  // equivalent with another iteration use the same letter (note there are 8
+  // iterations of the main loop, and the logic repeats after 4 iterations). A
+  // normal attribute change is shown with a single quote, e.g. a turns into a'.
+  // A boundary attribute change is shown with an asterisk, e.g. a turns into
+  // a*. The op a* is not equivalent to a but can be outlined by the same
+  // subgraph. However, a and a* cannot exist within the same subgraph. Finally,
+  // subgraphs are shown using square brackets, e.g. [a b].
+
+  // When no boundaries are set, the outliner will outline one subgraph with
+  // four ops.
+  std::cout << "Checking base case (a b c d a b c d -> [a b c d ] [a b c d])"
+            << std::endl;
+  test(None, all_false, 1);
+
+  std::cout
+      << "Checking outline context (a b c d a b c d -> [a b c d] [a b c d])"
+      << std::endl;
+  test(OutlineContext, all_false, 1);
+  std::cout
+      << "Checking outline context (a b c d a' b' c' d' -> a b c d a' b' c' d')"
+      << std::endl;
+  test(OutlineContext, split, 0);
+  std::cout << "Checking outline context (a b' c d' a b' c d' -> [a b' c d'] "
+               "[a b' c d'])"
+            << std::endl;
+  test(OutlineContext, alternate, 1);
+  std::cout << "Checking outline context (a b c' d' a b c' d' -> [a b c' d'] "
+               "[a b c' d'])"
+            << std::endl;
+  test(OutlineContext, alternate_two, 1);
+
+  std::cout
+      << "Checking execution context (a b c d a b c d -> [a b c d] [a b c d])"
+      << std::endl;
+  test(ExecutionContext, all_false, 1);
+  std::cout << "Checking execution context (a b c d a* b* c* d* -> [a b c d] "
+               "[a b c d])"
+            << std::endl;
+  test(ExecutionContext, split, 1);
+  std::cout << "Checking execution context (a b c* d* a b c* d* -> [a b][c d] "
+               "[a b][c d])"
+            << std::endl;
+  test(ExecutionContext, increment_two, 2);
 }
