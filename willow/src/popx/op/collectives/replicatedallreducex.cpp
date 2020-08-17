@@ -6,7 +6,7 @@
 #include <popart/popx/op/collectives/replicatedallreducex.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <popops/Collectives.hpp>
+#include <gcl/Collectives.hpp>
 
 namespace popart {
 namespace popx {
@@ -21,13 +21,12 @@ void ReplicatedAllReduceOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor toReduce              = getInTensor(inIndex);
   poplar::OptionFlags allReduceOptions = dv_p->gclOptions;
   allReduceOptions.set("useReplicatedImplementation", "true");
-  poplar::Tensor output =
-      popops::replicatedAllReduce(graph(),
-                                  toReduce,
-                                  popops::Operation::ADD,
-                                  prog,
-                                  debugPrefix("replicatedAllReduce"),
-                                  allReduceOptions);
+  poplar::Tensor output = gcl::allReduce(graph(),
+                                         toReduce,
+                                         popops::Operation::ADD,
+                                         prog,
+                                         debugPrefix("replicatedAllReduce"),
+                                         allReduceOptions);
   setOutTensor(ReplicatedAllReduceOp::getOutIndex(), output);
 }
 
@@ -58,12 +57,12 @@ void ReplicatedAllReduceInplaceOpx::grow(
   poplar::Tensor toReduce = getInTensor(inIndex);
   poplar::OptionFlags allReduceOptions = dv_p->gclOptions;
   allReduceOptions.set("useReplicatedImplementation", "true");
-  popops::replicatedAllReduceInPlace(graph(),
-                                     toReduce,
-                                     popops::Operation::ADD,
-                                     prog,
-                                     debugPrefix("replicatedAllReduce"),
-                                     allReduceOptions);
+  gcl::allReduceInPlace(graph(),
+                        toReduce,
+                        popops::Operation::ADD,
+                        prog,
+                        debugPrefix("replicatedAllReduce"),
+                        allReduceOptions);
   setOutTensor(ReplicatedAllReduceInplaceOp::getOutIndex(), toReduce);
 }
 

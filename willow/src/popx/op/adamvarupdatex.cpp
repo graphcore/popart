@@ -1,6 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
-#include <popops/Collectives.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/ScaledAdd.hpp>
 #include <popart/error.hpp>

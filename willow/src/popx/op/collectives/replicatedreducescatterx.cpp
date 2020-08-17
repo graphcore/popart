@@ -9,7 +9,7 @@
 #include <popart/popx/op/collectives/replicatedreducescatterx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <popops/Collectives.hpp>
+#include <gcl/Collectives.hpp>
 
 namespace popart {
 namespace popx {
@@ -52,12 +52,12 @@ void ReplicatedReduceScatterOpx::grow(poplar::program::Sequence &prog) const {
   reduceScatterOptions.set("useReplicatedImplementation", "true");
 
   poplar::Tensor reducedScattered =
-      popops::replicatedReduceScatter(graph(),
-                                      toReduceScatter.flatten(),
-                                      popops::Operation::ADD,
-                                      prog,
-                                      "",
-                                      reduceScatterOptions);
+      gcl::reduceScatter(graph(),
+                         toReduceScatter.flatten(),
+                         popops::Operation::ADD,
+                         prog,
+                         "",
+                         reduceScatterOptions);
 
   setOutTensor(ReplicatedReduceScatterOp::getOutIndex(), reducedScattered);
 }

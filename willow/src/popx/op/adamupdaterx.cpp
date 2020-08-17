@@ -2,7 +2,6 @@
 
 #include <cmath>
 
-#include <popops/Collectives.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Reduce.hpp>
 #include <popops/ScaledAdd.hpp>

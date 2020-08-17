@@ -8,8 +8,6 @@
 #include <popart/popx/op/collectives/collectivesx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <popops/Collectives.hpp>
-
 namespace popart {
 namespace popx {
 

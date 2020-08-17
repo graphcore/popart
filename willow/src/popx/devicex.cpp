@@ -16,7 +16,7 @@
 #include <boost/range/algorithm/find.hpp>
 #include <boost/range/algorithm_ext.hpp>
 
-#include <gcl/ct/TileAllocation.hpp>
+#include <gcl/TileAllocation.hpp>
 #include <poplar/CSRFunctions.hpp>
 #include <poplar/CycleCount.hpp>
 #include <poplin/codelets.hpp>

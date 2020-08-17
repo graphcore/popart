@@ -7,9 +7,10 @@
 #include <popart/popx/op/hostreducevarupdatex.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <popops/Collectives.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/ScaledAdd.hpp>
+
+#include <gcl/Collectives.hpp>
 
 namespace pe = popops::expr;
 
@@ -39,12 +40,12 @@ void GradCopyToHostOpx::grow(poplar::program::Sequence &prog) const {
   if (dv_p->getReplicationFactor() > 1 && dv_p->getAccumulationFactor() == 1) {
     poplar::OptionFlags allReduceOptions = dv_p->gclOptions;
     allReduceOptions.set("useReplicatedImplementation", "true");
-    weightDeltas = popops::replicatedAllReduce(graph(),
-                                               weightDeltas,
-                                               popops::Operation::ADD,
-                                               prog,
-                                               debugPrefix("allReduce_Add"),
-                                               allReduceOptions);
+    weightDeltas = gcl::allReduce(graph(),
+                                  weightDeltas,
+                                  popops::Operation::ADD,
+                                  prog,
+                                  debugPrefix("allReduce_Add"),
+                                  allReduceOptions);
   }
 
   if (op_p->getIr().getSessionOptions().hostAllReduceRemoteBuffer) {

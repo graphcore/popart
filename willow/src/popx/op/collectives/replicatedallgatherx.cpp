@@ -1,5 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <popops/Collectives.hpp>
+#include <gcl/Collectives.hpp>
 
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -24,12 +24,12 @@ void ReplicatedAllGatherOpx::grow(poplar::program::Sequence &prog) const {
   poplar::OptionFlags allGatherOptions = dv_p->gclOptions;
   allGatherOptions.set("useReplicatedImplementation", "true");
 
-  poplar::Tensor gathered = popops::replicatedAllGather(
-      graph(),
-      getInTensor(ReplicatedAllGatherOp::getInIndex()),
-      prog,
-      debugPrefix("replicatedAllGather"),
-      allGatherOptions);
+  poplar::Tensor gathered =
+      gcl::allGather(graph(),
+                     getInTensor(ReplicatedAllGatherOp::getInIndex()),
+                     prog,
+                     debugPrefix("replicatedAllGather"),
+                     allGatherOptions);
 
   if (hasInput(ReplicatedAllGatherOp::getCollectiveLinkedIndex())) {
     auto cbr = getCollectiveBalancedReorder();
