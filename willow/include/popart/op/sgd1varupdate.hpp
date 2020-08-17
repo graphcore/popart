@@ -21,13 +21,6 @@ public:
   const OptimizerValue initSlr1;
   static InIndex getSlr1InIndex() { return 2; }
 
-  // TODO https://phabricator.sourcevertex.net/T12562 for outlining this
-  bool isOutlineable() const final {
-    return settings.executionContext ==
-                   ExecutionContext::AccumulateOuterFragment
-               ? false
-               : true;
-  }
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };
 

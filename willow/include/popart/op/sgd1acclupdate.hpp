@@ -25,13 +25,6 @@ public:
   static InIndex getSmm1InIndex() { return 2; }
   static InIndex getSwd1InIndex() { return 3; }
 
-  // TODO https://phabricator.sourcevertex.net/T12562 for outlining this
-  bool isOutlineable() const final {
-    return settings.executionContext ==
-                   ExecutionContext::AccumulateOuterFragment
-               ? false
-               : true;
-  }
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };
 
