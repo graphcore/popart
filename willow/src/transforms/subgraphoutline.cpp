@@ -52,9 +52,6 @@ std::vector<int64_t> getBoundariesCrossed(int64_t start,
   OptionalExecutionPhase phase;
   OptionalExecutionPhase last_phase;
 
-  ExecutionContext exec_cont;
-  ExecutionContext last_exec_cont;
-
   OptionalBatchSerializedPhase batchserial;
   OptionalBatchSerializedPhase last_batchserial;
 
@@ -65,20 +62,17 @@ std::vector<int64_t> getBoundariesCrossed(int64_t start,
     Op *op           = schedule[i];
     last_vgid        = vgid;
     last_phase       = phase;
-    last_exec_cont   = exec_cont;
     last_batchserial = batchserial;
     last_recompute   = recompute;
     vgid             = op->getOptionalVGraphId();
     phase            = op->getOptionalExecutionPhase();
-    exec_cont        = op->settings.executionContext;
     batchserial      = op->getOptionalBatchSerializedPhase();
     recompute        = op->settings.recomputeType == RecomputeType::Recompute
                     ? RecomputeType::Recompute
                     : RecomputeType::Checkpoint;
     if (i > start &&
         (vgid != last_vgid || phase != last_phase ||
-         exec_cont != last_exec_cont || batchserial != last_batchserial ||
-         recompute != last_recompute)) {
+         batchserial != last_batchserial || recompute != last_recompute)) {
       crossing.push_back(i - start);
     }
   }
@@ -101,8 +95,6 @@ void insertBoundariesOps(const std::vector<Op *> &schedule) {
         auto boundary   = boundaryOp.get();
         auto phase      = schedule[i]->getOptionalExecutionPhase();
         boundary->setExecutionPhase(phase);
-        boundary->settings.executionContext =
-            schedule[i]->settings.executionContext;
         VGraphId vgid = 0;
         boundary->setVirtualGraphId(vgid);
         graph.moveIntoGraph(std::move(boundaryOp));
@@ -309,7 +301,6 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
   bool conflicting_batchserial = false;
   OptionalPipelineStage pipeline_stage;
   nonstd::optional<RecomputeType> recompute;
-  nonstd::optional<ExecutionContext> execution_context;
 
   for (const OpId &opid : instance.ops) {
     Op *op = graph.getOp(opid);
@@ -335,9 +326,6 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
     if (batchserial && op->hasBatchSerializedPhase() &&
         op->getBatchSerializedPhase() != batchserial) {
       conflicting_batchserial = true;
-    }
-    if (!execution_context) {
-      execution_context = op->settings.executionContext;
     }
   }
 
@@ -366,9 +354,6 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
   call_op->setExecutionPhase(phase);
   call_op->setPipelineStage(pipeline_stage);
   call_op->setBatchSerializedPhase(batchserial);
-  if (execution_context) {
-    call_op->settings.executionContext = execution_context.value();
-  }
 
   // Set the position w.r.t loss, if possible. If any of the internal ops
   // is connected to the final loss, then so is this CallOp. Note that we use
@@ -692,13 +677,8 @@ Graph &createSubgraph(const Match &match, Graph &graph) {
     clone->settings.graph         = subgraph;
     clone->settings.scope         = subgraph_scope;
     clone->settings.recomputeType = RecomputeType::Checkpoint;
-    // There are some attributes that have little meaning in subgraphs. Unset
-    // them here.
-    clone->settings.executionPhase   = ExecutionPhase();
-    clone->settings.pipelineStage    = PipelineStage();
-    clone->settings.executionContext = ExecutionContext::Subgraph;
-    auto cloneid                     = subgraph.moveIntoGraph(std::move(clone));
-    Op *clone_op                     = subgraph.getOp(cloneid);
+    auto cloneid                  = subgraph.moveIntoGraph(std::move(clone));
+    Op *clone_op                  = subgraph.getOp(cloneid);
     clone_map.insert({op, clone_op});
     clones.push_back(clone_op);
   }

@@ -133,10 +133,9 @@ using OnnxTensorPtrs = std::map<TensorId, const ONNX_NAMESPACE::TensorProto *>;
 using OpsBeforeKey   = std::map<Op *, std::vector<Op *>, POpCmp>;
 
 // Custom node attribute names
-static constexpr const char *sVirtualGraphAttribute     = "__ipu_number";
-static constexpr const char *sExecutionPhaseAttribute   = "__execution_phase";
-static constexpr const char *sExecutionContextAttribute = "__execution_context";
-static constexpr const char *sInplaceOpNames            = "__inplace_op_names";
+static constexpr const char *sVirtualGraphAttribute   = "__ipu_number";
+static constexpr const char *sExecutionPhaseAttribute = "__execution_phase";
+static constexpr const char *sInplaceOpNames          = "__inplace_op_names";
 static constexpr const char *sInplaceOpPriorities = "__inplace_op_priorities";
 static constexpr const char *sRecomputeOutputAttribute =
     "__recompute_output_in_backward_pass";

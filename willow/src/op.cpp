@@ -20,8 +20,6 @@
 #include <popart/op/restore.hpp>
 #include <popart/op/varupdate.hpp>
 
-#include <sstream>
-
 namespace {
 using namespace popart;
 
@@ -378,11 +376,8 @@ int64_t Op::memOfOutputs() const {
 }
 
 void Op::appendAttributes(OpSerialiserBase &os) const {
-  std::ostringstream executionContextSs;
-  executionContextSs << settings.executionContext;
   appendOutlineAttributes(os);
   os.appendAttribute(sExecutionPhaseAttribute, settings.executionPhase);
-  os.appendAttribute(sExecutionContextAttribute, executionContextSs.str());
   os.appendAttribute(sPipelineStageAttribute, settings.pipelineStage);
   os.appendAttribute("scope", getScope());
 }
@@ -494,10 +489,6 @@ std::ostream &operator<<(std::ostream &ost, const ExecutionContext &rt) {
     ost << "WeightsToHostFragment";
     break;
   }
-  case (ExecutionContext::Subgraph): {
-    ost << "Subgraph";
-    break;
-  }
   }
   return ost;
 }
@@ -546,12 +537,6 @@ void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {
     int64_t value;
     attributes.set(value, sExecutionPhaseAttribute);
     executionPhase = value;
-  }
-
-  if (attributes.hasAttribute(sExecutionContextAttribute)) {
-    int64_t value;
-    attributes.set(value, sExecutionContextAttribute);
-    executionContext = static_cast<ExecutionContext>(value);
   }
 
   if (attributes.hasAttribute(sVirtualGraphAttribute)) {
