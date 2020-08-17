@@ -79,7 +79,7 @@ def test_groupHostSync():
             order.append(2)
         if re.search(r"101/add/ReduceExpression", l):
             order.append(3)
-        if re.search(r"StreamCopy", l) and first:
+        if re.search(r"\bStreamCopy\b", l) and first:
             order.append(4)
             countStreams += 1
 
