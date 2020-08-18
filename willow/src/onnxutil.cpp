@@ -193,8 +193,14 @@ ConstVoidData getConstData(const ONNX_NAMESPACE::TensorProto &tp) {
   ConstVoidData cv_data;
   cv_data.info = TensorInfo(tp);
   cv_data.data = nullptr;
+
+  // It is possible to add an onnx Constant op with no elements:
+  //   builder.aiOnnxOpset11.constant(np.array([], dtype=np.float32), False)
+  if (cv_data.info.nelms() == 0) {
+    cv_data.data = nullptr;
+  }
   // raw_data is a string: guaranteed to be contiguous in C++11
-  if (tp.has_raw_data()) {
+  else if (tp.has_raw_data()) {
     cv_data.data = reinterpret_cast<const void *>(&(tp.raw_data()[0]));
   } else if (tp.has_data_location() &&
              tp.data_location() == ONNX_NAMESPACE::TensorProto::EXTERNAL) {

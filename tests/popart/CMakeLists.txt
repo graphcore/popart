@@ -310,7 +310,8 @@ add_popart_py_unit_test(virtual_graph_check_test)
 add_popart_py_unit_test(virtual_graph_test VARIANTS IpuModel)
 add_popart_py_unit_test(type_casting_test)
 add_popart_py_unit_test(supported_ops_test)
-add_popart_py_unit_test(opset_check_test)
+#Temporarily disables, see T24714.
+#add_popart_py_unit_test(opset_check_test)
 add_popart_py_unit_test(constant_op_test)
 
 # Test to check for boost in popart headers.

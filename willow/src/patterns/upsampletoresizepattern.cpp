@@ -46,7 +46,7 @@ bool UpsampleToResizePattern::apply(Op *op) const {
   auto out = op->outTensor(UpsampleOp::getOutIndex());
 
   auto resize2 = std::make_unique<ResizeOp>(
-      Onnx::AiOnnx::OpSet10::Resize,
+      Onnx::CustomOperators::Resize,
       Op::Settings(graph, upsample->name() + "_" + "Resize"),
       upsampleToResizeMode(upsample->getMode()),
       upsample->getScales());

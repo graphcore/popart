@@ -1,6 +1,7 @@
 #include <cmath>
 
 #include <popart/error.hpp>
+#include <popart/graph.hpp>
 #include <popart/op/resize.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/tensor.hpp>
@@ -62,13 +63,6 @@ void ResizeOp::setup() {
   outInfo(getOutIndex()) = {inInfo(getInIndex()).dataType(), outputShape};
 }
 
-void ResizeOp::connectInTensor(InIndex inIndex, TensorId tenId) {
-  // Ignore all but the first input
-  if (inIndex == getInIndex()) {
-    Op::connectInTensor(inIndex, tenId);
-  }
-}
-
 namespace {
 
 // We cant just inverse the forward pass scales because of the floor operation.
@@ -126,7 +120,8 @@ static OpDefinition::DataTypes T1 = {DataType::UINT8,
                                      DataType::INT32,
                                      DataType::FLOAT16,
                                      DataType::FLOAT};
-static OpDefinition::DataTypes T2 = {DataType::FLOAT};
+static OpDefinition::DataTypes T2 = {DataType::FLOAT16, DataType::FLOAT};
+static OpDefinition::DataTypes TensorFloat = {DataType::FLOAT};
 
 static OpDefinition resize10_OpDef({OpDefinition::Inputs({
                                         {"X", T1},
@@ -137,39 +132,96 @@ static OpDefinition resize10_OpDef({OpDefinition::Inputs({
                                         {"mode", {"nearest"}},
                                     })});
 
+static OpDefinition
+    resize11_OpDef({OpDefinition::Inputs({
+                        {"X", T1},
+                        {"roi", T2},
+                        {"scales", TensorFloat},
+                        {"sizes", TensorFloat},
+                    }),
+                    OpDefinition::Outputs({{"Y", T1}}),
+                    OpDefinition::Attributes(
+                        {{"coordinate_transformation_mode", {"half_pixel"}},
+                         {"cubic_coeff", {"*"}},
+                         {"exclude_outside", {"0"}},
+                         {"extrapalation_value", {"*"}},
+                         {"mode", {"nearest"}},
+                         {"nearest_mode", {"round_prefer_floor"}}})});
+
 static OpCreator<ResizeOp> resize10_OpCreator(
     OpDefinitions({{Onnx::Operators::Resize_10, resize10_OpDef}}),
-    [](const OpCreatorInfo &info) -> std::unique_ptr<Op> {
-      int xInputIndex      = 0;
-      int scalesInputIndex = 1;
-      auto scalesTensor    = info.getInputTensor(scalesInputIndex);
-      if (!scalesTensor->hasTensorData()) {
-        throw error("Scales tensor has no data");
-      }
-      auto inputTensor = info.getInputTensor(xInputIndex);
-      int nelms        = static_cast<int>(inputTensor->info.shape().size());
-      std::vector<float> scales;
-      if (scalesTensor->info.dataType() == DataType::FLOAT) {
-        scales = scalesTensor->tensorData()->copyDataAs<float>(nelms);
-      } else if (scalesTensor->info.dataType() == DataType::FLOAT16) {
-        auto temp = scalesTensor->tensorData()->copyDataAs<float16_t>(nelms);
-        for (auto i : temp) {
-          scales.push_back(i);
-        }
-      } else {
-        throw error("Can not import scales from tensor of type {}",
-                    scalesTensor->info.dataType());
-      }
+    [](const OpCreatorInfo &info, Graph &graph) -> Op * {
+      int scalesInputIndex      = 1;
+      std::vector<float> scales = info.getInputData<float>(scalesInputIndex);
 
-      ResizeMode mode = ResizeMode::Nearest;
-      if (info.attributes.hasAttribute("mode")) {
-        std::string modeString =
-            info.attributes.getAttribute<Attributes::String>("mode");
-        mode = getResizeModeFromString(modeString);
-      }
+      std::string modeString =
+          info.attributes.getAttribute<Attributes::String>("mode", "nearest");
+      ResizeMode mode = getResizeModeFromString(modeString);
 
-      return std::unique_ptr<Op>(
-          new ResizeOp(info.opid, info.settings, mode, scales));
+      Op *op = graph.createOp<ResizeOp>(
+          Onnx::CustomOperators::Resize, info.settings, mode, scales);
+
+      op->connectInTensor(ResizeOp::getInIndex(), info.getInputIds().at(0));
+      op->createAndConnectOutTensor(ResizeOp::getOutIndex(),
+                                    info.getOutputIds().at(0));
+
+      return op;
+    },
+    true);
+
+template <typename T>
+void checkAttribute(const OperatorIdentifier &opid,
+                    const Attributes &attr,
+                    const std::string &key,
+                    const std::vector<T> &acceptableValues) {
+  if (attr.hasAttribute(key)) {
+    auto v = attr.getAttribute<T>(key);
+    for (const auto &value : acceptableValues) {
+      if (v == value) {
+        return;
+      }
+    }
+    throw error("{}: Unsupported value '{}' for attribute '{}'. Acceptable "
+                "values are {}",
+                opid,
+                v,
+                key,
+                acceptableValues);
+  }
+}
+
+static OpCreator<ResizeOp> resize11_OpCreator(
+    OpDefinitions({{Onnx::Operators::Resize_11, resize11_OpDef}}),
+    [](const OpCreatorInfo &info, Graph &graph) -> Op * {
+      logging::debug("Resize11 factory enter");
+      int scalesInputIndex      = 2;
+      std::vector<float> scales = info.getInputData<float>(scalesInputIndex);
+
+      const Attributes &attr = info.attributes;
+
+      // Check attributes.
+      // The attributes 'cubic_coeff_a' and 'extrapolation_value' dont need to
+      // be checked, as we do not support the modes they are used in.
+      checkAttribute<Attributes::String>(
+          info.opid, attr, "coordinate_transformation_mode", {"half_pixel"});
+      checkAttribute<Attributes::String>(info.opid, attr, "mode", {"nearest"});
+      checkAttribute<Attributes::String>(
+          info.opid, attr, "nearest_mode", {"round_prefer_floor"});
+      checkAttribute<Attributes::Int>(info.opid, attr, "exclude_outside", {0});
+
+      // Create the op in the graph.
+      Op *op = graph.createOp<ResizeOp>(Onnx::CustomOperators::Resize,
+                                        info.settings,
+                                        ResizeMode::Nearest,
+                                        scales);
+
+      // Connect only the first input.
+      op->connectInTensor(ResizeOp::getInIndex(), info.getInputIds().at(0));
+      op->createAndConnectOutTensor(ResizeOp::getOutIndex(),
+                                    info.getOutputIds().at(0));
+
+      logging::debug("Resize11 factory exit");
+      return op;
     },
     true);
 
