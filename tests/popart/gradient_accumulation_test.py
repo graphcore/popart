@@ -3,6 +3,7 @@ import numpy as np
 import numpy.random as npr
 import popart
 import onnx
+import os
 import pytest
 import test_util as tu
 
@@ -334,7 +335,7 @@ def check_models(model_init, modelA_fn, modelB_fn):
 
 
 @tu.requires_ipu_model
-def test_gradient_accumulation_base():
+def test_gradient_accumulation_base(tmpdir):
     """
     base test (as simple as possible)
     """
@@ -351,7 +352,7 @@ def test_gradient_accumulation_base():
             enable_accum=True,
             batches_per_step=1,
             number_of_steps=1,
-            final_proto_filename="accl",
+            final_proto_filename=os.path.join(tmpdir, "accl"),
             enable_multi_ipu=False,
             full_anchorage=False)
 
@@ -362,7 +363,7 @@ def test_gradient_accumulation_base():
             enable_accum=False,
             batches_per_step=1,
             number_of_steps=1,
-            final_proto_filename="noAcc",
+            final_proto_filename=os.path.join(tmpdir, "noAcc"),
             enable_multi_ipu=False,
             full_anchorage=False)
 
@@ -371,7 +372,7 @@ def test_gradient_accumulation_base():
 
 
 @tu.requires_ipu_model
-def test_gradient_accumulation_multi_batch():
+def test_gradient_accumulation_multi_batch(tmpdir):
     """
     from _base: increase batches per step and number of steps
     """
@@ -387,7 +388,7 @@ def test_gradient_accumulation_multi_batch():
             enable_accum=True,
             batches_per_step=5,
             number_of_steps=3,
-            final_proto_filename="accl5batches3steps",
+            final_proto_filename=os.path.join(tmpdir, "accl5batches3steps"),
             enable_multi_ipu=False,
             full_anchorage=False)
 
@@ -398,7 +399,7 @@ def test_gradient_accumulation_multi_batch():
             enable_accum=False,
             batches_per_step=5,
             number_of_steps=3,
-            final_proto_filename="noAccl5batches3steps",
+            final_proto_filename=os.path.join(tmpdir, "noAccl5batches3steps"),
             enable_multi_ipu=False,
             full_anchorage=False)
 
@@ -407,7 +408,7 @@ def test_gradient_accumulation_multi_batch():
 
 
 @tu.requires_ipu_model
-def test_gradient_accumulation_multi_ipu():
+def test_gradient_accumulation_multi_ipu(tmpdir):
     """
     from _multi_batch: enable multi ipus
     """
@@ -421,7 +422,7 @@ def test_gradient_accumulation_multi_ipu():
         enable_accum=True,
         batches_per_step=5,
         number_of_steps=3,
-        final_proto_filename="accl5batches3steps",
+        final_proto_filename=os.path.join(tmpdir, "accl5batches3steps"),
         enable_multi_ipu=True,
         full_anchorage=False)
 
@@ -432,7 +433,7 @@ def test_gradient_accumulation_multi_ipu():
         enable_accum=False,
         batches_per_step=5,
         number_of_steps=3,
-        final_proto_filename="noAccl5batches3steps",
+        final_proto_filename=os.path.join(tmpdir, "noAccl5batches3steps"),
         # we do not enable multiple IPUs in the baseline
         enable_multi_ipu=False,
         full_anchorage=False)
@@ -442,7 +443,7 @@ def test_gradient_accumulation_multi_ipu():
 
 
 @tu.requires_ipu_model
-def test_gradient_accumulation_error_inference():
+def test_gradient_accumulation_error_inference(tmpdir):
     """
     confirm that there is an error if in inference mode
     """
@@ -456,7 +457,8 @@ def test_gradient_accumulation_error_inference():
                                enable_accum=True,
                                batches_per_step=5,
                                number_of_steps=3,
-                               final_proto_filename="accl5batches3steps",
+                               final_proto_filename=os.path.join(
+                                   tmpdir, "accl5batches3steps"),
                                enable_multi_ipu=True,
                                full_anchorage=False,
                                inference_mode=True)
@@ -466,7 +468,7 @@ def test_gradient_accumulation_error_inference():
 
 
 @tu.requires_ipu_model
-def test_gradient_accumulation_error_accum_factor_invalid():
+def test_gradient_accumulation_error_accum_factor_invalid(tmpdir):
     """
     confirm that enable_accum = False => accum_factor = 1
     """
@@ -479,7 +481,8 @@ def test_gradient_accumulation_error_accum_factor_invalid():
                                enable_accum=False,
                                batches_per_step=5,
                                number_of_steps=3,
-                               final_proto_filename="accl5batches3steps",
+                               final_proto_filename=os.path.join(
+                                   tmpdir, "accl5batches3steps"),
                                enable_multi_ipu=True,
                                full_anchorage=False,
                                inference_mode=False)
@@ -489,7 +492,7 @@ def test_gradient_accumulation_error_accum_factor_invalid():
 
 
 @tu.requires_ipu_model
-def test_gradient_accumulation_anchors():
+def test_gradient_accumulation_anchors(tmpdir):
     """
     Check that the accumulated gradients with gradient accumulation match
     the gradients without gradient accumulation enabled.
@@ -507,7 +510,8 @@ def test_gradient_accumulation_anchors():
         enable_accum=True,
         batches_per_step=batches_per_step,
         number_of_steps=1,
-        final_proto_filename="accl5batches3stepsAnchorsTest",
+        final_proto_filename=os.path.join(tmpdir,
+                                          "accl5batches3stepsAnchorsTest"),
         enable_multi_ipu=False,
         full_anchorage=True,
         inference_mode=False)
@@ -519,7 +523,8 @@ def test_gradient_accumulation_anchors():
         enable_accum=False,
         batches_per_step=batches_per_step,
         number_of_steps=1,
-        final_proto_filename="noAccl5batches3stepsAnchorsTest",
+        final_proto_filename=os.path.join(tmpdir,
+                                          "noAccl5batches3stepsAnchorsTest"),
         enable_multi_ipu=False,
         full_anchorage=True,
         inference_mode=False)
@@ -577,7 +582,7 @@ def test_gradient_accumulation_anchors():
 
 
 @tu.requires_ipu_model
-def test_gradient_accumulation_model_proto():
+def test_gradient_accumulation_model_proto(tmpdir):
     np.random.seed(1234)
     label_array = np.random.randint(0, hidden_size, batch_size)
     accl_initial_proto, accl_proto_filename, accl_anchor_arrays = run_mm_graph(
@@ -587,7 +592,7 @@ def test_gradient_accumulation_model_proto():
         enable_accum=True,
         batches_per_step=5,
         number_of_steps=3,
-        final_proto_filename="accl5batches3steps",
+        final_proto_filename=os.path.join(tmpdir, "accl5batches3steps"),
         enable_multi_ipu=False,
         full_anchorage=False)
 
@@ -624,7 +629,7 @@ def test_gradient_accumulation_model_proto():
             assert g_a_tensor.float_data[d_i] - v * wd < 1e-8
 
 
-def test_loading_saved_gradient_accumulationt_tesors():
+def test_loading_saved_gradient_accumulationt_tesors(tmpdir):
     """
     1. Build a model with matmuls, no grad accumulation
     2. Write out onnx model, verify initializers contain no accl tensors
@@ -664,7 +669,7 @@ def test_loading_saved_gradient_accumulationt_tesors():
 
     # 3.
     sess = getTrainingSession(onnx_model)
-    fn = "withInitZeroAcclTensors.onnx"
+    fn = os.path.join(tmpdir, "withInitZeroAcclTensors.onnx")
     sess.modelToHost(fn)
     model = onnx.load(fn)
     weights = {}
@@ -686,7 +691,7 @@ def test_loading_saved_gradient_accumulationt_tesors():
             lb_name: np.ones(batch_size).astype(np.int32),
         }, sess.initAnchorArrays())
     sess.run(stepio)
-    fn = "withUpdatedAcclTensors.onnx"
+    fn = os.path.join(tmpdir, "withUpdatedAcclTensors.onnx")
     sess.modelToHost(fn)
     model = onnx.load(fn)
     up_accls = {}
@@ -698,7 +703,7 @@ def test_loading_saved_gradient_accumulationt_tesors():
 
     # 5.
     sess = getTrainingSession(fn)
-    fn = "withUpdatedAcclTensors_check.onnx"
+    fn = os.path.join(tmpdir, "withUpdatedAcclTensors_check.onnx")
     sess.modelToHost(fn)
     model = onnx.load(fn)
     for t in model.graph.initializer:
@@ -707,7 +712,7 @@ def test_loading_saved_gradient_accumulationt_tesors():
 
 
 @tu.requires_ipu_model
-def test_adam_gradient_accumulation_base():
+def test_adam_gradient_accumulation_base(tmpdir):
     """
     base test (as simple as possible)
     """
@@ -724,7 +729,7 @@ def test_adam_gradient_accumulation_base():
             enable_accum=True,
             batches_per_step=1,
             number_of_steps=1,
-            final_proto_filename="adamAccum",
+            final_proto_filename=os.path.join(tmpdir, "adamAccum"),
             enable_multi_ipu=False,
             full_anchorage=False)
 
@@ -735,7 +740,7 @@ def test_adam_gradient_accumulation_base():
             enable_accum=False,
             batches_per_step=1,
             number_of_steps=1,
-            final_proto_filename="adamNoAccum",
+            final_proto_filename=os.path.join(tmpdir, "adamNoAccum"),
             enable_multi_ipu=False,
             full_anchorage=False)
 
@@ -744,7 +749,7 @@ def test_adam_gradient_accumulation_base():
 
 
 @tu.requires_ipu_model
-def test_adam_gradient_accumulation_multi_batch():
+def test_adam_gradient_accumulation_multi_batch(tmpdir):
     """
     from _base: increase batches per step and number of steps
     """
@@ -760,7 +765,8 @@ def test_adam_gradient_accumulation_multi_batch():
             enable_accum=True,
             batches_per_step=5,
             number_of_steps=3,
-            final_proto_filename="adamAccum5batches3steps",
+            final_proto_filename=os.path.join(tmpdir,
+                                              "adamAccum5batches3steps"),
             enable_multi_ipu=False,
             full_anchorage=False)
 
@@ -771,7 +777,8 @@ def test_adam_gradient_accumulation_multi_batch():
             enable_accum=False,
             batches_per_step=5,
             number_of_steps=3,
-            final_proto_filename="adamNoAccum5batches3steps",
+            final_proto_filename=os.path.join(tmpdir,
+                                              "adamNoAccum5batches3steps"),
             enable_multi_ipu=False,
             full_anchorage=False)
 
@@ -780,7 +787,7 @@ def test_adam_gradient_accumulation_multi_batch():
 
 
 @tu.requires_ipu_model
-def test_adam_gradient_accumulation_multi_ipu():
+def test_adam_gradient_accumulation_multi_ipu(tmpdir):
     """
     from _multi_batch: enable multi ipus
     """
@@ -794,7 +801,7 @@ def test_adam_gradient_accumulation_multi_ipu():
         enable_accum=True,
         batches_per_step=5,
         number_of_steps=3,
-        final_proto_filename="adamAccum5batches3steps",
+        final_proto_filename=os.path.join(tmpdir, "adamAccum5batches3steps"),
         enable_multi_ipu=True,
         full_anchorage=False)
 
@@ -805,7 +812,7 @@ def test_adam_gradient_accumulation_multi_ipu():
         enable_accum=False,
         batches_per_step=5,
         number_of_steps=3,
-        final_proto_filename="adamNoAccum5batches3steps",
+        final_proto_filename=os.path.join(tmpdir, "adamNoAccum5batches3steps"),
         # we do not enable multiple IPUs in the baseline
         enable_multi_ipu=False,
         full_anchorage=False)
@@ -815,7 +822,7 @@ def test_adam_gradient_accumulation_multi_ipu():
 
 
 @tu.requires_ipu_model
-def test_adam_gradient_accumulation_model_proto():
+def test_adam_gradient_accumulation_model_proto(tmpdir):
     batches_per_step = 5
     for steps in [0, 3]:
         np.random.seed(1234)
@@ -827,7 +834,7 @@ def test_adam_gradient_accumulation_model_proto():
             enable_accum=True,
             batches_per_step=batches_per_step,
             number_of_steps=steps,
-            final_proto_filename="accl5batches3steps",
+            final_proto_filename=os.path.join(tmpdir, "accl5batches3steps"),
             enable_multi_ipu=False,
             full_anchorage=False)
 
@@ -881,7 +888,7 @@ def test_adam_gradient_accumulation_model_proto():
                 assert tensor.float_data[0] == steps * batches_per_step
 
 
-def test_adam_loading_saved_gradient_accumulationt_tesors():
+def test_adam_loading_saved_gradient_accumulationt_tesors(tmpdir):
     """
     1. Build a model with matmuls, no grad accumulation
     2. Write out onnx model, verify initializers contain no accum tensors
@@ -921,7 +928,7 @@ def test_adam_loading_saved_gradient_accumulationt_tesors():
 
     # 3.
     sess = getTrainingSession(onnx_model)
-    fn = "withInitZeroAccumTensors.onnx"
+    fn = os.path.join(tmpdir, "withInitZeroAccumTensors.onnx")
     sess.modelToHost(fn)
     model = onnx.load(fn)
     weights = {}
@@ -944,7 +951,7 @@ def test_adam_loading_saved_gradient_accumulationt_tesors():
             lb_name: np.ones(batch_size).astype(np.int32),
         }, sess.initAnchorArrays())
     sess.run(stepio)
-    fn = "withUpdatedAcclTensors.onnx"
+    fn = os.path.join(tmpdir, "withUpdatedAcclTensors.onnx")
     sess.modelToHost(fn)
     model = onnx.load(fn)
     for t in model.graph.initializer:
@@ -963,7 +970,7 @@ def test_adam_loading_saved_gradient_accumulationt_tesors():
 
     # 5.
     sess = getTrainingSession(fn)
-    fn = "withUpdatedAcclTensors_check.onnx"
+    fn = os.path.join(tmpdir, "withUpdatedAcclTensors_check.onnx")
     sess.modelToHost(fn)
     model = onnx.load(fn)
     for t in model.graph.initializer:

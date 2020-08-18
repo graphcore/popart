@@ -227,7 +227,8 @@ set_property(TARGET "verify_cxx_11_interface" PROPERTY CXX_STANDARD 11)
 # Python unit test function
 # Uses VARIANTS as above for add_popart_cpp_unit_test
 function(add_popart_py_unit_test name)
-  set(oneValueArgs "VARIANTS;LABELS")
+  set(test_args_MATCHEXPR "")
+  set(oneValueArgs "VARIANTS;LABELS;MATCHEXPR;")
   cmake_parse_arguments(test_args "" "FILES" "${oneValueArgs}" "FILES;${ARGN}")
   set(FILES "${test_args_FILES}")
 
@@ -238,10 +239,19 @@ function(add_popart_py_unit_test name)
     extract_target(VARIANT TEST_TARGET)
     extract_runconfig(VARIANT TEST_CONFIG)
 
-    set(test_name "${TEST_TARGET}_${TEST_CONFIG}_${name}")
-    add_test(NAME "${test_name}"
-           COMMAND ${Python3_EXECUTABLE} -m pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/${name}.py
-           WORKING_DIRECTORY ${CMAKE_CURRENT_BUILD_DIR})
+    if ("${test_args_MATCHEXPR}" STREQUAL "")
+      set(test_name "${TEST_TARGET}_${TEST_CONFIG}_${name}")
+      add_test(NAME "${test_name}"
+            COMMAND ${Python3_EXECUTABLE} -m pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/${name}.py
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BUILD_DIR})
+    else()
+      string(REGEX REPLACE "[^a-zA-Z_]" "_" MATCHEXPR_NAME "${test_args_MATCHEXPR}")
+      string(REGEX REPLACE "[^a-zA-Z_]" " " MATCHEXPR_VALUE "${test_args_MATCHEXPR}")
+      set(test_name "${TEST_TARGET}_${TEST_CONFIG}_${name}-${MATCHEXPR_NAME}")
+      add_test(NAME "${test_name}"
+            COMMAND ${Python3_EXECUTABLE} -m pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/${name}.py -k "${MATCHEXPR_VALUE}"
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BUILD_DIR})
+    endif()
     set_tests_properties(${test_name} PROPERTIES
                          ENVIRONMENT TEST_TARGET=${TEST_TARGET})
   endforeach()
@@ -271,7 +281,20 @@ add_popart_py_unit_test(exception_test VARIANTS Hw)
 add_popart_py_unit_test(export_test)
 add_popart_py_unit_test(float_to_half_conversion_test)
 add_popart_py_unit_test(fp16_test)
-add_popart_py_unit_test(gradient_accumulation_test VARIANTS IpuModel)
+# The gradient_accumulation_test file is ran in separate ctest tests as they take a long time.
+add_popart_py_unit_test(gradient_accumulation_test MATCHEXPR test_gradient_accumulation_base VARIANTS IpuModel)
+add_popart_py_unit_test(gradient_accumulation_test MATCHEXPR test_gradient_accumulation_multi_batch VARIANTS IpuModel)
+add_popart_py_unit_test(gradient_accumulation_test MATCHEXPR test_gradient_accumulation_multi_ipu VARIANTS IpuModel)
+add_popart_py_unit_test(gradient_accumulation_test MATCHEXPR test_gradient_accumulation_error_inference VARIANTS IpuModel)
+add_popart_py_unit_test(gradient_accumulation_test MATCHEXPR test_gradient_accumulation_error_accum_factor_invalid VARIANTS IpuModel)
+add_popart_py_unit_test(gradient_accumulation_test MATCHEXPR test_gradient_accumulation_anchors VARIANTS IpuModel)
+add_popart_py_unit_test(gradient_accumulation_test MATCHEXPR test_gradient_accumulation_model_proto VARIANTS IpuModel)
+add_popart_py_unit_test(gradient_accumulation_test MATCHEXPR test_loading_saved_gradient_accumulationt_tesors VARIANTS IpuModel)
+add_popart_py_unit_test(gradient_accumulation_test MATCHEXPR test_adam_gradient_accumulation_base VARIANTS IpuModel)
+add_popart_py_unit_test(gradient_accumulation_test MATCHEXPR test_adam_gradient_accumulation_multi_batch VARIANTS IpuModel)
+add_popart_py_unit_test(gradient_accumulation_test MATCHEXPR test_adam_gradient_accumulation_multi_ipu VARIANTS IpuModel)
+add_popart_py_unit_test(gradient_accumulation_test MATCHEXPR test_adam_gradient_accumulation_model_proto VARIANTS IpuModel)
+add_popart_py_unit_test(gradient_accumulation_test MATCHEXPR test_adam_loading_saved_gradient_accumulationt_tesors VARIANTS IpuModel)
 add_popart_py_unit_test(graph_caching_test VARIANTS IpuModel)
 # add_popart_py_unit_test(graph_replication_test VARIANTS Hw) # TODO: Fix this T23920
 add_popart_py_unit_test(import_test)
