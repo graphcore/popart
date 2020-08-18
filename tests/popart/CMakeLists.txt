@@ -206,6 +206,7 @@ add_popart_cpp_unit_test(mergecopiestest mergecopies_test.cpp)
 add_popart_cpp_unit_test(nogradoptest no_gradop_test.cpp)
 add_popart_cpp_unit_test(numpybroadcastshapetest numpybroadcastshapetest.cpp)
 add_popart_cpp_unit_test(opmanagertest op_manager_test.cpp)
+add_popart_cpp_unit_test(opxtensoraliasingtest opx_tensor_aliasing_test.cpp)
 add_popart_cpp_unit_test(outliningirtest outlining_ir_test.cpp)
 add_popart_cpp_unit_test(poprithmstransitiveclosuretest poprithmstransitiveclosure_test.cpp TEST_UTILS test-graphs-test-util)
 add_popart_cpp_unit_test(prunetest prune_test.cpp)
@@ -215,6 +216,7 @@ add_popart_cpp_unit_test(transformtest transform_test.cpp)
 add_popart_cpp_unit_test(vertex_vgid_test vertex_vgid_test.cpp VARIANTS "IpuModel")
 add_popart_cpp_unit_test(viewchangingtest view_changing_test.cpp)
 add_popart_cpp_unit_test(op_factory_funcs_test op_factory_funcs_test.cpp)
+
 add_popart_cpp_unit_test(constop_test constop_test.cpp)
 
 # Add a test that targets c++11 to check that the popart interface is c++11.

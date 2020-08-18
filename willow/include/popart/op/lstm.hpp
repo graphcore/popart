@@ -66,6 +66,11 @@ public:
   int getInBatchAxis(InIndex) const override;
   int getOutBatchAxis(OutIndex) const override;
 
+  view::Regions aliases(InIndex, OutIndex) const final;
+
+  view::RegMap fwdRegMap(InIndex, OutIndex) const final;
+  view::RegMap bwdRegMap(InIndex, OutIndex) const final;
+
 private:
   void createPassThroughOutput(const TensorId &new_id,
                                OutIndex pass_through_index,

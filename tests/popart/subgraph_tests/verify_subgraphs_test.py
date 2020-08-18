@@ -23,7 +23,7 @@ def test_verify_subgraph():
     sg0_builder.addOutputTensor(sg0_out)
 
     # main
-    i0 = builder.addInputTensor(popart.TensorInfo("FLOAT", [2]))
+    i0 = builder.addInputTensor(popart.TensorInfo("FLOAT", [2, 2, 2]))
     out = builder.aiGraphcore.call([i0], 1, sg0_builder)[0]
 
     with pytest.raises(popart.popart_exception) as e_info:
@@ -36,7 +36,7 @@ def test_verify_subgraph():
 
 def test_subgraph_conv():
     """Test a matmul inside a subgraph vs 'regular' and asserts if they give the same output shape.
-    ALso ensures the conv taking the subgraph as an input does not cause any issues."""
+    Also ensures the conv taking the subgraph as an input does not cause any issues."""
     BATCH_SIZE = 1
     NUM_IN_CHANNELS = 80
     NUM_OUT_CHANNELS = 128

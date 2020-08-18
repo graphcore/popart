@@ -109,7 +109,10 @@ void GRUOpx::grow(poplar::program::Sequence &prog) const {
 
   auto output_h_state = output[createGRUParams().timeSteps - 1];
 
-  reshapeAndInsert(GRUOp::getHiddenStateOutIndex(), output_h_state);
+  // cloneNcopy to ensure outputs are not aliases of each other
+  // TODO T18126 remove requirement for this cloneNcopy
+  reshapeAndInsert(GRUOp::getHiddenStateOutIndex(),
+                   cloneNcopy(prog, output_h_state));
 
   setOutTensor(GRUOp::getInitStateOutputPassThroughIndex(), init_state_h);
 
@@ -315,6 +318,8 @@ void GRUGradOpx::grow(poplar::program::Sequence &prog) const {
 
   auto output_grad = getInTensor(GRUGradOp::getOutputGradInIndex())
                          .reshape({seq_length, batch_size, hidden_size});
+
+  output_grad = cloneNcopy(prog, output_grad);
 
   auto output_h_grad = getHiddenStateGrad();
 

@@ -82,6 +82,8 @@ def op_tester(tmpdir):
             np.random.seed(0)
             self.patterns = popart.Patterns(popart.PatternsLevel.Minimal)
             self.options = popart.SessionOptions()
+            self.options.opxAliasChecking = True
+            self.options.opxModifyChecking = True
             self.logging_dir = logging_dir
             self.numIPUs = 1
             self.rtol = 1e-05

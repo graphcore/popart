@@ -22,6 +22,7 @@
 #include <poplin/codelets.hpp>
 #include <popnn/codelets.hpp>
 #include <popops/ElementWise.hpp>
+#include <popops/Reduce.hpp>
 #include <popops/ScaledAdd.hpp>
 #include <popops/Zero.hpp>
 #include <popops/codelets.hpp>
@@ -2183,11 +2184,82 @@ void Devicex::growOpx(Opx *opx, poplar::program::Sequence &seq) {
   if (opxTrace) {
     seq.add(poplar::program::PrintTensor(opx->op_p->str() + "/enter",
                                          opxTraceTensor));
-    opx->grow(seq);
+  }
+
+  // Build a map of all tensors that are inputs and not
+  // supposed to be modified by this operation
+  std::map<InIndex, std::pair<poplar::Tensor, poplar::Tensor>>
+      nonModifiedTensors;
+  if (ir().getSessionOptions().opxModifyChecking) {
+    for (auto &inputMap : opx->op_p->input->tensorMap()) {
+      auto regions = opx->op_p->modifies(inputMap.first);
+      // Check that no region of the input tensor is marked as modified
+      // according to the IR
+      if (std::all_of(regions.begin(),
+                      regions.end(),
+                      [](const view::Region &r) { return r.isEmpty(); })) {
+        poplar::Tensor inTensor = opx->get(inputMap.second->id);
+        // Check that this isn't a phony tensor
+        if (inTensor.numElements() > 0) {
+          // Clone the input tensor with its current values
+          // to check if the original input tensor has been modified
+          // during opx->grow(seq)
+          auto inTensorClone = graph().clone(inTensor);
+          seq.add(poplar::program::Copy(inTensor, inTensorClone));
+          nonModifiedTensors[inputMap.first] =
+              std::make_pair(inTensor, inTensorClone);
+        }
+      }
+    }
+  }
+
+  // Grow code for the Op
+  opx->grow(seq);
+
+  if (ir().getSessionOptions().opxModifyChecking) {
+    for (auto &nonModified : nonModifiedTensors) {
+      // Compare input tensor with the input tensor clone before executing the
+      // Op, skip checking non-finite numbers
+      // (which always evaluate to non-equal)
+      auto check = popops::map(
+          opx->graph(),
+          popops::expr::NotEqual(
+              popops::expr::Select(popops::expr::_1,
+                                   popops::expr::Const(0),
+                                   popops::expr::IsFinite(popops::expr::_1)),
+              popops::expr::Select(popops::expr::_2,
+                                   popops::expr::Const(0),
+                                   popops::expr::IsFinite(popops::expr::_2))),
+          {nonModified.second.first, nonModified.second.second},
+          seq,
+          opx->debugPrefix("opxModifyChecking"),
+          {});
+      auto checkReduced = check.flatten();
+      // Convert result to boolean scalar
+      if (check.numElements() > 1) {
+        checkReduced = popops::reduce(opx->graph(),
+                                      checkReduced,
+                                      {0},
+                                      {popops::Operation::LOGICAL_OR},
+                                      seq,
+                                      opx->debugPrefix("opxModifyChecking"));
+      } else {
+        checkReduced = checkReduced.squeeze({0});
+      }
+      auto ifProg = poplar::program::ErrorProgram(
+          logging::format("Op {} claims input {} is not modified, "
+                          "but the Poplar tensors disagree.",
+                          opx->op_p->debugName(),
+                          nonModified.first),
+          check);
+      auto elseProg = poplar::program::Sequence();
+      seq.add(poplar::program::If(checkReduced, ifProg, elseProg));
+    }
+  }
+
+  if (opxTrace) {
     seq.add(poplar::program::PrintTensor(opx->op_p->str() + "/exit",
                                          opxTraceTensor));
-  } else {
-    opx->grow(seq);
   }
 }
 

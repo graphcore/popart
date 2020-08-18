@@ -154,6 +154,39 @@ void Opx::setOutViewChangers(OutIndex index,
 }
 
 void Opx::setOutTensor(OutIndex index, const poplar::Tensor &tensor) const {
+
+  if (dv_p->ir().getSessionOptions().opxAliasChecking) {
+    // Verify no unsolicited aliasing takes place
+    Op &op = getOp<Op>();
+    for (auto inputs : op.input->indicesMap()) {
+      InIndex inIndex   = inputs.second.front();
+      auto &inputTensor = getInTensor(inIndex);
+      if (tensor.elementType() == inputTensor.elementType()) {
+        if (!tensor.containsAliases() && !inputTensor.containsAliases()) {
+          // Can only safely test for aliases between the input and output
+          // if the input and output tensors alone are free from aliases
+          auto aliasedRegions = op.aliases(inIndex, index);
+          bool aliasesInIr =
+              std::any_of(aliasedRegions.begin(),
+                          aliasedRegions.end(),
+                          [](view::Region &r) { return !r.isEmpty(); });
+          bool aliasesInPoplar =
+              poplar::concat(tensor.flatten(), inputTensor.flatten(), 0)
+                  .containsAliases();
+          if (aliasesInPoplar != aliasesInIr) {
+            throw error(
+                "Op {} claims input {} -> output {} {} contain aliases, "
+                "but the Poplar tensors disagree.",
+                op.debugName(),
+                inIndex,
+                index,
+                aliasesInIr ? "do" : "do not");
+          }
+        }
+      }
+    }
+  }
+
   // Assume that if we have cached inputs then we will use cached outputs
   if (cachedOutputs) {
     cachedOutputs->insert(cachedOutputs->begin() + index, tensor);

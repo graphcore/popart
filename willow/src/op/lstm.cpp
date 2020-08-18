@@ -163,6 +163,36 @@ int LSTMOp::getOutBatchAxis(OutIndex index) const {
   return 0;
 }
 
+view::Regions LSTMOp::aliases(InIndex in, OutIndex out) const {
+  if (in == getInputInIndex() && out == getInputPassThroughIndex()) {
+    return {view::Region::getFull(inShape(in))};
+  } else {
+    return {view::Region::getEmpty(inRank(in))};
+  }
+}
+
+view::RegMap LSTMOp::fwdRegMap(InIndex in, OutIndex out) const {
+  auto emptyRegion = view::Region::getEmpty(outRank(out));
+  if (in == getInputInIndex() && out == getInputPassThroughIndex()) {
+    return [emptyRegion](const view::Region &r) { return view::Regions(1, r); };
+  } else {
+    return [emptyRegion](const view::Region &r) {
+      return view::Regions(1, emptyRegion);
+    };
+  }
+}
+
+view::RegMap LSTMOp::bwdRegMap(InIndex in, OutIndex out) const {
+  auto emptyRegion = view::Region::getEmpty(inRank(in));
+  if (in == getInputInIndex() && out == getInputPassThroughIndex()) {
+    return [emptyRegion](const view::Region &r) { return view::Regions(1, r); };
+  } else {
+    return [emptyRegion](const view::Region &r) {
+      return view::Regions(1, emptyRegion);
+    };
+  }
+}
+
 LSTMGradOp::LSTMGradOp(const LSTMOp &fwd_op)
     : Op(Onnx::GradOperators::LSTMGrad, fwd_op.getSettings()),
       forward_op(fwd_op) {}

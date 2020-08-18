@@ -458,6 +458,14 @@ struct SessionOptions {
   /// behaviour.
   bool strictOpVersions = true;
 
+  // Run Opx checks to verify IR tensor aliasing information
+  // corresponds to lowered Poplar tensor aliasing
+  bool opxAliasChecking = false;
+
+  // Run Opx checks to verify IR tensor modification information
+  // corresponds to lowered Poplar tensor modifications
+  bool opxModifyChecking = false;
+
   // Tensor location settings for activation/gradient tensors.
   TensorLocationSettings activationTensorLocationSettings =
       TensorLocationSettings{

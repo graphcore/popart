@@ -147,6 +147,36 @@ void GRUOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("direction", getDirectionAttribute());
 }
 
+view::Regions GRUOp::aliases(InIndex in, OutIndex out) const {
+  if (in == getInputInIndex() && out == getInputPassThroughIndex()) {
+    return {view::Region::getFull(inShape(in))};
+  } else {
+    return {view::Region::getEmpty(inRank(in))};
+  }
+}
+
+view::RegMap GRUOp::fwdRegMap(InIndex in, OutIndex out) const {
+  auto emptyRegion = view::Region::getEmpty(outRank(out));
+  if (in == getInputInIndex() && out == getInputPassThroughIndex()) {
+    return [emptyRegion](const view::Region &r) { return view::Regions(1, r); };
+  } else {
+    return [emptyRegion](const view::Region &r) {
+      return view::Regions(1, emptyRegion);
+    };
+  }
+}
+
+view::RegMap GRUOp::bwdRegMap(InIndex in, OutIndex out) const {
+  auto emptyRegion = view::Region::getEmpty(inRank(in));
+  if (in == getInputInIndex() && out == getInputPassThroughIndex()) {
+    return [emptyRegion](const view::Region &r) { return view::Regions(1, r); };
+  } else {
+    return [emptyRegion](const view::Region &r) {
+      return view::Regions(1, emptyRegion);
+    };
+  }
+}
+
 GRUGradOp::GRUGradOp(const GRUOp &fwd_op)
     : Op(Onnx::GradOperators::GRUGrad, fwd_op.getSettings()),
       forward_op(fwd_op) {}

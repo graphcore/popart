@@ -921,6 +921,8 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("ipuSystemType", &SessionOptions::ipuSystemType);
     cls.def_readwrite("groupHostSync", &SessionOptions::groupHostSync);
     cls.def_readwrite("strictOpVersions", &SessionOptions::strictOpVersions);
+    cls.def_readwrite("opxAliasChecking", &SessionOptions::opxAliasChecking);
+    cls.def_readwrite("opxModifyChecking", &SessionOptions::opxModifyChecking);
     cls.def_readwrite("activationTensorLocationSettings",
                       &SessionOptions::activationTensorLocationSettings);
     cls.def_readwrite("weightTensorLocationSettings",
