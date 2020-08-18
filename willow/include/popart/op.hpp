@@ -62,7 +62,8 @@ enum class ExecutionContext {
   Normal = 0,
   AccumulateOuterFragment,
   WeightsFromHostFragment,
-  WeightsToHostFragment
+  WeightsToHostFragment,
+  Subgraph
 };
 
 // Helper functions for tensor locations.

@@ -339,8 +339,10 @@ Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
     return intervals;
   }
 
-  if (t->hasProducer() &&
-      t->getProducer()->settings.executionContext != ExecutionContext::Normal) {
+  if (t->hasProducer() && !(t->getProducer()->settings.executionContext ==
+                                ExecutionContext::Normal ||
+                            t->getProducer()->settings.executionContext ==
+                                ExecutionContext::Subgraph)) {
     // Being conservative and keeping tensors that are touched outside the
     // training loop always live
     insertInterval(0, analyzer->getOpScheduleSize());
@@ -350,7 +352,8 @@ Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
   for (Op *c : t->consumers.getOps()) {
     for (auto &scheduleIndex : analyzer->getScheduleIndices(c)) {
       consumers.insert({scheduleIndex, {c, c->input->indices(t)}});
-      if (c->settings.executionContext != ExecutionContext::Normal) {
+      if (!(c->settings.executionContext == ExecutionContext::Normal ||
+            c->settings.executionContext == ExecutionContext::Subgraph)) {
         // Being conservative and keeping tensors that are touched outside the
         // training loop always live
         insertInterval(0, analyzer->getOpScheduleSize());
