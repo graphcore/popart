@@ -183,6 +183,7 @@ void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
       // Create RemoteLoadOp for this phase if we need to.
       if (phaseConfig.loadInPhase[phase]) {
         remoteLoad = insertRemoteLoadOp(tensorConfig, phase, loadedTensorId);
+        gatheredTensorId = loadedTensorId;
       }
 
       // Create RemoteStoreOp for this phase if we need to.
@@ -199,8 +200,6 @@ void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
     if (phaseConfig.gatherInPhase[phase]) {
       allGather = insertReplicatedAllGatherOp(
           tensorConfig, phase, loadedTensorId, gatheredTensorId);
-    } else {
-      gatheredTensorId = loadedTensorId;
     }
 
     // Add constraints to ensure new operations are scheduled in the right
