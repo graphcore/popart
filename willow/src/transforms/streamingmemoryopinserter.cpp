@@ -1292,6 +1292,16 @@ StreamingMemoryOpInserter::determineTensorLocation(Tensor *tensor) const {
       }
     }
 
+    if (result.replicatedTensorSharding) {
+      if ((!sessionOptions.enableReplicatedGraphs) ||
+          (sessionOptions.replicatedGraphCount <= 1)) {
+        logging::transform::warn("[StreamingMemory] Unable to shard tensor {} "
+                                 "due to lack of replication",
+                                 id);
+        result.replicatedTensorSharding = false;
+      }
+    }
+
     if (result.storage != TensorStorage::OnChip &&
         tensor->isOptimizerTensor()) {
 

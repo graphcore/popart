@@ -349,3 +349,12 @@ def test_replicated_lamb_weight_update(tmpdir):
 
     check_model(phased, phased_replicated)
     check_model(phased, phased_replicated_rws)
+
+
+@tu.requires_ipu
+def test_sharding_without_replicas_warning(tmpdir):
+    run_model(tmpdir,
+              'warning.onnx',
+              enable_executionphases=True,
+              num_replicas=1,
+              replicated_tensor_sharding=True)
