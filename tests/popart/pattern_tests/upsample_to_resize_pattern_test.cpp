@@ -52,7 +52,7 @@ BOOST_AUTO_TEST_CASE(UpsampleToResizeTest0) {
                   .enableRuntimeAsserts(false)});
 
   BOOST_CHECK(ir.opsOfType(Onnx::Operators::Upsample_9).size() == 0);
-  BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::Resize).size() == 1);
+  BOOST_CHECK(ir.opsOfType(Onnx::Operators::Resize_10).size() == 1);
 }
 
 BOOST_AUTO_TEST_CASE(UpsampleToResizeTest1) {
