@@ -1167,7 +1167,10 @@ PYBIND11_MODULE(popart_core, m) {
         "getCycleCount", &InferenceSession::getCycleCount, py::arg("id") = "");
     cls.def("weightsFromHost", &InferenceSession::weightsFromHost);
     cls.def("writeWeights", &TrainingSession::writeWeights);
-    cls.def("run", &InferenceSession::run);
+    cls.def("run",
+            &InferenceSession::run,
+            py::arg("stepio"),
+            py::arg("debugName") = "");
     cls.def("modelToHost", &InferenceSession::modelToHost);
     cls.def("getInfo", &InferenceSession::getInfo);
     cls.def("getSummaryReport",
@@ -1265,7 +1268,10 @@ PYBIND11_MODULE(popart_core, m) {
                std::string outputFilename) {
               exportInputs(session, inputs, num_elements, outputFilename);
             });
-    cls.def("run", &TrainingSession::run);
+    cls.def("run",
+            &TrainingSession::run,
+            py::arg("stepio"),
+            py::arg("debugName") = "");
     cls.def("modelToHost", &TrainingSession::modelToHost);
     cls.def("getInfo", &TrainingSession::getInfo);
     cls.def("getSummaryReport",

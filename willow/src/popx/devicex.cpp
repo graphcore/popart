@@ -579,12 +579,12 @@ std::map<Op *, int, POpCmp> Devicex::getMainGraphOpCounts() const {
   return counts;
 }
 
-void Devicex::run(PopPrograms::ProgramIndex ind) {
+void Devicex::run(PopPrograms::ProgramIndex ind, const std::string debugName) {
   if (isEngineLoaded() == false) {
     logging::devicex::debug("Reloading engine & connecting streams");
     loadEngineAndConnectStreams();
   }
-  pEngine->run(ind);
+  pEngine->run(ind, debugName);
 }
 
 void Devicex::weightsToHost() {
@@ -593,7 +593,7 @@ void Devicex::weightsToHost() {
     logging::devicex::debug("Writing weights to host");
     pEngine->disableExecutionProfiling();
     // Weights on the IPU
-    run(PopPrograms::ProgramIndex::WeightstoHost);
+    run(PopPrograms::ProgramIndex::WeightstoHost, "WeightsToHost");
     // Weights in the remote buffers
     remoteBufferWeightsToHost();
     logging::devicex::debug("Writing weights to host complete.");
@@ -689,7 +689,7 @@ void Devicex::weightsToHost(
 
     pEngine->disableExecutionProfiling();
     // Weights on the IPU
-    run(PopPrograms::ProgramIndex::WeightstoHost);
+    run(PopPrograms::ProgramIndex::WeightstoHost, "WeightsToHost");
     // Weights in the remote buffers
     remoteBufferWeightsToHost();
 
@@ -744,7 +744,8 @@ std::map<std::string, uint64_t> Devicex::cycleCountTensorToHost() {
     // Calls the copy from device to host
     logging::devicex::debug("Writing cycle count to host");
     pEngine->disableExecutionProfiling();
-    run(PopPrograms::ProgramIndex::CycleCountTensortoHost);
+    run(PopPrograms::ProgramIndex::CycleCountTensortoHost,
+        "CycleCountTensorToHost");
     logging::devicex::debug("Writing cycle count to host complete.");
 
     return cycleCount;
@@ -932,7 +933,7 @@ void Devicex::weightsFromHost() {
     logging::devicex::debug("Writing weights from host, ");
     pEngine->disableExecutionProfiling();
     // Weights on the IPU
-    run(PopPrograms::ProgramIndex::WeightsFromHost);
+    run(PopPrograms::ProgramIndex::WeightsFromHost, "WeightsFromHost");
     // Weights in the remote buffers
     remoteBufferWeightsFromHost();
     logging::devicex::debug("done.");
@@ -992,7 +993,7 @@ void Devicex::optimizerFromHost() {
   if (ir().useSyntheticData() == false) {
     logging::devicex::debug("Writing optimizer from host, ");
     pEngine->disableExecutionProfiling();
-    run(PopPrograms::ProgramIndex::OptimizerFromHost);
+    run(PopPrograms::ProgramIndex::OptimizerFromHost, "OptimizerFromHost");
     logging::devicex::debug("done.");
   }
 }
@@ -1059,7 +1060,7 @@ void Devicex::anchorsHostFromHostStreams(IStepIO &stepio) {
   }
 }
 
-void Devicex::run(IStepIO &stepio) {
+void Devicex::run(IStepIO &stepio, std::string debugName) {
   if (!prepareHasBeenCalled()) {
     throw error("Devicex::prepare() must be called before"
                 " Devicex::run(const IStepIO &) is called.");
@@ -1085,7 +1086,7 @@ void Devicex::run(IStepIO &stepio) {
   anchorsHostFromHostStreams(stepio);
 
   pEngine->enableExecutionProfiling();
-  run(PopPrograms::ProgramIndex::Program);
+  run(PopPrograms::ProgramIndex::Program, debugName);
 
   ++nCallsToRun;
 }
@@ -1637,7 +1638,7 @@ void Devicex::connectRandomSeedStream() {
 void Devicex::setRandomSeedFromHost() {
   if (ir().useSyntheticData() == false) {
     pEngine->disableExecutionProfiling();
-    run(PopPrograms::ProgramIndex::SetRandomSeedFromHost);
+    run(PopPrograms::ProgramIndex::SetRandomSeedFromHost, "SetRandomSeed");
   }
 }
 

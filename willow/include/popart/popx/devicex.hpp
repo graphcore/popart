@@ -114,7 +114,7 @@ public:
                                           int64_t tileId = 0,
                                           std::string id = "");
   std::map<std::string, uint64_t> cycleCountTensorToHost();
-  void run(IStepIO &);
+  void run(IStepIO &, std::string debugName = "");
 
 private:
   // the number of times run(IStepIO &) has been called
@@ -567,7 +567,7 @@ private:
 
   // Wrapper function that checks the calling devicex was the
   // last to have loaded its engine to deviceInfo's device
-  void run(PopPrograms::ProgramIndex ind);
+  void run(PopPrograms::ProgramIndex ind, std::string debugName);
 
   void hostStreamToHost(const MutableVoidData &mv_data, TensorId id);
 

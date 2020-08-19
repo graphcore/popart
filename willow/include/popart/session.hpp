@@ -77,9 +77,10 @@ public:
    * Perform one step.
    *
    * input data  : from address in stepIO.in
+   * debug name  : debug string to identify this run in logs
    * output data : to addresses in stepIO.out
    */
-  void run(IStepIO &stepIO);
+  void run(IStepIO &stepIO, std::string debugName = "");
 
   /**
    * Export numElements from stepIO.in

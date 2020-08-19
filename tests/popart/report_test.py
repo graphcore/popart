@@ -3,6 +3,7 @@ import numpy as np
 import popart
 import pytest
 import test_util as tu
+import json
 
 
 @tu.requires_ipu_model
@@ -171,9 +172,14 @@ def test_execution_report(tmpdir):
     d2 = np.array([11.]).astype(np.float32)
     stepio = popart.PyStepIO({i1: d1, i2: d2}, anchors)
 
-    session.run(stepio)
+    session.run(stepio, "Test message")
 
     rep = session.getExecutionReport()
+
+    # Need to convert bytes to string
+    details = json.loads(rep.decode("utf-8"))
+
+    assert (details['runs'][0]['name'] == "Test message")
 
 
 @tu.requires_ipu_model

@@ -136,8 +136,8 @@ void Session::exportInputs(IStepIO &stepIO,
   exportStepIO(stepIO, *device_, num_elements, output_filename);
 }
 
-void Session::run(IStepIO &stepio) {
-  logging::session::trace("Session::run");
+void Session::run(IStepIO &stepio, std::string debugName) {
+  logging::session::trace("Session::run {}", debugName);
   if (!ir.canInfer()) {
     throw error("Trying to infer when not in inference mode");
   }
@@ -149,7 +149,7 @@ void Session::run(IStepIO &stepio) {
         "and the session has been created in training mode");
   }
 
-  device_->run(stepio);
+  device_->run(stepio, debugName);
 
   runCalled = true;
 }

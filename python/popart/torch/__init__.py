@@ -155,11 +155,11 @@ class InferenceSession(_InferenceSessionCore):
         if not err.isSuccessful():
             raise popart.OutOfMemoryException(err)
 
-    def run(self, *args):
+    def run(self, debugName="", *args):
         args = [a.detach().numpy() for a in args]
         step_data = dict(zip(self.inputNames, args))
         stepio = popart.PyStepIO(step_data, self.anchorArrays)
-        super(InferenceSession, self).run(stepio)
+        super(InferenceSession, self).run(stepio, debugName)
 
 
 class TrainingSession(_TrainingSessionCore):
@@ -305,8 +305,8 @@ class TrainingSession(_TrainingSessionCore):
         if not err.isSuccessful():
             raise popart.OutOfMemoryException(err)
 
-    def run(self, *args):
+    def run(self, debugName="", *args):
         args = [a.detach().numpy() for a in args]
         step_data = dict(zip(self.inputNames, args))
         stepio = popart.PyStepIO(step_data, self.anchorArrays)
-        super(TrainingSession, self).run(stepio)
+        super(TrainingSession, self).run(stepio, debugName)
