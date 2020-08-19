@@ -225,6 +225,9 @@ public:
   static const std::vector<OperatorIdentifier>
   getSupportedOperations(bool includePrivate);
 
+  static const std::vector<OperatorIdentifier>
+  getUnsupportedOperations(int opsetVersion);
+
   static const OpDefinitions
   getSupportedOperationsDefinition(bool includePrivate);
 

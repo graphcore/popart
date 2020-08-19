@@ -11,4 +11,6 @@ using OpsetVersion = unsigned;
 OperatorIdentifier
 getOpid(const OpDomain &domain, OpsetVersion version, const OpType &opType);
 
+std::vector<OperatorIdentifier> getOpset(int opsetVersion);
+
 } // namespace popart

@@ -138,7 +138,6 @@ OpsetMap getOpsets() {
     {"RoiAlign", Onnx::AiOnnx::OpSet11::RoiAlign},
     {"Round", Onnx::AiOnnx::OpSet11::Round},
     {"Scan", Onnx::AiOnnx::OpSet11::Scan},
-    {"Scatter", Onnx::AiOnnx::OpSet11::Scatter},
     {"ScatterElements", Onnx::AiOnnx::OpSet11::ScatterElements},
     {"ScatterND", Onnx::AiOnnx::OpSet11::ScatterND},
     {"Selu", Onnx::AiOnnx::OpSet11::Selu},
@@ -176,7 +175,6 @@ OpsetMap getOpsets() {
     {"Transpose", Onnx::AiOnnx::OpSet11::Transpose},
     {"Unique", Onnx::AiOnnx::OpSet11::Unique},
     {"Unsqueeze", Onnx::AiOnnx::OpSet11::Unsqueeze},
-    {"Upsample", Onnx::AiOnnx::OpSet11::Upsample},
     {"Where", Onnx::AiOnnx::OpSet11::Where},
     {"Xor", Onnx::AiOnnx::OpSet11::Xor}};
 
@@ -315,7 +313,6 @@ OpsetMap getOpsets() {
     {"TopK", Onnx::AiOnnx::OpSet10::TopK},
     {"Transpose", Onnx::AiOnnx::OpSet10::Transpose},
     {"Unsqueeze", Onnx::AiOnnx::OpSet10::Unsqueeze},
-    {"Upsample", Onnx::AiOnnx::OpSet10::Upsample},
     {"Where", Onnx::AiOnnx::OpSet10::Where},
     {"Xor", Onnx::AiOnnx::OpSet10::Xor}};
 

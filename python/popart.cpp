@@ -520,6 +520,9 @@ PYBIND11_MODULE(popart_core, m) {
   m.def("getSupportedOperations",
         &OpManager::getSupportedOperations,
         py::arg("includeInternal"));
+  m.def("getUnsupportedOperations",
+        &OpManager::getUnsupportedOperations,
+        py::arg("opsetVersion"));
   {
     py::enum_<DataType> en(m, "DataType");
     en.value("UINT8", DataType::UINT8);

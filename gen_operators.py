@@ -345,7 +345,7 @@ class Attribute:
 
 
 class Operation:
-    def __init__(self, name, version, support):
+    def __init__(self, name, version, support, onnx_schema=None):
         self.opset = None
         self.name = name
         self.version = version
@@ -359,6 +359,8 @@ class Operation:
         self.outputs = 0
         self.min_ouput = 1
         self.max_ouput = 1
+
+        self.onnx_schema = onnx_schema
 
     def __lt__(self, other):
         """ Sort based on name """
@@ -414,7 +416,7 @@ def parseDefinitions():
 
             schema.domains[domain] = Domain(domain)
 
-        op = Operation(s.name, s.since_version, s.support_level)
+        op = Operation(s.name, s.since_version, s.support_level, s)
 
         for i in s.inputs:
             op.inputs = op.inputs + 1
@@ -1050,9 +1052,12 @@ def getOpsInOpset(domain, opsetVersion):
     for op in domain.operations:
         if op.version <= opsetVersion:
             if op.name not in result:
-                result[op.name] = op.version
-            elif result[op.name] < op.version:
-                result[op.name] = op.version
+                result[op.name] = op
+            elif result[op.name].version < op.version:
+                result[op.name] = op
+
+    result = {k: v for k, v in result.items() if not v.onnx_schema.deprecated}
+    result = {k: v.version for k, v in result.items()}
 
     return sorted([(name, version) for name, version in result.items()],
                   key=lambda x: x[0])
@@ -1086,7 +1091,6 @@ OpsetMap getOpsets() {
             if domain_name != 'ai.onnx':
                 continue
 
-            ops = sorted(domain.operations, key=lambda x: x.name)
             domain_name = domain_name.replace('.', '_')
 
             for opset_version, opset in domain.opsets.items():

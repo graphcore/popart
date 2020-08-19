@@ -145,6 +145,30 @@ OpManager::getSupportedOperations(bool includePrivate) {
   return list;
 }
 
+const std::vector<OperatorIdentifier>
+OpManager::getUnsupportedOperations(int opsetVersion) {
+  std::vector<OperatorIdentifier> result;
+
+  for (auto &op : getOpset(opsetVersion)) {
+    bool foundOp = [&]() {
+      auto foundType = getInstance().opMap.find({Domain::ai_onnx, op.type});
+      if (foundType == getInstance().opMap.end()) {
+        return false;
+      }
+
+      auto &versions    = foundType->second;
+      auto foundVersion = versions.find(op.version);
+      return foundVersion != versions.end();
+    }();
+
+    if (!foundOp) {
+      result.push_back(op);
+    }
+  }
+
+  return result;
+}
+
 const OpDefinitions
 OpManager::getSupportedOperationsDefinition(bool includePrivate) {
   OpDefinitions list;

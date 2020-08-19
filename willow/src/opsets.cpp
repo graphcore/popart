@@ -41,4 +41,23 @@ getOpid(const OpDomain &argDomain, OpsetVersion version, const OpType &opType) {
   }
 }
 
+std::vector<OperatorIdentifier> getOpset(int opsetVersion) {
+  static OpsetMap opsets = getOpsets();
+
+  auto found = opsets.find({Domain::ai_onnx, opsetVersion});
+  if (found != opsets.end()) {
+    std::vector<OperatorIdentifier> opList;
+    for (auto &opType_opId : found->second) {
+      auto opType = opType_opId.first;
+      auto opId   = opType_opId.second;
+
+      opList.push_back(opId);
+    }
+
+    return opList;
+  } else {
+    throw error("Could not find opset {}", opsetVersion);
+  }
+}
+
 } // namespace popart
