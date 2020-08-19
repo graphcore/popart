@@ -954,6 +954,69 @@ def test_asin_grad(op_tester):
     # op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
+def test_acos(op_tester):
+    # create test data
+    d1 = ((np.random.rand(4) - 0.5) * np.pi).astype(np.float32)
+
+    def init_builder(builder): 
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.acos([i1])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        out = torch.acos(a)
+        return [out]
+
+    op_tester.setPatterns(['AcosOpPattern'], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'infer')
+
+def test_acos_inplace(op_tester):
+    # create test data
+    d1 = ((np.random.rand(4) - 0.5) * np.pi).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.acos([i1])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        out = torch.acos(a)
+        return [out]
+
+    op_tester.setPatterns(['InPlace','AcosOpPattern'],
+    enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'infer')
+
+def test_acos_grad(op_tester):
+    # create the test data
+    d1 = ((np.random.rand(4) - 0.5) * np.pi).astype(np.float32)
+    print(d1)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.acos([i1])
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + o,
+        ]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        out = torch.acos(a)
+        d__o = ref_data.getOutputTensorGrad(0)
+        out.backward(torch.tensor(d__o))
+        return [out, a.grad, None]
+
+    op_tester.setPatterns(['AcosOpPattern','SubtractArg1GradOp'],
+    enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'train')
+
 
 def test_atan(op_tester):
     # create test data

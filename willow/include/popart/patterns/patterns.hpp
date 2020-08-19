@@ -240,6 +240,7 @@ public:
   bool isMatMulOpEnabled();
   bool isMatMulLhsGradOpEnabled();
   bool isMatMulRhsGradOpEnabled();
+  bool isAcosOpPatternEnabled();
 
   // The following methods are fluent allow you to
   // Pattens().enableInPlace0(false).
@@ -281,6 +282,7 @@ public:
   Patterns &enableMatMulOp(bool v);
   Patterns &enableMatMulLhsGradOp(bool v);
   Patterns &enableMatMulRhsGradOp(bool v);
+  Patterns &enableAcosOpPattern(bool v);
   Patterns &enableRuntimeAsserts(bool b) {
     runtimeAssertsOn = b;
     return *this;

@@ -32,6 +32,9 @@ add_popart_cpp_unit_test(replicate_and_shard_ir_test_0
 add_popart_cpp_unit_test(merge_duplicate_ops_test 
                           merge_duplicate_ops_test.cpp)
 
+add_popart_cpp_unit_test(acos_op_pattern_test 
+                          acos_op_pattern_test.cpp)
+
 add_popart_py_unit_test(test_excludes)
 
 add_popart_py_unit_test(test_enable_patterns)

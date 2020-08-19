@@ -49,7 +49,8 @@ enum class PreAliasPatternType {
   LSTMOp,
   OpToReshape,
   InitAccumulate,
-  UpsampleToResize
+  UpsampleToResize,
+  AcosOpPattern
 };
 
 // Definition: A tensor is "touched" by a Pattern if
