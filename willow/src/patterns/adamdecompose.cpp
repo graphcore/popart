@@ -170,6 +170,8 @@ bool AdamDecompose::apply(Op *op) const {
                                         gradIntoAcclId);
 
     reduceOp->setup();
+
+    graph.topoCons->transfer(combo, reduceOp);
   }
 
   // Gradient accumulation
@@ -203,6 +205,7 @@ bool AdamDecompose::apply(Op *op) const {
                                        updatedAccumId);
 
     accumOp->setup();
+    graph.topoCons->transfer(combo, accumOp);
     storeTensor(accumId);
 
     if (combo->reductionType == OptimizerReductionType::AccumReduce) {
@@ -501,7 +504,12 @@ bool AdamDecompose::apply(Op *op) const {
                                   combo->inId(AdamComboOp::getLrInIndex()));
   }
 
-  graph.topoCons->transfer(combo, adamVarUpdOp);
+  if (combo->withGradAccum) {
+    adamVarUpdOp->settings.executionContext =
+        ExecutionContext::AccumulateOuterFragment;
+  } else {
+    graph.topoCons->transfer(combo, adamVarUpdOp);
+  }
 
   // deleting combo op now, so that its output can be re-connected
   combo->disconnectAllInputs();
@@ -511,10 +519,6 @@ bool AdamDecompose::apply(Op *op) const {
   adamVarUpdOp->connectOutTensor(AdamVarUpdateOp::getUpdatedVarOutIndex(),
                                  updatedWeightId);
   adamVarUpdOp->setup();
-  if (combo->withGradAccum) {
-    adamVarUpdOp->settings.executionContext =
-        ExecutionContext::AccumulateOuterFragment;
-  }
 
   return true;
 }
