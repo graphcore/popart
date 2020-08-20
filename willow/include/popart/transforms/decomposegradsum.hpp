@@ -7,20 +7,6 @@
 
 namespace popart {
 
-// A class to encapsulate partial gradient tensors
-// (the inputs to a gradient sum operation), in
-// particular to aid with deciding the topology of
-// the addition tree to which a set of GradPartials
-// are the inputs
-class GradPartial {
-public:
-  GradPartial(Tensor *, std::vector<Op *>);
-  Tensor *t;
-  std::vector<Op *> pathFromLoss;
-  size_t pathLengthFromLoss() const;
-  bool operator<(const GradPartial &) const;
-};
-
 class DecomposeGradSum : public Transform {
 public:
   static std::size_t id();
