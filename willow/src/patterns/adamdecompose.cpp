@@ -11,8 +11,10 @@
 #include <popart/op/adamcombo.hpp>
 #include <popart/op/adamupdater.hpp>
 #include <popart/op/adamvarupdate.hpp>
+#include <popart/op/cast.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/concat.hpp>
+#include <popart/op/div.hpp>
 #include <popart/op/flatten.hpp>
 #include <popart/op/lamb.hpp>
 #include <popart/op/slice.hpp>
@@ -241,6 +243,71 @@ bool AdamDecompose::apply(Op *op) const {
     }
   }
 
+  auto gradType = combo->accumType;
+  // Cast if accumulator is fp16, and optimizer state is fp32.
+  if (combo->accumType == DataType::FLOAT16 &&
+      combo->accl1Type == DataType::FLOAT &&
+      combo->accl2Type == DataType::FLOAT) {
+    gradType        = DataType::FLOAT;
+    auto gradCastUp = std::make_unique<CastOp>(
+        Onnx::Operators::Cast_9,
+        gradType,
+        Op::Settings(graph, combo->name() + "_gradCast"));
+    auto gradCastOp = gradCastUp.get();
+    transferBaseProperties(combo, gradCastOp);
+    graph.moveIntoGraph(std::move(gradCastUp));
+
+    gradCastOp->connectInTensor(CastOp::getInIndex(), gradIntoAcclId);
+
+    // The updated gradIntoAcclId
+    gradIntoAcclId = ir.createIntermediateTensorId(gradIntoAcclId);
+    gradCastOp->createAndConnectOutTensor(CastOp::getOutIndex(),
+                                          gradIntoAcclId);
+
+    gradCastOp->setup();
+    if (combo->withGradAccum) {
+      gradCastOp->settings.executionContext =
+          ExecutionContext::AccumulateOuterFragment;
+      gradCastOp->settings.schedulePriority = 0.0;
+    }
+  }
+
+  // gradient unscaling.
+  auto gradUnscaleUp = std::make_unique<DivOp>(
+      Onnx::Operators::Div_7,
+      Op::Settings(graph, combo->name() + "_gradUnscale"));
+  auto gradUnscaleOp = gradUnscaleUp.get();
+  transferBaseProperties(combo, gradUnscaleOp);
+  graph.moveIntoGraph(std::move(gradUnscaleUp));
+
+  gradUnscaleOp->connectInTensor(DivOp::getArg0InIndex(), gradIntoAcclId);
+
+  if (!combo->initGs.isConst()) {
+    gradUnscaleOp->connectInTensor(DivOp::getArg1InIndex(),
+                                   combo->inId(AdamComboOp::getGsInIndex()));
+  } else {
+    auto gradScaleConst =
+        ir.createIntermediateTensorId(combo->name() + "_gradScale");
+    popart::TensorInfo lsInfo(gradType, {1});
+    std::vector<float> d(1, combo->initGs.val());
+    logging::pattern::info("Adam constant gradient scaling (ls * af) {}",
+                           combo->initGs.val());
+    graph.getTensors().addConstInit(gradScaleConst, lsInfo, d.data());
+    gradUnscaleOp->connectInTensor(DivOp::getArg1InIndex(), gradScaleConst);
+  }
+
+  // The updated gradIntoAcclId
+  gradIntoAcclId = ir.createIntermediateTensorId(gradIntoAcclId);
+  gradUnscaleOp->createAndConnectOutTensor(DivOp::getOutIndex(),
+                                           gradIntoAcclId);
+
+  gradUnscaleOp->setup();
+  if (combo->withGradAccum) {
+    gradUnscaleOp->settings.executionContext =
+        ExecutionContext::AccumulateOuterFragment;
+    gradUnscaleOp->settings.schedulePriority = 0.0;
+  }
+
   // 1st momentum
   auto accl1OpUp = std::make_unique<AccumulateOp>(
       accl1Id,
@@ -365,7 +432,6 @@ bool AdamDecompose::apply(Op *op) const {
       combo->initB1,
       combo->initB2,
       combo->initEps,
-      combo->initLs,
       Op::Settings(graph, combo->name() + "_adamupdater"));
   auto adamUpdOp = adamUpdOpUp.get();
   transferBaseProperties(combo, adamUpdOp);
@@ -415,10 +481,6 @@ bool AdamDecompose::apply(Op *op) const {
   if (!combo->initEps.isConst()) {
     adamUpdOp->connectInTensor(AdamUpdaterOp::getEpsInIndex(),
                                combo->inId(AdamComboOp::getEpsInIndex()));
-  }
-  if (!combo->initLs.isConst()) {
-    adamUpdOp->connectInTensor(AdamUpdaterOp::getLsInIndex(),
-                               combo->inId(AdamComboOp::getLsInIndex()));
   }
 
   // Updater term

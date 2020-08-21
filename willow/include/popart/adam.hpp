@@ -47,21 +47,28 @@ enum class AdamMode { Adam = 0, AdamNoBias, Lamb, LambNoBias };
 // r1 = (Lamb) L2 norm of the weight (w)
 // r2 = (Lamb) L2 norm of the updater term (x)
 // rf = replication factor
+// af = gradient accumulation factor
+//
+// If accumulationReductionType is set to ReductionType::Sum 'af' is set to 1
 //
 // accumulator (only used if gradient accumulation is enabled):
 // s = s + g                             (otherwise: s = g)
+//
+// remove loss scaling factor:
+// s = cast(s, FP16/FP32)
+// s = s / (ls * af)
 //
 // first order momentum (FP16/FP32):
 // m = b1 * m + (1 - b1) * s
 //
 // bias corrected:
-// mc = m / ((1 - b1 ** t) * ls)         (without correction: mc = m / ls)
+// mc = m / (1 - b1 ** t)  (without correction: mc = m)
 //
 // second order momentum (FP16/FP32):
 // v = b2 * v + (1 - b2) * s
 //
 // bias corrected:
-// vc = v / ((1 - b2 ** t) * ls ** 2)    (without correction: vc = v / ls ** 2)
+// vc = v / (1 - b2 ** t)  (without correction: vc = v)
 //
 // updater term (FP16/FP32):
 // x = mc / (sqrt(vc) + eps) + wd * w
@@ -313,9 +320,7 @@ private:
   AdamEpsHelper epshelper;
   AdamLossScalingHelper lshelper;
   AdamMaxWeightNormHelper mwnhelper;
-
-  OptimizerValue
-  getLossScalingOrDefault(const std::map<std::string, OptimizerValue> &) const;
+  AdamGradientScalingHelper gshelper;
 
   // int argument only to disambiguate from the other SGD constructor
   Adam(const std::map<std::string, OptimizerValue> &,
