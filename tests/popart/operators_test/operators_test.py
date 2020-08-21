@@ -1017,6 +1017,70 @@ def test_acos_grad(op_tester):
     enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
+def test_acosh(op_tester):
+    # create test data
+    d1 = np.array([1.0, 1.2, 2.0, 3.0, 10.0, 100.0, 2001.0], dtype=np.float32)
+
+    def init_builder(builder): 
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.acosh([i1])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        out = np.arccosh(d1)
+        return [out]    
+
+    op_tester.setPatterns(['AcoshOpPattern'], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'infer')
+
+def test_acosh_inplace(op_tester):
+    # create test data
+    d1 = np.array([1.0, 1.2, 2.0, 3.0, 10.0, 100.0, 2001.0], dtype=np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.acosh([i1])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        out = np.arccosh(d1)
+        return [out]
+
+    op_tester.setPatterns(['InPlace','AcoshOpPattern'],
+    enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'infer')
+
+def test_acosh_grad(op_tester):
+    # create test data
+    # This test fails for x "very" close to 1, e.g.  1.001.
+    # Acosh is defined for x > 1.
+    d1 = np.array([1.005, 1.2, 2.0, 3.0, 10.0, 10.123456, 100.0, 2001.0],
+     dtype=np.float32)
+
+    def derivative_acosh(x):
+        return 1/(np.sqrt(x - 1) * np.sqrt(x + 1))
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.acosh([i1])
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + o,
+        ]
+
+    def reference(ref_data):
+        out = np.arccosh(d1)
+        d__o = derivative_acosh(d1)
+        return [out, d__o, None]        
+
+    op_tester.setPatterns(['AcoshOpPattern','SubtractArg1GradOp',
+    'LogGradOp','SqrtGradOp','PowArg0GradOp'],
+    enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'train')
 
 def test_atan(op_tester):
     # create test data

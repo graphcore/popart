@@ -7,6 +7,7 @@
 #include <popart/op/sign.hpp>
 #include <popart/op/sin.hpp>
 
+#include <popart/patterns/acoshoppattern.hpp>
 #include <popart/patterns/acosoppattern.hpp>
 #include <popart/patterns/contiguateipucopyindices.hpp>
 #include <popart/patterns/convbias.hpp>
@@ -319,6 +320,10 @@ bool Patterns::isAcosOpPatternEnabled() {
   return isPatternEnabled<AcosOpPattern>();
 }
 
+bool Patterns::isAcoshOpPatternEnabled() {
+  return isPatternEnabled<AcoshOpPattern>();
+}
+
 Patterns &Patterns::enableInitAccumulate(bool v) {
   return enablePattern<InitAccumulatePattern>(v);
 }
@@ -439,6 +444,10 @@ Patterns &Patterns::enableAcosOpPattern(bool v) {
   return enablePattern<AcosOpPattern>(v);
 }
 
+Patterns &Patterns::enableAcoshOpPattern(bool v) {
+  return enablePattern<AcoshOpPattern>(v);
+}
+
 Patterns &Patterns::enablePattern(const std::type_index &t, bool v) {
   logging::pattern::warn(
       "Pattern {} {}", PreAliasPatternManager::getPatternName(t), v);
@@ -499,6 +508,7 @@ std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
   }
 
   static std::map<std::type_index, float> patternPriority{
+      {std::type_index(typeid(AcosOpPattern)), 40},
       {std::type_index(typeid(AcosOpPattern)), 39},
       {std::type_index(typeid(UpsampleToResizePattern)), 38},
       {std::type_index(typeid(InitAccumulatePattern)), 37},

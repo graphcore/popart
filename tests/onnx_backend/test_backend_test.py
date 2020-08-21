@@ -145,7 +145,6 @@ class IpuBackend(onnx.backend.base.Backend):
 backend_test = onnx.backend.test.BackendTest(IpuBackend, __name__)
 
 # Operations we do not support
-backend_test.exclude('test_acos')
 backend_test.exclude('test_asin')
 backend_test.exclude('test_atan')
 backend_test.exclude('test_compress')
