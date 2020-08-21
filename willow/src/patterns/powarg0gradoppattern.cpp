@@ -35,8 +35,9 @@ bool PowArg0GradOpPattern::apply(Op *op) const {
   // Create a 1-dim constant tensor of value 1.0f with same type as fwd_in1
   TensorInfo resultInfo(fwd_in1->info.dataType(), {1});
   std::vector<float> resultData(1, 1.0f);
+  auto onesId = op->getIr().createIntermediateTensorId("ones");
   op->getGraph().getTensors().addConstInit(
-      "ones", resultInfo, reinterpret_cast<void *>(resultData.data()));
+      onesId, resultInfo, reinterpret_cast<void *>(resultData.data()));
 
   // create the new ops
   auto sub    = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Sub, op);
@@ -55,7 +56,7 @@ bool PowArg0GradOpPattern::apply(Op *op) const {
 
   // Connect up the new ops
   sub->connectInTensor(0, fwd_in1->id);
-  sub->connectInTensor(1, "ones");
+  sub->connectInTensor(1, onesId);
   sub->createAndConnectOutTensor(
       0, grad_in->getIr().createIntermediateTensorId(grad_in->id));
   sub->outInfo(0) = op->prettyNpOut(sub->inInfo(0), sub->inInfo(1));

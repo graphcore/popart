@@ -25,8 +25,9 @@ bool AcosOpPattern::apply(Op *op) const {
 
   TensorInfo piover2Info(input->info.dataType(), {1});
   std::vector<float> piover2Data(1, M_PI_2);
+  auto piover2Id = op->getIr().createIntermediateTensorId("piover2");
   op->getGraph().getTensors().addConstInit(
-      "piover2", piover2Info, reinterpret_cast<void *>(piover2Data.data()));
+      piover2Id, piover2Info, reinterpret_cast<void *>(piover2Data.data()));
 
   // create the new ops
   auto asin = makeReplacementOpInIr(Onnx::Operators::Asin_7, op);
@@ -43,7 +44,7 @@ bool AcosOpPattern::apply(Op *op) const {
       0, input->getIr().createIntermediateTensorId(input->id));
   asin->setup();
 
-  sub->connectInTensor(0, "piover2");
+  sub->connectInTensor(0, piover2Id);
   sub->connectInTensor(1, asin->outTensor(0)->id);
   sub->connectOutTensor(0, output->id);
   sub->setup();
