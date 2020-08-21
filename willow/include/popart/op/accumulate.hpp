@@ -27,7 +27,14 @@ public:
   std::map<InIndex, TensorId> optimizerInputs() const final;
   void appendOutlineAttributes(OpSerialiserBase &) const final;
   static InIndex getFactorInIndex() { return 2; }
-  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+  float getSubgraphValue() const final {
+    if (type == AccumulationType::MovingAverage ||
+        type == AccumulationType::MovingAverageSquare) {
+      return getHighSubgraphValue();
+    } else {
+      return getLowSubgraphValue();
+    }
+  }
 
   const AccumulationType &getAccumulationType() const { return type; }
   const OptimizerValue &getFactor() const { return factor; }
