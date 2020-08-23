@@ -47,46 +47,6 @@ view::RegMap defaultRegMapImpl(const Op &op,
 
 namespace popart {
 
-TensorLocation::TensorLocation()
-    : storage(TensorStorage::Undefined), loadOnIOTiles(false),
-      storeOnIOTiles(false), replicatedTensorSharding(false) {}
-
-TensorLocation::TensorLocation(TensorStorage storage_)
-    : storage(storage_), loadOnIOTiles(false), storeOnIOTiles(false),
-      replicatedTensorSharding(false) {}
-
-TensorLocation::TensorLocation(std::vector<int64_t> serialized)
-    : storage(static_cast<TensorStorage>(serialized[0])),
-      loadOnIOTiles(serialized[1]), storeOnIOTiles(serialized[2]),
-      replicatedTensorSharding(serialized[3]) {}
-
-TensorLocation::TensorLocation(TensorStorage storage_,
-                               bool loadOnIOTiles_,
-                               bool storeOnIOTiles_,
-                               bool replicatedTensorSharding_)
-    : storage(storage_), loadOnIOTiles(loadOnIOTiles_),
-      storeOnIOTiles(storeOnIOTiles_),
-      replicatedTensorSharding(replicatedTensorSharding_) {}
-
-bool TensorLocation::operator==(const TensorLocation &rhs) {
-  return serialize() == rhs.serialize();
-}
-
-bool TensorLocation::operator!=(const TensorLocation &rhs) {
-  return serialize() != rhs.serialize();
-}
-
-std::vector<int64_t> TensorLocation::serialize() const {
-  return {static_cast<int64_t>(storage),
-          static_cast<int64_t>(loadOnIOTiles),
-          static_cast<int64_t>(storeOnIOTiles),
-          static_cast<int64_t>(replicatedTensorSharding)};
-}
-
-bool TensorLocation::isRemote() const {
-  return (replicatedTensorSharding || (storage == TensorStorage::OffChip));
-}
-
 GradInOutMapper::GradInOutMapper(int iG, int iNG, GradOpInType t)
     : iGrad(iG), iNonGrad(iNG), type(t) {}
 
@@ -392,7 +352,7 @@ void Op::appendOutlineAttributes(OpSerialiserBase &os) const {
       settings.recomputeType == RecomputeType::Recompute ? "YES" : "NO";
   os.appendAttribute("recompute", recomputeString);
   os.appendAttribute(sVirtualGraphAttribute, getOptionalVGraphId());
-  os.appendAttribute("useIoTiles", settings.useIoTiles);
+  os.appendAttribute("tileSet", static_cast<int64_t>(settings.tileSet));
   for (auto attribute : settings.extraOutlineAttributes) {
     os.appendAttribute(attribute.first,
                        attribute.first + ":" + attribute.second);
@@ -502,44 +462,6 @@ std::ostream &operator<<(std::ostream &ost, const ExecutionContext &rt) {
   return ost;
 }
 
-std::string tensorLocationToStr(const TensorLocation tensorLocation) {
-  std::ostringstream ss;
-
-  ss << "(";
-
-  switch (tensorLocation.storage) {
-  case TensorStorage::Undefined: {
-    ss << "Undefined";
-    break;
-  }
-  case TensorStorage::OffChip: {
-    ss << "OffChip";
-    break;
-  }
-  case TensorStorage::OnChip: {
-    ss << "OnChip";
-    break;
-  }
-  default: {
-    throw error("Unexpected value for tensorLocation in "
-                "tensorLocationToStr ({})",
-                static_cast<int>(tensorLocation.storage));
-  }
-  }
-
-  ss << ", loadOnIOTiles=" << tensorLocation.loadOnIOTiles;
-  ss << ", storeOnIOTiles=" << tensorLocation.storeOnIOTiles;
-  ss << ", RTS=" << tensorLocation.replicatedTensorSharding;
-  ss << ")";
-
-  return ss.str();
-}
-
-bool isValidTensorLocation(const TensorLocation tensorLocation) {
-  return (tensorLocation.storage == TensorStorage::OffChip) ||
-         (tensorLocation.storage == TensorStorage::OnChip);
-}
-
 void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {
 
   if (attributes.hasAttribute(sExecutionPhaseAttribute)) {
@@ -587,9 +509,9 @@ void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {
   }
 
   if (attributes.hasAttribute(sIOTilesAttribute)) {
-    int64_t useIoTilesTmp;
-    attributes.set(useIoTilesTmp, sIOTilesAttribute);
-    useIoTiles = static_cast<IsIoTile>(useIoTilesTmp);
+    int64_t tileSetTmp;
+    attributes.set(tileSetTmp, sIOTilesAttribute);
+    tileSet = static_cast<TileSet>(tileSetTmp);
   }
 
   bool hasNamesAtt = attributes.hasAttribute(sInplaceOpNames);
@@ -665,11 +587,11 @@ VGraphId Op::getVirtualGraphId() const {
 }
 
 VGraphIdAndIoTile Op::getIntrospectionInVirtualGraphId(InIndex) const {
-  return {getVirtualGraphId(), settings.useIoTiles};
+  return {getVirtualGraphId(), settings.tileSet};
 }
 
 VGraphIdAndIoTile Op::getIntrospectionOutVirtualGraphId(OutIndex) const {
-  return {getVirtualGraphId(), settings.useIoTiles};
+  return {getVirtualGraphId(), settings.tileSet};
 }
 
 bool Op::hasVirtualGraphId() const {

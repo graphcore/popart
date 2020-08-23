@@ -118,7 +118,7 @@ CallOp::getIntrospectionInVirtualGraphId(InIndex index) const {
         }
         if (IpuCopyOp *copyConsumer = dynamic_cast<IpuCopyOp *>(consumer)) {
           return {copyConsumer->getSourceIpu(tensor_id),
-                  copyConsumer->settings.useIoTiles};
+                  copyConsumer->settings.tileSet};
         }
       }
     }
@@ -138,9 +138,8 @@ CallOp::getIntrospectionInVirtualGraphId(InIndex index) const {
 
   // Fallback 2: No VGID determined by introspection or tensor
   return Op::hasVirtualGraphId()
-             ? VGraphIdAndIoTile(Op::getVirtualGraphId(),
-                                 getSettings().useIoTiles ? true : false)
-             : VGraphIdAndIoTile(unusedVGraphId, false);
+             ? VGraphIdAndIoTile(Op::getVirtualGraphId(), getSettings().tileSet)
+             : VGraphIdAndIoTile(unusedVGraphId, TileSet::Compute);
 }
 
 VGraphIdAndIoTile
@@ -183,12 +182,10 @@ CallOp::getIntrospectionOutVirtualGraphId(OutIndex index) const {
     }
   }
 
-  IsIoTile useIoTiles = getSettings().useIoTiles;
-
   // Fallback 2: No VGID determined by introspection or tensor
-  return Op::hasVirtualGraphId() ? VGraphIdAndIoTile(Op::getVirtualGraphId(),
-                                                     useIoTiles ? true : false)
-                                 : VGraphIdAndIoTile(unusedVGraphId, false);
+  return Op::hasVirtualGraphId()
+             ? VGraphIdAndIoTile(Op::getVirtualGraphId(), getSettings().tileSet)
+             : VGraphIdAndIoTile(unusedVGraphId, TileSet::Compute);
 }
 
 void CallOp::addAlias(InIndex in,

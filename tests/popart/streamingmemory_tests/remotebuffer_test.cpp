@@ -619,9 +619,10 @@ BOOST_AUTO_TEST_CASE(RemoteBufferWeightReplicaTest_0) {
   opts.enableOutlining        = false;
   opts.replicatedGraphCount   = 4;
   opts.enableReplicatedGraphs = true;
-  opts.weightTensorLocationSettings.location.replicatedTensorSharding = false;
+  opts.weightTensorLocationSettings.location.replicatedTensorSharding =
+      ReplicatedTensorSharding::Off;
   opts.optimizerStateTensorLocationSettings.location.replicatedTensorSharding =
-      false;
+      ReplicatedTensorSharding::Off;
   remoteBufferWeightTestBase(opts, 7, 3, 5);
   remoteBufferWeightTestBase(opts, 113, 103, 89, 1e-0);
   remoteBufferWeightTestBase(opts, 32, 13, 128, 1e-0);
@@ -633,14 +634,15 @@ BOOST_AUTO_TEST_CASE(RemoteBufferWeightReplicaShardedTest_0) {
   opts.enableOutlining        = false;
   opts.replicatedGraphCount   = 4;
   opts.enableReplicatedGraphs = true;
-  opts.weightTensorLocationSettings.location.replicatedTensorSharding = true;
-  opts.weightTensorLocationSettings.minElementsForOffChip             = 0;
-  opts.weightTensorLocationSettings.minElementsForReplicatedTensorSharding = 0;
+  opts.weightTensorLocationSettings.location.replicatedTensorSharding =
+      ReplicatedTensorSharding::On;
+  opts.weightTensorLocationSettings.minElementsForOffChip                  = 0;
+  opts.weightTensorLocationSettings.minElementsForReplicatedTensorSharding = 2;
   opts.optimizerStateTensorLocationSettings.location.replicatedTensorSharding =
-      true;
+      ReplicatedTensorSharding::On;
   opts.optimizerStateTensorLocationSettings.minElementsForOffChip = 0;
   opts.optimizerStateTensorLocationSettings
-      .minElementsForReplicatedTensorSharding = 0;
+      .minElementsForReplicatedTensorSharding = 2;
   opts.numIOTiles                             = 0;
   remoteBufferWeightTestBase(opts, 7, 3, 5);
   remoteBufferWeightTestBase(opts, 113, 103, 89, 1e-0);
@@ -653,14 +655,15 @@ BOOST_AUTO_TEST_CASE(RemoteBufferWeightReplicaShardedTest_1) {
   opts.enableOutlining        = false;
   opts.replicatedGraphCount   = 4;
   opts.enableReplicatedGraphs = true;
-  opts.weightTensorLocationSettings.location.replicatedTensorSharding = true;
-  opts.weightTensorLocationSettings.minElementsForOffChip             = 0;
-  opts.weightTensorLocationSettings.minElementsForReplicatedTensorSharding = 0;
+  opts.weightTensorLocationSettings.location.replicatedTensorSharding =
+      ReplicatedTensorSharding::On;
+  opts.weightTensorLocationSettings.minElementsForOffChip                  = 0;
+  opts.weightTensorLocationSettings.minElementsForReplicatedTensorSharding = 2;
   opts.optimizerStateTensorLocationSettings.location.replicatedTensorSharding =
-      true;
+      ReplicatedTensorSharding::On;
   opts.optimizerStateTensorLocationSettings.minElementsForOffChip = 0;
   opts.optimizerStateTensorLocationSettings
-      .minElementsForReplicatedTensorSharding = 0;
+      .minElementsForReplicatedTensorSharding = 2;
   opts.numIOTiles                             = 128;
   remoteBufferWeightTestBase(opts, 7, 3, 5);
   remoteBufferWeightTestBase(opts, 113, 103, 89, 1e-0);
@@ -674,14 +677,15 @@ BOOST_AUTO_TEST_CASE(RemoteBufferWeightReplicaShardedTest_2) {
   opts.replicatedGraphCount                          = 4;
   opts.enableReplicatedGraphs                        = true;
   opts.weightTensorLocationSettings.location.storage = TensorStorage::OnChip;
-  opts.weightTensorLocationSettings.location.replicatedTensorSharding = true;
-  opts.weightTensorLocationSettings.minElementsForOffChip             = 0;
-  opts.weightTensorLocationSettings.minElementsForReplicatedTensorSharding = 0;
+  opts.weightTensorLocationSettings.location.replicatedTensorSharding =
+      ReplicatedTensorSharding::On;
+  opts.weightTensorLocationSettings.minElementsForOffChip                  = 0;
+  opts.weightTensorLocationSettings.minElementsForReplicatedTensorSharding = 2;
   opts.optimizerStateTensorLocationSettings.location.replicatedTensorSharding =
-      true;
+      ReplicatedTensorSharding::On;
   opts.optimizerStateTensorLocationSettings.minElementsForOffChip = 0;
   opts.optimizerStateTensorLocationSettings
-      .minElementsForReplicatedTensorSharding = 0;
+      .minElementsForReplicatedTensorSharding = 2;
   opts.numIOTiles                             = 128;
   remoteBufferWeightTestBase(opts, 7, 3, 5);
   remoteBufferWeightTestBase(opts, 113, 103, 89, 1e-0);

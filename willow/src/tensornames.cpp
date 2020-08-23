@@ -98,11 +98,19 @@ TensorId stripAllReservedPrefixes(TensorId id) {
 }
 
 std::vector<std::string> reservedOptimizerStatePrefixes() {
-  std::vector<std::string> prefs = {reservedAccumPrefix(),
-                                    reservedAcclPrefix(),
+  std::vector<std::string> prefs = {reservedAcclPrefix(),
                                     reservedAccl1Prefix(),
                                     reservedAccl2Prefix(),
                                     reservedStepPrefix(),
+                                    reservedAcclToReducePrefix(),
+                                    reservedAcclToUpdatePrefix(),
+                                    reservedAcclFinalOutPrefix()};
+  return prefs;
+}
+
+std::vector<std::string> reservedAccumulatorPrefixes() {
+  std::vector<std::string> prefs = {reservedAccumPrefix(),
+                                    reservedAcclPrefix(),
                                     reservedAcclToReducePrefix(),
                                     reservedAcclToUpdatePrefix(),
                                     reservedAcclFinalOutPrefix()};

@@ -34,7 +34,8 @@ void IoTileCopyOpx::grow(poplar::program::Sequence &prog) const {
 InputCreatorType IoTileCopyOpx::getInputCreatorType(InIndex index) const {
   // Currently, unwinding is only supported if the copy direction is
   // IOTile -> ComputeTile
-  return index == IoTileCopyOp::getInIndex() && !op_p->settings.useIoTiles
+  return index == IoTileCopyOp::getInIndex() &&
+                 op_p->settings.tileSet == TileSet::Compute
              ? InputCreatorType::CanUnwind
              : Opx::getInputCreatorType(index);
 }
@@ -47,11 +48,13 @@ poplar::Tensor IoTileCopyOpx::unwindTensorLayout(poplar::Tensor tensor,
 
   // Source of unwinding (tensor originates from src graph)
   auto &srcGraph =
-      dv_p->getVirtualGraph(getVirtualGraphId(), op_p->settings.useIoTiles);
+      dv_p->getVirtualGraph(getVirtualGraphId(), op_p->settings.tileSet);
 
   // Destination of unwinding (tensor unwound into dst graph)
-  auto &dstGraph =
-      dv_p->getVirtualGraph(getVirtualGraphId(), !op_p->settings.useIoTiles);
+  auto &dstGraph = dv_p->getVirtualGraph(
+      getVirtualGraphId(),
+      op_p->settings.tileSet == TileSet::Compute ? TileSet::IO
+                                                 : TileSet::Compute);
 
   auto dstTensor = dstGraph.clone(tensor, "");
 

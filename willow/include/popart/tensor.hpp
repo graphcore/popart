@@ -165,7 +165,8 @@ public:
   bool isOptimizerTensor() const;
   bool isRemoteArgTensor() const;
   bool isRandomSeedTensor() const;
-  bool isAcclTensor() const;
+  bool isOptimizerStateTensor() const;
+  bool isAccumulatorTensor() const;
   bool hasTensorData() const;
   TensorData *tensorData();
   const TensorData *tensorData() const;

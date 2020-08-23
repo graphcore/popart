@@ -161,7 +161,7 @@ public:
   // Return virtual graph mapping to IPU virtualGraphIndex,
   // ioTileGraph selects between compute and IO tile graph.
   poplar::Graph &getVirtualGraph(VGraphId virtualGraphIndex,
-                                 IsIoTile ioTileGraph = false);
+                                 TileSet tileSet = TileSet::Compute);
 
   // Return the name of the task which initializes/creates a poplar::Tensor in a
   // poplar::Graph. This is NOT about creating a poplar::Program.
@@ -431,12 +431,14 @@ public:
   std::map<Op *, int, POpCmp> getMainGraphOpCounts() const;
 
   // A summary string of the Op series, with annotation for recomputation
-  std::string getMainGraphOpString(const std::vector<TaskId> &taskOrder) const;
+  std::string getContextOpString(ExecutionContext context,
+                                 const std::vector<TaskId> &taskOrder) const;
 
   bool prepareHasBeenCalled() const { return prepareHasBeenCalled_; }
 
 private:
-  std::map<TaskId, std::vector<Op *>> mainGraphOpRegistry;
+  std::map<std::pair<ExecutionContext, TaskId>, std::vector<Op *>>
+      contextOpRegistry;
   std::map<TaskId, std::vector<Op *>> requiredRecomputes;
 
   void verifyTaskOrder(const std::vector<TaskId> &taskOrder) const;

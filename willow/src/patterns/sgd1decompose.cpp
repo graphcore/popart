@@ -257,6 +257,7 @@ bool SGD1Decompose::apply(Op *op) const {
     if (ir.getSessionOptions().enableGradientAccumulation) {
       reduceOp->settings.executionContext =
           ExecutionContext::AccumulateOuterFragment;
+      reduceOp->settings.schedulePriority = 0.0;
     }
   }
 
@@ -308,6 +309,7 @@ bool SGD1Decompose::apply(Op *op) const {
   if (ir.getSessionOptions().enableGradientAccumulation) {
     acclUpdateOp->settings.executionContext =
         ExecutionContext::AccumulateOuterFragment;
+    acclUpdateOp->settings.schedulePriority = 0.0;
   }
 
   // VarUpdate
@@ -353,6 +355,7 @@ bool SGD1Decompose::apply(Op *op) const {
   if (ir.getSessionOptions().enableGradientAccumulation) {
     sgd1VarUpdateOp->settings.executionContext =
         ExecutionContext::AccumulateOuterFragment;
+    sgd1VarUpdateOp->settings.schedulePriority = 0.0;
   }
 
   // var update before accl update

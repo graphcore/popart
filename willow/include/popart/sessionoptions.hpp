@@ -8,6 +8,7 @@
 #include <string>
 
 #include <popart/op.hpp>
+#include <popart/tensorlocation.hpp>
 
 namespace popart {
 
@@ -468,21 +469,16 @@ struct SessionOptions {
 
   // Tensor location settings for activation/gradient tensors.
   TensorLocationSettings activationTensorLocationSettings =
-      TensorLocationSettings{
-          TensorLocation(TensorStorage::OffChip, false, false, false),
-          2,
-          8192};
+      TensorLocationSettings{TensorLocation(), 2, 8192};
   // Tensor location for weight tensors.
-  TensorLocationSettings weightTensorLocationSettings = TensorLocationSettings{
-      TensorLocation(TensorStorage::OffChip, true, true, false),
-      2,
-      8192};
+  TensorLocationSettings weightTensorLocationSettings =
+      TensorLocationSettings{TensorLocation(), 2, 8192};
   // Tensor location for optimizer state tensors.
   TensorLocationSettings optimizerStateTensorLocationSettings =
-      TensorLocationSettings{
-          TensorLocation(TensorStorage::OffChip, true, true, false),
-          2,
-          8192};
+      TensorLocationSettings{TensorLocation(), 2, 8192};
+  // Tensor location for gradient accumulator tensors.
+  TensorLocationSettings accumulatorTensorLocationSettings =
+      TensorLocationSettings{TensorLocation(), 2, 8192};
 
   // Overriding tensor location for specific tensors.
   std::map<TensorId, TensorLocation> tensorLocationSettingsOverride;

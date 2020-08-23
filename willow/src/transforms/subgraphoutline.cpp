@@ -318,7 +318,7 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
     }
     IpuCopyOp *copy = dynamic_cast<IpuCopyOp *>(op);
     if (copy && !ipu_copy_vgid) {
-      ipu_copy_vgid = copy->getSourceIpu();
+      ipu_copy_vgid = copy->getMinSourceIpu();
     }
     if (!vgid) {
       vgid = op->getOptionalVGraphId();
@@ -774,7 +774,7 @@ Graph &createSubgraph(const Match &match, Graph &graph) {
       auto *copyOp         = dynamic_cast<IpuCopyOp *>(op);
       auto *cloneCopyOp    = dynamic_cast<IpuCopyOp *>(clone);
       if (copyOp && cloneCopyOp) {
-        auto sourceIpu = copyOp->getSourceIpus().at(tensor->id);
+        auto sourceIpu = copyOp->getSourceIpu(tensor->id);
         cloneCopyOp->connectInTensor(idx, clone_tensor_id, sourceIpu);
       } else {
         clone->connectInTensor(idx, clone_tensor_id);

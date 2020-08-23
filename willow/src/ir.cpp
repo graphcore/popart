@@ -854,9 +854,9 @@ void Ir::prepareImpl(const IrBundle &gb) {
   }
 
   // First streaming memory transformation pass (fwd)
+  applyTransform(StreamingMemory::id(1), getMainGraph());
   if (userOptions.virtualGraphMode == VirtualGraphMode::ExecutionPhases &&
       userOptions.executionPhaseSettings.phases > 1) {
-    applyTransform(StreamingMemory::id(1), getMainGraph());
     verifyVirtualGraphIds(true);
   }
 
@@ -1041,15 +1041,15 @@ void Ir::prepareImpl(const IrBundle &gb) {
   updateVertices();
 
   // Second streaming memory transformation pass (cut)
+  // Streaming memory transformation 2 needs up-to-date aliasing information
+  updateAliases();
+  applyTransform(StreamingMemory::id(2), getMainGraph());
+  // Remove extra RemoteLoad, RemoteStore and Replicated ops that are not used
+  applyTransform(Prune::id(), getMainGraph());
+
   if (userOptions.virtualGraphMode == VirtualGraphMode::ExecutionPhases &&
       userOptions.executionPhaseSettings.phases > 1) {
-    // Streaming memory transformation 2 needs up-to-date aliasing information
-    updateAliases();
-
-    applyTransform(StreamingMemory::id(2), getMainGraph());
     verifyVirtualGraphIds(true);
-    // Remove extra RemoteLoad, RemoteStore and Replicated ops that are not used
-    applyTransform(Prune::id(), getMainGraph());
   }
 
   updateVertices();
@@ -1682,7 +1682,8 @@ bool Ir::streamingIsDisabledForTensor(const TensorId &tensorId) const {
 
   // 2. The tensor is an Gradient Accl tensor, but the user
   //    has turned off streaming for this kind of tensor
-  if (getTensors().get(tensorId)->isAcclTensor() &&
+  if ((getTensors().get(tensorId)->isOptimizerStateTensor() ||
+       getTensors().get(tensorId)->isAccumulatorTensor()) &&
       getSessionOptions().disableGradAccumulationTensorStreams) {
     return true;
   }
@@ -1705,7 +1706,8 @@ bool Ir::storingIsDisabledForTensor(const TensorId &tensorId) const {
 
   // 2. The tensor is an Gradient Accl tensor, but the user
   //    has turned off streaming for this kind of tensor
-  if (getTensors().get(tensorId)->isAcclTensor() &&
+  if ((getTensors().get(tensorId)->isOptimizerStateTensor() ||
+       getTensors().get(tensorId)->isAccumulatorTensor()) &&
       getSessionOptions().disableGradAccumulationTensorStreams) {
     return true;
   }

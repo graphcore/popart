@@ -454,12 +454,14 @@ void Devicex::OutputDatastream::write(void *ptr) {
 std::map<Op *, int, POpCmp> Devicex::getMainGraphOpSeriesNums() const {
   std::map<Op *, int, POpCmp> nums;
   int num = 0;
-  for (auto entry : mainGraphOpRegistry) {
-    for (auto op : entry.second) {
-      auto found = nums.find(op);
-      if (found == nums.end()) {
-        nums.insert({op, num});
-        ++num;
+  for (auto entry : contextOpRegistry) {
+    if (entry.first.first == ExecutionContext::Normal) {
+      for (auto op : entry.second) {
+        auto found = nums.find(op);
+        if (found == nums.end()) {
+          nums.insert({op, num});
+          ++num;
+        }
       }
     }
   }
@@ -473,8 +475,8 @@ void Devicex::verifyTaskOrder(const std::vector<TaskId> &taskOrder) const {
   std::set<Op *> recomputeSeen;
 
   for (auto taskId : taskOrder) {
-    auto id_ops = mainGraphOpRegistry.find(taskId);
-    if (id_ops == mainGraphOpRegistry.end()) {
+    auto id_ops = contextOpRegistry.find({ExecutionContext::Normal, taskId});
+    if (id_ops == contextOpRegistry.end()) {
       continue;
     }
     auto &taskOps = id_ops->second;
@@ -517,14 +519,15 @@ void Devicex::verifyTaskOrder(const std::vector<TaskId> &taskOrder) const {
 }
 
 std::string
-Devicex::getMainGraphOpString(const std::vector<TaskId> &taskOrder) const {
-
+Devicex::getContextOpString(ExecutionContext context,
+                            const std::vector<TaskId> &taskOrder) const {
   std::stringstream ss;
+  ss << "Context: " << context << std::endl;
   auto seriesNums = getMainGraphOpSeriesNums();
   std::set<Op *> seen;
   for (auto taskId : taskOrder) {
-    auto task_ops = mainGraphOpRegistry.find(taskId);
-    if (task_ops == mainGraphOpRegistry.end())
+    auto task_ops = contextOpRegistry.find({context, taskId});
+    if (task_ops == contextOpRegistry.end())
       continue;
     for (auto op : task_ops->second) {
       auto found = seen.count(op);
@@ -544,9 +547,11 @@ Devicex::getMainGraphOpString(const std::vector<TaskId> &taskOrder) const {
       }
       type +=
           op->settings.recomputeType == RecomputeType::Recomputed ? "-R" : "-F";
+      if (context == ExecutionContext::Normal) {
+        ss << type << "  " << seriesNums[op] << "  ";
+      }
       if (logging::shouldLog(logging::Module::devicex, logging::Level::Trace)) {
-        ss << type << "  " << seriesNums[op] << "  " << op->debugName()
-           << "  ExecutionPhase: "
+        ss << op->debugName() << "  ExecutionPhase: "
            << (op->hasExecutionPhase() ? op->getExecutionPhase()
                                        : unusedExecutionPhase)
            << "  Pipeline: "
@@ -557,7 +562,7 @@ Devicex::getMainGraphOpString(const std::vector<TaskId> &taskOrder) const {
                                        : unusedVGraphId)
            << "  priority: " << op->settings.schedulePriority << std::endl;
       } else {
-        ss << type << "  " << seriesNums[op] << "  " << op->str() << std::endl;
+        ss << op->str() << std::endl;
       }
     }
   }
@@ -566,7 +571,7 @@ Devicex::getMainGraphOpString(const std::vector<TaskId> &taskOrder) const {
 
 std::map<Op *, int, POpCmp> Devicex::getMainGraphOpCounts() const {
   std::map<Op *, int, POpCmp> counts;
-  for (auto entry : mainGraphOpRegistry) {
+  for (auto entry : contextOpRegistry) {
     for (auto op : entry.second) {
       auto found = counts.find(op);
       if (found == counts.end()) {
@@ -826,7 +831,7 @@ poplar::Graph &Devicex::graph() { return *pGraph; }
 const poplar::Graph &Devicex::graph() const { return *pGraph; }
 
 poplar::Graph &Devicex::getVirtualGraph(VGraphId virtualGraphIndex,
-                                        IsIoTile ioTileGraph) {
+                                        TileSet tileSet) {
   if (virtualGraphIndex < 0 || virtualGraphIndex >= virtualGraphs.size()) {
     throw error("Invalid virtual graph index {} ({} available)",
                 virtualGraphIndex,
@@ -834,7 +839,7 @@ poplar::Graph &Devicex::getVirtualGraph(VGraphId virtualGraphIndex,
   }
   VirtualGraph &vg = virtualGraphs.at(virtualGraphIndex);
 
-  if (ioTileGraph) {
+  if (tileSet == TileSet::IO) {
     if (!vg.hasIoTilesGraph()) {
       throw error("No IO tile graph for index {}", virtualGraphIndex);
     }
@@ -932,10 +937,10 @@ void Devicex::weightsFromHost() {
   if (ir().useSyntheticData() == false) {
     logging::devicex::debug("Writing weights from host, ");
     pEngine->disableExecutionProfiling();
-    // Weights on the IPU
-    run(PopPrograms::ProgramIndex::WeightsFromHost, "WeightsFromHost");
     // Weights in the remote buffers
     remoteBufferWeightsFromHost();
+    // Weights on the IPU
+    run(PopPrograms::ProgramIndex::WeightsFromHost, "WeightsFromHost");
     logging::devicex::debug("done.");
   }
 }
@@ -1538,7 +1543,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
 
       std::vector<VGraphId> ipus;
       for (auto &op : relatedOps) {
-        VGraphIdAndIoTile vgid{-1, false};
+        VGraphIdAndIoTile vgid{-1, TileSet::Compute};
         if (op.first->hasVirtualGraphId()) {
           if (op.second) {
             // Consumer OP
@@ -1548,8 +1553,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
             vgid       = op.first->getIntrospectionInVirtualGraphId(index);
           } else {
             // Producer OP
-            vgid = {op.first->getVirtualGraphId(),
-                    op.first->settings.useIoTiles};
+            vgid = {op.first->getVirtualGraphId(), op.first->settings.tileSet};
           }
         }
 
@@ -2265,10 +2269,23 @@ void Devicex::growOpx(Opx *opx, poplar::program::Sequence &seq) {
 }
 
 void Devicex::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
-  Opx *opx = getOpx(op->id);
+  Opx *opx                 = getOpx(op->id);
+  ExecutionContext context = op->settings.executionContext;
 
   if (op->copiesOptimizerTensors()) {
     growOpx(opx, seqs[&progs.streamOptimizerFromHostFragment()]);
+  }
+
+  // Special case for running operators before the main loop.
+  else if (context == ExecutionContext::WeightsFromHostFragment) {
+    growOpx(opx, seqs[&progs.streamWeightsFromHostFragment()]);
+    contextOpRegistry[{context, taskId}].push_back(op);
+  }
+
+  // Special case for running operators after the main loop.
+  else if (context == ExecutionContext::WeightsToHostFragment) {
+    growOpx(opx, seqs[&progs.weightsToHostFragment()]);
+    contextOpRegistry[{context, taskId}].push_back(op);
   }
 
   // pre-loss : create vertices for all recompute types
@@ -2296,7 +2313,7 @@ void Devicex::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
     else {
       throw internal_error("Unrecognised recompute type");
     }
-    mainGraphOpRegistry[taskId].push_back(op);
+    contextOpRegistry[{context, taskId}].push_back(op);
   }
 
   // post-loss
@@ -2315,20 +2332,10 @@ void Devicex::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
     // outside the "main" loop of the fowards and backwards passes.
     // special case Op 1:
     if (ir().getSessionOptions().enableGradientAccumulation &&
-        op->settings.executionContext ==
-            ExecutionContext::AccumulateOuterFragment) {
+        context == ExecutionContext::AccumulateOuterFragment) {
       outerLoopFragEmpty = false;
       growOpx(opx, seqs[&progs.accumulateOuterFragment()]);
-    }
-    // Special case for running operators before the main loop.
-    else if (op->settings.executionContext ==
-             ExecutionContext::WeightsFromHostFragment) {
-      growOpx(opx, seqs[&progs.streamWeightsFromHostFragment()]);
-    }
-    // Special case for running operators before the main loop.
-    else if (op->settings.executionContext ==
-             ExecutionContext::WeightsToHostFragment) {
-      growOpx(opx, seqs[&progs.weightsToHostFragment()]);
+      contextOpRegistry[{context, taskId}].push_back(op);
     } else {
       auto found = requiredRecomputes.find(taskId);
       if (found != requiredRecomputes.end()) {
@@ -2339,7 +2346,7 @@ void Devicex::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
 
           seqs[&progs.backwardFragment()].add(
               progs.recomputeFragment(opToRerun->id));
-          mainGraphOpRegistry[taskId].push_back(opToRerun);
+          contextOpRegistry[{context, taskId}].push_back(opToRerun);
           ExecutionPhase phase =
               op->hasExecutionPhase() &&
                       this->ir()
@@ -2355,8 +2362,7 @@ void Devicex::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
                               op->debugName());
 
       growOpx(opx, seqs[&progs.backwardFragment()]);
-
-      mainGraphOpRegistry[taskId].push_back(op);
+      contextOpRegistry[{context, taskId}].push_back(op);
     }
   }
 
@@ -2367,24 +2373,34 @@ void Devicex::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
 }
 
 void Devicex::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
-  Opx *opx = getOpx(op->id);
+  Opx *opx                 = getOpx(op->id);
+  ExecutionContext context = op->settings.executionContext;
 
   if (op->copiesOptimizerTensors()) {
     growOpx(opx, seqs[&progs.streamOptimizerFromHostFragment()]);
-  } else if (ir().getSessionOptions().enableGradientAccumulation &&
-             op->settings.executionContext ==
-                 ExecutionContext::AccumulateOuterFragment) {
+  }
+
+  else if (ir().getSessionOptions().enableGradientAccumulation &&
+           context == ExecutionContext::AccumulateOuterFragment) {
     outerLoopFragEmpty = false;
     growOpx(opx, seqs[&progs.accumulateOuterFragment()]);
-  } else if (op->settings.executionContext ==
-             ExecutionContext::WeightsFromHostFragment) {
-    // Special case for running operators before the main loop.
+    contextOpRegistry[{context, taskId}].push_back(op);
+  }
+
+  // Special case for running operators before the main loop.
+  else if (context == ExecutionContext::WeightsFromHostFragment) {
     growOpx(opx, seqs[&progs.streamWeightsFromHostFragment()]);
-  } else if (op->settings.executionContext ==
-             ExecutionContext::WeightsToHostFragment) {
+    contextOpRegistry[{context, taskId}].push_back(op);
+  }
+
+  // Special case for running operators before the main loop.
+  else if (context == ExecutionContext::WeightsToHostFragment) {
     // Special case for running operators before the main loop.
     growOpx(opx, seqs[&progs.weightsToHostFragment()]);
-  } else {
+    contextOpRegistry[{context, taskId}].push_back(op);
+  }
+
+  else {
     auto found = requiredRecomputes.find(taskId);
     if (found != requiredRecomputes.end()) {
       auto &rerunSchedule = found->second;
@@ -2402,7 +2418,7 @@ void Devicex::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
                                             "recompute of " + opToRerun->str())]
             .add(progs.recomputeFragment(opToRerun->id));
 
-        mainGraphOpRegistry[taskId].push_back(opToRerun);
+        contextOpRegistry[{context, taskId}].push_back(opToRerun);
       }
     }
 
@@ -2445,7 +2461,7 @@ void Devicex::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
       seqs[&progs.pipelineForwardFragment(op->getPipelineStage(), op->str())]
           .add(progs.recomputeFragment(op->id));
     }
-    mainGraphOpRegistry[taskId].push_back(op);
+    contextOpRegistry[{context, taskId}].push_back(op);
   }
 }
 
@@ -3242,7 +3258,15 @@ void Devicex::prepareGraph() {
 
   verifyTaskOrder(taskOrder);
 
-  logging::devicex::debug(getMainGraphOpString(taskOrder));
+  // Log the order of tasks and associated ops for each execution context
+  logging::devicex::debug(
+      getContextOpString(ExecutionContext::WeightsFromHostFragment, taskOrder));
+  logging::devicex::debug(
+      getContextOpString(ExecutionContext::Normal, taskOrder));
+  logging::devicex::debug(
+      getContextOpString(ExecutionContext::AccumulateOuterFragment, taskOrder));
+  logging::devicex::debug(
+      getContextOpString(ExecutionContext::WeightsToHostFragment, taskOrder));
 
   if (ir().getSessionOptions().exportPoplarVertexGraph) {
     std::ofstream strm;

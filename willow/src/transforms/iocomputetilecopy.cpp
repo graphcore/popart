@@ -19,8 +19,9 @@ std::size_t IoComputeTileCopy::id() {
 }
 
 TensorId IoComputeTileCopy::generateCopiedTensorId(Tensor *tensor,
-                                                   IsIoTile toIoTiles) const {
-  TensorId copiedTensor = tensor->id + (toIoTiles ? "_tioc" : "_fioc");
+                                                   TileSet toIoTiles) const {
+  TensorId copiedTensor =
+      tensor->id + (toIoTiles == TileSet::IO ? "_tioc" : "_fioc");
   return copiedTensor;
 }
 
@@ -39,7 +40,7 @@ void IoComputeTileCopy::connectIoTileCopy(Graph &,
   }
 
   TensorId copiedTensor =
-      generateCopiedTensorId(tensor, toOp->settings.useIoTiles);
+      generateCopiedTensorId(tensor, toOp->settings.tileSet);
 
   // Add the copied input tensor to the to op for each index
   for (auto i : indices) {
@@ -79,7 +80,7 @@ void IoComputeTileCopy::insertIoTileCopy(Graph &graph,
   ioCopy->connectInTensor(IoTileCopyOp::getInIndex(), tensor->id);
 
   TensorId copiedTensor =
-      generateCopiedTensorId(tensor, toOp->settings.useIoTiles);
+      generateCopiedTensorId(tensor, toOp->settings.tileSet);
 
   ioCopy->createAndConnectOutTensor(0, copiedTensor);
   ioCopy->setup();
@@ -92,17 +93,17 @@ void IoComputeTileCopy::insertIoTileCopy(Graph &graph,
   }
 
   // Copy from/to IO tiles should happen as close to the IO tile ops as possible
-  if (fromOp->settings.useIoTiles) {
+  if (fromOp->settings.tileSet == TileSet::IO) {
     // Copy direction: From IO tiles
     graph.topoCons->insert(fromOp, ioCopy, true);
-    ioCopy->settings.useIoTiles       = false;
+    ioCopy->settings.tileSet          = TileSet::Compute;
     ioCopy->settings.schedulePriority = fromOp->settings.schedulePriority;
   }
 
-  if (toOp->settings.useIoTiles) {
+  if (toOp->settings.tileSet == TileSet::IO) {
     // Copy direction: To IO tiles
     graph.topoCons->insert(ioCopy, toOp, true);
-    ioCopy->settings.useIoTiles       = true;
+    ioCopy->settings.tileSet          = TileSet::IO;
     ioCopy->settings.schedulePriority = toOp->settings.schedulePriority;
   }
 }
@@ -171,7 +172,7 @@ bool IoComputeTileCopy::apply(Graph &graph) const {
           if (to->opid != Onnx::CustomOperators::IoTileCopy) {
 
             // If the ops have different IO tile status
-            if (from->settings.useIoTiles != to->settings.useIoTiles) {
+            if (from->settings.tileSet != to->settings.tileSet) {
 
               bool alreadyCopied =
                   copiedTensors.find(tensor->id) != copiedTensors.end();

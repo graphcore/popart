@@ -142,6 +142,13 @@ BOOST_AUTO_TEST_CASE(Test2x2S1ExecutionPhase) {
     runner.patterns              = Patterns(PatternsLevel::Default);
     runner.loss                  = l1;
 
+    auto tensorLocation = TensorLocation(TensorStorage::OffChip);
+
+    runner.opts.activationTensorLocationSettings.location     = tensorLocation;
+    runner.opts.weightTensorLocationSettings.location         = tensorLocation;
+    runner.opts.optimizerStateTensorLocationSettings.location = tensorLocation;
+    runner.opts.accumulatorTensorLocationSettings.location    = tensorLocation;
+
     return sum;
   });
 
@@ -275,6 +282,13 @@ BOOST_AUTO_TEST_CASE(Test1x0S2ExecutionPhase) {
     runner.patterns              = Patterns(PatternsLevel::Default);
     runner.loss                  = l1;
 
+    auto tensorLocation = TensorLocation(TensorStorage::OffChip);
+
+    runner.opts.activationTensorLocationSettings.location     = tensorLocation;
+    runner.opts.weightTensorLocationSettings.location         = tensorLocation;
+    runner.opts.optimizerStateTensorLocationSettings.location = tensorLocation;
+    runner.opts.accumulatorTensorLocationSettings.location    = tensorLocation;
+
     return input;
   });
 
@@ -400,18 +414,17 @@ BOOST_AUTO_TEST_CASE(Test1x0S4ExecutionPhase) {
       runner.patterns              = Patterns(PatternsLevel::Default);
       runner.loss                  = l1;
 
+      auto tensorLocation = TensorLocation(TensorStorage::OffChip);
+
+      runner.opts.activationTensorLocationSettings.location = tensorLocation;
+      runner.opts.weightTensorLocationSettings.location     = tensorLocation;
+      runner.opts.optimizerStateTensorLocationSettings.location =
+          tensorLocation;
+      runner.opts.accumulatorTensorLocationSettings.location = tensorLocation;
+
       if (activationsThroughIOTiles) {
-        runner.opts.activationTensorLocationSettings.location.loadOnIOTiles =
-            true;
-        runner.opts.weightTensorLocationSettings.location.loadOnIOTiles = false;
-        runner.opts.optimizerStateTensorLocationSettings.location
-            .loadOnIOTiles = false;
-        runner.opts.activationTensorLocationSettings.location.storeOnIOTiles =
-            false;
-        runner.opts.weightTensorLocationSettings.location.storeOnIOTiles =
-            false;
-        runner.opts.optimizerStateTensorLocationSettings.location
-            .storeOnIOTiles    = false;
+        runner.opts.activationTensorLocationSettings.location.loadTileSet =
+            TileSet::IO;
         runner.opts.numIOTiles = 192;
       }
 
@@ -588,6 +601,13 @@ BOOST_AUTO_TEST_CASE(Test2x0S2ExecutionPhase) {
     runner.opts.virtualGraphMode = VirtualGraphMode::ExecutionPhases;
     runner.patterns              = Patterns(PatternsLevel::Default);
     runner.loss                  = l1;
+
+    auto tensorLocation = TensorLocation(TensorStorage::OffChip);
+
+    runner.opts.activationTensorLocationSettings.location     = tensorLocation;
+    runner.opts.weightTensorLocationSettings.location         = tensorLocation;
+    runner.opts.optimizerStateTensorLocationSettings.location = tensorLocation;
+    runner.opts.accumulatorTensorLocationSettings.location    = tensorLocation;
 
     return sum;
   });

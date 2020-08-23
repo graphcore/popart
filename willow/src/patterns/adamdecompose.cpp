@@ -233,6 +233,7 @@ bool AdamDecompose::apply(Op *op) const {
       if (combo->withGradAccum) {
         reduceOp->settings.executionContext =
             ExecutionContext::AccumulateOuterFragment;
+        reduceOp->settings.schedulePriority = 0.0;
       }
     } else {
       // No replicated accumulator reduction
@@ -278,6 +279,7 @@ bool AdamDecompose::apply(Op *op) const {
   if (combo->withGradAccum) {
     accl1Op->settings.executionContext =
         ExecutionContext::AccumulateOuterFragment;
+    accl1Op->settings.schedulePriority = 0.0;
   }
   storeTensor(accl1Id);
 
@@ -319,6 +321,7 @@ bool AdamDecompose::apply(Op *op) const {
   if (combo->withGradAccum) {
     accl2Op->settings.executionContext =
         ExecutionContext::AccumulateOuterFragment;
+    accl2Op->settings.schedulePriority = 0.0;
   }
   storeTensor(accl2Id);
 
@@ -347,6 +350,7 @@ bool AdamDecompose::apply(Op *op) const {
     if (combo->withGradAccum) {
       accumUpdateOp->settings.executionContext =
           ExecutionContext::AccumulateOuterFragment;
+      accumUpdateOp->settings.schedulePriority = 0.0;
     }
 
     // Accumulator update after accl1 and accl2
@@ -424,6 +428,7 @@ bool AdamDecompose::apply(Op *op) const {
   if (combo->withGradAccum) {
     adamUpdOp->settings.executionContext =
         ExecutionContext::AccumulateOuterFragment;
+    adamUpdOp->settings.schedulePriority = 0.0;
   }
 
   // Lamb R1 & R2
@@ -461,8 +466,10 @@ bool AdamDecompose::apply(Op *op) const {
     if (combo->withGradAccum) {
       lambR1Op->settings.executionContext =
           ExecutionContext::AccumulateOuterFragment;
+      lambR1Op->settings.schedulePriority = 0.0;
       lambR2Op->settings.executionContext =
           ExecutionContext::AccumulateOuterFragment;
+      lambR2Op->settings.schedulePriority = 0.0;
     }
   }
 
@@ -507,6 +514,7 @@ bool AdamDecompose::apply(Op *op) const {
   if (combo->withGradAccum) {
     adamVarUpdOp->settings.executionContext =
         ExecutionContext::AccumulateOuterFragment;
+    adamVarUpdOp->settings.schedulePriority = 0.0;
   } else {
     graph.topoCons->transfer(combo, adamVarUpdOp);
   }

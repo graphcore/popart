@@ -29,6 +29,7 @@
 #include <popart/stepio_generic.hpp>
 #include <popart/stepio_size_assertion.hpp>
 #include <popart/tensordata.hpp>
+#include <popart/tensorlocation.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
 #include <popart/version.hpp>
@@ -751,14 +752,18 @@ PYBIND11_MODULE(popart_core, m) {
     py::class_<TensorLocation> cls(m, "TensorLocation");
     cls.def(py::init<>());
     cls.def(py::init<TensorStorage>(), py::arg("storage"));
-    cls.def(py::init<TensorStorage, bool, bool, bool>(),
+    cls.def(py::init<TensorStorage, ReplicatedTensorSharding>(),
             py::arg("storage"),
-            py::arg("loadOnIOTiles"),
-            py::arg("storeOnIOTiles"),
             py::arg("replicatedTensorSharding"));
+    cls.def(
+        py::init<TensorStorage, TileSet, TileSet, ReplicatedTensorSharding>(),
+        py::arg("storage"),
+        py::arg("loadTileSet"),
+        py::arg("storageTileSet"),
+        py::arg("replicatedTensorSharding"));
     cls.def_readwrite("storage", &TensorLocation::storage);
-    cls.def_readwrite("loadOnIOTiles", &TensorLocation::loadOnIOTiles);
-    cls.def_readwrite("storeOnIOTiles", &TensorLocation::storeOnIOTiles);
+    cls.def_readwrite("loadTileSet", &TensorLocation::loadTileSet);
+    cls.def_readwrite("storageTileSet", &TensorLocation::storageTileSet);
     cls.def_readwrite("replicatedTensorSharding",
                       &TensorLocation::replicatedTensorSharding);
   }
@@ -932,6 +937,8 @@ PYBIND11_MODULE(popart_core, m) {
                       &SessionOptions::weightTensorLocationSettings);
     cls.def_readwrite("optimizerStateTensorLocationSettings",
                       &SessionOptions::optimizerStateTensorLocationSettings);
+    cls.def_readwrite("accumulatorTensorLocationSettings",
+                      &SessionOptions::accumulatorTensorLocationSettings);
     cls.def_readwrite("tensorLocationSettingsOverride",
                       &SessionOptions::tensorLocationSettingsOverride);
   }
@@ -969,6 +976,16 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("Undefined", TensorStorage::Undefined);
     en.value("OnChip", TensorStorage::OnChip);
     en.value("OffChip", TensorStorage::OffChip);
+  }
+  {
+    py::enum_<TileSet> en(m, "TileSet");
+    en.value("Compute", TileSet::Compute);
+    en.value("IO", TileSet::IO);
+  }
+  {
+    py::enum_<ReplicatedTensorSharding> en(m, "ReplicatedTensorSharding");
+    en.value("Off", ReplicatedTensorSharding::Off);
+    en.value("On", ReplicatedTensorSharding::On);
   }
   {
     py::enum_<ExecutionPhaseIOSchedule> en(m, "ExecutionPhaseIOSchedule");

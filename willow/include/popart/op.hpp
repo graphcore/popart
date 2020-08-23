@@ -13,6 +13,7 @@
 #include <popart/region.hpp>
 #include <popart/scope.hpp>
 #include <popart/tensorinfo.hpp>
+#include <popart/tensorlocation.hpp>
 #include <popart/util.hpp>
 #include <popart/vertex.hpp>
 
@@ -22,42 +23,6 @@ namespace popart {
 
 enum class RecomputeType { Undefined = 0, Checkpoint, Recompute, Recomputed };
 
-enum class TensorStorage {
-  Undefined = 0,
-  OnChip    = 1,
-  OffChip   = 2,
-};
-
-class TensorLocation {
-public:
-  TensorLocation();
-  TensorLocation(TensorStorage storage_);
-  TensorLocation(std::vector<int64_t> serialized);
-  TensorLocation(TensorStorage storage_,
-                 bool loadOnIOTiles_,
-                 bool storeOnIOTiles_,
-                 bool replicatedTensorSharding_);
-
-  TensorLocation &operator=(const TensorLocation &rhs) = default;
-  bool operator==(const TensorLocation &rhs);
-  bool operator!=(const TensorLocation &rhs);
-
-  std::vector<int64_t> serialize() const;
-
-  bool isRemote() const;
-
-  // Permanent tensor storage: OnChip or OffChip
-  TensorStorage storage;
-  // Load tensor through IO tiles
-  bool loadOnIOTiles;
-  // If OnChip: Store on IO tiles
-  // (relevant for replicated tensor sharded tensors)
-  bool storeOnIOTiles;
-  // Enable replicated tensor sharding
-  // (relevant for weights and optimizer states)
-  bool replicatedTensorSharding;
-};
-
 enum class ExecutionContext {
   Normal = 0,
   AccumulateOuterFragment,
@@ -65,10 +30,6 @@ enum class ExecutionContext {
   WeightsToHostFragment,
   Subgraph
 };
-
-// Helper functions for tensor locations.
-std::string tensorLocationToStr(const TensorLocation tensorLocation);
-bool isValidTensorLocation(const TensorLocation tensorLocation);
 
 std::ostream &operator<<(std::ostream &, const RecomputeType &);
 std::ostream &operator<<(std::ostream &, const ExecutionContext &);
@@ -154,7 +115,7 @@ public:
     OptionalBatchSerializedPhase batchSerializedPhase;
 
     // If the OP should be placed on I/O tiles instead of regular tiles
-    IsIoTile useIoTiles{false};
+    TileSet tileSet{TileSet::Compute};
 
     // If the OP needs to run in a special fragment,
     // such as gradient accumulation

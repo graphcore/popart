@@ -59,6 +59,7 @@ constexpr const char *reservedIndexPrefix() { return "Index___"; }
 
 std::vector<std::string> reservedOptimizerPrefixes();
 std::vector<std::string> reservedOptimizerStatePrefixes();
+std::vector<std::string> reservedAccumulatorPrefixes();
 std::vector<std::string> reservedPrefixes();
 
 TensorId stripAllReservedPrefixes(TensorId id);

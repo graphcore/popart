@@ -31,16 +31,6 @@ private:
 
   void verifyExecutionPhases(Graph &graph) const;
 
-  void getModifiersInPhase(ExecutionPhase phase,
-                           Tensor *t,
-                           std::vector<Op *> &modifyingConsumerOps) const;
-
-  void
-  getAliasedModifiersInPhase(Graph &graph,
-                             ExecutionPhase phase,
-                             Tensor *t,
-                             std::vector<Op *> &modifyingConsumerOps) const;
-
 private:
   int pass;
 };

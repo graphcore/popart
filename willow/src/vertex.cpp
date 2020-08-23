@@ -7,58 +7,71 @@
 
 namespace popart {
 
-std::string Vertex::wrtLossStr() const {
-
-  std::ostringstream ss;
-
-  ss << "toLoss=";
+std::ostream &operator<<(std::ostream &ost, const PathToLoss &toLoss) {
+  ost << "toLoss=";
   switch (toLoss) {
   case PathToLoss::Yes: {
-    ss << 'Y';
+    ost << 'Y';
     break;
   }
   case PathToLoss::No: {
-    ss << 'N';
+    ost << 'N';
     break;
   }
   case PathToLoss::Undefined: {
-    ss << 'U';
+    ost << 'U';
     break;
   }
   }
+  return ost;
+}
 
-  ss << "  fromLoss=";
+std::ostream &operator<<(std::ostream &ost, const PathFromLoss &fromLoss) {
+  ost << "fromLoss=";
   switch (fromLoss) {
   case PathFromLoss::Yes: {
-    ss << 'Y';
+    ost << 'Y';
     break;
   }
   case PathFromLoss::No: {
-    ss << 'N';
+    ost << 'N';
     break;
   }
   case PathFromLoss::Undefined: {
-    ss << 'U';
+    ost << 'U';
     break;
   }
   }
+  return ost;
+}
 
-  ss << "  schedPreLoss=";
+std::ostream &operator<<(std::ostream &ost,
+                         const ScheduledPreLoss &scheduledPreLoss) {
+  ost << "schedPreLoss=";
   switch (scheduledPreLoss) {
   case ScheduledPreLoss::Yes: {
-    ss << 'Y';
+    ost << 'Y';
     break;
   }
   case ScheduledPreLoss::No: {
-    ss << 'N';
+    ost << 'N';
     break;
   }
   case ScheduledPreLoss::Undefined: {
-    ss << 'U';
+    ost << 'U';
     break;
   }
   }
+  return ost;
+}
 
+std::string Vertex::wrtLossStr() const {
+  std::ostringstream ss;
+  ss << toLoss;
+  ss << "  ";
+  ss << fromLoss;
+  ss << "  ";
+  ss << scheduledPreLoss;
   return ss.str();
 }
 

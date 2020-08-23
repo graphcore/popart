@@ -96,7 +96,7 @@ poplar::Graph &IpuCopyOpx::srcGraph(InIndex in) const {
   if (op_p->getIr().virtualGraphsEnabled()) {
     IpuCopyOp &op = getOp<IpuCopyOp>();
     auto srcIpu   = op.getSourceIpu(op.input->tensor(in)->id);
-    return dv_p->getVirtualGraph(srcIpu, op_p->settings.useIoTiles);
+    return dv_p->getVirtualGraph(srcIpu, op_p->settings.tileSet);
   } else {
     throw error("IpuCopyOpx unexpected on model without virtual graphs");
   }
@@ -106,7 +106,7 @@ poplar::Graph &IpuCopyOpx::dstGraph(OutIndex out) const {
   if (op_p->getIr().virtualGraphsEnabled()) {
     IpuCopyOp &op = getOp<IpuCopyOp>();
     auto dstIpu   = op.getDestIpu();
-    return dv_p->getVirtualGraph(dstIpu, op_p->settings.useIoTiles);
+    return dv_p->getVirtualGraph(dstIpu, op_p->settings.tileSet);
   } else {
     throw error("IpuCopyOpx unexpected on model without virtual graphs");
   }

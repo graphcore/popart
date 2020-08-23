@@ -105,25 +105,17 @@ bool StreamingMemory::apply(Graph &graph) const {
   const int total_num_ipus = ir.getDeviceInfo()->getNumIpus();
   const int num_ipus       = total_num_ipus / replicationFactor;
 
-  // const auto training = ir.canTrain();
-  const auto num_stages = sessionOptions.executionPhaseSettings.stages;
-  const auto num_phases = sessionOptions.executionPhaseSettings.phases;
+  const auto num_stages =
+      sessionOptions.virtualGraphMode == VirtualGraphMode::ExecutionPhases
+          ? sessionOptions.executionPhaseSettings.stages
+          : 0;
+  const auto num_phases =
+      sessionOptions.virtualGraphMode == VirtualGraphMode::ExecutionPhases
+          ? sessionOptions.executionPhaseSettings.phases
+          : 0;
 
-  // Tensor remote store/load inserted in the third ping-pong pass only
   StreamingMemoryOpInserter opInserter{
       graph, replicationFactor, num_stages, num_phases};
-
-  if (graph.getOps().size() == 0 || num_phases < 2) {
-    return false;
-  }
-
-  logging::transform::debug(
-      "[StreamingMemory] Execution scheme with {} phases, {} ({}) ipus",
-      num_phases,
-      num_ipus,
-      total_num_ipus);
-
-  auto schedule = graph.getOpSchedule({});
 
   if (pass == 1 || pass == 2) {
     for (Tensor *tensor : graph.getTensors().getOfType(TensorType::Variable)) {
@@ -134,96 +126,108 @@ bool StreamingMemory::apply(Graph &graph) const {
       tensor->tensorLocationInfo.setRemote(tensorLocation.isRemote());
       logging::transform::debug("[StreamingMemory] Set Variable {} to {}.",
                                 tensor->id,
-                                tensorLocationToStr(tensorLocation));
+                                tensorLocation);
     }
   }
 
-  if (pass == 1) {
-    float cumulative_cost = 0.f;
+  // Update phased execution and streaming memory annotations
+  if (num_phases > 1) {
 
-    for (Op *op : schedule) {
-      cumulative_cost += costFn(op);
-    }
-
-    float cost_per_phase = cumulative_cost / static_cast<float>(num_phases);
-
-    // Greedy claiming of ops per phase according to execution schedule
-    // TODO T10602: Find better graph-cut algorithm for phase splitting
-    ExecutionPhase phase = 0;
-    float phase_cost     = 0;
-    for (Op *op : schedule) {
-
-      auto cost = costFn(op);
-      // Every phase should handle at least some cost, but not too much
-      if (phase_cost > 0 && phase_cost + cost > cost_per_phase &&
-          phase < (num_phases - 1)) {
-        ++phase;
-        phase_cost = 0;
-      }
-      phase_cost += cost;
-
-      bool has_phase = op->hasExecutionPhase();
-
-      if (has_phase && op->getExecutionPhase() >= num_phases) {
-        throw error(
-            "[StreamingMemory] Maximum phase is {}, but op {} has phase {}.",
-            num_phases - 1,
-            op->debugName(),
-            op->getExecutionPhase());
-      }
-
-      opInserter.sanitizePlacementAnnotation(
-          op, has_phase ? op->getExecutionPhase() : phase);
-    }
-
-    // Recomputation annotation
     logging::transform::debug(
-        "[StreamingMemory] Recomputation & Tensor Location annotation");
-    for (auto &op : graph.getOps()) {
-      // Mark any random seed operators as OnChip.
-      if (op.second->settings.tensorLocation.storage ==
-          TensorStorage::Undefined) {
-        if (op.second->opid == Onnx::CustomOperators::GetRandomSeed) {
-          op.second->settings.tensorLocation.storage = TensorStorage::OnChip;
-          logging::transform::trace("[StreamingMemory] {} set to OnChip",
-                                    op.second->debugName());
-        }
+        "[StreamingMemory] Execution scheme with {} phases, {} ({}) ipus",
+        num_phases,
+        num_ipus,
+        total_num_ipus);
+
+    auto schedule = graph.getOpSchedule({});
+
+    if (pass == 1) {
+      float cumulative_cost = 0.f;
+
+      for (Op *op : schedule) {
+        cumulative_cost += costFn(op);
       }
-      // Recompute everything else (fwd) not set by the user by default
-      if (op.second->settings.recomputeType == RecomputeType::Undefined) {
-        if (ir.autoRecomputationEnabled() && !op.second->isIpuCopyOp() &&
-            !dynamic_cast<GetRandomSeedOp *>(op.second.get())) {
-          op.second->settings.recomputeType = RecomputeType::Recompute;
-          logging::transform::trace("[StreamingMemory] {} set to Recompute",
-                                    op.second->debugName());
-        } else {
-          op.second->settings.recomputeType = RecomputeType::Checkpoint;
+
+      float cost_per_phase = cumulative_cost / static_cast<float>(num_phases);
+
+      // Greedy claiming of ops per phase according to execution schedule
+      // TODO T10602: Find better graph-cut algorithm for phase splitting
+      ExecutionPhase phase = 0;
+      float phase_cost     = 0;
+      for (Op *op : schedule) {
+
+        auto cost = costFn(op);
+        // Every phase should handle at least some cost, but not too much
+        if (phase_cost > 0 && phase_cost + cost > cost_per_phase &&
+            phase < (num_phases - 1)) {
+          ++phase;
+          phase_cost = 0;
+        }
+        phase_cost += cost;
+
+        bool has_phase = op->hasExecutionPhase();
+
+        if (has_phase && op->getExecutionPhase() >= num_phases) {
+          throw error(
+              "[StreamingMemory] Maximum phase is {}, but op {} has phase {}.",
+              num_phases - 1,
+              op->debugName(),
+              op->getExecutionPhase());
+        }
+
+        opInserter.sanitizePlacementAnnotation(
+            op, has_phase ? op->getExecutionPhase() : phase);
+      }
+
+      // Recomputation annotation
+      logging::transform::debug(
+          "[StreamingMemory] Recomputation & Tensor Location annotation");
+      for (auto &op : graph.getOps()) {
+        // Mark any random seed operators as OnChip.
+        if (op.second->settings.tensorLocation.storage ==
+            TensorStorage::Undefined) {
+          if (op.second->opid == Onnx::CustomOperators::GetRandomSeed) {
+            op.second->settings.tensorLocation.storage = TensorStorage::OnChip;
+            logging::transform::trace("[StreamingMemory] {} set to OnChip",
+                                      op.second->debugName());
+          }
+        }
+        // Recompute everything else (fwd) not set by the user by default
+        if (op.second->settings.recomputeType == RecomputeType::Undefined) {
+          if (ir.autoRecomputationEnabled() && !op.second->isIpuCopyOp() &&
+              !dynamic_cast<GetRandomSeedOp *>(op.second.get())) {
+            op.second->settings.recomputeType = RecomputeType::Recompute;
+            logging::transform::trace("[StreamingMemory] {} set to Recompute",
+                                      op.second->debugName());
+          } else {
+            op.second->settings.recomputeType = RecomputeType::Checkpoint;
+          }
         }
       }
     }
-  }
 
-  // Figure out the right phase for ops that did not get a phase yet
-  while (true) {
-    int num_ops_without_phase = 0;
-    // Need to get the schedule every time,
-    // because setting phases can change schedule order
-    for (Op *op : schedule) {
-      if (!op->hasExecutionPhase()) {
-        // Check which phase the consumers of the output are in
-        op->inheritPlacementAttributes(true);
+    // Figure out the right phase for ops that did not get a phase yet
+    while (true) {
+      int num_ops_without_phase = 0;
+      // Need to get the schedule every time,
+      // because setting phases can change schedule order
+      for (Op *op : schedule) {
+        if (!op->hasExecutionPhase()) {
+          // Check which phase the consumers of the output are in
+          op->inheritPlacementAttributes(true);
 
-        if (op->hasExecutionPhase()) {
-          // Make sure phase adheres to producer/consumer and topological
-          // constraints
-          opInserter.sanitizePlacementAnnotation(op, op->getExecutionPhase());
-        } else {
-          ++num_ops_without_phase;
+          if (op->hasExecutionPhase()) {
+            // Make sure phase adheres to producer/consumer and topological
+            // constraints
+            opInserter.sanitizePlacementAnnotation(op, op->getExecutionPhase());
+          } else {
+            ++num_ops_without_phase;
+          }
         }
       }
-    }
-    if (num_ops_without_phase == 0) {
-      break;
+      if (num_ops_without_phase == 0) {
+        break;
+      }
     }
   }
 
@@ -231,7 +235,10 @@ bool StreamingMemory::apply(Graph &graph) const {
     opInserter.apply();
   }
 
-  verifyExecutionPhases(graph);
+  if (num_phases > 1 &&
+      sessionOptions.virtualGraphMode != VirtualGraphMode::ExecutionPhases) {
+    verifyExecutionPhases(graph);
+  }
   return true;
 }
 

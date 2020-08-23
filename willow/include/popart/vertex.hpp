@@ -10,6 +10,10 @@ enum class PathToLoss { Yes, No, Undefined };
 enum class PathFromLoss { Yes, No, Undefined };
 enum class ScheduledPreLoss { Yes, No, Undefined };
 
+std::ostream &operator<<(std::ostream &, const PathToLoss &);
+std::ostream &operator<<(std::ostream &, const PathFromLoss &);
+std::ostream &operator<<(std::ostream &, const ScheduledPreLoss &);
+
 class Vertex {
 
 public:

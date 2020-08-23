@@ -75,7 +75,7 @@ VGraphIdAndIoTile Tensor::getVirtualGraphIdAndIoTileUnsafe() const {
     // special case of IPUCopy producer
     auto ipucopy = dynamic_cast<IpuCopyOp *>(getProducer());
     if (ipucopy) {
-      return {ipucopy->getDestIpu(), ipucopy->settings.useIoTiles};
+      return {ipucopy->getDestIpu(), ipucopy->settings.tileSet};
     } else if (getProducer()->hasVirtualGraphId()) {
       for (auto &indices : getProducer()->output->indicesMap()) {
         if (indices.first == this) {
@@ -103,17 +103,17 @@ VGraphIdAndIoTile Tensor::getVirtualGraphIdAndIoTileUnsafe() const {
   for (Op *consumer : consumers.getOps()) {
     auto ipucopy = dynamic_cast<IpuCopyOp *>(consumer);
     if (ipucopy) {
-      return {ipucopy->getSourceIpus().at(id), ipucopy->settings.useIoTiles};
+      return {ipucopy->getSourceIpus().at(id), ipucopy->settings.tileSet};
     }
   }
 
   // No virtual graph Id determined
-  return {unusedVGraphId, false};
+  return {unusedVGraphId, TileSet::Compute};
 }
 
 VGraphIdAndIoTile Tensor::getVirtualGraphIdAndIoTile() const {
   auto vid = getVirtualGraphIdAndIoTileUnsafe();
-  if (vid == VGraphIdAndIoTile(unusedVGraphId, false)) {
+  if (vid == VGraphIdAndIoTile(unusedVGraphId, TileSet::Compute)) {
     throw error("Invalid call to getVirtualGraphId, Tensor does not have one");
   }
   return vid;
@@ -121,7 +121,7 @@ VGraphIdAndIoTile Tensor::getVirtualGraphIdAndIoTile() const {
 
 VGraphId Tensor::getVirtualGraphId() const {
   auto vid = getVirtualGraphIdAndIoTileUnsafe();
-  if (vid == VGraphIdAndIoTile(unusedVGraphId, false)) {
+  if (vid == VGraphIdAndIoTile(unusedVGraphId, TileSet::Compute)) {
     throw error("Invalid call to getVirtualGraphId, Tensor does not have one");
   }
   return vid.first;
@@ -448,8 +448,25 @@ bool Tensor::isRandomSeedTensor() const {
   return false;
 }
 
-bool Tensor::isAcclTensor() const {
+bool Tensor::isOptimizerStateTensor() const {
   auto states = reservedOptimizerStatePrefixes();
+  if (std::any_of(
+          states.begin(), states.end(), [this](const std::string state) {
+            return id.find(state) != std::string::npos;
+          })) {
+    // sanity check that the accl tensor is of Variable type
+    if (tensorType() != TensorType::Variable) {
+      throw error("Tensor {} has been identified as an Accl tensor, but it is "
+                  "not a Variable tensor.",
+                  id);
+    }
+    return true;
+  }
+  return false;
+}
+
+bool Tensor::isAccumulatorTensor() const {
+  auto states = reservedAccumulatorPrefixes();
   if (std::any_of(
           states.begin(), states.end(), [this](const std::string state) {
             return id.find(state) != std::string::npos;

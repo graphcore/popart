@@ -2,6 +2,7 @@
 #ifndef GUARD_NEURALNET_STREAMING_MEMORY_OP_INSERTER_HPP
 #define GUARD_NEURALNET_STREAMING_MEMORY_OP_INSERTER_HPP
 
+#include <iostream>
 #include <map>
 
 #include <popart/op.hpp>
@@ -42,36 +43,58 @@ private:
   using Ops               = std::vector<Op *>;
   using SetupOps          = std::set<Op *, POpCmp>;
   using TensorIds         = std::vector<TensorId>;
-  using TensorPhase       = std::pair<TensorId, int64_t>;
-  using RemoteStoreOpData = std::pair<TensorId, RemoteStoreOp *>;
-  using RemoteLoadOpData  = std::pair<TensorId, RemoteLoadOp *>;
-  using TensorStoreMap    = std::map<TensorPhase, RemoteStoreOpData>;
-  using TensorLoadMap     = std::map<TensorPhase, RemoteLoadOpData>;
+  using LoadedTensorMap   = std::map<TensorId, int>;
+  using GatheredTensorMap = std::map<TensorId, int>;
+  using ScheduleMap       = std::map<Op *, int64_t>;
 
-  class TensorPhaseConfig {
+  class TensorStreamingContext {
   public:
-    // Execution phase of of the op that produced the tensor, if available/set.
-    // This field is used to derive other fields and is logged.
-    OptionalExecutionPhase producerExecutionPhase;
-    // Virtual graph ID for this tensor.
-    OptionalVGraphId loadStoreVGID;
-    // The execution phases in which this tensor is 'live'.
-    std::set<ExecutionPhase> livePhases;
-    // A mapping from execution phases to a list of ops that modify this tensor
-    // in the respective execution phase.
-    std::map<ExecutionPhase, Ops> modifiersInPhase;
-    // A mapping from execution phases to lists of consumer ops that are
-    // computed in the respective phases.
-    std::map<ExecutionPhase, Ops> consumersInPhase;
-    // A mapping from the various execution phases to flags that denote whether
-    // the tensor needs to be loaded/store in that phase of execution.
-    std::map<ExecutionPhase, bool> loadInPhase;
-    std::map<ExecutionPhase, bool> storeInPhase;
-    std::map<ExecutionPhase, bool> gatherInPhase;
-    // True if we need to load/store the tensor outside of the main loop. This
-    // is used for RWS + OnChip weights.
-    bool loadStoreOutOfPhase;
+    TensorStreamingContext();
+
+    TensorStreamingContext(ExecutionContext,
+                           OptionalExecutionPhase,
+                           ScheduledPreLoss);
+
+    bool operator<(const TensorStreamingContext &rhs) const;
+    bool operator==(const TensorStreamingContext &rhs) const;
+    bool operator!=(const TensorStreamingContext &rhs) const;
+
+    // Annotates if a tensor is live, loaded, stored or gathered in:
+    // 1. The execution context (always active)
+    ExecutionContext context;
+    // 2. The execution phase
+    //    (for phased execution in the ExecutionContext::Normal only)
+    OptionalExecutionPhase phase;
+    // 3. The pre/post loss schedule
+    //    (for non-phased execution in the ExecutionContext::Normal only)
+    ScheduledPreLoss preLoss = ScheduledPreLoss::Undefined;
   };
+
+  friend std::ostream &operator<<(std::ostream &output,
+                                  const TensorStreamingContext &c);
+
+  class TensorStreamingConfig {
+  public:
+    // Flag to denote whether this is a producer context
+    bool producer = false;
+    // Flag to denote whether the tensor is live in this context
+    bool live = false;
+    // Virtual graph ID for this tensor.
+    OptionalVGraphId streamingVGID;
+    // Ops that are modifiers
+    Ops modifiers;
+    // Ops that are consumers
+    Ops consumers;
+    // Flags that denote whether the tensor needs to be loaded/stored/gathered
+    bool load   = false;
+    bool store  = false;
+    bool gather = false;
+  };
+
+  // TensorStreamingContext: Where to apply graph streaming
+  // TensorStreamingConfig: How to do apply graph streaming
+  using TensorStreamingMap =
+      std::map<TensorStreamingContext, TensorStreamingConfig>;
 
   // The information required to apply changes necessary for this tensor.
   class TensorConfig {
@@ -79,7 +102,7 @@ private:
     // Constructor.
     TensorConfig(Graph &graph)
         : tensor{}, producerOp{}, consumerOps{}, location{},
-          phaseConfig{}, settings{graph, ""},
+          streamingMap{}, settings{graph, ""},
           ioSchedule(ExecutionPhaseIOSchedule::Preload),
           optimizerSchedule(ExecutionPhaseOptimizerSchedule::Interleaving) {}
 
@@ -91,8 +114,8 @@ private:
     Ops consumerOps;
     // The desired tensor location.
     TensorLocation location;
-    // The execution phase config of the tensor.
-    TensorPhaseConfig phaseConfig;
+    // Where and how to apply graph streaming.
+    TensorStreamingMap streamingMap;
     // The settings to use for new ops.
     Op::Settings settings;
     // The input/output schedule for the tensor
@@ -110,68 +133,70 @@ private:
   void getTensorConfig(Tensor *tensor, TensorConfig &tensorConfig) const;
   void getOrderedConsumerOps(Tensor *tensor, Ops &consumerOps) const;
   void getTensorLocation(Tensor *tensor, TensorLocation &location) const;
-  void
-  getTensorProducerExecutionPhase(Tensor *tensor,
-                                  const Op *producerOp,
-                                  OptionalExecutionPhase &producerPhase) const;
+  void getTensorProducerStreamingConfig(Tensor *tensor,
+                                        const TensorLocation &location,
+                                        const Op *producerOp,
+                                        TensorStreamingMap &streamingMap) const;
   void getTensorOptionalVGraphId(Tensor *tensor,
                                  const Op *producerOp,
                                  const Ops &consumerOps,
-                                 OptionalVGraphId &loadStoreVGID) const;
-  void getTensorPhaseConfig(Tensor *tensor,
-                            const Op *producerOp,
-                            const Ops &consumerOps,
-                            const TensorLocation &location,
-                            TensorPhaseConfig &phaseConfig) const;
+                                 OptionalVGraphId &streamingVGID) const;
+  void getTensorStreamingConfig(Tensor *tensor,
+                                const Op *producerOp,
+                                const Ops &consumerOps,
+                                const TensorLocation &location,
+                                TensorStreamingMap &streamingMap) const;
   void getTensorSettings(Tensor *tensor,
                          const Op *producerOp,
                          const Ops &consumerOps,
                          Op::Settings &settings) const;
-  void getModifiersInPhase(Tensor *t,
-                           const ExecutionPhase phase,
-                           Ops &modifyingConsumerOps) const;
-  void getAliasedModifiersInPhase(Tensor *t,
-                                  const ExecutionPhase phase,
-                                  Ops &modifyingConsumerOps) const;
+  void getModifiersInContext(Tensor *t,
+                             const TensorStreamingContext context,
+                             Ops &modifyingConsumerOps) const;
+  void getAliasedModifiersInContext(Tensor *t,
+                                    const TensorStreamingContext context,
+                                    Ops &modifyingConsumerOps) const;
 
   // Helper functions to insert a RemoteLoadOp.
   RemoteLoadOp *insertRemoteLoadOp(const TensorConfig &tensorConfig,
-                                   const OptionalExecutionPhase phase,
+                                   const TensorStreamingContext context,
                                    TensorId &loadedTensorId);
 
   // Helper functions to insert a RemoteStoreOp.
   RemoteStoreOp *insertRemoteStoreOp(const TensorConfig &tensorConfig,
-                                     const OptionalExecutionPhase phase,
+                                     const TensorStreamingContext context,
                                      const TensorId &loadedTensorId);
 
   // Helper function to insert a ReplicatedAllGatherOp.
   ReplicatedAllGatherOp *
   insertReplicatedAllGatherOp(const TensorConfig &tensorConfig,
-                              const ExecutionPhase phase,
+                              const TensorStreamingContext context,
                               const TensorId &loadedTensorId,
                               TensorId &gatheredTensorId);
+
+  // Execution mode helper functions.
+  // Phased execution: Ops are annotated with the ExecutionPhase attribute that
+  // control device placement and the streaming memory schedule
+  bool isPhasedExecution() const;
 
   // Sanity checking functions.
   void sanitizeOps() const;
   void verifyPlacementConsistency(const Op *op) const;
 
   // Log phase config for a tensor.
-  void logTensorPhaseConfig(const TensorConfig &tensorConfig) const;
+  void logTensorStreamingConfig(const TensorConfig &tensorConfig) const;
 
   // Helper function a remote buffer pointer tensor belonging to tensorId, if it
   // does not exist yet, and add it to remoteArgIds
   TensorId getRemoteArg(TensorId tensorId);
-  nonstd::optional<std::string> getPreviousLoadedTensorId(TensorId &id);
 
   // Helper functions for generating tensor IDs.
-  static TensorId generateInitTensorId(Tensor *tensor);
-  static TensorId generateLoadedTensorId(Tensor *tensor,
-                                         OptionalExecutionPhase phase);
-  static TensorId generateGatheredTensorId(Tensor *tensor,
-                                           ExecutionPhase phase);
+  TensorId generateInitTensorId(TensorId id);
+  TensorId generateLoadedTensorId(TensorId id);
+  TensorId getPreviousLoadedTensorId(TensorId id);
+  TensorId generateGatheredTensorId(TensorId id);
 
   // Static helper functions.
-  static bool isLoadRequired(const TensorPhaseConfig &phaseConfig);
   static bool
   tooSmallForOffChip(const TensorLocationSettings &tensorLocationSettings,
                      Tensor *tensor);
@@ -182,6 +207,9 @@ private:
   // The graph the transform operates on.
   Graph &graph;
 
+  // The Op schedule before this transform inserts new ops
+  ScheduleMap scheduleMap;
+
   // Number of graph replications.
   const int64_t replicationFactor;
   // Number of sets of IPUs.
@@ -191,10 +219,12 @@ private:
 
   // A list of remote buffer pointer tensor ids.
   TensorIds remoteArgIds;
-  // Result of RemoteStoreOps already applied.
-  TensorStoreMap tensorStoreMap;
-  // Result of RemoteLoadOps already applied.
-  TensorLoadMap tensorLoadMap;
+
+  // A map of loaded tensor ID counters
+  LoadedTensorMap loadedTensorCounter;
+
+  // A map of gathered tensor ID counters
+  GatheredTensorMap gatheredTensorCounter;
 };
 
 } // namespace popart

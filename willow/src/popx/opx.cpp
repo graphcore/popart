@@ -84,8 +84,7 @@ int64_t Opx::getVirtualGraphId() const {
 
 poplar::Graph &Opx::graph() const {
   if (op_p->getIr().virtualGraphsEnabled()) {
-    return dv_p->getVirtualGraph(getVirtualGraphId(),
-                                 op_p->settings.useIoTiles);
+    return dv_p->getVirtualGraph(getVirtualGraphId(), op_p->settings.tileSet);
   } else {
     return dv_p->graph();
   }

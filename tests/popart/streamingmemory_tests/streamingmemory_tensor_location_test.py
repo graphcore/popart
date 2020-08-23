@@ -144,7 +144,7 @@ def check_ir(ir, check_onchip, check_offchip):
 def test_weight_tensor_location_settings():
     # Check weight tensor location settings work.
     ir = get_ir(weight_tensor_location_settings=None)
-    check_ir(ir, check_onchip=[], check_offchip=['W0', 'W1', 'W2'])
+    check_ir(ir, check_onchip=['W0', 'W1', 'W2'], check_offchip=[])
 
     ir = get_ir(weight_tensor_location_settings=popart.TensorLocationSettings(
         popart.TensorStorage.OffChip, 0))
@@ -176,8 +176,8 @@ def test_activation_tensor_location_settings():
     # Check weight tensor location settings work.
     ir = get_ir(num_layers=5, activation_tensor_location_settings=None)
     check_ir(ir,
-             check_onchip=[],
-             check_offchip=['MatMul:0/1__t6', 'MatMul:0__t3'])
+             check_onchip=['MatMul:0/1__t6', 'MatMul:0__t3'],
+             check_offchip=[])
 
     ir = get_ir(
         num_layers=5,
@@ -234,8 +234,8 @@ def test_optimizer_state_tensor_location_settings():
     ir = get_ir(optimizer_state_tensor_location_settings=None,
                 optimizer=optimizer_with_state)
     check_ir(ir,
-             check_onchip=[],
-             check_offchip=['Accl___W1', 'Accl___W2', 'Accl___W0'])
+             check_onchip=['Accl___W1', 'Accl___W2', 'Accl___W0'],
+             check_offchip=[])
 
     ir = get_ir(
         optimizer_state_tensor_location_settings=popart.TensorLocationSettings(

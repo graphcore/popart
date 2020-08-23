@@ -29,7 +29,7 @@ public:
 
 private:
   // Generate a name for the new tensor
-  TensorId generateCopiedTensorId(Tensor *tensor, IsIoTile toIoTiles) const;
+  TensorId generateCopiedTensorId(Tensor *tensor, TileSet toIoTiles) const;
 
   void
   insertIoTileCopy(Graph &graph, Tensor *tensor, Op *fromOp, Op *toOp) const;

@@ -62,7 +62,7 @@ def attention_onnx(builder, qkv, mask, batch_size, sequence_length,
 def test_attention_streamingmemory(tmpdir):
     np.random.seed(0XDEAD1337)
     batches_per_step = 5
-    batch_size = 4
+    batch_size = 8
     hidden_size = 16
     sequence_length = 8
     attention_heads = 4
@@ -124,7 +124,7 @@ def test_attention_streamingmemory(tmpdir):
 
         with builder.virtualGraph(vgid), builder.executionPhase(
             (options["numLayers"] - 1) * int(2 / options["stages"])):
-            l1 = builder.aiGraphcore.l1loss([x], 0.1)
+            l1 = builder.aiGraphcore.l1loss([x], 0.2, popart.ReductionType.Sum)
 
         proto = builder.getModelProto()
 
@@ -151,13 +151,38 @@ def test_attention_streamingmemory(tmpdir):
                                  popart.VirtualGraphMode.Manual)
         opts.explicitRecomputation = options["explicitRecomputation"]
         opts.aliasZeroCopy = options["aliasZeroCopy"]
+
         opts.batchSerializationSettings.factor = options["batchSerialize"]
-        if options["weightTensorLocationSettings"]:
+        if "batchConcat" in options:
+            # Do not concatenate the batch across phases and virtual graphs
+            # (causes more, smalle transfers but allows for individual sub-batch
+            # elements to be transferred)
+            opts.batchSerializationSettings.concatOnVirtualGraphChange = options[
+                "batchConcat"]
+            opts.batchSerializationSettings.concatOnExecutionPhaseChange = options[
+                "batchConcat"]
+            # Wait with loading activations until they are required
+            opts.executionPhaseSettings.activationIOSchedule = popart.ExecutionPhaseIOSchedule.OnDemand
+
+        if "tensorLocationSettings" in options and options[
+                "tensorLocationSettings"]:
+            opts.activationTensorLocationSettings = options[
+                "tensorLocationSettings"]
+            opts.weightTensorLocationSettings = options[
+                "tensorLocationSettings"]
+            opts.optimizerStateTensorLocationSettings = options[
+                "tensorLocationSettings"]
+            opts.accumulatorTensorLocationSettings = options[
+                "tensorLocationSettings"]
+        if "weightTensorLocationSettings" in options and options[
+                "weightTensorLocationSettings"]:
             opts.weightTensorLocationSettings = options[
                 "weightTensorLocationSettings"]
         if options["replication"] > 1:
             opts.replicatedGraphCount = options["replication"]
             opts.enableReplicatedGraphs = True
+        if "ioTiles" in options:
+            opts.numIOTiles = options["ioTiles"]
 
         pat = popart.Patterns(popart.PatternsLevel.Default)
         if options["phasedExecution"]:
@@ -219,6 +244,24 @@ def test_attention_streamingmemory(tmpdir):
 
     test_variants = []
 
+    defaultOffChip = popart.TensorLocationSettings(
+        location=popart.TensorLocation(
+            storage=popart.TensorStorage.OffChip,
+            loadTileSet=popart.TileSet.Compute,
+            storageTileSet=popart.TileSet.Compute,
+            replicatedTensorSharding=popart.ReplicatedTensorSharding.Off),
+        minElementsForOffChip=0,
+        minElementsForReplicatedTensorSharding=2)
+
+    ioOffChip = popart.TensorLocationSettings(
+        location=popart.TensorLocation(
+            storage=popart.TensorStorage.OffChip,
+            loadTileSet=popart.TileSet.IO,
+            storageTileSet=popart.TileSet.IO,
+            replicatedTensorSharding=popart.ReplicatedTensorSharding.Off),
+        minElementsForOffChip=0,
+        minElementsForReplicatedTensorSharding=2)
+
     # Ground truth variant
     test_variants.append({
         "stages": 2,
@@ -229,7 +272,6 @@ def test_attention_streamingmemory(tmpdir):
         "aliasZeroCopy": False,
         "batchSerialize": 1,
         "replication": 1,
-        "weightTensorLocationSettings": None
     })
 
     test_variants.append({
@@ -241,7 +283,6 @@ def test_attention_streamingmemory(tmpdir):
         "aliasZeroCopy": False,
         "batchSerialize": 4,
         "replication": 1,
-        "weightTensorLocationSettings": None
     })
 
     test_variants.append({
@@ -253,7 +294,7 @@ def test_attention_streamingmemory(tmpdir):
         "aliasZeroCopy": False,
         "batchSerialize": 1,
         "replication": 1,
-        "weightTensorLocationSettings": None
+        "tensorLocationSettings": defaultOffChip,
     })
 
     test_variants.append({
@@ -265,7 +306,7 @@ def test_attention_streamingmemory(tmpdir):
         "aliasZeroCopy": False,
         "batchSerialize": 1,
         "replication": 1,
-        "weightTensorLocationSettings": None
+        "tensorLocationSettings": defaultOffChip,
     })
 
     test_variants.append({
@@ -277,7 +318,7 @@ def test_attention_streamingmemory(tmpdir):
         "aliasZeroCopy": False,
         "batchSerialize": 1,
         "replication": 1,
-        "weightTensorLocationSettings": None
+        "tensorLocationSettings": defaultOffChip,
     })
 
     test_variants.append({
@@ -289,9 +330,11 @@ def test_attention_streamingmemory(tmpdir):
         "aliasZeroCopy": True,
         "batchSerialize": 1,
         "replication": 1,
-        "weightTensorLocationSettings": None
+        "tensorLocationSettings": defaultOffChip,
     })
 
+    # Test batch serialized single device per replica execution, where all
+    # streaming memory traffic goes through IO tiles
     test_variants.append({
         "stages": 1,
         "numLayers": 3,
@@ -300,8 +343,10 @@ def test_attention_streamingmemory(tmpdir):
         "explicitRecomputation": True,
         "aliasZeroCopy": True,
         "batchSerialize": 4,
-        "replication": 1,
-        "weightTensorLocationSettings": None
+        "batchConcat": False,
+        "replication": 2,
+        "tensorLocationSettings": ioOffChip,
+        "ioTiles": 192
     })
 
     # Test replicated tensor sharding + on chip (no outlining).
@@ -322,14 +367,16 @@ def test_attention_streamingmemory(tmpdir):
         1,
         "replication":
         2,
+        "tensorLocationSettings":
+        defaultOffChip,
         "weightTensorLocationSettings":
         popart.TensorLocationSettings(location=popart.TensorLocation(
             storage=popart.TensorStorage.OnChip,
-            loadOnIOTiles=False,
-            storeOnIOTiles=False,
-            replicatedTensorSharding=True),
+            loadTileSet=popart.TileSet.Compute,
+            storageTileSet=popart.TileSet.Compute,
+            replicatedTensorSharding=popart.ReplicatedTensorSharding.On),
                                       minElementsForOffChip=0,
-                                      minElementsForReplicatedTensorSharding=0)
+                                      minElementsForReplicatedTensorSharding=2)
     })
 
     # Test replicated tensor sharding + off chip (no outlining).
@@ -350,14 +397,16 @@ def test_attention_streamingmemory(tmpdir):
         1,
         "replication":
         2,
+        "tensorLocationSettings":
+        defaultOffChip,
         "weightTensorLocationSettings":
         popart.TensorLocationSettings(location=popart.TensorLocation(
             storage=popart.TensorStorage.OffChip,
-            loadOnIOTiles=False,
-            storeOnIOTiles=False,
-            replicatedTensorSharding=True),
+            loadTileSet=popart.TileSet.Compute,
+            storageTileSet=popart.TileSet.Compute,
+            replicatedTensorSharding=popart.ReplicatedTensorSharding.On),
                                       minElementsForOffChip=0,
-                                      minElementsForReplicatedTensorSharding=0)
+                                      minElementsForReplicatedTensorSharding=2)
     })
 
     index = 0
@@ -374,8 +423,6 @@ def test_attention_streamingmemory(tmpdir):
             assert np.all(
                 np.isclose(test_results[0][key],
                            test_results[i][key],
-                           rtol=1.e-3,
-                           atol=1.e-5,
                            equal_nan=False))
 
         val_onnx = onnx.load(
@@ -386,8 +433,4 @@ def test_attention_streamingmemory(tmpdir):
             gt = numpy_helper.to_array(gt)
             val = val_onnx.graph.initializer[j]
             val = numpy_helper.to_array(val)
-            assert np.allclose(gt,
-                               val,
-                               rtol=1.e-3,
-                               atol=1.e-5,
-                               equal_nan=False)
+            assert np.allclose(gt, val, equal_nan=False)
