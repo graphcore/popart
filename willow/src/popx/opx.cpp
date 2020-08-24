@@ -172,7 +172,11 @@ void Opx::setOutTensor(OutIndex index, const poplar::Tensor &tensor) const {
           bool aliasesInPoplar =
               poplar::concat(tensor.flatten(), inputTensor.flatten(), 0)
                   .containsAliases();
-          if (aliasesInPoplar != aliasesInIr) {
+          // If the op is outplace in the ir, but inplace in poplar, that is an
+          // error. Note, there may be cases where the op is inplace in the ir,
+          // but the poplar operation was not able to be inplaced, hence why we
+          // do not just compare `aliasesInIr != aliasesInPoplar`.
+          if (!aliasesInIr && aliasesInPoplar) {
             throw error(
                 "Op {} claims input {} -> output {} {} contain aliases, "
                 "but the Poplar tensors disagree.",
