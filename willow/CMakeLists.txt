@@ -1,9 +1,6 @@
 # for more useful warnings
 include(EnableCompilerWarnings)
 
-include_directories("include")
-include_directories("${CMAKE_CURRENT_BINARY_DIR}/include")
-
 configure_file(include/popart/version.hpp.in
   ${CMAKE_CURRENT_BINARY_DIR}/include/popart/version.hpp
   @ONLY)
@@ -58,10 +55,15 @@ find_package(gcl REQUIRED)
 
 add_library(popart SHARED ${sources})
 
+target_include_directories(popart PUBLIC
+    "include"
+    "${CMAKE_CURRENT_BINARY_DIR}/include"
+)
+
 # Then need position indepenent code enabled to make dyanamic library with static libs
 set_property(TARGET popart PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-target_include_directories (popart SYSTEM PUBLIC
+target_include_directories(popart SYSTEM PUBLIC
     # if the model checker is used: ${ONNX_UTILS_INCLUDE_DIR}
     ${ONNX_PB_INCLUDE_DIR}
     ${ONNX_CHECKER_INCLUDE_DIR}
@@ -73,9 +75,9 @@ target_include_directories (popart SYSTEM PUBLIC
     ${POPLAR_INCLUDE_DIR}
     ${POPLIBS_INCLUDE_DIR}
     ${GCL_INCLUDE_DIR}
-    )
+)
 
-target_link_libraries(popart
+target_link_libraries(popart PUBLIC
   # if the onnx mode checker is incorporated, this will be needed: ${ONNX_LIB}
   ${ONNX_LIB}
   ${ONNX_PROTO_LIB}
@@ -101,13 +103,13 @@ if (PoplarRunner_FOUND)
 endif()
 
 if (TARGET poprithms-static)
-  target_link_libraries(popart poprithms-static)
+  target_link_libraries(popart PUBLIC poprithms-static)
 else()
   # Backwards compat for build_scripts using git tag before cmake exports of poprithms,
   # once this tag is incremented, we can delete FindPoprithms.cmake
   # and related ${POPRITHMS_*}, using normal cmake targets
   target_include_directories(popart SYSTEM PUBLIC ${POPRITHMS_INCLUDE_DIR})
-  target_link_libraries(popart ${POPRITHMS_LIB})
+  target_link_libraries(popart PUBLIC ${POPRITHMS_LIB})
 endif()
 
 # The following defines cause compiler warnings if not set

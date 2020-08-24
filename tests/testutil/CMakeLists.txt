@@ -30,13 +30,6 @@ add_library(test-graphs-test-util SHARED
 target_include_directories(test-graphs-test-util
     PUBLIC
       ${test_util_include_dir_for_libs}
-
-    # Popart has no public target include directories as they were added with a
-    # directory-scope `include_directories()` call. This means we don't
-    # automatically get them from linking against popart, so fetch them manually
-    # here.
-    PRIVATE
-      $<TARGET_PROPERTY:popart,INCLUDE_DIRECTORIES>
 )
 target_link_libraries(test-graphs-test-util
     PRIVATE popart

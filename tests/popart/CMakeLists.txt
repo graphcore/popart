@@ -97,7 +97,7 @@ function(add_test_executable name)
   target_include_directories(${name}
       PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}
-      $<TARGET_PROPERTY:popart,INCLUDE_DIRECTORIES>)
+  )
   target_link_libraries(${name}
     PRIVATE
       popart

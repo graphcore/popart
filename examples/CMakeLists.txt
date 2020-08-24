@@ -74,7 +74,7 @@ function(add_popart_cpp_example name)
       PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}
       ${Boost_INCLUDE_DIRS}
-      $<TARGET_PROPERTY:popart,INCLUDE_DIRECTORIES>)  
+  )
   target_link_libraries(${name}
     ${Boost_LIBRARIES}
     popart)
