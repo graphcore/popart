@@ -54,26 +54,19 @@ public:
   BasePadOpx(Op *, Devicex *);
   const BasePadOp &getBasePadOp() const;
   poplar::Tensor padGrow(poplar::Tensor inTensor,
-                         poplar::program::Sequence &) const;
+                         poplar::program::Sequence &,
+                         bool inPlaceAllowed) const;
 
 private:
   poplar::Tensor constantModePadGrow(poplar::Tensor inTensor,
-                                     poplar::program::Sequence &) const;
+                                     poplar::program::Sequence &,
+                                     bool inPlaceAllowed) const;
 
   // Padding with a constant needs to layout the constant. Sometimes there is an
   // obvious good choice for this: an example is if this Pad is a SliceGrad,
   // then the padding should have the layout of the original Tensor sliced.
   // TODO T22334 : generalize the search for propitious layout
   std::pair<bool, poplar::Tensor> getPropitiousPadLayout() const;
-
-  // TODO T22336  : move this functionality to poplibs
-  // Pad the tensor "toPad", so that it has the same shape as toMapEdgesFrom,
-  // and the padding added has the same tile mapping as the corresponding
-  // element of toMapEdgesFrom. toMapEdgesFrom must be of the correct shape, as
-  // specified by the Ir PadOp.
-  poplar::Tensor
-  padWithTargetMapping(const poplar::Tensor &toPad,
-                       const poplar::Tensor &toMapEdgesFrom) const;
 
   // Return a Tensor of the same shape as inTensor, which is an alias of
   // inTensor at the core, and a copy of inTensor on the padding edges.
@@ -95,7 +88,8 @@ private:
   poplar::Tensor flip(const poplar::Tensor &) const;
 
   poplar::Tensor unflippedPadGrow(poplar::Tensor inTensor,
-                                  poplar::program::Sequence &) const;
+                                  poplar::program::Sequence &,
+                                  bool inPlaceAllowed) const;
 };
 
 class PadOpx : public BasePadOpx {

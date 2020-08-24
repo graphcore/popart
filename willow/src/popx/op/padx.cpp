@@ -99,70 +99,6 @@ std::pair<bool, poplar::Tensor> BasePadOpx::getPropitiousPadLayout() const {
   return {true, get(act_in)};
 }
 
-poplar::Tensor
-BasePadOpx::padWithTargetMapping(const poplar::Tensor &toPad,
-                                 const poplar::Tensor &toMapEdgesFrom) const {
-
-  auto &&op = getBasePadOp();
-
-  const auto lowerPadding = op.getLowerPadding();
-  const auto upperPadding = op.getUpperPadding();
-  const auto padValue     = op.getPadValue();
-
-  const size_t tRank = lowerPadding.size();
-  if (toPad.rank() != tRank || toMapEdgesFrom.rank() != tRank) {
-    throw internal_error("Failed size comparison in getEdgeConstClone (1)");
-  }
-
-  for (uint32_t i = 0; i < tRank; ++i) {
-    if (toPad.dim(i) + lowerPadding[i] + upperPadding[i] !=
-        toMapEdgesFrom.dim(i)) {
-      throw internal_error("Failed size comparison in getEdgeConstClone (2)");
-    }
-  }
-
-  // return a Tensor which has the same tile mapping as x, but is constant
-  const auto getConstPad = [this, padValue](const poplar::Tensor &x,
-                                            const std::string &dbs) {
-    auto constPad = graph().addConstant<float>(
-        x.elementType(),
-        x.shape(),
-        std::vector<float>(x.numElements(), padValue),
-        dbs);
-    graph().setTileMapping(constPad, graph().getTileMapping(x));
-    return constPad;
-  };
-
-  auto chisseled = getChisseled(toMapEdgesFrom);
-  std::vector<poplar::Tensor> leftPads(tRank);
-  std::vector<poplar::Tensor> rightPads(tRank);
-  for (size_t d = 0; d < tRank; ++d) {
-    leftPads[d] =
-        getConstPad(chisseled.lows[d], "/leftPad_dim" + std::to_string(d));
-    rightPads[d] =
-        getConstPad(chisseled.upps[d], "/rightPad_dim" + std::to_string(d));
-  }
-
-  auto padded = toPad;
-
-  for (int d = static_cast<int>(tRank) - 1; d >= 0; --d) {
-    const auto d_u64 = static_cast<size_t>(d);
-    const auto d_u32 = static_cast<uint32_t>(d);
-
-    if (leftPads[d_u64].numElements() > 0) {
-      padded = poplar::concat({leftPads[d_u64], padded}, d_u32);
-    }
-    if (rightPads[d_u64].numElements() > 0) {
-      padded = poplar::concat({padded, rightPads[d_u64]}, d_u32);
-    }
-  }
-
-  if (padded.shape() != toMapEdgesFrom.shape()) {
-    throw internal_error("padded should be of the same shape as the original");
-  }
-  return padded;
-}
-
 BasePadOpx::Chisseled BasePadOpx::getChisseled(const poplar::Tensor &t0) const {
 
   auto t             = t0;
@@ -233,16 +169,21 @@ BasePadOpx::cloneNcopyEdges(poplar::Tensor t,
   return t;
 }
 
-poplar::Tensor
-BasePadOpx::constantModePadGrow(poplar::Tensor inTensor,
-                                poplar::program::Sequence &s) const {
-  auto mk_padded =
-      [this, &inTensor](const popops::padding::MappingMethod mappingMethod)
+poplar::Tensor BasePadOpx::constantModePadGrow(poplar::Tensor inTensor,
+                                               poplar::program::Sequence &s,
+                                               bool inPlaceAllowed) const {
+
+  auto mk_padded = [this, &s, &inTensor, inPlaceAllowed](
+                       const popops::padding::MappingMethod mappingMethod)
       -> poplar::Tensor {
     auto &&padBaseOp        = getBasePadOp();
     const auto lowerPadding = padBaseOp.getLowerPadding();
     const auto upperPadding = padBaseOp.getUpperPadding();
     const auto padValue     = padBaseOp.getPadValue();
+
+    if (!inPlaceAllowed) {
+      inTensor = cloneNcopy(s, inTensor);
+    }
 
     return popops::pad(Opx::graph(),
                        inTensor,
@@ -261,36 +202,47 @@ BasePadOpx::constantModePadGrow(poplar::Tensor inTensor,
     return outTensor;
   }
 
-  poplar::Tensor outTensor;
   // Can we find a good layout for the constant padding?
+  // This approach is never inplace, as the full input is copied. So we do not
+  // need to cloneNcopy it.
   const auto propitious = getPropitiousPadLayout();
   if (propitious.first) {
-    outTensor = padWithTargetMapping(inTensor, propitious.second);
+    auto outTensor    = graph().clone(propitious.second);
+    auto chisseledDst = getChisseled(outTensor);
+    s.add(poplar::program::Copy(inTensor, chisseledDst.core));
+    auto allPads = chisseledDst.lows;
+    allPads.insert(
+        allPads.end(), chisseledDst.upps.cbegin(), chisseledDst.upps.cend());
+    for (auto &x : allPads) {
+      x = x.flatten();
+    }
+    auto cat = poplar::concat(allPads, 0);
+    popops::zero(graph(), cat, s, debugPrefix("zero"));
+    return outTensor;
   }
 
   else {
-    outTensor = mk_padded(popops::padding::MappingMethod::EDGE);
+    auto outTensor = mk_padded(popops::padding::MappingMethod::EDGE);
+    if (outTensor.containsAliases()) {
+      outTensor = cloneNcopyEdges(outTensor, s);
+    }
+    return outTensor;
   }
-
-  // We clone and copy edges, but keep the core (the tensor being padded) as an
-  // alias. It is not 100% clear why this helps, but it has been observed to
-  // reduce the cycle count. Speculative explanantions:
-  // - by cloning, all self-aliases are removed which mean consumers can be
-  // inplace.
-  // - the constants are replaced by non-constants, which has implications for
-  // liveness, which has a knock-on effect for cycles.
-  return cloneNcopyEdges(outTensor, s);
 }
 
-poplar::Tensor
-BasePadOpx::unflippedPadGrow(poplar::Tensor inTensor,
-                             poplar::program::Sequence &prog) const {
+poplar::Tensor BasePadOpx::unflippedPadGrow(poplar::Tensor inTensor,
+                                            poplar::program::Sequence &prog,
+                                            bool inPlaceAllowed) const {
 
   auto &&padBaseOp = getBasePadOp();
   const auto mode  = padBaseOp.getMode();
 
   if (mode == "constant") {
-    return constantModePadGrow(inTensor, prog);
+    return constantModePadGrow(inTensor, prog, inPlaceAllowed);
+  }
+
+  if (!inPlaceAllowed) {
+    inTensor = cloneNcopy(prog, inTensor);
   }
 
   const auto lp = padBaseOp.getLowerPadding();
@@ -311,19 +263,20 @@ BasePadOpx::unflippedPadGrow(poplar::Tensor inTensor,
 }
 
 poplar::Tensor BasePadOpx::padGrow(poplar::Tensor inTensor,
-                                   poplar::program::Sequence &prog) const {
-  return unflippedPadGrow(flip(inTensor), prog);
+                                   poplar::program::Sequence &prog,
+                                   bool inPlaceAllowed) const {
+  return unflippedPadGrow(flip(inTensor), prog, inPlaceAllowed);
 }
 
 void PadOpx::grow(poplar::program::Sequence &prog) const {
   auto in0    = Opx::getInTensor(BasePadOp::getInIndex());
-  auto padded = padGrow(cloneNcopy(prog, in0), prog);
+  auto padded = padGrow(in0, prog, false);
   setOutTensor(BasePadOp::getOutIndex(), padded);
 }
 
 void PadInplaceOpx::grow(poplar::program::Sequence &prog) const {
   auto in0    = Opx::getInTensor(BasePadOp::getInIndex());
-  auto padded = padGrow(in0, prog);
+  auto padded = padGrow(in0, prog, true);
   setOutTensor(BasePadOp::getOutIndex(), padded);
 }
 
