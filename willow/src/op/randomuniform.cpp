@@ -11,83 +11,119 @@ namespace popart {
 
 RandomUniformOp::RandomUniformOp(const OperatorIdentifier &opid_,
                                  const std::vector<int64_t> &shape_,
-                                 DataType dataType_,
+                                 const OptionalDataType &dataType_,
                                  float high_,
                                  float low_,
                                  const Op::Settings &settings_)
-    : Op(opid_, settings_), shape(shape_), dataType(dataType_), high(high_),
-      low(low_), seedModifier(settings_.getIr().getAndIncrementSeedModifier()) {
-}
+    : RandomUniformBaseOp(opid_, dataType_, high_, low_, settings_),
+      shape(shape_) {}
 
 std::unique_ptr<Op> RandomUniformOp::clone() const {
   return std::make_unique<RandomUniformOp>(*this);
 }
 
-void RandomUniformOp::setup() {
-  outInfo(getOutIndex()) = TensorInfo(dataType, shape);
+void RandomUniformOp::setup() { setupWithShape(shape); }
+
+RandomUniformLikeOp::RandomUniformLikeOp(const OperatorIdentifier &opid_,
+                                         const OptionalDataType &dataType_,
+                                         float high_,
+                                         float low_,
+                                         const Op::Settings &settings_)
+    : RandomUniformBaseOp(opid_, dataType_, high_, low_, settings_) {}
+
+std::unique_ptr<Op> RandomUniformLikeOp::clone() const {
+  return std::make_unique<RandomUniformLikeOp>(*this);
 }
 
-void RandomUniformOp::appendOutlineAttributes(OpSerialiserBase &os) const {
-  Op::appendOutlineAttributes(os);
-  os.appendAttribute("low", low);
-  os.appendAttribute("high", high);
-  os.appendAttribute("seedModifier", seedModifier);
+void RandomUniformLikeOp::setup() { setupLike(inInfo(getInIndex())); }
+
+std::vector<std::unique_ptr<Op>> RandomUniformLikeOp::getGradOps() {
+  throw error("RandomUniformLikeOp should be removed by pattern "
+              "'RandomUniformLikeOpPattern' before call to "
+              "RandomUniformLikeOp::getGradOps");
+}
+
+std::unique_ptr<RandomUniformOp>
+RandomUniformLikeOp::foldInputTensor(const Op::Settings &settings) const {
+  const auto &input = inTensor(getInIndex())->info;
+
+  return std::make_unique<RandomUniformOp>(Onnx::Operators::RandomUniform_1,
+                                           input.shape(),
+                                           input.dataType(),
+                                           getHigh(),
+                                           getLow(),
+                                           settings);
 }
 
 namespace {
 
-static OpDefinition::DataTypes supportedDataTypes = {DataType::FLOAT16,
-                                                     DataType::FLOAT};
-
-static OpDefinition
-    randomUniformOpDef({OpDefinition::Inputs({}),
-                        OpDefinition::Outputs({{"output", supportedDataTypes}}),
-                        OpDefinition::Attributes({{"shape", {"*"}},
-                                                  {"dtype", {"*"}},
-                                                  {"high", {"*"}},
-                                                  {"low", {"*"}},
-                                                  {"seed", {"*"}}})});
+static OpDefinition randomUniformOpDef(
+    {OpDefinition::Inputs({}),
+     OpDefinition::Outputs({{"output", RandomBaseOp::getSupportedDataTypes()}}),
+     OpDefinition::Attributes({{"shape", {"*"}},
+                               {"dtype", {"*"}},
+                               {"high", {"*"}},
+                               {"low", {"*"}},
+                               {"seed", {"*"}}})});
 
 static OpCreator<RandomUniformOp> randomUniformOpCreator(
     OpDefinitions({{Onnx::Operators::RandomUniform_1, randomUniformOpDef}}),
     [](const OpCreatorInfo &info) {
       const auto &attr = info.attributes;
-
-      auto shape = attr.getAttribute<Attributes::Ints>("shape");
-      float high = attr.getAttribute<Attributes::Float>("high", 1.0f);
-      float low  = attr.getAttribute<Attributes::Float>("low", 0.0f);
-
-      constexpr int dtypeDefaultValue =
-          ONNX_NAMESPACE::TensorProto_DataType_FLOAT;
-      auto onnxDataType =
-          attr.getAttribute<Attributes::Int>("dtype", dtypeDefaultValue);
-
-      logging::trace("RandomUniform : dtype: {}", onnxDataType);
-      DataType dataType = onnxutil::getDataType(onnxDataType);
-      logging::trace("RandomUniform : popart DataType {}",
-                     getDataTypeInfoMap().at(dataType).name());
-
-      bool isSupported = std::count(supportedDataTypes.begin(),
-                                    supportedDataTypes.end(),
-                                    dataType) == 1;
-
-      if (!isSupported) {
-        throw error("{}: Unsupported data type requested: {}",
-                    info.opid,
-                    getDataTypeInfoMap().at(dataType).name());
-      }
-
-      if (attr.hasAttribute("seed")) {
-        throw error("{}: Optional seed attribute is not supported. "
-                    "Use session::setRandomSeed instead.",
-                    info.opid);
-      }
+      auto shape       = attr.getAttribute<Attributes::Ints>("shape");
+      float high       = attr.getAttribute<Attributes::Float>("high", 1.0f);
+      float low        = attr.getAttribute<Attributes::Float>("low", 0.0f);
+      auto dataType    = RandomBaseOp::getOptionalDataType(attr, info.opid);
+      RandomBaseOp::errorIfSeedIsSet(attr, info.opid);
 
       return std::unique_ptr<Op>(new RandomUniformOp(
           info.opid, shape, dataType, high, low, info.settings));
     },
     /*isPublic=*/true);
 
+// RandomUniformLike: Constrain to any tensor type. If the dtype attribute is
+// not provided this must be a valid output type.
+static OpDefinition::DataTypes T = {
+    DataType::UINT8,
+    DataType::INT8,
+    DataType::UINT16,
+    DataType::INT16,
+    DataType::INT32,
+    DataType::INT64,
+    DataType::UINT32,
+    DataType::UINT64,
+    DataType::BOOL,
+    DataType::FLOAT,
+    DataType::FLOAT16,
+    DataType::BFLOAT16,
+    DataType::DOUBLE,
+    DataType::COMPLEX64,
+    DataType::COMPLEX128,
+    DataType::STRING,
+};
+
+static OpDefinition randomUniformLikeOpDef(
+    {OpDefinition::Inputs({{"inputs", T}}),
+     OpDefinition::Outputs({{"output", RandomBaseOp::getSupportedDataTypes()}}),
+     OpDefinition::Attributes({{"dtype", {"*"}},
+                               {"high", {"*"}},
+                               {"low", {"*"}},
+                               {"seed", {"*"}}})});
+
+static OpCreator<RandomUniformLikeOp> randomUniformLikeOpCreator(
+    OpDefinitions({{Onnx::Operators::RandomUniformLike_1,
+                    randomUniformLikeOpDef}}),
+    [](const OpCreatorInfo &info) {
+      const auto &attr = info.attributes;
+      float high       = attr.getAttribute<Attributes::Float>("high", 1.0f);
+      float low        = attr.getAttribute<Attributes::Float>("low", 0.0f);
+      auto dataType    = RandomBaseOp::getOptionalDataType(attr, info.opid);
+      RandomBaseOp::errorIfSeedIsSet(attr, info.opid);
+
+      return std::unique_ptr<Op>(new RandomUniformLikeOp(
+          info.opid, dataType, high, low, info.settings));
+    },
+    /*isPublic=*/true);
 } // namespace
 
 } // namespace popart

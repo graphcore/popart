@@ -89,6 +89,7 @@ def op_tester(tmpdir):
             self.rtol = 1e-05
             self.atol = 1e-08
             self.check_shapes = True
+            self.check_dtypes = True
             self.equal_nan = False
             self.inplacing = True
             self.lossReduction = popart.ReductionType.Mean
@@ -99,6 +100,12 @@ def op_tester(tmpdir):
                     print('shape mismatch {} != {}'.format(
                         t1.shape, ref.shape))
                 assert t1.shape == ref.shape
+
+            if self.check_dtypes:
+                if t1.dtype != ref.dtype:
+                    print('dtype mismatch {} != {}'.format(
+                        t1.dtype, ref.dtype))
+                assert t1.dtype == ref.dtype
 
             if not np.allclose(t1, ref, self.rtol, self.atol, self.equal_nan):
                 print('rtol:{} atol:{}'.format(self.rtol, self.atol))

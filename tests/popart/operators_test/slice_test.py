@@ -200,7 +200,7 @@ def test_slice_start_out_of_bounds(op_tester):
 
     def reference(ref_data):
         o = d1[:, 1000:1000]
-        i1_grad = np.zeros(d1.shape)
+        i1_grad = np.zeros(d1.shape, dtype=np.float32)
 
         return [o, i1_grad]
 
@@ -245,7 +245,7 @@ def test_slice_end_out_of_bounds(op_tester):
     def reference(ref_data):
         o = d1[:, 1:1000]
 
-        o_grad = np.ones(o.shape)
+        o_grad = np.ones(o.shape, dtype=np.float32)
         i1_grad = np.pad(o_grad, [(0, 0), (1, 0), (0, 0)], constant_values=0.)
 
         return [o, i1_grad]

@@ -62,7 +62,7 @@ def test_dynamiczero_training(op_tester):
         mask1data[:, 8:12, 0:1, :] = 0.0
         mask0 = torch.tensor(mask0data)
         mask1 = torch.tensor(mask1data)
-        out = (((tensor * mask0) + inject_tensor) * mask1)
+        out = (((tensor * mask0) + inject_tensor) * mask1).type(torch.float32)
         outputs.append(out)
         result.append(out)
 

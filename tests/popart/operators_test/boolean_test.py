@@ -18,8 +18,8 @@ def test_and(op_tester):
         return [o]
 
     def reference(ref_data):
-        t1 = torch.tensor(d1).type(torch.ByteTensor)
-        t2 = torch.tensor(d2).type(torch.ByteTensor)
+        t1 = torch.tensor(d1, dtype=torch.bool)
+        t2 = torch.tensor(d2, dtype=torch.bool)
         out = t1 & t2
         return [out]
 
@@ -38,8 +38,8 @@ def test_broadcast_and(op_tester):
         return [o]
 
     def reference(ref_data):
-        t1 = torch.tensor(d1).type(torch.ByteTensor)
-        t2 = torch.tensor(d2).type(torch.ByteTensor)
+        t1 = torch.tensor(d1, dtype=torch.bool)
+        t2 = torch.tensor(d2, dtype=torch.bool)
         out = t1 & t2
         return [out]
 
@@ -58,8 +58,8 @@ def test_or(op_tester):
         return [o]
 
     def reference(ref_data):
-        t1 = torch.tensor(d1).type(torch.ByteTensor)
-        t2 = torch.tensor(d2).type(torch.ByteTensor)
+        t1 = torch.tensor(d1, dtype=torch.bool)
+        t2 = torch.tensor(d2, dtype=torch.bool)
         out = t1 | t2
         return [out]
 
@@ -79,8 +79,8 @@ def test_broadcast_or(op_tester):
         return [o]
 
     def reference(ref_data):
-        t1 = torch.tensor(d1).type(torch.ByteTensor)
-        t2 = torch.tensor(d2).type(torch.ByteTensor)
+        t1 = torch.tensor(d1, dtype=torch.bool)
+        t2 = torch.tensor(d2, dtype=torch.bool)
         out = t1 | t2
         return [out]
 

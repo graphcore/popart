@@ -242,6 +242,8 @@ public:
   bool isMatMulRhsGradOpEnabled();
   bool isAcosOpPatternEnabled();
   bool isAcoshOpPatternEnabled();
+  bool isRandomNormalLikeOpPatternEnabled();
+  bool isRandomUniformLikeOpPatternEnabled();
 
   // The following methods are fluent allow you to
   // Pattens().enableInPlace0(false).
@@ -285,6 +287,8 @@ public:
   Patterns &enableMatMulRhsGradOp(bool v);
   Patterns &enableAcosOpPattern(bool v);
   Patterns &enableAcoshOpPattern(bool v);
+  Patterns &enableRandomNormalLikeOpPattern(bool v);
+  Patterns &enableRandomUniformLikeOpPattern(bool v);
   Patterns &enableRuntimeAsserts(bool b) {
     runtimeAssertsOn = b;
     return *this;

@@ -58,6 +58,8 @@ def test_l1(op_tester):
 def test_l1_training(op_tester):
     op_tester.rtol = 1e-02
     op_tester.atol = 1e-05
+    # TODO(T25842): Enable data type checks for this test
+    op_tester.check_dtypes = False
 
     for reduction_type in (popart.ReductionType.Mean,
                            popart.ReductionType.Sum):

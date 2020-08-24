@@ -4,6 +4,8 @@
 
 #include <popart/op/abs.hpp>
 #include <popart/op/cos.hpp>
+#include <popart/op/randomnormal.hpp>
+#include <popart/op/randomuniform.hpp>
 #include <popart/op/sign.hpp>
 #include <popart/op/sin.hpp>
 
@@ -36,6 +38,7 @@
 #include <popart/patterns/powarg0gradoppattern.hpp>
 #include <popart/patterns/powarg1gradoppattern.hpp>
 #include <popart/patterns/preunirepl.hpp>
+#include <popart/patterns/randomlikeoppattern.hpp>
 #include <popart/patterns/reciprocalgradoppattern.hpp>
 #include <popart/patterns/sequenceexpander.hpp>
 #include <popart/patterns/sgd1decompose.hpp>
@@ -324,6 +327,14 @@ bool Patterns::isAcoshOpPatternEnabled() {
   return isPatternEnabled<AcoshOpPattern>();
 }
 
+bool Patterns::isRandomNormalLikeOpPatternEnabled() {
+  return isPatternEnabled<RandomLikeOpPattern<RandomNormalLikeOp>>();
+}
+
+bool Patterns::isRandomUniformLikeOpPatternEnabled() {
+  return isPatternEnabled<RandomLikeOpPattern<RandomUniformLikeOp>>();
+}
+
 Patterns &Patterns::enableInitAccumulate(bool v) {
   return enablePattern<InitAccumulatePattern>(v);
 }
@@ -448,6 +459,14 @@ Patterns &Patterns::enableAcoshOpPattern(bool v) {
   return enablePattern<AcoshOpPattern>(v);
 }
 
+Patterns &Patterns::enableRandomNormalLikeOpPattern(bool v) {
+  return enablePattern<RandomLikeOpPattern<RandomNormalLikeOp>>(v);
+}
+
+Patterns &Patterns::enableRandomUniformLikeOpPattern(bool v) {
+  return enablePattern<RandomLikeOpPattern<RandomUniformLikeOp>>(v);
+}
+
 Patterns &Patterns::enablePattern(const std::type_index &t, bool v) {
   logging::pattern::warn(
       "Pattern {} {}", PreAliasPatternManager::getPatternName(t), v);
@@ -508,6 +527,8 @@ std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
   }
 
   static std::map<std::type_index, float> patternPriority{
+      {std::type_index(typeid(RandomLikeOpPattern<RandomUniformLikeOp>)), 42},
+      {std::type_index(typeid(RandomLikeOpPattern<RandomNormalLikeOp>)), 41},
       {std::type_index(typeid(AcosOpPattern)), 40},
       {std::type_index(typeid(AcosOpPattern)), 39},
       {std::type_index(typeid(UpsampleToResizePattern)), 38},

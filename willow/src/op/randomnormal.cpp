@@ -11,83 +11,119 @@ namespace popart {
 
 RandomNormalOp::RandomNormalOp(const OperatorIdentifier &opid_,
                                const std::vector<int64_t> &shape_,
-                               DataType dataType_,
+                               const OptionalDataType &dataType_,
                                float mean_,
                                float scale_,
                                const Op::Settings &settings_)
-    : Op(opid_, settings_), shape(shape_), dataType(dataType_), mean(mean_),
-      scale(scale_),
-      seedModifier(settings_.getIr().getAndIncrementSeedModifier()) {}
+    : RandomNormalBaseOp(opid_, dataType_, mean_, scale_, settings_),
+      shape(shape_) {}
 
 std::unique_ptr<Op> RandomNormalOp::clone() const {
   return std::make_unique<RandomNormalOp>(*this);
 }
 
-void RandomNormalOp::setup() {
-  outInfo(getOutIndex()) = TensorInfo(dataType, shape);
+void RandomNormalOp::setup() { setupWithShape(shape); }
+
+RandomNormalLikeOp::RandomNormalLikeOp(const OperatorIdentifier &opid_,
+                                       const OptionalDataType &dataType_,
+                                       float mean_,
+                                       float scale_,
+                                       const Op::Settings &settings_)
+    : RandomNormalBaseOp(opid_, dataType_, mean_, scale_, settings_) {}
+
+std::unique_ptr<Op> RandomNormalLikeOp::clone() const {
+  return std::make_unique<RandomNormalLikeOp>(*this);
 }
 
-void RandomNormalOp::appendOutlineAttributes(OpSerialiserBase &os) const {
-  Op::appendOutlineAttributes(os);
-  os.appendAttribute("mean", mean);
-  os.appendAttribute("scale", scale);
-  os.appendAttribute("seedModifier", seedModifier);
+void RandomNormalLikeOp::setup() { setupLike(inInfo(getInIndex())); }
+
+std::vector<std::unique_ptr<Op>> RandomNormalLikeOp::getGradOps() {
+  throw error("RandomNormalLikeOp should be removed by pattern "
+              "'RandomNormalLikeOpPattern' before call to "
+              "RandomNormalLikeOp::getGradOps");
+}
+
+std::unique_ptr<RandomNormalOp>
+RandomNormalLikeOp::foldInputTensor(const Op::Settings &settings) const {
+  const auto &input = inTensor(getInIndex())->info;
+
+  return std::make_unique<RandomNormalOp>(Onnx::Operators::RandomNormal_1,
+                                          input.shape(),
+                                          input.dataType(),
+                                          getMean(),
+                                          getScale(),
+                                          settings);
 }
 
 namespace {
 
-static OpDefinition::DataTypes supportedDataTypes = {DataType::FLOAT16,
-                                                     DataType::FLOAT};
-
-static OpDefinition
-    randomNormalOpDef({OpDefinition::Inputs({}),
-                       OpDefinition::Outputs({{"output", supportedDataTypes}}),
-                       OpDefinition::Attributes({{"shape", {"*"}},
-                                                 {"dtype", {"*"}},
-                                                 {"mean", {"*"}},
-                                                 {"scale", {"*"}},
-                                                 {"seed", {"*"}}})});
+static OpDefinition randomNormalOpDef(
+    {OpDefinition::Inputs({}),
+     OpDefinition::Outputs({{"output", RandomBaseOp::getSupportedDataTypes()}}),
+     OpDefinition::Attributes({{"shape", {"*"}},
+                               {"dtype", {"*"}},
+                               {"mean", {"*"}},
+                               {"scale", {"*"}},
+                               {"seed", {"*"}}})});
 
 static OpCreator<RandomNormalOp> randomNormalOpCreator(
     OpDefinitions({{Onnx::Operators::RandomNormal_1, randomNormalOpDef}}),
     [](const OpCreatorInfo &info) {
       const auto &attr = info.attributes;
-
-      auto shape  = attr.getAttribute<Attributes::Ints>("shape");
-      float mean  = attr.getAttribute<Attributes::Float>("mean", 0.0f);
-      float scale = attr.getAttribute<Attributes::Float>("scale", 1.0f);
-
-      constexpr int dtypeDefaultValue =
-          ONNX_NAMESPACE::TensorProto_DataType_FLOAT;
-      auto onnxDataType =
-          attr.getAttribute<Attributes::Int>("dtype", dtypeDefaultValue);
-
-      logging::trace("RandomNormal : dtype: {}", onnxDataType);
-      DataType dataType = onnxutil::getDataType(onnxDataType);
-      logging::trace("RandomNormal : popart DataType {}",
-                     getDataTypeInfoMap().at(dataType).name());
-
-      bool isSupported = std::count(supportedDataTypes.begin(),
-                                    supportedDataTypes.end(),
-                                    dataType) == 1;
-
-      if (!isSupported) {
-        throw error("{}: Unsupported data type requested: {}",
-                    info.opid,
-                    getDataTypeInfoMap().at(dataType).name());
-      }
-
-      if (attr.hasAttribute("seed")) {
-        throw error("{}: Optional seed attribute is not supported. "
-                    "Use session::setRandomSeed instead.",
-                    info.opid);
-      }
+      auto shape       = attr.getAttribute<Attributes::Ints>("shape");
+      float mean       = attr.getAttribute<Attributes::Float>("mean", 0.0f);
+      float scale      = attr.getAttribute<Attributes::Float>("scale", 1.0f);
+      auto dataType    = RandomBaseOp::getOptionalDataType(attr, info.opid);
+      RandomBaseOp::errorIfSeedIsSet(attr, info.opid);
 
       return std::unique_ptr<Op>(new RandomNormalOp(
           info.opid, shape, dataType, mean, scale, info.settings));
     },
     /*isPublic=*/true);
 
-} // namespace
+// RandomNormalLike: Constrain to any tensor type. If the dtype attribute is not
+// provided this must be a valid output type.
+static OpDefinition::DataTypes T = {
+    DataType::UINT8,
+    DataType::INT8,
+    DataType::UINT16,
+    DataType::INT16,
+    DataType::INT32,
+    DataType::INT64,
+    DataType::UINT32,
+    DataType::UINT64,
+    DataType::BOOL,
+    DataType::FLOAT,
+    DataType::FLOAT16,
+    DataType::BFLOAT16,
+    DataType::DOUBLE,
+    DataType::COMPLEX64,
+    DataType::COMPLEX128,
+    DataType::STRING,
+};
 
+static OpDefinition randomNormalLikeOpDef(
+    {OpDefinition::Inputs({{"inputs", T}}),
+     OpDefinition::Outputs({{"output", RandomBaseOp::getSupportedDataTypes()}}),
+     OpDefinition::Attributes({{"dtype", {"*"}},
+                               {"mean", {"*"}},
+                               {"scale", {"*"}},
+                               {"seed", {"*"}}})});
+
+static OpCreator<RandomNormalLikeOp> randomNormalLikeOpCreator(
+    OpDefinitions({{Onnx::Operators::RandomNormalLike_1,
+                    randomNormalLikeOpDef}}),
+    [](const OpCreatorInfo &info) {
+      const auto &attr = info.attributes;
+      float mean       = attr.getAttribute<Attributes::Float>("mean", 0.0f);
+      float scale      = attr.getAttribute<Attributes::Float>("scale", 1.0f);
+      auto dataType    = RandomBaseOp::getOptionalDataType(attr, info.opid);
+      RandomBaseOp::errorIfSeedIsSet(attr, info.opid);
+
+      return std::unique_ptr<Op>(new RandomNormalLikeOp(
+          info.opid, dataType, mean, scale, info.settings));
+    },
+    /*isPublic=*/true);
+
+} // namespace
 } // namespace popart

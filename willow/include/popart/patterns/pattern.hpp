@@ -51,7 +51,9 @@ enum class PreAliasPatternType {
   InitAccumulate,
   UpsampleToResize,
   AcosOpPattern,
-  AcoshOpPattern
+  AcoshOpPattern,
+  RandomNormalLikeOpPattern,
+  RandomUniformLikeOpPattern
 };
 
 // Definition: A tensor is "touched" by a Pattern if
