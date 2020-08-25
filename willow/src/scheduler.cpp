@@ -206,25 +206,38 @@ public:
     // Adding pipelineStage bins is not required for correctness.
     // Constraining the Ops to be within their pipelineStage improves
     // scheduling runtime as swaps with no effect are invalid.
-    std::vector<std::vector<OpAddress>> bins;
+    std::vector<std::vector<OpAddress>> normal_bins;
+    std::vector<std::vector<OpAddress>> outer_bins;
     for (const auto &x : pg.getOps()) {
       auto op = x.second.get();
-      if (op->hasPipelineStage() &&
-          op->settings.executionContext == ExecutionContext::Normal) {
+      bool should_bin =
+          op->hasPipelineStage() &&
+          (op->settings.executionContext == ExecutionContext::Normal ||
+           (op->settings.executionContext ==
+                ExecutionContext::AccumulateOuterFragment &&
+            op->hasVirtualGraphId()));
+      if (should_bin) {
         auto opAddress = opAddresses[op];
-        auto stage     = *op->getOptionalPipelineStage();
-        if (stage < -1) {
-          throw internal_error(
-              "stage < -1 unexpected. This function needs adjustment");
+        auto stage_or_vgraph =
+            op->settings.executionContext == ExecutionContext::Normal
+                ? *op->getOptionalPipelineStage()
+                : *op->getOptionalVGraphId();
+        if (stage_or_vgraph < -1) {
+          throw internal_error("stage_or_vgraph < -1 unexpected. This function "
+                               "needs adjustment");
         }
-        uint64_t binIndex = static_cast<uint64_t>(1LL + stage);
+        uint64_t binIndex = static_cast<uint64_t>(1LL + stage_or_vgraph);
+        auto &bins = op->settings.executionContext == ExecutionContext::Normal
+                         ? normal_bins
+                         : outer_bins;
         if (binIndex >= bins.size()) {
           bins.resize(binIndex + 1);
         }
         bins[binIndex].push_back(opAddress);
       }
     }
-    g.insertBinConstraints(bins, "PipelineStageStart_");
+    g.insertBinConstraints(normal_bins, "PipelineStageStart_");
+    g.insertBinConstraints(outer_bins, "OuterPipelineStageStart_");
   }
 
   void annotatePriorities() {
