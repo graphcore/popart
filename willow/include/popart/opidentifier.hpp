@@ -310,6 +310,7 @@ const static AiGraphcoreOpIdV1 GeluInplace("GeluInplace");
 const static AiGraphcoreOpIdV1 Detach_1("Detach", 1, 1);
 const static AiGraphcoreOpIdV1 DetachInplace("DetachInplace");
 const static AiGraphcoreOpIdV1 MultiConv_1("MultiConv");
+const static AiGraphcoreOpIdV1 Nop_1("Nop", 1, 1);
 
 const static AiGraphcoreOpIdV1 ReluInplace("ReluInplace");
 const static AiGraphcoreOpIdV1 LeakyReluInplace("LeakyReluInplace");
@@ -420,6 +421,7 @@ const static OperatorIdentifier ReplicatedAllReduce =
 const static OperatorIdentifier L1           = CustomOperators::L1;
 const static OperatorIdentifier Nll          = CustomOperators::Nll;
 const static OperatorIdentifier IdentityLoss = CustomOperators::IdentityLoss;
+const static OperatorIdentifier Nop          = CustomOperators::Nop_1;
 } // namespace OpSet1
 } // namespace AiGraphcore
 

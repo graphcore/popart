@@ -173,6 +173,12 @@ public:
                        const std::string &name = {});
 
   /**
+   * Add a nop operation to the model
+   *
+   */
+  TensorId nop(const std::vector<TensorId> &args, const std::string &name = {});
+
+  /**
    * Add a scale operation to the model
    *
    * This is a poplar extension, to replace the experimental scale

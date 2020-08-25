@@ -526,6 +526,13 @@ TensorId AiGraphcoreOpset1::printtensor(const std::vector<TensorId> &args,
       .at(0);
 }
 
+TensorId AiGraphcoreOpset1::nop(const std::vector<TensorId> &args,
+                                const std::string &name) {
+  return impl
+      ->op(Onnx::AiGraphcore::OpSet1::Nop, getOpsetVersion(), args, {}, name)
+      .at(0);
+}
+
 TensorId AiGraphcoreOpset1::scale(const std::vector<TensorId> &args,
                                   float scale,
                                   const std::string &name) {
