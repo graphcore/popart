@@ -126,8 +126,8 @@ void DropoutOpx::grow(poplar::program::Sequence &prog) const {
     }
   } else {
     // In inference mode, dropout is an identity function
-    setOutTensor(DropoutOp::getOutIndex(),
-                 getInTensor(DropoutOp::getInIndex()));
+    auto output = cloneNcopy(prog, getInTensor(DropoutOp::getInIndex()));
+    setOutTensor(DropoutOp::getOutIndex(), output);
     // In inference mask is just a tensor of true values.
     if (op.getOutputMask()) {
       auto mask = getConst(poplar::BOOL,
