@@ -112,7 +112,7 @@ class Opset:
         self.operators = []
 
     def RemoveDuplicates(self):
-        """ 
+        """
         When putting ops into the opset, the opset can end up with multiple
         versions of the same op, this function will remove duplicates with the
         smallest version number
@@ -253,6 +253,17 @@ class Attribute:
 
         return True
 
+    def hasPrimitiveDefaultValue(self):
+        if len(str(self.default)) == 0:
+            return False
+
+        if self.type == onnx.defs.OpSchema.AttrType.INT:
+            return True
+        if self.type == onnx.defs.OpSchema.AttrType.FLOAT:
+            return True
+
+        return False
+
     def DefaultValue(self):
         """
         Return the default value for an attribute
@@ -367,7 +378,7 @@ class Operation:
         return self.name < other.name
 
     def CppName(self):
-        """ 
+        """
         Return a C++ name for the operation
         Need the replace C++ key words
         """
@@ -739,8 +750,14 @@ def genBuilderCpp(filename, schema):
                                         .format(a.name, a.DefaultValue(),
                                                 a.CppType()))
                                 else:
-                                    f.write("  if ({} != {}) {{\n".format(
-                                        a.name, a.DefaultValue()))
+                                    if a.hasPrimitiveDefaultValue():
+                                        f.write("  // Workaround Onnx not " +
+                                                "applying default values " +
+                                                "during type/shape inference" +
+                                                "\n  {\n")
+                                    else:
+                                        f.write("  if ({} != {}) {{\n".format(
+                                            a.name, a.DefaultValue()))
 
                                 if a.isBoostOptional():
                                     f.write("    attributes[\"{}\"] = *{};\n".
@@ -976,7 +993,7 @@ def genOpIdentifiersHpp(filename, schema):
                 continue
 
             ops = v.operations
-            ''' 
+            '''
             for opset_version, opset in sorted(v.opsets.items(),
                                                key=lambda x: int(x[0])):
 

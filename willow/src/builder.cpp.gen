@@ -24,7 +24,8 @@ AiOnnxOpset6::add(const std::vector<TensorId>& args,
   if (axis != nonstd::optional<int64_t>()) {
     attributes["axis"] = *axis;
   }
-  if (broadcast != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["broadcast"] = broadcast;
   }
   return impl->op(Onnx::Operators::Add_6,
@@ -43,7 +44,8 @@ AiOnnxOpset6::logical_and(const std::vector<TensorId>& args,
   if (axis != nonstd::optional<int64_t>()) {
     attributes["axis"] = *axis;
   }
-  if (broadcast != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["broadcast"] = broadcast;
   }
   return impl->op(Onnx::Operators::And_1,
@@ -59,10 +61,12 @@ AiOnnxOpset6::argmax(const std::vector<TensorId>& args,
                      int64_t keepdims,
                      const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
-  if (keepdims != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["keepdims"] = keepdims;
   }
   return impl->op(Onnx::Operators::ArgMax_1,
@@ -78,10 +82,12 @@ AiOnnxOpset6::argmin(const std::vector<TensorId>& args,
                      int64_t keepdims,
                      const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
-  if (keepdims != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["keepdims"] = keepdims;
   }
   return impl->op(Onnx::Operators::ArgMin_1,
@@ -128,13 +134,15 @@ AiOnnxOpset6::batchnormalization(const std::vector<TensorId>& args,
   if (std::abs(epsilon - 1e-05f) >  std::numeric_limits<float>::epsilon()) {
     attributes["epsilon"] = epsilon;
   }
-  if (is_test != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["is_test"] = is_test;
   }
   if (std::abs(momentum - 0.9f) >  std::numeric_limits<float>::epsilon()) {
     attributes["momentum"] = momentum;
   }
-  if (spatial != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["spatial"] = spatial;
   }
   return impl->op(Onnx::Operators::BatchNormalization_6,
@@ -227,7 +235,8 @@ AiOnnxOpset6::conv(const std::vector<TensorId>& args,
   if (!dilations.empty()) {
     attributes["dilations"] = dilations;
   }
-  if (group != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["group"] = group;
   }
   if (!kernel_shape.empty()) {
@@ -264,7 +273,8 @@ AiOnnxOpset6::convtranspose(const std::vector<TensorId>& args,
   if (!dilations.empty()) {
     attributes["dilations"] = dilations;
   }
-  if (group != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["group"] = group;
   }
   if (!kernel_shape.empty()) {
@@ -311,7 +321,8 @@ AiOnnxOpset6::div(const std::vector<TensorId>& args,
   if (axis != nonstd::optional<int64_t>()) {
     attributes["axis"] = *axis;
   }
-  if (broadcast != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["broadcast"] = broadcast;
   }
   return impl->op(Onnx::Operators::Div_6,
@@ -328,7 +339,8 @@ AiOnnxOpset6::dropout(const std::vector<TensorId>& args,
                       float ratio,
                       const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (is_test != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["is_test"] = is_test;
   }
   if (std::abs(ratio - 0.5f) >  std::numeric_limits<float>::epsilon()) {
@@ -366,7 +378,8 @@ AiOnnxOpset6::equal(const std::vector<TensorId>& args,
   if (axis != nonstd::optional<int64_t>()) {
     attributes["axis"] = *axis;
   }
-  if (broadcast != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["broadcast"] = broadcast;
   }
   return impl->op(Onnx::Operators::Equal_1,
@@ -392,7 +405,8 @@ AiOnnxOpset6::flatten(const std::vector<TensorId>& args,
                       int64_t axis,
                       const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
   return impl->op(Onnx::Operators::Flatten_1,
@@ -444,10 +458,12 @@ AiOnnxOpset6::gru(const std::vector<TensorId>& args,
   if (hidden_size != nonstd::optional<int64_t>()) {
     attributes["hidden_size"] = *hidden_size;
   }
-  if (linear_before_reset != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["linear_before_reset"] = linear_before_reset;
   }
-  if (output_sequence != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["output_sequence"] = output_sequence;
   }
   return impl->op(Onnx::Operators::GRU_3,
@@ -463,7 +479,8 @@ AiOnnxOpset6::gather(const std::vector<TensorId>& args,
                      int64_t axis,
                      const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
   return impl->op(Onnx::Operators::Gather_1,
@@ -488,13 +505,16 @@ AiOnnxOpset6::gemm(const std::vector<TensorId>& args,
   if (std::abs(beta - 1.0f) >  std::numeric_limits<float>::epsilon()) {
     attributes["beta"] = beta;
   }
-  if (broadcast != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["broadcast"] = broadcast;
   }
-  if (transA != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["transA"] = transA;
   }
-  if (transB != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["transB"] = transB;
   }
   return impl->op(Onnx::Operators::Gemm_6,
@@ -520,7 +540,8 @@ AiOnnxOpset6::globallppool(const std::vector<TensorId>& args,
                            int64_t p,
                            const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (p != 2) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["p"] = p;
   }
   return impl->op(Onnx::Operators::GlobalLpPool_2,
@@ -550,7 +571,8 @@ AiOnnxOpset6::greater(const std::vector<TensorId>& args,
   if (axis != nonstd::optional<int64_t>()) {
     attributes["axis"] = *axis;
   }
-  if (broadcast != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["broadcast"] = broadcast;
   }
   return impl->op(Onnx::Operators::Greater_1,
@@ -584,7 +606,8 @@ AiOnnxOpset6::hardmax(const std::vector<TensorId>& args,
                       int64_t axis,
                       const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
   return impl->op(Onnx::Operators::Hardmax_1,
@@ -699,10 +722,12 @@ AiOnnxOpset6::lstm(const std::vector<TensorId>& args,
   if (hidden_size != nonstd::optional<int64_t>()) {
     attributes["hidden_size"] = *hidden_size;
   }
-  if (input_forget != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["input_forget"] = input_forget;
   }
-  if (output_sequence != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["output_sequence"] = output_sequence;
   }
   return impl->op(Onnx::Operators::LSTM_1,
@@ -737,7 +762,8 @@ AiOnnxOpset6::less(const std::vector<TensorId>& args,
   if (axis != nonstd::optional<int64_t>()) {
     attributes["axis"] = *axis;
   }
-  if (broadcast != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["broadcast"] = broadcast;
   }
   return impl->op(Onnx::Operators::Less_1,
@@ -763,7 +789,8 @@ AiOnnxOpset6::logsoftmax(const std::vector<TensorId>& args,
                          int64_t axis,
                          const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
   return impl->op(Onnx::Operators::LogSoftmax_1,
@@ -797,10 +824,12 @@ AiOnnxOpset6::lpnormalization(const std::vector<TensorId>& args,
                               int64_t p,
                               const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != -1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
-  if (p != 2) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["p"] = p;
   }
   return impl->op(Onnx::Operators::LpNormalization_1,
@@ -819,7 +848,8 @@ AiOnnxOpset6::lppool(const std::vector<TensorId>& args,
                      const std::string& name) {
   std::map<std::string, popart::any> attributes;
   attributes["kernel_shape"] = kernel_shape;
-  if (p != 2) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["p"] = p;
   }
   if (!pads.empty()) {
@@ -930,7 +960,8 @@ AiOnnxOpset6::mul(const std::vector<TensorId>& args,
   if (axis != nonstd::optional<int64_t>()) {
     attributes["axis"] = *axis;
   }
-  if (broadcast != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["broadcast"] = broadcast;
   }
   return impl->op(Onnx::Operators::Mul_6,
@@ -971,7 +1002,8 @@ AiOnnxOpset6::logical_or(const std::vector<TensorId>& args,
   if (axis != nonstd::optional<int64_t>()) {
     attributes["axis"] = *axis;
   }
-  if (broadcast != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["broadcast"] = broadcast;
   }
   return impl->op(Onnx::Operators::Or_1,
@@ -1026,7 +1058,8 @@ AiOnnxOpset6::pow(const std::vector<TensorId>& args,
   if (axis != nonstd::optional<int64_t>()) {
     attributes["axis"] = *axis;
   }
-  if (broadcast != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["broadcast"] = broadcast;
   }
   return impl->op(Onnx::Operators::Pow_1,
@@ -1066,7 +1099,8 @@ AiOnnxOpset6::rnn(const std::vector<TensorId>& args,
   if (hidden_size != nonstd::optional<int64_t>()) {
     attributes["hidden_size"] = *hidden_size;
   }
-  if (output_sequence != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["output_sequence"] = output_sequence;
   }
   return impl->op(Onnx::Operators::RNN_1,
@@ -1085,7 +1119,8 @@ AiOnnxOpset6::randomnormal(                           const std::vector<int64_t>
                            nonstd::optional<float> seed,
                            const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (dtype != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["dtype"] = dtype;
   }
   if (std::abs(mean - 0.0f) >  std::numeric_limits<float>::epsilon()) {
@@ -1140,7 +1175,8 @@ AiOnnxOpset6::randomuniform(                            const std::vector<int64_
                             nonstd::optional<float> seed,
                             const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (dtype != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["dtype"] = dtype;
   }
   if (std::abs(high - 1.0f) >  std::numeric_limits<float>::epsilon()) {
@@ -1207,7 +1243,8 @@ AiOnnxOpset6::reducel1(const std::vector<TensorId>& args,
   if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
-  if (keepdims != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["keepdims"] = keepdims;
   }
   return impl->op(Onnx::Operators::ReduceL1_1,
@@ -1226,7 +1263,8 @@ AiOnnxOpset6::reducel2(const std::vector<TensorId>& args,
   if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
-  if (keepdims != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["keepdims"] = keepdims;
   }
   return impl->op(Onnx::Operators::ReduceL2_1,
@@ -1245,7 +1283,8 @@ AiOnnxOpset6::reducelogsum(const std::vector<TensorId>& args,
   if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
-  if (keepdims != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["keepdims"] = keepdims;
   }
   return impl->op(Onnx::Operators::ReduceLogSum_1,
@@ -1264,7 +1303,8 @@ AiOnnxOpset6::reducelogsumexp(const std::vector<TensorId>& args,
   if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
-  if (keepdims != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["keepdims"] = keepdims;
   }
   return impl->op(Onnx::Operators::ReduceLogSumExp_1,
@@ -1283,7 +1323,8 @@ AiOnnxOpset6::reducemax(const std::vector<TensorId>& args,
   if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
-  if (keepdims != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["keepdims"] = keepdims;
   }
   return impl->op(Onnx::Operators::ReduceMax_1,
@@ -1302,7 +1343,8 @@ AiOnnxOpset6::reducemean(const std::vector<TensorId>& args,
   if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
-  if (keepdims != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["keepdims"] = keepdims;
   }
   return impl->op(Onnx::Operators::ReduceMean_1,
@@ -1321,7 +1363,8 @@ AiOnnxOpset6::reducemin(const std::vector<TensorId>& args,
   if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
-  if (keepdims != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["keepdims"] = keepdims;
   }
   return impl->op(Onnx::Operators::ReduceMin_1,
@@ -1340,7 +1383,8 @@ AiOnnxOpset6::reduceprod(const std::vector<TensorId>& args,
   if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
-  if (keepdims != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["keepdims"] = keepdims;
   }
   return impl->op(Onnx::Operators::ReduceProd_1,
@@ -1359,7 +1403,8 @@ AiOnnxOpset6::reducesum(const std::vector<TensorId>& args,
   if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
-  if (keepdims != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["keepdims"] = keepdims;
   }
   return impl->op(Onnx::Operators::ReduceSum_1,
@@ -1378,7 +1423,8 @@ AiOnnxOpset6::reducesumsquare(const std::vector<TensorId>& args,
   if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
-  if (keepdims != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["keepdims"] = keepdims;
   }
   return impl->op(Onnx::Operators::ReduceSumSquare_1,
@@ -1486,7 +1532,8 @@ AiOnnxOpset6::softmax(const std::vector<TensorId>& args,
                       int64_t axis,
                       const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
   return impl->op(Onnx::Operators::Softmax_1,
@@ -1538,7 +1585,8 @@ AiOnnxOpset6::split(const std::vector<TensorId>& args,
                     const std::vector<int64_t>& split,
                     const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
   if (!split.empty()) {
@@ -1587,7 +1635,8 @@ AiOnnxOpset6::sub(const std::vector<TensorId>& args,
   if (axis != nonstd::optional<int64_t>()) {
     attributes["axis"] = *axis;
   }
-  if (broadcast != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["broadcast"] = broadcast;
   }
   return impl->op(Onnx::Operators::Sub_6,
@@ -1636,7 +1685,8 @@ AiOnnxOpset6::topk(const std::vector<TensorId>& args,
                    int64_t axis,
                    const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != -1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
   attributes["k"] = k;
@@ -1703,7 +1753,8 @@ AiOnnxOpset6::logical_xor(const std::vector<TensorId>& args,
   if (axis != nonstd::optional<int64_t>()) {
     attributes["axis"] = *axis;
   }
-  if (broadcast != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["broadcast"] = broadcast;
   }
   return impl->op(Onnx::Operators::Xor_1,
@@ -1776,7 +1827,8 @@ AiOnnxOpset7::averagepool(const std::vector<TensorId>& args,
                           const std::vector<int64_t>& strides,
                           const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (count_include_pad != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["count_include_pad"] = count_include_pad;
   }
   attributes["kernel_shape"] = kernel_shape;
@@ -1811,7 +1863,8 @@ AiOnnxOpset7::batchnormalization(const std::vector<TensorId>& args,
   if (std::abs(momentum - 0.9f) >  std::numeric_limits<float>::epsilon()) {
     attributes["momentum"] = momentum;
   }
-  if (spatial != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["spatial"] = spatial;
   }
   return impl->op(Onnx::Operators::BatchNormalization_7,
@@ -1902,7 +1955,8 @@ AiOnnxOpset7::gru(const std::vector<TensorId>& args,
   if (hidden_size != nonstd::optional<int64_t>()) {
     attributes["hidden_size"] = *hidden_size;
   }
-  if (linear_before_reset != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["linear_before_reset"] = linear_before_reset;
   }
   return impl->op(Onnx::Operators::GRU_7,
@@ -1927,10 +1981,12 @@ AiOnnxOpset7::gemm(const std::vector<TensorId>& args,
   if (std::abs(beta - 1.0f) >  std::numeric_limits<float>::epsilon()) {
     attributes["beta"] = beta;
   }
-  if (transA != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["transA"] = transA;
   }
-  if (transB != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["transB"] = transB;
   }
   return impl->op(Onnx::Operators::Gemm_7,
@@ -1981,7 +2037,8 @@ AiOnnxOpset7::lstm(const std::vector<TensorId>& args,
   if (hidden_size != nonstd::optional<int64_t>()) {
     attributes["hidden_size"] = *hidden_size;
   }
-  if (input_forget != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["input_forget"] = input_forget;
   }
   return impl->op(Onnx::Operators::LSTM_7,
@@ -2021,10 +2078,12 @@ AiOnnxOpset7::multinomial(const std::vector<TensorId>& args,
                           nonstd::optional<float> seed,
                           const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (dtype != 6) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["dtype"] = dtype;
   }
-  if (sample_size != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["sample_size"] = sample_size;
   }
   if (seed != nonstd::optional<float>()) {
@@ -2203,7 +2262,8 @@ AiOnnxOpset8::maxpool(const std::vector<TensorId>& args,
   if (!pads.empty()) {
     attributes["pads"] = pads;
   }
-  if (storage_order != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["storage_order"] = storage_order;
   }
   if (!strides.empty()) {
@@ -2418,7 +2478,8 @@ AiOnnxOpset9::eyelike(const std::vector<TensorId>& args,
   if (dtype != nonstd::optional<int64_t>()) {
     attributes["dtype"] = *dtype;
   }
-  if (k != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["k"] = k;
   }
   return impl->op(Onnx::Operators::EyeLike_9,
@@ -2433,7 +2494,8 @@ AiOnnxOpset9::flatten(const std::vector<TensorId>& args,
                       int64_t axis,
                       const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
   return impl->op(Onnx::Operators::Flatten_9,
@@ -2457,10 +2519,12 @@ AiOnnxOpset9::gemm(const std::vector<TensorId>& args,
   if (std::abs(beta - 1.0f) >  std::numeric_limits<float>::epsilon()) {
     attributes["beta"] = beta;
   }
-  if (transA != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["transA"] = transA;
   }
-  if (transB != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["transB"] = transB;
   }
   return impl->op(Onnx::Operators::Gemm_9,
@@ -2566,7 +2630,8 @@ AiOnnxOpset9::onehot(const std::vector<TensorId>& args,
                      int64_t axis,
                      const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != -1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
   return impl->op(Onnx::Operators::OneHot_9,
@@ -2628,7 +2693,8 @@ AiOnnxOpset9::scatter(const std::vector<TensorId>& args,
                       int64_t axis,
                       const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
   return impl->op(Onnx::Operators::Scatter_9,
@@ -2749,10 +2815,12 @@ AiOnnxOpset10::averagepool(const std::vector<TensorId>& args,
                            const std::vector<int64_t>& strides,
                            const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (ceil_mode != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["ceil_mode"] = ceil_mode;
   }
-  if (count_include_pad != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["count_include_pad"] = count_include_pad;
   }
   attributes["kernel_shape"] = kernel_shape;
@@ -2785,7 +2853,8 @@ AiOnnxOpset10::convinteger(const std::vector<TensorId>& args,
   if (!dilations.empty()) {
     attributes["dilations"] = dilations;
   }
-  if (group != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["group"] = group;
   }
   if (!kernel_shape.empty()) {
@@ -2838,10 +2907,12 @@ AiOnnxOpset10::isinf(const std::vector<TensorId>& args,
                      int64_t detect_positive,
                      const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (detect_negative != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["detect_negative"] = detect_negative;
   }
-  if (detect_positive != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["detect_positive"] = detect_positive;
   }
   return impl->op(Onnx::Operators::IsInf_10,
@@ -2873,7 +2944,8 @@ AiOnnxOpset10::maxpool(const std::vector<TensorId>& args,
                        const std::vector<int64_t>& strides,
                        const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (ceil_mode != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["ceil_mode"] = ceil_mode;
   }
   if (!dilations.empty()) {
@@ -2883,7 +2955,8 @@ AiOnnxOpset10::maxpool(const std::vector<TensorId>& args,
   if (!pads.empty()) {
     attributes["pads"] = pads;
   }
-  if (storage_order != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["storage_order"] = storage_order;
   }
   if (!strides.empty()) {
@@ -2906,7 +2979,8 @@ AiOnnxOpset10::mod(const std::vector<TensorId>& args,
                    int64_t fmod,
                    const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (fmod != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["fmod"] = fmod;
   }
   return impl->op(Onnx::Operators::Mod_10,
@@ -2921,7 +2995,8 @@ AiOnnxOpset10::nonmaxsuppression(const std::vector<TensorId>& args,
                                  int64_t center_point_box,
                                  const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (center_point_box != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["center_point_box"] = center_point_box;
   }
   return impl->op(Onnx::Operators::NonMaxSuppression_10,
@@ -2943,7 +3018,8 @@ AiOnnxOpset10::qlinearconv(const std::vector<TensorId>& args,
   if (!dilations.empty()) {
     attributes["dilations"] = dilations;
   }
-  if (group != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["group"] = group;
   }
   if (!kernel_shape.empty()) {
@@ -3005,10 +3081,12 @@ AiOnnxOpset10::reversesequence(const std::vector<TensorId>& args,
                                int64_t time_axis,
                                const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (batch_axis != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["batch_axis"] = batch_axis;
   }
-  if (time_axis != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["time_axis"] = time_axis;
   }
   return impl->op(Onnx::Operators::ReverseSequence_10,
@@ -3030,13 +3108,16 @@ AiOnnxOpset10::roialign(const std::vector<TensorId>& args,
   if (mode != "avg") {
     attributes["mode"] = mode;
   }
-  if (output_height != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["output_height"] = output_height;
   }
-  if (output_width != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["output_width"] = output_width;
   }
-  if (sampling_ratio != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["sampling_ratio"] = sampling_ratio;
   }
   if (std::abs(spatial_scale - 1.0f) >  std::numeric_limits<float>::epsilon()) {
@@ -3071,7 +3152,8 @@ AiOnnxOpset10::stringnormalizer(const std::vector<TensorId>& args,
   if (case_change_action != "NONE") {
     attributes["case_change_action"] = case_change_action;
   }
-  if (is_case_sensitive != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["is_case_sensitive"] = is_case_sensitive;
   }
   if (locale != std::string()) {
@@ -3107,7 +3189,8 @@ AiOnnxOpset10::topk(const std::vector<TensorId>& args,
                     int64_t axis,
                     const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != -1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
   return impl->op(Onnx::Operators::TopK_10,
@@ -3138,10 +3221,12 @@ AiOnnxOpset11::argmax(const std::vector<TensorId>& args,
                       int64_t keepdims,
                       const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
-  if (keepdims != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["keepdims"] = keepdims;
   }
   return impl->op(Onnx::Operators::ArgMax_11,
@@ -3157,10 +3242,12 @@ AiOnnxOpset11::argmin(const std::vector<TensorId>& args,
                       int64_t keepdims,
                       const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
-  if (keepdims != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["keepdims"] = keepdims;
   }
   return impl->op(Onnx::Operators::ArgMin_11,
@@ -3179,10 +3266,12 @@ AiOnnxOpset11::averagepool(const std::vector<TensorId>& args,
                            const std::vector<int64_t>& strides,
                            const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (ceil_mode != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["ceil_mode"] = ceil_mode;
   }
-  if (count_include_pad != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["count_include_pad"] = count_include_pad;
   }
   attributes["kernel_shape"] = kernel_shape;
@@ -3262,7 +3351,8 @@ AiOnnxOpset11::concatfromsequence(const std::vector<TensorId>& args,
                                   const std::string& name) {
   std::map<std::string, popart::any> attributes;
   attributes["axis"] = axis;
-  if (new_axis != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["new_axis"] = new_axis;
   }
   return impl->op(Onnx::Operators::ConcatFromSequence_11,
@@ -3301,7 +3391,8 @@ AiOnnxOpset11::conv(const std::vector<TensorId>& args,
   if (!dilations.empty()) {
     attributes["dilations"] = dilations;
   }
-  if (group != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["group"] = group;
   }
   if (!kernel_shape.empty()) {
@@ -3338,7 +3429,8 @@ AiOnnxOpset11::convtranspose(const std::vector<TensorId>& args,
   if (!dilations.empty()) {
     attributes["dilations"] = dilations;
   }
-  if (group != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["group"] = group;
   }
   if (!kernel_shape.empty()) {
@@ -3369,10 +3461,12 @@ AiOnnxOpset11::cumsum(const std::vector<TensorId>& args,
                       int64_t reverse,
                       const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (exclusive != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["exclusive"] = exclusive;
   }
-  if (reverse != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["reverse"] = reverse;
   }
   return impl->op(Onnx::Operators::CumSum_11,
@@ -3437,7 +3531,8 @@ AiOnnxOpset11::flatten(const std::vector<TensorId>& args,
                        int64_t axis,
                        const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
   return impl->op(Onnx::Operators::Flatten_11,
@@ -3452,7 +3547,8 @@ AiOnnxOpset11::gather(const std::vector<TensorId>& args,
                       int64_t axis,
                       const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
   return impl->op(Onnx::Operators::Gather_11,
@@ -3467,7 +3563,8 @@ AiOnnxOpset11::gatherelements(const std::vector<TensorId>& args,
                               int64_t axis,
                               const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
   return impl->op(Onnx::Operators::GatherElements_11,
@@ -3502,10 +3599,12 @@ AiOnnxOpset11::gemm(const std::vector<TensorId>& args,
   if (std::abs(beta - 1.0f) >  std::numeric_limits<float>::epsilon()) {
     attributes["beta"] = beta;
   }
-  if (transA != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["transA"] = transA;
   }
-  if (transB != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["transB"] = transB;
   }
   return impl->op(Onnx::Operators::Gemm_11,
@@ -3520,7 +3619,8 @@ AiOnnxOpset11::hardmax(const std::vector<TensorId>& args,
                        int64_t axis,
                        const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
   return impl->op(Onnx::Operators::Hardmax_11,
@@ -3558,7 +3658,8 @@ AiOnnxOpset11::logsoftmax(const std::vector<TensorId>& args,
                           int64_t axis,
                           const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
   return impl->op(Onnx::Operators::LogSoftmax_11,
@@ -3595,7 +3696,8 @@ AiOnnxOpset11::lppool(const std::vector<TensorId>& args,
                       const std::string& name) {
   std::map<std::string, popart::any> attributes;
   attributes["kernel_shape"] = kernel_shape;
-  if (p != 2) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["p"] = p;
   }
   if (!pads.empty()) {
@@ -3622,7 +3724,8 @@ AiOnnxOpset11::maxpool(const std::vector<TensorId>& args,
                        const std::vector<int64_t>& strides,
                        const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (ceil_mode != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["ceil_mode"] = ceil_mode;
   }
   if (!dilations.empty()) {
@@ -3632,7 +3735,8 @@ AiOnnxOpset11::maxpool(const std::vector<TensorId>& args,
   if (!pads.empty()) {
     attributes["pads"] = pads;
   }
-  if (storage_order != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["storage_order"] = storage_order;
   }
   if (!strides.empty()) {
@@ -3676,7 +3780,8 @@ AiOnnxOpset11::nonmaxsuppression(const std::vector<TensorId>& args,
                                  int64_t center_point_box,
                                  const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (center_point_box != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["center_point_box"] = center_point_box;
   }
   return impl->op(Onnx::Operators::NonMaxSuppression_11,
@@ -3691,7 +3796,8 @@ AiOnnxOpset11::onehot(const std::vector<TensorId>& args,
                       int64_t axis,
                       const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != -1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
   return impl->op(Onnx::Operators::OneHot_11,
@@ -3736,7 +3842,8 @@ AiOnnxOpset11::reducel1(const std::vector<TensorId>& args,
   if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
-  if (keepdims != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["keepdims"] = keepdims;
   }
   return impl->op(Onnx::Operators::ReduceL1_11,
@@ -3755,7 +3862,8 @@ AiOnnxOpset11::reducel2(const std::vector<TensorId>& args,
   if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
-  if (keepdims != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["keepdims"] = keepdims;
   }
   return impl->op(Onnx::Operators::ReduceL2_11,
@@ -3774,7 +3882,8 @@ AiOnnxOpset11::reducelogsum(const std::vector<TensorId>& args,
   if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
-  if (keepdims != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["keepdims"] = keepdims;
   }
   return impl->op(Onnx::Operators::ReduceLogSum_11,
@@ -3793,7 +3902,8 @@ AiOnnxOpset11::reducelogsumexp(const std::vector<TensorId>& args,
   if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
-  if (keepdims != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["keepdims"] = keepdims;
   }
   return impl->op(Onnx::Operators::ReduceLogSumExp_11,
@@ -3812,7 +3922,8 @@ AiOnnxOpset11::reducemax(const std::vector<TensorId>& args,
   if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
-  if (keepdims != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["keepdims"] = keepdims;
   }
   return impl->op(Onnx::Operators::ReduceMax_11,
@@ -3831,7 +3942,8 @@ AiOnnxOpset11::reducemean(const std::vector<TensorId>& args,
   if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
-  if (keepdims != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["keepdims"] = keepdims;
   }
   return impl->op(Onnx::Operators::ReduceMean_11,
@@ -3850,7 +3962,8 @@ AiOnnxOpset11::reducemin(const std::vector<TensorId>& args,
   if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
-  if (keepdims != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["keepdims"] = keepdims;
   }
   return impl->op(Onnx::Operators::ReduceMin_11,
@@ -3869,7 +3982,8 @@ AiOnnxOpset11::reduceprod(const std::vector<TensorId>& args,
   if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
-  if (keepdims != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["keepdims"] = keepdims;
   }
   return impl->op(Onnx::Operators::ReduceProd_11,
@@ -3888,7 +4002,8 @@ AiOnnxOpset11::reducesum(const std::vector<TensorId>& args,
   if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
-  if (keepdims != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["keepdims"] = keepdims;
   }
   return impl->op(Onnx::Operators::ReduceSum_11,
@@ -3907,7 +4022,8 @@ AiOnnxOpset11::reducesumsquare(const std::vector<TensorId>& args,
   if (axes != nonstd::optional<std::vector<int64_t>>()) {
     attributes["axes"] = *axes;
   }
-  if (keepdims != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["keepdims"] = keepdims;
   }
   return impl->op(Onnx::Operators::ReduceSumSquare_11,
@@ -3933,7 +4049,8 @@ AiOnnxOpset11::resize(const std::vector<TensorId>& args,
   if (std::abs(cubic_coeff_a - -0.75f) >  std::numeric_limits<float>::epsilon()) {
     attributes["cubic_coeff_a"] = cubic_coeff_a;
   }
-  if (exclude_outside != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["exclude_outside"] = exclude_outside;
   }
   if (std::abs(extrapolation_value - 0.0f) >  std::numeric_limits<float>::epsilon()) {
@@ -4004,7 +4121,8 @@ AiOnnxOpset11::scatter(const std::vector<TensorId>& args,
                        int64_t axis,
                        const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
   return impl->op(Onnx::Operators::Scatter_11,
@@ -4019,7 +4137,8 @@ AiOnnxOpset11::scatterelements(const std::vector<TensorId>& args,
                                int64_t axis,
                                const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
   return impl->op(Onnx::Operators::ScatterElements_11,
@@ -4125,7 +4244,8 @@ AiOnnxOpset11::softmax(const std::vector<TensorId>& args,
                        int64_t axis,
                        const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
   return impl->op(Onnx::Operators::Softmax_11,
@@ -4142,7 +4262,8 @@ AiOnnxOpset11::split(const std::vector<TensorId>& args,
                      const std::vector<int64_t>& split,
                      const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
   if (!split.empty()) {
@@ -4162,10 +4283,12 @@ AiOnnxOpset11::splittosequence(const std::vector<TensorId>& args,
                                int64_t keepdims,
                                const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != 0) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
-  if (keepdims != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["keepdims"] = keepdims;
   }
   return impl->op(Onnx::Operators::SplitToSequence_11,
@@ -4197,13 +4320,16 @@ AiOnnxOpset11::topk(const std::vector<TensorId>& args,
                     int64_t sorted,
                     const std::string& name) {
   std::map<std::string, popart::any> attributes;
-  if (axis != -1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["axis"] = axis;
   }
-  if (largest != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["largest"] = largest;
   }
-  if (sorted != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["sorted"] = sorted;
   }
   return impl->op(Onnx::Operators::TopK_11,
@@ -4223,7 +4349,8 @@ AiOnnxOpset11::unique(const std::vector<TensorId>& args,
   if (axis != nonstd::optional<int64_t>()) {
     attributes["axis"] = *axis;
   }
-  if (sorted != 1) {
+  // Workaround Onnx not applying default values during type/shape inference
+  {
     attributes["sorted"] = sorted;
   }
   return impl->op(Onnx::Operators::Unique_11,
@@ -4246,4 +4373,3 @@ AiOnnxOpset11::unsqueeze(const std::vector<TensorId>& args,
                   attributes,
                   name)[0];
 }
-
