@@ -11,6 +11,7 @@ class AdamVarUpdateOp : public VarUpdateWithUpdaterOp {
 public:
   AdamVarUpdateOp(const TensorId &varToUpdate,
                   OptimizerValue initLr,
+                  OptimizerValue mwn,
                   const Op::Settings &);
 
   std::unique_ptr<Op> clone() const final;
@@ -19,10 +20,12 @@ public:
   void appendOutlineAttributes(OpSerialiserBase &) const final;
 
   const OptimizerValue initLr;
+  const OptimizerValue initMwn;
 
   static InIndex getLambR1SqInIndex() { return 2; }
   static InIndex getLambR2SqInIndex() { return 3; }
   static InIndex getLrInIndex() { return 4; }
+  static InIndex getMwnInIndex() { return 5; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };

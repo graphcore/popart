@@ -241,6 +241,21 @@ private:
   }
 };
 
+class AdamMaxWeightNormHelper : public CompoundScalarHelper<Adam> {
+public:
+  float val(const TensorId &weightId, const Adam &) const final;
+  bool isConst(const TensorId &weightId, const Adam &) const final;
+  float val(float mwn) const { return mwn; }
+
+private:
+  std::string defaultPrefix() const final {
+    return reservedDefaultMaxWeightNormPrefix();
+  }
+  std::string specificPrefix() const final {
+    return reservedSpecificMaxWeightNormPrefix();
+  }
+};
+
 } // namespace popart
 
 #endif

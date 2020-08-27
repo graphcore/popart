@@ -11,7 +11,7 @@
 namespace popart {
 
 std::unique_ptr<Op> AdamVarUpdateOp::cloneWithNewName(const TensorId &x) const {
-  return std::make_unique<AdamVarUpdateOp>(x, initLr, settings);
+  return std::make_unique<AdamVarUpdateOp>(x, initLr, initMwn, settings);
 }
 
 std::unique_ptr<Op> AdamVarUpdateOp::clone() const {
@@ -34,14 +34,18 @@ void AdamVarUpdateOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   if (initLr.isConst()) {
     os.appendAttribute("const learning rate", initLr.val());
   }
+  if (initMwn.isConst()) {
+    os.appendAttribute("const max weight norm", initMwn.val());
+  }
 }
 
 AdamVarUpdateOp::AdamVarUpdateOp(const TensorId &varToUpdate,
                                  OptimizerValue lr,
+                                 OptimizerValue mwn,
                                  const Op::Settings &opSettings)
     : VarUpdateWithUpdaterOp(Onnx::CustomOperators::AdamVarUpdate,
                              varToUpdate,
                              opSettings),
-      initLr(lr) {}
+      initLr(lr), initMwn(mwn) {}
 
 } // namespace popart

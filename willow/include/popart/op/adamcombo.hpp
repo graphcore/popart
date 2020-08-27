@@ -29,6 +29,7 @@ public:
               OptimizerValue initialB2,
               OptimizerValue initialEps,
               OptimizerValue initialLs,
+              OptimizerValue mwn,
               AdamMode mode_,
               bool withGradAccum_,
               OptimizerReductionType reductionType_,
@@ -63,6 +64,9 @@ public:
   // loss scaling
   const OptimizerValue initLs;
 
+  // maximum trust ratio (Lamb)
+  const OptimizerValue initMwn;
+
   // Adam mode
   const AdamMode mode;
 
@@ -82,6 +86,7 @@ public:
   static InIndex getBeta2InIndex() { return 5; }
   static InIndex getEpsInIndex() { return 6; }
   static InIndex getLsInIndex() { return 7; }
+  static InIndex getMwnInIndex() { return 8; }
 
   std::set<InIndex> optionalInputs() const final;
 

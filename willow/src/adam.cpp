@@ -169,6 +169,7 @@ Adam::Adam(const std::map<std::string, OptimizerValue> &cmap,
            cmap.at("defaultBeta2"),
            cmap.at("defaultEps"),
            cmap.at("lossScaling"),
+           cmap.at("maxWeightNorm"),
            mode_,
            accumType_,
            accl1Type_,
@@ -184,8 +185,31 @@ Adam::Adam(OptimizerValue lr,
            DataType accumType_,
            DataType accl1Type_,
            DataType accl2Type_)
+    : Adam(lr,
+           wd,
+           b1,
+           b2,
+           eps,
+           lossScaling,
+           getUnsetMaxWeightNorm(),
+           mode_,
+           accumType_,
+           accl1Type_,
+           accl2Type_) {}
+
+Adam::Adam(OptimizerValue lr,
+           OptimizerValue wd,
+           OptimizerValue b1,
+           OptimizerValue b2,
+           OptimizerValue eps,
+           OptimizerValue lossScaling,
+           OptimizerValue mwn_,
+           AdamMode mode_,
+           DataType accumType_,
+           DataType accl1Type_,
+           DataType accl2Type_)
     : Optimizer(lossScaling), lrs(lr), wds(wd), b1s(b1), b2s(b2), epsvs(eps),
-      mode(mode_), accumType(accumType_), accl1Type(accl1Type_),
+      mwns(mwn_), mode(mode_), accumType(accumType_), accl1Type(accl1Type_),
       accl2Type(accl2Type_) {
   runValueChecks(lr, wd, b1, b2, eps);
 }
@@ -202,12 +226,13 @@ OptimizerValue Adam::getLossScalingOrDefault(
 std::map<std::string, OptimizerValue>
 Adam::getComplete(const std::map<std::string, OptimizerValue> &m) {
 
-  std::vector<std::string> sixParamArgs{"defaultLearningRate",
-                                        "defaultWeightDecay",
-                                        "defaultBeta1",
-                                        "defaultBeta2",
-                                        "defaultEps",
-                                        "lossScaling"};
+  std::vector<std::string> argNames{"defaultLearningRate",
+                                    "defaultWeightDecay",
+                                    "defaultBeta1",
+                                    "defaultBeta2",
+                                    "defaultEps",
+                                    "lossScaling",
+                                    "maxWeightNorm"};
 
   std::map<std::string, OptimizerValue> complete{};
 
@@ -217,15 +242,15 @@ Adam::getComplete(const std::map<std::string, OptimizerValue> &m) {
   complete.insert({"defaultBeta2", getUnsetBeta2()});
   complete.insert({"defaultEps", getUnsetEps()});
   complete.insert({"lossScaling", getUnsetLossScaling()});
+  complete.insert({"maxWeightNorm", getUnsetMaxWeightNorm()});
 
   for (auto key_val : m) {
     auto key = key_val.first;
     auto val = key_val.second;
-    if (std::find(sixParamArgs.cbegin(), sixParamArgs.cend(), key) ==
-        sixParamArgs.cend()) {
+    if (std::find(argNames.cbegin(), argNames.cend(), key) == argNames.cend()) {
       std::ostringstream oss;
       oss << "Invalid Adam key, " << key << ", the allowed keys are ( ";
-      for (auto x : sixParamArgs) {
+      for (auto x : argNames) {
         oss << x << ' ';
       }
       oss << ')';
@@ -268,6 +293,7 @@ std::unique_ptr<Op> Adam::createOp(const Tensor &w, Graph &graph) const {
       b2helper.getFromWeightId(w.id, *this),
       epshelper.getFromWeightId(w.id, *this),
       lshelper.getFromWeightId(w.id, *this),
+      mwnhelper.getFromWeightId(w.id, *this),
       mode,
       gradientAccumulationEnabled(),
       reductionType,
@@ -282,7 +308,7 @@ std::unique_ptr<Op> Adam::createOp(const Tensor &w, Graph &graph) const {
 
 std::vector<TensorId> Adam::getInputIds(const Tensor &w) const {
   const TensorId &varId = w.id;
-  std::vector<TensorId> inputs(8, "");
+  std::vector<TensorId> inputs(9, "");
 
   // variable
   inputs[VarUpdateOp::getVarToUpdateInIndex()] = varId;
@@ -314,6 +340,10 @@ std::vector<TensorId> Adam::getInputIds(const Tensor &w) const {
   inputs[AdamComboOp::getLsInIndex()] =
       lshelper.getScalarIdIfNonConst(w, *this);
 
+  // max weight norm
+  inputs[AdamComboOp::getMwnInIndex()] =
+      mwnhelper.getScalarIdIfNonConst(w, *this);
+
   return inputs;
 }
 
@@ -328,6 +358,7 @@ Adam::getOptimizerInputs(const Tensor &weight) const {
   ids.push_back(b2helper.getScalarIdIfNonConst(weight, *this));
   ids.push_back(epshelper.getScalarIdIfNonConst(weight, *this));
   ids.push_back(lshelper.getScalarIdIfNonConst(weight, *this));
+  ids.push_back(mwnhelper.getScalarIdIfNonConst(weight, *this));
 
   std::vector<std::tuple<TensorId, TensorInfo>> optInputs;
   for (const auto &id : ids) {
@@ -389,6 +420,10 @@ float Adam::getStoredValue(const TensorId &optId) const {
     return lshelper.getFromScalarId(optId, *this).val();
   }
 
+  if (mwnhelper.idMatch(optId)) {
+    return mwnhelper.getFromScalarId(optId, *this).val();
+  }
+
   throw error("In getStoredValue for {}, it doesn't match any existing "
               "optimizer prefix",
               optId);
@@ -434,6 +469,11 @@ bool Adam::validReplacement(const Optimizer &other) const {
 
   logging::ir::debug("Checking eps for compatibility");
   if (!epsvs.validReplacement(asAdam->epsvs)) {
+    return false;
+  }
+
+  logging::ir::debug("Checking mwn for compatibility");
+  if (!mwns.validReplacement(asAdam->mwns)) {
     return false;
   }
 

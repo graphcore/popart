@@ -262,4 +262,15 @@ bool AdamLossScalingHelper::isConst(const TensorId &weightId,
   return adam.lossScaling().isConst();
 }
 
+float AdamMaxWeightNormHelper::val(const TensorId &weightId,
+                                   const Adam &adam) const {
+  auto wd = adam.maxWeightNorm().get(weightId).val();
+  return val(wd);
+}
+
+bool AdamMaxWeightNormHelper::isConst(const TensorId &weightId,
+                                      const Adam &adam) const {
+  return adam.maxWeightNorm().get(weightId).isConst();
+}
+
 } // namespace popart

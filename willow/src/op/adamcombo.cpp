@@ -13,6 +13,7 @@ AdamComboOp::AdamComboOp(const TensorId &varToUpdate,
                          OptimizerValue initialB2,
                          OptimizerValue initialEps,
                          OptimizerValue initialLs,
+                         OptimizerValue initialMwn,
                          AdamMode mode_,
                          bool withGradAccum_,
                          OptimizerReductionType reductionType_,
@@ -24,9 +25,10 @@ AdamComboOp::AdamComboOp(const TensorId &varToUpdate,
                              varToUpdate,
                              settings_),
       initLr(initialLr), initWd(initialWd), initB1(initialB1),
-      initB2(initialB2), initEps(initialEps), initLs(initialLs), mode(mode_),
-      withGradAccum(withGradAccum_), reductionType(reductionType_),
-      accumType(accumType_), accl1Type(accl1Type_), accl2Type(accl2Type_) {}
+      initB2(initialB2), initEps(initialEps), initLs(initialLs),
+      initMwn(initialMwn), mode(mode_), withGradAccum(withGradAccum_),
+      reductionType(reductionType_), accumType(accumType_),
+      accl1Type(accl1Type_), accl2Type(accl2Type_) {}
 
 void AdamComboOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   if (initLr.isConst()) {
@@ -53,6 +55,10 @@ void AdamComboOp::appendOutlineAttributes(OpSerialiserBase &os) const {
     os.appendAttribute("const loss scaling", initLs.val());
   }
 
+  if (initMwn.isConst()) {
+    os.appendAttribute("const max weight norm", initMwn.val());
+  }
+
   os.appendAttribute("reduction type", static_cast<int>(reductionType));
 }
 
@@ -64,6 +70,7 @@ std::unique_ptr<Op> AdamComboOp::cloneWithNewName(const TensorId &x) const {
                                        initB2,
                                        initEps,
                                        initLs,
+                                       initMwn,
                                        mode,
                                        withGradAccum,
                                        reductionType,
@@ -111,6 +118,11 @@ std::map<InIndex, TensorId> AdamComboOp::optimizerInputs() const {
     m.insert({index, inId(index)});
   }
 
+  if (!initMwn.isConst()) {
+    auto index = getMwnInIndex();
+    m.insert({index, inId(index)});
+  }
+
   return m;
 }
 
@@ -121,7 +133,8 @@ std::set<InIndex> AdamComboOp::optionalInputs() const {
           getBeta2InIndex(),
           getWdInIndex(),
           getEpsInIndex(),
-          getLsInIndex()};
+          getLsInIndex(),
+          getMwnInIndex()};
 }
 
 } // namespace popart

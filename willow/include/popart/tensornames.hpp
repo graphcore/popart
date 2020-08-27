@@ -134,6 +134,13 @@ constexpr const char *reservedSpecificLossScalingPrefix() {
   return "lossScaling___specific___";
 }
 
+constexpr const char *reservedDefaultMaxWeightNormPrefix() {
+  return "maxWeightNorm___default___";
+}
+constexpr const char *reservedSpecificMaxWeightNormPrefix() {
+  return "maxWeightNorm___specific___";
+}
+
 constexpr const char *reservedDefaultAdamBeta1Prefix() {
   return "adamBeta1___default___";
 }

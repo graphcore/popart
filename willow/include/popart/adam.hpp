@@ -37,6 +37,7 @@ enum class AdamMode { Adam = 0, AdamNoBias, Lamb, LambNoBias };
 // ls = loss scaling
 // wd = weight decay
 // eps = stability additive
+// mwn = max weight norm (c.f. phi or scaling function in Lamb paper)
 // lr = learning rate
 // w = weight
 // m = 1st momentum
@@ -78,8 +79,8 @@ enum class AdamMode { Adam = 0, AdamNoBias, Lamb, LambNoBias };
 //   thereafter all-reduced before every replica takes the square root of r2sq
 //
 // variable update:
-// w -= r1/r2 * lr * x
-//      ^^^^^
+// w -= min(r1,mwn)/r2 * lr * x
+//      ^^^^^^^^^^^^^^
 //      Lamb trust ratio
 //
 // accumulator update:
@@ -158,11 +159,29 @@ public:
     return {0.1f, true}; // a learning rate of 0.1 forever
   }
 
+  static OptimizerValue getUnsetMaxWeightNorm() {
+    return {10.0f, true}; // a maximum weight norm of 10.0f forever
+  }
+
 public:
   // Does "w" have specific OptimizerValues, or will it use default?
   bool hasSpecific(const Tensor &w) const;
 
   // Adam constructor with all parameteers
+  // ----------------
+  Adam(OptimizerValue default_lr,
+       OptimizerValue default_wd,
+       OptimizerValue default_b1,
+       OptimizerValue default_b2,
+       OptimizerValue default_eps,
+       OptimizerValue ls,
+       OptimizerValue mwn,
+       AdamMode adamMode_,
+       DataType accumType_,
+       DataType accl1Type_,
+       DataType accl2Type_);
+
+  // Adam constructor with all parameters except max weight norm.
   // ----------------
   Adam(OptimizerValue default_lr,
        OptimizerValue default_wd,
@@ -250,6 +269,7 @@ public:
   const OptimizerValueMap &beta1s() const { return b1s; }
   const OptimizerValueMap &beta2s() const { return b2s; }
   const OptimizerValueMap &epss() const { return epsvs; }
+  const OptimizerValueMap &maxWeightNorm() const { return mwns; }
 
 private:
   void runValueChecks(OptimizerValue lr,
@@ -275,6 +295,9 @@ private:
   // eps values
   OptimizerValueMap epsvs;
 
+  // max weight norm.
+  OptimizerValueMap mwns;
+
   // Adam settings
   AdamMode mode;
   DataType accumType;
@@ -289,6 +312,7 @@ private:
   AdamBeta2Helper b2helper;
   AdamEpsHelper epshelper;
   AdamLossScalingHelper lshelper;
+  AdamMaxWeightNormHelper mwnhelper;
 
   OptimizerValue
   getLossScalingOrDefault(const std::map<std::string, OptimizerValue> &) const;

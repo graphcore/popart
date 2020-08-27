@@ -34,6 +34,7 @@ void AdamVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
   std::vector<poplar::Tensor> tensors;
 
   pe::Any lr(pe::Const(0.0f));
+  pe::Any mwn(pe::Const(0.0f));
 
   if (adamVarUpdateOp.initLr.isConst()) {
     lr = pe::Const(adamVarUpdateOp.initLr.val());
@@ -50,14 +51,22 @@ void AdamVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
     tensors.push_back(getInTensor(AdamVarUpdateOp::getLambR2SqInIndex()));
     auto r2sqindex = tensors.size();
 
+    if (adamVarUpdateOp.initMwn.isConst()) {
+      mwn = pe::Const(adamVarUpdateOp.initMwn.val());
+    } else {
+      tensors.push_back(getInTensor(AdamVarUpdateOp::getMwnInIndex()));
+      mwn = pe::PlaceHolder(tensors.size());
+    }
+
     lr = pe::Mul(
         lr,
         pe::Select(
             pe::Const(1.0f),
-            pe::Select(pe::Const(1.0f),
-                       pe::Divide(pe::Sqrt(pe::PlaceHolder(r1sqindex)),
-                                  pe::Sqrt(pe::PlaceHolder(r2sqindex))),
-                       pe::Equal(pe::PlaceHolder(r2sqindex), pe::Const(0.0f))),
+            pe::Select(
+                pe::Const(1.0f),
+                pe::Divide(pe::Min(pe::Sqrt(pe::PlaceHolder(r1sqindex)), mwn),
+                           pe::Sqrt(pe::PlaceHolder(r2sqindex))),
+                pe::Equal(pe::PlaceHolder(r2sqindex), pe::Const(0.0f))),
             pe::Equal(pe::PlaceHolder(r1sqindex), pe::Const(0.0f))));
   }
 

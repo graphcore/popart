@@ -2008,6 +2008,10 @@ PYBIND11_MODULE(popart_core, m) {
   m.def("reservedDefaultLossScalingPrefix", &reservedDefaultLossScalingPrefix);
   m.def("reservedSpecificLossScalingPrefix",
         &reservedSpecificLossScalingPrefix);
+  m.def("reservedDefaultMaxWeightNormPrefix",
+        &reservedDefaultMaxWeightNormPrefix);
+  m.def("reservedSpecificMaxWeightNormPrefix",
+        &reservedSpecificMaxWeightNormPrefix);
   m.def("reservedDefaultAdamBeta1Prefix", &reservedDefaultAdamBeta1Prefix);
   m.def("reservedSpecificAdamBeta1Prefix", &reservedSpecificAdamBeta1Prefix);
   m.def("reservedDefaultAdamBeta2Prefix", &reservedDefaultAdamBeta2Prefix);
