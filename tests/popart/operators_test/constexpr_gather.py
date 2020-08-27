@@ -22,8 +22,6 @@ def test_gather_id_pattern(op_tester):
         return [out]
 
     op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
-    # T23410: This test doesn't work with inplacing enabled.
-    op_tester.inplacing = False
     op_tester.run(init_builder, reference, 'infer')
 
 
