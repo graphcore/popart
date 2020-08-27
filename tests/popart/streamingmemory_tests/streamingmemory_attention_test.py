@@ -92,6 +92,10 @@ def test_attention_streamingmemory(tmpdir):
         model_mask_shape = mask_shape[:]
         model_mask_shape[0] = int(model_mask_shape[0] / options["replication"])
 
+        stride = 2 // options["stages"]
+        if "stride" in options and options["stride"]:
+            stride = options["stride"]
+
         builder = popart.Builder(opsets={
             "ai.onnx": 9,
             "ai.onnx.ml": 1,
@@ -113,7 +117,7 @@ def test_attention_streamingmemory(tmpdir):
             vgid = (i % options["stages"]) if options["phasedExecution"] else i
 
             with builder.virtualGraph(vgid), builder.executionPhase(
-                    i * int(2 / options["stages"])):
+                    i * stride):
                 x = builder.aiOnnx.matmul([x, qkv])
                 x = attention_onnx(builder, x, mask, per_replica_batch_size,
                                    sequence_length, hidden_size,
@@ -123,7 +127,7 @@ def test_attention_streamingmemory(tmpdir):
                 ) if options["phasedExecution"] else options["numLayers"] - 1
 
         with builder.virtualGraph(vgid), builder.executionPhase(
-            (options["numLayers"] - 1) * int(2 / options["stages"])):
+            (options["numLayers"] - 1) * stride):
             l1 = builder.aiGraphcore.l1loss([x], 0.2, popart.ReductionType.Sum)
 
         proto = builder.getModelProto()
@@ -135,8 +139,9 @@ def test_attention_streamingmemory(tmpdir):
 
         opts = popart.SessionOptions()
         opts.executionPhaseSettings.stages = options["stages"]
-        opts.executionPhaseSettings.phases = options["numLayers"] * int(
-            2 / options["stages"]) if options["phasedExecution"] else 0
+
+        opts.executionPhaseSettings.phases = (
+            options["numLayers"] * stride if options["phasedExecution"] else 0)
         opts.enableOutlining = options["outlining"]
 
         # Phased execution currently does its own recompute annotations
@@ -334,9 +339,11 @@ def test_attention_streamingmemory(tmpdir):
     })
 
     # Test batch serialized single device per replica execution, where all
-    # streaming memory traffic goes through IO tiles
+    # streaming memory traffic goes through IO tiles, and activations are
+    # stored and loaded one-by-one
     test_variants.append({
         "stages": 1,
+        "stride": 4,
         "numLayers": 3,
         "phasedExecution": True,
         "outlining": True,
@@ -344,6 +351,24 @@ def test_attention_streamingmemory(tmpdir):
         "aliasZeroCopy": True,
         "batchSerialize": 4,
         "batchConcat": False,
+        "replication": 2,
+        "tensorLocationSettings": ioOffChip,
+        "ioTiles": 192
+    })
+
+    # Test batch serialized single device per replica execution, where all
+    # streaming memory traffic goes through IO tiles, and loading of the next
+    # phase happens before storing the current phase
+    test_variants.append({
+        "stages": 1,
+        "stride": 1,
+        "numLayers": 3,
+        "phasedExecution": True,
+        "outlining": True,
+        "explicitRecomputation": True,
+        "aliasZeroCopy": True,
+        "batchSerialize": 4,
+        "batchConcat": True,
         "replication": 2,
         "tensorLocationSettings": ioOffChip,
         "ioTiles": 192

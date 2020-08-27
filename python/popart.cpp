@@ -810,12 +810,14 @@ PYBIND11_MODULE(popart_core, m) {
                      ExecutionPhaseIOSchedule,
                      ExecutionPhaseIOSchedule,
                      ExecutionPhaseIOSchedule,
-                     ExecutionPhaseOptimizerSchedule>(),
+                     ExecutionPhaseIOSchedule,
+                     ExecutionPhaseSchedule>(),
             py::arg("phases"),
             py::arg("stages"),
             py::arg("weightIOSchedule"),
             py::arg("activationIOSchedule"),
-            py::arg("optimizerIOSchedule"),
+            py::arg("optimizerStateIOSchedule"),
+            py::arg("accumulatorIOSchedule"),
             py::arg("optimizerSchedule"));
     cls.def_readwrite("phases", &ExecutionPhaseSettings::phases);
     cls.def_readwrite("stages", &ExecutionPhaseSettings::stages);
@@ -823,10 +825,11 @@ PYBIND11_MODULE(popart_core, m) {
                       &ExecutionPhaseSettings::weightIOSchedule);
     cls.def_readwrite("activationIOSchedule",
                       &ExecutionPhaseSettings::activationIOSchedule);
-    cls.def_readwrite("optimizerIOSchedule",
-                      &ExecutionPhaseSettings::optimizerIOSchedule);
-    cls.def_readwrite("optimizerSchedule",
-                      &ExecutionPhaseSettings::optimizerSchedule);
+    cls.def_readwrite("optimizerStateIOSchedule",
+                      &ExecutionPhaseSettings::optimizerStateIOSchedule);
+    cls.def_readwrite("accumulatorIOSchedule",
+                      &ExecutionPhaseSettings::accumulatorIOSchedule);
+    cls.def_readwrite("schedule", &ExecutionPhaseSettings::schedule);
   }
   {
     py::class_<SessionOptions> cls(m, "SessionOptions");
@@ -993,10 +996,9 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("OnDemand", ExecutionPhaseIOSchedule::OnDemand);
   }
   {
-    py::enum_<ExecutionPhaseOptimizerSchedule> en(
-        m, "ExecutionPhaseOptimizerSchedule");
-    en.value("Interleaving", ExecutionPhaseOptimizerSchedule::Interleaving);
-    en.value("Batch", ExecutionPhaseOptimizerSchedule::Batch);
+    py::enum_<ExecutionPhaseSchedule> en(m, "ExecutionPhaseSchedule");
+    en.value("Interleaving", ExecutionPhaseSchedule::Interleaving);
+    en.value("Batch", ExecutionPhaseSchedule::Batch);
   }
   {
     py::enum_<SyncPattern> en(m, "SyncPattern");

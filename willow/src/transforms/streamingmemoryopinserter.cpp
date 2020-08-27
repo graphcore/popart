@@ -6,6 +6,7 @@
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/collectives/replicatedreducescatter.hpp>
 #include <popart/op/init.hpp>
+#include <popart/op/iotilecopy.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/lamb.hpp>
 #include <popart/op/remote.hpp>
@@ -19,20 +20,6 @@ namespace popart {
 namespace {
 
 static constexpr const double maxCompressedPriority = 9000.0;
-static constexpr const double initPriority          = -9996.0;
-static constexpr const double remoteLoadPriority    = -9997.0;
-static constexpr const double allGatherPriority     = -9997.0;
-static constexpr const double ipuCopyPriority       = -9998.0;
-
-static constexpr const double allReducePriorityInterleave          = -9999.0;
-static constexpr const double optimizerStateLoadPriorityInterleave = -9999.0;
-static constexpr const double varUpdatePriorityInterleave          = -9999.0;
-static constexpr const double remoteStorePriorityInterleave        = -9999.0;
-
-static constexpr const double allReducePriorityBatch          = -9999.0;
-static constexpr const double optimizerStateLoadPriorityBatch = -10000.0;
-static constexpr const double varUpdatePriorityBatch          = -10001.0;
-static constexpr const double remoteStorePriorityBatch        = -10002.0;
 
 // Compress priorities so that nothing is using priorities outside the range
 // -9000 to +9000
@@ -86,6 +73,88 @@ bool isConstOrCopyOfConst(Tensor *tensor) {
 }
 
 } // namespace
+
+void StreamingMemoryOpInserter::setPriority(Op *op,
+                                            bool isPhased,
+                                            bool onDemandOptimizerState,
+                                            ExecutionPhaseSchedule schedule) {
+  double priority = -(maxCompressedPriority + 1);
+  if (isPhased && op->settings.executionContext == ExecutionContext::Normal) {
+    switch (schedule) {
+    case ExecutionPhaseSchedule::Interleaving: {
+      // Init ops must be scheduled first
+      if (op->isConvertibleTo<InitOp>()) {
+        op->settings.schedulePriority = priority;
+      }
+      --priority;
+      // Remote load & all gather can be scheduled together in a way that
+      // minimizes liveness
+      if (!onDemandOptimizerState &&
+          (op->isConvertibleTo<RemoteLoadOp>() ||
+           op->isConvertibleTo<ReplicatedAllGatherOp>())) {
+        op->settings.schedulePriority = priority;
+      }
+      --priority;
+      // Cross-phase cross-IPU communication
+      if (op->isConvertibleTo<IpuCopyOp>()) {
+        op->settings.schedulePriority = priority;
+      }
+      --priority;
+      // Optimizer related ops and remote store can be scheduled together
+      // in a way that minimizes liveness
+      if ((onDemandOptimizerState &&
+           (op->isConvertibleTo<RemoteLoadOp>() ||
+            op->isConvertibleTo<ReplicatedAllGatherOp>())) ||
+          op->isOptimizerOp() || op->isConvertibleTo<ReplicatedAllReduceOp>() ||
+          op->isConvertibleTo<ReplicatedReduceScatterOp>() ||
+          op->isConvertibleTo<RemoteStoreOp>()) {
+        op->settings.schedulePriority = priority;
+      }
+      break;
+    }
+    case ExecutionPhaseSchedule::Batch: {
+      // Init ops must be scheduled first
+      if (op->isConvertibleTo<InitOp>()) {
+        op->settings.schedulePriority = priority;
+      }
+      --priority;
+      // All remote loads must be scheduled before replicated operations
+      // to maximize overlap (collectives block overlap)
+      if (op->isConvertibleTo<RemoteLoadOp>()) {
+        op->settings.schedulePriority = priority;
+      }
+      --priority;
+      // Cross-phase cross-IPU and compute/IO tile communication
+      // (overlap blocking)
+      if (op->isConvertibleTo<IpuCopyOp>() ||
+          op->isConvertibleTo<IoTileCopyOp>()) {
+        op->settings.schedulePriority = priority;
+      }
+      --priority;
+      // All collective operations (overlap blocking)
+      if (op->isConvertibleTo<ReplicatedReduceScatterOp>() ||
+          op->isConvertibleTo<ReplicatedAllReduceOp>() ||
+          op->isConvertibleTo<ReplicatedAllGatherOp>()) {
+        op->settings.schedulePriority = priority;
+      }
+      --priority;
+      // All optimizer operations
+      if (op->isOptimizerOp()) {
+        op->settings.schedulePriority = priority;
+      }
+      --priority;
+      // All remote stores must be scheduled at the end, to overlap with the
+      // next compute phase
+      if (op->isConvertibleTo<RemoteStoreOp>()) {
+        op->settings.schedulePriority = priority;
+      }
+      break;
+    }
+    default:
+      throw error("Unsupported schedule {}", static_cast<int>(schedule));
+    }
+  }
+}
 
 StreamingMemoryOpInserter::StreamingMemoryOpInserter(Graph &graph_,
                                                      int64_t replicationFactor_,
@@ -289,16 +358,8 @@ void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
           for (Op *optimizerOp : optimizerOps) {
             opsToSetup.insert(optimizerOp);
 
-            if (isPhasedExecution()) {
-              if (tensorConfig.optimizerSchedule ==
-                  ExecutionPhaseOptimizerSchedule::Interleaving) {
-                optimizerOp->settings.schedulePriority =
-                    varUpdatePriorityInterleave;
-              } else if (tensorConfig.optimizerSchedule ==
-                         ExecutionPhaseOptimizerSchedule::Batch) {
-                optimizerOp->settings.schedulePriority = varUpdatePriorityBatch;
-              }
-            }
+            setPriority(
+                optimizerOp, isPhasedExecution(), false, tensorConfig.schedule);
 
             optimizerOp->settings.tileSet =
                 tensorConfig.location.storageTileSet;
@@ -322,20 +383,13 @@ void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
               }
 
               if (replicatedAllReduce) {
-                if (isPhasedExecution()) {
-                  if (tensorConfig.optimizerSchedule ==
-                      ExecutionPhaseOptimizerSchedule::Interleaving) {
-                    replicatedAllReduce->settings.schedulePriority =
-                        allReducePriorityInterleave;
-                  } else if (tensorConfig.optimizerSchedule ==
-                             ExecutionPhaseOptimizerSchedule::Batch) {
-                    replicatedAllReduce->settings.schedulePriority =
-                        allReducePriorityBatch;
-                  }
-                }
                 replicatedAllReduce->settings.tileSet =
                     tensorConfig.location.storageTileSet;
 
+                setPriority(replicatedAllReduce,
+                            isPhasedExecution(),
+                            false,
+                            tensorConfig.schedule);
                 if (tensorConfig.location.replicatedTensorSharding ==
                     ReplicatedTensorSharding::On) {
                   auto replicatedReduceScatterOp =
@@ -378,19 +432,13 @@ void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
 
                   replicatedReduceScatter->setup();
 
-                  if (isPhasedExecution()) {
-                    if (tensorConfig.optimizerSchedule ==
-                        ExecutionPhaseOptimizerSchedule::Interleaving) {
-                      replicatedReduceScatter->settings.schedulePriority =
-                          allReducePriorityInterleave;
-                    } else if (tensorConfig.optimizerSchedule ==
-                               ExecutionPhaseOptimizerSchedule::Batch) {
-                      replicatedReduceScatter->settings.schedulePriority =
-                          allReducePriorityBatch;
-                    }
-                  }
                   replicatedReduceScatter->settings.tileSet =
                       tensorConfig.location.storageTileSet;
+
+                  setPriority(replicatedReduceScatter,
+                              isPhasedExecution(),
+                              false,
+                              tensorConfig.schedule);
 
                   // Tie the reduction operation to the SGD0VarUpdate to get
                   // the same schedule behaviour as if the reduction was
@@ -461,19 +509,23 @@ void StreamingMemoryOpInserter::getTensorSchedule(
     TensorConfig &tensorConfig) const {
   auto &sessionOptions = graph.getIr().getSessionOptions();
   if (tensor->getTensorTypeInfo()->type() == TensorType::Variable) {
+    tensorConfig.ioSchedule =
+        sessionOptions.executionPhaseSettings.weightIOSchedule;
+    // Test optimizer state & accumulator separately, because a tensor can be
+    // considered as being both (e.g. SGD1 momentum)
     if (tensor->isOptimizerStateTensor()) {
       tensorConfig.ioSchedule =
-          sessionOptions.executionPhaseSettings.optimizerIOSchedule;
-    } else {
+          sessionOptions.executionPhaseSettings.optimizerStateIOSchedule;
+    }
+    if (tensor->isAccumulatorTensor()) {
       tensorConfig.ioSchedule =
-          sessionOptions.executionPhaseSettings.weightIOSchedule;
+          sessionOptions.executionPhaseSettings.accumulatorIOSchedule;
     }
   } else {
     tensorConfig.ioSchedule =
         sessionOptions.executionPhaseSettings.activationIOSchedule;
   }
-  tensorConfig.optimizerSchedule =
-      sessionOptions.executionPhaseSettings.optimizerSchedule;
+  tensorConfig.schedule = sessionOptions.executionPhaseSettings.schedule;
 }
 
 void StreamingMemoryOpInserter::getTensorConfig(
@@ -482,7 +534,8 @@ void StreamingMemoryOpInserter::getTensorConfig(
 
   auto producerOp = tensor->getProducerUnsafe();
 
-  tensorConfig.tensor     = tensor;
+  tensorConfig.tensor = tensor;
+
   tensorConfig.producerOp = producerOp;
 
   // Get all consumers in schedule order
@@ -688,7 +741,7 @@ void StreamingMemoryOpInserter::getTensorStreamingConfig(
       }
     }
 
-    TensorStreamingConfig *previousConfig = nullptr;
+    std::vector<TensorStreamingConfig *> previousConfigs;
     TensorStreamingConfig *consumerConfig = &streamingMap[consumerContext];
 
     consumerConfig->consumers.push_back(consumerOp);
@@ -696,32 +749,24 @@ void StreamingMemoryOpInserter::getTensorStreamingConfig(
     consumerConfig->live = true;
 
     if (isPhasedExecution()) {
-      auto previousContext = consumerContext;
-      if (previousContext.phase) {
-        // With the current implementation of phased execution,
-        // IPUs always are associated with alternate
-        // phases, regardless of num_stages.
-        // Last phase relevant to this IPU was two phases ago.
-        previousContext.phase = *(previousContext.phase) - 2;
-        auto it               = streamingMap.find(previousContext);
-        if (it != streamingMap.end()) {
-          previousConfig = &it->second;
+      // Treat last 2 phases as adjacent previous phases
+      for (ExecutionPhase phaseDiff = 2; phaseDiff > 0; --phaseDiff) {
+        auto previousContext = consumerContext;
+        if (previousContext.phase) {
+          // With the current implementation of phased execution,
+          // IPUs always are associated with alternate
+          // phases, regardless of num_stages.
+          // Last phase relevant to this IPU was one or two phases ago.
+          previousContext.phase = *(previousContext.phase) - phaseDiff;
+          auto it               = streamingMap.find(previousContext);
+          if (it != streamingMap.end()) {
+            previousConfigs.push_back(&it->second);
+          }
         }
       }
     }
 
-    if (previousConfig && previousConfig->live) {
-      // The tensor is live in the previous context.
-      // Instead of storing it in the previous context and loading it in again
-      // in this context we are going to keep it live.
-      consumerConfig->load = false;
-      // If tensor was stored in the previous context, defer storing until the
-      // current context.
-      if (previousConfig->store) {
-        consumerConfig->store = true;
-        previousConfig->store = false;
-      }
-    } else if (consumerConfig->producer) {
+    if (consumerConfig->producer) {
       // Current phase is producer context -- there is no need to load in the
       // current context
     } else {
@@ -729,6 +774,22 @@ void StreamingMemoryOpInserter::getTensorStreamingConfig(
       consumerConfig->load = true;
     }
 
+    for (auto previousConfig : previousConfigs) {
+      if (previousConfig->live) {
+        // The tensor is live in the previous context.
+        // Instead of storing it in a previous context and loading it in again
+        // in this context we are going to keep it live.
+        consumerConfig->load = false;
+        // If tensor was stored in a previous context, defer storing until the
+        // current context.
+        if (previousConfig->store) {
+          consumerConfig->store = true;
+          previousConfig->store = false;
+        }
+      }
+    }
+
+    // If the modifiers are not checked yet
     if (consumerConfig->modifiers.empty()) {
       // Check if the consumer OP modifies the tensor, e.g. for weights
       // if yes, then the tensor requires to be backed-up at the end of
@@ -736,11 +797,13 @@ void StreamingMemoryOpInserter::getTensorStreamingConfig(
       getAliasedModifiersInContext(
           tensor, consumerContext, consumerConfig->modifiers);
     }
+
+    // If there are modifiers in this context
     if (!consumerConfig->modifiers.empty()) {
       // Storing in this context
       consumerConfig->store = true;
-      if (previousConfig) {
-        // Not storing in previous context
+      for (auto previousConfig : previousConfigs) {
+        // Not storing in previous contexts
         previousConfig->store = false;
       }
     }
@@ -858,12 +921,46 @@ void StreamingMemoryOpInserter::getAliasedModifiersInContext(
   }
 }
 
+void StreamingMemoryOpInserter::setLoadingOpPhaseAndPriority(
+    Op *op,
+    const Tensor *const tensor,
+    const TensorConfig &tensorConfig,
+    const TensorStreamingContext &context) {
+  if (context.context == ExecutionContext::Normal && isPhasedExecution()) {
+    if (tensorConfig.ioSchedule == ExecutionPhaseIOSchedule::OnDemand) {
+      if (context.phase) {
+        // RemoteLoad in current phase
+        op->setExecutionPhase(context.phase);
+        op->settings.schedulePriority = 0.0f;
+      }
+      // Optimizer states OnDemand are given a priority that delays the load
+      // until the optimizer needs it
+      if (tensorConfig.tensor->getTensorTypeInfo()->type() ==
+              TensorType::Variable &&
+          tensorConfig.tensor->isOptimizerStateTensor() &&
+          !tensorConfig.tensor->isAccumulatorTensor()) {
+        setPriority(op, isPhasedExecution(), true, tensorConfig.schedule);
+      }
+    } else if (tensorConfig.ioSchedule == ExecutionPhaseIOSchedule::Preload) {
+      // RemoteLoad at the end of the previous phase
+      if (context.phase) {
+        op->setExecutionPhase(*(context.phase) - 1);
+      }
+      setPriority(op, isPhasedExecution(), false, tensorConfig.schedule);
+    }
+  } else {
+    op->setExecutionPhase({});
+    op->settings.schedulePriority = 0.0f;
+  }
+}
+
 RemoteLoadOp *StreamingMemoryOpInserter::insertRemoteLoadOp(
     const TensorConfig &tensorConfig,
     const TensorStreamingContext context,
     TensorId &loadedTensorId) {
 
   RemoteLoadOp *remoteLoad = nullptr;
+  InitOp *init             = nullptr;
 
   if (isPhasedExecution() && context.context == ExecutionContext::Normal) {
     // Phase must be set when storing in phase.
@@ -884,38 +981,9 @@ RemoteLoadOp *StreamingMemoryOpInserter::insertRemoteLoadOp(
       Onnx::CustomOperators::RemoteLoad, tensorConfig.settings);
   remoteLoad = remoteLoadOp.get();
 
-  if (context.context == ExecutionContext::Normal && isPhasedExecution()) {
-    if (tensorConfig.ioSchedule == ExecutionPhaseIOSchedule::OnDemand) {
-      if (context.phase) {
-        // RemoteLoad in current phase
-        remoteLoad->setExecutionPhase(context.phase);
-      }
-      if (tensorConfig.tensor->isOptimizerStateTensor()) {
-        // Optimizer state: Load as late as possible
-        if (tensorConfig.optimizerSchedule ==
-            ExecutionPhaseOptimizerSchedule::Interleaving) {
-          remoteLoad->settings.schedulePriority =
-              optimizerStateLoadPriorityInterleave;
-        } else if (tensorConfig.optimizerSchedule ==
-                   ExecutionPhaseOptimizerSchedule::Batch) {
-          remoteLoad->settings.schedulePriority =
-              optimizerStateLoadPriorityBatch;
-        }
-      }
-    } else if (tensorConfig.ioSchedule == ExecutionPhaseIOSchedule::Preload) {
-      // Very low schedulePriority on loads (at the end of the previous
-      // phase)
-      remoteLoad->settings.schedulePriority = remoteLoadPriority;
-      // RemoteLoad at the end of the previous phase, so that load
-      // is executed before inter-IPU copy
-      if (context.phase) {
-        remoteLoad->setExecutionPhase(*(context.phase) - 1);
-      }
-    }
-  } else {
-    remoteLoad->setExecutionPhase({});
-    remoteLoad->settings.schedulePriority = 0.0f;
-  }
+  // Setting the execution context ensures it's scheduled in the correct
+  // fragment
+  remoteLoad->settings.executionContext = context.context;
 
   remoteLoad->settings.recomputeType = RecomputeType::Checkpoint;
   remoteLoad->setVirtualGraphId(
@@ -929,10 +997,6 @@ RemoteLoadOp *StreamingMemoryOpInserter::insertRemoteLoadOp(
   TensorId prevLoadId   = getPreviousLoadedTensorId(tensorConfig.tensor->id);
   loadedTensorId        = generateLoadedTensorId(tensorConfig.tensor->id);
   TensorId inTensorId;
-
-  // Setting the execution context ensures it's scheduled in the correct
-  // fragment
-  remoteLoad->settings.executionContext = context.context;
 
   // If this tensor is loaded here, it may be loaded in multiple contexts. In
   // this case getPreviousLoadedTensorId is used to 'chain' the tensor inputs.
@@ -959,42 +1023,9 @@ RemoteLoadOp *StreamingMemoryOpInserter::insertRemoteLoadOp(
                                            TensorType::Cache,
                                            InitType::NoInit,
                                            tensorConfig.settings);
-    Op *init    = initOp.get();
-
-    if (context.context == ExecutionContext::Normal && isPhasedExecution()) {
-      if (tensorConfig.ioSchedule == ExecutionPhaseIOSchedule::OnDemand) {
-        if (context.phase) {
-          // RemoteLoad in current phase
-          init->setExecutionPhase(context.phase);
-        }
-        if (tensorConfig.tensor->isOptimizerStateTensor()) {
-          // Optimizer state: Load as late as possible
-          if (tensorConfig.optimizerSchedule ==
-              ExecutionPhaseOptimizerSchedule::Interleaving) {
-            init->settings.schedulePriority =
-                optimizerStateLoadPriorityInterleave;
-          } else if (tensorConfig.optimizerSchedule ==
-                     ExecutionPhaseOptimizerSchedule::Batch) {
-            init->settings.schedulePriority = optimizerStateLoadPriorityBatch;
-          }
-        }
-      } else if (tensorConfig.ioSchedule == ExecutionPhaseIOSchedule::Preload) {
-        // Very low schedulePriority on loads (at the end of the previous
-        // phase)
-        init->settings.schedulePriority = initPriority;
-        // RemoteLoad at the end of the previous phase, so that load
-        // is executed before inter-IPU copy
-        if (context.phase) {
-          init->setExecutionPhase(*(context.phase) - 1);
-        }
-      }
-    } else {
-      init->setExecutionPhase({});
-      init->settings.schedulePriority = 0.0f;
-    }
+    init        = initOp.get();
 
     init->settings.executionContext = context.context;
-
     init->setVirtualGraphId(
         tensorConfig.streamingMap.at(context).streamingVGID);
     graph.moveIntoGraph(std::move(initOp));
@@ -1005,6 +1036,17 @@ RemoteLoadOp *StreamingMemoryOpInserter::insertRemoteLoadOp(
     // Do Init on IO tiles
     init->settings.tileSet = tensorConfig.location.loadTileSet;
   }
+
+  // Set priority and phase on init & load
+  if (init) {
+    setLoadingOpPhaseAndPriority(
+        init, tensorConfig.tensor, tensorConfig, context);
+  }
+  if (remoteLoad) {
+    setLoadingOpPhaseAndPriority(
+        remoteLoad, tensorConfig.tensor, tensorConfig, context);
+  }
+
   // RemoteLoad always needs both an input and an output,
   // for outlining and aliasing purposes
 
@@ -1060,10 +1102,15 @@ ReplicatedAllGatherOp *StreamingMemoryOpInserter::insertReplicatedAllGatherOp(
       tensorConfig.settings,
       tensorConfig.tensor->info);
   allGather = allGatherOp.get();
+
+  allGather->settings.executionContext = context.context;
+
   if (isPhasedExecution() && context.phase) {
-    allGather->settings.schedulePriority = allGatherPriority;
     allGather->setExecutionPhase(*(context.phase) - 1);
+    setLoadingOpPhaseAndPriority(
+        allGather, tensorConfig.tensor, tensorConfig, context);
   }
+
   allGather->settings.recomputeType = RecomputeType::Checkpoint;
   // RemoteLoad at the end of the previous phase, so that load
   // is executed before inter-IPU copy
@@ -1119,16 +1166,9 @@ RemoteStoreOp *StreamingMemoryOpInserter::insertRemoteStoreOp(
     if (context.phase) {
       remoteStore->setExecutionPhase(context.phase);
     }
-    if (tensorConfig.ioSchedule == ExecutionPhaseIOSchedule::Preload ||
-        (tensorConfig.ioSchedule == ExecutionPhaseIOSchedule::OnDemand &&
-         tensorConfig.tensor->isOptimizerStateTensor())) {
-      // Very low schedulePriority on stores (at the end of a phase)
-      if (tensorConfig.optimizerSchedule ==
-          ExecutionPhaseOptimizerSchedule::Interleaving) {
-        remoteStore->settings.schedulePriority = remoteStorePriorityInterleave;
-      } else {
-        remoteStore->settings.schedulePriority = remoteStorePriorityBatch;
-      }
+    if (tensorConfig.ioSchedule == ExecutionPhaseIOSchedule::Preload) {
+      setPriority(
+          remoteStore, isPhasedExecution(), false, tensorConfig.schedule);
     }
   } else {
     remoteStore->setExecutionPhase({});
@@ -1172,7 +1212,11 @@ void StreamingMemoryOpInserter::sanitizeOps() const {
           copy->getMinSourceIpu() % num_stages !=
               copy->getDestIpu() % num_stages) {
         // Inter-phase copy
-        op->settings.schedulePriority = ipuCopyPriority;
+        setPriority(
+            copy,
+            isPhasedExecution(),
+            false,
+            graph.getIr().getSessionOptions().executionPhaseSettings.schedule);
       } else {
         op->settings.schedulePriority = 0.0;
       }

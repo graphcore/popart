@@ -131,17 +131,22 @@ enum class ExecutionPhaseIOSchedule {
   OnDemand,
 };
 
-enum class ExecutionPhaseOptimizerSchedule {
-  // The optimizer steps for phased execution consists of:
+enum class ExecutionPhaseSchedule {
+  // The steps for phased execution consists of:
   // 1. Copy to IO tiles if necessary
   // 2. Run collective operations if necessary
-  // 3. Load and update optimizer state
-  // 4. Apply optimizer
-  // 5. Store updated tensor if necessary
+  // 3. Load optimizer state
+  // 4. Update optimizer state
+  // 5. Apply optimizer
+  // 6. Store updated tensor if necessary
 
-  // Process above steps for one weight at a time (12345, 12345)
+  // Process above steps for one weight at a time,
+  // or as interleaved as the scheduler decides to minimize liveness
+  // e.g.  (123456, 123456, 123456)
   Interleaving = 0,
-  // Process above steps for all weights together (11, 22, 33, 44, 55)
+  // Process above steps for all weights together, in a way that maximizes
+  // overlap potential between compute and exchange
+  // e.g. (333, 111, 222, 444, 555, 666)
   Batch
 };
 
@@ -154,12 +159,13 @@ struct ExecutionPhaseSettings {
                          bool stages_,
                          ExecutionPhaseIOSchedule weightIOSchedule_,
                          ExecutionPhaseIOSchedule activationIOSchedule_,
-                         ExecutionPhaseIOSchedule optimizerIOSchedule_,
-                         ExecutionPhaseOptimizerSchedule optimizerSchedule_)
+                         ExecutionPhaseIOSchedule optimizerStateIOSchedule_,
+                         ExecutionPhaseIOSchedule accumulatorIOSchedule_,
+                         ExecutionPhaseSchedule schedule_)
       : phases{phases_}, stages{stages_}, weightIOSchedule{weightIOSchedule_},
         activationIOSchedule{activationIOSchedule_},
-        optimizerIOSchedule{optimizerIOSchedule_}, optimizerSchedule{
-                                                       optimizerSchedule_} {}
+        optimizerStateIOSchedule{optimizerStateIOSchedule_},
+        accumulatorIOSchedule{accumulatorIOSchedule_}, schedule{schedule_} {}
 
   ExecutionPhaseSettings &
   operator=(const ExecutionPhaseSettings &rhs) = default;
@@ -175,11 +181,12 @@ struct ExecutionPhaseSettings {
   ExecutionPhaseIOSchedule weightIOSchedule = ExecutionPhaseIOSchedule::Preload;
   ExecutionPhaseIOSchedule activationIOSchedule =
       ExecutionPhaseIOSchedule::Preload;
-  ExecutionPhaseIOSchedule optimizerIOSchedule =
+  ExecutionPhaseIOSchedule optimizerStateIOSchedule =
       ExecutionPhaseIOSchedule::OnDemand;
+  ExecutionPhaseIOSchedule accumulatorIOSchedule =
+      ExecutionPhaseIOSchedule::Preload;
 
-  ExecutionPhaseOptimizerSchedule optimizerSchedule =
-      ExecutionPhaseOptimizerSchedule::Interleaving;
+  ExecutionPhaseSchedule schedule = ExecutionPhaseSchedule::Interleaving;
 };
 
 /**

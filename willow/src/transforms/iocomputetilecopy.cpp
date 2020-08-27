@@ -11,6 +11,7 @@
 #include <popart/topocons.hpp>
 
 #include <popart/transforms/iocomputetilecopy.hpp>
+#include <popart/transforms/streamingmemoryopinserter.hpp>
 
 namespace popart {
 
@@ -57,10 +58,6 @@ void IoComputeTileCopy::insertIoTileCopy(Graph &graph,
 
   Op::Settings settings(graph, "");
 
-  // Inherit important settings from the fromOp
-  // Tensor caching is inherited
-  settings.tensorLocation = fromOp->getSettings().tensorLocation;
-
   auto ioCopyOp = std::make_unique<IoTileCopyOp>(
       Onnx::CustomOperators::IoTileCopy, settings);
 
@@ -92,20 +89,37 @@ void IoComputeTileCopy::insertIoTileCopy(Graph &graph,
     toOp->connectInTensor(i, copiedTensor);
   }
 
-  // Copy from/to IO tiles should happen as close to the IO tile ops as possible
+  auto &sessionOptions = graph.getIr().getSessionOptions();
+  bool isPhased =
+      sessionOptions.virtualGraphMode == VirtualGraphMode::ExecutionPhases &&
+      sessionOptions.executionPhaseSettings.phases;
+
+  // If the schedule is interleaving instead of batched, we can schedule the
+  // IoTileCopyOps as close to the consumers on the IO tiles as possible to
+  // reduce the memory footprint on IO tiles.
+  // Otherwise, follow a schedule that maximizes possible overlap
+  bool tiedTopoCon =
+      !isPhased || sessionOptions.executionPhaseSettings.schedule ==
+                       ExecutionPhaseSchedule::Interleaving;
+
   if (fromOp->settings.tileSet == TileSet::IO) {
     // Copy direction: From IO tiles
-    graph.topoCons->insert(fromOp, ioCopy, true);
-    ioCopy->settings.tileSet          = TileSet::Compute;
-    ioCopy->settings.schedulePriority = fromOp->settings.schedulePriority;
+    graph.topoCons->insert(fromOp, ioCopy, tiedTopoCon);
+    ioCopy->settings         = fromOp->settings;
+    ioCopy->settings.name    = "";
+    ioCopy->settings.tileSet = TileSet::Compute;
   }
 
   if (toOp->settings.tileSet == TileSet::IO) {
     // Copy direction: To IO tiles
-    graph.topoCons->insert(ioCopy, toOp, true);
-    ioCopy->settings.tileSet          = TileSet::IO;
-    ioCopy->settings.schedulePriority = toOp->settings.schedulePriority;
+    graph.topoCons->insert(ioCopy, toOp, tiedTopoCon);
+    ioCopy->settings         = toOp->settings;
+    ioCopy->settings.name    = "";
+    ioCopy->settings.tileSet = TileSet::IO;
   }
+
+  StreamingMemoryOpInserter::setPriority(
+      ioCopy, isPhased, false, sessionOptions.executionPhaseSettings.schedule);
 }
 
 bool IoComputeTileCopy::apply(Graph &graph) const {
@@ -188,12 +202,6 @@ bool IoComputeTileCopy::apply(Graph &graph) const {
           }
         }
       }
-    }
-  }
-
-  for (Op *op : graph.getOpSchedule({})) {
-    if (dynamic_cast<IoTileCopyOp *>(op)) {
-      op->inheritPlacementAttributes(false);
     }
   }
 

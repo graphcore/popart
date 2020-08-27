@@ -38,6 +38,14 @@ public:
   // Sanity checking helper function (used by StreamingMemory).
   void sanitizePlacementAnnotation(Op *op, ExecutionPhase phase) const;
 
+  // Deduct and set the priority on the op, based on
+  // op type, phased execution and the schedule for the
+  // phased execution
+  static void setPriority(Op *op,
+                          bool isPhased,
+                          bool onDemandOptimizerState,
+                          ExecutionPhaseSchedule schedule);
+
 private:
   // Types used.
   using Ops               = std::vector<Op *>;
@@ -104,7 +112,7 @@ private:
         : tensor{}, producerOp{}, consumerOps{}, location{},
           streamingMap{}, settings{graph, ""},
           ioSchedule(ExecutionPhaseIOSchedule::Preload),
-          optimizerSchedule(ExecutionPhaseOptimizerSchedule::Interleaving) {}
+          schedule(ExecutionPhaseSchedule::Interleaving) {}
 
     // The tensor affected.
     Tensor *tensor;
@@ -121,7 +129,7 @@ private:
     // The input/output schedule for the tensor
     ExecutionPhaseIOSchedule ioSchedule;
     // The optimizer schedule for the tensor (for weights)
-    ExecutionPhaseOptimizerSchedule optimizerSchedule;
+    ExecutionPhaseSchedule schedule;
   };
 
   // Add streaming memory operations pertaining to one tensor.
@@ -156,6 +164,13 @@ private:
   void getAliasedModifiersInContext(Tensor *t,
                                     const TensorStreamingContext context,
                                     Ops &modifyingConsumerOps) const;
+
+  // Helper to configure phase & priority on tensor loading operations
+  // (Init -> RemoteLoad -> AllGather)
+  void setLoadingOpPhaseAndPriority(Op *op,
+                                    const Tensor *const tensor,
+                                    const TensorConfig &tensorConfig,
+                                    const TensorStreamingContext &context);
 
   // Helper functions to insert a RemoteLoadOp.
   RemoteLoadOp *insertRemoteLoadOp(const TensorConfig &tensorConfig,

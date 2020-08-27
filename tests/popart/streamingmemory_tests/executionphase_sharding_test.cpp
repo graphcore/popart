@@ -202,7 +202,7 @@ BOOST_AUTO_TEST_CASE(Test2x2S1ExecutionPhase) {
           if (copy->getSourceIpu() % 2 != copy->getDestIpu() % 2) {
             // Inter-phase
             // See streamingmemoryopinserter.cpp ipuCopyPriority
-            BOOST_CHECK(copy->settings.schedulePriority == -9998.0);
+            BOOST_CHECK(copy->settings.schedulePriority < -9000.0);
           } else {
             // Intra-phase
             BOOST_CHECK(copy->settings.schedulePriority == 0.0);
@@ -221,6 +221,168 @@ BOOST_AUTO_TEST_CASE(Test2x2S1ExecutionPhase) {
       if (op->isLossOp()) {
         BOOST_CHECK(op->getVirtualGraphId() == 3);
         BOOST_CHECK(op->getExecutionPhase() == N * 2 - 1);
+      }
+    }
+  });
+}
+
+// Model: 1x0 S1 ExecutionPhase, repeated N times
+// Keeps activations between adjacent phases (phase stride 1)
+// Overlaps IO and compute with adjacent phases
+BOOST_AUTO_TEST_CASE(Test1x0S1ExecutionPhase) {
+  TestRunner runner;
+  runner.isTraining  = true;
+  int batchSize      = 8;
+  int batchSerialize = 4;
+  int N              = 5;
+  int size           = 100;
+
+  // Weights are [size, size]
+  // Input and Acts are [batchSize, size]
+  TensorInfo wInfo{"FLOAT", std::vector<int64_t>{1, size, size}};
+  std::vector<TestTensor> inputs;
+  std::vector<TestTensor> outputs;
+  std::vector<float> wData(wInfo.nelms(), 0);
+  ConstVoidData wCVData{wData.data(), wInfo};
+
+  runner.buildModel([&](auto &builder) {
+    auto aiOnnx      = builder.aiOnnxOpset9();
+    auto aiGraphcore = builder.aiGraphcoreOpset1();
+    TensorInfo inInfo{"FLOAT", std::vector<int64_t>{batchSize, 1, size}};
+    auto input = builder.addInputTensor(inInfo);
+
+    // N phases
+    for (int n = 0; n < N; ++n) {
+      auto w = builder.addInitializedInputTensor(wCVData);
+      auto out =
+          aiOnnx.matmul({input, w}, logging::format("CHECKOP_MM: [{}]", n));
+      builder.executionPhase(out, n);
+      builder.virtualGraph(out, 0);
+      out = aiOnnx.relu({out}, logging::format("CHECKOP_RELU: [{}]", n));
+      builder.executionPhase(out, n);
+      builder.virtualGraph(out, 0);
+
+      // Cross over between IPUs (intra-phase)
+      input = out;
+    }
+
+    auto l1 = aiGraphcore.l1loss({input}, 0.1);
+    builder.executionPhase(l1, N - 1);
+    builder.virtualGraph(l1, 0);
+
+    // To make introspecting the IR easy
+    runner.opts.enableOutlining                   = false;
+    runner.opts.autoRecomputation                 = RecomputationType::Standard;
+    runner.opts.explicitRecomputation             = true;
+    runner.opts.batchSerializationSettings.factor = batchSerialize;
+    runner.opts.executionPhaseSettings.phases     = N;
+    runner.opts.executionPhaseSettings.stages     = 1;
+    runner.opts.executionPhaseSettings.activationIOSchedule =
+        ExecutionPhaseIOSchedule::Preload;
+    runner.opts.executionPhaseSettings.weightIOSchedule =
+        ExecutionPhaseIOSchedule::Preload;
+    runner.opts.executionPhaseSettings.optimizerStateIOSchedule =
+        ExecutionPhaseIOSchedule::Preload;
+    runner.opts.executionPhaseSettings.accumulatorIOSchedule =
+        ExecutionPhaseIOSchedule::Preload;
+    runner.opts.executionPhaseSettings.schedule = ExecutionPhaseSchedule::Batch;
+    runner.opts.virtualGraphMode = VirtualGraphMode::ExecutionPhases;
+    runner.patterns              = Patterns(PatternsLevel::Default);
+    runner.loss                  = l1;
+    runner.opts.numIOTiles       = 192;
+
+    auto tensorLocation = TensorLocation(TensorStorage::OffChip,
+                                         TileSet::IO,
+                                         TileSet::IO,
+                                         ReplicatedTensorSharding::Off);
+
+    runner.opts.activationTensorLocationSettings.location     = tensorLocation;
+    runner.opts.weightTensorLocationSettings.location         = tensorLocation;
+    runner.opts.optimizerStateTensorLocationSettings.location = tensorLocation;
+    runner.opts.accumulatorTensorLocationSettings.location    = tensorLocation;
+    return input;
+  });
+
+  runner.checkIr([&](Ir &ir) {
+    std::map<ExecutionPhase, std::tuple<int, int, int, int>> remoteOpsPerPhase;
+
+    std::set<ExecutionPhase> ioTileCopyInPhase;
+    std::set<ExecutionPhase> remoteStoreInPhase;
+
+    std::vector<Op *> schedule = ir.getOpSchedule({});
+    for (size_t i = 0; i < schedule.size(); i++) {
+      Op *op = schedule.at(i);
+      logging::trace(
+          "Op: {} {}", op->debugName(), op->settings.schedulePriority);
+
+      ExecutionPhase phase = op->getExecutionPhase();
+      if (op->isConvertibleTo<RemoteLoadOp>()) {
+        if (op->settings.schedulePriority == 0.0) {
+          std::get<0>(remoteOpsPerPhase[phase]) += 1;
+        } else {
+          std::get<1>(remoteOpsPerPhase[phase]) += 1;
+        }
+      }
+
+      if (op->isConvertibleTo<RemoteStoreOp>()) {
+        if (op->settings.schedulePriority == 0.0) {
+          std::get<2>(remoteOpsPerPhase[phase]) += 1;
+        } else {
+          std::get<3>(remoteOpsPerPhase[phase]) += 1;
+        }
+      }
+
+      // Check strict ordering in each phase due to having
+      // ExecutionPhaseSchedule::Batch
+      // enabled: RemoteLoad before IOTileCopy before RemoteStore
+      if (op->isConvertibleTo<RemoteLoadOp>()) {
+        BOOST_CHECK(ioTileCopyInPhase.find(op->getExecutionPhase()) ==
+                    ioTileCopyInPhase.end());
+        BOOST_CHECK(remoteStoreInPhase.find(op->getExecutionPhase()) ==
+                    remoteStoreInPhase.end());
+      }
+      if (op->isConvertibleTo<IoTileCopyOp>()) {
+        BOOST_CHECK(remoteStoreInPhase.find(op->getExecutionPhase()) ==
+                    remoteStoreInPhase.end());
+        ioTileCopyInPhase.insert(op->getExecutionPhase());
+      }
+      if (op->isConvertibleTo<RemoteStoreOp>()) {
+        remoteStoreInPhase.insert(op->getExecutionPhase());
+      }
+    }
+
+    // For this execution mode, we expect:
+    // 1.) For phases -1, 0, ..., N - 1: Preload one weight, #N in total
+    // 2.) For phases 1, ..., N - 2: Save one activation, #N - 3 in total
+    // 3.) For phases N - 1, ..., 2 * N - 2: Save one weight, #N in total
+    // 4.) For phases N, ..., 2 * N - 4: Load a weight and an activation
+    // 4.) For phases 2 * N - 3: Load a weight
+    for (auto &kv : remoteOpsPerPhase) {
+      logging::trace("Remote ops in phase: {} {} {} {} {}",
+                     kv.first,
+                     std::get<0>(kv.second),
+                     std::get<1>(kv.second),
+                     std::get<2>(kv.second),
+                     std::get<3>(kv.second));
+      // 1.)
+      if (kv.first < N - 1) {
+        BOOST_CHECK(std::get<1>(kv.second) == 1);
+      }
+      // 2.)
+      if (kv.first < N - 2 && kv.first > 0) {
+        BOOST_CHECK(std::get<3>(kv.second) == 1);
+      }
+      // 3.)
+      if (kv.first >= N - 1) {
+        BOOST_CHECK(std::get<3>(kv.second) == 1);
+      }
+      // 4.)
+      if (kv.first >= N && kv.first < 2 * N - 3) {
+        BOOST_CHECK(std::get<3>(kv.second) == 1);
+      }
+      // 4.)
+      if (kv.first == 2 * N - 3) {
+        BOOST_CHECK(std::get<3>(kv.second) == 1);
       }
     }
   });
@@ -618,7 +780,8 @@ BOOST_AUTO_TEST_CASE(Test2x0S2ExecutionPhase) {
     std::vector<Op *> schedule = ir.getOpSchedule({});
     for (size_t i = 0; i < schedule.size(); i++) {
       Op *op = schedule.at(i);
-      logging::trace("Op: {}", op->debugName());
+      logging::trace(
+          "Op: {} {}", op->debugName(), op->settings.schedulePriority);
 
       ExecutionPhase phase = op->getExecutionPhase();
       if (op->isConvertibleTo<RemoteLoadOp>()) {
