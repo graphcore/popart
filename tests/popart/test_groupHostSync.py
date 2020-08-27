@@ -44,51 +44,66 @@ def test_groupHostSync():
     stepio = popart.PyStepIO({a: input_a}, anchors)
     session.run(stepio)
     summaryReport = session.getSummaryReport()
+    print(summaryReport)
 
     lines = summaryReport.split('\n')
     order = []
-    first = False
+    pastSwitch = False
     countStreams = 0
     countSeq = 0
 
     # Analyse a sequence:
     # default order :
+    #  Switch
+    #   Repeat
     #     StreamCopy (FromHost) x2
+    #     StreamCopy(ToHost) x1
     #     Add
     #     StreamCopy(ToHost) x2
     #     Absolute
     #     Reduce
-    #     StreamCopy(ToHost) x2
+    #     StreamCopy(ToHost) x1
 
     # with the option:
+    #  Switch
+    #   Repeat
     #     StreamCopy (FromHost) x2
+    #     StreamCopy(ToHost)   x1
     #     Add
     #     Absolute
     #     Reduce
-    #     StreamCopy(ToHost)   x2
+    #     StreamCopy(ToHost)   x1
 
     for l in lines:
+        if re.search(r"Switch", l):
+            pastSwitch = True
+        if not pastSwitch:
+            continue
         if re.search(r"Sequence", l):
             countSeq += 1
-            if countSeq >= 7:
+            if countSeq >= 6:
                 break
         if re.search(r"OnTileExecute: 104/Op/Add", l):
             order.append(1)
-            first = True
         if re.search(r"OnTileExecute: 101/abs/Op/Absolute", l):
             order.append(2)
         if re.search(r"101/add/ReduceExpression", l):
             order.append(3)
-        if re.search(r"\bStreamCopy\b", l) and first:
+        if re.search(r"\bStreamCopy\b", l):
             order.append(4)
             countStreams += 1
 
-    # The streamcopy to host should only happen at the end (after ReduceExpression)
-    # Expected list with the option enabled: [1,2,3,4,4]
-    # Expected list without the option: [1,4,4,2,3,4,4]
-    assert (order[1] == 2)
-    assert (order[2] == 3)
-    assert (order[3] == 4)
+    # The streamcopy to host should only happen at the end (after
+    # ReduceExpression)
+    # Expected list with the option enabled: [4,4,4,1,2,3,4]
+    # Expected list without the option: [4,4,4,1,4,4,2,3,4]
+    assert (order[0] == 4)
+    assert (order[1] == 4)
+    assert (order[2] == 4)
+    assert (order[3] == 1)
+    assert (order[4] == 2)
+    assert (order[5] == 3)
+    assert (order[6] == 4)
     # The number of Streamcopies happening in total
-    # (start counting from Add) should be 2.
-    assert (countStreams == 2)
+    # (start counting from the Switch) should be 4.
+    assert (countStreams == 4)
