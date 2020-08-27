@@ -14,7 +14,7 @@ endif()
 message(STATUS "Found GCL_LIBRARIES ${GCL_LIB}")
 mark_as_advanced(GCL_LIBRARIES)
 
-find_path(GCL_INCLUDE_DIR gcl/ct/TileAllocation.hpp HINT ${GCL_HINT_PATHS})
+find_path(GCL_INCLUDE_DIR gcl/TileAllocation.hpp HINT ${GCL_HINT_PATHS})
 set(GCL_INCLUDE_DIRS ${GCL_INCLUDE_DIR})
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(gcl DEFAULT_MSG GCL_INCLUDE_DIR)
