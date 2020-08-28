@@ -138,7 +138,10 @@ bool LSTMOp::hasInitialCInput() const {
 bool LSTMOp::hasOutput(OutIndex index) const { return output->hasIndex(index); }
 
 std::set<InIndex> LSTMOp::optionalInputs() const {
-  return {getSequenceLensInIndex()};
+  return {getSequenceLensInIndex(),
+          getInitialHInIndex(),
+          getInitialCInIndex(),
+          getPeepholeInIndex()};
 }
 
 void LSTMOp::appendOutlineAttributes(OpSerialiserBase &os) const {
@@ -506,7 +509,7 @@ static OpCreator<LSTMOp> lstmOpCreator(
         throw error("LSTMOp attribute `activation_alpha' is not supported");
       }
       if (info.attributes.hasAttribute("activation_beta")) {
-        throw error("LSTMOp attribute `activation_alpha' is not supported");
+        throw error("LSTMOp attribute `activation_beta' is not supported");
       }
 
       if (info.attributes.hasAttribute("clip")) {
