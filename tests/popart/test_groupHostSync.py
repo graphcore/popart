@@ -44,7 +44,6 @@ def test_groupHostSync():
     stepio = popart.PyStepIO({a: input_a}, anchors)
     session.run(stepio)
     summaryReport = session.getSummaryReport()
-    print(summaryReport)
 
     lines = summaryReport.split('\n')
     order = []
