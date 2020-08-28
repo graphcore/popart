@@ -250,6 +250,115 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_1) {
   }
 }
 
+// Test loading/storing of a broadcast tensor
+BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_2) {
+
+  int32_t N = 4;
+  int32_t K = 3;
+
+  // we will generate random initializations
+  int seed = 1337;
+  DefaultRandomEngine eng(seed);
+  UniformRealDistribution<float> fdis(-4.f, 4.f);
+
+  auto bder        = Builder::create();
+  auto aiOnnx      = bder->aiOnnxOpset9();
+  auto aiGraphcore = bder->aiGraphcoreOpset1();
+
+  // Tensor A of shape 1 x 1 x 1
+  TensorInfo A_info{"FLOAT", std::vector<int64_t>{1, 1, 1}};
+  std::vector<float> v_A_init(A_info.nelms());
+  for (auto &val : v_A_init) {
+    val = fdis(eng);
+  }
+  TensorId A_id =
+      bder->addInitializedInputTensor({v_A_init.data(), A_info}, "A");
+
+  // Expand A to K x N x N
+  std::vector<int32_t> expand_data = {K, N, N};
+  ConstVoidData expand_cv          = {expand_data.data(),
+                             {"INT32", std::vector<int64_t>{3}}};
+  TensorId expand_id               = aiOnnx.constant(expand_cv, "expand_id");
+
+  // Tensor W of shape 1 x N x N
+  TensorInfo W_info{"FLOAT", std::vector<int64_t>{1, N, N}};
+  std::vector<float> v_W_init(W_info.nelms());
+  for (auto &val : v_W_init) {
+    val = fdis(eng);
+  }
+  TensorId W_id =
+      bder->addInitializedInputTensor({v_W_init.data(), W_info}, "W");
+
+  TensorId A_bc_id = bder->customOp(
+      Onnx::Operators::Expand_8, 9, {A_id, expand_id}, 1, {}, "MatMul")[0];
+
+  TensorId B_id = bder->customOp(
+      Onnx::AiOnnx::OpSet9::Mul, 9, {A_bc_id, W_id}, 1, {}, "MatMul")[0];
+
+  bder->customOp(Onnx::CustomOperators::RemoteStore,
+                 1,
+                 {B_id},
+                 0,
+                 {{"bufferid", 0}, {"__schedule_priority", 1.f}},
+                 "store");
+
+  TensorInfo B_info{"FLOAT", std::vector<int64_t>{K, N, N}};
+  TensorId B_l_id =
+      bder->customOp(Onnx::CustomOperators::RemoteLoad,
+                     1,
+                     {A_bc_id},
+                     1,
+                     {{"bufferid", 0}, {"__schedule_priority", -1.f}},
+                     "load")[0];
+
+  bder->addOutputTensor(B_l_id);
+
+  auto proto         = bder->getModelProto();
+  auto modelProto    = io::getModelFromString(proto);
+  auto art           = AnchorReturnType("All");
+  int batchesPerStep = 1;
+  auto dataFlow      = DataFlow(batchesPerStep, {{B_l_id, art}});
+  auto device        = createTestDevice(TEST_TARGET);
+
+  // inputs:
+  popart::NDArrayWrapper<float> A_wrapper(v_A_init.data(), A_info);
+  popart::NDArrayWrapper<float> W_wrapper(v_W_init.data(), W_info);
+
+  std::map<popart::TensorId, popart::IArray &> inputs = {{A_id, A_wrapper},
+                                                         {W_id, W_wrapper}};
+
+  std::vector<float> raw_B_out(B_info.nelms());
+  std::vector<float> groundTruth(B_info.nelms());
+  popart::NDArrayWrapper<float> B_wrapper(raw_B_out.data(), B_info.shape());
+  std::map<popart::TensorId, popart::IArray &> anchors = {
+      {B_l_id, B_wrapper},
+  };
+
+  if (device != nullptr) {
+    auto opts    = SessionOptions();
+    auto session = popart::InferenceSession::createFromOnnxModel(
+        proto,
+        dataFlow,
+        device,
+        popart::InputShapeInfo(),
+        opts,
+        popart::Patterns(PatternsLevel::Default));
+    session->prepareDevice();
+    popart::StepIO stepio(inputs, anchors);
+    session->run(stepio);
+
+    for (size_t k = 0; k < K; ++k) {
+      for (size_t n0 = 0; n0 < N; ++n0) {
+        for (size_t n1 = 0; n1 < N; ++n1) {
+          size_t i       = n1 + n0 * N + k * N * N;
+          groundTruth[i] = v_A_init[0] * v_W_init[n1 + n0 * N];
+          BOOST_CHECK_CLOSE(raw_B_out[i], groundTruth[i], 1e-4f);
+        }
+      }
+    }
+  }
+}
+
 // Overwrite A and B with RemoteLoad, aliased as C and D
 // Check if subgraph and main tensors are aliased correctly
 // Before outlining:

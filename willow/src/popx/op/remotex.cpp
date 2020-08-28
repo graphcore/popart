@@ -33,7 +33,7 @@ void RemoteStoreOpx::grow(poplar::program::Sequence &prog) const {
     rbTensor =
         graph().clone(inTensor,
                       inTensorId + "_RemoteTmp",
-                      poplar::TensorCloneMethod::PRESERVE_ORDER_AND_ALIASES);
+                      poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
     dv_p->createRemoteBuffer(remoteStoreOp.getRemoteBufferId(), rbTensor);
   }
 
@@ -81,7 +81,7 @@ void RemoteLoadOpx::grow(poplar::program::Sequence &prog) const {
     rbTensor =
         graph().clone(outTensor,
                       outTensorId + "_RemoteTmp",
-                      poplar::TensorCloneMethod::PRESERVE_ORDER_AND_ALIASES);
+                      poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
     dv_p->createRemoteBuffer(remoteLoadOp.getRemoteBufferId(), rbTensor);
   }
 
@@ -96,6 +96,18 @@ void RemoteLoadOpx::grow(poplar::program::Sequence &prog) const {
   } else {
     poplar::program::Copy copy_prog(buffer.first, rbTensor);
     prog.add(copy_prog);
+  }
+
+  if (!outTensor.isParallelWriteable() || outTensor.containsConstant()) {
+    logging::opx::warn("Tensor {} is not a writable remote buffer "
+                       "copy target, cloning. "
+                       "The aliasing properties of {} have changed implicitly.",
+                       remoteLoadOp.inId(RemoteLoadOp::getLocalTensorInIndex()),
+                       remoteLoadOp.debugName());
+    outTensor =
+        graph().clone(rbTensor,
+                      outTensorId + "_Writable",
+                      poplar::TensorCloneMethod::PRESERVE_ORDER_AND_ALIASES);
   }
 
   poplar::program::Copy tmp_copy_prog(rbTensor, outTensor);
