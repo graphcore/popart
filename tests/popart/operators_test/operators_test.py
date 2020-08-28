@@ -228,7 +228,6 @@ def test_convolution_2(op_tester):
     Test the convolution when the conv in the bwd pass is not the same as the conv in the
     forward pass
     '''
-
     def init_builder(builder):
         data = np.ones([1, 2, 4, 4], dtype=np.float32)
         filt = np.ones([4, 2, 1, 1], dtype=np.float32)
@@ -954,11 +953,12 @@ def test_asin_grad(op_tester):
     # op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
+
 def test_acos(op_tester):
     # create test data
     d1 = ((np.random.rand(4) - 0.5) * np.pi).astype(np.float32)
 
-    def init_builder(builder): 
+    def init_builder(builder):
         i1 = builder.addInputTensor(d1)
         o = builder.aiOnnx.acos([i1])
         builder.addOutputTensor(o)
@@ -971,6 +971,7 @@ def test_acos(op_tester):
 
     op_tester.setPatterns(['AcosOpPattern'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
+
 
 def test_acos_inplace(op_tester):
     # create test data
@@ -987,9 +988,10 @@ def test_acos_inplace(op_tester):
         out = torch.acos(a)
         return [out]
 
-    op_tester.setPatterns(['InPlace','AcosOpPattern'],
-    enableRuntimeAsserts=False)
+    op_tester.setPatterns(['InPlace', 'AcosOpPattern'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
+
 
 def test_acos_grad(op_tester):
     # create the test data
@@ -1013,15 +1015,16 @@ def test_acos_grad(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, a.grad, None]
 
-    op_tester.setPatterns(['AcosOpPattern','SubtractArg1GradOp'],
-    enableRuntimeAsserts=False)
+    op_tester.setPatterns(['AcosOpPattern', 'SubtractArg1GradOp'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
+
 
 def test_acosh(op_tester):
     # create test data
     d1 = np.array([1.0, 1.2, 2.0, 3.0, 10.0, 100.0, 2001.0], dtype=np.float32)
 
-    def init_builder(builder): 
+    def init_builder(builder):
         i1 = builder.addInputTensor(d1)
         o = builder.aiOnnx.acosh([i1])
         builder.addOutputTensor(o)
@@ -1029,10 +1032,11 @@ def test_acosh(op_tester):
 
     def reference(ref_data):
         out = np.arccosh(d1)
-        return [out]    
+        return [out]
 
     op_tester.setPatterns(['AcoshOpPattern'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
+
 
 def test_acosh_inplace(op_tester):
     # create test data
@@ -1048,19 +1052,20 @@ def test_acosh_inplace(op_tester):
         out = np.arccosh(d1)
         return [out]
 
-    op_tester.setPatterns(['InPlace','AcoshOpPattern'],
-    enableRuntimeAsserts=False)
+    op_tester.setPatterns(['InPlace', 'AcoshOpPattern'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
+
 
 def test_acosh_grad(op_tester):
     # create test data
     # This test fails for x "very" close to 1, e.g.  1.001.
     # Acosh is defined for x > 1.
     d1 = np.array([1.005, 1.2, 2.0, 3.0, 10.0, 10.123456, 100.0, 2001.0],
-     dtype=np.float32)
+                  dtype=np.float32)
 
     def derivative_acosh(x):
-        return 1/(np.sqrt(x - 1) * np.sqrt(x + 1))
+        return 1 / (np.sqrt(x - 1) * np.sqrt(x + 1))
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
@@ -1075,12 +1080,15 @@ def test_acosh_grad(op_tester):
     def reference(ref_data):
         out = np.arccosh(d1)
         d__o = derivative_acosh(d1)
-        return [out, d__o, None]        
+        return [out, d__o, None]
 
-    op_tester.setPatterns(['AcoshOpPattern','SubtractArg1GradOp',
-    'LogGradOp','SqrtGradOp','PowArg0GradOp'],
-    enableRuntimeAsserts=False)
+    op_tester.setPatterns([
+        'AcoshOpPattern', 'SubtractArg1GradOp', 'LogGradOp', 'SqrtGradOp',
+        'PowArg0GradOp'
+    ],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
+
 
 def test_atan(op_tester):
     # create test data
@@ -1446,7 +1454,11 @@ def test_pad11(op_tester):
                   })
 
 
-def _test_pad(op_tester, data, lower_padding, upper_padding, mode,
+def _test_pad(op_tester,
+              data,
+              lower_padding,
+              upper_padding,
+              mode,
               pad_value=0):
     def init_builder(builder):
         i1 = builder.addInputTensor(data)
@@ -2197,3 +2209,364 @@ def test_constant_of_shape_int32(op_tester):
         return [o]
 
     op_tester.run(init_builder, reference, 'infer')
+
+
+def test_convtranspose(op_tester):
+    # Test modified from example `convtranspose` in onnx
+    # operators documentation.
+    x = np.array([[[
+        [0., 1., 2.],  # (1, 1, 3, 3)
+        [3., 4., 5.],
+        [6., 7., 8.]
+    ]]]).astype(np.float32)
+
+    W = np.array([[
+        [
+            [1., 1., 1.],  # (1, 2, 3, 3)
+            [1., 1., 1.],
+            [1., 1., 1.]
+        ],
+        [[1., 1., 1.], [1., 1., 1.], [1., 1., 1.]]
+    ]]).astype(np.float32)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(x)
+        f = builder.addInputTensor(W)
+        o = builder.aiOnnxOpset11.convtranspose([d, f])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        y = np.array([[
+            [
+                [0., 1., 3., 3., 2.],  # (1, 2, 5, 5)
+                [3., 8., 15., 12., 7.],
+                [9., 21., 36., 27., 15.],
+                [9., 20., 33., 24., 13.],
+                [6., 13., 21., 15., 8.]
+            ],
+            [[0., 1., 3., 3., 2.], [3., 8., 15., 12., 7.],
+             [9., 21., 36., 27., 15.], [9., 20., 33., 24., 13.],
+             [6., 13., 21., 15., 8.]]
+        ]]).astype(np.float32)
+        return [y]
+
+    op_tester.setPatterns(['ConvTranspose'], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, step_type='infer')
+
+
+def test_convtranspose_1d(op_tester):
+    # Test modified from example `convtranspose_1d` in onnx
+    # operators documentation.
+    x = np.array([[[0., 1., 2.]]]).astype(np.float32)  # (1, 1, 3)
+
+    W = np.array([[
+        [1., 1., 1.],  # (1, 2, 3)
+        [1., 1., 1.]
+    ]]).astype(np.float32)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(x)
+        f = builder.addInputTensor(W)
+        o = builder.aiOnnxOpset11.convtranspose([d, f])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        y = np.array([[
+            [0., 1., 3., 3., 2.],  # (1, 2, 5)
+            [0., 1., 3., 3., 2.]
+        ]]).astype(np.float32)
+        return [y]
+
+    op_tester.setPatterns(['ConvTranspose'], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, step_type='infer')
+
+
+def test_convtranspose_3d(op_tester):
+    # Test modified from example `convtranspose_3d` in onnx
+    # operators documentation.
+    x = np.array([[[[[0., 1., 2., 3., 4.], [5., 6., 7., 8., 9.],
+                     [10., 11., 12., 13., 14.], [15., 16., 17., 18., 19.]],
+                    [[20., 21., 22., 23., 24.], [25., 26., 27., 28., 29.],
+                     [30., 31., 32., 33., 34.], [35., 36., 37., 38., 39.]],
+                    [[40., 41., 42., 43., 44.], [45., 46., 47., 48., 49.],
+                     [50., 51., 52., 53., 54.], [55., 56., 57., 58.,
+                                                 59.]]]]]).astype(np.float32)
+
+    W = np.array([[[[[1., 1., 1.], [1., 1., 1.], [1., 1., 1.]],
+                    [[1., 1., 1.], [1., 1., 1.], [1., 1., 1.]],
+                    [[1., 1., 1.], [1., 1., 1.], [1., 1., 1.]]],
+                   [[[1., 1., 1.], [1., 1., 1.], [1., 1., 1.]],
+                    [[1., 1., 1.], [1., 1., 1.], [1., 1., 1.]],
+                    [[1., 1., 1.], [1., 1., 1.], [1., 1.,
+                                                  1.]]]]]).astype(np.float32)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(x)
+        f = builder.addInputTensor(W)
+        o = builder.aiOnnxOpset11.convtranspose([d, f])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        y = np.array([[[[[0., 1., 3., 6., 9., 7., 4.],
+                         [5., 12., 21., 27., 33., 24., 13.],
+                         [15., 33., 54., 63., 72., 51., 27.],
+                         [30., 63., 99., 108., 117., 81., 42.],
+                         [25., 52., 81., 87., 93., 64., 33.],
+                         [15., 31., 48., 51., 54., 37., 19.]],
+                        [[20., 42., 66., 72., 78., 54., 28.],
+                         [50., 104., 162., 174., 186., 128., 66.],
+                         [90., 186., 288., 306., 324., 222., 114.],
+                         [120., 246., 378., 396., 414., 282., 144.],
+                         [90., 184., 282., 294., 306., 208., 106.],
+                         [50., 102., 156., 162., 168., 114., 58.]],
+                        [[60., 123., 189., 198., 207., 141., 72.],
+                         [135., 276., 423., 441., 459., 312., 159.],
+                         [225., 459., 702., 729., 756., 513., 261.],
+                         [270., 549., 837., 864., 891., 603., 306.],
+                         [195., 396., 603., 621., 639., 432., 219.],
+                         [105., 213., 324., 333., 342., 231., 117.]],
+                        [[60., 122., 186., 192., 198., 134., 68.],
+                         [130., 264., 402., 414., 426., 288., 146.],
+                         [210., 426., 648., 666., 684., 462., 234.],
+                         [240., 486., 738., 756., 774., 522., 264.],
+                         [170., 344., 522., 534., 546., 368., 186.],
+                         [90., 182., 276., 282., 288., 194., 98.]],
+                        [[40., 81., 123., 126., 129., 87., 44.],
+                         [85., 172., 261., 267., 273., 184., 93.],
+                         [135., 273., 414., 423., 432., 291., 147.],
+                         [150., 303., 459., 468., 477., 321., 162.],
+                         [105., 212., 321., 327., 333., 224., 113.],
+                         [55., 111., 168., 171., 174., 117., 59.]]],
+                       [[[0., 1., 3., 6., 9., 7., 4.],
+                         [5., 12., 21., 27., 33., 24., 13.],
+                         [15., 33., 54., 63., 72., 51., 27.],
+                         [30., 63., 99., 108., 117., 81., 42.],
+                         [25., 52., 81., 87., 93., 64., 33.],
+                         [15., 31., 48., 51., 54., 37., 19.]],
+                        [[20., 42., 66., 72., 78., 54., 28.],
+                         [50., 104., 162., 174., 186., 128., 66.],
+                         [90., 186., 288., 306., 324., 222., 114.],
+                         [120., 246., 378., 396., 414., 282., 144.],
+                         [90., 184., 282., 294., 306., 208., 106.],
+                         [50., 102., 156., 162., 168., 114., 58.]],
+                        [[60., 123., 189., 198., 207., 141., 72.],
+                         [135., 276., 423., 441., 459., 312., 159.],
+                         [225., 459., 702., 729., 756., 513., 261.],
+                         [270., 549., 837., 864., 891., 603., 306.],
+                         [195., 396., 603., 621., 639., 432., 219.],
+                         [105., 213., 324., 333., 342., 231., 117.]],
+                        [[60., 122., 186., 192., 198., 134., 68.],
+                         [130., 264., 402., 414., 426., 288., 146.],
+                         [210., 426., 648., 666., 684., 462., 234.],
+                         [240., 486., 738., 756., 774., 522., 264.],
+                         [170., 344., 522., 534., 546., 368., 186.],
+                         [90., 182., 276., 282., 288., 194., 98.]],
+                        [[40., 81., 123., 126., 129., 87., 44.],
+                         [85., 172., 261., 267., 273., 184., 93.],
+                         [135., 273., 414., 423., 432., 291., 147.],
+                         [150., 303., 459., 468., 477., 321., 162.],
+                         [105., 212., 321., 327., 333., 224., 113.],
+                         [55., 111., 168., 171., 174., 117.,
+                          59.]]]]]).astype(np.float32)
+
+        return [y]
+
+    op_tester.setPatterns(['ConvTranspose'], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, step_type='infer')
+
+
+def test_convtranspose_pytorch(op_tester):
+    def run_test(in_chans, out_chans, data, kernel):
+        print(f'run_test({in_chans}, {out_chans}, {data}, {kernel})')
+        assert len(data) == len(kernel)
+        x = np.random.rand(1, in_chans, *data).astype(np.float32)
+        W = np.random.rand(in_chans, out_chans, *kernel).astype(np.float32)
+
+        def init_builder(builder):
+            d = builder.addInputTensor(x)
+            f = builder.addInputTensor(W)
+            o = builder.aiOnnxOpset11.convtranspose([d, f])
+            builder.addOutputTensor(o)
+            return [o]
+
+        def reference(ref_data):
+            data = torch.tensor(x)
+            weights = torch.tensor(W)
+            if len(kernel) == 1:
+                conv = torch.nn.ConvTranspose1d(in_chans, out_chans, kernel)
+            elif len(kernel) == 2:
+                conv = torch.nn.ConvTranspose2d(in_chans, out_chans, kernel)
+            else:
+                raise SystemError(f'Bad kernel size {len(kernel)}')
+            conv.weight.data = weights
+            conv.bias.data = torch.zeros(conv.bias.size())
+            o = conv(data)
+            print(o.shape)
+            return [o]
+
+        op_tester.setPatterns(['ConvTranspose'], enableRuntimeAsserts=False)
+        op_tester.run(init_builder, reference, step_type='infer')
+
+    # Test various 2d convtransposes
+    run_test(in_chans=1, out_chans=2, data=[3, 3], kernel=[3, 3])
+    run_test(in_chans=1, out_chans=2, data=[4, 4], kernel=[4, 4])
+    run_test(in_chans=1, out_chans=2, data=[5, 5], kernel=[5, 5])
+    run_test(in_chans=1, out_chans=2, data=[4, 4], kernel=[3, 3])
+    run_test(in_chans=1, out_chans=2, data=[5, 5], kernel=[3, 3])
+    run_test(in_chans=1, out_chans=2, data=[5, 5], kernel=[4, 4])
+    run_test(in_chans=2, out_chans=3, data=[3, 3], kernel=[3, 3])
+    run_test(in_chans=3, out_chans=6, data=[4, 4], kernel=[4, 4])
+
+    # Test various 1d convtransposes
+    run_test(in_chans=1, out_chans=2, data=[3], kernel=[3])
+    run_test(in_chans=1, out_chans=2, data=[4], kernel=[4])
+    run_test(in_chans=1, out_chans=2, data=[5], kernel=[5])
+    run_test(in_chans=1, out_chans=2, data=[4], kernel=[3])
+    run_test(in_chans=1, out_chans=2, data=[5], kernel=[3])
+    run_test(in_chans=1, out_chans=2, data=[5], kernel=[4])
+    run_test(in_chans=2, out_chans=3, data=[3], kernel=[3])
+    run_test(in_chans=3, out_chans=6, data=[4], kernel=[4])
+
+
+def test_convtranspose_pytorch_attributes(op_tester):
+    def run_test(in_chans,
+                 out_chans,
+                 data,
+                 kernel,
+                 stride=None,
+                 output_padding=None,
+                 pads=None):
+        print(f'run_test({in_chans}, {out_chans}, {data}, {kernel})')
+        assert len(data) == len(kernel)
+        x = np.random.rand(1, in_chans, *data).astype(np.float32)
+        W = np.random.rand(in_chans, out_chans, *kernel).astype(np.float32)
+
+        def init_builder(builder):
+            d = builder.addInputTensor(x)
+            f = builder.addInputTensor(W)
+
+            kwargs = {}
+            if stride:
+                kwargs['strides'] = stride
+            if output_padding:
+                kwargs['output_padding'] = output_padding
+            if pads:
+                kwargs['pads'] = pads + pads
+
+            o = builder.aiOnnxOpset11.convtranspose([d, f], **kwargs)
+            builder.addOutputTensor(o)
+            return [o]
+
+        def reference(ref_data):
+            data = torch.tensor(x)
+            weights = torch.tensor(W)
+
+            kwargs = {}
+            if stride:
+                kwargs['stride'] = stride
+            if output_padding:
+                kwargs['output_padding'] = output_padding
+            if pads:
+                kwargs['padding'] = pads
+
+            if len(kernel) == 1:
+                conv = torch.nn.ConvTranspose1d(in_chans, out_chans, kernel,
+                                                **kwargs)
+            elif len(kernel) == 2:
+                conv = torch.nn.ConvTranspose2d(in_chans, out_chans, kernel,
+                                                **kwargs)
+            else:
+                raise SystemError(f'Bad kernel size {len(kernel)}')
+            conv.weight.data = weights
+            conv.bias.data = torch.zeros(conv.bias.size())
+            o = conv(data)
+            print(o.shape)
+            return [o]
+
+        op_tester.setPatterns(['ConvTranspose'], enableRuntimeAsserts=False)
+        op_tester.run(init_builder, reference, step_type='infer')
+
+    # just testing strides
+    run_test(in_chans=1, out_chans=2, data=[4], kernel=[4], stride=[5])
+    run_test(in_chans=1, out_chans=2, data=[5], kernel=[4], stride=[5])
+    run_test(in_chans=2, out_chans=3, data=[5], kernel=[4], stride=[5])
+    run_test(in_chans=2,
+             out_chans=3,
+             data=[5, 5],
+             kernel=[4, 4],
+             stride=[3, 5])
+
+    # testing output padding
+    run_test(in_chans=1,
+             out_chans=2,
+             data=[4],
+             kernel=[4],
+             stride=[2],
+             output_padding=[1])
+
+    # testing pads
+    run_test(in_chans=1, out_chans=2, data=[3], kernel=[3], pads=[1])
+    run_test(in_chans=1, out_chans=2, data=[5], kernel=[3], pads=[1])
+    run_test(in_chans=1, out_chans=2, data=[5], kernel=[5], pads=[2])
+    run_test(in_chans=1, out_chans=2, data=[5], kernel=[7], pads=[2])
+
+    # stride and pads
+    run_test(in_chans=1,
+             out_chans=2,
+             data=[3, 3],
+             kernel=[3, 3],
+             stride=[3, 2],
+             pads=[1, 2],
+             output_padding=[2, 1])
+
+
+def test_convtranspose_debug(op_tester):
+    x = np.array([[[
+        [0., 1., 2.],  # (1, 1, 3, 3)
+        [3., 4., 5.],
+        [6., 7., 8.]
+    ]]]).astype(np.float32)
+
+    W = np.array([[
+        [
+            [1., 1., 1.],  # (1, 2, 3, 3)
+            [1., 1., 1.],
+            [1., 1., 1.]
+        ],
+        [[1., 1., 1.], [1., 1., 1.], [1., 1., 1.]]
+    ]]).astype(np.float32)
+
+    y = np.random.rand(1, 2, 10, 8).astype(np.float32)
+
+    # y = np.array([[
+    #     [
+    #         [0., 1., 3., 3., 2.],  # (1, 2, 5, 5)
+    #         [3., 8., 15., 12., 7.],
+    #         [9., 21., 36., 27., 15.],
+    #         [9., 20., 33., 24., 13.],
+    #         [6., 13., 21., 15., 8.]
+    #     ],
+    #     [[0., 1., 3., 3., 2.], [3., 8., 15., 12., 7.],
+    #      [9., 21., 36., 27., 15.], [9., 20., 33., 24., 13.],
+    #      [6., 13., 21., 15., 8.]]
+    # ]]).astype(np.float32)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(y)
+        f = builder.addInputTensor(W)
+        o = builder.aiOnnxOpset11.conv([d, f],
+                                       dilations=[3, 2],
+                                       pads=[0, 0, -1, -1])
+        builder.addOutputTensor(o)
+        # return [o]
+        return [o, popart.reservedGradientPrefix() + d]
+
+    def reference(ref_data):
+        return [None, None]
+
+    op_tester.setPatterns(['ConvDataGrad'], enableRuntimeAsserts=False)
+    # op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.run(init_builder, reference, step_type='train')
