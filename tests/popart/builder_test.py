@@ -1491,10 +1491,10 @@ def test_builder_opsetVersioning(tmpdir):
     o1 = builder.aiOnnxOpset9.add([i1, i2], 'a')
 
     # This will fail as we have already defined the opset as 9
-    with pytest.raises(RuntimeError) as e_info:
+    with pytest.raises(popart.popart_exception) as e_info:
         o1 = builder.aiOnnxOpset6.add([i1, i2], 1, 0, 'a')
     assert (
-        "Invalid opset 'aiOnnxOpset6' selected. Opset for domain ai.onnx already defined as 9"
+        "Invalid opset 6 used to add an operation. Opset for domain ai.onnx already defined as 9"
         in e_info.value.args[0])
 
 
@@ -1639,114 +1639,3 @@ def test_conv_invalid_kernel_shape():
         e_info.value.args[0] ==
         "Window parameter values combine to give invalid spatial output shape: [-7 -7]"
     )
-
-
-def _get_onnx_opset_version(proto):
-    onnx_domain = ''
-
-    m = onnx.load_from_string(proto)
-    opsets = m.opset_import
-    opsets = [i for i in opsets if i.domain == onnx_domain]
-    assert len(opsets) == 1
-    return opsets[0].version
-
-
-# Test setting the opset version in the constructor
-def test_opset_version_constructor():
-    builder = popart.Builder(opsets={"ai.onnx": 9, "ai.graphcore": 1})
-    a = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]), "a")
-    b = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]), "b")
-    o = builder.aiOnnx.add([a, b])
-    builder.addOutputTensor(o)
-    proto = builder.getModelProto()
-
-    assert _get_onnx_opset_version(proto) == 9
-
-
-# Test using the default opset version
-def test_opset_version_default():
-    builder = popart.Builder()
-    a = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]), "a")
-    b = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]), "b")
-    o = builder.aiOnnx.add([a, b])
-    builder.addOutputTensor(o)
-    proto = builder.getModelProto()
-
-    assert _get_onnx_opset_version(proto) == popart.defaultAiOnnxOpset
-
-
-# Test choosing an opset version by using an explicit opset
-def test_opset_version_opset_choice():
-    builder = popart.Builder()
-    a = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]), "a")
-    b = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]), "b")
-    o = builder.aiOnnxOpset8.add([a, b])
-    builder.addOutputTensor(o)
-    proto = builder.getModelProto()
-
-    assert _get_onnx_opset_version(proto) == 8
-
-
-# Check that an error is thrown when trying to use a different
-# opset to the one specified in the Builder constructor
-def test_opset_version_constructor_override():
-    builder = popart.Builder(opsets={"ai.onnx": 9, "ai.graphcore": 1})
-    a = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]), "a")
-    b = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]), "b")
-
-    # Trying to override the constructor chosen opset version.
-    with pytest.raises(RuntimeError) as e_info:
-        o = builder.aiOnnxOpset8.add([a, b])
-
-    assert e_info.value.args[0].startswith(
-        "Invalid opset 'aiOnnxOpset8' selected. Opset "
-        "for domain ai.onnx already defined as 9")
-
-
-# Check that an error is thrown when trying to use two different opsets
-def test_opset_version_opset_choice_override():
-    builder = popart.Builder()
-    a = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]), "a")
-    b = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]), "b")
-    c = builder.aiOnnxOpset9.add([a, b])
-
-    # Trying to override the chosen opset.
-    with pytest.raises(RuntimeError) as e_info:
-        o = builder.aiOnnxOpset8.add([a, b])
-
-    assert e_info.value.args[0].startswith(
-        "Invalid opset 'aiOnnxOpset8' selected. Opset "
-        "for domain ai.onnx already defined as 9")
-
-
-# Check that an error is thrown when trying to override the default opset
-def test_opset_version_opset_default_choice_override():
-    builder = popart.Builder()
-    a = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]), "a")
-    b = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]), "b")
-
-    # This sets the opset strictly to the default opset.
-    c = builder.aiOnnx.add([a, b])
-
-    with pytest.raises(RuntimeError) as e_info:
-        o = builder.aiOnnxOpset8.add([a, b])
-
-    assert e_info.value.args[0].startswith(
-        "Invalid opset 'aiOnnxOpset8' selected. Opset "
-        "for domain ai.onnx already defined as 10")
-
-
-# Check that the default opset, `Builder.aiOnnx`, is set to
-# the explicitly chosen opset
-def test_opset_version_opset_default_version_changed():
-    builder = popart.Builder()
-    a = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]), "a")
-    b = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]), "b")
-
-    c = builder.aiOnnxOpset8.add([a, b])
-
-    # Check that builder.aiOnnx is now adding ops using opset 8.
-    o = builder.aiOnnx.add([a, b])
-
-    proto = builder.getModelProto()
-    assert _get_onnx_opset_version(proto) == 8

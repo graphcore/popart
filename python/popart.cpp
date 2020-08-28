@@ -492,10 +492,6 @@ PYBIND11_MODULE(popart_core, m) {
   init_ex10(m);
   init_ex11(m);
 
-  m.attr("defaultAiOnnxOpset")      = defaultAiOnnxOpset;
-  m.attr("defaultAiOnnxMlOpset")    = defaultAiOnnxMlOpset;
-  m.attr("defaultAiGraphcoreOpset") = defaultAiGraphcoreOpset;
-
   m.def("getTensorInfo", &getTensorInfo);
 
   m.def("getLogger", &Logger::getLogger, py::arg("name") = "all");
