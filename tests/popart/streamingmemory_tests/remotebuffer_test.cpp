@@ -299,17 +299,16 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_2) {
                  1,
                  {B_id},
                  0,
-                 {{"bufferid", 0}, {"__schedule_priority", -1.f}},
+                 {{"bufferid", 0}, {"__execution_phase", 0}},
                  "store");
 
   TensorInfo B_info{"FLOAT", std::vector<int64_t>{K, N, N}};
-  TensorId B_l_id =
-      bder->customOp(Onnx::CustomOperators::RemoteLoad,
-                     1,
-                     {A_bc_id},
-                     1,
-                     {{"bufferid", 0}, {"__schedule_priority", 1.f}},
-                     "load")[0];
+  TensorId B_l_id = bder->customOp(Onnx::CustomOperators::RemoteLoad,
+                                   1,
+                                   {A_bc_id},
+                                   1,
+                                   {{"bufferid", 0}, {"__execution_phase", 2}},
+                                   "load")[0];
 
   bder->addOutputTensor(B_l_id);
 
@@ -335,7 +334,10 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_2) {
   };
 
   if (device != nullptr) {
-    auto opts    = SessionOptions();
+    auto opts                          = SessionOptions();
+    opts.virtualGraphMode              = VirtualGraphMode::ExecutionPhases;
+    opts.executionPhaseSettings.stages = 1;
+    opts.executionPhaseSettings.phases = 3;
     auto session = popart::InferenceSession::createFromOnnxModel(
         proto,
         dataFlow,
