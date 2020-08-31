@@ -290,16 +290,16 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_2) {
       bder->addInitializedInputTensor({v_W_init.data(), W_info}, "W");
 
   TensorId A_bc_id = bder->customOp(
-      Onnx::Operators::Expand_8, 9, {A_id, expand_id}, 1, {}, "MatMul")[0];
+      Onnx::Operators::Expand_8, 9, {A_id, expand_id}, 1, {}, "Expand")[0];
 
   TensorId B_id = bder->customOp(
-      Onnx::AiOnnx::OpSet9::Mul, 9, {A_bc_id, W_id}, 1, {}, "MatMul")[0];
+      Onnx::AiOnnx::OpSet9::Mul, 9, {A_bc_id, W_id}, 1, {}, "Mul")[0];
 
   bder->customOp(Onnx::CustomOperators::RemoteStore,
                  1,
                  {B_id},
                  0,
-                 {{"bufferid", 0}, {"__schedule_priority", 1.f}},
+                 {{"bufferid", 0}, {"__schedule_priority", -1.f}},
                  "store");
 
   TensorInfo B_info{"FLOAT", std::vector<int64_t>{K, N, N}};
@@ -308,7 +308,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_2) {
                      1,
                      {A_bc_id},
                      1,
-                     {{"bufferid", 0}, {"__schedule_priority", -1.f}},
+                     {{"bufferid", 0}, {"__schedule_priority", 1.f}},
                      "load")[0];
 
   bder->addOutputTensor(B_l_id);
