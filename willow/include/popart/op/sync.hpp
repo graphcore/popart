@@ -20,6 +20,8 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
+  bool hasSideEffect() const override { return true; }
+
 private:
   poplar::SyncType syncType_;
 };

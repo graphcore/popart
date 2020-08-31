@@ -28,6 +28,8 @@ public:
   }
   RemoteBufferId getRemoteBufferId() const { return remotebuffer_id; }
 
+  bool hasSideEffect() const override { return true; }
+
 private:
   RemoteBufferId remotebuffer_id;
 };

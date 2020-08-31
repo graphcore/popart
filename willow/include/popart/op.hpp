@@ -427,6 +427,8 @@ public:
   // not be cached. The default is enabled (return true)
   virtual bool isOutlineable() const;
 
+  virtual bool hasSideEffect() const;
+
   bool inputsUnmodifiable() const;
 
   // A summary of the calculation in inputsUnmodifiable()

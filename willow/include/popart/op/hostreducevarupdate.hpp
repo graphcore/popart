@@ -24,6 +24,8 @@ public:
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
   void appendAttributes(OpSerialiserBase &) const final;
+
+  bool hasSideEffect() const override { return true; }
 };
 
 // Copy gradients to the device. Output is the streamed gradient

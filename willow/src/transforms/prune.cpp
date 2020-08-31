@@ -83,16 +83,11 @@ bool Prune::apply(Graph &graph) const {
     tensorFront.push_back(t);
     tensorsVisited.insert(t);
   }
-  // - RemoteStore inputs
-  // RemoteStore have no outputs and no consumers thereafter,
-  // so they will be pruned even though they do something necessary
-  // (e.g. store an updated weight tensor).
-  // This may no longer be necessary once we have host-tensor representations
-  // in the IR instead, that can represent the output of a RemoteStore op
-  // TODO: T17309
+
+  // and (4), input tensors to ops with side effects.
   for (Op *op : ir.getAllOps()) {
-    if (RemoteStoreOp *store = dynamic_cast<RemoteStoreOp *>(op)) {
-      for (auto &tensor : store->input->tensorMap()) {
+    if (op->hasSideEffect()) {
+      for (auto &tensor : op->input->tensorMap()) {
         tensorFront.push_back(tensor.second);
         tensorsVisited.insert(tensor.second);
       }
@@ -147,9 +142,7 @@ bool Prune::apply(Graph &graph) const {
 
   for (auto &id_op : graph.getOps()) {
     Op *op = id_op.second.get();
-    // TODO: Better mechanism to preserve special ops
-    if (required.count(op) == 0 && !dynamic_cast<RemoteStoreOp *>(op) &&
-        !dynamic_cast<BoundaryOp *>(op)) {
+    if (required.count(op) == 0 && !op->hasSideEffect()) {
       opsToDelete.push_back(op);
       for (auto &t_inds : op->output->indicesMap()) {
         tensorsToDelete.push_back(t_inds.first);

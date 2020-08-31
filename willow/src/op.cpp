@@ -1048,6 +1048,8 @@ Op::getSubgraphOutputs() const {
 
 bool Op::isOutlineable() const { return true; }
 
+bool Op::hasSideEffect() const { return false; }
+
 void Op::getInTensorData(TensorId tensorId,
                          std::vector<int64_t> &data,
                          std::vector<DataType> dataTypes) {

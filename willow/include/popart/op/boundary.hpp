@@ -17,6 +17,7 @@ public:
   void setup() final {}
   float getSubgraphValue() const final { return 0.0f; }
   bool isOutlineable() const override { return false; }
+  bool hasSideEffect() const override { return true; }
 };
 
 } // namespace popart
