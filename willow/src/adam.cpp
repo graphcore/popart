@@ -55,7 +55,7 @@ void Adam::insertSpecific(
   // no momentum key in m0, then this tensor "id" will have momentum 0.7.
   complete.insert({"learningRate", lrs.getDefault()});
   complete.insert({"weightDecay", wds.getDefault()});
-  complete.insert({"beta1", b2s.getDefault()});
+  complete.insert({"beta1", b1s.getDefault()});
   complete.insert({"beta2", b2s.getDefault()});
   complete.insert({"eps", epsvs.getDefault()});
   for (auto key_val : m0) {
