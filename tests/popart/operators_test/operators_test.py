@@ -2620,3 +2620,91 @@ def test_convtranspose_debug(op_tester):
     op_tester.setPatterns(['ConvDataGrad'], enableRuntimeAsserts=False)
     # op_tester.run(init_builder, reference, step_type='infer')
     op_tester.run(init_builder, reference, step_type='train')
+
+
+def test_where_0(op_tester):
+    condition = np.array([[1, 0], [1, 1]], dtype=np.bool)
+    x = np.array([[1, 2], [3, 4]], dtype=np.float32)
+    y = np.array([[9, 8], [7, 6]], dtype=np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(condition)
+        i2 = builder.addInputTensor(x)
+        i3 = builder.addInputTensor(y)
+        o = builder.aiOnnx.where([i1, i2, i3])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        out = np.where(condition, x, y)
+        return [out]   
+
+    op_tester.run(init_builder, reference, 'infer')
+
+def test_where_1(op_tester):
+    x = np.arange(9, dtype=np.int32)
+    y = 10*x
+    condition = x < 5
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(condition)
+        i2 = builder.addInputTensor(x)
+        i3 = builder.addInputTensor(y)
+        o = builder.aiOnnx.where([i1, i2, i3])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        out = np.where(condition, x, y)
+        return [out]   
+
+    op_tester.run(init_builder, reference, 'infer')
+
+def test_where_2(op_tester):
+    x, y = np.ogrid[:3, :4]
+    y = 10 + y
+    condition = x < y
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(condition)
+        i2 = builder.addInputTensor(x)
+        i3 = builder.addInputTensor(y)
+        o = builder.aiOnnx.where([i1, i2, i3])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        out = np.where(condition, x, y)
+        return [out]
+
+def test_where_3(op_tester):
+    x = np.array([[0, 1, 2],
+                  [0, 2, 4],
+                  [0, 3, 6]])
+    y = -1
+    condition = x < 4
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(condition)
+        i2 = builder.addInputTensor(x)
+        i3 = builder.addInputTensor(y)
+        o = builder.aiOnnx.where([i1, i2, i3])
+        builder.addOutputTensor(o)
+        return [o]
+
+def test_where_4(op_tester):
+    x = np.array([[1, 2], [3, 4], [5, 6]])
+    y = np.array([0,10])
+    condition = False
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(condition)
+        i2 = builder.addInputTensor(x)
+        i3 = builder.addInputTensor(y)
+        o = builder.aiOnnx.where([i1, i2, i3])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        out = np.where(condition, x, y)
+        return [out]
