@@ -10,8 +10,11 @@ namespace popx {
 namespace scatterutilx {
 
 // poplin::linspace only supports float or half, this is for int
-poplar::Tensor
-linspace(poplar::Graph &, int left, int right, int increment = 1);
+poplar::Tensor linspace(poplar::Graph &,
+                        int left,
+                        int right,
+                        int increment            = 1,
+                        const poplar::Type &type = poplar::INT);
 
 // Make b's rank match a.
 //

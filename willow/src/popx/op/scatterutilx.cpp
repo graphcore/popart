@@ -14,8 +14,11 @@ namespace popart {
 namespace popx {
 namespace scatterutilx {
 
-poplar::Tensor
-linspace(poplar::Graph &graph, int left, int right, int increment) {
+poplar::Tensor linspace(poplar::Graph &graph,
+                        int left,
+                        int right,
+                        int increment,
+                        const poplar::Type &type) {
   std::size_t count = right - left;
 
   std::vector<int> values(count);
@@ -25,8 +28,8 @@ linspace(poplar::Graph &graph, int left, int right, int increment) {
                  values.begin(),
                  [left, increment](int v) { return left + v * increment; });
 
-  auto result = graph.addConstant(
-      poplar::INT, {count}, poplar::ArrayRef<int>(values), "count");
+  auto result =
+      graph.addConstant(type, {count}, poplar::ArrayRef<int>(values), "count");
 
   graph.setTileMapping(result, 0);
 
@@ -65,7 +68,8 @@ void growScatter(poplar::program::Sequence &prog,
   // data tensor, but ONNX scatter only provides an axis and a scalar index.
   std::vector<poplar::Tensor> indices_mapped(indices.rank());
   for (int i = 0; i < indices.rank(); ++i) {
-    auto t = linspace(graph, 0, static_cast<int>(indices.dim(i)));
+    auto t = linspace(
+        graph, 0, static_cast<int>(indices.dim(i)), 1, indices.elementType());
 
     // Match the rank of indices
     t = matchRank(indices, t, i);

@@ -820,6 +820,56 @@ def test_sigmoid_grad(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
+def test_topk_2d(op_tester):
+    d1 = np.random.rand(7, 8).astype(np.float32) * 10
+    k = 4
+    for axis in [0, 1]:
+
+        def init_builder(builder):
+            i1 = builder.addInputTensor(d1)
+            k_t = builder.aiOnnx.constant(np.array([k]).astype(np.int64))
+            [vals, inds] = builder.aiOnnx.topk([i1, k_t], axis=axis)
+            builder.addOutputTensor(vals)
+            return [vals, inds]
+
+        def reference(ref_data):
+            a = torch.tensor(d1)
+            b = torch.topk(a, k=k, dim=axis)
+            return [b.values, b.indices]
+
+        # Torch doesn't have a uint32 type
+        op_tester.check_dtypes = False
+        op_tester.run(init_builder, reference, 'infer')
+
+
+def test_topk_2d_grad(op_tester):
+    d1 = np.random.rand(7, 8).astype(np.float32) * 10
+    k = 4
+    for axis in [0, 1]:
+
+        def init_builder(builder):
+            i1 = builder.addInputTensor(d1)
+            k_t = builder.aiOnnx.constant(np.array([k]).astype(np.int64))
+            [vals, inds] = builder.aiOnnx.topk([i1, k_t], axis=axis)
+            builder.addOutputTensor(vals)
+            return [
+                vals, inds,
+                popart.reservedGradientPrefix() + i1,
+                popart.reservedGradientPrefix() + vals
+            ]
+
+        def reference(ref_data):
+            a = torch.tensor(d1, requires_grad=True)
+            b = torch.topk(a, k=k, dim=axis)
+            d__o = ref_data.getOutputTensorGrad(0)
+            b.values.backward(torch.tensor(d__o))
+            return [b.values, b.indices, a.grad, None]
+
+        # Torch doesn't have a uint32 type
+        op_tester.check_dtypes = False
+        op_tester.run(init_builder, reference, 'train')
+
+
 def test_transpose(op_tester):
     d1 = np.random.rand(3, 5, 2, 7).astype(np.float32)
 

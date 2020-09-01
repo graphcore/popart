@@ -6,6 +6,7 @@
 #include <popart/popx/op/topkx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include <popnn/Loss.hpp>
 #include <popops/Zero.hpp>
 
 namespace popart {
@@ -48,16 +49,47 @@ void TopKGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 void TopKOpx::grow(poplar::program::Sequence &prog) const {
+  // Input shape, e.g. for rank = 4, axis = 2:
+  //   [a0, a1, a2, a3]
+  // Output shape:
+  //   [a0, a1, K,  a3]
+  auto input   = getInTensor(TopKOp::getInIndex());
+  auto lastDim = input.rank() - 1;
+  // Poplibs topk requires input with rank = 2, axis = 1
+  // Reshape input to:
+  //   [a0*a1*a3, a2]
+  if (axis != lastDim) {
+    input = input.dimShufflePartial({axis, lastDim}, {lastDim, axis});
+  }
 
-  FullSortResult result = growFullSortResult(prog);
-  const auto size       = result.values.dim(axis);
+  auto dim1Elememts = input.dim(lastDim);
+  auto dim0Elems    = input.numElements() / dim1Elememts;
+  input             = input.reshape({dim0Elems, dim1Elememts});
 
-  // TODO T8134  I think this is correct, but should confirm:
-  // topKVals[:...:,0,:...:] > topKVals[:...:,1,:...:] etc, where the slice
-  // is axis here. That is why I have included the reverse.
+  // Add variable to store indices
+  auto indsShape = input.shape();
+  indsShape[1]   = K;
+  auto topKInds  = graph().addVariable(poplar::UNSIGNED_INT, indsShape);
+  poputil::mapTensorLinearly(graph(), topKInds);
 
-  auto topKVals = result.values.slice(size - K, size, axis).reverse(axis);
-  auto topKInds = result.indices.slice(size - K, size, axis).reverse(axis);
+  auto topKVals = popnn::topK(graph(), input, topKInds, K, true, prog);
+
+  // Reverse the dimshuffling and reshaping of the input and indices tensors
+  auto valsShape = outShape(TopKOp::getValuesOutIndex());
+  std::vector<size_t> valsShape_t(valsShape.begin(), valsShape.end());
+  std::swap(valsShape_t[axis], valsShape_t[lastDim]);
+
+  // of shape: [a0, a1, a3, K]
+  topKVals = topKVals.reshape(valsShape_t);
+  topKInds = topKInds.reshape(valsShape_t);
+
+  // of shape [a0, a1, K, a3]
+  if (axis != lastDim) {
+    topKVals = topKVals.dimShufflePartial({axis, lastDim}, {lastDim, axis});
+  }
+  if (axis != lastDim) {
+    topKInds = topKInds.dimShufflePartial({axis, lastDim}, {lastDim, axis});
+  }
 
   setOutTensor(TopKOp::getValuesOutIndex(), topKVals);
   setOutTensor(TopKOp::getIndicesOutIndex(), topKInds);
