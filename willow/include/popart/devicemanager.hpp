@@ -16,6 +16,11 @@ enum class SyncPattern { Full = 0, SinglePipeline, ReplicaAndLadder };
 
 enum class DeviceConnectionType { Always = 0, OnDemand, Never };
 
+enum class DeviceSelectionCriterion {
+  First = 0, // Select the first device available
+  Random     // Select a device randomly from those available
+};
+
 SyncPattern syncPatternFromString(const std::string &str);
 std::string syncPatternToString(SyncPattern pattern);
 
@@ -75,11 +80,18 @@ public:
 
   const poplar::OptionFlags &getOptionFlags() const { return flags; }
 
+  void setOnDemandAttachTimeout(const unsigned seconds);
+  const unsigned &getOnDemandAttachTimeout() const { return attachTimeout; }
+
+  bool tryAttachUntilTimeout();
+
 private:
   DeviceProvider &provider;
   DeviceType type;
   DeviceConnectionType connectionType;
   const poplar::OptionFlags flags;
+  // How many seconds to wait when trying to attach to an IPU
+  unsigned attachTimeout = 0;
 };
 
 std::ostream &operator<<(std::ostream &os, const DeviceInfo &di);
@@ -170,7 +182,9 @@ public:
       int numIpus                         = 1,
       int tilesPerIPU                     = 0,
       SyncPattern pattern                 = SyncPattern::Full,
-      DeviceConnectionType connectionType = DeviceConnectionType::Always);
+      DeviceConnectionType connectionType = DeviceConnectionType::Always,
+      DeviceSelectionCriterion selectionCriterion =
+          DeviceSelectionCriterion::First);
 
   /** Allocates the hardware device by id. This id can be found running 'gc-info
    *  -l'. This method will attach to the device.
@@ -229,6 +243,18 @@ public:
    */
   std::shared_ptr<DeviceInfo>
   createOfflineIPUDevice(std::map<std::string, std::string> &options);
+
+  /** If unable to attach to a device on first try, the attach timeout
+   * set here is the length of time (in seconds) that the DeviceManager
+   * will wait to try and attach. Note: this only takes effect when trying
+   * to attach with a DeviceConnectionType::OnDemand DeviceConnectionType.
+   * \param seconds The attach timeout in seconds
+   */
+  void setOnDemandAttachTimeout(const unsigned seconds);
+
+private:
+  // How many seconds to wait when trying to attach to an IPU
+  unsigned attachTimeout = 0;
 };
 
 /** Write a representation of a DeviceType to an output stream.

@@ -6,6 +6,7 @@ import test_util as tu
 import pprint
 
 
+@tu.requires_ipu
 def test_replicated_allreduce():
     input_data = np.array(range(10), dtype=np.float32)
     replicatedGraphCount = 2

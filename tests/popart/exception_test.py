@@ -15,6 +15,10 @@ import test_util as tu
 # when it run's out of memory
 @tu.requires_ipu
 def test_out_of_memory_exception():
+    deviceInfo = tu.create_test_device(1)
+    if deviceInfo.tilesPerIpu != 1216:
+        pytest.skip("Out of memory only on an IPU with 1216 tiles")
+
     d1 = np.random.rand(2000, 2000).astype(np.float32)
     d2 = np.random.rand(2000, 2000).astype(np.float32)
     d3 = np.random.rand(2000, 2000).astype(np.float32)
@@ -55,7 +59,7 @@ def test_out_of_memory_exception():
         dataFlow=popart.DataFlow(1, {out: popart.AnchorReturnType("All")}),
         userOptions=options,
         patterns=patterns,
-        deviceInfo=tu.create_test_device(1))
+        deviceInfo=deviceInfo)
 
     with pytest.raises(popart.poplar_exception) as e:
         session.prepareDevice()

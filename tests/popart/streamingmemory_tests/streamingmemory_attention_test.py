@@ -194,8 +194,8 @@ def test_attention_streamingmemory(tmpdir):
             numIpus = options["stages"]
         else:
             numIpus = options["numLayers"] + 1
-        if options["replication"]:
-            numIpus = numIpus * 2
+        if options["replication"] > 1:
+            numIpus = numIpus * options["replication"]
         device = tu.create_test_device(numIpus,
                                        pattern=popart.SyncPattern.Full)
 

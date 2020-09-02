@@ -1894,6 +1894,11 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("OnDemand", DeviceConnectionType::OnDemand);
     en.value("Never", DeviceConnectionType::Never);
   }
+  {
+    py::enum_<DeviceSelectionCriterion> en(m, "DeviceSelectionCriterion");
+    en.value("First", DeviceSelectionCriterion::First);
+    en.value("Random", DeviceSelectionCriterion::Random);
+  }
 
   {
     // PyBinding to a singleton
@@ -1903,14 +1908,19 @@ PYBIND11_MODULE(popart_core, m) {
       return std::unique_ptr<DeviceManager, py::nodelete>(
           &DeviceManager::createDeviceManager());
     }));
-    cls.def("acquireAvailableDevice",
-            static_cast<std::shared_ptr<DeviceInfo> (DeviceManager::*)(
-                int, int, SyncPattern, DeviceConnectionType)>(
-                &DeviceManager::acquireAvailableDevice),
-            py::arg("numIpus")        = 1,
-            py::arg("tilesPerIPU")    = 0,
-            py::arg("pattern")        = SyncPattern::Full,
-            py::arg("connectionType") = DeviceConnectionType::Always);
+    cls.def(
+        "acquireAvailableDevice",
+        static_cast<std::shared_ptr<DeviceInfo> (DeviceManager::*)(
+            int,
+            int,
+            SyncPattern,
+            DeviceConnectionType,
+            DeviceSelectionCriterion)>(&DeviceManager::acquireAvailableDevice),
+        py::arg("numIpus")            = 1,
+        py::arg("tilesPerIpu")        = 0,
+        py::arg("pattern")            = SyncPattern::Full,
+        py::arg("connectionType")     = DeviceConnectionType::Always,
+        py::arg("selectionCriterion") = DeviceSelectionCriterion::First);
     cls.def("acquireDeviceById",
             &DeviceManager::acquireDeviceById,
             py::arg("id"),
@@ -1938,10 +1948,14 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("numIpus")        = 1,
             py::arg("deviceType")     = DeviceType::Ipu,
             py::arg("connectionType") = DeviceConnectionType::Always);
+    cls.def("setOnDemandAttachTimeout",
+            &DeviceManager::setOnDemandAttachTimeout,
+            py::arg("attachTimeout"));
   }
   {
     py::class_<DeviceInfo, std::shared_ptr<DeviceInfo>> cls(m, "DeviceInfo");
     cls.def("attach", &DeviceInfo::attach);
+    cls.def("tryAttachUntilTimeout", &DeviceInfo::attach);
     cls.def("detach", &DeviceInfo::detach);
     cls.def_property_readonly("type", &DeviceInfo::getType);
     cls.def_property_readonly("connectionType", &DeviceInfo::getConnectionType);

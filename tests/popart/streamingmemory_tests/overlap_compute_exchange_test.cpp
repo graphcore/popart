@@ -184,6 +184,6 @@ BOOST_AUTO_TEST_CASE(OverlapComputeExchangeTest_0) {
   }
 
   // Expected > 30% savings on cycle count per IPU
-  BOOST_CHECK(ipu_0_parallel_cycles < 0.7 * ipu_0_serial_cycles);
-  BOOST_CHECK(ipu_1_parallel_cycles < 0.7 * ipu_1_serial_cycles);
+  BOOST_CHECK(ipu_0_parallel_cycles < 0.8 * ipu_0_serial_cycles);
+  BOOST_CHECK(ipu_1_parallel_cycles < 0.8 * ipu_1_serial_cycles);
 }

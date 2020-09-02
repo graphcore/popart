@@ -24,12 +24,15 @@ def filter_dict(dict_to_filter, fun):
     return filtered_dict
 
 
-def create_test_device(numIpus: int = 1,
-                       tilesPerIPU: int = 0,
-                       opts: Dict = None,
-                       pattern: popart.SyncPattern = popart.SyncPattern.Full,
-                       connectionType: popart.DeviceConnectionType = popart.
-                       DeviceConnectionType.Always):
+def create_test_device(
+    numIpus: int = 1,
+    tilesPerIPU: int = 0,
+    opts: Dict = None,
+    pattern: popart.SyncPattern = popart.SyncPattern.Full,
+    connectionType: popart.DeviceConnectionType = popart.DeviceConnectionType.
+    OnDemand,
+    selectionCriterion: popart.DeviceSelectionCriterion = popart.
+    DeviceSelectionCriterion.Random):
     testDeviceType = os.environ.get("TEST_TARGET")
 
     if opts:
@@ -56,11 +59,15 @@ def create_test_device(numIpus: int = 1,
     elif testDeviceType == "Sim":
         device = popart.DeviceManager().createSimDevice()
     elif testDeviceType == "Hw":
+        dm = popart.DeviceManager()
+        # Keep trying to attach for 15 minutes before aborting
+        dm.setOnDemandAttachTimeout(900)
         device = popart.DeviceManager().acquireAvailableDevice(
             numIpus=numIpus,
-            tilesPerIPU=tilesPerIPU,
+            tilesPerIpu=tilesPerIPU,
             pattern=pattern,
-            connectionType=connectionType)
+            connectionType=connectionType,
+            selectionCriterion=selectionCriterion)
     elif testDeviceType == "IpuModel":
         device = popart.DeviceManager().createIpuModelDevice(opts)
     else:

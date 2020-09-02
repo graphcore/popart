@@ -6,6 +6,7 @@ import torch
 import onnx
 from onnx import numpy_helper
 import math
+import pytest
 
 # `import test_util` requires adding to sys.path
 import sys
@@ -45,7 +46,8 @@ def run_model(tmpdir,
             np.random.rand(dsize, dsize).astype(np.float32), f"W{index}")
         matmul_id = builder.aiOnnx.matmul([in_id, w])
         if enable_matmul_serialization:
-            builder.setSerializeMatMul({matmul_id})
+            builder.setSerializeMatMul({matmul_id}, matmul_serialization_mode,
+                                       matmul_serialization_factor)
         return matmul_id
 
     out = ip
@@ -58,6 +60,8 @@ def run_model(tmpdir,
             vgid = i % 2
         elif execution_mode == "pipelined":
             vgid = i
+        else:
+            raise ValueError(f"Execution mode {execution_mode} unsupported")
         with builder.executionPhase(i), builder.pipelineStage(
                 i), builder.virtualGraph(vgid):
             out = add_layer(i, out)
@@ -187,7 +191,7 @@ offChipRtsLocation = popart.TensorLocationSettings(
 
 @tu.requires_ipu
 def test_weight_update(tmpdir):
-    run_model(tmpdir, 'without_phased.onnx', False, True)
+    run_model(tmpdir, 'without_phased.onnx', "normal", False, True)
     run_model(tmpdir,
               'with_phased.onnx',
               execution_mode="phased",
@@ -315,6 +319,7 @@ def test_replicated_sgd0_weight_update(tmpdir):
 # Check that 2 batches on 1 replica or 1 batch per replica on 2 replicas
 # results in the same updated weight with SGD1
 @tu.requires_ipu
+@pytest.mark.skip(reason="T26179 test produces NaNs")
 def test_replicated_sgd1_weight_update(tmpdir):
 
     optimizer_dict = {

@@ -1,5 +1,9 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <chrono>
 #include <sstream>
+#include <thread>
+
 #include <poplar/DeviceManager.hpp>
 #include <poplar/OptionFlags.hpp>
 #include <popart/devicemanager.hpp>
@@ -73,6 +77,11 @@ DeviceManager::enumerateDevices(SyncPattern pattern,
   for (auto d : devices) {
     logging::debug("Device: {}", d.get()->toString());
   }
+
+  for (auto device : devices) {
+    device->setOnDemandAttachTimeout(attachTimeout);
+  }
+
   return devices;
 }
 
@@ -121,11 +130,12 @@ std::shared_ptr<DeviceInfo> DeviceManager::createOfflineIPUDevice(
   return nullptr;
 }
 
-std::shared_ptr<DeviceInfo>
-DeviceManager::acquireAvailableDevice(int numIpus,
-                                      int tilesPerIPU,
-                                      SyncPattern pattern,
-                                      DeviceConnectionType connectionType) {
+std::shared_ptr<DeviceInfo> DeviceManager::acquireAvailableDevice(
+    int numIpus,
+    int tilesPerIPU,
+    SyncPattern pattern,
+    DeviceConnectionType connectionType,
+    DeviceSelectionCriterion selectionCriterion) {
   if (numIpus > 0 && ((numIpus & (numIpus - 1)) != 0)) {
     throw error("You have attempted to acquire {} IPUs. The number of IPUs "
                 "requested must be a power of two",
@@ -138,6 +148,10 @@ DeviceManager::acquireAvailableDevice(int numIpus,
 
   auto devices =
       enumerateDevices(pattern, numIpus, DeviceType::Ipu, connectionType);
+
+  if (selectionCriterion == DeviceSelectionCriterion::Random) {
+    std::random_shuffle(devices.begin(), devices.end());
+  }
 
   for (auto &device : devices) {
     if ((!tilesPerIPU || tilesPerIPU == device->getTilesPerIPU())) {
@@ -176,6 +190,10 @@ DeviceManager::acquireDeviceById(int id,
   }
 
   return device;
+}
+
+void DeviceManager::setOnDemandAttachTimeout(const unsigned seconds) {
+  attachTimeout = seconds;
 }
 
 std::ostream &operator<<(std::ostream &os, const DeviceType &dt) {
@@ -235,6 +253,27 @@ std::string DeviceInfo::toString() const {
   // TODO : Add all the information from Target
 
   return ss.str();
+}
+
+void DeviceInfo::setOnDemandAttachTimeout(const unsigned seconds) {
+  attachTimeout = seconds;
+}
+
+bool DeviceInfo::tryAttachUntilTimeout() {
+  // Periodically try to attach until either timeout reached or
+  // successfully attached
+  auto startTime = std::chrono::steady_clock::now();
+  unsigned wait  = 0;
+  bool attached  = false;
+  while (wait < getOnDemandAttachTimeout() && !attached) {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    attached       = attach();
+    auto delayTime = std::chrono::steady_clock::now();
+    wait =
+        std::chrono::duration_cast<std::chrono::seconds>(delayTime - startTime)
+            .count();
+  }
+  return attached;
 }
 
 std::ostream &operator<<(std::ostream &os, const DeviceInfo &di) {

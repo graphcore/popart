@@ -71,9 +71,9 @@ def test_simple_load(tmp_path):
     third_duration = run_session(70)
 
     # There is no direct way to test whether the cached executable was used,
-    # but using the cached graph should be at least twice as fast as not.
-    assert (first_duration / 2) > second_duration  # 1.
-    assert (first_duration / 2) < third_duration  # 2.
+    # but using the cached graph should be at least 1.5x as fast as not.
+    assert (first_duration / 1.5) > second_duration  # 1.
+    assert (first_duration / 1.5) < third_duration  # 2.
 
 
 # create 2 models with identical stream names

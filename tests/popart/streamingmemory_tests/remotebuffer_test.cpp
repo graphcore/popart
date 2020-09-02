@@ -728,7 +728,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferWeightTest_0) {
 BOOST_AUTO_TEST_CASE(RemoteBufferWeightReplicaTest_0) {
   auto opts                   = SessionOptions();
   opts.enableOutlining        = false;
-  opts.replicatedGraphCount   = 4;
+  opts.replicatedGraphCount   = 2;
   opts.enableReplicatedGraphs = true;
   opts.weightTensorLocationSettings.location.replicatedTensorSharding =
       ReplicatedTensorSharding::Off;
@@ -743,7 +743,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferWeightReplicaTest_0) {
 BOOST_AUTO_TEST_CASE(RemoteBufferWeightReplicaShardedTest_0) {
   auto opts                   = SessionOptions();
   opts.enableOutlining        = false;
-  opts.replicatedGraphCount   = 4;
+  opts.replicatedGraphCount   = 2;
   opts.enableReplicatedGraphs = true;
   opts.weightTensorLocationSettings.location.replicatedTensorSharding =
       ReplicatedTensorSharding::On;
@@ -764,7 +764,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferWeightReplicaShardedTest_0) {
 BOOST_AUTO_TEST_CASE(RemoteBufferWeightReplicaShardedTest_1) {
   auto opts                   = SessionOptions();
   opts.enableOutlining        = false;
-  opts.replicatedGraphCount   = 4;
+  opts.replicatedGraphCount   = 2;
   opts.enableReplicatedGraphs = true;
   opts.weightTensorLocationSettings.location.replicatedTensorSharding =
       ReplicatedTensorSharding::On;
@@ -785,7 +785,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferWeightReplicaShardedTest_1) {
 BOOST_AUTO_TEST_CASE(RemoteBufferWeightReplicaShardedTest_2) {
   auto opts                                          = SessionOptions();
   opts.enableOutlining                               = false;
-  opts.replicatedGraphCount                          = 4;
+  opts.replicatedGraphCount                          = 2;
   opts.enableReplicatedGraphs                        = true;
   opts.weightTensorLocationSettings.location.storage = TensorStorage::OnChip;
   opts.weightTensorLocationSettings.location.replicatedTensorSharding =

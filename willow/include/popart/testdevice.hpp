@@ -53,17 +53,22 @@ createTestDevice(const TestDeviceType testDeviceType,
       {"numIPUs", std::to_string(numIPUs)},
       {"tilesPerIPU", std::to_string(tilesPerIPU)}};
 
+  auto dm = DeviceManager::createDeviceManager();
   switch (testDeviceType) {
   case TestDeviceType::Cpu:
-    return DeviceManager::createDeviceManager().createCpuDevice();
+    return dm.createCpuDevice();
   case TestDeviceType::Sim:
-    return DeviceManager::createDeviceManager().createSimDevice(deviceOpts);
+    return dm.createSimDevice(deviceOpts);
   case TestDeviceType::Hw:
-    return DeviceManager::createDeviceManager().acquireAvailableDevice(
-        numIPUs, tilesPerIPU, pattern);
+    // Keep trying to attach for 15 minutes before aborting
+    dm.setOnDemandAttachTimeout(900);
+    return dm.acquireAvailableDevice(numIPUs,
+                                     tilesPerIPU,
+                                     pattern,
+                                     DeviceConnectionType::OnDemand,
+                                     DeviceSelectionCriterion::Random);
   case TestDeviceType::IpuModel:
-    return DeviceManager::createDeviceManager().createIpuModelDevice(
-        deviceOpts);
+    return dm.createIpuModelDevice(deviceOpts);
   default:
     throw error("Unrecognized device {}", testDeviceType);
   }

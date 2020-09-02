@@ -7,6 +7,7 @@
 #include <memory>
 #include <random>
 #include <set>
+#include <thread>
 #include <tuple>
 #include <utility>
 #include <popart/popx/creatorx.hpp>
@@ -2562,7 +2563,13 @@ void Devicex::loadEngineAndConnectStreams() {
   if (di.getConnectionType() == DeviceConnectionType::OnDemand) {
     logging::devicex::debug("Attaching to device on demand");
     if (!di.attach()) {
-      throw error("Failed to attach to device");
+      if (di.getOnDemandAttachTimeout() > 0) {
+        di.tryAttachUntilTimeout();
+      }
+      // If still not attached, error
+      if (!di.attach()) {
+        throw error("Failed to attach to device");
+      }
     }
   }
 

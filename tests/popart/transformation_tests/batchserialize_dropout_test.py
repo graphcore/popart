@@ -8,11 +8,16 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 import numpy as np
 import pytest
 import popart
-import test_util as tu
 import pprint
 import json
 import onnx
 from onnx import numpy_helper
+
+# `import test_util` requires adding to sys.path
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+import test_util as tu
 
 
 def test_batchserialisation_dropout(tmpdir):
