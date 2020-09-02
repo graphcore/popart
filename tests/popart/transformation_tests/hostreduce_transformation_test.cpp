@@ -1245,7 +1245,9 @@ BOOST_AUTO_TEST_CASE(
   }
 }
 
-BOOST_AUTO_TEST_CASE(HostReduceTransformationWithAccumulation) {
+// TODO see T24260
+BOOST_AUTO_TEST_CASE(HostReduceTransformationWithAccumulation,
+                     *boost::unit_test::disabled()) {
   auto run = [](bool hostAllReduce) {
     auto builder     = Builder::create();
     auto aiOnnx      = builder->aiOnnxOpset9();
@@ -1751,7 +1753,9 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipelining) {
   }
 }
 
-BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation) {
+// TODO see T24260
+BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation,
+                     *boost::unit_test::disabled()) {
   auto run = [](bool hostAllReduce) {
     auto builder     = Builder::create();
     auto aiOnnx      = builder->aiOnnxOpset9();
