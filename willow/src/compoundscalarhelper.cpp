@@ -169,12 +169,11 @@ float DampeningScaleFactor1Helper::val(const TensorId &weightId,
   auto dm = sgd.dampenings().get(weightId).val();
   auto vs = sgd.velocityScalings().get(weightId).val();
   auto ls = sgd.lossScaling().val();
-  return val(
-      dm,
-      vs,
-      ls,
-      sgd.gradientAccumulationEnabled() ? sgd.getReplicatedGraphCount() : 1,
-      sgd.meanGradientAccumulationEnabled() ? sgd.getAccumulationFactor() : 1);
+  return val(dm,
+             vs,
+             ls,
+             sgd.gradientAccumulationEnabled() ? sgd.getReplicatedGraphCount()
+                                               : 1);
 }
 
 bool DampeningScaleFactor1Helper::isConst(const TensorId &weightId,
@@ -223,8 +222,8 @@ bool AdamBeta2Helper::isConst(const TensorId &weightId,
 
 float AdamLearningRateHelper::val(const TensorId &weightId,
                                   const Adam &adam) const {
-  auto lr = adam.learningRates().get(weightId).val();
-  return val(lr);
+  auto wd = adam.learningRates().get(weightId).val();
+  return val(wd);
 }
 
 bool AdamLearningRateHelper::isConst(const TensorId &weightId,
@@ -244,8 +243,8 @@ bool AdamWeightDecayHelper::isConst(const TensorId &weightId,
 }
 
 float AdamEpsHelper::val(const TensorId &weightId, const Adam &adam) const {
-  auto eps = adam.epss().get(weightId).val();
-  return val(eps);
+  auto wd = adam.epss().get(weightId).val();
+  return val(wd);
 }
 
 bool AdamEpsHelper::isConst(const TensorId &weightId, const Adam &adam) const {
@@ -254,8 +253,8 @@ bool AdamEpsHelper::isConst(const TensorId &weightId, const Adam &adam) const {
 
 float AdamLossScalingHelper::val(const TensorId &weightId,
                                  const Adam &adam) const {
-  auto ls = adam.lossScaling().val();
-  return val(ls);
+  auto wd = adam.lossScaling().val();
+  return val(wd);
 }
 
 bool AdamLossScalingHelper::isConst(const TensorId &weightId,
@@ -272,20 +271,6 @@ float AdamMaxWeightNormHelper::val(const TensorId &weightId,
 bool AdamMaxWeightNormHelper::isConst(const TensorId &weightId,
                                       const Adam &adam) const {
   return adam.maxWeightNorm().get(weightId).isConst();
-}
-
-float AdamGradientScalingHelper::val(const TensorId &weightId,
-                                     const Adam &adam) const {
-  auto ls = adam.lossScaling().val();
-  return val(ls,
-             adam.meanGradientAccumulationEnabled()
-                 ? adam.getAccumulationFactor()
-                 : 1);
-}
-
-bool AdamGradientScalingHelper::isConst(const TensorId &weightId,
-                                        const Adam &adam) const {
-  return adam.lossScaling().isConst();
 }
 
 } // namespace popart

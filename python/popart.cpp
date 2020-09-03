@@ -858,8 +858,6 @@ PYBIND11_MODULE(popart_core, m) {
                       &SessionOptions::accumulationFactor);
     cls.def_readwrite("enableGradientAccumulation",
                       &SessionOptions::enableGradientAccumulation);
-    cls.def_readwrite("accumulationReductionType",
-                      &SessionOptions::accumulationReductionType);
     cls.def_readwrite("enableNonStableSoftmax",
                       &SessionOptions::enableNonStableSoftmax);
     cls.def_readwrite("enablePipelining", &SessionOptions::enablePipelining);

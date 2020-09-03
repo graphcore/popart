@@ -74,7 +74,6 @@ public:
 
   bool replicatedGraphsEnabled() const;
   bool gradientAccumulationEnabled() const;
-  bool meanGradientAccumulationEnabled() const;
   int64_t getReplicatedGraphCount() const;
   int64_t getAccumulationFactor() const;
 
@@ -84,7 +83,6 @@ private:
   // factors from SessionOptions (TODO adopt permanently T12588, T12589)
   bool enableReplicatedGraphs;
   bool enableGradientAccumulation;
-  bool meanGradientAccumulation;
   int64_t replicatedGraphCount;
   int64_t accumulationFactor;
 
@@ -160,11 +158,9 @@ private:
 //   ls : loss scaling
 //   vs : velocity scaling
 //
-// and the terms to accelerate training is
+// and the term to accelerate training is
 //   rf : data replication factor.
-//   af : gradient accumulation factor.
 //
-// If accumulationReductionType is set to ReductionType::Sum 'af' is set to 1
 //
 // Special case a)
 // --------------
@@ -181,12 +177,13 @@ private:
 // In this simple special case, everything is done in a single Op of type
 // SGD0VarUpdateOp.
 //
+//
 // Note that all compound scalar terms are always calculated on host.
 //
 // To summarise, there are atomic scalars and compound scalars.
 //                         ------             --------
 //
-// The atomic scalars are mm, dm, wd, lr, ls, vs, rf, af.
+// The atomic scalars are mm, dm, wd, lr, ls, vs, rf.
 //
 // The compound scalars for the simple case of no persistent v tensor are,
 //
@@ -201,18 +198,18 @@ private:
 //
 // Compound scalars for the case where there is gradient accumulation and
 // momentum (SGD1):
-//                                            mm dm wd lr ls vs rf af
-//                                            =======================
-//  - scaledWeightDecay1 (swd1) =             .  x  x  .  .  x  .  .
+//                                            mm dm wd lr ls vs rf
+//                                            ====================
+//  - scaledWeightDecay1 (swd1) =             .  x  x  .  .  x  .
 //      (1 - dm) * wd * vs
 //
-//  - dampeningScaleFactor1 (dpsf1) =         .  x  .  .  x  x  x  x
-//      (1 - dm) * vs * rf / (ls * af)
+//  - dampeningScaleFactor1 (dpsf1) =         .  x  .  .  x  x  x
+//      (1 - dm) * vs  * rf / ls
 //
-//  - scaledLearningRate1 (slr1) =            .  .  .  x  .  x  x  .
-//      lr / ( vs * rf)
+//  - scaledLearningRate1 (slr1) =            .  .  .  x  .  x  x
+//      lr / ( vs * rf )
 //
-//  - scaledMomentum1 (smm1) =                x  .  .  .  .  .  .  .
+//  - scaledMomentum1 (smm1) =                x  .  .  .  .  .  x
 //      mm / rf
 //
 //
@@ -390,6 +387,9 @@ private:
   ScaledWeightDecay1Helper swd1helper;
   DampeningScaleFactor1Helper dpsf1helper;
   ScaledMomentum1Helper smm1helper;
+
+  OptimizerValue
+  getLossScalingOrDefault(const std::map<std::string, OptimizerValue> &) const;
 
   // int argument only to disambiguate from the other SGD constructor
   SGD(const std::map<std::string, OptimizerValue> &, int);

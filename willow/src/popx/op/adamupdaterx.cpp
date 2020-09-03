@@ -79,6 +79,23 @@ void AdamUpdaterOpx::grow(poplar::program::Sequence &prog) const {
     b2correction = pe::Cast(b2correction, accl2.elementType());
   }
 
+  // b1correction: (1 - b_1^t) * ls
+  // b2correction: (1 - b_2^t) * ls ^ 2
+  if (adamUpdaterOp.initLs.isConst()) {
+    b1correction = pe::Mul(b1correction, pe::Const(adamUpdaterOp.initLs.val()));
+    b2correction = pe::Mul(
+        b2correction,
+        pe::Const(adamUpdaterOp.initLs.val() * adamUpdaterOp.initLs.val()));
+  } else {
+    tensors.push_back(getInTensor(AdamUpdaterOp::getLsInIndex()));
+    b1correction =
+        pe::Mul(b1correction,
+                pe::Cast(pe::PlaceHolder(tensors.size()), accl1.elementType()));
+    b2correction = pe::Mul(b2correction,
+                           pe::Square(pe::Cast(pe::PlaceHolder(tensors.size()),
+                                               accl2.elementType())));
+  }
+
   // Accl1 (m) -> mhat
   mhat = pe::Divide(pe::PlaceHolder(2), b1correction);
 

@@ -162,13 +162,6 @@ constexpr const char *reservedSpecificAdamEpsPrefix() {
   return "adamEps___specific___";
 }
 
-constexpr const char *reservedDefaultAdamGradientScalingPrefix() {
-  return "adamGradientScaling___default___";
-}
-constexpr const char *reservedSpecificAdamGradientScalingPrefix() {
-  return "adamGradientScaling___specific___";
-}
-
 constexpr const char *reservedDefaultStepPrefix() {
   return "step___default___";
 }

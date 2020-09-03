@@ -115,13 +115,10 @@ void NllOpx::applyScalingInPlaceForMeanReduction(
     const Opx &opx,
     poplar::Tensor t,
     poplar::program::Sequence &prog,
-    bool negate,
-    bool include_replication) {
-  double totalSamples = static_cast<double>(t.dim(0));
-  if (include_replication) {
-    totalSamples *=
-        static_cast<double>(opx.getDevicex()->getReplicationFactor());
-  }
+    bool negate) {
+  double totalSamples =
+      static_cast<double>(opx.getDevicex()->getReplicationFactor()) *
+      static_cast<double>(t.dim(0));
   auto t_totalSamples = opx.getConst(t.elementType(),
                                      {},
                                      negate ? -totalSamples : totalSamples,
@@ -139,8 +136,7 @@ void NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
     poplar::Tensor t,
     poplar::Tensor mask,
     poplar::program::Sequence &prog,
-    bool negate,
-    bool include_replication) {
+    bool negate) {
   // Determine the scale-factor for mean reduction dynamically from the
   // mask.
   // Any sample whose label index is the 'ignore index' should not be
@@ -151,10 +147,7 @@ void NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
   auto numNonIgnoredSamples =
       popops::reduce(opx.graph(), mask, {0}, {popops::Operation::ADD}, prog);
 
-  double scale = 1.0;
-  if (include_replication) {
-    scale *= static_cast<double>(opx.getDevicex()->getReplicationFactor());
-  }
+  double scale = static_cast<double>(opx.getDevicex()->getReplicationFactor());
   if (negate) {
     scale *= -1.0;
   }
@@ -241,11 +234,13 @@ void NllOpx::handleLossOutReducedToScalar(const Opx &opx,
       auto lossMask = applyMaskInPlaceForIgnoredIndex(
           opx, reduction, label1D, static_cast<int>(ignoreIndex), prog);
       applyScalingInPlaceForMeanReductionWithIgnoreIndex(
-          opx, reduction, lossMask, prog, false, false);
+          opx, reduction, lossMask, prog);
       // Leave scale as 1.0 as already scaled
     } else {
-      double totalSamples = static_cast<double>(reduction.dim(0));
-      scale               = 1.0 / totalSamples;
+      double totalSamples =
+          static_cast<double>(opx.getDevicex()->getReplicationFactor()) *
+          static_cast<double>(reduction.dim(0));
+      scale = 1.0 / totalSamples;
     }
   }
 

@@ -15,9 +15,10 @@ AdamUpdaterOp::AdamUpdaterOp(AdamMode mode_,
                              OptimizerValue b1,
                              OptimizerValue b2,
                              OptimizerValue eps,
+                             OptimizerValue ls,
                              const Op::Settings &opSettings)
     : Op(Onnx::CustomOperators::AdamUpdater, opSettings), mode(mode_),
-      initWd(wd), initB1(b1), initB2(b2), initEps(eps) {}
+      initWd(wd), initB1(b1), initB2(b2), initEps(eps), initLs(ls) {}
 
 void AdamUpdaterOp::setup() {
   outInfo(getUpdaterOutIndex()) = inInfo(getVarInIndex());
@@ -45,6 +46,10 @@ void AdamUpdaterOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 
   if (initEps.isConst()) {
     os.appendAttribute("const eps", initEps.val());
+  }
+
+  if (initLs.isConst()) {
+    os.appendAttribute("const loss scaling", initLs.val());
   }
 
   os.appendAttribute("mode", static_cast<int>(mode));

@@ -123,9 +123,8 @@ class DampeningScaleFactor1Helper : public CompoundScalarHelper<SGD> {
 public:
   float val(const TensorId &weightId, const SGD &) const final;
   bool isConst(const TensorId &weightId, const SGD &) const final;
-  float val(float dm, float vs, float ls, int64_t rf, int64_t af) const {
-    return (1.0f - dm) * vs * static_cast<float>(rf) /
-           (ls * static_cast<float>(af));
+  float val(float dm, float vs, float ls, int64_t rf) const {
+    return (1.0f - dm) * vs * static_cast<float>(rf) / ls;
   }
 
 private:
@@ -141,9 +140,7 @@ class ScaledMomentum1Helper : public CompoundScalarHelper<SGD> {
 public:
   float val(const TensorId &weightId, const SGD &) const final;
   bool isConst(const TensorId &weightId, const SGD &) const final;
-  float val(float mm, int64_t rf) const {
-    return mm / (static_cast<float>(rf));
-  }
+  float val(float mm, int64_t rf) const { return mm / static_cast<float>(rf); }
 
 private:
   std::string defaultPrefix() const final {
@@ -256,21 +253,6 @@ private:
   }
   std::string specificPrefix() const final {
     return reservedSpecificMaxWeightNormPrefix();
-  }
-};
-
-class AdamGradientScalingHelper : public CompoundScalarHelper<Adam> {
-public:
-  float val(const TensorId &weightId, const Adam &) const final;
-  bool isConst(const TensorId &weightId, const Adam &) const final;
-  float val(float ls, float af) const { return ls * af; }
-
-private:
-  std::string defaultPrefix() const final {
-    return reservedDefaultAdamGradientScalingPrefix();
-  }
-  std::string specificPrefix() const final {
-    return reservedSpecificAdamGradientScalingPrefix();
   }
 };
 

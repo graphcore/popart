@@ -2,7 +2,6 @@
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-#include <popart/op/loss.hpp>
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/sgd1combo.hpp>
 #include <popart/optimizer.hpp>
@@ -33,10 +32,7 @@ void Optimizer::setFactorsFromOptions(const SessionOptions &opts) {
   enableGradientAccumulation = opts.enableGradientAccumulation;
   replicatedGraphCount       = opts.replicatedGraphCount;
   accumulationFactor         = opts.accumulationFactor;
-  meanGradientAccumulation =
-      enableGradientAccumulation &&
-      opts.accumulationReductionType == ReductionType::Mean;
-  factorsAreSetFromOptions = true;
+  factorsAreSetFromOptions   = true;
 }
 
 bool Optimizer::replicatedGraphsEnabled() const {
@@ -53,14 +49,6 @@ bool Optimizer::gradientAccumulationEnabled() const {
                 "SGD::setFactorsFromOptions has been called");
   }
   return enableGradientAccumulation;
-}
-
-bool Optimizer::meanGradientAccumulationEnabled() const {
-  if (!factorsAreSetFromOptions) {
-    throw error("Cannot call SGD::meanGradientAccumulationEnabled until "
-                "SGD::setFactorsFromOptions has been called");
-  }
-  return meanGradientAccumulation;
 }
 
 int64_t Optimizer::getReplicatedGraphCount() const {
@@ -244,6 +232,15 @@ SGD::SGD(OptimizerValue lr,
          OptimizerValue lossScaling)
     : Optimizer(lossScaling), lrs(lr), wds(wd), mms(mm), dps(dp), vss(vs) {
   runValueChecks(lr, wd, mm, dp, vs);
+}
+
+OptimizerValue SGD::getLossScalingOrDefault(
+    const std::map<std::string, OptimizerValue> &m) const {
+  auto found = m.find("lossScaling");
+  if (found != m.end()) {
+    return found->second;
+  }
+  return {1, true};
 }
 
 std::map<std::string, OptimizerValue>

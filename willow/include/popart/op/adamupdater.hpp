@@ -15,6 +15,7 @@ public:
                 OptimizerValue b1,
                 OptimizerValue b2,
                 OptimizerValue eps,
+                OptimizerValue ls,
                 const Op::Settings &);
 
   std::unique_ptr<Op> clone() const final;
@@ -28,6 +29,7 @@ public:
   const OptimizerValue initB1;
   const OptimizerValue initB2;
   const OptimizerValue initEps;
+  const OptimizerValue initLs;
 
   static InIndex getVarInIndex() { return 0; }
   static InIndex getAccl1InIndex() { return 1; }
@@ -37,6 +39,7 @@ public:
   static InIndex getBeta1InIndex() { return 5; }
   static InIndex getBeta2InIndex() { return 6; }
   static InIndex getEpsInIndex() { return 7; }
+  static InIndex getLsInIndex() { return 8; }
 
   static OutIndex getUpdaterOutIndex() { return 0; }
 

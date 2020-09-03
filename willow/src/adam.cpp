@@ -214,6 +214,15 @@ Adam::Adam(OptimizerValue lr,
   runValueChecks(lr, wd, b1, b2, eps);
 }
 
+OptimizerValue Adam::getLossScalingOrDefault(
+    const std::map<std::string, OptimizerValue> &m) const {
+  auto found = m.find("lossScaling");
+  if (found != m.end()) {
+    return found->second;
+  }
+  return {1, true};
+}
+
 std::map<std::string, OptimizerValue>
 Adam::getComplete(const std::map<std::string, OptimizerValue> &m) {
 
@@ -285,7 +294,6 @@ std::unique_ptr<Op> Adam::createOp(const Tensor &w, Graph &graph) const {
       epshelper.getFromWeightId(w.id, *this),
       lshelper.getFromWeightId(w.id, *this),
       mwnhelper.getFromWeightId(w.id, *this),
-      gshelper.getFromWeightId(w.id, *this),
       mode,
       gradientAccumulationEnabled(),
       reductionType,
@@ -300,7 +308,7 @@ std::unique_ptr<Op> Adam::createOp(const Tensor &w, Graph &graph) const {
 
 std::vector<TensorId> Adam::getInputIds(const Tensor &w) const {
   const TensorId &varId = w.id;
-  std::vector<TensorId> inputs(10, "");
+  std::vector<TensorId> inputs(9, "");
 
   // variable
   inputs[VarUpdateOp::getVarToUpdateInIndex()] = varId;
@@ -336,10 +344,6 @@ std::vector<TensorId> Adam::getInputIds(const Tensor &w) const {
   inputs[AdamComboOp::getMwnInIndex()] =
       mwnhelper.getScalarIdIfNonConst(w, *this);
 
-  // gradient scaling
-  inputs[AdamComboOp::getGsInIndex()] =
-      gshelper.getScalarIdIfNonConst(w, *this);
-
   return inputs;
 }
 
@@ -355,7 +359,6 @@ Adam::getOptimizerInputs(const Tensor &weight) const {
   ids.push_back(epshelper.getScalarIdIfNonConst(weight, *this));
   ids.push_back(lshelper.getScalarIdIfNonConst(weight, *this));
   ids.push_back(mwnhelper.getScalarIdIfNonConst(weight, *this));
-  ids.push_back(gshelper.getScalarIdIfNonConst(weight, *this));
 
   std::vector<std::tuple<TensorId, TensorInfo>> optInputs;
   for (const auto &id : ids) {
@@ -419,10 +422,6 @@ float Adam::getStoredValue(const TensorId &optId) const {
 
   if (mwnhelper.idMatch(optId)) {
     return mwnhelper.getFromScalarId(optId, *this).val();
-  }
-
-  if (gshelper.idMatch(optId)) {
-    return gshelper.getFromScalarId(optId, *this).val();
   }
 
   throw error("In getStoredValue for {}, it doesn't match any existing "
