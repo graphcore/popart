@@ -2486,29 +2486,17 @@ def test_convtranspose_pytorch_attributes(op_tester):
                  out_chans,
                  data,
                  kernel,
+                 groups=1,
+                 outshape=False,
                  stride=None,
                  output_padding=None,
                  pads=None):
         print(f'run_test({in_chans}, {out_chans}, {data}, {kernel})')
         assert len(data) == len(kernel)
         x = np.random.rand(1, in_chans, *data).astype(np.float32)
-        W = np.random.rand(in_chans, out_chans, *kernel).astype(np.float32)
-
-        def init_builder(builder):
-            d = builder.addInputTensor(x)
-            f = builder.addInputTensor(W)
-
-            kwargs = {}
-            if stride:
-                kwargs['strides'] = stride
-            if output_padding:
-                kwargs['output_padding'] = output_padding
-            if pads:
-                kwargs['pads'] = pads + pads
-
-            o = builder.aiOnnxOpset11.convtranspose([d, f], **kwargs)
-            builder.addOutputTensor(o)
-            return [o]
+        W = np.random.rand(in_chans, out_chans // groups,
+                           *kernel).astype(np.float32)
+        bias = np.random.rand(out_chans).astype(np.float32)
 
         def reference(ref_data):
             data = torch.tensor(x)
@@ -2521,6 +2509,7 @@ def test_convtranspose_pytorch_attributes(op_tester):
                 kwargs['output_padding'] = output_padding
             if pads:
                 kwargs['padding'] = pads
+            kwargs['groups'] = groups
 
             if len(kernel) == 1:
                 conv = torch.nn.ConvTranspose1d(in_chans, out_chans, kernel,
@@ -2531,12 +2520,37 @@ def test_convtranspose_pytorch_attributes(op_tester):
             else:
                 raise SystemError(f'Bad kernel size {len(kernel)}')
             conv.weight.data = weights
-            conv.bias.data = torch.zeros(conv.bias.size())
+            conv.bias.data = torch.tensor(bias)
             o = conv(data)
             print(o.shape)
             return [o]
 
-        op_tester.setPatterns(['ConvTranspose'], enableRuntimeAsserts=False)
+        torch_out_shape = None
+        if outshape:
+            torch_out_shape = reference(x)[0].shape
+
+        def init_builder(builder):
+            d = builder.addInputTensor(x)
+            f = builder.addInputTensor(W)
+            b = builder.addInitializedInputTensor(bias)
+
+            kwargs = {}
+            if stride:
+                kwargs['strides'] = stride
+            if output_padding:
+                kwargs['output_padding'] = output_padding
+            if pads:
+                kwargs['pads'] = pads + pads
+
+            if torch_out_shape:
+                kwargs['output_shape'] = torch_out_shape
+
+            kwargs['group'] = groups
+            o = builder.aiOnnxOpset10.convtranspose([d, f, b], **kwargs)
+            builder.addOutputTensor(o)
+            return [o]
+
+        op_tester.setPatterns(popart.Patterns(popart.PatternsLevel.Default))
         op_tester.run(init_builder, reference, step_type='infer')
 
     # just testing strides
@@ -2571,6 +2585,18 @@ def test_convtranspose_pytorch_attributes(op_tester):
              stride=[3, 2],
              pads=[1, 2],
              output_padding=[2, 1])
+
+    # Test groups
+    run_test(in_chans=4, out_chans=4, data=[3], kernel=[3], pads=[1], groups=4)
+    run_test(in_chans=8, out_chans=8, data=[5], kernel=[3], pads=[1], groups=2)
+
+    # Test output shape
+    run_test(in_chans=8,
+             out_chans=8,
+             data=[5],
+             kernel=[3],
+             pads=[1],
+             outshape=True)
 
 
 def test_convtranspose_debug(op_tester):

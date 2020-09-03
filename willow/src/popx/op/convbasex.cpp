@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+// Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
 #include <popart/op/convbase.hpp>
 #include <popart/popx/devicex.hpp>

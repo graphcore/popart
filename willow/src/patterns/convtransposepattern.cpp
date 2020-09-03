@@ -14,7 +14,7 @@
 namespace popart {
 
 bool ConvTransposePattern::matches(Op *op) const {
-  return (op->opid == Onnx::Operators::ConvTranspose_11);
+  return op->isConvertibleTo<ConvTransposeOp>();
 }
 
 std::vector<const Tensor *> ConvTransposePattern::touches(Op *) const {
@@ -30,6 +30,12 @@ bool ConvTransposePattern::apply(Op *op) const {
   auto kernelTensor =
       convTranspose->inTensor(ConvTransposeOp::getWeightsInIndex());
   auto outTensor = convTranspose->outTensor(ConvTransposeOp::getOutIndex());
+
+  popart::Tensor *bias = nullptr;
+
+  if (convTranspose->hasInput(ConvTransposeOp::getBiasInIndex())) {
+    bias = convTranspose->inTensor(ConvTransposeOp::getBiasInIndex());
+  }
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
 
@@ -52,8 +58,8 @@ bool ConvTransposePattern::apply(Op *op) const {
   int convDimensions = inTensor->info.rank() - 2;
   std::vector<int64_t> padding(convDimensions * 2, paddingNum);
 
-  auto dilations = convTranspose->strides;
-  auto strides   = convTranspose->dilations;
+  auto strides   = convTranspose->strides;
+  auto dilations = convTranspose->dilations;
 
   logging::debug("Creating ConvOp");
   logging::debug("  strides: {}", strides);
@@ -73,6 +79,10 @@ bool ConvTransposePattern::apply(Op *op) const {
 
   conv->connectInTensor(ConvOp::getDataInIndex(), inTensor->id);
   conv->connectInTensor(ConvOp::getWeightsInIndex(), flip->outId(0));
+
+  if (bias) {
+    conv->connectInTensor(ConvOp::getBiasInIndex(), bias->id);
+  }
   conv->connectOutTensor(ConvOp::getOutIndex(), outTensor->id);
 
   conv->params.push_back(convTranspose->params);

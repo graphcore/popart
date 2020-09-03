@@ -40,28 +40,17 @@ void ConvTransposeOp::setup() {
       })) {
     throw error("Non default value for dilations {} is not supported.");
   }
-  // We dont currently support the attribute output_shape.
-  if (outputShape.size() > 0) {
-    throw error("Attribute output_shape is not supported");
-  }
-  // Currently only works with group of 1.
-  if (group != 1) {
-    throw error("Group must have a value of 1");
-  }
 
-  Shape outShape{inputShape.at(0), kernelShape.at(1)};
+  Shape outShape{inputShape.at(0), kernelShape.at(1) * group};
   if (outputShape.size() == 0) {
     for (int i = 0; i < strides.size(); i++) {
       int64_t x = strides.at(i) * (inputShape.at(i + 2) - 1) +
-                  outputPadding.at(i) +
-                  ((kernelShape.at(i + 2) - 1) * dilations.at(i) + 1) -
+                  outputPadding.at(i) + ((kernelShape.at(i + 2) - 1) + 1) -
                   pads.at(i) - pads.at(nSpatialDims + i);
       outShape.push_back(x);
     }
   } else {
-    for (auto dim : outputShape) {
-      outShape.push_back(dim);
-    }
+    outShape = outputShape;
   }
 
   outInfo(getOutIndex()) = {inInfo(getInIndex()).dataType(), outShape};
@@ -70,9 +59,9 @@ void ConvTransposeOp::setup() {
   params.type      = inInfo(getInIndex()).dataType();
   params.batchSize = inShape(getInIndex()).at(0);
 
-  params.numInChannelsPerGroup  = inShape(getWeightsInIndex()).at(0);
-  params.numOutChannelsPerGroup = inShape(getWeightsInIndex()).at(1);
-  params.numGroups              = 1;
+  params.numInChannelsPerGroup  = inputShape.at(1) / group;
+  params.numOutChannelsPerGroup = kernelShape.at(1);
+  params.numGroups              = group;
 
   inputShape = inShape(getInIndex());
   for (int i = 2; i < inputShape.size(); i++) {
@@ -91,6 +80,7 @@ void ConvTransposeOp::setup() {
   params.inputTransformation.lowerTruncation = zeroes;
   params.inputTransformation.upperTruncation = zeroes;
   params.inputTransformation.dilation        = strides;
+  params.inputTransformation.flip            = falses;
 
   for (int i = 0; i < nSpatialDims; i++) {
     int64_t x = inShape(getWeightsInIndex()).at(i + 2) - 1;
@@ -99,7 +89,6 @@ void ConvTransposeOp::setup() {
         x + outputPadding.at(i) - pads.at(nSpatialDims + i));
   }
 
-  params.inputTransformation.flip             = falses;
   params.kernelTransformation.lowerTruncation = zeroes;
   params.kernelTransformation.upperTruncation = zeroes;
   params.kernelTransformation.dilation        = ones;
@@ -136,7 +125,8 @@ static OpDefinition convtranspose_OpDef({OpDefinition::Inputs({
                                          })});
 
 static OpCreator<ConvTransposeOp> convtranspose_OpCreator(
-    OpDefinitions({{Onnx::Operators::ConvTranspose_11, convtranspose_OpDef}}),
+    OpDefinitions({{Onnx::Operators::ConvTranspose_1, convtranspose_OpDef},
+                   {Onnx::Operators::ConvTranspose_11, convtranspose_OpDef}}),
     [](const OpCreatorInfo &info) -> std::unique_ptr<Op> {
       // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       auto &attr = info.attributes;
