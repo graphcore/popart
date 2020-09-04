@@ -13,12 +13,12 @@ from onnx import numpy_helper
 def test_outlining_accumulation_context(pipeline, tmpdir):
     def model():
         np.random.seed(1984)
-        input_data = np.random.rand(4, 2, 2, 20).astype(np.float32)
-        weight_data = np.random.rand(20, 20).astype(np.float32)
+        input_data = np.random.rand(4, 2, 2, 200).astype(np.float32)
+        weight_data = np.random.rand(200, 200).astype(np.float32)
 
         builder = popart.Builder()
 
-        d0 = builder.addInputTensor(popart.TensorInfo('FLOAT', (2, 20)),
+        d0 = builder.addInputTensor(popart.TensorInfo('FLOAT', (2, 200)),
                                     'data0')
         x = d0
 
