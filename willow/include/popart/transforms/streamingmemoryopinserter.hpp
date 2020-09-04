@@ -103,7 +103,7 @@ private:
   class ConsumerOpConfig {
   public:
     ConsumerOpConfig(Tensor *tensor_, Op *op_, std::vector<InIndex> inIndices_)
-        : tensor(tensor_), op{op_}, inIndices(inIndices_){};
+        : tensor(tensor_), op{op_}, inIndices(inIndices_) {}
 
     // The originally consumed tensor
     Tensor *tensor;
