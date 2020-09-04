@@ -46,3 +46,19 @@ def test_basic():
 
     assert np.array_equal(anchors[o], np.array([6., 9., 12.],
                                                dtype=np.float32))
+
+
+def test_builder_shape_inference():
+    builder = popart.Builder()
+
+    shape = popart.TensorInfo("FLOAT", [3])
+    i1 = builder.addInputTensor(shape)
+
+    n1 = builder.aiGraphcore.nop([i1])
+    m1 = builder.aiOnnx.mul([n1, i1])
+
+    o = m1
+    builder.addOutputTensor(o)
+
+    nopShape = builder.getTensorShape(n1)
+    print(f'nopShape: {nopShape}')
