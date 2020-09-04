@@ -200,22 +200,11 @@ def test_weight_update(tmpdir):
               weight_tensor_location_settings=offChipLocation,
               optimizer_state_tensor_location_settings=offChipLocation,
               accumulator_tensor_location_settings=offChipLocation)
-    run_model(tmpdir,
-              'with_phased_serialized.onnx',
-              execution_mode="phased",
-              enable_matmul_serialization=True,
-              activation_tensor_location_settings=offChipLocation,
-              weight_tensor_location_settings=offChipLocation,
-              optimizer_state_tensor_location_settings=offChipLocation,
-              accumulator_tensor_location_settings=offChipLocation)
 
     without_phased = onnx.load(str(tmpdir / 'without_phased.onnx'))
     with_phased = onnx.load(str(tmpdir / 'with_phased.onnx'))
-    with_phased_serialized = onnx.load(
-        str(tmpdir / 'with_phased_serialized.onnx'))
 
     check_model(without_phased, with_phased)
-    check_model(without_phased, with_phased_serialized)
 
 
 @tu.requires_ipu
@@ -568,13 +557,30 @@ def test_pipelined_streaming_lamb(tmpdir):
               weight_tensor_location_settings=onChipLocation,
               optimizer_state_tensor_location_settings=offChipLocation,
               accumulator_tensor_location_settings=onChipLocation)
+    run_model(tmpdir,
+              'pipelined_streaming_rep_rts.onnx',
+              execution_mode="pipelined",
+              num_layers=2,
+              batch_size=1,
+              num_replicas=2,
+              num_iterations=5,
+              enable_accum=True,
+              accum_factor=6,
+              optimizer=popart.Adam(optimizer_dict, popart.AdamMode.Lamb),
+              activation_tensor_location_settings=onChipLocation,
+              weight_tensor_location_settings=onChipLocation,
+              optimizer_state_tensor_location_settings=offChipRtsLocation,
+              accumulator_tensor_location_settings=onChipLocation)
 
     normal = onnx.load(str(tmpdir / 'normal.onnx'))
     pipelined = onnx.load(str(tmpdir / 'pipelined.onnx'))
     pipelined_streaming = onnx.load(str(tmpdir / 'pipelined_streaming.onnx'))
     pipelined_streaming_rep = onnx.load(
         str(tmpdir / 'pipelined_streaming_rep.onnx'))
+    pipelined_streaming_rep_rts = onnx.load(
+        str(tmpdir / 'pipelined_streaming_rep_rts.onnx'))
 
     check_model(normal, pipelined)
     check_model(normal, pipelined_streaming)
     check_model(normal, pipelined_streaming_rep)
+    check_model(normal, pipelined_streaming_rep_rts)

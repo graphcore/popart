@@ -508,9 +508,9 @@ void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {
     schedulePriority = static_cast<double>(schedule_priority);
   }
 
-  if (attributes.hasAttribute(sIOTilesAttribute)) {
+  if (attributes.hasAttribute(sTileSetAttribute)) {
     int64_t tileSetTmp;
-    attributes.set(tileSetTmp, sIOTilesAttribute);
+    attributes.set(tileSetTmp, sTileSetAttribute);
     tileSet = static_cast<TileSet>(tileSetTmp);
   }
 
@@ -1329,6 +1329,15 @@ Op::shard(const std::map<TensorId, std::vector<TensorId>> &inputs) {
 
 void Op::configureShardedOp(Op *const shardOp, int shardIndex) const {
   shardOp->setBatchSerializedPhase(shardIndex);
+}
+
+ReplicatedTensorShardingIndices Op::getReplicatedTensorShardingIndices() const {
+  return {};
+}
+
+void Op::configureForReplicatedTensorSharding(
+    ReplicatedTensorShardingIndices indices) {
+  setup();
 }
 
 } // namespace popart

@@ -58,8 +58,9 @@ void compressPriorities(Graph &graph) {
 
 bool isConstOrCopyOfConst(Tensor *tensor) {
   do {
-    if (tensor->tensorType() == TensorType::Const)
+    if (tensor->tensorType() == TensorType::Const) {
       return true;
+    }
     if (tensor->hasProducer()) {
       Op *prod = tensor->getProducer();
       if (prod->isIpuCopyOp()) {
@@ -167,14 +168,127 @@ bool StreamingMemoryOpInserter::isPhasedExecution() const {
   return num_phases > 1;
 }
 
-void StreamingMemoryOpInserter::apply() {
-
-  // Set up a map to look up the relative position of ops
+void StreamingMemoryOpInserter::createTensorSchedule() {
+  Tensors &tensors = graph.getTensors();
+  std::set<TensorId> seenTensors;
+  tensorSchedule.clear();
+  tensorSchedule.reserve(tensors.getAllTensorIds().size());
   auto schedule = graph.getOpSchedule({});
   for (int64_t i = 0; i < schedule.size(); ++i) {
-    scheduleMap[schedule.at(i)] = i;
+    Op *op            = schedule.at(i);
+    opScheduleMap[op] = i;
+    for (auto &indexAndTensor : op->input->tensorMap()) {
+      if (seenTensors.find(indexAndTensor.second->id) == seenTensors.end()) {
+        seenTensors.insert(indexAndTensor.second->id);
+        tensorSchedule.push_back(indexAndTensor.second);
+      }
+    }
+    for (auto &indexAndTensor : op->output->tensorMap()) {
+      if (seenTensors.find(indexAndTensor.second->id) == seenTensors.end()) {
+        seenTensors.insert(indexAndTensor.second->id);
+        tensorSchedule.push_back(indexAndTensor.second);
+      }
+    }
+  }
+}
+
+Tensor *
+StreamingMemoryOpInserter::findRelatedVarTensor(std::vector<Tensor *> front) {
+  while (front.size()) {
+    Tensor *t0 = front.back();
+    front.pop_back();
+
+    auto config = tensorConfigs.at(t0);
+
+    if (config.rootVarTensor &&
+        config.rootVarTensor->tensorType() == TensorType::Variable) {
+      return config.rootVarTensor;
+    }
+
+    for (Op *consumer : t0->consumers.getOps()) {
+      for (auto iter = consumer->output->tensorMap().rbegin();
+           iter != consumer->output->tensorMap().rend();
+           ++iter) {
+        front.push_back(iter->second);
+      }
+    }
   }
 
+  return nullptr;
+}
+
+void StreamingMemoryOpInserter::updateReplicatedOperations() {
+  auto &ops = graph.getOps();
+
+  for (auto &opIdAndOp : ops) {
+    if (opIdAndOp.second->isConvertibleTo<ReplicatedAllReduceOp>()) {
+      bool reductionForOptimizer = false;
+      for (auto tensorAndIndex : opIdAndOp.second->output->indicesMap()) {
+        for (auto consumer : tensorAndIndex.first->consumers.getOps()) {
+          reductionForOptimizer |= consumer->isOptimizerOp();
+        }
+      }
+      if (reductionForOptimizer) {
+        ReplicatedAllReduceOp *replicatedAllReduce =
+            dynamic_cast<ReplicatedAllReduceOp *>(opIdAndOp.second.get());
+
+        Tensor *varTensor = findRelatedVarTensor({replicatedAllReduce->inTensor(
+            ReplicatedAllReduceOp::getInIndex())});
+
+        if (varTensor) {
+          TensorConfig tensorConfig = tensorConfigs.at(varTensor);
+
+          replicatedAllReduce->settings.tileSet =
+              tensorConfig.location.storageTileSet;
+
+          setPriority(replicatedAllReduce,
+                      isPhasedExecution(),
+                      false,
+                      tensorConfig.schedule);
+        } else {
+          logging::transform::warn(
+              "[StreamingMemory] {} is an optimizer related "
+              "ReplicatedAllReduceOp, but the related variable "
+              "has not been found.",
+              opIdAndOp.second->debugName());
+        }
+      }
+    }
+  }
+}
+
+void StreamingMemoryOpInserter::updateOptimizerOperations() {
+  OpsSet optimizerOps;
+
+  auto &ops = graph.getOps();
+
+  for (auto &opIdAndOp : ops) {
+    if (opIdAndOp.second->isOptimizerOp()) {
+      optimizerOps.insert(opIdAndOp.second.get());
+    }
+  }
+
+  for (Op *op : optimizerOps) {
+    std::vector<Tensor *> tensors;
+    for (auto iter = op->output->tensorMap().rbegin();
+         iter != op->output->tensorMap().rend();
+         ++iter) {
+      tensors.push_back(iter->second);
+    }
+    Tensor *varTensor = findRelatedVarTensor(tensors);
+    if (varTensor) {
+      TensorConfig rootVarConfig = tensorConfigs.at(varTensor);
+      op->settings.tileSet       = rootVarConfig.location.storageTileSet;
+      setPriority(op, isPhasedExecution(), false, rootVarConfig.schedule);
+    } else {
+      logging::transform::warn("[StreamingMemory] {} is an optimizer op, "
+                               "but the related variable has not been found.",
+                               op->debugName());
+    }
+  }
+}
+
+void StreamingMemoryOpInserter::apply() {
   std::set<Op *, POpCmp> opsToSetup;
 
   if (isPhasedExecution()) {
@@ -184,42 +298,43 @@ void StreamingMemoryOpInserter::apply() {
     sanitizeOps();
   }
 
-  // Remove tensors and Cached from memory as needed
-  // If two ops are on the same virtual graph,
-  // and their phase is non-adjacently different,
-  // then the tensor should be disconnected and backed up / restored
-
   logging::transform::debug(
       "[StreamingMemory] Processing tensors for streaming memory");
-  Tensors &tensors = graph.getTensors();
 
-  for (TensorId id : tensors.getAllTensorIds()) {
+  createTensorSchedule();
+
+  // Determine tensor configuration in reverse from bottom to top
+  // (so that root variable tensors are updated last)
+  for (TensorSchedule::reverse_iterator it = tensorSchedule.rbegin();
+       it != tensorSchedule.rend();
+       ++it) {
+    getTensorConfig(*it);
+  }
+
+  ReplicationShardedTensors rtsTensors;
+
+  for (auto &tensor : tensorSchedule) {
     // Introduce ops for each tensor.
-    auto tensor = tensors.get(id);
-    applyTensor(tensor, opsToSetup);
+    applyTensor(tensor, rtsTensors);
   }
 
-  // Get new schedule after having applied streaming memory transforms
-  schedule = graph.getOpSchedule({});
+  updateReplicatedOperations();
+  updateOptimizerOperations();
 
-  // Re-setup all ops that require it in schedule order (update tensor shapes)
-  for (Op *op : schedule) {
-    if (opsToSetup.find(op) != opsToSetup.end()) {
-      op->setup();
-    }
-  }
+  // Propagate replicated tensor sharding through the optimizer ops
+  applyReplicatedOptimizerSharding(rtsTensors);
 
   if (isPhasedExecution()) {
     graph.getIr().setExecutionPhasesReady();
   }
 }
 
-void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
-                                            SetupOps &opsToSetup) {
+void StreamingMemoryOpInserter::applyTensor(
+    Tensor *tensor,
+    ReplicationShardedTensors &rtsTensors) {
 
-  // Work out the tensor's configuration.
-  TensorConfig tensorConfig{graph};
-  getTensorConfig(tensor, tensorConfig);
+  // Get the tensor's configuration.
+  const TensorConfig &tensorConfig = tensorConfigs.at(tensor);
 
   // Nothing to for this tensor if it's not remote.
   if (!tensorConfig.location.isRemote()) {
@@ -228,10 +343,16 @@ void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
     return;
   }
 
+  // Skip if this is not a root variable tensor or tensor without root
+  // variable
+  if (tensorConfig.rootVarTensor && tensor != tensorConfig.rootVarTensor) {
+    return;
+  }
+
   // Log tensor phase configuration.
   logTensorStreamingConfig(tensorConfig);
 
-  // Some context variables we need to keep track of between phases.
+  // Some context variables we need to keep track of between contexts.
   TensorId loadedTensorId   = tensor->id;
   TensorId gatheredTensorId = tensor->id;
 
@@ -261,6 +382,7 @@ void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
       remoteStore = insertRemoteStoreOp(tensorConfig, context, loadedTensorId);
     }
 
+    // Create GatherOp for this phase if we need to.
     if (config.gather) {
       allGather = insertReplicatedAllGatherOp(
           tensorConfig, context, loadedTensorId, gatheredTensorId);
@@ -271,7 +393,7 @@ void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
 
     // Load must happen before the all-gather.
     if (remoteLoad && allGather) {
-      graph.topoCons->insert(remoteLoad, allGather, true);
+      graph.topoCons->insert(remoteLoad, allGather);
     }
 
     // Remote load has to take place before associated remote store
@@ -286,19 +408,40 @@ void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
       }
     }
 
-    for (Op *consumerOp : config.consumers) {
-      if (tensor->getTensorTypeInfo()->type() == TensorType::Variable &&
-          (tensor->isOptimizerStateTensor() || tensor->isAccumulatorTensor())) {
-        if (remoteLoad) {
-          graph.topoCons->insert(remoteLoad, consumerOp, true);
-        }
-        if (allGather) {
-          graph.topoCons->insert(allGather, consumerOp, true);
-        }
-      } else {
-        if (remoteLoad) {
-          // Loading has to take place before the consumption
-          graph.topoCons->insert(remoteLoad, consumerOp);
+    if (tensorConfig.location.replicatedTensorSharding ==
+        ReplicatedTensorSharding::On) {
+      rtsTensors.insert(loadedTensorId,
+                        gatheredTensorId,
+                        tensor->id,
+                        stripAllReservedPrefixes(tensor->id));
+    }
+
+    for (auto consumerOpConfig : config.consumers) {
+      if (remoteLoad) {
+        // Loading has to take place before the consumption
+        graph.topoCons->insert(remoteLoad, consumerOpConfig.op);
+      }
+      if (tensor->getTensorTypeInfo()->type() == TensorType::Variable) {
+        if (tensor->id != consumerOpConfig.tensor->id) {
+          // Current tensor (root var) is not the same as the actually
+          // consumed tensor (descendant)
+          if (consumerOpConfig.tensor->hasProducer()) {
+            // If we rewire from descendant to the root tensor,
+            // preserve topological constraint to the producer of the
+            // descendant
+            auto producer = consumerOpConfig.tensor->getProducer();
+            logging::transform::debug(
+                "[StreamingMemory] Inserting topological constraint between "
+                "producer {} and consumer {} before connecting the root "
+                "variable tensor {}",
+                producer->debugName(),
+                consumerOpConfig.op->debugName(),
+                tensor->id);
+            graph.topoCons->insert(producer, consumerOpConfig.op, false);
+            if (remoteStore) {
+              graph.topoCons->insert(producer, remoteStore, false);
+            }
+          }
         }
       }
 
@@ -306,205 +449,339 @@ void StreamingMemoryOpInserter::applyTensor(Tensor *tensor,
       if (tensorConfig.producerOp) {
         logging::transform::debug(
             "[StreamingMemory] Disconnecting tensor {} between ops {} and {}",
-            tensor->id,
+            consumerOpConfig.tensor->id,
             tensorConfig.producerOp->debugName(),
-            consumerOp->debugName());
+            consumerOpConfig.op->debugName());
       } else {
-        logging::transform::debug(
-            "[StreamingMemory] Disconnecting tensor {} at op {} (modified: {})",
-            tensor->id,
-            consumerOp->debugName(),
-            !config.modifiers.empty());
+        logging::transform::debug("[StreamingMemory] Disconnecting tensor {} "
+                                  "at op {} (modified: {})",
+                                  consumerOpConfig.tensor->id,
+                                  consumerOpConfig.op->debugName(),
+                                  !config.modifiers.empty());
       }
 
       // Disconnect original tensor and wire up loaded tensor
-      auto indices = consumerOp->input->indices(tensor);
+      auto indices = consumerOpConfig.inIndices;
       for (auto i : indices) {
-        auto *copyOp = dynamic_cast<IpuCopyOp *>(consumerOp);
+        auto *copyOp = dynamic_cast<IpuCopyOp *>(consumerOpConfig.op);
 
         if (copyOp) {
           auto sourceIpu = copyOp->getSourceIpus().at(tensor->id);
-          copyOp->disconnectInTensor(i, tensor);
+          copyOp->disconnectInTensor(i, consumerOpConfig.tensor);
           copyOp->connectInTensor(i, gatheredTensorId, sourceIpu);
-        } else if (consumerOp->isOptimizerOp()) {
-          consumerOp->disconnectInTensor(i, tensor);
-          consumerOp->connectInTensor(i, loadedTensorId);
-
-          // Check all optimizer ops connected of the current optimizer op
-
-          std::vector<Op *> optimizerFrontOps(1, consumerOp);
-          std::set<Op *, POpCmp> optimizerOps;
-
-          while (!optimizerFrontOps.empty()) {
-            Op *optFrontOp = optimizerFrontOps.back();
-            optimizerFrontOps.pop_back();
-            if (optFrontOp->isOptimizerOp() &&
-                optimizerOps.find(optFrontOp) == optimizerOps.end()) {
-              optimizerOps.insert(optFrontOp);
-              for (auto tensorAndIndex : optFrontOp->input->tensorMap()) {
-                if (tensorAndIndex.second->hasProducer()) {
-                  optimizerFrontOps.push_back(
-                      tensorAndIndex.second->getProducer());
-                }
-              }
-              for (auto tensorAndIndex : optFrontOp->output->tensorMap()) {
-                for (Op *op : tensorAndIndex.second->consumers.getOps()) {
-                  optimizerFrontOps.push_back(op);
-                }
-              }
-            }
-          }
-
-          for (Op *optimizerOp : optimizerOps) {
-            opsToSetup.insert(optimizerOp);
-
-            setPriority(
-                optimizerOp, isPhasedExecution(), false, tensorConfig.schedule);
-
-            optimizerOp->settings.tileSet =
-                tensorConfig.location.storageTileSet;
-
-            // If the current tensor is the weight tensor being updated,
-            // update the AllReduce / ReduceScatter operation
-            if (tensor->getTensorTypeInfo()->type() == TensorType::Variable &&
-                !tensor->isOptimizerStateTensor() &&
-                !tensor->isAccumulatorTensor() &&
-                optimizerOp->input->hasIndex(
-                    VarUpdateWithUpdaterOp::getUpdaterInIndex())) {
-              Tensor *grad = optimizerOp->input->tensor(
-                  VarUpdateWithUpdaterOp::getUpdaterInIndex());
-
-              ReplicatedAllReduceOp *replicatedAllReduce = nullptr;
-
-              if (grad->hasProducer()) {
-                Op *producer = grad->getProducer();
-                replicatedAllReduce =
-                    dynamic_cast<ReplicatedAllReduceOp *>(producer);
-              }
-
-              if (replicatedAllReduce) {
-                replicatedAllReduce->settings.tileSet =
-                    tensorConfig.location.storageTileSet;
-
-                setPriority(replicatedAllReduce,
-                            isPhasedExecution(),
-                            false,
-                            tensorConfig.schedule);
-                if (tensorConfig.location.replicatedTensorSharding ==
-                    ReplicatedTensorSharding::On) {
-                  auto replicatedReduceScatterOp =
-                      std::make_unique<ReplicatedReduceScatterOp>(
-                          Onnx::CustomOperators::ReplicatedReduceScatter,
-                          replicatedAllReduce->settings);
-                  auto replicatedReduceScatter =
-                      replicatedReduceScatterOp.get();
-                  replicatedReduceScatter->fromLoss =
-                      replicatedAllReduce->fromLoss;
-                  replicatedReduceScatter->toLoss = replicatedAllReduce->toLoss;
-                  graph.moveIntoGraph(std::move(replicatedReduceScatterOp));
-
-                  TensorId inId =
-                      replicatedAllReduce->input
-                          ->tensor(ReplicatedAllReduceOp::getInIndex())
-                          ->id;
-                  TensorId outId =
-                      replicatedAllReduce->output
-                          ->tensor(ReplicatedAllReduceOp::getOutIndex())
-                          ->id;
-                  replicatedAllReduce->disconnectAllInputs();
-                  replicatedAllReduce->disconnectAllOutputs();
-
-                  graph.topoCons->transfer(replicatedAllReduce,
-                                           replicatedReduceScatter);
-
-                  replicatedAllReduce->getGraph().eraseOp(
-                      replicatedAllReduce->id);
-
-                  replicatedReduceScatter->connectInTensor(
-                      ReplicatedAllReduceOp::getInIndex(), inId);
-
-                  replicatedReduceScatter->connectInTensor(
-                      ReplicatedAllGatherOp::getCollectiveLinkedIndex(),
-                      getRemoteArg(tensor->id));
-
-                  replicatedReduceScatter->connectOutTensor(
-                      ReplicatedAllReduceOp::getOutIndex(), outId);
-
-                  replicatedReduceScatter->setup();
-
-                  replicatedReduceScatter->settings.tileSet =
-                      tensorConfig.location.storageTileSet;
-
-                  setPriority(replicatedReduceScatter,
-                              isPhasedExecution(),
-                              false,
-                              tensorConfig.schedule);
-
-                  // Tie the reduction operation to the SGD0VarUpdate to get
-                  // the same schedule behaviour as if the reduction was
-                  // still integrated into SGD0VarUpdate
-                  graph.topoCons->insert(
-                      replicatedReduceScatter, optimizerOp, true);
-                }
-              }
-            }
-
-            // Lamb + replicated weight sharding:
-            // Distributed L2 norm of the weight and updater tensor
-            if (tensor->getTensorTypeInfo()->type() == TensorType::Variable &&
-                !tensor->isOptimizerStateTensor() &&
-                !tensor->isAccumulatorTensor() &&
-                tensorConfig.location.replicatedTensorSharding ==
-                    ReplicatedTensorSharding::On &&
-                dynamic_cast<LambSquareOp *>(optimizerOp)) {
-
-              Tensor *out =
-                  optimizerOp->output->tensor(LambSquareOp::getOutIndex());
-
-              // Make sure reduction is only added once
-              auto lambSqConsumers = out->consumers.getOps();
-              if (!std::any_of(lambSqConsumers.begin(),
-                               lambSqConsumers.end(),
-                               [](Op *op) {
-                                 return dynamic_cast<ReplicatedAllReduceOp *>(
-                                     op);
-                               })) {
-
-                TensorId lambIntoReduceId =
-                    graph.getIr().createIntermediateTensorId(out->id);
-
-                optimizerOp->disconnectOutTensor(out);
-                optimizerOp->createAndConnectOutTensor(
-                    ReplicatedAllReduceOp::getOutIndex(), lambIntoReduceId);
-                optimizerOp->setup();
-
-                auto reduceOpUp =
-                    std::make_unique<ReplicatedAllReduceInplaceOp>(
-                        Onnx::CustomOperators::ReplicatedAllReduceInplace,
-                        optimizerOp->settings);
-                auto reduceOp = reduceOpUp.get();
-                graph.moveIntoGraph(std::move(reduceOpUp));
-
-                reduceOp->connectInTensor(
-                    ReplicatedAllReduceInplaceOp::getInIndex(),
-                    lambIntoReduceId);
-                reduceOp->connectOutTensor(
-                    ReplicatedAllReduceInplaceOp::getOutIndex(), out->id);
-
-                reduceOp->setup();
-              }
-            }
-          }
+        } else if (consumerOpConfig.op->isOptimizerOp()) {
+          consumerOpConfig.op->disconnectInTensor(i, consumerOpConfig.tensor);
+          consumerOpConfig.op->connectInTensor(i, loadedTensorId);
         } else {
-          consumerOp->disconnectInTensor(i, tensor);
-          consumerOp->connectInTensor(i, gatheredTensorId);
+          consumerOpConfig.op->disconnectInTensor(i, consumerOpConfig.tensor);
+          consumerOpConfig.op->connectInTensor(i, gatheredTensorId);
+        }
+      }
+    }
+
+    // Transfer tensor configurations
+    if (!loadedTensorId.empty()) {
+      tensorConfigs.insert(
+          {graph.getTensors().get(loadedTensorId), tensorConfigs.at(tensor)});
+    }
+    if (!gatheredTensorId.empty()) {
+      tensorConfigs.insert(
+          {graph.getTensors().get(gatheredTensorId), tensorConfigs.at(tensor)});
+    }
+  }
+}
+
+void StreamingMemoryOpInserter::applyReplicatedOptimizerSharding(
+    ReplicationShardedTensors &rtsTensors) {
+
+  // Propagates replicated tensor sharding through the optimizers, e.g.:
+
+  // Rules apply only for operation inputs marked in
+  // getReplicatedTensorShardingIndices by the consuming operator, which
+  // leaves non-RTS tensors such as optimizer parameters (learning rate,
+  // weight decay) alone.
+
+  // 1.) Op has both RTS and non-RTS inputs, set Op and output to be non-RTS
+  //    a.) Reuse an existing AllGather if possible
+  //    b.) Insert a new one if not
+  //  A*  B                   A*    B
+  //   \ /                    |     |
+  //    Op           ---> AllGather /
+  //    |                     |    /
+  //    C                     A   /
+  //                          |  /
+  //                          Op
+  //                          |
+  //                          C
+  //
+  // 2.) Op has one RTS and one AllReduce input, change Op and output to be
+  // RTS
+  //  A*  B                   A*  B
+  //  |   |                   |   |
+  //  |  AllReduce   --->     |  ReduceScatter
+  //  |   |                   |   |
+  //  |   B'                  |   B'*
+  //   \ /                     \ /
+  //    Op                      Op*
+  //    |                       |
+  //    C                       C*
+  //
+  //
+  // 3.) Op has only RTS inputs, change Op and output to be RTS
+  //  A*  B*                  A*  B*
+  //   \ /                     \ /
+  //    Op          --->        Op*
+  //    |                       |
+  //    C                       C*
+  //
+  // 4.) Bailing (error) if the Op has RTS and non-RTS inputs, but can't
+  // gather
+  //
+  //  A*  B
+  //   \ /
+  //    Op <- modifies A* -> bailing with error
+  //    |
+  //    C
+  //
+  // * = replica sharded tensor or operation
+
+  // Operations that are affected by replicated tensor sharding
+  OpsSet opsToProcess;
+
+  // Map to resolve the reference tensor id for replicated weight sharding for
+  // a specific Op
+  std::map<Op *, TensorId> opToRefTensorId;
+
+  auto addOpsToProcess =
+      [this, &opsToProcess, &opToRefTensorId](TensorId id, TensorId refId) {
+        Tensor *t = graph.getTensors().get(id);
+        for (Op *consumer : t->consumers.getOps()) {
+          logging::transform::trace("[StreamingMemory] Op {} consumes at least "
+                                    "one replication sharded tensor",
+                                    consumer->debugName());
+          opsToProcess.insert(consumer);
+          opToRefTensorId.insert({consumer, refId});
+        }
+      };
+
+  for (TensorId shardId : rtsTensors.getShardTensorIds()) {
+    TensorId tensorId = rtsTensors.getTensor(shardId);
+    TensorId refId    = rtsTensors.getReference(shardId);
+    // Process initial shard consumers
+    if (!shardId.empty()) {
+      logging::transform::trace(
+          "[StreamingMemory] Processing replicated tensor "
+          "sharding for tensor {} (shard {})",
+          tensorId,
+          shardId);
+      addOpsToProcess(shardId, refId);
+    }
+  }
+
+  // Propagate replicated tensor sharding as far as possible
+  bool rtsChanged = true;
+  while (rtsChanged) {
+    OpsSet currentOpsToProcess = opsToProcess;
+    rtsChanged                 = false;
+    for (Op *op : currentOpsToProcess) {
+      logging::transform::trace(
+          "[StreamingMemory] Processing {} for replicated tensor sharding",
+          op->debugName());
+      TensorId refId = opToRefTensorId.at(op);
+
+      auto rtsIndices = op->getReplicatedTensorShardingIndices();
+
+      // Loop over one set of indices
+      for (auto indices : rtsIndices) {
+        bool allIndiciesSharded = true;
+        for (InIndex inIdx : indices.first) {
+          bool indexSharded = false;
+          Tensor *inTensor  = op->input->tensor(inIdx);
+          if (rtsTensors.hasShard(inTensor->id)) {
+            // Already sharded
+            indexSharded = true;
+          } else if (!rtsTensors.getShard(inTensor->id).empty()) {
+            // Sharded tensor available
+            op->disconnectInTensor(inTensor);
+            op->connectInTensor(inIdx, rtsTensors.getShard(inTensor->id));
+            indexSharded = true;
+            rtsChanged   = true;
+          } else {
+            // Try to shard index by changing an AllReduce into a
+            // ReduceScatter
+            if (inTensor->hasProducer() &&
+                inTensor->getProducer()
+                    ->isConvertibleTo<ReplicatedAllReduceOp>()) {
+              ReplicatedAllReduceOp *replicatedAllReduce =
+                  dynamic_cast<ReplicatedAllReduceOp *>(
+                      inTensor->getProducer());
+              TensorId inId = replicatedAllReduce->input
+                                  ->tensor(ReplicatedAllReduceOp::getInIndex())
+                                  ->id;
+              TensorId outId =
+                  replicatedAllReduce->output
+                      ->tensor(ReplicatedAllReduceOp::getOutIndex())
+                      ->id;
+
+              replicatedAllReduce->disconnectAllInputs();
+              replicatedAllReduce->disconnectAllOutputs();
+
+              TensorStreamingContext context;
+              context.context = replicatedAllReduce->settings.executionContext;
+              if (context.context == ExecutionContext::Normal) {
+                if (isPhasedExecution()) {
+                  context.phase =
+                      replicatedAllReduce->getOptionalExecutionPhase();
+                } else {
+                  context.preLoss = replicatedAllReduce->scheduledPreLoss;
+                }
+              }
+
+              Tensor *outTensor = graph.getTensors().get(outId);
+
+              TensorConfig &tensorConfig = tensorConfigs.at(outTensor);
+
+              ReplicatedReduceScatterOp *replicatedReduceScatter =
+                  insertReplicatedReduceScatterOp(
+                      tensorConfig, context, inId, outId, refId);
+
+              graph.topoCons->transfer(replicatedAllReduce,
+                                       replicatedReduceScatter);
+
+              replicatedAllReduce->getGraph().eraseOp(replicatedAllReduce->id);
+
+              // Tensor outId is now replicated tensor sharded
+              rtsTensors.insert(
+                  outId, "", outId, stripAllReservedPrefixes(refId));
+              // Add all consumers to the set of ops to process
+              addOpsToProcess(outId, refId);
+              indexSharded = true;
+              rtsChanged   = true;
+            }
+          }
+          allIndiciesSharded &= indexSharded;
+        }
+        if (allIndiciesSharded) {
+          // Configure the op with all sharded inputs added
+          logging::transform::trace("[StreamingMemory] Configuring {} for "
+                                    "replicated tensor sharding "
+                                    "(indices: {}->{})",
+                                    op->debugName(),
+                                    indices.first,
+                                    indices.second);
+          op->configureForReplicatedTensorSharding({indices});
+          // Add output tensors as RTS tensors
+          for (auto outIndex : indices.second) {
+            TensorId outId = op->outId(outIndex);
+            // Tensor outId is now replicated tensor sharded
+            rtsTensors.insert(
+                outId, "", outId, stripAllReservedPrefixes(refId));
+            // Add all consumers to the set of ops to process
+            addOpsToProcess(outId, refId);
+            rtsChanged = currentOpsToProcess.size() != opsToProcess.size();
+          }
+        }
+      }
+    }
+  }
+
+  // Where replicated tensor sharding couldn't be propagated further,
+  // consume the gathered tensor instead
+  for (Op *op : opsToProcess) {
+    TensorId refId = opToRefTensorId.at(op);
+
+    auto rtsIndices = op->getReplicatedTensorShardingIndices();
+
+    // Loop over one set of indices
+    for (auto indices : rtsIndices) {
+      bool modifiesSharded    = false;
+      bool allIndiciesSharded = true;
+      for (InIndex inIdx : indices.first) {
+        bool indexSharded = false;
+        Tensor *inTensor  = op->input->tensor(inIdx);
+        if (rtsTensors.hasShard(inTensor->id)) {
+          // Already sharded
+          indexSharded         = true;
+          auto modifiedRegions = op->modifies(inIdx);
+          // If the optimizer Op modifies the input, we say that the optimizer
+          // updates this variable. If this variable is an RTS tensor,
+          // then we know the update Op must be sharded for that input.
+          // We most definitely can't use a ReplicatedAllGather here,
+          // because that would no longer update the root var tensor
+          modifiesSharded |=
+              std::any_of(modifiedRegions.begin(),
+                          modifiedRegions.end(),
+                          [](view::Region &r) { return !r.isEmpty(); });
+        }
+        allIndiciesSharded &= indexSharded;
+      }
+      if (!allIndiciesSharded) {
+        // Not all required indices for this op are RTS tensors:
+        // We can try to gather the complete tensor and let the Op operate
+        // on the whole tensors rather than shards (2) or we need to bail
+        // because the Op updates a sharded tensor (1)
+
+        // 1.) Bail with error if op must consume sharded tensor but can't
+        if (modifiesSharded) {
+          throw error(
+              "[StreamingMemory] Op {} modifies a sharded tensor, but"
+              "not all required sharded inputs could be connected. Adjust the"
+              "replicated tensor sharding settings. Bailing.",
+              op->debugName());
+        }
+
+        // 2.) Op cannot do RTS, connect gathered tensors instead
+        for (InIndex inIdx : indices.first) {
+          Tensor *inTensor = op->input->tensor(inIdx);
+          if (rtsTensors.hasShard(inTensor->id)) {
+            // Disconnect sharded input tensor
+            op->disconnectInTensor(inIdx, inTensor);
+
+            TensorId gatheredId = rtsTensors.getGathered(inTensor->id);
+            TensorId tensorId   = rtsTensors.getTensor(inTensor->id);
+
+            if (gatheredId.empty()) {
+              TensorConfig tensorConfig = tensorConfigs.at(inTensor);
+              TensorStreamingContext context;
+              context.context = op->settings.executionContext;
+              if (context.context == ExecutionContext::Normal) {
+                if (isPhasedExecution()) {
+                  context.phase = op->getOptionalExecutionPhase();
+                } else {
+                  context.preLoss = op->scheduledPreLoss;
+                }
+              }
+
+              insertReplicatedAllGatherOp(
+                  tensorConfig, context, inTensor->id, gatheredId);
+
+              rtsTensors.insert(inTensor->id,
+                                gatheredId,
+                                tensorId,
+                                stripAllReservedPrefixes(refId));
+            }
+
+            Tensor *gatheredTensor = graph.getTensors().get(gatheredId);
+            if (gatheredTensor->hasProducer()) {
+              auto consBefore = graph.topoCons->getBefores(op);
+              for (auto before : consBefore) {
+                // Also move the allGather behind the producer
+                // Note that if both the optimizer & normal ops are interested
+                // in this gathered tensor, then we would have to insert
+                // multiple allGathers, if it ever comes up (T26236)
+                graph.topoCons->insert(before, gatheredTensor->getProducer());
+              }
+            }
+
+            op->connectInTensor(inIdx, gatheredId);
+          }
         }
       }
     }
   }
 }
 
-void StreamingMemoryOpInserter::getTensorSchedule(
+void StreamingMemoryOpInserter::getTensorOpSchedule(
     Tensor *tensor,
     TensorConfig &tensorConfig) const {
   auto &sessionOptions = graph.getIr().getSessionOptions();
@@ -528,35 +805,60 @@ void StreamingMemoryOpInserter::getTensorSchedule(
   tensorConfig.schedule = sessionOptions.executionPhaseSettings.schedule;
 }
 
-void StreamingMemoryOpInserter::getTensorConfig(
-    Tensor *tensor,
-    TensorConfig &tensorConfig) const {
+void StreamingMemoryOpInserter::getTensorConfig(Tensor *tensor) {
 
   auto producerOp = tensor->getProducerUnsafe();
 
-  tensorConfig.tensor = tensor;
+  {
+    auto it = tensorConfigs.find(tensor);
+    if (it == tensorConfigs.end()) {
+      tensorConfigs.insert({tensor, TensorConfig(graph)});
+    }
+  }
 
+  TensorConfig &tensorConfig = tensorConfigs.at(tensor);
+
+  tensorConfig.tensor     = tensor;
   tensorConfig.producerOp = producerOp;
 
-  // Get all consumers in schedule order
-  getOrderedConsumerOps(tensor, tensorConfig.consumerOps);
+  // Get the root variable tensor, if it exists
+  getRootVarTensor(tensor, tensorConfig.rootVarTensor);
+
+  // Add this tensor to the root tensor's descendants
+  if (tensorConfig.rootVarTensor) {
+    auto it = tensorConfigs.find(tensorConfig.rootVarTensor);
+    if (it == tensorConfigs.end()) {
+      tensorConfigs.insert({tensorConfig.rootVarTensor, TensorConfig(graph)});
+    }
+    tensorConfigs.at(tensorConfig.rootVarTensor)
+        .descendantTensors.insert(tensor);
+  }
+
+  // Get all direct consumers
+  getConsumerOps(tensor, tensorConfig.consumerOps);
+  // Get all indirect (descendant) consumers
+  for (Tensor *descendantTensor : tensorConfig.descendantTensors) {
+    getConsumerOps(descendantTensor, tensorConfig.consumerOps);
+  }
+  // Sort all consumers in schedule order
+  filterAndSortConsumerOps(tensorConfig.consumerOps);
 
   // Determine the storage location of the tensor
-  getTensorLocation(tensor, tensorConfig.location);
+  // If this tensor has a root variable tensor, the location of that tensor
+  // is used instead
+  getTensorLocation(tensorConfig.rootVarTensor ? tensorConfig.rootVarTensor
+                                               : tensor,
+                    tensorConfig.location);
 
   // Determine the streaming configuration of the tensor
-  getTensorStreamingConfig(tensor,
-                           producerOp,
-                           tensorConfig.consumerOps,
-                           tensorConfig.location,
-                           tensorConfig.streamingMap);
+  getTensorStreamingConfig(tensor);
 
   // Determine the settings that new ops should inherit
   getTensorSettings(
       tensor, producerOp, tensorConfig.consumerOps, tensorConfig.settings);
 
   // Determine how the new ops should be scheduled
-  getTensorSchedule(tensor, tensorConfig);
+  getTensorOpSchedule(tensor, tensorConfig);
 
   if (tensorConfig.location.replicatedTensorSharding ==
       ReplicatedTensorSharding::On) {
@@ -567,16 +869,44 @@ void StreamingMemoryOpInserter::getTensorConfig(
   }
 }
 
-void StreamingMemoryOpInserter::getOrderedConsumerOps(Tensor *tensor,
-                                                      Ops &consumerOps) const {
+void StreamingMemoryOpInserter::getRootVarTensor(Tensor *tensor,
+                                                 Tensor *&rootTensor) const {
+  auto chains = graph.getTensors().getAliases().aliasChainsFrom(tensor);
+  auto shape  = tensor->info.shape();
+
+  // Check if the alias is an identity chain
+  for (auto tensorAndChain : chains) {
+    if (tensorAndChain.first->getTensorTypeInfo()->type() ==
+            TensorType::Variable &&
+        !tensorAndChain.second.isEmpty()) {
+      rootTensor = tensorAndChain.first;
+    }
+  }
+}
+
+void StreamingMemoryOpInserter::getConsumerOps(
+    Tensor *tensor,
+    ConsumerOpConfigs &consumerOps) const {
 
   // Get consuming ops.
-  consumerOps = tensor->consumers.getOps();
+  auto consumers = tensor->consumers.getOps();
+  for (Op *consumer : consumers) {
+    consumerOps.emplace_back(
+        tensor, consumer, consumer->input->indices(tensor));
+  }
+}
 
+void StreamingMemoryOpInserter::filterAndSortConsumerOps(
+    ConsumerOpConfigs &consumerOps) const {
   // Process consumers in ascending order of phases
-  std::sort(consumerOps.begin(), consumerOps.end(), [this](Op *lhs, Op *rhs) {
-    return scheduleMap.at(lhs) < scheduleMap.at(rhs);
-  });
+  std::sort(consumerOps.begin(),
+            consumerOps.end(),
+            [this](const ConsumerOpConfig &lhs, const ConsumerOpConfig &rhs) {
+              return opScheduleMap.at(lhs.op) < opScheduleMap.at(rhs.op);
+            });
+
+  consumerOps.erase(std::unique(consumerOps.begin(), consumerOps.end()),
+                    consumerOps.end());
 }
 
 void StreamingMemoryOpInserter::getTensorLocation(
@@ -593,7 +923,7 @@ void StreamingMemoryOpInserter::getTensorLocation(
 void StreamingMemoryOpInserter::getTensorOptionalVGraphId(
     Tensor *tensor,
     const Op *producerOp,
-    const Ops &consumerOps,
+    const ConsumerOpConfigs &consumerOps,
     OptionalVGraphId &streamingVGID) const {
 
   // If we have a producer op, use the VGID of the producer.
@@ -607,8 +937,8 @@ void StreamingMemoryOpInserter::getTensorOptionalVGraphId(
 
   // If we don't have a producer op, use the smallest consumer op VGID.
   for (auto consumerOp : consumerOps) {
-    OptionalVGraphId consumerVGID = consumerOp->getOptionalVGraphId();
-    if (IpuCopyOp *copyOp = dynamic_cast<IpuCopyOp *>(consumerOp)) {
+    OptionalVGraphId consumerVGID = consumerOp.op->getOptionalVGraphId();
+    if (IpuCopyOp *copyOp = dynamic_cast<IpuCopyOp *>(consumerOp.op)) {
       consumerVGID = copyOp->getSourceIpu(tensor->id);
     }
 
@@ -658,16 +988,17 @@ void StreamingMemoryOpInserter::getTensorProducerStreamingConfig(
   }
 }
 
-void StreamingMemoryOpInserter::getTensorStreamingConfig(
-    Tensor *tensor,
-    const Op *producerOp,
-    const Ops &consumerOps,
-    const TensorLocation &location,
-    TensorStreamingMap &streamingMap) const {
+void StreamingMemoryOpInserter::getTensorStreamingConfig(Tensor *tensor) {
+
+  auto &tensorConfig   = tensorConfigs.at(tensor);
+  auto &streamingMap   = tensorConfig.streamingMap;
+  auto const &location = tensorConfig.location;
 
   TensorStreamingConfig defaultStreamingConfig;
-  getTensorOptionalVGraphId(
-      tensor, producerOp, consumerOps, defaultStreamingConfig.streamingVGID);
+  getTensorOptionalVGraphId(tensor,
+                            tensorConfig.producerOp,
+                            tensorConfig.consumerOps,
+                            defaultStreamingConfig.streamingVGID);
 
   auto fromHostContext =
       TensorStreamingContext(ExecutionContext::WeightsFromHostFragment,
@@ -682,8 +1013,8 @@ void StreamingMemoryOpInserter::getTensorStreamingConfig(
                              OptionalExecutionPhase(),
                              ScheduledPreLoss::Undefined);
 
-  // Create entries for every context and set everything to the default to begin
-  // with
+  // Create entries for every context and set everything to the default to
+  // begin with
   streamingMap[fromHostContext]   = defaultStreamingConfig;
   streamingMap[accumulateContext] = defaultStreamingConfig;
   streamingMap[toHostContext]     = defaultStreamingConfig;
@@ -704,9 +1035,9 @@ void StreamingMemoryOpInserter::getTensorStreamingConfig(
         defaultStreamingConfig;
   }
 
-  // If the user requests to keep the tensor OnChip but also wants to shard the
-  // tensor between replica sets then we will load/store the tensor out of the
-  // training loop (e.g. only once) to keep the tensor shard always live
+  // If the user requests to keep the tensor OnChip but also wants to shard
+  // the tensor between replica sets then we will load/store the tensor out of
+  // the training loop (e.g. only once) to keep the tensor shard always live
   if (location.storage == TensorStorage::OnChip &&
       location.replicatedTensorSharding == ReplicatedTensorSharding::On) {
     streamingMap[fromHostContext].load = true;
@@ -715,8 +1046,30 @@ void StreamingMemoryOpInserter::getTensorStreamingConfig(
     streamingMap[toHostContext].live   = true;
   }
 
+  // Inherit load, store, gather settings from descendants
+  for (Tensor *descendant : tensorConfig.descendantTensors) {
+    if (descendant != tensor) {
+      logging::transform::trace(
+          "[StreamingMemory] Transferring streaming settings from {} to {}",
+          descendant->id,
+          tensor->id);
+      for (auto &contextAndConfig : tensorConfigs.at(descendant).streamingMap) {
+        streamingMap[contextAndConfig.first].load |=
+            contextAndConfig.second.load;
+        streamingMap[contextAndConfig.first].store |=
+            contextAndConfig.second.store;
+        streamingMap[contextAndConfig.first].gather |=
+            contextAndConfig.second.gather;
+        contextAndConfig.second.load   = false;
+        contextAndConfig.second.store  = false;
+        contextAndConfig.second.gather = false;
+      }
+    }
+  }
+
   // Set producer & liveness config on relevant context if possible.
-  getTensorProducerStreamingConfig(tensor, location, producerOp, streamingMap);
+  getTensorProducerStreamingConfig(
+      tensor, location, tensorConfig.producerOp, streamingMap);
 
   // TODO T25043: The remaining code in this function is non-trivial and would
   // benefit from unit testing.
@@ -729,24 +1082,24 @@ void StreamingMemoryOpInserter::getTensorStreamingConfig(
   // incremental algorithm which processes phases in order by iterating over
   // consumer ops in execution phase order.
 
-  for (auto consumerOp : consumerOps) {
+  for (auto consumerOp : tensorConfig.consumerOps) {
     // Context of this consumer
     TensorStreamingContext consumerContext;
-    consumerContext.context = consumerOp->settings.executionContext;
+    consumerContext.context = consumerOp.op->settings.executionContext;
     if (consumerContext.context == ExecutionContext::Normal) {
       if (isPhasedExecution()) {
-        consumerContext.phase = consumerOp->getOptionalExecutionPhase();
+        consumerContext.phase = consumerOp.op->getOptionalExecutionPhase();
       } else {
-        consumerContext.preLoss = consumerOp->scheduledPreLoss;
+        consumerContext.preLoss = consumerOp.op->scheduledPreLoss;
       }
     }
 
     std::vector<TensorStreamingConfig *> previousConfigs;
-    TensorStreamingConfig *consumerConfig = &streamingMap[consumerContext];
+    TensorStreamingConfig *currentConfig = &streamingMap[consumerContext];
 
-    consumerConfig->consumers.push_back(consumerOp);
+    currentConfig->consumers.push_back(consumerOp);
     // Live in consumer phases
-    consumerConfig->live = true;
+    currentConfig->live = true;
 
     if (isPhasedExecution()) {
       // Treat last 2 phases as adjacent previous phases
@@ -766,12 +1119,12 @@ void StreamingMemoryOpInserter::getTensorStreamingConfig(
       }
     }
 
-    if (consumerConfig->producer) {
+    if (currentConfig->producer) {
       // Current phase is producer context -- there is no need to load in the
       // current context
     } else {
       // Not live, load in current phase
-      consumerConfig->load = true;
+      currentConfig->load = true;
     }
 
     for (auto previousConfig : previousConfigs) {
@@ -779,29 +1132,29 @@ void StreamingMemoryOpInserter::getTensorStreamingConfig(
         // The tensor is live in the previous context.
         // Instead of storing it in a previous context and loading it in again
         // in this context we are going to keep it live.
-        consumerConfig->load = false;
+        currentConfig->load = false;
         // If tensor was stored in a previous context, defer storing until the
         // current context.
         if (previousConfig->store) {
-          consumerConfig->store = true;
+          currentConfig->store  = true;
           previousConfig->store = false;
         }
       }
     }
 
     // If the modifiers are not checked yet
-    if (consumerConfig->modifiers.empty()) {
+    if (currentConfig->modifiers.empty()) {
       // Check if the consumer OP modifies the tensor, e.g. for weights
       // if yes, then the tensor requires to be backed-up at the end of
       // the phase
       getAliasedModifiersInContext(
-          tensor, consumerContext, consumerConfig->modifiers);
+          tensor, consumerContext, currentConfig->modifiers);
     }
 
     // If there are modifiers in this context
-    if (!consumerConfig->modifiers.empty()) {
+    if (!currentConfig->modifiers.empty()) {
       // Storing in this context
-      consumerConfig->store = true;
+      currentConfig->store = true;
       for (auto previousConfig : previousConfigs) {
         // Not storing in previous contexts
         previousConfig->store = false;
@@ -851,7 +1204,7 @@ void StreamingMemoryOpInserter::getTensorStreamingConfig(
 void StreamingMemoryOpInserter::getTensorSettings(
     Tensor *tensor,
     const Op *producerOp,
-    const Ops &consumerOps,
+    const ConsumerOpConfigs &consumerOps,
     Op::Settings &settings) const {
 
   // Inherit settings from producer or consumer
@@ -859,7 +1212,7 @@ void StreamingMemoryOpInserter::getTensorSettings(
     settings = producerOp->settings;
   } else {
     if (!consumerOps.empty()) {
-      settings = consumerOps.front()->settings;
+      settings = consumerOps.front().op->settings;
     }
     settings.batchSerializedPhase.reset();
   }
@@ -971,11 +1324,11 @@ RemoteLoadOp *StreamingMemoryOpInserter::insertRemoteLoadOp(
   }
 
   // Log this.
-  logging::transform::trace(
-      "[StreamingMemory] Adding remote load of {} ({}) in streaming context {}",
-      loadedTensorId,
-      tensorConfig.tensor->id,
-      context);
+  logging::transform::trace("[StreamingMemory] Adding remote load of {} ({}) "
+                            "in streaming context {}",
+                            loadedTensorId,
+                            tensorConfig.tensor->id,
+                            context);
 
   auto remoteLoadOp = std::make_unique<RemoteLoadOp>(
       Onnx::CustomOperators::RemoteLoad, tensorConfig.settings);
@@ -1089,11 +1442,11 @@ ReplicatedAllGatherOp *StreamingMemoryOpInserter::insertReplicatedAllGatherOp(
     TensorId &gatheredTensorId) {
   ReplicatedAllGatherOp *allGather = nullptr;
 
-  logging::transform::trace(
-      "[StreamingMemory] Adding replicated all gather of {} ({}) in context {}",
-      loadedTensorId,
-      tensorConfig.tensor->id,
-      context);
+  logging::transform::trace("[StreamingMemory] Adding replicated all gather "
+                            "of {} ({}) in context {}",
+                            loadedTensorId,
+                            tensorConfig.tensor->id,
+                            context);
 
   // Execute replicated allgather to collect the full weight
   // tensor from the individual replicas
@@ -1121,8 +1474,9 @@ ReplicatedAllGatherOp *StreamingMemoryOpInserter::insertReplicatedAllGatherOp(
   allGather->connectInTensor(ReplicatedAllGatherOp::getInIndex(),
                              loadedTensorId);
 
-  allGather->connectInTensor(ReplicatedAllGatherOp::getCollectiveLinkedIndex(),
-                             getRemoteArg(tensorConfig.tensor->id));
+  allGather->connectInTensor(
+      ReplicatedAllGatherOp::getCollectiveLinkedIndex(),
+      getRemoteArg(stripAllReservedPrefixes(tensorConfig.tensor->id)));
 
   gatheredTensorId = generateGatheredTensorId(tensorConfig.tensor->id);
 
@@ -1135,6 +1489,42 @@ ReplicatedAllGatherOp *StreamingMemoryOpInserter::insertReplicatedAllGatherOp(
   allGather->settings.tileSet = tensorConfig.location.loadTileSet;
 
   return allGather;
+}
+
+ReplicatedReduceScatterOp *
+StreamingMemoryOpInserter::insertReplicatedReduceScatterOp(
+    const TensorConfig &tensorConfig,
+    const TensorStreamingContext context,
+    const TensorId &inTensorId,
+    const TensorId &outTensorId,
+    const TensorId &weightTensorId) {
+
+  auto replicatedReduceScatterOp = std::make_unique<ReplicatedReduceScatterOp>(
+      Onnx::CustomOperators::ReplicatedReduceScatter, tensorConfig.settings);
+  auto replicatedReduceScatter = replicatedReduceScatterOp.get();
+  graph.moveIntoGraph(std::move(replicatedReduceScatterOp));
+
+  replicatedReduceScatter->connectInTensor(ReplicatedAllReduceOp::getInIndex(),
+                                           inTensorId);
+
+  replicatedReduceScatter->connectInTensor(
+      ReplicatedAllGatherOp::getCollectiveLinkedIndex(),
+      getRemoteArg(weightTensorId));
+
+  replicatedReduceScatter->connectOutTensor(
+      ReplicatedAllReduceOp::getOutIndex(), outTensorId);
+
+  replicatedReduceScatter->setup();
+
+  replicatedReduceScatter->settings.tileSet =
+      tensorConfig.location.storageTileSet;
+
+  setPriority(replicatedReduceScatter,
+              isPhasedExecution(),
+              false,
+              tensorConfig.schedule);
+
+  return replicatedReduceScatter;
 }
 
 RemoteStoreOp *StreamingMemoryOpInserter::insertRemoteStoreOp(
@@ -1314,9 +1704,9 @@ StreamingMemoryOpInserter::determineTensorLocation(Tensor *tensor) const {
 
     if (result.storage == TensorStorage::Undefined) {
 
-      // If we still don't have a tensor location setting and the tensor belongs
-      // to a group we have tensor location settings for, use those tensor
-      // location settings.
+      // If we still don't have a tensor location setting and the tensor
+      // belongs to a group we have tensor location settings for, use those
+      // tensor location settings.
 
       if (isActivation &&
           isValidTensorLocation(
@@ -1357,8 +1747,9 @@ StreamingMemoryOpInserter::determineTensorLocation(Tensor *tensor) const {
 
       // If we are planning to offload the tensor to off-chip memory but the
       // tensor belongs to a group of tensors for which we have a tensor
-      // location setting that specifies a minimum size for offloading and this
-      // tensor is smaller than this minimum size, revert back to on-chip.
+      // location setting that specifies a minimum size for offloading and
+      // this tensor is smaller than this minimum size, revert back to
+      // on-chip.
 
       if (isActivation &&
           tooSmallForOffChip(sessionOptions.activationTensorLocationSettings,
@@ -1524,6 +1915,10 @@ void StreamingMemoryOpInserter::logTensorStreamingConfig(
         // Loaded in this phase
         ss << "L";
       }
+      if (config.gather) {
+        // Gathered in this phase
+        ss << "G";
+      }
       if (config.store) {
         // Stored in this phase
         ss << "S";
@@ -1680,6 +2075,112 @@ operator<<(std::ostream &output,
   }
   output << "]";
   return output;
+}
+
+bool StreamingMemoryOpInserter::ConsumerOpConfig::operator==(
+    const ConsumerOpConfig &rhs) const {
+  return tensor == rhs.tensor && op == rhs.op;
+}
+
+void StreamingMemoryOpInserter::ReplicationShardedTensors::insert(
+    TensorId shardId,
+    TensorId gatheredId,
+    TensorId tensorId,
+    TensorId refId) {
+  if (!shardId.empty()) {
+    shardToTensors.insert({shardId, {gatheredId, tensorId, refId}});
+  }
+  if (!gatheredId.empty()) {
+    gatheredToTensors.insert({gatheredId, {shardId, tensorId, refId}});
+  }
+}
+
+std::set<TensorId>
+StreamingMemoryOpInserter::ReplicationShardedTensors::getShardTensorIds()
+    const {
+  std::set<TensorId> set;
+  for (auto &kv : shardToTensors) {
+    set.insert(kv.first);
+  }
+  return set;
+}
+
+std::set<TensorId>
+StreamingMemoryOpInserter::ReplicationShardedTensors::getGatheredTensorIds()
+    const {
+  std::set<TensorId> set;
+  for (auto &kv : gatheredToTensors) {
+    set.insert(kv.first);
+  }
+  return set;
+}
+
+TensorId StreamingMemoryOpInserter::ReplicationShardedTensors::getShard(
+    TensorId tensorId) const {
+  {
+    auto it = shardToTensors.find(tensorId);
+    if (it != shardToTensors.end()) {
+      return tensorId;
+    }
+  }
+  {
+    auto it = gatheredToTensors.find(tensorId);
+    if (it != gatheredToTensors.end()) {
+      return std::get<0>(it->second);
+    }
+  }
+  return "";
+}
+
+TensorId StreamingMemoryOpInserter::ReplicationShardedTensors::getGathered(
+    TensorId tensorId) const {
+  {
+    auto it = gatheredToTensors.find(tensorId);
+    if (it != gatheredToTensors.end()) {
+      return tensorId;
+    }
+  }
+  {
+    auto it = shardToTensors.find(tensorId);
+    if (it != shardToTensors.end()) {
+      return std::get<0>(it->second);
+    }
+  }
+  return "";
+}
+
+TensorId StreamingMemoryOpInserter::ReplicationShardedTensors::getTensor(
+    TensorId tensorId) const {
+  {
+    auto it = shardToTensors.find(tensorId);
+    if (it != shardToTensors.end()) {
+      return std::get<1>(it->second);
+    }
+  }
+  {
+    auto it = gatheredToTensors.find(tensorId);
+    if (it != gatheredToTensors.end()) {
+      return std::get<1>(it->second);
+    }
+  }
+  return "";
+}
+
+TensorId StreamingMemoryOpInserter::ReplicationShardedTensors::getReference(
+    TensorId tensorId) const {
+  {
+    auto it = shardToTensors.find(tensorId);
+    if (it != shardToTensors.end()) {
+      return std::get<2>(it->second);
+    }
+  }
+  {
+    auto it = gatheredToTensors.find(tensorId);
+    if (it != gatheredToTensors.end()) {
+      return std::get<2>(it->second);
+    }
+  }
+  return "";
 }
 
 } // namespace popart

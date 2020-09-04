@@ -66,15 +66,15 @@ bool isValidTensorLocation(const TensorLocation tensorLocation) {
 std::ostream &operator<<(std::ostream &ost, const TensorStorage &ts) {
   switch (ts) {
   case (TensorStorage::Undefined): {
-    ost << "Recomputed";
+    ost << "Undefined";
     break;
   }
   case (TensorStorage::OnChip): {
-    ost << "Recompute";
+    ost << "OnChip";
     break;
   }
   case (TensorStorage::OffChip): {
-    ost << "Checkpoint";
+    ost << "OffChip";
     break;
   }
   default: {

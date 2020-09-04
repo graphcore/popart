@@ -13,6 +13,8 @@ namespace popart {
 class RemoteLoadOp;
 class RemoteStoreOp;
 class ReplicatedAllGatherOp;
+class ReplicatedAllReduceOp;
+class ReplicatedReduceScatterOp;
 
 class StreamingMemoryOpInserter {
 public:
@@ -33,6 +35,19 @@ public:
   // Add streaming memory operations.
   void apply();
 
+  // Set up data structures to look up the schedule of ops and tensors
+  void createTensorSchedule();
+
+  // Find the related weight tensor downstream of the tensorSet
+  Tensor *findRelatedVarTensor(std::vector<Tensor *> front);
+
+  // Correct attributes on replicated reduction operations connected to the
+  // optimizer
+  void updateReplicatedOperations();
+
+  // Correct attributes on optimizer operations
+  void updateOptimizerOperations();
+
   // Determine where to place a tensor (used by StreamingMemory).
   TensorLocation determineTensorLocation(Tensor *tensor) const;
   // Sanity checking helper function (used by StreamingMemory).
@@ -49,11 +64,13 @@ public:
 private:
   // Types used.
   using Ops               = std::vector<Op *>;
-  using SetupOps          = std::set<Op *, POpCmp>;
+  using OpsSet            = std::set<Op *, POpCmp>;
   using TensorIds         = std::vector<TensorId>;
   using LoadedTensorMap   = std::map<TensorId, int>;
   using GatheredTensorMap = std::map<TensorId, int>;
-  using ScheduleMap       = std::map<Op *, int64_t>;
+  using OpScheduleMap     = std::map<Op *, int64_t, POpCmp>;
+  using TensorSchedule    = std::vector<Tensor *>;
+  using TensorSet         = std::set<Tensor *, PTensorCmp>;
 
   class TensorStreamingContext {
   public:
@@ -81,6 +98,27 @@ private:
   friend std::ostream &operator<<(std::ostream &output,
                                   const TensorStreamingContext &c);
 
+  // The information required to apply changes necessary for this operation
+  // related to the input tensor.
+  class ConsumerOpConfig {
+  public:
+    ConsumerOpConfig(Tensor *tensor_, Op *op_, std::vector<InIndex> inIndices_)
+        : tensor(tensor_), op{op_}, inIndices(inIndices_){};
+
+    // The originally consumed tensor
+    Tensor *tensor;
+
+    // The op to reconfigure
+    Op *op;
+
+    // The input indices of this tensor consumer
+    std::vector<InIndex> inIndices;
+
+    bool operator==(const ConsumerOpConfig &rhs) const;
+  };
+
+  using ConsumerOpConfigs = std::vector<ConsumerOpConfig>;
+
   class TensorStreamingConfig {
   public:
     // Flag to denote whether this is a producer context
@@ -92,7 +130,7 @@ private:
     // Ops that are modifiers
     Ops modifiers;
     // Ops that are consumers
-    Ops consumers;
+    ConsumerOpConfigs consumers;
     // Flags that denote whether the tensor needs to be loaded/stored/gathered
     bool load   = false;
     bool store  = false;
@@ -109,17 +147,21 @@ private:
   public:
     // Constructor.
     TensorConfig(Graph &graph)
-        : tensor{}, producerOp{}, consumerOps{}, location{},
+        : tensor{}, rootVarTensor{}, producerOp{}, consumerOps{}, location{},
           streamingMap{}, settings{graph, ""},
           ioSchedule(ExecutionPhaseIOSchedule::Preload),
           schedule(ExecutionPhaseSchedule::Interleaving) {}
 
     // The tensor affected.
     Tensor *tensor;
+    // The variable root tensor which this tensor is aliased from, if available
+    Tensor *rootVarTensor;
+    // The descendant tensors if this is a variable root tensor
+    TensorSet descendantTensors;
     // The tensor's producer op, if any.
     Op *producerOp;
     // The tensor's consuming ops.
-    Ops consumerOps;
+    ConsumerOpConfigs consumerOps;
     // The desired tensor location.
     TensorLocation location;
     // Where and how to apply graph streaming.
@@ -132,14 +174,61 @@ private:
     ExecutionPhaseSchedule schedule;
   };
 
+  using TensorConfigMap = std::map<Tensor *, TensorConfig, PTensorCmp>;
+
+  class ReplicationShardedTensors {
+  public:
+    void insert(TensorId shardId,
+                TensorId gatheredId,
+                TensorId tensorId,
+                TensorId refId);
+
+    std::set<TensorId> getShardTensorIds() const;
+    std::set<TensorId> getGatheredTensorIds() const;
+
+    bool hasShard(TensorId tensorId) const {
+      return shardToTensors.find(tensorId) != shardToTensors.end();
+    }
+
+    bool hasGathered(TensorId tensorId) const {
+      return gatheredToTensors.find(tensorId) != shardToTensors.end();
+    }
+
+    // Returns the sharded tensor id
+    TensorId getShard(TensorId tensorId) const;
+
+    // Returns the gathered tensor id
+    TensorId getGathered(TensorId tensorId) const;
+
+    // Returns the original tensor id
+    // (tensor name before offloading was applied)
+    TensorId getTensor(TensorId tensorId) const;
+
+    // Returns the reference tensor id
+    // (tensor that determines the replica sharded tensor layout)
+    TensorId getReference(TensorId tensorId) const;
+
+  private:
+    // The tensor shard -> tensor map
+    std::map<TensorId, std::tuple<TensorId, TensorId, TensorId>> shardToTensors;
+    // The gathered tensor -> tensor map
+    std::map<TensorId, std::tuple<TensorId, TensorId, TensorId>>
+        gatheredToTensors;
+  };
+
   // Add streaming memory operations pertaining to one tensor.
-  void applyTensor(Tensor *tensor, SetupOps &opsToSetup);
+  void applyTensor(Tensor *tensor, ReplicationShardedTensors &rtsTensors);
+
+  // Reconfigure optimizer for replicated tensor sharding
+  void applyReplicatedOptimizerSharding(ReplicationShardedTensors &rtsTensors);
 
   // Helper functions to populate tensor config (the functions
   // below and TensorConfig could possibly be put in their own class.)
-  void getTensorSchedule(Tensor *tensor, TensorConfig &tensorConfig) const;
-  void getTensorConfig(Tensor *tensor, TensorConfig &tensorConfig) const;
-  void getOrderedConsumerOps(Tensor *tensor, Ops &consumerOps) const;
+  void getTensorOpSchedule(Tensor *tensor, TensorConfig &tensorConfig) const;
+  void getTensorConfig(Tensor *tensor);
+  void getRootVarTensor(Tensor *tensor, Tensor *&rootTensor) const;
+  void getConsumerOps(Tensor *tensor, ConsumerOpConfigs &consumerOps) const;
+  void filterAndSortConsumerOps(ConsumerOpConfigs &consumerOps) const;
   void getTensorLocation(Tensor *tensor, TensorLocation &location) const;
   void getTensorProducerStreamingConfig(Tensor *tensor,
                                         const TensorLocation &location,
@@ -147,16 +236,14 @@ private:
                                         TensorStreamingMap &streamingMap) const;
   void getTensorOptionalVGraphId(Tensor *tensor,
                                  const Op *producerOp,
-                                 const Ops &consumerOps,
+                                 const ConsumerOpConfigs &consumerOps,
                                  OptionalVGraphId &streamingVGID) const;
-  void getTensorStreamingConfig(Tensor *tensor,
-                                const Op *producerOp,
-                                const Ops &consumerOps,
-                                const TensorLocation &location,
-                                TensorStreamingMap &streamingMap) const;
+
+  void getTensorStreamingConfig(Tensor *tensor);
+
   void getTensorSettings(Tensor *tensor,
                          const Op *producerOp,
-                         const Ops &consumerOps,
+                         const ConsumerOpConfigs &consumerOps,
                          Op::Settings &settings) const;
   void getModifiersInContext(Tensor *t,
                              const TensorStreamingContext context,
@@ -188,6 +275,14 @@ private:
                               const TensorStreamingContext context,
                               const TensorId &loadedTensorId,
                               TensorId &gatheredTensorId);
+
+  // Helper function to insert a ReplicatedReduceScatter.
+  ReplicatedReduceScatterOp *
+  insertReplicatedReduceScatterOp(const TensorConfig &tensorConfig,
+                                  const TensorStreamingContext context,
+                                  const TensorId &inTensorId,
+                                  const TensorId &outTensorId,
+                                  const TensorId &weightTensorId);
 
   // Execution mode helper functions.
   // Phased execution: Ops are annotated with the ExecutionPhase attribute that
@@ -222,18 +317,27 @@ private:
   // The graph the transform operates on.
   Graph &graph;
 
-  // The Op schedule before this transform inserts new ops
-  ScheduleMap scheduleMap;
+  // The Op schedule before this transform inserts new ops and tensors
+  OpScheduleMap opScheduleMap;
+
+  // The tensor schedule (determines processing order)
+  // before this transform inserts new ops and tensors
+  TensorSchedule tensorSchedule;
 
   // Number of graph replications.
   const int64_t replicationFactor;
+
   // Number of sets of IPUs.
   const int num_stages;
+
   // Number of execution phases.
   const int num_phases;
 
   // A list of remote buffer pointer tensor ids.
   TensorIds remoteArgIds;
+
+  // A map of tensor configurations
+  TensorConfigMap tensorConfigs;
 
   // A map of loaded tensor ID counters
   LoadedTensorMap loadedTensorCounter;

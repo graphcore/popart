@@ -33,18 +33,11 @@ void ReplicatedReduceScatterOpx::grow(poplar::program::Sequence &prog) const {
 
     if (!hasInViewChangers(ReplicatedReduceScatterOp::getInIndex())) {
       // Tensor not rearranged for reduceScatter yet, do it now
-
-      auto cbr = getCollectiveBalancedReorder();
-      if (cbr) {
-        poplar::Tensor refClone = cbr->getReferenceTensorClone(
-            inId(ReplicatedReduceScatterOp::getInIndex()) + "_RefClone");
-        prog.add(poplar::program::Copy(toReduceScatter, refClone));
-        toReduceScatter = cbr->rearrangeForCollective(refClone.flatten());
-      } else {
-        throw error("ReplicatedReduceScatterOpx::grow, "
-                    "CollectiveBalancedReorder not found for Op {}",
-                    op_p->debugName());
-      }
+      auto cbr = createCollectiveBalancedReorder(toReduceScatter);
+      poplar::Tensor refClone = cbr->getReferenceTensorClone(
+          inId(ReplicatedReduceScatterOp::getInIndex()) + "_RefClone");
+      prog.add(poplar::program::Copy(toReduceScatter, refClone));
+      toReduceScatter = cbr->rearrangeForCollective(refClone.flatten());
     }
   }
 

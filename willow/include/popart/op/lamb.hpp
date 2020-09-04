@@ -21,6 +21,14 @@ public:
   static OutIndex getOutIndex() { return 0; }
 
   virtual bool isOptimizerOp() const { return true; }
+
+  ReplicatedTensorShardingIndices
+  getReplicatedTensorShardingIndices() const final;
+
+  // Lamb + replicated tensor sharding:
+  // Distributed L2 norm of the weight and updater tensor
+  void configureForReplicatedTensorSharding(
+      ReplicatedTensorShardingIndices indices) final;
 };
 
 } // namespace popart

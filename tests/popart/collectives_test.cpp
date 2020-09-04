@@ -216,11 +216,12 @@ BOOST_AUTO_TEST_CASE(ReplicatedAllReduceIOTileTest) {
   TensorId A2_id = aiOnnx.add({A_id, A_id});
 
   TensorInfo B_info{"FLOAT", std::vector<int64_t>{N}};
-  TensorId B_id = bder->customOp(Onnx::CustomOperators::ReplicatedAllReduce,
-                                 1,
-                                 {A2_id},
-                                 1,
-                                 {{"__io_tiles", 1}})[0];
+  TensorId B_id =
+      bder->customOp(Onnx::CustomOperators::ReplicatedAllReduce,
+                     1,
+                     {A2_id},
+                     1,
+                     {{sTileSetAttribute, static_cast<int>(TileSet::IO)}})[0];
 
   bder->addOutputTensor(B_id);
 

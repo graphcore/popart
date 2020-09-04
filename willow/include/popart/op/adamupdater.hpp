@@ -50,6 +50,9 @@ public:
   virtual bool isOptimizerOp() const { return true; }
 
   view::Regions modifies(InIndex) const final;
+
+  ReplicatedTensorShardingIndices
+  getReplicatedTensorShardingIndices() const final;
 };
 
 } // namespace popart

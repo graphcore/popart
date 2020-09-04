@@ -455,6 +455,15 @@ public:
   // Configure attributes/settings on sharded op
   virtual void configureShardedOp(Op *const shardedOp, int shardIndex) const;
 
+  // Return which inputs/outputs are replicated tensor sharding pairs
+  virtual ReplicatedTensorShardingIndices
+  getReplicatedTensorShardingIndices() const;
+
+  // Configure the operation for replicated tensor sharding at the specific
+  // indices
+  virtual void
+  configureForReplicatedTensorSharding(ReplicatedTensorShardingIndices indices);
+
 protected:
   // Attempt to get the data of an input tensor. This method will throw an
   // exception if it could not access the data.

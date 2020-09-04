@@ -34,6 +34,9 @@ public:
 
   virtual bool isOptimizerOp() const { return true; }
 
+  ReplicatedTensorShardingIndices
+  getReplicatedTensorShardingIndices() const override;
+
 private:
   TensorId varId;
 };
@@ -48,6 +51,9 @@ public:
   // tensor used to update the variable tensor is received at this index
   static InIndex getUpdaterInIndex() { return 1; }
   void setup() final;
+
+  ReplicatedTensorShardingIndices
+  getReplicatedTensorShardingIndices() const override;
 };
 
 class VarUpdateWithoutUpdaterOp : public VarUpdateOp {

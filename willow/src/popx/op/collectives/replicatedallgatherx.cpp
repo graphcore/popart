@@ -35,6 +35,10 @@ void ReplicatedAllGatherOpx::grow(poplar::program::Sequence &prog) const {
     auto cbr = getCollectiveBalancedReorder();
     if (cbr) {
       gathered = cbr->undoRearrangeForCollective(gathered);
+    } else {
+      throw error("ReplicatedAllGatherOpx::grow, "
+                  "CollectiveBalancedReorder not found for Op {}",
+                  op_p->debugName());
     }
   }
 

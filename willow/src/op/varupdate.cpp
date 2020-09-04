@@ -58,6 +58,17 @@ view::Regions VarUpdateOp::modifies(InIndex index) const {
   return aliases(index, 0);
 }
 
-namespace {} // namespace
+ReplicatedTensorShardingIndices
+VarUpdateOp::getReplicatedTensorShardingIndices() const {
+  return {{{VarUpdateOp::getVarToUpdateInIndex()},
+           {VarUpdateOp::getUpdatedVarOutIndex()}}};
+}
+
+ReplicatedTensorShardingIndices
+VarUpdateWithUpdaterOp::getReplicatedTensorShardingIndices() const {
+  return {{{VarUpdateWithUpdaterOp::getVarToUpdateInIndex(),
+            VarUpdateWithUpdaterOp::getUpdaterInIndex()},
+           {VarUpdateWithUpdaterOp::getUpdatedVarOutIndex()}}};
+}
 
 } // namespace popart

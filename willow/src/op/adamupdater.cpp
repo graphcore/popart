@@ -62,4 +62,13 @@ view::Regions AdamUpdaterOp::modifies(InIndex index) const {
     return {view::Region::getEmpty(inRank(index))};
   }
 }
+
+ReplicatedTensorShardingIndices
+AdamUpdaterOp::getReplicatedTensorShardingIndices() const {
+  return {{{AdamUpdaterOp::getVarInIndex(),
+            AdamUpdaterOp::getAccl1InIndex(),
+            AdamUpdaterOp::getAccl2InIndex()},
+           {AdamUpdaterOp::getUpdaterOutIndex()}}};
+}
+
 } // namespace popart
