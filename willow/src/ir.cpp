@@ -1054,14 +1054,14 @@ void Ir::prepareImpl(const IrBundle &gb) {
 
   updateVertices();
 
-  // Batch serialisation, step 2
+  applyTransform(IoComputeTileCopy::id(), getMainGraph());
+  updateVertices();
+
+  // Batch serialisation, step 2 (needs IoTileCopy ops to have been inserted)
   if (userOptions.batchSerializationSettings.factor > 1) {
     applyTransform(BatchSerialize::id(2), getMainGraph());
     updateVertices();
   }
-
-  applyTransform(IoComputeTileCopy::id(), getMainGraph());
-  updateVertices();
 
   for (auto &id_graph : graphs) {
     auto &graph = getGraph(id_graph.first);

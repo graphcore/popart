@@ -442,6 +442,10 @@ public:
   bool consumesGraphOutput() const;
   bool producesGraphOutput() const;
 
+  // Helper functions for probing graph structure.
+  bool isParentOf(const Op *) const;
+  bool isChildOf(const Op *) const;
+
   // Test if the operation can be sharded into multiple operations
   // TODO: T16743: extend support for other dimensions than the batch
   virtual bool canShard() const;

@@ -69,12 +69,70 @@ public:
   }
 
 private:
+  using Position            = int64_t;
+  using Section             = int64_t;
+  using PositionsToOp       = std::map<std::pair<Section, BatchSerializedPhase>,
+                                 std::map<Position, Op *>>;
+  using PositionsToOpVector = std::vector<std::pair<Position, Op *>>;
+
   OpId reshapeForSlice(Graph &graph,
                        Op::Settings settings,
                        TensorId inId,
                        Shape newShape,
                        TensorId newId,
                        OptionalBatchSerializedPhase bsp) const;
+
+  // Return true if we allow tweaking schedules by switching ops. We should only
+  // allow switching when semantics are preserved.
+  bool areSwappable(Graph &graph, Op *first, Op *second) const;
+
+  // For a given vector of pairs of positions and ops, move ops (as selected by
+  // isPushOp) as far foward the vector as is legal as defined by the pairwise
+  // areOpsSwappable function.
+  void pushEarlier(PositionsToOpVector &vec,
+                   std::function<bool(Op *)> isPushOp,
+                   std::function<bool(Op *)> considerSwappingWith,
+                   std::function<bool(Op *, Op *)> areSwappable) const;
+
+  // For a given vector of pairs of positions and ops, move ops (as selected by
+  // isPushOp) as far back the vector as is legal as defined by the pairwise
+  // areOpsSwappable function.
+  void pushLater(PositionsToOpVector &vec,
+                 std::function<bool(Op *)> isPushOp,
+                 std::function<bool(Op *)> considerSwappingWith,
+                 std::function<bool(Op *, Op *)> areSwappable) const;
+
+  // Add intra-batch parallelization constraints as topological constraints to
+  // attempt to encourage parallelization between batches.
+  void addParallelizationConstraints(Graph &graph,
+                                     const PositionsToOp &positionToOp) const;
+
+  // Get the last RemoteLoadOp that copies from IO to compute tiles for a given
+  // section and phase, if one exists, and nullptr otherwise.
+  Op *getLastRemoteLoad(const PositionsToOp &positionsToOp,
+                        const Section section,
+                        const BatchSerializedPhase phase) const;
+
+  // Get the last IoTileCopyOp that copies from IO to compute tiles for a given
+  // section and phase, if one exists, and nullptr otherwise.
+  Op *getLastIoTileCopyToCompute(const PositionsToOp &positionsToOp,
+                                 const Section section,
+                                 const BatchSerializedPhase phase) const;
+  // Get the first IoTileCopyOp that copies from compute to IO tiles for a given
+  // section and phase, if one exists, and nullptr otherwise.
+  Op *getFirstIoTileCopyToIo(const PositionsToOp &positionsToOp,
+                             const Section section,
+                             const BatchSerializedPhase phase) const;
+
+  // Get the first compute operation for a given section and phase, if one
+  // exists, and nullptr otherwise.
+  Op *getFirstComputeOp(const PositionsToOp &positionsToOp,
+                        const Section section,
+                        const BatchSerializedPhase phase) const;
+
+  // Try and reorder map to be more ameniable to overlapping compute & IO.
+  void tryToMakeAmenableToParallelization(Graph &graph,
+                                          PositionsToOp &positionsToOp) const;
 
   int pass;
 };

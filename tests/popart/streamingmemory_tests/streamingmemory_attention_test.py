@@ -158,6 +158,9 @@ def test_attention_streamingmemory(tmpdir):
         opts.aliasZeroCopy = options["aliasZeroCopy"]
 
         opts.batchSerializationSettings.factor = options["batchSerialize"]
+        if "batchSchedule" in options:
+            opts.batchSerializationSettings.batchSchedule = options[
+                "batchSchedule"]
         if "batchConcat" in options:
             # Do not concatenate the batch across phases and virtual graphs
             # (causes more, smalle transfers but allows for individual sub-batch
@@ -373,6 +376,30 @@ def test_attention_streamingmemory(tmpdir):
         "tensorLocationSettings": ioOffChip,
         "ioTiles": 192
     })
+
+    # Test a variety of batch serialisation schedules.
+    for batchSchedule in [
+            popart.BatchSerializationBatchSchedule.Scheduler,
+            popart.BatchSerializationBatchSchedule.Isomorphic,
+            popart.BatchSerializationBatchSchedule.OverlapOnIo,
+            popart.BatchSerializationBatchSchedule.OverlapOnCompute,
+    ]:
+
+        test_variants.append({
+            "stages": 1,
+            "stride": 4,
+            "numLayers": 3,
+            "phasedExecution": True,
+            "outlining": False,
+            "explicitRecomputation": True,
+            "aliasZeroCopy": True,
+            "batchSerialize": 4,
+            "batchSchedule": batchSchedule,
+            "batchConcat": False,
+            "replication": 2,
+            "tensorLocationSettings": ioOffChip,
+            "ioTiles": 192
+        })
 
     # Test replicated tensor sharding + on chip (no outlining).
     test_variants.append({

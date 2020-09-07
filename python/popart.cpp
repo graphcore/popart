@@ -790,13 +790,25 @@ PYBIND11_MODULE(popart_core, m) {
         &TensorLocationSettings::minElementsForReplicatedTensorSharding);
   }
   {
+    // This setting is experimental and may change.
+    py::enum_<BatchSerializationBatchSchedule> en(
+        m, "BatchSerializationBatchSchedule");
+    en.value("Scheduler", BatchSerializationBatchSchedule::Scheduler);
+    en.value("Isomorphic", BatchSerializationBatchSchedule::Isomorphic);
+    en.value("OverlapOnIo", BatchSerializationBatchSchedule::OverlapOnIo);
+    en.value("OverlapOnCompute",
+             BatchSerializationBatchSchedule::OverlapOnCompute);
+  }
+  {
     py::class_<BatchSerializationSettings> cls(m, "BatchSerializationSettings");
     cls.def(py::init<>());
-    cls.def(py::init<int, bool, bool, bool>(),
+    cls.def(py::init<int, bool, bool, bool, BatchSerializationBatchSchedule>(),
             py::arg("factor"),
             py::arg("concatOnVirtualGraphChange"),
             py::arg("concatOnExecutionPhaseChange"),
-            py::arg("concatOnPipelineStageChange"));
+            py::arg("concatOnPipelineStageChange"),
+            py::arg("batchSchedule") =
+                BatchSerializationBatchSchedule::Isomorphic);
     cls.def_readwrite("factor", &BatchSerializationSettings::factor);
     cls.def_readwrite("concatOnVirtualGraphChange",
                       &BatchSerializationSettings::concatOnVirtualGraphChange);
@@ -805,6 +817,9 @@ PYBIND11_MODULE(popart_core, m) {
         &BatchSerializationSettings::concatOnExecutionPhaseChange);
     cls.def_readwrite("concatOnPipelineStageChange",
                       &BatchSerializationSettings::concatOnPipelineStageChange);
+    // This setting is experimental and may change.
+    cls.def_readwrite("batchSchedule",
+                      &BatchSerializationSettings::batchSchedule);
   }
   {
     py::class_<ExecutionPhaseSettings> cls(m, "ExecutionPhaseSettings");

@@ -52,10 +52,12 @@ BatchSerializationSettings::BatchSerializationSettings(
     int factor_,
     bool concatOnVirtualGraphChange_,
     bool concatOnExecutionPhaseChange_,
-    bool concatOnPipelineStageChange_)
+    bool concatOnPipelineStageChange_,
+    BatchSerializationBatchSchedule batchSchedule_)
     : factor{factor_}, concatOnVirtualGraphChange{concatOnVirtualGraphChange_},
       concatOnExecutionPhaseChange{concatOnExecutionPhaseChange_},
-      concatOnPipelineStageChange{concatOnPipelineStageChange_} {}
+      concatOnPipelineStageChange{concatOnPipelineStageChange_},
+      batchSchedule{batchSchedule_} {}
 
 std::string getDotCheckString(DotCheck d) {
   const static std::array<std::string, NDotChecks> V = getDotCheckIds();
@@ -127,8 +129,8 @@ std::ostream &operator<<(std::ostream &os, RecomputationType r) {
 } // namespace popart
 
 namespace std {
-std::size_t hash<popart::SessionOptions>::operator()(
-    const popart::SessionOptions &so) const {
+std::size_t hash<popart::SessionOptions>::
+operator()(const popart::SessionOptions &so) const {
   // Hash based on all the SessionOptions attributes that
   // can affect compiled program
 

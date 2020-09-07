@@ -1217,6 +1217,30 @@ bool Op::producesGraphOutput() const {
                      });
 }
 
+bool Op::isParentOf(const Op *op) const {
+  // We're a parent of op if and only if op is our child.
+  return op->isChildOf(this);
+}
+
+bool Op::isChildOf(const Op *op) const {
+  // We're a direct child of op if we consume any of the tensors that op
+  // produces.
+  const auto opOutTensors = op->output->tensors();
+  const auto inTensors    = input->tensors();
+  std::vector<TensorId> inTensorIds;
+  inTensorIds.reserve(inTensors.size());
+  for (const auto inTensor : inTensors) {
+    inTensorIds.push_back(inTensor->id);
+  }
+  return std::any_of(opOutTensors.cbegin(),
+                     opOutTensors.cend(),
+                     [&inTensorIds](const Tensor *outTensor) {
+                       return std::find(inTensorIds.cbegin(),
+                                        inTensorIds.cend(),
+                                        outTensor->id) != inTensorIds.cend();
+                     });
+}
+
 std::string Op::getInputsUnmodifiableString() const {
   std::ostringstream oss;
   oss << "([produces anchor ? " << producesAnchor() << "], consumes anchor ? "

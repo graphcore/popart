@@ -7,7 +7,9 @@
 #include <popart/op/dynamic/dynamicslice.hpp>
 #include <popart/op/dynamic/dynamicupdate.hpp>
 #include <popart/op/init.hpp>
+#include <popart/op/iotilecopy.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/op/remote.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/tensor.hpp>
@@ -671,336 +673,734 @@ bool BatchSerialize::apply(Graph &graph) const {
   // Annotate priorities to isolate batch ops and crystallize the schedule
   // between batch serial phases
   if (pass == 2) {
-    using Position        = int64_t;
-    using Section         = int64_t;
-    using SubgraphEquivId = std::string;
 
-    // Crystallize schedule within batch serialized phase by inserting topo cons
-    std::map<Op *, int64_t> opScheduleIndex;
-    std::map<Op *, SubgraphEquivId> opSubgraphEquivId;
+    // If batchSchedule == Scheduler we defer any further scheduling to the
+    // scheduler.
+    if (settings.batchSchedule != BatchSerializationBatchSchedule::Scheduler) {
 
-    for (size_t i = 0; i < schedule.size(); ++i) {
-      opScheduleIndex[schedule.at(i)]   = i;
-      opSubgraphEquivId[schedule.at(i)] = schedule.at(i)->getSubgraphEquivId();
-    }
+      using SubgraphEquivId = std::string;
 
-    std::set<Op *> equivProcessedOps;
-    std::map<Op *, Section> opSectionLookup;
-    std::map<std::pair<Section, BatchSerializedPhase>, std::map<Op *, Position>>
-        opToPosition;
-    std::map<std::pair<Section, BatchSerializedPhase>, std::map<Position, Op *>>
-        positionToOp;
-    std::map<Section, std::vector<Op *>> opsBehindSection;
+      // Crystallize schedule within batch serialized phase by inserting topo
+      // cons
+      std::map<Op *, int64_t> opScheduleIndex;
+      std::map<Op *, SubgraphEquivId> opSubgraphEquivId;
 
-    std::vector<std::tuple<std::vector<Tensor *>, TraceDirection>>
-        parallelTraceFront;
+      for (size_t i = 0; i < schedule.size(); ++i) {
+        opScheduleIndex[schedule.at(i)] = i;
+        opSubgraphEquivId[schedule.at(i)] =
+            schedule.at(i)->getSubgraphEquivId();
+      }
 
-    std::map<std::pair<Op *, Op *>, int64_t> cachedIsoScores;
+      std::set<Op *> equivProcessedOps;
+      std::map<Op *, Section> opSectionLookup;
+      std::map<std::pair<Section, BatchSerializedPhase>,
+               std::map<Op *, Position>>
+          opToPosition;
+      std::map<std::pair<Section, BatchSerializedPhase>,
+               std::map<Position, Op *>>
+          positionToOp;
+      std::map<Section, std::vector<Op *>> opsBehindSection;
 
-    std::function<int64_t(
-        std::pair<Op *, Op *>, std::set<std::pair<Op *, Op *>> &, int, bool)>
-        localIsoScore = [&cachedIsoScores, &localIsoScore, &opSubgraphEquivId](
-                            std::pair<Op *, Op *> ops,
-                            std::set<std::pair<Op *, Op *>> &visitedOps,
-                            int maxDepth,
-                            bool cached) {
-          if (cached) {
-            auto it = cachedIsoScores.find(ops);
-            if (it != cachedIsoScores.end()) {
-              return it->second;
+      std::vector<std::tuple<std::vector<Tensor *>, TraceDirection>>
+          parallelTraceFront;
+
+      std::map<std::pair<Op *, Op *>, int64_t> cachedIsoScores;
+
+      std::function<int64_t(
+          std::pair<Op *, Op *>, std::set<std::pair<Op *, Op *>> &, int, bool)>
+          localIsoScore = [&cachedIsoScores,
+                           &localIsoScore,
+                           &opSubgraphEquivId](
+                              std::pair<Op *, Op *> ops,
+                              std::set<std::pair<Op *, Op *>> &visitedOps,
+                              int maxDepth,
+                              bool cached) {
+            if (cached) {
+              auto it = cachedIsoScores.find(ops);
+              if (it != cachedIsoScores.end()) {
+                return it->second;
+              }
             }
-          }
 
-          int64_t score = 0;
-          if (visitedOps.find(ops) != visitedOps.end() || maxDepth == 0 ||
-              ops.first->scheduledPreLoss != ops.second->scheduledPreLoss ||
-              (ops.first->getOptionalExecutionPhase() !=
-               ops.second->getOptionalExecutionPhase()) ||
-              (ops.first->getOptionalPipelineStage() !=
-               ops.second->getOptionalPipelineStage())) {
-            return score;
-          }
-          visitedOps.insert(ops);
+            int64_t score = 0;
+            if (visitedOps.find(ops) != visitedOps.end() || maxDepth == 0 ||
+                ops.first->scheduledPreLoss != ops.second->scheduledPreLoss ||
+                (ops.first->getOptionalExecutionPhase() !=
+                 ops.second->getOptionalExecutionPhase()) ||
+                (ops.first->getOptionalPipelineStage() !=
+                 ops.second->getOptionalPipelineStage())) {
+              return score;
+            }
+            visitedOps.insert(ops);
 
-          // Check if the ops have the same subgraph equivalent ID
-          if (opSubgraphEquivId[ops.first] == opSubgraphEquivId[ops.second]) {
-            // Possibly isomorphic
-            ++score;
+            // Check if the ops have the same subgraph equivalent ID
+            if (opSubgraphEquivId[ops.first] == opSubgraphEquivId[ops.second]) {
+              // Possibly isomorphic
+              ++score;
 
-            for (auto &input : ops.first->input->tensorMap()) {
-              Tensor *tfirst  = ops.first->input->tensor(input.first);
-              Tensor *tsecond = ops.second->input->tensor(input.first);
-              if (tfirst->hasProducer() && tsecond->hasProducer()) {
-                Op *pfirst  = tfirst->getProducer();
-                Op *psecond = tsecond->getProducer();
-                if (opSubgraphEquivId[pfirst] == opSubgraphEquivId[psecond]) {
-                  score += localIsoScore(
-                      {pfirst, psecond}, visitedOps, maxDepth - 1, false);
+              for (auto &input : ops.first->input->tensorMap()) {
+                Tensor *tfirst  = ops.first->input->tensor(input.first);
+                Tensor *tsecond = ops.second->input->tensor(input.first);
+                if (tfirst->hasProducer() && tsecond->hasProducer()) {
+                  Op *pfirst  = tfirst->getProducer();
+                  Op *psecond = tsecond->getProducer();
+                  if (opSubgraphEquivId[pfirst] == opSubgraphEquivId[psecond]) {
+                    score += localIsoScore(
+                        {pfirst, psecond}, visitedOps, maxDepth - 1, false);
+                  }
                 }
               }
-            }
 
-            for (auto &output : ops.first->output->tensorMap()) {
-              if (!ops.first->output->hasIndex(output.first) ||
-                  !ops.second->output->hasIndex(output.first)) {
-                continue;
-              }
-              Tensor *tfirst  = ops.first->output->tensor(output.first);
-              Tensor *tsecond = ops.second->output->tensor(output.first);
+              for (auto &output : ops.first->output->tensorMap()) {
+                if (!ops.first->output->hasIndex(output.first) ||
+                    !ops.second->output->hasIndex(output.first)) {
+                  continue;
+                }
+                Tensor *tfirst  = ops.first->output->tensor(output.first);
+                Tensor *tsecond = ops.second->output->tensor(output.first);
 
-              auto csfirst  = tfirst->consumers.getOps();
-              auto cssecond = tsecond->consumers.getOps();
+                auto csfirst  = tfirst->consumers.getOps();
+                auto cssecond = tsecond->consumers.getOps();
 
-              for (Op *cfirst : csfirst) {
-                for (Op *csecond : cssecond) {
-                  if (opSubgraphEquivId[cfirst] == opSubgraphEquivId[csecond]) {
-                    score += localIsoScore(
-                        {cfirst, csecond}, visitedOps, maxDepth - 1, false);
+                for (Op *cfirst : csfirst) {
+                  for (Op *csecond : cssecond) {
+                    if (opSubgraphEquivId[cfirst] ==
+                        opSubgraphEquivId[csecond]) {
+                      score += localIsoScore(
+                          {cfirst, csecond}, visitedOps, maxDepth - 1, false);
+                    }
                   }
                 }
               }
             }
-          }
 
-          if (cached) {
-            for (auto &vops : visitedOps) {
-              cachedIsoScores[vops] = score;
+            if (cached) {
+              for (auto &vops : visitedOps) {
+                cachedIsoScores[vops] = score;
+              }
             }
+            return score;
+          };
+
+      // Find equivalence classes, derive positions
+      Section section   = -1;
+      Position position = 0;
+      bool nextSection  = true;
+      for (Op *op : schedule) {
+        logging::transform::trace(
+            "[BatchSerialize] BSP: {} S: {} P: {} prio: {} OP: {}",
+            op->hasBatchSerializedPhase()
+                ? std::to_string(op->getBatchSerializedPhase())
+                : "*",
+            section,
+            position,
+            op->settings.schedulePriority,
+            op->debugName());
+        if (op->hasBatchSerializedPhase()) {
+          auto bsp = op->getBatchSerializedPhase();
+          if (bsp == 0) {
+            if (nextSection) {
+              ++section;
+              nextSection = false;
+            }
+            opToPosition[{section, bsp}][op]       = position;
+            positionToOp[{section, bsp}][position] = op;
+            opSectionLookup[op]                    = section;
+
+            if (op->isConvertibleTo<DynamicSliceOp>()) {
+              std::vector<Tensor *> traceFront(
+                  batchSerFactor,
+                  op->input->tensor(DynamicSliceOp::getInIndex()));
+              parallelTraceFront.push_back(
+                  {traceFront, TraceDirection::Forward});
+            }
+
+            // First batch defines schedule order
+            position++;
+          } else if (bsp > 0) {
+            nextSection = true;
           }
-          return score;
-        };
-
-    // Find equivalence classes, derive positions
-    Section section   = -1;
-    Position position = 0;
-    bool nextSection  = true;
-    for (Op *op : schedule) {
-      logging::transform::trace(
-          "[BatchSerialize] BSP: {} S: {} P: {} prio: {} OP: {}",
-          op->hasBatchSerializedPhase()
-              ? std::to_string(op->getBatchSerializedPhase())
-              : "*",
-          section,
-          position,
-          op->settings.schedulePriority,
-          op->debugName());
-      if (op->hasBatchSerializedPhase()) {
-        auto bsp = op->getBatchSerializedPhase();
-        if (bsp == 0) {
-          if (nextSection) {
-            ++section;
-            nextSection = false;
-          }
-          opToPosition[{section, bsp}][op]       = position;
-          positionToOp[{section, bsp}][position] = op;
-          opSectionLookup[op]                    = section;
-
-          if (dynamic_cast<DynamicSliceOp *>(op)) {
-            std::vector<Tensor *> traceFront(
-                batchSerFactor,
-                op->input->tensor(DynamicSliceOp::getInIndex()));
-            parallelTraceFront.push_back({traceFront, TraceDirection::Forward});
-          }
-
-          // First batch defines schedule order
-          position++;
-        } else if (bsp > 0) {
-          nextSection = true;
-        }
-      } else {
-        // Ops with no annotated bsp that occur after a section
-        opsBehindSection[section].push_back(op);
-      }
-    }
-
-    std::set<std::pair<Tensor *, TraceDirection>> visited;
-
-    while (!parallelTraceFront.empty()) {
-      std::map<std::tuple<OpId, TraceDirection, int>, std::vector<Tensor *>>
-          nextFronts;
-      auto traceFront = parallelTraceFront.back();
-      auto tensors    = std::get<0>(traceFront);
-      auto direction  = std::get<1>(traceFront);
-      parallelTraceFront.pop_back();
-
-      std::vector<TensorId> ids;
-      for (Tensor *t : tensors) {
-        ids.push_back(t->id);
-      }
-
-      logging::transform::trace(
-          "[BatchSerialize] Current ({}) front: {} (remaining: {})",
-          direction == TraceDirection::Forward ? "forward" : "backward",
-          ids,
-          parallelTraceFront.size());
-
-      std::vector<Tensor *> frontTensors;
-      std::vector<std::vector<Op *>> frontOps;
-      for (Tensor *t : tensors) {
-        visited.insert({t, direction});
-        std::vector<Op *> fops;
-        if (direction == TraceDirection::Forward) {
-          fops = t->consumers.getOps();
-          frontOps.push_back(fops);
         } else {
-          if (t->hasProducer()) {
-            fops.push_back(t->getProducer());
+          // Ops with no annotated bsp that occur after a section
+          opsBehindSection[section].push_back(op);
+        }
+      }
+
+      std::set<std::pair<Tensor *, TraceDirection>> visited;
+
+      while (!parallelTraceFront.empty()) {
+        std::map<std::tuple<OpId, TraceDirection, int>, std::vector<Tensor *>>
+            nextFronts;
+        auto traceFront = parallelTraceFront.back();
+        auto tensors    = std::get<0>(traceFront);
+        auto direction  = std::get<1>(traceFront);
+        parallelTraceFront.pop_back();
+
+        std::vector<TensorId> ids;
+        for (Tensor *t : tensors) {
+          ids.push_back(t->id);
+        }
+
+        logging::transform::trace(
+            "[BatchSerialize] Current ({}) front: {} (remaining: {})",
+            direction == TraceDirection::Forward ? "forward" : "backward",
+            ids,
+            parallelTraceFront.size());
+
+        std::vector<Tensor *> frontTensors;
+        std::vector<std::vector<Op *>> frontOps;
+        for (Tensor *t : tensors) {
+          visited.insert({t, direction});
+          std::vector<Op *> fops;
+          if (direction == TraceDirection::Forward) {
+            fops = t->consumers.getOps();
             frontOps.push_back(fops);
           } else {
-            // Change direction on tensors without producers
-            frontTensors.push_back(t);
+            if (t->hasProducer()) {
+              fops.push_back(t->getProducer());
+              frontOps.push_back(fops);
+            } else {
+              // Change direction on tensors without producers
+              frontTensors.push_back(t);
+            }
           }
         }
-      }
-      if (frontTensors.size() != 0) {
-        nextFronts[{-1, TraceDirection::Forward, -1}] = frontTensors;
-      }
+        if (frontTensors.size() != 0) {
+          nextFronts[{-1, TraceDirection::Forward, -1}] = frontTensors;
+        }
 
-      // Skip tracing of certain tensors that can lead to false
-      // positive isomporphism results
-      if (std::any_of(ids.begin(), ids.end(), [](TensorId id) {
-            return id.find(reservedIndexPrefix()) != std::string::npos;
-          })) {
-        continue;
-      }
+        // Skip tracing of certain tensors that can lead to false
+        // positive isomporphism results
+        if (std::any_of(ids.begin(), ids.end(), [](TensorId id) {
+              return id.find(reservedIndexPrefix()) != std::string::npos;
+            })) {
+          continue;
+        }
 
-      if (!frontOps.empty() && !std::any_of(frontOps.begin(),
-                                            frontOps.end(),
-                                            [](const std::vector<Op *> &ops) {
-                                              return ops.empty();
-                                            })) {
-        for (Op *op0 : frontOps.front()) {
-          if (!op0->hasBatchSerializedPhase() ||
-              op0->getBatchSerializedPhase() != 0 ||
-              equivProcessedOps.find(op0) != equivProcessedOps.end()) {
-            continue;
-          }
-          equivProcessedOps.insert(op0);
-
-          section = opSectionLookup.at(op0);
-          std::vector<Op *> equivalentOps;
-          std::set<BatchSerializedPhase> foundBSPs;
-          foundBSPs.insert(op0->getBatchSerializedPhase());
-
-          for (auto tensorAndIndex : op0->output->indicesMap()) {
-            for (InIndex index : tensorAndIndex.second) {
-              nextFronts[{op0->id, TraceDirection::Forward, index}].push_back(
-                  tensorAndIndex.first);
+        if (!frontOps.empty() && !std::any_of(frontOps.begin(),
+                                              frontOps.end(),
+                                              [](const std::vector<Op *> &ops) {
+                                                return ops.empty();
+                                              })) {
+          for (Op *op0 : frontOps.front()) {
+            if (!op0->hasBatchSerializedPhase() ||
+                op0->getBatchSerializedPhase() != 0 ||
+                equivProcessedOps.find(op0) != equivProcessedOps.end()) {
+              continue;
             }
-          }
-          for (auto tensorAndIndex : op0->input->indicesMap()) {
-            for (InIndex index : tensorAndIndex.second) {
-              nextFronts[{op0->id, TraceDirection::Backward, index}].push_back(
-                  tensorAndIndex.first);
+            equivProcessedOps.insert(op0);
+
+            section = opSectionLookup.at(op0);
+            std::vector<Op *> equivalentOps;
+            std::set<BatchSerializedPhase> foundBSPs;
+            foundBSPs.insert(op0->getBatchSerializedPhase());
+
+            for (auto tensorAndIndex : op0->output->indicesMap()) {
+              for (InIndex index : tensorAndIndex.second) {
+                nextFronts[{op0->id, TraceDirection::Forward, index}].push_back(
+                    tensorAndIndex.first);
+              }
             }
-          }
-          for (auto ops : frontOps) {
-            // Sort by local isomorphism score against op0
-            std::sort(
-                ops.begin(),
-                ops.end(),
-                [&localIsoScore, &op0](Op *lhs, Op *rhs) {
-                  std::set<std::pair<Op *, Op *>> visitedOpsLhs;
-                  std::set<std::pair<Op *, Op *>> visitedOpsRhs;
-                  return localIsoScore({op0, lhs}, visitedOpsLhs, 5, true) >
-                         localIsoScore({op0, rhs}, visitedOpsRhs, 5, true);
-                });
-            // Iterate through potentially isomorphic ops
-            for (Op *op1 : ops) {
-              if (op1->id != op0->id && op1->toLoss == op0->toLoss &&
-                  op1->fromLoss == op0->fromLoss &&
-                  opSubgraphEquivId[op1] == opSubgraphEquivId[op0] &&
-                  op1->hasBatchSerializedPhase() &&
-                  foundBSPs.find(op1->getBatchSerializedPhase()) ==
-                      foundBSPs.end() &&
-                  equivProcessedOps.find(op1) == equivProcessedOps.end()) {
-                BatchSerializedPhase bsp = op1->getBatchSerializedPhase();
-                foundBSPs.insert(bsp);
+            for (auto tensorAndIndex : op0->input->indicesMap()) {
+              for (InIndex index : tensorAndIndex.second) {
+                nextFronts[{op0->id, TraceDirection::Backward, index}]
+                    .push_back(tensorAndIndex.first);
+              }
+            }
+            for (auto ops : frontOps) {
+              // Sort by local isomorphism score against op0
+              std::sort(
+                  ops.begin(),
+                  ops.end(),
+                  [&localIsoScore, &op0](Op *lhs, Op *rhs) {
+                    std::set<std::pair<Op *, Op *>> visitedOpsLhs;
+                    std::set<std::pair<Op *, Op *>> visitedOpsRhs;
+                    return localIsoScore({op0, lhs}, visitedOpsLhs, 5, true) >
+                           localIsoScore({op0, rhs}, visitedOpsRhs, 5, true);
+                  });
+              // Iterate through potentially isomorphic ops
+              for (Op *op1 : ops) {
+                if (op1->id != op0->id && op1->toLoss == op0->toLoss &&
+                    op1->fromLoss == op0->fromLoss &&
+                    opSubgraphEquivId[op1] == opSubgraphEquivId[op0] &&
+                    op1->hasBatchSerializedPhase() &&
+                    foundBSPs.find(op1->getBatchSerializedPhase()) ==
+                        foundBSPs.end() &&
+                    equivProcessedOps.find(op1) == equivProcessedOps.end()) {
+                  BatchSerializedPhase bsp = op1->getBatchSerializedPhase();
+                  foundBSPs.insert(bsp);
 
-                for (auto tensorAndIndex : op1->output->indicesMap()) {
-                  for (InIndex index : tensorAndIndex.second) {
-                    nextFronts[{op0->id, TraceDirection::Forward, index}]
-                        .push_back(tensorAndIndex.first);
+                  for (auto tensorAndIndex : op1->output->indicesMap()) {
+                    for (InIndex index : tensorAndIndex.second) {
+                      nextFronts[{op0->id, TraceDirection::Forward, index}]
+                          .push_back(tensorAndIndex.first);
+                    }
                   }
-                }
-                for (auto tensorAndIndex : op1->input->indicesMap()) {
-                  for (InIndex index : tensorAndIndex.second) {
-                    nextFronts[{op0->id, TraceDirection::Backward, index}]
-                        .push_back(tensorAndIndex.first);
+                  for (auto tensorAndIndex : op1->input->indicesMap()) {
+                    for (InIndex index : tensorAndIndex.second) {
+                      nextFronts[{op0->id, TraceDirection::Backward, index}]
+                          .push_back(tensorAndIndex.first);
+                    }
                   }
-                }
 
-                auto pos = opToPosition[{section, 0}][op0];
-                opToPosition[{section, bsp}][op1] = pos;
-                positionToOp[{section, bsp}][pos] = op1;
-                opSectionLookup[op1]              = section;
-                equivProcessedOps.insert(op1);
+                  auto pos = opToPosition[{section, 0}][op0];
+                  opToPosition[{section, bsp}][op1] = pos;
+                  positionToOp[{section, bsp}][pos] = op1;
+                  opSectionLookup[op1]              = section;
+                  equivProcessedOps.insert(op1);
+                }
               }
             }
           }
         }
-      }
-      for (auto nextFront : nextFronts) {
-        bool alreadyVisited = std::any_of(
-            nextFront.second.begin(),
-            nextFront.second.end(),
-            [&visited, &nextFront](Tensor *t) {
-              return visited.find({t, std::get<1>(nextFront.first)}) !=
-                     visited.end();
-            });
-        if (alreadyVisited || nextFront.second.size() != batchSerFactor) {
-          std::vector<TensorId> idsLocal;
-          for (Tensor *tx : nextFront.second) {
-            idsLocal.push_back(tx->id);
+        for (auto nextFront : nextFronts) {
+          bool alreadyVisited = std::any_of(
+              nextFront.second.begin(),
+              nextFront.second.end(),
+              [&visited, &nextFront](Tensor *t) {
+                return visited.find({t, std::get<1>(nextFront.first)}) !=
+                       visited.end();
+              });
+          if (alreadyVisited || nextFront.second.size() != batchSerFactor) {
+            std::vector<TensorId> idsLocal;
+            for (Tensor *tx : nextFront.second) {
+              idsLocal.push_back(tx->id);
+            }
+            logging::transform::trace(
+                "[BatchSerialization] Front {}{} size {} is a deadend",
+                idsLocal,
+                alreadyVisited ? " (already visited)" : "",
+                idsLocal.size());
+          } else {
+            // All front tensors for the different BSPs have been found
+            parallelTraceFront.push_back(
+                {nextFront.second, std::get<1>(nextFront.first)});
           }
-          logging::transform::trace(
-              "[BatchSerialization] Front {}{} size {} is a deadend",
-              idsLocal,
-              alreadyVisited ? " (already visited)" : "",
-              idsLocal.size());
-        } else {
-          // All front tensors for the different BSPs have been found
-          parallelTraceFront.push_back(
-              {nextFront.second, std::get<1>(nextFront.first)});
         }
       }
-    }
 
-    for (Op *op : schedule) {
-      if (op->hasBatchSerializedPhase() && op->getBatchSerializedPhase() >= 0) {
-        if (opSectionLookup.find(op) == opSectionLookup.end()) {
-          logging::warn(
-              "[BatchSerialization] Could not find isomorphic position for {}",
-              op->debugName());
+      for (Op *op : schedule) {
+        if (op->hasBatchSerializedPhase() &&
+            op->getBatchSerializedPhase() >= 0) {
+          if (opSectionLookup.find(op) == opSectionLookup.end()) {
+            logging::warn("[BatchSerialization] Could not find isomorphic "
+                          "position for {}",
+                          op->debugName());
+          }
         }
       }
-    }
 
-    // Crystallize schedule within each batch serialized phase
-    for (auto &positions : positionToOp) {
-      Op *prev = nullptr;
-      for (auto &pos : positions.second) {
-        logging::transform::trace("[BatchSerialize] Fixed: {} {} {} {}",
-                                  positions.first.first,
-                                  positions.first.second,
-                                  pos.first,
-                                  pos.second->debugName());
-        Op *op = pos.second;
+      const bool isOverlapSchedule =
+          (settings.batchSchedule ==
+           BatchSerializationBatchSchedule::OverlapOnIo) ||
+          (settings.batchSchedule ==
+           BatchSerializationBatchSchedule::OverlapOnCompute);
+
+      if (isOverlapSchedule) {
+        tryToMakeAmenableToParallelization(graph, positionToOp);
+      }
+
+      // Crystallize schedule within each batch serialized phase
+      for (auto &positions : positionToOp) {
+        Op *prev = nullptr;
+        for (auto &pos : positions.second) {
+          logging::transform::trace("[BatchSerialize] Fixed: {} {} {} {}",
+                                    positions.first.first,
+                                    positions.first.second,
+                                    pos.first,
+                                    pos.second->debugName());
+          Op *op = pos.second;
+          if (prev) {
+            graph.topoCons->insert(prev, op, true);
+          }
+          prev = op;
+        }
         if (prev) {
-          graph.topoCons->insert(prev, op, true);
+          for (Op *op : opsBehindSection[positions.first.first]) {
+            graph.topoCons->insert(prev, op);
+          }
         }
-        prev = op;
       }
-      if (prev) {
-        for (Op *op : opsBehindSection[positions.first.first]) {
-          graph.topoCons->insert(prev, op);
-        }
+
+      if (isOverlapSchedule) {
+        addParallelizationConstraints(graph, positionToOp);
       }
     }
   }
 
   logging::transform::debug("[BatchSerialize] Done.");
   return true;
+}
+
+void BatchSerialize::addParallelizationConstraints(
+    Graph &graph,
+    const PositionsToOp &positionToOp) const {
+  // For maximum overlap we want the IoTileCopy (IO to compute) and the
+  // preceding RemoteLoadOps for phase N+1 to happen during the compute
+  // stage of batch N. To achieve this, let's schedule the IoTileCopy (IO
+  // to compute) for N+1 to happen IoTileCopy (compute to IO) for N.
+
+  auto &ir      = graph.getIr();
+  auto settings = ir.getSessionOptions().batchSerializationSettings;
+
+  for (auto &positions : positionToOp) {
+    auto section = positions.first.first;
+    auto phase   = positions.first.second;
+
+    auto addConstraint = [&](Op *batchNPlus1Op, Op *batchNOp) {
+      std::stringstream ss;
+      ss << "[BatchSerialize] Added parallelization constraint "
+         << batchNPlus1Op->str() << " -> " << batchNOp->str()
+         << " (section {}, BSP {}-{}).";
+      logging::transform::debug(ss.str(), section, phase - 1, phase);
+      graph.topoCons->insert(batchNPlus1Op, batchNOp, true);
+    };
+
+    if (phase > 0) {
+
+      // If we're overlapping, lift our batch N+1's loading IoTileCopy before
+      // batch N's saving tile copy. This will force RemoteLoadOps for batch
+      // N+1 to happen prior to the saving of the results of N's compute phase.
+
+      Op *batchNPlus1Op =
+          getLastIoTileCopyToCompute(positionToOp, section, phase);
+      Op *batchNOp = getFirstIoTileCopyToIo(positionToOp, section, phase - 1);
+
+      if (batchNPlus1Op && batchNOp) {
+        addConstraint(batchNPlus1Op, batchNOp);
+      }
+
+      // If we're in OverlapOnCompute mode, try and lift batch N+1's
+      // RemoteLoadOps to the front batch N's compute phase.
+
+      if (settings.batchSchedule ==
+          BatchSerializationBatchSchedule::OverlapOnCompute) {
+        batchNPlus1Op = getLastRemoteLoad(positionToOp, section, phase);
+        batchNOp      = getFirstComputeOp(positionToOp, section, phase - 1);
+
+        if (batchNPlus1Op && batchNOp) {
+          addConstraint(batchNPlus1Op, batchNOp);
+        }
+      }
+    }
+  }
+}
+
+Op *BatchSerialize::getLastRemoteLoad(const PositionsToOp &positionsToOp,
+                                      const Section section,
+                                      const BatchSerializedPhase phase) const {
+
+  auto findIt = positionsToOp.find(std::make_pair(section, phase));
+
+  if (findIt == positionsToOp.end()) {
+    return nullptr;
+  }
+
+  for (auto it = findIt->second.rbegin(); it != findIt->second.rend(); ++it) {
+    auto op = it->second;
+    if (op->isConvertibleTo<RemoteLoadOp>()) {
+      return op;
+    }
+  }
+
+  return nullptr;
+}
+
+Op *BatchSerialize::getLastIoTileCopyToCompute(
+    const PositionsToOp &positionsToOp,
+    const Section section,
+    const BatchSerializedPhase phase) const {
+
+  auto findIt = positionsToOp.find(std::make_pair(section, phase));
+
+  if (findIt == positionsToOp.end()) {
+    return nullptr;
+  }
+
+  for (auto it = findIt->second.rbegin(); it != findIt->second.rend(); ++it) {
+    auto op = it->second;
+    if ((op->isConvertibleTo<IoTileCopyOp>()) &&
+        (op->settings.tileSet == TileSet::Compute)) {
+      return op;
+    }
+  }
+
+  return nullptr;
+}
+
+Op *BatchSerialize::getFirstIoTileCopyToIo(
+    const PositionsToOp &positionsToOp,
+    const Section section,
+    const BatchSerializedPhase phase) const {
+
+  const auto findIt = positionsToOp.find(std::make_pair(section, phase));
+
+  if (findIt == positionsToOp.end()) {
+    return nullptr;
+  }
+
+  for (auto it = findIt->second.begin(); it != findIt->second.end(); ++it) {
+    auto op = it->second;
+    if ((op->isConvertibleTo<IoTileCopyOp>()) &&
+        (op->settings.tileSet == TileSet::IO)) {
+      return op;
+    }
+  }
+
+  return nullptr;
+}
+
+Op *BatchSerialize::getFirstComputeOp(const PositionsToOp &positionsToOp,
+                                      const Section section,
+                                      const BatchSerializedPhase phase) const {
+
+  const auto findIt = positionsToOp.find(std::make_pair(section, phase));
+
+  if (findIt == positionsToOp.end()) {
+    return nullptr;
+  }
+
+  for (auto it = findIt->second.begin(); it != findIt->second.end(); ++it) {
+    auto op = it->second;
+    if ((!op->isConvertibleTo<RemoteLoadOp>()) &&
+        (!op->isConvertibleTo<IoTileCopyOp>()) &&
+        (!op->isConvertibleTo<RemoteStoreOp>())) {
+      return op;
+    }
+  }
+
+  return nullptr;
+}
+
+bool BatchSerialize::areSwappable(Graph &graph,
+                                  Op *earlierOp,
+                                  Op *laterOp) const {
+
+  if (graph.topoCons->contains(earlierOp, laterOp)) {
+    // Don't go against topological constraints.
+    return false;
+  }
+
+  if (earlierOp->isParentOf(laterOp)) {
+    // Don't reverse direct parent/child relationships.
+    return false;
+  }
+
+  return true;
+}
+
+void BatchSerialize::pushEarlier(
+    PositionsToOpVector &vec,
+    std::function<bool(Op *)> isPushOp,
+    std::function<bool(Op *)> considerSwappingWith,
+    std::function<bool(Op *, Op *)> areSwappable) const {
+  // Move select to the front where this is possible.
+  for (auto it1 = vec.begin(); it1 != vec.end(); ++it1) {
+
+    if (isPushOp(it1->second)) {
+      // Push selected op the furthest forward that we can.
+      auto opIt = it1;
+
+      while (true) {
+        if (opIt == vec.begin()) {
+          std::stringstream ss;
+          ss << "[BatchSerialize] Considered moving " << opIt->second->str()
+             << " earlier in the schedule "
+             << "but no ops are available at earlier positions.";
+          logging::transform::trace(ss.str());
+          break;
+        }
+
+        // Get the op previous to ours.
+        auto prevOpIt = opIt;
+        prevOpIt--;
+
+        // Check if we should consider swapping.
+        if (!considerSwappingWith(prevOpIt->second)) {
+          std::stringstream ss;
+          ss << "[BatchSerialize] Not considering swapping "
+             << opIt->second->str() << " with " << prevOpIt->second->str()
+             << " (which is earlier in the schedule).";
+          logging::transform::trace(ss.str());
+          break;
+        }
+
+        // Check if we can swap.
+        if (!areSwappable(prevOpIt->second, opIt->second)) {
+          std::stringstream ss;
+          ss << "[BatchSerialize] Not able to swap " << opIt->second->str()
+             << " with " << prevOpIt->second->str()
+             << " (which is earlier in the schedule) "
+             << "as the ops are not swappable.";
+          logging::transform::trace(ss.str());
+          break;
+        }
+
+        std::stringstream ss;
+        ss << "[BatchSerialize] Moving " << opIt->second->str()
+           << " earlier in the schedule by "
+           << "swapping it with " << prevOpIt->second->str()
+           << " (in an attempt to make the "
+           << "schedule more amenable to parallelization)";
+        logging::transform::debug(ss.str());
+
+        // OK, we can swap it!
+        auto prevOp      = prevOpIt->second;
+        prevOpIt->second = opIt->second;
+        opIt->second     = prevOp;
+
+        // We're now at the location of prevOpIt.
+        opIt = prevOpIt;
+      }
+    }
+  }
+}
+
+void BatchSerialize::pushLater(
+    PositionsToOpVector &vec,
+    std::function<bool(Op *)> isPushOp,
+    std::function<bool(Op *)> considerSwappingWith,
+    std::function<bool(Op *, Op *)> areSwappable) const {
+  // Move select to the front where this is possible.
+  for (auto it1 = vec.rbegin(); it1 != vec.rend(); ++it1) {
+
+    if (isPushOp(it1->second)) {
+      // Push selected op the furthest forward that we can.
+      auto opIt = it1;
+
+      while (true) {
+        if (opIt == vec.rbegin()) {
+          std::stringstream ss;
+          ss << "[BatchSerialize] Considered moving " << opIt->second->str()
+             << " later in the schedule "
+             << "but no ops are available at later positions.";
+          logging::transform::trace(ss.str());
+          break;
+        }
+
+        // Get the op previous to ours.
+        auto nextOpIt = opIt;
+        nextOpIt--;
+
+        // Check if we should consider swapping.
+        if (!considerSwappingWith(nextOpIt->second)) {
+          std::stringstream ss;
+          ss << "[BatchSerialize] Not considering swapping "
+             << opIt->second->str() << " with " << nextOpIt->second->str()
+             << " (which is later in the schedule).";
+          logging::transform::trace(ss.str());
+          break;
+        }
+
+        // Check if we can swap.
+        if (!areSwappable(opIt->second, nextOpIt->second)) {
+          std::stringstream ss;
+          ss << "[BatchSerialize] Not able to swap " << opIt->second->str()
+             << " with " << nextOpIt->second->str()
+             << " (which is later in the schedule) "
+             << "as the ops are not swappable.";
+          logging::transform::trace(ss.str());
+          break;
+        }
+
+        std::stringstream ss;
+        ss << "[BatchSerialize] Moving " << opIt->second->str()
+           << " later in the schedule by "
+           << "swapping it with " << nextOpIt->second->str()
+           << " (in an attempt to make the "
+           << "schedule more amenable to parallelization)";
+        logging::transform::debug(ss.str());
+
+        // OK, we can swap it!
+        auto nextOp      = nextOpIt->second;
+        nextOpIt->second = opIt->second;
+        opIt->second     = nextOp;
+
+        // We're now at the location of prevOpIt.
+        opIt = nextOpIt;
+      }
+    }
+  }
+}
+
+void BatchSerialize::tryToMakeAmenableToParallelization(
+    Graph &graph,
+    PositionsToOp &positionsToOp) const {
+
+  // Predicate function to test if an op is a RemoteLoadOp.
+  auto isRemoteLoad = [](Op *op) -> bool {
+    return (op->isConvertibleTo<RemoteLoadOp>());
+  };
+  // Predicate function to test if an op is a RemoteLoadStore.
+  auto isRemoteStore = [](Op *op) -> bool {
+    return (op->isConvertibleTo<RemoteStoreOp>());
+  };
+  // Predicate function to test if an op is an IoTileCopyOp (from IO to
+  // compute).
+  auto isIoTileCopyToCompute = [](Op *op) -> bool {
+    return (op->isConvertibleTo<IoTileCopyOp>()) &&
+           (op->settings.tileSet == TileSet::Compute);
+  };
+  // Predicate function to test if an op is an IoTileCopyOp (from compute to
+  // IO).
+  auto isIoTileCopyToIo = [](Op *op) -> bool {
+    return (op->isConvertibleTo<IoTileCopyOp>()) &&
+           (op->settings.tileSet == TileSet::IO);
+  };
+  auto areSwappableL = [&](Op *earlierOp, Op *laterOp) {
+    return areSwappable(graph, earlierOp, laterOp);
+  };
+
+  for (auto &entry : positionsToOp) {
+    auto &posOpMap = entry.second;
+
+    // Turn the map into a vector (it's easier to work with).
+    PositionsToOpVector posOpVec;
+    posOpVec.reserve(posOpMap.size());
+    for (auto &posOpMapEntry : posOpMap) {
+      posOpVec.push_back(
+          std::make_pair(posOpMapEntry.first, posOpMapEntry.second));
+    }
+
+    // Move any RemoteLoadOp to the start of the schedule if possible, but don't
+    // move past other RemoteLoadOps.
+    pushEarlier(
+        posOpVec,
+        isRemoteLoad,
+        [&](Op *op) { return !isRemoteLoad(op); },
+        areSwappableL);
+
+    // Move any IoTileCopyOp (from IO to compute) to the start, too. Don't move
+    // past other IoTileCopyOp (from IO) ops or any RemoteLoadOps.
+    pushEarlier(
+        posOpVec,
+        isIoTileCopyToCompute,
+        [&](Op *op) { return !isRemoteLoad(op) && !isIoTileCopyToCompute(op); },
+        areSwappableL);
+
+    // Move any RemoteStoreOp back (later) to the back of the schedule if
+    // possible, but don't move past other RemoteStoreOp.
+    pushLater(
+        posOpVec,
+        isRemoteStore,
+        [&](Op *op) { return !isRemoteStore(op); },
+        areSwappableL);
+
+    // Move any IoTileCopyOp (from IO to compute) to the back of the schedule if
+    // possible. Don't move past other IoTileCopyOp (from IO) op or
+    // RemoteStoreOps.
+    pushLater(
+        posOpVec,
+        isIoTileCopyToIo,
+        [&](Op *op) { return !isRemoteStore(op) && !isIoTileCopyToIo(op); },
+        areSwappableL);
+
+    // Turn the vector back into a map.
+    posOpMap.clear();
+    for (auto &posOpVecEntry : posOpVec) {
+      posOpMap[posOpVecEntry.first] = posOpVecEntry.second;
+    }
+  }
 }
 
 namespace {

@@ -14,10 +14,13 @@
 #include <popart/op/add.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/init.hpp>
+#include <popart/op/iotilecopy.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/op/mean.hpp>
 #include <popart/op/nll.hpp>
+#include <popart/op/relu.hpp>
+#include <popart/op/remote.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/op/sum.hpp>
 #include <popart/tensorinfo.hpp>
@@ -499,4 +502,445 @@ BOOST_AUTO_TEST_CASE(NllBatchSerializedTest) {
   auto weightsmbs = getFinalWeights(
       2, vWeight, ReductionType::NoReduction, ReductionType::Mean, true);
   check(weightsm, weightsmbs);
+}
+
+BOOST_AUTO_TEST_CASE(TestBatchSerialWithOverlappedSchedule) {
+  // Run with remote tensors and with an overlapped batch serialisation schedule
+  // and check the IR ordering is (some may appear multiple times):
+  //
+  //     RemoteLoad batch n
+  //     IoTileCopy n
+  //     Compute batch n
+  //     RemoteLoad batch n+1
+  //     IoTileCopy (I/O -> compute batch n+1)
+  //     IoTileCopy (compute -> I/O batch n)
+  //     RemoteStore batch n
+  //     Compute batch n+1
+  //     RemoteLoad batch n+2
+  //     IoTileCopy (I/O -> compute batch n+2)
+  //     IoTileCopy (compute -> I/O batch n+1)
+  //     RemoteStore batch n+1
+  //     Compute batch n+2
+  //     etc.
+
+  auto isRemoteLoad = [](Op *op, int bsp) {
+    return (op->isConvertibleTo<RemoteLoadOp>()) &&
+           (op->getBatchSerializedPhase() == bsp);
+  };
+  auto isIoTileCopyToCompute = [](Op *op, int bsp) {
+    return (op->isConvertibleTo<IoTileCopyOp>()) &&
+           (op->settings.tileSet == TileSet::Compute) &&
+           (op->getBatchSerializedPhase() == bsp);
+  };
+  auto isCompute = [](Op *op, int bsp) {
+    return (!op->isConvertibleTo<RemoteLoadOp>()) &&
+           (!op->isConvertibleTo<IoTileCopyOp>()) &&
+           (!op->isConvertibleTo<RemoteStoreOp>()) &&
+           (op->getBatchSerializedPhase() == bsp);
+  };
+  auto isIoTileCopyToIo = [](Op *op, int bsp) {
+    return (op->isConvertibleTo<IoTileCopyOp>()) &&
+           (op->settings.tileSet == TileSet::IO) &&
+           (op->getBatchSerializedPhase() == bsp);
+  };
+  auto isRemoteStore = [](Op *op, int bsp) {
+    return (op->isConvertibleTo<RemoteStoreOp>()) &&
+           (op->getBatchSerializedPhase() == bsp);
+  };
+
+  auto opFilter = [](Op *op, int phase) {
+    return (op->hasBatchSerializedPhase()) &&
+           (op->getBatchSerializedPhase() >= 0) && (op->hasExecutionPhase()) &&
+           (op->getExecutionPhase() == phase);
+  };
+
+  auto test = [&](BatchSerializationBatchSchedule batchSchedule) {
+    TestRunner runner;
+    runner.isTraining = true;
+    int N             = 4;   // layers.
+    int M             = 8;   // data size
+    int K             = 4;   // batch serialisation factor
+    int size          = 100; // data size
+
+    runner.buildModel([&](auto &builder) {
+      auto aiOnnx = builder.aiOnnxOpset9();
+      TensorInfo inInfo{"FLOAT", std::vector<int64_t>{M, size}};
+      auto act = builder.addInputTensor(inInfo, "input");
+
+      int phase = 0;
+
+      for (int n = 0; n < N; ++n) {
+        TensorInfo wInfo{"FLOAT", std::vector<int64_t>{size, size}};
+        std::vector<TestTensor> inputs;
+        std::vector<TestTensor> outputs;
+        std::vector<float> wData(wInfo.nelms(), 0);
+        ConstVoidData wCVData{wData.data(), wInfo};
+        auto w = builder.addInitializedInputTensor(
+            wCVData, logging::format("WEIGHTS[layer={} {}]", n, phase));
+        act = aiOnnx.matmul({act, w},
+                            logging::format("MATMUT[layer={}-{}]", n, phase));
+        builder.executionPhase(act, phase);
+        act =
+            aiOnnx.relu({act}, logging::format("RELU[layer={}-{}]", n, phase));
+        builder.executionPhase(act, phase);
+        phase += 4;
+      }
+
+      auto loss = builder.aiGraphcoreOpset1().l1loss({act}, 0.1);
+      builder.executionPhase(loss, phase);
+
+      // Make sure IO tiles are usd.
+      runner.opts.numIOTiles = 192;
+
+      runner.opts.batchSerializationSettings.factor        = K;
+      runner.opts.batchSerializationSettings.batchSchedule = batchSchedule;
+      runner.opts.batchSerializationSettings.concatOnVirtualGraphChange = false;
+      runner.opts.batchSerializationSettings.concatOnExecutionPhaseChange =
+          false;
+      runner.opts.virtualGraphMode = VirtualGraphMode::ExecutionPhases;
+      runner.opts.executionPhaseSettings.phases = (N + 1) * 4;
+      runner.opts.executionPhaseSettings.stages = 1;
+      runner.opts.executionPhaseSettings.activationIOSchedule =
+          ExecutionPhaseIOSchedule::OnDemand;
+
+      // Make sure activations are stored in streaming memory, loaded via IO
+      // tiles.
+      runner.opts.activationTensorLocationSettings.location.storage =
+          TensorStorage::OffChip;
+      runner.opts.activationTensorLocationSettings.location.loadTileSet =
+          TileSet::IO;
+      runner.opts.activationTensorLocationSettings.location.storageTileSet =
+          TileSet::IO;
+      runner.opts.activationTensorLocationSettings.location
+          .replicatedTensorSharding = ReplicatedTensorSharding::Off;
+      runner.opts.activationTensorLocationSettings.minElementsForOffChip = 0;
+
+      // Enable outlining with no restrictions
+      runner.opts.explicitRecomputation          = false;
+      runner.opts.enableOutlining                = false;
+      runner.opts.outlineThreshold               = -1.0;
+      runner.opts.enableOutliningCopyCostPruning = false;
+      runner.patterns = Patterns(PatternsLevel::Default);
+
+      // Disable so that no false negatives (rhs vs. lhs inplace) exist
+      runner.patterns.inplaceEnabled = false;
+      runner.loss                    = loss;
+
+      return act;
+    });
+
+    // Testing that the schedule is as expected for batch serialization:
+    runner.checkIr([&](Ir &ir) {
+      std::vector<Op *> schedule = ir.getMainGraph().getOpSchedule({});
+
+      // Let's grab all some forward phase and look at the ops order in detail.
+      std::vector<Op *> someFwdPhase;
+      std::copy_if(schedule.begin(),
+                   schedule.end(),
+                   std::back_inserter(someFwdPhase),
+                   std::bind(opFilter, std::placeholders::_1, 4));
+
+      // Print ops for debugging.
+      // for (auto op : someFwdPhase) {
+      //  logging::trace("Op: {} {} {} {}",
+      //                 op->hasExecutionPhase()
+      //                     ? std::to_string(op->getExecutionPhase())
+      //                     : "*",
+      //                 op->hasBatchSerializedPhase()
+      //                     ? std::to_string(op->getBatchSerializedPhase())
+      //                     : "*",
+      //                 op->settings.schedulePriority,
+      //                 op->debugName());
+      //}
+
+      BOOST_ASSERT(someFwdPhase.size() >= 40);
+      auto it = someFwdPhase.begin();
+
+      if (batchSchedule == BatchSerializationBatchSchedule::OverlapOnIo) {
+
+        // Check interleaved/overlapped order.
+        BOOST_CHECK(isRemoteLoad(*it++, 0));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isRemoteLoad(*it++, 1));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 1));
+        BOOST_CHECK(isIoTileCopyToIo(*it++, 0));
+        BOOST_CHECK(isIoTileCopyToIo(*it++, 0));
+        BOOST_CHECK(isRemoteStore(*it++, 0));
+        BOOST_CHECK(isRemoteStore(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isRemoteLoad(*it++, 2));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 2));
+        BOOST_CHECK(isIoTileCopyToIo(*it++, 1));
+        BOOST_CHECK(isIoTileCopyToIo(*it++, 1));
+        BOOST_CHECK(isRemoteStore(*it++, 1));
+        BOOST_CHECK(isRemoteStore(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isRemoteLoad(*it++, 3));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 3));
+        BOOST_CHECK(isIoTileCopyToIo(*it++, 2));
+        BOOST_CHECK(isIoTileCopyToIo(*it++, 2));
+        BOOST_CHECK(isRemoteStore(*it++, 2));
+        BOOST_CHECK(isRemoteStore(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isIoTileCopyToIo(*it++, 3));
+        BOOST_CHECK(isIoTileCopyToIo(*it++, 3));
+        BOOST_CHECK(isRemoteStore(*it++, 3));
+        BOOST_CHECK(isRemoteStore(*it++, 3));
+
+      } else if (batchSchedule ==
+                 BatchSerializationBatchSchedule::OverlapOnCompute) {
+
+        // Check interleaved/overlapped order.
+        BOOST_CHECK(isRemoteLoad(*it++, 0));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 0));
+        BOOST_CHECK(isRemoteLoad(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 1));
+        BOOST_CHECK(isIoTileCopyToIo(*it++, 0));
+        BOOST_CHECK(isIoTileCopyToIo(*it++, 0));
+        BOOST_CHECK(isRemoteStore(*it++, 0));
+        BOOST_CHECK(isRemoteStore(*it++, 0));
+        BOOST_CHECK(isRemoteLoad(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 2));
+        BOOST_CHECK(isIoTileCopyToIo(*it++, 1));
+        BOOST_CHECK(isIoTileCopyToIo(*it++, 1));
+        BOOST_CHECK(isRemoteStore(*it++, 1));
+        BOOST_CHECK(isRemoteStore(*it++, 1));
+        BOOST_CHECK(isRemoteLoad(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 3));
+        BOOST_CHECK(isIoTileCopyToIo(*it++, 2));
+        BOOST_CHECK(isIoTileCopyToIo(*it++, 2));
+        BOOST_CHECK(isRemoteStore(*it++, 2));
+        BOOST_CHECK(isRemoteStore(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isIoTileCopyToIo(*it++, 3));
+        BOOST_CHECK(isIoTileCopyToIo(*it++, 3));
+        BOOST_CHECK(isRemoteStore(*it++, 3));
+        BOOST_CHECK(isRemoteStore(*it++, 3));
+      }
+
+      // Now let's grab all some backwards phase and look at the ops order in
+      // detail.
+
+      std::vector<Op *> someBwdPhase;
+      std::copy_if(schedule.begin(),
+                   schedule.end(),
+                   std::back_inserter(someBwdPhase),
+                   std::bind(opFilter, std::placeholders::_1, 34));
+
+      // Print ops for debugging.
+      // for (auto op : someBwdPhase) {
+      //  logging::trace("Op: {} {} {} {}",
+      //                 op->hasExecutionPhase()
+      //                     ? std::to_string(op->getExecutionPhase())
+      //                     : "*",
+      //                 op->hasBatchSerializedPhase()
+      //                     ? std::to_string(op->getBatchSerializedPhase())
+      //                     : "*",
+      //                 op->settings.schedulePriority,
+      //                 op->debugName());
+      //}
+
+      BOOST_ASSERT(someBwdPhase.size() >= 40);
+      it = someBwdPhase.begin();
+
+      if (batchSchedule == BatchSerializationBatchSchedule::OverlapOnIo) {
+
+        BOOST_CHECK(isRemoteLoad(*it++, 0));
+        BOOST_CHECK(isRemoteLoad(*it++, 0));
+        BOOST_CHECK(isRemoteLoad(*it++, 0));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 0));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 0));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isRemoteLoad(*it++, 1));
+        BOOST_CHECK(isRemoteLoad(*it++, 1));
+        BOOST_CHECK(isRemoteLoad(*it++, 1));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 1));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 1));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 1));
+        BOOST_CHECK(isIoTileCopyToIo(*it++, 0));
+        BOOST_CHECK(isRemoteStore(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isRemoteLoad(*it++, 2));
+        BOOST_CHECK(isRemoteLoad(*it++, 2));
+        BOOST_CHECK(isRemoteLoad(*it++, 2));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 2));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 2));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 2));
+        BOOST_CHECK(isIoTileCopyToIo(*it++, 1));
+        BOOST_CHECK(isRemoteStore(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isRemoteLoad(*it++, 3));
+        BOOST_CHECK(isRemoteLoad(*it++, 3));
+        BOOST_CHECK(isRemoteLoad(*it++, 3));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 3));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 3));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 3));
+        BOOST_CHECK(isIoTileCopyToIo(*it++, 2));
+        BOOST_CHECK(isRemoteStore(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isIoTileCopyToIo(*it++, 3));
+        BOOST_CHECK(isRemoteStore(*it++, 3));
+
+      } else if (batchSchedule ==
+                 BatchSerializationBatchSchedule::OverlapOnCompute) {
+
+        BOOST_CHECK(isRemoteLoad(*it++, 0));
+        BOOST_CHECK(isRemoteLoad(*it++, 0));
+        BOOST_CHECK(isRemoteLoad(*it++, 0));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 0));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 0));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 0));
+        BOOST_CHECK(isRemoteLoad(*it++, 1));
+        BOOST_CHECK(isRemoteLoad(*it++, 1));
+        BOOST_CHECK(isRemoteLoad(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isCompute(*it++, 0));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 1));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 1));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 1));
+        BOOST_CHECK(isIoTileCopyToIo(*it++, 0));
+        BOOST_CHECK(isRemoteStore(*it++, 0));
+        BOOST_CHECK(isRemoteLoad(*it++, 2));
+        BOOST_CHECK(isRemoteLoad(*it++, 2));
+        BOOST_CHECK(isRemoteLoad(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isCompute(*it++, 1));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 2));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 2));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 2));
+        BOOST_CHECK(isIoTileCopyToIo(*it++, 1));
+        BOOST_CHECK(isRemoteStore(*it++, 1));
+        BOOST_CHECK(isRemoteLoad(*it++, 3));
+        BOOST_CHECK(isRemoteLoad(*it++, 3));
+        BOOST_CHECK(isRemoteLoad(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 2));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 3));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 3));
+        BOOST_CHECK(isIoTileCopyToCompute(*it++, 3));
+        BOOST_CHECK(isIoTileCopyToIo(*it++, 2));
+        BOOST_CHECK(isRemoteStore(*it++, 2));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isCompute(*it++, 3));
+        BOOST_CHECK(isIoTileCopyToIo(*it++, 3));
+        BOOST_CHECK(isRemoteStore(*it++, 3));
+      }
+    });
+  };
+
+  test(BatchSerializationBatchSchedule::OverlapOnIo);
+  test(BatchSerializationBatchSchedule::OverlapOnCompute);
 }

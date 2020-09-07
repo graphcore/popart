@@ -105,6 +105,24 @@ struct TensorLocationSettings {
   int minElementsForReplicatedTensorSharding = 8192;
 };
 
+// Setting that affects batch serialisation subgraph schedule before outlining.
+// This setting is experimental and may change.
+enum class BatchSerializationBatchSchedule {
+  // Don't encourage any particular scheduling for ops within batch subgraphs
+  // (leave it to the scheduler) but tell the scheduler to schedule subgraphs
+  // in sequence.
+  Scheduler = 0,
+  // Encourage all ops within batch subgraphs to be scheduled identically and
+  // for each subgraph to be scheduled in sequence (good for outlineability).
+  Isomorphic,
+  // OverlapOnIo tries to put the RemoteLoad for batch N+1 right after the
+  // compute phase of batch N.
+  OverlapOnIo,
+  // OverlapOnCompute tries to put the RemoteLoad for batch N+1 right before
+  // the compute phase of batch N.
+  OverlapOnCompute
+};
+
 /**
  * A structure containing batch serialization settings.
  */
@@ -113,7 +131,9 @@ struct BatchSerializationSettings {
   BatchSerializationSettings(int factor_,
                              bool concatOnVirtualGraphChange_,
                              bool concatOnExecutionPhaseChange_,
-                             bool concatOnPipelineStageChange_);
+                             bool concatOnPipelineStageChange_,
+                             BatchSerializationBatchSchedule batchSchedule_ =
+                                 BatchSerializationBatchSchedule::Isomorphic);
 
   BatchSerializationSettings &
   operator=(const BatchSerializationSettings &rhs) = default;
@@ -122,6 +142,9 @@ struct BatchSerializationSettings {
   bool concatOnVirtualGraphChange   = true;
   bool concatOnExecutionPhaseChange = true;
   bool concatOnPipelineStageChange  = true;
+  // This setting is experimental and may change.
+  BatchSerializationBatchSchedule batchSchedule =
+      BatchSerializationBatchSchedule::Isomorphic;
 };
 
 enum class ExecutionPhaseIOSchedule {
