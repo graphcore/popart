@@ -2,7 +2,11 @@ cmake_minimum_required(VERSION 3.12.0)
 
 project(popart)
 
-enable_testing()
+# Calls enable_testing(), which sets BUILD_TESTING=ON
+include(CTest)
+
+option(POPART_BUILD_TESTING "Build the popart tests" ON)
+option(POPART_BUILD_EXAMPLES "Build the popart examples" ON)
 
 include(GNUInstallDirs)
 
@@ -139,13 +143,17 @@ execute_process(COMMAND
 
 add_subdirectory(willow)
 
-# Examples and tests
-add_subdirectory(tests)
-add_subdirectory(examples)
-
 # light-weight wrapper using pybind11, plus python support libraries
 # VERSION needs to be defined before adding this directory
 add_subdirectory(python)
+
+# Examples and tests
+if (POPART_BUILD_TESTING AND BUILD_TESTING)
+  add_subdirectory(tests)
+endif()
+if (POPART_BUILD_EXAMPLES)
+  add_subdirectory(examples)
+endif()
 
 if(${OS_TYPE} STREQUAL osx)
   set(PACKAGE_OS_TYPE osx)
