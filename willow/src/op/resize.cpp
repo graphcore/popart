@@ -49,9 +49,10 @@ void ResizeOp::setup() {
 
   // Sanity check scales
   if (scales.size() != inputShape.size()) {
-    throw error(
-        "There should be at exactly {inputShape.size()} elements in resize op "
-        "inputs, scales. Scales has {scales.size()} elements.");
+    throw error("The number of dimensions of the resize op scales ({}) must "
+                "match the number of dimensions of the input ({})",
+                scales.size(),
+                inputShape.size());
   }
 
   Shape outputShape;
