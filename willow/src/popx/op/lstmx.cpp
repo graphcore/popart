@@ -119,16 +119,15 @@ void LSTMOpx::growBias(poplar::program::Sequence &prog) const {
 InputCreatorType LSTMOpx::getInputCreatorType(InIndex index) const {
   if (index == LSTMOp::getInputInIndex() ||
       index == LSTMOp::getWeightsInIndex() ||
-      index == LSTMOp::getRecurrenceInIndex() ||
-      index == LSTMOp::getInitialHInIndex() ||
-      index == LSTMOp::getInitialCInIndex()) {
+      index == LSTMOp::getRecurrenceInIndex()) {
     return InputCreatorType::CanCreate;
   } else {
     return InputCreatorType::Deadend;
   }
 }
 
-poplar::Tensor LSTMOpx::createInput(InIndex index, const std::string &) const {
+poplar::Tensor LSTMOpx::createInput(InIndex index,
+                                    const std::string &name) const {
   createdInputs.insert(index);
 
   if (index == LSTMOp::getInputInIndex()) {
@@ -139,24 +138,6 @@ poplar::Tensor LSTMOpx::createInput(InIndex index, const std::string &) const {
   } else if (index == LSTMOp::getRecurrenceInIndex()) {
     auto outputWeights = getLSTMWeights().outputWeights;
     return reshapePoplibWeightsForOnnx(outputWeights, true);
-  } else if (index == LSTMOp::getInitialCInIndex()) {
-    auto &lstm_op = getOp<LSTMOp>();
-
-    unsigned batch_size     = static_cast<unsigned>(lstm_op.getBatchSize());
-    unsigned hidden_size    = static_cast<unsigned>(lstm_op.getHiddenSize());
-    unsigned num_directions = static_cast<unsigned>(lstm_op.getNumDirections());
-
-    auto init_c = getInitialState().cellState;
-    return init_c.reshape({num_directions, batch_size, hidden_size});
-  } else if (index == LSTMOp::getInitialHInIndex()) {
-    auto &lstm_op = getOp<LSTMOp>();
-
-    unsigned batch_size     = static_cast<unsigned>(lstm_op.getBatchSize());
-    unsigned hidden_size    = static_cast<unsigned>(lstm_op.getHiddenSize());
-    unsigned num_directions = static_cast<unsigned>(lstm_op.getNumDirections());
-
-    auto init_h = getInitialState().output;
-    return init_h.reshape({num_directions, batch_size, hidden_size});
   } else {
     throw error("LSTMOpx::createInput is not supported for index {}", index);
   }
@@ -274,10 +255,14 @@ poplar::Tensor LSTMOpx::getInput(poplar::program::Sequence &prog) const {
 
 void LSTMOpx::prepareInitialState(popnn::lstm::LstmState &init_state,
                                   poplar::program::Sequence &prog) const {
-  auto &lstm_op = getOp<LSTMOp>();
-  auto hasInitC = lstm_op.hasInitialCInput();
-  auto hasInitH = lstm_op.hasInitialHInput();
+  auto &lstm_op           = getOp<LSTMOp>();
+  auto hasInitC           = lstm_op.hasInitialCInput();
+  auto hasInitH           = lstm_op.hasInitialHInput();
+  unsigned batch_size     = static_cast<unsigned>(lstm_op.getBatchSize());
+  unsigned hidden_size    = static_cast<unsigned>(lstm_op.getHiddenSize());
+  unsigned num_directions = static_cast<unsigned>(lstm_op.getNumDirections());
 
+  // If initC and initH are not present, one or both will need zeroing.
   if (!hasInitC && !hasInitH) {
     zeroInitialState(graph(), init_state, prog, debugPrefix());
   } else if (!hasInitC) {
@@ -286,16 +271,21 @@ void LSTMOpx::prepareInitialState(popnn::lstm::LstmState &init_state,
     popops::zero(graph(), init_state.output, prog, debugPrefix());
   }
 
-  // Check the inputs have been created
+  // Copy initC input to initialState.cellState is initC is provided.
   if (hasInitC) {
-    prog.add(poplar::program::Copy(
-        getInTensor(LSTMOp::getInitialCInIndex()),
-        createInput(LSTMOp::getInitialCInIndex(), debugPrefix("initC"))));
+    auto init_c = getInitialState().cellState;
+    init_c      = init_c.reshape({num_directions, batch_size, hidden_size});
+
+    prog.add(poplar::program::Copy(getInTensor(LSTMOp::getInitialCInIndex()),
+                                   init_c));
   }
+  // Copy initH input to initialState.output is initH is provided.
   if (hasInitH) {
-    prog.add(poplar::program::Copy(
-        getInTensor(LSTMOp::getInitialHInIndex()),
-        createInput(LSTMOp::getInitialHInIndex(), debugPrefix("initH"))));
+    auto init_h = getInitialState().output;
+    init_h      = init_h.reshape({num_directions, batch_size, hidden_size});
+
+    prog.add(poplar::program::Copy(getInTensor(LSTMOp::getInitialHInIndex()),
+                                   init_h));
   }
 }
 
