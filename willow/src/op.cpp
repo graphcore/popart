@@ -1217,6 +1217,76 @@ bool Op::producesGraphOutput() const {
                      });
 }
 
+auto regionsModified = [](view::Regions &regions) {
+  return !std::all_of(
+      regions.begin(), regions.end(), [](const view::Region &r) {
+        return r.isEmpty() || r.getAccessType() == view::AccessType::Read;
+      });
+};
+auto nonEmptyRegion = [](view::Regions &regions) {
+  return std::any_of(regions.begin(), regions.end(), [](view::Region &r) {
+    return !r.isEmpty();
+  });
+};
+
+bool Op::inputVariableOrAlias(InIndex in) const {
+  auto t                = input->tensor(in);
+  auto aliasedTensorMap = getGraph().getTensors().aliasChainsTo(t);
+
+  // if input is variable: check by using aliasChainsTo(input), if the
+  // aliases are updated properly, check any connected variable tensor if
+  // the aliasing chain is non-empty.
+  for (auto &chain : aliasedTensorMap) {
+
+    if (chain.first->tensorType() == TensorType::Variable ||
+        chain.first->tensorType() == TensorType::Const) {
+
+      auto fullRegion = view::Region::getFull(chain.first->info.shape());
+      auto regions    = chain.second.apply(fullRegion);
+      if (nonEmptyRegion(regions)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+bool Op::hasAliasedModifiers(OutIndex out) const {
+  auto t                = output->tensor(out);
+  auto aliasedTensorMap = getGraph().getTensors().aliasChainsFrom(t);
+  auto fullRegion       = view::Region::getFull(t->info.shape());
+
+  bool tChecked = false;
+
+  for (auto &chain : aliasedTensorMap) {
+    auto regions = chain.second.apply(fullRegion);
+    if (nonEmptyRegion(regions)) {
+      // We check if t itself is in the chain, if not we need to check it later.
+      if (chain.first == t) {
+        tChecked = true;
+      }
+      // Check any consumer of any aliased tensor downstream modifies a
+      // non-empty region.
+      auto checkConsumers = [](Tensor *t_in) {
+        for (Op *consumer : t_in->consumers.getOps()) {
+          for (InIndex in : consumer->input->indices(t_in)) {
+            auto regions = consumer->modifies(in);
+            if (regionsModified(regions)) {
+              return true;
+            }
+          }
+        }
+        return false;
+      };
+      checkConsumers(chain.first);
+      if (!tChecked) {
+        checkConsumers(t);
+      }
+    }
+  }
+  return false;
+}
 bool Op::isParentOf(const Op *op) const {
   // We're a parent of op if and only if op is our child.
   return op->isChildOf(this);
@@ -1264,6 +1334,14 @@ bool Op::modifies() const {
   return false;
 }
 
+bool Op::modifiesIndex(InIndex in) const {
+  auto region = modifies(in);
+  if (regionsModified(region)) {
+    return true;
+  }
+  return false;
+}
+
 bool Op::inputsUnmodifiable() const {
   return
 
@@ -1285,8 +1363,8 @@ bool Op::inputsUnmodifiable() const {
       // - its input, or a tensor it aliases, is restored inplace
       // - and its output, or a tensor that is an alias of it, is consumed
       //   by an ipucopy
-      // TODO T19283: Make less strict once we can determine if any two tensors
-      // are aliases of eachother
+      // TODO T19283: Make less strict once we can determine if any two
+      // tensors are aliases of eachother
       || consumesRestoredInplaceTensor()
 
       // Graph output tensors must not be modified to ensure the correct value

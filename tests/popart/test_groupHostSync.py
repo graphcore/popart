@@ -30,11 +30,13 @@ def test_groupHostSync():
         "showPerIpuMemoryUsage": "true",
         "showExecutionSteps": "true"
     }
+    patterns = popart.Patterns(popart.PatternsLevel.Minimal)
 
     session = popart.InferenceSession(fnModel=builder.getModelProto(),
                                       dataFlow=dataFlow,
                                       deviceInfo=tu.create_test_device(),
-                                      userOptions=options)
+                                      userOptions=options,
+                                      patterns=patterns)
 
     session.prepareDevice()
     session.weightsFromHost()
@@ -82,27 +84,27 @@ def test_groupHostSync():
             countSeq += 1
             if countSeq >= 6:
                 break
-        if re.search(r"OnTileExecute: 104/Op/Add", l):
-            order.append(1)
-        if re.search(r"OnTileExecute: 101/abs/Op/Absolute", l):
-            order.append(2)
-        if re.search(r"101/add/ReduceExpression", l):
-            order.append(3)
+        if re.search(r"OnTileExecute: [0-9]{3}/Op/Add", l):
+            order.append("add")
+        if re.search(r"OnTileExecute: [0-9]{3}/abs/Op/Absolute", l):
+            order.append("abs")
+        if re.search(r"[0-9]{3}/add/ReduceExpression", l):
+            order.append("reduce")
         if re.search(r"\bStreamCopy\b", l):
-            order.append(4)
+            order.append("streamcopy")
             countStreams += 1
 
     # The streamcopy to host should only happen at the end (after
     # ReduceExpression)
     # Expected list with the option enabled: [4,4,4,1,2,3,4]
     # Expected list without the option: [4,4,4,1,4,4,2,3,4]
-    assert (order[0] == 4)
-    assert (order[1] == 4)
-    assert (order[2] == 4)
-    assert (order[3] == 1)
-    assert (order[4] == 2)
-    assert (order[5] == 3)
-    assert (order[6] == 4)
+    assert (order[0] == "streamcopy")
+    assert (order[1] == "streamcopy")
+    assert (order[2] == "streamcopy")
+    assert (order[3] == "add")
+    assert (order[4] == "abs")
+    assert (order[5] == "reduce")
+    assert (order[6] == "streamcopy")
     # The number of Streamcopies happening in total
     # (start counting from the Switch) should be 4.
     assert (countStreams == 4)

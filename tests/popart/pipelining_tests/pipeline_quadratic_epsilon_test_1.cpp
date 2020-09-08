@@ -182,8 +182,6 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilonTest1) {
 
       act0 = aiOnnx.add({act0, allWeightIds.back()});
       builder->virtualGraph(act0, vgid);
-      builder->setInplacePreferences(
-          act0, {{"AddLhsInplace", -100.0f}, {"AddRhsInplace", -100.0f}});
 
       actIds.push_back(act0);
       weightsRead.insert(allWeightIds.back(),

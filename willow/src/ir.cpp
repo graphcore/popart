@@ -3255,6 +3255,63 @@ void Ir::applyInplacePattern(Graph &graph) {
       ExternOpTensorBundle eot_bun(op, op->getInplaceVariant(identifier));
       const Op *inplaceOp = eot_bun.getOp();
 
+      // check if input is a variable or aliases a variable, check if output is
+      // modified by any consumer.
+      // if input is variable: check by using aliasChainsTo(input), if the
+      // aliases are updated properly, check any connected variable tensor if
+      // the aliasing chain is non-empty.
+      // If output is modified:
+      // check by using aliasChainsFrom(output), check any connected tensor if
+      // the aliasing chain is non-empty & any consumer of any aliased tensor
+      // downstream modifies a non-empty region.
+      // If both conditions true: do not inplace current op.
+
+      // Lambda to check if an inpput is a weight, and is modified.
+      auto modifiesWeight =
+          [&inplaceOp](const std::pair<const int, popart::Tensor *> &in_index) {
+            if (inplaceOp->modifiesIndex(in_index.first)) {
+              return true;
+            }
+            return false;
+          };
+
+      bool varOrModified = false;
+      for (const auto &in_index : inplaceOp->input->tensorMap()) {
+        for (const auto &out_index : inplaceOp->output->tensorMap()) {
+          auto regions = inplaceOp->aliases(in_index.first, out_index.first);
+          bool opAliases =
+              !std::all_of(regions.begin(),
+                           regions.end(),
+                           [](const view::Region &r) { return r.isEmpty(); });
+          // 1. Is the input a variable, or alias of a variable?
+          bool var_or_alias = op->inputVariableOrAlias(in_index.first);
+          // 2. Does it indirectly modify this tensor and alias it?
+          bool indirect_modify =
+              (op->hasAliasedModifiers(out_index.first) && opAliases);
+          // 3. Does it directly modify a weight?
+          bool direct_modify = modifiesWeight(in_index);
+          // If ((1 and 2) or 3) : do not inplace.
+          if (var_or_alias && (indirect_modify || direct_modify)) {
+
+            std::ostringstream oss;
+            oss << "[Inplacing] Not inplacing " << op->opid << " with "
+                << inplaceOp->opid
+                << " as it aliases a variable, or another alias of a "
+                   "variable: "
+                << in_index.second->id
+                << " and either a downstream op modifies an alias of an "
+                   "output "
+                << out_index.second->id
+                << " , or the inplace op itself modifies the variable.";
+            logging::pattern::trace(oss.str());
+            varOrModified = true;
+          }
+        }
+      }
+      if (varOrModified) {
+        continue;
+      }
+
       // If any of the new topological constraints start at an Op whose inputs
       // cannot be modified (consume anchors, certain recomputatation Ops, etc),
       // then we cannot inplace op. This is because a constraint op -> op2 is

@@ -291,8 +291,19 @@ public:
   virtual view::RegMap fwdRegMap(InIndex, OutIndex) const;
   virtual view::RegMap bwdRegMap(InIndex, OutIndex) const;
 
-  // Is modifies(i) non-empty for any input index i?
+  /** Is modifies(i) non-empty for any input index i?
+   *
+   * \returns     true if modifies(i) is non-empty for any i
+   * \returns     false otherwise.
+   */
   bool modifies() const;
+  /** Check if an op modifies a tensor at a specific index in.
+   *
+   * \param in    Index to check
+   * \returns     true if it modifies the tensor.
+   * \returns     false otherwise.
+   */
+  bool modifiesIndex(InIndex in) const;
 
   // A grad-op outputs an edge-gradient tensor dT at gradOpOutIndex.
   // dT is the edge-gradient of a tensor T which was the input
@@ -442,6 +453,24 @@ public:
   bool consumesGraphOutput() const;
   bool producesGraphOutput() const;
 
+  //
+  /** Check if input is a variable or aliases a variable.
+   *
+   * \param in    InIndex to check.
+   * \returns     true if any connected variable tensor has a non-empty alias
+   *              chain.
+   * \returns     false otherwise.
+   */
+  bool inputVariableOrAlias(InIndex in) const;
+
+  /** Check if output is modified by any consumer.
+   *
+   * \param out   OutIndex to check.
+   * \returns     true if any consumer of any aliased tensor downstream modifies
+   *              a non-empty region.
+   * \returns     false otherwise.
+   */
+  bool hasAliasedModifiers(OutIndex out) const;
   // Helper functions for probing graph structure.
   bool isParentOf(const Op *) const;
   bool isChildOf(const Op *) const;
