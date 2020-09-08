@@ -543,6 +543,18 @@ void StreamingMemoryOpInserter::applyReplicatedOptimizerSharding(
   //    |
   //    C
   //
+  // 5.) Try to backpropagate RTS to producer operations
+  //
+  //  A*  B                   A*  B*
+  //  |   |                   |   |
+  //  |  Producer   --->      |  Producer*
+  //  |   |                   |   |
+  //  |   B'                  |   B'*
+  //   \ /                     \ /
+  //    Op                      Op
+  //    |                       |
+  //    C                       C
+  //
   // * = replica sharded tensor or operation
 
   // Operations that are affected by replicated tensor sharding
@@ -606,68 +618,77 @@ void StreamingMemoryOpInserter::applyReplicatedOptimizerSharding(
             op->connectInTensor(inIdx, rtsTensors.getShard(inTensor->id));
             indexSharded = true;
             rtsChanged   = true;
-          } else {
+          } else if (inTensor->hasProducer() &&
+                     inTensor->getProducer()
+                         ->isConvertibleTo<ReplicatedAllReduceOp>()) {
             // Try to shard index by changing an AllReduce into a
             // ReduceScatter
-            if (inTensor->hasProducer() &&
-                inTensor->getProducer()
-                    ->isConvertibleTo<ReplicatedAllReduceOp>()) {
-              ReplicatedAllReduceOp *replicatedAllReduce =
-                  dynamic_cast<ReplicatedAllReduceOp *>(
-                      inTensor->getProducer());
-              TensorId inId = replicatedAllReduce->input
-                                  ->tensor(ReplicatedAllReduceOp::getInIndex())
-                                  ->id;
-              TensorId outId =
-                  replicatedAllReduce->output
-                      ->tensor(ReplicatedAllReduceOp::getOutIndex())
-                      ->id;
+            ReplicatedAllReduceOp *replicatedAllReduce =
+                dynamic_cast<ReplicatedAllReduceOp *>(inTensor->getProducer());
+            TensorId inId = replicatedAllReduce->input
+                                ->tensor(ReplicatedAllReduceOp::getInIndex())
+                                ->id;
+            TensorId outId = replicatedAllReduce->output
+                                 ->tensor(ReplicatedAllReduceOp::getOutIndex())
+                                 ->id;
 
-              replicatedAllReduce->disconnectAllInputs();
-              replicatedAllReduce->disconnectAllOutputs();
+            replicatedAllReduce->disconnectAllInputs();
+            replicatedAllReduce->disconnectAllOutputs();
 
-              TensorStreamingContext context;
-              context.context = replicatedAllReduce->settings.executionContext;
-              if (context.context == ExecutionContext::Normal) {
-                if (isPhasedExecution()) {
-                  context.phase =
-                      replicatedAllReduce->getOptionalExecutionPhase();
-                } else {
-                  context.preLoss = replicatedAllReduce->scheduledPreLoss;
-                }
-              }
-
-              Tensor *outTensor         = graph.getTensors().get(outId);
-              TensorConfig tensorConfig = tensorConfigs.at(outTensor);
-
-              Tensor *varTensor = findRelatedVarTensor({outTensor});
-
-              if (varTensor) {
-                tensorConfig = tensorConfigs.at(varTensor);
+            TensorStreamingContext context;
+            context.context = replicatedAllReduce->settings.executionContext;
+            if (context.context == ExecutionContext::Normal) {
+              if (isPhasedExecution()) {
+                context.phase =
+                    replicatedAllReduce->getOptionalExecutionPhase();
               } else {
-                logging::transform::warn(
-                    "[StreamingMemory] {} is an optimizer related "
-                    "ReplicatedAllReduce, but the related variable "
-                    "has not been found.",
-                    replicatedAllReduce->debugName());
+                context.preLoss = replicatedAllReduce->scheduledPreLoss;
               }
+            }
 
-              ReplicatedReduceScatterOp *replicatedReduceScatter =
-                  insertReplicatedReduceScatterOp(
-                      tensorConfig, context, inId, outId, refId);
+            Tensor *outTensor         = graph.getTensors().get(outId);
+            TensorConfig tensorConfig = tensorConfigs.at(outTensor);
 
-              graph.topoCons->transfer(replicatedAllReduce,
-                                       replicatedReduceScatter);
+            Tensor *varTensor = findRelatedVarTensor({outTensor});
 
-              replicatedAllReduce->getGraph().eraseOp(replicatedAllReduce->id);
+            if (varTensor) {
+              tensorConfig = tensorConfigs.at(varTensor);
+            } else {
+              logging::transform::warn(
+                  "[StreamingMemory] {} is an optimizer related "
+                  "ReplicatedAllReduce, but the related variable "
+                  "has not been found.",
+                  replicatedAllReduce->debugName());
+            }
 
-              // Tensor outId is now replicated tensor sharded
-              rtsTensors.insert(
-                  outId, "", outId, stripAllReservedPrefixes(refId));
-              // Add all consumers to the set of ops to process
-              addOpsToProcess(outId, refId);
-              indexSharded = true;
-              rtsChanged   = true;
+            ReplicatedReduceScatterOp *replicatedReduceScatter =
+                insertReplicatedReduceScatterOp(
+                    tensorConfig, context, inId, outId, refId);
+
+            graph.topoCons->transfer(replicatedAllReduce,
+                                     replicatedReduceScatter);
+
+            replicatedAllReduce->getGraph().eraseOp(replicatedAllReduce->id);
+
+            // Tensor outId is now replicated tensor sharded
+            rtsTensors.insert(
+                outId, "", outId, stripAllReservedPrefixes(refId));
+            // Add all consumers to the set of ops to process
+            addOpsToProcess(outId, refId);
+            indexSharded = true;
+            rtsChanged   = true;
+          } else {
+            // Try to backpropagate RTS to the producer
+            if (inTensor->hasProducer()) {
+              Op *producer = inTensor->getProducer();
+              auto producerRtsIndices =
+                  producer->getReplicatedTensorShardingIndices();
+              if (!producerRtsIndices.empty() &&
+                  opsToProcess.find(producer) == opsToProcess.end()) {
+                opsToProcess.insert(producer);
+                opToRefTensorId.insert({producer, refId});
+                rtsChanged = true;
+              }
             }
           }
           allIndiciesSharded &= indexSharded;
@@ -689,8 +710,9 @@ void StreamingMemoryOpInserter::applyReplicatedOptimizerSharding(
                 outId, "", outId, stripAllReservedPrefixes(refId));
             // Add all consumers to the set of ops to process
             addOpsToProcess(outId, refId);
-            rtsChanged = currentOpsToProcess.size() != opsToProcess.size();
           }
+          opsToProcess.erase(op);
+          rtsChanged = true;
         }
       }
     }
@@ -735,8 +757,8 @@ void StreamingMemoryOpInserter::applyReplicatedOptimizerSharding(
         // 1.) Bail with error if op must consume sharded tensor but can't
         if (modifiesSharded) {
           throw error(
-              "[StreamingMemory] Op {} modifies a sharded tensor, but"
-              "not all required sharded inputs could be connected. Adjust the"
+              "[StreamingMemory] Op {} modifies a sharded tensor, but "
+              "not all required sharded inputs could be connected. Adjust the "
               "replicated tensor sharding settings. Bailing.",
               op->debugName());
         }
