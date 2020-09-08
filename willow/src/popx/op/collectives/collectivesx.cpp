@@ -313,7 +313,7 @@ CollectivesBaseOpx::getCollectiveLinkedGroup() const {
         if (front->hasProducer()) {
           // The link tensor is only allowed to come through subgraph ops, and
           // should not be touched by other ops
-          throw error("Op {} not expected on the path from the"
+          throw error("Op {} not expected on the path from the "
                       "link tensor to the collective operation {}",
                       front->getProducer()->debugName(),
                       op->debugName());

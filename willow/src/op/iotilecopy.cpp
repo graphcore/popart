@@ -25,4 +25,16 @@ void IoTileCopyOp::setup() {
   }
 }
 
+VGraphIdAndIoTile
+IoTileCopyOp::getIntrospectionInVirtualGraphId(InIndex) const {
+  return {getVirtualGraphId(),
+          settings.tileSet == TileSet::Compute ? TileSet::IO
+                                               : TileSet::Compute};
+}
+
+VGraphIdAndIoTile
+IoTileCopyOp::getIntrospectionOutVirtualGraphId(OutIndex) const {
+  return {getVirtualGraphId(), settings.tileSet};
+}
+
 } // namespace popart

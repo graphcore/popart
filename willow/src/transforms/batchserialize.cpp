@@ -788,14 +788,15 @@ bool BatchSerialize::apply(Graph &graph) const {
       bool nextSection  = true;
       for (Op *op : schedule) {
         logging::transform::trace(
-            "[BatchSerialize] BSP: {} S: {} P: {} prio: {} OP: {}",
+            "[BatchSerialize] BSP: {} S: {} P: {} prio: {} OP: {}, SID: {}",
             op->hasBatchSerializedPhase()
                 ? std::to_string(op->getBatchSerializedPhase())
                 : "*",
             section,
             position,
             op->settings.schedulePriority,
-            op->debugName());
+            op->debugName(),
+            op->getSubgraphEquivId());
         if (op->hasBatchSerializedPhase()) {
           auto bsp = op->getBatchSerializedPhase();
           if (bsp == 0) {
@@ -872,7 +873,8 @@ bool BatchSerialize::apply(Graph &graph) const {
         // Skip tracing of certain tensors that can lead to false
         // positive isomporphism results
         if (std::any_of(ids.begin(), ids.end(), [](TensorId id) {
-              return id.find(reservedIndexPrefix()) != std::string::npos;
+              return id.find(reservedIndexPrefix()) != std::string::npos ||
+                     id.find(reservedRandomSeedPrefix()) != std::string::npos;
             })) {
           continue;
         }
@@ -967,7 +969,7 @@ bool BatchSerialize::apply(Graph &graph) const {
               idsLocal.push_back(tx->id);
             }
             logging::transform::trace(
-                "[BatchSerialization] Front {}{} size {} is a deadend",
+                "[BatchSerialize] Front {}{} size {} is a deadend",
                 idsLocal,
                 alreadyVisited ? " (already visited)" : "",
                 idsLocal.size());
@@ -983,7 +985,7 @@ bool BatchSerialize::apply(Graph &graph) const {
         if (op->hasBatchSerializedPhase() &&
             op->getBatchSerializedPhase() >= 0) {
           if (opSectionLookup.find(op) == opSectionLookup.end()) {
-            logging::warn("[BatchSerialization] Could not find isomorphic "
+            logging::warn("[BatchSerialize] Could not find isomorphic "
                           "position for {}",
                           op->debugName());
           }

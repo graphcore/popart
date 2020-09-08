@@ -637,9 +637,20 @@ void StreamingMemoryOpInserter::applyReplicatedOptimizerSharding(
                 }
               }
 
-              Tensor *outTensor = graph.getTensors().get(outId);
+              Tensor *outTensor         = graph.getTensors().get(outId);
+              TensorConfig tensorConfig = tensorConfigs.at(outTensor);
 
-              TensorConfig &tensorConfig = tensorConfigs.at(outTensor);
+              Tensor *varTensor = findRelatedVarTensor({outTensor});
+
+              if (varTensor) {
+                tensorConfig = tensorConfigs.at(varTensor);
+              } else {
+                logging::transform::warn(
+                    "[StreamingMemory] {} is an optimizer related "
+                    "ReplicatedAllReduce, but the related variable "
+                    "has not been found.",
+                    replicatedAllReduce->debugName());
+              }
 
               ReplicatedReduceScatterOp *replicatedReduceScatter =
                   insertReplicatedReduceScatterOp(

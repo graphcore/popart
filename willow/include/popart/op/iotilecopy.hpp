@@ -17,6 +17,9 @@ public:
   static OutIndex getOutIndex() { return 0; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
+  VGraphIdAndIoTile getIntrospectionInVirtualGraphId(InIndex) const final;
+  VGraphIdAndIoTile getIntrospectionOutVirtualGraphId(OutIndex) const final;
 };
 } // namespace popart
 

@@ -152,6 +152,10 @@ bool IoComputeTileCopy::apply(Graph &graph) const {
             tensor->tensorType() == TensorType::Variable) {
           auto it = processedTensors.find(tensor->id);
           if (it == processedTensors.end()) {
+            logging::trace("[IoComputeTileCopy] Tensor {} placed on TileSet "
+                           "determined by {}",
+                           tensor->id,
+                           from->debugName());
             tensors.insert(tensor);
             processedTensors.insert(tensor->id);
           }

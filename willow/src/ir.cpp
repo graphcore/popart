@@ -1057,18 +1057,18 @@ void Ir::prepareImpl(const IrBundle &gb) {
   applyTransform(IoComputeTileCopy::id(), getMainGraph());
   updateVertices();
 
-  // Batch serialisation, step 2 (needs IoTileCopy ops to have been inserted)
-  if (userOptions.batchSerializationSettings.factor > 1) {
-    applyTransform(BatchSerialize::id(2), getMainGraph());
-    updateVertices();
-  }
-
   for (auto &id_graph : graphs) {
     auto &graph = getGraph(id_graph.first);
     applyPreAliasPatterns(graph);
   }
 
   updateVertices();
+
+  // Batch serialisation, step 2 (needs IoTileCopy ops to have been inserted)
+  if (userOptions.batchSerializationSettings.factor > 1) {
+    applyTransform(BatchSerialize::id(2), getMainGraph());
+    updateVertices();
+  }
 
   dotCheckpoint(DotCheck::PreAlias);
 
