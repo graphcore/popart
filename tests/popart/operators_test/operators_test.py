@@ -2663,6 +2663,77 @@ def test_where_0(op_tester):
     op_tester.run(init_builder, reference, 'infer')
 
 
+def test_round(op_tester):
+    d1 = np.random.rand(2, 7).astype(np.float32)
+    d1 = d1 * 6 - 3  # numbers in range [-3, 3]
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnxOpset11.round([i1], "test_round")
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        result = np.round(d1)
+        return [result.astype(np.float32)]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_round_graphcore(op_tester):
+    d1 = np.random.rand(2, 7).astype(np.float32)
+    d1 = d1 * 6 - 3  # numbers in range [-3, 3]
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiGraphcore.round([i1], "test_round")
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        result = np.round(d1)
+        return [result.astype(np.float32)]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_round_inplace(op_tester):
+    d1 = np.random.rand(2, 7).astype(np.float32)
+    d1 = d1 * 10  # numbers in range [0, 10]
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        # Pad with ops to allow in-placing
+        log = builder.aiOnnxOpset11.log([i1])
+        round = builder.aiOnnxOpset11.round([log], "test_round")
+        o = builder.aiOnnxOpset11.exp([round])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        result = np.exp(np.round(np.log(d1)))
+        return [result.astype(np.float32)]
+
+    op_tester.setPatterns(['InPlace'], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'train')
+
+
+def test_round_grad(op_tester):
+    d1 = np.random.rand(2, 7).astype(np.float32)
+    d1 = d1 * 6 - 3  # numbers in range [-3, 3]
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnxOpset11.round([i1], "test_round")
+        builder.addOutputTensor(o)
+        return [o, popart.reservedGradientPrefix() + i1]
+
+    def reference(ref_data):
+        return [np.round(d1).astype(np.float32), np.zeros_like(d1)]
+
+    op_tester.run(init_builder, reference, 'train')
+
+
 def test_where_1(op_tester):
     condition = np.array([[1, 0], [1, 1]], dtype=np.bool)
     x = np.array([[1, 2]], dtype=np.float32)

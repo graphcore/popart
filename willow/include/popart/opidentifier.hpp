@@ -301,6 +301,7 @@ const static AiGraphcoreOpIdV1 PadInplace("PadInplace");
 const static AiGraphcoreOpIdV1 PrintTensor_1("PrintTensor", 1, 1);
 const static AiGraphcoreOpIdV1 ConcatGradInplace("ConcatInplace");
 const static AiGraphcoreOpIdV1 ExpandInplace("ExpandInplace");
+const static AiGraphcoreOpIdV1 RoundInplace("RoundInplace");
 const static AiGraphcoreOpIdV1 Subsample_1("Subsample", 1, 1);
 const static AiGraphcoreOpIdV1 Scale_1("Scale", 1, 1);
 const static AiGraphcoreOpIdV1 SignInplace("SignInplace");
@@ -313,6 +314,7 @@ const static AiGraphcoreOpIdV1 GeluInplace("GeluInplace");
 const static AiGraphcoreOpIdV1 Detach_1("Detach", 1, 1);
 const static AiGraphcoreOpIdV1 DetachInplace("DetachInplace");
 const static AiGraphcoreOpIdV1 MultiConv_1("MultiConv");
+const static AiGraphcoreOpIdV1 Round_1("Round", 1, 1);
 const static AiGraphcoreOpIdV1 Nop_1("Nop", 1, 1);
 
 const static AiGraphcoreOpIdV1 ReluInplace("ReluInplace");
@@ -417,6 +419,7 @@ const static OperatorIdentifier Gelu         = CustomOperators::Gelu_1;
 const static OperatorIdentifier Init         = CustomOperators::Init_1;
 const static OperatorIdentifier Detach       = CustomOperators::Detach_1;
 const static OperatorIdentifier MultiConv    = CustomOperators::MultiConv_1;
+const static OperatorIdentifier Round        = CustomOperators::Round_1;
 const static OperatorIdentifier DynamicSlice = CustomOperators::DynamicSlice_1;
 const static OperatorIdentifier DynamicUpdate =
     CustomOperators::DynamicUpdate_1;

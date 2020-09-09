@@ -1437,6 +1437,10 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("args"),
             py::arg("pass_through_creation") = 0,
             py::arg("debugPrefix")           = std::string());
+    cls.def("round",
+            &AiGraphcoreOpset1::round,
+            py::arg("args"),
+            py::arg("debugPrefix") = std::string());
     cls.def("init",
             py::overload_cast<Attributes::Ints,
                               Attributes::Int,
