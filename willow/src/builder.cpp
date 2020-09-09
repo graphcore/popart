@@ -575,6 +575,16 @@ TensorId AiGraphcoreOpset1::detach(const std::vector<TensorId> &args,
       .at(0);
 }
 
+TensorId AiGraphcoreOpset1::round(const std::vector<TensorId> &args,
+                                  const std::string &name) {
+  std::map<std::string, popart::any> attributes;
+  return impl->op(Onnx::AiGraphcore::OpSet1::Round,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
 TensorId AiGraphcoreOpset1::init(Attributes::Ints shape,
                                  Attributes::Int data_type,
                                  Attributes::Int init_type,

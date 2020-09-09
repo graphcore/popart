@@ -226,6 +226,19 @@ public:
                   const std::string &name    = {});
 
   /**
+   * Add the 'Round' to the model
+   * (This allows Round_11 to be targeted from earlier opsets)
+   *
+   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Round
+   *
+   * \param args List of input tensor ids
+   * \param name Optional identifier for the operation
+   * \return The normalized output tensor ids
+   */
+  TensorId round(const std::vector<TensorId> &args,
+                 const std::string &name = {});
+
+  /**
    * Add an init operation to the model
    *
    * \param shape Shape of the tensor to initialise
