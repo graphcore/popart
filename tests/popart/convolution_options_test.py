@@ -191,22 +191,6 @@ def test_conv_avail_memory_error(tmpdir, capfd):
     assert (e_info.value.args[0].startswith(
         "availableMemoryProportion must be in (0,1]"))
 
-
-# Test wrong op error
-@tu.requires_ipu_model
-def test_avail_memory_error_2(tmpdir, capfd):
-
-    avail_mem_prop = 0.6
-
-    # Apply to the wrong op
-    with pytest.raises(popart.popart_exception) as e_info:
-        conv_avail_memory(tmpdir, capfd, False, avail_mem_prop)
-
-    assert (e_info.value.args[0].startswith(
-        "Builder::setAvailableMemoryProportion should only be called on Conv or MatMul"
-    ))
-
-
 # Test that poplar gets our instruction to set the available memory proportion.
 # Do this by matching the poplibs logs.
 @tu.requires_ipu_model
