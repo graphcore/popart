@@ -43,7 +43,8 @@ public:
   applyScalingInPlaceForMeanReduction(const Opx &opx,
                                       poplar::Tensor t,
                                       poplar::program::Sequence &prog,
-                                      bool negate = false);
+                                      bool negate              = false,
+                                      bool include_replication = true);
 
   // Same as above, except the divisor for the scaling of the loss/
   // loss grad cannot be determined at compile time.
@@ -57,7 +58,8 @@ public:
       poplar::Tensor t,
       poplar::Tensor mask,
       poplar::program::Sequence &prog,
-      bool negate = false);
+      bool negate              = false,
+      bool include_replication = true);
 
   static void handleLossOutReducedToScalar(const Opx &opx,
                                            bool hasIgnoreIndex,

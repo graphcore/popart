@@ -114,9 +114,8 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
       break;
     }
     case ReductionType::Mean: {
-      double totalSamples = static_cast<double>(dv_p->getReplicationFactor()) *
-                            static_cast<double>(absTensor1D.dim(0));
-      scale = lambda / totalSamples;
+      double totalSamples = static_cast<double>(absTensor1D.dim(0));
+      scale               = lambda / totalSamples;
       break;
     }
     // Making it explicit which data types we're not handling. Note that
