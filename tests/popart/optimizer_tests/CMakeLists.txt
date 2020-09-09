@@ -17,3 +17,9 @@ add_popart_py_unit_test(pytorch_comparisons VARIANTS IpuModel)
 add_popart_py_unit_test(sgd_mixed_mode_test_py_0)
 add_popart_py_unit_test(sgd_mixed_mode_test_py_1)
 add_popart_py_unit_test(sgd1_accumulator_test)
+
+add_popart_py_unit_test(global_batch_size_test VARIANTS Hw)
+# Test uses all IPUs, so run alone to avoid IPU attachment conflicts
+if ("Hw" IN_LIST ENABLED_TEST_VARIANTS)
+  set_tests_properties("Hw_default_global_batch_size_test" PROPERTIES RUN_SERIAL TRUE)
+endif()

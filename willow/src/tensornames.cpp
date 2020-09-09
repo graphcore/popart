@@ -59,7 +59,9 @@ std::vector<std::string> reservedOptimizerPrefixes() {
           reservedDefaultAdamEpsPrefix(),
           reservedSpecificAdamEpsPrefix(),
           reservedDefaultWeightDecayPrefix(),
-          reservedSpecificWeightDecayPrefix()};
+          reservedSpecificWeightDecayPrefix(),
+          reservedDefaultAdamGradientScalingPrefix(),
+          reservedSpecificAdamGradientScalingPrefix()};
 }
 
 std::vector<std::string> reservedPrefixes() {

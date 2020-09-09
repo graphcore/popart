@@ -365,7 +365,7 @@ bool AdamDecompose::apply(Op *op) const {
       combo->initB1,
       combo->initB2,
       combo->initEps,
-      combo->initLs,
+      combo->initGs,
       Op::Settings(graph, combo->name() + "_adamupdater"));
   auto adamUpdOp = adamUpdOpUp.get();
   transferBaseProperties(combo, adamUpdOp);
@@ -416,9 +416,9 @@ bool AdamDecompose::apply(Op *op) const {
     adamUpdOp->connectInTensor(AdamUpdaterOp::getEpsInIndex(),
                                combo->inId(AdamComboOp::getEpsInIndex()));
   }
-  if (!combo->initLs.isConst()) {
-    adamUpdOp->connectInTensor(AdamUpdaterOp::getLsInIndex(),
-                               combo->inId(AdamComboOp::getLsInIndex()));
+  if (!combo->initGs.isConst()) {
+    adamUpdOp->connectInTensor(AdamUpdaterOp::getGsInIndex(),
+                               combo->inId(AdamComboOp::getGsInIndex()));
   }
 
   // Updater term

@@ -44,28 +44,6 @@ private:
   const OptimizerValue factor;
 };
 
-// Update accumulator by dividing it by the replication factor in case of
-// multi-replica gradient accumulation
-class AccumulateUpdateOp : public VarUpdateWithUpdaterOp {
-
-public:
-  AccumulateUpdateOp(const TensorId &varToUpdate,
-                     AccumulationType type_,
-                     OptimizerValue factor_,
-                     const Op::Settings &);
-
-  std::unique_ptr<Op> clone() const final;
-  std::unique_ptr<Op> cloneWithNewName(const TensorId &newName) const final;
-  std::map<InIndex, TensorId> optimizerInputs() const final;
-  void appendOutlineAttributes(OpSerialiserBase &) const final;
-  static InIndex getFactorInIndex() { return 2; }
-  float getSubgraphValue() const final { return getLowSubgraphValue(); }
-
-private:
-  AccumulationType type;
-  const OptimizerValue factor;
-};
-
 } // namespace popart
 
 #endif

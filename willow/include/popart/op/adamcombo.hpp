@@ -30,6 +30,7 @@ public:
               OptimizerValue initialEps,
               OptimizerValue initialLs,
               OptimizerValue mwn,
+              OptimizerValue initialGs,
               AdamMode mode_,
               bool withGradAccum_,
               OptimizerReductionType reductionType_,
@@ -67,6 +68,9 @@ public:
   // maximum trust ratio (Lamb)
   const OptimizerValue initMwn;
 
+  // gradient scaling
+  const OptimizerValue initGs;
+
   // Adam mode
   const AdamMode mode;
 
@@ -87,6 +91,7 @@ public:
   static InIndex getEpsInIndex() { return 6; }
   static InIndex getLsInIndex() { return 7; }
   static InIndex getMwnInIndex() { return 8; }
+  static InIndex getGsInIndex() { return 9; }
 
   std::set<InIndex> optionalInputs() const final;
 

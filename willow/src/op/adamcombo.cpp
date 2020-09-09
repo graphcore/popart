@@ -14,6 +14,7 @@ AdamComboOp::AdamComboOp(const TensorId &varToUpdate,
                          OptimizerValue initialEps,
                          OptimizerValue initialLs,
                          OptimizerValue initialMwn,
+                         OptimizerValue initialGs,
                          AdamMode mode_,
                          bool withGradAccum_,
                          OptimizerReductionType reductionType_,
@@ -26,9 +27,9 @@ AdamComboOp::AdamComboOp(const TensorId &varToUpdate,
                              settings_),
       initLr(initialLr), initWd(initialWd), initB1(initialB1),
       initB2(initialB2), initEps(initialEps), initLs(initialLs),
-      initMwn(initialMwn), mode(mode_), withGradAccum(withGradAccum_),
-      reductionType(reductionType_), accumType(accumType_),
-      accl1Type(accl1Type_), accl2Type(accl2Type_) {}
+      initMwn(initialMwn), initGs(initialGs), mode(mode_),
+      withGradAccum(withGradAccum_), reductionType(reductionType_),
+      accumType(accumType_), accl1Type(accl1Type_), accl2Type(accl2Type_) {}
 
 void AdamComboOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   if (initLr.isConst()) {
@@ -71,6 +72,7 @@ std::unique_ptr<Op> AdamComboOp::cloneWithNewName(const TensorId &x) const {
                                        initEps,
                                        initLs,
                                        initMwn,
+                                       initGs,
                                        mode,
                                        withGradAccum,
                                        reductionType,
@@ -123,6 +125,11 @@ std::map<InIndex, TensorId> AdamComboOp::optimizerInputs() const {
     m.insert({index, inId(index)});
   }
 
+  if (!initGs.isConst()) {
+    auto index = getGsInIndex();
+    m.insert({index, inId(index)});
+  }
+
   return m;
 }
 
@@ -134,7 +141,8 @@ std::set<InIndex> AdamComboOp::optionalInputs() const {
           getWdInIndex(),
           getEpsInIndex(),
           getLsInIndex(),
-          getMwnInIndex()};
+          getMwnInIndex(),
+          getGsInIndex()};
 }
 
 } // namespace popart

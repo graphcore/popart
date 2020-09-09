@@ -8,6 +8,7 @@
 #include <string>
 
 #include <popart/op.hpp>
+#include <popart/op/loss.hpp>
 #include <popart/tensorlocation.hpp>
 
 namespace popart {
@@ -307,6 +308,10 @@ struct SessionOptions {
 
   /// Enable gradient accumulation
   bool enableGradientAccumulation = false;
+
+  /// Specify how gradients are reduced when using gradient accumulation.
+  /// The options are equivilent to how gradients are reduced on lossOps.
+  ReductionType accumulationReductionType = ReductionType::Sum;
 
   /// If enableReplicatedGraphs is true, replicatedGraphCount will set the
   /// number of model replications. E.g. if your model uses 1 IPU, a
