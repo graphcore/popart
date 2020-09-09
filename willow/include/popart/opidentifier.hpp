@@ -275,6 +275,8 @@ const static AiGraphcoreOpIdV1 TileGrad("TileGrad");
 const static AiGraphcoreOpIdV1 TopKGrad("TopKGrad");
 const static AiGraphcoreOpIdV1 TransposeGrad("TransposeGrad");
 const static AiGraphcoreOpIdV1 UnsqueezeGrad("UnsqueezeGrad");
+const static AiGraphcoreOpIdV1 WhereXGrad("WhereXGrad");
+const static AiGraphcoreOpIdV1 WhereYGrad("WhereYGrad");
 // constexpr static char Upsample[] = "Upsample";
 // constexpr static char Xor[] = "Xor";
 

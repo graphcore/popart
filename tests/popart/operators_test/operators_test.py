@@ -2662,12 +2662,37 @@ def test_where_0(op_tester):
         return [o]
 
     def reference(ref_data):
-        out = np.where(condition, x, y)
+        ct = torch.tensor(condition)
+        cx = torch.tensor(x)
+        cy = torch.tensor(y)
+        out = torch.where(ct, cx, cy)
         return [out]   
 
     op_tester.run(init_builder, reference, 'infer')
 
 def test_where_1(op_tester):
+    condition = np.array([[1, 0], [1, 1]], dtype=np.bool)
+    x = np.array([[1, 2]], dtype=np.float32)
+    y = np.array([[9, 8], [7, 6]], dtype=np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(condition)
+        i2 = builder.addInputTensor(x)
+        i3 = builder.addInputTensor(y)
+        o = builder.aiOnnx.where([i1, i2, i3])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        ct = torch.tensor(condition)
+        cx = torch.tensor(x)
+        cy = torch.tensor(y)
+        out = torch.where(ct, cx, cy)
+        return [out]   
+
+    op_tester.run(init_builder, reference, 'infer')
+
+def test_where_2(op_tester):
     x = np.arange(9, dtype=np.int32)
     y = 10*x
     condition = x < 5
@@ -2681,13 +2706,18 @@ def test_where_1(op_tester):
         return [o]
 
     def reference(ref_data):
-        out = np.where(condition, x, y)
+        ct = torch.tensor(condition)
+        cx = torch.tensor(x)
+        cy = torch.tensor(y)
+        out = torch.where(ct, cx, cy)
         return [out]   
 
     op_tester.run(init_builder, reference, 'infer')
 
-def test_where_2(op_tester):
+def test_where_3(op_tester):
     x, y = np.ogrid[:3, :4]
+    x = np.float32(x)
+    y = np.float32(y)    
     y = 10 + y
     condition = x < y
 
@@ -2700,14 +2730,21 @@ def test_where_2(op_tester):
         return [o]
 
     def reference(ref_data):
-        out = np.where(condition, x, y)
+        ct = torch.tensor(condition)
+        cx = torch.tensor(x)
+        cy = torch.tensor(y)
+        out = torch.where(ct, cx, cy)
         return [out]
 
-def test_where_3(op_tester):
+    op_tester.run(init_builder, reference, 'infer')        
+
+def test_where_4(op_tester):
     x = np.array([[0, 1, 2],
                   [0, 2, 4],
                   [0, 3, 6]])
-    y = -1
+    y = np.array([-1])
+    x = np.float32(x)
+    y = np.float32(y)
     condition = x < 4
 
     def init_builder(builder):
@@ -2718,10 +2755,21 @@ def test_where_3(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-def test_where_4(op_tester):
+    def reference(ref_data):
+        ct = torch.tensor(condition)
+        cx = torch.tensor(x)
+        cy = torch.tensor(y)
+        out = torch.where(ct, cx, cy)
+        return [out]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+def test_where_5(op_tester):
     x = np.array([[1, 2], [3, 4], [5, 6]])
     y = np.array([0,10])
-    condition = False
+    x = np.float32(x)
+    y = np.float32(y)   
+    condition = np.array([False])
 
     def init_builder(builder):
         i1 = builder.addInputTensor(condition)
@@ -2732,5 +2780,193 @@ def test_where_4(op_tester):
         return [o]
 
     def reference(ref_data):
-        out = np.where(condition, x, y)
+        ct = torch.tensor(condition)
+        cx = torch.tensor(x)
+        cy = torch.tensor(y)
+        out = torch.where(ct, cx, cy)
         return [out]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+def test_where_grad0(op_tester):
+    condition = np.array([[True, False], [True, True]], dtype=np.bool)    
+    x = np.array([[1, 2], [3, 4]], dtype=np.float32)
+    y = np.array([[9, 8], [7, 6]], dtype=np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(condition)
+        i2 = builder.addInputTensor(x)
+        i3 = builder.addInputTensor(y)
+        o = builder.aiOnnx.where([i1, i2, i3])
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + i2,
+            popart.reservedGradientPrefix() + i3,
+            popart.reservedGradientPrefix() + o,
+        ]
+
+    def reference(ref_data):
+        tc = torch.tensor(condition)
+        tx = torch.tensor(x, requires_grad=True)
+        ty = torch.tensor(y, requires_grad=True)
+        out = torch.where(tc, tx, ty)
+        d__o = ref_data.getOutputTensorGrad(0)
+        out.backward(torch.tensor(d__o))
+        return [out, tx.grad, ty.grad, None]
+
+    op_tester.run(init_builder, reference, 'train')
+
+def test_where_grad1(op_tester):
+    condition = np.array([[True, False], [True, True]], dtype=np.bool)    
+    x = np.array([[1, 2]], dtype=np.float32)
+    y = np.array([[9, 8], [7, 6]], dtype=np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(condition)
+        i2 = builder.addInputTensor(x)
+        i3 = builder.addInputTensor(y)
+        o = builder.aiOnnx.where([i1, i2, i3])
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + i2,
+            popart.reservedGradientPrefix() + i3,
+            popart.reservedGradientPrefix() + o,
+        ]
+
+    def reference(ref_data):
+        tc = torch.tensor(condition)
+        tx = torch.tensor(x, requires_grad=True)
+        ty = torch.tensor(y, requires_grad=True)
+        out = torch.where(tc, tx, ty)
+        d__o = ref_data.getOutputTensorGrad(0)
+        out.backward(torch.tensor(d__o))
+        return [out, tx.grad, ty.grad, None]        
+
+    op_tester.run(init_builder, reference, 'train')
+
+
+def test_where_grad2(op_tester):
+    x = np.arange(9, dtype=np.float32)
+    y = 10*x
+    condition = x < 5
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(condition)
+        i2 = builder.addInputTensor(x)
+        i3 = builder.addInputTensor(y)
+        o = builder.aiOnnx.where([i1, i2, i3])
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + i2,
+            popart.reservedGradientPrefix() + i3,
+            popart.reservedGradientPrefix() + o,
+        ]
+
+    def reference(ref_data):
+        tc = torch.tensor(condition)
+        tx = torch.tensor(x, requires_grad=True)
+        ty = torch.tensor(y, requires_grad=True)
+        out = torch.where(tc, tx, ty)
+        d__o = ref_data.getOutputTensorGrad(0)
+        out.backward(torch.tensor(d__o))
+        return [out, tx.grad, ty.grad, None]
+
+    op_tester.run(init_builder, reference, 'train')
+
+def test_where_grad3(op_tester):
+    x, y = np.ogrid[:3, :4]
+    x = np.float32(x)
+    y = np.float32(y)    
+    y = 10 + y
+    condition = x < y
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(condition)
+        i2 = builder.addInputTensor(x)
+        i3 = builder.addInputTensor(y)
+        o = builder.aiOnnx.where([i1, i2, i3])        
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + i2,
+            popart.reservedGradientPrefix() + i3,
+            popart.reservedGradientPrefix() + o,
+        ]
+
+    def reference(ref_data):
+        tc = torch.tensor(condition)
+        tx = torch.tensor(x, requires_grad=True)
+        ty = torch.tensor(y, requires_grad=True)
+        out = torch.where(tc, tx, ty)
+        d__o = ref_data.getOutputTensorGrad(0)
+        out.backward(torch.tensor(d__o))
+        return [out, tx.grad, ty.grad, None]
+
+    op_tester.run(init_builder, reference, 'train')
+
+def test_where_grad4(op_tester):
+    x = np.array([[0, 1, 2],
+                  [0, 2, 4],
+                  [0, 3, 6]])
+    y = np.array([-1])
+    x = np.float32(x)
+    y = np.float32(y)
+    condition = x < 4
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(condition)
+        i2 = builder.addInputTensor(x)
+        i3 = builder.addInputTensor(y)
+        o = builder.aiOnnx.where([i1, i2, i3])
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + i2,
+            popart.reservedGradientPrefix() + i3,
+            popart.reservedGradientPrefix() + o,
+        ]
+
+    def reference(ref_data):
+        tc = torch.tensor(condition)
+        tx = torch.tensor(x, requires_grad=True)
+        ty = torch.tensor(y, requires_grad=True)
+        out = torch.where(tc, tx, ty)
+        d__o = ref_data.getOutputTensorGrad(0)
+        out.backward(torch.tensor(d__o))
+        return [out, tx.grad, ty.grad, None]
+
+    op_tester.run(init_builder, reference, 'train')
+    
+def test_where_grad5(op_tester):
+    x = np.array([[1, 2], [3, 4], [5, 6]])
+    y = np.array([0,10])
+    x = np.float32(x)
+    y = np.float32(y)   
+    condition = np.array([False])
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(condition)
+        i2 = builder.addInputTensor(x)
+        i3 = builder.addInputTensor(y)
+        o = builder.aiOnnx.where([i1, i2, i3])
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + i2,
+            popart.reservedGradientPrefix() + i3,
+            popart.reservedGradientPrefix() + o,
+        ]
+
+    def reference(ref_data):
+        tc = torch.tensor(condition)
+        tx = torch.tensor(x, requires_grad=True)
+        ty = torch.tensor(y, requires_grad=True)
+        out = torch.where(tc, tx, ty)
+        d__o = ref_data.getOutputTensorGrad(0)
+        out.backward(torch.tensor(d__o))
+        return [out, tx.grad, ty.grad, None]
+
+    op_tester.run(init_builder, reference, 'train')

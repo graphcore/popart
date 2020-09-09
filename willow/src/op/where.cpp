@@ -1,13 +1,9 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <string>
+
 #include <vector>
 
-#include <memory>
 #include <popart/op/where.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/opserialiser.hpp>
-#include <popart/tensor.hpp>
 
 namespace popart {
 
@@ -23,6 +19,70 @@ void WhereOp::setup() {
       TensorInfo(inInfo(xInIndex()).dataType(), inShape(conditionInIndex()));
   outInfo(outIndex()) = prettyNpOut(outInfo(outIndex()), inInfo(xInIndex()));
   outInfo(outIndex()) = prettyNpOut(outInfo(outIndex()), inInfo(yInIndex()));
+}
+
+std::vector<std::unique_ptr<Op>> WhereOp::getGradOps() {
+  std::vector<std::unique_ptr<Op>> upops;
+  upops.emplace_back(std::make_unique<WhereXGradOp>(*this));
+  upops.emplace_back(std::make_unique<WhereYGradOp>(*this));
+
+  return upops;
+}
+
+WhereXGradOp::WhereXGradOp(const WhereOp &op)
+    : Op(Onnx::GradOperators::WhereXGrad, op.getSettings()),
+      fwdOpXInInfo(op.inInfo(WhereOp::xInIndex())) {}
+
+std::unique_ptr<Op> WhereXGradOp::clone() const {
+  return std::make_unique<WhereXGradOp>(*this);
+}
+
+const std::vector<GradInOutMapper> &WhereXGradOp::gradInputInfo() const {
+  static const std::vector<GradInOutMapper> inInfo = {
+      {fwdConditionInIndex(), WhereOp::conditionInIndex(), GradOpInType::In},
+      {outGradInIndex(), WhereOp::outIndex(), GradOpInType::GradOut}};
+
+  return inInfo;
+}
+
+const std::map<int, int> &WhereXGradOp::gradOutToNonGradIn() const {
+  static const std::map<int, int> outInfo = {{outIndex(), WhereOp::xInIndex()}};
+
+  return outInfo;
+}
+
+void WhereXGradOp::setup() { outInfo(outIndex()) = fwdOpXInInfo; }
+
+std::vector<size_t> WhereXGradOp::getFwdInShape() const {
+  return fwdOpXInInfo.shape_szt();
+}
+
+WhereYGradOp::WhereYGradOp(const WhereOp &op)
+    : Op(Onnx::GradOperators::WhereYGrad, op.getSettings()),
+      fwdOpYInInfo(op.inInfo(WhereOp::yInIndex())) {}
+
+std::unique_ptr<Op> WhereYGradOp::clone() const {
+  return std::make_unique<WhereYGradOp>(*this);
+}
+
+const std::vector<GradInOutMapper> &WhereYGradOp::gradInputInfo() const {
+  static const std::vector<GradInOutMapper> inInfo = {
+      {fwdConditionInIndex(), WhereOp::conditionInIndex(), GradOpInType::In},
+      {outGradInIndex(), WhereOp::outIndex(), GradOpInType::GradOut}};
+
+  return inInfo;
+}
+
+const std::map<int, int> &WhereYGradOp::gradOutToNonGradIn() const {
+  static const std::map<int, int> outInfo = {{outIndex(), WhereOp::yInIndex()}};
+
+  return outInfo;
+}
+
+void WhereYGradOp::setup() { outInfo(outIndex()) = fwdOpYInInfo; }
+
+std::vector<size_t> WhereYGradOp::getFwdInShape() const {
+  return fwdOpYInInfo.shape_szt();
 }
 
 namespace {
