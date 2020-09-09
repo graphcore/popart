@@ -661,6 +661,10 @@ void StreamingMemoryOpInserter::applyReplicatedOptimizerSharding(
                   replicatedAllReduce->debugName());
             }
 
+            // Keep settings that the ReplicatedAllReduce, that is being
+            // replaced, had.
+            tensorConfig.settings = replicatedAllReduce->settings;
+
             ReplicatedReduceScatterOp *replicatedReduceScatter =
                 insertReplicatedReduceScatterOp(
                     tensorConfig, context, inId, outId, refId);
