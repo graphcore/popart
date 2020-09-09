@@ -1,4 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <popops/ElementWise.hpp>
 #include <popops/Zero.hpp>
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
@@ -19,12 +20,32 @@ void AccumulatorUpdateOpx::grow(poplar::program::Sequence &prog) const {
 
   auto accumulateOp = getOp<AccumulatorUpdateOp>();
 
-  auto accum = getInTensor(VarUpdateOp::getVarToUpdateInIndex());
+  auto accum = getInTensor(AccumulatorUpdateOp::getVarToUpdateInIndex());
 
-  popops::zero(graph(), accum, prog, debugPrefix("accumulatorUpdate"));
+  auto factor = accumulateOp.getFactor();
+
+  if (factor.isConst()) {
+    auto val = accumulateOp.getFactor().val();
+    if (val == 0.0f) {
+      popops::zero(graph(), accum, prog, debugPrefix("accumulatorUpdate"));
+    } else {
+      popops::mulInPlace(
+          graph(), accum, val, prog, debugPrefix("accumulatorUpdate"));
+    }
+  } else {
+    auto factor = getInTensor(AccumulatorUpdateOp::getFactorInIndex());
+    popops::mulInPlace(
+        graph(), accum, factor, prog, debugPrefix("accumulatorUpdate"));
+  }
+
+  if (hasInViewChangers(AccumulatorUpdateOp::getVarToUpdateInIndex())) {
+    setOutViewChangers(
+        AccumulatorUpdateOp::getUpdatedVarOutIndex(),
+        getInViewChangers(AccumulatorUpdateOp::getVarToUpdateInIndex()));
+  }
 
   // reference accum returned
-  setOutTensor(VarUpdateOp::getUpdatedVarOutIndex(), accum);
+  setOutTensor(AccumulatorUpdateOp::getUpdatedVarOutIndex(), accum);
 }
 
 namespace {

@@ -8,13 +8,9 @@
 
 namespace popart {
 
-void AccumulatorUpdateOp::setup() {
-  outInfo(getUpdatedVarOutIndex()) = inInfo(getVarToUpdateInIndex());
-}
-
 std::unique_ptr<Op>
 AccumulatorUpdateOp::cloneWithNewName(const TensorId &x) const {
-  return std::make_unique<AccumulatorUpdateOp>(x, settings);
+  return std::make_unique<AccumulatorUpdateOp>(x, factor, settings);
 }
 
 std::unique_ptr<Op> AccumulatorUpdateOp::clone() const {
@@ -28,12 +24,18 @@ std::map<InIndex, TensorId> AccumulatorUpdateOp::optimizerInputs() const {
 
 void AccumulatorUpdateOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
+
+  if (factor.isConst()) {
+    os.appendAttribute("const factor", factor.val());
+  }
 }
 
 AccumulatorUpdateOp::AccumulatorUpdateOp(const TensorId &varToUpdate,
+                                         const OptimizerValue factor_,
                                          const Op::Settings &opSettings)
-    : VarUpdateOp(Onnx::CustomOperators::AccumulatorUpdate,
-                  varToUpdate,
-                  opSettings) {}
+    : VarUpdateWithoutUpdaterOp(Onnx::CustomOperators::AccumulatorUpdate,
+                                varToUpdate,
+                                opSettings),
+      factor(factor_) {}
 
 } // namespace popart

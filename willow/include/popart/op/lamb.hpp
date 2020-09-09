@@ -20,7 +20,7 @@ public:
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 
-  virtual bool isOptimizerOp() const { return true; }
+  virtual bool isOptimizerOp() const override { return true; }
 
   ReplicatedTensorShardingIndices
   getReplicatedTensorShardingIndices() const final;

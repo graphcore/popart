@@ -24,6 +24,11 @@ public:
 
   bool canShard() const override { return true; }
 
+  ReplicatedTensorShardingIndices
+  getReplicatedTensorShardingIndices() const override {
+    return {{{CastOp::getInIndex()}, {CastOp::getOutIndex()}}};
+  }
+
 private:
   DataType to;
 };

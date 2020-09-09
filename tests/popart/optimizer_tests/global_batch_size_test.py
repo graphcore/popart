@@ -181,9 +181,7 @@ def test_global_batch_size_correctness(tmpdir, reduction_type, loss_type,
         for j in range(len(baseline_proto.graph.initializer)):
             gt = baseline_proto.graph.initializer[j]
             print(f"Checking initializer {gt.name}")
-            # TODO: Move the accumulationFactor to before the AccumulateOps
-            # To ensure Accl weights match across execution schemes
-            if "Step" in gt.name or "Accl" in gt.name:
+            if "Step" in gt.name:
                 continue
             gt = numpy_helper.to_array(gt)
             val = proto.graph.initializer[j]

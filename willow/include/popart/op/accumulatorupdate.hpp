@@ -9,16 +9,19 @@ namespace popart {
 
 // Update accumulator by dividing it by the replication factor in case of
 // multi-replica gradient accumulation
-class AccumulatorUpdateOp : public VarUpdateOp {
+class AccumulatorUpdateOp : public VarUpdateWithoutUpdaterOp {
+  OptimizerValue factor;
 
 public:
-  AccumulatorUpdateOp(const TensorId &varToUpdate, const Op::Settings &);
-  void setup() final;
+  AccumulatorUpdateOp(const TensorId &varToUpdate,
+                      const OptimizerValue factor_,
+                      const Op::Settings &);
   std::unique_ptr<Op> clone() const final;
   std::unique_ptr<Op> cloneWithNewName(const TensorId &newName) const final;
   std::map<InIndex, TensorId> optimizerInputs() const final;
   void appendOutlineAttributes(OpSerialiserBase &) const final;
   static InIndex getFactorInIndex() { return 2; }
+  const OptimizerValue &getFactor() const { return factor; }
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };
 

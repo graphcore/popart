@@ -263,7 +263,7 @@ class AdamGradientScalingHelper : public CompoundScalarHelper<Adam> {
 public:
   float val(const TensorId &weightId, const Adam &) const final;
   bool isConst(const TensorId &weightId, const Adam &) const final;
-  float val(float ls, float af) const { return ls * af; }
+  float val(float ls, float af) const { return 1 / (ls * af); }
 
 private:
   std::string defaultPrefix() const final {

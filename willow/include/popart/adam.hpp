@@ -54,20 +54,21 @@ enum class AdamMode { Adam = 0, AdamNoBias, Lamb, LambNoBias };
 // accumulator (only used if gradient accumulation is enabled):
 // s = s + g                             (otherwise: s = g)
 //
-// Current gradient scaling
-// gs = ls * af
+// remove loss scaling factor:
+// s = cast(s, FP16/FP32)
+// s = s / (ls * af)
 //
 // first order momentum (FP16/FP32):
 // m = b1 * m + (1 - b1) * s
 //
 // bias corrected:
-// mc = m / ((1 - b1 ** t) * gs)  (without correction: mc = m / gs)
+// mc = m / (1 - b1 ** t)  (without correction: mc = m)
 //
 // second order momentum (FP16/FP32):
 // v = b2 * v + (1 - b2) * s
 //
 // bias corrected:
-// vc = v / ((1 - b2 ** t) * gs ** 2)  (without correction: vc = v / gs ** 2)
+// vc = v / (1 - b2 ** t)  (without correction: vc = v)
 //
 // updater term (FP16/FP32):
 // x = mc / (sqrt(vc) + eps) + wd * w
