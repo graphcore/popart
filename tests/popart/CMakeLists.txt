@@ -270,6 +270,11 @@ add_popart_py_unit_test(collectives_test VARIANTS Hw)
 add_popart_py_unit_test(context_scope_test)
 add_popart_py_unit_test(convolution_options_test VARIANTS IpuModel)
 add_popart_py_unit_test(cycle_count_test VARIANTS Hw)
+# Test uses all IPUs, so run alone to avoid IPU attachment conflicts
+if ("Hw" IN_LIST ENABLED_TEST_VARIANTS)
+  
+endif()
+
 add_popart_py_unit_test(decompose_gradient_summation_test VARIANTS IpuModel)
 add_popart_py_unit_test(device_test VARIANTS Hw)
 add_popart_py_unit_test(dim_param_test)
@@ -338,10 +343,13 @@ set(POPART_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/willow/include)
 add_test(NAME "boost_free_interface_test"
   COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/boost_free_interface_test.py ${POPART_INCLUDE_DIR})
 
-# device_test should be run serially as it tests that it can attach to each
-# IPU available on the machine it is run on.
 if ("Hw" IN_LIST ENABLED_TEST_VARIANTS)
+  # device_test should be run serially as it tests that it can attach to each
+  # IPU available on the machine it is run on.
   set_tests_properties("Hw_default_device_test" PROPERTIES RUN_SERIAL TRUE)
+
+  # Uses all IPUs, so run serially to avoid IPU attachment conflicts
+  set_tests_properties("Hw_default_cycle_count_test" PROPERTIES RUN_SERIAL TRUE)
 endif()
 
 add_subdirectory(anchor_tests)

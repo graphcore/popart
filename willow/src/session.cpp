@@ -54,7 +54,15 @@ uint64_t Session::getCycleCount(std::string id) {
   if (!runCalled) {
     throw error("Must call run before getCycleCount.");
   }
-  return device_->cycleCountTensorToHost().at(id);
+  auto cycleCounts = device_->cycleCountTensorToHost();
+  if (cycleCounts.find(id) != cycleCounts.end()) {
+    // Always get cycle count from first replica
+    return cycleCounts.at(id)[0];
+  } else {
+    throw error("Invalid id for cycle counter, '{}'. Make sure you have set "
+                "SessionOption::hardwareInstrumentations correctly.",
+                id);
+  }
 }
 
 // get the TensorInfo on a Tensor

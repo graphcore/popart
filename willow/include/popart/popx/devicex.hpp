@@ -113,7 +113,7 @@ public:
   void instrumentWithHardwareCycleCounter(poplar::program::Sequence &,
                                           int64_t tileId = 0,
                                           std::string id = "");
-  std::map<std::string, uint64_t> cycleCountTensorToHost();
+  std::map<std::string, std::vector<uint64_t>> cycleCountTensorToHost();
   void run(IStepIO &, std::string debugName = "");
 
 private:
@@ -545,7 +545,7 @@ private:
   std::map<TensorId, std::vector<char>> chBuffers;
 
   // Buffers for storing the hardware cycle count
-  std::map<std::string, uint64_t> cycleCount;
+  std::map<std::string, std::vector<uint64_t>> cycleCount;
 
   // Wrapper for calls to poplar Engine API calls: loading
   // engine onto the poplar device and connecting streams.

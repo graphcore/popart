@@ -738,14 +738,15 @@ void Devicex::instrumentWithHardwareCycleCounter(poplar::program::Sequence &sq,
                                         cycleCountTensor.numElements());
 
   // Allocate host side buffer for cycle count
-  cycleCount[id] = 0;
+  std::vector<uint64_t> zeros(getReplicationFactor(), 0);
+  cycleCount[id] = zeros;
 
   // Add program fragment to copy to host stream
   auto cyclesToHostStream = poplar::program::Copy(cycleCountTensor, st, true);
   progs.cycleCountTensorToHostFragment().add(cyclesToHostStream);
 }
 
-std::map<std::string, uint64_t> Devicex::cycleCountTensorToHost() {
+std::map<std::string, std::vector<uint64_t>> Devicex::cycleCountTensorToHost() {
   if (ir().getSessionOptions().instrumentWithHardwareCycleCounter) {
     // Calls the copy from device to host
     logging::devicex::debug("Writing cycle count to host");
@@ -2715,7 +2716,7 @@ void Devicex::loadEngineAndConnectStreams() {
   if (ir().getSessionOptions().instrumentWithHardwareCycleCounter) {
     for (auto &kv : cycleCount) {
       pEngine->connectStream(cycleCountStreamId(kv.first),
-                             static_cast<void *>(&kv.second));
+                             static_cast<void *>(kv.second.data()));
     }
   }
 }

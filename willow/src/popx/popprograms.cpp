@@ -361,12 +361,16 @@ poplar::program::Sequence PopPrograms::program() const {
         instrumentations.find(Instrumentation::Inner) !=
             instrumentations.end()) {
       // Instrument first tile of every IPU for inner program
-      for (size_t i = 0; i < dv_p->getDeviceInfo()->getNumIpus(); ++i) {
+      auto numIpus =
+          dv_p->getDeviceInfo()->getNumIpus() / dv_p->getReplicationFactor();
+      for (int64_t i = 0; i < numIpus; ++i) {
         std::stringstream ss;
         // String to identify instrumentation
         ss << "inner_ipu_" << i;
         dv_p->instrumentWithHardwareCycleCounter(
-            prog, i * dv_p->getDeviceInfo()->getTilesPerIPU(), ss.str());
+            prog,
+            i * static_cast<int64_t>(dv_p->getDeviceInfo()->getTilesPerIPU()),
+            ss.str());
       }
     }
 

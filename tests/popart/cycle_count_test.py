@@ -79,18 +79,18 @@ def test_get_cycle_count_requires_run():
     opts = popart.SessionOptions()
     opts.instrumentWithHardwareCycleCounter = True
 
+    d = tu.create_test_device()
     session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                      dataFlow=popart.DataFlow(
-                                          1,
-                                          {p: popart.AnchorReturnType("All")}),
+                                      dataFlow=popart.DataFlow(1, [p]),
                                       userOptions=opts,
-                                      deviceInfo=tu.create_test_device())
+                                      deviceInfo=d)
     session.prepareDevice()
 
     with pytest.raises(popart.popart_exception) as e_info:
         cycles = session.getCycleCount()
     assert e_info.value.args[0].startswith(
         "Must call run before getCycleCount")
+    d.detach()
 
 
 @tu.requires_ipu
@@ -100,11 +100,10 @@ def test_get_cycle_count_requires_instrumentation_option():
     p = builder.aiOnnx.exp([d0])
 
     # Default SessionOptions - cycle count instrumentation off
+    d = tu.create_test_device()
     session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                      dataFlow=popart.DataFlow(
-                                          1,
-                                          {p: popart.AnchorReturnType("All")}),
-                                      deviceInfo=tu.create_test_device())
+                                      dataFlow=popart.DataFlow(1, [p]),
+                                      deviceInfo=d)
     session.prepareDevice()
     stepio = popart.PyStepIO({d0: np.random.rand(1).astype(np.float32)},
                              session.initAnchorArrays())
@@ -114,3 +113,74 @@ def test_get_cycle_count_requires_instrumentation_option():
         cycles = session.getCycleCount()
     assert e_info.value.args[0].startswith(
         "SessionOption 'instrumentWithHardwareCycleCounter' must be")
+    d.detach()
+
+
+@tu.requires_ipu
+def test_get_cycle_count_bad_id():
+    builder = popart.Builder()
+    d0 = builder.addInputTensor("FLOAT", [1])
+    p = builder.aiOnnx.exp([d0])
+
+    def getInstrumentedSession(instrumentation):
+        device = tu.create_test_device()
+        opts = popart.SessionOptions()
+        opts.instrumentWithHardwareCycleCounter = True
+        opts.hardwareInstrumentations = instrumentation
+        session = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                          dataFlow=popart.DataFlow(1, [p]),
+                                          userOptions=opts,
+                                          deviceInfo=device)
+        session.prepareDevice()
+        stepio = popart.PyStepIO({d0: np.random.rand(1).astype(np.float32)},
+                                 session.initAnchorArrays())
+        session.run(stepio)
+        return session, device
+
+    s, d = getInstrumentedSession({popart.Instrumentation.Outer})
+    with pytest.raises(popart.popart_exception) as e_info:
+        cycles = s.getCycleCount("inner_ipu_0")
+    assert e_info.value.args[0].endswith(
+        "Make sure you have set SessionOption::hardwareInstrumentations correctly."
+    )
+    d.detach()
+
+    s, d = getInstrumentedSession({popart.Instrumentation.Inner})
+    cycles = s.getCycleCount("inner_ipu_0")
+    d.detach()
+
+
+@tu.requires_ipu
+@pytest.mark.parametrize("useIOTiles", [True, False])
+def test_get_cycle_count_replication(useIOTiles):
+    builder = popart.Builder()
+    d0 = builder.addInputTensor("FLOAT", [1])
+    with builder.virtualGraph(0):
+        act = builder.aiOnnx.exp([d0])
+    with builder.virtualGraph(1):
+        act = builder.aiOnnx.sin([act])
+
+    def getInstrumentedSession(instrumentation):
+        opts = popart.SessionOptions()
+        opts.instrumentWithHardwareCycleCounter = True
+        opts.hardwareInstrumentations = instrumentation
+        opts.replicatedGraphCount = 2
+        opts.virtualGraphMode = popart.VirtualGraphMode.Manual
+        opts.enableReplicatedGraphs = True
+        if useIOTiles is True:
+            opts.numIOTiles = 32
+        session = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                          dataFlow=popart.DataFlow(20, [act]),
+                                          userOptions=opts,
+                                          deviceInfo=tu.create_test_device(4))
+        session.prepareDevice()
+        stepio = popart.PyStepIO({d0: np.random.rand(40).astype(np.float32)},
+                                 session.initAnchorArrays())
+        session.run(stepio)
+        return session
+
+    s = getInstrumentedSession(
+        {popart.Instrumentation.Outer, popart.Instrumentation.Inner})
+    print(s.getCycleCount())
+    print(s.getCycleCount("inner_ipu_0"))
+    print(s.getCycleCount("inner_ipu_1"))
