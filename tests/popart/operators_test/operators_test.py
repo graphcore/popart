@@ -1849,16 +1849,12 @@ def test_ceil_grad(op_tester):
         i1 = builder.addInputTensor(d1)
         o = builder.aiOnnx.ceil([i1], "test_ceil")
         builder.addOutputTensor(o)
-        return [o, popart.reservedGradientPrefix() + o]
+        return [o, popart.reservedGradientPrefix() + i1]
 
     def reference(ref_data):
-        return [np.ceil(d1 * 0).astype(np.float32)]
+        return [np.ceil(d1).astype(np.float32), np.zeros_like(d1)]
 
-    with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'train')
-
-    assert (e_info.value.args[0].startswith(
-        "PopART does not have a valid grad op"))
+    op_tester.run(init_builder, reference, 'train')
 
 
 def test_floor(op_tester):
@@ -1907,16 +1903,12 @@ def test_floor_grad(op_tester):
         i1 = builder.addInputTensor(d1)
         o = builder.aiOnnx.floor([i1], "test_floor")
         builder.addOutputTensor(o)
-        return [o, popart.reservedGradientPrefix() + o]
+        return [o, popart.reservedGradientPrefix() + i1]
 
     def reference(ref_data):
-        return [np.floor(d1 * 0).astype(np.float32)]
+        return [np.floor(d1).astype(np.float32), np.zeros_like(d1)]
 
-    with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'train')
-
-    assert (e_info.value.args[0].startswith(
-        "PopART does not have a valid grad op"))
+    op_tester.run(init_builder, reference, 'train')
 
 
 def test_clip(op_tester):
@@ -2666,9 +2658,10 @@ def test_where_0(op_tester):
         cx = torch.tensor(x)
         cy = torch.tensor(y)
         out = torch.where(ct, cx, cy)
-        return [out]   
+        return [out]
 
     op_tester.run(init_builder, reference, 'infer')
+
 
 def test_where_1(op_tester):
     condition = np.array([[1, 0], [1, 1]], dtype=np.bool)
@@ -2688,13 +2681,14 @@ def test_where_1(op_tester):
         cx = torch.tensor(x)
         cy = torch.tensor(y)
         out = torch.where(ct, cx, cy)
-        return [out]   
+        return [out]
 
     op_tester.run(init_builder, reference, 'infer')
 
+
 def test_where_2(op_tester):
     x = np.arange(9, dtype=np.int32)
-    y = 10*x
+    y = 10 * x
     condition = x < 5
 
     def init_builder(builder):
@@ -2710,14 +2704,15 @@ def test_where_2(op_tester):
         cx = torch.tensor(x)
         cy = torch.tensor(y)
         out = torch.where(ct, cx, cy)
-        return [out]   
+        return [out]
 
     op_tester.run(init_builder, reference, 'infer')
+
 
 def test_where_3(op_tester):
     x, y = np.ogrid[:3, :4]
     x = np.float32(x)
-    y = np.float32(y)    
+    y = np.float32(y)
     y = 10 + y
     condition = x < y
 
@@ -2736,12 +2731,11 @@ def test_where_3(op_tester):
         out = torch.where(ct, cx, cy)
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')        
+    op_tester.run(init_builder, reference, 'infer')
+
 
 def test_where_4(op_tester):
-    x = np.array([[0, 1, 2],
-                  [0, 2, 4],
-                  [0, 3, 6]])
+    x = np.array([[0, 1, 2], [0, 2, 4], [0, 3, 6]])
     y = np.array([-1])
     x = np.float32(x)
     y = np.float32(y)
@@ -2764,11 +2758,12 @@ def test_where_4(op_tester):
 
     op_tester.run(init_builder, reference, 'infer')
 
+
 def test_where_5(op_tester):
     x = np.array([[1, 2], [3, 4], [5, 6]])
-    y = np.array([0,10])
+    y = np.array([0, 10])
     x = np.float32(x)
-    y = np.float32(y)   
+    y = np.float32(y)
     condition = np.array([False])
 
     def init_builder(builder):
@@ -2788,8 +2783,9 @@ def test_where_5(op_tester):
 
     op_tester.run(init_builder, reference, 'infer')
 
+
 def test_where_grad0(op_tester):
-    condition = np.array([[True, False], [True, True]], dtype=np.bool)    
+    condition = np.array([[True, False], [True, True]], dtype=np.bool)
     x = np.array([[1, 2], [3, 4]], dtype=np.float32)
     y = np.array([[9, 8], [7, 6]], dtype=np.float32)
 
@@ -2817,8 +2813,9 @@ def test_where_grad0(op_tester):
 
     op_tester.run(init_builder, reference, 'train')
 
+
 def test_where_grad1(op_tester):
-    condition = np.array([[True, False], [True, True]], dtype=np.bool)    
+    condition = np.array([[True, False], [True, True]], dtype=np.bool)
     x = np.array([[1, 2]], dtype=np.float32)
     y = np.array([[9, 8], [7, 6]], dtype=np.float32)
 
@@ -2842,14 +2839,14 @@ def test_where_grad1(op_tester):
         out = torch.where(tc, tx, ty)
         d__o = ref_data.getOutputTensorGrad(0)
         out.backward(torch.tensor(d__o))
-        return [out, tx.grad, ty.grad, None]        
+        return [out, tx.grad, ty.grad, None]
 
     op_tester.run(init_builder, reference, 'train')
 
 
 def test_where_grad2(op_tester):
     x = np.arange(9, dtype=np.float32)
-    y = 10*x
+    y = 10 * x
     condition = x < 5
 
     def init_builder(builder):
@@ -2876,10 +2873,11 @@ def test_where_grad2(op_tester):
 
     op_tester.run(init_builder, reference, 'train')
 
+
 def test_where_grad3(op_tester):
     x, y = np.ogrid[:3, :4]
     x = np.float32(x)
-    y = np.float32(y)    
+    y = np.float32(y)
     y = 10 + y
     condition = x < y
 
@@ -2887,7 +2885,7 @@ def test_where_grad3(op_tester):
         i1 = builder.addInputTensor(condition)
         i2 = builder.addInputTensor(x)
         i3 = builder.addInputTensor(y)
-        o = builder.aiOnnx.where([i1, i2, i3])        
+        o = builder.aiOnnx.where([i1, i2, i3])
         builder.addOutputTensor(o)
         return [
             o,
@@ -2907,10 +2905,9 @@ def test_where_grad3(op_tester):
 
     op_tester.run(init_builder, reference, 'train')
 
+
 def test_where_grad4(op_tester):
-    x = np.array([[0, 1, 2],
-                  [0, 2, 4],
-                  [0, 3, 6]])
+    x = np.array([[0, 1, 2], [0, 2, 4], [0, 3, 6]])
     y = np.array([-1])
     x = np.float32(x)
     y = np.float32(y)
@@ -2939,12 +2936,13 @@ def test_where_grad4(op_tester):
         return [out, tx.grad, ty.grad, None]
 
     op_tester.run(init_builder, reference, 'train')
-    
+
+
 def test_where_grad5(op_tester):
     x = np.array([[1, 2], [3, 4], [5, 6]])
-    y = np.array([0,10])
+    y = np.array([0, 10])
     x = np.float32(x)
-    y = np.float32(y)   
+    y = np.float32(y)
     condition = np.array([False])
 
     def init_builder(builder):

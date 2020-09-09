@@ -59,7 +59,7 @@ namespace {
 
 static OpDefinition randomUniformOpDef(
     {OpDefinition::Inputs({}),
-     OpDefinition::Outputs({{"output", RandomBaseOp::getSupportedDataTypes()}}),
+     OpDefinition::Outputs({{"output", RandomBaseOp::supportedDataTypes()}}),
      OpDefinition::Attributes({{"shape", {"*"}},
                                {"dtype", {"*"}},
                                {"high", {"*"}},
@@ -73,7 +73,7 @@ static OpCreator<RandomUniformOp> randomUniformOpCreator(
       auto shape       = attr.getAttribute<Attributes::Ints>("shape");
       float high       = attr.getAttribute<Attributes::Float>("high", 1.0f);
       float low        = attr.getAttribute<Attributes::Float>("low", 0.0f);
-      auto dataType    = RandomBaseOp::getOptionalDataType(attr, info.opid);
+      auto dataType    = ShapeOrLikeOp::getOptionalDataType(attr, info.opid);
       RandomBaseOp::errorIfSeedIsSet(attr, info.opid);
 
       return std::unique_ptr<Op>(new RandomUniformOp(
@@ -81,30 +81,10 @@ static OpCreator<RandomUniformOp> randomUniformOpCreator(
     },
     /*isPublic=*/true);
 
-// RandomUniformLike: Constrain to any tensor type. If the dtype attribute is
-// not provided this must be a valid output type.
-static OpDefinition::DataTypes T = {
-    DataType::UINT8,
-    DataType::INT8,
-    DataType::UINT16,
-    DataType::INT16,
-    DataType::INT32,
-    DataType::INT64,
-    DataType::UINT32,
-    DataType::UINT64,
-    DataType::BOOL,
-    DataType::FLOAT,
-    DataType::FLOAT16,
-    DataType::BFLOAT16,
-    DataType::DOUBLE,
-    DataType::COMPLEX64,
-    DataType::COMPLEX128,
-    DataType::STRING,
-};
-
 static OpDefinition randomUniformLikeOpDef(
-    {OpDefinition::Inputs({{"inputs", T}}),
-     OpDefinition::Outputs({{"output", RandomBaseOp::getSupportedDataTypes()}}),
+    {OpDefinition::Inputs({{"inputs",
+                            ShapeOrLikeOp::likeSupportedInputTypes()}}),
+     OpDefinition::Outputs({{"output", RandomBaseOp::supportedDataTypes()}}),
      OpDefinition::Attributes({{"dtype", {"*"}},
                                {"high", {"*"}},
                                {"low", {"*"}},

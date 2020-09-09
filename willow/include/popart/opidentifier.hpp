@@ -303,6 +303,7 @@ const static AiGraphcoreOpIdV1 ConcatGradInplace("ConcatInplace");
 const static AiGraphcoreOpIdV1 ExpandInplace("ExpandInplace");
 const static AiGraphcoreOpIdV1 Subsample_1("Subsample", 1, 1);
 const static AiGraphcoreOpIdV1 Scale_1("Scale", 1, 1);
+const static AiGraphcoreOpIdV1 SignInplace("SignInplace");
 const static AiGraphcoreOpIdV1 Square("Square");
 const static AiGraphcoreOpIdV1 GetRandomSeed("GetRandomSeed");
 const static AiGraphcoreOpIdV1 GroupNormalization_1("GroupNormalization", 3, 3);
@@ -398,6 +399,10 @@ const static AiGraphcoreOpIdV1 MulLhsInplace("MulLhsInplace");
 const static AiGraphcoreOpIdV1 MulRhsInplace("MulRhsInplace");
 const static AiGraphcoreOpIdV1 PowLhsInplace("PowLhsInplace");
 const static AiGraphcoreOpIdV1 Resize("Resize");
+
+const static AiGraphcoreOpIdV1 Zeros_1("Zeros");
+const static AiGraphcoreOpIdV1 ZerosLike_1("ZerosLike");
+
 } // namespace CustomOperators
 
 namespace AiGraphcore {
@@ -447,6 +452,9 @@ const static AiGraphcoreOpIdV1
 const static AiGraphcoreOpIdV1
     DynamicUpdateToUpdateGrad("DynamicUpdateToUpdateGrad");
 const static AiGraphcoreOpIdV1 DynamicZeroGrad("DynamicZeroGrad");
+
+const static AiGraphcoreOpIdV1 UnaryZeroGradOp("UnaryZeroGrad");
+
 } // namespace CustomGradOperators
 } // namespace Onnx
 

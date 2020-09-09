@@ -64,5 +64,6 @@ def test_sign_training(op_tester):
 
         return [out, d__o, t1.grad]
 
-    op_tester.setPatterns(['AbsGradOp'], enableRuntimeAsserts=False)
+    op_tester.setPatterns(['AbsGradOp', 'ZerosLikeOpPattern'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')

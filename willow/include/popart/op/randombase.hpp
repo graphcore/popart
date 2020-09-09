@@ -2,44 +2,30 @@
 #ifndef GUARD_NEURALNET_RANDOMBASE_HPP
 #define GUARD_NEURALNET_RANDOMBASE_HPP
 
-#include <vector>
-#include <popart/op.hpp>
+#include <popart/op/shapeorlike.hpp>
 
 namespace popart {
 
 // Shared base class for RNG ops
-class RandomBaseOp : public Op {
+class RandomBaseOp : public ShapeOrLikeOp {
 public:
   RandomBaseOp(const OperatorIdentifier &opid_,
                const OptionalDataType &dataType_,
                const Op::Settings &settings_);
 
-  float getSubgraphValue() const final { return getLowSubgraphValue(); }
-
-  static OutIndex getOutIndex() { return 0; }
+  static std::vector<DataType> supportedDataTypes();
 
   bool requiresRandomSeed() const final { return true; }
 
   uint32_t getSeedModifier() const { return seedModifier; }
 
-  static void validateDataType(DataType dataType, OperatorIdentifier opid);
-
-  static std::vector<DataType> getSupportedDataTypes();
-
-  static OptionalDataType getOptionalDataType(const Attributes &attr,
-                                              OperatorIdentifier opid);
+  std::vector<DataType> getSupportedDataTypes() const {
+    return supportedDataTypes();
+  }
 
   static void errorIfSeedIsSet(const Attributes &attr, OperatorIdentifier opid);
 
-protected:
-  const OptionalDataType &getDataType() const { return dataType; }
-
-  void setupWithShape(const std::vector<int64_t> &shape);
-
-  void setupLike(const popart::TensorInfo &info);
-
 private:
-  OptionalDataType dataType;
   uint32_t seedModifier;
 };
 

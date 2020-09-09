@@ -1,18 +1,17 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_RANDOMLIKEOPPATTERN_HPP
-#define GUARD_NEURALNET_RANDOMLIKEOPPATTERN_HPP
+#ifndef GUARD_NEURALNET_LIKEOPSPATTERN_HPP
+#define GUARD_NEURALNET_LIKEOPSPATTERN_HPP
 
 #include <popart/graph.hpp>
 #include <popart/patterns/pattern.hpp>
 
 namespace popart {
 
-// Templated pattern that replaces a Random(Normal|Uniform)LikeOp with
-// the equivalent Random(Normal|Uniform)Op
-template <class L> class RandomLikeOpPattern : public PreAliasPattern {
+// Templated pattern that replaces a _LikeOp with the equivalent _Op
+template <class L> class LikeOpsPattern : public PreAliasPattern {
 public:
   // Does op at the root of the
-  // pattern make a match the RandomLikeOp L?
+  // pattern make a match the LikeOp L?
   bool matches(Op *op) const final { return op->isConvertibleTo<L>(); }
 
   // If this Pattern were to be applied at op, which
@@ -32,7 +31,7 @@ public:
     auto foldedOp = likeOp->foldInputTensor(settings);
     transferBaseProperties(likeOp, foldedOp.get());
 
-    // Remove the RandomLikeOp
+    // Remove the LikeOp
     op->disconnectAllInputs();
     op->disconnectAllOutputs();
     graph.eraseOp(op->id);

@@ -54,6 +54,7 @@ enum class PreAliasPatternType {
   AcoshOpPattern,
   RandomNormalLikeOpPattern,
   RandomUniformLikeOpPattern,
+  ZerosLikeOpPattern,
   ConvTranspose
 };
 

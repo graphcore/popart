@@ -8,6 +8,7 @@
 #include <popart/op/randomuniform.hpp>
 #include <popart/op/sign.hpp>
 #include <popart/op/sin.hpp>
+#include <popart/op/zeros.hpp>
 
 #include <popart/patterns/acoshoppattern.hpp>
 #include <popart/patterns/acosoppattern.hpp>
@@ -23,6 +24,7 @@
 #include <popart/patterns/gemmdecompositionpattern.hpp>
 #include <popart/patterns/initaccumulatepattern.hpp>
 #include <popart/patterns/inplace.hpp>
+#include <popart/patterns/likeopspattern.hpp>
 #include <popart/patterns/loggradoppattern.hpp>
 #include <popart/patterns/logsoftmaxoppattern.hpp>
 #include <popart/patterns/lstmoppattern.hpp>
@@ -38,7 +40,6 @@
 #include <popart/patterns/powarg0gradoppattern.hpp>
 #include <popart/patterns/powarg1gradoppattern.hpp>
 #include <popart/patterns/preunirepl.hpp>
-#include <popart/patterns/randomlikeoppattern.hpp>
 #include <popart/patterns/reciprocalgradoppattern.hpp>
 #include <popart/patterns/sequenceexpander.hpp>
 #include <popart/patterns/sgd1decompose.hpp>
@@ -328,11 +329,15 @@ bool Patterns::isAcoshOpPatternEnabled() {
 }
 
 bool Patterns::isRandomNormalLikeOpPatternEnabled() {
-  return isPatternEnabled<RandomLikeOpPattern<RandomNormalLikeOp>>();
+  return isPatternEnabled<LikeOpsPattern<RandomNormalLikeOp>>();
 }
 
 bool Patterns::isRandomUniformLikeOpPatternEnabled() {
-  return isPatternEnabled<RandomLikeOpPattern<RandomUniformLikeOp>>();
+  return isPatternEnabled<LikeOpsPattern<RandomUniformLikeOp>>();
+}
+
+bool Patterns::isZerosLikeOpPatternEnabled() {
+  return isPatternEnabled<LikeOpsPattern<ZerosLikeOp>>();
 }
 
 Patterns &Patterns::enableInitAccumulate(bool v) {
@@ -460,11 +465,15 @@ Patterns &Patterns::enableAcoshOpPattern(bool v) {
 }
 
 Patterns &Patterns::enableRandomNormalLikeOpPattern(bool v) {
-  return enablePattern<RandomLikeOpPattern<RandomNormalLikeOp>>(v);
+  return enablePattern<LikeOpsPattern<RandomNormalLikeOp>>(v);
 }
 
 Patterns &Patterns::enableRandomUniformLikeOpPattern(bool v) {
-  return enablePattern<RandomLikeOpPattern<RandomUniformLikeOp>>(v);
+  return enablePattern<LikeOpsPattern<RandomUniformLikeOp>>(v);
+}
+
+Patterns &Patterns::enableZerosLikeOpPattern(bool v) {
+  return enablePattern<LikeOpsPattern<ZerosLikeOp>>(v);
 }
 
 Patterns &Patterns::enablePattern(const std::type_index &t, bool v) {
@@ -527,8 +536,9 @@ std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
   }
 
   static std::map<std::type_index, float> patternPriority{
-      {std::type_index(typeid(RandomLikeOpPattern<RandomUniformLikeOp>)), 42},
-      {std::type_index(typeid(RandomLikeOpPattern<RandomNormalLikeOp>)), 41},
+      {std::type_index(typeid(LikeOpsPattern<ZerosLikeOp>)), 43},
+      {std::type_index(typeid(LikeOpsPattern<RandomUniformLikeOp>)), 42},
+      {std::type_index(typeid(LikeOpsPattern<RandomNormalLikeOp>)), 41},
       {std::type_index(typeid(AcosOpPattern)), 40},
       {std::type_index(typeid(AcosOpPattern)), 39},
       {std::type_index(typeid(UpsampleToResizePattern)), 38},

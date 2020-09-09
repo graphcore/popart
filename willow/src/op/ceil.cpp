@@ -1,19 +1,24 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <memory>
+
 #include <popart/op/ceil.hpp>
+#include <popart/op/zeros.hpp>
 #include <popart/opmanager.hpp>
 
 namespace popart {
+
+CeilOp::CeilOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
+    : OneWayUnaryOp(_opid, settings_) {}
+
+std::unique_ptr<Op> CeilOp::clone() const {
+  return std::make_unique<CeilOp>(*this);
+}
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 CeilOp::inplacePriorityDefault() const {
   // see T6768: choosing default inplace priorities
   return {{Onnx::CustomOperators::CeilInplace, 10}};
 }
-
-CeilInplaceOp::CeilInplaceOp(const CeilOp &ceil_op)
-    : ElementWiseInplaceUnaryOp(Onnx::CustomOperators::CeilInplace,
-                                ceil_op.getSettings()) {}
 
 std::unique_ptr<Op>
 CeilOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
@@ -24,16 +29,9 @@ CeilOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   return Op::getInplaceVariant(operator_id);
 }
 
-CeilOp::CeilOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
-    : ElementWiseUnaryOp(_opid, settings_) {}
-
-std::unique_ptr<Op> CeilOp::clone() const {
-  return std::make_unique<CeilOp>(*this);
-}
-
-std::vector<std::unique_ptr<Op>> CeilOp::getGradOps() {
-  throw error("PopART does not have a valid grad op corresponding to CeilOp");
-}
+CeilInplaceOp::CeilInplaceOp(const CeilOp &ceil_op)
+    : OneWayUnaryInPlaceOp(Onnx::CustomOperators::CeilInplace,
+                           ceil_op.getSettings()) {}
 
 std::unique_ptr<Op> CeilInplaceOp::clone() const {
   return std::make_unique<CeilInplaceOp>(*this);

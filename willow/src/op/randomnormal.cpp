@@ -59,7 +59,7 @@ namespace {
 
 static OpDefinition randomNormalOpDef(
     {OpDefinition::Inputs({}),
-     OpDefinition::Outputs({{"output", RandomBaseOp::getSupportedDataTypes()}}),
+     OpDefinition::Outputs({{"output", RandomBaseOp::supportedDataTypes()}}),
      OpDefinition::Attributes({{"shape", {"*"}},
                                {"dtype", {"*"}},
                                {"mean", {"*"}},
@@ -103,8 +103,9 @@ static OpDefinition::DataTypes T = {
 };
 
 static OpDefinition randomNormalLikeOpDef(
-    {OpDefinition::Inputs({{"inputs", T}}),
-     OpDefinition::Outputs({{"output", RandomBaseOp::getSupportedDataTypes()}}),
+    {OpDefinition::Inputs({{"inputs",
+                            ShapeOrLikeOp::likeSupportedInputTypes()}}),
+     OpDefinition::Outputs({{"output", RandomBaseOp::supportedDataTypes()}}),
      OpDefinition::Attributes({{"dtype", {"*"}},
                                {"mean", {"*"}},
                                {"scale", {"*"}},
