@@ -129,6 +129,9 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
 
   auto condOut = graph().addVariable(poplar::BOOL, {}, debugPrefix("condOut"));
   poputil::mapTensorLinearly(graph(), condOut);
+  // Initialise condOut to false
+  prog.add(poplar::program::Copy(falseConst, condOut));
+
   poplar::program::Copy startElseCopyProg(trueConst, condOut);
   startElseProg.add(startElseCopyProg);
 
