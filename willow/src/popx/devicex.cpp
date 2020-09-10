@@ -3031,7 +3031,7 @@ void Devicex::prepareGraph() {
   // tensors may need to be added to the graph to keep track of
   // batch count.
   if (ir().getDataFlow().isBatchCountingRequired()) {
-    tasks.add(initBatchCounterTensorsTask());
+    tasks.add(initBatchCounterTensorsTask(progs.initFragment()));
     tasks.add(updateBatchCountTask(progs.preForwardFragment()));
   }
 
@@ -3774,10 +3774,12 @@ PriTask Devicex::anchorReturnTypeSumTask(Tensor *tensor,
           f};
 }
 
-PriTask Devicex::initBatchCounterTensorsTask() {
+PriTask Devicex::initBatchCounterTensorsTask(poplar::program::Sequence &sq) {
 
-  auto f = [this]() {
+  auto f = [&sq, this]() {
     logging::devicex::debug("Adding batch counter tensors");
+
+    poplar::Tensor falseConst = getConst(graph(), poplar::BOOL, {}, 0, "false");
 
     // Add scalar tensors outside of the ir to track the batch
     // Id and decide when to execute the copy to the host
@@ -3791,6 +3793,13 @@ PriTask Devicex::initBatchCounterTensorsTask() {
 
       poputil::mapTensorLinearly(graph(), batchCountingTensors[N]);
       poputil::mapTensorLinearly(graph(), batchCountCheckingTensors[N]);
+
+      // Set the initial values of the tensors.
+      popops::zero(graph(),
+                   batchCountingTensors[N],
+                   sq,
+                   logging::format("initBatchCountTensors[{}]", N));
+      sq.add(poplar::program::Copy(falseConst, batchCountCheckingTensors[N]));
     }
 
     // Make sure const 1 tensor exists
