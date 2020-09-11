@@ -92,7 +92,7 @@ std::vector<TensorId> CallOp::getInputsForGraph(const Graph &) const {
   return result;
 }
 
-VGraphIdAndIoTile
+VGraphIdAndTileSet
 CallOp::getIntrospectionInVirtualGraphId(InIndex index) const {
   if (index > -1) {
     auto num_ids = getCalledGraph().getInputIds().size();
@@ -129,7 +129,7 @@ CallOp::getIntrospectionInVirtualGraphId(InIndex index) const {
     // consuming operator is on another virtual graph.
     if (tensor->hasVirtualGraphId()) {
       // Tensor has VirtualGraphID given by it's producer or consumer
-      auto vgId = tensor->getVirtualGraphIdAndIoTile();
+      auto vgId = tensor->getVirtualGraphIdAndTileSet();
       if (vgId.first > -1) {
         return vgId;
       }
@@ -138,11 +138,12 @@ CallOp::getIntrospectionInVirtualGraphId(InIndex index) const {
 
   // Fallback 2: No VGID determined by introspection or tensor
   return Op::hasVirtualGraphId()
-             ? VGraphIdAndIoTile(Op::getVirtualGraphId(), getSettings().tileSet)
-             : VGraphIdAndIoTile(unusedVGraphId, TileSet::Compute);
+             ? VGraphIdAndTileSet(Op::getVirtualGraphId(),
+                                  getSettings().tileSet)
+             : VGraphIdAndTileSet(unusedVGraphId, TileSet::Compute);
 }
 
-VGraphIdAndIoTile
+VGraphIdAndTileSet
 CallOp::getIntrospectionOutVirtualGraphId(OutIndex index) const {
   if (index > -1) {
     auto num_ids = getCalledGraph().getOutputIds().size();
@@ -175,7 +176,7 @@ CallOp::getIntrospectionOutVirtualGraphId(OutIndex index) const {
     // consuming operator is on another virtual graph.
     if (tensor->hasVirtualGraphId()) {
       // Tensor has VirtualGraphID given by it's producer or consumer
-      auto vgId = tensor->getVirtualGraphIdAndIoTile();
+      auto vgId = tensor->getVirtualGraphIdAndTileSet();
       if (vgId.first > -1) {
         return vgId;
       }
@@ -184,8 +185,9 @@ CallOp::getIntrospectionOutVirtualGraphId(OutIndex index) const {
 
   // Fallback 2: No VGID determined by introspection or tensor
   return Op::hasVirtualGraphId()
-             ? VGraphIdAndIoTile(Op::getVirtualGraphId(), getSettings().tileSet)
-             : VGraphIdAndIoTile(unusedVGraphId, TileSet::Compute);
+             ? VGraphIdAndTileSet(Op::getVirtualGraphId(),
+                                  getSettings().tileSet)
+             : VGraphIdAndTileSet(unusedVGraphId, TileSet::Compute);
 }
 
 void CallOp::addAlias(InIndex in,

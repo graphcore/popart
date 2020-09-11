@@ -1545,7 +1545,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
 
       std::vector<VGraphId> ipus;
       for (auto &op : relatedOps) {
-        VGraphIdAndIoTile vgid{-1, TileSet::Compute};
+        VGraphIdAndTileSet vgid{-1, TileSet::Compute};
         if (op.first->hasVirtualGraphId()) {
           if (op.second) {
             // Consumer OP

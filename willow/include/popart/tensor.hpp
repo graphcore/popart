@@ -200,9 +200,9 @@ public:
   VGraphId getVirtualGraphIdUnsafe() const;
 
   // Return the virtual graph id and io tile flag
-  VGraphIdAndIoTile getVirtualGraphIdAndIoTile() const;
+  VGraphIdAndTileSet getVirtualGraphIdAndTileSet() const;
   // return the virtual graph id, or {-1, false} if there is not one
-  VGraphIdAndIoTile getVirtualGraphIdAndIoTileUnsafe() const;
+  VGraphIdAndTileSet getVirtualGraphIdAndTileSetUnsafe() const;
 
   // Determine the batch axis for this Tensor
   int getBatchAxis() const;

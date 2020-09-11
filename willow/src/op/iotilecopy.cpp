@@ -25,14 +25,14 @@ void IoTileCopyOp::setup() {
   }
 }
 
-VGraphIdAndIoTile
+VGraphIdAndTileSet
 IoTileCopyOp::getIntrospectionInVirtualGraphId(InIndex) const {
   return {getVirtualGraphId(),
           settings.tileSet == TileSet::Compute ? TileSet::IO
                                                : TileSet::Compute};
 }
 
-VGraphIdAndIoTile
+VGraphIdAndTileSet
 IoTileCopyOp::getIntrospectionOutVirtualGraphId(OutIndex) const {
   return {getVirtualGraphId(), settings.tileSet};
 }

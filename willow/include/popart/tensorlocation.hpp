@@ -12,7 +12,7 @@ namespace popart {
 enum class TensorStorage { Undefined = 0, OnChip = 1, OffChip = 2 };
 
 enum class TileSet { Compute = 0, IO = 1 };
-using VGraphIdAndIoTile = std::pair<VGraphId, TileSet>;
+using VGraphIdAndTileSet = std::pair<VGraphId, TileSet>;
 
 enum class ReplicatedTensorSharding { Off = 0, On = 1 };
 

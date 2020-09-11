@@ -586,11 +586,11 @@ VGraphId Op::getVirtualGraphId() const {
   return *(settings.vgraphId);
 }
 
-VGraphIdAndIoTile Op::getIntrospectionInVirtualGraphId(InIndex) const {
+VGraphIdAndTileSet Op::getIntrospectionInVirtualGraphId(InIndex) const {
   return {getVirtualGraphId(), settings.tileSet};
 }
 
-VGraphIdAndIoTile Op::getIntrospectionOutVirtualGraphId(OutIndex) const {
+VGraphIdAndTileSet Op::getIntrospectionOutVirtualGraphId(OutIndex) const {
   return {getVirtualGraphId(), settings.tileSet};
 }
 

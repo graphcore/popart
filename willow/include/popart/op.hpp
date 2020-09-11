@@ -149,8 +149,8 @@ public:
 
   const OptionalVGraphId getOptionalVGraphId() const;
   VGraphId getVirtualGraphId() const;
-  virtual VGraphIdAndIoTile getIntrospectionInVirtualGraphId(InIndex) const;
-  virtual VGraphIdAndIoTile getIntrospectionOutVirtualGraphId(OutIndex) const;
+  virtual VGraphIdAndTileSet getIntrospectionInVirtualGraphId(InIndex) const;
+  virtual VGraphIdAndTileSet getIntrospectionOutVirtualGraphId(OutIndex) const;
   void setVirtualGraphId(const OptionalVGraphId);
   bool hasVirtualGraphId() const;
 

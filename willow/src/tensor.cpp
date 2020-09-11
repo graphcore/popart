@@ -65,10 +65,10 @@ bool Tensor::isModified() const {
 }
 
 VGraphId Tensor::getVirtualGraphIdUnsafe() const {
-  return getVirtualGraphIdAndIoTileUnsafe().first;
+  return getVirtualGraphIdAndTileSetUnsafe().first;
 }
 
-VGraphIdAndIoTile Tensor::getVirtualGraphIdAndIoTileUnsafe() const {
+VGraphIdAndTileSet Tensor::getVirtualGraphIdAndTileSetUnsafe() const {
 
   // If this Tensor has a Producer, use its VirtualGraphId if it has one
   if (hasProducer()) {
@@ -111,17 +111,17 @@ VGraphIdAndIoTile Tensor::getVirtualGraphIdAndIoTileUnsafe() const {
   return {unusedVGraphId, TileSet::Compute};
 }
 
-VGraphIdAndIoTile Tensor::getVirtualGraphIdAndIoTile() const {
-  auto vid = getVirtualGraphIdAndIoTileUnsafe();
-  if (vid == VGraphIdAndIoTile(unusedVGraphId, TileSet::Compute)) {
+VGraphIdAndTileSet Tensor::getVirtualGraphIdAndTileSet() const {
+  auto vid = getVirtualGraphIdAndTileSetUnsafe();
+  if (vid == VGraphIdAndTileSet(unusedVGraphId, TileSet::Compute)) {
     throw error("Invalid call to getVirtualGraphId, Tensor does not have one");
   }
   return vid;
 }
 
 VGraphId Tensor::getVirtualGraphId() const {
-  auto vid = getVirtualGraphIdAndIoTileUnsafe();
-  if (vid == VGraphIdAndIoTile(unusedVGraphId, TileSet::Compute)) {
+  auto vid = getVirtualGraphIdAndTileSetUnsafe();
+  if (vid == VGraphIdAndTileSet(unusedVGraphId, TileSet::Compute)) {
     throw error("Invalid call to getVirtualGraphId, Tensor does not have one");
   }
   return vid.first;

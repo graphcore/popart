@@ -18,8 +18,8 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
-  VGraphIdAndIoTile getIntrospectionInVirtualGraphId(InIndex) const final;
-  VGraphIdAndIoTile getIntrospectionOutVirtualGraphId(OutIndex) const final;
+  VGraphIdAndTileSet getIntrospectionInVirtualGraphId(InIndex) const final;
+  VGraphIdAndTileSet getIntrospectionOutVirtualGraphId(OutIndex) const final;
 };
 } // namespace popart
 
