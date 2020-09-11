@@ -212,7 +212,7 @@ const static AiGraphcoreOpIdV1 MultiConvWeightsGrad("MultiConvWeightsGrad");
 // constexpr static char Multinomial[] = "Multinomial";
 const static AiGraphcoreOpIdV1 NegGrad("NegGrad");
 // constexpr static char Not[] = "Not";
-const static AiGraphcoreOpIdV1 OneHotGrad("OneHot");
+const static AiGraphcoreOpIdV1 OneHotGrad("OneHotGrad");
 // constexpr static char Or[] = "Or";
 // constexpr static char PRelu[] = "PRelu";
 const static AiGraphcoreOpIdV1 PadGrad("PadGrad");

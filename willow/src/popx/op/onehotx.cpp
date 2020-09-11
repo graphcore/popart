@@ -9,6 +9,7 @@
 #include <popops/ElementWise.hpp>
 #include <popops/Encoding.hpp>
 #include <popops/Expr.hpp>
+#include <popops/Zero.hpp>
 
 #include <queue>
 #include <popops/Reduce.hpp>
@@ -147,9 +148,10 @@ void OnehotGradOpx::grow(poplar::program::Sequence &prog) const {
 
   const auto shape = vXtoY<int64_t, std::size_t>(onehotGradOp.getOutputShape());
 
-  // Create a new output tensor
+  // Create and initialise a new output tensor
   auto output = graph().addVariable(
       gradInput.elementType(), shape, debugPrefix("output"));
+  popops::zero(graph(), output, prog, debugPrefix("zero output"));
 
   // The output.slice method returns a view on the underling output tensor
   // that we can write the hot or not hot value into
