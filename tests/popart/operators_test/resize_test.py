@@ -317,3 +317,47 @@ def test_resize_11_debug():
     sess.run(stepio)
 
     print(f'Fin')
+
+
+def test_float16_scales(op_tester):
+    data = np.random.rand(1, 1, 2, 2).astype(np.float32)
+
+    scales = np.array([1.0, 1.0, 2.0, 3.0], dtype=np.float16)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(data)
+        s = builder.aiOnnx.constant(scales)
+        o = builder.aiOnnx.resize([d, s])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        x = torch.tensor(data)
+        s = [int(i * scale) for i, scale in zip(data.shape[2:], scales[2:])]
+        o = F.interpolate(x, s)
+        return [o]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_resize11_float16_scales(op_tester):
+    data = np.random.rand(1, 1, 2, 2).astype(np.float32)
+
+    roi = np.array([], dtype=np.float32)
+    scales = np.array([1.0, 1.0, 2.0, 3.0], dtype=np.float16)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(data)
+        r = builder.aiOnnxOpset11.constant(roi, False)
+        s = builder.aiOnnxOpset11.constant(scales)
+        o = builder.aiOnnxOpset11.resize([d, r, s])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        x = torch.tensor(data)
+        s = [int(i * scale) for i, scale in zip(data.shape[2:], scales[2:])]
+        o = F.interpolate(x, s)
+        return [o]
+
+    op_tester.run(init_builder, reference, 'infer')

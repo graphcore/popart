@@ -113,6 +113,25 @@ ResizeMode getResizeModeFromString(const std::string &mode) {
   }
 }
 
+std::vector<float> readScales(const OpCreatorInfo &info, int scalesInputIndex) {
+  auto scalesInfo = info.getInputTensorInfo(scalesInputIndex);
+  if (scalesInfo.dataType() == DataType::FLOAT) {
+    return info.getInputData<float>(scalesInputIndex);
+  } else if (scalesInfo.dataType() == DataType::FLOAT16) {
+    std::vector<float> result;
+    std::vector<float16_t> temp =
+        info.getInputData<float16_t>(scalesInputIndex);
+    for (auto &v : temp) {
+      result.push_back(v);
+    }
+    return result;
+  } else {
+    throw error("Unsupported data type for resize input scales. Type is {}. "
+                "Supported types are float and float16",
+                scalesInfo.dataType());
+  }
+}
+
 static OpDefinition::DataTypes T1 = {DataType::UINT8,
                                      DataType::UINT16,
                                      DataType::UINT32,
@@ -153,7 +172,7 @@ static OpCreator<ResizeOp> resize10_OpCreator(
     OpDefinitions({{Onnx::Operators::Resize_10, resize10_OpDef}}),
     [](const OpCreatorInfo &info, Graph &graph) -> Op * {
       int scalesInputIndex      = 1;
-      std::vector<float> scales = info.getInputData<float>(scalesInputIndex);
+      std::vector<float> scales = readScales(info, scalesInputIndex);
 
       std::string modeString =
           info.attributes.getAttribute<Attributes::String>("mode", "nearest");
@@ -196,7 +215,7 @@ static OpCreator<ResizeOp> resize11_OpCreator(
     [](const OpCreatorInfo &info, Graph &graph) -> Op * {
       logging::debug("Resize11 factory enter");
       int scalesInputIndex      = 2;
-      std::vector<float> scales = info.getInputData<float>(scalesInputIndex);
+      std::vector<float> scales = readScales(info, scalesInputIndex);
 
       const Attributes &attr = info.attributes;
 
