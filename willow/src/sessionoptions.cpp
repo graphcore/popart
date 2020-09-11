@@ -1,6 +1,9 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <array>
+
+#include <boost/lexical_cast.hpp>
+
 #include <popart/error.hpp>
 #include <popart/sessionoptions.hpp>
 
@@ -124,13 +127,50 @@ std::ostream &operator<<(std::ostream &os, RecomputationType r) {
   return os;
 }
 
+// Compare with ints.
+bool SessionOptions::NumIOTiles::operator==(const int &rhs) const {
+  int lhs = *this;
+  return lhs == rhs;
+}
+
+// Auto convert to int.
+SessionOptions::NumIOTiles::operator int() const {
+  // If the option was set, it takes priority.
+  if (userAssignedValue) {
+    return value;
+  }
+  // The GCL environment variable should only be used if the session option has
+  // not been set.
+  else if (std::getenv("GCL_NUM_IO_TILES")) {
+    logging::warn(
+        "You are using a deprecated environement variable \"{}\". This "
+        "will be removed in an upcoming release. Please use the "
+        "session option 'SessionOptions::{}' instead",
+        "GCL_NUM_IO_TILES",
+        "numIOTiles");
+
+    const char *env_p = std::getenv("GCL_NUM_IO_TILES");
+    return boost::lexical_cast<int>(env_p);
+  } else {
+    return 0;
+  }
+}
+
+// Assign value using int.
+SessionOptions::NumIOTiles &
+SessionOptions::NumIOTiles::operator=(const int &x) {
+  value             = x;
+  userAssignedValue = true;
+  return *this;
+}
+
 // No implementation required
 
 } // namespace popart
 
 namespace std {
-std::size_t hash<popart::SessionOptions>::
-operator()(const popart::SessionOptions &so) const {
+std::size_t hash<popart::SessionOptions>::operator()(
+    const popart::SessionOptions &so) const {
   // Hash based on all the SessionOptions attributes that
   // can affect compiled program
 

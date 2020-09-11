@@ -902,6 +902,7 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("_convolutionOptions",
                       &SessionOptions::convolutionOptions);
     cls.def_readwrite("_reportOptions", &SessionOptions::reportOptions);
+    cls.def_readwrite("_gclOptions", &SessionOptions::gclOptions);
     cls.def_readwrite("dotOpNames", &SessionOptions::dotOpNames);
     cls.def_readwrite("separateCallOpPdfs",
                       &SessionOptions::separateCallOpPdfs);

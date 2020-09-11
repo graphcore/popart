@@ -373,8 +373,24 @@ struct SessionOptions {
   // Enable explicit recomputation
   bool explicitRecomputation = false;
 
+  class NumIOTiles {
+  public:
+    // Compare with ints.
+    bool operator==(const int &rhs) const;
+
+    // Auto convert to int.
+    operator int() const;
+
+    // Assign value using int.
+    NumIOTiles &operator=(const int &x);
+
+  private:
+    int value              = 0;
+    bool userAssignedValue = false;
+  };
+
   // Number of IO tiles
-  int numIOTiles = 0;
+  NumIOTiles numIOTiles;
 
   // Enable zero-copy for subgraphs
   bool aliasZeroCopy = false;
@@ -427,6 +443,9 @@ struct SessionOptions {
 
   /// Poplar reporting options
   std::map<std::string, std::string> reportOptions;
+
+  // GCL options
+  std::map<std::string, std::string> gclOptions;
 
   /// List of codelets (with filetype) to be added to the poplar graph. See the
   /// poplar documentation for more information.

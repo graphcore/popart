@@ -240,6 +240,27 @@ private:
   const std::vector<Op *> &opSchedule;
 };
 
+void validateGclOptions(const std::map<std::string, std::string> &gclOptions) {
+  std::set<std::string> validOptions = {"useGclCollectives", "maxBytesPerTile"};
+  for (auto &key_value : gclOptions) {
+    const std::string &key = key_value.first;
+    if (validOptions.find(key) == validOptions.end()) {
+      throw error("'{}' is not a valid gcl option. Valid options are {}",
+                  key,
+                  validOptions);
+    }
+  }
+}
+
+void gclEnvironmentDeprecationWarning(const std::string &envVarName,
+                                      const std::string &optName) {
+  logging::warn("You are using a deprecated environement variable \"{}\". This "
+                "will be removed in an upcoming release. Please use the "
+                "session option 'SessionOptions::{}' instead",
+                envVarName,
+                optName);
+}
+
 } // namespace
 
 class devicex_memory_allocation_err : public popart::memory_allocation_err {
@@ -927,10 +948,25 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
     reportOptions.set(it.first, it.second);
   }
 
-  if (std::getenv("GCL_REAL_COLLECTIVES")) {
+  const auto &userGclOptions = ir.getSessionOptions().gclOptions;
+  validateGclOptions(userGclOptions);
+
+  // Prefer to use `userGclOptions' over environment variables.
+  if (userGclOptions.find("useGclCollectives") != userGclOptions.end()) {
+    gclOptions.set("useGclCollectives", userGclOptions.at("useGclCollectives"));
+  } else if (std::getenv("GCL_REAL_COLLECTIVES")) {
+    gclEnvironmentDeprecationWarning("GCL_REAL_COLLECTIVES",
+                                     "gclOptions[\"useGclCollectives\"]");
     gclOptions.set("useGclCollectives", "true");
   }
-  if (auto *val = std::getenv("GCL_MAX_BYTES_PER_TILE")) {
+
+  // Prefer to use `maxBytesPerTile' over environment variables.
+  if (userGclOptions.find("maxBytesPerTile") != userGclOptions.end()) {
+    auto &val = userGclOptions.at("maxBytesPerTile");
+    gclOptions.set("maxBytesPerTile", val);
+  } else if (auto *val = std::getenv("GCL_MAX_BYTES_PER_TILE")) {
+    gclEnvironmentDeprecationWarning("GCL_MAX_BYTES_PER_TILE",
+                                     "gclOptions[\"maxBytesPerTile\"]");
     gclOptions.set("maxBytesPerTile", val);
   }
 }
@@ -2840,11 +2876,7 @@ void Devicex::prepareGraph() {
 
     int numIOTiles = ir().getSessionOptions().numIOTiles;
 
-    if (const char *env_p = std::getenv("GCL_NUM_IO_TILES")) {
-      numIOTiles = boost::lexical_cast<int>(env_p);
-    }
-
-    if (numIOTiles) {
+    if (numIOTiles > 0) {
 
       if (numIOTiles < 32 || numIOTiles > 192 || (numIOTiles % 2 != 0)) {
         throw error(
