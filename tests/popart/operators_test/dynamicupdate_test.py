@@ -138,7 +138,7 @@ def test_dynamicupdate_overlap_wrong(op_tester):
         tensors = [tensor0, tensor1]
         result = []
         out = builder.aiGraphcore.init([10], popart.DataType.FLOAT,
-                                       popart.InitType.NoInit, "test_init")
+                                       popart.InitType.Zero, "test_init")
         for sliceid in range(2):
             index = builder.addInputTensor(np.asarray([sliceid * 4],
                                                       np.uint32))
@@ -208,7 +208,7 @@ def test_dynamicupdate_overlap_correct(op_tester):
         tensors = [tensor0, tensor1]
         result = []
         out = builder.aiGraphcore.init([10], popart.DataType.FLOAT,
-                                       popart.InitType.NoInit, "test_init")
+                                       popart.InitType.Zero, "test_init")
         for sliceid in range(2):
             index = builder.addInputTensor(np.asarray([sliceid * 4],
                                                       np.uint32))
@@ -271,7 +271,6 @@ def test_dynamicupdate_shape():
 output shape is correctly inferred inside a call op. Previously this would fail
 as the shape inference for the dynamicupdate, and thus the subgraph would not run.
 """
-
     def get_test_conf():
         conf = Mock()
         conf.samples_per_device_for_inference = 2
