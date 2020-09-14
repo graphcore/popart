@@ -568,6 +568,10 @@ bool AdamDecompose::apply(Op *op) const {
     adamVarUpdOp->connectInTensor(AdamVarUpdateOp::getLrInIndex(),
                                   combo->inId(AdamComboOp::getLrInIndex()));
   }
+  if (!combo->initMwn.isConst()) {
+    adamVarUpdOp->connectInTensor(AdamVarUpdateOp::getMwnInIndex(),
+                                  combo->inId(AdamComboOp::getMwnInIndex()));
+  }
 
   if (combo->withGradAccum) {
     adamVarUpdOp->settings.executionContext =
