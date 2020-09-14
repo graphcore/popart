@@ -69,6 +69,8 @@
 #include <popart/popx/op/ipucopyx.hpp>
 #include <popart/tensornames.hpp>
 
+#include <popart/poparttracepoint.hpp>
+
 namespace popart {
 namespace popx {
 
@@ -330,6 +332,7 @@ Devicex::PrefetchCallback::PrefetchCallback(
 
 poplar::StreamCallback::Result
 Devicex::PrefetchCallback::prefetch(void *dest) noexcept {
+  POPART_TRACEPOINT();
   if (ds->readPrefetch(dest)) {
     return poplar::StreamCallback::Result::Success;
   } else {
@@ -337,12 +340,18 @@ Devicex::PrefetchCallback::prefetch(void *dest) noexcept {
   }
 }
 
-void Devicex::PrefetchCallback::fetch(void *dest) noexcept { ds->read(dest); }
+void Devicex::PrefetchCallback::fetch(void *dest) noexcept {
+  POPART_TRACEPOINT();
+  ds->read(dest);
+}
 
-void Devicex::PrefetchCallback::complete() noexcept { ds->readComplete(); }
+void Devicex::PrefetchCallback::complete() noexcept {
+  POPART_TRACEPOINT();
+  ds->readComplete();
+}
 
 void Devicex::InputDatastream::read(void *ptr) {
-
+  POPART_TRACEPOINT();
   if (io) {
 
     ConstVoidData data = io->in(getTensorId(), tensor->info.nelms(), false);
@@ -393,7 +402,7 @@ void Devicex::InputDatastream::read(void *ptr) {
 }
 
 bool Devicex::InputDatastream::readPrefetch(void *ptr) {
-
+  POPART_TRACEPOINT();
   if (io) {
 
     ConstVoidData data = io->in(getTensorId(), tensor->info.nelms(), true);
@@ -453,6 +462,7 @@ bool Devicex::InputDatastream::readPrefetch(void *ptr) {
 }
 
 void Devicex::InputDatastream::readComplete() {
+  POPART_TRACEPOINT();
   if (io) {
     io->inComplete(getTensorId(), tensor->info.nelms());
   }
@@ -462,7 +472,7 @@ Devicex::OutputDatastream::OutputDatastream(Tensor *t, PopStreamId s)
     : Datastream(t, s) {}
 
 void Devicex::OutputDatastream::write(void *ptr) {
-
+  POPART_TRACEPOINT();
   if (io) {
     MutableVoidData data = io->out(getTensorId(), tensor->info.nelms());
     memcpy(data.data, ptr, tensor->info.nbytes());
@@ -607,6 +617,7 @@ std::map<Op *, int, POpCmp> Devicex::getMainGraphOpCounts() const {
 }
 
 void Devicex::run(PopPrograms::ProgramIndex ind, const std::string debugName) {
+  POPART_TRACEPOINT();
   if (isEngineLoaded() == false) {
     logging::devicex::debug("Reloading engine & connecting streams");
     loadEngineAndConnectStreams();
@@ -615,7 +626,7 @@ void Devicex::run(PopPrograms::ProgramIndex ind, const std::string debugName) {
 }
 
 void Devicex::weightsToHost() {
-
+  POPART_TRACEPOINT();
   if (ir().useSyntheticData() == false) {
     logging::devicex::debug("Writing weights to host");
     pEngine->disableExecutionProfiling();
@@ -628,6 +639,7 @@ void Devicex::weightsToHost() {
 }
 
 void Devicex::remoteBufferWeightsToHost() {
+  POPART_TRACEPOINT();
   for (auto initId : ir().getTensorIds(TensorType::Variable)) {
     Tensor *tensor = ir().getTensor(initId);
     if (tensor->tensorLocationInfo.isRemote()) {
@@ -674,7 +686,7 @@ void Devicex::remoteBufferWeightsToHost() {
 }
 
 void Devicex::readWeights(const IWeightsIO &weights) {
-
+  POPART_TRACEPOINT();
   // Better to do this the otherway round
   for (auto id : ir().getTensorIds(TensorType::Variable)) {
     if (weights.contains(id)) {
@@ -690,6 +702,7 @@ void Devicex::readWeights(const IWeightsIO &weights) {
 }
 
 void Devicex::writeWeights(const IWeightsIO &weights) {
+  POPART_TRACEPOINT();
   // Better to do this the other way round
   // Also : should check that all weights have valid names
   for (auto id : ir().getTensorIds(TensorType::Variable)) {
@@ -703,6 +716,7 @@ void Devicex::writeWeights(const IWeightsIO &weights) {
 
 void Devicex::weightsToHost(
     const std::map<TensorId, MutableVoidData> &onnxModelData) {
+  POPART_TRACEPOINT();
 
   if (!prepareHasBeenCalled()) {
     throw error(
@@ -879,7 +893,7 @@ Devicex::~Devicex() = default;
 Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
     : _ir(ir), progs(PopPrograms(this)), tensors(ir), deviceInfo(deviceInfo_),
       prepareHasBeenCalled_(false), prepareGraphHasBeenCalled_(false) {
-
+  POPART_TRACEPOINT();
   logging::devicex::info("Setting selected device: {}", *deviceInfo);
 
   // Set the opxTrace flag based on the environment variable
@@ -972,6 +986,7 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
 }
 
 void Devicex::weightsFromHost() {
+  POPART_TRACEPOINT();
   if (ir().useSyntheticData() == false) {
     logging::devicex::debug("Writing weights from host, ");
     pEngine->disableExecutionProfiling();
@@ -984,6 +999,7 @@ void Devicex::weightsFromHost() {
 }
 
 void Devicex::remoteBufferWeightsFromHost() {
+  POPART_TRACEPOINT();
   for (auto initId : ir().getTensorIds(TensorType::Variable)) {
     Tensor *tensor = ir().getTensor(initId);
     if (tensor->tensorLocationInfo.isRemote()) {
@@ -1033,6 +1049,7 @@ void Devicex::remoteBufferWeightsFromHost() {
 }
 
 void Devicex::optimizerFromHost() {
+  POPART_TRACEPOINT();
   if (ir().useSyntheticData() == false) {
     logging::devicex::debug("Writing optimizer from host, ");
     pEngine->disableExecutionProfiling();
@@ -1047,6 +1064,7 @@ void Devicex::optimizerFromHost() {
 // they are connected to a fixed host address. This function copies
 // from that fixed address to a dynamic address (mv_data).
 void Devicex::hostStreamToHost(const MutableVoidData &mv_data, TensorId id) {
+  POPART_TRACEPOINT();
 
   // The host end of the poplar::Stream,
   // we will try to copy from here
@@ -1079,6 +1097,8 @@ void Devicex::hostStreamToHost(const MutableVoidData &mv_data, TensorId id) {
 }
 
 void Devicex::anchorsHostToHostStreams(IStepIO &stepio) {
+  POPART_TRACEPOINT();
+
   if (ir().useSyntheticData() == false) {
     std::string prefix = "     ";
     logging::devicex::debug(prefix + "Copying to h2d stream address(es) ");
@@ -1091,6 +1111,7 @@ void Devicex::anchorsHostToHostStreams(IStepIO &stepio) {
 }
 
 void Devicex::anchorsHostFromHostStreams(IStepIO &stepio) {
+  POPART_TRACEPOINT();
 
   if (ir().useSyntheticData() == false) {
     std::string prefix = "     ";
@@ -1104,6 +1125,8 @@ void Devicex::anchorsHostFromHostStreams(IStepIO &stepio) {
 }
 
 void Devicex::run(IStepIO &stepio, std::string debugName) {
+  POPART_TRACEPOINT();
+
   if (!prepareHasBeenCalled()) {
     throw error("Devicex::prepare() must be called before"
                 " Devicex::run(const IStepIO &) is called.");
@@ -1654,6 +1677,8 @@ PriTask Devicex::initRandomSeed() {
 }
 
 void Devicex::connectRandomSeedStream() {
+  POPART_TRACEPOINT();
+
   // Generate a separate random seed for each replicant.
   for (uint16_t replicaId = 0; replicaId < getReplicationFactor();
        ++replicaId) {
@@ -1678,6 +1703,7 @@ void Devicex::connectRandomSeedStream() {
 }
 
 void Devicex::setRandomSeedFromHost() {
+  POPART_TRACEPOINT();
   if (ir().useSyntheticData() == false) {
     pEngine->disableExecutionProfiling();
     run(PopPrograms::ProgramIndex::SetRandomSeedFromHost, "SetRandomSeed");
@@ -2583,6 +2609,7 @@ bool Devicex::isEngineLoaded() const { return engineIsLoaded; }
 void Devicex::setEngineIsLoaded(bool isLoaded) { engineIsLoaded = isLoaded; }
 
 void Devicex::loadEngineAndConnectStreams() {
+  POPART_TRACEPOINT();
   if (deviceInfo->getConnectionType() == DeviceConnectionType::Never) {
     throw error("Trying to load an engine on an offline device");
   }
@@ -2758,6 +2785,7 @@ void Devicex::loadEngineAndConnectStreams() {
 }
 
 void Devicex::reconnectInputStreams() {
+  POPART_TRACEPOINT();
   logging::devicex::debug(
       "Reconnecting input streams, invalidating prefetches.");
 
@@ -2826,6 +2854,7 @@ void Devicex::trySaveTensorTileMap() const {
 }
 
 void Devicex::prepareGraph() {
+  POPART_TRACEPOINT();
   if (prepareGraphHasBeenCalled_) {
     logging::devicex::info("Poplar graph has already been prepared");
     return;
@@ -3325,6 +3354,7 @@ void Devicex::prepareGraph() {
 
 void Devicex::compileAndExport(const std::string &executablePath,
                                const std::string &weightsPath) {
+  POPART_TRACEPOINT();
   if (!getDeviceInfo()->canCompileOffline()) {
     std::ostringstream oss;
     oss << getDeviceInfo()->getType();
@@ -3403,6 +3433,7 @@ void Devicex::compileAndExport(const std::string &executablePath,
 
 // go all the way to creating the engine and connecting streams
 void Devicex::prepare() {
+  POPART_TRACEPOINT();
   prepareGraph();
 
   if (ir().getSessionOptions().compileEngine) {
@@ -3526,7 +3557,7 @@ std::string Devicex::getPopartCachePath() {
 }
 
 void Devicex::trySaveExecutable(poplar::Executable &executable) {
-
+  POPART_TRACEPOINT();
   auto cachePath    = ir().getSessionOptions().cachePath;
   auto cacheEnabled = ir().getSessionOptions().enableEngineCaching;
 
@@ -3562,6 +3593,7 @@ void Devicex::trySaveExecutable(poplar::Executable &executable) {
 }
 
 void Devicex::tryLoadExecutable() {
+  POPART_TRACEPOINT();
   auto warn = [&](const std::string &msg) {
     logging::devicex::warn("Unable to load cached poplar::Executable, {}", msg);
   };
@@ -3967,6 +3999,7 @@ bool Devicex::doRearrangeOnHost(Tensor *tensor) const {
 }
 
 void Devicex::initPoplarGraph() {
+  POPART_TRACEPOINT();
   poplar::Target popTarget;
   unsigned replicationFactor = 0;
 
@@ -4025,6 +4058,7 @@ void Devicex::doProfileChecks() const {
 }
 
 std::string Devicex::getSummaryReport(bool resetProfile) const {
+  POPART_TRACEPOINT();
   doProfileChecks();
   const auto &g_prof = pEngine->getGraphProfile();
   const auto &e_prof = pEngine->getExecutionProfile();
@@ -4039,6 +4073,7 @@ std::string Devicex::getSummaryReport(bool resetProfile) const {
 }
 
 std::string Devicex::getGraphReport(bool useCbor) const {
+  POPART_TRACEPOINT();
   doProfileChecks();
   std::stringstream ss;
   auto report = pEngine->getGraphProfile();
@@ -4052,6 +4087,7 @@ std::string Devicex::getGraphReport(bool useCbor) const {
 }
 
 std::string Devicex::getExecutionReport(bool useCbor, bool resetProfile) const {
+  POPART_TRACEPOINT();
   doProfileChecks();
   std::stringstream ss;
   auto report = pEngine->getExecutionProfile();
@@ -4069,6 +4105,7 @@ std::string Devicex::getExecutionReport(bool useCbor, bool resetProfile) const {
 }
 
 std::string Devicex::getSerializedGraph() const {
+  POPART_TRACEPOINT();
   doProfileChecks();
   std::stringstream ss;
   graph().serialize(ss, progs.progs(), poplar::SerializationFormat::Binary);
@@ -4278,6 +4315,7 @@ Devicex::getHostReduceRemoteBuffers() const {
 void Devicex::connectStreamToCallback(const std::string &streamHandle,
                                       std::function<void(void *)> callback,
                                       unsigned index) {
+  POPART_TRACEPOINT();
   pEngine->connectStreamToCallback(streamHandle, index, callback);
 }
 
@@ -4285,6 +4323,7 @@ void Devicex::copyFromRemoteBuffer(const PopStreamId buffer,
                                    void *w,
                                    int repeat_index,
                                    unsigned replication_index) {
+  POPART_TRACEPOINT();
   pEngine->copyFromRemoteBuffer(buffer, w, repeat_index, replication_index);
 }
 
@@ -4292,6 +4331,7 @@ void Devicex::copyToRemoteBuffer(void *w,
                                  const PopStreamId buffer,
                                  int repeat_index,
                                  unsigned replication_index) {
+  POPART_TRACEPOINT();
   pEngine->copyToRemoteBuffer(w, buffer, repeat_index, replication_index);
 }
 

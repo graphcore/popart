@@ -18,20 +18,25 @@
 #include <popart/util.hpp>
 #include <popart/version.hpp>
 
+#include <popart/poparttracepoint.hpp>
+
 namespace popart {
 
 Session::Session() {
+  POPART_TRACEPOINT();
   logging::session::info("Popart version: {}", popart::core::versionString());
   logging::session::info("Popart release githash: {}",
                          popart::core::packageHash());
 }
 
 void Session::setDevice(std::shared_ptr<DeviceInfo> deviceInfo) {
+  POPART_TRACEPOINT();
   logging::session::trace("Session::setDevice({})", *deviceInfo);
   device_.reset(new popx::Devicex(ir, deviceInfo));
 }
 
 void Session::setRandomSeed(uint64_t seedValue) {
+  POPART_TRACEPOINT();
   logging::session::trace("Session::setRandomSeed({})", seedValue);
   if (!ir.requiresRandomSeed()) {
     logging::session::warn("Trying to set the random seed, but this session "
@@ -50,6 +55,7 @@ void Session::setRandomSeed(uint64_t seedValue) {
 }
 
 uint64_t Session::getCycleCount(std::string id) {
+  POPART_TRACEPOINT();
   logging::session::trace("Session::getCycleCount()");
   if (!runCalled) {
     throw error("Must call run before getCycleCount.");
@@ -79,6 +85,7 @@ Session::~Session() = default;
 
 void Session::compileAndExport(std::string executablePath,
                                std::string weightsPath) {
+  POPART_TRACEPOINT();
   logging::session::trace("Session::compileAndExport()");
 
   if (executablePath.length() > 0) {
@@ -95,12 +102,14 @@ void Session::compileAndExport(std::string executablePath,
 }
 
 void Session::prepareDevice() {
+  POPART_TRACEPOINT();
   logging::session::trace("Session::prepareDevice()");
 
   device_->prepare();
 }
 
 void Session::weightsFromHost() {
+  POPART_TRACEPOINT();
   logging::session::trace("Sessions::weightsFromHost");
 
   device_->weightsFromHost();
@@ -108,6 +117,7 @@ void Session::weightsFromHost() {
 }
 
 void Session::weightsToHost() {
+  POPART_TRACEPOINT();
   logging::session::trace("Session::weightsToHost");
 
   if (!device_) {
@@ -118,6 +128,7 @@ void Session::weightsToHost() {
 }
 
 void Session::readWeights(const IWeightsIO &weightsIo) {
+  POPART_TRACEPOINT();
   logging::session::trace("Session::readWeights");
 
   if (!device_) {
@@ -128,6 +139,7 @@ void Session::readWeights(const IWeightsIO &weightsIo) {
 }
 
 void Session::writeWeights(const IWeightsIO &weightsIo) {
+  POPART_TRACEPOINT();
   logging::session::trace("Session::writeWeights");
 
   if (!device_) {
@@ -140,11 +152,13 @@ void Session::writeWeights(const IWeightsIO &weightsIo) {
 void Session::exportInputs(IStepIO &stepIO,
                            int64_t num_elements,
                            const std::string &output_filename) {
+  POPART_TRACEPOINT();
   logging::session::trace("Session::exportInputs");
   exportStepIO(stepIO, *device_, num_elements, output_filename);
 }
 
 void Session::run(IStepIO &stepio, std::string debugName) {
+  POPART_TRACEPOINT();
   logging::session::trace("Session::run {}", debugName);
   if (!ir.canInfer()) {
     throw error("Trying to infer when not in inference mode");
@@ -164,6 +178,7 @@ void Session::run(IStepIO &stepio, std::string debugName) {
 
 // write current model to ONNX file
 void Session::modelToHost(const std::string &fn) {
+  POPART_TRACEPOINT();
   logging::session::trace("Session::modelToHost");
 
   ONNX_NAMESPACE::ModelProto model      = ir.getModel();
@@ -253,22 +268,26 @@ void Session::modelToHost(const std::string &fn) {
 }
 
 std::string Session::getSummaryReport(bool resetProfile) const {
+  POPART_TRACEPOINT();
   logging::session::trace("Session::getSummaryReport");
 
   return device_->getSummaryReport(resetProfile);
 }
 
 std::string Session::getGraphReport(bool useCbor) const {
+  POPART_TRACEPOINT();
   logging::session::trace("Session::getGraphReport");
   return device_->getGraphReport(useCbor);
 }
 
 std::string Session::getExecutionReport(bool useCbor, bool resetProfile) const {
+  POPART_TRACEPOINT();
   logging::session::trace("Session::getExecutionReport");
   return device_->getExecutionReport(useCbor, resetProfile);
 }
 
 std::string Session::getSerializedGraph() const {
+  POPART_TRACEPOINT();
   logging::session::trace("Session::getSerializedGraph");
   return device_->getSerializedGraph();
 }
@@ -282,6 +301,7 @@ TensorTileMap Session::getTensorTileMap() const {
 void Session::resetHostWeights(
     const std::string &modelProtoOrFilename,
     const bool ignoreWeightsInModelWithoutCorrespondingHostWeight) {
+  POPART_TRACEPOINT();
   logging::session::trace("Session::resetHostWeights");
   if (ir.getSessionOptions().constantWeights &&
       ir.getExecutionMode() == Ir::ExecutionMode::Inference) {
@@ -302,7 +322,7 @@ std::string Session::serializeIr(IrSerializationFormat format) {
   return ss.str();
 }
 
-InferenceSession::InferenceSession() : Session() {}
+InferenceSession::InferenceSession() : Session() { POPART_TRACEPOINT(); }
 
 InferenceSession::~InferenceSession() = default;
 
@@ -313,6 +333,7 @@ void InferenceSession::configureFromOnnx(
     std::shared_ptr<DeviceInfo> deviceInfo,
     const SessionOptions &userOptions,
     const Patterns &patterns) {
+  POPART_TRACEPOINT();
 
   logging::session::trace("InferenceSession::configureFromOnnx");
 
@@ -329,7 +350,7 @@ InferenceSession::createFromOnnxModel(const std::string &model,
                                       const InputShapeInfo &inputShapeInfo,
                                       const SessionOptions &userOptions,
                                       const Patterns &patterns) {
-
+  POPART_TRACEPOINT();
   logging::session::trace("InferenceSession::createFromOnnx");
 
   if (!deviceInfo) {
@@ -346,7 +367,7 @@ InferenceSession::createFromOnnxModel(const std::string &model,
   return session;
 }
 
-TrainingSession::TrainingSession() : Session() {}
+TrainingSession::TrainingSession() : Session() { POPART_TRACEPOINT(); }
 
 TrainingSession::~TrainingSession() = default;
 
@@ -358,7 +379,7 @@ void TrainingSession::configureFromOnnx(const std::string &modelProtoOrFilename,
                                         std::shared_ptr<DeviceInfo> deviceInfo,
                                         const SessionOptions &userOptions,
                                         const Patterns &patterns) {
-
+  POPART_TRACEPOINT();
   logging::session::trace("TrainingSession::configureFromOnnx");
 
   auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
@@ -382,7 +403,7 @@ TrainingSession::createFromOnnxModel(const std::string &model,
                                      const InputShapeInfo &inputShapeInfo,
                                      const SessionOptions &userOptions,
                                      const Patterns &patterns) {
-
+  POPART_TRACEPOINT();
   logging::session::trace("TrainingSession::createFromOnnx");
 
   if (!deviceInfo) {
@@ -406,6 +427,7 @@ TrainingSession::createFromOnnxModel(const std::string &model,
 }
 
 void TrainingSession::updateOptimizerFromHost(const Optimizer *optimizer) {
+  POPART_TRACEPOINT();
   logging::session::trace("TrainingSession::updateOptimizerFromHost");
   ir.updateOptimizer(*optimizer);
 
@@ -432,6 +454,7 @@ void TrainingSession::connectStreamToCallback(
     const std::string &streamHandle,
     std::function<void(void *)> callback,
     unsigned index) {
+  POPART_TRACEPOINT();
   device_->connectStreamToCallback(streamHandle, callback, index);
 }
 
@@ -439,6 +462,7 @@ void TrainingSession::copyFromRemoteBuffer(const std::string &buffer,
                                            void *w,
                                            int repeat_index,
                                            unsigned replication_index) {
+  POPART_TRACEPOINT();
   device_->copyFromRemoteBuffer(buffer, w, repeat_index, replication_index);
 }
 
@@ -446,6 +470,7 @@ void TrainingSession::copyToRemoteBuffer(void *w,
                                          const std::string &buffer,
                                          int repeat_index,
                                          unsigned replication_index) {
+  POPART_TRACEPOINT();
   device_->copyToRemoteBuffer(w, buffer, repeat_index, replication_index);
 }
 

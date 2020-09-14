@@ -75,7 +75,8 @@ target_include_directories(popart SYSTEM PUBLIC
     ${POPLAR_INCLUDE_DIR}
     ${POPLIBS_INCLUDE_DIR}
     ${GCL_INCLUDE_DIR}
-)
+    ${LIBPVTI_INCLUDE_DIR}
+    )
 
 target_link_libraries(popart PUBLIC
   # if the onnx mode checker is incorporated, this will be needed: ${ONNX_LIB}
@@ -91,6 +92,7 @@ target_link_libraries(popart PUBLIC
   ${POPOPS_LIB}
   ${POPRAND_LIB}
   ${POPUTIL_LIB}
+  ${LIBPVTI_LIB}
   ${GCL_LIBRARIES}
   ${CMAKE_DL_LIBS}
   ${CMAKE_THREAD_LIBS_INIT}

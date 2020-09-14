@@ -28,6 +28,7 @@ target_include_directories (popart_core SYSTEM PUBLIC
 target_include_directories (popart_core PUBLIC
   ${POPLAR_INCLUDE_DIR}
   ${POPLIBS_INCLUDE_DIR}
+  ${LIBPVTI_INCLUDE_DIR}
 )
 
 # Not defining them results in compiler warnings that they will default to 0
