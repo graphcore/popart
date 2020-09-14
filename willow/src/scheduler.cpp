@@ -66,6 +66,30 @@ public:
            opAddresses == rhs.opAddresses;
   }
 
+  // Get the schedule from the RithmicGraph as a vector of Op pointers.
+  // The RithmicGraph must have already been initialised through a call to
+  // `GraphGrower::initialize`.
+  std::vector<Op *> getSchedule() const {
+    // 1. Get vector of all ops.
+    // We know all op addresses are 0..nOps
+    std::vector<OpAddress> opAddrs(nOps);
+    std::iota(opAddrs.begin(), opAddrs.end(), 0);
+
+    // 2.
+    const auto schToOpAddr = g.getSubSchedule(opAddrs);
+
+    // 3. Convert schedule on OpAddress to schedule on popart::Op.
+    std::vector<Op *> schToOp;
+    schToOp.reserve(nOps);
+
+    std::transform(schToOpAddr.cbegin(),
+                   schToOpAddr.cend(),
+                   std::back_inserter(schToOp),
+                   [this](const auto &opAddr) { return addressToOp[opAddr]; });
+
+    return schToOp;
+  }
+
   void minSumLivenessAnneal(const std::map<std::string, std::string> &a) {
     auto ll = logging::Level::Trace;
     std::string strBefore;
@@ -87,7 +111,6 @@ public:
   std::string getSerializationString() const {
     return g.getSerializationString();
   }
-  ScheduleIndex opToSchedule(OpAddress a) const { return g.opToSchedule(a); }
 
   Op *toOp(OpAddress a) const { return addressToOp.at(a); }
 
@@ -468,20 +491,11 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
        {"timeLimitSeconds", std::to_string(timeLimitSeconds)},
        {"swapLimitCount", std::to_string(swapLimitCount)}});
 
-  const auto nOps = pg.getOps().size();
-  std::vector<std::tuple<ScheduleIndex, OpAddress>> subSchedule;
-  subSchedule.reserve(nOps);
-  for (OpAddress add = 0; add < nOps; ++add) {
-    subSchedule.push_back({grower->opToSchedule(add), add});
-  }
-  std::sort(subSchedule.begin(), subSchedule.end());
-  std::vector<Op *> finalSchedule;
-  finalSchedule.reserve(nOps);
-  for (auto i = 0; i < nOps; ++i) {
-    finalSchedule.push_back(grower->toOp(std::get<1>(subSchedule[i])));
-  }
+  std::vector<Op *> finalSchedule = grower->getSchedule();
+
   cacher->setSchedule(finalSchedule);
   cacher->setGrower(std::move(grower));
+
   return finalSchedule;
 }
 
