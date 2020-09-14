@@ -380,6 +380,9 @@ struct SessionOptions {
 
   class NumIOTiles {
   public:
+    NumIOTiles();
+    NumIOTiles(int numIOTiles);
+
     // Compare with ints.
     bool operator==(const int &rhs) const;
 

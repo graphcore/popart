@@ -127,6 +127,10 @@ std::ostream &operator<<(std::ostream &os, RecomputationType r) {
   return os;
 }
 
+SessionOptions::NumIOTiles::NumIOTiles() : value(0), userAssignedValue(false) {}
+SessionOptions::NumIOTiles::NumIOTiles(int numIOTiles_)
+    : value(numIOTiles_), userAssignedValue(true) {}
+
 // Compare with ints.
 bool SessionOptions::NumIOTiles::operator==(const int &rhs) const {
   int lhs = *this;

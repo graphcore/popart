@@ -851,6 +851,11 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("schedule", &ExecutionPhaseSettings::schedule);
   }
   {
+    py::class_<SessionOptions::NumIOTiles> cls(m, "NumIOTiles");
+    cls.def(py::init<>());
+    cls.def(py::init<int>());
+  }
+  {
     py::class_<SessionOptions> cls(m, "SessionOptions");
     cls.def(py::init<>());
     cls.def_readwrite("logDir", &SessionOptions::logDir);
