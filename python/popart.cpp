@@ -891,7 +891,12 @@ PYBIND11_MODULE(popart_core, m) {
                       &SessionOptions::rearrangeAnchorsOnHost);
     cls.def_readwrite("executionPhaseSettings",
                       &SessionOptions::executionPhaseSettings);
-    cls.def_readwrite("numIOTiles", &SessionOptions::numIOTiles);
+    cls.def_property(
+        "numIOTiles",
+        [](const SessionOptions &s) -> int { return s.numIOTiles; },
+        [](SessionOptions &s, int numIOTiles) -> void {
+          s.numIOTiles = numIOTiles;
+        });
     cls.def_readwrite("explicitRecomputation",
                       &SessionOptions::explicitRecomputation);
     cls.def_readwrite("batchSerializationSettings",

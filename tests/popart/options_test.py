@@ -137,3 +137,10 @@ def test_update_options():
         a = opts.engineOptions[key]
         b = pdict[key]
         assert a == b
+
+
+# Check we can read from and write to numIOTiles from python
+def test_numIOTiles_option():
+    opts = popart.SessionOptions()
+    opts.numIOTiles = 42
+    assert opts.numIOTiles == 42
