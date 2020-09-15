@@ -300,7 +300,7 @@ add_popart_py_unit_test(gradient_accumulation_test MATCHEXPR test_adam_gradient_
 add_popart_py_unit_test(gradient_accumulation_test MATCHEXPR test_adam_gradient_accumulation_model_proto VARIANTS IpuModel)
 add_popart_py_unit_test(gradient_accumulation_test MATCHEXPR test_adam_loading_saved_gradient_accumulationt_tesors VARIANTS IpuModel)
 add_popart_py_unit_test(graph_caching_test VARIANTS IpuModel)
-# add_popart_py_unit_test(graph_replication_test VARIANTS Hw) # TODO: Fix this T23920
+add_popart_py_unit_test(graph_replication_test VARIANTS Hw)
 add_popart_py_unit_test(import_test)
 add_popart_py_unit_test(ipu_copy_test VARIANTS IpuModel)
 add_popart_py_unit_test(ipu_gather_test)

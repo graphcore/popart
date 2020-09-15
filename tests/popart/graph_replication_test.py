@@ -34,7 +34,8 @@ def test_weight_update(op_tester):
             o,
             popart.reservedGradientPrefix() + i2, i2, i3,
             "scaledLearningRate0___default___FLOAT",
-            "weightDecayScaleFactor0___default___FLOAT"
+            "weightDecayScaleFactor0___default___FLOAT",
+            popart.reservedGradientPrefix() + o
         ]
 
     def reference(ref_data):
@@ -56,16 +57,19 @@ def test_weight_update(op_tester):
 
         a = torch.tensor(A, requires_grad=True)
 
-        # forward
+        # train
         o = module([a])
+        d__o = ref_data.getOutputTensorGrad(0)
+        o.backward(torch.tensor(d__o))
+        optimizer = torch.optim.SGD(module.parameters(), lr=0.01)
+        optimizer.step()
 
         return [
             o, module.B.grad, module.B.data, module.C.data,
             np.float32(0.01),
-            np.float32(1.0)
+            np.float32(1.0), None
         ]
 
-    op_tester.device = tu.create_test_device()
     op_tester.numIPUs = 1
     op_tester.setPatterns(
         ['GemmDecomposition', 'PreUniRepl', 'MatMulRhsGradOp', 'OpToReshape'],
@@ -169,11 +173,9 @@ def test_weight_update_replicated(op_tester):
         enableRuntimeAsserts=False)
     op_tester.options.enableReplicatedGraphs = True
     op_tester.options.replicatedGraphCount = replicationFactor
-    op_tester.device = tu.create_test_device(numIpus=replicationFactor)
-    if not op_tester.device:
-        raise RuntimeError(
-            "Failed to acquire IPU device in training graph replication test")
-
+    # T26773: set to False, or else 'poplar_exception:
+    # Divergent control flow in switch'
+    op_tester.options.opxModifyChecking = False
     op_tester.numIPUs = replicationFactor
     op_tester.run(init_builder,
                   reference,
@@ -243,10 +245,8 @@ def test_replication_infer(op_tester):
                           enableRuntimeAsserts=False)
     op_tester.options.enableReplicatedGraphs = True
     op_tester.options.replicatedGraphCount = replicationFactor
-    op_tester.device = tu.create_test_device(replicationFactor)
-    if not op_tester.device:
-        raise RuntimeError(
-            "Failed to acquire IPU device in inference graph replication test")
-
     op_tester.numIPUs = replicationFactor
+    # T26773: set to False, or else 'poplar_exception:
+    # Divergent control flow in switch'
+    op_tester.options.opxModifyChecking = False
     op_tester.run(init_builder, reference, 'infer')
