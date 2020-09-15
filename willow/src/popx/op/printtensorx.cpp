@@ -24,10 +24,21 @@ void PrintTensorOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 std::string PrintTensorOpx::getTitle() const {
+  auto op    = getOp<PrintTensorOp>();
+  auto title = op.getTitle();
+
   if (op_p->scheduledPreLoss == ScheduledPreLoss::Yes) {
-    return op_p->inTensor(PrintTensorOp::getInIndex())->id;
+    if (title.size() > 0) {
+      return title;
+    } else {
+      return op_p->inTensor(PrintTensorOp::getInIndex())->id;
+    }
   } else if (op_p->scheduledPreLoss == ScheduledPreLoss::No) {
-    return op_p->outTensor(PrintTensorOp::getOutIndex())->id;
+    if (title.size() > 0) {
+      return logging::format("{}_gradient", title);
+    } else {
+      return op_p->outTensor(PrintTensorOp::getOutIndex())->id;
+    }
   } else {
     throw error("ScheduledPreLoss Unknown not allowed in getTitle");
   }

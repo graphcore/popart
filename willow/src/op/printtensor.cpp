@@ -10,9 +10,10 @@ namespace popart {
 PrintTensorOp::PrintTensorOp(const OperatorIdentifier &opid_,
                              bool printSelf_,
                              bool printGradient_,
+                             const std::string &title_,
                              const Op::Settings &settings_)
     : ElementWiseUnaryOp(opid_, settings_), printSelf(printSelf_),
-      printGradient(printGradient_) {}
+      printGradient(printGradient_), title(title_) {}
 
 std::unique_ptr<Op> PrintTensorOp::clone() const {
   return std::make_unique<PrintTensorOp>(*this);
@@ -22,6 +23,7 @@ void PrintTensorOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   ElementWiseUnaryOp::appendOutlineAttributes(os);
   os.appendAttribute("printSelf", printSelf);
   os.appendAttribute("printGradient", printGradient);
+  os.appendAttribute("title", title);
 }
 
 std::vector<std::unique_ptr<Op>> PrintTensorOp::getGradOps() {
@@ -30,6 +32,7 @@ std::vector<std::unique_ptr<Op>> PrintTensorOp::getGradOps() {
       std::make_unique<PrintTensorOp>(Onnx::CustomOperators::PrintTensor_1,
                                       printGradient,
                                       printGradient,
+                                      title,
                                       getSettings()));
   return upops;
 }
@@ -74,9 +77,11 @@ static OpCreator<PrintTensorOp> printtensorOpCreator(
     [](const OpCreatorInfo &info) {
       bool printGradient = info.attributes.getAttribute<Attributes::Int>(
                                "print_gradient", true) != 0;
+      std::string title =
+          info.attributes.getAttribute<Attributes::String>("title", "");
 
-      return std::unique_ptr<Op>(
-          new PrintTensorOp(info.opid, true, printGradient, info.settings));
+      return std::unique_ptr<Op>(new PrintTensorOp(
+          info.opid, true, printGradient, title, info.settings));
     },
     true);
 } // namespace

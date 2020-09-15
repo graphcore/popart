@@ -169,8 +169,9 @@ public:
    * This is a poplar extension
    */
   TensorId printtensor(const std::vector<TensorId> &args,
-                       int64_t print_gradient  = 1,
-                       const std::string &name = {});
+                       int64_t print_gradient   = 1,
+                       const std::string &name  = {},
+                       const std::string &title = {});
 
   /**
    * Add a nop operation to the model

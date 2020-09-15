@@ -1408,7 +1408,8 @@ PYBIND11_MODULE(popart_core, m) {
             &AiGraphcoreOpset1::printtensor,
             py::arg("args"),
             py::arg("print_gradient") = 1,
-            py::arg("debugPrefix")    = std::string());
+            py::arg("debugPrefix")    = std::string(),
+            py::arg("title")          = std::string());
     cls.def("nop",
             &AiGraphcoreOpset1::nop,
             py::arg("args"),

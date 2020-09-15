@@ -149,3 +149,86 @@ def test_train(tmpdir, capfd):
     assert matches[0] == i2 + ":{{{{1,2},{1,2}}}}"
     assert matches[1] == c1 + ":{{{{2,2},{6,4}}}}"
     assert matches[2] == d__i2 + ":{{{{0.4,0.3},{0.2,0.1}}}}"
+
+
+def test_custom_title(tmpdir, capfd):
+    filt_data = np.array([1., 2., 1., 2.], dtype=np.float32)
+    filt_data = np.reshape(filt_data, [1, 1, 2, 2])
+    input_data = np.array([1., 2., 3., 4.], dtype=np.float32)
+    input_data = np.reshape(input_data, [1, 1, 2, 2])
+
+    builder = popart.Builder()
+
+    shape = popart.TensorInfo("FLOAT", input_data.shape)
+    i1 = builder.addInputTensor(shape, "data")
+
+    i2 = builder.addInitializedInputTensor(filt_data, "filter")
+
+    # both i2 and d__i2 will be printed
+    p1 = builder.aiGraphcore.printtensor([i2], print_gradient=1, title="foo")
+
+    c1 = builder.aiOnnx.conv([i1, p1],
+                             dilations=[1, 1],
+                             pads=[1, 1, 1, 1],
+                             strides=[2, 2])
+
+    # c1 will be printed, but d__c1 will not
+    o = builder.aiGraphcore.printtensor([c1], print_gradient=1, title="bar")
+    l1 = builder.aiGraphcore.l1loss([o],
+                                    0.1,
+                                    reduction=popart.ReductionType.Sum)
+
+    proto = builder.getModelProto()
+
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
+
+    opts = popart.SessionOptions()
+    opts.enableOutlining = False
+    opts.enableOutliningCopyCostPruning = False
+
+    session = popart.TrainingSession(fnModel=proto,
+                                     dataFlow=dataFlow,
+                                     userOptions=opts,
+                                     optimizer=popart.ConstSGD(0.1),
+                                     loss=l1,
+                                     deviceInfo=tu.create_test_device())
+
+    session.prepareDevice()
+
+    session.weightsFromHost()
+
+    anchors = session.initAnchorArrays()
+
+    inputs = {i1: input_data}
+    stepio = popart.PyStepIO(inputs, anchors)
+
+    capfd.readouterr()
+
+    session.run(stepio)
+
+    captured = capfd.readouterr()
+    output = captured.err
+
+    # Remove ESC characters
+    output = re.sub(chr(27), '', output)
+
+    # Remove termcolor sequences
+    output = re.sub('\[\d\dm', '', output)
+
+    # Remove popart log lines
+    output = re.sub('\[\d\d\d\d-\d\d-\d\d .*?\n', '', output)
+
+    # remove all whitespace
+    output = re.sub('\s+', '', output)
+
+    pattern = 'name:{{{{float,float},{float,float}}}}'
+    pattern = re.sub('name', r'[\\w:]+', pattern)
+    pattern = re.sub('float', r'\\d(?:\\.\\d+)?', pattern)
+
+    matches = re.findall(pattern, output)
+
+    assert len(matches) == 4
+    assert matches[0] == "foo:{{{{1,2},{1,2}}}}"
+    assert matches[1] == "bar:{{{{2,2},{6,4}}}}"
+    assert matches[2] == "bar_gradient:{{{{0.1,0.1},{0.1,0.1}}}}"
+    assert matches[3] == "foo_gradient:{{{{0.4,0.3},{0.2,0.1}}}}"

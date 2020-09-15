@@ -11,6 +11,7 @@ public:
   PrintTensorOp(const OperatorIdentifier &,
                 bool printSelf,
                 bool printGradient,
+                const std::string &title,
                 const Op::Settings &);
 
   std::unique_ptr<Op> clone() const override;
@@ -21,10 +22,12 @@ public:
   bool canBeReplacedByIdentity() final { return !printSelf; }
 
   bool shouldPrint() const { return printSelf; }
+  const std::string &getTitle() { return title; }
 
 private:
   bool printSelf;
   bool printGradient;
+  std::string title;
 };
 
 } // namespace popart
