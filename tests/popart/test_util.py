@@ -68,10 +68,6 @@ def create_test_device(
             pattern=pattern,
             connectionType=connectionType,
             selectionCriterion=selectionCriterion)
-
-        if device.tilesPerIpu != 1216:
-            pytest.skip("T25924: intermittent hangs on IPUs with >1216 tiles")
-
     elif testDeviceType == "IpuModel":
         device = popart.DeviceManager().createIpuModelDevice(opts)
     else:

@@ -15,6 +15,10 @@ set(DEFAULT_TEST_VARIANTS "Cpu" CACHE STRING
 # Will enable all tests - note that you need to use '$<SEMICOLON>' not ';'
 set(ENABLED_TEST_VARIANTS "Cpu;IpuModel" CACHE STRING "Default (non-hw) test variants")
 
+# TODO : T26346. Hw tests are sometimes timing out. Allocate resources better,
+# then re-instate.
+list(REMOVE_ITEM ENABLED_TEST_VARIANTS Hw)
+
 # Remove any requested variants not present in ${ENABLED_TEST_VARIANTS}
 # If no variants were requested filtered ${DEFAULT_TEST_VARIANTS} are returned.
 function(sanitise_variants variant_name)
@@ -236,23 +240,17 @@ function(add_popart_py_unit_test name)
     extract_target(VARIANT TEST_TARGET)
     extract_runconfig(VARIANT TEST_CONFIG)
 
-    set(fork_test "")
-    if ("${VARIANT}" STREQUAL "Hw")
-      # Make sure IPUs have detached between each pytest
-      set(fork_test "--forked")
-    endif()
-
     if ("${test_args_MATCHEXPR}" STREQUAL "")
       set(test_name "${TEST_TARGET}_${TEST_CONFIG}_${name}")
       add_test(NAME "${test_name}"
-            COMMAND ${Python3_EXECUTABLE} -m pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/${name}.py ${fork_test}
+            COMMAND ${Python3_EXECUTABLE} -m pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/${name}.py
             WORKING_DIRECTORY ${CMAKE_CURRENT_BUILD_DIR})
     else()
       string(REGEX REPLACE "[^a-zA-Z_]" "_" MATCHEXPR_NAME "${test_args_MATCHEXPR}")
       string(REGEX REPLACE "[^a-zA-Z_]" " " MATCHEXPR_VALUE "${test_args_MATCHEXPR}")
       set(test_name "${TEST_TARGET}_${TEST_CONFIG}_${name}-${MATCHEXPR_NAME}")
       add_test(NAME "${test_name}"
-            COMMAND ${Python3_EXECUTABLE} -m pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/${name}.py -k "${MATCHEXPR_VALUE}" ${fork_test}
+            COMMAND ${Python3_EXECUTABLE} -m pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/${name}.py -k "${MATCHEXPR_VALUE}"
             WORKING_DIRECTORY ${CMAKE_CURRENT_BUILD_DIR})
     endif()
     set_tests_properties(${test_name} PROPERTIES
@@ -276,6 +274,10 @@ add_popart_py_unit_test(collectives_test VARIANTS Hw)
 add_popart_py_unit_test(context_scope_test)
 add_popart_py_unit_test(convolution_options_test VARIANTS IpuModel)
 add_popart_py_unit_test(cycle_count_test VARIANTS Hw)
+# Test uses all IPUs, so run alone to avoid IPU attachment conflicts
+if ("Hw" IN_LIST ENABLED_TEST_VARIANTS)
+  
+endif()
 
 add_popart_py_unit_test(decompose_gradient_summation_test VARIANTS IpuModel)
 add_popart_py_unit_test(device_test VARIANTS Hw)
