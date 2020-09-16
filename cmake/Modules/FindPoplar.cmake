@@ -100,7 +100,7 @@ MESSAGE(STATUS "Found POPRAND_LIB ${POPRAND_LIB}")
 MARK_AS_ADVANCED(POPRAND_LIB)
 
 FIND_LIBRARY(LIBPVTI_LIB
-  NAMES libpvti
+  NAMES pvti
   HINTS ${POPLAR_INSTALL_DIR}/libpvti/lib ${POPLAR_INSTALL_DIR}/lib
   PATH_SUFFIXES libpvti libpvti/lib
   DOC "libpvti library to link to")
