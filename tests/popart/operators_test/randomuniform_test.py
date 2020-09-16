@@ -182,4 +182,4 @@ def test_randomuniform_bad_dtype(op_tester):
     with pytest.raises(popart.popart_exception) as e_info:
         op_tester.run(init_builder, None)
 
-    assert ("Unsupported data type requested" in e_info.value.args[0])
+    assert ("Is there a poplar type for DOUBLE?" in e_info.value.args[0])
