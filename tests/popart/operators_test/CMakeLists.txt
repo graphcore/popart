@@ -64,9 +64,9 @@ add_popart_py_unit_test(operators_test)
 add_popart_py_unit_test(pattern_op_removal_test)
 add_popart_py_unit_test(pooling_test)
 add_popart_py_unit_test(pow_test)
-# add_popart_py_unit_test(randomnormal_test VARIANTS Hw) T26817
+add_popart_py_unit_test(randomnormal_test VARIANTS Hw)
 add_popart_py_unit_test(randomnormallike_test VARIANTS Hw)
-# add_popart_py_unit_test(randomuniform_test VARIANTS Hw) T26817
+add_popart_py_unit_test(randomuniform_test VARIANTS Hw)
 add_popart_py_unit_test(randomuniformlike_test VARIANTS Hw)
 add_popart_py_unit_test(reducel1_test)
 add_popart_py_unit_test(reducel2_test)
