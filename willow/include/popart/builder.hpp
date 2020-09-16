@@ -378,12 +378,16 @@ public:
    * \param args [probs, target]
    * \param reduction Type of reduction to perform on the individual losses
    * \param ignoreIndex Optional class index to ignore in loss calculation
+   * \param inputIsLogProbability Specifies if the input tensor contains
+   *                              log-probabilities or raw probabilities
+   *                              (false, default).
    * \param name Optional identifier for operation
    * \return The name of the result tensor
    */
   TensorId nllloss(const std::vector<TensorId> &args,
                    const ReductionType reduction = ReductionType::Mean,
                    const nonstd::optional<int> ignoreIndex = nonstd::nullopt,
+                   bool inputIsLogProbability              = false,
                    const std::string &name                 = {});
 
   /**
