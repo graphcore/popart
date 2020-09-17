@@ -11,9 +11,7 @@ add_popart_py_unit_test(constexpr_gemm_decomposition)
 add_popart_py_unit_test(constexpr_slice)
 add_popart_py_unit_test(constexpr_unsqueeze)
 add_popart_py_unit_test(detach_test)
-# TODO: T25527
-# Unit test failing due to aliasing dishonesty
-# add_popart_py_unit_test(dropout_test VARIANTS Hw)
+add_popart_py_unit_test(dropout_test VARIANTS Hw)
 add_popart_py_unit_test(dynamicslice_test)
 add_popart_py_unit_test(dynamicupdate_test)
 add_popart_py_unit_test(dynamicadd_test)
