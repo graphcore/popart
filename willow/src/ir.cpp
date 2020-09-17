@@ -53,6 +53,7 @@
 #include <popart/transforms/iocomputetilecopy.hpp>
 #include <popart/transforms/mergecopies.hpp>
 #include <popart/transforms/mergeduplicateops.hpp>
+#include <popart/transforms/mergeremote.hpp>
 #include <popart/transforms/mergevarupdates.hpp>
 #include <popart/transforms/pipeline.hpp>
 #include <popart/transforms/prune.hpp>
@@ -1071,6 +1072,9 @@ void Ir::prepareImpl(const IrBundle &gb) {
   }
 
   dotCheckpoint(DotCheck::PreAlias);
+
+  // Merge remote loads/stores into exchanges
+  applyTransform(MergeRemote::id(), getMainGraph());
 
   if (getSessionOptions().enableOutlining) {
     updateAliases();

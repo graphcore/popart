@@ -39,9 +39,12 @@ template <typename T>
 
 // Repeated isomorphic non-overlapping sequences
 // R....... i......... n.............. se....... matching function
-std::vector<Match> getRinseMatches(const std::vector<T *> &schedule,
-                                   float threshold,
-                                   OutlinerAlgorithm algo) {
+std::vector<Match>
+getRinseMatches(const std::vector<T *> &schedule,
+                const std::vector<std::pair<size_t, size_t>> &sequences,
+                float threshold,
+                float sequenceBreakCost,
+                OutlinerAlgorithm algo) {
 
   switch (algo) {
 
@@ -66,7 +69,7 @@ std::vector<Match> getRinseMatches(const std::vector<T *> &schedule,
 
   case OutlinerAlgorithm::ALGO1: {
     using namespace algo1;
-    Algo1<T> algo1(schedule);
+    Algo1<T> algo1(schedule, sequences, sequenceBreakCost);
     algo1.init();
     auto acc = algo1.getPreThresholded();
 

@@ -144,6 +144,9 @@ def test_attention_streamingmemory(tmpdir):
             options["numLayers"] * stride if options["phasedExecution"] else 0)
         opts.enableOutlining = options["outlining"]
 
+        if "phaseSchedule" in options:
+            opts.executionPhaseSettings.schedule = options["phaseSchedule"]
+
         # Phased execution currently does its own recompute annotations
         opts.autoRecomputation = (popart.RecomputationType.Standard
                                   if options["explicitRecomputation"] else
@@ -269,7 +272,7 @@ def test_attention_streamingmemory(tmpdir):
             replicatedTensorSharding=popart.ReplicatedTensorSharding.Off),
         minElementsForOffChip=0,
         minElementsForReplicatedTensorSharding=2)
-
+    """
     # Ground truth variant
     test_variants.append({
         "stages": 2,
@@ -358,6 +361,7 @@ def test_attention_streamingmemory(tmpdir):
         "tensorLocationSettings": ioOffChip,
         "ioTiles": 192
     })
+    """
 
     # Test batch serialized single device per replica execution, where all
     # streaming memory traffic goes through IO tiles, and loading of the next
@@ -367,7 +371,8 @@ def test_attention_streamingmemory(tmpdir):
         "stride": 1,
         "numLayers": 3,
         "phasedExecution": True,
-        "outlining": True,
+        "phaseSchedule": popart.ExecutionPhaseSchedule.BatchClusteredIO,
+        "outlining": False,
         "explicitRecomputation": True,
         "aliasZeroCopy": True,
         "batchSerialize": 4,
@@ -376,7 +381,7 @@ def test_attention_streamingmemory(tmpdir):
         "tensorLocationSettings": ioOffChip,
         "ioTiles": 192
     })
-
+    """
     # Test a variety of batch serialisation schedules.
     for batchSchedule in [
             popart.BatchSerializationBatchSchedule.Scheduler,
@@ -460,6 +465,7 @@ def test_attention_streamingmemory(tmpdir):
                                       minElementsForOffChip=0,
                                       minElementsForReplicatedTensorSharding=2)
     })
+    """
 
     index = 0
     for test_option in test_variants:

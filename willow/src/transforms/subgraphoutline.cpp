@@ -1,4 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <algorithm>
 #include <boost/algorithm/cxx11/any_of.hpp>
 #include <boost/range/algorithm/find.hpp>
 #include <cmath>
@@ -12,6 +13,7 @@
 #include <popart/op/call.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/op/remote.hpp>
 #include <popart/subgraph/iosubgraphcostmodel.hpp>
 #include <popart/subgraph/outliner.hpp>
 #include <popart/subgraph/prunematches.hpp>
@@ -41,7 +43,8 @@ namespace localoutline {
 namespace {
 using namespace fwtools::subgraph;
 
-std::vector<int64_t> getBoundariesCrossed(int64_t start,
+std::vector<int64_t> getBoundariesCrossed(const SessionOptions &opts,
+                                          int64_t start,
                                           int64_t end,
                                           const std::vector<Op *> &schedule) {
   std::vector<int64_t> crossing;
@@ -68,11 +71,19 @@ std::vector<int64_t> getBoundariesCrossed(int64_t start,
     last_exec_cont   = exec_cont;
     last_batchserial = batchserial;
     last_recompute   = recompute;
-    vgid             = op->getOptionalVGraphId();
-    phase            = op->getOptionalExecutionPhase();
-    exec_cont        = op->settings.executionContext;
-    batchserial      = op->getOptionalBatchSerializedPhase();
-    recompute        = op->settings.recomputeType == RecomputeType::Recompute
+
+    if (!(opts.executionPhaseSettings.phases > 0 &&
+          opts.executionPhaseSettings.schedule ==
+              ExecutionPhaseSchedule::BatchClusteredIO)) {
+      // Disable vgid and phase barriers when using the BatchClusteredIO
+      // schedule, so that subgraphs can span multiple phases and virtual graphs
+      vgid  = op->getOptionalVGraphId();
+      phase = op->getOptionalExecutionPhase();
+    }
+
+    exec_cont   = op->settings.executionContext;
+    batchserial = op->getOptionalBatchSerializedPhase();
+    recompute   = op->settings.recomputeType == RecomputeType::Recompute
                     ? RecomputeType::Recompute
                     : RecomputeType::Checkpoint;
     if (i > start &&
@@ -85,16 +96,151 @@ std::vector<int64_t> getBoundariesCrossed(int64_t start,
   return crossing;
 }
 
+// Cost model for computing runs of parallelizable sequences
+class SoftParallelismModel {
+public:
+  SoftParallelismModel(std::vector<Op *> schedule_) : schedule(schedule_) {
+    parallelSchedule.resize(schedule.size());
+    for (size_t i = 0; i < schedule.size(); ++i) {
+      // Op at position i can overlap with itself: [i, i + 1)
+      parallelSchedule[i].first  = i;
+      parallelSchedule[i].second = i + 1;
+      for (size_t j = i; j >= 1; --j) {
+        if (canSoftParallelize(i, j - 1)) {
+          // Extend parallelizable sequence to [j - 1, i + 1)
+          parallelSchedule[i].first = j - 1;
+        } else {
+          break;
+        }
+      }
+      for (size_t j = i + 1; j < schedule.size(); ++j) {
+        if (canSoftParallelize(i, j)) {
+          // Extend parallelizable sequence to [i, j + 1)
+          parallelSchedule[i].second = j + 1;
+        } else {
+          break;
+        }
+      }
+    }
+  }
+
+  void log() {
+    logging::transform::trace("[SubgraphOutline] Soft parallelism:");
+    for (size_t i = 0; i < parallelSchedule.size(); ++i) {
+      std::string a(parallelSchedule.at(i).first, ' ');
+      std::string b(
+          parallelSchedule.at(i).second - parallelSchedule.at(i).first, 'x');
+      std::string c(schedule.size() - parallelSchedule.at(i).second, ' ');
+      logging::transform::trace(
+          "{}{}{} ({}: {})", a, b, c, i, schedule.at(i)->debugName());
+    }
+  }
+
+  std::set<VGraphId> getVirtualGraphIds(Op *op) {
+    std::set<VGraphId> vgids;
+    for (auto &in : op->input->tensorMap()) {
+      vgids.insert(op->getIntrospectionInVirtualGraphId(in.first).first);
+    }
+    for (auto &out : op->output->tensorMap()) {
+      vgids.insert(op->getIntrospectionOutVirtualGraphId(out.first).first);
+    }
+    return vgids;
+  }
+
+  std::set<TileSet> getTileSets(Op *op) {
+    std::set<TileSet> tileSets;
+    for (auto &in : op->input->tensorMap()) {
+      tileSets.insert(op->getIntrospectionInVirtualGraphId(in.first).second);
+    }
+    for (auto &out : op->output->tensorMap()) {
+      tileSets.insert(op->getIntrospectionOutVirtualGraphId(out.first).second);
+    }
+    return tileSets;
+  }
+
+  bool virtualGraphOverlap(Op *op0, Op *op1) {
+    auto set0 = getVirtualGraphIds(op0);
+    auto set1 = getVirtualGraphIds(op1);
+
+    std::set<VGraphId> intersect;
+    std::set_intersection(set0.begin(),
+                          set0.end(),
+                          set1.begin(),
+                          set1.end(),
+                          std::inserter(intersect, intersect.begin()));
+    return intersect.size();
+  }
+
+  bool tileSetOverlap(Op *op0, Op *op1) {
+    auto set0 = getTileSets(op0);
+    auto set1 = getTileSets(op1);
+
+    std::set<TileSet> intersect;
+    std::set_intersection(set0.begin(),
+                          set0.end(),
+                          set1.begin(),
+                          set1.end(),
+                          std::inserter(intersect, intersect.begin()));
+    return intersect.size();
+  }
+
+  bool isRemoteOp(Op *op) {
+    return op->isConvertibleTo<RemoteLoadOp>() ||
+           op->isConvertibleTo<RemoteStoreOp>() ||
+           op->isConvertibleTo<RemoteExchangeOp>();
+  }
+
+  bool canSoftParallelize(size_t p0, size_t p1) {
+    Op *op0 = schedule.at(p0);
+    Op *op1 = schedule.at(p1);
+
+    if (op0->id == op1->id) {
+      // Op can overlap with itself
+      return true;
+    }
+
+    if (op0->settings.executionContext != op1->settings.executionContext) {
+      // Can't overlap if in different execution contexts
+      return false;
+    }
+
+    if (virtualGraphOverlap(op0, op1) && tileSetOverlap(op0, op1)) {
+      // Can't overlap in software if the tile sets on the same IPU overlap
+      return false;
+    } else if (op0->isConvertibleTo<BoundaryOp>() ||
+               op1->isConvertibleTo<BoundaryOp>() || !isRemoteOp(op0) ||
+               (isRemoteOp(op0) && p1 < p0)) {
+      return false;
+    } else {
+      // Can only overlap if op0 is a Remote Op and the other ops follows after
+      return true;
+    }
+  }
+
+  const std::vector<std::pair<size_t, size_t>> &getParallelSchedule() const {
+    return parallelSchedule;
+  }
+
+private:
+  // Op schedule to operate on
+  std::vector<Op *> schedule;
+
+  // For Op at schedule position i, the start and end positions encasing i
+  // that benefit from being outlined together with schedule.at(i)
+  std::vector<std::pair<size_t, size_t>> parallelSchedule;
+};
+
 } // namespace
 
 namespace {
 //  Outlining matches are not supposed to cross certain boundaries:
 // a.) Across recompute/non-recompute operators
 // b.) Across execution phases
-void insertBoundariesOps(const std::vector<Op *> &schedule) {
+void insertBoundariesOps(const SessionOptions &opts,
+                         const std::vector<Op *> &schedule) {
   if (!schedule.empty()) {
     for (int64_t i = 0; i < schedule.size() - 1; ++i) {
-      auto crossed = getBoundariesCrossed(i, i + 2, schedule);
+      auto crossed = getBoundariesCrossed(opts, i, i + 2, schedule);
       if (crossed.size() > 0) {
         auto &graph     = schedule[i]->getGraph();
         auto boundaryOp = std::make_unique<BoundaryOp>(Op::Settings(graph, ""));
@@ -816,9 +962,12 @@ static std::vector<Replacement> applyMatch(const Match &match, Graph &graph) {
 
 // Returns a vector of Match instance
 // sorted so the smallest matches are at the back
-std::vector<Match> getRinseMatches(const std::vector<Op *> &ops,
-                                   float threshold,
-                                   bool copyCostPruning) {
+std::vector<Match>
+getRinseMatches(const std::vector<Op *> &ops,
+                const std::vector<std::pair<size_t, size_t>> &sequences,
+                float threshold,
+                float sequenceBreakCost,
+                bool copyCostPruning) {
 
   if (logging::shouldLog(logging::Module::transform, logging::Level::Trace)) {
     std::vector<int> intSchedule = fwtools::subgraph::getIntSchedule(ops);
@@ -840,7 +989,11 @@ std::vector<Match> getRinseMatches(const std::vector<Op *> &ops,
   }
 
   auto fw_matches = fwtools::subgraph::getRinseMatches(
-      ops, threshold, fwtools::subgraph::getDefaultOutlinerAlgorithm());
+      ops,
+      sequences,
+      threshold,
+      sequenceBreakCost,
+      fwtools::subgraph::getDefaultOutlinerAlgorithm());
   int64_t num_matches_0 = fw_matches.size();
 
   // TODO: T Copy cost pruning can cause crossing matches,
@@ -921,14 +1074,21 @@ bool SubgraphOutline::apply(Graph &graph) const {
   std::vector<Op *> schedule = graph.getOpSchedule({});
 
   // Change schedule to include boundaries that can't be outlined
-  localoutline::insertBoundariesOps(schedule);
+  localoutline::insertBoundariesOps(ir.getSessionOptions(), schedule);
 
   // Get updated schedule with boundaries
   schedule = graph.getOpSchedule({});
 
+  // Get the software parallel schedule to generate sequences that should
+  // be outlined as a whole
+  localoutline::SoftParallelismModel softParallelismModel(schedule);
+  // softParallelismModel.log();
+
   auto matches =
       getRinseMatches(schedule,
+                      softParallelismModel.getParallelSchedule(),
                       ir.getSessionOptions().outlineThreshold,
+                      ir.getSessionOptions().outlineSequenceBreakCost,
                       ir.getSessionOptions().enableOutliningCopyCostPruning);
 
   if (logging::shouldLog(logging::Module::none, logging::Level::Trace)) {

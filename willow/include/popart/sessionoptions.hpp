@@ -171,7 +171,12 @@ enum class ExecutionPhaseSchedule {
   // Process above steps for all weights together, in a way that maximizes
   // overlap potential between compute and exchange
   // e.g. (333, 111, 222, 444, 555, 666)
-  Batch
+  Batch,
+  // Process above steps for all weights together, in a way that maximizes
+  // overlap potential between compute and exchange, and maximize stream
+  // copy merges by keeping RemoteLoad/RemoteStore operations clustered
+  // e.g. (333, 111, 222, 444, 555, 666)
+  BatchClusteredIO
 };
 
 /**
@@ -260,6 +265,12 @@ struct SessionOptions {
   /// convolution being cached, but standalone low Value operations such as Relu
   /// will not be.
   float outlineThreshold = 1.0f;
+
+  // The penalty applied to outlining potential sub-graphs if the sub-graph
+  // to be created breaks up a sequence of operations that are more efficient
+  // (for example for overlapping compute and exchange) when outlined together
+  // Default value is set to ~10 * getHighSubgraphValue()
+  float outlineSequenceBreakCost = 10000.0f;
 
   /// Enable recomputation of operations in the graph in the backwards pass to
   /// reduce model size at the cost of computation cycles

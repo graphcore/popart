@@ -27,14 +27,15 @@ void IoTileCopyOp::setup() {
 
 VGraphIdAndTileSet
 IoTileCopyOp::getIntrospectionInVirtualGraphId(InIndex) const {
-  return {getVirtualGraphId(),
+  return {hasVirtualGraphId() ? getVirtualGraphId() : unusedVGraphId,
           settings.tileSet == TileSet::Compute ? TileSet::IO
                                                : TileSet::Compute};
 }
 
 VGraphIdAndTileSet
 IoTileCopyOp::getIntrospectionOutVirtualGraphId(OutIndex) const {
-  return {getVirtualGraphId(), settings.tileSet};
+  return {hasVirtualGraphId() ? getVirtualGraphId() : unusedVGraphId,
+          settings.tileSet};
 }
 
 } // namespace popart

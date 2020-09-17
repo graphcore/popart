@@ -22,7 +22,8 @@ bool RemoteSetup::apply(Graph &graph) const {
   Ir &ir                 = graph.getIr();
   int64_t remoteBufferId = 0;
 
-  // Create remote buffer info for RemoteLoad/RemoteStore ops with set buffer ID
+  // Create remote buffer info for RemoteLoad/RemoteStore/RemoteExchange ops
+  // with set buffer ID
   for (Op *op : ir.getAllOps()) {
     if (RemoteLoadOp *loadOp = dynamic_cast<RemoteLoadOp *>(op)) {
       auto allRemoteBufferIds = ir.getAllRemoteBufferInfos();
@@ -48,11 +49,30 @@ bool RemoteSetup::apply(Graph &graph) const {
         remoteBufferId = std::max(remoteBufferId, id + 1);
       }
     }
+    if (RemoteExchangeOp *exchangeOp = dynamic_cast<RemoteExchangeOp *>(op)) {
+      auto allRemoteBufferIds = ir.getAllRemoteBufferInfos();
+      for (InIndex inIndex = 0;
+           inIndex < exchangeOp->numLoads() + exchangeOp->numStores();
+           ++inIndex) {
+        RemoteBufferId id = exchangeOp->getRemoteBufferId(inIndex);
+        if (id > -1 &&
+            allRemoteBufferIds.find(id) == allRemoteBufferIds.end()) {
+          auto info =
+              RemoteBufferInfo(exchangeOp->input
+                                   ->tensor(exchangeOp->numLoads() +
+                                            exchangeOp->numStores() + inIndex)
+                                   ->info,
+                               1);
+          ir.setRemoteBufferInfo(id, info);
+          remoteBufferId = std::max(remoteBufferId, id + 1);
+        }
+      }
+    }
   }
 
   // Mapping from each RemoteArg to it's final consumers
-  std::map<TensorId, std::set<Op *>> argOpMap;
-  std::map<Op *, std::set<TensorId>> opArgMap;
+  std::map<TensorId, std::set<std::pair<Op *, InIndex>>> argOpMap;
+  std::map<std::pair<Op *, InIndex>, std::set<TensorId>> opArgMap;
   std::map<TensorId, std::pair<RemoteBufferId, RemoteBufferIndex>> argBufferMap;
 
   // TODO: Support for Loop and ID ranges per arg tensor ID
@@ -72,9 +92,12 @@ bool RemoteSetup::apply(Graph &graph) const {
           // Only certain ops can be on the path between RemoteArg and
           // RemoteLoad/Store.
           if (consumer->opid == Onnx::CustomOperators::RemoteLoad ||
-              consumer->opid == Onnx::CustomOperators::RemoteStore) {
-            argOpMap[tensor_id].insert(consumer);
-            opArgMap[consumer].insert(tensor_id);
+              consumer->opid == Onnx::CustomOperators::RemoteStore ||
+              consumer->opid == Onnx::CustomOperators::RemoteExchange) {
+            for (InIndex inIndex : consumer->input->indices(front)) {
+              argOpMap[tensor_id].insert({consumer, inIndex});
+              opArgMap[{consumer, inIndex}].insert(tensor_id);
+            }
           } else if (consumer->opid == Onnx::CustomOperators::Call_1) {
             CallOp *call = dynamic_cast<CallOp *>(consumer);
 
@@ -106,12 +129,13 @@ bool RemoteSetup::apply(Graph &graph) const {
       TensorInfo tensorInfo;
       group.insert(argOp.first);
 
-      std::vector<Op *> front;
+      std::vector<std::pair<Op *, InIndex>> front;
       front.insert(front.end(), argOp.second.begin(), argOp.second.end());
       while (front.size() > 0) {
-        Op *op = front.back();
+        Op *op          = front.back().first;
+        InIndex inIndex = front.back().second;
         front.pop_back();
-        for (TensorId tensor_id : opArgMap.at(op)) {
+        for (TensorId tensor_id : opArgMap.at({op, inIndex})) {
           if (group.find(tensor_id) == group.end()) {
             group.insert(tensor_id);
             front.insert(front.end(),
@@ -120,40 +144,56 @@ bool RemoteSetup::apply(Graph &graph) const {
           }
         }
       }
-
+      logging::trace("[RemoteSetup] RemoteArg group: {}", group);
       for (TensorId tensor_id : group) {
         argBufferMap[tensor_id] = {remoteBufferId, remoteBufferIndex};
         auto remoteArgTensor    = graph.getTensors().get(tensor_id);
         *static_cast<int *>(remoteArgTensor->tensorData()->data()) =
             static_cast<int>(remoteBufferIndex);
-        logging::trace("RemoteArg {} buffer: {} index: {}",
-                       tensor_id,
-                       remoteBufferId,
-                       remoteBufferIndex);
-        for (Op *op : argOpMap[tensor_id]) {
-          if (RemoteStoreOp *cs = dynamic_cast<RemoteStoreOp *>(op)) {
-            cs->setRemoteBufferId(remoteBufferId);
-            tensorInfo = cs->input->tensor(cs->getLocalTensorInIndex())->info;
+        logging::transform::trace(
+            "[RemoteSetup] RemoteArg {} buffer: {} index: {}",
+            tensor_id,
+            remoteBufferId,
+            remoteBufferIndex);
+        for (auto opAndIndex : argOpMap[tensor_id]) {
+          Op *op          = opAndIndex.first;
+          InIndex inIndex = opAndIndex.second;
+          if (RemoteStoreOp *rs = dynamic_cast<RemoteStoreOp *>(op)) {
+            rs->setRemoteBufferId(remoteBufferId);
             remoteBufferVGIDs[remoteBufferId].insert(
-                cs->hasVirtualGraphId() ? cs->getVirtualGraphId() : -1);
+                rs->hasVirtualGraphId() ? rs->getVirtualGraphId()
+                                        : unusedVGraphId);
             logging::transform::trace(
                 "[RemoteSetup] Op {} connected to remote buffer {}. "
                 "Tensor info {}.",
-                cs->debugName(),
+                rs->debugName(),
                 remoteBufferId,
-                cs->inInfo(RemoteStoreOp::getLocalTensorInIndex()));
+                rs->inInfo(RemoteStoreOp::getLocalTensorInIndex()));
           }
-          if (RemoteLoadOp *cl = dynamic_cast<RemoteLoadOp *>(op)) {
-            cl->setRemoteBufferId(remoteBufferId);
-            tensorInfo = cl->output->tensor(cl->getLocalTensorOutIndex())->info;
+          if (RemoteLoadOp *rl = dynamic_cast<RemoteLoadOp *>(op)) {
+            rl->setRemoteBufferId(remoteBufferId);
             remoteBufferVGIDs[remoteBufferId].insert(
-                cl->hasVirtualGraphId() ? cl->getVirtualGraphId() : -1);
+                rl->hasVirtualGraphId() ? rl->getVirtualGraphId()
+                                        : unusedVGraphId);
             logging::transform::trace(
                 "[RemoteSetup] Op {} connected to remote buffer {}. "
                 "Tensor info {}.",
-                cl->debugName(),
+                rl->debugName(),
                 remoteBufferId,
-                cl->outInfo(RemoteLoadOp::getLocalTensorOutIndex()));
+                rl->outInfo(RemoteLoadOp::getLocalTensorOutIndex()));
+          }
+          if (RemoteExchangeOp *re = dynamic_cast<RemoteExchangeOp *>(op)) {
+            auto localInIndex = inIndex % (re->numLoads() + re->numStores());
+            re->setRemoteBufferId(localInIndex, remoteBufferId);
+            remoteBufferVGIDs[remoteBufferId].insert(
+                re->getIntrospectionInVirtualGraphId(inIndex).first);
+            logging::transform::trace(
+                "[RemoteSetup] Op {} index {} connected to remote buffer {}. "
+                "Tensor info {}.",
+                re->debugName(),
+                localInIndex,
+                remoteBufferId,
+                re->inInfo(localInIndex));
           }
         }
         remoteBufferIndex++;
@@ -180,14 +220,17 @@ bool RemoteSetup::apply(Graph &graph) const {
             continue;
           logging::transform::trace("[RemoteSetup]   Tensor arg {} with:",
                                     tensor_id);
-          for (Op *op : argOpMap[tensor_id]) {
+          for (auto opAndIndex : argOpMap[tensor_id]) {
+            Op *op          = opAndIndex.first;
+            InIndex inIndex = opAndIndex.second;
             logging::transform::trace(
-                "[RemoteSetup]     Op {} phase {} vgid {} {}.",
+                "[RemoteSetup] Op {} phase {} vgid {} {}.",
                 op->opid,
                 op->hasExecutionPhase() ? op->getExecutionPhase()
                                         : unusedExecutionPhase,
-                op->hasVirtualGraphId() ? op->getVirtualGraphId()
-                                        : unusedVGraphId,
+                graph.getIr().virtualGraphsEnabled()
+                    ? op->getIntrospectionInVirtualGraphId(inIndex).first
+                    : -1,
                 op->debugName());
           }
         }
@@ -199,7 +242,7 @@ bool RemoteSetup::apply(Graph &graph) const {
     }
   }
 
-  // Remote (weight) tensors
+  // Remote (variable) tensors
   for (TensorId &tensor_id : graph.getTensors().getAllTensorIds()) {
     Tensor *tensor = graph.getTensors().get(tensor_id);
     if (tensor->tensorLocationInfo.isRemote()) {
@@ -217,6 +260,31 @@ bool RemoteSetup::apply(Graph &graph) const {
         // required remote tensor for the graph. Remove it's protected "remote"
         // status so it can be pruned by ir::removeIsolated later.
         tensor->tensorLocationInfo.setRemote(false);
+      }
+    }
+  }
+
+  // Verify every Remote*Op has valid RemoteBufferIDs
+  for (Op *op : ir.getAllOps()) {
+    if (RemoteLoadOp *loadOp = dynamic_cast<RemoteLoadOp *>(op)) {
+      if (loadOp->getRemoteBufferId() < 0) {
+        throw error("Op {} has no valid remote buffer set.", op->debugName());
+      }
+    }
+    if (RemoteStoreOp *storeOp = dynamic_cast<RemoteStoreOp *>(op)) {
+      if (storeOp->getRemoteBufferId() < 0) {
+        throw error("Op {} has no valid remote buffer set.", op->debugName());
+      }
+    }
+    if (RemoteExchangeOp *exchangeOp = dynamic_cast<RemoteExchangeOp *>(op)) {
+      for (InIndex inIndex = 0;
+           inIndex < exchangeOp->numLoads() + exchangeOp->numStores();
+           ++inIndex) {
+        if (exchangeOp->getRemoteBufferId(inIndex) < 0) {
+          throw error("Op {} index {} has no valid remote buffer set.",
+                      op->debugName(),
+                      inIndex);
+        }
       }
     }
   }

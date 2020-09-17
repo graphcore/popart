@@ -66,6 +66,49 @@ private:
   RemoteBufferId remotebuffer_id;
 };
 
+// The inputs to a RemoteExchangeOp (N loads, M stores) are:
+// [load-data0, ..., load-dataN, store-data0, ..., store-dataM]
+// [arg-load-data0, ..., arg-load-dataN, arg-store-data0, ..., arg-store-dataM]
+// The inputs to a remote exchange op are:
+// [load-data0, ..., load-dataN]
+class RemoteExchangeOp : public Op {
+public:
+  RemoteExchangeOp(const OperatorIdentifier &,
+                   const Op::Settings &,
+                   const std::vector<RemoteBufferId>,
+                   const std::vector<std::pair<OptionalVGraphId, TileSet>>);
+
+  std::unique_ptr<Op> clone() const final;
+  void setup() final;
+
+  view::Regions modifies(InIndex) const final;
+  view::Regions aliases(InIndex, OutIndex) const final;
+
+  view::RegMap fwdRegMap(InIndex, OutIndex) const final;
+  view::RegMap bwdRegMap(InIndex, OutIndex) const final;
+
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
+  bool isOutlineable() const final { return true; }
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
+
+  int numLoads() const;
+  int numStores() const;
+
+  void setRemoteBufferId(InIndex index, RemoteBufferId remotebuffer_id) {
+    remotebufferIds[index] = remotebuffer_id;
+  }
+  RemoteBufferId getRemoteBufferId(InIndex index) const {
+    return remotebufferIds.at(index);
+  }
+
+  VGraphIdAndTileSet getIntrospectionInVirtualGraphId(InIndex) const final;
+  VGraphIdAndTileSet getIntrospectionOutVirtualGraphId(OutIndex) const final;
+
+private:
+  std::vector<RemoteBufferId> remotebufferIds;
+  std::vector<std::pair<OptionalVGraphId, TileSet>> vgidAndTiles;
+};
+
 } // namespace popart
 
 #endif

@@ -33,13 +33,24 @@ std::vector<std::set<Match>> getSets(const std::vector<Op *> &sched,
                                      float threshold,
                                      int algo) {
 
+  std::vector<std::pair<size_t, size_t>> sequences(sched.size());
+  float sequenceBreakCost = 0.0f;
+
   // get the matches
   //
   std::vector<Match> matches;
   if (algo == 0) {
-    matches = getRinseMatches<Op>(sched, threshold, OutlinerAlgorithm::ALGO0);
+    matches = getRinseMatches<Op>(sched,
+                                  sequences,
+                                  threshold,
+                                  sequenceBreakCost,
+                                  OutlinerAlgorithm::ALGO0);
   } else if (algo == 1) {
-    matches = getRinseMatches<Op>(sched, threshold, OutlinerAlgorithm::ALGO1);
+    matches = getRinseMatches<Op>(sched,
+                                  sequences,
+                                  threshold,
+                                  sequenceBreakCost,
+                                  OutlinerAlgorithm::ALGO1);
   } else {
     throw std::runtime_error("invalid algo number");
   }

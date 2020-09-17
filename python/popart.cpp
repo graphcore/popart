@@ -874,6 +874,8 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("enableOutliningCopyCostPruning",
                       &SessionOptions::enableOutliningCopyCostPruning);
     cls.def_readwrite("outlineThreshold", &SessionOptions::outlineThreshold);
+    cls.def_readwrite("outlineSequenceBreakCost",
+                      &SessionOptions::outlineSequenceBreakCost);
     cls.def_readwrite("accumulationFactor",
                       &SessionOptions::accumulationFactor);
     cls.def_readwrite("enableGradientAccumulation",
@@ -1031,6 +1033,7 @@ PYBIND11_MODULE(popart_core, m) {
     py::enum_<ExecutionPhaseSchedule> en(m, "ExecutionPhaseSchedule");
     en.value("Interleaving", ExecutionPhaseSchedule::Interleaving);
     en.value("Batch", ExecutionPhaseSchedule::Batch);
+    en.value("BatchClusteredIO", ExecutionPhaseSchedule::BatchClusteredIO);
   }
   {
     py::enum_<SyncPattern> en(m, "SyncPattern");

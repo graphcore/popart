@@ -1,0 +1,192 @@
+# Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+import os
+import popart
+import numpy as np
+import torch
+import onnx
+from onnx import numpy_helper
+import math
+import pytest
+
+# `import test_util` requires adding to sys.path
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+import test_util as tu
+
+
+def run_model(tmpdir,
+              model_file_name,
+              schedule=popart.ExecutionPhaseSchedule.Interleaving,
+              enable_outlining=False,
+              num_layers=5,
+              dsize=256,
+              batch_size=8,
+              num_iterations=5,
+              num_replicas=2,
+              optimizer=popart.Adam({"defaultLearningRate": (0.1, False)})):
+
+    np.random.seed(52125)
+
+    builder = popart.Builder()
+    ip = builder.addInputTensor(
+        popart.TensorInfo("FLOAT", [batch_size, dsize, dsize]))
+
+    def add_layer(index, in_id):
+        w = builder.addInitializedInputTensor(
+            np.random.rand(dsize, dsize).astype(np.float32), f"W{index}")
+        matmul_id = builder.aiOnnx.matmul([in_id, w])
+        return matmul_id
+
+    out = ip
+    l1 = ""
+
+    for i in range(num_layers):
+        vgid = 0
+        with builder.executionPhase(i), builder.virtualGraph(vgid):
+            for j in range(3):
+                out = add_layer(i, out)
+
+        if i == num_layers - 1:
+            with builder.executionPhase(i), builder.virtualGraph(vgid):
+                l1 = builder.aiGraphcore.l1loss([out], 0.1,
+                                                popart.ReductionType.Sum)
+
+    anchorIds = []
+
+    builder.addOutputTensor(out)
+
+    num_ipus = 1
+
+    device = tu.create_test_device(num_replicas * num_ipus,
+                                   pattern=popart.SyncPattern.Full)
+
+    dfAnchors = {}
+    for anchorId in anchorIds:
+        dfAnchors.update({anchorId: popart.AnchorReturnType("All")})
+
+    opts = popart.SessionOptions()
+
+    # Cycle counting
+    opts.instrumentWithHardwareCycleCounter = True
+
+    # Outlining
+    opts.enableOutlining = enable_outlining
+    opts.enableOutliningCopyCostPruning = False
+    opts.outlineThreshold = -np.inf
+
+    # Replicated graphs
+    opts.replicatedGraphCount = num_replicas
+    opts.enableReplicatedGraphs = True if num_replicas > 1 else False
+
+    # IO tiles
+    opts.numIOTiles = 192
+
+    # Phased execution
+    opts.executionPhaseSettings.phases = num_layers
+    opts.executionPhaseSettings.stages = 1
+    opts.executionPhaseSettings.schedule = schedule
+    opts.virtualGraphMode = popart.VirtualGraphMode.ExecutionPhases
+
+    # Recomputation
+    opts.autoRecomputation = popart.RecomputationType.Standard
+    opts.explicitRecomputation = True
+
+    # Streaming memory
+    offChipLocation = popart.TensorLocationSettings(
+        location=popart.TensorLocation(
+            storage=popart.TensorStorage.OffChip,
+            loadTileSet=popart.TileSet.IO,
+            storageTileSet=popart.TileSet.IO,
+            replicatedTensorSharding=popart.ReplicatedTensorSharding.Off),
+        minElementsForOffChip=0,
+        minElementsForReplicatedTensorSharding=2)
+
+    offChipRtsLocation = popart.TensorLocationSettings(
+        location=popart.TensorLocation(
+            storage=popart.TensorStorage.OffChip,
+            loadTileSet=popart.TileSet.IO,
+            storageTileSet=popart.TileSet.IO,
+            replicatedTensorSharding=popart.ReplicatedTensorSharding.On),
+        minElementsForOffChip=0,
+        minElementsForReplicatedTensorSharding=2)
+
+    opts.activationTensorLocationSettings = offChipLocation
+    opts.weightTensorLocationSettings = offChipRtsLocation
+    opts.optimizerStateTensorLocationSettings = offChipRtsLocation
+
+    proto = builder.getModelProto()
+
+    session = popart.TrainingSession(fnModel=proto,
+                                     dataFlow=popart.DataFlow(1, dfAnchors),
+                                     optimizer=optimizer,
+                                     loss=l1,
+                                     patterns=popart.Patterns(
+                                         popart.PatternsLevel.All),
+                                     userOptions=opts,
+                                     deviceInfo=device)
+
+    session.prepareDevice()
+    session.weightsFromHost()
+    anchors = session.initAnchorArrays()
+
+    for i in range(num_iterations):
+        ip_data = np.random.rand(num_replicas, batch_size, dsize,
+                                 dsize).astype(np.float32)
+        stepio = popart.PyStepIO({ip: ip_data}, anchors)
+        session.run(stepio)
+
+    cycles = session.getCycleCount()
+
+    print("anchors:")
+    print(anchors)
+    session.modelToHost(str(tmpdir / model_file_name))
+
+    return cycles
+
+
+def check_model(lhs_model, rhs_model):
+    for i in range(len(lhs_model.graph.initializer)):
+        lhs = lhs_model.graph.initializer[i]
+        for j in range(len(rhs_model.graph.initializer)):
+            rhs = rhs_model.graph.initializer[j]
+            if (rhs.name == lhs.name):
+                print(f'Checking initializer {i} ({lhs.name} - {rhs.name})')
+                lhsa = numpy_helper.to_array(lhs)
+                rhsa = numpy_helper.to_array(rhs)
+                assert np.allclose(lhsa, rhsa, rtol=1.e-4, atol=1.e-6)
+
+
+@tu.requires_ipu
+def test_overlap(tmpdir):
+    cycles_interleaving = run_model(
+        tmpdir,
+        'interleaving.onnx',
+        schedule=popart.ExecutionPhaseSchedule.Interleaving)
+
+    cycles_clustered_io = run_model(
+        tmpdir,
+        'batch_clustered_io.onnx',
+        schedule=popart.ExecutionPhaseSchedule.BatchClusteredIO)
+
+    cycles_clustered_io_outline = run_model(
+        tmpdir,
+        'batch_clustered_io_outline.onnx',
+        schedule=popart.ExecutionPhaseSchedule.BatchClusteredIO,
+        enable_outlining=True)
+
+    interleaving = onnx.load(str(tmpdir / 'interleaving.onnx'))
+    clustered_io = onnx.load(str(tmpdir / 'batch_clustered_io.onnx'))
+    clustered_io_outline = onnx.load(
+        str(tmpdir / 'batch_clustered_io_outline.onnx'))
+
+    # Test requires T26754 to pass
+    check_model(interleaving, clustered_io)
+    check_model(interleaving, clustered_io_outline)
+
+    BOOST_CHECK(cycles_clustered_io < 0.9 * cycles_interleaving)
+    BOOST_CHECK(cycles_clustered_io_outline < 0.9 * cycles_interleaving)
+
+    print(
+        f"Cycles: {cycles_interleaving} {cycles_clustered_io} {cycles_clustered_io_outline}"
+    )

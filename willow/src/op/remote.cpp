@@ -85,6 +85,102 @@ view::RegMap RemoteLoadOp::bwdRegMap(InIndex inIndex, OutIndex outIndex) const {
   return Op::bwdRegMap(inIndex, outIndex);
 }
 
+RemoteExchangeOp::RemoteExchangeOp(
+    const OperatorIdentifier &_opid,
+    const Op::Settings &settings_,
+    const std::vector<RemoteBufferId> remotebuffer_ids_,
+    const std::vector<std::pair<OptionalVGraphId, TileSet>> vgidAndTiles_)
+    : Op(_opid, settings_), remotebufferIds(remotebuffer_ids_),
+      vgidAndTiles(vgidAndTiles_) {}
+
+std::unique_ptr<Op> RemoteExchangeOp::clone() const {
+  return std::make_unique<RemoteExchangeOp>(*this);
+}
+
+void RemoteExchangeOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
+  os.appendAttribute("bufferids", remotebufferIds);
+
+  std::vector<VGraphId> vgids;
+  vgids.reserve(vgidAndTiles.size());
+  std::vector<int64_t> tileSets;
+  tileSets.reserve(vgidAndTiles.size());
+
+  for (auto &vgid : vgidAndTiles) {
+    vgids.push_back(vgid.first ? *vgid.first : unusedVGraphId);
+    tileSets.push_back(static_cast<int64_t>(vgid.second));
+  }
+
+  os.appendAttribute("vgids", vgids);
+  os.appendAttribute("tileSets", tileSets);
+}
+
+void RemoteExchangeOp::setup() {
+  for (auto &out : output->tensorMap()) {
+    outInfo(out.first) = inInfo(out.first);
+  }
+}
+
+view::Regions RemoteExchangeOp::modifies(InIndex in) const {
+  if (in < numLoads()) {
+    return {view::Region::getFull(inShape(in), view::AccessType::Write)};
+  } else {
+    return {view::Region::getEmpty(inRank(in))};
+  }
+}
+
+view::Regions RemoteExchangeOp::aliases(InIndex in, OutIndex out) const {
+  if (in == out) {
+    return {view::Region::getFull(inShape(in), view::AccessType::Write)};
+  } else {
+    return {view::Region::getEmpty(inRank(in))};
+  }
+}
+
+view::RegMap RemoteExchangeOp::fwdRegMap(InIndex inIndex,
+                                         OutIndex outIndex) const {
+  if (inIndex != outIndex) {
+    auto emptyRegion = view::Region::getEmpty(outRank(outIndex));
+    return [emptyRegion](const view::Region &) {
+      return view::Regions(1, emptyRegion);
+    };
+  }
+  return Op::fwdRegMap(inIndex, outIndex);
+}
+
+view::RegMap RemoteExchangeOp::bwdRegMap(InIndex inIndex,
+                                         OutIndex outIndex) const {
+  if (inIndex != outIndex) {
+    auto emptyRegion = view::Region::getEmpty(inRank(inIndex));
+    return [emptyRegion](const view::Region &) {
+      return view::Regions(1, emptyRegion);
+    };
+  }
+  return Op::bwdRegMap(inIndex, outIndex);
+}
+
+int RemoteExchangeOp::numLoads() const {
+  // Each load produces one Op output
+  return output->tensorMap().size();
+}
+
+int RemoteExchangeOp::numStores() const {
+  // Each store and load has 2 inputs
+  return (input->tensorMap().size() / 2) - numLoads();
+}
+
+VGraphIdAndTileSet
+RemoteExchangeOp::getIntrospectionInVirtualGraphId(InIndex in) const {
+  auto vgid = vgidAndTiles.at(in % (numLoads() + numStores()));
+  return {vgid.first ? *vgid.first : unusedVGraphId, vgid.second};
+}
+
+VGraphIdAndTileSet
+RemoteExchangeOp::getIntrospectionOutVirtualGraphId(OutIndex out) const {
+  auto vgid = vgidAndTiles.at(out % (numLoads() + numStores()));
+  return {vgid.first ? *vgid.first : unusedVGraphId, vgid.second};
+}
+
 static OpDefinition::DataTypes T = {DataType::FLOAT,
                                     DataType::FLOAT16,
                                     DataType::INT32,

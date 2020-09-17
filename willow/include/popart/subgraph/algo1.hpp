@@ -96,10 +96,10 @@ private:
   // convert the schedule into an integer schedule for the suffix-tree
   std::vector<int> intSched;
 
+  int schedSize;
+
   bool isDominatingEnqueued(const CurrentEnqueueKey &,
                             const std::vector<Start> &);
-
-  int schedSize;
 
   void process(const Match &match);
   bool noCrossingsWithAccepted(const Match &match);
@@ -121,17 +121,71 @@ private:
   virtual std::vector<Match> partitionedByIsomorphism(const Match &) = 0;
 };
 
+std::vector<int>
+getSequenceBreaks(const std::vector<std::pair<size_t, size_t>> &sequences_);
+
 template <typename T> class Algo1 : public Algo1Base {
 public:
-  Algo1(const std::vector<T *> &sched)
+  Algo1(const std::vector<T *> &sched,
+        const std::vector<std::pair<size_t, size_t>> &sequences_,
+        float sequenceBreakCost_)
       : Algo1Base(getIntSchedule(sched), static_cast<int>(sched.size())),
-        rmb(sched), cumVals(getCumVals(sched)) {}
+        rmb(sched), cumVals(getCumVals(sched)), sequences(sequences_),
+        sequenceBreaks(getSequenceBreaks(sequences_)),
+        sequenceBreakCost(sequenceBreakCost_) {}
 
 private:
   // Using cumulative to accelerate to make this O(1)
   void setVal(Match &match) final {
+    // Initial value of the match
     double val =
         cumVals[match.starts[0] + match.length] - cumVals[match.starts[0]];
+
+    // Decrease match value if the match breaks sequences
+    for (Start start : match.starts) {
+
+      // Number of sequence breaks in this match
+      auto numBreaks = sequenceBreaks.at(start + match.length - 1) -
+                       sequenceBreaks.at(start);
+
+      // Sequence broken, reduce value of the match
+      val -= static_cast<float>(numBreaks) * sequenceBreakCost /
+             static_cast<float>(match.starts.size());
+
+      // Test if the match encases a schedule position (sequence.at(i))
+      // that commands a sequence
+      // Examples of cases that will be tested:
+      //   Sequence: ..XSXX... (where S at position i)
+      //   Match:    .XXXXX... (match encases S)
+      //   Sequence: ..XSXX... (where S at position i)
+      //   Match:    ..XX..... (match encases S)
+      // Case that will not be tested:
+      //   Sequence: ..XSXX... (where S at position i)
+      //   Match:    ....XX... (match does not encase S)
+      for (Start i = start; i < start + match.length; ++i) {
+        if (start <= sequences.at(i).first &&
+            start + match.length >= sequences.at(i).second) {
+          // Match subsumes whole sequence, boost value to correct for
+          // sequence breaks that have been subtracted unnecessarily
+          // Sequence: ..XSXX... (where S at position i)
+          // Match:    .XXXXX...
+          if (sequences.at(i).second - sequences.at(i).first > 1) {
+            val += sequenceBreakCost / static_cast<float>(match.starts.size());
+          }
+        }
+        if (start >= sequences.at(i).first &&
+            start + match.length <= sequences.at(i).second &&
+            match.length < sequences.at(i).second - sequences.at(i).first) {
+          // Sequence subsumes whole match, but the match is not spanning the
+          // whole sequence
+          // Match encases position i, which should be outlined in sequence,
+          // but the match only overlaps with a part of the sequence
+          // Sequence: ..XSXX... (where S at position i)
+          // Match:    ..XX.....
+          val -= sequenceBreakCost / static_cast<float>(match.starts.size());
+        }
+      }
+    }
     match.setValue(val);
   }
 
@@ -148,7 +202,18 @@ private:
   }
 
   RinseMatcherBase<T> rmb;
+
+  // Cumulative sum of subgraph values
   std::vector<double> cumVals;
+
+  // Sequences that add a penalty when broken
+  const std::vector<std::pair<size_t, size_t>> sequences;
+
+  // Cumulative sum of number of sequence breaks
+  std::vector<int> sequenceBreaks;
+
+  // Penalty for broken sequences
+  float sequenceBreakCost;
 };
 
 } // namespace algo1

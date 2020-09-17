@@ -30,12 +30,13 @@ view::RegMap defaultRegMapImpl(const Op &op,
                                InIndex i,
                                OutIndex o,
                                const std::string &methodName) {
-  logging::op::trace("[{}] for OP {} index {}", methodName, op.debugName(), i);
+  logging::op::trace(
+      "[{}] for OP {} index {} -> {}", methodName, op.debugName(), i, o);
   if (!op.input->hasIndex(i) || !op.output->hasIndex(o)) {
     throw error("invalid index in {}", methodName);
   } else if (!op.output->hasIndex(o)) {
     throw error("{} called for op with no zero output", methodName);
-  } else if (op.inShape(i) != op.outShape(0)) {
+  } else if (op.inShape(i) != op.outShape(o)) {
     throw error("default {} not valid : should be specialised for {}",
                 methodName,
                 op.str());
@@ -587,11 +588,13 @@ VGraphId Op::getVirtualGraphId() const {
 }
 
 VGraphIdAndTileSet Op::getIntrospectionInVirtualGraphId(InIndex) const {
-  return {getVirtualGraphId(), settings.tileSet};
+  return {hasVirtualGraphId() ? getVirtualGraphId() : unusedVGraphId,
+          settings.tileSet};
 }
 
 VGraphIdAndTileSet Op::getIntrospectionOutVirtualGraphId(OutIndex) const {
-  return {getVirtualGraphId(), settings.tileSet};
+  return {hasVirtualGraphId() ? getVirtualGraphId() : unusedVGraphId,
+          settings.tileSet};
 }
 
 bool Op::hasVirtualGraphId() const {
