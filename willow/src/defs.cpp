@@ -413,6 +413,11 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               "Should the gradient tensor also be printed.",
               AttributeProto::INT,
               true)
+        .Attr("title",
+              "A sting to use for the title of the tensor. Will use tensor "
+              "name if not provided.",
+              AttributeProto::STRING,
+              "")
         .TypeAndShapeInferenceFunction(PrintTensorShapeInference))
 
 static const char scaleDoc[] =

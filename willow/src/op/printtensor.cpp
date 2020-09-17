@@ -64,11 +64,10 @@ static OpDefinition::DataTypes T = {DataType::UINT8,
                                     DataType::FLOAT,
                                     DataType::BOOL};
 
-static OpDefinition printTensorOpDef({OpDefinition::Inputs({{"X", T}}),
-                                      OpDefinition::Outputs({{"Y", T}}),
-                                      OpDefinition::Attributes({
-                                          {"print_gradient", {"*"}},
-                                      })});
+static OpDefinition printTensorOpDef(
+    {OpDefinition::Inputs({{"X", T}}),
+     OpDefinition::Outputs({{"Y", T}}),
+     OpDefinition::Attributes({{"print_gradient", {"*"}}, {"title", {"*"}}})});
 
 static OpCreator<PrintTensorOp> printtensorOpCreator(
     OpDefinitions({
