@@ -43,7 +43,9 @@ BOOST_AUTO_TEST_CASE(SyncPatternTest_1) {
     // {{IpuLinkConfiguration: 0}, {SyncConfiguration: 0}}' error
     // Similarly for tests below.
     BOOST_CHECK_THROW(engine.load(di1.getDevice()), poplar::poplar_error);
+    di1.detach(); // avoid ipu attachment conflicts
 
+    engine.load(di0.getDevice());
     engine.run();
   }
 }
@@ -76,7 +78,9 @@ BOOST_AUTO_TEST_CASE(SyncPatternTest_3) {
     auto exe = poplar::compileGraph(graph, {poplar::program::Sequence()});
     poplar::Engine engine(std::move(exe));
     BOOST_CHECK_THROW(engine.load(di1.getDevice()), poplar::poplar_error);
+    di1.detach(); // avoid ipu attachment conflicts
 
+    engine.load(di0.getDevice());
     engine.run();
   }
 }
@@ -95,7 +99,9 @@ BOOST_AUTO_TEST_CASE(SyncPatternTest_4) {
     auto exe = poplar::compileGraph(graph, {poplar::program::Sequence()});
     poplar::Engine engine(std::move(exe));
     BOOST_CHECK_THROW(engine.load(di1.getDevice()), poplar::poplar_error);
+    di1.detach(); // avoid ipu attachment conflicts
 
+    engine.load(di0.getDevice());
     engine.run();
   }
 }
