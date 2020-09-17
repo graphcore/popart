@@ -13,3 +13,4 @@ add_popart_cpp_unit_test(executionphase_initop_accumulator_test executionphase_i
 #add_popart_py_unit_test(streamingmemory_test VARIANTS "Hw")
 #add_popart_py_unit_test(streamingmemory_tensor_location_test VARIANTS "Hw")
 #add_popart_py_unit_test(streamingmemory_attention_test VARIANTS "Hw")
+#add_popart_py_unit_test(streamingmemory_overlap_test VARIANTS "Hw")

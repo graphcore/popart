@@ -68,13 +68,17 @@ AlgoStats getStats(int taskId,
                    const std::vector<const Blip *> &sched,
                    OutlinerAlgorithm algo) {
 
+  std::vector<std::pair<size_t, size_t>> sequences(sched.size());
+  float sequenceBreakCost = 0.0f;
+
   using namespace std::chrono;
 
   float threshold = -1.0;
   auto t0         = steady_clock::now();
-  auto matches0   = getRinseMatches<const Blip>(sched, threshold, algo);
-  auto t1         = steady_clock::now();
-  auto d0         = std::chrono::duration<double, std::milli>(t1 - t0).count();
+  auto matches0   = getRinseMatches<const Blip>(
+      sched, sequences, threshold, sequenceBreakCost, algo);
+  auto t1 = steady_clock::now();
+  auto d0 = std::chrono::duration<double, std::milli>(t1 - t0).count();
 
   AlgoStats stats;
   stats.matches  = matches0;

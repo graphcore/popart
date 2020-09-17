@@ -479,6 +479,13 @@ void Algo1Base::process(const Match &match) {
     return;
   }
 
+  if (match.getValue() < 0.0) {
+    // match has negative value
+    popart::logging::trace("[RINSE Algo1] Negative value: {}",
+                           match.getValue());
+    return;
+  }
+
   for (auto &acc : accepted) {
 
     if (acc.length == match.length && acc.startsIntersect(match.starts)) {
@@ -542,6 +549,24 @@ void Algo1Base::process(const Match &match) {
       edgeLocs.emplace(s0 + match.length - 1);
     }
   }
+}
+
+std::vector<int>
+getSequenceBreaks(const std::vector<std::pair<size_t, size_t>> &sequences_) {
+  std::vector<int> breaks(sequences_.size() + 1);
+
+  for (auto &seq : sequences_) {
+    if (seq.second - seq.first > 1) {
+      breaks.at(seq.first) += 1;
+      breaks.at(seq.second) += 1;
+    }
+  }
+
+  for (size_t i = 1; i < breaks.size(); ++i) {
+    breaks[i] += breaks[i - 1];
+  }
+
+  return breaks;
 }
 
 } // namespace algo1

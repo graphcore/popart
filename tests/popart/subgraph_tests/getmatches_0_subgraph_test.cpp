@@ -39,14 +39,23 @@ BOOST_AUTO_TEST_CASE(Final0_Subgraph) {
       sched.push_back(blips[i].get());
     }
 
+    std::vector<std::pair<size_t, size_t>> sequences(sched.size());
+    float sequenceBreakCost = 0.0f;
+
     // get the matches
     std::vector<Match> matches;
     if (algo == 1) {
-      matches = getRinseMatches<const Blip>(
-          sched, threshold, OutlinerAlgorithm::ALGO1);
+      matches = getRinseMatches<const Blip>(sched,
+                                            sequences,
+                                            threshold,
+                                            sequenceBreakCost,
+                                            OutlinerAlgorithm::ALGO1);
     } else if (algo == 0) {
-      matches = getRinseMatches<const Blip>(
-          sched, threshold, OutlinerAlgorithm::ALGO0);
+      matches = getRinseMatches<const Blip>(sched,
+                                            sequences,
+                                            threshold,
+                                            sequenceBreakCost,
+                                            OutlinerAlgorithm::ALGO0);
     } else {
       throw std::runtime_error("invalid algo");
     }

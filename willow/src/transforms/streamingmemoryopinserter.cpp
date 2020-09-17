@@ -79,10 +79,10 @@ void StreamingMemoryOpInserter::setPriority(Op *op,
                                             bool isPhased,
                                             bool onDemandOptimizerState,
                                             ExecutionPhaseSchedule schedule) {
-  double priority = -(maxCompressedPriority + 1);
   if (isPhased && op->settings.executionContext == ExecutionContext::Normal) {
     switch (schedule) {
     case ExecutionPhaseSchedule::Interleaving: {
+      double priority = -(maxCompressedPriority + 1);
       // Init ops must be scheduled first
       if (op->isConvertibleTo<InitOp>()) {
         op->settings.schedulePriority = priority;
@@ -114,6 +114,7 @@ void StreamingMemoryOpInserter::setPriority(Op *op,
       break;
     }
     case ExecutionPhaseSchedule::Batch: {
+      double priority = -(maxCompressedPriority + 1);
       // Init ops must be scheduled first
       if (op->isConvertibleTo<InitOp>()) {
         op->settings.schedulePriority = priority;
@@ -125,6 +126,45 @@ void StreamingMemoryOpInserter::setPriority(Op *op,
         op->settings.schedulePriority = priority;
       }
       --priority;
+      // Cross-phase cross-IPU and compute/IO tile communication
+      // (overlap blocking)
+      if (op->isConvertibleTo<IpuCopyOp>() ||
+          op->isConvertibleTo<IoTileCopyOp>()) {
+        op->settings.schedulePriority = priority;
+      }
+      --priority;
+      // All collective operations (overlap blocking)
+      if (op->isConvertibleTo<ReplicatedReduceScatterOp>() ||
+          op->isConvertibleTo<ReplicatedAllReduceOp>() ||
+          op->isConvertibleTo<ReplicatedAllGatherOp>()) {
+        op->settings.schedulePriority = priority;
+      }
+      --priority;
+      // All optimizer operations
+      if (op->isOptimizerOp()) {
+        op->settings.schedulePriority = priority;
+      }
+      --priority;
+      // All remote stores must be scheduled at the end, to overlap with the
+      // next compute phase
+      if (op->isConvertibleTo<RemoteStoreOp>()) {
+        op->settings.schedulePriority = priority;
+      }
+      break;
+    }
+    case ExecutionPhaseSchedule::BatchClusteredIO: {
+      double priority = maxCompressedPriority + 2;
+      // Init ops must be scheduled first
+      if (op->isConvertibleTo<InitOp>()) {
+        op->settings.schedulePriority = priority;
+      }
+      --priority;
+      // All remote loads must be scheduled before replicated operations
+      // to maximize overlap (collectives block overlap)
+      if (op->isConvertibleTo<RemoteLoadOp>()) {
+        op->settings.schedulePriority = priority;
+      }
+      priority = -(maxCompressedPriority + 1);
       // Cross-phase cross-IPU and compute/IO tile communication
       // (overlap blocking)
       if (op->isConvertibleTo<IpuCopyOp>() ||
@@ -1596,6 +1636,12 @@ RemoteStoreOp *StreamingMemoryOpInserter::insertRemoteStoreOp(
     if (tensorConfig.ioSchedule == ExecutionPhaseIOSchedule::Preload) {
       setPriority(
           remoteStore, isPhasedExecution(), false, tensorConfig.schedule);
+    } else if (tensorConfig.tensor->getTensorTypeInfo()->type() ==
+                   TensorType::Variable &&
+               tensorConfig.tensor->isOptimizerStateTensor() &&
+               !tensorConfig.tensor->isAccumulatorTensor()) {
+      setPriority(
+          remoteStore, isPhasedExecution(), true, tensorConfig.schedule);
     }
   } else {
     remoteStore->setExecutionPhase({});
