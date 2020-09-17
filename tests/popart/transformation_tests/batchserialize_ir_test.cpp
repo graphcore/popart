@@ -547,6 +547,10 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithOverlappedSchedule) {
     return (op->isConvertibleTo<RemoteStoreOp>()) &&
            (op->getBatchSerializedPhase() == bsp);
   };
+  auto isRemoteExchange = [](Op *op, int bsp) {
+    return (op->isConvertibleTo<RemoteExchangeOp>()) &&
+           (op->getBatchSerializedPhase() == bsp);
+  };
 
   auto opFilter = [](Op *op, int phase) {
     return (op->hasBatchSerializedPhase()) &&
@@ -669,8 +673,7 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithOverlappedSchedule) {
         BOOST_CHECK(isIoTileCopyToCompute(*it++, 1));
         BOOST_CHECK(isIoTileCopyToIo(*it++, 0));
         BOOST_CHECK(isIoTileCopyToIo(*it++, 0));
-        BOOST_CHECK(isRemoteStore(*it++, 0));
-        BOOST_CHECK(isRemoteStore(*it++, 0));
+        BOOST_CHECK(isRemoteExchange(*it++, 0));
         BOOST_CHECK(isCompute(*it++, 1));
         BOOST_CHECK(isCompute(*it++, 1));
         BOOST_CHECK(isCompute(*it++, 1));
@@ -679,8 +682,7 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithOverlappedSchedule) {
         BOOST_CHECK(isIoTileCopyToCompute(*it++, 2));
         BOOST_CHECK(isIoTileCopyToIo(*it++, 1));
         BOOST_CHECK(isIoTileCopyToIo(*it++, 1));
-        BOOST_CHECK(isRemoteStore(*it++, 1));
-        BOOST_CHECK(isRemoteStore(*it++, 1));
+        BOOST_CHECK(isRemoteExchange(*it++, 1));
         BOOST_CHECK(isCompute(*it++, 2));
         BOOST_CHECK(isCompute(*it++, 2));
         BOOST_CHECK(isCompute(*it++, 2));
@@ -689,16 +691,14 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithOverlappedSchedule) {
         BOOST_CHECK(isIoTileCopyToCompute(*it++, 3));
         BOOST_CHECK(isIoTileCopyToIo(*it++, 2));
         BOOST_CHECK(isIoTileCopyToIo(*it++, 2));
-        BOOST_CHECK(isRemoteStore(*it++, 2));
-        BOOST_CHECK(isRemoteStore(*it++, 2));
+        BOOST_CHECK(isRemoteExchange(*it++, 2));
         BOOST_CHECK(isCompute(*it++, 3));
         BOOST_CHECK(isCompute(*it++, 3));
         BOOST_CHECK(isCompute(*it++, 3));
         BOOST_CHECK(isCompute(*it++, 3));
         BOOST_CHECK(isIoTileCopyToIo(*it++, 3));
         BOOST_CHECK(isIoTileCopyToIo(*it++, 3));
-        BOOST_CHECK(isRemoteStore(*it++, 3));
-        BOOST_CHECK(isRemoteStore(*it++, 3));
+        BOOST_CHECK(isRemoteExchange(*it++, 3));
 
       } else if (batchSchedule ==
                  BatchSerializationBatchSchedule::OverlapOnCompute) {
@@ -714,9 +714,7 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithOverlappedSchedule) {
         BOOST_CHECK(isIoTileCopyToCompute(*it++, 1));
         BOOST_CHECK(isIoTileCopyToIo(*it++, 0));
         BOOST_CHECK(isIoTileCopyToIo(*it++, 0));
-        BOOST_CHECK(isRemoteStore(*it++, 0));
-        BOOST_CHECK(isRemoteStore(*it++, 0));
-        BOOST_CHECK(isRemoteLoad(*it++, 2));
+        BOOST_CHECK(isRemoteExchange(*it++, 2));
         BOOST_CHECK(isCompute(*it++, 1));
         BOOST_CHECK(isCompute(*it++, 1));
         BOOST_CHECK(isCompute(*it++, 1));
@@ -724,9 +722,7 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithOverlappedSchedule) {
         BOOST_CHECK(isIoTileCopyToCompute(*it++, 2));
         BOOST_CHECK(isIoTileCopyToIo(*it++, 1));
         BOOST_CHECK(isIoTileCopyToIo(*it++, 1));
-        BOOST_CHECK(isRemoteStore(*it++, 1));
-        BOOST_CHECK(isRemoteStore(*it++, 1));
-        BOOST_CHECK(isRemoteLoad(*it++, 3));
+        BOOST_CHECK(isRemoteExchange(*it++, 3));
         BOOST_CHECK(isCompute(*it++, 2));
         BOOST_CHECK(isCompute(*it++, 2));
         BOOST_CHECK(isCompute(*it++, 2));
@@ -734,16 +730,14 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithOverlappedSchedule) {
         BOOST_CHECK(isIoTileCopyToCompute(*it++, 3));
         BOOST_CHECK(isIoTileCopyToIo(*it++, 2));
         BOOST_CHECK(isIoTileCopyToIo(*it++, 2));
-        BOOST_CHECK(isRemoteStore(*it++, 2));
-        BOOST_CHECK(isRemoteStore(*it++, 2));
+        BOOST_CHECK(isRemoteExchange(*it++, 2));
         BOOST_CHECK(isCompute(*it++, 3));
         BOOST_CHECK(isCompute(*it++, 3));
         BOOST_CHECK(isCompute(*it++, 3));
         BOOST_CHECK(isCompute(*it++, 3));
         BOOST_CHECK(isIoTileCopyToIo(*it++, 3));
         BOOST_CHECK(isIoTileCopyToIo(*it++, 3));
-        BOOST_CHECK(isRemoteStore(*it++, 3));
-        BOOST_CHECK(isRemoteStore(*it++, 3));
+        BOOST_CHECK(isRemoteExchange(*it++, 3));
       }
 
       // Now let's grab all some backwards phase and look at the ops order in
@@ -773,9 +767,7 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithOverlappedSchedule) {
 
       if (batchSchedule == BatchSerializationBatchSchedule::OverlapOnIo) {
 
-        BOOST_CHECK(isRemoteLoad(*it++, 0));
-        BOOST_CHECK(isRemoteLoad(*it++, 0));
-        BOOST_CHECK(isRemoteLoad(*it++, 0));
+        BOOST_CHECK(isRemoteExchange(*it++, 0));
         BOOST_CHECK(isIoTileCopyToCompute(*it++, 0));
         BOOST_CHECK(isIoTileCopyToCompute(*it++, 0));
         BOOST_CHECK(isIoTileCopyToCompute(*it++, 0));
@@ -791,9 +783,7 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithOverlappedSchedule) {
         BOOST_CHECK(isCompute(*it++, 0));
         BOOST_CHECK(isCompute(*it++, 0));
         BOOST_CHECK(isCompute(*it++, 0));
-        BOOST_CHECK(isRemoteLoad(*it++, 1));
-        BOOST_CHECK(isRemoteLoad(*it++, 1));
-        BOOST_CHECK(isRemoteLoad(*it++, 1));
+        BOOST_CHECK(isRemoteExchange(*it++, 1));
         BOOST_CHECK(isIoTileCopyToCompute(*it++, 1));
         BOOST_CHECK(isIoTileCopyToCompute(*it++, 1));
         BOOST_CHECK(isIoTileCopyToCompute(*it++, 1));
@@ -811,9 +801,7 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithOverlappedSchedule) {
         BOOST_CHECK(isCompute(*it++, 1));
         BOOST_CHECK(isCompute(*it++, 1));
         BOOST_CHECK(isCompute(*it++, 1));
-        BOOST_CHECK(isRemoteLoad(*it++, 2));
-        BOOST_CHECK(isRemoteLoad(*it++, 2));
-        BOOST_CHECK(isRemoteLoad(*it++, 2));
+        BOOST_CHECK(isRemoteExchange(*it++, 2));
         BOOST_CHECK(isIoTileCopyToCompute(*it++, 2));
         BOOST_CHECK(isIoTileCopyToCompute(*it++, 2));
         BOOST_CHECK(isIoTileCopyToCompute(*it++, 2));
@@ -831,9 +819,7 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithOverlappedSchedule) {
         BOOST_CHECK(isCompute(*it++, 2));
         BOOST_CHECK(isCompute(*it++, 2));
         BOOST_CHECK(isCompute(*it++, 2));
-        BOOST_CHECK(isRemoteLoad(*it++, 3));
-        BOOST_CHECK(isRemoteLoad(*it++, 3));
-        BOOST_CHECK(isRemoteLoad(*it++, 3));
+        BOOST_CHECK(isRemoteExchange(*it++, 3));
         BOOST_CHECK(isIoTileCopyToCompute(*it++, 3));
         BOOST_CHECK(isIoTileCopyToCompute(*it++, 3));
         BOOST_CHECK(isIoTileCopyToCompute(*it++, 3));
@@ -857,15 +843,11 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithOverlappedSchedule) {
       } else if (batchSchedule ==
                  BatchSerializationBatchSchedule::OverlapOnCompute) {
 
-        BOOST_CHECK(isRemoteLoad(*it++, 0));
-        BOOST_CHECK(isRemoteLoad(*it++, 0));
-        BOOST_CHECK(isRemoteLoad(*it++, 0));
+        BOOST_CHECK(isRemoteExchange(*it++, 0));
         BOOST_CHECK(isIoTileCopyToCompute(*it++, 0));
         BOOST_CHECK(isIoTileCopyToCompute(*it++, 0));
         BOOST_CHECK(isIoTileCopyToCompute(*it++, 0));
-        BOOST_CHECK(isRemoteLoad(*it++, 1));
-        BOOST_CHECK(isRemoteLoad(*it++, 1));
-        BOOST_CHECK(isRemoteLoad(*it++, 1));
+        BOOST_CHECK(isRemoteExchange(*it++, 1));
         BOOST_CHECK(isCompute(*it++, 0));
         BOOST_CHECK(isCompute(*it++, 0));
         BOOST_CHECK(isCompute(*it++, 0));
@@ -882,10 +864,7 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithOverlappedSchedule) {
         BOOST_CHECK(isIoTileCopyToCompute(*it++, 1));
         BOOST_CHECK(isIoTileCopyToCompute(*it++, 1));
         BOOST_CHECK(isIoTileCopyToIo(*it++, 0));
-        BOOST_CHECK(isRemoteStore(*it++, 0));
-        BOOST_CHECK(isRemoteLoad(*it++, 2));
-        BOOST_CHECK(isRemoteLoad(*it++, 2));
-        BOOST_CHECK(isRemoteLoad(*it++, 2));
+        BOOST_CHECK(isRemoteExchange(*it++, 2));
         BOOST_CHECK(isCompute(*it++, 1));
         BOOST_CHECK(isCompute(*it++, 1));
         BOOST_CHECK(isCompute(*it++, 1));
@@ -902,10 +881,7 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithOverlappedSchedule) {
         BOOST_CHECK(isIoTileCopyToCompute(*it++, 2));
         BOOST_CHECK(isIoTileCopyToCompute(*it++, 2));
         BOOST_CHECK(isIoTileCopyToIo(*it++, 1));
-        BOOST_CHECK(isRemoteStore(*it++, 1));
-        BOOST_CHECK(isRemoteLoad(*it++, 3));
-        BOOST_CHECK(isRemoteLoad(*it++, 3));
-        BOOST_CHECK(isRemoteLoad(*it++, 3));
+        BOOST_CHECK(isRemoteExchange(*it++, 3));
         BOOST_CHECK(isCompute(*it++, 2));
         BOOST_CHECK(isCompute(*it++, 2));
         BOOST_CHECK(isCompute(*it++, 2));
