@@ -1510,10 +1510,9 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("nllloss",
             &AiGraphcoreOpset1::nllloss,
             py::arg("args"),
-            py::arg("reduction")             = ReductionType::Mean,
-            py::arg("ignoreIndex")           = pybind11::none(),
-            py::arg("inputIsLogProbability") = false,
-            py::arg("debugPrefix")           = std::string());
+            py::arg("reduction")   = ReductionType::Mean,
+            py::arg("ignoreIndex") = pybind11::none(),
+            py::arg("debugPrefix") = std::string());
     cls.def("identityloss",
             &AiGraphcoreOpset1::identityloss,
             py::arg("args"),

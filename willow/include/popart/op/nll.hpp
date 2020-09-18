@@ -13,7 +13,6 @@ public:
   NllOp(const OperatorIdentifier &_opid,
         const nonstd::optional<int> ignoreIndex,
         const ReductionType reduction,
-        bool inputIsLogProbability,
         const Op::Settings &settings_);
 
   std::unique_ptr<Op> clone() const final;
@@ -29,7 +28,6 @@ public:
   bool hasIgnoreIndex() const { return ignoreIndex_ != nonstd::nullopt; }
   nonstd::optional<int> getOptionalIgnoreIndex() const { return ignoreIndex_; }
   int getIgnoreIndex() const;
-  bool inputIsLogProbability() const { return inputIsLogProbability_; }
   virtual void appendOutlineAttributes(OpSerialiserBase &) const final;
 
   bool canShard() const override { return true; }
@@ -45,9 +43,6 @@ private:
   // Specifies a target value that is masked when calculating the loss and
   // input gradient
   nonstd::optional<int> ignoreIndex_;
-
-  // Specifies if the input tensor contains log-probabilities
-  bool inputIsLogProbability_;
 };
 
 class NllGradOp : public Op {
@@ -68,7 +63,6 @@ public:
   bool hasIgnoreIndex() const { return ignoreIndex_ != nonstd::nullopt; }
   nonstd::optional<int> getOptionalIgnoreIndex() const { return ignoreIndex_; }
   int getIgnoreIndex() const;
-  bool inputIsLogProbability() const { return inputIsLogProbability_; }
   TensorId getLossTensorId() const { return lossId_; }
   virtual void appendOutlineAttributes(OpSerialiserBase &) const final;
 
@@ -76,7 +70,6 @@ private:
   TensorId lossId_;
   ReductionType reduction_;
   nonstd::optional<int> ignoreIndex_;
-  bool inputIsLogProbability_;
 };
 
 } // namespace popart
