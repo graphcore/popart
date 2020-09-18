@@ -726,11 +726,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               "they do not contribute to the loss",
               AttributeProto::INT,
               false)
-        .Attr("inputIsLogProbability",
-              "Specifies if the input tensor contains log-probabilities or raw "
-              "probabilities",
-              AttributeProto::INT,
-              false)
         .TypeAndShapeInferenceFunction(LossShapeInference<1>))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(

@@ -75,11 +75,9 @@ void NllOp::setup() {
 NllOp::NllOp(const OperatorIdentifier &_opid,
              const nonstd::optional<int> ignoreIndex,
              const ReductionType reduction,
-             bool inputIsLogProbability,
              const Op::Settings &_settings)
     : LossOp(_opid, _settings), reduction_(reduction),
-      ignoreIndex_(ignoreIndex), inputIsLogProbability_(inputIsLogProbability) {
-}
+      ignoreIndex_(ignoreIndex) {}
 
 void NllOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
@@ -87,7 +85,6 @@ void NllOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   if (hasIgnoreIndex()) {
     os.appendAttribute("ignore_index", static_cast<int64_t>(*ignoreIndex_));
   }
-  os.appendAttribute("input_is_log_probability", inputIsLogProbability_);
 }
 
 int NllOp::getIgnoreIndex() const {
@@ -156,8 +153,7 @@ NllGradOp::NllGradOp(const NllOp &op_)
     : Op(Onnx::CustomGradOperators::NllGrad, op_.getSettings()),
       lossId_(op_.outId(NllOp::getOutIndex())),
       reduction_(op_.getReductionType()),
-      ignoreIndex_(op_.getOptionalIgnoreIndex()),
-      inputIsLogProbability_(op_.inputIsLogProbability()) {}
+      ignoreIndex_(op_.getOptionalIgnoreIndex()) {}
 
 std::unique_ptr<Op> NllGradOp::clone() const {
   return std::make_unique<NllGradOp>(*this);
@@ -191,7 +187,6 @@ void NllGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   if (hasIgnoreIndex()) {
     os.appendAttribute("ignore_index", static_cast<int64_t>(*ignoreIndex_));
   }
-  os.appendAttribute("input_is_log_probability", inputIsLogProbability_);
 }
 
 int NllGradOp::getIgnoreIndex() const {
@@ -208,12 +203,11 @@ static OpDefinition::DataTypes T1 = {DataType::FLOAT16, DataType::FLOAT};
 
 static OpDefinition::DataTypes T2 = {DataType::INT32, DataType::UINT32};
 
-static OpDefinition nlllossOpDef(
-    {OpDefinition::Inputs({{"A", T1}, {"B", T2}}),
-     OpDefinition::Outputs({{"C", T1}}),
-     OpDefinition::Attributes({{"reduction", {"*"}},
-                               {"ignore_index", {"*"}},
-                               {"input_is_log_probability", {"*"}}})});
+static OpDefinition
+    nlllossOpDef({OpDefinition::Inputs({{"A", T1}, {"B", T2}}),
+                  OpDefinition::Outputs({{"C", T1}}),
+                  OpDefinition::Attributes({{"reduction", {"*"}},
+                                            {"ignore_index", {"*"}}})});
 
 static OpCreator<NllOp> nlllossOpCreator(
     OpDefinitions({{Onnx::CustomOperators::Nll, nlllossOpDef}}),
@@ -222,20 +216,13 @@ static OpCreator<NllOp> nlllossOpCreator(
           info.attributes.getAttribute<Attributes::String>("reduction");
       ReductionType reduction = LossOp::reductionTypeFromString(reductionStr);
 
-      bool inputIsLogProbability =
-          info.attributes.getAttribute<Attributes::Int>("inputIsLogProbability",
-                                                        0) != 0;
-
       nonstd::optional<int> ignoreIndex;
       if (info.attributes.hasAttribute("ignoreIndex")) {
         ignoreIndex =
             info.attributes.getAttribute<Attributes::Int>("ignoreIndex");
       }
-      return std::unique_ptr<NllOp>(new NllOp(info.opid,
-                                              ignoreIndex,
-                                              reduction,
-                                              inputIsLogProbability,
-                                              info.settings));
+      return std::unique_ptr<NllOp>(
+          new NllOp(info.opid, ignoreIndex, reduction, info.settings));
     },
     true);
 

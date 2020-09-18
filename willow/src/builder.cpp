@@ -728,13 +728,11 @@ TensorId AiGraphcoreOpset1::l1loss(const std::vector<TensorId> &args,
 TensorId AiGraphcoreOpset1::nllloss(const std::vector<TensorId> &args,
                                     const ReductionType reduction,
                                     const nonstd::optional<int> ignoreIndex,
-                                    bool inputIsLogProbability,
                                     const std::string &name) {
   std::string reductionString = LossOp::reductionTypeToString(reduction);
 
   std::map<std::string, popart::any> attributes = {
-      {"reduction", reductionString},
-      {"inputIsLogProbability", inputIsLogProbability}};
+      {"reduction", reductionString}};
   if (ignoreIndex.has_value()) {
     attributes.emplace("ignoreIndex", ignoreIndex.value());
   }
