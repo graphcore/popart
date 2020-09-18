@@ -377,7 +377,7 @@ BOOST_AUTO_TEST_CASE(NllBatchSerializedTest) {
     }
 
     if (batchSerialize) {
-      BOOST_ASSERT(num_nll == 2 * batchSize);
+      BOOST_CHECK(num_nll == 2 * batchSize);
 
       int expected_num_sum  = 0;
       int expected_num_mean = 0;
@@ -393,13 +393,13 @@ BOOST_AUTO_TEST_CASE(NllBatchSerializedTest) {
       } else if (r1 == ReductionType::Mean) {
         ++expected_num_mean;
       }
-      BOOST_ASSERT(num_sum == expected_num_sum);
-      BOOST_ASSERT(num_mean == expected_num_mean);
+      BOOST_CHECK(num_sum == expected_num_sum);
+      BOOST_CHECK(num_mean == expected_num_mean);
 
     } else {
-      BOOST_ASSERT(num_nll == 2);
-      BOOST_ASSERT(num_sum == 0);
-      BOOST_ASSERT(num_mean == 0);
+      BOOST_CHECK(num_nll == 2);
+      BOOST_CHECK(num_sum == 0);
+      BOOST_CHECK(num_mean == 0);
     }
 
     logging::trace("IR OPS: {} {} {}", num_nll, num_sum, num_mean);
@@ -472,7 +472,7 @@ BOOST_AUTO_TEST_CASE(NllBatchSerializedTest) {
                   std::vector<std::vector<float>> weights1) {
     for (size_t idx = 0; idx < weights0.size(); ++idx) {
       float absErr = 0.0f;
-      for (int i = 0; i < weights1.size(); ++i) {
+      for (int i = 0; i < weights0[idx].size(); ++i) {
         absErr += std::abs(weights0[idx][i] - weights1[idx][i]);
         BOOST_CHECK(weights0[idx][i] != -777.0f);
         BOOST_CHECK(weights1[idx][i] != -777.0f);
@@ -657,10 +657,10 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithOverlappedSchedule) {
       //                 op->debugName());
       //}
 
-      BOOST_ASSERT(someFwdPhase.size() >= 40);
       auto it = someFwdPhase.begin();
 
       if (batchSchedule == BatchSerializationBatchSchedule::OverlapOnIo) {
+        BOOST_CHECK(someFwdPhase.size() >= 36);
 
         // Check interleaved/overlapped order.
         BOOST_CHECK(isRemoteLoad(*it++, 0));
@@ -702,6 +702,7 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithOverlappedSchedule) {
 
       } else if (batchSchedule ==
                  BatchSerializationBatchSchedule::OverlapOnCompute) {
+        BOOST_CHECK(someFwdPhase.size() >= 34);
 
         // Check interleaved/overlapped order.
         BOOST_CHECK(isRemoteLoad(*it++, 0));
@@ -762,10 +763,10 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithOverlappedSchedule) {
       //                 op->debugName());
       //}
 
-      BOOST_ASSERT(someBwdPhase.size() >= 40);
       it = someBwdPhase.begin();
 
       if (batchSchedule == BatchSerializationBatchSchedule::OverlapOnIo) {
+        BOOST_CHECK(someBwdPhase.size() >= 72);
 
         BOOST_CHECK(isRemoteExchange(*it++, 0));
         BOOST_CHECK(isIoTileCopyToCompute(*it++, 0));
@@ -842,6 +843,7 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithOverlappedSchedule) {
 
       } else if (batchSchedule ==
                  BatchSerializationBatchSchedule::OverlapOnCompute) {
+        BOOST_CHECK(someBwdPhase.size() >= 70);
 
         BOOST_CHECK(isRemoteExchange(*it++, 0));
         BOOST_CHECK(isIoTileCopyToCompute(*it++, 0));
