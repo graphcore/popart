@@ -373,7 +373,8 @@ def get_replicated_dropout_session(replication_factor=4,
                                    dsize=10,
                                    num_layers=1,
                                    ratio=0.3,
-                                   batches_per_step=1):
+                                   batches_per_step=1,
+                                   seed=0):
     builder = popart.Builder()
     ip = builder.addInputTensor(popart.TensorInfo("FLOAT", [dsize]))
     d__ip = popart.reservedGradientPrefix() + ip
@@ -401,9 +402,9 @@ def get_replicated_dropout_session(replication_factor=4,
                                      deviceInfo=device)
 
     session.prepareDevice()
+    session.setRandomSeed(seed)
     session.weightsFromHost()
     anchors = session.initAnchorArrays()
-
     return session, ip, out, d__ip, anchors
 
 
@@ -411,7 +412,8 @@ def get_dropout_session(dsize=100,
                         ratio=0.2,
                         bps=1,
                         use_ipu=False,
-                        num_layers=1):
+                        num_layers=1,
+                        seed=0):
     builder = popart.Builder()
     ip = builder.addInputTensor(popart.TensorInfo("FLOAT", [dsize]))
     d__ip = popart.reservedGradientPrefix() + ip
@@ -427,12 +429,13 @@ def get_dropout_session(dsize=100,
                                    proto=builder.getModelProto(),
                                    device=device,
                                    loss=loss,
-                                   bps=bps)
+                                   bps=bps,
+                                   seed=seed)
 
     return session, ip, out, d__ip, anchors
 
 
-def get_session(anchorIds, proto, device, loss, bps=1):
+def get_session(anchorIds, proto, device, loss, bps=1, seed=0):
     dfAnchors = {}
     for anchorId in anchorIds:
         dfAnchors.update({anchorId: popart.AnchorReturnType("All")})
@@ -446,7 +449,7 @@ def get_session(anchorIds, proto, device, loss, bps=1):
                                      deviceInfo=device)
 
     session.prepareDevice()
+    session.setRandomSeed(seed)
     session.weightsFromHost()
     anchors = session.initAnchorArrays()
-
     return session, anchors
