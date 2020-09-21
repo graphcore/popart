@@ -96,14 +96,20 @@ def test_groupHostSync():
 
     # The streamcopy to host should only happen at the end (after
     # ReduceExpression)
+    # Pre D31787:
+    # Expected list with the option enabled: [4,4,4,1,2,3,4]
+    # Expected list without the option: [4,4,4,1,4,4,2,3,4]
+    # Post D31787:
     # Expected list with the option enabled: [4,4,1,2,3,4]
     # Expected list without the option: [4,4,1,4,4,2,3,4]
     assert (order[0] == "streamcopy")
     assert (order[1] == "streamcopy")
-    assert (order[2] == "add")
-    assert (order[3] == "abs")
-    assert (order[4] == "reduce")
-    assert (order[5] == "streamcopy")
+    assert (order[2] == "add" or order[2] == "streamcopy")
+    assert (order[3] == "abs" or order[3] == "add")
+    assert (order[4] == "reduce" or order[4] == "abs")
+    assert (order[5] == "streamcopy" or order[5] == "reduce")
+    assert (len(order) == 6 or order[6] == "streamcopy")
+
     # The number of Streamcopies happening in total
-    # (start counting from the Switch) should be 3.
-    assert (countStreams == 3)
+    # (start counting from the Switch) should be 3 (or 4 if before D31787).
+    assert (countStreams == 3 or countStreams == 4)
