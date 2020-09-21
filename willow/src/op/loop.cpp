@@ -173,7 +173,7 @@ void LoopOp::connectInTensor(InIndex inIndex, TensorId tensorId) {
     TensorId castTensorName = tensorId + "_int32";
 
     getGraph().getTensors().addConstInit(
-        castTensorName, {DataType::INT32, {}}, castTensorName.data());
+        castTensorName, {DataType::INT32, {}}, castTensorData.data());
     defaultConnectInTensor(inIndex, castTensorName);
   } else {
     defaultConnectInTensor(inIndex, tensorId);
