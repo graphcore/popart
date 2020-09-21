@@ -528,6 +528,13 @@ std::vector<TensorId> getStashCandidateTensors(Graph &graph) {
       continue;
     }
 
+    // We only concern ourselves with the normal context
+    if (tensor->hasProducer() &&
+        tensor->getProducer()->settings.executionContext !=
+            popart::ExecutionContext::Normal) {
+      continue;
+    }
+
     auto onlyConsumedByCopies = [](Tensor *t) {
       for (auto consumer : t->consumers.getOps()) {
         if (!consumer->isConvertibleTo<IpuCopyOp>()) {
