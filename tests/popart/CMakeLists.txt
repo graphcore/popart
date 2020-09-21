@@ -350,8 +350,11 @@ if ("Hw" IN_LIST ENABLED_TEST_VARIANTS)
   # IPU available on the machine it is run on.
   set_tests_properties("Hw_default_device_test" PROPERTIES RUN_SERIAL TRUE)
 
-  # Uses all IPUs, so run serially to avoid IPU attachment conflicts
+  # Run serially to avoid IPU attachment conflicts:
+  # Uses all IPUs
   set_tests_properties("Hw_default_cycle_count_test" PROPERTIES RUN_SERIAL TRUE)
+  # Doesn't wait to attach
+  set_tests_properties("Hw_default_syncpatterntest" PROPERTIES RUN_SERIAL TRUE) 
 endif()
 
 add_subdirectory(anchor_tests)
