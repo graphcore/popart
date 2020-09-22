@@ -86,7 +86,8 @@ ResizeGradOp::ResizeGradOp(const ResizeOp &op_)
     : ResizeOp(Onnx::GradOperators::ResizeGrad,
                op_.getSettings(),
                op_.getMode(),
-               gradScales(op_)) {}
+               gradScales(op_)),
+      fwdScales(op_.getScales()) {}
 
 const std::vector<GradInOutMapper> &ResizeGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
