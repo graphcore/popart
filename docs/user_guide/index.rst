@@ -13,7 +13,8 @@ PopART User Guide
   \addtocontents{toc}{\protect\setcounter{secnumdepth}{2}}
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 4
+    :numbered: 3
 
     intro
     importing
