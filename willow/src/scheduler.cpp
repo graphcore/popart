@@ -172,6 +172,31 @@ public:
     g.insertBinConstraints(bins, "executionPhaseStart_");
   }
 
+  // Given a preliminary feasible schedule initSchedule, fix sections of the
+  // schedule that have a batch serialization phase set against sections that
+  // don't, resulting in dramatically faster scheduling
+  void annotateBatchSerializationPhase(const std::vector<Op *> &initSchedule) {
+    // Insert bin constraints to ensure ops are sorted by batch serialization
+    // phases
+    std::vector<std::vector<OpAddress>> bins(1);
+
+    OptionalBatchSerializedPhase prevPhase;
+    size_t binIndex = 0;
+
+    for (Op *op : initSchedule) {
+      OptionalBatchSerializedPhase currPhase =
+          op->getOptionalBatchSerializedPhase();
+      if (currPhase != prevPhase) {
+        ++binIndex;
+        bins.resize(binIndex + 1);
+        prevPhase = currPhase;
+      }
+      auto opAddress = opAddresses[op];
+      bins[binIndex].push_back(opAddress);
+    }
+    g.insertBinConstraints(bins, "batchSerialGroupStart_");
+  }
+
   void annotateExecutionContext() {
     std::vector<OpAddress> weightsToOps;
     std::vector<OpAddress> normalOps;
@@ -481,6 +506,14 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
     ktb = KahnTieBreaker::RANDOM;
   } else {
     throw error("Unrecognised KahnTieBreaker, {}", kahnTieBreakerString);
+  }
+
+  if (pg.getIr().getSessionOptions().batchSerializationSettings.factor > 1) {
+    // Add additional constraints based on the preliminary schedule to speed up
+    // the annealing algorithm
+    grower->initialize(ktb);
+    std::vector<Op *> initSchedule = grower->getSchedule();
+    grower->annotateBatchSerializationPhase(initSchedule);
   }
 
   grower->initialize(ktb);
