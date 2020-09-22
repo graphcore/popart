@@ -39,6 +39,11 @@ public:
   ResizeGradOp(const ResizeOp &);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
+
+  const std::vector<float> getFwdScales() const { return fwdScales; }
+
+private:
+  const std::vector<float> fwdScales;
 };
 
 } // namespace popart

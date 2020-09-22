@@ -7,7 +7,45 @@ import torch.nn.functional as F
 from op_tester import op_tester
 import test_util as tu
 import os
+from packaging import version
+import numbers
 os.environ['POPART_LOG_LEVEL'] = 'TRACE'
+
+
+# if the version of torch is greater or equal to 1.5.0, use
+# F.interpolate, otherwise use a matching interpolate
+# function. This is required as torch versions below 1.5.0
+# don't have the `recompute_scale_factor` parameter for
+# `F.interpolate` and not all the buildbots appear to have
+# an up to date version of torch.
+def interpolate(data, scale_factor):
+    if version.parse(torch.__version__) >= version.parse("1.5.0"):
+        return F.interpolate(data,
+                             scale_factor=scale_factor,
+                             recompute_scale_factor=False)
+    else:
+        if isinstance(scale_factor, numbers.Number):
+            scale_factor = [scale_factor]
+        scale_factor = [1.0, 1.0] + scale_factor
+
+        result = data
+        out_shape = data.shape
+        out_shape = [int(i * s) for i, s in zip(out_shape, scale_factor)]
+
+        def resize_nearest(x, dim, size, scale):
+            slices = torch.split(x, 1, dim)
+            to_concat = []
+
+            to_concat = [slices[int(i / scale)] for i in range(size)]
+
+            return torch.cat(to_concat, dim)
+
+        for i in range(len(out_shape)):
+            if data.shape[i] != out_shape[i]:
+                result = resize_nearest(result, i, out_shape[i],
+                                        scale_factor[i])
+
+        return result
 
 
 def test_upsample_nearest(op_tester):
@@ -25,10 +63,8 @@ def test_upsample_nearest(op_tester):
 
         def reference(ref_data):
             x = torch.tensor(data)
-            s = [
-                int(i * scale) for i, scale in zip(data.shape[2:], scales[2:])
-            ]
-            o = F.interpolate(x, s)
+            s = [i for i in scales[2:]]
+            o = interpolate(x, s)
             return [o]
 
         op_tester.run(init_builder, reference, 'infer')
@@ -54,10 +90,8 @@ def test_downsample_nearest(op_tester):
 
         def reference(ref_data):
             x = torch.tensor(data)
-            s = [
-                int(i * scale) for i, scale in zip(data.shape[2:], scales[2:])
-            ]
-            o = F.interpolate(x, s)
+            s = [i for i in scales[2:]]
+            o = interpolate(x, s)
             return [o]
 
         op_tester.run(init_builder, reference, 'infer')
@@ -93,7 +127,7 @@ def test_resize_nearest_grad_1d(op_tester):
 
         def reference(ref_data):
             a = torch.tensor(data, requires_grad=True)
-            b = F.interpolate(a, [int(4 * scale_factor)])
+            b = interpolate(a, scale_factor)
             b.retain_grad()
             o = b * torch.tensor(x_data)
 
@@ -146,7 +180,7 @@ def test_resize_nearest_grad_2d(op_tester):
 
         def reference(ref_data):
             a = torch.tensor(data, requires_grad=True)
-            b = F.interpolate(a, [int(2 * factor1), int(4 * factor2)])
+            b = interpolate(a, [factor1, factor2])
             b.retain_grad()
             o = b * torch.tensor(x_data)
 
@@ -197,10 +231,8 @@ def test_upsample_nearest_grad(op_tester):
 
         def reference(ref_data):
             a = torch.tensor(data, requires_grad=True)
-            s = [
-                int(i * scale) for i, scale in zip(data.shape[2:], scales[2:])
-            ]
-            b = F.interpolate(a, s)
+            s = [i for i in scales[2:]]
+            b = interpolate(a, s)
             b.retain_grad()
             o = b * torch.tensor(x_data)
 
@@ -241,10 +273,8 @@ def test_downsample_nearest_grad(op_tester):
 
         def reference(ref_data):
             a = torch.tensor(data, requires_grad=True)
-            s = [
-                int(i * scale) for i, scale in zip(data.shape[2:], scales[2:])
-            ]
-            b = F.interpolate(a, s)
+            s = [i for i in scales[2:]]
+            b = interpolate(a, s)
             b.retain_grad()
             o = b * torch.tensor(x_data)
 
@@ -276,8 +306,8 @@ def test_resize_11(op_tester):
 
     def reference(ref_data):
         x = torch.tensor(data)
-        s = [int(i * scale) for i, scale in zip(data.shape[2:], scales[2:])]
-        o = F.interpolate(x, s)
+        s = [i for i in scales[2:]]
+        o = interpolate(x, s)
         return [o]
 
     op_tester.run(init_builder, reference, 'infer')
@@ -333,8 +363,8 @@ def test_float16_scales(op_tester):
 
     def reference(ref_data):
         x = torch.tensor(data)
-        s = [int(i * scale) for i, scale in zip(data.shape[2:], scales[2:])]
-        o = F.interpolate(x, s)
+        s = [i for i in scales[2:]]
+        o = interpolate(x, s)
         return [o]
 
     op_tester.run(init_builder, reference, 'infer')
@@ -356,8 +386,124 @@ def test_resize11_float16_scales(op_tester):
 
     def reference(ref_data):
         x = torch.tensor(data)
-        s = [int(i * scale) for i, scale in zip(data.shape[2:], scales[2:])]
-        o = F.interpolate(x, s)
+        s = [i for i in scales[2:]]
+        o = interpolate(x, s)
         return [o]
 
     op_tester.run(init_builder, reference, 'infer')
+
+
+def test_odd_scale_factor_upsample(op_tester):
+    scale_factor = 3.0001
+    data = np.random.rand(1, 1, 2).astype(np.float32)
+    scales = np.array([1.0, 1.0, scale_factor], dtype=np.float32)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(data)
+        s = builder.aiOnnx.constant(scales)
+        o = builder.aiOnnx.resize([d, s])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        x = torch.tensor(data)
+        s = [i for i in scales[2:]]
+        o = interpolate(x, s)
+
+        return [o]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_odd_scale_factor_upsample_grad(op_tester):
+    data = np.random.rand(1, 1, 2).astype(np.float32)
+
+    scales = np.array([1.0, 1.0, 3.0001], dtype=np.float32)
+
+    x_data_shape = [int(i * j) for i, j in zip(data.shape, scales)]
+    x_data = np.random.rand(*x_data_shape).astype(np.float32)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(data)
+        x = builder.addInputTensor(x_data)
+        s = builder.aiOnnx.constant(scales)
+        o = builder.aiOnnx.resize([d, s])
+        o = builder.aiOnnx.mul([o, x])
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + d,
+            popart.reservedGradientPrefix() + o,
+        ]
+
+    def reference(ref_data):
+        a = torch.tensor(data, requires_grad=True)
+        s = [i for i in scales[2:]]
+        b = interpolate(a, s)
+        b.retain_grad()
+        o = b * torch.tensor(x_data)
+
+        d__o = ref_data.getOutputTensorGrad(0)
+        o.backward(torch.tensor(d__o))
+        return [o, a.grad, None]
+
+    op_tester.setPatterns(['MulArgGradOp'], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'train')
+
+
+def test_odd_scale_factor_downsample(op_tester):
+    scale_factor = 0.51
+    data = np.random.rand(1, 1, 6).astype(np.float32)
+    scales = np.array([1.0, 1.0, scale_factor], dtype=np.float32)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(data)
+        s = builder.aiOnnx.constant(scales)
+        o = builder.aiOnnx.resize([d, s])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        x = torch.tensor(data)
+        s = [i for i in scales[2:]]
+        o = interpolate(x, s)
+
+        return [o]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_odd_scale_factor_downsample_grad(op_tester):
+    data = np.random.rand(1, 1, 6).astype(np.float32)
+
+    scales = np.array([1.0, 1.0, 0.51], dtype=np.float32)
+
+    x_data_shape = [int(i * j) for i, j in zip(data.shape, scales)]
+    x_data = np.random.rand(*x_data_shape).astype(np.float32)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(data)
+        x = builder.addInputTensor(x_data)
+        s = builder.aiOnnx.constant(scales)
+        o = builder.aiOnnx.resize([d, s])
+        o = builder.aiOnnx.mul([o, x])
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + d,
+            popart.reservedGradientPrefix() + o,
+        ]
+
+    def reference(ref_data):
+        a = torch.tensor(data, requires_grad=True)
+        s = [i for i in scales[2:]]
+        b = interpolate(a, s)
+        b.retain_grad()
+        o = b * torch.tensor(x_data)
+
+        d__o = ref_data.getOutputTensorGrad(0)
+        o.backward(torch.tensor(d__o))
+        return [o, a.grad, None]
+
+    op_tester.setPatterns(['MulArgGradOp'], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'train')
