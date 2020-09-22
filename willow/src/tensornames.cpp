@@ -61,7 +61,9 @@ std::vector<std::string> reservedOptimizerPrefixes() {
           reservedDefaultWeightDecayPrefix(),
           reservedSpecificWeightDecayPrefix(),
           reservedDefaultAdamGradientScalingPrefix(),
-          reservedSpecificAdamGradientScalingPrefix()};
+          reservedSpecificAdamGradientScalingPrefix(),
+          reservedDefaultMaxWeightNormPrefix(),
+          reservedSpecificMaxWeightNormPrefix()};
 }
 
 std::vector<std::string> reservedPrefixes() {

@@ -218,6 +218,43 @@ struct ExecutionPhaseSettings {
   ExecutionPhaseSchedule schedule = ExecutionPhaseSchedule::Interleaving;
 };
 
+// Setting that determines how the operations in the accumulate outer fragment
+// will be scheduled accross virtual graphs (only relevant to pipelined modes).
+enum class AccumulateOuterFragmentSchedule {
+  // Don't pose additional constraints and let the scheduler work it out.
+  Scheduler = 0,
+  // Add constraints that ensure ops are executed in virtual graph ID order.
+  Serial,
+  // Try and parallelise ops with different virtual graph IDs as much as
+  // possible.
+  OverlapCycleOptimized,
+  // Try and parallelize ops with different virtual graph IDs but avoid certain
+  // steps that are costly in terms of memory usage.
+  OverlapMemoryOptimized
+};
+
+/**
+ * A structure containing accumulate outer fragment settings.
+ */
+struct AccumulateOuterFragmentSettings {
+  AccumulateOuterFragmentSettings() = default;
+  AccumulateOuterFragmentSettings(
+      AccumulateOuterFragmentSchedule schedule_,
+      const std::vector<int> &excludedVirtualGraphs_)
+      : schedule{schedule_}, excludedVirtualGraphs{excludedVirtualGraphs_} {}
+
+  AccumulateOuterFragmentSettings &
+  operator=(const AccumulateOuterFragmentSettings &rhs) = default;
+
+  // Tell popart how you would like to schedule the accumulate outer fragment.
+  // This setting is experimental and may change.
+  AccumulateOuterFragmentSchedule schedule =
+      AccumulateOuterFragmentSchedule::Serial;
+  // A setting to explicitly tell popart to avoid to try and parallelise the
+  // given virtual graph ids. This setting is experimental and may change.
+  std::vector<int> excludedVirtualGraphs = {};
+};
+
 /**
  * A structure containing user configuration options for the Session class
  */
@@ -385,6 +422,9 @@ struct SessionOptions {
 
   // Configure execution phases
   ExecutionPhaseSettings executionPhaseSettings;
+
+  // Configure accumulate outer fragment.
+  AccumulateOuterFragmentSettings accumulateOuterFragmentSettings;
 
   // Enable explicit recomputation
   bool explicitRecomputation = false;

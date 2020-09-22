@@ -41,6 +41,7 @@
 
 // The transformations
 #include <popart/recompute.hpp>
+#include <popart/transforms/accumulateouterfragmentparallelizer.hpp>
 #include <popart/transforms/auto_virtual_graph.hpp>
 #include <popart/transforms/batchserialize.hpp>
 #include <popart/transforms/decomposegradsum.hpp>
@@ -1057,6 +1058,14 @@ void Ir::prepareImpl(const IrBundle &gb) {
 
   applyTransform(IoComputeTileCopy::id(), getMainGraph());
   updateVertices();
+
+  // Optimizer accumulate outer fragment.
+  if (userOptions.accumulateOuterFragmentSettings.schedule ==
+          AccumulateOuterFragmentSchedule::OverlapCycleOptimized ||
+      userOptions.accumulateOuterFragmentSettings.schedule ==
+          AccumulateOuterFragmentSchedule::OverlapMemoryOptimized) {
+    applyTransform(AccumulateOuterFragmentParallelizer::id(), getMainGraph());
+  }
 
   for (auto &id_graph : graphs) {
     auto &graph = getGraph(id_graph.first);
@@ -3544,6 +3553,20 @@ GraphId Ir::createUniqueSubgraphId(GraphId base_id) {
       logging::format("{}_subgraph({})", base_id, subgraph_id_counter);
   ++subgraph_id_counter;
   return next_id;
+}
+
+std::vector<std::vector<Op *>>
+Ir::getAccumulateOuterFragmentBinConstraints(const Graph &graph) const {
+  auto &mainGraph = getMainGraph();
+
+  if (&graph == &mainGraph) {
+    // Only add bin constraints for main graph.
+    AccumulateOuterFragmentParallelizer transform;
+    return transform.getBinConstraints(graph);
+  } else {
+    // Return unconstrained.
+    return std::vector<std::vector<Op *>>();
+  }
 }
 
 } // namespace popart

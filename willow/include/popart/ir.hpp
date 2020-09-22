@@ -546,6 +546,12 @@ public:
 
   GraphId createUniqueSubgraphId(GraphId base_id);
 
+  // Accumulate outer fragment parallelizer bin constraints. Not really needed
+  // for functionality but without these some models take a lot longer to
+  // schedule.
+  std::vector<std::vector<Op *>>
+  getAccumulateOuterFragmentBinConstraints(const Graph &graph) const;
+
 private:
   uint64_t intermediate_tensor_counter{0};
   uint64_t subgraph_id_counter{0};

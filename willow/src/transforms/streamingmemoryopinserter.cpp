@@ -2089,8 +2089,8 @@ StreamingMemoryOpInserter::TensorStreamingContext::TensorStreamingContext(
     ScheduledPreLoss preLoss_)
     : context(context_), phase(phase_), preLoss(preLoss_) {}
 
-bool StreamingMemoryOpInserter::TensorStreamingContext::operator<(
-    const TensorStreamingContext &rhs) const {
+bool StreamingMemoryOpInserter::TensorStreamingContext::
+operator<(const TensorStreamingContext &rhs) const {
   std::vector<int> lhsVec;
   lhsVec.reserve(3);
   std::vector<int> rhsVec;
@@ -2135,13 +2135,13 @@ bool StreamingMemoryOpInserter::TensorStreamingContext::operator<(
   return lhsVec < rhsVec;
 }
 
-bool StreamingMemoryOpInserter::TensorStreamingContext::operator==(
-    const TensorStreamingContext &rhs) const {
+bool StreamingMemoryOpInserter::TensorStreamingContext::
+operator==(const TensorStreamingContext &rhs) const {
   return context == rhs.context && phase == rhs.phase && preLoss == rhs.preLoss;
 }
 
-bool StreamingMemoryOpInserter::TensorStreamingContext::operator!=(
-    const TensorStreamingContext &rhs) const {
+bool StreamingMemoryOpInserter::TensorStreamingContext::
+operator!=(const TensorStreamingContext &rhs) const {
   return context != rhs.context || phase != rhs.phase || preLoss != rhs.preLoss;
 }
 
@@ -2160,8 +2160,8 @@ operator<<(std::ostream &output,
   return output;
 }
 
-bool StreamingMemoryOpInserter::ConsumerOpConfig::operator==(
-    const ConsumerOpConfig &rhs) const {
+bool StreamingMemoryOpInserter::ConsumerOpConfig::
+operator==(const ConsumerOpConfig &rhs) const {
   return tensor == rhs.tensor && op == rhs.op;
 }
 
