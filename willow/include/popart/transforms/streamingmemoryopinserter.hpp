@@ -6,6 +6,8 @@
 #include <map>
 
 #include <popart/op.hpp>
+#include <popart/sessionoptions.hpp>
+#include <popart/tensor.hpp>
 #include <popart/vendored/optional.hpp>
 
 namespace popart {
@@ -61,7 +63,7 @@ public:
                           bool onDemandOptimizerState,
                           ExecutionPhaseSchedule schedule);
 
-private:
+protected:
   // Types used.
   using Ops               = std::vector<Op *>;
   using OpsSet            = std::set<Op *, POpCmp>;
