@@ -19,9 +19,12 @@ def run_model(tmpdir,
               model_file_name,
               schedule=popart.ExecutionPhaseSchedule.Interleaving,
               enable_outlining=False,
+              stride=1,
               num_layers=5,
-              dsize=256,
-              batch_size=8,
+              dsize=128,
+              batch_size=4,
+              batch_serialize=1,
+              batch_schedule=popart.BatchSerializationBatchSchedule.Isomorphic,
               num_iterations=5,
               num_replicas=2,
               optimizer=popart.Adam({"defaultLearningRate": (0.1, False)})):
@@ -40,17 +43,20 @@ def run_model(tmpdir,
 
     out = ip
     l1 = ""
+    final_loss = ""
 
     for i in range(num_layers):
         vgid = 0
-        with builder.executionPhase(i), builder.virtualGraph(vgid):
+        with builder.executionPhase(i * stride), builder.virtualGraph(vgid):
             for j in range(3):
                 out = add_layer(i, out)
 
         if i == num_layers - 1:
-            with builder.executionPhase(i), builder.virtualGraph(vgid):
+            with builder.executionPhase(
+                    i * stride), builder.virtualGraph(vgid):
                 l1 = builder.aiGraphcore.l1loss([out], 0.1,
                                                 popart.ReductionType.Sum)
+                final_loss = builder.aiGraphcore.identityloss([l1])
 
     anchorIds = []
 
@@ -74,6 +80,7 @@ def run_model(tmpdir,
     opts.enableOutlining = enable_outlining
     opts.enableOutliningCopyCostPruning = False
     opts.outlineThreshold = -np.inf
+    opts.aliasZeroCopy = enable_outlining
 
     # Replicated graphs
     opts.replicatedGraphCount = num_replicas
@@ -83,7 +90,7 @@ def run_model(tmpdir,
     opts.numIOTiles = 192
 
     # Phased execution
-    opts.executionPhaseSettings.phases = num_layers
+    opts.executionPhaseSettings.phases = num_layers * stride
     opts.executionPhaseSettings.stages = 1
     opts.executionPhaseSettings.schedule = schedule
     opts.virtualGraphMode = popart.VirtualGraphMode.ExecutionPhases
@@ -91,6 +98,16 @@ def run_model(tmpdir,
     # Recomputation
     opts.autoRecomputation = popart.RecomputationType.Standard
     opts.explicitRecomputation = True
+
+    # Batch serialization
+    if batch_serialize > 1:
+        opts.batchSerializationSettings.factor = batch_serialize
+        opts.batchSerializationSettings.concatOnVirtualGraphChange = False
+        opts.batchSerializationSettings.concatOnExecutionPhaseChange = False
+        opts.batchSerializationSettings.concatOnPipelineStageChange = False
+        opts.batchSerializationSettings.batchSchedule = batch_schedule
+        # Related execution phase setting
+        opts.executionPhaseSettings.activationIOSchedule = popart.ExecutionPhaseIOSchedule.OnDemand
 
     # Streaming memory
     offChipLocation = popart.TensorLocationSettings(
@@ -120,7 +137,7 @@ def run_model(tmpdir,
     session = popart.TrainingSession(fnModel=proto,
                                      dataFlow=popart.DataFlow(1, dfAnchors),
                                      optimizer=optimizer,
-                                     loss=l1,
+                                     loss=final_loss,
                                      patterns=popart.Patterns(
                                          popart.PatternsLevel.All),
                                      userOptions=opts,
@@ -158,7 +175,7 @@ def check_model(lhs_model, rhs_model):
 
 
 @tu.requires_ipu
-def test_overlap(tmpdir):
+def test_phase_overlap(tmpdir):
     cycles_interleaving = run_model(
         tmpdir,
         'interleaving.onnx',
@@ -180,13 +197,56 @@ def test_overlap(tmpdir):
     clustered_io_outline = onnx.load(
         str(tmpdir / 'batch_clustered_io_outline.onnx'))
 
-    # Test requires T26754 to pass
-    check_model(interleaving, clustered_io)
-    check_model(interleaving, clustered_io_outline)
-
-    BOOST_CHECK(cycles_clustered_io < 0.9 * cycles_interleaving)
-    BOOST_CHECK(cycles_clustered_io_outline < 0.9 * cycles_interleaving)
-
     print(
         f"Cycles: {cycles_interleaving} {cycles_clustered_io} {cycles_clustered_io_outline}"
     )
+
+    check_model(interleaving, clustered_io)
+    # Test requires T26754 to pass
+    check_model(interleaving, clustered_io_outline)
+
+    assert (cycles_clustered_io < 0.9 * cycles_interleaving)
+    # Test requires T26968 to pass
+    assert (cycles_clustered_io_outline < 0.9 * cycles_interleaving)
+
+
+@tu.requires_ipu
+def test_batch_overlap(tmpdir):
+    cycles_isomorphic = run_model(
+        tmpdir,
+        'isomorphic.onnx',
+        stride=4,
+        batch_serialize=4,
+        batch_schedule=popart.BatchSerializationBatchSchedule.Isomorphic)
+
+    cycles_overlap_on_compute = run_model(
+        tmpdir,
+        'overlap_on_compute.onnx',
+        stride=4,
+        batch_serialize=4,
+        batch_schedule=popart.BatchSerializationBatchSchedule.OverlapOnCompute)
+
+    cycles_overlap_on_compute_outline = run_model(
+        tmpdir,
+        'overlap_on_compute_outline.onnx',
+        stride=4,
+        batch_serialize=4,
+        batch_schedule=popart.BatchSerializationBatchSchedule.OverlapOnCompute,
+        enable_outlining=True)
+
+    isomorphic = onnx.load(str(tmpdir / 'isomorphic.onnx'))
+    overlap_on_compute = onnx.load(str(tmpdir / 'overlap_on_compute.onnx'))
+    overlap_on_compute_outline = onnx.load(
+        str(tmpdir / 'overlap_on_compute_outline.onnx'))
+
+    print(
+        f"Cycles: {cycles_isomorphic} {cycles_overlap_on_compute} {cycles_overlap_on_compute_outline}"
+    )
+
+    check_model(isomorphic, overlap_on_compute)
+    # Test requires T26754 to pass
+    check_model(isomorphic, overlap_on_compute_outline)
+
+    assert (cycles_overlap_on_compute < 0.9 * cycles_isomorphic)
+    # Test requires T26968 to pass
+    assert (cycles_overlap_on_compute_outline < 0.9 * cycles_isomorphic)

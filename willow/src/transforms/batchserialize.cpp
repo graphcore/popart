@@ -981,6 +981,9 @@ bool BatchSerialize::apply(Graph &graph) const {
         }
       }
 
+      // Check if for any BSP > 0, the isomorphic Op in BSP 0 could not be found
+      // and clean up BSP settings on non-isomorphic Ops
+      section = -1;
       for (Op *op : schedule) {
         if (op->hasBatchSerializedPhase() &&
             op->getBatchSerializedPhase() >= 0) {
@@ -988,6 +991,29 @@ bool BatchSerialize::apply(Graph &graph) const {
             logging::warn("[BatchSerialize] Could not find isomorphic "
                           "position for {}",
                           op->debugName());
+            op->setBatchSerializedPhase(OptionalBatchSerializedPhase());
+            opsBehindSection[section].push_back(op);
+          } else {
+            section   = opSectionLookup.at(op);
+            auto bsp0 = op->getBatchSerializedPhase();
+            if (bsp0 == 0) {
+              auto pos       = opToPosition.at({section, bsp0}).at(op);
+              bool hasIsoOps = false;
+              // Check if the Op with BSP == 0 has any isomorphic operations
+              for (auto bsp1 = 1; bsp1 < batchSerFactor; ++bsp1) {
+                auto posToOp = positionToOp.find({section, bsp1});
+                hasIsoOps |=
+                    (posToOp != positionToOp.end() &&
+                     posToOp->second.find(pos) != posToOp->second.end());
+              }
+              if (!hasIsoOps) {
+                logging::warn("[BatchSerialize] Could not find isomorphic "
+                              "position for {}",
+                              op->debugName());
+                opSectionLookup.erase(op);
+                op->setBatchSerializedPhase(OptionalBatchSerializedPhase());
+              }
+            }
           }
         }
       }

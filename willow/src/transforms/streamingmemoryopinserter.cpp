@@ -238,11 +238,11 @@ StreamingMemoryOpInserter::findRelatedVarTensor(std::vector<Tensor *> front) {
     Tensor *t0 = front.back();
     front.pop_back();
 
-    auto config = tensorConfigs.at(t0);
+    auto config = tensorConfigs.find(t0);
 
-    if (config.rootVarTensor &&
-        config.rootVarTensor->tensorType() == TensorType::Variable) {
-      return config.rootVarTensor;
+    if (config != tensorConfigs.end() && config->second.rootVarTensor &&
+        config->second.rootVarTensor->tensorType() == TensorType::Variable) {
+      return config->second.rootVarTensor;
     }
 
     for (Op *consumer : t0->consumers.getOps()) {
