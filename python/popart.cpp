@@ -851,6 +851,17 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("schedule", &ExecutionPhaseSettings::schedule);
   }
   {
+    py::class_<AccumulateOuterFragmentSettings> cls(
+        m, "AccumulateOuterFragmentSettings");
+    cls.def(py::init<>());
+    cls.def(py::init<AccumulateOuterFragmentSchedule, std::vector<int>>(),
+            py::arg("schedule"),
+            py::arg("excludedVirtualGraphs") = std::vector<int>());
+    cls.def_readwrite("schedule", &AccumulateOuterFragmentSettings::schedule);
+    cls.def_readwrite("excludedVirtualGraphs",
+                      &AccumulateOuterFragmentSettings::excludedVirtualGraphs);
+  }
+  {
     py::class_<SessionOptions::NumIOTiles> cls(m, "NumIOTiles");
     cls.def(py::init<>());
     cls.def(py::init<int>());
@@ -978,6 +989,8 @@ PYBIND11_MODULE(popart_core, m) {
                       &SessionOptions::accumulatorTensorLocationSettings);
     cls.def_readwrite("tensorLocationSettingsOverride",
                       &SessionOptions::tensorLocationSettingsOverride);
+    cls.def_readwrite("accumulateOuterFragmentSettings",
+                      &SessionOptions::accumulateOuterFragmentSettings);
   }
   {
     py::enum_<PatternsLevel> en(m, "PatternsLevel");
@@ -1034,6 +1047,16 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("Interleaving", ExecutionPhaseSchedule::Interleaving);
     en.value("Batch", ExecutionPhaseSchedule::Batch);
     en.value("BatchClusteredIO", ExecutionPhaseSchedule::BatchClusteredIO);
+  }
+  {
+    py::enum_<AccumulateOuterFragmentSchedule> en(
+        m, "AccumulateOuterFragmentSchedule");
+    en.value("Scheduler", AccumulateOuterFragmentSchedule::Scheduler);
+    en.value("Serial", AccumulateOuterFragmentSchedule::Serial);
+    en.value("OverlapCycleOptimized",
+             AccumulateOuterFragmentSchedule::OverlapCycleOptimized);
+    en.value("OverlapMemoryOptimized",
+             AccumulateOuterFragmentSchedule::OverlapMemoryOptimized);
   }
   {
     py::enum_<SyncPattern> en(m, "SyncPattern");

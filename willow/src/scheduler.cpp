@@ -13,6 +13,7 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
+#include <popart/op/remote.hpp>
 #include <popart/scheduler.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
@@ -254,38 +255,79 @@ public:
     // Adding pipelineStage bins is not required for correctness.
     // Constraining the Ops to be within their pipelineStage improves
     // scheduling runtime as swaps with no effect are invalid.
-    std::vector<std::vector<OpAddress>> normal_bins;
-    std::vector<std::vector<OpAddress>> outer_bins;
+    std::vector<std::vector<OpAddress>> bins;
     for (const auto &x : pg.getOps()) {
       auto op = x.second.get();
-      bool should_bin =
-          op->hasPipelineStage() &&
-          (op->settings.executionContext == ExecutionContext::Normal ||
-           (op->settings.executionContext ==
-                ExecutionContext::AccumulateOuterFragment &&
-            op->hasVirtualGraphId()));
-      if (should_bin) {
+      if (op->hasPipelineStage() &&
+          op->settings.executionContext == ExecutionContext::Normal) {
         auto opAddress = opAddresses[op];
-        auto stage_or_vgraph =
-            op->settings.executionContext == ExecutionContext::Normal
-                ? *op->getOptionalPipelineStage()
-                : *op->getOptionalVGraphId();
-        if (stage_or_vgraph < -1) {
-          throw internal_error("stage_or_vgraph < -1 unexpected. This function "
-                               "needs adjustment");
+        auto stage     = *op->getOptionalPipelineStage();
+        if (stage < -1) {
+          throw internal_error(
+              "stage < -1 unexpected. This function needs adjustment");
         }
-        uint64_t binIndex = static_cast<uint64_t>(1LL + stage_or_vgraph);
-        auto &bins = op->settings.executionContext == ExecutionContext::Normal
-                         ? normal_bins
-                         : outer_bins;
+        uint64_t binIndex = static_cast<uint64_t>(1LL + stage);
         if (binIndex >= bins.size()) {
           bins.resize(binIndex + 1);
         }
         bins[binIndex].push_back(opAddress);
       }
     }
-    g.insertBinConstraints(normal_bins, "PipelineStageStart_");
-    g.insertBinConstraints(outer_bins, "OuterPipelineStageStart_");
+    g.insertBinConstraints(bins, "PipelineStageStart_");
+  }
+
+  void annotateAccumulateOuterFragmentOps() {
+    // The scheduler can be slow when there are a lot of ops unconstrained in
+    // the accumulate outer fragment. To battle this, we sometimes add
+    // constraints here. Depending on where we are in the IR pipeline and
+    // session options this may be done in different ways. If the user set
+    // 'enableAccumulateOuterFragmentParallelization' we will use bin
+    // constraints this transform.
+    if (pg.getIr().getSessionOptions().enablePipelining) {
+      auto aufSettings =
+          pg.getIr().getSessionOptions().accumulateOuterFragmentSettings;
+      auto schedule = aufSettings.schedule;
+      if (schedule == AccumulateOuterFragmentSchedule::OverlapCycleOptimized ||
+          schedule == AccumulateOuterFragmentSchedule::OverlapMemoryOptimized) {
+        // Use cluster grouping from AccumulateOuterFragmentParallelizer
+        // transform as bins, this should allow parallelization accross IPUs.
+        std::vector<std::vector<OpAddress>> bins;
+        auto opBins = pg.getIr().getAccumulateOuterFragmentBinConstraints(pg);
+        for (auto opBin : opBins) {
+          std::vector<OpAddress> bin;
+          for (auto op : opBin) {
+            bin.push_back(opAddresses[op]);
+          }
+          bins.push_back(bin);
+        }
+        g.insertBinConstraints(bins, "AccumulateOuterFragmentCluster_");
+      } else if (schedule == AccumulateOuterFragmentSchedule::Serial) {
+        // Revert back to default behaviour for pipelining models where we
+        // serialize the ops based on virtual graph id.
+        std::vector<std::vector<OpAddress>> outer_bins;
+        for (const auto &x : pg.getOps()) {
+          auto op         = x.second.get();
+          bool should_bin = op->hasPipelineStage() && op->hasVirtualGraphId() &&
+                            (op->settings.executionContext ==
+                             ExecutionContext::AccumulateOuterFragment);
+
+          if (should_bin) {
+            auto opAddress = opAddresses[op];
+            auto vgraph    = *op->getOptionalVGraphId();
+            if (vgraph < -1) {
+              throw internal_error("vgraph < -1 unexpected. This function "
+                                   "needs adjustment");
+            }
+            uint64_t binIndex = static_cast<uint64_t>(1LL + vgraph);
+            if (binIndex >= outer_bins.size()) {
+              outer_bins.resize(binIndex + 1);
+            }
+            outer_bins[binIndex].push_back(opAddress);
+          }
+        }
+        g.insertBinConstraints(outer_bins, "OuterPipelineStageStart_");
+      }
+    }
   }
 
   void annotatePriorities() {
@@ -442,6 +484,7 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
   if (pg.getIr().getSessionOptions().enablePipelining) {
     grower->annotatePipelineStages();
   }
+  grower->annotateAccumulateOuterFragmentOps();
   grower->annotateExecutionContext();
   grower->annotatePriorities();
   grower->finalize();
@@ -546,6 +589,7 @@ bool Scheduler::isSchedulable(const OpsBeforeKey &gCons,
   if (pg.getIr().getSessionOptions().enablePipelining) {
     grower.annotatePipelineStages();
   }
+  grower.annotateAccumulateOuterFragmentOps();
   grower.annotateExecutionContext();
   grower.finalize();
   return grower.isSchedulable();

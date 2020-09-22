@@ -147,6 +147,14 @@ bool MergeRemote::apply(Graph &graph) const {
 
   std::vector<Op *> remoteOps;
 
+  bool seenRemoteLoads  = false;
+  bool seenRemoteStores = false;
+  auto aofSchedule      = graph.getIr()
+                         .getSessionOptions()
+                         .accumulateOuterFragmentSettings.schedule;
+  bool inhibitMerging =
+      (aofSchedule == AccumulateOuterFragmentSchedule::OverlapMemoryOptimized);
+
   // For each op (in schedule order)
   for (size_t i = 0; i < schedule.size(); ++i) {
     Op *op     = schedule.at(i);
@@ -163,11 +171,21 @@ bool MergeRemote::apply(Graph &graph) const {
                                         prevOp->settings.executionContext;
     bool bspChanged = prevOp && op->hasBatchSerializedPhase() !=
                                     prevOp->hasBatchSerializedPhase();
+    bool isMerge = (seenRemoteLoads && op->isConvertibleTo<RemoteStoreOp>()) ||
+                   (seenRemoteStores && op->isConvertibleTo<RemoteLoadOp>());
+    bool isAof = (op->settings.executionContext ==
+                  ExecutionContext::AccumulateOuterFragment);
 
-    if (contextChanged || !(isInit || isRemote) || (bspChanged && bspMerge)) {
+    if (contextChanged || !(isInit || isRemote) || (bspChanged && bspMerge) ||
+        (inhibitMerging && isAof && isMerge)) {
       conditionallyInsertRemoteExchange(graph, remoteOps, phaseMerge, bspMerge);
       remoteOps.clear();
+      seenRemoteLoads  = false;
+      seenRemoteStores = false;
     }
+
+    seenRemoteLoads  = seenRemoteLoads || op->isConvertibleTo<RemoteLoadOp>();
+    seenRemoteStores = seenRemoteStores || op->isConvertibleTo<RemoteStoreOp>();
 
     if (isRemote) {
       remoteOps.push_back(op);

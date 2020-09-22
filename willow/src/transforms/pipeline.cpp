@@ -237,10 +237,14 @@ Op *searchForRestoreReferenceOp(Tensor *t, Op *stashRefOp) {
   // Find a restore reference Op by searching through the consumers but not
   // crossing IPU boundaries.
   OpSearchHelper toCheck;
+
   toCheck.pushConsumers(t);
   while (!toCheck.empty()) {
     auto op = toCheck.pop();
-    if (!op->isConvertibleTo<IpuCopyOp>()) {
+    if (!op->isConvertibleTo<IpuCopyOp>() &&
+        (op->settings.executionContext ==
+         stashRefOp->settings.executionContext) &&
+        (op->getOptionalVGraphId() == stashRefOp->getOptionalVGraphId())) {
       if (op->getPipelineStage() > stashRefOp->getPipelineStage()) {
         return op;
       } else {

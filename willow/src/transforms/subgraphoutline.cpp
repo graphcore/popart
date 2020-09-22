@@ -64,6 +64,12 @@ std::vector<int64_t> getBoundariesCrossed(const SessionOptions &opts,
   RecomputeType recompute      = RecomputeType::Undefined;
   RecomputeType last_recompute = RecomputeType::Undefined;
 
+  auto aof_schedule = opts.accumulateOuterFragmentSettings.schedule;
+  auto check_vgid_in_aof =
+      (aof_schedule !=
+       AccumulateOuterFragmentSchedule::OverlapCycleOptimized) &&
+      (aof_schedule != AccumulateOuterFragmentSchedule::OverlapMemoryOptimized);
+
   for (int64_t i = start; i < end; ++i) {
     Op *op           = schedule[i];
     last_vgid        = vgid;
@@ -86,8 +92,12 @@ std::vector<int64_t> getBoundariesCrossed(const SessionOptions &opts,
     recompute   = op->settings.recomputeType == RecomputeType::Recompute
                     ? RecomputeType::Recompute
                     : RecomputeType::Checkpoint;
+
+    bool check_vgid = check_vgid_in_aof ||
+                      exec_cont != ExecutionContext::AccumulateOuterFragment;
+
     if (i > start &&
-        (vgid != last_vgid || phase != last_phase ||
+        ((check_vgid && vgid != last_vgid) || (phase != last_phase) ||
          exec_cont != last_exec_cont || batchserial != last_batchserial ||
          recompute != last_recompute)) {
       crossing.push_back(i - start);

@@ -66,20 +66,23 @@ public:
 
     // Create the IR
     anchors.insert({outId, AnchorReturnType("All")});
-    auto dataFlow  = DataFlow(1, anchors);
-    auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+    auto dataFlow = DataFlow(1, anchors);
+
+    if (!deviceInfo) {
+      deviceInfo = DeviceManager::createDeviceManager().createCpuDevice();
+    }
 
     if (isTraining) {
       auto optimizer = ConstSGD(0.1);
       session        = TrainingSession::createFromOnnxModel(
-          proto, dataFlow, loss, optimizer, cpuDevice, {}, opts, patterns);
+          proto, dataFlow, loss, optimizer, deviceInfo, {}, opts, patterns);
     } else {
       if (loss != "") {
         throw error(
             "Test runner: InferenceSession does not take 'loss' argument");
       }
       session = InferenceSession::createFromOnnxModel(
-          proto, dataFlow, cpuDevice, {}, opts, patterns);
+          proto, dataFlow, deviceInfo, {}, opts, patterns);
     }
 
     irChecker(session->ir);
@@ -143,6 +146,7 @@ public:
   bool isTraining = false;
   TensorId loss   = "";
   std::map<TensorId, AnchorReturnType> anchors;
+  std::shared_ptr<DeviceInfo> deviceInfo;
 
 private:
   std::string proto;
