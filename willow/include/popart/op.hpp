@@ -79,6 +79,9 @@ public:
 
   bool pruneable = true;
 
+  // To flag an Op as being part of the optimizer
+  bool optimizerOp = false;
+
   struct Settings {
 
     Settings(Graph &graph_, const std::string &name_)

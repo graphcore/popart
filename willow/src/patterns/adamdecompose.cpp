@@ -265,6 +265,9 @@ bool AdamDecompose::apply(Op *op) const {
                                           gradIntoAcclId);
 
     gradCastOp->setup();
+
+    gradCastOp->optimizerOp = true;
+
     if (combo->withGradAccum) {
       gradCastOp->settings.executionContext =
           ExecutionContext::AccumulateOuterFragment;
