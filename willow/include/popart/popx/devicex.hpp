@@ -481,9 +481,9 @@ private:
   public:
     PrefetchCallback(std::shared_ptr<InputDatastream> ds_);
 
-    poplar::StreamCallback::Result prefetch(void *dest) noexcept override;
-    void fetch(void *dest) noexcept override;
-    void complete() noexcept override;
+    poplar::StreamCallback::Result prefetch(void *dest) override;
+    void fetch(void *dest) override;
+    void complete() override;
 
   private:
     std::shared_ptr<InputDatastream> ds;

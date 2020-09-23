@@ -330,8 +330,7 @@ Devicex::PrefetchCallback::PrefetchCallback(
     std::shared_ptr<InputDatastream> ds_)
     : ds(ds_) {}
 
-poplar::StreamCallback::Result
-Devicex::PrefetchCallback::prefetch(void *dest) noexcept {
+poplar::StreamCallback::Result Devicex::PrefetchCallback::prefetch(void *dest) {
   POPART_TRACEPOINT();
   if (ds->readPrefetch(dest)) {
     return poplar::StreamCallback::Result::Success;
@@ -340,12 +339,12 @@ Devicex::PrefetchCallback::prefetch(void *dest) noexcept {
   }
 }
 
-void Devicex::PrefetchCallback::fetch(void *dest) noexcept {
+void Devicex::PrefetchCallback::fetch(void *dest) {
   POPART_TRACEPOINT();
   ds->read(dest);
 }
 
-void Devicex::PrefetchCallback::complete() noexcept {
+void Devicex::PrefetchCallback::complete() {
   POPART_TRACEPOINT();
   ds->readComplete();
 }
