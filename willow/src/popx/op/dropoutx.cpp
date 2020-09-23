@@ -17,28 +17,6 @@ namespace popx {
 
 namespace {
 
-// Get the reference Tensor used for poplibs call for mask generation.
-// Note that the reference Tensor cannot just be the Tensor to be masked, as the
-// mask generated depends on the layout of the input and not just the random
-// seed. It is required that forwards, recompute and backwards masks are all the
-// same, so the same reference tensor must be used in for these cases
-poplar::Tensor getReferenceTensor(const Opx &opx) {
-
-  const auto &dbo   = opx.getOp<DropoutOp>();
-  auto seedModifier = dbo.getSeedModifier();
-
-  poplar::Tensor refTensor;
-
-  if (opx.getDropoutReferenceTensors().find(seedModifier) ==
-      opx.getDropoutReferenceTensors().end()) {
-    refTensor = opx.getInTensor(0);
-    opx.getDropoutReferenceTensors().emplace(seedModifier, refTensor);
-  } else {
-    refTensor = opx.getDropoutReferenceTensors().at(seedModifier);
-  }
-  return refTensor;
-}
-
 std::pair<poplar::Tensor, poplar::Tensor>
 growDropout(poplar::Graph &graph,
             const poplar::Tensor &input,
@@ -89,7 +67,7 @@ void DropoutOpx::grow(poplar::program::Sequence &prog) const {
   auto seedModifier = op.getSeedModifier();
 
   if (op_p->getIr().canTrain()) {
-    poplar::Tensor refTensor = getReferenceTensor(*this);
+    const poplar::Tensor &refTensor = get(op.getReferenceTensorId());
 
     if (op.getOutputMask()) {
       auto dropout_mask = growDropout(graph(),

@@ -52,11 +52,15 @@ public:
   std::map<TensorId, std::vector<TensorId>>
   shard(const std::map<TensorId, std::vector<TensorId>> &inputs) override;
 
+  const TensorId &getReferenceTensorId();
+
 protected:
   float ratio;
   uint32_t seedModifier;
+  OpId partnerId;
 
 private:
+  TensorId refTensorId;
   bool output_mask = false;
 };
 

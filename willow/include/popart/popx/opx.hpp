@@ -112,10 +112,6 @@ public:
   // Returns the Devicex to which this Opx belongs
   const Devicex *getDevicex() const;
 
-  // Access dropoutReferenceTensors from Devicex
-  // TODO: Improve see, see TT15790
-  std::map<uint32_t, poplar::Tensor> &getDropoutReferenceTensors() const;
-
   // dv_p->getVirtualGraphId(). Defaults to 0 if virtualGraph is not enabled
   int64_t getVirtualGraphId() const;
   // Returns the virtual graph if enabled, else returns the dv_p->graph

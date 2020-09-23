@@ -1,5 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <memory>
+#include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/dropout.hpp>
 #include <popart/opmanager.hpp>
@@ -14,7 +15,7 @@ DropoutOp::DropoutOp(const OperatorIdentifier &opid_,
                      bool outputMask_,
                      const Op::Settings &settings_)
     : Op(opid_, settings_), ratio(ratio_), seedModifier(seedModifier_),
-      output_mask(outputMask_) {}
+      partnerId(-1), refTensorId(), output_mask(outputMask_) {}
 
 uint32_t DropoutOp::getSeedModifier() const { return seedModifier; }
 
@@ -52,6 +53,7 @@ void DropoutOp::setup() {
 std::vector<std::unique_ptr<Op>> DropoutOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
   upops.emplace_back(std::make_unique<DropoutGradOp>(*this));
+  partnerId = upops.back()->id;
   return upops;
 }
 
@@ -82,12 +84,50 @@ DropoutOp::shard(const std::map<TensorId, std::vector<TensorId>> &inputs) {
   return outputs;
 }
 
+// Get the reference TensorId used for poplibs call for mask generation.
+// Note that the reference Tensor cannot just be the Tensor to be masked, as the
+// mask generated depends on the layout of the input and not just the random
+// seed. It is required that forwards, recompute and backwards masks are all the
+// same, so the same reference tensor must be used in for these cases
+const TensorId &DropoutOp::getReferenceTensorId() {
+  auto name = str();
+
+  if (!refTensorId.empty()) {
+    logging::debug("Op {}: using cached tensor [{}] to use as mask reference.",
+                   name,
+                   refTensorId);
+    return refTensorId;
+  }
+
+  refTensorId = inId(getInIndex());
+  logging::debug(
+      "Op {}: stored tensor [{}] to use as mask reference.", name, refTensorId);
+
+  // Update partner to use the same referenceTensorId
+  const auto &ops  = getGraph().getOps();
+  const auto found = ops.find(partnerId);
+  if (found == ops.end()) {
+    logging::debug(
+        "Op {}: Could not find partner id={}, was it pruned?", name, partnerId);
+  } else {
+    DropoutOp *partnerPtr   = static_cast<DropoutOp *>(found->second.get());
+    partnerPtr->refTensorId = refTensorId;
+    logging::debug("Op {}: updated to use tensor [{}] as mask reference",
+                   partnerPtr->str(),
+                   refTensorId);
+  }
+
+  return refTensorId;
+}
+
 DropoutGradOp::DropoutGradOp(const DropoutOp &fwdOp)
     : DropoutOp(fwdOp.opid,
                 fwdOp.getRatio(),
                 fwdOp.getSeedModifier(),
                 fwdOp.getOutputMask(),
-                fwdOp.getSettings()) {}
+                fwdOp.getSettings()) {
+  partnerId = fwdOp.id;
+}
 
 std::unique_ptr<Op> DropoutGradOp::clone() const {
   return std::make_unique<DropoutGradOp>(*this);
