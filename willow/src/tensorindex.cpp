@@ -32,7 +32,7 @@ std::vector<TensorId> TensorIndexMap::getSerialised() const {
       maxIndex = ind_tensor.first;
     }
   }
-  std::vector<TensorId> serialised(maxIndex, "");
+  std::vector<TensorId> serialised(maxIndex + 1, "");
   for (auto &ind_tensor : tensor_map) {
     serialised[ind_tensor.first] = ind_tensor.second->id;
   }
