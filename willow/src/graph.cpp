@@ -449,6 +449,13 @@ std::vector<Op *> Graph::getOpSchedule(const OpsBeforeKey &gCons) const {
                                 getIr().getSessionOptions().kahnTieBreaker);
 }
 
+void Graph::freezeSchedule(const OpsBeforeKey &gCons) {
+  auto schedule = getOpSchedule(gCons);
+  for (size_t i = 1; i < schedule.size(); ++i) {
+    topoCons->insert(schedule.at(i - 1), schedule.at(i), false);
+  }
+}
+
 // Are the Ops with all the dependencies a DAG?
 bool Graph::isSchedulable(const OpsBeforeKey &gCons,
                           bool respectExecutionPhases) const {
