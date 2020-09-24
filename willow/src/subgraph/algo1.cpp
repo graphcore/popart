@@ -479,10 +479,23 @@ void Algo1Base::process(const Match &match) {
     return;
   }
 
-  if (match.getValue() < 0.0) {
+  if (match.getDiscountedValue() < 0.0) {
     // match has negative value
-    popart::logging::trace("[RINSE Algo1] Negative value: {}",
-                           match.getValue());
+    popart::logging::trace(
+        "[RINSE Algo1] Negative discounted value: {} (value: {}, length: {})",
+        match.getDiscountedValue(),
+        match.getValue(),
+        match.length);
+    // Child matches can have a higher subgraph value than the parent match
+    auto left_starts  = match.starts;
+    auto right_starts = match.starts;
+    for (size_t i = 0; i < right_starts.size(); ++i) {
+      ++right_starts[i];
+    }
+    Match left_child(left_starts, match.length - 1);
+    Match right_child(right_starts, match.length - 1);
+    emplace(left_child);
+    emplace(right_child);
     return;
   }
 
@@ -557,8 +570,8 @@ getSequenceBreaks(const std::vector<std::pair<size_t, size_t>> &sequences_) {
 
   for (auto &seq : sequences_) {
     if (seq.second - seq.first > 1) {
-      breaks.at(seq.first) += 1;
-      breaks.at(seq.second) += 1;
+      ++breaks.at(seq.first);
+      ++breaks.at(seq.second);
     }
   }
 
