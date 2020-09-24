@@ -140,6 +140,7 @@ private:
     // Initial value of the match
     double val =
         cumVals[match.starts[0] + match.length] - cumVals[match.starts[0]];
+    match.setValue(val);
 
     // Decrease match value if the match breaks sequences
     for (Start start : match.starts) {
@@ -168,9 +169,25 @@ private:
           // Match subsumes whole sequence, boost value to correct for
           // sequence breaks that have been subtracted unnecessarily
           // Sequence: ..XSXX... (where S at position i)
-          // Match:    .XXXXX...
+          // Match:    .XXXXXX..
+          float factor = 0.f;
+          if (start < sequences.at(i).first) {
+            // Not a perfect match before sequence
+            // Sequence: ..XSXX... (where S at position i)
+            // Match:    .XXXXX...
+            //            ^
+            ++factor;
+          }
+          if (start + match.length > sequences.at(i).second) {
+            // Not a perfect match after sequence
+            // Sequence: ..XSXX... (where S at position i)
+            // Match:    ..XXXXX..
+            //                 ^
+            ++factor;
+          }
           if (sequences.at(i).second - sequences.at(i).first > 1) {
-            val += sequenceBreakCost / static_cast<float>(match.starts.size());
+            val += factor * sequenceBreakCost /
+                   static_cast<float>(match.starts.size());
           }
         }
         if (start >= sequences.at(i).first &&
@@ -186,7 +203,7 @@ private:
         }
       }
     }
-    match.setValue(val);
+    match.setDiscountedValue(val);
   }
 
   // This function should use the cumulative in the same way as setVal

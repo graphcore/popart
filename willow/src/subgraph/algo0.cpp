@@ -86,7 +86,7 @@ std::vector<Match> getFinalMatches(const std::vector<Match> &matches,
           }
         }
 
-        if (candidate_match.getValue() < threshold) {
+        if (candidate_match.getDiscountedValue() < threshold) {
           return false;
         }
 

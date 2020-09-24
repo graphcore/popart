@@ -79,7 +79,7 @@ std::vector<Match> pruneMatches(const std::vector<Match> &inMatches,
 
     Match newMatch(newStarts, minEnd - minStart);
     setValue(newMatch, schedule);
-    if (newMatch.getValue() > threshold) {
+    if (newMatch.getDiscountedValue() > threshold) {
       pruned.insert(newMatch);
     }
 

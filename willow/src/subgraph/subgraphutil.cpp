@@ -128,11 +128,11 @@ std::vector<Match> applyIncrementalThreshold(const std::vector<Match> &dfm,
     double vChildren = 0.0f;
     for (int j = start0; j < start0 + len; ++j) {
       if (blanket[j]) {
-        vChildren += blanket[j]->getValue();
+        vChildren += blanket[j]->getDiscountedValue();
       }
     }
 
-    if (dfm[i].getValue() - vChildren > threshold) {
+    if (dfm[i].getDiscountedValue() - vChildren > threshold) {
       final_matches.push_back(dfm[i]);
       for (Start start : dfm[i].starts) {
         for (int j = start; j < start + len; ++j) {

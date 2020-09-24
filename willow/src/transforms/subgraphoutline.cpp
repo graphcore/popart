@@ -65,10 +65,22 @@ std::vector<int64_t> getBoundariesCrossed(const SessionOptions &opts,
   RecomputeType last_recompute = RecomputeType::Undefined;
 
   auto aof_schedule = opts.accumulateOuterFragmentSettings.schedule;
-  auto check_vgid_in_aof =
+
+  bool check_vgid_in_aof =
       (aof_schedule !=
        AccumulateOuterFragmentSchedule::OverlapCycleOptimized) &&
       (aof_schedule != AccumulateOuterFragmentSchedule::OverlapMemoryOptimized);
+
+  bool overlap_phase = opts.executionPhaseSettings.phases > 1 &&
+                       opts.executionPhaseSettings.schedule ==
+                           ExecutionPhaseSchedule::BatchClusteredIO;
+
+  bool overlap_batch_serial =
+      opts.batchSerializationSettings.factor > 1 &&
+      (opts.batchSerializationSettings.batchSchedule ==
+           BatchSerializationBatchSchedule::OverlapOnCompute ||
+       opts.batchSerializationSettings.batchSchedule ==
+           BatchSerializationBatchSchedule::OverlapOnIo);
 
   for (int64_t i = start; i < end; ++i) {
     Op *op           = schedule[i];
@@ -78,13 +90,25 @@ std::vector<int64_t> getBoundariesCrossed(const SessionOptions &opts,
     last_batchserial = batchserial;
     last_recompute   = recompute;
 
-    if (!(opts.executionPhaseSettings.phases > 0 &&
-          opts.executionPhaseSettings.schedule ==
-              ExecutionPhaseSchedule::BatchClusteredIO)) {
+    // Enable barriers between different sections of the schedules:
+    // - Improves subgraph structures by dividing the schedule into
+    //   logical units
+    // - Speeds up the outlining match algorithm
+    bool check_vgid        = true;
+    bool check_phase       = true;
+    bool check_batchserial = true;
+
+    if (overlap_phase) {
       // Disable vgid and phase barriers when using the BatchClusteredIO
       // schedule, so that subgraphs can span multiple phases and virtual graphs
-      vgid  = op->getOptionalVGraphId();
-      phase = op->getOptionalExecutionPhase();
+      check_vgid  = false;
+      check_phase = false;
+    }
+
+    if (overlap_batch_serial) {
+      // Don't insert barriers for outlining if a BSP overlap schedule is used,
+      // since operations in different BSPs will be mixed in the schedule
+      check_batchserial = false;
     }
 
     exec_cont   = op->settings.executionContext;
@@ -93,13 +117,14 @@ std::vector<int64_t> getBoundariesCrossed(const SessionOptions &opts,
                     ? RecomputeType::Recompute
                     : RecomputeType::Checkpoint;
 
-    bool check_vgid = check_vgid_in_aof ||
-                      exec_cont != ExecutionContext::AccumulateOuterFragment;
+    check_vgid &= check_vgid_in_aof ||
+                  exec_cont != ExecutionContext::AccumulateOuterFragment;
 
     if (i > start &&
-        ((check_vgid && vgid != last_vgid) || (phase != last_phase) ||
-         exec_cont != last_exec_cont || batchserial != last_batchserial ||
-         recompute != last_recompute)) {
+        ((exec_cont != last_exec_cont) || (recompute != last_recompute) ||
+         (check_vgid && vgid != last_vgid) ||
+         (check_phase && phase != last_phase) ||
+         (check_batchserial && batchserial != last_batchserial))) {
       crossing.push_back(i - start);
     }
   }
@@ -420,20 +445,34 @@ void updateTopoCons(const std::vector<OpId> &ops,
   // dont include any of the ops being replaced
   auto include_op = [&](OpId opid) { return find(ops, opid) == ops.end(); };
 
-  auto OpCompare = [](const Op *a, const Op *b) { return a->id < b->id; };
-  std::set<Op *, decltype(OpCompare)> befores(OpCompare);
-  std::set<Op *, decltype(OpCompare)> afters(OpCompare);
+  auto OpCompare = [](const std::pair<Op *, bool> &a,
+                      const std::pair<Op *, bool> &b) {
+    return std::pair<OpId, bool>(a.first->id, a.second) <
+           std::pair<OpId, bool>(b.first->id, b.second);
+  };
+  std::set<std::pair<Op *, bool>, decltype(OpCompare)> befores(OpCompare);
+  std::set<std::pair<Op *, bool>, decltype(OpCompare)> afters(OpCompare);
 
   // Get all befores and afters that are not in ops
   for (auto &opid : ops) {
     for (auto before : graph.topoCons->getBefores(graph.getOp(opid))) {
       if (include_op(before->id)) {
-        befores.insert(before);
+        befores.insert({before, false});
       }
     }
     for (auto after : graph.topoCons->getAfters(graph.getOp(opid))) {
       if (include_op(after->id)) {
-        afters.insert(after);
+        afters.insert({after, false});
+      }
+    }
+    for (auto before : graph.topoCons->getTiedBefores(graph.getOp(opid))) {
+      if (include_op(before->id)) {
+        befores.insert({before, true});
+      }
+    }
+    for (auto after : graph.topoCons->getTiedAfters(graph.getOp(opid))) {
+      if (include_op(after->id)) {
+        afters.insert({after, true});
       }
     }
   }
@@ -445,10 +484,12 @@ void updateTopoCons(const std::vector<OpId> &ops,
 
   // Add the topoCons for the replacement Op
   for (auto before : befores) {
-    graph.topoCons->insert(before, graph.getOp(replacement_op));
+    graph.topoCons->insert(
+        before.first, graph.getOp(replacement_op), before.second);
   }
   for (auto after : afters) {
-    graph.topoCons->insert(graph.getOp(replacement_op), after);
+    graph.topoCons->insert(
+        graph.getOp(replacement_op), after.first, after.second);
   }
 }
 
@@ -862,17 +903,29 @@ Graph &createSubgraph(const Match &match, Graph &graph) {
   // Map out constraints by schedule match positions for all instances.
   // If different constraints per instance exist, they either clash or can
   // coexist. We assume instance.ops preserves schedule order.
-  std::set<std::pair<int, int>> constraints;
+  std::set<std::tuple<int, int, bool>> constraints;
   for (auto &instanceForConstraints : match.instances) {
     for (int i = 0; i < instanceForConstraints.ops.size(); i++) {
-      auto opid   = instanceForConstraints.ops.at(i);
-      auto op     = graph.getOp(opid);
-      auto afters = graph.topoCons->getAfters(op);
-      for (Op *after_op : afters) {
-        auto j = instanceForConstraints.getIndex(after_op);
-        if (j > 0) {
-          // i before j
-          constraints.insert({i, j});
+      auto opid = instanceForConstraints.ops.at(i);
+      auto op   = graph.getOp(opid);
+      {
+        auto afters = graph.topoCons->getAfters(op);
+        for (Op *after_op : afters) {
+          auto j = instanceForConstraints.getIndex(after_op);
+          if (j > 0) {
+            // i before j
+            constraints.insert({i, j, false});
+          }
+        }
+      }
+      {
+        auto afters = graph.topoCons->getTiedAfters(op);
+        for (Op *after_op : afters) {
+          auto j = instanceForConstraints.getIndex(after_op);
+          if (j > 0) {
+            // i before j
+            constraints.insert({i, j, true});
+          }
         }
       }
     }
@@ -880,8 +933,9 @@ Graph &createSubgraph(const Match &match, Graph &graph) {
 
   // Preserve topological constraints between ops being added to the subgraph
   for (auto &constraint : constraints) {
-    subgraph.topoCons->insert(clones[constraint.first],
-                              clones[constraint.second]);
+    subgraph.topoCons->insert(clones[std::get<0>(constraint)],
+                              clones[std::get<1>(constraint)],
+                              std::get<2>(constraint));
   }
 
   // duplicate all the output tensors
@@ -1015,13 +1069,22 @@ getRinseMatches(const std::vector<Op *> &ops,
   }
   int64_t num_matches_1 = fw_matches.size();
 
-  // Remove the offsets caused by the boundary OPs from the matches
-  // outline::removeBoundariesOps(fw_matches, opsWithBoundaries);
-
   logging::transform::trace("[SubgraphOutline] Matches before pruning: {}, "
                             "matches after IOSize: {} ",
                             num_matches_0,
                             num_matches_1);
+
+  // Remove matches only wrapping another CallOp
+  std::vector<fwtools::subgraph::Match> filtered_fw_matches;
+  std::copy_if(fw_matches.begin(),
+               fw_matches.end(),
+               std::back_inserter(filtered_fw_matches),
+               [&ops](const fwtools::subgraph::Match &match) {
+                 return !(
+                     match.length == 1 &&
+                     ops.at(match.starts.front())->isConvertibleTo<CallOp>());
+               });
+  fw_matches = filtered_fw_matches;
 
   // Sort the matches so the smallest subgraphs are at the back.
   // `matches' is treated like a stack, so this will ensure the smallest

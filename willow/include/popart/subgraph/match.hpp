@@ -61,6 +61,10 @@ public:
 
   double getValue() const { return value; }
 
+  void setDiscountedValue(double v) { discountedValue = v; }
+
+  double getDiscountedValue() const { return discountedValue; }
+
   // the indices in a schedule at which the sequences start at
   std::vector<Start> starts;
 
@@ -68,7 +72,18 @@ public:
   int length;
 
 private:
+  // Value: Strictly positive value of this match, representing the code size
+  // reduction benefit of outlining a sequence of operators
+  // For two matches:
+  // A: xxxxx
+  // B:  xxx
+  // where one is subsumed by the other, it must hold that value(A) >= value(B)
   double value = -1;
+  // Discounted value: Value of this match after accounting for other factors
+  // than code size reduction, such as software parallelism.
+  // This value can be negative, and a subsumed child match (B) can have a
+  // higher value than it's parent match (A).
+  double discountedValue = -1;
 };
 
 // true iff  v1 is a subset of v0

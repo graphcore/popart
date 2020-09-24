@@ -53,6 +53,7 @@ void setValue(Match &match, const std::vector<T *> &schedule) {
     value += schedule.at(match.starts[0] + i)->getSubgraphValue();
   }
   match.setValue(value);
+  match.setDiscountedValue(value);
 }
 
 template <class T>
