@@ -1345,6 +1345,37 @@ bool Op::modifiesIndex(InIndex in) const {
   return false;
 }
 
+bool Op::overwritesTensor(Tensor *t) const {
+  auto consumers = t->consumers.getOps();
+  if (std::find(consumers.begin(), consumers.end(), this) == consumers.end()) {
+    return false;
+  }
+
+  bool overwrite = false;
+
+  for (auto index : input->indices(t)) {
+    auto regions = modifies(index);
+
+    if (regions.size() > 0 &&
+        regions.front() ==
+            view::Region::getFull(t->info.shape(), view::AccessType::Write)) {
+      overwrite = true;
+    }
+
+    if ((regions.size() == 0) ||
+        (std::any_of(regions.begin(), regions.end(), [](const view::Region &r) {
+          return r.getAccessType() == view::AccessType::Read ||
+                 r.getAccessType() == view::AccessType::ReadWrite ||
+                 r.isEmpty();
+        }))) {
+      // Consumer without modification, or modifications after reading,
+      // we assume the tensor is read and therefore not purely overwritten
+      overwrite = false;
+    }
+  }
+  return overwrite;
+}
+
 bool Op::inputsUnmodifiable() const {
   return
 

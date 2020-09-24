@@ -75,6 +75,22 @@ void AliasZeroCopy::apply() {
   proposedAliases = irAliases;
   activeAliases   = irAliases;
 
+  // Disable superfluous CopyModified, back to front
+  for (int64_t i = analyzer->getOpScheduleSize() - 1; i >= 0; --i) {
+    auto &node = analyzer->getOpScheduleAt(i);
+    if (node.getStatus() == OpStatus::CopyModified) {
+      auto tensorIds = node.getTensorIds();
+      Tensor *t      = ir->getTensor(tensorIds.first);
+      auto liveness  = getLivenessIntervals(t);
+      Intervals probe;
+      probe.insert(i + 1, i + 2);
+      // If the modified tensor is not required to be live after CopyModified,
+      // then the CopyModified is not required either
+      requiredCopyModified[{node.getOp(), node.getIndex()}] |=
+          doOverlap(liveness, probe);
+    }
+  }
+
   std::map<const Graph *, int64_t> beforeGraphMap;
 
   std::map<
@@ -445,9 +461,13 @@ Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
           auto regions = dynamic_cast<CallOp *>(opScheduleEntry->getOp())
                              ->modifies(inIndex);
 
-          if (std::any_of(regions.begin(), regions.end(), [](view::Region &r) {
-                return !r.isEmpty();
-              })) {
+          bool considerCopyModified =
+              std::any_of(regions.begin(),
+                          regions.end(),
+                          [](view::Region &r) { return !r.isEmpty(); }) &&
+              copyModifiedRequired(callSiteOp, inIndex);
+
+          if (considerCopyModified) {
             // Walk backwards to find OpStatus::CopyModified for that input
             do {
               --copyModifiedIndex;
@@ -483,8 +503,7 @@ Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
     Tensor *consumedTensor =
         consumer.second.first->inTensor(consumer.second.second.front());
 
-    auto indices = consumer.second.second;
-    Op *op       = consumer.second.first;
+    Op *op = consumer.second.first;
 
     // Handle subgraphing op input & modified liveness
     auto callEnterIndex  = consumer.first;
@@ -500,7 +519,9 @@ Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
           insertInterval(scheduleIndex - 1, scheduleIndex);
         }
         if (opScheduleEntry->getStatus() == OpStatus::CopyModified &&
-            opScheduleEntry->getTensorIds().first == consumedTensor->id) {
+            opScheduleEntry->getTensorIds().first == consumedTensor->id &&
+            copyModifiedRequired(opScheduleEntry->getOp(),
+                                 opScheduleEntry->getIndex())) {
           // Ensure tensor is live after CopyModified
           insertInterval(scheduleIndex, scheduleIndex + 1);
         }
@@ -508,33 +529,11 @@ Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
       }
     }
 
-    // Overwrite: The consumer will overwrite the tensor without reading it
-    bool overwrite = false;
-
-    for (auto index : indices) {
-      auto modifies = op->modifies(index);
-
-      if (modifies.size() > 0 && !modifies.front().isEmpty()) {
-        overwrite = true;
-      }
-
-      if ((modifies.size() == 0) ||
-          (std::any_of(
-              modifies.begin(), modifies.end(), [](const view::Region &r) {
-                return r.getAccessType() == view::AccessType::Read ||
-                       r.getAccessType() == view::AccessType::ReadWrite ||
-                       r.isEmpty();
-              }))) {
-        // Consumer without modification, or modifications after reading,
-        // we assume the tensor is read and must therefore be live
-        overwrite = false;
-      }
-    }
-
     int64_t front = findFront(consumedTensor, consumer.first);
     int64_t start = std::max(last_overwrite, findStart(consumedTensor, front));
 
-    if (overwrite) {
+    if (op->overwritesTensor(consumedTensor)) {
+      // Overwrite: The consumer will overwrite the tensor without reading it
       last_overwrite = front;
     } else {
       insertInterval(start, front);
@@ -545,9 +544,9 @@ Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
 }
 
 std::set<Tensor *, PTensorCmp>
-AliasZeroCopy::getAliasedTensors(Aliases &aliases,
+AliasZeroCopy::getAliasedTensors(const Aliases &aliases,
                                  std::set<Tensor *, PTensorCmp> tensors,
-                                 bool fullyAliased) {
+                                 bool fullyAliased) const {
   std::set<Tensor *, PTensorCmp> aliased;
   for (Tensor *t0 : tensors) {
     aliased.insert(t0);
@@ -569,12 +568,13 @@ AliasZeroCopy::getAliasedTensors(Aliases &aliases,
         accepted &= view::mergeRegions(regions0).front() == fullRegion1;
         accepted &= view::mergeRegions(regions1).front() == fullRegion0;
       } else {
-        accepted = std::any_of(regions0.begin(),
-                               regions0.end(),
-                               [](view::Region &r) { return !r.isEmpty(); }) ||
-                   std::any_of(regions1.begin(),
-                               regions1.end(),
-                               [](view::Region &r) { return !r.isEmpty(); });
+        accepted =
+            std::any_of(regions0.begin(),
+                        regions0.end(),
+                        [](const view::Region &r) { return !r.isEmpty(); }) ||
+            std::any_of(regions1.begin(),
+                        regions1.end(),
+                        [](const view::Region &r) { return !r.isEmpty(); });
       }
 
       if (accepted) {
@@ -587,13 +587,13 @@ AliasZeroCopy::getAliasedTensors(Aliases &aliases,
 
 std::set<Tensor *, PTensorCmp>
 AliasZeroCopy::getProposedAliasedTensors(std::set<Tensor *, PTensorCmp> tensors,
-                                         bool fullyAliased) {
+                                         bool fullyAliased) const {
   return getAliasedTensors(proposedAliases, tensors, fullyAliased);
 }
 
 std::set<Tensor *, PTensorCmp>
 AliasZeroCopy::getActiveAliasedTensors(std::set<Tensor *, PTensorCmp> tensors,
-                                       bool fullyAliased) {
+                                       bool fullyAliased) const {
   return getAliasedTensors(activeAliases, tensors, fullyAliased);
 }
 
@@ -1010,6 +1010,11 @@ void AliasZeroCopy::printLivenessIntervals(
 bool AliasZeroCopy::doOverlap(const Intervals &aIntervals,
                               const Intervals &bIntervals) {
   return !((aIntervals & bIntervals).empty());
+}
+
+bool AliasZeroCopy::copyModifiedRequired(Op *op, InIndex inIndex) const {
+  auto it = requiredCopyModified.find({op, inIndex});
+  return it == requiredCopyModified.end() || it->second;
 }
 
 } // namespace liveness

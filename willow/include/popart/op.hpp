@@ -307,6 +307,13 @@ public:
    * \returns     false otherwise.
    */
   bool modifiesIndex(InIndex in) const;
+  /** Check if an op overwrites a tensor at a specific index in.
+   *
+   * \param t      Tensor to check
+   * \returns     true if it overwrites the tensor.
+   * \returns     false otherwise.
+   */
+  bool overwritesTensor(Tensor *t) const;
 
   // A grad-op outputs an edge-gradient tensor dT at gradOpOutIndex.
   // dT is the edge-gradient of a tensor T which was the input
