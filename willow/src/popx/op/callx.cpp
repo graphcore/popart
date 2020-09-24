@@ -35,13 +35,26 @@ void CallOpx::copyModified(poplar::program::Sequence &prog) const {
       auto graph_input       = get(graph_input_id);
       auto aliases = getDevicex()->getAliasZeroCopy()->getActiveAliasedTensors(
           {callop.input->tensor(i)}, true);
-      if (aliases.find(callop.getIr().getTensor(graph_input_id)) ==
-          aliases.end()) {
+
+      bool copy_modified_required = true;
+
+      copy_modified_required &=
+          aliases.find(callop.getIr().getTensor(graph_input_id)) ==
+          aliases.end();
+
+      copy_modified_required &=
+          getDevicex()->getAliasZeroCopy()->copyModifiedRequired(&callop, i);
+
+      if (copy_modified_required) {
         logging::opx::trace("[CallOpx] Copying modified input {}->{}",
                             graph_input_id,
                             callop.inId(i));
         poplar::program::Copy copy_prog(graph_input, call_input);
         prog.add(copy_prog);
+      } else {
+        logging::opx::trace("[CallOpx] Skipping copy modified input {}->{}",
+                            graph_input_id,
+                            callop.inId(i));
       }
     }
   }

@@ -57,7 +57,7 @@
 namespace popart {
 namespace liveness {
 
-// Closed intervals of tensor liveness
+// Right-open intervals of tensor liveness
 class IntervalsImpl;
 class Intervals {
 public:
@@ -93,19 +93,21 @@ public:
 
   std::set<Tensor *, PTensorCmp>
   getProposedAliasedTensors(std::set<Tensor *, PTensorCmp> tensors,
-                            bool fullyAliased);
+                            bool fullyAliased) const;
 
   std::set<Tensor *, PTensorCmp>
   getActiveAliasedTensors(std::set<Tensor *, PTensorCmp> tensors,
-                          bool fullyAliased);
+                          bool fullyAliased) const;
 
   void activateAlias(Tensor *ta, Tensor *tb);
 
+  bool copyModifiedRequired(Op *op, InIndex inIndex) const;
+
 private:
   std::set<Tensor *, PTensorCmp>
-  getAliasedTensors(Aliases &aliases,
+  getAliasedTensors(const Aliases &aliases,
                     std::set<Tensor *, PTensorCmp> tensors,
-                    bool fullyAliased);
+                    bool fullyAliased) const;
 
   void insertAlias(Tensor *ta, Tensor *tb);
 
@@ -168,6 +170,9 @@ private:
   Aliases irAliases;
   Aliases proposedAliases;
   Aliases activeAliases;
+
+  // Required CopyModified
+  std::map<std::pair<Op *, InIndex>, bool> requiredCopyModified;
 
   std::map<Tensor *, std::set<Tensor *, PTensorCmp>, PTensorCmp> postIRAliases;
 
