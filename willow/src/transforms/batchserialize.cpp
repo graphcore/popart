@@ -1025,6 +1025,7 @@ bool BatchSerialize::apply(Graph &graph) const {
            BatchSerializationBatchSchedule::OverlapOnCompute);
 
       if (isOverlapSchedule) {
+        // Swap positions of operations inside the bins
         tryToMakeAmenableToParallelization(graph, positionToOp);
       }
 
@@ -1045,15 +1046,23 @@ bool BatchSerialize::apply(Graph &graph) const {
         }
         if (prev) {
           for (Op *op : opsBehindSection[positions.first.first]) {
+            // Stop Ops behind the batch serialized phases to slide up
+            // in the schedule
             graph.topoCons->insert(prev, op);
           }
         }
       }
 
       if (isOverlapSchedule) {
+        // Insert constraints to interleave loading/computing
+        // between batch serialized phases
         addParallelizationConstraints(graph, positionToOp);
       }
     }
+
+    // Freeze the schedule completely, so that the batch serial order cannot be
+    // undone by outlining
+    graph.freezeSchedule({});
   }
 
   logging::transform::debug("[BatchSerialize] Done.");

@@ -90,6 +90,9 @@ public:
   // set elsewhere.
   std::vector<Op *> getOpSchedule(const OpsBeforeKey &) const;
 
+  // Freeze the schedule into a total order
+  void freezeSchedule(const OpsBeforeKey &gCons);
+
   // Do all the Ops with all their dependencies form a DAG?
   bool isSchedulable(const OpsBeforeKey &,
                      bool respectExecutionPhases = false) const;
