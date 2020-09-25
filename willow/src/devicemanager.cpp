@@ -1,6 +1,7 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <chrono>
+#include <random>
 #include <sstream>
 #include <thread>
 
@@ -149,8 +150,10 @@ std::shared_ptr<DeviceInfo> DeviceManager::acquireAvailableDevice(
   auto devices =
       enumerateDevices(pattern, numIpus, DeviceType::Ipu, connectionType);
 
+  std::mt19937 g(/* seed */ 1);
+
   if (selectionCriterion == DeviceSelectionCriterion::Random) {
-    std::random_shuffle(devices.begin(), devices.end());
+    std::shuffle(devices.begin(), devices.end(), g);
   }
 
   for (auto &device : devices) {
