@@ -300,7 +300,7 @@ void withEdges(Graph &graph,
         op->createAndConnectOutTensor(DummyOp::getOutIndex(), tOutId);
         op->setup();
 
-        for (const auto out : edges[opId]) {
+        for (const auto &out : edges[opId]) {
           connectInTensor(out, tOutId);
         }
       };
@@ -344,7 +344,7 @@ void withEdges(Graph &graph,
 
     createAndConnectOutTensorAndConnectToConsumers(i);
 
-    for (const auto j : edges[i]) {
+    for (const auto &j : edges[i]) {
       --outstanding[j];
 
       if (outstanding[j] == 0) {
@@ -361,7 +361,7 @@ void withEdges(Graph &graph,
 
   /* 3. Now we've built the graph, add all the topo cons. */
 
-  for (const auto tc : topoCons) {
+  for (const auto &tc : topoCons) {
     graph.topoCons->insert(graph.getOp(tc.first), graph.getOp(tc.second));
   }
 }
