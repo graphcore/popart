@@ -704,7 +704,7 @@ bool BatchSerialize::apply(Graph &graph) const {
       std::vector<std::tuple<std::vector<Tensor *>, TraceDirection>>
           parallelTraceFront;
 
-      std::map<std::pair<Op *, Op *>, int64_t> cachedIsoScores;
+      std::map<std::tuple<Op *, Op *, int>, int64_t> cachedIsoScores;
 
       std::function<int64_t(
           std::pair<Op *, Op *>, std::set<std::pair<Op *, Op *>> &, int, bool)>
@@ -716,7 +716,7 @@ bool BatchSerialize::apply(Graph &graph) const {
                               int maxDepth,
                               bool cached) {
             if (cached) {
-              auto it = cachedIsoScores.find(ops);
+              auto it = cachedIsoScores.find({ops.first, ops.second, maxDepth});
               if (it != cachedIsoScores.end()) {
                 return it->second;
               }
@@ -775,9 +775,7 @@ bool BatchSerialize::apply(Graph &graph) const {
             }
 
             if (cached) {
-              for (auto &vops : visitedOps) {
-                cachedIsoScores[vops] = score;
-              }
+              cachedIsoScores[{ops.first, ops.second, maxDepth}] = score;
             }
             return score;
           };
@@ -917,8 +915,25 @@ bool BatchSerialize::apply(Graph &graph) const {
                   [&localIsoScore, &op0](Op *lhs, Op *rhs) {
                     std::set<std::pair<Op *, Op *>> visitedOpsLhs;
                     std::set<std::pair<Op *, Op *>> visitedOpsRhs;
-                    return localIsoScore({op0, lhs}, visitedOpsLhs, 5, true) >
-                           localIsoScore({op0, rhs}, visitedOpsRhs, 5, true);
+                    if (lhs->id == rhs->id) {
+                      return false;
+                    }
+                    int depth            = 0;
+                    int64_t lhsScore     = 0;
+                    int64_t rhsScore     = 0;
+                    int64_t lastLhsScore = 0;
+                    int64_t lastRhsScore = 0;
+                    do {
+                      lastLhsScore = lhsScore;
+                      lastRhsScore = rhsScore;
+                      lhsScore =
+                          localIsoScore({op0, lhs}, visitedOpsLhs, depth, true);
+                      rhsScore =
+                          localIsoScore({op0, rhs}, visitedOpsRhs, depth, true);
+                      ++depth;
+                    } while (lhsScore == rhsScore && lastLhsScore != lhsScore &&
+                             lastRhsScore != rhsScore);
+                    return lhsScore > rhsScore;
                   });
               // Iterate through potentially isomorphic ops
               for (Op *op1 : ops) {
