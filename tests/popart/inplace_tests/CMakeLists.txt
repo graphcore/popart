@@ -2,6 +2,7 @@
 # to run only these tests with ctest, consider using something like,
 # `ctest -R ip_test -j5 -VV'.
 
+add_popart_cpp_unit_test(accumulator_0_ip_test accumulator_0_ip_test.cpp VARIANTS "Hw")
 add_popart_cpp_unit_test(add_0_ip_test add_0_ip_test.cpp)
 add_popart_cpp_unit_test(addbias_0_ip_test addbias_0_ip_test.cpp)
 add_popart_cpp_unit_test(basic_0_ip_test basic_0_ip_test.cpp)

@@ -38,4 +38,13 @@ AccumulatorUpdateOp::AccumulatorUpdateOp(const TensorId &varToUpdate,
                                 opSettings),
       factor(factor_) {}
 
+view::Regions AccumulatorUpdateOp::modifies(InIndex index) const {
+  if (factor.isConst()) {
+    if (factor.val() == 0.0f) {
+      return {view::Region::getFull(inShape(index), view::AccessType::Write)};
+    }
+  }
+  return {view::Region::getFull(inShape(index), view::AccessType::ReadWrite)};
+}
+
 } // namespace popart

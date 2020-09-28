@@ -33,7 +33,7 @@ void AccumulatorUpdateOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   if (factor.isConst()) {
-    auto val = accumulateOp.getFactor().val();
+    auto val = factor.val();
     if (val == 0.0f) {
       popops::zero(graph(), accum, prog, debugPrefix("accumulatorUpdate"));
     } else {

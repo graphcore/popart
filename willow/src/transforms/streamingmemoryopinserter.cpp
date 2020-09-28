@@ -365,6 +365,17 @@ void StreamingMemoryOpInserter::apply() {
   applyReplicatedOptimizerSharding(rtsTensors);
 
   if (isPhasedExecution()) {
+    for (const auto &op : graph.getOps()) {
+      if (op.second.get()->hasExecutionPhase() &&
+          op.second.get()->settings.executionContext !=
+              ExecutionContext::Normal) {
+        throw error("[StreamingMemory] Op {} inconsistent execution phase {} "
+                    "and execution context {}.",
+                    op.second.get()->debugName(),
+                    op.second.get()->getExecutionPhase(),
+                    op.second.get()->settings.executionContext);
+      }
+    }
     graph.getIr().setExecutionPhasesReady();
   }
 }
@@ -456,65 +467,87 @@ void StreamingMemoryOpInserter::applyTensor(
                         stripAllReservedPrefixes(tensor->id));
     }
 
+    std::set<Op *> consumers;
     for (auto consumerOpConfig : config.consumers) {
-      if (remoteLoad) {
-        // Loading has to take place before the consumption
-        graph.topoCons->insert(remoteLoad, consumerOpConfig.op);
-      }
-      if (tensor->getTensorTypeInfo()->type() == TensorType::Variable) {
-        if (tensor->id != consumerOpConfig.tensor->id) {
-          // Current tensor (root var) is not the same as the actually
-          // consumed tensor (descendant)
-          if (consumerOpConfig.tensor->hasProducer()) {
-            // If we rewire from descendant to the root tensor,
-            // preserve topological constraint to the producer of the
-            // descendant
-            auto producer = consumerOpConfig.tensor->getProducer();
-            logging::transform::debug(
-                "[StreamingMemory] Inserting topological constraint between "
-                "producer {} and consumer {} before connecting the root "
-                "variable tensor {}",
-                producer->debugName(),
-                consumerOpConfig.op->debugName(),
-                tensor->id);
-            graph.topoCons->insert(producer, consumerOpConfig.op, false);
-            if (remoteStore) {
-              graph.topoCons->insert(producer, remoteStore, false);
-            }
+      consumers.insert(consumerOpConfig.op);
+    }
+
+    for (auto consumerOpConfig : config.consumers) {
+
+      bool requiresProducerTopoCons = false;
+      bool requiresRewiring         = false;
+
+      if (tensor->getTensorTypeInfo()->type() == TensorType::Variable &&
+          tensor->id != consumerOpConfig.tensor->id) {
+        // Current tensor (root var) is not the same as the actually
+        // consumed tensor (descendant)
+        if (consumerOpConfig.tensor->hasProducer()) {
+          if (consumers.find(consumerOpConfig.tensor->getProducer()) ==
+              consumers.end()) {
+            // The producer is in a different context than the consumer,
+            // therefore rewire to the root variable tensor
+            requiresRewiring         = true;
+            requiresProducerTopoCons = true;
           }
         }
-      }
-
-      // Logging graph change
-      if (tensorConfig.producerOp) {
-        logging::transform::debug(
-            "[StreamingMemory] Disconnecting tensor {} between ops {} and {}",
-            consumerOpConfig.tensor->id,
-            tensorConfig.producerOp->debugName(),
-            consumerOpConfig.op->debugName());
       } else {
-        logging::transform::debug("[StreamingMemory] Disconnecting tensor {} "
-                                  "at op {} (modified: {})",
-                                  consumerOpConfig.tensor->id,
-                                  consumerOpConfig.op->debugName(),
-                                  !config.modifiers.empty());
+        requiresRewiring = true;
       }
 
-      // Disconnect original tensor and wire up loaded tensor
-      auto indices = consumerOpConfig.inIndices;
-      for (auto i : indices) {
-        auto *copyOp = dynamic_cast<IpuCopyOp *>(consumerOpConfig.op);
+      if (requiresRewiring) {
+        if (remoteLoad) {
+          // Loading has to take place before the consumption
+          graph.topoCons->insert(remoteLoad, consumerOpConfig.op);
+        }
+        if (requiresProducerTopoCons) {
+          // If we rewire from descendant to the root tensor,
+          // preserve topological constraint to the producer of the
+          // descendant
+          auto producer = consumerOpConfig.tensor->getProducer();
+          logging::transform::debug(
+              "[StreamingMemory] Inserting topological constraint between "
+              "producer {} and consumer {} before connecting the root "
+              "variable tensor {}",
+              producer->debugName(),
+              consumerOpConfig.op->debugName(),
+              tensor->id);
+          graph.topoCons->insert(producer, consumerOpConfig.op, false);
+          if (remoteStore) {
+            graph.topoCons->insert(producer, remoteStore, false);
+          }
+        }
 
-        if (copyOp) {
-          auto sourceIpu = copyOp->getSourceIpus().at(tensor->id);
-          copyOp->disconnectInTensor(i, consumerOpConfig.tensor);
-          copyOp->connectInTensor(i, gatheredTensorId, sourceIpu);
-        } else if (consumerOpConfig.op->isOptimizerOp()) {
-          consumerOpConfig.op->disconnectInTensor(i, consumerOpConfig.tensor);
-          consumerOpConfig.op->connectInTensor(i, loadedTensorId);
+        // Logging graph change
+        if (tensorConfig.producerOp) {
+          logging::transform::debug(
+              "[StreamingMemory] Disconnecting tensor {} between ops {} and {}",
+              consumerOpConfig.tensor->id,
+              tensorConfig.producerOp->debugName(),
+              consumerOpConfig.op->debugName());
         } else {
-          consumerOpConfig.op->disconnectInTensor(i, consumerOpConfig.tensor);
-          consumerOpConfig.op->connectInTensor(i, gatheredTensorId);
+          logging::transform::debug("[StreamingMemory] Disconnecting tensor {} "
+                                    "at op {} (modified: {})",
+                                    consumerOpConfig.tensor->id,
+                                    consumerOpConfig.op->debugName(),
+                                    !config.modifiers.empty());
+        }
+
+        // Disconnect original tensor and wire up loaded tensor
+        auto indices = consumerOpConfig.inIndices;
+        for (auto i : indices) {
+          auto *copyOp = dynamic_cast<IpuCopyOp *>(consumerOpConfig.op);
+
+          if (copyOp) {
+            auto sourceIpu = copyOp->getSourceIpus().at(tensor->id);
+            copyOp->disconnectInTensor(i, consumerOpConfig.tensor);
+            copyOp->connectInTensor(i, gatheredTensorId, sourceIpu);
+          } else if (consumerOpConfig.op->isOptimizerOp()) {
+            consumerOpConfig.op->disconnectInTensor(i, consumerOpConfig.tensor);
+            consumerOpConfig.op->connectInTensor(i, loadedTensorId);
+          } else {
+            consumerOpConfig.op->disconnectInTensor(i, consumerOpConfig.tensor);
+            consumerOpConfig.op->connectInTensor(i, gatheredTensorId);
+          }
         }
       }
     }
@@ -1539,6 +1572,8 @@ ReplicatedAllGatherOp *StreamingMemoryOpInserter::insertReplicatedAllGatherOp(
     allGather->setExecutionPhase(*(context.phase) - 1);
     setLoadingOpPhaseAndPriority(
         allGather, tensorConfig.tensor, tensorConfig, context);
+  } else {
+    allGather->setExecutionPhase({});
   }
 
   allGather->settings.recomputeType = RecomputeType::Checkpoint;
@@ -1675,37 +1710,40 @@ void StreamingMemoryOpInserter::sanitizeOps() const {
   auto schedule = graph.getOpSchedule({});
 
   for (Op *op : schedule) {
-    sanitizePlacementAnnotation(op, op->getExecutionPhase());
-    // Assign correct schedulePriority to all inter-IPU copies
-    if (op->isIpuCopyOp()) {
-      // Special type of IPUCopy between execution phases
-      // schedulePriority before RemoteStore but after RemoteLoad
-      IpuCopyOp *copy = dynamic_cast<IpuCopyOp *>(op);
-      if (!op->copiesOptimizerTensors() &&
-          copy->getMinSourceIpu() % num_stages !=
-              copy->getDestIpu() % num_stages) {
-        // Inter-phase copy
-        setPriority(
-            copy,
-            isPhasedExecution(),
-            false,
-            graph.getIr().getSessionOptions().executionPhaseSettings.schedule);
-      } else {
-        op->settings.schedulePriority = 0.0;
+    if (op->hasExecutionPhase()) {
+      sanitizePlacementAnnotation(op, op->getExecutionPhase());
+      // Assign correct schedulePriority to all inter-IPU copies
+      if (op->isIpuCopyOp()) {
+        // Special type of IPUCopy between execution phases
+        // schedulePriority before RemoteStore but after RemoteLoad
+        IpuCopyOp *copy = dynamic_cast<IpuCopyOp *>(op);
+        if (!op->copiesOptimizerTensors() &&
+            copy->getMinSourceIpu() % num_stages !=
+                copy->getDestIpu() % num_stages) {
+          // Inter-phase copy
+          setPriority(copy,
+                      isPhasedExecution(),
+                      false,
+                      graph.getIr()
+                          .getSessionOptions()
+                          .executionPhaseSettings.schedule);
+        } else {
+          op->settings.schedulePriority = 0.0;
+        }
+        // Always keep IPU copy checkpointed
+        if (op->settings.recomputeType == RecomputeType::Undefined) {
+          op->settings.recomputeType = RecomputeType::Checkpoint;
+          logging::transform::trace("[StreamingMemory] {} set to Checkpoint",
+                                    op->debugName());
+        }
       }
-      // Always keep IPU copy checkpointed
-      if (op->settings.recomputeType == RecomputeType::Undefined) {
-        op->settings.recomputeType = RecomputeType::Checkpoint;
-        logging::transform::trace("[StreamingMemory] {} set to Checkpoint",
-                                  op->debugName());
-      }
-    }
-    // OnChip random seed operator if not set by the user
-    if (op->settings.tensorLocation.storage == TensorStorage::Undefined) {
-      if (op->opid == Onnx::CustomOperators::GetRandomSeed) {
-        op->settings.tensorLocation.storage = TensorStorage::OnChip;
-        logging::transform::trace("[StreamingMemory] {} set to OnChip",
-                                  op->debugName());
+      // OnChip random seed operator if not set by the user
+      if (op->settings.tensorLocation.storage == TensorStorage::Undefined) {
+        if (op->opid == Onnx::CustomOperators::GetRandomSeed) {
+          op->settings.tensorLocation.storage = TensorStorage::OnChip;
+          logging::transform::trace("[StreamingMemory] {} set to OnChip",
+                                    op->debugName());
+        }
       }
     }
   }
@@ -1969,6 +2007,11 @@ void StreamingMemoryOpInserter::sanitizePlacementAnnotation(
         vgid);
     op->setVirtualGraphId(vgid);
   }
+
+  if (op->settings.executionContext != ExecutionContext::Normal) {
+    op->setExecutionPhase({});
+  }
+
   verifyPlacementConsistency(op);
 }
 
@@ -2089,8 +2132,8 @@ StreamingMemoryOpInserter::TensorStreamingContext::TensorStreamingContext(
     ScheduledPreLoss preLoss_)
     : context(context_), phase(phase_), preLoss(preLoss_) {}
 
-bool StreamingMemoryOpInserter::TensorStreamingContext::
-operator<(const TensorStreamingContext &rhs) const {
+bool StreamingMemoryOpInserter::TensorStreamingContext::operator<(
+    const TensorStreamingContext &rhs) const {
   std::vector<int> lhsVec;
   lhsVec.reserve(3);
   std::vector<int> rhsVec;
@@ -2135,13 +2178,13 @@ operator<(const TensorStreamingContext &rhs) const {
   return lhsVec < rhsVec;
 }
 
-bool StreamingMemoryOpInserter::TensorStreamingContext::
-operator==(const TensorStreamingContext &rhs) const {
+bool StreamingMemoryOpInserter::TensorStreamingContext::operator==(
+    const TensorStreamingContext &rhs) const {
   return context == rhs.context && phase == rhs.phase && preLoss == rhs.preLoss;
 }
 
-bool StreamingMemoryOpInserter::TensorStreamingContext::
-operator!=(const TensorStreamingContext &rhs) const {
+bool StreamingMemoryOpInserter::TensorStreamingContext::operator!=(
+    const TensorStreamingContext &rhs) const {
   return context != rhs.context || phase != rhs.phase || preLoss != rhs.preLoss;
 }
 
@@ -2160,8 +2203,8 @@ operator<<(std::ostream &output,
   return output;
 }
 
-bool StreamingMemoryOpInserter::ConsumerOpConfig::
-operator==(const ConsumerOpConfig &rhs) const {
+bool StreamingMemoryOpInserter::ConsumerOpConfig::operator==(
+    const ConsumerOpConfig &rhs) const {
   return tensor == rhs.tensor && op == rhs.op;
 }
 

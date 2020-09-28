@@ -73,9 +73,8 @@ public:
     }
 
     if (isTraining) {
-      auto optimizer = ConstSGD(0.1);
-      session        = TrainingSession::createFromOnnxModel(
-          proto, dataFlow, loss, optimizer, deviceInfo, {}, opts, patterns);
+      session = TrainingSession::createFromOnnxModel(
+          proto, dataFlow, loss, *optimizer, deviceInfo, {}, opts, patterns);
     } else {
       if (loss != "") {
         throw error(
@@ -142,6 +141,7 @@ public:
   }
 
   SessionOptions opts;
+  std::unique_ptr<Optimizer> optimizer = std::make_unique<ConstSGD>(0.1);
   Patterns patterns;
   bool isTraining = false;
   TensorId loss   = "";
