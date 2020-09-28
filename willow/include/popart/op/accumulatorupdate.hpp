@@ -23,6 +23,7 @@ public:
   static InIndex getFactorInIndex() { return 2; }
   const OptimizerValue &getFactor() const { return factor; }
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
+  view::Regions modifies(InIndex) const override;
 };
 
 } // namespace popart

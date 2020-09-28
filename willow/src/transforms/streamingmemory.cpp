@@ -212,7 +212,8 @@ bool StreamingMemory::apply(Graph &graph) const {
       // Need to get the schedule every time,
       // because setting phases can change schedule order
       for (Op *op : schedule) {
-        if (!op->hasExecutionPhase()) {
+        if (op->settings.executionContext == ExecutionContext::Normal &&
+            !op->hasExecutionPhase()) {
           // Check which phase the consumers of the output are in
           op->inheritPlacementAttributes(true);
 

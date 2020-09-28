@@ -235,6 +235,7 @@ bool AdamDecompose::apply(Op *op) const {
       if (combo->withGradAccum) {
         reduceOp->settings.executionContext =
             ExecutionContext::AccumulateOuterFragment;
+        reduceOp->setExecutionPhase({});
         reduceOp->settings.schedulePriority = 0.0;
       }
     } else {
@@ -271,6 +272,7 @@ bool AdamDecompose::apply(Op *op) const {
     if (combo->withGradAccum) {
       gradCastOp->settings.executionContext =
           ExecutionContext::AccumulateOuterFragment;
+      gradCastOp->setExecutionPhase({});
       gradCastOp->settings.schedulePriority = 0.0;
     }
   }
@@ -301,6 +303,7 @@ bool AdamDecompose::apply(Op *op) const {
   if (combo->withGradAccum) {
     gradUnscaleOp->settings.executionContext =
         ExecutionContext::AccumulateOuterFragment;
+    gradUnscaleOp->setExecutionPhase({});
     gradUnscaleOp->settings.schedulePriority = 0.0;
   }
 
@@ -342,6 +345,7 @@ bool AdamDecompose::apply(Op *op) const {
   if (combo->withGradAccum) {
     accl1Op->settings.executionContext =
         ExecutionContext::AccumulateOuterFragment;
+    accl1Op->setExecutionPhase({});
     accl1Op->settings.schedulePriority = 0.0;
   }
   storeTensor(accl1Id);
@@ -384,6 +388,7 @@ bool AdamDecompose::apply(Op *op) const {
   if (combo->withGradAccum) {
     accl2Op->settings.executionContext =
         ExecutionContext::AccumulateOuterFragment;
+    accl2Op->setExecutionPhase({});
     accl2Op->settings.schedulePriority = 0.0;
   }
   storeTensor(accl2Id);
@@ -415,6 +420,7 @@ bool AdamDecompose::apply(Op *op) const {
     if (combo->withGradAccum) {
       accumUpdateOp->settings.executionContext =
           ExecutionContext::AccumulateOuterFragment;
+      accumUpdateOp->setExecutionPhase({});
       accumUpdateOp->settings.schedulePriority = 0.0;
     }
 
@@ -488,6 +494,7 @@ bool AdamDecompose::apply(Op *op) const {
   if (combo->withGradAccum) {
     adamUpdOp->settings.executionContext =
         ExecutionContext::AccumulateOuterFragment;
+    adamUpdOp->setExecutionPhase({});
     adamUpdOp->settings.schedulePriority = 0.0;
   }
 
@@ -526,9 +533,11 @@ bool AdamDecompose::apply(Op *op) const {
     if (combo->withGradAccum) {
       lambR1Op->settings.executionContext =
           ExecutionContext::AccumulateOuterFragment;
+      lambR1Op->setExecutionPhase({});
       lambR1Op->settings.schedulePriority = 0.0;
       lambR2Op->settings.executionContext =
           ExecutionContext::AccumulateOuterFragment;
+      lambR2Op->setExecutionPhase({});
       lambR2Op->settings.schedulePriority = 0.0;
     }
   }
@@ -579,6 +588,7 @@ bool AdamDecompose::apply(Op *op) const {
   if (combo->withGradAccum) {
     adamVarUpdOp->settings.executionContext =
         ExecutionContext::AccumulateOuterFragment;
+    adamVarUpdOp->setExecutionPhase({});
     adamVarUpdOp->settings.schedulePriority = 0.0;
   } else {
     graph.topoCons->transfer(combo, adamVarUpdOp);

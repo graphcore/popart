@@ -21,8 +21,8 @@ public:
   static OutIndex getUpdatedVarOutIndex() { return 0; }
 
   // This Op aliases and modifies the input at index getVarIndex()
-  view::Regions aliases(InIndex in, OutIndex) const final;
-  view::Regions modifies(InIndex) const final;
+  view::Regions aliases(InIndex in, OutIndex) const override;
+  view::Regions modifies(InIndex) const override;
 
   const TensorId &getVarId() const { return varId; }
 

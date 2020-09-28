@@ -437,7 +437,7 @@ def test_replicated_lamb_weight_update(tmpdir):
     run_model(tmpdir,
               'phased.onnx',
               execution_mode="phased",
-              batch_size=2,
+              batch_size=4,
               num_replicas=1,
               num_iterations=5,
               optimizer=popart.Adam(optimizer_dict, popart.AdamMode.Lamb),
@@ -448,7 +448,7 @@ def test_replicated_lamb_weight_update(tmpdir):
     run_model(tmpdir,
               'phased_replicated.onnx',
               execution_mode="phased",
-              batch_size=1,
+              batch_size=2,
               num_replicas=2,
               num_iterations=5,
               optimizer=popart.Adam(optimizer_dict, popart.AdamMode.Lamb),
@@ -459,22 +459,38 @@ def test_replicated_lamb_weight_update(tmpdir):
     run_model(tmpdir,
               'phased_replicated_rws.onnx',
               execution_mode="phased",
-              batch_size=1,
+              batch_size=2,
               num_replicas=2,
               num_iterations=5,
               optimizer=popart.Adam(optimizer_dict, popart.AdamMode.Lamb),
               activation_tensor_location_settings=offChipLocation,
               weight_tensor_location_settings=offChipRtsLocation,
               optimizer_state_tensor_location_settings=offChipRtsLocation,
-              accumulator_tensor_location_settings=offChipRtsLocation)
+              accumulator_tensor_location_settings=offChipLocation)
+    run_model(tmpdir,
+              'phased_replicated_rws_acc.onnx',
+              execution_mode="phased",
+              batch_size=1,
+              num_replicas=2,
+              num_iterations=5,
+              enable_accum=True,
+              accum_factor=2,
+              optimizer=popart.Adam(optimizer_dict, popart.AdamMode.Lamb),
+              activation_tensor_location_settings=offChipLocation,
+              weight_tensor_location_settings=offChipRtsLocation,
+              optimizer_state_tensor_location_settings=offChipRtsLocation,
+              accumulator_tensor_location_settings=offChipLocation)
 
     phased = onnx.load(str(tmpdir / 'phased.onnx'))
     phased_replicated = onnx.load(str(tmpdir / 'phased_replicated.onnx'))
     phased_replicated_rws = onnx.load(
         str(tmpdir / 'phased_replicated_rws.onnx'))
+    phased_replicated_rws_acc = onnx.load(
+        str(tmpdir / 'phased_replicated_rws_acc.onnx'))
 
     check_model(phased, phased_replicated)
     check_model(phased, phased_replicated_rws)
+    check_model(phased, phased_replicated_rws_acc)
 
 
 @tu.requires_ipu
