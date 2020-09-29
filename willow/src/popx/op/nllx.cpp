@@ -114,59 +114,61 @@ void NllOpx::flattenAndEncodeOneHot(const Opx &opx,
 void NllOpx::applyScalingInPlaceForMeanReduction(
     const Opx &opx,
     poplar::Tensor t,
+    poplar::Tensor scale,
     poplar::program::Sequence &prog,
-    bool negate,
     bool include_replication) {
   double totalSamples = static_cast<double>(t.dim(0));
   if (include_replication) {
     totalSamples *=
         static_cast<double>(opx.getDevicex()->getReplicationFactor());
   }
-  auto t_totalSamples = opx.getConst(t.elementType(),
-                                     {},
-                                     negate ? -totalSamples : totalSamples,
-                                     opx.debugPrefix("samples"));
-  popops::mapInPlace(opx.graph(),
-                     popops::expr::BinaryOpType::DIVIDE,
-                     t,
-                     t_totalSamples,
-                     prog,
-                     opx.debugPrefix("mean"));
+
+  auto combined_scale = popops::div(opx.graph(),
+                                    scale,
+                                    totalSamples,
+                                    prog,
+                                    opx.debugPrefix("combinedLossScale"));
+
+  popops::mulInPlace(
+      opx.graph(), t, combined_scale, prog, opx.debugPrefix("mean"));
 }
 
 void NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
     const Opx &opx,
     poplar::Tensor t,
+    poplar::Tensor scale,
     poplar::Tensor mask,
     poplar::program::Sequence &prog,
-    bool negate,
     bool include_replication) {
   // Determine the scale-factor for mean reduction dynamically from the
   // mask.
   // Any sample whose label index is the 'ignore index' should not be
   // counted when scaling the loss/loss grad
-  if (mask.rank() == 2 && mask.dim(1) == 1) {
-    mask = mask.squeeze({1});
-  }
   auto numNonIgnoredSamples =
-      popops::reduce(opx.graph(), mask, {0}, {popops::Operation::ADD}, prog);
-
-  double scale = 1.0;
-  if (include_replication) {
-    scale *= static_cast<double>(opx.getDevicex()->getReplicationFactor());
-  }
-  if (negate) {
-    scale *= -1.0;
-  }
-
-  auto repFactor = opx.getConst(
-      t.elementType(), {}, scale, opx.debugPrefix("replicationFactor"));
-
-  popops::mapInPlace(opx.graph(),
-                     pe::Divide(pe::_1, pe::Mul(pe::_2, pe::_3)),
-                     {t, repFactor, numNonIgnoredSamples},
+      popops::reduce(opx.graph(),
+                     mask.flatten(),
+                     {0},
+                     {popops::Operation::ADD},
                      prog,
-                     opx.debugPrefix("mean"));
+                     opx.debugPrefix("numNonIgnoredSamples"));
+
+  if (include_replication) {
+    numNonIgnoredSamples = popops::mul(
+        opx.graph(),
+        numNonIgnoredSamples,
+        static_cast<float>(opx.getDevicex()->getReplicationFactor()),
+        prog,
+        opx.debugPrefix("repFactor"));
+  }
+
+  auto combined_scale = popops::div(opx.graph(),
+                                    scale,
+                                    numNonIgnoredSamples,
+                                    prog,
+                                    opx.debugPrefix("combinedLossScale"));
+
+  popops::mulInPlace(
+      opx.graph(), t, combined_scale, prog, opx.debugPrefix("mean"));
 }
 
 poplar::Tensor
@@ -194,9 +196,11 @@ NllOpx::applyMaskInPlaceForIgnoredIndex(const Opx &opx,
                                prog,
                                opx.debugPrefix("cast"));
 
-  // Expand, if required, for valid broadcasting of mul
-  if (t.rank() == 2) {
-    lossMask = lossMask.expand({1});
+  if (t.rank() != lossMask.rank()) {
+    // If required, broadcast lossMask on the final dimension.
+    auto t_shape          = t.shape();
+    t_shape[t.rank() - 1] = 1;
+    lossMask              = lossMask.reshape(t_shape);
   }
 
   // Apply the mask
@@ -240,8 +244,12 @@ void NllOpx::handleLossOutReducedToScalar(const Opx &opx,
     if (hasIgnoreIndex) {
       auto lossMask = applyMaskInPlaceForIgnoredIndex(
           opx, reduction, label1D, static_cast<int>(ignoreIndex), prog);
+
+      auto scaleT = opx.getConst(
+          reduction.elementType(), {}, 1.0, opx.debugPrefix("One"));
+
       applyScalingInPlaceForMeanReductionWithIgnoreIndex(
-          opx, reduction, lossMask, prog, false, false);
+          opx, reduction, scaleT, lossMask, prog, false);
       // Leave scale as 1.0 as already scaled
     } else {
       double totalSamples = static_cast<double>(reduction.dim(0));
@@ -260,6 +268,42 @@ void NllOpx::handleLossOutReducedToScalar(const Opx &opx,
                                prog,
                                opx.debugPrefix("toScalar"));
   opx.setOutTensor(outIdx, scalar);
+}
+
+void NllOpx::handleLossGradScaling(const Opx &opx,
+                                   bool hasIgnoreIndex,
+                                   int64_t ignoreIndex,
+                                   bool meanReduce,
+                                   poplar::Tensor &oneHot,
+                                   poplar::Tensor &gradIn,
+                                   poplar::Tensor &label1D,
+                                   poplar::program::Sequence &prog) {
+  // To ensure gradIn has a broadcastable shape, add extra singleton
+  // dimensions
+  for (unsigned dim = 0; dim < oneHot.rank(); dim++) {
+    if (dim > gradIn.rank() - 1) {
+      gradIn = gradIn.expand({dim});
+    }
+  }
+
+  // Apply mask before reduction, so that ignored class doesn't
+  // contribute to the loss gradient
+  if (hasIgnoreIndex) {
+    auto lossMask = NllOpx::applyMaskInPlaceForIgnoredIndex(
+        opx, oneHot, label1D, ignoreIndex, prog);
+
+    if (meanReduce) {
+      NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
+          opx, oneHot, gradIn, lossMask, prog);
+    }
+  } else {
+    if (meanReduce) {
+      NllOpx::applyScalingInPlaceForMeanReduction(opx, oneHot, gradIn, prog);
+    } else {
+      popops::mulInPlace(
+          opx.graph(), oneHot, gradIn, prog, opx.debugPrefix("scaledGradIn"));
+    }
+  }
 }
 
 NllGradOpx::NllGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -315,36 +359,18 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
                      prog,
                      debugPrefix("NegDiv"));
 
-  // Apply mask before reduction, so that ignored class doesn't
-  // contribute to the loss gradient
-  if (gradOp.hasIgnoreIndex()) {
-    auto lossMask = NllOpx::applyMaskInPlaceForIgnoredIndex(
-        *this, oneHot, label1D, gradOp.getIgnoreIndex(), prog);
-
-    if (gradOp.getReductionType() == ReductionType::Mean) {
-      NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
-          *this, oneHot, lossMask, prog);
-    }
-  } else {
-    if (gradOp.getReductionType() == ReductionType::Mean) {
-      NllOpx::applyScalingInPlaceForMeanReduction(*this, oneHot, prog);
-    }
-  }
-
   // Output is reshaped to match probs input shape
   oneHot = oneHot.reshape(probs.shape());
 
-  // To ensure gradIn has a broadcastable shape, add extra singleton dimensions
-  for (unsigned dim = 0; dim < oneHot.rank(); dim++) {
-    if (dim > gradIn.rank() - 1) {
-      gradIn = gradIn.expand({dim});
-    }
-  }
-  popops::mapInPlace(graph(),
-                     pe::Mul(pe::_1, pe::_2),
-                     {oneHot, gradIn},
-                     prog,
-                     debugPrefix("scaledGradIn"));
+  NllOpx::handleLossGradScaling(
+      *this,
+      gradOp.hasIgnoreIndex(),
+      gradOp.hasIgnoreIndex() ? gradOp.getIgnoreIndex() : 0,
+      gradOp.getReductionType() == ReductionType::Mean,
+      oneHot,
+      gradIn,
+      label1D,
+      prog);
 
   setOutTensor(0, oneHot);
 }

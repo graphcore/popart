@@ -154,35 +154,17 @@ void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                      prog,
                      debugPrefix("negsub"));
 
-  if (op.hasIgnoreIndex()) {
-    auto lossMask = NllOpx::applyMaskInPlaceForIgnoredIndex(
-        *this, oneHot, label1D, op.getIgnoreIndex(), prog);
-    if (op.getReductionType() == ReductionType::Mean) {
-      NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
-          *this, oneHot, lossMask, prog);
-    }
-  } else {
-    if (op.getReductionType() == ReductionType::Mean) {
-      NllOpx::applyScalingInPlaceForMeanReduction(*this, oneHot, prog);
-    }
-  }
-
   // Output is reshaped to match probs input shape
   oneHot = oneHot.reshape(probs.shape());
 
-  // To ensure gradIn has a broadcastable shape, add extra singleton dimensions
-  for (unsigned dim = 0; dim < oneHot.rank(); dim++) {
-    if (dim > gradIn.rank() - 1) {
-      gradIn = gradIn.expand({dim});
-    }
-  }
-
-  // Scale by the input gradient
-  popops::mapInPlace(graph(),
-                     pe::Mul(pe::_1, pe::_2),
-                     {oneHot, gradIn},
-                     prog,
-                     debugPrefix("scaledGradIn"));
+  NllOpx::handleLossGradScaling(*this,
+                                op.hasIgnoreIndex(),
+                                op.hasIgnoreIndex() ? op.getIgnoreIndex() : 0,
+                                op.getReductionType() == ReductionType::Mean,
+                                oneHot,
+                                gradIn,
+                                label1D,
+                                prog);
 
   setOutTensor(0, oneHot);
 }
@@ -286,35 +268,17 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                      prog,
                      debugPrefix("NegSub"));
 
-  if (op.hasIgnoreIndex()) {
-    auto lossMask = NllOpx::applyMaskInPlaceForIgnoredIndex(
-        *this, oneHot, label1D, op.getIgnoreIndex(), prog);
-    if (op.getReductionType() == ReductionType::Mean) {
-      NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
-          *this, oneHot, lossMask, prog);
-    }
-  } else {
-    if (op.getReductionType() == ReductionType::Mean) {
-      NllOpx::applyScalingInPlaceForMeanReduction(*this, oneHot, prog);
-    }
-  }
-
   // Output is reshaped to match probs input shape
   oneHot = oneHot.reshape(probs.shape());
 
-  // To ensure gradIn has a broadcastable shape, add extra singleton dimensions
-  for (unsigned dim = 0; dim < oneHot.rank(); dim++) {
-    if (dim > gradIn.rank() - 1) {
-      gradIn = gradIn.expand({dim});
-    }
-  }
-
-  // Scale by the input gradient
-  popops::mapInPlace(graph(),
-                     pe::Mul(pe::_1, pe::_2),
-                     {oneHot, gradIn},
-                     prog,
-                     debugPrefix("scaledGradIn"));
+  NllOpx::handleLossGradScaling(*this,
+                                op.hasIgnoreIndex(),
+                                op.hasIgnoreIndex() ? op.getIgnoreIndex() : 0,
+                                op.getReductionType() == ReductionType::Mean,
+                                oneHot,
+                                gradIn,
+                                label1D,
+                                prog);
 
   setOutTensor(op.getGradOutIndex(), oneHot);
 

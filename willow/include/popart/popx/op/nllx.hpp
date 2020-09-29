@@ -35,15 +35,15 @@ public:
                                   poplar::program::Sequence &prog);
   // If the loss that created this op was constructed with a
   // ReductionType 'Mean', then we scale the output of the loss
-  // tensor by 1/(local_batch_size * replication_factor)
-  // (referred to as total number of samples)
+  // tensor by 1/local_loss_elements and the gradient of the loss tensor
+  // by 1/(local_loss_elements * replication)
   // This is a static function that is used to scale the every Nll
   // loss and loss grad at the output of the respective ops/grad ops
   static void
   applyScalingInPlaceForMeanReduction(const Opx &opx,
                                       poplar::Tensor t,
+                                      poplar::Tensor scale,
                                       poplar::program::Sequence &prog,
-                                      bool negate              = false,
                                       bool include_replication = true);
 
   // Same as above, except the divisor for the scaling of the loss/
@@ -56,10 +56,19 @@ public:
   static void applyScalingInPlaceForMeanReductionWithIgnoreIndex(
       const Opx &opx,
       poplar::Tensor t,
+      poplar::Tensor scale,
       poplar::Tensor mask,
       poplar::program::Sequence &prog,
-      bool negate              = false,
       bool include_replication = true);
+
+  static void handleLossGradScaling(const Opx &opx,
+                                    bool hasIgnoreIndex,
+                                    int64_t ignoreIndex,
+                                    bool meanReduce,
+                                    poplar::Tensor &oneHot,
+                                    poplar::Tensor &gradIn,
+                                    poplar::Tensor &label1D,
+                                    poplar::program::Sequence &prog);
 
   static void handleLossOutReducedToScalar(const Opx &opx,
                                            bool hasIgnoreIndex,
