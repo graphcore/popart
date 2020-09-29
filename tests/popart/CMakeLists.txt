@@ -93,6 +93,7 @@ function(add_test_executable name)
   target_include_directories(${name}
       PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}
+      ${Boost_INCLUDE_DIRS}
   )
   target_link_libraries(${name}
     PRIVATE
