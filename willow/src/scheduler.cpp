@@ -589,7 +589,6 @@ bool Scheduler::isSchedulable(const OpsBeforeKey &gCons,
   if (pg.getIr().getSessionOptions().enablePipelining) {
     grower.annotatePipelineStages();
   }
-  grower.annotateAccumulateOuterFragmentOps();
   grower.annotateExecutionContext();
   grower.finalize();
   return grower.isSchedulable();
