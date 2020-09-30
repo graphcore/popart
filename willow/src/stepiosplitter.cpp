@@ -53,6 +53,9 @@ void StepIOSplitterAdapter::inComplete(TensorId id, int64_t numElements) {
   }
 
   if (!inData.empty()) {
+    // Callback to allow inComplete to be called upstream if needed.
+    splitter->inCompleteCallback(id, numElements, replicationIndex);
+
     inData.pop_front();
     logging::devicex::debug(
         "[StepIOSplitter] Input read complete; discarded front of input buffer "
@@ -125,7 +128,8 @@ void StepIOSplitterAdapter::reset() {
 }
 
 SplitIOTensorInfo::SplitIOTensorInfo()
-    : inIndex(0u), outIndex(0u), adapterMap{} {}
+    : inIndex(0u),
+      outIndex(0u), upstreamInCompletePending{false}, adapterMap{} {}
 
 StepIOSplitter::StepIOSplitter(unsigned replicationFactor_)
     : replicationFactor(replicationFactor_), upstreamIo(nullptr),
@@ -133,9 +137,10 @@ StepIOSplitter::StepIOSplitter(unsigned replicationFactor_)
 
 void StepIOSplitter::reset() {
   for (auto &entry1 : downstreamIoMap) {
-    auto &splitIoTensorInfo    = entry1.second;
-    splitIoTensorInfo.inIndex  = 0u;
-    splitIoTensorInfo.outIndex = 0u;
+    auto &splitIoTensorInfo                     = entry1.second;
+    splitIoTensorInfo.inIndex                   = 0u;
+    splitIoTensorInfo.outIndex                  = 0u;
+    splitIoTensorInfo.upstreamInCompletePending = false;
     for (auto &entry2 : splitIoTensorInfo.adapterMap) {
       auto &adapter = entry2.second;
       adapter->reset();
@@ -195,6 +200,19 @@ void StepIOSplitter::getInData(TensorId id,
                               splitIoTensorInfo.inIndex,
                               isPrefetch ? " (prefetch)" : "");
 
+      if (splitIoTensorInfo.upstreamInCompletePending) {
+        // Mark the upsteam data as 'complete' so we can move on to the next
+        // replicationIndex.
+        logging::devicex::debug(
+            "[StepIOSplitter] Calling upstream 'inComplete' because we "
+            "need data for the next replica {}@{}",
+            id,
+            splitIoTensorInfo.outIndex);
+
+        upstreamIo->inComplete(id, numElements);
+        splitIoTensorInfo.upstreamInCompletePending = false;
+      }
+
       // Ask for data.
       const auto data = upstreamIo->in(id, numElements, isPrefetch);
       // Did get we data?
@@ -203,9 +221,8 @@ void StepIOSplitter::getInData(TensorId id,
       if (receivedData) {
         // Store the data.
         adapter->getInData().push_back(data);
-        // Mark the upsteam data as 'complete' so we can move on to the next
-        // replicationIndex.
-        upstreamIo->inComplete(id, numElements);
+        // We need to call 'inComplete' on this data yet.
+        splitIoTensorInfo.upstreamInCompletePending = true;
         // Update inData.
         splitIoTensorInfo.inIndex =
             (splitIoTensorInfo.inIndex + 1) % replicationFactor;
@@ -340,6 +357,33 @@ IStepIO *StepIOSplitter::getDownstreamStepIO(TensorId id,
     adapter                 = std::make_unique<StepIOSplitterAdapter>(
         this, replicationIndex, id, info);
     return adapter.get();
+  }
+}
+
+void StepIOSplitter::inCompleteCallback(TensorId id,
+                                        int64_t numElements,
+                                        unsigned replicationIndex) {
+
+  auto it1 = downstreamIoMap.find(id);
+  if (it1 != downstreamIoMap.end()) {
+    auto &splitIoTensorInfo = it1->second;
+
+    // Is this the last replica that we got data for?
+    auto replicaMatch = ((replicationIndex + 1) % replicationFactor) ==
+                        splitIoTensorInfo.inIndex;
+
+    if (splitIoTensorInfo.upstreamInCompletePending && replicaMatch) {
+      // Mark the upsteam data as 'complete' so we can move on to the next
+      // replicationIndex.
+      logging::devicex::debug(
+          "[StepIOSplitter] Calling upstream 'inComplete' because of "
+          "downstream 'inComplete' call {}@{}",
+          id,
+          splitIoTensorInfo.outIndex);
+
+      upstreamIo->inComplete(id, numElements);
+      splitIoTensorInfo.upstreamInCompletePending = false;
+    }
   }
 }
 
