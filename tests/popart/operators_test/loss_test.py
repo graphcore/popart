@@ -403,7 +403,8 @@ def test_nll_loss_grad_with_ignored_index():
     run_nll_loss_grad_with_ignored_index(popart.ReductionType.Sum)
 
 
-def test_loss_scaling(op_tester):
+@pytest.mark.parametrize("ignore_index", (None, 1))
+def test_loss_scaling(ignore_index, op_tester):
     nll_scale = 1.2
     l1_scale = 1.5
 
@@ -427,7 +428,8 @@ def test_loss_scaling(op_tester):
 
             sm = builder.aiOnnx.softmax([ip], axis=np.size(lshape))
             nll = builder.aiGraphcore.nllloss([sm, lb],
-                                              reduction=popart_reduction_type)
+                                              reduction=popart_reduction_type,
+                                              ignoreIndex=ignore_index)
             nll_scaled = builder.aiGraphcore.scale([nll], nll_scale)
 
             l1 = builder.aiGraphcore.l1loss([ip],
@@ -450,8 +452,11 @@ def test_loss_scaling(op_tester):
             target = torch.tensor(lb_data, requires_grad=False)
 
             logsm = torch.nn.LogSoftmax()(input)
-            nll = get_pytorch_equivalent_loss(
-                torch.nn.NLLLoss, popart_reduction_type, [logsm, target])
+            extra_args = {'ignore_index': ignore_index} if ignore_index else {}
+            nll = get_pytorch_equivalent_loss(torch.nn.NLLLoss,
+                                              popart_reduction_type,
+                                              [logsm, target],
+                                              extra_args=extra_args)
             nll_scaled = nll * nll_scale
 
             l1 = get_pytorch_equivalent_loss(

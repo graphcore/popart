@@ -299,10 +299,12 @@ void NllOpx::handleLossGradScaling(const Opx &opx,
   } else {
     if (meanReduce) {
       NllOpx::applyScalingInPlaceForMeanReduction(opx, oneHot, gradIn, prog);
-    } else {
-      popops::mulInPlace(
-          opx.graph(), oneHot, gradIn, prog, opx.debugPrefix("scaledGradIn"));
     }
+  }
+
+  if (!meanReduce) {
+    popops::mulInPlace(
+        opx.graph(), oneHot, gradIn, prog, opx.debugPrefix("scaledGradIn"));
   }
 }
 
