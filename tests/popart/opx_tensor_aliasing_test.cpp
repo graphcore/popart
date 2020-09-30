@@ -48,7 +48,9 @@ public:
     return std::make_unique<OpxTensorAliasingTestOp>(*this);
   }
 
-  virtual float getSubgraphValue() const { return getLowSubgraphValue(); }
+  virtual float getSubgraphValue() const override {
+    return getLowSubgraphValue();
+  }
 };
 
 class OpxTensorAliasingTestOpx : public popx::Opx {
