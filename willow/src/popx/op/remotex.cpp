@@ -84,7 +84,7 @@ void RemoteBaseOpx::load(poplar::Graph &sgraph,
   auto buffer = dv_p->getRemoteBuffer(rbid);
   rbTensor    = buffer.second.value();
 
-  if (offset.numElements() > 0) {
+  if (offset.valid() && offset.numElements() > 0) {
     poplar::program::Copy copy_prog(buffer.first, rbTensor, offset);
     prog.add(copy_prog);
   } else {
@@ -99,7 +99,7 @@ void RemoteBaseOpx::store(poplar::program::Sequence &prog,
                           poplar::Tensor offset) const {
   auto buffer             = dv_p->getRemoteBuffer(rbid);
   poplar::Tensor rbTensor = buffer.second.value();
-  if (offset.numElements() > 0) {
+  if (offset.valid() && offset.numElements() > 0) {
     poplar::program::Copy copy_prog(rbTensor, buffer.first, offset);
     prog.add(copy_prog);
   } else {

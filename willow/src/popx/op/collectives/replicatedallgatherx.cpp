@@ -30,7 +30,6 @@ void ReplicatedAllGatherOpx::grow(poplar::program::Sequence &prog) const {
                      prog,
                      debugPrefix("replicatedAllGather"),
                      allGatherOptions);
-
   if (hasInput(ReplicatedAllGatherOp::getCollectiveLinkedIndex())) {
     auto cbr = getCollectiveBalancedReorder();
     if (cbr) {

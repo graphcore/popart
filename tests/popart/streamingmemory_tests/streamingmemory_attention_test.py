@@ -272,7 +272,7 @@ def test_attention_streamingmemory(tmpdir):
             replicatedTensorSharding=popart.ReplicatedTensorSharding.Off),
         minElementsForOffChip=0,
         minElementsForReplicatedTensorSharding=2)
-    """
+
     # Ground truth variant
     test_variants.append({
         "stages": 2,
@@ -361,7 +361,6 @@ def test_attention_streamingmemory(tmpdir):
         "tensorLocationSettings": ioOffChip,
         "ioTiles": 192
     })
-    """
 
     # Test batch serialized single device per replica execution, where all
     # streaming memory traffic goes through IO tiles, and loading of the next
@@ -381,7 +380,7 @@ def test_attention_streamingmemory(tmpdir):
         "tensorLocationSettings": ioOffChip,
         "ioTiles": 192
     })
-    """
+
     # Test a variety of batch serialisation schedules.
     for batchSchedule in [
             popart.BatchSerializationBatchSchedule.Scheduler,
@@ -465,7 +464,6 @@ def test_attention_streamingmemory(tmpdir):
                                       minElementsForOffChip=0,
                                       minElementsForReplicatedTensorSharding=2)
     })
-    """
 
     index = 0
     for test_option in test_variants:

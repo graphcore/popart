@@ -69,11 +69,21 @@ public:
   }
 
 private:
+  using SubgraphEquivId     = std::string;
   using Position            = int64_t;
   using Section             = int64_t;
   using PositionsToOp       = std::map<std::pair<Section, BatchSerializedPhase>,
                                  std::map<Position, Op *>>;
   using PositionsToOpVector = std::vector<std::pair<Position, Op *>>;
+
+  // Calculates how similar two operations are in the context of a graph
+  int64_t getLocalIsoScore(
+      std::map<std::tuple<Op *, Op *, int>, int64_t> &cachedIsoScores,
+      std::map<Op *, SubgraphEquivId> &opSubgraphEquivId,
+      std::pair<Op *, Op *> ops,
+      std::set<std::pair<Op *, Op *>> &visitedOps,
+      int maxDepth,
+      bool cached) const;
 
   OpId reshapeForSlice(Graph &graph,
                        Op::Settings settings,

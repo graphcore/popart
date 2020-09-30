@@ -273,8 +273,9 @@ void CollectiveBalancedReorder::undoRearrangeForCollective(
 }
 
 poplar::Tensor
-CollectiveBalancedReorder::getReferenceTensorClone(std::string name) const {
-  return graph.clone(referenceTensor, name);
+CollectiveBalancedReorder::getReferenceTensorClone(poplar::Type type,
+                                                   std::string name) const {
+  return graph.clone(type, referenceTensor, name);
 }
 
 const poplar::Tensor &CollectiveBalancedReorder::getReferenceTensor() const {

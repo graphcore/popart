@@ -54,7 +54,8 @@ public:
                                   int64_t elemByteSize) const;
 
   // Get a clone of the tensor that was used to create the CBR object
-  poplar::Tensor getReferenceTensorClone(std::string name) const;
+  poplar::Tensor getReferenceTensorClone(poplar::Type type,
+                                         std::string name) const;
 
   // Get the tensor that was used to create the CBR object
   const poplar::Tensor &getReferenceTensor() const;
