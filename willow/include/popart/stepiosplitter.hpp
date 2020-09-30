@@ -68,6 +68,8 @@ public:
   unsigned inIndex;
   // The replica index that is next in line to receive 'out' data.
   unsigned outIndex;
+  // True if a call to inComplete is pending.
+  bool upstreamInCompletePending;
 
   // Map from replication indices to IStepIO adapters
   std::map<unsigned, std::unique_ptr<StepIOSplitterAdapter>> adapterMap;
@@ -110,6 +112,12 @@ public:
   IStepIO *getDownstreamStepIO(TensorId id,
                                const TensorInfo &info,
                                unsigned replicationIndex);
+
+  // Give the splitter a change to call inComplete upstream from a downstream
+  // inComplete call.
+  virtual void inCompleteCallback(TensorId id,
+                                  int64_t numElements,
+                                  unsigned replicationIndex);
 
 private:
   // The number of replications.

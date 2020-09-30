@@ -348,14 +348,13 @@ BOOST_AUTO_TEST_CASE(StepIOSplitter_PrefetchFlag) {
   // Check that the upstream IStepIO was called with prefetch=true and that
   // complete was called at the earliest opportunity;
   BOOST_ASSERT(upstreamIo.inCallHistory.size() == 1);
-  BOOST_ASSERT(upstreamIo.inCompleteCallHistory.size() == 1);
+  // The inComplete call is deferred.
+  BOOST_ASSERT(upstreamIo.inCompleteCallHistory.size() == 0);
   BOOST_ASSERT(upstreamIo.outCallHistory.size() == 0);
   BOOST_ASSERT(upstreamIo.outCompleteCallHistory.size() == 0);
   BOOST_ASSERT(upstreamIo.inCallHistory[0].id == tensorId);
   BOOST_ASSERT(upstreamIo.inCallHistory[0].numElements == tensorNelms);
   BOOST_ASSERT(upstreamIo.inCallHistory[0].prefetch == true);
-  BOOST_ASSERT(upstreamIo.inCompleteCallHistory[0].id == tensorId);
-  BOOST_ASSERT(upstreamIo.inCompleteCallHistory[0].numElements == tensorNelms);
 
   // STEP 3: Next, do a prefetch on replica 2 with prefetch. This should result
   // in a non-prefetch call for replica 1 and a prefetch call for replica 2.
