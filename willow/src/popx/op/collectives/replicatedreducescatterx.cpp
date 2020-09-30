@@ -23,7 +23,6 @@ ReplicatedReduceScatterOpx::ReplicatedReduceScatterOpx(Op *op, Devicex *devicex)
 void ReplicatedReduceScatterOpx::grow(poplar::program::Sequence &prog) const {
   const auto inIndex             = ReplicatedReduceScatterOp::getInIndex();
   poplar::Tensor toReduceScatter = getInTensor(inIndex);
-  auto rrs_op                    = getOp<ReplicatedReduceScatterOp>();
 
   if (hasInput(ReplicatedAllGatherOp::getCollectiveLinkedIndex())) {
     ViewChangers viewChangers(
@@ -67,7 +66,7 @@ ReplicatedReduceScatterOpx::getInputCreatorType(InIndex index) const {
 poplar::Tensor
 ReplicatedReduceScatterOpx::createInput(int inIndex,
                                         const std::string &name) const {
-  auto rrs_op = getOp<ReplicatedReduceScatterOp>();
+  const auto &rrs_op = getOp<ReplicatedReduceScatterOp>();
   if (inIndex != ReplicatedReduceScatterOp::getInIndex()) {
     throw error(
         "ReplicatedReduceScatterOpx::createInput, cannot create input at {}",
@@ -77,8 +76,8 @@ ReplicatedReduceScatterOpx::createInput(int inIndex,
   auto cbr = getCollectiveBalancedReorder();
   if (cbr) {
     return cbr->rearrangeForCollective(
-        cbr->getReferenceTensorClone(
-               popType(rrs_op.input->tensor(inIndex)->info), name)
+        cbr->getReferenceTensorClone(popType(rrs_op.inTensor(inIndex)->info),
+                                     name)
             .flatten());
   } else {
     throw error("ReplicatedReduceScatterOpx::createInput, "
