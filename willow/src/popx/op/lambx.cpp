@@ -17,13 +17,8 @@ LambSquareOpx::LambSquareOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 void LambSquareOpx::grow(poplar::program::Sequence &prog) const {
-  auto var = getInTensor(LambSquareOp::getInIndex());
-
-  auto cast = popops::cast(
-      graph(), var.flatten(), poplar::FLOAT, prog, debugPrefix("LambCastFP32"));
-
   auto rsq = popops::reduce(graph(),
-                            cast,
+                            getInTensor(LambSquareOp::getInIndex()).flatten(),
                             poplar::FLOAT,
                             {0},
                             {popops::Operation::SQUARE_ADD},
