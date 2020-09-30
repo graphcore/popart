@@ -274,7 +274,8 @@ private:
   insertReplicatedAllGatherOp(const TensorConfig &tensorConfig,
                               const TensorStreamingContext context,
                               const TensorId &loadedTensorId,
-                              TensorId &gatheredTensorId);
+                              TensorId &gatheredTensorId,
+                              const TensorId &referenceTensorId);
 
   // Helper function to insert a ReplicatedReduceScatter.
   ReplicatedReduceScatterOp *

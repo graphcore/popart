@@ -35,6 +35,7 @@ void ReplicatedReduceScatterOpx::grow(poplar::program::Sequence &prog) const {
       // Tensor not rearranged for reduceScatter yet, do it now
       auto cbr = createCollectiveBalancedReorder(toReduceScatter);
       poplar::Tensor refClone = cbr->getReferenceTensorClone(
+          toReduceScatter.elementType(),
           inId(ReplicatedReduceScatterOp::getInIndex()) + "_RefClone");
       prog.add(poplar::program::Copy(toReduceScatter, refClone));
       toReduceScatter = cbr->rearrangeForCollective(refClone.flatten());
@@ -76,7 +77,9 @@ ReplicatedReduceScatterOpx::createInput(int inIndex,
   auto cbr = getCollectiveBalancedReorder();
   if (cbr) {
     return cbr->rearrangeForCollective(
-        cbr->getReferenceTensorClone(name).flatten());
+        cbr->getReferenceTensorClone(
+               popType(rrs_op.input->tensor(inIndex)->info), name)
+            .flatten());
   } else {
     throw error("ReplicatedReduceScatterOpx::createInput, "
                 "CollectiveBalancedReorder not found for Op {}",

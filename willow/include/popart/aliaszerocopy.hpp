@@ -122,7 +122,7 @@ private:
 
   // Returns when the tensor (including all aliases)
   // needs to be live in the schedule
-  Intervals getCandidateLivenessIntervals(Tensor *);
+  Intervals getCandidateLivenessIntervals(Tensor *, bool cached = true);
 
   bool checkCandidatesCompatible(Tensor *ta, Tensor *tb);
 

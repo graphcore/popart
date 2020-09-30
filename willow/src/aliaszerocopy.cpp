@@ -81,7 +81,7 @@ void AliasZeroCopy::apply() {
     if (node.getStatus() == OpStatus::CopyModified) {
       auto tensorIds = node.getTensorIds();
       Tensor *t      = ir->getTensor(tensorIds.first);
-      auto liveness  = getLivenessIntervals(t);
+      auto liveness  = getCandidateLivenessIntervals(t, false);
       Intervals probe;
       probe.insert(i + 1, i + 2);
       // If the modified tensor is not required to be live after CopyModified,
@@ -693,7 +693,8 @@ void AliasZeroCopy::logPostIRAliases() {
   }
 }
 
-Intervals AliasZeroCopy::getCandidateLivenessIntervals(Tensor *startTensor) {
+Intervals AliasZeroCopy::getCandidateLivenessIntervals(Tensor *startTensor,
+                                                       bool cached) {
   std::set<Tensor *, PTensorCmp> aliasedTensors;
   aliasedTensors.insert(startTensor);
 
@@ -702,13 +703,18 @@ Intervals AliasZeroCopy::getCandidateLivenessIntervals(Tensor *startTensor) {
   Intervals combinedIntervals;
 
   for (Tensor *t : aliasedTensors) {
-    auto it = candidateLivenessIntervalsMap.find(t);
-    if (it == candidateLivenessIntervalsMap.end()) {
-      Intervals candidateIntervals = getLivenessIntervals(t);
-      candidateLivenessIntervalsMap.insert({t, candidateIntervals});
-      combinedIntervals += candidateIntervals;
+    if (cached) {
+      auto it = candidateLivenessIntervalsMap.find(t);
+      if (it == candidateLivenessIntervalsMap.end()) {
+        Intervals candidateIntervals = getLivenessIntervals(t);
+        candidateLivenessIntervalsMap.insert({t, candidateIntervals});
+        combinedIntervals += candidateIntervals;
+      } else {
+        combinedIntervals += it->second;
+      }
     } else {
-      combinedIntervals += it->second;
+      Intervals candidateIntervals = getLivenessIntervals(t);
+      combinedIntervals += candidateIntervals;
     }
   }
 

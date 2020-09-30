@@ -308,11 +308,10 @@ def test_replicated_sgd0_weight_update(tmpdir):
 # Check that 2 batches on 1 replica or 1 batch per replica on 2 replicas
 # results in the same updated weight with SGD1
 @tu.requires_ipu
-@pytest.mark.skip(reason="T26179 test produces NaNs")
 def test_replicated_sgd1_weight_update(tmpdir):
 
     optimizer_dict = {
-        "defaultLearningRate": (0.1, False),
+        "defaultLearningRate": (0.00001, False),
         "defaultMomentum": (0.9, False),
         "defaultDampening": (0.2, False),
         "defaultVelocityScaling": (0.1, False),
