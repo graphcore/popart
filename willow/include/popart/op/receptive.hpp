@@ -21,6 +21,7 @@ public:
     std::vector<int64_t> strides;
     std::vector<int64_t> dilations;
     std::string auto_pad;
+    int64_t ceil_mode = 0;
 
     void setFromAttributes(const Attributes &attributes) override;
   };
@@ -42,6 +43,7 @@ public:
   std::vector<int64_t> dilations;
 
   AutoPad padType;
+  bool ceilMode;
 
   static AutoPad getAutoPad(const std::string &autoPadStr);
   std::string getAutoPadStr(const AutoPad &x) const;
@@ -99,7 +101,8 @@ public:
                                   std::vector<int64_t> pads_,
                                   std::vector<int64_t> strides_,
                                   std::vector<int64_t> dilations_,
-                                  AutoPad auto_pad_);
+                                  AutoPad auto_pad_,
+                                  bool ceil_mode_ = false);
 
 private:
   // set the public vector "spatialK"

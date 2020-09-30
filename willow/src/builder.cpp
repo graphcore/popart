@@ -40,7 +40,8 @@ static void verifyWindowParameters(std::unique_ptr<BuilderImpl> &impl,
                                    std::vector<int64_t> padding,
                                    const std::vector<int64_t> kernel_shape,
                                    std::vector<int64_t> dilation = {},
-                                   const std::string &auto_pad   = "NOTSET") {
+                                   const std::string &auto_pad   = "NOTSET",
+                                   bool ceil_mode                = false) {
   auto num_spatial_dims = impl->getTensorShape(input).size() - 2;
   if (num_spatial_dims < 1) {
     throw error("Input tensor has no spatial dimensions");
@@ -91,7 +92,8 @@ static void verifyWindowParameters(std::unique_ptr<BuilderImpl> &impl,
         padding,
         strides,
         dilation,
-        HasReceptiveFieldOp::getAutoPad(auto_pad));
+        HasReceptiveFieldOp::getAutoPad(auto_pad),
+        ceil_mode);
 
     if (std::any_of(spatialOutShape.begin(),
                     spatialOutShape.end(),
@@ -123,6 +125,10 @@ static void verifyPoolBase(std::unique_ptr<BuilderImpl> &impl,
   if (!attributes.count("auto_pad")) {
     attributes["auto_pad"] = emptyString;
   }
+  bool ceil_mode = false;
+  if (attributes.count("ceil_mode")) {
+    ceil_mode = popart::any_cast<int64_t>(attributes["ceil_mode"]);
+  }
 
   verifyWindowParameters(
       impl,
@@ -131,7 +137,8 @@ static void verifyPoolBase(std::unique_ptr<BuilderImpl> &impl,
       popart::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
       popart::any_cast<std::vector<int64_t> &>(attributes["kernel_shape"]),
       popart::any_cast<std::vector<int64_t> &>(attributes["dilations"]),
-      popart::any_cast<std::string>(attributes["auto_pad"]));
+      popart::any_cast<const std::string &>(attributes["auto_pad"]),
+      ceil_mode);
 }
 
 // Functions that are expected by the generated code when the verifyInput

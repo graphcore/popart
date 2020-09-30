@@ -16,7 +16,8 @@ HasReceptiveFieldOp::HasReceptiveFieldOp(
     const OperatorIdentifier &_opid,
     const HasReceptiveFieldOp::Settings &settings_)
     : Op(_opid, settings_), pads(settings_.pads), strides(settings_.strides),
-      dilations(settings_.dilations), padType(getAutoPad(settings_.auto_pad)) {}
+      dilations(settings_.dilations), padType(getAutoPad(settings_.auto_pad)),
+      ceilMode(settings_.ceil_mode) {}
 
 void HasReceptiveFieldOp::setup() {
 
@@ -49,6 +50,18 @@ void HasReceptiveFieldOp::setup() {
 
   if (padType == AutoPad::SAME_LOWER || padType == AutoPad::SAME_UPPER) {
     alterPads(pads, spatialO, spatialD, spatialK, strides);
+  }
+
+  if (ceilMode) {
+    // Given the input parameters (pads, strides, dilations), if the calculated
+    // output shape is non-integer, add upper-padding to each spatial dimension
+    // such that the newly calculated output shape is the non-integer value
+    // rounded up to the nearest integer.
+    for (int i = 0; i < nSpatialDims; i++) {
+      auto inferredUpperPad = ((spatialO[i] - 1) * strides[i]) + spatialK[i] -
+                              spatialD[i] - pads[i];
+      pads[i + nSpatialDims] = inferredUpperPad;
+    }
   }
 
   // we assume that the output type is the same as the input type
@@ -123,8 +136,8 @@ Shape HasReceptiveFieldOp::getOutShape() const {
   outShape[0] = batchSize;
   outShape[1] = getNOutChans();
 
-  Shape spatialOutShape =
-      getSpatialOutShape(spatialD, spatialK, pads, strides, dilations, padType);
+  Shape spatialOutShape = getSpatialOutShape(
+      spatialD, spatialK, pads, strides, dilations, padType, ceilMode);
 
   for (int spDim = 0; spDim < nSpatialDims; ++spDim) {
     outShape[spDim + 2] = spatialOutShape[spDim];
@@ -142,29 +155,40 @@ Shape HasReceptiveFieldOp::getSpatialOutShape(Shape spatialD_,
                                               std::vector<int64_t> pads_,
                                               std::vector<int64_t> strides_,
                                               std::vector<int64_t> dilations_,
-                                              AutoPad auto_pad_) {
+                                              AutoPad auto_pad_,
+                                              bool ceil_mode_) {
 
   Shape spatialOutShape;
   int64_t numSpatialDims = spatialD_.size();
 
+  auto round = [ceil_mode_](float dim) -> int64_t {
+    if (ceil_mode_) {
+      return std::ceil(dim);
+    } else {
+      return std::floor(dim);
+    }
+  };
+
   for (int spDim = 0; spDim < numSpatialDims; ++spDim) {
-    int64_t dimSize = spatialD_[spDim];
+    int64_t dimSize;
     switch (auto_pad_) {
     case AutoPad::VALID: {
-      dimSize = int(ceil(float(spatialD_[spDim] - (spatialK_[spDim] - 1)) /
-                         float(strides_[spDim])));
+      dimSize = int(std::ceil(float(spatialD_[spDim] - (spatialK_[spDim] - 1)) /
+                              float(strides_[spDim])));
       break;
     }
     case AutoPad::SAME_LOWER:
     case AutoPad::SAME_UPPER: {
-      dimSize = int(ceil(float(spatialD_[spDim]) / float(strides_[spDim])));
+      dimSize =
+          int(std::ceil(float(spatialD_[spDim]) / float(strides_[spDim])));
       break;
     }
     case AutoPad::NOTSET: // default
     default: {
+      dimSize = spatialD_[spDim];
       dimSize += pads_[spDim] + pads_[numSpatialDims + spDim] - 1;
       dimSize -= dilations_[spDim] * (spatialK_[spDim] - 1);
-      dimSize /= strides_[spDim];
+      dimSize = int(round(float(dimSize) / float(strides_[spDim])));
       dimSize += 1;
     }
     }
@@ -251,6 +275,7 @@ void HasReceptiveFieldOp::Settings::setFromAttributes(
   attributes.setIfPresent(strides, "strides");
   attributes.setIfPresent(dilations, "dilations");
   attributes.setIfPresent(auto_pad, "auto_pad");
+  attributes.setIfPresent(ceil_mode, "ceil_mode");
 }
 
 } // namespace popart

@@ -12,18 +12,12 @@ namespace popart {
 
 // TODO : Support "count_include_pad" T6249
 
-// TODO : Support ceilMode T9185
-
 AveragePoolOp::AveragePoolOp(const OperatorIdentifier &_opid,
                              int64_t _countIncludePad,
-                             int64_t _ceilMode,
                              const std::vector<int64_t> &_kernelShape,
                              const HasReceptiveFieldOp::Settings &settings_)
     : HasReceptiveFieldOp(_opid, settings_), kernelShape(_kernelShape),
-      countIncludePad(_countIncludePad), ceilMode(_ceilMode) {
-
-  // TODO : Use the count_include_pad for AveragePool-1
-}
+      countIncludePad(_countIncludePad) {}
 
 void AveragePoolOp::setup0() {}
 
@@ -65,8 +59,6 @@ void AveragePoolOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   HasReceptiveFieldOp::appendOutlineAttributes(os);
   os.appendAttribute("kernel_shape", kernelShape);
   os.appendAttribute("count_include_pad", countIncludePad);
-  os.appendAttribute("ceil_mode", ceilMode);
-  os.appendAttribute("auto_pad", getAutoPadStr(padType));
 }
 
 bool AveragePoolOp::canBeReplacedByIdentity() {
@@ -134,8 +126,8 @@ static OpDefinition
                       OpDefinition::Outputs({{"Y", T}}),
                       OpDefinition::Attributes({// Deprecated
                                                 {"auto_pad", {"NOTSET"}},
+                                                {"ceil_mode", {"*"}},
                                                 // Not currently supported
-                                                // {"ceil_mode", {"*"}},
                                                 // {"count_include_pad", {"*"}},
                                                 {"kernel_shape", {"*"}},
                                                 {"pads", {"*"}},
@@ -157,14 +149,9 @@ static OpCreator<AveragePoolOp> averagePoolOpCreator(
           info.attributes.getAttribute<Attributes::Ints>("kernel_shape", {});
       int64_t countIncludePad =
           info.attributes.getAttribute<Attributes::Int>("count_include_pad", 0);
-      int64_t ceilMode =
-          info.attributes.getAttribute<Attributes::Int>("ceil_mode", 0);
 
-      return std::unique_ptr<Op>(new AveragePoolOp(info.opid,
-                                                   countIncludePad,
-                                                   ceilMode,
-                                                   kernelShape,
-                                                   receptiveSettings));
+      return std::unique_ptr<Op>(new AveragePoolOp(
+          info.opid, countIncludePad, kernelShape, receptiveSettings));
     },
     true);
 } // namespace

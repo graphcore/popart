@@ -13,19 +13,14 @@ namespace popart {
 MaxPoolOp::MaxPoolOp(const OperatorIdentifier &_opid,
                      const std::vector<int64_t> &kernelShape_,
                      int64_t storageOrder_,
-                     int64_t ceilMode_,
                      const HasReceptiveFieldOp::Settings &settings_)
     : HasReceptiveFieldOp(_opid, settings_), storageOrder(storageOrder_),
-      ceilMode(ceilMode_), kernelShape(kernelShape_) {}
+      kernelShape(kernelShape_) {}
 
 void MaxPoolOp::setup0() {
 
   if (storageOrder != 0) {
     throw error("storage_order != 0, not supported");
-  }
-
-  if (ceilMode != 0) {
-    throw error("ceil_mode != 0, not supported");
   }
 }
 
@@ -63,7 +58,6 @@ void MaxPoolOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   HasReceptiveFieldOp::appendOutlineAttributes(os);
   os.appendAttribute("storage_order", storageOrder);
   os.appendAttribute("kernel_shape", kernelShape);
-  os.appendAttribute("ceil_mode", ceilMode);
 }
 
 bool MaxPoolOp::canBeReplacedByIdentity() {
@@ -154,7 +148,7 @@ static OpDefinition maxPoolOpDef({OpDefinition::Inputs({{"X", T}}),
                                   }),
                                   OpDefinition::Attributes({
                                       {"auto_pad", {"NOTSET"}},
-                                      {"ceil_mode", {"0"}},
+                                      {"ceil_mode", {"*"}},
                                       {"dilations", {"*"}},
                                       {"kernel_shape", {"*"}},
                                       {"pads", {"*"}},
@@ -176,8 +170,6 @@ static OpCreator<MaxPoolOp> maxPoolOpCreator(
 
       int64_t storageOrder =
           info.attributes.getAttribute<Attributes::Int>("storage_order", 0);
-      int64_t ceilMode =
-          info.attributes.getAttribute<Attributes::Int>("ceil_mode", 0);
       std::vector<int64_t> kernelShape =
           info.attributes.getAttribute<Attributes::Ints>("kernel_shape", {});
 
@@ -196,7 +188,7 @@ static OpCreator<MaxPoolOp> maxPoolOpCreator(
       }
 
       return std::unique_ptr<Op>(new MaxPoolOp(
-          info.opid, kernelShape, storageOrder, ceilMode, receptiveSettings));
+          info.opid, kernelShape, storageOrder, receptiveSettings));
     },
     true);
 } // namespace
