@@ -64,6 +64,8 @@ public:
   // Default constructor.
   SplitIOTensorInfo();
 
+  // The number of data elements loaded so far
+  unsigned fetchCount;
   // The replica index that is next in line to receive 'in' data.
   unsigned inIndex;
   // The replica index that is next in line to receive 'out' data.
@@ -80,7 +82,9 @@ public:
 class StepIOSplitter {
 public:
   // Constructor.
-  StepIOSplitter(unsigned replicationFactor);
+  StepIOSplitter(unsigned replicationFactor,
+                 unsigned batchesPerStep,
+                 unsigned accumulationFactor);
   // Don't allow copying.
   StepIOSplitter(const StepIOSplitter &) = delete;
   // Don't allow assigning.
@@ -122,6 +126,12 @@ public:
 private:
   // The number of replications.
   unsigned replicationFactor;
+
+  // The number of batches per step.
+  unsigned batchesPerStep;
+
+  // The accumulation factor.
+  unsigned accumulationFactor;
 
   // The upstream datastream.
   IStepIO *upstreamIo;

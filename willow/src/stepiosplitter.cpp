@@ -128,16 +128,20 @@ void StepIOSplitterAdapter::reset() {
 }
 
 SplitIOTensorInfo::SplitIOTensorInfo()
-    : inIndex(0u),
+    : fetchCount(0u), inIndex(0u),
       outIndex(0u), upstreamInCompletePending{false}, adapterMap{} {}
 
-StepIOSplitter::StepIOSplitter(unsigned replicationFactor_)
-    : replicationFactor(replicationFactor_), upstreamIo(nullptr),
+StepIOSplitter::StepIOSplitter(unsigned replicationFactor_,
+                               unsigned batchesPerStep_,
+                               unsigned accumulationFactor_)
+    : replicationFactor(replicationFactor_), batchesPerStep(batchesPerStep_),
+      accumulationFactor(accumulationFactor_), upstreamIo(nullptr),
       downstreamIoMap() {}
 
 void StepIOSplitter::reset() {
   for (auto &entry1 : downstreamIoMap) {
     auto &splitIoTensorInfo                     = entry1.second;
+    splitIoTensorInfo.fetchCount                = 0u;
     splitIoTensorInfo.inIndex                   = 0u;
     splitIoTensorInfo.outIndex                  = 0u;
     splitIoTensorInfo.upstreamInCompletePending = false;
@@ -213,35 +217,48 @@ void StepIOSplitter::getInData(TensorId id,
         splitIoTensorInfo.upstreamInCompletePending = false;
       }
 
-      // Ask for data.
-      const auto data = upstreamIo->in(id, numElements, isPrefetch);
-      // Did get we data?
-      const bool receivedData = (data.data != nullptr);
+      if (splitIoTensorInfo.fetchCount <
+          replicationFactor * batchesPerStep * accumulationFactor) {
+        // Ask for data.
+        const auto data = upstreamIo->in(id, numElements, isPrefetch);
+        // Did get we data?
+        const bool receivedData = (data.data != nullptr);
 
-      if (receivedData) {
-        // Store the data.
-        adapter->getInData().push_back(data);
-        // We need to call 'inComplete' on this data yet.
-        splitIoTensorInfo.upstreamInCompletePending = true;
-        // Update inData.
+        if (receivedData) {
+          // Store the data.
+          adapter->getInData().push_back(data);
+          // We need to call 'inComplete' on this data yet.
+          splitIoTensorInfo.upstreamInCompletePending = true;
+          // Update inData.
+          splitIoTensorInfo.inIndex =
+              (splitIoTensorInfo.inIndex + 1) % replicationFactor;
+          ++splitIoTensorInfo.fetchCount;
+
+          logging::devicex::debug(
+              "[StepIOSplitter] Added data to back of input buffer for adapter "
+              "{}@{} (buffer now has {} element(s))",
+              id,
+              splitIoTensorInfo.inIndex,
+              adapter->getInData().size());
+        } else {
+          // If we didn't get data it's an error unless we are prefetching.
+          if (!isPrefetch) {
+            throw error("[StepIOSplitter] Upstream IStepIO unexpectedly did "
+                        "not provide input data for tensor {}",
+                        id);
+          }
+        }
+      } else {
         splitIoTensorInfo.inIndex =
             (splitIoTensorInfo.inIndex + 1) % replicationFactor;
-
+        // The maximum allowed number of data fetches has been reached
         logging::devicex::debug(
-            "[StepIOSplitter] Added data to back of input buffer for adapter "
-            "{}@{} (buffer now has {} element(s))",
+            "[StepIOSplitter]"
+            " Maximum fetch count {} reached for tensor {}@{}",
+            splitIoTensorInfo.fetchCount,
             id,
-            splitIoTensorInfo.inIndex,
-            adapter->getInData().size());
-      } else {
-        // If we didn't get data it's an error unless we are prefetching.
-        if (!isPrefetch) {
-          throw error("[StepIOSplitter] Upstream IStepIO unexpectedly did "
-                      "not provide input data for tensor {}",
-                      id);
-        }
+            splitIoTensorInfo.inIndex);
       }
-
     } else {
       // We can't do much without a downstream adapter.
       throw error("[StepIOSplitter] No downstream adapter found for input "

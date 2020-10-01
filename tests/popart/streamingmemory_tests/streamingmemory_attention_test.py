@@ -234,7 +234,7 @@ def test_attention_streamingmemory(tmpdir):
             for k, v in anchors.items():
                 if k in gradient_keys:
                     # The gradient anchors will have an additional replication axis.
-                    anchors[k] = np.sum(v, 1)
+                    anchors[k] = np.sum(v, 1 if batches_per_step > 1 else 0)
                 else:
                     # Output tensor needs reshaping.
                     anchors[k] = np.reshape(anchors[k], [
