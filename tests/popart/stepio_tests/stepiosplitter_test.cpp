@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE(StepIOSplitter_Order) {
   }
 
   // Set up StepIOSplitter.
-  StepIOSplitter splitter(NUM_REPLICAS);
+  StepIOSplitter splitter(NUM_REPLICAS, 10, 1);
   splitter.setUpstreamIo(&upstreamIo);
 
   // Get downstream StepIOs from splitter.
@@ -297,7 +297,7 @@ BOOST_AUTO_TEST_CASE(StepIOSplitter_PrefetchFlag) {
   TestStepIO upstreamIo;
 
   // Set up StepIOSplitter.
-  StepIOSplitter splitter(NUM_REPLICAS);
+  StepIOSplitter splitter(NUM_REPLICAS, 10, 1);
   splitter.setUpstreamIo(&upstreamIo);
 
   // Get downstream StepIOs from splitter.

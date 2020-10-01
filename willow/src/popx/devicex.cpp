@@ -2662,7 +2662,13 @@ void Devicex::loadEngineAndConnectStreams() {
       pEngine->connectStream(h2dId(tensor->id), tensor->tensorData()->data());
     }
 
-    stepIoSplitter = std::make_unique<StepIOSplitter>(getReplicationFactor());
+    stepIoSplitter = std::make_unique<StepIOSplitter>(
+        getReplicationFactor(),
+        static_cast<unsigned>(ir().getDataFlow().batchesPerStep()),
+        ir().getSessionOptions().enableGradientAccumulation
+            ? ir().getSessionOptions().accumulationFactor
+            : 1);
+    stepIoSplitter->reset();
 
     auto engineToInputStreamWithCallback =
         [&pEngine = pEngine, this](Tensor *tensor, PopStreamId streamId) {
