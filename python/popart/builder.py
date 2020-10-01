@@ -15,6 +15,7 @@ class Opset():
         builder: An interface for a Builder, used for creating ONNX graphs.
         version: Opset version to use for the given opset sub-class.
     """
+
     def __init__(self, builder: "Builder", version: int) -> None:
         self._builder = builder
         self.version = version
@@ -31,6 +32,7 @@ class Builder():
         builderCore: ``_BuilderCore`` object if you want to create a subgraph
             builder using an existing ``buildercore`` object. Default: ``None``.
     """
+
     def __init__(self,
                  modelProtoOrFilename: Union[str, bytes] = None,
                  opsets: Dict[str, int] = None,
@@ -83,8 +85,9 @@ class Builder():
 
             # Populate self._onnxOpsets with the AiOnnx{version} classes.
             for key, value in globals().items():
-                if re.match('AiOnnx\d', key):
-                    version = key[len('AiOnnx'):]
+                match = re.match(r'AiOnnx(\d+)', key)
+                if match is not None:
+                    version = match.group(1)
                     self._onnxOpsets[f'aiOnnxOpset{version}'] = value(
                         self, version)
 
@@ -173,6 +176,7 @@ class AiOnnx(Opset):
             Default: 10.
 
     """
+
     def __init__(self, builder: Builder, version: int) -> None:
         super(AiOnnx, self).__init__(builder, version)
 
@@ -242,6 +246,7 @@ class AiOnnx(Opset):
 class AiOnnx6(AiOnnx):
     """Minimal builder interface for ai.onnx version 6.
     """
+
     def __init__(self, builder: Builder, version: int) -> None:
         super(AiOnnx6, self).__init__(builder, version)
         self.aiOnnx = self._builder._impl.aiOnnxOpset6
@@ -250,6 +255,7 @@ class AiOnnx6(AiOnnx):
 class AiOnnx7(AiOnnx6):
     """Minimal builder interface for ai.onnx version 7.
     """
+
     def __init__(self, builder: Builder, version: int) -> None:
         super(AiOnnx7, self).__init__(builder, version)
         self.aiOnnx = self._builder._impl.aiOnnxOpset7
@@ -258,6 +264,7 @@ class AiOnnx7(AiOnnx6):
 class AiOnnx8(AiOnnx7):
     """Minimal builder interface for ai.onnx version 8.
     """
+
     def __init__(self, builder: Builder, version: int) -> None:
         super(AiOnnx8, self).__init__(builder, version)
         self.aiOnnx = self._builder._impl.aiOnnxOpset8
@@ -294,6 +301,7 @@ class AiOnnx8(AiOnnx7):
 class AiOnnx9(AiOnnx8):
     """Minimal builder interface for ai.onnx version 9.
     """
+
     def __init__(self, builder: Builder, version: int) -> None:
         super(AiOnnx9, self).__init__(builder, version)
         self.aiOnnx = self._builder._impl.aiOnnxOpset9
@@ -351,6 +359,7 @@ class AiOnnx10(AiOnnx9):
     this class must be updated to inherit from AiOnnx11, as
     described in T12084
     """
+
     def __init__(self, builder: Builder, version: int) -> None:
         super(AiOnnx10, self).__init__(builder, version)
         self.aiOnnx = self._builder._impl.aiOnnxOpset10
@@ -359,6 +368,7 @@ class AiOnnx10(AiOnnx9):
 class AiOnnx11(AiOnnx10):
     """Minimal builder interface for ai.onnx version 11.
     """
+
     def __init__(self, builder: Builder, version: int) -> None:
         super(AiOnnx11, self).__init__(builder, version)
         self.aiOnnx = self._builder._impl.aiOnnxOpset11
@@ -370,6 +380,7 @@ class AiOnnxMl(Opset):
     Raises:
         ValueError: Thrown if an invalid ai.onnx.ml opset version provided.
     """
+
     def __init__(self, builder: Builder, version: int) -> None:
         super(AiOnnxMl, self).__init__(builder, version)
         if self.version == 1:
@@ -389,6 +400,7 @@ class AiGraphcore(Opset):
     Raises:
         ValueError: Thrown if an invalid ai.graphcore opset version provided.
     """
+
     def __init__(self, builder: Builder, version: int) -> None:
         super(AiGraphcore, self).__init__(builder, version)
         if self.version == 1:
@@ -437,5 +449,6 @@ class AiGraphcore(Opset):
 class AiGraphcoreOpset1(AiGraphcore):
     """Sub-class for backwards compatibility. Will forward all calls to AiGraphcore class.
     """
+
     def __init__(self, builder: Builder, version: int) -> None:
         super(AiGraphcoreOpset1, self).__init__(builder, version)
