@@ -9,7 +9,8 @@ add_popart_cpp_unit_test(executionphase_sharding_test executionphase_sharding_te
 add_popart_cpp_unit_test(executionphase_initop_accumulator_test executionphase_initop_accumulator_test.cpp VARIANTS "IpuModel")
 add_popart_cpp_unit_test(streamingmemoryopinserter_test streamingmemoryopinserter_test.cpp VARIANTS "Cpu")
 
-add_popart_py_unit_test(streamingmemory_test VARIANTS "Hw")
+add_popart_py_unit_test(streamingmemory_test_0 VARIANTS "Hw")
+add_popart_py_unit_test(streamingmemory_test_1 VARIANTS "Hw")
 add_popart_py_unit_test(streamingmemory_tensor_location_test VARIANTS "Hw")
 add_popart_py_unit_test(streamingmemory_attention_test VARIANTS "Hw")
 # T26754 && T26968
