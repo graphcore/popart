@@ -9,7 +9,7 @@
 namespace py = pybind11;
 using namespace popart;
 
-void init_ex6(py::module &m) {
+PYBIND11_MODULE(popart_opset6, m) {
   py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
       .def(
           "abs",

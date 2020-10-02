@@ -485,13 +485,6 @@ public:
 PYBIND11_MODULE(popart_core, m) {
   m.doc() = "binding for C++ popart library";
 
-  init_ex6(m);
-  init_ex7(m);
-  init_ex8(m);
-  init_ex9(m);
-  init_ex10(m);
-  init_ex11(m);
-
   m.attr("defaultAiOnnxOpset")      = defaultAiOnnxOpset;
   m.attr("defaultAiOnnxMlOpset")    = defaultAiOnnxMlOpset;
   m.attr("defaultAiGraphcoreOpset") = defaultAiGraphcoreOpset;

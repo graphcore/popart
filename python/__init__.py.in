@@ -13,6 +13,13 @@ sys.path.insert(0, lp)
 
 # Import all symbols into our namespace
 from popart_core import *
+from popart_opset6 import *
+from popart_opset7 import *
+from popart_opset8 import *
+from popart_opset9 import *
+from popart_opset10 import *
+from popart_opset11 import *
+
 from popart.builder import Builder
 from popart.session import InferenceSession, TrainingSession, OutOfMemoryException
 from popart.tensorinfo import TensorInfo

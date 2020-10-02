@@ -832,7 +832,8 @@ def genPythonBuilderBinds(schema):
 
                 f.write("namespace py = pybind11;\n")
                 f.write("using namespace popart;\n\n")
-                f.write(f"void init_ex{opset_version}(py::module &m) {{\n")
+                f.write(
+                    f"PYBIND11_MODULE(popart_opset{opset_version}, m) {{\n")
                 # Add all ops in the this op set
                 for op in opset.operators:
 
