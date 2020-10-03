@@ -38,12 +38,7 @@ function(add_popart_python_module module_name source_file)
     # ...
   )
 
-  add_custom_command(
-    TARGET ${module_name}
-    PRE_BUILD
-    COMMAND cmake -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/popart ${CMAKE_CURRENT_BINARY_DIR}/popart
-    COMMENT "Copying python module"
-  )
+
 
   # This was useful on OS/X for a while, see 
   # https://stackoverflow.com/questions/47697761 and
@@ -67,6 +62,11 @@ add_popart_python_module(popart_opset8 popart_opset8.gen.cpp)
 add_popart_python_module(popart_opset9 popart_opset9.gen.cpp)
 add_popart_python_module(popart_opset10 popart_opset10.gen.cpp)
 add_popart_python_module(popart_opset11 popart_opset11.gen.cpp)
+
+# Copy the files in popart/popart/python/popart.
+install(DIRECTORY
+  ${CMAKE_CURRENT_SOURCE_DIR}/popart
+  DESTINATION ${INSTALL_PYDIR})
 
 install(DIRECTORY
   popart
