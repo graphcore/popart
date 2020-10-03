@@ -53,7 +53,7 @@ createTestDevice(const TestDeviceType testDeviceType,
       {"numIPUs", std::to_string(numIPUs)},
       {"tilesPerIPU", std::to_string(tilesPerIPU)}};
 
-  auto dm = DeviceManager::createDeviceManager();
+  auto &dm = DeviceManager::createDeviceManager();
   switch (testDeviceType) {
   case TestDeviceType::Cpu:
     return dm.createCpuDevice();
