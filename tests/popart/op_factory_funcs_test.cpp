@@ -28,22 +28,30 @@ public:
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };
 
-static popart::OpDefinition dontTrainOpDef(
-    {popart::OpDefinition::Inputs({
-         {"input", {{popart::DataType::FLOAT}}},
-     }),
-     popart::OpDefinition::Outputs({{"output", {{popart::DataType::FLOAT}}}}),
-     popart::OpDefinition::Attributes({})});
+// clang-format off
+static popart::OpDefinition dontTrainOpDef({
+    popart::OpDefinition::Inputs({
+      {"input", {popart::DataType::FLOAT}}
+    }),
+    popart::OpDefinition::Outputs({
+      {"output", {popart::DataType::FLOAT}}
+    }),
+    popart::OpDefinition::Attributes({})
+});
+// clang-format on
 
 // Test that the LegacyOpFactoryFunction still works.
 // This test will throw an error at compile time if it doesn't.
+// clang-format off
 static OpCreator<TestOp> donttrainOpCreator(
     {{CustomOperators::DontTrain, dontTrainOpDef}},
     [](const OperatorIdentifier &opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {
       return std::unique_ptr<TestOp>(new TestOp(opid, settings));
-    });
+    }
+);
+// clang-format on
 
 BOOST_AUTO_TEST_CASE(Basic0) {
   logging::debug("If this test built, then LegacyOpFactoryFunc still works.");
