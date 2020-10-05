@@ -135,7 +135,7 @@ struct BatchSerializationSettings {
                              bool concatOnPipelineStageChange_,
                              BatchSerializationBatchSchedule batchSchedule_ =
                                  BatchSerializationBatchSchedule::Isomorphic,
-                             int isomorphismScoreGap_ = 5);
+                             int isomorphismScoreGap_ = 3);
 
   BatchSerializationSettings &
   operator=(const BatchSerializationSettings &rhs) = default;
@@ -147,7 +147,7 @@ struct BatchSerializationSettings {
   // These settings are experimental and may change.
   BatchSerializationBatchSchedule batchSchedule =
       BatchSerializationBatchSchedule::Isomorphic;
-  int isomorphismScoreGap = 5;
+  int isomorphismScoreGap = 3;
 };
 
 enum class ExecutionPhaseIOSchedule {
