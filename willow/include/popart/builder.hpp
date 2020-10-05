@@ -373,13 +373,13 @@ public:
    * a zero target
    *
    * \param args [tensor]
-   * \param lamda Scale factor of L1 loss
+   * \param lambda Scale factor of L1 loss
    * \param reduction Type of reduction to perform on the individual losses
    * \param name Optional identifier for operation
    * \return The name of the result tensor
    */
   TensorId l1loss(const std::vector<TensorId> &args,
-                  const float lamda,
+                  const float lambda,
                   const ReductionType reduction = ReductionType::Mean,
                   const std::string &name       = {});
 
@@ -403,8 +403,7 @@ public:
   /**
    * Add an identity loss operation to the model
    *
-   * Calculates the nll loss given a probability tensor over classes, and
-   * a target tensor containing class labels
+   * Calculates the loss using the identity operator.
    *
    * \param args [tensor]
    * \param reduction Type of reduction to perform on the individual losses
@@ -414,6 +413,26 @@ public:
   TensorId identityloss(const std::vector<TensorId> &args,
                         const ReductionType reduction = ReductionType::Mean,
                         const std::string &name       = {});
+
+  /**
+   * Add a shaped dropout operation to the model
+   *
+   * Applies a shaped dropout to the input tensor. This operator requires a
+   * shape parameter that is used to define the shape of the dropout mask so
+   * that strongly correlated features in the input tensor can be preserved.
+   * The provided shape must be broadcastable to the input tensor.  Note that
+   * this operation targets the poprand library function of the same name.
+   *
+   * \param args [tensor]
+   * \param shape Shape of dropout mask. Must be broadcastable to the input.
+   * \param ratio Probability of dropping an input feature (default = 0.5).
+   * \param name Optional identifier for operation
+   * \return The name of the result tensor
+   */
+  TensorId shapeddropout(const std::vector<TensorId> &args,
+                         const std::vector<int64_t> &shape,
+                         float ratio             = 0.5f,
+                         const std::string &name = {});
 };
 
 /**

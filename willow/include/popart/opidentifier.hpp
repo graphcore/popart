@@ -309,6 +309,7 @@ const static AiGraphcoreOpIdV1 SGD0VarUpdate("SGD0VarUpdate");
 const static AiGraphcoreOpIdV1 SGD1AcclUpdate("SGD1AcclUpdate");
 const static AiGraphcoreOpIdV1 SGD1Combo("SGD1Combo");
 const static AiGraphcoreOpIdV1 SGD1VarUpdate("SGD1VarUpdate");
+const static AiGraphcoreOpIdV1 ShapedDropout_1("ShapedDropout", 1, 1);
 const static AiGraphcoreOpIdV1 ShrinkInplace("ShrinkInplace");
 const static AiGraphcoreOpIdV1 SigmoidInplace("SigmoidInplace");
 const static AiGraphcoreOpIdV1 SignInplace("SignInplace");
@@ -349,8 +350,10 @@ const static OperatorIdentifier Nop          = CustomOperators::Nop_1;
 const static OperatorIdentifier PrintTensor  = CustomOperators::PrintTensor_1;
 const static OperatorIdentifier ReplicatedAllReduce =
     CustomOperators::ReplicatedAllReduce;
-const static OperatorIdentifier Round     = CustomOperators::Round_1;
-const static OperatorIdentifier Scale     = CustomOperators::Scale_1;
+const static OperatorIdentifier Round = CustomOperators::Round_1;
+const static OperatorIdentifier Scale = CustomOperators::Scale_1;
+const static OperatorIdentifier ShapedDropout =
+    CustomOperators::ShapedDropout_1;
 const static OperatorIdentifier Subsample = CustomOperators::Subsample_1;
 } // namespace OpSet1
 } // namespace AiGraphcore

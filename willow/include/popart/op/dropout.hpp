@@ -2,18 +2,20 @@
 #ifndef GUARD_NEURALNET_DROPOUT_HPP
 #define GUARD_NEURALNET_DROPOUT_HPP
 
-#include <popart/op.hpp>
+#include <popart/op/dropoutbase.hpp>
 
 namespace popart {
 
-class DropoutOp : public Op {
-public:
+class DropoutOp : public DropoutBaseOp {
+protected:
+  // protected constructor used in grad op
   DropoutOp(const OperatorIdentifier &opid_,
             float ratio_,
             uint32_t seedModifier_,
             bool outputMask_,
             const Op::Settings &settings_);
 
+public:
   DropoutOp(const OperatorIdentifier &_opid,
             float ratio_,
             const Op::Settings &settings_);
@@ -22,46 +24,22 @@ public:
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
 
-  // Inputs
-  static InIndex getInIndex() { return 0; }
-
-  // Ouputs
-  static OutIndex getOutIndex() { return 0; }
+  // Additional mask output
   static OutIndex getMaskOutIndex() { return 1; }
 
-  bool canBeReplacedByIdentity() override;
-
-  uint32_t getSeedModifier() const;
-  void setSeedModifier(uint32_t sm);
-
-  float getRatio() const;
-  void setRatio(float r);
-
-  void setOutputMask(bool v) { output_mask = v; }
-  bool getOutputMask() const { return output_mask; }
-
-  bool requiresRandomSeed() const override { return true; }
-  InIndex getSeedInIndex() const override { return 1; }
+  void setOutputMask(bool v) { outputMask = v; }
+  bool getOutputMask() const { return outputMask; }
 
   void appendOutlineAttributes(OpSerialiserBase &) const final;
-
-  float getSubgraphValue() const override;
-
-  bool canShard() const override { return true; }
-
-  std::map<TensorId, std::vector<TensorId>>
-  shard(const std::map<TensorId, std::vector<TensorId>> &inputs) override;
 
   const TensorId &getReferenceTensorId();
 
 protected:
-  float ratio;
-  uint32_t seedModifier;
   OpId partnerId;
 
 private:
   TensorId refTensorId;
-  bool output_mask = false;
+  bool outputMask = false;
 };
 
 class DropoutGradOp : public DropoutOp {

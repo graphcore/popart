@@ -14,27 +14,13 @@ DropoutOp::DropoutOp(const OperatorIdentifier &opid_,
                      uint32_t seedModifier_,
                      bool outputMask_,
                      const Op::Settings &settings_)
-    : Op(opid_, settings_), ratio(ratio_), seedModifier(seedModifier_),
-      partnerId(-1), refTensorId(), output_mask(outputMask_) {}
-
-uint32_t DropoutOp::getSeedModifier() const { return seedModifier; }
-
-void DropoutOp::setSeedModifier(uint32_t sm) { seedModifier = sm; }
-
-float DropoutOp::getRatio() const { return ratio; }
-
-void DropoutOp::setRatio(float r) { ratio = r; }
-
-float DropoutOp::getSubgraphValue() const { return getLowSubgraphValue(); }
+    : DropoutBaseOp(opid_, ratio_, seedModifier_, settings_), partnerId(-1),
+      refTensorId(), outputMask(outputMask_) {}
 
 DropoutOp::DropoutOp(const OperatorIdentifier &_opid,
                      float ratio_,
                      const Op::Settings &settings_)
-    : DropoutOp(_opid,
-                ratio_,
-                settings_.getIr().getAndIncrementSeedModifier(),
-                false,
-                settings_) {}
+    : DropoutBaseOp(_opid, ratio_, settings_) {}
 
 std::unique_ptr<Op> DropoutOp::clone() const {
   return std::make_unique<DropoutOp>(*this);
@@ -59,7 +45,7 @@ std::vector<std::unique_ptr<Op>> DropoutOp::getGradOps() {
 
 void DropoutOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
-  os.appendAttribute("ratio", ratio);
+  os.appendAttribute("ratio", getRatio());
 
   // Appending the seedModfier ensures that caching can only occur
   // between dropout ops in the same layer, i.e. between the forward op,
@@ -67,21 +53,6 @@ void DropoutOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   // and the corresponding recompute op (if the fwd op is cloned for
   // recomputation)
   os.appendAttribute("seedModifier", getSeedModifier());
-}
-
-// Dropout in testing mode can be replaced by the identity
-bool DropoutOp::canBeReplacedByIdentity() { return (getIr().isTesting()); }
-
-std::map<TensorId, std::vector<TensorId>>
-DropoutOp::shard(const std::map<TensorId, std::vector<TensorId>> &inputs) {
-  auto outputs = Op::shard(inputs);
-  for (auto shard_outs : outputs.begin()->second) {
-    auto sharded_dropout =
-        dynamic_cast<DropoutOp *>(getIr().getTensor(shard_outs)->getProducer());
-    // Fetch a unique seed modifier
-    sharded_dropout->setSeedModifier(getIr().getAndIncrementSeedModifier());
-  }
-  return outputs;
 }
 
 // Get the reference TensorId used for poplibs call for mask generation.
@@ -136,7 +107,7 @@ std::unique_ptr<Op> DropoutGradOp::clone() const {
 const std::vector<GradInOutMapper> &DropoutGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
       {getGradInIndex(), DropoutOp::getOutIndex(), GradOpInType::GradOut},
-      // Dropout and DropoutGrad inheret from the same base op, so share the
+      // Dropout and DropoutGrad inherit from the same base op, so share the
       // same seed InIndex
       {getSeedInIndex(), getSeedInIndex(), GradOpInType::In}};
   return inInfo;
@@ -163,15 +134,7 @@ static OpCreator<DropoutOp> dropoutOpCreator(
                    {Onnx::Operators::Dropout_7, dropoutOpDef},
                    {Onnx::Operators::Dropout_10, dropoutOpDef}}),
     [](const OpCreatorInfo &info) {
-      float ratio =
-          info.attributes.getAttribute<Attributes::Float>("ratio", 0.5f);
-      // If invalid probability for ratio supplied, throw error.
-      if (ratio <= float(0.) || ratio >= float(1.)) {
-        throw error("{} ratio value {} is not valid. Please use a value in the "
-                    "interval (0,1)",
-                    info.opid,
-                    ratio);
-      }
+      float ratio = DropoutBaseOp::validateRatioAttribute(info);
       return std::unique_ptr<Op>(
           new DropoutOp(info.opid, ratio, info.settings));
     },

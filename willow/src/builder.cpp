@@ -779,6 +779,22 @@ TensorId AiGraphcoreOpset1::identityloss(const std::vector<TensorId> &args,
       .at(0);
 }
 
+TensorId AiGraphcoreOpset1::shapeddropout(const std::vector<TensorId> &args,
+                                          const std::vector<int64_t> &shape,
+                                          float ratio,
+                                          const std::string &name) {
+  std::map<std::string, popart::any> attributes = {{"shape", shape},
+                                                   {"ratio", ratio}};
+
+  return impl
+      ->op(Onnx::AiGraphcore::OpSet1::ShapedDropout,
+           getOpsetVersion(),
+           args,
+           attributes,
+           name)
+      .at(0);
+}
+
 std::vector<TensorId>
 Builder::customOp(const OperatorIdentifier &opid,
                   int opsetVersion,

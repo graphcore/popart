@@ -1546,6 +1546,12 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("perConvReservedTiles")       = pybind11::none(),
             py::arg("cycleBackOff")               = pybind11::none(),
             py::arg("debugPrefix")                = std::string());
+    cls.def("shapeddropout",
+            &AiGraphcoreOpset1::shapeddropout,
+            py::arg("args"),
+            py::arg("shape"),
+            py::arg("ratio")       = 0.5f,
+            py::arg("debugPrefix") = std::string());
   }
   {
     py::class_<Builder> cls(m, "_BuilderCore");
