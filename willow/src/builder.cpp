@@ -42,65 +42,67 @@ static void verifyWindowParameters(std::unique_ptr<BuilderImpl> &impl,
                                    std::vector<int64_t> dilation = {},
                                    const std::string &auto_pad   = "NOTSET",
                                    bool ceil_mode                = false) {
-  auto num_spatial_dims = impl->getTensorShape(input).size() - 2;
-  if (num_spatial_dims < 1) {
-    throw error("Input tensor has no spatial dimensions");
-  }
-  if (strides.size() != 0 && strides.size() != num_spatial_dims) {
-    throw error(
-        "Length of strides vector {} != number of spatial dimensions {}",
-        strides.size(),
-        num_spatial_dims);
-  }
-  if (padding.size() != 0 && padding.size() != num_spatial_dims * 2) {
-    throw error("Padding vector (length {}) does not have 2 values for each "
-                "spatial dimension {}",
-                padding.size(),
-                num_spatial_dims);
-  }
-  if (dilation.size() != 0 && dilation.size() != num_spatial_dims) {
-    throw error(
-        "Length of dilations vector {} != number of spatial dimensions {}",
-        dilation.size(),
-        num_spatial_dims);
-  }
-
-  // Validate that the input shape, kernel shape, strides, padding, and
-  // optional dilation combine to produce a valid output shape
-  if (impl->hasTensorShape(input) && kernel_shape.size()) {
-    // TODO T17932 : We do not have a mechanism for infering the output shape
-    // of custom ops, so this check can only be applied if the tensor shape
-    // is known
-    Shape inShape = impl->getTensorShape(input);
-    inShape.erase(inShape.begin(), inShape.begin() + 2);
-
-    // Default 'zeros'
-    if (padding.empty()) {
-      padding.resize(2 * num_spatial_dims, 0);
+  // TODO T17932 : We do not have a mechanism for infering the output shape
+  // of custom ops, so this set of checks can only be applied if the tensor
+  // shape is known
+  if (impl->hasTensorShape(input)) {
+    auto num_spatial_dims = impl->getTensorShape(input).size() - 2;
+    if (num_spatial_dims < 1) {
+      throw error("Input tensor has no spatial dimensions");
     }
-    // Default 'ones'
-    if (dilation.empty()) {
-      dilation.resize(num_spatial_dims, 1);
+    if (strides.size() != 0 && strides.size() != num_spatial_dims) {
+      throw error(
+          "Length of strides vector {} != number of spatial dimensions {}",
+          strides.size(),
+          num_spatial_dims);
     }
-    if (strides.empty()) {
-      strides.resize(num_spatial_dims, 1);
+    if (padding.size() != 0 && padding.size() != num_spatial_dims * 2) {
+      throw error("Padding vector (length {}) does not have 2 values for each "
+                  "spatial dimension {}",
+                  padding.size(),
+                  num_spatial_dims);
+    }
+    if (dilation.size() != 0 && dilation.size() != num_spatial_dims) {
+      throw error(
+          "Length of dilations vector {} != number of spatial dimensions {}",
+          dilation.size(),
+          num_spatial_dims);
     }
 
-    Shape spatialOutShape = HasReceptiveFieldOp::getSpatialOutShape(
-        inShape,
-        kernel_shape,
-        padding,
-        strides,
-        dilation,
-        HasReceptiveFieldOp::getAutoPad(auto_pad),
-        ceil_mode);
+    // Validate that the input shape, kernel shape, strides, padding, and
+    // optional dilation combine to produce a valid output shape
+    if (kernel_shape.size()) {
+      Shape inShape = impl->getTensorShape(input);
+      inShape.erase(inShape.begin(), inShape.begin() + 2);
 
-    if (std::any_of(spatialOutShape.begin(),
-                    spatialOutShape.end(),
-                    [](int64_t i) { return i < 0; })) {
-      throw error("Window parameter values combine to give invalid spatial "
-                  "output shape: {}",
-                  spatialOutShape);
+      // Default 'zeros'
+      if (padding.empty()) {
+        padding.resize(2 * num_spatial_dims, 0);
+      }
+      // Default 'ones'
+      if (dilation.empty()) {
+        dilation.resize(num_spatial_dims, 1);
+      }
+      if (strides.empty()) {
+        strides.resize(num_spatial_dims, 1);
+      }
+
+      Shape spatialOutShape = HasReceptiveFieldOp::getSpatialOutShape(
+          inShape,
+          kernel_shape,
+          padding,
+          strides,
+          dilation,
+          HasReceptiveFieldOp::getAutoPad(auto_pad),
+          ceil_mode);
+
+      if (std::any_of(spatialOutShape.begin(),
+                      spatialOutShape.end(),
+                      [](int64_t i) { return i < 0; })) {
+        throw error("Window parameter values combine to give invalid spatial "
+                    "output shape: {}",
+                    spatialOutShape);
+      }
     }
   }
 }

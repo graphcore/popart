@@ -13,7 +13,9 @@
 #include <popart/names.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/nll.hpp>
+#include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
+#include <popart/popx/devicex.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
@@ -46,4 +48,74 @@ BOOST_AUTO_TEST_CASE(Builder_MultiOpset) {
   auto in2 = builder->addInputTensor(shape0);
 
   BOOST_CHECK_EXCEPTION(aiOnnx6.concat({in2, t1}, 0), error, invalidOpsetId);
+}
+
+namespace CustomOperators {
+const OperatorIdentifier Foo = {"com.acme", "Foo", 1};
+} // namespace CustomOperators
+
+// An IdentityOp
+class FooOp : public Op {
+public:
+  FooOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
+      : Op(_opid, settings_) {}
+
+  void setup() final { outInfo(0) = inInfo(0); }
+
+  std::unique_ptr<Op> clone() const final {
+    return std::make_unique<FooOp>(*this);
+  }
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+};
+
+static popart::OpDefinition fooOpDef(
+    {popart::OpDefinition::Inputs({
+         {"input", {{popart::DataType::FLOAT, popart::DataType::FLOAT16}}},
+     }),
+     popart::OpDefinition::Outputs(
+         {{"output", {{popart::DataType::FLOAT, popart::DataType::FLOAT16}}}}),
+     popart::OpDefinition::Attributes({})});
+
+static OpCreator<FooOp> fooOpCreator({{CustomOperators::Foo, fooOpDef}});
+
+class FooOpx : public popx::Opx {
+public:
+  FooOpx(Op *op, popx::Devicex *devicex) : popx::Opx(op, devicex) {
+    verifyOp<FooOp>(op, CustomOperators::Foo);
+  }
+
+  void grow(poplar::program::Sequence &prog) const final {
+    insert(outId(0), cloneNcopy(prog, getInTensor(0)));
+  }
+};
+
+bool noTensorShape(const error &ex) {
+  // Error thrown inside BuilderImpl::getValueInfoProto
+  std::string strerr = " is not an known tensor. Must be one of ";
+  return std::string(ex.what()).find(strerr) != std::string::npos;
+}
+
+BOOST_AUTO_TEST_CASE(Builder_CustomOp_Into_WindowParameter_Op) {
+  // Build the model:
+  //
+  // in0 ----> Foo ----> t0 ---> MaxPool --> o
+  //       (Custom Op)
+  //
+  // in order to test that (until T17932 is complete) a tensor generated
+  // by a custom op (which lacks an onnx shape inference method) can be
+  // an input to an op whose Builder method calls into verify_AiOnnxOpset...
+
+  // Build an onnx model
+  auto builder = Builder::create();
+  auto aiOnnx  = builder->aiOnnxOpset6();
+
+  auto in0 = builder->addInputTensor("FLOAT", {1, 1, 10, 10});
+  auto t0  = builder->customOp(CustomOperators::Foo, 1, {in0}, 1, {}).at(0);
+
+  // Confirm that the output of the custom op does not have a known tensor shape
+  BOOST_CHECK_EXCEPTION(builder->getTensorShape(t0), error, noTensorShape);
+
+  // Confirm that maxpool (an op whose builder method calls into
+  // verifyWindowParameters) can take an input without a known tensor shape
+  auto o = aiOnnx.maxpool({t0}, {3, 3}, {}, {});
 }
