@@ -250,8 +250,8 @@ function(add_popart_py_unit_test name)
             COMMAND ${Python3_EXECUTABLE} -m pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/${name}.py ${fork_test}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BUILD_DIR})
     else()
-      string(REGEX REPLACE "[^a-zA-Z_]" "_" MATCHEXPR_NAME "${test_args_MATCHEXPR}")
-      string(REGEX REPLACE "[^a-zA-Z_]" " " MATCHEXPR_VALUE "${test_args_MATCHEXPR}")
+      string(REGEX REPLACE "[^a-zA-Z0-9_]" "_" MATCHEXPR_NAME "${test_args_MATCHEXPR}")
+      string(REGEX REPLACE "[^a-zA-Z0-9_]" " " MATCHEXPR_VALUE "${test_args_MATCHEXPR}")
       set(test_name "${TEST_TARGET}_${TEST_CONFIG}_${name}-${MATCHEXPR_NAME}")
       add_test(NAME "${test_name}"
             COMMAND ${Python3_EXECUTABLE} -m pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/${name}.py -k "${MATCHEXPR_VALUE}" ${fork_test}

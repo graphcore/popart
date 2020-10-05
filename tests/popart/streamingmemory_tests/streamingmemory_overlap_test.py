@@ -64,9 +64,6 @@ def run_model(tmpdir,
 
     num_ipus = 1
 
-    device = tu.create_test_device(num_replicas * num_ipus,
-                                   pattern=popart.SyncPattern.Full)
-
     dfAnchors = {}
     for anchorId in anchorIds:
         dfAnchors.update({anchorId: popart.AnchorReturnType("All")})
@@ -134,32 +131,35 @@ def run_model(tmpdir,
 
     proto = builder.getModelProto()
 
-    session = popart.TrainingSession(fnModel=proto,
-                                     dataFlow=popart.DataFlow(1, dfAnchors),
-                                     optimizer=optimizer,
-                                     loss=final_loss,
-                                     patterns=popart.Patterns(
-                                         popart.PatternsLevel.All),
-                                     userOptions=opts,
-                                     deviceInfo=device)
+    with tu.create_test_device(num_replicas * num_ipus,
+                               pattern=popart.SyncPattern.Full) as device:
 
-    session.prepareDevice()
-    session.weightsFromHost()
-    anchors = session.initAnchorArrays()
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=popart.DataFlow(1, dfAnchors),
+            optimizer=optimizer,
+            loss=final_loss,
+            patterns=popart.Patterns(popart.PatternsLevel.All),
+            userOptions=opts,
+            deviceInfo=device)
 
-    for i in range(num_iterations):
-        ip_data = np.random.rand(num_replicas, batch_size, dsize,
-                                 dsize).astype(np.float32)
-        stepio = popart.PyStepIO({ip: ip_data}, anchors)
-        session.run(stepio)
+        session.prepareDevice()
+        session.weightsFromHost()
+        anchors = session.initAnchorArrays()
 
-    cycles = session.getCycleCount()
+        for i in range(num_iterations):
+            ip_data = np.random.rand(num_replicas, batch_size, dsize,
+                                     dsize).astype(np.float32)
+            stepio = popart.PyStepIO({ip: ip_data}, anchors)
+            session.run(stepio)
 
-    print("anchors:")
-    print(anchors)
-    session.modelToHost(str(tmpdir / model_file_name))
+        cycles = session.getCycleCount()
 
-    return cycles
+        print("anchors:")
+        print(anchors)
+        session.modelToHost(str(tmpdir / model_file_name))
+
+        return cycles
 
 
 def check_model(lhs_model, rhs_model):

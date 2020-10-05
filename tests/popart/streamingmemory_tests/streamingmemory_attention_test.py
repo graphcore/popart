@@ -202,49 +202,51 @@ def test_attention_streamingmemory(tmpdir):
             numIpus = options["numLayers"] + 1
         if options["replication"] > 1:
             numIpus = numIpus * options["replication"]
-        device = tu.create_test_device(numIpus,
-                                       pattern=popart.SyncPattern.Full)
 
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=dataFlow,
-                                         userOptions=opts,
-                                         loss=l1,
-                                         optimizer=popart.ConstSGD(0.1),
-                                         patterns=pat,
-                                         deviceInfo=device)
+        with tu.create_test_device(numIpus,
+                                   pattern=popart.SyncPattern.Full) as device:
 
-        session.prepareDevice()
+            session = popart.TrainingSession(fnModel=proto,
+                                             dataFlow=dataFlow,
+                                             userOptions=opts,
+                                             loss=l1,
+                                             optimizer=popart.ConstSGD(0.1),
+                                             patterns=pat,
+                                             deviceInfo=device)
 
-        session.weightsFromHost()
+            session.prepareDevice()
 
-        anchors = session.initAnchorArrays()
-        for k, v in anchors.items():
-            print(f"anchor_before {k}={v.shape}")
+            session.weightsFromHost()
 
-        inputs = {x_in: input_data, mask: mask_data}
-        stepio = popart.PyStepIO(inputs, anchors)
-
-        for __ in range(10):
-            session.run(stepio)
-
-        session.modelToHost(
-            str(tmpdir / f"streamingmemory_attention_{index}.onnx"))
-
-        if options["replication"] > 1:
+            anchors = session.initAnchorArrays()
             for k, v in anchors.items():
-                if k in gradient_keys:
-                    # The gradient anchors will have an additional replication axis.
-                    anchors[k] = np.sum(v, 1 if batches_per_step > 1 else 0)
-                else:
-                    # Output tensor needs reshaping.
-                    anchors[k] = np.reshape(anchors[k], [
-                        batches_per_step, sequence_length * batch_size,
-                        hidden_size
-                    ])
-            for k, v in anchors.items():
-                print(f"anchor_after {k}={v.shape}")
+                print(f"anchor_before {k}={v.shape}")
 
-        return anchors
+            inputs = {x_in: input_data, mask: mask_data}
+            stepio = popart.PyStepIO(inputs, anchors)
+
+            for __ in range(10):
+                session.run(stepio)
+
+            session.modelToHost(
+                str(tmpdir / f"streamingmemory_attention_{index}.onnx"))
+
+            if options["replication"] > 1:
+                for k, v in anchors.items():
+                    if k in gradient_keys:
+                        # The gradient anchors will have an additional replication axis.
+                        anchors[k] = np.sum(v,
+                                            1 if batches_per_step > 1 else 0)
+                    else:
+                        # Output tensor needs reshaping.
+                        anchors[k] = np.reshape(anchors[k], [
+                            batches_per_step, sequence_length * batch_size,
+                            hidden_size
+                        ])
+                for k, v in anchors.items():
+                    print(f"anchor_after {k}={v.shape}")
+
+            return anchors
 
     test_results = []
 

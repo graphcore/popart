@@ -85,9 +85,6 @@ def run_model(tmpdir,
     else:
         raise ValueError(f"Execution mode {execution_mode} unsupported")
 
-    device = tu.create_test_device(num_replicas * num_ipus,
-                                   pattern=popart.SyncPattern.Full)
-
     dfAnchors = {}
     for anchorId in anchorIds:
         dfAnchors.update({anchorId: popart.AnchorReturnType("All")})
@@ -122,28 +119,31 @@ def run_model(tmpdir,
 
     proto = builder.getModelProto()
 
-    session = popart.TrainingSession(fnModel=proto,
-                                     dataFlow=popart.DataFlow(1, dfAnchors),
-                                     optimizer=optimizer,
-                                     loss=l1,
-                                     patterns=popart.Patterns(
-                                         popart.PatternsLevel.All),
-                                     userOptions=opts,
-                                     deviceInfo=device)
+    with tu.create_test_device(num_replicas * num_ipus,
+                               pattern=popart.SyncPattern.Full) as device:
 
-    session.prepareDevice()
-    session.weightsFromHost()
-    anchors = session.initAnchorArrays()
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=popart.DataFlow(1, dfAnchors),
+            optimizer=optimizer,
+            loss=l1,
+            patterns=popart.Patterns(popart.PatternsLevel.All),
+            userOptions=opts,
+            deviceInfo=device)
 
-    for i in range(num_iterations):
-        ip_data = np.random.rand(num_replicas, accum_factor, batch_size, dsize,
-                                 dsize).astype(np.float32)
-        stepio = popart.PyStepIO({ip: ip_data}, anchors)
-        session.run(stepio)
+        session.prepareDevice()
+        session.weightsFromHost()
+        anchors = session.initAnchorArrays()
 
-    print("anchors:")
-    print(anchors)
-    session.modelToHost(str(tmpdir / model_file_name))
+        for i in range(num_iterations):
+            ip_data = np.random.rand(num_replicas, accum_factor, batch_size,
+                                     dsize, dsize).astype(np.float32)
+            stepio = popart.PyStepIO({ip: ip_data}, anchors)
+            session.run(stepio)
+
+        print("anchors:")
+        print(anchors)
+        session.modelToHost(str(tmpdir / model_file_name))
 
 
 def check_model(lhs_model, rhs_model):
@@ -471,4 +471,3 @@ def test_replicated_lamb_weight_update(tmpdir):
     check_model(phased, phased_replicated)
     check_model(phased, phased_replicated_rws)
     check_model(phased, phased_replicated_rws_acc)
-
