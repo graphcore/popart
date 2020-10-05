@@ -56,11 +56,13 @@ BatchSerializationSettings::BatchSerializationSettings(
     bool concatOnVirtualGraphChange_,
     bool concatOnExecutionPhaseChange_,
     bool concatOnPipelineStageChange_,
-    BatchSerializationBatchSchedule batchSchedule_)
+    BatchSerializationBatchSchedule batchSchedule_,
+    int isomorphismScoreGap_)
     : factor{factor_}, concatOnVirtualGraphChange{concatOnVirtualGraphChange_},
       concatOnExecutionPhaseChange{concatOnExecutionPhaseChange_},
       concatOnPipelineStageChange{concatOnPipelineStageChange_},
-      batchSchedule{batchSchedule_} {}
+      batchSchedule{batchSchedule_}, isomorphismScoreGap(isomorphismScoreGap_) {
+}
 
 std::string getDotCheckString(DotCheck d) {
   const static std::array<std::string, NDotChecks> V = getDotCheckIds();

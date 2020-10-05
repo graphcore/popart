@@ -134,7 +134,8 @@ struct BatchSerializationSettings {
                              bool concatOnExecutionPhaseChange_,
                              bool concatOnPipelineStageChange_,
                              BatchSerializationBatchSchedule batchSchedule_ =
-                                 BatchSerializationBatchSchedule::Isomorphic);
+                                 BatchSerializationBatchSchedule::Isomorphic,
+                             int isomorphismScoreGap_ = 5);
 
   BatchSerializationSettings &
   operator=(const BatchSerializationSettings &rhs) = default;
@@ -143,9 +144,10 @@ struct BatchSerializationSettings {
   bool concatOnVirtualGraphChange   = true;
   bool concatOnExecutionPhaseChange = true;
   bool concatOnPipelineStageChange  = true;
-  // This setting is experimental and may change.
+  // These settings are experimental and may change.
   BatchSerializationBatchSchedule batchSchedule =
       BatchSerializationBatchSchedule::Isomorphic;
+  int isomorphismScoreGap = 5;
 };
 
 enum class ExecutionPhaseIOSchedule {

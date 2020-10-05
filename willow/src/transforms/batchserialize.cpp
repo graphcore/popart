@@ -678,6 +678,9 @@ bool BatchSerialize::apply(Graph &graph) const {
     // scheduler.
     if (settings.batchSchedule != BatchSerializationBatchSchedule::Scheduler) {
 
+      // Local isomorphism distinction gap
+      int64_t scoreGap = settings.isomorphismScoreGap;
+
       // Crystallize schedule within batch serialized phase by inserting topo
       // cons
       std::map<Op *, int64_t> opScheduleIndex;
@@ -749,7 +752,7 @@ bool BatchSerialize::apply(Graph &graph) const {
         }
       }
 
-      std::set<std::pair<Tensor *, TraceDirection>> visited;
+      std::set<std::pair<std::vector<Tensor *>, TraceDirection>> visited;
 
       while (!parallelTraceFront.empty()) {
         std::map<std::tuple<OpId, TraceDirection, int>, std::vector<Tensor *>>
@@ -772,8 +775,8 @@ bool BatchSerialize::apply(Graph &graph) const {
 
         std::vector<Tensor *> frontTensors;
         std::vector<std::vector<Op *>> frontOps;
+        visited.insert({tensors, direction});
         for (Tensor *t : tensors) {
-          visited.insert({t, direction});
           std::vector<Op *> fops;
           if (direction == TraceDirection::Forward) {
             fops = t->consumers.getOps();
@@ -858,8 +861,8 @@ bool BatchSerialize::apply(Graph &graph) const {
               Op *op1 = *std::max_element(
                   binOps.begin(),
                   binOps.end(),
-                  [this, &cachedIsoScores, &opSubgraphEquivId, &op0](Op *lhs,
-                                                                     Op *rhs) {
+                  [this, &cachedIsoScores, &opSubgraphEquivId, &op0, &scoreGap](
+                      Op *lhs, Op *rhs) {
                     std::set<std::pair<Op *, Op *>> visitedOpsLhs;
                     std::set<std::pair<Op *, Op *>> visitedOpsRhs;
                     if (lhs->id == rhs->id) {
@@ -888,7 +891,8 @@ bool BatchSerialize::apply(Graph &graph) const {
                                                   depth,
                                                   true);
                       ++depth;
-                    } while (lhsScore == rhsScore && lastLhsScore != lhsScore &&
+                    } while (std::abs(lhsScore - rhsScore) < scoreGap &&
+                             lastLhsScore != lhsScore &&
                              lastRhsScore != rhsScore);
                     return lhsScore < rhsScore;
                   });
@@ -918,13 +922,9 @@ bool BatchSerialize::apply(Graph &graph) const {
           }
         }
         for (auto nextFront : nextFronts) {
-          bool alreadyVisited = std::any_of(
-              nextFront.second.begin(),
-              nextFront.second.end(),
-              [&visited, &nextFront](Tensor *t) {
-                return visited.find({t, std::get<1>(nextFront.first)}) !=
-                       visited.end();
-              });
+          bool alreadyVisited =
+              visited.find({nextFront.second, std::get<1>(nextFront.first)}) !=
+              visited.end();
           if (alreadyVisited || nextFront.second.size() != batchSerFactor) {
             std::vector<TensorId> idsLocal;
             for (Tensor *tx : nextFront.second) {
@@ -1091,16 +1091,20 @@ int64_t BatchSerialize::getLocalIsoScore(
       auto cssecond = tsecond->consumers.getOps();
 
       for (Op *cfirst : csfirst) {
+        int64_t max_score = 0;
         for (Op *csecond : cssecond) {
+          // Find csecond that matches cfirst best
           if (opSubgraphEquivId[cfirst] == opSubgraphEquivId[csecond]) {
-            score += getLocalIsoScore(cachedIsoScores,
-                                      opSubgraphEquivId,
-                                      {cfirst, csecond},
-                                      visitedOps,
-                                      maxDepth - 1,
-                                      false);
+            max_score = std::max(getLocalIsoScore(cachedIsoScores,
+                                                  opSubgraphEquivId,
+                                                  {cfirst, csecond},
+                                                  visitedOps,
+                                                  maxDepth - 1,
+                                                  false),
+                                 max_score);
           }
         }
+        score += max_score;
       }
     }
   }
