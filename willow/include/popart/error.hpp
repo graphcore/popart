@@ -91,7 +91,7 @@ enum class ErrorSource {
 class memory_allocation_err : public error {
 
 public:
-  memory_allocation_err(const std::string &info) : error(info) {}
+  memory_allocation_err(const std::string &info) : error("{}", info) {}
 
   virtual std::unique_ptr<memory_allocation_err> clone() const = 0;
   virtual std::string getSummaryReport() const                 = 0;
