@@ -237,6 +237,19 @@ std::ostream &operator<<(std::ostream &os, const DeviceConnectionType &dct) {
   return os;
 }
 
+DeviceInfo::DeviceInfo(DeviceProvider &_provider,
+                       DeviceType _type,
+                       DeviceConnectionType _connectionType,
+                       const poplar::OptionFlags &_flags)
+    : provider(_provider), type(_type), connectionType(_connectionType),
+      flags(std::make_unique<const poplar::OptionFlags>(_flags)) {
+  (void)provider;
+}
+
+DeviceInfo::~DeviceInfo() {}
+
+const poplar::OptionFlags &DeviceInfo::getOptionFlags() const { return *flags; }
+
 std::string DeviceInfo::toString() const {
   std::stringstream ss;
 

@@ -2,11 +2,17 @@
 #ifndef GUARD_NEURALNET_DEVICEMANAGER_HPP
 #define GUARD_NEURALNET_DEVICEMANAGER_HPP
 
+#include <map>
 #include <memory>
 #include <sstream>
 #include <vector>
-#include <poplar/DeviceManager.hpp>
+
 #include <popart/names.hpp>
+
+namespace poplar {
+class OptionFlags;
+class Target;
+} // namespace poplar
 
 namespace popart {
 
@@ -36,13 +42,9 @@ public:
   DeviceInfo(DeviceProvider &_provider,
              DeviceType _type,
              DeviceConnectionType _connectionType,
-             const poplar::OptionFlags &_flags)
-      : provider(_provider), type(_type), connectionType(_connectionType),
-        flags(_flags) {
-    (void)provider;
-  }
+             const poplar::OptionFlags &_flags);
 
-  virtual ~DeviceInfo() {}
+  virtual ~DeviceInfo();
 
   /// Attach to the IPU.
   /// \return Returns true if successfully attaches to the device
@@ -78,7 +80,7 @@ public:
   // Whether the device supports offlne compilation
   virtual bool canCompileOffline() const { return false; }
 
-  const poplar::OptionFlags &getOptionFlags() const { return flags; }
+  const poplar::OptionFlags &getOptionFlags() const;
 
   void setOnDemandAttachTimeout(const unsigned seconds);
   const unsigned &getOnDemandAttachTimeout() const { return attachTimeout; }
@@ -89,7 +91,7 @@ private:
   DeviceProvider &provider;
   DeviceType type;
   DeviceConnectionType connectionType;
-  const poplar::OptionFlags flags;
+  const std::unique_ptr<const poplar::OptionFlags> flags;
   // How many seconds to wait when trying to attach to an IPU
   unsigned attachTimeout = 0;
 };
