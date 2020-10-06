@@ -34,6 +34,9 @@ public:
 
   const TensorId &getReferenceTensorId();
 
+  // TODO (T25465): this setter can be removed once dropout is outlineable
+  void setSeedModifier(uint32_t sm) { seedModifier = sm; }
+
 protected:
   OpId partnerId;
 

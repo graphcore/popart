@@ -51,6 +51,9 @@ private:
   void updateSeedModifier();
 
   float ratio;
+
+protected:
+  // TODO (T25465): seedModifier should be private once dropout is outlineable
   uint32_t seedModifier;
 };
 
