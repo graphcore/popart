@@ -39,22 +39,6 @@ poplar::program::Sequence &PopPrograms::setRandomSeedFromHostFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::SetRandomSeedFromHost)];
 }
 
-const poplar::program::Sequence &PopPrograms::rngStateFromHostFragment() const {
-  return seqs[static_cast<int>(ProgramFragmentIndex::RngStateFromHost)];
-}
-
-poplar::program::Sequence &PopPrograms::rngStateFromHostFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::RngStateFromHost)];
-}
-
-const poplar::program::Sequence &PopPrograms::rngStateToHostFragment() const {
-  return seqs[static_cast<int>(ProgramFragmentIndex::RngStateToHost)];
-}
-
-poplar::program::Sequence &PopPrograms::rngStateToHostFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::RngStateToHost)];
-}
-
 const poplar::program::Sequence &
 PopPrograms::cycleCountTensorToHostFragment() const {
   return seqs[static_cast<int>(ProgramFragmentIndex::CycleCountTensortoHost)];
@@ -140,18 +124,6 @@ poplar::program::Sequence PopPrograms::setRandomSeedFromHost() const {
 poplar::program::Sequence PopPrograms::cycleCountTensorToHost() const {
   poplar::program::Sequence prog;
   prog.add(cycleCountTensorToHostFragment());
-  return prog;
-}
-
-poplar::program::Sequence PopPrograms::rngStateFromHost() const {
-  poplar::program::Sequence prog;
-  prog.add(rngStateFromHostFragment());
-  return prog;
-}
-
-poplar::program::Sequence PopPrograms::rngStateToHost() const {
-  poplar::program::Sequence prog;
-  prog.add(rngStateToHostFragment());
   return prog;
 }
 
@@ -426,9 +398,7 @@ const std::vector<poplar::program::Program> PopPrograms::progs() const {
   ps[ProgramIndex::WeightsFromHost]        = weightsFromHost();
   ps[ProgramIndex::OptimizerFromHost]      = optimizerFromHost();
   ps[ProgramIndex::SetRandomSeedFromHost]  = setRandomSeedFromHost();
-  ps[ProgramIndex::RngStateFromHost]       = rngStateFromHost();
   ps[ProgramIndex::Program]                = program();
-  ps[ProgramIndex::RngStateToHost]         = rngStateToHost();
   ps[ProgramIndex::WeightstoHost]          = weightsToHost();
   ps[ProgramIndex::CycleCountTensortoHost] = cycleCountTensorToHost();
 

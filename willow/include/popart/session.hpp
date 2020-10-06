@@ -32,9 +32,6 @@ protected:
 public:
   virtual ~Session() = 0;
 
-  std::vector<uint32_t> getRNGState();
-  void setRNGState(const std::vector<uint32_t>);
-
   void setRandomSeed(uint64_t seedValue);
 
   /**

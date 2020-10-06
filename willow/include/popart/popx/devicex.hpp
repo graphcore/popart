@@ -109,14 +109,6 @@ public:
   // Streams the random seed value from host, and sets the rng registers on
   // the device
   void setRandomSeedFromHost();
-
-  // Stream RNG state host -> device
-  void setRngStateFromHost();
-  // Stream RNG state device -> host
-  std::vector<uint32_t> getRngStateToHost();
-  // write RNG State to host buffer (host -> host)
-  void setRngStateValue(const std::vector<uint32_t>);
-
   const std::string cycleCountStreamId(std::string id) const;
   void instrumentWithHardwareCycleCounter(poplar::program::Sequence &,
                                           int64_t tileId = 0,
@@ -311,8 +303,6 @@ private:
 
   std::shared_ptr<DeviceInfo> deviceInfo;
 
-  poplar::Tensor rngStateTensor;
-
   // Non-const tensors used to keep track of batch count, modulo the return
   // period
   std::map<ReturnPeriod, poplar::Tensor> batchCountingTensors;
@@ -338,14 +328,6 @@ private:
   PriTask initRandomSeed();
   TaskId initRandomSeedTaskId() const;
   void connectRandomSeedStream();
-
-  PriTask rngStateFromHost();
-  TaskId rngStateFromHostTaskId() const;
-  PriTask rngStateToHost();
-  TaskId rngStateToHostTaskId() const;
-  PriTask initRngStateTensor();
-  TaskId initRngStateTensorTaskId() const;
-  void connectRngStateStream();
 
   PriTask setInitTensorValTask(Tensor *);
   TaskId setInitTensorValTaskId(TensorId) const;
@@ -557,9 +539,6 @@ private:
 
   // Buffers for storing the hardware cycle count
   std::map<std::string, std::vector<uint64_t>> cycleCount;
-
-  // Stream buffer for storing RNG states for replicas (HwSeeds)
-  std::map<uint16_t, std::vector<uint32_t>> rngBuffer;
 
   // Wrapper for calls to poplar Engine API calls: loading
   // engine onto the poplar device and connecting streams.

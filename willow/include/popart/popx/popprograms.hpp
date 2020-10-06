@@ -29,9 +29,7 @@ public:
     WeightsFromHost = 0,
     OptimizerFromHost,
     SetRandomSeedFromHost,
-    RngStateFromHost,
     Program,
-    RngStateToHost,
     WeightstoHost,
     CycleCountTensortoHost,
     N // The number of programs
@@ -42,13 +40,11 @@ public:
     StreamWeightsFromHost = 0,
     StreamOptimizerFromHost,
     SetRandomSeedFromHost,
-    RngStateFromHost,
     Init,
     PreForward,
     Forward,
     Backward,
     VarUpdateFromAccumulator,
-    RngStateToHost,
     WeightstoHost,
     ToHostFinalCopy,
     CycleCountTensortoHost,
@@ -64,10 +60,6 @@ public:
   const poplar::program::Sequence &setRandomSeedFromHostFragment() const;
   poplar::program::Sequence &setRandomSeedFromHostFragment();
   const poplar::program::Sequence &cycleCountTensorToHostFragment() const;
-  poplar::program::Sequence &rngStateFromHostFragment();
-  const poplar::program::Sequence &rngStateFromHostFragment() const;
-  poplar::program::Sequence &rngStateToHostFragment();
-  const poplar::program::Sequence &rngStateToHostFragment() const;
   poplar::program::Sequence &cycleCountTensorToHostFragment();
   const poplar::program::Sequence &toHostFinalCopyFragment() const;
   poplar::program::Sequence &toHostFinalCopyFragment();
@@ -176,10 +168,8 @@ private:
   poplar::program::Sequence weightsFromHost() const;
   poplar::program::Sequence optimizerFromHost() const;
   poplar::program::Sequence setRandomSeedFromHost() const;
-  poplar::program::Sequence rngStateFromHost() const;
   poplar::program::Sequence cycleCountTensorToHost() const;
   poplar::program::Sequence program() const;
-  poplar::program::Sequence rngStateToHost() const;
   poplar::program::Sequence weightsToHost() const;
 };
 
