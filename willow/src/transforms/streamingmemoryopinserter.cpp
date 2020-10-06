@@ -1473,8 +1473,8 @@ RemoteLoadOp *StreamingMemoryOpInserter::insertRemoteLoadOp(
   // Setting the execution context ensures it's scheduled in the correct
   // fragment
   remoteLoad->settings.executionContext = context.context;
-
-  remoteLoad->settings.recomputeType = RecomputeType::Checkpoint;
+  remoteLoad->settings.optimizerOp      = false;
+  remoteLoad->settings.recomputeType    = RecomputeType::Checkpoint;
   remoteLoad->setVirtualGraphId(
       tensorConfig.streamingMap.at(context).streamingVGID);
   graph.moveIntoGraph(std::move(remoteLoadOp));
@@ -1603,6 +1603,7 @@ ReplicatedAllGatherOp *StreamingMemoryOpInserter::insertReplicatedAllGatherOp(
     allGather->setExecutionPhase({});
   }
 
+  allGather->settings.optimizerOp   = false;
   allGather->settings.recomputeType = RecomputeType::Checkpoint;
   // RemoteLoad at the end of the previous phase, so that load
   // is executed before inter-IPU copy
@@ -1656,6 +1657,7 @@ StreamingMemoryOpInserter::insertReplicatedReduceScatterOp(
 
   replicatedReduceScatter->settings.tileSet =
       tensorConfig.location.storageTileSet;
+  replicatedReduceScatter->settings.optimizerOp = false;
 
   setPriority(replicatedReduceScatter,
               isPhasedExecution(),
@@ -1709,6 +1711,7 @@ RemoteStoreOp *StreamingMemoryOpInserter::insertRemoteStoreOp(
     remoteStore->settings.schedulePriority = 0.0f;
   }
 
+  remoteStore->settings.optimizerOp   = false;
   remoteStore->settings.recomputeType = RecomputeType::Checkpoint;
   remoteStore->setVirtualGraphId(
       tensorConfig.streamingMap.at(context).streamingVGID);

@@ -24,12 +24,10 @@ void AccumulatorUpdateOpx::grow(poplar::program::Sequence &prog) const {
 
   auto factor = accumulateOp.getFactor();
 
-  // T26910. Replace Adam gradUnscale instances of this Op with mul once
-  // elementwise ops support viewChanges.
   if (!accum.isParallelWriteable()) {
-    accum = graph().clone(accum, debugPrefix("OutplaceFallBack"));
-    logging::opx::warn("Using Outplace Fallback for {}.",
-                       accumulateOp.debugName());
+    throw error("Expected accumulator {} to be writable in {}.",
+                accumulateOp.inId(AccumulatorUpdateOp::getVarToUpdateInIndex()),
+                accumulateOp.debugName());
   }
 
   if (factor.isConst()) {

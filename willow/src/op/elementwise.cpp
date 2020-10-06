@@ -62,6 +62,16 @@ void ElementWiseUnaryOp::setup() {
   outInfo(getOutIndex()) = inInfo(getInIndex());
 }
 
+ReplicatedTensorShardingIndices
+ElementWiseUnaryOp::getReplicatedTensorShardingIndices() const {
+  if (isOptimizerOp()) {
+    return {{{ElementWiseUnaryOp::getInIndex()},
+             {ElementWiseUnaryOp::getOutIndex()}}};
+  } else {
+    return {};
+  }
+}
+
 ElementWiseUnaryBooleanOp::ElementWiseUnaryBooleanOp(
     const OperatorIdentifier &_opid,
     const Op::Settings &settings_)
@@ -107,6 +117,17 @@ ElementWiseBinaryBaseOp::ElementWiseBinaryBaseOp(
 void ElementWiseBinaryBaseOp::setup() {
   outInfo(getOutIndex()) =
       prettyNpOut(inInfo(getArg0InIndex()), inInfo(getArg1InIndex()));
+}
+
+ReplicatedTensorShardingIndices
+ElementWiseBinaryBaseOp::getReplicatedTensorShardingIndices() const {
+  if (isOptimizerOp()) {
+    return {{{ElementWiseBinaryBaseOp::getArg0InIndex(),
+              ElementWiseBinaryBaseOp::getArg1InIndex()},
+             {ElementWiseBinaryBaseOp::getOutIndex()}}};
+  } else {
+    return {};
+  }
 }
 
 ElementWiseBinaryOp::ElementWiseBinaryOp(const OperatorIdentifier &_opid,

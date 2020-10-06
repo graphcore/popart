@@ -22,6 +22,9 @@ public:
   float getSubgraphValue() const override { return getLowSubgraphValue(); }
 
   bool canShard() const override { return true; }
+
+  ReplicatedTensorShardingIndices
+  getReplicatedTensorShardingIndices() const override;
 };
 
 // Base class for elementwise unary boolean output operations
@@ -95,6 +98,9 @@ public:
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
   bool canShard() const override { return true; }
+
+  ReplicatedTensorShardingIndices
+  getReplicatedTensorShardingIndices() const override;
 };
 
 // Base class for non-inplace elementwise binary operation, which may have

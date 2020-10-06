@@ -103,7 +103,7 @@ view::RegMap Op::bwdRegMap(InIndex i, OutIndex o) const {
 bool Op::isLossOp() const { return false; }
 bool Op::isIpuCopyOp() const { return false; }
 bool Op::copiesOptimizerTensors() const { return false; }
-bool Op::isOptimizerOp() const { return optimizerOp; }
+bool Op::isOptimizerOp() const { return settings.optimizerOp; }
 
 bool Op::requiresRandomSeed() const { return false; }
 InIndex Op::getSeedInIndex() const {

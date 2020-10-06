@@ -14,9 +14,10 @@
 #include <popart/op/cast.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/concat.hpp>
-#include <popart/op/div.hpp>
 #include <popart/op/flatten.hpp>
 #include <popart/op/lamb.hpp>
+#include <popart/op/mul.hpp>
+#include <popart/op/scale.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/patterns/adamdecompose.hpp>
 #include <popart/tensor.hpp>
@@ -267,7 +268,7 @@ bool AdamDecompose::apply(Op *op) const {
 
     gradCastOp->setup();
 
-    gradCastOp->optimizerOp = true;
+    gradCastOp->settings.optimizerOp = true;
 
     if (combo->withGradAccum) {
       gradCastOp->settings.executionContext =
@@ -277,29 +278,41 @@ bool AdamDecompose::apply(Op *op) const {
     }
   }
 
-  // gradient unscaling.
-  auto gradUnscaleUp = std::make_unique<AccumulatorUpdateOp>(
-      gradIntoAcclId,
-      combo->initGs,
-      Op::Settings(graph, combo->name() + "_gradUnscale"));
-  auto gradUnscaleOp = gradUnscaleUp.get();
-  transferBaseProperties(combo, gradUnscaleOp);
-  graph.moveIntoGraph(std::move(gradUnscaleUp));
+  Op *gradUnscaleOp;
+  OutIndex gradUnscaleOutIdx = 0;
 
-  gradUnscaleOp->connectInTensor(AccumulatorUpdateOp::getVarToUpdateInIndex(),
-                                 gradIntoAcclId);
+  // Gradient unscaling.
+  if (combo->initGs.isConst()) {
+    auto gradUnscaleUp = std::make_unique<ScaleOp>(
+        Onnx::AiGraphcore::OpSet1::Scale,
+        combo->initGs.val(),
+        Op::Settings(graph, combo->name() + "_gradUnscale"));
+    gradUnscaleOp = gradUnscaleUp.get();
+    transferBaseProperties(combo, gradUnscaleOp);
+    graph.moveIntoGraph(std::move(gradUnscaleUp));
+    gradUnscaleOp->connectInTensor(ScaleOp::getInIndex(), gradIntoAcclId);
+    gradUnscaleOutIdx = ScaleOp::getOutIndex();
+  } else {
+    auto gradUnscaleUp = std::make_unique<MulOp>(
+        Onnx::Operators::Mul_7,
+        Op::Settings(graph, combo->name() + "_gradUnscale"));
+    gradUnscaleOp = gradUnscaleUp.get();
+    transferBaseProperties(combo, gradUnscaleOp);
+    graph.moveIntoGraph(std::move(gradUnscaleUp));
 
-  if (!combo->initGs.isConst()) {
-    gradUnscaleOp->connectInTensor(AccumulatorUpdateOp::getFactorInIndex(),
+    gradUnscaleOp->connectInTensor(MulOp::getArg0InIndex(), gradIntoAcclId);
+    gradUnscaleOp->connectInTensor(MulOp::getArg1InIndex(),
                                    combo->inId(AdamComboOp::getGsInIndex()));
+    gradUnscaleOutIdx = MulOp::getOutIndex();
   }
 
   // The updated gradIntoAcclId
   gradIntoAcclId = ir.createIntermediateTensorId(gradIntoAcclId);
-  gradUnscaleOp->createAndConnectOutTensor(
-      AccumulatorUpdateOp::getUpdatedVarOutIndex(), gradIntoAcclId);
+  gradUnscaleOp->createAndConnectOutTensor(gradUnscaleOutIdx, gradIntoAcclId);
 
   gradUnscaleOp->setup();
+  gradUnscaleOp->settings.optimizerOp = true;
+
   if (combo->withGradAccum) {
     gradUnscaleOp->settings.executionContext =
         ExecutionContext::AccumulateOuterFragment;

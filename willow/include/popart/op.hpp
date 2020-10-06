@@ -79,9 +79,6 @@ public:
 
   bool pruneable = true;
 
-  // To flag an Op as being part of the optimizer
-  bool optimizerOp = false;
-
   struct Settings {
 
     Settings(Graph &graph_, const std::string &name_)
@@ -136,6 +133,9 @@ public:
     // Extra attributes to differentiate ops for outlining
     // Ops with different outline attributes are not outlined together
     std::map<std::string, std::string> extraOutlineAttributes;
+
+    // To flag an Op as being part of the optimizer
+    bool optimizerOp{false};
 
     // This method will append the optional attributes (vgraphId, etc)
     // depending on whether the attribute has been

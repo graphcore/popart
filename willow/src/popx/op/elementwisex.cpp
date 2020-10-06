@@ -134,6 +134,10 @@ void ElementWiseUnaryInplaceOpx::grow(poplar::program::Sequence &prog) const {
     cx->inplace(prog, graph(), outTensor, debugPrefix("nonLinearityInplace"));
   }
   outTensor = cx->reshape(outTensor);
+  if (hasInViewChangers(ElementWiseUnaryOp::getInIndex())) {
+    setOutViewChangers(ElementWiseUnaryOp::getOutIndex(),
+                       getInViewChangers(ElementWiseUnaryOp::getInIndex()));
+  }
   setOutTensor(ElementWiseUnaryOp::getOutIndex(), outTensor);
 }
 
@@ -214,6 +218,12 @@ void ElementWiseBinaryOutplaceOpx::grow(poplar::program::Sequence &prog) const {
 
   auto outTensor = cx->outplace(
       prog, graph(), getInTensor(arg0Idx), getInTensor(arg1Idx), debugPrefix());
+
+  if (hasInViewChangers(ElementWiseBinaryOp::getArg0InIndex())) {
+    setOutViewChangers(
+        ElementWiseBinaryOp::getOutIndex(),
+        getInViewChangers(ElementWiseBinaryOp::getArg0InIndex()));
+  }
   setOutTensor(outIdx, outTensor);
 }
 
@@ -253,6 +263,11 @@ void ElementWiseBinaryInplaceOpx::grow(poplar::program::Sequence &prog) const {
     tInOut = cx->outplace(prog, g, tInOut, tIn, debugPrefix());
   }
 
+  if (hasInViewChangers(ElementWiseBinaryOp::getArg0InIndex())) {
+    setOutViewChangers(
+        ElementWiseBinaryOp::getOutIndex(),
+        getInViewChangers(ElementWiseBinaryOp::getArg0InIndex()));
+  }
   setOutTensor(outIdx, tInOut);
 }
 
