@@ -20,6 +20,7 @@
 #include <gcl/TileAllocation.hpp>
 #include <poplar/CSRFunctions.hpp>
 #include <poplar/CycleCount.hpp>
+#include <poplar/RandomSeed.hpp>
 #include <poplin/codelets.hpp>
 #include <popnn/codelets.hpp>
 #include <popops/ElementWise.hpp>
@@ -1701,11 +1702,151 @@ void Devicex::connectRandomSeedStream() {
   }
 }
 
+PriTask Devicex::rngStateFromHost() {
+  auto rngStateFromHostTask = [this]() {
+    int rngSize = (graph().getTarget().getNumTiles()) *
+                  graph().getTarget().getNumWorkerContexts() * 4;
+    auto streamRngFromHost =
+        graph().addHostToDeviceFIFO("h2d_rngStateTensor",
+                                    poplar::UNSIGNED_INT,
+                                    rngSize,
+                                    poplar::ReplicatedStreamMode::REPLICATE);
+
+    logging::devicex::debug("Initializing RNG h2d.");
+
+    SequenceMap seqs;
+    seqs[&progs.rngStateFromHostFragment()].add(
+        poplar::program::Copy(streamRngFromHost, rngStateTensor));
+    poplar::setHwSeeds(graph(),
+                       rngStateTensor,
+                       seqs[&progs.rngStateFromHostFragment()],
+                       "RNG set");
+    logging::devicex::debug("RNG size {}", rngSize);
+    return seqs;
+  };
+  return {0,
+          rngStateFromHostTaskId(),
+          {{initRngStateTensorTaskId(), DependencyType::Tensor}},
+          rngStateFromHostTask};
+}
+
+PriTask Devicex::initRngStateTensor() {
+  // Add a new tensor to the graph to store the Hw seed
+  auto initRngStateTensorTask = [this]() {
+    SequenceMap seqs;
+    auto workersPerIPU = graph().getTarget().getNumWorkerContexts();
+    auto numTiles      = graph().getTarget().getNumTiles();
+    rngStateTensor     = graph().addVariable(
+        poplar::UNSIGNED_INT, {numTiles, workersPerIPU, 4}, "rngStateTensor");
+    linearMapper.mapTensor(graph(), rngStateTensor);
+    return SequenceMap();
+  };
+  return {+1e6, initRngStateTensorTaskId(), {}, initRngStateTensorTask};
+}
+
+PriTask Devicex::rngStateToHost() {
+  auto rngStateToHostTask = [this]() {
+    int rngSize = graph().getTarget().getNumTiles() *
+                  graph().getTarget().getNumWorkerContexts() * 4;
+    auto streamRngToHost = graph().addDeviceToHostFIFO(
+        "d2h_rngStateTensor", poplar::UNSIGNED_INT, rngSize);
+
+    logging::devicex::debug("Initializing RNG d2h.");
+    logging::devicex::debug("RNG size {}", rngSize);
+    SequenceMap seqs;
+    rngStateTensor = poplar::getHwSeeds(
+        graph(), seqs[&progs.rngStateToHostFragment()], "RNG get");
+    seqs[&progs.rngStateToHostFragment()].add(
+        poplar::program::Copy(rngStateTensor, streamRngToHost));
+    return seqs;
+  };
+
+  return {0,
+          rngStateToHostTaskId(),
+          {{initRngStateTensorTaskId(), DependencyType::Tensor}},
+          rngStateToHostTask};
+}
+
+void Devicex::connectRngStateStream() {
+  int rngSize = graph().getTarget().getNumTiles() *
+                graph().getTarget().getNumWorkerContexts() * 4;
+  for (uint16_t replicaId = 0; replicaId < getReplicationFactor();
+       ++replicaId) {
+    rngBuffer[replicaId] = std::vector<uint32_t>(rngSize);
+
+    auto h2d_callback = [this, replicaId, rngSize](void *ptr) {
+      uint32_t *data   = reinterpret_cast<uint32_t *>(ptr);
+      uint32_t *buffer = rngBuffer[replicaId].data();
+      for (int k = 0; k < rngSize; k++) {
+        *data = *buffer;
+        data++;
+        buffer++;
+      }
+      logging::devicex::debug("Updating RNG state for replica:{}", replicaId);
+    };
+
+    auto d2h_callback = [this, replicaId, rngSize](void *ptr) {
+      uint32_t *data   = reinterpret_cast<uint32_t *>(ptr);
+      uint32_t *buffer = rngBuffer[replicaId].data();
+      for (int k = 0; k < rngSize; k++) {
+        *buffer = *data;
+        data++;
+        buffer++;
+      }
+      logging::devicex::debug("Retrieving RNG for replica:{}", replicaId);
+    };
+
+    pEngine->connectStreamToCallback(
+        "h2d_rngStateTensor", replicaId, h2d_callback);
+    pEngine->connectStreamToCallback(
+        "d2h_rngStateTensor", replicaId, d2h_callback);
+  }
+}
+
 void Devicex::setRandomSeedFromHost() {
   POPART_TRACEPOINT();
   if (ir().useSyntheticData() == false) {
     pEngine->disableExecutionProfiling();
     run(PopPrograms::ProgramIndex::SetRandomSeedFromHost, "SetRandomSeed");
+  }
+}
+
+void Devicex::setRngStateFromHost() {
+  if (1) { // Add Session option
+    pEngine->disableExecutionProfiling();
+    run(PopPrograms::ProgramIndex::RngStateFromHost, "SetRngState");
+  }
+}
+
+std::vector<uint32_t> Devicex::getRngStateToHost() {
+  // Reset the buffer
+  logging::devicex::debug("Cleaning the rng buffer before receiving data");
+  for (auto &buffer : rngBuffer) {
+    buffer.second =
+        std::vector<uint32_t>(graph().getTarget().getNumTiles() *
+                              graph().getTarget().getNumWorkerContexts() * 4);
+  }
+  pEngine->disableExecutionProfiling();
+  run(PopPrograms::ProgramIndex::RngStateToHost, "GetRngState");
+  logging::devicex::debug("Copying data to host");
+  std::vector<uint32_t> seedValue;
+  for (uint16_t replicaId = 0; replicaId < getReplicationFactor();
+       ++replicaId) {
+    seedValue.insert(seedValue.end(),
+                     rngBuffer[replicaId].begin(),
+                     rngBuffer[replicaId].end());
+  }
+  return seedValue;
+}
+
+void Devicex::setRngStateValue(const std::vector<uint32_t> seedValue) {
+  int rngSize = graph().getTarget().getNumTiles() *
+                graph().getTarget().getNumWorkerContexts() * 4;
+  const uint32_t *seed_ptr = seedValue.data();
+  for (uint16_t replicaId = 0; replicaId < getReplicationFactor();
+       ++replicaId) {
+    rngBuffer[replicaId].assign(seed_ptr, seed_ptr + rngSize);
+    seed_ptr += rngSize;
   }
 }
 
@@ -2655,6 +2796,11 @@ void Devicex::loadEngineAndConnectStreams() {
       connectRandomSeedStream();
     }
 
+    // Rng
+    if (ir().getSessionOptions().enableLoadAndOffloadRNGState) {
+      connectRngStateStream();
+    }
+
     logging::devicex::debug("Connecting optimizer streams");
 
     for (auto tensor : ir().optimizerTensors()) {
@@ -3093,6 +3239,12 @@ void Devicex::prepareGraph() {
     tasks.add(initRandomSeed());
   }
 
+  if (ir().getSessionOptions().enableLoadAndOffloadRNGState) {
+    tasks.add(initRngStateTensor());
+    tasks.add(rngStateFromHost());
+    tasks.add(rngStateToHost());
+  }
+
   // Depending on anchor return types specified by the user, some
   // tensors may need to be added to the graph to keep track of
   // batch count.
@@ -3394,7 +3546,7 @@ void Devicex::compileAndExport(const std::string &executablePath,
     const auto programs = progs.progs();
     poplar::program::Sequence fusedH2d, fusedMain, fusedD2h;
 
-    static_assert(PopPrograms::ProgramIndex::N == 6,
+    static_assert(PopPrograms::ProgramIndex::N == 8,
                   "Make sure all the programs are added to one of the 3 "
                   "sequences below.");
 
@@ -3669,6 +3821,16 @@ TaskId Devicex::updateBatchCountTaskId() const {
 }
 
 TaskId Devicex::initRandomSeedTaskId() const { return "initRandomSeedTask"; }
+
+TaskId Devicex::rngStateFromHostTaskId() const {
+  return "rngStateFromHostTask";
+}
+
+TaskId Devicex::rngStateToHostTaskId() const { return "rngStateToHostTask"; }
+
+TaskId Devicex::initRngStateTensorTaskId() const {
+  return "initRngStateTensorTask";
+}
 
 TaskId Devicex::initTensorTaskId(TensorId id) const {
   return "initTensorTaskId_" + id;

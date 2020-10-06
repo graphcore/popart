@@ -46,7 +46,6 @@ def test_groupHostSync():
     stepio = popart.PyStepIO({a: input_a}, anchors)
     session.run(stepio)
     summaryReport = session.getSummaryReport()
-
     lines = summaryReport.split('\n')
     order = []
     pastSwitch = False
@@ -82,7 +81,7 @@ def test_groupHostSync():
             continue
         if re.search(r"Sequence", l):
             countSeq += 1
-            if countSeq >= 6:
+            if countSeq > 6:
                 break
         if re.search(r"OnTileExecute: [0-9]{3}/Op/Add", l):
             order.append("add")
