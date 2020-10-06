@@ -64,9 +64,12 @@ add_popart_python_module(popart_opset10 popart_opset10.gen.cpp)
 add_popart_python_module(popart_opset11 popart_opset11.gen.cpp)
 
 # Copy the files in popart/popart/python/popart.
-install(DIRECTORY
-  ${CMAKE_CURRENT_SOURCE_DIR}/popart
-  DESTINATION ${INSTALL_PYDIR})
+add_custom_command(
+  TARGET popart_core
+  PRE_BUILD
+  COMMAND cmake -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/popart ${CMAKE_CURRENT_BINARY_DIR}/popart
+  COMMENT "Copying python module"
+)
 
 install(DIRECTORY
   popart
