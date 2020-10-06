@@ -74,6 +74,8 @@ from the model. The associated values are an ``AnchorReturnType``, which is one 
   only for iterations which are divisible by ``N``.
 * ``popart.AnchorReturnType("FINAL")``: the value of the tensor on the final
   iteration through the graph.
+* ``popart.AnchorReturnType("SUM")``: the sum of the values of the tensor
+ from each iteration through the graph.
 
 Selecting a device for execution
 ================================
