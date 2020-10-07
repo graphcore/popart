@@ -4,4 +4,3 @@ add_popart_cpp_unit_test(stepiosplitter_test stepiosplitter_test.cpp)
 
 add_popart_py_unit_test(stepio_tests_py VARIANTS Hw)
 add_popart_py_unit_test(stepio_tests_py_cpu)
-add_popart_py_unit_test(stepio_shuffle_test VARIANTS Hw)
