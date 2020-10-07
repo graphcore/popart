@@ -173,8 +173,7 @@ def test_weight_update_replicated(op_tester):
         enableRuntimeAsserts=False)
     op_tester.options.enableReplicatedGraphs = True
     op_tester.options.replicatedGraphCount = replicationFactor
-    # T26773: set to False, or else 'poplar_exception:
-    # Divergent control flow in switch'
+    # Cant do opxModifyChecking wich replicated graphs.
     op_tester.options.opxModifyChecking = False
     op_tester.numIPUs = replicationFactor
     op_tester.run(init_builder,
@@ -246,7 +245,6 @@ def test_replication_infer(op_tester):
     op_tester.options.enableReplicatedGraphs = True
     op_tester.options.replicatedGraphCount = replicationFactor
     op_tester.numIPUs = replicationFactor
-    # T26773: set to False, or else 'poplar_exception:
-    # Divergent control flow in switch'
+    # Cant do opxModifyChecking wich replicated graphs.
     op_tester.options.opxModifyChecking = False
     op_tester.run(init_builder, reference, 'infer')

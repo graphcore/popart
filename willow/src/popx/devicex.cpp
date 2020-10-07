@@ -2259,6 +2259,11 @@ void Devicex::growOpx(Opx *opx, poplar::program::Sequence &seq) {
   std::map<InIndex, std::pair<poplar::Tensor, poplar::Tensor>>
       nonModifiedTensors;
   if (ir().getSessionOptions().opxModifyChecking) {
+    if (ir().getSessionOptions().replicatedGraphCount > 1) {
+      throw error("Can not do opx modify checking when using replicated "
+                  "graphs. Set SessionOptions::opxModifyChecking to false.");
+    }
+
     for (auto &inputMap : opx->op_p->input->tensorMap()) {
       auto regions = opx->op_p->modifies(inputMap.first);
       // Check that no region of the input tensor is marked as modified
