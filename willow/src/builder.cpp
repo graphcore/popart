@@ -951,6 +951,10 @@ std::vector<TensorId> Builder::getValueTensorIds() const {
   return impl_->getValueTensorIds();
 }
 
+std::vector<TensorId> Builder::getTrainableTensorIds() const {
+  return impl_->getTrainableTensorIds();
+}
+
 std::vector<int64_t> Builder::getTensorShape(const TensorId id) {
   return impl_->getTensorShape(id);
 }

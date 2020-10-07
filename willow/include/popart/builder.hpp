@@ -1160,6 +1160,16 @@ public:
   std::vector<TensorId> getValueTensorIds() const;
 
   /**
+   * Return a list of ONNX graph initialized tensor ids
+   *
+   * These tensors are stored in the `initialized` section of the ONNX
+   * GraphProto structure.
+   *
+   * \return A vector of tensor names
+   */
+  std::vector<TensorId> getTrainableTensorIds() const;
+
+  /**
    * Return an ONNX graph tensor shape, from either the input,
    * output, or value_info lists in the GraphProto
    *

@@ -1100,6 +1100,14 @@ bool BuilderImpl::isInitializer(const TensorId &id) const {
   return false;
 }
 
+std::vector<TensorId> BuilderImpl::getTrainableTensorIds() const {
+  std::vector<TensorId> result;
+  for (const auto &initializer : model_.graph().initializer()) {
+    result.push_back(initializer.name());
+  }
+  return result;
+}
+
 void BuilderImpl::setAttribute(const std::string &attribute,
                                popart::any value) {
   attributes.insert(std::make_pair(attribute, value));

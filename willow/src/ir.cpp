@@ -44,6 +44,7 @@
 #include <popart/transforms/accumulateouterfragmentparallelizer.hpp>
 #include <popart/transforms/auto_virtual_graph.hpp>
 #include <popart/transforms/batchserialize.hpp>
+#include <popart/transforms/clipweightgradientsbynorm.hpp>
 #include <popart/transforms/decomposegradsum.hpp>
 #include <popart/transforms/dynamicoptransform.hpp>
 #include <popart/transforms/explicitrecompute.hpp>
@@ -1114,6 +1115,10 @@ void Ir::prepareImpl(const IrBundle &gb) {
     logging::transform::info("Auto-annotating Ops for recomputation");
     recompute::autoAnnotate(getMainGraph(),
                             getSessionOptions().autoRecomputation);
+  }
+
+  if (optimizer && optimizer->getClipNormSettings().size() > 0) {
+    applyTransform(ClipWeightGradientsByNorm::id(), getMainGraph());
   }
 
   updateVertices();

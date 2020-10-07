@@ -687,10 +687,13 @@ PYBIND11_MODULE(popart_core, m) {
 
     {
       py::class_<SGD> sgd(m, "SGD", optimizer);
-      sgd.def(py::init([](py::dict pyd) {
-        auto cppm = getOptimizerValueDictionary(pyd);
-        return SGD(cppm);
-      }));
+      sgd.def(py::init([](py::dict pyd,
+                          std::vector<ClipNormSettings> clipNormSettings) {
+                auto cppm = getOptimizerValueDictionary(pyd);
+                return SGD(cppm, clipNormSettings);
+              }),
+              py::arg("pyd"),
+              py::arg("clip_norm_settings") = std::vector<ClipNormSettings>{});
       sgd.def("insertSpecific", [](SGD &self, TensorId id, py::dict pyd) {
         self.insertSpecific(id, getOptimizerValueDictionary(pyd));
       });
@@ -703,10 +706,12 @@ PYBIND11_MODULE(popart_core, m) {
 
       { // This class is deprecated, and SGD should be preferred
         py::class_<ConstSGD> cls(m, "ConstSGD", sgd);
-        cls.def(py::init<float, float, float>(),
+        cls.def(py::init<float, float, float, std::vector<ClipNormSettings>>(),
                 py::arg("learning_rate"),
                 py::arg("weight_decay") = 0.0f,
-                py::arg("loss_scaling") = 1.0f);
+                py::arg("loss_scaling") = 1.0f,
+                py::arg("clip_norm_settings") =
+                    std::vector<ClipNormSettings>{});
       }
     }
     {
@@ -853,6 +858,14 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("schedule", &AccumulateOuterFragmentSettings::schedule);
     cls.def_readwrite("excludedVirtualGraphs",
                       &AccumulateOuterFragmentSettings::excludedVirtualGraphs);
+  }
+  {
+    py::class_<ClipNormSettings> cls(m, "ClipNormSettings");
+    cls.def(py::init<std::vector<TensorId>, float>(),
+            py::arg("weightIds"),
+            py::arg("maxNorm"));
+    cls.def_readwrite("weightIds", &ClipNormSettings::weightIds);
+    cls.def_readwrite("maxNorm", &ClipNormSettings::maxNorm);
   }
   {
     py::class_<SessionOptions::NumIOTiles> cls(m, "NumIOTiles");
@@ -1736,6 +1749,7 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("getInputTensorIds", &Builder::getInputTensorIds);
     cls.def("getOutputTensorIds", &Builder::getOutputTensorIds);
     cls.def("getValueTensorIds", &Builder::getValueTensorIds);
+    cls.def("getTrainableTensorIds", &Builder::getTrainableTensorIds);
     cls.def("getTensorShape", &Builder::getTensorShape, py::arg("id"));
     cls.def(
         "getTensorDtypeString", &Builder::getTensorDtypeString, py::arg("id"));

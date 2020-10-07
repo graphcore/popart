@@ -24,8 +24,41 @@ getOptMap(const std::map<std::string, std::pair<float, bool>> &m) {
   return mOptVals;
 }
 
+bool ClipNormSettings::operator==(const ClipNormSettings &other) const {
+  if (weightIds.size() != other.weightIds.size()) {
+    return false;
+  }
+
+  for (int i = 0; i < weightIds.size(); i++) {
+    if (weightIds[i] != other.weightIds[i]) {
+      return false;
+    }
+  }
+
+  if (maxNorm != other.maxNorm) {
+    return false;
+  }
+
+  return true;
+}
+
+bool Optimizer::validReplacement(const Optimizer &other) const {
+  logging::ir::debug("Checking clip norm settings.");
+  if (clipNormSettings.size() != other.clipNormSettings.size()) {
+    return false;
+  }
+
+  for (int i = 0; i < clipNormSettings.size(); i++) {
+    if (clipNormSettings[i] != other.clipNormSettings[i]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 SGD SGD::fromDefaultMap(const std::map<std::string, OptimizerValue> &m) {
-  return SGD(getComplete(m), 1011);
+  return SGD(getComplete(m), {}, 1011);
 }
 
 void Optimizer::setFactorsFromOptions(const SessionOptions &opts) {
@@ -95,8 +128,9 @@ const std::vector<std::string> &getSpecificNames() {
 
 } // namespace
 
-SGD::SGD(const std::map<std::string, std::pair<float, bool>> &m)
-    : SGD(getComplete(getOptMap(m)), 31415) {}
+SGD::SGD(const std::map<std::string, std::pair<float, bool>> &m,
+         const std::vector<ClipNormSettings> &clipNormSettings)
+    : SGD(getComplete(getOptMap(m)), clipNormSettings, 31415) {}
 
 void SGD::insertSpecific(
     const TensorId &id,
@@ -141,7 +175,9 @@ TensorId Optimizer::getLossScalingTensorId(DataType t) {
   return reservedLossScalingPrefix() + getDataTypeInfoMap().at(t).name();
 }
 
-Optimizer::Optimizer(OptimizerValue ls_) : ls(ls_) {
+Optimizer::Optimizer(OptimizerValue ls_,
+                     const std::vector<ClipNormSettings> &clipNormSettings_)
+    : ls(ls_), clipNormSettings(clipNormSettings_) {
   // Reject loss scaling of 0.
   if (!(ls.val() > 0.0f || ls.val() < 0.0f)) {
     throw error("Loss scaling cannot be 0");
@@ -228,21 +264,26 @@ void SGD::runValueChecks(OptimizerValue lr,
   }
 }
 
-SGD::SGD(const std::map<std::string, OptimizerValue> &cmap, int)
+SGD::SGD(const std::map<std::string, OptimizerValue> &cmap,
+         const std::vector<ClipNormSettings> &clipNormSettings,
+         int)
     : SGD(cmap.at("defaultLearningRate"),
           cmap.at("defaultWeightDecay"),
           cmap.at("defaultMomentum"),
           cmap.at("defaultDampening"),
           cmap.at("defaultVelocityScaling"),
-          cmap.at("lossScaling")) {}
+          cmap.at("lossScaling"),
+          clipNormSettings) {}
 
 SGD::SGD(OptimizerValue lr,
          OptimizerValue wd,
          OptimizerValue mm,
          OptimizerValue dp,
          OptimizerValue vs,
-         OptimizerValue lossScaling)
-    : Optimizer(lossScaling), lrs(lr), wds(wd), mms(mm), dps(dp), vss(vs) {
+         OptimizerValue lossScaling,
+         const std::vector<ClipNormSettings> &clipNormSettings)
+    : Optimizer(lossScaling, clipNormSettings), lrs(lr), wds(wd), mms(mm),
+      dps(dp), vss(vs) {
   runValueChecks(lr, wd, mm, dp, vs);
 }
 
@@ -310,6 +351,13 @@ std::unique_ptr<Op> SGD::createOp(const Tensor &w, Graph &graph) const {
         wdsf0helper.getFromWeightId(w.id, *this),
         reductionType,
         opSettings);
+  } else {
+    auto &cns = getClipNormSettings();
+    if (cns.size() > 0) {
+      logging::warn(
+          "Clip norm settings will have no effect as gradient clipping is not "
+          "supported when using gradient accumulation");
+    }
   }
 
   if (getReplicatedGraphCount() > 1) {
@@ -471,6 +519,10 @@ float SGD::getStoredValue(const TensorId &optId) const {
 }
 
 bool SGD::validReplacement(const Optimizer &other) const {
+  if (!Optimizer::validReplacement(other)) {
+    return false;
+  }
+
   if (other.type() != type()) {
     return false;
   }

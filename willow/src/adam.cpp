@@ -208,9 +208,9 @@ Adam::Adam(OptimizerValue lr,
            DataType accumType_,
            DataType accl1Type_,
            DataType accl2Type_)
-    : Optimizer(lossScaling), lrs(lr), wds(wd), b1s(b1), b2s(b2), epsvs(eps),
-      mwns(mwn_), mode(mode_), accumType(accumType_), accl1Type(accl1Type_),
-      accl2Type(accl2Type_) {
+    : Optimizer(lossScaling, {}), lrs(lr), wds(wd), b1s(b1), b2s(b2),
+      epsvs(eps), mwns(mwn_), mode(mode_), accumType(accumType_),
+      accl1Type(accl1Type_), accl2Type(accl2Type_) {
   runValueChecks(lr, wd, b1, b2, eps);
 }
 
@@ -431,6 +431,10 @@ float Adam::getStoredValue(const TensorId &optId) const {
 }
 
 bool Adam::validReplacement(const Optimizer &other) const {
+  if (!Optimizer::validReplacement(other)) {
+    return false;
+  }
+
   if (other.type() != type()) {
     return false;
   }

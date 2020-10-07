@@ -33,18 +33,32 @@ enum class OptimizerReductionType {
 std::map<std::string, OptimizerValue>
 getOptMap(const std::map<std::string, std::pair<float, bool>> &m);
 
+struct ClipNormSettings {
+  ClipNormSettings(const std::vector<TensorId> &weightIds_, float maxNorm_)
+      : weightIds(weightIds_), maxNorm(maxNorm_) {}
+
+  std::vector<TensorId> weightIds;
+  float maxNorm;
+
+  bool operator==(const ClipNormSettings &) const;
+  bool operator!=(const ClipNormSettings &other) const {
+    return !(*this == other);
+  }
+};
+
 // The base Optimizer class
 class Optimizer {
 public:
   virtual ~Optimizer() = default;
-  Optimizer(OptimizerValue lossScaling);
+  Optimizer(OptimizerValue lossScaling,
+            const std::vector<ClipNormSettings> &clipNormSettings);
   Optimizer(const Optimizer &) = default;
 
   // If a Graph has been constructed with this Optimizer, can it be updated with
   // "other", without requiring a change to compute Graph? For example, a
   // VarUpdate which has a constant scaled learning rate cannot be modified to
   // have a variable scaled learning rate
-  virtual bool validReplacement(const Optimizer &other) const = 0;
+  virtual bool validReplacement(const Optimizer &other) const;
 
   virtual OptimizerType type() const               = 0;
   virtual std::string type_s() const               = 0;
@@ -78,8 +92,13 @@ public:
   int64_t getReplicatedGraphCount() const;
   int64_t getAccumulationFactor() const;
 
+  const std::vector<ClipNormSettings> &getClipNormSettings() const {
+    return clipNormSettings;
+  }
+
 private:
   OptimizerValue ls;
+  std::vector<ClipNormSettings> clipNormSettings;
 
   // factors from SessionOptions (TODO adopt permanently T12588, T12589)
   bool enableReplicatedGraphs;
@@ -287,7 +306,8 @@ public:
       OptimizerValue default_mm,
       OptimizerValue default_dp,
       OptimizerValue default_vs,
-      OptimizerValue ls);
+      OptimizerValue ls,
+      const std::vector<ClipNormSettings> &clipNormSettings);
 
   // Example:
   //
@@ -300,7 +320,8 @@ public:
   //
   // Construct from pair instead of OptimizerValue for pybind11 support
   //
-  SGD(const std::map<std::string, std::pair<float, bool>> &);
+  SGD(const std::map<std::string, std::pair<float, bool>> &,
+      const std::vector<ClipNormSettings> &clipNormSettings = {});
   static SGD fromDefaultMap(const std::map<std::string, OptimizerValue> &);
 
   SGD(const SGD &) = default;
@@ -392,7 +413,9 @@ private:
   ScaledMomentum1Helper smm1helper;
 
   // int argument only to disambiguate from the other SGD constructor
-  SGD(const std::map<std::string, OptimizerValue> &, int);
+  SGD(const std::map<std::string, OptimizerValue> &,
+      const std::vector<ClipNormSettings> &,
+      int);
 
   static std::map<std::string, OptimizerValue>
   getComplete(const std::map<std::string, OptimizerValue> &);
@@ -402,13 +425,17 @@ private:
 // removed at some point in the future.
 class ConstSGD : public SGD {
 public:
-  ConstSGD(float learningRate, float weightDecay = 0, float lossScaling = 1)
+  ConstSGD(float learningRate,
+           float weightDecay                                     = 0,
+           float lossScaling                                     = 1,
+           const std::vector<ClipNormSettings> &clipNormSettings = {})
       : SGD({learningRate, true},
             {weightDecay, true},
             getUnsetMomentum(),
             getUnsetDampening(),
             getUnsetVelocityScaling(),
-            {lossScaling, true}) {}
+            {lossScaling, true},
+            clipNormSettings) {}
 };
 
 } // namespace popart
