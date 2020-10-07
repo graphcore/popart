@@ -255,7 +255,9 @@ def test_gru_torch_grad(op_tester):
 
     op_tester.setPatterns(['PreUniRepl', 'OpToReshape'],
                           enableRuntimeAsserts=False)
-    # No need to relax tolerances!
+
+    op_tester.atol = 1e-06
+    op_tester.rtol = 1e-05
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -447,126 +449,7 @@ def test_gru_torch_grad_all_inputs(op_tester):
 
     op_tester.setPatterns(['PreUniRepl', 'OpToReshape'],
                           enableRuntimeAsserts=False)
-    op_tester.atol = 1e-06
-    op_tester.rtol = 1e-05
-    op_tester.run(init_builder, reference, 'train')
-
-
-def test_gru_torch_grad_all_inputs(op_tester):
-    d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],
-                   [[7., 8., 9.], [10., 11., 12.]]]).astype(np.float32)
-
-    seq_length = d1.shape[0]
-    batch_size = d1.shape[1]
-    input_size = d1.shape[2]
-    hidden_size = 2
-    num_directions = 1
-
-    wz = np.random.rand(1, hidden_size, input_size).astype(np.float32)
-    wr = np.random.rand(1, hidden_size, input_size).astype(np.float32)
-    wh = np.random.rand(1, hidden_size, input_size).astype(np.float32)
-
-    whz = np.random.rand(1, hidden_size, hidden_size).astype(np.float32)
-    whr = np.random.rand(1, hidden_size, hidden_size).astype(np.float32)
-    whh = np.random.rand(1, hidden_size, hidden_size).astype(np.float32)
-
-    input_weights = np.concatenate((wz, wr, wh), axis=1)
-    input_weights_torch = np.concatenate((wr, wz, wh), axis=1)
-
-    hidden_weights = np.concatenate((whz, whr, whh), axis=1)
-    hidden_weights_torch = np.concatenate((whr, whz, whh), axis=1)
-
-    biz = np.random.rand(1, hidden_size).astype(np.float32)
-    bir = np.random.rand(1, hidden_size).astype(np.float32)
-    bih = np.random.rand(1, hidden_size).astype(np.float32)
-
-    bhz = np.random.rand(1, hidden_size).astype(np.float32)
-    bhr = np.random.rand(1, hidden_size).astype(np.float32)
-    bhh = np.random.rand(1, hidden_size).astype(np.float32)
-
-    biases = np.concatenate((biz, bir, bih, bhz, bhr, bhh), axis=1)
-    input_biases_torch = np.concatenate((bir, biz, bih), axis=1)
-    hidden_biases_torch = np.concatenate((bhr, bhz, bhh), axis=1)
-
-    seq_lens = np.asarray([seq_length] * batch_size).astype(np.int32)
-
-    initial_h = np.random.rand(num_directions, batch_size,
-                               hidden_size).astype(np.float32)
-
-    def init_builder(builder):
-        i1 = builder.addInputTensor(d1)
-        i2 = builder.addInputTensor(input_weights)
-        i3 = builder.addInputTensor(hidden_weights)
-        i4 = builder.addInputTensor(biases)
-        i5 = builder.addInputTensor(seq_lens)
-        i6 = builder.addInputTensor(initial_h)
-        Y, Y_h = builder.aiOnnx.gru([i1, i2, i3, i4, i5, i6], 2)
-        Ys = builder.aiOnnx.squeeze([Y], [])
-        Y1 = builder.aiOnnx.add([Ys, Y_h])
-
-        builder.addOutputTensor(Y1)
-        print([
-            Y1,
-            popart.reservedGradientPrefix() + Y1,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + i2,
-            popart.reservedGradientPrefix() + i3,
-            popart.reservedGradientPrefix() + i4,
-            popart.reservedGradientPrefix() + i6
-        ])
-        return [
-            Y1,
-            popart.reservedGradientPrefix() + Y1,
-            popart.reservedGradientPrefix() + i1,  # input
-            popart.reservedGradientPrefix() + i2,  # input/1
-            popart.reservedGradientPrefix() + i3,  # input/2 
-            popart.reservedGradientPrefix() + i4,  # input/3
-            popart.reservedGradientPrefix() + i6  # input/4
-        ]
-
-    def reference(ref_data):
-        gru = torch.nn.GRU(input_size, hidden_size, 1)
-        gru.weight_ih_l0.data = torch.tensor(input_weights_torch[0])
-        gru.weight_hh_l0.data = torch.tensor(hidden_weights_torch[0])
-        gru.bias_ih_l0.data = torch.tensor(input_biases_torch)
-        gru.bias_hh_l0.data = torch.tensor(hidden_biases_torch)
-
-        h0 = torch.tensor(initial_h, requires_grad=True)
-
-        a = torch.tensor(d1, requires_grad=True)
-        Y, Y_h = gru(a, h0)
-        Ys = Y.squeeze()
-        Y1 = Ys + Y_h
-
-        Y.retain_grad()
-        Y_h.retain_grad()
-        Ys.retain_grad()
-        Y1.retain_grad()
-
-        d__o = ref_data.getOutputTensorGrad(0)
-        Y1.backward(torch.tensor(d__o))
-
-        # reorder the weights for comparison with popart
-        wr, wz, wh = torch.split(gru.weight_ih_l0.grad, hidden_size)
-        wig = torch.cat((wz, wr, wh), dim=0)
-        wig.unsqueeze_(0)
-
-        # reorder the weights for comparison with popart
-        wr, wz, wh = torch.split(gru.weight_hh_l0.grad, hidden_size)
-        whg = torch.cat((wz, wr, wh), dim=0)
-        whg.unsqueeze_(0)
-
-        # reorder the biases for comparison with popart
-        bir, biz, bih = torch.split(gru.bias_ih_l0.grad, hidden_size, dim=1)
-        bhr, bhz, bhh = torch.split(gru.bias_hh_l0.grad, hidden_size, dim=1)
-        b_grad = torch.cat((biz, bir, bih, bhz, bhr, bhh)).view(
-            1, 6 * hidden_size)
-
-        return [Y1, Y1.grad, a.grad, wig, whg, b_grad, h0.grad]
-
-    op_tester.setPatterns(['PreUniRepl', 'OpToReshape'],
-                          enableRuntimeAsserts=False)
-    op_tester.atol = 1e-06
+    op_tester.atol = 1e-05
     op_tester.rtol = 1e-05
     op_tester.run(init_builder, reference, 'train')
 
