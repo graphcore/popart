@@ -307,7 +307,7 @@ public:
       OptimizerValue default_dp,
       OptimizerValue default_vs,
       OptimizerValue ls,
-      const std::vector<ClipNormSettings> &clipNormSettings);
+      const std::vector<ClipNormSettings> &clipNormSettings = {});
 
   // Example:
   //
