@@ -1,5 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <vector>
+#include <poplar/Tensor.hpp>
 #include <poplin/MatMul.hpp>
 #include <poputil/TileMapping.hpp>
 #include <popart/op/cumsum.hpp>
@@ -9,13 +10,92 @@
 
 namespace popart {
 namespace popx {
+namespace {
+
+// Four triangular types for attributes:
+// exclusive/reverse:  1) F/F 2) T/F 3) F/T 4) T/T
+//   triangular type:     11     01     10     00
+//                        01     00     11     10
+poplar::Tensor triangularMatrix(const Opx &opx,
+                                std::size_t triangularSize_,
+                                bool exclusive_,
+                                bool reverse_,
+                                bool transpose_ = false) {
+  const poplar::Tensor one =
+      opx.getConst(poplar::FLOAT, {1}, 1.f, opx.debugPrefix("one"));
+  const poplar::Tensor zero =
+      opx.getConst(poplar::FLOAT, {1}, 0.f, opx.debugPrefix("zero"));
+
+  std::vector<poplar::Tensor> pieces;
+  for (int k = 0; k < triangularSize_; k++) {
+    int bound = k;
+    if (exclusive_) {
+      bound += 1;
+    }
+    for (int i = 0; i < bound; i++) {
+      pieces.push_back(zero);
+    }
+    for (int j = 0; j < triangularSize_ - bound; j++) {
+      pieces.push_back(one);
+    }
+  }
+
+  if (reverse_) {
+    std::reverse(pieces.begin(), pieces.end());
+  }
+
+  poplar::Tensor triangularM = poplar::concat(pieces);
+  triangularM = triangularM.reshape({triangularSize_, triangularSize_});
+
+  if (transpose_) {
+    triangularM = triangularM.transpose();
+  }
+
+  return triangularM;
+}
+
+int64_t toNonNegativeAxis(int64_t axis_, unsigned xRank_) {
+  if (axis_ < 0) {
+    int64_t xRank2 = static_cast<int64_t>(xRank_);
+
+    return xRank2 + axis_;
+  } else {
+    return axis_;
+  }
+}
+
+std::size_t secondDimension(std::size_t xMulDim0,
+                            const std::vector<std::size_t> &xShape) {
+  return std::accumulate(
+             xShape.begin(), xShape.end(), 1, std::multiplies<std::size_t>()) /
+         xMulDim0;
+}
+
+std::vector<unsigned> furthestRightPermutation(std::size_t xShapeSize,
+                                               int64_t axisNN) {
+  std::vector<unsigned> perm(xShapeSize);
+  for (unsigned i = 0; i < perm.size(); i++) {
+    perm[i] = i;
+  }
+  perm[axisNN]         = xShapeSize - 1;
+  perm[xShapeSize - 1] = axisNN;
+
+  return perm;
+}
+
+void checkAxisValue(int64_t axis_, unsigned xRank_) {
+  int64_t xRank = static_cast<int64_t>(xRank_);
+
+  // Axis value must be in the range [-rank(x), rank(x)-1].
+  if ((axis_ < -xRank) || (axis_ > xRank - 1)) {
+    throw error("CumSumOpx op, 'axis' value out of range.");
+  }
+}
+
+} // namespace
 
 CumSumOpx::CumSumOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<CumSumOp>(op, {Onnx::Operators::CumSum_11});
-
-  axis      = dynamic_cast<CumSumOp *>(op)->getAxis();
-  exclusive = dynamic_cast<CumSumOp *>(op)->getExclusive();
-  reverse   = dynamic_cast<CumSumOp *>(op)->getReverse();
 }
 
 // We reshape input tensor to 2D, where one axis is the axis to accumulate on.
@@ -26,29 +106,28 @@ CumSumOpx::CumSumOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 // gives us cumulative sum. We shuffle and reshape back to get the final
 // result. We expect good performance as MatMul is highly optimised on the IPU.
 void CumSumOpx::grow(poplar::program::Sequence &prog) const {
-  CheckAxisValue();
-  auto x                          = getInTensor(CumSumOp::xInIndex());
-  std::vector<std::size_t> xShape = x.shape();
-  int64_t axisNN                  = ToNonNegativeAxis(axis);
-  std::size_t xMulDim0            = x.dim(axisNN);
-  std::size_t xMulDim1 =
-      std::accumulate(
-          xShape.begin(), xShape.end(), 1, std::multiplies<std::size_t>()) /
-      xMulDim0;
 
-  auto xShapeSize = x.shape().size();
-  std::vector<unsigned> perm(xShapeSize);
-  for (unsigned i = 0; i < perm.size(); i++) {
-    perm[i] = i;
-  }
-  perm[axisNN]         = xShapeSize - 1;
-  perm[xShapeSize - 1] = axisNN;
+  const auto &op       = getOp<CumSumOp>();
+  const int64_t axis   = op.getAxis();
+  const bool exclusive = op.getExclusive();
+  const bool reverse   = op.getReverse();
 
-  x                                     = x.dimShuffle(perm);
-  std::vector<std::size_t> xMiddleShape = x.shape();
-  x                                     = x.reshape({xMulDim1, xMulDim0});
+  auto x = getInTensor(CumSumOp::xInIndex());
+  checkAxisValue(axis, x.rank());
+  const std::vector<std::size_t> xShape = x.shape();
+  int64_t axisNN                        = toNonNegativeAxis(axis, x.rank());
+  std::size_t xMulDim0                  = x.dim(axisNN);
+  std::size_t xMulDim1                  = secondDimension(xMulDim0, xShape);
 
-  poplar::Tensor triangularM = TriangularMatrix(xMulDim0);
+  const std::vector<unsigned> perm =
+      furthestRightPermutation(x.shape().size(), axisNN);
+
+  x                                           = x.dimShuffle(perm);
+  const std::vector<std::size_t> xMiddleShape = x.shape();
+  x                                           = x.reshape({xMulDim1, xMulDim0});
+
+  poplar::Tensor triangularM =
+      triangularMatrix(*this, xMulDim0, exclusive, reverse);
 
   x = poplin::matMul(graph(), x, triangularM, prog, debugPrefix("cumsum_mul"));
   x = x.reshape(xMiddleShape);
@@ -57,64 +136,48 @@ void CumSumOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(CumSumOp::outIndex(), x);
 }
 
-// Four triangular types for attributes:
-// exclusive/reverse:  1) F/F 2) T/F 3) F/T 4) T/T
-//   triangular type:     11     01     10     00
-//                        01     00     11     10
-poplar::Tensor CumSumOpx::TriangularMatrix(std::size_t triangularSize) const {
-  poplar::Tensor one  = graph().addConstant(poplar::FLOAT, {1}, 1.f, "one");
-  poplar::Tensor zero = graph().addConstant(poplar::FLOAT, {1}, 0.f, "zero");
-  graph().setTileMapping(one, 0);
-  graph().setTileMapping(zero, 0);
-
-  std::vector<poplar::Tensor> pieces;
-  for (int k = 0; k < triangularSize; k++) {
-    int bound = k;
-    if (exclusive == 1) {
-      bound += 1;
-    }
-    for (int i = 0; i < bound; i++) {
-      pieces.push_back(zero);
-    }
-    for (int j = 0; j < triangularSize - bound; j++) {
-      pieces.push_back(one);
-    }
-  }
-
-  if (reverse == 1) {
-    std::reverse(pieces.begin(), pieces.end());
-  }
-
-  poplar::Tensor triangularM = poplar::concat(pieces);
-  triangularM = triangularM.reshape({triangularSize, triangularSize});
-
-  return triangularM;
+CumSumGradOpx::CumSumGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+  verifyOp<CumSumGradOp>(op, Onnx::GradOperators::CumSumGrad);
 }
 
-void CumSumOpx::CheckAxisValue() const {
+// The gradient of cumulative sum is a cumulative sum from the right.
+// dCumulativeSum(dOut) = reverse(CumulativeSum(reverse(dOut))
+// This can be interpreted as the MatMul gradient where the
+// triangular matrix has been transposed.
+void CumSumGradOpx::grow(poplar::program::Sequence &prog) const {
 
-  unsigned xRank1 = getInTensor(CumSumOp::xInIndex()).rank();
-  int64_t xRank   = static_cast<int64_t>(xRank1);
+  const auto &op       = getOp<CumSumGradOp>();
+  const int64_t axis   = op.getAxis();
+  const bool exclusive = op.getExclusive();
+  const bool reverse   = op.getReverse();
 
-  // Axis value must be in the range [-rank(x), rank(x)-1].
-  if ((axis < -xRank) || (axis > xRank - 1)) {
-    throw error("CumSumOpx op, 'axis' value out of range.");
-  }
-}
+  auto dx = getInTensor(CumSumGradOp::outGradXInIndex());
+  const std::vector<std::size_t> dxShape = dx.shape();
+  int64_t axisNN                         = toNonNegativeAxis(axis, dx.rank());
+  std::size_t xMulDim0                   = dx.dim(axisNN);
+  std::size_t xMulDim1                   = secondDimension(xMulDim0, dxShape);
 
-int64_t CumSumOpx::ToNonNegativeAxis(int64_t ax) const {
-  if (ax < 0) {
-    unsigned xRank1 = getInTensor(CumSumOp::xInIndex()).rank();
-    int64_t xRank   = static_cast<int64_t>(xRank1);
+  const std::vector<unsigned> perm =
+      furthestRightPermutation(dx.shape().size(), axisNN);
 
-    return xRank + ax;
-  } else {
-    return ax;
-  }
+  dx                                          = dx.dimShuffle(perm);
+  const std::vector<std::size_t> xMiddleShape = dx.shape();
+  dx = dx.reshape({xMulDim1, xMulDim0});
+
+  poplar::Tensor triangularM =
+      triangularMatrix(*this, xMulDim0, exclusive, reverse, true);
+
+  dx =
+      poplin::matMul(graph(), dx, triangularM, prog, debugPrefix("cumsum_mul"));
+  dx = dx.reshape(xMiddleShape);
+  dx = dx.dimShuffle(perm);
+
+  setOutTensor(CumSumGradOp::outIndex(), dx);
 }
 
 namespace {
 OpxCreator<CumSumOpx> cumSumOpxCreator(Onnx::Operators::CumSum_11);
+OpxCreator<CumSumGradOpx> cumSumGradOpxCreator(Onnx::GradOperators::CumSumGrad);
 } // namespace
 
 } // namespace popx

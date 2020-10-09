@@ -7,10 +7,21 @@
 #include <popart/tensor.hpp>
 
 namespace popart {
+namespace {
+void checkAttibs(int64_t exclusive_, int64_t reverse_) {
+  if (exclusive_ < 0 || exclusive_ > 1) {
+    throw error("CumSum op, 'exclusive' attributes must be 0 or 1.");
+  }
+
+  if (reverse_ < 0 || reverse_ > 1) {
+    throw error("CumSum op, 'reverse' attributes must be 0 or 1.");
+  }
+}
+} // namespace
 
 CumSumOp::CumSumOp(const OperatorIdentifier &_opid,
-                   int64_t exclusive_,
-                   int64_t reverse_,
+                   bool exclusive_,
+                   bool reverse_,
                    const Op::Settings &settings_)
     : Op(_opid, settings_), exclusive(exclusive_), reverse(reverse_) {}
 
@@ -18,20 +29,11 @@ std::unique_ptr<Op> CumSumOp::clone() const {
   return std::make_unique<CumSumOp>(*this);
 }
 
-int64_t CumSumOp::getExclusive() const { return exclusive; }
-int64_t CumSumOp::getReverse() const { return reverse; }
+bool CumSumOp::getExclusive() const { return exclusive; }
+bool CumSumOp::getReverse() const { return reverse; }
 int64_t CumSumOp::getAxis() const { return axis; }
 
 void CumSumOp::setup() {
-
-  if (exclusive < 0 || exclusive > 1) {
-    throw error("CumSum op, 'exclusive' attributes must be 0 or 1.");
-  }
-
-  if (reverse < 0 || reverse > 1) {
-    throw error("CumSum op, 'reverse' attributes must be 0 or 1.");
-  }
-
   if (inInfo(axisInIndex()).nelms() != 1) {
     throw error("CumSum op, 'axis' tensor must have one element.");
   }
@@ -53,6 +55,47 @@ void CumSumOp::setup() {
   outInfo(outIndex()) = inInfo(xInIndex());
 }
 
+std::vector<std::unique_ptr<Op>> CumSumOp::getGradOps() {
+  std::vector<std::unique_ptr<Op>> upops;
+  upops.emplace_back(
+      std::make_unique<CumSumGradOp>(*this, exclusive, reverse, axis));
+
+  return upops;
+}
+
+CumSumGradOp::CumSumGradOp(const CumSumOp &op,
+                           bool exclusive_,
+                           bool reverse_,
+                           int64_t axis_)
+    : Op(Onnx::GradOperators::CumSumGrad, op.getSettings()),
+      exclusive(exclusive_), reverse(reverse_), axis(axis_),
+      fwdOpXInInfo(op.inInfo(CumSumOp::xInIndex())) {}
+
+std::unique_ptr<Op> CumSumGradOp::clone() const {
+  return std::make_unique<CumSumGradOp>(*this);
+}
+
+const std::vector<GradInOutMapper> &CumSumGradOp::gradInputInfo() const {
+  static const std::vector<GradInOutMapper> inInfo = {
+      {fwdXInIndex(), CumSumOp::xInIndex(), GradOpInType::In},
+      {outGradXInIndex(), CumSumOp::outIndex(), GradOpInType::GradOut}};
+
+  return inInfo;
+}
+
+const std::map<int, int> &CumSumGradOp::gradOutToNonGradIn() const {
+  static const std::map<int, int> outInfo = {
+      {outIndex(), CumSumOp::xInIndex()}};
+
+  return outInfo;
+}
+
+void CumSumGradOp::setup() { outInfo(outIndex()) = fwdOpXInInfo; }
+
+bool CumSumGradOp::getExclusive() const { return exclusive; }
+bool CumSumGradOp::getReverse() const { return reverse; }
+int64_t CumSumGradOp::getAxis() const { return axis; }
+
 namespace {
 
 static OpDefinition::DataTypes T = {DataType::UINT32,
@@ -71,10 +114,14 @@ static OpDefinition cumSumOpDef(
 static OpCreator<CumSumOp> cumSumOpCreator(
     OpDefinitions({{Onnx::Operators::CumSum_11, cumSumOpDef}}),
     [](const OpCreatorInfo &info) {
-      int64_t exclusive =
+      int64_t exclusiveInt =
           info.attributes.getAttribute<Attributes::Int>("exclusive", 0);
-      int64_t reverse =
+      int64_t reverseInt =
           info.attributes.getAttribute<Attributes::Int>("reverse", 0);
+
+      checkAttibs(exclusiveInt, reverseInt);
+      bool exclusive = static_cast<bool>(exclusiveInt);
+      bool reverse   = static_cast<bool>(reverseInt);
 
       return std::unique_ptr<Op>(
           new CumSumOp(info.opid, exclusive, reverse, info.settings));

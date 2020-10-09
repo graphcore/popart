@@ -1,5 +1,6 @@
 # Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 import numpy as np
+import popart
 import torch
 from op_tester import op_tester
 
@@ -187,6 +188,27 @@ def test_cumsum_3d(op_tester):
         op_tester.run(init_builder, reference, 'infer')
 
 
+def test_cumsum_3d_v2(op_tester):
+    testAxis = [-3, -2, -1, 0, 1, 2]
+    for a in testAxis:
+        x = np.arange(60).astype(np.float32).reshape((3, 4, 5))
+        axis = np.array(a).astype(np.int32)
+
+        def init_builder(builder):
+            i0 = builder.addInputTensor(x)
+            i1 = builder.aiOnnxOpset11.constant(axis)
+            o = builder.aiOnnxOpset11.cumsum([i0, i1])
+            builder.addOutputTensor(o)
+            return [o]
+
+        def reference(ref_data):
+            tx = torch.tensor(x)
+            out = torch.cumsum(tx, a)
+            return [out]
+
+        op_tester.run(init_builder, reference, 'infer')
+
+
 def test_cumsum_3d_reverse(op_tester):
     a0 = np.array([[[60, 63, 66, 69, 72], [75, 78, 81, 84, 87],
                     [90, 93, 96, 99, 102], [105, 108, 111, 114, 117]],
@@ -230,6 +252,29 @@ def test_cumsum_3d_reverse(op_tester):
 
         def reference(ref_data):
             out = torch.tensor(expected[a])
+            return [out]
+
+        op_tester.run(init_builder, reference, 'infer')
+
+
+def test_cumsum_3d_reverse_v2(op_tester):
+    testAxis = [-3, -2, -1, 0, 1, 2]
+    for a in testAxis:
+        x = np.arange(60).astype(np.float32).reshape((3, 4, 5))
+        axis = np.array(a).astype(np.int32)
+
+        def init_builder(builder):
+            i0 = builder.addInputTensor(x)
+            i1 = builder.aiOnnxOpset11.constant(axis)
+            o = builder.aiOnnxOpset11.cumsum([i0, i1], reverse=1)
+            builder.addOutputTensor(o)
+            return [o]
+
+        def reference(ref_data):
+            tx = torch.tensor(x)
+            tx = torch.flip(tx, [a])
+            out = torch.cumsum(tx, a)
+            out = torch.flip(out, [a])
             return [out]
 
         op_tester.run(init_builder, reference, 'infer')
@@ -283,3 +328,186 @@ def test_cumsum_3d_exclusive(op_tester):
             return [out]
 
         op_tester.run(init_builder, reference, 'infer')
+
+
+def test_cumsum_grad_1d(op_tester):
+    x = np.array([1., 2., 3., 4., 5.]).astype(np.float32)
+    axis = np.array(0).astype(np.int32)
+
+    def init_builder(builder):
+        i0 = builder.addInputTensor(x)
+        i1 = builder.aiOnnxOpset11.constant(axis)
+        o = builder.aiOnnxOpset11.cumsum([i0, i1])
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + i0,
+            popart.reservedGradientPrefix() + o,
+        ]
+
+    def reference(ref_data):
+        tx = torch.tensor(x, requires_grad=True)
+        out = torch.cumsum(tx, axis.item(0))
+        d__o = ref_data.getOutputTensorGrad(0)
+        out.backward(torch.tensor(d__o))
+        return [out, tx.grad, None]
+
+    op_tester.run(init_builder, reference, 'train')
+
+
+def test_cumsum_grad_1d_reverse(op_tester):
+    x = np.array([1., 2., 3., 4., 5.]).astype(np.float32)
+    axis = np.array(0).astype(np.int32)
+
+    def init_builder(builder):
+        i0 = builder.addInputTensor(x)
+        i1 = builder.aiOnnxOpset11.constant(axis)
+        o = builder.aiOnnxOpset11.cumsum([i0, i1], reverse=1)
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + i0,
+            popart.reservedGradientPrefix() + o,
+        ]
+
+    def reference(ref_data):
+        tx = torch.tensor(x, requires_grad=True)
+        tx = torch.flip(tx, [0])
+        out = torch.cumsum(tx, 0)
+        out = torch.flip(out, [0])
+        d__o = ref_data.getOutputTensorGrad(0)
+        out.backward(torch.tensor(d__o))
+        return [out, tx.grad, None]
+
+    op_tester.run(init_builder, reference, 'train')
+
+
+def test_cumsum_grad_2d_axis_0(op_tester):
+    x = np.array([1., 2., 3., 4., 5., 6.]).astype(np.float32).reshape((2, 3))
+    axis = np.array(0).astype(np.int32)
+
+    def init_builder(builder):
+        i0 = builder.addInputTensor(x)
+        i1 = builder.aiOnnxOpset11.constant(axis)
+        o = builder.aiOnnxOpset11.cumsum([i0, i1])
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + i0,
+            popart.reservedGradientPrefix() + o,
+        ]
+
+    def reference(ref_data):
+        tx = torch.tensor(x, requires_grad=True)
+        out = torch.cumsum(tx, axis.item(0))
+        d__o = ref_data.getOutputTensorGrad(0)
+        out.backward(torch.tensor(d__o))
+        return [out, tx.grad, None]
+
+    op_tester.run(init_builder, reference, 'train')
+
+
+def test_cumsum_grad_2d_axis_1(op_tester):
+    x = np.array([1., 2., 3., 4., 5., 6.]).astype(np.float32).reshape((2, 3))
+    axis = np.array(1).astype(np.int32)
+
+    def init_builder(builder):
+        i0 = builder.addInputTensor(x)
+        i1 = builder.aiOnnxOpset11.constant(axis)
+        o = builder.aiOnnxOpset11.cumsum([i0, i1])
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + i0,
+            popart.reservedGradientPrefix() + o,
+        ]
+
+    def reference(ref_data):
+        tx = torch.tensor(x, requires_grad=True)
+        out = torch.cumsum(tx, axis.item(0))
+        d__o = ref_data.getOutputTensorGrad(0)
+        out.backward(torch.tensor(d__o))
+        return [out, tx.grad, None]
+
+    op_tester.run(init_builder, reference, 'train')
+
+
+def test_cumsum_grad_2d_negative_axis(op_tester):
+    x = np.array([1., 2., 3., 4., 5., 6.]).astype(np.float32).reshape((2, 3))
+    axis = np.array(-1).astype(np.int32)
+
+    def init_builder(builder):
+        i0 = builder.addInputTensor(x)
+        i1 = builder.aiOnnxOpset11.constant(axis)
+        o = builder.aiOnnxOpset11.cumsum([i0, i1])
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + i0,
+            popart.reservedGradientPrefix() + o,
+        ]
+
+    def reference(ref_data):
+        tx = torch.tensor(x, requires_grad=True)
+        out = torch.cumsum(tx, axis.item(0))
+        d__o = ref_data.getOutputTensorGrad(0)
+        out.backward(torch.tensor(d__o))
+        return [out, tx.grad, None]
+
+    op_tester.run(init_builder, reference, 'train')
+
+
+def test_cumsum_grad_3d(op_tester):
+    testAxis = [-3, -2, -1, 0, 1, 2]
+    for a in testAxis:
+        x = np.arange(60).astype(np.float32).reshape((3, 4, 5))
+        axis = np.array(a).astype(np.int32)
+
+        def init_builder(builder):
+            i0 = builder.addInputTensor(x)
+            i1 = builder.aiOnnxOpset11.constant(axis)
+            o = builder.aiOnnxOpset11.cumsum([i0, i1])
+            builder.addOutputTensor(o)
+            return [
+                o,
+                popart.reservedGradientPrefix() + i0,
+                popart.reservedGradientPrefix() + o,
+            ]
+
+        def reference(ref_data):
+            tx = torch.tensor(x, requires_grad=True)
+            out = torch.cumsum(tx, a)
+            d__o = ref_data.getOutputTensorGrad(0)
+            out.backward(torch.tensor(d__o))
+            return [out, tx.grad, None]
+
+        op_tester.run(init_builder, reference, 'train')
+
+
+def test_cumsum_grad_3d_reverse(op_tester):
+    testAxis = [-3, -2, -1, 0, 1, 2]
+    for a in testAxis:
+        x = np.arange(60).astype(np.float32).reshape((3, 4, 5))
+        axis = np.array(a).astype(np.int32)
+
+        def init_builder(builder):
+            i0 = builder.addInputTensor(x)
+            i1 = builder.aiOnnxOpset11.constant(axis)
+            o = builder.aiOnnxOpset11.cumsum([i0, i1], reverse=1)
+            builder.addOutputTensor(o)
+            return [
+                o,
+                popart.reservedGradientPrefix() + i0,
+                popart.reservedGradientPrefix() + o,
+            ]
+
+        def reference(ref_data):
+            tx = torch.tensor(x, requires_grad=True)
+            tx = torch.flip(tx, [a])
+            out = torch.cumsum(tx, a)
+            out = torch.flip(out, [a])
+            d__o = ref_data.getOutputTensorGrad(0)
+            out.backward(torch.tensor(d__o))
+            return [out, tx.grad, None]
+
+        op_tester.run(init_builder, reference, 'train')
