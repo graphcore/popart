@@ -265,9 +265,11 @@ void Ir::setDeviceInfo(DeviceInfo &di) { deviceInfo = &di; }
 const DeviceInfo *Ir::getDeviceInfo() const { return deviceInfo; }
 
 void Ir::logIr() {
+  logging::ir::info("Logging the IR:");
   std::stringstream ss2;
   append(ss2);
   logging::ir::info(ss2.str());
+  logging::ir::info("End IR");
 }
 
 void Ir::verifyPipelineSettings() const {
