@@ -282,7 +282,7 @@ add_popart_py_unit_test(cycle_count_test VARIANTS Hw)
 add_popart_py_unit_test(decompose_gradient_summation_test VARIANTS IpuModel)
 add_popart_py_unit_test(device_test VARIANTS Hw)
 add_popart_py_unit_test(dim_param_test)
-# add_popart_py_unit_test(dropout_replicated_pipeline VARIANTS Hw) # TODO: Fix this T23920
+add_popart_py_unit_test(dropout_replicated_pipeline VARIANTS Hw)
 add_popart_py_unit_test(exception_test VARIANTS Hw)
 add_popart_py_unit_test(export_test)
 add_popart_py_unit_test(float_to_half_conversion_test)
