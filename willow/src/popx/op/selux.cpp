@@ -69,7 +69,7 @@ SeluGradOpx::SeluGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 void SeluGradOpx::grow(poplar::program::Sequence &prog) const {
-  auto op              = getOp<SeluGradOp>();
+  const auto &op       = getOp<SeluGradOp>();
   const auto input     = getInTensor(SeluGradOp::getGradInIndex());
   const auto fwd_input = getInTensor(SeluGradOp::getFwdArgInIndex());
 

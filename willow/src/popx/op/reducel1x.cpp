@@ -23,7 +23,7 @@ ReduceL1Opx::ReduceL1Opx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 void ReduceL1Opx::grow(poplar::program::Sequence &prog) const {
-  const auto op    = getOp<ReduceL1Op>();
+  const auto &op   = getOp<ReduceL1Op>();
   const auto input = getInTensor(ReduceL1Op::getInIndex());
 
   auto abs_input = popops::abs(graph(), input, prog, debugPrefix("abs"));
@@ -45,7 +45,7 @@ ReduceL1GradOpx::ReduceL1GradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 void ReduceL1GradOpx::grow(poplar::program::Sequence &prog) const {
-  const auto op        = getOp<ReduceL1GradOp>();
+  const auto &op       = getOp<ReduceL1GradOp>();
   auto output          = getInTensor(ReduceL1GradOp::getOutIndex());
   auto fwd_input       = getInTensor(ReduceL1GradOp::getFwdInInIndex());
   auto input_shape     = inShape(ReduceL1GradOp::getInIndex());

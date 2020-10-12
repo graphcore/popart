@@ -34,7 +34,7 @@ void SGD0VarUpdateOpx::grow(poplar::program::Sequence &prog) const {
   //
   // The (1 - lr * wd) and (lr/ls) calculations are done in SGD::setTensorData
 
-  auto vu_op = getOp<SGD0VarUpdateOp>();
+  const auto &vu_op = getOp<SGD0VarUpdateOp>();
 
   // (1) update weights with weight decay
 

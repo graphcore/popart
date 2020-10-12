@@ -23,7 +23,7 @@ void SGD1AcclUpdateOpx::grow(poplar::program::Sequence &prog) const {
 
   //   See optimizer.hpp for derivation of the equations implemented here
 
-  auto vu_op = getOp<SGD1AcclUpdateOp>();
+  const auto &vu_op = getOp<SGD1AcclUpdateOp>();
 
   auto smm1Const  = vu_op.initSmm1.isConst();
   auto swdf1Const = vu_op.initSwd1.isConst();

@@ -54,7 +54,6 @@ SinhGradOpx::SinhGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 void SinhGradOpx::grow(poplar::program::Sequence &prog) const {
-  auto op              = getOp<SinhGradOp>();
   const auto input     = getInTensor(SinhGradOp::getGradInIndex());
   const auto fwd_input = getInTensor(SinhGradOp::getFwdArgInIndex());
 

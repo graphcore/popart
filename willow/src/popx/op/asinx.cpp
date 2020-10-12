@@ -47,7 +47,6 @@ AsinGradOpx::AsinGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 void AsinGradOpx::grow(poplar::program::Sequence &prog) const {
-  auto op              = getOp<AsinGradOp>();
   const auto input     = getInTensor(AsinGradOp::getGradInIndex());
   const auto fwd_input = getInTensor(AsinGradOp::getFwdArgInIndex());
 

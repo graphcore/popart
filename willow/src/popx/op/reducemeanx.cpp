@@ -24,7 +24,7 @@ ReduceMeanOpx::ReduceMeanOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 void ReduceMeanOpx::grow(poplar::program::Sequence &prog) const {
-  const auto op    = getOp<ReduceMeanOp>();
+  const auto &op   = getOp<ReduceMeanOp>();
   const auto input = getInTensor(ReduceMeanOp::getInIndex());
 
   auto output_tensor = popops::reduce(graph(),
@@ -54,8 +54,8 @@ ReduceMeanGradOpx::ReduceMeanGradOpx(Op *op, Devicex *devicex)
 }
 
 void ReduceMeanGradOpx::grow(poplar::program::Sequence &prog) const {
-  const auto op = getOp<ReduceMeanGradOp>();
-  auto output   = cloneNcopy(prog, getInTensor(ReduceMeanGradOp::getInIndex()));
+  const auto &op = getOp<ReduceMeanGradOp>();
+  auto output = cloneNcopy(prog, getInTensor(ReduceMeanGradOp::getInIndex()));
   auto input_shape     = inShape(ReduceMeanGradOp::getInIndex());
   auto output_shape    = outShape(ReduceMeanGradOp::getOutIndex());
   const auto new_shape = vector_cast<std::size_t>(op.backwardShape());

@@ -78,7 +78,7 @@ LeakyReluGradOpx::LeakyReluGradOpx(Op *op, Devicex *devicex)
 }
 
 void LeakyReluGradOpx::grow(poplar::program::Sequence &prog) const {
-  auto op = getOp<LeakyReluGradOp>();
+  auto &op = getOp<LeakyReluGradOp>();
 
   poplar::Tensor grad  = getInTensor(0);
   poplar::Tensor input = getInTensor(1);

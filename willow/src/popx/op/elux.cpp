@@ -65,7 +65,7 @@ EluGradOpx::EluGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 void EluGradOpx::grow(poplar::program::Sequence &prog) const {
-  auto op              = getOp<EluGradOp>();
+  const auto &op       = getOp<EluGradOp>();
   const auto input     = getInTensor(EluGradOp::getGradInIndex());
   const auto fwd_input = getInTensor(EluGradOp::getFwdArgInIndex());
 

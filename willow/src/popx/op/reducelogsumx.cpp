@@ -24,7 +24,7 @@ ReduceLogSumOpx::ReduceLogSumOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 void ReduceLogSumOpx::grow(poplar::program::Sequence &prog) const {
-  const auto op    = getOp<ReduceLogSumOp>();
+  const auto &op   = getOp<ReduceLogSumOp>();
   const auto input = getInTensor(ReduceLogSumOp::getInIndex());
 
   auto output_tensor = popops::reduce(graph(),
@@ -46,7 +46,7 @@ ReduceLogSumGradOpx::ReduceLogSumGradOpx(Op *op, Devicex *devicex)
 }
 
 void ReduceLogSumGradOpx::grow(poplar::program::Sequence &prog) const {
-  const auto op        = getOp<ReduceLogSumGradOp>();
+  const auto &op       = getOp<ReduceLogSumGradOp>();
   auto output          = getInTensor(ReduceLogSumGradOp::getInIndex());
   auto scale           = getInTensor(ReduceLogSumGradOp::getFwdOutInIndex());
   auto input_shape     = inShape(ReduceLogSumGradOp::getInIndex());

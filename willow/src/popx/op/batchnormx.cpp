@@ -67,7 +67,7 @@ static bool isZeroElementArray(const poplar::Shape &shape) {
 
 void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
 
-  auto op = getOp<BatchNormOp>();
+  auto &op = getOp<BatchNormOp>();
 
   // Using the input names as per the onnx spec.
   auto x     = getInTensor(BatchNormOp::getXInIndex());
@@ -323,7 +323,7 @@ BatchNormGradOpx::BatchNormGradOpx(Op *op, Devicex *devicex)
 
 void BatchNormGradOpx::grow(poplar::program::Sequence &prog) const {
 
-  auto op = getOp<BatchNormGradOp>();
+  auto &op = getOp<BatchNormGradOp>();
 
   // Inputs
   auto x     = getInTensor(BatchNormGradOp::getXInIndex());

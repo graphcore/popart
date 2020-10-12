@@ -27,7 +27,7 @@ GroupNormOpx::GroupNormOpx(Op *op, Devicex *devicex) : NormOpx(op, devicex) {
 
 void GroupNormOpx::grow(poplar::program::Sequence &prog) const {
 
-  auto op = getOp<GroupNormOp>();
+  auto &op = getOp<GroupNormOp>();
 
   // Get the attributes
   float epsilon      = op.getEpsilon();
@@ -87,8 +87,6 @@ GroupNormGradOpx::GroupNormGradOpx(Op *op, Devicex *devicex)
 }
 
 void GroupNormGradOpx::grow(poplar::program::Sequence &prog) const {
-
-  auto op = getOp<GroupNormGradOp>();
 
   auto x         = getInTensor(GroupNormGradOp::getXInIndex());
   auto yGrad     = getInTensor(GroupNormGradOp::getYGradInIndex());

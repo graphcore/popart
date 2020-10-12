@@ -57,7 +57,6 @@ AtanGradOpx::AtanGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 void AtanGradOpx::grow(poplar::program::Sequence &prog) const {
-  auto op              = getOp<AtanGradOp>();
   const auto input     = getInTensor(AtanGradOp::getGradInIndex());
   const auto fwd_input = getInTensor(AtanGradOp::getFwdArgInIndex());
 

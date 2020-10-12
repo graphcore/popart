@@ -71,7 +71,7 @@ HardSigmoidGradOpx::HardSigmoidGradOpx(Op *op, Devicex *devicex)
 }
 
 void HardSigmoidGradOpx::grow(poplar::program::Sequence &prog) const {
-  auto op              = getOp<HardSigmoidGradOp>();
+  const auto &op       = getOp<HardSigmoidGradOp>();
   const auto input     = getInTensor(HardSigmoidGradOp::getGradInIndex());
   const auto fwd_input = getInTensor(HardSigmoidGradOp::getFwdArgInIndex());
 

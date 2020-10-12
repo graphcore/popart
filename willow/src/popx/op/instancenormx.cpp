@@ -28,7 +28,7 @@ InstanceNormOpx::InstanceNormOpx(Op *op, Devicex *devicex)
 
 void InstanceNormOpx::grow(poplar::program::Sequence &prog) const {
 
-  auto op = getOp<InstanceNormOp>();
+  auto &op = getOp<InstanceNormOp>();
 
   // Get the inputs
   auto input = getInTensor(InstanceNormOp::getInputInIndex());

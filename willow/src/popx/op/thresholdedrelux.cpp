@@ -63,7 +63,7 @@ ThresholdedReluGradOpx::ThresholdedReluGradOpx(Op *op, Devicex *devicex)
 }
 
 void ThresholdedReluGradOpx::grow(poplar::program::Sequence &prog) const {
-  auto op              = getOp<ThresholdedReluGradOp>();
+  const auto &op       = getOp<ThresholdedReluGradOp>();
   const auto input     = getInTensor(ThresholdedReluGradOp::getGradInIndex());
   const auto fwd_input = getInTensor(ThresholdedReluGradOp::getFwdArgInIndex());
 

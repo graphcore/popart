@@ -24,8 +24,8 @@ void PrintTensorOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 std::string PrintTensorOpx::getTitle() const {
-  auto op    = getOp<PrintTensorOp>();
-  auto title = op.getTitle();
+  const auto &op = getOp<PrintTensorOp>();
+  auto title     = op.getTitle();
 
   if (op_p->scheduledPreLoss == ScheduledPreLoss::Yes) {
     if (title.size() > 0) {

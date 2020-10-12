@@ -22,7 +22,7 @@ public:
   bool canBeReplacedByIdentity() final { return !printSelf; }
 
   bool shouldPrint() const { return printSelf; }
-  const std::string &getTitle() { return title; }
+  const std::string &getTitle() const { return title; }
 
 private:
   bool printSelf;

@@ -22,7 +22,7 @@ ReduceProdOpx::ReduceProdOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 void ReduceProdOpx::grow(poplar::program::Sequence &prog) const {
-  const auto op    = getOp<ReduceProdOp>();
+  const auto &op   = getOp<ReduceProdOp>();
   const auto input = getInTensor(ReduceProdOp::getInIndex());
 
   auto output_tensor = popops::reduce(graph(),
@@ -43,8 +43,8 @@ ReduceProdGradOpx::ReduceProdGradOpx(Op *op, Devicex *devicex)
 }
 
 void ReduceProdGradOpx::grow(poplar::program::Sequence &prog) const {
-  const auto op = getOp<ReduceProdGradOp>();
-  auto output   = cloneNcopy(prog, getInTensor(ReduceProdGradOp::getInIndex()));
+  const auto &op = getOp<ReduceProdGradOp>();
+  auto output = cloneNcopy(prog, getInTensor(ReduceProdGradOp::getInIndex()));
   auto fwd_input =
       cloneNcopy(prog, getInTensor(ReduceProdGradOp::getFwdInInIndex()));
   auto input_shape     = inShape(ReduceProdGradOp::getInIndex());

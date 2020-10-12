@@ -75,7 +75,7 @@ ShrinkGradOpx::ShrinkGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 void ShrinkGradOpx::grow(poplar::program::Sequence &prog) const {
-  auto op              = getOp<ShrinkGradOp>();
+  const auto &op       = getOp<ShrinkGradOp>();
   const auto input     = getInTensor(ShrinkGradOp::getGradInIndex());
   const auto fwd_input = getInTensor(ShrinkGradOp::getFwdArgInIndex());
 

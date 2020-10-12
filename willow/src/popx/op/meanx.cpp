@@ -68,7 +68,7 @@ MeanArgGradOpx::MeanArgGradOpx(Op *op_, Devicex *devicex_)
     : Opx(op_, devicex_) {}
 
 void MeanArgGradOpx::grow(poplar::program::Sequence &prog) const {
-  auto gradOp = getOp<MeanArgGradOp>();
+  auto &gradOp = getOp<MeanArgGradOp>();
 
   auto shapeOfInputToBwdOp = inInfo(MeanArgGradOp::getGradInIndex()).shape();
   auto shapeOfInputToFwdOp = gradOp.getFwdInputInfo().shape();

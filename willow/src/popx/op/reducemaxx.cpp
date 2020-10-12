@@ -23,7 +23,7 @@ ReduceMaxOpx::ReduceMaxOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 void ReduceMaxOpx::grow(poplar::program::Sequence &prog) const {
-  const auto op    = getOp<ReduceMaxOp>();
+  const auto &op   = getOp<ReduceMaxOp>();
   const auto input = getInTensor(ReduceMaxOp::getInIndex());
 
   auto output_tensor = popops::reduce(graph(),
@@ -44,8 +44,8 @@ ReduceMaxGradOpx::ReduceMaxGradOpx(Op *op, Devicex *devicex)
 }
 
 void ReduceMaxGradOpx::grow(poplar::program::Sequence &prog) const {
-  const auto op = getOp<ReduceMaxGradOp>();
-  auto output   = cloneNcopy(prog, getInTensor(ReduceMaxGradOp::getInIndex()));
+  const auto &op = getOp<ReduceMaxGradOp>();
+  auto output    = cloneNcopy(prog, getInTensor(ReduceMaxGradOp::getInIndex()));
   auto mask =
       cloneNcopy(prog, getInTensor(ReduceMaxGradOp::getFwdOutInIndex()));
   auto input_shape     = inShape(ReduceMaxGradOp::getInIndex());

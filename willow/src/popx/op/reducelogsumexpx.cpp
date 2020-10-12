@@ -23,7 +23,7 @@ ReduceLogSumExpOpx::ReduceLogSumExpOpx(Op *op, Devicex *devicex)
 }
 
 void ReduceLogSumExpOpx::grow(poplar::program::Sequence &prog) const {
-  const auto op        = getOp<ReduceLogSumExpOp>();
+  const auto &op       = getOp<ReduceLogSumExpOp>();
   const auto input     = getInTensor(ReduceLogSumExpOp::getInIndex());
   const auto new_shape = vector_cast<std::size_t>(op.backwardShape());
 
@@ -72,7 +72,7 @@ ReduceLogSumExpGradOpx::ReduceLogSumExpGradOpx(Op *op, Devicex *devicex)
 }
 
 void ReduceLogSumExpGradOpx::grow(poplar::program::Sequence &prog) const {
-  const auto op        = getOp<ReduceLogSumExpGradOp>();
+  const auto &op       = getOp<ReduceLogSumExpGradOp>();
   auto output          = getInTensor(ReduceLogSumExpGradOp::getInIndex());
   auto scale           = getInTensor(ReduceLogSumExpGradOp::getFwdOutInIndex());
   auto fwd_input       = getInTensor(ReduceLogSumExpGradOp::getFwdInInIndex());

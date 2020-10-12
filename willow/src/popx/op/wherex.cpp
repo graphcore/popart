@@ -33,7 +33,7 @@ WhereXGradOpx::WhereXGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 
 void WhereXGradOpx::grow(poplar::program::Sequence &prog) const {
 
-  const auto op           = getOp<WhereXGradOp>();
+  const auto &op          = getOp<WhereXGradOp>();
   const auto whereOutGrad = getInTensor(WhereXGradOp::outGradInIndex());
   const auto condition    = getInTensor(WhereXGradOp::fwdConditionInIndex());
 
@@ -81,7 +81,7 @@ WhereYGradOpx::WhereYGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 
 void WhereYGradOpx::grow(poplar::program::Sequence &prog) const {
 
-  const auto op           = getOp<WhereYGradOp>();
+  const auto &op          = getOp<WhereYGradOp>();
   const auto whereOutGrad = getInTensor(WhereYGradOp::outGradInIndex());
   const auto condition    = getInTensor(WhereYGradOp::fwdConditionInIndex());
 
