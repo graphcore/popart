@@ -11,66 +11,118 @@
 #include <popart/op/loss.hpp>
 #include <popart/tensorlocation.hpp>
 
+// Note that comments in this file have to adhere to doxygen formatting. See
+// https://www.doxygen.nl/manual/.
+
 namespace popart {
 
-// Stages of Ir construction where .dot files can be written
+/**
+ * Enum type used to identify at which stages of IR construction to export .dot
+ * files.
+ */
 enum class DotCheck {
-  Fwd0 = 0, // after construction of the forward pass
-  Fwd1,     // after running pre-aliasing patterns
-  Bwd0,     // after backwards construction
-  PreAlias, // after all transformations, patterns, except the aliasing
-  Final,    // after running aliasing patterns (the final Ir)
-  N         // the number of DotChecks, must appear as the final enum
+  /// Generate graph after construction of the forward pass.
+  Fwd0 = 0,
+  /// Generate graph after running pre-aliasing patterns.
+  Fwd1,
+  /// Generate graph after backwards construction.
+  Bwd0,
+  /// Generate graph after all transformations, patterns, except the aliasing.
+  PreAlias,
+  /// Generate graph after running aliasing patterns (the final IR).
+  Final,
+  /// The number of DotChecks, must appear as the final enum.
+  N
 };
 
 std::string getDotCheckString(DotCheck);
 DotCheck dotCheckFromString(const std::string &);
 
-// If doing auto-recomputation, how should we decide which ops to recompute
-// in the backwards pass?
+/**
+ * Enum type to specify which ops to recompute in the backwards pass when doing
+ * auto-recomputation.
+ */
 enum class RecomputationType {
-  None = 0, // No ops should be recomputed
-  Standard, // Algorithm to pick checkpoint to try an minimize max liveness
-  NormOnly, // Only Norm ops (+ non-linearities, if following) are recomputed
-  Pipeline, // Recompute all forward pipeline stages
-  N         // the number of RecomputationTypes, must appear as the final enum
+  /// No ops are recomputed.
+  None = 0,
+  /// Algorithm to pick checkpoints to try and minimize max liveness.
+  Standard,
+  /// Only Norm ops (+ non-linearities, if following) are recomputed.
+  NormOnly,
+  /// Recompute all forward pipeline stages.
+  Pipeline,
+  /// The number of RecomputationTypes, must appear as the final enum.
+  N
 };
 
+/**
+ * Enum type used to specify which VarUpdate ops to merge.
+ */
 enum class MergeVarUpdateType {
-  None = 0,  // Do not merge VarUpdate Ops
-  All,       // Merge all VarUpdate Ops into as few groups as possible.
-             // This is a good choice when memory is not a constraint
-  AutoLoose, // Merge into groups, attempting to not increase max-liveness in
-             // the process, and not slicing individual Var Tensors to be
-             // processed by different VarUpdateOps
-  AutoTight, // Merge into groups, so that VarUpdateOps process Tensors of
-             // exactly mergeVarUpdateMemThreshold in size
-  N          // The number of MergeVarUpdateTypes, must appear as the final enum
+  /// Do not merge VarUpdate Ops.
+  None = 0,
+  /// Merge all VarUpdate Ops into as few groups as possible.
+  /// This is a good choice when memory is not a constraint.
+  All,
+  /// Merge into groups, attempting to not increase max-liveness in
+  /// the process, and not slicing individual Var Tensors to be
+  /// processed by different VarUpdateOps.
+  AutoLoose,
+  /// Merge into groups, so that VarUpdateOps process Tensors of
+  /// exactly mergeVarUpdateMemThreshold in size.
+  AutoTight,
+  /// The number of MergeVarUpdateTypes, must appear as the final enum.
+  N
 };
 
+/**
+ * Enum type used to specify a virtual graph mode.
+ */
 enum class VirtualGraphMode {
-  Off = 0, // virtual graphs are not enabled
-  Manual,  // user must set the virtualGraph attribute on all ops and losses
-  Auto,    // autoVirtualGraph transform is used
-  ExecutionPhases, // virtual graphs are tied to execution phases
-  N // The number of VirtualGraphModes, must appear as the final enum
+  /// Virtual graphs are not enabled.
+  Off = 0,
+  /// User must set the `virtualGraph` attribute on all ops.
+  Manual,
+  /// Use `autoVirtualGraph` transform.
+  Auto,
+  /// Virtual graphs are tied to execution phases.
+  ExecutionPhases,
+  /// The number of VirtualGraphModes, must appear as the final enum.
+  N
 };
 
+/**
+ * Enum type used to specify a serialization format.
+ */
 enum class IrSerializationFormat {
-  JSON // JSON format
+  /// JavaScript Object Notation (JSON).
+  JSON
 };
 
+/**
+ * Enum type used to specify the data source for input tensors.
+ */
 enum class SyntheticDataMode {
-  Off = 0,      // Use real data
-  Zeros,        // Input tensors are initialised to all zeros
-  RandomNormal, // Input tensors are initialised with distribution ~N(0,1)
-  N             // The number of SyntheticDataModes, the final enum
+  /// Use real data.
+  Off = 0,
+  /// Input tensors are initialised to all zeros.
+  Zeros,
+  /// Input tensors are initialised with distribution ~N(0,1).
+  RandomNormal,
+  /// The number of SyntheticDataModes, the final enum.
+  N
 };
 
+/**
+ * Enum type used to specify an instrumentation type.
+ */
 enum class Instrumentation {
-  Outer = 0, // Outer loop instrumentation, graph over all IPUs
-  Inner,     // Inner loop instrumentation, graph per IPU
-  N          // The number of Instrumentations, the final enum
+  /// Outer loop instrumentation, graph over all IPUs.
+  Outer = 0,
+  /// Inner loop instrumentation, graph per IPU.
+  Inner,
+  /// The number of Instrumentations, the final enum.
+  N
 };
 
 std::string toString(VirtualGraphMode);
@@ -96,32 +148,38 @@ struct TensorLocationSettings {
   TensorLocationSettings &
   operator=(const TensorLocationSettings &rhs) = default;
 
-  // The default tensor location for this tensor type.
+  /// The default tensor location for this tensor type.
   TensorLocation location = TensorLocation();
 
-  // A minimum number of elements below which offloading won't be considered.
+  /// A minimum number of elements below which offloading won't be considered.
   int minElementsForOffChip = 2;
 
-  // Only enable RTS for tensors with more than 8192 elements
+  /// Only enable Replicated Tensor Sharding (RTS) for tensors with more than
+  /// 8192 elements
   int minElementsForReplicatedTensorSharding = 8192;
 };
 
-// Setting that affects batch serialisation subgraph schedule before outlining.
-// This setting is experimental and may change.
+/**
+ * Enum type that describes how to change the batch serialisation subgraph
+ * schedule before outlining. \b NOTE: This setting is experimental and may
+ * change.
+ */
 enum class BatchSerializationBatchSchedule {
-  // Don't encourage any particular scheduling for ops within batch subgraphs
-  // (leave it to the scheduler) but tell the scheduler to schedule subgraphs
-  // in sequence.
+  /// Don't encourage any particular scheduling for ops within batch subgraphs
+  /// (leave it to the scheduler) but tell the scheduler to schedule subgraphs
+  /// in sequence.
   Scheduler = 0,
-  // Encourage all ops within batch subgraphs to be scheduled identically and
-  // for each subgraph to be scheduled in sequence (good for outlineability).
+  /// Encourage all ops within batch subgraphs to be scheduled identically and
+  /// for each subgraph to be scheduled in sequence (good for outlineability).
   Isomorphic,
-  // OverlapOnIo tries to put the RemoteLoad for batch N+1 right after the
-  // compute phase of batch N.
+  /// OverlapOnIo tries to put the RemoteLoad for batch N+1 right after the
+  /// compute phase of batch N.
   OverlapOnIo,
-  // OverlapOnCompute tries to put the RemoteLoad for batch N+1 right before
-  // the compute phase of batch N.
-  OverlapOnCompute
+  /// OverlapOnCompute tries to put the RemoteLoad for batch N+1 right before
+  /// the compute phase of batch N.
+  OverlapOnCompute,
+  /// The number of BatchSerializationBatchSchedule, the final enum.
+  N
 };
 
 /**
@@ -139,46 +197,63 @@ struct BatchSerializationSettings {
 
   BatchSerializationSettings &
   operator=(const BatchSerializationSettings &rhs) = default;
-
-  int factor                        = 0;
-  bool concatOnVirtualGraphChange   = true;
+  /// The number of compute batches to split operations into.
+  int factor = 0;
+  /// Break batch serialization chains when the virtual graph
+  /// changes (by concatenating the compute batches to the local batch).
+  bool concatOnVirtualGraphChange = true;
+  /// Break batch serialization chains when the execution phase
+  /// changes (by concatenating the compute batches to the local batch).
   bool concatOnExecutionPhaseChange = true;
-  bool concatOnPipelineStageChange  = true;
-  // These settings are experimental and may change.
+  /// Break batch serialization chains when the pipeline stage
+  /// changes (by concatenating the compute batches to the local batch).
+  bool concatOnPipelineStageChange = true;
+  /// Experimental value that changes how operations are scheduled.
   BatchSerializationBatchSchedule batchSchedule =
       BatchSerializationBatchSchedule::Isomorphic;
+  /// Experimental value to encourage isomorphic batch serialization chains.
   int isomorphismScoreGap = 3;
 };
 
+/**
+ * Enum type to specify when to load tensors.
+ */
 enum class ExecutionPhaseIOSchedule {
-  // Preload tensors in previous phase for use in current phase
+  /// Preload tensors in previous phase for use in current phase
   Preload = 0,
-  // Load tensors just before they are required
+  /// Load tensors just before they are required
   OnDemand,
+  /// The number of ExecutionPhaseIOSchedule, the final enum.
+  N
 };
 
+/**
+ * Enum type to specify an execution phase schedule.
+ *
+ * The steps for phased execution consists of:
+ *   - 1. Copy to IO tiles if necessary
+ *   - 2. Run collective operations if necessary
+ *   - 3. Load optimizer state
+ *   - 4. Update optimizer state
+ *   - 5. Apply optimizer
+ *   - 6. Store updated tensor if necessary
+ */
 enum class ExecutionPhaseSchedule {
-  // The steps for phased execution consists of:
-  // 1. Copy to IO tiles if necessary
-  // 2. Run collective operations if necessary
-  // 3. Load optimizer state
-  // 4. Update optimizer state
-  // 5. Apply optimizer
-  // 6. Store updated tensor if necessary
-
-  // Process above steps for one weight at a time,
-  // or as interleaved as the scheduler decides to minimize liveness
-  // e.g.  (123456, 123456, 123456)
+  /// Process above steps for one weight at a time,
+  /// or as interleaved as the scheduler decides to minimize liveness
+  /// e.g.  (123456, 123456, 123456)
   Interleaving = 0,
-  // Process above steps for all weights together, in a way that maximizes
-  // overlap potential between compute and exchange
-  // e.g. (333, 111, 222, 444, 555, 666)
+  /// Process above steps for all weights together, in a way that maximizes
+  /// overlap potential between compute and exchange
+  /// e.g. (333, 111, 222, 444, 555, 666)
   Batch,
-  // Process above steps for all weights together, in a way that maximizes
-  // overlap potential between compute and exchange, and maximize stream
-  // copy merges by keeping RemoteLoad/RemoteStore operations clustered
-  // e.g. (333, 111, 222, 444, 555, 666)
-  BatchClusteredIO
+  /// Process above steps for all weights together, in a way that maximizes
+  /// overlap potential between compute and exchange, and maximize stream
+  /// copy merges by keeping RemoteLoad/RemoteStore operations clustered
+  /// e.g. (333, 111, 222, 444, 555, 666)
+  BatchClusteredIO,
+  /// The number of ExecutionPhaseSchedule, the final enum.
+  N
 };
 
 /**
@@ -201,37 +276,43 @@ struct ExecutionPhaseSettings {
   ExecutionPhaseSettings &
   operator=(const ExecutionPhaseSettings &rhs) = default;
 
-  // Number of ExecutionPhases for the whole model
+  /// Number of ExecutionPhases for the whole model
   int phases = 0;
 
-  // Number of overlapping stages
-  // 1: Parallel streaming memory, default for 1 IPU / replica
-  // 2: PingPong between 2 IPUs, default for >= 2 IPUs / replica
+  /// Number of overlapping stages
+  /// 1: Parallel streaming memory, default for 1 IPU / replica
+  /// 2: PingPong between 2 IPUs, default for >= 2 IPUs / replica
   int stages = 2;
 
+  /// The execution phase IO schedule for weight tensors.
   ExecutionPhaseIOSchedule weightIOSchedule = ExecutionPhaseIOSchedule::Preload;
+  /// The execution phase IO schedule for activation and gradient tensors.
   ExecutionPhaseIOSchedule activationIOSchedule =
       ExecutionPhaseIOSchedule::Preload;
+  /// The execution phase IO schedule for optimizer state tensors.
   ExecutionPhaseIOSchedule optimizerStateIOSchedule =
       ExecutionPhaseIOSchedule::OnDemand;
+  /// The execution phase IO schedule for accumulator tensors.
   ExecutionPhaseIOSchedule accumulatorIOSchedule =
       ExecutionPhaseIOSchedule::Preload;
-
+  /// The execution phase schedule.
   ExecutionPhaseSchedule schedule = ExecutionPhaseSchedule::Interleaving;
 };
 
-// Setting that determines how the operations in the accumulate outer fragment
-// will be scheduled accross virtual graphs (only relevant to pipelined modes).
+/**
+ * Enum type that determines how the operations in the accumulate outer fragment
+ * will be scheduled accross virtual graphs (only relevant to pipelined modes).
+ */
 enum class AccumulateOuterFragmentSchedule {
-  // Don't pose additional constraints and let the scheduler work it out.
+  /// Don't add additional constraints and let the scheduler work it out.
   Scheduler = 0,
-  // Add constraints that ensure ops are executed in virtual graph ID order.
+  /// Add constraints that ensure ops are executed in virtual graph ID order.
   Serial,
-  // Try and parallelise ops with different virtual graph IDs as much as
-  // possible.
+  /// Try and parallelise ops with different virtual graph IDs as much as
+  /// possible.
   OverlapCycleOptimized,
-  // Try and parallelize ops with different virtual graph IDs but avoid certain
-  // steps that are costly in terms of memory usage.
+  /// Try and parallelize ops with different virtual graph IDs but avoid certain
+  /// steps that are costly in terms of memory usage.
   OverlapMemoryOptimized
 };
 
@@ -248,12 +329,12 @@ struct AccumulateOuterFragmentSettings {
   AccumulateOuterFragmentSettings &
   operator=(const AccumulateOuterFragmentSettings &rhs) = default;
 
-  // Tell popart how you would like to schedule the accumulate outer fragment.
-  // This setting is experimental and may change.
+  /// Tell popart how you would like to schedule the accumulate outer fragment.
+  /// This setting is experimental and may change.
   AccumulateOuterFragmentSchedule schedule =
       AccumulateOuterFragmentSchedule::Serial;
-  // A setting to explicitly tell popart to avoid to try and parallelise the
-  // given virtual graph ids. This setting is experimental and may change.
+  /// A setting to explicitly tell popart to avoid to try and parallelise the
+  /// given virtual graph ids. This setting is experimental and may change.
   std::vector<int> excludedVirtualGraphs = {};
 };
 
@@ -274,6 +355,7 @@ struct SessionOptions {
   /// of the schedule, controlled by firstDotOp and finalDotOp. In particular,
   /// it will be [min(0, firstDotOp), max(N ops in Ir, finalDotOp))
   int firstDotOp = 0;
+  /// See #firstDotOp.
   int finalDotOp = 10000;
 
   /// Include the Op name in the .dot file (the Op type is always exported)
@@ -285,6 +367,7 @@ struct SessionOptions {
   /// Export Poplar vertex graph
   bool exportPoplarVertexGraph = false;
 
+  /// When generating PDFs of IR graphs, create separate PDFs for each subgraph.
   bool separateCallOpPdfs = true;
 
   /// Controls caching of identical sections of the graph.
@@ -305,10 +388,10 @@ struct SessionOptions {
   /// will not be.
   float outlineThreshold = 1.0f;
 
-  // The penalty applied to outlining potential sub-graphs if the sub-graph
-  // to be created breaks up a sequence of operations that are more efficient
-  // (for example for overlapping compute and exchange) when outlined together
-  // Default value is set to ~10 * getHighSubgraphValue()
+  /// The penalty applied to outlining potential sub-graphs if the sub-graph
+  /// to be created breaks up a sequence of operations that are more efficient
+  /// (for example for overlapping compute and exchange) when outlined together
+  /// Default value is set to ~10 * getHighSubgraphValue()
   float outlineSequenceBreakCost = 10000.0f;
 
   /// Enable recomputation of operations in the graph in the backwards pass to
@@ -404,10 +487,10 @@ struct SessionOptions {
   /// information from the graph building stage will be ok (tile mapping).
   bool compileEngine = true;
 
-  // An optimization for an inference session to have constant weights, true by
-  // default. Set this option to false if you are going to want to change the
-  // weights with a call to resetHostWeights after the session has been
-  // prepared. This option has no effect on a training session
+  /// An optimization for an inference session to have constant weights, true by
+  /// default. Set this option to false if you are going to want to change the
+  /// weights with a call to resetHostWeights after the session has been
+  /// prepared. This option has no effect on a training session
   bool constantWeights = true;
 
   /// Enable poplar executable caching
@@ -416,33 +499,39 @@ struct SessionOptions {
   /// Path to save the poplar::Executable to.
   std::string cachePath = "session_cache";
 
-  // Enable exceptions when floating point errors occur.
+  /// Throw an exception when floating point errors occur.
   bool enableFloatingPointChecks = false;
 
-  // Enable stochastic rounding
+  /// Enable stochastic rounding
   bool enableStochasticRounding = false;
 
-  // Configure execution phases
+  /// Configuration settings for execution phases
   ExecutionPhaseSettings executionPhaseSettings;
 
-  // Configure accumulate outer fragment.
+  /// Configuration setting for operations in the accumulate outer fragment.
   AccumulateOuterFragmentSettings accumulateOuterFragmentSettings;
 
-  // Enable explicit recomputation
+  /// Enable explicit recomputation
   bool explicitRecomputation = false;
 
+  /**
+   * A wrapper class for the `numIOTiles` option that permits any int value and
+   * has an 'unassigned' state.
+   */
   class NumIOTiles {
   public:
+    /// Constructor.
     NumIOTiles();
+    /// Constructor.
     NumIOTiles(int numIOTiles);
 
-    // Compare with ints.
+    /// Compare with ints.
     bool operator==(const int &rhs) const;
 
-    // Auto convert to int.
+    /// Auto convert to int.
     operator int() const;
 
-    // Assign value using int.
+    /// Assign value using int.
     NumIOTiles &operator=(const int &x);
 
   private:
@@ -450,20 +539,20 @@ struct SessionOptions {
     bool userAssignedValue = false;
   };
 
-  // Number of IO tiles
+  /// Number of IPU tiles dedicated to IO.
   NumIOTiles numIOTiles;
 
-  // Enable zero-copy for subgraphs
+  /// Enable zero-copy for subgraphs
   bool aliasZeroCopy = false;
 
-  // Configure batch serialization
+  /// Configuration setting for batch serialization
   BatchSerializationSettings batchSerializationSettings;
 
-  // Delay var updates as much as possible
+  /// Options to delay var updates as much as possible
   // TODO: Remove with T19212
   bool delayVarUpdates = true;
 
-  // Enable the global fullyConnectedPass option for matmuls
+  /// Enable the global fullyConnectedPass option for matmuls
   bool enableFullyConnectedPass = true;
 
   /// Enable/disable the grouping of matmuls that are the same shape
@@ -472,11 +561,11 @@ struct SessionOptions {
   /// Enable/disable the serializing of matmuls.
   bool enableSerializedMatmuls = true;
 
-  // Set the partials type globally for matmuls. Can be overriden individually
-  // with `builder.setPartialsType()`. Possible values are defined by
-  // `fromString` in op/matmul.cpp. As of last check, those are:
-  // "float", "half" in any letter case.
-  // By default, this is not set, so no global partials type is imposed.
+  /// Set the partials type globally for matmuls. Can be overriden individually
+  /// with `builder.setPartialsType()`. Possible values are defined by
+  /// `fromString` in op/matmul.cpp. As of last check, those are:
+  /// "float", "half" in any letter case.
+  /// By default, this is not set, so no global partials type is imposed.
   std::string partialsTypeMatMuls;
 
   /// If true, computes the mean first and subtracts the activations
@@ -505,7 +594,7 @@ struct SessionOptions {
   /// Poplar reporting options
   std::map<std::string, std::string> reportOptions;
 
-  // GCL options
+  /// GCL options
   std::map<std::string, std::string> gclOptions;
 
   /// List of codelets (with filetype) to be added to the poplar graph. See the
@@ -569,28 +658,28 @@ struct SessionOptions {
   /// behaviour.
   bool strictOpVersions = true;
 
-  // Run Opx checks to verify IR tensor aliasing information
-  // corresponds to lowered Poplar tensor aliasing
+  /// Run Opx checks to verify IR tensor aliasing information
+  /// corresponds to lowered Poplar tensor aliasing
   bool opxAliasChecking = false;
 
-  // Run Opx checks to verify IR tensor modification information
-  // corresponds to lowered Poplar tensor modifications
+  /// Run Opx checks to verify IR tensor modification information
+  /// corresponds to lowered Poplar tensor modifications
   bool opxModifyChecking = false;
 
-  // Tensor location settings for activation/gradient tensors.
+  /// Tensor location settings for activation/gradient tensors.
   TensorLocationSettings activationTensorLocationSettings =
       TensorLocationSettings{TensorLocation(), 2, 8192};
-  // Tensor location for weight tensors.
+  /// Tensor location for weight tensors.
   TensorLocationSettings weightTensorLocationSettings =
       TensorLocationSettings{TensorLocation(), 2, 8192};
-  // Tensor location for optimizer state tensors.
+  /// Tensor location for optimizer state tensors.
   TensorLocationSettings optimizerStateTensorLocationSettings =
       TensorLocationSettings{TensorLocation(), 2, 8192};
-  // Tensor location for gradient accumulator tensors.
+  /// Tensor location for gradient accumulator tensors.
   TensorLocationSettings accumulatorTensorLocationSettings =
       TensorLocationSettings{TensorLocation(), 2, 8192};
 
-  // Overriding tensor location for specific tensors.
+  /// Overriding tensor location for specific tensors.
   std::map<TensorId, TensorLocation> tensorLocationSettingsOverride;
 };
 

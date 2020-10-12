@@ -12,8 +12,42 @@ Sessions
 .. doxygenclass:: popart::TrainingSession
   :members:
 
-Session option flags
-....................
+Session options
+..............
+
+.. doxygenenum:: popart::DotCheck
+
+.. doxygenenum:: popart::RecomputationType
+
+.. doxygenenum:: popart::MergeVarUpdateType
+
+.. doxygenenum:: popart::VirtualGraphMode
+
+.. doxygenenum:: popart::IrSerializationFormat
+
+.. doxygenenum:: popart::SyntheticDataMode
+
+.. doxygenenum:: popart::Instrumentation
+
+.. doxygenenum:: popart::BatchSerializationBatchSchedule
+
+.. doxygenenum:: popart::ExecutionPhaseIOSchedule
+
+.. doxygenenum:: popart::ExecutionPhaseSchedule
+
+.. doxygenenum:: popart::AccumulateOuterFragmentSchedule
+
+.. doxygenstruct:: popart::TensorLocationSettings
+  :members:
+
+.. doxygenstruct:: popart::BatchSerializationSettings
+  :members:
+
+.. doxygenstruct:: popart::ExecutionPhaseSettings
+  :members:
+
+.. doxygenstruct:: popart::AccumulateOuterFragmentSettings
+  :members:
 
 .. doxygenstruct:: popart::SessionOptions
   :members:
