@@ -97,7 +97,7 @@ function(add_test_executable name)
   )
   target_link_libraries(${name}
     PRIVATE
-      popart
+      popart-internal
       ${CMAKE_THREAD_LIBS_INIT}
       ${Boost_LIBRARIES}
       ${add_test_exe_TEST_UTILS}

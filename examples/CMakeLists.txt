@@ -65,19 +65,22 @@ set(urlbase "https://s3.amazonaws.com/download.onnx/models/opset_9")
 
 ## cpp examples
 set (CMAKE_CXX_STANDARD 14)
+set (CMAKE_CXX_STANDARD_REQUIRED ON)
+set (CMAKE_CXX_EXTENSIONS OFF)
 
 function(add_popart_cpp_example name)
-  message(STATUS
-    "Adding example '${name}' with sources '${ARGN}'")
+  message(STATUS "Adding example '${name}' with sources '${ARGN}'")
+  
   add_executable(${name} ${ARGN})
-  target_include_directories(${name}
-      PRIVATE
-      ${CMAKE_CURRENT_SOURCE_DIR}
-      ${Boost_INCLUDE_DIRS}
-  )
+
+  target_include_directories(${name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+  target_include_directories(${name} SYSTEM PRIVATE ${Boost_INCLUDE_DIRS})
   target_link_libraries(${name}
-    ${Boost_LIBRARIES}
-    popart)
+    PRIVATE
+      ${Boost_LIBRARIES}
+      popart
+  )
+  
   set(executable_name "${name}")
   add_custom_command(TARGET popart_run_examples
                      COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${name}

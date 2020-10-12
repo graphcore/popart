@@ -9,18 +9,12 @@ include_directories("../willow/include")
 include_directories("${PROJECT_BINARY_DIR}/willow/include")
 
 find_package(pybind11 REQUIRED)
-find_package(Poplar REQUIRED)
 
 function(add_popart_python_module module_name source_file)
   pybind11_add_module(${module_name} ${source_file} np_utils.cpp)
 
   target_include_directories (${module_name} SYSTEM PUBLIC
     ${pybind11_INCLUDE_DIR}
-  )
-  target_include_directories (${module_name} PUBLIC
-    ${POPLAR_INCLUDE_DIR}
-    ${POPLIBS_INCLUDE_DIR}
-    ${LIBPVTI_INCLUDE_DIR}
   )
 
   # Not defining them results in compiler warnings that they will default to 0
@@ -33,12 +27,9 @@ function(add_popart_python_module module_name source_file)
   )
 
   target_link_libraries(${module_name} PRIVATE
-    ${POPLAR_LIB}
     popart
     # ...
   )
-
-
 
   # This was useful on OS/X for a while, see 
   # https://stackoverflow.com/questions/47697761 and

@@ -1,0 +1,17 @@
+@PACKAGE_INIT@
+set(POPART_VERSION @POPART_VERSION@)
+
+set_and_check(popart_CMAKE_CONFIG_DIR "@PACKAGE_POPART_CMAKE_INSTALL_CONFIGDIR@")
+
+if(NOT TARGET popart AND NOT TARGET popart-only)
+  include("${CMAKE_CURRENT_LIST_DIR}/popart-targets.cmake")
+endif()
+
+set_and_check(popart_INCLUDE_DIR "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@")
+set_and_check(popart_LIB_DIR     "@PACKAGE_CMAKE_INSTALL_LIBDIR@")
+
+set(POPART_INCLUDES "${popart_INCLUDE_DIR}")
+set(POPART_LIBRARIES "${popart_LIB_DIR}")
+
+# Will set popart_FOUND
+check_required_components(popart)
