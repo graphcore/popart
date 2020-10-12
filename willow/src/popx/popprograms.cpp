@@ -306,14 +306,16 @@ PopPrograms::getMainProgramFromPipelineFragments() const {
 
   poplar::program::Sequence inner;
 
-  inner.add(initFragment());
   inner.add(fill);
   // This is the inner main cycles loop, if doing pipelining withour gradient
   // accumulation, this the batches per step loop, as batch size = micro_batch
   // size
   inner.add(poplar::program::Repeat(static_cast<uint32_t>(mainCycles), main));
   inner.add(flush);
+
   poplar::program::Sequence outer;
+
+  outer.add(initFragment());
 
   if (!dv_p->getOuterLoopFragEmpty()) {
 
@@ -321,7 +323,7 @@ PopPrograms::getMainProgramFromPipelineFragments() const {
     // If doing gradient accumulation, the inner loop is over mini batches,
     // and this outer loop loops over multiple batches per step.
     auto bps = dv_p->ir().getDataFlow().batchesPerStep();
-    outer    = poplar::program::Repeat(bps, inner);
+    outer.add(poplar::program::Repeat(bps, inner));
   } else {
     // No gradient accumulation, so just add one iteration of the inner program.
     outer.add(inner);

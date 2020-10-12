@@ -3814,12 +3814,11 @@ PriTask Devicex::anchorReturnTypeSumTask(Tensor *tensor,
     tensors.insertUnsafe(accumulatorId, accumulatorTensor);
 
     logging::devicex::debug("Adding AnchorSum operations to {}", tensor->id);
-    popops::scaledAddTo(graph(),
-                        accumulatorTensor,
-                        poplarTensor,
-                        1.f,
-                        seqs[&sq],
-                        "AnchorSum_" + tensor->id);
+    popops::addInPlace(graph(),
+                       accumulatorTensor,
+                       poplarTensor,
+                       seqs[&sq],
+                       "AnchorSum_" + tensor->id);
     // Zero the accumulator
     popops::zero(graph(),
                  accumulatorTensor,
