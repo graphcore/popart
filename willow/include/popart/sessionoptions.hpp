@@ -31,7 +31,7 @@ enum class DotCheck {
   PreAlias,
   /// Generate graph after running aliasing patterns (the final IR).
   Final,
-  /// The number of DotChecks, must appear as the final enum.
+  /// The number of DotCheck values.
   N
 };
 
@@ -45,18 +45,18 @@ DotCheck dotCheckFromString(const std::string &);
 enum class RecomputationType {
   /// No ops are recomputed.
   None = 0,
-  /// Algorithm to pick checkpoints to try and minimize max liveness.
+  /// Algorithm to pick checkpoints to try and minimise max liveness.
   Standard,
   /// Only Norm ops (+ non-linearities, if following) are recomputed.
   NormOnly,
   /// Recompute all forward pipeline stages.
   Pipeline,
-  /// The number of RecomputationTypes, must appear as the final enum.
+  /// The number of RecomputationTypes values.
   N
 };
 
 /**
- * Enum type used to specify which VarUpdate ops to merge.
+ * Enum type used to specify which `VarUpdate` ops to merge.
  */
 enum class MergeVarUpdateType {
   /// Do not merge VarUpdate Ops.
@@ -64,14 +64,14 @@ enum class MergeVarUpdateType {
   /// Merge all VarUpdate Ops into as few groups as possible.
   /// This is a good choice when memory is not a constraint.
   All,
-  /// Merge into groups, attempting to not increase max-liveness in
-  /// the process, and not slicing individual Var Tensors to be
-  /// processed by different VarUpdateOps.
+  /// Merge into groups while attempting not to increase maximum
+  /// variable liveness, and also not slice tensor variables so
+  /// they they will need to be processed by different `VarUpdate` ops.
   AutoLoose,
-  /// Merge into groups, so that VarUpdateOps process Tensors of
-  /// exactly mergeVarUpdateMemThreshold in size.
+  /// Merge into groups, so that VarUpdateOps process tensors of
+  /// exactly `mergeVarUpdateMemThreshold` in size.
   AutoTight,
-  /// The number of MergeVarUpdateTypes, must appear as the final enum.
+  /// The number of MergeVarUpdateTypes values.
   N
 };
 
@@ -87,7 +87,7 @@ enum class VirtualGraphMode {
   Auto,
   /// Virtual graphs are tied to execution phases.
   ExecutionPhases,
-  /// The number of VirtualGraphModes, must appear as the final enum.
+  /// The number of VirtualGraphModes values.
   N
 };
 
@@ -109,7 +109,7 @@ enum class SyntheticDataMode {
   Zeros,
   /// Input tensors are initialised with distribution ~N(0,1).
   RandomNormal,
-  /// The number of SyntheticDataModes, the final enum.
+  /// The number of SyntheticDataMode values.
   N
 };
 
@@ -121,7 +121,7 @@ enum class Instrumentation {
   Outer = 0,
   /// Inner loop instrumentation, graph per IPU.
   Inner,
-  /// The number of Instrumentations, the final enum.
+  /// The number of Instrumentations values.
   N
 };
 
@@ -154,8 +154,8 @@ struct TensorLocationSettings {
   /// A minimum number of elements below which offloading won't be considered.
   int minElementsForOffChip = 2;
 
-  /// Only enable Replicated Tensor Sharding (RTS) for tensors with more than
-  /// 8192 elements
+  /// A minimum number of elements below which Replicated Tensor Sharding (RTS)
+  /// won't be considered.
   int minElementsForReplicatedTensorSharding = 8192;
 };
 
@@ -178,7 +178,7 @@ enum class BatchSerializationBatchSchedule {
   /// OverlapOnCompute tries to put the RemoteLoad for batch N+1 right before
   /// the compute phase of batch N.
   OverlapOnCompute,
-  /// The number of BatchSerializationBatchSchedule, the final enum.
+  /// The number of BatchSerializationBatchSchedule values.
   N
 };
 
@@ -223,12 +223,13 @@ enum class ExecutionPhaseIOSchedule {
   Preload = 0,
   /// Load tensors just before they are required
   OnDemand,
-  /// The number of ExecutionPhaseIOSchedule, the final enum.
+  /// The number of ExecutionPhaseIOSchedule values.
   N
 };
 
 /**
- * Enum type to specify an execution phase schedule.
+ * Enum type to specify the order of processing optimizer operations for
+ * different weights of the same execution phase.
  *
  * The steps for phased execution consists of:
  *   - 1. Copy to IO tiles if necessary
@@ -239,20 +240,19 @@ enum class ExecutionPhaseIOSchedule {
  *   - 6. Store updated tensor if necessary
  */
 enum class ExecutionPhaseSchedule {
-  /// Process above steps for one weight at a time,
-  /// or as interleaved as the scheduler decides to minimize liveness
-  /// e.g.  (123456, 123456, 123456)
+  /// Process above steps for one weight at a time (for example: 123456, 123456,
+  /// 123456). The scheduler may interleave these steps.
   Interleaving = 0,
-  /// Process above steps for all weights together, in a way that maximizes
+  /// Process above steps for all weights together, in a way that maximises
   /// overlap potential between compute and exchange
-  /// e.g. (333, 111, 222, 444, 555, 666)
+  /// (for example: 333, 111, 222, 444, 555, 666).
   Batch,
-  /// Process above steps for all weights together, in a way that maximizes
-  /// overlap potential between compute and exchange, and maximize stream
+  /// Process above steps for all weights together, in a way that maximises
+  /// overlap potential between compute and exchange, and maximise stream
   /// copy merges by keeping RemoteLoad/RemoteStore operations clustered
-  /// e.g. (333, 111, 222, 444, 555, 666)
+  /// (for example: 333, 111, 222, 444, 555, 666).
   BatchClusteredIO,
-  /// The number of ExecutionPhaseSchedule, the final enum.
+  /// The number of ExecutionPhaseSchedule values.
   N
 };
 
@@ -311,7 +311,7 @@ enum class AccumulateOuterFragmentSchedule {
   /// Try and parallelise ops with different virtual graph IDs as much as
   /// possible.
   OverlapCycleOptimized,
-  /// Try and parallelize ops with different virtual graph IDs but avoid certain
+  /// Try and parallelise ops with different virtual graph IDs but avoid certain
   /// steps that are costly in terms of memory usage.
   OverlapMemoryOptimized
 };
@@ -329,17 +329,17 @@ struct AccumulateOuterFragmentSettings {
   AccumulateOuterFragmentSettings &
   operator=(const AccumulateOuterFragmentSettings &rhs) = default;
 
-  /// Tell popart how you would like to schedule the accumulate outer fragment.
+  /// Tell PopART how you would like to schedule the accumulate outer fragment.
   /// This setting is experimental and may change.
   AccumulateOuterFragmentSchedule schedule =
       AccumulateOuterFragmentSchedule::Serial;
-  /// A setting to explicitly tell popart to avoid to try and parallelise the
+  /// A setting to explicitly tell PopART to avoid to try and parallelise the
   /// given virtual graph ids. This setting is experimental and may change.
   std::vector<int> excludedVirtualGraphs = {};
 };
 
 /**
- * A structure containing user configuration options for the Session class
+ * A structure containing user configuration options for the `Session` class
  */
 struct SessionOptions {
 
@@ -370,10 +370,10 @@ struct SessionOptions {
   /// When generating PDFs of IR graphs, create separate PDFs for each subgraph.
   bool separateCallOpPdfs = true;
 
-  /// Controls caching of identical sections of the graph.
+  /// Identify and extract repeated parts of computational graph into subgraphs.
   bool enableOutlining = true;
 
-  /// Controls whether the cost of copying of cached sections should be included
+  /// When `true` the cost of copying of cached sections should be included
   /// in the outlining cost model.
   bool enableOutliningCopyCostPruning = true;
 
@@ -381,17 +381,17 @@ struct SessionOptions {
   /// sub-graphs (if any), to be eligible for outlining. A high threshold
   /// results in fewer sub-graphs being outlined, a negative value results in
   /// all being outlined. The gross value of a sub-graph is the sum of its
-  /// constituent Ops' getSubgraphValue() values. To disable outlining, it is
-  /// better to set enableOutlining to false than to set this value to infinity.
-  /// The default value of 1.0f results in all high Value operations such as
-  /// convolution being cached, but standalone low Value operations such as Relu
-  /// will not be.
+  /// constituent Ops' Op::getSubgraphValue() values. To disable outlining, it
+  /// is better to set enableOutlining to false than to set this value to
+  /// infinity. The default value of 1.0f results in all high value operations
+  /// such as convolution being cached, but standalone low Value operations such
+  /// as Relu will not be.
   float outlineThreshold = 1.0f;
 
   /// The penalty applied to outlining potential sub-graphs if the sub-graph
   /// to be created breaks up a sequence of operations that are more efficient
   /// (for example for overlapping compute and exchange) when outlined together
-  /// Default value is set to ~10 * getHighSubgraphValue()
+  /// Default value is set to ~10 * Op::getHighSubgraphValue().
   float outlineSequenceBreakCost = 10000.0f;
 
   /// Enable recomputation of operations in the graph in the backwards pass to
@@ -428,7 +428,7 @@ struct SessionOptions {
   /// 'preparation' of the data to occur in parallel with compute
   bool enablePrefetchDatastreams = true;
 
-  /// By default, we use the stable-softmax poplar function. This input tensor
+  /// By default, we use the stable-softmax Poplar function. This input tensor
   /// to softmax, _x_, is preprocessed by subtracting max(_x_) to each element
   /// before computing the exponentials, ensuring numerical stability. If you
   /// are sure the inputs to your softmax operations are small enough to not
@@ -489,11 +489,11 @@ struct SessionOptions {
 
   /// An optimization for an inference session to have constant weights, true by
   /// default. Set this option to false if you are going to want to change the
-  /// weights with a call to resetHostWeights after the session has been
-  /// prepared. This option has no effect on a training session
+  /// weights with a call to Session::resetHostWeights after the session has
+  /// been prepared. This option has no effect on a training session
   bool constantWeights = true;
 
-  /// Enable poplar executable caching
+  /// Enable Poplar executable caching
   bool enableEngineCaching = false;
 
   /// Path to save the poplar::Executable to.
@@ -561,10 +561,12 @@ struct SessionOptions {
   /// Enable/disable the serializing of matmuls.
   bool enableSerializedMatmuls = true;
 
-  /// Set the partials type globally for matmuls. Can be overriden individually
-  /// with `builder.setPartialsType()`. Possible values are defined by
-  /// `fromString` in op/matmul.cpp. As of last check, those are:
-  /// "float", "half" in any letter case.
+  // For partialsTypeMatMuls, possible values are defined by
+  // `fromString` in op/matmul.cpp. As of last check, those are:
+  // "float", "half" in any letter case.
+
+  /// Set the partials type globally for matmuls. Can be overridden individually
+  /// with `builder.setPartialsType()`. Valid values are `"float"` and `"half"`.
   /// By default, this is not set, so no global partials type is imposed.
   std::string partialsTypeMatMuls;
 
@@ -597,8 +599,8 @@ struct SessionOptions {
   /// GCL options
   std::map<std::string, std::string> gclOptions;
 
-  /// List of codelets (with filetype) to be added to the poplar graph. See the
-  /// poplar documentation for more information.
+  /// List of codelets (with filetype) to be added to the Poplar graph. See the
+  /// Poplar documentation for more information.
   std::vector<std::string> customCodelets;
 
   /// Compile flags for the custom codelets. For example `-g` to generate debug
@@ -614,9 +616,9 @@ struct SessionOptions {
   int64_t swapLimitScheduler = static_cast<int64_t>(1e9);
 
   /// PopART uses Poprithms for scheduling PopART Graphs. The Poprithms Graphs
-  /// created for scheduling can be optionally serialized (written to file). The
+  /// created for scheduling can be optionally serialised (written to file). The
   /// string below specified the directory to serialize Poprithms Graphs to. If
-  /// it is empty, then the Graphs will not be serialized. The names of
+  /// it is empty, then the Graphs will not be serialised. The names of
   /// serialization files will be poprithms_anneal_graph_`i'.json for the lowest
   /// non-existing `i's. The directory must already exist, PopART will not
   /// create it.
@@ -653,7 +655,7 @@ struct SessionOptions {
 
   /// Strict op version checks will throw an error if the exact version of an op
   /// required for the models opset is not supported. Turning this check off
-  /// will cause popart to fall back to the latest implementation of the op that
+  /// will cause PopART to fall back to the latest implementation of the op that
   /// is supported. Warning, turning off these checks may cause undefined
   /// behaviour.
   bool strictOpVersions = true;
@@ -679,7 +681,8 @@ struct SessionOptions {
   TensorLocationSettings accumulatorTensorLocationSettings =
       TensorLocationSettings{TensorLocation(), 2, 8192};
 
-  /// Overriding tensor location for specific tensors.
+  /// Override tensor location for specific tensors by setting a TensorLocation
+  /// for specific TensorId values.
   std::map<TensorId, TensorLocation> tensorLocationSettingsOverride;
 };
 
