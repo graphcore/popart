@@ -28,6 +28,7 @@ from onnx import numpy_helper
 
 # Get download url and test number from args
 
+
 class InShapeInfo():
     def __init__(self, id_name, in_name, in_type, shape):
         self.id_name = id_name
@@ -35,54 +36,64 @@ class InShapeInfo():
         self.in_type = in_type
         self.shape = shape
 
+
 def non_common_shape_info_model_name(onnx_model_path):
     # Add model on list if non common settings for inputShapeInfo
     # if needed.
-    # Careful when adding new cases with this simle solution that 
+    # Careful when adding new cases with this simle solution that
     # there is unique identification from onnx_model_path.
-    non_common_settings = ["super_resolution", "tiny_yolov2",
-    "mask_rcnn_R_50_FPN_1x","ssd_mobilenet_v1", "faster_rcnn_R_50_FPN_1x",
-    "yolov3", "yolov4","roberta-base-11", "GPT2", "GPT-2-LM-HEAD",
-     "bertsquad10"]
-    return next(
-        (x for x in non_common_settings if x in onnx_model_path), "common")
+    non_common_settings = [
+        "super_resolution", "tiny_yolov2", "mask_rcnn_R_50_FPN_1x",
+        "ssd_mobilenet_v1", "faster_rcnn_R_50_FPN_1x", "yolov3", "yolov4",
+        "roberta-base-11", "GPT2", "GPT-2-LM-HEAD", "bertsquad10"
+    ]
+    return next((x for x in non_common_settings if x in onnx_model_path),
+                "common")
+
 
 def get_in_shape_info(onnx_model_id_name):
     # You might want to change shape, say batch_size = 1 or 16.
     # Have a look on model info, e.g. super_resolution.onnx with Netron:
-    # type: float32[batch_size,1,224,224] 
+    # type: float32[batch_size,1,224,224]
     in_shape_info_list = {
-    "super_resolution" : InShapeInfo("super_resolution", ["input"], ["FLOAT"],
-     [[1, 1, 224, 224]]), 
-    "tiny_yolov2" : InShapeInfo("tiny_yolov2", ["image"], ["FLOAT"],
-     [[1,3,416,416]]),
-    "mask_rcnn_R_50_FPN_1x" : InShapeInfo("mask_rcnn_R_50_FPN_1x", ["image"],
-     ["FLOAT"], [[3, 224, 224]]),
-    "ssd_mobilenet_v1" : InShapeInfo("ssd_mobilenet_v1", ["image_tensor:0"],
-     ["UINT8"], [[1, 32, 32, 3]]),
-    "faster_rcnn_R_50_FPN_1x" : InShapeInfo("faster_rcnn_R_50_FPN_1x",
-     ["image"], ["FLOAT"], [[3, 32, 32]]),
-    "yolov3" : InShapeInfo("yolov3", ["input_1", "image_shape"],
-     ["FLOAT", "FLOAT"], [[576, 3, 577, 578], [579, 2]]),
-    "yolov4" : InShapeInfo("yolov4", ["input_1:0"], ["FLOAT"],
-     [[1,416,416,3]]),
-    "roberta-sequence-classification-9" : 
-    InShapeInfo("roberta-sequence-classification-9",
-     ["input"], ["INT64"], [[1, 50]]),
-    "roberta-base-11" : 
-    InShapeInfo("roberta-base-11", ["input_ids"], ["FLOAT"], [[1,50,768]]),
-    "GPT2" : InShapeInfo("GPT2", ["input1"], ["INT64"], [[1, 2, 3]]),
-    "GPT-2-LM-HEAD" : 
-    InShapeInfo("GPT-2-LM-HEAD", ["input1"], ["INT64"], [[1, 2, 3]]),  
-    "bertsquad10" : InShapeInfo("bertsquad10",
-       ["unique_ids_raw_output___9:0", "segment_ids:0",
-        "input_mask:0", "input_ids:0"],
-       ["INT32","INT32","INT32","INT32"],
-       [[1], [1, 256],[1, 256],[1, 256]])                                              
+        "super_resolution":
+        InShapeInfo("super_resolution", ["input"], ["FLOAT"],
+                    [[1, 1, 224, 224]]),
+        "tiny_yolov2":
+        InShapeInfo("tiny_yolov2", ["image"], ["FLOAT"], [[1, 3, 416, 416]]),
+        "mask_rcnn_R_50_FPN_1x":
+        InShapeInfo("mask_rcnn_R_50_FPN_1x", ["image"], ["FLOAT"],
+                    [[3, 224, 224]]),
+        "ssd_mobilenet_v1":
+        InShapeInfo("ssd_mobilenet_v1", ["image_tensor:0"], ["UINT8"],
+                    [[1, 32, 32, 3]]),
+        "faster_rcnn_R_50_FPN_1x":
+        InShapeInfo("faster_rcnn_R_50_FPN_1x", ["image"], ["FLOAT"],
+                    [[3, 32, 32]]),
+        "yolov3":
+        InShapeInfo("yolov3", ["input_1", "image_shape"], ["FLOAT", "FLOAT"],
+                    [[576, 3, 577, 578], [579, 2]]),
+        "yolov4":
+        InShapeInfo("yolov4", ["input_1:0"], ["FLOAT"], [[1, 416, 416, 3]]),
+        "roberta-sequence-classification-9":
+        InShapeInfo("roberta-sequence-classification-9", ["input"], ["INT64"],
+                    [[1, 50]]),
+        "roberta-base-11":
+        InShapeInfo("roberta-base-11", ["input_ids"], ["INT64"], [[1, 50]]),
+        "GPT2":
+        InShapeInfo("GPT2", ["input1"], ["INT64"], [[1, 2, 3]]),
+        "GPT-2-LM-HEAD":
+        InShapeInfo("GPT-2-LM-HEAD", ["input1"], ["INT64"], [[1, 2, 3]]),
+        "bertsquad10":
+        InShapeInfo("bertsquad10", [
+            "unique_ids_raw_output___9:0", "segment_ids:0", "input_mask:0",
+            "input_ids:0"
+        ], ["INT32", "INT32", "INT32", "INT32"],
+                    [[1], [1, 256], [1, 256], [1, 256]])
     }
     return in_shape_info_list[onnx_model_id_name]
 
-     
+
 def set_up_session(onnx_model):
     graph_transformer = popart.GraphTransformer(onnx_model)
     graph_transformer.convertAllFixedPointInitializersToConstants()
@@ -91,23 +102,27 @@ def set_up_session(onnx_model):
     device = popart.DeviceManager().createIpuModelDevice({"tilesPerIPU": 20})
     if model_name == "common":
         session = popart.InferenceSession(
-        fnModel=graph_transformer.getModelProto(),
-        dataFlow=popart.DataFlow(1, {output: popart.AnchorReturnType("All")}),
-        deviceInfo=device)
+            fnModel=graph_transformer.getModelProto(),
+            dataFlow=popart.DataFlow(1,
+                                     {output: popart.AnchorReturnType("All")}),
+            deviceInfo=device)
     else:
-        assert len(model_name) != 0 
-        shape_info = get_in_shape_info(model_name)        
+        assert len(model_name) != 0
+        shape_info = get_in_shape_info(model_name)
         inputShapeInfo = popart.InputShapeInfo()
         for i in range(len(shape_info.in_name)):
-            inputShapeInfo.add(shape_info.in_name[i],
-            popart.TensorInfo(shape_info.in_type[i], shape_info.shape[i]))
+            inputShapeInfo.add(
+                shape_info.in_name[i],
+                popart.TensorInfo(shape_info.in_type[i], shape_info.shape[i]))
         session = popart.InferenceSession(
-        fnModel=graph_transformer.getModelProto(),
-        dataFlow=popart.DataFlow(1, {output: popart.AnchorReturnType("All")}),
-        deviceInfo=device,
-        inputShapeInfo=inputShapeInfo)
+            fnModel=graph_transformer.getModelProto(),
+            dataFlow=popart.DataFlow(1,
+                                     {output: popart.AnchorReturnType("All")}),
+            deviceInfo=device,
+            inputShapeInfo=inputShapeInfo)
 
     return session
+
 
 def is_json_load_ok(report):
     is_report_ok = True
@@ -116,6 +131,7 @@ def is_json_load_ok(report):
     except ValueError:
         is_report_ok = False
     return is_report_ok, report_json
+
 
 def save_report(zoo_test_dir, execution_report, graph_report):
     if (not os.path.exists(zoo_test_dir)):
@@ -137,6 +153,7 @@ def save_report(zoo_test_dir, execution_report, graph_report):
         with open(graph_report_file, 'w') as f:
             json.dump(graph_report_json, f)
 
+
 def total_execution_cycles(execution_report):
     is_execution_report_ok, execution_report_json = is_json_load_ok(
         execution_report)
@@ -152,14 +169,16 @@ def total_execution_cycles(execution_report):
                 if 'cycles' in step)
             print("sum_cycles: ", sum_cycles)
 
+
 def total_tile_sizes(graph_report):
     is_graph_report_ok, graph_report_json = is_json_load_ok(graph_report)
-    
+
     if is_graph_report_ok and 'memory' in graph_report_json and \
         'byTile' in graph_report_json['memory'] and \
         'total' in graph_report_json['memory']['byTile']:
         sum_tile_sizes = sum(graph_report_json['memory']['byTile']['total'])
         print('sum_tile_sizes: ', sum_tile_sizes)
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("url", type=str, help="URL for the tar file download")
@@ -283,7 +302,7 @@ total_execution_cycles(session.getExecutionReport())
 total_tile_sizes(session.getGraphReport())
 
 if args.model_zoo_test_dir:
-    save_report(args.model_zoo_test_dir, session.getExecutionReport(), 
+    save_report(args.model_zoo_test_dir, session.getExecutionReport(),
                 session.getGraphReport())
 
 # Check the output from the test data is approximately equal to our inference
