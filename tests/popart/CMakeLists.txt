@@ -1,4 +1,4 @@
-find_package(Boost REQUIRED unit_test_framework filesystem)
+find_package(Boost REQUIRED COMPONENTS unit_test_framework filesystem)
 
 # Workaround for this bug: https://github.com/boostorg/system/issues/26
 # on certain systems/compilers (e.g. compiling the host-runtime-view
