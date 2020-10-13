@@ -19,92 +19,104 @@ AccessType combine(std::set<AccessType> accessTypes) {
 }
 
 // Merge in approx. O(rank * 2 * n log^2 n)
-Regions mergeRegions(Regions regions) {
+Regions mergeRegions(Regions inRegions) {
+  Regions outRegions;
 
-  AccessType accessType = AccessType::None;
-  for (Region &r : regions) {
-    accessType = combine({r.getAccessType(), accessType});
+  std::map<int64_t, Regions> rankRegionsMap;
+
+  for (auto &region : inRegions) {
+    rankRegionsMap[region.rank()].push_back(region);
   }
 
-  bool unchanged = false;
-  if (regions.size() > 0) {
-    Regions subRegions;
+  for (auto &rankAndRegions : rankRegionsMap) {
+    auto &rank    = rankAndRegions.first;
+    auto &regions = rankAndRegions.second;
 
-    while (!unchanged) {
-      unchanged = true;
+    AccessType accessType = AccessType::None;
+    for (Region &r : regions) {
+      accessType = combine({r.getAccessType(), accessType});
+    }
 
-      auto rank = regions.front().rank();
+    bool unchanged = false;
+    if (regions.size() > 0) {
+      Regions subRegions;
 
-      for (int64_t d = 0; d < rank; ++d) {
-        regions.insert(regions.end(), subRegions.begin(), subRegions.end());
-        subRegions.clear();
-        auto last_size = regions.size();
+      while (!unchanged) {
+        unchanged = true;
 
-        std::sort(regions.begin(),
-                  regions.end(),
-                  [d](const view::Region &a, const view::Region &b) -> bool {
-                    return a.getLower()[d] < b.getLower()[d];
-                  });
+        for (int64_t d = 0; d < rank; ++d) {
+          regions.insert(regions.end(), subRegions.begin(), subRegions.end());
+          subRegions.clear();
+          auto last_size = regions.size();
 
-        std::vector<bool> erase(regions.size(), false);
+          std::sort(regions.begin(),
+                    regions.end(),
+                    [d](const view::Region &a, const view::Region &b) -> bool {
+                      return a.getLower()[d] < b.getLower()[d];
+                    });
 
-        int64_t jstart = 0;
-        for (int64_t i = 0; i < regions.size(); ++i) {
-          if (regions[i].isEmpty())
-            erase[i] = true;
-          if (erase[i]) {
-            continue;
-          }
-          // Using jstart brings down worst-case complexity to less than N**2
-          for (int64_t j = std::max(i + 1, jstart); j < regions.size(); ++j) {
-            if (erase[j]) {
+          std::vector<bool> erase(regions.size(), false);
+
+          int64_t jstart = 0;
+          for (int64_t i = 0; i < regions.size(); ++i) {
+            if (regions[i].isEmpty())
+              erase[i] = true;
+            if (erase[i]) {
               continue;
             }
-            if (regions[i].getLower()[d] == regions[j].getLower()[d] &&
-                regions[i].getUpper()[d] == regions[j].getUpper()[d]) {
-              // if i and j fully overlap, any region in [i, j] does not have
-              // to check for merges with any other region in [i, j], so we can
-              // set the next j to j + 1
-              jstart = j + 1;
-              continue;
-            } else if (regions[i].getUpper()[d] < regions[j].getLower()[d]) {
-              // j and any region after j are not connected to i and therefore
-              // can't be merged in d, advance to next i
-              break;
-            } else {
-              // Try merge
-              auto merged = regions[i].merge(regions[j]);
-              if (merged.first == d) {
-                regions[i] = merged.second;
-                erase[j]   = true;
+            // Using jstart brings down worst-case complexity to less than N**2
+            for (int64_t j = std::max(i + 1, jstart); j < regions.size(); ++j) {
+              if (erase[j]) {
+                continue;
+              }
+              if (regions[i].getLower()[d] == regions[j].getLower()[d] &&
+                  regions[i].getUpper()[d] == regions[j].getUpper()[d]) {
+                // if i and j fully overlap, any region in [i, j] does not have
+                // to check for merges with any other region in [i, j], so we
+                // can set the next j to j + 1
+                jstart = j + 1;
+                continue;
+              } else if (regions[i].getUpper()[d] < regions[j].getLower()[d]) {
+                // j and any region after j are not connected to i and therefore
+                // can't be merged in d, advance to next i
+                break;
               } else {
-                // Try subtraction
-                auto subs = regions[j].sub(regions[i]);
-                if (subs.size() > 0 && subs.front() != regions[j]) {
-                  subRegions.insert(subRegions.end(), subs.begin(), subs.end());
-                  erase[j] = true;
+                // Try merge
+                auto merged = regions[i].merge(regions[j]);
+                if (merged.first == d) {
+                  regions[i] = merged.second;
+                  erase[j]   = true;
+                } else {
+                  // Try subtraction
+                  auto subs = regions[j].sub(regions[i]);
+                  if (subs.size() > 0 && subs.front() != regions[j]) {
+                    subRegions.insert(
+                        subRegions.end(), subs.begin(), subs.end());
+                    erase[j] = true;
+                  }
                 }
               }
             }
           }
+
+          regions.erase(std::remove_if(regions.begin(),
+                                       regions.end(),
+                                       [&erase, &regions](Region const &i) {
+                                         return erase.at(&i - regions.data());
+                                       }),
+                        regions.end());
+
+          unchanged &= (last_size == regions.size() && subRegions.size() == 0);
         }
-
-        regions.erase(std::remove_if(regions.begin(),
-                                     regions.end(),
-                                     [&erase, &regions](Region const &i) {
-                                       return erase.at(&i - regions.data());
-                                     }),
-                      regions.end());
-
-        unchanged &= (last_size == regions.size() && subRegions.size() == 0);
       }
     }
-  }
 
-  for (Region &r : regions) {
-    r.setAccessType(accessType);
+    for (Region &r : regions) {
+      r.setAccessType(accessType);
+      outRegions.push_back(r);
+    }
   }
-  return regions;
+  return outRegions;
 }
 
 bool Region::operator==(const Region &r) const {
