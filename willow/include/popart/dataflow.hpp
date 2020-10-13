@@ -9,40 +9,117 @@
 
 namespace popart {
 
-// An anchor tensor is a tensor which the user wants returned
-// after a step is run. Anchors are essentially what tensorflow calls
-// "fetches". AnchorReturnType specifies what exactly should be
-// returned for a tensor, currently the 3 options are:
-
+/**
+ * An anchor tensor is a tensor that the user wants returned after a
+ * call to Session::run. Each call to Session::run results in
+ * `batchesPerStep x accumulationFactor x replicationFactor` of such
+ * tensors being computed for each replica. We refer to the samples associated
+ * with each such computation as a micro batch. The dimensions are
+ * user-specified by the following parameters:
+ *
+ *  * `batchesPerStep` is the value in DataFlow.
+ *  * `accumulationFactor` is the value defined by
+ *    SessionOptions::accumulationFactor.
+ *  * `replicationFactor` is the value defined by
+ *    SessionOptions::globalReplicationFactor.
+ *
+ * This enum type describes the strategy with which the micro batch values
+ * for anchor tensors (or summaries thereof) are written or to the IStepIO
+ * instance passed to Session::run.
+ *
+ * See also:  AnchorReturnType.
+ *
+ * **NOTE**: Anchors are essentially what tensorflow calls "fetches".
+ */
 enum class AnchorReturnTypeId {
-  Final = 0, // return just the final micro-batch(es) of the step
-  EveryN,    // return every Nth batch in the step
-  All,       // return all batches in the step.
-  Sum, // return the same shape as FINAL, with accumulation over all aditional
-       // Tensor dimensions.
+  /// Only return the tensor value for the last micro batch of the Session::run
+  /// call
+  /// for each replica.
+  ///
+  /// The buffer shape required for this anchor in IStepIO is
+  /// `[replicationFactor, <anchorTensorShape>]`
+  /// (with dimensions of size 1 removed).
+  Final = 0,
+  /// Return the tensor value for *all* micro batches for each replica
+  ///
+  /// The buffer shape required for this anchor in IStepIO is
+  /// `[batchesPerStep, accumulationFactor, replicationFactor,
+  /// <anchorTensorShape>]`
+  /// (with dimensions of size 1 removed).
+
+  /// Return the tensor value for every `N`th global batch for each replica and
+  /// for
+  /// all accumulation steps in that global batch. Note that the value of `N` is
+  /// captured by AnchorReturnType.
+  ///
+  /// The buffer shape required for this anchor in IStepIO is
+  /// `[batchesPerStep // N, accumulationFactor, replicationFactor,
+  /// <anchorTensorShape>]`
+  /// (with dimensions of size 1 removed).
+  EveryN,
+  /// Return the tensor value for *all* micro batches for each replica.
+  ///
+  /// The buffer shape required for this anchor in IStepIO is
+  /// `[batchesPerStep, accumulationFactor, replicationFactor,
+  /// <anchorTensorShape>]`
+  /// (with dimensions of size 1 removed).
+  All,
+  /// Return one tensor value for each replica, doing a sum reduction over the
+  /// `batchesPerStep` and `accumulationFactor` dimensions.
+  ///
+  /// The buffer shape required for this anchor in IStepIO is
+  /// `[replicationFactor, <anchorTensorShape>]`
+  /// (with dimensions of size 1 removed).
+  Sum,
 };
 
 std::ostream &operator<<(std::ostream &, AnchorReturnTypeId);
 
-// As an example, suppose we have an anchor scalar (0-d) tensor,
-// Suppose batchesPerStep = 4 and we process them in a batch of batchSize = 2
-// Suppose that the 2*4 = 8 samples are supplied in a 2d tensor with values:
-// [[1, 2], [1, 0], [1, 3], [2, 0]]
-// Then, under each of the AnchorReturnTypes the returned tensors are,
-// FINAL       : [2, 0]                           (1-d tensor)
-// EVERYN, N=2 : [[1, 0], [2, 0]]                 (2-d tensor)
-// ALL         : [[1, 2], [1, 0], [1, 3], [2, 0]] (2-d tensor)
-
+/**
+ * A class that captures an AnchorReturnTypeId value and, when this value is
+ * AnchorReturnTypeId::EVERYN, the associated `N` number. The constructor
+ * takes `std::string` values and converts them as appropriate.
+ *
+ * See also: #AnchorReturnTypeId.
+ */
 class AnchorReturnType {
 public:
-  // If AnchorReturnTypeId is EVERYN, a valid return period must
-  // also be supplied. Othwise just supply the Id.
+  /// Constructor.
+  /// \param artString - the string to convert to an #AnchorReturnTypeId value.
+  /// The following values are acceptable (case insensitive):
+  ///  * `"final"` - AnchorReturnTypeId::FINAL
+  ///  * `"all"` - AnchorReturnTypeId::ALL
+  ///  * `"sum"` - AnchorReturnTypeId::SUM
+  ///
+  /// **NOTE**: Constructing an AnchorReturnType with of type
+  /// AnchorReturnTypeId::EVERYN
+  /// using this constructor will result in an error. Use the constructor that
+  /// also specifies a return period.
   AnchorReturnType(std::string artString);
+  /// Constructor.
+  /// \param artString the string to convert to an #AnchorReturnTypeId value.
+  /// The following values are acceptable (case insensitive):
+  ///  * `"final"` - AnchorReturnTypeId::FINAL
+  ///  * `"everyn"` - AnchorReturnTypeId::EVERYN
+  ///  * `"all"` - AnchorReturnTypeId::ALL
+  ///  * `"sum"` - AnchorReturnTypeId::SUM
+  /// \param returnPeriod the value of `N` in case of
+  /// AnchorReturnTypeId::EVERYN.
+  ///
+  /// **NOTE**: Constructing a #AnchorReturnType with of type
+  /// AnchorReturnTypeId::EVERYN will result in an error. Use the constructor
+  /// that also specifies the return period.
   AnchorReturnType(std::string artString, int returnPeriod);
 
+  // Return the associated #AnchorReturnTypeId, not currently part of public
+  // API.
   AnchorReturnTypeId id() const { return artId_; }
-  // Return period
+  // Return the associated return period (`N`) if the #AnchorReturnTypeId is
+  // AnchorReturnTypeId::EVERYN,
+  // not currently part of public API.
   int rp() const;
+
+  // A hash value, not currently part of public API.
   std::size_t hash() const;
 
 private:
@@ -54,41 +131,82 @@ private:
   int returnPeriod_;
 };
 
-// Specifies parameters for the host-device data streams.
-// Used to control the amount input data processed each step,
-// and how the user wants data returned
+/**
+ * This class specifies parameters for host-device data streams. The parameters
+ * are used to control the amount input data processed each step (that is: each
+ * Session::run call) determines how data is returned to the user.
+ *
+ * See also: AnchorReturnType, #AnchorReturnTypeId.
+ **/
 class DataFlow {
 public:
+  /// Default constructor, sets `batchesPerStep` to 0 and does not have any
+  /// anchors.
   DataFlow();
+  /// Construct DataFlow instance without anchor tensors.
+  /// \param batchesPerStep - the number of global batches to run the inference
+  /// or training
+  ///     session for per call to Session::run before returning control to the
+  ///     caller.
   DataFlow(int batchesPerStep);
-  DataFlow(int batchesPerStep, const std::map<TensorId, AnchorReturnType> &);
+  /// Constructor DataFlow instance with anchor tensors.
+  /// \param batchesPerStep the number of global batches to run the inference or
+  /// training
+  ///     session for per call to Session::run before returning control to the
+  ///     caller.
+  /// \param anchorMap a mapping from output tensor TensorId to AnchorReturnType
+  ///     indicating the strategy with which to write the anchor tensor values
+  ///     to the IStepIO object provided to Session::run.
   DataFlow(int batchesPerStep,
-           const std::vector<TensorId> tIds,
-           const AnchorReturnType &art = AnchorReturnType("All"));
+           const std::map<TensorId, AnchorReturnType> &anchorMap);
+  /// Constructor DataFlow instance with anchor tensors.
+  /// \param batchesPerStep the number of global batches to run the inference or
+  /// training
+  ///     session for per call to Session::run before returning control to the
+  ///     caller.
+  /// \param anchorTensorIds the tensor ID of anchor tensors.
+  /// \param anchorReturnType the strategy with which to write anchor tensor
+  /// values to the IStepIO
+  ///     object provided to Session::run.
+  DataFlow(int batchesPerStep,
+           const std::vector<TensorId> anchorTensorIds,
+           const AnchorReturnType &anchorReturnType = AnchorReturnType("All"));
 
+  // Default copy constructor, not currently part of public API.
   DataFlow(const DataFlow &rhs) = default;
+  // Default assignment operator, not currently part of public API.
   DataFlow &operator=(const DataFlow &rhs) = default;
 
+  // Determine if a tensor is an anchor, not currently part of public API.
   bool isAnchored(TensorId) const;
+  // Determine if batch counting is required, not currently part of public API.
   bool isBatchCountingRequired() const;
+  // Return a vector of all anchor tensors, not currently part of public API.
   const std::vector<TensorId> &anchors() const { return v_anchors; }
+  // Return a vector of all return periods, not currently part of public API.
   const std::vector<int> &rps() const { return v_rps; }
+  // Number of anchor tensors, not currently part of public API.
   int nAnchors() const { return static_cast<int>(v_anchors.size()); }
+  // Number of global batches per Session::run call, not currently part of
+  // public API.
   int batchesPerStep() const { return batchesPerStep_; }
+  // Get AnchorReturnType for a anchor tensor, not currently part of public API.
   AnchorReturnType art(TensorId anchorId) const;
+  // Get a hash for this object, not currently part of public API.
   std::size_t hash() const;
 
 private:
-  /// The number of batches processed by the backend in one call to train
-  /// or infer.
+  // The number of batches processed by the backend in one call to train
+  // or infer.
   int batchesPerStep_;
 
-  /// The set of tensors to return to the user after execution, and how
-  /// frequently they are returned during multi-batch training or inference
+  // The set of tensors to return to the user after execution, and how
+  // frequently they are returned during multi-batch training or inference
   std::map<TensorId, AnchorReturnType> m_anchors;
 
-  /// The set of anchor tensors
+  // The set of anchor tensors (as std::vector).
   std::vector<TensorId> v_anchors;
+  // The set of anchor tensors (as std::vector).
   std::set<TensorId> s_anchors;
 
   // The unique set of return periods for all anchors.
