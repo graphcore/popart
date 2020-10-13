@@ -232,12 +232,12 @@ enum class ExecutionPhaseIOSchedule {
  * different weights of the same execution phase.
  *
  * The steps for phased execution consists of:
- *   - 1. Copy to IO tiles if necessary
- *   - 2. Run collective operations if necessary
- *   - 3. Load optimizer state
- *   - 4. Update optimizer state
- *   - 5. Apply optimizer
- *   - 6. Store updated tensor if necessary
+ *   - Copy to IO tiles if necessary (1)
+ *   - Run collective operations if necessary (2)
+ *   - Load optimizer state (3)
+ *   - Update optimizer state (4)
+ *   - Apply optimizer (5)
+ *   - Store updated tensor if necessary (6)
  */
 enum class ExecutionPhaseSchedule {
   /// Process above steps for one weight at a time (for example: 123456, 123456,
