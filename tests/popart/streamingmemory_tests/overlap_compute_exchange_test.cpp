@@ -34,7 +34,7 @@ using namespace popart;
 // Run a PopART graph that allows overlapping compute/exchange with 2 IPUs.
 // Run Full and ReplicaAndLadder sync configurations and check that the
 // IPU cycles on the parallel (ReplicaAndLadder) execution is at least
-// 30% lower than the serial (Full) execution mode.
+// 20% lower than the serial (Full) execution mode.
 BOOST_AUTO_TEST_CASE(OverlapComputeExchangeTest_0) {
 
   int64_t N = 128;
@@ -183,7 +183,7 @@ BOOST_AUTO_TEST_CASE(OverlapComputeExchangeTest_0) {
     }
   }
 
-  // Expected > 30% savings on cycle count per IPU
-  BOOST_CHECK(ipu_0_parallel_cycles < 0.8 * ipu_0_serial_cycles);
-  BOOST_CHECK(ipu_1_parallel_cycles < 0.8 * ipu_1_serial_cycles);
+  // Expected > 20% savings on cycle count per IPU
+  BOOST_CHECK_LT(ipu_0_parallel_cycles, 0.8 * ipu_0_serial_cycles);
+  BOOST_CHECK_LT(ipu_1_parallel_cycles, 0.8 * ipu_1_serial_cycles);
 }
