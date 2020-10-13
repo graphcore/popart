@@ -191,6 +191,7 @@ def test_conv_avail_memory_error(tmpdir, capfd):
     assert (e_info.value.args[0].startswith(
         "availableMemoryProportion must be in (0,1]"))
 
+
 # Test that poplar gets our instruction to set the available memory proportion.
 # Do this by matching the poplibs logs.
 @tu.requires_ipu_model
@@ -208,4 +209,4 @@ def test_matmul_avail_memory_log(tmpdir, capfd):
     matches = re.findall(patt, output)
     print(output)
     print(matches)
-    assert len(matches) > 1
+    assert len(matches) > 0
