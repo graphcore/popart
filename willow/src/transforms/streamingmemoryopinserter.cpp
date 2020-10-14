@@ -13,7 +13,8 @@
 #include <popart/op/varupdate.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/topocons.hpp>
-#include <popart/transforms/streamingmemoryopinserter.hpp>
+
+#include <transforms/streamingmemoryopinserter.hpp>
 
 namespace popart {
 

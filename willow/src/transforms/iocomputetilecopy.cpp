@@ -9,9 +9,9 @@
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
-
 #include <popart/transforms/iocomputetilecopy.hpp>
-#include <popart/transforms/streamingmemoryopinserter.hpp>
+
+#include <transforms/streamingmemoryopinserter.hpp>
 
 namespace popart {
 

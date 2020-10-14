@@ -214,6 +214,9 @@ target_include_directories(popart-only
 
     # For generated headers like version.hpp.in
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+  PRIVATE
+    # Include headers in src privately (not part of public API).
+    ${PROJECT_SOURCE_DIR}/willow/src
 )
 
 # Link dependencies, exposed at varying levels of visibility through interface
@@ -245,6 +248,7 @@ target_include_directories(popart SYSTEM INTERFACE ${POPART_DEPS_INCLUDES})
 add_library(popart-internal INTERFACE)
 target_link_libraries(popart-internal INTERFACE popart ${POPART_INTERNAL_DEPS_LIBS})
 target_include_directories(popart-internal SYSTEM INTERFACE ${POPART_INTERNAL_DEPS_INCLUDES})
+target_include_directories(popart-internal INTERFACE ${PROJECT_SOURCE_DIR}/willow/src)
 
 ################################################################################
 ##### Install popart and popart-only

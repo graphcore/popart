@@ -20,8 +20,9 @@
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/streamingmemory.hpp>
-#include <popart/transforms/streamingmemoryopinserter.hpp>
 #include <popart/vendored/optional.hpp>
+
+#include <transforms/streamingmemoryopinserter.hpp>
 
 namespace popart {
 

@@ -10,7 +10,8 @@
 #include <popart/op/add.hpp>
 #include <popart/scheduler.hpp>
 #include <popart/topocons.hpp>
-#include <popart/transforms/streamingmemoryopinserter.hpp>
+
+#include <transforms/streamingmemoryopinserter.hpp>
 
 using namespace popart;
 using namespace popart::io;
