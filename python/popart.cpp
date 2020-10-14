@@ -1451,6 +1451,12 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("args"),
             py::arg("scale"),
             py::arg("debugPrefix") = std::string());
+    cls.def("scaledadd",
+            &AiGraphcoreOpset1::scaledadd,
+            py::arg("args"),
+            py::arg("scale0")      = 1.0,
+            py::arg("scale1")      = 1.0,
+            py::arg("debugPrefix") = std::string());
     cls.def("lstm",
             &AiGraphcoreOpset1::lstm,
             py::arg("args"),

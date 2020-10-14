@@ -304,6 +304,9 @@ const static AiGraphcoreOpIdV1 RestoreInplace("RestoreInplace");
 const static AiGraphcoreOpIdV1 Round_1("Round", 1, 1);
 const static AiGraphcoreOpIdV1 RoundInplace("RoundInplace");
 const static AiGraphcoreOpIdV1 Scale_1("Scale", 1, 1);
+const static AiGraphcoreOpIdV1 ScaledAdd("ScaledAdd", {2, 4}, 1);
+const static AiGraphcoreOpIdV1 ScaledAddLhsInplace("ScaledAddLhsInplace");
+const static AiGraphcoreOpIdV1 ScaledAddRhsInplace("ScaledAddRhsInplace");
 const static AiGraphcoreOpIdV1 ScaleInplace("ScaleInplace");
 const static AiGraphcoreOpIdV1 SeluInplace("SeluInplace");
 const static AiGraphcoreOpIdV1 SGD0VarUpdate("SGD0VarUpdate");
@@ -351,8 +354,9 @@ const static OperatorIdentifier Nop          = CustomOperators::Nop_1;
 const static OperatorIdentifier PrintTensor  = CustomOperators::PrintTensor_1;
 const static OperatorIdentifier ReplicatedAllReduce =
     CustomOperators::ReplicatedAllReduce;
-const static OperatorIdentifier Round = CustomOperators::Round_1;
-const static OperatorIdentifier Scale = CustomOperators::Scale_1;
+const static OperatorIdentifier Round     = CustomOperators::Round_1;
+const static OperatorIdentifier Scale     = CustomOperators::Scale_1;
+const static OperatorIdentifier ScaledAdd = CustomOperators::ScaledAdd;
 const static OperatorIdentifier ShapedDropout =
     CustomOperators::ShapedDropout_1;
 const static OperatorIdentifier Subsample = CustomOperators::Subsample_1;

@@ -194,6 +194,21 @@ public:
                  float scale,
                  const std::string &name = {});
 
+  /**
+   * Add a scaledadd operation to the model
+   * X = scale0 * T0 + scale1 * T1
+   *
+   * \param args Tensor {T0, T1, scale0, scale1}
+   * \param scale0 The scale to apply (if no scale0 tensor is supplied)
+   * \param scale1 The scale to apply (if no scale1 tensor is supplied)
+   * \param name Optional identifier for operation
+   * \return The name of the result tensor
+   */
+  TensorId scaledadd(const std::vector<TensorId> &args,
+                     float scale0,
+                     float scale1,
+                     const std::string &name = {});
+
   std::vector<TensorId> lstm(const std::vector<TensorId> &args,
                              int64_t outputFullSequence,
                              const std::string &name = {});

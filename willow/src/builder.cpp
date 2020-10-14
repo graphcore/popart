@@ -555,6 +555,19 @@ TensorId AiGraphcoreOpset1::scale(const std::vector<TensorId> &args,
       .at(0);
 }
 
+TensorId AiGraphcoreOpset1::scaledadd(const std::vector<TensorId> &args,
+                                      float scale0,
+                                      float scale1,
+                                      const std::string &name) {
+  return impl
+      ->op(Onnx::AiGraphcore::OpSet1::ScaledAdd,
+           getOpsetVersion(),
+           args,
+           {{"scale0", scale0}, {"scale1", scale1}},
+           name)
+      .at(0);
+}
+
 std::vector<TensorId> AiGraphcoreOpset1::lstm(const std::vector<TensorId> &args,
                                               int64_t outputFullSequence,
                                               const std::string &name) {
