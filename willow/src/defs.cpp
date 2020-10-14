@@ -508,10 +508,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
                          "tensor(float16)",
                          "tensor(bool)"},
                         "Do not constrain tensors")
-        .Attr("pass_through_creation",
-              "pass_through_creation",
-              AttributeProto::INT,
-              true)
         .TypeAndShapeInferenceFunction(DetachShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(

@@ -1474,7 +1474,6 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("detach",
             &AiGraphcoreOpset1::detach,
             py::arg("args"),
-            py::arg("pass_through_creation") = 0,
             py::arg("debugPrefix")           = std::string());
     cls.def("round",
             &AiGraphcoreOpset1::round,

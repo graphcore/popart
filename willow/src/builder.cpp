@@ -586,14 +586,9 @@ TensorId AiGraphcoreOpset1::gelu(const std::vector<TensorId> &args,
 }
 
 TensorId AiGraphcoreOpset1::detach(const std::vector<TensorId> &args,
-                                   bool pass_through_creation,
                                    const std::string &name) {
   return impl
-      ->op(Onnx::AiGraphcore::OpSet1::Detach,
-           getOpsetVersion(),
-           args,
-           {{"pass_through_creation", pass_through_creation}},
-           name)
+      ->op(Onnx::AiGraphcore::OpSet1::Detach, getOpsetVersion(), args, {}, name)
       .at(0);
 }
 

@@ -230,15 +230,11 @@ public:
    *
    *
    * \param args Tensor T Input tensor.
-   * \param pass_through_creation Bool Identifies whether the detach op will
-   *  allow it's downstream tensors to dictate layout on the device. True
-   * indicates CANUNWIND, false indicates DEADEND.
    * \param name Optional identifier for operation.
    * \return The name of the result tensor
    */
   TensorId detach(const std::vector<TensorId> &args,
-                  bool pass_through_creation = false,
-                  const std::string &name    = {});
+                  const std::string &name = {});
 
   /**
    * Add the 'Round' to the model
