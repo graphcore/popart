@@ -192,6 +192,16 @@ void Op::disconnectInTensor(InIndex inIndex, Tensor *tensor) {
   input->erase(inIndex);
 }
 
+void Op::disconnectInTensor(InIndex inIndex) {
+  if (!hasInput(inIndex)) {
+    throw internal_error("error disconnecting tensor at index {} of Op {}. "
+                         "There is no tensor at this index to disconnect.",
+                         inIndex,
+                         debugName());
+  }
+  disconnectInTensor(inIndex, inTensor(inIndex));
+}
+
 void Op::disconnectOutTensor(Tensor *tensor) {
   for (auto idx : output->indices(tensor)) {
     if (tensor->hasProducer() && tensor->getProducer() == this) {

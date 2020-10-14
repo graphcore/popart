@@ -25,6 +25,10 @@ std::vector<std::unique_ptr<Op>> GroupNormOp::getGradOps() {
   return upops;
 }
 
+bool GroupNormOp::canBeReplacedByIdentity() {
+  return inInfo(getXInIndex()).nelms() == 0;
+}
+
 void GroupNormOp::setup() {
   // The input and output are of shape (N x C x H x W). If 4D input
   outInfo(getYOutIndex()) = inInfo(getXInIndex());

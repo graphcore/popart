@@ -2,6 +2,7 @@
 #include <memory>
 #include <popart/ir.hpp>
 #include <popart/op/gather.hpp>
+#include <popart/op/groupnorm.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/pad.hpp>
 #include <popart/op/reducesum.hpp>
@@ -21,18 +22,14 @@ bool OpToIdentityPattern::matches(Op *op) const {
 std::vector<std::unique_ptr<Op>> OpToIdentityPattern::sequence(Op *op) const {
   std::vector<std::unique_ptr<Op>> seq;
 
-  // The GatherOp matches this pattern, but has more than 1 inputs. This was
-  // resulting in an IdentityOp with two inputs. For the GatherOp, it is
-  // suitable just to disconnect all but the first inputs, but this should
-  // probably be an error.
+  // For Ops that match this pattern, but have more than one input, leave only
+  // the input connected that is mapped to the output by the identity function
   if (op->isConvertibleTo<GatherOp>()) {
-    for (auto &index_tensor : op->input->tensorMap()) {
-      int index   = index_tensor.first;
-      auto tensor = index_tensor.second;
-      if (index != 0) {
-        op->disconnectInTensor(index, tensor);
-      }
-    }
+    op->disconnectInTensor(GatherOp::indicesInIndex());
+  }
+  if (op->isConvertibleTo<GroupNormOp>()) {
+    op->disconnectInTensor(GroupNormOp::getScaleInIndex());
+    op->disconnectInTensor(GroupNormOp::getBInIndex());
   }
 
   // It should be an error to replace an op with multiple inputs.
