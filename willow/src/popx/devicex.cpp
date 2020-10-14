@@ -2070,12 +2070,12 @@ void Devicex::addOpTasks(PriTasks &tasks) {
       }
     }
 
-    auto task = opTask(op, priority, prevOpTaskId);
-
     auto rerunSchedule = recomputeFinder.getRequiredRecomputeOps(op);
     if (!rerunSchedule.empty()) {
-      requiredRecomputes[task.name] = rerunSchedule;
+      requiredRecomputes[opTaskId(op)] = rerunSchedule;
     }
+
+    auto task = opTask(op, priority, prevOpTaskId);
 
     tasks.add(task);
     prevOpTaskId = task.name;
@@ -2219,6 +2219,17 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
     // Add dependency only if not already added
     if (std::find(deps.begin(), deps.end(), prevTask) == deps.end()) {
       deps.push_back(prevTask);
+    }
+  }
+
+  auto taskId = opTaskId(op);
+  if (requiredRecomputes.find(taskId) != requiredRecomputes.end()) {
+    for (const auto &recompOp : requiredRecomputes[taskId]) {
+      std::pair<TaskId, DependencyType> recompTask = {opTaskId(recompOp),
+                                                      DependencyType::Output};
+      if (std::find(deps.begin(), deps.end(), recompTask) == deps.end()) {
+        deps.push_back(recompTask);
+      }
     }
   }
 
@@ -2373,7 +2384,7 @@ void Devicex::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
                               op->settings.recomputeType,
                               op->debugName());
 
-      growOpx(opx, progs.recomputeFragment(op->id));
+      growOpx(opx, progs.createRecomputeFragment(op->id));
       seqs[&progs.forwardFragment()].add(progs.recomputeFragment(op->id));
     }
 
@@ -2524,7 +2535,7 @@ void Devicex::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
       logging::devicex::debug("Adding (first) recompute Op {}",
                               op->debugName());
 
-      growOpx(opx, progs.recomputeFragment(op->id));
+      growOpx(opx, progs.createRecomputeFragment(op->id));
 
       seqs[&progs.pipelineForwardFragment(op->getPipelineStage(), op->str())]
           .add(progs.recomputeFragment(op->id));

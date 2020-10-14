@@ -92,9 +92,11 @@ public:
   poplar::Function &getFragmentFunction(const Graph &called_graph,
                                         poplar::Graph &popgraph);
 
-  // Recompute program fragments, get and (implicitly) create. There is a unique
-  // fragment for each recomputed Op
+  // Get the program fragment for a recomputed op. createRecomputeFragment must
+  // be called first.
   poplar::program::Sequence &recomputeFragment(OpId);
+  // Create the program fragment for a recomputed op.
+  poplar::program::Sequence &createRecomputeFragment(OpId);
 
   bool hasBeenRecomputed(OpId, ExecutionPhase) const;
   void recordRecomputed(OpId, ExecutionPhase);

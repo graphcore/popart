@@ -455,9 +455,13 @@ void PopPrograms::recordRecomputed(OpId id, ExecutionPhase phase) {
 
 poplar::program::Sequence &PopPrograms::recomputeFragment(OpId id) {
   auto found = recomputeSeqs.find(id);
-  if (found != recomputeSeqs.end()) {
-    return found->second;
+  if (found == recomputeSeqs.end()) {
+    throw error("Recompute Fragment for Op {} has not been created.", id);
   }
+  return found->second;
+}
+
+poplar::program::Sequence &PopPrograms::createRecomputeFragment(OpId id) {
   recomputeSeqs.insert({id, poplar::program::Sequence{}});
   return recomputeSeqs[id];
 }
