@@ -14,16 +14,6 @@ public:
   void grow(poplar::program::Sequence &) const final;
 };
 
-class LambR2SquareOpx : public Opx {
-public:
-  LambR2SquareOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
-  InputCreatorType getInputCreatorType(InIndex index) const final;
-  poplar::Tensor
-      unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const final;
-  view::RegMap unwindRegion(InIndex, OutIndex) const final;
-};
-
 } // namespace popx
 } // namespace popart
 

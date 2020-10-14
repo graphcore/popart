@@ -39,8 +39,6 @@ class Lamb(Optimizer):
                     state["step"] = 0
                     state["exp_avg"] = torch.zeros_like(p.data)
                     state["exp_avg_sq"] = torch.zeros_like(p.data)
-                    if amsgrad:
-                        state["max_exp_avg_sq"] = torch.zeros_like(p.data)
 
                 state["step"] += 1
 

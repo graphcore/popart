@@ -274,7 +274,6 @@ const static AiGraphcoreOpIdV1 Init_1("Init", 0, 1);
 const static AiGraphcoreOpIdV1 IoTileCopy("IoTileCopy");
 const static AiGraphcoreOpIdV1 IpuCopy("IpuCopy");
 const static AiGraphcoreOpIdV1 L1("L1", 1, 1);
-const static AiGraphcoreOpIdV1 LambR2Square("LambR2Square");
 const static AiGraphcoreOpIdV1 LambSquare("LambSquare");
 const static AiGraphcoreOpIdV1 LeakyReluInplace("LeakyReluInplace");
 const static AiGraphcoreOpIdV1 LSTM_1("LSTM", 4, 2);
