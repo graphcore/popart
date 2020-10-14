@@ -289,13 +289,12 @@ struct ExecutionPhaseSettings {
   /// The execution phase IO schedule for activation and gradient tensors.
   ExecutionPhaseIOSchedule activationIOSchedule =
       ExecutionPhaseIOSchedule::Preload;
-  /// The execution phase IO schedule for optimizer state tensors.
+
+  // TODO T28529: Add doxygen comments.
   ExecutionPhaseIOSchedule optimizerStateIOSchedule =
       ExecutionPhaseIOSchedule::OnDemand;
-  /// The execution phase IO schedule for accumulator tensors.
   ExecutionPhaseIOSchedule accumulatorIOSchedule =
       ExecutionPhaseIOSchedule::Preload;
-  /// The execution phase schedule.
   ExecutionPhaseSchedule schedule = ExecutionPhaseSchedule::Interleaving;
 };
 
