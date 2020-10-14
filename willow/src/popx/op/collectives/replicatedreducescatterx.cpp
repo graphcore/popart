@@ -35,11 +35,12 @@ void ReplicatedReduceScatterOpx::grow(poplar::program::Sequence &prog) const {
     if (!hasInViewChangers(ReplicatedReduceScatterOp::getInIndex())) {
       // Tensor not rearranged for reduceScatter yet, do it now
       auto cbr = createCollectiveBalancedReorder(toReduceScatter);
-      poplar::Tensor refClone = cbr->getReferenceTensorClone(
+      auto c   = cbr->createCollectivesTensor(
           toReduceScatter.elementType(),
-          inId(ReplicatedReduceScatterOp::getInIndex()) + "_RefClone");
-      prog.add(poplar::program::Copy(toReduceScatter, refClone));
-      toReduceScatter = cbr->rearrangeForCollective(refClone.flatten());
+          inId(ReplicatedReduceScatterOp::getInIndex()));
+      auto ref = cbr->undoRearrangeForCollective(c);
+      prog.add(poplar::program::Copy(toReduceScatter.flatten(), ref.flatten()));
+      toReduceScatter = c;
     }
   }
 
@@ -68,7 +69,6 @@ ReplicatedReduceScatterOpx::getInputCreatorType(InIndex index) const {
 poplar::Tensor
 ReplicatedReduceScatterOpx::createInput(int inIndex,
                                         const std::string &name) const {
-  const auto &rrs_op = getOp<ReplicatedReduceScatterOp>();
   if (inIndex != ReplicatedReduceScatterOp::getInIndex()) {
     throw error(
         "ReplicatedReduceScatterOpx::createInput, cannot create input at {}",
@@ -76,16 +76,15 @@ ReplicatedReduceScatterOpx::createInput(int inIndex,
   }
 
   auto cbr = getCollectiveBalancedReorder();
-  if (cbr) {
-    return cbr->rearrangeForCollective(
-        cbr->getReferenceTensorClone(popType(rrs_op.inTensor(inIndex)->info),
-                                     name)
-            .flatten());
-  } else {
+  if (!cbr) {
     throw error("ReplicatedReduceScatterOpx::createInput, "
                 "CollectiveBalancedReorder not found for Op {}",
                 op_p->debugName());
   }
+
+  const auto &rrs_op = getOp<ReplicatedReduceScatterOp>();
+  const auto &type   = popType(rrs_op.inTensor(inIndex)->info);
+  return cbr->createCollectivesTensor(type, name);
 }
 
 std::vector<TensorId>

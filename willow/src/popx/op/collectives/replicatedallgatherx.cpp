@@ -59,11 +59,8 @@ ReplicatedAllGatherOpx::getInputCreatorType(InIndex index) const {
 poplar::Tensor ReplicatedAllGatherOpx::unwindTensorLayout(poplar::Tensor tensor,
                                                           InIndex,
                                                           OutIndex) const {
-  auto replicationFactor = dv_p->lowering().getReplicationFactor();
-  auto cbr               = createCollectiveBalancedReorder(tensor);
-  auto rearranged        = cbr->rearrangeForCollective(tensor);
-  // Rearranged tensor is always sliceable by the replication factor
-  return rearranged.slice(0, rearranged.numElements() / replicationFactor);
+  auto cbr = createCollectiveBalancedReorder(tensor);
+  return cbr->createReplicaSlice(tensor.elementType(), "");
 }
 
 view::RegMap ReplicatedAllGatherOpx::unwindRegion(InIndex, OutIndex) const {
@@ -88,11 +85,8 @@ ReplicatedAllGatherOpx::createInput(InIndex index,
     auto outTensor =
         graph().addVariable(popType(outInfo), outInfo.shape_szt(), name);
     dv_p->lowering().getLinearMapper().mapTensor(graph(), outTensor);
-    auto inShape = op.inShape(ReplicatedAllGatherOp::getInIndex());
-
-    return unwindTensorLayout(outTensor,
-                              ReplicatedAllGatherOp::getInIndex(),
-                              ReplicatedAllGatherOp::getOutIndex());
+    auto cbr = createCollectiveBalancedReorder(outTensor);
+    return cbr->createReplicaSlice(popType(outInfo), name);
   }
 
   throw error("ReplicatedAllGatherOpx::createInput: Invalid index = " +

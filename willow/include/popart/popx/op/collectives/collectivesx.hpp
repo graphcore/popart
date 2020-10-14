@@ -38,8 +38,11 @@ public:
                             poplar::Tensor tensor_,
                             unsigned replicationFactor_);
 
-  // Balanced reorder the tensor in a collective-friendly manner
-  poplar::Tensor rearrangeForCollective(poplar::Tensor tensor) const;
+  poplar::Tensor createReplicaSlice(const poplar::Type &type,
+                                    const std::string &debugPrefix);
+
+  poplar::Tensor createCollectivesTensor(const poplar::Type &type,
+                                         const std::string &debugPrefix);
 
   // Reorder tensor back into the expected IR tensor shape and order
   poplar::Tensor undoRearrangeForCollective(poplar::Tensor tensor) const;
@@ -53,41 +56,31 @@ public:
                                   char *out,
                                   int64_t elemByteSize) const;
 
-  // Get a clone of the tensor that was used to create the CBR object
-  poplar::Tensor getReferenceTensorClone(poplar::Type type,
-                                         std::string name) const;
-
-  // Get the tensor that was used to create the CBR object
-  const poplar::Tensor &getReferenceTensor() const;
+  std::vector<std::size_t> getReferenceShape() const {
+    return referenceTensor.shape();
+  }
 
   // Number of elements in the collective balanced (reordered) tensor
-  size_t getNumRearrangedTensorElems() const {
-    return numRearrangedTensorElems;
-  }
+  size_t getNumRearrangedTensorElems() const;
 
 private:
   // Host tensor rearrangement routine
   void rearrange(const char *in,
                  char *out,
                  int64_t elemByteSize,
-                 bool forCollective) const;
+                 bool refToGathered) const;
 
   // Graph or subgraph on which the tensor and reordered tensor are allocated
   poplar::Graph &graph;
 
   unsigned replicationFactor;
 
+  std::vector<std::size_t> numReplicaElementsPerTile;
+  std::vector<poplar::Interval> gatheredToSimplifiedRefSlices;
+  std::vector<poplar::Interval> gatheredToRefSlices;
+  std::size_t totalElementsPerReplica;
   poplar::Tensor referenceTensor;
-  size_t numRearrangedTensorElems;
-
-  // Tuple of: original offset, rearranged offset, size and tile
-  std::vector<ReorderMetadata> reordering;
-
-  // Proxy to simplify tensors to rearrange for collectives
-  poplar::Tensor simplifyProxy;
-
-  // Proxy to reverse simplfy tensors to rearrange for collectives
-  poplar::Tensor simplifyReverseProxy;
+  poplar::TensorRearranger simplifier;
 };
 
 // If the input/output to a collective op is padded,
@@ -130,7 +123,7 @@ public:
       : cbr(cbr_), group(group_) {}
   poplar::Tensor apply(poplar::Tensor tensor) const final {
     return cbr->undoRearrangeForCollective(tensor).reshape(
-        cbr->getReferenceTensor().shape());
+        cbr->getReferenceShape());
   }
   bool operator==(const ViewChanger &rhs) const final {
     if (const ReplicatedGatherOutScatterInViewChanger *other =

@@ -9,253 +9,190 @@
 #include <popart/popx/op/collectives/collectivesx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include <popops/Collectives.hpp>
+#include <poputil/Util.hpp>
+
 namespace popart {
 namespace popx {
+
+static int64_t nextMultiple(int64_t val, int64_t multiple) {
+  return ((val + multiple - 1) / multiple) * multiple;
+}
 
 CollectiveBalancedReorder::CollectiveBalancedReorder(
     poplar::Graph &graph_,
     poplar::Tensor tensor_,
     unsigned replicationFactor_)
-    : graph(graph_), replicationFactor(replicationFactor_) {
-  referenceTensor = graph.clone(tensor_);
-  auto flat       = tensor_.flatten();
+    : graph(graph_), replicationFactor(replicationFactor_),
+      referenceTensor(tensor_) {
+  simplifier    = graph.getSimplifyingRearranger(referenceTensor);
+  auto t        = simplifier.rearrange(referenceTensor);
+  auto mapping  = graph.getTileMapping(t);
+  auto numTiles = mapping.size();
 
-  int64_t minRegionSize = 1;
-
-  auto nextMultiple = [](int64_t val, int64_t multiple) {
-    return ((val + multiple - 1) / multiple) * multiple;
+  // Go through each tile of the (potentially simplified) reference
+  // tensor and split the contiguous regions between the replicas.
+  // Build up a map from indices in the reference tensor to
+  // the corresponding replica and index within the replica of
+  // the gathered tensor in the 'refToGatheredMap' data structure.
+  struct GatherSlice {
+    unsigned rep;
+    std::size_t index;
+    std::size_t size;
+    bool operator<(const GatherSlice &other) const {
+      return std::tie(rep, index, size) <
+             std::tie(other.rep, other.index, other.size);
+    }
   };
+  numReplicaElementsPerTile.resize(numTiles);
+  std::vector<std::pair<std::size_t, GatherSlice>> refToGathered;
+  unsigned index = 0;
+  for (unsigned tile = 0; tile < numTiles; ++tile) {
+    auto contRegions   = graph.getSortedContiguousRegions(t, mapping[tile]);
+    auto elemsThisTile = poputil::intervalSequenceNumElements(contRegions);
+    auto paddedElemsThisTile = nextMultiple(elemsThisTile, replicationFactor);
+    numReplicaElementsPerTile[tile] = paddedElemsThisTile / replicationFactor;
+    auto perReplicaRegions =
+        poputil::splitRegions(contRegions, 1, replicationFactor);
 
-  simplifyProxy = graph.addVariable(flat.elementType(), {flat.numElements()});
-  simplifyReverseProxy =
-      graph.addVariable(flat.elementType(), {flat.numElements()});
-  graph.setTileMapping(simplifyProxy, 0);
-  graph.setTileMapping(simplifyReverseProxy, 0);
-
-  graph.reorderToSimplify(&flat, {&simplifyReverseProxy});
-  poplar::Tensor reverse = simplifyReverseProxy;
-  graph.reorderToSimplify(&reverse, {&simplifyProxy});
-
-  auto mapping = graph.getTileMapping(flat);
-
-  std::vector<std::vector<poplar::Tensor>> reorderedSlices(replicationFactor);
-  std::vector<size_t> reloc(replicationFactor);
-
-  std::vector<std::vector<std::vector<poplar::Interval>>> contRegionsPerTile;
-
-  for (const auto &m : mapping) {
-    contRegionsPerTile.emplace_back(graph.getSortedContiguousRegions(flat, m));
-  }
-
-  size_t numElemsPerReplica = 0;
-  for (unsigned tile = 0; tile < contRegionsPerTile.size(); ++tile) {
-    auto contRegions = contRegionsPerTile.at(tile);
-    if (contRegions.size() > 0) {
-      for (auto contRegion : contRegions) {
-        size_t totalSize = 0;
-        for (auto region : contRegion) {
-          totalSize += region.size();
-        }
-        numElemsPerReplica += nextMultiple(
-            (totalSize - 1) / replicationFactor + 1, minRegionSize);
-      }
-    }
-  }
-
-  for (unsigned i = 0; i < replicationFactor; ++i) {
-    reloc[i] = i * numElemsPerReplica;
-  }
-
-  for (unsigned tile = 0; tile < contRegionsPerTile.size(); ++tile) {
-    auto contRegions = contRegionsPerTile.at(tile);
-
-    if (contRegions.size() > 0) {
-      for (auto contRegion : contRegions) {
-        size_t totalSize = 0;
-        for (auto region : contRegion) {
-          totalSize += region.size();
-        }
-        size_t totalReplicaSize = nextMultiple(
-            (totalSize - 1) / replicationFactor + 1, minRegionSize);
-
-        size_t regionIndex  = 0;
-        size_t regionOffset = 0;
-        size_t replicaIndex = 0;
-        size_t replicaSize  = 0;
-        while (replicaIndex < replicationFactor) {
-          if (regionIndex < contRegion.size()) {
-            auto &region = contRegion[regionIndex];
-
-            auto size = std::min(region.size() - regionOffset,
-                                 totalReplicaSize - replicaSize);
-
-            size_t start = region.begin() + regionOffset;
-
-            // Slice of the tensor
-            reordering.emplace_back(start, reloc[replicaIndex], size, tile);
-
-            reloc[replicaIndex] += size;
-            regionOffset += size;
-            replicaSize += size;
-
-            if (regionOffset == region.size()) {
-              ++regionIndex;
-              regionOffset = 0;
-            }
-          } else {
-            auto size = totalReplicaSize - replicaSize;
-            // Padding
-            reordering.emplace_back(-1, reloc[replicaIndex], size, tile);
-            reloc[replicaIndex] += size;
-            replicaSize += size;
-          }
-          if (replicaSize == totalReplicaSize) {
-            ++replicaIndex;
-            replicaSize = 0;
-          }
+    for (unsigned rep = 0; rep < replicationFactor; ++rep) {
+      if (perReplicaRegions.size() <= rep)
+        continue;
+      auto rIndex = index;
+      for (auto &rs : perReplicaRegions[rep]) {
+        for (auto &r : rs) {
+          refToGathered.emplace_back(r.begin(),
+                                     GatherSlice{rep, rIndex, r.size()});
+          rIndex += r.size();
         }
       }
     }
+    index += numReplicaElementsPerTile[tile];
   }
-  numRearrangedTensorElems =
-      reordering.back().rearranged_offset + reordering.back().size;
+  totalElementsPerReplica = index;
+
+  std::sort(refToGathered.begin(), refToGathered.end());
+
+  // Now create the list of intervals in the gathered tensor
+  // that make up a view of the (simplified) reference tensor.
+  for (const auto &entry : refToGathered) {
+    const auto begin =
+        entry.second.rep * totalElementsPerReplica + entry.second.index;
+    gatheredToSimplifiedRefSlices.emplace_back(begin,
+                                               begin + entry.second.size);
+  }
+
+  // We need a second set of intervals that goes directly from
+  // the gathered tensor ordering -> reference tensor ordering
+  // for CollectiveBalancedReorder::rearrange
+
+  // First we get an ordering of slices in the simplified ordering using
+  // the rearranger. For convenience later we ensure this is split by the
+  // intervals in the gathered -> simplified map.
+  std::vector<poplar::Interval> simplifiedToRefSlices;
+  simplifiedToRefSlices.reserve(refToGathered.size());
+  std::transform(refToGathered.begin(),
+                 refToGathered.end(),
+                 std::back_inserter(simplifiedToRefSlices),
+                 [](const auto &x) {
+                   return poplar::Interval(x.first, x.first + x.second.size);
+                 });
+  simplifiedToRefSlices = simplifier.undoRearrangement(simplifiedToRefSlices);
+  const auto numSimplifiedRefSlices = simplifiedToRefSlices.size();
+
+  // Now we need to apply the same reordering as above to the intervals which
+  // go from gathered -> simplified so that we have intervals that go from
+  // gathered -> reference tensor ordering.
+  std::vector<std::size_t> simplifiedOrderingIndices(numSimplifiedRefSlices);
+  std::iota(
+      simplifiedOrderingIndices.begin(), simplifiedOrderingIndices.end(), 0);
+  std::sort(simplifiedOrderingIndices.begin(),
+            simplifiedOrderingIndices.end(),
+            [&](const auto a, const auto b) {
+              return simplifiedToRefSlices[a] < simplifiedToRefSlices[b];
+            });
+
+  gatheredToRefSlices.resize(numSimplifiedRefSlices);
+  auto it = gatheredToSimplifiedRefSlices.begin();
+  std::size_t gatheredToSimplifiedRefOffset = 0;
+  for (const auto i : simplifiedOrderingIndices) {
+    const auto &simplifiedToRefSlice = simplifiedToRefSlices[i];
+
+    const auto begin = it->begin() + gatheredToSimplifiedRefOffset;
+    const auto end   = begin + simplifiedToRefSlice.size();
+
+    gatheredToRefSlices[i] = poplar::Interval(begin, end);
+
+    gatheredToSimplifiedRefOffset += simplifiedToRefSlice.size();
+    if (gatheredToSimplifiedRefOffset == it->size()) {
+      ++it;
+      gatheredToSimplifiedRefOffset = 0;
+    }
+  }
 }
 
 poplar::Tensor
-CollectiveBalancedReorder::rearrangeForCollective(poplar::Tensor tensor) const {
-
-  auto reorder = reordering;
-
-  auto flat = tensor.flatten();
-
-  // Simplify
-  poplar::Tensor simplify = simplifyProxy;
-  graph.reorderToSimplify(&simplify, {&flat});
-
-  // Sort by start offset in the rearranged tensor
-  std::sort(reorder.begin(),
-            reorder.end(),
-            [](const ReorderMetadata &a, const ReorderMetadata &b) {
-              return a.rearranged_offset < b.rearranged_offset;
-            });
-
-  std::vector<poplar::Tensor> allReorderedSlices;
-
-  size_t padSize = 0;
-  for (auto &r : reorder) {
-    if (r.offset == -1) {
-      padSize += r.size;
-    }
+CollectiveBalancedReorder::createReplicaSlice(const poplar::Type &type,
+                                              const std::string &debugPrefix) {
+  // A replica slice is a single variable with the tile
+  // mapping set so you get a contiguous region on each
+  // tile of the correct size to map the reference tensor to.
+  auto t = graph.addVariable(
+      type, {totalElementsPerReplica}, debugPrefix + "_cbr_slice0");
+  auto index = 0;
+  for (unsigned tile = 0; tile < numReplicaElementsPerTile.size(); ++tile) {
+    auto size = numReplicaElementsPerTile[tile];
+    graph.setTileMapping(t.slice(index, index + size), tile);
+    index += size;
   }
+  return t;
+}
 
-  poplar::Tensor pad = graph.addVariable(flat.elementType(), {padSize});
-  int64_t padOffset  = 0;
-
-  // Per-replica reordering
-  for (auto &r : reorder) {
-    if (r.offset > -1) {
-      allReorderedSlices.push_back(flat.slice(r.offset, r.offset + r.size));
-    } else {
-      allReorderedSlices.push_back(pad.slice(padOffset, padOffset + r.size));
-      graph.setTileMapping(allReorderedSlices.back(),
-                           static_cast<unsigned>(r.tile));
-      padOffset += r.size;
-    }
+poplar::Tensor CollectiveBalancedReorder::createCollectivesTensor(
+    const poplar::Type &type,
+    const std::string &debugPrefix) {
+  // The full collectives (gathered) tensor is just the
+  // concatenation of 'replicaFactor' slices.
+  std::vector<poplar::Tensor> slices = {
+      createReplicaSlice(type, debugPrefix).expand({0})};
+  for (unsigned i = 1; i < replicationFactor; ++i) {
+    auto name = debugPrefix + "_cbr_slice" + std::to_string(i);
+    slices.push_back(graph.clone(slices[0], name));
   }
-
-  poplar::Tensor concatResult = poplar::concat(allReorderedSlices);
-  return concatResult;
+  return concat(slices);
 }
 
 poplar::Tensor CollectiveBalancedReorder::undoRearrangeForCollective(
     poplar::Tensor tensor) const {
+  // To go from a gathered tensor to a view that looks like the
+  // reference tensor we use the list of regions in
+  // 'gatheredToSimplifiedRefSlices' to get a view with the ordering
+  // of the simplified reference tensor, then we use the simplifier
+  // to get a view with the ordering of the original reference tensor.
+  auto t = concat(tensor.flatten().slices(gatheredToSimplifiedRefSlices));
+  t      = simplifier.undoRearrangement(t);
+  return t.reshape(referenceTensor.shape());
+}
 
-  auto reorder = reordering;
-
-  auto flat = tensor.flatten();
-
-  // Sort by start offset in the original flat tensor
-  std::sort(reorder.begin(),
-            reorder.end(),
-            [](const ReorderMetadata &a, const ReorderMetadata &b) {
-              return a.offset < b.offset;
-            });
-
-  std::vector<poplar::Tensor> allReorderedSlices;
-
-  // Reverse per-replica reordering
-  for (auto &r : reorder) {
-    // Skip padding
-    if (r.offset > -1) {
-      allReorderedSlices.push_back(
-          flat.slice(r.rearranged_offset, r.rearranged_offset + r.size));
-    }
-  }
-
-  poplar::Tensor concatResult = poplar::concat(allReorderedSlices);
-  poplar::Tensor reverse      = simplifyReverseProxy;
-
-  // Reverse simplification
-  graph.reorderToSimplify(&reverse, {&concatResult});
-
-  return concatResult;
+size_t CollectiveBalancedReorder::getNumRearrangedTensorElems() const {
+  return totalElementsPerReplica * replicationFactor;
 }
 
 void CollectiveBalancedReorder::rearrange(const char *in,
                                           char *out,
                                           int64_t elemByteSize,
-                                          bool forCollective) const {
-  auto reorder = reordering;
-
-  // Sort by start offset in the original tensor
-  std::sort(reorder.begin(),
-            reorder.end(),
-            [](const ReorderMetadata &a, const ReorderMetadata &b) {
-              return a.offset < b.offset;
-            });
-
-  // Offsets in the original tensor, sorted by the simplified tensor order
-  auto intervals = graph.getSortedContiguousRegions(
-      simplifyProxy, graph.getTileMapping(simplifyProxy)[0])[0];
-
-  int64_t intervalIndex  = 0;
-  int64_t intervalOffset = 0;
-
-  for (auto &r : reorder) {
-    if (r.offset > -1) {
-      // Translate offset in the simplifed tensor (ostart) to offset in the
-      // original input tensor (osstart)
-      int64_t copiedOffset = 0;
-      while (copiedOffset < r.size) {
-        auto currentInterval = intervals[intervalIndex];
-        int64_t osstart      = currentInterval.begin();
-        int64_t intervalSize = currentInterval.size();
-        int64_t size =
-            std::min(intervalSize - intervalOffset, r.size - copiedOffset);
-
-        int64_t inOff;
-        int64_t outOff;
-        if (forCollective) {
-          inOff  = (osstart + intervalOffset) * elemByteSize;
-          outOff = (r.rearranged_offset + copiedOffset) * elemByteSize;
-        } else {
-          outOff = (osstart + intervalOffset) * elemByteSize;
-          inOff  = (r.rearranged_offset + copiedOffset) * elemByteSize;
-        }
-
-        auto byteSize = size * elemByteSize;
-
-        std::memcpy(out + outOff, in + inOff, byteSize);
-
-        copiedOffset += size;
-        intervalOffset += size;
-        if (intervalOffset == currentInterval.size()) {
-          // Next proxy interval
-          ++intervalIndex;
-          intervalOffset = 0;
-        }
-      }
+                                          bool refToGathered) const {
+  auto index = 0;
+  for (const auto &i : gatheredToRefSlices) {
+    auto size    = i.size();
+    auto gOffset = i.begin() * elemByteSize;
+    auto rOffset = index * elemByteSize;
+    if (refToGathered) {
+      std::memcpy(out + gOffset, in + rOffset, size * elemByteSize);
+    } else {
+      std::memcpy(out + rOffset, in + gOffset, size * elemByteSize);
     }
+    index += size;
   }
 }
 
@@ -271,16 +208,6 @@ void CollectiveBalancedReorder::undoRearrangeForCollective(
     char *out,
     int64_t elemByteSize) const {
   rearrange(in, out, elemByteSize, false);
-}
-
-poplar::Tensor
-CollectiveBalancedReorder::getReferenceTensorClone(poplar::Type type,
-                                                   std::string name) const {
-  return graph.clone(type, referenceTensor, name);
-}
-
-const poplar::Tensor &CollectiveBalancedReorder::getReferenceTensor() const {
-  return referenceTensor;
 }
 
 CollectivesBaseOpx::CollectivesBaseOpx(Op *op, Devicex *devicex)
