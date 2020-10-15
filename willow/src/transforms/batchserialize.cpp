@@ -1,3 +1,4 @@
+#include <queue> // we use a priority_queue
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -23,6 +24,33 @@ namespace {
 
 using TensorContext = std::tuple<VGraphId, ExecutionPhase, PipelineStage>;
 enum class TraceDirection { Forward = 0, Backward };
+
+class TraceFront {
+public:
+  TraceFront(std::vector<Tensor *> tensors_, TraceDirection direction_)
+      : tensors(tensors_), direction(direction_) {}
+
+  int64_t score() const {
+    int64_t score = 0;
+    if (direction == TraceDirection::Forward) {
+      for (Tensor *t : tensors) {
+        score += t->consumers.getOps().size();
+      }
+    } else {
+      for (Tensor *t : tensors) {
+        score += t->hasProducer() ? 1 : 0;
+      }
+    }
+    return score;
+  }
+
+  // Trace fronts with less producers/consumers first
+  // (lesser chance of matching wrong isomorphic ops)
+  bool operator<(const TraceFront &rhs) const { return score() > rhs.score(); }
+
+  std::vector<Tensor *> tensors;
+  TraceDirection direction;
+};
 
 TensorId createOrGetIndexTensor(Graph &graph, uint32_t index) {
   TensorId id = reservedIndexPrefix() + std::to_string(index);
@@ -702,8 +730,7 @@ bool BatchSerialize::apply(Graph &graph) const {
           positionToOp;
       std::map<Section, std::vector<Op *>> opsBehindSection;
 
-      std::vector<std::tuple<std::vector<Tensor *>, TraceDirection>>
-          parallelTraceFront;
+      std::priority_queue<TraceFront> parallelTraceFront;
 
       std::map<std::tuple<Op *, Op *, int>, int64_t> cachedIsoScores;
 
@@ -737,8 +764,8 @@ bool BatchSerialize::apply(Graph &graph) const {
               std::vector<Tensor *> traceFront(
                   batchSerFactor,
                   op->input->tensor(DynamicSliceOp::getInIndex()));
-              parallelTraceFront.push_back(
-                  {traceFront, TraceDirection::Forward});
+              parallelTraceFront.push(
+                  TraceFront(traceFront, TraceDirection::Forward));
             }
 
             // First batch defines schedule order
@@ -757,10 +784,10 @@ bool BatchSerialize::apply(Graph &graph) const {
       while (!parallelTraceFront.empty()) {
         std::map<std::tuple<OpId, TraceDirection, int>, std::vector<Tensor *>>
             nextFronts;
-        auto traceFront = parallelTraceFront.back();
-        auto tensors    = std::get<0>(traceFront);
-        auto direction  = std::get<1>(traceFront);
-        parallelTraceFront.pop_back();
+        auto traceFront = parallelTraceFront.top();
+        auto &tensors   = traceFront.tensors;
+        auto &direction = traceFront.direction;
+        parallelTraceFront.pop();
 
         std::vector<TensorId> ids;
         for (Tensor *t : tensors) {
@@ -768,9 +795,11 @@ bool BatchSerialize::apply(Graph &graph) const {
         }
 
         logging::transform::trace(
-            "[BatchSerialize] Current ({}) front: {} (remaining: {})",
+            "[BatchSerialize] Current ({}) front: {} (score: {}, remaining: "
+            "{})",
             direction == TraceDirection::Forward ? "forward" : "backward",
             ids,
+            traceFront.score(),
             parallelTraceFront.size());
 
         std::vector<Tensor *> frontTensors;
@@ -937,8 +966,8 @@ bool BatchSerialize::apply(Graph &graph) const {
                 idsLocal.size());
           } else {
             // All front tensors for the different BSPs have been found
-            parallelTraceFront.push_back(
-                {nextFront.second, std::get<1>(nextFront.first)});
+            parallelTraceFront.push(
+                TraceFront(nextFront.second, std::get<1>(nextFront.first)));
           }
         }
       }

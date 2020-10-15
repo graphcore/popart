@@ -800,13 +800,14 @@ PYBIND11_MODULE(popart_core, m) {
   {
     py::class_<BatchSerializationSettings> cls(m, "BatchSerializationSettings");
     cls.def(py::init<>());
-    cls.def(py::init<int, bool, bool, bool, BatchSerializationBatchSchedule>(),
-            py::arg("factor"),
-            py::arg("concatOnVirtualGraphChange"),
-            py::arg("concatOnExecutionPhaseChange"),
-            py::arg("concatOnPipelineStageChange"),
-            py::arg("batchSchedule") =
-                BatchSerializationBatchSchedule::Isomorphic);
+    cls.def(
+        py::init<int, bool, bool, bool, BatchSerializationBatchSchedule, int>(),
+        py::arg("factor"),
+        py::arg("concatOnVirtualGraphChange"),
+        py::arg("concatOnExecutionPhaseChange"),
+        py::arg("concatOnPipelineStageChange"),
+        py::arg("batchSchedule") = BatchSerializationBatchSchedule::Isomorphic,
+        py::arg("isomorphismScoreGap") = 1);
     cls.def_readwrite("factor", &BatchSerializationSettings::factor);
     cls.def_readwrite("concatOnVirtualGraphChange",
                       &BatchSerializationSettings::concatOnVirtualGraphChange);
@@ -818,6 +819,8 @@ PYBIND11_MODULE(popart_core, m) {
     // This setting is experimental and may change.
     cls.def_readwrite("batchSchedule",
                       &BatchSerializationSettings::batchSchedule);
+    cls.def_readwrite("isomorphismScoreGap",
+                      &BatchSerializationSettings::isomorphismScoreGap);
   }
   {
     py::class_<ExecutionPhaseSettings> cls(m, "ExecutionPhaseSettings");

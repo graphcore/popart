@@ -212,7 +212,7 @@ struct BatchSerializationSettings {
   BatchSerializationBatchSchedule batchSchedule =
       BatchSerializationBatchSchedule::Isomorphic;
   /// Experimental value to encourage isomorphic batch serialization chains.
-  int isomorphismScoreGap = 3;
+  int isomorphismScoreGap = 1;
 };
 
 /**
