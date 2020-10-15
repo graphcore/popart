@@ -93,6 +93,7 @@ BOOST_AUTO_TEST_CASE(TestAccumulatorInplace) {
     std::map<std::string, std::pair<float, bool>> optValues;
     runner.optimizer               = std::make_unique<Adam>(optValues,
                                               AdamMode::Lamb,
+                                              WeightDecayMode::Decay,
                                               DataType::FLOAT,
                                               DataType::FLOAT,
                                               DataType::FLOAT);

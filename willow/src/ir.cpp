@@ -73,6 +73,7 @@
 #include <popart/op/sum.hpp>
 
 #include <popart/patterns/adamdecompose.hpp>
+#include <popart/patterns/adaptivedecompose.hpp>
 #include <popart/patterns/inplace.hpp>
 #include <popart/patterns/sgd0decompose.hpp>
 #include <popart/patterns/sgd1decompose.hpp>
@@ -1008,6 +1009,8 @@ void Ir::prepareImpl(const IrBundle &gb) {
   applyPreAliasPattern(&sgd1Decomposer, getMainGraph());
   AdamDecompose adamDecomposer;
   applyPreAliasPattern(&adamDecomposer, getMainGraph());
+  AdaptiveDecompose adaptiveDecomposer;
+  applyPreAliasPattern(&adaptiveDecomposer, getMainGraph());
   decomposedOptimizers = true;
 
   if (getSessionOptions().hostWeightUpdate &&

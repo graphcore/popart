@@ -34,6 +34,7 @@ constexpr const char *reservedAccumPrefix() { return "Accum___"; }
 constexpr const char *reservedAcclPrefix() { return "Accl___"; }
 constexpr const char *reservedAccl1Prefix() { return "Accl1___"; }
 constexpr const char *reservedAccl2Prefix() { return "Accl2___"; }
+constexpr const char *reservedAccl3Prefix() { return "Accl3___"; }
 constexpr const char *reservedStepPrefix() { return "Step___"; }
 constexpr const char *reservedAcclToReducePrefix() {
   return "AcclIntoReduce___";
@@ -47,6 +48,10 @@ constexpr const char *reservedAcclFinalOutPrefix() {
 constexpr const char *reservedAdamUpdaterPrefix() { return "AdamUpdater___"; }
 constexpr const char *reservedLambR1SqPrefix() { return "LambR1Sq___"; }
 constexpr const char *reservedLambR2SqPrefix() { return "LambR2Sq___"; }
+
+constexpr const char *reservedAdaptiveUpdaterPrefix() {
+  return "AdaptiveUpdater___";
+}
 
 constexpr const char *reservedStashedPrefix() { return "Stashed___"; }
 constexpr const char *reservedRestoredPrefix() { return "Restored___"; }
@@ -167,6 +172,34 @@ constexpr const char *reservedDefaultAdamGradientScalingPrefix() {
 }
 constexpr const char *reservedSpecificAdamGradientScalingPrefix() {
   return "adamGradientScaling___specific___";
+}
+
+constexpr const char *reservedDefaultAdaptiveAlphaPrefix() {
+  return "adaptiveAlpha___default___";
+}
+constexpr const char *reservedSpecificAdaptiveAlphaPrefix() {
+  return "adaptiveAlpha___specific___";
+}
+
+constexpr const char *reservedDefaultAdaptiveMomentumPrefix() {
+  return "adaptiveMomentum___default___";
+}
+constexpr const char *reservedSpecificAdaptiveMomentumPrefix() {
+  return "adaptiveMomentum___specific___";
+}
+
+constexpr const char *reservedDefaultAdaptiveEpsPrefix() {
+  return "adaptiveEps___default___";
+}
+constexpr const char *reservedSpecificAdaptiveEpsPrefix() {
+  return "adaptiveEps___specific___";
+}
+
+constexpr const char *reservedDefaultAdaptiveGradientScalingPrefix() {
+  return "adaptiveGradientScaling___default___";
+}
+constexpr const char *reservedSpecificAdaptiveGradientScalingPrefix() {
+  return "adaptiveGradientScaling___specific___";
 }
 
 constexpr const char *reservedDefaultStepPrefix() {

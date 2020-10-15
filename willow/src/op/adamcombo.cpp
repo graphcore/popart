@@ -16,6 +16,7 @@ AdamComboOp::AdamComboOp(const TensorId &varToUpdate,
                          OptimizerValue initialMwn,
                          OptimizerValue initialGs,
                          AdamMode mode_,
+                         WeightDecayMode decayMode_,
                          bool withGradAccum_,
                          OptimizerReductionType reductionType_,
                          DataType accumType_,
@@ -28,8 +29,9 @@ AdamComboOp::AdamComboOp(const TensorId &varToUpdate,
       initLr(initialLr), initWd(initialWd), initB1(initialB1),
       initB2(initialB2), initEps(initialEps), initLs(initialLs),
       initMwn(initialMwn), initGs(initialGs), mode(mode_),
-      withGradAccum(withGradAccum_), reductionType(reductionType_),
-      accumType(accumType_), accl1Type(accl1Type_), accl2Type(accl2Type_) {}
+      decayMode(decayMode_), withGradAccum(withGradAccum_),
+      reductionType(reductionType_), accumType(accumType_),
+      accl1Type(accl1Type_), accl2Type(accl2Type_) {}
 
 void AdamComboOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   if (initLr.isConst()) {
@@ -61,6 +63,8 @@ void AdamComboOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   }
 
   os.appendAttribute("reduction type", static_cast<int>(reductionType));
+  os.appendAttribute("adam mode", static_cast<int>(mode));
+  os.appendAttribute("decay mode", static_cast<int>(decayMode));
 }
 
 std::unique_ptr<Op> AdamComboOp::cloneWithNewName(const TensorId &x) const {
@@ -74,6 +78,7 @@ std::unique_ptr<Op> AdamComboOp::cloneWithNewName(const TensorId &x) const {
                                        initMwn,
                                        initGs,
                                        mode,
+                                       decayMode,
                                        withGradAccum,
                                        reductionType,
                                        accumType,

@@ -5,9 +5,7 @@
 #include <popart/ces/slicece.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-#include <popart/onnxutil.hpp>
 #include <popart/op/accumulate.hpp>
-#include <popart/op/accumulatorupdate.hpp>
 #include <popart/op/adamcombo.hpp>
 #include <popart/op/adamupdater.hpp>
 #include <popart/op/adamvarupdate.hpp>
@@ -16,8 +14,6 @@
 #include <popart/op/concat.hpp>
 #include <popart/op/flatten.hpp>
 #include <popart/op/lamb.hpp>
-#include <popart/op/mul.hpp>
-#include <popart/op/scale.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/patterns/adamdecompose.hpp>
 #include <popart/tensor.hpp>
@@ -32,40 +28,10 @@ bool AdamDecompose::matches(Op *op) const {
 
 std::vector<const Tensor *> AdamDecompose::touches(Op *) const { return {}; }
 
-namespace {
-template <typename T>
-void addAdamStateTensor(AdamComboOp &op,
-                        const TensorId &tensorId,
-                        const TensorInfo info) {
-  auto &graph = op.getGraph();
-  auto &ir    = graph.getIr();
-  if (ir.tensorExistsInInitialisers(tensorId)) {
-    auto tp = onnxutil::getTensorProto(ir.getModel(), tensorId);
-    graph.getTensors().addVarInit(tensorId, &tp);
-  } else {
-    std::vector<T> d(info.nelms(), static_cast<T>(0));
-    graph.getTensors().addVarInit(tensorId, info, d.data());
-  }
-}
-} // namespace
-
 bool AdamDecompose::apply(Op *op) const {
 
   auto &ir    = op->getIr();
   auto &graph = op->getGraph();
-
-  auto storeTensor = [&ir](TensorId id) {
-    if (ir.additionalModelProtoTensors.find(id) ==
-            ir.additionalModelProtoTensors.end() &&
-        !ir.tensorExistsInInitialisers(id)) {
-      // If we are not going to stream the tensors from the host,
-      // don't add them to the set of additional tensors to be saved
-      // in the onnx modelproto
-      if (!ir.storingIsDisabledForTensor(id)) {
-        ir.additionalModelProtoTensors.insert(id);
-      }
-    }
-  };
 
   // matches must have verified the correctness before this call
   auto combo = static_cast<AdamComboOp *>(op);
@@ -88,9 +54,12 @@ bool AdamDecompose::apply(Op *op) const {
   auto lambR1SqId    = reservedLambR1SqPrefix() + weightId;
   auto lambR2SqId    = reservedLambR2SqPrefix() + weightId;
 
-  // Step
-  addAdamStateTensor<uint32_t>(*combo, stepId, TensorInfo(DataType::FLOAT, {}));
-  storeTensor(stepId);
+  if (combo->mode == AdamMode::Adam || combo->mode == AdamMode::Lamb ||
+      combo->mode == AdamMode::AdaMax) {
+    // Step
+    addStateTensor<float>(graph, stepId, TensorInfo(DataType::FLOAT, {}));
+    storeTensor(ir, stepId);
+  }
 
   if (weightGrad->info.dataType() != weight->info.dataType()) {
     throw error("Currently, weight and weight gradient should have the same "
@@ -102,350 +71,103 @@ bool AdamDecompose::apply(Op *op) const {
 
   // Accumulator
   if (combo->withGradAccum) {
-    auto accumInfo = TensorInfo(combo->accumType, weightShape);
-    switch (combo->accumType) {
-    case DataType::FLOAT:
-      addAdamStateTensor<float>(*combo, accumId, accumInfo);
-      break;
-    case DataType::FLOAT16:
-      addAdamStateTensor<float16_t>(*combo, accumId, accumInfo);
-      break;
-    default:
-      error("Unsupported data type for tensor {}, "
-            "currently only FLOAT16 and FLOAT are supported",
-            accumId);
-    }
+    addStateTensor(graph, accumId, weightShape, combo->accumType);
   }
 
   // 1st momentum (accl1)
-  auto accl1Info = TensorInfo(combo->accl1Type, weightShape);
-  switch (combo->accl1Type) {
-  case DataType::FLOAT:
-    addAdamStateTensor<float>(*combo, accl1Id, accl1Info);
-    break;
-  case DataType::FLOAT16:
-    addAdamStateTensor<float16_t>(*combo, accl1Id, accl1Info);
-    break;
-  default:
-    error("Unsupported data type for tensor {}, "
-          "currently only FLOAT16 and FLOAT are supported",
-          accl1Id);
-  }
+  addStateTensor(graph, accl1Id, weightShape, combo->accl1Type);
 
   // 2nd momentum (accl2)
-  auto accl2Info = TensorInfo(combo->accl2Type, weightShape);
-  switch (combo->accl2Type) {
-  case DataType::FLOAT:
-    addAdamStateTensor<float>(*combo, accl2Id, accl2Info);
-    break;
-  case DataType::FLOAT16:
-    addAdamStateTensor<float16_t>(*combo, accl2Id, accl2Info);
-    break;
-  default:
-    error("Unsupported data type for tensor {}, "
-          "currently only FLOAT16 and FLOAT are supported",
-          accl2Id);
-  }
+  addStateTensor(graph, accl2Id, weightShape, combo->accl2Type);
 
   TensorId gradIntoAcclId  = weightGradId;
   TensorId gradIntoAccumId = weightGradId;
 
   if (combo->reductionType == OptimizerReductionType::GradReduce) {
-    auto reduceOpUp = std::make_unique<ReplicatedAllReduceOp>(
-        Onnx::CustomOperators::ReplicatedAllReduce,
-        Op::Settings(graph, combo->name() + "_reduce"));
-    auto reduceOp = reduceOpUp.get();
-    transferBaseProperties(combo, reduceOp);
-    graph.moveIntoGraph(std::move(reduceOpUp));
-
-    logging::pattern::trace("Connecting input {} to {} at {}",
-                            weightGradId,
-                            reduceOp->str(),
-                            ReplicatedAllReduceOp::getInIndex());
-    reduceOp->connectInTensor(ReplicatedAllReduceOp::getInIndex(),
-                              weightGradId);
-
-    // The reduced gradient
-    gradIntoAcclId  = ir.createIntermediateTensorId(weightGradId);
-    gradIntoAccumId = gradIntoAcclId;
-
-    reduceOp->createAndConnectOutTensor(ReplicatedAllReduceOp::getOutIndex(),
-                                        gradIntoAcclId);
-
-    reduceOp->setup();
-
-    graph.topoCons->transfer(combo, reduceOp);
+    TensorId reducedId = gradReduce(graph, combo, weightGradId);
+    gradIntoAcclId     = reducedId;
+    gradIntoAccumId    = reducedId;
   }
 
   // Gradient accumulation
   if (combo->withGradAccum) {
-    auto accumOpUp = std::make_unique<AccumulateOp>(
-        accumId,
-        AccumulationType::Add,
-        OptimizerValue(1.0f),
-        Op::Settings(graph, combo->name() + "_accumulate"));
-    auto accumOp = accumOpUp.get();
-    transferBaseProperties(combo, accumOp);
-    graph.moveIntoGraph(std::move(accumOpUp));
-
-    logging::pattern::trace("Connecting input {} to {} at {}",
-                            accumId,
-                            accumOp->str(),
-                            VarUpdateOp::getVarToUpdateInIndex());
-    accumOp->connectInTensor(VarUpdateOp::getVarToUpdateInIndex(), accumId);
-
-    logging::pattern::trace("Connecting input {} to {} at {}",
-                            gradIntoAccumId,
-                            accumOp->str(),
-                            VarUpdateWithUpdaterOp::getUpdaterInIndex());
-    accumOp->connectInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex(),
-                             gradIntoAccumId);
-
-    // The updated accumulator
-    TensorId updatedAccumId = ir.createIntermediateTensorId(accumId);
-
-    accumOp->createAndConnectOutTensor(VarUpdateOp::getUpdatedVarOutIndex(),
-                                       updatedAccumId);
-
-    accumOp->setup();
-    graph.topoCons->transfer(combo, accumOp);
-    storeTensor(accumId);
-
-    if (combo->reductionType == OptimizerReductionType::AccumReduce) {
-      auto reduceOpUp = std::make_unique<ReplicatedAllReduceInplaceOp>(
-          Onnx::CustomOperators::ReplicatedAllReduceInplace,
-          Op::Settings(graph, combo->name() + "_reduce"));
-      auto reduceOp = reduceOpUp.get();
-      transferBaseProperties(combo, reduceOp);
-      graph.moveIntoGraph(std::move(reduceOpUp));
-
-      logging::pattern::trace("Connecting input {} to {} at {}",
-                              updatedAccumId,
-                              reduceOp->str(),
-                              ReplicatedAllReduceInplaceOp::getInIndex());
-      reduceOp->connectInTensor(ReplicatedAllReduceInplaceOp::getInIndex(),
-                                updatedAccumId);
-
-      // The updated, reduced accumulator
-      gradIntoAcclId = ir.createIntermediateTensorId(accumId);
-
-      reduceOp->createAndConnectOutTensor(
-          ReplicatedAllReduceInplaceOp::getOutIndex(), gradIntoAcclId);
-
-      reduceOp->setup();
-      if (combo->withGradAccum) {
-        reduceOp->settings.executionContext =
-            ExecutionContext::AccumulateOuterFragment;
-        reduceOp->setExecutionPhase({});
-        reduceOp->settings.schedulePriority = 0.0;
-      }
-    } else {
-      // No replicated accumulator reduction
-      gradIntoAcclId = updatedAccumId;
-    }
+    gradIntoAcclId =
+        gradAccum(graph,
+                  combo,
+                  accumId,
+                  gradIntoAccumId,
+                  combo->reductionType == OptimizerReductionType::AccumReduce,
+                  combo->withGradAccum);
   }
 
-  auto gradType = combo->accumType;
   // Cast if accumulator is fp16, and optimizer state is fp32.
   if (combo->accumType == DataType::FLOAT16 &&
       combo->accl1Type == DataType::FLOAT &&
       combo->accl2Type == DataType::FLOAT) {
-    gradType        = DataType::FLOAT;
-    auto gradCastUp = std::make_unique<CastOp>(
-        Onnx::Operators::Cast_9,
-        gradType,
-        Op::Settings(graph, combo->name() + "_gradCast"));
-    auto gradCastOp = gradCastUp.get();
-    transferBaseProperties(combo, gradCastOp);
-    graph.moveIntoGraph(std::move(gradCastUp));
-
-    gradCastOp->connectInTensor(CastOp::getInIndex(), gradIntoAcclId);
-
-    // The updated gradIntoAcclId
-    gradIntoAcclId = ir.createIntermediateTensorId(gradIntoAcclId);
-    gradCastOp->createAndConnectOutTensor(CastOp::getOutIndex(),
-                                          gradIntoAcclId);
-
-    gradCastOp->setup();
-
-    gradCastOp->settings.optimizerOp = true;
-
-    if (combo->withGradAccum) {
-      gradCastOp->settings.executionContext =
-          ExecutionContext::AccumulateOuterFragment;
-      gradCastOp->setExecutionPhase({});
-      gradCastOp->settings.schedulePriority = 0.0;
-    }
+    gradIntoAcclId =
+        gradCast(graph, combo, gradIntoAcclId, combo->withGradAccum);
   }
 
-  Op *gradUnscaleOp;
-  OutIndex gradUnscaleOutIdx = 0;
+  // Gradient unscaling
+  TensorId gsId =
+      combo->initGs.isConst() ? "" : combo->inId(AdamComboOp::getGsInIndex());
+  gradIntoAcclId = gradUnscale(
+      graph, combo, combo->initGs, gsId, gradIntoAcclId, combo->withGradAccum);
 
-  // Gradient unscaling.
-  if (combo->initGs.isConst()) {
-    auto gradUnscaleUp = std::make_unique<ScaleOp>(
-        Onnx::AiGraphcore::OpSet1::Scale,
-        combo->initGs.val(),
-        Op::Settings(graph, combo->name() + "_gradUnscale"));
-    gradUnscaleOp = gradUnscaleUp.get();
-    transferBaseProperties(combo, gradUnscaleOp);
-    graph.moveIntoGraph(std::move(gradUnscaleUp));
-    gradUnscaleOp->connectInTensor(ScaleOp::getInIndex(), gradIntoAcclId);
-    gradUnscaleOutIdx = ScaleOp::getOutIndex();
-  } else {
-    auto gradUnscaleUp = std::make_unique<MulOp>(
-        Onnx::Operators::Mul_7,
-        Op::Settings(graph, combo->name() + "_gradUnscale"));
-    gradUnscaleOp = gradUnscaleUp.get();
-    transferBaseProperties(combo, gradUnscaleOp);
-    graph.moveIntoGraph(std::move(gradUnscaleUp));
-
-    gradUnscaleOp->connectInTensor(MulOp::getArg0InIndex(), gradIntoAcclId);
-    gradUnscaleOp->connectInTensor(MulOp::getArg1InIndex(),
-                                   combo->inId(AdamComboOp::getGsInIndex()));
-    gradUnscaleOutIdx = MulOp::getOutIndex();
-  }
-
-  // The updated gradIntoAcclId
-  gradIntoAcclId = ir.createIntermediateTensorId(gradIntoAcclId);
-  gradUnscaleOp->createAndConnectOutTensor(gradUnscaleOutIdx, gradIntoAcclId);
-
-  gradUnscaleOp->setup();
-  gradUnscaleOp->settings.optimizerOp = true;
-
-  if (combo->withGradAccum) {
-    gradUnscaleOp->settings.executionContext =
-        ExecutionContext::AccumulateOuterFragment;
-    gradUnscaleOp->setExecutionPhase({});
-    gradUnscaleOp->settings.schedulePriority = 0.0;
+  // L2 regularization
+  if (combo->decayMode == WeightDecayMode::L2Regularization) {
+    TensorId wdId =
+        combo->initWd.isConst() ? "" : combo->inId(AdamComboOp::getWdInIndex());
+    gradIntoAcclId = regularizeL2(graph,
+                                  combo,
+                                  combo->initWd,
+                                  wdId,
+                                  weightId,
+                                  gradIntoAcclId,
+                                  combo->withGradAccum);
   }
 
   // 1st momentum
-  auto accl1OpUp = std::make_unique<AccumulateOp>(
-      accl1Id,
-      AccumulationType::MovingAverage,
-      combo->initB1,
-      Op::Settings(graph, combo->name() + "_accl1"));
-  auto accl1Op = accl1OpUp.get();
-  transferBaseProperties(combo, accl1Op);
-  graph.moveIntoGraph(std::move(accl1OpUp));
-
-  logging::pattern::trace("Connecting input {} to {} at {}",
-                          accl1Id,
-                          accl1Op->str(),
-                          VarUpdateOp::getVarToUpdateInIndex());
-  accl1Op->connectInTensor(VarUpdateOp::getVarToUpdateInIndex(), accl1Id);
-
-  logging::pattern::trace("Connecting input {} to {} at {}",
-                          gradIntoAcclId,
-                          accl1Op->str(),
-                          VarUpdateWithUpdaterOp::getUpdaterInIndex());
-  accl1Op->connectInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex(),
-                           gradIntoAcclId);
-
-  // The updated accl1
-  TensorId updatedAccl1Id = ir.createIntermediateTensorId(accl1Id);
-
-  accl1Op->createAndConnectOutTensor(VarUpdateOp::getUpdatedVarOutIndex(),
-                                     updatedAccl1Id);
-
-  if (!combo->initB1.isConst()) {
-    accl1Op->connectInTensor(AccumulateOp::getFactorInIndex(),
-                             combo->inId(AdamComboOp::getBeta1InIndex()));
-  }
-
-  accl1Op->setup();
-  if (combo->withGradAccum) {
-    accl1Op->settings.executionContext =
-        ExecutionContext::AccumulateOuterFragment;
-    accl1Op->setExecutionPhase({});
-    accl1Op->settings.schedulePriority = 0.0;
-  }
-  storeTensor(accl1Id);
+  auto accl1              = accl(graph,
+                    combo,
+                    accl1Id,
+                    gradIntoAcclId,
+                    AccumulationType::MovingAverage,
+                    combo->initB1,
+                    combo->initB1.isConst()
+                        ? ""
+                        : combo->inId(AdamComboOp::getBeta1InIndex()),
+                    "_accl1",
+                    combo->withGradAccum);
+  Op *accl1Op             = accl1.first;
+  TensorId updatedAccl1Id = accl1.second;
 
   // 2nd momentum
-  auto accl2OpUp = std::make_unique<AccumulateOp>(
+  auto accl2 = accl(
+      graph,
+      combo,
       accl2Id,
-      AccumulationType::MovingAverageSquare,
+      gradIntoAcclId,
+      combo->mode == AdamMode::AdaMax ? AccumulationType::Infinity
+                                      : AccumulationType::MovingAverageSquare,
       combo->initB2,
-      Op::Settings(graph, combo->name() + "_accl2"));
-  auto accl2Op = accl2OpUp.get();
-  transferBaseProperties(combo, accl2Op);
-  graph.moveIntoGraph(std::move(accl2OpUp));
-
-  logging::pattern::trace("Connecting input {} to {} at {}",
-                          accl2Id,
-                          accl2Op->str(),
-                          VarUpdateOp::getVarToUpdateInIndex());
-  accl2Op->connectInTensor(VarUpdateOp::getVarToUpdateInIndex(), accl2Id);
-
-  logging::pattern::trace("Connecting input {} to {} at {}",
-                          gradIntoAcclId,
-                          accl2Op->str(),
-                          VarUpdateWithUpdaterOp::getUpdaterInIndex());
-  accl2Op->connectInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex(),
-                           gradIntoAcclId);
-
-  // The updated accl2
-  TensorId updatedAccl2Id = ir.createIntermediateTensorId(accl2Id);
-
-  accl2Op->createAndConnectOutTensor(VarUpdateOp::getUpdatedVarOutIndex(),
-                                     updatedAccl2Id);
-
-  if (!combo->initB2.isConst()) {
-    accl2Op->connectInTensor(AccumulateOp::getFactorInIndex(),
-                             combo->inId(AdamComboOp::getBeta2InIndex()));
-  }
-
-  accl2Op->setup();
-  if (combo->withGradAccum) {
-    accl2Op->settings.executionContext =
-        ExecutionContext::AccumulateOuterFragment;
-    accl2Op->setExecutionPhase({});
-    accl2Op->settings.schedulePriority = 0.0;
-  }
-  storeTensor(accl2Id);
+      combo->initB2.isConst() ? ""
+                              : combo->inId(AdamComboOp::getBeta2InIndex()),
+      "_accl1",
+      combo->withGradAccum);
+  Op *accl2Op             = accl2.first;
+  TensorId updatedAccl2Id = accl2.second;
 
   // The accumulator updater
   if (combo->withGradAccum) {
-    auto accumUpdateOpUp = std::make_unique<AccumulatorUpdateOp>(
-        accumId,
-        OptimizerValue(0),
-        Op::Settings(graph, combo->name() + "_accumupdate"));
-    auto accumUpdateOp = accumUpdateOpUp.get();
-    transferBaseProperties(combo, accumUpdateOp);
-    graph.moveIntoGraph(std::move(accumUpdateOpUp));
-
-    logging::pattern::trace("Connecting input {} to {} at {}",
-                            accumId,
-                            accumUpdateOp->str(),
-                            LambSquareOp::getInIndex());
-    accumUpdateOp->connectInTensor(AccumulatorUpdateOp::getVarToUpdateInIndex(),
-                                   accumId);
-
-    TensorId updatedAccumId = reservedUpdatedVarPrefix() + accumId;
-
-    accumUpdateOp->createAndConnectOutTensor(LambSquareOp::getOutIndex(),
-                                             updatedAccumId);
-
-    accumUpdateOp->setup();
-
-    if (combo->withGradAccum) {
-      accumUpdateOp->settings.executionContext =
-          ExecutionContext::AccumulateOuterFragment;
-      accumUpdateOp->setExecutionPhase({});
-      accumUpdateOp->settings.schedulePriority = 0.0;
-    }
-
-    // Accumulator update after accl1 and accl2
-    graph.topoCons->insert(accl1Op, accumUpdateOp);
-    graph.topoCons->insert(accl2Op, accumUpdateOp);
+    accumUpdate(graph, combo, {accl1Op, accl2Op}, accumId);
   }
 
   // Adam updater term
   auto adamUpdOpUp = std::make_unique<AdamUpdaterOp>(
       combo->mode,
-      combo->initWd,
+      combo->decayMode == WeightDecayMode::Decay ? combo->initWd
+                                                 : OptimizerValue(0.0f, true),
       combo->initB1,
       combo->initB2,
       combo->initEps,
@@ -454,33 +176,39 @@ bool AdamDecompose::apply(Op *op) const {
   transferBaseProperties(combo, adamUpdOp);
   graph.moveIntoGraph(std::move(adamUpdOpUp));
 
-  // Weight
-  logging::pattern::trace("Connecting input {} to {} at {}",
-                          weightId,
-                          adamUpdOp->str(),
-                          AdamUpdaterOp::getVarInIndex());
-  adamUpdOp->connectInTensor(AdamUpdaterOp::getVarInIndex(), weightId);
+  if (combo->decayMode == WeightDecayMode::Decay &&
+      (!combo->initWd.isConst() || combo->initWd.val() > 0.0f)) {
+    // Weight (for weight decay)
+    logging::pattern::trace("Connecting input {} to {} at {}",
+                            weightId,
+                            adamUpdOp->str(),
+                            AdamUpdaterOp::getVarInIndex());
+    adamUpdOp->connectInTensor(AdamUpdaterOp::getVarInIndex(), weightId);
+  }
 
   // 1st momentum
   logging::pattern::trace("Connecting input {} to {} at {}",
-                          accl1Id,
+                          updatedAccl1Id,
                           adamUpdOp->str(),
                           AdamUpdaterOp::getAccl1InIndex());
   adamUpdOp->connectInTensor(AdamUpdaterOp::getAccl1InIndex(), updatedAccl1Id);
 
   // 2nd momentum
   logging::pattern::trace("Connecting input {} to {} at {}",
-                          accl2Id,
+                          updatedAccl2Id,
                           adamUpdOp->str(),
                           AdamUpdaterOp::getAccl2InIndex());
   adamUpdOp->connectInTensor(AdamUpdaterOp::getAccl2InIndex(), updatedAccl2Id);
 
-  // step
-  logging::pattern::trace("Connecting input {} to {} at {}",
-                          stepId,
-                          adamUpdOp->str(),
-                          AdamUpdaterOp::getStepInIndex());
-  adamUpdOp->connectInTensor(AdamUpdaterOp::getStepInIndex(), stepId);
+  if (combo->mode == AdamMode::Adam || combo->mode == AdamMode::Lamb ||
+      combo->mode == AdamMode::AdaMax) {
+    // step
+    logging::pattern::trace("Connecting input {} to {} at {}",
+                            stepId,
+                            adamUpdOp->str(),
+                            AdamUpdaterOp::getStepInIndex());
+    adamUpdOp->connectInTensor(AdamUpdaterOp::getStepInIndex(), stepId);
+  }
 
   // Optimizer parameters
   if (!combo->initWd.isConst()) {
@@ -568,15 +296,15 @@ bool AdamDecompose::apply(Op *op) const {
   // Weight
   logging::pattern::trace("Connecting input {} to {} at {}",
                           weightId,
-                          adamUpdOp->str(),
+                          adamVarUpdOp->str(),
                           AdamVarUpdateOp::getVarToUpdateInIndex());
   adamVarUpdOp->connectInTensor(AdamVarUpdateOp::getVarToUpdateInIndex(),
                                 weightId);
 
   // Updater
   logging::pattern::trace("Connecting input {} to {} at {}",
-                          accl1Id,
-                          adamUpdOp->str(),
+                          adamUpdaterId,
+                          adamVarUpdOp->str(),
                           AdamVarUpdateOp::getUpdaterInIndex());
   adamVarUpdOp->connectInTensor(AdamVarUpdateOp::getUpdaterInIndex(),
                                 adamUpdaterId);

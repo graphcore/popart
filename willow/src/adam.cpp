@@ -15,11 +15,17 @@ namespace popart {
 
 Adam Adam::fromDefaultMap(const std::map<std::string, OptimizerValue> &m,
                           AdamMode adamMode_,
+                          WeightDecayMode decayMode_,
                           DataType accumType_,
                           DataType accl1Type_,
                           DataType accl2Type_) {
-  return Adam(
-      getComplete(m), adamMode_, accumType_, accl1Type_, accl2Type_, 1011);
+  return Adam(getComplete(m),
+              adamMode_,
+              decayMode_,
+              accumType_,
+              accl1Type_,
+              accl2Type_,
+              1011);
 }
 
 namespace {
@@ -32,11 +38,13 @@ const std::vector<std::string> &getSpecificNames() {
 
 Adam::Adam(const std::map<std::string, std::pair<float, bool>> &m,
            AdamMode adamMode_,
+           WeightDecayMode decayMode_,
            DataType accumType_,
            DataType accl1Type_,
            DataType accl2Type_)
     : Adam(getComplete(getOptMap(m)),
            adamMode_,
+           decayMode_,
            accumType_,
            accl1Type_,
            accl2Type_,
@@ -159,6 +167,7 @@ void Adam::runValueChecks(OptimizerValue lr,
 
 Adam::Adam(const std::map<std::string, OptimizerValue> &cmap,
            AdamMode mode_,
+           WeightDecayMode decayMode_,
            DataType accumType_,
            DataType accl1Type_,
            DataType accl2Type_,
@@ -171,6 +180,55 @@ Adam::Adam(const std::map<std::string, OptimizerValue> &cmap,
            cmap.at("lossScaling"),
            cmap.at("maxWeightNorm"),
            mode_,
+           decayMode_,
+           accumType_,
+           accl1Type_,
+           accl2Type_) {}
+
+Adam::Adam(OptimizerValue lr,
+           OptimizerValue wd,
+           OptimizerValue b1,
+           OptimizerValue b2,
+           OptimizerValue eps,
+           OptimizerValue lossScaling,
+           AdamMode mode_,
+           WeightDecayMode decayMode_,
+           DataType accumType_,
+           DataType accl1Type_,
+           DataType accl2Type_)
+    : Adam(lr,
+           wd,
+           b1,
+           b2,
+           eps,
+           lossScaling,
+           getUnsetMaxWeightNorm(),
+           mode_,
+           decayMode_,
+           accumType_,
+           accl1Type_,
+           accl2Type_) {}
+
+Adam::Adam(OptimizerValue lr,
+           OptimizerValue wd,
+           OptimizerValue b1,
+           OptimizerValue b2,
+           OptimizerValue eps,
+           OptimizerValue lossScaling,
+           OptimizerValue mwn_,
+           AdamMode mode_,
+           DataType accumType_,
+           DataType accl1Type_,
+           DataType accl2Type_)
+    : Adam(lr,
+           wd,
+           b1,
+           b2,
+           eps,
+           lossScaling,
+           mwn_,
+           mode_,
+           WeightDecayMode::Decay,
            accumType_,
            accl1Type_,
            accl2Type_) {}
@@ -193,6 +251,7 @@ Adam::Adam(OptimizerValue lr,
            lossScaling,
            getUnsetMaxWeightNorm(),
            mode_,
+           WeightDecayMode::Decay,
            accumType_,
            accl1Type_,
            accl2Type_) {}
@@ -205,11 +264,14 @@ Adam::Adam(OptimizerValue lr,
            OptimizerValue lossScaling,
            OptimizerValue mwn_,
            AdamMode mode_,
+           WeightDecayMode decayMode_,
            DataType accumType_,
            DataType accl1Type_,
            DataType accl2Type_)
     : Optimizer(lossScaling, {}), lrs(lr), wds(wd), b1s(b1), b2s(b2),
-      epsvs(eps), mwns(mwn_), mode(mode_), accumType(accumType_),
+      epsvs(eps), mwns(mwn_), mode(mode_), decayMode(decayMode_),
+      accumType(accumType_),
+
       accl1Type(accl1Type_), accl2Type(accl2Type_) {
   runValueChecks(lr, wd, b1, b2, eps);
 }
@@ -287,6 +349,7 @@ std::unique_ptr<Op> Adam::createOp(const Tensor &w, Graph &graph) const {
       mwnhelper.getFromWeightId(w.id, *this),
       gshelper.getFromWeightId(w.id, *this),
       mode,
+      decayMode,
       gradientAccumulationEnabled(),
       reductionType,
       accumType == DataType::UNDEFINED ? w.info.getDataTypeInfo()->type()
@@ -445,6 +508,14 @@ bool Adam::validReplacement(const Optimizer &other) const {
         "other has same `type' as this Adam, but cannot be "
         "dynamically cast to Adam. Has there been a redesign of the "
         "optimizer classes? if so this needs a rethink");
+  }
+
+  if (asAdam->mode != mode) {
+    return false;
+  }
+
+  if (asAdam->decayMode != decayMode) {
+    return false;
   }
 
   logging::ir::debug("Checking loss scaling for compatibility");

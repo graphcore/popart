@@ -22,7 +22,7 @@ AccumulateOpx::AccumulateOpx(Op *op, Devicex *devicex)
 
 void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
 
-  auto accumulateOp = getOp<AccumulateOp>();
+  auto &accumulateOp = getOp<AccumulateOp>();
 
   auto isConst = accumulateOp.getFactor().isConst();
 
@@ -56,6 +56,92 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
       auto factor = getInTensor(AccumulateOp::getFactorInIndex());
       popops::scaledAddTo(
           graph(), accum, grad, factor, prog, debugPrefix("dampenedAdd"));
+    }
+    break;
+  }
+  case AccumulationType::DampenedAddSquare: {
+    if (isConst) {
+      auto val = accumulateOp.getFactor().val();
+      if (val == 0.0f) {
+        throw internal_error(
+            "factor of 0 is not allowed, should have been caught in "
+            "the Ir, factor of 0 could be caused by dampening of 1, which "
+            "means the gradient is multiplied by 0 (no learning)");
+      }
+      if (val - 1.0f == 0.0f) {
+        // accum += grad^2
+        popops::mapInPlace(graph(),
+                           pe::Add(pe::_1, pe::Square(pe::_2)),
+                           {accum, grad},
+                           prog,
+                           debugPrefix("constAddSquare"));
+      } else {
+        auto val = accumulateOp.getFactor().val();
+        // accum += factor * grad^2
+        popops::mapInPlace(
+            graph(),
+            pe::Add(pe::_1,
+                    pe::Mul(pe::Mul(pe::Const(val),
+                                    pe::Cast(pe::_2, accum.elementType())),
+                            pe::Cast(pe::_2, accum.elementType()))),
+            {accum, grad},
+            prog,
+            debugPrefix("constDampenedAddSquare"));
+      }
+    } else {
+      auto factor = getInTensor(AccumulateOp::getFactorInIndex());
+      popops::mapInPlace(
+          graph(),
+          pe::Add(
+              pe::_1,
+              pe::Mul(pe::Mul(pe::_3, pe::Cast(pe::_2, accum.elementType())),
+                      pe::Cast(pe::_2, accum.elementType()))),
+          {accum, grad, factor},
+          prog,
+          debugPrefix("dampenedAddSquare"));
+    }
+    break;
+  }
+  case AccumulationType::DecayAdd: {
+    if (isConst) {
+      auto val = accumulateOp.getFactor().val();
+      popops::mapInPlace(graph(),
+                         pe::Add(pe::Mul(pe::Const(val), pe::_1),
+                                 pe::Cast(pe::_2, accum.elementType())),
+                         {accum, grad},
+                         prog,
+                         debugPrefix("constDecayAdd"));
+    } else {
+      auto factor = getInTensor(AccumulateOp::getFactorInIndex());
+      popops::mapInPlace(
+          graph(),
+          pe::Add(pe::Mul(pe::Cast(pe::_3, accum.elementType()), pe::_1),
+                  pe::Cast(pe::_2, accum.elementType())),
+          {accum, grad, factor},
+          prog,
+          debugPrefix("decayAdd"));
+    }
+    break;
+  }
+  case AccumulationType::DecayAddSquare: {
+    if (isConst) {
+      auto val = accumulateOp.getFactor().val();
+      popops::mapInPlace(
+          graph(),
+          pe::Add(pe::Mul(pe::Const(val), pe::_1),
+                  pe::Square(pe::Cast(pe::_2, accum.elementType()))),
+          {accum, grad},
+          prog,
+          debugPrefix("constDecayAddSquare"));
+    } else {
+      auto factor = getInTensor(AccumulateOp::getFactorInIndex());
+      popops::mapInPlace(
+          graph(),
+          pe::Add(pe::Mul(pe::_3, pe::_1),
+                  pe::Square(pe::Cast(pe::_2, accum.elementType()))),
+          {accum, grad, factor},
+          prog,
+          debugPrefix("decayAddSquare"));
     }
     break;
   }
@@ -109,6 +195,30 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
     }
     break;
   }
+  case AccumulationType::Infinity: {
+    if (isConst) {
+      auto val = accumulateOp.getFactor().val();
+      popops::mapInPlace(
+          graph(),
+          pe::Cast(pe::Max(pe::Mul(pe::Const(val), pe::_1),
+                           pe::Cast(pe::Abs(pe::_2), accum.elementType())),
+                   accum.elementType()),
+          {accum, grad},
+          prog,
+          debugPrefix("constInfinity"));
+    } else {
+      auto factor = getInTensor(AccumulateOp::getFactorInIndex());
+      popops::mapInPlace(
+          graph(),
+          pe::Cast(pe::Max(pe::Mul(pe::_3, pe::_1),
+                           pe::Cast(pe::Abs(pe::_2), accum.elementType())),
+                   accum.elementType()),
+          {accum, grad, factor},
+          prog,
+          debugPrefix("infinity"));
+    }
+    break;
+  }
   }
 
   if (hasInViewChangers(VarUpdateWithUpdaterOp::getUpdaterInIndex())) {
@@ -141,8 +251,9 @@ InputCreatorType AccumulateOpx::getInputCreatorType(int inIndex) const {
              : Opx::getInputCreatorType(inIndex);
 }
 
-std::vector<TensorId> AccumulateOpx::mustExistBeforeCreate(int index1) const {
-  if (index1 != VarUpdateOp::getVarToUpdateInIndex()) {
+std::vector<TensorId>
+AccumulateOpx::mustExistBeforeCreate(InIndex index) const {
+  if (index != VarUpdateOp::getVarToUpdateInIndex()) {
     throw internal_error(
         "AccumulateOpx::mustExistBeforeCreate : Invalid index");
   }

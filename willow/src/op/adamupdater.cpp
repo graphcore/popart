@@ -20,7 +20,11 @@ AdamUpdaterOp::AdamUpdaterOp(AdamMode mode_,
       initWd(wd), initB1(b1), initB2(b2), initEps(eps) {}
 
 void AdamUpdaterOp::setup() {
-  outInfo(getUpdaterOutIndex()) = inInfo(getVarInIndex());
+  if (hasInput(getVarInIndex())) {
+    outInfo(getUpdaterOutIndex()) = inInfo(getVarInIndex());
+  } else {
+    outInfo(getUpdaterOutIndex()) = inInfo(getAccl1InIndex());
+  }
 }
 
 std::unique_ptr<Op> AdamUpdaterOp::clone() const {
@@ -60,10 +64,15 @@ view::Regions AdamUpdaterOp::modifies(InIndex index) const {
 
 ReplicatedTensorShardingIndices
 AdamUpdaterOp::getReplicatedTensorShardingIndices() const {
-  return {{{AdamUpdaterOp::getVarInIndex(),
-            AdamUpdaterOp::getAccl1InIndex(),
-            AdamUpdaterOp::getAccl2InIndex()},
-           {AdamUpdaterOp::getUpdaterOutIndex()}}};
+  std::set<InIndex> inIndices;
+
+  if (hasInput(AdamUpdaterOp::getVarInIndex())) {
+    inIndices.insert(AdamUpdaterOp::getVarInIndex());
+  }
+  inIndices.insert(AdamUpdaterOp::getAccl1InIndex());
+  inIndices.insert(AdamUpdaterOp::getAccl2InIndex());
+
+  return {{inIndices, {AdamUpdaterOp::getUpdaterOutIndex()}}};
 }
 
 } // namespace popart

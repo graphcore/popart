@@ -8,10 +8,14 @@
 namespace popart {
 
 enum class AccumulationType {
-  Add = 0,            // accum += g
-  DampenedAdd,        // accum += f * g
-  MovingAverage,      // accum = f * accum + (1 - f) * g
-  MovingAverageSquare // accum = f * accum + (1 - f) * g^2
+  Add = 0,             // accum += g
+  DampenedAdd,         // accum += f * g
+  DampenedAddSquare,   // accum += f * g^2
+  DecayAdd,            // accum = f * accum + g
+  DecayAddSquare,      // accum = f * accum + g^2
+  MovingAverage,       // accum = f * accum + (1 - f) * g
+  MovingAverageSquare, // accum = f * accum + (1 - f) * g^2
+  Infinity             // accum = max(f * accum, abs(g))
 };
 
 class AccumulateOp : public VarUpdateWithUpdaterOp {
@@ -29,7 +33,8 @@ public:
   static InIndex getFactorInIndex() { return 2; }
   float getSubgraphValue() const final {
     if (type == AccumulationType::MovingAverage ||
-        type == AccumulationType::MovingAverageSquare) {
+        type == AccumulationType::MovingAverageSquare ||
+        type == AccumulationType::Infinity) {
       return getHighSubgraphValue();
     } else {
       return getLowSubgraphValue();

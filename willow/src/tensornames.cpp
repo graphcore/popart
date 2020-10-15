@@ -63,7 +63,16 @@ std::vector<std::string> reservedOptimizerPrefixes() {
           reservedDefaultAdamGradientScalingPrefix(),
           reservedSpecificAdamGradientScalingPrefix(),
           reservedDefaultMaxWeightNormPrefix(),
-          reservedSpecificMaxWeightNormPrefix()};
+          reservedSpecificMaxWeightNormPrefix(),
+          // Adaptive
+          reservedDefaultAdaptiveAlphaPrefix(),
+          reservedSpecificAdaptiveAlphaPrefix(),
+          reservedDefaultAdaptiveEpsPrefix(),
+          reservedSpecificAdaptiveEpsPrefix(),
+          reservedDefaultAdaptiveGradientScalingPrefix(),
+          reservedSpecificAdaptiveGradientScalingPrefix(),
+          reservedDefaultAdaptiveMomentumPrefix(),
+          reservedSpecificAdaptiveMomentumPrefix()};
 }
 
 std::vector<std::string> reservedPrefixes() {
@@ -105,6 +114,7 @@ std::vector<std::string> reservedOptimizerStatePrefixes() {
   std::vector<std::string> prefs = {reservedAcclPrefix(),
                                     reservedAccl1Prefix(),
                                     reservedAccl2Prefix(),
+                                    reservedAccl3Prefix(),
                                     reservedStepPrefix(),
                                     reservedAcclToReducePrefix(),
                                     reservedAcclToUpdatePrefix(),

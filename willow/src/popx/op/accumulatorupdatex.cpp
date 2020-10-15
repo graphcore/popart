@@ -18,7 +18,7 @@ AccumulatorUpdateOpx::AccumulatorUpdateOpx(Op *op, Devicex *devicex)
 
 void AccumulatorUpdateOpx::grow(poplar::program::Sequence &prog) const {
 
-  auto accumulateOp = getOp<AccumulatorUpdateOp>();
+  auto &accumulateOp = getOp<AccumulatorUpdateOp>();
 
   auto accum = getInTensor(AccumulatorUpdateOp::getVarToUpdateInIndex());
 

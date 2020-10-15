@@ -14,6 +14,7 @@ namespace popart {
 class Optimizer;
 class SGD;
 class Adam;
+class Adaptive;
 
 // Base helper class for scalars composed of other scalars
 template <class T> class CompoundScalarHelper {
@@ -188,7 +189,7 @@ class AdamLearningRateHelper : public CompoundScalarHelper<Adam> {
 public:
   float val(const TensorId &weightId, const Adam &) const final;
   bool isConst(const TensorId &weightId, const Adam &) const final;
-  float val(float b2) const { return b2; }
+  float val(float lr) const { return lr; }
 
 private:
   std::string defaultPrefix() const final {
@@ -271,6 +272,126 @@ private:
   }
   std::string specificPrefix() const final {
     return reservedSpecificAdamGradientScalingPrefix();
+  }
+};
+
+class AdaptiveAlphaHelper : public CompoundScalarHelper<Adaptive> {
+public:
+  float val(const TensorId &weightId, const Adaptive &) const final;
+  bool isConst(const TensorId &weightId, const Adaptive &) const final;
+  float val(float a) const { return a; }
+
+private:
+  std::string defaultPrefix() const final {
+    return reservedDefaultAdaptiveAlphaPrefix();
+  }
+  std::string specificPrefix() const final {
+    return reservedSpecificAdaptiveAlphaPrefix();
+  }
+};
+
+class AdaptiveMomentumHelper : public CompoundScalarHelper<Adaptive> {
+public:
+  float val(const TensorId &weightId, const Adaptive &) const final;
+  bool isConst(const TensorId &weightId, const Adaptive &) const final;
+  float val(float a) const { return a; }
+
+private:
+  std::string defaultPrefix() const final {
+    return reservedDefaultAdaptiveMomentumPrefix();
+  }
+  std::string specificPrefix() const final {
+    return reservedSpecificAdaptiveMomentumPrefix();
+  }
+};
+
+class AdaptiveLearningRateHelper : public CompoundScalarHelper<Adaptive> {
+public:
+  float val(const TensorId &weightId, const Adaptive &) const final;
+  bool isConst(const TensorId &weightId, const Adaptive &) const final;
+  float val(float b2) const { return b2; }
+
+private:
+  std::string defaultPrefix() const final {
+    return reservedDefaultLearningRatePrefix();
+  }
+  std::string specificPrefix() const final {
+    return reservedSpecificLearningRatePrefix();
+  }
+};
+
+class AdaptiveWeightDecayHelper : public CompoundScalarHelper<Adaptive> {
+public:
+  float val(const TensorId &weightId, const Adaptive &) const final;
+  bool isConst(const TensorId &weightId, const Adaptive &) const final;
+  float val(float wd) const { return wd; }
+
+private:
+  std::string defaultPrefix() const final {
+    return reservedDefaultWeightDecayPrefix();
+  }
+  std::string specificPrefix() const final {
+    return reservedSpecificWeightDecayPrefix();
+  }
+};
+
+class AdaptiveEpsHelper : public CompoundScalarHelper<Adaptive> {
+public:
+  float val(const TensorId &weightId, const Adaptive &) const final;
+  bool isConst(const TensorId &weightId, const Adaptive &) const final;
+  float val(float eps) const { return eps; }
+
+private:
+  std::string defaultPrefix() const final {
+    return reservedDefaultAdaptiveEpsPrefix();
+  }
+  std::string specificPrefix() const final {
+    return reservedSpecificAdaptiveEpsPrefix();
+  }
+};
+
+class AdaptiveLossScalingHelper : public CompoundScalarHelper<Adaptive> {
+public:
+  float val(const TensorId &weightId, const Adaptive &) const final;
+  bool isConst(const TensorId &weightId, const Adaptive &) const final;
+  float val(float ls) const { return ls; }
+
+private:
+  std::string defaultPrefix() const final {
+    return reservedDefaultLossScalingPrefix();
+  }
+  std::string specificPrefix() const final {
+    return reservedSpecificLossScalingPrefix();
+  }
+};
+
+class AdaptiveMaxWeightNormHelper : public CompoundScalarHelper<Adaptive> {
+public:
+  float val(const TensorId &weightId, const Adaptive &) const final;
+  bool isConst(const TensorId &weightId, const Adaptive &) const final;
+  float val(float mwn) const { return mwn; }
+
+private:
+  std::string defaultPrefix() const final {
+    return reservedDefaultMaxWeightNormPrefix();
+  }
+  std::string specificPrefix() const final {
+    return reservedSpecificMaxWeightNormPrefix();
+  }
+};
+
+class AdaptiveGradientScalingHelper : public CompoundScalarHelper<Adaptive> {
+public:
+  float val(const TensorId &weightId, const Adaptive &) const final;
+  bool isConst(const TensorId &weightId, const Adaptive &) const final;
+  float val(float ls, float af) const { return 1 / (ls * af); }
+
+private:
+  std::string defaultPrefix() const final {
+    return reservedDefaultAdaptiveGradientScalingPrefix();
+  }
+  std::string specificPrefix() const final {
+    return reservedSpecificAdaptiveGradientScalingPrefix();
   }
 };
 

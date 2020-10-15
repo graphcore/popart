@@ -1,6 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <string>
 #include <popart/adam.hpp>
+#include <popart/adaptive.hpp>
 #include <popart/compoundscalarhelper.hpp>
 #include <popart/op.hpp>
 #include <popart/optimizer.hpp>
@@ -9,6 +10,7 @@ namespace popart {
 
 template class CompoundScalarHelper<SGD>;
 template class CompoundScalarHelper<Adam>;
+template class CompoundScalarHelper<Adaptive>;
 
 template <class T>
 bool CompoundScalarHelper<T>::idMatch(const TensorId &optId) const {
@@ -18,6 +20,8 @@ bool CompoundScalarHelper<T>::idMatch(const TensorId &optId) const {
 
 template bool CompoundScalarHelper<SGD>::idMatch(const TensorId &optId) const;
 template bool CompoundScalarHelper<Adam>::idMatch(const TensorId &optId) const;
+template bool
+CompoundScalarHelper<Adaptive>::idMatch(const TensorId &optId) const;
 
 template <class T>
 OptimizerValue
@@ -31,7 +35,10 @@ CompoundScalarHelper<SGD>::getFromWeightId(const TensorId &weightId,
                                            const SGD &sgd) const;
 template OptimizerValue
 CompoundScalarHelper<Adam>::getFromWeightId(const TensorId &weightId,
-                                            const Adam &sgd) const;
+                                            const Adam &adam) const;
+template OptimizerValue
+CompoundScalarHelper<Adaptive>::getFromWeightId(const TensorId &weightId,
+                                                const Adaptive &adaptive) const;
 
 template <class T>
 OptimizerValue CompoundScalarHelper<T>::getFromScalarId(const TensorId &optId,
@@ -54,6 +61,10 @@ CompoundScalarHelper<SGD>::getFromScalarId(const TensorId &optId,
 template OptimizerValue
 CompoundScalarHelper<Adam>::getFromScalarId(const TensorId &optId,
                                             const Adam &adam) const;
+template OptimizerValue
+CompoundScalarHelper<Adaptive>::getFromScalarId(const TensorId &optId,
+                                                const Adaptive &adaptive) const;
+
 template <class T>
 TensorId CompoundScalarHelper<T>::getScalarId(const Tensor &w,
                                               const T &sgd) const {
@@ -68,6 +79,9 @@ template TensorId CompoundScalarHelper<SGD>::getScalarId(const Tensor &w,
 template TensorId
 CompoundScalarHelper<Adam>::getScalarId(const Tensor &w,
                                         const Adam &adam) const;
+template TensorId
+CompoundScalarHelper<Adaptive>::getScalarId(const Tensor &w,
+                                            const Adaptive &adaptive) const;
 
 template <class T>
 TensorId CompoundScalarHelper<T>::getScalarIdIfNonConst(const Tensor &w,
@@ -81,6 +95,9 @@ CompoundScalarHelper<SGD>::getScalarIdIfNonConst(const Tensor &w,
 template TensorId
 CompoundScalarHelper<Adam>::getScalarIdIfNonConst(const Tensor &w,
                                                   const Adam &adam) const;
+template TensorId CompoundScalarHelper<Adaptive>::getScalarIdIfNonConst(
+    const Tensor &w,
+    const Adaptive &adaptive) const;
 
 // remove specific prefix to obtain the TensorId of the weight
 template <class T>
@@ -100,6 +117,8 @@ template TensorId
 CompoundScalarHelper<SGD>::getWeightId(const TensorId &scalarId) const;
 template TensorId
 CompoundScalarHelper<Adam>::getWeightId(const TensorId &scalarId) const;
+template TensorId
+CompoundScalarHelper<Adaptive>::getWeightId(const TensorId &scalarId) const;
 
 float WeightDecayScaleFactor0Helper::val(const TensorId &weightId,
                                          const SGD &sgd) const {
@@ -265,13 +284,13 @@ bool AdamLossScalingHelper::isConst(const TensorId &weightId,
 
 float AdamMaxWeightNormHelper::val(const TensorId &weightId,
                                    const Adam &adam) const {
-  auto wd = adam.maxWeightNorm().get(weightId).val();
+  auto wd = adam.maxWeightNorms().get(weightId).val();
   return val(wd);
 }
 
 bool AdamMaxWeightNormHelper::isConst(const TensorId &weightId,
                                       const Adam &adam) const {
-  return adam.maxWeightNorm().get(weightId).isConst();
+  return adam.maxWeightNorms().get(weightId).isConst();
 }
 
 float AdamGradientScalingHelper::val(const TensorId &weightId,
@@ -286,6 +305,86 @@ float AdamGradientScalingHelper::val(const TensorId &weightId,
 bool AdamGradientScalingHelper::isConst(const TensorId &weightId,
                                         const Adam &adam) const {
   return adam.lossScaling().isConst();
+}
+
+float AdaptiveAlphaHelper::val(const TensorId &weightId,
+                               const Adaptive &adaptive) const {
+  auto a = adaptive.alphas().get(weightId).val();
+  return val(a);
+}
+
+bool AdaptiveAlphaHelper::isConst(const TensorId &weightId,
+                                  const Adaptive &adaptive) const {
+  return adaptive.alphas().get(weightId).isConst();
+}
+
+float AdaptiveMomentumHelper::val(const TensorId &weightId,
+                                  const Adaptive &adaptive) const {
+  auto a = adaptive.momentums().get(weightId).val();
+  return val(a);
+}
+
+bool AdaptiveMomentumHelper::isConst(const TensorId &weightId,
+                                     const Adaptive &adaptive) const {
+  return adaptive.momentums().get(weightId).isConst();
+}
+
+float AdaptiveLearningRateHelper::val(const TensorId &weightId,
+                                      const Adaptive &adaptive) const {
+  auto lr = adaptive.learningRates().get(weightId).val();
+  return val(lr);
+}
+
+bool AdaptiveLearningRateHelper::isConst(const TensorId &weightId,
+                                         const Adaptive &adaptive) const {
+  return adaptive.learningRates().get(weightId).isConst();
+}
+
+float AdaptiveWeightDecayHelper::val(const TensorId &weightId,
+                                     const Adaptive &adaptive) const {
+  auto wd = adaptive.weightDecays().get(weightId).val();
+  return val(wd);
+}
+
+bool AdaptiveWeightDecayHelper::isConst(const TensorId &weightId,
+                                        const Adaptive &adaptive) const {
+  return adaptive.weightDecays().get(weightId).isConst();
+}
+
+float AdaptiveEpsHelper::val(const TensorId &weightId,
+                             const Adaptive &adaptive) const {
+  auto eps = adaptive.epss().get(weightId).val();
+  return val(eps);
+}
+
+bool AdaptiveEpsHelper::isConst(const TensorId &weightId,
+                                const Adaptive &adaptive) const {
+  return adaptive.epss().get(weightId).isConst();
+}
+
+float AdaptiveLossScalingHelper::val(const TensorId &weightId,
+                                     const Adaptive &adaptive) const {
+  auto ls = adaptive.lossScaling().val();
+  return val(ls);
+}
+
+bool AdaptiveLossScalingHelper::isConst(const TensorId &weightId,
+                                        const Adaptive &adaptive) const {
+  return adaptive.lossScaling().isConst();
+}
+
+float AdaptiveGradientScalingHelper::val(const TensorId &weightId,
+                                         const Adaptive &adaptive) const {
+  auto ls = adaptive.lossScaling().val();
+  return val(ls,
+             adaptive.meanGradientAccumulationEnabled()
+                 ? adaptive.getAccumulationFactor()
+                 : 1);
+}
+
+bool AdaptiveGradientScalingHelper::isConst(const TensorId &weightId,
+                                            const Adaptive &adaptive) const {
+  return adaptive.lossScaling().isConst();
 }
 
 } // namespace popart

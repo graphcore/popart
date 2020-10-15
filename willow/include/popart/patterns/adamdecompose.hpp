@@ -2,11 +2,12 @@
 #ifndef GUARD_NEURALNET_ADAMDECOMPOSE_PATTERN_HPP
 #define GUARD_NEURALNET_ADAMDECOMPOSE_PATTERN_HPP
 
+#include <popart/patterns/optimizerdecompose.hpp>
 #include <popart/patterns/patterns.hpp>
 
 namespace popart {
 
-class AdamDecompose : public PreAliasPattern {
+class AdamDecompose : public OptimizerDecompose {
 public:
   bool matches(Op *) const final;
   std::vector<const Tensor *> touches(Op *) const final;

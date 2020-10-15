@@ -32,6 +32,7 @@ public:
               OptimizerValue mwn,
               OptimizerValue initialGs,
               AdamMode mode_,
+              WeightDecayMode decayMode_,
               bool withGradAccum_,
               OptimizerReductionType reductionType_,
               DataType accumType_,
@@ -73,6 +74,9 @@ public:
 
   // Adam mode
   const AdamMode mode;
+
+  // Weight decay mode
+  const WeightDecayMode decayMode;
 
   // Gradient accumulation
   const bool withGradAccum;

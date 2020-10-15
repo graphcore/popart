@@ -13,7 +13,7 @@
 
 namespace popart {
 
-enum class AdamMode { Adam = 0, AdamNoBias, Lamb, LambNoBias };
+enum class AdamMode { Adam = 0, AdamNoBias, Lamb, LambNoBias, AdaMax };
 
 // Implements Adam(W)
 //   (Adam: A Method For Stochastic Optimization, Kingma & Ba, ICLR 2015)
@@ -23,10 +23,6 @@ enum class AdamMode { Adam = 0, AdamNoBias, Lamb, LambNoBias };
 //   (Large Batch Optimization For Deep learning: Training BERT in 76 Minutes,
 //    You et al., ICLR 2020)
 //
-// Note that for implementation reasons, weight decay with this Adam
-// implementation always defaults to AdamW.
-// Weight decay in the sense of L2-regularization (original Adam paper)
-// is not supported.
 //
 // g = gradient computed in backward pass
 // s = accumulated gradient
@@ -58,20 +54,30 @@ enum class AdamMode { Adam = 0, AdamNoBias, Lamb, LambNoBias };
 // s = cast(s, FP16/FP32)
 // s = s / (ls * af)
 //
+// L2 regularization (if wd > 0.0 and weight decay mode: L2 regularization)
+// s = s + wd * w
+//
 // first order momentum (FP16/FP32):
 // m = b1 * m + (1 - b1) * s
 //
 // bias corrected:
 // mc = m / (1 - b1 ** t)  (without correction: mc = m)
 //
-// second order momentum (FP16/FP32):
-// v = b2 * v + (1 - b2) * s
+// second order momentum (FP16/FP32, Adam/Lamb):
+// v = b2 * v + (1 - b2) * s^2
+//
+// second order momentum (FP16/FP32, AdaMax):
+// v = max(b2 * v, abs(s))
 //
 // bias corrected:
 // vc = v / (1 - b2 ** t)  (without correction: vc = v)
 //
-// updater term (FP16/FP32):
+// updater term (FP16/FP32, with weight decay mode: decay and wd > 0.0):
 // x = mc / (sqrt(vc) + eps) + wd * w
+//
+// updater term (FP16/FP32, without weight decay mode: decay):
+// x = mc / (sqrt(vc) + eps)
+//
 //
 // Lamb r1 (FP32):
 // r1 = ||w||_2                          (without Lamb or r1 == 0: r1/r2 = 1)
@@ -86,7 +92,7 @@ enum class AdamMode { Adam = 0, AdamNoBias, Lamb, LambNoBias };
 //   thereafter all-reduced before every replica takes the square root of r2sq
 //
 // variable update:
-// w -= min(r1,mwn)/r2 * lr * x
+// w -= min(r1, mwn) / r2 * lr * x
 //      ^^^^^^^^^^^^^^
 //      Lamb trust ratio
 //
@@ -133,8 +139,8 @@ enum class AdamMode { Adam = 0, AdamNoBias, Lamb, LambNoBias };
 //                       |  |       [r1sq]       [r2sq]
 //                       |  |        |            |
 //                       |  |       (AllReduce)  (AllReduce) (replicated weight
-//                       |  | [lr]  /            /            sharding only)
-//                       |  |  |   / .-----------
+//                 [mwn] |  | [lr]  /            /            sharding only)
+//                     \ |  |  |   / .-----------
 //                     (AdamVarUpdate)
 //                       |
 //                      [w']
@@ -151,7 +157,7 @@ public:
   }
 
   static OptimizerValue getUnsetEps() {
-    return {1e-6f, true}; // a denominator stability term of 1e-8 forever
+    return {1e-6f, true}; // a denominator stability term of 1e-6 forever
   }
 
   static OptimizerValue getUnsetWeightDecay() {
@@ -174,7 +180,36 @@ public:
   // Does "w" have specific OptimizerValues, or will it use default?
   bool hasSpecific(const Tensor &w) const;
 
-  // Adam constructor with all parameteers
+  // Adam constructor with all parameters
+  // ----------------
+  Adam(OptimizerValue default_lr,
+       OptimizerValue default_wd,
+       OptimizerValue default_b1,
+       OptimizerValue default_b2,
+       OptimizerValue default_eps,
+       OptimizerValue ls,
+       OptimizerValue mwn,
+       AdamMode adamMode_,
+       WeightDecayMode decayMode_,
+       DataType accumType_,
+       DataType accl1Type_,
+       DataType accl2Type_);
+
+  // Adam constructor (no max weight norm)
+  // ----------------
+  Adam(OptimizerValue default_lr,
+       OptimizerValue default_wd,
+       OptimizerValue default_b1,
+       OptimizerValue default_b2,
+       OptimizerValue default_eps,
+       OptimizerValue ls,
+       AdamMode adamMode_,
+       WeightDecayMode decayMode_,
+       DataType accumType_,
+       DataType accl1Type_,
+       DataType accl2Type_);
+
+  // Adam constructor (no decayMode)
   // ----------------
   Adam(OptimizerValue default_lr,
        OptimizerValue default_wd,
@@ -188,7 +223,7 @@ public:
        DataType accl1Type_,
        DataType accl2Type_);
 
-  // Adam constructor with all parameters except max weight norm.
+  // Adam constructor (no decayMode and no max weight norm)
   // ----------------
   Adam(OptimizerValue default_lr,
        OptimizerValue default_wd,
@@ -207,7 +242,7 @@ public:
   //       {"defaultBeta1", {0.9, True}},
   //       {"defaultBeta2":{0.999, True}}});
   //
-  // will create an Adam Optimizer which has a constant beta1/beta2 of 0.9/0.99
+  // will create an Adam Optimizer which has a constant beta1/beta2 of 0.9/0.999
   // and a changeable learning rate initially of 0.02.
   // All OptimizerValues not present in the map will take values from the
   // getUnset* functions.
@@ -216,11 +251,13 @@ public:
   //
   Adam(const std::map<std::string, std::pair<float, bool>> &,
        AdamMode adamMode_,
+       WeightDecayMode decayMode_,
        DataType accumType_,
        DataType accl1Type_,
        DataType accl2Type_);
   static Adam fromDefaultMap(const std::map<std::string, OptimizerValue> &,
                              AdamMode adamMode_,
+                             WeightDecayMode decayMode_,
                              DataType accumType_,
                              DataType accl1Type_,
                              DataType accl2Type_);
@@ -276,7 +313,7 @@ public:
   const OptimizerValueMap &beta1s() const { return b1s; }
   const OptimizerValueMap &beta2s() const { return b2s; }
   const OptimizerValueMap &epss() const { return epsvs; }
-  const OptimizerValueMap &maxWeightNorm() const { return mwns; }
+  const OptimizerValueMap &maxWeightNorms() const { return mwns; }
 
 private:
   void runValueChecks(OptimizerValue lr,
@@ -307,6 +344,7 @@ private:
 
   // Adam settings
   AdamMode mode;
+  WeightDecayMode decayMode;
   DataType accumType;
   DataType accl1Type;
   DataType accl2Type;
@@ -325,6 +363,7 @@ private:
   // int argument only to disambiguate from the other SGD constructor
   Adam(const std::map<std::string, OptimizerValue> &,
        AdamMode mode_,
+       WeightDecayMode decayMode_,
        DataType accumType_,
        DataType accl1Type_,
        DataType accl2Type_,

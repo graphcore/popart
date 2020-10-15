@@ -22,9 +22,9 @@ AdamVarUpdateOpx::AdamVarUpdateOpx(Op *op, Devicex *devicex)
 
 void AdamVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
 
-  // see optimizer.hpp for the equations implemented here
+  // see adam.hpp for the equations implemented here
 
-  auto adamVarUpdateOp = getOp<AdamVarUpdateOp>();
+  auto &adamVarUpdateOp = getOp<AdamVarUpdateOp>();
 
   poplar::Tensor updater =
       getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());

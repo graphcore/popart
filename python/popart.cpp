@@ -8,6 +8,7 @@
 #include "np_utils.hpp"
 #include "pyarray_accessor.hpp"
 #include <popart/adam.hpp>
+#include <popart/adaptive.hpp>
 #include <popart/builder.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/error.hpp>
@@ -686,6 +687,12 @@ PYBIND11_MODULE(popart_core, m) {
     optimizer.def("getLossScalingVal", &Optimizer::getLossScalingVal);
 
     {
+      py::enum_<WeightDecayMode> en(m, "WeightDecayMode");
+      en.value("Decay", WeightDecayMode::Decay);
+      en.value("L2Regularization", WeightDecayMode::L2Regularization);
+    }
+
+    {
       py::class_<SGD> sgd(m, "SGD", optimizer);
       sgd.def(py::init([](py::dict pyd,
                           std::vector<ClipNormSettings> clipNormSettings) {
@@ -721,18 +728,22 @@ PYBIND11_MODULE(popart_core, m) {
         en.value("AdamNoBias", AdamMode::AdamNoBias);
         en.value("Lamb", AdamMode::Lamb);
         en.value("LambNoBias", AdamMode::LambNoBias);
+        en.value("AdaMax", AdamMode::AdaMax);
       }
       py::class_<Adam> adam(m, "Adam", optimizer);
       adam.def(py::init([](py::dict pyd,
                            AdamMode mode,
+                           WeightDecayMode wdmode,
                            DataType accumType,
                            DataType accl1Type,
                            DataType accl2Type) {
                  auto cppm = getOptimizerValueDictionary(pyd);
-                 return Adam(cppm, mode, accumType, accl1Type, accl2Type);
+                 return Adam(
+                     cppm, mode, wdmode, accumType, accl1Type, accl2Type);
                }),
                py::arg("values"),
-               py::arg("mode") = AdamMode::Adam,
+               py::arg("mode")              = AdamMode::Adam,
+               py::arg("weight_decay_mode") = WeightDecayMode::Decay,
                // Choose same data type as weight for the accumulator by default
                py::arg("accum_type") = DataType::UNDEFINED,
                // Momentums in FP32 by default
@@ -748,6 +759,50 @@ PYBIND11_MODULE(popart_core, m) {
       adam.def("beta1s", &Adam::beta1s);
       adam.def("beta2s", &Adam::beta1s);
       adam.def("epss", &Adam::epss);
+      adam.def("maxWeightNorms", &Adam::maxWeightNorms);
+    }
+    {
+      {
+        py::enum_<AdaptiveMode> en(m, "AdaptiveMode");
+        en.value("AdaGrad", AdaptiveMode::AdaGrad);
+        en.value("RMSProp", AdaptiveMode::RMSProp);
+        en.value("CenteredRMSProp", AdaptiveMode::CenteredRMSProp);
+        en.value("AdaDelta", AdaptiveMode::AdaDelta);
+      }
+      py::class_<Adaptive> adaptive(m, "Adaptive", optimizer);
+      adaptive.def(
+          py::init([](py::dict pyd,
+                      AdaptiveMode mode,
+                      WeightDecayMode wdmode,
+                      DataType accumType,
+                      DataType accl1Type,
+                      DataType accl2Type,
+                      DataType accl3Type) {
+            auto cppm = getOptimizerValueDictionary(pyd);
+            return Adaptive(
+                cppm, mode, wdmode, accumType, accl1Type, accl2Type, accl3Type);
+          }),
+          py::arg("values"),
+          py::arg("mode")              = AdaptiveMode::RMSProp,
+          py::arg("weight_decay_mode") = WeightDecayMode::Decay,
+          // Choose same data type as weight for the accumulator by default
+          py::arg("accum_type") = DataType::UNDEFINED,
+          // Accl1 / Accl2 in FP32 by default
+          py::arg("accl1_type") = DataType::FLOAT,
+          py::arg("accl2_type") = DataType::FLOAT,
+          // Choose same data type as weight for the Accl3 by default
+          py::arg("accl3_type") = DataType::UNDEFINED);
+
+      adaptive.def("insertSpecific",
+                   [](Adaptive &self, TensorId id, py::dict pyd) {
+                     self.insertSpecific(id, getOptimizerValueDictionary(pyd));
+                   });
+
+      adaptive.def("learningRates", &Adaptive::learningRates);
+      adaptive.def("weightDecays", &Adaptive::weightDecays);
+      adaptive.def("alphas", &Adaptive::alphas);
+      adaptive.def("momentums", &Adaptive::momentums);
+      adaptive.def("epss", &Adaptive::epss);
     }
   }
   {
@@ -1477,7 +1532,7 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("detach",
             &AiGraphcoreOpset1::detach,
             py::arg("args"),
-            py::arg("debugPrefix")           = std::string());
+            py::arg("debugPrefix") = std::string());
     cls.def("round",
             &AiGraphcoreOpset1::round,
             py::arg("args"),
@@ -2067,6 +2122,7 @@ PYBIND11_MODULE(popart_core, m) {
   m.def("reservedAcclPrefix", &reservedAcclPrefix);
   m.def("reservedAccl1Prefix", &reservedAccl1Prefix);
   m.def("reservedAccl2Prefix", &reservedAccl2Prefix);
+  m.def("reservedAccl3Prefix", &reservedAccl3Prefix);
   m.def("reservedStepPrefix", &reservedStepPrefix);
   m.def("reservedAcclToReducePrefix", &reservedAcclToReducePrefix);
   m.def("reservedAcclToUpdatePrefix", &reservedAcclToUpdatePrefix);
