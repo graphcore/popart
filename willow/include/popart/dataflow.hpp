@@ -13,7 +13,7 @@ namespace popart {
  * An anchor tensor is a tensor that the user wants returned after a
  * call to Session::run. Each call to Session::run results in
  * `batchesPerStep x accumulationFactor x replicationFactor` of such
- * tensors being computed for each replica. We refer to the samples associated
+ * tensors being computed. We refer to the samples associated
  * with each such computation as a micro batch. The dimensions are
  * user-specified by the following parameters:
  *
@@ -33,8 +33,7 @@ namespace popart {
  */
 enum class AnchorReturnTypeId {
   /// Only return the tensor value for the last micro batch of the Session::run
-  /// call
-  /// for each replica.
+  /// call for each replica.
   ///
   /// The buffer shape required for this anchor in IStepIO is
   /// `[replicationFactor, <anchorTensorShape>]`
@@ -48,9 +47,8 @@ enum class AnchorReturnTypeId {
   /// (with dimensions of size 1 removed).
 
   /// Return the tensor value for every `N`th global batch for each replica and
-  /// for
-  /// all accumulation steps in that global batch. Note that the value of `N` is
-  /// captured by AnchorReturnType.
+  /// for all accumulation steps in that global batch. Note that the value of
+  /// `N` is captured by AnchorReturnType.
   ///
   /// The buffer shape required for this anchor in IStepIO is
   /// `[batchesPerStep // N, accumulationFactor, replicationFactor,
@@ -145,15 +143,13 @@ public:
   DataFlow();
   /// Construct DataFlow instance without anchor tensors.
   /// \param batchesPerStep - the number of global batches to run the inference
-  /// or training
-  ///     session for per call to Session::run before returning control to the
-  ///     caller.
+  ///     or training session for per call to Session::run before returning
+  ///     control to the caller.
   DataFlow(int batchesPerStep);
   /// Constructor DataFlow instance with anchor tensors.
   /// \param batchesPerStep the number of global batches to run the inference or
-  /// training
-  ///     session for per call to Session::run before returning control to the
-  ///     caller.
+  ///     training session for per call to Session::run before returning control
+  ///     to the caller.
   /// \param anchorMap a mapping from output tensor TensorId to AnchorReturnType
   ///     indicating the strategy with which to write the anchor tensor values
   ///     to the IStepIO object provided to Session::run.
@@ -161,13 +157,11 @@ public:
            const std::map<TensorId, AnchorReturnType> &anchorMap);
   /// Constructor DataFlow instance with anchor tensors.
   /// \param batchesPerStep the number of global batches to run the inference or
-  /// training
-  ///     session for per call to Session::run before returning control to the
-  ///     caller.
+  ///     training session for per call to Session::run before returning control
+  ///     to the caller.
   /// \param anchorTensorIds the tensor ID of anchor tensors.
   /// \param anchorReturnType the strategy with which to write anchor tensor
-  /// values to the IStepIO
-  ///     object provided to Session::run.
+  ///     values to the IStepIO object provided to Session::run.
   DataFlow(int batchesPerStep,
            const std::vector<TensorId> anchorTensorIds,
            const AnchorReturnType &anchorReturnType = AnchorReturnType("All"));
