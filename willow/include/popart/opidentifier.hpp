@@ -148,6 +148,7 @@ const static AiGraphcoreOpIdV1 DivArg0Grad("DivArg0Grad");
 const static AiGraphcoreOpIdV1 DivArg1Grad("DivArg1Grad");
 const static AiGraphcoreOpIdV1 DropoutGrad("DropoutGrad");
 const static AiGraphcoreOpIdV1 EluGrad("EluGrad");
+const static AiGraphcoreOpIdV1 ErfGrad("ErfGrad");
 const static AiGraphcoreOpIdV1 ExpandGrad("ExpandGrad");
 const static AiGraphcoreOpIdV1 ExpGrad("ExpGrad");
 const static AiGraphcoreOpIdV1 FlattenGrad("FlattenGrad");
