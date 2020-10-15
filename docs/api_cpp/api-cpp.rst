@@ -15,29 +15,35 @@ Sessions
 Session options
 ..............
 
-.. doxygenenum:: popart::DotCheck
-
-.. doxygenenum:: popart::RecomputationType
-
-.. doxygenenum:: popart::MergeVarUpdateType
-
-.. doxygenenum:: popart::VirtualGraphMode
-
-.. doxygenenum:: popart::IrSerializationFormat
-
-.. doxygenenum:: popart::SyntheticDataMode
-
-.. doxygenenum:: popart::Instrumentation
+.. doxygenenum:: popart::AccumulateOuterFragmentSchedule
 
 .. doxygenenum:: popart::BatchSerializationBatchSchedule
+
+.. doxygenenum:: popart::DotCheck
 
 .. doxygenenum:: popart::ExecutionPhaseIOSchedule
 
 .. doxygenenum:: popart::ExecutionPhaseSchedule
 
-.. doxygenenum:: popart::AccumulateOuterFragmentSchedule
+.. doxygenenum:: popart::Instrumentation
 
-.. doxygenstruct:: popart::TensorLocationSettings
+.. doxygenenum:: popart::IrSerializationFormat
+
+.. doxygenenum:: popart::MergeVarUpdateType
+
+.. doxygenenum:: popart::SyntheticDataMode
+
+.. doxygenenum:: popart::RecomputationType
+
+.. doxygenenum:: popart::ReplicatedTensorSharding
+
+.. doxygenenum:: popart::TensorStorage
+
+.. doxygenenum:: popart::TileSet
+
+.. doxygenenum:: popart::VirtualGraphMode
+
+.. doxygenstruct:: popart::AccumulateOuterFragmentSettings
   :members:
 
 .. doxygenstruct:: popart::BatchSerializationSettings
@@ -46,7 +52,10 @@ Session options
 .. doxygenstruct:: popart::ExecutionPhaseSettings
   :members:
 
-.. doxygenstruct:: popart::AccumulateOuterFragmentSettings
+.. doxygenstruct:: popart::TensorLocationSettings
+  :members:
+
+.. doxygenclass:: popart::TensorLocation
   :members:
 
 .. doxygenstruct:: popart::SessionOptions
