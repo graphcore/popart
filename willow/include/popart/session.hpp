@@ -301,17 +301,17 @@ public:
                       const SessionOptions &userOptions    = SessionOptions(),
                       const Patterns &patterns             = Patterns());
 
-  /** Update the optimizer, as well as writing whatever optimizer tensors
-   * (learning rates, momentum, initial momentum tensors (zero)) there are to
-   * device.
+  /**
+   * Update the optimizer and the associated hyperparameters but not the
+   * optimizer state tensors.
    *
-   * Note that the optimizer passed in must be compatible with that passed to
-   * the constructor. For example, you cannot update to an Optimizer which uses
-   * momentum here, if the Optimizer passed to the constructor did not have
-   * momentum. Reason: The Ir would need to change to incorporate momentum, but
-   * the Ir is frozen once constructed.
+   * **NOTE**: The optimizer parameter has to be compatible with the optimizer
+   * passed to the constructor. For example, you cannot call this function
+   * with an SDG1 optimizer if you created the session with an SDG0 optimizer.
+   * The reason for this is that it is not possible to change the IR after
+   * it has been constructed.
    *
-   * \param optimizer A pointer to a popart::Optimizer
+   * \param optimizer A pointer to a popart::Optimizer.
    */
   void updateOptimizerFromHost(const Optimizer *optimizer);
 
