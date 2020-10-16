@@ -174,7 +174,7 @@ public:
 
   void assertNumElements(const Ir &) const final {}
 
-  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
+  ConstVoidData in(TensorId id, int64_t, bool prefetch) final {
     py::array a = inputCb(id, prefetch);
     if (!isContiguous(a)) {
       throw error(
@@ -1058,6 +1058,8 @@ PYBIND11_MODULE(popart_core, m) {
                       &SessionOptions::tensorLocationSettingsOverride);
     cls.def_readwrite("accumulateOuterFragmentSettings",
                       &SessionOptions::accumulateOuterFragmentSettings);
+    cls.def_readwrite("enableLoadAndOffloadRNGState",
+                      &SessionOptions::enableLoadAndOffloadRNGState);
   }
   {
     py::enum_<PatternsLevel> en(m, "PatternsLevel");
@@ -1318,6 +1320,9 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("setRandomSeed",
             &InferenceSession::setRandomSeed,
             py::arg("seedValue"));
+    cls.def("getRNGState", &InferenceSession::getRNGState);
+    cls.def("setRNGState", &InferenceSession::setRNGState, py::arg("rngValue"));
+
     cls.def(
         "getCycleCount", &InferenceSession::getCycleCount, py::arg("id") = "");
     cls.def("weightsFromHost", &InferenceSession::weightsFromHost);
@@ -1407,6 +1412,8 @@ PYBIND11_MODULE(popart_core, m) {
         py::arg("err").none());
     cls.def(
         "setRandomSeed", &TrainingSession::setRandomSeed, py::arg("seedValue"));
+    cls.def("getRNGState", &InferenceSession::getRNGState);
+    cls.def("setRNGState", &InferenceSession::setRNGState, py::arg("rngValue"));
     cls.def(
         "getCycleCount", &TrainingSession::getCycleCount, py::arg("id") = "");
     cls.def("weightsToHost", &TrainingSession::weightsToHost);

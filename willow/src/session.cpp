@@ -35,6 +35,36 @@ void Session::setDevice(std::shared_ptr<DeviceInfo> deviceInfo) {
   device_.reset(new popx::Devicex(ir, deviceInfo));
 }
 
+std::vector<uint32_t> Session::getRNGState() {
+  if (!ir.getSessionOptions().enableLoadAndOffloadRNGState) {
+    throw error("Trying to get the RNG state, but the session option "
+                "enableLoadAndOffloadRNGState must be set to True.");
+  }
+  if (!device_->prepareHasBeenCalled()) {
+    throw error("Devicex::prepare() must be called before "
+                "Devicex::getRngStateToHost is called.");
+  }
+  std::vector<uint32_t> seedValue;
+  seedValue = device_->getRngStateToHost();
+  return seedValue;
+}
+
+void Session::setRNGState(const std::vector<uint32_t> stateValue) {
+  if (!ir.getSessionOptions().enableLoadAndOffloadRNGState) {
+    throw error("Trying to set the RNG state, but the session option "
+                "enableLoadAndOffloadRNGState must be set to True.");
+  }
+  // Set seed value on host
+  device_->setRngStateValue(stateValue);
+
+  // ... Then stream to device
+  if (!device_->prepareHasBeenCalled()) {
+    throw error("Devicex::prepare() must be called before "
+                "Devicex::setRngStateFromHost is called.");
+  }
+  device_->setRngStateFromHost();
+}
+
 void Session::setRandomSeed(uint64_t seedValue) {
   POPART_TRACEPOINT();
   logging::session::trace("Session::setRandomSeed({})", seedValue);

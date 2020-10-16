@@ -667,7 +667,10 @@ struct SessionOptions {
   /// corresponds to lowered Poplar tensor modifications
   bool opxModifyChecking = false;
 
-  /// Tensor location settings for activation/gradient tensors.
+  // Allows to load/offload device RNG state from host
+  bool enableLoadAndOffloadRNGState = false;
+
+  // Tensor location settings for activation/gradient tensors.
   TensorLocationSettings activationTensorLocationSettings =
       TensorLocationSettings{TensorLocation(), 2, 8192};
   /// Tensor location for weight tensors.
