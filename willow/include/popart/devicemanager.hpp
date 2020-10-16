@@ -28,7 +28,7 @@ enum class DeviceSelectionCriterion {
 };
 
 SyncPattern syncPatternFromString(const std::string &str);
-std::string syncPatternToString(SyncPattern pattern);
+std::string syncPatternToString(const SyncPattern &pattern);
 
 class DeviceProvider;
 
@@ -274,6 +274,14 @@ std::ostream &operator<<(std::ostream &os, const DeviceType &dt);
  * \return The same output stream for chaining
  */
 std::ostream &operator<<(std::ostream &os, const DeviceConnectionType &dct);
+
+/** Write a representation of a SyncPattern to an output stream.
+ *
+ * \param os Output stream
+ * \param sp Sync pattern reference
+ * \return The same output stream for chaining
+ */
+std::ostream &operator<<(std::ostream &, const SyncPattern &);
 
 } // namespace popart
 

@@ -26,7 +26,7 @@ SyncPattern syncPatternFromString(const std::string &str) {
   throw error("Unknown syncPattern setting: {}", str);
 }
 
-std::string syncPatternToString(SyncPattern pattern) {
+std::string syncPatternToString(const SyncPattern &pattern) {
   switch (pattern) {
   case SyncPattern::Full:
     return "full";
@@ -234,6 +234,11 @@ std::ostream &operator<<(std::ostream &os, const DeviceConnectionType &dct) {
     break;
   }
 
+  return os;
+}
+
+std::ostream &operator<<(std::ostream &os, const SyncPattern &sp) {
+  os << syncPatternToString(sp);
   return os;
 }
 

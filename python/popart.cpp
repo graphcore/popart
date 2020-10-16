@@ -492,6 +492,9 @@ PYBIND11_MODULE(popart_core, m) {
 
   m.def("getTensorInfo", &getTensorInfo);
 
+  m.def("syncPatternFromString", &syncPatternFromString);
+  m.def("syncPatternToString", &syncPatternToString);
+
   m.def("getLogger", &Logger::getLogger, py::arg("name") = "all");
 
   m.def("versionString", &popart::core::versionString);
@@ -1127,6 +1130,14 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("Full", SyncPattern::Full);
     en.value("SinglePipeline", SyncPattern::SinglePipeline);
     en.value("ReplicaAndLadder", SyncPattern::ReplicaAndLadder);
+    en.attr("__str__") = py::cpp_function(
+        [](const SyncPattern &sp) {
+          std::stringstream ss;
+          ss << sp;
+          return ss.str();
+        },
+        py::name("__str__"),
+        py::is_method(en));
   }
   {
     py::enum_<MergeVarUpdateType> en(m, "MergeVarUpdateType");
