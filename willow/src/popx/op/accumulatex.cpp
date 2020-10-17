@@ -32,7 +32,11 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
   switch (accumulateOp.getAccumulationType()) {
   case AccumulationType::Add: {
     // accum += grad
-    popops::addInPlace(graph(), accum, grad, prog, debugPrefix("constAdd"));
+    popops::mapInPlace(graph(),
+                       pe::Add(pe::_1, pe::Cast(pe::_2, accum.elementType())),
+                       {accum, grad},
+                       prog,
+                       debugPrefix("constAdd"));
     break;
   }
   case AccumulationType::DampenedAdd: {
@@ -46,7 +50,12 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
       }
       if (val - 1.0f == 0.0f) {
         // accum += grad
-        popops::addInPlace(graph(), accum, grad, prog, debugPrefix("constAdd"));
+        popops::mapInPlace(
+            graph(),
+            pe::Add(pe::_1, pe::Cast(pe::_2, accum.elementType())),
+            {accum, grad},
+            prog,
+            debugPrefix("constAdd"));
       } else {
         // accum += factor * grad
         popops::scaledAddTo(
@@ -70,11 +79,12 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
       }
       if (val - 1.0f == 0.0f) {
         // accum += grad^2
-        popops::mapInPlace(graph(),
-                           pe::Add(pe::_1, pe::Square(pe::_2)),
-                           {accum, grad},
-                           prog,
-                           debugPrefix("constAddSquare"));
+        popops::mapInPlace(
+            graph(),
+            pe::Add(pe::_1, pe::Square(pe::Cast(pe::_2, accum.elementType()))),
+            {accum, grad},
+            prog,
+            debugPrefix("constAddSquare"));
       } else {
         auto val = accumulateOp.getFactor().val();
         // accum += factor * grad^2
@@ -137,7 +147,7 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
       auto factor = getInTensor(AccumulateOp::getFactorInIndex());
       popops::mapInPlace(
           graph(),
-          pe::Add(pe::Mul(pe::_3, pe::_1),
+          pe::Add(pe::Mul(pe::Cast(pe::_3, accum.elementType()), pe::_1),
                   pe::Square(pe::Cast(pe::_2, accum.elementType()))),
           {accum, grad, factor},
           prog,
@@ -160,7 +170,7 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
       auto factor = getInTensor(AccumulateOp::getFactorInIndex());
       popops::mapInPlace(
           graph(),
-          pe::Add(pe::Mul(pe::_3, pe::_1),
+          pe::Add(pe::Mul(pe::Cast(pe::_3, accum.elementType()), pe::_1),
                   pe::Mul(pe::Sub(pe::Const(1.0f), pe::_3),
                           pe::Cast(pe::_2, accum.elementType()))),
           {accum, grad, factor},
@@ -185,7 +195,7 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
       auto factor = getInTensor(AccumulateOp::getFactorInIndex());
       popops::mapInPlace(
           graph(),
-          pe::Add(pe::Mul(pe::_3, pe::_1),
+          pe::Add(pe::Mul(pe::Cast(pe::_3, accum.elementType()), pe::_1),
                   pe::Mul(pe::Mul(pe::Sub(pe::Const(1.0f), pe::_3),
                                   pe::Cast(pe::_2, accum.elementType())),
                           pe::Cast(pe::_2, accum.elementType()))),
@@ -210,9 +220,10 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
       auto factor = getInTensor(AccumulateOp::getFactorInIndex());
       popops::mapInPlace(
           graph(),
-          pe::Cast(pe::Max(pe::Mul(pe::_3, pe::_1),
-                           pe::Cast(pe::Abs(pe::_2), accum.elementType())),
-                   accum.elementType()),
+          pe::Cast(
+              pe::Max(pe::Mul(pe::Cast(pe::_3, accum.elementType()), pe::_1),
+                      pe::Cast(pe::Abs(pe::_2), accum.elementType())),
+              accum.elementType()),
           {accum, grad, factor},
           prog,
           debugPrefix("infinity"));
