@@ -12,6 +12,20 @@ poplar::Tensor ViewChangers::apply(poplar::Tensor tensor) const {
   return tensor;
 }
 
+bool ViewChangers::operator==(const ViewChangers &rhs) const {
+  if (empty() != rhs.empty() ||
+      viewChangers.size() != rhs.viewChangers.size()) {
+    return false;
+  }
+
+  for (size_t i = 0; i < viewChangers.size(); ++i) {
+    if (viewChangers.at(i) != rhs.viewChangers.at(i)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 ViewChangers::ViewChangers() {}
 
 ViewChangers::ViewChangers(

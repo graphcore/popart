@@ -14,6 +14,9 @@ public:
   virtual ~ViewChanger() {}
   virtual poplar::Tensor apply(poplar::Tensor tensor) const { return tensor; }
   virtual bool containsAllDataRegions() const { return true; }
+  virtual bool operator==(const ViewChanger &rhs) const {
+    return typeid(&rhs) == typeid(ViewChanger);
+  }
 };
 
 // Chain of view changers
@@ -23,6 +26,8 @@ public:
   ViewChangers(std::vector<std::shared_ptr<ViewChanger>> viewChangers_);
   poplar::Tensor apply(poplar::Tensor tensor) const;
   bool empty() const { return viewChangers.empty(); }
+
+  bool operator==(const ViewChangers &rhs) const;
 
 private:
   std::vector<std::shared_ptr<ViewChanger>> viewChangers;

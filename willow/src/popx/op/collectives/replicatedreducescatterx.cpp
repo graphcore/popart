@@ -27,7 +27,8 @@ void ReplicatedReduceScatterOpx::grow(poplar::program::Sequence &prog) const {
   if (hasInput(ReplicatedAllGatherOp::getCollectiveLinkedIndex())) {
     ViewChangers viewChangers(
         {std::make_shared<ReplicatedGatherInScatterOutViewChanger>(
-            outInfo(ReplicatedAllGatherOp::getOutIndex()).nelms())});
+            outInfo(ReplicatedAllGatherOp::getOutIndex()).nelms(),
+            getCollectiveLinkedGroup().first)});
     setOutViewChangers(ReplicatedReduceScatterOp::getOutIndex(), viewChangers);
 
     if (!hasInViewChangers(ReplicatedReduceScatterOp::getInIndex())) {
@@ -88,13 +89,16 @@ ReplicatedReduceScatterOpx::createInput(int inIndex,
 
 std::vector<TensorId>
 ReplicatedReduceScatterOpx::mustExistBeforeCreate(InIndex) const {
-  auto group = getCollectiveLinkedGroup();
-  TensorId mustExist =
-      group.second.front()->inId(CollectivesBaseOp::getInIndex());
-  logging::opx::trace(
-      "ReplicatedReduceScatterOpx::mustExistBeforeCreate, must exist: {}",
-      mustExist);
-  return {mustExist};
+  const auto &rrs_op              = getOp<ReplicatedReduceScatterOp>();
+  auto group                      = getCollectiveLinkedGroup();
+  std::vector<TensorId> mustExist = {
+      group.second.front()->inId(CollectivesBaseOp::getInIndex()),
+      group.second.front()->outId(CollectivesBaseOp::getOutIndex())};
+  logging::opx::trace("ReplicatedReduceScatterOpx::mustExistBeforeCreate, Op "
+                      "{}, must exist: {}",
+                      rrs_op.debugName(),
+                      mustExist);
+  return mustExist;
 }
 
 bool ReplicatedReduceScatterOpx::hasCreatorViewChangers(InIndex index) const {
@@ -106,7 +110,8 @@ ReplicatedReduceScatterOpx::getCreatorViewChangers(InIndex index) const {
   if (index == ReplicatedReduceScatterOp::getInIndex()) {
     auto cbr = getCollectiveBalancedReorder();
     ViewChangers viewChangers(
-        {std::make_shared<ReplicatedGatherOutScatterInViewChanger>(cbr)});
+        {std::make_shared<ReplicatedGatherOutScatterInViewChanger>(
+            cbr, getCollectiveLinkedGroup().first)});
     return viewChangers;
   }
   throw error(

@@ -107,7 +107,8 @@ ReplicatedAllGatherOpx::getCreatorViewChangers(InIndex index) const {
   if (index == ReplicatedAllGatherOp::getInIndex()) {
     ViewChangers viewChangers(
         {std::make_shared<ReplicatedGatherInScatterOutViewChanger>(
-            inInfo(ReplicatedAllGatherOp::getInIndex()).nelms())});
+            inInfo(ReplicatedAllGatherOp::getInIndex()).nelms(),
+            getCollectiveLinkedGroup().first)});
     return viewChangers;
   }
   throw error(

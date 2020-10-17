@@ -333,7 +333,8 @@ private:
   PriTask initTensorByCloningTask(Op *op, TensorId srcId, TensorId dstId);
   PriTask initTensorByAliasingTask(Op *op, TensorId srcId, TensorId dstId);
   TaskId initTensorTaskId(TensorId) const;
-  bool tryInitTensorByPostIRAliasing(TensorId dstId);
+  bool tryInitTensorByPostIRAliasing(TensorId dstId,
+                                     const ViewChangers &viewChangers);
 
   PriTask initRandomSeed();
   TaskId initRandomSeedTaskId() const;

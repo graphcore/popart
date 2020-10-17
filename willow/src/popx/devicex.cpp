@@ -1513,17 +1513,17 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
   if (candidate) {
 
     auto f = [this, candidate, tensor]() {
-      // Try if an existing Poplar tensor can be reused
-      if (tryInitTensorByPostIRAliasing(tensor->id)) {
-        return SequenceMap();
-      }
-
       logging::devicex::debug(
           "Creating poplar::Tensor {}, with layout allocated by {}",
           tensor->id,
           candidate->str());
 
       auto inputAndView = candidate->createInput(tensor->str() + "_tmp");
+
+      // Try if an existing Poplar tensor can be reused
+      if (tryInitTensorByPostIRAliasing(tensor->id, inputAndView.second)) {
+        return SequenceMap();
+      }
 
       if (!inputAndView.second.empty()) {
         // Underlying poplar::Tensor does not match IR expectations, supply
@@ -1559,7 +1559,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
 
     auto f = [this, tensor]() {
       // Try if an existing Poplar tensor can be reused
-      if (tryInitTensorByPostIRAliasing(tensor->id)) {
+      if (tryInitTensorByPostIRAliasing(tensor->id, ViewChangers())) {
         return SequenceMap();
       }
 
@@ -2224,11 +2224,24 @@ void Devicex::addOpTasks(PriTasks &tasks) {
   }
 }
 
-bool Devicex::tryInitTensorByPostIRAliasing(TensorId dstId) {
+bool Devicex::tryInitTensorByPostIRAliasing(TensorId dstId,
+                                            const ViewChangers &viewChangers) {
   for (Tensor *aliased :
        aliasZeroCopy->getPostIRAliases(ir().getTensor(dstId))) {
     if (tensors.contains(aliased->id)) {
-      if (tensors.canAlias(aliased->id)) {
+
+      // Can only alias if the view changers associated with the tensors are
+      // also compatible
+      bool viewChangerCompatible = true;
+      if (tensors.hasViewChangers(aliased->id) || !viewChangers.empty()) {
+        ViewChangers aliasedViewChangers;
+        if (tensors.hasViewChangers(aliased->id)) {
+          aliasedViewChangers = tensors.getViewChangers(aliased->id);
+        }
+        viewChangerCompatible = aliasedViewChangers == viewChangers;
+      }
+
+      if (tensors.canAlias(aliased->id) && viewChangerCompatible) {
         logging::devicex::debug("Creating poplar::Tensor '{}' "
                                 "by aliasing from poplar::Tensor '{}'",
                                 dstId,
@@ -2238,9 +2251,11 @@ bool Devicex::tryInitTensorByPostIRAliasing(TensorId dstId) {
         aliasZeroCopy->activateAlias(aliased, ir().getTensor(dstId));
         return true;
       } else {
-        logging::devicex::trace("[PopTensors] Rejecting aliasing of {} due to "
-                                "constant or aliased region",
-                                aliased->id);
+        logging::devicex::trace(
+            "[PopTensors] Rejecting aliasing of {} due to {}",
+            aliased->id,
+            viewChangerCompatible ? "constant or aliased region"
+                                  : "differing view changers");
         // Tensor can't be aliased
         aliasZeroCopy->removePostIRAliases(ir().getTensor(aliased->id));
       }
@@ -2255,7 +2270,10 @@ Devicex::initTensorByCloningTask(Op *op, TensorId srcId, TensorId dstId) {
 
   auto f = [srcId, dstId, opx, this]() {
     // Try if an existing Poplar tensor can be reused
-    if (tryInitTensorByPostIRAliasing(dstId)) {
+    if (tryInitTensorByPostIRAliasing(dstId,
+                                      tensors.hasViewChangers(srcId)
+                                          ? tensors.getViewChangers(srcId)
+                                          : ViewChangers())) {
       return SequenceMap();
     }
 

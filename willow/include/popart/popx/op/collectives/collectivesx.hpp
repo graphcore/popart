@@ -97,14 +97,25 @@ private:
 // serves to provide an IR-compatible view of the tensor
 class ReplicatedGatherInScatterOutViewChanger : public ViewChanger {
 public:
-  ReplicatedGatherInScatterOutViewChanger(int64_t nelms_) : nelms(nelms_) {}
+  ReplicatedGatherInScatterOutViewChanger(int64_t nelms_,
+                                          const std::set<TensorId> group_)
+      : nelms(nelms_), group(group_) {}
   poplar::Tensor apply(poplar::Tensor tensor) const final {
     return tensor.slice(0, nelms, 0);
   }
   bool containsAllDataRegions() const final { return false; }
+  bool operator==(const ViewChanger &rhs) const final {
+    if (const ReplicatedGatherInScatterOutViewChanger *other =
+            dynamic_cast<const ReplicatedGatherInScatterOutViewChanger *>(
+                &rhs)) {
+      return group == other->group;
+    }
+    return false;
+  }
 
 private:
   int64_t nelms;
+  std::set<TensorId> group;
 };
 
 // If the (tile-balanced) input/output to a collective op is rearranged and/or
@@ -114,15 +125,25 @@ private:
 // regions are included in the view and arranged correctly
 class ReplicatedGatherOutScatterInViewChanger : public ViewChanger {
 public:
-  ReplicatedGatherOutScatterInViewChanger(const CollectiveBalancedReorder *cbr_)
-      : cbr(cbr_) {}
+  ReplicatedGatherOutScatterInViewChanger(const CollectiveBalancedReorder *cbr_,
+                                          const std::set<TensorId> group_)
+      : cbr(cbr_), group(group_) {}
   poplar::Tensor apply(poplar::Tensor tensor) const final {
     return cbr->undoRearrangeForCollective(tensor).reshape(
         cbr->getReferenceTensor().shape());
   }
+  bool operator==(const ViewChanger &rhs) const final {
+    if (const ReplicatedGatherOutScatterInViewChanger *other =
+            dynamic_cast<const ReplicatedGatherOutScatterInViewChanger *>(
+                &rhs)) {
+      return group == other->group;
+    }
+    return false;
+  }
 
 private:
   const CollectiveBalancedReorder *cbr;
+  std::set<TensorId> group;
 };
 
 class CollectivesBaseOpx : public Opx {
