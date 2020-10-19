@@ -219,6 +219,15 @@ target_include_directories(popart-only
     ${PROJECT_SOURCE_DIR}/willow/src
 )
 
+# Popart headers do not fully hide poplar headers. With our current lack of
+# public-private separation, trying to fix places we leak poplar and preventing
+# active development from re-leaking, will be very flakey.
+#
+# Thus, make the poplar headers public again in popart-only. Users of
+# popart-only will still have to link poplar themselves, and hope they have a
+# compatible version.
+target_include_directories(popart-only PUBLIC ${POPLAR_INCLUDE_DIR})
+
 # Link dependencies, exposed at varying levels of visibility through interface
 # targets. See [comment-willow-targets].
 
