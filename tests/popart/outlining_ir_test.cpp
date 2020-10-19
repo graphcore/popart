@@ -16,13 +16,11 @@
 #include <popart/tensornames.hpp>
 
 std::map<GraphId, size_t> getNumCallsToSubgraph(Ir &ir) {
-  std::vector<Op *> schedule = ir.getMainGraph().getOpSchedule({});
-
   std::map<GraphId, size_t> numCallsToSubgraph;
 
   // Testing that the schedule is as expected for outlining contexts:
-  for (size_t i = 0; i < schedule.size(); i++) {
-    Op *op = schedule.at(i);
+  for (const auto &op_id : ir.getMainGraphOps()) {
+    Op *op = op_id.second.get();
     for (auto subgraph : op->getCalledGraphs()) {
       ++numCallsToSubgraph[subgraph->id];
     }
@@ -80,8 +78,6 @@ BOOST_AUTO_TEST_CASE(TestOutliningWithExtraAttributes) {
 
     // Testing that the schedule is as expected for batch serialization:
     runner.checkIr([&](Ir &ir) {
-      std::vector<Op *> schedule = ir.getMainGraph().getOpSchedule({});
-
       std::map<GraphId, size_t> numCallsToSubgraph = getNumCallsToSubgraph(ir);
 
       BOOST_CHECK(numCallsToSubgraph.find(GraphId("_subgraph(0)")) !=
@@ -255,8 +251,6 @@ BOOST_AUTO_TEST_CASE(TestOutliningAcrossBoundaries) {
 
     // Testing that the schedule is as expected for batch serialization:
     runner.checkIr([&](Ir &ir) {
-      std::vector<Op *> schedule = ir.getMainGraph().getOpSchedule({});
-
       std::map<GraphId, size_t> numCallsToSubgraph = getNumCallsToSubgraph(ir);
 
       BOOST_CHECK_EQUAL(expectedNumberOfSubgraphs, numCallsToSubgraph.size());

@@ -2092,7 +2092,8 @@ poplar::Function &Devicex::getFragmentFunction(const Graph &called_graph) {
 }
 
 void Devicex::addPipelinedCopyTasks(PriTasks &tasks) {
-  auto schedule          = ir().getMainGraph().getOpSchedule({});
+  auto schedule =
+      ir().getMainGraph().getOpSchedule({}, RequireOptimalSchedule::Yes);
   std::string prevTaskId = "";
 
   for (auto iter = schedule.rbegin(); iter != schedule.rend(); iter++) {
@@ -2146,7 +2147,8 @@ void Devicex::addOpTasks(PriTasks &tasks) {
     }
   }
 
-  auto mainGraphSchedule = ir().getMainGraph().getOpSchedule({});
+  auto mainGraphSchedule =
+      ir().getMainGraph().getOpSchedule({}, RequireOptimalSchedule::Yes);
 
   // repeating logic in Ir::getOpSchedule (can be simplified there?)
   std::vector<Op *> allOps;
@@ -2160,7 +2162,7 @@ void Devicex::addOpTasks(PriTasks &tasks) {
     addedGraphs.insert(graph);
 
     // Add each op in the graph
-    for (auto op : graph->getOpSchedule({})) {
+    for (auto op : graph->getOpSchedule({}, RequireOptimalSchedule::Yes)) {
       // If the op calls another graph, then
       // the ops in that graph should be scheduled first
       for (auto calledGraph : op->getCalledGraphs()) {
@@ -2357,7 +2359,7 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
   }
 
   auto addGraphOpsToDeps = [&](const Graph *graph) {
-    for (auto graphOp : graph->getOpSchedule({})) {
+    for (auto graphOp : graph->getOpSchedule({}, RequireOptimalSchedule::Yes)) {
       std::pair<TaskId, DependencyType> taskId = {opTaskId(graphOp),
                                                   DependencyType::SubGraph};
       if (std::find(deps.begin(), deps.end(), taskId) == deps.end()) {
@@ -3144,7 +3146,7 @@ void Devicex::prepareGraph() {
     }
 
     // Make sure that the virtual graph information is valid
-    for (Op *op : ir().getOpSchedule({})) {
+    for (Op *op : ir().getOpSchedule({}, RequireOptimalSchedule::Yes)) {
       if (op->hasVirtualGraphId()) {
         VGraphId index = op->getVirtualGraphId();
         if (index < 0 || index >= numIPUs) {
@@ -3175,7 +3177,7 @@ void Devicex::prepareGraph() {
   logging::devicex::info("Turning Ops into Opxes");
 
   // create an Opx for every Op
-  for (Op *op : ir().getOpSchedule({})) {
+  for (Op *op : ir().getOpSchedule({}, RequireOptimalSchedule::Yes)) {
     logging::devicex::trace("Creating OPX for {}", op->debugName());
     opxs[op->id] = createOpx(op);
   }

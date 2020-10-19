@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE(StandardRecomputeTest) {
     int nRecompute  = 0;
     int nRecomputed = 0;
 
-    for (auto op : ir.getOpSchedule({})) {
+    for (auto op : ir.getOpSchedule({}, RequireOptimalSchedule::Yes)) {
 
       if (recomputation && enableOutlining) {
         // Enabling outlining means the CallOp replaces the other Ops

@@ -180,8 +180,9 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeNumericalTest0x) {
         userOptions,
         popart::Patterns(PatternsLevel::Default));
 
-    auto opSchedule = session->ir.getOpSchedule({});
-    int nRestore    = 0;
+    auto opSchedule =
+        session->ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
+    int nRestore = 0;
     for (auto op : opSchedule) {
       // number of restores
       if (dynamic_cast<RestoreOp *>(op) ||

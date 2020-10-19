@@ -111,7 +111,8 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithVGraphs) {
   // 3.) Correct number of IPU copies (not batch serialized), indicating that
   //     the batch has been concatenated before an IPU copy
   runner.checkIr([&](Ir &ir) {
-    std::vector<Op *> schedule = ir.getMainGraph().getOpSchedule({});
+    std::vector<Op *> schedule =
+        ir.getMainGraph().getOpSchedule({}, RequireOptimalSchedule::Yes);
 
     size_t numIpuCopies               = 0;
     BatchSerializedPhase currentPhase = -1;
@@ -231,7 +232,8 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithVGraphsOutlined) {
 
   // Testing that the schedule is as expected for batch serialization:
   runner.checkIr([&](Ir &ir) {
-    std::vector<Op *> schedule = ir.getMainGraph().getOpSchedule({});
+    std::vector<Op *> schedule =
+        ir.getMainGraph().getOpSchedule({}, RequireOptimalSchedule::Yes);
 
     std::map<GraphId, size_t> numCallsToSubgraph;
 
@@ -357,7 +359,7 @@ BOOST_AUTO_TEST_CASE(NllBatchSerializedTest) {
             .enableNlllWithSoftMaxGradDirect(false)
             .enableSoftMaxGradDirect(false));
 
-    auto sched = session->ir.getOpSchedule({});
+    auto sched = session->ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
     int num_nll  = 0;
     int num_sum  = 0;
@@ -635,7 +637,8 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithOverlappedSchedule) {
 
     // Testing that the schedule is as expected for batch serialization:
     runner.checkIr([&](Ir &ir) {
-      std::vector<Op *> schedule = ir.getMainGraph().getOpSchedule({});
+      std::vector<Op *> schedule =
+          ir.getMainGraph().getOpSchedule({}, RequireOptimalSchedule::Yes);
 
       // Let's grab all some forward phase and look at the ops order in detail.
       std::vector<Op *> someFwdPhase;

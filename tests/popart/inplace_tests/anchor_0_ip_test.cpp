@@ -58,7 +58,7 @@ BOOST_AUTO_TEST_CASE(InplaceAnchortest1) {
                   .enableRuntimeAsserts(false)
                   .enableInPlace(true)});
 
-  auto sched = ir.getOpSchedule({});
+  auto sched = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
   BOOST_CHECK(sched.size() == 3);
   BOOST_CHECK(sched[0]->opid == Onnx::CustomOperators::ScaleInplace);
   BOOST_CHECK(sched[1]->opid == Onnx::AiGraphcore::OpSet1::Scale);
@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_CASE(InplaceAnchorTest2) {
                   .enableRuntimeAsserts(false)
                   .enableInPlace(true)});
 
-  auto sched = ir.getOpSchedule({});
+  auto sched = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
   BOOST_CHECK(sched.size() == 4);
   for (auto op : sched) {
     std::cout << op->opid << std::endl;
@@ -179,10 +179,13 @@ BOOST_AUTO_TEST_CASE(InplaceAnchorTest3) {
                   .enableRuntimeAsserts(false)
                   .enableInPlace(true)});
 
-  auto sched = ir.getOpSchedule({});
+  auto sched = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
   BOOST_CHECK(sched.size() == 5);
-  for (auto op : sched) {
-    std::cout << op->opid.type << std::endl;
+
+  if (logging::shouldLog(logging::Module::popart, logging::Level::Debug)) {
+    for (auto op : sched) {
+      std::cout << op->opid.type << std::endl;
+    }
   }
 
   BOOST_CHECK(sched[0]->opid == Onnx::CustomOperators::ScaleInplace);

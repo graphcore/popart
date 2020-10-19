@@ -103,7 +103,7 @@ BOOST_AUTO_TEST_CASE(ScheduleLiveness0Test) {
   Ir ir;
   setIr(N, ir);
 
-  auto opSchedule = ir.getOpSchedule({});
+  auto opSchedule = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
   BOOST_CHECK(dynamic_cast<ScaleOp *>(opSchedule[0]));
   BOOST_CHECK(dynamic_cast<ScaleOp *>(opSchedule[1]));
   for (uint64_t i = 2; i < opSchedule.size(); ++i) {
@@ -146,7 +146,7 @@ BOOST_AUTO_TEST_CASE(ScheduleLiveness1Test) {
     expected.emplace_back(false, -1);
   }
 
-  auto opSchedule = ir.getOpSchedule({});
+  auto opSchedule = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
   if (opSchedule.size() != expected.size()) {
     throw error("sizes do not match");
@@ -184,7 +184,7 @@ BOOST_AUTO_TEST_CASE(ScheduleLiveness2Test) {
   // This topo con should not disturb the priority order
   ir.getMainGraph().topoCons->insert(scaleOps[2], scaleOps[4], true);
 
-  auto opSchedule = ir.getOpSchedule({});
+  auto opSchedule = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
   // Wrong schedule if lex order of tied topo cons is -1 and priorities is -1:
   // Priority, Op

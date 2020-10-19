@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE(test0) {
                   .enableRuntimeAsserts(false)
                   .enableInPlace(true)});
 
-  auto sched = ir.getOpSchedule({});
+  auto sched = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
   BOOST_CHECK(sched[1]->opid == Onnx::CustomOperators::Stash);
   BOOST_CHECK(sched[2]->opid == Onnx::AiOnnx::OpSet9::Reshape);
   BOOST_CHECK(sched[3]->opid == Onnx::CustomOperators::ReshapeInplace);

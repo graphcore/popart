@@ -73,7 +73,7 @@ bool DynamicOpTransform::apply(Graph &graph) const {
   logging::transform::debug("[DynamicOpTransform] Started.");
 
   auto &ir      = graph.getIr();
-  auto schedule = graph.getOpSchedule({});
+  auto schedule = graph.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
   std::map<Op *, std::vector<Op *>, POpCmp> opsToChainMap;
 

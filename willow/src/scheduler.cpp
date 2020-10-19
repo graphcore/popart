@@ -424,8 +424,12 @@ public:
   ScheduleCacher(const Graph &pg) : grower(std::make_unique<GraphGrower>(pg)) {}
   const GraphGrower &getGrower() const { return *grower; }
   const std::vector<Op *> &getSchedule() const { return schedule; }
-  void setSchedule(const std::vector<Op *> s) { schedule = s; }
+  void setSchedule(const std::vector<Op *> &s, const bool scheduleIsOptimal) {
+    schedule           = s;
+    scheduleIsOptimal_ = scheduleIsOptimal;
+  }
   void setGrower(std::unique_ptr<GraphGrower> g) { grower = std::move(g); }
+  bool scheduleIsOptimal() const { return scheduleIsOptimal_; }
   void registerHit() {
     ++nHits;
     logging::ir::debug(
@@ -443,11 +447,114 @@ public:
 
 private:
   std::unique_ptr<GraphGrower> grower;
+
   std::vector<Op *> schedule;
+
+  // Is the currently cached schedule the optimal min sum-liveness schedule, or
+  // merely any valid topological traversal?
+  bool scheduleIsOptimal_;
 
   int nHits{0};
   int nMisses{0};
 };
+
+// Helpers for `Scheduler`
+namespace {
+
+KahnTieBreaker kahnTieBreakerFromString(const std::string &ktbString) {
+  std::string ktbLower = ktbString;
+  std::transform(ktbLower.begin(),
+                 ktbLower.end(),
+                 ktbLower.begin(),
+                 [](unsigned char c) { return std::tolower(c); });
+
+  KahnTieBreaker ktb;
+
+  if (ktbLower == "fifo") {
+    ktb = KahnTieBreaker::FIFO;
+  } else if (ktbLower == "greedy") {
+    ktb = KahnTieBreaker::GREEDY;
+  } else if (ktbLower == "random") {
+    ktb = KahnTieBreaker::RANDOM;
+  } else {
+    throw error("Unrecognised KahnTieBreaker, {}", ktbString);
+  }
+
+  return ktb;
+}
+
+void serializePoprithmsGraph(
+    const GraphGrower *grower,
+    const std::string &serializedPoprithmsAnnealGraphsDir) {
+  auto dirName =
+      boost::filesystem::canonical(serializedPoprithmsAnnealGraphsDir).string();
+
+  if (!boost::filesystem::exists(dirName)) {
+    std::ostringstream oss;
+    oss << "No directory, `" << dirName << "' exists. "
+        << " The SessionOptions directory serializedPoprithmsAnnealGraphsDir "
+        << "must already exist, PopART will not create it. "
+        << "If you do not want to serialize Poprithms Graph, set "
+        << " serializePoprithmsAnnealGraphs "
+        << " to false.";
+    throw error(oss.str());
+  }
+  auto getTargetName = [dirName](int i) {
+    return io::appendDirFn(
+        dirName, "poprithms_anneal_graph_" + std::to_string(i) + ".json");
+  };
+
+  // iterate through file names until a non-existant one is found
+  int modelNumber{0};
+  while (boost::filesystem::exists(getTargetName(modelNumber))) {
+    ++modelNumber;
+  }
+  auto filename = getTargetName(modelNumber);
+
+  std::ofstream ofs;
+  ofs.open(filename);
+  if (!ofs.is_open()) {
+    throw error("Failed to open file {}", filename);
+  }
+  ofs << grower->getSerializationString();
+  ofs.close();
+}
+
+void defaultAnnotate(GraphGrower *grower,
+                     const bool optimizeForAnnealing,
+                     const OpsBeforeKey &gCons,
+                     const Graph &pg,
+                     const bool respectExecutionPhases) {
+  grower->setBasic();
+  grower->appendGCons(gCons);
+  if (respectExecutionPhases &&
+      pg.getIr().getSessionOptions().executionPhaseSettings.phases > 1) {
+    grower->annotateExecutionPhase();
+  }
+  if (pg.getIr().getSessionOptions().enablePipelining) {
+    grower->annotatePipelineStages();
+  }
+  if (optimizeForAnnealing) {
+    grower->annotateAccumulateOuterFragmentOps();
+  }
+  grower->annotateExecutionContext();
+  if (optimizeForAnnealing) {
+    grower->annotatePriorities();
+  }
+  grower->finalize();
+}
+
+void defaultMinSumLivenessAnneal(GraphGrower *grower,
+                                 double timeLimitSeconds,
+                                 int64_t swapLimitCount) {
+  grower->minSumLivenessAnneal(
+      {{"debug", "0"},
+       {"seed", "1011"},
+       {"timeLimitSeconds", std::to_string(timeLimitSeconds)},
+       {"swapLimitCount", std::to_string(swapLimitCount)}});
+}
+
+} // namespace
 
 // TODO(jn)
 // 1) smallest cycle function, to report with on failure.
@@ -457,9 +564,10 @@ private:
 std::vector<Op *>
 Scheduler::getSchedule(const OpsBeforeKey &gCons,
                        const Graph &pg,
-                       bool respectExecutionPhases,
-                       double timeLimitSeconds,
-                       int64_t swapLimitCount,
+                       const RequireOptimalSchedule requireOptimalSchedule,
+                       const bool respectExecutionPhases,
+                       const double timeLimitSeconds,
+                       const int64_t swapLimitCount,
                        const std::string &kahnTieBreakerString) {
 
   // TODO(jn) cache advancedOptions too
@@ -475,81 +583,61 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
 
   auto grower = std::make_unique<GraphGrower>(pg);
 
-  grower->setBasic();
-  grower->appendGCons(gCons);
-  if (respectExecutionPhases &&
-      pg.getIr().getSessionOptions().executionPhaseSettings.phases > 1) {
-    grower->annotateExecutionPhase();
-  }
-  if (pg.getIr().getSessionOptions().enablePipelining) {
-    grower->annotatePipelineStages();
-  }
-  grower->annotateAccumulateOuterFragmentOps();
-  grower->annotateExecutionContext();
-  grower->annotatePriorities();
-  grower->finalize();
-  if (cacher->getGrower() == *grower) {
+  // Always call with `optimiseForAnnealing = true`, regardless of whether the
+  // user is requesting optimal or not, so we construct the same graph and do
+  // not get a cache miss.
+  defaultAnnotate(grower.get(), true, gCons, pg, respectExecutionPhases);
+
+  /*
+    Explanation of the caching logic:
+
+    Sometimes, the user does not require the fully optimised schedule, only
+    any valid topological sort. This is controlled by the parameter
+    `requireOptimalSchedule`.
+
+    We thus keep track of, in the cacher, whether the currently cached schedule
+    is optimal or not.
+
+    These are the possible scenarious when looking up the cache:
+
+    (1) If the schedule is optimal: doesn't matter whether the user wants the
+    optimal schedule or not, we can return what we have.
+
+    If the schedule is not optimal:
+      (2)   if the user wants the optimal schedule, we have to calculate it.
+      (3)   if the user doesn't want the optimal schedule, we can return the
+            cached one.
+
+    (2) is the only case where we can't return the cached schedule. In other
+    words, if there is a cache hit on the graph, the only scenario that will
+    cause it to still be a cache miss, is if the cached schedule is not optimal
+    but we want the optimal one.
+
+    One thing to be careful of when implementing is, in (1) when the cached
+    schedule is optimal and the user is requesting non-optimal; we do not
+    accidentally mark the cached schedule as now non-optimal.
+  */
+  const bool requireOptimal_b =
+      requireOptimalSchedule == RequireOptimalSchedule::Yes;
+  const bool cachedIsNotOptimalButRequireOptimal =
+      !cacher->scheduleIsOptimal() && requireOptimal_b;
+
+  if (cacher->getGrower() == *grower && !cachedIsNotOptimalButRequireOptimal) {
     cacher->registerHit();
     return cacher->getSchedule();
   }
 
+  cacher->registerMiss();
+
   if (!pg.getIr()
            .getSessionOptions()
            .serializedPoprithmsAnnealGraphsDir.empty()) {
-    auto dirName =
-        boost::filesystem::canonical(
-            pg.getIr().getSessionOptions().serializedPoprithmsAnnealGraphsDir)
-            .string();
-
-    if (!boost::filesystem::exists(dirName)) {
-      std::ostringstream oss;
-      oss << "No directory, `" << dirName << "' exists. "
-          << " The SessionOptions directory serializedPoprithmsAnnealGraphsDir "
-          << "must already exist, PopART will not create it. "
-          << "If you do not want to serialize Poprithms Graph, set "
-          << " serializePoprithmsAnnealGraphs "
-          << " to false.";
-      throw error(oss.str());
-    }
-    auto getTargetName = [dirName](int i) {
-      return io::appendDirFn(
-          dirName, "poprithms_anneal_graph_" + std::to_string(i) + ".json");
-    };
-
-    // iterate through file names until a non-existant one is found
-    int modelNumber{0};
-    while (boost::filesystem::exists(getTargetName(modelNumber))) {
-      ++modelNumber;
-    }
-    auto filename = getTargetName(modelNumber);
-
-    std::ofstream ofs;
-    ofs.open(filename);
-    if (!ofs.is_open()) {
-      throw error("Failed to open file {}", filename);
-    }
-    ofs << grower->getSerializationString();
-    ofs.close();
+    serializePoprithmsGraph(
+        grower.get(),
+        pg.getIr().getSessionOptions().serializedPoprithmsAnnealGraphsDir);
   }
 
-  cacher->registerMiss();
-  KahnTieBreaker ktb;
-
-  auto ktbLower = kahnTieBreakerString;
-  std::transform(ktbLower.begin(),
-                 ktbLower.end(),
-                 ktbLower.begin(),
-                 [](unsigned char c) { return std::tolower(c); });
-
-  if (ktbLower == "fifo") {
-    ktb = KahnTieBreaker::FIFO;
-  } else if (ktbLower == "greedy") {
-    ktb = KahnTieBreaker::GREEDY;
-  } else if (ktbLower == "random") {
-    ktb = KahnTieBreaker::RANDOM;
-  } else {
-    throw error("Unrecognised KahnTieBreaker, {}", kahnTieBreakerString);
-  }
+  const auto ktb = kahnTieBreakerFromString(kahnTieBreakerString);
 
   if (pg.getIr().getSessionOptions().batchSerializationSettings.factor > 1) {
     // Add additional constraints based on the preliminary schedule to speed up
@@ -561,15 +649,16 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
 
   grower->initialize(ktb);
 
-  grower->minSumLivenessAnneal(
-      {{"debug", "0"},
-       {"seed", "1011"},
-       {"timeLimitSeconds", std::to_string(timeLimitSeconds)},
-       {"swapLimitCount", std::to_string(swapLimitCount)}});
+  // Using a time and swap limit of 0 will force no annealing to happen.
+  if (requireOptimal_b) {
+    defaultMinSumLivenessAnneal(grower.get(), timeLimitSeconds, swapLimitCount);
+  } else {
+    defaultMinSumLivenessAnneal(grower.get(), 0.0, 0);
+  }
 
-  std::vector<Op *> finalSchedule = grower->getSchedule();
+  const std::vector<Op *> finalSchedule = grower->getSchedule();
 
-  cacher->setSchedule(finalSchedule);
+  cacher->setSchedule(finalSchedule, requireOptimal_b);
   cacher->setGrower(std::move(grower));
 
   return finalSchedule;
@@ -578,19 +667,10 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
 bool Scheduler::isSchedulable(const OpsBeforeKey &gCons,
                               const Graph &pg,
                               bool respectExecutionPhases) const {
-
   GraphGrower grower(pg);
-  grower.setBasic();
-  grower.appendGCons(gCons);
-  if (respectExecutionPhases &&
-      pg.getIr().getSessionOptions().executionPhaseSettings.phases > 1) {
-    grower.annotateExecutionPhase();
-  }
-  if (pg.getIr().getSessionOptions().enablePipelining) {
-    grower.annotatePipelineStages();
-  }
-  grower.annotateExecutionContext();
-  grower.finalize();
+
+  defaultAnnotate(&grower, false, gCons, pg, respectExecutionPhases);
+
   return grower.isSchedulable();
 }
 

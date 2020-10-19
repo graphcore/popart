@@ -179,7 +179,9 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
     }
   }
   // In topological order...
-  for (Op *op : graph.getOpSchedule({})) {
+  auto schedule = graph.getOpSchedule({}, RequireOptimalSchedule::Yes);
+
+  for (Op *op : schedule) {
 
     if (op->toLoss != PathToLoss::Undefined) {
       throw internal_error(
@@ -367,7 +369,9 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
   }
 
   // Add sharding information to graph.
-  for (Op *op : graph.getOpSchedule({})) {
+  // Note, the transform did not mutate the graph, so we can reuse the schedule
+  // we computed before.
+  for (Op *op : schedule) {
     // Find potential split nodes
     auto &subgraph = subgraphs.at(node_subgraph_map.find(op->id)->second);
     op->setVirtualGraphId(subgraph.virtual_graph_id);

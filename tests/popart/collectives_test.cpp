@@ -263,7 +263,7 @@ BOOST_AUTO_TEST_CASE(ReplicatedAllReduceIOTileTest) {
         popart::Patterns(PatternsLevel::Default));
 
     auto &ir      = session->getIr();
-    auto schedule = ir.getOpSchedule({});
+    auto schedule = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
     BOOST_CHECK(schedule.size() == 3);
     BOOST_CHECK(schedule.at(1)->opid == Onnx::CustomOperators::IoTileCopy);

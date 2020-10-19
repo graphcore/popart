@@ -12,11 +12,17 @@
 #include <popart/names.hpp>
 #include <popart/opidentifier.hpp>
 #include <popart/patterns/patterns.hpp>
+#include <popart/scheduler_requireoptimal.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/transforms/transform.hpp>
 
 namespace popart {
+
+enum class RequireOptimalSchedule; /*
+  Yes = true,
+  No = false
+*/
 
 // helper class used during backwards pass construction.
 // This class helps to decouple the non-grad op from a
@@ -179,6 +185,8 @@ public:
   // Prepare the IR based on the IrBundle configuration
   void prepare(const IrBundle &);
 
+  bool isPrepared() const { return isPrepared_; }
+
   // Reset the weights with data from an ONNX model
   void resetWeights(
       const ONNX_NAMESPACE::ModelProto &modelProto,
@@ -223,7 +231,23 @@ public:
   // with additional constrains imposed through the input paramater.
   // Ops which are ready to be inserted have an insertion "priority",
   // set elsewhere.
-  std::vector<Op *> getOpSchedule(const OpsBeforeKey &) const;
+  //
+  // Returns the op schedule across all graphs.
+  //
+  // Parameters:
+  //   `const OpsBeforeKey &`: Extra topological constraints.
+  //   `RequireOptimalSchedule ros`:
+  //         Whether the true optimal schedule is required, which could be very
+  //         expensive to compute; or whether merely any valid topological
+  //         traversal is required.
+  //         Note, the schedule is cached, but there may still be a cache miss
+  //         if the graph has changed, or if an optimal schedule is required but
+  //         the cached one is not optimal.
+  //
+  // Returns:
+  //   `std::vector<Op *>`: The ops in schedule order.
+  std::vector<Op *> getOpSchedule(const OpsBeforeKey &,
+                                  RequireOptimalSchedule ros) const;
 
   // Do all the Ops with all their dependencies form a DAG?
   bool isSchedulable(const OpsBeforeKey &) const;
@@ -412,6 +436,8 @@ public:
 private:
   void prepareImpl(const IrBundle &);
 
+  void setIsPrepared();
+
   // Accessors for the tensors
   const Tensors &getTensors() const;
   Tensors &getTensors();
@@ -518,7 +544,7 @@ private:
   ExecutionMode executionMode = ExecutionMode::Training;
 
   bool executionPhasesReady = false;
-  bool isPrepared           = false;
+  bool isPrepared_          = false;
 
   // enable/disable a transform stage
   void enableTransform(std::size_t transformId, bool enable);

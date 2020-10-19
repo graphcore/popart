@@ -75,11 +75,11 @@ BOOST_AUTO_TEST_CASE(InplaceGraphOutputTest1) {
                   .enableRuntimeAsserts(false)
                   .enableInPlace(true)});
 
-  auto sched      = ir.getOpSchedule({});
+  auto sched      = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
   auto graphSched = ir.getGraphSchedule();
   BOOST_CHECK(graphSched.size() == 2);
   for (auto g : graphSched) {
-    auto gSched = g->getOpSchedule({});
+    auto gSched = g->getOpSchedule({}, RequireOptimalSchedule::Yes);
     if (gSched.size() == 1) {
       // TODO (T18153)
       // Should be Call, is ScaleInplace
@@ -152,11 +152,11 @@ BOOST_AUTO_TEST_CASE(InplaceGraphOutputTest2) {
                   .enableRuntimeAsserts(false)
                   .enableInPlace(true)});
 
-  auto sched      = ir.getOpSchedule({});
+  auto sched      = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
   auto graphSched = ir.getGraphSchedule();
   BOOST_CHECK(graphSched.size() == 2);
   for (auto g : graphSched) {
-    auto gSched = g->getOpSchedule({});
+    auto gSched = g->getOpSchedule({}, RequireOptimalSchedule::Yes);
     if (gSched.size() == 1) {
       // TODO (T18153)
       // Should be Call, is ScaleInplace
@@ -238,11 +238,11 @@ BOOST_AUTO_TEST_CASE(InplaceSubGraphOutputTest1) {
                   .enableRuntimeAsserts(false)
                   .enableInPlace(true)});
 
-  auto sched      = ir.getOpSchedule({});
+  auto sched      = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
   auto graphSched = ir.getGraphSchedule();
   BOOST_CHECK(graphSched.size() == 2);
   for (auto g : graphSched) {
-    auto gSched = g->getOpSchedule({});
+    auto gSched = g->getOpSchedule({}, RequireOptimalSchedule::Yes);
     if (gSched.size() == 1) {
       // TODO (T18153)
       // Should be Call, is ScaleInplace
@@ -327,11 +327,11 @@ BOOST_AUTO_TEST_CASE(InplaceSubGraphOutputTest2) {
                   .enableRuntimeAsserts(false)
                   .enableInPlace(true)});
 
-  auto sched      = ir.getOpSchedule({});
+  auto sched      = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
   auto graphSched = ir.getGraphSchedule();
   BOOST_CHECK(graphSched.size() == 2);
   for (auto g : graphSched) {
-    auto gSched = g->getOpSchedule({});
+    auto gSched = g->getOpSchedule({}, RequireOptimalSchedule::Yes);
     if (gSched.size() == 1) {
       // TODO (T18153)
       // Should be Call, is ScaleInplace
@@ -415,11 +415,11 @@ BOOST_AUTO_TEST_CASE(InplaceSubGraphOutputTest3) {
                   .enableRuntimeAsserts(false)
                   .enableInPlace(true)});
 
-  auto sched      = ir.getOpSchedule({});
+  auto sched      = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
   auto graphSched = ir.getGraphSchedule();
   BOOST_CHECK(graphSched.size() == 2);
   for (auto g : graphSched) {
-    auto gSched = g->getOpSchedule({});
+    auto gSched = g->getOpSchedule({}, RequireOptimalSchedule::Yes);
     if (gSched.size() == 1) {
       // TODO (T18153)
       // Should be Call, is ScaleInplace
@@ -503,11 +503,11 @@ BOOST_AUTO_TEST_CASE(InplaceSubGraphOutputTest4) {
                   .enableRuntimeAsserts(false)
                   .enableInPlace(true)});
 
-  auto sched      = ir.getOpSchedule({});
+  auto sched      = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
   auto graphSched = ir.getGraphSchedule();
   BOOST_CHECK(graphSched.size() == 2);
   for (auto g : graphSched) {
-    auto gSched = g->getOpSchedule({});
+    auto gSched = g->getOpSchedule({}, RequireOptimalSchedule::Yes);
     if (gSched.size() == 1) {
       // TODO (T18153)
       // Should be Call, is ScaleInplace

@@ -245,8 +245,9 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilonTest1) {
         userOptions,
         popart::Patterns(PatternsLevel::Default));
 
-    auto opSchedule = session->ir.getOpSchedule({});
-    int nRecomp     = 0;
+    auto opSchedule =
+        session->ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
+    int nRecomp = 0;
     for (auto op : opSchedule) {
       if (op->settings.recomputeType == RecomputeType::Recompute) {
         ++nRecomp;

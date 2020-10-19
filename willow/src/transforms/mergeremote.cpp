@@ -129,7 +129,7 @@ bool MergeRemote::apply(Graph &graph) const {
   std::set<TensorId> processedTensors;
 
   auto &opts    = graph.getIr().getSessionOptions();
-  auto schedule = graph.getOpSchedule({});
+  auto schedule = graph.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
   // Merge batch serialized RemoteLoad/RemoteStore together
   bool bspMerge = opts.batchSerializationSettings.factor > 1 &&

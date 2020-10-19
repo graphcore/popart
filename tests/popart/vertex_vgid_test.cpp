@@ -106,7 +106,7 @@ BOOST_AUTO_TEST_CASE(VertexVgidTest0) {
     //  check that no tensors have virtual graph ids set
     //  ----------
     //
-    auto opSchedule = ir.getOpSchedule({});
+    auto opSchedule = ir.getOpSchedule({}, RequireOptimalSchedule::No);
     for (auto op : opSchedule) {
 
       if (withSharding) {

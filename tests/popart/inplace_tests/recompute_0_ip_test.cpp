@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE(InplaceRecomputeTest) {
                   .enableRuntimeAsserts(false)
                   .enableInPlace(true)});
 
-  auto sched = ir.getOpSchedule({});
+  auto sched = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
   BOOST_CHECK(sched.size() == 4);
 
   BOOST_CHECK(sched[0]->opid == Onnx::AiGraphcore::OpSet1::Scale);

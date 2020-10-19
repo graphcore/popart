@@ -4,10 +4,16 @@
 
 #include <vector>
 #include <popart/names.hpp>
+#include <popart/scheduler_requireoptimal.hpp>
 
 namespace popart {
 
 class ScheduleCacher;
+
+enum class RequireOptimalSchedule; /*
+  Yes = true,
+  No = false
+*/
 
 class Scheduler {
 
@@ -20,6 +26,10 @@ public:
   //
   // - graph
   // the Graph whose Ops are to be scheduled
+  //
+  // - requireOptimalSchedule
+  // whether the true optimal schedule is required, which is expensive to
+  // compute, or merely any valid topological ordering
   //
   // - respectExecutionPhase
   // if true: Ops must appear in ascending order of ping-pong phase
@@ -38,6 +48,7 @@ public:
   //
   std::vector<Op *> getSchedule(const OpsBeforeKey &opsBeforeKey,
                                 const Graph &graph,
+                                RequireOptimalSchedule requireOptimalSchedule,
                                 bool respectExecutionPhase,
                                 double timeLimitSeconds,
                                 int64_t swapLimitCount,

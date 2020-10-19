@@ -158,7 +158,8 @@ BOOST_AUTO_TEST_CASE(Test2x2S1ExecutionPhase) {
   // 3.) Initial SliceOps is placed correctly
   // 4.) Final loss op is placed correctly
   runner.checkIr([&](Ir &ir) {
-    std::vector<Op *> schedule = ir.getOpSchedule({});
+    std::vector<Op *> schedule =
+        ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
     for (size_t i = 0; i < schedule.size(); i++) {
       Op *op = schedule.at(i);
       logging::trace("Op: {}", op->debugName());
@@ -309,7 +310,8 @@ BOOST_AUTO_TEST_CASE(Test1x0S1ExecutionPhase) {
     std::set<ExecutionPhase> ioTileCopyInPhase;
     std::set<ExecutionPhase> remoteStoreInPhase;
 
-    std::vector<Op *> schedule = ir.getOpSchedule({});
+    std::vector<Op *> schedule =
+        ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
     for (size_t i = 0; i < schedule.size(); i++) {
       Op *op = schedule.at(i);
       logging::trace(
@@ -457,7 +459,8 @@ BOOST_AUTO_TEST_CASE(Test1x0S2ExecutionPhase) {
   runner.checkIr([&](Ir &ir) {
     std::map<ExecutionPhase, std::tuple<int, int, int, int>> remoteOpsPerPhase;
 
-    std::vector<Op *> schedule = ir.getOpSchedule({});
+    std::vector<Op *> schedule =
+        ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
     for (size_t i = 0; i < schedule.size(); i++) {
       Op *op = schedule.at(i);
       logging::trace("Op: {}", op->debugName());
@@ -598,7 +601,8 @@ BOOST_AUTO_TEST_CASE(Test1x0S4ExecutionPhase) {
           remoteOpsPerPhase;
       std::map<ExecutionPhase, int> ioTileCopyOpsPerPhase;
 
-      std::vector<Op *> schedule = ir.getOpSchedule({});
+      std::vector<Op *> schedule =
+          ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
       for (size_t i = 0; i < schedule.size(); i++) {
         Op *op = schedule.at(i);
         logging::trace("Op: {}", op->debugName());
@@ -777,7 +781,8 @@ BOOST_AUTO_TEST_CASE(Test2x0S2ExecutionPhase) {
   runner.checkIr([&](Ir &ir) {
     std::map<ExecutionPhase, std::tuple<int, int, int, int>> remoteOpsPerPhase;
 
-    std::vector<Op *> schedule = ir.getOpSchedule({});
+    std::vector<Op *> schedule =
+        ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
     for (size_t i = 0; i < schedule.size(); i++) {
       Op *op = schedule.at(i);
       logging::trace(

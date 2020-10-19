@@ -167,7 +167,8 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest2) {
                 userOptions,
                 patterns});
 
-    auto sched = ir.getMainGraph().getOpSchedule({});
+    auto sched =
+        ir.getMainGraph().getOpSchedule({}, RequireOptimalSchedule::Yes);
 
     std::vector<int64_t> stashIpus(nIpus, 0);
     for (auto op : sched) {

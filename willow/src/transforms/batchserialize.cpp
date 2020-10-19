@@ -111,7 +111,6 @@ bool BatchSerialize::apply(Graph &graph) const {
   auto &ir               = graph.getIr();
   auto settings          = ir.getSessionOptions().batchSerializationSettings;
   int64_t batchSerFactor = settings.factor;
-  auto schedule          = graph.getOpSchedule({});
   std::map<std::pair<TensorId, TensorContext>, std::set<OpId>> batchSerialOps;
 
   auto getContext = [&](Op *op) {
@@ -135,6 +134,8 @@ bool BatchSerialize::apply(Graph &graph) const {
 
   // FWD
   if (pass == 1) {
+    auto schedule = graph.getOpSchedule({}, RequireOptimalSchedule::No);
+
     std::set<TensorId> tensorsWithBatch;
     std::set<Op *> serializedOps;
     std::map<std::pair<TensorId, TensorContext>, std::vector<TensorId>>
@@ -701,6 +702,7 @@ bool BatchSerialize::apply(Graph &graph) const {
   // Annotate priorities to isolate batch ops and crystallize the schedule
   // between batch serial phases
   if (pass == 2) {
+    auto schedule = graph.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
     // If batchSchedule == Scheduler we defer any further scheduling to the
     // scheduler.

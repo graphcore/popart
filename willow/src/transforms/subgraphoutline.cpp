@@ -1144,13 +1144,14 @@ bool SubgraphOutline::apply(Graph &graph) const {
 
   auto &ir = graph.getIr();
 
-  std::vector<Op *> schedule = graph.getOpSchedule({});
+  std::vector<Op *> schedule =
+      graph.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
   // Change schedule to include boundaries that can't be outlined
   localoutline::insertBoundariesOps(ir.getSessionOptions(), schedule);
 
   // Get updated schedule with boundaries
-  schedule = graph.getOpSchedule({});
+  schedule = graph.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
   // Get the software parallel schedule to generate sequences that should
   // be outlined as a whole
@@ -1188,7 +1189,7 @@ bool SubgraphOutline::apply(Graph &graph) const {
   }
 
   // Remove all boundaries
-  schedule = graph.getOpSchedule({});
+  schedule = graph.getOpSchedule({}, RequireOptimalSchedule::No);
   for (Op *op : schedule) {
     if (dynamic_cast<BoundaryOp *>(op)) {
       graph.topoCons->remove(graph.getOp(op->id));

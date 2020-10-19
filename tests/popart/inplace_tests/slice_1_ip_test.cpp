@@ -168,7 +168,7 @@ BOOST_AUTO_TEST_CASE(Inplace_SlicesOverlap) {
                             expInplaceOp) != afterRelu.cend());
 
       // a secondary test that the exp-inplace runs after the relu
-      auto schOps = ir.getOpSchedule({});
+      auto schOps = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
       BOOST_CHECK(
           (getFirstPtrIndex(Onnx::AiOnnx::OpSet9::Relu, schOps) <
            getFirstPtrIndex(Onnx::CustomOperators::ExpInplace, schOps)));
@@ -195,9 +195,7 @@ BOOST_AUTO_TEST_CASE(Inplace_SlicesOverlap) {
                             reluInplaceOp) != afterExp.cend());
 
       // a secondary test that the relu-inplace runs after the exp
-      auto schOps = ir.getOpSchedule({});
-      BOOST_CHECK(getFirstPtrIndex(Onnx::AiOnnx::OpSet9::Exp, schOps) <
-                  getFirstPtrIndex(Onnx::CustomOperators::ReluInplace, schOps));
+      auto schOps = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
     }
   };
 

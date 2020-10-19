@@ -163,7 +163,7 @@ bool MergeCopies::apply(Graph &graph) const {
 
   const auto multiple_copy_consumers = getOpsThatConsumeMultipleCopies(graph);
 
-  const auto op_schedule = graph.getOpSchedule({});
+  const auto op_schedule = graph.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
   for (auto op : multiple_copy_consumers) {
     const auto copy_group = createCopyGroup(op, op_schedule);

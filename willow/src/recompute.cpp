@@ -10,6 +10,7 @@
 #include <popart/op/groupnorm.hpp>
 #include <popart/pbwrap.hpp>
 #include <popart/recompute.hpp>
+#include <popart/scheduler_requireoptimal.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
@@ -21,7 +22,8 @@ namespace recompute {
 namespace {
 
 void annotateNormOnly(Graph &graph) {
-  for (auto op : graph.getOpSchedule({})) {
+  for (auto &id_op : graph.getOps()) {
+    auto op = id_op.second.get();
     if (op->toLoss == PathToLoss::Yes && op->isNorm()) {
       // don't checkpoint Norms as their outputs are large and
       // relatively cheap to recompute
@@ -34,7 +36,7 @@ void annotateNormOnly(Graph &graph) {
 
 void annotateStandard(const Graph &graph) {
   std::vector<Op *> fwdOps;
-  for (auto op : graph.getOpSchedule({})) {
+  for (auto op : graph.getOpSchedule({}, RequireOptimalSchedule::Yes)) {
     if (op->toLoss == PathToLoss::Yes) {
       fwdOps.push_back(op);
     }

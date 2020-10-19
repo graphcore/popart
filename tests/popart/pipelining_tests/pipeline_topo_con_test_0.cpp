@@ -206,7 +206,7 @@ BOOST_AUTO_TEST_CASE(PipelineTopoConTest0) {
   using namespace popart;
 
   auto test = [](Ir &ir) {
-    auto opSchedule = ir.getOpSchedule({});
+    auto opSchedule = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
     for (auto op : opSchedule) {
       std::cout << op->str() << std::endl;
     }

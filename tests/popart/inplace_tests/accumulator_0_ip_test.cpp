@@ -106,14 +106,13 @@ BOOST_AUTO_TEST_CASE(TestAccumulatorInplace) {
 
   // Testing that the accumulator reduction is inplaced
   runner.checkIr([&](Ir &ir) {
-    std::vector<Op *> schedule = ir.getMainGraph().getOpSchedule({});
+    std::vector<Op *> schedule =
+        ir.getMainGraph().getOpSchedule({}, RequireOptimalSchedule::No);
 
     size_t numIpuCopies               = 0;
     BatchSerializedPhase currentPhase = -1;
     size_t recordedOffset             = 0;
     std::vector<Op *> recordedOps;
-
-    std::map<BatchSerializedPhase, size_t> opsPerPhase;
 
     auto numAllReduce        = 0;
     auto numAllReduceInplace = 0;

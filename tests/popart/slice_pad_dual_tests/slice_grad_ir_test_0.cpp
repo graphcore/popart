@@ -95,7 +95,7 @@ BOOST_AUTO_TEST_CASE(ConverSliceGrads0) {
 
     std::cout << "\n\n\nwith inplace = " << inplace
               << ", and with padsum = " << padsum << std::endl;
-    auto schedule = ir.getOpSchedule({});
+    auto schedule = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
     int nConcatInplace{0};
     int nConcat{0};
     int nPadInplace{0};

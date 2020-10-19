@@ -3,6 +3,7 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/liveness.hpp>
+#include <popart/scheduler_requireoptimal.hpp>
 
 namespace popart {
 namespace liveness {
@@ -74,7 +75,8 @@ void LivenessAnalyzer::apply() {
   graphCallSiteOps[ir->getMainGraph().id] = {};
 
   for (const Graph *sgraph : ir->getAllGraphs()) {
-    graphOpSchedule[sgraph->id] = sgraph->getOpSchedule({});
+    graphOpSchedule[sgraph->id] =
+        sgraph->getOpSchedule({}, RequireOptimalSchedule::Yes);
   }
   addToSchedule(&(ir->getMainGraph()), {});
 }

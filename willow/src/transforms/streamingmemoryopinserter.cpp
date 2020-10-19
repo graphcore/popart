@@ -214,7 +214,7 @@ void StreamingMemoryOpInserter::createTensorSchedule() {
   std::set<TensorId> seenTensors;
   tensorSchedule.clear();
   tensorSchedule.reserve(tensors.getAllTensorIds().size());
-  auto schedule = graph.getOpSchedule({});
+  auto schedule = graph.getOpSchedule({}, RequireOptimalSchedule::Yes);
   for (int64_t i = 0; i < schedule.size(); ++i) {
     Op *op            = schedule.at(i);
     opScheduleMap[op] = i;
@@ -1737,7 +1737,7 @@ RemoteStoreOp *StreamingMemoryOpInserter::insertRemoteStoreOp(
 
 void StreamingMemoryOpInserter::sanitizeOps() const {
 
-  auto schedule = graph.getOpSchedule({});
+  auto schedule = graph.getOpSchedule({}, RequireOptimalSchedule::No);
 
   for (Op *op : schedule) {
     if (op->hasExecutionPhase()) {

@@ -233,7 +233,8 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
     session->prepareDevice();
 
     if (continuous) {
-      auto opSchedule = session->ir.getOpSchedule({});
+      auto opSchedule =
+          session->ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
       for (auto op : opSchedule) {
         auto stashOp = dynamic_cast<StashOp *>(op);
         if (stashOp) {

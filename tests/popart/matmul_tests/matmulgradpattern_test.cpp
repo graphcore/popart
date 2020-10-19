@@ -125,7 +125,8 @@ BOOST_AUTO_TEST_CASE(MatMulGradPatternScheduleTest_0) {
   popart::StepIO stepio(inputs, anchors);
 
   // Verify schedule order
-  auto schedule = session->getIr().getMainGraph().getOpSchedule({});
+  auto schedule = session->getIr().getMainGraph().getOpSchedule(
+      {}, RequireOptimalSchedule::Yes);
 
   auto schedulePosition = [&](Op *op) {
     return std::distance(schedule.begin(),

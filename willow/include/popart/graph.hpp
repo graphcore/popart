@@ -11,12 +11,18 @@
 #include <popart/graphid.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/scheduler_requireoptimal.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
 
 namespace popart {
 
 class BackwardPassCreator;
+
+enum class RequireOptimalSchedule; /*
+  Yes = true,
+  No = false
+*/
 
 class Graph {
   friend class BackwardPassCreator;
@@ -86,9 +92,24 @@ public:
   // Essentially Kahn's algorithm (1962),
   // https://en.wikipedia.org/wiki/Topological_sorting
   // with additional constrains imposed through the input paramater.
-  // Ops which are ready to be inserted have an insertion "priority",
-  // set elsewhere.
-  std::vector<Op *> getOpSchedule(const OpsBeforeKey &) const;
+  //
+  // Returns the schedule of all the ops in the graph.
+  //
+  // Parameters:
+  //   `const OpsBeforeKey &`: Extra topological constraints.
+  //   `RequireOptimalSchedule requireOptimalSchedule`:
+  //         Whether the true optimal schedule is required, which could be very
+  //         expensive to compute; or whether merely any valid topological
+  //         traversal is required.
+  //         Note, the schedule is cached, but there may still be a cache miss
+  //         if the graph has changed, or if an optimal schedule is required but
+  //         the cached one is not optimal.
+  //
+  // Returns:
+  //   `std::vector<Op *>`: The ops in schedule order.
+  std::vector<Op *>
+  getOpSchedule(const OpsBeforeKey &,
+                RequireOptimalSchedule requireOptimalSchedule) const;
 
   // Freeze the schedule into a total order
   void freezeSchedule(const OpsBeforeKey &gCons);

@@ -780,7 +780,7 @@ void Ir::prepare(const IrBundle &gb) {
 void Ir::prepareImpl(const IrBundle &gb) {
   setDeviceInfo(gb.deviceInfo);
 
-  if (isPrepared) {
+  if (isPrepared()) {
     throw error("Ir::prepare called more than once");
   }
 
@@ -797,7 +797,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   setOnnxModel(gb.modelProto);
 
   if (graphs.size() == 1) {
-    if (isPrepared) {
+    if (isPrepared()) {
       throw error("There is more than one graph at the loss insertion stage, "
                   "which should not happen. This is an internal error.");
     }
@@ -1189,11 +1189,13 @@ void Ir::prepareImpl(const IrBundle &gb) {
   verifyRecomputeAttributes();
   // end of checks
 
-  isPrepared = true;
+  setIsPrepared();
 }
 
+void Ir::setIsPrepared() { isPrepared_ = true; }
+
 void Ir::verifyVertexAttributesOnlyInMain() const {
-  auto verify = [](Vertex *v) {
+  auto verify = [](const Vertex *v) {
     if (v->toLoss != PathToLoss::Undefined) {
       throw error("Vertex {}, which is not in the main scope, does not have "
                   "PathToLoss::Undefined",
@@ -1211,7 +1213,7 @@ void Ir::verifyVertexAttributesOnlyInMain() const {
     }
   };
 
-  for (auto op : getOpSchedule({})) {
+  for (auto op : getAllOps()) {
 
     // If this Vertex is not in the main Graph
     if (!op->settings.scope.str().empty()) {
@@ -2245,7 +2247,9 @@ void Ir::updateVertices() {
 
   // 3.1) scheduledPreLoss for Ops.
   // Op which have PathFromLoss::Yes are ScheduledPreLoss::No
-  for (auto op : getMainGraph().getOpSchedule({})) {
+  for (auto &id_op : getMainGraph().getOps()) {
+    auto op = id_op.second.get();
+
     if (op->fromLoss == PathFromLoss::Yes) {
       op->scheduledPreLoss = ScheduledPreLoss::No;
     } else {
@@ -2261,7 +2265,8 @@ void Ir::updateVertices() {
   // 3.2) scheduledPreLoss for Tensors and any ops occuring post the loss
   // in the schedule
   bool postLoss = false;
-  for (auto op : getMainGraph().getOpSchedule({})) {
+  for (auto op :
+       getMainGraph().getOpSchedule({}, RequireOptimalSchedule::Yes)) {
     postLoss |= op->scheduledPreLoss == ScheduledPreLoss::No;
     if (postLoss) {
       // The loss has been crossed, everything ScheduledPreLoss::No from here on
@@ -2677,7 +2682,7 @@ void Ir::append(std::stringstream &ss) const {
          << "\n";
     }
 
-    for (auto &op : graph->getOpSchedule({})) {
+    for (auto &op : graph->getOpSchedule({}, RequireOptimalSchedule::Yes)) {
       op->append(ss);
     }
   }
@@ -2714,7 +2719,7 @@ void Ir::serialise(SerialiseFormat format,
 
   auto getOps = [useScheduler](auto *graph) {
     if (useScheduler) {
-      return graph->getOpSchedule({});
+      return graph->getOpSchedule({}, RequireOptimalSchedule::Yes);
     } else {
       std::vector<Op *> result;
       for (auto &id_op : graph->getOps()) {
@@ -3017,7 +3022,7 @@ void Ir::initRandomSeed() {
       Onnx::CustomOperators::GetRandomSeed, settings);
   auto getSeedOp = getSeedOp_up.get();
 
-  auto allOtherOps                  = getOpSchedule({});
+  auto allOtherOps                  = getAllOps();
   bool allOtherOpsHavePipelineStage = true;
   for (auto op : allOtherOps) {
     if (!op->hasPipelineStage()) {
@@ -3038,7 +3043,7 @@ void Ir::initRandomSeed() {
   getSeedOp->setup();
 
   // 4. hook up to fwd Random ops
-  for (auto op : getOpSchedule({})) {
+  for (auto op : getAllOps()) {
     if (op->requiresRandomSeed()) {
       op->connectInTensor(op->getSeedInIndex(), updatedSeedId);
     }
@@ -3058,7 +3063,8 @@ void Ir::setRandomSeedValue(uint64_t seedValue) {
   }
 }
 
-std::vector<Op *> Ir::getOpSchedule(const OpsBeforeKey &gCons) const {
+std::vector<Op *> Ir::getOpSchedule(const OpsBeforeKey &gCons,
+                                    const RequireOptimalSchedule ros) const {
   std::vector<Op *> sorted;
   std::set<const Graph *> addedGraphs;
 
@@ -3071,7 +3077,7 @@ std::vector<Op *> Ir::getOpSchedule(const OpsBeforeKey &gCons) const {
     addedGraphs.insert(graph);
 
     // Add each op in the graph
-    for (auto op : graph->getOpSchedule(gCons)) {
+    for (auto op : graph->getOpSchedule(gCons, ros)) {
       // If the op calls another graph
       // the ops in that graph should be scheduled first
       for (auto calledGraph : op->getCalledGraphs()) {

@@ -140,7 +140,7 @@ bool StreamingMemory::apply(Graph &graph) const {
         num_ipus,
         total_num_ipus);
 
-    auto schedule = graph.getOpSchedule({});
+    auto schedule = graph.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
     if (pass == 1) {
       float cumulative_cost = 0.f;

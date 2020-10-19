@@ -197,7 +197,7 @@ bool HostReduce::apply(Graph &graph) const {
   std::vector<Op *> toRemove;
 
   int counter = 0;
-  for (auto &id_op : graph.getOpSchedule({})) {
+  for (auto &id_op : graph.getOpSchedule({}, RequireOptimalSchedule::No)) {
     auto &op = id_op;
 
     const bool isVarUpdateOp = op->isConvertibleTo<SGD0VarUpdateOp>() ||

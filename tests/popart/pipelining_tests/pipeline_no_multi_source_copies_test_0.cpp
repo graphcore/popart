@@ -155,7 +155,7 @@ BOOST_AUTO_TEST_CASE(PipelineNoMultiSourceTest0) {
     // prepare the final log:
     std::array<std::stringstream, nIpus> sss;
 
-    auto sched = ir.getOpSchedule({});
+    auto sched = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
     for (auto op : sched) {
       auto ipuCopyOp = dynamic_cast<IpuCopyOp *>(op);
       if (!ipuCopyOp) {

@@ -127,7 +127,7 @@ bool IoComputeTileCopy::apply(Graph &graph) const {
   std::set<TensorId> copiedTensors;
   std::set<TensorId> processedTensors;
 
-  auto schedule = graph.getOpSchedule({});
+  auto schedule = graph.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
   std::unordered_map<Op *, size_t> opScheduleIndex;
   for (size_t i = 0; i < schedule.size(); ++i) {

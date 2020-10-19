@@ -117,7 +117,8 @@ BOOST_AUTO_TEST_CASE(PipelineAnchorRecomputedTensor0) {
     if (rt == RunType::ContinuousRecompPipe) {
       // Check our assumption, that the Sigmoid op is
       // annoted attribute "recompute: YES"
-      auto opSchedule = session->getIr().getOpSchedule({});
+      auto opSchedule =
+          session->getIr().getOpSchedule({}, RequireOptimalSchedule::Yes);
       for (auto op : opSchedule) {
         if (dynamic_cast<SigmoidOp *>(op)) {
           BOOST_CHECK(op->settings.recomputeType == RecomputeType::Recompute);

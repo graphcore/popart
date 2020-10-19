@@ -25,7 +25,7 @@ bool ExplicitRecompute::apply(Graph &graph) const {
   logging::transform::debug("[ExplicitRecompute] Started.");
 
   auto &ir      = graph.getIr();
-  auto schedule = graph.getOpSchedule({});
+  auto schedule = graph.getOpSchedule({}, RequireOptimalSchedule::No);
 
   auto getContext = [&ir](Op *op) -> TensorContext {
     VGraphId vgid = op->hasVirtualGraphId() ? op->getVirtualGraphId() : -1;

@@ -97,7 +97,8 @@ BOOST_AUTO_TEST_CASE(TestWeightSharingWhereWeightsMuchLargerThanActivations) {
   });
 
   runner.checkIr([&](Ir &ir) {
-    std::vector<Op *> schedule = ir.getOpSchedule({});
+    std::vector<Op *> schedule =
+        ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
     debugLogSchedule<false>(
         schedule, "TestWeightSharingWhereWeightsMuchLargerThanActivations");
@@ -158,7 +159,8 @@ BOOST_AUTO_TEST_CASE(
   });
 
   runner.checkIr([&](Ir &ir) {
-    std::vector<Op *> schedule = ir.getOpSchedule({});
+    std::vector<Op *> schedule =
+        ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
     debugLogSchedule<false>(schedule,
                             "TestWeightSharingWithSkipConnectionsWhereWeightsMu"
@@ -274,7 +276,8 @@ BOOST_AUTO_TEST_CASE(TestNestedSums) {
   BOOST_CHECK_NO_THROW(runner.buildModel(modelBuilder));
 
   runner.checkIr([&](Ir &ir) {
-    std::vector<Op *> schedule = ir.getOpSchedule({});
+    std::vector<Op *> schedule =
+        ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
     debugLogSchedule<false>(schedule, "TestNestedSums");
   });

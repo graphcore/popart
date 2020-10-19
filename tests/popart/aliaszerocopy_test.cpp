@@ -243,7 +243,8 @@ BOOST_AUTO_TEST_CASE(AliasZeroCopyTest0) {
       // Count the number of calls
       size_t callIndex = 0;
 
-      for (Op *op : ir.getMainGraph().getOpSchedule({})) {
+      for (Op *op :
+           ir.getMainGraph().getOpSchedule({}, RequireOptimalSchedule::Yes)) {
         logging::trace("Op: {}", op->debugName());
 
         if (CallOp *call = dynamic_cast<CallOp *>(op)) {

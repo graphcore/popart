@@ -196,7 +196,7 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
       }
       pole = pole == 0 ? 1 : 0;
     }
-    auto sched = ir.getOpSchedule(topoCons);
+    auto sched = ir.getOpSchedule(topoCons, RequireOptimalSchedule::Yes);
 
     // The training schedule looks like this (05 / September / 2019)
     //
@@ -377,7 +377,7 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
               Patterns(PatternsLevel::Default).enableInPlace(false)});
 
   std::vector<Match> expected_matches{};
-  auto sched = ir.getOpSchedule({});
+  auto sched = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
   popart::logging::debug("Testing Anchor0_Subgraph, algo 0, threshold -1");
   test(sched, expected_train_matches, -1.0f, 0);

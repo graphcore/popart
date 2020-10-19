@@ -440,17 +440,25 @@ void Graph::setConvFlipWeightConstraints() {
   }
 }
 
-std::vector<Op *> Graph::getOpSchedule(const OpsBeforeKey &gCons) const {
+std::vector<Op *> Graph::getOpSchedule(
+    const OpsBeforeKey &gCons,
+    const RequireOptimalSchedule requireOptimalSchedule) const {
+  const auto respectExecutionPhases = ir.getExecutionPhasesReady();
+  const auto swapLimit   = getIr().getSessionOptions().swapLimitScheduler;
+  const std::string &ktb = getIr().getSessionOptions().kahnTieBreaker;
+  const auto timeLimit   = getIr().getSessionOptions().timeLimitScheduler;
+
   return scheduler->getSchedule(gCons,
                                 *this,
-                                ir.getExecutionPhasesReady(),
-                                getIr().getSessionOptions().timeLimitScheduler,
-                                getIr().getSessionOptions().swapLimitScheduler,
-                                getIr().getSessionOptions().kahnTieBreaker);
+                                requireOptimalSchedule,
+                                respectExecutionPhases,
+                                timeLimit,
+                                swapLimit,
+                                ktb);
 }
 
 void Graph::freezeSchedule(const OpsBeforeKey &gCons) {
-  auto schedule = getOpSchedule(gCons);
+  auto schedule = getOpSchedule(gCons, RequireOptimalSchedule::Yes);
   for (size_t i = 1; i < schedule.size(); ++i) {
     topoCons->insert(schedule.at(i - 1), schedule.at(i), false);
   }
@@ -942,7 +950,8 @@ std::vector<Op *> Graph::getCallSiteOps(size_t num) const {
   std::vector<Op *> opStack;
 
   // Start at first op of main graph
-  auto schedule = ir.getMainGraph().getOpSchedule({});
+  auto schedule =
+      ir.getMainGraph().getOpSchedule({}, RequireOptimalSchedule::Yes);
   opStack.insert(opStack.end(), schedule.rbegin(), schedule.rend());
 
   while (!opStack.empty()) {
@@ -955,7 +964,7 @@ std::vector<Op *> Graph::getCallSiteOps(size_t num) const {
           return ops_;
         }
       } else if (visited.find(calledGraph) == visited.end()) {
-        schedule = calledGraph->getOpSchedule({});
+        schedule = calledGraph->getOpSchedule({}, RequireOptimalSchedule::Yes);
         opStack.insert(opStack.end(), schedule.rbegin(), schedule.rend());
         visited.insert(calledGraph);
       }

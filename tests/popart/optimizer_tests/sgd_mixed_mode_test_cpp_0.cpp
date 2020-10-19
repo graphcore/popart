@@ -157,7 +157,7 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTest0) {
 
     // All the SGD0VarUpdateOps, in no particular order
     std::vector<SGD0VarUpdateOp *> sgdOpsOOO;
-    for (auto op : session->ir.getOpSchedule({})) {
+    for (auto op : session->ir.getOpSchedule({}, RequireOptimalSchedule::No)) {
       auto asSgd = dynamic_cast<SGD0VarUpdateOp *>(op);
       if (asSgd) {
         sgdOpsOOO.push_back(asSgd);

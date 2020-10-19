@@ -92,7 +92,8 @@ BOOST_AUTO_TEST_CASE(TestDecomposeAcrossExecutionPhases) {
   });
 
   runner.checkIr([&](Ir &ir) {
-    std::vector<Op *> schedule = ir.getOpSchedule({});
+    std::vector<Op *> schedule =
+        ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
     std::vector<Op *> gradPartialAddsOrder;
     size_t addOpNumber = 0;
     for (size_t i = 0; i < schedule.size(); i++) {

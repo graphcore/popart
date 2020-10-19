@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
                           PreAliasPatternType::PostNRepl})
                     .enableRuntimeAsserts(false)});
 
-    auto opSchedule = ir.getOpSchedule({});
+    auto opSchedule = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
     // Check that there is no recomputation
     BOOST_CHECK(

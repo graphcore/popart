@@ -75,7 +75,7 @@ BOOST_AUTO_TEST_CASE(PipelineNoMultiSourceTest0) {
               userOptions,
               Patterns(PatternsLevel::Default)});
 
-  auto sched = ir.getOpSchedule({});
+  auto sched = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
   std::vector<int64_t> stashIpus;
   for (auto op : sched) {

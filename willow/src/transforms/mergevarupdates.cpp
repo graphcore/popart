@@ -174,7 +174,7 @@ MergeTightThreshold::getFinal(const Graph &g) const {
   // is what will be returned
   PartitionMap childPartitions;
 
-  auto opSched = g.getOpSchedule({});
+  auto opSched = g.getOpSchedule({}, RequireOptimalSchedule::Yes);
   // a map from Ops to their position in the schedule
   std::map<Op *, int> schedIndex;
   for (int i = 0; i < opSched.size(); ++i) {
@@ -296,7 +296,7 @@ MergeLooseThreshold::getFinal(const Graph &g) const {
     return parentPartitions;
   }
 
-  auto opSched = g.getOpSchedule({});
+  auto opSched = g.getOpSchedule({}, RequireOptimalSchedule::Yes);
   std::map<Op *, int> schedIndex;
   for (int i = 0; i < opSched.size(); ++i) {
     schedIndex[opSched[i]] = i;

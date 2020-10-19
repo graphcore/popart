@@ -110,7 +110,7 @@ BOOST_AUTO_TEST_CASE(test) {
             .enableInPlace(doInplace)
             .enablePattern("PadSum", false));
 
-    auto sched = session->ir.getOpSchedule({});
+    auto sched = session->ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
     std::cout << "The op schedule with inplace=" << doInplace << " is :\n";
     int nAdds = 0;
     for (const auto *op : sched) {

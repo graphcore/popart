@@ -71,7 +71,7 @@ void runTest(AccumulateOuterFragmentSettings settings,
   });
 
   runner.checkIr([&](Ir &ir) {
-    std::vector<Op *> ops = ir.getOpSchedule({});
+    std::vector<Op *> ops = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
     checker(ops);
   });
 };

@@ -104,7 +104,7 @@ BOOST_AUTO_TEST_CASE(NormOnlyRecomputeTest) {
                     .enableRuntimeAsserts(false)});
 
     int nRecompute = 0;
-    for (auto op : ir.getOpSchedule({})) {
+    for (auto op : ir.getOpSchedule({}, RequireOptimalSchedule::Yes)) {
       if (explicitRecomputation) {
         if ((op->settings.recomputeType == RecomputeType::Recomputed) &&
             (!op->opid.type.compare("BatchNormalization"))) {

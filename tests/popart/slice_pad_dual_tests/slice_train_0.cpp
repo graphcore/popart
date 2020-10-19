@@ -189,11 +189,14 @@ BOOST_AUTO_TEST_CASE(SliceTrain0) {
 
     session->prepareDevice();
 
-    const auto sched = session->getIr().getOpSchedule({});
+    /*
+    const auto sched = session->getIr().getOpSchedule({},
+        RequireOptimalSchedule::Yes);
     for (auto x : sched) {
       std::cout << "\n   " << x->str();
     }
     std::cout << std::endl;
+    */
     std::vector<float> v_input_x(stepDataInfo.nelms());
     for (auto &x : v_input_x) {
       x = getVal();

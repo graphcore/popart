@@ -288,7 +288,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
   popart::StepIO stepio(inputs, anchors);
 
   const auto &ir = session->getIr();
-  auto ops       = ir.getOpSchedule({});
+  auto ops       = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
   checkOpSchedule(ops, opts);
 
   session->weightsFromHost();
@@ -429,7 +429,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
   session->prepareDevice();
 
   const auto &ir = session->getIr();
-  auto ops       = ir.getOpSchedule({});
+  auto ops       = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
   std::vector<Op *> partial_op_schedule;
   for (auto op : ops) {
     if (dynamic_cast<GradCopyToHostOp *>(op) ||
@@ -706,7 +706,7 @@ BOOST_AUTO_TEST_CASE(HostReduceHierarchicalReductionWithReplicatedGraphs) {
     popart::StepIO stepio(inputs, anchors);
 
     const auto &ir = session->getIr();
-    auto ops       = ir.getOpSchedule({});
+    auto ops       = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
     checkOpSchedule(ops, opts);
 
     session->weightsFromHost();
@@ -891,7 +891,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationGradientStoreGradientLoad) {
   session->prepareDevice();
 
   const auto &ir = session->getIr();
-  auto ops       = ir.getOpSchedule({});
+  auto ops       = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
   std::vector<Op *> partial_op_schedule;
   for (auto op : ops) {
     if (dynamic_cast<GradCopyToHostOp *>(op) ||
@@ -1211,7 +1211,7 @@ BOOST_AUTO_TEST_CASE(
     popart::StepIO stepio(inputs, anchors);
 
     const auto &ir = session->getIr();
-    auto ops       = ir.getOpSchedule({});
+    auto ops       = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
     checkOpSchedule(ops, opts);
 
     session->weightsFromHost();
@@ -1395,7 +1395,8 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithAccumulation,
     const auto &mainGraph = ir.getMainGraph();
 
     if (userOptions.hostAllReduce) {
-      checkOpSchedule(mainGraph.getOpSchedule({}), userOptions);
+      checkOpSchedule(mainGraph.getOpSchedule({}, RequireOptimalSchedule::Yes),
+                      userOptions);
     }
 
     std::vector<float> v_input_0(stepDataElms);
@@ -1653,7 +1654,8 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipelining) {
     const auto &ir        = session->getIr();
     const auto &mainGraph = ir.getMainGraph();
     if (userOptions.hostAllReduce) {
-      checkOpSchedule(mainGraph.getOpSchedule({}), userOptions);
+      checkOpSchedule(mainGraph.getOpSchedule({}, RequireOptimalSchedule::Yes),
+                      userOptions);
     }
 
     std::vector<float> v_input_0(stepDataElms);
@@ -1905,7 +1907,8 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation,
     const auto &ir        = session->getIr();
     const auto &mainGraph = ir.getMainGraph();
     if (userOptions.hostAllReduce) {
-      checkOpSchedule(mainGraph.getOpSchedule({}), userOptions);
+      checkOpSchedule(mainGraph.getOpSchedule({}, RequireOptimalSchedule::Yes),
+                      userOptions);
     }
 
     std::vector<float> v_input_0(stepDataElms);
@@ -2111,7 +2114,7 @@ BOOST_AUTO_TEST_CASE(OATTSimpleTest, *boost::unit_test::disabled()) {
   session->prepareDevice();
 
   const auto &ir = session->getIr();
-  auto ops       = ir.getOpSchedule({});
+  auto ops       = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
   // checkOpSchedule(ops, opts);
 
   std::vector<std::string> callback_handles;
@@ -2364,7 +2367,8 @@ BOOST_AUTO_TEST_CASE(OATTWithAccumulation, *boost::unit_test::disabled()) {
     const auto &mainGraph = ir.getMainGraph();
 
     if (userOptions.hostAllReduce) {
-      checkOpSchedule(mainGraph.getOpSchedule({}), userOptions);
+      checkOpSchedule(mainGraph.getOpSchedule({}, RequireOptimalSchedule::Yes),
+                      userOptions);
     }
     std::vector<float> v_input_0(stepDataElms);
 
@@ -2613,7 +2617,8 @@ BOOST_AUTO_TEST_CASE(OATTWithPipeliningAndAccumulation,
     const auto &ir        = session->getIr();
     const auto &mainGraph = ir.getMainGraph();
     if (userOptions.hostAllReduce) {
-      checkOpSchedule(mainGraph.getOpSchedule({}), userOptions);
+      checkOpSchedule(mainGraph.getOpSchedule({}, RequireOptimalSchedule::Yes),
+                      userOptions);
     }
 
     std::vector<float> v_input_0(stepDataElms);

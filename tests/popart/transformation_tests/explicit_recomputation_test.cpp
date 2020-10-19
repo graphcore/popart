@@ -102,7 +102,7 @@ BOOST_AUTO_TEST_CASE(ExplicitRecomputation_Case) {
                 Patterns(PatternsLevel::All)});
 
     auto nRecompute = 0;
-    for (auto op : ir.getOpSchedule({})) {
+    for (auto op : ir.getOpSchedule({}, RequireOptimalSchedule::Yes)) {
       if (recomputation) {
         // All Ops except those that have their type set to Recomputed
         // must have their recompute type set to Checkpoint
