@@ -54,7 +54,7 @@ namespace logging {
 namespace internal {
 struct Value {
 
-  Value() {}
+  Value() = default;
   Value(const Value &v) : custom_value(v.custom_value) {}
   ~Value() {}
 
