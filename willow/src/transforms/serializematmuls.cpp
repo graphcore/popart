@@ -147,6 +147,11 @@ std::size_t SerializeMatMuls::id() {
   return typeid(SerializeMatMuls).hash_code();
 }
 
+static bool keepPrecision(MatMulBaseOp *matmul) {
+  return matmul->getSerialiseSettings().keep_precision &&
+         matmul->getPartialsType() == MatMulPartialsType::FLOAT;
+}
+
 static void serializeMatMul(TransformBuilder &builder,
                             Tensor *lhs,
                             int sliceLhsDim, // -1 indicates no slice
@@ -208,11 +213,8 @@ static void serializeMatMul(TransformBuilder &builder,
     }
 
     std::map<std::string, popart::any> attrs = {};
-    if (sliceLhsDim == 2 && sliceRhsDim == 1 &&
-        matmul->getSerialiseSettings().keep_precision &&
+    if (sliceLhsDim == 2 && sliceRhsDim == 1 && keepPrecision(matmul) &&
         output->info.dataType() != DataType::FLOAT) {
-      // TODO (T11610): When partialsType has been added to MatMuls
-      // include a check here to make sure it equals FLOAT.
       attrs.insert({sOutputTypeAttribute, std::string("FLOAT")});
     }
 
@@ -580,7 +582,7 @@ serializeBwdRhsMatMul_InputChannels(TransformBuilder &builder,
                   name);
 
   sumByAddInplace(builder,
-                  matmul->getSerialiseSettings().keep_precision,
+                  keepPrecision(matmul),
                   output,
                   outputTensors,
                   virtualGraphId,
@@ -615,7 +617,7 @@ serializeFwdMatMul_ReducingDim(TransformBuilder &builder,
                   name);
 
   sumByAddInplace(builder,
-                  matmul->getSerialiseSettings().keep_precision,
+                  keepPrecision(matmul),
                   output,
                   outputTensors,
                   virtualGraphId,
@@ -756,7 +758,7 @@ serializeBwdLhsMatMul_OutputChannels(TransformBuilder &builder,
                   name);
 
   sumByAddInplace(builder,
-                  matmul->getSerialiseSettings().keep_precision,
+                  keepPrecision(matmul),
                   output,
                   outputTensors,
                   virtualGraphId,
