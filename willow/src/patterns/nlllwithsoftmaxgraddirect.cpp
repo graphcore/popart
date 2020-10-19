@@ -50,11 +50,16 @@ bool NlllWithSoftmaxGradDirect::apply(Op *op) const {
   auto sfm_grad = sfmgdOp->outTensor(0);
   auto loss     = fwdLossOp->outTensor(0);
 
+  // Use the fwdLossOp Settings as there may be operations that depend on
+  // loss in fwdLossOp's pipelineStage. There is only the guarantee that
+  // fwdLossOp pipelineStage <= sfmgdOp pipelineStage. So nlllsfmgd must be
+  // placed in the (potentially) earlier pipelineStage.
+
   // create the new op
   OpId nlllsfmgdId = graph.moveIntoGraph(std::unique_ptr<Op>(
       new NlllWithSoftmaxGradDirectOp(sfmgdOp->getOptionalIgnoreIndex(),
                                       sfmgdOp->getReductionType(),
-                                      sfmgdOp->getSettings())));
+                                      fwdLossOp->getSettings())));
   Op *nlllsfmgd    = graph.getOp(nlllsfmgdId);
 
   // Remove the SoftmaxGradDirectOp connections
