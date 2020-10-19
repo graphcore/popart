@@ -14,6 +14,7 @@ bool NlllWithSoftmaxGradDirect::matches(Op *op) const {
   // 1. Matches only on SoftmaxGradDirectOp
   // 2. Corresponding fwd NllOp op must exist
   // 3. NllOp and SoftmaxGradDirectOp must be on same IPU
+  // 4. NllOp and SoftmaxGradDirectOp must be on same PipelineStage
 
   // 1.
   auto sfmgdOp = dynamic_cast<SoftmaxGradDirectOp *>(op);
@@ -29,6 +30,12 @@ bool NlllWithSoftmaxGradDirect::matches(Op *op) const {
   // 3.
   auto fwdLossOp = sfmgdOp->nlllFwdOp();
   if (sfmgdOp->getOptionalVGraphId() != fwdLossOp->getOptionalVGraphId()) {
+    return false;
+  }
+
+  // 4.
+  if (sfmgdOp->getOptionalPipelineStage() !=
+      fwdLossOp->getOptionalPipelineStage()) {
     return false;
   }
 
