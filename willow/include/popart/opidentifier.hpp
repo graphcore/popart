@@ -260,6 +260,8 @@ const static AiGraphcoreOpIdV1 DynamicZeroInplace("DynamicZeroInplace", 2, 1);
 const static AiGraphcoreOpIdV1 EluInplace("EluInplace");
 const static AiGraphcoreOpIdV1 ExpandInplace("ExpandInplace");
 const static AiGraphcoreOpIdV1 ExpInplace("ExpInplace");
+const static AiGraphcoreOpIdV1 Expm1_1("Expm1", 1, 1);
+const static AiGraphcoreOpIdV1 Expm1Inplace("Expm1Inplace");
 const static AiGraphcoreOpIdV1 FlattenInplace("FlattenInplace");
 const static AiGraphcoreOpIdV1 FloorInplace("FloorInplace");
 const static AiGraphcoreOpIdV1 Gelu_1("Gelu", 1, 1);
@@ -345,6 +347,7 @@ const static OperatorIdentifier DynamicSlice = CustomOperators::DynamicSlice_1;
 const static OperatorIdentifier DynamicUpdate =
     CustomOperators::DynamicUpdate_1;
 const static OperatorIdentifier DynamicZero = CustomOperators::DynamicZero_1;
+const static OperatorIdentifier Expm1       = CustomOperators::Expm1_1;
 const static OperatorIdentifier Gelu        = CustomOperators::Gelu_1;
 const static OperatorIdentifier GroupNormalization =
     CustomOperators::GroupNormalization_1;

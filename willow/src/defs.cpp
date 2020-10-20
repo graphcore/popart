@@ -31,6 +31,7 @@ void DynamicAddShapeInference(InferenceContext &ctx);
 void MultiConvShapeInference(InferenceContext &ctx);
 void NopShapeInference(InferenceContext &ctx);
 void ShapedDropoutShapeInference(InferenceContext &ctx);
+void Expm1ShapeInference(InferenceContext &ctx);
 
 void SubsampleShapeInference(InferenceContext &ctx) {
   propagateElemTypeFromInputToOutput(ctx, 0, 0);
@@ -332,6 +333,10 @@ void ShapedDropoutShapeInference(InferenceContext &ctx) {
   propagateShapeAndTypeFromFirstInput(ctx);
 }
 
+void Expm1ShapeInference(InferenceContext &ctx) {
+  propagateShapeAndTypeFromFirstInput(ctx);
+}
+
 extern size_t dbg_count_check_GroupNormalization_AiGraphcore_ver1;
 extern size_t dbg_count_check_Subsample_AiGraphcore_ver1;
 extern size_t dbg_count_check_PrintTensor_AiGraphcore_ver1;
@@ -348,6 +353,7 @@ extern size_t dbg_count_check_DynamicAdd_AiGraphcore_ver1;
 extern size_t dbg_count_check_MultiConv_AiGraphcore_ver1;
 extern size_t dbg_count_check_Nop_AiGraphcore_ver1;
 extern size_t dbg_count_check_ShapedDropout_AiGraphcore_ver1;
+extern size_t dbg_count_check_Expm1_AiGraphcore_ver1;
 
 static const char groupnormalizationDoc[] =
     "GroupNormalization applies Group Normalization over a mini-batch of "
@@ -870,6 +876,21 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               AttributeProto::FLOAT,
               0.5f)
         .TypeAndShapeInferenceFunction(ShapedDropoutShapeInference))
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    Expm1,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("Exp(x) - 1.")
+        .Input(0, "X", "Input tensor", "T")
+        .Output(0, "Y", "Output tensor", "T")
+        .TypeConstraint("T",
+                        {"tensor(float)", "tensor(float16)"},
+                        "Constrain input and output types to float tensors.")
+        .TypeAndShapeInferenceFunction(Expm1ShapeInference))
 
 static bool registerOps() {
   auto &d = ONNX_NAMESPACE::OpSchemaRegistry::DomainToVersionRange::Instance();

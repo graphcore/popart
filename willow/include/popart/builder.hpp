@@ -444,6 +444,19 @@ public:
                          const std::vector<int64_t> &shape,
                          float ratio             = 0.5f,
                          const std::string &name = {});
+
+  /**
+   * Add expm1 operation to the model
+   * It computes exp(x) - 1.
+   * Calculates the exponential of the given input tensor and
+   * subtract one. Element-wise.
+   *
+   * \param args Tensor T
+   * \param name Optional identifier for operation
+   * \return The name of the result tensor
+   */
+  TensorId expm1(const std::vector<TensorId> &args,
+                 const std::string &name = {});
 };
 
 /**
