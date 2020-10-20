@@ -95,6 +95,7 @@ def test_enabled_recomputation():
                                           numIpus=2, tilesPerIPU=20))
 
 
+@tu.requires_ipu_model
 def test_stream_tensors_to_multiple_ipus():
     """
     Streaming an input to Ops on multiple IPUs throws an error
@@ -123,6 +124,7 @@ def test_stream_tensors_to_multiple_ipus():
                                           numIpus=2, tilesPerIPU=20))
 
 
+@tu.requires_ipu_model
 def test_sharding_multi_source():
     """
     Branched sharding does not merge IPU Copies with pipelining
@@ -159,6 +161,7 @@ def test_sharding_multi_source():
                                           numIpus=3, tilesPerIPU=20))
 
 
+@tu.requires_ipu_model
 def test_inference_min_batches():
     """
     Check that we throw if too few batches to fill and flush the pipeline
@@ -182,6 +185,7 @@ def test_inference_min_batches():
         "For pipelining, depth (batchesPerStep) must")
 
 
+@tu.requires_ipu_model
 def test_training_min_batches():
     """
     Check that we throw if too few batches to fill and flush the pipeline
@@ -205,6 +209,7 @@ def test_training_min_batches():
         "For pipelining, depth (batchesPerStep) must")
 
 
+@tu.requires_ipu_model
 def test_output_matches_train():
     """
     In this test we check that the anchors of equivalent non-sharded, sharded
@@ -243,6 +248,7 @@ def test_output_matches_train():
         assert np.allclose(t1[0], t2[0])
 
 
+@tu.requires_ipu_model
 def test_acts_match_restored_acts():
     """
     In this test we check that the stashed tensors and their equivalent
@@ -275,6 +281,7 @@ def test_acts_match_restored_acts():
                        pipelined_anchors["input"])
 
 
+@tu.requires_ipu_model
 def test_output_matches_infer():
     """
     In this test we check that the anchors of equivalent non-sharded, sharded
@@ -308,262 +315,6 @@ def test_output_matches_infer():
             print("singleIpu   , batch: ", i, tId1, np.sum(t1[i]))
             print("pipelinedIpu, batch: ", i, tId2, np.sum(t2[i]))
         assert np.allclose(t1, t2)
-
-
-## TODO T8803 : requires hardware or a sim device
-def test_pipelined_dropout():
-    # The test can be run without pipelining for debugging.
-    def test(do_pipelining, do_sharding):
-        dsize = 10
-        ratio = 0.5
-        if do_sharding:
-            ipus = 4
-        else:
-            ipus = 1
-        layers = 4
-        batches_per_step = 7
-
-        # Ensure inputs in range [1.0, 2.0] to ensure comparing with 0 is valid
-        ip_shape = [dsize]
-        ip_data = np.full([batches_per_step] + ip_shape, 1).astype(np.float32)
-
-        dropouts = []
-        dropoutGrads = []
-        dropoutInputs = []
-        dropoutOutputs = []
-
-        builder = popart.Builder()
-        ip = builder.addInputTensor(popart.TensorInfo("FLOAT", ip_shape))
-
-        def add_layer(layer_input, vgraph_num):
-            # This is to get the output of the dropout in the bwd pass.
-            # D_next_layer_in also includes the gradient of the AddOp.
-            identity0 = builder.aiOnnx.identity([layer_input])
-            if do_sharding:
-                builder.virtualGraph(identity0, vgraph_num)
-
-            [dropout0] = builder.aiOnnx.dropout([identity0],
-                                                num_outputs=1,
-                                                ratio=ratio)
-            if do_sharding:
-                builder.virtualGraph(dropout0, vgraph_num)
-
-            # the input to the forward pass dropout
-            dropoutInputs.append(identity0)
-            # the input to the backward pass dropout
-            dropoutInputs.append(popart.reservedGradientPrefix() + dropout0)
-            # the output of the backward pass dropout
-            dropoutGrads.append(popart.reservedGradientPrefix() + identity0)
-            # the output of the forward pass dropout
-            dropouts.append(dropout0)
-
-            # This ensures the all input elements to the dropouts, in both
-            # the forward and backward passes, will be non-zero.
-            add0 = builder.aiOnnx.add([layer_input, dropout0])
-            if do_sharding:
-                builder.virtualGraph(add0, vgraph_num)
-
-            return add0
-
-        # construct a graph of `layers` number of layers
-        # with each layer on a different IPU.
-        next_layer_in = ip
-        for vgraph in range(layers):
-            next_layer_in = add_layer(next_layer_in, vgraph)
-        out = next_layer_in
-        loss = builder.aiGraphcore.identityloss([out])
-        builder.virtualGraph(loss, layers - 1)
-        builder.addOutputTensor(loss)
-
-        # TODO: use the tu.requires_ipu decorator
-        if tu.ipu_available(ipus):
-            device = tu.create_test_device(numIpus=ipus)
-        else:
-            pytest.skip("Test needs to run on IPU, but none are available")
-
-        dfAnchors = {}
-        for x in dropouts + dropoutGrads + dropoutInputs:
-            dfAnchors[x] = popart.AnchorReturnType("All")
-
-        dataFlow = popart.DataFlow(batches_per_step, dfAnchors)
-
-        userOptions = popart.SessionOptions()
-        if do_sharding:
-            userOptions.virtualGraphMode = popart.VirtualGraphMode.Manual
-        userOptions.enablePipelining = do_pipelining
-
-        session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                         dataFlow=dataFlow,
-                                         optimizer=popart.ConstSGD(0.1),
-                                         loss=loss,
-                                         userOptions=userOptions,
-                                         deviceInfo=device)
-
-        session.prepareDevice()
-        session.weightsFromHost()
-        anchors = session.initAnchorArrays()
-        session.setRandomSeed(0)
-
-        stepio = popart.PyStepIO({ip: ip_data}, anchors)
-
-        session.run(stepio)
-
-        print(anchors.keys())
-
-        # Check that none of the elements of the dropout inputs are zero
-        for tid in dropoutInputs:
-            x = anchors[tid]
-            print(f'{tid}: {x}')
-            zero = np.zeros(x.shape)
-            assert not np.any(np.equal(x, zero)), \
-                   f'Some elements of dropout input {tid} are zero'
-
-        print()
-
-        # For each dropout, check that the masked out elements are the same
-        # in the forward and backward passes.
-        for fwdId, bwdId in zip(dropouts, dropoutGrads):
-            print(f'{fwdId}:\n{np.sign(anchors[fwdId])}')
-            print(f'{bwdId}:\n{np.sign(anchors[bwdId])}')
-            lhs = np.sign(anchors[fwdId])
-            rhs = np.sign(anchors[bwdId])
-            assert np.array_equal(lhs, rhs), \
-                   f'{fwdId} and {bwdId} did not use the same dropout mask'
-            print()
-
-        return anchors
-
-    # Compare pipelined and non-pipelined models to confirm random
-    # dropout behaviour is the same
-    # Note: Because the random behaviour of ops such as dropout depend on a
-    # reference tensor layout, which is not constant between these models
-    # (since they all have a different IR), this behaviour is not always
-    # guaranteed. However, we have chosen a model where the random behaviour
-    # is the same between non-sharded, sharded, and sharded-pipelined
-    # configurations
-    singleipu_anchors = test(do_sharding=False, do_pipelining=False)
-    shard_anchors = test(do_sharding=True, do_pipelining=False)
-    pipe_anchors = test(do_sharding=True, do_pipelining=True)
-    for tId in singleipu_anchors:
-        assert np.array_equal(singleipu_anchors[tId], shard_anchors[tId])
-        assert np.array_equal(singleipu_anchors[tId], pipe_anchors[tId])
-
-
-## TODO T8803 : requires hardware or a sim device
-def test_pipelined_recomputed_dropout():
-    dsize = 10
-    ratio = 0.5
-    ipus = 4
-    layers = 4
-    batches_per_step = 7
-
-    # Ensure inputs in range [1.0, 2.0] to ensure comparing with 0 is valid
-    ip_shape = [dsize]
-    ip_data = np.full([batches_per_step] + ip_shape, 1).astype(np.float32)
-
-    dropouts = []
-    dropoutGrads = []
-    dropoutInputs = []
-    dropoutOutputs = []
-
-    builder = popart.Builder()
-    ip = builder.addInputTensor(popart.TensorInfo("FLOAT", ip_shape))
-
-    def add_layer(layer_input, vgraph_num):
-        # This is to get the output of the dropout in the bwd pass.
-        # D_next_layer_in also includes the gradient of the AddOp.
-        identity0 = builder.aiOnnx.identity([layer_input])
-        builder.virtualGraph(identity0, vgraph_num)
-
-        [dropout0] = builder.aiOnnx.dropout([identity0],
-                                            num_outputs=1,
-                                            ratio=ratio)
-        builder.virtualGraph(dropout0, vgraph_num)
-
-        # the input to the forward pass dropout
-        dropoutInputs.append(identity0)
-        # the input to the backward pass dropout
-        dropoutInputs.append(popart.reservedGradientPrefix() + dropout0)
-        # the output of the backward pass dropout
-        dropoutGrads.append(popart.reservedGradientPrefix() + identity0)
-        # the output of the forward pass dropout
-        dropouts.append(dropout0)
-
-        relu0 = builder.aiOnnx.relu([dropout0])
-        builder.virtualGraph(relu0, vgraph_num)
-
-        # This ensures the all input elements to the dropouts, in both
-        # the forward and backward passes, will be non-zero.
-        add0 = builder.aiOnnx.add([layer_input, dropout0])
-        builder.virtualGraph(add0, vgraph_num)
-
-        return add0
-
-    # construct a graph of `layers` number of layers
-    # with each layer on a different IPU.
-    next_layer_in = ip
-    for vgraph in range(layers):
-        next_layer_in = add_layer(next_layer_in, vgraph)
-    out = next_layer_in
-
-    # TODO: use the tu.requires_ipu decorator
-    if tu.ipu_available(ipus):
-        device = tu.create_test_device(numIpus=ipus)
-    else:
-        pytest.skip("Test needs to run on IPU, but none are available")
-
-    dfAnchors = {}
-    for x in dropouts + dropoutGrads + dropoutInputs:
-        dfAnchors[x] = popart.AnchorReturnType("All")
-
-    dataFlow = popart.DataFlow(batches_per_step, dfAnchors)
-
-    loss = builder.aiGraphcore.identityloss([out])
-    builder.virtualGraph(loss, layers - 1)
-
-    userOptions = popart.SessionOptions()
-    userOptions.virtualGraphMode = popart.VirtualGraphMode.Manual
-    userOptions.enablePipelining = True
-    userOptions.autoRecomputation = popart.RecomputationType.Pipeline
-
-    session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                     dataFlow=dataFlow,
-                                     optimizer=popart.ConstSGD(0.1),
-                                     loss=loss,
-                                     userOptions=userOptions,
-                                     deviceInfo=device)
-
-    session.prepareDevice()
-    session.weightsFromHost()
-    anchors = session.initAnchorArrays()
-    session.setRandomSeed(0)
-
-    stepio = popart.PyStepIO({ip: ip_data}, anchors)
-
-    session.run(stepio)
-
-    print(anchors.keys())
-
-    # Check that none of the elements of the dropout inputs are zero
-    for tid in dropoutInputs:
-        x = anchors[tid]
-        print(f'{tid}: {x}')
-        zero = np.zeros(x.shape)
-        assert not np.any(np.equal(x, zero)), \
-               f'Some elements of dropout input {tid} are zero'
-
-    print()
-
-    # For each dropout, check that the masked out elements are the same
-    # in the forward and backward passes.
-    for fwdId, bwdId in zip(dropouts, dropoutGrads):
-        print(f'{fwdId}:\n{np.sign(anchors[fwdId])}')
-        print(f'{bwdId}:\n{np.sign(anchors[bwdId])}')
-        lhs = np.sign(anchors[fwdId])
-        rhs = np.sign(anchors[bwdId])
-        assert np.array_equal(lhs, rhs), \
-               f'{fwdId} and {bwdId} did not use the same dropout mask'
-        print()
 
 
 # Model
@@ -696,6 +447,7 @@ def get_simple_linear_model(streamInputToOp1AndOp2=False):
     return builder, op0_out, op1_out, op2_out, op3_out, anchor_map
 
 
+@tu.requires_ipu_model
 def test_pipeline_stage_errors():
     dummy_data = np.zeros(2, dtype=np.float32)
     bps = 2
@@ -755,6 +507,7 @@ def test_pipeline_stage_errors():
     assert emsg.startswith('Only some ops have had their pipeline stage set.')
 
 
+@tu.requires_ipu_model
 def test_pipeline_stages_backwards_through_ipus():
     dummy_data = np.array([0.5, 1.0], dtype=np.float32)
     bps = 2
@@ -817,6 +570,7 @@ def test_pipeline_stages_backwards_through_ipus():
     assert np.allclose(pipelineAnchor[0], ref())
 
 
+@tu.requires_ipu_model
 def test_multiple_stages_per_virtual_graph_inference():
     bps = 4
     dummy_data = np.random.rand(2, 2).astype(np.float32)
@@ -878,6 +632,7 @@ def test_multiple_stages_per_virtual_graph_inference():
 
 
 # run the same model with and without revisiting ipus and compare the resultant weights.
+@tu.requires_ipu_model
 def test_multiple_stages_per_virtual_graph_training():
     accumulation_factor = 5
     micro_batches_per_step = 5
@@ -960,6 +715,7 @@ def test_multiple_stages_per_virtual_graph_training():
 
 
 # run the same model with and without recomputation and check the updated weights
+@tu.requires_ipu_model
 def test_recomputation():
     accumulationFactor = 3
     microBatchesPerStep = 3
@@ -1029,6 +785,7 @@ def test_recomputation():
     assert np.array_equal(w0, w1)
 
 
+@tu.requires_ipu_model
 def test_bad_auto_staging():
     bps = 4
     dummy_data = np.random.rand(2, 2).astype(np.float32)

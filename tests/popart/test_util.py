@@ -137,21 +137,39 @@ def ipu_available(numIPUs=1):
     return len(popart.DeviceManager().enumerateDevices(numIpus=numIPUs)) > 0
 
 
+def _run_test_on_target(func, target, args, kwargs):
+    curr_test_target = os.environ.get("TEST_TARGET")
+
+    # If not already set, make the test target `target`
+    if not curr_test_target:
+        os.environ["TEST_TARGET"] = target
+
+    def reset_test_target():
+        if curr_test_target is None:
+            os.environ["TEST_TARGET"] = ""
+        else:
+            os.environ["TEST_TARGET"] = curr_test_target
+
+    try:
+        result = func(*args, **kwargs)
+        reset_test_target()
+        return result
+    except:
+        reset_test_target()
+        raise
+
+
 def requires_ipu(func):
     @functools.wraps(func)
     def decorated_func(*args, **kwargs):
-        curr_test_target = os.environ.get("TEST_TARGET")
         if "numIPUs" in kwargs:
             numIPUs = kwargs["numIPUs"]
         else:
             numIPUs = 1
         if not ipu_available(numIPUs):
             return pytest.fail(f"Test requires {numIPUs} IPUs")
-        # If not already set, make the test target Hw
-        if not curr_test_target:
-            os.environ["TEST_TARGET"] = "Hw"
 
-        return func(*args, **kwargs)
+        _run_test_on_target(func, "Hw", args, kwargs)
 
     return decorated_func
 
@@ -159,12 +177,6 @@ def requires_ipu(func):
 def requires_ipu_model(func):
     @functools.wraps(func)
     def decorated_func(*args, **kwargs):
-        curr_test_target = os.environ.get("TEST_TARGET")
-
-        # If not already set, make the test target IpuModel
-        if not curr_test_target:
-            os.environ["TEST_TARGET"] = "IpuModel"
-
-        return func(*args, **kwargs)
+        _run_test_on_target(func, "IpuModel", args, kwargs)
 
     return decorated_func
