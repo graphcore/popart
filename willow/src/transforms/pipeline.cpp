@@ -1,9 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <vector>
 
-#include <boost/range/algorithm.hpp>
-#include <boost/range/algorithm_ext.hpp>
-
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -21,9 +18,6 @@
 #include <popart/topocons.hpp>
 #include <popart/transforms/pipeline.hpp>
 #include <popart/vertex.hpp>
-
-using boost::range::max_element;
-using boost::range::min_element;
 
 // Which pipelining scheme should we use? There are some considerations to
 // make:
@@ -322,8 +316,9 @@ void insertClonesBeforeIpuCopyConsumers(Graph &graph,
   std::vector<IpuCopyOp *> ipuCopyConsumers;
   for (auto *c : tensor->consumers.getOps()) {
     auto ipuCopyOp = dynamic_cast<IpuCopyOp *>(c);
-    if (ipuCopyOp)
+    if (ipuCopyOp) {
       ipuCopyConsumers.push_back(ipuCopyOp);
+    }
   }
 
   if (ipuCopyConsumers.size() > 0) {
@@ -501,17 +496,52 @@ void chainCopiesTransform(Graph &graph) {
   }
 }
 
+void mergeConsecutivePipelineStages(Graph &graph) {
+  std::map<PipelineStage, VGraphId> stageMap;
+  for (auto &id_op : graph.getOps()) {
+    auto op = id_op.second.get();
+    if (op->hasPipelineStage() && op->hasVirtualGraphId() &&
+        !op->isIpuCopyOp()) {
+      stageMap[op->getPipelineStage()] = op->getVirtualGraphId();
+    }
+  }
+
+  std::map<PipelineStage, PipelineStage> stageTransformation;
+
+  unsigned shift = 0;
+  VGraphId prev  = stageMap.begin()->second;
+  for (auto &pStage_vGraphId : stageMap) {
+    auto pStage   = pStage_vGraphId.first;
+    auto vGraphId = pStage_vGraphId.second;
+    if (pStage == 0) {
+      continue;
+    }
+    if (vGraphId == prev) {
+      logging::debug("Merging Pipeline Stage {} into Previous", pStage);
+      shift++;
+    }
+    stageTransformation[pStage] = pStage - shift;
+    prev                        = vGraphId;
+  }
+
+  // Apply stageTransformation
+  for (auto &id_op : graph.getOps()) {
+    auto op = id_op.second.get();
+    op->setPipelineStage(stageTransformation[op->getPipelineStage()]);
+  }
+}
+
 bool isFullRecompute(Graph &graph) {
   auto &ir = graph.getIr();
   return ir.getSessionOptions().autoRecomputation ==
          RecomputationType::Pipeline;
 }
 
-std::vector<TensorId> getStashCandidateTensors(Graph &graph) {
+std::set<TensorId> getStashCandidateTensors(Graph &graph) {
 
   bool full_recompute = isFullRecompute(graph);
 
-  std::vector<TensorId> toStashCandidateTensors;
+  std::set<TensorId> toStashCandidateTensors;
   for (auto &tid : graph.getTensors().getAllTensorIds()) {
     auto tensor = graph.getTensors().get(tid);
 
@@ -557,7 +587,7 @@ std::vector<TensorId> getStashCandidateTensors(Graph &graph) {
     }
 
     logging::transform::debug("Adding {} to stash candidates", tid);
-    toStashCandidateTensors.push_back(tid);
+    toStashCandidateTensors.insert(tid);
   }
 
   return toStashCandidateTensors;
@@ -585,7 +615,7 @@ bool isRecomputable(Op *op) {
 }
 
 void setRecomputation(Graph &graph,
-                      std::vector<TensorId> &toStashCandidateTensors) {
+                      std::set<TensorId> &toStashCandidateTensors) {
   bool full_recompute = isFullRecompute(graph);
 
   auto isConsumedByCopy = [](Op *op) {
@@ -710,7 +740,7 @@ TensorId createStashableRandomSeed(GetRandomSeedOp *randomSeedOp) {
   return randomSeedClone->id;
 }
 
-bool containsSeedTensor(std::vector<TensorId> ids) {
+bool containsSeedTensor(std::set<TensorId> ids) {
   bool containsSeedFromHost =
       std::find(ids.begin(),
                 ids.end(),
@@ -744,39 +774,21 @@ bool Pipeline::apply(Graph &graph) const {
 
   checkOpsPipelineStage(graph);
 
-  // 2. There must be enough mini-batches of data to fill the pipeline
-  int64_t numPipelineStages = ir.getNumPipelineStages();
-  if (ir.getSessionOptions().enableGradientAccumulation) {
-    if (ir.getSessionOptions().accumulationFactor < numPipelineStages) {
-      // For replicated graphs we are replicating the entire pipeline, so these
-      // conditions still hold.
-      throw error("For pipelining, depth (gradient accumulation factor) must "
-                  "equal at least the number of pipeline stages ({})",
-                  numPipelineStages);
-    }
-  } else {
-    int64_t bps = static_cast<int64_t>(ir.getDataFlow().batchesPerStep());
-    if (bps < numPipelineStages) {
-      throw error("For pipelining, depth (batchesPerStep) must equal at least "
-                  "the number of pipeline stages ({})",
-                  numPipelineStages);
-    }
-  }
-
-  // 3. Currently recomputation is not supported with pipelining (TODO T9575)
+  // 2. Currently user-annotated recomputation is not supported with pipelining
+  // (TODO T9575)
   if (ir.getMainGraph().hasUserRecomputeOps()) {
     throw error("When pipelining is enabled, user annotation for recomputation "
                 "is not allowed");
   }
 
-  // 4. Forward layers must be sharded with increasing IPU index
+  // 3. Forward layers must be sharded with increasing IPU index
   //    Examples violating this:
   //      Consider the fwd Graph : Op0 -> Op1 -> Op2 -> Op3
   //          e.g. 1) IPU0 : {Op2, Op3}, IPU1 : {Op0, Op1}
   //          e.g. 2) IPU0 : {Op0, Op2}, IPU1 : {Op1, Op3}
 
   // The checks:
-  // 4.2 Copies in the correct direction
+  // 3.2 Copies in the correct direction
 
   auto getIpuCopyOps = [&graph] {
     // contiguating IpuCopyOps
@@ -794,7 +806,7 @@ bool Pipeline::apply(Graph &graph) const {
 
   // Other sharding assumptions to check:
 
-  // 5. Ir stream tensors cannot be consumed by ops on multiple IPUs
+  // 4. Ir stream tensors cannot be consumed by ops on multiple IPUs
   for (TensorId tid : graph.getTensors().getIds(TensorType::Stream)) {
     auto tensor = graph.getTensors().get(tid);
     std::set<VGraphId> virtualGraphs;
@@ -805,6 +817,28 @@ bool Pipeline::apply(Graph &graph) const {
     if (virtualGraphs.size() > 1) {
       throw error("For pipelining, stream tensors can only be streamed "
                   "directly onto a single IPU");
+    }
+  }
+
+  // Merge Consecutive stages.
+  mergeConsecutivePipelineStages(graph);
+
+  // 5. There must be enough mini-batches of data to fill the pipeline
+  int64_t numPipelineStages = ir.getNumPipelineStages();
+  if (ir.getSessionOptions().enableGradientAccumulation) {
+    if (ir.getSessionOptions().accumulationFactor < numPipelineStages) {
+      // For replicated graphs we are replicating the entire pipeline, so these
+      // conditions still hold.
+      throw error("For pipelining, depth (gradient accumulation factor) must "
+                  "equal at least the number of pipeline stages ({})",
+                  numPipelineStages);
+    }
+  } else {
+    int64_t bps = static_cast<int64_t>(ir.getDataFlow().batchesPerStep());
+    if (bps < numPipelineStages) {
+      throw error("For pipelining, depth (batchesPerStep) must equal at least "
+                  "the number of pipeline stages ({})",
+                  numPipelineStages);
     }
   }
 
@@ -850,21 +884,20 @@ bool Pipeline::apply(Graph &graph) const {
     }
   }
 
-  std::vector<TensorId> toStashCandidateTensors =
-      getStashCandidateTensors(graph);
+  auto toStashCandidateTensors = getStashCandidateTensors(graph);
 
   if (ir.requiresRandomSeed() && containsSeedTensor(toStashCandidateTensors)) {
     // Neither the input or the output of a GetRandomSeedOp should be stashed.
     auto getRandomSeedOp = findGetRandomSeedOp(graph);
-    boost::remove_erase(toStashCandidateTensors, getRandomSeedOp->inId(0));
-    boost::remove_erase(toStashCandidateTensors, getRandomSeedOp->outId(0));
+    toStashCandidateTensors.erase(getRandomSeedOp->inId(0));
+    toStashCandidateTensors.erase(getRandomSeedOp->outId(0));
     // Instead, we need to clone the output of the random seed op and stash
     // that.
     auto stashableRandomSeed = createStashableRandomSeed(getRandomSeedOp);
-    toStashCandidateTensors.push_back(stashableRandomSeed);
+    toStashCandidateTensors.insert(stashableRandomSeed);
   }
 
-  std::vector<TensorId> toStashTensors;
+  std::set<TensorId> toStashTensors;
   // StashTensorId -> std::pair<StashRefOp, RestoreRefOp>
   std::map<TensorId, std::pair<Op *, Op *>> stashRestoreRefOps;
   // If there is no recomputation, then the candidates for stashing will all be
@@ -905,11 +938,14 @@ bool Pipeline::apply(Graph &graph) const {
           auto stashRef   = getStashReferenceOp(tensor);
           auto restoreRef = searchForRestoreReferenceOp(tensor, stashRef);
           if (restoreRef == nullptr) {
+            logging::transform::debug("Discarding Stash candidate tensor {} as "
+                                      "no restore reference found.",
+                                      tid);
             continue;
           }
           stashRestoreRefOps.insert({tid, {stashRef, restoreRef}});
         }
-        toStashTensors.push_back(tid);
+        toStashTensors.insert(tid);
       }
     }
 
