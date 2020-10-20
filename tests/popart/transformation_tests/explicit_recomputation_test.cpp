@@ -135,6 +135,71 @@ BOOST_AUTO_TEST_CASE(ExplicitRecomputation_Case) {
     }
   };
 
-  test(true);
-  test(false);
+  // test(true);
+  // test(false);
+}
+
+BOOST_AUTO_TEST_CASE(ExplicitRecomputation_Case1) {
+  // Build the graph:
+  //
+  // in0 -- Add -- Relu -- L1Loss -- out
+  //       /     (recomp)
+  // in1 -
+  //
+  // and verify that the recomputed Relu tensor is scheduled as expected:
+  // after the loss gradient has been computed
+  auto builder = Builder::create();
+  auto ip0     = builder->addInputTensor("FLOAT", std::vector<int64_t>{10});
+  auto ip1     = builder->addInputTensor("FLOAT", std::vector<int64_t>{10, 10});
+
+  auto rel = builder->aiOnnxOpset10().relu({ip0});
+  auto out = builder->aiOnnxOpset10().add({rel, ip1});
+  auto l1  = builder->aiGraphcoreOpset1().l1loss({out}, 0.1);
+  auto id  = builder->aiGraphcoreOpset1().identityloss({l1});
+
+  builder->recomputeOutputInBackwardPass(rel);
+  auto modelProto = io::getModelFromString(builder->getModelProto());
+
+  auto device    = createTestDevice(TEST_TARGET);
+  auto optimizer = ConstSGD(0.01);
+  SessionOptions opts;
+  opts.explicitRecomputation      = true;
+  std::vector<TensorId> anchorIds = {reservedGradientPrefix() + ip0, out};
+
+  Ir ir;
+  ir.prepare({modelProto,
+              InputShapeInfo(),
+              DataFlow(1, anchorIds),
+              id,
+              &optimizer,
+              *device,
+              opts,
+              Patterns(PatternsLevel::All).enableInPlace(false)});
+
+  auto opSchedule = ir.getOpSchedule({});
+  std::vector<size_t> recomputedIdx;
+  std::vector<size_t> lossGradIdx;
+
+  for (size_t idx = 0; idx < opSchedule.size(); idx++) {
+    auto op = opSchedule.at(idx);
+
+    // Register the position in the schedule of the recomputed Relu op
+    if ((op->settings.recomputeType == RecomputeType::Recomputed) &&
+        (!op->opid.type.compare("Relu"))) {
+      recomputedIdx.push_back(idx);
+    }
+
+    // Register the position in the schedule of the loss gradient op
+    if (!op->opid.type.compare("L1Grad")) {
+      lossGradIdx.push_back(idx);
+    }
+  }
+  // Verify that the recomputed Relu and the loss grad have been
+  // found in the schedule
+  BOOST_CHECK(recomputedIdx.size() == 1);
+  BOOST_CHECK(lossGradIdx.size() == 1);
+
+  // Verify that the recomputed Relu appears after the loss grad op
+  // in the schedule
+  BOOST_CHECK(recomputedIdx[0] > lossGradIdx[0]);
 }

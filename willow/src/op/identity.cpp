@@ -1,5 +1,7 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <memory>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
@@ -127,12 +129,16 @@ IdentityLossGradOp::IdentityLossGradOp(const IdentityLossOp &op_)
   // OpN-1   No
   // OpN     No.
   //
-  // A number of transforms (e.g. recomputation, interipucopy), depend
-  // on this setting correctly indicating whether an op is in the forward or
-  // backward pass, so push IdentityLossGrad as far back in the schedule
+  // The implicit recomputation transform depends on this setting
+  // correctly indicating whether an op is in the forward or backward
+  // pass, so push IdentityLossGrad as far back in the schedule
   // as possible (i.e. post-loss) to prevent this from happening.
   // Note: this cannot have a negative effect on sum-liveness.
-  settings.schedulePriority = std::numeric_limits<double>::lowest();
+  if ((getIr().autoRecomputationEnabled() ||
+       getIr().getMainGraph().hasUserRecomputeOps()) &&
+      !getIr().getSessionOptions().explicitRecomputation) {
+    settings.schedulePriority = std::numeric_limits<double>::lowest();
+  }
 }
 
 void IdentityLossGradOp::setup() {
