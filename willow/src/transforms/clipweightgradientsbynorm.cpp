@@ -4,10 +4,12 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/div.hpp>
+#include <popart/op/ipucopy.hpp>
 #include <popart/op/max.hpp>
 #include <popart/op/mul.hpp>
 #include <popart/op/reducesumsquare.hpp>
 #include <popart/op/sgd0varupdate.hpp>
+#include <popart/op/sgd1varupdate.hpp>
 #include <popart/op/sqrt.hpp>
 #include <popart/op/sum.hpp>
 #include <popart/opidentifier.hpp>
@@ -41,8 +43,20 @@ void transferBaseProperties(Op *from, Op *to) {
   to->settings.schedulePriority = from->settings.schedulePriority;
 }
 
+ExecutionContext decideExecutionContext(Graph &graph) {
+  auto &ir   = graph.getIr();
+  auto &opts = ir.getSessionOptions();
+
+  if (opts.enablePipelining && opts.enableGradientAccumulation) {
+    return ExecutionContext::AccumulateOuterFragment;
+  } else {
+    return ExecutionContext::Normal;
+  }
+}
+
 Tensor *addReduceSumSquare(Op *varUpdate, Graph &graph) {
   Op::Settings settings(graph, "", {});
+  settings.executionContext = decideExecutionContext(graph);
 
   nonstd::optional<std::vector<int64_t>> axes;
   Op *reduction = graph.createOp<ReduceSumSquareOp>(
@@ -66,7 +80,8 @@ std::vector<Op *> getVarUpdates(Graph &graph,
                                 const std::vector<TensorId> &weightIds) {
   auto getVarUpdate = [](Tensor *t) {
     for (auto op : t->consumers.getOps()) {
-      if (op->isConvertibleTo<SGD0VarUpdateOp>()) {
+      if (op->isConvertibleTo<SGD0VarUpdateOp>() ||
+          op->isConvertibleTo<SGD1VarUpdateOp>()) {
         return op;
       }
     }
@@ -83,9 +98,46 @@ std::vector<Op *> getVarUpdates(Graph &graph,
   return varUpdates;
 }
 
+Tensor *createCopyOnVGraph(Tensor *t, VGraphId destination, Graph &graph) {
+  auto &ir = graph.getIr();
+
+  Op::Settings settings(graph, "", {});
+  settings.executionContext = decideExecutionContext(graph);
+
+  Op *op = graph.createOp<IpuCopyOp>(
+      Onnx::CustomOperators::IpuCopy, destination, settings);
+  IpuCopyOp *ipuCopy = dynamic_cast<IpuCopyOp *>(op);
+  transferBaseProperties(t->getProducer(), op);
+
+  ipuCopy->connectInTensor(0, t->id, t->getVirtualGraphId());
+  ipuCopy->createAndConnectOutTensor(0, ir.createIntermediateTensorId(t->id));
+  ipuCopy->setup();
+
+  return ipuCopy->outTensor(0);
+}
+
+std::vector<Tensor *> copyToSameVGraph(const std::vector<Tensor *> ts,
+                                       VGraphId destination,
+                                       Graph &graph) {
+  auto vGraphId = 0;
+  std::vector<Tensor *> result;
+
+  for (auto t : ts) {
+    if (t->getVirtualGraphId() == destination) {
+      result.push_back(t);
+    } else {
+      auto x = createCopyOnVGraph(t, vGraphId, graph);
+      result.push_back(x);
+    }
+  }
+
+  return result;
+}
+
 // globalNorm = sqrt(sum(gradNorms))
 Tensor *createGlobalNorm(std::vector<Tensor *> gradNorms, Graph &graph) {
   Op::Settings settings(graph, "", {});
+  settings.executionContext = decideExecutionContext(graph);
 
   Op *sum = graph.createOp<SumOp>(Onnx::AiOnnx::OpSet8::Sum, settings);
   transferBaseProperties(gradNorms.at(0)->getProducer(), sum);
@@ -116,12 +168,22 @@ void addClipByNorm(Op *varUpdate, Tensor *clipFactor, Graph &graph) {
   auto grad = varUpdate->inTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
 
   Op::Settings settings(graph, "", {});
+  settings.executionContext = decideExecutionContext(graph);
 
   Op *mulOp = graph.createOp<MulOp>(Onnx::AiOnnx::OpSet6::Mul, settings);
   transferBaseProperties(varUpdate, mulOp);
 
+  auto clipFactorId = clipFactor->id;
+
+  if (mulOp->hasVirtualGraphId() &&
+      mulOp->getVirtualGraphId() != clipFactor->getVirtualGraphId()) {
+    auto destIpu          = mulOp->getVirtualGraphId();
+    auto copiedClipFactor = createCopyOnVGraph(clipFactor, destIpu, graph);
+    clipFactorId          = copiedClipFactor->id;
+  }
+
   mulOp->connectInTensor(MulOp::getArg0InIndex(), grad->id);
-  mulOp->connectInTensor(MulOp::getArg1InIndex(), clipFactor->id);
+  mulOp->connectInTensor(MulOp::getArg1InIndex(), clipFactorId);
   mulOp->createAndConnectOutTensor(MulOp::getOutIndex(),
                                    ir.createIntermediateTensorId(grad->id));
   mulOp->setup();
@@ -144,6 +206,7 @@ Tensor *createClipFactor(Tensor *globalNorm, Tensor *clipNorm, Graph &graph) {
   auto &ir = graph.getIr();
 
   Op::Settings settings(graph, "", {});
+  settings.executionContext = decideExecutionContext(graph);
 
   Op *maxOp = graph.createOp<MaxOp>(Onnx::AiOnnx::OpSet6::Max, settings);
   transferBaseProperties(globalNorm->getProducer(), maxOp);
@@ -187,6 +250,12 @@ void clipWeightGradientsByNorm(const std::vector<TensorId> &weightIds,
     gradNorms.push_back(gradNorm);
   }
 
+  auto &ir   = graph.getIr();
+  auto &opts = ir.getSessionOptions();
+  if (opts.enablePipelining) {
+    gradNorms = copyToSameVGraph(gradNorms, 0, graph);
+  }
+
   auto globalNorm = createGlobalNorm(gradNorms, graph);
   auto clipNorm   = createClipNorm(maxNorm, graph);
   auto clipFactor = createClipFactor(globalNorm, clipNorm, graph);
@@ -202,6 +271,15 @@ std::size_t ClipWeightGradientsByNorm::id() {
 bool ClipWeightGradientsByNorm::apply(Graph &graph) const {
   auto &ir        = graph.getIr();
   auto &optimizer = ir.getOptimizer();
+  auto &opts      = ir.getSessionOptions();
+
+  if (opts.enablePipelining && opts.accumulateOuterFragmentSettings.schedule ==
+                                   AccumulateOuterFragmentSchedule::Serial) {
+    throw error(
+        "Incompatible accumulateOuterFragmentSchedule used with gradient "
+        "clipping, SessionOptions::accumulateOuterFragmentSettings.schedule "
+        "can not be set to AccumulateOuterFragmentSchedule::Serial");
+  }
 
   for (auto &clipGroup : optimizer.getClipNormSettings()) {
     clipWeightGradientsByNorm(clipGroup.weightIds, clipGroup.maxNorm, graph);

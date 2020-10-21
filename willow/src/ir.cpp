@@ -1122,10 +1122,6 @@ void Ir::prepareImpl(const IrBundle &gb) {
                             getSessionOptions().autoRecomputation);
   }
 
-  if (optimizer && optimizer->getClipNormSettings().size() > 0) {
-    applyTransform(ClipWeightGradientsByNorm::id(), getMainGraph());
-  }
-
   updateVertices();
 
   // Each virtual graph is a pipeline stage in the pipeline.
@@ -1134,6 +1130,11 @@ void Ir::prepareImpl(const IrBundle &gb) {
   // for greater parallelism during compute.
   if (getSessionOptions().enablePipelining) {
     applyTransform(Pipeline::id(), getMainGraph());
+    updateVertices();
+  }
+
+  if (optimizer && optimizer->getClipNormSettings().size() > 0) {
+    applyTransform(ClipWeightGradientsByNorm::id(), getMainGraph());
     updateVertices();
   }
 

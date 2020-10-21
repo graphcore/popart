@@ -351,13 +351,6 @@ std::unique_ptr<Op> SGD::createOp(const Tensor &w, Graph &graph) const {
         wdsf0helper.getFromWeightId(w.id, *this),
         reductionType,
         opSettings);
-  } else {
-    auto &cns = getClipNormSettings();
-    if (cns.size() > 0) {
-      logging::warn(
-          "Clip norm settings will have no effect as gradient clipping is not "
-          "supported when using gradient accumulation");
-    }
   }
 
   if (getReplicatedGraphCount() > 1) {

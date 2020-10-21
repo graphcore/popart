@@ -13,7 +13,11 @@ import test_util as tu
 # `clipInfo` describes the gradient clipping groups.
 # The format of `clipInfo` is:
 #     List(Tuple(List(TensorId), MaxNorm)))
-def _run_popart_test_model(data, weights, clipInfo):
+def _run_popart_test_model(data,
+                           weights,
+                           clipInfo,
+                           pipelineGroups=None,
+                           accumulationFactor=None):
     # make sure the weights are not accidently modified in this function
     weights = [np.copy(i) for i in weights]
     bld = popart.Builder()
@@ -24,14 +28,28 @@ def _run_popart_test_model(data, weights, clipInfo):
         for i, w in enumerate(weights)
     ]
 
+    # Get a pipeline stage for each weight
+    if pipelineGroups:
+        pipelineStages = {}
+        maxPipelineStage = len(pipelineGroups) - 1
+        for pipelineStage, indices in enumerate(pipelineGroups):
+            for index in indices:
+                pipelineStages[index] = pipelineStage
+
     x = d0
-    for weightId in weightIds:
+    for i, weightId in enumerate(weightIds):
         x = bld.aiOnnxOpset9.conv([x, weightId],
                                   dilations=[1, 1],
                                   pads=[1, 1, 1, 1],
                                   strides=[1, 1])
+        if pipelineGroups:
+            bld.pipelineStage(x, pipelineStages[i])
+            bld.virtualGraph(x, pipelineStages[i])
 
     out = bld.aiGraphcore.l1loss([x], 1.0)
+    if pipelineGroups:
+        bld.pipelineStage(out, maxPipelineStage)
+        bld.virtualGraph(out, maxPipelineStage)
 
     bld.addOutputTensor(out)
 
@@ -42,7 +60,11 @@ def _run_popart_test_model(data, weights, clipInfo):
         out: popart.AnchorReturnType("All")
     })
 
-    device = popart.DeviceManager().createIpuModelDevice({"numIPUs": 1})
+    if pipelineGroups:
+        device = popart.DeviceManager().createIpuModelDevice(
+            {"numIPUs": maxPipelineStage + 1})
+    else:
+        device = popart.DeviceManager().createIpuModelDevice({"numIPUs": 1})
 
     clipNormSettings = []
     for weightIndices, maxNorm in clipInfo:
@@ -50,6 +72,14 @@ def _run_popart_test_model(data, weights, clipInfo):
             popart.ClipNormSettings([weightIds[i] for i in weightIndices],
                                     maxNorm))
     opts = popart.SessionOptions()
+    if pipelineGroups:
+        opts.enableGradientAccumulation = True
+        opts.accumulationFactor = accumulationFactor
+        opts.enablePipelining = True
+        opts.virtualGraphMode = popart.VirtualGraphMode.Manual
+        # opts.accumulateOuterFragmentSettings.schedule = popart.AccumulateOuterFragmentSchedule.Scheduler
+        opts.accumulateOuterFragmentSettings.schedule = popart.AccumulateOuterFragmentSchedule.OverlapMemoryOptimized
+        # opts.accumulateOuterFragmentSettings.schedule = popart.AccumulateOuterFragmentSchedule.OverlapCycleOptimized
 
     sess = popart.TrainingSession(
         proto,
@@ -66,6 +96,8 @@ def _run_popart_test_model(data, weights, clipInfo):
     sess.weightsFromHost()
 
     anchors = sess.initAnchorArrays()
+    if pipelineGroups:
+        data = np.array([data] * accumulationFactor)
     stepio = popart.PyStepIO({d0: data}, anchors)
     sess.run(stepio)
 
@@ -92,7 +124,7 @@ def _run_popart_test_model(data, weights, clipInfo):
 # `clipInfo` describes the gradient clipping groups.
 # The format of `clipInfo` is:
 #     List(Tuple(List(TensorId), MaxNorm)))
-def _run_torch_test_model(data, weights, clipInfo):
+def _run_torch_test_model(data, weights, clipInfo, accumulationFactor=None):
     data = torch.tensor(data)
     weights = [torch.tensor(np.copy(i)) for i in weights]
 
@@ -127,9 +159,15 @@ def _run_torch_test_model(data, weights, clipInfo):
     result = net(data)
     output = loss(result, torch.zeros(result.shape))
     output.backward()
+
+    if accumulationFactor:
+        for conv in net.convs:
+            conv.weight.grad = conv.weight.grad * accumulationFactor
+
     for weightIndices, maxNorm in clipInfo:
         torch.nn.utils.clip_grad_norm_(
             [net.convs[i].weight for i in weightIndices], maxNorm)
+
     optimizer.step()
 
     result_weights = [conv.weight.data.detach().numpy() for conv in net.convs]
@@ -194,6 +232,44 @@ def test_two_groups():
         data, weights, clipGroups)
     torch_result, torch_weights = _run_torch_test_model(
         data, weights, clipGroups)
+
+    assert popart_result.shape == torch_result.shape
+    assert np.allclose(popart_result, torch_result)
+
+    def print_tensor(x):
+        x = str(x)
+        x = x.replace('\n', '')
+        print(f'  {x}')
+
+    for key in popart_weights.keys():
+        print(f'{key}:')
+        print_tensor(initial_weights[key])
+        print_tensor(popart_weights[key])
+        print_tensor(torch_weights[key])
+
+    for key in popart_weights.keys():
+        assert np.allclose(popart_weights[key], torch_weights[key])
+
+
+def test_pipelined():
+    print()
+    np.random.seed(0)
+    norm1 = 15
+
+    data = np.random.rand(1, 1, 8, 8).astype(np.float32)
+    weights = [np.random.rand(1, 1, 2, 2).astype(np.float32) for _ in range(4)]
+    initial_weights = {f'weight{i}': np.copy(w) for i, w in enumerate(weights)}
+
+    clipGroups = [([0, 1, 2, 3], norm1)]
+    pipelineGroups = ((0, 1), (2, 3))
+
+    popart_result, popart_weights = _run_popart_test_model(
+        data, weights, clipGroups, pipelineGroups, accumulationFactor=3)
+    popart_result = popart_result[1]
+    torch_result, torch_weights = _run_torch_test_model(data,
+                                                        weights,
+                                                        clipGroups,
+                                                        accumulationFactor=3)
 
     assert popart_result.shape == torch_result.shape
     assert np.allclose(popart_result, torch_result)

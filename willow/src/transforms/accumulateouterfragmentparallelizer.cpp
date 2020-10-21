@@ -253,8 +253,11 @@ bool AccumulateOuterFragmentParallelizer::apply(Graph &graph) const {
       // virtual graph in parallel in each step, in increasing order of memory.
       for (auto it1 = clustersMap.begin(); it1 != clustersMap.end();) {
         auto &clusters = it1->second;
-        opClustersToParallelize.push_back(clusters.front());
-        clusters.pop_front();
+        if (!clusters.empty()) {
+          opClustersToParallelize.push_back(clusters.front());
+          clusters.pop_front();
+        }
+
         // Update it1.
         if (clusters.empty()) {
           it1 = clustersMap.erase(it1);
@@ -276,8 +279,9 @@ bool AccumulateOuterFragmentParallelizer::apply(Graph &graph) const {
       auto smallestLoadShapes   = std::set<Shape>();
       for (auto it = clustersMap.begin(); it != clustersMap.end(); ++it) {
         auto &clusters = it->second;
-        if (!hasSmallest ||
-            clusters.front().numLoadBytes < smallestNumLoadBytes) {
+        if (!clusters.empty() &&
+            (!hasSmallest ||
+             clusters.front().numLoadBytes < smallestNumLoadBytes)) {
           hasSmallest          = true;
           smallestNumLoadBytes = clusters.front().numLoadBytes;
           smallestLoadShapes   = clusters.front().loadShapes;
