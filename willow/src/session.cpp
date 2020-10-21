@@ -230,6 +230,31 @@ void Session::modelToHost(const std::string &fn) {
       cvData.data = tensor->tensorData()->data();
       cvData.info = tensor->info;
       BuilderImpl::populateTensorProtoFromConstVoidData(cvData, tId, init);
+
+      // If optimizer state tensor, and its corresponding initializer is saved
+      // externally, then save the this tensor to the same external location
+      if (tensor->isOptimizerStateTensor()) {
+        // Get corresponding initializer from optimizer state TensorId
+        TensorId initializerId = tId;
+        for (auto prefix : reservedOptimizerStatePrefixes()) {
+          size_t pos = initializerId.find(prefix);
+          if (pos != std::string::npos) {
+            initializerId.erase(pos, prefix.length());
+            break;
+          }
+        }
+        if (!ir.tensorExistsInInitialisers(initializerId)) {
+          throw internal_error("Unable to find corresponding initializer for "
+                               "optimizer state tensor, {}",
+                               tId);
+        }
+
+        if (onnxutil::isExternallySavedInitializer(model, initializerId)) {
+          std::string fn =
+              onnxutil::getExternallySavedTensorLocation(model, initializerId);
+          onnxutil::saveInitializersExternally(model, {tId}, fn, true);
+        }
+      }
     }
   }
 

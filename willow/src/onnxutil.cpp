@@ -154,9 +154,9 @@ ExternalTensorProtoInfo::ExternalTensorProtoInfo(
       if (info.key() == "location") {
         location = info.value();
       } else if (info.key() == "offset") {
-        offset = std::stoi(info.value());
+        offset = std::stol(info.value());
       } else if (info.key() == "length") {
-        length = std::stoi(info.value());
+        length = std::stol(info.value());
       }
     }
 
@@ -336,21 +336,72 @@ void clearInternallySavedData(ONNX_NAMESPACE::TensorProto &tp) {
 }
 } // namespace
 
+bool isExternallySavedInitializer(ONNX_NAMESPACE::ModelProto &model,
+                                  const TensorId &id) {
+  if (!isInitializer(model, id)) {
+    throw error("Tensor '{}' is not an initializer", id);
+  }
+
+  ONNX_NAMESPACE::TensorProto &tp = getTensorProto(model, id);
+  if (tp.has_data_location()) {
+    if (tp.data_location() == ONNX_NAMESPACE::TensorProto::EXTERNAL) {
+      return true;
+    }
+  }
+  return false;
+}
+
+std::string getExternallySavedTensorLocation(ONNX_NAMESPACE::ModelProto &model,
+                                             const TensorId &id) {
+  if (!isExternallySavedInitializer(model, id)) {
+    throw error("Tensor '{}' is not an externally saved initializer", id);
+  }
+
+  ONNX_NAMESPACE::TensorProto &tp = getTensorProto(model, id);
+  return ExternalTensorProtoInfo(tp).location;
+}
+
 void saveInitializersExternally(ONNX_NAMESPACE::ModelProto &model,
                                 const std::vector<TensorId> &ids,
-                                const std::string &fn) {
+                                const std::string &fn,
+                                bool appendToExistingFile) {
 
   if (boost::filesystem::exists(fn)) {
-    logging::info("Saving tensor data to file {}, but it already exists. Its "
-                  "contents will be overwritten",
+    if (!appendToExistingFile) {
+      logging::info("Saving tensor data to file {}, but it already exists. Its "
+                    "contents will be overwritten",
+                    fn);
+    }
+  } else {
+    if (appendToExistingFile) {
+      std::string idsString;
+      for (const auto &s : ids) {
+        idsString = idsString + s + " ";
+      }
+      throw error("TensorIds '{}' to be saved externally to existing file {}, "
+                  "but file doesn't exist",
+                  idsString,
                   fn);
+    }
   }
-  std::ofstream ofs(fn, std::ofstream::binary);
+
+  int64_t totalBytes;
+  if (appendToExistingFile) {
+    totalBytes = static_cast<int64_t>(boost::filesystem::file_size(fn));
+  } else {
+    totalBytes = 0;
+  }
+
+  std::ofstream ofs;
+  if (appendToExistingFile) {
+    ofs.open(fn, std::ofstream::binary | std::ofstream::app);
+  } else {
+    ofs.open(fn, std::ofstream::binary);
+  }
   if (!ofs.is_open()) {
     throw error("Failed to open file {}", fn);
   }
 
-  int64_t totalBytes = 0;
   for (const TensorId &id : ids) {
     // 1. Some checks:
     // That the tensor is an initializer

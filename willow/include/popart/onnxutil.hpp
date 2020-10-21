@@ -12,8 +12,8 @@ namespace onnxutil {
 class ExternalTensorProtoInfo {
 public:
   std::string location = "";
-  int offset           = 0;
-  int length           = 0;
+  int64_t offset       = 0;
+  int64_t length       = 0;
 
   ExternalTensorProtoInfo(const ONNX_NAMESPACE::TensorProto &tp);
 };
@@ -24,10 +24,20 @@ public:
 ConstVoidData getConstData(const ONNX_NAMESPACE::TensorProto &tp);
 MutableVoidData getMutableData(ONNX_NAMESPACE::TensorProto &tp);
 
+// Returns true if TensorProto with name `id` has an external data location
+bool isExternallySavedInitializer(ONNX_NAMESPACE::ModelProto &model,
+                                  const TensorId &id);
+
+// Returns the location of externally saved tensor data of initializer
+// with name `id`
+std::string getExternallySavedTensorLocation(ONNX_NAMESPACE::ModelProto &model,
+                                             const TensorId &id);
+
 // Move tensor data for ids from inside ModelProto to external file, fn
 void saveInitializersExternally(ONNX_NAMESPACE::ModelProto &model,
                                 const std::vector<TensorId> &ids,
-                                const std::string &fn);
+                                const std::string &fn,
+                                bool appendToExistingFile = false);
 
 // Get an ONNX model protobuf, either from a file, or the string directly
 ONNX_NAMESPACE::ModelProto

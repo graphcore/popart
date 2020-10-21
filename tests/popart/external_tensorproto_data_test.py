@@ -168,3 +168,142 @@ def test_save_back_externally_saved_tensors():
                                     offset=layer * elms * 4)
         assert np.array_equal(anchors[weightsIds[layer]].flatten(),
                               saved_weights)
+
+
+optimizerInfos = []
+# 1. SGD with momentum
+optimizerInfos.append((popart.SGD({
+    "defaultLearningRate": (0.2, True),
+    "defaultMomentum": (0.5, True)
+}), [popart.reservedAcclPrefix()]))
+# 2. Adam
+optimizerInfos.append((popart.Adam({
+    "defaultLearningRate": (0.2, True),
+    "defaultBeta1": (0.1, True),
+    "defaultBeta2": (0.1, True),
+    "defaultWeightDecay": (0.5, True),
+    "defaultEps": (1e-5, True),
+    "lossScaling": (2, True)
+}), [
+    popart.reservedAccl1Prefix(),
+    popart.reservedAccl2Prefix(),
+    popart.reservedStepPrefix()
+]))
+# 3. Adaptive
+optimizerInfos.append(
+    (popart.Adaptive({"defaultLearningRate": (0.2, True)},
+                     mode=popart.AdaptiveMode.CenteredRMSProp), [
+                         popart.reservedAccl1Prefix(),
+                         popart.reservedAccl2Prefix()
+                     ]))
+
+
+@pytest.mark.parametrize("optimizerInfo", optimizerInfos)
+def test_save_tensors_optimizer_state_externally(optimizerInfo):
+    """
+    # 1. create training session with momentum, save initializers externally
+    # 2. check file size before session.modelToHost, see it grows after
+    #    due to the additional optimizer state tensors being saved
+    # 3. read tensors from file, compare with anchors to verify that the
+    #    additional optimizer state has saved correctly
+    # 4. Create a new session from the saved onnx model, run both sessions
+    #    and compare outputs to verify that the optimizer state tensors
+    #    were loaded in correctly
+    """
+    optimizer = optimizerInfo[0]
+    extraOptimizerStatePrefs = optimizerInfo[1]
+
+    d1 = np.random.rand(3, 3).astype(np.float32)
+    d2 = np.random.rand(3).astype(np.float32)
+    builder = popart.Builder()
+    i1 = builder.addInitializedInputTensor(d1)
+    i2 = builder.addInitializedInputTensor(d2)
+    o = builder.aiOnnx.matmul([i1, i2])
+    loss = builder.aiGraphcore.identityloss([o])
+
+    tmpdir = tempfile.mkdtemp()
+    tmpfile = os.path.join(tmpdir, "model_tensors.onnx")
+    builder.saveInitializersExternally([i1, i2], tmpfile)
+
+    # Check file is of expected size: (3 * 3 * 4) + (3 * 4) = 48
+    assert os.path.exists(tmpfile)
+    assert os.path.getsize(tmpfile) == d1.size * 4 + d2.size * 4
+
+    anchorIds = [o]
+    anchorIds.append(popart.reservedGradientPrefix() + i1)
+    anchorIds.append(popart.reservedGradientPrefix() + i2)
+
+    session = popart.TrainingSession(
+        deviceInfo=popart.DeviceManager().createCpuDevice(),
+        fnModel=builder.getModelProto(),
+        loss=loss,
+        optimizer=optimizer,
+        dataFlow=popart.DataFlow(1, anchorIds))
+
+    session.prepareDevice()
+    session.weightsFromHost()
+    anchors = session.initAnchorArrays()
+    session.run(popart.PyStepIO({}, anchors))
+
+    session.weightsToHost()
+    weightsMap = {}
+    weightsMap[i1] = np.ones(d1.size).astype(np.float32)
+    weightsMap[i2] = np.ones(d2.size).astype(np.float32)
+    for pref in extraOptimizerStatePrefs:
+        if pref == popart.reservedStepPrefix():
+            size1 = 1
+            size2 = 1
+        else:
+            size1 = d1.size
+            size2 = d2.size
+        weightsMap[pref + i1] = np.ones(size1).astype(np.float32)
+        weightsMap[pref + i2] = np.ones(size2).astype(np.float32)
+    session.readWeights(popart.PyWeightsIO(weightsMap))
+
+    tmpfile1 = os.path.join(tmpdir, "model.onnx")
+    session.modelToHost(tmpfile1)
+
+    # Extra state for each initializer
+    expectedSize = (d1.size * 4) + (d2.size * 4)
+    for pref in extraOptimizerStatePrefs:
+        if pref == popart.reservedStepPrefix():
+            expectedSize += (2 * 4)
+        else:
+            expectedSize += d1.size * 4
+            expectedSize += d2.size * 4
+
+    assert os.path.getsize(tmpfile) == expectedSize
+
+    # Compare anchors with external data written to file
+    saved_weights = np.fromfile(tmpfile, dtype=np.float32)
+    assert np.allclose(saved_weights[0:d1.size], weightsMap[i1].flatten())
+    totalSize = d1.size + d2.size
+    assert np.allclose(saved_weights[d1.size:totalSize],
+                       weightsMap[i2].flatten())
+
+    for pref in extraOptimizerStatePrefs:
+        assert np.allclose(saved_weights[totalSize:totalSize + d1.size],
+                           weightsMap[pref + i1].flatten())
+        totalSize += d1.size
+        assert np.allclose(saved_weights[totalSize:totalSize + d2.size],
+                           weightsMap[pref + i2].flatten())
+        totalSize += d2.size
+
+    # Create new session
+    new_session = popart.TrainingSession(
+        deviceInfo=popart.DeviceManager().createCpuDevice(),
+        fnModel=tmpfile1,
+        loss=loss,
+        optimizer=optimizer,
+        dataFlow=popart.DataFlow(1, anchorIds))
+    new_anchors = new_session.initAnchorArrays()
+    new_session.prepareDevice()
+    new_session.weightsFromHost()
+
+    new_session.run(popart.PyStepIO({}, new_anchors))
+    session.run(popart.PyStepIO({}, anchors))
+
+    # Compare output from both sessions to confirm that the optimizer state
+    # tensors have been read back in correctly for the new session
+    for anchorId in anchorIds:
+        assert np.allclose(anchors[anchorId], new_anchors[anchorId])
