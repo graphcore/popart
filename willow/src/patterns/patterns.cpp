@@ -549,7 +549,7 @@ std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
       {std::type_index(typeid(LikeOpsPattern<ZerosLikeOp>)), 43},
       {std::type_index(typeid(LikeOpsPattern<RandomUniformLikeOp>)), 42},
       {std::type_index(typeid(LikeOpsPattern<RandomNormalLikeOp>)), 41},
-      {std::type_index(typeid(AcosOpPattern)), 40},
+      {std::type_index(typeid(AcoshOpPattern)), 40},
       {std::type_index(typeid(AcosOpPattern)), 39},
       {std::type_index(typeid(UpsampleToResizePattern)), 38},
       {std::type_index(typeid(InitAccumulatePattern)), 37},
