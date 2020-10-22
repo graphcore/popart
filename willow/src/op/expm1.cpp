@@ -34,6 +34,38 @@ std::unique_ptr<Op> Expm1Op::clone() const {
   return std::make_unique<Expm1Op>(*this);
 }
 
+std::vector<std::unique_ptr<Op>> Expm1Op::getGradOps() {
+  std::vector<std::unique_ptr<Op>> upops;
+  upops.emplace_back(std::make_unique<Expm1GradOp>(*this));
+  return upops;
+}
+
+Expm1GradOp::Expm1GradOp(const Expm1Op &fwdOp)
+    : Op(Onnx::GradOperators::Expm1Grad, fwdOp.getSettings()) {}
+
+std::unique_ptr<Op> Expm1GradOp::clone() const {
+  return std::make_unique<Expm1GradOp>(*this);
+}
+
+const std::vector<GradInOutMapper> &Expm1GradOp::gradInputInfo() const {
+  static const std::vector<GradInOutMapper> inInfo = {
+      {getGradInIndex(), Expm1Op::getOutIndex(), GradOpInType::GradOut},
+      {getFwdOutInIndex(), Expm1Op::getOutIndex(), GradOpInType::Out}};
+
+  return inInfo;
+}
+
+const std::map<int, int> &Expm1GradOp::gradOutToNonGradIn() const {
+  static const std::map<int, int> outInfo = {
+      {getOutIndex(), Expm1Op::getInIndex()}};
+
+  return outInfo;
+}
+
+void Expm1GradOp::setup() {
+  outInfo(getOutIndex()) = inInfo(getFwdOutInIndex());
+}
+
 namespace {
 
 static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};

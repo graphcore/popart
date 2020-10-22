@@ -147,3 +147,53 @@ def test_expm1_inplace_2(op_tester):
             return [a]
 
         op_tester.run(init_builder, reference, 'infer')
+
+
+def test_expm1_grad_0(op_tester):
+    d1 = np.array([-2.0, -1.0, 0.0, 1.0, 2.0], dtype=np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiGraphcore.expm1([i1])
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + o
+        ]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        b = torch.expm1(a)
+        d__o = ref_data.getOutputTensorGrad(0)
+        b.backward(torch.tensor(d__o))
+        return [b, a.grad, None]
+
+    op_tester.setPatterns(['PreUniRepl', 'Expm1GradOp'],
+                          enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'train')
+
+
+def test_expm1_grad_1(op_tester):
+    d1 = np.linspace(-10, 10, 100, dtype=np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiGraphcore.expm1([i1])
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + o
+        ]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        b = torch.expm1(a)
+        d__o = ref_data.getOutputTensorGrad(0)
+        b.backward(torch.tensor(d__o))
+        return [b, a.grad, None]
+
+    op_tester.setPatterns(['PreUniRepl', 'Expm1GradOp'],
+                          enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'train')

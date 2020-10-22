@@ -151,6 +151,7 @@ const static AiGraphcoreOpIdV1 EluGrad("EluGrad");
 const static AiGraphcoreOpIdV1 ErfGrad("ErfGrad");
 const static AiGraphcoreOpIdV1 ExpandGrad("ExpandGrad");
 const static AiGraphcoreOpIdV1 ExpGrad("ExpGrad");
+const static AiGraphcoreOpIdV1 Expm1Grad("Expm1Grad");
 const static AiGraphcoreOpIdV1 FlattenGrad("FlattenGrad");
 const static AiGraphcoreOpIdV1 GatherGrad("GatherGrad");
 const static AiGraphcoreOpIdV1 GeluGrad("GeluGrad");

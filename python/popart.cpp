@@ -1191,6 +1191,7 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("PowArg1GradOp", PreAliasPatternType::PowArg1GradOp);
     en.value("SqrtGradOp", PreAliasPatternType::SqrtGradOp);
     en.value("ExpGradOp", PreAliasPatternType::ExpGradOp);
+    en.value("Expm1GradOp", PreAliasPatternType::Expm1GradOp);
     en.value("GemmDecomposition", PreAliasPatternType::GemmDecomposition);
     en.value("NegativeOneScale", PreAliasPatternType::NegativeOneScale);
     en.value("MatMulOp", PreAliasPatternType::MatMulOp);

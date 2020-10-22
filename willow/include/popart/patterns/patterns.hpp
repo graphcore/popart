@@ -233,6 +233,7 @@ public:
   }
   bool isSqrtGradOpEnabled();
   bool isExpGradOpEnabled();
+  bool isExpm1GradOpEnabled();
   bool isLogGradOpEnabled();
   bool isLogSoftmaxOpEnabled();
   bool isGemmDecompositionEnabled();
@@ -279,6 +280,7 @@ public:
   }
   Patterns &enableSqrtGradOp(bool v);
   Patterns &enableExpGradOp(bool v);
+  Patterns &enableExpm1GradOp(bool v);
   Patterns &enableLogGradOp(bool v);
   Patterns &enableLogSoftmaxOp(bool v);
   Patterns &enableGemmDecomposition(bool v);

@@ -135,6 +135,32 @@ def test_exp_grad_error(op_tester):
         "This op should have been removed by pattern ExpGradOp"))
 
 
+def test_expm1_grad_error(op_tester):
+    d1 = np.random.rand(2, 7).astype(np.float32)
+    d2 = np.random.rand(2, 7).astype(np.float32)
+
+    # No pattern passes, grad op will not be created.
+    op_tester.setPatterns([], enableRuntimeAsserts=False)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        # Add weight to force grad op creation
+        w1 = builder.addInitializedInputTensor(d2)
+        o = builder.aiOnnx.add([i1, w1], "test_add")
+        o = builder.aiGraphcore.expm1([o], "test_expm1")
+        builder.addOutputTensor(o)
+        return [o, popart.reservedGradientPrefix() + o]
+
+    def reference(ref_data):
+        return [None, None]
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        op_tester.run(init_builder, reference, 'train')
+
+    assert (e_info.value.args[0].endswith(
+        "This op should have been removed by pattern Expm1GradOp"))
+
+
 def test_gemm_grad_error(op_tester):
     """
     We test the inference session to fire the GemmDecomposition
