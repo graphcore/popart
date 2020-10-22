@@ -44,7 +44,7 @@ public:
   void setup() final;
 
   static InIndex getRemoteBufferOffsetInIndex() { return 1; }
-  static OutIndex getLocalTensorInIndex() { return 0; }
+  static InIndex getLocalTensorInIndex() { return 0; }
   static OutIndex getLocalTensorOutIndex() { return 0; }
 
   view::Regions modifies(InIndex) const final;

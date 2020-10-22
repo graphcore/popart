@@ -22,7 +22,7 @@ public:
   static InIndex dataInIndex() { return 0; }
   static InIndex indicesInIndex() { return 1; }
   static InIndex updatesInIndex() { return 2; }
-  static InIndex outIndex() { return 0; }
+  static OutIndex outIndex() { return 0; }
 
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
@@ -48,7 +48,7 @@ public:
 
   static InIndex gradInIndex() { return 0; }
   static InIndex indicesInIndex() { return 1; }
-  static InIndex gradOutIndex() { return 0; }
+  static OutIndex gradOutIndex() { return 0; }
 
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
@@ -74,7 +74,7 @@ public:
 
   static InIndex gradInIndex() { return 0; }
   static InIndex indicesInIndex() { return 1; }
-  static InIndex gradOutIndex() { return 0; }
+  static OutIndex gradOutIndex() { return 0; }
 
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
