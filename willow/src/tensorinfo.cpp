@@ -24,7 +24,11 @@ template <> DataType getDataType<double>() { return DataType::DOUBLE; }
 template <> DataType getDataType<std::string>() { return DataType::STRING; }
 
 TensorInfo::TensorInfo(DataType t, const Shape &s)
-    : dataTypeInfo(&getDataTypeInfoMap().at(t)), shape_v(s) {}
+    : dataTypeInfo(&getDataTypeInfoMap().at(t)), shape_v(s), meta_shape_v() {}
+
+TensorInfo::TensorInfo(DataType t, const Shape &s, const Shape &rts_s)
+    : dataTypeInfo(&getDataTypeInfoMap().at(t)), shape_v(s),
+      meta_shape_v(rts_s) {}
 
 TensorInfo::TensorInfo(std::string s_type, const Shape &s)
     : TensorInfo(dataTypeFromString(s_type), s) {}
@@ -323,6 +327,8 @@ const std::string &TensorInfo::data_type_lcase() const {
 
 const Shape &TensorInfo::shape() const { return shape_v; }
 
+const Shape &TensorInfo::meta_shape() const { return meta_shape_v; }
+
 int64_t TensorInfo::nbytes() const {
   return nelms() * static_cast<int64_t>(dataTypeInfo->nbytes());
 }
@@ -334,6 +340,12 @@ void TensorInfo::set(DataType t, const Shape &s) {
   shape_v      = s;
 }
 
+void TensorInfo::set(DataType t, const Shape &s, const Shape &rts_s) {
+  dataTypeInfo = &getDataTypeInfoMap().at(t);
+  shape_v      = s;
+  meta_shape_v = rts_s;
+}
+
 const std::map<DataType, DataTypeInfo> &getDataTypeInfoMap() {
   static std::map<DataType, DataTypeInfo> dataTypeInfoMap =
       initDataTypeInfoMap();
@@ -341,7 +353,8 @@ const std::map<DataType, DataTypeInfo> &getDataTypeInfoMap() {
 }
 
 bool TensorInfo::operator==(const TensorInfo &i1) const {
-  return (shape_v == i1.shape_v && dataTypeInfo == i1.dataTypeInfo);
+  return (shape_v == i1.shape_v && meta_shape_v == i1.meta_shape_v &&
+          dataTypeInfo == i1.dataTypeInfo);
 }
 
 bool TensorInfo::operator!=(const TensorInfo &i1) const {

@@ -722,10 +722,8 @@ Intervals AliasZeroCopy::getCandidateLivenessIntervals(Tensor *startTensor,
 }
 
 bool AliasZeroCopy::checkCandidatesCompatible(Tensor *ta, Tensor *tb) {
-  bool compatible =
-      (ta->info.shape() == tb->info.shape() &&
-       ta->info.dataType() == tb->info.dataType() &&
-       ta->getVirtualGraphIdUnsafe() == tb->getVirtualGraphIdUnsafe());
+  bool compatible = (ta->info == tb->info && ta->getVirtualGraphIdUnsafe() ==
+                                                 tb->getVirtualGraphIdUnsafe());
   if (!compatible)
     return false;
 
@@ -740,10 +738,8 @@ bool AliasZeroCopy::checkCandidatesCompatible(Tensor *ta, Tensor *tb) {
 }
 
 bool AliasZeroCopy::checkSubgraphInputCompatible(Tensor *ta, Tensor *tb) {
-  bool compatible =
-      (ta->info.shape() == tb->info.shape() &&
-       ta->info.dataType() == tb->info.dataType() &&
-       ta->getVirtualGraphIdUnsafe() == tb->getVirtualGraphIdUnsafe());
+  bool compatible = (ta->info == tb->info && ta->getVirtualGraphIdUnsafe() ==
+                                                 tb->getVirtualGraphIdUnsafe());
   if (!compatible) {
     return false;
   }
@@ -813,10 +809,8 @@ bool AliasZeroCopy::checkSubgraphInputCompatible(Tensor *ta, Tensor *tb) {
 }
 
 bool AliasZeroCopy::checkSubgraphOutputCompatible(Tensor *ta, Tensor *tb) {
-  bool compatible =
-      (ta->info.shape() == tb->info.shape() &&
-       ta->info.dataType() == tb->info.dataType() &&
-       ta->getVirtualGraphIdUnsafe() == tb->getVirtualGraphIdUnsafe());
+  bool compatible = (ta->info == tb->info && ta->getVirtualGraphIdUnsafe() ==
+                                                 tb->getVirtualGraphIdUnsafe());
   if (!compatible) {
     return false;
   }

@@ -292,7 +292,8 @@ template <> void OpEquivIdCreator::appendAttr(const TensorIndexMap &tmap) {
       ss << ',';
     }
 
-    ss << idx << tensor->info.data_type() << tensor->info.shape();
+    ss << idx << tensor->info.data_type() << tensor->info.shape()
+       << tensor->info.meta_shape();
 
     i++;
   }

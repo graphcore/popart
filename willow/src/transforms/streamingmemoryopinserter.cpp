@@ -1503,8 +1503,12 @@ RemoteLoadOp *StreamingMemoryOpInserter::insertRemoteLoadOp(
 
     if (tensorConfig.location.replicatedTensorSharding ==
         ReplicatedTensorSharding::On) {
+      // The original shape becomes the RTS shape
+      // The actual tensor shape is now:
+      // (initInfo.nelms() - 1) / replicationFactor + 1
       initInfo.set(initInfo.dataType(),
-                   {(initInfo.nelms() - 1) / replicationFactor + 1});
+                   {(initInfo.nelms() - 1) / replicationFactor + 1},
+                   initInfo.shape());
     }
 
     // InitOp as a "producer" op
@@ -1551,23 +1555,6 @@ RemoteLoadOp *StreamingMemoryOpInserter::insertRemoteLoadOp(
 
   // Do RemoteLoad on IO tiles
   remoteLoad->settings.tileSet = tensorConfig.location.loadTileSet;
-
-  if (tensorConfig.location.replicatedTensorSharding ==
-      ReplicatedTensorSharding::On) {
-    // Avoid outlining RemoteLoad Ops that result in a
-    // different final gathered tensor shape together,
-    // because it can have adverse effects due to copying tensors
-    // with different final tile mapping using the same host
-    // exchange
-    std::string gatheredShapeString =
-        "[" +
-        logging::join(tensorConfig.tensor->info.shape().begin(),
-                      tensorConfig.tensor->info.shape().end(),
-                      ",") +
-        "]";
-    remoteLoad->settings.extraOutlineAttributes.insert(
-        {"gatheredSize", gatheredShapeString});
-  }
 
   return remoteLoad;
 }

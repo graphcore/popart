@@ -164,7 +164,19 @@ int64_t getONNXDataTypeAsInt(const DataType dtype);
 
 class TensorInfo {
 public:
+  /// Create TensorInformation based on data type and shape
+  ///
+  /// \param data_type    - The data type
+  /// \param shape        - The actual shape of the tensor
   TensorInfo(DataType, const Shape &);
+  /// Create TensorInformation based on data type, shape and meta shape
+  ///
+  /// \param data_type    - The data type
+  /// \param shape        - The actual shape of the tensor
+  /// \param meta_shape   - The meta shape of the tensor, which can for example
+  ///                       be used to store the original tensor shape before
+  ///                       replicated tensor sharding was applied
+  TensorInfo(DataType data_type, const Shape &shape, const Shape &meta_shape);
   TensorInfo(std::string data_type, std::string shape);
   TensorInfo(std::string data_type, const Shape &);
   explicit TensorInfo(const ONNX_NAMESPACE::TensorProto &);
@@ -173,7 +185,10 @@ public:
   void set(const ONNX_NAMESPACE::TypeProto &);
   TensorInfo() = default;
   void set(DataType, const Shape &);
+  void set(DataType, const Shape &, const Shape &);
   const Shape &shape() const;
+  //
+  const Shape &meta_shape() const;
   // A helper functions for back-ends which
   // prefer the size as (unsigned) size_t.
   std::vector<size_t> shape_szt() const;
@@ -209,7 +224,11 @@ public:
 
 private:
   const DataTypeInfo *dataTypeInfo = nullptr;
+  // The tensor's actual shape
   Shape shape_v;
+  // The tensor's meta shape, e.g. original shape before replicated tensor
+  // sharding
+  Shape meta_shape_v;
 };
 
 std::ostream &operator<<(std::ostream &stream, const TensorInfo &ti);
