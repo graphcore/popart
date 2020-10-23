@@ -1,4 +1,3 @@
-#include <queue> // we use a priority_queue
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -21,36 +20,6 @@
 namespace popart {
 
 namespace {
-
-using TensorContext = std::tuple<VGraphId, ExecutionPhase, PipelineStage>;
-enum class TraceDirection { Forward = 0, Backward };
-
-class TraceFront {
-public:
-  TraceFront(std::vector<Tensor *> tensors_, TraceDirection direction_)
-      : tensors(tensors_), direction(direction_) {}
-
-  int64_t score() const {
-    int64_t score = 0;
-    if (direction == TraceDirection::Forward) {
-      for (Tensor *t : tensors) {
-        score += t->consumers.getOps().size();
-      }
-    } else {
-      for (Tensor *t : tensors) {
-        score += t->hasProducer() ? 1 : 0;
-      }
-    }
-    return score;
-  }
-
-  // Trace fronts with less producers/consumers first
-  // (lesser chance of matching wrong isomorphic ops)
-  bool operator<(const TraceFront &rhs) const { return score() > rhs.score(); }
-
-  std::vector<Tensor *> tensors;
-  TraceDirection direction;
-};
 
 TensorId createOrGetIndexTensor(Graph &graph, uint32_t index) {
   TensorId id = reservedIndexPrefix() + std::to_string(index);
@@ -76,6 +45,30 @@ void connectOutTensor(Ir &ir, Op *op, TensorId id, OutIndex index) {
 }
 
 } // namespace
+
+BatchSerialize::TraceFront::TraceFront(std::vector<Tensor *> tensors_,
+                                       TraceDirection direction_)
+    : tensors(tensors_), direction(direction_) {}
+
+int64_t BatchSerialize::TraceFront::score() const {
+  int64_t score = 0;
+  if (direction == TraceDirection::Forward) {
+    for (Tensor *t : tensors) {
+      score += t->consumers.getOps().size();
+    }
+  } else {
+    for (Tensor *t : tensors) {
+      score += t->hasProducer() ? 1 : 0;
+    }
+  }
+  return score;
+}
+
+// Trace fronts with less producers/consumers first
+// (lesser chance of matching wrong isomorphic ops)
+bool BatchSerialize::TraceFront::operator<(const TraceFront &rhs) const {
+  return score() > rhs.score();
+}
 
 std::size_t BatchSerialize::id(int pass) {
   return typeid(BatchSerialize).hash_code() + pass;
@@ -723,18 +716,11 @@ bool BatchSerialize::apply(Graph &graph) const {
       }
 
       std::set<Op *> equivProcessedOps;
-      std::map<Op *, Section> opSectionLookup;
-      std::map<std::pair<Section, BatchSerializedPhase>,
-               std::map<Op *, Position>>
-          opToPosition;
-      std::map<std::pair<Section, BatchSerializedPhase>,
-               std::map<Position, Op *>>
-          positionToOp;
-      std::map<Section, std::vector<Op *>> opsBehindSection;
-
-      std::priority_queue<TraceFront> parallelTraceFront;
-
-      std::map<std::tuple<Op *, Op *, int>, int64_t> cachedIsoScores;
+      OpToSection opToSection;
+      OpToPosition opToPosition;
+      PositionsToOp positionToOp;
+      OpsBehindSection opsBehindSection;
+      IsoScoreCache cachedIsoScores;
 
       // Find equivalence classes, derive positions
       Section section   = -1;
@@ -760,15 +746,7 @@ bool BatchSerialize::apply(Graph &graph) const {
             }
             opToPosition[{section, bsp}][op]       = position;
             positionToOp[{section, bsp}][position] = op;
-            opSectionLookup[op]                    = section;
-
-            if (op->isConvertibleTo<DynamicSliceOp>()) {
-              std::vector<Tensor *> traceFront(
-                  batchSerFactor,
-                  op->input->tensor(DynamicSliceOp::getInIndex()));
-              parallelTraceFront.push(
-                  TraceFront(traceFront, TraceDirection::Forward));
-            }
+            opToSection[op]                        = section;
 
             // First batch defines schedule order
             position++;
@@ -780,6 +758,13 @@ bool BatchSerialize::apply(Graph &graph) const {
           opsBehindSection[section].push_back(op);
         }
       }
+
+      // Find seed fronts
+      auto parallelTraceFront =
+          findParallelTraceFronts(schedule, batchSerFactor);
+
+      logging::trace("[BatchSerialize] Parallel trace fronts: {}",
+                     parallelTraceFront.size());
 
       std::set<std::pair<std::vector<Tensor *>, TraceDirection>> visited;
 
@@ -850,7 +835,7 @@ bool BatchSerialize::apply(Graph &graph) const {
             }
             equivProcessedOps.insert(op0);
 
-            section = opSectionLookup.at(op0);
+            section = opToSection.at(op0);
             std::vector<Op *> equivalentOps;
             std::set<BatchSerializedPhase> foundBSPs;
             foundBSPs.insert(op0->getBatchSerializedPhase());
@@ -892,8 +877,13 @@ bool BatchSerialize::apply(Graph &graph) const {
               Op *op1 = *std::max_element(
                   binOps.begin(),
                   binOps.end(),
-                  [this, &cachedIsoScores, &opSubgraphEquivId, &op0, &scoreGap](
-                      Op *lhs, Op *rhs) {
+                  [this,
+                   &cachedIsoScores,
+                   &opToSection,
+                   &opToPosition,
+                   &opSubgraphEquivId,
+                   &op0,
+                   &scoreGap](Op *lhs, Op *rhs) {
                     std::set<std::pair<Op *, Op *>> visitedOpsLhs;
                     std::set<std::pair<Op *, Op *>> visitedOpsRhs;
                     if (lhs->id == rhs->id) {
@@ -910,12 +900,16 @@ bool BatchSerialize::apply(Graph &graph) const {
                       lastLhsScore = lhsScore;
                       lastRhsScore = rhsScore;
                       lhsScore     = getLocalIsoScore(cachedIsoScores,
+                                                  opToSection,
+                                                  opToPosition,
                                                   opSubgraphEquivId,
                                                   {op0, lhs},
                                                   visitedOpsLhs,
                                                   depth,
                                                   true);
                       rhsScore     = getLocalIsoScore(cachedIsoScores,
+                                                  opToSection,
+                                                  opToPosition,
                                                   opSubgraphEquivId,
                                                   {op0, rhs},
                                                   visitedOpsRhs,
@@ -947,7 +941,7 @@ bool BatchSerialize::apply(Graph &graph) const {
               auto pos = opToPosition[{section, 0}][op0];
               opToPosition[{section, bsp}][op1] = pos;
               positionToOp[{section, bsp}][pos] = op1;
-              opSectionLookup[op1]              = section;
+              opToSection[op1]                  = section;
               equivProcessedOps.insert(op1);
             }
           }
@@ -980,14 +974,14 @@ bool BatchSerialize::apply(Graph &graph) const {
       for (Op *op : schedule) {
         if (op->hasBatchSerializedPhase() &&
             op->getBatchSerializedPhase() >= 0) {
-          if (opSectionLookup.find(op) == opSectionLookup.end()) {
+          if (opToSection.find(op) == opToSection.end()) {
             logging::warn("[BatchSerialize] Could not find isomorphic "
                           "position for {}",
                           op->debugName());
             op->setBatchSerializedPhase(OptionalBatchSerializedPhase());
             opsBehindSection[section].push_back(op);
           } else {
-            section   = opSectionLookup.at(op);
+            section   = opToSection.at(op);
             auto bsp0 = op->getBatchSerializedPhase();
             if (bsp0 == 0) {
               auto pos       = opToPosition.at({section, bsp0}).at(op);
@@ -1003,7 +997,7 @@ bool BatchSerialize::apply(Graph &graph) const {
                 logging::warn("[BatchSerialize] Could not find isomorphic "
                               "position for {}",
                               op->debugName());
-                opSectionLookup.erase(op);
+                opToSection.erase(op);
                 op->setBatchSerializedPhase(OptionalBatchSerializedPhase());
               }
             }
@@ -1062,8 +1056,85 @@ bool BatchSerialize::apply(Graph &graph) const {
   return true;
 }
 
+std::priority_queue<BatchSerialize::TraceFront>
+BatchSerialize::findParallelTraceFronts(std::vector<Op *> schedule,
+                                        int64_t batchSerFactor) const {
+  std::priority_queue<BatchSerialize::TraceFront> queue;
+  std::vector<Tensor *> traceTensors(batchSerFactor);
+
+  for (Op *op : schedule) {
+
+    if (!op->hasBatchSerializedPhase()) {
+
+      // Breadth first search, find patterns like:
+      // 1.)
+      //
+      // |           |           |
+      // Op (BSP 0)  Op (BSP 1)  Op (BSP 2)
+      //    \        |         /
+      //     '------ Op ------'
+      //             |
+      //
+      // 2.)
+      //
+      // |           |           |
+      // Op (BSP 0)  |           |
+      // '---------- Op (BSP 1)  |
+      //             '---------- Op (BSP 2)
+      //                         '------------ Op
+
+      std::map<SubgraphEquivId, std::vector<Tensor *>> equivTraceTensors;
+
+      std::set<BatchSerializedPhase> foundBSPs;
+      std::set<Op *> visited;
+      std::queue<Op *> opQueue;
+      opQueue.push(op);
+      while (!opQueue.empty() && foundBSPs.size() != batchSerFactor) {
+        Op *op0 = opQueue.front();
+        opQueue.pop();
+        visited.insert(op0);
+        for (auto &idxAndTensor : op0->input->tensorMap()) {
+          if (idxAndTensor.second->hasProducer()) {
+            Op *op1 = idxAndTensor.second->getProducer();
+            if (op1->hasBatchSerializedPhase()) {
+              BatchSerializedPhase bsp1 = op1->getBatchSerializedPhase();
+              SubgraphEquivId id        = op1->getSubgraphEquivId();
+              if (equivTraceTensors.find(id) == equivTraceTensors.end()) {
+                equivTraceTensors.insert(
+                    {id, std::vector<Tensor *>(batchSerFactor)});
+              }
+              if (!equivTraceTensors.at(id).at(bsp1)) {
+                equivTraceTensors.at(id)[bsp1] = idxAndTensor.second;
+              }
+              if (std::all_of(
+                      equivTraceTensors.at(id).begin(),
+                      equivTraceTensors.at(id).end(),
+                      [](const Tensor *t) { return static_cast<bool>(t); })) {
+                traceTensors = equivTraceTensors.at(id);
+                opQueue      = {};
+                break;
+              }
+            }
+            opQueue.push(op1);
+          }
+        }
+      }
+
+      if (std::all_of(traceTensors.begin(),
+                      traceTensors.end(),
+                      [](const Tensor *t) { return static_cast<bool>(t); })) {
+        queue.push(BatchSerialize::TraceFront(
+            traceTensors, BatchSerialize::TraceDirection::Backward));
+      }
+    }
+  }
+  return queue;
+}
+
 int64_t BatchSerialize::getLocalIsoScore(
-    std::map<std::tuple<Op *, Op *, int>, int64_t> &cachedIsoScores,
+    IsoScoreCache &cachedIsoScores,
+    const OpToSection &opToSection,
+    const OpToPosition &opToPosition,
     std::map<Op *, SubgraphEquivId> &opSubgraphEquivId,
     std::pair<Op *, Op *> ops,
     std::set<std::pair<Op *, Op *>> &visitedOps,
@@ -1086,6 +1157,28 @@ int64_t BatchSerialize::getLocalIsoScore(
        ops.second->getOptionalPipelineStage())) {
     return score;
   }
+
+  auto sit0 = opToSection.find(ops.first);
+  auto sit1 = opToSection.find(ops.second);
+
+  if (sit0 != opToSection.end() && sit1 != opToSection.end()) {
+    if (sit0->second != sit1->second) {
+      // Ops already annotated in different sections: Not isomorphic
+      return score;
+    } else {
+      auto pos0 =
+          opToPosition.at({sit0->second, ops.first->getBatchSerializedPhase()})
+              .at(ops.first);
+      auto pos1 =
+          opToPosition.at({sit1->second, ops.second->getBatchSerializedPhase()})
+              .at(ops.second);
+      if (pos0 != pos1) {
+        // Ops already annotated in same section but different positions: Not
+        // isomorphic
+      }
+    }
+  }
+
   visitedOps.insert(ops);
 
   // Check if the ops have the same subgraph equivalent ID
@@ -1101,6 +1194,8 @@ int64_t BatchSerialize::getLocalIsoScore(
         Op *psecond = tsecond->getProducer();
         if (opSubgraphEquivId[pfirst] == opSubgraphEquivId[psecond]) {
           score += getLocalIsoScore(cachedIsoScores,
+                                    opToSection,
+                                    opToPosition,
                                     opSubgraphEquivId,
                                     {pfirst, psecond},
                                     visitedOps,
@@ -1121,21 +1216,37 @@ int64_t BatchSerialize::getLocalIsoScore(
       auto csfirst  = tfirst->consumers.getOps();
       auto cssecond = tsecond->consumers.getOps();
 
+      std::set<Op *, POpCmp> cssecondMatched;
+
       for (Op *cfirst : csfirst) {
+        Op *maxOp         = nullptr;
         int64_t max_score = 0;
+        std::set<std::pair<Op *, Op *>> maxVisitedOps;
         for (Op *csecond : cssecond) {
           // Find csecond that matches cfirst best
-          if (opSubgraphEquivId[cfirst] == opSubgraphEquivId[csecond]) {
-            max_score = std::max(getLocalIsoScore(cachedIsoScores,
-                                                  opSubgraphEquivId,
-                                                  {cfirst, csecond},
-                                                  visitedOps,
-                                                  maxDepth - 1,
-                                                  false),
-                                 max_score);
+          if (opSubgraphEquivId[cfirst] == opSubgraphEquivId[csecond] &&
+              cssecondMatched.find(csecond) == cssecondMatched.end()) {
+            std::set<std::pair<Op *, Op *>> &localVisitedOps = visitedOps;
+            int64_t local_score = getLocalIsoScore(cachedIsoScores,
+                                                   opToSection,
+                                                   opToPosition,
+                                                   opSubgraphEquivId,
+                                                   {cfirst, csecond},
+                                                   localVisitedOps,
+                                                   maxDepth - 1,
+                                                   false);
+            if (local_score > max_score) {
+              max_score     = local_score;
+              maxVisitedOps = localVisitedOps;
+              maxOp         = csecond;
+            }
           }
         }
-        score += max_score;
+        if (maxOp) {
+          cssecondMatched.insert(maxOp);
+          visitedOps.insert(maxVisitedOps.begin(), maxVisitedOps.end());
+          score += max_score;
+        }
       }
     }
   }

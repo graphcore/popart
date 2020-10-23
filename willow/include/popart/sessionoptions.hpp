@@ -193,7 +193,7 @@ struct BatchSerializationSettings {
                              bool concatOnPipelineStageChange_,
                              BatchSerializationBatchSchedule batchSchedule_ =
                                  BatchSerializationBatchSchedule::Isomorphic,
-                             int isomorphismScoreGap_ = 3);
+                             int isomorphismScoreGap_ = 1);
 
   BatchSerializationSettings &
   operator=(const BatchSerializationSettings &rhs) = default;
