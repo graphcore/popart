@@ -2,7 +2,7 @@
 #define BOOST_TEST_MODULE StepIOTest
 
 #include <boost/test/unit_test.hpp>
-#include <popart/stepiosplitter.hpp>
+#include <stepiosplitter.hpp>
 
 using namespace popart;
 
@@ -20,17 +20,21 @@ public:
     int64_t numElements;
     bool prefetch;
   };
+  using InCallParamsVec = std::vector<InCallParams>;
   struct InCompleteCallParams {
     TensorId id;
     int64_t numElements;
   };
+  using InCompleteCallParamsVec = std::vector<InCompleteCallParams>;
   struct OutCallParams {
     TensorId id;
     int64_t numElements;
   };
+  using OutCallParamsVec = std::vector<OutCallParams>;
   struct OutCompleteCallParams {
     TensorId id;
   };
+  using OutCompleteCallParamsVec = std::vector<OutCompleteCallParams>;
 
   TestStepIO()
       : inCallHistory{}, inCompleteCallHistory{}, outCallHistory{},
@@ -41,9 +45,13 @@ public:
   virtual ConstVoidData in(TensorId id, int64_t numElements, bool prefetch) {
     // Remember call (so we can use it in tests).
     inCallHistory.push_back(InCallParams{id, numElements, prefetch});
-
-    BOOST_ASSERT(!inReturnValues.empty());
+    BOOST_REQUIRE(!inReturnValues.empty());
     auto res = inReturnValues.front();
+    logging::debug("upstream -   in({},{},{}) (return:{})",
+                   id,
+                   numElements,
+                   prefetch,
+                   res.data);
     inReturnValues.pop_front();
     return res;
   }
@@ -51,20 +59,23 @@ public:
   virtual void inComplete(TensorId id, int64_t numElements) {
     // Remember call (so we can use it in tests).
     inCompleteCallHistory.push_back(InCompleteCallParams{id, numElements});
+    logging::debug("upstream -   inComplete({},{})", id, numElements);
   }
 
   virtual MutableVoidData out(TensorId id, int64_t numElements) {
     // Remember call (so we can use it in tests).
     outCallHistory.push_back(OutCallParams{id, numElements});
-
-    BOOST_ASSERT(!outReturnValues.empty());
+    BOOST_REQUIRE(!outReturnValues.empty());
     auto res = outReturnValues.front();
+    logging::debug(
+        "upstream -   out({},{}) (return:{})", id, numElements, res.data);
     outReturnValues.pop_front();
     return res;
   }
 
   virtual void outComplete(TensorId id) {
     outCompleteCallHistory.push_back(OutCompleteCallParams{id});
+    logging::debug("upstream -   outComplete({})", id);
   }
 
   virtual void assertNumElements(const Ir &) const {
@@ -89,362 +100,555 @@ public:
   std::list<MutableVoidData> outReturnValues;
 };
 
-void runTestSquence(std::function<const void *(unsigned)> &fetchFn,
-                    std::function<void(unsigned)> &completeFn,
-                    std::function<void *(size_t)> &dataItemFn) {
-  auto down0_data0 = fetchFn(0);
-  auto down1_data0 = fetchFn(1);
-  auto down2_data0 = fetchFn(2);
-  auto down3_data0 = fetchFn(3);
-  completeFn(0);
-  completeFn(1);
-  completeFn(2);
-  completeFn(3);
-  auto down0_data1 = fetchFn(0);
-  auto down1_data1 = fetchFn(1);
-  auto down2_data1 = fetchFn(2);
-  auto down3_data1 = fetchFn(3);
-  completeFn(0);
-  completeFn(1);
-  completeFn(2);
-  completeFn(3);
+enum class TestDirection {
+  In  = 0,
+  Out = 1,
+};
 
-  // Now try a slightly more chaotic order of downstream CallHistory.
-  auto down0_data2  = fetchFn(0);
-  auto down1_data2a = fetchFn(1);
-  auto down1_data2b = fetchFn(1); // fetch same data twice.
-  completeFn(0);                  // complete before other replicas
-  auto down0_data3 = fetchFn(0);  // replica 0 on second round
-  auto down3_data2 = fetchFn(3);  // out of order
-  auto down2_data2 = fetchFn(2);
-  completeFn(1);
-  completeFn(2);
-  completeFn(3);
-  completeFn(0);
-  auto down3_data3 = fetchFn(3);
-  completeFn(3);
-  auto down2_data3 = fetchFn(2);
-  auto down1_data3 = fetchFn(1);
-  completeFn(1);
-  completeFn(2);
-
-  // Check we got presented the data in the right order.
-  BOOST_CHECK(down0_data0 == dataItemFn(0));
-  BOOST_CHECK(down1_data0 == dataItemFn(1));
-  BOOST_CHECK(down2_data0 == dataItemFn(2));
-  BOOST_CHECK(down3_data0 == dataItemFn(3));
-  BOOST_CHECK(down0_data1 == dataItemFn(4));
-  BOOST_CHECK(down1_data1 == dataItemFn(5));
-  BOOST_CHECK(down2_data1 == dataItemFn(6));
-  BOOST_CHECK(down3_data1 == dataItemFn(7));
-  BOOST_CHECK(down0_data2 == dataItemFn(8));
-  BOOST_CHECK(down1_data2a == dataItemFn(9)); // Got same data twice.
-  BOOST_CHECK(down1_data2b == dataItemFn(9));
-  BOOST_CHECK(down2_data2 == dataItemFn(10));
-  BOOST_CHECK(down3_data2 == dataItemFn(11));
-  BOOST_CHECK(down0_data3 == dataItemFn(12));
-  BOOST_CHECK(down1_data3 == dataItemFn(13));
-  BOOST_CHECK(down2_data3 == dataItemFn(14));
-  BOOST_CHECK(down3_data3 == dataItemFn(15));
+std::string testDirection2Str(TestDirection &dir) {
+  if (dir == TestDirection::In) {
+    return "In";
+  } else {
+    return "Out";
+  }
 }
 
-BOOST_AUTO_TEST_CASE(StepIOSplitter_Order) {
+TensorId tensorId{"testTensor1"};
+TensorInfo tensorInfo{DataType::FLOAT, Shape{1}};
+int64_t tensorNelms{tensorInfo.nelms()};
 
-  const size_t NUM_INPUTS     = 100;
-  const unsigned NUM_REPLICAS = 4;
+auto setupSplitter = [](int repl, int bsp, int accum, int runs = 1) {
+  const unsigned numData = repl * bsp * accum * runs;
 
-  TensorId tensorId{"testTensor1"};
-  TensorInfo tensorInfo{DataType::FLOAT, Shape{1}};
-  int64_t tensorNelms{tensorInfo.nelms()};
+  auto splitter = std::make_shared<StepIOSplitter>(
+      repl,
+      [&](const TensorId &id) { return bsp * accum; },
+      [&](const TensorId &id) { return bsp * accum; });
+  auto upstream    = std::make_shared<TestStepIO>();
+  auto downstreams = std::vector<IStepIO *>();
+  auto inbuf       = std::make_shared<std::vector<unsigned>>(numData, 0u);
+  auto outbuf      = std::make_shared<std::vector<unsigned>>(numData, 0u);
 
-  // Data buffer we can use for comparing memory locations.
-  std::vector<unsigned> inDataBuffer{NUM_INPUTS, 0u};
-  std::vector<unsigned> outDataBuffer{NUM_INPUTS, 0u};
+  // Link upstream IStepIO to splitter.
+  splitter->setUpstreamIo(upstream.get());
 
-  // Set up upstream IStepIO.
-  TestStepIO upstreamIo;
-
-  for (int i = 0; i < NUM_INPUTS; ++i) {
-    ConstVoidData inData;
-    inData.data = static_cast<void *>(&inDataBuffer[i]);
-    inData.info = tensorInfo;
-    upstreamIo.inReturnValues.push_back(inData);
-
-    MutableVoidData outData;
-    outData.data = static_cast<void *>(&outDataBuffer[i]);
-    outData.info = tensorInfo;
-    upstreamIo.outReturnValues.push_back(outData);
+  // Set upstream return values (for testing).
+  for (int i = 0; i < numData; ++i) {
+    upstream->inReturnValues.push_back(
+        ConstVoidData{reinterpret_cast<void *>(&(*inbuf)[i]), tensorInfo});
+    logging::debug(
+        "buffer in[{}]  - {}", i, reinterpret_cast<void *>(&(*inbuf)[i]));
+  }
+  for (int i = 0; i < numData; ++i) {
+    upstream->outReturnValues.push_back(
+        MutableVoidData{reinterpret_cast<void *>(&(*outbuf)[i]), tensorInfo});
+    logging::debug(
+        "buffer out[{}] - {}", i, reinterpret_cast<void *>(&(*outbuf)[i]));
   }
 
-  // Set up StepIOSplitter.
-  StepIOSplitter splitter(NUM_REPLICAS, 10, 1);
-  splitter.setUpstreamIo(&upstreamIo);
-
-  // Get downstream StepIOs from splitter.
-  std::vector<IStepIO *> downstreamIos;
-  for (unsigned replicationIndex = 0; replicationIndex < NUM_REPLICAS;
-       ++replicationIndex) {
-    downstreamIos.push_back(
-        splitter.getDownstreamStepIO(tensorId, tensorInfo, replicationIndex));
+  // Get downstream IStepIO adapters from splitter.
+  for (unsigned r = 0; r < repl; ++r) {
+    downstreams.push_back(
+        splitter->getDownstreamStepIO(tensorId, tensorInfo, r));
   }
 
-  // Get downstream Ios again for some replicas to ensure it won't cause
-  // problems.
-  splitter.getDownstreamStepIO(tensorId, tensorInfo, 0);
-  splitter.getDownstreamStepIO(tensorId, tensorInfo, 3);
+  return std::make_tuple(splitter, upstream, downstreams, inbuf, outbuf);
+};
 
-  // Define helper functions for testing.
-  std::function<const void *(unsigned)> inFetch =
-      [&](unsigned replicationIndex) -> const void * {
-    return downstreamIos[replicationIndex]
-        ->in(tensorId, tensorNelms, false)
-        .data;
+// Create function that returns buffer addresses for a given offset.
+auto getAddr = [](auto &setup, TestDirection &dir) {
+  auto addr = [&](int i) {
+    if (dir == TestDirection::In) {
+      auto inbuf = std::get<3>(setup);
+      // logging::debug("getAddr (inbuf[{}] == {})", i, reinterpret_cast<void
+      // *>(&(*inbuf)[i]));
+      return reinterpret_cast<void *>(&(*inbuf)[i]);
+    } else {
+      auto outbuf = std::get<4>(setup);
+      // logging::debug("getAddr (outbuf[{}] == {})", i, reinterpret_cast<void
+      // *>(&(*outbuf)[i]));
+      return reinterpret_cast<void *>(&(*outbuf)[i]);
+    }
   };
-  std::function<void(unsigned)> inComplete =
-      [&](unsigned replicationIndex) -> void {
-    downstreamIos[replicationIndex]->inComplete(tensorId, tensorNelms);
+  return addr;
+};
+
+// Create function that calls 'in' on downstream IStepIO and checks
+// the returned buffer matches the parameter.
+auto getCallDownstream = [](auto &downstreams, TestDirection &dir) {
+  auto callDownstream = [&](int repl, bool prefetch, void *expectedAddr) {
+    if (dir == TestDirection::In) {
+      logging::debug("downstream - in({},{},{}):{} (exp:{})",
+                     tensorId,
+                     tensorNelms,
+                     prefetch,
+                     repl,
+                     expectedAddr);
+      auto result = downstreams[repl]->in(tensorId, tensorNelms, prefetch);
+      BOOST_CHECK_EQUAL(result.data, expectedAddr);
+    } else {
+      logging::debug("downstream - out({},{}):{} (exp:{})",
+                     tensorId,
+                     tensorNelms,
+                     repl,
+                     expectedAddr);
+      auto result = downstreams[repl]->out(tensorId, tensorNelms);
+      BOOST_CHECK_EQUAL(result.data, expectedAddr);
+    }
   };
-  std::function<void *(size_t)> inDataItem = [&](size_t index) -> void * {
-    return static_cast<void *>(&inDataBuffer[index]);
+  return callDownstream;
+};
+
+// Create function that calls 'inComplete' on downstream IStepIO.
+auto getCallDownstreamComplete = [](auto &downstreams, TestDirection &dir) {
+  auto callDownstreamComplete = [&](int repl) {
+    if (dir == TestDirection::In) {
+      logging::debug(
+          "downstream - inComplete({},{}):{}", tensorId, tensorNelms, repl);
+      downstreams[repl]->inComplete(tensorId, tensorNelms);
+    } else {
+      logging::debug("downstream - outComplete({}):{}", tensorId, repl);
+      downstreams[repl]->outComplete(tensorId);
+    }
   };
+  return callDownstreamComplete;
+};
 
-  // Run tests for inputs.
-  runTestSquence(inFetch, inComplete, inDataItem);
-
-  // Define helper functions for testing.
-  std::function<const void *(unsigned)> outFetch =
-      [&](unsigned replicationIndex) -> const void * {
-    return downstreamIos[replicationIndex]->out(tensorId, tensorNelms).data;
+// Create function to check and clear upstream call history.
+auto getCheckUpstreamCallHistory = [](auto &upstream, TestDirection &dir) {
+  auto checkUpstreamCallHistory = [&](const int numBufRequests,
+                                      const int numCompletes) {
+    if (dir == TestDirection::In) {
+      BOOST_CHECK_EQUAL(upstream->inCallHistory.size(), numBufRequests);
+      BOOST_REQUIRE(upstream->inCallHistory.size() >= numBufRequests);
+      for (int i = 0; i < numBufRequests; ++i) {
+        BOOST_CHECK_EQUAL(upstream->inCallHistory[i].id, tensorId);
+        BOOST_CHECK_EQUAL(upstream->inCallHistory[i].numElements, tensorNelms);
+        BOOST_CHECK_EQUAL(upstream->inCallHistory[i].prefetch,
+                          i == numBufRequests - 1);
+      }
+      BOOST_CHECK_EQUAL(upstream->inCompleteCallHistory.size(), numCompletes);
+      BOOST_REQUIRE(upstream->inCompleteCallHistory.size() >= numCompletes);
+      for (int i = 0; i < numCompletes; ++i) {
+        BOOST_CHECK_EQUAL(upstream->inCompleteCallHistory[i].id, tensorId);
+        BOOST_CHECK_EQUAL(upstream->inCompleteCallHistory[i].numElements,
+                          tensorNelms);
+      }
+      BOOST_CHECK_EQUAL(upstream->outCallHistory.size(), 0);
+      BOOST_CHECK_EQUAL(upstream->outCompleteCallHistory.size(), 0);
+    } else {
+      BOOST_CHECK_EQUAL(upstream->inCallHistory.size(), 0);
+      BOOST_CHECK_EQUAL(upstream->inCompleteCallHistory.size(), 0);
+      BOOST_CHECK_EQUAL(upstream->outCallHistory.size(), numBufRequests);
+      BOOST_REQUIRE(upstream->outCallHistory.size() >= numBufRequests);
+      for (int i = 0; i < numBufRequests; ++i) {
+        BOOST_CHECK_EQUAL(upstream->outCallHistory[i].id, tensorId);
+        BOOST_CHECK_EQUAL(upstream->outCallHistory[i].numElements, tensorNelms);
+      }
+      BOOST_CHECK_EQUAL(upstream->outCompleteCallHistory.size(), numCompletes);
+      BOOST_REQUIRE(upstream->outCompleteCallHistory.size() >= numCompletes);
+      for (int i = 0; i < numCompletes; ++i) {
+        BOOST_CHECK_EQUAL(upstream->outCompleteCallHistory[i].id, tensorId);
+      }
+    }
+    upstream->clearHistory();
   };
-  std::function<void(unsigned)> outComplete =
-      [&](unsigned replicationIndex) -> void {
-    downstreamIos[replicationIndex]->outComplete(tensorId);
-  };
-  std::function<void *(size_t)> outDataItem = [&](size_t index) -> void * {
-    return static_cast<void *>(&outDataBuffer[index]);
-  };
-
-  // Run tests for outputs.
-  runTestSquence(outFetch, outComplete, outDataItem);
-}
-
-BOOST_AUTO_TEST_CASE(StepIOSplitter_PrefetchFlag) {
-
-  //  IStepIO         StepIOSplitter           Poplar
-  // (upstream)        (under test)          (downstream)
-  //    |                   |                     |
-  //    | [STEP 1]          |                     |
-  //    |                   |                     |
-  //    |                   | <--in[0](..,true)-- |
-  //    | <--in(..,true)--- |                     |
-  //    | ---ret:nullptr--> |                     |
-  //    |                   | ---ret:nullptr----> |
-  //    |                   |                     |
-  //    | [STEP 2]          |                     |
-  //    |                   |                     |
-  //    |                   | <--in[0](..,true)-- |
-  //    | <--in(..,true)--- |                     |
-  //    | ---ret:&[4]-----> |                     |
-  //    | <--inComplete(..) |                     |
-  //    | ----------------> |                     |
-  //    |                   | ---ret:&[4]-------> |
-  //    |                   |                     |
-  //    | [STEP 3]          |                     |
-  //    |                   |                     |
-  //    |                   | <--in[2](..,true)-- |
-  //    | <--in(..,false)-- |                     |
-  //    | ---ret:&[7]-----> |                     |
-  //    | <--inComplete(..) |                     |
-  //    | ----------------> |                     |
-  //    | <--in(..,true)--- |                     |
-  //    | ---ret:&[8]-----> |                     |
-  //    | <--inComplete(..) |                     |
-  //    | ----------------> |                     |
-  //    |                   | ---ret:&[8]-------> |
-  //    |                   |                     |
-  //    | [STEP 4]          |                     |
-  //    |                   |                     |
-  //    |                   | <--in[1](..,true)-- |
-  //    |                   | ---ret:&[7]-------> |
-  //    |                   |                     |
-  //    | [STEP 5]          |                     |
-  //    |                   |                     |
-  //    |                   | <--inComplete[1]()- |
-  //    |                   | ------------------> |
-  //    |                   | <--in[1](..,false)- |
-  //    | <--in(..,false)-- |                     |
-  //    | ---ret:&[11]----> |                     |
-  //    | <--inComplete(..) |                     |
-  //    | ----------------> |                     |
-  //    | <--in(..,false)-- |                     |
-  //    | ---ret:&[16]----> |                     |
-  //    | <--inComplete(..) |                     |
-  //    | ----------------> |                     |
-  //    | <--in(..,false)-- |                     |
-  //    | ---ret:&[17]----> |                     |
-  //    | <--inComplete(..) |                     |
-  //    | ----------------> |                     |
-  //    |                   | ---ret:&[17]------> |
-  //
-
-  const size_t NUM_INPUTS     = 100;
-  const unsigned NUM_REPLICAS = 4;
-
-  TensorId tensorId{"testTensor1"};
-  TensorInfo tensorInfo{DataType::FLOAT, Shape{1}};
-  int64_t tensorNelms{tensorInfo.nelms()};
-
-  TestStepIO upstreamIo;
-
-  // Set up StepIOSplitter.
-  StepIOSplitter splitter(NUM_REPLICAS, 10, 1);
-  splitter.setUpstreamIo(&upstreamIo);
-
-  // Get downstream StepIOs from splitter.
-  std::vector<IStepIO *> downstreamIos;
-  for (unsigned replicationIndex = 0; replicationIndex < NUM_REPLICAS;
-       ++replicationIndex) {
-    downstreamIos.push_back(
-        splitter.getDownstreamStepIO(tensorId, tensorInfo, replicationIndex));
-  }
-
-  // Data buffer we can use for comparing memory locations.
-  std::vector<unsigned> inDataBuffer{NUM_INPUTS, 0u};
-
-  ConstVoidData result;
-
-  // STEP 1: The steps below tests a failed prefetch on replica 0.
-
-  // Ensure history is clear.
-  upstreamIo.clearHistory();
-  // Tell upstreamIo what to return when called.
-  upstreamIo.inReturnValues.push_back(ConstVoidData{nullptr, tensorInfo});
-  // Request prefetch for first replica.
-  result = downstreamIos[0]->in(tensorId, tensorNelms, /*prefetch=*/true);
-  // Check that the downstream result indicated failure (as per upstream return
-  // value).
-  BOOST_ASSERT(result.data == nullptr);
-  // Check that the upstream IStepIO was called with prefetch=true;
-  BOOST_ASSERT(upstreamIo.inCallHistory.size() == 1);
-  BOOST_ASSERT(upstreamIo.inCompleteCallHistory.size() == 0);
-  BOOST_ASSERT(upstreamIo.outCallHistory.size() == 0);
-  BOOST_ASSERT(upstreamIo.outCompleteCallHistory.size() == 0);
-  BOOST_ASSERT(upstreamIo.inCallHistory[0].id == tensorId);
-  BOOST_ASSERT(upstreamIo.inCallHistory[0].numElements == tensorNelms);
-  BOOST_ASSERT(upstreamIo.inCallHistory[0].prefetch == true);
-
-  // STEP 2: The steps below tests a successful prefetch on replica 0.
-
-  // Clear history between test steps.
-  upstreamIo.clearHistory();
-  // Tell upstreamIo what to return when called.
-  upstreamIo.inReturnValues.push_back(
-      ConstVoidData{reinterpret_cast<void *>(&inDataBuffer[4]), tensorInfo});
-  // Request prefetch for first replica.
-  result = downstreamIos[0]->in(tensorId, tensorNelms, /*prefetch=*/true);
-  // Check that the downstream result indicated success (as per upstream return
-  // value).
-  BOOST_ASSERT(result.data == reinterpret_cast<void *>(&inDataBuffer[4]));
-  // Check that the upstream IStepIO was called with prefetch=true and that
-  // complete was called at the earliest opportunity;
-  BOOST_ASSERT(upstreamIo.inCallHistory.size() == 1);
-  // The inComplete call is deferred.
-  BOOST_ASSERT(upstreamIo.inCompleteCallHistory.size() == 0);
-  BOOST_ASSERT(upstreamIo.outCallHistory.size() == 0);
-  BOOST_ASSERT(upstreamIo.outCompleteCallHistory.size() == 0);
-  BOOST_ASSERT(upstreamIo.inCallHistory[0].id == tensorId);
-  BOOST_ASSERT(upstreamIo.inCallHistory[0].numElements == tensorNelms);
-  BOOST_ASSERT(upstreamIo.inCallHistory[0].prefetch == true);
-
-  // STEP 3: Next, do a prefetch on replica 2 with prefetch. This should result
-  // in a non-prefetch call for replica 1 and a prefetch call for replica 2.
-
-  // Clear history between test steps.
-  upstreamIo.clearHistory();
-  // Tell upstreamIo what to return when called.
-  upstreamIo.inReturnValues.push_back(
-      ConstVoidData{reinterpret_cast<void *>(&inDataBuffer[7]), tensorInfo});
-  upstreamIo.inReturnValues.push_back(
-      ConstVoidData{reinterpret_cast<void *>(&inDataBuffer[8]), tensorInfo});
-  // Request prefetch for replica 2.
-  result = downstreamIos[2]->in(tensorId, tensorNelms, /*prefetch=*/true);
-  // Check that the downstream result indicated success (as per upstream return
-  // value).
-  BOOST_ASSERT(result.data == reinterpret_cast<void *>(&inDataBuffer[8]));
-  // Check that the upstream IStepIO was called twice, once with prefetch=false
-  // and once with prefetch=true;
-  BOOST_ASSERT(upstreamIo.inCallHistory.size() == 2);
-  BOOST_ASSERT(upstreamIo.inCompleteCallHistory.size() == 2);
-  BOOST_ASSERT(upstreamIo.outCallHistory.size() == 0);
-  BOOST_ASSERT(upstreamIo.outCompleteCallHistory.size() == 0);
-  BOOST_ASSERT(upstreamIo.inCallHistory[0].id == tensorId);
-  BOOST_ASSERT(upstreamIo.inCallHistory[0].numElements == tensorNelms);
-  BOOST_ASSERT(upstreamIo.inCallHistory[0].prefetch == false);
-  BOOST_ASSERT(upstreamIo.inCallHistory[1].id == tensorId);
-  BOOST_ASSERT(upstreamIo.inCallHistory[1].numElements == tensorNelms);
-  BOOST_ASSERT(upstreamIo.inCallHistory[1].prefetch == true);
-  BOOST_ASSERT(upstreamIo.inCompleteCallHistory[0].id == tensorId);
-  BOOST_ASSERT(upstreamIo.inCompleteCallHistory[0].numElements == tensorNelms);
-  BOOST_ASSERT(upstreamIo.inCompleteCallHistory[1].id == tensorId);
-  BOOST_ASSERT(upstreamIo.inCompleteCallHistory[1].numElements == tensorNelms);
-
-  // STEP 4: Do another downstream fetch for replica 1 but see it doesn't result
-  // in an upstream call because we didn't call inComplete.
-
-  // Clear history between test steps.
-  upstreamIo.clearHistory();
-  // Request prefetch for replica 1.
-  result = downstreamIos[1]->in(tensorId, tensorNelms, /*prefetch=*/true);
-  // Check that the downstream result indicated success (as per upstream return
-  // value).
-  BOOST_ASSERT(result.data == reinterpret_cast<void *>(&inDataBuffer[7]));
-  // Check that the upstream IStepIO was called twice, once with prefetch=false
-  // and once with prefetch=true;
-  BOOST_ASSERT(upstreamIo.inCallHistory.size() == 0);
-  BOOST_ASSERT(upstreamIo.inCompleteCallHistory.size() == 0);
-  BOOST_ASSERT(upstreamIo.outCallHistory.size() == 0);
-  BOOST_ASSERT(upstreamIo.outCompleteCallHistory.size() == 0);
-
-  // STEP 5: Now call inComplete on replica 1 and request new data, without
-  // prefetch. Request prefetch for replica 1. Expecting fresh calls for replica
-  // 3, 0 and 1.
-
-  // Clear history between test steps.
-  upstreamIo.clearHistory();
-  // Tell upstreamIo what to return when called.
-  upstreamIo.inReturnValues.push_back(
-      ConstVoidData{reinterpret_cast<void *>(&inDataBuffer[11]), tensorInfo});
-  upstreamIo.inReturnValues.push_back(
-      ConstVoidData{reinterpret_cast<void *>(&inDataBuffer[16]), tensorInfo});
-  upstreamIo.inReturnValues.push_back(
-      ConstVoidData{reinterpret_cast<void *>(&inDataBuffer[17]), tensorInfo});
-  // Do inComplete and request new data without prefetch for replica 1.
-  downstreamIos[1]->inComplete(tensorId, tensorNelms);
-  result = downstreamIos[1]->in(tensorId, tensorNelms, /*prefetch=*/false);
-  // Check that the downstream result indicated success (as per upstream return
-  // value).
-  BOOST_ASSERT(result.data == reinterpret_cast<void *>(&inDataBuffer[17]));
-  // Check that the upstream IStepIO was called twice, once with prefetch=false
-  // and once with prefetch=true;
-  BOOST_ASSERT(upstreamIo.inCallHistory.size() == 3);
-  BOOST_ASSERT(upstreamIo.inCompleteCallHistory.size() == 3);
-  BOOST_ASSERT(upstreamIo.outCallHistory.size() == 0);
-  BOOST_ASSERT(upstreamIo.outCompleteCallHistory.size() == 0);
-  BOOST_ASSERT(upstreamIo.inCallHistory[0].id == tensorId);
-  BOOST_ASSERT(upstreamIo.inCallHistory[0].numElements == tensorNelms);
-  BOOST_ASSERT(upstreamIo.inCallHistory[0].prefetch == false);
-  BOOST_ASSERT(upstreamIo.inCallHistory[1].id == tensorId);
-  BOOST_ASSERT(upstreamIo.inCallHistory[1].numElements == tensorNelms);
-  BOOST_ASSERT(upstreamIo.inCallHistory[1].prefetch == false);
-  BOOST_ASSERT(upstreamIo.inCallHistory[2].id == tensorId);
-  BOOST_ASSERT(upstreamIo.inCallHistory[2].numElements == tensorNelms);
-  BOOST_ASSERT(upstreamIo.inCallHistory[2].prefetch == false);
-  BOOST_ASSERT(upstreamIo.inCompleteCallHistory[0].id == tensorId);
-  BOOST_ASSERT(upstreamIo.inCompleteCallHistory[0].numElements == tensorNelms);
-  BOOST_ASSERT(upstreamIo.inCompleteCallHistory[1].id == tensorId);
-  BOOST_ASSERT(upstreamIo.inCompleteCallHistory[1].numElements == tensorNelms);
-  BOOST_ASSERT(upstreamIo.inCompleteCallHistory[2].id == tensorId);
-  BOOST_ASSERT(upstreamIo.inCompleteCallHistory[2].numElements == tensorNelms);
-}
-
+  return checkUpstreamCallHistory;
+};
 } // namespace
+
+BOOST_AUTO_TEST_CASE(StepIOSplitter_prefetch_bufferDepth1_scenario1) {
+
+  // Test the case where poplar calls in/inComplete on each replica in order,
+  // e.g.:
+  //
+  //    POPLAR                        UPSTREAM
+  //    * in (repl=0)                 in
+  //    * inComplete (repl=0)         inComplete
+  //    * in (repl=1)                 in
+  //    * inComplete (repl=1)         inComplete
+  //    * ...
+  //    * in (repl=repl-1)            in
+  //    * inComplete (repl=repl-1)    inComplete
+  //    * etc.
+  //
+  auto test = [=](int repl, int bsp, int accum, TestDirection dir) {
+    logging::debug("StepIOSplitter_prefetch_bufferDepth1_scenario1 - repl={}, "
+                   "bsp={}, accum={}, dir={}",
+                   repl,
+                   bsp,
+                   accum,
+                   testDirection2Str(dir));
+
+    auto setup = setupSplitter(repl, bsp, accum);
+
+    auto splitter    = std::get<0>(setup);
+    auto upstream    = std::get<1>(setup);
+    auto downstreams = std::get<2>(setup);
+
+    auto addr                     = getAddr(setup, dir);
+    auto callDownstream           = getCallDownstream(downstreams, dir);
+    auto callDownstreamComplete   = getCallDownstreamComplete(downstreams, dir);
+    auto checkUpstreamCallHistory = getCheckUpstreamCallHistory(upstream, dir);
+
+    int addrOffset = 0;
+
+    for (int b = 0; b < bsp; ++b) {
+      for (int a = 0; a < accum; ++a) {
+        for (int r = 0; r < repl; ++r) {
+          callDownstream(r, true, addr(addrOffset++));
+          checkUpstreamCallHistory(/* num in/out calls= */ 1,
+                                   /* num inComplete/outComplete calls= */ 0);
+          callDownstreamComplete(r);
+          checkUpstreamCallHistory(/* num in/out calls= */ 0,
+                                   /* num inComplete/outComplete calls= */ 1);
+        }
+      }
+    }
+
+    // Check that once we run out of data we return nullptr and nothing gets
+    // called upstream. Output can't overrun.
+    if (dir == TestDirection::In) {
+      for (int r = 0; r < repl; ++r) {
+        callDownstream(r, true, nullptr);
+        checkUpstreamCallHistory(/* num in/out calls= */ 0,
+                                 /* num inComplete/outComplete calls= */ 0);
+      }
+    }
+  };
+
+  for (auto dir : {TestDirection::In, TestDirection::Out}) {
+    test(/*repl= */ 1, /* bsp= */ 15, /*accum= */ 2, dir);
+    test(/*repl= */ 2, /* bsp= */ 3, /*accum= */ 2, dir);
+    test(/*repl= */ 4, /* bsp= */ 3, /*accum= */ 16, dir);
+  }
+}
+
+BOOST_AUTO_TEST_CASE(StepIOSplitter_prefetch_bufferDepth1_scenario2) {
+
+  // Test the case where poplar calls in on each replica in order and then calls
+  // inComplete on each replica in order, e.g.:
+  //
+  //    POPLAR                        UPSTREAM
+  //    * in (repl=0)                 in
+  //    * in (repl=1)                 in
+  //    * ...
+  //    * in (repl=repl-1)            in
+  //    * inComplete (repl=0)         inComplete
+  //    * inComplete (repl=1)         inComplete
+  //    * ...
+  //    * inComplete (repl=repl-1)    inComplete
+  //    * etc.
+  //
+  auto test = [=](int repl, int bsp, int accum, TestDirection dir) {
+    logging::debug("StepIOSplitter_prefetch_bufferDepth1_scenario2 - repl={}, "
+                   "bsp={}, accum={}, dir={}",
+                   repl,
+                   bsp,
+                   accum,
+                   testDirection2Str(dir));
+
+    auto setup = setupSplitter(repl, bsp, accum);
+
+    auto splitter    = std::get<0>(setup);
+    auto upstream    = std::get<1>(setup);
+    auto downstreams = std::get<2>(setup);
+
+    auto addr                     = getAddr(setup, dir);
+    auto callDownstream           = getCallDownstream(downstreams, dir);
+    auto callDownstreamComplete   = getCallDownstreamComplete(downstreams, dir);
+    auto checkUpstreamCallHistory = getCheckUpstreamCallHistory(upstream, dir);
+
+    int addrOffset = 0;
+
+    for (int b = 0; b < bsp; ++b) {
+      for (int a = 0; a < accum; ++a) {
+        for (int r = 0; r < repl; ++r) {
+          callDownstream(r, true, addr(addrOffset++));
+          checkUpstreamCallHistory(/* num in/out calls= */ 1,
+                                   /* num inComplete/outComplete calls= */ 0);
+        }
+        for (int r = 0; r < repl; ++r) {
+          callDownstreamComplete(r);
+          checkUpstreamCallHistory(/* num in/out calls= */ 0,
+                                   /* num inComplete/outComplete calls= */ 1);
+        }
+      }
+    }
+
+    // Check that once we run out of data we return nullptr and nothing gets
+    // called upstream. Output can't overrun.
+    if (dir == TestDirection::In) {
+      for (int r = 0; r < repl; ++r) {
+        callDownstream(r, true, nullptr);
+        checkUpstreamCallHistory(/* num in/out calls= */ 0,
+                                 /* num inComplete/outComplete calls= */ 0);
+      }
+    }
+  };
+
+  for (auto dir : {TestDirection::In, TestDirection::Out}) {
+    test(/*repl= */ 1, /* bsp= */ 15, /*accum= */ 2, dir);
+    test(/*repl= */ 2, /* bsp= */ 3, /*accum= */ 2, dir);
+    test(/*repl= */ 4, /* bsp= */ 3, /*accum= */ 16, dir);
+  }
+}
+
+BOOST_AUTO_TEST_CASE(StepIOSplitter_prefetch_bufferDepth1_scenario3) {
+
+  // Test the case where poplar calls replicas out of order:
+  //
+  //    POPLAR                        UPSTREAM
+  //    * in (repl=2)                 in, in, in
+  //    * in (repl=1)                 -
+  //    * inComplete(repl=2)          -
+  //    * in (repl=0)                 -
+  //    * inComplete(repl=0)          inComplete
+  //    * in (repl=3)                 in
+  //    * inComplete(repl=1)          inComplete, inComplete
+  //    * inComplete(repl=3)          inComplete
+  //    * repeated.
+  //
+  auto test = [=](int bsp, int accum, TestDirection dir) {
+    const int repl = 4;
+
+    logging::debug("StepIOSplitter_prefetch_bufferDepth1_scenario3 - repl={}, "
+                   "bsp={}, accum={}, dir={}",
+                   repl,
+                   bsp,
+                   accum,
+                   testDirection2Str(dir));
+
+    auto setup = setupSplitter(repl, bsp, accum);
+
+    auto splitter    = std::get<0>(setup);
+    auto upstream    = std::get<1>(setup);
+    auto downstreams = std::get<2>(setup);
+
+    auto addr                     = getAddr(setup, dir);
+    auto callDownstream           = getCallDownstream(downstreams, dir);
+    auto callDownstreamComplete   = getCallDownstreamComplete(downstreams, dir);
+    auto checkUpstreamCallHistory = getCheckUpstreamCallHistory(upstream, dir);
+
+    int addrOffset = 0;
+
+    for (int b = 0; b < bsp; ++b) {
+      for (int a = 0; a < accum; ++a) {
+
+        callDownstream(2, true, addr(addrOffset + 2));
+        checkUpstreamCallHistory(/* num in/out calls= */ 3,
+                                 /* num inComplete/outComplete calls= */ 0);
+        callDownstream(1, true, addr(addrOffset + 1));
+        checkUpstreamCallHistory(/* num in/out calls= */ 0,
+                                 /* num inComplete/outComplete calls= */ 0);
+        callDownstreamComplete(2);
+        checkUpstreamCallHistory(/* num in/out calls= */ 0,
+                                 /* num inComplete/outComplete calls= */ 0);
+        callDownstream(0, true, addr(addrOffset + 0));
+        checkUpstreamCallHistory(/* num in/out calls= */ 0,
+                                 /* num inComplete/outComplete calls= */ 0);
+        callDownstreamComplete(0);
+        checkUpstreamCallHistory(/* num in/out calls= */ 0,
+                                 /* num inComplete/outComplete calls= */ 1);
+        callDownstream(3, true, addr(addrOffset + 3));
+        checkUpstreamCallHistory(/* num in/out calls= */ 1,
+                                 /* num inComplete/outComplete calls= */ 0);
+        callDownstreamComplete(1);
+        checkUpstreamCallHistory(/* num in/out calls= */ 0,
+                                 /* num inComplete/outComplete calls= */ 2);
+        callDownstreamComplete(3);
+        checkUpstreamCallHistory(/* num in/out calls= */ 0,
+                                 /* num inComplete/outComplete calls= */ 1);
+
+        addrOffset += repl;
+      }
+    }
+
+    // Check that once we run out of data we return nullptr and nothing gets
+    // called upstream. Output can't overrun.
+    if (dir == TestDirection::In) {
+      for (int r = 0; r < repl; ++r) {
+        callDownstream(r, true, nullptr);
+        checkUpstreamCallHistory(/* num in/out calls= */ 0,
+                                 /* num inComplete/outComplete calls= */ 0);
+      }
+    }
+  };
+
+  for (auto dir : {TestDirection::In, TestDirection::Out}) {
+    test(/* bsp= */ 15, /*accum= */ 2, dir);
+  }
+}
+
+BOOST_AUTO_TEST_CASE(StepIOSplitter_prefetch_bufferDepth_1_2_3_scenario1) {
+
+  // Test the case where poplar calls in/inComplete on each replica in order,
+  // e.g. for bufferingDepth=3:
+  //
+  //    POPLAR                        UPSTREAM
+  //    * in (repl=0)                 in
+  //    * ...
+  //    * in (repl=repl-1)            in
+  //    * in (repl=0)                 in
+  //    * ...
+  //    * in (repl=repl-1)            in
+  //    * in (repl=0)                 in
+  //    * ...
+  //    * in (repl=repl-1)            in
+  //    * inComplete (repl=1)         inComplete
+  //    * ...
+  //    * inComplete (repl=repl-1)    inComplete
+  //    * in (repl=0)                 in
+  //    * ...
+  //    * in (repl=repl-1)            in
+  //    * inComplete (repl=1)         inComplete
+  //    * ...
+  //    * inComplete (repl=repl-1)    inComplete
+  //    * in (repl=0)                 in
+  //    * ...
+  //    * in (repl=repl-1)            in
+  //    * etc.
+  //
+  auto test = [=](int repl,
+                  int bsp,
+                  int accum,
+                  int bufferingDepth,
+                  TestDirection dir) {
+    logging::debug("StepIOSplitter_prefetch_bufferDepth_1_2_3_scenario1 - "
+                   "repl={}, bsp={}, accum={}, bufDepth={}, dir={}",
+                   repl,
+                   bsp,
+                   accum,
+                   bufferingDepth,
+                   testDirection2Str(dir));
+
+    auto setup = setupSplitter(repl, bsp, accum);
+
+    auto splitter    = std::get<0>(setup);
+    auto upstream    = std::get<1>(setup);
+    auto downstreams = std::get<2>(setup);
+
+    auto addr                     = getAddr(setup, dir);
+    auto callDownstream           = getCallDownstream(downstreams, dir);
+    auto callDownstreamComplete   = getCallDownstreamComplete(downstreams, dir);
+    auto checkUpstreamCallHistory = getCheckUpstreamCallHistory(upstream, dir);
+
+    int addrOffset = 0;
+    int round      = 0;
+
+    for (int b = 0; b < bsp; ++b) {
+      for (int a = 0; a < accum; ++a) {
+        for (int r = 0; r < repl; ++r) {
+          callDownstream(r, true, addr(addrOffset++));
+          checkUpstreamCallHistory(/* num in/out calls= */ 1,
+                                   /* num inComplete/outComplete calls= */ 0);
+
+          if (round >= (bufferingDepth - 1)) {
+            // Don't run for the first (bufferingDepth - 1) rounds.
+            callDownstreamComplete(r);
+            checkUpstreamCallHistory(/* num in/out calls= */ 0,
+                                     /* num inComplete/outComplete calls= */ 1);
+          }
+        }
+        round++;
+      }
+    }
+
+    // Complete the outstanding buffers.
+    for (int b = 0; b < bufferingDepth - 1; ++b) {
+      for (int r = 0; r < repl; ++r) {
+        callDownstreamComplete(r);
+        checkUpstreamCallHistory(/* num in/out calls= */ 0,
+                                 /* num inComplete/outComplete calls= */ 1);
+      }
+    }
+
+    // Check that once we run out of data we return nullptr and nothing gets
+    // called upstream. Output can't overrun.
+    if (dir == TestDirection::In) {
+      for (int r = 0; r < repl; ++r) {
+        callDownstream(r, true, nullptr);
+        checkUpstreamCallHistory(/* num in/out calls= */ 0,
+                                 /* num inComplete/outComplete calls= */ 0);
+      }
+    }
+  };
+
+  for (auto dir : {TestDirection::In, TestDirection::Out}) {
+    for (auto bd : {1, 2, 3}) {
+      test(/*repl= */ 1,
+           /* bsp= */ 7,
+           /*accum= */ 2,
+           /*bufferingDepth=*/bd,
+           dir);
+      test(/*repl= */ 2,
+           /* bsp= */ 3,
+           /*accum= */ 1,
+           /*bufferingDepth=*/bd,
+           dir);
+      test(/*repl= */ 4,
+           /* bsp= */ 3,
+           /*accum= */ 2,
+           /*bufferingDepth=*/bd,
+           dir);
+    }
+  }
+}
+
+BOOST_AUTO_TEST_CASE(StepIOSplitter_reset) {
+
+  // Test it's possible to re-user the splitter following a reset.
+  auto test = [=](int repl, int bsp, int accum, int runs, TestDirection dir) {
+    logging::debug("StepIOSplitter_reset - repl={}, "
+                   "bsp={}, accum={}, runs={}, dir={}",
+                   repl,
+                   bsp,
+                   accum,
+                   runs,
+                   testDirection2Str(dir));
+
+    auto setup = setupSplitter(repl, bsp, accum, runs);
+
+    auto splitter    = std::get<0>(setup);
+    auto upstream    = std::get<1>(setup);
+    auto downstreams = std::get<2>(setup);
+
+    auto addr                     = getAddr(setup, dir);
+    auto callDownstream           = getCallDownstream(downstreams, dir);
+    auto callDownstreamComplete   = getCallDownstreamComplete(downstreams, dir);
+    auto checkUpstreamCallHistory = getCheckUpstreamCallHistory(upstream, dir);
+
+    int addrOffset = 0;
+
+    for (int k = 0; k < runs; k++) {
+      for (int b = 0; b < bsp; ++b) {
+        for (int a = 0; a < accum; ++a) {
+          for (int r = 0; r < repl; ++r) {
+            callDownstream(r, true, addr(addrOffset++));
+            checkUpstreamCallHistory(/* num in/out calls= */ 1,
+                                     /* num inComplete/outComplete calls= */ 0);
+            callDownstreamComplete(r);
+            checkUpstreamCallHistory(/* num in/out calls= */ 0,
+                                     /* num inComplete/outComplete calls= */ 1);
+          }
+        }
+      }
+
+      // Check that once we run out of data we return nullptr and nothing gets
+      // called upstream. Output can't overrun.
+      if (dir == TestDirection::In) {
+        for (int r = 0; r < repl; ++r) {
+          callDownstream(r, true, nullptr);
+          checkUpstreamCallHistory(/* num in/out calls= */ 0,
+                                   /* num inComplete/outComplete calls= */ 0);
+        }
+      }
+
+      splitter->reset();
+    }
+  };
+
+  for (auto dir : {TestDirection::In, TestDirection::Out}) {
+    test(/*repl= */ 4, /* bsp= */ 3, /*accum= */ 16, /*runs=*/2, dir);
+  }
+}

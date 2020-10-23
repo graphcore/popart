@@ -29,10 +29,10 @@
 #include <popart/names.hpp>
 // MutableVoidData is defined in here:
 #include <popart/stepio.hpp>
-#include <popart/stepiosplitter.hpp>
 #include <popart/tensordata.hpp>
 
 namespace popart {
+class StepIOSplitter;
 namespace liveness {
 class LivenessAnalyzer;
 }
@@ -503,6 +503,12 @@ private:
     poplar::StreamCallback::Result prefetch(void *dest) override;
     void fetch(void *dest) override;
     void complete() override;
+
+    // NOTE: We do not need to override invalidatePrefetched because
+    // our current StepIOSplitter implementation will never allow a
+    // successful prefetch to happen accross a step (i.e. a call to
+    // Session::run call) and therefore there is never any
+    // prefetches to invalidate.
 
   private:
     std::shared_ptr<InputDatastream> ds;

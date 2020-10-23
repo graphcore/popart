@@ -28,7 +28,6 @@ def identity_inference_session(tmpdir, inputShape, inputArray, BPS, art, R=1):
     opts.enablePrefetchDatastreams = R < 1
 
     device = tu.create_test_device(numIpus=R)
-
     session = popart.InferenceSession(fnModel=proto,
                                       dataFlow=dataFlow,
                                       deviceInfo=device,

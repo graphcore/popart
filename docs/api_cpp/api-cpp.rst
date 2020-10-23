@@ -6,6 +6,9 @@ PopART C++ API
 Sessions
 --------
 
+.. doxygenclass:: popart::IStepIO
+  :members:
+
 .. doxygenclass:: popart::InferenceSession
   :members:
 

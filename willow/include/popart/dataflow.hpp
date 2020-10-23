@@ -9,6 +9,9 @@
 
 namespace popart {
 
+// Forward declaration.
+struct SessionOptions;
+
 /**
  * An anchor tensor is a tensor that the user wants returned after a
  * call to Session::run. Each call to Session::run results in
@@ -186,6 +189,10 @@ public:
   int batchesPerStep() const { return batchesPerStep_; }
   // Get AnchorReturnType for a anchor tensor, not currently part of public API.
   AnchorReturnType art(TensorId anchorId) const;
+  // Get number of fetches per replica for a tensor, not currently part of
+  // public API.
+  unsigned numOutFetchesPerRepl(const struct SessionOptions &opts,
+                                const TensorId &anchorId) const;
   // Get a hash for this object, not currently part of public API.
   std::size_t hash() const;
 

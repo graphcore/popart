@@ -12,6 +12,7 @@ namespace popart {
 
 // Forward declaration.
 class StepIOSplitter;
+class SplitIOTensorInfo;
 
 // A helper class that acts as a downstream interface for input and output data
 // streams.
@@ -19,9 +20,13 @@ class StepIOSplitterAdapter : public IStepIO {
 public:
   // Constructor.
   StepIOSplitterAdapter(StepIOSplitter *splitter,
+                        SplitIOTensorInfo *tensorInfo,
                         unsigned replicationIndex,
+                        unsigned replicationFactor,
                         TensorId id,
-                        const TensorInfo &info);
+                        const TensorInfo &info,
+                        const int maxInFetches,
+                        const int maxOutFetches);
   // Destructor.
   virtual ~StepIOSplitterAdapter() = default;
   // Get next data element for reading from adapter.
@@ -35,25 +40,64 @@ public:
   // Check number of elements.
   virtual void assertNumElements(const Ir &ir) const;
 
+  // Log the state (for in).
+  void inLog(const char *action) const;
+  // Log the state (for out).
+  void outLog(const char *action) const;
+
   // Reset all in/out data.
   void reset();
 
-  // Get reference to in data buffer.
-  std::list<ConstVoidData> &getInData() { return inData; }
-  // Get reference to out data buffer.
-  std::list<MutableVoidData> &getOutData() { return outData; }
+  // Can we add data to the in buffer?
+  bool canAddInBuffer() const;
+  // Can we add data to the out buffer?
+  bool canAddOutBuffer() const;
+
+  // Add inData buffer.
+  void addInBuffer(const ConstVoidData &buf);
+  // Add outData buffer.
+  void addOutBuffer(const MutableVoidData &buf);
+
+  // See if there's an input buffer ready to complete upstream. If so,
+  // update the bookkeeping as if this inComplete has happened.
+  bool tryInCompleteUpstream();
+  // See if there's an output buffer ready to complete upstream. If so,
+  // update the bookkeeping as if this outComplete has happened.
+  bool tryOutCompleteUpstream();
 
 private:
   // Reference back to StepIOSplitter object.
   StepIOSplitter *splitter;
+  // Reference back to SplitIOTensorInfo object.
+  SplitIOTensorInfo *tensorInfo;
   // Replication index.
   unsigned replicationIndex;
+  // Number of replicas.
+  unsigned replicationFactor;
   // The id this adapter was created for.
   TensorId adapterId;
-  // Buffer of elements to read from.
+  // Maximum number of in fetches.
+  int maxInFetches;
+  // Maximum number of out fetches.
+  int maxOutFetches;
+  // Buffer of elements to ready to read.
   std::list<ConstVoidData> inData;
-  // Buffer of elements to write into.
+  // Number of input fetches.
+  unsigned numInFetches;
+  // Number of in buffers yet to be completed by poplar.
+  unsigned numInIncompleteDownstream;
+  // Number of in buffers completed by poplar but still incomplete because of
+  // order.
+  unsigned numInIncompleteUpstream;
+  // Buffer of elements to ready to write.
   std::list<MutableVoidData> outData;
+  // Number of output fetches.
+  unsigned numOutFetches;
+  // Number of out buffers yet to be completed by poplar.
+  unsigned numOutIncompleteDownstream;
+  // Number of out buffers completed by poplar but still incomplete because of
+  // order.
+  unsigned numOutIncompleteUpstream;
   // Void data to return if input with prefetch fails.
   ConstVoidData emptyVoidData;
 };
@@ -64,14 +108,12 @@ public:
   // Default constructor.
   SplitIOTensorInfo();
 
-  // The number of data elements loaded so far
-  unsigned fetchCount;
   // The replica index that is next in line to receive 'in' data.
   unsigned inIndex;
+  unsigned inCompleteIndex;
   // The replica index that is next in line to receive 'out' data.
   unsigned outIndex;
-  // True if a call to inComplete is pending.
-  bool upstreamInCompletePending;
+  unsigned outCompleteIndex;
 
   // Map from replication indices to IStepIO adapters
   std::map<unsigned, std::unique_ptr<StepIOSplitterAdapter>> adapterMap;
@@ -82,9 +124,15 @@ public:
 class StepIOSplitter {
 public:
   // Constructor.
-  StepIOSplitter(unsigned replicationFactor,
-                 unsigned batchesPerStep,
-                 unsigned accumulationFactor);
+  // \param replicationFactor the number of replicas.
+  // \param maxInFetchesPerReplFun a function mapping tensor ids to the maximum
+  //     number of input buffer fetches per replica expected for this tensor.
+  // \param maxOutFetchesPerReplFun a function mapping tensor ids to the maximum
+  //     number of output buffer fetches per replica expected for this tensor.
+  StepIOSplitter(
+      unsigned replicationFactor,
+      std::function<unsigned(const TensorId &)> maxInFetchesPerReplFun,
+      std::function<unsigned(const TensorId &)> maxOutFetchesPerReplFun);
   // Don't allow copying.
   StepIOSplitter(const StepIOSplitter &) = delete;
   // Don't allow assigning.
@@ -117,21 +165,20 @@ public:
                                const TensorInfo &info,
                                unsigned replicationIndex);
 
-  // Give the splitter a change to call inComplete upstream from a downstream
-  // inComplete call.
-  virtual void inCompleteCallback(TensorId id,
-                                  int64_t numElements,
-                                  unsigned replicationIndex);
+  // Give the splitter a change to call inComplete upstream.
+  virtual void inCompletionCallback(TensorId id,
+                                    int64_t numElements,
+                                    unsigned replicationIndex);
+  // Give the splitter a change to call outComplete upstream.
+  virtual void outCompletionCallback(TensorId id, unsigned replicationIndex);
 
 private:
   // The number of replications.
   unsigned replicationFactor;
-
-  // The number of batches per step.
-  unsigned batchesPerStep;
-
-  // The accumulation factor.
-  unsigned accumulationFactor;
+  // Function to get maximum input fetches.
+  std::function<unsigned(const TensorId &)> maxInFetchesPerReplFun;
+  // Function to get maximum output fetches.
+  std::function<unsigned(const TensorId &)> maxOutFetchesPerReplFun;
 
   // The upstream datastream.
   IStepIO *upstreamIo;

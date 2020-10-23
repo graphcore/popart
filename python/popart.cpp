@@ -984,6 +984,8 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("aliasZeroCopy", &SessionOptions::aliasZeroCopy);
     cls.def_readwrite("enablePrefetchDatastreams",
                       &SessionOptions::enablePrefetchDatastreams);
+    cls.def_readwrite("prefetchBufferingDepthMap",
+                      &SessionOptions::prefetchBufferingDepthMap);
     cls.def_readwrite("virtualGraphMode", &SessionOptions::virtualGraphMode);
     cls.def_readwrite("enableReplicatedGraphs",
                       &SessionOptions::enableReplicatedGraphs);
@@ -1259,12 +1261,13 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("__str__", &OutOfMemoryError::what);
     cls.def("isSuccessful", &OutOfMemoryError::isSuccessful);
     cls.def("getSummaryReport", &OutOfMemoryError::getSummaryReport);
-    cls.def("getGraphReport",
-            [](const OutOfMemoryError &error, bool useCbor) {
-              auto report = error.getGraphReport(useCbor);
-              return py::bytes(report);
-            },
-            py::arg("useCbor") = false);
+    cls.def(
+        "getGraphReport",
+        [](const OutOfMemoryError &error, bool useCbor) {
+          auto report = error.getGraphReport(useCbor);
+          return py::bytes(report);
+        },
+        py::arg("useCbor") = false);
   }
   {
     py::class_<InferenceSession> cls(m, "_InferenceSessionCore");
@@ -1275,39 +1278,41 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("inputShapeInfo"),
             py::arg("userOptions"),
             py::arg("patterns"));
-    cls.def("compileAndExport",
-            [](InferenceSession &session,
-               const std::string &executablePath,
-               const std::string &weightsPath,
-               OutOfMemoryError *status) {
-              try {
-                session.compileAndExport(executablePath, weightsPath);
-              } catch (const popart::memory_allocation_err &e) {
-                if (status != nullptr) {
-                  status->exception = e.clone();
-                } else {
-                  // rethrow the exception
-                  throw;
-                }
-              }
-            },
-            py::arg("executablePath").none(true),
-            py::arg("weightsPath").none(true),
-            py::arg("err").none());
-    cls.def("prepareDevice",
-            [](InferenceSession &session, OutOfMemoryError *status) {
-              try {
-                session.prepareDevice();
-              } catch (const popart::memory_allocation_err &e) {
-                if (status != nullptr) {
-                  status->exception = e.clone();
-                } else {
-                  // rethrow the exception
-                  throw;
-                }
-              }
-            },
-            py::arg("err").none());
+    cls.def(
+        "compileAndExport",
+        [](InferenceSession &session,
+           const std::string &executablePath,
+           const std::string &weightsPath,
+           OutOfMemoryError *status) {
+          try {
+            session.compileAndExport(executablePath, weightsPath);
+          } catch (const popart::memory_allocation_err &e) {
+            if (status != nullptr) {
+              status->exception = e.clone();
+            } else {
+              // rethrow the exception
+              throw;
+            }
+          }
+        },
+        py::arg("executablePath").none(true),
+        py::arg("weightsPath").none(true),
+        py::arg("err").none());
+    cls.def(
+        "prepareDevice",
+        [](InferenceSession &session, OutOfMemoryError *status) {
+          try {
+            session.prepareDevice();
+          } catch (const popart::memory_allocation_err &e) {
+            if (status != nullptr) {
+              status->exception = e.clone();
+            } else {
+              // rethrow the exception
+              throw;
+            }
+          }
+        },
+        py::arg("err").none());
     cls.def("exportInputs",
             [](InferenceSession &session,
                std::map<TensorId, py::iterable> inputs,
@@ -1334,12 +1339,13 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("getSummaryReport",
             &InferenceSession::getSummaryReport,
             py::arg("resetProfile") = true);
-    cls.def("getGraphReport",
-            [](const InferenceSession &session, bool useCbor) {
-              auto report = session.getGraphReport(useCbor);
-              return py::bytes(report);
-            },
-            py::arg("useCbor") = false);
+    cls.def(
+        "getGraphReport",
+        [](const InferenceSession &session, bool useCbor) {
+          auto report = session.getGraphReport(useCbor);
+          return py::bytes(report);
+        },
+        py::arg("useCbor") = false);
     cls.def(
         "getExecutionReport",
         [](const InferenceSession &session, bool useCbor, bool resetProfile) {
@@ -1372,39 +1378,41 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("inputShapeInfo"),
             py::arg("userOptions"),
             py::arg("patterns"));
-    cls.def("compileAndExport",
-            [](TrainingSession &session,
-               const std::string &executablePath,
-               const std::string &weightsPath,
-               OutOfMemoryError *status) {
-              try {
-                session.compileAndExport(executablePath, weightsPath);
-              } catch (const popart::memory_allocation_err &e) {
-                if (status != nullptr) {
-                  status->exception = e.clone();
-                } else {
-                  // rethrow the exception
-                  throw;
-                }
-              }
-            },
-            py::arg("executablePath").none(true),
-            py::arg("weightsPath").none(true),
-            py::arg("err").none());
-    cls.def("prepareDevice",
-            [](TrainingSession &session, OutOfMemoryError *status) {
-              try {
-                session.prepareDevice();
-              } catch (const popart::memory_allocation_err &e) {
-                if (status != nullptr) {
-                  status->exception = e.clone();
-                } else {
-                  // rethrow the exception
-                  throw;
-                }
-              }
-            },
-            py::arg("err").none());
+    cls.def(
+        "compileAndExport",
+        [](TrainingSession &session,
+           const std::string &executablePath,
+           const std::string &weightsPath,
+           OutOfMemoryError *status) {
+          try {
+            session.compileAndExport(executablePath, weightsPath);
+          } catch (const popart::memory_allocation_err &e) {
+            if (status != nullptr) {
+              status->exception = e.clone();
+            } else {
+              // rethrow the exception
+              throw;
+            }
+          }
+        },
+        py::arg("executablePath").none(true),
+        py::arg("weightsPath").none(true),
+        py::arg("err").none());
+    cls.def(
+        "prepareDevice",
+        [](TrainingSession &session, OutOfMemoryError *status) {
+          try {
+            session.prepareDevice();
+          } catch (const popart::memory_allocation_err &e) {
+            if (status != nullptr) {
+              status->exception = e.clone();
+            } else {
+              // rethrow the exception
+              throw;
+            }
+          }
+        },
+        py::arg("err").none());
     cls.def(
         "setRandomSeed", &TrainingSession::setRandomSeed, py::arg("seedValue"));
     cls.def("getRNGState", &InferenceSession::getRNGState);
@@ -1434,12 +1442,13 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("getSummaryReport",
             &TrainingSession::getSummaryReport,
             py::arg("resetProfile") = true);
-    cls.def("getGraphReport",
-            [](const TrainingSession &session, bool useCbor) {
-              auto report = session.getGraphReport(useCbor);
-              return py::bytes(report);
-            },
-            py::arg("useCbor") = false);
+    cls.def(
+        "getGraphReport",
+        [](const TrainingSession &session, bool useCbor) {
+          auto report = session.getGraphReport(useCbor);
+          return py::bytes(report);
+        },
+        py::arg("useCbor") = false);
     cls.def(
         "getExecutionReport",
         [](const TrainingSession &session, bool useCbor, bool resetProfile) {
@@ -1675,16 +1684,17 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("numElements"),
             py::arg("outputFilename"),
             py::arg("metadataFilename") = std::string());
-    cls.def("addInitializedInputTensor",
-            [](Builder &builder, py::array array, std::string &debugPrefix) {
-              array = makeContiguous(array);
-              ConstVoidData initData;
-              initData.data = array.request().ptr;
-              initData.info = getTensorInfo(array);
-              return builder.addInitializedInputTensor(initData, debugPrefix);
-            },
-            py::arg("initVal"),
-            py::arg("debugPrefix") = std::string());
+    cls.def(
+        "addInitializedInputTensor",
+        [](Builder &builder, py::array array, std::string &debugPrefix) {
+          array = makeContiguous(array);
+          ConstVoidData initData;
+          initData.data = array.request().ptr;
+          initData.info = getTensorInfo(array);
+          return builder.addInitializedInputTensor(initData, debugPrefix);
+        },
+        py::arg("initVal"),
+        py::arg("debugPrefix") = std::string());
     cls.def(
         "addOutputTensor", &Builder::addOutputTensor, py::arg("outputName"));
     cls.def("_createSubgraphBuilder",
@@ -1837,24 +1847,25 @@ PYBIND11_MODULE(popart_core, m) {
                 &Builder::virtualGraph),
             py::arg("nodeOutputNames"),
             py::arg("value") = 0);
-    cls.def("virtualGraph",
-            [](Builder &self, int64_t index) -> AttributeContextManager {
-              AttributeContextManager acm(self, sVirtualGraphAttribute, index);
-              return acm;
-            },
-            py::arg("value"));
+    cls.def(
+        "virtualGraph",
+        [](Builder &self, int64_t index) -> AttributeContextManager {
+          AttributeContextManager acm(self, sVirtualGraphAttribute, index);
+          return acm;
+        },
+        py::arg("value"));
     cls.def("executionPhase",
             static_cast<void (Builder::*)(const TensorId &, int64_t phase)>(
                 &Builder::executionPhase),
             py::arg("nodeOutputNames"),
             py::arg("value") = 0);
-    cls.def("executionPhase",
-            [](Builder &self, int64_t phase) -> AttributeContextManager {
-              AttributeContextManager acm(
-                  self, sExecutionPhaseAttribute, phase);
-              return acm;
-            },
-            py::arg("value") = 0);
+    cls.def(
+        "executionPhase",
+        [](Builder &self, int64_t phase) -> AttributeContextManager {
+          AttributeContextManager acm(self, sExecutionPhaseAttribute, phase);
+          return acm;
+        },
+        py::arg("value") = 0);
     cls.def("outlineAttributes",
             [](Builder &self, py::dict pyd) -> KeyValueContextManager {
               KeyValueContextManager kvcm(
@@ -1873,43 +1884,47 @@ PYBIND11_MODULE(popart_core, m) {
             &Builder::recomputeOutput),
         py::arg("nodeOutputNames"),
         py::arg("value") = RecomputeType::Undefined);
-    cls.def("recomputeOutput",
-            [](Builder &self, RecomputeType value) -> AttributeContextManager {
-              AttributeContextManager acm(
-                  self, sRecomputeOutputAttribute, static_cast<int64_t>(value));
-              return acm;
-            },
-            py::arg("value") = RecomputeType::Undefined);
+    cls.def(
+        "recomputeOutput",
+        [](Builder &self, RecomputeType value) -> AttributeContextManager {
+          AttributeContextManager acm(
+              self, sRecomputeOutputAttribute, static_cast<int64_t>(value));
+          return acm;
+        },
+        py::arg("value") = RecomputeType::Undefined);
     cls.def(
         "outputTensorLocation",
         static_cast<void (Builder::*)(const TensorId &, TensorLocation value)>(
             &Builder::outputTensorLocation),
         py::arg("nodeOutputNames"),
         py::arg("value") = TensorLocation());
-    cls.def("outputTensorLocation",
-            [](Builder &self, TensorLocation value) -> AttributeContextManager {
-              AttributeContextManager acm(
-                  self, sOutputTensorLocationAttribute, value.serialize());
-              return acm;
-            },
-            py::arg("value") = TensorLocation());
+    cls.def(
+        "outputTensorLocation",
+        [](Builder &self, TensorLocation value) -> AttributeContextManager {
+          AttributeContextManager acm(
+              self, sOutputTensorLocationAttribute, value.serialize());
+          return acm;
+        },
+        py::arg("value") = TensorLocation());
     cls.def("pipelineStage",
             static_cast<void (Builder::*)(const TensorId &, int64_t value)>(
                 &Builder::pipelineStage),
             py::arg("nodeOutputNames"),
             py::arg("value") = 0);
-    cls.def("pipelineStage",
-            [](Builder &self, int64_t index) -> AttributeContextManager {
-              AttributeContextManager acm(self, sPipelineStageAttribute, index);
-              return acm;
-            },
-            py::arg("value"));
-    cls.def("schedulePriority",
-            [](Builder &self, float priority) -> AttributeContextManager {
-              AttributeContextManager acm(self, sSchedulePriority, priority);
-              return acm;
-            },
-            py::arg("value"));
+    cls.def(
+        "pipelineStage",
+        [](Builder &self, int64_t index) -> AttributeContextManager {
+          AttributeContextManager acm(self, sPipelineStageAttribute, index);
+          return acm;
+        },
+        py::arg("value"));
+    cls.def(
+        "schedulePriority",
+        [](Builder &self, float priority) -> AttributeContextManager {
+          AttributeContextManager acm(self, sSchedulePriority, priority);
+          return acm;
+        },
+        py::arg("value"));
     cls.def("excludePatterns",
             static_cast<void (Builder::*)(
                 const TensorId &, const std::vector<std::string> &value)>(
@@ -1937,30 +1952,33 @@ PYBIND11_MODULE(popart_core, m) {
             &Builder::setAvailableMemoryProportion,
             py::arg("nodeOutputName"),
             py::arg("availableMemoryProportion"));
-    cls.def("setSerializeMatMul",
-            [](Builder &self,
-               const std::set<TensorId> &nodeOutputNames,
-               std::string mode,
-               int64_t factor,
-               bool keep_precision) {
-              self.setSerializeMatMul(
-                  nodeOutputNames, mode, factor, keep_precision);
-            },
-            py::arg("nodeOutputName"),
-            py::arg("mode"),
-            py::arg("factor")         = 0,
-            py::arg("keep_precision") = false);
-    cls.def("nameScope",
-            [](Builder &self, const std::string &name) -> NameContextManager {
-              NameContextManager ncm(self, name);
-              return ncm;
-            },
-            py::arg("name"));
-    cls.def("getNameScope",
-            [](Builder &self, std::string &name) {
-              return self.getNameScope(name);
-            },
-            py::arg("name") = "");
+    cls.def(
+        "setSerializeMatMul",
+        [](Builder &self,
+           const std::set<TensorId> &nodeOutputNames,
+           std::string mode,
+           int64_t factor,
+           bool keep_precision) {
+          self.setSerializeMatMul(
+              nodeOutputNames, mode, factor, keep_precision);
+        },
+        py::arg("nodeOutputName"),
+        py::arg("mode"),
+        py::arg("factor")         = 0,
+        py::arg("keep_precision") = false);
+    cls.def(
+        "nameScope",
+        [](Builder &self, const std::string &name) -> NameContextManager {
+          NameContextManager ncm(self, name);
+          return ncm;
+        },
+        py::arg("name"));
+    cls.def(
+        "getNameScope",
+        [](Builder &self, std::string &name) {
+          return self.getNameScope(name);
+        },
+        py::arg("name") = "");
     cls.def("getVirtualGraph",
             static_cast<int64_t (Builder::*)(const TensorId &)>(
                 &Builder::getVirtualGraph),
@@ -2077,12 +2095,13 @@ PYBIND11_MODULE(popart_core, m) {
       std::map<std::string, std::string> options = getDictionary(e);
       return dm.createSimDevice(options);
     });
-    cls.def("createOfflineIPUDevice",
-            [](DeviceManager &dm, py::dict e) {
-              std::map<std::string, std::string> options = getDictionary(e);
-              return dm.createOfflineIPUDevice(options);
-            },
-            py::arg("opts"));
+    cls.def(
+        "createOfflineIPUDevice",
+        [](DeviceManager &dm, py::dict e) {
+          std::map<std::string, std::string> options = getDictionary(e);
+          return dm.createOfflineIPUDevice(options);
+        },
+        py::arg("opts"));
     cls.def("enumerateDevices",
             &DeviceManager::enumerateDevices,
             py::arg("pattern")        = SyncPattern::Full,

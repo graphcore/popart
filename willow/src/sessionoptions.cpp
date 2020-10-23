@@ -170,6 +170,26 @@ SessionOptions::NumIOTiles::operator=(const int &x) {
   return *this;
 }
 
+unsigned SessionOptions::getPrefetchBufferingDepth(const TensorId &id) const {
+  if (!enablePrefetchDatastreams) {
+    return 1;
+  } else {
+    auto mapIt = prefetchBufferingDepthMap.find(id);
+    if (mapIt == prefetchBufferingDepthMap.end()) {
+      return 1;
+    } else {
+      auto bufferingDepth = mapIt->second;
+      if (bufferingDepth < 1) {
+        throw error("Unable to support a buffering depth of {} for tensor {} "
+                    "(minimum buffering depth is 1)",
+                    bufferingDepth,
+                    id);
+      }
+      return bufferingDepth;
+    }
+  }
+}
+
 // No implementation required
 
 } // namespace popart

@@ -109,12 +109,10 @@ public:
   }
 
   ConstVoidData in(TensorId id, int64_t numElements, bool)final {
-    return get<ConstVoidData>(id, inputsInfo, numElements, false, "inputs");
+    return get<ConstVoidData>(id, inputsInfo, numElements, true, "inputs");
   }
 
-  void inComplete(TensorId id, int64_t numElements) final {
-    return advance<ConstVoidData>(id, inputsInfo, numElements, "inputs");
-  }
+  void inComplete(TensorId id, int64_t numElements) final { return; }
 
   MutableVoidData out(TensorId id, int64_t numElements) final {
     return get<MutableVoidData>(id, outputsInfo, numElements, true, "outputs");

@@ -72,6 +72,8 @@
 
 #include <popart/poparttracepoint.hpp>
 
+#include <stepiosplitter.hpp>
+
 namespace popart {
 namespace popx {
 
@@ -1952,10 +1954,37 @@ PriTask Devicex::streamFromHostTask(Tensor *tensor) {
         // Only stream the tensor once for all op's that consume it on an ipu
         if (std::find(ipus.begin(), ipus.end(), vgid) == ipus.end()) {
 
-          logging::devicex::debug(
-              "Creating host-to-device FIFO {} copied to ipu:{}",
-              tensor->id,
-              vgid);
+          poplar::OptionFlags options{};
+
+          // Get bufferingDepth from SessionOptions.
+          auto depth =
+              ir().getSessionOptions().getPrefetchBufferingDepth(tensor->id);
+
+          if (depth > 1) {
+            if (doRearrangeOnHost(tensor)) {
+              // There is a problem. This tensor is set to re-arrange on the
+              // host but we've configured the engine option
+              // "exchange.streamBufferOverlap" to "hostRearrangeOnly", meaning
+              // that Poplar could overlap the memory of streams that are
+              // rearranged on the host. This makes it incompatible with
+              // bufferingDepths >1.
+              throw error(
+                  "Unable to support a buffering depth >1 for tensor {} "
+                  "because the stream is set to rearrange on the host (and "
+                  "PopART allows streams that are rearranged on the host to "
+                  "overlap in memory, making this unsafe)",
+                  tensor->id);
+            }
+
+            // Configure the buffering depth of the stream.
+            options.set("bufferingDepth", std::to_string(depth));
+          }
+
+          logging::devicex::debug("Creating host-to-device FIFO {} copied to "
+                                  "ipu:{} (with buffering depth {})",
+                                  tensor->id,
+                                  vgid,
+                                  depth);
 
           poplar::ReplicatedStreamMode mode =
               poplar::ReplicatedStreamMode::BROADCAST;
@@ -1987,7 +2016,8 @@ PriTask Devicex::streamFromHostTask(Tensor *tensor) {
               graph.addHostToDeviceFIFO(h2dId(tensor->id),
                                         popType(tensor->info),
                                         tensor->info.nelms(),
-                                        mode));
+                                        mode,
+                                        options));
 
           ipus.push_back(vgid);
         }
@@ -2844,12 +2874,23 @@ void Devicex::loadEngineAndConnectStreams() {
       pEngine->connectStream(h2dId(tensor->id), tensor->tensorData()->data());
     }
 
+    // The splitter needs to know how many input buffers and output buffers
+    // to expect per replica. For input buffers this is a constant figure
+    // for all tensors. For output buffers, it depends on the AnchorReturnType
+    // for that tensor.
+    const int bps = static_cast<unsigned>(ir().getDataFlow().batchesPerStep());
+    const int accumFactor = ir().getSessionOptions().enableGradientAccumulation
+                                ? ir().getSessionOptions().accumulationFactor
+                                : 1;
+    const int maxInputsPerRepl = bps * accumFactor;
+
     stepIoSplitter = std::make_unique<StepIOSplitter>(
         getReplicationFactor(),
-        static_cast<unsigned>(ir().getDataFlow().batchesPerStep()),
-        ir().getSessionOptions().enableGradientAccumulation
-            ? ir().getSessionOptions().accumulationFactor
-            : 1);
+        [=](const TensorId &id) { return maxInputsPerRepl; },
+        [&](const TensorId &id) {
+          return ir().getDataFlow().numOutFetchesPerRepl(
+              ir().getSessionOptions(), id);
+        });
     stepIoSplitter->reset();
 
     auto engineToInputStreamWithCallback =

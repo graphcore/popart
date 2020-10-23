@@ -4,6 +4,7 @@
 #include <poprithms/util/stringutil.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/error.hpp>
+#include <popart/sessionoptions.hpp>
 
 namespace popart {
 
@@ -134,6 +135,34 @@ AnchorReturnType DataFlow::art(TensorId anchorId) const {
   }
 
   return m_anchors.at(anchorId);
+}
+
+unsigned DataFlow::numOutFetchesPerRepl(const struct SessionOptions &opts,
+                                        const TensorId &anchorId) const {
+  if (!isAnchored(anchorId)) {
+    return 0;
+  } else {
+    const auto rt = m_anchors.at(anchorId);
+    const int accumFactor =
+        opts.enableGradientAccumulation ? opts.accumulationFactor : 1;
+
+    switch (rt.id()) {
+    case AnchorReturnTypeId::Final:
+    case AnchorReturnTypeId::Sum: {
+      return 1;
+    }
+    case AnchorReturnTypeId::EveryN: {
+      auto batches = batchesPerStep_ / rt.rp();
+      return batches * accumFactor;
+    }
+    case AnchorReturnTypeId::All: {
+      return batchesPerStep_ * accumFactor;
+    }
+    default: {
+      throw error("Unsupported AnchorReturnTypeId ({})", rt.id());
+    }
+    }
+  }
 }
 
 void DataFlow::isValidAnchorReturnPeriod(TensorId anchorId,
