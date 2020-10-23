@@ -244,12 +244,10 @@ void Session::modelToHost(const std::string &fn) {
           }
         }
         if (!ir.tensorExistsInInitialisers(initializerId)) {
-          throw internal_error("Unable to find corresponding initializer for "
-                               "optimizer state tensor, {}",
-                               tId);
-        }
-
-        if (onnxutil::isExternallySavedInitializer(model, initializerId)) {
+          // No candidate path to save tensor data externally
+          continue;
+        } else if (onnxutil::isExternallySavedInitializer(model,
+                                                          initializerId)) {
           std::string fn =
               onnxutil::getExternallySavedTensorLocation(model, initializerId);
           onnxutil::saveInitializersExternally(model, {tId}, fn, true);
