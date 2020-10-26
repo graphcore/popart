@@ -246,7 +246,8 @@ private:
 };
 
 void validateGclOptions(const std::map<std::string, std::string> &gclOptions) {
-  std::set<std::string> validOptions = {"useGclCollectives", "maxBytesPerTile"};
+  std::set<std::string> validOptions = {"useSynclessCollectives",
+                                        "maxBytesPerTile"};
   for (auto &key_value : gclOptions) {
     const std::string &key = key_value.first;
     if (validOptions.find(key) == validOptions.end()) {
@@ -259,7 +260,7 @@ void validateGclOptions(const std::map<std::string, std::string> &gclOptions) {
 
 void gclEnvironmentDeprecationWarning(const std::string &envVarName,
                                       const std::string &optName) {
-  logging::warn("You are using a deprecated environement variable \"{}\". This "
+  logging::warn("You are using a deprecated environment variable \"{}\". This "
                 "will be removed in an upcoming release. Please use the "
                 "session option 'SessionOptions::{}' instead",
                 envVarName,
@@ -968,12 +969,13 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
   validateGclOptions(userGclOptions);
 
   // Prefer to use `userGclOptions' over environment variables.
-  if (userGclOptions.find("useGclCollectives") != userGclOptions.end()) {
-    gclOptions.set("useGclCollectives", userGclOptions.at("useGclCollectives"));
+  if (userGclOptions.find("useSynclessCollectives") != userGclOptions.end()) {
+    gclOptions.set("useSynclessCollectives",
+                   userGclOptions.at("useSynclessCollectives"));
   } else if (std::getenv("GCL_REAL_COLLECTIVES")) {
     gclEnvironmentDeprecationWarning("GCL_REAL_COLLECTIVES",
-                                     "gclOptions[\"useGclCollectives\"]");
-    gclOptions.set("useGclCollectives", "true");
+                                     "gclOptions[\"useSynclessCollectives\"]");
+    gclOptions.set("useSynclessCollectives", "true");
   }
 
   // Prefer to use `maxBytesPerTile' over environment variables.
