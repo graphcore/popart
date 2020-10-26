@@ -245,27 +245,3 @@ def test_cosh_grad_error(op_tester):
 
     assert (e_info.value.args[0].endswith(
         "This op should have been removed by pattern CoshOp"))
-
-
-def test_logsoftmax_grad_error(op_tester):
-    d1 = np.random.rand(2, 7).astype(np.float32)
-    d2 = np.random.rand(2, 7).astype(np.float32)
-
-    op_tester.setPatterns([], enableRuntimeAsserts=False)
-
-    def init_builder(builder):
-        i1 = builder.addInputTensor(d1)
-        w1 = builder.addInitializedInputTensor(d2)
-        o = builder.aiOnnx.add([i1, w1], "test_add")
-        o = builder.aiOnnx.logsoftmax([o])
-        builder.addOutputTensor(o)
-        return [o]
-
-    def reference(ref_data):
-        return [None, None]
-
-    with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'infer')
-
-    assert (e_info.value.args[0].endswith(
-        "This op should have been removed by pattern LogSoftmaxOp"))

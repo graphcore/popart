@@ -27,7 +27,6 @@
 #include <popart/patterns/inplace.hpp>
 #include <popart/patterns/likeopspattern.hpp>
 #include <popart/patterns/loggradoppattern.hpp>
-#include <popart/patterns/logsoftmaxoppattern.hpp>
 #include <popart/patterns/lstmoppattern.hpp>
 #include <popart/patterns/matmulgradpattern.hpp>
 #include <popart/patterns/mularggradoppattern.hpp>
@@ -303,10 +302,6 @@ bool Patterns::isLogGradOpEnabled() {
   return isPatternEnabled<LogGradOpPattern>();
 }
 
-bool Patterns::isLogSoftmaxOpEnabled() {
-  return isPatternEnabled<LogSoftmaxOpPattern>();
-}
-
 bool Patterns::isGemmDecompositionEnabled() {
   return isPatternEnabled<GemmDecompositionPattern>();
 }
@@ -441,10 +436,6 @@ Patterns &Patterns::enableLogGradOp(bool v) {
   return enablePattern<LogGradOpPattern>(v);
 }
 
-Patterns &Patterns::enableLogSoftmaxOp(bool v) {
-  return enablePattern<LogSoftmaxOpPattern>(v);
-}
-
 Patterns &Patterns::enableGemmDecomposition(bool v) {
   return enablePattern<GemmDecompositionPattern>(v);
 }
@@ -571,7 +562,6 @@ std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
       {std::type_index(typeid(ExpGradOpPattern)), 21},
       {std::type_index(typeid(LogGradOpPattern)), 20},
       {std::type_index(typeid(CoshOpPattern)), 19},
-      {std::type_index(typeid(LogSoftmaxOpPattern)), 18},
       {std::type_index(typeid(GemmDecompositionPattern)), 17},
       {std::type_index(typeid(NegativeOneScalePattern)), 16},
       {std::type_index(typeid(PadSumPattern)), 15},

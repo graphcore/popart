@@ -3,6 +3,7 @@
 #include <popart/error.hpp>
 #include <popart/op/logsoftmax.hpp>
 #include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
 #include <popart/tensor.hpp>
 
 namespace popart {
@@ -17,8 +18,9 @@ std::unique_ptr<Op> LogSoftmaxOp::clone() const {
 }
 
 std::vector<std::unique_ptr<Op>> LogSoftmaxOp::getGradOps() {
-  throw error("LogSoftmaxOp should be removed by pattern 'LogSoftmaxOp' before "
-              "call to getGradOps");
+  std::vector<std::unique_ptr<Op>> upops;
+  upops.emplace_back(std::make_unique<LogSoftmaxGradOp>(*this));
+  return upops;
 }
 
 int64_t LogSoftmaxOp::getAxis() const {
@@ -35,6 +37,76 @@ int64_t LogSoftmaxOp::getAxis() const {
   } else {
     return axis;
   }
+}
+
+void LogSoftmaxOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
+  os.appendAttribute("axis", axis);
+}
+
+std::vector<std::tuple<OperatorIdentifier, float>>
+LogSoftmaxOp::inplacePriorityDefault() const {
+  return {{Onnx::CustomOperators::LogSoftmaxInplace, 10}};
+}
+
+std::unique_ptr<Op>
+LogSoftmaxOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
+  if (operator_id == Onnx::CustomOperators::LogSoftmaxInplace) {
+    return std::make_unique<LogSoftmaxInplaceOp>(*this);
+  }
+  // catch remaining cases and throw an error
+  return Op::getInplaceVariant(operator_id);
+}
+
+LogSoftmaxInplaceOp::LogSoftmaxInplaceOp(const LogSoftmaxOp &lsm_op)
+    : ElementWiseInplaceUnaryOp(Onnx::CustomOperators::LogSoftmaxInplace,
+                                lsm_op.getSettings()),
+      axis(lsm_op.getAxis()) {}
+
+std::unique_ptr<Op> LogSoftmaxInplaceOp::clone() const {
+  return std::make_unique<LogSoftmaxInplaceOp>(*this);
+}
+
+void LogSoftmaxInplaceOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
+  os.appendAttribute("axis", axis);
+}
+
+LogSoftmaxGradOp::LogSoftmaxGradOp(const LogSoftmaxOp &op_)
+    : Op(Onnx::GradOperators::LogSoftmaxGrad, op_.getSettings()),
+      axis(op_.getAxis()) {}
+
+std::unique_ptr<Op> LogSoftmaxGradOp::clone() const {
+  return std::make_unique<LogSoftmaxGradOp>(*this);
+}
+
+const std::vector<GradInOutMapper> &LogSoftmaxGradOp::gradInputInfo() const {
+  // input at index 0 (probGradInputIndex()) : gradient of output of logsoftmax
+  // input at index 1 (actsIn()): input of logsoftmax (activations before p)
+  // the (1-sparse) gradient of the output will be used
+  static const std::vector<GradInOutMapper> inInfo = {
+      {getGradProbsInIndex(),
+       LogSoftmaxOp::getOutIndex(),
+       GradOpInType::GradOut},
+      {getActsInIndex(), LogSoftmaxOp::getInIndex(), GradOpInType::In}};
+  return inInfo;
+}
+
+const std::map<int, int> &LogSoftmaxGradOp::gradOutToNonGradIn() const {
+  // the grad-op's output at index 0 corresponds
+  // to the non-grad-op's input at index 0
+  static const std::map<int, int> outInfo = {
+      {getOutIndex(), LogSoftmaxOp::getInIndex()}};
+  return outInfo;
+}
+
+void LogSoftmaxGradOp::setup() {
+  outInfo(getOutIndex()) = inInfo(getGradProbsInIndex());
+}
+
+void LogSoftmaxGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
+  os.appendAttribute("axis", axis);
 }
 
 namespace {

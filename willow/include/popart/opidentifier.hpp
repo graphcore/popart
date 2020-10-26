@@ -166,6 +166,7 @@ const static AiGraphcoreOpIdV1
     InstanceNormalizationGrad("InstanceNormalizationGrad");
 const static AiGraphcoreOpIdV1 LeakyReluGrad("LeakyReluGrad");
 const static AiGraphcoreOpIdV1 LogGrad("LogGrad");
+const static AiGraphcoreOpIdV1 LogSoftmaxGrad("LogSoftmaxGrad");
 const static AiGraphcoreOpIdV1 LRN("LRN");
 const static AiGraphcoreOpIdV1 LRNGrad("LRNGrad");
 const static AiGraphcoreOpIdV1 LSTMGrad("LSTMGrad");
@@ -282,6 +283,7 @@ const static AiGraphcoreOpIdV1 IpuCopy("IpuCopy");
 const static AiGraphcoreOpIdV1 L1("L1", 1, 1);
 const static AiGraphcoreOpIdV1 LambSquare("LambSquare");
 const static AiGraphcoreOpIdV1 LeakyReluInplace("LeakyReluInplace");
+const static AiGraphcoreOpIdV1 LogSoftmaxInplace("LogSoftmaxInplace");
 const static AiGraphcoreOpIdV1 LSTM_1("LSTM", 4, 2);
 const static AiGraphcoreOpIdV1 MulLhsInplace("MulLhsInplace");
 const static AiGraphcoreOpIdV1 MulRhsInplace("MulRhsInplace");

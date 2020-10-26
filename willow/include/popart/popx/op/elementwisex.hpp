@@ -28,8 +28,10 @@ public:
                             poplar::Graph &,
                             const poplar::Tensor &) const;
 
-  // certain elementwise unary ops may reshape the input tensor (eg Softmax)
+  // certain ops reshape the input tensor (eg Softmax and LogSoftmax)
   virtual poplar::Tensor reshape(const poplar::Tensor &t) const { return t; }
+
+  static poplar::Tensor coerceTo2D(const poplar::Tensor &t, int64_t axis);
 };
 
 // Base class for elementwise unary operations

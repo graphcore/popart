@@ -180,6 +180,18 @@ poplar::Tensor EwuComputex::outplace(poplar::program::Sequence &prog,
   return out_tensor;
 }
 
+poplar::Tensor EwuComputex::coerceTo2D(const poplar::Tensor &t, int64_t axis) {
+  const auto in_shape = t.shape();
+  auto k              = in_shape.begin();
+  std::advance(k, axis);
+
+  auto n = std::accumulate(
+      in_shape.begin(), k, std::size_t{1}, std::multiplies<std::size_t>());
+  auto d = std::accumulate(
+      k, in_shape.end(), std::size_t{1}, std::multiplies<std::size_t>());
+  return t.reshape({n, d});
+}
+
 bool EwbComputex::inplaceSupported() const {
   return inplacePolicy != EwbComputex::InplacePolicy::NEVER;
 }

@@ -59,21 +59,6 @@ poplar::Tensor SoftmaxComputex::outplace(poplar::program::Sequence &p,
   return outTensor;
 }
 
-namespace {
-poplar::Tensor coerceTo2D(const poplar::Tensor &t, int64_t axis) {
-
-  const auto in_shape = t.shape();
-  auto k              = in_shape.begin();
-  std::advance(k, axis);
-
-  auto n = std::accumulate(
-      in_shape.begin(), k, std::size_t{1}, std::multiplies<std::size_t>());
-  auto d = std::accumulate(
-      k, in_shape.end(), std::size_t{1}, std::multiplies<std::size_t>());
-  return t.reshape({n, d});
-}
-} // namespace
-
 void SoftmaxComputex::inplace(poplar::program::Sequence &p,
                               poplar::Graph &g,
                               const poplar::Tensor &tIn,
@@ -183,11 +168,11 @@ void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
 
   // The gradient of the loss w.r.t. the probabilities (g in above description)
   auto d_probs = getInTensor(SoftmaxGradOp::getGradProbsInIndex());
-  d_probs      = coerceTo2D(d_probs, axis);
+  d_probs      = EwuComputex::coerceTo2D(d_probs, axis);
 
   // The input to the softmax (which we are computing the gradient of here)
   auto pre_probs = getInTensor(SoftmaxGradOp::getActsInIndex());
-  pre_probs      = coerceTo2D(pre_probs, axis);
+  pre_probs      = EwuComputex::coerceTo2D(pre_probs, axis);
 
   // recomputing the probabilities (p in the above description)
   popnn::NonLinearityType nlType;
