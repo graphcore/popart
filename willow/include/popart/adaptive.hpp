@@ -13,7 +13,19 @@
 
 namespace popart {
 
-enum class AdaptiveMode { AdaGrad = 0, RMSProp, CenteredRMSProp, AdaDelta };
+/**
+ * Enum class representing a type of adaptive optimizer.
+ */
+enum class AdaptiveMode {
+  /// AdaGrad optimizer.
+  AdaGrad = 0,
+  /// RMSProp optimizer.
+  RMSProp,
+  /// CenteredRMSProp optimizer.
+  CenteredRMSProp,
+  /// AdaDelta optimizer.
+  AdaDelta
+};
 
 // Implements AdaGrad, RMSProp, CenteredAdaGrad, CenteredRMSProp, AdaDelta
 //
@@ -45,7 +57,7 @@ enum class AdaptiveMode { AdaGrad = 0, RMSProp, CenteredRMSProp, AdaDelta };
 // L2 regularization (if wd > 0.0 and weight decay mode: L2 regularization)
 // s = s + wd * w
 //
-// Accl1 (FP16/FP32, RMSProp/AdaDelta):
+// Accl1 (FP16/FP32, RMSProp/AdaDelta/CenteredRMSProp):
 // v1 = a * m + (1 - a) * s^2
 //
 // Accl1 (FP16/FP32, AdaGrad):
@@ -55,10 +67,13 @@ enum class AdaptiveMode { AdaGrad = 0, RMSProp, CenteredRMSProp, AdaDelta };
 // v2 = a * v2 + (1 - a) * s
 //
 // Updater term (AdaGrad/RMSProp):
-// x = g / (sqrt(v1 - v2^2) + eps)
+// x = s / (sqrt(v1) + eps)
+//
+// Updater term (CenteredRMSProp):
+// x = s / (sqrt(v1 - v2^2) + eps)
 //
 // Updater term (AdaDelta):
-// x = (g * sqrt(v2 + eps)) / (sqrt(v1 + eps))
+// x = (s * sqrt(v2 + eps)) / (sqrt(v1 + eps))
 //
 // Accl2 (FP16/FP32, AdaDelta):
 // v2 = a * v2 + (1 - a) * x^2
@@ -154,51 +169,186 @@ enum class AdaptiveMode { AdaGrad = 0, RMSProp, CenteredRMSProp, AdaDelta };
 //                           |
 //                          [w']
 
+/**
+ * AdaDelta, RMSProp and AdaGrad optimizer implementation.
+ *
+ * Akin to any optimizer implementation, this class is responsible for updating
+ * each weight tensor (\f$w\f$) in the model using the gradient (\f$g\f$) of
+ * the loss function with respect to the weight as calculated during the
+ * backwards pass.
+ *
+ * The optimizer has the following **state** for each weight:
+ *
+ *  * *first-order momentum* (\f$v_1\f$)
+ *  * *second-order momentum* (\f$v_2\f$) (only for AdaGrad/RMSProp)
+ *  * *third-order momentum* (\f$v_3\f$)
+ *
+ * The optimizer has the following **hyper parameters**:
+ *
+ *  * *learning rate* (\f$\text{lr}\f$)
+ *  * *weight decay* (\f$\text{wd}\f$)
+ *  * *alpha* (\f$\alpha\f$)
+ *  * *momentum* (\f$\text{m}\f$))
+ *  * *epsilon* (\f$\epsilon\f$)
+ *  * *loss scaling* (\f$\text{ls}\f$)
+ *
+ * The values of these parameters can be shared between all weights but some
+ * can be overridden with weight-specific values (see Adaptive::insertSpecific).
+ * Hyper parameters are captured using OptimizerValue objects and therefore
+ * can be either a constant value or a non-constant value that can be adjusted
+ * by the user.
+ *
+ * The values of #AdaptiveMode and #WeightDecayMode passed to the constructor
+ * determines how weights are updated (see below).
+ *
+ * In the following we will describe how this optimizer updates a weight
+ * using a gradient. In the context of this description the gradient is
+ * is the value of the gradient *after* any gradient accumulation has been
+ * performed and *after* the application of a loss scaling factor to the
+ * gradient has been corrected for.
+ *
+ * When the optimizer needs to update a weight, \f$w\f$, using a gradient,
+ * \f$g\f$,
+ * it first computes a term \f$g_\text{tmp}\f$, which is effectively
+ * is \f$g\f$ with L2 regularization applied if the #WeightDecayMode is
+ * set to WeightDecayMode::L2Regularization this, as follows:
+ *
+ * \f[
+ *    g_\text{tmp} := \left\{\begin{aligned}
+ *        g                   & \text{ \; (Decay) } \\
+ *        (g + \text{wd} * w) & \text{ \; (L2Regularization) \; . } \\
+ *    \end{aligned}\right.\\
+ * \f]
+ *
+ * Secondly, the optimizer updates \f$v_1\f$ the optimizer state as follows:
+ *
+ * \f[
+ *    v_1' &:= \left\{\begin{aligned}
+ *        \alpha * m + (1 - \alpha) * g_\text{tmp}^2 & \text{ \;
+ * (RMSProp/AdaDelta) } \\
+ *        \alpha * m + (1 - \alpha) * g_\text{tmp}^2 & \text{ \;
+ * (CenteredRMSProp) } \\
+ *        v_1 + g_\text{tmp}^2 & \text{ \; (AdaGrad) } \\
+ *    \end{aligned}\right.\\
+ * \f]
+ *
+ * Next, \f$v_2\f$ is updated, but only for CenteredRMSProp:
+ *
+ * \f[
+ *    v_2' &:= \alpha * v_2 + (1 - \alpha) * g_\text{tmp} \text{ \;
+ * (CenteredRMSProp) } \\ \f]
+ *
+ * Next, it computes the update term \f$u_\text{tmp}\f$:
+ *
+ * \f[
+ *    u_\text{tmp} &:= \left\{\begin{aligned}
+ *        \frac{g_\text{tmp}}{\sqrt{v_1'} + \epsilon}
+ *             & \text{ \; (AdaGrad/RMSProp) } \\
+ *        \frac{g_\text{tmp}}{\sqrt{v_1' - v_2'^2} + \epsilon}
+ *            & \text{ \; (CenteredRMSProp) } \\
+ *        \frac{g_\text{tmp} * \sqrt{v_2 + \epsilon}}{\sqrt{v_1' + \epsilon}}
+ *            & \text{ \; (AdaDelta) } \\
+ *    \end{aligned}\right.
+ * \f]
+ *
+ * Next, \f$v_2\f$ is updated, but only for AdaDelta:
+ *
+ * \f[
+ *    v_2' := \alpha * v_2 + (1 - \alpha) * u_\text{tmp}^2  \text{ \; (AdaDelta)
+ * } \\ \f]
+ *
+ * Next the third momentum is updated for all modes:
+ *
+ * \f[
+ *    v_3' := m * v_3 + u_\text{tmp}
+ * \f]
+ *
+ * Finally, the optimizer updates the weight as follows:
+ *
+ * \f[
+ *    w' := \left\{\begin{aligned}
+ *        w - \text{lr} * (v_3' + \text{wd} * w) &\text{ \; (Decay) } \\
+ *        w - \text{lr} * v_3'                   &\text{ \; (L2Regularization) }
+ * \\ \end{aligned}\right. \f]
+ *
+ * In addition to the above, the *loss scaling* hyper parameter is similar in
+ * nature to the velocity scaling parameter. It is a scaling value that is
+ * applied to the loss gradient at the start of the the backwards pass and, at
+ * the end of the backwards pass, this scaling is reversed by multiplying the
+ * gradients for each weight with the inverse of the loss scaling value prior to
+ * updating the optimizer state. Using loss scaling can also improve numerical
+ * stability in some cases.
+ */
 class Adaptive : public Optimizer {
 
 public:
-  static OptimizerValue getUnsetAlpha() {
-    return {0.99f, true}; // fixed alpha of 0.99
+  /// Default learning rate value.
+  static OptimizerValue getUnsetLearningRate() {
+    return {0.01f, true}; // a learning rate of 0.1 forever
   }
 
-  static OptimizerValue getUnsetMomentum() {
-    return {0.0f, true}; // fixed momentum of 0.0
-  }
-
-  static OptimizerValue getUnsetEps() {
-    return {1e-6f, true}; // a denominator stability term of 1e-6 forever
-  }
-
+  /// Default weight decay value.
   static OptimizerValue getUnsetWeightDecay() {
     return {0.0f, true}; // no weight decay, ever
   }
 
-  static OptimizerValue getUnsetLossScaling() {
-    return {1.0f, true}; // no loss scaling, ever
+  /// Default alpha value.
+  static OptimizerValue getUnsetAlpha() {
+    return {0.99f, true}; // fixed alpha of 0.99
   }
 
-  static OptimizerValue getUnsetLearningRate() {
-    return {0.01f, true}; // a learning rate of 0.1 forever
+  /// Default momentum value.
+  static OptimizerValue getUnsetMomentum() {
+    return {0.0f, true}; // fixed momentum of 0.0
+  }
+
+  /// Default epsilon value.
+  static OptimizerValue getUnsetEps() {
+    return {1e-6f, true}; // a denominator stability term of 1e-6 forever
+  }
+
+  /// Default loss scaling value.
+  static OptimizerValue getUnsetLossScaling() {
+    return {1.0f, true}; // no loss scaling, ever
   }
 
 public:
   // Does "w" have specific OptimizerValues, or will it use default?
   bool hasSpecific(const Tensor &w) const;
 
-  // Adaptive constructor with all parameters
-  // ----------------
-  Adaptive(OptimizerValue default_lr,
-           OptimizerValue default_wd,
-           OptimizerValue default_alpha,
-           OptimizerValue default_momentum,
-           OptimizerValue default_eps,
-           OptimizerValue ls,
-           AdaptiveMode adaptiveMode_,
-           WeightDecayMode decayMode_,
-           DataType accumType_,
-           DataType accl1Type_,
-           DataType accl2Type_,
-           DataType accl3Type_);
+  /// Constructor.
+  /// \param defaultLearningRate the learning rate value to use for weights
+  ///     for which no weight-specific hyper parameter have been inserted.
+  /// \param defaultWeightDecay the weight decay value to use for weights
+  ///     for which no weight-specific hyper parameter have been inserted.
+  /// \param defaultAlpha the alpha value to use for weights
+  ///     for which no weight-specific hyper parameter have been inserted.
+  /// \param defaultMomentum the momentum value to use for weights
+  ///     for which no weight-specific hyper parameter have been inserted.
+  /// \param defaultEps the epsilon value to use for weights
+  ///     for which no weight-specific hyper parameter have been inserted.
+  /// \param lossScaling the loss scaling value to use.
+  /// \param adaptiveMode the AdaptiveMode value to use.
+  /// \param weightDecayMode the WeightDecayMode value to use.
+  /// \param accumType data type to use for gradient accumulation.
+  /// \param accl1Type data type to use for tensor that stores first-order
+  ///     momentum optimizer state.
+  /// \param accl2Type data type to use for tensor that stores second-order
+  ///     momentum optimizer state.
+  /// \param accl2Type data type to use for tensor that stores third-order
+  ///     momentum optimizer state.
+  Adaptive(OptimizerValue defaultLearningRate,
+           OptimizerValue defaultWeightDecay,
+           OptimizerValue defaultAlpha,
+           OptimizerValue defaultMomentum,
+           OptimizerValue defaultEps,
+           OptimizerValue lossScaling,
+           AdaptiveMode adaptiveMode,
+           WeightDecayMode weightDecayMode,
+           DataType accumType,
+           DataType accl1Type,
+           DataType accl2Type,
+           DataType accl3Type);
 
   // Example:
   //
@@ -212,13 +362,43 @@ public:
   //
   // Construct from pair instead of OptimizerValue for pybind11 support
   //
-  Adaptive(const std::map<std::string, std::pair<float, bool>> &,
-           AdaptiveMode adaptiveMode_,
-           WeightDecayMode decayMode_,
-           DataType accumType_,
-           DataType accl1Type_,
-           DataType accl2Type_,
-           DataType accl3Type_);
+
+  /// Constructor.
+  /// \param params a parameter map where keys are one of
+  ///     `"defaultLearningRate"`, `"defaultWeightDecay"`, `"defaultAlpha"`,
+  ///     `"defaultMomentum"`, `"defaultEps"` or `"lossScaling"`, and the
+  ///     map's values pairs of floats and booleans
+  ///     representing OptimizerValue constructor arguments. The map does not
+  ///     have to specify each hyper parameter as default values will be used
+  ///     where parameters are missing.
+  /// \param adaptiveMode the AdaptiveMode value to use.
+  /// \param weightDecayMode the WeightDecayMode value to use.
+  /// \param accumType data type to use for gradient accumulation.
+  /// \param accl1Type data type to use for tensor that stores first-order
+  ///     momentum optimizer state.
+  /// \param accl2Type data type to use for tensor that stores second-order
+  ///     momentum optimizer state.
+  /// \param accl2Type data type to use for tensor that stores third-order
+  ///     momentum optimizer state.
+  ///
+  /// **EXAMPLE**:
+  /// ```
+  /// Adaptive({{"defaultLearningRate", {0.02, False}},
+  //           {"defaultAlpha", {0.99, True}}},
+  ///          AdaptiveMode::RMSProp,
+  ///          WeightDecayMode::Decay,
+  ///          DataType::FLOAT,
+  ///          DataType::FLOAT,
+  ///          DataType::FLOAT,
+  ///          DataType::FLOAT);
+  /// ```
+  Adaptive(const std::map<std::string, std::pair<float, bool>> &params,
+           AdaptiveMode adaptiveMode,
+           WeightDecayMode weightDecayMode,
+           DataType accumType,
+           DataType accl1Type,
+           DataType accl2Type,
+           DataType accl3Type);
   static Adaptive fromDefaultMap(const std::map<std::string, OptimizerValue> &,
                                  AdaptiveMode adaptiveMode_,
                                  WeightDecayMode decayMode_,
@@ -255,23 +435,41 @@ public:
   // this object can compute from the atomic scalars
   float getStoredValue(const TensorId &optId) const;
 
-  void insertSpecific(const TensorId &,
-                      OptimizerValue lr,
-                      OptimizerValue wd,
-                      OptimizerValue a,
-                      OptimizerValue m,
+  /// Insert a weight-specific set of hyper parameters.
+  /// \param weight the TensorId of the weight.
+  /// \param learningRate the learning rate value to use for this specific
+  ///     weight.
+  /// \param weightDecay the weight decay value to use for this specific
+  ///     weight.
+  /// \param alpha the alpha value to use for this specific
+  ///     weight.
+  /// \param momentum the momentum value to use for this specific
+  ///     weight.
+  /// \param eps the epsilon value to use for this specific
+  ///     weight.
+  void insertSpecific(const TensorId &weight,
+                      OptimizerValue learningRate,
+                      OptimizerValue weightDecay,
+                      OptimizerValue alpha,
+                      OptimizerValue momentum,
                       OptimizerValue eps);
 
   void setStep(int64_t step);
   void setStep(const TensorId &, int64_t step);
   void setStep(std::map<TensorId, int64_t> steps);
 
-  // insert OptimizerValues specific to one Tensor. The keys of the map should
-  // be the names of atomic optimizer scalars, such as "momentum",
-  // "learningRate". The map does not need to be complete. If it is not
-  // complete, the default values already set for the SGD will be used.
-  void insertSpecific(const TensorId &,
-                      const std::map<std::string, std::pair<float, bool>> &);
+  /// Insert a weight-specific set of hyper parameters.
+  /// \param weight the TensorId of the weight.
+  /// \param params a parameter map where keys are one of
+  ///     `"defaultLearningRate"`, `"defaultWeightDecay"`, `"defaultAlpha"`,
+  ///     `"defaultMomentum"`, `"defaultEps"` or `"lossScaling"`
+  ///     and the map's values pairs of floats and booleans representing
+  ///     OptimizerValue constructor arguments. The map does not have to
+  ///     specify each hyper parameter as default values will be used where
+  ///     parameters are missing.
+  void
+  insertSpecific(const TensorId &weight,
+                 const std::map<std::string, std::pair<float, bool>> &params);
 
   const OptimizerValueMap &learningRates() const { return lrs; }
   const OptimizerValueMap &weightDecays() const { return wds; }

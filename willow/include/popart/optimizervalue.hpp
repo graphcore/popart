@@ -6,10 +6,19 @@
 
 namespace popart {
 
+/**
+ * A class used to represent values of hyper parameters.
+ */
 class OptimizerValue {
 public:
+  /// Equivalent to OptimizerValue(0, false).
   OptimizerValue() = default;
+  /// Equivalent to OptimizerValue(v, true).
   OptimizerValue(float v) : val_(v), isConst_(true) {}
+  /// Constructor.
+  /// \param v the current value of the hyper parameter.
+  /// \param c a boolean flag to indicate whether the parameter will remain
+  ///     at this value forever (`true`) or may change over time (`false`).
   OptimizerValue(float v, bool c) : val_(v), isConst_(c) {}
   OptimizerValue(std::pair<float, bool> x)
       : OptimizerValue(x.first, x.second) {}

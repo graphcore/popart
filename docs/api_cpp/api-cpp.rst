@@ -64,16 +64,40 @@ Session options
 .. doxygenstruct:: popart::SessionOptions
   :members:
 
-Training operations
--------------------
+Optimizers
+----------
 
-Optimisers
-..........
+.. doxygenclass:: popart::OptimizerValue
+  :members:
+
+.. doxygenenum:: popart::WeightDecayMode
+
+Stochastic Gradient Descent (SGD)
+.................................
+
+.. doxygenstruct:: popart::ClipNormSettings
+  :members:
+
+.. doxygenclass:: popart::SGD
+  :members:
 
 .. doxygenclass:: popart::ConstSGD
   :members:
 
-.. doxygenclass:: popart::SGD
+Adam, AdaMax & Lamb
+...................
+
+.. doxygenenum:: popart::AdamMode
+
+.. doxygenclass:: popart::Adam
+  :members:
+
+AdaDelta, RMSProp & AdaGrad
+.........................
+
+.. doxygenenum:: popart::AdaptiveMode
+
+.. doxygenclass:: popart::Adaptive
   :members:
 
 Builder

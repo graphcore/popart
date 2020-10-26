@@ -30,17 +30,27 @@ enum class OptimizerReductionType {
   AccumReduce
 };
 
+/***
+ * Enum type for different types of weight decay.
+ */
 enum class WeightDecayMode {
-  // Weight decay (e.g. AdamW)
+  /// Weight decay (e.g. AdamW)
   Decay,
-  // L2 regularization (e.g. PyTorch-like Adam)
+  /// L2 regularization (e.g. PyTorch-like Adam)
   L2Regularization
 };
 
 std::map<std::string, OptimizerValue>
 getOptMap(const std::map<std::string, std::pair<float, bool>> &m);
-
+/**
+ * A data structure used to represent a maximum value constaint on
+ * one or more weights.
+ */
 struct ClipNormSettings {
+  /// Constructor.
+  /// \param weightIds_ the weight tensor IDs that this constraint
+  ///     applies to.
+  /// \param maxNorm_ the maximum permissible value.
   ClipNormSettings(const std::vector<TensorId> &weightIds_, float maxNorm_)
       : weightIds(weightIds_), maxNorm(maxNorm_) {}
 
@@ -275,62 +285,158 @@ private:
 // Note that ReplicationReduction will be a nop if replFactor = 1.
 //
 
+/**
+ * Stochastic Gradient Descent (SGD) optimizer.
+ *
+ * Akin to any optimizer implementation, this class is responsible for updating
+ * each weight tensor (\f$w\f$) in the model using the gradient (\f$g\f$) of
+ * the loss function with respect to the weight as calculated during the
+ * backwards pass.
+ *
+ * The SGD optimizer has the following **state** for each weight:
+ *
+ *  * *velocity* (\f$v\f$)
+ *
+ * The SGD optimizer has the following **hyper parameters**:
+ *
+ *  * *learning rate* (\f$\text{lr}\f$)
+ *  * *momentum* (\f$\text{mm}\f$)
+ *  * *weight decay* (\f$\text{wd}\f$)
+ *  * *dampening* (\f$\text{dm}\f$)
+ *  * *velocity scaling* (\f$\text{vs}\f$)
+ *  * *loss scaling* (\f$\text{ls}\f$)
+ *  * *clip norm settings*
+ *
+ * The values of these parameters can be shared between all weights but some
+ * can be overridden with weight-specific values (see SGD::insertSpecific).
+ * Hyper parameters are captured using OptimizerValue objects and therefore
+ * can be either a constant value or a non-constant value that can be adjusted
+ * by the user.
+ *
+ * In the following we will describe how this optimizer updates a weight
+ * using a gradient. In the context of this description the gradient is
+ * is the value of the gradient *after* any gradient accumulation has been
+ * performed and *after* the application of a loss scaling factor to the
+ * gradient has been corrected for.
+ *
+ * When the optimizer needs to update a weight, \f$w\f$, using a gradient,
+ * \f$g\f$, it first updates the optimizer state as follows:
+ *
+ * \f[
+ *    v' := v * \text{mm} + (1 - \text{dm}) * (g + \text{wd} * w) \text{ \ . }
+ * \f]
+ *
+ * Following the update of the optimizer state the optimizer uses said
+ * state to update the weight:
+ *
+ * \f[
+ *    w' := w - \text{lr} * v' \text{ \ . }
+ * \f]
+ *
+ * In addition to the above, the *velocity scaling* hyper parameter is a scaling
+ * factor that can provide improved numerical stability by ensuring the values
+ * stored in the optimizer state, \f$v\f$, are scaled by this value. When using
+ * this parameter PopART will automatically deal with the artificially scaled
+ * velocity value during the weight update and other hyper parameters do not
+ * need to be adjusted).
+ *
+ * In addition, the *loss scaling* hyper parameter is similar in nature to the
+ * velocity scaling parameter. It is a scaling value that is applied to the loss
+ * gradient at the start of the the backwards pass and, at the end of the
+ * backwards pass, this scaling is reversed by multiplying the gradients for
+ * each weight with the inverse of the loss scaling value prior to updating the
+ * optimizer state. Using loss scaling can also improve numerical stability in
+ * some cases.
+ *
+ * Finally, it is possible to add clip norm settings for this optimizer. These
+ * clip norms compute the L2 norm for a group of weights and adds a scalar term
+ * to the weight update that effectively divides it by the norm (or a constant
+ * value that is provided as part of the clip norm, which ever is greater).
+ */
 class SGD : public Optimizer {
 
 public:
-  static OptimizerValue getUnsetMomentum() {
-    return {0.0f, true}; // no momentum, ever
+  /// Default learning rate value.
+  static OptimizerValue getUnsetLearningRate() {
+    return {0.1f, true}; // a learning rate of 0.1 forever
   }
 
-  static OptimizerValue getUnsetDampening() {
-    return {0.0f, true}; // no dampening, ever
-  }
-
-  static OptimizerValue getUnsetVelocityScaling() {
-    return {1.0f, true}; // no velocity scaling, ever
-  }
-
+  /// Default weight decay value.
   static OptimizerValue getUnsetWeightDecay() {
     return {0.0f, true}; // no weight decay, ever
   }
 
-  static OptimizerValue getUnsetLossScaling() {
-    return {1.0f, true}; // no loss scaling, ever
+  /// Default momentum value.
+  static OptimizerValue getUnsetMomentum() {
+    return {0.0f, true}; // no momentum, ever
   }
 
-  static OptimizerValue getUnsetLearningRate() {
-    return {0.1f, true}; // a learning rate of 0.1 forever
+  /// Default dampening value.
+  static OptimizerValue getUnsetDampening() {
+    return {0.0f, true}; // no dampening, ever
+  }
+
+  /// Default velocity scaling value.
+  static OptimizerValue getUnsetVelocityScaling() {
+    return {1.0f, true}; // no velocity scaling, ever
+  }
+
+  /// Default loss scaling value.
+  static OptimizerValue getUnsetLossScaling() {
+    return {1.0f, true}; // no loss scaling, ever
   }
 
 public:
   // Does "w" have specific OptimizerValues, or will it use default?
   bool hasSpecific(const Tensor &w) const;
 
-  // SGD constructor with all 6 parameteers
-  // ----------------
-  SGD(OptimizerValue default_lr,
-      OptimizerValue default_wd,
-      OptimizerValue default_mm,
-      OptimizerValue default_dp,
-      OptimizerValue default_vs,
-      OptimizerValue ls,
+  /// Constructor.
+  /// \param defaultLearningRate the learning rate value to use for weights
+  ///     for which no weight-specific hyper parameter have been inserted.
+  /// \param defaultWeightDecay the weight decay value  to use for weights
+  ///     for which no weight-specific hyper parameter have been inserted.
+  /// \param defaultMomentum the momentum value to use for weights
+  ///     for which no weight-specific hyper parameter have been inserted.
+  /// \param defaultDampening the dampening value to use for weights
+  ///     for which no weight-specific hyper parameter have been inserted.
+  /// \param defaultVelocityScaling the velocity scaling value to use for
+  ///     weights for which no weight-specific hyper parameter have been
+  ///     inserted.
+  /// \param lossScaling the loss scaling value to use.
+  /// \param clipNormSettings a vector of ClipNormSettings (this can be used
+  ///     to set maximum values for weights).
+  SGD(OptimizerValue defaultLearningRate,
+      OptimizerValue defaultWeightDecay,
+      OptimizerValue defaultMomentum,
+      OptimizerValue defaultDampening,
+      OptimizerValue defaultVelocityScaling,
+      OptimizerValue lossScaling,
       const std::vector<ClipNormSettings> &clipNormSettings = {});
 
-  // Example:
-  //
-  // SGD({{"defaultLearningRate", {0.02, False}},
-  //      {"defaultMomentum":{0.6, True}}});
-  //
-  // will create an SGD Optimizer which has a constant momentum of 0.6 and a
-  // changeable learning rate initially of 0.02. All OptimizerValues not present
-  // in the map will take values from the getUnset* functions.
-  //
-  // Construct from pair instead of OptimizerValue for pybind11 support
-  //
-  SGD(const std::map<std::string, std::pair<float, bool>> &,
+  /// Constructor.
+  /// \param params a parameter map where keys are one of
+  ///     `"defaultLearningRate"`, `"defaultWeightDecay"`, `"defaultMomentum"`,
+  ///     `"defaultDampening"`, `"defaultVelocityScaling"` or `"lossScaling"`
+  ///     and the map's values pairs of floats and booleans representing
+  ///     OptimizerValue constructor arguments. The map does not have to
+  ///     specify each hyper parameter as default values will be used where
+  ///     parameters are missing.
+  /// \param clipNormSettings a vector of ClipNormSettings (this can be used
+  ///     to set maximum values for weights).
+  ///
+  /// **EXAMPLE**:
+  /// ```
+  /// SGD({{"defaultLearningRate", {0.02, False}},
+  ///     {"defaultMomentum":{0.6, True}}});
+  /// ```
+  /// This will create an SGD Optimizer which has a constant momentum of 0.6 and
+  /// a changeable learning rate initially of 0.02. All OptimizerValues not
+  /// present in the map will take values from the `getUnset`* functions.
+  SGD(const std::map<std::string, std::pair<float, bool>> &params,
       const std::vector<ClipNormSettings> &clipNormSettings = {});
   static SGD fromDefaultMap(const std::map<std::string, OptimizerValue> &);
 
+  /// Construct an SDG instance with default values.
   SGD(const SGD &) = default;
   ~SGD()           = default;
 
@@ -359,19 +465,37 @@ public:
   // this object can compute from the atomic scalars
   float getStoredValue(const TensorId &optId) const;
 
-  void insertSpecific(const TensorId &,
-                      OptimizerValue lr,
-                      OptimizerValue wd,
-                      OptimizerValue mm,
-                      OptimizerValue dp,
-                      OptimizerValue vs);
+  /// Insert a weight-specific set of hyper parameters.
+  /// \param weight the TensorId of the weight.
+  /// \param learningRate the learning rate value to use for this specific
+  ///     weight.
+  /// \param weightDecay the weight decay value to use for this specific
+  ///     weight.
+  /// \param momentum the momentum value to use for this specific
+  ///     weight.
+  /// \param dampening the dampening value to use for this specific
+  ///     weight.
+  /// \param velocityScaling the velocity scaling value to use for this
+  ///     specific weight.
+  void insertSpecific(const TensorId &weight,
+                      OptimizerValue learningRate,
+                      OptimizerValue weightDecay,
+                      OptimizerValue momentum,
+                      OptimizerValue dampening,
+                      OptimizerValue velocityScaling);
 
-  // insert OptimizerValues specific to one Tensor. The keys of the map should
-  // be the names of atomic optimizer scalars, such as "momentum",
-  // "learningRate". The map does not need to be complete. If it is not
-  // complete, the default values already set for the SGD will be used.
-  void insertSpecific(const TensorId &,
-                      const std::map<std::string, std::pair<float, bool>> &);
+  /// Insert a weight-specific set of hyper parameters.
+  /// \param weight the TensorId of the weight.
+  /// \param params a parameter map where keys are one of
+  ///     `"defaultLearningRate"`, `"defaultWeightDecay"`, `"defaultMomentum"`,
+  ///     `"defaultDampening"`, `"defaultVelocityScaling"` or `"lossScaling"`
+  ///     and the map's values pairs of floats and booleans representing
+  ///     OptimizerValue constructor arguments. The map does not have to
+  ///     specify each hyper parameter as default values will be used where
+  ///     parameters are missing.
+  void
+  insertSpecific(const TensorId &weight,
+                 const std::map<std::string, std::pair<float, bool>> &params);
 
   // If velocity (accumulation) is required, either because of gradient
   // accumulation or because of momentum : return true, otherwise return false.
@@ -428,10 +552,24 @@ private:
   getComplete(const std::map<std::string, OptimizerValue> &);
 };
 
-// This class is kept to be backwards compatible with the Python API, should be
-// removed at some point in the future.
+/**
+ * Stochastic Gradient Descent (SGD) optimizer with constant learning rate,
+ * weight decay, loss scaling and clip norm settings (and default values for
+ * momentum, dampening or velocity scaling).
+ *
+ * **NOTE**: See SGD for detailed meaning for these parameters.
+ *
+ * **NOTE**: This class exists for backwards compatibility with the Python API
+ * and may be removed at some point in the future.
+ */
 class ConstSGD : public SGD {
 public:
+  /// Constructor.
+  /// \param learningRate a constant learning rate.
+  /// \param weightDecay a constant weight decay value.
+  /// \param lossScaling a constant loss scaling value.
+  /// \param clipNormSettings a vector of ClipNormSettings (this can be used
+  ///     to set maximum values for weights).
   ConstSGD(float learningRate,
            float weightDecay                                     = 0,
            float lossScaling                                     = 1,
