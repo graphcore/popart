@@ -50,6 +50,11 @@ set(POPART_VERSION ${VERSION})
     The variables <target>_DEPS_* are public to that target and above. If a
     dependency is public to the visibility level of <target> and above, it
     should be added once here.
+
+    These variables, when passed to `target_include_directories` and
+    `target_link_libraries`, will be wrapped in `$<BUILD_INTERFACE:...>` genexes
+    because we do not ship them in the installed package - we expect the user
+    to provide the dependencies themselves when linking popart.
 ]]
 
 ################################################################################
@@ -187,6 +192,14 @@ configure_file(
 ##### Build targets
 ################################################################################
 
+# IMPORTANT NOTE:
+# A generator expression that wraps a list needs to be wrapped in quotes when
+# passed to a command. Like:
+#
+#   target_include_directories(tgt "$<BUILD_INTERFACE:${some_list}>")
+#
+# See https://stackoverflow.com/questions/44425257/how-to-properly-use-target-include-directories-with-lists-of-includes
+
 # The actual popart library we build. This is the lowest-visibility target.
 # See [comment-willow-targets].
 
@@ -226,14 +239,14 @@ target_include_directories(popart-only
 # Thus, make the poplar headers public again in popart-only. Users of
 # popart-only will still have to link poplar themselves, and hope they have a
 # compatible version.
-target_include_directories(popart-only PUBLIC ${POPLAR_INCLUDE_DIR})
+target_include_directories(popart-only PUBLIC $<BUILD_INTERFACE:${POPLAR_INCLUDE_DIR}>)
 
 # Link dependencies, exposed at varying levels of visibility through interface
 # targets. See [comment-willow-targets].
 
 target_link_libraries(popart-only
   PUBLIC
-    ${POPART_ONLY_DEPS_LIBS}
+    "$<BUILD_INTERFACE:${POPART_ONLY_DEPS_LIBS}>"
   PRIVATE
     ${POPART_PRIVATE_DEPS_LIBS}
     ${POPART_DEPS_LIBS}
@@ -241,7 +254,7 @@ target_link_libraries(popart-only
 )
 target_include_directories(popart-only SYSTEM
   PUBLIC
-    ${POPART_ONLY_DEPS_INCLUDES}
+    "$<BUILD_INTERFACE:${POPART_ONLY_DEPS_INCLUDES}>"
 )
 target_include_directories(popart-only SYSTEM 
   PRIVATE
@@ -251,13 +264,14 @@ target_include_directories(popart-only SYSTEM
 )
 
 add_library(popart INTERFACE)
-target_link_libraries(popart INTERFACE popart-only ${POPART_DEPS_LIBS})
-target_include_directories(popart SYSTEM INTERFACE ${POPART_DEPS_INCLUDES})
+target_link_libraries(popart INTERFACE popart-only "$<BUILD_INTERFACE:${POPART_DEPS_LIBS}>")
+target_include_directories(popart SYSTEM INTERFACE "$<BUILD_INTERFACE:${POPART_DEPS_INCLUDES}>")
 
 add_library(popart-internal INTERFACE)
-target_link_libraries(popart-internal INTERFACE popart ${POPART_INTERNAL_DEPS_LIBS})
-target_include_directories(popart-internal SYSTEM INTERFACE ${POPART_INTERNAL_DEPS_INCLUDES})
-target_include_directories(popart-internal INTERFACE ${PROJECT_SOURCE_DIR}/willow/src)
+target_link_libraries(popart-internal INTERFACE popart "$<BUILD_INTERFACE:${POPART_INTERNAL_DEPS_LIBS}>")
+target_include_directories(popart-internal SYSTEM INTERFACE "$<BUILD_INTERFACE:${POPART_INTERNAL_DEPS_INCLUDES}>")
+
+target_include_directories(popart-internal INTERFACE "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/willow/src>")
 
 ################################################################################
 ##### Install popart and popart-only
@@ -292,7 +306,10 @@ configure_package_config_file(
     "popart-config.cmake.in"
     "popart-config.cmake"
     INSTALL_DESTINATION ${POPART_CMAKE_INSTALL_CONFIGDIR}
-    PATH_VARS CMAKE_INSTALL_INCLUDEDIR CMAKE_INSTALL_LIBDIR POPART_CMAKE_INSTALL_CONFIGDIR
+    PATH_VARS
+      CMAKE_INSTALL_INCLUDEDIR
+      CMAKE_INSTALL_LIBDIR
+      POPART_CMAKE_INSTALL_CONFIGDIR
 )
 
 write_basic_package_version_file(
