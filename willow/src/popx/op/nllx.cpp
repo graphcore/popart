@@ -62,13 +62,15 @@ void NllOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor eps =
       getConst(probs.elementType(), {1}, eps_f, debugPrefix("epsilon"));
 
-  // Take max of prob and eps to reduction make sure it does not have any
-  // 0's and log it,
-  popops::mapInPlace(graph(),
-                     pe::Log(pe::Max(pe::_1, pe::_2)),
-                     {reduction, eps},
-                     prog,
-                     debugPrefix("LogMax"));
+  if (!op.inputIsLogProbability()) {
+    // Take max of prob and eps to reduction make sure it does not have any
+    // 0's and log it,
+    popops::mapInPlace(graph(),
+                       pe::Log(pe::Max(pe::_1, pe::_2)),
+                       {reduction, eps},
+                       prog,
+                       debugPrefix("LogMax"));
+  }
 
   if (op.hasIgnoreIndex()) {
     auto lossMask = applyMaskInPlaceForIgnoredIndex(
@@ -312,11 +314,19 @@ NllGradOpx::NllGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<NllGradOp>(op, Onnx::CustomGradOperators::NllGrad);
 }
 
-// loss         = -ln (p_l), where p_l is the probability at "label" so
+// NllGrad depends on whether the input contains log-probabilities:
 //
-//                 0     if i != l
-// d_loss / d_p = -1/p_i if i == l
-//                 ...............
+// 1) inputIsLogProbability == false (default)
+//    loss         = -ln (p_l), where p_l is the probability at "label" so
+//
+//                     0     if i != l
+//    d_loss / d_p = -1/p_i if i == l
+//
+// 2) inputIsLogProbability == true (pytorch convention)
+//    loss         = -p_l, defined as above
+//
+//                     0   if i != l
+//    d_loss / d_p = -p_i if i == l
 
 void NllGradOpx::grow(poplar::program::Sequence &prog) const {
   const NllGradOp &gradOp     = getOp<NllGradOp>();
@@ -334,8 +344,9 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
   // If working with float16 increase the eps to avoid underfloat
   // Note that because of the division we would ideally use 1/65500
   // but this will underflow.
-  if (probs.elementType() == poplar::HALF)
+  if (probs.elementType() == poplar::HALF) {
     eps = 6.104e-05f;
+  }
 
   auto smallConst =
       graph().addConstant(probs.elementType(), {1}, eps, debugPrefix("eps"));
@@ -353,13 +364,21 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
 
   popops::encodeOneHot(graph(), label1D, oneHot, prog, debugPrefix("nll"));
 
-  // oneHot: becomes -1 at position "label", 0 elsewhere.
-  // oneHot: set to -1/p at position "label", 0 elsewhere.
-  popops::mapInPlace(graph(),
-                     pe::Divide(pe::Neg(pe::_1), pe::_2),
-                     {oneHot, safeProbs},
-                     prog,
-                     debugPrefix("NegDiv"));
+  if (gradOp.inputIsLogProbability()) {
+    // oneHot: becomes -1 at position "label", 0 elsewhere.
+    popops::mapInPlace(graph(),
+                       pe::UnaryOpType::NEGATE,
+                       oneHot,
+                       prog,
+                       debugPrefix("negOneHot"));
+  } else {
+    // oneHot: set to -1/p at position "label", 0 elsewhere.
+    popops::mapInPlace(graph(),
+                       pe::Divide(pe::Neg(pe::_1), pe::_2),
+                       {oneHot, safeProbs},
+                       prog,
+                       debugPrefix("NegDiv"));
+  }
 
   // Output is reshaped to match probs input shape
   oneHot = oneHot.reshape(probs.shape());

@@ -580,3 +580,58 @@ def test_nll_no_underflow():
 
     assert not np.isnan(anchors[loss]).any()
     assert not np.isnan(anchors[dprobs]).any()
+
+
+def test_nll_input_is_log_probability(op_tester):
+    np.random.seed(0)
+    data = np.random.rand(3, 5).astype(np.float32)
+    target = np.random.randint(5, size=3)
+
+    def init_builder(builder):
+        P = builder.addInitializedInputTensor(data)
+        T = builder.addInitializedInputTensor(target.astype(np.int32))
+        logP = builder.aiOnnx.logsoftmax([P], axis=1)
+        nll = builder.aiGraphcore.nllloss([logP, T], inputIsLogProbability=1)
+        builder.addOutputTensor(nll)
+        return [nll]
+
+    def reference(ref_data):
+        logsoftmax = torch.nn.LogSoftmax(dim=1)
+        loss = torch.nn.NLLLoss()
+        p = torch.tensor(data)
+        t = torch.tensor(target)
+        nll = loss(logsoftmax(p), t)
+        return [nll]
+
+    op_tester.run(init_builder, reference, seed=8)
+
+
+def test_nll_input_is_log_probability_training(op_tester):
+    np.random.seed(0)
+    data = np.random.rand(3, 5).astype(np.float32)
+    target = np.random.randint(5, size=3)
+
+    def init_builder(builder):
+        P = builder.addInitializedInputTensor(data)
+        T = builder.addInputTensor(target.astype(np.int32))
+        logP = builder.aiOnnx.logsoftmax([P], axis=1)
+        nll = builder.aiGraphcore.nllloss([logP, T], inputIsLogProbability=1)
+        builder.addOutputTensor(nll)
+        return [
+            nll,
+            popart.reservedGradientPrefix() + P,
+            popart.reservedGradientPrefix() + nll,
+        ]
+
+    def reference(ref_data):
+        logsoftmax = torch.nn.LogSoftmax(dim=1)
+        loss = torch.nn.NLLLoss()
+        p = torch.tensor(data, requires_grad=True)
+        t = torch.tensor(target, requires_grad=False)
+        nll = loss(logsoftmax(p), t)
+        d__nll = ref_data.getOutputTensorGrad(0)
+        nll.backward(torch.tensor(d__nll))
+        return [nll, p.grad, None]
+
+    op_tester.setPatterns([], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, step_type='train', seed=8)
