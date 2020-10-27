@@ -120,6 +120,7 @@ private:
   // Return fronts of tensors that can be used to find isomorphic ops
   std::priority_queue<TraceFront>
   findParallelTraceFronts(std::vector<Op *> schedule,
+                          const std::map<Op *, SubgraphEquivId> &ids,
                           int64_t batchSerFactor) const;
 
   // Return true if we allow tweaking schedules by switching ops. We should only

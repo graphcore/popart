@@ -761,7 +761,7 @@ bool BatchSerialize::apply(Graph &graph) const {
 
       // Find seed fronts
       auto parallelTraceFront =
-          findParallelTraceFronts(schedule, batchSerFactor);
+          findParallelTraceFronts(schedule, opSubgraphEquivId, batchSerFactor);
 
       logging::trace("[BatchSerialize] Parallel trace fronts: {}",
                      parallelTraceFront.size());
@@ -1057,12 +1057,20 @@ bool BatchSerialize::apply(Graph &graph) const {
 }
 
 std::priority_queue<BatchSerialize::TraceFront>
-BatchSerialize::findParallelTraceFronts(std::vector<Op *> schedule,
-                                        int64_t batchSerFactor) const {
+BatchSerialize::findParallelTraceFronts(
+    std::vector<Op *> schedule,
+    const std::map<Op *, SubgraphEquivId> &ids,
+    int64_t batchSerFactor) const {
   std::priority_queue<BatchSerialize::TraceFront> queue;
-  std::vector<Tensor *> traceTensors(batchSerFactor);
 
-  for (Op *op : schedule) {
+  for (size_t schedule_pos = 0; schedule_pos < schedule.size();
+       ++schedule_pos) {
+    Op *op = schedule.at(schedule_pos);
+
+    logging::trace("[BatchSerialize] Find trace fronts from {} (pos: {}/{})",
+                   op->debugName(),
+                   schedule_pos,
+                   schedule.size() - 1);
 
     if (!op->hasBatchSerializedPhase()) {
 
@@ -1084,21 +1092,20 @@ BatchSerialize::findParallelTraceFronts(std::vector<Op *> schedule,
       //                         '------------ Op
 
       std::map<SubgraphEquivId, std::vector<Tensor *>> equivTraceTensors;
-
-      std::set<BatchSerializedPhase> foundBSPs;
+      std::vector<Tensor *> traceTensors(batchSerFactor);
       std::set<Op *> visited;
-      std::queue<Op *> opQueue;
-      opQueue.push(op);
-      while (!opQueue.empty() && foundBSPs.size() != batchSerFactor) {
+      std::deque<Op *> opQueue;
+      opQueue.push_back(op);
+      while (!opQueue.empty()) {
         Op *op0 = opQueue.front();
-        opQueue.pop();
+        opQueue.pop_front();
         visited.insert(op0);
         for (auto &idxAndTensor : op0->input->tensorMap()) {
           if (idxAndTensor.second->hasProducer()) {
             Op *op1 = idxAndTensor.second->getProducer();
             if (op1->hasBatchSerializedPhase()) {
               BatchSerializedPhase bsp1 = op1->getBatchSerializedPhase();
-              SubgraphEquivId id        = op1->getSubgraphEquivId();
+              SubgraphEquivId id        = ids.at(op1);
               if (equivTraceTensors.find(id) == equivTraceTensors.end()) {
                 equivTraceTensors.insert(
                     {id, std::vector<Tensor *>(batchSerFactor)});
@@ -1115,10 +1122,21 @@ BatchSerialize::findParallelTraceFronts(std::vector<Op *> schedule,
                 break;
               }
             }
-            opQueue.push(op1);
+            if (op0->hasBatchSerializedPhase() !=
+                    op1->hasBatchSerializedPhase() ||
+                (op0->hasBatchSerializedPhase() &&
+                 op1->hasBatchSerializedPhase() &&
+                 op0->getBatchSerializedPhase() !=
+                     op1->getBatchSerializedPhase())) {
+              opQueue.push_front(op1);
+            } else {
+              opQueue.push_back(op1);
+            }
           }
         }
       }
+
+      logging::trace("[BatchSerialize] Visited {} ops.", visited.size());
 
       if (std::all_of(traceTensors.begin(),
                       traceTensors.end(),
