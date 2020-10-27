@@ -1152,4 +1152,25 @@ std::string BuilderImpl::getNameScope(const std::string &name) const {
   return fullname.str();
 }
 
+std::vector<TensorId>
+BuilderImpl::checkpointOutput(const std::vector<TensorId> &nodeOutputNames) {
+  std::vector<TensorId> results;
+  for (const auto &arg : nodeOutputNames) {
+    auto output = op(Onnx::Operators::Identity_1,
+                     opsetVersions[Domain::ai_onnx],
+                     {arg},
+                     {},
+                     "Checkpoint")
+                      .at(0);
+    addNodeAttribute(sRecomputeOutputAttribute,
+                     static_cast<int64_t>(RecomputeType::Checkpoint),
+                     {output});
+    addNodeAttribute(sExcludePatternsAttribute,
+                     std::vector<std::string>{"PreUniRepl", "PostNRepl"},
+                     {output});
+    results.push_back(output);
+  }
+  return results;
+}
+
 } // namespace popart

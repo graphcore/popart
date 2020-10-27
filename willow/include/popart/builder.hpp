@@ -176,6 +176,9 @@ public:
   /**
    * Add a nop operation to the model
    *
+   * \param args Tensor T
+   * \param name Optional identifier for operation
+   * \return The name of the result tensor
    */
   TensorId nop(const std::vector<TensorId> &args, const std::string &name = {});
 
@@ -698,6 +701,18 @@ public:
   getRecomputeOutputInBackwardPass(const std::set<TensorId> &nodeOutputNames) {
     return getBoolNodeAttribute(sRecomputeOutputAttribute, nodeOutputNames);
   }
+
+  /**
+   * Add checkpoint operations to the model
+   *
+   * This is the same as an identity but is recomputeType Checkpoint by default.
+   *  Use this to checkpoint a subset of an operation's output tensors.
+   *
+   * \param nodeOutputNames Tensors to checkpoint
+   * \return The checkpointed tensors
+   */
+  std::vector<TensorId>
+  checkpointOutput(const std::vector<TensorId> &nodeOutputNames);
 
   /**
    * Set the virtual graph that computes the given node.  Applies when creating

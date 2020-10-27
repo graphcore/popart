@@ -364,6 +364,11 @@ void Builder::addOutputTensor(const TensorId &arg0) {
 }
 
 std::vector<TensorId>
+Builder::checkpointOutput(const std::vector<TensorId> &nodeOutputNames) {
+  return impl_->checkpointOutput(nodeOutputNames);
+}
+
+std::vector<TensorId>
 AiGraphcoreOpset1::groupnormalization(const std::vector<TensorId> &args,
                                       int64_t num_groups,
                                       float epsilon,

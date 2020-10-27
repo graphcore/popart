@@ -1897,6 +1897,9 @@ PYBIND11_MODULE(popart_core, m) {
           return acm;
         },
         py::arg("value") = RecomputeType::Undefined);
+    cls.def("checkpointOutput",
+            &Builder::checkpointOutput,
+            py::arg("nodeOutputNames"));
     cls.def(
         "outputTensorLocation",
         static_cast<void (Builder::*)(const TensorId &, TensorLocation value)>(

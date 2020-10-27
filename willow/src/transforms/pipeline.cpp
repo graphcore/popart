@@ -537,6 +537,13 @@ bool isFullRecompute(Graph &graph) {
          RecomputationType::Pipeline;
 }
 
+bool hasCheckpointProducer(Tensor *tensor) {
+  return !tensor->hasProducer() ||
+         (tensor->getProducer()->settings.recomputeType ==
+              RecomputeType::Checkpoint &&
+          tensor->getProducer()->scheduledPreLoss == ScheduledPreLoss::Yes);
+}
+
 std::set<TensorId> getStashCandidateTensors(Graph &graph) {
 
   bool full_recompute = isFullRecompute(graph);
@@ -553,8 +560,9 @@ std::set<TensorId> getStashCandidateTensors(Graph &graph) {
     }
 
     // Full Recompute use stashes only on the inputs to an IPU
-    // to complete any pipeline stage.
-    if (full_recompute && isProducedOnIPU(tensor)) {
+    // to complete any pipeline stage. Or tensors specified by the user.
+    if (full_recompute && isProducedOnIPU(tensor) &&
+        !hasCheckpointProducer(tensor)) {
       continue;
     }
 
@@ -594,6 +602,10 @@ std::set<TensorId> getStashCandidateTensors(Graph &graph) {
 }
 
 bool isRecomputable(Op *op) {
+  if (op->settings.executionContext != ExecutionContext::Normal) {
+    return false;
+  }
+
   // Copy ops are never recomputable
   if (op->isConvertibleTo<IpuCopyOp>()) {
     return false;
@@ -612,6 +624,15 @@ bool isRecomputable(Op *op) {
   }
 
   return true;
+}
+
+bool outputsAreStashed(Op *op, std::set<TensorId> &stashTensors) {
+  for (const auto &outT : op->output->tensors()) {
+    if (stashTensors.find(outT->id) != stashTensors.end()) {
+      return true;
+    }
+  }
+  return false;
 }
 
 void setRecomputation(Graph &graph,
@@ -633,11 +654,20 @@ void setRecomputation(Graph &graph,
   for (auto &id_op : graph.getOps()) {
     auto op = id_op.second.get();
     if (isRecomputable(op)) {
-      // In full_recompute all forward ops are Recomputed
-      if (!full_recompute && isConsumedByCopy(op)) {
-        op->settings.recomputeType = RecomputeType::Checkpoint;
+      if (full_recompute) {
+        // In full_recompute all forward ops are Recomputed unless specified by
+        // the user.
+        if (op->settings.recomputeType != RecomputeType::Checkpoint &&
+            !outputsAreStashed(op, toStashCandidateTensors) &&
+            op->scheduledPreLoss == ScheduledPreLoss::Yes) {
+          op->settings.recomputeType = RecomputeType::Recompute;
+        }
       } else {
-        op->settings.recomputeType = RecomputeType::Recompute;
+        if (isConsumedByCopy(op)) {
+          op->settings.recomputeType = RecomputeType::Checkpoint;
+        } else {
+          op->settings.recomputeType = RecomputeType::Recompute;
+        }
       }
     }
   }

@@ -269,6 +269,9 @@ public:
                                        const std::string &id,
                                        ONNX_NAMESPACE::TensorProto *tp);
 
+  std::vector<TensorId>
+  checkpointOutput(const std::vector<TensorId> &nodeOutputNames);
+
 private:
   ONNX_NAMESPACE::ValueInfoProto *addGraphInput(const TensorId &id);
 
