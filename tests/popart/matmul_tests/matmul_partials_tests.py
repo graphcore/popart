@@ -14,7 +14,10 @@ from test_session import PopartTestSession
 
 @tu.requires_ipu_model
 def test_per_op_partials():
-    data_size = 4
+    # Use parameters such that the number of accumulations per output (in each pass) is greater than 16. If the number of
+    # accumulations is less than or equal to the number of input channels supported by AMP the planner can ignore
+    # the partial type option since no partials are formed outside of the AMP unit.
+    data_size = 32
     data1 = np.random.rand(data_size, data_size).astype(np.float16)
     data2 = np.random.rand(data_size, data_size).astype(np.float16)
     data3 = np.random.rand(data_size, data_size).astype(np.float16)
@@ -60,7 +63,10 @@ def test_per_op_partials():
 
 @tu.requires_ipu_model
 def test_per_op_partials_train():
-    data_size = 4
+    # Use parameters such that the number of accumulations per output (in each pass) is greater than 16. If the number of
+    # accumulations is less than or equal to the number of input channels supported by AMP the planner can ignore
+    # the partial type option since no partials are formed outside of the AMP unit.
+    data_size = 32
     data1 = np.random.rand(data_size, data_size).astype(np.float16)
     data2 = np.random.rand(data_size, data_size).astype(np.float16)
     data3 = np.random.rand(data_size, data_size).astype(np.float16)
@@ -114,7 +120,10 @@ def test_per_op_partials_train():
 
 @tu.requires_ipu_model
 def test_global_partials():
-    data_size = 4
+    # Use parameters such that the number of accumulations per output (in each pass) is greater than 16. If the number of
+    # accumulations is less than or equal to the number of input channels supported by AMP the planner can ignore
+    # the partial type option since no partials are formed outside of the AMP unit.
+    data_size = 32
     data1 = np.random.rand(data_size, data_size).astype(np.float16)
     data2 = np.random.rand(data_size, data_size).astype(np.float16)
     partials_type = ['', '']

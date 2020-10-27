@@ -8,10 +8,18 @@ from test_session import PopartTestSession
 
 @tu.requires_ipu_model
 def test_per_op_partials():
+    # Use parameters such that the number of accumulations per output (in each pass) is greater than 16. If the number of
+    # accumulations is less than or equal to the number of input channels supported by AMP the planner can ignore
+    # the partial type option since no partials are formed outside of the AMP unit.
+    batch_size = 5
+    input_channels = 4
+    output_channels = 3
     data_size = 4
     kernel_size = 3
-    datas = np.random.rand(1, 2, data_size, data_size).astype(np.float16)
-    kernel = np.random.rand(3, 2, kernel_size, kernel_size).astype(np.float16)
+    datas = np.random.rand(batch_size, input_channels, data_size,
+                           data_size).astype(np.float16)
+    kernel = np.random.rand(output_channels, input_channels, kernel_size,
+                            kernel_size).astype(np.float16)
     partials_type = ['', '']
 
     def init_builder0(builder):
@@ -80,10 +88,18 @@ def test_per_op_partials():
 
 @tu.requires_ipu_model
 def test_per_op_partials_train():
+    # Use parameters such that the number of accumulations per output (in each pass) is greater than 16. If the number of
+    # accumulations is less than or equal to the number of input channels supported by AMP the planner can ignore
+    # the partial type option since no partials are formed outside of the AMP unit.
+    batch_size = 5
+    input_channels = 4
+    output_channels = 3
     data_size = 4
     kernel_size = 3
-    datas = np.random.rand(1, 2, data_size, data_size).astype(np.float16)
-    kernel = np.random.rand(3, 2, kernel_size, kernel_size).astype(np.float16)
+    datas = np.random.rand(batch_size, input_channels, data_size,
+                           data_size).astype(np.float16)
+    kernel = np.random.rand(output_channels, input_channels, kernel_size,
+                            kernel_size).astype(np.float16)
     partials_type = ['', '']
 
     def init_builder(builder):
@@ -137,10 +153,18 @@ def test_per_op_partials_train():
 
 @tu.requires_ipu_model
 def test_global_partials():
+    # Use parameters such that the number of accumulations per output (in each pass) is greater than 16. If the number of
+    # accumulations is less than or equal to the number of input channels supported by AMP the planner can ignore
+    # the partial type option since no partials are formed outside of the AMP unit.
+    batch_size = 5
+    input_channels = 4
+    output_channels = 3
     data_size = 4
     kernel_size = 3
-    datas = np.random.rand(1, 2, data_size, data_size).astype(np.float16)
-    kernel = np.random.rand(3, 2, kernel_size, kernel_size).astype(np.float16)
+    datas = np.random.rand(batch_size, input_channels, data_size,
+                           data_size).astype(np.float16)
+    kernel = np.random.rand(output_channels, input_channels, kernel_size,
+                            kernel_size).astype(np.float16)
 
     def init_builder0(builder):
         d1 = builder.addInputTensor(datas, 'data_in')
