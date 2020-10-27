@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <cstring>
 #include <string>
-
 #include <popart/ces/constexpr.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>

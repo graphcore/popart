@@ -1,5 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <onnx/onnx_pb.h>
+#include <poprithmshosttensor.hpp>
 #include <popart/ces/concatce.hpp>
 #include <popart/ndarraywrapper.hpp>
 #include <popart/ndindices.hpp>
@@ -14,50 +15,15 @@ ConstExprConcat::ConstExprConcat(Op *op_) : ConstExprOp(op_) {
   input_count = op_->input->n();
 }
 
-class ConcatFunctor {
-public:
-  template <typename T>
-  std::vector<char> operator()(const TensorInfo &out_info,
-                               std::vector<Tensor *> inputs,
-                               int64_t axis) {
-    std::vector<char> v_out(out_info.nbytes());
-    NDArrayWrapper<T> output(reinterpret_cast<T *>(v_out.data()), out_info);
-
-    auto stride = inputs[0]->info.dim(static_cast<int>(axis));
-
-    for (int i = 0; i < inputs.size(); i++) {
-      auto input = inputs[i];
-      NDArrayWrapper<T> data(*input);
-      for (int j = 0; j < input->info.nelms(); j++) {
-        auto indices = data.unflatten(j);
-        auto pindices(indices);
-        pindices[axis] += stride * i;
-        output[pindices] = data[indices];
-      }
-    }
-
-    return v_out;
-  }
-};
-
 std::vector<char> ConstExprConcat::compute() {
-  std::vector<const Shape *> input_shapes;
-  input_shapes.reserve(input_count);
+  std::vector<poprithms::compute::host::Tensor> rithms;
+  rithms.reserve(input_count);
   for (int i = 0; i < input_count; i++) {
-    input_shapes.push_back(&inShape(i));
+    rithms.push_back(getPoprithmsComputeHostTensor(*inTensor(i)));
   }
 
-  auto out_shape = ConcatOp::getOutputShape(axis, input_shapes);
-  auto &in0_info = inInfo(0);
-  TensorInfo out_info(in0_info.dataType(), out_shape);
-
-  std::vector<Tensor *> inputs;
-  for (int i = 0; i < input_count; i++) {
-    inputs.push_back(inTensor(i));
-  }
-
-  return callOpFunctor<ConcatFunctor>(
-      in0_info.dataType(), out_info, inputs, axis);
+  return poprithms::compute::host::Tensor::concat(rithms, axis)
+      .getNativeCharVector();
 }
 
 } // namespace popart
