@@ -528,6 +528,14 @@ struct POpCmp {
   bool operator()(Op *const &a, Op *const &b) const { return a->id < b->id; }
 };
 
+struct POpIntCmp {
+  bool operator()(std::pair<Op *, int> const &a,
+                  std::pair<Op *, int> const &b) const {
+    return std::pair<OpId, int>(a.first->id, a.second) <
+           std::pair<OpId, int>(b.first->id, b.second);
+  }
+};
+
 } // namespace popart
 
 #endif

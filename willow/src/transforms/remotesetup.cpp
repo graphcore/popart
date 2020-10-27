@@ -71,8 +71,8 @@ bool RemoteSetup::apply(Graph &graph) const {
   }
 
   // Mapping from each RemoteArg to it's final consumers
-  std::map<TensorId, std::set<std::pair<Op *, InIndex>>> argOpMap;
-  std::map<std::pair<Op *, InIndex>, std::set<TensorId>> opArgMap;
+  std::map<TensorId, std::set<std::pair<Op *, InIndex>, POpIntCmp>> argOpMap;
+  std::map<std::pair<Op *, InIndex>, std::set<TensorId>, POpIntCmp> opArgMap;
   std::map<TensorId, std::pair<RemoteBufferId, RemoteBufferIndex>> argBufferMap;
 
   // TODO: Support for Loop and ID ranges per arg tensor ID
