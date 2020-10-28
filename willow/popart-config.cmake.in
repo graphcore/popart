@@ -1,15 +1,89 @@
+# popart-config.cmake
+# -------------------
+#
+# This is the CMake config module for popart.
+#
+# We export the following targets:
+#
+#   popart      : Popart and all its dependencies.
+#   popart-only : Popart and Poplar only, for when you are not including popart
+#                 headers that use any of the other dependencies.
+#
+# We set the following variables:
+#
+#   POPART_VERSION          : The Popart version in major.minor.patch
+#
+#   popart_CMAKE_CONFIG_DIR : The directory containing the popart config files.
+#   popart_INCLUDE_DIR      : Popart's include directory.
+#   popart_LIB_DIR          : The directory where Popart's libraries have been 
+#                             installed.
+#
+#   POPART_INCLUDES         : List of include directories for popart and all 
+#                             it's dependencies that must be provided.
+#   POPART_LIBRARIES        : List of libraries for popart and all it's 
+#                             dependencies that must be provided.
+#
+#   popart_FOUND            : Truthy if Popart and all required components were
+#                             found.
+#
+# We require the user provides the following dependencies:
+#
+#   poplar
+#
+# You can point CMake to them in any of the usual ways that `find_package`
+# supports, for example by setting the `<pkg>_DIR` variable.
+#
+# Example Usage:
+#
+#   find_package(popart CONFIG REQUIRED)
+#   target_link_libraries(mytgt PRIVATE popart-only)
+#
+
+message(WARNING "popart-config.cmake: The `popart` target is not yet fully \
+supported. You may encounter errors with popart's dependencies.")
+
 @PACKAGE_INIT@
 set(POPART_VERSION @POPART_VERSION@)
 
 set_and_check(popart_CMAKE_CONFIG_DIR "@PACKAGE_POPART_CMAKE_INSTALL_CONFIGDIR@")
 
+include(CMakeFindDependencyMacro)
+find_dependency(poplar REQUIRED)
+
 if(NOT TARGET popart AND NOT TARGET popart-only)
   include("${CMAKE_CURRENT_LIST_DIR}/popart-targets.cmake")
+endif()
+
+# Popart does not ship Poplar, but it's public headers expose it. This means the
+# user must provide Poplar. We do not want to add poplar to the interface link
+# libraries, only the include directories. This mirrors what is done in Popart's
+# own build system.
+if(TARGET poplar)
+  message(STATUS "Found imported target 'poplar'")
+
+  target_include_directories(popart-only SYSTEM INTERFACE
+      $<TARGET_PROPERTY:poplar,INTERFACE_INCLUDE_DIRECTORIES>
+      $<TARGET_PROPERTY:poplar,INTERFACE_SYSTEM_INCLUDE_DIRECTORIES>
+  )
+  target_include_directories(popart SYSTEM INTERFACE
+      $<TARGET_PROPERTY:poplar,INTERFACE_INCLUDE_DIRECTORIES>
+      $<TARGET_PROPERTY:poplar,INTERFACE_SYSTEM_INCLUDE_DIRECTORIES>
+  )
+elseif(DEFINED POPLAR_INCLUDES)
+  message(STATUS Found "POPLAR_INCLUDES ${POPLAR_INCLUDES}")
+
+  target_include_directories(popart-only SYSTEM INTERFACE "${POPLAR_INCLUDES}")
+  target_include_directories(popart SYSTEM INTERFACE "${POPLAR_INCLUDES}")
+else()
+  message(FATAL_ERROR "The package `poplar` was found but no `poplar` target \
+or `POPLAR_INCLUDES` variable was created.")
 endif()
 
 set_and_check(popart_INCLUDE_DIR "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@")
 set_and_check(popart_LIB_DIR     "@PACKAGE_CMAKE_INSTALL_LIBDIR@")
 
+# These are currently not set properly (don't contain the dependencies), but it
+# will not be changed yet to avoid making a breaking change.
 set(POPART_INCLUDES "${popart_INCLUDE_DIR}")
 set(POPART_LIBRARIES "${popart_LIB_DIR}")
 
