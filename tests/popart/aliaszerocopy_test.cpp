@@ -17,6 +17,7 @@
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
@@ -190,7 +191,7 @@ BOOST_AUTO_TEST_CASE(AliasZeroCopyTest0) {
     // Verify alias zero copy
     if (aliasZeroCopy) {
       auto &dev = session->getDevice();
-      auto azc  = dev.getAliasZeroCopy();
+      auto azc  = dev.lowering().getAliasZeroCopy();
 
       std::set<TensorId> tensorIdsWithAliases;
       for (Tensor *t : azc->getTensorsWithPostIRAliases()) {
@@ -224,8 +225,9 @@ BOOST_AUTO_TEST_CASE(AliasZeroCopyTest0) {
           // AliasZeroCopy reports tensors as actively aliased
           BOOST_CHECK(aliased);
           // Additionally verify the poplar tensors agree
-          BOOST_CHECK(poplar::concat(
-                          {dev.tensors.get(t0->id), dev.tensors.get(t1->id)}, 0)
+          BOOST_CHECK(poplar::concat({dev.lowering().tensors().get(t0->id),
+                                      dev.lowering().tensors().get(t1->id)},
+                                     0)
                           .containsAliases());
         } else {
           BOOST_CHECK(!aliased);

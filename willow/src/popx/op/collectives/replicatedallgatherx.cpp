@@ -5,6 +5,7 @@
 #include <popart/ir.hpp>
 #include <popart/op/collectives/replicatedallgather.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/collectives/replicatedallgatherx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
@@ -21,7 +22,7 @@ ReplicatedAllGatherOpx::ReplicatedAllGatherOpx(Op *op, Devicex *devicex)
 void ReplicatedAllGatherOpx::grow(poplar::program::Sequence &prog) const {
   auto &op = getOp<ReplicatedAllGatherOp>();
 
-  poplar::OptionFlags allGatherOptions = dv_p->gclOptions;
+  poplar::OptionFlags allGatherOptions = dv_p->lowering().gclOptions;
   allGatherOptions.set("useReplicatedImplementation", "true");
 
   poplar::Tensor gathered =
@@ -58,7 +59,7 @@ ReplicatedAllGatherOpx::getInputCreatorType(InIndex index) const {
 poplar::Tensor ReplicatedAllGatherOpx::unwindTensorLayout(poplar::Tensor tensor,
                                                           InIndex,
                                                           OutIndex) const {
-  auto replicationFactor = dv_p->getReplicationFactor();
+  auto replicationFactor = dv_p->lowering().getReplicationFactor();
   auto cbr               = createCollectiveBalancedReorder(tensor);
   auto rearranged        = cbr->rearrangeForCollective(tensor);
   // Rearranged tensor is always sliceable by the replication factor
@@ -86,7 +87,7 @@ ReplicatedAllGatherOpx::createInput(InIndex index,
     auto outInfo = op.outInfo(ReplicatedAllGatherOp::getOutIndex());
     auto outTensor =
         graph().addVariable(popType(outInfo), outInfo.shape_szt(), name);
-    dv_p->getLinearMapper().mapTensor(graph(), outTensor);
+    dv_p->lowering().getLinearMapper().mapTensor(graph(), outTensor);
     auto inShape = op.inShape(ReplicatedAllGatherOp::getInIndex());
 
     return unwindTensorLayout(outTensor,

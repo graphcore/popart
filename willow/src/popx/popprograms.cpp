@@ -7,13 +7,18 @@
 
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-#include <popart/popx/devicex.hpp>
+
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/popprograms.hpp>
+
+#include <poplar/Graph.hpp>
+#include <poplar/Program.hpp>
 
 namespace popart {
 namespace popx {
 
-PopPrograms::PopPrograms(Devicex *dv_p_) : dv_p(dv_p_) {}
+PopPrograms::PopPrograms(IrLowering *ir_lowering_p_)
+    : ir_lowering_p(ir_lowering_p_) {}
 
 const poplar::program::Sequence &
 PopPrograms::streamWeightsFromHostFragment() const {
@@ -168,7 +173,7 @@ void PopPrograms::addPipelineCycle(
   // 7. Device->Host copies for each IPU
   // 8. Inter-IPU copies
 
-  PipelineInfo pInfo = dv_p->pipelineInfo();
+  PipelineInfo pInfo = ir_lowering_p->pipelineInfo();
 
   // 1.
   sq.add(preForwardFragment());
@@ -184,7 +189,7 @@ void PopPrograms::addPipelineCycle(
       }
     }
   } else {
-    if (dv_p->ir().useSyntheticData() == false) {
+    if (ir_lowering_p->ir().useSyntheticData() == false) {
       throw error(
           "There are no ToDeviceStream pipeline program fragments. Check that "
           "the stream copies have been added to the correct fragment.");
@@ -297,13 +302,13 @@ PopPrograms::getMainProgramFromPipelineFragments() const {
 
   ss << "\n\n";
 
-  PipelineInfo pInfo = dv_p->pipelineInfo();
+  PipelineInfo pInfo = ir_lowering_p->pipelineInfo();
 
   std::map<PipelineStage, poplar::Function> fwdFunctions;
 
   for (auto &stage_seq : pipelineSeqs.at(PipelineFragmentId::Forward)) {
-    fwdFunctions.insert(
-        {stage_seq.first, dv_p->graph().addFunction(stage_seq.second)});
+    fwdFunctions.insert({stage_seq.first,
+                         ir_lowering_p->graph().addFunction(stage_seq.second)});
   }
 
   poplar::program::Sequence fill;
@@ -345,12 +350,12 @@ PopPrograms::getMainProgramFromPipelineFragments() const {
 
   outer.add(initFragment());
 
-  if (!dv_p->getOuterLoopFragEmpty()) {
+  if (!ir_lowering_p->getOuterLoopFragEmpty()) {
 
     inner.add(accumulateOuterFragment());
     // If doing gradient accumulation, the inner loop is over mini batches,
     // and this outer loop loops over multiple batches per step.
-    auto bps = dv_p->ir().getDataFlow().batchesPerStep();
+    auto bps = ir_lowering_p->ir().getDataFlow().batchesPerStep();
     outer.add(poplar::program::Repeat(bps, inner));
   } else {
     // No gradient accumulation, so just add one iteration of the inner program.
@@ -364,10 +369,10 @@ PopPrograms::getMainProgramFromPipelineFragments() const {
 
 poplar::program::Sequence PopPrograms::program() const {
   auto instrumentations =
-      dv_p->ir().getSessionOptions().hardwareInstrumentations;
+      ir_lowering_p->ir().getSessionOptions().hardwareInstrumentations;
 
   poplar::program::Sequence outer;
-  if (dv_p->ir().getSessionOptions().enablePipelining) {
+  if (ir_lowering_p->ir().getSessionOptions().enablePipelining) {
     outer.add(getMainProgramFromPipelineFragments());
   } else {
     poplar::program::Sequence prog;
@@ -378,8 +383,8 @@ poplar::program::Sequence PopPrograms::program() const {
     outer.add(initFragment());
 
     // auto accumulationFactor = static_cast<int>(
-    auto accumulationFactor = dv_p->getAccumulationFactor();
-    if (!dv_p->getOuterLoopFragEmpty()) {
+    auto accumulationFactor = ir_lowering_p->getAccumulationFactor();
+    if (!ir_lowering_p->getOuterLoopFragEmpty()) {
       logging::devicex::trace(
           "Adding gradient accumulation repeat loop with {} loops",
           accumulationFactor);
@@ -387,32 +392,37 @@ poplar::program::Sequence PopPrograms::program() const {
       prog.add(accumulateOuterFragment());
     }
 
-    if (dv_p->ir().getSessionOptions().instrumentWithHardwareCycleCounter &&
+    if (ir_lowering_p->ir()
+            .getSessionOptions()
+            .instrumentWithHardwareCycleCounter &&
         instrumentations.find(Instrumentation::Inner) !=
             instrumentations.end()) {
       // Instrument first tile of every IPU for inner program
-      auto numIpus =
-          dv_p->getDeviceInfo()->getNumIpus() / dv_p->getReplicationFactor();
+      auto numIpus = ir_lowering_p->getDeviceInfo()->getNumIpus() /
+                     ir_lowering_p->getReplicationFactor();
       for (int64_t i = 0; i < numIpus; ++i) {
         std::stringstream ss;
         // String to identify instrumentation
         ss << "inner_ipu_" << i;
-        dv_p->instrumentWithHardwareCycleCounter(
+        ir_lowering_p->instrumentWithHardwareCycleCounter(
             prog,
-            i * static_cast<int64_t>(dv_p->getDeviceInfo()->getTilesPerIPU()),
+            i * static_cast<int64_t>(
+                    ir_lowering_p->getDeviceInfo()->getTilesPerIPU()),
             ss.str());
       }
     }
 
     // BatchesPerStep loop
-    outer.add(poplar::program::Repeat(dv_p->ir().getDataFlow().batchesPerStep(),
-                                      prog));
+    outer.add(poplar::program::Repeat(
+        ir_lowering_p->ir().getDataFlow().batchesPerStep(), prog));
     outer.add(toHostFinalCopyFragment());
   }
 
-  if (dv_p->ir().getSessionOptions().instrumentWithHardwareCycleCounter &&
+  if (ir_lowering_p->ir()
+          .getSessionOptions()
+          .instrumentWithHardwareCycleCounter &&
       instrumentations.find(Instrumentation::Outer) != instrumentations.end()) {
-    dv_p->instrumentWithHardwareCycleCounter(outer);
+    ir_lowering_p->instrumentWithHardwareCycleCounter(outer);
   }
 
   return outer;

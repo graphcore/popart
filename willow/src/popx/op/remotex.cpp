@@ -3,6 +3,7 @@
 #include <popart/ir.hpp>
 #include <popart/op/remote.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/remotex.hpp>
 #include <popart/popx/opxmanager.hpp>
 
@@ -14,7 +15,7 @@ RemoteBaseOpx::RemoteBaseOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}
 void RemoteBaseOpx::postLoad(poplar::program::Sequence &prog,
                              RemoteBufferId rbid,
                              const poplar::Tensor t) const {
-  auto buffer             = dv_p->getRemoteBuffer(rbid);
+  auto buffer             = dv_p->lowering().getRemoteBuffer(rbid);
   poplar::Tensor rbTensor = buffer.second.value();
   poplar::program::Copy tmp_copy_prog(rbTensor, t);
   prog.add(tmp_copy_prog);
@@ -25,14 +26,14 @@ void RemoteBaseOpx::preStore(poplar::Graph &sgraph,
                              RemoteBufferId rbid,
                              const poplar::Tensor t) const {
   poplar::Tensor rbTensor;
-  if (!dv_p->hasRemoteBuffer(rbid)) {
+  if (!dv_p->lowering().hasRemoteBuffer(rbid)) {
     rbTensor =
         sgraph.clone(t,
-                     dv_p->getRemoteBufferName(rbid),
+                     dv_p->lowering().getRemoteBufferName(rbid),
                      poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
-    dv_p->createRemoteBuffer(rbid, rbTensor);
+    dv_p->lowering().createRemoteBuffer(rbid, rbTensor);
   }
-  auto buffer = dv_p->getRemoteBuffer(rbid);
+  auto buffer = dv_p->lowering().getRemoteBuffer(rbid);
   rbTensor    = buffer.second.value();
   poplar::program::Copy tmp_copy_prog(t, rbTensor);
   prog.add(tmp_copy_prog);
@@ -43,14 +44,14 @@ poplar::Tensor RemoteBaseOpx::makeWritable(poplar::Graph &sgraph,
                                            RemoteBufferId rbid,
                                            TensorId id) const {
   poplar::Tensor rbTensor;
-  if (!dv_p->hasRemoteBuffer(rbid)) {
+  if (!dv_p->lowering().hasRemoteBuffer(rbid)) {
     rbTensor =
         sgraph.clone(t,
-                     dv_p->getRemoteBufferName(rbid),
+                     dv_p->lowering().getRemoteBufferName(rbid),
                      poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
-    dv_p->createRemoteBuffer(rbid, rbTensor);
+    dv_p->lowering().createRemoteBuffer(rbid, rbTensor);
   }
-  auto buffer = dv_p->getRemoteBuffer(rbid);
+  auto buffer = dv_p->lowering().getRemoteBuffer(rbid);
   rbTensor    = buffer.second.value();
   if (!t.isParallelWriteable() || t.containsConstant()) {
     logging::opx::warn("Tensor {} is not a writable remote buffer "
@@ -73,15 +74,15 @@ void RemoteBaseOpx::load(poplar::Graph &sgraph,
                          poplar::Tensor offset) const {
   poplar::Tensor rbTensor;
 
-  if (!dv_p->hasRemoteBuffer(rbid)) {
+  if (!dv_p->lowering().hasRemoteBuffer(rbid)) {
     rbTensor =
         sgraph.clone(t,
-                     dv_p->getRemoteBufferName(rbid),
+                     dv_p->lowering().getRemoteBufferName(rbid),
                      poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
-    dv_p->createRemoteBuffer(rbid, rbTensor);
+    dv_p->lowering().createRemoteBuffer(rbid, rbTensor);
   }
 
-  auto buffer = dv_p->getRemoteBuffer(rbid);
+  auto buffer = dv_p->lowering().getRemoteBuffer(rbid);
   rbTensor    = buffer.second.value();
 
   if (offset.valid() && offset.numElements() > 0) {
@@ -97,7 +98,7 @@ void RemoteBaseOpx::store(poplar::program::Sequence &prog,
                           RemoteBufferId rbid,
                           poplar::Tensor t,
                           poplar::Tensor offset) const {
-  auto buffer             = dv_p->getRemoteBuffer(rbid);
+  auto buffer             = dv_p->lowering().getRemoteBuffer(rbid);
   poplar::Tensor rbTensor = buffer.second.value();
   if (offset.valid() && offset.numElements() > 0) {
     poplar::program::Copy copy_prog(rbTensor, buffer.first, offset);
@@ -330,9 +331,9 @@ poplar::Graph &RemoteExchangeOpx::inGraph(InIndex in) const {
   if (op_p->getIr().virtualGraphsEnabled()) {
     auto &remoteExchangeOp = getOp<RemoteExchangeOp>();
     auto vgid = remoteExchangeOp.getIntrospectionInVirtualGraphId(in);
-    return dv_p->getVirtualGraph(vgid.first, vgid.second);
+    return dv_p->lowering().getVirtualGraph(vgid.first, vgid.second);
   } else {
-    return dv_p->graph();
+    return dv_p->lowering().graph();
   }
 }
 
@@ -340,9 +341,9 @@ poplar::Graph &RemoteExchangeOpx::outGraph(OutIndex out) const {
   if (op_p->getIr().virtualGraphsEnabled()) {
     auto &remoteExchangeOp = getOp<RemoteExchangeOp>();
     auto vgid = remoteExchangeOp.getIntrospectionInVirtualGraphId(out);
-    return dv_p->getVirtualGraph(vgid.first, vgid.second);
+    return dv_p->lowering().getVirtualGraph(vgid.first, vgid.second);
   } else {
-    return dv_p->graph();
+    return dv_p->lowering().graph();
   }
 }
 

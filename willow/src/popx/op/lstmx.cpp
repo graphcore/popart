@@ -5,6 +5,7 @@
 #include <popart/ir.hpp>
 #include <popart/op/lstm.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/lstmx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensor.hpp>
@@ -40,17 +41,18 @@ void LSTMOpx::grow(poplar::program::Sequence &prog) const {
 
   auto intermediate = createIntermediate();
   poplar::Tensor output, cell_state;
-  auto input                   = getInput(prog);
-  std::tie(output, cell_state) = popnn::lstm::lstmFwd(graph(),
-                                                      createLSTMParams(),
-                                                      init_state,
-                                                      input,
-                                                      *weights,
-                                                      intermediate.get(),
-                                                      prog,
-                                                      debugPrefix("lstmFwd"),
-                                                      dv_p->lstmOptions,
-                                                      &dv_p->matmulCache);
+  auto input = getInput(prog);
+  std::tie(output, cell_state) =
+      popnn::lstm::lstmFwd(graph(),
+                           createLSTMParams(),
+                           init_state,
+                           input,
+                           *weights,
+                           intermediate.get(),
+                           prog,
+                           debugPrefix("lstmFwd"),
+                           dv_p->lowering().lstmOptions,
+                           &dv_p->matmulCache);
 
   if (intermediate) {
     setOutTensor(LSTMOp::getIntermediatesPassThroughIndex(), *intermediate);
@@ -178,7 +180,7 @@ LSTMOpx::reshapePoplibWeightsForOnnx(poplar::Tensor poplib_weights,
 
 poplar::Tensor LSTMOpx::createLSTMInput() const {
   auto lstm_params = createLSTMParams();
-  auto options     = dv_p->lstmOptions;
+  auto options     = dv_p->lowering().lstmOptions;
   auto cache       = &dv_p->matmulCache;
 
   return popnn::lstm::createInput(
@@ -187,7 +189,7 @@ poplar::Tensor LSTMOpx::createLSTMInput() const {
 
 popnn::lstm::LstmState LSTMOpx::getInitialState() const {
   if (!initial_state) {
-    auto options     = dv_p->lstmOptions;
+    auto options     = dv_p->lowering().lstmOptions;
     auto cache       = &dv_p->matmulCache;
     auto lstm_params = createLSTMParams();
 
@@ -201,7 +203,7 @@ popnn::lstm::LstmState LSTMOpx::getInitialState() const {
 popnn::lstm::LstmWeights LSTMOpx::getLSTMWeights() const {
   if (!weights) {
     auto lstm_params = createLSTMParams();
-    auto options     = dv_p->lstmOptions;
+    auto options     = dv_p->lowering().lstmOptions;
     auto cache       = &dv_p->matmulCache;
 
     weights = createWeights(
@@ -347,7 +349,7 @@ void LSTMGradOpx::grow(poplar::program::Sequence &prog) const {
                                        &input_grad,
                                        weights_grad,
                                        debugPrefix("lstmBwdWithWU"),
-                                       dv_p->lstmOptions,
+                                       dv_p->lowering().lstmOptions,
                                        &dv_p->matmulCache);
 
   setOutTensor(LSTMGradOp::getInputOutIndex(), input_grad);

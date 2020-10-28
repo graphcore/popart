@@ -2,6 +2,7 @@
 #include <popart/error.hpp>
 #include <popart/op/dynamic/dynamicupdate.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/dynamic/dynamicupdatex.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensor.hpp>
@@ -87,7 +88,7 @@ poplar::Tensor DynamicUpdateOpx::createInput(InIndex index,
   auto &op = getOp<DynamicTernaryBaseOp>();
 
   if (index == DynamicTernaryBaseOp::getInIndex()) {
-    if (dv_p->tensors.contains(
+    if (dv_p->lowering().tensors().contains(
             op_p->input->id(DynamicTernaryBaseOp::getUpdateInIndex()))) {
       auto updateTensor = getInTensor(DynamicTernaryBaseOp::getUpdateInIndex());
       auto updateShape  = op.inShape(DynamicTernaryBaseOp::getUpdateInIndex());
@@ -102,7 +103,7 @@ poplar::Tensor DynamicUpdateOpx::createInput(InIndex index,
   }
 
   if (index == DynamicTernaryBaseOp::getUpdateInIndex()) {
-    if (dv_p->tensors.contains(
+    if (dv_p->lowering().tensors().contains(
             op_p->input->id(DynamicTernaryBaseOp::getInIndex()))) {
       auto inTensor    = getInTensor(DynamicTernaryBaseOp::getInIndex());
       auto updateShape = op.inShape(DynamicTernaryBaseOp::getUpdateInIndex());

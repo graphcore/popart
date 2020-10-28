@@ -3,6 +3,7 @@
 #include <popart/ir.hpp>
 #include <popart/op/conv.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/opx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/popx/viewchangers.hpp>
@@ -84,9 +85,10 @@ int64_t Opx::getVirtualGraphId() const {
 
 poplar::Graph &Opx::graph() const {
   if (op_p->getIr().virtualGraphsEnabled()) {
-    return dv_p->getVirtualGraph(getVirtualGraphId(), op_p->settings.tileSet);
+    return dv_p->lowering().getVirtualGraph(getVirtualGraphId(),
+                                            op_p->settings.tileSet);
   } else {
-    return dv_p->graph();
+    return dv_p->lowering().graph();
   }
 }
 
@@ -95,15 +97,15 @@ poplar::Graph &Opx::srcGraph(InIndex) const { return graph(); }
 poplar::Graph &Opx::dstGraph(OutIndex) const { return graph(); }
 
 const poplar::Tensor &Opx::get(TensorId id) const {
-  return dv_p->tensors.get(id);
+  return dv_p->lowering().tensors().get(id);
 }
 
 const poplar::Tensor &Opx::getView(TensorId id) const {
-  return dv_p->tensors.getView(id);
+  return dv_p->lowering().tensors().getView(id);
 }
 
 void Opx::insert(TensorId id, const poplar::Tensor &tensor) const {
-  dv_p->tensors.insert(id, tensor);
+  dv_p->lowering().tensors().insert(id, tensor);
 }
 
 TensorId Opx::inId(InIndex index) const { return op_p->input->id(index); }
@@ -140,21 +142,22 @@ const poplar::Tensor &Opx::getOutView(OutIndex index) const {
 }
 
 bool Opx::hasInViewChangers(InIndex index) const {
-  return dv_p->tensors.hasViewChangers(op_p->input->id(index));
+  return dv_p->lowering().tensors().hasViewChangers(op_p->input->id(index));
 }
 
 const ViewChangers &Opx::getInViewChangers(InIndex index) const {
-  return dv_p->tensors.getViewChangers(op_p->input->id(index));
+  return dv_p->lowering().tensors().getViewChangers(op_p->input->id(index));
 }
 
 void Opx::setOutViewChangers(OutIndex index,
                              const ViewChangers &changers) const {
-  return dv_p->tensors.setViewChangers(op_p->output->id(index), changers);
+  return dv_p->lowering().tensors().setViewChangers(op_p->output->id(index),
+                                                    changers);
 }
 
 void Opx::setOutTensor(OutIndex index, const poplar::Tensor &tensor) const {
 
-  if (dv_p->ir().getSessionOptions().opxAliasChecking) {
+  if (dv_p->lowering().ir().getSessionOptions().opxAliasChecking) {
     // Verify no unsolicited aliasing takes place
     Op &op = getOp<Op>();
     for (auto inputs : op.input->indicesMap()) {
@@ -298,12 +301,12 @@ poplar::Tensor Opx::getConst(const poplar::Type &type,
                              const std::vector<size_t> &shape,
                              double val,
                              const std::string &name) const {
-  return dv_p->getConst(graph(), type, shape, val, name);
+  return dv_p->lowering().getConst(graph(), type, shape, val, name);
 }
 
 poplar::Tensor Opx::getScalarVariable(const poplar::Type &type,
                                       const std::string &name) const {
-  return dv_p->getScalarVariable(graph(), type, name);
+  return dv_p->lowering().getScalarVariable(graph(), type, name);
 }
 
 std::vector<std::tuple<TensorId, TensorId, bool>>

@@ -5,6 +5,7 @@
 #include <popart/op/if.hpp>
 #include <popart/op/loop.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/loopx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensorindex.hpp>
@@ -124,7 +125,7 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
       startProg);
 
   // 5: Construct loop_begin_testExpr branches
-  auto &loopBody = dv_p->progs.scopeFragment(op.subgraph());
+  auto &loopBody = dv_p->lowering().progs.scopeFragment(op.subgraph());
   startThenProg.add(loopBody);
 
   auto condOut = graph().addVariable(poplar::BOOL, {}, debugPrefix("condOut"));

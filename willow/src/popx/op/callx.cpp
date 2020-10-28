@@ -5,6 +5,7 @@
 #include <popart/ir.hpp>
 #include <popart/op/call.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/callx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensorindex.hpp>
@@ -33,8 +34,9 @@ void CallOpx::copyModified(poplar::program::Sequence &prog) const {
       TensorId call_input_id = callop.inId(i);
       auto call_input        = get(call_input_id);
       auto graph_input       = get(graph_input_id);
-      auto aliases = getDevicex()->getAliasZeroCopy()->getActiveAliasedTensors(
-          {callop.input->tensor(i)}, true);
+      auto aliases =
+          dv_p->lowering().getAliasZeroCopy()->getActiveAliasedTensors(
+              {callop.input->tensor(i)}, true);
 
       bool copy_modified_required = true;
 
@@ -43,7 +45,7 @@ void CallOpx::copyModified(poplar::program::Sequence &prog) const {
           aliases.end();
 
       copy_modified_required &=
-          getDevicex()->getAliasZeroCopy()->copyModifiedRequired(&callop, i);
+          dv_p->lowering().getAliasZeroCopy()->copyModifiedRequired(&callop, i);
 
       if (copy_modified_required) {
         logging::opx::trace("[CallOpx] Copying modified input {}->{}",
@@ -69,7 +71,7 @@ void CallOpx::copyInputs(poplar::program::Sequence &prog) const {
     TensorId graph_input_id = callop.getCalledGraph().getInputId(i);
     auto graph_input        = get(graph_input_id);
 
-    auto aliases = getDevicex()->getAliasZeroCopy()->getActiveAliasedTensors(
+    auto aliases = dv_p->lowering().getAliasZeroCopy()->getActiveAliasedTensors(
         {callop.input->tensor(i)}, true);
 
     view::AccessType accessType = view::AccessType::None;
@@ -114,7 +116,7 @@ void CallOpx::copyOutputs(poplar::program::Sequence &prog) const {
     auto graph_output_id    = callop.getCalledGraph().getOutputId(i);
     auto graph_output       = get(graph_output_id);
 
-    auto aliases = getDevicex()->getAliasZeroCopy()->getActiveAliasedTensors(
+    auto aliases = dv_p->lowering().getAliasZeroCopy()->getActiveAliasedTensors(
         {callop.getIr().getTensor(graph_output_id)}, true);
 
     // Post IR aliased between subgraph output and CallOp output
@@ -150,7 +152,7 @@ void CallOpx::copyOutputs(poplar::program::Sequence &prog) const {
 void CallOpx::doCall(poplar::program::Sequence &prog) const {
   auto &callop       = getOp<CallOp>();
   auto &called_graph = callop.getCalledGraph();
-  auto &graph_prog   = dv_p->getFragmentFunction(called_graph);
+  auto &graph_prog   = dv_p->lowering().getFragmentFunction(called_graph);
   prog.add(poplar::program::Call(graph_prog));
 }
 

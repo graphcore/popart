@@ -7,6 +7,7 @@
 #include <popart/op/globalmaxpool.hpp>
 #include <popart/op/maxpool.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/opxmanager.hpp>
 
 #include <popnn/Pooling.hpp>
@@ -111,7 +112,7 @@ public:
                                       getInTensor(0),
                                       prog,
                                       debugPrefix("pool"),
-                                      dv_p->pooling_options));
+                                      dv_p->lowering().pooling_options));
   }
 
   popnn::PoolingType pooling_type;
@@ -155,7 +156,7 @@ public:
                      false, // useScaledVariant TODO T7295
                      prog,
                      debugPrefix("poolInputGradient"),
-                     dv_p->pooling_options));
+                     dv_p->lowering().pooling_options));
   }
 
   popnn::PoolingType pooling_type;

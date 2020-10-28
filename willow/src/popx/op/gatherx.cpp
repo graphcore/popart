@@ -2,6 +2,7 @@
 #include <popart/error.hpp>
 #include <popart/op/gather.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/gatherx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/util.hpp>

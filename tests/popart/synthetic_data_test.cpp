@@ -25,6 +25,7 @@
 #include <popart/testdevice.hpp>
 
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 
 using namespace popart;
 
@@ -75,9 +76,9 @@ BOOST_AUTO_TEST_CASE(SyntheticData_False) {
   BOOST_TEST(devicex->ir().useSyntheticData() == false);
   BOOST_TEST(devicex->d2hWeightBuffers.size() == 0);
   // The one input tensor
-  BOOST_TEST(devicex->fromHostStreams.size() == 1);
+  BOOST_TEST(devicex->lowering().fromHostStreams.size() == 1);
   // The two anchor tensors
-  BOOST_TEST(devicex->toHostAnchorStreams.size() == 2);
+  BOOST_TEST(devicex->lowering().toHostAnchorStreams.size() == 2);
 }
 BOOST_AUTO_TEST_CASE(SyntheticData_True) {
 
@@ -128,7 +129,7 @@ BOOST_AUTO_TEST_CASE(SyntheticData_True) {
 
   BOOST_TEST(devicex->ir().useSyntheticData() == true);
   BOOST_TEST(devicex->d2hWeightBuffers.size() == 0);
-  BOOST_TEST(devicex->fromHostStreams.size() == 0);
-  BOOST_TEST(devicex->toHostAnchorStreams.size() == 0);
-  BOOST_TEST(devicex->toHostWeightStreams.size() == 0);
+  BOOST_TEST(devicex->lowering().fromHostStreams.size() == 0);
+  BOOST_TEST(devicex->lowering().toHostAnchorStreams.size() == 0);
+  BOOST_TEST(devicex->lowering().toHostWeightStreams.size() == 0);
 }

@@ -4,6 +4,7 @@
 #include <popart/op/collectives/replicatedallgather.hpp>
 #include <popart/op/collectives/replicatedreducescatter.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/collectives/collectivesx.hpp>
 #include <popart/popx/op/collectives/replicatedallgatherx.hpp>
 #include <popart/popx/op/collectives/replicatedreducescatterx.hpp>
@@ -42,7 +43,7 @@ void ReplicatedReduceScatterOpx::grow(poplar::program::Sequence &prog) const {
     }
   }
 
-  poplar::OptionFlags reduceScatterOptions = dv_p->gclOptions;
+  poplar::OptionFlags reduceScatterOptions = dv_p->lowering().gclOptions;
   reduceScatterOptions.set("useReplicatedImplementation", "true");
 
   poplar::Tensor reducedScattered =

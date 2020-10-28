@@ -4,6 +4,7 @@
 #include <popart/graph.hpp>
 #include <popart/op/if.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/ifx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensorindex.hpp>
@@ -47,7 +48,7 @@ void IfOpx::copyInputs(poplar::program::Sequence &thenProg,
 
 void IfOpx::callBranch(poplar::program::Sequence &prog,
                        const Graph &graph) const {
-  auto &branch_prog = dv_p->progs.scopeFragment(graph);
+  auto &branch_prog = dv_p->lowering().progs.scopeFragment(graph);
   prog.add(branch_prog);
 }
 

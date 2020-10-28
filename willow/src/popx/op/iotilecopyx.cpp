@@ -2,6 +2,7 @@
 #include <popart/error.hpp>
 #include <popart/op/iotilecopy.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/iotilecopyx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensorindex.hpp>
@@ -47,11 +48,11 @@ poplar::Tensor IoTileCopyOpx::unwindTensorLayout(poplar::Tensor tensor,
   auto info        = op.inInfo(IoTileCopyOp::getInIndex());
 
   // Source of unwinding (tensor originates from src graph)
-  auto &srcGraph =
-      dv_p->getVirtualGraph(getVirtualGraphId(), op_p->settings.tileSet);
+  auto &srcGraph = dv_p->lowering().getVirtualGraph(getVirtualGraphId(),
+                                                    op_p->settings.tileSet);
 
   // Destination of unwinding (tensor unwound into dst graph)
-  auto &dstGraph = dv_p->getVirtualGraph(
+  auto &dstGraph = dv_p->lowering().getVirtualGraph(
       getVirtualGraphId(),
       op_p->settings.tileSet == TileSet::Compute ? TileSet::IO
                                                  : TileSet::Compute);
@@ -67,7 +68,7 @@ poplar::Tensor IoTileCopyOpx::unwindTensorLayout(poplar::Tensor tensor,
   auto dstTensorFlat = dstTensor.flatten();
 
   // Reorder both tensors on the main graph
-  dv_p->graph().reorderToSimplify(&srcTensorFlat, {&dstTensorFlat});
+  dv_p->lowering().graph().reorderToSimplify(&srcTensorFlat, {&dstTensorFlat});
 
   auto srcMapping = srcGraph.getTileMapping(srcTensorFlat);
   poplar::Graph::TileToTensorMapping dstMapping(numDstTiles);

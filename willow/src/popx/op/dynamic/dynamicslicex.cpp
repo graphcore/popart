@@ -3,6 +3,7 @@
 #include <popart/op/dynamic/dynamicslice.hpp>
 
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/dynamic/dynamicslicex.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensor.hpp>
@@ -57,7 +58,7 @@ poplar::Tensor DynamicSliceOpx::createInput(InIndex index,
         popType(outInfo),
         outInfo.shape_szt(),
         op.inId(DynamicSliceBaseOp::getInIndex()) + "_slice");
-    dv_p->getLinearMapper().mapTensor(graph(), sliceTensor);
+    dv_p->lowering().getLinearMapper().mapTensor(graph(), sliceTensor);
     auto inShape = op.inShape(DynamicSliceBaseOp::getInIndex());
 
     std::vector<size_t> paxes(op.getAxes().begin(), op.getAxes().end());

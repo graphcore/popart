@@ -7,6 +7,7 @@
 #include <popart/op/pad.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/padgradx.hpp>
 #include <popart/popx/op/padx.hpp>
 #include <popart/popx/opxmanager.hpp>
@@ -54,7 +55,7 @@ std::pair<bool, poplar::Tensor> BasePadOpx::getPropitiousPadLayout() const {
 
   TensorId act_out = getNonGradId(inId);
 
-  if (!dv_p->tensors.contains(act_out)) {
+  if (!dv_p->lowering().tensors().contains(act_out)) {
     return {false, dummy};
   }
 
@@ -70,7 +71,7 @@ std::pair<bool, poplar::Tensor> BasePadOpx::getPropitiousPadLayout() const {
   }
 
   TensorId act_in = sliceOp->inId(BaseSliceOp::getInIndex());
-  if (!dv_p->tensors.contains(act_in)) {
+  if (!dv_p->lowering().tensors().contains(act_in)) {
     return {false, dummy};
   }
 
@@ -90,7 +91,7 @@ std::pair<bool, poplar::Tensor> BasePadOpx::getPropitiousPadLayout() const {
 
   logging::devicex::debug(
       "Found a propitious tile mapping for the Pad's output, "
-      "based on already tile-mapped Tensors, for op {}",
+      "based on already tile-mapped lowering().Tensors, for op {}",
       bop.str());
 
   // Found a good layout!
@@ -140,7 +141,8 @@ BasePadOpx::cloneNcopyEdges(poplar::Tensor t,
 
   // clone and copy the edges
   // These copies will be merged by poplar, so it is not necessary to
-  // concatenate all the Tensors and create one single large copy program.
+  // concatenate all the lowering().Tensors and create one single large copy
+  // program.
   for (auto &p : leftPads) {
     if (p.numElements() > 0) {
       p = cloneNcopy(se, p);
@@ -198,7 +200,7 @@ poplar::Tensor BasePadOpx::constantModePadGrow(poplar::Tensor inTensor,
   // Note a tensor has 0 elements iff it has a zero-sized dimension.
   if (inTensor.numElements() == 0) {
     poplar::Tensor outTensor = mk_padded(popops::padding::MappingMethod::NONE);
-    dv_p->getLinearMapper().mapTensor(Opx::graph(), outTensor);
+    dv_p->lowering().getLinearMapper().mapTensor(Opx::graph(), outTensor);
     return outTensor;
   }
 

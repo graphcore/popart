@@ -39,7 +39,7 @@ protected:
     return popnn::lstm::createWeightsBiases(graph(),
                                             createLSTMParams(),
                                             debugPrefix("createWeights"),
-                                            dv_p->lstmOptions,
+                                            dv_p->lowering().lstmOptions,
                                             &dv_p->matmulCache);
   }
 
@@ -59,7 +59,7 @@ protected:
     return createInitialState(graph(),
                               createLSTMParams(),
                               debugPrefix("createInitialState"),
-                              dv_p->lstmOptions,
+                              dv_p->lowering().lstmOptions,
                               &dv_p->matmulCache);
   }
 

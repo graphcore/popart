@@ -5,6 +5,7 @@
 #include <set>
 #include <unordered_map>
 
+#include <poplar/Program.hpp>
 #include <popart/names.hpp>
 
 namespace popart {
@@ -13,7 +14,7 @@ enum class ScheduledPreLoss;
 
 namespace popx {
 
-class Devicex;
+class IrLowering;
 class PipelineInfo;
 
 class PopPrograms {
@@ -23,7 +24,7 @@ public:
   // to communicate with the host to call the 'run'. By supplying a
   // count, we can loop a repeatable program inside a Poplar repeat
   // program
-  PopPrograms(Devicex *dv_p_);
+  PopPrograms(IrLowering *ir_lowering_p_);
 
   enum ProgramIndex {
     WeightsFromHost = 0,
@@ -145,7 +146,7 @@ public:
       std::ostringstream &ss,
       std::map<PipelineStage, poplar::Function> &fwdFunctions) const;
 
-  Devicex *dv_p;
+  IrLowering *ir_lowering_p;
 
 private:
   static constexpr int seqs_size = static_cast<int>(ProgramFragmentIndex::N);

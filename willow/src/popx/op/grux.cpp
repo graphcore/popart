@@ -5,6 +5,7 @@
 #include <popart/ir.hpp>
 #include <popart/op/gru.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/grux.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensor.hpp>
@@ -37,7 +38,7 @@ poplar::Tensor GRUOpx::getInitialState() const {
         popnn::gru::createInitialState(graph(),
                                        createGRUParams(),
                                        debugPrefix("initialState"),
-                                       dv_p->lstmOptions,
+                                       dv_p->lowering().lstmOptions,
                                        &dv_p->matmulCache);
   }
   return *initial_state_h;
@@ -82,7 +83,7 @@ void GRUOpx::grow(poplar::program::Sequence &prog) const {
                                 intermediate.get(),
                                 prog,
                                 debugPrefix("gruFwd"),
-                                dv_p->lstmOptions,
+                                dv_p->lowering().lstmOptions,
                                 &dv_p->matmulCache);
   } else if (gru_op.getDirectionAttribute() == "backward") {
     output = popnn::gru::gruFwd(graph(),
@@ -93,7 +94,7 @@ void GRUOpx::grow(poplar::program::Sequence &prog) const {
                                 intermediate.get(),
                                 prog,
                                 debugPrefix("gruFwd"),
-                                dv_p->lstmOptions,
+                                dv_p->lowering().lstmOptions,
                                 &dv_p->matmulCache);
   } else if (gru_op.getDirectionAttribute() == "bidirectional") {
     // TODO: Add support for bidirectional GRU op.
@@ -229,7 +230,7 @@ GRUOpx::reshapePoplibWeightsForOnnx(poplar::Tensor poplib_weights,
 
 poplar::Tensor GRUOpx::createGRUInput() const {
   auto gru_params = createGRUParams();
-  auto options    = dv_p->lstmOptions;
+  auto options    = dv_p->lowering().lstmOptions;
   auto cache      = &dv_p->matmulCache;
 
   return popnn::gru::createInput(
@@ -239,7 +240,7 @@ poplar::Tensor GRUOpx::createGRUInput() const {
 popnn::gru::GruWeights GRUOpx::getGRUWeights() const {
   if (!weights) {
     auto gru_params = createGRUParams();
-    auto options    = dv_p->lstmOptions;
+    auto options    = dv_p->lowering().lstmOptions;
     auto cache      = &dv_p->matmulCache;
 
     weights = createWeights(
@@ -344,7 +345,7 @@ void GRUGradOpx::grow(poplar::program::Sequence &prog) const {
                                       &input_grad,
                                       weights_grad,
                                       debugPrefix("gruBwdWithWU"),
-                                      dv_p->lstmOptions,
+                                      dv_p->lowering().lstmOptions,
                                       &dv_p->matmulCache);
 
   setOutTensor(GRUGradOp::getInputOutIndex(), input_grad);

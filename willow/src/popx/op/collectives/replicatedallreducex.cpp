@@ -3,6 +3,7 @@
 #include <popart/ir.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/collectives/replicatedallreducex.hpp>
 #include <popart/popx/opxmanager.hpp>
 
@@ -19,7 +20,7 @@ ReplicatedAllReduceOpx::ReplicatedAllReduceOpx(Op *op, Devicex *devicex)
 void ReplicatedAllReduceOpx::grow(poplar::program::Sequence &prog) const {
   const auto inIndex                   = ReplicatedAllReduceOp::getInIndex();
   poplar::Tensor toReduce              = getInTensor(inIndex);
-  poplar::OptionFlags allReduceOptions = dv_p->gclOptions;
+  poplar::OptionFlags allReduceOptions = dv_p->lowering().gclOptions;
   allReduceOptions.set("useReplicatedImplementation", "true");
   poplar::Tensor output = gcl::allReduce(graph(),
                                          toReduce,
@@ -55,7 +56,7 @@ void ReplicatedAllReduceInplaceOpx::grow(
     poplar::program::Sequence &prog) const {
   const auto inIndex      = ReplicatedAllReduceInplaceOp::getInIndex();
   poplar::Tensor toReduce = getInTensor(inIndex);
-  poplar::OptionFlags allReduceOptions = dv_p->gclOptions;
+  poplar::OptionFlags allReduceOptions = dv_p->lowering().gclOptions;
   allReduceOptions.set("useReplicatedImplementation", "true");
   gcl::allReduceInPlace(graph(),
                         toReduce,

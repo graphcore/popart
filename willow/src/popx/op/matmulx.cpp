@@ -4,6 +4,7 @@
 #include <popart/ir.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/matmulx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/popx/poplaroptionsx.hpp>

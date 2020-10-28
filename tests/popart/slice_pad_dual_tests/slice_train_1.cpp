@@ -14,6 +14,7 @@
 #include <popart/error.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/session.hpp>
 #include <popart/testdevice.hpp>
 
@@ -105,7 +106,7 @@ BOOST_AUTO_TEST_CASE(SliceTrain1) {
   // Tensor shape: tile mapping
   std::map<std::vector<size_t>, std::vector<Mapping>> mappings;
   const auto &graph = session->getDevice().graph();
-  for (auto id : session->getDevice().tensors.tensors_) {
+  for (auto id : session->getDevice().lowering().tensors().tensors_) {
     auto shape    = id.second->shape();
     const auto tm = graph.getTileMapping(*id.second);
     mappings[shape].push_back(tm);

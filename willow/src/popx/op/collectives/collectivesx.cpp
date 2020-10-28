@@ -5,6 +5,7 @@
 #include <popart/liveness.hpp>
 #include <popart/op/collectives/collectives.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/collectives/collectivesx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
@@ -291,8 +292,9 @@ CollectivesBaseOpx::getCollectiveLinkedGroup() const {
   std::map<TensorId, std::set<Op *>> linkOpMap;
   std::map<Op *, std::set<TensorId>> opLinkMap;
 
-  Ir &ir                                     = op_p->getIr();
-  const liveness::LivenessAnalyzer *liveness = dv_p->getLivenessAnalyzer();
+  Ir &ir = op_p->getIr();
+  const liveness::LivenessAnalyzer *liveness =
+      dv_p->lowering().getLivenessAnalyzer();
 
   for (Op *op : ir.getAllOps()) {
     if (CollectivesBaseOp *collectiveOp =
@@ -374,21 +376,23 @@ CollectivesBaseOpx::getCollectiveBalancedReorder() const {
   auto group = getCollectiveLinkedGroup();
   logging::opx::trace("[CollectivesBaseOpx] Getting CBR for {}",
                       *group.first.begin());
-  auto cbr = dv_p->getCollectiveBalancedReorder(*group.first.begin());
+  auto cbr =
+      dv_p->lowering().getCollectiveBalancedReorder(*group.first.begin());
   return cbr.get();
 }
 
 CollectiveBalancedReorder *CollectivesBaseOpx::createCollectiveBalancedReorder(
     poplar::Tensor tensor) const {
-  auto replicationFactor = dv_p->getReplicationFactor();
+  auto replicationFactor = dv_p->lowering().getReplicationFactor();
   auto group             = getCollectiveLinkedGroup();
-  auto cbr = dv_p->getCollectiveBalancedReorder(*group.first.begin());
+  auto cbr =
+      dv_p->lowering().getCollectiveBalancedReorder(*group.first.begin());
   if (!cbr.get()) {
     cbr = std::make_shared<CollectiveBalancedReorder>(
         graph(), tensor, replicationFactor);
     for (auto tensor_id : group.first) {
       logging::opx::trace("[CollectivesBaseOpx] CBR created for {}", tensor_id);
-      dv_p->setCollectiveBalancedReorder(tensor_id, cbr);
+      dv_p->lowering().setCollectiveBalancedReorder(tensor_id, cbr);
     }
   }
   return cbr.get();

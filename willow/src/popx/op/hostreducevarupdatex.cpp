@@ -4,6 +4,7 @@
 #include <popart/op/hostreducevarupdate.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/hostreducevarupdatex.hpp>
 #include <popart/popx/opxmanager.hpp>
 
@@ -26,19 +27,21 @@ void GradCopyToHostOpx::grow(poplar::program::Sequence &prog) const {
   const auto updater_index    = GradCopyToHostOp::getInIndex();
   poplar::Tensor weightDeltas = getInTensor(updater_index);
 
-  const auto grad_id = inId(updater_index);
-  auto deviceToHostStream =
-      dv_p->insertGradientStoreStream(grad_id, inInfo(updater_index), graph());
+  const auto grad_id      = inId(updater_index);
+  auto deviceToHostStream = dv_p->lowering().insertGradientStoreStream(
+      grad_id, inInfo(updater_index), graph());
 
-  dv_p->getHostReduceStreamIds().emplace_back(deviceToHostStream.handle());
+  dv_p->lowering().getHostReduceStreamIds().emplace_back(
+      deviceToHostStream.handle());
 
   // TODO(T12685): Once replicatedReduceScatter is part of the Poplar
   // public API we can replace the replicatedAllReduce with it and
   // then do the AllGather on the host.
   // If accumulation is enabled then the replicatedAllReduce is run from
   // SGD1AcclReduceOp
-  if (dv_p->getReplicationFactor() > 1 && dv_p->getAccumulationFactor() == 1) {
-    poplar::OptionFlags allReduceOptions = dv_p->gclOptions;
+  if (dv_p->lowering().getReplicationFactor() > 1 &&
+      dv_p->lowering().getAccumulationFactor() == 1) {
+    poplar::OptionFlags allReduceOptions = dv_p->lowering().gclOptions;
     allReduceOptions.set("useReplicatedImplementation", "true");
     weightDeltas = gcl::allReduce(graph(),
                                   weightDeltas,
@@ -55,7 +58,7 @@ void GradCopyToHostOpx::grow(poplar::program::Sequence &prog) const {
     poplar::Tensor dummyTensor = graph().addVariable(poplar::CHAR, {1});
     graph().setTileMapping(dummyTensor, 0);
 
-    auto remoteBuffer = dv_p->getOrCreateHostReduceRemoteBuffer(
+    auto remoteBuffer = dv_p->lowering().getOrCreateHostReduceRemoteBuffer(
         grad_id, inInfo(updater_index), graph());
 
     poplar::program::Copy gradientsToHostProg(weightDeltas, remoteBuffer);
@@ -83,11 +86,12 @@ void GradCopyFromHostOpx::grow(poplar::program::Sequence &prog) const {
   const auto updater_index    = GradCopyFromHostOp::getInIndex();
   poplar::Tensor weightDeltas = getInTensor(updater_index);
 
-  const auto grad_id = inId(updater_index);
-  auto hostToDeviceStream =
-      dv_p->insertGradientLoadStream(grad_id, inInfo(updater_index), graph());
+  const auto grad_id      = inId(updater_index);
+  auto hostToDeviceStream = dv_p->lowering().insertGradientLoadStream(
+      grad_id, inInfo(updater_index), graph());
 
-  dv_p->getHostReduceStreamIds().push_back(hostToDeviceStream.handle());
+  dv_p->lowering().getHostReduceStreamIds().push_back(
+      hostToDeviceStream.handle());
 
   if (op_p->getIr().getSessionOptions().hostAllReduceRemoteBuffer) {
     // This is currently a hack
@@ -95,7 +99,7 @@ void GradCopyFromHostOpx::grow(poplar::program::Sequence &prog) const {
     // TODO: use linear mapper?
     graph().setTileMapping(dummyTensor, 0);
 
-    auto remoteBuffer = dv_p->getOrCreateHostReduceRemoteBuffer(
+    auto remoteBuffer = dv_p->lowering().getOrCreateHostReduceRemoteBuffer(
         grad_id, inInfo(updater_index), graph());
 
     poplar::program::Copy dummyCallback(hostToDeviceStream, dummyTensor);
@@ -124,10 +128,11 @@ void HostReduceVarCopyOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor weights      = getInTensor(var_update_index);
 
   const auto weight_id    = inId(var_update_index);
-  auto hostToDeviceStream = dv_p->insertWeightLoadStream(
+  auto hostToDeviceStream = dv_p->lowering().insertWeightLoadStream(
       weight_id, inInfo(var_update_index), graph());
 
-  dv_p->getHostReduceStreamIds().emplace_back(hostToDeviceStream.handle());
+  dv_p->lowering().getHostReduceStreamIds().emplace_back(
+      hostToDeviceStream.handle());
 
   poplar::program::Copy hostWeightsToDeviceProg(hostToDeviceStream, weights);
   prog.add(hostWeightsToDeviceProg);

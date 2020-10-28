@@ -16,6 +16,7 @@
 #define private public
 #define protected public
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/session.hpp>
 #undef private
 #undef public
@@ -96,7 +97,8 @@ BOOST_AUTO_TEST_CASE(RecomputeTestPopxNormOnlyCalls0) {
       dynamic_cast<popart::popx::Devicex *>(session->device_.get());
 
   // we count how many times each op appears
-  std::map<Op *, int, POpCmp> counts = devicex->getMainGraphOpCounts();
+  std::map<Op *, int, POpCmp> counts =
+      devicex->lowering().getMainGraphOpCounts();
 
   // for norm only, we expect all Norm ops to appear twice, all others once
   for (auto op_count : counts) {

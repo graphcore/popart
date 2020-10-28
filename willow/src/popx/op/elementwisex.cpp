@@ -1,6 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popart/op/elementwise.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/elementwisex.hpp>
 
 namespace popart {
@@ -106,13 +107,13 @@ ElementWiseBinaryOpx::createInput(InIndex index,
   const auto arg1Idx = ElementWiseBinaryBaseOp::getArg1InIndex();
 
   if (index == arg0Idx) {
-    if (dv_p->tensors.contains(op_p->input->id(arg1Idx))) {
+    if (dv_p->lowering().tensors().contains(op_p->input->id(arg1Idx))) {
       return graph().clone(getInTensor(arg1Idx), name);
     }
   }
 
   if (index == arg1Idx) {
-    if (dv_p->tensors.contains(op_p->input->id(arg0Idx))) {
+    if (dv_p->lowering().tensors().contains(op_p->input->id(arg0Idx))) {
       return graph().clone(getInTensor(arg0Idx), name);
     }
   }
