@@ -810,6 +810,13 @@ TensorId AiGraphcoreOpset1::expm1(const std::vector<TensorId> &args,
       .at(0);
 }
 
+TensorId AiGraphcoreOpset1::log1p(const std::vector<TensorId> &args,
+                                  const std::string &name) {
+  return impl
+      ->op(Onnx::AiGraphcore::OpSet1::Log1p, getOpsetVersion(), args, {}, name)
+      .at(0);
+}
+
 std::vector<TensorId>
 Builder::customOp(const OperatorIdentifier &opid,
                   int opsetVersion,

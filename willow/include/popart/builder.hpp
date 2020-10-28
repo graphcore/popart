@@ -457,6 +457,20 @@ public:
    */
   TensorId expm1(const std::vector<TensorId> &args,
                  const std::string &name = {});
+
+  /**
+   * Add log1p operation to the model
+   * It computes log(x + 1).
+   * Calculates the logarithm of the given
+   * input tensor plus one.
+   * Element-wise.
+   *
+   * \param args Tensor T
+   * \param name Optional identifier for operation
+   * \return The name of the result tensor
+   */
+  TensorId log1p(const std::vector<TensorId> &args,
+                 const std::string &name = {});
 };
 
 /**

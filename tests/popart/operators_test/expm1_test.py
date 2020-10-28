@@ -115,7 +115,7 @@ def test_expm1_inplace_1(op_tester):
 def test_expm1_inplace_2(op_tester):
     """
     Test of both
-    1) 1 Expm1Inplace and 2 Exp (priority > 0) and 
+    1) 1 Expm1Inplace and 2 Expm1 (priority > 0) and 
     2) 3 Expm1 (priority <= 0)
     """
     for inplace_priority in [-100., +100.]:

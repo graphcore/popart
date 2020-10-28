@@ -283,6 +283,8 @@ const static AiGraphcoreOpIdV1 IpuCopy("IpuCopy");
 const static AiGraphcoreOpIdV1 L1("L1", 1, 1);
 const static AiGraphcoreOpIdV1 LambSquare("LambSquare");
 const static AiGraphcoreOpIdV1 LeakyReluInplace("LeakyReluInplace");
+const static AiGraphcoreOpIdV1 Log1p_1("Log1p", 1, 1);
+const static AiGraphcoreOpIdV1 Log1pInplace("Log1pInplace");
 const static AiGraphcoreOpIdV1 LogSoftmaxInplace("LogSoftmaxInplace");
 const static AiGraphcoreOpIdV1 LSTM_1("LSTM", 4, 2);
 const static AiGraphcoreOpIdV1 MulLhsInplace("MulLhsInplace");
@@ -357,6 +359,7 @@ const static OperatorIdentifier GroupNormalization =
 const static OperatorIdentifier IdentityLoss = CustomOperators::IdentityLoss;
 const static OperatorIdentifier Init         = CustomOperators::Init_1;
 const static OperatorIdentifier L1           = CustomOperators::L1;
+const static OperatorIdentifier Log1p        = CustomOperators::Log1p_1;
 const static OperatorIdentifier LSTM         = CustomOperators::LSTM_1;
 const static OperatorIdentifier MultiConv    = CustomOperators::MultiConv_1;
 const static OperatorIdentifier Nll          = CustomOperators::Nll;

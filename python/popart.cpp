@@ -1653,6 +1653,10 @@ PYBIND11_MODULE(popart_core, m) {
             &AiGraphcoreOpset1::expm1,
             py::arg("args"),
             py::arg("debugPrefix") = std::string());
+    cls.def("log1p",
+            &AiGraphcoreOpset1::log1p,
+            py::arg("args"),
+            py::arg("debugPrefix") = std::string());
   }
   {
     py::class_<Builder> cls(m, "_BuilderCore");
