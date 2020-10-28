@@ -25,7 +25,7 @@ std::vector<std::unique_ptr<Op>> GroupNormOp::getGradOps() {
   return upops;
 }
 
-bool GroupNormOp::canBeReplacedByIdentity() {
+bool GroupNormOp::canBeReplacedByIdentity() const {
   return inInfo(getXInIndex()).nelms() == 0;
 }
 

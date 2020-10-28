@@ -60,7 +60,7 @@ void MaxPoolOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("kernel_shape", kernelShape);
 }
 
-bool MaxPoolOp::canBeReplacedByIdentity() {
+bool MaxPoolOp::canBeReplacedByIdentity() const {
   int64_t padsSum        = std::accumulate(pads.begin(), pads.end(), 0);
   int64_t stridesProduct = std::accumulate(
       strides.begin(), strides.end(), 1, std::multiplies<int64_t>());

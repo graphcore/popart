@@ -91,7 +91,7 @@ public:
                     const std::string &_mode,
                     const Op::Settings &settings_);
 
-  bool canBeReplacedByIdentity() override { return padSizeZero(); }
+  bool canBeReplacedByIdentity() const override { return padSizeZero(); }
 
   std::vector<std::tuple<OperatorIdentifier, float>>
   inplacePriorityDefault() const override;

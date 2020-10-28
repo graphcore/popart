@@ -52,7 +52,7 @@ public:
 
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
-  bool canBeReplacedByIdentity() override;
+  bool canBeReplacedByIdentity() const override;
 
   // For inplace support
   std::unique_ptr<Op>

@@ -40,7 +40,7 @@ public:
   view::RegMap fwdRegMap(InIndex, OutIndex) const final;
   view::RegMap bwdRegMap(InIndex, OutIndex) const final;
 
-  bool canBeReplacedByIdentity() override {
+  bool canBeReplacedByIdentity() const override {
     return input->getIndexShapeMap()[ExpandOp::getInTensorIndex()] == outShape;
   }
 

@@ -191,7 +191,7 @@ const std::map<int, int> &ReshapeGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
-bool ReshapeBaseOp::canBeReplacedByIdentity() {
+bool ReshapeBaseOp::canBeReplacedByIdentity() const {
   return inShape(getInIndex()) == outShape;
 }
 

@@ -122,7 +122,7 @@ void TransposeOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("perm", getPerm());
 }
 
-bool TransposeOp::canBeReplacedByIdentity() {
+bool TransposeOp::canBeReplacedByIdentity() const {
   return std::is_sorted(getPerm().begin(), getPerm().end());
 }
 

@@ -176,8 +176,8 @@ public:
 
   // Convenience methods to query the mode of the model.
   // Onnx refers to Inference as testing.
-  bool isTraining() { return executionMode == ExecutionMode::Training; }
-  bool isTesting() { return executionMode == ExecutionMode::Inference; }
+  bool isTraining() const { return executionMode == ExecutionMode::Training; }
+  bool isTesting() const { return executionMode == ExecutionMode::Inference; }
 
   // Log the IR in a human readable format.
   void logIr();

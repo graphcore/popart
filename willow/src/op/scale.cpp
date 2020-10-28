@@ -60,7 +60,9 @@ std::unique_ptr<Op> ScaleInplaceOp::clone() const {
 }
 
 // A scale with a scale factor of +1 can be replaced by identity
-bool ScaleOp::canBeReplacedByIdentity() { return getScaleFactor() == 1.0f; }
+bool ScaleOp::canBeReplacedByIdentity() const {
+  return getScaleFactor() == 1.0f;
+}
 
 ScaleGradOp::ScaleGradOp(const ScaleOp &fwdOp)
     : ScaleOp(Onnx::GradOperators::ScaleGrad,

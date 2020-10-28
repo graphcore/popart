@@ -21,7 +21,9 @@ DropoutBaseOp::DropoutBaseOp(const OperatorIdentifier &opid_,
 }
 
 // Dropout in testing mode can be replaced by the identity
-bool DropoutBaseOp::canBeReplacedByIdentity() { return (getIr().isTesting()); }
+bool DropoutBaseOp::canBeReplacedByIdentity() const {
+  return (getIr().isTesting());
+}
 
 void DropoutBaseOp::updateSeedModifier() {
   seedModifier = getIr().getAndIncrementSeedModifier();

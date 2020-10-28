@@ -61,7 +61,7 @@ void AveragePoolOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("count_include_pad", countIncludePad);
 }
 
-bool AveragePoolOp::canBeReplacedByIdentity() {
+bool AveragePoolOp::canBeReplacedByIdentity() const {
   int64_t padsSum        = std::accumulate(pads.begin(), pads.end(), 0);
   int64_t stridesProduct = std::accumulate(
       strides.begin(), strides.end(), 1, std::multiplies<int64_t>());

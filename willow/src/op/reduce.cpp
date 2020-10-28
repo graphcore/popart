@@ -76,7 +76,7 @@ void ReduceOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 }
 
 // A reduce op that doesn't reduce anything can be replaced by identity
-bool ReduceOp::canBeReplacedByIdentity() {
+bool ReduceOp::canBeReplacedByIdentity() const {
   return (inInfo(getInIndex()).shape() == outInfo(getOutIndex()).shape());
 }
 

@@ -35,7 +35,7 @@ const std::vector<GradInOutMapper> &SumArgGradOp::gradInputInfo() const {
   return gradInputInfoVec;
 }
 
-bool SumArgGradOp::canBeReplacedByIdentity() {
+bool SumArgGradOp::canBeReplacedByIdentity() const {
   return inShape(0) == outShape(0);
 }
 

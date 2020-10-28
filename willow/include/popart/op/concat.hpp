@@ -40,7 +40,7 @@ public:
   static Shape getOutputShape(int64_t axis,
                               const std::vector<const Shape *> inputs);
 
-  bool canBeReplacedByIdentity() override;
+  bool canBeReplacedByIdentity() const override;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
   bool canShard() const override { return true; }

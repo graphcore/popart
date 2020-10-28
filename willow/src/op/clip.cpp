@@ -67,7 +67,7 @@ std::unique_ptr<Op> ClipInplaceOp::clone() const {
 
 // A clip op with a clipping range of min and max numbers than
 // can be expresses as a float can be replaced by identity
-bool ClipOp::canBeReplacedByIdentity() {
+bool ClipOp::canBeReplacedByIdentity() const {
   if (getClipMin() > std::numeric_limits<float>::lowest()) {
     return false;
   } else if (getClipMax() < std::numeric_limits<float>::max()) {

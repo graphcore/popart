@@ -32,7 +32,7 @@ public:
 
   const std::vector<int64_t> &getRepeats() const;
 
-  bool canBeReplacedByIdentity() override;
+  bool canBeReplacedByIdentity() const override;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 

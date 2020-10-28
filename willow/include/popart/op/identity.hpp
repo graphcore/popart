@@ -55,7 +55,7 @@ public:
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
-  bool canBeReplacedByIdentity() override;
+  bool canBeReplacedByIdentity() const override;
 
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
@@ -75,7 +75,7 @@ public:
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
   std::unique_ptr<Op> clone() const final;
-  bool canBeReplacedByIdentity() override;
+  bool canBeReplacedByIdentity() const override;
 
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }

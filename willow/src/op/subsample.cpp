@@ -135,7 +135,9 @@ SubsampleOp::SubsampleOp(const OperatorIdentifier &_opid,
     : SubsampleBaseOp(_opid, strides_, settings_) {}
 
 // A subsample with all strides being  1 can be replaced by identity
-bool SubsampleBaseOp::canBeReplacedByIdentity() { return strideSizeOne(); }
+bool SubsampleBaseOp::canBeReplacedByIdentity() const {
+  return strideSizeOne();
+}
 
 void SubsampleBaseOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);

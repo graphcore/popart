@@ -27,7 +27,7 @@ public:
   std::vector<std::tuple<OperatorIdentifier, float>>
   inplacePriorityDefault() const final;
   std::unique_ptr<Op> getInplaceVariant(const OperatorIdentifier &) const final;
-  bool canBeReplacedByIdentity() override;
+  bool canBeReplacedByIdentity() const override;
 
   static InIndex clip11MinInputIndex() { return 1; }
   static InIndex clip11MaxInputIndex() { return 2; }

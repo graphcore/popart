@@ -200,7 +200,7 @@ std::vector<std::unique_ptr<Op>> ConcatOp::getGradOps() {
 }
 
 // Concat can be replace by identity if there is 1 input
-bool ConcatOp::canBeReplacedByIdentity() { return input->n() == 1; }
+bool ConcatOp::canBeReplacedByIdentity() const { return input->n() == 1; }
 
 ConcatGradOp::ConcatGradOp(const ConcatOp &fwd, InIndex inputIndex)
     : Op(Onnx::GradOperators::ConcatGrad, fwd.getSettings()),

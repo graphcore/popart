@@ -39,7 +39,7 @@ public:
 
   bool canShard() const override { return true; }
 
-  bool canBeReplacedByIdentity() final;
+  bool canBeReplacedByIdentity() const final;
 
 private:
   int64_t num_groups;

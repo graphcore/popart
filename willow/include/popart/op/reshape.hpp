@@ -32,7 +32,7 @@ public:
   view::RegMap fwdRegMap(InIndex, OutIndex) const final;
   view::RegMap bwdRegMap(InIndex, OutIndex) const final;
 
-  bool canBeReplacedByIdentity() override;
+  bool canBeReplacedByIdentity() const override;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
   void connectInTensor(InIndex inIndex, TensorId tenId) final;

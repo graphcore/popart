@@ -39,7 +39,7 @@ void VariadicOp::setup() {
   }
 }
 
-bool VariadicOp::canBeReplacedByIdentity() { return (input->n() == 1); }
+bool VariadicOp::canBeReplacedByIdentity() const { return (input->n() == 1); }
 
 VariadicGradOp::VariadicGradOp(const OperatorIdentifier &_opid,
                                const VariadicOp &op_,

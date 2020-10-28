@@ -27,7 +27,7 @@ public:
   // Outputs
   static OutIndex getOutIndex() { return 0; }
 
-  bool canBeReplacedByIdentity() final;
+  bool canBeReplacedByIdentity() const final;
 
   uint32_t getSeedModifier() const { return seedModifier; }
 

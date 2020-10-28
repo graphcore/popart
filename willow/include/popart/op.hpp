@@ -204,7 +204,7 @@ public:
 
   // Return true if the op based on it's configuration can be replace by the
   // identity operations, else false.
-  virtual bool canBeReplacedByIdentity();
+  virtual bool canBeReplacedByIdentity() const;
 
 public:
   Op(const OperatorIdentifier &_opid, const Op::Settings &settings);

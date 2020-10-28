@@ -28,7 +28,7 @@ public:
 
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
-  bool canBeReplacedByIdentity() override;
+  bool canBeReplacedByIdentity() const override;
 
   // currently these are conservative TODO T6973
   view::RegMap fwdRegMap(InIndex, OutIndex) const final;

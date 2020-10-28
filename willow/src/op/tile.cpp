@@ -133,7 +133,7 @@ const std::map<int, int> &TileGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
-bool TileOp::canBeReplacedByIdentity() {
+bool TileOp::canBeReplacedByIdentity() const {
   return inShape(getInIndex()) == outShape;
 }
 

@@ -27,7 +27,7 @@ public:
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
-  bool canBeReplacedByIdentity() override;
+  bool canBeReplacedByIdentity() const override;
 
 private:
   void setup0() final;

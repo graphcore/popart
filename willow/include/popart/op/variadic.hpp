@@ -22,7 +22,7 @@ public:
   // VariadicOps have a variable number of inputs, but exactly one output
   static OutIndex getOutIndex() { return 0; }
 
-  bool canBeReplacedByIdentity() final;
+  bool canBeReplacedByIdentity() const final;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 

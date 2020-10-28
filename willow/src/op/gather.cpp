@@ -64,7 +64,7 @@ void GatherOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 
 // A gather on a degenerate dimension with a rank 1 index tensor with a single
 // element can be replaced by identity
-bool GatherOp::canBeReplacedByIdentity() {
+bool GatherOp::canBeReplacedByIdentity() const {
   return (inShape(dataInIndex())[getAxis()] == 1 &&
           inInfo(indicesInIndex()).rank() == 1 &&
           inInfo(indicesInIndex()).nelms() == 1);
