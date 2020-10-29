@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE(ExplicitRecomputation_Case1) {
               opts,
               Patterns(PatternsLevel::All).enableInPlace(false)});
 
-  auto opSchedule = ir.getOpSchedule({});
+  auto opSchedule = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
   std::vector<size_t> recomputedIdx;
   std::vector<size_t> lossGradIdx;
 
