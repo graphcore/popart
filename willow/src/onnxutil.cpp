@@ -364,7 +364,17 @@ std::string getExternallySavedTensorLocation(ONNX_NAMESPACE::ModelProto &model,
 void saveInitializersExternally(ONNX_NAMESPACE::ModelProto &model,
                                 const std::vector<TensorId> &ids,
                                 const std::string &fn,
-                                bool appendToExistingFile) {
+                                bool appendToExistingFile,
+                                bool updateExistingExternalInfo) {
+
+  // Check fn's parent directory exists
+  boost::filesystem::path path(fn);
+  if (!path.parent_path().empty() &&
+      !boost::filesystem::exists(path.parent_path())) {
+    throw error("Saving tensor data to file {}, but its parent directory does "
+                "not exist",
+                fn);
+  }
 
   if (boost::filesystem::exists(fn)) {
     if (!appendToExistingFile) {
@@ -410,16 +420,21 @@ void saveInitializersExternally(ONNX_NAMESPACE::ModelProto &model,
     }
     // That the tensor is not already saved externally
     ONNX_NAMESPACE::TensorProto &tp = getTensorProto(model, id);
-    if (tp.has_data_location()) {
-      if (tp.data_location() == ONNX_NAMESPACE::TensorProto::EXTERNAL) {
-        throw error("Tensor '{}' already has an external data_location", id);
-      }
+    if (tp.has_data_location() &&
+        tp.data_location() == ONNX_NAMESPACE::TensorProto::EXTERNAL &&
+        !updateExistingExternalInfo) {
+      throw error("Tensor '{}' already has an external data_location", id);
     }
     // And that the tensor has data that can be saved externally
     ConstVoidData cvData = getConstData(tp);
     auto nBytes          = cvData.info.nbytes();
     if (nBytes == 0) {
       throw error("Tensor '{}' has no data to save externally", id);
+    }
+
+    if (updateExistingExternalInfo) {
+      tp.clear_data_location();
+      tp.clear_external_data();
     }
 
     // 2. Set data location to external

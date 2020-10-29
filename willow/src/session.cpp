@@ -1,7 +1,8 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <fstream>
 
-#include <popart/builder_impl.hpp>
+#include <boost/filesystem.hpp>
+
 #include <popart/error.hpp>
 #include <popart/filereader.hpp>
 #include <popart/graph.hpp>
@@ -206,55 +207,73 @@ void Session::run(IStepIO &stepio, std::string debugName) {
   runCalled = true;
 }
 
+void Session::updateExternallySavedTensorLocations(
+    const std::string &fromLocation,
+    const std::string &toLocation) {
+  // Check that toLocation does not exist
+  if (boost::filesystem::exists(toLocation)) {
+    throw error("Updating externally saved tensor location from file '{}' to "
+                "file '{}', but file '{}' already exists",
+                fromLocation,
+                toLocation,
+                toLocation);
+  }
+
+  // Check that fromLocation exists
+  if (!boost::filesystem::exists(fromLocation)) {
+    throw error("Updating externally saved tensor location from file '{}' to "
+                "file '{}', but file '{}' does not exist",
+                fromLocation,
+                toLocation,
+                fromLocation);
+  }
+
+  ONNX_NAMESPACE::ModelProto model = ir.getModel();
+  std::vector<TensorId> tIds;
+  for (int init_index = 0; init_index < model.graph().initializer_size();
+       ++init_index) {
+    ONNX_NAMESPACE::TensorProto tp = model.graph().initializer(init_index);
+
+    if (tp.has_data_location() &&
+        tp.data_location() == ONNX_NAMESPACE::TensorProto::EXTERNAL) {
+      if (onnxutil::ExternalTensorProtoInfo(tp).location == fromLocation) {
+        logging::session::debug("Changing the external data location for "
+                                "tensor '{}' from '{}' to '{}'",
+                                tp.name(),
+                                fromLocation,
+                                toLocation);
+        tIds.push_back(tp.name());
+      }
+    }
+  }
+
+  if (tIds.empty()) {
+    throw error("No ONNX model initializers have external location set to '{}'",
+                fromLocation);
+  }
+
+  // Save the external data of tensors from the Ir's ONNX model to their
+  // new locations
+  onnxutil::saveInitializersExternally(
+      model,
+      tIds,
+      toLocation,
+      false, // Writing to a new file
+      true); // Updating an existing externally saved tensor
+
+  // Update the external tensor info of the Ir's ONNX model, so that
+  // modelToHost will write tensor data to the new location, fn.
+  for (auto tId : tIds) {
+    ir.setExternalTensorDataInfo(tId, onnxutil::getTensorProto(model, tId));
+  }
+}
+
 // write current model to ONNX file
 void Session::modelToHost(const std::string &fn) {
   POPART_TRACEPOINT();
   logging::session::trace("Session::modelToHost");
 
-  ONNX_NAMESPACE::ModelProto model      = ir.getModel();
-  ONNX_NAMESPACE::GraphProto *onnxgraph = model.mutable_graph();
-
-  for (auto tId : ir.additionalModelProtoTensors) {
-    // For additional tensors we want to save in the onnx modelproto, we copy
-    // their info into across to the proto.
-    if (ir.tensorExistsInInitialisers(tId)) {
-      throw error("Tensor id {} already in initializers, duplicate tensor "
-                  "Ids not allowed in onnx specification.",
-                  tId);
-    } else {
-      ONNX_NAMESPACE::TensorProto *init = onnxgraph->add_initializer();
-      init->set_name(tId);
-      auto tensor = ir.getMainGraph().getTensors().get(tId);
-
-      ConstVoidData cvData;
-      cvData.data = tensor->tensorData()->data();
-      cvData.info = tensor->info;
-      BuilderImpl::populateTensorProtoFromConstVoidData(cvData, tId, init);
-
-      // If optimizer state tensor, and its corresponding initializer is saved
-      // externally, then save the this tensor to the same external location
-      if (tensor->isOptimizerStateTensor()) {
-        // Get corresponding initializer from optimizer state TensorId
-        TensorId initializerId = tId;
-        for (auto prefix : reservedOptimizerStatePrefixes()) {
-          size_t pos = initializerId.find(prefix);
-          if (pos != std::string::npos) {
-            initializerId.erase(pos, prefix.length());
-            break;
-          }
-        }
-        if (!ir.tensorExistsInInitialisers(initializerId)) {
-          // No candidate path to save tensor data externally
-          continue;
-        } else if (onnxutil::isExternallySavedInitializer(model,
-                                                          initializerId)) {
-          std::string fn =
-              onnxutil::getExternallySavedTensorLocation(model, initializerId);
-          onnxutil::saveInitializersExternally(model, {tId}, fn, true);
-        }
-      }
-    }
-  }
+  ONNX_NAMESPACE::ModelProto model = ir.getModel();
 
   std::map<TensorId, MutableVoidData> initMap;
   // For storing tensor data for externally stored tensors.

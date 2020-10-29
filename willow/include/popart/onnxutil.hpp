@@ -37,7 +37,8 @@ std::string getExternallySavedTensorLocation(ONNX_NAMESPACE::ModelProto &model,
 void saveInitializersExternally(ONNX_NAMESPACE::ModelProto &model,
                                 const std::vector<TensorId> &ids,
                                 const std::string &fn,
-                                bool appendToExistingFile = false);
+                                bool appendToExistingFile       = false,
+                                bool updateExistingExternalInfo = false);
 
 // Get an ONNX model protobuf, either from a file, or the string directly
 ONNX_NAMESPACE::ModelProto

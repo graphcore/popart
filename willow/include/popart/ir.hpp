@@ -276,6 +276,7 @@ public:
 
   const ONNX_NAMESPACE::ModelProto &getModel() const;
   std::vector<TensorId> getModelInputIds() const;
+  void setExternalTensorDataInfo(TensorId, const ONNX_NAMESPACE::TensorProto &);
 
   const SessionOptions &getSessionOptions() const { return userOptions; }
 
@@ -472,6 +473,10 @@ private:
   Op *growLossGradients();
 
   void initRandomSeed();
+
+  // Extra tensors to be saved alongside the ONNX model (such as additional
+  // optimizer state) are added to the model's initializers here
+  void addAdditionalModelProtoTensors();
 
   // Verify the connectivity of the graph
   void verifyConnectivity() const;

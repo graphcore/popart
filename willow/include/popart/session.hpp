@@ -93,6 +93,17 @@ public:
                     const std::string &outputFilename);
 
   /**
+   * Update the tensor locations of the tensors in the Session's ONNX model.
+   * The new file will be created at this point, and written to when the ONNX
+   * model is saved with a subsequent call to modelToHost.
+   * \param fromLocation All externally saved tensors with location fromLocation
+   *                     will have their location updated to toLocation.
+   * \param toLocation The updated location. Must not already exist.
+   */
+  void updateExternallySavedTensorLocations(const std::string &fromLocation,
+                                            const std::string &toLocation);
+
+  /**
    * Write current model to ONNX file
    */
   void modelToHost(const std::string &fn);

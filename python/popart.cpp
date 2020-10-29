@@ -1336,6 +1336,8 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("stepio"),
             py::arg("debugName") = "");
     cls.def("modelToHost", &InferenceSession::modelToHost);
+    cls.def("updateExternallySavedTensorLocations",
+            &InferenceSession::updateExternallySavedTensorLocations);
     cls.def("getInfo", &InferenceSession::getInfo);
     cls.def("getSummaryReport",
             &InferenceSession::getSummaryReport,
@@ -1439,6 +1441,8 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("stepio"),
             py::arg("debugName") = "");
     cls.def("modelToHost", &TrainingSession::modelToHost);
+    cls.def("updateExternallySavedTensorLocations",
+            &TrainingSession::updateExternallySavedTensorLocations);
     cls.def("getInfo", &TrainingSession::getInfo);
     cls.def("getSummaryReport",
             &TrainingSession::getSummaryReport,

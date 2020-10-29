@@ -1187,7 +1187,10 @@ public:
    * saved separately.
    *
    * \param ids The names of tensors whose data is to be saved externally.
-   * \param fn The name of a file containing the binary tensor data.
+   * \param fn The name of a file containing the binary tensor data. This
+   *        can be an absolute or relative path. If a relative path, when
+   *        the onnx model is saved, external tensor data will be written
+   *        to a path relative to your current working directory.
    */
   void saveInitializersExternally(const std::vector<TensorId> &ids,
                                   const std::string &fn);

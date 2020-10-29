@@ -12,6 +12,7 @@
 #include <boost/random/normal_distribution.hpp>
 
 #include <popart/builder.hpp>
+#include <popart/builder_impl.hpp>
 #include <popart/ces/constexpr.hpp>
 #include <popart/ces/onnxconstexpr.hpp>
 #include <popart/chains.hpp>
@@ -103,6 +104,30 @@ GradNonGradPair::GradNonGradPair(Op *g_, Op *ng_) : grad(g_), nongrad(ng_) {}
 GradNonGradPair::GradNonGradPair() : GradNonGradPair(nullptr, nullptr) {}
 
 const ONNX_NAMESPACE::ModelProto &Ir::getModel() const { return *onnxModel; }
+
+void Ir::setExternalTensorDataInfo(
+    TensorId tId,
+    const ONNX_NAMESPACE::TensorProto &tpReference) {
+  // Check tpReference has external info
+  if (!tpReference.has_data_location() ||
+      tpReference.data_location() != ONNX_NAMESPACE::TensorProto::EXTERNAL) {
+    throw error("Trying to set external tensor info for '{}'. Refernce tensor "
+                "does not have an external data_location",
+                tId);
+  }
+
+  ONNX_NAMESPACE::TensorProto &tp = onnxutil::getTensorProto(*onnxModel, tId);
+
+  tp.clear_data_location();
+  tp.set_data_location(ONNX_NAMESPACE::TensorProto::EXTERNAL);
+
+  tp.clear_external_data();
+  auto externalDataInfo = tp.mutable_external_data();
+  *externalDataInfo     = tpReference.external_data();
+  for (int i = 0; i < tp.external_data_size(); i++) {
+    auto edi = tp.external_data(i);
+  }
+}
 
 // Data stream tensors are all tensors, excluding:
 //  - optimizer tensors
@@ -1181,6 +1206,8 @@ void Ir::prepareImpl(const IrBundle &gb) {
     }
   }
 
+  addAdditionalModelProtoTensors();
+
   verifyConstExprFolding();
   verifyConnectivity();
   verifyTensorIds();
@@ -1194,6 +1221,57 @@ void Ir::prepareImpl(const IrBundle &gb) {
 }
 
 void Ir::setIsPrepared() { isPrepared_ = true; }
+
+void Ir::addAdditionalModelProtoTensors() {
+  ONNX_NAMESPACE::GraphProto *onnxGraph = onnxModel->mutable_graph();
+  for (auto tId : additionalModelProtoTensors) {
+    // For additional tensors we want to save in the onnx modelproto, we copy
+    // their info into across to the proto.
+    if (tensorExistsInInitialisers(tId)) {
+      throw error("Tensor id {} already in initializers, duplicate tensor "
+                  "Ids not allowed in onnx specification.",
+                  tId);
+    } else {
+      ONNX_NAMESPACE::TensorProto *init = onnxGraph->add_initializer();
+      init->set_name(tId);
+      auto tensor = getMainGraph().getTensors().get(tId);
+
+      ConstVoidData cvData;
+      cvData.data = tensor->tensorData()->data();
+      cvData.info = tensor->info;
+      BuilderImpl::populateTensorProtoFromConstVoidData(cvData, tId, init);
+
+      // If optimizer state tensor, and its corresponding initializer is saved
+      // externally, then save the this tensor to the same external location
+      if (tensor->isOptimizerStateTensor()) {
+        // Get corresponding initializer from optimizer state TensorId
+        TensorId initializerId = tId;
+        for (auto prefix : reservedOptimizerStatePrefixes()) {
+          size_t pos = initializerId.find(prefix);
+          if (pos != std::string::npos) {
+            initializerId.erase(pos, prefix.length());
+            break;
+          }
+        }
+        if (!tensorExistsInInitialisers(initializerId)) {
+          // No candidate path to save tensor data externally
+          continue;
+        } else if (onnxutil::isExternallySavedInitializer(*onnxModel,
+                                                          initializerId)) {
+          std::string fn = onnxutil::getExternallySavedTensorLocation(
+              *onnxModel, initializerId);
+          logging::ir::debug(
+              "Saving additional optimizer state tensor data for tensor '{}' "
+              "alongside corresponidng initializer '{}' in file '{}'",
+              tId,
+              initializerId,
+              fn);
+          onnxutil::saveInitializersExternally(*onnxModel, {tId}, fn, true);
+        }
+      }
+    }
+  }
+}
 
 void Ir::verifyVertexAttributesOnlyInMain() const {
   auto verify = [](const Vertex *v) {

@@ -307,3 +307,238 @@ def test_save_tensors_optimizer_state_externally(optimizerInfo):
     # tensors have been read back in correctly for the new session
     for anchorId in anchorIds:
         assert np.allclose(anchors[anchorId], new_anchors[anchorId])
+
+
+def test_external_location_relative_path():
+    # Demonstrate that external data can be saved using a path relative
+    # to the cwd
+    builder = popart.Builder()
+    i1 = builder.addInitializedInputTensor(np.array([7, 4]).astype(np.float16))
+    o = builder.aiOnnx.add([i1, i1])
+
+    tmpdir = tempfile.mkdtemp()
+    tensor_data_file = "model_tensors.onnx"
+    tmpfile = os.path.join(tmpdir, tensor_data_file)
+    os.chdir(tmpdir)
+
+    # Save tensor data externally, using a relative path
+    builder.saveInitializersExternally([i1], tensor_data_file)
+    assert os.path.exists(tmpfile)
+    builder.saveModelProto("model.onnx")
+
+    # Can load tensor data from cwd, because it relative path exists
+    new_builder = popart.Builder("model.onnx")
+
+    # Fail to load tensor data, because relative path does not exist in this
+    # case
+    os.mkdir("dummy_dir")
+    os.chdir("dummy_dir")
+    with pytest.raises(RuntimeError) as e_info:
+        new_new_builder = popart.Builder("../model.onnx")
+    assert "model_tensors.onnx, but it doesn't exist or is not accessible" in e_info.value.args[
+        0]
+
+
+def test_external_location_path_does_not_exist():
+    # Try to save tensors externally to file whose parent directory doesn't
+    # exist
+    builder = popart.Builder()
+    i1 = builder.addInitializedInputTensor(
+        np.array([-1, 6]).astype(np.float32))
+    o = builder.aiOnnx.add([i1, i1])
+
+    tmpdir = tempfile.mkdtemp()
+    tmpfile = os.path.join(tmpdir, "dummy/tensors.onnx")
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        builder.saveInitializersExternally([i1], tmpfile)
+    assert "parent directory does not exist" in e_info.value.args[0]
+
+
+def test_overwriting_external_data_file():
+    # Verify that if calling modelToHost twice, the external data is overwritten
+    # correctly, and not corrupted!
+    builder = popart.Builder()
+    d1 = np.random.rand(3, 3).astype(np.float32)
+    i1 = builder.addInitializedInputTensor(d1)
+    o = builder.aiOnnx.matmul([i1, i1])
+    loss = builder.aiGraphcore.identityloss([o])
+
+    tmpdir = tempfile.mkdtemp()
+    tmpfile0 = os.path.join(tmpdir, "model_tensors0.onnx")
+    builder.saveInitializersExternally([i1], tmpfile0)
+
+    optimizer = popart.SGD({
+        "defaultLearningRate": (0.2, True),
+        "defaultMomentum": (0.5, True)
+    })
+
+    session = popart.TrainingSession(
+        deviceInfo=popart.DeviceManager().createCpuDevice(),
+        fnModel=builder.getModelProto(),
+        loss=loss,
+        optimizer=optimizer,
+        dataFlow=popart.DataFlow(1, []))
+
+    session.prepareDevice()
+    session.weightsFromHost()
+    anchors = session.initAnchorArrays()
+    session.run(popart.PyStepIO({}, anchors))
+
+    # Should overwrite external data with the same data
+    tmpfile1 = os.path.join(tmpdir, "model0.onnx")
+    session.modelToHost(tmpfile1)
+    weights0 = np.fromfile(tmpfile0, dtype=np.float32)
+    session.modelToHost(tmpfile1)
+    weights1 = np.fromfile(tmpfile0, dtype=np.float32)
+    assert np.array_equal(weights0, weights1)
+
+
+def test_checkpointing_with_externally_stored_tensor_data0():
+    # Test demonstrating how checkpointing of model weights when using
+    # externally saved tensor data does not work by using a relative path
+    # in the external tensor info.
+    #   - New external data files are not created unless there is an explicit
+    #     call
+    builder = popart.Builder()
+    i1 = builder.addInitializedInputTensor(
+        np.array([1, -1]).astype(np.float32))
+    o = builder.aiOnnx.add([i1, i1])
+
+    tmpdir = tempfile.mkdtemp()
+    os.chdir(tmpdir)
+
+    # Setting the (relative) path of tensor data for the first and only time
+    builder.saveInitializersExternally([i1], "tensors.onnx")
+
+    # Create builder from onnx model
+    opts = popart.SessionOptions()
+    opts.constantWeights = False
+    session = popart.InferenceSession(
+        fnModel=builder.getModelProto(),
+        dataFlow=popart.DataFlow(1, [o]),
+        deviceInfo=popart.DeviceManager().createCpuDevice())
+    anchors = session.initAnchorArrays()
+    session.prepareDevice()
+
+    # Run once, try to checkpoint.
+    # Fails because session.modelToHost should not be able to write external
+    # tensor data to a new location unless explicitly asked to (see
+    # Session::updateExternallySavedTensorLocations)
+    session.run(popart.PyStepIO({}, anchors))
+    os.mkdir("checlpoint0")
+    os.chdir("checlpoint0")
+    with pytest.raises(popart.popart_exception) as e_info:
+        session.modelToHost("model.onnx")
+    assert "Unrecognised file name 'tensors.onnx" in e_info.value.args[0]
+
+    # New external data file has not been created
+    assert not os.path.exists("tensors.onnx")
+
+
+def test_checkpointing_with_externally_stored_tensor_data1():
+    # Test demonstrating checkpointing of model weights when using externally
+    # saved tensor data
+    builder = popart.Builder()
+    d1 = np.random.rand(3, 3).astype(np.float32)
+    i1 = builder.addInitializedInputTensor(d1)
+    o = builder.aiOnnx.matmul([i1, i1])
+    loss = builder.aiGraphcore.identityloss([o])
+
+    tmpdir = tempfile.mkdtemp()
+    tmpfile0 = os.path.join(tmpdir, "model_tensors0.onnx")
+    builder.saveInitializersExternally([i1], tmpfile0)
+
+    optimizer = popart.SGD({
+        "defaultLearningRate": (0.2, True),
+        "defaultMomentum": (0.5, True)
+    })
+
+    session = popart.TrainingSession(
+        deviceInfo=popart.DeviceManager().createCpuDevice(),
+        fnModel=builder.getModelProto(),
+        loss=loss,
+        optimizer=optimizer,
+        dataFlow=popart.DataFlow(1, []))
+
+    session.prepareDevice()
+    session.weightsFromHost()
+    anchors = session.initAnchorArrays()
+    session.run(popart.PyStepIO({}, anchors))
+
+    # Get baseline external weights from disk after one run
+    tmpfile1 = os.path.join(tmpdir, "model0.onnx")
+    session.modelToHost(tmpfile1)
+    weights0 = np.fromfile(tmpfile0, dtype=np.float32)
+
+    # Calling modelToHost without updating external locations - overwrites
+    # existing external data in tmpfile0
+    session.run(popart.PyStepIO({}, anchors))
+    session.modelToHost(tmpfile1)
+    weights1 = np.fromfile(tmpfile0, dtype=np.float32)
+    assert not np.array_equal(weights0, weights1)
+
+    # Update external weight location.
+    # Save the onnx model to a new location, without running the session.
+    # Confirm the tensor data in new weights file is the same as previously
+    tmpfile2 = os.path.join(tmpdir, "model_tensors1.onnx")
+    session.updateExternallySavedTensorLocations(tmpfile0, tmpfile2)
+    assert os.path.exists(tmpfile2)
+    tmpfile3 = os.path.join(tmpdir, "model1.onnx")
+    session.modelToHost(tmpfile3)
+    assert np.array_equal(np.fromfile(tmpfile2, dtype=np.float32), weights1)
+
+    # Update external weight location.
+    # Save the onnx model to a new location, this time with running the session.
+    # Confirm the tensor data in new weights file has changed
+    session.run(popart.PyStepIO({}, anchors))
+    tmpfile4 = os.path.join(tmpdir, "model_tensors2.onnx")
+    session.updateExternallySavedTensorLocations(tmpfile2, tmpfile4)
+    assert os.path.exists(tmpfile4)
+    tmpfile5 = os.path.join(tmpdir, "model2.onnx")
+    session.modelToHost(tmpfile5)
+    assert not np.array_equal(np.fromfile(tmpfile4, dtype=np.float32),
+                              weights1)
+
+
+def test_invalid_tensor_location_updates():
+    # Test to demonstrate exceptions thrown during incorrect usage of
+    # Session::updateExternallySavedTensorLocations
+    builder = popart.Builder()
+    d1 = np.random.rand(3, 3).astype(np.float32)
+    i1 = builder.addInitializedInputTensor(d1)
+    o = builder.aiOnnx.matmul([i1, i1])
+    loss = builder.aiGraphcore.identityloss([o])
+
+    tmpdir = tempfile.mkdtemp()
+    origpath = os.path.join(tmpdir, "model_tensors0.onnx")
+    builder.saveInitializersExternally([i1], origpath)
+
+    optimizer = popart.SGD({
+        "defaultLearningRate": (0.2, True),
+        "defaultMomentum": (0.5, True)
+    })
+
+    session = popart.TrainingSession(
+        deviceInfo=popart.DeviceManager().createCpuDevice(),
+        fnModel=builder.getModelProto(),
+        loss=loss,
+        optimizer=optimizer,
+        dataFlow=popart.DataFlow(1, []))
+
+    updatedpath0 = os.path.join(tmpdir, "model_tensors1.onnx")
+
+    # Try to update from from a path that doesn't exist
+    fakepath = os.path.join(tmpdir, "foo.bar")
+    with pytest.raises(popart.popart_exception) as e_info:
+        session.updateExternallySavedTensorLocations(fakepath, updatedpath0)
+    assert "but file '" + fakepath + "' does not exist" in e_info.value.args[0]
+
+    session.updateExternallySavedTensorLocations(origpath, updatedpath0)
+
+    # Try to update from from old path
+    updatedpath1 = os.path.join(tmpdir, "model_tensors2.onnx")
+    with pytest.raises(popart.popart_exception) as e_info:
+        session.updateExternallySavedTensorLocations(origpath, updatedpath1)
+    assert "No ONNX model initializers have external location set to" in e_info.value.args[
+        0]
