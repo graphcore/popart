@@ -11,7 +11,6 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
-#include <popart/op/expm1.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/nll.hpp>
@@ -718,5 +717,46 @@ BOOST_AUTO_TEST_CASE(Expm1GradOpTest) {
   // Expm1Grad should have been replace with Mul and Add.
   BOOST_CHECK(ir.opsOfType(Onnx::GradOperators::Expm1Grad).size() == 0);
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Mul).size() == 1);
+  BOOST_CHECK(ir.opsOfType(Onnx::Operators::Add_7).size() == 1);
+}
+
+BOOST_AUTO_TEST_CASE(Log1pGradOpTest) {
+  // Build an onnnx model
+  auto builder = Builder::create();
+
+  TensorInfo shape{"FLOAT", std::vector<int64_t>{2}};
+  auto input = builder->addInputTensor(shape);
+
+  auto output = builder->aiGraphcoreOpset1().log1p({input});
+  auto l1     = builder->aiGraphcoreOpset1().l1loss({output}, 0.1);
+
+  auto proto      = builder->getModelProto();
+  auto modelProto = io::getModelFromString(proto);
+
+  // Create the IR
+  // Add the last tensor, and the 3rd tensor as anchors
+  auto art      = AnchorReturnType("ALL");
+  auto dataFlow = DataFlow(
+      1, {{output, art}, {reservedGradientPrefix() + input, art}, {l1, art}});
+  auto optimizer = ConstSGD(0.01);
+
+  auto opts   = SessionOptions();
+  auto device = createTestDevice(TEST_TARGET);
+
+  Ir ir;
+  ir.prepare({modelProto,
+              InputShapeInfo(),
+              dataFlow,
+              l1,
+              &optimizer,
+              *device,
+              opts,
+              Patterns({PreAliasPatternType::Log1pGradOp})
+                  .enableRuntimeAsserts(false)});
+
+  // Check the ir
+  // Log1pGrad should have been replace with Div and Add.
+  BOOST_CHECK(ir.opsOfType(Onnx::GradOperators::Log1pGrad).size() == 0);
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Div).size() == 1);
   BOOST_CHECK(ir.opsOfType(Onnx::Operators::Add_7).size() == 1);
 }

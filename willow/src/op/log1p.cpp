@@ -34,6 +34,19 @@ std::unique_ptr<Op> Log1pOp::clone() const {
   return std::make_unique<Log1pOp>(*this);
 }
 
+std::vector<std::unique_ptr<Op>> Log1pOp::getGradOps() {
+  std::vector<std::unique_ptr<Op>> result;
+  result.emplace_back(std::make_unique<Log1pGradOp>(*this));
+  return result;
+}
+
+Log1pGradOp::Log1pGradOp(const Log1pOp &fwdop)
+    : ElementWiseNonLinearUnaryGradOp(Onnx::GradOperators::Log1pGrad, fwdop) {}
+
+std::unique_ptr<Op> Log1pGradOp::clone() const {
+  return std::make_unique<Log1pGradOp>(*this);
+}
+
 namespace {
 
 static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};

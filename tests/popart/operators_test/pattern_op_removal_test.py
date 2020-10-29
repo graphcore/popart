@@ -245,3 +245,29 @@ def test_cosh_grad_error(op_tester):
 
     assert (e_info.value.args[0].endswith(
         "This op should have been removed by pattern CoshOp"))
+
+
+def test_log1p_grad_error(op_tester):
+    d1 = np.random.rand(2, 7).astype(np.float32)
+    d2 = np.random.rand(2, 7).astype(np.float32)
+
+    # No pattern passes, grad op will not be created.
+    op_tester.setPatterns([], enableRuntimeAsserts=False)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        # Add weight to force grad op creation
+        w1 = builder.addInitializedInputTensor(d2)
+        o = builder.aiOnnx.add([i1, w1], "test_add")
+        o = builder.aiGraphcore.log1p([o], "test_log1p")
+        builder.addOutputTensor(o)
+        return [o, popart.reservedGradientPrefix() + o]
+
+    def reference(ref_data):
+        return [None, None]
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        op_tester.run(init_builder, reference, 'train')
+
+    assert (e_info.value.args[0].endswith(
+        "This op should have been removed by pattern Log1pGradOp"))

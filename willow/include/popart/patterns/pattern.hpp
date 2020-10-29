@@ -28,6 +28,7 @@ enum class PreAliasPatternType {
   SqrtGradOp,
   ExpGradOp,
   Expm1GradOp,
+  Log1pGradOp,
   LogGradOp,
   CoshOp,
   GemmDecomposition,

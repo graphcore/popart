@@ -234,6 +234,7 @@ public:
   bool isSqrtGradOpEnabled();
   bool isExpGradOpEnabled();
   bool isExpm1GradOpEnabled();
+  bool isLog1pGradOpEnabled();
   bool isLogGradOpEnabled();
   bool isGemmDecompositionEnabled();
   bool isNegativeOneScaleEnabled();
@@ -280,6 +281,7 @@ public:
   Patterns &enableSqrtGradOp(bool v);
   Patterns &enableExpGradOp(bool v);
   Patterns &enableExpm1GradOp(bool v);
+  Patterns &enableLog1pGradOp(bool v);
   Patterns &enableLogGradOp(bool v);
   Patterns &enableGemmDecomposition(bool v);
   Patterns &enableNegativeOneScale(bool v);

@@ -165,6 +165,7 @@ const static AiGraphcoreOpIdV1 IdentityLossGrad("IdentityLossGrad");
 const static AiGraphcoreOpIdV1
     InstanceNormalizationGrad("InstanceNormalizationGrad");
 const static AiGraphcoreOpIdV1 LeakyReluGrad("LeakyReluGrad");
+const static AiGraphcoreOpIdV1 Log1pGrad("Log1pGrad");
 const static AiGraphcoreOpIdV1 LogGrad("LogGrad");
 const static AiGraphcoreOpIdV1 LogSoftmaxGrad("LogSoftmaxGrad");
 const static AiGraphcoreOpIdV1 LRN("LRN");

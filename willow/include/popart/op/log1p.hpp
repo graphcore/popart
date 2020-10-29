@@ -12,6 +12,8 @@ class Log1pOp : public ElementWiseUnaryOp {
 public:
   Log1pOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const override;
+  std::vector<std::unique_ptr<Op>> getGradOps() final;
+
   std::vector<std::tuple<OperatorIdentifier, float>>
   inplacePriorityDefault() const final;
   std::unique_ptr<Op> getInplaceVariant(const OperatorIdentifier &) const final;
@@ -20,6 +22,12 @@ public:
 class Log1pInplaceOp : public ElementWiseInplaceUnaryOp {
 public:
   Log1pInplaceOp(const Log1pOp &);
+  std::unique_ptr<Op> clone() const final;
+};
+
+class Log1pGradOp : public ElementWiseNonLinearUnaryGradOp {
+public:
+  Log1pGradOp(const Log1pOp &);
   std::unique_ptr<Op> clone() const final;
 };
 

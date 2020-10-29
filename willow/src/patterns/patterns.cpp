@@ -26,6 +26,7 @@
 #include <popart/patterns/initaccumulatepattern.hpp>
 #include <popart/patterns/inplace.hpp>
 #include <popart/patterns/likeopspattern.hpp>
+#include <popart/patterns/log1pgradoppattern.hpp>
 #include <popart/patterns/loggradoppattern.hpp>
 #include <popart/patterns/lstmoppattern.hpp>
 #include <popart/patterns/matmulgradpattern.hpp>
@@ -298,6 +299,10 @@ bool Patterns::isExpm1GradOpEnabled() {
   return isPatternEnabled<Expm1GradOpPattern>();
 }
 
+bool Patterns::isLog1pGradOpEnabled() {
+  return isPatternEnabled<Log1pGradOpPattern>();
+}
+
 bool Patterns::isLogGradOpEnabled() {
   return isPatternEnabled<LogGradOpPattern>();
 }
@@ -432,6 +437,10 @@ Patterns &Patterns::enableExpm1GradOp(bool v) {
   return enablePattern<Expm1GradOpPattern>(v);
 }
 
+Patterns &Patterns::enableLog1pGradOp(bool v) {
+  return enablePattern<Log1pGradOpPattern>(v);
+}
+
 Patterns &Patterns::enableLogGradOp(bool v) {
   return enablePattern<LogGradOpPattern>(v);
 }
@@ -536,6 +545,7 @@ std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
   }
 
   static std::map<std::type_index, float> patternPriority{
+      {std::type_index(typeid(Log1pGradOpPattern)), 45},
       {std::type_index(typeid(Expm1GradOpPattern)), 44},
       {std::type_index(typeid(LikeOpsPattern<ZerosLikeOp>)), 43},
       {std::type_index(typeid(LikeOpsPattern<RandomUniformLikeOp>)), 42},
