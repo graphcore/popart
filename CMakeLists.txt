@@ -82,9 +82,6 @@ endif()
 # or repo popart if available
 find_package(ONNX REQUIRED)
 
-# The logging library
-find_package(Spdlog REQUIRED)
-
 #Link Boost statically
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_STATIC_RUNTIME ON)

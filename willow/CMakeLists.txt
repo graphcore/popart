@@ -73,7 +73,7 @@ if (NOT TARGET poprithms-static)
   find_package(Poprithms REQUIRED)
 endif ()
 
-find_package(Spdlog REQUIRED)
+find_package(spdlog REQUIRED)
 message(STATUS "Spdlog include dir is " ${SPDLOG_INCLUDE_DIRS})
 
 find_package(gcl REQUIRED)
