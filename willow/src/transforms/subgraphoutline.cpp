@@ -11,6 +11,7 @@
 #include <popart/op.hpp>
 #include <popart/op/boundary.hpp>
 #include <popart/op/call.hpp>
+#include <popart/op/dropout.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/remote.hpp>
@@ -1003,6 +1004,23 @@ Graph &createSubgraph(const Match &match, Graph &graph) {
   return subgraph;
 }
 
+static void handleRandomReferences(const Match &match, Graph &graph) {
+  std::map<std::string, std::set<RandomReferenceId>> idsToMerge;
+  for (auto &instance : match.instances) {
+    for (auto opid : instance.ops) {
+      auto old_op = dynamic_cast<DropoutOp *>(graph.getOp(opid));
+      if (old_op) {
+        idsToMerge[old_op->getSubgraphEquivId()].insert(
+            old_op->getReferenceId());
+      }
+    }
+  }
+
+  for (auto &equivSet : idsToMerge) {
+    graph.getIr().mergeRandomReferenceIds(equivSet.second);
+  }
+}
+
 // Create a subgraph for the match and
 // replace instances of the match with a CallOp
 static std::vector<Replacement> applyMatch(const Match &match, Graph &graph) {
@@ -1012,6 +1030,8 @@ static std::vector<Replacement> applyMatch(const Match &match, Graph &graph) {
   // verifyTopologicalConstraints(match, graph);
 
   auto &subgraph = createSubgraph(match, graph);
+
+  handleRandomReferences(match, graph);
 
   std::vector<Replacement> replacements;
 

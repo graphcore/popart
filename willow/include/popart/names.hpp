@@ -70,6 +70,9 @@ using RemoteBufferId = int64_t;
 // The index within a remote buffer
 using RemoteBufferIndex = int64_t;
 
+// Identifier for Random Reference Tensors
+using RandomReferenceId = int64_t;
+
 // For decreasing the verbosity of MultiConv Op parameter names
 using ConvInputs    = std::vector<TensorId>;
 using ConvDilations = std::vector<int64_t>;

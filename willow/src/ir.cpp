@@ -23,6 +23,7 @@
 #include <popart/intervals.hpp>
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
+#include <popart/op/dropout.hpp>
 #include <popart/op/getrandomseed.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/loss.hpp>
@@ -3603,6 +3604,32 @@ const Tensors &Ir::getMainGraphTensors() const {
 uint32_t Ir::getAndIncrementSeedModifier() {
   seedModifier += 1;
   return seedModifier;
+}
+
+RandomReferenceId Ir::getAndIncrementRandomReferenceId() {
+  randomReferenceId += 1;
+  return randomReferenceId;
+}
+
+TensorId Ir::getOrSetRandomReferenceTensor(RandomReferenceId id,
+                                           TensorId defaultTensor) {
+  if (randomReferenceTensorMap.find(id) == randomReferenceTensorMap.end()) {
+    randomReferenceTensorMap[id] = defaultTensor;
+  }
+  return randomReferenceTensorMap[id];
+}
+
+void Ir::mergeRandomReferenceIds(std::set<RandomReferenceId> &ids) {
+  if (ids.size() < 2) {
+    return;
+  }
+  auto to = *ids.begin();
+  for (auto op : getAllOps()) {
+    auto dropout = dynamic_cast<DropoutOp *>(op);
+    if (dropout && ids.find(dropout->getReferenceId()) != ids.end()) {
+      dropout->setReferenceId(to);
+    }
+  }
 }
 
 void Ir::setRemoteBufferInfo(RemoteBufferId id, RemoteBufferInfo info) {

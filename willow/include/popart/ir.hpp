@@ -424,6 +424,12 @@ public:
   bool requiresRandomSeed() const;
   uint32_t getAndIncrementSeedModifier();
 
+  RandomReferenceId getAndIncrementRandomReferenceId();
+
+  TensorId getOrSetRandomReferenceTensor(RandomReferenceId, TensorId);
+
+  void mergeRandomReferenceIds(std::set<RandomReferenceId> &);
+
   void setRemoteBufferInfo(RemoteBufferId, RemoteBufferInfo);
   const RemoteBufferInfo getRemoteBufferInfo(RemoteBufferId) const;
   const std::map<RemoteBufferId, RemoteBufferInfo>
@@ -555,6 +561,10 @@ private:
   void enableTransform(std::size_t transformId, bool enable);
 
   uint32_t seedModifier = 0;
+
+  RandomReferenceId randomReferenceId = 0;
+
+  std::map<RandomReferenceId, TensorId> randomReferenceTensorMap;
 
   std::map<RemoteBufferId, RemoteBufferInfo> remoteBufferInfoMap;
 

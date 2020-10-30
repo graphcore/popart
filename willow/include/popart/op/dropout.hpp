@@ -12,6 +12,7 @@ protected:
   DropoutOp(const OperatorIdentifier &opid_,
             float ratio_,
             uint32_t seedModifier_,
+            RandomReferenceId referenceId_,
             bool outputMask_,
             const Op::Settings &settings_);
 
@@ -24,6 +25,8 @@ public:
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
 
+  void appendAttributes(OpSerialiserBase &os) const override;
+
   // Additional mask output
   static OutIndex getMaskOutIndex() { return 1; }
 
@@ -32,16 +35,18 @@ public:
 
   void appendOutlineAttributes(OpSerialiserBase &) const final;
 
-  const TensorId &getReferenceTensorId();
-
   // TODO (T25465): this setter can be removed once dropout is outlineable
   void setSeedModifier(uint32_t sm) { seedModifier = sm; }
 
+  void setReferenceId(RandomReferenceId id) { referenceId = id; }
+  RandomReferenceId getReferenceId() const { return referenceId; }
+
+  TensorId getReferenceTensorId();
+
 protected:
-  OpId partnerId;
+  RandomReferenceId referenceId;
 
 private:
-  TensorId refTensorId;
   bool outputMask = false;
 };
 
