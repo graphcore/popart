@@ -61,8 +61,8 @@ struct Value {
   typedef std::ostream &(*ValueFormatFunc)(std::ostream &os, const void *t);
 
   struct CustomValue {
-    const void *value = nullptr;
-    ValueFormatFunc format;
+    const void *value      = nullptr;
+    ValueFormatFunc format = nullptr;
   };
 
   CustomValue custom_value;
