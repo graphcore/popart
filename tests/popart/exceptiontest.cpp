@@ -26,7 +26,6 @@ BOOST_AUTO_TEST_CASE(LoggingTest2) {
   } catch (const popart::error &e) {
     BOOST_CHECK(
         e.what() ==
-        std::string(
-            "Popart exception format error argument index out of range"));
+        std::string("Popart exception format error argument not found"));
   }
 }

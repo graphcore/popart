@@ -73,9 +73,7 @@ if (NOT TARGET poprithms-static)
   find_package(Poprithms REQUIRED)
 endif ()
 
-find_package(spdlog REQUIRED)
-message(STATUS "Spdlog include dir is " ${SPDLOG_INCLUDE_DIRS})
-
+find_package(spdlog "1.8.0" EXACT REQUIRED)
 find_package(gcl REQUIRED)
 
 ################################################################################
@@ -84,13 +82,12 @@ find_package(gcl REQUIRED)
 
 set(POPART_PRIVATE_DEPS_INCLUDES
     ${Boost_INCLUDE_DIRS}
-    ${SPDLOG_INCLUDE_DIRS}
     # ${CBLAS_INCLUDE_DIRS}
     ${LIBPVTI_INCLUDE_DIR}
 )
 set(POPART_PRIVATE_DEPS_LIBS
     ${Boost_LIBRARIES}
-    ${SPDLOG_LIBRARIES}
+    spdlog::spdlog_header_only
     # ${CBLAS_LIBRARIES}
     ${LIBPVTI_LIB}
     ${CMAKE_DL_LIBS}

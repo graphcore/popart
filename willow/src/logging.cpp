@@ -7,7 +7,7 @@
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/sinks/ansicolor_sink.h>
-#include <spdlog/sinks/file_sinks.h>
+#include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
 
 #include <boost/exception/diagnostic_information.hpp>
@@ -198,8 +198,7 @@ LoggingContext::LoggingContext() {
     sink = std::make_shared<spdlog::sinks::ansicolor_stderr_sink_mt>();
   } else {
     try {
-      sink =
-          std::make_shared<spdlog::sinks::simple_file_sink_mt>(logDest, true);
+      sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(logDest, true);
     } catch (const spdlog::spdlog_ex &e) {
       // Should we be throwing an popart exception?
       std::cerr << "Error opening log file: " << e.what() << std::endl;
@@ -293,52 +292,21 @@ void flush(Module m) { LoggingContext::getLogger(m)->flush(); }
 
 namespace internal {
 
-static void spdlog_format_custom_arg(void *formatter,
-                                     const void *arg,
-                                     void *format_str_ptr) {
-
-  fmt::BasicFormatter<char> &f =
-      *static_cast<fmt::BasicFormatter<char> *>(formatter);
-  const char *&format_str     = *static_cast<const char **>(format_str_ptr);
-  const Value::CustomValue *v = static_cast<const Value::CustomValue *>(arg);
-
-  fmt::internal::MemoryBuffer<char, fmt::internal::INLINE_BUFFER_SIZE> buffer;
-  fmt::internal::FormatBuf<char> format_buf(buffer);
-  std::basic_ostream<char> output(&format_buf);
-
-  // Call the custom format function for the type
-  v->format(output, v->value);
-
-  fmt::BasicStringRef<char> str(&buffer[0], buffer.size());
-  typedef fmt::internal::MakeArg<fmt::BasicFormatter<char>> MakeArg;
-  format_str = f.format(format_str, MakeArg(str));
+std::ostream &operator<<(std::ostream &os, const Value::CustomValue &v) {
+  v.format(os, v.value);
+  return os;
 }
 
 std::string format(std::string ref, std::size_t numArgs, Value args[]) {
 
-  fmt::internal::Value v[fmt::ArgList::MAX_PACKED_ARGS];
-
-  // We will only support the packed argument type for now, who needs
-  // more that 16 (MAX_PACKED_ARGS) arguments for log function anyway.....
-
-  if (numArgs > fmt::ArgList::MAX_PACKED_ARGS) {
-    throw FormatError("Exceeded maxium of 16 format arguments");
-  }
-
-  uint64_t types = 0;
-
+  fmt::dynamic_format_arg_store<fmt::format_context> fmtArgs;
   for (int i = 0; i < numArgs; ++i) {
-    v[i].custom.value  = &(args[i].custom_value);
-    v[i].custom.format = &spdlog_format_custom_arg;
-    types              = types | (fmt::internal::Value::CUSTOM << (4 * i));
+    fmtArgs.push_back(args[i].custom_value);
   }
 
   try {
-    // fmt::CStringRef formatStr = ref;
-    fmt::ArgList fmtArgs(types, v);
-
-    return fmt::format(ref, fmtArgs);
-  } catch (fmt::FormatError &e) {
+    return fmt::vformat(ref, fmtArgs);
+  } catch (fmt::format_error &e) {
     throw FormatError(e.what());
   }
 }
