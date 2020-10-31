@@ -70,6 +70,8 @@ public:
 
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
 
+  bool canShard() const override { return true; }
+
 private:
   float epsilon;
   TensorInfo fwdInInfo, fwdScaleInInfo, fwdBInInfo;

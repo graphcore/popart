@@ -25,11 +25,9 @@ public:
   ReductionType getReductionType() const { return reduction; }
 
   bool canShard() const override { return true; }
-
-  // L1 sharding with reduction type Sum or Mean collapses the output along
-  // all dimension, requiring an additional sum/mean operation when sharding
-  std::map<TensorId, std::vector<TensorId>>
-  shard(const std::map<TensorId, std::vector<TensorId>> &inputs) override;
+  ReductionType getShardReductionType(OutIndex index) const override {
+    return getReductionType();
+  }
 
 private:
   float lambda;
@@ -53,6 +51,8 @@ public:
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
   float getLambda() const { return lambda; }
   ReductionType getReductionType() const { return reduction; }
+
+  bool canShard() const override { return true; }
 
 private:
   float lambda;

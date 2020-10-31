@@ -165,13 +165,136 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithVGraphs) {
     // 2.)
     for (int k = 0; k < K; ++k) {
       // At least some ops with batch serial phase
-      BOOST_CHECK(opsPerPhase[k] > 0);
+      BOOST_CHECK_GT(opsPerPhase[k], 0);
       // Same number of ops per phase
-      BOOST_CHECK(opsPerPhase[k] == opsPerPhase[0]);
+      BOOST_CHECK_EQUAL(opsPerPhase[k], opsPerPhase[0]);
     }
 
     // 3.)
-    BOOST_CHECK(numIpuCopies == 4 * N + 1);
+    BOOST_CHECK_EQUAL(numIpuCopies, 4 * N + 1);
+  });
+}
+
+BOOST_AUTO_TEST_CASE(TestBatchSerialWithVGraphsBwd) {
+  TestRunner runner;
+  runner.isTraining = true;
+  int N             = 3;
+  int M             = 6;
+  int K             = 3;
+  int size          = 100;
+
+  // Weights are [size, size]
+  // Input and Acts are [M, size]
+  TensorInfo wInfo{"FLOAT", std::vector<int64_t>{size, size}};
+  std::vector<TestTensor> inputs;
+  std::vector<TestTensor> outputs;
+  std::vector<float> wData(wInfo.nelms(), 0);
+  ConstVoidData wCVData{wData.data(), wInfo};
+
+  runner.buildModel([&](auto &builder) {
+    auto aiOnnx = builder.aiOnnxOpset9();
+    TensorInfo inInfo{"FLOAT", std::vector<int64_t>{M, size}};
+    auto act = builder.addInputTensor(inInfo);
+
+    // 2N layers
+    for (int n = 0; n < 2 * N; ++n) {
+      // Switch between 1 and 2 MatMul blocks per VGID
+      for (int j = 0; j < 1 + n % 2; ++j) {
+        auto w = builder.addInitializedInputTensor(wCVData);
+        act    = aiOnnx.matmul({act, w},
+                            logging::format("CHECKOP_MM: [{} {}]", n, j));
+        builder.virtualGraph(act, n % 2);
+        act =
+            aiOnnx.relu({act}, logging::format("CHECKOP_RELU: [{} {}]", n, j));
+        builder.virtualGraph(act, n % 2);
+      }
+    }
+
+    auto loss = builder.aiGraphcoreOpset1().l1loss({act}, 0.1);
+    builder.virtualGraph(loss, (2 * N - 1) % 2);
+
+    runner.opts.batchSerializationSettings.factor = K;
+    // Test if the graph can be serialized after the backward pass is grown
+    runner.opts.batchSerializationSettings.transformContext =
+        BatchSerializationTransformContext::Bwd;
+    // Disable outlining (tested separately)
+    runner.opts.enableOutlining  = false;
+    runner.opts.virtualGraphMode = VirtualGraphMode::Manual;
+    runner.patterns              = Patterns(PatternsLevel::Default);
+    // Disable so that no false negatives (rhs vs. lhs inplace) exist
+    runner.patterns.inplaceEnabled = false;
+    runner.loss                    = loss;
+
+    return act;
+  });
+
+  // Testing that the schedule is as expected for batch serialization:
+  // 1.) The schedule repeats the same way for each batch serial
+  // 2.) Correct number of total ops with batch serial phases
+  // 3.) Correct number of IPU copies (not batch serialized), indicating that
+  //     the batch has been concatenated before an IPU copy
+  runner.checkIr([&](Ir &ir) {
+    std::vector<Op *> schedule =
+        ir.getMainGraph().getOpSchedule({}, RequireOptimalSchedule::Yes);
+
+    size_t numIpuCopies               = 0;
+    BatchSerializedPhase currentPhase = -1;
+    size_t recordedOffset             = 0;
+    std::vector<Op *> recordedOps;
+
+    std::map<BatchSerializedPhase, size_t> opsPerPhase;
+
+    for (size_t i = 0; i < schedule.size(); i++) {
+      Op *op = schedule.at(i);
+      logging::trace("Op: {} {} {}",
+                     op->hasBatchSerializedPhase()
+                         ? std::to_string(op->getBatchSerializedPhase())
+                         : "*",
+                     op->settings.schedulePriority,
+                     op->debugName());
+
+      // 3.)
+      if (op->isIpuCopyOp()) {
+        ++numIpuCopies;
+      }
+
+      // 1.)
+      if (op->hasBatchSerializedPhase()) {
+        opsPerPhase[op->getBatchSerializedPhase()] += 1;
+
+        // Record order of ops for first batch element
+        if (op->getBatchSerializedPhase() == 0) {
+          if (currentPhase != 0) {
+            currentPhase = 0;
+            recordedOps.clear();
+          }
+          recordedOps.push_back(op);
+        } else if (op->getBatchSerializedPhase() > 0) {
+          if (op->getBatchSerializedPhase() != currentPhase) {
+            recordedOffset = 0;
+            currentPhase   = op->getBatchSerializedPhase();
+          }
+          BOOST_CHECK(recordedOps.size() > recordedOffset);
+          if (recordedOps.size() > recordedOffset) {
+            Op *recordedOp = recordedOps.at(recordedOffset);
+            // Identical ops and order of ops per batch serial phase
+            BOOST_CHECK(op->opid == recordedOp->opid);
+          }
+          recordedOffset += 1;
+        }
+      }
+    }
+
+    // 2.)
+    for (int k = 0; k < K; ++k) {
+      // At least some ops with batch serial phase
+      BOOST_CHECK_GT(opsPerPhase[k], 0);
+      // Same number of ops per phase
+      BOOST_CHECK_EQUAL(opsPerPhase[k], opsPerPhase[0]);
+    }
+
+    // 3.)
+    BOOST_CHECK_EQUAL(numIpuCopies, 4 * N - 2);
   });
 }
 
@@ -273,7 +396,7 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithVGraphsOutlined) {
       // K = 4: expected = 2
       //  Call(1), Call(1), Call(1), Call(1) -> Call(2), Call(2)
       //  Call(2): Call(1), Call(1)
-      BOOST_CHECK(graphIdAndCount.second == 2);
+      BOOST_CHECK_EQUAL(graphIdAndCount.second, 2);
     }
   });
 }
@@ -379,29 +502,29 @@ BOOST_AUTO_TEST_CASE(NllBatchSerializedTest) {
     }
 
     if (batchSerialize) {
-      BOOST_CHECK(num_nll == 2 * batchSize);
+      BOOST_CHECK_EQUAL(num_nll, 2 * batchSize);
 
       int expected_num_sum  = 0;
       int expected_num_mean = 0;
 
-      if (r0 == ReductionType::Sum) {
+      if (r0 == ReductionType::Sum || r0 == ReductionType::NoReduction) {
         ++expected_num_sum;
       } else if (r0 == ReductionType::Mean) {
         ++expected_num_mean;
       }
 
-      if (r1 == ReductionType::Sum) {
+      if (r1 == ReductionType::Sum || r1 == ReductionType::NoReduction) {
         ++expected_num_sum;
       } else if (r1 == ReductionType::Mean) {
         ++expected_num_mean;
       }
-      BOOST_CHECK(num_sum == expected_num_sum);
-      BOOST_CHECK(num_mean == expected_num_mean);
+      BOOST_CHECK_EQUAL(num_sum, expected_num_sum);
+      BOOST_CHECK_EQUAL(num_mean, expected_num_mean);
 
     } else {
-      BOOST_CHECK(num_nll == 2);
-      BOOST_CHECK(num_sum == 0);
-      BOOST_CHECK(num_mean == 0);
+      BOOST_CHECK_EQUAL(num_nll, 2);
+      BOOST_CHECK_EQUAL(num_sum, 0);
+      BOOST_CHECK_EQUAL(num_mean, 0);
     }
 
     logging::trace("IR OPS: {} {} {}", num_nll, num_sum, num_mean);

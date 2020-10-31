@@ -31,6 +31,15 @@ enum class ExecutionContext {
   Subgraph
 };
 
+// When weight updates of a batch are computed in one go, we
+// are reducing over the gradients of the whole minibatch.
+// What type of reduction should this be?
+// Sum : Sum the output of the loss values and do not scale the gradient
+// Mean : Take the mean of the loss values and divide the gradient by the number
+//        of samples
+// NoReduction : Leave the loss values as they are and do not scale the gradient
+enum class ReductionType { Sum = 0, Mean, NoReduction };
+
 std::ostream &operator<<(std::ostream &, const RecomputeType &);
 std::ostream &operator<<(std::ostream &, const ExecutionContext &);
 
@@ -149,6 +158,14 @@ public:
 
   Settings &getSettings() { return settings; }
   const Settings &getSettings() const { return settings; }
+
+  // Return suitable settings for an Op inserted before the input to an existing
+  // Op
+  virtual Settings getInSettings(InIndex) const;
+
+  // Return suitable settings for an Op inserted after the output to an existing
+  // Op
+  virtual Settings getOutSettings(OutIndex) const;
 
   const OptionalVGraphId getOptionalVGraphId() const;
   VGraphId getVirtualGraphId() const;
@@ -489,6 +506,8 @@ public:
   // Test if the operation can be sharded into multiple operations
   // TODO: T16743: extend support for other dimensions than the batch
   virtual bool canShard() const;
+
+  virtual ReductionType getShardReductionType(OutIndex index) const;
 
   // Shard operation into multiple operations according to the new,
   // already sharded input tensors. Returns the sharded output tensors.

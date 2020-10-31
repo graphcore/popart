@@ -33,11 +33,9 @@ public:
   virtual void appendOutlineAttributes(OpSerialiserBase &) const final;
 
   bool canShard() const override { return true; }
-
-  // NLL sharding with reduction type Sum or Mean collapses the output along
-  // all dimension, requiring an additional sum/mean operation when sharding
-  std::map<TensorId, std::vector<TensorId>>
-  shard(const std::map<TensorId, std::vector<TensorId>> &inputs) override;
+  ReductionType getShardReductionType(OutIndex index) const override {
+    return getReductionType();
+  }
 
 private:
   ReductionType reduction_;

@@ -2,6 +2,8 @@
 #ifndef GUARD_NEURALNET_IPUCOPY_HPP
 #define GUARD_NEURALNET_IPUCOPY_HPP
 
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/op.hpp>
 
 namespace popart {
@@ -44,6 +46,14 @@ public:
   std::string getFromToStr() const;
 
   void disconnectInTensor(InIndex, Tensor *) override;
+
+  bool canShard() const override {
+    // For batch serialization, IpuCopyOp signifies changing virtual graphs
+    return !getGraph()
+                .getIr()
+                .getSessionOptions()
+                .batchSerializationSettings.concatOnVirtualGraphChange;
+  }
 
 private:
   void connectInTensor(InIndex, TensorId) override {

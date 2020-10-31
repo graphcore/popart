@@ -183,17 +183,30 @@ enum class BatchSerializationBatchSchedule {
 };
 
 /**
+ * Enum type that describes when to apply the batch serialization.
+ * \b NOTE: This setting is experimental and may change.
+ */
+enum class BatchSerializationTransformContext {
+  /// Apply before growing the backward pass
+  Fwd,
+  /// Apply after growing the backward pass
+  Bwd
+};
+
+/**
  * A structure containing batch serialization settings.
  */
 struct BatchSerializationSettings {
   BatchSerializationSettings() = default;
-  BatchSerializationSettings(int factor_,
-                             bool concatOnVirtualGraphChange_,
-                             bool concatOnExecutionPhaseChange_,
-                             bool concatOnPipelineStageChange_,
-                             BatchSerializationBatchSchedule batchSchedule_ =
-                                 BatchSerializationBatchSchedule::Isomorphic,
-                             int isomorphismScoreGap_ = 1);
+  BatchSerializationSettings(
+      int factor_,
+      bool concatOnVirtualGraphChange_,
+      bool concatOnExecutionPhaseChange_,
+      bool concatOnPipelineStageChange_,
+      BatchSerializationTransformContext transformContext =
+          BatchSerializationTransformContext::Fwd,
+      BatchSerializationBatchSchedule batchSchedule_ =
+          BatchSerializationBatchSchedule::Isomorphic);
 
   BatchSerializationSettings &
   operator=(const BatchSerializationSettings &rhs) = default;
@@ -208,11 +221,12 @@ struct BatchSerializationSettings {
   /// Break batch serialization chains when the pipeline stage
   /// changes (by concatenating the compute batches to the local batch).
   bool concatOnPipelineStageChange = true;
+  /// Experimental value to control when batch serialization is applied.
+  BatchSerializationTransformContext transformContext =
+      BatchSerializationTransformContext::Fwd;
   /// Experimental value that changes how operations are scheduled.
   BatchSerializationBatchSchedule batchSchedule =
       BatchSerializationBatchSchedule::Isomorphic;
-  /// Experimental value to encourage isomorphic batch serialization chains.
-  int isomorphismScoreGap = 1;
 };
 
 /**

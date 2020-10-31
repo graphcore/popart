@@ -98,55 +98,6 @@ int NllOp::getIgnoreIndex() const {
   }
 }
 
-std::map<TensorId, std::vector<TensorId>>
-NllOp::shard(const std::map<TensorId, std::vector<TensorId>> &inputs) {
-  std::map<TensorId, std::vector<TensorId>> outputs = Op::shard(inputs);
-
-  switch (getReductionType()) {
-  case ReductionType::Sum: {
-    auto sumOpUp = std::make_unique<SumOp>(Onnx::Operators::Sum_8, settings);
-    Op *sumOp    = sumOpUp.get();
-    getGraph().moveIntoGraph(std::move(sumOpUp));
-    auto nllOutId = outId(NllOp::getOutIndex());
-    disconnectOutTensor(outTensor(NllOp::getOutIndex()));
-
-    InIndex i = 0;
-    for (auto nllShardOutId : outputs[nllOutId]) {
-      sumOp->connectInTensor(i, nllShardOutId);
-      ++i;
-    }
-
-    sumOp->connectOutTensor(SumOp::getOutIndex(), nllOutId);
-    sumOp->setup();
-    outputs[nllOutId] = {nllOutId};
-    break;
-  }
-  case ReductionType::Mean: {
-    auto meanOpUp = std::make_unique<MeanOp>(Onnx::Operators::Mean_8, settings);
-    Op *meanOp    = meanOpUp.get();
-    getGraph().moveIntoGraph(std::move(meanOpUp));
-    auto nllOutId = outId(NllOp::getOutIndex());
-    disconnectOutTensor(outTensor(NllOp::getOutIndex()));
-
-    InIndex i = 0;
-    for (auto nllShardOutId : outputs[nllOutId]) {
-      meanOp->connectInTensor(i, nllShardOutId);
-      ++i;
-    }
-
-    meanOp->connectOutTensor(MeanOp::getOutIndex(), nllOutId);
-    meanOp->setup();
-    outputs[nllOutId] = {nllOutId};
-    break;
-  }
-  case ReductionType::NoReduction:
-  default:
-    break;
-  }
-
-  return outputs;
-}
-
 void NllGradOp::setup() {
   // gradient of probs has same shape as probs
   outInfo(getOutIndex()) = inInfo(getProbsInIndex());

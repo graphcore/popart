@@ -113,6 +113,13 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
+  bool canShard() const override { return true; }
+  ReductionType getShardReductionType(OutIndex index) const override {
+    return ReductionType::NoReduction;
+  }
+  std::map<TensorId, std::vector<TensorId>>
+  shard(const std::map<TensorId, std::vector<TensorId>> &inputs) override;
+
 protected:
   // An unsafe constructor that allows using any OperatorIdentifier
   ConcatGradOp(const OperatorIdentifier &_opid,

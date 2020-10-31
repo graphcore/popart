@@ -894,8 +894,11 @@ void Ir::prepareImpl(const IrBundle &gb) {
 
   // Batch serialisation, step 1
   // (has to occur before setNEdgesToLoss, but after setFinalLoss)
-  if (userOptions.batchSerializationSettings.factor > 1) {
+  if (userOptions.batchSerializationSettings.factor > 1 &&
+      userOptions.batchSerializationSettings.transformContext ==
+          BatchSerializationTransformContext::Fwd) {
     applyTransform(BatchSerialize::id(1), getMainGraph());
+    removeIsolatedTensors(true);
     updateVertices();
   }
 
@@ -964,8 +967,11 @@ void Ir::prepareImpl(const IrBundle &gb) {
   applyTransform(DynamicOpTransform::id(), getMainGraph());
 
   // DecomposeGradSum decomposes remaining grad sums
-  if (getSessionOptions().decomposeGradSum ||
-      getSessionOptions().batchSerializationSettings.factor > 1) {
+  if ((getSessionOptions().batchSerializationSettings.factor <= 1 &&
+       getSessionOptions().decomposeGradSum) ||
+      (getSessionOptions().batchSerializationSettings.factor > 1 &&
+       getSessionOptions().batchSerializationSettings.transformContext ==
+           BatchSerializationTransformContext::Fwd)) {
     applyTransform(DecomposeGradSum::id(), getMainGraph());
   }
 
@@ -1108,6 +1114,14 @@ void Ir::prepareImpl(const IrBundle &gb) {
 
   // Batch serialisation, step 2 (needs IoTileCopy ops to have been inserted)
   if (userOptions.batchSerializationSettings.factor > 1) {
+    if (userOptions.batchSerializationSettings.transformContext ==
+        BatchSerializationTransformContext::Bwd) {
+      applyTransform(BatchSerialize::id(1), getMainGraph());
+      // DecomposeGradSum decomposes remaining grad sums
+      applyTransform(DecomposeGradSum::id(), getMainGraph());
+      applyTransform(Prune::id(), getMainGraph());
+      removeIsolatedTensors(true);
+    }
     applyTransform(BatchSerialize::id(2), getMainGraph());
     updateVertices();
   }
@@ -1115,7 +1129,9 @@ void Ir::prepareImpl(const IrBundle &gb) {
   dotCheckpoint(DotCheck::PreAlias);
 
   // Merge remote loads/stores into exchanges
-  applyTransform(MergeRemote::id(), getMainGraph());
+  for (auto &id_graph : graphs) {
+    applyTransform(MergeRemote::id(), *id_graph.second);
+  }
 
   if (getSessionOptions().enableOutlining) {
     updateAliases();
@@ -2254,7 +2270,6 @@ std::set<Vertex *> forwardPropogate(std::vector<Op *> frontier) {
 } // namespace
 
 void Ir::updateVertices() {
-
   // for all vertices (Ops and Tensors), set
   //  1) toLoss (is there a path to the final loss?)
   //  2) fromLoss (is there a path from the final loss?)
@@ -2413,12 +2428,10 @@ void Ir::setNEdgesToLoss() {
   for (auto &id_op : getMainGraph().getOps()) {
     Op *op           = id_op.second.get();
     op->nEdgesToLoss = 0;
-    for (auto index_tensor : op->input->tensorMap()) {
-      index_tensor.second->nEdgesToLoss = 0;
-    }
-    for (auto index_tensor : op->output->tensorMap()) {
-      index_tensor.second->nEdgesToLoss = 0;
-    }
+  }
+  for (TensorId tid : getMainGraph().getTensors().getAllTensorIds()) {
+    Tensor *t       = getMainGraph().getTensors().get(tid);
+    t->nEdgesToLoss = 0;
   }
 
   for (auto &id_op : getMainGraph().getOps()) {
@@ -2439,6 +2452,11 @@ void Ir::setNEdgesToLoss() {
         ++inTensor->nEdgesToLoss;
       }
     }
+  }
+
+  for (TensorId tid : getMainGraph().getTensors().getAllTensorIds()) {
+    Tensor *t = getMainGraph().getTensors().get(tid);
+    logging::trace("Edges to loss: {} {}", tid, t->nEdgesToLoss);
   }
 }
 
@@ -2737,7 +2755,9 @@ void Ir::setFinalLoss(const TensorId &loss) {
     finalLossId           = loss;
     finalLossOpId         = finalLossOp->id;
 
-    logging::ir::trace("Final loss Op id set to {}", finalLossOpId);
+    logging::ir::trace("Final loss Op id set to {} ({})",
+                       finalLossOpId,
+                       finalLossOp->debugName());
   } else {
     throw error("Could not find loss tensor '{}' in main graph tensors", loss);
   }

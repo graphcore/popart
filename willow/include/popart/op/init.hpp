@@ -45,6 +45,8 @@ public:
 
   int getOutBatchAxis(OutIndex) const override { return batch_axis; }
 
+  bool canShard() const override { return batch_axis != -1; }
+
 private:
   TensorInfo tensor_info;
   TensorType tensor_type;

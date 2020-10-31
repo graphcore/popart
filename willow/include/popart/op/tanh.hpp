@@ -27,6 +27,8 @@ public:
   static OutIndex getOutIndex() { return 0; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
+  bool canShard() const override { return true; }
 };
 
 } // namespace popart

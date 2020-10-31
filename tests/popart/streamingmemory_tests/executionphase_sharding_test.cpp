@@ -214,14 +214,14 @@ BOOST_AUTO_TEST_CASE(Test2x2S1ExecutionPhase) {
       // 3.)
       if (op->getName().find("CHECKOP_SL0") != std::string::npos ||
           op->getName().find("CHECKOP_SL1") != std::string::npos) {
-        BOOST_CHECK(op->getVirtualGraphId() == 0);
-        BOOST_CHECK(op->getExecutionPhase() == 0);
+        BOOST_CHECK_EQUAL(op->getVirtualGraphId(), 0);
+        BOOST_CHECK_EQUAL(op->getExecutionPhase(), 0);
       }
 
       // 4.)
       if (op->isLossOp()) {
-        BOOST_CHECK(op->getVirtualGraphId() == 3);
-        BOOST_CHECK(op->getExecutionPhase() == N * 2 - 1);
+        BOOST_CHECK_EQUAL(op->getVirtualGraphId(), 3);
+        BOOST_CHECK_EQUAL(op->getExecutionPhase(), N * 2 - 1);
       }
     }
   });
@@ -368,23 +368,23 @@ BOOST_AUTO_TEST_CASE(Test1x0S1ExecutionPhase) {
                      std::get<3>(kv.second));
       // 1.)
       if (kv.first < N - 1) {
-        BOOST_CHECK(std::get<1>(kv.second) == 1);
+        BOOST_CHECK_EQUAL(std::get<1>(kv.second), 1);
       }
       // 2.)
       if (kv.first < N - 2 && kv.first > 0) {
-        BOOST_CHECK(std::get<3>(kv.second) == 1);
+        BOOST_CHECK_EQUAL(std::get<3>(kv.second), 1);
       }
       // 3.)
       if (kv.first >= N - 1) {
-        BOOST_CHECK(std::get<3>(kv.second) == 1);
+        BOOST_CHECK_EQUAL(std::get<3>(kv.second), 1);
       }
       // 4.)
       if (kv.first >= N && kv.first < 2 * N - 3) {
-        BOOST_CHECK(std::get<3>(kv.second) == 1);
+        BOOST_CHECK_EQUAL(std::get<3>(kv.second), 1);
       }
       // 4.)
       if (kv.first == 2 * N - 3) {
-        BOOST_CHECK(std::get<3>(kv.second) == 1);
+        BOOST_CHECK_EQUAL(std::get<3>(kv.second), 1);
       }
     }
   });
@@ -499,23 +499,23 @@ BOOST_AUTO_TEST_CASE(Test1x0S2ExecutionPhase) {
                      std::get<3>(kv.second));
       // 1.)
       if (kv.first < N * 2 - 2 && kv.first % 2 == 1) {
-        BOOST_CHECK(std::get<1>(kv.second) == 1);
+        BOOST_CHECK_EQUAL(std::get<1>(kv.second), 1);
       }
       // 2.)
       if (kv.first < N * 2 - 2 && kv.first % 2 == 0) {
-        BOOST_CHECK(std::get<2>(kv.second) == batchSerialize);
+        BOOST_CHECK_EQUAL(std::get<2>(kv.second), batchSerialize);
       }
       // 3.)
       if (kv.first > N * 2 - 2 && kv.first % 2 == 0) {
-        BOOST_CHECK(std::get<0>(kv.second) == batchSerialize);
+        BOOST_CHECK_EQUAL(std::get<0>(kv.second), batchSerialize);
       }
       // 4.)
       if (kv.first >= N * 2 - 2 && kv.first % 2 == 0) {
-        BOOST_CHECK(std::get<3>(kv.second) == 1);
+        BOOST_CHECK_EQUAL(std::get<3>(kv.second), 1);
       }
       // 5.)
       if (kv.first > N * 2 - 2 && kv.first % 2 == 1) {
-        BOOST_CHECK(std::get<1>(kv.second) == 1);
+        BOOST_CHECK_EQUAL(std::get<1>(kv.second), 1);
       }
     }
   });
@@ -656,34 +656,34 @@ BOOST_AUTO_TEST_CASE(Test1x0S4ExecutionPhase) {
                        numIoTileOps);
         // 1.)
         if (kv.first == -1 || (kv.first < N * 8 - 8 && kv.first % 4 == 1)) {
-          BOOST_CHECK(std::get<1>(kv.second) == 1);
+          BOOST_CHECK_EQUAL(std::get<1>(kv.second), 1);
         }
         // 2.)
         if (kv.first == 0) {
-          BOOST_CHECK(std::get<2>(kv.second) == 2 * batchSerialize);
+          BOOST_CHECK_EQUAL(std::get<2>(kv.second), 2 * batchSerialize);
         }
         // 3.)
         if (kv.first > 0 && kv.first < N * 8 - 8 && kv.first % 4 == 0) {
-          BOOST_CHECK(std::get<2>(kv.second) == batchSerialize);
+          BOOST_CHECK_EQUAL(std::get<2>(kv.second), batchSerialize);
         }
         // 4.)
         if (kv.first > 0 && kv.first < N * 4 && kv.first % 4 == 0) {
-          BOOST_CHECK(std::get<0>(kv.second) == batchSerialize);
+          BOOST_CHECK_EQUAL(std::get<0>(kv.second), batchSerialize);
         }
         // 5.)
         if (kv.first >= N * 4 && kv.first % 4 == 0) {
-          BOOST_CHECK(std::get<0>(kv.second) == 3 * batchSerialize);
+          BOOST_CHECK_EQUAL(std::get<0>(kv.second), 3 * batchSerialize);
         }
         // 6.)
         if (kv.first >= N * 4 - 4 && kv.first % 4 == 0) {
-          BOOST_CHECK(std::get<3>(kv.second) == 1);
+          BOOST_CHECK_EQUAL(std::get<3>(kv.second), 1);
         }
         // 7.)
         if (activationsThroughIOTiles) {
-          BOOST_CHECK(numIoTileOps ==
-                      std::get<0>(kv.second) + std::get<2>(kv.second));
+          BOOST_CHECK_EQUAL(numIoTileOps,
+                            std::get<0>(kv.second) + std::get<2>(kv.second));
         } else {
-          BOOST_CHECK(numIoTileOps == 0);
+          BOOST_CHECK_EQUAL(numIoTileOps, 0);
         }
       }
     });
@@ -824,32 +824,32 @@ BOOST_AUTO_TEST_CASE(Test2x0S2ExecutionPhase) {
                      std::get<3>(kv.second));
       // 1.)
       if (kv.first < N * 8 - 4 && kv.first % 4 == 3) {
-        BOOST_CHECK(std::get<1>(kv.second) == 2);
+        BOOST_CHECK_EQUAL(std::get<1>(kv.second), 2);
       }
       // 2.)
       if (kv.first < N * 8 - 4 && kv.first % 4 == 1) {
-        BOOST_CHECK(std::get<1>(kv.second) == 4);
+        BOOST_CHECK_EQUAL(std::get<1>(kv.second), 4);
       }
       // 3.) & 7.)
       if (kv.first > N * 4 - 4 && kv.first % 4 == 0) {
-        BOOST_CHECK(std::get<3>(kv.second) == 2);
-        BOOST_CHECK(std::get<0>(kv.second) == 16);
+        BOOST_CHECK_EQUAL(std::get<3>(kv.second), 2);
+        BOOST_CHECK_EQUAL(std::get<0>(kv.second), 16);
       }
       // 4.) & 8.)
       if (kv.first > N * 4 - 4 && kv.first % 4 == 2) {
-        BOOST_CHECK(std::get<3>(kv.second) == 4);
+        BOOST_CHECK_EQUAL(std::get<3>(kv.second), 4);
         if (kv.first > N * 4) {
           // Because last fwd & first bwd are adjacent
-          BOOST_CHECK(std::get<0>(kv.second) == 32);
+          BOOST_CHECK_EQUAL(std::get<0>(kv.second), 32);
         }
       }
       // 5.)
       if (kv.first <= N * 4 - 4 && kv.first % 4 == 0) {
-        BOOST_CHECK(std::get<2>(kv.second) == 16);
+        BOOST_CHECK_EQUAL(std::get<2>(kv.second), 16);
       }
       // 6.)
       if (kv.first <= N * 4 - 4 && kv.first % 4 == 2) {
-        BOOST_CHECK(std::get<2>(kv.second) == 32);
+        BOOST_CHECK_EQUAL(std::get<2>(kv.second), 32);
       }
     }
   });

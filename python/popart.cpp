@@ -174,7 +174,7 @@ public:
 
   void assertNumElements(const Ir &) const final {}
 
-  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
+  ConstVoidData in(TensorId id, int64_t, bool prefetch) final {
     py::array a = inputCb(id, prefetch);
     if (!isContiguous(a)) {
       throw error(
@@ -847,6 +847,15 @@ PYBIND11_MODULE(popart_core, m) {
   }
   {
     // This setting is experimental and may change.
+    py::enum_<BatchSerializationTransformContext> en(
+        m, "BatchSerializationTransformContext");
+    en.value("Forward", BatchSerializationTransformContext::Fwd);
+    en.value("Backward", BatchSerializationTransformContext::Bwd);
+    en.value("Fwd", BatchSerializationTransformContext::Fwd);
+    en.value("Bwd", BatchSerializationTransformContext::Bwd);
+  }
+  {
+    // This setting is experimental and may change.
     py::enum_<BatchSerializationBatchSchedule> en(
         m, "BatchSerializationBatchSchedule");
     en.value("Scheduler", BatchSerializationBatchSchedule::Scheduler);
@@ -859,13 +868,18 @@ PYBIND11_MODULE(popart_core, m) {
     py::class_<BatchSerializationSettings> cls(m, "BatchSerializationSettings");
     cls.def(py::init<>());
     cls.def(
-        py::init<int, bool, bool, bool, BatchSerializationBatchSchedule, int>(),
+        py::init<int,
+                 bool,
+                 bool,
+                 bool,
+                 BatchSerializationTransformContext,
+                 BatchSerializationBatchSchedule>(),
         py::arg("factor"),
         py::arg("concatOnVirtualGraphChange"),
         py::arg("concatOnExecutionPhaseChange"),
         py::arg("concatOnPipelineStageChange"),
-        py::arg("batchSchedule") = BatchSerializationBatchSchedule::Isomorphic,
-        py::arg("isomorphismScoreGap") = 1);
+        py::arg("transformContext") = BatchSerializationTransformContext::Fwd,
+        py::arg("batchSchedule") = BatchSerializationBatchSchedule::Isomorphic);
     cls.def_readwrite("factor", &BatchSerializationSettings::factor);
     cls.def_readwrite("concatOnVirtualGraphChange",
                       &BatchSerializationSettings::concatOnVirtualGraphChange);
@@ -874,11 +888,11 @@ PYBIND11_MODULE(popart_core, m) {
         &BatchSerializationSettings::concatOnExecutionPhaseChange);
     cls.def_readwrite("concatOnPipelineStageChange",
                       &BatchSerializationSettings::concatOnPipelineStageChange);
+    cls.def_readwrite("transformContext",
+                      &BatchSerializationSettings::transformContext);
     // This setting is experimental and may change.
     cls.def_readwrite("batchSchedule",
                       &BatchSerializationSettings::batchSchedule);
-    cls.def_readwrite("isomorphismScoreGap",
-                      &BatchSerializationSettings::isomorphismScoreGap);
   }
   {
     py::class_<ExecutionPhaseSettings> cls(m, "ExecutionPhaseSettings");

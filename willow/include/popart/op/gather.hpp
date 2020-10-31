@@ -55,6 +55,11 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
+  int getInBatchAxis(InIndex i) const override { return 0; }
+  int getOutBatchAxis(OutIndex) const override { return -1; }
+
+  bool canShard() const override { return true; }
+
 private:
   int64_t axis;
   TensorInfo fwdDataInfo;

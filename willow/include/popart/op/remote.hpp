@@ -30,6 +30,8 @@ public:
 
   bool hasSideEffect() const override { return true; }
 
+  bool canShard() const final { return true; }
+
 private:
   RemoteBufferId remotebuffer_id;
 };
@@ -61,6 +63,8 @@ public:
     remotebuffer_id = remotebuffer_id_;
   }
   RemoteBufferId getRemoteBufferId() const { return remotebuffer_id; }
+
+  bool canShard() const final { return true; }
 
 private:
   RemoteBufferId remotebuffer_id;
@@ -103,6 +107,8 @@ public:
 
   VGraphIdAndTileSet getIntrospectionInVirtualGraphId(InIndex) const final;
   VGraphIdAndTileSet getIntrospectionOutVirtualGraphId(OutIndex) const final;
+
+  bool canShard() const final { return false; }
 
 private:
   std::vector<RemoteBufferId> remotebufferIds;

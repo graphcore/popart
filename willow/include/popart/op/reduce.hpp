@@ -39,6 +39,12 @@ public:
 
   const Shape &backwardShape() const;
 
+  bool canShard() const override { return true; }
+
+  int getOutBatchAxis(OutIndex) const override {
+    return std::find(axes.begin(), axes.end(), 0) != axes.end() ? -1 : 0;
+  }
+
 protected:
   // The input shape, with '1' inserted in reduction axes.
   // This is the same as the output shape if keepdims is true.

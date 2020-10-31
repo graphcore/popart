@@ -148,6 +148,8 @@ public:
   std::unique_ptr<Op> clone() const final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
+
+  bool canShard() const override { return true; }
 };
 
 } // namespace popart

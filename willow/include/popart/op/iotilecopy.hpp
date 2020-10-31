@@ -20,6 +20,8 @@ public:
 
   VGraphIdAndTileSet getIntrospectionInVirtualGraphId(InIndex) const final;
   VGraphIdAndTileSet getIntrospectionOutVirtualGraphId(OutIndex) const final;
+
+  bool canShard() const override { return true; }
 };
 } // namespace popart
 

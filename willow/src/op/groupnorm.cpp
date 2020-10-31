@@ -76,8 +76,10 @@ const std::vector<GradInOutMapper> &GroupNormGradOp::gradInputInfo() const {
 }
 
 void GroupNormGradOp::setup() {
+  TensorInfo xOutInfo = fwdInInfo;
+  xOutInfo.set(xOutInfo.dataType(), inTensor(getXInIndex())->info.shape());
 
-  outInfo(getXGradOutIndex()) = fwdInInfo;
+  outInfo(getXGradOutIndex()) = xOutInfo;
   outInfo(getScaleOutIndex()) = fwdScaleInInfo;
   outInfo(getBOutIndex())     = fwdBInInfo;
 }

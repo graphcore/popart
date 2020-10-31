@@ -121,6 +121,11 @@ public:
   int getIgnoreIndex() const { return ignoreIndex_.value(); }
   virtual void appendOutlineAttributes(OpSerialiserBase &) const final;
 
+  bool canShard() const override { return true; }
+  ReductionType getShardReductionType(OutIndex index) const override {
+    return getReductionType();
+  }
+
 private:
   ReductionType reduction_;
   nonstd::optional<int> ignoreIndex_;

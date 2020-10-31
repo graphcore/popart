@@ -4,6 +4,9 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
+#include <popart/op/identity.hpp>
+#include <popart/op/mean.hpp>
+#include <popart/op/sum.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/region.hpp>
@@ -580,6 +583,30 @@ void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {
   }
 }
 
+// Return suitable settings for an Op inserted before the input to an existing
+// Op
+Op::Settings Op::getInSettings(InIndex index) const {
+  Op::Settings inSettings = getSettings();
+  auto vs                 = getIntrospectionInVirtualGraphId(index);
+  if (vs.first != unusedVGraphId) {
+    inSettings.vgraphId = vs.first;
+  }
+  inSettings.tileSet = vs.second;
+  return inSettings;
+}
+
+// Return suitable settings for an Op inserted after the output to an existing
+// Op
+Op::Settings Op::getOutSettings(OutIndex index) const {
+  Op::Settings outSettings = getSettings();
+  auto vs                  = getIntrospectionOutVirtualGraphId(index);
+  if (vs.first != unusedVGraphId) {
+    outSettings.vgraphId = vs.first;
+  }
+  outSettings.tileSet = vs.second;
+  return outSettings;
+}
+
 void Op::setVirtualGraphId(const OptionalVGraphId value) {
   settings.vgraphId = value;
 }
@@ -991,13 +1018,14 @@ std::string Op::str() const {
 
 std::string Op::debugName() const {
   std::string debug_id;
+  std::stringstream ss;
   if (!getName().empty()) {
-    debug_id = getName();
+    ss << getName();
+    ss << " (" << opid << ")";
   } else {
-    std::stringstream ss;
     ss << opid;
-    debug_id = ss.str();
   }
+  debug_id = ss.str();
 
   std::vector<TensorId> in_ids;
   for (auto i : input->tensorIdMap()) {
@@ -1418,13 +1446,28 @@ bool Op::inputsUnmodifiable() const {
 
 bool Op::canShard() const { return false; }
 
+ReductionType Op::getShardReductionType(OutIndex index) const {
+  return ReductionType::Sum;
+}
+
 std::map<TensorId, std::vector<TensorId>>
 Op::shard(const std::map<TensorId, std::vector<TensorId>> &inputs) {
-  std::map<TensorId, std::vector<TensorId>> outputs;
+  std::map<TensorId, std::vector<TensorId>> shardOutputs;
   size_t num_shards = 1;
   for (auto &idkv : inputs) {
     num_shards = std::max(num_shards, idkv.second.size());
   }
+
+  auto connectInTensorFn = [this](Op *op, InIndex index, TensorId tensorId) {
+    IpuCopyOp *srcOp = dynamic_cast<IpuCopyOp *>(this);
+    IpuCopyOp *dstOp = dynamic_cast<IpuCopyOp *>(op);
+    if (srcOp && dstOp) {
+      TensorId srcTensorId = srcOp->input->tensor(index)->id;
+      dstOp->connectInTensor(index, tensorId, srcOp->getSourceIpu(srcTensorId));
+    } else {
+      op->connectInTensor(index, tensorId);
+    }
+  };
 
   auto &graph = getGraph();
   std::vector<Op *> cloneOps;
@@ -1434,18 +1477,23 @@ Op::shard(const std::map<TensorId, std::vector<TensorId>> &inputs) {
     Op *clonedOp    = graph.getOp(cloneId);
     clonedOp->disconnectAllInputs();
     clonedOp->disconnectAllOutputs();
+
+    if (toLoss == PathToLoss::Yes && fromLoss == PathFromLoss::Yes) {
+      clonedOp->fromLoss = PathFromLoss::No;
+    }
+
     for (const auto &in : input->tensorMap()) {
       auto serializedTensor = inputs.find(in.second->id);
       if (serializedTensor == inputs.end()) {
         // Tensors not split
-        clonedOp->connectInTensor(in.first, in.second->id);
+        connectInTensorFn(clonedOp, in.first, in.second->id);
       } else {
         if (serializedTensor->second.size() == num_shards) {
           // Tensors split dimension
-          clonedOp->connectInTensor(in.first, serializedTensor->second[b]);
+          connectInTensorFn(clonedOp, in.first, serializedTensor->second[b]);
         } else if (serializedTensor->second.size() == 1) {
           // Tensors not split
-          clonedOp->connectInTensor(in.first, serializedTensor->second[0]);
+          connectInTensorFn(clonedOp, in.first, serializedTensor->second[0]);
         } else {
           throw error("[Op] Number of input tensors must be 1 or match the "
                       "serialziation factor {}",
@@ -1459,7 +1507,7 @@ Op::shard(const std::map<TensorId, std::vector<TensorId>> &inputs) {
                                            static_cast<unsigned>(b),
                                            static_cast<unsigned>(b + 1));
       clonedOp->createAndConnectOutTensor(out.first, sliceId);
-      outputs[out.second->id].push_back(sliceId);
+      shardOutputs[out.second->id].push_back(sliceId);
     }
     configureShardedOp(clonedOp, b);
     clonedOp->setup();
@@ -1469,8 +1517,97 @@ Op::shard(const std::map<TensorId, std::vector<TensorId>> &inputs) {
                        clonedOp->input->getIndexShapeMap(),
                        clonedOp->output->getIndexShapeMap());
   }
+
+  for (auto out : shardOutputs) {
+    TensorId oldOutId  = out.first;
+    Tensor *oldOut     = getGraph().getTensors().get(oldOutId);
+    auto reductionType = getShardReductionType(output->indices(oldOut).front());
+
+    Tensor *newOut =
+        getGraph().getTensors().get(shardOutputs.at(oldOutId).front());
+
+    logging::trace("[Op] {}; old output shape: {}, new output shape: {}x{}",
+                   debugName(),
+                   oldOut->info.shape(),
+                   shardOutputs.at(oldOutId).size(),
+                   newOut->info.shape());
+
+    if (reductionType != ReductionType::NoReduction) {
+
+      if (oldOut->info.nelms() == newOut->info.nelms() &&
+          shardOutputs.at(oldOutId).size() > 1) {
+        logging::trace("[Op] {}; adding reduction over {} shards.",
+                       debugName(),
+                       shardOutputs.at(oldOutId).size());
+
+        Op *reduceOp;
+
+        switch (reductionType) {
+        case ReductionType::Sum: {
+          auto sumOpUp =
+              std::make_unique<SumOp>(Onnx::Operators::Sum_8, settings);
+          Op *sumOp = sumOpUp.get();
+          getGraph().moveIntoGraph(std::move(sumOpUp));
+          reduceOp = sumOp;
+          break;
+        }
+        case ReductionType::Mean: {
+          auto meanOpUp =
+              std::make_unique<MeanOp>(Onnx::Operators::Mean_8, settings);
+          Op *meanOp = meanOpUp.get();
+          getGraph().moveIntoGraph(std::move(meanOpUp));
+          reduceOp = meanOp;
+          break;
+        }
+        case ReductionType::NoReduction:
+          throw error("Unsupported reduction type in shard() ({})",
+                      debugName());
+          break;
+        }
+        cloneOps.push_back(reduceOp);
+
+        disconnectOutTensor(oldOut);
+
+        InIndex i = 0;
+        for (auto shardOutId : shardOutputs[oldOutId]) {
+          reduceOp->connectInTensor(i, shardOutId);
+          ++i;
+        }
+
+        reduceOp->toLoss   = toLoss;
+        reduceOp->fromLoss = fromLoss;
+        if (toLoss == PathToLoss::Yes && fromLoss == PathFromLoss::Yes) {
+          reduceOp->fromLoss = PathFromLoss::No;
+          // New final loss
+          auto idLossOpUp = std::make_unique<IdentityLossOp>(
+              Onnx::AiGraphcore::OpSet1::IdentityLoss, reductionType, settings);
+          Op *idLossOp = idLossOpUp.get();
+          getGraph().moveIntoGraph(std::move(idLossOpUp));
+
+          auto tmpOutId =
+              getGraph().getIr().createIntermediateTensorId(oldOutId);
+          reduceOp->createAndConnectOutTensor(SumOp::getOutIndex(), tmpOutId);
+          reduceOp->setup();
+          idLossOp->connectInTensor(IdentityLossOp::getInIndex(), tmpOutId);
+          idLossOp->connectOutTensor(IdentityLossOp::getOutIndex(), oldOutId);
+          idLossOp->setup();
+          idLossOp->toLoss                 = toLoss;
+          idLossOp->fromLoss               = fromLoss;
+          idLossOp->settings.recomputeType = RecomputeType::Checkpoint;
+          getGraph().getIr().setFinalLoss(oldOutId);
+        } else {
+          reduceOp->connectOutTensor(SumOp::getOutIndex(), oldOutId);
+          reduceOp->setup();
+        }
+
+        shardOutputs[oldOutId] = {oldOutId};
+      }
+    }
+  }
+
   graph.topoCons->transferToMultiple(this, cloneOps);
-  return outputs;
+
+  return shardOutputs;
 }
 
 void Op::configureShardedOp(Op *const shardOp, int shardIndex) const {

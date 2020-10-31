@@ -50,14 +50,17 @@ void ReduceSumGradOpx::grow(poplar::program::Sequence &prog) const {
   output = output.reshape(new_shape);
 
   // Broadcasting across each dimension
-  for (int dim = 0; dim < new_shape.size(); ++dim) {
+  for (int dim = 0; dim < std::min(new_shape.size(), output_shape.size());
+       ++dim) {
     if (new_shape[dim] != output_shape[dim]) {
       output = output.broadcast(static_cast<uint32_t>(output_shape[dim]), dim);
     }
   }
 
   // output now matches the shape of output_shape
-  setOutTensor(ReduceSumGradOp::getOutIndex(), output);
+  setOutTensor(
+      ReduceSumGradOp::getOutIndex(),
+      output.reshape(outInfo(ReduceSumGradOp::getOutIndex()).shape_szt()));
 }
 
 namespace {

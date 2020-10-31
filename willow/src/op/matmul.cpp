@@ -2,9 +2,11 @@
 #include <memory>
 #include <string>
 #include <popart/error.hpp>
+#include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op/matmul.hpp>
+#include <popart/op/sum.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/tensor.hpp>

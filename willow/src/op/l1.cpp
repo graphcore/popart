@@ -49,55 +49,6 @@ void L1Op::setup() {
   outInfo(getOutIndex()).set(info0.dataType(), outShape);
 }
 
-std::map<TensorId, std::vector<TensorId>>
-L1Op::shard(const std::map<TensorId, std::vector<TensorId>> &inputs) {
-  std::map<TensorId, std::vector<TensorId>> outputs = Op::shard(inputs);
-
-  switch (getReductionType()) {
-  case ReductionType::Sum: {
-    auto sumOpUp = std::make_unique<SumOp>(Onnx::Operators::Sum_8, settings);
-    Op *sumOp    = sumOpUp.get();
-    getGraph().moveIntoGraph(std::move(sumOpUp));
-    auto l1OutId = outId(L1Op::getOutIndex());
-    disconnectOutTensor(outTensor(L1Op::getOutIndex()));
-
-    InIndex i = 0;
-    for (auto l1ShardOutId : outputs[l1OutId]) {
-      sumOp->connectInTensor(i, l1ShardOutId);
-      ++i;
-    }
-
-    sumOp->connectOutTensor(SumOp::getOutIndex(), l1OutId);
-    sumOp->setup();
-    outputs[l1OutId] = {l1OutId};
-    break;
-  }
-  case ReductionType::Mean: {
-    auto meanOpUp = std::make_unique<MeanOp>(Onnx::Operators::Mean_8, settings);
-    Op *meanOp    = meanOpUp.get();
-    getGraph().moveIntoGraph(std::move(meanOpUp));
-    auto l1OutId = outId(L1Op::getOutIndex());
-    disconnectOutTensor(outTensor(L1Op::getOutIndex()));
-
-    InIndex i = 0;
-    for (auto l1ShardOutId : outputs[l1OutId]) {
-      meanOp->connectInTensor(i, l1ShardOutId);
-      ++i;
-    }
-
-    meanOp->connectOutTensor(MeanOp::getOutIndex(), l1OutId);
-    meanOp->setup();
-    outputs[l1OutId] = {l1OutId};
-    break;
-  }
-  case ReductionType::NoReduction:
-  default:
-    break;
-  }
-
-  return outputs;
-}
-
 L1GradOp::L1GradOp(const L1Op &op_)
     : Op(Onnx::CustomGradOperators::L1Grad, op_.getSettings()),
       lambda(op_.getLambda()), reduction(op_.getReductionType()) {}

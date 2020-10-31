@@ -32,11 +32,13 @@ void DropoutBaseOp::updateSeedModifier() {
 std::map<TensorId, std::vector<TensorId>>
 DropoutBaseOp::shard(const std::map<TensorId, std::vector<TensorId>> &inputs) {
   auto outputs = Op::shard(inputs);
-  for (auto shard_outs : outputs.begin()->second) {
-    auto sharded_dropout = dynamic_cast<DropoutBaseOp *>(
-        getIr().getTensor(shard_outs)->getProducer());
-    // Fetch a unique seed modifier
-    sharded_dropout->updateSeedModifier();
+  if (!hasInput(DropoutBaseOp::getSeedInIndex())) {
+    for (auto shard_outs : outputs.begin()->second) {
+      auto sharded_dropout = dynamic_cast<DropoutBaseOp *>(
+          getIr().getTensor(shard_outs)->getProducer());
+      // Fetch a unique seed modifier
+      sharded_dropout->updateSeedModifier();
+    }
   }
   return outputs;
 }
