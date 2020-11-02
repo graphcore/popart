@@ -1623,4 +1623,22 @@ void Op::configureForReplicatedTensorSharding(
   setup();
 }
 
+bool Op::doesAlias(InIndex inIndex, OutIndex outIndex) const {
+  const auto regions = aliases(inIndex, outIndex);
+  return std::any_of(regions.cbegin(),
+                     regions.cend(),
+                     [](const view::Region &r) { return !r.isEmpty(); });
+}
+
+bool Op::doesAlias() const {
+  for (const auto &x : input->tensorMap()) {
+    for (const auto &y : output->tensorMap()) {
+      if (doesAlias(x.first, y.first)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 } // namespace popart

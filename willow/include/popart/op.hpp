@@ -312,12 +312,25 @@ public:
   virtual view::RegMap fwdRegMap(InIndex, OutIndex) const;
   virtual view::RegMap bwdRegMap(InIndex, OutIndex) const;
 
+  /**
+   * \return true if there is an input which aliases an output.
+   * */
+  bool doesAlias() const;
+
+  bool isOutplace() const { return !doesAlias(); }
+
+  /**
+   * \return true if the input at \a inIndex aliases the output at \a outIndex
+   * */
+  bool doesAlias(InIndex inIndex, OutIndex outIndex) const;
+
   /** Is modifies(i) non-empty for any input index i?
    *
    * \returns     true if modifies(i) is non-empty for any i
    * \returns     false otherwise.
    */
   bool modifies() const;
+
   /** Check if an op modifies a tensor at a specific index in.
    *
    * \param in    Index to check
@@ -325,6 +338,7 @@ public:
    * \returns     false otherwise.
    */
   bool modifiesIndex(InIndex in) const;
+
   /** Check if an op overwrites a tensor at a specific index in.
    *
    * \param t      Tensor to check
