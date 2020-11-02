@@ -121,7 +121,7 @@ const std::map<int64_t, int> Graph::getVirtualGraphCounts() const {
   return vGraphCounts;
 }
 
-Op *Graph::getOp(OpId opId) {
+Op *Graph::getOp(OpId opId) const {
   auto found = ops.find(opId);
   if (found == ops.end()) {
     throw error("No Op `" + std::to_string(opId) + "'");

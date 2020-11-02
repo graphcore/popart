@@ -44,7 +44,7 @@ public:
   // Obtain counts for each vitual graphs Id used across ops
   const std::map<int64_t, int> getVirtualGraphCounts() const;
 
-  Op *getOp(OpId opId);
+  Op *getOp(OpId opId) const;
 
   const Tensors &getTensors() const;
   Tensors &getTensors();
