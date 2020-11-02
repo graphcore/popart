@@ -247,6 +247,7 @@ public:
   bool isRandomUniformLikeOpPatternEnabled();
   bool isZerosLikeOpPatternEnabled();
   bool isAsinhOpPatternEnabled();
+  bool isAtanhOpPatternEnabled();
 
   // The following methods are fluent allow you to
   // Pattens().enableInPlace0(false).
@@ -295,6 +296,7 @@ public:
   Patterns &enableRandomUniformLikeOpPattern(bool v);
   Patterns &enableZerosLikeOpPattern(bool v);
   Patterns &enableAsinhOpPattern(bool v);
+  Patterns &enableAtanhOpPattern(bool v);
   Patterns &enableRuntimeAsserts(bool b) {
     runtimeAssertsOn = b;
     return *this;

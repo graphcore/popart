@@ -57,7 +57,8 @@ enum class PreAliasPatternType {
   RandomUniformLikeOpPattern,
   ZerosLikeOpPattern,
   ConvTranspose,
-  AsinhOpPattern
+  AsinhOpPattern,
+  AtanhOpPattern
 };
 
 // Definition: A tensor is "touched" by a Pattern if

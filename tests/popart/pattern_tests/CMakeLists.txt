@@ -41,6 +41,9 @@ add_popart_cpp_unit_test(acosh_op_pattern_test
 add_popart_cpp_unit_test(asinh_op_pattern_test 
                           asinh_op_pattern_test.cpp)
 
+add_popart_cpp_unit_test(atanh_op_pattern_test 
+                          atanh_op_pattern_test.cpp)
+
 add_popart_py_unit_test(test_excludes)
 
 add_popart_py_unit_test(test_enable_patterns)
