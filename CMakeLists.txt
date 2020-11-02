@@ -92,9 +92,21 @@ find_package(Boost REQUIRED COMPONENTS filesystem system program_options)
 set(POPART_PYTHON_DIR ${CMAKE_CURRENT_SOURCE_DIR}/python)
 
 #------ cpack information
+
+# Default to the original paths to ensure backwards compatability.
+if(NOT POPART_PKG_DIR)
+  set(POPART_PKG_DIR "../../../pkg")
+endif()
+if(NOT POPART_CBT_VIEW_DIR)
+  set(POPART_CBT_VIEW_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../..")
+endif()
+
+message(STATUS "Package directory is ${POPART_PKG_DIR}")
+message(STATUS "View directory is ${POPART_CBT_VIEW_DIR}")
+
 execute_process(
   COMMAND git rev-parse HEAD
-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../..
+  WORKING_DIRECTORY "${POPART_CBT_VIEW_DIR}"
   OUTPUT_VARIABLE VIEW_HASH
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 if("${VIEW_HASH}" STREQUAL "")
@@ -183,31 +195,31 @@ set(PRODINFO_FILE_NAME popart-${VERSION}-${SNAPSHOT}.yml)
 
 include(CPack)
 
-set(PKG_UPLOAD_DIR ../../../pkg)
-
 if(BUILD_DOCS)
 add_custom_target(package_and_move
   # CMAKE_BINARY_DIR is not the CWD for this command when it is nested in the popart_super repo
   # Specifying CPackConfig.cmake manually for this reason
   COMMAND ${CMAKE_CPACK_COMMAND} --config ${CMAKE_BINARY_DIR}/CPackConfig.cmake
-  COMMAND bash -c "mkdir -p ${PKG_UPLOAD_DIR}"
-  COMMAND bash -c "mv ${PACKAGE_FILE_NAME}.tar.gz ${PKG_UPLOAD_DIR}"
-  COMMAND bash -c "mv ${PRODINFO_FILE_NAME} ${PKG_UPLOAD_DIR}"
-  COMMAND bash -c "mv ${USER_GUIDE_PDF_NAME} ${PKG_UPLOAD_DIR}"
-  COMMAND bash -c "mv ${USER_GUIDE_HTML_NAME} ${PKG_UPLOAD_DIR}"
-  COMMAND bash -c "mv ${PYTHON_API_PDF_NAME} ${PKG_UPLOAD_DIR}"
-  COMMAND bash -c "mv ${PYTHON_API_HTML_NAME} ${PKG_UPLOAD_DIR}"
-  COMMAND bash -c "mv ${CPP_API_HTML_NAME} ${PKG_UPLOAD_DIR}"
-  COMMAND bash -c "mv ${CPP_API_PDF_NAME} ${PKG_UPLOAD_DIR}"
+  COMMAND ${CMAKE_COMMAND} -E echo "Moved package to POPART_PKG_DIR = ${POPART_PKG_DIR}"
+  COMMAND bash -c "mkdir -p ${POPART_PKG_DIR}"
+  COMMAND bash -c "mv ${PACKAGE_FILE_NAME}.tar.gz ${POPART_PKG_DIR}"
+  COMMAND bash -c "mv ${PRODINFO_FILE_NAME} ${POPART_PKG_DIR}"
+  COMMAND bash -c "mv ${USER_GUIDE_PDF_NAME} ${POPART_PKG_DIR}"
+  COMMAND bash -c "mv ${USER_GUIDE_HTML_NAME} ${POPART_PKG_DIR}"
+  COMMAND bash -c "mv ${PYTHON_API_PDF_NAME} ${POPART_PKG_DIR}"
+  COMMAND bash -c "mv ${PYTHON_API_HTML_NAME} ${POPART_PKG_DIR}"
+  COMMAND bash -c "mv ${CPP_API_HTML_NAME} ${POPART_PKG_DIR}"
+  COMMAND bash -c "mv ${CPP_API_PDF_NAME} ${POPART_PKG_DIR}"
 )
 else()
 add_custom_target(package_and_move
   # CMAKE_BINARY_DIR is not the CWD for this command when it is nested in the popart_super repo
   # Specifying CPackConfig.cmake manually for this reason
   COMMAND ${CMAKE_CPACK_COMMAND} --config ${CMAKE_BINARY_DIR}/CPackConfig.cmake
-  COMMAND bash -c "mkdir -p ${PKG_UPLOAD_DIR}"
-  COMMAND bash -c "mv ${PACKAGE_FILE_NAME}.tar.gz ${PKG_UPLOAD_DIR}"
-  COMMAND bash -c "mv ${PRODINFO_FILE_NAME} ${PKG_UPLOAD_DIR}"
+  COMMAND ${CMAKE_COMMAND} -E echo "Moved package to POPART_PKG_DIR = ${POPART_PKG_DIR}"
+  COMMAND bash -c "mkdir -p ${POPART_PKG_DIR}"
+  COMMAND bash -c "mv ${PACKAGE_FILE_NAME}.tar.gz ${POPART_PKG_DIR}"
+  COMMAND bash -c "mv ${PRODINFO_FILE_NAME} ${POPART_PKG_DIR}"
 )
 endif()
 #------ end of cpack information

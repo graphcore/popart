@@ -12,6 +12,29 @@ list(APPEND POPART_CMAKE_ARGS -DPoplarRunner_INSTALL_DIR=${PoplarRunner_INSTALL_
 set(C10_DIR "" CACHE STRING "Directory to install Cifar-10 dataset to")
 list(APPEND POPART_CMAKE_ARGS -DC10_DIR=${C10_DIR})
 
+set(POPART_PKG_DIR "" CACHE PATH
+    "Directory where the Popart package produced by CPack will be moved"
+)
+list(APPEND POPART_CMAKE_ARGS -DPOPART_PKG_DIR=${POPART_PKG_DIR})
+
+# If building a view, can default to the VIEW_DIR variable that CBT provides.
+if(DEFINED VIEW_DIR AND DEFINED CBT_DIR)
+  # Get absolute path.
+  get_filename_component(
+      VIEW_DIR_ABS "${VIEW_DIR}"
+      ABSOLUTE
+      BASE_DIR "${CMAKE_BINARY_DIR}"
+  )
+
+  set(POPART_CBT_VIEW_DIR "${VIEW_DIR_ABS}" CACHE PATH
+      "Directory of the view that is building Popart, used to compute a \
+version hash for the Popart package."
+  )
+  mark_as_advanced(POPART_CBT_VIEW_DIR)
+
+  list(APPEND POPART_CMAKE_ARGS -DPOPART_CBT_VIEW_DIR=${POPART_CBT_VIEW_DIR})
+endif()
+
 set(CMAKE_CONFIGURATION_TYPES "Release" "Debug" "MinSizeRel" "RelWithDebInfo")
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${CMAKE_CONFIGURATION_TYPES})
 # Enable IN_LIST operator
