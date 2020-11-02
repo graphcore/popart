@@ -99,6 +99,9 @@ private:
     TraceDirection direction;
   };
 
+  // Return the context of a tensor in the graph
+  BatchSerialize::TensorContext getTensorContext(const Op *op) const;
+
   // Calculates how similar two operations are in the context of a graph
   int64_t getLocalIsoScore(
       std::map<std::tuple<Op *, Op *, int>, int64_t> &cachedIsoScores,

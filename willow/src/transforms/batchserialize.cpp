@@ -93,6 +93,32 @@ OpId BatchSerialize::reshapeForSlice(Graph &graph,
   return reshape->id;
 }
 
+BatchSerialize::TensorContext
+BatchSerialize::getTensorContext(const Op *op) const {
+  const auto &ir = op->getIr();
+  auto settings  = ir.getSessionOptions();
+  VGraphId vgid  = op->hasVirtualGraphId() ? op->getVirtualGraphId() : -1;
+  ExecutionPhase executionPhase =
+      (ir.getSessionOptions().executionPhaseSettings.phases > 1 &&
+       op->hasExecutionPhase())
+          ? op->getExecutionPhase()
+          : -1;
+  PipelineStage pipelineStage =
+      (ir.getSessionOptions().enablePipelining && op->hasPipelineStage())
+          ? op->getPipelineStage()
+          : -1;
+  return TensorContext(
+      settings.batchSerializationSettings.concatOnVirtualGraphChange
+          ? vgid
+          : unusedVGraphId,
+      settings.batchSerializationSettings.concatOnExecutionPhaseChange
+          ? executionPhase
+          : unusedExecutionPhase,
+      settings.batchSerializationSettings.concatOnPipelineStageChange
+          ? pipelineStage
+          : unusedPipelineStage);
+}
+
 bool BatchSerialize::apply(Graph &graph) const {
   logging::transform::debug("[BatchSerialize] Started.");
 
@@ -105,25 +131,6 @@ bool BatchSerialize::apply(Graph &graph) const {
   auto settings          = ir.getSessionOptions().batchSerializationSettings;
   int64_t batchSerFactor = settings.factor;
   std::map<std::pair<TensorId, TensorContext>, std::set<OpId>> batchSerialOps;
-
-  auto getContext = [&](Op *op) {
-    VGraphId vgid = op->hasVirtualGraphId() ? op->getVirtualGraphId() : -1;
-    ExecutionPhase executionPhase =
-        (ir.getSessionOptions().executionPhaseSettings.phases > 1 &&
-         op->hasExecutionPhase())
-            ? op->getExecutionPhase()
-            : -1;
-    PipelineStage pipelineStage =
-        (ir.getSessionOptions().enablePipelining && op->hasPipelineStage())
-            ? op->getPipelineStage()
-            : -1;
-    return TensorContext(
-        settings.concatOnVirtualGraphChange ? vgid : unusedVGraphId,
-        settings.concatOnExecutionPhaseChange ? executionPhase
-                                              : unusedExecutionPhase,
-        settings.concatOnPipelineStageChange ? pipelineStage
-                                             : unusedPipelineStage);
-  };
 
   // FWD
   if (pass == 1) {
@@ -141,7 +148,7 @@ bool BatchSerialize::apply(Graph &graph) const {
 
     for (Op *op : schedule) {
       // Context in which the tensors are consumed
-      TensorContext consumerContext = getContext(op);
+      TensorContext consumerContext = getTensorContext(op);
 
       auto opInTensorIdxIds  = op->input->tensorIdMap();
       auto opOutTensorIdxIds = op->output->tensorIdMap();
@@ -185,9 +192,10 @@ bool BatchSerialize::apply(Graph &graph) const {
               entry.first->getProducer()->isConvertibleTo<InitOp>();
         }
 
-        auto producerContext = entry.first->hasProducer()
-                                   ? getContext(entry.first->getProducer())
-                                   : TensorContext(-1, -1, -1);
+        auto producerContext =
+            entry.first->hasProducer()
+                ? getTensorContext(entry.first->getProducer())
+                : TensorContext(-1, -1, -1);
 
         auto serializedItProducer =
             serializedTensorMap.find({entry.first->id, producerContext});
@@ -470,7 +478,7 @@ bool BatchSerialize::apply(Graph &graph) const {
         continue;
 
       Op *producer         = tensor->getProducer();
-      auto producerContext = getContext(producer);
+      auto producerContext = getTensorContext(producer);
       if (serializedTensor.first.second != producerContext) {
         continue;
       }
@@ -1153,33 +1161,42 @@ BatchSerialize::findParallelTraceFronts(
       //             '---------- Op (BSP 2)
       //                         '------------ Op
 
-      std::map<SubgraphEquivId, std::vector<Tensor *>> equivTraceTensors;
+      std::map<std::pair<SubgraphEquivId, TensorContext>, std::vector<Tensor *>>
+          equivTraceTensors;
       std::vector<Tensor *> traceTensors(batchSerFactor);
       std::set<Op *> visited;
-      std::deque<Op *> opQueue;
-      opQueue.push_back(op);
+      std::deque<std::pair<Op *, int>> opQueue;
+      opQueue.push_back({op, 2 * batchSerFactor});
       while (!opQueue.empty()) {
-        Op *op0 = opQueue.front();
+        auto opAndDepth = opQueue.front();
+        Op *op0         = opAndDepth.first;
         opQueue.pop_front();
         visited.insert(op0);
+
+        if (opAndDepth.second == 0) {
+          continue;
+        }
+
         for (auto &idxAndTensor : op0->input->tensorMap()) {
           if (idxAndTensor.second->hasProducer()) {
             Op *op1 = idxAndTensor.second->getProducer();
             if (op1->hasBatchSerializedPhase()) {
               BatchSerializedPhase bsp1 = op1->getBatchSerializedPhase();
               SubgraphEquivId id        = ids.at(op1);
-              if (equivTraceTensors.find(id) == equivTraceTensors.end()) {
+              TensorContext context     = getTensorContext(op1);
+              if (equivTraceTensors.find({id, context}) ==
+                  equivTraceTensors.end()) {
                 equivTraceTensors.insert(
-                    {id, std::vector<Tensor *>(batchSerFactor)});
+                    {{id, context}, std::vector<Tensor *>(batchSerFactor)});
               }
-              if (!equivTraceTensors.at(id).at(bsp1)) {
-                equivTraceTensors.at(id)[bsp1] = idxAndTensor.second;
+              if (!equivTraceTensors.at({id, context}).at(bsp1)) {
+                equivTraceTensors.at({id, context})[bsp1] = idxAndTensor.second;
               }
               if (std::all_of(
-                      equivTraceTensors.at(id).begin(),
-                      equivTraceTensors.at(id).end(),
+                      equivTraceTensors.at({id, context}).begin(),
+                      equivTraceTensors.at({id, context}).end(),
                       [](const Tensor *t) { return static_cast<bool>(t); })) {
-                traceTensors = equivTraceTensors.at(id);
+                traceTensors = equivTraceTensors.at({id, context});
                 opQueue      = {};
                 break;
               }
@@ -1190,9 +1207,9 @@ BatchSerialize::findParallelTraceFronts(
                  op1->hasBatchSerializedPhase() &&
                  op0->getBatchSerializedPhase() !=
                      op1->getBatchSerializedPhase())) {
-              opQueue.push_front(op1);
+              opQueue.push_front({op1, opAndDepth.second - 1});
             } else {
-              opQueue.push_back(op1);
+              opQueue.push_back({op1, opAndDepth.second - 1});
             }
           }
         }

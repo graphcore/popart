@@ -59,6 +59,8 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
+  bool canShard() const override { return axis != 0; }
+
 private:
   int64_t axis;
 };
