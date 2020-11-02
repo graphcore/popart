@@ -1,4 +1,5 @@
 add_popart_py_unit_test(abs_sign_test)
+add_popart_py_unit_test(asinh_test)
 # add_popart_py_unit_test(auto_pad_test) Disabled, see comment in file.
 add_popart_py_unit_test(batchnorm_test)
 add_popart_py_unit_test(binaryop_error_test)

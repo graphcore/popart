@@ -12,6 +12,7 @@
 
 #include <popart/patterns/acoshoppattern.hpp>
 #include <popart/patterns/acosoppattern.hpp>
+#include <popart/patterns/asinhoppattern.hpp>
 #include <popart/patterns/contiguateipucopyindices.hpp>
 #include <popart/patterns/convbias.hpp>
 #include <popart/patterns/convdatagrad.hpp>
@@ -345,6 +346,10 @@ bool Patterns::isZerosLikeOpPatternEnabled() {
   return isPatternEnabled<LikeOpsPattern<ZerosLikeOp>>();
 }
 
+bool Patterns::isAsinhOpPatternEnabled() {
+  return isPatternEnabled<AsinhOpPattern>();
+}
+
 Patterns &Patterns::enableInitAccumulate(bool v) {
   return enablePattern<InitAccumulatePattern>(v);
 }
@@ -485,6 +490,10 @@ Patterns &Patterns::enableZerosLikeOpPattern(bool v) {
   return enablePattern<LikeOpsPattern<ZerosLikeOp>>(v);
 }
 
+Patterns &Patterns::enableAsinhOpPattern(bool v) {
+  return enablePattern<AsinhOpPattern>(v);
+}
+
 Patterns &Patterns::enablePattern(const std::type_index &t, bool v) {
   logging::pattern::warn(
       "Pattern {} {}", PreAliasPatternManager::getPatternName(t), v);
@@ -545,6 +554,7 @@ std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
   }
 
   static std::map<std::type_index, float> patternPriority{
+      {std::type_index(typeid(AsinhOpPattern)), 46},
       {std::type_index(typeid(Log1pGradOpPattern)), 45},
       {std::type_index(typeid(Expm1GradOpPattern)), 44},
       {std::type_index(typeid(LikeOpsPattern<ZerosLikeOp>)), 43},
