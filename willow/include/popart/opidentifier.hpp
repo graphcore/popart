@@ -242,6 +242,8 @@ const static AiGraphcoreOpIdV1 AddBiasInplace("AddBiasInplace");
 const static AiGraphcoreOpIdV1 AddLhsInplace("AddLhsInplace");
 const static AiGraphcoreOpIdV1 AddRhsInplace("AddRhsInplace");
 const static AiGraphcoreOpIdV1 AsinInplace("AsinInplace");
+const static AiGraphcoreOpIdV1 Atan2_1("Atan2", 2, 1);
+const static AiGraphcoreOpIdV1 Atan2Inplace("Atan2Inplace");
 const static AiGraphcoreOpIdV1 AtanInplace("AtanInplace");
 const static AiGraphcoreOpIdV1 Call_1("Call");
 const static AiGraphcoreOpIdV1 CeilInplace("CeilInplace");
@@ -346,6 +348,7 @@ const static AiGraphcoreOpIdV1 ZerosLike_1("ZerosLike");
 
 namespace AiGraphcore {
 namespace OpSet1 {
+const static OperatorIdentifier Atan2        = CustomOperators::Atan2_1;
 const static OperatorIdentifier Call         = CustomOperators::Call_1;
 const static OperatorIdentifier Detach       = CustomOperators::Detach_1;
 const static OperatorIdentifier DynamicAdd   = CustomOperators::DynamicAdd_1;

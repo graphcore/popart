@@ -1669,6 +1669,10 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("shape"),
             py::arg("ratio")       = 0.5f,
             py::arg("debugPrefix") = std::string());
+    cls.def("atan2",
+            &AiGraphcoreOpset1::atan2,
+            py::arg("args"),
+            py::arg("debugPrefix") = std::string());
     cls.def("expm1",
             &AiGraphcoreOpset1::expm1,
             py::arg("args"),

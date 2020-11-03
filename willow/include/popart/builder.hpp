@@ -453,6 +453,23 @@ public:
                          const std::string &name = {});
 
   /**
+   * Add an atan2 operation to the model
+   *
+   * Returns the element-wise angle theta as a tensor, -pi < theta <= pi, such
+   * that for two input tensors x and y and given r != 0,
+   * x = r cos theta, and
+   * y = r sin theta, element-wise.
+   *
+   * In the case of x > 0, theta = arctan(y/x)
+   *
+   * \param args A vector of inputs tensors (y, x)
+   * \param name Optional identifier for operation
+   * \return The name of the result tensor containing element wise theta values
+   */
+  TensorId atan2(const std::vector<TensorId> &args,
+                 const std::string &name = {});
+
+  /**
    * Add expm1 operation to the model
    * It computes exp(x) - 1.
    * Calculates the exponential of the given input tensor and

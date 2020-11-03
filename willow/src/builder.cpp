@@ -810,6 +810,13 @@ TensorId AiGraphcoreOpset1::shapeddropout(const std::vector<TensorId> &args,
       .at(0);
 }
 
+TensorId AiGraphcoreOpset1::atan2(const std::vector<TensorId> &args,
+                                  const std::string &name) {
+  return impl
+      ->op(Onnx::AiGraphcore::OpSet1::Atan2, getOpsetVersion(), args, {}, name)
+      .at(0);
+}
+
 TensorId AiGraphcoreOpset1::expm1(const std::vector<TensorId> &args,
                                   const std::string &name) {
   return impl

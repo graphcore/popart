@@ -334,6 +334,19 @@ void ShapedDropoutShapeInference(InferenceContext &ctx) {
   propagateShapeAndTypeFromFirstInput(ctx);
 }
 
+void Atan2ShapeInference(InferenceContext &ctx) {
+  propagateElemTypeFromInputToOutput(ctx, 0, 0);
+
+  if (!hasNInputShapes(ctx, 2)) {
+    fail_type_inference("Atan2 requires two inputtensors with shapes.");
+  }
+
+  bidirectionalBroadcastShapeInference(
+      ctx.getInputType(0)->tensor_type().shape(),
+      ctx.getInputType(1)->tensor_type().shape(),
+      *ctx.getOutputType(0)->mutable_tensor_type()->mutable_shape());
+}
+
 void Expm1ShapeInference(InferenceContext &ctx) {
   propagateShapeAndTypeFromFirstInput(ctx);
 }
@@ -358,6 +371,7 @@ extern size_t dbg_count_check_DynamicAdd_AiGraphcore_ver1;
 extern size_t dbg_count_check_MultiConv_AiGraphcore_ver1;
 extern size_t dbg_count_check_Nop_AiGraphcore_ver1;
 extern size_t dbg_count_check_ShapedDropout_AiGraphcore_ver1;
+extern size_t dbg_count_check_Atan2_AiGraphcore_ver1;
 extern size_t dbg_count_check_Expm1_AiGraphcore_ver1;
 extern size_t dbg_count_check_Log1p_AiGraphcore_ver1;
 
@@ -889,6 +903,22 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(ShapedDropoutShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
+    Atan2,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("Atan2(Y, X)")
+        .Input(0, "Y", "First input tensor", "T")
+        .Input(1, "X", "Second input tensor", "T")
+        .Output(0, "Theta", "Output tensor", "T")
+        .TypeConstraint("T",
+                        {"tensor(float)", "tensor(float16)"},
+                        "Constrain input and output types to float tensors.")
+        .TypeAndShapeInferenceFunction(Atan2ShapeInference))
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
     Expm1,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -975,6 +1005,10 @@ static bool registerOps() {
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
           AiGraphcore, 1, ShapedDropout)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, Atan2)>());
 
   return true;
 }
