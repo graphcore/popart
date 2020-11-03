@@ -20,7 +20,7 @@ std::vector<const Tensor *> DivArg0GradOpPattern::touches(Op *) const {
 // grad_out = grad_in / fwd_in1
 bool DivArg0GradOpPattern::apply(Op *op) const {
   auto grad_in  = op->inTensor(DivArg0GradOp::getGradInIndex());
-  auto fwd_in1  = op->inTensor(DivArg0GradOp::getFwdArg0InIndex());
+  auto fwd_in1  = op->inTensor(DivArg0GradOp::getFwdArg1InIndex());
   auto grad_out = op->outTensor(DivArg0GradOp::getOutIndex());
 
   // we assume this dynamic_cast call has been confirmed

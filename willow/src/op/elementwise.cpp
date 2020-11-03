@@ -3,8 +3,7 @@
 #include <popart/op/elementwise.hpp>
 #include <popart/tensor.hpp>
 
-namespace {
-using namespace popart;
+namespace popart {
 
 view::RegMap binaryFwdRegMapImpl(const ElementWiseBinaryBaseOp &op,
                                  InIndex argIndex) {
@@ -49,10 +48,6 @@ view::RegMap binaryBwdRegMapImpl(const ElementWiseBinaryBaseOp &op,
     return view::Regions(1, view::Region{lower, upper});
   };
 }
-
-} // namespace
-
-namespace popart {
 
 ElementWiseUnaryOp::ElementWiseUnaryOp(const OperatorIdentifier &_opid,
                                        const Op::Settings &settings_)
@@ -167,14 +162,6 @@ std::unique_ptr<Op> ElementWiseBinaryOp::getInplaceVariant(
   return Op::getInplaceVariant(operator_id);
 }
 
-view::RegMap ElementWiseBinaryOp::fwdRegMap(InIndex argIndex, OutIndex) const {
-  return binaryFwdRegMapImpl(*this, argIndex);
-}
-
-view::RegMap ElementWiseBinaryOp::bwdRegMap(InIndex argIndex, OutIndex) const {
-  return binaryBwdRegMapImpl(*this, argIndex);
-}
-
 void ElementWiseBinaryOp::setInplacePriority(
     const OperatorIdentifier &opidParam,
     float priority) {
@@ -212,78 +199,16 @@ OperatorIdentifier ElementWiseBinaryOp::getRhsOperatorIdentifier() const {
   throw error("Operator {} does not have RHS OperatorIdentifier", opid);
 }
 
-ElementWiseBinaryInplaceLhsOp::ElementWiseBinaryInplaceLhsOp(
+ElementWiseBinaryGradOp::ElementWiseBinaryGradOp(
     const OperatorIdentifier &_opid,
-    const Op::Settings &_settings)
-    : ElementWiseBinaryBaseOp(_opid, _settings) {}
+    const std::vector<int64_t> &reduction_axes_,
+    const TensorInfo &forward_op_arg_info_,
+    const Op::Settings &settings_)
+    : Op(_opid, settings_), forward_op_arg_info(forward_op_arg_info_),
+      reduction_axes(reduction_axes_) {}
 
-view::Regions ElementWiseBinaryInplaceLhsOp::modifies(InIndex index) const {
-  if (index == getArg0InIndex()) {
-    return {view::Region::getFull(inShape(index))};
-  } else if (index == getArg1InIndex()) {
-    return {view::Region::getEmpty(inRank(index))};
-  } else {
-    throw error("Invalid index passed to modifies method for Operator {}",
-                opid);
-  }
-}
-
-view::Regions ElementWiseBinaryInplaceLhsOp::aliases(InIndex index,
-                                                     OutIndex) const {
-  if (index == getArg0InIndex()) {
-    return {view::Region::getFull(inShape(index))};
-  } else if (index == getArg1InIndex()) {
-    return {view::Region::getEmpty(inRank(index))};
-  } else {
-    throw error("Invalid index passed to aliases method for Operator {}", opid);
-  }
-}
-
-view::RegMap ElementWiseBinaryInplaceLhsOp::fwdRegMap(InIndex argIndex,
-                                                      OutIndex) const {
-  return binaryFwdRegMapImpl(*this, argIndex);
-}
-
-view::RegMap ElementWiseBinaryInplaceLhsOp::bwdRegMap(InIndex argIndex,
-                                                      OutIndex) const {
-  return binaryBwdRegMapImpl(*this, argIndex);
-}
-
-ElementWiseBinaryInplaceRhsOp::ElementWiseBinaryInplaceRhsOp(
-    const OperatorIdentifier &_opid,
-    const Op::Settings &_settings)
-    : ElementWiseBinaryBaseOp(_opid, _settings) {}
-
-view::Regions ElementWiseBinaryInplaceRhsOp::modifies(InIndex index) const {
-  if (index == getArg0InIndex()) {
-    return {view::Region::getEmpty(inRank(index))};
-  } else if (index == getArg1InIndex()) {
-    return {view::Region::getFull(inShape(index))};
-  } else {
-    throw error("Invalid index passed to modifies method for Operator {}",
-                opid);
-  }
-}
-
-view::Regions ElementWiseBinaryInplaceRhsOp::aliases(InIndex index,
-                                                     OutIndex) const {
-  if (index == getArg0InIndex()) {
-    return {view::Region::getEmpty(inRank(index))};
-  } else if (index == getArg1InIndex()) {
-    return {view::Region::getFull(inShape(index))};
-  } else {
-    throw error("Invalid index passed to aliases method for Operator {}", opid);
-  }
-}
-
-view::RegMap ElementWiseBinaryInplaceRhsOp::fwdRegMap(InIndex argIndex,
-                                                      OutIndex) const {
-  return binaryFwdRegMapImpl(*this, argIndex);
-}
-
-view::RegMap ElementWiseBinaryInplaceRhsOp::bwdRegMap(InIndex argIndex,
-                                                      OutIndex) const {
-  return binaryBwdRegMapImpl(*this, argIndex);
+void ElementWiseBinaryGradOp::setup() {
+  outInfo(getOutIndex()) = forward_op_arg_info;
 }
 
 BinaryComparisonOp::BinaryComparisonOp(const OperatorIdentifier &_opid,

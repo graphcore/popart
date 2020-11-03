@@ -16,11 +16,9 @@ bool SubtractArg1GradOpPattern::matches(Op *op) const {
 
 std::vector<std::unique_ptr<Op>>
 SubtractArg1GradOpPattern::sequence(Op *op) const {
-
-  auto input_tensor  = op->input->tensor(0);
-  auto output_tensor = op->output->tensor(0);
-  auto axes =
-      npReductionAxis(output_tensor->info.shape(), input_tensor->info.shape());
+  // we assume this dynamic_cast call has been confirmed
+  // to be valid via a previous call to SubtractArg1GradOp::matches
+  auto axes = dynamic_cast<SubtractArg1GradOp *>(op)->getReductionAxes();
 
   std::vector<std::unique_ptr<Op>> seq;
 

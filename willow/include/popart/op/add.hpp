@@ -7,11 +7,14 @@
 
 namespace popart {
 
-class AddOp : public ElementWiseBinaryOp {
+class AddArg0GradOp;
+class AddArg1GradOp;
+
+class AddOp : public ElementWiseNpBroadcastableBinaryWithGradOp<AddArg0GradOp,
+                                                                AddArg1GradOp> {
 public:
-  AddOp(const OperatorIdentifier &_opid, const Op::Settings &settings);
+  AddOp(const OperatorIdentifier &_opid, const Op::Settings &_settings);
   std::unique_ptr<Op> clone() const override;
-  std::vector<std::unique_ptr<Op>> getGradOps() final;
 
 private:
   bool hasLhsInplaceVariant() const final;
@@ -24,32 +27,27 @@ private:
   OperatorIdentifier getRhsOperatorIdentifier() const final;
 };
 
-class AddLhsInplaceOp : public ElementWiseBinaryInplaceLhsOp {
+class AddLhsInplaceOp : public ElementWiseBinaryInplaceLhsOp<AddLhsInplaceOp> {
 public:
-  AddLhsInplaceOp(const AddOp &addOp);
-  AddLhsInplaceOp(const Op::Settings &settings_);
-
-  std::unique_ptr<Op> clone() const override;
+  AddLhsInplaceOp(const Op::Settings &_settings)
+      : ElementWiseBinaryInplaceLhsOp(Onnx::CustomOperators::AddLhsInplace,
+                                      _settings) {}
 };
 
-class AddRhsInplaceOp : public ElementWiseBinaryInplaceRhsOp {
+class AddRhsInplaceOp : public ElementWiseBinaryInplaceRhsOp<AddRhsInplaceOp> {
 public:
-  AddRhsInplaceOp(const AddOp &addOp);
-  AddRhsInplaceOp(const Op::Settings &settings_);
-
-  std::unique_ptr<Op> clone() const override;
+  AddRhsInplaceOp(const Op::Settings &_settings)
+      : ElementWiseBinaryInplaceRhsOp(Onnx::CustomOperators::AddRhsInplace,
+                                      _settings) {}
 };
 
 class AddArg0GradOp : public ReduceSumOp {
 public:
-  AddArg0GradOp(const AddOp &, const std::vector<int64_t> &axes);
+  AddArg0GradOp(const Op &, const std::vector<int64_t> &axes);
 
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
-  const std::map<int, int> &gradOutToNonGradIn() const final;
+  const std::map<int, int> &gradOutToNonGradIn() const override final;
   void setup() final;
-
-  static InIndex getInIndex() { return 0; }
-  static OutIndex getOutIndex() { return 0; }
 
 private:
   TensorInfo forward_op_arg_info;
@@ -57,13 +55,11 @@ private:
 
 class AddArg1GradOp : public ReduceSumOp {
 public:
-  AddArg1GradOp(const AddOp &, const std::vector<int64_t> &axes);
+  AddArg1GradOp(const Op &, const std::vector<int64_t> &axes);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
-  const std::map<int, int> &gradOutToNonGradIn() const final;
-  void setup() final;
 
-  static InIndex getInIndex() { return 0; }
-  static OutIndex getOutIndex() { return 0; }
+  const std::map<int, int> &gradOutToNonGradIn() const override final;
+  void setup() final;
 
 private:
   TensorInfo forward_op_arg_info;

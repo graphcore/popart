@@ -6,8 +6,8 @@
 
 namespace popart {
 
-DivOp::DivOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
-    : ElementWiseBinaryBaseOp(_opid, settings_) {
+DivOp::DivOp(const OperatorIdentifier &_opid, const Op::Settings &_settings)
+    : ElementWiseNpBroadcastableBinaryWithGradOp(_opid, _settings) {
   // TODO : Use the attributes in Div-6
 }
 
@@ -15,81 +15,19 @@ std::unique_ptr<Op> DivOp::clone() const {
   return std::make_unique<DivOp>(*this);
 }
 
-std::vector<std::unique_ptr<Op>> DivOp::getGradOps() {
-  std::vector<std::unique_ptr<Op>> upops;
+DivArg0GradOp::DivArg0GradOp(const Op &op,
+                             const std::vector<int64_t> &_reduction_axes)
+    : ElementWiseBinaryArg0GradOp(Onnx::GradOperators::DivArg0Grad,
+                                  _reduction_axes,
+                                  op.inInfo(DivOp::getArg0InIndex()),
+                                  op.getSettings()) {}
 
-  const auto &shape_in_0   = inShape(getArg0InIndex());
-  const auto &shape_in_1   = inShape(getArg1InIndex());
-  const auto &shape_output = outShape(getOutIndex());
-
-  upops.emplace_back(std::make_unique<DivArg0GradOp>(
-      *this, npReductionAxis(shape_in_0, shape_output)));
-  upops.emplace_back(std::make_unique<DivArg1GradOp>(
-      *this, npReductionAxis(shape_in_1, shape_output)));
-  return upops;
-}
-
-DivArgGradOp::DivArgGradOp(const OperatorIdentifier &_opid,
-                           const std::vector<int64_t> &reduction_axes_,
-                           const TensorInfo &forward_op_arg_info_,
-                           const Op::Settings &settings_)
-    : Op(_opid, settings_), forward_op_arg_info(forward_op_arg_info_),
-      reduction_axes(reduction_axes_) {}
-
-void DivArgGradOp::setup() { outInfo(0) = forward_op_arg_info; }
-
-const std::vector<int64_t> &DivArgGradOp::getReductionAxes() const {
-  return reduction_axes;
-}
-
-DivArg0GradOp::DivArg0GradOp(const DivOp &op,
-                             const std::vector<int64_t> &reduction_axes_)
-    : DivArgGradOp(Onnx::GradOperators::DivArg0Grad,
-                   reduction_axes_,
-                   op.inInfo(DivOp::getArg0InIndex()),
-                   op.getSettings()) {}
-
-std::unique_ptr<Op> DivArg0GradOp::clone() const {
-  return std::make_unique<DivArg0GradOp>(*this);
-}
-
-const std::map<int, int> &DivArg0GradOp::gradOutToNonGradIn() const {
-  static const std::map<int, int> outInfo = {
-      {getOutIndex(), DivOp::getArg0InIndex()}};
-  return outInfo;
-}
-
-const std::vector<GradInOutMapper> &DivArg0GradOp::gradInputInfo() const {
-  static const std::vector<GradInOutMapper> inInfo = {
-      {0, getOutIndex(), GradOpInType::GradOut},
-      {1, DivOp::getArg1InIndex(), GradOpInType::In}};
-  return inInfo;
-}
-
-DivArg1GradOp::DivArg1GradOp(const DivOp &op,
-                             const std::vector<int64_t> &reduction_axes_)
-    : DivArgGradOp(Onnx::GradOperators::DivArg1Grad,
-                   reduction_axes_,
-                   op.inInfo(DivOp::getArg1InIndex()),
-                   op.getSettings()) {}
-
-std::unique_ptr<Op> DivArg1GradOp::clone() const {
-  return std::make_unique<DivArg1GradOp>(*this);
-}
-
-const std::map<int, int> &DivArg1GradOp::gradOutToNonGradIn() const {
-  static const std::map<int, int> outInfo = {
-      {getOutIndex(), DivOp::getArg1InIndex()}};
-  return outInfo;
-}
-
-const std::vector<GradInOutMapper> &DivArg1GradOp::gradInputInfo() const {
-  static const std::vector<GradInOutMapper> inInfo = {
-      {0, getOutIndex(), GradOpInType::GradOut},
-      {1, DivOp::getArg0InIndex(), GradOpInType::In},
-      {2, DivOp::getArg1InIndex(), GradOpInType::In}};
-  return inInfo;
-}
+DivArg1GradOp::DivArg1GradOp(const Op &op,
+                             const std::vector<int64_t> &_reduction_axes)
+    : ElementWiseBinaryArg1GradOp(Onnx::GradOperators::DivArg1Grad,
+                                  _reduction_axes,
+                                  op.inInfo(DivOp::getArg1InIndex()),
+                                  op.getSettings()) {}
 
 namespace {
 

@@ -11,9 +11,8 @@ namespace popart {
 
 // TODO : T6250 : Add support for V6 axis & broadcast attributes
 
-AddOp::AddOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
-    : ElementWiseBinaryOp(_opid, settings_) {
-
+AddOp::AddOp(const OperatorIdentifier &_opid, const Op::Settings &_settings)
+    : ElementWiseNpBroadcastableBinaryWithGradOp(_opid, _settings) {
   // TODO : Use the attributes in Add-6
 }
 
@@ -21,31 +20,16 @@ std::unique_ptr<Op> AddOp::clone() const {
   return std::make_unique<AddOp>(*this);
 }
 
-std::vector<std::unique_ptr<Op>> AddOp::getGradOps() {
-  std::vector<std::unique_ptr<Op>> upops;
-
-  const auto &shape_a0 = inShape(getArg0InIndex());
-  const auto &shape_a1 = inShape(getArg1InIndex());
-  const auto &shape_o0 = outShape(getOutIndex());
-
-  upops.emplace_back(std::make_unique<AddArg0GradOp>(
-      *this, npReductionAxis(shape_a0, shape_o0)));
-  upops.emplace_back(std::make_unique<AddArg1GradOp>(
-      *this, npReductionAxis(shape_a1, shape_o0)));
-
-  return upops;
-}
-
 bool AddOp::hasLhsInplaceVariant() const { return true; }
 
 bool AddOp::hasRhsInplaceVariant() const { return true; }
 
 std::unique_ptr<Op> AddOp::getLhsInplaceVariant() const {
-  return std::make_unique<AddLhsInplaceOp>(*this);
+  return std::make_unique<AddLhsInplaceOp>(getSettings());
 }
 
 std::unique_ptr<Op> AddOp::getRhsInplaceVariant() const {
-  return std::make_unique<AddRhsInplaceOp>(*this);
+  return std::make_unique<AddRhsInplaceOp>(getSettings());
 }
 
 OperatorIdentifier AddOp::getLhsOperatorIdentifier() const {
@@ -56,37 +40,12 @@ OperatorIdentifier AddOp::getRhsOperatorIdentifier() const {
   return Onnx::CustomOperators::AddRhsInplace;
 }
 
-AddLhsInplaceOp::AddLhsInplaceOp(const AddOp &op)
-    : ElementWiseBinaryInplaceLhsOp(Onnx::CustomOperators::AddLhsInplace,
-                                    op.getSettings()) {}
-
-AddLhsInplaceOp::AddLhsInplaceOp(const Op::Settings &settings_)
-    : ElementWiseBinaryInplaceLhsOp(Onnx::CustomOperators::AddLhsInplace,
-                                    settings_) {}
-
-std::unique_ptr<Op> AddLhsInplaceOp::clone() const {
-  return std::make_unique<AddLhsInplaceOp>(*this);
-}
-
-AddRhsInplaceOp::AddRhsInplaceOp(const AddOp &op)
-    : ElementWiseBinaryInplaceRhsOp(Onnx::CustomOperators::AddRhsInplace,
-                                    op.getSettings()) {}
-
-AddRhsInplaceOp::AddRhsInplaceOp(const Op::Settings &settings_)
-    : ElementWiseBinaryInplaceRhsOp(Onnx::CustomOperators::AddRhsInplace,
-                                    settings_) {}
-
-std::unique_ptr<Op> AddRhsInplaceOp::clone() const {
-  return std::make_unique<AddRhsInplaceOp>(*this);
-}
-
-AddArg0GradOp::AddArg0GradOp(const AddOp &op_,
-                             const std::vector<int64_t> &axes_)
+AddArg0GradOp::AddArg0GradOp(const Op &op, const std::vector<int64_t> &_axes)
     : ReduceSumOp(Onnx::GradOperators::AddArg0Grad,
-                  axes_,
+                  _axes,
                   false,
-                  op_.getSettings()),
-      forward_op_arg_info(op_.inInfo(AddOp::getArg0InIndex())) {}
+                  op.getSettings()),
+      forward_op_arg_info(op.inInfo(AddOp::getArg0InIndex())) {}
 
 const std::map<int, int> &AddArg0GradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {
@@ -102,13 +61,12 @@ const std::vector<GradInOutMapper> &AddArg0GradOp::gradInputInfo() const {
 
 void AddArg0GradOp::setup() { outInfo(getOutIndex()) = forward_op_arg_info; }
 
-AddArg1GradOp::AddArg1GradOp(const AddOp &op_,
-                             const std::vector<int64_t> &axes_)
+AddArg1GradOp::AddArg1GradOp(const Op &op, const std::vector<int64_t> &_axes)
     : ReduceSumOp(Onnx::GradOperators::AddArg1Grad,
-                  axes_,
+                  _axes,
                   false,
-                  op_.getSettings()),
-      forward_op_arg_info(op_.inInfo(AddOp::getArg1InIndex())) {}
+                  op.getSettings()),
+      forward_op_arg_info(op.inInfo(AddOp::getArg1InIndex())) {}
 
 const std::map<int, int> &AddArg1GradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {

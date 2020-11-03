@@ -8,12 +8,15 @@
 
 namespace popart {
 
+class PowArg0GradOp;
+class PowArg1GradOp;
+
 // arg_0 / arg_1
-class PowOp : public ElementWiseBinaryOp {
+class PowOp : public ElementWiseNpBroadcastableBinaryWithGradOp<PowArg0GradOp,
+                                                                PowArg1GradOp> {
 public:
-  PowOp(const OperatorIdentifier &_opid, const Op::Settings &settings);
+  PowOp(const OperatorIdentifier &_opid, const Op::Settings &_settings);
   std::unique_ptr<Op> clone() const final;
-  std::vector<std::unique_ptr<Op>> getGradOps() final;
 
   static OperatorIdentifier getOpId(const Ir &ir);
 
@@ -23,62 +26,21 @@ private:
   OperatorIdentifier getLhsOperatorIdentifier() const final;
 };
 
-class PowLhsInplaceOp : public ElementWiseBinaryInplaceLhsOp {
+class PowLhsInplaceOp : public ElementWiseBinaryInplaceLhsOp<PowLhsInplaceOp> {
 public:
-  PowLhsInplaceOp(const PowOp &powOp);
-  PowLhsInplaceOp(const Op::Settings &setting_);
-
-  std::unique_ptr<Op> clone() const final;
+  PowLhsInplaceOp(const Op::Settings &_settings)
+      : ElementWiseBinaryInplaceLhsOp(Onnx::CustomOperators::PowLhsInplace,
+                                      _settings) {}
 };
 
-// Base class for PowArg grad ops
-class PowArgGradOp : public Op {
+class PowArg0GradOp : public ElementWiseBinaryArg0GradOp<PowArg0GradOp> {
 public:
-  PowArgGradOp(const OperatorIdentifier &_opid,
-               const std::vector<int64_t> &reduction_axes,
-               const TensorInfo &forward_op_arg_info,
-               const Op::Settings &settings_);
-  void setup() final;
-  static OutIndex getOutIndex() { return 0; }
-  // In C = pow(A,B) =  A ** B with numpy-style broadcasting,
-  //   dA = reduce_sum(mul(B, pow(A, B-1)))
-  //   dB = reduce_sum(mul(C, log(A)))
-  // this function returns the axes along which to perform the reduction.
-  const std::vector<int64_t> &getReductionAxes() const;
-
-  float getSubgraphValue() const final { return getLowSubgraphValue(); }
-
-private:
-  // Used to set the outputs TensorInfo
-  TensorInfo forward_op_arg_info;
-  // reduction axes eventually passed to ReduceSumOp
-  std::vector<int64_t> reduction_axes;
+  PowArg0GradOp(const Op &, const std::vector<int64_t> &_reduction_axes);
 };
 
-class PowArg0GradOp : public PowArgGradOp {
+class PowArg1GradOp : public ElementWiseBinaryArg1GradOp<PowArg1GradOp> {
 public:
-  PowArg0GradOp(const PowOp &, const std::vector<int64_t> &reduction_axes);
-  std::unique_ptr<Op> clone() const final;
-  const std::vector<GradInOutMapper> &gradInputInfo() const final;
-  const std::map<int, int> &gradOutToNonGradIn() const final;
-
-  static InIndex getGradInIndex() { return 0; }
-  static InIndex getFwdArg0InIndex() { return 1; }
-  static InIndex getFwdArg1InIndex() { return 2; }
-  static OutIndex getOutIndex() { return 0; }
-};
-
-class PowArg1GradOp : public PowArgGradOp {
-public:
-  PowArg1GradOp(const PowOp &, const std::vector<int64_t> &reduction_axes);
-  std::unique_ptr<Op> clone() const final;
-  const std::vector<GradInOutMapper> &gradInputInfo() const final;
-  const std::map<int, int> &gradOutToNonGradIn() const final;
-
-  static InIndex getGradInIndex() { return 0; }
-  static InIndex getFwdArg0InIndex() { return 1; }
-  static InIndex getFwdOutIndex() { return 2; }
-  static OutIndex getOutIndex() { return 0; }
+  PowArg1GradOp(const Op &, const std::vector<int64_t> &_reduction_axes);
 };
 
 } // namespace popart

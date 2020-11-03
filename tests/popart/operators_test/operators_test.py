@@ -65,8 +65,11 @@ def test_add(op_tester):
         t1 = torch.tensor(d1, requires_grad=True)
         t2 = torch.tensor(d2, requires_grad=True)
         out = t1 + t2
-        d__o = ref_data.getOutputTensorGrad(0)
-        out.backward(torch.tensor(d__o))
+
+        d__o = torch.tensor(ref_data.getOutputTensorGrad(0))
+        assert not torch.isnan(d__o).any()
+        out.backward(d__o)
+
         return [out, t1.grad, t2.grad, None]
 
     op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
@@ -228,6 +231,7 @@ def test_convolution_2(op_tester):
     Test the convolution when the conv in the bwd pass is not the same as the conv in the
     forward pass
     '''
+
     def init_builder(builder):
         data = np.ones([1, 2, 4, 4], dtype=np.float32)
         filt = np.ones([4, 2, 1, 1], dtype=np.float32)
@@ -653,8 +657,11 @@ def test_div_grad(op_tester):
         t1 = torch.tensor(d1, requires_grad=True)
         t2 = torch.tensor(d2, requires_grad=True)
         out = t1 / t2
-        d__o = ref_data.getOutputTensorGrad(0)
-        out.backward(torch.tensor(d__o))
+
+        d__o = torch.tensor(ref_data.getOutputTensorGrad(0))
+        assert not torch.isnan(d__o).any()
+        out.backward(d__o)
+
         return [out, t1.grad, t2.grad, None]
 
     op_tester.setPatterns(['PreUniRepl', 'DivArg0GradOp', 'DivArg1GradOp'],
@@ -729,6 +736,53 @@ def test_sqrt_grad(op_tester):
         return [out, a.grad, None]
 
     op_tester.setPatterns(['PreUniRepl', 'SqrtGradOp'],
+                          enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'train')
+
+
+def test_subtract(op_tester):
+    d1 = np.random.rand(4).astype(np.float32)
+    d2 = np.random.rand(4).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        i2 = builder.addInputTensor(d2)
+        o = builder.aiOnnx.sub([i1, i2], "test_subtract")
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        out = d1 - d2
+        return [out]
+
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_subtract_grad(op_tester):
+    d1 = np.random.rand(4).astype(np.float32)
+    d2 = np.random.rand(4).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        i2 = builder.addInputTensor(d2)
+        o = builder.aiOnnx.sub([i1, i2], "test_subtract")
+        builder.addOutputTensor(o)
+        gradPrefix = popart.reservedGradientPrefix()
+        return [o, gradPrefix + i1, gradPrefix + i2, gradPrefix + o]
+
+    def reference(ref_data):
+        t1 = torch.tensor(d1, requires_grad=True)
+        t2 = torch.tensor(d2, requires_grad=True)
+        out = t1 - t2
+
+        d__o = torch.tensor(ref_data.getOutputTensorGrad(0))
+        assert not torch.isnan(d__o).any()
+        out.backward(d__o)
+
+        return [out, t1.grad, t2.grad, None]
+
+    op_tester.setPatterns(['PreUniRepl', 'SubtractArg1GradOp'],
                           enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
@@ -1567,11 +1621,7 @@ def test_pad11(op_tester):
                   })
 
 
-def _test_pad(op_tester,
-              data,
-              lower_padding,
-              upper_padding,
-              mode,
+def _test_pad(op_tester, data, lower_padding, upper_padding, mode,
               pad_value=0):
     def init_builder(builder):
         i1 = builder.addInputTensor(data)

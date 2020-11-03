@@ -2,6 +2,7 @@
 #ifndef GUARD_NEURALNET_MUL_HPP
 #define GUARD_NEURALNET_MUL_HPP
 
+#include <memory>
 #include <vector>
 #include <popart/names.hpp>
 #include <popart/op/elementwise.hpp>
@@ -9,12 +10,14 @@
 
 namespace popart {
 
-class MulOp : public ElementWiseBinaryOp {
-public:
-  MulOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
-  std::unique_ptr<Op> clone() const final;
-  std::vector<std::unique_ptr<Op>> getGradOps() final;
+class MulArg0GradOp;
+class MulArg1GradOp;
 
+class MulOp : public ElementWiseNpBroadcastableBinaryWithGradOp<MulArg0GradOp,
+                                                                MulArg1GradOp> {
+public:
+  MulOp(const OperatorIdentifier &_opid, const Op::Settings &_settings);
+  std::unique_ptr<Op> clone() const final;
   static OperatorIdentifier getOpId(const Ir &ir);
 
 private:
@@ -28,61 +31,28 @@ private:
   OperatorIdentifier getRhsOperatorIdentifier() const final;
 };
 
-class MulLhsInplaceOp : public ElementWiseBinaryInplaceLhsOp {
+class MulLhsInplaceOp : public ElementWiseBinaryInplaceLhsOp<MulLhsInplaceOp> {
 public:
-  MulLhsInplaceOp(const MulOp &mulOp);
-  MulLhsInplaceOp(const Op::Settings &settings_);
-
-  std::unique_ptr<Op> clone() const override;
+  MulLhsInplaceOp(const Op::Settings &_settings)
+      : ElementWiseBinaryInplaceLhsOp(Onnx::CustomOperators::MulLhsInplace,
+                                      _settings) {}
 };
 
-class MulRhsInplaceOp : public ElementWiseBinaryInplaceRhsOp {
+class MulRhsInplaceOp : public ElementWiseBinaryInplaceRhsOp<MulRhsInplaceOp> {
 public:
-  MulRhsInplaceOp(const MulOp &mulOp);
-  MulRhsInplaceOp(const Op::Settings &settings_);
-
-  std::unique_ptr<Op> clone() const override;
+  MulRhsInplaceOp(const Op::Settings &_settings)
+      : ElementWiseBinaryInplaceRhsOp(Onnx::CustomOperators::MulRhsInplace,
+                                      _settings) {}
 };
 
-class MulArgGradOp : public Op {
+class MulArg0GradOp : public ElementWiseBinaryArg0GradOp<MulArg0GradOp> {
 public:
-  MulArgGradOp(const OperatorIdentifier &_opid,
-               const std::vector<int64_t> &reduction_axes,
-               const TensorInfo &forward_op_arg_info,
-               const Op::Settings &settings_);
-  // MulArgGradOp(const OpConstructorBundle &,
-  // const std::vector<int64_t> &reduction_axes,
-  // const TensorInfo &forward_op_arg_info);
-  void setup() final;
-  // In C = mul(A,B) with numpy-style broadcasting,
-  //   dA = reduceSum(mul(dC,B)), and
-  //   dB = reduceSum(mul(dC,A)).
-  // this function returns the axes along which to perform the reduction.
-  const std::vector<int64_t> &getReductionAxes();
-  static OutIndex getOutIndex() { return 0; }
-
-  float getSubgraphValue() const final { return getLowSubgraphValue(); }
-
-private:
-  std::vector<int64_t> reduction_axes;
-  TensorInfo forward_op_arg_info;
+  MulArg0GradOp(const Op &, const std::vector<int64_t> &_reduction_axes);
 };
 
-class MulArg0GradOp : public MulArgGradOp {
+class MulArg1GradOp : public ElementWiseBinaryArg1GradOp<MulArg1GradOp> {
 public:
-  MulArg0GradOp(const MulOp &, const std::vector<int64_t> &reduction_axes);
-  std::unique_ptr<Op> clone() const final;
-  const std::vector<GradInOutMapper> &gradInputInfo() const final;
-  const std::map<int, int> &gradOutToNonGradIn() const final;
-  static OutIndex getOutIndex() { return 0; }
-};
-
-class MulArg1GradOp : public MulArgGradOp {
-public:
-  MulArg1GradOp(const MulOp &, const std::vector<int64_t> &reduction_axes);
-  std::unique_ptr<Op> clone() const final;
-  const std::vector<GradInOutMapper> &gradInputInfo() const final;
-  const std::map<int, int> &gradOutToNonGradIn() const final;
+  MulArg1GradOp(const Op &, const std::vector<int64_t> &_reduction_axes);
 };
 
 } // namespace popart

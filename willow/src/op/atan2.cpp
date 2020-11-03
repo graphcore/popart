@@ -15,23 +15,11 @@ std::unique_ptr<Op> Atan2Op::clone() const {
 }
 
 std::unique_ptr<Op> Atan2Op::getLhsInplaceVariant() const {
-  return std::make_unique<Atan2LhsInplaceOp>(*this);
+  return std::make_unique<Atan2LhsInplaceOp>(getSettings());
 }
 
 OperatorIdentifier Atan2Op::getLhsOperatorIdentifier() const {
   return Onnx::CustomOperators::Atan2Inplace;
-}
-
-Atan2LhsInplaceOp::Atan2LhsInplaceOp(const Atan2Op &op)
-    : ElementWiseBinaryInplaceLhsOp(Onnx::CustomOperators::Atan2Inplace,
-                                    op.getSettings()) {}
-
-Atan2LhsInplaceOp::Atan2LhsInplaceOp(const Op::Settings &settings_)
-    : ElementWiseBinaryInplaceLhsOp(Onnx::CustomOperators::Atan2Inplace,
-                                    settings_) {}
-
-std::unique_ptr<Op> Atan2LhsInplaceOp::clone() const {
-  return std::make_unique<Atan2LhsInplaceOp>(*this);
 }
 
 namespace {

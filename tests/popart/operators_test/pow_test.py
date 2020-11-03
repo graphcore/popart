@@ -75,8 +75,11 @@ def test_pow_grad(op_tester):
         a = torch.tensor(d1, requires_grad=True)
         b = torch.tensor(d2, requires_grad=True)
         out = torch.pow(a, b)
-        d__o = ref_data.getOutputTensorGrad(0)
-        out.backward(torch.tensor(d__o))
+
+        d__o = torch.tensor(ref_data.getOutputTensorGrad(0))
+        assert not torch.isnan(d__o).any()
+        out.backward(d__o)
+
         return [out, a.grad, b.grad, None]
 
     # Need to have NaN == NaN to mirror numpy's functionality

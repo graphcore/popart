@@ -21,10 +21,11 @@ std::vector<const Tensor *> PowArg1GradOpPattern::touches(Op *) const {
 
 // grad_out = grad_in * out * log(arg_0)
 bool PowArg1GradOpPattern::apply(Op *op) const {
-  auto grad_in  = op->inTensor(PowArg1GradOp::getGradInIndex());
-  auto fwd_in0  = op->inTensor(PowArg1GradOp::getFwdArg0InIndex());
-  auto out      = op->inTensor(PowArg1GradOp::getFwdOutIndex());
-  auto grad_out = op->outTensor(PowArg1GradOp::getOutIndex());
+  auto grad_in  = op->inTensor(PowArg0GradOp::getGradInIndex());
+  auto fwd_in0  = op->inTensor(PowArg0GradOp::getFwdArg0InIndex());
+  auto fwd_out  = op->inTensor(PowArg0GradOp::getFwdOutIndex());
+  auto grad_out = op->outTensor(PowArg0GradOp::getOutIndex());
+
   // we assume this dynamic_cast call has been confirmed
   // to be valid via a previous call to PowArg1GradOpPattern::matches
   auto axes = dynamic_cast<PowArg1GradOp *>(op)->getReductionAxes();
@@ -50,7 +51,7 @@ bool PowArg1GradOpPattern::apply(Op *op) const {
       0, grad_in->getIr().createIntermediateTensorId(grad_in->id));
   log->outInfo(0) = log->inInfo(0);
 
-  mul_1->connectInTensor(0, out->id);
+  mul_1->connectInTensor(0, fwd_out->id);
   mul_1->connectInTensor(1, log->outTensor(0)->id);
   mul_1->createAndConnectOutTensor(
       0, grad_in->getIr().createIntermediateTensorId(grad_in->id));

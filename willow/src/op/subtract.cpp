@@ -7,8 +7,8 @@
 namespace popart {
 
 SubtractOp::SubtractOp(const OperatorIdentifier &_opid,
-                       const Op::Settings &settings_)
-    : ElementWiseBinaryBaseOp(_opid, settings_) {
+                       const Op::Settings &_settings)
+    : ElementWiseNpBroadcastableBinaryWithGradOp(_opid, _settings) {
   // TODO : Do not broadcast in version 6
 }
 
@@ -16,37 +16,24 @@ std::unique_ptr<Op> SubtractOp::clone() const {
   return std::make_unique<SubtractOp>(*this);
 }
 
-std::vector<std::unique_ptr<Op>> SubtractOp::getGradOps() {
-  std::vector<std::unique_ptr<Op>> upops;
-
-  const auto &shape_a0 = inShape(SubtractOp::getArg0InIndex());
-  const auto &shape_o0 = outShape(SubtractOp::getOutIndex());
-
-  upops.emplace_back(std::make_unique<SubtractArg0GradOp>(
-      *this, npReductionAxis(shape_a0, shape_o0)));
-  upops.emplace_back(std::make_unique<SubtractArg1GradOp>(*this));
-
-  return upops;
-}
-
-SubtractArg0GradOp::SubtractArg0GradOp(const SubtractOp &op_,
-                                       const std::vector<int64_t> &_axes)
+SubtractArg0GradOp::SubtractArg0GradOp(
+    const Op &op,
+    const std::vector<int64_t> &_reduction_axes)
     : ReduceSumOp(Onnx::GradOperators::SubArg0Grad,
-                  _axes,
+                  _reduction_axes,
                   false,
-                  op_.getSettings()),
-      forward_op_arg_info(op_.inInfo(SubtractOp::getArg0InIndex())) {}
+                  op.getSettings()),
+      forward_op_arg_info(op.inInfo(SubtractOp::getArg0InIndex())) {}
 
 const std::map<int, int> &SubtractArg0GradOp::gradOutToNonGradIn() const {
-  static const std::map<int, int> outInfo = {
-      {getOutIndex(), SubtractOp::getArg0InIndex()}};
+  static const std::map<int, int> outInfo = {{0, SubtractOp::getArg0InIndex()}};
 
   return outInfo;
 }
 
 const std::vector<GradInOutMapper> &SubtractArg0GradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), SubtractOp::getOutIndex(), GradOpInType::GradOut}};
+      {0, SubtractOp::getOutIndex(), GradOpInType::GradOut}};
 
   return inInfo;
 }
@@ -55,31 +42,13 @@ void SubtractArg0GradOp::setup() {
   outInfo(getOutIndex()) = forward_op_arg_info;
 }
 
-SubtractArg1GradOp::SubtractArg1GradOp(const SubtractOp &op_)
-    : Op(Onnx::GradOperators::SubArg1Grad, op_.getSettings()),
-      forward_op_arg_info(op_.inInfo(SubtractOp::getArg1InIndex())) {}
-
-const std::map<int, int> &SubtractArg1GradOp::gradOutToNonGradIn() const {
-  static const std::map<int, int> outInfo = {
-      {getOutIndex(), SubtractOp::getArg1InIndex()}};
-
-  return outInfo;
-}
-
-const std::vector<GradInOutMapper> &SubtractArg1GradOp::gradInputInfo() const {
-  static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), SubtractOp::getOutIndex(), GradOpInType::GradOut}};
-
-  return inInfo;
-}
-
-std::unique_ptr<Op> SubtractArg1GradOp::clone() const {
-  return std::make_unique<SubtractArg1GradOp>(*this);
-}
-
-void SubtractArg1GradOp::setup() {
-  outInfo(getOutIndex()) = forward_op_arg_info;
-}
+SubtractArg1GradOp::SubtractArg1GradOp(
+    const Op &op,
+    const std::vector<int64_t> &_reduction_axes)
+    : ElementWiseBinaryArg1GradOp(Onnx::GradOperators::SubArg1Grad,
+                                  _reduction_axes,
+                                  op.inInfo(SubtractOp::getArg1InIndex()),
+                                  op.getSettings()) {}
 
 namespace {
 

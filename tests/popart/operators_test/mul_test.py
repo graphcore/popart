@@ -32,8 +32,11 @@ def test_mul(op_tester):
         t1 = torch.tensor(d1, requires_grad=True)
         t2 = torch.tensor(d2, requires_grad=True)
         out = t1 * t2
-        d__o = ref_data.getOutputTensorGrad(0)
-        out.backward(torch.tensor(d__o))
+
+        d__o = torch.tensor(ref_data.getOutputTensorGrad(0))
+        assert not torch.isnan(d__o).any()
+        out.backward(d__o)
+
         return [out, t1.grad, t2.grad, None]
 
     op_tester.setPatterns(['PreUniRepl', 'MulArgGradOp'],
@@ -61,8 +64,11 @@ def test_broadcast_mul(op_tester):
         t1 = torch.tensor(d1, requires_grad=True)
         t2 = torch.tensor(d2, requires_grad=True)
         out = t1 * t2
-        d__o = ref_data.getOutputTensorGrad(0)
-        out.backward(torch.tensor(d__o))
+
+        d__o = torch.tensor(ref_data.getOutputTensorGrad(0))
+        assert not torch.isnan(d__o).any()
+        out.backward(d__o)
+
         return [out, t1.grad, t2.grad, None]
 
     op_tester.setPatterns(['PreUniRepl', 'MulArgGradOp'],

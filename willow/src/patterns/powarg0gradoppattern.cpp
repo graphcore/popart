@@ -23,9 +23,10 @@ std::vector<const Tensor *> PowArg0GradOpPattern::touches(Op *) const {
 
 // grad_out = grad_in *arg1 * arg0 ^(arg1 - 1)
 bool PowArg0GradOpPattern::apply(Op *op) const {
-  auto grad_in  = op->inTensor(PowArg0GradOp::getGradInIndex());
-  auto fwd_in0  = op->inTensor(PowArg0GradOp::getFwdArg0InIndex());
-  auto fwd_in1  = op->inTensor(PowArg0GradOp::getFwdArg1InIndex());
+  auto grad_in = op->inTensor(PowArg0GradOp::getGradInIndex());
+  auto fwd_in0 = op->inTensor(PowArg0GradOp::getFwdArg0InIndex());
+  auto fwd_in1 = op->inTensor(PowArg0GradOp::getFwdArg1InIndex());
+
   auto grad_out = op->outTensor(PowArg0GradOp::getOutIndex());
 
   // we assume this dynamic_cast call has been confirmed
@@ -50,7 +51,7 @@ bool PowArg0GradOpPattern::apply(Op *op) const {
   // do not keep reduced dims
   reduce->setKeepDims(0l);
 
-  // Remove the PowArg0GradOp
+  // Disconnect the original op
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
 

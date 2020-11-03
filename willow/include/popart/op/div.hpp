@@ -8,63 +8,26 @@
 
 namespace popart {
 
-// arg_0 / arg_1
-class DivOp : public ElementWiseBinaryBaseOp {
+class DivArg0GradOp;
+class DivArg1GradOp;
+
+class DivOp : public ElementWiseNpBroadcastableBinaryWithGradOp<DivArg0GradOp,
+                                                                DivArg1GradOp> {
 public:
-  DivOp(const OperatorIdentifier &_opid, const Op::Settings &settings);
+  DivOp(const OperatorIdentifier &_opid, const Op::Settings &_settings);
   std::unique_ptr<Op> clone() const final;
-  std::vector<std::unique_ptr<Op>> getGradOps() final;
-};
-
-// Base class for DivArg grad ops
-class DivArgGradOp : public Op {
-public:
-  DivArgGradOp(const OperatorIdentifier &_opid,
-               const std::vector<int64_t> &reduction_axes,
-               const TensorInfo &forward_op_arg_info,
-               const Op::Settings &settings_);
-  void setup() final;
-  static OutIndex getOutIndex() { return 0; }
-  // In C = div(A,B) with numpy-style broadcasting,
-  //   dA = reduceSum(div(dC,B)), and
-  //   dB = reduceSum( negate( div( mul(dC, A), square(B) )) ).
-  // this function returns the axes along which to perform the reduction.
-  const std::vector<int64_t> &getReductionAxes() const;
-
-  float getSubgraphValue() const final { return getLowSubgraphValue(); }
-
-private:
-  // Used to set the outputs TensorInfo
-  TensorInfo forward_op_arg_info;
-  // reduction axes eventually passed to ReduceSumOp
-  std::vector<int64_t> reduction_axes;
 };
 
 // gradOut / arg_1
-class DivArg0GradOp : public DivArgGradOp {
+class DivArg0GradOp : public ElementWiseBinaryArg0GradOp<DivArg0GradOp> {
 public:
-  DivArg0GradOp(const DivOp &, const std::vector<int64_t> &reduction_axes);
-  std::unique_ptr<Op> clone() const final;
-  const std::vector<GradInOutMapper> &gradInputInfo() const final;
-  const std::map<int, int> &gradOutToNonGradIn() const final;
-
-  static InIndex getGradInIndex() { return 0; }
-  static InIndex getFwdArg0InIndex() { return 1; }
-  static OutIndex getOutIndex() { return 0; }
+  DivArg0GradOp(const Op &, const std::vector<int64_t> &_reduction_axes);
 };
 
 // - (gradOut * arg_0) / arg_1^2
-class DivArg1GradOp : public DivArgGradOp {
+class DivArg1GradOp : public ElementWiseBinaryArg1GradOp<DivArg1GradOp> {
 public:
-  DivArg1GradOp(const DivOp &, const std::vector<int64_t> &reduction_axes);
-  std::unique_ptr<Op> clone() const final;
-  const std::vector<GradInOutMapper> &gradInputInfo() const final;
-  const std::map<int, int> &gradOutToNonGradIn() const final;
-
-  static InIndex getGradInIndex() { return 0; }
-  static InIndex getFwdArg0InIndex() { return 1; }
-  static InIndex getFwdArg1InIndex() { return 2; }
-  static OutIndex getOutIndex() { return 0; }
+  DivArg1GradOp(const Op &, const std::vector<int64_t> &_reduction_axes);
 };
 
 } // namespace popart

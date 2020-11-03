@@ -19,12 +19,12 @@ private:
   OperatorIdentifier getLhsOperatorIdentifier() const final;
 };
 
-class Atan2LhsInplaceOp : public ElementWiseBinaryInplaceLhsOp {
+class Atan2LhsInplaceOp
+    : public ElementWiseBinaryInplaceLhsOp<Atan2LhsInplaceOp> {
 public:
-  Atan2LhsInplaceOp(const Atan2Op &atan2Op);
-  Atan2LhsInplaceOp(const Op::Settings &setting_);
-
-  std::unique_ptr<Op> clone() const final;
+  Atan2LhsInplaceOp(const Op::Settings &settings)
+      : ElementWiseBinaryInplaceLhsOp(Onnx::CustomOperators::Atan2Inplace,
+                                      settings) {}
 };
 
 } // namespace popart
