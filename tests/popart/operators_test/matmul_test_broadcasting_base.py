@@ -131,8 +131,6 @@ def _test_matmul_broadcasting_base(op_tester, shapes):
         # Test with the MatMulXXGradOp to MatMulOp pass
         op_tester.patterns = popart.Patterns(
             popart.PatternsLevel.Minimal).enablePattern(
-                "OpToReshape", True).enablePattern("MatMulLhsGradOp",
-                                                   True).enablePattern(
-                                                       "MatMulRhsGradOp", True)
+                "MatMulLhsGradOp", True).enablePattern("MatMulRhsGradOp", True)
 
         op_tester.run(init_builder, reference, 'train')

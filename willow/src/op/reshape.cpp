@@ -2,6 +2,8 @@
 #include <memory>
 #include <numeric>
 #include <onnx/onnx_pb.h>
+#include <poprithms/ndarray/shape.hpp>
+#include <poprithms/util/printiter.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -248,6 +250,108 @@ static OpDefinition
 static OpCreator<ReshapeOp> reshapeOpCreator(OpDefinitions({
     {Onnx::Operators::Reshape_5, reshapeOpDef},
 }));
+
+// map negative indices to positive indices, and cast to uint64_t.
+std::vector<uint64_t> getAxes_u64(const std::vector<int64_t> &axes,
+                                  uint64_t outRank) {
+
+  std::vector<uint64_t> axes_u64;
+  for (auto d : axes) {
+    if (d < 0) {
+      d += outRank;
+    }
+    if (d < 0) {
+      std::ostringstream oss;
+      oss << "Invalid axis in getAxes_u64(axes=";
+      poprithms::util::append(oss, axes);
+      oss << ", outRank=" << outRank << "). ";
+      throw error(oss.str());
+    }
+    d = d % outRank;
+    axes_u64.push_back(d);
+  }
+  return axes_u64;
+}
+
+poprithms::ndarray::Shape getShapeToReshape(const OpCreatorInfo &info) {
+  return poprithms::ndarray::Shape(info.settings.graph.get()
+                                       .getTensors()
+                                       .get(info.getInputIds()[0])
+                                       ->info.shape());
+}
+
+std::vector<int64_t> getAxesAttrib(const OpCreatorInfo &info) {
+  return info.attributes.getAttribute<Attributes::Ints>("axes", {});
+}
+
+// UnSqueeze //
+static OpDefinition
+    unsqueezeOpDef({OpDefinition::Inputs({{"data", T}}),
+                    OpDefinition::Outputs({{"expanded", T}}),
+                    OpDefinition::Attributes({{"axes", {"*"}}})});
+
+static OpCreator<ReshapeOp> unsqueezeOpCreator(
+    OpDefinitions({
+        {Onnx::Operators::Unsqueeze_1, unsqueezeOpDef},
+        {Onnx::Operators::Unsqueeze_11, unsqueezeOpDef},
+    }),
+    [](const OpCreatorInfo &info) {
+      const auto inShape  = getShapeToReshape(info);
+      const auto axes     = getAxesAttrib(info);
+      const auto outShape = inShape.unsqueeze(
+          getAxes_u64(axes, axes.size() + inShape.rank_u64()));
+      return std::make_unique<ReshapeOp>(
+          Onnx::Operators::Reshape_5, outShape.get(), info.settings);
+    },
+    true);
+
+// Squeeze //
+static OpDefinition squeezeOpDef({OpDefinition::Inputs({{"data", T}}),
+                                  OpDefinition::Outputs({{"squeezed", T}}),
+                                  OpDefinition::Attributes({{"axes", {"*"}}})});
+
+static OpCreator<ReshapeOp> squeezeOpCreator(
+    OpDefinitions({
+        {Onnx::Operators::Squeeze_1, squeezeOpDef},
+        {Onnx::Operators::Squeeze_11, squeezeOpDef},
+    }),
+    [](const OpCreatorInfo &info) {
+      const auto inShape = getShapeToReshape(info);
+      const auto axes    = getAxesAttrib(info);
+      const auto outShape =
+          axes.empty() ? inShape.squeeze()
+                       : inShape.squeeze(getAxes_u64(axes, inShape.rank_u64()));
+      return std::make_unique<ReshapeOp>(
+          Onnx::Operators::Reshape_5, outShape.get(), info.settings);
+    },
+    true);
+
+// Flatten //
+// ------- //
+static OpDefinition flattenOpDef({OpDefinition::Inputs({{"input", T}}),
+                                  OpDefinition::Outputs({{"output", T}}),
+                                  OpDefinition::Attributes({{"axis", {"*"}}})});
+
+static std::unique_ptr<Op> flattenOpFactory(const OpCreatorInfo &info) {
+  const auto inShape = getShapeToReshape(info);
+  int64_t axis       = info.attributes.getAttribute<Attributes::Int>("axis", 1);
+  axis += (axis < 0 ? inShape.rank_i64() : 0);
+  if (axis < 0 || axis > inShape.rank_u64()) {
+    throw error("invalid axis {} in flattenOpFactory", axis);
+  }
+  return std::make_unique<ReshapeOp>(
+      Onnx::Operators::Reshape_5,
+      inShape.flattenTo2d(static_cast<uint64_t>(axis)).get(),
+      info.settings);
+}
+
+static OpCreator<ReshapeOp>
+    flattenOpCreator({{Onnx::Operators::Flatten_1, flattenOpDef},
+                      {Onnx::Operators::Flatten_9, flattenOpDef},
+                      {Onnx::Operators::Flatten_11, flattenOpDef}},
+                     flattenOpFactory,
+                     true);
+
 } // namespace
 
 } // namespace popart

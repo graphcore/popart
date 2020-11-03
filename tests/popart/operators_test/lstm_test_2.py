@@ -142,8 +142,7 @@ def test_lstm_torch_grad_all_inputs(op_tester):
 
         return [Y2, a.grad, wig, whg, b_grad, h0.grad, c0.grad, None]
 
-    op_tester.setPatterns(['PreUniRepl', 'OpToReshape'],
-                          enableRuntimeAsserts=False)
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.atol = 1e-07
     op_tester.run(init_builder, reference, 'train')
 
@@ -352,14 +351,14 @@ def test_import_torch_lstm_train(tmpdir):
         optimizer = popart.ConstSGD(0.1)
         device = tu.create_test_device(1)
         print('Creating session')
-        s = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                   dataFlow=dataFlow,
-                                   optimizer=optimizer,
-                                   loss=loss,
-                                   patterns=popart.Patterns([
-                                       'PreUniRepl', 'OpToReshape'
-                                   ]).enableRuntimeAsserts(False),
-                                   deviceInfo=device)
+        s = popart.TrainingSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=dataFlow,
+            optimizer=optimizer,
+            loss=loss,
+            patterns=popart.Patterns(
+                ['PreUniRepl']).enableRuntimeAsserts(False),
+            deviceInfo=device)
         print('setting device')
 
         anchor_map = s.initAnchorArrays()

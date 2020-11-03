@@ -45,8 +45,7 @@ def test_lrn(op_tester):
             result.append(lrn_out_ref)
         return result
 
-    op_tester.setPatterns(['PreUniRepl', 'OpToReshape'],
-                          enableRuntimeAsserts=False)
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -112,6 +111,5 @@ def test_lrn_training(op_tester):
         result = [sum, sum.grad] + result
         return result
 
-    op_tester.setPatterns(['OpToIdentity', 'OpToReshape'],
-                          enableRuntimeAsserts=False)
+    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')

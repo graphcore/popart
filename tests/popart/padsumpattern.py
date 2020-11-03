@@ -222,6 +222,5 @@ def test_pad_sum7(op_tester):
         o.backward(torch.tensor(d__o))
         return [o, i1.grad, None]
 
-    op_tester.setPatterns(['PadSum', 'OpToReshape'],
-                          enableRuntimeAsserts=False)
+    op_tester.setPatterns(['PadSum'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')

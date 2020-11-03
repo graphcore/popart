@@ -13,7 +13,8 @@ class TransformBuilder {
 
   std::unique_ptr<Op> createOp(const OperatorIdentifier &opid,
                                std::map<std::string, popart::any> attributes,
-                               const std::string debugPrefix);
+                               const std::string debugPrefix,
+                               const std::vector<TensorId> &inIds);
 
   TensorId op(const OperatorIdentifier &_opid,
               std::vector<TensorId> &inputs,

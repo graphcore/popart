@@ -48,7 +48,6 @@ enum class PreAliasPatternType {
   MatMulRHSGradOp,
   SGD1Decompose,
   LSTMOp,
-  OpToReshape,
   InitAccumulate,
   UpsampleToResize,
   AcosOpPattern,

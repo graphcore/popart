@@ -72,7 +72,7 @@ def test_weight_update(op_tester):
 
     op_tester.numIPUs = 1
     op_tester.setPatterns(
-        ['GemmDecomposition', 'PreUniRepl', 'MatMulRhsGradOp', 'OpToReshape'],
+        ['GemmDecomposition', 'PreUniRepl', 'MatMulRhsGradOp'],
         enableRuntimeAsserts=False)
     op_tester.run(init_builder,
                   reference,
@@ -169,7 +169,7 @@ def test_weight_update_replicated(op_tester):
 
     op_tester.lossReduction = popart.ReductionType.Sum
     op_tester.setPatterns(
-        ['GemmDecomposition', 'PreUniRepl', 'MatMulRhsGradOp', 'OpToReshape'],
+        ['GemmDecomposition', 'PreUniRepl', 'MatMulRhsGradOp'],
         enableRuntimeAsserts=False)
     op_tester.options.enableReplicatedGraphs = True
     op_tester.options.replicatedGraphCount = replicationFactor
@@ -240,7 +240,7 @@ def test_replication_infer(op_tester):
                 o2, 0), torch.unsqueeze(o3, 0), torch.unsqueeze(o4, 0)))
         ]
 
-    op_tester.setPatterns(['GemmDecomposition', 'PreUniRepl', 'OpToReshape'],
+    op_tester.setPatterns(['GemmDecomposition', 'PreUniRepl'],
                           enableRuntimeAsserts=False)
     op_tester.options.enableReplicatedGraphs = True
     op_tester.options.replicatedGraphCount = replicationFactor

@@ -22,7 +22,6 @@
 
 // The layers required to construct the backwards pass
 #include <popart/op/conv.hpp>
-#include <popart/op/flatten.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/sgd1acclupdate.hpp>

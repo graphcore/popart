@@ -36,7 +36,6 @@
 #include <popart/patterns/negativeonescalepattern.hpp>
 #include <popart/patterns/nlllwithsoftmaxgraddirect.hpp>
 #include <popart/patterns/optoidentitypattern.hpp>
-#include <popart/patterns/optoreshapepattern.hpp>
 #include <popart/patterns/padsum.hpp>
 #include <popart/patterns/pattern.hpp>
 #include <popart/patterns/postnrepl.hpp>
@@ -241,10 +240,6 @@ bool Patterns::isOpToIdentityEnabled() {
   return isPatternEnabled<OpToIdentityPattern>();
 }
 
-bool Patterns::isOpToReshapeEnabled() {
-  return isPatternEnabled<OpToReshapePattern>();
-}
-
 bool Patterns::isUpsampleToResizeEnabled() {
   return isPatternEnabled<UpsampleToResizePattern>();
 }
@@ -373,10 +368,6 @@ Patterns &Patterns::enableSoftMaxGradDirect(bool v) {
 
 Patterns &Patterns::enableNlllWithSoftMaxGradDirect(bool v) {
   return enablePattern<NlllWithSoftmaxGradDirect>(v);
-}
-
-Patterns &Patterns::enableOpToReshape(bool v) {
-  return enablePattern<OpToReshapePattern>(v);
 }
 
 Patterns &Patterns::enableUpsampleToResize(bool v) {
@@ -600,7 +591,6 @@ std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
       {std::type_index(typeid(SplitGatherPattern)), 13},
       {std::type_index(typeid(ConvDataGradPattern)), 12},
       {std::type_index(typeid(SumToAddPattern)), 11},
-      {std::type_index(typeid(OpToReshapePattern)), 10},
       {std::type_index(typeid(SplitGradOpToConcatPattern)), 9},
       {std::type_index(typeid(SplitOpPattern)), 8},
       {std::type_index(typeid(PowArg0GradOpPattern)), 7},

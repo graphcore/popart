@@ -1,11 +1,11 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <memory>
 #include <numeric>
+#include <poprithms/ndarray/shape.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/reducesum.hpp>
 #include <popart/op/reshape.hpp>
-#include <popart/op/squeeze.hpp>
 #include <popart/op/transpose.hpp>
 #include <popart/patterns/matmulgradpattern.hpp>
 #include <popart/patterns/patterns.hpp>
@@ -94,16 +94,16 @@ popart::Tensor *configureReduceSumOp(ReduceSumOp *op,
   return op->outTensor(ReduceSumOp::getOutIndex());
 }
 
-popart::Tensor *configureSqueezeOp(SqueezeOp *op,
+popart::Tensor *configureSqueezeOp(ReshapeOp *op,
                                    const TensorId inputTensorId,
-                                   const Shape &axes) {
-  op->setAxes(axes);
-  op->connectInTensor(SqueezeOp::getInIndex(), inputTensorId);
+                                   const Shape &newShape) {
+  op->setOutShape(newShape);
+  op->connectInTensor(ReshapeOp::getInIndex(), inputTensorId);
   op->createAndConnectOutTensor(
-      SqueezeOp::getOutIndex(),
+      ReshapeOp::getOutIndex(),
       op->getIr().createIntermediateTensorId(inputTensorId));
   op->setup();
-  return op->outTensor(SqueezeOp::getOutIndex());
+  return op->outTensor(ReshapeOp::getOutIndex());
 }
 
 Shape getLhsShape(Op *op) {
@@ -224,8 +224,8 @@ bool MatMulGradPattern::apply(Op *op) const {
   matmulOp->setUseFullyConnectedPass(matmulBaseOp->useFullyConnectedPass());
   matmulOp->setPartialsType(matmulBaseOp->getPartialsType());
 
-  auto squeezeOp = dynamic_cast<SqueezeOp *>(
-      makeReplacementOpInIr(Onnx::Operators::Squeeze_1, op, "Squeeze"));
+  auto squeezeOp = dynamic_cast<ReshapeOp *>(
+      makeReplacementOpInIr(Onnx::Operators::Reshape_5, op, "Squeeze"));
   auto reduceSumOp = dynamic_cast<ReduceSumOp *>(
       makeReplacementOpInIr(Onnx::Operators::ReduceSum_1, op, "ReduceOut"));
   auto reshapeOp = dynamic_cast<ReshapeOp *>(
@@ -337,14 +337,17 @@ bool MatMulGradPattern::apply(Op *op) const {
                               getPatternName(),
                               squeezeDims,
                               out->info.shape());
-      out = configureSqueezeOp(squeezeOp, out->id, squeezeDims);
+
+      auto newShape = poprithms::ndarray::Shape(out->info.shape())
+                          .squeeze({squeezeDims.cbegin(), squeezeDims.cend()});
+      out = configureSqueezeOp(squeezeOp, out->id, newShape.get());
     }
 
     if (out->info.shape() == grad_out->info.shape()) {
       // The output of transpose/matmul/squeeze is correct, remove the
       // intermediate tensor and instead use the grad_out
       squeezeOp->disconnectAllOutputs();
-      squeezeOp->connectOutTensor(SqueezeOp::getOutIndex(), grad_out->id);
+      squeezeOp->connectOutTensor(ReshapeOp::getOutIndex(), grad_out->id);
     } else {
 
       // The shapes are still not the same then use the reduce

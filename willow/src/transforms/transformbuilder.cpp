@@ -15,9 +15,14 @@ namespace popart {
 std::unique_ptr<Op>
 TransformBuilder::createOp(const OperatorIdentifier &opid,
                            std::map<std::string, popart::any> attributes,
-                           const std::string debugPrefix) {
-  return OpManager::createOp(
-      opid, graph, debugPrefix, OpManager::getAttributesFromAnyMap(attributes));
+                           const std::string debugPrefix,
+                           const std::vector<TensorId> &inIds) {
+  return OpManager::createOpWithInputs(
+      opid,
+      graph,
+      debugPrefix,
+      OpManager::getAttributesFromAnyMap(attributes),
+      inIds);
 }
 
 TensorId TransformBuilder::op(const OperatorIdentifier &_opid,
@@ -29,7 +34,7 @@ TensorId TransformBuilder::op(const OperatorIdentifier &_opid,
                               const std::string opName,
                               const std::string outputName) {
 
-  auto op = createOp(_opid, attributes, opName);
+  auto op = createOp(_opid, attributes, opName, inputs);
 
   if (op == nullptr) {
     throw error("Failed to create op : {} in the transform builder", _opid);
@@ -62,7 +67,7 @@ void TransformBuilder::opWithOutput(
     OptionalExecutionPhase executionPhase,
     const std::string debugPrefix) {
 
-  auto op = createOp(_opid, attributes, debugPrefix);
+  auto op = createOp(_opid, attributes, debugPrefix, inputs);
 
   for (int i = 0; i < inputs.size(); ++i) {
     op->connectInTensor(i, inputs[i]);
@@ -89,7 +94,7 @@ TransformBuilder::multiOutputOp(const OperatorIdentifier &_opid,
                                 OptionalExecutionPhase executionPhase,
                                 const std::string opName) {
 
-  auto op = createOp(_opid, attributes, opName);
+  auto op = createOp(_opid, attributes, opName, inputs);
 
   if (op == nullptr) {
     throw error("Failed to create op : {} in the transform builder", _opid);
@@ -479,7 +484,7 @@ TensorId TransformBuilder::reshape(TensorId in,
                                    OptionalExecutionPhase executionPhase,
                                    const std::string opName,
                                    const std::string outputName) {
-  auto op = createOp(Onnx::Operators::Reshape_5, {}, opName);
+  auto op = createOp(Onnx::Operators::Reshape_5, {}, opName, {in});
 
   if (op == nullptr) {
     throw error("Failed to create op : {}", Onnx::Operators::Reshape_5);

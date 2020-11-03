@@ -12,7 +12,6 @@
 #include <popart/op/cast.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/concat.hpp>
-#include <popart/op/flatten.hpp>
 #include <popart/op/lamb.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/patterns/adamdecompose.hpp>

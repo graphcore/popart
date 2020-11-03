@@ -9,7 +9,6 @@
 #include <popart/op/accumulate.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/concat.hpp>
-#include <popart/op/flatten.hpp>
 #include <popart/op/sgd1acclupdate.hpp>
 #include <popart/op/sgd1combo.hpp>
 #include <popart/op/sgd1varupdate.hpp>

@@ -177,8 +177,7 @@ def test_gru_torch(op_tester):
 
         return [Y, Y_h]
 
-    op_tester.setPatterns(['PreUniRepl', 'OpToReshape'],
-                          enableRuntimeAsserts=False)
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     # No need to relax tolerances!
     op_tester.run(init_builder, reference, 'infer')
 
@@ -253,8 +252,7 @@ def test_gru_torch_grad(op_tester):
 
         return [Y1, Y1.grad, a.grad, wig, whg, None]
 
-    op_tester.setPatterns(['PreUniRepl', 'OpToReshape'],
-                          enableRuntimeAsserts=False)
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
 
     op_tester.atol = 1e-06
     op_tester.rtol = 1e-05
@@ -447,8 +445,7 @@ def test_gru_torch_grad_all_inputs(op_tester):
 
         return [Y1, Y1.grad, a.grad, wig, whg, b_grad, h0.grad]
 
-    op_tester.setPatterns(['PreUniRepl', 'OpToReshape'],
-                          enableRuntimeAsserts=False)
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.atol = 1e-05
     op_tester.rtol = 1e-05
     op_tester.run(init_builder, reference, 'train')

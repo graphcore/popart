@@ -2,9 +2,6 @@
 # to run only these tests with ctest, consider using something like,
 # `ctest -R patterns_test -j5 -VV'.
 
-add_popart_cpp_unit_test(op_to_reshape_pattern_test 
-                          op_to_reshape_pattern_test.cpp)
-
 add_popart_cpp_unit_test(upsample_to_resize_pattern_test 
                           upsample_to_resize_pattern_test.cpp)
 

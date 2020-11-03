@@ -18,7 +18,7 @@ def test_flatten(op_tester):
         o = d1.flatten().reshape(1, -1)
         return [o]
 
-    op_tester.setPatterns(['OpToReshape'], enableRuntimeAsserts=False)
+    op_tester.setPatterns([], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -35,7 +35,7 @@ def test_flatten_negative(op_tester):
         o = d1.reshape(6, 20)
         return [o]
 
-    op_tester.setPatterns(['OpToReshape'], enableRuntimeAsserts=False)
+    op_tester.setPatterns([], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -60,6 +60,5 @@ def test_flatten_grad(op_tester):
         o.backward(torch.tensor(d__o))
         return [o, i1.grad, None]
 
-    op_tester.setPatterns(['PreUniRepl', 'OpToReshape'],
-                          enableRuntimeAsserts=False)
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')

@@ -121,6 +121,5 @@ def test_reducelogsumexp_training(op_tester):
         result = [sum, sum.grad] + result
         return result
 
-    op_tester.setPatterns(['OpToIdentity', 'OpToReshape'],
-                          enableRuntimeAsserts=False)
+    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')

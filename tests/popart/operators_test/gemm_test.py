@@ -120,8 +120,7 @@ def _test_gemm(op_tester,
             o += beta * c
         return [o]
 
-    op_tester.setPatterns(['GemmDecomposition', 'OpToReshape'],
-                          enableRuntimeAsserts=False)
+    op_tester.setPatterns(['GemmDecomposition'], enableRuntimeAsserts=False)
 
     opsets = None
     if onnx_version is not None:
@@ -187,8 +186,7 @@ def _test_gemm_grad(op_tester,
         # return [o, a.grad, b.grad, c.grad, None]
 
     op_tester.setPatterns([
-        'GemmDecomposition', 'PreUniRepl', 'MatMulLhsGradOp',
-        'MatMulRhsGradOp', 'OpToReshape'
+        'GemmDecomposition', 'PreUniRepl', 'MatMulLhsGradOp', 'MatMulRhsGradOp'
     ],
                           enableRuntimeAsserts=False)
 

@@ -18,7 +18,7 @@ def test_unsqueeze(op_tester):
         o = np.expand_dims(d1, 1)
         return [o]
 
-    op_tester.setPatterns(['OpToReshape'], enableRuntimeAsserts=False)
+    op_tester.setPatterns([], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -42,6 +42,5 @@ def test_unsqueeze_grad(op_tester):
         o.backward(torch.tensor(d__o))
         return [o, i1.grad, None]
 
-    op_tester.setPatterns(['PreUniRepl', 'OpToReshape'],
-                          enableRuntimeAsserts=False)
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')

@@ -218,6 +218,13 @@ public:
                                       const std::string &name = "",
                                       const Attributes &_attr = {});
 
+  static std::unique_ptr<Op>
+  createOpWithInputs(const OperatorIdentifier &opid,
+                     Graph &graph,
+                     const std::string &name,
+                     const Attributes &_attr,
+                     const std::vector<TensorId> &inIds);
+
   // Creates an op from the onnx node and adds it to the graph.
   static Op *createOpInGraph(const Node &node, Graph &graph);
 

@@ -10,7 +10,6 @@
 #include <popart/op/adaptivecombo.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/concat.hpp>
-#include <popart/op/flatten.hpp>
 #include <popart/op/rmspropupdater.hpp>
 #include <popart/op/scaledvarupdate.hpp>
 #include <popart/op/slice.hpp>

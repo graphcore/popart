@@ -291,6 +291,15 @@ std::unique_ptr<Op> OpManager::createOp(const OperatorIdentifier &opid,
                                         Graph &graph,
                                         const std::string &name,
                                         const Attributes &attr) {
+  return createOpWithInputs(opid, graph, name, attr, {});
+}
+
+std::unique_ptr<Op>
+OpManager::createOpWithInputs(const OperatorIdentifier &opid,
+                              Graph &graph,
+                              const std::string &name,
+                              const Attributes &attr,
+                              const std::vector<TensorId> &inIds) {
 
   OpManager &self = getInstance();
 
@@ -302,8 +311,14 @@ std::unique_ptr<Op> OpManager::createOp(const OperatorIdentifier &opid,
     const auto &it3 = it2->second.find(opid.version);
 
     if (it3 != it2->second.end()) {
-      return self.create(
-          opid, graph, name, {}, attr, {}, {}, it3->second.getSimpleFactory());
+      return self.create(opid,
+                         graph,
+                         name,
+                         {},
+                         attr,
+                         inIds,
+                         {},
+                         it3->second.getSimpleFactory());
     }
   }
   return nullptr;

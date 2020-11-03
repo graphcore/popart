@@ -5,7 +5,6 @@
 #include <popart/onnxutil.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/concat.hpp>
-#include <popart/op/flatten.hpp>
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/optimizer.hpp>
