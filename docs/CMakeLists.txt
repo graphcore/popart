@@ -2,6 +2,28 @@ cmake_minimum_required(VERSION 3.4.2)
 
 set(BUILD_DOCS OFF CACHE BOOL "Build documentation")
 
+set(popart_docs__find_poplar_enable_script_failure_str "\
+Error building PopART docs: Cannot find Poplar's enable.sh script. Try setting \
+POPLAR_INSTALL_DIR. If you are building the poplar view, this is a bug."
+CACHE INTERNAL "")
+
+function(find_poplar_enable_script result_var)
+  if(DEFINED POPLAR_INSTAL_DIR AND EXISTS ${POPLAR_INSTALL_DIR})
+    # If building in popart view or out-of-view.
+    set(${result_var} "${POPLAR_INSTALL_DIR}/enable.sh" PARENT_SCOPE)
+
+  elseif(EXISTS "${CMAKE_BINARY_DIR}/../../activate.sh" AND
+      EXISTS "${CMAKE_BINARY_DIR}/../../install/poplar")
+    # Assume building in poplar view. There is no enable.sh, so we activate the
+    # buildtree instead. 
+    set(${result_var} "${CMAKE_BINARY_DIR}/../../activate.sh" PARENT_SCOPE)
+
+  else()
+    # Error, don't know where else to look.
+    message(FATAL_ERROR ${popart_docs__find_poplar_enable_script_failure_str})
+  endif()
+endfunction()
+
 if (BUILD_DOCS)
   find_package(gcdoc REQUIRED)
 
@@ -11,6 +33,7 @@ if (BUILD_DOCS)
   string(REPLACE ";" " " DOXYGEN_INPUT "${DOXYGEN_INPUT0}")
   configure_file(api_cpp/Doxyfile.in Doxyfile @ONLY)
 
+  find_poplar_enable_script(POPLAR_ENABLE_SCRIPT)
   configure_file(./gen_docs.sh.in gen_docs.sh @ONLY)
 
   set(SUPPORTED_OPS_GEN ${CMAKE_CURRENT_SOURCE_DIR}/supported_ops_gen.rst)

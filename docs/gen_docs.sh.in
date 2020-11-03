@@ -9,7 +9,7 @@ source ${VENV}/bin/activate
 pip install numpy
 pip install sphinx
 
-source @POPLAR_INSTALL_DIR@/enable.sh
+source @POPLAR_ENABLE_SCRIPT@
 
 export PYTHONPATH=@PROJECT_BINARY_DIR@/python:$PYTHONPATH
 export LIBRARY_PATH=@PROJECT_BINARY_DIR@/python:$LIBRARY_PATH
