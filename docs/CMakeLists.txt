@@ -8,7 +8,7 @@ POPLAR_INSTALL_DIR. If you are building the poplar view, this is a bug."
 CACHE INTERNAL "")
 
 function(find_poplar_enable_script result_var)
-  if(DEFINED POPLAR_INSTAL_DIR AND EXISTS ${POPLAR_INSTALL_DIR})
+  if(DEFINED POPLAR_INSTALL_DIR AND EXISTS ${POPLAR_INSTALL_DIR})
     # If building in popart view or out-of-view.
     set(${result_var} "${POPLAR_INSTALL_DIR}/enable.sh" PARENT_SCOPE)
 
