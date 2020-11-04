@@ -35,6 +35,7 @@ public:
 
   const std::map<OpId, std::unique_ptr<Op>> &getOps() const;
   std::map<OpId, std::unique_ptr<Op>> &getOps();
+  std::vector<OpId> getOpIds() const;
 
   static const int64_t NoVGraph;
 

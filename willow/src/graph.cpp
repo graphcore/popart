@@ -729,6 +729,16 @@ void BackwardPassCreator::registerBwdOp(Op *fwdOp, Op *bwdOp) {
   }
 }
 
+std::vector<OpId> Graph::getOpIds() const {
+  const auto &opMap = getOps();
+  std::vector<OpId> opIds;
+  opIds.reserve(opMap.size());
+  for (const auto &x : opMap) {
+    opIds.push_back(x.first);
+  }
+  return opIds;
+}
+
 Op *BackwardPassCreator::growGradSumOp(Tensor *nonGradTensor,
                                        const std::vector<Tensor *> &partials) {
   std::unique_ptr<popart::Op> gradSum = OpManager::createOp(
@@ -887,37 +897,35 @@ std::vector<Op *> BackwardPassCreator::growGradOps(Op *nonGradOp) {
 void BackwardPassCreator::doPrune(Graph &graph) {
   using boost::range::find;
 
-  auto outputIds   = graph.getOutputIds();
-  auto isNotOutput = [&outputIds](const TensorId &tId) {
+  const auto outputIds = graph.getOutputIds();
+  auto isNotOutput     = [&outputIds](const TensorId &tId) {
     return find(outputIds, tId) == outputIds.end();
-  };
-
-  auto removeTensor = [&graph](Tensor *tensor) {
-    if (tensor->hasProducer()) {
-      auto producer = tensor->getProducer();
-      producer->disconnectOutTensor(tensor);
-    }
-    graph.getTensors().remove(tensor->id);
   };
 
   while (true) {
     // set to true if a tensor or op is removed
     bool continueLoop = false;
 
+    auto &tensors = graph.getTensors();
+
     // Remove tensors that are not inputs or outputs and have no consumers
-    for (auto &id : graph.getTensors().getAllTensorIds()) {
+    const auto tensorIds = tensors.getAllTensorIds();
+    for (auto id : tensorIds) {
       auto tensor = graph.getTensors().get(id);
       if (tensor->consumers.getTotal() == 0 && isNotOutput(id)) {
-        removeTensor(tensor);
+        if (tensor->hasProducer()) {
+          auto producer = tensor->getProducer();
+          producer->disconnectOutTensor(tensor);
+        }
+        tensors.remove(id);
         continueLoop = true;
       }
     }
 
     // Remove ops with no outputs
-    for (auto &id_op : graph.getOps()) {
-      auto id = id_op.first;
-      auto op = id_op.second.get();
-
+    const auto opIds = graph.getOpIds();
+    for (const auto id : opIds) {
+      const auto op = graph.getOp(id);
       if (op->output->n() == 0) {
         op->disconnectAllInputs();
         graph.eraseOp(id);
