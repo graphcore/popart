@@ -13,6 +13,8 @@
 #include <popart/patterns/acoshoppattern.hpp>
 #include <popart/patterns/acosoppattern.hpp>
 #include <popart/patterns/asinhoppattern.hpp>
+#include <popart/patterns/atan2arg0gradoppattern.hpp>
+#include <popart/patterns/atan2arg1gradoppattern.hpp>
 #include <popart/patterns/atanhoppattern.hpp>
 #include <popart/patterns/contiguateipucopyindices.hpp>
 #include <popart/patterns/convbias.hpp>
@@ -257,6 +259,14 @@ bool Patterns::isReciprocalGradOpEnabled() {
   return isPatternEnabled<ReciprocalGradOpPattern>();
 }
 
+bool Patterns::isAtan2Arg0GradOpEnabled() {
+  return isPatternEnabled<Atan2Arg0GradOpPattern>();
+}
+
+bool Patterns::isAtan2Arg1GradOpEnabled() {
+  return isPatternEnabled<Atan2Arg1GradOpPattern>();
+}
+
 bool Patterns::isDivArg0GradOpEnabled() {
   return isPatternEnabled<DivArg0GradOpPattern>();
 }
@@ -405,6 +415,14 @@ Patterns &Patterns::enableMulArgGradOp(bool v) {
 
 Patterns &Patterns::enableReciprocalGradOp(bool v) {
   return enablePattern<ReciprocalGradOpPattern>(v);
+}
+
+Patterns &Patterns::enableAtan2Arg0GradOp(bool v) {
+  return enablePattern<Atan2Arg0GradOpPattern>(v);
+}
+
+Patterns &Patterns::enableAtan2Arg1GradOp(bool v) {
+  return enablePattern<Atan2Arg1GradOpPattern>(v);
 }
 
 Patterns &Patterns::enableDivArg0GradOp(bool v) {
@@ -571,6 +589,8 @@ std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
   }
 
   static std::map<std::type_index, float> patternPriority{
+      {std::type_index(typeid(Atan2Arg0GradOpPattern)), 51},
+      {std::type_index(typeid(Atan2Arg1GradOpPattern)), 50},
       {std::type_index(typeid(SpaceToDepthOpPattern)), 49},
       {std::type_index(typeid(DepthToSpaceOpPattern)), 48},
       {std::type_index(typeid(AtanhOpPattern)), 47},

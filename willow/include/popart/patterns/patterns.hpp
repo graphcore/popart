@@ -217,6 +217,8 @@ public:
   bool isSubtractArg1GradOpEnabled();
   bool isMulArgGradOpEnabled();
   bool isReciprocalGradOpEnabled();
+  bool isAtan2Arg0GradOpEnabled();
+  bool isAtan2Arg1GradOpEnabled();
   bool isDivArg0GradOpEnabled();
   bool isDivArg1GradOpEnabled();
   bool isPowArg0GradOpEnabled();
@@ -263,6 +265,8 @@ public:
   Patterns &enableSubtractArg1GradOp(bool v);
   Patterns &enableMulArgGradOp(bool v);
   Patterns &enableReciprocalGradOp(bool v);
+  Patterns &enableAtan2Arg0GradOp(bool v);
+  Patterns &enableAtan2Arg1GradOp(bool v);
   Patterns &enableDivArg0GradOp(bool v);
   Patterns &enableDivArg1GradOp(bool v);
   Patterns &enablePowArg0GradOp(bool v);

@@ -1,7 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_NEURALNET_POW_ARG_0_GRAD_OP_PATTERN_HPP
 #define GUARD_NEURALNET_POW_ARG_0_GRAD_OP_PATTERN_HPP
-
 #include <popart/patterns/binarygradoppattern.hpp>
 
 namespace popart {
@@ -16,10 +15,11 @@ public:
 
 protected:
   virtual TensorId makeAllReplacementOps(Op *op,
-                                         Tensor *grad_in,
-                                         Tensor *fwd_in0,
-                                         Tensor *fwd_in1,
-                                         Tensor *fwd_out) const override;
+                                         Ir *ir,
+                                         const Tensor &gradIn,
+                                         const Tensor &fwdIn0,
+                                         const Tensor &fwdIn1,
+                                         const Tensor &fwdOut) const override;
 };
 
 } // namespace popart

@@ -34,8 +34,9 @@ bool BinaryGradOpPattern::apply(Op *op) const {
   // do not keep reduced dims
   reduce->setKeepDims(0l);
 
-  TensorId pre_reduce =
-      makeAllReplacementOps(op, grad_in, fwd_in0, fwd_in1, fwd_out);
+  TensorId pre_reduce = makeAllReplacementOps(
+      op, &grad_in->getIr(), *grad_in, *fwd_in0, *fwd_in1, *fwd_out);
+
   reduce->connectInTensor(0, pre_reduce);
 
   reduce->connectOutTensor(0, grad_out->id);

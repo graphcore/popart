@@ -5,6 +5,56 @@ import pytest
 from op_tester import op_tester
 
 
+def test_atan2_arg0_grad_error(op_tester):
+    d1 = np.random.rand(2, 7).astype(np.float32)
+    d2 = np.random.rand(2, 7).astype(np.float32)
+
+    # No pattern passes, grad op will not be created.
+    op_tester.setPatterns(['Atan2Arg1GradOp'], enableRuntimeAsserts=False)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        # Add weight to force grad op creation
+        w1 = builder.addInitializedInputTensor(d2)
+        o = builder.aiGraphcore.atan2([w1, i1], "test_atan2")
+        builder.addOutputTensor(o)
+        return [o, popart.reservedGradientPrefix() + o]
+
+    def reference(ref_data):
+        return [None, None]
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        op_tester.run(init_builder, reference, 'train')
+
+    assert (e_info.value.args[0].endswith(
+        "This op should have been removed by pattern Atan2Arg0GradOp"))
+
+
+def test_atan2_arg1_grad_error(op_tester):
+    d1 = np.random.rand(2, 7).astype(np.float32)
+    d2 = np.random.rand(2, 7).astype(np.float32)
+
+    # No pattern passes, grad op will not be created.
+    op_tester.setPatterns(['Atan2Arg0GradOp'], enableRuntimeAsserts=False)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        # Add weight to force grad op creation
+        w1 = builder.addInitializedInputTensor(d2)
+        o = builder.aiGraphcore.atan2([i1, w1], "test_atan2")
+        builder.addOutputTensor(o)
+        return [o, popart.reservedGradientPrefix() + o]
+
+    def reference(ref_data):
+        return [None, None]
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        op_tester.run(init_builder, reference, 'train')
+
+    assert (e_info.value.args[0].endswith(
+        "This op should have been removed by pattern Atan2Arg1GradOp"))
+
+
 def test_cos_grad_error(op_tester):
     d1 = np.random.rand(2, 7).astype(np.float32)
     d2 = np.random.rand(2, 7).astype(np.float32)

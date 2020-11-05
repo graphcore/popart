@@ -8,7 +8,7 @@
 namespace popart {
 
 Atan2Op::Atan2Op(const OperatorIdentifier &_opid, const Op::Settings &settings_)
-    : ElementWiseBinaryOp(_opid, settings_) {}
+    : ElementWiseNpBroadcastableBinaryWithGradOp(_opid, settings_) {}
 
 std::unique_ptr<Op> Atan2Op::clone() const {
   return std::make_unique<Atan2Op>(*this);
@@ -21,6 +21,20 @@ std::unique_ptr<Op> Atan2Op::getLhsInplaceVariant() const {
 OperatorIdentifier Atan2Op::getLhsOperatorIdentifier() const {
   return Onnx::CustomOperators::Atan2Inplace;
 }
+
+Atan2Arg0GradOp::Atan2Arg0GradOp(const Op &op,
+                                 const std::vector<int64_t> &_reduction_axes)
+    : ElementWiseBinaryArg0GradOp(Onnx::GradOperators::Atan2Arg0Grad,
+                                  _reduction_axes,
+                                  op.inInfo(Atan2Op::getArg0InIndex()),
+                                  op.getSettings()) {}
+
+Atan2Arg1GradOp::Atan2Arg1GradOp(const Op &op,
+                                 const std::vector<int64_t> &_reduction_axes)
+    : ElementWiseBinaryArg1GradOp(Onnx::GradOperators::Atan2Arg1Grad,
+                                  _reduction_axes,
+                                  op.inInfo(Atan2Op::getArg1InIndex()),
+                                  op.getSettings()) {}
 
 namespace {
 

@@ -1226,6 +1226,8 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("DivArg1GradOp", PreAliasPatternType::DivArg1GradOp);
     en.value("PowArg0GradOp", PreAliasPatternType::PowArg0GradOp);
     en.value("PowArg1GradOp", PreAliasPatternType::PowArg1GradOp);
+    en.value("Atan2Arg0GradOp", PreAliasPatternType::Atan2Arg0GradOp);
+    en.value("Atan2Arg1GradOp", PreAliasPatternType::Atan2Arg1GradOp);
     en.value("SqrtGradOp", PreAliasPatternType::SqrtGradOp);
     en.value("ExpGradOp", PreAliasPatternType::ExpGradOp);
     en.value("Expm1GradOp", PreAliasPatternType::Expm1GradOp);

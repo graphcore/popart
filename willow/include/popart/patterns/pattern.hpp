@@ -25,6 +25,8 @@ enum class PreAliasPatternType {
   SinGradOp,
   CosGradOp,
   TanToSinOverCos,
+  Atan2Arg0GradOp,
+  Atan2Arg1GradOp,
   SqrtGradOp,
   ExpGradOp,
   Expm1GradOp,
