@@ -7,6 +7,7 @@
 #include <popart/popx/opxmanager.hpp>
 
 #include <popnn/Loss.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/Zero.hpp>
 
 namespace popart {
@@ -49,11 +50,22 @@ void TopKGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 void TopKOpx::grow(poplar::program::Sequence &prog) const {
+  auto negateTensor = [&](auto &x) {
+    return popops::map(
+        graph(), popops::expr::UnaryOpType::NEGATE, x, prog, debugPrefix());
+  };
+
   // Input shape, e.g. for rank = 4, axis = 2:
   //   [a0, a1, a2, a3]
   // Output shape:
   //   [a0, a1, K,  a3]
-  auto input   = getInTensor(TopKOp::getInIndex());
+  auto input = getInTensor(TopKOp::getInIndex());
+
+  auto &topk = getOp<TopKOp>();
+  if (!topk.getLargest()) {
+    input = negateTensor(input);
+  }
+
   auto lastDim = input.rank() - 1;
   // Poplibs topk requires input with rank = 2, axis = 1
   // Reshape input to:
@@ -72,7 +84,11 @@ void TopKOpx::grow(poplar::program::Sequence &prog) const {
   auto topKInds  = graph().addVariable(poplar::UNSIGNED_INT, indsShape);
   poputil::mapTensorLinearly(graph(), topKInds);
 
-  auto topKVals = popnn::topK(graph(), input, topKInds, K, true, prog);
+  auto topKVals =
+      popnn::topK(graph(), input, topKInds, K, topk.getSorted(), prog);
+  if (!topk.getLargest()) {
+    topKVals = negateTensor(topKVals);
+  }
 
   // Reverse the dimshuffling and reshaping of the input and indices tensors
   auto valsShape = outShape(TopKOp::getValuesOutIndex());

@@ -11,17 +11,18 @@ public:
   TopKOp(const OperatorIdentifier &_opid,
          int64_t k,
          int64_t axis,
+         bool largest,
+         bool sorted,
          const Op::Settings &settings);
   std::unique_ptr<Op> clone() const override;
   void setup() final;
-  virtual void connectInTensor(InIndex, TensorId) final;
 
   int64_t getK() const;
+  bool getLargest() const { return largest; }
+  bool getSorted() const { return sorted; }
   std::vector<std::unique_ptr<Op>> getGradOps() final;
 
   void appendOutlineAttributes(OpSerialiserBase &) const final;
-
-  static InIndex getKInIndex() { return 1; }
 
   // The outputs are:
   // - the sorted input, sliced from 0:K
@@ -32,6 +33,8 @@ public:
 
 private:
   int64_t K;
+  bool largest;
+  bool sorted;
 };
 
 // Similar to Scatter, except it has 2 inputs instead of 3.
