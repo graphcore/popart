@@ -1,17 +1,17 @@
-// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_DIV_ARG_0_GRAD_OP_PATTERN_HPP
-#define GUARD_NEURALNET_DIV_ARG_0_GRAD_OP_PATTERN_HPP
-
+// Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#ifndef GUARD_NEURALNET_ATAN2_ARG_1_GRAD_OP_PATTERN_HPP
+#define GUARD_NEURALNET_ATAN2_ARG_1_GRAD_OP_PATTERN_HPP
 #include <popart/patterns/binarygradoppattern.hpp>
 
 namespace popart {
 
-// Replace a DivArg0GradOp with
-// {(grad_in), (fwd_in1)} -> [Div] -> [ReduceSum] -> (grad_out)
-class DivArg0GradOpPattern : public BinaryGradOpPattern {
+// Replace a Atan2ArgGradOp with -y/(x^2+y^2)
+// {(fwd_in_y)} -> [Square] -> (tmp1)
+// {(fwd_in_x)} -> [Square] -> (tmp2)
+// {(tmp1), (tmp2)} -> [Add] -> (tmp3)
+// {(fwd_in_y), (tmp3)} -> [Div] -> [ReduceSum] -> [Neg] -> (grad_out)
+class Atan2Arg1GradOpPattern : public BinaryGradOpPattern {
 public:
-  // Does op at the root of the
-  // pattern make a match?
   bool matches(Op *) const override;
 
 protected:

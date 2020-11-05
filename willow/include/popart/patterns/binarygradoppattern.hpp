@@ -26,10 +26,11 @@ protected:
   // The implementation is *not* responsible for disconnecting or erasing the
   // original op, or the reduce sum for np-style broadcasting.
   virtual TensorId makeAllReplacementOps(Op *op,
-                                         Tensor *grad_in,
-                                         Tensor *fwd_in0,
-                                         Tensor *fwd_in1,
-                                         Tensor *fwd_out) const = 0;
+                                         Ir *ir,
+                                         const Tensor &gradIn,
+                                         const Tensor &fwdIn0,
+                                         const Tensor &fwdIn1,
+                                         const Tensor &fwdOut) const = 0;
 };
 
 } // namespace popart

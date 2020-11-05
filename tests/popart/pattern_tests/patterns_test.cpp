@@ -23,6 +23,64 @@
 
 using namespace popart;
 
+BOOST_AUTO_TEST_CASE(Atan2GradOps) {
+  // () -> [Atan2GradArg0] -> ()
+  // () -> [Atan2GradArg1] -> ()
+  // should become
+  //
+  // Combined by transform
+  // () -> [Square] -> [Add] -> (*)
+  // () -> [Square] -^
+  //
+  // For arg 0 (*) -> [Div] -> [Reduce] -> ()
+  // For arg 1 (*) -> [Div] -> [Neg] -> [Reduce] -> ()
+
+  // Build an onnx model
+  auto builder     = Builder::create();
+  auto aiOnnx      = builder->aiOnnxOpset9();
+  auto aiGraphcore = builder->aiGraphcoreOpset1();
+
+  TensorInfo shape{"FLOAT", std::vector<int64_t>{2}};
+
+  auto input1 = builder->addInputTensor(shape);
+  auto input2 = builder->addInputTensor(shape);
+
+  auto atan2Out = aiGraphcore.atan2({input1, input2});
+  auto l1       = builder->aiGraphcoreOpset1().l1loss({atan2Out}, 0.1);
+
+  auto proto      = builder->getModelProto();
+  auto modelProto = io::getModelFromString(proto);
+
+  // Create the IR
+  // Add the last tensor, and the 3rd tensor as anchors
+  auto art       = AnchorReturnType("All");
+  auto dataFlow  = DataFlow(1,
+                           {{atan2Out, art},
+                            {reservedGradientPrefix() + input1, art},
+                            {reservedGradientPrefix() + input2, art}});
+  auto optimizer = ConstSGD(0.01);
+  auto device    = createTestDevice(TEST_TARGET);
+
+  Ir ir;
+  ir.prepare({modelProto,
+              InputShapeInfo(),
+              dataFlow,
+              l1,
+              &optimizer,
+              *device,
+              {},
+              Patterns::create({"Atan2Arg0GradOp", "Atan2Arg1GradOp"})
+                  .enableRuntimeAsserts(false)});
+
+  // Check the ir
+  // Sum of op coun as above
+  BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::Square).size() == 2);
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Add).size() == 1);
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Div).size() == 2);
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Neg).size() == 1);
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::ReduceSum).size() == 2);
+}
+
 BOOST_AUTO_TEST_CASE(PostNRepl_IdentityOp) {
   // clang-format off
   //

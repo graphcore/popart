@@ -134,6 +134,8 @@ const static AiGraphcoreOpIdV1 AbsGrad("AbsGrad");
 const static AiGraphcoreOpIdV1 AddArg0Grad("AddArg0Grad");
 const static AiGraphcoreOpIdV1 AddArg1Grad("AddArg1Grad");
 const static AiGraphcoreOpIdV1 AsinGrad("AsinGrad");
+const static AiGraphcoreOpIdV1 Atan2Arg0Grad("Atan2Arg0Grad");
+const static AiGraphcoreOpIdV1 Atan2Arg1Grad("Atan2Arg1Grad");
 const static AiGraphcoreOpIdV1 AtanGrad("AtanGrad");
 const static AiGraphcoreOpIdV1 AveragePoolGrad("AveragePoolGrad");
 const static AiGraphcoreOpIdV1 BatchNormalizationGrad("BatchNormalizationGrad");
