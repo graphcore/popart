@@ -28,23 +28,6 @@ using boost::algorithm::any_of;
 
 namespace popart {
 namespace {
-
-using OpMap = std::unordered_map<OpId, Op *>;
-
-// Create a map of OpIds to Op*.
-// This map includes ops in all graphs in the Ir.
-OpMap createOpMap(const Ir &ir) {
-  OpMap opMap;
-  for (auto &graphId_graphPtr : ir.getGraphs()) {
-    auto graphPtr = graphId_graphPtr.second.get();
-    for (auto &opId_opPtr : graphPtr->getOps()) {
-      auto op = opId_opPtr.second.get();
-      opMap.insert({op->id, op});
-    }
-  }
-  return opMap;
-}
-
 template <typename T> void sortMatches(std::vector<T> &matches) {
   std::sort(matches.begin(), matches.end(), [=](T &p1, T &p2) {
     return std::tuple<int, std::vector<int>::size_type, int>(
@@ -289,16 +272,12 @@ namespace {
 //  Outlining matches are not supposed to cross certain boundaries:
 // a.) Across recompute/non-recompute operators
 // b.) Across execution phases
-// c.) Across graphs
 void insertBoundariesOps(const SessionOptions &opts,
                          const std::vector<Op *> &schedule) {
   if (!schedule.empty()) {
     for (int64_t i = 0; i < schedule.size() - 1; ++i) {
       auto crossed = getBoundariesCrossed(opts, i, i + 2, schedule);
-      // The graph comparison has been omitted from `getBoundariesCrossed` as it
-      // is a special case that needs handling when adding the boundary op.
-      if (crossed.size() > 0 ||
-          schedule[i]->getGraph().id != schedule[i + 1]->getGraph().id) {
+      if (crossed.size() > 0) {
         auto &graph     = schedule[i]->getGraph();
         auto boundaryOp = std::make_unique<BoundaryOp>(Op::Settings(graph, ""));
         auto boundary   = boundaryOp.get();
@@ -311,9 +290,7 @@ void insertBoundariesOps(const SessionOptions &opts,
         graph.moveIntoGraph(std::move(boundaryOp));
         // Insert topo cons to pin boundary between ops
         graph.topoCons.get()->insert(schedule[i], boundary);
-        if (schedule[i]->getGraph().id == schedule[i + 1]->getGraph().id) {
-          graph.topoCons.get()->insert(boundary, schedule[i + 1]);
-        }
+        graph.topoCons.get()->insert(boundary, schedule[i + 1]);
         // Ensures inserting boundaries does not mess with priorities
         boundary->settings.schedulePriority =
             schedule[i]->settings.schedulePriority;
@@ -329,7 +306,7 @@ class Match {
 public:
   class Instance {
   public:
-    Instance(const std::vector<OpId> &, Graph &, const OpMap &);
+    Instance(const std::vector<OpId> &, Graph &);
 
     std::vector<OpId> ops;
 
@@ -345,9 +322,7 @@ public:
     void addExternalInput(Tensor *);
   };
 
-  Match(const fwtools::subgraph::Match &,
-        const std::vector<Op *> &,
-        const OpMap &);
+  Match(const fwtools::subgraph::Match &, const std::vector<Op *> &);
 
   std::vector<Instance> instances;
   int length;
@@ -355,27 +330,25 @@ public:
 
 class Replacement {
 public:
-  Replacement(const std::vector<OpId> &ops_, Op *replacement_op_)
+  Replacement(const std::vector<OpId> &ops_, const OpId &replacement_op_)
       : ops(ops_), replacement_op(replacement_op_) {}
 
   std::vector<OpId> ops;
-  Op *replacement_op;
+  OpId replacement_op;
 };
 
-Match::Instance::Instance(const std::vector<OpId> &ops_,
-                          Graph &graph,
-                          const OpMap &opMap)
+Match::Instance::Instance(const std::vector<OpId> &ops_, Graph &graph)
     : ops(ops_) {
   std::set<Op *> op_set;
   for (auto opid : ops) {
-    auto op = opMap.at(opid);
+    auto op = graph.getOp(opid);
     op_set.insert(op);
   }
 
   auto &ir = graph.getIr();
 
   for (auto opid : ops) {
-    auto op = opMap.at(opid);
+    auto op = graph.getOp(opid);
 
     for (auto &index_tensor : op->input->tensorMap()) {
       auto input = index_tensor.second;
@@ -440,8 +413,7 @@ void Match::Instance::addExternalOutput(Tensor *tensor) {
 }
 
 Match::Match(const fwtools::subgraph::Match &match,
-             const std::vector<Op *> &ops,
-             const OpMap &opMap)
+             const std::vector<Op *> &ops)
     : length(match.length) {
   for (auto &start : match.starts) {
     std::vector<OpId> m;
@@ -451,7 +423,7 @@ Match::Match(const fwtools::subgraph::Match &match,
       m.push_back(ops[idx]->id);
     }
 
-    instances.emplace_back(m, ops[0]->getGraph(), opMap);
+    instances.emplace_back(m, ops[0]->getGraph());
   }
 }
 
@@ -522,9 +494,9 @@ void updateTopoCons(const std::vector<OpId> &ops,
   }
 }
 
-static Op *replaceWithCallOp(const Match::Instance &instance,
-                             Graph &graph,
-                             Graph &subgraph) {
+static OpId replaceWithCallOp(const Match::Instance &instance,
+                              Graph &graph,
+                              Graph &subgraph) {
 
   // Copy some attributes with heuristics from the instance ops
   nonstd::optional<Scope> scope;
@@ -751,7 +723,7 @@ static Op *replaceWithCallOp(const Match::Instance &instance,
 
   call_op->setup();
 
-  return call_op;
+  return call_op->id;
 }
 
 class InstanceConstraints {
@@ -879,9 +851,10 @@ void verifyMatchInstances(const Match &match) {
   }
 }
 
-Graph &createSubgraph(const Match &match, Ir &ir, const OpMap &opMap) {
+Graph &createSubgraph(const Match &match, Graph &graph) {
 
-  auto subgraph_id    = ir.createUniqueSubgraphId({""});
+  auto &ir            = graph.getIr();
+  auto subgraph_id    = ir.createUniqueSubgraphId(graph.id);
   auto &subgraph      = ir.createGraph(subgraph_id);
   auto subgraph_scope = subgraph.getScope();
   auto &instance      = match.instances[0];
@@ -890,7 +863,7 @@ Graph &createSubgraph(const Match &match, Ir &ir, const OpMap &opMap) {
     std::stringstream ss;
     for (int i = 0; i < instance.ops.size(); i++) {
       auto opid = instance.ops.at(i);
-      auto op   = opMap.at(opid);
+      auto op   = graph.getOp(opid);
       ss << std::endl
          << "    " << op->debugName() << ", "
          << "VGID: " << (op->hasVirtualGraphId() ? op->getVirtualGraphId() : -1)
@@ -912,7 +885,7 @@ Graph &createSubgraph(const Match &match, Ir &ir, const OpMap &opMap) {
   std::vector<Op *> clones;
   for (int i = 0; i < instance.ops.size(); i++) {
     auto opid                     = instance.ops.at(i);
-    auto op                       = opMap.at(opid);
+    auto op                       = graph.getOp(opid);
     auto clone                    = op->clone();
     clone->settings.graph         = subgraph;
     clone->settings.scope         = subgraph_scope;
@@ -934,9 +907,8 @@ Graph &createSubgraph(const Match &match, Ir &ir, const OpMap &opMap) {
   std::set<std::tuple<int, int, bool>> constraints;
   for (auto &instanceForConstraints : match.instances) {
     for (int i = 0; i < instanceForConstraints.ops.size(); i++) {
-      auto opid   = instanceForConstraints.ops.at(i);
-      auto op     = opMap.at(opid);
-      auto &graph = op->getGraph();
+      auto opid = instanceForConstraints.ops.at(i);
+      auto op   = graph.getOp(opid);
       {
         auto afters = graph.topoCons->getAfters(op);
         for (Op *after_op : afters) {
@@ -1002,7 +974,7 @@ Graph &createSubgraph(const Match &match, Ir &ir, const OpMap &opMap) {
 
   // hook up graph inputs and outputs
   for (auto opid : instance.ops) {
-    auto op    = opMap.at(opid);
+    auto op    = graph.getOp(opid);
     auto clone = clone_map.at(op);
 
     // connect inputs
@@ -1032,12 +1004,11 @@ Graph &createSubgraph(const Match &match, Ir &ir, const OpMap &opMap) {
   return subgraph;
 }
 
-static void
-handleRandomReferences(const Match &match, Ir &ir, const OpMap &opMap) {
+static void handleRandomReferences(const Match &match, Graph &graph) {
   std::map<std::string, std::set<RandomReferenceId>> idsToMerge;
   for (auto &instance : match.instances) {
     for (auto opid : instance.ops) {
-      auto old_op = dynamic_cast<DropoutOp *>(opMap.at(opid));
+      auto old_op = dynamic_cast<DropoutOp *>(graph.getOp(opid));
       if (old_op) {
         idsToMerge[old_op->getSubgraphEquivId()].insert(
             old_op->getReferenceId());
@@ -1046,30 +1017,28 @@ handleRandomReferences(const Match &match, Ir &ir, const OpMap &opMap) {
   }
 
   for (auto &equivSet : idsToMerge) {
-    ir.mergeRandomReferenceIds(equivSet.second);
+    graph.getIr().mergeRandomReferenceIds(equivSet.second);
   }
 }
 
 // Create a subgraph for the match and
 // replace instances of the match with a CallOp
-static std::vector<Replacement>
-applyMatch(const Match &match, Ir &ir, const OpMap &opMap) {
+static std::vector<Replacement> applyMatch(const Match &match, Graph &graph) {
   verifyMatchInstances(match);
 
   // TODO: Verify. This is possibly too strict. Can probably be dropped.
   // verifyTopologicalConstraints(match, graph);
 
-  auto &subgraph = createSubgraph(match, ir, opMap);
+  auto &subgraph = createSubgraph(match, graph);
 
-  handleRandomReferences(match, ir, opMap);
+  handleRandomReferences(match, graph);
 
   std::vector<Replacement> replacements;
 
   // Replace the matches with call ops
   for (auto &instance : match.instances) {
-    Graph &instanceGraph = opMap.at(instance.ops.at(0))->getGraph();
-    auto call_op         = replaceWithCallOp(instance, instanceGraph, subgraph);
-    replacements.push_back({instance.ops, call_op});
+    auto call_op_id = replaceWithCallOp(instance, graph, subgraph);
+    replacements.push_back({instance.ops, call_op_id});
   }
 
   return replacements;
@@ -1082,8 +1051,7 @@ getRinseMatches(const std::vector<Op *> &ops,
                 const std::vector<std::pair<size_t, size_t>> &sequences,
                 float threshold,
                 float sequenceBreakCost,
-                bool copyCostPruning,
-                const OpMap &opMap) {
+                bool copyCostPruning) {
 
   if (logging::shouldLog(logging::Module::transform, logging::Level::Trace)) {
     std::vector<int> intSchedule = fwtools::subgraph::getIntSchedule(ops);
@@ -1150,7 +1118,7 @@ getRinseMatches(const std::vector<Op *> &ops,
     logging::transform::trace("[SubgraphOutline] Match length: {}, starts: {}",
                               match.length,
                               match.starts);
-    matches.emplace_back(match, ops, opMap);
+    matches.emplace_back(match, ops);
   }
 
   return matches;
@@ -1164,7 +1132,7 @@ void applyReplacement(Match::Instance &instance, Replacement &replacement) {
                            replacement.ops.end());
   if (start != instance.ops.end()) {
     instance.ops.erase(start, start + replacement.ops.size());
-    instance.ops.insert(start, replacement.replacement_op->id);
+    instance.ops.insert(start, replacement.replacement_op);
   } else {
     for (OpId id : replacement.ops) {
       if (std::find(instance.ops.begin(), instance.ops.end(), id) !=
@@ -1190,62 +1158,20 @@ void applyReplacements(std::vector<Match> &matches,
   }
 }
 
-std::vector<Op *> getFullSchedule(const Ir &ir) {
-  std::vector<Op *> schedule;
-  for (auto &graphId_graphPtr : ir.getGraphs()) {
-    Graph *graphPtr = graphId_graphPtr.second.get();
-    auto sched      = graphPtr->getOpSchedule({}, RequireOptimalSchedule::Yes);
-    schedule.insert(schedule.end(), sched.begin(), sched.end());
-  }
-  return schedule;
-}
-
-void removeBoundaryOps(const Ir &ir) {
-  for (auto &graphId_graphPtr : ir.getGraphs()) {
-    auto graph    = graphId_graphPtr.second.get();
-    auto schedule = graph->getOpSchedule({}, RequireOptimalSchedule::No);
-    for (Op *op : schedule) {
-      if (dynamic_cast<BoundaryOp *>(op)) {
-        graph->topoCons->remove(graph->getOp(op->id));
-        graph->eraseOp(op->id);
-      }
-    }
-  }
-}
-
-void updateOpMap(OpMap &opMap,
-                 const Match &match,
-                 const std::vector<Replacement> &replacements) {
-  // Remove all the ops in the match instances from opMap as they should
-  // have been removed.
-  for (auto &instance : match.instances) {
-    for (const OpId &opid : instance.ops) {
-      opMap.erase(opid);
-    }
-  }
-
-  // Add the replacement ops to opMap.
-  for (auto &replacement : replacements) {
-    auto x = replacement.replacement_op;
-    opMap.insert({x->id, x});
-  }
-}
-
 } // namespace
 
 bool SubgraphOutline::apply(Graph &graph) const {
 
   auto &ir = graph.getIr();
 
-  OpMap opMap = createOpMap(ir);
-
-  auto schedule = getFullSchedule(ir);
+  std::vector<Op *> schedule =
+      graph.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
   // Change schedule to include boundaries that can't be outlined
   localoutline::insertBoundariesOps(ir.getSessionOptions(), schedule);
 
   // Get updated schedule with boundaries
-  schedule = getFullSchedule(ir);
+  schedule = graph.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
   // Get the software parallel schedule to generate sequences that should
   // be outlined as a whole
@@ -1257,8 +1183,7 @@ bool SubgraphOutline::apply(Graph &graph) const {
                       softParallelismModel.getParallelSchedule(),
                       ir.getSessionOptions().outlineThreshold,
                       ir.getSessionOptions().outlineSequenceBreakCost,
-                      ir.getSessionOptions().enableOutliningCopyCostPruning,
-                      opMap);
+                      ir.getSessionOptions().enableOutliningCopyCostPruning);
 
   if (logging::shouldLog(logging::Module::none, logging::Level::Trace)) {
     unsigned i = 0;
@@ -1279,16 +1204,18 @@ bool SubgraphOutline::apply(Graph &graph) const {
     auto match = matches.back();
     matches.pop_back();
 
-    auto replacements = applyMatch(match, ir, opMap);
+    auto replacements = applyMatch(match, graph);
     applyReplacements(matches, replacements);
-
-    // If there are more matches, we need to update opMap with the new call ops.
-    if (!matches.empty()) {
-      updateOpMap(opMap, match, replacements);
-    }
   }
 
-  removeBoundaryOps(ir);
+  // Remove all boundaries
+  schedule = graph.getOpSchedule({}, RequireOptimalSchedule::No);
+  for (Op *op : schedule) {
+    if (dynamic_cast<BoundaryOp *>(op)) {
+      graph.topoCons->remove(graph.getOp(op->id));
+      graph.eraseOp(op->id);
+    }
+  }
 
   graph.getTensors().removeIsolated(true);
 

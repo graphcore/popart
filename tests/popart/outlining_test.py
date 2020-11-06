@@ -5,7 +5,6 @@ import torch
 import onnx
 from onnx import numpy_helper
 import test_util as tu
-import json
 
 
 def test_weight_update(tmpdir):
@@ -145,76 +144,3 @@ def test_batches_per_step_greater_than_one():
         rhs = with_outlining[key]
 
         assert np.allclose(lhs, rhs)
-
-
-def test_outlining_in_subgraphs():
-    data = [np.random.rand(4, 4).astype(np.float32) for i in range(2)]
-    weights = [np.random.rand(4, 4).astype(np.float32) for i in range(2)]
-
-    def run_popart():
-        # Main graph: add, matmul, add, Call(0)
-        # Subgraph 0: add, matmul
-        bld = popart.Builder()
-        i0 = bld.addInputTensor("FLOAT", [4, 4])
-        i1 = bld.addInputTensor("FLOAT", [4, 4])
-        w0 = bld.addInitializedInputTensor(weights[0])
-        w1 = bld.addInitializedInputTensor(weights[1])
-        x = bld.aiOnnx.add([i0, i1])
-        x = bld.aiOnnx.matmul([x, w0])
-        x = bld.aiOnnx.add([x, i1])
-
-        def create_subgraph():
-            subgraph_builder = bld.createSubgraphBuilder()
-            tensor_info = popart.TensorInfo('FLOAT', [4, 4])
-            i0 = subgraph_builder.addInputTensor(tensor_info)
-            i1 = subgraph_builder.addInputTensor(tensor_info)
-            i2 = subgraph_builder.addInputTensor(tensor_info)
-            y = subgraph_builder.aiOnnx.add([i0, i1])
-            y = subgraph_builder.aiOnnx.matmul([y, i2])
-            subgraph_builder.addOutputTensor(y)
-            return subgraph_builder
-
-        x = bld.aiGraphcore.call([x, i1, w1], 1, create_subgraph())[0]
-
-        o = x
-        proto = bld.getModelProto()
-
-        sess = popart.InferenceSession(fnModel=proto,
-                                       deviceInfo=tu.create_test_device(),
-                                       dataFlow=popart.DataFlow(1, [o]))
-        sess.prepareDevice()
-
-        anchors = sess.initAnchorArrays()
-
-        stepio = popart.PyStepIO({i0: data[0], i1: data[1]}, anchors)
-        sess.weightsFromHost()
-
-        sess.run(stepio)
-        return anchors[o], json.loads(
-            sess._serializeIr(popart.IrSerializationFormat.JSON))
-
-    def run_reference():
-        x = data[0] + data[1]
-        x = np.matmul(x, weights[0])
-        x = x + data[1]
-        x = x + data[1]
-        x = np.matmul(x, weights[1])
-        return x
-
-    popart_output, ir = run_popart()
-    ref_output = run_reference()
-    print(f'popart_output: {popart_output}\n')
-    print(f'ref_output: {ref_output}')
-    assert np.allclose(popart_output, ref_output)
-
-    ops = [j['type'] for i in ir.values() for j in i]
-
-    # Outlining should have added another subgraph.
-    graph_count = len(ir)
-    assert graph_count == 3
-
-    # The 2 MatMul ops should have been outlined.
-    assert ops.count('MatMul') == 1
-
-    # 2 Call ops should have been added for the outlined MatMuls.
-    assert ops.count('Call') == 3
