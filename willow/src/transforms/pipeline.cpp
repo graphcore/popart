@@ -995,8 +995,6 @@ bool Pipeline::apply(Graph &graph) const {
   //    and (in-place) restore op
   Op::Settings settings(graph, "");
 
-  std::map<PipelineStage, std::vector<Op *>> restoreOps;
-
   for (auto &tid : toStashTensors) {
     auto tensor = graph.getTensors().get(tid);
 
@@ -1125,7 +1123,6 @@ bool Pipeline::apply(Graph &graph) const {
     }
 
     restoreOp->setup();
-    restoreOps[restoreRefOp->getPipelineStage()].push_back(restoreOp);
 
     // refresh consumers of tensor
     tidConsumers = tensor->consumers.getOps();
