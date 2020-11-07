@@ -121,7 +121,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_1) {
   int64_t K = 3;
 
   // we will generate random initializations
-  int seed = 1337;
+  int seed = 1338;
   DefaultRandomEngine eng(seed);
   UniformRealDistribution<float> fdis(-4.f, 4.f);
 
@@ -257,7 +257,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_2) {
   int32_t K = 3;
 
   // we will generate random initializations
-  int seed = 1337;
+  int seed = 1339;
   DefaultRandomEngine eng(seed);
   UniformRealDistribution<float> fdis(-4.f, 4.f);
 
@@ -284,7 +284,6 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_2) {
   TensorInfo W_info{"FLOAT", std::vector<int64_t>{1, N, N}};
   std::vector<float> v_W_init(W_info.nelms());
   for (auto &val : v_W_init) {
-    val = fdis(eng);
   }
   TensorId W_id =
       bder->addInitializedInputTensor({v_W_init.data(), W_info}, "W");
@@ -375,7 +374,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadOutlineTest) {
   int64_t K = 3;
 
   // we will generate random initializations
-  int seed = 1337;
+  int seed = 1340;
   DefaultRandomEngine eng(seed);
   UniformRealDistribution<float> fdis(-4.f, 4.f);
 
