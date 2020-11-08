@@ -158,6 +158,10 @@ public:
   void setProducer(Op *);
   void resetProducer(Op *);
   bool hasProducer() const;
+  bool isGraphInput() const;
+  InIndex getGraphInputIndex() const;
+  bool isGraphOutput() const;
+  OutIndex getGraphOutputIndex() const;
   void setImplicitLoopInput(bool);
   bool isImplicitLoopInput() const;
   // Returns true for stream tensors that are optimizer tensors, as

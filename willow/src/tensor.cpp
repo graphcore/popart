@@ -418,6 +418,30 @@ Op *Tensor::getProducerUnsafe() const { return producer; }
 
 bool Tensor::hasProducer() const { return producer != nullptr; }
 
+bool Tensor::isGraphInput() const {
+  return std::find(graph.getInputIds().begin(),
+                   graph.getInputIds().end(),
+                   id) != graph.getInputIds().end();
+}
+
+InIndex Tensor::getGraphInputIndex() const {
+  auto it =
+      std::find(graph.getInputIds().begin(), graph.getInputIds().end(), id);
+  return std::distance(graph.getInputIds().begin(), it);
+}
+
+bool Tensor::isGraphOutput() const {
+  return std::find(graph.getOutputIds().begin(),
+                   graph.getOutputIds().end(),
+                   id) != graph.getOutputIds().end();
+}
+
+InIndex Tensor::getGraphOutputIndex() const {
+  auto it =
+      std::find(graph.getOutputIds().begin(), graph.getOutputIds().end(), id);
+  return std::distance(graph.getOutputIds().begin(), it);
+}
+
 bool Tensor::isOptimizerTensor() const {
 
   // TODO T11262 is to make an optimizer Tensor class, so that we don't need to
