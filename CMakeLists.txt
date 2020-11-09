@@ -62,6 +62,11 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 set(CMAKE_MACOSX_RPATH 1)
 set(CMAKE_INSTALL_RPATH "${POPLAR_INSTALL_DIR}/lib")
 
+# Add Poplar SDK dir to prefix path so we can find its libraries.
+if(DEFINED POPLAR_INSTALL_DIR)
+  list(APPEND CMAKE_PREFIX_PATH ${POPLAR_INSTALL_DIR})
+endif()
+
 #with cmake >= 3.12 this should be add_compile_definitions(ONNX_NAMESPACE=onnx)
 add_definitions(-DONNX_NAMESPACE=onnx)
 
@@ -95,7 +100,9 @@ find_package(ONNX REQUIRED)
 #Link Boost statically
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_STATIC_RUNTIME ON)
-find_package(Boost REQUIRED COMPONENTS filesystem system program_options)
+# thread needed by libpvti. This is a libpvti bug - they should find it for us.
+find_package(Boost REQUIRED COMPONENTS filesystem system program_options thread)
+# find_package(CBLAS REQUIRED)
 
 #------ end of find dependencies
 
