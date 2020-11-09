@@ -20,3 +20,32 @@ if (${POPART_USE_STACKTRACE})
     message(STATUS "Building popart with Boost Stacktrace")
     add_definitions(-DPOPART_USE_STACKTRACE -DBOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED)
 endif()
+
+option(POPART_BUILD_TESTING "Build the popart tests" ON)
+option(POPART_BUILD_EXAMPLES "Build the popart examples" ON)
+
+# Generate compile_commands.json file for IDE integration
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# Use GOLD linker if g++ to speed up compilation
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+  # Based on https://github.com/frobware/c-hacks/blob/master/
+  # cmake/use-gold-linker.cmake
+  execute_process(COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=gold -Wl,--version OUTPUT_VARIABLE stdout ERROR_QUIET)
+  if("${stdout}" MATCHES "GNU gold")
+    foreach(BINARY_TYPE EXE MODULE SHARED STATIC)
+      set(CMAKE_${BINARY_TYPE}_LINKER_FLAGS "${CMAKE_${BINARY_TYPE}_LINKER_FLAGS} -fuse-ld=gold")
+    endforeach()
+  endif()
+endif()
+
+# Paths used for packaging.
+# Default to the original paths to ensure backwards compatability.
+if(NOT POPART_PKG_DIR)
+  set(POPART_PKG_DIR "../../../pkg")
+endif()
+if(NOT POPART_CBT_VIEW_DIR)
+  set(POPART_CBT_VIEW_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../..")
+endif()
+message(STATUS "Package directory is ${POPART_PKG_DIR}")
+message(STATUS "View directory is ${POPART_CBT_VIEW_DIR}")

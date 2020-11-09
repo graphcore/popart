@@ -1,53 +1,64 @@
 cmake_minimum_required(VERSION 3.12.0)
 
-project(popart)
+#------ set version
+
+file(READ ${CMAKE_CURRENT_SOURCE_DIR}/version.json VERSION_JSON)
+string(REGEX REPLACE
+       ".*major[^:]*: \"([^\"]*)\".*" "\\1"
+       POPART_VERSION_MAJOR
+       ${VERSION_JSON})
+string(REGEX REPLACE
+       ".*minor[^:]*: \"([^\"]*)\".*" "\\1"
+       POPART_VERSION_MINOR
+       ${VERSION_JSON})
+string(REGEX REPLACE
+       ".*point[^:]*: \"([^\"]*)\".*" "\\1"
+       POPART_VERSION_PATCH
+       ${VERSION_JSON})
+
+set(POPART_VERSION "${POPART_VERSION_MAJOR}.${POPART_VERSION_MINOR}.${POPART_VERSION_PATCH}")
+
+# Docs version doesn't have the build number or view hash.
+set(DOCS_VERSION "${POPART_VERSION}")
+if (DEFINED BUILD_NUMBER)
+  # Version used in the file names of the package will include build number.
+  set(VERSION "${POPART_VERSION}+${BUILD_NUMBER}")
+endif()
+
+#------ end of set version
+
+### Project declaration
+project(popart VERSION ${POPART_VERSION} LANGUAGES CXX)
+
+# Where to find Findxxxx.cmake files
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules ${PROJECT_SOURCE_DIR}/cmake)
+
+# cmake option definitions for popart
+include(DefineOptions)
 
 # Calls enable_testing(), which sets BUILD_TESTING=ON
 include(CTest)
 
-option(POPART_BUILD_TESTING "Build the popart tests" ON)
-option(POPART_BUILD_EXAMPLES "Build the popart examples" ON)
+#------ Set install directories
 
 include(GNUInstallDirs)
 
-# All C++ code in this project will be compiled as C++14
-set (CMAKE_CXX_STANDARD 14)
-
-# Generate compile_commands.json file for IDE integration
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-if(${CMAKE_SYSTEM_NAME} STREQUAL Darwin)
-  set(OS_TYPE osx)
-elseif(${CMAKE_SYSTEM_NAME} STREQUAL Linux)
-  set(OS_TYPE linux)
-else()
-  set(OS_TYPE unknown)
-endif()
-
-# Use GOLD linker if g++ to speed up compilation
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-  # Based on https://github.com/frobware/c-hacks/blob/master/
-  # cmake/use-gold-linker.cmake
-  execute_process(COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=gold -Wl,--version OUTPUT_VARIABLE stdout ERROR_QUIET)
-  if("${stdout}" MATCHES "GNU gold")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fuse-ld=gold")
-  endif()
-endif()
-
-# Distribution paths
+# Distribution path
 set(INSTALL_PYDIR python)
 set(INSTALL_EXAMPLES examples)
 
 # Tests path
 set(INSTALL_TESTS ${CMAKE_INSTALL_PREFIX}/tests)
 
-# There are tests for the python examples which need copying
-install(DIRECTORY docs/
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/docs
-  FILES_MATCHING REGEX ".*\.(py)$")
+#------ end of install directories
 
+#------ Definitions that configure the build
+
+# All C++ code in this project will be compiled as C++14
+set (CMAKE_CXX_STANDARD 14)
+
+# Hardcode rpaths to things we link against outside of popart's build tree.
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-
 set(CMAKE_MACOSX_RPATH 1)
 set(CMAKE_INSTALL_RPATH "${POPLAR_INSTALL_DIR}/lib")
 
@@ -58,15 +69,14 @@ add_definitions(-DONNX_NAMESPACE=onnx)
 # in our own code without breaking customers code.
 add_definitions(-DDEPRECATE_LEGACY_OP_FACTORY=1)
 
-#Where to find Findxxxx.cmake files
-list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules ${PROJECT_SOURCE_DIR}/cmake)
-
-# cmake option definitions for popart
-include(DefineOptions)
-
 # Prefer to find static libraries
 set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+#------ end of build configuration
+
+#------ find dependencies
 
 find_package(PoplarRunner)
 find_package(Threads REQUIRED)
@@ -85,24 +95,32 @@ find_package(ONNX REQUIRED)
 #Link Boost statically
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_STATIC_RUNTIME ON)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 find_package(Boost REQUIRED COMPONENTS filesystem system program_options)
 # find_package(CBLAS REQUIRED)
 
+#------ end of find dependencies
+
+#------ configure sources
+
 set(POPART_PYTHON_DIR ${CMAKE_CURRENT_SOURCE_DIR}/python)
 
+add_subdirectory(willow)
+
+# light-weight wrapper using pybind11, plus python support libraries
+# VERSION needs to be defined before adding this directory
+add_subdirectory(python)
+
+# Examples and tests
+if (POPART_BUILD_TESTING AND BUILD_TESTING)
+  add_subdirectory(tests)
+endif()
+if (POPART_BUILD_EXAMPLES)
+  add_subdirectory(examples)
+endif()
+
+#------ end of configure sources
+
 #------ cpack information
-
-# Default to the original paths to ensure backwards compatability.
-if(NOT POPART_PKG_DIR)
-  set(POPART_PKG_DIR "../../../pkg")
-endif()
-if(NOT POPART_CBT_VIEW_DIR)
-  set(POPART_CBT_VIEW_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../..")
-endif()
-
-message(STATUS "Package directory is ${POPART_PKG_DIR}")
-message(STATUS "View directory is ${POPART_CBT_VIEW_DIR}")
 
 execute_process(
   COMMAND git rev-parse HEAD
@@ -120,50 +138,20 @@ set(SNAPSHOT ${VIEW_SHORT_HASH})
 
 set(CPACK_PACKAGE_VENDOR graphcore)
 set(CPACK_GENERATOR TGZ)
+set(CPACK_PACKAGE_VERSION_MAJOR ${POPART_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${POPART_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${POPART_VERSION_PATCH})
 
-file(READ ${PROJECT_SOURCE_DIR}/version.json VERSION_JSON)
-string(REGEX REPLACE
-       ".*major[^:]*: \"([^\"]*)\".*" "\\1"
-       CPACK_PACKAGE_VERSION_MAJOR
-       ${VERSION_JSON})
-string(REGEX REPLACE
-       ".*minor[^:]*: \"([^\"]*)\".*" "\\1"
-       CPACK_PACKAGE_VERSION_MINOR
-       ${VERSION_JSON})
-string(REGEX REPLACE
-       ".*point[^:]*: \"([^\"]*)\".*" "\\1"
-       CPACK_PACKAGE_VERSION_PATCH
-       ${VERSION_JSON})
-
-set(VERSION ${CPACK_PACKAGE_VERSION_MAJOR})
-set(VERSION ${VERSION}.${CPACK_PACKAGE_VERSION_MINOR})
-set(VERSION ${VERSION}.${CPACK_PACKAGE_VERSION_PATCH})
-
-set(DOCS_VERSION "${VERSION}")
-if (DEFINED BUILD_NUMBER)
-  set(VERSION "${VERSION}+${BUILD_NUMBER}")
+# Set OS_TYPE (used later in prodinfo yml).
+if(${CMAKE_SYSTEM_NAME} STREQUAL Darwin)
+  set(OS_TYPE osx)
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL Linux)
+  set(OS_TYPE linux)
+else()
+  set(OS_TYPE unknown)
 endif()
 
-execute_process(COMMAND
-  git rev-parse --short=10 HEAD
-  WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-  OUTPUT_VARIABLE GIT_COMMIT_HASH
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-add_subdirectory(willow)
-
-# light-weight wrapper using pybind11, plus python support libraries
-# VERSION needs to be defined before adding this directory
-add_subdirectory(python)
-
-# Examples and tests
-if (POPART_BUILD_TESTING AND BUILD_TESTING)
-  add_subdirectory(tests)
-endif()
-if (POPART_BUILD_EXAMPLES)
-  add_subdirectory(examples)
-endif()
-
+# Set PACKAGE_OS_TYPE used in CPack package.
 if(${OS_TYPE} STREQUAL osx)
   set(PACKAGE_OS_TYPE osx)
 elseif(${OS_TYPE} STREQUAL linux)
@@ -280,4 +268,10 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/enable.sh
 #------ end of enable script
 
 # Docs
+
+# There are tests for the python examples which need copying
+install(DIRECTORY docs/
+  DESTINATION docs
+  FILES_MATCHING REGEX ".*\.(py)$")
+
 add_subdirectory(docs)

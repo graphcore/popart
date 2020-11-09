@@ -1,9 +1,6 @@
 # for more useful warnings
 include(EnableCompilerWarnings)
 
-# Make a prefixed variable name for consistency (VERSION was defined earlier).
-set(POPART_VERSION ${VERSION})
-
 #[[ [comment-willow-targets]
 
   Popart Targets Created Here
@@ -61,7 +58,7 @@ set(POPART_VERSION ${VERSION})
 ##### Find dependencies
 ################################################################################
 
-# Note, some of the depencies are "found" in the parent cmake file, some are
+# Note, some of the dependencies are "found" in the parent cmake file, some are
 # found here.
 
 find_package(Poplar REQUIRED)
@@ -178,6 +175,14 @@ set(sources
   ${opx_sources}
   ${opx_dyn_sources}
   ${opx_collectives_sources})
+
+# Fed to version header.
+execute_process(COMMAND
+  git rev-parse --short=10 HEAD
+  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+  OUTPUT_VARIABLE GIT_COMMIT_HASH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
 
 configure_file(
     include/popart/version.hpp.in
