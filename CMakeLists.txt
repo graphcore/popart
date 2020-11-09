@@ -86,17 +86,11 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 find_package(PoplarRunner)
 find_package(Threads REQUIRED)
-find_package(PROTOBUF REQUIRED)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 if (PoplarRunner_FOUND)
   add_definitions(-DPOPLAR_RUNNER)
 endif()
-
-# Using installed cmake find (ONNX must be installed)
-# For a hand-crafted Findonnx script, see a very early commit
-# or repo popart if available
-find_package(ONNX REQUIRED)
 
 #------ end of find dependencies
 

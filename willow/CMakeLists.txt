@@ -74,6 +74,9 @@ set(boost_components
     filesystem
     graph
     random
+
+    # libpvti-config bug (T29898): they do not find their dependencies before
+    # linking them, so we must find thread for them.
     thread
 )
 find_package(Boost 1.70 REQUIRED COMPONENTS ${boost_components})
@@ -98,6 +101,11 @@ if (NOT TARGET poprithms-static)
   find_package(Poprithms REQUIRED)
 endif ()
 
+# Onnx's config file fails to find protobuf, so we have to do it ourselves.
+# We use the find module provided by CMake.
+find_package(Protobuf 3.6 MODULE REQUIRED)
+find_package(ONNX 1.6 CONFIG REQUIRED)
+
 ################################################################################
 ##### Dependecy visibility levels (see [comment-willow-targets])
 ################################################################################
@@ -118,11 +126,6 @@ set(POPART_ONLY_DEPS_LIBS
 
 set(POPART_DEPS_INCLUDES
     ${GCL_INCLUDE_DIR}
-    # if the model checker is used: ${ONNX_UTILS_INCLUDE_DIR}
-    ${ONNX_PB_INCLUDE_DIR}
-    ${ONNX_CHECKER_INCLUDE_DIR}
-    ${ONNX_INCLUDE_DIRS}
-    ${PROTOBUF_INCLUDE_DIR}
 )
 set(POPART_DEPS_LIBS
     poplar
@@ -133,10 +136,8 @@ set(POPART_DEPS_LIBS
     poputil
     libpvti
     ${GCL_LIBRARIES}
-    # if the onnx mode checker is incorporated, this will be needed: ${ONNX_LIB}
-    ${ONNX_LIB}
-    ${ONNX_PROTO_LIB}
-    ${PROTOBUF_LIB}
+    onnx
+    onnx_proto
 )
 if (PoplarRunner_FOUND)
   list(APPEND POPART_DEPS_LIBS PoplarRunner::PoplarExecutableData)
