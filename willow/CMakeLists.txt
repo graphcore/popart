@@ -79,13 +79,11 @@ find_package(gcl REQUIRED)
 
 set(POPART_PRIVATE_DEPS_INCLUDES
     ${Boost_INCLUDE_DIRS}
-    # ${CBLAS_INCLUDE_DIRS}
     ${LIBPVTI_INCLUDE_DIR}
 )
 set(POPART_PRIVATE_DEPS_LIBS
     ${Boost_LIBRARIES}
     spdlog::spdlog_header_only
-    # ${CBLAS_LIBRARIES}
     ${LIBPVTI_LIB}
     ${CMAKE_DL_LIBS}
     ${CMAKE_THREAD_LIBS_INIT}
