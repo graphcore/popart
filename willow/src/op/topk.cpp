@@ -1,6 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <memory>
-#include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/topk.hpp>
 #include <popart/opmanager.hpp>
@@ -12,14 +11,32 @@ namespace popart {
 TopKOp::TopKOp(const OperatorIdentifier &opid_,
                int64_t K_,
                int64_t axis_,
-               bool largest_,
-               bool sorted_,
                const Op::Settings &settings_)
-    : BaseSortOp(opid_, axis_, settings_), K(K_), largest(largest_),
-      sorted(sorted_) {}
+    : BaseSortOp(opid_, axis_, settings_), K(K_) {}
 
 std::unique_ptr<Op> TopKOp::clone() const {
   return std::make_unique<TopKOp>(*this);
+}
+
+void TopKOp::connectInTensor(InIndex inIndex, TensorId tenId) {
+  if (inIndex == getInIndex()) {
+    BaseSortOp::connectInTensor(inIndex, tenId);
+  }
+
+  if (opid.version >= 10) {
+    if (inIndex == getKInIndex()) {
+      try {
+        std::vector<int64_t> k;
+        getInTensorData(tenId, k);
+        K = k[0];
+      } catch (popart::error &err) {
+        throw error("Need the value of the {} input 'K' to detemine the output "
+                    "shape, but was unable because {}",
+                    opid,
+                    err.what());
+      }
+    }
+  }
 }
 
 void TopKOp::setup() {
@@ -100,39 +117,26 @@ const TensorInfo &TopKGradOp::getGradOutInfo() const { return gradOutInfo; }
 void TopKGradOp::setup() { outInfo(gradOutIndex()) = gradOutInfo; }
 
 namespace {
-Op *topKFactory(const OpCreatorInfo &info, Graph &graph) {
-  // largest is optional
-  bool largest = checkedIntToBool(
-      info.attributes.getAttribute<Attributes::Int>("largest", 1));
-  // sorted is optional
-  bool sorted = checkedIntToBool(
-      info.attributes.getAttribute<Attributes::Int>("sorted", 1));
+std::unique_ptr<Op> topKFactory(const OpCreatorInfo &info) {
 
-  // axis is optional
-  int64_t axis = info.attributes.getAttribute<Attributes::Int>("axis", -1);
-
-  int64_t K;
   if (info.opid.version == 1) {
-    // k is required, so has no default value.
-    K = info.attributes.getAttribute<Attributes::Int>("k");
-  } else if (info.opid.version == 10 || info.opid.version == 11) {
-    int kInIndex = 1;
-    K            = info.getInputScalarValue<int64_t>(kInIndex);
+    // K is required
+    int64_t K = info.attributes.getAttribute<Attributes::Int>("k", 1);
+    // axis is optional
+    int64_t axis = info.attributes.getAttribute<Attributes::Int>("axis", 0);
+
+    return std::make_unique<TopKOp>(info.opid, K, axis, info.settings);
+  } else if (info.opid.version == 10) {
+    // K is now an input, which we will attend to determine in the setup
+    // method
+
+    // axis is optional
+    int64_t axis = info.attributes.getAttribute<Attributes::Int>("axis", 0);
+
+    return std::make_unique<TopKOp>(info.opid, -1, axis, info.settings);
   } else {
     throw error("Unsupported operator version {} for topK", info.opid.version);
   }
-
-  Op *op = graph.createOp<TopKOp>(
-      info.opid, K, axis, largest, sorted, info.settings);
-
-  // Connect only the first input.
-  op->connectInTensor(TopKOp::getInIndex(), info.getInputIds().at(0));
-  op->createAndConnectOutTensor(TopKOp::getValuesOutIndex(),
-                                info.getOutputIds().at(0));
-  op->createAndConnectOutTensor(TopKOp::getIndicesOutIndex(),
-                                info.getOutputIds().at(1));
-
-  return op;
 }
 
 static OpDefinition::DataTypes T_V1 = {DataType::FLOAT16, DataType::FLOAT};

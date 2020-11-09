@@ -9,13 +9,6 @@
 
 namespace popart {
 
-bool checkedIntToBool(int64_t x) {
-  if (x != 0 && x != 1) {
-    throw error("Can not convert int {} to bool. Value needs to be 0 or 1", x);
-  }
-  return static_cast<bool>(x);
-}
-
 const std::vector<std::string> &Attributes::getNames() const { return names; }
 
 onnxAttPtr Attributes::at(const std::string &name) const {

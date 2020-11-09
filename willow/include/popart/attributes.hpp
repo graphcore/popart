@@ -67,10 +67,6 @@ private:
   std::vector<std::string> names;
 };
 
-// Check that `x` is 0 or 1 before doing the conversion to bool.
-// This is common when using attributes as onnx uses int64 for boolean values.
-bool checkedIntToBool(int64_t x);
-
 // Template specialisation that allows a string to be used like a predicate
 template <> Attributes Attributes::filter(const char *key) const;
 template <> Attributes Attributes::filter(std::string key) const;
