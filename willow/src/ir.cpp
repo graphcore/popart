@@ -30,6 +30,7 @@
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/pbwrap.hpp>
+#include <popart/poparttracepoint.hpp>
 #include <popart/scheduler.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensor.hpp>
@@ -1680,6 +1681,9 @@ void Ir::validateAnchors() const {
 
 bool Ir::applyPreAliasPattern(const PreAliasPattern *pattern, Graph &graph) {
   bool result = false;
+
+  PopartTracepoint tp(
+      logging::format("Applying pattern '{}'", pattern->getPatternName()));
 
   auto touchesInputToLoss = [&graph, pattern](Op *op) {
     for (auto &tensor : pattern->touches(op)) {

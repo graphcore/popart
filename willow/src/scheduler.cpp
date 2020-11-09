@@ -14,6 +14,7 @@
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
 #include <popart/op/remote.hpp>
+#include <popart/poparttracepoint.hpp>
 #include <popart/scheduler.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
@@ -106,7 +107,10 @@ public:
       logging::log(logging::Module::ir, ll, oss.str());
     }
   }
-  void initialize(KahnTieBreaker ktb) { g.initialize(ktb); }
+  void initialize(KahnTieBreaker ktb) {
+    POPART_TRACEPOINT();
+    g.initialize(ktb);
+  }
   void finalize() { g.finalize(); }
   bool isSchedulable() const { return g.isSchedulable(); }
   std::string getSerializationString() const {
@@ -547,6 +551,7 @@ void defaultAnnotate(GraphGrower *grower,
 void defaultMinSumLivenessAnneal(GraphGrower *grower,
                                  double timeLimitSeconds,
                                  int64_t swapLimitCount) {
+  POPART_TRACEPOINT();
   grower->minSumLivenessAnneal(
       {{"debug", "0"},
        {"seed", "1011"},

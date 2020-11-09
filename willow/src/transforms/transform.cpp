@@ -1,6 +1,7 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <memory>
 #include <popart/logging.hpp>
+#include <popart/poparttracepoint.hpp>
 #include <popart/transforms/transform.hpp>
 
 namespace popart {
@@ -15,6 +16,8 @@ static TransformMap &getTransformMap() {
 
 void Transform::applyTransform(std::size_t transformId, Graph &graph) {
   auto &transform = getTransformMap().at(transformId);
+  PopartTracepoint tp(
+      logging::format("Applying transform '{}'", transform->getName()));
   logging::transform::info("Applying Graph transform {}", transform->getName());
   transform->apply(graph);
 }

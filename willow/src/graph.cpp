@@ -11,6 +11,7 @@
 #include <popart/ir.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/pbwrap.hpp>
+#include <popart/poparttracepoint.hpp>
 #include <popart/scheduler.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
@@ -442,6 +443,7 @@ void Graph::setConvFlipWeightConstraints() {
 std::vector<Op *> Graph::getOpSchedule(
     const OpsBeforeKey &gCons,
     const RequireOptimalSchedule requireOptimalSchedule) const {
+  POPART_TRACEPOINT();
   const auto respectExecutionPhases = ir.getExecutionPhasesReady();
   const auto swapLimit   = getIr().getSessionOptions().swapLimitScheduler;
   const std::string &ktb = getIr().getSessionOptions().kahnTieBreaker;
