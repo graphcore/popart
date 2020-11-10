@@ -20,8 +20,9 @@ set(POPART_VERSION "${POPART_VERSION_MAJOR}.${POPART_VERSION_MINOR}.${POPART_VER
 
 # Docs version doesn't have the build number or view hash.
 set(DOCS_VERSION "${POPART_VERSION}")
+set(VERSION "${POPART_VERSION}")
 if (DEFINED BUILD_NUMBER)
-  # Version used in the file names of the package will include build number.
+  # Version used in the file names of the buildbot's package will include build number.
   set(VERSION "${POPART_VERSION}+${BUILD_NUMBER}")
 endif()
 
