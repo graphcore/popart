@@ -102,7 +102,6 @@ set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_STATIC_RUNTIME ON)
 # thread needed by libpvti. This is a libpvti bug - they should find it for us.
 find_package(Boost REQUIRED COMPONENTS filesystem system program_options thread)
-# find_package(CBLAS REQUIRED)
 
 #------ end of find dependencies
 
