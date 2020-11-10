@@ -19,6 +19,7 @@
 #include <popart/patterns/convdatagrad.hpp>
 #include <popart/patterns/cosgradoppattern.hpp>
 #include <popart/patterns/coshoppattern.hpp>
+#include <popart/patterns/depthtospaceoppattern.hpp>
 #include <popart/patterns/divarg0gradoppattern.hpp>
 #include <popart/patterns/divarg1gradoppattern.hpp>
 #include <popart/patterns/elementwisegradoppattern.hpp>
@@ -350,6 +351,10 @@ bool Patterns::isAtanhOpPatternEnabled() {
   return isPatternEnabled<AtanhOpPattern>();
 }
 
+bool Patterns::isDepthToSpaceOpPatternEnabled() {
+  return isPatternEnabled<DepthToSpaceOpPattern>();
+}
+
 Patterns &Patterns::enableInitAccumulate(bool v) {
   return enablePattern<InitAccumulatePattern>(v);
 }
@@ -494,6 +499,10 @@ Patterns &Patterns::enableAtanhOpPattern(bool v) {
   return enablePattern<AtanhOpPattern>(v);
 }
 
+Patterns &Patterns::enableDepthToSpaceOpPattern(bool v) {
+  return enablePattern<DepthToSpaceOpPattern>(v);
+}
+
 Patterns &Patterns::enablePattern(const std::type_index &t, bool v) {
   logging::pattern::warn(
       "Pattern {} {}", PreAliasPatternManager::getPatternName(t), v);
@@ -554,6 +563,7 @@ std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
   }
 
   static std::map<std::type_index, float> patternPriority{
+      {std::type_index(typeid(DepthToSpaceOpPattern)), 48},
       {std::type_index(typeid(AtanhOpPattern)), 47},
       {std::type_index(typeid(AsinhOpPattern)), 46},
       {std::type_index(typeid(Log1pGradOpPattern)), 45},

@@ -147,7 +147,6 @@ backend_test = onnx.backend.test.BackendTest(IpuBackend, __name__)
 # Operations we do not support
 backend_test.exclude('test_compress')
 backend_test.exclude('test_convtranspose')
-backend_test.exclude('test_depthtospace')
 backend_test.exclude('test_expand')
 backend_test.exclude('test_eyelike')
 backend_test.exclude('test_gru')

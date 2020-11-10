@@ -247,6 +247,7 @@ public:
   bool isZerosLikeOpPatternEnabled();
   bool isAsinhOpPatternEnabled();
   bool isAtanhOpPatternEnabled();
+  bool isDepthToSpaceOpPatternEnabled();
 
   // The following methods are fluent allow you to
   // Pattens().enableInPlace0(false).
@@ -295,6 +296,8 @@ public:
   Patterns &enableZerosLikeOpPattern(bool v);
   Patterns &enableAsinhOpPattern(bool v);
   Patterns &enableAtanhOpPattern(bool v);
+  Patterns &enableDepthToSpaceOpPattern(bool v);
+
   Patterns &enableRuntimeAsserts(bool b) {
     runtimeAssertsOn = b;
     return *this;
