@@ -38,7 +38,7 @@ void ConvTransposeOp::setup() {
   if (!std::all_of(dilations.begin(), dilations.end(), [](int64_t i) {
         return i == 1;
       })) {
-    throw error("Non default value for dilations {} is not supported.");
+    throw error("Non default value for dilations is not supported.");
   }
 
   Shape outShape{inputShape.at(0), kernelShape.at(1) * group};
