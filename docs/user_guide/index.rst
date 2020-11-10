@@ -24,6 +24,7 @@ PopART User Guide
     distributed_training
     performance
     supported_ops
+    custom_ops
     env_vars
     references
     batch_size

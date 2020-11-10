@@ -28,10 +28,11 @@ Creating a session
 The ``Session`` class takes the name of a protobuf file, or the protobuf
 itself.  It also takes a ``DataFlow`` object which has information about
 how to execute the graph:
-  * The number of times to conduct a forward pass (and a backward pass,
-    if training) of the graph on the IPU before returning to the host for
-    more data.
-  * The names of the tensors in the graph used to return the results to the host.
+
+* The number of times to conduct a forward pass (and a backward pass,
+  if training) of the graph on the IPU before returning to the host for
+  more data.
+* The names of the tensors in the graph used to return the results to the host.
 
 In some ONNX graphs, the sizes of input tensors might not be specified.
 In this case, the ``inputShapeInfo`` parameter can be used to specify the

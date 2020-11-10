@@ -35,7 +35,7 @@ specified in the ``DataFlow`` object during session construction.
 .. TODO: Add something about the pytorch data feeder.
 
 
-If there are any pre-defined inputs (weights, biases, etc.) in the graph
+If there are any pre-defined inputs (such as weights or biases) in the graph
 then they will not be specified in the ``PyStepIO`` object.  However, before
 executing the graph, they will need to the copied to the hardware.
 If there are any optimiser-specific parameters which can be modified,
@@ -75,7 +75,7 @@ from the model. The associated values are an ``AnchorReturnType``, which is one 
 * ``popart.AnchorReturnType("FINAL")``: the value of the tensor on the final
   iteration through the graph.
 * ``popart.AnchorReturnType("SUM")``: the sum of the values of the tensor
- from each iteration through the graph.
+  from each iteration through the graph.
 
 Selecting a device for execution
 ================================
