@@ -79,7 +79,7 @@ Alternatively we can use the `Gloo <https://github.com/facebookincubator/gloo>`_
 
   $ horovodrun --gloo -np 2 -H localhost:2 python train.py
 
-Additional documentation on flags that can be passed to `horovodrun` can be found here: `Horovod documentation <https://horovod.readthedocs.io/en/latest/>`_.
+Additional documentation on flags that can be passed to ``horovodrun`` can be found here: `Horovod documentation <https://horovod.readthedocs.io/en/latest/>`_.
 
 
 Full distributed training example

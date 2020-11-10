@@ -14,7 +14,7 @@
             "severity": {
                 "1": "autofix",
                 "2": "warning",
-                "3": "warning",
+                "3": "disabled",
                 "4": "autofix",
                 "5": "disabled",
                 "6": "warning",
