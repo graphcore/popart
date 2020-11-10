@@ -90,6 +90,7 @@ function(add_test_executable name)
   )
 
   add_executable(${name} ${add_test_exe_FILES})
+  target_compile_features(${name} PUBLIC cxx_std_14)
   target_include_directories(${name}
       PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}

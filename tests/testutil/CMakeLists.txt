@@ -44,14 +44,13 @@ set_target_properties(test-graphs-test-util
       # This is because, when libpopart.so was compiled, which has the
       # implementation of the function, the symbols will have certain names
       # based on the defines in the header.
-      # 
+      #
       # When we include those same headers under C++17, the defines are
       # different, so different symbol names are generated. This then results in
       # undefined references at link time.
-      CXX_STANDARD 14
-      CXX_STANDARD_REQUIRED YES
-      CXX_EXTENSIONS NO
+      CXX_EXTENSIONS OFF
 
       # Need pic to make dynamic library with static libs.
       POSITION_INDEPENDENT_CODE ON
 )
+target_compile_features(test-graphs-test-util PUBLIC cxx_std_14)

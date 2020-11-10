@@ -24,6 +24,8 @@ function(add_popart_python_module module_name source_file)
       ${source_file} np_utils.cpp
   )
 
+  target_compile_features(${module_name} PUBLIC cxx_std_14)
+
   target_link_libraries(${module_name} PRIVATE popart)
 
   # This was useful on OS/X for a while, see 

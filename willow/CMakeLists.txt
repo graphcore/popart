@@ -213,6 +213,7 @@ set_target_properties(popart-only PROPERTIES
     # Need position indepenent code to make dyanamic library with static libs.
     POSITION_INDEPENDENT_CODE ON
 )
+target_compile_features(popart-only PUBLIC cxx_std_14)
 
 # The following defines cause compiler warnings if not set
 target_compile_definitions(popart-only

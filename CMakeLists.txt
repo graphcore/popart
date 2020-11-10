@@ -55,8 +55,8 @@ set(INSTALL_TESTS ${CMAKE_INSTALL_PREFIX}/tests)
 
 #------ Definitions that configure the build
 
-# All C++ code in this project will be compiled as C++14
-set (CMAKE_CXX_STANDARD 14)
+# Don't allow C++ extensions.
+set (CMAKE_CXX_EXTENSIONS OFF)
 
 # Hardcode rpaths to things we link against outside of popart's build tree.
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
