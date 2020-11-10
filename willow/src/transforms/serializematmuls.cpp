@@ -8,6 +8,7 @@
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/op/concat.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/op/reshape.hpp>
@@ -60,6 +61,7 @@
 //  d_x  = concat(d_X_0...d_X_n)
 //  d_W  = cast(_d_W) if type(d_W) != type(_d_W) else _d_W
 //
+
 //  For D = OUTPUT_CHANNEL
 //
 //      X   W            d_Y     W.T         X.T    d_Y
@@ -86,6 +88,7 @@
 //  Y    = concat(Y_0...Y_n) - concat on final dim
 //  d_X  = cast(_d_X) if type(d_X) != type(_d_X) else _d_X
 //
+
 //                    For D = REDUCING_DIM
 //      X   W            d_Y     W.T         X.T    d_Y
 //      |   |             |      |            |      |
@@ -334,6 +337,8 @@ static void serializeVarUpdate(int sliceDim,
 
       // Only certain ops can be on the path between matmul and varupdate.
       if (consumerOps[0]->isConvertibleTo<VarUpdateOp>() ||
+          consumerOps[0]->isConvertibleTo<IdentityOp>() ||
+          consumerOps[0]->isConvertibleTo<TransposeBaseOp>() ||
           consumerOps[0]->opid == Onnx::Operators::Reshape_1 ||
           consumerOps[0]->opid == Onnx::Operators::Reshape_5 ||
           consumerOps[0]->opid == Onnx::GradOperators::ReshapeGrad ||
@@ -415,6 +420,28 @@ static void serializeVarUpdate(int sliceDim,
                                      executionPhase,
                                      name + "_ReduceSum",
                                      builder.getNextId(name + "_ReduceSum"));
+        } else if (op->isConvertibleTo<TransposeBaseOp>()) {
+
+          logging::op::debug("Serializing transpose {}", output);
+          auto transposeBase = dynamic_cast<TransposeBaseOp *>(op);
+          auto transposePerm = transposeBase->getPerm();
+
+          output = builder.transpose(output,
+                                     transposePerm,
+                                     virtualGraphId,
+                                     pipelineStage,
+                                     executionPhase,
+                                     name + "_Transpose",
+                                     builder.getNextId(name + "_Transpose"));
+          // Output slice dim changes after the transpose
+          axes[0] = transposePerm[axes[0]];
+          size    = weightTensor->info.dim(axes[0]) /
+                 matmul->getSerialiseSettings().factor;
+          starts = {(i)*size};
+          ends   = {(i + 1) * size};
+
+        } else if (op->isConvertibleTo<IdentityOp>()) {
+          // Don't do anything
         } else if (op->isConvertibleTo<VarUpdateOp>()) {
           // Don't do anything
         } else {
