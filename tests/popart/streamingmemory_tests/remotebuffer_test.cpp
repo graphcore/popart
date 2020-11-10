@@ -284,6 +284,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_2) {
   TensorInfo W_info{"FLOAT", std::vector<int64_t>{1, N, N}};
   std::vector<float> v_W_init(W_info.nelms());
   for (auto &val : v_W_init) {
+    val = fdis(eng);
   }
   TensorId W_id =
       bder->addInitializedInputTensor({v_W_init.data(), W_info}, "W");
