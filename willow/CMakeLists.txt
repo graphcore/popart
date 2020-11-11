@@ -61,7 +61,12 @@ include(EnableCompilerWarnings)
 # Note, some of the dependencies are "found" in the parent cmake file, some are
 # found here.
 
-find_package(Poplar REQUIRED)
+# Versions are not given where packages don't support them.
+
+find_package(poplar CONFIG REQUIRED)
+find_package(poplibs CONFIG REQUIRED)
+find_package(libpvti CONFIG REQUIRED)
+find_package(gcl MODULE REQUIRED)
 
 # Search first for poprithms-static-config.cmake
 find_package(poprithms-static CONFIG)
@@ -70,8 +75,7 @@ if (NOT TARGET poprithms-static)
   find_package(Poprithms REQUIRED)
 endif ()
 
-find_package(spdlog "1.8.0" EXACT REQUIRED)
-find_package(gcl REQUIRED)
+find_package(spdlog 1.8.0 EXACT REQUIRED)
 
 ################################################################################
 ##### Dependecy visibility levels (see [comment-willow-targets])
@@ -79,12 +83,10 @@ find_package(gcl REQUIRED)
 
 set(POPART_PRIVATE_DEPS_INCLUDES
     ${Boost_INCLUDE_DIRS}
-    ${LIBPVTI_INCLUDE_DIR}
 )
 set(POPART_PRIVATE_DEPS_LIBS
     ${Boost_LIBRARIES}
     spdlog::spdlog_header_only
-    ${LIBPVTI_LIB}
     ${CMAKE_DL_LIBS}
     ${CMAKE_THREAD_LIBS_INIT}
 )
@@ -95,8 +97,6 @@ set(POPART_ONLY_DEPS_LIBS
 )
 
 set(POPART_DEPS_INCLUDES
-    ${POPLAR_INCLUDE_DIR}
-    ${POPLIBS_INCLUDE_DIR}
     ${GCL_INCLUDE_DIR}
     # if the model checker is used: ${ONNX_UTILS_INCLUDE_DIR}
     ${ONNX_PB_INCLUDE_DIR}
@@ -105,12 +105,13 @@ set(POPART_DEPS_INCLUDES
     ${PROTOBUF_INCLUDE_DIR}
 )
 set(POPART_DEPS_LIBS
-    ${POPLAR_LIB}
-    ${POPLIN_LIB}
-    ${POPNN_LIB}
-    ${POPOPS_LIB}
-    ${POPRAND_LIB}
-    ${POPUTIL_LIB}
+    poplar
+    poplin
+    popnn
+    popops
+    poprand
+    poputil
+    libpvti
     ${GCL_LIBRARIES}
     # if the onnx mode checker is incorporated, this will be needed: ${ONNX_LIB}
     ${ONNX_LIB}
