@@ -85,10 +85,10 @@ public:
     auto tensorData  = getInputTensorData(index);
     auto &tensorInfo = getInputTensorInfo(index);
 
-    if (tensorInfo.rank() != 1) {
-      throw error(
-          "Can only return data for rank 1 tensors. Tensor is of rank {}",
-          tensorInfo.rank());
+    if (tensorInfo.rank() > 1) {
+      throw error("Can only return data for rank 0 or rank 1 tensors. Tensor "
+                  "is of rank {}",
+                  tensorInfo.rank());
     }
 
     if (getDataType<T>() == tensorInfo.dataType()) {
