@@ -22,7 +22,7 @@ DropoutBaseOp::DropoutBaseOp(const OperatorIdentifier &opid_,
 
 // Dropout in testing mode can be replaced by the identity
 bool DropoutBaseOp::canBeReplacedByIdentity() const {
-  return (getIr().isTesting());
+  return (getIr().isTesting() || ratio == 0);
 }
 
 void DropoutBaseOp::updateSeedModifier() {
@@ -46,9 +46,9 @@ DropoutBaseOp::shard(const std::map<TensorId, std::vector<TensorId>> &inputs) {
 float DropoutBaseOp::validateRatioAttribute(const OpCreatorInfo &info) {
   float ratio = info.attributes.getAttribute<Attributes::Float>("ratio", 0.5f);
   // If invalid probability for ratio supplied, throw error.
-  if (ratio <= float(0.) || ratio >= float(1.)) {
+  if (ratio < float(0.) || ratio >= float(1.)) {
     throw error("{} ratio value {} is not valid. Please use a value in the "
-                "interval (0,1)",
+                "interval [0,1)",
                 info.opid,
                 ratio);
   }

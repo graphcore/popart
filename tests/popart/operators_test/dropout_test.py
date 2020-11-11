@@ -36,6 +36,29 @@ def test_dropout_testing(op_tester):
     op_tester.run(init_builder, reference, 'infer')
 
 
+# Check dropout with a ratio 0.0 (i.e. identity)
+@tu.requires_ipu_model
+def test_dropout_ratio0_testing(op_tester):
+    d1 = np.random.rand(2).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        (o, ) = builder.aiOnnx.dropout([i1], 1, 0.0, "test_dropout")
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        t1 = torch.tensor(d1)
+        return [t1]
+
+    # Without identity pattern...
+    op_tester.run(init_builder, reference, 'train')
+
+    # ... and with identity pattern
+    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'train')
+
+
 # Verify that the mask returned is correct when requesting 2 outputs.
 # Manually calculate the result of the dropout using numpy and compare
 @tu.requires_ipu_model
@@ -290,7 +313,6 @@ def test_dropout_training_replicated():
     o = anchors[out]
     for ai, bi in itertools.combinations(
         [i for i in range(replication_factor)], 2):
-        print(f'Checking o[{ai}] is not equal to o[{bi}]')
         a = o[ai]
         b = o[bi]
         assert not np.allclose(a, b)
@@ -361,9 +383,6 @@ def test_replicated_with_multiple_batches_per_step():
     # Check that none of the micro batch results are the same
     for ai, bi in itertools.combinations(
         [i for i in range(len(micro_batches))], 2):
-        print(
-            f'Checking micro_batches[{ai}] is not equal to micro_batches[{bi}]'
-        )
         a = micro_batches[ai]
         b = micro_batches[bi]
         assert not np.allclose(a, b)
