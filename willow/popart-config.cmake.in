@@ -17,6 +17,7 @@
 #   popart_INCLUDE_DIR      : Popart's include directory.
 #   popart_LIB_DIR          : The directory where Popart's libraries have been 
 #                             installed.
+#   popart_LIB              : Path to the popart library.
 #
 #   POPART_INCLUDES         : List of include directories for popart and all 
 #                             it's dependencies that must be provided.
@@ -81,6 +82,10 @@ endif()
 
 set_and_check(popart_INCLUDE_DIR "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@")
 set_and_check(popart_LIB_DIR     "@PACKAGE_CMAKE_INSTALL_LIBDIR@")
+
+# According to the docs of the LOCATION property, this is well supported on
+# imported targets (it is not on regular targets).
+get_target_property(popart_LIB popart-only LOCATION)
 
 # These are currently not set properly (don't contain the dependencies), but it
 # will not be changed yet to avoid making a breaking change.
