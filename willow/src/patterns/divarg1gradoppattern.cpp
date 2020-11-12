@@ -1,5 +1,4 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <memory>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/div.hpp>
@@ -17,35 +16,17 @@ bool DivArg1GradOpPattern::matches(Op *op) const {
   return op->isConvertibleTo<DivArg1GradOp>();
 }
 
-std::vector<const Tensor *> DivArg1GradOpPattern::touches(Op *) const {
-  return {};
-}
-
 // grad_out = - (grad_in * arg_0) / arg_1^2
-bool DivArg1GradOpPattern::apply(Op *op) const {
-  auto grad_in  = op->inTensor(DivArg1GradOp::getGradInIndex());
-  auto fwd_in0  = op->inTensor(DivArg1GradOp::getFwdArg0InIndex());
-  auto fwd_in1  = op->inTensor(DivArg1GradOp::getFwdArg1InIndex());
-  auto grad_out = op->outTensor(DivArg1GradOp::getOutIndex());
-
-  // we assume this dynamic_cast call has been confirmed
-  // to be valid via a previous call to DivArg1GradOpPattern::matches
-  auto axes = dynamic_cast<DivArg1GradOp *>(op)->getReductionAxes();
-
+TensorId DivArg1GradOpPattern::makeAllReplacementOps(Op *op,
+                                                     Tensor *grad_in,
+                                                     Tensor *fwd_in0,
+                                                     Tensor *fwd_in1,
+                                                     Tensor *fwd_out) const {
   // create the new ops
   auto square = makeReplacementOpInIr(Onnx::CustomOperators::Square, op);
   auto div    = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Div, op);
   auto mul    = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Mul, op);
   auto negate = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Neg, op);
-  auto reduce = dynamic_cast<ReduceSumOp *>(
-      makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::ReduceSum, op));
-  reduce->setAxes(axes);
-  // do not keep reduced dims
-  reduce->setKeepDims(0l);
-
-  // Remove the DivArg1GradOp
-  op->disconnectAllInputs();
-  op->disconnectAllOutputs();
 
   // Connect up the new ops
   square->connectInTensor(0, fwd_in1->id);
@@ -70,13 +51,7 @@ bool DivArg1GradOpPattern::apply(Op *op) const {
       0, grad_in->getIr().createIntermediateTensorId(grad_in->id));
   negate->outInfo(0) = negate->inInfo(0);
 
-  reduce->connectInTensor(0, negate->outTensor(0)->id);
-  reduce->connectOutTensor(0, grad_out->id);
-
-  // Don't delete op until after the op->prettyNpOut calls.
-  op->getGraph().eraseOp(op->id);
-
-  return true;
+  return negate->outTensor(0)->id;
 }
 
 namespace {

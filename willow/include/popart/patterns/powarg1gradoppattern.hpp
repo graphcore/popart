@@ -2,27 +2,25 @@
 #ifndef GUARD_NEURALNET_POW_ARG_1_GRAD_OP_PATTERN_HPP
 #define GUARD_NEURALNET_POW_ARG_1_GRAD_OP_PATTERN_HPP
 
-#include <popart/patterns/patterns.hpp>
+#include <popart/patterns/binarygradoppattern.hpp>
 
 namespace popart {
 
 // Replace a PowArg1GradOp with
 // (fwd_in0) -> [Log] -> (tmp1)
 // {(out), (tmp1)} -> [Mult] -> [ReduceSum] -> (grad_out)
-class PowArg1GradOpPattern : public PreAliasPattern {
+class PowArg1GradOpPattern : public BinaryGradOpPattern {
 public:
   // Does op at the root of the
   // pattern make a match?
   bool matches(Op *) const override;
-  // If this Pattern were to be applied at op, which
-  // Tensors in the subgraph centered (rooted) on op
-  // would be touched?
-  std::vector<const Tensor *> touches(Op *) const override;
-  // apply the pattern,
-  // changes the graph of the op
-  bool apply(Op *) const override;
-  // what phase should this Pattern run in? PRETOPOCONS, as it does not
-  // handle topological constraints.
+
+protected:
+  virtual TensorId makeAllReplacementOps(Op *op,
+                                         Tensor *grad_in,
+                                         Tensor *fwd_in0,
+                                         Tensor *fwd_in1,
+                                         Tensor *fwd_out) const override;
 };
 
 } // namespace popart

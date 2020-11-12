@@ -1,9 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <memory>
 #include <popart/graph.hpp>
 #include <popart/op/mul.hpp>
 #include <popart/op/pow.hpp>
-#include <popart/op/reducesum.hpp>
 #include <popart/op/subtract.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/patterns/powarg0gradoppattern.hpp>
@@ -17,22 +15,12 @@ bool PowArg0GradOpPattern::matches(Op *op) const {
   return op->isConvertibleTo<PowArg0GradOp>();
 }
 
-std::vector<const Tensor *> PowArg0GradOpPattern::touches(Op *) const {
-  return {};
-}
-
 // grad_out = grad_in *arg1 * arg0 ^(arg1 - 1)
-bool PowArg0GradOpPattern::apply(Op *op) const {
-  auto grad_in = op->inTensor(PowArg0GradOp::getGradInIndex());
-  auto fwd_in0 = op->inTensor(PowArg0GradOp::getFwdArg0InIndex());
-  auto fwd_in1 = op->inTensor(PowArg0GradOp::getFwdArg1InIndex());
-
-  auto grad_out = op->outTensor(PowArg0GradOp::getOutIndex());
-
-  // we assume this dynamic_cast call has been confirmed
-  // to be valid via a previous call to PowArg0GradOpPattern::matches
-  auto axes = dynamic_cast<PowArg0GradOp *>(op)->getReductionAxes();
-
+TensorId PowArg0GradOpPattern::makeAllReplacementOps(Op *op,
+                                                     Tensor *grad_in,
+                                                     Tensor *fwd_in0,
+                                                     Tensor *fwd_in1,
+                                                     Tensor *fwd_out) const {
   // Create a 1-dim constant tensor of value 1.0f with same type as fwd_in1
   TensorInfo resultInfo(fwd_in1->info.dataType(), {1});
   std::vector<float> resultData(1, 1.0f);
@@ -41,19 +29,10 @@ bool PowArg0GradOpPattern::apply(Op *op) const {
       onesId, resultInfo, reinterpret_cast<void *>(resultData.data()));
 
   // create the new ops
-  auto sub    = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Sub, op);
-  auto pow    = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Pow, op);
-  auto mul_1  = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Mul, op);
-  auto mul_2  = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Mul, op);
-  auto reduce = dynamic_cast<ReduceSumOp *>(
-      makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::ReduceSum, op));
-  reduce->setAxes(axes);
-  // do not keep reduced dims
-  reduce->setKeepDims(0l);
-
-  // Disconnect the original op
-  op->disconnectAllInputs();
-  op->disconnectAllOutputs();
+  auto sub   = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Sub, op);
+  auto pow   = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Pow, op);
+  auto mul_1 = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Mul, op);
+  auto mul_2 = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Mul, op);
 
   // Connect up the new ops
   sub->connectInTensor(0, fwd_in1->id);
@@ -80,13 +59,7 @@ bool PowArg0GradOpPattern::apply(Op *op) const {
       0, grad_in->getIr().createIntermediateTensorId(grad_in->id));
   mul_2->outInfo(0) = op->prettyNpOut(mul_2->inInfo(0), mul_2->inInfo(1));
 
-  reduce->connectInTensor(0, mul_2->outTensor(0)->id);
-  reduce->connectOutTensor(0, grad_out->id);
-
-  // Don't delete op until after the op->prettyNpOut calls.
-  op->getGraph().eraseOp(op->id);
-
-  return true;
+  return mul_2->outTensor(0)->id;
 }
 
 namespace {
