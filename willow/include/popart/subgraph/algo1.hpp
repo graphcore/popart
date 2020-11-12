@@ -4,7 +4,6 @@
 
 #include "match.hpp"
 #include "rinsematcherbase.hpp"
-#include "suffixtree.hpp"
 
 #include <array>
 #include <queue>

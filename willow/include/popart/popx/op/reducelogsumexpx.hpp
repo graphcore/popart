@@ -6,9 +6,6 @@
 #include <popart/popx/opx.hpp>
 
 namespace popart {
-
-class ReduceLogSumExpOp;
-
 namespace popx {
 
 class ReduceLogSumExpOpx : public Opx {

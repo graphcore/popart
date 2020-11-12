@@ -6,10 +6,6 @@
 #include <popart/popx/opx.hpp>
 
 namespace popart {
-
-class SumOp;
-class SumArgGradOp;
-
 namespace popx {
 
 class SumOpx : public Opx {

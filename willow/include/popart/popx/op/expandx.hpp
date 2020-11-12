@@ -5,10 +5,6 @@
 #include <popart/popx/opx.hpp>
 
 namespace popart {
-
-class ExpandOp;
-class ExpandGradOp;
-
 namespace popx {
 
 class BaseExpandOpx : public Opx {

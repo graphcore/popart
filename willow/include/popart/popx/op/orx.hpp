@@ -6,9 +6,6 @@
 #include <popart/popx/op/elementwisex.hpp>
 
 namespace popart {
-
-class OrOp;
-
 namespace popx {
 
 class OrOpx : public BinaryComparisonOpx {

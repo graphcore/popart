@@ -6,9 +6,6 @@
 #include <popart/popx/opx.hpp>
 
 namespace popart {
-
-class RestoreOp;
-
 namespace popx {
 
 class RestoreOpx : public Opx {

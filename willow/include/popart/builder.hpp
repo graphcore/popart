@@ -12,6 +12,7 @@
 #include <popart/op/loss.hpp>
 #include <popart/opidentifier.hpp>
 #include <popart/tensorinfo.hpp>
+#include <popart/tensorlocation.hpp>
 
 #include <popart/vendored/any.hpp>
 #include <popart/vendored/optional.hpp>
@@ -20,8 +21,6 @@ namespace popart {
 
 class BuilderImpl;
 class Builder;
-class TensorInfo;
-class TensorLocation;
 enum class DataType;
 enum class RecomputeType;
 

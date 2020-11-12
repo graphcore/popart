@@ -6,10 +6,6 @@
 #include <popart/popx/opx.hpp>
 
 namespace popart {
-
-class NllGradOp;
-class NllOp;
-
 namespace popx {
 
 class NllOpx : public Opx {

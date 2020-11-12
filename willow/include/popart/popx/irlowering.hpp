@@ -60,7 +60,6 @@ public:
 using PopStreamId = std::string;
 
 class Opx;
-class GraphCachex;
 class CollectiveBalancedReorder;
 class Devicex;
 

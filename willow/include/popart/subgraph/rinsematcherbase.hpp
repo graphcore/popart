@@ -4,7 +4,6 @@
 
 #include "isomorphic.hpp"
 #include "match.hpp"
-#include "subgraphnames.hpp"
 #include "subgraphutil.hpp"
 #include <algorithm>
 #include <functional>

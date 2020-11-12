@@ -6,7 +6,6 @@
 #include <popart/popx/op/elementwisex.hpp>
 
 namespace popart {
-
 namespace popx {
 
 class FloorComputex : public EwuComputex {

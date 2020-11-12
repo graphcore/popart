@@ -21,7 +21,6 @@ class ICreatorCandidate;
 using ICreatorCandidatePtr = std::shared_ptr<ICreatorCandidate>;
 struct UnwindEndpoint;
 using UnwindEndpointPtr = std::shared_ptr<UnwindEndpoint>;
-struct OpxInAndOutIndex;
 
 class Devicex;
 class ViewChangers;

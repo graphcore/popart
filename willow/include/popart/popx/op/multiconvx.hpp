@@ -10,9 +10,6 @@
 #include <poplin/MultiConvolution.hpp>
 
 namespace popart {
-
-class MultiConvOp;
-
 namespace popx {
 
 class MultiConvOpx : public MultiConvBaseOpx {

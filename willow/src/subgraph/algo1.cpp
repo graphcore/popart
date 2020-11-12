@@ -1,6 +1,8 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popart/logging.hpp>
 #include <popart/subgraph/algo1.hpp>
+#include <popart/subgraph/match.hpp>
+#include <popart/subgraph/suffixtree.hpp>
 
 namespace fwtools {
 namespace subgraph {

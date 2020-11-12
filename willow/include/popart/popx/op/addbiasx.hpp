@@ -8,10 +8,6 @@
 #include <popart/popx/opx.hpp>
 
 namespace popart {
-
-class AddBiasOp;
-class AddBiasGradOp;
-
 namespace popx {
 
 class AddBiasOpx : public Opx {

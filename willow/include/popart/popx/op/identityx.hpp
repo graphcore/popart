@@ -7,10 +7,6 @@
 #include <popart/popx/opx.hpp>
 
 namespace popart {
-
-class IdentityLossGradOp;
-class IdentityLossOp;
-
 namespace popx {
 
 class IdentityOpx : public ElementWiseUnaryOpx {

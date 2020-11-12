@@ -15,7 +15,6 @@ enum class ScheduledPreLoss;
 namespace popx {
 
 class IrLowering;
-class PipelineInfo;
 
 class PopPrograms {
 

@@ -33,16 +33,10 @@
 
 namespace popart {
 class StepIOSplitter;
-namespace liveness {
-class LivenessAnalyzer;
-}
 namespace popx {
 
 using PopStreamId = std::string;
 
-class Opx;
-class GraphCachex;
-class CollectiveBalancedReorder;
 class IrLowering;
 
 poplar::Type popType(const TensorInfo &);

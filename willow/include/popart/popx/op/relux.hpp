@@ -6,11 +6,6 @@
 #include <popart/popx/op/elementwisex.hpp>
 
 namespace popart {
-
-class ReluOp;
-class ReluInplaceOp;
-class ReluGradOp;
-
 namespace popx {
 
 class ReluComputex : public EwuComputex {

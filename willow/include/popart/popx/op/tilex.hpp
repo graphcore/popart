@@ -6,10 +6,6 @@
 #include <popart/popx/opx.hpp>
 
 namespace popart {
-
-class TileOp;
-class TileGradOp;
-
 namespace popx {
 
 class TileOpx : public Opx {

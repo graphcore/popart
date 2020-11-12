@@ -7,9 +7,6 @@
 #include <popart/popx/op/reducesumx.hpp>
 
 namespace popart {
-
-class MulOp;
-
 namespace popx {
 
 class MulComputex : public EwbComputex {

@@ -10,9 +10,6 @@
 #include <popart/popx/opx.hpp>
 
 namespace popart {
-
-class LSTMOp;
-
 namespace popx {
 
 template <typename LSTMOP> class PopartLSTMOpxBase : public Opx {

@@ -6,10 +6,6 @@
 #include <popart/popx/opx.hpp>
 
 namespace popart {
-
-class ReshapeOp;
-class ReshapeGradOp;
-
 namespace popx {
 
 class ReshapeBaseOpx : public Opx {

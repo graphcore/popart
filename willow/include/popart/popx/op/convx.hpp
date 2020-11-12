@@ -11,11 +11,6 @@
 #include <poplin/Convolution.hpp>
 
 namespace popart {
-
-class ConvOp;
-class ConvWeightsGradOp;
-class ConvDataGradOp;
-
 namespace popx {
 
 class ConvOpx : public MultiConvBaseOpx {

@@ -6,9 +6,6 @@
 #include <popart/popx/opx.hpp>
 
 namespace popart {
-
-class StashOp;
-
 namespace popx {
 
 class StashOpx : public Opx {

@@ -6,9 +6,6 @@
 #include <popart/popx/op/elementwisex.hpp>
 
 namespace popart {
-
-class DivOp;
-
 namespace popx {
 
 class DivOpx : public ElementWiseBinaryOpx {

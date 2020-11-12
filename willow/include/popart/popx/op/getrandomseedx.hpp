@@ -6,9 +6,6 @@
 #include <popart/popx/opx.hpp>
 
 namespace popart {
-
-class GetRandomSeedOp;
-
 namespace popx {
 
 class GetRandomSeedOpx : public Opx {

@@ -126,7 +126,7 @@ const static OperatorIdentifier
 }
 } // namespace Onnx
 
-#include "opidentifier.hpp.gen"
+#include <popart/opidentifier.hpp.gen>
 
 namespace Onnx {
 namespace GradOperators {

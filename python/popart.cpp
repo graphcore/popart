@@ -51,6 +51,7 @@ void init_ex9(py::module &);
 void init_ex10(py::module &);
 void init_ex11(py::module &);
 
+namespace {
 // The following code attempts to convert the python dictionary
 // (py::dict) into a map of strings for keys and values. The default
 // pybind will attempt to match types
@@ -122,6 +123,7 @@ std::map<std::string, popart::any> getDictionaryVar(py::dict pydict) {
   }
   return dictionary;
 }
+} // namespace
 
 class PyStepIO
     : public StepIOGeneric<py::array, StepIONS::PyArrayAccessor, py::array> {
@@ -174,7 +176,7 @@ public:
 
   void assertNumElements(const Ir &) const final {}
 
-  ConstVoidData in(TensorId id, int64_t, bool prefetch) final {
+  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
     py::array a = inputCb(id, prefetch);
     if (!isContiguous(a)) {
       throw error(
@@ -236,6 +238,8 @@ private:
   py::dict outDict = py::dict();
 };
 
+namespace {
+
 void exportDataset(Builder &builder,
                    std::map<TensorId, py::iterable> inputs,
                    int64_t numElements,
@@ -293,6 +297,7 @@ void exportInputs(Session &session,
 
   session.exportInputs(stepio, num_elements, output_filename);
 }
+} // namespace
 
 class PyWeightsIO : public IWeightsIO {
 public:

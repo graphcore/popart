@@ -6,9 +6,6 @@
 #include <popart/popx/opx.hpp>
 
 namespace popart {
-
-class DynamicSliceOp;
-
 namespace popx {
 
 class DynamicSliceOpx : public Opx {

@@ -5,9 +5,6 @@
 #include <popart/popx/op/elementwisex.hpp>
 
 namespace popart {
-
-class Atan2Op;
-
 namespace popx {
 
 class Atan2Computex : public EwbComputex {

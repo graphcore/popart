@@ -2,8 +2,9 @@
 #ifndef GUARD_NEURALNET_SUFFIXTREE_HPP
 #define GUARD_NEURALNET_SUFFIXTREE_HPP
 
-#include "match.hpp"
 #include <vector>
+
+#include <popart/subgraph/match.hpp>
 
 namespace fwtools {
 namespace subgraph {

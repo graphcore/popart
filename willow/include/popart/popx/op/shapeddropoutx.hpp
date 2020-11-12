@@ -5,9 +5,6 @@
 #include <popart/popx/opx.hpp>
 
 namespace popart {
-
-class DropoutOp;
-
 namespace popx {
 
 class ShapedDropoutOpx : public Opx {

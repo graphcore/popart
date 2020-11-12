@@ -827,8 +827,21 @@ def genPythonBuilderBinds(schema):
                          'w') as f:
                 addHeader(f)
                 # Add the include file.
-                f.write("#include \"common.hpp\"")
-                f.write("\n\n")
+                f.write("#include <pybind11/functional.h>\n")
+                f.write("\n")
+                f.write("#include <pybind11/numpy.h>\n")
+                f.write("#include <pybind11/pybind11.h>\n")
+                f.write("#include <pybind11/stl.h>\n")
+                f.write("\n")
+                f.write("#include \"np_utils.hpp\"\n")
+                f.write("#include \"pyarray_accessor.hpp\"\n")
+                f.write("\n")
+                f.write("#include <popart/builder.hpp>\n")
+                f.write("#include <popart/tensors.hpp>\n")
+                f.write("#include <popart/version.hpp>\n")
+                f.write("\n")
+                f.write("#include <onnx/onnx_pb.h>\n")
+                f.write("\n")
 
                 f.write("namespace py = pybind11;\n")
                 f.write("using namespace popart;\n\n")

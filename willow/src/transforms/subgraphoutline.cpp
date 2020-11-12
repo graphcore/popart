@@ -16,6 +16,7 @@
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/remote.hpp>
 #include <popart/subgraph/iosubgraphcostmodel.hpp>
+#include <popart/subgraph/match.hpp>
 #include <popart/subgraph/outliner.hpp>
 #include <popart/subgraph/prunematches.hpp>
 #include <popart/subgraph/subgraphutil.hpp>

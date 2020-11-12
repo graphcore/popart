@@ -6,13 +6,6 @@
 #include <popart/popx/op/elementwisex.hpp>
 
 namespace popart {
-
-class SoftmaxOp;
-class SoftmaxInplaceOp;
-class SoftmaxGradOp;
-class SoftmaxGradDirectOp;
-class NlllWithSoftmaxGradDirectOp;
-
 namespace popx {
 
 class SoftmaxComputex : public EwuComputex {

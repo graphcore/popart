@@ -2,9 +2,13 @@
 #ifndef GUARD_NEURALNET_RINSEMATCHER_OUTLINER_HPP
 #define GUARD_NEURALNET_RINSEMATCHER_OUTLINER_HPP
 
-#include "algo0.hpp"
-#include "algo1.hpp"
 #include <popart/logging.hpp>
+
+#include <popart/subgraph/algo0.hpp>
+#include <popart/subgraph/algo1.hpp>
+#include <popart/subgraph/match.hpp>
+#include <popart/subgraph/outliner.hpp>
+#include <popart/subgraph/subgraphutil.hpp>
 
 namespace fwtools {
 namespace subgraph {

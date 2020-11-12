@@ -8,9 +8,6 @@
 #include <popart/popx/op/reducesumx.hpp>
 
 namespace popart {
-
-class SubtractOp;
-
 namespace popx {
 
 class SubtractOpx : public ElementWiseBinaryOpx {

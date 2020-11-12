@@ -6,8 +6,6 @@
 
 #include <popart/names.hpp>
 namespace popart {
-
-class Session;
 namespace numerics {
 
 class NumericsReport {

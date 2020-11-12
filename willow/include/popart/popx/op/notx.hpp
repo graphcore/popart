@@ -6,9 +6,6 @@
 #include <popart/popx/op/elementwisex.hpp>
 
 namespace popart {
-
-class NotOp;
-
 namespace popx {
 
 class NotOpx : public ElementWiseUnaryOpx {

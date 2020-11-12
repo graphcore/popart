@@ -8,12 +8,12 @@
 #include <poplar/DataStream.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
+#include <popart/patterns/pattern.hpp>
+#include <popart/sessionoptions.hpp>
 #include <popart/stepio.hpp>
 
 namespace popart {
 
-struct SessionOptions;
-class Patterns;
 class DeviceInfo;
 
 namespace popx {

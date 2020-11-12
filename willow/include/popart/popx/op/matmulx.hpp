@@ -6,11 +6,6 @@
 #include <popart/popx/opx.hpp>
 
 namespace popart {
-
-class MatMulOp;
-class MatMulLhsGradOp;
-class MatMulRhsGradOp;
-
 namespace popx {
 
 class MatMulOpx : public Opx {

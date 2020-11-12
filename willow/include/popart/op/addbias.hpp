@@ -8,8 +8,6 @@
 
 namespace popart {
 
-class ConvOp;
-
 // A special purpose add operation used to add a bias to the output of a
 // convolution operation.
 class AddBiasOp : public Op {

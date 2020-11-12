@@ -7,9 +7,6 @@
 #include <popart/popx/opx.hpp>
 
 namespace popart {
-
-class DynamicZeroOp;
-
 namespace popx {
 
 class DynamicZeroOpx : public DynamicUpdateOpx {

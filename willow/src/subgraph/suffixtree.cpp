@@ -10,6 +10,7 @@
 #include <sstream>
 #include <tuple>
 #include <vector>
+
 #include <popart/subgraph/suffixtree.hpp>
 
 namespace fwtools {

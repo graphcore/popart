@@ -6,9 +6,6 @@
 #include <popart/popx/op/elementwisex.hpp>
 
 namespace popart {
-
-class DropoutOp;
-
 namespace popx {
 
 class DropoutOpx : public ElementWiseUnaryOpx {

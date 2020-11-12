@@ -2,9 +2,10 @@
 #ifndef GUARD_NEURALNET_ISOMORPHIC_HPP
 #define GUARD_NEURALNET_ISOMORPHIC_HPP
 
-#include "subgraphnames.hpp"
 #include <map>
 #include <vector>
+
+#include <popart/subgraph/subgraphnames.hpp>
 
 namespace fwtools {
 namespace subgraph {
