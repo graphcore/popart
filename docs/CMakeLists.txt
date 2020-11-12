@@ -38,14 +38,12 @@ if (BUILD_DOCS)
 
   set(SUPPORTED_OPS_GEN ${CMAKE_CURRENT_SOURCE_DIR}/supported_ops_gen.rst)
 
-  message(STATUS "Popart_core lib : " $<TARGET_FILE:popart_core>)
-  message(STATUS "Python executable : " ${Python3_EXECUTABLE})
-
   add_custom_command(
     OUTPUT ${SUPPORTED_OPS_GEN}
-    COMMAND python3 gen_supported_ops.py "${PROJECT_BINARY_DIR}/python:${PROJECT_BINARY_DIR}/popart/python" ${SUPPORTED_OPS_GEN}
+    COMMAND python3 gen_supported_ops.py "${PROJECT_BINARY_DIR}/python:${PROJECT_BINARY_DIR}/python/popart" ${SUPPORTED_OPS_GEN}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Creating supported ops"
+    DEPENDS popart-py
   )
 
   add_custom_command(
@@ -83,7 +81,7 @@ if (BUILD_DOCS)
     ${CMAKE_CURRENT_BINARY_DIR}/latex
     ${SUPPORTED_OPS_GEN}
     popart_examples
-    popart_core
+    popart-py
   )
 
   add_custom_command(
@@ -93,7 +91,7 @@ if (BUILD_DOCS)
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS ${SUPPORTED_OPS_GEN}
     popart_examples
-    popart_core
+    popart-py
   )
 
   add_custom_command(
@@ -104,7 +102,7 @@ if (BUILD_DOCS)
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
     ${SUPPORTED_OPS_GEN}
     popart_examples
-    popart_core
+    popart-py
   )
 
   add_custom_command(
@@ -116,7 +114,7 @@ if (BUILD_DOCS)
     ${PROJECT_BINARY_DIR}/enable.sh
     ${SUPPORTED_OPS_GEN}
     popart_examples
-    popart_core
+    popart-py
   )
 
   add_custom_target(ug_zip ALL

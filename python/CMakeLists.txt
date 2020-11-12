@@ -13,6 +13,10 @@ set(PYBIND11_PYTHON_VERSION 3)
 find_package(pybind11 CONFIG REQUIRED)
 message(STATUS "Found pybind11 v${pybind11_VERSION}: ${pybind11_INCLUDE_DIRS}")
 
+# Create a convenience target that depends on the whole python API, so
+# consumers of the API can link just one target instead of all of them.
+add_library(popart-py INTERFACE)
+
 function(add_popart_python_module module_name source_file)
   # Creates a module library.
   pybind11_add_module(${module_name}
@@ -27,6 +31,11 @@ function(add_popart_python_module module_name source_file)
   target_compile_features(${module_name} PUBLIC cxx_std_14)
 
   target_link_libraries(${module_name} PRIVATE popart)
+
+  # For some unknown reason, you need the latter command to get
+  # add_custom_command(DEPENDS popart-py ...) to work.
+  target_link_libraries(popart-py INTERFACE ${module_name})
+  add_dependencies(popart-py ${module_name})
 
   # This was useful on OS/X for a while, see 
   # https://stackoverflow.com/questions/47697761 and
