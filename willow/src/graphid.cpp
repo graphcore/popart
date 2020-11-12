@@ -1,6 +1,8 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popart/graphid.hpp>
 
+#include <ostream>
+
 namespace popart {
 
 const GraphId rootId("");
