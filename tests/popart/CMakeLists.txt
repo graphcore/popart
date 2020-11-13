@@ -1,4 +1,12 @@
-find_package(Boost REQUIRED COMPONENTS unit_test_framework filesystem)
+find_package(Boost 1.70 REQUIRED COMPONENTS unit_test_framework filesystem random)
+
+set(boost_targets
+    unit_test_framework
+    filesystem
+    random
+    boost # All header-only libraries.
+)
+list(TRANSFORM boost_targets PREPEND Boost:: OUTPUT_VARIABLE boost_targets)
 
 # Workaround for this bug: https://github.com/boostorg/system/issues/26
 # on certain systems/compilers (e.g. compiling the host-runtime-view
@@ -94,13 +102,12 @@ function(add_test_executable name)
   target_include_directories(${name}
       PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}
-      ${Boost_INCLUDE_DIRS}
   )
   target_link_libraries(${name}
     PRIVATE
       popart-internal
       ${CMAKE_THREAD_LIBS_INIT}
-      ${Boost_LIBRARIES}
+      ${boost_targets}
       ${add_test_exe_TEST_UTILS}
   )
   if (NOT Boost_UNIT_TEST_FRAMEWORK_LIBRARY MATCHES "\\.a$")

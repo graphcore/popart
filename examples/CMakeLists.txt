@@ -2,6 +2,10 @@
 # for more useful warnings
 include(EnableCompilerWarnings)
 
+# Link Boost statically
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_STATIC_RUNTIME ON)
+find_package(Boost 1.70 REQUIRED COMPONENTS program_options)
 
 add_custom_target(popart_examples)
 add_custom_command(TARGET popart_examples
@@ -74,10 +78,9 @@ function(add_popart_cpp_example name)
   add_executable(${name} ${ARGN})
 
   target_include_directories(${name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-  target_include_directories(${name} SYSTEM PRIVATE ${Boost_INCLUDE_DIRS})
   target_link_libraries(${name}
     PRIVATE
-      ${Boost_LIBRARIES}
+      Boost::program_options
       popart
   )
   

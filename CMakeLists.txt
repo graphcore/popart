@@ -98,12 +98,6 @@ endif()
 # or repo popart if available
 find_package(ONNX REQUIRED)
 
-#Link Boost statically
-set(Boost_USE_STATIC_LIBS ON)
-set(Boost_USE_STATIC_RUNTIME ON)
-# thread needed by libpvti. This is a libpvti bug - they should find it for us.
-find_package(Boost REQUIRED COMPONENTS filesystem system program_options thread)
-
 #------ end of find dependencies
 
 #------ configure sources

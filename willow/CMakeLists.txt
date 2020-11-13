@@ -63,6 +63,29 @@ include(EnableCompilerWarnings)
 
 # Versions are not given where packages don't support them.
 
+# Link Boost statically
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_STATIC_RUNTIME ON)
+set(boost_components
+    # FindBoost bug: finding filesystem component does not transitively find and
+    # link the system component.
+    system
+
+    filesystem
+    graph
+    random
+    thread
+)
+find_package(Boost 1.70 REQUIRED COMPONENTS ${boost_components})
+
+list(TRANSFORM boost_components PREPEND Boost:: OUTPUT_VARIABLE boost_targets)
+
+# The header-only component. Many of the libs are header-only, and come under
+# this target. You do not pass it as a COMPONENT; it will always be created.
+list(APPEND boost_targets Boost::boost)
+
+find_package(spdlog 1.8.0 EXACT REQUIRED)
+
 find_package(poplar CONFIG REQUIRED)
 find_package(poplibs CONFIG REQUIRED)
 find_package(libpvti CONFIG REQUIRED)
@@ -75,17 +98,14 @@ if (NOT TARGET poprithms-static)
   find_package(Poprithms REQUIRED)
 endif ()
 
-find_package(spdlog 1.8.0 EXACT REQUIRED)
-
 ################################################################################
 ##### Dependecy visibility levels (see [comment-willow-targets])
 ################################################################################
 
 set(POPART_PRIVATE_DEPS_INCLUDES
-    ${Boost_INCLUDE_DIRS}
 )
 set(POPART_PRIVATE_DEPS_LIBS
-    ${Boost_LIBRARIES}
+    ${boost_targets}
     spdlog::spdlog_header_only
     ${CMAKE_DL_LIBS}
     ${CMAKE_THREAD_LIBS_INIT}
