@@ -161,8 +161,7 @@ public:
         enabled,
         mandatory,
         [name]() -> std::unique_ptr<PreAliasPattern> {
-          auto pattern = std::unique_ptr<PATTERN>(new PATTERN());
-          return std::move(pattern);
+          return std::unique_ptr<PATTERN>(new PATTERN());
         });
     AddPatternName<PATTERN> registerName(name);
   }
@@ -177,8 +176,7 @@ public:
         enabled,
         mandatory,
         [name]() -> std::unique_ptr<PreAliasPattern> {
-          auto pattern = std::unique_ptr<PATTERN>(new PATTERN());
-          return std::move(pattern);
+          return std::unique_ptr<PATTERN>(new PATTERN());
         });
     AddPatternName<PATTERN> registerName(name);
   }
