@@ -135,3 +135,83 @@ def test_depthtospace_grad1(op_tester):
     op_tester.setPatterns(['DepthToSpaceOpPattern'],
                           enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
+
+
+def test_spacetodepth0(op_tester):
+    # create test data
+    d1 = np.random.rand(1, 8, 2, 3).astype(np.float32)
+    blocks = 2
+
+    # SpaceToDepth is the reverse transformation of DepthToSpace.
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o1 = builder.aiOnnxOpset11.depthtospace([i1],
+                                                blocksize=blocks,
+                                                mode="DCR")
+        o2 = builder.aiOnnx.spacetodepth([o1], blocksize=blocks)
+        builder.addOutputTensor(o2)
+        return [o2]
+
+    def reference(ref_data):
+        return [d1]
+
+    op_tester.setPatterns(['SpaceToDepthOpPattern', 'DepthToSpaceOpPattern'],
+                          enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_spacetodepth1(op_tester):
+    # create test data
+    d1 = np.random.rand(1, 2, 4, 6).astype(np.float32)
+    blocks = 2
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.spacetodepth([i1], blocksize=blocks)
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        tx = torch.tensor(d1)
+        d_shape = tx.size()
+        txr = torch.reshape(tx, (d_shape[0], d_shape[1], d_shape[2] // blocks,
+                                 blocks, d_shape[3] // blocks, blocks))
+        txrp = txr.permute(0, 3, 5, 1, 2, 4)
+        out = torch.reshape(txrp, (d_shape[0], d_shape[1] * blocks * blocks,
+                                   d_shape[2] // blocks, d_shape[3] // blocks))
+        return [out]
+
+    op_tester.setPatterns(['SpaceToDepthOpPattern'],
+                          enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_spacetodepth_grad1(op_tester):
+    d1 = np.random.rand(1, 2, 4, 6).astype(np.float32)
+    blocks = 2
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.spacetodepth([i1], blocksize=blocks)
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + o,
+        ]
+
+    def reference(ref_data):
+        tx = torch.tensor(d1, requires_grad=True)
+        d_shape = tx.size()
+        txr = torch.reshape(tx, (d_shape[0], d_shape[1], d_shape[2] // blocks,
+                                 blocks, d_shape[3] // blocks, blocks))
+        txrp = txr.permute(0, 3, 5, 1, 2, 4)
+        out = torch.reshape(txrp, (d_shape[0], d_shape[1] * blocks * blocks,
+                                   d_shape[2] // blocks, d_shape[3] // blocks))
+        d__o = ref_data.getOutputTensorGrad(0)
+        out.backward(torch.tensor(d__o))
+        return [out, tx.grad, None]
+
+    op_tester.setPatterns(['SpaceToDepthOpPattern'],
+                          enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'train')

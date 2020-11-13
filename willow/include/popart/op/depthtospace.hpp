@@ -14,27 +14,27 @@ enum class DepthToSpaceMode { DCR, CRD };
 std::string toString(DepthToSpaceMode);
 std::ostream &operator<<(std::ostream &, DepthToSpaceMode);
 
-class DepthToSpaceBaseOp : public Op {
+// Base class for DepthToSpaceOp and SpaceToDepthOp.
+class DepthSpaceBaseOp : public Op {
 public:
-  DepthToSpaceBaseOp(const OperatorIdentifier &_opid,
-                     int64_t blocksize_,
-                     DepthToSpaceMode mode_,
-                     const Op::Settings &settings_);
+  DepthSpaceBaseOp(const OperatorIdentifier &_opid,
+                   int64_t blocksize_,
+                   const Op::Settings &settings_);
 
-  void setup() final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
 
   int64_t getBlocksize() const { return blocksize; }
-  DepthToSpaceMode getMode() const { return mode; }
 
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
+protected:
+  void setupHelper(const Shape &inShape);
+
 private:
   const int64_t blocksize;
-  const DepthToSpaceMode mode;
 };
 
 // DepthToSpace op rearranges (permutes) data from depth into
@@ -43,13 +43,31 @@ private:
 // to the height and width dimensions.
 // It expect 4 dimensional input tensor: x.shape = b, c, h, w. See
 // https://github.com/onnx/onnx/blob/master/docs/Operators.md#DepthToSpace
-class DepthToSpaceOp : public DepthToSpaceBaseOp {
+class DepthToSpaceOp : public DepthSpaceBaseOp {
 public:
   DepthToSpaceOp(const OperatorIdentifier &_opid,
                  int64_t blocksize_,
                  DepthToSpaceMode mode_,
                  const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const final;
+
+  void setup() final;
+  DepthToSpaceMode getMode() const { return mode; }
+
+private:
+  const DepthToSpaceMode mode;
+};
+
+// SpaceToDepth rearranges blocks of spatial data into depth.
+// It outputs a copy of the input tensor where values from
+// the height and width dimensions are moved to the depth dimension.
+class SpaceToDepthOp : public DepthSpaceBaseOp {
+public:
+  SpaceToDepthOp(const OperatorIdentifier &_opid,
+                 int64_t blocksize_,
+                 const Op::Settings &settings_);
+  std::unique_ptr<Op> clone() const final;
+  void setup() final;
 };
 
 } // namespace popart

@@ -16,7 +16,7 @@ std::string toString(DepthToSpaceMode mode) {
   case DepthToSpaceMode::CRD:
     return "CRD";
   default:
-    throw error("Bad DepthToSpaceMode {}", static_cast<int>(mode));
+    throw error("Bad DepthToSpaceMode. Must be DCR or CRD.");
   }
 }
 
@@ -25,11 +25,10 @@ std::ostream &operator<<(std::ostream &os, DepthToSpaceMode x) {
   return os;
 }
 
-DepthToSpaceBaseOp::DepthToSpaceBaseOp(const OperatorIdentifier &_opid,
-                                       int64_t blocksize_,
-                                       DepthToSpaceMode mode_,
-                                       const Op::Settings &settings_)
-    : Op(_opid, settings_), blocksize(blocksize_), mode(mode_) {}
+DepthSpaceBaseOp::DepthSpaceBaseOp(const OperatorIdentifier &_opid,
+                                   int64_t blocksize_,
+                                   const Op::Settings &settings_)
+    : Op(_opid, settings_), blocksize(blocksize_) {}
 
 std::unique_ptr<Op> DepthToSpaceOp::clone() const {
   return std::make_unique<DepthToSpaceOp>(*this);
@@ -39,53 +38,98 @@ DepthToSpaceOp::DepthToSpaceOp(const OperatorIdentifier &_opid,
                                int64_t blocksize_,
                                DepthToSpaceMode mode_,
                                const Op::Settings &settings_)
-    : DepthToSpaceBaseOp(_opid, blocksize_, mode_, settings_) {}
+    : DepthSpaceBaseOp(_opid, blocksize_, settings_), mode(mode_) {}
 
-void DepthToSpaceBaseOp::setup() {
+void DepthSpaceBaseOp::setupHelper(const Shape &inShape) {
+
+  std::string dName = debugName();
+  if (blocksize == 0) {
+    throw error("{}, blocksize is 0.", dName);
+  }
+
+  if (inShape.size() != 4) {
+    throw error("Rank of input tensor of {} is {}."
+                "But it must have 4 dimensions.",
+                dName,
+                inShape.size());
+  }
+
+  for (int i = 0; i < 4; i++) {
+    if (inShape[i] == 0) {
+      throw error("{} th component of {} input shape is 0.", i, dName);
+    }
+  }
+}
+
+void DepthToSpaceOp::setup() {
+  // Check b, c, h, w = x.shape
+  const auto inShape = inInfo(getInIndex()).shape();
+  int64_t blocksize  = getBlocksize();
+  setupHelper(inShape);
+
+  if (inShape[1] % (blocksize * blocksize) != 0) {
+    throw error("c component of DepthToSpaceOp input shape is not compatible"
+                "with blocksize. b, c, h, w = input.shape. c must be divisible"
+                "by blocksize^2. But c is {} and blocksize is {}.",
+                inShape[1],
+                blocksize);
+  }
 
   if (!(mode == DepthToSpaceMode::DCR || mode == DepthToSpaceMode::CRD)) {
     throw error("Bad DepthToSpaceMode. Must be DCR or CRD.");
   }
 
-  if (blocksize == 0) {
-    throw error("DepthToSpaceOp, blocksize is 0.");
-  }
+  const Shape outShape = {inShape[0],
+                          inShape[1] / (blocksize * blocksize),
+                          inShape[2] * blocksize,
+                          inShape[3] * blocksize};
 
+  outInfo(getOutIndex()) = {inInfo(getInIndex()).data_type(), outShape};
+}
+
+void SpaceToDepthOp::setup() {
   // Check b, c, h, w = x.shape
-  const auto in_shape = inInfo(getInIndex()).shape();
+  const auto inShape = inInfo(getInIndex()).shape();
+  int64_t blocksize  = getBlocksize();
+  setupHelper(inShape);
 
-  if (in_shape.size() != 4) {
-    throw error("Rank of input tensor of depth to space op, "
-                "DepthToSpaceOp, is {}. But it must have 4 dimensions.",
-                in_shape.size());
-  }
-
-  for (int i = 0; i < 4; i++) {
-    if (in_shape[i] == 0) {
-      throw error("{} th component of DepthToSpaceOp input shape is 0.", i);
-    }
-  }
-
-  if (in_shape[1] % (blocksize * blocksize) != 0) {
-    throw error("c component of DepthToSpaceOp input shape is not compatible"
-                "with blocksize. c must be divisible by blocksize^2."
-                "But c is {} and blocksize is {}.",
-                in_shape[1],
+  if (inShape[2] % blocksize != 0) {
+    throw error("h component of SpaceToDepthOp input shape is not compatible"
+                "with blocksize. b, c, h, w = input.shape. h must be divisible"
+                "by blocksize. But h is {} and blocksize is {}.",
+                inShape[2],
                 blocksize);
   }
 
-  const Shape out_shape = {in_shape[0],
-                           in_shape[1] / (blocksize * blocksize),
-                           in_shape[2] * blocksize,
-                           in_shape[3] * blocksize};
+  if (inShape[3] % blocksize != 0) {
+    throw error("w component of SpaceToDepthOp input shape is not compatible"
+                "with blocksize. b, c, h, w = input.shape. w must be divisible"
+                "by blocksize. But w is {} and blocksize is {}.",
+                inShape[3],
+                blocksize);
+  }
 
-  outInfo(getOutIndex()) = {inInfo(getInIndex()).data_type(), out_shape};
+  const Shape outShape = {inShape[0],
+                          inShape[1] * blocksize * blocksize,
+                          inShape[2] / blocksize,
+                          inShape[3] / blocksize};
+
+  outInfo(getOutIndex()) = {inInfo(getInIndex()).data_type(), outShape};
 }
 
-std::vector<std::unique_ptr<Op>> DepthToSpaceBaseOp::getGradOps() {
+std::vector<std::unique_ptr<Op>> DepthSpaceBaseOp::getGradOps() {
   throw error("No gradient operation for depth to space is available."
               "Depth to space should have been automatically replaced by "
-              "DepthToSpaceOp pattern.");
+              "Depth/Space to Space/Depth op pattern.");
+}
+
+SpaceToDepthOp::SpaceToDepthOp(const OperatorIdentifier &_opid,
+                               int64_t blocksize_,
+                               const Op::Settings &settings_)
+    : DepthSpaceBaseOp(_opid, blocksize_, settings_) {}
+
+std::unique_ptr<Op> SpaceToDepthOp::clone() const {
+  return std::make_unique<SpaceToDepthOp>(*this);
 }
 
 namespace {
@@ -125,6 +169,11 @@ static OpDefinition depthtospaceOpDef(
      OpDefinition::Outputs({{"output", T}}),
      OpDefinition::Attributes({{"blocksize", {"*"}}, {"mode", {"*"}}})});
 
+static OpDefinition
+    spacetodepthOpDef({OpDefinition::Inputs({{"input", T}}),
+                       OpDefinition::Outputs({{"output", T}}),
+                       OpDefinition::Attributes({{"blocksize", {"*"}}})});
+
 static std::unique_ptr<Op> depthtospaceOpFactory(const OpCreatorInfo &info) {
   int64_t blocksize = static_cast<int64_t>(
       info.attributes.getAttribute<Attributes::Int>("blocksize", 0));
@@ -140,10 +189,23 @@ static std::unique_ptr<Op> depthtospaceOpFactory(const OpCreatorInfo &info) {
       info.opid, blocksize, mode, info.settings);
 }
 
+static std::unique_ptr<Op> spacetodepthOpFactory(const OpCreatorInfo &info) {
+  int64_t blocksize = static_cast<int64_t>(
+      info.attributes.getAttribute<Attributes::Int>("blocksize", 0));
+
+  return std::make_unique<SpaceToDepthOp>(info.opid, blocksize, info.settings);
+}
+
 static OpCreator<DepthToSpaceOp> depthtospaceOpCreator(
     {{Onnx::Operators::DepthToSpace_11, depthtospaceOpDef}},
     depthtospaceOpFactory,
     true);
+
+static OpCreator<SpaceToDepthOp> spacetodepthOpCreator(
+    {{Onnx::Operators::SpaceToDepth_1, spacetodepthOpDef}},
+    spacetodepthOpFactory,
+    true);
+
 } // namespace
 
 } // namespace popart

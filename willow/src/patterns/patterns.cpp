@@ -355,6 +355,10 @@ bool Patterns::isDepthToSpaceOpPatternEnabled() {
   return isPatternEnabled<DepthToSpaceOpPattern>();
 }
 
+bool Patterns::isSpaceToDepthOpPatternEnabled() {
+  return isPatternEnabled<SpaceToDepthOpPattern>();
+}
+
 Patterns &Patterns::enableInitAccumulate(bool v) {
   return enablePattern<InitAccumulatePattern>(v);
 }
@@ -503,6 +507,10 @@ Patterns &Patterns::enableDepthToSpaceOpPattern(bool v) {
   return enablePattern<DepthToSpaceOpPattern>(v);
 }
 
+Patterns &Patterns::enableSpaceToDepthOpPattern(bool v) {
+  return enablePattern<SpaceToDepthOpPattern>(v);
+}
+
 Patterns &Patterns::enablePattern(const std::type_index &t, bool v) {
   logging::pattern::warn(
       "Pattern {} {}", PreAliasPatternManager::getPatternName(t), v);
@@ -563,6 +571,7 @@ std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
   }
 
   static std::map<std::type_index, float> patternPriority{
+      {std::type_index(typeid(SpaceToDepthOpPattern)), 49},
       {std::type_index(typeid(DepthToSpaceOpPattern)), 48},
       {std::type_index(typeid(AtanhOpPattern)), 47},
       {std::type_index(typeid(AsinhOpPattern)), 46},
