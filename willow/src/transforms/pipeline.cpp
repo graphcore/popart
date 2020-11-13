@@ -227,26 +227,36 @@ std::string zeroCandidatesError(Tensor *t, Op *stashRefOp) {
   return ss.str();
 }
 
-Op *searchForRestoreReferenceOp(Tensor *t, Op *stashRefOp) {
-  // Find a restore reference Op by searching through the consumers but not
-  // crossing IPU boundaries.
+// Find descendent consumers on different PipelineStages that can be used
+// as restore reference Ops by searching through the consumers but not
+// crossing IPU or executionContext boundaries.
+std::vector<Op *> findDescendentsOnDifferentPipelineStages(Tensor *t,
+                                                           Op *stashRefOp) {
   OpSearchHelper toCheck;
 
+  std::vector<Op *> differentPipelineStageDescendents;
+  std::vector<PipelineStage> foundPipelineStages;
   toCheck.pushConsumers(t);
   while (!toCheck.empty()) {
     auto op = toCheck.pop();
-    if (!op->isConvertibleTo<IpuCopyOp>() &&
-        (op->settings.executionContext ==
-         stashRefOp->settings.executionContext) &&
-        (op->getOptionalVGraphId() == stashRefOp->getOptionalVGraphId())) {
-      if (op->getPipelineStage() > stashRefOp->getPipelineStage()) {
-        return op;
-      } else {
-        toCheck.pushOutputConsumers(op);
+    if (op->isConvertibleTo<IpuCopyOp>()) {
+      // do nothing
+    } else if (op->settings.executionContext !=
+               stashRefOp->settings.executionContext) {
+      // do nothing
+    } else if (op->getPipelineStage() > stashRefOp->getPipelineStage()) {
+      if (std::find(foundPipelineStages.begin(),
+                    foundPipelineStages.end(),
+                    op->getPipelineStage()) == foundPipelineStages.end()) {
+        differentPipelineStageDescendents.push_back(op);
+        foundPipelineStages.push_back(op->getPipelineStage());
       }
+    } else {
+      toCheck.pushOutputConsumers(op);
     }
   }
-  return nullptr;
+
+  return differentPipelineStageDescendents;
 }
 
 bool isProducedOnIPU(Tensor *tensor) {
@@ -964,16 +974,23 @@ bool Pipeline::apply(Graph &graph) const {
         // For full_recompute if a stash candidate doesn't have a
         // restoreReference then it is not required for recomputation during the
         // backwards pass.
-        if (full_recompute && tensor->getPipelineStages().size() == 1) {
-          auto stashRef   = getStashReferenceOp(tensor);
-          auto restoreRef = searchForRestoreReferenceOp(tensor, stashRef);
-          if (restoreRef == nullptr) {
+        if (full_recompute) {
+          auto stashRef = getStashReferenceOp(tensor);
+          auto restoreRefs =
+              findDescendentsOnDifferentPipelineStages(tensor, stashRef);
+          if (restoreRefs.size() == 0) {
             logging::transform::debug("Discarding Stash candidate tensor {} as "
                                       "no restore reference found.",
                                       tid);
             continue;
+          } else if (restoreRefs.size() > 1) {
+            throw internal_error("To-stash tensor {} requires >1 Restore op. "
+                                 "This is not currently supported.",
+                                 tid);
+          } else {
+            // Only a single restore reference Op has been found
+            stashRestoreRefOps.insert({tid, {stashRef, restoreRefs.at(0)}});
           }
-          stashRestoreRefOps.insert({tid, {stashRef, restoreRef}});
         }
         toStashTensors.insert(tid);
       }
