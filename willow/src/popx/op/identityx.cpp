@@ -104,9 +104,8 @@ void IdentityLossOpx::grow(poplar::program::Sequence &prog) const {
       break;
     }
     case ReductionType::Mean: {
-      double totalSamples = static_cast<double>(dv_p->getReplicationFactor()) *
-                            static_cast<double>(inTensor1D.dim(0));
-      scale = 1.0 / totalSamples;
+      double totalSamples = static_cast<double>(inTensor1D.dim(0));
+      scale               = 1.0 / totalSamples;
       break;
     }
     // Making it explicit which data types we're not handling. Note that
