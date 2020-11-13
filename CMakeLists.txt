@@ -86,7 +86,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 find_package(PoplarRunner)
 find_package(Threads REQUIRED)
-find_package(Python3 REQUIRED COMPONENTS Interpreter)
+find_package(Python3 3.6 REQUIRED COMPONENTS Interpreter)
 
 if (PoplarRunner_FOUND)
   add_definitions(-DPOPLAR_RUNNER)
