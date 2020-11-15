@@ -1,7 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <vector>
+#include <poprithmshosttensor.hpp>
 #include <popart/ces/gatherce.hpp>
-#include <popart/ndarraywrapper.hpp>
 #include <popart/op/gather.hpp>
 #include <popart/tensor.hpp>
 
@@ -9,76 +9,13 @@ namespace popart {
 
 ConstExprGather::ConstExprGather(Op *op_) : ConstExprOp(op_) {}
 
-class GatherFunctor {
-public:
-  template <typename DATA_IN_TYPE>
-  std::vector<char> operator()(Tensor &dataIn,
-                               Tensor &indicesIn,
-                               int64_t axis,
-                               const TensorInfo &outInfo) {
-
-    DataType indicesType = indicesIn.info.dataType();
-    if (indicesType == DataType::INT32) {
-      return operator()<DATA_IN_TYPE, int32_t>(
-          dataIn, indicesIn, axis, outInfo);
-    } else if (indicesType == DataType::INT64) {
-      return operator()<DATA_IN_TYPE, int64_t>(
-          dataIn, indicesIn, axis, outInfo);
-    } else {
-      throw error("Gather indices must be of type int32 or int64");
-    }
-  }
-
-private:
-  template <typename DATA_IN_TYPE, typename INDICES_TYPE>
-  std::vector<char> operator()(Tensor &dataIn,
-                               Tensor &indicesIn,
-                               int64_t axis,
-                               const TensorInfo &outInfo) {
-
-    auto inShape = dataIn.info.shape();
-    std::vector<char> v_out(outInfo.nbytes());
-    DATA_IN_TYPE *output = reinterpret_cast<DATA_IN_TYPE *>(v_out.data());
-    NDArrayWrapper<DATA_IN_TYPE> data0(dataIn);
-    NDArrayWrapper<INDICES_TYPE> data1(indicesIn);
-
-    const int64_t axis_size     = inShape[axis];
-    const int64_t indices_count = indicesIn.info.nelms();
-
-    // Size of the array below the gather axis
-    int64_t outer_size = 1;
-    for (int64_t i = 0; i < axis; ++i) {
-      outer_size *= inShape[i];
-    }
-
-    // Size of the array beyond the gather axis
-    int64_t inner_size = 1;
-    for (int64_t i = axis + 1; i < inShape.size(); ++i) {
-      inner_size *= inShape[i];
-    }
-
-    // Outer elements
-    for (int64_t outer = 0; outer < outer_size; ++outer) {
-      // Specified indices to copy
-      for (int64_t i = 0; i < indices_count; ++i) {
-        // All inner elements can be copied contiguously
-        for (int64_t j = 0; j < inner_size; ++j) {
-          output[((outer * indices_count + i) * inner_size) + j] =
-              data0[((outer * axis_size + data1[i]) * inner_size) + j];
-        }
-      }
-    }
-
-    return v_out;
-  }
-};
-
 std::vector<char> ConstExprGather::compute() {
-  Tensor *dataIn    = inTensor(GatherOp::dataInIndex());
-  Tensor *indicesIn = inTensor(GatherOp::indicesInIndex());
-  int64_t axis      = getOp<GatherOp>().getAxis();
-  return callOpFunctor<GatherFunctor>(
-      dataIn->info.dataType(), *dataIn, *indicesIn, axis, outInfo0());
+  return getPoprithmsComputeHostTensor(*inTensor(GatherOp::dataInIndex()))
+      .gather(
+          getOp<GatherOp>().getAxis(),
+          getPoprithmsComputeHostTensor(*inTensor(GatherOp::indicesInIndex()))
+              .getInt64Vector())
+      .getNativeCharVector();
 }
 
 } // namespace popart

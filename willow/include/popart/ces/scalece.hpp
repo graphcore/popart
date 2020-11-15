@@ -8,15 +8,8 @@ namespace popart {
 
 class ConstExprScale : public ConstExprOp {
 public:
-  ConstExprScale(Op *);
+  ConstExprScale(Op *op) : ConstExprOp(op) {}
   std::vector<char> compute() final;
-
-private:
-  // obtained from the ONNX_NAMESPACE::NodeProto, the factor by which to scale
-  // the input
-  float factor32;
-  // the actual scaling will be done in double precision for all types
-  double factor64;
 };
 } // namespace popart
 
