@@ -94,12 +94,7 @@ find_package(poplibs CONFIG REQUIRED)
 find_package(libpvti CONFIG REQUIRED)
 find_package(gcl MODULE REQUIRED)
 
-# Search first for poprithms-static-config.cmake
-find_package(poprithms-static CONFIG)
-if (NOT TARGET poprithms-static)
-  # For backwards compat fallback to FindPoprithms.cmake
-  find_package(Poprithms REQUIRED)
-endif ()
+find_package(poprithms CONFIG REQUIRED)
 
 # Onnx's config file fails to find protobuf, so we have to do it ourselves.
 # We use the find module provided by CMake.
@@ -146,16 +141,8 @@ endif()
 set(POPART_INTERNAL_DEPS_INCLUDES
 )
 set(POPART_INTERNAL_DEPS_LIBS
+  poprithms
 )
-if (TARGET poprithms-static)
-  list(APPEND POPART_INTERNAL_DEPS_LIBS poprithms-static)
-else()
-  # Backwards compat for build_scripts using git tag before cmake exports of poprithms,
-  # once this tag is incremented, we can delete FindPoprithms.cmake
-  # and related ${POPRITHMS_*}, using normal cmake targets
-  list(APPEND POPART_INTERNAL_DEPS_INCLUDES ${POPRITHMS_INCLUDE_DIR})
-  list(APPEND POPART_INTERNAL_DEPS_LIBS ${POPRITHMS_LIB})
-endif()
 
 
 ################################################################################
