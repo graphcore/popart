@@ -15,7 +15,7 @@ public:
 
   void setup() final;
 
-  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
 
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }

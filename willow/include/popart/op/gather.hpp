@@ -27,7 +27,7 @@ public:
 
   bool canBeReplacedByIdentity() const override;
 
-  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+  float getSubgraphValue() const override { return getLowSubgraphValue(); }
 
   bool canShard() const override { return true; }
 
