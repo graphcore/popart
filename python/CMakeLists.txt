@@ -6,10 +6,10 @@ include(EnableCompilerWarnings)
 # of certain classes in headers
 
 # See pybind11's installed cmake files for more documentation.
-# We tell it what cpp std and minimum python version modules should be compiled
-# with.
+# We tell it what cpp std modules should be compiled with.
+# Note that pybind11 will use the python targets found by the
+# find_package(Python3 ...) command.
 set(PYBIND11_CPP_STANDARD -std=c++14)
-set(PYBIND11_PYTHON_VERSION 3)
 find_package(pybind11 CONFIG REQUIRED)
 message(STATUS "Found pybind11 v${pybind11_VERSION}: ${pybind11_INCLUDE_DIRS}")
 
