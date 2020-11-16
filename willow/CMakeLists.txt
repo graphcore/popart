@@ -120,7 +120,6 @@ set(POPART_ONLY_DEPS_LIBS
 )
 
 set(POPART_DEPS_INCLUDES
-    ${GCL_INCLUDE_DIR}
 )
 set(POPART_DEPS_LIBS
     poplar
@@ -130,7 +129,7 @@ set(POPART_DEPS_LIBS
     poprand
     poputil
     libpvti
-    ${GCL_LIBRARIES}
+    gcl
     onnx
     onnx_proto
 )
