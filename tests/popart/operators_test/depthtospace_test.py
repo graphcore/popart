@@ -215,3 +215,33 @@ def test_spacetodepth_grad1(op_tester):
     op_tester.setPatterns(['SpaceToDepthOpPattern'],
                           enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
+
+
+def test_pixelshuffle0(op_tester):
+    # depthtospace CRD onnx should be same as PixelShuffle pytorch.
+    # create test data
+    d1 = np.random.rand(1, 8, 2, 3).astype(np.float32)
+    d2 = np.random.rand(1, 9, 4, 4).astype(np.float32)
+    block1 = 2
+    block2 = 3
+    testData = [d1, d2]
+    blocks = [block1, block2]
+    for di, blocki in zip(testData, blocks):
+
+        def init_builder(builder):
+            i1 = builder.addInputTensor(di)
+            o = builder.aiOnnxOpset11.depthtospace([i1],
+                                                   blocksize=blocki,
+                                                   mode="CRD")
+            builder.addOutputTensor(o)
+            return [o]
+
+        def reference(ref_data):
+            tx = torch.tensor(di)
+            pixel_shuffle = torch.nn.PixelShuffle(blocki)
+            out = pixel_shuffle(tx)
+            return [out]
+
+        op_tester.setPatterns(['DepthToSpaceOpPattern'],
+                              enableRuntimeAsserts=False)
+        op_tester.run(init_builder, reference, 'infer')

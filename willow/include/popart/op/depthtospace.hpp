@@ -43,6 +43,7 @@ private:
 // to the height and width dimensions.
 // It expect 4 dimensional input tensor: x.shape = b, c, h, w. See
 // https://github.com/onnx/onnx/blob/master/docs/Operators.md#DepthToSpace
+// DepthToSpaceOp CRD is supporting PixelShuffle poptorch.
 class DepthToSpaceOp : public DepthSpaceBaseOp {
 public:
   DepthToSpaceOp(const OperatorIdentifier &_opid,
