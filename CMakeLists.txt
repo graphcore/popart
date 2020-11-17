@@ -68,13 +68,6 @@ if(DEFINED POPLAR_INSTALL_DIR)
   list(APPEND CMAKE_PREFIX_PATH ${POPLAR_INSTALL_DIR})
 endif()
 
-#with cmake >= 3.12 this should be add_compile_definitions(ONNX_NAMESPACE=onnx)
-add_definitions(-DONNX_NAMESPACE=onnx)
-
-# This allows us to deprecate the legacy op factory functions
-# in our own code without breaking customers code.
-add_definitions(-DDEPRECATE_LEGACY_OP_FACTORY=1)
-
 # Prefer to find static libraries
 set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
 
@@ -84,12 +77,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 #------ find dependencies
 
-find_package(PoplarRunner)
 find_package(Python3 3.6 REQUIRED COMPONENTS Interpreter)
-
-if (PoplarRunner_FOUND)
-  add_definitions(-DPOPLAR_RUNNER)
-endif()
 
 #------ end of find dependencies
 

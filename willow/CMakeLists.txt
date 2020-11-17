@@ -101,6 +101,8 @@ find_package(poprithms CONFIG REQUIRED)
 find_package(Protobuf 3.6 MODULE REQUIRED)
 find_package(ONNX 1.6 CONFIG REQUIRED)
 
+find_package(PoplarRunner)
+
 ################################################################################
 ##### Dependecy visibility levels (see [comment-willow-targets])
 ################################################################################
@@ -140,7 +142,6 @@ set(POPART_INTERNAL_DEPS_INCLUDES
 set(POPART_INTERNAL_DEPS_LIBS
   poprithms
 )
-
 
 ################################################################################
 ##### Sources
@@ -221,11 +222,25 @@ set_target_properties(popart-only PROPERTIES
 )
 target_compile_features(popart-only PUBLIC cxx_std_14)
 
-# The following defines cause compiler warnings if not set
-target_compile_definitions(popart-only
-  PRIVATE 
-    PROTOBUF_INLINE_NOT_IN_HEADERS=0
+# These definitions are private to popart-only, as the external user does not
+# need them, but they are needed by all internal targets.
+set(popart_common_definitions
+    # This allows us to deprecate the legacy op factory functions in our own
+    # code without breaking customers code.
+    DEPRECATE_LEGACY_OP_FACTORY=1
 )
+
+target_compile_definitions(popart-only
+  PRIVATE
+    # Required to prevent warnings.
+    PROTOBUF_INLINE_NOT_IN_HEADERS=0
+
+    ${popart_common_definitions}
+)
+
+if (PoplarRunner_FOUND)
+  target_compile_definitions(popart-only PUBLIC POPLAR_RUNNER)
+endif()
 
 target_include_directories(popart-only
   PUBLIC
@@ -279,6 +294,8 @@ target_link_libraries(popart-internal INTERFACE popart "$<BUILD_INTERFACE:${POPA
 target_include_directories(popart-internal SYSTEM INTERFACE "$<BUILD_INTERFACE:${POPART_INTERNAL_DEPS_INCLUDES}>")
 
 target_include_directories(popart-internal INTERFACE "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/willow/src>")
+
+target_compile_definitions(popart-internal INTERFACE ${popart_common_definitions})
 
 ################################################################################
 ##### Install popart and popart-only
