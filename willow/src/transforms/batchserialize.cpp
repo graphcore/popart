@@ -15,58 +15,14 @@
 #include <popart/op/remote.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/op/slice.hpp>
+#include <popart/opsharding.hpp>
+#include <popart/shardingplan.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/batchserialize.hpp>
 
 namespace popart {
-
-namespace {
-
-TensorId createOrGetIndexTensor(Graph &graph, uint32_t index) {
-  TensorId id = reservedIndexPrefix() + std::to_string(index);
-  if (!graph.getTensors().contains(id)) {
-    TensorInfo indexTensorInfo(DataType::UINT32, {1});
-    std::vector<uint32_t> idData(1, index);
-    graph.getTensors().addConstInit(
-        id, indexTensorInfo, reinterpret_cast<void *>(idData.data()));
-  }
-  return id;
-}
-
-void connectOutTensor(Ir &ir, Op *op, TensorId id, OutIndex index) {
-  if (ir.containsTensor(id)) {
-    auto t = ir.getTensor(id);
-    if (t->hasProducer()) {
-      t->getProducer()->disconnectOutTensor(t);
-    }
-    op->connectOutTensor(index, id);
-  } else {
-    op->createAndConnectOutTensor(index, id);
-  }
-}
-
-} // namespace
-
-OpId BatchSerialize::reshapeForSlice(Graph &graph,
-                                     Op::Settings settings,
-                                     TensorId inId,
-                                     Shape newShape,
-                                     TensorId outId,
-                                     OptionalBatchSerializedPhase bsp) const {
-  std::unique_ptr<ReshapeOp> reshapeOp = std::make_unique<ReshapeOp>(
-      Onnx::AiOnnx::OpSet11::Reshape, newShape, settings);
-  reshapeOp->setName("Batch_Reshape_" + inId);
-  reshapeOp->setBatchSerializedPhase(bsp);
-  Op *reshape = reshapeOp.get();
-  graph.moveIntoGraph(std::move(reshapeOp));
-
-  reshape->connectInTensor(ReshapeOp::getInIndex(), inId);
-  connectOutTensor(graph.getIr(), reshape, outId, ReshapeOp::getOutIndex());
-  reshape->setup();
-  return reshape->id;
-}
 
 std::size_t BatchSerialize::id(int pass) {
   return typeid(BatchSerialize).hash_code() + pass;
@@ -75,8 +31,7 @@ std::size_t BatchSerialize::id(int pass) {
 bool BatchSerialize::apply(Graph &graph) const {
   logging::transform::debug("[BatchSerialize] Started.");
 
-  bool dynamicSlicing = true;
-  bool dynamicConcat  = true;
+  ShardingHelper helper(&graph);
 
   std::set<Op *> toErase;
 
@@ -93,10 +48,8 @@ bool BatchSerialize::apply(Graph &graph) const {
     std::set<TensorId> tensorsWithBatch;
     std::set<Op *> serializedOps;
     std::map<std::pair<TensorId, BatchSerialTensorContext>,
-             std::vector<TensorId>>
+             BatchSerializedTensorInfo>
         serializedTensorMap;
-    std::map<std::pair<TensorId, BatchSerialTensorContext>, TensorId>
-        concatTensorMap;
 
     for (TensorId id : ir.getTensorIds(TensorType::Stream)) {
       tensorsWithBatch.insert(id);
@@ -106,6 +59,7 @@ bool BatchSerialize::apply(Graph &graph) const {
       // Context in which the tensors are consumed
       BatchSerialTensorContext consumerContext =
           getBatchSerialTensorContext(op);
+      Op::Settings consumerSettings = op->settings;
 
       auto opInTensorIdxIds  = op->input->tensorIdMap();
       auto opOutTensorIdxIds = op->output->tensorIdMap();
@@ -152,7 +106,7 @@ bool BatchSerialize::apply(Graph &graph) const {
         auto producerContext =
             entry.first->hasProducer()
                 ? getBatchSerialTensorContext(entry.first->getProducer())
-                : BatchSerialTensorContext(-1, -1, -1);
+                : BatchSerialTensorContext();
 
         auto serializedItProducer =
             serializedTensorMap.find({entry.first->id, producerContext});
@@ -183,21 +137,27 @@ bool BatchSerialize::apply(Graph &graph) const {
         if (isRemoteArg &&
             (serializedItProducer == serializedTensorMap.end() ||
              serializedItConsumer == serializedTensorMap.end())) {
+
           TensorId remoteArgId = entry.first->id;
+
+          BatchSerializedTensorInfo &bsInfo =
+              serializedTensorMap[{entry.first->id, producerContext}];
+          bsInfo.id   = remoteArgId;
+          bsInfo.info = entry.first->info;
+
           for (int64_t b = 0; b < batchSerFactor; ++b) {
-            auto remoteArgBsId =
-                ir.createBatchSliceTensorId(remoteArgId, b, b + 1);
+            auto remoteArgBsId = ir.createSliceTensorId(remoteArgId, b, b + 1);
             TensorInfo argTensorInfo(DataType::INT32, {1});
             std::vector<int> idData(1, 0);
             graph.getTensors().addConstInit(
                 remoteArgBsId,
                 argTensorInfo,
                 reinterpret_cast<void *>(idData.data()));
-            serializedTensorMap[{entry.first->id, consumerContext}].push_back(
-                remoteArgBsId);
-            serializedTensorMap[{entry.first->id, producerContext}].push_back(
-                remoteArgBsId);
+
+            bsInfo.serializedIds.push_back(remoteArgBsId);
+            bsInfo.serializedInfos.push_back(argTensorInfo);
           }
+
           hasBatch = true;
         } else if (hasBatch &&
                    (!entry.first->hasProducer() ||
@@ -229,149 +189,79 @@ bool BatchSerialize::apply(Graph &graph) const {
                 "[BatchSerialize] Batch axis for {} is {}",
                 entry.first->id,
                 axis);
-            int batch_slice_size =
-                static_cast<int>(shape[axis] / batchSerFactor);
 
-            TensorId sliceableTensorId;
-
-            // Reshape to minimize sliceable offsets along the axis dimension
-            if (batch_slice_size > 1) {
-
-              Shape reshape(shape.size() + 1);
-              for (size_t i = 0; i < reshape.size(); ++i) {
-                if (i < axis) {
-                  reshape[i] = shape[i];
-                } else if (i > axis + 1) {
-                  reshape[i] = shape[i - 1];
-                } else if (i == axis + 1) {
-                  reshape[i] = batch_slice_size;
-                } else if (i == axis) {
-                  reshape[i] = batchSerFactor;
-                }
-              }
-
-              logging::transform::trace(
-                  "[BatchSerialize] Reshape to sliceable: [{} -> {}]",
-                  shape,
-                  reshape);
-
-              sliceableTensorId =
-                  ir.createIntermediateTensorId(entry.first->id);
-              batchSerialOps[{entry.first->id, consumerContext}].insert(
-                  reshapeForSlice(graph,
-                                  op->getInSettings(entry.second.front()),
-                                  entry.first->id,
-                                  reshape,
-                                  sliceableTensorId,
-                                  OptionalBatchSerializedPhase()));
-
-            } else {
-              sliceableTensorId = entry.first->id;
+            if (consumerContext.vgraphId) {
+              consumerSettings.vgraphId = consumerContext.vgraphId;
+            }
+            if (consumerContext.executionPhase) {
+              consumerSettings.executionPhase = consumerContext.executionPhase;
+            }
+            if (consumerContext.pipelineStage) {
+              consumerSettings.pipelineStage = consumerContext.pipelineStage;
             }
 
+            BatchSerializedTensorInfo &bsInfo =
+                serializedTensorMap[{entry.first->id, consumerContext}];
+            bsInfo.id   = entry.first->id;
+            bsInfo.info = entry.first->info;
+
+            std::vector<Op::Settings> sliceSettings(batchSerFactor,
+                                                    consumerSettings);
             for (int64_t b = 0; b < batchSerFactor; ++b) {
-
-              Op *slice = nullptr;
-              if (dynamicSlicing) {
-                std::vector<int64_t> axesv(1, axis);
-                std::vector<int64_t> sizesv(1, 1);
-
-                std::unique_ptr<DynamicSliceOp> sliceOp =
-                    std::make_unique<DynamicSliceOp>(
-                        Onnx::CustomOperators::DynamicSlice_1,
-                        axesv,
-                        sizesv,
-                        true,
-                        op->getInSettings(entry.second.front()));
-                sliceOp->setName("BatchSlice_" + entry.first->id);
-                slice = sliceOp.get();
-                graph.moveIntoGraph(std::move(sliceOp));
-                batchSerialOps[{entry.first->id, consumerContext}].insert(
-                    slice->id);
-                slice->setBatchSerializedPhase(b);
-              } else {
-                std::vector<int64_t> startsv(1, b);
-                // TODO T20169: Factor support
-                std::vector<int64_t> endsv(1, (b + 1));
-                // TODO T20169: Different axis support
-                std::vector<int64_t> axesv(1, axis);
-
-                std::unique_ptr<SliceOp> sliceOp = std::make_unique<SliceOp>(
-                    Onnx::AiOnnx::OpSet11::Slice,
-                    startsv,
-                    endsv,
-                    axesv,
-                    std::vector<int64_t>{}, // steps
-                    op->getInSettings(entry.second.front()));
-                sliceOp->setName("BatchSlice_" + entry.first->id);
-                slice = sliceOp.get();
-                graph.moveIntoGraph(std::move(sliceOp));
-                batchSerialOps[{entry.first->id, consumerContext}].insert(
-                    slice->id);
-                slice->setBatchSerializedPhase(-1);
-              }
-              // Slice should always happen on the consumer side.
-              if (std::get<0>(consumerContext) > -1)
-                slice->setVirtualGraphId(std::get<0>(consumerContext));
-              if (std::get<1>(consumerContext) > -1)
-                slice->setExecutionPhase(std::get<1>(consumerContext));
-              if (std::get<2>(consumerContext) > -1)
-                slice->setPipelineStage(std::get<2>(consumerContext));
-              slice->connectInTensor(SliceOp::getInIndex(), sliceableTensorId);
-              if (dynamicSlicing) {
-                slice->connectInTensor(
-                    DynamicSliceOp::getIndexInIndex(),
-                    createOrGetIndexTensor(graph, static_cast<uint32_t>(b)));
-              }
               TensorId sliceId =
-                  ir.createBatchSliceTensorId(entry.first->id,
-                                              static_cast<unsigned int>(b),
-                                              static_cast<unsigned int>(b + 1));
-              slice->createAndConnectOutTensor(SliceOp::getOutIndex(), sliceId);
-              slice->setup();
+                  ir.createSliceTensorId(entry.first->id,
+                                         static_cast<unsigned int>(b),
+                                         static_cast<unsigned int>(b + 1));
+              bsInfo.serializedIds.push_back(sliceId);
+              sliceSettings.at(b).batchSerializedPhase = b;
+            }
 
-              logging::transform::trace("Slice tensor {} {} -> {} {}",
-                                        entry.first->id,
-                                        entry.first->info.shape(),
-                                        sliceId,
-                                        ir.getTensor(sliceId)->info.shape());
-
-              if (dynamicSlicing && batch_slice_size > 1) {
-
-                Shape reshape(shape.size());
-                for (size_t i = 0; i < shape.size(); ++i) {
-                  if (i != axis) {
-                    reshape[i] = shape[i];
-                  } else {
-                    reshape[i] = batch_slice_size;
-                  }
-                }
-
-                logging::transform::trace(
-                    "[BatchSerialize] Reshape slice: [{} -> {}]",
-                    ir.getTensor(sliceId)->info.shape(),
-                    reshape);
-
-                TensorId sliceReshapedId =
-                    ir.createIntermediateTensorId(entry.first->id);
-                batchSerialOps[{entry.first->id, consumerContext}].insert(
-                    reshapeForSlice(graph,
-                                    op->getInSettings(entry.second.front()),
-                                    sliceId,
-                                    reshape,
-                                    sliceReshapedId,
-                                    b));
-
-                serializedTensorMap[{entry.first->id, consumerContext}]
-                    .push_back(sliceReshapedId);
-              } else {
-                serializedTensorMap[{entry.first->id, consumerContext}]
-                    .push_back(sliceId);
+            std::vector<Op *> sops;
+            if (settings.method == BatchSerializationMethod::UnrollDynamic) {
+              auto preSettings                 = consumerSettings;
+              preSettings.batchSerializedPhase = OptionalBatchSerializedPhase();
+              auto postSettings                = consumerSettings;
+              postSettings.batchSerializedPhase =
+                  OptionalBatchSerializedPhase();
+              sliceSettings.push_back(preSettings);
+              sliceSettings.push_back(postSettings);
+              sops = helper.dynamicShard(
+                  axis, bsInfo.serializedIds, entry.first->id, sliceSettings);
+              for (int64_t b = 0; b < batchSerFactor; ++b) {
+                bsInfo.serializedInfos.push_back(
+                    graph.getTensors().get(bsInfo.serializedIds.at(b))->info);
               }
+            } else if (settings.method ==
+                       BatchSerializationMethod::UnrollStatic) {
+              sops = helper.staticShard(
+                  axis, bsInfo.serializedIds, entry.first->id, sliceSettings);
+              for (int64_t b = 0; b < batchSerFactor; ++b) {
+                bsInfo.serializedInfos.push_back(
+                    graph.getTensors().get(bsInfo.serializedIds.at(b))->info);
+              }
+            } else if (settings.method == BatchSerializationMethod::Loop) {
+              bsInfo.serializedIds.clear();
+              TensorInfo info = bsInfo.info;
+              Shape shape     = info.shape();
+              shape.at(axis) /= batchSerFactor;
+              info.set(info.dataType(), shape);
+              for (int64_t b = 0; b < batchSerFactor; ++b) {
+                bsInfo.serializedInfos.push_back(info);
+              }
+            } else {
+              throw error("[BatchSerialize] Unsupported method.");
+            }
+            for (Op *sop : sops) {
+              batchSerialOps[{entry.first->id, consumerContext}].insert(
+                  sop->id);
             }
           }
-        } else if (serializedItProducer != serializedTensorMap.end() ||
-                   serializedItConsumer != serializedTensorMap.end()) {
+        } else if ((serializedItProducer != serializedTensorMap.end() &&
+                    serializedItProducer->second.serializedInfos.size() ==
+                        batchSerFactor) ||
+                   (serializedItConsumer != serializedTensorMap.end() &&
+                    serializedItConsumer->second.serializedInfos.size() ==
+                        batchSerFactor)) {
           // Input already serialized
           op_has_batch |= true;
         }
@@ -379,24 +269,73 @@ bool BatchSerialize::apply(Graph &graph) const {
 
       // Operations not affected by the batch size can skip this part
       if (op_has_batch) {
-        std::map<TensorId, std::vector<TensorId>> shardInputs;
+        ShardIdMap shardInputs;
+        ShardInfoMap shardInfos;
 
         for (auto &in : op->input->tensorMap()) {
           auto serializedTensor =
               serializedTensorMap.find({in.second->id, consumerContext});
           if (serializedTensor != serializedTensorMap.end()) {
             // Tensors split along batch dimension
-            for (int64_t b = 0; b < batchSerFactor; ++b) {
-              shardInputs[in.second->id].push_back(serializedTensor->second[b]);
+            if (serializedTensor->second.serializedIds.size() ==
+                batchSerFactor) {
+              for (int64_t b = 0; b < batchSerFactor; ++b) {
+                shardInputs[in.second->id].push_back(
+                    serializedTensor->second.serializedIds.at(b));
+              }
+            } else {
+              // Tensor not split along batch dimension, but split info
+              // available
+              std::vector<TensorInfo> infos;
+              for (int64_t b = 0; b < batchSerFactor; ++b) {
+                infos.push_back(serializedTensor->second.serializedInfos.at(b));
+              }
+              shardInfos[in.second->id] = {
+                  serializedTensor->second.concatId.empty()
+                      ? serializedTensor->second.id
+                      : serializedTensor->second.concatId,
+                  serializedTensor->second.info,
+                  infos};
             }
           }
         }
 
-        std::map<TensorId, std::vector<TensorId>> shardOutputs;
+        ShardingMethod method;
+        switch (settings.method) {
+        case BatchSerializationMethod::UnrollDynamic: {
+          method = ShardingMethod::DynamicShard;
+          break;
+        };
+        case BatchSerializationMethod::UnrollStatic: {
+          method = ShardingMethod::StaticShard;
+          break;
+        };
+        case BatchSerializationMethod::Loop: {
+          method = ShardingMethod::Loop;
+          break;
+        };
+        }
+
+        ShardingPlan outputPlan(method);
         // The following will throw an error if batch serialisation failed
         // to slice a tensor. Return a sensible error message.
         try {
-          shardOutputs = op->shard(shardInputs);
+          std::vector<Op::Settings> shardSettings(batchSerFactor, op->settings);
+          for (int64_t b = 0; b < batchSerFactor; ++b) {
+            shardSettings.at(b).batchSerializedPhase = b;
+          }
+
+          ShardOpSettings shardOpSettings;
+          shardOpSettings.setPreSettings(op->settings);
+          shardOpSettings.setShardSettings(shardSettings);
+          shardOpSettings.setPostSettings(op->settings);
+
+          ShardingPlan inputPlan(method, shardOpSettings);
+          inputPlan.insertIdMap(shardInputs, graph);
+          inputPlan.insertInfoMap(shardInfos);
+
+          outputPlan = op->shard(inputPlan);
+
         } catch (error &e) {
           std::stringstream ss;
           ss << "Batch serialisation failed while processing op " << op->opid;
@@ -407,17 +346,38 @@ bool BatchSerialize::apply(Graph &graph) const {
           throw error(ss.str());
         }
 
-        for (auto &idkv : shardOutputs) {
-          if (idkv.second.size() == batchSerFactor) {
-            serializedTensorMap[{idkv.first, consumerContext}] = idkv.second;
-            logging::trace("[BatchSerialize] Tensor: {} {} shards.",
+        // Output tensor shardable, but no sharded tensor IDs
+        for (auto &idkv : outputPlan.getInfoMap()) {
+          serializedTensorMap[{idkv.first, consumerContext}].id = idkv.first;
+          serializedTensorMap[{idkv.first, consumerContext}].concatId =
+              std::get<0>(idkv.second);
+          serializedTensorMap[{idkv.first, consumerContext}].info =
+              std::get<1>(idkv.second);
+
+          if (std::get<2>(idkv.second).size() == batchSerFactor) {
+            serializedTensorMap[{idkv.first, consumerContext}].serializedInfos =
+                std::get<2>(idkv.second);
+            logging::trace("[BatchSerialize] Tensor: {} {} shards (info).",
                            idkv.first,
                            batchSerFactor);
           } else {
             tensorsWithBatch.erase(idkv.first);
-            concatTensorMap[{idkv.first, consumerContext}] =
-                idkv.second.front();
-            logging::trace("[BatchSerialize] Tensor: {} no shards.",
+            logging::trace("[BatchSerialize] Tensor: {} no shards (info).",
+                           idkv.first);
+          }
+        }
+
+        // Output tensor shardable, with sharded tensor IDs
+        for (auto &idkv : outputPlan.getIdMap()) {
+          if (idkv.second.size() == batchSerFactor) {
+            serializedTensorMap[{idkv.first, consumerContext}].serializedIds =
+                idkv.second;
+            serializedTensorMap[{idkv.first, consumerContext}].concatId.clear();
+            logging::trace("[BatchSerialize] Tensor: {} {} shards (ids).",
+                           idkv.first,
+                           batchSerFactor);
+          } else {
+            logging::trace("[BatchSerialize] Tensor: {} no shards (ids).",
                            idkv.first);
           }
         }
@@ -440,21 +400,18 @@ bool BatchSerialize::apply(Graph &graph) const {
         continue;
       }
 
-      auto concatIfNecessary = [this,
+      auto concatIfNecessary = [&settings,
                                 &tensor,
                                 &producer,
                                 &ir,
-                                &graph,
-                                &concatTensorMap,
                                 &producerContext,
                                 &serializedTensor,
+                                &serializedTensorMap,
                                 &batchSerialOps,
-                                &dynamicConcat,
-                                &batchSerFactor]() {
-        if (concatTensorMap.find({tensor->id, producerContext}) ==
-            concatTensorMap.end()) {
+                                &helper]() {
+        if (serializedTensor.second.concatId.empty()) {
           // TODO T20169: Different axis support
-          TensorId serId0 = serializedTensor.second[0];
+          TensorId serId0 = serializedTensor.second.serializedIds.at(0);
           Tensor *serT0   = ir.getTensor(serId0);
           int64_t axis    = 0;
           for (unsigned i = 0; i < tensor->info.shape().size(); ++i) {
@@ -464,184 +421,50 @@ bool BatchSerialize::apply(Graph &graph) const {
             }
           }
 
+          auto &tensorIds = serializedTensor.second.serializedIds;
+
           TensorId concatId = serializedTensor.first.first;
 
-          if (dynamicConcat) {
-            Tensor *t = graph.getTensors().get(serializedTensor.first.first);
+          auto producerSettings = producer->getOutSettings(
+              producer->output->indices(tensor).front());
 
-            TensorId lastId;
-            for (size_t b = 0; b < serializedTensor.second.size(); ++b) {
-              TensorId sliceTensorId = serializedTensor.second[b];
-              Tensor *s              = graph.getTensors().get(sliceTensorId);
-
-              logging::transform::trace(
-                  "[BatchSerialize] Concat slice {} ({}) of {} ({})",
-                  s->id,
-                  s->info.shape(),
-                  t->id,
-                  t->info.shape());
-
-              size_t batch_slice_size = s->info.shape()[axis];
-
-              auto outShape   = t->info.shape();
-              auto initShape  = t->info.shape();
-              auto sliceShape = s->info.shape();
-
-              TensorId toUpdateSliceTensorId;
-              if (dynamicConcat && batch_slice_size > 1) {
-
-                initShape.resize(initShape.size() + 1);
-                sliceShape.resize(sliceShape.size() + 1);
-                for (size_t i = 0; i < initShape.size(); ++i) {
-                  if (i < axis) {
-                    initShape[i]  = outShape[i];
-                    sliceShape[i] = outShape[i];
-                  } else if (i > axis + 1) {
-                    initShape[i]  = outShape[i - 1];
-                    sliceShape[i] = outShape[i - 1];
-                  } else if (i == axis + 1) {
-                    initShape[i]  = batch_slice_size;
-                    sliceShape[i] = batch_slice_size;
-                  } else if (i == axis) {
-                    initShape[i]  = batchSerFactor;
-                    sliceShape[i] = 1;
-                  }
-                }
-
-                logging::transform::trace(
-                    "[BatchSerialize] Reshape for update: [{} -> {}, {}]",
-                    outShape,
-                    initShape,
-                    sliceShape);
-
-                toUpdateSliceTensorId =
-                    ir.createIntermediateTensorId(sliceTensorId);
-                batchSerialOps[{tensor->id, producerContext}].insert(
-                    reshapeForSlice(
-                        graph,
-                        producer->getOutSettings(
-                            producer->output->indices(tensor).front()),
-                        sliceTensorId,
-                        sliceShape,
-                        toUpdateSliceTensorId,
-                        b));
-              } else {
-                toUpdateSliceTensorId = sliceTensorId;
-              }
-
-              if (b == 0) {
-
-                TensorInfo info = t->info;
-                info.set(info.dataType(), initShape);
-
-                auto initOp = std::make_unique<InitOp>(
-                    Onnx::CustomOperators::Init_1,
-                    info,
-                    TensorType::ActGrad,
-                    InitType::Zero,
-                    producer->getOutSettings(
-                        producer->output->indices(tensor).front()));
-                Op *init = initOp.get();
-                init->setName("ConcatInit_" + concatId);
-                init->setBatchSerializedPhase(OptionalBatchSerializedPhase());
-                graph.moveIntoGraph(std::move(initOp));
-                batchSerialOps[{tensor->id, producerContext}].insert(init->id);
-                lastId = ir.createIntermediateTensorId(concatId);
-                init->createAndConnectOutTensor(InitOp::getOutIndex(), lastId);
-                init->setup();
-              }
-
-              std::vector<int64_t> axesv(1, axis);
-              std::vector<int64_t> sizesv(1, 1);
-
-              std::unique_ptr<DynamicUpdateOp> updateOp =
-                  std::make_unique<DynamicUpdateOp>(
-                      Onnx::CustomOperators::DynamicUpdate_1,
-                      axesv,
-                      sizesv,
-                      true,
-                      producer->getOutSettings(
-                          producer->output->indices(tensor).front()));
-              updateOp->setName("BatchConcat_" + concatId);
-              DynamicUpdateOp *update = updateOp.get();
-              graph.moveIntoGraph(std::move(updateOp));
-              batchSerialOps[{tensor->id, producerContext}].insert(update->id);
-              update->setBatchSerializedPhase(b);
-
-              if (std::get<0>(producerContext) > -1)
-                update->setVirtualGraphId(std::get<0>(producerContext));
-              if (std::get<1>(producerContext) > -1)
-                update->setExecutionPhase(std::get<1>(producerContext));
-              if (std::get<2>(producerContext) > -1)
-                update->setPipelineStage(std::get<2>(producerContext));
-
-              update->connectInTensor(DynamicUpdateOp::getInIndex(),
-                                      toUpdateSliceTensorId);
-              update->connectInTensor(
-                  DynamicUpdateOp::getIndexInIndex(),
-                  createOrGetIndexTensor(graph, static_cast<uint32_t>(b)));
-              update->connectInTensor(DynamicUpdateOp::getUpdateInIndex(),
-                                      lastId);
-
-              update->settings.inferTensorMappingToFrom.insert(
-                  {DynamicUpdateOp::getUpdateInIndex(),
-                   DynamicUpdateOp::getInIndex()});
-
-              lastId = (b == serializedTensor.second.size() - 1 &&
-                        batch_slice_size == 1)
-                           ? concatId
-                           : ir.createIntermediateTensorId(concatId);
-              connectOutTensor(
-                  ir, update, lastId, DynamicUpdateOp::getOutIndex());
-              update->setup();
-
-              if (b == serializedTensor.second.size() - 1 &&
-                  batch_slice_size > 1 && dynamicConcat) {
-
-                logging::transform::trace(
-                    "[BatchSerialize] Reshape after last update: [{} -> {}]",
-                    initShape,
-                    outShape);
-
-                batchSerialOps[{tensor->id, producerContext}].insert(
-                    reshapeForSlice(
-                        graph,
-                        producer->getOutSettings(
-                            producer->output->indices(tensor).front()),
-                        lastId,
-                        outShape,
-                        concatId,
-                        OptionalBatchSerializedPhase()));
-              }
-            }
-          } else {
-            std::unique_ptr<ConcatOp> concatOp = std::make_unique<ConcatOp>(
-                Onnx::AiOnnx::OpSet11::Concat,
-                axis,
-                producer->getOutSettings(
-                    producer->output->indices(tensor).front()));
-            concatOp->setName("BatchConcat_" + concatId);
-            // Concat should always happen on the producer side.
-            ConcatOp *concat = concatOp.get();
-            graph.moveIntoGraph(std::move(concatOp));
-            batchSerialOps[{tensor->id, producerContext}].insert(concat->id);
-            if (std::get<0>(producerContext) > -1)
-              concat->setVirtualGraphId(std::get<0>(producerContext));
-            if (std::get<1>(producerContext) > -1)
-              concat->setExecutionPhase(std::get<1>(producerContext));
-            if (std::get<2>(producerContext) > -1)
-              concat->setPipelineStage(std::get<2>(producerContext));
-            for (size_t b = 0; b < serializedTensor.second.size(); ++b) {
-              concat->connectInTensor(static_cast<popart::InIndex>(b),
-                                      serializedTensor.second[b]);
-            }
-            concat->createAndConnectOutTensor(ConcatOp::getOutIndex(),
-                                              concatId);
-            concat->setup();
+          if (producerContext.vgraphId) {
+            producerSettings.vgraphId = producerContext.vgraphId;
+          }
+          if (producerContext.executionPhase) {
+            producerSettings.executionPhase = producerContext.executionPhase;
+          }
+          if (producerContext.pipelineStage) {
+            producerSettings.pipelineStage = producerContext.pipelineStage;
           }
 
-          concatTensorMap[{serializedTensor.first.first, producerContext}] =
-              concatId;
+          if (settings.method == BatchSerializationMethod::UnrollDynamic ||
+              settings.method == BatchSerializationMethod::Loop) {
+            std::vector<Op::Settings> concatSettings(tensorIds.size() + 2,
+                                                     producerSettings);
+
+            for (size_t b = 0; b < tensorIds.size(); ++b) {
+              concatSettings.at(b).batchSerializedPhase = b;
+            }
+            concatSettings.at(tensorIds.size()).batchSerializedPhase =
+                OptionalBatchSerializedPhase();
+            concatSettings.at(tensorIds.size() + 1).batchSerializedPhase =
+                OptionalBatchSerializedPhase();
+
+            std::vector<Op *> sops =
+                helper.dynamicConcat(axis, tensorIds, concatId, concatSettings);
+            for (Op *sop : sops) {
+              batchSerialOps[{tensor->id, producerContext}].insert(sop->id);
+            }
+          } else {
+            Op *concatOp =
+                helper.staticConcat(axis, tensorIds, concatId, producerSettings)
+                    .front();
+            batchSerialOps[{tensor->id, producerContext}].insert(concatOp->id);
+          }
+
+          serializedTensorMap[{serializedTensor.first.first, producerContext}]
+              .concatId = concatId;
         }
       };
 
@@ -685,11 +508,14 @@ bool BatchSerialize::apply(Graph &graph) const {
                 copyOp->getSourceIpu(copyOp->input->tensorIdMap().at(i));
             consumer->disconnectInTensor(i, tensor);
             copyOp->connectInTensor(
-                i, concatTensorMap.at({tensor->id, producerContext}), source);
+                i,
+                serializedTensorMap.at({tensor->id, producerContext}).concatId,
+                source);
           } else {
             consumer->disconnectInTensor(i, tensor);
             consumer->connectInTensor(
-                i, concatTensorMap.at({tensor->id, producerContext}));
+                i,
+                serializedTensorMap.at({tensor->id, producerContext}).concatId);
           }
         }
       }
@@ -727,7 +553,8 @@ bool BatchSerialize::apply(Graph &graph) const {
 
     // If batchSchedule == Scheduler we defer any further scheduling to the
     // scheduler.
-    if (settings.batchSchedule != BatchSerializationBatchSchedule::Scheduler) {
+    if (settings.batchSchedule != BatchSerializationBatchSchedule::Scheduler &&
+        settings.method != BatchSerializationMethod::Loop) {
       BatchSerialScheduler scheduler(graph);
       scheduler.apply();
     }

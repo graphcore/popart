@@ -3,7 +3,7 @@
 #define GUARD_NEURALNET_CALL_HPP
 
 #include <popart/op.hpp>
-#include <popart/op/subgraphop.hpp>
+#include <popart/op/subgraph.hpp>
 
 namespace popart {
 
@@ -16,45 +16,32 @@ public:
   void setup() final;
   std::unique_ptr<Op> clone() const final;
 
-  Graph &getCalledGraph() const;
+  Graph &getCalledGraph() const override;
 
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   std::vector<TensorId> getGradOpInputIds(const Graph &gradGraph);
 
   void appendOutlineAttributes(OpSerialiserBase &os) const override;
 
-  view::Regions modifies(InIndex) const override;
-  view::Regions aliases(InIndex, OutIndex) const override;
-
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
-
-  VGraphIdAndTileSet
-  getIntrospectionInVirtualGraphId(InIndex index) const override;
-  VGraphIdAndTileSet
-  getIntrospectionOutVirtualGraphId(OutIndex index) const override;
 
   std::vector<const Graph *> getCalledGraphs() const override;
 
   std::vector<TensorId> getInputsForGraph(const Graph &) const override;
 
-  void addAlias(InIndex in,
-                OutIndex out,
-                view::Chains fwdChains,
-                view::Chains bwdChains);
-
-  void addModified(InIndex in, view::Regions regions);
-
-  view::RegMap fwdRegMap(InIndex, OutIndex) const final;
-  view::RegMap bwdRegMap(InIndex, OutIndex) const final;
-
   GraphId getBackwardsGraphId() const;
+
+  InIndex subgraphInToOpInIndex(InIndex index) const override { return index; }
+  InIndex opInToSubgraphInIndex(InIndex index) const override { return index; }
+  OutIndex subgraphOutToOpOutIndex(OutIndex index) const override {
+    return index;
+  }
+  OutIndex opOutToSubgraphOutIndex(OutIndex index) const override {
+    return index;
+  }
 
 private:
   std::reference_wrapper<Graph> callee;
-  // Regions of Input Tensors (InIndex) are aliased by Output Tensors (OutIndex)
-  std::map<std::pair<InIndex, OutIndex>, std::pair<view::Chains, view::Chains>>
-      aliasMap;
-  std::map<InIndex, view::Regions> modifiesMap;
 
   std::vector<GradInOutMapper>
   getGradInInfo(const std::vector<TensorId> &gradOpInputIds) const;

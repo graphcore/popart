@@ -8,8 +8,20 @@
 
 namespace popart {
 
-using BatchSerialTensorContext =
-    std::tuple<VGraphId, ExecutionPhase, PipelineStage>;
+struct BatchSerialTensorContext {
+public:
+  BatchSerialTensorContext() {}
+  BatchSerialTensorContext(OptionalVGraphId vgraphId_,
+                           OptionalExecutionPhase phase_,
+                           OptionalPipelineStage stage_)
+      : vgraphId(vgraphId_), executionPhase(phase_), pipelineStage(stage_) {}
+  OptionalVGraphId vgraphId;
+  OptionalExecutionPhase executionPhase;
+  OptionalPipelineStage pipelineStage;
+  bool operator<(BatchSerialTensorContext const &rhs) const;
+  bool operator==(BatchSerialTensorContext const &rhs) const;
+  bool operator!=(BatchSerialTensorContext const &rhs) const;
+};
 
 // Return the context of a tensor in the graph
 BatchSerialTensorContext getBatchSerialTensorContext(const Op *op);

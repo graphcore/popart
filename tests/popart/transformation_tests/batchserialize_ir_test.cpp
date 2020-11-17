@@ -33,6 +33,8 @@
 
 using namespace popart;
 
+namespace {
+
 // Model: Repeated N times, batch size M, batch serialized K times:
 // ____________________
 // IPU 0:
@@ -55,14 +57,8 @@ using namespace popart;
 //            |
 //           Loss
 
-BOOST_AUTO_TEST_CASE(TestBatchSerialWithVGraphs) {
-  TestRunner runner;
-  runner.isTraining = true;
-  int N             = 3;
-  int M             = 6;
-  int K             = 3;
-  int size          = 100;
-
+std::pair<TensorId, TensorId>
+buildBatchSerialModel(Builder &builder, int M, int N, int size) {
   // Weights are [size, size]
   // Input and Acts are [M, size]
   TensorInfo wInfo{"FLOAT", std::vector<int64_t>{size, size}};
@@ -71,27 +67,42 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithVGraphs) {
   std::vector<float> wData(wInfo.nelms(), 0);
   ConstVoidData wCVData{wData.data(), wInfo};
 
-  runner.buildModel([&](auto &builder) {
-    auto aiOnnx = builder.aiOnnxOpset9();
-    TensorInfo inInfo{"FLOAT", std::vector<int64_t>{M, size}};
-    auto act = builder.addInputTensor(inInfo);
+  auto aiOnnx = builder.aiOnnxOpset9();
+  TensorInfo inInfo{"FLOAT", std::vector<int64_t>{M, size}};
+  auto act = builder.addInputTensor(inInfo);
 
-    // 2N layers
-    for (int n = 0; n < 2 * N; ++n) {
-      // Switch between 1 and 2 MatMul blocks per VGID
-      for (int j = 0; j < 1 + n % 2; ++j) {
-        auto w = builder.addInitializedInputTensor(wCVData);
-        act    = aiOnnx.matmul({act, w},
-                            logging::format("CHECKOP_MM: [{} {}]", n, j));
-        builder.virtualGraph(act, n % 2);
-        act =
-            aiOnnx.relu({act}, logging::format("CHECKOP_RELU: [{} {}]", n, j));
-        builder.virtualGraph(act, n % 2);
-      }
+  // 2N layers
+  for (int n = 0; n < 2 * N; ++n) {
+    // Switch between 1 and 2 MatMul blocks per VGID
+    for (int j = 0; j < 1 + n % 2; ++j) {
+      auto w = builder.addInitializedInputTensor(wCVData);
+      act =
+          aiOnnx.matmul({act, w}, logging::format("CHECKOP_MM: [{} {}]", n, j));
+      builder.virtualGraph(act, n % 2);
+      act = aiOnnx.relu({act}, logging::format("CHECKOP_RELU: [{} {}]", n, j));
+      builder.virtualGraph(act, n % 2);
     }
+  }
 
-    auto loss = builder.aiGraphcoreOpset1().l1loss({act}, 0.1);
-    builder.virtualGraph(loss, (2 * N - 1) % 2);
+  auto loss = builder.aiGraphcoreOpset1().l1loss({act}, 0.1);
+  builder.virtualGraph(loss, (2 * N - 1) % 2);
+  return {loss, act};
+}
+
+} // namespace
+
+BOOST_AUTO_TEST_CASE(TestBatchSerialWithVGraphs) {
+  TestRunner runner;
+  runner.isTraining = true;
+  int N             = 3;
+  int M             = 6;
+  int K             = 3;
+  int size          = 100;
+
+  runner.buildModel([&](auto &builder) {
+    auto lossAct  = buildBatchSerialModel(builder, M, N, size);
+    TensorId loss = lossAct.first;
+    TensorId act  = lossAct.second;
 
     runner.opts.batchSerializationSettings.factor = K;
     // Disable outlining (tested separately)
@@ -192,26 +203,9 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithVGraphsBwd) {
   ConstVoidData wCVData{wData.data(), wInfo};
 
   runner.buildModel([&](auto &builder) {
-    auto aiOnnx = builder.aiOnnxOpset9();
-    TensorInfo inInfo{"FLOAT", std::vector<int64_t>{M, size}};
-    auto act = builder.addInputTensor(inInfo);
-
-    // 2N layers
-    for (int n = 0; n < 2 * N; ++n) {
-      // Switch between 1 and 2 MatMul blocks per VGID
-      for (int j = 0; j < 1 + n % 2; ++j) {
-        auto w = builder.addInitializedInputTensor(wCVData);
-        act    = aiOnnx.matmul({act, w},
-                            logging::format("CHECKOP_MM: [{} {}]", n, j));
-        builder.virtualGraph(act, n % 2);
-        act =
-            aiOnnx.relu({act}, logging::format("CHECKOP_RELU: [{} {}]", n, j));
-        builder.virtualGraph(act, n % 2);
-      }
-    }
-
-    auto loss = builder.aiGraphcoreOpset1().l1loss({act}, 0.1);
-    builder.virtualGraph(loss, (2 * N - 1) % 2);
+    auto lossAct  = buildBatchSerialModel(builder, M, N, size);
+    TensorId loss = lossAct.first;
+    TensorId act  = lossAct.second;
 
     runner.opts.batchSerializationSettings.factor = K;
     // Test if the graph can be serialized after the backward pass is grown
@@ -295,6 +289,69 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithVGraphsBwd) {
 
     // 3.)
     BOOST_CHECK_EQUAL(numIpuCopies, 4 * N - 2);
+  });
+}
+
+BOOST_AUTO_TEST_CASE(TestBatchSerialWithVGraphsBwdLoop) {
+  TestRunner runner;
+  runner.isTraining = true;
+  int N             = 3;
+  int M             = 6;
+  int K             = 3;
+  int size          = 100;
+
+  // Weights are [size, size]
+  // Input and Acts are [M, size]
+  TensorInfo wInfo{"FLOAT", std::vector<int64_t>{size, size}};
+  std::vector<TestTensor> inputs;
+  std::vector<TestTensor> outputs;
+  std::vector<float> wData(wInfo.nelms(), 0);
+  ConstVoidData wCVData{wData.data(), wInfo};
+
+  runner.buildModel([&](auto &builder) {
+    auto lossAct  = buildBatchSerialModel(builder, M, N, size);
+    TensorId loss = lossAct.first;
+    TensorId act  = lossAct.second;
+
+    runner.opts.batchSerializationSettings.factor = K;
+    // Test if the graph can be serialized after the backward pass is grown
+    runner.opts.batchSerializationSettings.transformContext =
+        BatchSerializationTransformContext::Bwd;
+    runner.opts.batchSerializationSettings.method =
+        BatchSerializationMethod::Loop;
+    // Disable outlining (tested separately)
+    runner.opts.enableOutlining  = false;
+    runner.opts.virtualGraphMode = VirtualGraphMode::Manual;
+    runner.patterns              = Patterns(PatternsLevel::Default);
+    // Disable so that no false negatives (rhs vs. lhs inplace) exist
+    runner.patterns.inplaceEnabled = false;
+    runner.loss                    = loss;
+
+    return act;
+  });
+
+  // Testing that the schedule is as expected for batch serialization with
+  // loops:
+  runner.checkIr([&](Ir &ir) {
+    std::vector<Op *> schedule =
+        ir.getMainGraph().getOpSchedule({}, RequireOptimalSchedule::Yes);
+
+    size_t numIpuCopies               = 0;
+    BatchSerializedPhase currentPhase = -1;
+    size_t recordedOffset             = 0;
+    std::vector<Op *> recordedOps;
+
+    std::map<BatchSerializedPhase, size_t> opsPerPhase;
+
+    for (size_t i = 0; i < schedule.size(); i++) {
+      Op *op = schedule.at(i);
+      logging::trace("Op: {} {} {}",
+                     op->hasBatchSerializedPhase()
+                         ? std::to_string(op->getBatchSerializedPhase())
+                         : "*",
+                     op->settings.schedulePriority,
+                     op->debugName());
+    }
   });
 }
 

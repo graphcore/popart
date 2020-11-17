@@ -579,11 +579,11 @@ public:
   // Create a new intermediate tensor id with a unique name
   TensorId createIntermediateTensorId(const TensorId &base_id);
 
-  // Create a new intermediate batch slice tensor id with a unique name
-  TensorId createBatchSliceTensorId(TensorId base_id, unsigned s, unsigned e);
+  // Create a new intermediate slice tensor id with a unique name
+  TensorId createSliceTensorId(TensorId base_id, unsigned s, unsigned e);
 
   // Create a new intermediate batch slice tensor id with a unique name
-  TensorId createBatchConcatTensorId(TensorId base_id);
+  TensorId createConcatTensorId(TensorId base_id);
 
   GraphId createUniqueSubgraphId(GraphId base_id);
 

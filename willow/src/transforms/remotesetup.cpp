@@ -98,14 +98,17 @@ bool RemoteSetup::apply(Graph &graph) const {
               argOpMap[tensor_id].insert({consumer, inIndex});
               opArgMap[{consumer, inIndex}].insert(tensor_id);
             }
-          } else if (consumer->opid == Onnx::CustomOperators::Call_1) {
-            CallOp *call = dynamic_cast<CallOp *>(consumer);
-
-            auto indices = consumer->input->indices(front);
+          } else if (consumer->isConvertibleTo<SubgraphOp>()) {
+            SubgraphOp *subgraphOp = dynamic_cast<SubgraphOp *>(consumer);
+            auto indices           = consumer->input->indices(front);
             for (auto index : indices) {
-              auto t_id = call->getCalledGraph().getInputId(index);
-              auto t    = call->getCalledGraph().getTensors().get(t_id);
-              traceFront.push_back(t);
+              auto sgIndex = subgraphOp->opInToSubgraphInIndex(index);
+              if (sgIndex > -1 &&
+                  sgIndex < subgraphOp->getCalledGraph().getInputIds().size()) {
+                auto t_id = subgraphOp->getCalledGraph().getInputId(sgIndex);
+                auto t    = subgraphOp->getCalledGraph().getTensors().get(t_id);
+                traceFront.push_back(t);
+              }
             }
           } else {
             logging::warn("[RemoteSetup] Unsupported Op {} in path from"

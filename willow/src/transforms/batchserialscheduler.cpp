@@ -21,6 +21,29 @@
 
 namespace popart {
 
+bool BatchSerialTensorContext::operator<(
+    BatchSerialTensorContext const &rhs) const {
+  return std::make_tuple(vgraphId ? *vgraphId : unusedVGraphId,
+                         executionPhase ? *executionPhase
+                                        : unusedExecutionPhase,
+                         pipelineStage ? *pipelineStage : unusedPipelineStage) <
+         std::make_tuple(
+             rhs.vgraphId ? *rhs.vgraphId : unusedVGraphId,
+             rhs.executionPhase ? *rhs.executionPhase : unusedExecutionPhase,
+             rhs.pipelineStage ? *rhs.pipelineStage : unusedPipelineStage);
+}
+
+bool BatchSerialTensorContext::operator==(
+    BatchSerialTensorContext const &rhs) const {
+  return std::make_tuple(vgraphId, executionPhase, pipelineStage) ==
+         std::make_tuple(rhs.vgraphId, rhs.executionPhase, rhs.pipelineStage);
+}
+
+bool BatchSerialTensorContext::operator!=(
+    BatchSerialTensorContext const &rhs) const {
+  return !(*this == rhs);
+}
+
 BatchSerialScheduler::BatchSerialScheduler(Graph &graph_) : graph(graph_) {}
 
 void BatchSerialScheduler::apply() {
@@ -365,28 +388,21 @@ bool BatchSerialScheduler::TraceFront::operator<(const TraceFront &rhs) const {
 }
 
 BatchSerialTensorContext getBatchSerialTensorContext(const Op *op) {
-  const auto &ir = op->getIr();
-  auto settings  = ir.getSessionOptions();
-  VGraphId vgid  = op->hasVirtualGraphId() ? op->getVirtualGraphId() : -1;
-  ExecutionPhase executionPhase =
-      (ir.getSessionOptions().executionPhaseSettings.phases > 1 &&
-       op->hasExecutionPhase())
-          ? op->getExecutionPhase()
-          : -1;
-  PipelineStage pipelineStage =
-      (ir.getSessionOptions().enablePipelining && op->hasPipelineStage())
-          ? op->getPipelineStage()
-          : -1;
+  const auto &ir                        = op->getIr();
+  auto settings                         = ir.getSessionOptions();
+  OptionalVGraphId vgid                 = op->getOptionalVGraphId();
+  OptionalExecutionPhase executionPhase = op->getOptionalExecutionPhase();
+  OptionalPipelineStage pipelineStage   = op->getOptionalPipelineStage();
   return BatchSerialTensorContext(
       settings.batchSerializationSettings.concatOnVirtualGraphChange
           ? vgid
-          : unusedVGraphId,
+          : OptionalVGraphId(),
       settings.batchSerializationSettings.concatOnExecutionPhaseChange
           ? executionPhase
-          : unusedExecutionPhase,
+          : OptionalExecutionPhase(),
       settings.batchSerializationSettings.concatOnPipelineStageChange
           ? pipelineStage
-          : unusedPipelineStage);
+          : OptionalPipelineStage());
 }
 
 std::priority_queue<BatchSerialScheduler::TraceFront>

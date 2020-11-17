@@ -2,7 +2,6 @@
 #include <popops/ElementWise.hpp>
 #include <popops/Zero.hpp>
 #include <popart/graph.hpp>
-#include <popart/op/if.hpp>
 #include <popart/op/loop.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
@@ -13,163 +12,239 @@
 namespace popart {
 namespace popx {
 
-LoopOpx::LoopOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+LoopOpx::LoopOpx(Op *op, Devicex *devicex) : SubgraphOpx(op, devicex) {
   verifyOp<LoopOp>(op, {Onnx::Operators::Loop_1, Onnx::Operators::Loop_11});
 }
 
-void LoopOpx::copyOpInputsToBodyInputs(poplar::program::Sequence &prog) const {
-  auto &op              = getOp<LoopOp>();
-  auto &subgraph        = op.subgraph();
-  auto bodyInputs       = op.inputMap();
-  auto opInputTensorIds = op.input->tensorIdMap();
+InputCreatorType LoopOpx::getInputCreatorType(InIndex index) const {
+  if (index >= 2) {
+    return InputCreatorType::CanDelegateOrUnwind;
+  } else {
+    return InputCreatorType::CanDelegate;
+  }
+}
 
-  for (const auto &kv : opInputTensorIds) {
-    auto opInput   = get(op.inId(kv.first));
-    auto bodyInput = get(subgraph.getInputId(kv.first));
-    poplar::program::Copy copyProg(opInput, bodyInput);
+bool LoopOpx::canUnwind(InIndex in, OutIndex out) const {
+  auto &op = getOp<LoopOp>();
+  if (out >= 0 && out < op.output->n() && in >= 1 && in - 1 == out) {
+    return true;
+  }
+  return false;
+}
+
+poplar::Tensor LoopOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                           InIndex in,
+                                           OutIndex out) const {
+  if (canUnwind(in, out)) {
+    return tensor;
+  } else {
+    throw error("[LoopOpx] Unwinding from output {} to input {} not supported",
+                out,
+                in);
+  }
+}
+
+view::RegMap LoopOpx::unwindRegion(InIndex in, OutIndex out) const {
+  if (canUnwind(in, out)) {
+    return [](const view::Region &r) { return view::Regions(1, r); };
+  } else {
+    throw error("[LoopOpx] Unwinding from output {} to input {} not supported",
+                out,
+                in);
+  }
+}
+
+void LoopOpx::copyExplicitOpInputsToBodyOutputs(
+    poplar::program::Sequence &prog) const {
+  auto &op       = getOp<LoopOp>();
+  auto &subgraph = op.getCalledGraph();
+
+  // Op input 1   ->  Body output 0
+  // Op input 2   ->  Body output 1
+  // ..
+  // Op input M   ->  Body output M-1
+  for (int i = 0; i < op.getCalledGraph().getOutputIds().size(); ++i) {
+    if (hasInput(i + 1)) {
+      auto opInputTensor    = getInTensor(i + 1);
+      auto bodyOutputTensor = get(subgraph.getOutputId(i));
+      poplar::program::Copy copyProg(opInputTensor, bodyOutputTensor);
+      prog.add(copyProg);
+    }
+  }
+}
+
+void LoopOpx::copyImplicitOpInputsToImplicitBodyInputs(
+    poplar::program::Sequence &prog) const {
+  auto &op       = getOp<LoopOp>();
+  auto &subgraph = op.getCalledGraph();
+
+  // Op input M+1   ->  Body input M+1
+  // Op input M+2   ->  Body input M+2
+  // ..
+  // Op input N     ->  Body input N
+  for (int i = op.numExplicitInputs();
+       i < op.numExplicitInputs() + op.numImplicitInputs();
+       ++i) {
+    auto opInputTensor   = getInTensor(i);
+    auto bodyInputTensor = get(subgraph.getInputId(i));
+    poplar::program::Copy copyProg(opInputTensor, bodyInputTensor);
     prog.add(copyProg);
   }
 }
 
-// explicit body inputs: m, cond, a_in etc. offset of two so that m
-// and cond is skipped
 void LoopOpx::copyBodyOutputsToExplicitBodyInputs(
-    poplar::program::Sequence &prog,
-    const std::vector<poplar::Tensor> &bodyOutputs) const {
-  auto &op                = getOp<LoopOp>();
-  auto &subgraph          = op.subgraph();
-  auto explicitBodyInputs = op.explicitTensorMap();
+    poplar::program::Sequence &prog) const {
+  auto &op       = getOp<LoopOp>();
+  auto &subgraph = op.getCalledGraph();
 
-  for (int i = 0; i < bodyOutputs.size(); ++i) {
-    auto bodyInputTensor  = get(subgraph.getInputId(i + 2));
-    auto bodyOutputTensor = get(op.subgraph().getOutputId(i + 1));
-    auto bodyOutputTemp   = cloneNcopy(prog, bodyOutputTensor);
-    poplar::program::Copy copyProg(bodyOutputTemp, bodyInputTensor);
-    prog.add(copyProg);
+  // Skip the trip count tensor
+  // Body output 0   ->  Body input 1
+  // Body output 1   ->  Body input 2
+  // ..
+  // Body output M-1 ->  Body input M
+  for (int i = 0; i < op.getCalledGraph().getOutputIds().size(); ++i) {
+    TensorId inId  = subgraph.getInputId(i + 1);
+    TensorId outId = subgraph.getOutputId(i);
+
+    if (inId != outId) {
+      // Only copy if the input is not directly wired through to the output
+      auto bodyInputTensor  = get(inId);
+      auto bodyOutputTensor = get(outId);
+      poplar::program::Copy copyProg(bodyOutputTensor, bodyInputTensor);
+      prog.add(copyProg);
+    }
   }
 }
 
 void LoopOpx::copyBodyOutputsToOpOutputs(
-    poplar::program::Sequence &prog,
-    const std::vector<poplar::Tensor> &bodyOutputs) const {
+    poplar::program::Sequence &prog) const {
   auto &op = getOp<LoopOp>();
 
-  for (int i = 0; i < bodyOutputs.size(); ++i) {
-    auto bodyOutputTensor = get(op.subgraph().getOutputId(i + 1));
-    auto opOutputTensor   = get(outId(i));
-    auto bodyOutputTemp   = cloneNcopy(prog, bodyOutputTensor);
-    poplar::program::Copy copyProg(bodyOutputTemp, opOutputTensor);
+  // Skip the cond-out tensor
+  // Body out 0   ->  skip
+  // Body out 1   ->  Loop out 0
+  // ..
+  // Body out M-1 ->  Loop out M-2
+  for (int i = 1; i < op.getCalledGraph().getOutputIds().size(); ++i) {
+    auto bodyOutputTensor = get(op.getCalledGraph().getOutputId(i));
+    auto opOutputTensor   = get(outId(i - 1));
+    poplar::program::Copy copyProg(bodyOutputTensor, opOutputTensor);
     prog.add(copyProg);
   }
 }
 
-// Given o = builder.aiOnnxOpset10.loop([M, cond, a], 1, loopBuilder)[0]
-// an offset of +1 is needed because the first variable is the boolean condition
-std::vector<poplar::Tensor> LoopOpx::prepareBodyOutputs() const {
-  auto &op       = getOp<LoopOp>();
-  auto &subgraph = op.subgraph();
-  std::vector<poplar::Tensor> bodyOutputs;
-
-  for (int i = 0; i < subgraph.getOutputIds().size() - 1; ++i) {
-    auto tensorId = subgraph.getOutputId(i + 1);
-    auto tensor   = get(tensorId);
-    bodyOutputs.push_back(tensor);
-  }
-  return bodyOutputs;
-}
-
 void LoopOpx::grow(poplar::program::Sequence &prog) const {
-  auto &op         = getOp<LoopOp>();
-  auto bodyOutputs = prepareBodyOutputs();
+  // Builds the logic for loops (pseudocode):
+  //
+  // copyExplicitOpInputsToBodyOutputs(); // will set condOut
+  // copyImplicitOpInputsToBodyInputs();
+  // exit = false;
+  // for (i = 0; i < maxTripCount; ++i) {
+  //   // loopProg
+  //   exit = exit || !condOut || i >= maxTripCount);
+  //   if (exit) {
+  //     // loopExitProg
+  //   } else {
+  //     // loopContinueProg
+  //     copyBodyOutputsToBodyInputs();
+  //     body(); // can update condOut
+  //   }
+  // }
+  // copyBodyOutputsToOpOutputs();
+  //
 
-  // Set the body_output to output
-  for (int i = 0; i < bodyOutputs.size(); ++i) {
-    setOutTensor(i, bodyOutputs.at(i));
+  auto &op = getOp<LoopOp>();
+
+  auto condOutTensor = get(op.getCalledGraph().getOutputId(0));
+
+  // 0: Set condOut to true if the cond is not shipped as op input
+  if (!hasInput(LoopOp::getTerminationConditionInIndex())) {
+    popops::mapInPlace(
+        graph(),
+        popops::expr::And(popops::expr::_1, popops::expr::Const(true)),
+        {condOutTensor},
+        prog,
+        debugPrefix("cond_true"));
   }
 
-  // 0: Define constants
-  auto trueConst =
-      graph().addConstant(poplar::BOOL, {}, true, debugPrefix("trueConst"));
-  poputil::mapTensorLinearly(graph(), trueConst);
-  auto falseConst =
-      graph().addConstant(poplar::BOOL, {}, false, debugPrefix("falseConst"));
-  poputil::mapTensorLinearly(graph(), falseConst);
+  // 1: Copy explicit inputs to body outputs
+  copyExplicitOpInputsToBodyOutputs(prog);
 
-  // 1: Create a poplar only iterator variable i
-  auto iterTensor = graph().addVariable(poplar::INT, {}, debugPrefix("i"));
-  poputil::mapTensorLinearly(graph(), iterTensor);
-  popops::zero(graph(), iterTensor, prog, debugPrefix("zeroIterator"));
+  // 2: Copy implicit inputs to body inputs
+  copyImplicitOpInputsToImplicitBodyInputs(prog);
 
-  // 2: Create a poplar only boolean variable exit
-  auto exit = graph().addVariable(poplar::BOOL, {}, debugPrefix("exit"));
-  poputil::mapTensorLinearly(graph(), exit);
-  poplar::program::Copy exitFalse(falseConst, exit);
-  prog.add(exitFalse);
+  // 3: Create a poplar only iterator variable i, set it to 0
+  poplar::Tensor iteratorTensor;
+  if (hasInput(LoopOp::getMaximumTripCountInIndex())) {
+    iteratorTensor =
+        graph().addVariable(poplar::INT, {}, debugPrefix("iterator"));
+    poputil::mapTensorLinearly(graph(), iteratorTensor);
+    popops::zero(graph(), iteratorTensor, prog, debugPrefix("iterator_0"));
+  }
 
-  // 3: Get user-defined max_trip_count and condition variable
-  auto maxTripCountValue  = op.tripCountValue();
-  auto maxTripCountTensor = getInTensor(LoopOp::getMaximumTripCountInIndex());
-
-  auto cond   = getInTensor(LoopOp::getTerminationConditionInIndex());
-  auto condIn = get(op.subgraph().getOutputId(0));
-
-  // 4: Create loop start if prog
-  poplar::program::Sequence startProg, startThenProg, startElseProg;
-  copyOpInputsToBodyInputs(prog);
-
-  auto testExpr = popops::map(
-      graph(),
-      popops::expr::And(popops::expr::_1,
-                        popops::expr::Lt(popops::expr::_2, popops::expr::_3)),
-      {condIn, iterTensor, maxTripCountTensor},
-      startProg);
-
-  // 5: Construct loop_begin_testExpr branches
-  auto &loopBody = dv_p->lowering().progs.scopeFragment(op.subgraph());
-  startThenProg.add(loopBody);
-
-  auto condOut = graph().addVariable(poplar::BOOL, {}, debugPrefix("condOut"));
-  poputil::mapTensorLinearly(graph(), condOut);
-  // Initialise condOut to false
-  prog.add(poplar::program::Copy(falseConst, condOut));
-
-  poplar::program::Copy startElseCopyProg(trueConst, condOut);
-  startElseProg.add(startElseCopyProg);
-
-  startProg.add(poplar::program::If(testExpr, startThenProg, startElseProg));
-
-  // 6: Construct loop_endTestExpr branches
-  poplar::program::Sequence endProg, endThenProg, endElseProg;
-  auto endTestExpr = popops::map(
-      graph(),
-      popops::expr::Or(popops::expr::_1,
-                       popops::expr::Gte(popops::expr::_2, popops::expr::_3)),
-      {condOut, iterTensor, maxTripCountTensor},
-      endProg);
-
-  poplar::program::Copy endThenCopyProg(trueConst, exit);
-  endThenProg.add(endThenCopyProg);
-  copyBodyOutputsToOpOutputs(endThenProg, bodyOutputs);
-  copyBodyOutputsToExplicitBodyInputs(endElseProg, bodyOutputs);
-
+  // 4: Create a poplar only boolean variable exit, set it to false
+  auto exitTensor = graph().addVariable(poplar::BOOL, {}, debugPrefix("exit"));
+  poputil::mapTensorLinearly(graph(), exitTensor);
   popops::mapInPlace(
       graph(),
-      popops::expr::Add(popops::expr::_1, popops::expr::Const(1)),
-      {iterTensor},
-      endElseProg);
-  endProg.add(poplar::program::If(endTestExpr, endThenProg, endElseProg));
+      popops::expr::And(popops::expr::_1, popops::expr::Const(false)),
+      {exitTensor},
+      prog,
+      debugPrefix("exit_false"));
 
-  // 8: Construct if (!exit) {} block
-  poplar::program::Sequence exitProg, exitThenProg, exitElseProg;
-  exitThenProg.add(startProg);
-  exitThenProg.add(endProg);
+  // 5: Get the max trip count value
+  auto maxTripCountValue = op.getTripCountValue();
 
-  auto exitTestExpr = popops::map(
-      graph(), popops::expr::Not(popops::expr::_1), {exit}, exitProg);
-  exitProg.add(poplar::program::If(exitTestExpr, exitThenProg, exitElseProg));
+  // 6: Create the three loop body programs
+  poplar::program::Sequence loopProg, loopExitProg, loopContinueProg;
 
-  // 9: Execute the loop program
-  prog.add(poplar::program::Repeat(maxTripCountValue, exitProg));
+  // 7: Update the exit condition
+  if (hasInput(LoopOp::getMaximumTripCountInIndex())) {
+    poplar::Tensor maxTripCountTensor =
+        getInTensor(LoopOp::getMaximumTripCountInIndex());
+    popops::mapInPlace(
+        graph(),
+        popops::expr::Or(popops::expr::Or(popops::expr::_1,
+                                          popops::expr::Not(popops::expr::_2)),
+                         popops::expr::Gte(popops::expr::_3, popops::expr::_4)),
+        {exitTensor, condOutTensor, iteratorTensor, maxTripCountTensor},
+        loopProg,
+        debugPrefix("exit_update"));
+  } else {
+    popops::mapInPlace(
+        graph(),
+        popops::expr::Or(popops::expr::Or(popops::expr::_1,
+                                          popops::expr::Not(popops::expr::_2))),
+        {exitTensor, condOutTensor},
+        loopProg,
+        debugPrefix("exit_update"));
+  }
+
+  // 8: Copy body outputs to body inputs
+  copyBodyOutputsToExplicitBodyInputs(loopContinueProg);
+
+  // 9: Add the loop body itself
+  auto &loopBody = dv_p->lowering().progs.scopeFragment(op.getCalledGraph());
+  loopContinueProg.add(loopBody);
+
+  // 10: Increment the loop iterator
+  if (hasInput(LoopOp::getMaximumTripCountInIndex())) {
+    popops::mapInPlace(
+        graph(),
+        popops::expr::Add(popops::expr::_1, popops::expr::Const(1)),
+        {iteratorTensor},
+        loopContinueProg,
+        debugPrefix("iterator_update"));
+  }
+
+  // 11: Add conditional around the loop body program
+  loopProg.add(poplar::program::If(exitTensor, loopExitProg, loopContinueProg));
+
+  // 12: Repeat the loop conditional program
+  prog.add(poplar::program::Repeat(maxTripCountValue, loopProg));
+
+  // 13: Copy body outputs to op outputs
+  copyBodyOutputsToOpOutputs(prog);
 }
 
 namespace {

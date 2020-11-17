@@ -38,7 +38,8 @@ public:
   void connectInTensor(InIndex inIndex, TensorId tenId) final;
 
   bool canShard() const override { return true; }
-  void configureShardedOp(Op *const shardedOp, int shardIndex) const override;
+  void configureShardedOp(Op *const shardedOp,
+                          const Settings *const settings_) const override;
 
 protected:
   // The shape of the data output tensor

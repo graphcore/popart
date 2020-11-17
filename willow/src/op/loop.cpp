@@ -2,8 +2,10 @@
 #include <onnx/onnx_pb.h>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/ipucopy.hpp>
 #include <popart/op/loop.hpp>
 #include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensornames.hpp>
@@ -50,21 +52,20 @@ getBodyInputIds(const ONNX_NAMESPACE::GraphProto &bodyProto) {
   return bodyInputIds;
 }
 
-std::vector<std::pair<int, TensorId>>
-pairInputIdxToInputId(const ONNX_NAMESPACE::GraphProto &bodyProto) {
-  std::vector<std::pair<int, TensorId>> bodyInputs;
+std::vector<TensorId>
+loopBodyInputIds(const ONNX_NAMESPACE::GraphProto &bodyProto) {
+  std::vector<TensorId> bodyInputs;
   for (int i = 0; i < bodyProto.input_size(); ++i) {
-    bodyInputs.push_back(std::make_pair(i, bodyProto.input(i).name()));
+    bodyInputs.push_back(bodyProto.input(i).name());
   }
-
   return bodyInputs;
 }
 
-std::vector<std::pair<int, TensorId>>
-pairOutputIdxToOutputId(const ONNX_NAMESPACE::GraphProto &body) {
-  std::vector<std::pair<int, TensorId>> bodyOutputs;
-  for (int i = 0; i < body.output_size(); ++i) {
-    bodyOutputs.push_back(std::make_pair(i, body.output(i).name()));
+std::vector<TensorId>
+loopBodyOutputIds(const ONNX_NAMESPACE::GraphProto &bodyProto) {
+  std::vector<TensorId> bodyOutputs;
+  for (int i = 0; i < bodyProto.output_size(); ++i) {
+    bodyOutputs.push_back(bodyProto.output(i).name());
   }
   return bodyOutputs;
 }
@@ -99,34 +100,37 @@ addImplicitTensors(const ONNX_NAMESPACE::GraphProto &bodyProto,
 
 } // namespace
 
-LoopOp::LoopOp(
-    const OperatorIdentifier &_opid,
-    const Op::Settings &settings_,
-    const GraphId &subgraphId,
-    const std::vector<std::pair<TensorId, TensorInfo>> inputs,
-    const std::vector<TensorId> implicitTensors,
-    const std::vector<std::pair<TensorId, TensorInfo>> explicitTensors)
-    : Op(_opid, settings_), tripCountValue_(0), subgraphId_(subgraphId),
-      implicitTensors_(implicitTensors), inputs_(inputs),
-      explicitTensors_(explicitTensors) {}
+LoopOp::LoopOp(const OperatorIdentifier &_opid,
+               const Op::Settings &settings_,
+               Graph &callee_)
+    : SubgraphOp(_opid, settings_), callee(callee_), tripCountValue(0) {}
+
+LoopOp::LoopOp(const OperatorIdentifier &_opid,
+               const Op::Settings &settings_,
+               Graph &callee_,
+               std::vector<std::pair<TensorId, TensorInfo>> opInputs_,
+               std::vector<TensorId> implicitTensors_)
+    : SubgraphOp(_opid, settings_), callee(callee_), tripCountValue(0) {
+  for (int i = 0; i < opInputs_.size(); ++i) {
+    TensorId inId = opInputs_.at(i).first;
+    if (std::find(implicitTensors_.begin(), implicitTensors_.end(), inId) !=
+        implicitTensors_.end()) {
+      connectInTensor(i, opInputs_.at(i).first);
+    }
+  }
+}
 
 void LoopOp::setup() {
-
-  // Mark implicit inputs to the LoopOp as implicit
-  for (auto &tid : implicitTensors_) {
-    auto tensor = getGraph().getTensors().get(tid);
-    tensor->setImplicitLoopInput(true);
-  }
-
-  for (int i = input->n(); i < inputs_.size(); ++i) {
-    connectInTensor(i, inputs_.at(i).first);
-  }
-
   // Connect the output of the subgraph with the output from the main graph
   // an offset of +1 because the boolean termination is the first variable
+  // Skip the cond-out tensor
+  // Body out 0   ->  skip
+  // Body out 1   ->  Loop out 0
+  // ..
+  // Body out M-1 ->  Loop out M-2
   for (int i = 0; i < output->n(); ++i) {
-    auto tensorId = subgraph().getOutputId(i + 1);
-    auto tensor   = subgraph().getTensors().get(tensorId);
+    auto tensorId = getCalledGraph().getOutputId(i + 1);
+    auto tensor   = getCalledGraph().getTensors().get(tensorId);
     outInfo(i)    = tensor->info;
   }
 }
@@ -137,14 +141,36 @@ std::unique_ptr<Op> LoopOp::clone() const {
 
 void LoopOp::appendAttributes(OpSerialiserBase &os) const {
   Op::appendAttributes(os);
+  os.appendAttribute("callee", callee.get().id.str());
+  os.appendAttribute("tripCountValue", tripCountValue);
 }
 
-Graph &LoopOp::subgraph() const {
-  return getGraph().getIr().getGraph(subgraphId_);
+Graph &LoopOp::getCalledGraph() const { return callee.get(); }
+
+int LoopOp::numExplicitInputs() const {
+  int numOutputs        = getCalledGraph().getOutputIds().size() - 1;
+  int numExplicitInputs = numOutputs + 2;
+  return numExplicitInputs;
+}
+
+int LoopOp::numImplicitInputs() const {
+  int numLoopInputs = input->n();
+  return numLoopInputs - numExplicitInputs();
+}
+
+InIndex LoopOp::subgraphInToOpInIndex(InIndex index) const { return index; }
+
+InIndex LoopOp::opInToSubgraphInIndex(InIndex index) const { return index; }
+
+OutIndex LoopOp::subgraphOutToOpOutIndex(OutIndex index) const {
+  return index - 1;
+}
+OutIndex LoopOp::opOutToSubgraphOutIndex(OutIndex index) const {
+  return index + 1;
 }
 
 std::vector<const Graph *> LoopOp::getCalledGraphs() const {
-  return {&subgraph()};
+  return {&getCalledGraph()};
 }
 
 std::vector<TensorId> LoopOp::getInputsForGraph(const Graph &graph) const {
@@ -169,15 +195,40 @@ void LoopOp::connectInTensor(InIndex inIndex, TensorId tensorId) {
     int64_t tensorData = *static_cast<int64_t *>(tensor->tensorData()->data());
 
     std::vector<int32_t> castTensorData{static_cast<int32_t>(tensorData)};
-    tripCountValue_         = castTensorData.front();
-    TensorId castTensorName = tensorId + "_int32";
+    tripCountValue        = castTensorData.front();
+    TensorId castTensorId = getIr().createIntermediateTensorId(tensorId);
 
     getGraph().getTensors().addConstInit(
-        castTensorName, {DataType::INT32, {}}, castTensorData.data());
-    defaultConnectInTensor(inIndex, castTensorName);
+        castTensorId, {DataType::INT32, {}}, castTensorData.data());
+    defaultConnectInTensor(inIndex, castTensorId);
   } else {
     defaultConnectInTensor(inIndex, tensorId);
   };
+}
+
+void LoopOp::addLoopInput(InIndex index,
+                          TensorId tensorId,
+                          TensorId subgraphTensorId) {
+  connectInTensor(index, tensorId);
+  getCalledGraph().addInput(opInToSubgraphInIndex(index),
+                            subgraphTensorId,
+                            getIr().getTensor(tensorId)->info);
+}
+
+void LoopOp::addLoopOutput(OutIndex index,
+                           TensorId tensorId,
+                           TensorId subgraphTensorId) {
+  if (getIr().containsTensor(tensorId)) {
+    Tensor *t = getIr().getTensor(tensorId);
+    if (t->hasProducer()) {
+      t->getProducer()->disconnectOutTensor(t);
+    }
+    connectOutTensor(index, tensorId);
+  } else {
+    createAndConnectOutTensor(index, tensorId);
+  }
+  getCalledGraph().markAsOutput(opOutToSubgraphOutIndex(index),
+                                subgraphTensorId);
 }
 
 namespace {
@@ -206,57 +257,55 @@ static OpCreator<LoopOp> loopOpCreator(
     OpDefinitions({{Onnx::Operators::Loop_1, loopOpDef},
                    {Onnx::Operators::Loop_11, loopOpDef}}),
     [](const OpCreatorInfo &info) -> std::unique_ptr<Op> {
-      const ONNX_NAMESPACE::GraphProto &bodyGraph =
+      const ONNX_NAMESPACE::GraphProto &callee =
           info.attributes.getAttribute<Attributes::Graph>("body");
       auto &mainGraph = info.settings.graph.get();
       auto &tensors   = mainGraph.getTensors();
 
-      auto loopBodyInputs  = pairInputIdxToInputId(bodyGraph);
-      auto loopBodyOutputs = pairOutputIdxToOutputId(bodyGraph);
+      auto loopBodyInputs  = loopBodyInputIds(callee);
+      auto loopBodyOutputs = loopBodyOutputIds(callee);
 
-      std::vector<std::pair<TensorId, TensorInfo>> opInputs, explicitTensors;
+      std::vector<std::pair<TensorId, TensorInfo>> opInputs;
 
       for (int i = 0; i < info.getInputIds().size(); ++i) {
-        explicitTensors.push_back(
-            std::make_pair(loopBodyInputs[i].second,
-                           tensors.get(info.getInputIds().at(i))->info));
-        opInputs.push_back(
-            std::make_pair(loopBodyInputs[i].second,
-                           tensors.get(info.getInputIds().at(i))->info));
+        opInputs.push_back({info.getInputIds().at(i),
+                            tensors.get(info.getInputIds().at(i))->info});
       }
 
-      auto implicitTensors = addImplicitTensors(bodyGraph, tensors, opInputs);
+      auto implicitTensors = addImplicitTensors(callee, tensors, opInputs);
 
-      auto subgraphId = bodyGraph.name().empty() ? generateSubgraphUID("loop")
-                                                 : bodyGraph.name();
-      auto &ir       = mainGraph.getIr();
-      auto &subgraph = ir.createGraph(subgraphId);
+      auto subgraphId =
+          callee.name().empty() ? generateSubgraphUID("loop") : callee.name();
+      auto &ir          = mainGraph.getIr();
+      auto &calleeGraph = ir.createGraph(subgraphId);
 
       for (int i = 0; i < opInputs.size(); ++i) {
         auto &kv = opInputs.at(i);
+        TensorId scopedTensorId;
+        if (i < loopBodyInputs.size()) {
+          // Explicit
+          scopedTensorId = calleeGraph.addScope(loopBodyInputs.at(i));
+        } else {
+          // Implicit
+          scopedTensorId = calleeGraph.addScope(kv.first);
+        }
         if (i == 0) {
           TensorInfo tensorInfo = {DataType::INT32, kv.second.shape()};
-          TensorId scope        = subgraph.addScope(kv.first);
-          subgraph.addInput(scope, tensorInfo);
+          calleeGraph.addInput(scopedTensorId, tensorInfo);
         } else {
-          TensorId scope = subgraph.addScope(kv.first);
-          subgraph.addInput(scope, kv.second);
+          calleeGraph.addInput(scopedTensorId, kv.second);
         }
       }
 
-      subgraph.constructFromOnnxGraph(bodyGraph);
+      calleeGraph.constructFromOnnxGraph(callee);
 
-      for (const auto &kv : loopBodyOutputs) {
-        TensorId scope = subgraph.addScope(kv.second);
-        subgraph.markAsOutput(scope);
+      for (TensorId outputId : loopBodyOutputs) {
+        TensorId scopedTensorId = calleeGraph.addScope(outputId);
+        calleeGraph.markAsOutput(scopedTensorId);
       }
 
-      return std::unique_ptr<Op>(new LoopOp(info.opid,
-                                            info.settings,
-                                            subgraphId,
-                                            opInputs,
-                                            implicitTensors,
-                                            explicitTensors));
+      return std::unique_ptr<Op>(new LoopOp(
+          info.opid, info.settings, calleeGraph, opInputs, implicitTensors));
     },
     true);
 

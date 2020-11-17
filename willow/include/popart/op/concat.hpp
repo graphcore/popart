@@ -117,8 +117,9 @@ public:
   ReductionType getShardReductionType(OutIndex index) const override {
     return ReductionType::NoReduction;
   }
-  std::map<TensorId, std::vector<TensorId>>
-  shard(const std::map<TensorId, std::vector<TensorId>> &inputs) override;
+
+  void configureShardedOp(Op *const shardedOp,
+                          const Settings *const settings_) const override;
 
 protected:
   // An unsafe constructor that allows using any OperatorIdentifier

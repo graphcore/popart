@@ -136,7 +136,20 @@ public:
   getLiveSets(const std::vector<Op *> &topoOps) const;
 
   const std::vector<TensorId> &getInputIds() const { return graph_inputs; }
-  void addInput(const TensorId &, const TensorInfo &);
+
+  /// Add a graph input at a specific index in the list
+  /// \param index Force the input to be at the specified index in the graph.
+  ///              Overwrites any existing input at the index.
+  /// \param id tensor name to create and connect
+  /// \param info tensor info
+  void
+  addInput(const InIndex &index, const TensorId &id, const TensorInfo &info);
+
+  /// Add a graph input to the end of the list
+  /// \param id tensor name to create and connect
+  /// \param info tensor info
+  void addInput(const TensorId &id, const TensorInfo &info);
+
   // Mark an existing tensor as a graph input.
   void markAsInput(const TensorId &);
   // Add new graph input with auto generated name
@@ -145,7 +158,17 @@ public:
 
   const std::vector<TensorId> &getOutputIds() const { return graph_outputs; }
   // Mark an existing tensor as a graph output.
-  void markAsOutput(const TensorId &);
+
+  /// Mark a graph tensor as graph output at a specific index in the list
+  /// \param index Force the output to be at the specified index in the graph.
+  ///              Overwrites any existing output at the index.
+  /// \param id tensor in the graph to mark as output
+  void markAsOutput(const OutIndex &index, const TensorId &id);
+
+  /// Mark a graph tensor as graph output at the end of the list
+  /// \param id tensor in the graph to mark as output
+  void markAsOutput(const TensorId &id);
+
   void removeOutput(const TensorId &);
   TensorId getOutputId(OutIndex idx) const { return graph_outputs.at(idx); }
 
@@ -159,6 +182,9 @@ public:
   const std::vector<GradInOutMapper> &gradInputInfo() const {
     return gradInInfo;
   }
+
+  // Returns the call sites to this graph in any order.
+  std::vector<Op *> getCallSiteOps() const;
 
   // Returns the call sites to this graph in IR scheduler order.
   // At most num call sites are returned if num > 0.

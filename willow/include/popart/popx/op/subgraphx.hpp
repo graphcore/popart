@@ -12,6 +12,8 @@ class SubgraphOpx : public Opx {
 public:
   SubgraphOpx(Op *, Devicex *);
   bool outputCreatedExternally(OutIndex) const final { return true; }
+  std::vector<std::tuple<TensorId, TensorId, bool>>
+  getOutputsToPrepare() const override;
 
 private:
 };

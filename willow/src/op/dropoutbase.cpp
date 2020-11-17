@@ -29,18 +29,13 @@ void DropoutBaseOp::updateSeedModifier() {
   seedModifier = getIr().getAndIncrementSeedModifier();
 }
 
-std::map<TensorId, std::vector<TensorId>>
-DropoutBaseOp::shard(const std::map<TensorId, std::vector<TensorId>> &inputs) {
-  auto outputs = Op::shard(inputs);
+void DropoutBaseOp::configureShardedOp(Op *const shardedOp,
+                                       const Settings *const settings_) const {
+  Op::configureShardedOp(shardedOp, settings_);
   if (!hasInput(DropoutBaseOp::getSeedInIndex())) {
-    for (auto shard_outs : outputs.begin()->second) {
-      auto sharded_dropout = dynamic_cast<DropoutBaseOp *>(
-          getIr().getTensor(shard_outs)->getProducer());
-      // Fetch a unique seed modifier
-      sharded_dropout->updateSeedModifier();
-    }
+    // Fetch a unique seed modifier
+    dynamic_cast<DropoutBaseOp *>(shardedOp)->updateSeedModifier();
   }
-  return outputs;
 }
 
 float DropoutBaseOp::validateRatioAttribute(const OpCreatorInfo &info) {

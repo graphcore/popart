@@ -40,7 +40,10 @@ enum class InputCreatorType {
   Deadend,
   // Has a potential creator, but can also allow an Opx downstream in the graph
   // to create it instead.
-  CanDelegate
+  CanDelegate,
+  // Has a potential creator, but can also allow an Opx downstream in the graph
+  // to create it instead (either propagated through the subgraph, or directly).
+  CanDelegateOrUnwind
 };
 
 class Opx {

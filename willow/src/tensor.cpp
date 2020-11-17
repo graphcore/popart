@@ -9,6 +9,7 @@
 #include <popart/onnxutil.hpp>
 #include <popart/op.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/op/loop.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensorindex.hpp>
@@ -369,12 +370,6 @@ void Tensor::resetProducer(Op *op) {
   producer = op;
 }
 
-void Tensor::setImplicitLoopInput(bool implicit_) {
-  implicitLoopInput = implicit_;
-}
-
-bool Tensor::isImplicitLoopInput() const { return implicitLoopInput; }
-
 int Consumers::getTotal() const {
   //  using X = decltype(consumers_m.begin());
   //  return std::accumulate(consumers_m.begin(), consumers_m.end(), 0,
@@ -390,8 +385,7 @@ int Consumers::getTotal() const {
 // https://stackoverflow.com/questions/5058349
 Tensor::Tensor(TensorId n, TensorType t, Graph &g)
     : Vertex(), id(n), consumers(this), graph(g), producer(nullptr),
-      tensorTypeInfo(&getTensorTypeInfoMap().at(t)), implicitLoopInput(false),
-      data_(nullptr) {
+      tensorTypeInfo(&getTensorTypeInfoMap().at(t)), data_(nullptr) {
   // graph is currently unused - this removes the compiler warning
   (void)graph;
 }
@@ -440,6 +434,20 @@ InIndex Tensor::getGraphOutputIndex() const {
   auto it =
       std::find(graph.getOutputIds().begin(), graph.getOutputIds().end(), id);
   return std::distance(graph.getOutputIds().begin(), it);
+}
+
+bool Tensor::isImplicitLoopInput() const {
+  if (isGraphInput()) {
+    auto ops = graph.getCallSiteOps();
+    for (Op *op : ops) {
+      if (LoopOp *loop = dynamic_cast<LoopOp *>(op)) {
+        if (getGraphInputIndex() >= loop->numExplicitInputs()) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
 }
 
 bool Tensor::isOptimizerTensor() const {

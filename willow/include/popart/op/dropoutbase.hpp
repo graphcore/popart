@@ -41,8 +41,8 @@ public:
 
   bool canShard() const final { return true; }
 
-  std::map<TensorId, std::vector<TensorId>>
-  shard(const std::map<TensorId, std::vector<TensorId>> &inputs) final;
+  void configureShardedOp(Op *const shardedOp,
+                          const Settings *const settings_) const final;
 
   static float validateRatioAttribute(const OpCreatorInfo &info);
 

@@ -45,7 +45,7 @@
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/remote.hpp>
 #include <popart/op/restore.hpp>
-#include <popart/op/subgraphop.hpp>
+#include <popart/op/subgraph.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/patterns/pattern.hpp>
 #include <popart/popx/devicex.hpp>

@@ -45,6 +45,8 @@ std::ostream &operator<<(std::ostream &, const ExecutionContext &);
 
 class OpSerialiserBase;
 
+class ShardingPlan;
+
 // the input tensor of a grad-op has what kind of
 // relationship with the corresponding non-grad-op?
 // design note: it's not possible for an input to a
@@ -526,11 +528,14 @@ public:
   // Shard operation into multiple operations according to the new,
   // already sharded input tensors. Returns the sharded output tensors.
   // TODO: T16743: extend support for other dimensions than the batch
-  virtual std::map<TensorId, std::vector<TensorId>>
+  std::map<TensorId, std::vector<TensorId>>
   shard(const std::map<TensorId, std::vector<TensorId>> &inputs);
 
+  ShardingPlan shard(const ShardingPlan plan);
+
   // Configure attributes/settings on sharded op
-  virtual void configureShardedOp(Op *const shardedOp, int shardIndex) const;
+  virtual void configureShardedOp(Op *const shardedOp,
+                                  const Settings *const settings_) const;
 
   // Return which inputs/outputs are replicated tensor sharding pairs
   virtual ReplicatedTensorShardingIndices

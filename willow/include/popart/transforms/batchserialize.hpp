@@ -49,11 +49,42 @@
 //                                                                |
 //                                                               Loss
 
+// Loop-based batch serialisation (batch serialization factor 4):
+//
+// Init     data [batch(4), c, h, w]
+//  |        |
+//  |     DynamicSlice(i)       }
+//  |        |                  }
+//  |  w1 - MatMul              } Loop(4)
+//  |        |                  }
+//  '-----DynamicUpdate(i)      }
+//           |
+// Init    BatchNorm
+//  |        |
+//  |     DynamicSlice(i)       }
+//  |        |                  }
+//  |  w1 - MatMul              } Loop(4)
+//  |        |                  }
+//  '-----DynamicUpdate(i)      }
+//           |
+//          Loss
+
 namespace popart {
 
-using IpuNumber = int64_t;
-
-IpuNumber getIpuNumber(const Op *op);
+class BatchSerializedTensorInfo {
+public:
+  // Original tensor id before batch serialisation
+  TensorId id;
+  // Concatenated tensor id if the tensor has been concatenated after
+  // serializing
+  TensorId concatId;
+  // Original tensor info before batch serialisation
+  TensorInfo info;
+  // Serialized tensor infos
+  std::vector<TensorInfo> serializedInfos;
+  // Serialized tensor ids
+  std::vector<TensorId> serializedIds;
+};
 
 class BatchSerialize : public Transform {
 public:

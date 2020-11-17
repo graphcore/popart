@@ -188,9 +188,22 @@ enum class BatchSerializationBatchSchedule {
  */
 enum class BatchSerializationTransformContext {
   /// Apply before growing the backward pass
-  Fwd,
+  Fwd = 0,
   /// Apply after growing the backward pass
   Bwd
+};
+
+/**
+ * Enum type that describes how to apply the batch serialization.
+ * \b NOTE: This setting is experimental and may change.
+ */
+enum class BatchSerializationMethod {
+  /// Unroll the batch with dynamic slicing
+  UnrollDynamic = 0,
+  /// Unroll the batch with static slicing
+  UnrollStatic,
+  /// Loop over the batch dimension
+  Loop
 };
 
 /**
@@ -203,8 +216,10 @@ struct BatchSerializationSettings {
       bool concatOnVirtualGraphChange_,
       bool concatOnExecutionPhaseChange_,
       bool concatOnPipelineStageChange_,
-      BatchSerializationTransformContext transformContext =
+      BatchSerializationTransformContext transformContext_ =
           BatchSerializationTransformContext::Fwd,
+      BatchSerializationMethod method_ =
+          BatchSerializationMethod::UnrollDynamic,
       BatchSerializationBatchSchedule batchSchedule_ =
           BatchSerializationBatchSchedule::Isomorphic);
 
@@ -224,6 +239,8 @@ struct BatchSerializationSettings {
   /// Experimental value to control when batch serialization is applied.
   BatchSerializationTransformContext transformContext =
       BatchSerializationTransformContext::Fwd;
+  /// Experimental value to control how batch serialization is applied.
+  BatchSerializationMethod method = BatchSerializationMethod::UnrollDynamic;
   /// Experimental value that changes how operations are scheduled.
   BatchSerializationBatchSchedule batchSchedule =
       BatchSerializationBatchSchedule::Isomorphic;

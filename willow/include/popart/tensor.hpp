@@ -162,7 +162,6 @@ public:
   InIndex getGraphInputIndex() const;
   bool isGraphOutput() const;
   OutIndex getGraphOutputIndex() const;
-  void setImplicitLoopInput(bool);
   bool isImplicitLoopInput() const;
   // Returns true for stream tensors that are optimizer tensors, as
   // well as their copies
@@ -231,7 +230,6 @@ protected:
   Graph &graph;
   Op *producer;
   const TensorTypeInfo *tensorTypeInfo;
-  bool implicitLoopInput;
 
   // By default stream tensors are replicated
   ReplicatedStreamMode replicatedStreamMode = ReplicatedStreamMode::Replicate;

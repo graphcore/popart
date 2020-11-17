@@ -2,7 +2,7 @@
 #ifndef GUARD_NEURALNET_CALLX_HPP
 #define GUARD_NEURALNET_CALLX_HPP
 
-#include <popart/popx/op/subgraphopx.hpp>
+#include <popart/popx/op/subgraphx.hpp>
 #include <popart/popx/opx.hpp>
 #include <popart/vendored/optional.hpp>
 
@@ -15,9 +15,6 @@ public:
   void grow(poplar::program::Sequence &) const final;
   InputCreatorType getInputCreatorType(InIndex) const;
 
-  std::vector<std::tuple<TensorId, TensorId, bool>>
-  getOutputsToPrepare() const final;
-
 private:
   // Copy aliased or modifed inputs back from graph.
   void copyModified(poplar::program::Sequence &prog) const;
@@ -28,8 +25,6 @@ private:
   // Copy the Graph output tensors to the CallOp outputs.
   void copyOutputs(poplar::program::Sequence &prog) const;
   void doCall(poplar::program::Sequence &prog) const;
-  // preparing outputs at returned (calling) site
-  std::vector<std::pair<poplar::Tensor, bool>> prepareOutputs() const;
 };
 
 class CallGradOpx : public CallOpx {

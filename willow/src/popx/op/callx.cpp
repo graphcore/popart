@@ -163,35 +163,6 @@ void CallOpx::grow(poplar::program::Sequence &prog) const {
   copyModified(prog);
 }
 
-std::vector<std::tuple<TensorId, TensorId, bool>>
-CallOpx::getOutputsToPrepare() const {
-  auto &callop = getOp<CallOp>();
-  std::vector<std::tuple<TensorId, TensorId, bool>> outputs;
-  int i = 0;
-  for (auto subgraph_out_id : callop.getCalledGraph().getOutputIds()) {
-    bool aliased = false;
-    for (int j = 0; j < callop.input->n(); j++) {
-      // Fully aliased & shape did not change
-      auto aliasRegions = callop.aliases(j, i);
-      bool alias        = aliasRegions.size() == 1 &&
-                   aliasRegions.front().nelms() ==
-                       callop.output->tensor(i)->info.nelms() &&
-                   callop.output->tensor(i)->info.shape() ==
-                       callop.input->tensor(j)->info.shape();
-      aliased |= alias;
-      if (alias)
-        subgraph_out_id = callop.input->id(j);
-    }
-
-    TensorId call_out_id = callop.output->tensor(i)->id;
-
-    logging::opx::trace(
-        "To prepare graph output {}, aliased: {}", subgraph_out_id, aliased);
-    outputs.emplace_back(subgraph_out_id, call_out_id, aliased);
-    ++i;
-  }
-  return outputs;
-}
 
 CallGradOpx::CallGradOpx(Op *op, Devicex *devicex) : CallOpx(op, devicex) {
   verifyOp<CallGradOp>(op, Onnx::CustomGradOperators::CallGrad);

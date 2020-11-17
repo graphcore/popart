@@ -45,7 +45,7 @@
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/remote.hpp>
 #include <popart/op/restore.hpp>
-#include <popart/op/subgraphop.hpp>
+#include <popart/op/subgraph.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/patterns/pattern.hpp>
 #include <popart/popx/exporter.hpp>
@@ -813,13 +813,18 @@ IrLowering::getCreatorEndpoints(const Tensor *startTensor,
           const SubgraphOpx *callopx = dynamic_cast<const SubgraphOpx *>(opx);
 
           // Get delegated endpoints
-          SubgraphOp *callOp = &callopx->getOp<SubgraphOp>();
-          auto callgraphs    = callOp->getCalledGraphs();
+          SubgraphOp *subgraphOp = &callopx->getOp<SubgraphOp>();
+          auto callgraphs        = subgraphOp->getCalledGraphs();
 
           for (auto callgraph : callgraphs) {
-            auto in_tensor_id      = callgraph->getInputId(inIndex);
-            const Tensor *inTensor = ir().getTensor(in_tensor_id);
-            searchStack.push_back({inTensor, updatedPath});
+            InIndex subgraphInIndex =
+                subgraphOp->opInToSubgraphInIndex(inIndex);
+            if (subgraphInIndex > -1 &&
+                subgraphInIndex < callgraph->getInputIds().size()) {
+              auto in_tensor_id      = callgraph->getInputId(subgraphInIndex);
+              const Tensor *inTensor = ir().getTensor(in_tensor_id);
+              searchStack.push_back({inTensor, updatedPath});
+            }
           }
         };
 
@@ -854,6 +859,14 @@ IrLowering::getCreatorEndpoints(const Tensor *startTensor,
                                   op->debugName(),
                                   pathFromInput.size());
           f_create();
+          f_unwind();
+          break;
+        }
+        case InputCreatorType::CanDelegateOrUnwind: {
+          logging::devicex::trace("{} can delegate or unwind, path depth {}",
+                                  op->debugName(),
+                                  pathFromInput.size());
+          f_delegate();
           f_unwind();
           break;
         }
@@ -895,8 +908,8 @@ IrLowering::getCreatorEndpoints(const Tensor *startTensor,
           for (auto &opxOnPath : pathToInput) {
             if (opxOnPath.isDelegate) {
               // Is a delegate: Get the caller Op
-              SubgraphOp *op = &opxOnPath.opx->getOp<SubgraphOp>();
-              for (auto graph : op->getCalledGraphs()) {
+              SubgraphOp *subgraphOp = &opxOnPath.opx->getOp<SubgraphOp>();
+              for (auto graph : subgraphOp->getCalledGraphs()) {
                 // Loop over all callees
                 if (graph->id == tensor->getGraph().id) {
                   // This callee is the graph where the current tensor is in
@@ -904,10 +917,14 @@ IrLowering::getCreatorEndpoints(const Tensor *startTensor,
 
                   // TODO: T13654 Generalize for other subgraphing ops (if,
                   // loop).
-                  Tensor *nextOutputTensor = op->output->tensor(o);
-                  // Continue search behind the subgraph
-                  searchStack.push_back({nextOutputTensor, pathFromInput});
-                  return;
+
+                  OutIndex opo = subgraphOp->subgraphOutToOpOutIndex(o);
+                  if (opo > -1 && opo < subgraphOp->output->n()) {
+                    Tensor *nextOutputTensor = subgraphOp->output->tensor(opo);
+                    // Continue search behind the subgraph
+                    searchStack.push_back({nextOutputTensor, pathFromInput});
+                    return;
+                  }
                 }
               }
             }
@@ -1609,12 +1626,18 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
       for (int i = 0; i < opOutputs.size(); i++) {
         auto opOutput = opOutputs[i];
         if (!tasks.contains(initTensorTaskId(std::get<1>(opOutput)))) {
-          if (std::get<2>(opOutput)) {
-            tasks.add(initTensorByAliasingTask(
-                op, std::get<0>(opOutput), std::get<1>(opOutput)));
+          if (std::get<0>(opOutput).empty()) {
+            // No tensor to clone or alias from
+            tasks.add(initTensorTask(ir().getTensor(std::get<1>(opOutput))));
           } else {
-            tasks.add(initTensorByCloningTask(
-                op, std::get<0>(opOutput), std::get<1>(opOutput)));
+            // Tensor can be cloned or aliased
+            if (std::get<2>(opOutput)) {
+              tasks.add(initTensorByAliasingTask(
+                  op, std::get<0>(opOutput), std::get<1>(opOutput)));
+            } else {
+              tasks.add(initTensorByCloningTask(
+                  op, std::get<0>(opOutput), std::get<1>(opOutput)));
+            }
           }
         }
       }

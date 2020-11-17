@@ -3677,16 +3677,15 @@ TensorId Ir::createIntermediateTensorId(const TensorId &base_id) {
   return temp_id;
 }
 
-TensorId
-Ir::createBatchSliceTensorId(TensorId base_id, unsigned s, unsigned e) {
+TensorId Ir::createSliceTensorId(TensorId base_id, unsigned s, unsigned e) {
   auto slice_id = logging::format(
-      "{}__bs{}_{}_{}", base_id, s, e, intermediate_tensor_counter);
+      "{}__s{}_{}_{}", base_id, s, e, intermediate_tensor_counter);
   logging::ir::trace("Generating tensor id {}", slice_id);
   ++intermediate_tensor_counter;
   return slice_id;
 }
 
-TensorId Ir::createBatchConcatTensorId(TensorId base_id) {
+TensorId Ir::createConcatTensorId(TensorId base_id) {
   auto concat_id =
       logging::format("{}__cc{}", base_id, intermediate_tensor_counter);
   logging::ir::trace("Generating tensor id {}", concat_id);

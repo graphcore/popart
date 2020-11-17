@@ -62,6 +62,14 @@ constexpr const char *reservedRandomSeedPrefix() { return "randomSeed___"; }
 
 constexpr const char *reservedIndexPrefix() { return "Index___"; }
 
+constexpr const char *reservedLoopCondPrefix() { return "LoopCond___"; }
+
+constexpr const char *reservedInitPrefix() { return "Init___"; }
+
+constexpr const char *reservedConcatInitPrefix() { return "ConcatInit___"; }
+
+constexpr const char *reservedConstValuePrefix() { return "ConstValue___"; }
+
 std::vector<std::string> reservedOptimizerPrefixes();
 std::vector<std::string> reservedOptimizerStatePrefixes();
 std::vector<std::string> reservedAccumulatorPrefixes();

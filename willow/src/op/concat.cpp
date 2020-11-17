@@ -267,35 +267,29 @@ int64_t ConcatGradOp::getStart() const { return start; }
 
 int64_t ConcatGradOp::getEnd() const { return end; }
 
-std::map<TensorId, std::vector<TensorId>>
-ConcatGradOp::shard(const std::map<TensorId, std::vector<TensorId>> &inputs) {
-  auto outputs    = Op::shard(inputs);
+void ConcatGradOp::configureShardedOp(Op *const shardedOp,
+                                      const Settings *const settings_) const {
+  Op::configureShardedOp(shardedOp, settings_);
+
   auto oldInShape = inInfo(ConcatGradOp::getInIndex()).shape();
 
-  for (auto shard_idx = 0; shard_idx < inputs.begin()->second.size();
-       ++shard_idx) {
-    Tensor *inTensor =
-        getGraph().getTensors().get(inputs.begin()->second.at(shard_idx));
-    Tensor *outTensor =
-        getGraph().getTensors().get(outputs.begin()->second.at(shard_idx));
-    auto newInShape   = inTensor->info.shape();
-    int64_t reduction = 1;
-    for (size_t i = 0; i < oldInShape.size(); ++i) {
-      reduction = oldInShape.at(i) / newInShape.at(i);
-      if (reduction > 1) {
-        Op *prod                     = outTensor->getProducer();
-        ConcatGradOp *concatGradProd = dynamic_cast<ConcatGradOp *>(prod);
-        auto type                    = concatGradProd->gradInfo.dataType();
-        auto shape                   = concatGradProd->gradInfo.shape();
-        shape[i] /= reduction;
-        concatGradProd->gradInfo.set(type, shape);
-        concatGradProd->setup();
-        break;
-      }
+  Tensor *inTensor  = shardedOp->input->tensor(ConcatGradOp::getInIndex());
+  Tensor *outTensor = shardedOp->output->tensor(ConcatGradOp::getOutIndex());
+  auto newInShape   = inTensor->info.shape();
+  int64_t reduction = 1;
+  for (size_t i = 0; i < oldInShape.size(); ++i) {
+    reduction = oldInShape.at(i) / newInShape.at(i);
+    if (reduction > 1) {
+      Op *prod                     = outTensor->getProducer();
+      ConcatGradOp *concatGradProd = dynamic_cast<ConcatGradOp *>(prod);
+      auto type                    = concatGradProd->gradInfo.dataType();
+      auto shape                   = concatGradProd->gradInfo.shape();
+      shape[i] /= reduction;
+      concatGradProd->gradInfo.set(type, shape);
+      concatGradProd->setup();
+      break;
     }
   }
-
-  return outputs;
 }
 
 namespace {

@@ -132,6 +132,18 @@ Op *Graph::getOp(OpId opId) const {
 const Tensors &Graph::getTensors() const { return *(up_tensors.get()); }
 Tensors &Graph::getTensors() { return *(up_tensors.get()); }
 
+void Graph::addInput(const InIndex &index,
+                     const TensorId &tensorId,
+                     const TensorInfo &tensorInfo) {
+  getTensors().addActGrad(tensorId);
+  auto tensor  = getTensors().get(tensorId);
+  tensor->info = tensorInfo;
+  if (graph_inputs.size() < index + 1) {
+    graph_inputs.resize(index + 1);
+  }
+  graph_inputs.at(index) = tensorId;
+}
+
 void Graph::addInput(const TensorId &tensorId, const TensorInfo &tensorInfo) {
   getTensors().addActGrad(tensorId);
   auto tensor  = getTensors().get(tensorId);
@@ -151,6 +163,16 @@ void Graph::markAsInput(const TensorId &tensorId) {
     throw error("Could not find tensor '{}' to mark as input", tensorId);
   }
   graph_inputs.push_back(tensorId);
+}
+
+void Graph::markAsOutput(const OutIndex &index, const TensorId &tensorId) {
+  if (!getTensors().contains(tensorId)) {
+    throw error("Could not find tensor '{}' to mark as output", tensorId);
+  }
+  if (graph_outputs.size() < index + 1) {
+    graph_outputs.resize(index + 1);
+  }
+  graph_outputs.at(index) = tensorId;
 }
 
 void Graph::markAsOutput(const TensorId &tensorId) {
@@ -948,6 +970,19 @@ void BackwardPassCreator::doPrune(Graph &graph) {
       graph.graph_inputs.erase(inputIter);
     }
   }
+}
+
+std::vector<Op *> Graph::getCallSiteOps() const {
+  auto ops = ir.getAllOps();
+  std::vector<Op *> callSites;
+  for (Op *op : ops) {
+    for (const Graph *calledGraph : op->getCalledGraphs()) {
+      if (calledGraph->id.str() == id.str()) {
+        callSites.push_back(op);
+      }
+    }
+  }
+  return callSites;
 }
 
 std::vector<Op *> Graph::getCallSiteOps(size_t num) const {

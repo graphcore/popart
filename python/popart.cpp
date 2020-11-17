@@ -176,7 +176,7 @@ public:
 
   void assertNumElements(const Ir &) const final {}
 
-  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
+  ConstVoidData in(TensorId id, int64_t, bool prefetch) final {
     py::array a = inputCb(id, prefetch);
     if (!isContiguous(a)) {
       throw error(
@@ -861,6 +861,13 @@ PYBIND11_MODULE(popart_core, m) {
   }
   {
     // This setting is experimental and may change.
+    py::enum_<BatchSerializationMethod> en(m, "BatchSerializationMethod");
+    en.value("UnrollDynamic", BatchSerializationMethod::UnrollDynamic);
+    en.value("UnrollStatic", BatchSerializationMethod::UnrollStatic);
+    en.value("Loop", BatchSerializationMethod::Loop);
+  }
+  {
+    // This setting is experimental and may change.
     py::enum_<BatchSerializationBatchSchedule> en(
         m, "BatchSerializationBatchSchedule");
     en.value("Scheduler", BatchSerializationBatchSchedule::Scheduler);
@@ -878,12 +885,14 @@ PYBIND11_MODULE(popart_core, m) {
                  bool,
                  bool,
                  BatchSerializationTransformContext,
+                 BatchSerializationMethod,
                  BatchSerializationBatchSchedule>(),
         py::arg("factor"),
         py::arg("concatOnVirtualGraphChange"),
         py::arg("concatOnExecutionPhaseChange"),
         py::arg("concatOnPipelineStageChange"),
         py::arg("transformContext") = BatchSerializationTransformContext::Fwd,
+        py::arg("method")           = BatchSerializationMethod::UnrollDynamic,
         py::arg("batchSchedule") = BatchSerializationBatchSchedule::Isomorphic);
     cls.def_readwrite("factor", &BatchSerializationSettings::factor);
     cls.def_readwrite("concatOnVirtualGraphChange",
@@ -895,6 +904,7 @@ PYBIND11_MODULE(popart_core, m) {
                       &BatchSerializationSettings::concatOnPipelineStageChange);
     cls.def_readwrite("transformContext",
                       &BatchSerializationSettings::transformContext);
+    cls.def_readwrite("method", &BatchSerializationSettings::method);
     // This setting is experimental and may change.
     cls.def_readwrite("batchSchedule",
                       &BatchSerializationSettings::batchSchedule);

@@ -57,11 +57,13 @@ BatchSerializationSettings::BatchSerializationSettings(
     bool concatOnExecutionPhaseChange_,
     bool concatOnPipelineStageChange_,
     BatchSerializationTransformContext transformContext_,
+    BatchSerializationMethod method_,
     BatchSerializationBatchSchedule batchSchedule_)
     : factor{factor_}, concatOnVirtualGraphChange{concatOnVirtualGraphChange_},
       concatOnExecutionPhaseChange{concatOnExecutionPhaseChange_},
       concatOnPipelineStageChange{concatOnPipelineStageChange_},
-      transformContext{transformContext_}, batchSchedule{batchSchedule_} {}
+      transformContext{transformContext_}, method{method_},
+      batchSchedule{batchSchedule_} {}
 
 std::string getDotCheckString(DotCheck d) {
   const static std::array<std::string, NDotChecks> V = getDotCheckIds();

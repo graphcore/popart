@@ -198,8 +198,8 @@ bool ReshapeBaseOp::canBeReplacedByIdentity() const {
 }
 
 void ReshapeBaseOp::configureShardedOp(Op *const shardOp,
-                                       int shardIndex) const {
-  Op::configureShardedOp(shardOp, shardIndex);
+                                       const Settings *const settings_) const {
+  Op::configureShardedOp(shardOp, settings_);
   if (auto reshape = dynamic_cast<ReshapeBaseOp *>(shardOp)) {
     Shape outShape = reshape->getOutShape();
 
