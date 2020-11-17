@@ -327,8 +327,8 @@ install(EXPORT popart-targets
 include(CMakePackageConfigHelpers)
 
 configure_package_config_file(
-    "popart-config.cmake.in"
-    "popart-config.cmake"
+    popart-config.cmake.in
+    popart-config.cmake
     INSTALL_DESTINATION ${POPART_CMAKE_INSTALL_CONFIGDIR}
     PATH_VARS
       CMAKE_INSTALL_INCLUDEDIR
@@ -339,7 +339,7 @@ configure_package_config_file(
 write_basic_package_version_file(
   ${CMAKE_CURRENT_BINARY_DIR}/popart-config-version.cmake
   VERSION ${POPART_VERSION}
-  COMPATIBILITY SameMajorVersion
+  COMPATIBILITY SameMinorVersion
 )
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/popart-config.cmake"
