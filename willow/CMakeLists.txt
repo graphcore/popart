@@ -110,8 +110,6 @@ set(POPART_PRIVATE_DEPS_INCLUDES
 set(POPART_PRIVATE_DEPS_LIBS
     ${boost_targets}
     spdlog::spdlog_header_only
-    ${CMAKE_DL_LIBS}
-    ${CMAKE_THREAD_LIBS_INIT}
 )
 
 set(POPART_ONLY_DEPS_INCLUDES
