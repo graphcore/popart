@@ -11,6 +11,8 @@
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/executablex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/testdevice.hpp>
 
 using namespace popart;
@@ -127,8 +129,14 @@ BOOST_AUTO_TEST_CASE(TestInitOpAccumulator) {
   });
 
   // Compile.
+  std::unique_ptr<popx::IrLowering> lowering;
+  lowering.reset(new popx::IrLowering(ir, testDev));
+
+  std::unique_ptr<popx::Executablex> executable =
+      std::move(popx::Executablex::createFromLoweredIr(*lowering));
+
   std::unique_ptr<popx::Devicex> device;
-  device.reset(new popx::Devicex(ir, testDev));
+  device.reset(new popx::Devicex(*executable, testDev));
   device->prepare();
 
   // Get resultant tensors (efficient v linear).

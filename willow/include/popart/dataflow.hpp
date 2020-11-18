@@ -123,6 +123,8 @@ public:
   // A hash value, not currently part of public API.
   std::size_t hash() const;
 
+  const std::string &str() const { return artStr_; }
+
 private:
   AnchorReturnTypeId getIdFromStr(std::string artString);
 
@@ -195,6 +197,10 @@ public:
                                 const TensorId &anchorId) const;
   // Get a hash for this object, not currently part of public API.
   std::size_t hash() const;
+
+  const std::map<TensorId, AnchorReturnType> &getAnchorMap() const {
+    return m_anchors;
+  }
 
 private:
   // The number of batches processed by the backend in one call to train

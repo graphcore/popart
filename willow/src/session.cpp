@@ -10,7 +10,9 @@
 #include <popart/logging.hpp>
 #include <popart/onnxutil.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/executablex.hpp>
 #include <popart/popx/exporter.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/session.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensor.hpp>
@@ -33,7 +35,10 @@ Session::Session() {
 void Session::setDevice(std::shared_ptr<DeviceInfo> deviceInfo) {
   POPART_TRACEPOINT();
   logging::session::trace("Session::setDevice({})", *deviceInfo);
-  device_.reset(new popx::Devicex(ir, deviceInfo));
+
+  lowering_.reset(new popx::IrLowering(ir, deviceInfo));
+  executable_ = popx::Executablex::createFromLoweredIr(*lowering_);
+  device_.reset(new popx::Devicex(*executable_, deviceInfo));
 }
 
 std::vector<uint32_t> Session::getRNGState() {
@@ -69,7 +74,7 @@ void Session::setRNGState(const std::vector<uint32_t> stateValue) {
 void Session::setRandomSeed(uint64_t seedValue) {
   POPART_TRACEPOINT();
   logging::session::trace("Session::setRandomSeed({})", seedValue);
-  if (!ir.requiresRandomSeed()) {
+  if (!ir.getRequiresRandomSeed()) {
     logging::session::warn("Trying to set the random seed, but this session "
                            "has no random behaviour. Doing nothing.");
     return;

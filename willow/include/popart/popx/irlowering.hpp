@@ -61,6 +61,7 @@ using PopStreamId = std::string;
 
 class Opx;
 class CollectiveBalancedReorder;
+class CollectiveBalancedHostRearrangement;
 class Devicex;
 
 enum class ToHostStreamType { NonAnchor, NonSumAnchor, SumAnchor };
@@ -288,8 +289,11 @@ private:
   std::vector<std::string> cycleCountIds;
   PopTensors tensors_;
 
+  TensorTileMap tensorTileMap;
+
 public:
-  IrLowering(const Ir &, std::shared_ptr<DeviceInfo> deviceInfo, Devicex *);
+  IrLowering(const Ir &, std::shared_ptr<DeviceInfo> deviceInfo);
+  IrLowering(const Ir &);
   const Ir &ir() const { return _ir; }
 
   PopPrograms progs;
@@ -300,16 +304,27 @@ public:
   poplar::OptionFlags engineOptions;
   poplar::OptionFlags reportOptions;
 
+  void setDevicex(Devicex *d) { dv_p = d; }
   // Used for opx creation
-  Devicex *dv_p;
+  Devicex *dv_p = nullptr;
 
   // Return stored input tensors based on how they are allocated
   std::set<TensorId> getLinearlyCreatedInputTensors() const;
+  void setLinearlyCreatedInputTensors(const std::set<TensorId> &s) {
+    linearlyCreatedInputTensors = s;
+  }
+
   std::set<TensorId> getEfficientlyCreatedInputTensors() const;
+  void setEfficientlyCreatedInputTensors(const std::set<TensorId> &s) {
+    efficientlyCreatedInputTensors = s;
+  }
 
   static std::string cycleCountStreamId(std::string id);
   const std::vector<std::string> &getCycleCountIds() const {
     return cycleCountIds;
+  }
+  void setCycleCountIds(const std::vector<std::string> &ids) {
+    cycleCountIds = ids;
   }
 
   const PopTensors &tensors() const { return tensors_; }
@@ -320,8 +335,20 @@ public:
                                           int64_t tileId = 0,
                                           std::string id = "");
 
-  poplar::Graph &graph() { return *pGraph; }
-  const poplar::Graph &graph() const { return *pGraph; }
+  poplar::Graph &graph() {
+    if (pGraph == nullptr) {
+      throw error(
+          "poplar::Graph is null when the lowering state is deserialized");
+    }
+    return *pGraph;
+  }
+  const poplar::Graph &graph() const {
+    if (pGraph == nullptr) {
+      throw error(
+          "poplar::Graph is null when the lowering state is deserialized");
+    }
+    return *pGraph;
+  }
 
   // Prepares the graph ready for poplar compilation
   void prepareGraph();
@@ -394,8 +421,16 @@ public:
 
   std::shared_ptr<CollectiveBalancedReorder>
   getCollectiveBalancedReorder(TensorId tensor_id);
+  const CollectiveBalancedHostRearrangement &
+  getCollectiveBalancedHostRearrangement(const TensorId &tensor_id) const;
+
   void setCollectiveBalancedReorder(TensorId tensor_id,
                                     std::shared_ptr<CollectiveBalancedReorder>);
+
+  const std::map<TensorId, std::shared_ptr<CollectiveBalancedReorder>> &
+  getCollectiveReorders() const {
+    return collectiveReorders;
+  }
 
   poplar::Tensor getScalarVariable(poplar::Graph &graph,
                                    const poplar::Type &type,
@@ -446,6 +481,7 @@ public:
   void trySaveTensorTileMap() const;
   void saveTensorTileMap(const std::string &) const;
   TensorTileMap getTensorTileMap() const;
+  void setTensorTileMap(const TensorTileMap &);
 
   bool usingCachedExecutable() const { return usingCachedExecutable_; }
 

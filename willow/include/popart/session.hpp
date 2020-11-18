@@ -18,7 +18,9 @@ class DeviceInfo;
 
 namespace popx {
 class Devicex;
-}
+class IrLowering;
+class Executablex;
+} // namespace popx
 
 /**
  * Session is a runtime instance the provides an interface for executing ONNX
@@ -212,6 +214,8 @@ public:
 
   const Ir &getIr() const { return ir; }
   const popx::Devicex &getDevice() const { return *device_; }
+  const popx::IrLowering &getIrLowering() const { return *lowering_; }
+  const popx::Executablex &getExecutable() const { return *executable_; }
 
 protected:
   /**
@@ -233,6 +237,19 @@ protected:
    * where calls to poplar are made.
    */
   std::unique_ptr<popx::Devicex> device_;
+
+  /**
+   * Implementation of the lowering of the PopART Ir to the
+   * poplar Graph.
+   */
+  std::unique_ptr<popx::IrLowering> lowering_;
+
+  /**
+   * The final executable which contains all the data, metadata
+   * and configuration parameters necessary to start running
+   * the program on the device.
+   */
+  std::unique_ptr<popx::Executablex> executable_;
 
   /**
    * Flag to indicate if weightsFromHost has been called

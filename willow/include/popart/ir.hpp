@@ -197,7 +197,9 @@ public:
   ONNX_NAMESPACE::ModelProto step(int n);
   // if the tensor is returned to user (passes call to DataFlow).
   bool isAnchored(const TensorId &) const;
+  bool streamingIsDisabledForTensor(const Tensor *) const;
   bool streamingIsDisabledForTensor(const TensorId &) const;
+  bool storingIsDisabledForTensor(const Tensor *) const;
   bool storingIsDisabledForTensor(const TensorId &) const;
   void append(std::stringstream &) const;
 
@@ -421,7 +423,8 @@ public:
 
   // The model requires a user-settable random seed tensor
   bool hasRandomOps() const;
-  bool requiresRandomSeed() const;
+  void setRequiresRandomSeed() { requiresRandomSeed_ = true; }
+  bool getRequiresRandomSeed() const { return requiresRandomSeed_; }
   uint32_t getAndIncrementSeedModifier();
 
   RandomReferenceId getAndIncrementRandomReferenceId();
@@ -477,6 +480,8 @@ private:
   // Grow loss operands. Return pointer to Op introduced for non-const loss
   // scaling, if one was needed.
   Op *growLossGradients();
+
+  bool requiresRandomSeed() const;
 
   void initRandomSeed();
 
@@ -556,6 +561,8 @@ private:
 
   bool executionPhasesReady = false;
   bool isPrepared_          = false;
+
+  bool requiresRandomSeed_ = false;
 
   // enable/disable a transform stage
   void enableTransform(std::size_t transformId, bool enable);

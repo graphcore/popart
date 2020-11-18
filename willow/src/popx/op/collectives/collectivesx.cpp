@@ -69,7 +69,8 @@ CollectiveBalancedReorder::CollectiveBalancedReorder(
     }
     index += numReplicaElementsPerTile[tile];
   }
-  totalElementsPerReplica = index;
+  hostRearrangement.replicationFactor       = replicationFactor_;
+  hostRearrangement.totalElementsPerReplica = index;
 
   std::sort(refToGathered.begin(), refToGathered.end());
 
@@ -77,7 +78,8 @@ CollectiveBalancedReorder::CollectiveBalancedReorder(
   // that make up a view of the (simplified) reference tensor.
   for (const auto &entry : refToGathered) {
     const auto begin =
-        entry.second.rep * totalElementsPerReplica + entry.second.index;
+        entry.second.rep * hostRearrangement.totalElementsPerReplica +
+        entry.second.index;
     gatheredToSimplifiedRefSlices.emplace_back(begin,
                                                begin + entry.second.size);
   }
@@ -112,7 +114,7 @@ CollectiveBalancedReorder::CollectiveBalancedReorder(
               return simplifiedToRefSlices[a] < simplifiedToRefSlices[b];
             });
 
-  gatheredToRefSlices.resize(numSimplifiedRefSlices);
+  hostRearrangement.gatheredToRefSlices.resize(numSimplifiedRefSlices);
   auto it = gatheredToSimplifiedRefSlices.begin();
   std::size_t gatheredToSimplifiedRefOffset = 0;
   for (const auto i : simplifiedOrderingIndices) {
@@ -121,7 +123,7 @@ CollectiveBalancedReorder::CollectiveBalancedReorder(
     const auto begin = it->begin() + gatheredToSimplifiedRefOffset;
     const auto end   = begin + simplifiedToRefSlice.size();
 
-    gatheredToRefSlices[i] = poplar::Interval(begin, end);
+    hostRearrangement.gatheredToRefSlices[i] = poplar::Interval(begin, end);
 
     gatheredToSimplifiedRefOffset += simplifiedToRefSlice.size();
     if (gatheredToSimplifiedRefOffset == it->size()) {
@@ -137,8 +139,9 @@ CollectiveBalancedReorder::createReplicaSlice(const poplar::Type &type,
   // A replica slice is a single variable with the tile
   // mapping set so you get a contiguous region on each
   // tile of the correct size to map the reference tensor to.
-  auto t = graph.addVariable(
-      type, {totalElementsPerReplica}, debugPrefix + "_cbr_slice0");
+  auto t     = graph.addVariable(type,
+                             {hostRearrangement.totalElementsPerReplica},
+                             debugPrefix + "_cbr_slice0");
   auto index = 0;
   for (unsigned tile = 0; tile < numReplicaElementsPerTile.size(); ++tile) {
     auto size = numReplicaElementsPerTile[tile];
@@ -174,14 +177,15 @@ poplar::Tensor CollectiveBalancedReorder::undoRearrangeForCollective(
   return t.reshape(referenceTensor.shape());
 }
 
-size_t CollectiveBalancedReorder::getNumRearrangedTensorElems() const {
+size_t
+CollectiveBalancedHostRearrangement::getNumRearrangedTensorElems() const {
   return totalElementsPerReplica * replicationFactor;
 }
 
-void CollectiveBalancedReorder::rearrange(const char *in,
-                                          char *out,
-                                          int64_t elemByteSize,
-                                          bool refToGathered) const {
+void CollectiveBalancedHostRearrangement::rearrange(const char *in,
+                                                    char *out,
+                                                    int64_t elemByteSize,
+                                                    bool refToGathered) const {
   auto index = 0;
   for (const auto &i : gatheredToRefSlices) {
     auto size    = i.size();
@@ -196,14 +200,14 @@ void CollectiveBalancedReorder::rearrange(const char *in,
   }
 }
 
-void CollectiveBalancedReorder::rearrangeForCollective(
+void CollectiveBalancedHostRearrangement::rearrangeForCollective(
     const char *in,
     char *out,
     int64_t elemByteSize) const {
   rearrange(in, out, elemByteSize, true);
 }
 
-void CollectiveBalancedReorder::undoRearrangeForCollective(
+void CollectiveBalancedHostRearrangement::undoRearrangeForCollective(
     const char *in,
     char *out,
     int64_t elemByteSize) const {

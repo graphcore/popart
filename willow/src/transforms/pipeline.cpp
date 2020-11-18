@@ -926,7 +926,8 @@ bool Pipeline::apply(Graph &graph) const {
 
   auto toStashCandidateTensors = getStashCandidateTensors(graph);
 
-  if (ir.requiresRandomSeed() && containsSeedTensor(toStashCandidateTensors)) {
+  if (ir.getRequiresRandomSeed() &&
+      containsSeedTensor(toStashCandidateTensors)) {
     // Neither the input or the output of a GetRandomSeedOp should be stashed.
     auto getRandomSeedOp = findGetRandomSeedOp(graph);
     toStashCandidateTensors.erase(getRandomSeedOp->inId(0));

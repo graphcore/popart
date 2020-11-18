@@ -9,7 +9,8 @@
     "gcl",
     "spdlog",
     "boost",
-    "protobuf"
+    "protobuf",
+    "capnproto"
   ],
   "superproject_cmake_includes" : [ "SuperProjectConfig.cmake" ]
 }

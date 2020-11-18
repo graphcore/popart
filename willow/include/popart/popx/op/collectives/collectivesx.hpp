@@ -4,6 +4,7 @@
 
 #include <popart/names.hpp>
 #include <popart/popx/opx.hpp>
+#include <popart/popx/viewchangers.hpp>
 
 namespace popart {
 namespace popx {
@@ -19,6 +20,34 @@ struct ReorderMetadata {
   int64_t rearranged_offset;
   int64_t size;
   int64_t tile;
+};
+
+// This class contains functions and data necessary to rearrange tensors on
+// the host side at runtime. The separation is made so that we can serialize
+// the state and restore it without having to create a `poplar::Graph`.
+class CollectiveBalancedHostRearrangement {
+public:
+  // Balanced reorder the tensor in a collective-friendly manner (host-side)
+  void
+  rearrangeForCollective(const char *in, char *out, int64_t elemByteSize) const;
+
+  // Reorder tensor back into the expected IR tensor shape and order (host-side)
+  void undoRearrangeForCollective(const char *in,
+                                  char *out,
+                                  int64_t elemByteSize) const;
+
+  // Number of elements in the collective balanced (reordered) tensor
+  size_t getNumRearrangedTensorElems() const;
+
+  // Host tensor rearrangement routine
+  void rearrange(const char *in,
+                 char *out,
+                 int64_t elemByteSize,
+                 bool refToGathered) const;
+
+  unsigned replicationFactor;
+  std::size_t totalElementsPerReplica;
+  std::vector<poplar::Interval> gatheredToRefSlices;
 };
 
 // Helper class to reorder a tensor in a per-tile-balanced fashion such that
@@ -47,21 +76,13 @@ public:
   // Reorder tensor back into the expected IR tensor shape and order
   poplar::Tensor undoRearrangeForCollective(poplar::Tensor tensor) const;
 
-  // Balanced reorder the tensor in a collective-friendly manner (host-side)
-  void
-  rearrangeForCollective(const char *in, char *out, int64_t elemByteSize) const;
-
-  // Reorder tensor back into the expected IR tensor shape and order (host-side)
-  void undoRearrangeForCollective(const char *in,
-                                  char *out,
-                                  int64_t elemByteSize) const;
-
   std::vector<std::size_t> getReferenceShape() const {
     return referenceTensor.shape();
   }
 
-  // Number of elements in the collective balanced (reordered) tensor
-  size_t getNumRearrangedTensorElems() const;
+  const CollectiveBalancedHostRearrangement &getHostRearrangement() const {
+    return hostRearrangement;
+  }
 
 private:
   // Host tensor rearrangement routine
@@ -77,10 +98,10 @@ private:
 
   std::vector<std::size_t> numReplicaElementsPerTile;
   std::vector<poplar::Interval> gatheredToSimplifiedRefSlices;
-  std::vector<poplar::Interval> gatheredToRefSlices;
-  std::size_t totalElementsPerReplica;
   poplar::Tensor referenceTensor;
   poplar::TensorRearranger simplifier;
+
+  CollectiveBalancedHostRearrangement hostRearrangement;
 };
 
 // If the input/output to a collective op is padded,

@@ -216,6 +216,8 @@ public:
   // lightweight container, like `std::vector`.
   std::map<OpId, std::unordered_set<OpId>> getEdgeMap() const;
 
+  const std::string getGraphId() const { return id.str(); }
+
 private:
   std::vector<Op *>
   growGradOps(Op *nonGradOp, const std::map<TensorId, TensorId> &gradTensorMap);

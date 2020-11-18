@@ -866,6 +866,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   dotCheckpoint(DotCheck::Fwd1);
 
   if (requiresRandomSeed()) {
+    setRequiresRandomSeed();
     initRandomSeed();
   }
 
@@ -1798,6 +1799,11 @@ bool Ir::isAnchored(const TensorId &tenId) const {
 }
 
 bool Ir::streamingIsDisabledForTensor(const TensorId &tensorId) const {
+  const Tensor *tensor = getTensors().get(tensorId);
+  return streamingIsDisabledForTensor(tensor);
+}
+
+bool Ir::streamingIsDisabledForTensor(const Tensor *tensor) const {
   // What conditions mean that this tensor should not be streamed?
 
   // 1. Streams have been turned off globally
@@ -1807,14 +1813,13 @@ bool Ir::streamingIsDisabledForTensor(const TensorId &tensorId) const {
 
   // 2. The tensor is an Gradient Accl tensor, but the user
   //    has turned off streaming for this kind of tensor
-  if ((getTensors().get(tensorId)->isOptimizerStateTensor() ||
-       getTensors().get(tensorId)->isAccumulatorTensor()) &&
+  if ((tensor->isOptimizerStateTensor() || tensor->isAccumulatorTensor()) &&
       getSessionOptions().disableGradAccumulationTensorStreams) {
     return true;
   }
 
   // 3. The tensor is cached
-  if (getTensors().get(tensorId)->tensorLocationInfo.isRemote()) {
+  if (tensor->tensorLocationInfo.isRemote()) {
     return true;
   }
 
@@ -1822,6 +1827,11 @@ bool Ir::streamingIsDisabledForTensor(const TensorId &tensorId) const {
 }
 
 bool Ir::storingIsDisabledForTensor(const TensorId &tensorId) const {
+  const Tensor *tensor = getTensors().get(tensorId);
+  return storingIsDisabledForTensor(tensor);
+}
+
+bool Ir::storingIsDisabledForTensor(const Tensor *tensor) const {
   // What conditions mean that this tensor should not be streamed?
 
   // 1. Streams have been turned off globally
@@ -1831,8 +1841,7 @@ bool Ir::storingIsDisabledForTensor(const TensorId &tensorId) const {
 
   // 2. The tensor is an Gradient Accl tensor, but the user
   //    has turned off streaming for this kind of tensor
-  if ((getTensors().get(tensorId)->isOptimizerStateTensor() ||
-       getTensors().get(tensorId)->isAccumulatorTensor()) &&
+  if ((tensor->isOptimizerStateTensor() || tensor->isAccumulatorTensor()) &&
       getSessionOptions().disableGradAccumulationTensorStreams) {
     return true;
   }

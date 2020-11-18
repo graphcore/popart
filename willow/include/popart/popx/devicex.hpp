@@ -38,23 +38,24 @@ namespace popx {
 using PopStreamId = std::string;
 
 class IrLowering;
+class Executablex;
 
 poplar::Type popType(const TensorInfo &);
 poplar::Type popType(DataType);
 
 class Devicex {
 private:
+  Executablex &executable_;
   int nCallsToRun{0};
   std::shared_ptr<DeviceInfo> deviceInfo;
   bool prepareHasBeenCalled_;
-  std::unique_ptr<IrLowering> ir_lowering_;
 
 public:
   const Ir &ir() const;
-  IrLowering &lowering() { return *ir_lowering_; }
-  const IrLowering &lowering() const { return *ir_lowering_; }
+  const IrLowering &lowering() const;
+  IrLowering &lowering();
 
-  Devicex(const Ir &, std::shared_ptr<DeviceInfo> deviceInfo);
+  Devicex(Executablex &exe, std::shared_ptr<DeviceInfo> deviceInfo);
   ~Devicex();
 
   // Compile the graph and export the executable and metadata to the
@@ -113,7 +114,6 @@ public:
   void setEngineIsLoaded(bool isLoaded);
 
   const std::vector<TensorId> &getHostReduceStreamIds() const;
-  std::vector<TensorId> &getHostReduceStreamIds();
 
   const std::map<TensorId, poplar::RemoteBuffer> &
   getHostReduceRemoteBuffers() const;
@@ -136,7 +136,8 @@ public:
                           int repeat_index,
                           unsigned replication_index = 0);
 
-  // Keep these in devicex since they may be used in custom ops
+  // Although these belong in IrLowering we keep these in devicex since
+  // they may be used in custom ops
   poplin::PlanningCache convCache;
   poplin::matmul::PlanningCache matmulCache;
 

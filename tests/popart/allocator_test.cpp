@@ -12,6 +12,8 @@
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/executablex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/session.hpp>
 #include <popart/tensordata.hpp>
 
@@ -62,8 +64,14 @@ BOOST_AUTO_TEST_CASE(allocator_conv_control) {
               {},         // no SessionOptions
               Patterns({}).enableRuntimeAsserts(false)});
 
+  std::unique_ptr<popx::IrLowering> lowering;
+  lowering.reset(new popx::IrLowering(ir, cpuDevice));
+
+  std::unique_ptr<popx::Executablex> executable =
+      std::move(popx::Executablex::createFromLoweredIr(*lowering));
+
   std::unique_ptr<popx::Devicex> device;
-  device.reset(new popx::Devicex(ir, cpuDevice));
+  device.reset(new popx::Devicex(*executable, cpuDevice));
   device->prepare();
 
   BOOST_CHECK(device->getLinearlyCreatedInputTensors().count(i1) == 0);
@@ -118,8 +126,14 @@ BOOST_AUTO_TEST_CASE(allocator_single_input_viewchanging_conv) {
               {},         // no SessionOptions
               Patterns({}).enableRuntimeAsserts(false)});
 
+  std::unique_ptr<popx::IrLowering> lowering;
+  lowering.reset(new popx::IrLowering(ir, cpuDevice));
+
+  std::unique_ptr<popx::Executablex> executable =
+      std::move(popx::Executablex::createFromLoweredIr(*lowering));
+
   std::unique_ptr<popx::Devicex> device;
-  device.reset(new popx::Devicex(ir, cpuDevice));
+  device.reset(new popx::Devicex(*executable, cpuDevice));
   device->prepare();
 
   BOOST_CHECK(device->getEfficientlyCreatedInputTensors().count(i1) == 1);

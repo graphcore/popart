@@ -317,11 +317,9 @@ std::string devicex_memory_allocation_err::getGraphReport(bool useCbor) const {
   }
 }
 
-IrLowering::IrLowering(const Ir &ir,
-                       std::shared_ptr<DeviceInfo> deviceInfo_,
-                       Devicex *devicex)
+IrLowering::IrLowering(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
     : _ir(ir), deviceInfo(deviceInfo_), prepareGraphHasBeenCalled_(false),
-      tensors_(ir), progs(PopPrograms(this)), dv_p(devicex) {
+      tensors_(ir), progs(PopPrograms(this)) {
   POPART_TRACEPOINT();
 
   // Set the opxTrace flag based on the environment variable
@@ -366,6 +364,11 @@ IrLowering::IrLowering(const Ir &ir,
     gclOptions.set("maxBytesPerTile", val);
   }
 }
+
+// Constructor when deserializing the lowered state
+IrLowering::IrLowering(const Ir &ir)
+    : _ir(ir), deviceInfo(nullptr), prepareGraphHasBeenCalled_(true),
+      tensors_(ir), progs(PopPrograms(this)) {}
 
 std::map<Op *, int, POpCmp> IrLowering::getMainGraphOpSeriesNums() const {
   std::map<Op *, int, POpCmp> nums;
@@ -522,8 +525,11 @@ void IrLowering::saveTensorTileMap(const std::string &mapFileName) const {
 }
 
 TensorTileMap IrLowering::getTensorTileMap() const {
-  TensorTileMap map;
+  if (!tensorTileMap.empty()) {
+    return tensorTileMap;
+  }
 
+  TensorTileMap map;
   for (const auto &t : tensors_.getTensors()) {
     std::vector<TensorIntervalList> mapping;
     for (auto tile : graph().getTileMapping(*t.second.get())) {
@@ -540,6 +546,8 @@ TensorTileMap IrLowering::getTensorTileMap() const {
   }
   return map;
 }
+
+void IrLowering::setTensorTileMap(const TensorTileMap &m) { tensorTileMap = m; }
 
 void IrLowering::instrumentWithHardwareCycleCounter(
     poplar::program::Sequence &sq,
@@ -650,6 +658,9 @@ poplar::Graph &IrLowering::getVirtualGraph(VGraphId virtualGraphIndex,
 }
 
 std::unique_ptr<Opx> IrLowering::createOpx(Op *op) {
+  if (dv_p == nullptr) {
+    throw error("IrLowering::setDevice has not been called.");
+  }
 
   auto opx = OpxManager::createOpx(op, dv_p);
 
@@ -1495,6 +1506,13 @@ std::shared_ptr<CollectiveBalancedReorder>
 IrLowering::getCollectiveBalancedReorder(TensorId tensor_id) {
   return collectiveReorders[tensor_id];
 }
+
+const CollectiveBalancedHostRearrangement &
+IrLowering::getCollectiveBalancedHostRearrangement(
+    const TensorId &tensor_id) const {
+  return collectiveReorders.at(tensor_id)->getHostRearrangement();
+}
+
 void IrLowering::setCollectiveBalancedReorder(
     TensorId tensor_id,
     std::shared_ptr<CollectiveBalancedReorder> cbr) {
@@ -2472,7 +2490,7 @@ void IrLowering::prepareGraph() {
   }
 
   // Init the random seed
-  if (ir().requiresRandomSeed() and !ir().useSyntheticData()) {
+  if (ir().getRequiresRandomSeed() and !ir().useSyntheticData()) {
     auto seedTen = ir().getTensor(GetRandomSeedOp::getStreamedSeedTensorId());
     tasks.add(fromHostTask(seedTen, progs.setRandomSeedFromHostFragment()));
     tasks.add(initRandomSeed());
@@ -2773,6 +2791,9 @@ void IrLowering::compileAndExport(const std::string &executablePath,
         "The engine must be compiled before the executable can be exported");
   }
   if (!weightsPath.empty()) {
+    if (dv_p == nullptr) {
+      throw error("IrLowering::setDevice has not been called.");
+    }
     exportWeights(*dv_p, weightsPath);
   }
   if (executablePath.empty()) {
@@ -2806,6 +2827,9 @@ void IrLowering::compileAndExport(const std::string &executablePath,
         graph(), fusedProgs, engineOptions, progressLogger);
     auto numIPUs = graph().getTarget().getNumIPUs();
     logging::devicex::info("Exporting compiled executable");
+    if (dv_p == nullptr) {
+      throw error("IrLowering::setDevice has not been called.");
+    }
     exportExecutable(executable,
                      *dv_p,
                      engineOptions,

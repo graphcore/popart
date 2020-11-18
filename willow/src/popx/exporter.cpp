@@ -248,7 +248,7 @@ void exportExecutable(poplar::Executable &executable,
   }
   unsigned replication_factor = device.getReplicationFactor();
   builder.SetConfig(replication_factor, numIPUs);
-  if (device.ir().requiresRandomSeed()) {
+  if (device.ir().getRequiresRandomSeed()) {
     builder.SetRandomNumberSeedHandle(
         device.h2dId(GetRandomSeedOp::getStreamedSeedTensorId()));
   }

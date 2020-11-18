@@ -50,6 +50,7 @@
 #include <popart/patterns/pattern.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/devicexmanager.hpp>
+#include <popart/popx/executablex.hpp>
 #include <popart/popx/exporter.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/callx.hpp>
@@ -265,8 +266,8 @@ void Devicex::weightsToHost() {
 
 void Devicex::remoteBufferWeightsToHost() {
   POPART_TRACEPOINT();
-  for (auto initId : ir().getTensorIds(TensorType::Variable)) {
-    Tensor *tensor = ir().getTensor(initId);
+  for (auto *tensor : executable_.getWeightTensors()) {
+    const auto &initId = tensor->id;
     if (tensor->tensorLocationInfo.isRemote()) {
       logging::devicex::debug("remoteBufferWeightsToHost: {}", initId);
       auto remoteBufferInfo = tensor->tensorLocationInfo.getRemoteBufferInfo();
@@ -275,12 +276,12 @@ void Devicex::remoteBufferWeightsToHost() {
       if (tensor->tensorLocationInfo.isSharded()) {
         // Replicated weight sharding, each replica holds 1/repfactor
         // parts of the weight
-        auto cbr = lowering().getCollectiveBalancedReorder(
+        const auto &cbr = executable_.getCollectiveBalancedHostRearrangement(
             getRemoteArgTensorId(stripAllReservedPrefixes(tensor->id)));
 
         auto elemSize =
             static_cast<int64_t>(tensor->info.getDataTypeInfo()->nbytes());
-        auto nelms = cbr->getNumRearrangedTensorElems();
+        auto nelms = cbr.getNumRearrangedTensorElems();
 
         // Temporary buffer that can hold the padded weight shards
         // from all replicas
@@ -296,7 +297,7 @@ void Devicex::remoteBufferWeightsToHost() {
         }
 
         // Rearrange collected weights into d2h buffer
-        cbr->undoRearrangeForCollective(&tmp[0], data0, elemSize);
+        cbr.undoRearrangeForCollective(&tmp[0], data0, elemSize);
       } else {
         // Weight should be the same for each replica if not using sharded,
         // only return weights from replica_id == 0
@@ -313,7 +314,8 @@ void Devicex::remoteBufferWeightsToHost() {
 void Devicex::readWeights(const IWeightsIO &weights) {
   POPART_TRACEPOINT();
   // Better to do this the otherway round
-  for (auto id : ir().getTensorIds(TensorType::Variable)) {
+  for (auto *tensor : executable_.getWeightTensors()) {
+    const auto &id = tensor->id;
     if (weights.contains(id)) {
       logging::devicex::debug("Reading weights (host stream -> host) for {}",
                               id);
@@ -330,9 +332,9 @@ void Devicex::writeWeights(const IWeightsIO &weights) {
   POPART_TRACEPOINT();
   // Better to do this the other way round
   // Also : should check that all weights have valid names
-  for (auto id : ir().getTensorIds(TensorType::Variable)) {
+  for (auto *tensor : executable_.getWeightTensors()) {
+    const auto &id = tensor->id;
     if (weights.contains(id)) {
-      auto tensor             = ir().getTensor(id);
       MutableVoidData stepout = weights.weight(id);
       tensor->tensorData()->resetData(stepout.info, stepout.data);
     }
@@ -362,8 +364,9 @@ void Devicex::weightsToHost(
     logging::devicex::debug("Writing weights to ONNX ModelProto");
     // copy from the host stream memory points to the
     // addresses on onnxModelData
-    for (auto id : ir().getTensorIds(TensorType::Variable)) {
-      if (!ir().storingIsDisabledForTensor(id)) {
+    for (auto *tensor : executable_.getWeightTensors()) {
+      const auto &id = tensor->id;
+      if (!ir().storingIsDisabledForTensor(tensor)) {
         auto found = onnxModelData.find(id);
         if (found == onnxModelData.end()) {
           std::ostringstream oss;
@@ -400,13 +403,12 @@ std::map<std::string, std::vector<uint64_t>> Devicex::cycleCountTensorToHost() {
 
 Devicex::~Devicex() = default;
 
-Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
-    : deviceInfo(deviceInfo_), prepareHasBeenCalled_(false),
-      ir_lowering_(new IrLowering(ir, deviceInfo_, this)) {
+Devicex::Devicex(Executablex &exe, std::shared_ptr<DeviceInfo> deviceInfo_)
+    : executable_(exe), deviceInfo(deviceInfo_), prepareHasBeenCalled_(false) {
   POPART_TRACEPOINT();
   logging::devicex::info("Setting selected device: {}", *deviceInfo);
 
-  if (ir.getSessionOptions().enablePrefetchDatastreams) {
+  if (ir().getSessionOptions().enablePrefetchDatastreams) {
     logging::devicex::info("Setting engine options for prefetch data streams "
                            "(exchange.streamBufferOverlap = hostRearrangeOnly, "
                            "exchange.enablePrefetch = true");
@@ -415,17 +417,17 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
     lowering().engineOptions.set("exchange.enablePrefetch", "true");
   }
 
-  if (ir.getSessionOptions().enableDistributedReplicatedGraphs) {
+  if (ir().getSessionOptions().enableDistributedReplicatedGraphs) {
     logging::devicex::info("Setting firstRuntimeReplica {}",
-                           ir.getSessionOptions().globalReplicaOffset);
+                           ir().getSessionOptions().globalReplicaOffset);
 
     logging::devicex::info("Setting numberRuntimeReplica {}",
-                           ir.getSessionOptions().replicatedGraphCount);
+                           ir().getSessionOptions().replicatedGraphCount);
 
     std::string firstRuntimeReplica =
-        std::to_string(ir.getSessionOptions().globalReplicaOffset);
+        std::to_string(ir().getSessionOptions().globalReplicaOffset);
     std::string numberRuntimeReplica =
-        std::to_string(ir.getSessionOptions().replicatedGraphCount);
+        std::to_string(ir().getSessionOptions().replicatedGraphCount);
 
     lowering().engineOptions.set("target.syncReplicasIndependently", "true");
     lowering().engineOptions.set("target.firstRuntimeReplica",
@@ -434,30 +436,33 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
                                  numberRuntimeReplica);
   }
 
-  for (auto it : ir.getSessionOptions().engineOptions) {
+  for (auto it : ir().getSessionOptions().engineOptions) {
     logging::devicex::info(
         "Setting engine option {} = {}", it.first, it.second);
     lowering().engineOptions.set(it.first, it.second);
   }
 
-  if (ir.getSessionOptions().engineOptions.find("autoReport.directory") ==
-      ir.getSessionOptions().engineOptions.end()) {
+  if (ir().getSessionOptions().engineOptions.find("autoReport.directory") ==
+      ir().getSessionOptions().engineOptions.end()) {
     const std::string directory{
-        (ir.getExecutionMode() == Ir::ExecutionMode::Training) ? "training"
-                                                               : "inference"};
+        (ir().getExecutionMode() == Ir::ExecutionMode::Training) ? "training"
+                                                                 : "inference"};
     logging::devicex::info(
         "Setting engine option {} = {}", "autoReport.directory", directory);
     lowering().engineOptions.set("autoReport.directory", directory);
   }
 
-  for (auto it : ir.getSessionOptions().reportOptions) {
+  for (auto it : ir().getSessionOptions().reportOptions) {
     logging::devicex::info(
         "Setting report option {} = {}", it.first, it.second);
     lowering().reportOptions.set(it.first, it.second);
   }
+  executable_.lowering().setDevicex(this);
 }
 
-const Ir &Devicex::ir() const { return ir_lowering_->ir(); }
+const Ir &Devicex::ir() const { return lowering().ir(); }
+IrLowering &Devicex::lowering() { return executable_.lowering(); }
+const IrLowering &Devicex::lowering() const { return executable_.lowering(); }
 
 void Devicex::weightsFromHost() {
   POPART_TRACEPOINT();
@@ -474,8 +479,8 @@ void Devicex::weightsFromHost() {
 
 void Devicex::remoteBufferWeightsFromHost() {
   POPART_TRACEPOINT();
-  for (auto initId : ir().getTensorIds(TensorType::Variable)) {
-    Tensor *tensor = ir().getTensor(initId);
+  for (auto *tensor : executable_.getWeightTensors()) {
+    const auto &initId = tensor->id;
     if (tensor->tensorLocationInfo.isRemote()) {
       logging::devicex::debug("remoteBufferWeightsFromHost: {}", initId);
       auto remoteBufferInfo = tensor->tensorLocationInfo.getRemoteBufferInfo();
@@ -484,19 +489,19 @@ void Devicex::remoteBufferWeightsFromHost() {
       if (tensor->tensorLocationInfo.isSharded()) {
         // Replicated weight sharding, each replica holds 1/repfactor
         // parts of the weight
-        auto cbr = lowering().getCollectiveBalancedReorder(
+        const auto &cbr = executable_.getCollectiveBalancedHostRearrangement(
             getRemoteArgTensorId(stripAllReservedPrefixes(tensor->id)));
 
         auto elemSize =
             static_cast<int64_t>(tensor->info.getDataTypeInfo()->nbytes());
-        auto nelms = cbr->getNumRearrangedTensorElems();
+        auto nelms = cbr.getNumRearrangedTensorElems();
 
         // Temporary buffer that can hold the padded weight shards
         // for all replicas
         std::vector<char> tmp(nelms * elemSize);
 
         // Rearrange weights into tmp buffer
-        cbr->rearrangeForCollective(data0, &tmp[0], elemSize);
+        cbr.rearrangeForCollective(data0, &tmp[0], elemSize);
 
         for (unsigned replica_id = 0; replica_id < getReplicationFactor();
              ++replica_id) {
@@ -557,7 +562,8 @@ void Devicex::hostStreamToHost(const MutableVoidData &mv_data, TensorId id) {
   int64_t nbytes_dst = mv_data.info.nbytes();
 
   // display which tensors are being copied
-  logging::devicex::debug("       {} {}", id, ir().getTensor(id)->info.shape());
+  logging::devicex::debug(
+      "       {} {}", id, executable_.getTensor(id)->info.shape());
 
   // We confirm that the sizes of src and dst are the same
   if (nbytes_src != nbytes_dst) {
@@ -639,10 +645,10 @@ void Devicex::connectRandomSeedStream() {
        ++replicaId) {
 
     auto callback = [this, replicaId](void *ptr) {
-      TensorId seedId    = GetRandomSeedOp::getStreamedSeedTensorId();
-      Tensor *seedTensor = ir().getTensor(seedId);
-      uint64_t *seedVal =
-          reinterpret_cast<uint64_t *>(seedTensor->tensorData()->data());
+      TensorId seedId          = GetRandomSeedOp::getStreamedSeedTensorId();
+      const Tensor *seedTensor = executable_.getSeedTensor();
+      const uint64_t *seedVal =
+          reinterpret_cast<const uint64_t *>(seedTensor->tensorData()->data());
       logging::devicex::debug(
           "Updating random seed for replica:{} to `{} + replicaId({})'",
           replicaId,
@@ -744,19 +750,19 @@ void Devicex::setRngStateValue(const std::vector<uint32_t> seedValue) {
 
 // TODO consider moving the test in this function into the Ir (T12636)
 unsigned Devicex::getAccumulationFactor() const {
-  return ir_lowering_->getAccumulationFactor();
+  return lowering().getAccumulationFactor();
 }
 
 unsigned Devicex::getGlobalReplicationFactor() const {
-  return ir_lowering_->getGlobalReplicationFactor();
+  return lowering().getGlobalReplicationFactor();
 }
 
 unsigned Devicex::getReplicationFactor() const {
-  return ir_lowering_->getReplicationFactor();
+  return lowering().getReplicationFactor();
 }
 
 bool Devicex::isReplicatedGraph() const {
-  return ir_lowering_->isReplicatedGraph();
+  return lowering().isReplicatedGraph();
 }
 
 bool Devicex::isEngineLoaded() const { return engineIsLoaded; }
@@ -798,9 +804,9 @@ void Devicex::loadEngineAndConnectStreams() {
   if (ir().useSyntheticData() == false) {
     logging::devicex::debug("Connecting initializer streams");
 
-    for (auto id : ir().getTensorIds(TensorType::Variable)) {
-      Tensor *tensor = ir().getTensor(id);
-      if (!ir().streamingIsDisabledForTensor(id)) {
+    for (auto *tensor : executable_.getWeightTensors()) {
+      const auto &id = tensor->id;
+      if (!ir().streamingIsDisabledForTensor(tensor)) {
         logging::devicex::debug("   {}", tensor->str());
         pEngine->connectStream(lowering().h2dId(id),
                                tensor->tensorData()->data());
@@ -808,7 +814,7 @@ void Devicex::loadEngineAndConnectStreams() {
     }
 
     // Random seed
-    if (ir().requiresRandomSeed()) {
+    if (ir().getRequiresRandomSeed()) {
       connectRandomSeedStream();
     }
 
@@ -819,7 +825,7 @@ void Devicex::loadEngineAndConnectStreams() {
 
     logging::devicex::debug("Connecting optimizer streams");
 
-    for (auto tensor : ir().optimizerTensors()) {
+    for (auto *tensor : executable_.getOptimizerTensors()) {
       logging::devicex::debug("   {}", tensor->str());
       pEngine->connectStream(lowering().h2dId(tensor->id),
                              tensor->tensorData()->data());
@@ -918,28 +924,27 @@ void Devicex::loadEngineAndConnectStreams() {
         };
 
     logging::devicex::debug("Connected h2d input data streams");
-    for (Tensor *tensor : ir().dataStreamTensors()) {
+    for (Tensor *tensor : executable_.getDataStreamTensors()) {
       logging::devicex::debug(" {}", tensor->id);
       engineToInputStreamWithCallback(tensor, lowering().h2dId(tensor->id));
     }
 
     logging::devicex::debug("Connected d2h anchor data streams");
-    for (TensorId anchorId : ir().getDataFlow().anchors()) {
-
+    for (Tensor *tensor : executable_.getAnchorTensors()) {
+      const auto &anchorId = tensor->id;
       bool isAnchorStream  = true;
       PopStreamId streamId = lowering().d2hId(anchorId, isAnchorStream);
-      Tensor *tensor       = ir().getTensor(anchorId);
       logging::devicex::debug(" {}", tensor->id);
       engineToOutputStreamWithCallback(tensor, streamId);
     }
 
     logging::devicex::debug("Connected d2h weight data streams");
-    for (auto initId : ir().getTensorIds(TensorType::Variable)) {
-      Tensor *tensor           = ir().getTensor(initId);
+    for (auto *tensor : executable_.getWeightTensors()) {
+      const auto &initId       = tensor->id;
       int64_t n_bytes          = tensor->info.nbytes();
       d2hWeightBuffers[initId] = std::vector<char>(n_bytes);
       char *data0              = d2hWeightBuffers[initId].data();
-      if (!ir().streamingIsDisabledForTensor(initId)) {
+      if (!ir().streamingIsDisabledForTensor(tensor)) {
         // Only connect non-cached tensor streams,
         // RemoteBuffer handled separately
         bool isAnchorStream  = false;
@@ -994,17 +999,17 @@ void Devicex::reconnectInputStreams() {
 
 void Devicex::compileAndExport(const std::string &executablePath,
                                const std::string &weightsPath) {
-  ir_lowering_->compileAndExport(executablePath, weightsPath);
+  lowering().compileAndExport(executablePath, weightsPath);
 }
 
 // go all the way to creating the engine and connecting streams
 void Devicex::prepare() {
   POPART_TRACEPOINT();
-  ir_lowering_->prepareGraph();
+  lowering().prepareGraph();
 
   if (ir().getSessionOptions().compileEngine) {
     try {
-      auto executable = ir_lowering_->getExecutable();
+      auto executable = lowering().getExecutable();
       pEngine.reset(
           new poplar::Engine(std::move(executable), lowering().engineOptions));
     } catch (const poplar::graph_memory_allocation_error &e) {
@@ -1014,7 +1019,7 @@ void Devicex::prepare() {
       // without a graph profile. The following engine option needs to be set to
       // enable the graph profile in this case "debug.allowOutOfMemory":"true"
 
-      ir_lowering_->trySaveTensorTileMap();
+      lowering().trySaveTensorTileMap();
 
       logging::devicex::err("Memory allocation error : {}", e.what());
       throw devicex_memory_allocation_err(e, lowering().reportOptions);
@@ -1059,7 +1064,7 @@ void Devicex::doProfileChecks() const {
     throw error(
         "Session must have been prepared before a report can be fetched");
   }
-  if (ir_lowering_->usingCachedExecutable()) {
+  if (lowering().usingCachedExecutable()) {
     throw error("Unable to get reports when using a cached executable.\n"
                 "Either remove the cache file ({}), or \ndisable engine "
                 "caching (userOptions.enableEngineCaching = false)",
@@ -1123,35 +1128,31 @@ std::string Devicex::getSerializedGraph() const {
   return ss.str();
 }
 
-poplar::Graph &Devicex::graph() { return ir_lowering_->graph(); }
-const poplar::Graph &Devicex::graph() const { return ir_lowering_->graph(); }
+poplar::Graph &Devicex::graph() { return lowering().graph(); }
+const poplar::Graph &Devicex::graph() const { return lowering().graph(); }
 
 TensorTileMap Devicex::getTensorTileMap() const {
-  return ir_lowering_->getTensorTileMap();
+  return lowering().getTensorTileMap();
 }
 
 void Devicex::saveTensorTileMap(const std::string &mapFileName) const {
-  ir_lowering_->saveTensorTileMap(mapFileName);
+  lowering().saveTensorTileMap(mapFileName);
 }
 
 std::set<TensorId> Devicex::getLinearlyCreatedInputTensors() const {
-  return ir_lowering_->getLinearlyCreatedInputTensors();
+  return lowering().getLinearlyCreatedInputTensors();
 }
 std::set<TensorId> Devicex::getEfficientlyCreatedInputTensors() const {
-  return ir_lowering_->getEfficientlyCreatedInputTensors();
+  return lowering().getEfficientlyCreatedInputTensors();
 }
 
 const std::vector<TensorId> &Devicex::getHostReduceStreamIds() const {
-  return ir_lowering_->getHostReduceStreamIds();
-}
-
-std::vector<TensorId> &Devicex::getHostReduceStreamIds() {
-  return ir_lowering_->getHostReduceStreamIds();
+  return lowering().getHostReduceStreamIds();
 }
 
 const std::map<TensorId, poplar::RemoteBuffer> &
 Devicex::getHostReduceRemoteBuffers() const {
-  return ir_lowering_->getHostReduceRemoteBuffers();
+  return lowering().getHostReduceRemoteBuffers();
 }
 
 void Devicex::connectStreamToCallback(const std::string &streamHandle,
