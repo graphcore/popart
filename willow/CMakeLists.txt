@@ -74,6 +74,10 @@ set(boost_components
     filesystem
     graph
     random
+
+    # libpvti-config bug (T29898): they do not find their dependencies before
+    # linking them, so we must find thread for them.
+    thread
 )
 find_package(Boost 1.70 REQUIRED COMPONENTS ${boost_components})
 
