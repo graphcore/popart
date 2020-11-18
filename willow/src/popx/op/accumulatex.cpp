@@ -32,11 +32,8 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
   switch (accumulateOp.getAccumulationType()) {
   case AccumulationType::Add: {
     // accum += grad
-    popops::mapInPlace(graph(),
-                       pe::Add(pe::_1, pe::Cast(pe::_2, accum.elementType())),
-                       {accum, grad},
-                       prog,
-                       debugPrefix("constAdd"));
+    popops::scaledAddTo(
+        graph(), accum, grad, 1.0f, prog, debugPrefix("constAdd"));
     break;
   }
   case AccumulationType::DampenedAdd: {
@@ -50,12 +47,8 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
       }
       if (val - 1.0f == 0.0f) {
         // accum += grad
-        popops::mapInPlace(
-            graph(),
-            pe::Add(pe::_1, pe::Cast(pe::_2, accum.elementType())),
-            {accum, grad},
-            prog,
-            debugPrefix("constAdd"));
+        popops::scaledAddTo(
+            graph(), accum, grad, 1.0f, prog, debugPrefix("constAdd"));
       } else {
         // accum += factor * grad
         popops::scaledAddTo(
