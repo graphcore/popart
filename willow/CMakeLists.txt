@@ -87,19 +87,19 @@ list(TRANSFORM boost_components PREPEND Boost:: OUTPUT_VARIABLE boost_targets)
 # this target. You do not pass it as a COMPONENT; it will always be created.
 list(APPEND boost_targets Boost::boost)
 
-find_package(spdlog 1.8.0 EXACT REQUIRED)
+find_package(spdlog 1.8.0 REQUIRED)
 
-find_package(poplar CONFIG REQUIRED)
-find_package(poplibs CONFIG REQUIRED)
-find_package(libpvti CONFIG REQUIRED)
-find_package(gcl MODULE REQUIRED)
+find_package(poplar REQUIRED)
+find_package(poplibs REQUIRED)
+find_package(libpvti REQUIRED)
+find_package(gcl REQUIRED)
 
-find_package(poprithms CONFIG REQUIRED)
+find_package(poprithms REQUIRED)
 
 # Onnx's config file fails to find protobuf, so we have to do it ourselves.
 # We use the find module provided by CMake.
-find_package(Protobuf 3.6 MODULE REQUIRED)
-find_package(ONNX 1.6 CONFIG REQUIRED)
+find_package(Protobuf 3.6 REQUIRED)
+find_package(ONNX 1.6 REQUIRED)
 
 find_package(PoplarRunner)
 
