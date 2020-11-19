@@ -49,3 +49,29 @@ if(NOT POPART_CBT_VIEW_DIR)
 endif()
 message(STATUS "Package directory is ${POPART_PKG_DIR}")
 message(STATUS "View directory is ${POPART_CBT_VIEW_DIR}")
+
+## We have removed many custom Find<pkg> modules in popart. These used variables
+## like ONNX_INSTALL_DIR etc. as hints. We now use the the standard methods of
+## pointing cmake at a package location, e.g. Protobuf_ROOT.
+##
+## Thus, we convert any *_INSTALL_DIR variables passed to *_ROOT variables, and
+## print a deprecation warning.
+
+# Verbatim package names given to find_package
+set(popart_deps_with_var_needed_for_bwd_compat
+  ONNX
+  Protobuf
+  poprithms
+  spdlog
+  pybind11
+)
+
+foreach(dep ${popart_deps_with_var_needed_for_bwd_compat})
+  string(TOUPPER ${dep} DEP_UPPER)
+  set(dep_old_var "${DEP_UPPER}_INSTALL_DIR")
+  set(dep_root "${dep}_ROOT")
+  
+  if(DEFINED ${dep_old_var})
+    message(DEPRECATION "Using the variable ${dep_old_var} to point Popart at ${dep} is deprecated. Please use ${dep_root} instead.")
+  endif()
+endforeach()
