@@ -241,6 +241,9 @@ std::vector<Op *> findDescendentsOnDifferentPipelineStages(Tensor *t,
     auto op = toCheck.pop();
     if (op->isConvertibleTo<IpuCopyOp>()) {
       // do nothing
+    } else if (op->getOptionalVGraphId() != stashRefOp->getOptionalVGraphId()) {
+      // e.g. not a IpuCopyOp, but is an op that spans multiple VirtualGraphs,
+      // such a collective op - do nothing
     } else if (op->settings.executionContext !=
                stashRefOp->settings.executionContext) {
       // do nothing
