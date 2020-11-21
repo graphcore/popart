@@ -617,7 +617,7 @@ void Devicex::run(IStepIO &stepio, std::string debugName) {
   // check is only performed in the first call to run, under the assumption that
   // the user is unlikely to change the size of buffers between runs.
   if (nCallsToRun == 0 && stepio.runtimeAssertsEnabled()) {
-    stepio.assertNumElements(ir());
+    stepio.assertNumElements(executable_);
   }
 
   logging::devicex::debug("Performing one step: ");
@@ -666,8 +666,8 @@ void Devicex::connectRandomSeedStream() {
 }
 
 void Devicex::connectRngStateStream() {
-  int rngSize = graph().getTarget().getNumTiles() *
-                graph().getTarget().getNumWorkerContexts() * 4;
+  int totalNumTiles = deviceInfo->getNumIpus() * deviceInfo->getTilesPerIPU();
+  int rngSize       = totalNumTiles * deviceInfo->getNumWorkerContexts() * 4;
   for (uint16_t replicaId = 0; replicaId < getReplicationFactor();
        ++replicaId) {
     rngBuffer[replicaId] = std::vector<uint32_t>(rngSize);
@@ -719,10 +719,10 @@ void Devicex::setRngStateFromHost() {
 std::vector<uint32_t> Devicex::getRngStateToHost() {
   // Reset the buffer
   logging::devicex::debug("Cleaning the rng buffer before receiving data");
+  int totalNumTiles = deviceInfo->getNumIpus() * deviceInfo->getTilesPerIPU();
+  int rngSize       = totalNumTiles * deviceInfo->getNumWorkerContexts() * 4;
   for (auto &buffer : rngBuffer) {
-    buffer.second =
-        std::vector<uint32_t>(graph().getTarget().getNumTiles() *
-                              graph().getTarget().getNumWorkerContexts() * 4);
+    buffer.second = std::vector<uint32_t>(rngSize);
   }
   pEngine->disableExecutionProfiling();
   run(PopPrograms::ProgramIndex::RngStateToHost, "GetRngState");
@@ -738,8 +738,8 @@ std::vector<uint32_t> Devicex::getRngStateToHost() {
 }
 
 void Devicex::setRngStateValue(const std::vector<uint32_t> seedValue) {
-  int rngSize = graph().getTarget().getNumTiles() *
-                graph().getTarget().getNumWorkerContexts() * 4;
+  int totalNumTiles = deviceInfo->getNumIpus() * deviceInfo->getTilesPerIPU();
+  int rngSize       = totalNumTiles * deviceInfo->getNumWorkerContexts() * 4;
   const uint32_t *seed_ptr = seedValue.data();
   for (uint16_t replicaId = 0; replicaId < getReplicationFactor();
        ++replicaId) {
@@ -988,7 +988,7 @@ void Devicex::reconnectInputStreams() {
     }
   };
 
-  for (Tensor *tensor : ir().dataStreamTensors()) {
+  for (Tensor *tensor : executable_.getDataStreamTensors()) {
     // The data stream for a tensor won't exist if using synthetic data, so
     // don't try and recreate them.
     if (!ir().useSyntheticData() && !tensor->tensorLocationInfo.isRemote()) {
@@ -997,19 +997,16 @@ void Devicex::reconnectInputStreams() {
   }
 }
 
-void Devicex::compileAndExport(const std::string &executablePath,
-                               const std::string &weightsPath) {
-  lowering().compileAndExport(executablePath, weightsPath);
-}
-
 // go all the way to creating the engine and connecting streams
 void Devicex::prepare() {
   POPART_TRACEPOINT();
-  lowering().prepareGraph();
+  if (!lowering().prepareGraphHasBeenCalled()) {
+    lowering().prepareGraph();
+  }
 
   if (ir().getSessionOptions().compileEngine) {
     try {
-      auto executable = lowering().getExecutable();
+      auto executable = executable_.getPoplarExecutable();
       pEngine.reset(
           new poplar::Engine(std::move(executable), lowering().engineOptions));
     } catch (const poplar::graph_memory_allocation_error &e) {
@@ -1064,7 +1061,7 @@ void Devicex::doProfileChecks() const {
     throw error(
         "Session must have been prepared before a report can be fetched");
   }
-  if (lowering().usingCachedExecutable()) {
+  if (executable_.isDeserialized()) {
     throw error("Unable to get reports when using a cached executable.\n"
                 "Either remove the cache file ({}), or \ndisable engine "
                 "caching (userOptions.enableEngineCaching = false)",
@@ -1122,14 +1119,8 @@ std::string Devicex::getExecutionReport(bool useCbor, bool resetProfile) const {
 std::string Devicex::getSerializedGraph() const {
   POPART_TRACEPOINT();
   doProfileChecks();
-  std::stringstream ss;
-  graph().serialize(
-      ss, lowering().progs.progs(), poplar::SerializationFormat::Binary);
-  return ss.str();
+  return lowering().getSerializedGraph();
 }
-
-poplar::Graph &Devicex::graph() { return lowering().graph(); }
-const poplar::Graph &Devicex::graph() const { return lowering().graph(); }
 
 TensorTileMap Devicex::getTensorTileMap() const {
   return lowering().getTensorTileMap();

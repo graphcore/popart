@@ -7,6 +7,8 @@
 #include <popart/tensorinfo.hpp>
 #include <popart/tensors.hpp>
 
+#include <popart/popx/executablex.hpp>
+
 // TODO(T15449) factorize out templates advance and get from StepIO and PyStepIO
 //
 
@@ -15,8 +17,8 @@ namespace iosizecheck {
 
 class CorrectnessAsserter {
 public:
-  CorrectnessAsserter(const Ir &_ir_)
-      : ir(_ir_), tensors(ir.getMainGraphTensors()),
+  CorrectnessAsserter(const popx::Executablex &_exe_)
+      : exe(_exe_), ir(exe.ir()),
         rFact(ir.getSessionOptions().replicatedGraphCount),
         aFact(ir.getSessionOptions().accumulationFactor),
         bps(ir.getDataFlow().batchesPerStep()), onnxIns(ir.getModelInputIds()) {
@@ -31,7 +33,7 @@ public:
   template <class M, class G> void checkIn(const M &m, const G &g) const {
     for (auto x = m.cbegin(); x != m.cend(); ++x) {
       const auto id = x->first;
-      if (tensors.contains(id)) {
+      if (exe.containsTensor(id)) {
         const auto expected = getInExpected(id);
         const auto nElms    = g(x->second);
         std::ostringstream oss;
@@ -53,7 +55,7 @@ public:
   template <class M, class G> void checkOut(const M &m, const G &g) const {
     for (auto x = m.cbegin(); x != m.cend(); ++x) {
       auto id = x->first;
-      if (tensors.contains(id)) {
+      if (exe.containsTensor(id)) {
         auto expected    = getOutExpected(id);
         const auto nElms = g(x->second);
         auto art         = ir.getDataFlow().art(id);
@@ -68,7 +70,7 @@ public:
 
 private:
   uint64_t getNElms(const TensorId &id) const {
-    return tensors.get(id)->info.nelms();
+    return exe.getTensor(id)->info.nelms();
   }
   std::string getBaseError(const std::string &io,
                            const TensorId &id,
@@ -95,8 +97,8 @@ private:
 
   void warnOfUnunsedInput(const TensorId &) const;
 
+  const popx::Executablex &exe;
   const Ir &ir;
-  const Tensors &tensors;
   int64_t rFact;
   int64_t aFact;
   int64_t bps;
@@ -104,13 +106,13 @@ private:
 };
 
 template <class M, class G>
-void assertInCorrect(const Ir &_ir_, const M &_m_, const G &g) {
-  CorrectnessAsserter(_ir_).checkIn<M, G>(_m_, g);
+void assertInCorrect(const popx::Executablex &exe, const M &_m_, const G &g) {
+  CorrectnessAsserter(exe).checkIn<M, G>(_m_, g);
 }
 
 template <class M, class G>
-void assertOutCorrect(const Ir &_ir_, const M &_m_, const G &g) {
-  CorrectnessAsserter(_ir_).checkOut<M, G>(_m_, g);
+void assertOutCorrect(const popx::Executablex &exe, const M &_m_, const G &g) {
+  CorrectnessAsserter(exe).checkOut<M, G>(_m_, g);
 }
 
 } // namespace iosizecheck

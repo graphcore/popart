@@ -1,6 +1,10 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <fstream>
+
+#include <boost/filesystem.hpp>
 
 #include <popart/popx/executablex.hpp>
+#include <popart/popx/executablexserialization.hpp>
 #include <popart/popx/irlowering.hpp>
 
 #include <popart/ir.hpp>
@@ -95,8 +99,28 @@ IrLowering &Executablex::lowering() { return ir_lowering; }
 
 const popart::Ir &Executablex::ir() const { return ir_lowering.ir(); }
 
+bool Executablex::containsTensor(const TensorId &id) const {
+  if (!deserialized) {
+    return ir().containsTensor(id);
+  }
+
+  const auto &tensors_ = tensors.value();
+  return tensors_.count(id) > 0;
+}
+
+bool Executablex::shouldSerialize() {
+  auto cachePath    = ir().getSessionOptions().cachePath;
+  auto cacheEnabled = ir().getSessionOptions().enableEngineCaching;
+
+  const bool shouldSerialize =
+      cacheEnabled && !cachePath.empty() &&
+      lowering().getDeviceInfo()->getType() == DeviceType::Ipu && !deserialized;
+
+  return shouldSerialize;
+}
+
 Tensor *Executablex::getTensor(const TensorId &id) {
-  if (!tensors) {
+  if (!deserialized) {
     return ir().getTensor(id);
   }
 
@@ -111,7 +135,7 @@ Tensor *Executablex::getTensor(const TensorId &id) {
 }
 
 const Tensor *Executablex::getTensor(const TensorId &id) const {
-  if (!tensors) {
+  if (!deserialized) {
     return ir().getTensor(id);
   }
 
@@ -170,6 +194,50 @@ Executablex::getCollectiveBalancedHostRearrangements() const {
   }
 
   return cbrHostRearrangement.value();
+}
+
+std::string Executablex::getExecutablexCachePath(const std::string &cachePath) {
+  return cachePath + ".popart.exe";
+}
+
+void Executablex::saveExecutablex() {
+  if (false == shouldSerialize()) {
+    logging::devicex::warn("Serialization is disabled. Skipping save.");
+    return;
+  }
+
+  auto cachePath = ir().getSessionOptions().cachePath;
+
+  // If target directory does not exist, create it
+  auto cachePathObj = boost::filesystem::path(cachePath);
+  if (cachePathObj.has_parent_path()) {
+    auto cacheDir = cachePathObj.parent_path();
+    if (!boost::filesystem::exists(cacheDir)) {
+      logging::devicex::warn("Specified cache directory not found. "
+                             "Creating {} directory ",
+                             cacheDir);
+      if (!boost::filesystem::create_directory(cacheDir))
+        throw error("Cannot create cache directory. Aborting.");
+    }
+  }
+  auto serializedExecutableFilePath = getExecutablexCachePath(cachePath);
+  logging::devicex::info("Saving serialized Executablex to {}",
+                         serializedExecutableFilePath);
+  std::ofstream out(serializedExecutableFilePath);
+  popx::serialization::serializeExecutable(out, *this);
+}
+
+poplar::Executable Executablex::getPoplarExecutable() {
+  auto exe = lowering().getExecutable();
+
+  if (!deserialized) {
+    if (shouldSerialize()) {
+      saveExecutablex();
+      lowering().trySavePoplarExecutable(exe);
+    }
+  }
+
+  return std::move(exe);
 }
 
 } // namespace popx

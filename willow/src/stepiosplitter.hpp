@@ -14,6 +14,10 @@ namespace popart {
 class StepIOSplitter;
 class SplitIOTensorInfo;
 
+namespace popx {
+class Executablex;
+}
+
 // A helper class that acts as a downstream interface for input and output data
 // streams.
 class StepIOSplitterAdapter : public IStepIO {
@@ -38,7 +42,7 @@ public:
   // Move on to next data element.
   virtual void outComplete(TensorId);
   // Check number of elements.
-  virtual void assertNumElements(const Ir &ir) const;
+  virtual void assertNumElements(const popx::Executablex &) const;
 
   // Log the state (for in).
   void inLog(const char *action) const;
@@ -158,7 +162,7 @@ public:
   void getOutData(TensorId id, int64_t numElements, unsigned replicationIndex);
 
   // Check number of elements in upstream IStepIO.
-  virtual void assertNumElements(const Ir &) const;
+  virtual void assertNumElements(const popx::Executablex &) const;
 
   // Get access to the 'split' data stream.
   IStepIO *getDownstreamStepIO(TensorId id,

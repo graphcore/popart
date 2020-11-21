@@ -575,6 +575,10 @@ private:
 
   std::map<RemoteBufferId, RemoteBufferInfo> remoteBufferInfoMap;
 
+  // Store a hash which can identify the Ir when deserializing
+  // PopART state.
+  nonstd::optional<size_t> hash_;
+
 public:
   // A "dummy" Op used to ensure that anchor tensors
   // will be copied out of sub-graphs, even if they
@@ -599,6 +603,9 @@ public:
   // schedule.
   std::vector<std::vector<Op *>>
   getAccumulateOuterFragmentBinConstraints(const Graph &graph) const;
+
+  size_t getHash() const;
+  void setHash(size_t);
 
 private:
   uint64_t intermediate_tensor_counter{0};

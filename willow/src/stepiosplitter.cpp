@@ -2,6 +2,9 @@
 #include <stepiosplitter.hpp>
 
 namespace popart {
+namespace popx {
+class Executablex;
+}
 
 StepIOSplitterAdapter::StepIOSplitterAdapter(StepIOSplitter *splitter_,
                                              SplitIOTensorInfo *tensorInfo_,
@@ -127,8 +130,9 @@ void StepIOSplitterAdapter::outComplete(TensorId id) {
   }
 }
 
-void StepIOSplitterAdapter::assertNumElements(const Ir &ir) const {
-  splitter->assertNumElements(ir);
+void StepIOSplitterAdapter::assertNumElements(
+    const popx::Executablex &exe) const {
+  splitter->assertNumElements(exe);
 }
 
 void StepIOSplitterAdapter::inLog(const char *action) const {
@@ -439,9 +443,9 @@ void StepIOSplitter::getOutData(TensorId id,
   } while (lastOutIndex != replicationIndex);
 }
 
-void StepIOSplitter::assertNumElements(const Ir &ir) const {
+void StepIOSplitter::assertNumElements(const popx::Executablex &exe) const {
   if (upstreamIo) {
-    upstreamIo->assertNumElements(ir);
+    upstreamIo->assertNumElements(exe);
   } else {
     throw error("Upstream StepIO not set.");
   }

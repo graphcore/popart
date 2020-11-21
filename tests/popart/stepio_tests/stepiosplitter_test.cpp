@@ -6,6 +6,12 @@
 
 using namespace popart;
 
+namespace popart {
+namespace popx {
+class Executablex;
+}
+} // namespace popart
+
 namespace {
 
 // Test class that can be plugged in as a 'fake' upstream class into
@@ -78,7 +84,7 @@ public:
     logging::debug("upstream -   outComplete({})", id);
   }
 
-  virtual void assertNumElements(const Ir &) const {
+  virtual void assertNumElements(const popx::Executablex &) const {
     // pass
   }
 
