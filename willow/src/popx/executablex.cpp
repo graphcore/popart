@@ -237,7 +237,7 @@ poplar::Executable Executablex::getPoplarExecutable() {
     }
   }
 
-  return std::move(exe);
+  return exe;
 }
 
 } // namespace popx
