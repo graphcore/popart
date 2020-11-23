@@ -443,14 +443,14 @@ deserializeExecutable(std::istream &in,
   {
     auto capnpTensorTileMap = irLoweringReader.getTensorTileMap().getMappings();
     TensorTileMap mappings;
-    for (const auto &m : capnpTensorTileMap) {
+    for (const auto m : capnpTensorTileMap) {
       auto capnpTensorIntervalLists = m.getTensorIntervalLists();
       std::vector<TensorIntervalList> tils;
       tils.reserve(capnpTensorIntervalLists.size());
-      for (const auto &capnpTensorIntervalList : capnpTensorIntervalLists) {
+      for (const auto capnpTensorIntervalList : capnpTensorIntervalLists) {
         std::vector<TensorInterval> tensorIntervalList;
         tensorIntervalList.reserve(capnpTensorIntervalList.size());
-        for (const auto &ti : capnpTensorIntervalList) {
+        for (const auto ti : capnpTensorIntervalList) {
           tensorIntervalList.push_back(
               std::make_pair(ti.getStart(), ti.getEnd()));
         }
@@ -466,7 +466,7 @@ deserializeExecutable(std::istream &in,
     auto linearlyCreatedInputTensors =
         irLoweringReader.getLinearlyCreatedInputTensors();
     std::set<TensorId> linearlyCreatedInputTensors_;
-    for (const auto &t : linearlyCreatedInputTensors) {
+    for (const auto t : linearlyCreatedInputTensors) {
       linearlyCreatedInputTensors_.insert(t);
     }
     lowering.setLinearlyCreatedInputTensors(linearlyCreatedInputTensors_);
@@ -475,7 +475,7 @@ deserializeExecutable(std::istream &in,
     auto efficientlyCreatedInputTensors =
         irLoweringReader.getEfficientlyCreatedInputTensors();
     std::set<TensorId> efficientlyCreatedInputTensors_;
-    for (const auto &t : efficientlyCreatedInputTensors) {
+    for (const auto t : efficientlyCreatedInputTensors) {
       efficientlyCreatedInputTensors_.insert(t);
     }
     lowering.setEfficientlyCreatedInputTensors(efficientlyCreatedInputTensors_);
@@ -485,7 +485,7 @@ deserializeExecutable(std::istream &in,
     std::vector<TensorId> hostReduceStreamIds_;
     hostReduceStreamIds_.reserve(hostReduceStreamIds.size());
 
-    for (const auto &t : hostReduceStreamIds) {
+    for (const auto t : hostReduceStreamIds) {
       hostReduceStreamIds_.push_back(t);
     }
     lowering.getHostReduceStreamIds() = hostReduceStreamIds_;
@@ -494,7 +494,7 @@ deserializeExecutable(std::istream &in,
     auto cycleCountIds = irLoweringReader.getCycleCountIds();
     std::vector<TensorId> cycleCountIds_;
     cycleCountIds_.reserve(cycleCountIds.size());
-    for (const auto &t : cycleCountIds) {
+    for (const auto t : cycleCountIds) {
       cycleCountIds_.push_back(t);
     }
     lowering.setCycleCountIds(cycleCountIds_);
@@ -508,7 +508,7 @@ deserializeExecutable(std::istream &in,
 
     auto gid = popart::GraphId("");
     popart::Graph dummyGraph(ir, gid);
-    for (const auto &capnpTensor : tensors) {
+    for (const auto capnpTensor : tensors) {
       std::string id = capnpTensor.getId();
       auto type      = capnpTensor.getTensorType();
       auto tensor    = std::make_unique<popart::Tensor>(
@@ -520,7 +520,7 @@ deserializeExecutable(std::istream &in,
           toPopartDataType(capnpDataTypeInfo.getDataType());
       auto shapeReader = capnpTensorInfo.getShape();
       std::vector<int64_t> shape;
-      for (const auto &s : shapeReader) {
+      for (const auto s : shapeReader) {
         shape.push_back(s);
       }
 
@@ -551,7 +551,7 @@ deserializeExecutable(std::istream &in,
     auto rearrangementsReader =
         collectiveBalancedHostRearrangementsReader.getRearrangements();
 
-    for (const auto &cbr : rearrangementsReader) {
+    for (const auto cbr : rearrangementsReader) {
       std::string id           = cbr.getId();
       auto rearrangementReader = cbr.getRearrangement();
 
@@ -563,7 +563,7 @@ deserializeExecutable(std::istream &in,
       auto gatheredToRefSlicesReader =
           rearrangementReader.getGatheredToRefSlices();
       cbhr.gatheredToRefSlices.reserve(gatheredToRefSlicesReader.size());
-      for (const auto &s : gatheredToRefSlicesReader) {
+      for (const auto s : gatheredToRefSlicesReader) {
         cbhr.gatheredToRefSlices.push_back(
             poplar::Interval(s.getBegin(), s.getEnd()));
       }
