@@ -77,7 +77,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 #------ find dependencies
 
-find_package(CapnProto REQUIRED CONFIG)
 find_package(Python3 3.6 REQUIRED COMPONENTS Interpreter Development)
 
 #------ end of find dependencies

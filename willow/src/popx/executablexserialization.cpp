@@ -26,9 +26,9 @@
 
 #include <kj/std/iostream.h>
 
-#include "capnp/Executablex.capnp.h"
-#include "capnp/Ir.capnp.h"
-#include "capnp/IrLowering.capnp.h"
+#include <popart/capnp/Executablex.capnp.h>
+#include <popart/capnp/Ir.capnp.h>
+#include <popart/capnp/IrLowering.capnp.h>
 
 namespace popart {
 namespace popx {
