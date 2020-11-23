@@ -558,9 +558,17 @@ bool isFullRecompute(Graph &graph) {
 
 bool hasCheckpointProducer(Tensor *tensor) {
   return !tensor->hasProducer() ||
-         (tensor->getProducer()->settings.recomputeType ==
-              RecomputeType::Checkpoint &&
-          tensor->getProducer()->scheduledPreLoss == ScheduledPreLoss::Yes);
+         tensor->getProducer()->settings.recomputeType ==
+             RecomputeType::Checkpoint;
+}
+
+bool onlyConsumedByPostLossOps(Tensor *tensor) {
+  for (auto consumer : tensor->consumers.getOps()) {
+    if (consumer->scheduledPreLoss == ScheduledPreLoss::Yes) {
+      return false;
+    }
+  }
+  return true;
 }
 
 std::set<TensorId> getStashCandidateTensors(Graph &graph) {
@@ -605,11 +613,12 @@ std::set<TensorId> getStashCandidateTensors(Graph &graph) {
     std::set<PipelineStage> tensorStages = tensor->getPipelineStages();
 
     // There is no need to stash a tensor that only appears in 1 stage.
-    // Unless using full_recompute, then it must be consumed by something other
-    // than a copy (it's not just "passing
-    //  through")
+    // Unless using full_recompute, then it must be consumed by something
+    // other than a copy (it's not just "passing through"), which is
+    // scheduled pre-loss (we're not recomputing grad ops)
     if (tensorStages.size() == 1 &&
-        !(full_recompute && !onlyConsumedByCopies(tensor))) {
+        !(full_recompute && !onlyConsumedByCopies(tensor) &&
+          !onlyConsumedByPostLossOps(tensor))) {
       continue;
     }
 
