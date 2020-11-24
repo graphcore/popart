@@ -46,6 +46,7 @@ cifarInIndices = {"image0": 0}
 
 # The optimization passes to run in the Ir, see patterns.hpp
 willowOptPasses = popart.Patterns()
+willowOptPasses.SplitConvBias = True
 
 
 class Module0(torch.nn.Module):

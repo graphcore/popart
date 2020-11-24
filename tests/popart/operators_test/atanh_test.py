@@ -20,8 +20,7 @@ def test_atanh(op_tester):
         out = np.arctanh(d1)
         return [out]
 
-    op_tester.setPatterns(['DecomposeBinaryConstScalar'],
-                          enableRuntimeAsserts=False)
+    op_tester.setPatterns(['AtanhOpPattern'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -41,7 +40,7 @@ def test_atanh_inplace(op_tester):
         out = np.arctanh(d1)
         return [out]
 
-    op_tester.setPatterns(['InPlace', 'DecomposeBinaryConstScalar'],
+    op_tester.setPatterns(['InPlace', 'AtanhOpPattern'],
                           enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
@@ -71,8 +70,8 @@ def test_atanh_grad(op_tester):
         return [out, d__o, None]
 
     op_tester.setPatterns([
-        'SubtractArg1GradOp', 'DivArg0GradOp', 'DivArg1GradOp', 'LogGradOp',
-        'MulArgGradOp', 'DecomposeBinaryConstScalar'
+        'AtanhOpPattern', 'SubtractArg1GradOp', 'DivArg0GradOp',
+        'DivArg1GradOp', 'LogGradOp', 'MulArgGradOp'
     ],
                           enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')

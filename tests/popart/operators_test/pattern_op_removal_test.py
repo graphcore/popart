@@ -247,6 +247,30 @@ def test_gemm_grad_error(op_tester):
         "This op should have been removed by pattern GemmDecomposition"))
 
 
+def test_tan_grad_error(op_tester):
+    d1 = np.random.rand(2, 7).astype(np.float32)
+    d2 = np.random.rand(2, 7).astype(np.float32)
+
+    # No pattern passes, op will be try to be created.
+    op_tester.setPatterns([], enableRuntimeAsserts=False)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        w1 = builder.addInitializedInputTensor(d2)
+        o = builder.aiOnnx.add([i1, w1], "test_add")
+        o = builder.aiOnnx.tan([o], "test_tan")
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        return [None, None]
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        op_tester.run(init_builder, reference, 'infer')
+
+    assert (e_info.value.args[0].endswith(
+        "This op should have been removed by pattern TanToSinOverCos"))
+
 
 def test_cosh_grad_error(op_tester):
     d1 = np.random.rand(2, 7).astype(np.float32)

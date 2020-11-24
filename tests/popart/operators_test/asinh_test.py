@@ -25,8 +25,7 @@ def test_asinh(op_tester):
         out = np.arcsinh(d1)
         return [out]
 
-    op_tester.setPatterns(['DecomposeBinaryConstScalar'],
-                          enableRuntimeAsserts=False)
+    op_tester.setPatterns(['AsinhOpPattern'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -48,7 +47,7 @@ def test_asinh_inplace(op_tester):
         out = np.arcsinh(d1)
         return [out]
 
-    op_tester.setPatterns(['InPlace', 'DecomposeBinaryConstScalar'],
+    op_tester.setPatterns(['InPlace', 'AsinhOpPattern'],
                           enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
@@ -80,8 +79,8 @@ def test_asinh_grad(op_tester):
         return [out, d__o, None]
 
     op_tester.setPatterns([
-        'SubtractArg1GradOp', 'LogGradOp', 'SqrtGradOp', 'PowArg0GradOp',
-        'DecomposeBinaryConstScalar'
+        'AsinhOpPattern', 'SubtractArg1GradOp', 'LogGradOp', 'SqrtGradOp',
+        'PowArg0GradOp'
     ],
                           enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')

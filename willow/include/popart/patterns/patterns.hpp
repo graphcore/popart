@@ -210,6 +210,7 @@ public:
   bool isPostNReplEnabled();
   bool isSoftMaxGradDirectEnabled();
   bool isNlllWithSoftMaxGradDirectEnabled();
+  bool isSplitConvBiasEnabled();
   bool isSplitGatherEnabled();
   bool isOpToIdentityEnabled();
   bool isUpsampleToResizeEnabled();
@@ -224,6 +225,7 @@ public:
   bool isPowArg1GradOpEnabled();
   bool isSinGradOpEnabled();
   bool isCosGradOpEnabled();
+  bool isTanToSinOverCosEnabled();
   bool isInPlaceEnabled() { return inplaceEnabled; }
   bool isUpdateInplacePrioritiesForIpuEnabled() {
     return updateInplacePrioritiesForIpuEnabled;
@@ -238,10 +240,13 @@ public:
   bool isMatMulOpEnabled();
   bool isMatMulLhsGradOpEnabled();
   bool isMatMulRhsGradOpEnabled();
+  bool isAcosOpPatternEnabled();
+  bool isAcoshOpPatternEnabled();
   bool isRandomNormalLikeOpPatternEnabled();
   bool isRandomUniformLikeOpPatternEnabled();
   bool isZerosLikeOpPatternEnabled();
-  bool isDecomposeBinaryConstScalarEnabled();
+  bool isAsinhOpPatternEnabled();
+  bool isAtanhOpPatternEnabled();
   bool isDepthToSpaceOpPatternEnabled();
   bool isSpaceToDepthOpPatternEnabled();
 
@@ -253,6 +258,7 @@ public:
   Patterns &enablePostNRepl(bool v);
   Patterns &enableSoftMaxGradDirect(bool v);
   Patterns &enableNlllWithSoftMaxGradDirect(bool v);
+  Patterns &enableSplitConvBias(bool v);
   Patterns &enableSplitGather(bool v);
   Patterns &enableOpToIdentity(bool v);
   Patterns &enableUpsampleToResize(bool v);
@@ -267,6 +273,7 @@ public:
   Patterns &enablePowArg1GradOp(bool v);
   Patterns &enableSinGradOp(bool v);
   Patterns &enableCosGradOp(bool v);
+  Patterns &enableTanToSinOverCos(bool v);
   Patterns &enableInPlace(bool v) {
     inplaceEnabled = v;
     return *this;
@@ -285,10 +292,13 @@ public:
   Patterns &enableMatMulOp(bool v);
   Patterns &enableMatMulLhsGradOp(bool v);
   Patterns &enableMatMulRhsGradOp(bool v);
+  Patterns &enableAcosOpPattern(bool v);
+  Patterns &enableAcoshOpPattern(bool v);
   Patterns &enableRandomNormalLikeOpPattern(bool v);
   Patterns &enableRandomUniformLikeOpPattern(bool v);
   Patterns &enableZerosLikeOpPattern(bool v);
-  Patterns &enableDecomposeBinaryConstScalar(bool v);
+  Patterns &enableAsinhOpPattern(bool v);
+  Patterns &enableAtanhOpPattern(bool v);
   Patterns &enableDepthToSpaceOpPattern(bool v);
   Patterns &enableSpaceToDepthOpPattern(bool v);
 

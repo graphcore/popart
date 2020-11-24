@@ -10,13 +10,17 @@
 #include <popart/op/sin.hpp>
 #include <popart/op/zeros.hpp>
 
+#include <popart/patterns/acoshoppattern.hpp>
+#include <popart/patterns/acosoppattern.hpp>
+#include <popart/patterns/asinhoppattern.hpp>
 #include <popart/patterns/atan2arg0gradoppattern.hpp>
 #include <popart/patterns/atan2arg1gradoppattern.hpp>
+#include <popart/patterns/atanhoppattern.hpp>
 #include <popart/patterns/contiguateipucopyindices.hpp>
+#include <popart/patterns/convbias.hpp>
 #include <popart/patterns/convdatagrad.hpp>
 #include <popart/patterns/cosgradoppattern.hpp>
 #include <popart/patterns/coshoppattern.hpp>
-#include <popart/patterns/decomposebinaryconstscalar.hpp>
 #include <popart/patterns/depthtospaceoppattern.hpp>
 #include <popart/patterns/divarg0gradoppattern.hpp>
 #include <popart/patterns/divarg1gradoppattern.hpp>
@@ -51,6 +55,7 @@
 #include <popart/patterns/sqrtgradoppattern.hpp>
 #include <popart/patterns/subtractarg1gradoppattern.hpp>
 #include <popart/patterns/sumtoaddpattern.hpp>
+#include <popart/patterns/tantosinovercospattern.hpp>
 #include <popart/patterns/updateinplaceprioritiesforipu.hpp>
 #include <popart/patterns/upsampletoresizepattern.hpp>
 
@@ -226,6 +231,10 @@ bool Patterns::isNlllWithSoftMaxGradDirectEnabled() {
   return isPatternEnabled<NlllWithSoftmaxGradDirect>();
 }
 
+bool Patterns::isSplitConvBiasEnabled() {
+  return isPatternEnabled<ConvBiasPattern>();
+}
+
 bool Patterns::isSplitGatherEnabled() {
   return isPatternEnabled<SplitGatherPattern>();
 }
@@ -282,6 +291,10 @@ bool Patterns::isCosGradOpEnabled() {
   return isPatternEnabled<CosGradOpPattern>();
 }
 
+bool Patterns::isTanToSinOverCosEnabled() {
+  return isPatternEnabled<TanToSinOverCosPattern>();
+}
+
 bool Patterns::isSqrtGradOpEnabled() {
   return isPatternEnabled<SqrtGradOpPattern>();
 }
@@ -320,6 +333,14 @@ bool Patterns::isMatMulRhsGradOpEnabled() {
   return isPatternEnabled<MatMulRhsGradPattern>();
 }
 
+bool Patterns::isAcosOpPatternEnabled() {
+  return isPatternEnabled<AcosOpPattern>();
+}
+
+bool Patterns::isAcoshOpPatternEnabled() {
+  return isPatternEnabled<AcoshOpPattern>();
+}
+
 bool Patterns::isRandomNormalLikeOpPatternEnabled() {
   return isPatternEnabled<LikeOpsPattern<RandomNormalLikeOp>>();
 }
@@ -332,8 +353,12 @@ bool Patterns::isZerosLikeOpPatternEnabled() {
   return isPatternEnabled<LikeOpsPattern<ZerosLikeOp>>();
 }
 
-bool Patterns::isDecomposeBinaryConstScalarEnabled() {
-  return isPatternEnabled<DecomposeBinaryConstScalar>();
+bool Patterns::isAsinhOpPatternEnabled() {
+  return isPatternEnabled<AsinhOpPattern>();
+}
+
+bool Patterns::isAtanhOpPatternEnabled() {
+  return isPatternEnabled<AtanhOpPattern>();
 }
 
 bool Patterns::isDepthToSpaceOpPatternEnabled() {
@@ -366,6 +391,10 @@ Patterns &Patterns::enableNlllWithSoftMaxGradDirect(bool v) {
 
 Patterns &Patterns::enableUpsampleToResize(bool v) {
   return enablePattern<UpsampleToResizePattern>(v);
+}
+
+Patterns &Patterns::enableSplitConvBias(bool v) {
+  return enablePattern<ConvBiasPattern>(v);
 }
 
 Patterns &Patterns::enableSplitGather(bool v) {
@@ -420,6 +449,10 @@ Patterns &Patterns::enableCosGradOp(bool v) {
   return enablePattern<CosGradOpPattern>(v);
 }
 
+Patterns &Patterns::enableTanToSinOverCos(bool v) {
+  return enablePattern<TanToSinOverCosPattern>(v);
+}
+
 Patterns &Patterns::enableSqrtGradOp(bool v) {
   return enablePattern<SqrtGradOpPattern>(v);
 }
@@ -460,6 +493,14 @@ Patterns &Patterns::enableMatMulRhsGradOp(bool v) {
   return enablePattern<MatMulRhsGradPattern>(v);
 }
 
+Patterns &Patterns::enableAcosOpPattern(bool v) {
+  return enablePattern<AcosOpPattern>(v);
+}
+
+Patterns &Patterns::enableAcoshOpPattern(bool v) {
+  return enablePattern<AcoshOpPattern>(v);
+}
+
 Patterns &Patterns::enableRandomNormalLikeOpPattern(bool v) {
   return enablePattern<LikeOpsPattern<RandomNormalLikeOp>>(v);
 }
@@ -472,8 +513,12 @@ Patterns &Patterns::enableZerosLikeOpPattern(bool v) {
   return enablePattern<LikeOpsPattern<ZerosLikeOp>>(v);
 }
 
-Patterns &Patterns::enableDecomposeBinaryConstScalar(bool v) {
-  return enablePattern<DecomposeBinaryConstScalar>(v);
+Patterns &Patterns::enableAsinhOpPattern(bool v) {
+  return enablePattern<AsinhOpPattern>(v);
+}
+
+Patterns &Patterns::enableAtanhOpPattern(bool v) {
+  return enablePattern<AtanhOpPattern>(v);
 }
 
 Patterns &Patterns::enableDepthToSpaceOpPattern(bool v) {
@@ -548,18 +593,22 @@ std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
       {std::type_index(typeid(Atan2Arg1GradOpPattern)), 50},
       {std::type_index(typeid(SpaceToDepthOpPattern)), 49},
       {std::type_index(typeid(DepthToSpaceOpPattern)), 48},
-      {std::type_index(typeid(DecomposeBinaryConstScalar)), 47},
+      {std::type_index(typeid(AtanhOpPattern)), 47},
+      {std::type_index(typeid(AsinhOpPattern)), 46},
       {std::type_index(typeid(Log1pGradOpPattern)), 45},
       {std::type_index(typeid(Expm1GradOpPattern)), 44},
       {std::type_index(typeid(LikeOpsPattern<ZerosLikeOp>)), 43},
       {std::type_index(typeid(LikeOpsPattern<RandomUniformLikeOp>)), 42},
       {std::type_index(typeid(LikeOpsPattern<RandomNormalLikeOp>)), 41},
+      {std::type_index(typeid(AcoshOpPattern)), 40},
+      {std::type_index(typeid(AcosOpPattern)), 39},
       {std::type_index(typeid(UpsampleToResizePattern)), 38},
       {std::type_index(typeid(InitAccumulatePattern)), 37},
       {std::type_index(typeid(PreUniRepl)), 36},
       {std::type_index(typeid(PostNRepl)), 35},
       {std::type_index(typeid(SoftmaxGradDirect)), 34},
       {std::type_index(typeid(NlllWithSoftmaxGradDirect)), 33},
+      {std::type_index(typeid(ConvBiasPattern)), 32},
       {std::type_index(typeid(OpToIdentityPattern)), 31},
       {std::type_index(typeid(SubtractArg1GradOpPattern)), 30},
       {std::type_index(typeid(MulArgGradOpPattern)), 29},
@@ -568,6 +617,7 @@ std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
       {std::type_index(typeid(DivArg1GradOpPattern)), 26},
       {std::type_index(typeid(ElementWiseGradOpPattern<SinGradOp, CosOp>)), 25},
       {std::type_index(typeid(CosGradOpPattern)), 24},
+      {std::type_index(typeid(TanToSinOverCosPattern)), 23},
       {std::type_index(typeid(SqrtGradOpPattern)), 22},
       {std::type_index(typeid(ExpGradOpPattern)), 21},
       {std::type_index(typeid(LogGradOpPattern)), 20},

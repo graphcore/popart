@@ -1214,12 +1214,14 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("SoftmaxGradDirect", PreAliasPatternType::SoftmaxGradDirect);
     en.value("NLLLWithSoftmaxGradDirect",
              PreAliasPatternType::NLLLWithSoftmaxGradDirect);
+    en.value("SplitConvBias", PreAliasPatternType::SplitConvBias);
     en.value("OptoIdentity", PreAliasPatternType::OptoIdentity);
     en.value("SubtractArg1GradOp", PreAliasPatternType::SubtractArg1GradOp);
     en.value("MulArgGradOp", PreAliasPatternType::MulArgGradOp);
     en.value("ReciprocalGradOp", PreAliasPatternType::ReciprocalGradOp);
     en.value("SinGradOp", PreAliasPatternType::SinGradOp);
     en.value("CosGradOp", PreAliasPatternType::CosGradOp);
+    en.value("TanToSinOverCos", PreAliasPatternType::TanToSinOverCos);
     en.value("DivArg0GradOp", PreAliasPatternType::DivArg0GradOp);
     en.value("DivArg1GradOp", PreAliasPatternType::DivArg1GradOp);
     en.value("PowArg0GradOp", PreAliasPatternType::PowArg0GradOp);
@@ -1253,6 +1255,9 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_property("NlllWithSoftMaxGradDirect",
                      &Patterns::isNlllWithSoftMaxGradDirectEnabled,
                      &Patterns::enableNlllWithSoftMaxGradDirect);
+    cls.def_property("SplitConvBias",
+                     &Patterns::isSplitConvBiasEnabled,
+                     &Patterns::enableSplitConvBias);
     cls.def_property("OpToIdentity",
                      &Patterns::isOpToIdentityEnabled,
                      &Patterns::enableOpToIdentity);

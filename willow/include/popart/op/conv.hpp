@@ -24,6 +24,12 @@ public:
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
 
+  // from github.com/onnx/onnx/blob/master/docs/Operators.md#Conv :
+  // "data" at index 0, "weights" at index 1, "bias" as index 2.
+  // popart's ConvOp does not support bias, but bias can be used when
+  // ConvBiasPattern is used.
+  static InIndex getBiasInIndex() { return 2; }
+
   int numConvs() const final { return 1; }
   static InIndex getDataInIndex() { return MultiConvBaseOp::getDataInIndex(0); }
   static InIndex getWeightsInIndex() {

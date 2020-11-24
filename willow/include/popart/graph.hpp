@@ -19,10 +19,6 @@ namespace popart {
 
 class BackwardPassCreator;
 
-namespace onnxpasses {
-class IOnnxToOnnx;
-}
-
 enum class RequireOptimalSchedule; /*
   Yes = true,
   No = false
@@ -33,7 +29,6 @@ class Graph {
 
 public:
   Graph(Ir &, const GraphId &);
-  ~Graph();
 
   Graph()              = delete;
   Graph(const Graph &) = delete;
@@ -231,15 +226,6 @@ public:
   std::unique_ptr<TopoCons> topoCons;
   const GraphId id;
 
-  /**
-   * Set the object which will perform the ONNX -> ONNX transformation, which
-   * happens early on in the Graph constructor. The default object, which is
-   * used if this method is not called, is an instance of the
-   * onnxpasses::Canonnxalizer class, which performs a set of required
-   * transformations, such as decomposing ASinh into more basic Nodes.
-   * */
-  void setOnnxToOnnx(std::unique_ptr<onnxpasses::IOnnxToOnnx>);
-
 private:
   std::unique_ptr<Tensors> up_tensors;
   std::map<OpId, std::unique_ptr<Op>> ops;
@@ -247,7 +233,6 @@ private:
   std::vector<TensorId> graph_outputs;
   std::unique_ptr<Scheduler> scheduler;
   std::vector<GradInOutMapper> gradInInfo;
-  std::unique_ptr<onnxpasses::IOnnxToOnnx> onnxToOnnx;
 
   Ir &ir;
   TensorId loss;
