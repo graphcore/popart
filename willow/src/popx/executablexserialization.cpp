@@ -336,6 +336,10 @@ void serializeExecutable(std::ostream &out,
         variableTensors.size() + anchorTensors.size() +
         optimizerTensors.size() + dataStreamTensors.size();
 
+    if (ir.getRequiresRandomSeed()) {
+      ++numTensorsToSerialize;
+    }
+
     auto tensors = executablexBuilder.initTensors(numTensorsToSerialize);
 
     size_t i = 0;
