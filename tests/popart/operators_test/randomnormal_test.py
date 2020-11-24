@@ -48,7 +48,7 @@ def test_randomnormal_stats(op_tester, dtypes):
 
         return [expected_mean, expected_stddev]
 
-    op_tester.atol = 1e-02
+    op_tester.atol = 1e-01
     op_tester.run(init_builder, reference, seed=42)
 
 

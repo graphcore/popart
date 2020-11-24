@@ -15,6 +15,7 @@ import onnx
 from onnx import numpy_helper
 
 
+@tu.requires_ipu
 @pytest.mark.parametrize("reduction_type", ["Sum", "Mean"])
 @pytest.mark.parametrize("loss_type", ["L1", "NLL"])
 @pytest.mark.parametrize("optim", ["SGD", "SGDM", "ADAM", "LAMB"])
