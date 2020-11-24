@@ -242,12 +242,13 @@ export POPART_INSTALL_DIR=$(pwd)/popart/install_dir/
 git clone https://github.com/graphcore/popart.git
 push popart
 mkdir build; cd build;
-pybind11_DIR=$PYBIND11_INSTALL_DIR cmake .. \
+cmake .. \
+  -Dpybind11_ROOT=$PYBIND11_INSTALL_DIR \
   -DPOPLAR_INSTALL_DIR=$POPLAR_INSTALL_DIR \
-  -DPROTOBUF_INSTALL_DIR=$PROTOBUF_INSTALL_DIR \
+  -DProtobuf_ROOT=$PROTOBUF_INSTALL_DIR \
   -DBOOST_ROOT=$BOOST_INSTALL_DIR \
-  -DONNX_INSTALL_DIR=$ONNX_INSTALL_DIR \
-  -DPOPRITHMS_INSTALL_DIR=$POPRITHMS_INSTALL_DIR \
+  -DONNX_ROOT=$ONNX_INSTALL_DIR \
+  -Dpoprithms_ROOT=$POPRITHMS_INSTALL_DIR \
   -DCMAKE_INSTALL_PREFIX=$POPART_INSTALL_DIR \
   -DCMAKE_GENERATOR="Ninja"
 ninja
@@ -255,13 +256,15 @@ ninja install
 popd
 ```
 
-Note that spdlog is picked up by the build system automatically because it is installed as a system package. There is no need to pass spdlog's installation directory to cmake.
+You could use any method supported by CMake to point it at dependencies. See the`find_package` documentation [here](https://cmake.org/cmake/help/v3.12/command/find_package.html). We have chosen to use `<verbatim pkg name>_ROOT` variables that point to the package installation directory. As spdlog is installed as a system package, there is no need to pass such a variable, as the system locations will automatically be searched by CMake.
+
+**DEPRECATION**: `<uppercase pkg name>_INSTALL_DIR` variables, except `POPLAR_INSTALL_DIR`, have been deprecated and will be removed in a future release.
 
 **NOTE**: Other cmake switches are available:
 
 * `-DPOPART_BUILD_TESTING=0` - Switch that can be used to avoid compiling PopART test.
 * `-DPOPART_BUILD_EXAMPLES=0` - Switch that can be used to avoid compiling PopART examples.
-* `-DSPDLOG_INSTALL_DIR=<dir>` - Switch that can be used to point to a specific spdlog library.
+* `-Dspdlog_ROOT=<dir>` - Switch that can be used to point to a specific spdlog library.
 * `-DPOPLIBS_INCLUDE_DIR=<dir>`, `-DLIBPVTI_INCLUDE_DIR=<dir>`, etc. - Internal switches that could be used to target alternative internal Poplar libraries.
 
 **NOTE**: If you prefer building with `make` instead of `ninja`, remove the `-DCMAKE_GENERATOR="Ninja"` switch.
