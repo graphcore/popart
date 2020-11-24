@@ -317,12 +317,9 @@ std::string devicex_memory_allocation_err::getGraphReport(bool useCbor) const {
   }
 }
 
-IrLowering::IrLowering(const Ir &ir,
-                       std::shared_ptr<DeviceInfo> deviceInfo_,
-                       bool prepareGraphHasBeenCalled)
-    : _ir(ir), deviceInfo(deviceInfo_),
-      prepareGraphHasBeenCalled_(prepareGraphHasBeenCalled), tensors_(ir),
-      progs(PopPrograms(this)) {
+IrLowering::IrLowering(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
+    : _ir(ir), deviceInfo(deviceInfo_), prepareGraphHasBeenCalled_(false),
+      tensors_(ir), progs(PopPrograms(this)) {
   POPART_TRACEPOINT();
 
   // Set the opxTrace flag based on the environment variable
@@ -333,6 +330,15 @@ IrLowering::IrLowering(const Ir &ir,
     lstmOptions.set("inferenceOnly", "false");
   } else {
     lstmOptions.set("inferenceOnly", "true");
+  }
+
+  if (ir.getSessionOptions().enablePipelining) {
+    pInfo =
+        PipelineInfo(static_cast<int64_t>(ir.getDataFlow().batchesPerStep()),
+                     ir.getSessionOptions().accumulationFactor,
+                     ir.getNumPipelineStages(),
+                     ir.canTrain(),
+                     ir.getSessionOptions().enableGradientAccumulation);
   }
 
   const auto &userGclOptions = ir.getSessionOptions().gclOptions;
@@ -358,6 +364,11 @@ IrLowering::IrLowering(const Ir &ir,
     gclOptions.set("maxBytesPerTile", val);
   }
 }
+
+// Constructor when deserializing the lowered state
+IrLowering::IrLowering(const Ir &ir)
+    : _ir(ir), deviceInfo(nullptr), prepareGraphHasBeenCalled_(true),
+      tensors_(ir), progs(PopPrograms(this)) {}
 
 std::map<Op *, int, POpCmp> IrLowering::getMainGraphOpSeriesNums() const {
   std::map<Op *, int, POpCmp> nums;
@@ -644,12 +655,6 @@ poplar::Graph &IrLowering::getVirtualGraph(VGraphId virtualGraphIndex,
     }
     return vg.getComputeTilesGraph();
   }
-}
-
-std::string IrLowering::getSerializedGraph() const {
-  std::stringstream ss;
-  pGraph->serialize(ss, progs.progs(), poplar::SerializationFormat::Binary);
-  return ss.str();
 }
 
 std::unique_ptr<Opx> IrLowering::createOpx(Op *op) {
@@ -2221,18 +2226,7 @@ unsigned IrLowering::getAccumulationFactor() const {
   return accumulationFactor;
 }
 
-PipelineInfo IrLowering::pipelineInfo() const {
-  PipelineInfo pInfo;
-  if (ir().getSessionOptions().enablePipelining) {
-    pInfo =
-        PipelineInfo(static_cast<int64_t>(ir().getDataFlow().batchesPerStep()),
-                     ir().getSessionOptions().accumulationFactor,
-                     ir().getNumPipelineStages(),
-                     ir().canTrain(),
-                     ir().getSessionOptions().enableGradientAccumulation);
-  }
-  return pInfo;
-}
+PipelineInfo IrLowering::pipelineInfo() const { return pInfo; }
 
 // Floating point settings are not suported on CPU
 void IrLowering::setFloatingPointBehaviour(poplar::Graph &graph) {
@@ -2277,7 +2271,7 @@ void IrLowering::prepareGraph() {
   logging::devicex::info("Poplar version: {}", poplar::versionString());
   logging::devicex::info("Poplar release githash: {}", poplar::packageHash());
 
-  tryLoadPoplarExecutable();
+  tryLoadExecutable();
   logging::devicex::info("Loaded executable");
 
   initPoplarGraph();
@@ -2888,8 +2882,8 @@ poplar::program::Sequence &IrLowering::getAnchorReturnFragment(Tensor *tensor) {
 
 poplar::Executable IrLowering::getExecutable() {
   if (!prepareGraphHasBeenCalled_) {
-    throw internal_error("IrLowering::prepareGraph() must be called before"
-                         " IrLowering::getExecutable() is called.");
+    throw internal_error("Devicex::prepareGraph() must be called before"
+                         " Devicex::getExecutable() is called.");
   }
 
   if (cachedExecutable) {
@@ -2908,6 +2902,8 @@ poplar::Executable IrLowering::getExecutable() {
           graph(), progs.progs(), engineOptions, progressLogger);
 
       logging::devicex::warn("Graph compiled");
+
+      trySaveExecutable(executable);
       return executable;
     } catch (const poplar::graph_memory_allocation_error &e) {
       // If the compilations throws an exception due to memory
@@ -2924,15 +2920,15 @@ poplar::Executable IrLowering::getExecutable() {
   }
 }
 
-std::string IrLowering::getPoplarCachePath(const std::string &userCachePath) {
-  return userCachePath + ".poplar";
+std::string IrLowering::getPoplarCachePath() {
+  return ir().getSessionOptions().cachePath + ".poplar";
 }
 
-std::string IrLowering::getPopartCachePath(const std::string &userCachePath) {
-  return userCachePath + ".popart";
+std::string IrLowering::getPopartCachePath() {
+  return ir().getSessionOptions().cachePath + ".popart";
 }
 
-void IrLowering::trySavePoplarExecutable(poplar::Executable &executable) {
+void IrLowering::trySaveExecutable(poplar::Executable &executable) {
   POPART_TRACEPOINT();
   auto cachePath    = ir().getSessionOptions().cachePath;
   auto cacheEnabled = ir().getSessionOptions().enableEngineCaching;
@@ -2953,13 +2949,13 @@ void IrLowering::trySavePoplarExecutable(poplar::Executable &executable) {
       }
     }
     // save the poplar executable
-    auto poplarCachePath = getPoplarCachePath(cachePath);
+    auto poplarCachePath = getPoplarCachePath();
     std::ofstream poplarFs(poplarCachePath, std::ofstream::binary);
     logging::devicex::warn("Saving poplar Executable to '{}'", poplarCachePath);
     executable.serialize(poplarFs);
 
     // save the popart ir hash
-    auto popartCachePath = getPopartCachePath(cachePath);
+    auto popartCachePath = getPopartCachePath();
     std::ofstream popartFs(popartCachePath, std::ofstream::binary);
     logging::devicex::warn("Saving popart ir hash to '{}'", popartCachePath);
     SavedInfo savedInfo(this);
@@ -2967,7 +2963,7 @@ void IrLowering::trySavePoplarExecutable(poplar::Executable &executable) {
   }
 }
 
-bool IrLowering::tryLoadPoplarExecutable() {
+void IrLowering::tryLoadExecutable() {
   POPART_TRACEPOINT();
   auto warn = [&](const std::string &msg) {
     logging::devicex::warn("Unable to load cached poplar::Executable, {}", msg);
@@ -2979,18 +2975,17 @@ bool IrLowering::tryLoadPoplarExecutable() {
   if (cacheEnabled && !cachePath.empty() &&
       deviceInfo->getType() == DeviceType::Ipu) {
     // load the popart ir hash
-    auto popartCachePath = getPopartCachePath(cachePath);
+    auto popartCachePath = getPopartCachePath();
     std::ifstream popartFs(popartCachePath, std::ifstream::binary);
     if (popartFs.is_open()) {
-      if (ir().getHash() == SavedInfo::deserialize(popartFs).irHash) {
-        auto poplarCachePath = getPoplarCachePath(cachePath);
+      if (SavedInfo(this) == SavedInfo::deserialize(popartFs)) {
+        auto poplarCachePath = getPoplarCachePath();
         std::ifstream poplarFs(poplarCachePath, std::ifstream::binary);
         if (poplarFs.is_open()) {
           logging::devicex::warn("Loading poplar Executable from '{}'",
                                  cachePath);
           cachedExecutable.emplace(poplar::Executable::deserialize(poplarFs));
           usingCachedExecutable_ = true;
-          return true;
         } else {
           warn(logging::format("could not open file `{}'", poplarCachePath));
         }
@@ -3001,8 +2996,6 @@ bool IrLowering::tryLoadPoplarExecutable() {
       warn(logging::format("could not open file `{}'", popartCachePath));
     }
   }
-
-  return false;
 }
 
 TaskId IrLowering::streamFromHostTaskId(TensorId id) {

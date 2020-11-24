@@ -107,6 +107,9 @@ public:
   TensorTileMap getTensorTileMap() const;
   std::string getSerializedGraph() const;
 
+  poplar::Graph &graph();
+  const poplar::Graph &graph() const;
+
   bool isEngineLoaded() const;
   void setEngineIsLoaded(bool isLoaded);
 

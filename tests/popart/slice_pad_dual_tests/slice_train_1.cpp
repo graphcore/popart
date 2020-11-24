@@ -105,7 +105,7 @@ BOOST_AUTO_TEST_CASE(SliceTrain1) {
 
   // Tensor shape: tile mapping
   std::map<std::vector<size_t>, std::vector<Mapping>> mappings;
-  const auto &graph = session->getDevice().lowering().graph();
+  const auto &graph = session->getDevice().graph();
   for (auto id : session->getDevice().lowering().tensors().tensors_) {
     auto shape    = id.second->shape();
     const auto tm = graph.getTileMapping(*id.second);

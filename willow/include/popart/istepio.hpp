@@ -4,12 +4,7 @@
 
 #include <popart/names.hpp>
 #include <popart/voiddata.hpp>
-
 namespace popart {
-
-namespace popx {
-class Executablex;
-}
 
 /**
  * An abstract base class through which input and output data is passed to a
@@ -110,7 +105,7 @@ public:
 
   void enableRuntimeAsserts(bool b) { runtimeAssertsOn = b; }
   bool runtimeAssertsEnabled() const { return runtimeAssertsOn; }
-  virtual void assertNumElements(const popx::Executablex &) const = 0;
+  virtual void assertNumElements(const Ir &) const = 0;
 
 private:
   bool runtimeAssertsOn{true};

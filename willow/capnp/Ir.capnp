@@ -118,9 +118,9 @@ struct Ir {
     inference @0;
     training @1;
   }
-  hash @0: UInt64;
-  dataFlow @1: DataFlow;
-  sessionOptions @2: SessionOptions;
-  requiresRandomSeed @3: Bool;
-  executionMode @4: ExecutionMode;
+
+  dataFlow @0: DataFlow;
+  sessionOptions @1: SessionOptions;
+  requiresRandomSeed @2: Bool;
+  executionMode @3: ExecutionMode;
 }

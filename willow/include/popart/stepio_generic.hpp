@@ -7,9 +7,6 @@
 #include <popart/stepio_size_assertion.hpp>
 
 namespace popart {
-namespace popx {
-class Executablex;
-}
 
 template <typename ARRAY_TYPE, typename ACCESSOR_TYPE, typename ArrayInfoT>
 class StepIOGeneric : public IStepIO {
@@ -20,12 +17,12 @@ class StepIOGeneric : public IStepIO {
   };
 
 public:
-  void assertNumElements(const popx::Executablex &exe) const final {
+  void assertNumElements(const Ir &ir) const final {
     auto g = [](const ArrayInfo &info) {
       return ACCESSOR_TYPE::getArraySize(info.array);
     };
-    iosizecheck::assertInCorrect(exe, inputsInfo, g);
-    iosizecheck::assertOutCorrect(exe, outputsInfo, g);
+    iosizecheck::assertInCorrect(ir, inputsInfo, g);
+    iosizecheck::assertOutCorrect(ir, outputsInfo, g);
   }
 
   TensorInfo getTensorInfo(ARRAY_TYPE &array) const {

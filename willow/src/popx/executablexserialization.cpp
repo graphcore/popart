@@ -242,7 +242,6 @@ void serializeExecutable(std::ostream &out,
   auto irBuilder    = irLoweringBuilder.initIr();
 
   irBuilder.setRequiresRandomSeed(ir.getRequiresRandomSeed());
-  irBuilder.setHash(std::hash<popart::Ir>{}(ir));
 
   irBuilder.setExecutionMode(ir.getExecutionMode() ==
                                      Ir::ExecutionMode::Inference
@@ -440,7 +439,6 @@ deserializeExecutable(std::istream &in,
       ir.setExecutionMode(popart::Ir::ExecutionMode::Training);
     }
   }
-  { ir.setHash(irReader.getHash()); }
 
   {
     auto capnpTensorTileMap = irLoweringReader.getTensorTileMap().getMappings();
