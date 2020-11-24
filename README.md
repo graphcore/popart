@@ -36,7 +36,7 @@ ln -s /usr/bin/python3 /usr/bin/python
 sudo apt-get install ninja-build -y
 ```
 
-##### CMake (version 3.10.2 or greater)
+##### CMake (version 3.12.0 or greater)
 
 Unfortunately, Ubuntu 18.04's default cmake package does not meet the version requirement and hence you have to build cmake from source. Version 3.17.2 is known to work with PopART. To do this, in a directory of your choice, download the source from [here](http://www.cmake.org/download) and build and install cmake as follows:
 
@@ -59,19 +59,19 @@ For more information, see: [http://www.cmake.org/download](http://www.cmake.org/
 
 PopART requires the following PIP packages to be installed:
 
-##### ONNX (version 1.7.0 or compatible)
+##### ONNX (version 1.6.0 or compatible)
 
 ```
-sudo pip3 install onnx==1.7.0
+sudo pip3 install onnx==1.6.0
 ```
 
-##### Protobuf (version 3.7.0 or newer)
+##### Protobuf (version 3.6.1 or compatible with ONNX version)
 
 ```
-sudo pip3 install protobuf>=3.7.0
+sudo pip3 install protobuf>=3.6.1
 ```
 
-**NOTE**: The argument `>=3.7.0` is necessary because the python package index may not have version 3.7.0 for the version of python installed on your system.
+**NOTE**: The argument `>=3.6.1` is necessary because the python package index may not have version 3.6.1 for the version of python installed on your system.
 
 ##### Pytest and Pytest-forked (default versions)
 
@@ -89,13 +89,18 @@ sudo pip3 install numpy==1.19.2
 
 PopART compiles against a number of libraries that you will need to have available on your system:
 
-##### Spdlog (version 0.16.3)
+##### Spdlog (version 1.8.0)
 
-There is a library package in Ubuntun 18.04 that you can use to install this dependency: 
+The version of the spdlog library in Ubuntu 18.04 (`spdlog-dev`) is not compatible with PopART. Instead, you need to build version 1.8.0 from source. To do this, in a directory of your choice, download the source from [here](https://github.com/gabime/spdlog/tree/v1.8.0) and build and install as follows:
 
 ```
-sudo apt-get install libspdlog-dev -y
+export SPDLOG_INSTALL_DIR=$(pwd)/spdlog-1.8.0/install_dir/
+git clone --branch v1.8.0 https://github.com/gabime/spdlog.git
+cd spdlog && mkdir build && cd build
+cmake .. -GNinja -DCMAKE_INSTALL_PREFIX=$SPDLOG_INSTALL_DIR && cmake --build . --target install
 ```
+
+**NOTE**: You will need the value of `SPDLOG_INSTALL_DIR` later.
 
 ##### Pybind11 (version 2.5.0 or compatible)
 
@@ -112,7 +117,7 @@ mkdir install_dir
 cd build
 cmake .. \
   -DCMAKE_INSTALL_PREFIX=$PYBIND11_INSTALL_DIR \
-  -DCMAKE_GENERATOR="Ninja"
+  -GNinja
 ninja
 ninja install
 popd
@@ -136,7 +141,7 @@ rm boost_1_70_0.tar.gz
 pushd boost_1_70_0
 mkdir install_dir
 ./bootstrap.sh --prefix=$BOOST_INSTALL_DIR
-./b2 -j8 link=static runtime-link=static --abbreviate-paths variant=release toolset=gcc "cxxflags= -fno-semantic-interposition -fPIC" cxxstd=14 --with-test --with-system --with-filesystem --with-program_options install
+./b2 -j8 link=static runtime-link=static --abbreviate-paths variant=release toolset=gcc "cxxflags= -fno-semantic-interposition -fPIC" cxxstd=14 --with-test --with-system --with-filesystem --with-program_options --with-graph --with-random install
 popd
 ```
 
@@ -146,16 +151,16 @@ popd
 
 For more information, see: https://www.boost.org/doc/libs/1_70_0/more/getting_started/unix-variants.html.
 
-##### Protobuf (version 3.7.0 or compatible)
+##### Protobuf (version 3.6.1 or compatible with ONNX version)
 
-The protobuf library in Ubuntu 18.04 (`libprotobuf-dev`) is version 3.0.0. Again, you need to build version 3.7.0 from source. To do this, in a directory of your choice, download the source from [here](https://github.com/protocolbuffers/protobuf/releases) and build and install as follows:
+The protobuf library in Ubuntu 18.04 (`libprotobuf-dev`) is version 3.0.0. Again, you need to build version 3.6.1 from source. To do this, in a directory of your choice, download the source from [here](https://github.com/protocolbuffers/protobuf/releases) and build and install as follows:
 
 ```
 export PROTOBUF_INSTALL_DIR=$(pwd)/protobuf-3.6.1/install_dir/
 wget https://github.com/protocolbuffers/protobuf/releases/download/v3.6.1/protobuf-cpp-3.6.1.tar.gz 
-tar xvfz protobuf-cpp-3.7.0.tar.gz
-rm protobuf-cpp-3.7.0.tar.gz
-pushd protobuf-3.7.0
+tar xvfz protobuf-cpp-3.6.1.tar.gz
+rm protobuf-cpp-3.6.1.tar.gz
+pushd protobuf-3.6.1
 mkdir install_dir
 CXXFLAGS=-fPIC CFLAGS=-fPIC ./configure \
   --prefix=$PROTOBUF_INSTALL_DIR
@@ -171,16 +176,16 @@ popd
 
 For more information, see: https://developers.google.com/protocol-buffers/docs/downloads.
 
-##### ONNX (version 1.7.0 or compatible)
+##### ONNX (version 1.6.0 or compatible)
 
 The ONNX library also needs to be compiled from source. To do this, in a directory of your choice, download the source from [here](https://github.com/onnx/onnx/releases) and build and install as follows:
 
 ```
-export ONNX_INSTALL_DIR=$(pwd)/onnx-1.7.0/install_dir/
-wget https://github.com/onnx/onnx/archive/v1.7.0.tar.gz
-tar xvfz v1.7.0.tar.gz
-rm v1.7.0.tar.gz
-pushd onnx-1.7.0
+export ONNX_INSTALL_DIR=$(pwd)/onnx-1.6.0/install_dir/
+wget https://github.com/onnx/onnx/archive/v1.6.0.tar.gz
+tar xvfz v1.6.0.tar.gz
+rm v1.6.0.tar.gz
+pushd onnx-1.6.0
 mkdir install_dir
 cmake .. \
   -DONNX_ML=0 \
@@ -196,6 +201,26 @@ popd
 **NOTE**: You will need the value of `ONNX_INSTALL_DIR` later.
 
 For more information, see: https://github.com/onnx/onnx.
+
+##### CapnProto (version 0.7.0 or compatible)
+
+CapnProto releases can be downloaded from [here](https://capnproto.org/install.html). In a directory of your choice, download and install as follows: 
+
+```
+export CAPNPROTO_INSTALL_DIR=$(pwd)/capnproto-0.7.0/install_dir/
+wget https://capnproto.org/capnproto-c++-0.7.0.tar.gz
+tar xvfz capnproto-c++-0.7.0.tar.gz
+cd /workspace/libs/third-party/capnproto-c++-0.7.0
+./configure --prefix=$CAPNPROTO_INSTALL_DIR
+make -j8 check
+make install
+```
+
+**NOTE**: The `-j8` switch is used to reduce test times by testing with up to 8 threads.
+
+**NOTE**: You will need the value of `CAPNPROTO_INSTALL_DIR` later
+
+For more information, see: https://capnproto.org/install.html
 
 ### Installing Graphcore Library Dependencies
 
@@ -243,20 +268,22 @@ git clone https://github.com/graphcore/popart.git
 push popart
 mkdir build; cd build;
 cmake .. \
-  -Dpybind11_ROOT=$PYBIND11_INSTALL_DIR \
-  -DPOPLAR_INSTALL_DIR=$POPLAR_INSTALL_DIR \
-  -DProtobuf_ROOT=$PROTOBUF_INSTALL_DIR \
   -DBOOST_ROOT=$BOOST_INSTALL_DIR \
+  -DCapnProto_ROOT=$CAPNPROTO_INSTALL_DIR \
   -DONNX_ROOT=$ONNX_INSTALL_DIR \
+  -DPOPLAR_INSTALL_DIR=$POPLAR_INSTALL_DIR \
   -Dpoprithms_ROOT=$POPRITHMS_INSTALL_DIR \
+  -DProtobuf_ROOT=$PROTOBUF_INSTALL_DIR \
+  -Dpybind11_ROOT=$PYBIND11_INSTALL_DIR \
+  -Dspdlog_ROOT=$SPDLOG_INSTALL_DIR \
   -DCMAKE_INSTALL_PREFIX=$POPART_INSTALL_DIR \
-  -DCMAKE_GENERATOR="Ninja"
+  -GNinja
 ninja
 ninja install
 popd
 ```
 
-You could use any method supported by CMake to point it at dependencies. See the`find_package` documentation [here](https://cmake.org/cmake/help/v3.12/command/find_package.html). We have chosen to use `<verbatim pkg name>_ROOT` variables that point to the package installation directory. As spdlog is installed as a system package, there is no need to pass such a variable, as the system locations will automatically be searched by CMake.
+You could use any method supported by CMake to point it at dependencies. See the`find_package` documentation [here](https://cmake.org/cmake/help/v3.12/command/find_package.html). We have chosen to use `<verbatim pkg name>_ROOT` variables that point to the package installation directory.
 
 **DEPRECATION**: `<uppercase pkg name>_INSTALL_DIR` variables, except `POPLAR_INSTALL_DIR`, have been deprecated and will be removed in a future release.
 
@@ -264,10 +291,9 @@ You could use any method supported by CMake to point it at dependencies. See the
 
 * `-DPOPART_BUILD_TESTING=0` - Switch that can be used to avoid compiling PopART test.
 * `-DPOPART_BUILD_EXAMPLES=0` - Switch that can be used to avoid compiling PopART examples.
-* `-Dspdlog_ROOT=<dir>` - Switch that can be used to point to a specific spdlog library.
 * `-DPOPLIBS_INCLUDE_DIR=<dir>`, `-DLIBPVTI_INCLUDE_DIR=<dir>`, etc. - Internal switches that could be used to target alternative internal Poplar libraries.
 
-**NOTE**: If you prefer building with `make` instead of `ninja`, remove the `-DCMAKE_GENERATOR="Ninja"` switch.
+**NOTE**: If you prefer building with `make` instead of `ninja`, remove the `-GNinja` switch.
 
 **NOTE**: Builds can be further accelerated by using [ccache](https://ccache.dev/).
 
@@ -289,7 +315,7 @@ This script will change your `PYTHONPATH` environment variable so that python ca
 python3 $POPART_INSTALL_DIR/examples/python/simple_addition.py
 ```
 
-**NOTE**: Other python examples are available in the `$POPAR_INSTALL_DIR/examples/python/` directory.
+**NOTE**: Other python examples are available in the `$POPART_INSTALL_DIR/examples/python/` directory.
 
 ##### Running C++ Examples
 
