@@ -11,8 +11,8 @@
 #include <popart/onnxutil.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/executablex.hpp>
-#include <popart/popx/executablexserialization.hpp>
 #include <popart/popx/exporter.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/session.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensor.hpp>
@@ -53,49 +53,6 @@ std::vector<uint32_t> Session::getRNGState() {
   std::vector<uint32_t> seedValue;
   seedValue = device_->getRngStateToHost();
   return seedValue;
-}
-
-bool Session::tryLoadExecutable(const ONNX_NAMESPACE::ModelProto &modelProto,
-                                const DataFlow &dataFlow,
-                                const SessionOptions &userOptions,
-                                std::shared_ptr<DeviceInfo> deviceInfo) {
-  const bool tryLoad = userOptions.enableEngineCaching &&
-                       !userOptions.cachePath.empty() &&
-                       deviceInfo->getType() == DeviceType::Ipu;
-
-  if (false == tryLoad) {
-    return false;
-  }
-
-  auto cachePath =
-      popx::Executablex::getExecutablexCachePath(userOptions.cachePath);
-  std::ifstream executableFs(cachePath, std::ifstream::binary);
-
-  // TODO(T28364): Insert logic to check the hash against the IrBundle here
-  // so that we can avoid a possible mismatched deserialization
-
-  if (executableFs.is_open()) {
-    logging::session::info("Loading serialized PopART executable from {}",
-                           cachePath);
-    ir.setDataFlow(dataFlow);
-    ir.setDeviceInfo(*deviceInfo);
-    ir.setUserOptions(userOptions);
-    ir.setOnnxModel(modelProto);
-
-    bool skipGraphCompilation = true;
-    lowering_.reset(new popx::IrLowering(ir, deviceInfo, skipGraphCompilation));
-
-    executable_ = popx::serialization::deserializeExecutable(
-        executableFs, ir, *lowering_);
-
-    if (!lowering_->tryLoadPoplarExecutable()) {
-      return false;
-    }
-    return true;
-  }
-
-  logging::session::warn("Could not open file {}", cachePath);
-  return false;
 }
 
 void Session::setRNGState(const std::vector<uint32_t> stateValue) {
@@ -177,13 +134,13 @@ void Session::compileAndExport(std::string executablePath,
     io::assertDirectoryWritable(weightsPath);
   }
 
-  lowering_->compileAndExport(executablePath, weightsPath);
+  device_->compileAndExport(executablePath, weightsPath);
 }
 
 void Session::prepareDevice() {
   POPART_TRACEPOINT();
   logging::session::trace("Session::prepareDevice()");
-  lowering_->prepareGraph();
+
   device_->prepare();
 }
 
@@ -243,12 +200,13 @@ void Session::run(IStepIO &stepio, std::string debugName) {
     throw error("Trying to infer when not in inference mode");
   }
 
-  if (weightsFromHostCalled == false && ir.containsInitialisers() &&
-      ir.isTraining()) {
+  if (ir.containsInitialisers() && ir.isTraining() &&
+      weightsFromHostCalled == false) {
     throw error(
         "Must call weightsFromHost before run as the model has initializers "
         "and the session has been created in training mode");
   }
+
   device_->run(stepio, debugName);
 
   runCalled = true;
@@ -458,20 +416,8 @@ void InferenceSession::configureFromOnnx(
 
   auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
 
-  if (tryLoadExecutable(modelProto, df, userOptions, deviceInfo)) {
-    device_.reset(new popx::Devicex(*executable_, deviceInfo));
-  } else {
-    ir.prepare({modelProto,
-                perk,
-                df,
-                {},
-                nullptr,
-                *deviceInfo,
-                userOptions,
-                patterns});
-
-    setDevice(deviceInfo);
-  }
+  ir.prepare(
+      {modelProto, perk, df, {}, nullptr, *deviceInfo, userOptions, patterns});
 }
 
 std::unique_ptr<InferenceSession>
@@ -493,6 +439,8 @@ InferenceSession::createFromOnnxModel(const std::string &model,
   session->configureFromOnnx(
       model, dataFlow, inputShapeInfo, deviceInfo, userOptions, patterns);
 
+  session->setDevice(deviceInfo);
+
   return session;
 }
 
@@ -513,19 +461,14 @@ void TrainingSession::configureFromOnnx(const std::string &modelProtoOrFilename,
 
   auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
 
-  if (tryLoadExecutable(modelProto, df, userOptions, deviceInfo)) {
-    device_.reset(new popx::Devicex(*executable_, deviceInfo));
-  } else {
-    ir.prepare({modelProto,
-                perk,
-                df,
-                lossIn,
-                &optimizerIn,
-                *deviceInfo,
-                userOptions,
-                patterns});
-    setDevice(deviceInfo);
-  }
+  ir.prepare({modelProto,
+              perk,
+              df,
+              lossIn,
+              &optimizerIn,
+              *deviceInfo,
+              userOptions,
+              patterns});
 }
 
 std::unique_ptr<TrainingSession>
@@ -554,6 +497,8 @@ TrainingSession::createFromOnnxModel(const std::string &model,
                              deviceInfo,
                              userOptions,
                              patterns);
+
+  session->setDevice(deviceInfo);
 
   return session;
 }

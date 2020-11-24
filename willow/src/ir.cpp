@@ -3723,14 +3723,4 @@ Ir::getAccumulateOuterFragmentBinConstraints(const Graph &graph) const {
   }
 }
 
-size_t Ir::getHash() const {
-  if (!hash_.has_value()) {
-    throw error("Attempting to get Ir hash value when it hasn't been set.");
-  }
-
-  return hash_.value();
-}
-
-void Ir::setHash(size_t v) { hash_ = v; }
-
 } // namespace popart
