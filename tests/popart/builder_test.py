@@ -1750,3 +1750,14 @@ def test_opset_version_opset_default_version_changed():
 
     proto = builder.getModelProto()
     assert _get_onnx_opset_version(proto) == 8
+
+
+# Test that when we construct an op with an invalid input tensor ID
+# we raise an error.
+def test_error_on_invalid_input_tensor():
+    with pytest.raises(popart.popart_exception) as e:
+        b = popart.Builder()
+        b.aiOnnx.relu(['blaaa'])  # should throw error
+
+    # Check error mentions unknown tensor name.
+    assert ('\'blaaa\'' in str(e))

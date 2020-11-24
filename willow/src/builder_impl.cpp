@@ -426,6 +426,44 @@ void BuilderImpl::op(
     }
   }
 
+  // Get valid tensors of mutable graph.
+  auto validTensors = getValidInputTensorIds();
+
+  for (size_t i = 0; i < inputs.size(); ++i) {
+    auto &input     = inputs[i];
+    auto isOptional = (i >= opid.numInputs.min);
+
+    if (isOptional && input == "") {
+      // Assume "" is used to indicate tensor is not set.
+    } else {
+      // Throw an exception if an tensor id is given as an input but it does not
+      // exist.
+      if (validTensors.find(input) == validTensors.end()) {
+        std::stringstream ss;
+        ss << "Unknown tensor '" << input << "' (";
+
+        if (validTensors.size() == 0) {
+          ss << "there are no valid tensors yet";
+        } else {
+          ss << "valid tensors are ";
+
+          bool isFirst = true;
+          for (auto id : validTensors) {
+            if (!isFirst) {
+              ss << ", ";
+            } else {
+              isFirst = false;
+            }
+            ss << id;
+          }
+        }
+
+        ss << ").";
+        throw error(ss.str());
+      }
+    }
+  }
+
   if (validateInput)
     validateInput(inputs, opAttributes);
 
@@ -954,6 +992,38 @@ std::vector<TensorId> BuilderImpl::getValueTensorIds() const {
     valueNames.push_back(value_info.name());
   }
   return valueNames;
+}
+
+std::set<TensorId> BuilderImpl::getValidInputTensorIds() const {
+  std::set<TensorId> ids;
+
+  const ONNX_NAMESPACE::GraphProto *graph = &model_.graph();
+
+  // Tensor IDs of parent graphs can be used in the child graph.
+  if (nullptr != parent) {
+    auto parentIds = parent->getValidInputTensorIds();
+    ids.insert(parentIds.begin(), parentIds.end());
+  }
+
+  // Add input tensors within this graph.
+  for (const auto &input : graph->input()) {
+    ids.insert(input.name());
+  }
+  // Add output tensors within this graph.
+  for (const auto &output : graph->output()) {
+    ids.insert(output.name());
+  }
+  // Add value tensors within this graph.
+  for (const auto &value_info : graph->value_info()) {
+    ids.insert(value_info.name());
+  }
+  // Add node outputs.
+  for (const ONNX_NAMESPACE::NodeProto &node : graph->node()) {
+    for (const std::string &output : node.output()) {
+      ids.insert(output);
+    }
+  }
+  return ids;
 }
 
 bool BuilderImpl::isInputTensor(const TensorId &id) const {

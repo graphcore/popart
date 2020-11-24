@@ -230,6 +230,8 @@ public:
 
   std::vector<TensorId> getTrainableTensorIds() const;
 
+  std::set<TensorId> getValidInputTensorIds() const;
+
   bool isInputTensor(const TensorId &id) const;
 
   bool isOutputTensor(const TensorId &id) const;
