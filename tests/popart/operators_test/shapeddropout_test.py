@@ -273,7 +273,7 @@ def test_shapeddropout_invalid_ratio():
         ShapedDropoutHarness(np.zeros([2, 2]), drop_ratio=bad_ratio)
 
     exmsg = ("ratio value {} is not valid. "
-             "Please use a value in the interval (0,1)").format(bad_ratio)
+             "Please use a value in the interval [0,1)").format(bad_ratio)
     assert e_info.value.args[0].endswith(exmsg)
 
 

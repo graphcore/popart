@@ -291,7 +291,7 @@ def test_dropout_training8(op_tester):
         op_tester.run(init_builder, reference, 'train')
 
     assert (e_info.value.args[0].endswith(
-        "Please use a value in the interval (0,1)"))
+        "Please use a value in the interval [0,1)"))
 
 
 # check we get a different dropout from each replicated graph
