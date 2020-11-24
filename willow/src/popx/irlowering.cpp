@@ -415,10 +415,14 @@ void IrLowering::verifyTaskOrder(const std::vector<TaskId> &taskOrder) const {
         }
         seen.insert(op);
       }
-      // This is a recompute op.
+      // This is a recompute op, to be recomputed before op with TaskId 'taskId'
+      // is run
       else {
+        std::vector<Op *> recomputes = requiredRecomputes.at(taskId);
         for (auto before : op->getGraph().topoCons->getBefores(op)) {
-          if (recomputeSeen.find(before) == recomputeSeen.end()) {
+          if (std::find(recomputes.begin(), recomputes.end(), before) !=
+                  recomputes.end() &&
+              recomputeSeen.find(before) == recomputeSeen.end()) {
             logging::devicex::warn(
                 "Recompute of op {} required op {} to be run before it.",
                 op->id,
@@ -432,8 +436,7 @@ void IrLowering::verifyTaskOrder(const std::vector<TaskId> &taskOrder) const {
   }
 
   if (errors > 0) {
-    logging::devicex::warn("Encountered {} errors when verifying task order",
-                           errors);
+    throw error("Encountered {} errors when verifying task order", errors);
   }
 }
 
