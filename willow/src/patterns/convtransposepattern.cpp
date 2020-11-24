@@ -2,7 +2,6 @@
 #include <memory>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-#include <popart/op/addbias.hpp>
 #include <popart/op/conv.hpp>
 #include <popart/op/convtranspose.hpp>
 #include <popart/patterns/convtransposepattern.hpp>
@@ -31,11 +30,6 @@ bool ConvTransposePattern::apply(Op *op) const {
       convTranspose->inTensor(ConvTransposeOp::getWeightsInIndex());
   auto outTensor = convTranspose->outTensor(ConvTransposeOp::getOutIndex());
 
-  popart::Tensor *bias = nullptr;
-
-  if (convTranspose->hasInput(ConvTransposeOp::getBiasInIndex())) {
-    bias = convTranspose->inTensor(ConvTransposeOp::getBiasInIndex());
-  }
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
 
@@ -80,9 +74,6 @@ bool ConvTransposePattern::apply(Op *op) const {
   conv->connectInTensor(ConvOp::getDataInIndex(), inTensor->id);
   conv->connectInTensor(ConvOp::getWeightsInIndex(), flip->outId(0));
 
-  if (bias) {
-    conv->connectInTensor(ConvOp::getBiasInIndex(), bias->id);
-  }
   conv->connectOutTensor(ConvOp::getOutIndex(), outTensor->id);
 
   conv->params.push_back(convTranspose->params);

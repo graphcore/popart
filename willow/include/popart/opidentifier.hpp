@@ -319,6 +319,7 @@ const static AiGraphcoreOpIdV1 RMSPropUpdater("RMSPropUpdater");
 const static AiGraphcoreOpIdV1 Round_1("Round", 1, 1);
 const static AiGraphcoreOpIdV1 RoundInplace("RoundInplace");
 const static AiGraphcoreOpIdV1 Scale_1("Scale", 1, 1);
+const static AiGraphcoreOpIdV1 BinaryConstScalar("BinaryConstScalar", 1, 1);
 const static AiGraphcoreOpIdV1 ScaledAdd("ScaledAdd", {2, 4}, 1);
 const static AiGraphcoreOpIdV1 ScaledAddLhsInplace("ScaledAddLhsInplace");
 const static AiGraphcoreOpIdV1 ScaledAddRhsInplace("ScaledAddRhsInplace");
@@ -376,6 +377,8 @@ const static OperatorIdentifier ReplicatedAllReduce =
 const static OperatorIdentifier Round     = CustomOperators::Round_1;
 const static OperatorIdentifier Scale     = CustomOperators::Scale_1;
 const static OperatorIdentifier ScaledAdd = CustomOperators::ScaledAdd;
+const static OperatorIdentifier BinaryConstScalar =
+    CustomOperators::BinaryConstScalar;
 const static OperatorIdentifier ShapedDropout =
     CustomOperators::ShapedDropout_1;
 const static OperatorIdentifier Subsample = CustomOperators::Subsample_1;

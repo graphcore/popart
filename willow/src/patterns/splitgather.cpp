@@ -8,6 +8,7 @@
 #include <popart/op/reshape.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/op/transpose.hpp>
+#include <popart/patterns/pattern.hpp>
 #include <popart/patterns/splitgather.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
@@ -284,7 +285,7 @@ bool SplitGatherPattern::apply(Op *op) const {
 
 namespace {
 static PatternCreator<SplitGatherPattern>
-    convBiasPattern(PreAliasPatternType::SplitGather, "SplitGather", false);
+    splitGatherer(PreAliasPatternType::SplitGather, "SplitGather", false);
 }
 
 } // namespace popart

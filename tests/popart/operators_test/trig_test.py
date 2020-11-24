@@ -108,7 +108,6 @@ def test_tan(op_tester):
         b = torch.tan(a)
         return [b]
 
-    op_tester.setPatterns(['TanToSinOverCos'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -134,8 +133,8 @@ def test_tan_grad(op_tester):
         return [b, a.grad, None]
 
     op_tester.setPatterns([
-        'PreUniRepl', 'TanToSinOverCos', 'DivArg0GradOp', 'DivArg1GradOp',
-        'SinGradOp', 'CosGradOp'
+        'PreUniRepl', 'DivArg0GradOp', 'DivArg1GradOp', 'SinGradOp',
+        'CosGradOp'
     ],
                           enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
