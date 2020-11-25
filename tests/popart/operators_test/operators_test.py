@@ -601,7 +601,6 @@ def test_convolution_with_bias_1d(op_tester):
         o = conv(d)
         return [o]
 
-    op_tester.setPatterns(['SplitConvBias'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, step_type='infer')
 
 
@@ -1215,7 +1214,8 @@ def test_acos(op_tester):
         out = torch.acos(a)
         return [out]
 
-    op_tester.setPatterns(['AcosOpPattern'], enableRuntimeAsserts=False)
+    op_tester.setPatterns(['DecomposeBinaryConstScalar'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -1234,7 +1234,7 @@ def test_acos_inplace(op_tester):
         out = torch.acos(a)
         return [out]
 
-    op_tester.setPatterns(['InPlace', 'AcosOpPattern'],
+    op_tester.setPatterns(['InPlace', 'DecomposeBinaryConstScalar'],
                           enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
@@ -1261,7 +1261,7 @@ def test_acos_grad(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, a.grad, None]
 
-    op_tester.setPatterns(['AcosOpPattern', 'SubtractArg1GradOp'],
+    op_tester.setPatterns(['DecomposeBinaryConstScalar', 'SubtractArg1GradOp'],
                           enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
@@ -1280,7 +1280,8 @@ def test_acosh(op_tester):
         out = np.arccosh(d1)
         return [out]
 
-    op_tester.setPatterns(['AcoshOpPattern'], enableRuntimeAsserts=False)
+    op_tester.setPatterns(['DecomposeBinaryConstScalar'],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -1298,7 +1299,7 @@ def test_acosh_inplace(op_tester):
         out = np.arccosh(d1)
         return [out]
 
-    op_tester.setPatterns(['InPlace', 'AcoshOpPattern'],
+    op_tester.setPatterns(['InPlace', 'DecomposeBinaryConstScalar'],
                           enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
@@ -1329,8 +1330,8 @@ def test_acosh_grad(op_tester):
         return [out, d__o, None]
 
     op_tester.setPatterns([
-        'AcoshOpPattern', 'SubtractArg1GradOp', 'LogGradOp', 'SqrtGradOp',
-        'PowArg0GradOp'
+        'DecomposeBinaryConstScalar', 'SubtractArg1GradOp', 'LogGradOp',
+        'SqrtGradOp', 'PowArg0GradOp'
     ],
                           enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
