@@ -282,66 +282,6 @@ BOOST_AUTO_TEST_CASE(GatherToIdentity) {
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Identity).size() == 1);
 }
 
-BOOST_AUTO_TEST_CASE(SplitConvBias) {
-  // {(i1), (i2), (i3)} -> [Conv] -> () -> [Identity] -> (identOut)
-  //
-  // should become
-  //
-  // {(i1), (i2)} -> [Conv] -> (convOut)
-  // {(i3), (convOut)} -> [AddBias] () -> [Identity] -> (identOut)
-
-  // Build an onnx model
-  auto builder = Builder::create();
-  auto aiOnnx  = builder->aiOnnxOpset9();
-
-  TensorInfo shape{"FLOAT", std::vector<int64_t>{1, 2, 2, 2}};
-
-  auto input1 = builder->addInputTensor(shape);
-  auto input2 = builder->addInputTensor(shape);
-  auto input3 = builder->addInputTensor(shape);
-
-  auto convOut = aiOnnx.conv(
-      {input1, input2, input3}, {1, 1}, 1, {}, {0, 0, 0, 0}, {1, 1});
-  auto identOut = aiOnnx.identity({convOut});
-
-  auto l1 = builder->aiGraphcoreOpset1().l1loss({identOut}, 0.1);
-
-  auto proto      = builder->getModelProto();
-  auto modelProto = io::getModelFromString(proto);
-
-  // Create the IR
-  // Add the last tensor, and the 3rd tensor as anchors
-  auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("All")}});
-  auto optimizer = ConstSGD(0.01);
-  auto device    = createTestDevice(TEST_TARGET);
-
-  Ir ir;
-  ir.prepare({modelProto,
-              InputShapeInfo(),
-              dataFlow,
-              l1,
-              &optimizer,
-              *device,
-              {},
-              Patterns({PreAliasPatternType::SplitConvBias})
-                  .enableRuntimeAsserts(false)});
-
-  // Check the ir
-  // Input 1 should connect to ConvOp
-  // ConvOp should only have 2 inputs
-  auto input1Tensor = ir.getMainGraphTensors().get(input1);
-  auto convOp       = input1Tensor->consumers.getOps()[0];
-  BOOST_CHECK(convOp->input->n() == 2);
-
-  auto bias = convOp->output->tensor(0)->consumers.getOps()[0];
-  BOOST_CHECK(bias->opid == Onnx::CustomOperators::AddBias);
-
-  // Input3 should be consumed only by the AddBiasOp
-  auto input3Tensor = ir.getMainGraphTensors().get(input3);
-  BOOST_CHECK(input3Tensor->consumers.getTotal() == 1);
-  BOOST_CHECK(bias == input3Tensor->consumers.getOps()[0]);
-}
-
 BOOST_AUTO_TEST_CASE(ScaleByOne) {
   // () -> [Scale(by 1.0)] -> ()
   //

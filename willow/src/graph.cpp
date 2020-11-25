@@ -29,6 +29,8 @@
 #include <popart/op/sgd1varupdate.hpp>
 #include <popart/op/varupdate.hpp>
 
+#include <onnxpasses/onnxtoonnx.hpp>
+
 // Prototypes
 namespace {
 using namespace popart;
@@ -41,6 +43,8 @@ std::pair<OpId, std::unordered_set<OpId>> getConsumerOpIdsInGraph(
 } // namespace
 
 namespace popart {
+
+Graph::~Graph() = default;
 
 // map of grad Tensor to the list of Tensors that
 // must be summed to create the grad Tensor
@@ -80,10 +84,17 @@ private:
   TensorGradMapRegister gradRegister;
 };
 
-Graph::Graph(Ir &ir_, const GraphId &id_) : id(id_), ir(ir_) {
+Graph::Graph(Ir &ir_, const GraphId &id_)
+    : id(id_), onnxToOnnx(std::make_unique<onnxpasses::Canonnxalizer>()),
+      ir(ir_) {
   up_tensors.reset(new Tensors(*this));
   topoCons.reset(new TopoCons());
   scheduler.reset(new Scheduler());
+}
+
+void Graph::setOnnxToOnnx(
+    std::unique_ptr<onnxpasses::IOnnxToOnnx> onnxToOnnx_) {
+  onnxToOnnx = std::move(onnxToOnnx_);
 }
 
 const std::map<OpId, std::unique_ptr<Op>> &Graph::getOps() const { return ops; }
@@ -205,12 +216,14 @@ std::vector<const Graph *> Graph::getCalledGraphs() const {
 
 void Graph::constructFromOnnxGraph(
     const ONNX_NAMESPACE::GraphProto &onnx_graph) {
-  for (const auto &node : onnx_graph.node()) {
+
+  auto g0 = onnxToOnnx->getCanonnxalized(onnx_graph);
+
+  for (const auto &node : g0.node()) {
     if (OnnxConstExprUtil::isConst(node)) {
       OnnxConstExprUtil::processNode(node, this);
     } else {
       Op *op = growFromNode(node);
-
       // process ops as they are created
       // Reshape requires a const input tensor at creation time
       // if const folding is left till after the ir is completly constructed
