@@ -1594,6 +1594,12 @@ PYBIND11_MODULE(popart_core, m) {
             &AiGraphcoreOpset1::round,
             py::arg("args"),
             py::arg("debugPrefix") = std::string());
+    cls.def("depthtospace",
+            &AiGraphcoreOpset1::depthtospace,
+            py::arg("args"),
+            py::arg("blocksize"),
+            py::arg("mode"),
+            py::arg("debugPrefix") = std::string());
     cls.def("init",
             py::overload_cast<Attributes::Ints,
                               Attributes::Int,

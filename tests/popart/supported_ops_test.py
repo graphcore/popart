@@ -36,6 +36,7 @@ def test_unsupported_operations():
     supportedOps = [opidToStr(i) for i in supportedOps]
     supportedOps = set(supportedOps)
 
+    print(unsupportedOps & supportedOps)
     # Make sure both sets contain elements.
     assert len(unsupportedOps) > 0 and len(supportedOps) > 0
     # There should be no ops that are in both lists.

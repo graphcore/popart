@@ -164,7 +164,12 @@ static OpDefinition::DataTypes T = {
     DataType::COMPLEX128,
 };
 
-static OpDefinition depthtospaceOpDef(
+static OpDefinition
+    depthtospace1_OpDef({OpDefinition::Inputs({{"input", T}}),
+                         OpDefinition::Outputs({{"output", T}}),
+                         OpDefinition::Attributes({{"blocksize", {"*"}}})});
+
+static OpDefinition depthtospace11_OpDef(
     {OpDefinition::Inputs({{"input", T}}),
      OpDefinition::Outputs({{"output", T}}),
      OpDefinition::Attributes({{"blocksize", {"*"}}, {"mode", {"*"}}})});
@@ -179,10 +184,13 @@ static std::unique_ptr<Op> depthtospaceOpFactory(const OpCreatorInfo &info) {
       info.attributes.getAttribute<Attributes::Int>("blocksize", 0));
 
   DepthToSpaceMode mode = DepthToSpaceMode::DCR;
-  if (info.attributes.hasAttribute("mode")) {
-    std::string modeString =
-        info.attributes.getAttribute<Attributes::String>("mode");
-    mode = getDepthToSpaceModeFromString(modeString);
+
+  if (info.opid != Onnx::Operators::DepthToSpace_1) {
+    if (info.attributes.hasAttribute("mode")) {
+      std::string modeString =
+          info.attributes.getAttribute<Attributes::String>("mode");
+      mode = getDepthToSpaceModeFromString(modeString);
+    }
   }
 
   return std::make_unique<DepthToSpaceOp>(
@@ -197,7 +205,9 @@ static std::unique_ptr<Op> spacetodepthOpFactory(const OpCreatorInfo &info) {
 }
 
 static OpCreator<DepthToSpaceOp> depthtospaceOpCreator(
-    {{Onnx::Operators::DepthToSpace_11, depthtospaceOpDef}},
+    {{Onnx::Operators::DepthToSpace_1, depthtospace1_OpDef},
+     {Onnx::Operators::DepthToSpace_11, depthtospace11_OpDef},
+     {Onnx::CustomOperators::DepthToSpace, depthtospace11_OpDef}},
     depthtospaceOpFactory,
     true);
 

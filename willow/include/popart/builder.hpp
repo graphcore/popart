@@ -240,6 +240,32 @@ public:
                   const std::string &name = {});
 
   /**
+   * Add the 'DepthToSpace' to the model
+   * (This allows DepthToSpace_11 to be targeted from earlier opsets)
+   *
+   * The purpose of Depth to Space, also known as pixel shuffling, is to
+   * rearrange data from the depth (channels) dimension into the spacial (width
+   * and height) dimensions. It is an efficient means of learning upsampling
+   * alongside mixing convolution with bilinear interpolation and using
+   * transpose convolution.
+   *
+   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#DepthToSpace
+   *
+   * \param args List containing single tensor input
+   * \param blocksize Indicates the scale factor: if the input is [N, C, H, W]
+   *     and the blocksize is B, the output will be [N, C/(B*B), H*B, W*B]
+   * \param mode Specifies how the data is rearranged
+         "DCR": depth-column-row order
+         "CRD": column-row-depth order
+   * \param name Optional identifier for the operation
+   * \return A tensor which is a rearrangement of the input tensor
+   */
+  TensorId depthtospace(const std::vector<TensorId> &args,
+                        int64_t blocksize,
+                        const std::string &mode = "DCR",
+                        const std::string &name = "");
+
+  /**
    * Add the 'Round' to the model
    * (This allows Round_11 to be targeted from earlier opsets)
    *

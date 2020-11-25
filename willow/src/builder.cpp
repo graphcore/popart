@@ -607,6 +607,22 @@ TensorId AiGraphcoreOpset1::detach(const std::vector<TensorId> &args,
       .at(0);
 }
 
+TensorId AiGraphcoreOpset1::depthtospace(const std::vector<TensorId> &args,
+                                         int64_t blocksize,
+                                         const std::string &mode,
+                                         const std::string &name) {
+  std::map<std::string, popart::any> attributes;
+  attributes["blocksize"] = blocksize;
+  if (mode != "DCR") {
+    attributes["mode"] = mode;
+  }
+  return impl->op(Onnx::AiGraphcore::OpSet1::DepthToSpace,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
 TensorId AiGraphcoreOpset1::round(const std::vector<TensorId> &args,
                                   const std::string &name) {
   std::map<std::string, popart::any> attributes;

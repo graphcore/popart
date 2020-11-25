@@ -2,6 +2,7 @@
 #define BOOST_TEST_MODULE DepthToSpaceOpPatternTest
 
 #include <functional>
+#include <memory>
 
 #include <boost/test/unit_test.hpp>
 #include <popart/builder.hpp>
@@ -10,21 +11,19 @@
 #include <popart/ir.hpp>
 #include <popart/testdevice.hpp>
 
-BOOST_AUTO_TEST_CASE(DepthToSpaceOpPatternTest0) {
-
+template <typename Fn> void testDepthToSpace(const Fn &opset) {
   using namespace popart;
 
   auto builder = Builder::create();
-  auto aiOnnx  = builder->aiOnnxOpset11();
 
   int N = 3;
   int C = 4;
   int H = 8;
   int W = 8;
-  popart::TensorInfo inputInfo{"FLOAT", std::vector<int64_t>{N, C, H, W}};
+  TensorInfo inputInfo{"FLOAT", std::vector<int64_t>{N, C, H, W}};
   auto input = builder->addInputTensor(inputInfo);
 
-  auto out = aiOnnx.depthtospace({input}, {2}, {"DCR"});
+  auto out = opset(*builder, input);
 
   builder->addOutputTensor(out);
   auto proto      = builder->getModelProto();
@@ -47,9 +46,40 @@ BOOST_AUTO_TEST_CASE(DepthToSpaceOpPatternTest0) {
               Patterns({PreAliasPatternType::DepthToSpaceOpPattern})
                   .enableRuntimeAsserts(false)});
 
+  BOOST_CHECK(ir.opsOfType(Onnx::Operators::DepthToSpace_1).size() == 0);
   BOOST_CHECK(ir.opsOfType(Onnx::Operators::DepthToSpace_11).size() == 0);
+  BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::DepthToSpace).size() == 0);
+
   BOOST_CHECK(ir.opsOfType(Onnx::Operators::Reshape_5).size() == 2);
   BOOST_CHECK(ir.opsOfType(Onnx::Operators::Transpose_1).size() == 1);
+}
+
+BOOST_AUTO_TEST_CASE(DepthToSpaceOpPatternTest0_1) {
+  auto add_dts = [](popart::Builder &builder, const popart::TensorId &input) {
+    // Opset 6 uses DepthToSpace_1
+    auto opset = builder.aiOnnxOpset6();
+    return opset.depthtospace({input}, {2}, "name");
+  };
+
+  testDepthToSpace(add_dts);
+}
+
+BOOST_AUTO_TEST_CASE(DepthToSpaceOpPatternTest0_11) {
+  auto add_dts = [](popart::Builder &builder, const popart::TensorId &input) {
+    auto opset = builder.aiOnnxOpset11();
+    return opset.depthtospace({input}, {2}, {"DCR"}, "name");
+  };
+
+  testDepthToSpace(add_dts);
+}
+
+BOOST_AUTO_TEST_CASE(DepthToSpaceOpPatternTest0_Custom) {
+  auto add_dts = [](popart::Builder &builder, const popart::TensorId &input) {
+    auto opset = builder.aiGraphcoreOpset1();
+    return opset.depthtospace({input}, {2}, {"DCR"});
+  };
+
+  testDepthToSpace(add_dts);
 }
 
 BOOST_AUTO_TEST_CASE(DepthToSpaceOpPatternTest1) {
