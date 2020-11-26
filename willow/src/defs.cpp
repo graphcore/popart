@@ -262,8 +262,8 @@ void MultiConvShapeInference(InferenceContext &ctx) {
   getRepeatedAttribute(ctx, "dilations", flatDilations);
 
   for (size_t outIdx = 0; outIdx < num_outputs; ++outIdx) {
-    size_t dataIdx    = (2 * outIdx);
-    size_t weightsIdx = (2 * outIdx) + 1;
+    size_t dataIdx    = (3 * outIdx);
+    size_t weightsIdx = (3 * outIdx) + 1;
 
     propagateElemTypeFromInputToOutput(ctx, dataIdx, outIdx);
 
@@ -810,8 +810,8 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
                 "be run in parallel")
         .Input(0,
                "inputs",
-               "List of inputs to the convolutions, in pairwise 'data, "
-               "weights' order",
+               "List of inputs to the convolutions, in triplets 'data, "
+               "weights, biases' order",
                "T",
                OpSchema::Variadic)
         .Output(0,
