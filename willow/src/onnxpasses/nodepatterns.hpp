@@ -16,6 +16,22 @@ private:
   bool go(const Node &node) final;
 };
 
+// Replace:
+//    [U1, ...] = MultiConv([X1, Y1, b1], ...)
+//
+// With:
+//    [V1, ...] = MultiConv([X1, Y1], ...)
+//    [U1, ...] = [addBias(V1, b1), ...]
+//
+// Where bias is an optional tensor input for each conv.
+class MultiConvWithBias : public NodePattern {
+public:
+  MultiConvWithBias(Graph &g, Suffixer &s) : NodePattern(g, s) {}
+
+private:
+  bool go(const Node &node) final;
+};
+
 // Replace tan(x) with div(sin(x),cos(x))
 class Tan : public NodePattern {
 public:

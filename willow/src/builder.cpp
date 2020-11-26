@@ -410,13 +410,18 @@ std::vector<TensorId> AiGraphcoreOpset1::multiconv(
                 name);
   }
 
-  // 2. Each conv must have exactly two inputs. An optional third bias
-  //    input is not supported for multiconv
+  // 2. Each conv must have at least two inputs where the third bias input is
+  // optional.
   for (size_t i = 0; i < numConvs; i++) {
     auto numConvInputs = tensors[i].size();
-    if (numConvInputs != 2) {
-      throw error("Each convolution of MultiConvOp '{}' must have exactly two "
+    if (numConvInputs < 2) {
+      throw error("Each convolution of MultiConvOp '{}' must have at least two "
                   "inputs - data and weights",
+                  name);
+    }
+    if (numConvInputs > 3) {
+      throw error("Each convolution of MultiConvOp '{}' can have at most three "
+                  "inputs - data, weights, and bias",
                   name);
     }
   }
@@ -468,6 +473,11 @@ std::vector<TensorId> AiGraphcoreOpset1::multiconv(
   for (size_t i = 0; i < numConvs; i++) {
     flatTensors.insert(
         flatTensors.end(), tensors[i].cbegin(), tensors[i].cend());
+
+    if (tensors[i].size() == 2) {
+      // Unbaised conv - insert empty placeholder for the optional bias
+      flatTensors.emplace_back("");
+    }
 
     // Flatten if not empty
     if (!dilations.empty()) {

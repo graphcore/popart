@@ -91,12 +91,12 @@ public:
    *
    * For example, calling
    *
-   * > A0 = conv({X0, W0})
+   * > A0 = conv({X0, W0, B0})
    * > A1 = conv({X1, W1})
    *
    * is functionally equivalent to calling
    *
-   * > {A0, A1} = multiconv({{X0, W0}, {X1, Q1}).
+   * > {A0, A1} = multiconv({{X0, W0, B0}, {X1, Q1}).
    *
    * It is possible that any two convolutions cannot be executed in parallel
    * due to topological constraints. For example,
@@ -116,7 +116,7 @@ public:
    * poplin::multiconv::convolution
    *
    *
-   * \param tensors List of {DataTensorId, WeightTensorId}
+   * \param tensors List of {DataId, WeightId, BiasId (optional)}
    * \param dilations The dilations attributes for each convolution.
    * \param pads The pads for each convolution.
    * \param strides The strides for each convolution.
@@ -129,7 +129,8 @@ public:
    * \param name Optional identifier for the operation
    *
    * All input vectors must be either empty, or equal in length to
-   * the number of convolutions.
+   * the number of convolutions. Note that groups for each convolution are
+   * automatically inferred from the shapes of the data and weight inputs.
    *
    * \return The TensorId of the output Tensor from each convolution.
    *

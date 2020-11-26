@@ -24,6 +24,7 @@ void Canonnxalizer::canonnxalize(GraphProto &g) const {
 
   std::vector<std::unique_ptr<NodePattern>> patterns;
   patterns.push_back(std::make_unique<ConvWithBias>(g, suffixer));
+  patterns.push_back(std::make_unique<MultiConvWithBias>(g, suffixer));
   patterns.push_back(std::make_unique<Tan>(g, suffixer));
   patterns.push_back(std::make_unique<Asinh>(g, suffixer));
   patterns.push_back(std::make_unique<Acosh>(g, suffixer));

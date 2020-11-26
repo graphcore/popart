@@ -12,8 +12,12 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
+# Test 1D, 2D and 3D multiconvs, and all permutations thereof
+dim_values = [1, 2, 3]
 
-def test_multiconv_infer(op_tester):
+
+@pytest.mark.parametrize("dims", itertools.product(dim_values, dim_values))
+def test_multiconv_infer(op_tester, dims):
     # Shape info for conv0
     bs0 = 1
     chans_in0 = 6
@@ -34,53 +38,52 @@ def test_multiconv_infer(op_tester):
     pad1 = [0]  # upper and lower
     stride1 = [1]
 
-    # Test 1D, 2D and 3D multiconvs, and all permutations thereof
-    allDims = [1, 2, 3]
-    for dims in list(itertools.product(allDims, allDims)):
-        data0 = np.random.rand(bs0, chans_in0,
-                               *([size0] * dims[0])).astype(np.float32)
-        data1 = np.random.rand(bs1, chans_in1,
-                               *([size1] * dims[1])).astype(np.float32)
+    data0 = np.random.rand(bs0, chans_in0,
+                           *([size0] * dims[0])).astype(np.float32)
+    data1 = np.random.rand(bs1, chans_in1,
+                           *([size1] * dims[1])).astype(np.float32)
 
-        filt0 = np.random.rand(chans_out0, chans_in0,
-                               *([kernel_size0] * dims[0])).astype(np.float32)
-        filt1 = np.random.rand(chans_out1, chans_in1,
-                               *([kernel_size1] * dims[1])).astype(np.float32)
+    filt0 = np.random.rand(chans_out0, chans_in0,
+                           *([kernel_size0] * dims[0])).astype(np.float32)
+    filt1 = np.random.rand(chans_out1, chans_in1,
+                           *([kernel_size1] * dims[1])).astype(np.float32)
+    bias1 = np.random.rand(chans_out1).astype(np.float32)
 
-        def init_builder(builder):
-            d0 = builder.addInputTensor(data0)
-            d1 = builder.addInputTensor(data1)
-            f0 = builder.addInputTensor(filt0)
-            f1 = builder.addInitializedInputTensor(filt1)
-            [c0, c1] = builder.aiGraphcore.multiconv(
-                [[d0, f0], [d1, f1]],
-                dilations=[dil0 * dims[0], dil1 * dims[1]],
-                pads=[pad0 * 2 * dims[0], pad1 * 2 * dims[1]],
-                strides=[stride0 * dims[0], stride1 * dims[1]])
-            return [c0, c1]
+    def init_builder(builder):
+        d0 = builder.addInputTensor(data0)
+        d1 = builder.addInputTensor(data1)
+        f0 = builder.addInputTensor(filt0)
+        f1 = builder.addInitializedInputTensor(filt1)
+        b1 = builder.addInitializedInputTensor(bias1)
+        [c0, c1] = builder.aiGraphcore.multiconv(
+            [[d0, f0], [d1, f1, b1]],
+            dilations=[dil0 * dims[0], dil1 * dims[1]],
+            pads=[pad0 * 2 * dims[0], pad1 * 2 * dims[1]],
+            strides=[stride0 * dims[0], stride1 * dims[1]])
+        return [c0, c1]
 
-        def reference(ref_data):
-            d0 = torch.tensor(data0)
-            d1 = torch.tensor(data1)
-            conv0 = _torch_convolution(dims[0],
-                                       [chans_in0, chans_out0, kernel_size0],
-                                       dilation=dil0,
-                                       padding=pad0,
-                                       stride=stride0)
-            conv1 = _torch_convolution(dims[1],
-                                       [chans_in1, chans_out1, kernel_size1],
-                                       dilation=dil1,
-                                       padding=pad1,
-                                       stride=stride1)
-            conv0.weight.data = torch.tensor(filt0)
-            conv0.bias.data = torch.tensor([0.0 for i in range(chans_out0)])
-            conv1.weight.data = torch.tensor(filt1)
-            conv1.bias.data = torch.tensor([0.0 for i in range(chans_out1)])
-            c0 = conv0(d0)
-            c1 = conv1(d1)
-            return [c0, c1]
+    def reference(ref_data):
+        d0 = torch.tensor(data0)
+        d1 = torch.tensor(data1)
+        conv0 = _torch_convolution(dims[0],
+                                   [chans_in0, chans_out0, kernel_size0],
+                                   dilation=dil0,
+                                   padding=pad0,
+                                   stride=stride0)
+        conv1 = _torch_convolution(dims[1],
+                                   [chans_in1, chans_out1, kernel_size1],
+                                   dilation=dil1,
+                                   padding=pad1,
+                                   stride=stride1)
+        conv0.weight.data = torch.tensor(filt0)
+        conv0.bias.data = torch.tensor([0.0 for i in range(chans_out0)])
+        conv1.weight.data = torch.tensor(filt1)
+        conv1.bias.data = torch.tensor(bias1)
+        c0 = conv0(d0)
+        c1 = conv1(d1)
+        return [c0, c1]
 
-        op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.run(init_builder, reference, step_type='infer')
 
 
 def test_multiconv_infer_default(op_tester):
@@ -128,7 +131,8 @@ def test_multiconv_infer_default(op_tester):
     op_tester.run(init_builder, reference, step_type='infer')
 
 
-def test_multiconv_train_default_parameters_and_conv_options(op_tester):
+@pytest.mark.parametrize("dims", itertools.product(dim_values, dim_values))
+def test_multiconv_train_default_parameters_and_conv_options(op_tester, dims):
     """
     Add a multiconv op, comprised of two convolutions, and test for training.
     Strides, Pads, Dilations, and all convolution options are the defaults
@@ -145,59 +149,58 @@ def test_multiconv_train_default_parameters_and_conv_options(op_tester):
     size1 = 5
     kernel_size1 = 2
 
-    # Test 1D, 2D and 3D multiconvs, and all permutations thereof
-    allDims = [1, 2, 3]
-    for dims in list(itertools.product(allDims, allDims)):
-        data0 = np.random.rand(bs0, chans_in0,
-                               *([size0] * dims[0])).astype(np.float32)
-        data1 = np.random.rand(bs1, chans_in1,
-                               *([size1] * dims[1])).astype(np.float32)
+    data0 = np.random.rand(bs0, chans_in0,
+                           *([size0] * dims[0])).astype(np.float32)
+    data1 = np.random.rand(bs1, chans_in1,
+                           *([size1] * dims[1])).astype(np.float32)
 
-        filt0 = np.random.rand(chans_out0, chans_in0,
-                               *([kernel_size0] * dims[0])).astype(np.float32)
-        filt1 = np.random.rand(chans_out1, chans_in1,
-                               *([kernel_size1] * dims[1])).astype(np.float32)
+    filt0 = np.random.rand(chans_out0, chans_in0,
+                           *([kernel_size0] * dims[0])).astype(np.float32)
+    filt1 = np.random.rand(chans_out1, chans_in1,
+                           *([kernel_size1] * dims[1])).astype(np.float32)
+    bias1 = np.random.rand(chans_out1).astype(np.float32)
 
-        def init_builder(builder):
-            d0 = builder.addInputTensor(data0)
-            d1 = builder.addInputTensor(data1)
-            f0 = builder.addInputTensor(filt0)
-            f1 = builder.addInitializedInputTensor(filt1)
-            [c0, c1] = builder.aiGraphcore.multiconv([[d0, f0], [d1, f1]])
-            sumc0 = builder.aiOnnx.reducesum([c0], keepdims=0)
-            sumc1 = builder.aiOnnx.reducesum([c1], keepdims=0)
-            out = builder.aiOnnx.add([sumc0, sumc1])
-            return [
-                out,
-                popart.reservedGradientPrefix() + d0,
-                popart.reservedGradientPrefix() + d1,
-                popart.reservedGradientPrefix() + f0,
-                popart.reservedGradientPrefix() + f1
-            ]
+    def init_builder(builder):
+        d0 = builder.addInputTensor(data0)
+        d1 = builder.addInputTensor(data1)
+        f0 = builder.addInputTensor(filt0)
+        f1 = builder.addInitializedInputTensor(filt1)
+        b1 = builder.addInitializedInputTensor(bias1)
+        [c0, c1] = builder.aiGraphcore.multiconv([[d0, f0], [d1, f1, b1]])
+        sumc0 = builder.aiOnnx.reducesum([c0], keepdims=0)
+        sumc1 = builder.aiOnnx.reducesum([c1], keepdims=0)
+        out = builder.aiOnnx.add([sumc0, sumc1])
+        return [
+            out,
+            popart.reservedGradientPrefix() + d0,
+            popart.reservedGradientPrefix() + d1,
+            popart.reservedGradientPrefix() + f0,
+            popart.reservedGradientPrefix() + f1,
+            popart.reservedGradientPrefix() + b1
+        ]
 
-        def reference(ref_data):
-            d0 = torch.tensor(data0, requires_grad=True)
-            d1 = torch.tensor(data1, requires_grad=True)
-            conv0 = _torch_convolution(dims[0],
-                                       [chans_in0, chans_out0, kernel_size0],
-                                       None, None, None)
-            conv1 = _torch_convolution(dims[1],
-                                       [chans_in1, chans_out1, kernel_size1],
-                                       None, None, None)
-            conv0.weight.data = torch.tensor(filt0)
-            conv0.bias.data = torch.tensor([0.0 for i in range(chans_out0)])
-            conv1.weight.data = torch.tensor(filt1)
-            conv1.bias.data = torch.tensor([0.0 for i in range(chans_out1)])
-            c0 = conv0(d0)
-            c1 = conv1(d1)
-            out = torch.sum(c0) + torch.sum(c1)
-            out.backward()
-            return [
-                out, d0.grad, d1.grad, conv0.weight.grad, conv1.weight.grad
-            ]
+    def reference(ref_data):
+        d0 = torch.tensor(data0, requires_grad=True)
+        d1 = torch.tensor(data1, requires_grad=True)
+        conv0 = _torch_convolution(
+            dims[0], [chans_in0, chans_out0, kernel_size0], None, None, None)
+        conv1 = _torch_convolution(
+            dims[1], [chans_in1, chans_out1, kernel_size1], None, None, None)
+        conv0.weight.data = torch.tensor(filt0)
+        conv0.bias.data = torch.tensor([0.0 for i in range(chans_out0)])
+        conv1.weight.data = torch.tensor(filt1)
+        conv1.bias.data = torch.tensor(bias1)
+        c0 = conv0(d0)
+        c1 = conv1(d1)
+        out = torch.sum(c0) + torch.sum(c1)
+        out.backward()
+        return [
+            out, d0.grad, d1.grad, conv0.weight.grad, conv1.weight.grad,
+            conv1.bias.grad
+        ]
 
-        op_tester.setPatterns(['ConvDataGrad'], enableRuntimeAsserts=False)
-        op_tester.run(init_builder, reference, step_type='train')
+    op_tester.setPatterns(['ConvDataGrad'], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, step_type='train')
 
 
 def test_multiconv_train_all_conv_options(op_tester):
@@ -289,9 +292,14 @@ def test_multiconv_bad_options():
     ))
 
     with pytest.raises(popart.popart_exception) as e_info:
-        [c0, c1] = builder.aiGraphcore.multiconv([[d0, f0, d0], [d0, f0]])
+        [c0, c1] = builder.aiGraphcore.multiconv([[d0], [d0, f0]])
     assert (e_info.value.args[0].endswith(
-        "must have exactly two inputs - data and weights"))
+        "must have at least two inputs - data and weights"))
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        [c0, c1] = builder.aiGraphcore.multiconv([[d0, f0, d0, f0], [d0, f0]])
+    assert (e_info.value.args[0].endswith(
+        "can have at most three inputs - data, weights, and bias"))
 
 
 def test_multiconv_shape_inference():

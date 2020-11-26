@@ -38,6 +38,56 @@ bool ConvWithBias::go(const Node &node) {
   return false;
 }
 
+bool MultiConvWithBias::go(const Node &node) {
+  if (node.op_type() != "MultiConv") {
+    return false;
+  }
+
+  if (node.input_size() != 3 * node.output_size()) {
+    throw internal_error(
+        "Wrong number of inputs for MultiConv op. Expected "
+        "number of inputs to equal three times the number of outputs. "
+        "MultiConv op has {} inputs and {} outputs.",
+        node.input_size(),
+        node.output_size());
+  }
+
+  // Build up correct inputs/outputs for an unbiased MultiConv
+  auto &unbiasedMultiConv = copy(node);
+  int numConvs            = node.input_size() / 3;
+  std::vector<std::string> inputs;
+  std::vector<std::string> outputs;
+
+  for (int i = 0; i < numConvs; i++) {
+    int inputIdx         = i * 3;
+    const auto &dataId   = node.input(inputIdx);
+    const auto &weightId = node.input(inputIdx + 1);
+    const auto &biasId   = node.input(inputIdx + 2);
+    const auto &outputId = node.output(i);
+
+    inputs.emplace_back(dataId);
+    inputs.emplace_back(weightId);
+
+    if (biasId.empty()) {
+      // No bias provided
+      outputs.emplace_back(outputId);
+    } else {
+      // Add bias
+      const auto intermediateName = outputId + suffixer.getAndIncr();
+      outputs.emplace_back(intermediateName);
+
+      auto &addBias = copyUnderscorePrefixedAttributes(node);
+      setIO(addBias, {intermediateName, biasId}, {outputId});
+      addBias.set_op_type("AddBias");
+      addBias.set_domain("ai.graphcore");
+    }
+  }
+
+  // Setup inputs/outputs for the unbiased MultiConv
+  setIO(unbiasedMultiConv, inputs, outputs);
+  return true;
+}
+
 bool Tan::go(const Node &node) {
   if (node.op_type() == "Tan") {
     const auto inName     = node.input(0);
