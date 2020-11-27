@@ -190,7 +190,9 @@ enum class BatchSerializationTransformContext {
   /// Apply before growing the backward pass
   Fwd = 0,
   /// Apply after growing the backward pass
-  Bwd
+  Bwd,
+  /// The number of BatchSerializationTransformContext values.
+  N
 };
 
 /**
@@ -203,7 +205,9 @@ enum class BatchSerializationMethod {
   /// Unroll the batch with static slicing
   UnrollStatic,
   /// Loop over the batch dimension
-  Loop
+  Loop,
+  /// The number of BatchSerializationMethod values.
+  N
 };
 
 /**

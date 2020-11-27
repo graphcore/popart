@@ -314,6 +314,8 @@ bool BatchSerialize::apply(Graph &graph) const {
           method = ShardingMethod::Loop;
           break;
         };
+        default:
+          throw error("[BatchSerialize] Unsupported method.");
         }
 
         ShardingPlan outputPlan(method);
