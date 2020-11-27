@@ -42,8 +42,9 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
   case ReductionType::Sum:
     break;
   case ReductionType::Mean: {
-    double totalSamples = static_cast<double>(dv_p->getReplicationFactor()) *
-                          static_cast<double>(getInTensor(0).numElements());
+    double totalSamples =
+        static_cast<double>(dv_p->getGlobalReplicationFactor()) *
+        static_cast<double>(getInTensor(0).numElements());
     scale = lambda / totalSamples;
     break;
   }

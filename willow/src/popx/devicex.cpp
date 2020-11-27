@@ -649,13 +649,15 @@ void Devicex::connectRandomSeedStream() {
       const Tensor *seedTensor = executable_.getSeedTensor();
       const uint64_t *seedVal =
           reinterpret_cast<const uint64_t *>(seedTensor->tensorData()->data());
+      const unsigned globalReplicaId =
+          replicaId + (getReplicationFactor() * getGlobalReplicaOffset());
       logging::devicex::debug(
           "Updating random seed for replica:{} to `{} + replicaId({})'",
-          replicaId,
+          globalReplicaId,
           *seedVal,
           replicaId);
       uint64_t *data = reinterpret_cast<uint64_t *>(ptr);
-      data[0]        = *seedVal + replicaId;
+      data[0]        = *seedVal + globalReplicaId;
     };
 
     pEngine->connectStreamToCallback(
@@ -755,6 +757,10 @@ unsigned Devicex::getAccumulationFactor() const {
 
 unsigned Devicex::getGlobalReplicationFactor() const {
   return lowering().getGlobalReplicationFactor();
+}
+
+unsigned Devicex::getGlobalReplicaOffset() const {
+  return lowering().getGlobalReplicaOffset();
 }
 
 unsigned Devicex::getReplicationFactor() const {

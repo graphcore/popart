@@ -1072,7 +1072,6 @@ PYBIND11_MODULE(popart_core, m) {
                       &SessionOptions::globalReplicationFactor);
     cls.def_readwrite("globalReplicaOffset",
                       &SessionOptions::globalReplicaOffset);
-    cls.def_readwrite("ipuSystemType", &SessionOptions::ipuSystemType);
     cls.def_readwrite("groupHostSync", &SessionOptions::groupHostSync);
     cls.def_readwrite("strictOpVersions", &SessionOptions::strictOpVersions);
     cls.def_readwrite("opxAliasChecking", &SessionOptions::opxAliasChecking);

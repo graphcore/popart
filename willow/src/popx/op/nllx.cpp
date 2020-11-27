@@ -122,7 +122,7 @@ void NllOpx::applyScalingInPlaceForMeanReduction(
   double totalSamples = static_cast<double>(t.dim(0));
   if (include_replication) {
     totalSamples *=
-        static_cast<double>(opx.getDevicex()->getReplicationFactor());
+        static_cast<double>(opx.getDevicex()->getGlobalReplicationFactor());
   }
 
   auto combined_scale = popops::div(opx.graph(),
@@ -158,7 +158,7 @@ void NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
     numNonIgnoredSamples = popops::mul(
         opx.graph(),
         numNonIgnoredSamples,
-        static_cast<float>(opx.getDevicex()->getReplicationFactor()),
+        static_cast<float>(opx.getDevicex()->getGlobalReplicationFactor()),
         prog,
         opx.debugPrefix("repFactor"));
   }

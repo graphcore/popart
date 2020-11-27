@@ -379,7 +379,7 @@ public:
 
   // If globalReplicatedGraphs are enabled then this will return an
   // offset into the global instances, otherwise 0.
-  unsigned getReplicaOffset() const;
+  unsigned getGlobalReplicaOffset() const;
 
   unsigned getGlobalReplicationFactor() const;
 

@@ -2180,7 +2180,7 @@ unsigned IrLowering::getReplicationFactor() const {
 
 unsigned IrLowering::getGlobalReplicationFactor() const {
 
-  unsigned globalReplicationFactor = 1;
+  unsigned globalReplicationFactor = getReplicationFactor();
   if (ir().getSessionOptions().enableDistributedReplicatedGraphs) {
     globalReplicationFactor =
         static_cast<unsigned>(ir().getSessionOptions().globalReplicationFactor);
@@ -2201,9 +2201,22 @@ unsigned IrLowering::getGlobalReplicationFactor() const {
   return globalReplicationFactor;
 }
 
+unsigned IrLowering::getGlobalReplicaOffset() const {
+
+  unsigned globalReplicaOffset = 0;
+  if (ir().getSessionOptions().enableDistributedReplicatedGraphs) {
+    globalReplicaOffset =
+        static_cast<unsigned>(ir().getSessionOptions().globalReplicaOffset);
+  }
+
+  return globalReplicaOffset;
+}
+
 bool IrLowering::isReplicatedGraph() const {
-  const bool isLocallyReplicated  = getReplicationFactor() > 1;
-  const bool isGloballyReplicated = getGlobalReplicationFactor() > 1;
+  const unsigned localReplicas   = getReplicationFactor();
+  const bool isLocallyReplicated = localReplicas > 1;
+  const bool isGloballyReplicated =
+      getGlobalReplicationFactor() > localReplicas;
   return isLocallyReplicated || isGloballyReplicated;
 }
 
@@ -3374,11 +3387,11 @@ void IrLowering::initPoplarGraph() {
 
   if (ir().getSessionOptions().enableDistributedReplicatedGraphs) {
     auto globalReplicationFactor = getGlobalReplicationFactor();
-    auto localReplicationFactor = ir().getSessionOptions().replicatedGraphCount;
+    auto localReplicationFactor  = getReplicationFactor();
     auto numInstances = globalReplicationFactor / localReplicationFactor;
 
-    auto globalNumIpus  = deviceInfo->getNumIpus() * numInstances;
-    auto &ipuSystemType = ir().getSessionOptions().ipuSystemType;
+    auto globalNumIpus = deviceInfo->getNumIpus() * numInstances;
+    auto archString    = deviceInfo->getTarget().getTargetArchString();
 
     replicationFactor = globalReplicationFactor;
 
@@ -3388,7 +3401,7 @@ void IrLowering::initPoplarGraph() {
     switch (deviceInfo->getType()) {
     case DeviceType::Ipu: {
       popTarget = poplar::Target::createIPUTarget(
-          static_cast<unsigned>(globalNumIpus), ipuSystemType);
+          static_cast<unsigned>(globalNumIpus), archString);
       break;
     }
     case DeviceType::Cpu:

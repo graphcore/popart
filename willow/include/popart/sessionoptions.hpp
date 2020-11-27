@@ -689,9 +689,6 @@ struct SessionOptions {
   /// The first replica index that this PopART instance is running
   int64_t globalReplicaOffset = 0;
 
-  /// The IPU SystemType
-  std::string ipuSystemType = "ipu1";
-
   /// Allows to group the streams from host at the beginning and the streams
   /// to host at the end, this trades off sum-liveness efficiency for cycle
   /// efficiency.
