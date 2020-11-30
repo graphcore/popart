@@ -12,6 +12,10 @@
 
 namespace popart {
 
+namespace popx {
+class Executablex;
+}
+
 class StepIOCallback : public IStepIO {
 
 public:
@@ -27,7 +31,7 @@ public:
       : inputCb(inputCb_), inputCompleteCb(inputCompleteCb_),
         outputCb(outputCb_), outputCompleteCb(outputCompleteCb_) {}
 
-  void assertNumElements(const Ir &) const {}
+  void assertNumElements(const popx::Executablex &) const {}
 
   ConstVoidData in(TensorId id, int64_t numElements, bool prefetch)final;
   void inComplete(TensorId id, int64_t numElements) final;

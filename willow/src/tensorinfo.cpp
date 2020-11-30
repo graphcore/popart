@@ -450,7 +450,6 @@ Shape TensorInfo::shapeFromString(const std::string &s) const {
     shape.push_back(std::stoi(token));
   }
 
-  std::stringstream ss;
   return shape;
 }
 

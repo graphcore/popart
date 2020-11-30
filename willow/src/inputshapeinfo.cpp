@@ -1,4 +1,5 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <boost/functional/hash.hpp>
 #include <set>
 #include <popart/error.hpp>
 #include <popart/inputshapeinfo.hpp>
@@ -40,3 +41,19 @@ std::vector<TensorId> InputShapeInfo::getAllTensorIds() const {
 }
 
 } // namespace popart
+
+namespace std {
+std::size_t std::hash<popart::InputShapeInfo>::operator()(
+    const popart::InputShapeInfo &info) const {
+  std::size_t seed = 0;
+  for (const auto &kv : info.getInfos()) {
+    boost::hash_combine(seed, kv.first);
+
+    std::stringstream ss;
+    kv.second.append(ss);
+    std::string serializedTensorInfo = ss.str();
+    boost::hash_combine(seed, serializedTensorInfo);
+  }
+  return seed;
+}
+} // namespace std

@@ -301,6 +301,15 @@ public:
   bool operator==(const Patterns &p) const;
   friend std::ostream &operator<<(std::ostream &os, const Patterns &patterns);
 
+  const std::map<std::type_index, bool> &getSettings() const {
+    return settings;
+  }
+  bool getInplaceEnabled() const { return inplaceEnabled; }
+  bool getUpdateInplacePrioritiesForIpuEnabled() const {
+    return updateInplacePrioritiesForIpuEnabled;
+  }
+  bool getRuntimeAssertsOn() const { return runtimeAssertsOn; }
+
 private:
   void ensureAllMandatoryPreAliasPatternsAreEnabled() const;
 
@@ -317,6 +326,18 @@ private:
 
 std::ostream &operator<<(std::ostream &os, const Patterns &patterns);
 
+} // namespace popart
+
+namespace std {
+template <> struct hash<popart::Patterns> {
+  std::size_t operator()(const popart::Patterns &patterns) const;
+};
+} // namespace std
+
+namespace popart {
+inline std::size_t hash_value(const Patterns &patterns) {
+  return std::hash<Patterns>()(patterns);
+}
 } // namespace popart
 
 #endif

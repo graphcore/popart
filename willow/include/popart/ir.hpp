@@ -128,6 +128,25 @@ public:
 
   enum class SerialiseFormat { JSON };
 
+  class SavedInfo {
+  public:
+    SavedInfo(const popart::Ir &ir);
+    SavedInfo(std::size_t);
+
+    void serialize(std::ostream &os);
+
+    static SavedInfo deserialize(std::istream &is);
+
+    bool operator==(const SavedInfo &rhs) const { return irHash == rhs.irHash; }
+
+    std::string toString() const;
+
+    std::size_t irHash;
+
+  private:
+    SavedInfo() : irHash(0) {}
+  };
+
   Ir();
   ~Ir();
 
@@ -146,6 +165,7 @@ public:
 
   // Set the input shape information
   void setInputShapeInfo(const InputShapeInfo &info);
+  const InputShapeInfo &getInputShapeInfo() const { return inputShapeInfo; }
 
   // Set the optimizer and add optimizer tensors
   // NOTE: could this be combined with updateOptimizerFromHost?
@@ -164,6 +184,7 @@ public:
 
   // Set the optimization patterns
   void setPatterns(const Patterns &p);
+  const Patterns &getPatterns() const { return patterns; }
   std::string getPatternLevelStr(const Patterns &p);
   bool isPatternsLevel(const Patterns &p, PatternsLevel level);
 
@@ -182,15 +203,13 @@ public:
   // Log the IR in a human readable format.
   void logIr();
 
+  void getOrSaveIrHash(const IrBundle &gb);
+
   // Prepare the IR based on the IrBundle configuration
   void prepare(const IrBundle &);
 
   bool isPrepared() const { return isPrepared_; }
-
-  // Reset the weights with data from an ONNX model
-  void resetWeights(
-      const ONNX_NAMESPACE::ModelProto &modelProto,
-      const bool ignoreWeightsInModelWithoutCorrespondingIrWeight = false);
+  bool hashMatched() const { return hashMatched_; }
 
   void updateOptimizer(const Optimizer &);
   // take training steps
@@ -264,9 +283,10 @@ public:
   // returns true
   bool useSyntheticData() const;
 
-  void setRandomSeedValue(uint64_t seedVal);
-
 public:
+  static bool usingEngineCache(const SessionOptions &, const DeviceInfo *);
+  static std::string getPopartCachePath(const std::string &);
+
   OpId getOpsCounter() const;
   OpId getAndIncrOpsCounter();
   TensorId getFinalLossId() const;
@@ -561,6 +581,7 @@ private:
 
   bool executionPhasesReady = false;
   bool isPrepared_          = false;
+  bool hashMatched_         = false;
 
   bool requiresRandomSeed_ = false;
 
@@ -574,6 +595,12 @@ private:
   std::map<RandomReferenceId, TensorId> randomReferenceTensorMap;
 
   std::map<RemoteBufferId, RemoteBufferInfo> remoteBufferInfoMap;
+
+  // Store a hash which can identify the Ir when deserializing
+  // PopART state.
+  nonstd::optional<size_t> hash_;
+
+  size_t irBundleHash = 0;
 
 public:
   // A "dummy" Op used to ensure that anchor tensors
@@ -600,6 +627,11 @@ public:
   std::vector<std::vector<Op *>>
   getAccumulateOuterFragmentBinConstraints(const Graph &graph) const;
 
+  size_t getHash() const;
+  void setHash(size_t);
+  size_t getIrBundleHash() const;
+  void setIrBundleHash(size_t);
+
 private:
   uint64_t intermediate_tensor_counter{0};
   uint64_t subgraph_id_counter{0};
@@ -609,19 +641,13 @@ private:
 
 namespace std {
 template <> struct hash<popart::Ir> {
-  std::size_t operator()(const popart::Ir &ir) const {
-    // Hash based on all the IR attributes that
-    // can affect compiled program
-
-    std::stringstream ss;
-    ir.append(ss);
-
-    return std::hash<std::string>{}(ss.str()) ^
-           std::hash<popart::DataFlow>{}(ir.getDataFlow()) ^
-           std::hash<popart::DeviceInfo>{}(*(ir.getDeviceInfo())) ^
-           std::hash<popart::SessionOptions>{}(ir.getSessionOptions());
-  }
+  std::size_t operator()(const popart::Ir &ir) const;
 };
+
+template <> struct hash<popart::IrBundle> {
+  std::size_t operator()(const popart::IrBundle &irBundle) const;
+};
+
 } // namespace std
 
 #endif

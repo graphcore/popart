@@ -25,6 +25,8 @@ public:
   // or an actual tensor
   std::vector<TensorId> getAllTensorIds() const;
 
+  const std::map<TensorId, TensorInfo> &getInfos() const { return infos; }
+
 private:
   std::map<TensorId, TensorInfo> infos;
   // we will also have a map of actual tensors, these
@@ -32,6 +34,18 @@ private:
   // indices for example) (TODO T5252)
 };
 
+} // namespace popart
+
+namespace std {
+template <> struct hash<popart::InputShapeInfo> {
+  std::size_t operator()(const popart::InputShapeInfo &info) const;
+};
+} // namespace std
+
+namespace popart {
+inline std::size_t hash_value(const InputShapeInfo &info) {
+  return std::hash<InputShapeInfo>()(info);
+}
 } // namespace popart
 
 #endif

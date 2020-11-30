@@ -223,7 +223,20 @@ protected:
    *
    * /param deviceInfo which defines the type of device to work on
    */
-  void setDevice(std::shared_ptr<DeviceInfo> deviceInfo);
+  void setDevice(std::shared_ptr<DeviceInfo> deviceInfo); /**
+
+  * Attempts to load a serialized executable. If succesful then Ir
+  * preparation and `poplar::Graph` compilation are skipped.
+  *
+  * \param modelProto An ONNX model protobuf
+  * \param dataFlow Configuration for the data feeds and fetches
+  * \param userOptions String to configure session options
+  * \param deviceInfo which defines the type of device to work on
+  */
+  bool tryLoadExecutable(const ONNX_NAMESPACE::ModelProto &modelProto,
+                         const DataFlow &dataFlow,
+                         const SessionOptions &userOptions,
+                         std::shared_ptr<DeviceInfo> deviceInfo);
 
   /**
    * abstraction of the computation, the Ir is where

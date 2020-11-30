@@ -1,6 +1,8 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popart/optimizervaluemap.hpp>
 
+#include <boost/functional/hash.hpp>
+
 namespace popart {
 
 void OptimizerValueMap::insertSpecific(const TensorId &id, OptimizerValue ov) {
@@ -48,3 +50,16 @@ bool OptimizerValueMap::validReplacement(const OptimizerValueMap &ovm) const {
 }
 
 } // namespace popart
+
+namespace std {
+std::size_t std::hash<popart::OptimizerValueMap>::operator()(
+    const popart::OptimizerValueMap &vmap) const {
+  std::size_t seed = 0;
+  boost::hash_combine(seed, hash_value(vmap.getDefault()));
+  for (const auto &kv : vmap.getSpecifics()) {
+    boost::hash_combine(seed, kv.first);
+    boost::hash_combine(seed, hash_value(kv.second));
+  }
+  return seed;
+}
+} // namespace std

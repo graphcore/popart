@@ -13,6 +13,8 @@
 #include <popart/tensors.hpp>
 #include <popart/util.hpp>
 
+#include <boost/functional/hash.hpp>
+
 namespace popart {
 
 std::map<std::string, OptimizerValue>
@@ -182,6 +184,13 @@ Optimizer::Optimizer(OptimizerValue ls_,
   if (!(ls.val() > 0.0f || ls.val() < 0.0f)) {
     throw error("Loss scaling cannot be 0");
   }
+}
+
+size_t Optimizer::hash() const {
+  std::size_t seed = 0;
+  boost::hash_combine(seed, ls);
+  boost::hash_range(seed, clipNormSettings.begin(), clipNormSettings.end());
+  return seed;
 }
 
 bool SGD::hasSpecific(const Tensor &w) const {
@@ -560,4 +569,25 @@ std::unique_ptr<Optimizer> SGD::clone() const {
   return std::make_unique<SGD>(*this);
 }
 
+size_t SGD::hash() const {
+  std::size_t seed = 0;
+  boost::hash_combine(seed, Optimizer::hash());
+  boost::hash_combine(seed, lrs);
+  boost::hash_combine(seed, wds);
+  boost::hash_combine(seed, mms);
+  boost::hash_combine(seed, dps);
+  boost::hash_combine(seed, vss);
+  return seed;
+}
+
 } // namespace popart
+
+namespace std {
+std::size_t std::hash<popart::ClipNormSettings>::operator()(
+    const popart::ClipNormSettings &settings) const {
+  std::size_t seed = 0;
+  boost::hash_combine(seed, settings.maxNorm);
+  boost::hash_range(seed, settings.weightIds.begin(), settings.weightIds.end());
+  return seed;
+}
+} // namespace std

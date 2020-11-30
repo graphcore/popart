@@ -16,6 +16,10 @@
 #include <popart/ir.hpp>
 #include <popart/vendored/optional.hpp>
 
+namespace ONNX_NAMESPACE {
+class ModelProto;
+}
+
 namespace popart {
 class StepIOSplitter;
 
@@ -55,7 +59,7 @@ private:
 public:
   Executablex(IrLowering &ir_lowering_);
   Executablex(IrLowering &ir_lowering_,
-              std::unordered_map<TensorId, std::unique_ptr<Tensor>> tensorMap,
+              std::unordered_map<TensorId, std::unique_ptr<Tensor>> &&tensorMap,
               std::map<TensorId, CollectiveBalancedHostRearrangement> &&cbrMap);
 
   static std::unique_ptr<Executablex>
@@ -63,7 +67,7 @@ public:
 
   static std::unique_ptr<Executablex> createFromStream(
       IrLowering &ir_lowering_,
-      std::unordered_map<TensorId, std::unique_ptr<Tensor>> tensorMap,
+      std::unordered_map<TensorId, std::unique_ptr<Tensor>> &&tensorMap,
       std::map<TensorId, CollectiveBalancedHostRearrangement> &&cbrMap);
 
   IrLowering &lowering();
@@ -71,8 +75,17 @@ public:
 
   const Ir &ir() const;
 
+  bool isDeserialized() const { return deserialized; }
+  bool shouldSerialize();
+
+  bool containsTensor(const TensorId &id) const;
   Tensor *getTensor(const TensorId &);
   const Tensor *getTensor(const TensorId &) const;
+
+  void setRandomSeedValue(uint64_t value);
+  void resetWeights(
+      const ONNX_NAMESPACE::ModelProto &modelProto,
+      const bool ignoreWeightsInModelWithoutCorrespondingIrWeight = false);
 
   const SessionOptions &getSessionOptions() const { return options; }
 
@@ -99,6 +112,20 @@ public:
 
   const std::map<TensorId, CollectiveBalancedHostRearrangement>
   getCollectiveBalancedHostRearrangements() const;
+
+  static std::string getExecutablexCachePath(const std::string &cachePath);
+
+  // Serialize this object and save the ouptut to disk.
+  void saveExecutablex();
+
+  // Get the poplar::Executable from the IrLowering. If the executable
+  // was cached on disk then the cached executable will be returned.
+  // If not the graph is compiled and the resulting executable is returned.
+  // If engine caching is enabled then the graph compilation result is
+  // serialized and stored to disk. In this case the `popx::Executablex' is
+  // also serialized and stored to `ir().getSessionOptions().cachePath'.
+  // The logic has been kept this way to
+  poplar::Executable getPoplarExecutable();
 };
 
 } // namespace popx

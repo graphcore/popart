@@ -477,6 +477,8 @@ public:
   const OptimizerValueMap &momentums() const { return ms; }
   const OptimizerValueMap &epss() const { return epsvs; }
 
+  virtual size_t hash() const;
+
 private:
   void runValueChecks(OptimizerValue lr,
                       OptimizerValue wd,

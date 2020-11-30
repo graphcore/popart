@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <array>
 #include <fstream>
+#include <iomanip>
 #include <map>
 #include <random>
 #include <sstream>
@@ -9,6 +10,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include <boost/filesystem.hpp>
+#include <boost/functional/hash.hpp>
 #include <boost/random/normal_distribution.hpp>
 
 #include <popart/builder.hpp>
@@ -88,6 +91,25 @@
 #include <poplar/Target.hpp>
 
 namespace popart {
+
+Ir::SavedInfo::SavedInfo(const popart::Ir &ir)
+    : irHash(std::hash<popart::Ir>{}(ir)) {}
+Ir::SavedInfo::SavedInfo(std::size_t hash) : irHash(hash) {}
+
+void Ir::SavedInfo::serialize(std::ostream &os) { os << irHash; }
+
+Ir::SavedInfo Ir::SavedInfo::deserialize(std::istream &is) {
+  Ir::SavedInfo result;
+  is >> result.irHash;
+  return result;
+}
+
+std::string Ir::SavedInfo::toString() const {
+  std::stringstream ss;
+  ss << std::hex << std::setfill('0') << std::setw(2 * sizeof(std::size_t))
+     << irHash;
+  return ss.str();
+}
 
 Ir::~Ir() = default;
 
@@ -235,6 +257,14 @@ bool Ir::useSyntheticData() const {
   return syntheticDataMode() != SyntheticDataMode::Off;
 }
 
+bool Ir::usingEngineCache(const SessionOptions &opts, const DeviceInfo *di) {
+  return opts.enableEngineCaching && !opts.cachePath.empty() &&
+         di->getType() == DeviceType::Ipu;
+}
+std::string Ir::getPopartCachePath(const std::string &cachePath) {
+  return cachePath + ".popart";
+}
+
 void Ir::setUserOptions(const SessionOptions &flags) { userOptions = flags; }
 
 void Ir::setInputShapeInfo(const InputShapeInfo &info) {
@@ -298,6 +328,54 @@ void Ir::logIr() {
   append(ss2);
   logging::ir::info(ss2.str());
   logging::ir::info("End IR");
+}
+
+void Ir::getOrSaveIrHash(const IrBundle &gb) {
+  if (false == Ir::usingEngineCache(userOptions, deviceInfo)) {
+    logging::ir::warn("Engine caching disabled. Skipping Ir hashing.");
+    return;
+  }
+
+  auto cachePath       = userOptions.cachePath;
+  auto popartCachePath = getPopartCachePath(cachePath);
+
+  size_t hash = std::hash<Ir>()(*this);
+  setHash(hash);
+
+  if (boost::filesystem::exists(popartCachePath)) {
+    std::ifstream popartFs(popartCachePath, std::ifstream::binary);
+    hashMatched_ = false;
+    if (popartFs.is_open()) {
+      size_t savedHash = SavedInfo::deserialize(popartFs).irHash;
+
+      if (hash == savedHash) {
+        hashMatched_ = true;
+        return;
+      } else {
+        logging::ir::warn("Ir hash mismatch with cached value.");
+      }
+    } else {
+      logging::ir::warn("Could not open ir hash file `{}'", popartCachePath);
+    }
+  }
+
+  // If target directory does not exist, create it
+  auto cachePathObj = boost::filesystem::path(cachePath);
+  if (cachePathObj.has_parent_path()) {
+    auto cacheDir = cachePathObj.parent_path();
+    if (!boost::filesystem::exists(cacheDir)) {
+      logging::ir::warn("Specified cache directory not found. "
+                        "Creating {} directory ",
+                        cacheDir);
+      if (!boost::filesystem::create_directory(cacheDir))
+        throw error("Cannot create cache directory. Aborting.");
+    }
+  }
+
+  std::ofstream popartFs(popartCachePath, std::ofstream::binary);
+  logging::ir::warn("Saving popart ir hash to '{}'", popartCachePath);
+  SavedInfo savedInfo(hash);
+  savedInfo.serialize(popartFs);
 }
 
 void Ir::verifyPipelineSettings() const {
@@ -847,6 +925,21 @@ void Ir::prepareImpl(const IrBundle &gb) {
 
   // construct the forward pass from ONNX,
   constructForwards();
+
+  // Check if cached Ir hash matches the current one and skip
+  // the rest of the Ir preparation if true.
+  setIrBundleHash(std::hash<popart::IrBundle>()(gb));
+  getOrSaveIrHash(gb);
+  if (hashMatched()) {
+    logging::ir::info("Ir hash matched cached value. Skipping Ir preparation");
+    if (gb.optimizer) {
+      optimizer = gb.optimizer->clone();
+      optimizer->setFactorsFromOptions(getSessionOptions());
+    }
+    setIsPrepared();
+    return;
+  }
+
   if (!virtualGraphsEnabled()) {
     unsetAllVirtualGraphIds();
   }
@@ -1421,30 +1514,6 @@ std::vector<TensorId> Ir::getModelInputIds() const {
     modelProtoInputIds.push_back(valueInfo.name());
   }
   return modelProtoInputIds;
-}
-
-void Ir::resetWeights(
-    const ONNX_NAMESPACE::ModelProto &modelProto,
-    const bool ignoreWeightsInModelWithoutCorrespondingIrWeight) {
-  auto &onnxGraph = modelProto.graph();
-
-  for (const auto &initializer : onnxGraph.initializer()) {
-    TensorId tenId = initializer.name();
-    if (!getTensors().contains(tenId)) {
-      if (ignoreWeightsInModelWithoutCorrespondingIrWeight) {
-        continue;
-      } else {
-        throw error("resetWeights, no tensor '" + tenId + "' in tensors");
-      }
-    }
-    auto tensor = getTensors().get(tenId);
-    if (tensor->info != TensorInfo(initializer)) {
-      throw error("trying to reset weights using tensor with non matching "
-                  "tensor info. Tensor ID: {}",
-                  tensor->id);
-    }
-    tensor->tensorData()->resetData(initializer);
-  }
 }
 
 namespace {
@@ -3125,11 +3194,6 @@ void Ir::initRandomSeed() {
   Tensor &seedTensor = *getTensors().get(seedId);
   seedTensor.setReplicatedStreamMode(Tensor::ReplicatedStreamMode::Replicate);
 
-  // 2. Set initial value (from clock)
-  uint64_t init = std::chrono::system_clock::now().time_since_epoch().count();
-  setRandomSeedValue(init);
-
-  // 3. create GetRandomSeed op and connect to seed tensor
   Op::Settings settings(getMainGraph(), "");
   auto getSeedOp_up = std::make_unique<GetRandomSeedOp>(
       Onnx::CustomOperators::GetRandomSeed, settings);
@@ -3155,24 +3219,10 @@ void Ir::initRandomSeed() {
       GetRandomSeedOp::getUpdatedSeedOutIndex(), updatedSeedId);
   getSeedOp->setup();
 
-  // 4. hook up to fwd Random ops
   for (auto op : getAllOps()) {
     if (op->requiresRandomSeed()) {
       op->connectInTensor(op->getSeedInIndex(), updatedSeedId);
     }
-  }
-}
-
-void Ir::setRandomSeedValue(uint64_t seedValue) {
-  logging::ir::info("Setting the random seed to {}", seedValue);
-  TensorId seedId    = GetRandomSeedOp::getStreamedSeedTensorId();
-  Tensor *seedTensor = getTensor(seedId);
-  std::vector<char> seedData(seedTensor->info.nbytes());
-  *reinterpret_cast<uint64_t *>(seedData.data()) = seedValue;
-  if (seedTensor->hasTensorData()) {
-    seedTensor->tensorData()->resetData(seedTensor->info, seedData.data());
-  } else {
-    seedTensor->setTensorData(seedTensor->info, seedData.data());
   }
 }
 
@@ -3723,4 +3773,57 @@ Ir::getAccumulateOuterFragmentBinConstraints(const Graph &graph) const {
   }
 }
 
+size_t Ir::getHash() const {
+  if (!hash_.has_value()) {
+    throw error("Attempting to get Ir hash value when it hasn't been set.");
+  }
+
+  return hash_.value();
+}
+
+void Ir::setHash(size_t v) { hash_ = v; }
+
+size_t Ir::getIrBundleHash() const { return irBundleHash; }
+
+void Ir::setIrBundleHash(size_t v) { irBundleHash = v; }
+
 } // namespace popart
+
+namespace std {
+
+std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
+  // Hash based on all the IR attributes that
+  // can affect compiled program
+  size_t seed = 0;
+
+  std::stringstream ss;
+  ir.append(ss);
+
+  boost::hash_combine(seed, ss.str());
+  boost::hash_combine(seed, ir.getIrBundleHash());
+
+  return seed;
+}
+
+std::size_t
+std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
+  size_t seed = 0;
+
+  boost::hash_combine(
+      seed, std::hash<popart::InputShapeInfo>()(bundle.inputShapeInfo));
+  boost::hash_combine(seed, std::hash<popart::DataFlow>{}(bundle.dataFlow));
+  boost::hash_combine(seed, bundle.loss);
+
+  if (bundle.optimizer) {
+    boost::hash_combine(seed,
+                        std::hash<popart::Optimizer *>()(bundle.optimizer));
+  }
+  boost::hash_combine(seed, std::hash<popart::DeviceInfo>()(bundle.deviceInfo));
+  boost::hash_combine(seed,
+                      std::hash<popart::SessionOptions>{}(bundle.userOptions));
+  boost::hash_combine(seed, std::hash<popart::Patterns>()(bundle.patterns));
+
+  return seed;
+}
+
+} // namespace std

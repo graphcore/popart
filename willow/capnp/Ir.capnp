@@ -118,7 +118,6 @@ struct Ir {
     inference @0;
     training @1;
   }
-
   dataFlow @0: DataFlow;
   sessionOptions @1: SessionOptions;
   requiresRandomSeed @2: Bool;

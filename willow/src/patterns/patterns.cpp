@@ -1,4 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <boost/functional/hash.hpp>
+
 #include <popart/logging.hpp>
 #include <popart/patterns/patterns.hpp>
 
@@ -655,3 +657,18 @@ bool Patterns::operator==(const Patterns &p) const {
 }
 
 } // namespace popart
+
+namespace std {
+std::size_t std::hash<popart::Patterns>::operator()(
+    const popart::Patterns &patterns) const {
+  std::size_t seed = 0;
+  for (const auto &kv : patterns.getSettings()) {
+    boost::hash_combine(seed, kv.first);
+    boost::hash_combine(seed, kv.second);
+  }
+  boost::hash_combine(seed, patterns.getInplaceEnabled());
+  boost::hash_combine(seed, patterns.getUpdateInplacePrioritiesForIpuEnabled());
+  boost::hash_combine(seed, patterns.getRuntimeAssertsOn());
+  return seed;
+}
+} // namespace std

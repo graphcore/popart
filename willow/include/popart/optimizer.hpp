@@ -113,6 +113,8 @@ public:
     return clipNormSettings;
   }
 
+  virtual size_t hash() const;
+
 private:
   OptimizerValue ls;
   std::vector<ClipNormSettings> clipNormSettings;
@@ -507,6 +509,8 @@ public:
   const OptimizerValueMap &dampenings() const { return dps; }
   const OptimizerValueMap &velocityScalings() const { return vss; }
 
+  virtual size_t hash() const;
+
 private:
   void runValueChecks(OptimizerValue lr,
                       OptimizerValue wd,
@@ -583,6 +587,25 @@ public:
             clipNormSettings) {}
 };
 
+} // namespace popart
+
+namespace std {
+template <> struct hash<popart::ClipNormSettings> {
+  std::size_t operator()(const popart::ClipNormSettings &settings) const;
+};
+
+template <> struct hash<popart::Optimizer *> {
+  std::size_t operator()(const popart::Optimizer *opt) const {
+    return opt->hash();
+  }
+};
+
+} // namespace std
+
+namespace popart {
+inline std::size_t hash_value(const ClipNormSettings &settings) {
+  return std::hash<ClipNormSettings>()(settings);
+}
 } // namespace popart
 
 #endif

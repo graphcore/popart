@@ -107,8 +107,6 @@ private:
 
   std::shared_ptr<DeviceInfo> deviceInfo;
 
-  PipelineInfo pInfo;
-
   std::map<PipelineStage, VGraphId> getPipelineToVGraphIdMap() const;
 
   std::map<std::pair<ExecutionContext, TaskId>, std::vector<Op *>>
@@ -270,19 +268,6 @@ private:
   template <typename T> void setInitVal(Tensor *tensor);
   void setInitValHalf(Tensor *tensor);
 
-  // Try to save the argument executable to a file at
-  // `ir().getSessionOptions().cachePath'.
-  void trySaveExecutable(poplar::Executable &);
-
-  // Try to load a poplar::Executable from a file at
-  // `ir().getSessionOptions().cachePath'. If successful,
-  // `this->cachedExecutable' will be set else, `this->cachedExecutable' will
-  // remain set to `nonstd::nullopt'.
-  void tryLoadExecutable();
-
-  std::string getPoplarCachePath();
-  std::string getPopartCachePath();
-
   void setFloatingPointBehaviour(poplar::Graph &graph);
   void setStochasticRoundingBehaviour(poplar::Graph &graph);
 
@@ -292,8 +277,9 @@ private:
   TensorTileMap tensorTileMap;
 
 public:
-  IrLowering(const Ir &, std::shared_ptr<DeviceInfo> deviceInfo);
-  IrLowering(const Ir &);
+  IrLowering(const Ir &,
+             std::shared_ptr<DeviceInfo> deviceInfo,
+             bool prepareGraphHasBeenCalled = false);
   const Ir &ir() const { return _ir; }
 
   PopPrograms progs;
@@ -353,11 +339,25 @@ public:
   // Prepares the graph ready for poplar compilation
   void prepareGraph();
 
+  // Try to save the argument executable to a file at
+  // `ir().getSessionOptions().cachePath'.
+  void trySavePoplarExecutable(poplar::Executable &);
+
+  // Try to load a poplar::Executable from a file at
+  // `ir().getSessionOptions().cachePath'. If successful,
+  // `this->cachedExecutable' will be set else, `this->cachedExecutable' will
+  // remain set to `nonstd::nullopt'.
+  bool tryLoadPoplarExecutable();
+
   // Either return the executable in cachedExecutable
   // or compile `rootGraph' and try to save the generated executable before
   // returning it. After calling `getExecutable', `cachedExecutable' will always
   // be set to `nonstd::nullopt'.
   poplar::Executable getExecutable();
+
+  static std::string getPoplarCachePath(const std::string &);
+
+  std::string getSerializedGraph() const;
 
   // Return virtual graph mapping to IPU virtualGraphIndex,
   // ioTileGraph selects between compute and IO tile graph.

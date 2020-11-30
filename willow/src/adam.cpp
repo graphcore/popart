@@ -11,6 +11,8 @@
 #include <popart/tensors.hpp>
 #include <popart/util.hpp>
 
+#include <boost/functional/hash.hpp>
+
 namespace popart {
 
 Adam Adam::fromDefaultMap(const std::map<std::string, OptimizerValue> &m,
@@ -554,6 +556,22 @@ bool Adam::validReplacement(const Optimizer &other) const {
   }
 
   return true;
+}
+
+size_t Adam::hash() const {
+  std::size_t seed = 0;
+  boost::hash_combine(seed, Optimizer::hash());
+  boost::hash_combine(seed, lrs);
+  boost::hash_combine(seed, wds);
+  boost::hash_combine(seed, b1s);
+  boost::hash_combine(seed, b2s);
+  boost::hash_combine(seed, epsvs);
+  boost::hash_combine(seed, mwns);
+  boost::hash_combine(seed, static_cast<int>(mode));
+  boost::hash_combine(seed, static_cast<int>(accumType));
+  boost::hash_combine(seed, static_cast<int>(accl1Type));
+  boost::hash_combine(seed, static_cast<int>(accl2Type));
+  return seed;
 }
 
 std::unique_ptr<Optimizer> Adam::clone() const {

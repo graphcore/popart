@@ -7,6 +7,8 @@
 #include <popart/error.hpp>
 #include <popart/sessionoptions.hpp>
 
+#include <boost/functional/hash.hpp>
+
 namespace popart {
 
 constexpr static int NDotChecks = static_cast<int>(DotCheck::N);
@@ -204,25 +206,103 @@ std::size_t hash<popart::SessionOptions>::operator()(
   std::stringstream ss;
   ss << so.autoRecomputation;
 
-  auto hsh = std::hash<std::string>{}(ss.str());
-  hsh      = (hsh ^ (std::hash<bool>{}(so.rearrangeAnchorsOnHost) << 1)) << 1;
-  hsh      = (hsh ^ (std::hash<bool>{}(so.enableNonStableSoftmax) << 1)) << 1;
-  hsh      = (hsh ^ (std::hash<int64_t>{}(so.replicatedGraphCount) << 1)) << 1;
-  hsh      = (hsh ^ (std::hash<bool>{}(so.enablePipelining) << 1)) << 1;
-  hsh = (hsh ^ (std::hash<bool>{}(so.enableFloatingPointChecks) << 1)) << 1;
-  hsh = (hsh ^ (std::hash<bool>{}(so.enableStochasticRounding) << 1)) << 1;
-  hsh = (hsh ^ (std::hash<bool>{}(so.enableFullyConnectedPass) << 1)) << 1;
-  hsh = (hsh ^ (std::hash<int>{}(static_cast<int>(so.syntheticDataMode)) << 1))
-        << 1;
+  std::size_t seed = std::hash<std::string>{}(ss.str());
+
+  boost::hash_combine(seed, so.rearrangeAnchorsOnHost);
+  boost::hash_combine(seed, so.enableNonStableSoftmax);
+  boost::hash_combine(seed, so.replicatedGraphCount);
+  boost::hash_combine(seed, so.enablePipelining);
+  boost::hash_combine(seed, so.enableFloatingPointChecks);
+  boost::hash_combine(seed, so.enableStochasticRounding);
+  boost::hash_combine(seed, so.enableFullyConnectedPass);
+  boost::hash_combine(seed, static_cast<int>(so.syntheticDataMode));
+  boost::hash_combine(seed, so.enableSerializedMatmuls);
+  boost::hash_combine(seed, so.enableGroupedMatmuls);
+  boost::hash_combine(seed, so.aliasZeroCopy);
+  boost::hash_combine(seed, static_cast<int>(so.numIOTiles));
+  boost::hash_combine(seed, so.enableStochasticRounding);
+  boost::hash_combine(seed, so.enableStochasticRounding);
+  boost::hash_combine(seed, static_cast<int>(so.autoRecomputation));
+  boost::hash_combine(seed, static_cast<int>(so.mergeVarUpdate));
+  boost::hash_combine(seed, so.partialsTypeMatMuls);
+  boost::hash_combine(seed, so.decomposeGradSum);
+  boost::hash_combine(seed, static_cast<int>(so.virtualGraphMode));
+  boost::hash_combine(seed, static_cast<int>(so.syntheticDataMode));
+
+  boost::hash_combine(seed, so.batchSerializationSettings.factor);
+  boost::hash_combine(seed,
+                      so.batchSerializationSettings.concatOnVirtualGraphChange);
+  boost::hash_combine(
+      seed, so.batchSerializationSettings.concatOnExecutionPhaseChange);
+  boost::hash_combine(
+      seed, so.batchSerializationSettings.concatOnPipelineStageChange);
+  boost::hash_combine(
+      seed, static_cast<int>(so.batchSerializationSettings.transformContext));
+  boost::hash_combine(seed,
+                      static_cast<int>(so.batchSerializationSettings.method));
+  boost::hash_combine(
+      seed, static_cast<int>(so.batchSerializationSettings.batchSchedule));
+
+  boost::hash_combine(seed, so.executionPhaseSettings.phases);
+  boost::hash_combine(seed, so.executionPhaseSettings.stages);
+  boost::hash_combine(
+      seed, static_cast<int>(so.executionPhaseSettings.weightIOSchedule));
+  boost::hash_combine(
+      seed, static_cast<int>(so.executionPhaseSettings.activationIOSchedule));
+  boost::hash_combine(
+      seed,
+      static_cast<int>(so.executionPhaseSettings.optimizerStateIOSchedule));
+  boost::hash_combine(
+      seed, static_cast<int>(so.executionPhaseSettings.accumulatorIOSchedule));
+  boost::hash_combine(seed,
+                      static_cast<int>(so.executionPhaseSettings.schedule));
+
+  boost::hash_combine(
+      seed, so.activationTensorLocationSettings.minElementsForOffChip);
+  boost::hash_combine(seed,
+                      so.activationTensorLocationSettings
+                          .minElementsForReplicatedTensorSharding);
+  auto atls = so.activationTensorLocationSettings.location.serialize();
+  boost::hash_range(seed, atls.begin(), atls.end());
+
+  boost::hash_combine(seed,
+                      so.weightTensorLocationSettings.minElementsForOffChip);
+  boost::hash_combine(
+      seed,
+      so.weightTensorLocationSettings.minElementsForReplicatedTensorSharding);
+  auto wtls = so.weightTensorLocationSettings.location.serialize();
+  boost::hash_range(seed, wtls.begin(), wtls.end());
+
+  boost::hash_combine(
+      seed, so.optimizerStateTensorLocationSettings.minElementsForOffChip);
+  boost::hash_combine(seed,
+                      so.optimizerStateTensorLocationSettings
+                          .minElementsForReplicatedTensorSharding);
+  auto otls = so.optimizerStateTensorLocationSettings.location.serialize();
+  boost::hash_range(seed, otls.begin(), otls.end());
+
+  boost::hash_combine(
+      seed, so.accumulatorTensorLocationSettings.minElementsForOffChip);
+  boost::hash_combine(seed,
+                      so.accumulatorTensorLocationSettings
+                          .minElementsForReplicatedTensorSharding);
+  auto acctls = so.accumulatorTensorLocationSettings.location.serialize();
+  boost::hash_range(seed, acctls.begin(), acctls.end());
+
   for (auto key_val : so.engineOptions) {
-    hsh = (hsh ^ (std::hash<std::string>()(key_val.first) << 1)) << 1;
-    hsh = (hsh ^ (std::hash<std::string>()(key_val.second) << 1)) << 1;
+    boost::hash_combine(seed, key_val.first);
+    boost::hash_combine(seed, key_val.second);
   }
   for (auto key_val : so.convolutionOptions) {
-    hsh = (hsh ^ (std::hash<std::string>()(key_val.first) << 1)) << 1;
-    hsh = (hsh ^ (std::hash<std::string>()(key_val.second) << 1)) << 1;
+    boost::hash_combine(seed, key_val.first);
+    boost::hash_combine(seed, key_val.second);
+  }
+  for (auto key_val : so.gclOptions) {
+    boost::hash_combine(seed, key_val.first);
+    boost::hash_combine(seed, key_val.second);
   }
 
-  return hsh;
+  return seed;
 }
+
 } // namespace std

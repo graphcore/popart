@@ -507,6 +507,8 @@ public:
   const OptimizerValueMap &epss() const { return epsvs; }
   const OptimizerValueMap &maxWeightNorms() const { return mwns; }
 
+  size_t hash() const;
+
 private:
   void runValueChecks(OptimizerValue lr,
                       OptimizerValue wd,

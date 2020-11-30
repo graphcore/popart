@@ -32,6 +32,10 @@ public:
   // Graph?
   bool validReplacement(const OptimizerValueMap &rhs) const;
 
+  const std::map<TensorId, OptimizerValue> &getSpecifics() const {
+    return specifics;
+  }
+
 private:
   std::map<TensorId, OptimizerValue> specifics;
 
@@ -41,4 +45,15 @@ private:
 
 } // namespace popart
 
+namespace std {
+template <> struct hash<popart::OptimizerValueMap> {
+  std::size_t operator()(const popart::OptimizerValueMap &vmap) const;
+};
+} // namespace std
+
+namespace popart {
+inline std::size_t hash_value(const OptimizerValueMap &vmap) {
+  return std::hash<OptimizerValueMap>()(vmap);
+}
+} // namespace popart
 #endif

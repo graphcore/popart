@@ -51,6 +51,12 @@ void init_ex9(py::module &);
 void init_ex10(py::module &);
 void init_ex11(py::module &);
 
+namespace popart {
+namespace popx {
+class Executablex;
+}
+} // namespace popart
+
 namespace {
 // The following code attempts to convert the python dictionary
 // (py::dict) into a map of strings for keys and values. The default
@@ -174,7 +180,7 @@ public:
       : inputCb(inputCb_), inputCompleteCb(inputCompleteCb_),
         outputCb(outputCb_), outputCompleteCb(outputCompleteCb_) {}
 
-  void assertNumElements(const Ir &) const final {}
+  void assertNumElements(const popx::Executablex &) const final {}
 
   ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
     py::array a = inputCb(id, prefetch);

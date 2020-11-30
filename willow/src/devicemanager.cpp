@@ -5,6 +5,8 @@
 #include <sstream>
 #include <thread>
 
+#include <boost/functional/hash.hpp>
+
 #include <poplar/DeviceManager.hpp>
 #include <poplar/OptionFlags.hpp>
 #include <popart/devicemanager.hpp>
@@ -302,3 +304,16 @@ std::ostream &operator<<(std::ostream &os, const DeviceInfo &di) {
 }
 
 } // namespace popart
+
+namespace std {
+std::size_t
+std::hash<popart::DeviceInfo>::operator()(const popart::DeviceInfo &di) const {
+  std::size_t seed = 0;
+  boost::hash_combine(seed, static_cast<int>(di.getType()));
+  boost::hash_combine(seed, di.getNumIpus());
+  boost::hash_combine(seed, di.getTilesPerIPU());
+  boost::hash_combine(seed, di.getNumWorkerContexts());
+
+  return seed;
+}
+} // namespace std

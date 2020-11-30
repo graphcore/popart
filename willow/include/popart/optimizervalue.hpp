@@ -39,7 +39,18 @@ private:
   float val_;
   bool isConst_;
 };
+} // namespace popart
 
+namespace std {
+template <> struct hash<popart::OptimizerValue> {
+  std::size_t operator()(const popart::OptimizerValue &value) const;
+};
+} // namespace std
+
+namespace popart {
+inline std::size_t hash_value(const OptimizerValue &value) {
+  return std::hash<OptimizerValue>()(value);
+}
 } // namespace popart
 
 #endif

@@ -11,6 +11,8 @@
 #include <popart/tensors.hpp>
 #include <popart/util.hpp>
 
+#include <boost/functional/hash.hpp>
+
 namespace popart {
 
 Adaptive
@@ -475,6 +477,17 @@ bool Adaptive::validReplacement(const Optimizer &other) const {
 
 std::unique_ptr<Optimizer> Adaptive::clone() const {
   return std::make_unique<Adaptive>(*this);
+}
+
+size_t Adaptive::hash() const {
+  std::size_t seed = 0;
+  boost::hash_combine(seed, Optimizer::hash());
+  boost::hash_combine(seed, lrs);
+  boost::hash_combine(seed, wds);
+  boost::hash_combine(seed, as);
+  boost::hash_combine(seed, ms);
+  boost::hash_combine(seed, epsvs);
+  return seed;
 }
 
 } // namespace popart

@@ -3,6 +3,7 @@
 #include <popart/graph.hpp>
 #include <popart/intervals.hpp>
 #include <popart/ir.hpp>
+#include <popart/onnxutil.hpp>
 #include <popart/op/getrandomseed.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/scheduler.hpp>
@@ -340,12 +341,21 @@ void serializeExecutable(std::ostream &out,
     }
 
     auto tensors = executablexBuilder.initTensors(numTensorsToSerialize);
+    const auto &onnxModel = ir.getModel();
 
     size_t i = 0;
     for (auto &id : variableTensors) {
       Tensor *tensor     = ir.getTensor(id);
       auto tensorBuilder = tensors[i];
-      serializeTensor(tensor, tensorBuilder);
+
+      // We don't store the tensorData for the variable tensors
+      // with initializers since they will be loaded from the onnx file.
+      auto idWithoutPrefix = popart::stripAllReservedPrefixes(id);
+      bool isInitializer =
+          popart::onnxutil::isInitializer(onnxModel, idWithoutPrefix);
+      bool serializeTensorData = isInitializer == false;
+
+      serializeTensor(tensor, tensorBuilder, serializeTensorData);
       ++i;
     }
 
@@ -422,7 +432,11 @@ deserializeExecutable(std::istream &in,
                       popart::Ir &ir,
                       popart::popx::IrLowering &lowering) {
   kj::std::StdInputStream sis(in);
-  capnp::InputStreamMessageReader message(sis);
+
+  capnp::ReaderOptions opts;
+  // Increase default size from 64 MB to handle larger models.
+  opts.traversalLimitInWords = 512 * 1024 * 1024;
+  capnp::InputStreamMessageReader message(sis, opts);
 
   auto executablexReader = message.getRoot<popart::popx::cap::Executablex>();
   auto irLoweringReader  = executablexReader.getIrLowering();
@@ -509,10 +523,10 @@ deserializeExecutable(std::istream &in,
     auto gid = popart::GraphId("");
     popart::Graph dummyGraph(ir, gid);
     for (const auto capnpTensor : tensors) {
-      std::string id = capnpTensor.getId();
-      auto type      = capnpTensor.getTensorType();
-      auto tensor    = std::make_unique<popart::Tensor>(
-          id, toPopartTensorType(type), dummyGraph);
+      std::string id        = capnpTensor.getId();
+      auto popartTensorType = toPopartTensorType(capnpTensor.getTensorType());
+      auto tensor =
+          std::make_unique<popart::Tensor>(id, popartTensorType, dummyGraph);
 
       auto capnpTensorInfo   = capnpTensor.getTensorInfo();
       auto capnpDataTypeInfo = capnpTensorInfo.getDataTypeInfo();
@@ -534,10 +548,31 @@ deserializeExecutable(std::istream &in,
           capnpTensorLocationInfo.getRemoteBufferInfo().getId(),
           capnpTensorLocationInfo.getRemoteBufferInfo().getIndex());
 
+      auto idWithoutPrefix  = popart::stripAllReservedPrefixes(id);
+      const auto &onnxModel = ir.getModel();
       if (capnpTensor.hasTensorData()) {
         auto tensorDataReader = capnpTensor.getTensorData();
         const void *src       = tensorDataReader.begin();
         tensor->setTensorData(tensor->info, src);
+      }
+
+      if (popartTensorType == popart::TensorType::Variable &&
+          popart::onnxutil::isInitializer(onnxModel, idWithoutPrefix)) {
+        const auto &tensorProto =
+            popart::onnxutil::getTensorProto(onnxModel, idWithoutPrefix);
+        auto constData = popart::onnxutil::getConstData(tensorProto);
+        if (constData.data == nullptr) {
+          throw error("Data for Tensor {} is null", id);
+        }
+
+        if (constData.info != tensor->info) {
+          throw error("TensorInfo mismatch for {}, expected {}, got {}",
+                      id,
+                      tensor->info,
+                      constData.info);
+        }
+
+        tensor->setTensorData(tensor->info, constData.data);
       }
 
       deserializedTensors[id] = std::move(tensor);

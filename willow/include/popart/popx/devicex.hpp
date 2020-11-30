@@ -58,11 +58,6 @@ public:
   Devicex(Executablex &exe, std::shared_ptr<DeviceInfo> deviceInfo);
   ~Devicex();
 
-  // Compile the graph and export the executable and metadata to the
-  // specified paths
-  void compileAndExport(const std::string &executablePath,
-                        const std::string &weightsPath);
-
   // Compiles the graph and then prepares the streams for running on the device
   void prepare();
 
@@ -106,9 +101,6 @@ public:
   void saveTensorTileMap(const std::string &) const;
   TensorTileMap getTensorTileMap() const;
   std::string getSerializedGraph() const;
-
-  poplar::Graph &graph();
-  const poplar::Graph &graph() const;
 
   bool isEngineLoaded() const;
   void setEngineIsLoaded(bool isLoaded);

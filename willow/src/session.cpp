@@ -11,8 +11,8 @@
 #include <popart/onnxutil.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/executablex.hpp>
+#include <popart/popx/executablexserialization.hpp>
 #include <popart/popx/exporter.hpp>
-#include <popart/popx/irlowering.hpp>
 #include <popart/session.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensor.hpp>
@@ -55,6 +55,43 @@ std::vector<uint32_t> Session::getRNGState() {
   return seedValue;
 }
 
+bool Session::tryLoadExecutable(const ONNX_NAMESPACE::ModelProto &modelProto,
+                                const DataFlow &dataFlow,
+                                const SessionOptions &userOptions,
+                                std::shared_ptr<DeviceInfo> deviceInfo) {
+
+  if (false == Ir::usingEngineCache(userOptions, deviceInfo.get())) {
+    return false;
+  }
+
+  if (false == ir.hashMatched()) {
+    return false;
+  }
+
+  auto cachePath =
+      popx::Executablex::getExecutablexCachePath(userOptions.cachePath);
+  std::ifstream executableFs(cachePath, std::ifstream::binary);
+  if (executableFs.is_open()) {
+    logging::session::warn("Loading serialized PopART executable from {}",
+                           cachePath);
+
+    bool skipGraphCompilation = true;
+    lowering_.reset(new popx::IrLowering(ir, deviceInfo, skipGraphCompilation));
+
+    if (!lowering_->tryLoadPoplarExecutable()) {
+      throw error("Failed to load serialized poplar executable.");
+    }
+
+    executable_ = popx::serialization::deserializeExecutable(
+        executableFs, ir, *lowering_);
+
+    return true;
+  }
+
+  logging::session::warn("Could not open file {}", cachePath);
+  return false;
+}
+
 void Session::setRNGState(const std::vector<uint32_t> stateValue) {
   if (!ir.getSessionOptions().enableLoadAndOffloadRNGState) {
     throw error("Trying to set the RNG state, but the session option "
@@ -80,7 +117,7 @@ void Session::setRandomSeed(uint64_t seedValue) {
     return;
   }
   // Set seed value on host
-  ir.setRandomSeedValue(seedValue);
+  executable_->setRandomSeedValue(seedValue);
 
   // ... Then stream to device
   if (!device_->prepareHasBeenCalled()) {
@@ -110,7 +147,7 @@ uint64_t Session::getCycleCount(std::string id) {
 // get the TensorInfo on a Tensor
 TensorInfo Session::getInfo(TensorId id) const {
   logging::session::trace("Session::getInfo({})", id);
-  TensorInfo info = ir.getMainGraph().getTensors().get(id)->info;
+  TensorInfo info = executable_->getTensor(id)->info;
   if (!info.isSet()) {
     throw error("TensorInfo for `" + id + "' not set");
   }
@@ -134,13 +171,13 @@ void Session::compileAndExport(std::string executablePath,
     io::assertDirectoryWritable(weightsPath);
   }
 
-  device_->compileAndExport(executablePath, weightsPath);
+  lowering_->compileAndExport(executablePath, weightsPath);
 }
 
 void Session::prepareDevice() {
   POPART_TRACEPOINT();
   logging::session::trace("Session::prepareDevice()");
-
+  lowering_->prepareGraph();
   device_->prepare();
 }
 
@@ -200,13 +237,12 @@ void Session::run(IStepIO &stepio, std::string debugName) {
     throw error("Trying to infer when not in inference mode");
   }
 
-  if (ir.containsInitialisers() && ir.isTraining() &&
-      weightsFromHostCalled == false) {
+  if (weightsFromHostCalled == false && ir.containsInitialisers() &&
+      ir.isTraining()) {
     throw error(
         "Must call weightsFromHost before run as the model has initializers "
         "and the session has been created in training mode");
   }
-
   device_->run(stepio, debugName);
 
   runCalled = true;
@@ -339,8 +375,8 @@ void Session::modelToHost(const std::string &fn) {
 
   if (!ir.getSessionOptions().constantWeights ||
       ir.getExecutionMode() != Ir::ExecutionMode::Inference) {
-    // Weights in ir, device, and disk now all match
-    ir.resetWeights(model);
+    // Weights in executable, device, and disk now all match
+    executable_->resetWeights(model);
   }
 }
 
@@ -385,8 +421,8 @@ void Session::resetHostWeights(
     throw error("Cannot call resetHostWeights when constantWeights is set");
   }
   auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
-  ir.resetWeights(modelProto,
-                  ignoreWeightsInModelWithoutCorrespondingHostWeight);
+  executable_->resetWeights(modelProto,
+                            ignoreWeightsInModelWithoutCorrespondingHostWeight);
 
   // After the weights has been reset they must be rewritten to the target
   weightsFromHostCalled = false;
@@ -394,6 +430,12 @@ void Session::resetHostWeights(
 
 std::string Session::serializeIr(IrSerializationFormat format) {
   (void)format;
+  if (executable_->isDeserialized()) {
+    logging::session::warn(
+        "Ir state is not populated when running from a serialized executable.");
+    return std::string();
+  }
+
   std::stringstream ss;
   ir.serialise(Ir::SerialiseFormat::JSON, ss);
   return ss.str();
@@ -418,6 +460,11 @@ void InferenceSession::configureFromOnnx(
 
   ir.prepare(
       {modelProto, perk, df, {}, nullptr, *deviceInfo, userOptions, patterns});
+  if (tryLoadExecutable(modelProto, df, userOptions, deviceInfo)) {
+    device_.reset(new popx::Devicex(*executable_, deviceInfo));
+  } else {
+    setDevice(deviceInfo);
+  }
 }
 
 std::unique_ptr<InferenceSession>
@@ -438,8 +485,6 @@ InferenceSession::createFromOnnxModel(const std::string &model,
   auto session = std::unique_ptr<InferenceSession>(new InferenceSession());
   session->configureFromOnnx(
       model, dataFlow, inputShapeInfo, deviceInfo, userOptions, patterns);
-
-  session->setDevice(deviceInfo);
 
   return session;
 }
@@ -469,6 +514,12 @@ void TrainingSession::configureFromOnnx(const std::string &modelProtoOrFilename,
               *deviceInfo,
               userOptions,
               patterns});
+
+  if (tryLoadExecutable(modelProto, df, userOptions, deviceInfo)) {
+    device_.reset(new popx::Devicex(*executable_, deviceInfo));
+  } else {
+    setDevice(deviceInfo);
+  }
 }
 
 std::unique_ptr<TrainingSession>
@@ -497,8 +548,6 @@ TrainingSession::createFromOnnxModel(const std::string &model,
                              deviceInfo,
                              userOptions,
                              patterns);
-
-  session->setDevice(deviceInfo);
 
   return session;
 }

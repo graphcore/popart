@@ -287,19 +287,7 @@ std::ostream &operator<<(std::ostream &, const SyncPattern &);
 
 namespace std {
 template <> struct hash<popart::DeviceInfo> {
-  std::size_t operator()(const popart::DeviceInfo &di) const {
-    // Hash based on all the DeviceManager attributes that
-    // can affect compiled program
-
-    std::stringstream ss;
-    ss << di.getType() << di.getConnectionType();
-
-    return std::hash<std::string>()(ss.str()) ^
-           std::hash<std::string>()(di.getVersion()) ^
-           std::hash<int>()(di.getNumIpus()) ^
-           std::hash<int>()(di.getTilesPerIPU()) ^
-           std::hash<int>()(di.getNumWorkerContexts());
-  }
+  std::size_t operator()(const popart::DeviceInfo &di) const;
 };
 } // namespace std
 
