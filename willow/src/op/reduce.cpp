@@ -28,6 +28,12 @@ std::unique_ptr<Op> ReduceOp::clone() const {
 }
 
 void ReduceOp::setup() {
+
+  // Normalize to positive axes
+  normalizeAxes();
+  // Check the axes are all in the right range.
+  validateAxes();
+
   const auto input_shape = inShape(getInIndex());
 
   if (has_default_axes) {
@@ -56,6 +62,55 @@ void ReduceOp::setup() {
 }
 
 const std::vector<int64_t> &ReduceOp::getAxes() const { return axes; }
+
+void ReduceOp::normalizeAxes() {
+  for (int64_t i = 0; i < axes.size(); i++) {
+    axes[i] = getAxis(axes[i]);
+  }
+}
+
+int64_t ReduceOp::getAxis(int64_t axis_) const {
+  // Onnx 11 supports negative axis indexing for reduce.
+  if (axis_ >= int64_t(0)) {
+    return axis_;
+  } else {
+    return inShape(getInIndex()).size() + axis_;
+  }
+}
+
+void ReduceOp::validateAxes() const {
+  for (size_t i = 0; i < axes.size(); i++) {
+    validateAxis(axes[i]);
+  }
+}
+
+void ReduceOp::validateAxis(int64_t axis_) const {
+  auto shape = inShape(getInIndex());
+
+  if (shape.size() == 0) {
+    throw error("ReduceOp input rank must be greater than 0, invalid "
+                "ReduceOp {}.",
+                str());
+  }
+
+  if (shape.size() <= axis_) {
+    throw error("Cannot compute ReduceOp on axis {} when input rank is {}, "
+                "invalid ReduceOp {}.",
+                axis_,
+                shape.size(),
+                str());
+  }
+
+  // From the onnx spec:
+  //   Accepted range is [-r, r-1] where r = rank(data).
+  if (axis_ > static_cast<int64_t>(shape.size()) - 1 ||
+      axis_ < -static_cast<int64_t>(shape.size())) {
+    throw error("Axis {} is out of acceptable range [{}, {}]",
+                axis_,
+                -static_cast<int64_t>(shape.size()),
+                shape.size() - 1);
+  }
+}
 
 bool ReduceOp::getKeepDims() const { return keepdims; }
 
