@@ -31,7 +31,49 @@ std::vector<Match> pruneMatches(const std::vector<Match> &inMatches,
             inMatchesIncreasing.end(),
             [](const Match &a, const Match &b) { return a.length < b.length; });
 
-  // as we add to "pruned", we keep track of what positions have been outlined
+  // We keep track of what positions have been outlined with vectors
+  // isInternal, isFirst and isLast. Consider we have processed
+  // three pruned matches, m_0, m_1 and m_2 already:
+  //
+  // Schedule is:
+  //   index      0  1  2  3  4  5  6  7  8  9 10 11 12 13
+  //   schedule   x  a  b  c  d  y  x  a  b  c  d  a  b  c
+  // Matches are:
+  //   m_0              *  *              *  *        *  *
+  //   m_1           *  *  *           *  *  *     *  *  *
+  //   m_2           *  *  *  *        *  *  *  *
+  //
+  // At this point, our vector variables are as follows:
+  //   isInternal 0  0  1  1  0  0  0  0  1  1  0  0  1  0
+  //   isFirst    0  1  1  0  0  0  0  1  1  0  0  1  1  0
+  //   isLast     0  0  0  1  1  0  0  0  0  1  1  0  0  1
+  //
+  // As matches are considered in reverse size order matches
+  // that are supersets of these matches will be considered
+  // once the isInternal, isFirst and isLast state encorporates
+  // m_0, m_1 and m_2 already.
+  //
+  // Let's say the next match to consider is m_3:
+  //   m_3        *  *  *  *  *     *  *  *  *  *
+  //
+  // We only consider pruning m_3 to start/end values that mesh
+  // with out state as follows:
+  //   goodStart  1  1  0  0  0  1  1  1  0  0  0  1  0  0
+  //   goodEnd       0  0  0  1  1  1  0  0  0  1  0  0  1
+  //
+  // That is, we can allow prunings of m_3 to start where
+  // other prunings started, but no later. Similarly, it can
+  // end where other prunings ended, but no earlier. This way
+  // we guarantee there is no overlap in prunings.
+  //
+  // Hence considered pruned versions of m_3 are:
+  //   m_3'       *  *  *  *  *     *  *  *  *  *
+  //   m_3''         *  *  *  *        *  *  *  *
+  //
+  // By not considering other, smaller prunings we avoid introducing
+  // matches that overlap with other prunings, as such overlaps
+  // are not compatible with our outliner.
+
   std::vector<bool> isInternal(schedule.size(), false);
   std::vector<bool> isFirst(schedule.size(), false);
   std::vector<bool> isLast(schedule.size(), false);
@@ -56,7 +98,7 @@ std::vector<Match> pruneMatches(const std::vector<Match> &inMatches,
         // valid end (not overlapping with covered)
         bool goodEnd =
             (!isInternal[end - 1] && // another match is here, and not its end
-             !isFirst[end]           // another match is here, and not its end
+             !isFirst[end - 1]       // another match is here, and not its end
             );
 
         // we don't need to check for isomorphism, sub-sequences always are iso.
