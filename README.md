@@ -36,6 +36,12 @@ ln -s /usr/bin/python3 /usr/bin/python
 sudo apt-get install ninja-build -y
 ```
 
+##### pkg-config
+
+```
+sudo apt-get install pkg-config -y
+```
+
 ##### CMake (version 3.12.0 or greater)
 
 Unfortunately, Ubuntu 18.04's default cmake package does not meet the version requirement and hence you have to build cmake from source. Version 3.17.2 is known to work with PopART. To do this, in a directory of your choice, download the source from [here](http://www.cmake.org/download) and build and install cmake as follows:
@@ -210,10 +216,12 @@ CapnProto releases can be downloaded from [here](https://capnproto.org/install.h
 export CAPNPROTO_INSTALL_DIR=$(pwd)/capnproto-0.7.0/install_dir/
 wget https://capnproto.org/capnproto-c++-0.7.0.tar.gz
 tar xvfz capnproto-c++-0.7.0.tar.gz
-cd /workspace/libs/third-party/capnproto-c++-0.7.0
+rm capnproto-c++-0.7.0.tar.gz
+pushd capnproto-c++-0.7.0
 ./configure --prefix=$CAPNPROTO_INSTALL_DIR
 make -j8 check
 make install
+popd
 ```
 
 **NOTE**: The `-j8` switch is used to reduce test times by testing with up to 8 threads.
@@ -264,6 +272,7 @@ To build PopART, do the following in the directory where you checked out the rep
 
 ```
 export POPART_INSTALL_DIR=$(pwd)/popart/install_dir/
+export PKG_CONFIG_PATH="$CAPNPROTO_INSTALL_DIR/lib/pkgconfig:$PKG_CONFIG_PATH"
 git clone https://github.com/graphcore/popart.git
 push popart
 mkdir build; cd build;
@@ -297,6 +306,7 @@ You could use any method supported by CMake to point it at dependencies. See the
 
 **NOTE**: Builds can be further accelerated by using [ccache](https://ccache.dev/).
 
+**NOTE**: CapnProto’s cmake export simply wraps pkg-config. PKG_CONFIG_PATH is set in order to tell pkg-config where to find CapnProto.
 
 
 ## Using PopART
