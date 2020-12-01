@@ -791,10 +791,10 @@ IrLowering::getCreatorEndpoints(const Tensor *startTensor,
           // Mark as delegate visited Opx on path
           updatedPath.push_back({opx});
 
-          const SubgraphOpx *callopx = dynamic_cast<const SubgraphOpx *>(opx);
+          const SubgraphOpx *sgopx = dynamic_cast<const SubgraphOpx *>(opx);
 
           // Get delegated endpoints
-          SubgraphOp *subgraphOp = &callopx->getOp<SubgraphOp>();
+          SubgraphOp *subgraphOp = &sgopx->getOp<SubgraphOp>();
           auto callgraphs        = subgraphOp->getCalledGraphs();
 
           for (auto callgraph : callgraphs) {
@@ -1049,81 +1049,26 @@ PriTask IrLowering::initTensorTask(Tensor *tensor) {
         return SequenceMap();
       }
 
-      logging::devicex::debug("Creating poplar::Tensor '{}' linearly. No "
-                              "operator specific allocator found",
-                              tensor->id);
+      auto vgid = tensor->getVirtualGraphIdAndTileSetUnsafe();
 
-      // Find the ipu the op that consumes with tensor is on and create the
-      // tensor on that graph
-      auto consumerOps = tensor->consumers.getOps();
+      logging::devicex::debug(
+          "Creating poplar::Tensor '{}' linearly on vgid: {}, tileset: {}. No "
+          "operator specific allocator found",
+          tensor->id,
+          vgid.first,
+          vgid.second);
 
-      std::vector<std::pair<Op *, bool>> relatedOps;
-      relatedOps.reserve(consumerOps.size() + 1);
+      auto &dstGraph = vgid.first == unusedVGraphId
+                           ? graph()
+                           : getVirtualGraph(vgid.first, vgid.second);
 
-      for (auto *op : consumerOps) {
-        relatedOps.emplace_back(op, true);
-      }
+      auto newTensor = dstGraph.addVariable(
+          popType(tensor->info), tensor->info.shape_szt(), tensor->str());
+      linearMapper.mapTensor(dstGraph, newTensor);
 
-      if (tensor->hasProducer()) {
-        relatedOps.emplace_back(tensor->getProducer(), false);
-      }
+      tensors_.insert(tensor->id, newTensor);
+      linearlyCreatedInputTensors.insert(tensor->id);
 
-      if (logging::shouldLog(logging::Module::devicex, logging::Level::Trace)) {
-        std::stringstream ss;
-        for (auto &op : relatedOps) {
-          if (op.second) {
-            auto index = op.first->input->indicesMap().at(tensor)[0];
-            ss << std::endl
-               << "    {" << op.first->debugName() << ", VGID: "
-               << (op.first->hasVirtualGraphId()
-                       ? op.first->getIntrospectionInVirtualGraphId(index).first
-                       : -1)
-               << "}";
-          }
-        }
-        logging::devicex::trace(
-            "[initTensorTask] Tensor: {}, type: {}, consumed by ops: [{}]",
-            tensor->id,
-            tensor->getTensorTypeInfo()->type_s(),
-            ss.str());
-      }
-
-      std::vector<VGraphId> ipus;
-      for (auto &op : relatedOps) {
-        VGraphIdAndTileSet vgid{-1, TileSet::Compute};
-        if (op.first->hasVirtualGraphId()) {
-          if (op.second) {
-            // Consumer OP
-            // VirtualGraphId with subgraph call introspection
-            // for the current tensor
-            auto index = op.first->input->indicesMap().at(tensor)[0];
-            vgid       = op.first->getIntrospectionInVirtualGraphId(index);
-          } else {
-            // Producer OP
-            vgid = {op.first->getVirtualGraphId(), op.first->settings.tileSet};
-          }
-        }
-
-        // The copyToIpu op assume that the tensor will already
-        // have been copied to the ipu from another op
-        if (op.first->opid != Onnx::CustomOperators::IpuCopy) {
-
-          if (ipus.end() == std::find(ipus.begin(), ipus.end(), vgid.first)) {
-
-            auto &graph = vgid.first > -1
-                              ? getVirtualGraph(vgid.first, vgid.second)
-                              : getOpx(op.first->id)->graph();
-
-            auto newTensor = graph.addVariable(
-                popType(tensor->info), tensor->info.shape_szt(), tensor->str());
-            linearMapper.mapTensor(graph, newTensor);
-
-            tensors_.insert(tensor->id, newTensor);
-            linearlyCreatedInputTensors.insert(tensor->id);
-            ipus.push_back(vgid.first);
-          }
-        }
-      }
       return SequenceMap();
     };
 
@@ -1600,32 +1545,43 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
   std::set<std::pair<Op *, ExecutionPhase>> seenRecomputeOps;
   FindRequiredRecomputes recomputeFinder(allOps);
   // Iterate through Ops according to the Ir's schedule
-  for (auto op : allOps) {
-    for (auto graph : op->getCalledGraphs()) {
-      auto opInputs = op->getInputsForGraph(*graph);
-      for (int i = 0; i < opInputs.size(); i++) {
-        auto graphInput = graph->getInputId(i);
-        if (!tasks.contains(initTensorTaskId(graphInput))) {
-          tasks.add(initTensorByCloningTask(op, opInputs.at(i), graphInput));
+  for (Op *op : allOps) {
+
+    auto opInputs = getOpx(op->id)->getInputsToPrepare();
+    for (int i = 0; i < opInputs.size(); i++) {
+      auto opInput = opInputs[i];
+      if (!tasks.contains(initTensorTaskId(std::get<1>(opInput)))) {
+        if (std::get<0>(opInput).empty()) {
+          // No tensor to clone or alias from
+          tasks.add(initTensorTask(ir().getTensor(std::get<1>(opInput))));
+        } else {
+          // Tensor can be cloned or aliased
+          if (std::get<2>(opInput)) {
+            tasks.add(initTensorByAliasingTask(std::get<0>(opInput),
+                                               std::get<1>(opInput)));
+          } else {
+            tasks.add(initTensorByCloningTask(std::get<0>(opInput),
+                                              std::get<1>(opInput)));
+          }
         }
       }
+    }
 
-      auto opOutputs = getOpx(op->id)->getOutputsToPrepare();
-      for (int i = 0; i < opOutputs.size(); i++) {
-        auto opOutput = opOutputs[i];
-        if (!tasks.contains(initTensorTaskId(std::get<1>(opOutput)))) {
-          if (std::get<0>(opOutput).empty()) {
-            // No tensor to clone or alias from
-            tasks.add(initTensorTask(ir().getTensor(std::get<1>(opOutput))));
+    auto opOutputs = getOpx(op->id)->getOutputsToPrepare();
+    for (int i = 0; i < opOutputs.size(); i++) {
+      auto opOutput = opOutputs[i];
+      if (!tasks.contains(initTensorTaskId(std::get<1>(opOutput)))) {
+        if (std::get<0>(opOutput).empty()) {
+          // No tensor to clone or alias from
+          tasks.add(initTensorTask(ir().getTensor(std::get<1>(opOutput))));
+        } else {
+          // Tensor can be cloned or aliased
+          if (std::get<2>(opOutput)) {
+            tasks.add(initTensorByAliasingTask(std::get<0>(opOutput),
+                                               std::get<1>(opOutput)));
           } else {
-            // Tensor can be cloned or aliased
-            if (std::get<2>(opOutput)) {
-              tasks.add(initTensorByAliasingTask(
-                  op, std::get<0>(opOutput), std::get<1>(opOutput)));
-            } else {
-              tasks.add(initTensorByCloningTask(
-                  op, std::get<0>(opOutput), std::get<1>(opOutput)));
-            }
+            tasks.add(initTensorByCloningTask(std::get<0>(opOutput),
+                                              std::get<1>(opOutput)));
           }
         }
       }
@@ -1685,11 +1641,8 @@ bool IrLowering::tryInitTensorByPostIRAliasing(
   return false;
 }
 
-PriTask
-IrLowering::initTensorByCloningTask(Op *op, TensorId srcId, TensorId dstId) {
-  Opx *opx = getOpx(op->id);
-
-  auto f = [srcId, dstId, opx, this]() {
+PriTask IrLowering::initTensorByCloningTask(TensorId srcId, TensorId dstId) {
+  auto f = [srcId, dstId, this]() {
     // Try if an existing Poplar tensor can be reused
     if (tryInitTensorByPostIRAliasing(dstId,
                                       tensors_.hasViewChangers(srcId)
@@ -1698,9 +1651,19 @@ IrLowering::initTensorByCloningTask(Op *op, TensorId srcId, TensorId dstId) {
       return SequenceMap();
     }
 
-    logging::debug("Cloning tensor {} to {}", srcId, dstId);
-    auto src = opx->get(srcId);
-    auto dst = opx->graph().clone(src, dstId);
+    auto vgid = ir().getTensor(srcId)->getVirtualGraphIdAndTileSetUnsafe();
+
+    auto &dstGraph = vgid.first == unusedVGraphId
+                         ? graph()
+                         : getVirtualGraph(vgid.first, vgid.second);
+
+    logging::debug("Cloning tensor {} to {} (vgid: {} tileset: {})",
+                   srcId,
+                   dstId,
+                   vgid.first,
+                   vgid.second);
+    auto src = tensors_.get(srcId);
+    auto dst = dstGraph.clone(src, dstId);
 
     if (tensors_.hasViewChangers(srcId)) {
       tensors_.setViewChangers(dstId, tensors_.getViewChangers(srcId));
@@ -1716,8 +1679,7 @@ IrLowering::initTensorByCloningTask(Op *op, TensorId srcId, TensorId dstId) {
   return {-1e6, initTensorTaskId(dstId), deps, f};
 }
 
-PriTask
-IrLowering::initTensorByAliasingTask(Op *op, TensorId srcId, TensorId dstId) {
+PriTask IrLowering::initTensorByAliasingTask(TensorId srcId, TensorId dstId) {
   auto f = [srcId, dstId, this]() {
     logging::debug("Aliasing tensor {} to {}", srcId, dstId);
     tensors_.insertAliased(dstId, srcId);
@@ -1783,6 +1745,24 @@ PriTask IrLowering::opTask(Op *op, double priority, TaskId prevOpTaskId) {
                                                   DependencyType::SubGraph};
       if (std::find(deps.begin(), deps.end(), taskId) == deps.end()) {
         deps.push_back(taskId);
+      }
+
+      // Graph inputs
+      for (auto &inputId : graph->getInputIds()) {
+        std::pair<TaskId, DependencyType> creatorTask =
+            taskWhichCreates(inputId);
+        if (std::find(deps.begin(), deps.end(), creatorTask) == deps.end()) {
+          deps.push_back(creatorTask);
+        }
+      }
+
+      // Graph outputs
+      for (auto &outputId : graph->getOutputIds()) {
+        std::pair<TaskId, DependencyType> creatorTask =
+            taskWhichCreates(outputId);
+        if (std::find(deps.begin(), deps.end(), creatorTask) == deps.end()) {
+          deps.push_back(creatorTask);
+        }
       }
     }
   };

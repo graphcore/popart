@@ -26,7 +26,7 @@ void ZerosOpx::grow(poplar::program::Sequence &) const {
 }
 
 namespace {
-OpxCreator<ZerosOpx> printtensorOpxCreator(Onnx::CustomOperators::Zeros_1);
+OpxCreator<ZerosOpx> zerosOpxCreator(Onnx::CustomOperators::Zeros_1);
 } // namespace
 
 } // namespace popx

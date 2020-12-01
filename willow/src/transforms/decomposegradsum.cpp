@@ -237,8 +237,10 @@ bool DecomposeGradSum::apply(Graph &graph) const {
     // Create InitOp to produce the initial gradient partial input to the
     // addition tree, gpi. It inherits settings from the producer of the first
     // gradient partial
-    Op::Settings initSettings =
-        partialsSumOrder.front()->getProducer()->settings;
+    auto firstPartialProducer = partialsSumOrder.front()->getProducer();
+    Op::Settings initSettings = firstPartialProducer->getOutSettings(
+        firstPartialProducer->output->indices(partialsSumOrder.front())
+            .front());
     initSettings.name = gradSum->id + "_InitOp";
     auto init         = std::make_unique<InitOp>(Onnx::CustomOperators::Init_1,
                                          partialsSumOrder.front()->info,

@@ -3660,6 +3660,8 @@ Graph &Ir::createGraph(const GraphId &graphId) {
   return getGraph(graphId);
 }
 
+void Ir::removeGraph(const GraphId &graphId) { graphs.erase(graphId); }
+
 std::map<OpId, std::unique_ptr<Op>> &Ir::getMainGraphOps() {
   return getMainGraph().getOps();
 }

@@ -145,14 +145,19 @@ Tensors &Graph::getTensors() { return *(up_tensors.get()); }
 
 void Graph::addInput(const InIndex &index,
                      const TensorId &tensorId,
-                     const TensorInfo &tensorInfo) {
+                     const TensorInfo &tensorInfo,
+                     bool overwrite) {
   getTensors().addActGrad(tensorId);
   auto tensor  = getTensors().get(tensorId);
   tensor->info = tensorInfo;
-  if (graph_inputs.size() < index + 1) {
-    graph_inputs.resize(index + 1);
+  if (overwrite) {
+    if (graph_inputs.size() < index + 1) {
+      graph_inputs.resize(index + 1);
+    }
+    graph_inputs.at(index) = tensorId;
+  } else {
+    graph_inputs.insert(graph_inputs.begin() + index, tensorId);
   }
-  graph_inputs.at(index) = tensorId;
 }
 
 void Graph::addInput(const TensorId &tensorId, const TensorInfo &tensorInfo) {
@@ -176,14 +181,40 @@ void Graph::markAsInput(const TensorId &tensorId) {
   graph_inputs.push_back(tensorId);
 }
 
-void Graph::markAsOutput(const OutIndex &index, const TensorId &tensorId) {
+void Graph::removeInput(const TensorId &tensorId) {
+  auto found = boost::range::find(graph_inputs, tensorId);
+  if (found == graph_inputs.end()) {
+    throw error("Could not find tensor '{}' in graph {} outputs", tensorId, id);
+  }
+  graph_inputs.erase(found);
+}
+
+void Graph::removeInput(const InIndex &index) {
+  graph_inputs.erase(graph_inputs.begin() + index);
+}
+
+OutIndex Graph::getOutputIndex(TensorId tensorId) const {
+  auto it = std::find(graph_outputs.begin(), graph_outputs.end(), tensorId);
+  if (it == graph_outputs.end()) {
+    throw error("Could not find output tensor '{}'", tensorId);
+  }
+  return std::distance(graph_outputs.begin(), it);
+}
+
+void Graph::markAsOutput(const OutIndex &index,
+                         const TensorId &tensorId,
+                         bool overwrite) {
   if (!getTensors().contains(tensorId)) {
     throw error("Could not find tensor '{}' to mark as output", tensorId);
   }
-  if (graph_outputs.size() < index + 1) {
-    graph_outputs.resize(index + 1);
+  if (overwrite) {
+    if (graph_outputs.size() < index + 1) {
+      graph_outputs.resize(index + 1);
+    }
+    graph_outputs.at(index) = tensorId;
+  } else {
+    graph_outputs.insert(graph_outputs.begin() + index, tensorId);
   }
-  graph_outputs.at(index) = tensorId;
 }
 
 void Graph::markAsOutput(const TensorId &tensorId) {
@@ -199,6 +230,10 @@ void Graph::removeOutput(const TensorId &tensorId) {
     throw error("Could not find tensor '{}' in graph {} outputs", tensorId, id);
   }
   graph_outputs.erase(found);
+}
+
+void Graph::removeOutput(const OutIndex &index) {
+  graph_outputs.erase(graph_outputs.begin() + index);
 }
 
 std::vector<const Graph *> Graph::getCalledGraphs() const {
@@ -981,6 +1016,26 @@ void BackwardPassCreator::doPrune(Graph &graph) {
     if (!graph.getTensors().contains(id)) {
       auto inputIter = find(graph.getInputIds(), id);
       graph.graph_inputs.erase(inputIter);
+    }
+  }
+}
+
+void Graph::replaceTensor(const TensorId &oldId, const TensorId &newId) {
+  Tensor *oldt = getTensors().get(oldId);
+  Tensor *newt = getTensors().get(newId);
+
+  for (Op *c : oldt->consumers.getOps()) {
+    auto indices = c->input->indices(oldt);
+    c->disconnectInTensor(oldt);
+    for (auto index : indices) {
+      c->connectInTensor(index, newt->id);
+    }
+    c->setup();
+  }
+
+  for (size_t i = 0; i < graph_outputs.size(); ++i) {
+    if (graph_outputs.at(i) == oldId) {
+      graph_outputs.at(i) = newId;
     }
   }
 }

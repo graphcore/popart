@@ -162,6 +162,7 @@ public:
   InIndex getGraphInputIndex() const;
   bool isGraphOutput() const;
   OutIndex getGraphOutputIndex() const;
+  bool isLoopInput() const;
   bool isImplicitLoopInput() const;
   // Returns true for stream tensors that are optimizer tensors, as
   // well as their copies
@@ -170,6 +171,7 @@ public:
   bool isRandomSeedTensor() const;
   bool isOptimizerStateTensor() const;
   bool isAccumulatorTensor() const;
+  bool isAnchored() const;
   bool hasTensorData() const;
   TensorData *tensorData();
   const TensorData *tensorData() const;
@@ -217,8 +219,6 @@ public:
 
   // Any of the consumers alias this tensor
   bool isAliased() const;
-
-  const void *getTensorData() const;
 
   // Backtrack through input ops in order to get data from initializer tensors
   // (if they exist). When ops are performed on initializers (e.g. slice), the

@@ -92,9 +92,25 @@ poplar::Graph &Opx::graph() const {
   }
 }
 
-poplar::Graph &Opx::srcGraph(InIndex) const { return graph(); }
+poplar::Graph &Opx::srcGraph(InIndex index) const {
+  auto &op  = getOp<Op>();
+  auto vgid = op.getIntrospectionInVirtualGraphId(index);
+  if (vgid.first == unusedVGraphId) {
+    return graph();
+  } else {
+    return dv_p->lowering().getVirtualGraph(vgid.first, vgid.second);
+  }
+}
 
-poplar::Graph &Opx::dstGraph(OutIndex) const { return graph(); }
+poplar::Graph &Opx::dstGraph(OutIndex index) const {
+  auto &op  = getOp<Op>();
+  auto vgid = op.getIntrospectionOutVirtualGraphId(index);
+  if (vgid.first == unusedVGraphId) {
+    return graph();
+  } else {
+    return dv_p->lowering().getVirtualGraph(vgid.first, vgid.second);
+  }
+}
 
 const poplar::Tensor &Opx::get(TensorId id) const {
   return dv_p->lowering().tensors().get(id);
@@ -311,6 +327,11 @@ poplar::Tensor Opx::getScalarVariable(const poplar::Type &type,
 
 std::vector<std::tuple<TensorId, TensorId, bool>>
 Opx::getOutputsToPrepare() const {
+  return {};
+}
+
+std::vector<std::tuple<TensorId, TensorId, bool>>
+Opx::getInputsToPrepare() const {
   return {};
 }
 

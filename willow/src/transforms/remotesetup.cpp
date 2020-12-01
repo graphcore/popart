@@ -5,8 +5,14 @@
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/op/call.hpp>
+#include <popart/op/concat.hpp>
+#include <popart/op/dynamic/dynamicslice.hpp>
+#include <popart/op/dynamic/dynamicupdate.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/remote.hpp>
+#include <popart/op/reshape.hpp>
+#include <popart/op/slice.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
@@ -75,41 +81,94 @@ bool RemoteSetup::apply(Graph &graph) const {
   std::map<std::pair<Op *, InIndex>, std::set<TensorId>, POpIntCmp> opArgMap;
   std::map<TensorId, std::pair<RemoteBufferId, RemoteBufferIndex>> argBufferMap;
 
-  // TODO: Support for Loop and ID ranges per arg tensor ID
+  // TODO T29076: Support for ID ranges per arg tensor ID in loops
 
   for (TensorId &tensor_id : graph.getTensors().getAllTensorIds()) {
     Tensor *tensor = graph.getTensors().get(tensor_id);
-    if (tensor->isRemoteArgTensor()) {
+    if (tensor->isRemoteArgTensor() &&
+        tensor->tensorType() == TensorType::Const) {
       logging::transform::trace("[RemoteSetup] Resolving RemoteArg tensor {}",
                                 tensor_id);
-      std::vector<Tensor *> traceFront;
-      traceFront.push_back(tensor);
+      std::vector<std::pair<Tensor *, std::vector<SubgraphOp *>>> traceFront;
+      traceFront.push_back({tensor, {}});
 
       while (traceFront.size() > 0) {
-        Tensor *front = traceFront.back();
+        auto front     = traceFront.back();
+        Tensor *tfront = front.first;
+        auto callStack = front.second;
+
         traceFront.pop_back();
-        for (Op *consumer : front->consumers.getOps()) {
+
+        if (tfront->isGraphOutput()) {
+          auto stack       = callStack;
+          SubgraphOp *sgOp = stack.back();
+          stack.pop_back();
+          auto sgOutIndex = sgOp->getCalledGraph().getOutputIndex(tfront->id);
+          auto opOutIndex = sgOp->subgraphOutToOpOutIndex(sgOutIndex);
+          traceFront.push_back({sgOp->outTensor(opOutIndex), stack});
+        }
+
+        for (Op *consumer : tfront->consumers.getOps()) {
           // Only certain ops can be on the path between RemoteArg and
           // RemoteLoad/Store.
           if (consumer->opid == Onnx::CustomOperators::RemoteLoad ||
               consumer->opid == Onnx::CustomOperators::RemoteStore ||
               consumer->opid == Onnx::CustomOperators::RemoteExchange) {
-            for (InIndex inIndex : consumer->input->indices(front)) {
+            for (InIndex inIndex : consumer->input->indices(tfront)) {
               argOpMap[tensor_id].insert({consumer, inIndex});
               opArgMap[{consumer, inIndex}].insert(tensor_id);
             }
           } else if (consumer->isConvertibleTo<SubgraphOp>()) {
             SubgraphOp *subgraphOp = dynamic_cast<SubgraphOp *>(consumer);
-            auto indices           = consumer->input->indices(front);
+            auto indices           = consumer->input->indices(tfront);
             for (auto index : indices) {
               auto sgIndex = subgraphOp->opInToSubgraphInIndex(index);
               if (sgIndex > -1 &&
                   sgIndex < subgraphOp->getCalledGraph().getInputIds().size()) {
                 auto t_id = subgraphOp->getCalledGraph().getInputId(sgIndex);
                 auto t    = subgraphOp->getCalledGraph().getTensors().get(t_id);
-                traceFront.push_back(t);
+                callStack.push_back(subgraphOp);
+                traceFront.push_back({t, callStack});
               }
             }
+          } else if (consumer->isConvertibleTo<ConcatOp>()) {
+            traceFront.push_back(
+                {consumer->output->tensor(ConcatOp::getOutIndex()), callStack});
+          } else if (consumer->isConvertibleTo<SliceOp>()) {
+            traceFront.push_back(
+                {consumer->output->tensor(SliceOp::getOutIndex()), callStack});
+          } else if (consumer->isConvertibleTo<ConcatInplaceOp>()) {
+            traceFront.push_back(
+                {consumer->output->tensor(ConcatInplaceOp::getOutIndex()),
+                 callStack});
+          } else if (consumer->isConvertibleTo<SliceInplaceOp>()) {
+            traceFront.push_back(
+                {consumer->output->tensor(SliceInplaceOp::getOutIndex()),
+                 callStack});
+          } else if (consumer->isConvertibleTo<DynamicUpdateOp>()) {
+            traceFront.push_back(
+                {consumer->output->tensor(DynamicUpdateOp::getOutIndex()),
+                 callStack});
+          } else if (consumer->isConvertibleTo<DynamicUpdateInplaceOp>()) {
+            traceFront.push_back({consumer->output->tensor(
+                                      DynamicUpdateInplaceOp::getOutIndex()),
+                                  callStack});
+          } else if (consumer->isConvertibleTo<DynamicSliceOp>()) {
+            traceFront.push_back(
+                {consumer->output->tensor(DynamicSliceOp::getOutIndex()),
+                 callStack});
+          } else if (consumer->isConvertibleTo<IdentityOp>()) {
+            traceFront.push_back(
+                {consumer->output->tensor(IdentityOp::getOutIndex()),
+                 callStack});
+          } else if (consumer->isConvertibleTo<ReshapeOp>()) {
+            traceFront.push_back(
+                {consumer->output->tensor(ReshapeOp::getOutIndex()),
+                 callStack});
+          } else if (consumer->isConvertibleTo<ReshapeInplaceOp>()) {
+            traceFront.push_back(
+                {consumer->output->tensor(ReshapeInplaceOp::getOutIndex()),
+                 callStack});
           } else {
             logging::warn("[RemoteSetup] Unsupported Op {} in path from"
                           "RemoteArg tensor {}.",
@@ -233,7 +292,7 @@ bool RemoteSetup::apply(Graph &graph) const {
                                         : unusedExecutionPhase,
                 graph.getIr().virtualGraphsEnabled()
                     ? op->getIntrospectionInVirtualGraphId(inIndex).first
-                    : -1,
+                    : unusedVGraphId,
                 op->debugName());
           }
         }

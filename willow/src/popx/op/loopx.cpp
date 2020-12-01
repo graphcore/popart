@@ -26,7 +26,7 @@ InputCreatorType LoopOpx::getInputCreatorType(InIndex index) const {
 
 bool LoopOpx::canUnwind(InIndex in, OutIndex out) const {
   auto &op = getOp<LoopOp>();
-  if (out >= 0 && out < op.output->n() && in >= 1 && in - 1 == out) {
+  if (out >= 0 && out < op.output->n() && in > 1 && in - 2 == out) {
     return true;
   }
   return false;
@@ -65,10 +65,27 @@ void LoopOpx::copyExplicitOpInputsToBodyOutputs(
   // Op input M   ->  Body output M-1
   for (int i = 0; i < op.getCalledGraph().getOutputIds().size(); ++i) {
     if (hasInput(i + 1)) {
+
+      TensorId inId  = op.inId(i + 1);
+      TensorId outId = subgraph.getOutputId(i);
+
       auto opInputTensor    = getInTensor(i + 1);
-      auto bodyOutputTensor = get(subgraph.getOutputId(i));
-      poplar::program::Copy copyProg(opInputTensor, bodyOutputTensor);
-      prog.add(copyProg);
+      auto bodyOutputTensor = get(outId);
+
+      auto aliases =
+          dv_p->lowering().getAliasZeroCopy()->getActiveAliasedTensors(
+              {op.getIr().getTensor(op.inId(i + 1))}, true);
+
+      if (aliases.find(op.getIr().getTensor(subgraph.getOutputId(i))) ==
+          aliases.end()) {
+        poplar::program::Copy copyProg(opInputTensor, bodyOutputTensor);
+        prog.add(copyProg);
+        logging::opx::trace(
+            "[LoopOpx] input {} -> output {} copied", inId, outId);
+      } else {
+        logging::opx::trace(
+            "[LoopOpx] input {} -> output {} aliased", inId, outId);
+      }
     }
   }
 }
@@ -85,10 +102,26 @@ void LoopOpx::copyImplicitOpInputsToImplicitBodyInputs(
   for (int i = op.numExplicitInputs();
        i < op.numExplicitInputs() + op.numImplicitInputs();
        ++i) {
+
+    auto aliases = dv_p->lowering().getAliasZeroCopy()->getActiveAliasedTensors(
+        {op.inTensor(i)}, true);
+
+    TensorId opInId   = op.inId(i);
+    TensorId bodyInId = subgraph.getInputId(i);
+
     auto opInputTensor   = getInTensor(i);
-    auto bodyInputTensor = get(subgraph.getInputId(i));
-    poplar::program::Copy copyProg(opInputTensor, bodyInputTensor);
-    prog.add(copyProg);
+    auto bodyInputTensor = get(bodyInId);
+
+    if (aliases.find(op.getIr().getTensor(subgraph.getInputId(i))) ==
+        aliases.end()) {
+      poplar::program::Copy copyProg(opInputTensor, bodyInputTensor);
+      prog.add(copyProg);
+      logging::opx::trace(
+          "[LoopOpx] input {} -> input {} copied", opInId, bodyInId);
+    } else {
+      logging::opx::trace(
+          "[LoopOpx] input {} -> input {} aliased", opInId, bodyInId);
+    }
   }
 }
 
@@ -96,6 +129,9 @@ void LoopOpx::copyBodyOutputsToExplicitBodyInputs(
     poplar::program::Sequence &prog) const {
   auto &op       = getOp<LoopOp>();
   auto &subgraph = op.getCalledGraph();
+
+  poplar::program::Sequence tmpCopiesProg;
+  poplar::program::Sequence finalCopiesProg;
 
   // Skip the trip count tensor
   // Body output 0   ->  Body input 1
@@ -106,14 +142,32 @@ void LoopOpx::copyBodyOutputsToExplicitBodyInputs(
     TensorId inId  = subgraph.getInputId(i + 1);
     TensorId outId = subgraph.getOutputId(i);
 
-    if (inId != outId) {
-      // Only copy if the input is not directly wired through to the output
+    auto aliases = dv_p->lowering().getAliasZeroCopy()->getActiveAliasedTensors(
+        {op.getIr().getTensor(outId)}, true);
+
+    if (inId != outId &&
+        aliases.find(op.getIr().getTensor(inId)) == aliases.end()) {
+      // Only copy if the input is not directly wired through to the output,
+      // and if there are no aliases
       auto bodyInputTensor  = get(inId);
       auto bodyOutputTensor = get(outId);
-      poplar::program::Copy copyProg(bodyOutputTensor, bodyInputTensor);
-      prog.add(copyProg);
+      // Clone to avoid issues with implicit aliases
+
+      auto tmp =
+          dstGraph(op.subgraphOutToOpOutIndex(i)).clone(bodyOutputTensor);
+      tmpCopiesProg.add(poplar::program::Copy(bodyOutputTensor, tmp));
+      finalCopiesProg.add(poplar::program::Copy(tmp, bodyInputTensor));
+      logging::opx::trace(
+          "[LoopOpx] output {} -> input {} copied", outId, inId);
+    } else {
+      logging::opx::trace(
+          "[LoopOpx] output {} -> input {} aliased", outId, inId);
     }
   }
+  // Do temporary copies before final copies to avoid overwriting results
+  // due to possible aliases between the inputs and outputs
+  prog.add(tmpCopiesProg);
+  prog.add(finalCopiesProg);
 }
 
 void LoopOpx::copyBodyOutputsToOpOutputs(
@@ -126,10 +180,25 @@ void LoopOpx::copyBodyOutputsToOpOutputs(
   // ..
   // Body out M-1 ->  Loop out M-2
   for (int i = 1; i < op.getCalledGraph().getOutputIds().size(); ++i) {
-    auto bodyOutputTensor = get(op.getCalledGraph().getOutputId(i));
-    auto opOutputTensor   = get(outId(i - 1));
-    poplar::program::Copy copyProg(bodyOutputTensor, opOutputTensor);
-    prog.add(copyProg);
+    TensorId bodyOutputTensorId = op.getCalledGraph().getOutputId(i);
+    TensorId opOutputTensorId   = outId(i - 1);
+
+    auto aliases = dv_p->lowering().getAliasZeroCopy()->getActiveAliasedTensors(
+        {op.getIr().getTensor(bodyOutputTensorId)}, true);
+
+    if (aliases.find(op.getIr().getTensor(opOutputTensorId)) == aliases.end()) {
+      auto bodyOutputTensor = get(bodyOutputTensorId);
+      auto opOutputTensor   = get(opOutputTensorId);
+      poplar::program::Copy copyProg(bodyOutputTensor, opOutputTensor);
+      prog.add(copyProg);
+      logging::opx::trace("[LoopOpx] output {} -> output {} copied",
+                          bodyOutputTensorId,
+                          opOutputTensorId);
+    } else {
+      logging::opx::trace("[LoopOpx] output {} -> output {} aliased",
+                          bodyOutputTensorId,
+                          opOutputTensorId);
+    }
   }
 }
 
@@ -155,16 +224,16 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
 
   auto &op = getOp<LoopOp>();
 
+  auto tconst = getConst(poplar::BOOL, {}, true, debugPrefix("fconst"));
+
+  auto fconst = getConst(poplar::BOOL, {}, false, debugPrefix("fconst"));
+
   auto condOutTensor = get(op.getCalledGraph().getOutputId(0));
 
   // 0: Set condOut to true if the cond is not shipped as op input
   if (!hasInput(LoopOp::getTerminationConditionInIndex())) {
-    popops::mapInPlace(
-        graph(),
-        popops::expr::And(popops::expr::_1, popops::expr::Const(true)),
-        {condOutTensor},
-        prog,
-        debugPrefix("cond_true"));
+    prog.add(poplar::program::Copy(
+        tconst, condOutTensor, {}, debugPrefix("cond_true")));
   }
 
   // 1: Copy explicit inputs to body outputs
@@ -185,12 +254,8 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
   // 4: Create a poplar only boolean variable exit, set it to false
   auto exitTensor = graph().addVariable(poplar::BOOL, {}, debugPrefix("exit"));
   poputil::mapTensorLinearly(graph(), exitTensor);
-  popops::mapInPlace(
-      graph(),
-      popops::expr::And(popops::expr::_1, popops::expr::Const(false)),
-      {exitTensor},
-      prog,
-      debugPrefix("exit_false"));
+  prog.add(
+      poplar::program::Copy(fconst, exitTensor, {}, debugPrefix("exit_false")));
 
   // 5: Get the max trip count value
   auto maxTripCountValue = op.getTripCountValue();
@@ -213,8 +278,7 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
   } else {
     popops::mapInPlace(
         graph(),
-        popops::expr::Or(popops::expr::Or(popops::expr::_1,
-                                          popops::expr::Not(popops::expr::_2))),
+        popops::expr::Or(popops::expr::_1, popops::expr::Not(popops::expr::_2)),
         {exitTensor, condOutTensor},
         loopProg,
         debugPrefix("exit_update"));
@@ -223,11 +287,20 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
   // 8: Copy body outputs to body inputs
   copyBodyOutputsToExplicitBodyInputs(loopContinueProg);
 
-  // 9: Add the loop body itself
-  auto &loopBody = dv_p->lowering().progs.scopeFragment(op.getCalledGraph());
-  loopContinueProg.add(loopBody);
+  // 9: Copy iterator to body input
+  if (hasInput(LoopOp::getMaximumTripCountInIndex())) {
+    auto bodyInputTensor = get(op.getCalledGraph().getInputId(
+        op.opInToSubgraphInIndex(LoopOp::getMaximumTripCountInIndex())));
+    poplar::program::Copy copyProg(iteratorTensor, bodyInputTensor);
+    loopContinueProg.add(copyProg);
+  }
 
-  // 10: Increment the loop iterator
+  // 10: Add the loop body itself
+  auto &called_graph = op.getCalledGraph();
+  auto &graph_prog   = dv_p->lowering().getFragmentFunction(called_graph);
+  loopContinueProg.add(poplar::program::Call(graph_prog));
+
+  // 11: Increment the loop iterator
   if (hasInput(LoopOp::getMaximumTripCountInIndex())) {
     popops::mapInPlace(
         graph(),
@@ -237,13 +310,15 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
         debugPrefix("iterator_update"));
   }
 
-  // 11: Add conditional around the loop body program
+  // 12: Add conditional around the loop body program
   loopProg.add(poplar::program::If(exitTensor, loopExitProg, loopContinueProg));
 
-  // 12: Repeat the loop conditional program
+  // 13: Repeat the loop conditional program
+  logging::opx::debug(
+      "[LoopOpx] Max trip count: {} ({})", maxTripCountValue, op.debugName());
   prog.add(poplar::program::Repeat(maxTripCountValue, loopProg));
 
-  // 13: Copy body outputs to op outputs
+  // 14: Copy body outputs to op outputs
   copyBodyOutputsToOpOutputs(prog);
 }
 

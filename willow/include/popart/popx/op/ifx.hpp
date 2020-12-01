@@ -24,6 +24,9 @@ private:
                    const std::vector<poplar::Tensor> &outputs) const;
 
   std::vector<poplar::Tensor> prepareOutputs() const;
+
+  std::vector<std::tuple<TensorId, TensorId, bool>>
+  getInputsToPrepare() const override;
 };
 
 class IfGradOpx : public IfOpx {

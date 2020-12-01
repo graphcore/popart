@@ -139,8 +139,8 @@ std::unique_ptr<Op> LoopOp::clone() const {
   return std::make_unique<LoopOp>(*this);
 }
 
-void LoopOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
+void LoopOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("callee", callee.get().id.str());
   os.appendAttribute("tripCountValue", tripCountValue);
 }
@@ -148,14 +148,14 @@ void LoopOp::appendAttributes(OpSerialiserBase &os) const {
 Graph &LoopOp::getCalledGraph() const { return callee.get(); }
 
 int LoopOp::numExplicitInputs() const {
-  int numOutputs        = getCalledGraph().getOutputIds().size() - 1;
+  int numOutputs = getCalledGraph().getOutputIds().size() - 1;
+  // User defined explicit inputs + trip count and termination condition
   int numExplicitInputs = numOutputs + 2;
   return numExplicitInputs;
 }
 
 int LoopOp::numImplicitInputs() const {
-  int numLoopInputs = input->n();
-  return numLoopInputs - numExplicitInputs();
+  return input->maxIndex() + 1 - numExplicitInputs();
 }
 
 InIndex LoopOp::subgraphInToOpInIndex(InIndex index) const { return index; }
@@ -173,21 +173,8 @@ std::vector<const Graph *> LoopOp::getCalledGraphs() const {
   return {&getCalledGraph()};
 }
 
-std::vector<TensorId> LoopOp::getInputsForGraph(const Graph &graph) const {
-  auto allTensors = graph.getIr().getMainGraphTensors().getAllTensorIds();
-  std::vector<TensorId> inputIds;
-  for (int i = 0; i < input->n(); ++i) {
-    auto found =
-        std::find(std::begin(allTensors), std::end(allTensors), inId(i));
-    if (found != std::end(allTensors)) {
-      inputIds.push_back(inId(i));
-    }
-  }
-  return inputIds;
-}
-
 void LoopOp::connectInTensor(InIndex inIndex, TensorId tensorId) {
-  if (inIndex == 0) {
+  if (inIndex == LoopOp::getMaximumTripCountInIndex()) {
     logging::op::warn(
         "INT64 is currently not supported. Casting loop input {} to INT32",
         tensorId);
@@ -208,16 +195,45 @@ void LoopOp::connectInTensor(InIndex inIndex, TensorId tensorId) {
 
 void LoopOp::addLoopInput(InIndex index,
                           TensorId tensorId,
-                          TensorId subgraphTensorId) {
+                          TensorId subgraphTensorId,
+                          bool overwrite) {
+  if (!overwrite) {
+    int n = input->maxIndex();
+    for (InIndex i = n; i >= index; --i) {
+      if (hasInput(i + 1)) {
+        disconnectInTensor(i + 1);
+      }
+      connectInTensor(i + 1, input->tensorIdMap().at(i));
+    }
+  }
+  if (hasInput(index)) {
+    disconnectInTensor(index);
+  }
   connectInTensor(index, tensorId);
   getCalledGraph().addInput(opInToSubgraphInIndex(index),
                             subgraphTensorId,
-                            getIr().getTensor(tensorId)->info);
+                            getIr().getTensor(tensorId)->info,
+                            overwrite);
 }
 
 void LoopOp::addLoopOutput(OutIndex index,
                            TensorId tensorId,
-                           TensorId subgraphTensorId) {
+                           TensorId subgraphTensorId,
+                           bool overwrite) {
+  if (!overwrite) {
+    int n = output->maxIndex();
+    for (OutIndex i = n; i >= index; --i) {
+      if (output->hasIndex(i)) {
+        Tensor *t = output->tensorMap().at(i);
+        disconnectOutTensor(t);
+        connectOutTensor(i + 1, t->id);
+      }
+    }
+  }
+  if (output->hasIndex(index)) {
+    Tensor *t = output->tensorMap().at(index);
+    disconnectOutTensor(t);
+  }
   if (getIr().containsTensor(tensorId)) {
     Tensor *t = getIr().getTensor(tensorId);
     if (t->hasProducer()) {
@@ -227,8 +243,33 @@ void LoopOp::addLoopOutput(OutIndex index,
   } else {
     createAndConnectOutTensor(index, tensorId);
   }
-  getCalledGraph().markAsOutput(opOutToSubgraphOutIndex(index),
-                                subgraphTensorId);
+  getCalledGraph().markAsOutput(
+      opOutToSubgraphOutIndex(index), subgraphTensorId, overwrite);
+}
+
+void LoopOp::removeLoopInput(InIndex index) {
+  disconnectInTensor(index);
+  int n = input->maxIndex();
+  for (InIndex i = index; i <= n; ++i) {
+    if (hasInput(i + 1)) {
+      connectInTensor(i, input->tensorIdMap().at(i + 1));
+      disconnectInTensor(i + 1);
+    }
+  }
+  getCalledGraph().removeInput(opInToSubgraphInIndex(index));
+}
+
+void LoopOp::removeLoopOutput(OutIndex index) {
+  disconnectOutTensor(output->tensor(index));
+  int n = output->maxIndex();
+  for (InIndex i = index; i <= n; ++i) {
+    if (output->hasIndex(i + 1)) {
+      Tensor *t = output->tensor(i + 1);
+      disconnectOutTensor(t);
+      connectOutTensor(i, t->id);
+    }
+  }
+  getCalledGraph().removeOutput(opOutToSubgraphOutIndex(index));
 }
 
 namespace {

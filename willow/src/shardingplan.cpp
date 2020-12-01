@@ -6,13 +6,14 @@
 namespace popart {
 
 ShardingPlan::ShardingPlan(ShardingMethod method_, ShardOpSettings settings_)
-    : method(method_), shardSettings(settings_) {}
+    : method(method_), shardSettings(settings_), totalNumShards(0) {}
 
 ShardingPlan::ShardingPlan(ShardingMethod method_,
                            const ShardIdMap &shardMap_,
                            Graph &graph_,
                            ShardOpSettings settings_)
-    : method(method_), shardIdMap(shardMap_), shardSettings(settings_) {
+    : method(method_), shardIdMap(shardMap_), shardSettings(settings_),
+      totalNumShards(0) {
   for (auto &idAndShardIds : shardIdMap) {
     fillInfoMapFromIdMap(idAndShardIds.first, graph_);
   }
@@ -21,7 +22,8 @@ ShardingPlan::ShardingPlan(ShardingMethod method_,
 ShardingPlan::ShardingPlan(ShardingMethod method_,
                            const ShardInfoMap &shardMap_,
                            ShardOpSettings settings_)
-    : method(method_), shardInfoMap(shardMap_), shardSettings(settings_) {}
+    : method(method_), shardInfoMap(shardMap_), shardSettings(settings_),
+      totalNumShards(0) {}
 
 void ShardingPlan::fillInfoMapFromIdMap(TensorId id, Graph &graph_) {
   auto &shardIds  = shardIdMap.at(id);

@@ -131,6 +131,10 @@ public:
     shardSettings = shardSettings_;
   }
 
+  int64_t getTotalNumShards() const { return totalNumShards; }
+
+  void setTotalNumShards(int64_t num) { totalNumShards = num; }
+
 private:
   void fillInfoMapFromIdMap(TensorId id, Graph &graph);
 
@@ -138,6 +142,7 @@ private:
   ShardIdMap shardIdMap;
   ShardInfoMap shardInfoMap;
   ShardOpSettings shardSettings;
+  int64_t totalNumShards;
 };
 
 } // namespace popart

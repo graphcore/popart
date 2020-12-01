@@ -358,7 +358,10 @@ Regions Region::reshape(Region fullInRegion, Region fullOutRegion) const {
   }
 
   if (rank() != fullInRegion.rank()) {
-    throw error("This region and the in-region are of different rank");
+    throw error(
+        "This region and the in-region are of different rank ({} vs. {})",
+        rank(),
+        fullInRegion.rank());
   }
 
   if (*this == fullInRegion) {

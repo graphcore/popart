@@ -299,8 +299,13 @@ void insertBoundariesOps(const SessionOptions &opts,
           graph.topoCons.get()->insert(schedule[i], boundary);
           graph.topoCons.get()->insert(boundary, schedule[i + 1]);
         } else {
-          // Insert topo con to pin boundary at the end of the graph
-          graph.topoCons.get()->insert(schedule[i], boundary);
+          // Insert topo cons to pin boundary at the end of the graph
+          int64_t j = i;
+          while (j >= 0 &&
+                 schedule[j]->getGraph().id == schedule[i]->getGraph().id) {
+            graph.topoCons.get()->insert(schedule[j], boundary);
+            --j;
+          }
         }
         // Ensures inserting boundaries does not mess with priorities
         boundary->settings.schedulePriority =
@@ -1245,6 +1250,15 @@ bool SubgraphOutline::apply(Graph &graph) const {
 
   // Get updated schedule with boundaries
   schedule = getFullSchedule(ir);
+
+  for (size_t i = 0; i < schedule.size(); ++i) {
+    Op *op = schedule.at(i);
+    logging::transform::trace("[SubgraphOutline] {} - graph {}, opid {}, op {}",
+                              i,
+                              op->getGraph().id,
+                              op->id,
+                              op->debugName());
+  }
 
   // Get the software parallel schedule to generate sequences that should
   // be outlined as a whole

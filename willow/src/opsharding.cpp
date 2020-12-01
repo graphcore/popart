@@ -137,10 +137,14 @@ ShardingHelper::dynamicConcat(int64_t axis,
     TensorId sliceTensorId = tensorIds.at(b);
     Tensor *s              = graph->getTensors().get(sliceTensorId);
 
-    auto outShape       = s->info.shape();
-    auto initShape      = s->info.shape();
-    auto sliceShape     = s->info.shape();
     auto origSliceShape = s->info.shape();
+    if (origSliceShape.empty()) {
+      origSliceShape.push_back(1);
+    }
+
+    auto outShape   = origSliceShape;
+    auto initShape  = origSliceShape;
+    auto sliceShape = origSliceShape;
 
     TensorId toUpdateSliceTensorId;
     if (origSliceShape[axis] > 1) {
@@ -177,6 +181,7 @@ ShardingHelper::dynamicConcat(int64_t axis,
       ops.insert(ops.end(), reshapeOps.begin(), reshapeOps.end());
     } else {
       toUpdateSliceTensorId = sliceTensorId;
+      initShape[axis]       = tensorIds.size() * origSliceShape[axis];
       outShape[axis]        = tensorIds.size() * origSliceShape[axis];
     }
 
@@ -209,8 +214,10 @@ ShardingHelper::dynamicConcat(int64_t axis,
 
     updateOp->connectInTensor(DynamicUpdateOp::getInIndex(),
                               toUpdateSliceTensorId);
-    updateOp->connectInTensor(DynamicUpdateOp::getIndexInIndex(),
-                              createOrGetIndexTensor(static_cast<uint32_t>(b)));
+    updateOp->connectInTensor(
+        DynamicUpdateOp::getIndexInIndex(),
+        createOrGetIndexTensor(static_cast<uint32_t>(b),
+                               settings.at(b % settings.size())));
     updateOp->connectInTensor(DynamicUpdateOp::getUpdateInIndex(), lastId);
 
     updateOp->settings.inferTensorMappingToFrom.insert(
@@ -313,8 +320,10 @@ ShardingHelper::dynamicShard(int64_t axis,
     ops.push_back(sliceOp);
 
     sliceOp->connectInTensor(SliceOp::getInIndex(), sliceableTensorId);
-    sliceOp->connectInTensor(DynamicSliceOp::getIndexInIndex(),
-                             createOrGetIndexTensor(static_cast<uint32_t>(b)));
+    sliceOp->connectInTensor(
+        DynamicSliceOp::getIndexInIndex(),
+        createOrGetIndexTensor(static_cast<uint32_t>(b),
+                               settings.at(b % settings.size())));
 
     TensorId tmpSliceId =
         origShape[axis] > tensorIds.size()
@@ -456,7 +465,7 @@ std::vector<Op *> ShardingHelper::dynamicUpdate(int64_t axis,
   TensorId inReId    = concatInId;
   TensorId outReId   = concatOutId;
 
-  if (origShape[axis] > 1) {
+  if (sliceShape[axis] > 1) {
     sliceReShape.resize(origShape.size() + 1);
     inReShape.resize(sliceShape.size() + 1);
     for (size_t i = 0; i < sliceReShape.size(); ++i) {
@@ -519,7 +528,7 @@ std::vector<Op *> ShardingHelper::dynamicUpdate(int64_t axis,
   updateOp->createAndConnectOutTensor(DynamicUpdateOp::getOutIndex(), outReId);
   updateOp->setup();
 
-  if (origShape[axis] > 1) {
+  if (sliceShape[axis] > 1) {
 
     logging::transform::trace(
         "[ShardingHelper] Reshape after update: [{} -> {}]",
@@ -556,10 +565,10 @@ Tensor *ShardingHelper::initTensor(TensorInfo info,
   return initOp->output->tensor(InitOp::getOutIndex());
 }
 
-void ShardingHelper::idLoss(ReductionType reductionType,
-                            TensorId intermediateId,
-                            TensorId lossOutId,
-                            Op::Settings settings) const {
+Op *ShardingHelper::idLoss(ReductionType reductionType,
+                           TensorId intermediateId,
+                           TensorId lossOutId,
+                           Op::Settings settings) const {
   auto idLossOpUp = std::make_unique<IdentityLossOp>(
       Onnx::AiGraphcore::OpSet1::IdentityLoss, reductionType, settings);
   Op *idLossOp = idLossOpUp.get();
@@ -572,10 +581,19 @@ void ShardingHelper::idLoss(ReductionType reductionType,
   idLossOp->fromLoss               = PathFromLoss::Yes;
   idLossOp->settings.recomputeType = RecomputeType::Checkpoint;
   graph->getIr().setFinalLoss(lossOutId);
+  return idLossOp;
 }
 
-TensorId ShardingHelper::createOrGetIndexTensor(uint32_t index) const {
-  TensorId id = graph->addScope(reservedIndexPrefix() + std::to_string(index));
+TensorId ShardingHelper::createOrGetIndexTensor(uint32_t index,
+                                                Op::Settings settings) const {
+  std::stringstream ss;
+  ss << reservedIndexPrefix() << std::to_string(index);
+  ss << "_" << settings.tileSet;
+  if (settings.vgraphId) {
+    ss << "_" << *(settings.vgraphId);
+  }
+
+  TensorId id = graph->addScope(ss.str());
   if (!graph->getTensors().contains(id)) {
     TensorInfo indexTensorInfo(DataType::UINT32, {1});
     std::vector<uint32_t> idData(1, index);
@@ -586,10 +604,16 @@ TensorId ShardingHelper::createOrGetIndexTensor(uint32_t index) const {
 }
 
 template <class T>
-TensorId ShardingHelper::createOrGetConstTensor(DataType type, T value) const {
+TensorId ShardingHelper::createOrGetConstTensor(DataType type,
+                                                T value,
+                                                Op::Settings settings) const {
   std::stringstream ss;
   ss << reservedConstValuePrefix() << "_" << static_cast<int>(type) << "_"
      << std::to_string(value);
+  ss << "_" << settings.tileSet;
+  if (settings.vgraphId) {
+    ss << "_" << *(settings.vgraphId);
+  }
   TensorId id = graph->addScope(ss.str());
   if (!graph->getTensors().contains(id)) {
     TensorInfo indexTensorInfo(type, {1});
@@ -612,14 +636,15 @@ ShardIdMap Op::shard(const ShardIdMap &inputs) {
       .getIdMap();
 }
 
-ShardingPlan Op::shard(const ShardingPlan inputPlan) {
-  ShardingPlan outputPlan(inputPlan.getMethod());
+std::pair<ShardingPlan, ShardingPlan>
+Op::adjustShardPlans(const ShardingPlan inputPlan) {
+  auto &graph              = getGraph();
+  auto &ir                 = graph.getIr();
+  int64_t total_num_shards = inputPlan.getTotalNumShards();
+
   ShardingPlan adjustedInputPlan(inputPlan.getMethod(),
                                  inputPlan.getOpSettings());
-  int64_t total_num_shards = 0;
-
-  auto &graph = getGraph();
-  auto &ir    = graph.getIr();
+  ShardingPlan outputPlan(inputPlan.getMethod());
 
   ShardingHelper helper(&graph);
 
@@ -670,10 +695,17 @@ ShardingPlan Op::shard(const ShardingPlan inputPlan) {
         if (inputPlan.getOpSettings().hasPreSetting()) {
           sliceSettings.at(num_shards) =
               inputPlan.getOpSettings().getPreSetting();
-        }
-        if (inputPlan.getOpSettings().hasPostSetting()) {
           sliceSettings.at(num_shards + 1) =
-              inputPlan.getOpSettings().getPostSetting();
+              inputPlan.getOpSettings().getPreSetting();
+        }
+
+        for (size_t i = 0; i < sliceSettings.size(); ++i) {
+          Tensor *t = getIr().getTensor(it->first);
+          if (input->contains(t)) {
+            auto indices = input->indices(t);
+            sliceSettings.at(i) =
+                adjustInSettings(indices.front(), sliceSettings.at(i));
+          }
         }
 
         if (inputPlan.getMethod() == ShardingMethod::DynamicShard) {
@@ -711,10 +743,17 @@ ShardingPlan Op::shard(const ShardingPlan inputPlan) {
         if (inputPlan.getOpSettings().hasPreSetting()) {
           concatSettings.at(num_shards) =
               inputPlan.getOpSettings().getPreSetting();
-        }
-        if (inputPlan.getOpSettings().hasPostSetting()) {
           concatSettings.at(num_shards + 1) =
-              inputPlan.getOpSettings().getPostSetting();
+              inputPlan.getOpSettings().getPreSetting();
+        }
+
+        for (size_t i = 0; i < concatSettings.size(); ++i) {
+          Tensor *t = getIr().getTensor(it->first);
+          if (input->contains(t)) {
+            auto indices = input->indices(t);
+            concatSettings.at(i) =
+                adjustInSettings(indices.front(), concatSettings.at(i));
+          }
         }
 
         TensorId newConcatId = ir.createIntermediateTensorId(concatId);
@@ -733,422 +772,520 @@ ShardingPlan Op::shard(const ShardingPlan inputPlan) {
       }
     }
   }
+  adjustedInputPlan.setTotalNumShards(total_num_shards);
+  outputPlan.setTotalNumShards(total_num_shards);
 
-  // Shard operation
-  if (adjustedInputPlan.getMethod() == ShardingMethod::DynamicShard ||
-      adjustedInputPlan.getMethod() == ShardingMethod::StaticShard) {
-    // Construct shards
-    auto inputs = adjustedInputPlan.getIdMap();
+  return {adjustedInputPlan, outputPlan};
+}
 
-    ShardIdMap shardOutputs;
-    size_t num_shards = 1;
-    for (auto &idkv : inputs) {
-      num_shards = std::max(num_shards, idkv.second.size());
+ShardingPlan Op::unrollShard(const ShardingPlan adjustedInputPlan,
+                             ShardingPlan outputPlan) {
+  auto &graph = getGraph();
+  ShardingHelper helper(&graph);
+
+  // Construct shards
+  auto inputs = adjustedInputPlan.getIdMap();
+
+  ShardIdMap shardOutputs;
+  size_t num_shards = 1;
+  for (auto &idkv : inputs) {
+    num_shards = std::max(num_shards, idkv.second.size());
+  }
+
+  auto connectInTensorFn = [this](Op *op, InIndex index, TensorId tensorId) {
+    IpuCopyOp *srcOp = dynamic_cast<IpuCopyOp *>(this);
+    IpuCopyOp *dstOp = dynamic_cast<IpuCopyOp *>(op);
+    if (srcOp && dstOp) {
+      TensorId srcTensorId = srcOp->input->tensor(index)->id;
+      dstOp->connectInTensor(index, tensorId, srcOp->getSourceIpu(srcTensorId));
+    } else {
+      op->connectInTensor(index, tensorId);
     }
+  };
 
-    auto connectInTensorFn = [this](Op *op, InIndex index, TensorId tensorId) {
-      IpuCopyOp *srcOp = dynamic_cast<IpuCopyOp *>(this);
-      IpuCopyOp *dstOp = dynamic_cast<IpuCopyOp *>(op);
-      if (srcOp && dstOp) {
-        TensorId srcTensorId = srcOp->input->tensor(index)->id;
-        dstOp->connectInTensor(
-            index, tensorId, srcOp->getSourceIpu(srcTensorId));
-      } else {
-        op->connectInTensor(index, tensorId);
-      }
-    };
-
-    std::vector<Op *> cloneOps;
-    for (size_t b = 0; b < num_shards; ++b) {
-      auto clonedOpUp = clone();
-      auto cloneId    = graph.moveIntoGraph(std::move(clonedOpUp));
-      Op *clonedOp    = graph.getOp(cloneId);
-      clonedOp->disconnectAllInputs();
-      clonedOp->disconnectAllOutputs();
-
-      if (toLoss == PathToLoss::Yes && fromLoss == PathFromLoss::Yes) {
-        clonedOp->fromLoss = PathFromLoss::No;
-      }
-
-      for (const auto &in : input->tensorMap()) {
-        auto serializedTensor = inputs.find(in.second->id);
-        if (serializedTensor == inputs.end()) {
-          // Tensors not split
-          connectInTensorFn(clonedOp, in.first, in.second->id);
-        } else {
-          if (serializedTensor->second.size() == num_shards) {
-            // Tensors split dimension
-            connectInTensorFn(clonedOp, in.first, serializedTensor->second[b]);
-          } else if (serializedTensor->second.size() == 1) {
-            // Tensors not split
-            connectInTensorFn(clonedOp, in.first, serializedTensor->second[0]);
-          } else {
-            throw error("[Op] Number of input tensors must be 1 or match the "
-                        "serialziation factor {}",
-                        num_shards);
-          }
-        }
-      }
-      for (const auto &out : output->tensorMap()) {
-        TensorId sliceId =
-            getIr().createSliceTensorId(out.second->id,
-                                        static_cast<unsigned>(b),
-                                        static_cast<unsigned>(b + 1));
-        clonedOp->createAndConnectOutTensor(out.first, sliceId);
-        shardOutputs[out.second->id].push_back(sliceId);
-      }
-      Settings cloneSettings = clonedOp->settings;
-      if (adjustedInputPlan.getOpSettings().getShardSettings().size() > b) {
-        cloneSettings =
-            adjustedInputPlan.getOpSettings().getShardSettings().at(b);
-      }
-      configureShardedOp(clonedOp, &cloneSettings);
-      clonedOp->setup();
-
-      logging::op::trace("[Op::shard] Cloned op {} {} -> {}",
-                         clonedOp->opid,
-                         clonedOp->input->getIndexShapeMap(),
-                         clonedOp->output->getIndexShapeMap());
-    }
-
-    for (auto out : shardOutputs) {
-      TensorId oldOutId = out.first;
-      Tensor *oldOut    = graph.getTensors().get(oldOutId);
-      auto reductionType =
-          getShardReductionType(output->indices(oldOut).front());
-
-      Tensor *newOut =
-          graph.getTensors().get(shardOutputs.at(oldOutId).front());
-
-      logging::trace("[Op] {}; old output shape: {}, new output shape: {}x{}",
-                     debugName(),
-                     oldOut->info.shape(),
-                     shardOutputs.at(oldOutId).size(),
-                     newOut->info.shape());
-
-      if (reductionType != ReductionType::NoReduction) {
-
-        if (oldOut->info.nelms() == newOut->info.nelms() &&
-            shardOutputs.at(oldOutId).size() > 1) {
-          logging::trace("[Op] {}; adding reduction over {} shards.",
-                         debugName(),
-                         shardOutputs.at(oldOutId).size());
-
-          Op *reduceOp;
-
-          switch (reductionType) {
-          case ReductionType::Sum: {
-            auto sumOpUp =
-                std::make_unique<SumOp>(Onnx::Operators::Sum_8, settings);
-            Op *sumOp = sumOpUp.get();
-            graph.moveIntoGraph(std::move(sumOpUp));
-            reduceOp = sumOp;
-            break;
-          }
-          case ReductionType::Mean: {
-            auto meanOpUp =
-                std::make_unique<MeanOp>(Onnx::Operators::Mean_8, settings);
-            Op *meanOp = meanOpUp.get();
-            graph.moveIntoGraph(std::move(meanOpUp));
-            reduceOp = meanOp;
-            break;
-          }
-          case ReductionType::NoReduction:
-            throw error("Unsupported reduction type in shard() ({})",
-                        debugName());
-            break;
-          }
-          cloneOps.push_back(reduceOp);
-
-          disconnectOutTensor(oldOut);
-
-          InIndex i = 0;
-          for (auto shardOutId : shardOutputs[oldOutId]) {
-            reduceOp->connectInTensor(i, shardOutId);
-            ++i;
-          }
-
-          reduceOp->toLoss   = toLoss;
-          reduceOp->fromLoss = fromLoss;
-          if (toLoss == PathToLoss::Yes && fromLoss == PathFromLoss::Yes) {
-            reduceOp->fromLoss = PathFromLoss::No;
-            // New final loss
-            auto tmpOutId = graph.getIr().createIntermediateTensorId(oldOutId);
-            reduceOp->createAndConnectOutTensor(SumOp::getOutIndex(), tmpOutId);
-            reduceOp->setup();
-            helper.idLoss(
-                reductionType,
-                tmpOutId,
-                oldOutId,
-                adjustedInputPlan.getOpSettings().hasPostSetting()
-                    ? adjustedInputPlan.getOpSettings().getPostSetting()
-                    : settings);
-          } else {
-            reduceOp->connectOutTensor(SumOp::getOutIndex(), oldOutId);
-            reduceOp->setup();
-          }
-
-          shardOutputs[oldOutId] = {oldOutId};
-        }
-      }
-      outputPlan.insertIdMap(shardOutputs, graph);
-    }
-
-    graph.topoCons->transferToMultiple(this, cloneOps);
-  } else if (adjustedInputPlan.getMethod() == ShardingMethod::Loop) {
-    // Construct loop
-
-    Settings loopSettings =
-        adjustedInputPlan.getOpSettings().getShardSettings().size() > 0
-            ? adjustedInputPlan.getOpSettings().getShardSettings().at(0)
-            : settings;
-
-    auto subgraph_id    = ir.createUniqueSubgraphId({""});
-    auto &subgraph      = ir.createGraph(subgraph_id);
-    auto subgraph_scope = subgraph.getScope();
-
-    // Iterate over Op outputs and inputs
-    auto outputMap = output->tensorMap();
-    auto inputMap  = input->tensorMap();
-
-    ShardingHelper subgraphHelper(&subgraph);
-
-    auto loopOpUp = std::make_unique<LoopOp>(
-        Onnx::Operators::Loop_11, loopSettings, subgraph);
-    LoopOp *loopOp = loopOpUp.get();
-    graph.moveIntoGraph(std::move(loopOpUp));
-    loopOp->setTripCountValue(total_num_shards);
-
-    // Move loop-sharded op into subgraph
+  std::vector<Op *> cloneOps;
+  for (size_t b = 0; b < num_shards; ++b) {
     auto clonedOpUp = clone();
-    auto cloneId    = subgraph.moveIntoGraph(std::move(clonedOpUp));
-    Op *clonedOp    = subgraph.getOp(cloneId);
+    auto cloneId    = graph.moveIntoGraph(std::move(clonedOpUp));
+    Op *clonedOp    = graph.getOp(cloneId);
     clonedOp->disconnectAllInputs();
     clonedOp->disconnectAllOutputs();
 
-    bool requiresIdLoss = false;
-    // Adjust from/to loss
-    loopOp->toLoss   = toLoss;
-    loopOp->fromLoss = fromLoss;
     if (toLoss == PathToLoss::Yes && fromLoss == PathFromLoss::Yes) {
-      loopOp->fromLoss   = PathFromLoss::No;
       clonedOp->fromLoss = PathFromLoss::No;
-      requiresIdLoss     = true;
     }
 
-    // Add mandatory loop condition tensor to subgraph
-    TensorId loopCondScopedId = subgraph.addScope(reservedLoopCondPrefix());
-    subgraph.addInput(loopCondScopedId, TensorInfo(DataType::BOOL, {}));
-    subgraph.markAsOutput(loopCondScopedId);
-
-    InIndex explicitLoopInIndex = LoopOp::getFirstInputInIndex();
-    int numExplicitInputs       = 1 + outputMap.size();
-    InIndex implicitLoopInIndex = explicitLoopInIndex + numExplicitInputs;
-    InIndex loopOutIndex        = 0;
-
-    // Connect a loop iterator starting at 0
-    TensorId serialIndexTensorId   = helper.createOrGetIndexTensor(0);
-    auto serialIndexTensorScopedId = subgraph.addScope(serialIndexTensorId);
-    loopOp->addLoopInput(
-        explicitLoopInIndex++, serialIndexTensorId, serialIndexTensorScopedId);
-
-    // Increment the loop index inside of the loop
-    std::unique_ptr<AddOp> indexAddOpUp =
-        std::make_unique<AddOp>(Onnx::Operators::Add_7, loopSettings);
-    Op *indexAddOp = indexAddOpUp.get();
-    subgraph.moveIntoGraph(std::move(indexAddOpUp));
-    // Increment by 1
-    TensorId constId =
-        subgraphHelper.createOrGetConstTensor<uint32_t>(DataType::UINT32, 1);
-    indexAddOp->connectInTensor(AddOp::getArg0InIndex(),
-                                serialIndexTensorScopedId);
-    indexAddOp->connectInTensor(AddOp::getArg1InIndex(), constId);
-    TensorId updatedSerialIndexTensorScopedId =
-        ir.createIntermediateTensorId(serialIndexTensorScopedId);
-    TensorId updatedSerialIndexTensorId =
-        subgraph.removeScope(updatedSerialIndexTensorScopedId);
-    indexAddOp->createAndConnectOutTensor(AddOp::getOutIndex(),
-                                          updatedSerialIndexTensorScopedId);
-    indexAddOp->setup();
-    loopOp->addLoopOutput(loopOutIndex++,
-                          updatedSerialIndexTensorId,
-                          updatedSerialIndexTensorScopedId);
-
-    // Connect Op inputs as implicit loop inputs
-    for (const auto &in : inputMap) {
-      TensorId opInId;
-      auto infoMap = adjustedInputPlan.getInfoMap();
-
-      auto inScopedId = subgraph.addScope(in.second->id);
-
-      auto it = infoMap.find(in.second->id);
-      if (it != infoMap.end()) {
-        // Connect from shard plan
-        loopOp->addLoopInput(
-            implicitLoopInIndex++, std::get<0>(it->second), inScopedId);
-
-        Shape origShape    = std::get<1>(it->second).shape();
-        Shape sliceShape   = std::get<2>(it->second).front().shape();
-        int64_t num_shards = std::get<2>(it->second).size();
-        int64_t axis       = 0;
-
-        for (int64_t i = 0; i < sliceShape.size(); ++i) {
-          if (sliceShape[i] * num_shards == origShape[i]) {
-            axis = i;
-          }
-        }
-
-        TensorId sliceScopedId = ir.createIntermediateTensorId(inScopedId);
-        subgraphHelper.dynamicSlice(axis,
-                                    num_shards,
-                                    sliceScopedId,
-                                    inScopedId,
-                                    serialIndexTensorScopedId,
-                                    loopSettings);
-
-        opInId = sliceScopedId;
+    for (const auto &in : input->tensorMap()) {
+      auto serializedTensor = inputs.find(in.second->id);
+      if (serializedTensor == inputs.end()) {
+        // Tensors not split
+        connectInTensorFn(clonedOp, in.first, in.second->id);
       } else {
-        // Connect directly
-        loopOp->addLoopInput(implicitLoopInIndex++, in.second->id, inScopedId);
-        opInId = inScopedId;
+        if (serializedTensor->second.size() == num_shards) {
+          // Tensors split dimension
+          connectInTensorFn(clonedOp, in.first, serializedTensor->second[b]);
+        } else if (serializedTensor->second.size() == 1) {
+          // Tensors not split
+          connectInTensorFn(clonedOp, in.first, serializedTensor->second[0]);
+        } else {
+          throw error("[Op] Number of input tensors must be 1 or match the "
+                      "serialziation factor {}",
+                      num_shards);
+        }
       }
-
-      // Connect the cloned Op inputs
-      clonedOp->connectInTensor(in.first, opInId);
     }
-
-    // Connect the cloned Op outputs
-    for (const auto &out : outputMap) {
-      TensorId shardOutId = subgraph.addScope(out.second->id);
-      clonedOp->createAndConnectOutTensor(out.first, shardOutId);
+    for (const auto &out : output->tensorMap()) {
+      TensorId sliceId =
+          getIr().createSliceTensorId(out.second->id,
+                                      static_cast<unsigned>(b),
+                                      static_cast<unsigned>(b + 1));
+      clonedOp->createAndConnectOutTensor(out.first, sliceId);
+      shardOutputs[out.second->id].push_back(sliceId);
     }
-
-    // Setup the cloned Op (calculates the proper output shapes)
-    configureShardedOp(clonedOp, &loopSettings);
+    Settings cloneSettings = clonedOp->settings;
+    if (adjustedInputPlan.getOpSettings().getShardSettings().size() > b) {
+      cloneSettings =
+          adjustedInputPlan.getOpSettings().getShardSettings().at(b);
+    }
+    configureShardedOp(clonedOp, &cloneSettings);
     clonedOp->setup();
 
-    // Add loop outputs and explicit inputs, add dynamic updates &
-    // accumulation
-    std::map<TensorId, ReductionType> outReductionMap;
-    for (const auto &out : outputMap) {
-      Shape outShape   = out.second->info.shape();
-      Shape sliceShape = clonedOp->outTensor(out.first)->info.shape();
-      TensorId sliceId = clonedOp->outTensor(out.first)->id;
+    logging::op::trace("[Op::shard] Cloned op {} {} -> {}",
+                       clonedOp->opid,
+                       clonedOp->input->getIndexShapeMap(),
+                       clonedOp->output->getIndexShapeMap());
+  }
 
-      bool reduce = outShape == sliceShape;
+  for (auto out : shardOutputs) {
+    TensorId oldOutId  = out.first;
+    Tensor *oldOut     = graph.getTensors().get(oldOutId);
+    auto reductionType = getShardReductionType(output->indices(oldOut).front());
 
-      // Explicit input -> explicit output
-      Tensor *initTensor = helper.initTensor(
-          out.second->info,
-          out.second->id,
-          reduce ? InitType::Zero : InitType::NoInit,
-          adjustedInputPlan.getOpSettings().hasPreSetting()
-              ? adjustedInputPlan.getOpSettings().getPreSetting()
-              : settings);
+    Tensor *newOut = graph.getTensors().get(shardOutputs.at(oldOutId).front());
 
-      auto initScopedId = subgraph.addScope(initTensor->id);
-      loopOp->addLoopInput(explicitLoopInIndex++, initTensor->id, initScopedId);
-      TensorId updatedTensorId = ir.createIntermediateTensorId(initScopedId);
+    logging::trace("[Op] {}; old output shape: {}, new output shape: {}x{}",
+                   debugName(),
+                   oldOut->info.shape(),
+                   shardOutputs.at(oldOutId).size(),
+                   newOut->info.shape());
 
-      if (reduce) {
-        ReductionType reductionType = getShardReductionType(out.first);
-        outReductionMap.insert({out.second->id, reductionType});
-        if (reductionType == ReductionType::Mean ||
-            reductionType == ReductionType::Sum) {
-          auto addOpUp =
-              std::make_unique<AddOp>(Onnx::Operators::Add_7, loopSettings);
-          Op *addOp = addOpUp.get();
-          subgraph.moveIntoGraph(std::move(addOpUp));
-          addOp->connectInTensor(AddOp::getArg0InIndex(), initScopedId);
-          addOp->connectInTensor(AddOp::getArg1InIndex(), sliceId);
-          addOp->createAndConnectOutTensor(AddOp::getOutIndex(),
-                                           updatedTensorId);
-          addOp->setup();
-        } else {
+    if (reductionType != ReductionType::NoReduction) {
+      Settings postSettings =
+          adjustedInputPlan.getOpSettings().hasPostSetting()
+              ? adjustedInputPlan.getOpSettings().getPostSetting()
+              : settings;
+
+      if (output->contains(oldOut)) {
+        auto indices = output->indices(oldOut);
+        postSettings = adjustOutSettings(indices.front(), postSettings);
+      }
+
+      if (oldOut->info.nelms() == newOut->info.nelms() &&
+          shardOutputs.at(oldOutId).size() > 1) {
+        logging::trace("[Op] {}; adding reduction over {} shards.",
+                       debugName(),
+                       shardOutputs.at(oldOutId).size());
+
+        Op *reduceOp;
+
+        switch (reductionType) {
+        case ReductionType::Sum: {
+          auto sumOpUp =
+              std::make_unique<SumOp>(Onnx::Operators::Sum_8, postSettings);
+          Op *sumOp = sumOpUp.get();
+          graph.moveIntoGraph(std::move(sumOpUp));
+          reduceOp = sumOp;
+          break;
+        }
+        case ReductionType::Mean: {
+          auto meanOpUp =
+              std::make_unique<MeanOp>(Onnx::Operators::Mean_8, postSettings);
+          Op *meanOp = meanOpUp.get();
+          graph.moveIntoGraph(std::move(meanOpUp));
+          reduceOp = meanOp;
+          break;
+        }
+        case ReductionType::NoReduction:
           throw error("Unsupported reduction type in shard() ({})",
                       debugName());
           break;
         }
-      } else {
-        outReductionMap.insert({out.second->id, ReductionType::NoReduction});
-        int64_t num_shards = total_num_shards;
-        int64_t axis       = 0;
+        cloneOps.push_back(reduceOp);
 
-        for (int64_t i = 0; i < sliceShape.size(); ++i) {
-          if (sliceShape[i] * num_shards == outShape[i]) {
-            axis = i;
-          }
+        disconnectOutTensor(oldOut);
+
+        InIndex i = 0;
+        for (auto shardOutId : shardOutputs[oldOutId]) {
+          reduceOp->connectInTensor(i, shardOutId);
+          ++i;
         }
 
-        subgraphHelper.dynamicUpdate(axis,
-                                     num_shards,
-                                     sliceId,
-                                     initScopedId,
-                                     updatedTensorId,
-                                     serialIndexTensorScopedId,
-                                     loopSettings);
+        reduceOp->toLoss   = toLoss;
+        reduceOp->fromLoss = fromLoss;
+        if (toLoss == PathToLoss::Yes && fromLoss == PathFromLoss::Yes) {
+          reduceOp->fromLoss = PathFromLoss::No;
+          // New final loss
+          auto tmpOutId = graph.getIr().createIntermediateTensorId(oldOutId);
+          reduceOp->createAndConnectOutTensor(SumOp::getOutIndex(), tmpOutId);
+          reduceOp->setup();
+          helper.idLoss(reductionType, tmpOutId, oldOutId, postSettings);
+        } else {
+          reduceOp->connectOutTensor(SumOp::getOutIndex(), oldOutId);
+          reduceOp->setup();
+        }
+
+        shardOutputs[oldOutId] = {oldOutId};
       }
-      loopOp->addLoopOutput(loopOutIndex++, out.second->id, updatedTensorId);
+    }
+    outputPlan.insertIdMap(shardOutputs, graph);
+  }
+
+  graph.topoCons->transferToMultiple(this, cloneOps);
+
+  return outputPlan;
+}
+
+ShardingPlan Op::loopShard(const ShardingPlan adjustedInputPlan,
+                           ShardingPlan outputPlan) {
+  auto &graph = getGraph();
+  auto &ir    = graph.getIr();
+  ShardingHelper helper(&graph);
+
+  std::vector<Op *> shardedOps;
+
+  // Construct loop
+
+  Settings loopSettings =
+      adjustedInputPlan.getOpSettings().getShardSettings().size() > 0
+          ? adjustedInputPlan.getOpSettings().getShardSettings().at(0)
+          : settings;
+  Settings insideLoopSettings = loopSettings;
+
+  auto subgraph_id    = ir.createUniqueSubgraphId({""});
+  auto &subgraph      = ir.createGraph(subgraph_id);
+  auto subgraph_scope = subgraph.getScope();
+
+  // Ops inside the loop must use the correct subgraph
+  insideLoopSettings.graph = subgraph;
+
+  // Iterate over Op outputs and inputs
+  auto outputMap = output->tensorMap();
+  auto inputMap  = input->tensorMap();
+
+  ShardingHelper subgraphHelper(&subgraph);
+
+  auto loopOpUp = std::make_unique<LoopOp>(
+      Onnx::Operators::Loop_11, loopSettings, subgraph);
+  LoopOp *loopOp = loopOpUp.get();
+  graph.moveIntoGraph(std::move(loopOpUp));
+  loopOp->setTripCountValue(adjustedInputPlan.getTotalNumShards());
+  shardedOps.push_back(loopOp);
+
+  // Move loop-sharded Op into subgraph
+  auto clonedOpUp = clone();
+  auto cloneId    = subgraph.moveIntoGraph(std::move(clonedOpUp));
+  Op *clonedOp    = subgraph.getOp(cloneId);
+  clonedOp->disconnectAllInputs();
+  clonedOp->disconnectAllOutputs();
+
+  bool requiresIdLoss = false;
+  // Adjust from/to loss
+  loopOp->toLoss   = toLoss;
+  loopOp->fromLoss = fromLoss;
+  if (toLoss == PathToLoss::Yes && fromLoss == PathFromLoss::Yes) {
+    loopOp->fromLoss   = PathFromLoss::No;
+    clonedOp->fromLoss = PathFromLoss::No;
+    requiresIdLoss     = true;
+  }
+
+  // Add mandatory loop iterator tensor to subgraph (is not an output)
+  TensorId loopItScopedId = subgraph.addScope(reservedLoopIteratorPrefix());
+  subgraph.addInput(loopItScopedId, TensorInfo(DataType::INT32, {}));
+
+  // Add mandatory loop condition tensor to subgraph (is also an output)
+  TensorId loopCondScopedId = subgraph.addScope(reservedLoopCondPrefix());
+  subgraph.addInput(loopCondScopedId, TensorInfo(DataType::BOOL, {}));
+  subgraph.markAsOutput(loopCondScopedId);
+
+  // Explicit input/output pairs
+  InIndex loopInIndex  = LoopOp::getFirstInputInIndex();
+  InIndex loopOutIndex = 0;
+
+  // Index / iterators (one per required VGID and TileSet)
+  std::set<TensorId> serialIndexTensorScopedIds;
+  auto getOrCreateIterator = [&serialIndexTensorScopedIds,
+                              &loopOp,
+                              &loopInIndex,
+                              &loopOutIndex,
+                              &subgraph,
+                              &helper,
+                              &subgraphHelper,
+                              &ir](Settings indexSettings) {
+    // Connect a loop iterator starting at 0
+    TensorId serialIndexTensorId =
+        helper.createOrGetIndexTensor(0, indexSettings);
+    auto serialIndexTensorScopedId = subgraph.addScope(serialIndexTensorId);
+
+    if (serialIndexTensorScopedIds.find(serialIndexTensorScopedId) ==
+        serialIndexTensorScopedIds.end()) {
+      serialIndexTensorScopedIds.insert(serialIndexTensorScopedId);
+
+      loopOp->addLoopInput(
+          loopInIndex++, serialIndexTensorId, serialIndexTensorScopedId, false);
+
+      // Increment the loop index inside of the loop
+      std::unique_ptr<AddOp> indexAddOpUp =
+          std::make_unique<AddOp>(Onnx::Operators::Add_7, indexSettings);
+      Op *indexAddOp = indexAddOpUp.get();
+      subgraph.moveIntoGraph(std::move(indexAddOpUp));
+      // Increment by 1
+      TensorId constId = subgraphHelper.createOrGetConstTensor<uint32_t>(
+          DataType::UINT32, 1, indexSettings);
+      indexAddOp->connectInTensor(AddOp::getArg0InIndex(),
+                                  serialIndexTensorScopedId);
+      indexAddOp->connectInTensor(AddOp::getArg1InIndex(), constId);
+      TensorId updatedSerialIndexTensorScopedId =
+          ir.createIntermediateTensorId(serialIndexTensorScopedId);
+      TensorId updatedSerialIndexTensorId =
+          subgraph.removeScope(updatedSerialIndexTensorScopedId);
+      indexAddOp->createAndConnectOutTensor(AddOp::getOutIndex(),
+                                            updatedSerialIndexTensorScopedId);
+      indexAddOp->setup();
+      loopOp->addLoopOutput(loopOutIndex++,
+                            updatedSerialIndexTensorId,
+                            updatedSerialIndexTensorScopedId,
+                            false);
+    }
+    return serialIndexTensorScopedId;
+  };
+
+  // Connect Op inputs as implicit loop inputs
+  for (const auto &in : inputMap) {
+    TensorId opInId;
+    auto infoMap = adjustedInputPlan.getInfoMap();
+
+    auto inScopedId = subgraph.addScope(in.second->id);
+
+    Settings preInsideLoopSettings =
+        adjustInSettings(in.first, insideLoopSettings);
+
+    auto it = infoMap.find(in.second->id);
+    if (it != infoMap.end()) {
+      // Connect from shard plan
+      loopOp->addLoopInput(std::max(LoopOp::getFirstInputInIndex(),
+                                    loopOp->input->maxIndex() + 1),
+                           std::get<0>(it->second),
+                           inScopedId,
+                           false);
+
+      Shape origShape    = std::get<1>(it->second).shape();
+      Shape sliceShape   = std::get<2>(it->second).front().shape();
+      int64_t num_shards = std::get<2>(it->second).size();
+      int64_t axis       = 0;
+
+      for (int64_t i = 0; i < sliceShape.size(); ++i) {
+        if (sliceShape[i] * num_shards == origShape[i]) {
+          axis = i;
+        }
+      }
+
+      TensorId sliceScopedId = ir.createIntermediateTensorId(inScopedId);
+      subgraphHelper.dynamicSlice(axis,
+                                  num_shards,
+                                  sliceScopedId,
+                                  inScopedId,
+                                  getOrCreateIterator(preInsideLoopSettings),
+                                  preInsideLoopSettings);
+
+      opInId = sliceScopedId;
+    } else {
+      // Connect directly
+      loopOp->addLoopInput(std::max(LoopOp::getFirstInputInIndex(),
+                                    loopOp->input->maxIndex() + 1),
+                           in.second->id,
+                           inScopedId,
+                           false);
+      opInId = inScopedId;
+    }
+
+    // Connect the cloned Op inputs
+    clonedOp->connectInTensor(in.first, opInId);
+  }
+
+  // Connect the cloned Op outputs
+  for (const auto &out : outputMap) {
+    TensorId shardOutId = subgraph.addScope(out.second->id);
+    clonedOp->createAndConnectOutTensor(out.first, shardOutId);
+  }
+
+  // Setup the cloned Op (calculates the proper output shapes)
+  configureShardedOp(clonedOp, &insideLoopSettings);
+  clonedOp->setup();
+
+  // Add loop outputs and explicit inputs, add dynamic updates &
+  // accumulation
+  std::map<TensorId, ReductionType> outReductionMap;
+  for (const auto &out : outputMap) {
+    Shape outShape   = out.second->info.shape();
+    Shape sliceShape = clonedOp->outTensor(out.first)->info.shape();
+    TensorId sliceId = clonedOp->outTensor(out.first)->id;
+
+    bool reduce = outShape == sliceShape;
+
+    Settings initSettings = adjustOutSettings(
+        out.first,
+        adjustedInputPlan.getOpSettings().hasPreSetting()
+            ? adjustedInputPlan.getOpSettings().getPreSetting()
+            : settings);
+
+    // Explicit input -> explicit output
+    Tensor *initTensor =
+        helper.initTensor(out.second->info,
+                          out.second->id,
+                          reduce ? InitType::Zero : InitType::NoInit,
+                          initSettings);
+
+    Settings postInsideLoopSettings =
+        adjustOutSettings(out.first, insideLoopSettings);
+
+    TensorId serialIndexTensorScopedId;
+    if (!reduce) {
+      serialIndexTensorScopedId = getOrCreateIterator(postInsideLoopSettings);
+    }
+
+    auto initScopedId = subgraph.addScope(initTensor->id);
+    loopOp->addLoopInput(loopInIndex++, initTensor->id, initScopedId, false);
+    TensorId updatedTensorId = ir.createIntermediateTensorId(initScopedId);
+
+    if (reduce) {
+      ReductionType reductionType = getShardReductionType(out.first);
+      outReductionMap.insert({out.second->id, reductionType});
+      if (reductionType == ReductionType::Mean ||
+          reductionType == ReductionType::Sum) {
+        auto addOpUp = std::make_unique<AddOp>(Onnx::Operators::Add_7,
+                                               postInsideLoopSettings);
+        Op *addOp    = addOpUp.get();
+        subgraph.moveIntoGraph(std::move(addOpUp));
+        addOp->connectInTensor(AddOp::getArg0InIndex(), initScopedId);
+        addOp->connectInTensor(AddOp::getArg1InIndex(), sliceId);
+        addOp->createAndConnectOutTensor(AddOp::getOutIndex(), updatedTensorId);
+        addOp->setup();
+      } else {
+        throw error("Unsupported reduction type in shard() ({})", debugName());
+        break;
+      }
+      // Reduced outputs aren't shardable, and are therefore not added
+      // to the output plan
+    } else {
+      outReductionMap.insert({out.second->id, ReductionType::NoReduction});
+      int64_t num_shards = adjustedInputPlan.getTotalNumShards();
+      int64_t axis       = 0;
+
+      for (int64_t i = 0; i < sliceShape.size(); ++i) {
+        if (sliceShape[i] * num_shards == outShape[i]) {
+          axis = i;
+        }
+      }
+
+      subgraphHelper.dynamicUpdate(axis,
+                                   num_shards,
+                                   sliceId,
+                                   initScopedId,
+                                   updatedTensorId,
+                                   serialIndexTensorScopedId,
+                                   postInsideLoopSettings);
+
+      // Add shardable output to the output plan
       ShardInfoMap map;
       std::vector<TensorInfo> outShardInfo(
-          total_num_shards, clonedOp->outTensor(out.first)->info);
+          num_shards, clonedOp->outTensor(out.first)->info);
       map.insert(
           {out.second->id, {out.second->id, out.second->info, outShardInfo}});
       outputPlan.insertInfoMap(map);
     }
+    loopOp->addLoopOutput(
+        loopOutIndex++, out.second->id, updatedTensorId, false);
+  }
 
-    // Setup the loop
-    loopOp->setup();
+  // Setup the loop
+  loopOp->setup();
 
-    // Post-processing outputs after the loop
-    for (const auto &out : outputMap) {
+  // Post-processing outputs after the loop
+  for (const auto &out : outputMap) {
 
-      // Add division for mean reduction, if required
-      if (outReductionMap.at(out.second->id) == ReductionType::Mean) {
-        auto tmpOutId =
-            graph.getIr().createIntermediateTensorId(out.second->id);
+    // Add division for mean reduction, if required
+    if (outReductionMap.at(out.second->id) == ReductionType::Mean) {
+      auto tmpOutId = graph.getIr().createIntermediateTensorId(out.second->id);
 
-        Op *prod          = out.second->getProducer();
-        OutIndex outIndex = prod->output->indices(out.second).front();
-        prod->disconnectOutTensor(out.second);
-        prod->createAndConnectOutTensor(outIndex, tmpOutId);
-        prod->setup();
+      Op *prod          = out.second->getProducer();
+      OutIndex outIndex = prod->output->indices(out.second).front();
+      prod->disconnectOutTensor(out.second);
+      prod->createAndConnectOutTensor(outIndex, tmpOutId);
+      prod->setup();
 
-        TensorId dividerId = helper.createOrGetConstTensor<float>(
-            out.second->info.dataType(), static_cast<float>(total_num_shards));
+      TensorId dividerId = helper.createOrGetConstTensor<float>(
+          out.second->info.dataType(),
+          static_cast<float>(adjustedInputPlan.getTotalNumShards()),
+          loopSettings);
 
-        auto divOpUp = std::make_unique<DivOp>(
-            Onnx::Operators::Div_7,
-            adjustedInputPlan.getOpSettings().hasPostSetting()
-                ? adjustedInputPlan.getOpSettings().getPostSetting()
-                : settings);
-        Op *divOp = divOpUp.get();
-        graph.moveIntoGraph(std::move(divOpUp));
-        divOp->connectInTensor(AddOp::getArg0InIndex(), tmpOutId);
-        divOp->connectInTensor(AddOp::getArg1InIndex(), dividerId);
-        divOp->createAndConnectOutTensor(AddOp::getOutIndex(), out.second->id);
-        divOp->setup();
-      }
-
-      // Add identity loss, if required
-      if (requiresIdLoss) {
-        auto tmpOutId =
-            graph.getIr().createIntermediateTensorId(out.second->id);
-
-        Op *prod          = out.second->getProducer();
-        OutIndex outIndex = prod->output->indices(out.second).front();
-        prod->disconnectOutTensor(out.second);
-        prod->createAndConnectOutTensor(outIndex, tmpOutId);
-        prod->setup();
-
-        helper.idLoss(outReductionMap.at(out.second->id),
-                      tmpOutId,
-                      out.second->id,
-                      adjustedInputPlan.getOpSettings().hasPostSetting()
-                          ? adjustedInputPlan.getOpSettings().getPostSetting()
-                          : settings);
-      }
+      auto divOpUp = std::make_unique<DivOp>(
+          Onnx::Operators::Div_7,
+          adjustedInputPlan.getOpSettings().hasPostSetting()
+              ? adjustedInputPlan.getOpSettings().getPostSetting()
+              : settings);
+      Op *divOp = divOpUp.get();
+      graph.moveIntoGraph(std::move(divOpUp));
+      divOp->connectInTensor(AddOp::getArg0InIndex(), tmpOutId);
+      divOp->connectInTensor(AddOp::getArg1InIndex(), dividerId);
+      divOp->connectOutTensor(AddOp::getOutIndex(), out.second->id);
+      divOp->setup();
+      shardedOps.push_back(divOp);
     }
+
+    // Add identity loss, if required
+    if (requiresIdLoss && out.second->id == ir.getFinalLossId()) {
+      Settings postSettings =
+          adjustedInputPlan.getOpSettings().hasPostSetting()
+              ? adjustedInputPlan.getOpSettings().getPostSetting()
+              : settings;
+
+      postSettings = adjustOutSettings(out.first, postSettings);
+
+      auto tmpOutId = graph.getIr().createIntermediateTensorId(out.second->id);
+
+      Op *prod          = out.second->getProducer();
+      OutIndex outIndex = prod->output->indices(out.second).front();
+      prod->disconnectOutTensor(out.second);
+      prod->createAndConnectOutTensor(outIndex, tmpOutId);
+      prod->setup();
+
+      Op *idLossOp = helper.idLoss(outReductionMap.at(out.second->id),
+                                   tmpOutId,
+                                   out.second->id,
+                                   postSettings);
+      shardedOps.push_back(idLossOp);
+    }
+  }
+
+  graph.topoCons->transferToMultiple(this, shardedOps);
+
+  return outputPlan;
+}
+
+ShardingPlan Op::shard(const ShardingPlan inputPlan) {
+  auto &graph = getGraph();
+  ShardingHelper helper(&graph);
+
+  auto plans                     = adjustShardPlans(inputPlan);
+  ShardingPlan adjustedInputPlan = plans.first;
+  ShardingPlan outputPlan        = plans.second;
+
+  // Shard operation
+  if (adjustedInputPlan.getMethod() == ShardingMethod::DynamicShard ||
+      adjustedInputPlan.getMethod() == ShardingMethod::StaticShard) {
+    outputPlan = unrollShard(adjustedInputPlan, outputPlan);
+  } else if (adjustedInputPlan.getMethod() == ShardingMethod::Loop) {
+    outputPlan = loopShard(adjustedInputPlan, outputPlan);
   }
 
   return outputPlan;

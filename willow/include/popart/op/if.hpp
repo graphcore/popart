@@ -44,7 +44,6 @@ public:
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
   std::vector<const Graph *> getCalledGraphs() const final;
-  std::vector<TensorId> getInputsForGraph(const Graph &) const final;
 
 private:
   void appendInputs(const std::vector<TensorId> &inputIds, const Scope &);

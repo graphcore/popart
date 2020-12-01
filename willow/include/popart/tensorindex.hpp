@@ -63,6 +63,10 @@ public:
   int maxIdLength() const;
   // returns the shapes of the tensors at the indices
   std::map<int, Shape> getIndexShapeMap();
+  // Return the lowest index in the map
+  int minIndex() const;
+  // Return the highest index in the map
+  int maxIndex() const;
 
 private:
   std::map<int, Tensor *> tensor_map;

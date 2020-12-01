@@ -318,18 +318,6 @@ std::vector<const Graph *> IfOp::getCalledGraphs() const {
   return {&getThenGraph(), &getElseGraph()};
 }
 
-std::vector<TensorId> IfOp::getInputsForGraph(const Graph &graph) const {
-  auto &idxMap = getBranchInIndicesMap(graph);
-  std::vector<TensorId> ids;
-  for (int i = 0; i < input->n(); i++) {
-    auto hasIndex = idxMap.find(i) != idxMap.end();
-    if (hasIndex) {
-      ids.push_back(inId(i));
-    }
-  }
-  return ids;
-}
-
 IfGradOp::IfGradOp(const IfOp &fwdOp,
                    const std::vector<GradInOutMapper> &gradInInfo_,
                    const BranchInfo &thenBranchInfo,

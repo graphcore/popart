@@ -175,6 +175,11 @@ def test_attention_streamingmemory(tmpdir):
             # Wait with loading activations until they are required
             opts.executionPhaseSettings.activationIOSchedule = popart.ExecutionPhaseIOSchedule.OnDemand
 
+        if "batchSerialMethod" in options:
+            if options["batchSerialMethod"] == "loop":
+                opts.batchSerializationSettings.transformContext = popart.BatchSerializationTransformContext.Bwd
+                opts.batchSerializationSettings.method = popart.BatchSerializationMethod.Loop
+
         if "tensorLocationSettings" in options and options[
                 "tensorLocationSettings"]:
             opts.activationTensorLocationSettings = options[
@@ -349,6 +354,7 @@ def test_attention_streamingmemory(tmpdir):
     # Test batch serialized single device per replica execution, where all
     # streaming memory traffic goes through IO tiles, and activations are
     # stored and loaded one-by-one
+    # Batch serialization happens with loops
     test_variants.append({
         "stages": 1,
         "stride": 4,
@@ -358,6 +364,7 @@ def test_attention_streamingmemory(tmpdir):
         "explicitRecomputation": True,
         "aliasZeroCopy": True,
         "batchSerialize": 4,
+        "batchSerialMethod": "loop",
         "batchConcat": False,
         "replication": 2,
         "tensorLocationSettings": ioOffChip,
@@ -478,10 +485,9 @@ def test_attention_streamingmemory(tmpdir):
     for i in range(1, index):
         print(f"Testing run {i}: {test_variants[i]}")
         for key in test_results[0].keys():
-            assert np.all(
-                np.isclose(test_results[0][key],
-                           test_results[i][key],
-                           equal_nan=False))
+            assert np.allclose(test_results[0][key],
+                               test_results[i][key],
+                               equal_nan=False)
 
         val_onnx = onnx.load(
             str(tmpdir / f"streamingmemory_attention_{i}.onnx"))

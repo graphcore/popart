@@ -64,6 +64,8 @@ constexpr const char *reservedIndexPrefix() { return "Index___"; }
 
 constexpr const char *reservedLoopCondPrefix() { return "LoopCond___"; }
 
+constexpr const char *reservedLoopIteratorPrefix() { return "Iterator___"; }
+
 constexpr const char *reservedInitPrefix() { return "Init___"; }
 
 constexpr const char *reservedConcatInitPrefix() { return "ConcatInit___"; }

@@ -98,13 +98,21 @@ VGraphIdAndTileSet Tensor::getVirtualGraphIdAndTileSetUnsafe() const {
     }
   }
 
-  // no consumers have virtual graph ids. Last hope now is that a consumer
-  // is an IPUCopy, otherwise we will return -1 (to denote no virtual graph)
+  // no consumers have virtual graph ids. If a consumer
+  // is an IPUCopy, we can derive the virtual graph id from it.
   for (Op *consumer : consumers.getOps()) {
     auto ipucopy = dynamic_cast<IpuCopyOp *>(consumer);
     if (ipucopy) {
       return {ipucopy->getSourceIpus().at(id), ipucopy->settings.tileSet};
     }
+  }
+
+  // Graph input, derive from call site
+  if (isGraphInput()) {
+    Op *callSite = getGraph().getCallSiteOps().front();
+    return {callSite->hasVirtualGraphId() ? callSite->getVirtualGraphId()
+                                          : unusedVGraphId,
+            callSite->settings.tileSet};
   }
 
   // No virtual graph Id determined
@@ -436,6 +444,18 @@ InIndex Tensor::getGraphOutputIndex() const {
   return std::distance(graph.getOutputIds().begin(), it);
 }
 
+bool Tensor::isLoopInput() const {
+  if (isGraphInput()) {
+    auto ops = graph.getCallSiteOps();
+    for (Op *op : ops) {
+      if (op->isConvertibleTo<LoopOp>()) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 bool Tensor::isImplicitLoopInput() const {
   if (isGraphInput()) {
     auto ops = graph.getCallSiteOps();
@@ -511,6 +531,11 @@ bool Tensor::isAccumulatorTensor() const {
     return true;
   }
   return false;
+}
+
+bool Tensor::isAnchored() const {
+  auto &anchors = graph.getIr().getDataFlow().anchors();
+  return std::find(anchors.begin(), anchors.end(), id) != anchors.end();
 }
 
 void Consumers::increment(Op *op) {

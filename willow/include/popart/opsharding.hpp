@@ -174,10 +174,10 @@ public:
 
   /// Create an IdLossOp with fromLoss/toLoss set to true (final loss)
   /// \param
-  void idLoss(ReductionType reductionType,
-              TensorId intermediateId,
-              TensorId lossOutId,
-              Op::Settings settings) const;
+  Op *idLoss(ReductionType reductionType,
+             TensorId intermediateId,
+             TensorId lossOutId,
+             Op::Settings settings) const;
 
   /// Connect tensor as output to an Op
   /// \param op Op to connect the output tensor to
@@ -198,16 +198,19 @@ public:
 
   /// Create a constant index tensor
   /// \param index unsigned integer index
+  /// \param settings settings to derive virtual graph and tile set from
   /// \returns the ID of the constant index tensor created
-  TensorId createOrGetIndexTensor(uint32_t index) const;
+  TensorId createOrGetIndexTensor(uint32_t index, Op::Settings settings) const;
 
   /// Create a constant value tensor
   /// \param type DataType of the tensor to generate
   /// \param value value of the tensor to be generated, with a type T compatible
   ///              to the DataType type
+  /// \param settings settings to derive virtual graph and tile set from
   /// \returns the ID of the constant tensor created
   template <class T>
-  TensorId createOrGetConstTensor(DataType type, T value) const;
+  TensorId
+  createOrGetConstTensor(DataType type, T value, Op::Settings settings) const;
 
 private:
   /// The graph on which to operate

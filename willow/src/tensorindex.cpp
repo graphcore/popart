@@ -23,6 +23,20 @@ std::map<int, Shape> TensorIndexMap::getIndexShapeMap() {
   return outMap;
 }
 
+int TensorIndexMap::minIndex() const {
+  if (tensor_map.empty()) {
+    return 0;
+  }
+  return (tensor_map.begin())->first;
+}
+
+int TensorIndexMap::maxIndex() const {
+  if (tensor_map.empty()) {
+    return 0;
+  }
+  return (--tensor_map.end())->first;
+}
+
 TensorIndexMap::~TensorIndexMap() = default;
 
 std::vector<TensorId> TensorIndexMap::getSerialised() const {

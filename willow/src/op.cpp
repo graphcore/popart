@@ -375,10 +375,6 @@ void Op::appendOutlineAttributes(OpSerialiserBase &os) const {
 
 std::vector<const Graph *> Op::getCalledGraphs() const { return {}; }
 
-std::vector<TensorId> Op::getInputsForGraph(const Graph &) const {
-  throw error("Op does not call any graphs");
-}
-
 Shape Op::prettyNpOut(const Shape &s0, const Shape &s1) const {
   std::stringstream ss;
   ss << "Op " << str();
@@ -605,6 +601,31 @@ Op::Settings Op::getOutSettings(OutIndex index) const {
   }
   outSettings.tileSet = vs.second;
   return outSettings;
+}
+
+// Adjust the settings to be suitable as input at InIndex
+Op::Settings Op::adjustInSettings(InIndex index, Op::Settings settings_) const {
+  Op::Settings inSettings = getInSettings(index);
+  if (inSettings.vgraphId != settings.vgraphId) {
+    settings_.vgraphId = inSettings.vgraphId;
+  }
+  if (inSettings.tileSet != settings.tileSet) {
+    settings_.tileSet = inSettings.tileSet;
+  }
+  return settings_;
+}
+
+// Adjust the settings to be suitable as output at OutIndex
+Op::Settings Op::adjustOutSettings(OutIndex index,
+                                   Op::Settings settings_) const {
+  Op::Settings outSettings = getOutSettings(index);
+  if (outSettings.vgraphId != settings.vgraphId) {
+    settings_.vgraphId = outSettings.vgraphId;
+  }
+  if (outSettings.tileSet != settings.tileSet) {
+    settings_.tileSet = outSettings.tileSet;
+  }
+  return settings_;
 }
 
 void Op::setVirtualGraphId(const OptionalVGraphId value) {
@@ -1037,8 +1058,18 @@ std::string Op::debugName() const {
     out_ids.push_back(i.second);
   }
 
-  return logging::format("Op({}, inputs=[{}], outputs=[{}])",
+  std::vector<std::string> subgraph_ids;
+  for (auto &g : getCalledGraphs()) {
+    subgraph_ids.push_back(g->id.str());
+  }
+
+  std::string subgraph_fmt = logging::format(
+      "subgraphs=[{}], ",
+      logging::join(subgraph_ids.begin(), subgraph_ids.end(), ", "));
+
+  return logging::format("Op({}, {}inputs=[{}], outputs=[{}])",
                          debug_id,
+                         subgraph_ids.empty() ? "" : subgraph_fmt,
                          logging::join(in_ids.begin(), in_ids.end(), ", "),
                          logging::join(out_ids.begin(), out_ids.end(), ", "));
 }
@@ -1443,7 +1474,6 @@ bool Op::inputsUnmodifiable() const {
       // is returned at the end of the computation
       || consumesGraphOutput();
 }
-
 
 ReplicatedTensorShardingIndices Op::getReplicatedTensorShardingIndices() const {
   return {};

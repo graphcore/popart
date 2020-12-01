@@ -169,6 +169,12 @@ public:
   // Op
   virtual Settings getOutSettings(OutIndex) const;
 
+  // Adjust the settings to be suitable as input at InIndex
+  Settings adjustInSettings(InIndex, Op::Settings) const;
+
+  // Adjust the settings to be suitable as output at OutIndex
+  Settings adjustOutSettings(InIndex, Op::Settings) const;
+
   const OptionalVGraphId getOptionalVGraphId() const;
   VGraphId getVirtualGraphId() const;
   virtual VGraphIdAndTileSet getIntrospectionInVirtualGraphId(InIndex) const;
@@ -443,10 +449,6 @@ public:
   // All graph that this op may call during its execution
   virtual std::vector<const Graph *> getCalledGraphs() const;
 
-  // The op inputs that are used as inputs for the graph,
-  // in the order they will be used for the graph.
-  virtual std::vector<TensorId> getInputsForGraph(const Graph &) const;
-
   // Calculate numpy broadcast shape for two shapes or generate an error if
   // the broadcast is not aligned. The error will have operator context.
   Shape prettyNpOut(const Shape &s0, const Shape &s1) const;
@@ -552,6 +554,14 @@ protected:
   void getInTensorData(TensorId tensorId,
                        std::vector<int64_t> &data,
                        std::vector<DataType> dataTypes = {DataType::INT64});
+
+private:
+  std::pair<ShardingPlan, ShardingPlan>
+  adjustShardPlans(const ShardingPlan inputPlan);
+  ShardingPlan unrollShard(const ShardingPlan adjustedInputPlan,
+                           ShardingPlan outputPlan);
+  ShardingPlan loopShard(const ShardingPlan adjustedInputPlan,
+                         ShardingPlan outputPlan);
 };
 
 std::ostream &operator<<(std::ostream &, const GradInOutMapper &);

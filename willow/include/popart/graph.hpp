@@ -144,11 +144,14 @@ public:
 
   /// Add a graph input at a specific index in the list
   /// \param index Force the input to be at the specified index in the graph.
-  ///              Overwrites any existing input at the index.
   /// \param id tensor name to create and connect
   /// \param info tensor info
-  void
-  addInput(const InIndex &index, const TensorId &id, const TensorInfo &info);
+  /// \param overwrite Overwrites any existing input at the index if true,
+  ///                  otherwise, moves all other inputs by one position
+  void addInput(const InIndex &index,
+                const TensorId &id,
+                const TensorInfo &info,
+                bool overwrite);
 
   /// Add a graph input to the end of the list
   /// \param id tensor name to create and connect
@@ -161,20 +164,28 @@ public:
   TensorId addInput(const TensorInfo &);
   TensorId getInputId(InIndex idx) const { return graph_inputs.at(idx); }
 
+  void removeInput(const TensorId &);
+  void removeInput(const InIndex &);
+
   const std::vector<TensorId> &getOutputIds() const { return graph_outputs; }
+  OutIndex getOutputIndex(TensorId id) const;
+
   // Mark an existing tensor as a graph output.
 
   /// Mark a graph tensor as graph output at a specific index in the list
   /// \param index Force the output to be at the specified index in the graph.
   ///              Overwrites any existing output at the index.
   /// \param id tensor in the graph to mark as output
-  void markAsOutput(const OutIndex &index, const TensorId &id);
+  /// \param overwrite Overwrites any existing output at the index if true,
+  ///                  otherwise, moves all other outputs by one position
+  void markAsOutput(const OutIndex &index, const TensorId &id, bool overwrite);
 
   /// Mark a graph tensor as graph output at the end of the list
   /// \param id tensor in the graph to mark as output
   void markAsOutput(const TensorId &id);
 
   void removeOutput(const TensorId &);
+  void removeOutput(const OutIndex &);
   TensorId getOutputId(OutIndex idx) const { return graph_outputs.at(idx); }
 
   TensorId addScope(const TensorId &) const;
@@ -187,6 +198,12 @@ public:
   const std::vector<GradInOutMapper> &gradInputInfo() const {
     return gradInInfo;
   }
+
+  /// Replace oldId with newId on any consumers.
+  /// Both tensors need to exist.
+  /// \param oldId tensor to disconenct from consumers & graph outputs
+  /// \param newId tensor to connect from consimers & graph outputs
+  void replaceTensor(const TensorId &oldId, const TensorId &newId);
 
   // Returns the call sites to this graph in any order.
   std::vector<Op *> getCallSiteOps() const;

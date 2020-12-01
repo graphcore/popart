@@ -3,6 +3,7 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/liveness.hpp>
+#include <popart/op/subgraph.hpp>
 #include <popart/scheduler_requireoptimal.hpp>
 
 namespace popart {
@@ -16,12 +17,26 @@ LivenessNode::LivenessNode(std::vector<Op *> callStack_,
 std::pair<TensorId, TensorId> LivenessNode::getTensorIds() const {
   switch (status) {
   case OpStatus::CopyInput:
-  case OpStatus::CopyModified:
-    return {getOp()->inId(index),
-            getOp()->getCalledGraphs().front()->getInputId(index)};
-  case OpStatus::CopyOutput:
-    return {getOp()->outId(index),
-            getOp()->getCalledGraphs().front()->getOutputId(index)};
+  case OpStatus::CopyModified: {
+    SubgraphOp *sgOp = static_cast<SubgraphOp *>(getOp());
+    auto sgInIdx     = sgOp->opInToSubgraphInIndex(index);
+    if (sgInIdx > -1 && sgInIdx < sgOp->getCalledGraph().getInputIds().size()) {
+      return {getOp()->inId(index), sgOp->getCalledGraph().getInputId(sgInIdx)};
+    } else {
+      return {"", ""};
+    }
+  } break;
+  case OpStatus::CopyOutput: {
+    SubgraphOp *sgOp = static_cast<SubgraphOp *>(callStack.back());
+    auto sgOutIdx    = sgOp->opOutToSubgraphOutIndex(index);
+    if (sgOutIdx > -1 &&
+        sgOutIdx < sgOp->getCalledGraph().getOutputIds().size()) {
+      return {getOp()->outId(index),
+              sgOp->getCalledGraph().getOutputId(sgOutIdx)};
+    } else {
+      return {"", ""};
+    }
+  } break;
   case OpStatus::Normal:
   case OpStatus::Enter:
   case OpStatus::Exit:
@@ -32,15 +47,18 @@ std::pair<TensorId, TensorId> LivenessNode::getTensorIds() const {
 
 bool LivenessNode::isProducerOf(Tensor *t) const {
   switch (status) {
-  case OpStatus::CopyInput:
+  case OpStatus::CopyInput: {
     // Produces tensor inside subgraph
     return t->id == getTensorIds().second;
+  }
   case OpStatus::CopyModified:
-  case OpStatus::CopyOutput:
+  case OpStatus::CopyOutput: {
     // Produces tensor outside subgraph
     return t->id == getTensorIds().first;
-  case OpStatus::Normal:
+  }
+  case OpStatus::Normal: {
     return t->hasProducer() && t->getProducer() == getOp();
+  }
   case OpStatus::Enter:
   case OpStatus::Exit:
   default:
@@ -85,10 +103,10 @@ void LivenessAnalyzer::addToSchedule(const Graph *graphToAdd,
                                      std::vector<Op *> callStack) {
   auto &schedule = graphOpSchedule.at(graphToAdd->id);
   for (Op *op : schedule) {
+    logging::trace("[LivenessAnalyzer] Adding Op {} to schedule.",
+                   op->debugName());
     auto current = callStack;
     current.push_back(op);
-
-    auto const &calledGraphs = op->getCalledGraphs();
 
     // Insert the actual op ("enter" location for subgraphing ops)
 
@@ -97,36 +115,48 @@ void LivenessAnalyzer::addToSchedule(const Graph *graphToAdd,
     enter_location = opSchedule.size();
     opScheduleMap[op].push_back(enter_location);
 
-    if (calledGraphs.empty()) {
-      opSchedule.emplace_back(current, OpStatus::Normal, 0);
-    } else {
+    if (SubgraphOp *sgOp = dynamic_cast<SubgraphOp *>(op)) {
       opSchedule.emplace_back(current, OpStatus::Enter, 0);
-      for (const Graph *subgraph : calledGraphs) {
-        for (InIndex i = 0; i < subgraph->getInputIds().size(); ++i) {
-          opSchedule.push_back({current, OpStatus::CopyInput, i});
+      for (auto input : sgOp->input->tensorIdMap()) {
+        auto sgInIndex = sgOp->opInToSubgraphInIndex(input.first);
+        if (sgInIndex > -1 &&
+            sgInIndex < sgOp->getCalledGraph().getInputIds().size()) {
+          opSchedule.push_back({current, OpStatus::CopyInput, input.first});
         }
       }
+    } else {
+      opSchedule.emplace_back(current, OpStatus::Normal, 0);
     }
 
     // Inspect subgraphs
-    for (const Graph *subgraph : calledGraphs) {
-      auto &callSites = graphCallSiteOps[subgraph->id];
+    if (SubgraphOp *sgOp = dynamic_cast<SubgraphOp *>(op)) {
+      auto &subgraph  = sgOp->getCalledGraph();
+      auto &callSites = graphCallSiteOps[subgraph.id];
       if (std::find(callSites.begin(), callSites.end(), op) ==
           callSites.end()) {
         callSites.push_back(op);
       }
-      addToSchedule(subgraph, current);
+      addToSchedule(&subgraph, current);
       // Insert the "exit" locations of subgraphs into the schedule
-      for (OutIndex i = 0; i < subgraph->getOutputIds().size(); ++i) {
-        opSchedule.emplace_back(current, OpStatus::CopyOutput, i);
+      for (auto output : sgOp->output->tensorIdMap()) {
+        auto sgOutIndex = sgOp->opOutToSubgraphOutIndex(output.first);
+        if (sgOutIndex > -1 &&
+            sgOutIndex < sgOp->getCalledGraph().getOutputIds().size()) {
+          opSchedule.emplace_back(current, OpStatus::CopyOutput, output.first);
+        }
       }
-      for (OutIndex i = 0; i < subgraph->getInputIds().size(); ++i) {
-        // Check for subgraph modified input
-        auto modifiedRegions = current.back()->modifies(i);
-        if (std::any_of(modifiedRegions.begin(),
-                        modifiedRegions.end(),
-                        [](const view::Region &r) { return !r.isEmpty(); })) {
-          opSchedule.push_back({current, OpStatus::CopyModified, i});
+      for (auto input : sgOp->input->tensorIdMap()) {
+        auto sgInIndex = sgOp->opInToSubgraphInIndex(input.first);
+        if (sgInIndex > -1 &&
+            sgInIndex < sgOp->getCalledGraph().getInputIds().size()) {
+          // Check for subgraph modified input
+          auto modifiedRegions = op->modifies(input.first);
+          if (std::any_of(modifiedRegions.begin(),
+                          modifiedRegions.end(),
+                          [](const view::Region &r) { return !r.isEmpty(); })) {
+            opSchedule.push_back(
+                {current, OpStatus::CopyModified, input.first});
+          }
         }
       }
       opSchedule.emplace_back(current, OpStatus::Exit, 0);

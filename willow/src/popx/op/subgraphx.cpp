@@ -12,6 +12,23 @@ namespace popx {
 SubgraphOpx::SubgraphOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}
 
 std::vector<std::tuple<TensorId, TensorId, bool>>
+SubgraphOpx::getInputsToPrepare() const {
+  auto &subgraphop = getOp<SubgraphOp>();
+  std::vector<std::tuple<TensorId, TensorId, bool>> inputs;
+  auto sgInIds = subgraphop.getCalledGraph().getInputIds();
+  for (InIndex sgInIdx = 0; sgInIdx < sgInIds.size(); ++sgInIdx) {
+    InIndex opInIdx = subgraphop.subgraphInToOpInIndex(sgInIdx);
+    if (subgraphop.hasInput(opInIdx)) {
+      inputs.emplace_back(
+          subgraphop.input->id(opInIdx), sgInIds.at(sgInIdx), false);
+    } else {
+      inputs.emplace_back("", sgInIds.at(sgInIdx), false);
+    }
+  }
+  return inputs;
+}
+
+std::vector<std::tuple<TensorId, TensorId, bool>>
 SubgraphOpx::getOutputsToPrepare() const {
   auto &subgraphop = getOp<SubgraphOp>();
   std::vector<std::tuple<TensorId, TensorId, bool>> outputs;

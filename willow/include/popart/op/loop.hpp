@@ -10,24 +10,24 @@ namespace popart {
 // Loop operation construct
 //
 // Loop op and body inputs:
-// 0    trip count
-// 1    termination condition <--.
+// 0    trip count                       can be omitted as Op input
+// 1    termination condition <--.       can be omitted as Op input
 // 2    explicit input <---------|--.
 // ..   ..             ..        |  |
 // M    explicit input <---------|--|--.
 // M+1  implicit input           |  |  |
-// ..                            |  |  |
+// ..   ..                       |  |  |
 // N    implicit input           |  |  |
 //                               |  |  | Loop carried dependencies
 // Loop body outputs:            |  |  |
 // 0     termination condition --'  |  |
 // 1     output --------------------+  |
-// ..           ..                  |  |
+// ..    ..                         |  |
 // M-1   output --------------------|--+
 //                                  |  |
 // Loop op outputs:                 |  |
 // 0     output <-------------------'  |
-// ..                                  |
+// ..    ..                            |
 // M-2   output <----------------------'
 //
 // Explicit inputs are loop-carried inputs that are copied into the loop body,
@@ -59,10 +59,9 @@ public:
          std::vector<TensorId> implicitTensors_);
 
   void setup() final;
-  void appendAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
   void connectInTensor(InIndex inIndex, TensorId tensorId) final;
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
-  std::vector<TensorId> getInputsForGraph(const Graph &graph) const final;
   std::unique_ptr<Op> clone() const override;
   std::vector<const Graph *> getCalledGraphs() const final;
   std::vector<TensorId> implicitInputTensors() const;
@@ -89,11 +88,18 @@ public:
   // The first regular, user-defined loop input
   static InIndex getFirstInputInIndex() { return 2; }
 
-  void
-  addLoopInput(InIndex index, TensorId tensorId, TensorId subgraphTensorId);
+  void addLoopInput(InIndex index,
+                    TensorId tensorId,
+                    TensorId subgraphTensorId,
+                    bool overwrite);
 
-  void
-  addLoopOutput(OutIndex index, TensorId tensorId, TensorId subgraphTensorId);
+  void addLoopOutput(OutIndex index,
+                     TensorId tensorId,
+                     TensorId subgraphTensorId,
+                     bool overwrite);
+
+  void removeLoopInput(InIndex index);
+  void removeLoopOutput(OutIndex index);
 
 private:
   std::reference_wrapper<Graph> callee;

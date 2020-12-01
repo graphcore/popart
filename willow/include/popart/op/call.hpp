@@ -27,8 +27,6 @@ public:
 
   std::vector<const Graph *> getCalledGraphs() const override;
 
-  std::vector<TensorId> getInputsForGraph(const Graph &) const override;
-
   GraphId getBackwardsGraphId() const;
 
   InIndex subgraphInToOpInIndex(InIndex index) const override { return index; }

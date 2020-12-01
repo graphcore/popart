@@ -247,6 +247,10 @@ public:
   virtual std::vector<std::tuple<TensorId, TensorId, bool>>
   getOutputsToPrepare() const;
 
+  // The Opx inputs that go to any subgraph and need to be prepared
+  virtual std::vector<std::tuple<TensorId, TensorId, bool>>
+  getInputsToPrepare() const;
+
 protected:
   // The Devicex to which this Opx belongs
   Devicex *dv_p;

@@ -41,14 +41,6 @@ std::vector<const Graph *> CallOp::getCalledGraphs() const {
   return {&getCalledGraph()};
 }
 
-std::vector<TensorId> CallOp::getInputsForGraph(const Graph &) const {
-  std::vector<TensorId> result;
-  for (int i = 0; i < input->n(); i++) {
-    result.push_back(inId(i));
-  }
-  return result;
-}
-
 
 GraphId CallOp::getBackwardsGraphId() const {
   return GraphId(logging::format("{}_bwd", callee.get().id));

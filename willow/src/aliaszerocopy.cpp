@@ -11,6 +11,7 @@
 #include <popart/op/call.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/op/loop.hpp>
 #include <popart/op/remote.hpp>
 #include <popart/region.hpp>
 #include <popart/tensors.hpp>
@@ -177,57 +178,73 @@ void AliasZeroCopy::apply() {
 
   // Graph input/output aliasing
   for (auto &priorityEntry : graphIOPriorityMap) {
-    InIndex inIndex     = std::get<2>(priorityEntry.first);
-    OutIndex outIndex   = std::get<3>(priorityEntry.first);
+    InIndex sgInIndex   = std::get<2>(priorityEntry.first);
+    OutIndex sgOutIndex = std::get<3>(priorityEntry.first);
     const Graph *sgraph = &ir->getGraph(std::get<4>(priorityEntry.first));
     std::vector<Op *> callSiteOps = priorityEntry.second;
 
-    if (inIndex >= 0) {
+    if (sgInIndex >= 0) {
       logging::devicex::trace(
           "[AliasZeroCopy] Subgraph: {}, input index: {}, call sites: {}",
           sgraph->id.str(),
-          inIndex,
+          sgInIndex,
           callSiteOps.size());
 
       std::set<Tensor *, PTensorCmp> parentGraphTensors;
       for (Op *callSite : callSiteOps) {
-        Tensor *t  = callSite->input->tensor(inIndex);
-        Tensor *at = findAliasableTensor(t);
-        if (at) {
-          parentGraphTensors.insert(at);
+        if (SubgraphOp *sgOp = dynamic_cast<SubgraphOp *>(callSite)) {
+          InIndex opInIndex = sgOp->subgraphInToOpInIndex(sgInIndex);
+          if (sgOp->input->hasIndex(opInIndex)) {
+            Tensor *t  = callSite->input->tensor(opInIndex);
+            Tensor *at = findAliasableTensor(t);
+            if (at) {
+              parentGraphTensors.insert(at);
+            }
+          }
         }
       }
-      // This is the only possible tensor that can alias from the parent graph
-      // to the subgraph; if this is viable can be checked later on.
-      std::pair<Tensor *, Tensor *> parentToSubgraphTensors = {
-          callSiteOps.front()->input->tensor(inIndex),
-          sgraph->getTensors().get(sgraph->getInputId(inIndex))};
+      if (SubgraphOp *sgOp = dynamic_cast<SubgraphOp *>(callSiteOps.front())) {
+        InIndex opInIndex = sgOp->subgraphInToOpInIndex(sgInIndex);
+        if (sgOp->input->hasIndex(opInIndex)) {
+          Tensor *t = sgOp->input->tensor(opInIndex);
+          // This is the only possible tensor that can alias from the parent
+          // graph to the subgraph; if this is viable can be checked later on.
+          std::pair<Tensor *, Tensor *> parentToSubgraphTensors = {
+              t, sgraph->getTensors().get(sgraph->getInputId(sgInIndex))};
 
-      // printLivenessIntervals(parentGraphTensors);
+          // printLivenessIntervals(parentGraphTensors);
 
-      processTensorAliasGroups(parentGraphTensors);
+          processTensorAliasGroups(parentGraphTensors);
 
-      if (checkSubgraphInputCompatible(parentToSubgraphTensors.first,
-                                       parentToSubgraphTensors.second)) {
-        insertAlias(parentToSubgraphTensors.first,
-                    parentToSubgraphTensors.second);
+          if (checkSubgraphInputCompatible(parentToSubgraphTensors.first,
+                                           parentToSubgraphTensors.second)) {
+            insertAlias(parentToSubgraphTensors.first,
+                        parentToSubgraphTensors.second);
+          }
+        }
       }
     }
 
-    if (outIndex >= 0) {
+    if (sgOutIndex >= 0) {
       logging::devicex::trace(
           "[AliasZeroCopy] Subgraph: {}, output index: {}, call sites: {}",
           sgraph->id.str(),
-          outIndex,
+          sgOutIndex,
           callSiteOps.size());
 
       std::set<Tensor *, PTensorCmp> parentGraphTensors;
       for (Op *callSite : callSiteOps) {
-        Tensor *at = callSite->output->tensor(outIndex);
-        if (checkSubgraphOutputCompatible(
-                sgraph->getTensors().get(sgraph->getOutputId(outIndex)), at)) {
-          // Parent graph tensors that can be aliased from subgraph tensor
-          parentGraphTensors.insert(at);
+        if (SubgraphOp *sgOp = dynamic_cast<SubgraphOp *>(callSite)) {
+          OutIndex opOutIndex = sgOp->subgraphOutToOpOutIndex(sgOutIndex);
+          if (callSite->output->hasIndex(opOutIndex)) {
+            Tensor *at = callSite->output->tensor(opOutIndex);
+            if (checkSubgraphOutputCompatible(
+                    sgraph->getTensors().get(sgraph->getOutputId(sgOutIndex)),
+                    at)) {
+              // Parent graph tensors that can be aliased from subgraph tensor
+              parentGraphTensors.insert(at);
+            }
+          }
         }
       }
 
@@ -237,7 +254,7 @@ void AliasZeroCopy::apply() {
 
       // Aliasing to one of the group's tensor aliases to all of them
       if (group.size() > 0) {
-        insertAlias(sgraph->getTensors().get(sgraph->getOutputId(outIndex)),
+        insertAlias(sgraph->getTensors().get(sgraph->getOutputId(sgOutIndex)),
                     (*group.begin()));
       }
     }
@@ -270,7 +287,7 @@ int64_t AliasZeroCopy::findStart(Tensor *consumedTensor,
   // Verify this is not an enter or exit entry
   auto status = analyzer->getOpScheduleAt(index).getStatus();
 
-  if (status == OpStatus::Enter || status == OpStatus::Exit) {
+  if (status == OpStatus::Exit) {
     throw error("[AliasZeroCopy] findStart: OpStatus {} unexpected.",
                 static_cast<int>(status));
     // break;
@@ -301,9 +318,10 @@ int64_t AliasZeroCopy::findFront(Tensor *consumedTensor,
     auto index = scheduleIndex;
     do {
       ++index;
-      if (index >= analyzer->getOpScheduleSize())
+      if (index >= analyzer->getOpScheduleSize()) {
         throw error("[AliasZeroCopy] Schedule index above schedule size ({})",
                     analyzer->getOpScheduleSize());
+      }
       opScheduleEntry = &analyzer->getOpScheduleAt(index);
     } while (opScheduleEntry->getStatus() != OpStatus::CopyInput ||
              opScheduleEntry->getIndex() != inIndices.front());
@@ -312,6 +330,7 @@ int64_t AliasZeroCopy::findFront(Tensor *consumedTensor,
 }
 
 Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
+  logging::trace("[AliasZeroCopy] Getting interval of tensor {}", t->id);
   Intervals intervals;
   auto insertInterval = [&](int64_t s, int64_t e) {
     if (s < 0) {
@@ -402,8 +421,9 @@ Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
 
   // Handle graph outputs
   auto graphOutputIds = t->getGraph().getOutputIds();
-  for (OutIndex outIndex = 0; outIndex < graphOutputIds.size(); ++outIndex) {
-    TensorId outId = graphOutputIds[outIndex];
+  for (OutIndex sgOutIndex = 0; sgOutIndex < graphOutputIds.size();
+       ++sgOutIndex) {
+    TensorId outId = graphOutputIds[sgOutIndex];
     if (t->id == outId) {
       auto &callSiteOps = analyzer->getGraphCallSites(t->getGraph().id);
       for (Op *callSiteOp : callSiteOps) {
@@ -419,15 +439,26 @@ Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
 
           auto copyOutputIndex = index;
 
-          // Walk backwards to find OpStatus::CopyOutput for that output
-          do {
-            --copyOutputIndex;
-            if (copyOutputIndex < 0)
-              throw error(
-                  "[AliasZeroCopy] Schedule index below 0 (no copy output)");
-            opScheduleEntry = &analyzer->getOpScheduleAt(copyOutputIndex);
-          } while (opScheduleEntry->getStatus() != OpStatus::CopyOutput ||
-                   opScheduleEntry->getIndex() != outIndex);
+          OutIndex opOutIndex = sgOutIndex;
+          if (SubgraphOp *sgOp = dynamic_cast<SubgraphOp *>(callSiteOp)) {
+            opOutIndex = sgOp->subgraphOutToOpOutIndex(sgOutIndex);
+          }
+          bool isOpOutput = callSiteOp->output->hasIndex(opOutIndex);
+
+          // If this graph output is also an Op output: Find CopyOutput entry,
+          // else, use the Exit entry.
+          if (isOpOutput) {
+            // Walk backwards to find OpStatus::CopyOutput for that output
+            do {
+              --copyOutputIndex;
+              if (copyOutputIndex < 0)
+                throw error("[AliasZeroCopy] Schedule index below 0 (no copy "
+                            "output) for {}",
+                            outId);
+              opScheduleEntry = &analyzer->getOpScheduleAt(copyOutputIndex);
+            } while (opScheduleEntry->getStatus() != OpStatus::CopyOutput ||
+                     opScheduleEntry->getIndex() != opOutIndex);
+          }
 
           // Find producer index
           int64_t startIndex = findStart(t, copyOutputIndex);
@@ -437,13 +468,21 @@ Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
     }
   }
 
-  // Handle modified graph inputs
+  // Handle modified graph inputs & implicit loop inputs, which both need to
+  // stay untampered and live until the CopyModified or Exit node of the
+  // subgraphing Op
   auto graphInputIds = t->getGraph().getInputIds();
-  for (OutIndex inIndex = 0; inIndex < graphInputIds.size(); ++inIndex) {
-    TensorId inId = graphInputIds[inIndex];
+  for (InIndex sgInIndex = 0; sgInIndex < graphInputIds.size(); ++sgInIndex) {
+    TensorId inId = graphInputIds[sgInIndex];
     if (t->id == inId) {
       auto &callSiteOps = analyzer->getGraphCallSites(t->getGraph().id);
       for (Op *callSiteOp : callSiteOps) {
+        InIndex opInIndex = sgInIndex;
+
+        if (SubgraphOp *sgOp = dynamic_cast<SubgraphOp *>(callSiteOp)) {
+          opInIndex = sgOp->subgraphInToOpInIndex(sgInIndex);
+        }
+
         auto &scheduleIndices = analyzer->getScheduleIndices(callSiteOp);
         for (int64_t scheduleIndex : scheduleIndices) {
           // TODO: This code is over-conservative for multiple subgraphs
@@ -456,18 +495,19 @@ Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
           auto &callStack      = opScheduleEntry->getCallStack();
           auto callStackSize   = callStack.size();
 
-          auto copyModifiedIndex = index;
-
-          auto regions = dynamic_cast<CallOp *>(opScheduleEntry->getOp())
-                             ->modifies(inIndex);
+          auto regions = dynamic_cast<SubgraphOp *>(opScheduleEntry->getOp())
+                             ->modifies(opInIndex);
 
           bool considerCopyModified =
               std::any_of(regions.begin(),
                           regions.end(),
                           [](view::Region &r) { return !r.isEmpty(); }) &&
-              copyModifiedRequired(callSiteOp, inIndex);
+              copyModifiedRequired(callSiteOp, opInIndex);
 
+          // Copy modified (live between CopyInput and CopyModified)
           if (considerCopyModified) {
+            auto copyModifiedIndex = index;
+
             // Walk backwards to find OpStatus::CopyModified for that input
             do {
               --copyModifiedIndex;
@@ -476,7 +516,7 @@ Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
                             "modified)");
               opScheduleEntry = &analyzer->getOpScheduleAt(copyModifiedIndex);
             } while (opScheduleEntry->getStatus() != OpStatus::CopyModified ||
-                     opScheduleEntry->getIndex() != inIndex);
+                     opScheduleEntry->getIndex() != opInIndex);
 
             // Move index into the subgraph
             do {
@@ -490,6 +530,24 @@ Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
             auto startIndex = findStart(t, index);
 
             insertInterval(startIndex, copyModifiedIndex);
+          }
+
+          // Implicit loop input (live between CopyInput and Exit)
+          if (t->isImplicitLoopInput()) {
+            auto exitIndex = index;
+
+            // Move index into the subgraph
+            do {
+              --index;
+              if (index < 0)
+                throw error("[AliasZeroCopy] Schedule index below 0 (no copy "
+                            "input)");
+              opScheduleEntry = &analyzer->getOpScheduleAt(index);
+            } while (opScheduleEntry->getCallStack().size() <= callStackSize);
+
+            auto startIndex = findStart(t, index);
+
+            insertInterval(startIndex, exitIndex);
           }
         }
       }
@@ -762,10 +820,17 @@ bool AliasZeroCopy::checkSubgraphInputCompatible(Tensor *ta, Tensor *tb) {
         bool conflict = false;
         bool modified = false;
 
-        for (auto index : indices) {
-          if (sgraph->getInputId(index) == tb->id) {
+        for (InIndex opInIndex : indices) {
+          InIndex sgInIndex = opInIndex;
+
+          if (SubgraphOp *sgOp =
+                  dynamic_cast<SubgraphOp *>(callSiteOps.front())) {
+            sgInIndex = sgOp->opInToSubgraphInIndex(opInIndex);
+          }
+
+          if (sgraph->getInputId(sgInIndex) == tb->id) {
             for (Op *callSiteOp : callSiteOps) {
-              Tensor *tc   = callSiteOp->input->tensor(index);
+              Tensor *tc   = callSiteOp->input->tensor(opInIndex);
               auto aliased = getProposedAliasedTensors({ta}, true);
               if (tc->id != ta->id && aliased.find(tc) == aliased.end() &&
                   (AliasZeroCopy::doOverlap(
@@ -793,6 +858,12 @@ bool AliasZeroCopy::checkSubgraphInputCompatible(Tensor *ta, Tensor *tb) {
                   std::any_of(aliases.begin(), aliases.end(), [](Tensor *t) {
                     return t->isModified();
                   });
+
+              if (LoopOp *loopOp =
+                      dynamic_cast<LoopOp *>(callSiteOps.front())) {
+                // All explicit loop inputs will be modified within the subgraph
+                modified |= (opInIndex < loopOp->numExplicitInputs());
+              }
             }
           }
         }

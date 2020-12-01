@@ -16,6 +16,7 @@
 #include <popart/op/init.hpp>
 #include <popart/op/iotilecopy.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/op/loop.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/op/mean.hpp>
 #include <popart/op/nll.hpp>
@@ -182,7 +183,7 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithVGraphs) {
     }
 
     // 3.)
-    BOOST_CHECK_EQUAL(numIpuCopies, 4 * N + 1);
+    BOOST_CHECK_EQUAL(numIpuCopies, 10);
   });
 }
 
@@ -336,12 +337,7 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithVGraphsBwdLoop) {
     std::vector<Op *> schedule =
         ir.getMainGraph().getOpSchedule({}, RequireOptimalSchedule::Yes);
 
-    size_t numIpuCopies               = 0;
-    BatchSerializedPhase currentPhase = -1;
-    size_t recordedOffset             = 0;
-    std::vector<Op *> recordedOps;
-
-    std::map<BatchSerializedPhase, size_t> opsPerPhase;
+    size_t numLoops = 0;
 
     for (size_t i = 0; i < schedule.size(); i++) {
       Op *op = schedule.at(i);
@@ -351,7 +347,13 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithVGraphsBwdLoop) {
                          : "*",
                      op->settings.schedulePriority,
                      op->debugName());
+
+      if (op->isConvertibleTo<LoopOp>()) {
+        ++numLoops;
+      }
     }
+
+    BOOST_CHECK_EQUAL(numLoops, 11);
   });
 }
 

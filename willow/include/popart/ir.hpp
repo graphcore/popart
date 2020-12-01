@@ -317,6 +317,7 @@ public:
   bool hasGraph(const GraphId &) const;
 
   Graph &createGraph(const GraphId &);
+  void removeGraph(const GraphId &);
 
   std::map<OpId, std::unique_ptr<Op>> &getMainGraphOps();
   const std::map<OpId, std::unique_ptr<Op>> &getMainGraphOps() const;

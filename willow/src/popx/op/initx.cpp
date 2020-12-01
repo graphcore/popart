@@ -24,9 +24,10 @@ void InitOpx::grow(poplar::program::Sequence &prog) const {
     popops::zero(graph(), outTensor, prog, debugPrefix("init_zero"));
     break;
   }
-  case InitType::NoInit:
+  case InitType::NoInit: {
     prog.add(poplar::program::WriteUndef(outTensor));
     break;
+  }
   default:
     throw error("[InitOpx] Unexpected InitType.");
     // NOTE: Unreachable code. Commenting out the break so that we can enable

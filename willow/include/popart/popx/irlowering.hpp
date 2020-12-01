@@ -182,8 +182,8 @@ private:
   // Task to create a poplar::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)
   PriTask initTensorTask(Tensor *);
-  PriTask initTensorByCloningTask(Op *op, TensorId srcId, TensorId dstId);
-  PriTask initTensorByAliasingTask(Op *op, TensorId srcId, TensorId dstId);
+  PriTask initTensorByCloningTask(TensorId srcId, TensorId dstId);
+  PriTask initTensorByAliasingTask(TensorId srcId, TensorId dstId);
   static TaskId initTensorTaskId(TensorId);
   bool tryInitTensorByPostIRAliasing(TensorId dstId,
                                      const ViewChangers &viewChangers);
