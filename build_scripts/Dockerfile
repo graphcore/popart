@@ -12,6 +12,8 @@ RUN apt-get install python3 -y
 RUN apt-get install python3-pip -y
 # Install ninja.
 RUN apt-get install ninja-build -y
+# Install pkg-config.
+RUN apt-get install pkg-config -y
 
 # Install cmake.
 WORKDIR /tmp/
@@ -46,7 +48,9 @@ RUN pip3 install torchvision==0.7.0
 WORKDIR /workspace/libs/third-party/
 ENV SPDLOG_INSTALL_DIR /workspace/libs/third-party/spdlog-1.8.0/install_dir/
 RUN git clone --branch v1.8.0 https://github.com/gabime/spdlog.git spdlog-1.8.0
-RUN cd spdlog-1.8.0 && mkdir build && cd build
+WORKDIR spdlog-1.8.0
+RUN mkdir build
+WORKDIR build
 RUN cmake .. -GNinja -DCMAKE_INSTALL_PREFIX=$SPDLOG_INSTALL_DIR && cmake --build . --target install
 
 # Pybind11 2.5.0
@@ -103,13 +107,17 @@ RUN cmake --build . --target install
 
 # CapnProto 0.7.0
 WORKDIR /workspace/libs/third-party/
-ENV CAPNPROTO_INSTALL_DIR /workspace/libs/third-party/capnproto-0.7.0/install_dir/
+ENV CAPNPROTO_INSTALL_DIR /workspace/libs/third-party/capnproto-c++-0.7.0/install_dir/
 RUN wget https://capnproto.org/capnproto-c++-0.7.0.tar.gz
 RUN tar xvfz capnproto-c++-0.7.0.tar.gz
+RUN rm capnproto-c++-0.7.0.tar.gz
 WORKDIR /workspace/libs/third-party/capnproto-c++-0.7.0
 RUN ./configure --prefix=$CAPNPROTO_INSTALL_DIR
 RUN make -j6 check
 RUN make install
+
+# Tell pkg-config where to find CapnProto
+ENV PKG_CONFIG_PATH=$CAPNPROTO_INSTALL_DIR/lib/pkgconfig:$PKG_CONFIG_PATH
 
 # -- Set workdir.
 
