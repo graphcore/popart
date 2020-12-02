@@ -30,9 +30,9 @@ public:
   std::vector<char> compute() final;
 };
 
-class ConstExprMod : public ConstExprOp {
+class ConstExprFmod : public ConstExprOp {
 public:
-  ConstExprMod(Op *op);
+  ConstExprFmod(Op *op);
   std::vector<char> compute() final;
 };
 

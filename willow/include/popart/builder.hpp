@@ -534,6 +534,19 @@ public:
   TensorId reshape(const TensorId &arg,
                    const Attributes::Ints &shape,
                    const DebugContext &debugContext = {});
+
+  /**
+   * Add fmod operation to the model.
+   *
+   * This is equivalent to C's fmod function. The result has the same sign as
+   * the dividend.
+   *
+   * \param args Input tensors.
+   * \return Computes the element-wise remainder of division. The remainder has
+   * the same sign as the dividend.
+   */
+  TensorId fmod(const std::vector<TensorId> &args,
+                const DebugContext &debugContext = {});
 };
 
 /**

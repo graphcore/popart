@@ -178,6 +178,7 @@ const static AiGraphcoreOpIdV1 MaxArgGrad("MaxArgGrad");
 const static AiGraphcoreOpIdV1 MaxPoolGrad("MaxPoolGrad");
 const static AiGraphcoreOpIdV1 MeanArgGrad("MeanArgGrad");
 const static AiGraphcoreOpIdV1 MinArgGrad("MinArgGrad");
+const static AiGraphcoreOpIdV1 FmodArg0Grad("FmodArg0Grad");
 const static AiGraphcoreOpIdV1 MulArg0Grad("MulArg0Grad");
 const static AiGraphcoreOpIdV1 MulArg1Grad("MulArg1Grad");
 const static AiGraphcoreOpIdV1 MultiConvDataGrad("MultiConvDataGrad");
@@ -269,6 +270,7 @@ const static AiGraphcoreOpIdV1 Expm1_1("Expm1", 1, 1);
 const static AiGraphcoreOpIdV1 Expm1Inplace("Expm1Inplace");
 const static AiGraphcoreOpIdV1 FlattenInplace("FlattenInplace");
 const static AiGraphcoreOpIdV1 FloorInplace("FloorInplace");
+const static AiGraphcoreOpIdV1 Fmod("Fmod", 2, 1);
 const static AiGraphcoreOpIdV1 Gelu_1("Gelu", 1, 1);
 const static AiGraphcoreOpIdV1 GeluInplace("GeluInplace");
 const static AiGraphcoreOpIdV1 GetRandomSeed("GetRandomSeed");
@@ -360,6 +362,7 @@ const static OperatorIdentifier DynamicUpdate =
     CustomOperators::DynamicUpdate_1;
 const static OperatorIdentifier DynamicZero = CustomOperators::DynamicZero_1;
 const static OperatorIdentifier Expm1       = CustomOperators::Expm1_1;
+const static OperatorIdentifier Fmod        = CustomOperators::Fmod;
 const static OperatorIdentifier Gelu        = CustomOperators::Gelu_1;
 const static OperatorIdentifier GroupNormalization =
     CustomOperators::GroupNormalization_1;

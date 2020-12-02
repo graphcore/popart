@@ -158,7 +158,7 @@ void ConstExprOpManager::registerConstOps() {
   registerConstOp<ConstExprAdd>("Add");
   registerConstOp<ConstExprMul>("Mul");
   registerConstOp<ConstExprSub>("Sub");
-  registerConstOp<ConstExprMod>("Mod");
+  registerConstOp<ConstExprFmod>("Fmod");
   registerConstOp<ConstExprDiv>("Div");
   registerConstOp<ConstExprCast>("Cast");
   registerConstOp<ConstExprScale>("Scale");

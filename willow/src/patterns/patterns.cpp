@@ -25,6 +25,7 @@
 #include <popart/patterns/elementwisegradoppattern.hpp>
 #include <popart/patterns/expgradoppattern.hpp>
 #include <popart/patterns/expm1gradoppattern.hpp>
+#include <popart/patterns/fmodarg0gradoppattern.hpp>
 #include <popart/patterns/gemmdecompositionpattern.hpp>
 #include <popart/patterns/initaccumulatepattern.hpp>
 #include <popart/patterns/inplace.hpp>
@@ -346,6 +347,10 @@ bool Patterns::isSpaceToDepthOpPatternEnabled() {
   return isPatternEnabled<SpaceToDepthOpPattern>();
 }
 
+bool Patterns::isFmodArg0GradOpEnabled() {
+  return isPatternEnabled<FmodArg0GradOpPattern>();
+}
+
 Patterns &Patterns::enableInitAccumulate(bool v) {
   return enablePattern<InitAccumulatePattern>(v);
 }
@@ -556,6 +561,7 @@ std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
       {std::type_index(typeid(LikeOpsPattern<ZerosLikeOp>)), 43},
       {std::type_index(typeid(LikeOpsPattern<RandomUniformLikeOp>)), 42},
       {std::type_index(typeid(LikeOpsPattern<RandomNormalLikeOp>)), 41},
+      {std::type_index(typeid(FmodArg0GradOpPattern)), 39},
       {std::type_index(typeid(UpsampleToResizePattern)), 38},
       {std::type_index(typeid(InitAccumulatePattern)), 37},
       {std::type_index(typeid(PreUniRepl)), 36},

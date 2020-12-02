@@ -1065,6 +1065,22 @@ TensorId AiGraphcoreOpset1::reshape(const TensorId &arg,
   return outputs.at(0);
 }
 
+TensorId AiGraphcoreOpset1::fmod(const std::vector<TensorId> &args,
+                                 const DebugContext &debugContext) {
+  std::map<std::string, popart::any> attributes;
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.emplace(sDebugInfoId, di.getId());
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::Fmod,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          debugContext);
+
+  di.setOutputs(outputs);
+  return outputs.at(0);
+}
+
 std::vector<TensorId>
 Builder::customOp(const OperatorIdentifier &opid,
                   int opsetVersion,

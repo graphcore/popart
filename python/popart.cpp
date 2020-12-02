@@ -1305,6 +1305,7 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("MatMulLHSGradOp", PreAliasPatternType::MatMulLHSGradOp);
     en.value("MatMulRHSGradOp", PreAliasPatternType::MatMulRHSGradOp);
     en.value("Log1pGradOp", PreAliasPatternType::Log1pGradOp);
+    en.value("FmodArg0GradOp", PreAliasPatternType::FmodArg0GradOp);
   }
   {
     py::class_<Patterns> cls(m, "Patterns");
@@ -1830,6 +1831,14 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("num_outputs"),
             py::arg("callee"),
             py::arg("debugContext") = std::string());
+    cls.def("fmod",
+            &AiGraphcoreOpset1::fmod,
+            py::arg("args"),
+            py::arg("debugContext") = std::string());
+    cls.def("fmod",
+            &AiGraphcoreOpset1::fmod,
+            py::arg("args"),
+            py::arg("debugPrefix") = std::string());
     cls.def("replicatedallreduce",
             &AiGraphcoreOpset1::replicatedallreduce,
             py::arg("args"),

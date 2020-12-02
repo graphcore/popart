@@ -43,9 +43,9 @@ std::vector<char> ConstExprSub::compute() {
       .getNativeCharVector();
 }
 
-ConstExprMod::ConstExprMod(Op *op_) : ConstExprOp(op_) {}
+ConstExprFmod::ConstExprFmod(Op *op_) : ConstExprOp(op_) {}
 
-std::vector<char> ConstExprMod::compute() {
+std::vector<char> ConstExprFmod::compute() {
   return (getPoprithmsComputeHostTensor(*inTensor(0)) %
           getPoprithmsComputeHostTensor(*inTensor(1)))
       .getNativeCharVector();
