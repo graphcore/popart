@@ -178,6 +178,7 @@ const static AiGraphcoreOpIdV1 MaxArgGrad("MaxArgGrad");
 const static AiGraphcoreOpIdV1 MaxPoolGrad("MaxPoolGrad");
 const static AiGraphcoreOpIdV1 MeanArgGrad("MeanArgGrad");
 const static AiGraphcoreOpIdV1 MinArgGrad("MinArgGrad");
+const static AiGraphcoreOpIdV1 ModArg0Grad("ModArg0Grad");
 const static AiGraphcoreOpIdV1 MulArg0Grad("MulArg0Grad");
 const static AiGraphcoreOpIdV1 MulArg1Grad("MulArg1Grad");
 const static AiGraphcoreOpIdV1 MultiConvDataGrad("MultiConvDataGrad");

@@ -1305,6 +1305,7 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("MatMulLHSGradOp", PreAliasPatternType::MatMulLHSGradOp);
     en.value("MatMulRHSGradOp", PreAliasPatternType::MatMulRHSGradOp);
     en.value("Log1pGradOp", PreAliasPatternType::Log1pGradOp);
+    en.value("ModArg0GradOp", PreAliasPatternType::ModArg0GradOp);
   }
   {
     py::class_<Patterns> cls(m, "Patterns");

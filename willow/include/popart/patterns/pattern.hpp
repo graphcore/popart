@@ -57,6 +57,7 @@ enum class PreAliasPatternType {
   DecomposeBinaryConstScalar,
   DepthToSpaceOpPattern,
   SpaceToDepthOpPattern,
+  ModArg0GradOp,
 };
 
 // Definition: A tensor is "touched" by a Pattern if
