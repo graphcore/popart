@@ -134,28 +134,44 @@ bool BatchSerialize::apply(Graph &graph) const {
         // c.) Tensor has no producer, or is not yet registered in the
         // serialized tensor map
         if (isRemoteArg &&
-            (serializedItProducer == serializedTensorMap.end() ||
-             serializedItConsumer == serializedTensorMap.end())) {
+            (serializedItConsumer == serializedTensorMap.end())) {
 
-          TensorId remoteArgId = entry.first->id;
+          TensorId remoteArgId     = entry.first->id;
+          TensorInfo remoteArgInfo = entry.first->info;
+          TensorId remoteArgRangeId =
+              ir.createIntermediateTensorId(remoteArgId);
+          TensorId remoteArgRangeSlicedId =
+              ir.createIntermediateTensorId(remoteArgId);
+
+          Op::Settings opSettings = op->settings;
+
+          remoteArgInfo.set(remoteArgInfo.dataType(), Shape{2});
+          std::vector<int> data{-1, static_cast<int>(batchSerFactor)};
+
+          graph.getTensors().addConstInit(
+              remoteArgRangeId,
+              remoteArgInfo,
+              reinterpret_cast<void *>(data.data()));
+
+          std::unique_ptr<SliceOp> sliceOpUp =
+              std::make_unique<SliceOp>(Onnx::AiOnnx::OpSet11::Slice,
+                                        std::vector<int64_t>{0},
+                                        std::vector<int64_t>{1},
+                                        std::vector<int64_t>{0},
+                                        std::vector<int64_t>{},
+                                        opSettings);
+          SliceOp *sliceOp = sliceOpUp.get();
+          graph.moveIntoGraph(std::move(sliceOpUp));
+          sliceOp->setName("Slice_" + remoteArgId);
+          sliceOp->connectInTensor(SliceOp::getInIndex(), remoteArgRangeId);
+          sliceOp->createAndConnectOutTensor(SliceOp::getOutIndex(),
+                                             remoteArgRangeSlicedId);
+          sliceOp->setup();
 
           BatchSerializedTensorInfo &bsInfo =
-              serializedTensorMap[{entry.first->id, producerContext}];
-          bsInfo.id   = remoteArgId;
-          bsInfo.info = entry.first->info;
-
-          for (int64_t b = 0; b < batchSerFactor; ++b) {
-            auto remoteArgBsId = ir.createSliceTensorId(remoteArgId, b, b + 1);
-            TensorInfo argTensorInfo(DataType::INT32, {1});
-            std::vector<int> idData(1, 0);
-            graph.getTensors().addConstInit(
-                remoteArgBsId,
-                argTensorInfo,
-                reinterpret_cast<void *>(idData.data()));
-
-            bsInfo.serializedIds.push_back(remoteArgBsId);
-            bsInfo.serializedInfos.push_back(argTensorInfo);
-          }
+              serializedTensorMap[{entry.first->id, consumerContext}];
+          bsInfo.concatId = remoteArgRangeSlicedId;
+          bsInfo.type     = ShardTensorType::Offset;
 
           hasBatch = true;
         } else if (hasBatch &&
@@ -281,15 +297,18 @@ bool BatchSerialize::apply(Graph &graph) const {
               // Tensor not split along batch dimension, but split info
               // available
               std::vector<TensorInfo> infos;
-              for (int64_t b = 0; b < batchSerFactor; ++b) {
+              for (int64_t b = 0;
+                   b < serializedTensor->second.serializedInfos.size();
+                   ++b) {
                 infos.push_back(serializedTensor->second.serializedInfos.at(b));
               }
-              shardInfos[in.second->id] = {
-                  serializedTensor->second.concatId.empty()
-                      ? serializedTensor->second.id
-                      : serializedTensor->second.concatId,
-                  serializedTensor->second.info,
-                  infos};
+              shardInfos[in.second->id] =
+                  ShardTensorInfo(serializedTensor->second.concatId.empty()
+                                      ? serializedTensor->second.id
+                                      : serializedTensor->second.concatId,
+                                  serializedTensor->second.info,
+                                  infos,
+                                  serializedTensor->second.type);
             }
           }
         }
@@ -348,13 +367,13 @@ bool BatchSerialize::apply(Graph &graph) const {
         for (auto &idkv : outputPlan.getInfoMap()) {
           serializedTensorMap[{idkv.first, consumerContext}].id = idkv.first;
           serializedTensorMap[{idkv.first, consumerContext}].concatId =
-              std::get<0>(idkv.second);
+              idkv.second.id;
           serializedTensorMap[{idkv.first, consumerContext}].info =
-              std::get<1>(idkv.second);
+              idkv.second.info;
 
-          if (std::get<2>(idkv.second).size() == batchSerFactor) {
+          if (idkv.second.infos.size() == batchSerFactor) {
             serializedTensorMap[{idkv.first, consumerContext}].serializedInfos =
-                std::get<2>(idkv.second);
+                idkv.second.infos;
             logging::trace("[BatchSerialize] Tensor: {} {} shards (info).",
                            idkv.first,
                            batchSerFactor);

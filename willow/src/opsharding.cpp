@@ -4,6 +4,7 @@
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
 #include <popart/op/add.hpp>
+#include <popart/op/cast.hpp>
 #include <popart/op/concat.hpp>
 #include <popart/op/div.hpp>
 #include <popart/op/dynamic/dynamicslice.hpp>
@@ -542,6 +543,67 @@ std::vector<Op *> ShardingHelper::dynamicUpdate(int64_t axis,
   return ops;
 }
 
+std::vector<Op *> ShardingHelper::offset(TensorId tensorId,
+                                         TensorId concatId,
+                                         TensorId offsetId,
+                                         Op::Settings settings) const {
+  std::vector<Op *> ops;
+
+  auto t  = graph->getIr().getTensor(concatId);
+  auto to = graph->getIr().getTensor(offsetId);
+
+  if (t->info.dataType() != to->info.dataType()) {
+    auto castOpUp = std::make_unique<CastOp>(
+        Onnx::Operators::Cast_9, t->info.dataType(), settings);
+    CastOp *castOp = castOpUp.get();
+    graph->moveIntoGraph(std::move(castOpUp));
+    castOp->setName("Cast_" + offsetId);
+    castOp->connectInTensor(CastOp::getInIndex(), offsetId);
+    offsetId = graph->getIr().createIntermediateTensorId(offsetId);
+    castOp->createAndConnectOutTensor(CastOp::getInIndex(), offsetId);
+    castOp->setup();
+    ops.push_back(castOp);
+  }
+
+  std::unique_ptr<AddOp> addOpUp =
+      std::make_unique<AddOp>(Onnx::Operators::Add_7, settings);
+  AddOp *addOp = addOpUp.get();
+  graph->moveIntoGraph(std::move(addOpUp));
+  addOp->setName("Add_" + tensorId);
+  addOp->connectInTensor(AddOp::getArg0InIndex(), concatId);
+  addOp->connectInTensor(AddOp::getArg1InIndex(), offsetId);
+  addOp->createAndConnectOutTensor(AddOp::getOutIndex(), tensorId);
+  addOp->setup();
+  ops.push_back(addOp);
+
+  return ops;
+}
+
+std::vector<Op *>
+ShardingHelper::offsets(std::vector<TensorId> tensorIds,
+                        TensorId concatId,
+                        std::vector<Op::Settings> settings) const {
+  if (settings.size() != tensorIds.size() && settings.size() != 1) {
+    throw error("[ShardingHelper] Expected {} or 1 settings.",
+                tensorIds.size());
+  }
+
+  std::vector<Op *> ops;
+
+  auto t = graph->getIr().getTensor(concatId);
+
+  for (int64_t b = 0; b < tensorIds.size(); ++b) {
+
+    TensorId constId = createOrGetConstTensor<int>(
+        t->info.dataType(), b, settings.at(b % settings.size()));
+
+    auto newOps = offset(
+        tensorIds.at(b), concatId, constId, settings.at(b % settings.size()));
+    ops.insert(ops.end(), newOps.begin(), newOps.end());
+  }
+  return ops;
+}
+
 Tensor *ShardingHelper::initTensor(TensorInfo info,
                                    TensorId id,
                                    InitType type,
@@ -650,18 +712,28 @@ Op::adjustShardPlans(const ShardingPlan inputPlan) {
 
   ShardIdMap inputIdMap     = inputPlan.getIdMap();
   ShardInfoMap inputInfoMap = inputPlan.getInfoMap();
+
+  for (auto &tensorIdAndInfo : inputInfoMap) {
+    int64_t num_shards = tensorIdAndInfo.second.infos.size();
+    total_num_shards   = std::max(num_shards, total_num_shards);
+  }
+  adjustedInputPlan.setTotalNumShards(total_num_shards);
+  outputPlan.setTotalNumShards(total_num_shards);
+
   for (auto &tensorIdAndInfo : inputInfoMap) {
 
-    TensorId concatId  = std::get<0>(tensorIdAndInfo.second);
-    Shape origShape    = std::get<1>(tensorIdAndInfo.second).shape();
-    Shape sliceShape   = std::get<2>(tensorIdAndInfo.second).front().shape();
-    int64_t num_shards = std::get<2>(tensorIdAndInfo.second).size();
-    total_num_shards   = std::max(num_shards, total_num_shards);
-    int64_t axis       = 0;
+    TensorId concatId    = tensorIdAndInfo.second.id;
+    Shape origShape      = tensorIdAndInfo.second.info.shape();
+    int64_t num_shards   = tensorIdAndInfo.second.infos.size();
+    ShardTensorType type = tensorIdAndInfo.second.type;
+    int64_t axis         = 0;
 
-    for (int64_t i = 0; i < sliceShape.size(); ++i) {
-      if (sliceShape[i] * num_shards == origShape[i]) {
-        axis = i;
+    if (num_shards > 0) {
+      Shape sliceShape = tensorIdAndInfo.second.infos.front().shape();
+      for (int64_t i = 0; i < sliceShape.size(); ++i) {
+        if (sliceShape[i] * num_shards == origShape[i]) {
+          axis = i;
+        }
       }
     }
 
@@ -670,13 +742,13 @@ Op::adjustShardPlans(const ShardingPlan inputPlan) {
         inputPlan.getMethod() == ShardingMethod::StaticShard) {
       auto it = inputIdMap.find(tensorIdAndInfo.first);
       if (it == inputIdMap.end()) {
-        // Input was not sharded yet, but has a plan -> shard (dynamic)
+        // Input was not sharded yet, but has a plan -> shard
 
         std::vector<TensorId> sliceIds;
-        sliceIds.reserve(num_shards);
+        sliceIds.reserve(total_num_shards);
 
-        std::vector<Op::Settings> sliceSettings(num_shards + 2, settings);
-        for (int64_t b = 0; b < num_shards; ++b) {
+        std::vector<Op::Settings> sliceSettings(total_num_shards + 2, settings);
+        for (int64_t b = 0; b < total_num_shards; ++b) {
           TensorId sliceId =
               ir.createSliceTensorId(concatId,
                                      static_cast<unsigned int>(b),
@@ -693,9 +765,9 @@ Op::adjustShardPlans(const ShardingPlan inputPlan) {
         map.insert({concatId, sliceIds});
 
         if (inputPlan.getOpSettings().hasPreSetting()) {
-          sliceSettings.at(num_shards) =
+          sliceSettings.at(total_num_shards) =
               inputPlan.getOpSettings().getPreSetting();
-          sliceSettings.at(num_shards + 1) =
+          sliceSettings.at(total_num_shards + 1) =
               inputPlan.getOpSettings().getPreSetting();
         }
 
@@ -708,12 +780,18 @@ Op::adjustShardPlans(const ShardingPlan inputPlan) {
           }
         }
 
-        if (inputPlan.getMethod() == ShardingMethod::DynamicShard) {
-          helper.dynamicShard(axis, sliceIds, concatId, sliceSettings);
+        if (type == ShardTensorType::Slice) {
+          if (inputPlan.getMethod() == ShardingMethod::DynamicShard) {
+            helper.dynamicShard(axis, sliceIds, concatId, sliceSettings);
+          } else {
+            helper.staticShard(axis, sliceIds, concatId, sliceSettings);
+          }
+        } else if (type == ShardTensorType::Offset) {
+          sliceSettings.resize(sliceIds.size(), Op::Settings(graph, ""));
+          helper.offsets(sliceIds, concatId, sliceSettings);
         } else {
-          helper.staticShard(axis, sliceIds, concatId, sliceSettings);
+          throw error("[Op] Unsupported sharding tensor type.");
         }
-
         adjustedInputPlan.insertIdMap(map, graph);
         outputPlan.insertIdMap(map, graph);
       } else {
@@ -732,8 +810,9 @@ Op::adjustShardPlans(const ShardingPlan inputPlan) {
       } else {
         // Input sharded with plan -> concatenate again before loop
 
-        std::vector<Op::Settings> concatSettings(num_shards + 2, settings);
-        for (int64_t b = 0; b < num_shards; ++b) {
+        std::vector<Op::Settings> concatSettings(total_num_shards + 2,
+                                                 settings);
+        for (int64_t b = 0; b < total_num_shards; ++b) {
           if (inputPlan.getOpSettings().getShardSettings().size() >= b) {
             concatSettings.at(b) =
                 inputPlan.getOpSettings().getShardSettings().at(b);
@@ -741,9 +820,9 @@ Op::adjustShardPlans(const ShardingPlan inputPlan) {
         }
 
         if (inputPlan.getOpSettings().hasPreSetting()) {
-          concatSettings.at(num_shards) =
+          concatSettings.at(total_num_shards) =
               inputPlan.getOpSettings().getPreSetting();
-          concatSettings.at(num_shards + 1) =
+          concatSettings.at(total_num_shards + 1) =
               inputPlan.getOpSettings().getPreSetting();
         }
 
@@ -762,8 +841,8 @@ Op::adjustShardPlans(const ShardingPlan inputPlan) {
         // Info stays the same, but the newConcatId is connected
         map.insert({concatId,
                     {newConcatId,
-                     std::get<1>(tensorIdAndInfo.second),
-                     std::get<2>(tensorIdAndInfo.second)}});
+                     tensorIdAndInfo.second.info,
+                     tensorIdAndInfo.second.infos}});
 
         helper.dynamicConcat(axis, it->second, newConcatId, concatSettings);
 
@@ -772,8 +851,6 @@ Op::adjustShardPlans(const ShardingPlan inputPlan) {
       }
     }
   }
-  adjustedInputPlan.setTotalNumShards(total_num_shards);
-  outputPlan.setTotalNumShards(total_num_shards);
 
   return {adjustedInputPlan, outputPlan};
 }
@@ -1074,28 +1151,39 @@ ShardingPlan Op::loopShard(const ShardingPlan adjustedInputPlan,
       // Connect from shard plan
       loopOp->addLoopInput(std::max(LoopOp::getFirstInputInIndex(),
                                     loopOp->input->maxIndex() + 1),
-                           std::get<0>(it->second),
+                           it->second.id,
                            inScopedId,
                            false);
 
-      Shape origShape    = std::get<1>(it->second).shape();
-      Shape sliceShape   = std::get<2>(it->second).front().shape();
-      int64_t num_shards = std::get<2>(it->second).size();
-      int64_t axis       = 0;
-
-      for (int64_t i = 0; i < sliceShape.size(); ++i) {
-        if (sliceShape[i] * num_shards == origShape[i]) {
-          axis = i;
-        }
-      }
-
+      Shape origShape        = it->second.info.shape();
       TensorId sliceScopedId = ir.createIntermediateTensorId(inScopedId);
-      subgraphHelper.dynamicSlice(axis,
-                                  num_shards,
-                                  sliceScopedId,
-                                  inScopedId,
-                                  getOrCreateIterator(preInsideLoopSettings),
-                                  preInsideLoopSettings);
+
+      if (it->second.type == ShardTensorType::Slice) {
+        Shape sliceShape   = it->second.infos.front().shape();
+        int64_t num_shards = it->second.infos.size();
+        int64_t axis       = 0;
+
+        for (int64_t i = 0; i < sliceShape.size(); ++i) {
+          if (sliceShape[i] * num_shards == origShape[i]) {
+            axis = i;
+          }
+        }
+
+        subgraphHelper.dynamicSlice(axis,
+                                    num_shards,
+                                    sliceScopedId,
+                                    inScopedId,
+                                    getOrCreateIterator(preInsideLoopSettings),
+                                    preInsideLoopSettings);
+      } else if (it->second.type == ShardTensorType::Offset) {
+        subgraphHelper.offset(sliceScopedId,
+                              inScopedId,
+                              getOrCreateIterator(preInsideLoopSettings),
+                              preInsideLoopSettings);
+
+      } else {
+        throw error("[Op] Unsupported sharding tensor type.");
+      }
 
       opInId = sliceScopedId;
     } else {

@@ -131,6 +131,10 @@ bool RemoteSetup::apply(Graph &graph) const {
                 traceFront.push_back({t, callStack});
               }
             }
+          } else if (consumer->isConvertibleTo<ElementWiseBinaryBaseOp>()) {
+            traceFront.push_back({consumer->output->tensor(
+                                      ElementWiseBinaryBaseOp::getOutIndex()),
+                                  callStack});
           } else if (consumer->isConvertibleTo<ConcatOp>()) {
             traceFront.push_back(
                 {consumer->output->tensor(ConcatOp::getOutIndex()), callStack});
@@ -207,17 +211,17 @@ bool RemoteSetup::apply(Graph &graph) const {
         }
       }
       logging::trace("[RemoteSetup] RemoteArg group: {}", group);
-      for (TensorId tensor_id : group) {
-        argBufferMap[tensor_id] = {remoteBufferId, remoteBufferIndex};
-        auto remoteArgTensor    = graph.getTensors().get(tensor_id);
+      for (TensorId remoteArgId : group) {
+        argBufferMap[remoteArgId] = {remoteBufferId, remoteBufferIndex};
+        auto remoteArgTensor      = graph.getTensors().get(remoteArgId);
         *static_cast<int *>(remoteArgTensor->tensorData()->data()) =
             static_cast<int>(remoteBufferIndex);
         logging::transform::trace(
             "[RemoteSetup] RemoteArg {} buffer: {} index: {}",
-            tensor_id,
+            remoteArgId,
             remoteBufferId,
             remoteBufferIndex);
-        for (auto opAndIndex : argOpMap[tensor_id]) {
+        for (auto opAndIndex : argOpMap[remoteArgId]) {
           Op *op          = opAndIndex.first;
           InIndex inIndex = opAndIndex.second;
           if (RemoteStoreOp *rs = dynamic_cast<RemoteStoreOp *>(op)) {
@@ -258,7 +262,20 @@ bool RemoteSetup::apply(Graph &graph) const {
                 re->inInfo(localInIndex));
           }
         }
-        remoteBufferIndex++;
+        // Remote arg is a single index: [index]
+        // increment the remoteBufferIndex by 1
+        int64_t inc = 1;
+        if (remoteArgTensor->info.shape() == Shape{2}) {
+          // Remote arg is a range of indices: [start, size]
+          // increment the remoteBufferIndex by size
+          inc =
+              *(static_cast<int *>(remoteArgTensor->tensorData()->data()) + 1);
+        }
+        logging::transform::trace("[RemoteSetup] incrementing {} {} by {}",
+                                  remoteArgId,
+                                  remoteBufferIndex,
+                                  inc);
+        remoteBufferIndex += inc;
       }
 
       auto info = RemoteBufferInfo(tensorInfo, remoteBufferIndex);

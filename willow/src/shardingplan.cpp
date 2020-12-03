@@ -52,10 +52,9 @@ void ShardingPlan::insertInfoMap(const ShardInfoMap &shardMap_) {
 bool ShardingPlan::canDynamicShard() const {
   bool can = true;
   for (auto &idAndInfos : shardInfoMap) {
-    for (size_t i = 1; i < std::get<2>(idAndInfos.second).size(); ++i) {
+    for (size_t i = 1; i < idAndInfos.second.infos.size(); ++i) {
       // All sharded tensor infos must be equal
-      if (std::get<2>(idAndInfos.second).at(i) !=
-          std::get<2>(idAndInfos.second).at(0)) {
+      if (idAndInfos.second.infos.at(i) != idAndInfos.second.infos.at(0)) {
         can = false;
       }
     }

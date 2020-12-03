@@ -63,6 +63,41 @@ public:
                                 TensorId concatId,
                                 std::vector<Op::Settings> settings) const;
 
+  /// Create an AddOps to create an offset version of the input tensor
+  /// \param tensorId slice tensor to generate (must not exist in the IR)
+  /// \param concatId input tensor name (must exist in the IR)
+  /// \param offsetId offset tensor name (must exist in the IR)
+  /// \param settings Op::Settings to apply to the AddOp
+  /// <pre>
+  /// concatId  offsetId
+  ///       |  /
+  ///     AddOp
+  ///       |
+  /// tensorId
+  /// </pre>
+  std::vector<Op *> offset(TensorId tensorId,
+                           TensorId concatId,
+                           TensorId offsetId,
+                           Op::Settings settings) const;
+
+  /// Shard tensors with a set of AddOps to create offset versions of the input
+  /// tensor
+  /// \param tensorIds slice tensors to generate (must not exist in the IR)
+  /// \param concatId input tensor name (must exist in the IR)
+  /// \param settings Op::Settings to apply to the AddOp
+  ///                 (1 setting in total or 1 setting per slice tensor)
+  /// <pre>
+  ///
+  /// Const(0)  concatId   Const(n)
+  ///       |  /        \  |
+  ///     AddOp   ...    AddOp
+  ///       |              |
+  /// tensorIds(0)   tensorIds(n)
+  /// </pre>
+  std::vector<Op *> offsets(std::vector<TensorId> tensorIds,
+                            TensorId concatId,
+                            std::vector<Op::Settings> settings) const;
+
   /// Update tensor with a dynamic DynamicUpdateOp (outlineable)
   /// \param axis tensor axis along which to concatenate
   /// \param num_shards number of addressable indices along the axis

@@ -25,6 +25,16 @@ enum class ShardingMethod {
 };
 
 /**
+ * Enum type that specifies how a tensor should be sharded
+ */
+enum class ShardTensorType {
+  /// Shard tensors are derived by slicing the tensor
+  Slice = 0,
+  /// Shard tensors are derived by adding an offset to the tensor
+  Offset
+};
+
+/**
  * Map from input to sharded tensor IDs.
  * Key:   TensorId connected to the Op before sharding
  * Value: TensorIds to be connected to the sharded Ops after sharding
@@ -32,18 +42,49 @@ enum class ShardingMethod {
 using ShardIdMap = std::map<TensorId, std::vector<TensorId>>;
 
 /**
+ * Class that describes the sharded tensors
+ */
+class ShardTensorInfo {
+public:
+  ShardTensorInfo() : id(), info(), infos(), type() {}
+
+  /// Construct ShardTensorInfo from parameters.
+  /// \param id_ the method of sharding the Op
+  /// \param info_ the sharded TensorIds to be connected
+  /// \param infos_ the graph which contains the TensorIds
+  ShardTensorInfo(TensorId id_,
+                  TensorInfo info_,
+                  std::vector<TensorInfo> infos_)
+      : id(id_), info(info_), infos(infos_), type() {}
+
+  /// Construct ShardTensorInfo from parameters.
+  /// \param id_ the method of sharding the Op
+  /// \param info_ the sharded TensorIds to be connected
+  /// \param infos_ the graph which contains the TensorIds
+  /// \param type_ the settings to apply onto the sharded ops
+  ShardTensorInfo(TensorId id_,
+                  TensorInfo info_,
+                  std::vector<TensorInfo> infos_,
+                  ShardTensorType type_)
+      : id(id_), info(info_), infos(infos_), type(type_) {}
+
+  /// TensorId to be connected as a replacement after sharding
+  TensorId id;
+  /// TensorInfo of the tensor to be connected as a replacement
+  TensorInfo info;
+  /// TensorInfos describing how to shard the TensorId before connecting
+  /// to the sharded Ops
+  std::vector<TensorInfo> infos;
+  /// Type of sharded tensor (sliceable or offsetable are currently supported)
+  ShardTensorType type;
+};
+
+/**
  * Map from input to sharded tensor infos
  * Key:   TensorId connected to the Op before sharding
- * Value:
- *
- * 1. TensorId to be connected as a replacement after sharding
- * 2. TensorInfo of the tensor to be connected as a replacement
- * 3. TensorInfos describing how to shard the TensorId before connecting
- *    to the sharded Ops
+ * Value: ShardTensorInfo
  */
-using ShardInfoMap =
-    std::map<TensorId,
-             std::tuple<TensorId, TensorInfo, std::vector<TensorInfo>>>;
+using ShardInfoMap = std::map<TensorId, ShardTensorInfo>;
 
 /**
  * Class that describes what Op::Settings to apply after sharding an Op

@@ -4,6 +4,7 @@
 
 #include <queue> // we use a priority_queue
 #include <popart/op.hpp>
+#include <popart/shardingplan.hpp>
 #include <popart/transforms/transform.hpp>
 
 // Batch serialization:
@@ -55,7 +56,7 @@
 //  |        |
 //  |     DynamicSlice(i)       }
 //  |        |                  }
-//  |  w1 - MatMul              } Loop(4)
+//  |  w0 - MatMul              } Loop(4)
 //  |        |                  }
 //  '-----DynamicUpdate(i)      }
 //           |
@@ -84,6 +85,8 @@ public:
   std::vector<TensorInfo> serializedInfos;
   // Serialized tensor ids
   std::vector<TensorId> serializedIds;
+  // Type of shard tensor
+  ShardTensorType type;
 };
 
 class BatchSerialize : public Transform {
