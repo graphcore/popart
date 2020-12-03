@@ -78,7 +78,8 @@ std::vector<std::unique_ptr<Op>> IdentityLossOp::getGradOps() {
 }
 
 bool IdentityLossOp::canBeReplacedByIdentity() const {
-  return getReductionType() == ReductionType::NoReduction;
+  return getReductionType() == ReductionType::NoReduction ||
+         inRank(getInIndex()) == 0;
 }
 
 IdentityLossOp::IdentityLossOp(const OperatorIdentifier &_opid,

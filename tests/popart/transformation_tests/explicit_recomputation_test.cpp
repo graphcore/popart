@@ -165,6 +165,10 @@ BOOST_AUTO_TEST_CASE(ExplicitRecomputation_Case1) {
   SessionOptions opts;
   opts.explicitRecomputation      = true;
   std::vector<TensorId> anchorIds = {reservedGradientPrefix() + ip0, out};
+  auto patterns                   = Patterns(PatternsLevel::All);
+  // So that the identity loss is not pruned
+  patterns.enableInPlace(false);
+  patterns.enableOpToIdentity(false);
 
   Ir ir;
   ir.prepare({modelProto,
@@ -174,7 +178,7 @@ BOOST_AUTO_TEST_CASE(ExplicitRecomputation_Case1) {
               &optimizer,
               *device,
               opts,
-              Patterns(PatternsLevel::All).enableInPlace(false)});
+              patterns});
 
   auto opSchedule = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
   std::vector<size_t> recomputedIdx;
