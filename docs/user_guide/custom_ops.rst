@@ -54,7 +54,7 @@ The two key base classes in PopART that define an op are:
   transformations of the compute graph. This representation of the op is
   decoupled from the Poplar implementation.
 
-- ``Opx``: a Poplar implementation of the op. This is he code that will
+- ``Opx``: a Poplar implementation of the op. This is the code that will
   actually be run on the IPU.
 
 If the op is required for training, then a ``GradOp`` and ``GradOpx`` must also
