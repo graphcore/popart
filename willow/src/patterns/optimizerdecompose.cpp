@@ -60,19 +60,6 @@ TensorInfo OptimizerDecompose::addStateTensor(Graph &graph,
   return info;
 }
 
-void OptimizerDecompose::storeTensor(Ir &ir, TensorId id) const {
-  if (ir.additionalModelProtoTensors.find(id) ==
-          ir.additionalModelProtoTensors.end() &&
-      !ir.tensorExistsInInitialisers(id)) {
-    // If we are not going to stream the tensors from the host,
-    // don't add them to the set of additional tensors to be saved
-    // in the onnx modelproto
-    if (!ir.storingIsDisabledForTensor(id)) {
-      ir.additionalModelProtoTensors.insert(id);
-    }
-  }
-}
-
 std::pair<Op *, TensorId> OptimizerDecompose::accl(Graph &graph,
                                                    Op *combo,
                                                    TensorId acclId,
@@ -118,7 +105,7 @@ std::pair<Op *, TensorId> OptimizerDecompose::accl(Graph &graph,
     acclOp->setExecutionPhase({});
     acclOp->settings.schedulePriority = 0.0;
   }
-  storeTensor(graph.getIr(), acclId);
+  graph.getIr().addAdditionalModelProtoTensor(acclId);
   return {acclOp, updatedAcclId};
 }
 
@@ -159,7 +146,7 @@ TensorId OptimizerDecompose::gradAccum(Graph &graph,
 
   accumOp->setup();
   graph.topoCons->transfer(combo, accumOp);
-  storeTensor(graph.getIr(), accumId);
+  graph.getIr().addAdditionalModelProtoTensor(accumId);
 
   if (accumReduce) {
     auto reduceOpUp = std::make_unique<ReplicatedAllReduceInplaceOp>(

@@ -29,7 +29,6 @@ std::vector<const Tensor *> AdamDecompose::touches(Op *) const { return {}; }
 
 bool AdamDecompose::apply(Op *op) const {
 
-  auto &ir    = op->getIr();
   auto &graph = op->getGraph();
 
   // matches must have verified the correctness before this call
@@ -57,7 +56,7 @@ bool AdamDecompose::apply(Op *op) const {
       combo->mode == AdamMode::AdaMax) {
     // Step
     addStateTensor<float>(graph, stepId, TensorInfo(DataType::FLOAT, {}));
-    storeTensor(ir, stepId);
+    graph.getIr().addAdditionalModelProtoTensor(stepId);
   }
 
   if (weightGrad->info.dataType() != weight->info.dataType()) {

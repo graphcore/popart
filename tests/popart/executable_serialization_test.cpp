@@ -19,6 +19,7 @@
 #include <popart/session.hpp>
 #include <popart/tensordata.hpp>
 
+#include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <popart/ndarraywrapper.hpp>
 #include <popart/testdevice.hpp>
@@ -1556,5 +1557,169 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_checkpoint) {
 
     BOOST_CHECK(A_readback2_init != A_readback1_init);
     BOOST_CHECK(B_readback2_init != B_readback1_init);
+  }
+}
+
+BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_update_optimizer) {
+  // the dimensions of the matrices
+  int K = 6;
+  int M = 7;
+  int N = 8;
+
+  // we will generate random initializations
+  int seed = 1013;
+  DefaultRandomEngine eng(seed);
+  UniformRealDistribution<float> fdis(-4.f, +4.f);
+
+  // prepare a Builder for creating onnx model
+  auto bder   = Builder::create();
+  auto aiOnnx = bder->aiOnnxOpset9();
+
+  // matrix A of shape M x K
+  TensorInfo A_info{"FLOAT", std::vector<int64_t>{M, K}};
+  std::vector<float> v_A_init(A_info.nelms());
+  for (auto &val : v_A_init) {
+    val = fdis(eng);
+  }
+  TensorId A_id = bder->addInitializedInputTensor({v_A_init.data(), A_info});
+
+  // matrix B of shape K x N
+  TensorInfo B_info{"FLOAT", std::vector<int64_t>{K, N}};
+  std::vector<float> v_B_init(B_info.nelms());
+  for (auto &val : v_B_init) {
+    val = fdis(eng);
+  }
+  TensorId B_id = bder->addInitializedInputTensor({v_B_init.data(), B_info});
+
+  // matrix C = A * B (output of network)
+  TensorInfo C_info{"FLOAT", std::vector<int64_t>{M, N}};
+  TensorId C_id = aiOnnx.matmul({A_id, B_id});
+
+  // l1 loss with penalty term, will be applied to C
+  float lossLambda = 0.26;
+  auto l1 =
+      bder->aiGraphcoreOpset1().l1loss({C_id}, lossLambda, ReductionType::Sum);
+
+  auto proto      = bder->getModelProto();
+  auto modelProto = io::getModelFromString(proto);
+  auto art        = AnchorReturnType("All");
+  // one batch per step
+  int batchesPerStep = 1;
+  auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}});
+
+  auto device = popart::createTestDevice(TestDeviceType::Hw);
+
+  auto cacheDir = "./tmp_7" + randomString(10);
+  BOOST_CHECK(boost::filesystem::create_directory(cacheDir));
+  auto d                      = boost::filesystem::path(cacheDir);
+  const std::string cacheName = "session_cache1";
+  auto n                      = boost::filesystem::path(cacheName);
+  auto cachePath_             = d / n;
+  auto cachePath              = cachePath_.string();
+
+  boost::filesystem::remove(popart::Ir::getPopartCachePath(cachePath));
+  boost::filesystem::remove(popx::IrLowering::getPoplarCachePath(cachePath));
+  boost::filesystem::remove(
+      popx::Executablex::getExecutablexCachePath(cachePath));
+
+  auto opts                = SessionOptions();
+  opts.enableEngineCaching = true;
+  opts.cachePath           = cachePath;
+
+  // training info
+  auto optimizer = SGD({{"defaultLearningRate", {0.01, false}},
+                        {"defaultMomentum", {0.9, false}}});
+
+  // prepare the anchors. We have the output C,
+  std::vector<float> raw_C_out(C_info.nelms());
+  popart::NDArrayWrapper<float> C_wrapper(raw_C_out.data(), C_info.shape());
+
+  std::map<popart::TensorId, popart::IArray &> anchors = {
+      {C_id, C_wrapper},
+  };
+
+  // inputs:
+  popart::NDArrayWrapper<float> A_wrapper(v_A_init.data(), A_info);
+  popart::NDArrayWrapper<float> B_wrapper(v_B_init.data(), B_info);
+  std::map<popart::TensorId, popart::IArray &> inputs = {{A_id, A_wrapper},
+                                                         {B_id, B_wrapper}};
+
+  popart::StepIO stepio(inputs, anchors);
+
+  std::vector<float> A_readback1(A_info.nelms(), -9.0f);
+  std::vector<float> B_readback1(B_info.nelms(), -99.0f);
+
+  std::vector<float> A_readback1_init(A_info.nelms(), -9.0f);
+  std::vector<float> B_readback1_init(B_info.nelms(), -99.0f);
+
+  size_t irBundleHash1 = 0;
+  {
+    // Engine caching is enabled so this session will store
+    // the serialized PopART state and poplar executable
+    auto session = popart::TrainingSession::createFromOnnxModel(
+        proto,
+        dataFlow,
+        l1,
+        optimizer,
+        device,
+        popart::InputShapeInfo(),
+        opts,
+        popart::Patterns(PatternsLevel::Default));
+    session->prepareDevice();
+    irBundleHash1 = session->getIr().getIrBundleHash();
+
+    BOOST_CHECK(session->getExecutable().isDeserialized() == false);
+    BOOST_CHECK(session->getIrLowering().usingCachedExecutable() == false);
+    BOOST_CHECK(session->getIr().hashMatched() == false);
+  }
+
+  // reset output values
+  std::fill(raw_C_out.begin(), raw_C_out.end(), -9.0f);
+
+  BOOST_CHECK(
+      boost::filesystem::exists(popart::Ir::getPopartCachePath(cachePath)));
+  BOOST_CHECK(boost::filesystem::exists(
+      popx::IrLowering::getPoplarCachePath(cachePath)));
+  BOOST_CHECK(boost::filesystem::exists(
+      popx::Executablex::getExecutablexCachePath(cachePath)));
+
+  size_t irBundleHash2 = 0;
+  {
+    // This session will load the PopART state and poplar
+    // executable produced by the previous session.
+    auto session = popart::TrainingSession::createFromOnnxModel(
+        proto,
+        dataFlow,
+        l1,
+        optimizer,
+        device,
+        popart::InputShapeInfo(),
+        opts,
+        popart::Patterns(PatternsLevel::Default));
+    session->prepareDevice();
+    irBundleHash2 = session->getIr().getIrBundleHash();
+    BOOST_CHECK(irBundleHash1 == irBundleHash2);
+
+    BOOST_CHECK(session->getIr().hashMatched());
+    BOOST_CHECK(session->getIrLowering().usingCachedExecutable());
+    BOOST_CHECK(session->getExecutable().isDeserialized());
+
+    float newLearningRate = 0.01f;
+    float newMomentum     = 0.09f;
+    auto newOptimizer = SGD({{"defaultLearningRate", {newLearningRate, false}},
+                             {"defaultMomentum", {newMomentum, false}}});
+
+    session->updateOptimizerFromHost(&newOptimizer);
+    const auto &optimizerTensors =
+        session->getExecutable().getOptimizerTensors();
+    for (const auto &o : optimizerTensors) {
+      if (boost::algorithm::icontains(o->id, "learning")) {
+        float val = *reinterpret_cast<float *>(o->tensorData()->data());
+        BOOST_CHECK(val == newLearningRate);
+      } else if (boost::algorithm::icontains(o->id, "momentum")) {
+        float val = *reinterpret_cast<float *>(o->tensorData()->data());
+        BOOST_CHECK(val == newMomentum);
+      }
+    }
   }
 }

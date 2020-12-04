@@ -45,7 +45,7 @@ ONNX_NAMESPACE::ModelProto
 getModelProto(const std::string &modelProtoOrFilename);
 
 // From a specified ModelProto, get a TensorProto by its name
-ONNX_NAMESPACE::TensorProto
+const ONNX_NAMESPACE::TensorProto &
 getTensorProto(const ONNX_NAMESPACE::ModelProto &model, const TensorId &tId);
 ONNX_NAMESPACE::TensorProto &getTensorProto(ONNX_NAMESPACE::ModelProto &model,
                                             const TensorId &tId);

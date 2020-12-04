@@ -556,6 +556,7 @@ void TrainingSession::updateOptimizerFromHost(const Optimizer *optimizer) {
   POPART_TRACEPOINT();
   logging::session::trace("TrainingSession::updateOptimizerFromHost");
   ir.updateOptimizer(*optimizer);
+  executable_->updateOptimizerTensors();
 
   // There has been a change to the TensorData of the optimizer tensors
   // on the host, but there wont be an equivalent update to the device-side

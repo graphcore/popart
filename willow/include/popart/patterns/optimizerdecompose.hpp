@@ -21,9 +21,6 @@ protected:
                       const TensorId &tensorId,
                       const TensorInfo info) const;
 
-  // Store optimizer state tensor
-  void storeTensor(Ir &ir, TensorId id) const;
-
   // ADd accl Op and updated tensor
   std::pair<Op *, TensorId> accl(Graph &graph,
                                  Op *combo,

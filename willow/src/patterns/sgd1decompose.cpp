@@ -209,16 +209,7 @@ bool SGD1Decompose::apply(Op *op) const {
                                         : acclIntoUpdateId);
 
   // T12001 better encapsulation
-  if (ir.additionalModelProtoTensors.find(acclIntoAccumulatorId) ==
-          ir.additionalModelProtoTensors.end() &&
-      !ir.tensorExistsInInitialisers(acclIntoAccumulatorId)) {
-    // If we are not going to stream the accl tensors from the host,
-    // don't add them to the set of additional tensors to be saved
-    // in the onnx modelproto
-    if (!ir.storingIsDisabledForTensor(acclIntoAccumulatorId)) {
-      ir.additionalModelProtoTensors.insert(acclIntoAccumulatorId);
-    }
-  }
+  ir.addAdditionalModelProtoTensor(acclIntoAccumulatorId);
 
   // T12001 confirm that there are no topo cons here rather
   graph.topoCons->transfer(combo, acclOp);

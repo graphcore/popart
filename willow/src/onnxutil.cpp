@@ -480,12 +480,12 @@ ONNX_NAMESPACE::TensorProto &getTensorProto(ONNX_NAMESPACE::ModelProto &model,
               tId);
 }
 
-ONNX_NAMESPACE::TensorProto
+const ONNX_NAMESPACE::TensorProto &
 getTensorProto(const ONNX_NAMESPACE::ModelProto &model, const TensorId &tId) {
-  ONNX_NAMESPACE::GraphProto g = model.graph();
+  const ONNX_NAMESPACE::GraphProto &g = model.graph();
 
   for (unsigned i = 0; i < g.initializer_size(); ++i) {
-    ONNX_NAMESPACE::TensorProto &init = *g.mutable_initializer(i);
+    const ONNX_NAMESPACE::TensorProto &init = g.initializer(i);
     if (init.name() == tId) {
       return init;
     }
@@ -497,9 +497,9 @@ getTensorProto(const ONNX_NAMESPACE::ModelProto &model, const TensorId &tId) {
 
 bool isInitializer(const ONNX_NAMESPACE::ModelProto &model,
                    const TensorId tId) {
-  ONNX_NAMESPACE::GraphProto g = model.graph();
+  const ONNX_NAMESPACE::GraphProto &g = model.graph();
   for (unsigned i = 0; i < g.initializer_size(); ++i) {
-    ONNX_NAMESPACE::TensorProto &init = *g.mutable_initializer(i);
+    const ONNX_NAMESPACE::TensorProto &init = g.initializer(i);
     if (init.name() == tId) {
       return true;
     }

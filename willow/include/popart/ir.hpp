@@ -212,8 +212,23 @@ public:
   bool hashMatched() const { return hashMatched_; }
 
   void updateOptimizer(const Optimizer &);
+
   // take training steps
   ONNX_NAMESPACE::ModelProto step(int n);
+
+  // Extra tensors to be saved alongside the ONNX model (such as additional
+  // optimizer state) are added to the model's initializers here
+  void addAdditionalModelProtoTensor(const TensorId &);
+  void addAdditionalModelProtoTensor(Tensor *);
+  void addAdditionalModelProtoTensors();
+  const std::set<Tensor *, PTensorCmp> &getAdditionalModelProtoTensors() const {
+    return additionalModelProtoTensors;
+  }
+
+  std::set<Tensor *, PTensorCmp> &getAdditionalModelProtoTensors() {
+    return additionalModelProtoTensors;
+  }
+
   // if the tensor is returned to user (passes call to DataFlow).
   bool isAnchored(const TensorId &) const;
   bool streamingIsDisabledForTensor(const Tensor *) const;
@@ -236,10 +251,6 @@ public:
   // The input data tensors. label(s), image(s), etc. This does not include
   // optimizer stream tensors (they are not data)
   std::vector<Tensor *> dataStreamTensors() const;
-
-  // Additional tensors that we want to add to the model proto when saving to a
-  // .onnx file
-  std::set<TensorId> additionalModelProtoTensors;
 
   std::vector<Op *> opsOfType(const OperatorIdentifier &opid);
   bool isConsumedByOpOfType(TensorId tid, const OperatorIdentifier &opid);
@@ -506,10 +517,6 @@ private:
 
   void initRandomSeed();
 
-  // Extra tensors to be saved alongside the ONNX model (such as additional
-  // optimizer state) are added to the model's initializers here
-  void addAdditionalModelProtoTensors();
-
   // Verify the connectivity of the graph
   void verifyConnectivity() const;
   void verifyOpInputConnectivity(const Graph &graph) const;
@@ -545,6 +552,9 @@ private:
   DataFlow dataFlow;
 
   std::unique_ptr<ONNX_NAMESPACE::ModelProto> onnxModel;
+  // Additional tensors that we want to add to the model proto when saving to a
+  // .onnx file
+  std::set<Tensor *, PTensorCmp> additionalModelProtoTensors;
 
   // learning rate, momentum, etc.
   // Optimizer needed to construct backwards pass:

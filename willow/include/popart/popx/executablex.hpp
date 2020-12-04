@@ -22,7 +22,7 @@ class ModelProto;
 
 namespace popart {
 class StepIOSplitter;
-
+class Optimizer;
 namespace popx {
 class CollectiveBalancedHostRearrangement;
 class Devicex;
@@ -117,6 +117,8 @@ public:
 
   // Serialize this object and save the ouptut to disk.
   void saveExecutablex();
+
+  void updateOptimizerTensors();
 
   // Get the poplar::Executable from the IrLowering. If the executable
   // was cached on disk then the cached executable will be returned.

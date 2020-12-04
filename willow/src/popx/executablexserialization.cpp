@@ -231,6 +231,63 @@ void serializeTensor(const popart::Tensor *tensor,
   }
 }
 
+std::unique_ptr<popart::Tensor>
+deserializeTensor(popart::Ir &ir,
+                  const popart::cap::Tensor::Reader &capnpTensor,
+                  bool deserializeData = true) {
+  auto gid = popart::GraphId("");
+  popart::Graph dummyGraph(ir, gid);
+  const auto &onnxModel = ir.getModel();
+  std::string id        = capnpTensor.getId();
+  auto popartTensorType = toPopartTensorType(capnpTensor.getTensorType());
+  auto tensor =
+      std::make_unique<popart::Tensor>(id, popartTensorType, dummyGraph);
+
+  auto capnpTensorInfo      = capnpTensor.getTensorInfo();
+  auto capnpDataTypeInfo    = capnpTensorInfo.getDataTypeInfo();
+  popart::DataType dataType = toPopartDataType(capnpDataTypeInfo.getDataType());
+  auto shapeReader          = capnpTensorInfo.getShape();
+  std::vector<int64_t> shape;
+  for (const auto s : shapeReader) {
+    shape.push_back(s);
+  }
+
+  tensor->info = popart::TensorInfo(dataType, shape);
+
+  auto capnpTensorLocationInfo = capnpTensor.getTensorLocationInfo();
+  tensor->tensorLocationInfo.setSharded(capnpTensorLocationInfo.getSharded());
+  tensor->tensorLocationInfo.setRemote(capnpTensorLocationInfo.getRemote());
+  tensor->tensorLocationInfo.setRemoteBufferInfo(
+      capnpTensorLocationInfo.getRemoteBufferInfo().getId(),
+      capnpTensorLocationInfo.getRemoteBufferInfo().getIndex());
+
+  if (deserializeData) {
+    if (popartTensorType == popart::TensorType::Variable &&
+        popart::onnxutil::isInitializer(onnxModel, id)) {
+      const auto &tensorProto = popart::onnxutil::getTensorProto(onnxModel, id);
+      auto constData          = popart::onnxutil::getConstData(tensorProto);
+      if (constData.data == nullptr) {
+        throw error("Data for Tensor {} is null", id);
+      }
+
+      if (constData.info != tensor->info) {
+        throw error("TensorInfo mismatch for {}, expected {}, got {}",
+                    id,
+                    tensor->info,
+                    constData.info);
+      }
+
+      tensor->setTensorData(tensor->info, constData.data);
+    } else if (capnpTensor.hasTensorData()) {
+      auto tensorDataReader = capnpTensor.getTensorData();
+      const void *src       = tensorDataReader.begin();
+      tensor->setTensorData(tensor->info, src);
+    }
+  }
+
+  return tensor;
+}
+
 void serializeExecutable(std::ostream &out,
                          const popart::popx::Executablex &executable) {
 
@@ -248,6 +305,18 @@ void serializeExecutable(std::ostream &out,
                                      Ir::ExecutionMode::Inference
                                  ? popart::cap::Ir::ExecutionMode::INFERENCE
                                  : popart::cap::Ir::ExecutionMode::TRAINING);
+  {
+    const auto &additionalModelProtoTensors =
+        ir.getAdditionalModelProtoTensors();
+    auto protoTensorsBuilder = irBuilder.initAdditionalModelProtoTensors(
+        additionalModelProtoTensors.size());
+
+    int i = 0;
+    for (auto *tensor : additionalModelProtoTensors) {
+      protoTensorsBuilder.set(i, tensor->id);
+      ++i;
+    }
+  }
 
   {
     auto tensorTileMap        = ir_lowering.getTensorTileMap();
@@ -350,10 +419,9 @@ void serializeExecutable(std::ostream &out,
 
       // We don't store the tensorData for the variable tensors
       // with initializers since they will be loaded from the onnx file.
-      auto idWithoutPrefix = popart::stripAllReservedPrefixes(id);
-      bool isInitializer =
-          popart::onnxutil::isInitializer(onnxModel, idWithoutPrefix);
-      bool serializeTensorData = isInitializer == false;
+      bool isInitializer = popart::onnxutil::isInitializer(onnxModel, id);
+      bool serializeTensorData =
+          !isInitializer || tensor->isOptimizerStateTensor();
 
       serializeTensor(tensor, tensorBuilder, serializeTensorData);
       ++i;
@@ -435,7 +503,8 @@ deserializeExecutable(std::istream &in,
 
   capnp::ReaderOptions opts;
   // Increase default size from 64 MB to handle larger models.
-  opts.traversalLimitInWords = 512 * 1024 * 1024;
+  uint64_t gb_limit          = 16;
+  opts.traversalLimitInWords = gb_limit * 1024 * 1024 * 1024;
   capnp::InputStreamMessageReader message(sis, opts);
 
   auto executablexReader = message.getRoot<popart::popx::cap::Executablex>();
@@ -453,7 +522,6 @@ deserializeExecutable(std::istream &in,
       ir.setExecutionMode(popart::Ir::ExecutionMode::Training);
     }
   }
-
   {
     auto capnpTensorTileMap = irLoweringReader.getTensorTileMap().getMappings();
     TensorTileMap mappings;
@@ -520,63 +588,18 @@ deserializeExecutable(std::istream &in,
     auto tensors = executablexReader.getTensors();
     deserializedTensors.reserve(tensors.size());
 
-    auto gid = popart::GraphId("");
-    popart::Graph dummyGraph(ir, gid);
     for (const auto capnpTensor : tensors) {
-      std::string id        = capnpTensor.getId();
-      auto popartTensorType = toPopartTensorType(capnpTensor.getTensorType());
-      auto tensor =
-          std::make_unique<popart::Tensor>(id, popartTensorType, dummyGraph);
-
-      auto capnpTensorInfo   = capnpTensor.getTensorInfo();
-      auto capnpDataTypeInfo = capnpTensorInfo.getDataTypeInfo();
-      popart::DataType dataType =
-          toPopartDataType(capnpDataTypeInfo.getDataType());
-      auto shapeReader = capnpTensorInfo.getShape();
-      std::vector<int64_t> shape;
-      for (const auto s : shapeReader) {
-        shape.push_back(s);
-      }
-
-      tensor->info = popart::TensorInfo(dataType, shape);
-
-      auto capnpTensorLocationInfo = capnpTensor.getTensorLocationInfo();
-      tensor->tensorLocationInfo.setSharded(
-          capnpTensorLocationInfo.getSharded());
-      tensor->tensorLocationInfo.setRemote(capnpTensorLocationInfo.getRemote());
-      tensor->tensorLocationInfo.setRemoteBufferInfo(
-          capnpTensorLocationInfo.getRemoteBufferInfo().getId(),
-          capnpTensorLocationInfo.getRemoteBufferInfo().getIndex());
-
-      auto idWithoutPrefix  = popart::stripAllReservedPrefixes(id);
-      const auto &onnxModel = ir.getModel();
-      if (capnpTensor.hasTensorData()) {
-        auto tensorDataReader = capnpTensor.getTensorData();
-        const void *src       = tensorDataReader.begin();
-        tensor->setTensorData(tensor->info, src);
-      }
-
-      if (popartTensorType == popart::TensorType::Variable &&
-          popart::onnxutil::isInitializer(onnxModel, idWithoutPrefix)) {
-        const auto &tensorProto =
-            popart::onnxutil::getTensorProto(onnxModel, idWithoutPrefix);
-        auto constData = popart::onnxutil::getConstData(tensorProto);
-        if (constData.data == nullptr) {
-          throw error("Data for Tensor {} is null", id);
-        }
-
-        if (constData.info != tensor->info) {
-          throw error("TensorInfo mismatch for {}, expected {}, got {}",
-                      id,
-                      tensor->info,
-                      constData.info);
-        }
-
-        tensor->setTensorData(tensor->info, constData.data);
-      }
-
-      deserializedTensors[id] = std::move(tensor);
+      auto tensor                     = deserializeTensor(ir, capnpTensor);
+      deserializedTensors[tensor->id] = std::move(tensor);
     }
+  }
+  {
+    auto capnpProtoTensors = irReader.getAdditionalModelProtoTensors();
+    for (const std::string id : capnpProtoTensors) {
+      auto *tensor = deserializedTensors[id].get();
+      ir.addAdditionalModelProtoTensor(tensor);
+    }
+    ir.addAdditionalModelProtoTensors();
   }
 
   std::map<TensorId, CollectiveBalancedHostRearrangement> cbrHostRearrangement;

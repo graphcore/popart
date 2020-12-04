@@ -122,4 +122,5 @@ struct Ir {
   sessionOptions @1: SessionOptions;
   requiresRandomSeed @2: Bool;
   executionMode @3: ExecutionMode;
+  additionalModelProtoTensors @4: List(TensorId);
 }

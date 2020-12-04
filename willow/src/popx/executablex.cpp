@@ -10,6 +10,7 @@
 
 #include <popart/ir.hpp>
 #include <popart/op/getrandomseed.hpp>
+#include <popart/optimizer.hpp>
 
 #include <onnx/onnx_pb.h>
 
@@ -204,6 +205,12 @@ void Executablex::resetWeights(
                   tensor->id);
     }
     tensor->tensorData()->resetData(initializer);
+  }
+}
+
+void Executablex::updateOptimizerTensors() {
+  for (auto *optTensor : optimizerTensors) {
+    ir().getOptimizer().resetTensorData(*optTensor);
   }
 }
 

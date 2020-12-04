@@ -188,9 +188,6 @@ void Ir::updateOptimizer(const Optimizer &newOptimizer) {
                 optimizer->type_s());
   }
   optimizer = std::move(newOptimizerClone);
-  for (auto opt : optimizerTensors()) {
-    optimizer->resetTensorData(*opt);
-  }
 }
 
 void Ir::dotCheckpoint(DotCheck check) const {
@@ -1336,17 +1333,17 @@ void Ir::setIsPrepared() { isPrepared_ = true; }
 
 void Ir::addAdditionalModelProtoTensors() {
   ONNX_NAMESPACE::GraphProto *onnxGraph = onnxModel->mutable_graph();
-  for (auto tId : additionalModelProtoTensors) {
+  for (const Tensor *tensor : additionalModelProtoTensors) {
+    const std::string &tId = tensor->id;
     // For additional tensors we want to save in the onnx modelproto, we copy
     // their info into across to the proto.
-    if (tensorExistsInInitialisers(tId)) {
+    if (onnxutil::isInitializer(*onnxModel, tId)) {
       throw error("Tensor id {} already in initializers, duplicate tensor "
                   "Ids not allowed in onnx specification.",
                   tId);
     } else {
       ONNX_NAMESPACE::TensorProto *init = onnxGraph->add_initializer();
       init->set_name(tId);
-      auto tensor = getMainGraph().getTensors().get(tId);
 
       ConstVoidData cvData;
       cvData.data = tensor->tensorData()->data();
@@ -1365,7 +1362,7 @@ void Ir::addAdditionalModelProtoTensors() {
             break;
           }
         }
-        if (!tensorExistsInInitialisers(initializerId)) {
+        if (!onnxutil::isInitializer(*onnxModel, initializerId)) {
           // No candidate path to save tensor data externally
           continue;
         } else if (onnxutil::isExternallySavedInitializer(*onnxModel,
@@ -1381,6 +1378,24 @@ void Ir::addAdditionalModelProtoTensors() {
           onnxutil::saveInitializersExternally(*onnxModel, {tId}, fn, true);
         }
       }
+    }
+  }
+}
+
+void Ir::addAdditionalModelProtoTensor(const TensorId &id) {
+  auto tensor = getMainGraph().getTensors().get(id);
+  addAdditionalModelProtoTensor(tensor);
+}
+
+void Ir::addAdditionalModelProtoTensor(Tensor *tensor) {
+  if (additionalModelProtoTensors.find(tensor) ==
+          additionalModelProtoTensors.end() &&
+      !tensorExistsInInitialisers(tensor->id)) {
+    // If we are not going to stream the tensors from the host,
+    // don't add them to the set of additional tensors to be saved
+    // in the onnx modelproto
+    if (!storingIsDisabledForTensor(tensor)) {
+      additionalModelProtoTensors.insert(tensor);
     }
   }
 }
