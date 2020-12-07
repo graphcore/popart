@@ -2867,12 +2867,12 @@ poplar::Executable IrLowering::getExecutable() {
     return std::move(result.value());
   } else {
     try {
-      logging::devicex::warn("Starting Engine compilation");
+      logging::devicex::info("Starting Engine compilation");
 
       auto executable = poplar::compileGraph(
           graph(), progs.progs(), engineOptions, progressLogger);
 
-      logging::devicex::warn("Graph compiled");
+      logging::devicex::info("Graph compiled");
       return executable;
     } catch (const poplar::graph_memory_allocation_error &e) {
       // If the compilations throws an exception due to memory
