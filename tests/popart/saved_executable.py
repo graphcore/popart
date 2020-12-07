@@ -1,7 +1,6 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 import numpy as np
 import popart
-import time
 import pytest
 
 # `import test_util` requires adding to sys.path
@@ -15,11 +14,9 @@ import test_util as tu
 # 1. That engine caching works for two identical sessions
 # 2. That the cached engine isn't loaded for a different session
 @tu.requires_ipu
-def test_simple_load(tmp_path):
+def test_simple_load(tmp_path, capfd):
     def run_session(bps):
         device = tu.create_test_device()
-
-        start = time.clock()
 
         # Create a builder and construct a graph
         builder = popart.Builder()
@@ -64,16 +61,33 @@ def test_simple_load(tmp_path):
         session.run(stepio)
 
         assert np.allclose(anchors[o], data_a + data_b)
-        return time.clock() - start
 
-    first_duration = run_session(2)
-    second_duration = run_session(2)
-    third_duration = run_session(70)
+    # Check the log output to see if an engine was compiled,
+    # or if a cached engine was used.
+    def loaded_saved_executable():
+        _, stderr = capfd.readouterr()
+        startedEngineCompilation = False
+        loadedPoplarExecutable = False
+        for line in stderr.splitlines():
+            if 'Starting Engine compilation' in line:
+                startedEngineCompilation = True
+            elif 'Loading poplar Executable' in line:
+                loadedPoplarExecutable = True
 
-    # There is no direct way to test whether the cached executable was used,
-    # but using the cached graph should be at least 1.5x as fast as not.
-    assert (first_duration / 1.5) > second_duration  # 1.
-    assert (first_duration / 1.5) < third_duration  # 2.
+        assert startedEngineCompilation != loadedPoplarExecutable
+        return not startedEngineCompilation
+
+    popart.getLogger().setLevel('DEBUG')
+    run_session(2)
+    assert loaded_saved_executable() is False
+
+    # Check engine caching works for two identical sessions.
+    run_session(2)
+    assert loaded_saved_executable() is True
+
+    # Check the cached engine isn't loaded for a different session.
+    run_session(70)
+    assert loaded_saved_executable() is False
 
 
 # create 2 models with identical stream names
