@@ -2147,26 +2147,16 @@ unsigned IrLowering::getReplicationFactor() const {
 }
 
 unsigned IrLowering::getGlobalReplicationFactor() const {
-
-  unsigned globalReplicationFactor = getReplicationFactor();
   if (ir().getSessionOptions().enableDistributedReplicatedGraphs) {
-    globalReplicationFactor =
-        static_cast<unsigned>(ir().getSessionOptions().globalReplicationFactor);
+
+    // This comes from outside this popart process because some procses might
+    // have a different local replication factor than this process.
+    return ir().getSessionOptions().globalReplicationFactor;
   }
 
-  else {
-    // A check on user input consistency
-    if (static_cast<unsigned>(
-            ir().getSessionOptions().globalReplicationFactor) > 1) {
-      throw error("enableDistributedReplicatedGraphs is false, but "
-                  "globalReplicationFactor > 1. "
-                  "Either enable global replicated graphs, or set the "
-                  "globalReplicationFactor "
-                  "to 1");
-    }
-  }
-
-  return globalReplicationFactor;
+  // When running without distributed graphs enabled, simply use
+  // getReplicationFactor()
+  return getReplicationFactor();
 }
 
 unsigned IrLowering::getGlobalReplicaOffset() const {
