@@ -160,6 +160,7 @@ file(GLOB patterns_sources src/patterns/*cpp)
 file(GLOB transforms_sources src/transforms/*cpp)
 file(GLOB subgraph_sources src/subgraph/*cpp)
 file(GLOB onnxpasses_sources src/onnxpasses/*cpp)
+file(GLOB nodepatterns_sources src/onnxpasses/nodepatterns/*cpp)
 
 
 # poplar backend op specifc:
@@ -177,7 +178,9 @@ set(sources
   ${patterns_sources}
   ${transforms_sources}
   ${subgraph_sources}
-  ${onnxpasses_sources})
+  ${onnxpasses_sources}
+  ${nodepatterns_sources}
+  )
 
 # concatenate poplar backend sources to the list of files to compile
 set(sources

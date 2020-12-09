@@ -3,11 +3,8 @@
 #define GUARD_NEURALNET_ONNXTOONNX_SUFFIXER_HPP
 
 #include <mutex>
+#include <onnxpasses/onnxnames.hpp>
 #include <string>
-
-namespace ONNX_NAMESPACE {
-class GraphProto;
-}
 
 namespace popart {
 namespace onnxpasses {
@@ -23,7 +20,7 @@ namespace onnxpasses {
 class Suffixer {
 
 public:
-  Suffixer(const ONNX_NAMESPACE::GraphProto &g);
+  Suffixer(const GraphProto &g);
 
   /** Get a unique suffix, and increment the counter */
   std::string getAndIncr();

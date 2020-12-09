@@ -2,6 +2,7 @@
 #ifndef GUARD_NEURALNET_ONNXTOONNX_ONNXTOONNX_HPP
 #define GUARD_NEURALNET_ONNXTOONNX_ONNXTOONNX_HPP
 #include <onnx/onnx_pb.h>
+#include <onnxpasses/onnxnames.hpp>
 
 namespace popart {
 namespace onnxpasses {
@@ -15,29 +16,29 @@ public:
   IOnnxToOnnx();
   virtual ~IOnnxToOnnx();
 
-  virtual void canonnxalize(ONNX_NAMESPACE::GraphProto &) const = 0;
+  /** Inplace modification of a ONNX GraphProto. */
+  virtual void canonnxalize(GraphProto &) const = 0;
 
-  /** Create a copy of \a gIn, modify it with onnxtoonnx, and return the
+  /** Create a copy of \a gIn, modify it with canonnxalize, and return the
    * modified GraphProto */
-  ONNX_NAMESPACE::GraphProto
-  getCanonnxalized(const ONNX_NAMESPACE::GraphProto &gIn) const;
+  GraphProto getCanonnxalized(const GraphProto &gIn) const;
 };
 
 class Canonnxalizer : public IOnnxToOnnx {
 
 public:
   Canonnxalizer();
-  virtual ~Canonnxalizer() override; // = default;
+  virtual ~Canonnxalizer() override;
 
   /**
-   * An ONNX to ONNX Graph transformation which removes or modifies unsupported
-   * Nodes and Attributes.
+   * An ONNX to ONNX GraphProto transformation which removes or modifies
+   * unsupported Nodes and Attributes.
    *
-   * Note that certain transformations/patterns cannot be performed in the ONNX
-   * representation, and these are performed directly on the PopART Ir, at a
-   * later stage.
+   * Note that certain transformations/patterns cannot be performed here, in the
+   * ONNX representation, and these are performed directly on the PopART Ir, at
+   * a later stage.
    * */
-  virtual void canonnxalize(ONNX_NAMESPACE::GraphProto &) const final;
+  virtual void canonnxalize(GraphProto &) const final;
 };
 
 } // namespace onnxpasses

@@ -1,38 +1,48 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <onnxpasses/nodepattern.hpp>
+#include <onnxpasses/onnxnames.hpp>
+#include <onnxpasses/patterntarget.hpp>
 #include <ostream>
 #include <popart/error.hpp>
 
 namespace popart {
 namespace onnxpasses {
 
-using Node = ONNX_NAMESPACE::NodeProto;
-
-bool NodePattern::run(const Node &node) {
+bool NodePattern::run(const NodeProto &node) {
   auto change = go(node);
   nHits_ += change;
   return change;
 }
 
-Node &NodePattern::copy(const Node &toCopy) {
-  auto n = nodes->Add();
-  *n     = toCopy;
-  return *n;
+NodeProto &NodePattern::copy(const NodeProto &toCopy) {
+  auto &n   = add();
+  auto nAdd = &n;
+  *nAdd     = toCopy;
+  return n;
 }
 
-Node &NodePattern::binary(const Node &toCopy,
-                          const std::array<std::string, 2> &ins,
-                          const std::string &out,
-                          const std::string &type) {
-  auto &n = *nodes->Add();
+NodeProto &NodePattern::binary(const NodeProto &toCopy,
+                               const std::array<std::string, 2> &ins,
+                               const std::string &out,
+                               const std::string &type) {
+  auto &n = add();
   n       = toCopy;
   setIO(n, {std::get<0>(ins), std::get<1>(ins)}, {out});
   n.set_op_type(type);
   return n;
 }
 
-Node &NodePattern::copyUnderscorePrefixedAttributes(const Node &src) {
-  auto &n = *nodes->Add();
+NodeProto &NodePattern::add() {
+  auto ptr = target->nodes->Add();
+  return *ptr;
+}
+
+std::string NodePattern::withUniqueSuffix(const std::string &n) const {
+  return n + target->suffixer.getAndIncr();
+}
+
+NodeProto &NodePattern::copyUnderscorePrefixedAttributes(const NodeProto &src) {
+  auto &n = add();
   for (const auto &srcAtt : src.attribute()) {
     if (srcAtt.name().find("__") == 0) {
       auto pn = n.add_attribute();
@@ -42,23 +52,23 @@ Node &NodePattern::copyUnderscorePrefixedAttributes(const Node &src) {
   return n;
 }
 
-Node &NodePattern::unary(const Node &toCopy,
-                         const std::string &in_,
-                         const std::string &out,
-                         const std::string &type) {
-  auto &n = *nodes->Add();
+NodeProto &NodePattern::unary(const NodeProto &toCopy,
+                              const std::string &in_,
+                              const std::string &out,
+                              const std::string &type) {
+  auto &n = add();
   n       = toCopy;
   setIO(n, {in_}, {out});
   n.set_op_type(type);
   return n;
 }
 
-Node &NodePattern::binaryConstScalar(const Node &toCopy,
-                                     const std::string &inName,
-                                     const std::string &outName,
-                                     const std::string &binaryOpName,
-                                     ScalarInIndex inIndex,
-                                     float v) {
+NodeProto &NodePattern::binaryConstScalar(const NodeProto &toCopy,
+                                          const std::string &inName,
+                                          const std::string &outName,
+                                          const std::string &binaryOpName,
+                                          ScalarInIndex inIndex,
+                                          float v) {
   auto &n = unary(toCopy, inName, outName, "BinaryConstScalar");
   n.set_domain("ai.graphcore");
 
@@ -80,9 +90,9 @@ Node &NodePattern::binaryConstScalar(const Node &toCopy,
   return n;
 }
 
-Node &NodePattern::setIO(Node &n,
-                         const std::vector<std::string> &inNames,
-                         const std::vector<std::string> &outNames) {
+NodeProto &NodePattern::setIO(NodeProto &n,
+                              const std::vector<std::string> &inNames,
+                              const std::vector<std::string> &outNames) {
 
   n.clear_input();
   for (auto inName : inNames) {

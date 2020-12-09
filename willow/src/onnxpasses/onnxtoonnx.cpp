@@ -1,8 +1,10 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <memory>
 #include <onnx/onnx_pb.h>
-#include <onnxpasses/nodepatterns.hpp>
+#include <onnxpasses/nodepatterns/conv.hpp>
+#include <onnxpasses/nodepatterns/trig.hpp>
 #include <onnxpasses/onnxtoonnx.hpp>
+#include <onnxpasses/patterntarget.hpp>
 #include <onnxpasses/suffixer.hpp>
 #include <string>
 #include <popart/error.hpp>
@@ -20,24 +22,24 @@ using namespace ONNX_NAMESPACE;
 
 void Canonnxalizer::canonnxalize(GraphProto &g) const {
 
-  Suffixer suffixer(g);
+  auto target = std::make_shared<PatternTarget>(g);
 
   std::vector<std::unique_ptr<NodePattern>> patterns;
-  patterns.push_back(std::make_unique<ConvWithBias>(g, suffixer));
-  patterns.push_back(std::make_unique<MultiConvWithBias>(g, suffixer));
-  patterns.push_back(std::make_unique<Tan>(g, suffixer));
-  patterns.push_back(std::make_unique<Asinh>(g, suffixer));
-  patterns.push_back(std::make_unique<Acosh>(g, suffixer));
-  patterns.push_back(std::make_unique<Atanh>(g, suffixer));
-  patterns.push_back(std::make_unique<Acos>(g, suffixer));
+  patterns.push_back(std::make_unique<ConvWithBias>(target));
+  patterns.push_back(std::make_unique<MultiConvWithBias>(target));
+  patterns.push_back(std::make_unique<Tan>(target));
+  patterns.push_back(std::make_unique<Asinh>(target));
+  patterns.push_back(std::make_unique<Acosh>(target));
+  patterns.push_back(std::make_unique<Atanh>(target));
+  patterns.push_back(std::make_unique<Acos>(target));
 
   /**
    * The ONNX spec ensures that the Nodes appear in topological order.
    *
-   * We iterate theough the Nodes in the original Graph in topological order,
+   * We iterate through the Nodes in the original Graph in topological order,
    * and try matching the NodePatterns to them. If a NodePattern matches, then
-   * we immediately proceed to the next Node. If no NodePatterns match, then a
-   * copy of the Node is inserted in the new list (schedule).
+   * we immediately process it and proceed to the next Node. If no NodePatterns
+   * match, then a copy of the Node is inserted in the new list (schedule).
    * */
   auto prevNodes = g.node();
   g.mutable_node()->Clear();
@@ -50,6 +52,9 @@ void Canonnxalizer::canonnxalize(GraphProto &g) const {
         break;
       }
     }
+
+    // No patterns can transform this Node, so it enters the the Graph
+    // unchanged.
     if (!nodeMatch) {
       auto nxt = g.mutable_node()->Add();
       *nxt     = node;

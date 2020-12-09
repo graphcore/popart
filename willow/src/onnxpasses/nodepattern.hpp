@@ -4,135 +4,143 @@
 
 #include <array>
 #include <onnx/onnx_pb.h>
+#include <onnxpasses/onnxnames.hpp>
 #include <string>
 
 namespace popart {
 namespace onnxpasses {
 
-class Suffixer;
+class PatternTarget;
 
 enum class ScalarInIndex { Zero, One };
+
+/**
+ * An abstract base pass for performing transformations on ONNX Graphs.
+ * */
 class NodePattern {
 
-private:
-  ONNX_NAMESPACE::GraphProto &g;
-  decltype(g.mutable_node()) nodes;
-
 protected:
-  using Node  = ONNX_NAMESPACE::NodeProto;
-  using Graph = ONNX_NAMESPACE::GraphProto;
+  std::string withUniqueSuffix(const std::string &) const;
 
-  Suffixer &suffixer;
+private:
+  // Multiple NodePatterns modify a single GraphProto, and use shared
+  // resources. One such shared resource is a Suffixer object, used for
+  // generating unique Tensor names. These shared resources are encapsulated in
+  // a PatternTarget object:
+  std::shared_ptr<PatternTarget> target;
+
+  // Insert an empty NodeProto into the Graph.
+  NodeProto &add();
 
 public:
-  NodePattern(ONNX_NAMESPACE::GraphProto &g_, Suffixer &suffixer_)
-      : g(g_), nodes(g.mutable_node()), suffixer(suffixer_) {}
+  NodePattern(std::shared_ptr<PatternTarget> t) : target(t) {}
 
   virtual ~NodePattern() = default;
 
   /**
-   * Execute this NodePattern on Node \a node.
-   *
+   * Execute this NodePattern on NodeProto \a node.
    *
    * \return true if this NodePattern matched \a node, and inserted
-   *         replacement(s) into \a nodes. If true is returned, this Patterns
+   *         replacement(s) into \a nodes. If true is returned, this Pattern's
    *         hit count is incremented by 1.
    *
    * This method calls into the virtual method, \a go, which is the method which
-   * NodePatterns which inherit from this base class should implement.
+   * NodePatterns inheriting from this base class should implement.
    * */
-  bool run(const Node &node);
+  bool run(const NodeProto &node);
 
   /** The total number of Nodes which with NodePattern has found an match on. */
   int64_t nHits() const { return nHits_; }
 
 protected:
-  /** Insert a NodeProto with no inputs or outputs, and which has only the
+  /** Insert a NodeProto with no inputs and no outputs, and which has only the
    * attributes of \a src which are prefixed with "__". These attributes are
    * generally used for IPU specific things like pipeline stage, IPU number,
    * etc. */
-  Node &copyUnderscorePrefixedAttributes(const Node &src);
+  NodeProto &copyUnderscorePrefixedAttributes(const NodeProto &src);
 
-  /** Insert a copy of the Node \a toCopy into nodes. This is an exact copy. */
-  Node &copy(const Node &toCopy);
+  /** Insert a copy of the NodeProto \a toCopy into nodes. This is an exact
+   * copy. */
+  NodeProto &copy(const NodeProto &toCopy);
 
   /** Insert a copy of \a toCopy into nodes, with modified inputs, outputs, and
-   * type.
+   * type. Attributes are copied exactly.
    *
-   * \param toCopy The Node to copy (attributes etc will be taken from this).
+   * \param toCopy The NodeProto to copy (attributes etc. will be taken from
+   * this).
    *
-   * \param ins The 2 inputs to the Node, at input positions 0 and 1
+   * \param ins The 2 inputs to the Node, at input indices 0 and 1
    *            respectively.
    *
-   * \param out The output of the Node, at output position 0.
+   * \param out The output of the Node, at output index 0.
    *
    * \param type The operator type of the Node, This string might be "Mul",
    *             "Div", etc
    *
    * */
-  Node &binary(const Node &toCopy,
-               const std::array<std::string, 2> &ins,
-               const std::string &out,
-               const std::string &type);
+  NodeProto &binary(const NodeProto &toCopy,
+                    const std::array<std::string, 2> &ins,
+                    const std::string &out,
+                    const std::string &type);
 
   /** Insert a copy of \a toCopy into nodes, with a modified input, output, and
-   * operator type. */
-  Node &unary(const Node &toCopy,
-              const std::string &in_,
-              const std::string &out,
-              const std::string &type);
+   * operator type. \sa binary */
+  NodeProto &unary(const NodeProto &toCopy,
+                   const std::string &in_,
+                   const std::string &out,
+                   const std::string &type);
 
   /**
    * Set the input and output names of the Node, \a n */
-  Node &setIO(Node &n,
-              const std::vector<std::string> &inNames,
-              const std::vector<std::string> &outNames);
+  NodeProto &setIO(NodeProto &n,
+                   const std::vector<std::string> &inNames,
+                   const std::vector<std::string> &outNames);
 
   /**
-   * Add to a constant scalar.
+   * Add to a constant scalar to the Tensor with nome \a inName.
    * \sa binaryConstScalar
    * */
-  Node &addConstScalar(const Node &toCopy,
-                       const std::string &inName,
-                       const std::string &outName,
-                       ScalarInIndex inIndex,
-                       float v) {
+  NodeProto &addConstScalar(const NodeProto &toCopy,
+                            const std::string &inName,
+                            const std::string &outName,
+                            ScalarInIndex inIndex,
+                            float v) {
     return binaryConstScalar(toCopy, inName, outName, "Add", inIndex, v);
   }
 
   /**
-   * Multiply by a constant scalar.
+   * Multiply the Tensor with name \a inName by a constant scalar.
    * \sa binaryConstScalar
    * */
-  Node &mulConstScalar(const Node &toCopy,
-                       const std::string &inName,
-                       const std::string &outName,
-                       ScalarInIndex inIndex,
-                       float v) {
+  NodeProto &mulConstScalar(const NodeProto &toCopy,
+                            const std::string &inName,
+                            const std::string &outName,
+                            ScalarInIndex inIndex,
+                            float v) {
     return binaryConstScalar(toCopy, inName, outName, "Mul", inIndex, v);
   }
 
   /**
-   * Divide (or be divided by) a constant scalar.
-   * \sa binaryConstScalar
+   * Divide the Tensor with name \a inName a constant scalar, or divide a
+   * constant scalar by this Tensor. \sa binaryConstScalar
    * */
-  Node &divConstScalar(const Node &toCopy,
-                       const std::string &inName,
-                       const std::string &outName,
-                       ScalarInIndex inIndex,
-                       float v) {
+  NodeProto &divConstScalar(const NodeProto &toCopy,
+                            const std::string &inName,
+                            const std::string &outName,
+                            ScalarInIndex inIndex,
+                            float v) {
     return binaryConstScalar(toCopy, inName, outName, "Div", inIndex, v);
   }
 
   /**
-   * Subtract (or be subtracted from) a constant scalar.
-   * \sa binaryConstScalar
+   * Subtract the Tensor with name \a inName from a constant scalar, or subtract
+   * a constant scalar from it. \sa binaryConstScalar
    * */
-  Node &subConstScalar(const Node &toCopy,
-                       const std::string &inName,
-                       const std::string &outName,
-                       ScalarInIndex inIndex,
-                       float v) {
+  NodeProto &subConstScalar(const NodeProto &toCopy,
+                            const std::string &inName,
+                            const std::string &outName,
+                            ScalarInIndex inIndex,
+                            float v) {
     return binaryConstScalar(toCopy, inName, outName, "Sub", inIndex, v);
   }
 
@@ -140,23 +148,23 @@ protected:
    * Raise to the power of a constant scalar (appear as base or scalar).
    * \sa binaryConstScalar
    * */
-  Node &powConstScalar(const Node &toCopy,
-                       const std::string &inName,
-                       const std::string &outName,
-                       ScalarInIndex inIndex,
-                       float v) {
+  NodeProto &powConstScalar(const NodeProto &toCopy,
+                            const std::string &inName,
+                            const std::string &outName,
+                            ScalarInIndex inIndex,
+                            float v) {
     return binaryConstScalar(toCopy, inName, outName, "Pow", inIndex, v);
   }
 
 private:
-  /** Insert a copy of \a toCopy into nodes, but of operator type
+  /** Insert a copy of \a toCopy into nodes, but change the operator type to
    * "BinaryConstScalar".
    *
    * Recall that a BinaryConstScalar operator has 1 input and 1 output, where
    * the output is the result of applting a binary operation (Mul, Sub, etc) to
    * the input, with a scalar value, either on the left or right:
    *
-   * \param toCopy The node to copy attributes, etc from.
+   * \param toCopy The node to copy attributes, etc. from.
    *
    * \param inName The input Tensor
    *
@@ -173,14 +181,14 @@ private:
    * The method is particularly useful if the numerical type of the input Tensor
    * \a inName is not known when the transformation is applied.
    * */
-  Node &binaryConstScalar(const Node &toCopy,
-                          const std::string &inName,
-                          const std::string &outName,
-                          const std::string &binaryOpType,
-                          ScalarInIndex inIndex,
-                          float v);
+  NodeProto &binaryConstScalar(const NodeProto &toCopy,
+                               const std::string &inName,
+                               const std::string &outName,
+                               const std::string &binaryOpType,
+                               ScalarInIndex inIndex,
+                               float v);
 
-  virtual bool go(const Node &node) = 0;
+  virtual bool go(const NodeProto &node) = 0;
   int64_t nHits_{0};
 };
 
