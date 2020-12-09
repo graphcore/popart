@@ -40,6 +40,7 @@
 #include <popart/logging.hpp>
 #include <popart/op.hpp>
 #include <popart/op/call.hpp>
+#include <popart/op/convbase.hpp>
 #include <popart/op/getrandomseed.hpp>
 #include <popart/op/if.hpp>
 #include <popart/op/ipucopy.hpp>
@@ -48,10 +49,12 @@
 #include <popart/op/subgraph.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/patterns/pattern.hpp>
+#include <popart/popx/devicex.hpp>
 #include <popart/popx/exporter.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/callx.hpp>
 #include <popart/popx/op/collectives/collectivesx.hpp>
+#include <popart/popx/op/convbasex.hpp>
 #include <popart/popx/opx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/popx/poplaroptionsx.hpp>
@@ -2235,6 +2238,71 @@ void IrLowering::setStochasticRoundingBehaviour(poplar::Graph &graph) {
   }
 }
 
+void IrLowering::prePlanConvolutions() {
+  // Get a map of conv ops on each poplar graph
+  std::vector<Op *> convOps;
+  for (Op *op : ir().getAllOps()) {
+    if (op->isConvertibleTo<MultiConvBaseOp>()) {
+      convOps.push_back(op);
+    } else if (op->isConvertibleTo<MultiConvWeightsGradBaseOp>()) {
+      convOps.push_back(op);
+    }
+  }
+  std::map<poplar::Graph *, std::vector<Op *>> convGraphsOps;
+  for (Op *convOp : convOps) {
+    poplar::Graph &graph = getOpx(convOp->id)->graph();
+    auto it              = convGraphsOps.find(&graph);
+    if (it == convGraphsOps.end()) {
+      convGraphsOps.emplace(&graph, std::vector<Op *>{convOp});
+    } else {
+      convGraphsOps.at(&graph).push_back(convOp);
+    }
+  }
+
+  if (convGraphsOps.size()) {
+    logging::devicex::debug("Pre-planning convolutions");
+  }
+
+  for (const auto &graph_op : convGraphsOps) {
+    poplar::Graph *graph  = graph_op.first;
+    std::vector<Op *> ops = graph_op.second;
+
+    std::vector<poplin::ConvParams> allConvParams;
+    std::vector<poplar::OptionFlags> allOptionFlags;
+
+    for (Op *op : ops) {
+      if (op->isConvertibleTo<MultiConvBaseOp>()) {
+        auto convOp  = dynamic_cast<MultiConvBaseOp *>(op);
+        auto convOpx = dynamic_cast<MultiConvBaseOpx *>(getOpx(op->id));
+        for (int i = 0; i < convOp->numConvs(); i++) {
+          allConvParams.push_back(
+              getPoplarConvParams(convOp->getParameters(i)));
+          allOptionFlags.push_back(convOpx->getConvOptions(i));
+        }
+      } else if (op->isConvertibleTo<MultiConvWeightsGradBaseOp>()) {
+        auto convOp = dynamic_cast<MultiConvWeightsGradBaseOp *>(op);
+        auto convOpx =
+            dynamic_cast<MultiConvWeightsGradBaseOpx *>(getOpx(op->id));
+        for (int i = 0; i < convOp->numConvs(); i++) {
+          allConvParams.push_back(
+              getPoplarConvParams(convOp->getParameters(i)));
+          allOptionFlags.push_back(convOpx->getConvOptions(i));
+        }
+      }
+    }
+    const poplar::Target target = graph->getTarget();
+    std::set<ConvPlanParams> allConvPlanParams;
+
+    for (int i = 0; i < allConvParams.size(); i++) {
+      ConvPlanParams convPlanParams =
+          std::make_tuple(&target, allConvParams.at(i), &allOptionFlags.at(i));
+      allConvPlanParams.insert(convPlanParams);
+    }
+
+    poplin::preplanConvolutions(*graph, allConvPlanParams, dv_p->convCache);
+  }
+}
+
 void IrLowering::prepareGraph() {
   POPART_TRACEPOINT();
   if (prepareGraphHasBeenCalled_) {
@@ -2372,6 +2440,12 @@ void IrLowering::prepareGraph() {
   for (Op *op : ir().getOpSchedule({}, RequireOptimalSchedule::Yes)) {
     logging::devicex::trace("Creating OPX for {}", op->debugName());
     opxs[op->id] = createOpx(op);
+  }
+
+  // If the model contains convolutions, generate plans for all of them
+  // at the same time in advance of growing the ops. It saves time.
+  if (dv_p->prePlanConvolutions) {
+    prePlanConvolutions();
   }
 
   PriTasks tasks;

@@ -226,6 +226,7 @@ add_popart_cpp_unit_test(op_factory_funcs_test op_factory_funcs_test.cpp)
 
 add_popart_cpp_unit_test(constop_test constop_test.cpp)
 #add_popart_cpp_unit_test(opsetcheck_test opset_check_test.cpp)
+add_popart_cpp_unit_test(preplan_convolutions_test preplan_convolutions_test.cpp VARIANTS "IpuModel")
 
 # Add a test that targets c++11 to check that the popart interface is c++11.
 # If the interface is not c++11, the build should fail.

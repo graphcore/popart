@@ -398,8 +398,6 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe) {
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}});
 
-  auto device = popart::createTestDevice(TestDeviceType::Hw);
-
   auto cacheDir = "./tmp_1" + randomString(10);
   BOOST_CHECK(boost::filesystem::create_directory(cacheDir));
   auto d                      = boost::filesystem::path(cacheDir);
@@ -444,6 +442,8 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe) {
 
   size_t irBundleHash1 = 0;
   {
+    auto device = popart::createTestDevice(TestDeviceType::Hw);
+
     // Engine caching is enabled so this session will store
     // the serialized PopART state and poplar executable
     auto session = popart::TrainingSession::createFromOnnxModel(
@@ -499,6 +499,8 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe) {
   std::vector<float> B_readback2_init(B_info.nelms(), -99.0f);
   size_t irBundleHash2 = 0;
   {
+    auto device = popart::createTestDevice(TestDeviceType::Hw);
+
     // This session will load the PopART state and poplar
     // executable produced by the previous session.
     auto session = popart::TrainingSession::createFromOnnxModel(
@@ -685,8 +687,6 @@ BOOST_AUTO_TEST_CASE(
   auto n                      = boost::filesystem::path(cacheName);
   auto cachePath_             = d / n;
   auto cachePath              = cachePath_.string();
-  auto device                 = createTestDevice(
-      TestDeviceType::Hw, 2 * opts.replicatedGraphCount, 0, SyncPattern::Full);
 
   opts.virtualGraphMode              = VirtualGraphMode::ExecutionPhases;
   opts.explicitRecomputation         = true;
@@ -709,6 +709,11 @@ BOOST_AUTO_TEST_CASE(
   std::vector<float> D_readback1(D_info.nelms(), -1.0f);
   size_t irBundleHash1 = 0;
   {
+    auto device = createTestDevice(TestDeviceType::Hw,
+                                   2 * opts.replicatedGraphCount,
+                                   0,
+                                   SyncPattern::Full);
+
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
         dataFlow,
@@ -754,6 +759,11 @@ BOOST_AUTO_TEST_CASE(
   std::fill(raw_C_out.begin(), raw_C_out.end(), -9.0f);
   size_t irBundleHash2 = 0;
   {
+    auto device = createTestDevice(TestDeviceType::Hw,
+                                   2 * opts.replicatedGraphCount,
+                                   0,
+                                   SyncPattern::Full);
+
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
         dataFlow,
@@ -852,8 +862,6 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_inference) {
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}});
 
-  auto device = popart::createTestDevice(TestDeviceType::Hw);
-
   auto cacheDir = "./tmp_3" + randomString(10);
   BOOST_CHECK(boost::filesystem::create_directory(cacheDir));
   auto d                      = boost::filesystem::path(cacheDir);
@@ -891,6 +899,8 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_inference) {
   std::vector<float> B_readback1(B_info.nelms(), -99.0f);
   size_t irBundleHash1 = 0;
   {
+    auto device = popart::createTestDevice(TestDeviceType::Hw);
+
     // Engine caching is enabled so this session will store
     // the serialized PopART state and poplar executable
     auto session = popart::InferenceSession::createFromOnnxModel(
@@ -934,6 +944,8 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_inference) {
   std::vector<float> B_readback2(B_info.nelms(), -99.0f);
   size_t irBundleHash2 = 0;
   {
+    auto device = popart::createTestDevice(TestDeviceType::Hw);
+
     // This session will load the PopART state and poplar
     // executable produced by the previous session.
     auto session = popart::InferenceSession::createFromOnnxModel(
@@ -1025,8 +1037,6 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_random_seed) {
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}});
 
-  auto device = popart::createTestDevice(TestDeviceType::Hw);
-
   auto cacheDir = "./tmp_4" + randomString(10);
   BOOST_CHECK(boost::filesystem::create_directory(cacheDir));
   auto d                      = boost::filesystem::path(cacheDir);
@@ -1069,6 +1079,8 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_random_seed) {
   size_t irBundleHash1   = 0;
   const uint64_t seedVal = 42;
   {
+    auto device = popart::createTestDevice(TestDeviceType::Hw);
+
     // Engine caching is enabled so this session will store
     // the serialized PopART state and poplar executable
     auto session = popart::TrainingSession::createFromOnnxModel(
@@ -1121,6 +1133,8 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_random_seed) {
   std::vector<float> B_readback2(B_info.nelms(), -99.0f);
   size_t irBundleHash2 = 0;
   {
+    auto device = popart::createTestDevice(TestDeviceType::Hw);
+
     // This session will load the PopART state and poplar
     // executable produced by the previous session.
     auto session = popart::TrainingSession::createFromOnnxModel(
@@ -1220,8 +1234,6 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_reset_host_weights) {
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}});
 
-  auto device = popart::createTestDevice(TestDeviceType::Hw);
-
   auto cacheDir = "./tmp_5" + randomString(10);
   BOOST_CHECK(boost::filesystem::create_directory(cacheDir));
   auto d                      = boost::filesystem::path(cacheDir);
@@ -1262,6 +1274,8 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_reset_host_weights) {
   std::vector<float> B_readback1(B_info.nelms(), -99.0f);
   size_t irBundleHash1 = 0;
   {
+    auto device = popart::createTestDevice(TestDeviceType::Hw);
+
     // Engine caching is enabled so this session will store
     // the serialized PopART state and poplar executable
     auto session = popart::TrainingSession::createFromOnnxModel(
@@ -1307,6 +1321,8 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_reset_host_weights) {
   std::vector<float> B_readback2(B_info.nelms(), -99.0f);
   size_t irBundleHash2 = 0;
   {
+    auto device = popart::createTestDevice(TestDeviceType::Hw);
+
     // This session will load the PopART state and poplar
     // executable produced by the previous session.
     auto session = popart::TrainingSession::createFromOnnxModel(
@@ -1337,6 +1353,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_reset_host_weights) {
 
     session->weightsToHost();
     session->readWeights(weightsRead);
+
     BOOST_CHECK_EQUAL_COLLECTIONS(v_A_init.begin(),
                                   v_A_init.end(),
                                   A_readback2.begin(),
@@ -1396,8 +1413,6 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_checkpoint) {
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}});
 
-  auto device = popart::createTestDevice(TestDeviceType::Hw);
-
   auto cacheDir = "./tmp_6" + randomString(10);
   BOOST_CHECK(boost::filesystem::create_directory(cacheDir));
   auto dir                    = boost::filesystem::path(cacheDir);
@@ -1444,6 +1459,8 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_checkpoint) {
   auto relModelPath_     = dir / modelPath_;
   auto modelPath         = relModelPath_.string();
   {
+    auto device = popart::createTestDevice(TestDeviceType::Hw);
+
     // Engine caching is enabled so this session will store
     // the serialized PopART state and poplar executable
     auto session = popart::TrainingSession::createFromOnnxModel(
@@ -1504,6 +1521,8 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_checkpoint) {
     BOOST_CHECK(input.is_open());
     std::string model((std::istreambuf_iterator<char>(input)),
                       (std::istreambuf_iterator<char>()));
+
+    auto device = popart::createTestDevice(TestDeviceType::Hw);
 
     // This session will load the PopART state and poplar
     // executable produced by the previous session.
