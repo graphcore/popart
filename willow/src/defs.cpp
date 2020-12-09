@@ -31,6 +31,8 @@ void DynamicAddShapeInference(InferenceContext &ctx);
 void MultiConvShapeInference(InferenceContext &ctx);
 void NopShapeInference(InferenceContext &ctx);
 void ShapedDropoutShapeInference(InferenceContext &ctx);
+void Atan2ShapeInference(InferenceContext &ctx);
+void DepthToSpaceShapeInference(InferenceContext &ctx);
 void Expm1ShapeInference(InferenceContext &ctx);
 void Log1pShapeInference(InferenceContext &ctx);
 void ReshapeShapeInference(InferenceContext &ctx);
@@ -348,6 +350,29 @@ void Atan2ShapeInference(InferenceContext &ctx) {
       *ctx.getOutputType(0)->mutable_tensor_type()->mutable_shape());
 }
 
+void DepthToSpaceShapeInference(InferenceContext &ctx) {
+  propagateElemTypeFromInputToOutput(ctx, 0, 0);
+
+  auto blocksize = getAttribute(ctx, "blocksize", 0);
+  if (blocksize <= 0) {
+    fail_shape_inference("Blocksize must be positive");
+  }
+
+  if (hasInputShape(ctx, 0)) {
+    auto &input_shape = getInputShape(ctx, 0);
+    if (input_shape.dim_size() == 4) {
+      updateOutputShape(ctx,
+                        0,
+                        {input_shape.dim(0),
+                         input_shape.dim(1) / (blocksize * blocksize),
+                         input_shape.dim(2) * blocksize,
+                         input_shape.dim(3) * blocksize});
+    } else {
+      fail_shape_inference("Input tensor must be 4-dimensional");
+    }
+  }
+}
+
 void Expm1ShapeInference(InferenceContext &ctx) {
   propagateShapeAndTypeFromFirstInput(ctx);
 }
@@ -377,6 +402,7 @@ extern size_t dbg_count_check_MultiConv_AiGraphcore_ver1;
 extern size_t dbg_count_check_Nop_AiGraphcore_ver1;
 extern size_t dbg_count_check_ShapedDropout_AiGraphcore_ver1;
 extern size_t dbg_count_check_Atan2_AiGraphcore_ver1;
+extern size_t dbg_count_check_DepthToSpace_AiGraphcore_ver1;
 extern size_t dbg_count_check_Expm1_AiGraphcore_ver1;
 extern size_t dbg_count_check_Log1p_AiGraphcore_ver1;
 extern size_t dbg_count_check_Reshape_AiGraphcore_ver1;
@@ -925,6 +951,31 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(Atan2ShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
+    DepthToSpace,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("Rearrange tensor so that the spatial dimensions are scaled and"
+                " the depth diemnsion is reduced.")
+        .Input(0, "input", "Input tensor", "T")
+        .Output(0, "output", "Output tensor", "T")
+        .TypeConstraint("T",
+                        OpSchema::all_tensor_types(),
+                        "Allow all tensor types")
+        .TypeAndShapeInferenceFunction(DepthToSpaceShapeInference)
+        .Attr(
+            "blocksize",
+            "Blocks of [blocksize, blocksize] are moved.",
+            AttributeProto::INT)
+        .Attr(
+            "mode",
+            "DCR (default) for depth-column-row order re-arrangement. Use CRD for column-row-depth order.",
+            AttributeProto::STRING,
+              std::string("DCR")))
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
     Expm1,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1041,6 +1092,10 @@ static bool registerOps() {
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
           AiGraphcore, 1, Atan2)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, DepthToSpace)>());
 
   return true;
 }
