@@ -132,8 +132,10 @@ public:
   // they may be used in custom ops
   poplin::PlanningCache convCache;
   poplin::matmul::PlanningCache matmulCache;
-  // This is always expected to be true. It has only been exposed for testing.
+  // These are always expected to be true. They have only been exposed for
+  // testing.
   bool prePlanConvolutions = true;
+  bool prePlanMatMuls      = true;
 
   // Helper method to get the replication factor based on the user options
   unsigned getReplicationFactor() const;

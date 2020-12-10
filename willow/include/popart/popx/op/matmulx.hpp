@@ -4,6 +4,7 @@
 
 #include <popart/names.hpp>
 #include <popart/popx/opx.hpp>
+#include <popart/popx/poplaroptionsx.hpp>
 
 namespace popart {
 namespace popx {
@@ -22,7 +23,18 @@ public:
   MatMulOp *getMatMulOp() const;
   void grow(poplar::program::Sequence &) const final;
 
+  poplar::Type getOutputType(const poplar::Tensor &output) const;
   static std::vector<std::size_t> onnxShapeToPoplar(const Shape &shape);
+  static PoplarOptions getPoplarOptionsForMatMul(const MatMulBaseOp &op);
+  static void addPartialsType(const MatMulPartialsType &partialsType,
+                              poplar::OptionFlags &opts);
+  static void setMatMulOptions(const MatMulBaseOp &op,
+                               poplar::OptionFlags &opts);
+
+  static std::pair<poplar::Tensor, poplar::Tensor>
+  groupedMatMulInputsFromOpxInputs(MatMulBaseOp &matmul,
+                                   poplar::Tensor lhs,
+                                   poplar::Tensor rhs);
 
 private:
   // The ONNX tensor shape

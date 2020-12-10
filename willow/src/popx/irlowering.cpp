@@ -44,6 +44,7 @@
 #include <popart/op/getrandomseed.hpp>
 #include <popart/op/if.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/op/matmul.hpp>
 #include <popart/op/remote.hpp>
 #include <popart/op/restore.hpp>
 #include <popart/op/subgraph.hpp>
@@ -56,6 +57,7 @@
 #include <popart/popx/op/callx.hpp>
 #include <popart/popx/op/collectives/collectivesx.hpp>
 #include <popart/popx/op/convbasex.hpp>
+#include <popart/popx/op/matmulx.hpp>
 #include <popart/popx/opx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/popx/poplaroptionsx.hpp>
@@ -2371,6 +2373,84 @@ void IrLowering::prePlanConvolutions() {
   }
 }
 
+void IrLowering::prePlanMatMuls() {
+  std::vector<Op *> matMulOps;
+
+  // Get a map of matmul ops on each poplar graph
+  for (Op *op : ir().getAllOps()) {
+    if (op->isConvertibleTo<MatMulOp>()) {
+      matMulOps.push_back(op);
+    }
+  }
+  std::map<poplar::Graph *, std::vector<Op *>> matMulGraphsOps;
+  for (Op *matMulOp : matMulOps) {
+    poplar::Graph &graph = getOpx(matMulOp->id)->graph();
+    auto it              = matMulGraphsOps.find(&graph);
+    if (it == matMulGraphsOps.end()) {
+      matMulGraphsOps.emplace(&graph, std::vector<Op *>{matMulOp});
+    } else {
+      matMulGraphsOps.at(&graph).push_back(matMulOp);
+    }
+  }
+
+  if (matMulGraphsOps.size()) {
+    logging::devicex::debug("Pre-planning matmuls");
+  }
+
+  for (const auto &graph_op : matMulGraphsOps) {
+    poplar::Graph *graph  = graph_op.first;
+    std::vector<Op *> ops = graph_op.second;
+
+    std::vector<poplin::MatMulParams> allMatMulParams;
+    std::vector<poplar::OptionFlags> allOptionFlags;
+
+    for (Op *op : matMulOps) {
+      auto matMulOp  = dynamic_cast<MatMulOp *>(op);
+      auto matMulOpx = dynamic_cast<MatMulOpx *>(getOpx(op->id));
+
+      poplin::MatMulParams matMulParams;
+      // The input tensors to the matmul opx are reshaped before being passed
+      // to the poplibs matmul call. These tensors don't exist at this point,
+      // so we create a dummy graph, and perform these same transformations on
+      // dummy input tensors, in order to get the correct input shapes from
+      // which to generate the MatMulParams.
+      // TODO: T31134 we could avoid this by moving the reshaping of inputs into
+      // the IR.
+      poplar::Graph dummyGraph(graph->getTarget());
+      auto inputType = popType(matMulOp->lhsIn()->info.dataType());
+      auto dummyLhs  = dummyGraph.addVariable(
+          inputType, matMulOp->lhsIn()->info.shape_szt());
+      auto dummyRhs = dummyGraph.addVariable(
+          inputType, matMulOp->rhsIn()->info.shape_szt());
+
+      auto inputs = MatMulOpx::groupedMatMulInputsFromOpxInputs(
+          *matMulOp, dummyLhs, dummyRhs);
+
+      matMulParams.inputType  = inputType;
+      matMulParams.outputType = matMulOpx->getOutputType(inputs.first);
+      matMulParams.aShape     = inputs.first.shape();
+      matMulParams.bShape     = inputs.second.shape();
+      allMatMulParams.push_back(matMulParams);
+
+      auto opts =
+          MatMulOpx::getPoplarOptionsForMatMul(*matMulOp).toOptionFlags();
+      MatMulOpx::setMatMulOptions(*matMulOp, opts);
+      allOptionFlags.push_back(opts);
+    }
+
+    const poplar::Target *target = &(graph->getTarget());
+    std::set<MatMulPlanParams> allMatMulPlanParams;
+
+    for (int i = 0; i < allMatMulParams.size(); i++) {
+      MatMulPlanParams matMulPlanParams =
+          std::make_tuple(target, allMatMulParams.at(i), &allOptionFlags.at(i));
+      allMatMulPlanParams.insert(matMulPlanParams);
+    }
+
+    poplin::preplanMatMuls(allMatMulPlanParams, dv_p->matmulCache);
+  }
+}
+
 void IrLowering::prepareGraph() {
   POPART_TRACEPOINT();
   if (prepareGraphHasBeenCalled_) {
@@ -2510,10 +2590,13 @@ void IrLowering::prepareGraph() {
     opxs[op->id] = createOpx(op);
   }
 
-  // If the model contains convolutions, generate plans for all of them
-  // at the same time in advance of growing the ops. It saves time.
+  // If the model contains convolutions or matmuls, generate plans for all of
+  // them at the same time in advance of growing the ops. It saves time.
   if (dv_p->prePlanConvolutions) {
     prePlanConvolutions();
+  }
+  if (dv_p->prePlanMatMuls) {
+    prePlanMatMuls();
   }
 
   PriTasks tasks;

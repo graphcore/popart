@@ -7,7 +7,6 @@
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/matmulx.hpp>
 #include <popart/popx/opxmanager.hpp>
-#include <popart/popx/poplaroptionsx.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/util.hpp>
@@ -21,8 +20,7 @@
 namespace popart {
 namespace popx {
 
-namespace {
-PoplarOptions getPoplarOptionsForMatMul(MatMulBaseOp &op) {
+PoplarOptions MatMulOpx::getPoplarOptionsForMatMul(const MatMulBaseOp &op) {
   PoplarOptions opts;
   auto &ir = op.getIr();
 
@@ -46,8 +44,8 @@ PoplarOptions getPoplarOptionsForMatMul(MatMulBaseOp &op) {
 
 // Add the partials type to the poplar::OptionFlags that were computed from the
 // poplar::popx::PoplarOptions.
-void addPartialsType(const MatMulPartialsType &partialsType,
-                     poplar::OptionFlags &opts) {
+void MatMulOpx::addPartialsType(const MatMulPartialsType &partialsType,
+                                poplar::OptionFlags &opts) {
   switch (partialsType) {
   case MatMulPartialsType::HALF: {
     opts.set("partialsType", "half");
@@ -62,8 +60,6 @@ void addPartialsType(const MatMulPartialsType &partialsType,
   }
   }
 }
-
-} // namespace
 
 MatMulOpx::MatMulOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<MatMulOp>(op,
@@ -84,7 +80,8 @@ std::vector<std::size_t> MatMulOpx::getOutputShape() const {
   return MatMulOpx::onnxShapeToPoplar(matmul->outInfo(0).shape());
 }
 
-static void setMatMulOptions(MatMulBaseOp &op, poplar::OptionFlags &opts) {
+void MatMulOpx::setMatMulOptions(const MatMulBaseOp &op,
+                                 poplar::OptionFlags &opts) {
   if (auto prop = op.getAvailableMemoryProportion()) {
     opts.set("availableMemoryProportion", std::to_string(*prop));
   }
@@ -352,6 +349,14 @@ static poplar::Tensor matShuffleGroupDims(poplar::Tensor result,
   return result.dimShuffle(permutation);
 }
 
+poplar::Type MatMulOpx::getOutputType(const poplar::Tensor &output) const {
+  auto outputType = output.elementType();
+  if (auto _outputType = getOp<MatMulOp>().getOutputType()) {
+    outputType = popType(*_outputType);
+  }
+  return outputType;
+}
+
 // Expand a matmul into a poplibs grouped matmul, following numpy rules
 //
 // For example,
@@ -425,9 +430,7 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
 
   auto opts = getPoplarOptionsForMatMul(matmul).toOptionFlags();
   setMatMulOptions(matmul, opts);
-  auto outputType = combinedBroadcastTs.first.elementType();
-  if (auto _outputType = matmul.getOutputType())
-    outputType = popType(*_outputType);
+  auto outputType = getOutputType(combinedBroadcastTs.first);
 
   auto outTensor =
       poplin::matMulGrouped(graph(),                    // graph
@@ -638,6 +641,26 @@ bool MatMulOpx::createsEquiv(int ind0, const Opx *opx1, int ind1) const {
 
 std::vector<TensorId> MatMulOpx::mustExistBeforeCreate(InIndex) const {
   return {};
+}
+
+std::pair<poplar::Tensor, poplar::Tensor>
+MatMulOpx::groupedMatMulInputsFromOpxInputs(MatMulBaseOp &matmul,
+                                            poplar::Tensor lhs,
+                                            poplar::Tensor rhs) {
+  auto initReshapedTs = matInitReshape(matmul, lhs, rhs);
+
+  auto matchedRankTs =
+      matMatchRank(initReshapedTs.first, initReshapedTs.second);
+
+  auto dimShuffledTs = matDimshuffle(matchedRankTs.first, matchedRankTs.second);
+
+  auto reshapedGroupsTs =
+      matReshapeGroups(dimShuffledTs.first, dimShuffledTs.second);
+
+  auto combinedBroadcastTs =
+      matCombineBroadcastDims(reshapedGroupsTs.first, reshapedGroupsTs.second);
+
+  return combinedBroadcastTs;
 }
 
 namespace {

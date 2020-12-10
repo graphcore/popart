@@ -66,7 +66,7 @@ public:
 
   OptionalDataType getOutputType() const { return outputType; }
 
-  Phase getPhase() { return phase; }
+  Phase getPhase() const { return phase; }
   void setPhase(Phase p) { phase = p; }
 
   void appendOutlineAttributes(OpSerialiserBase &os) const override;

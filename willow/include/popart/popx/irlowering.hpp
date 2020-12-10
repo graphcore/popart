@@ -275,10 +275,14 @@ private:
   void setFloatingPointBehaviour(poplar::Graph &graph);
   void setStochasticRoundingBehaviour(poplar::Graph &graph);
 
-  using ConvPlanParams = std::tuple<const poplar::Target *,
+  using ConvPlanParams   = std::tuple<const poplar::Target *,
                                     const poplin::ConvParams,
                                     const poplar::OptionFlags *>;
+  using MatMulPlanParams = std::tuple<const poplar::Target *,
+                                      const poplin::MatMulParams,
+                                      const poplar::OptionFlags *>;
   void prePlanConvolutions();
+  void prePlanMatMuls();
 
   std::vector<std::string> cycleCountIds;
   PopTensors tensors_;
