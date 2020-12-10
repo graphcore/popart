@@ -13,14 +13,14 @@ include(EnableCompilerWarnings)
     This is the main target most users should link against.
   
   popart-only
-    Keeps onnx, protobuf, and the poplar libraries private. In general, these
-    may be required by the user to actually interact usefully with the C++ API;
-    but for some users (in particular poptorch) it is unnecessary and pollutes
-    their package.
+    The Poplar SDK libs are still public, but keeps onnx, protobuf private. In
+    general, these may be required by the user to actually interact usefully
+    with the C++ API; but for some users (in particular poptorch) it is
+    unnecessary.
   
   popart-internal
     Has everything internally used as public. This is for internal targets
-    only, like tests, so does not get installed (no config file).
+    only, like tests, so does not get installed (not in the config file).
   
   Look at the variables defined below for the exact definitions of what is
   public and private at each visibility level.
@@ -120,11 +120,6 @@ set(POPART_PRIVATE_DEPS_LIBS
 set(POPART_ONLY_DEPS_INCLUDES
 )
 set(POPART_ONLY_DEPS_LIBS
-)
-
-set(POPART_DEPS_INCLUDES
-)
-set(POPART_DEPS_LIBS
     poplar
     poplin
     popnn
@@ -133,6 +128,11 @@ set(POPART_DEPS_LIBS
     poputil
     libpvti
     gcl
+)
+
+set(POPART_DEPS_INCLUDES
+)
+set(POPART_DEPS_LIBS
     onnx
     onnx_proto
 )
@@ -226,7 +226,7 @@ set_target_properties(popart-only PROPERTIES
     # libpopart.so, not libpopart-only.so.
     OUTPUT_NAME popart
 
-    # Need position indepenent code to make dyanamic library with static libs.
+    # Need position indepenent code to make dynamic library with static libs.
     POSITION_INDEPENDENT_CODE ON
 )
 target_compile_features(popart-only PUBLIC cxx_std_14)
@@ -251,33 +251,30 @@ if (PoplarRunner_FOUND)
   target_compile_definitions(popart-only PUBLIC POPLAR_RUNNER)
 endif()
 
+# These includes are private to popart-only, as the external user does not
+# need them, but they are needed by all internal targets.
+set(popart_common_includes
+    # Include headers in src privately (not part of public API).
+    ${PROJECT_SOURCE_DIR}/willow/src
+)
+
 target_include_directories(popart-only
   PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/willow/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 
-    # For generated headers like version.hpp.in
+    # For generated headers like version.hpp.in.
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
   PRIVATE
-    # Include headers in src privately (not part of public API).
-    ${PROJECT_SOURCE_DIR}/willow/src
+    ${popart_common_includes}
 )
-
-# Popart headers do not fully hide poplar headers. With our current lack of
-# public-private separation, trying to fix places we leak poplar and preventing
-# active development from re-leaking, will be very flakey.
-#
-# Thus, make the poplar headers public again in popart-only. Users of
-# popart-only will still have to link poplar themselves, and hope they have a
-# compatible version.
-target_include_directories(popart-only PUBLIC $<BUILD_INTERFACE:${POPLAR_INCLUDE_DIR}>)
 
 # Link dependencies, exposed at varying levels of visibility through interface
 # targets. See [comment-willow-targets].
 
 target_link_libraries(popart-only
   PUBLIC
-    "$<BUILD_INTERFACE:${POPART_ONLY_DEPS_LIBS}>"
+    ${POPART_ONLY_DEPS_LIBS}
   PRIVATE
     ${POPART_PRIVATE_DEPS_LIBS}
     ${POPART_DEPS_LIBS}
@@ -285,7 +282,7 @@ target_link_libraries(popart-only
 )
 target_include_directories(popart-only SYSTEM
   PUBLIC
-    "$<BUILD_INTERFACE:${POPART_ONLY_DEPS_INCLUDES}>"
+    ${POPART_ONLY_DEPS_INCLUDES}
 )
 target_include_directories(popart-only SYSTEM
   PRIVATE
@@ -295,15 +292,14 @@ target_include_directories(popart-only SYSTEM
 )
 
 add_library(popart INTERFACE)
-target_link_libraries(popart INTERFACE popart-only "$<BUILD_INTERFACE:${POPART_DEPS_LIBS}>")
-target_include_directories(popart SYSTEM INTERFACE "$<BUILD_INTERFACE:${POPART_DEPS_INCLUDES}>")
+target_link_libraries(popart INTERFACE popart-only ${POPART_DEPS_LIBS})
+target_include_directories(popart SYSTEM INTERFACE ${POPART_DEPS_INCLUDES})
 
 add_library(popart-internal INTERFACE)
-target_link_libraries(popart-internal INTERFACE popart "$<BUILD_INTERFACE:${POPART_INTERNAL_DEPS_LIBS}>")
-target_include_directories(popart-internal SYSTEM INTERFACE "$<BUILD_INTERFACE:${POPART_INTERNAL_DEPS_INCLUDES}>")
+target_link_libraries(popart-internal INTERFACE popart ${POPART_INTERNAL_DEPS_LIBS})
+target_include_directories(popart-internal SYSTEM INTERFACE ${POPART_INTERNAL_DEPS_INCLUDES})
 
-target_include_directories(popart-internal INTERFACE "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/willow/src>")
-
+target_include_directories(popart-internal INTERFACE ${popart_common_includes})
 target_compile_definitions(popart-internal INTERFACE ${popart_common_definitions})
 
 ################################################################################
@@ -315,22 +311,31 @@ target_compile_definitions(popart-internal INTERFACE ${popart_common_definitions
 set(POPART_CMAKE_INSTALL_CONFIGDIR "${CMAKE_INSTALL_LIBDIR}/cmake/popart"
     CACHE PATH 
     "Install directory for Popart's CMake config files. Defaults to \
-    ${CMAKE_INSTALL_LIBDIR}/cmake/popart, where CMAKE_INSTALL_LIBDIR is \
-    generated by the CMake package GNUInstallDirs."
+CMAKE_INSTALL_LIBDIR/cmake/popart, where CMAKE_INSTALL_LIBDIR is \
+generated by the CMake package GNUInstallDirs."
 )
 
-install(TARGETS popart-only popart
+# We install two separate components for popart and popart-only.
+install(TARGETS popart-only
+    EXPORT popart-only-targets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+install(TARGETS popart
     EXPORT popart-targets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
-install(DIRECTORY "include/popart"
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+install(EXPORT popart-only-targets
+    FILE popart--popart-only-targets.cmake
+    DESTINATION ${POPART_CMAKE_INSTALL_CONFIGDIR}
+)
+install(EXPORT popart-targets
+    FILE popart--popart-targets.cmake
+    DESTINATION ${POPART_CMAKE_INSTALL_CONFIGDIR}
 )
 
-install(EXPORT popart-targets
-    FILE popart-targets.cmake
-    DESTINATION ${POPART_CMAKE_INSTALL_CONFIGDIR}
+install(DIRECTORY "include/popart"
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
 include(CMakePackageConfigHelpers)
@@ -354,6 +359,12 @@ write_basic_package_version_file(
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/popart-config.cmake"
               "${CMAKE_CURRENT_BINARY_DIR}/popart-config-version.cmake"
         DESTINATION ${POPART_CMAKE_INSTALL_CONFIGDIR}
+)
+
+# For the user's convenience, we install our own Findgcl module, as gcl do not
+# provide their own config file.
+install(FILES "${PROJECT_SOURCE_DIR}/cmake/Modules/Findgcl.cmake"
+        DESTINATION ${POPART_CMAKE_INSTALL_CONFIGDIR}/Modules
 )
 
 # See T6089: to use python3 where strictly required, and

@@ -3,11 +3,36 @@
 #
 # This is the CMake config module for popart.
 #
-# We export the following targets:
+# ------------------------------------------------------------------------------
+#
+# We provide the following components, which export a target of the same name:
 #
 #   popart      : Popart and all its dependencies.
-#   popart-only : Popart and Poplar only, for when you are not including popart
-#                 headers that use any of the other dependencies.
+#   popart-only : Popart and Poplar SDK libs only, for when you are not
+#                 including popart headers that use any of the other
+#                 dependencies.
+#
+# The default component is popart. We support specifying optional components.
+#
+# ------------------------------------------------------------------------------
+#
+# We require the user provides the following dependencies:
+#
+#   poplar
+#   poplibs
+#   libpvti
+#   gcl
+#
+# If the popart component is requested, we require these additional
+# dependencies:
+#
+#   Protobuf
+#   ONNX
+#
+# You can point CMake to them in any of the usual ways that `find_package`
+# supports, for example by setting the `<pkg>_DIR` variable.
+#
+# ------------------------------------------------------------------------------
 #
 # We set the following variables:
 #
@@ -19,66 +44,116 @@
 #                             installed.
 #   popart_LIB              : Path to the popart library.
 #
-#   POPART_INCLUDES         : List of include directories for popart and all 
-#                             it's dependencies that must be provided.
-#   POPART_LIBRARIES        : List of libraries for popart and all it's 
-#                             dependencies that must be provided.
-#
 #   popart_FOUND            : Truthy if Popart and all required components were
 #                             found.
 #
-# We require the user provides the following dependencies:
+# ------------------------------------------------------------------------------
 #
-#   poplar
-#
-# You can point CMake to them in any of the usual ways that `find_package`
-# supports, for example by setting the `<pkg>_DIR` variable.
-#
-# Example Usage:
+# Example Usages:
 #
 #   find_package(popart CONFIG REQUIRED)
-#   target_link_libraries(mytgt PRIVATE popart-only)
+#   target_link_libraries(mytgt PRIVATE popart)
+#
+# or:
+#
+#   find_package(popart CONFIG COMPONENTS popart-only REQUIRED)
+#   target_link_libraries(mytgt PUBLIC popart-only)
+#
+# etc.
 #
 
-message(WARNING "popart-config.cmake: The `popart` target is not yet fully \
-supported. You may encounter errors with popart's dependencies.")
-
 @PACKAGE_INIT@
+
 set(POPART_VERSION @POPART_VERSION@)
 
 set_and_check(popart_CMAKE_CONFIG_DIR "@PACKAGE_POPART_CMAKE_INSTALL_CONFIGDIR@")
 
+#--- find components and their dependencies
+
 include(CMakeFindDependencyMacro)
-find_dependency(poplar REQUIRED)
 
-if(NOT TARGET popart AND NOT TARGET popart-only)
-  include("${CMAKE_CURRENT_LIST_DIR}/popart-targets.cmake")
+# CMake have intended it such that you must call find_dependency, which is a
+# macro. However, the dependency's config file will then overwrite any variables
+# from yours. With our own variables, we are already careful of such things,
+# because our user will include us in their scope; but for standard variables
+# CMake set for us (that we very much use), the dependency's config file will
+# overwrite them!
+#
+# I keep this as a macro to maintain the same semantics as find_dependency as 
+# much as possible.
+macro(_safe_find_dependency)
+  set(_old_PACKAGE_PREFIX_DIR "${PACKAGE_PREFIX_DIR}")
+  find_dependency(${ARGV})
+  set(PACKAGE_PREFIX_DIR "${_old_PACKAGE_PREFIX_DIR}")
+endmacro()
+
+# Find modules we provide for the user's convenience were installed here.
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/Modules")
+
+# Default to the popart component.
+list(LENGTH popart_FIND_COMPONENTS _num_comps)
+if(_num_comps EQUAL 0)
+  list(APPEND popart_FIND_COMPONENTS popart)
+endif()
+unset(_num_comps)
+
+set(_components_to_find ${popart_FIND_COMPONENTS})
+
+#------ find popart-only
+
+# We always find popart-only no matter what components were specified, as it is
+# the actual library the other interface targets depend on.
+
+# Find popart-only and its dependencies.
+_safe_find_dependency(poplar)
+_safe_find_dependency(poplibs)
+_safe_find_dependency(libpvti)
+_safe_find_dependency(gcl)
+include("${CMAKE_CURRENT_LIST_DIR}/popart--popart-only-targets.cmake")
+
+# Remove popart-only from the list of oustanding components to find.
+if(popart-only IN_LIST _components_to_find)
+  list(REMOVE_ITEM _components_to_find popart-only)
 endif()
 
-# Popart does not ship Poplar, but it's public headers expose it. This means the
-# user must provide Poplar. We do not want to add poplar to the interface link
-# libraries, only the include directories. This mirrors what is done in Popart's
-# own build system.
-if(TARGET poplar)
-  message(STATUS "Found imported target 'poplar'")
+#------ end of find popart-only
 
-  target_include_directories(popart-only SYSTEM INTERFACE
-      $<TARGET_PROPERTY:poplar,INTERFACE_INCLUDE_DIRECTORIES>
-      $<TARGET_PROPERTY:poplar,INTERFACE_SYSTEM_INCLUDE_DIRECTORIES>
-  )
-  target_include_directories(popart SYSTEM INTERFACE
-      $<TARGET_PROPERTY:poplar,INTERFACE_INCLUDE_DIRECTORIES>
-      $<TARGET_PROPERTY:poplar,INTERFACE_SYSTEM_INCLUDE_DIRECTORIES>
-  )
-elseif(DEFINED POPLAR_INCLUDES)
-  message(STATUS Found "POPLAR_INCLUDES ${POPLAR_INCLUDES}")
+#------ find popart
 
-  target_include_directories(popart-only SYSTEM INTERFACE "${POPLAR_INCLUDES}")
-  target_include_directories(popart SYSTEM INTERFACE "${POPLAR_INCLUDES}")
-else()
-  message(FATAL_ERROR "The package `poplar` was found but no `poplar` target \
-or `POPLAR_INCLUDES` variable was created.")
+if(popart IN_LIST _components_to_find)
+  # If popart is optional, the dependencies of the popart component are
+  # not REQUIRED whether the component was specified REQUIRED or not.
+  #
+  # If popart is REQUIRED, only if the popart component is a REQUIRED
+  # component, are its dependencies REQUIRED too.
+  if(popart_FIND_REQUIRED)
+    set(_required ${popart_FIND_REQUIRED_popart})
+  endif()
+
+  _safe_find_dependency(Protobuf 3.6 ${_required})
+  _safe_find_dependency(ONNX 1.6 ${_required})
+
+  unset(_required)
+
+  include("${CMAKE_CURRENT_LIST_DIR}/popart--popart-targets.cmake")
+
+  list(REMOVE_ITEM _components_to_find popart)
 endif()
+
+#------ end of find popart
+
+# Fail if unsupported component requested.
+foreach(_comp ${_components_to_find})
+  set(popart_FOUND False)
+  set(popart_NOT_FOUND_MESSAGE "Unsupported component: ${_comp}")
+  break()
+endforeach()
+
+unset(_components_to_find)
+unset(_old_PACKAGE_PREFIX_DIR)
+unset(_safe_find_dependency)
+
+#--- end of find components and their dependencies
 
 set_and_check(popart_INCLUDE_DIR "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@")
 set_and_check(popart_LIB_DIR     "@PACKAGE_CMAKE_INSTALL_LIBDIR@")
@@ -86,11 +161,6 @@ set_and_check(popart_LIB_DIR     "@PACKAGE_CMAKE_INSTALL_LIBDIR@")
 # According to the docs of the LOCATION property, this is well supported on
 # imported targets (it is not on regular targets).
 get_target_property(popart_LIB popart-only LOCATION)
-
-# These are currently not set properly (don't contain the dependencies), but it
-# will not be changed yet to avoid making a breaking change.
-set(POPART_INCLUDES "${popart_INCLUDE_DIR}")
-set(POPART_LIBRARIES "${popart_LIB_DIR}")
 
 # Will set popart_FOUND
 check_required_components(popart)
