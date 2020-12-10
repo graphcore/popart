@@ -136,3 +136,62 @@ def test_reshape_neg_one_and_zeros_grad(op_tester):
 
     op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
+
+
+def test_reshape_graphcore(op_tester):
+    d1 = np.random.rand(2, 4, 3).astype(np.float32)
+    d2a = [4, 6]
+    d2 = np.array(d2a).astype(np.int64)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiGraphcore.reshape(i1, shape=d2a)
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        out = np.reshape(d1, d2)
+        return [out]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_reshape_neg_graphcore(op_tester):
+    d1 = np.random.rand(2, 4, 3).astype(np.float32)
+    d2a = [-1, 6]
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiGraphcore.reshape(i1, shape=d2a)
+        builder.addOutputTensor(o)
+        return [o]
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        op_tester.run(init_builder, None, 'infer')
+
+    assert ('Attribute shape has negative dimension.') in str(e_info.value)
+
+
+def test_reshape_graphcore_grad(op_tester):
+    d1 = np.random.rand(2, 4, 3).astype(np.float32)
+    d2a = [4, 6]
+    d2b = (4, 6)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiGraphcore.reshape(i1, shape=d2a)
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + o,
+        ]
+
+    def reference(ref_data):
+        tx = torch.tensor(d1, requires_grad=True)
+        out = torch.reshape(tx, d2b)
+        d__o = ref_data.getOutputTensorGrad(0)
+        out.backward(torch.tensor(d__o))
+        return [out, tx.grad, None]
+
+    op_tester.run(init_builder, reference, 'train')

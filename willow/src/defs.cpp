@@ -33,6 +33,7 @@ void NopShapeInference(InferenceContext &ctx);
 void ShapedDropoutShapeInference(InferenceContext &ctx);
 void Expm1ShapeInference(InferenceContext &ctx);
 void Log1pShapeInference(InferenceContext &ctx);
+void ReshapeShapeInference(InferenceContext &ctx);
 
 void SubsampleShapeInference(InferenceContext &ctx) {
   propagateElemTypeFromInputToOutput(ctx, 0, 0);
@@ -355,6 +356,10 @@ void Log1pShapeInference(InferenceContext &ctx) {
   propagateShapeAndTypeFromFirstInput(ctx);
 }
 
+void ReshapeShapeInference(InferenceContext &ctx) {
+  propagateShapeFromAttributeToOutput(ctx, "shape", 0);
+}
+
 extern size_t dbg_count_check_GroupNormalization_AiGraphcore_ver1;
 extern size_t dbg_count_check_Subsample_AiGraphcore_ver1;
 extern size_t dbg_count_check_PrintTensor_AiGraphcore_ver1;
@@ -374,6 +379,7 @@ extern size_t dbg_count_check_ShapedDropout_AiGraphcore_ver1;
 extern size_t dbg_count_check_Atan2_AiGraphcore_ver1;
 extern size_t dbg_count_check_Expm1_AiGraphcore_ver1;
 extern size_t dbg_count_check_Log1p_AiGraphcore_ver1;
+extern size_t dbg_count_check_Reshape_AiGraphcore_ver1;
 
 static const char groupnormalizationDoc[] =
     "GroupNormalization applies Group Normalization over a mini-batch of "
@@ -947,6 +953,32 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
                         {"tensor(float)", "tensor(float16)"},
                         "Constrain input and output types to float tensors.")
         .TypeAndShapeInferenceFunction(Log1pShapeInference))
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    Reshape,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("Reshape the input tensor.")
+        .Input(0, "data", "Input tensor", "T")
+        .Output(0, "reshaped", "Output tensor", "T")
+        .TypeConstraint("T",
+                        {"tensor(uint8)",
+                         "tensor(uint16)",
+                         "tensor(uint32)",
+                         "tensor(uint64)",
+                         "tensor(int8)",
+                         "tensor(int16)",
+                         "tensor(int32)",
+                         "tensor(int64)",
+                         "tensor(float16)",
+                         "tensor(float)",
+                         "tensor(bool)"},
+                        "Constrain input and output types to float tensors.")
+        .Attr("shape", "New shape.", AttributeProto::INTS, true)
+        .TypeAndShapeInferenceFunction(ReshapeShapeInference))
 
 static bool registerOps() {
   auto &d = ONNX_NAMESPACE::OpSchemaRegistry::DomainToVersionRange::Instance();

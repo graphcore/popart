@@ -521,6 +521,21 @@ public:
    */
   TensorId log1p(const std::vector<TensorId> &args,
                  const std::string &name = {});
+
+  /**
+   * Add reshape operation to the model.
+   * Reshape the input tensor.
+   * This reshape takes the shape to reshape into as an attribute
+   * instead of a tensor input as the onnx reshape op.
+   * \param arg Single input Tensor.
+   * \param shape The shape of the output Tensor. The output Tensor
+   * must contain the same number of elements as the input Tensor.
+   * \param name Optional identifier for operation
+   * \return The name of the result tensor
+   */
+  TensorId reshape(const TensorId &arg,
+                   const Attributes::Ints &shape,
+                   const std::string &name = {});
 };
 
 /**

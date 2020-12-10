@@ -857,6 +857,18 @@ TensorId AiGraphcoreOpset1::log1p(const std::vector<TensorId> &args,
       .at(0);
 }
 
+TensorId AiGraphcoreOpset1::reshape(const TensorId &arg,
+                                    const Attributes::Ints &shape,
+                                    const std::string &name) {
+  return impl
+      ->op(Onnx::AiGraphcore::OpSet1::Reshape,
+           getOpsetVersion(),
+           {arg},
+           {{"shape", shape}},
+           name)
+      .at(0);
+}
+
 std::vector<TensorId>
 Builder::customOp(const OperatorIdentifier &opid,
                   int opsetVersion,

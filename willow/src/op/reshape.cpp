@@ -86,8 +86,9 @@ std::unique_ptr<Op> ReshapeOp::clone() const {
 // This will be used by ReshapeGradOp
 ReshapeBaseOp::ReshapeBaseOp(const OperatorIdentifier &_opid,
                              const std::vector<int64_t> &ots,
-                             const Op::Settings &settings_)
-    : Op(_opid, settings_), outShape(ots) {
+                             const Op::Settings &settings_,
+                             bool handleZero_)
+    : Op(_opid, settings_), outShape(ots), handleZero(handleZero_) {
   finaliseShape();
 }
 
@@ -99,6 +100,19 @@ void ReshapeBaseOp::setOutShape(const Shape &value) {
 const Shape &ReshapeBaseOp::getOutShape() const { return outShape; }
 
 void ReshapeBaseOp::finaliseShape() {
+  auto bad_dim = std::find_if(
+      outShape.begin(), outShape.end(), [&](auto i) { return i < -1; });
+  if (bad_dim != outShape.end()) {
+    throw error(
+        "Dimension, {}, of new shape for Reshape cannot be smaller than -1.",
+        *bad_dim);
+  }
+
+  // Do not inferr, do not replace zeros.
+  if (!handleZero) {
+    return;
+  }
+
   // replace zeros with size of input dimension
   for (int i = 0; i < outShape.size(); i++) {
     if (outShape[i] == 0) {
@@ -112,6 +126,9 @@ void ReshapeBaseOp::finaliseShape() {
     auto in_size  = inInfo(getInIndex()).nelms();
     auto out_size = -std::accumulate(
         outShape.begin(), outShape.end(), 1, std::multiplies<int64_t>());
+    if (in_size % out_size != 0) {
+      throw error("Incompatible inferred dimension, not whole number.");
+    }
     *infer_dim = in_size / out_size;
 
     // search the remaining elements of outShape for another -1
@@ -284,6 +301,19 @@ std::vector<int64_t> getAxesAttrib(const OpCreatorInfo &info) {
   return info.attributes.getAttribute<Attributes::Ints>("axes", {});
 }
 
+std::vector<int64_t> getShapeAttrib(const OpCreatorInfo &info) {
+  return info.attributes.getAttribute<Attributes::Ints>("shape", {});
+}
+
+void checkNegativeShape(const std::vector<int64_t> &newShape) {
+  auto bad_dim = std::find_if(
+      newShape.begin(), newShape.end(), [&](auto i) { return i < 0; });
+  if (bad_dim != newShape.end()) {
+    throw error("Attribute shape has negative dimension. "
+                "Not supported.");
+  }
+}
+
 // UnSqueeze //
 static OpDefinition
     unsqueezeOpDef({OpDefinition::Inputs({{"data", T}}),
@@ -351,6 +381,22 @@ static OpCreator<ReshapeOp>
                       {Onnx::Operators::Flatten_11, flattenOpDef}},
                      flattenOpFactory,
                      true);
+
+// Custom reshape with 1 input and shape attrib.
+static OpDefinition
+    reshape1OpDef({OpDefinition::Inputs({{"data", T}}),
+                   OpDefinition::Outputs({{"reshaped", T}}),
+                   OpDefinition::Attributes({{"shape", {"*"}}})});
+
+static OpCreator<ReshapeOp> reshape1OpCreator(
+    OpDefinitions({{Onnx::CustomOperators::Reshape_1, reshape1OpDef}}),
+    [](const OpCreatorInfo &info) {
+      const auto outShape = getShapeAttrib(info);
+      checkNegativeShape(outShape);
+      return std::make_unique<ReshapeOp>(
+          Onnx::Operators::Reshape_5, outShape, info.settings, false);
+    },
+    true);
 
 } // namespace
 

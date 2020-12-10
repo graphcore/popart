@@ -310,6 +310,7 @@ const static AiGraphcoreOpIdV1
     ReplicatedReduceScatter("ReplicatedReduceScatter");
 const static AiGraphcoreOpIdV1 ResetAccumulation("ResetAccl");
 const static AiGraphcoreOpIdV1 ReshapeInplace("ReshapeInplace");
+const static AiGraphcoreOpIdV1 Reshape_1("Reshape", 1, 1);
 const static AiGraphcoreOpIdV1 Resize("Resize");
 const static AiGraphcoreOpIdV1 Restore("Restore");
 const static AiGraphcoreOpIdV1 RestoreInplace("RestoreInplace");
@@ -373,6 +374,7 @@ const static OperatorIdentifier Nop          = CustomOperators::Nop_1;
 const static OperatorIdentifier PrintTensor  = CustomOperators::PrintTensor_1;
 const static OperatorIdentifier ReplicatedAllReduce =
     CustomOperators::ReplicatedAllReduce;
+const static OperatorIdentifier Reshape   = CustomOperators::Reshape_1;
 const static OperatorIdentifier Round     = CustomOperators::Round_1;
 const static OperatorIdentifier Scale     = CustomOperators::Scale_1;
 const static OperatorIdentifier ScaledAdd = CustomOperators::ScaledAdd;

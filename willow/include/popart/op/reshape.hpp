@@ -16,10 +16,13 @@ class ReshapeBaseOp : public Op {
 public:
   ReshapeBaseOp(const OperatorIdentifier &_opid,
                 const Shape &,
-                const Op::Settings &settings_);
+                const Op::Settings &settings_,
+                bool handleZero = true);
 
-  ReshapeBaseOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
-      : Op(_opid, settings_) {}
+  ReshapeBaseOp(const OperatorIdentifier &_opid,
+                const Op::Settings &settings_,
+                bool handleZero_ = true)
+      : Op(_opid, settings_), handleZero(handleZero_) {}
 
   void setup() final;
 
@@ -46,17 +49,25 @@ protected:
   Shape outShape;
 
   void finaliseShape();
+
+private:
+  // handleZero is to support custom reshape op where zero new shape
+  // dimensions are not replaced by input shape dimensions.
+  bool handleZero;
 };
 
 class ReshapeOp : public ReshapeBaseOp {
 public:
   ReshapeOp(const OperatorIdentifier &_opid,
             const Shape &s,
-            const Op::Settings &settings_)
-      : ReshapeBaseOp(_opid, s, settings_) {}
+            const Op::Settings &settings_,
+            bool handleZero = true)
+      : ReshapeBaseOp(_opid, s, settings_, handleZero) {}
 
-  ReshapeOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
-      : ReshapeBaseOp(_opid, settings_) {}
+  ReshapeOp(const OperatorIdentifier &_opid,
+            const Op::Settings &settings_,
+            bool handleZero = true)
+      : ReshapeBaseOp(_opid, settings_, handleZero) {}
 
   std::unique_ptr<Op> clone() const override;
 
