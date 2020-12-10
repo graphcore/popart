@@ -110,6 +110,8 @@ public:
 
   bool canShard() const final { return false; }
 
+  bool hasSideEffect() const override { return numStores() > 0; }
+
 private:
   std::vector<RemoteBufferId> remotebufferIds;
   std::vector<std::pair<OptionalVGraphId, TileSet>> vgidAndTiles;

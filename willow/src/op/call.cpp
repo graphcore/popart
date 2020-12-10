@@ -41,6 +41,7 @@ std::vector<const Graph *> CallOp::getCalledGraphs() const {
   return {&getCalledGraph()};
 }
 
+void CallOp::setCalledGraph(Graph &graph) { callee = graph; }
 
 GraphId CallOp::getBackwardsGraphId() const {
   return GraphId(logging::format("{}_bwd", callee.get().id));

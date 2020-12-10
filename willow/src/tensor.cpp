@@ -109,10 +109,13 @@ VGraphIdAndTileSet Tensor::getVirtualGraphIdAndTileSetUnsafe() const {
 
   // Graph input, derive from call site
   if (isGraphInput()) {
-    Op *callSite = getGraph().getCallSiteOps().front();
-    return {callSite->hasVirtualGraphId() ? callSite->getVirtualGraphId()
-                                          : unusedVGraphId,
-            callSite->settings.tileSet};
+    auto callSites = getGraph().getCallSiteOps();
+    if (callSites.size()) {
+      Op *callSite = callSites.front();
+      return {callSite->hasVirtualGraphId() ? callSite->getVirtualGraphId()
+                                            : unusedVGraphId,
+              callSite->settings.tileSet};
+    }
   }
 
   // No virtual graph Id determined

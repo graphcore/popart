@@ -17,6 +17,7 @@
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 
+#include <algorithm>
 #include <queue>
 
 #include <boost/icl/interval.hpp>
@@ -24,6 +25,18 @@
 
 namespace popart {
 namespace liveness {
+
+namespace {
+
+std::pair<int64_t, int64_t> bisect(const std::vector<int64_t> &indices,
+                                   const int64_t &index) {
+  auto lowerIt = std::lower_bound(indices.begin(), indices.end(), index);
+  auto upperIt = std::upper_bound(indices.begin(), indices.end(), index);
+  return {std::distance(indices.begin(), lowerIt),
+          std::distance(indices.begin(), upperIt)};
+}
+
+} // namespace
 
 // Right-open intervals of tensor liveness
 typedef boost::icl::interval_set<int64_t> BoostInterval;
@@ -53,6 +66,21 @@ void Intervals::operator+=(const Intervals &other) {
       *static_cast<BoostInterval *>(other.intervals.get());
 }
 
+bool Intervals::operator==(const Intervals &other) const {
+  return boost::icl::is_element_equal(
+      *static_cast<BoostInterval *>(intervals.get()),
+      *static_cast<BoostInterval *>(other.intervals.get()));
+}
+
+bool Intervals::operator!=(const Intervals &other) const {
+  return !(*this == other);
+}
+
+std::ostream &operator<<(std::ostream &os, const Intervals &intervals) {
+  os << *static_cast<BoostInterval *>(intervals.intervals.get());
+  return os;
+}
+
 void Intervals::insert(int64_t s, int64_t e) {
   intervals->insert(IntervalImpl(s, e));
 }
@@ -76,21 +104,9 @@ void AliasZeroCopy::apply() {
   proposedAliases = irAliases;
   activeAliases   = irAliases;
 
-  // Disable superfluous CopyModified, back to front
-  for (int64_t i = analyzer->getOpScheduleSize() - 1; i >= 0; --i) {
-    auto &node = analyzer->getOpScheduleAt(i);
-    if (node.getStatus() == OpStatus::CopyModified) {
-      auto tensorIds = node.getTensorIds();
-      Tensor *t      = ir->getTensor(tensorIds.first);
-      auto liveness  = getCandidateLivenessIntervals(t, false);
-      Intervals probe;
-      probe.insert(i + 1, i + 2);
-      // If the modified tensor is not required to be live after CopyModified,
-      // then the CopyModified is not required either
-      requiredCopyModified[{node.getOp(), node.getIndex()}] |=
-          doOverlap(liveness, probe);
-    }
-  }
+  disabledNodes.resize(analyzer->getOpScheduleSize(), false);
+
+  disableDeadCodeNodes();
 
   std::map<const Graph *, int64_t> beforeGraphMap;
 
@@ -126,36 +142,38 @@ void AliasZeroCopy::apply() {
       }
 
       auto &callSiteOps = analyzer->getGraphCallSites(graph0->id);
-      auto num_inputs   = graph0->getInputIds().size();
-      auto num_outputs  = graph0->getOutputIds().size();
-      for (InIndex in = 0; in < num_inputs; ++in) {
-        auto input   = graph0->getTensors().get(graph0->getInputId(in));
-        double bytes = input->info.nbytes();
-        // Prioritize aliasing candidates by graph priority, bytes copied and
-        // number of call sites
-        graphIOPriorityMap.insert(
-            {{i,
-              bytes / (1024.0 * 1024.0) * callSiteOps.size(),
-              in,
-              -1,
-              graph0->id},
-             callSiteOps});
+      if (!callSiteOps.empty()) {
+        auto num_inputs  = graph0->getInputIds().size();
+        auto num_outputs = graph0->getOutputIds().size();
+        for (InIndex in = 0; in < num_inputs; ++in) {
+          auto input   = graph0->getTensors().get(graph0->getInputId(in));
+          double bytes = input->info.nbytes();
+          // Prioritize aliasing candidates by graph priority, bytes copied and
+          // number of call sites
+          graphIOPriorityMap.insert(
+              {{i,
+                bytes / (1024.0 * 1024.0) * callSiteOps.size(),
+                in,
+                -1,
+                graph0->id},
+               callSiteOps});
+        }
+        for (OutIndex out = 0; out < num_outputs; ++out) {
+          auto output  = graph0->getTensors().get(graph0->getOutputId(out));
+          double bytes = output->info.nbytes();
+          // Prioritize aliasing candidates by graph priority, bytes copied and
+          // number of call sites
+          graphIOPriorityMap.insert(
+              {{i,
+                bytes / (1024.0 * 1024.0) * callSiteOps.size(),
+                -1,
+                out,
+                graph0->id},
+               callSiteOps});
+        }
+        // Next graph has lower priority for being processed
+        --i;
       }
-      for (OutIndex out = 0; out < num_outputs; ++out) {
-        auto output  = graph0->getTensors().get(graph0->getOutputId(out));
-        double bytes = output->info.nbytes();
-        // Prioritize aliasing candidates by graph priority, bytes copied and
-        // number of call sites
-        graphIOPriorityMap.insert(
-            {{i,
-              bytes / (1024.0 * 1024.0) * callSiteOps.size(),
-              -1,
-              out,
-              graph0->id},
-             callSiteOps});
-      }
-      // Next graph has lower priority for being processed
-      --i;
     }
   }
 
@@ -265,71 +283,171 @@ void AliasZeroCopy::apply() {
   logging::devicex::debug("[AliasZeroCopy] Done.");
 }
 
+void AliasZeroCopy::disableDeadCodeNodes() {
+  bool changed = true;
+  // Disable superfluous nodes, back to front
+
+  auto disableNode = [this, &changed](int64_t index) {
+    if (!disabledNodes[index]) {
+      changed              = true;
+      disabledNodes[index] = true;
+      logging::devicex::trace("[AliasZeroCopy] Disabling node {}",
+                              analyzer->getOpScheduleAt(index));
+    }
+  };
+
+  int64_t pass = 0;
+  while (changed) {
+    logging::devicex::debug("[AliasZeroCopy] disableDeadCodeNodes pass {}",
+                            pass);
+    ++pass;
+    changed = false;
+    for (int64_t i = analyzer->getOpScheduleSize() - 1; i >= 0; --i) {
+      auto &node = analyzer->getOpScheduleAt(i);
+      // Probing: Does the tensor need to be live after the producer?
+      Intervals probe;
+      probe.insert(i, i + 1);
+
+      switch (node.getStatus()) {
+      case OpStatus::CopyInput: {
+        auto tensorIds = node.getTensorIds();
+        Tensor *t      = ir->getTensor(tensorIds.second);
+        auto liveness =
+            getCandidateLivenessIntervals(t, ProducerInterval::Ignore, false);
+
+        // If the input tensor is not required to be live after CopyInput,
+        // then the CopyInput is not required either
+        if (!doOverlap(liveness, probe)) {
+          disableNode(i);
+        }
+        break;
+      }
+      case OpStatus::CopyLoopCarried: {
+        auto tensorIds = node.getTensorIds();
+        // First: output of iteration #0
+        // Second: input to iteration #1 <- produced
+        Tensor *t = ir->getTensor(tensorIds.second);
+        auto liveness =
+            getCandidateLivenessIntervals(t, ProducerInterval::Ignore, false);
+
+        // If the input tensor is not required to be live after CopyLoopCarried,
+        // then the CopyLoopCarried is not required either
+        if (!doOverlap(liveness, probe)) {
+          disableNode(i);
+        }
+        break;
+      }
+      case OpStatus::CopyModified: {
+        auto tensorIds = node.getTensorIds();
+        Tensor *t      = ir->getTensor(tensorIds.first);
+        auto liveness =
+            getCandidateLivenessIntervals(t, ProducerInterval::Ignore, false);
+
+        // If the modified tensor is not required to be live after CopyModified,
+        // then the CopyModified is not required either
+        if (!doOverlap(liveness, probe)) {
+          disableNode(i);
+        }
+        break;
+      }
+      case OpStatus::CopyOutput: {
+        auto tensorIds = node.getTensorIds();
+        Tensor *t      = ir->getTensor(tensorIds.first);
+        auto liveness =
+            getCandidateLivenessIntervals(t, ProducerInterval::Ignore, false);
+
+        // If the input tensor is not required to be live after CopyInput,
+        // then the CopyInput is not required either
+        if (!doOverlap(liveness, probe)) {
+          disableNode(i);
+        }
+        break;
+      }
+      case OpStatus::Exit:
+      case OpStatus::Normal: {
+        if (!node.getOp()->hasSideEffect()) {
+          // Side-effect free node
+          bool disable = true;
+          for (auto &out : node.getOp()->output->tensorMap()) {
+            auto liveness = getCandidateLivenessIntervals(
+                out.second, ProducerInterval::Ignore, false);
+            // If none of the outputs are required to be live after this node
+            // ...
+            disable &= !doOverlap(liveness, probe);
+          }
+          for (auto &in : node.getOp()->input->tensorMap()) {
+            auto liveness = getCandidateLivenessIntervals(
+                in.second, ProducerInterval::Ignore, false);
+            // ... and none of the modified inputs either ...
+            if (node.getOp()->modifiesIndex(in.first)) {
+              disable &= !doOverlap(liveness, probe);
+            }
+          }
+          // ... then the Exit/Normal node is not required either
+          if (disable) {
+            disableNode(i);
+          }
+        }
+        break;
+      }
+      case OpStatus::Enter: {
+        // Enter coupled to Exit
+        int64_t j     = analyzer->getCallSiteLinksAt(i).front();
+        auto exitNode = analyzer->getOpScheduleAt(j);
+        if (exitNode.getStatus() != OpStatus::Exit) {
+          throw error("[AliasZeroCopy] findFront: OpStatus {} unexpected.",
+                      static_cast<int>(exitNode.getStatus()));
+        }
+        if (disabledNodes[j]) {
+          // If exit is disabled -> disable enter
+          disableNode(i);
+        }
+        break;
+      }
+      default:
+        break;
+      }
+    }
+  }
+
+  // Check if a node is required across all call sites
+  for (int64_t i = 0; i < analyzer->getOpScheduleSize(); ++i) {
+    auto &node = analyzer->getOpScheduleAt(i);
+    requiredNodes[{node.getOp(), node.getStatus(), node.getIndex()}] |=
+        !disabledNodes[i];
+  }
+}
+
 int64_t AliasZeroCopy::findStart(Tensor *consumedTensor,
                                  int64_t scheduleIndex) const {
+  auto &tensorIndices = analyzer->getScheduleIndices(consumedTensor);
 
-  // Producer: Find producer OP on schedule
-  auto index = scheduleIndex;
+  auto i     = bisect(tensorIndices, scheduleIndex).first;
+  auto index = tensorIndices.at(
+      std::min(i, static_cast<int64_t>(tensorIndices.size() - 1)));
+
   // Walk back on schedule until the closest previous
   // tensor producer or consumer is found
   // Note that the node/op can exist multiple times in the schedule,
   // if the node/op is located in a subgraph
   auto opScheduleEntry = &analyzer->getOpScheduleAt(index);
-  do {
-    --index;
-    if (index < 0) {
-      return 0;
+  while (!(opScheduleEntry->isProducerOf(consumedTensor) ||
+           opScheduleEntry->isConsumerOf(consumedTensor)) ||
+         disabledNodes[index] || index == scheduleIndex) {
+    --i;
+    if (i < 0) {
+      return -1;
     }
+    index           = tensorIndices.at(i);
     opScheduleEntry = &analyzer->getOpScheduleAt(index);
-  } while (!opScheduleEntry->isProducerOf(consumedTensor) &&
-           !opScheduleEntry->isConsumerOf(consumedTensor));
-
-  // Verify this is not an enter or exit entry
-  auto status = analyzer->getOpScheduleAt(index).getStatus();
-
-  if (status == OpStatus::Exit) {
-    throw error("[AliasZeroCopy] findStart: OpStatus {} unexpected.",
-                static_cast<int>(status));
-    // break;
   }
 
   return index;
 }
 
-int64_t AliasZeroCopy::findFront(Tensor *consumedTensor,
-                                 int64_t scheduleIndex) const {
-
-  auto opScheduleEntry = &analyzer->getOpScheduleAt(scheduleIndex);
-  Op *consumer         = opScheduleEntry->getOp();
-  OpStatus status      = opScheduleEntry->getStatus();
-  auto inIndices       = consumer->input->indices(consumedTensor);
-
-  if (status != OpStatus::Normal && status != OpStatus::Enter) {
-    throw error("[AliasZeroCopy] findFront: OpStatus {} unexpected.",
-                static_cast<int>(status));
-  }
-
-  if (status == OpStatus::Normal) {
-    // Normal Op
-    return scheduleIndex;
-  } else {
-    // Subgraphing Op
-    // Walk forward to find OpStatus::CopyInput for that input
-    auto index = scheduleIndex;
-    do {
-      ++index;
-      if (index >= analyzer->getOpScheduleSize()) {
-        throw error("[AliasZeroCopy] Schedule index above schedule size ({})",
-                    analyzer->getOpScheduleSize());
-      }
-      opScheduleEntry = &analyzer->getOpScheduleAt(index);
-    } while (opScheduleEntry->getStatus() != OpStatus::CopyInput ||
-             opScheduleEntry->getIndex() != inIndices.front());
-    return index;
-  }
-}
-
-Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
+Intervals
+AliasZeroCopy::getLivenessIntervals(Tensor *t,
+                                    ProducerInterval producerInterval) {
   logging::trace("[AliasZeroCopy] Getting interval of tensor {}", t->id);
   Intervals intervals;
   auto insertInterval = [&](int64_t s, int64_t e) {
@@ -349,7 +467,7 @@ Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
     intervals.insert(s, e);
   };
 
-  std::map<int64_t, std::pair<Op *, std::vector<InIndex>>> consumers;
+  auto &tensorScheduleIndices = analyzer->getScheduleIndices(t);
 
   if ((!t->hasProducer() && t->getGraph().id == ir->getMainGraph().id) ||
       t->getTensorTypeInfo()->type() == TensorType::Const) {
@@ -385,216 +503,39 @@ Intervals AliasZeroCopy::getLivenessIntervals(Tensor *t) {
   }
 
   for (Op *c : t->consumers.getOps()) {
-    for (auto &scheduleIndex : analyzer->getScheduleIndices(c)) {
-      consumers.insert({scheduleIndex, {c, c->input->indices(t)}});
-      if (!(c->settings.executionContext == ExecutionContext::Normal ||
-            c->settings.executionContext == ExecutionContext::Subgraph)) {
-        // Being conservative and keeping tensors that are touched outside the
-        // training loop always live
-        insertInterval(0, analyzer->getOpScheduleSize());
-        return intervals;
-      }
+    if (!(c->settings.executionContext == ExecutionContext::Normal ||
+          c->settings.executionContext == ExecutionContext::Subgraph)) {
+      // Being conservative and keeping tensors that are touched outside the
+      // training loop always live
+      insertInterval(0, analyzer->getOpScheduleSize());
+      return intervals;
     }
   }
 
-  // Handle producers
-  if (t->hasProducer()) {
-    Op *p = t->getProducer();
-    for (auto &scheduleIndex : analyzer->getScheduleIndices(p)) {
-      auto opScheduleEntry = &analyzer->getOpScheduleAt(scheduleIndex);
-      if (opScheduleEntry->getStatus() == OpStatus::Normal) {
-        insertInterval(scheduleIndex, scheduleIndex + 1);
-      } else if (opScheduleEntry->getStatus() == OpStatus::Enter) {
-        auto index = scheduleIndex;
-        do {
-          ++index;
-          opScheduleEntry = &analyzer->getOpScheduleAt(index);
-        } while (opScheduleEntry->getStatus() != OpStatus::CopyOutput ||
-                 opScheduleEntry->getTensorIds().first != t->id);
-        insertInterval(index, index + 1);
-      } else {
-        throw error("[AliasZeroCopy] OpStatus {} unexpected.",
-                    static_cast<int>(opScheduleEntry->getStatus()));
-      }
+  for (auto scheduleIndex : tensorScheduleIndices) {
+    auto opScheduleEntry = &analyzer->getOpScheduleAt(scheduleIndex);
+
+    // Handle producers, graph inputs
+    if (producerInterval != ProducerInterval::Ignore &&
+        !disabledNodes[scheduleIndex] && opScheduleEntry->isProducerOf(t)) {
+      insertInterval(scheduleIndex, scheduleIndex + 1);
     }
-  }
 
-  // Handle graph outputs
-  auto graphOutputIds = t->getGraph().getOutputIds();
-  for (OutIndex sgOutIndex = 0; sgOutIndex < graphOutputIds.size();
-       ++sgOutIndex) {
-    TensorId outId = graphOutputIds[sgOutIndex];
-    if (t->id == outId) {
-      auto &callSiteOps = analyzer->getGraphCallSites(t->getGraph().id);
-      for (Op *callSiteOp : callSiteOps) {
-        auto &scheduleIndices = analyzer->getScheduleIndices(callSiteOp);
-        for (int64_t scheduleIndex : scheduleIndices) {
-          // TODO: This code is over-conservative for multiple subgraphs
-          // (e.g. if operation).
-
-          // Last exit entry
-          auto callSiteLinks   = analyzer->getCallSiteLinksAt(scheduleIndex);
-          int64_t index        = callSiteLinks.back();
-          auto opScheduleEntry = &analyzer->getOpScheduleAt(index);
-
-          auto copyOutputIndex = index;
-
-          OutIndex opOutIndex = sgOutIndex;
-          if (SubgraphOp *sgOp = dynamic_cast<SubgraphOp *>(callSiteOp)) {
-            opOutIndex = sgOp->subgraphOutToOpOutIndex(sgOutIndex);
-          }
-          bool isOpOutput = callSiteOp->output->hasIndex(opOutIndex);
-
-          // If this graph output is also an Op output: Find CopyOutput entry,
-          // else, use the Exit entry.
-          if (isOpOutput) {
-            // Walk backwards to find OpStatus::CopyOutput for that output
-            do {
-              --copyOutputIndex;
-              if (copyOutputIndex < 0)
-                throw error("[AliasZeroCopy] Schedule index below 0 (no copy "
-                            "output) for {}",
-                            outId);
-              opScheduleEntry = &analyzer->getOpScheduleAt(copyOutputIndex);
-            } while (opScheduleEntry->getStatus() != OpStatus::CopyOutput ||
-                     opScheduleEntry->getIndex() != opOutIndex);
-          }
-
-          // Find producer index
-          int64_t startIndex = findStart(t, copyOutputIndex);
-          insertInterval(startIndex, copyOutputIndex);
-        }
+    // Handle consumers, graph outputs, loop carried dependencies, copy modified
+    if (!disabledNodes[scheduleIndex] && opScheduleEntry->isConsumerOf(t)) {
+      int64_t startIndex = findStart(t, scheduleIndex);
+      if (startIndex > -1 && !opScheduleEntry->getOp()->overwritesTensor(t)) {
+        insertInterval(startIndex, scheduleIndex);
       }
-    }
-  }
-
-  // Handle modified graph inputs & implicit loop inputs, which both need to
-  // stay untampered and live until the CopyModified or Exit node of the
-  // subgraphing Op
-  auto graphInputIds = t->getGraph().getInputIds();
-  for (InIndex sgInIndex = 0; sgInIndex < graphInputIds.size(); ++sgInIndex) {
-    TensorId inId = graphInputIds[sgInIndex];
-    if (t->id == inId) {
-      auto &callSiteOps = analyzer->getGraphCallSites(t->getGraph().id);
-      for (Op *callSiteOp : callSiteOps) {
-        InIndex opInIndex = sgInIndex;
-
-        if (SubgraphOp *sgOp = dynamic_cast<SubgraphOp *>(callSiteOp)) {
-          opInIndex = sgOp->subgraphInToOpInIndex(sgInIndex);
-        }
-
-        auto &scheduleIndices = analyzer->getScheduleIndices(callSiteOp);
-        for (int64_t scheduleIndex : scheduleIndices) {
-          // TODO: This code is over-conservative for multiple subgraphs
-          // (e.g. if operation).
-
-          // Last exit entry
-          auto callSiteLinks   = analyzer->getCallSiteLinksAt(scheduleIndex);
-          int64_t index        = callSiteLinks.back();
-          auto opScheduleEntry = &analyzer->getOpScheduleAt(index);
-          auto &callStack      = opScheduleEntry->getCallStack();
-          auto callStackSize   = callStack.size();
-
-          auto regions = dynamic_cast<SubgraphOp *>(opScheduleEntry->getOp())
-                             ->modifies(opInIndex);
-
-          bool considerCopyModified =
-              std::any_of(regions.begin(),
-                          regions.end(),
-                          [](view::Region &r) { return !r.isEmpty(); }) &&
-              copyModifiedRequired(callSiteOp, opInIndex);
-
-          // Copy modified (live between CopyInput and CopyModified)
-          if (considerCopyModified) {
-            auto copyModifiedIndex = index;
-
-            // Walk backwards to find OpStatus::CopyModified for that input
-            do {
-              --copyModifiedIndex;
-              if (copyModifiedIndex < 0)
-                throw error("[AliasZeroCopy] Schedule index below 0 (no copy "
-                            "modified)");
-              opScheduleEntry = &analyzer->getOpScheduleAt(copyModifiedIndex);
-            } while (opScheduleEntry->getStatus() != OpStatus::CopyModified ||
-                     opScheduleEntry->getIndex() != opInIndex);
-
-            // Move index into the subgraph
-            do {
-              --index;
-              if (index < 0)
-                throw error("[AliasZeroCopy] Schedule index below 0 (no copy "
-                            "input)");
-              opScheduleEntry = &analyzer->getOpScheduleAt(index);
-            } while (opScheduleEntry->getCallStack().size() <= callStackSize);
-
-            auto startIndex = findStart(t, index);
-
-            insertInterval(startIndex, copyModifiedIndex);
-          }
-
-          // Implicit loop input (live between CopyInput and Exit)
-          if (t->isImplicitLoopInput()) {
-            auto exitIndex = index;
-
-            // Move index into the subgraph
-            do {
-              --index;
-              if (index < 0)
-                throw error("[AliasZeroCopy] Schedule index below 0 (no copy "
-                            "input)");
-              opScheduleEntry = &analyzer->getOpScheduleAt(index);
-            } while (opScheduleEntry->getCallStack().size() <= callStackSize);
-
-            auto startIndex = findStart(t, index);
-
-            insertInterval(startIndex, exitIndex);
+      if (opScheduleEntry->getOp()->input->contains(t)) {
+        auto inIndices = opScheduleEntry->getOp()->input->indices(t);
+        for (auto inIndex : inIndices) {
+          if (producerInterval != ProducerInterval::Ignore &&
+              opScheduleEntry->getOp()->modifiesIndex(inIndex)) {
+            insertInterval(scheduleIndex, scheduleIndex + 1);
           }
         }
       }
-    }
-  }
-
-  // Handle consumers
-  int64_t last_overwrite = 0;
-  for (auto consumer : consumers) {
-    // Establish the consumed tensor
-    Tensor *consumedTensor =
-        consumer.second.first->inTensor(consumer.second.second.front());
-
-    Op *op = consumer.second.first;
-
-    // Handle subgraphing op input & modified liveness
-    auto callEnterIndex  = consumer.first;
-    auto opScheduleEntry = &analyzer->getOpScheduleAt(callEnterIndex);
-    if (opScheduleEntry->getStatus() == OpStatus::Enter) {
-      auto callExitIndex = analyzer->getCallSiteLinksAt(callEnterIndex).back();
-      auto scheduleIndex = callEnterIndex + 1;
-      while (scheduleIndex < callExitIndex) {
-        auto opScheduleEntry = &analyzer->getOpScheduleAt(scheduleIndex);
-        if (opScheduleEntry->getStatus() == OpStatus::CopyInput &&
-            opScheduleEntry->getTensorIds().first == consumedTensor->id) {
-          // Ensure tensor is live before CopyInput
-          insertInterval(scheduleIndex - 1, scheduleIndex);
-        }
-        if (opScheduleEntry->getStatus() == OpStatus::CopyModified &&
-            opScheduleEntry->getTensorIds().first == consumedTensor->id &&
-            copyModifiedRequired(opScheduleEntry->getOp(),
-                                 opScheduleEntry->getIndex())) {
-          // Ensure tensor is live after CopyModified
-          insertInterval(scheduleIndex, scheduleIndex + 1);
-        }
-        ++scheduleIndex;
-      }
-    }
-
-    int64_t front = findFront(consumedTensor, consumer.first);
-    int64_t start = std::max(last_overwrite, findStart(consumedTensor, front));
-
-    if (op->overwritesTensor(consumedTensor)) {
-      // Overwrite: The consumer will overwrite the tensor without reading it
-      last_overwrite = front;
-    } else {
-      insertInterval(start, front);
     }
   }
 
@@ -694,7 +635,7 @@ void AliasZeroCopy::insertAlias(Tensor *ta, Tensor *tb) {
     postIRAliases[ta].insert(tb);
     postIRAliases[tb].insert(ta);
   } else {
-    printLivenessIntervals({ta, tb});
+    printLivenessIntervals({ta, tb}, ProducerInterval::Enforce);
   }
 }
 
@@ -751,8 +692,10 @@ void AliasZeroCopy::logPostIRAliases() {
   }
 }
 
-Intervals AliasZeroCopy::getCandidateLivenessIntervals(Tensor *startTensor,
-                                                       bool cached) {
+Intervals
+AliasZeroCopy::getCandidateLivenessIntervals(Tensor *startTensor,
+                                             ProducerInterval producerInterval,
+                                             bool cached) {
   std::set<Tensor *, PTensorCmp> aliasedTensors;
   aliasedTensors.insert(startTensor);
 
@@ -762,16 +705,18 @@ Intervals AliasZeroCopy::getCandidateLivenessIntervals(Tensor *startTensor,
 
   for (Tensor *t : aliasedTensors) {
     if (cached) {
-      auto it = candidateLivenessIntervalsMap.find(t);
+      auto it = candidateLivenessIntervalsMap.find({t, producerInterval});
       if (it == candidateLivenessIntervalsMap.end()) {
-        Intervals candidateIntervals = getLivenessIntervals(t);
-        candidateLivenessIntervalsMap.insert({t, candidateIntervals});
+        Intervals candidateIntervals =
+            getLivenessIntervals(t, producerInterval);
+        candidateLivenessIntervalsMap.insert(
+            {{t, producerInterval}, candidateIntervals});
         combinedIntervals += candidateIntervals;
       } else {
         combinedIntervals += it->second;
       }
     } else {
-      Intervals candidateIntervals = getLivenessIntervals(t);
+      Intervals candidateIntervals = getLivenessIntervals(t, producerInterval);
       combinedIntervals += candidateIntervals;
     }
   }
@@ -1033,7 +978,8 @@ Tensor *AliasZeroCopy::findAliasableTensor(Tensor *t) {
 }
 
 void AliasZeroCopy::printLivenessIntervals(
-    std::set<Tensor *, PTensorCmp> tensors) {
+    std::set<Tensor *, PTensorCmp> tensors,
+    ProducerInterval producerInterval) {
   if (logging::shouldLog(logging::Module::devicex, logging::Level::Trace)) {
     std::stringstream ss;
 
@@ -1046,8 +992,9 @@ void AliasZeroCopy::printLivenessIntervals(
     ss << std::endl;
 
     for (Tensor *t0 : tensors) {
-      auto livenessIntervals = getCandidateLivenessIntervals(t0);
-      size_t j               = 0;
+      auto livenessIntervals =
+          getCandidateLivenessIntervals(t0, producerInterval);
+      size_t j = 0;
       for (IntervalsImpl::iterator it = livenessIntervals.intervals->begin();
            it != livenessIntervals.intervals->end();
            it++) {
@@ -1083,9 +1030,34 @@ bool AliasZeroCopy::doOverlap(const Intervals &aIntervals,
   return !((aIntervals & bIntervals).empty());
 }
 
+bool AliasZeroCopy::nodeRequired(Op *op, OpStatus status, int index) const {
+  auto it = requiredNodes.find({op, status, index});
+  return it == requiredNodes.end() || it->second;
+}
+
+bool AliasZeroCopy::opRequired(Op *op) const {
+  auto ite = requiredNodes.find({op, OpStatus::Enter, 0});
+  auto itn = requiredNodes.find({op, OpStatus::Normal, 0});
+
+  return (ite == requiredNodes.end() && itn == requiredNodes.end()) ||
+         (ite != requiredNodes.end() && ite->second) ||
+         (itn != requiredNodes.end() && itn->second);
+}
+
+bool AliasZeroCopy::copyInputRequired(Op *op, InIndex inIndex) const {
+  return nodeRequired(op, OpStatus::CopyInput, inIndex);
+}
+
+bool AliasZeroCopy::copyLoopCarriedRequired(Op *op, OutIndex outIndex) const {
+  return nodeRequired(op, OpStatus::CopyLoopCarried, outIndex);
+}
+
 bool AliasZeroCopy::copyModifiedRequired(Op *op, InIndex inIndex) const {
-  auto it = requiredCopyModified.find({op, inIndex});
-  return it == requiredCopyModified.end() || it->second;
+  return nodeRequired(op, OpStatus::CopyModified, inIndex);
+}
+
+bool AliasZeroCopy::copyOutputRequired(Op *op, OutIndex outIndex) const {
+  return nodeRequired(op, OpStatus::CopyOutput, outIndex);
 }
 
 } // namespace liveness

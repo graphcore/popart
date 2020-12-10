@@ -193,6 +193,7 @@ endfunction()
 
 add_popart_cpp_unit_test(accumulateouterfragmentparallelizertest accumulateouterfragmentparallelizer_test.cpp VARIANTS "IpuModel")
 add_popart_cpp_unit_test(aliaszerocopytest aliaszerocopy_test.cpp)
+add_popart_cpp_unit_test(aliaszerocopytest1 aliaszerocopy_test1.cpp)
 add_popart_cpp_unit_test(allocatortest allocator_test.cpp)
 add_popart_cpp_unit_test(buildertest builder_test.cpp)
 add_popart_cpp_unit_test(builderpartialstest builder_partials_test.cpp)

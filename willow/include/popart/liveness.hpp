@@ -18,6 +18,8 @@ enum class OpStatus {
   // Subgraph entering
   Enter,
   CopyInput,
+  // Subgraph loop carried
+  CopyLoopCarried,
   // Subgraph exiting
   CopyOutput,
   CopyModified,
@@ -26,6 +28,8 @@ enum class OpStatus {
 
 class LivenessNode {
 public:
+  LivenessNode(const OpStatus status_, int index_);
+
   LivenessNode(std::vector<Op *> callStack_,
                const OpStatus status_,
                int index_);
@@ -42,6 +46,9 @@ public:
   // Input or output index of the Op associated with this node
   int getIndex() const { return index; }
 
+  // All tensor ids touched by this node
+  std::set<TensorId> usedTensorIds() const;
+
   // Pair of matching tensors inside/outside of the subgraph associated with the
   // index returned by getIndex on CopyOutput, CopyInput and CopyModified nodes
   std::pair<TensorId, TensorId> getTensorIds() const;
@@ -57,6 +64,9 @@ private:
   OpStatus status;
   int index;
 };
+
+std::ostream &operator<<(std::ostream &os, const OpStatus &);
+std::ostream &operator<<(std::ostream &os, const LivenessNode &);
 
 // Build global schedule for liveness and call site analysis:
 //
@@ -100,6 +110,16 @@ public:
     return opScheduleMap.at(op);
   }
 
+  // Return all global schedule positions where a tensor is used
+  const std::vector<int64_t> &getScheduleIndices(Tensor *t) const {
+    return tensorScheduleMap.at(t->id);
+  }
+
+  // Return all global schedule positions where a tensor is used
+  const std::vector<int64_t> &getScheduleIndices(TensorId tid) const {
+    return tensorScheduleMap.at(tid);
+  }
+
   // Given the position of an OpStatus::Enter (e.g. 6)
   // return the matching OpStatus::Exit positions (e.g. 9, 12)
   const std::vector<int64_t> &getCallSiteLinksAt(int64_t scheduleIndex) const {
@@ -125,6 +145,9 @@ private:
 
   // Map of all schedule positions where an Op is called
   std::map<Op *, std::vector<int64_t>> opScheduleMap;
+
+  // Map of all tensors and their usage location
+  std::map<TensorId, std::vector<int64_t>> tensorScheduleMap;
 
   // Map of all OpStatus::Enter positions to the matching OpStatus::Exit
   // positions

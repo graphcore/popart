@@ -67,6 +67,7 @@ public:
   std::vector<TensorId> implicitInputTensors() const;
 
   Graph &getCalledGraph() const override;
+  void setCalledGraph(Graph &) override;
 
   int getTripCountValue() const { return tripCountValue; }
   void setTripCountValue(int value) { tripCountValue = value; }

@@ -147,6 +147,8 @@ void LoopOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 
 Graph &LoopOp::getCalledGraph() const { return callee.get(); }
 
+void LoopOp::setCalledGraph(Graph &graph) { callee = graph; }
+
 int LoopOp::numExplicitInputs() const {
   int numOutputs = getCalledGraph().getOutputIds().size() - 1;
   // User defined explicit inputs + trip count and termination condition

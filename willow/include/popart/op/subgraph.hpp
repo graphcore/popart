@@ -30,11 +30,14 @@ public:
   virtual OutIndex opOutToSubgraphOutIndex(OutIndex index) const = 0;
 
   virtual Graph &getCalledGraph() const = 0;
+  virtual void setCalledGraph(Graph &)  = 0;
 
   VGraphIdAndTileSet
   getIntrospectionInVirtualGraphId(InIndex index) const override;
   VGraphIdAndTileSet
   getIntrospectionOutVirtualGraphId(OutIndex index) const override;
+
+  bool hasSideEffect() const override;
 
 private:
   // Regions of Input Tensors (InIndex) are aliased by Output Tensors (OutIndex)

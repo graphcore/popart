@@ -26,6 +26,7 @@ public:
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
   std::vector<const Graph *> getCalledGraphs() const override;
+  void setCalledGraph(Graph &) override;
 
   GraphId getBackwardsGraphId() const;
 

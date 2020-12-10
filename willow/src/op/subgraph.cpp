@@ -202,4 +202,11 @@ SubgraphOp::getIntrospectionOutVirtualGraphId(OutIndex index) const {
              : VGraphIdAndTileSet(unusedVGraphId, TileSet::Compute);
 }
 
+bool SubgraphOp::hasSideEffect() const {
+  auto &ops = getCalledGraph().getOps();
+  return std::any_of(ops.begin(), ops.end(), [](const auto &op) {
+    return op.second->hasSideEffect();
+  });
+}
+
 } // namespace popart

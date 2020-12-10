@@ -57,6 +57,16 @@
 namespace popart {
 namespace liveness {
 
+// Enum describing how to handle tensor producers for determining tensor
+// liveness intervals
+enum ProducerInterval {
+  // Enforce that the tensors are considered live for at least one interval
+  // after they are produced (which is the right-open interval [p, p+1))
+  Enforce = 0,
+  // Ignore producers whose output is not consumed
+  Ignore
+};
+
 // Right-open intervals of tensor liveness
 class IntervalsImpl;
 class Intervals {
@@ -69,6 +79,10 @@ public:
 
   Intervals operator&(const Intervals &other) const;
   void operator+=(const Intervals &other);
+  bool operator==(const Intervals &other) const;
+  bool operator!=(const Intervals &other) const;
+
+  friend std::ostream &operator<<(std::ostream &os, const Intervals &);
 
 private:
   std::unique_ptr<IntervalsImpl> intervals;
@@ -101,9 +115,32 @@ public:
 
   void activateAlias(Tensor *ta, Tensor *tb);
 
-  bool copyModifiedRequired(Op *op, InIndex inIndex) const;
+  bool nodeRequired(Op *op, OpStatus status, int index) const;
+
+  bool opRequired(Op *) const;
+  bool copyInputRequired(Op *, InIndex) const;
+  bool copyLoopCarriedRequired(Op *, InIndex) const;
+  bool copyModifiedRequired(Op *, InIndex) const;
+  bool copyOutputRequired(Op *, OutIndex) const;
+
+  // Debug printing liveness intervals
+  void printLivenessIntervals(std::set<Tensor *, PTensorCmp> tensors,
+                              ProducerInterval producerInterval);
+
+  // Returns when the tensor needs to be live in the schedule
+  Intervals getLivenessIntervals(Tensor *, ProducerInterval);
+
+  // Returns when the tensor (including all aliases)
+  // needs to be live in the schedule
+  Intervals
+  getCandidateLivenessIntervals(Tensor *,
+                                ProducerInterval = ProducerInterval::Enforce,
+                                bool cached      = true);
 
 private:
+  // Dead code elimination optimizations
+  void disableDeadCodeNodes();
+
   std::set<Tensor *, PTensorCmp>
   getAliasedTensors(const Aliases &aliases,
                     std::set<Tensor *, PTensorCmp> tensors,
@@ -113,16 +150,6 @@ private:
 
   // Find the liveness start of a consumed tensor
   int64_t findStart(Tensor *consumedTensor, int64_t scheduleIndex) const;
-
-  // Find the liveness front of a consumed tensor
-  int64_t findFront(Tensor *consumedTensor, int64_t scheduleIndex) const;
-
-  // Returns when the tensor needs to be live in the schedule
-  Intervals getLivenessIntervals(Tensor *);
-
-  // Returns when the tensor (including all aliases)
-  // needs to be live in the schedule
-  Intervals getCandidateLivenessIntervals(Tensor *, bool cached = true);
 
   bool checkCandidatesCompatible(Tensor *ta, Tensor *tb);
 
@@ -157,22 +184,24 @@ private:
 
   void logPostIRAliases();
 
-  // Debug printing liveness intervals
-  void printLivenessIntervals(std::set<Tensor *, PTensorCmp> tensors);
-
   const Ir *ir;
   const LivenessAnalyzer *analyzer;
 
   std::map<std::pair<Tensor *, Tensor *>, bool> candidateCompatMap;
-  std::map<Tensor *, Intervals, PTensorCmp> candidateLivenessIntervalsMap;
+
+  std::map<std::pair<Tensor *, ProducerInterval>, Intervals>
+      candidateLivenessIntervalsMap;
 
   // Aliases as inferred from all IR graphs
   Aliases irAliases;
   Aliases proposedAliases;
   Aliases activeAliases;
 
-  // Required CopyModified
-  std::map<std::pair<Op *, InIndex>, bool> requiredCopyModified;
+  // Nodes in the schedule not required
+  std::vector<bool> disabledNodes;
+
+  // Required nodes (at all call sites)
+  std::map<std::tuple<Op *, OpStatus, int>, bool> requiredNodes;
 
   std::map<Tensor *, std::set<Tensor *, PTensorCmp>, PTensorCmp> postIRAliases;
 

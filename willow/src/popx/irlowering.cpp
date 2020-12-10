@@ -1861,7 +1861,25 @@ void IrLowering::growOpx(Opx *opx, poplar::program::Sequence &seq) {
   }
 
   // Grow code for the Op
-  opx->grow(seq);
+  poplar::program::Sequence opSeq;
+  opx->grow(opSeq);
+
+  if (aliasZeroCopy->opRequired(opx->op_p)) {
+    // Code of an Op can be skipped if the Op is not required,
+    // meaning the Op has:
+    // 1.) No outputs which are consumed/live downstream
+    // 2.) No side effects
+    seq.add(opSeq);
+  } else {
+    for (auto out : opx->op_p->output->tensorMap()) {
+      poplar::Tensor outTensor = opx->getOutTensor(out.first);
+      seq.add(poplar::program::WriteUndef(outTensor));
+    }
+    logging::devicex::trace(
+        "Skipping code sequence for Op {} with debugName {}",
+        opx->op_p->str(),
+        opx->op_p->debugName());
+  }
 
   if (ir().getSessionOptions().opxModifyChecking) {
     for (auto &nonModified : nonModifiedTensors) {

@@ -86,7 +86,8 @@ void CallOpx::copyInputs(poplar::program::Sequence &prog) const {
     //     of the tensor)
     if (aliases.find(callop.getIr().getTensor(graph_input_id)) ==
         aliases.end()) {
-      if (accessType != view::AccessType::Write) {
+      if (accessType != view::AccessType::Write &&
+          dv_p->lowering().getAliasZeroCopy()->copyInputRequired(&callop, i)) {
         logging::opx::trace(
             "[CallOpx] Copying input {}->{}", call_input_id, graph_input_id);
         poplar::program::Copy copy_prog(call_input, graph_input);
@@ -138,10 +139,17 @@ void CallOpx::copyOutputs(poplar::program::Sequence &prog) const {
     // Skip copy if aliased tensor -> is handled by copyModified, or is aliased
     // from graph output to op output
     if (!aliased) {
-      logging::opx::trace(
-          "[CallOpx] Copying output {}->{}", graph_output_id, callop.outId(i));
-      poplar::program::Copy copy_prog(graph_output, call_output);
-      prog.add(copy_prog);
+      if (dv_p->lowering().getAliasZeroCopy()->copyOutputRequired(&callop, i)) {
+        logging::opx::trace("[CallOpx] Copying output {}->{}",
+                            graph_output_id,
+                            callop.outId(i));
+        poplar::program::Copy copy_prog(graph_output, call_output);
+        prog.add(copy_prog);
+      } else {
+        logging::opx::trace("[CallOpx] Skipping output {}->{}",
+                            graph_output_id,
+                            callop.outId(i));
+      }
     } else {
       logging::opx::trace(
           "[CallOpx] Aliasing output {}->{}", graph_output_id, callop.outId(i));
@@ -162,7 +170,6 @@ void CallOpx::grow(poplar::program::Sequence &prog) const {
   copyOutputs(prog);
   copyModified(prog);
 }
-
 
 CallGradOpx::CallGradOpx(Op *op, Devicex *devicex) : CallOpx(op, devicex) {
   verifyOp<CallGradOp>(op, Onnx::CustomGradOperators::CallGrad);

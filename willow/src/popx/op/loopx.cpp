@@ -78,10 +78,18 @@ void LoopOpx::copyExplicitOpInputsToBodyOutputs(
 
       if (aliases.find(op.getIr().getTensor(subgraph.getOutputId(i))) ==
           aliases.end()) {
-        poplar::program::Copy copyProg(opInputTensor, bodyOutputTensor);
-        prog.add(copyProg);
-        logging::opx::trace(
-            "[LoopOpx] input {} -> output {} copied", inId, outId);
+        if (dv_p->lowering().getAliasZeroCopy()->copyInputRequired(&op,
+                                                                   i + 1) ||
+            dv_p->lowering().getAliasZeroCopy()->copyOutputRequired(
+                &op, op.subgraphOutToOpOutIndex(i))) {
+          poplar::program::Copy copyProg(opInputTensor, bodyOutputTensor);
+          prog.add(copyProg);
+          logging::opx::trace(
+              "[LoopOpx] input {} -> output {} copied", inId, outId);
+        } else {
+          logging::opx::trace(
+              "[LoopOpx] input {} -> output {} skipped", inId, outId);
+        }
       } else {
         logging::opx::trace(
             "[LoopOpx] input {} -> output {} aliased", inId, outId);
@@ -114,10 +122,15 @@ void LoopOpx::copyImplicitOpInputsToImplicitBodyInputs(
 
     if (aliases.find(op.getIr().getTensor(subgraph.getInputId(i))) ==
         aliases.end()) {
-      poplar::program::Copy copyProg(opInputTensor, bodyInputTensor);
-      prog.add(copyProg);
-      logging::opx::trace(
-          "[LoopOpx] input {} -> input {} copied", opInId, bodyInId);
+      if (dv_p->lowering().getAliasZeroCopy()->copyInputRequired(&op, i)) {
+        poplar::program::Copy copyProg(opInputTensor, bodyInputTensor);
+        prog.add(copyProg);
+        logging::opx::trace(
+            "[LoopOpx] input {} -> input {} copied", opInId, bodyInId);
+      } else {
+        logging::opx::trace(
+            "[LoopOpx] input {} -> input {} skipped", opInId, bodyInId);
+      }
     } else {
       logging::opx::trace(
           "[LoopOpx] input {} -> input {} aliased", opInId, bodyInId);
@@ -147,18 +160,24 @@ void LoopOpx::copyBodyOutputsToExplicitBodyInputs(
 
     if (inId != outId &&
         aliases.find(op.getIr().getTensor(inId)) == aliases.end()) {
-      // Only copy if the input is not directly wired through to the output,
-      // and if there are no aliases
-      auto bodyInputTensor  = get(inId);
-      auto bodyOutputTensor = get(outId);
-      // Clone to avoid issues with implicit aliases
+      if (dv_p->lowering().getAliasZeroCopy()->copyLoopCarriedRequired(&op,
+                                                                       i)) {
+        // Only copy if the input is not directly wired through to the output,
+        // and if there are no aliases
+        auto bodyInputTensor  = get(inId);
+        auto bodyOutputTensor = get(outId);
 
-      auto tmp =
-          dstGraph(op.subgraphOutToOpOutIndex(i)).clone(bodyOutputTensor);
-      tmpCopiesProg.add(poplar::program::Copy(bodyOutputTensor, tmp));
-      finalCopiesProg.add(poplar::program::Copy(tmp, bodyInputTensor));
-      logging::opx::trace(
-          "[LoopOpx] output {} -> input {} copied", outId, inId);
+        // Clone to avoid issues with implicit aliases
+        auto tmp =
+            dstGraph(op.subgraphOutToOpOutIndex(i)).clone(bodyOutputTensor);
+        tmpCopiesProg.add(poplar::program::Copy(bodyOutputTensor, tmp));
+        finalCopiesProg.add(poplar::program::Copy(tmp, bodyInputTensor));
+        logging::opx::trace(
+            "[LoopOpx] output {} -> input {} copied", outId, inId);
+      } else {
+        logging::opx::trace(
+            "[LoopOpx] output {} -> input {} skipped", outId, inId);
+      }
     } else {
       logging::opx::trace(
           "[LoopOpx] output {} -> input {} aliased", outId, inId);
@@ -187,13 +206,19 @@ void LoopOpx::copyBodyOutputsToOpOutputs(
         {op.getIr().getTensor(bodyOutputTensorId)}, true);
 
     if (aliases.find(op.getIr().getTensor(opOutputTensorId)) == aliases.end()) {
-      auto bodyOutputTensor = get(bodyOutputTensorId);
-      auto opOutputTensor   = get(opOutputTensorId);
-      poplar::program::Copy copyProg(bodyOutputTensor, opOutputTensor);
-      prog.add(copyProg);
-      logging::opx::trace("[LoopOpx] output {} -> output {} copied",
-                          bodyOutputTensorId,
-                          opOutputTensorId);
+      if (dv_p->lowering().getAliasZeroCopy()->copyOutputRequired(&op, i - 1)) {
+        auto bodyOutputTensor = get(bodyOutputTensorId);
+        auto opOutputTensor   = get(opOutputTensorId);
+        poplar::program::Copy copyProg(bodyOutputTensor, opOutputTensor);
+        prog.add(copyProg);
+        logging::opx::trace("[LoopOpx] output {} -> output {} copied",
+                            bodyOutputTensorId,
+                            opOutputTensorId);
+      } else {
+        logging::opx::trace("[LoopOpx] output {} -> output {} skipped",
+                            bodyOutputTensorId,
+                            opOutputTensorId);
+      }
     } else {
       logging::opx::trace("[LoopOpx] output {} -> output {} aliased",
                           bodyOutputTensorId,
