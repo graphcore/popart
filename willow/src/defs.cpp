@@ -383,6 +383,7 @@ void Log1pShapeInference(InferenceContext &ctx) {
 
 void ReshapeShapeInference(InferenceContext &ctx) {
   propagateShapeFromAttributeToOutput(ctx, "shape", 0);
+  propagateElemTypeFromInputToOutput(ctx, 0, 0);
 }
 
 extern size_t dbg_count_check_GroupNormalization_AiGraphcore_ver1;
@@ -965,14 +966,13 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
                         OpSchema::all_tensor_types(),
                         "Allow all tensor types")
         .TypeAndShapeInferenceFunction(DepthToSpaceShapeInference)
-        .Attr(
-            "blocksize",
-            "Blocks of [blocksize, blocksize] are moved.",
-            AttributeProto::INT)
-        .Attr(
-            "mode",
-            "DCR (default) for depth-column-row order re-arrangement. Use CRD for column-row-depth order.",
-            AttributeProto::STRING,
+        .Attr("blocksize",
+              "Blocks of [blocksize, blocksize] are moved.",
+              AttributeProto::INT)
+        .Attr("mode",
+              "DCR (default) for depth-column-row order re-arrangement. Use "
+              "CRD for column-row-depth order.",
+              AttributeProto::STRING,
               std::string("DCR")))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
@@ -1096,6 +1096,18 @@ static bool registerOps() {
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
           AiGraphcore, 1, DepthToSpace)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, Expm1)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, Log1p)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, Reshape)>());
 
   return true;
 }
