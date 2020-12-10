@@ -239,7 +239,18 @@ set(popart_common_definitions
     DEPRECATE_LEGACY_OP_FACTORY=1
 )
 
+# Hack: Poptorch doesn't need onnx, but it includes the monolithic names.hpp,
+# which has many declarations intended to be private only that use
+# ONNX_NAMESPACE. Thus, we make it a public definition in popart-ony.
+get_target_property(onnx_defs onnx INTERFACE_COMPILE_DEFINITIONS)
+get_target_property(onnx_proto_defs onnx_proto INTERFACE_COMPILE_DEFINITIONS)
+list(APPEND onnx_defs ${onnx_proto_defs})
+list(REMOVE_DUPLICATES onnx_defs)
+
 target_compile_definitions(popart-only
+  PUBLIC
+    ${onnx_defs}
+
   PRIVATE
     # Required to prevent warnings.
     PROTOBUF_INLINE_NOT_IN_HEADERS=0

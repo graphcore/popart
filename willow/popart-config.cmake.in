@@ -46,6 +46,7 @@
 #
 #   popart_FOUND            : Truthy if Popart and all required components were
 #                             found.
+#   popart_<comp>_FOUND     : Truthy if component <comp> was found.
 #
 # ------------------------------------------------------------------------------
 #
@@ -109,7 +110,9 @@ _safe_find_dependency(poplar)
 _safe_find_dependency(poplibs)
 _safe_find_dependency(libpvti)
 _safe_find_dependency(gcl)
-include("${CMAKE_CURRENT_LIST_DIR}/popart--popart-only-targets.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/popart--popart-only-targets.cmake"
+    RESULT_VARIABLE popart_popart-only_FOUND
+)
 
 # Remove popart-only from the list of oustanding components to find.
 if(popart-only IN_LIST _components_to_find)
@@ -135,7 +138,9 @@ if(popart IN_LIST _components_to_find)
 
   unset(_required)
 
-  include("${CMAKE_CURRENT_LIST_DIR}/popart--popart-targets.cmake")
+  include("${CMAKE_CURRENT_LIST_DIR}/popart--popart-targets.cmake"
+      RESULT_VARIABLE popart_popart_FOUND
+  )
 
   list(REMOVE_ITEM _components_to_find popart)
 endif()
