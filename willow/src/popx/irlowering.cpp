@@ -3423,14 +3423,14 @@ void IrLowering::initPoplarGraph() {
                             "replication factor {}",
                             replicationFactor);
     switch (deviceInfo->getType()) {
-    case DeviceType::Ipu: {
+    case DeviceType::Ipu:
+    case DeviceType::OfflineIpu: {
       popTarget = poplar::Target::createIPUTarget(
           static_cast<unsigned>(globalNumIpus), archString);
       break;
     }
     case DeviceType::Cpu:
     case DeviceType::IpuModel:
-    case DeviceType::OfflineIpu:
     case DeviceType::Sim:
     default:
       throw error(
