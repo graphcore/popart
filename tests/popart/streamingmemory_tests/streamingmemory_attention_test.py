@@ -208,8 +208,14 @@ def test_attention_streamingmemory(tmpdir):
         if options["replication"] > 1:
             numIpus = numIpus * options["replication"]
 
+        # If using ioTiles, tilesPerIPU needs to be greater than numIoTiles.
+        deviceOptions = {}
+        if "ioTiles" in options:
+            deviceOptions['tilesPerIPU'] = tu.USE_ALL_TILES
+
         with tu.create_test_device(numIpus,
-                                   pattern=popart.SyncPattern.Full) as device:
+                                   pattern=popart.SyncPattern.Full,
+                                   **deviceOptions) as device:
 
             session = popart.TrainingSession(fnModel=proto,
                                              dataFlow=dataFlow,

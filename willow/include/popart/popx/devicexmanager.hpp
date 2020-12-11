@@ -25,7 +25,8 @@ public:
             unsigned requiredNumIPUs,
             SyncPattern syncPattern,
             DeviceType type,
-            DeviceConnectionType connectionType) override;
+            DeviceConnectionType connectionType,
+            uint32_t requiredTilesPerIPU) override;
 
   virtual std::shared_ptr<popart::DeviceInfo>
   createHostDevice(popart::DeviceType type,

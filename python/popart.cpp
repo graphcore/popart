@@ -2166,7 +2166,8 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("pattern")        = SyncPattern::Full,
             py::arg("numIpus")        = 1,
             py::arg("deviceType")     = DeviceType::Ipu,
-            py::arg("connectionType") = DeviceConnectionType::Always);
+            py::arg("connectionType") = DeviceConnectionType::Always,
+            py::arg("tilesPerIPU")    = 0);
     cls.def("setOnDemandAttachTimeout",
             &DeviceManager::setOnDemandAttachTimeout,
             py::arg("attachTimeout"));

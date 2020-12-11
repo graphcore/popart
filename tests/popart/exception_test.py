@@ -15,37 +15,24 @@ import test_util as tu
 # when it run's out of memory
 @tu.requires_ipu
 def test_out_of_memory_exception():
-    deviceInfo = tu.create_test_device(1)
-    if deviceInfo.tilesPerIpu != 1216:
-        pytest.skip("Out of memory only on an IPU with 1216 tiles")
-
-    d1 = np.random.rand(2000, 2000).astype(np.float32)
-    d2 = np.random.rand(2000, 2000).astype(np.float32)
-    d3 = np.random.rand(2000, 2000).astype(np.float32)
-    d4 = np.random.rand(2000, 2000).astype(np.float32)
-
-    datas = [np.random.rand(2000, 2000).astype(np.float32) for _ in range(4)]
+    deviceInfo = tu.create_test_device(1, tilesPerIPU=tu.USE_ALL_TILES)
 
     builder = popart.Builder()
 
-    i1 = builder.addInputTensor(popart.TensorInfo("FLOAT", [2000, 2000]))
-    i2 = builder.addInputTensor(popart.TensorInfo("FLOAT", [2000, 2000]))
-    i3 = builder.addInputTensor(popart.TensorInfo("FLOAT", [2000, 2000]))
-    i4 = builder.addInputTensor(popart.TensorInfo("FLOAT", [2000, 2000]))
-    i5 = builder.addInputTensor(popart.TensorInfo("FLOAT", [2000, 2000]))
-    i6 = builder.addInputTensor(popart.TensorInfo("FLOAT", [2000, 2000]))
-    i7 = builder.addInputTensor(popart.TensorInfo("FLOAT", [2000, 2000]))
-    i8 = builder.addInputTensor(popart.TensorInfo("FLOAT", [2000, 2000]))
+    inputs = [
+        builder.addInputTensor(popart.TensorInfo("FLOAT", [2000, 2000]))
+        for i in range(8)
+    ]
 
-    a1 = builder.aiOnnx.matmul([i1, i2])
-    a2 = builder.aiOnnx.matmul([i3, i4])
-    a3 = builder.aiOnnx.add([a1, a2])
+    # Matmul every input against every other input
+    activations = []
+    for a in inputs:
+        for b in inputs:
+            c = builder.aiOnnx.matmul([a, b])
+            activations.append(c)
 
-    a4 = builder.aiOnnx.matmul([i5, i6])
-    a5 = builder.aiOnnx.matmul([i7, i8])
-    a6 = builder.aiOnnx.add([a4, a5])
-
-    out = builder.aiOnnx.add([a3, a6])
+    # Sum all the activations together
+    out = builder.aiOnnx.sum(activations)
 
     builder.addOutputTensor(out)
 
@@ -61,13 +48,13 @@ def test_out_of_memory_exception():
         patterns=patterns,
         deviceInfo=deviceInfo)
 
-    with pytest.raises(popart.poplar_exception) as e:
+    with pytest.raises(popart.popart_exception) as e:
         session.prepareDevice()
-        print("Caught OutOfMemoryException exception {}", e)
-        print(e.getSummaryReport())
-        print(e.getGraphReport())
-        assert e.value.args[0].startswith(
-            "Out of memory. Data-stream is larger than remaining host buffer 1 memory."
-        )
+
+    assert e.type == popart.session.OutOfMemoryException
+    print(e.value.getSummaryReport())
+    print(e.value.getGraphReport())
+    assert e.value.args[0].startswith(
+        "Out of memory: Cannot fit all variable data onto one or more tiles")
 
     session.getTensorTileMap()

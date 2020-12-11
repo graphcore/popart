@@ -9,6 +9,7 @@ import onnx
 from onnx import numpy_helper
 
 
+@tu.requires_ipu
 @pytest.mark.parametrize('pipeline', [True, False])
 def test_outlining_accumulation_context(pipeline, tmpdir):
     def model():

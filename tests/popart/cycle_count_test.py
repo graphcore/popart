@@ -169,10 +169,19 @@ def test_get_cycle_count_replication(useIOTiles):
         opts.enableReplicatedGraphs = True
         if useIOTiles is True:
             opts.numIOTiles = 32
+            # Trying to use less than all the tiles throw an error like
+            #   popart_core.poplar_exception: Trying to access tile 72 on IPU
+            #   0 but the virtual graph only covers the following tiles on
+            #   that IPU: 0-63
+            # The error happens in a call to poplar made by gcl::perIPUTiles.
+            device = tu.create_test_device(numIpus=4,
+                                           tilesPerIPU=tu.USE_ALL_TILES)
+        else:
+            device = tu.create_test_device(numIpus=4, tilesPerIPU=4)
         session = popart.InferenceSession(fnModel=builder.getModelProto(),
                                           dataFlow=popart.DataFlow(20, [act]),
                                           userOptions=opts,
-                                          deviceInfo=tu.create_test_device(4))
+                                          deviceInfo=device)
         session.prepareDevice()
         stepio = popart.PyStepIO({d0: np.random.rand(40).astype(np.float32)},
                                  session.initAnchorArrays())

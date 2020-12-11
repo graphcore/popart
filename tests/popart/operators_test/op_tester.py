@@ -86,6 +86,7 @@ def op_tester(tmpdir):
             self.options.opxModifyChecking = True
             self.logging_dir = logging_dir
             self.numIPUs = 1
+            self.tilesPerIPU = None
             self.rtol = 1e-05
             self.atol = 1e-08
             self.check_shapes = True
@@ -161,8 +162,14 @@ def op_tester(tmpdir):
 
             self.options.logDir = self.logging_dir
 
-            device = tu.create_test_device(numIpus=self.numIPUs)
-            print(f"Created device {device} with {self.numIPUs} IPUs")
+            if self.tilesPerIPU is not None:
+                device = tu.create_test_device(numIpus=self.numIPUs,
+                                               tilesPerIPU=self.tilesPerIPU)
+                print(f"Created device {device} with {self.numIPUs}"
+                      f" IPUs and {self.tilesPerIPU} tiles per IPU")
+            else:
+                device = tu.create_test_device(numIpus=self.numIPUs)
+                print(f"Created device {device} with {self.numIPUs} IPUs")
 
             self.patterns.InPlace = self.inplacing
             if step_type == 'infer':

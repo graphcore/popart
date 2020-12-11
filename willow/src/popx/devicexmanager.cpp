@@ -86,8 +86,8 @@ void DevicexManager::enumerate(
     unsigned requiredNumIPUs,
     SyncPattern syncPattern,
     DeviceType type,
-    DeviceConnectionType connectionType) {
-
+    DeviceConnectionType connectionType,
+    uint32_t requiredTilesPerIPU) {
   auto deviceManager = poplar::DeviceManager::createDeviceManager();
 
   poplar::OptionFlags flags;
@@ -95,6 +95,14 @@ void DevicexManager::enumerate(
   std::vector<poplar::Device> popdevices =
       deviceManager.getDevices(convertDeviceType(type), requiredNumIPUs, flags);
   for (auto &device : popdevices) {
+    if (type == DeviceType::Ipu && requiredTilesPerIPU > 0 &&
+        device.getTarget().getTilesPerIPU() != requiredTilesPerIPU) {
+      logging::debug("Current device has {} tiles per ipu",
+                     device.getTarget().getTilesPerIPU());
+      logging::debug("Creating a virtual device with {} tiles per ipu",
+                     requiredTilesPerIPU);
+      device = device.createVirtualDevice(requiredTilesPerIPU);
+    }
     std::shared_ptr<popart::DeviceInfo> ipu = std::make_shared<DevicexIpuInfo>(
         *this, connectionType, device.getId(), device, flags);
     devices.push_back(ipu);

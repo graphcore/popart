@@ -71,11 +71,13 @@ std::vector<std::shared_ptr<DeviceInfo>>
 DeviceManager::enumerateDevices(SyncPattern pattern,
                                 int numIpus,
                                 DeviceType deviceType,
-                                DeviceConnectionType connectionType) {
+                                DeviceConnectionType connectionType,
+                                int tilesPerIPU) {
   std::vector<std::shared_ptr<DeviceInfo>> devices;
 
   for (auto p : providers) {
-    p->enumerate(devices, numIpus, pattern, deviceType, connectionType);
+    p->enumerate(
+        devices, numIpus, pattern, deviceType, connectionType, tilesPerIPU);
   }
   for (auto d : devices) {
     logging::debug("Device: {}", d.get()->toString());
@@ -149,8 +151,8 @@ std::shared_ptr<DeviceInfo> DeviceManager::acquireAvailableDevice(
                 "DeviceConnectionType::Never");
   }
 
-  auto devices =
-      enumerateDevices(pattern, numIpus, DeviceType::Ipu, connectionType);
+  auto devices = enumerateDevices(
+      pattern, numIpus, DeviceType::Ipu, connectionType, tilesPerIPU);
 
   std::mt19937 g(/* seed */ 1);
 

@@ -2372,10 +2372,10 @@ void IrLowering::prepareGraph() {
           "Reserving {} IO tiles for GCL collective operations on each IPU",
           numIOTiles);
 
-      if (numIOTiles > tilesPerIPU) {
-        throw error("Number of IO tiles {} exceeds tiles per IPU {}. ",
-                    numIOTiles,
-                    tilesPerIPU);
+      if (numIOTiles >= tilesPerIPU) {
+        throw error("Tiles per IPU {} should exceed number of IO tiles {}.",
+                    tilesPerIPU,
+                    numIOTiles);
       }
 
       const auto computeTiles =

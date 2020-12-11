@@ -1,4 +1,6 @@
 # Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+import enum
+from enum import Enum
 import fnmatch
 import functools
 import inspect
@@ -24,33 +26,28 @@ def filter_dict(dict_to_filter, fun):
     return filtered_dict
 
 
+USE_ALL_TILES = 0
+
+
 def create_test_device(
-    numIpus: int = 1,
-    tilesPerIPU: int = 0,
-    opts: Dict = None,
-    pattern: popart.SyncPattern = popart.SyncPattern.Full,
-    connectionType: popart.DeviceConnectionType = popart.DeviceConnectionType.
-    OnDemand,
-    selectionCriterion: popart.DeviceSelectionCriterion = popart.
-    DeviceSelectionCriterion.Random):
+        numIpus: int = 1,
+        opts: Dict = None,
+        pattern: popart.SyncPattern = popart.SyncPattern.Full,
+        connectionType: popart.DeviceConnectionType = popart.
+    DeviceConnectionType.OnDemand,
+        selectionCriterion: popart.DeviceSelectionCriterion = popart.
+    DeviceSelectionCriterion.Random,
+        tilesPerIPU=None):
     testDeviceType = os.environ.get("TEST_TARGET")
 
     if opts:
-        if tilesPerIPU != 0 and "tilesPerIPU" in opts.keys():
+        if tilesPerIPU is not None and "tilesPerIPU" in opts.keys():
             raise RuntimeError("Cannot set tilesPerIPU in 2 ways")
 
     # NOTE: This function isn't symmetric with willow/include/popart/testdevice.hpp because it doesn't
     # pass on the number of tiles for simulated devices (perhaps it should).
-    if tilesPerIPU == 0 and (testDeviceType == "IpuModel"
-                             or testDeviceType == "Sim"):
-        # We need a number of tiles for these device types.
+    if tilesPerIPU is None and testDeviceType in ('Hw', 'IpuModel', 'Sim'):
         tilesPerIPU = 4
-
-    if opts is None:
-        opts = {}
-
-    opts["numIPUs"] = numIpus
-    opts["tilesPerIPU"] = tilesPerIPU
 
     if testDeviceType is None:
         testDeviceType = "Cpu"
@@ -69,7 +66,14 @@ def create_test_device(
             connectionType=connectionType,
             selectionCriterion=selectionCriterion)
 
+        assert device is not None
+
     elif testDeviceType == "IpuModel":
+        if opts is None:
+            opts = {}
+        opts["numIPUs"] = numIpus
+        opts["tilesPerIPU"] = tilesPerIPU
+
         device = popart.DeviceManager().createIpuModelDevice(opts)
     else:
         raise RuntimeError(f"Unknown device type {testDeviceType}")
@@ -143,7 +147,7 @@ def _run_test_on_target(func, target, args, kwargs):
 
     def reset_test_target():
         if curr_test_target is None:
-            os.environ["TEST_TARGET"] = ""
+            os.environ.pop("TEST_TARGET")
         else:
             os.environ["TEST_TARGET"] = curr_test_target
 

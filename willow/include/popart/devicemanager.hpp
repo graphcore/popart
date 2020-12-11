@@ -32,8 +32,8 @@ std::string syncPatternToString(const SyncPattern &pattern);
 
 class DeviceProvider;
 
-// TOD : When the Device/DeviceX classes are renamed to be ?backend? (Need to
-// think of a good name) Then we can rename DeviceInfo to Device. THere is no
+// TODO : When the Device/DeviceX classes are renamed to be ?backend? (Need to
+// think of a good name) Then we can rename DeviceInfo to Device. There is no
 // seperate Target. is that ok?
 /// Represents a device
 class DeviceInfo {
@@ -115,12 +115,14 @@ public:
    * \param devices Devices to get
    * \param requiredNumIPUs Number of IPUs to request.
    * \param syncPattern Sync pattern
+   * \param requiredTilesPerIPU Number of tiles per IPU to request.
    */
   virtual void enumerate(std::vector<std::shared_ptr<DeviceInfo>> &devices,
                          uint32_t requiredNumIPUs,
                          SyncPattern syncPattern,
                          DeviceType type,
-                         DeviceConnectionType connectionType) = 0;
+                         DeviceConnectionType connectionType,
+                         uint32_t requiredTilesPerIPU) = 0;
 
   /// Create a host device for testing
   virtual std::shared_ptr<DeviceInfo>
@@ -164,13 +166,15 @@ public:
    * \param pattern Sync pattern.
    * \param numIpus Number of IPUs to request.
    * \param deviceType Type of device required.
+   * \param tilesPerIPU The number of tiles per ipu required.
    * \return List of requested IPUs.
    */
   std::vector<std::shared_ptr<DeviceInfo>> enumerateDevices(
       SyncPattern pattern                 = SyncPattern::Full,
       int numIpus                         = 1,
       DeviceType deviceType               = DeviceType::Ipu,
-      DeviceConnectionType connectionType = DeviceConnectionType::Always);
+      DeviceConnectionType connectionType = DeviceConnectionType::Always,
+      int tilesPerIPU                     = 0);
 
   /** Finds the first available hardware device, with a certain number of IPUs.
    * This method will attach to the device.
