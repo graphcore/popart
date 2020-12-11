@@ -169,7 +169,7 @@ def test_conv_avail_memory_log(tmpdir, capfd):
 
     # This is the available tile memory for the conv.
     # TODO: Update this if future chips have more memory per tile.
-    avail_mem = int(np.floor(avail_mem_prop * 262_144))
+    avail_mem = int(np.floor(avail_mem_prop * 638976))
     patt = f"Planning convolution with a per-tile memory limit of {avail_mem}"
 
     # Find the regex matches.
@@ -202,7 +202,7 @@ def test_matmul_avail_memory_log(tmpdir, capfd):
 
     # This is the available tile memory for the matmul.
     # TODO: Update this if future chips have more memory per tile.
-    avail_mem = int(np.floor(avail_mem_prop * 262_144))
+    avail_mem = int(np.floor(avail_mem_prop * 638976))
     patt = f"Planning convolution with a per-tile memory limit of {avail_mem}"
 
     # Find the regex matches.

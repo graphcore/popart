@@ -12,8 +12,8 @@ from onnx import numpy_helper
 def test_streamingmemory_momentum(tmpdir):
     def model():
         np.random.seed(1984)
-        input_data = np.random.randint(0, 20, (8, )).astype(np.uint32)
-        weight_data = np.random.rand(4, 20).astype(np.float32)
+        input_data = np.random.randint(0, 256, (8, )).astype(np.uint32)
+        weight_data = np.random.rand(128, 256).astype(np.float32)
 
         builder = popart.Builder()
 
@@ -33,7 +33,7 @@ def test_streamingmemory_momentum(tmpdir):
             x = builder.aiOnnx.add([
                 x,
                 builder.addInitializedInputTensor(
-                    np.random.rand(4).astype(np.float32), 'weight1')
+                    np.random.rand(128).astype(np.float32), 'weight1')
             ])
 
         with builder.executionPhase(2), builder.virtualGraph(
@@ -41,7 +41,7 @@ def test_streamingmemory_momentum(tmpdir):
             x = builder.aiOnnx.sub([
                 x,
                 builder.addInitializedInputTensor(
-                    np.random.rand(4).astype(np.float32), 'weight2')
+                    np.random.rand(128).astype(np.float32), 'weight2')
             ])
 
         with builder.executionPhase(3), builder.virtualGraph(
@@ -49,7 +49,7 @@ def test_streamingmemory_momentum(tmpdir):
             x = builder.aiOnnx.mul([
                 x,
                 builder.addInitializedInputTensor(
-                    np.random.rand(4).astype(np.float32), 'weight3')
+                    np.random.rand(128).astype(np.float32), 'weight3')
             ])
 
         with builder.executionPhase(4), builder.virtualGraph(
@@ -79,6 +79,13 @@ def test_streamingmemory_momentum(tmpdir):
         options.explicitRecomputation = True
         options.aliasZeroCopy = aliaszerocopy
         options.executionPhaseSettings.phases = 5
+        varLocation = popart.TensorLocation()
+        varLocation.storage = popart.TensorStorage.OffChip
+
+        options.weightTensorLocationSettings.location = varLocation
+        options.optimizerStateTensorLocationSettings.location = varLocation
+        options.accumulatorTensorLocationSettings.location = varLocation
+        options.activationTensorLocationSettings.location = varLocation
         request_ipus = 2
 
         device = tu.create_test_device(2, pattern=popart.SyncPattern.Full)
@@ -117,7 +124,7 @@ def test_streamingmemory_momentum(tmpdir):
     outputs_1, proto_1, total_memory_1 = run_test(False)
     outputs_2, proto_2, total_memory_2 = run_test(True)
 
-    # Reference values: 2551446 2530304
+    # Reference values: 900284 900108
     print(total_memory_1, total_memory_2)
 
     assert np.allclose(outputs_1, outputs_2)

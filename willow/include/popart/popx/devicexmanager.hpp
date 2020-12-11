@@ -95,15 +95,21 @@ public:
 };
 class DevicexIpuModelInfo : public DevicexInfo {
 public:
-  DevicexIpuModelInfo(DeviceProvider &_provider, poplar::Device &_device)
+  DevicexIpuModelInfo(DeviceProvider &_provider,
+                      poplar::Device &_device,
+                      const std::string _ipuVersion)
       : DevicexInfo(_provider,
                     popart::DeviceType::IpuModel,
                     popart::DeviceConnectionType::Always,
                     _device,
-                    {}) {}
+                    {}),
+        ipuVersion(_ipuVersion) {}
 
   virtual int getId() const { return 0; }
-  virtual std::string getVersion() const { return "<unknown-ipumodel>"; }
+  virtual std::string getVersion() const { return ipuVersion; }
+
+private:
+  std::string ipuVersion;
 };
 class DevicexIpuInfo : public DevicexInfo {
 public:
