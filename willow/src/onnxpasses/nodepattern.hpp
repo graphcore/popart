@@ -6,6 +6,7 @@
 #include <onnx/onnx_pb.h>
 #include <onnxpasses/onnxnames.hpp>
 #include <string>
+#include <poprithms/ndarray/shape.hpp>
 
 namespace popart {
 namespace onnxpasses {
@@ -21,6 +22,9 @@ class NodePattern {
 
 protected:
   std::string withUniqueSuffix(const std::string &) const;
+
+  // Get the Shape of a Tensor, retrieved from the target's GraphProto.
+  poprithms::ndarray::Shape shape(const std::string &name) const;
 
 private:
   // Multiple NodePatterns modify a single GraphProto, and use shared

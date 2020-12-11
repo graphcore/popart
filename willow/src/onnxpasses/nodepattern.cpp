@@ -8,6 +8,10 @@
 namespace popart {
 namespace onnxpasses {
 
+poprithms::ndarray::Shape NodePattern::shape(const std::string &s) const {
+  return target->shape(s);
+}
+
 bool NodePattern::run(const NodeProto &node) {
   auto change = go(node);
   nHits_ += change;

@@ -30,8 +30,19 @@ public:
   // intermediate Tensors.
   Suffixer suffixer;
 
-  // TODO(T31464)
-  // std::map<std::string, poprithms::ndarray::Shape> shapes;
+  poprithms::ndarray::Shape shape(const std::string &) const;
+
+  uint64_t nShapes() const { return shapes.size(); }
+
+private:
+  // Shapes of Tensors in the GraphProto, g.
+  std::map<std::string, poprithms::ndarray::Shape> shapes;
+
+  // Methods for taking Tensor Shapes from the GraphProto, and putting them into
+  // the shapes map.
+  using ValueInfoProtos = decltype(g.value_info());
+  void appendShapes(ValueInfoProtos &);
+  void extractShapes();
 };
 } // namespace onnxpasses
 } // namespace popart
