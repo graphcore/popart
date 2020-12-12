@@ -1057,6 +1057,8 @@ ShardingPlan Op::loopShard(const ShardingPlan adjustedInputPlan,
   graph.moveIntoGraph(std::move(loopOpUp));
   loopOp->setTripCountValue(adjustedInputPlan.getTotalNumShards());
   shardedOps.push_back(loopOp);
+  // Extra outline attributes not relevant on the LoopOp
+  loopOp->settings.extraOutlineAttributes.clear();
 
   // Move loop-sharded Op into subgraph
   auto clonedOpUp = clone();
@@ -1128,6 +1130,8 @@ ShardingPlan Op::loopShard(const ShardingPlan adjustedInputPlan,
       indexAddOp->createAndConnectOutTensor(AddOp::getOutIndex(),
                                             updatedSerialIndexTensorScopedId);
       indexAddOp->setup();
+      // Extra outline attributes not relevant on the indexAddOp
+      indexAddOp->settings.extraOutlineAttributes.clear();
       loopOp->addLoopOutput(loopOutIndex++,
                             updatedSerialIndexTensorId,
                             updatedSerialIndexTensorScopedId,

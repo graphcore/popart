@@ -389,7 +389,9 @@ std::ostream &operator<<(std::ostream &os, const OpStatus &opStatus) {
 std::ostream &operator<<(std::ostream &os, const LivenessNode &livenessNode) {
   os << livenessNode.getOp()->debugName() << " ";
   os << livenessNode.getStatus() << " ";
-  os << livenessNode.getIndex();
+  os << livenessNode.getIndex() << " ";
+  os << "{" << livenessNode.getTensorIds().first << ", "
+     << livenessNode.getTensorIds().second << "}";
   return os;
 }
 

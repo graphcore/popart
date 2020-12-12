@@ -413,6 +413,12 @@ void AliasZeroCopy::disableDeadCodeNodes() {
   // Check if a node is required across all call sites
   for (int64_t i = 0; i < analyzer->getOpScheduleSize(); ++i) {
     auto &node = analyzer->getOpScheduleAt(i);
+
+    logging::opx::trace("[AliasZeroCopy] index: {} node: {} disabled: {}",
+                        i,
+                        node,
+                        static_cast<int>(disabledNodes[i]));
+
     requiredNodes[{node.getOp(), node.getStatus(), node.getIndex()}] |=
         !disabledNodes[i];
   }

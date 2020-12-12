@@ -11,6 +11,8 @@ public:
   SumOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const final;
 
+  bool canShard() const override { return true; }
+
 private:
   virtual std::unique_ptr<Op> getIthGrad(int) const final;
 };
@@ -22,6 +24,8 @@ public:
   std::unique_ptr<Op> clone() const final;
 
   bool canBeReplacedByIdentity() const override;
+
+  bool canShard() const override { return true; }
 
 private:
   std::vector<GradInOutMapper> gradInputInfoVec;

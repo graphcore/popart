@@ -687,7 +687,7 @@ bool MergeLoops::checkIdenticalPaths(
 
   if (opInT0->id == opInT1->id && opIn0 >= loop0->numExplicitInputs() &&
       opIn1 >= loop1->numExplicitInputs()) {
-    // Identical implict inputs, only one needs to be wired up
+    // Identical implicit inputs, only one needs to be wired up
     return true;
   }
 
@@ -751,7 +751,8 @@ bool MergeLoops::apply(Graph &graph) const {
   int64_t loopOpCount = 0;
 
   // Build sets of mergeable loops
-  for (Op *op : schedule) {
+  for (size_t i = 0; i < schedule.size(); ++i) {
+    Op *op = schedule.at(i);
     if (LoopOp *loopOp0 = dynamic_cast<LoopOp *>(op)) {
       bool inserted = false;
 
@@ -766,7 +767,16 @@ bool MergeLoops::apply(Graph &graph) const {
         mergeSets.push_back({loopOp0});
       }
 
+      logging::transform::debug("[MergeLoops] position: {} processing loop {}, "
+                                "mergeable with previous: {}",
+                                i,
+                                loopOp0->debugName(),
+                                inserted);
+
       ++loopOpCount;
+    } else {
+      logging::transform::debug(
+          "[MergeLoops] position: {} not a loop ({})", i, op->debugName());
     }
   }
 
