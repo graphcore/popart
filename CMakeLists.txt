@@ -154,6 +154,7 @@ endif()
 set(PACKAGE_FILE_NAME popart-${PACKAGE_OS_TYPE}-${VERSION}-${SNAPSHOT})
 set(CPACK_PACKAGE_FILE_NAME ${PACKAGE_FILE_NAME})
 
+set(SUPPORTED_OPS_GEN_FILE_NAME supported_ops_gen-${VERSION}-${SNAPSHOT}.md)
 set(USER_GUIDE_PDF_NAME popart-user-guide-${VERSION}-${SNAPSHOT}.pdf)
 set(USER_GUIDE_HTML_NAME popart-user-guide-html-${VERSION}-${SNAPSHOT}.zip)
 set(PYTHON_API_PDF_NAME popart-python-api-${VERSION}-${SNAPSHOT}.pdf)
@@ -195,6 +196,11 @@ endif()
 
 #------ product info file
 if(BUILD_DOCS)
+  # Upload supported_ops to Artifactory so it can be used to builed the published docs
+  string(APPEND PKG_ELEMENTS "  - name: Poplar advanced runtime supported ops (MD)\n"
+                             "    file: ${SUPPORTED_OPS_GEN_FILE_NAME}\n"
+                             "    type: markdown\n")
+
   string(APPEND PKG_ELEMENTS "  - name: Poplar advanced runtime user guide (PDF)\n"
                              "    file: ${USER_GUIDE_PDF_NAME}\n"
                              "    type: pdf\n")

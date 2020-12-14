@@ -15,7 +15,7 @@ function(find_poplar_enable_script result_var)
   elseif(EXISTS "${CMAKE_BINARY_DIR}/../../activate.sh" AND
       EXISTS "${CMAKE_BINARY_DIR}/../../install/poplar")
     # Assume building in poplar view. There is no enable.sh, so we activate the
-    # buildtree instead. 
+    # buildtree instead.
     set(${result_var} "${CMAKE_BINARY_DIR}/../../activate.sh" PARENT_SCOPE)
 
   else()
@@ -136,6 +136,14 @@ if (BUILD_DOCS)
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_cpp
     VERBATIM
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_cpp
+  )
+
+  # Make a copy of the support_ops doc to be uploaded to Artifactory so
+  # it can be used to builed the externally published docs. This does not
+  # need to be installed as part of the SDK package.
+  add_custom_target(supported_ops_copy ALL
+    COMMAND cp ${SUPPORTED_OPS_GEN} ${PROJECT_BINARY_DIR}/${SUPPORTED_OPS_GEN_FILE_NAME}
+    DEPENDS ${SUPPORTED_OPS_GEN}
   )
 
   add_custom_target(pdf_copy ALL
