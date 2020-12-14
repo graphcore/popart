@@ -17,7 +17,8 @@ add_popart_py_unit_test(streamingmemory_test_0 MATCHEXPR "test_replicated_lamb_w
 
 add_popart_py_unit_test(streamingmemory_test_1 VARIANTS "Hw")
 add_popart_py_unit_test(streamingmemory_tensor_location_test VARIANTS "Hw")
-add_popart_py_unit_test(streamingmemory_attention_test VARIANTS "Hw")
+# T31696 exhibits flakiness (09/12/2020)
+# add_popart_py_unit_test(streamingmemory_attention_test VARIANTS "Hw")
 
 # T26754 && T26968
 #add_popart_py_unit_test(streamingmemory_overlap_test VARIANTS "Hw")
