@@ -327,7 +327,7 @@ void Ir::logIr() {
   logging::ir::info("End IR");
 }
 
-void Ir::getOrSaveIrHash(const IrBundle &gb) {
+void Ir::compareWithSavedHash(const IrBundle &gb) {
   if (false == Ir::usingEngineCache(userOptions, deviceInfo)) {
     logging::ir::warn("Engine caching disabled. Skipping Ir hashing.");
     return;
@@ -355,6 +355,12 @@ void Ir::getOrSaveIrHash(const IrBundle &gb) {
       logging::ir::warn("Could not open ir hash file `{}'", popartCachePath);
     }
   }
+}
+
+void Ir::saveHash() const {
+  auto hash            = getHash();
+  auto cachePath       = userOptions.cachePath;
+  auto popartCachePath = getPopartCachePath(cachePath);
 
   // If target directory does not exist, create it
   auto cachePathObj = boost::filesystem::path(cachePath);
@@ -926,7 +932,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   // Check if cached Ir hash matches the current one and skip
   // the rest of the Ir preparation if true.
   setIrBundleHash(std::hash<popart::IrBundle>()(gb));
-  getOrSaveIrHash(gb);
+  compareWithSavedHash(gb);
   if (hashMatched()) {
     logging::ir::info("Ir hash matched cached value. Skipping Ir preparation");
     if (gb.optimizer) {

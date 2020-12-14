@@ -211,6 +211,7 @@ std::size_t hash<popart::SessionOptions>::operator()(
   boost::hash_combine(seed, so.rearrangeAnchorsOnHost);
   boost::hash_combine(seed, so.enableNonStableSoftmax);
   boost::hash_combine(seed, so.replicatedGraphCount);
+  boost::hash_combine(seed, so.globalReplicationFactor);
   boost::hash_combine(seed, so.enablePipelining);
   boost::hash_combine(seed, so.enableFloatingPointChecks);
   boost::hash_combine(seed, so.enableStochasticRounding);

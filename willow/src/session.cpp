@@ -35,6 +35,12 @@ Session::Session() {
 void Session::setDevice(std::shared_ptr<DeviceInfo> deviceInfo) {
   POPART_TRACEPOINT();
   logging::session::trace("Session::setDevice({})", *deviceInfo);
+  deviceInfo_ = deviceInfo;
+
+  if (ir.hashMatched()) {
+    // The executable will be loaded during prepareDevice
+    return;
+  }
 
   lowering_.reset(new popx::IrLowering(ir, deviceInfo));
   executable_ = popx::Executablex::createFromLoweredIr(*lowering_);
@@ -55,12 +61,15 @@ std::vector<uint32_t> Session::getRNGState() {
   return seedValue;
 }
 
-bool Session::tryLoadExecutable(const ONNX_NAMESPACE::ModelProto &modelProto,
-                                const DataFlow &dataFlow,
-                                const SessionOptions &userOptions,
-                                std::shared_ptr<DeviceInfo> deviceInfo) {
+bool Session::tryLoadExecutable() {
+  logging::session::trace("Session::tryLoadExecutable()");
+  if (false == ir.isPrepared()) {
+    throw error("Ir::prepare() must be called before trying to load a cached "
+                "executable");
+  }
+  const SessionOptions &userOptions = ir.getSessionOptions();
 
-  if (false == Ir::usingEngineCache(userOptions, deviceInfo.get())) {
+  if (false == Ir::usingEngineCache(userOptions, deviceInfo_.get())) {
     return false;
   }
 
@@ -68,15 +77,26 @@ bool Session::tryLoadExecutable(const ONNX_NAMESPACE::ModelProto &modelProto,
     return false;
   }
 
-  auto cachePath =
+  auto popartCachePath =
       popx::Executablex::getExecutablexCachePath(userOptions.cachePath);
-  std::ifstream executableFs(cachePath, std::ifstream::binary);
+  if (false == boost::filesystem::exists(popartCachePath)) {
+    return false;
+  }
+
+  auto poplarCachePath =
+      popx::IrLowering::getPoplarCachePath(userOptions.cachePath);
+  if (false == boost::filesystem::exists(poplarCachePath)) {
+    return false;
+  }
+
+  std::ifstream executableFs(popartCachePath, std::ifstream::binary);
   if (executableFs.is_open()) {
     logging::session::warn("Loading serialized PopART executable from {}",
-                           cachePath);
+                           popartCachePath);
 
     bool skipGraphCompilation = true;
-    lowering_.reset(new popx::IrLowering(ir, deviceInfo, skipGraphCompilation));
+    lowering_.reset(
+        new popx::IrLowering(ir, deviceInfo_, skipGraphCompilation));
 
     if (!lowering_->tryLoadPoplarExecutable()) {
       throw error("Failed to load serialized poplar executable.");
@@ -85,10 +105,10 @@ bool Session::tryLoadExecutable(const ONNX_NAMESPACE::ModelProto &modelProto,
     executable_ = popx::serialization::deserializeExecutable(
         executableFs, ir, *lowering_);
 
+    device_.reset(new popx::Devicex(*executable_, deviceInfo_));
     return true;
   }
-
-  logging::session::warn("Could not open file {}", cachePath);
+  logging::session::warn("Could not open file {}", popartCachePath);
   return false;
 }
 
@@ -176,8 +196,11 @@ void Session::compileAndExport(std::string executablePath,
 
 void Session::prepareDevice() {
   POPART_TRACEPOINT();
+  if (!tryLoadExecutable()) {
+    lowering_->prepareGraph();
+  }
+
   logging::session::trace("Session::prepareDevice()");
-  lowering_->prepareGraph();
   device_->prepare();
 }
 
@@ -460,11 +483,7 @@ void InferenceSession::configureFromOnnx(
 
   ir.prepare(
       {modelProto, perk, df, {}, nullptr, *deviceInfo, userOptions, patterns});
-  if (tryLoadExecutable(modelProto, df, userOptions, deviceInfo)) {
-    device_.reset(new popx::Devicex(*executable_, deviceInfo));
-  } else {
-    setDevice(deviceInfo);
-  }
+  setDevice(deviceInfo);
 }
 
 std::unique_ptr<InferenceSession>
@@ -514,12 +533,7 @@ void TrainingSession::configureFromOnnx(const std::string &modelProtoOrFilename,
               *deviceInfo,
               userOptions,
               patterns});
-
-  if (tryLoadExecutable(modelProto, df, userOptions, deviceInfo)) {
-    device_.reset(new popx::Devicex(*executable_, deviceInfo));
-  } else {
-    setDevice(deviceInfo);
-  }
+  setDevice(deviceInfo);
 }
 
 std::unique_ptr<TrainingSession>

@@ -227,16 +227,8 @@ protected:
 
   * Attempts to load a serialized executable. If succesful then Ir
   * preparation and `poplar::Graph` compilation are skipped.
-  *
-  * \param modelProto An ONNX model protobuf
-  * \param dataFlow Configuration for the data feeds and fetches
-  * \param userOptions String to configure session options
-  * \param deviceInfo which defines the type of device to work on
   */
-  bool tryLoadExecutable(const ONNX_NAMESPACE::ModelProto &modelProto,
-                         const DataFlow &dataFlow,
-                         const SessionOptions &userOptions,
-                         std::shared_ptr<DeviceInfo> deviceInfo);
+  bool tryLoadExecutable();
 
   /**
    * abstraction of the computation, the Ir is where
@@ -263,6 +255,11 @@ protected:
    * the program on the device.
    */
   std::unique_ptr<popx::Executablex> executable_;
+
+  /**
+   * Information about the device which this session uses
+   */
+  std::shared_ptr<DeviceInfo> deviceInfo_;
 
   /**
    * Flag to indicate if weightsFromHost has been called

@@ -284,6 +284,7 @@ poplar::Executable Executablex::getPoplarExecutable() {
     if (shouldSerialize()) {
       saveExecutablex();
       lowering().trySavePoplarExecutable(exe);
+      ir().saveHash();
     }
   }
 

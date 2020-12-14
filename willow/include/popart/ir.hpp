@@ -203,9 +203,14 @@ public:
   // Log the IR in a human readable format.
   void logIr();
 
-  void getOrSaveIrHash(const IrBundle &gb);
+  void compareWithSavedHash(const IrBundle &gb);
+  void saveHash() const;
 
-  // Prepare the IR based on the IrBundle configuration
+  // Prepare the IR based on the IrBundle configuration.
+  // If engine caching is enabled then the IR hash which is
+  // based on the IrBundle and the forward graph will be
+  // compared to a saved file. If the hash matches then
+  // the rest of the Ir preparation will be skipped.
   void prepare(const IrBundle &);
 
   bool isPrepared() const { return isPrepared_; }
