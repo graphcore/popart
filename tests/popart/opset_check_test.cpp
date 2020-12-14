@@ -12,9 +12,9 @@
 
 using namespace popart;
 
-class DepthToSpaceOp : public Op {
+class HardmaxOp : public Op {
 public:
-  DepthToSpaceOp(const OperatorIdentifier &opid_, const Op::Settings &settings_)
+  HardmaxOp(const OperatorIdentifier &opid_, const Op::Settings &settings_)
       : Op(opid_, settings_) {}
 
   std::unique_ptr<Op> clone() const override { throw error("unimplemented"); }
@@ -22,17 +22,17 @@ public:
   void setup() override { throw error("setup is unimplemented"); }
 };
 
-static OpDefinition depthToSpaceOpDef({OpDefinition::Inputs({}),
+static OpDefinition hardmaxOpDef({OpDefinition::Inputs({}),
                                        OpDefinition::Outputs({}),
                                        OpDefinition::Attributes({})});
 
-static OpCreator<DepthToSpaceOp> depthToSpaceOpCreator(OpDefinitions({
-    {Onnx::Operators::DepthToSpace_1, depthToSpaceOpDef},
+static OpCreator<HardmaxOp> hardmaxOpCreator(OpDefinitions({
+    {Onnx::Operators::Hardmax_1, hardmaxOpDef},
 
 }));
 
-// This test works because DepthToSpace is not implemented in any version at the
-// moment. If DepthToSpace is ever implemented, this op will break.
+// This test works because Hardmax is not implemented in any version at the
+// moment. If Hardmax is ever implemented, this op will break.
 //
 // This test checks that the strict onnx opset version checking works, and also
 // checks that the session option 'strictOpVersions' works.
@@ -47,10 +47,10 @@ BOOST_AUTO_TEST_CASE(OpsetCheck) {
     std::vector<TensorId> outputs;
     if (strictOpsetVersions) {
       outputs = builder->customOp(
-          Onnx::Operators::DepthToSpace_1, 11, {input}, 1, {});
+          Onnx::Operators::Hardmax_1, 11, {input}, 1, {});
     } else {
       outputs =
-          builder->customOp(Onnx::Operators::DepthToSpace_1, 9, {input}, 1, {});
+          builder->customOp(Onnx::Operators::Hardmax_1, 9, {input}, 1, {});
     }
 
     auto l1 = aiGraphcore.l1loss({outputs.at(0)}, 0.1f, ReductionType::Sum);
@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE(OpsetCheck) {
           auto expected_error = [&]() -> std::string {
             if (strictOpsetVersions) {
               return "For an opset 11 Model, the ONNX spec stipulates that a "
-                     "DepthToSpace op must be version 11. The highest version "
+                     "Hardmax op must be version 11. The highest version "
                      "we have "
                      "implemented less than or equal to 11 is 1, so bailing.";
             } else {
