@@ -2011,13 +2011,14 @@ Ir::getVirtualGraphIdFromTensorProducers(std::vector<Tensor *> ts) {
 std::string Ir::getGradSumOpNamePrefix() const { return "GradSum"; }
 
 Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
+  TensorId gradientId = getGradId(target->id);
 
   std::unique_ptr<popart::Op> gradSum =
       OpManager::createOp(Domain::ai_onnx,
                           "Sum",
                           getOpSetVersionFromModel(Domain::ai_onnx),
                           getMainGraph(),
-                          getGradSumOpNamePrefix());
+                          getGradSumOpNamePrefix() + "_" + gradientId);
 
   OpId opId = getMainGraph().moveIntoGraph(std::move(gradSum));
 
@@ -2026,7 +2027,6 @@ Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
   for (auto &tensor : toSum) {
     inputs.push_back(tensor->id);
   }
-  TensorId gradientId = getGradId(target->id);
   std::vector<TensorId> outputs{gradientId};
 
   getMainGraph().connectInputs(InputVecWrapper(inputs), opId);
