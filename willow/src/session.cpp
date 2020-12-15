@@ -430,6 +430,10 @@ std::string Session::getSerializedGraph() const {
 
 TensorTileMap Session::getTensorTileMap() const {
   logging::session::trace("Session::getTensorTileMap");
+  if (executable_->isDeserialized()) {
+    throw error("Tensor tile map is not populated when running from a cached "
+                "executable");
+  }
 
   return device_->getTensorTileMap();
 }

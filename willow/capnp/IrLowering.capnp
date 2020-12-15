@@ -23,9 +23,8 @@ struct IrLowering {
   }
 
   ir @0: Ir.Ir;
-  tensorTileMap @1: TensorTileMap;
-  linearlyCreatedInputTensors @2: List(TensorId);
-  efficientlyCreatedInputTensors @3: List(TensorId);
-  hostReduceStreamIds @4: List(TensorId);
-  cycleCountIds @5: List(TensorId);
+  linearlyCreatedInputTensors @1: List(TensorId);
+  efficientlyCreatedInputTensors @2: List(TensorId);
+  hostReduceStreamIds @3: List(TensorId);
+  cycleCountIds @4: List(TensorId);
 }

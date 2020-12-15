@@ -87,9 +87,6 @@ void compare_executables(const popx::Executablex &exe1,
 
   BOOST_CHECK(exe2.getSeedTensor() == exe1.getSeedTensor());
 
-  auto tileMapExe1 = exe1.lowering().getTensorTileMap();
-  auto tileMapExe2 = exe2.lowering().getTensorTileMap();
-  BOOST_CHECK(tileMapExe1 == tileMapExe2);
   BOOST_CHECK(exe1.lowering().getLinearlyCreatedInputTensors() ==
               exe2.lowering().getLinearlyCreatedInputTensors());
   BOOST_CHECK(exe1.lowering().getEfficientlyCreatedInputTensors() ==

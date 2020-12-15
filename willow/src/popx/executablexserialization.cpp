@@ -319,35 +319,6 @@ void serializeExecutable(std::ostream &out,
   }
 
   {
-    auto tensorTileMap        = ir_lowering.getTensorTileMap();
-    auto tensorTileMapBuilder = irLoweringBuilder.initTensorTileMap();
-    auto capnpTensorTileMap =
-        tensorTileMapBuilder.initMappings(tensorTileMap.size());
-
-    int i = 0;
-    for (const auto &kv : tensorTileMap) {
-      capnpTensorTileMap[i].setId(kv.first);
-      auto tensorIntervalListsBuilder =
-          capnpTensorTileMap[i].initTensorIntervalLists(kv.second.size());
-
-      const auto &tensorIntervalLists = kv.second;
-      for (int j = 0; j < tensorIntervalLists.size(); ++j) {
-        const auto &tensorIntervalList = tensorIntervalLists[j];
-        auto innerTensorIntervalListsBuilder =
-            tensorIntervalListsBuilder.init(j, tensorIntervalList.size());
-        for (int k = 0; k < tensorIntervalList.size(); ++k) {
-
-          innerTensorIntervalListsBuilder[k].setStart(
-              tensorIntervalList[k].first);
-          innerTensorIntervalListsBuilder[k].setEnd(
-              tensorIntervalList[k].second);
-        }
-      }
-      ++i;
-    }
-  }
-
-  {
     auto linearlyCreatedInputTensors =
         ir_lowering.getLinearlyCreatedInputTensors();
     auto linearlyCreatedInputTensorsBuilder =
@@ -521,27 +492,6 @@ deserializeExecutable(std::istream &in,
     } else {
       ir.setExecutionMode(popart::Ir::ExecutionMode::Training);
     }
-  }
-  {
-    auto capnpTensorTileMap = irLoweringReader.getTensorTileMap().getMappings();
-    TensorTileMap mappings;
-    for (const auto m : capnpTensorTileMap) {
-      auto capnpTensorIntervalLists = m.getTensorIntervalLists();
-      std::vector<TensorIntervalList> tils;
-      tils.reserve(capnpTensorIntervalLists.size());
-      for (const auto capnpTensorIntervalList : capnpTensorIntervalLists) {
-        std::vector<TensorInterval> tensorIntervalList;
-        tensorIntervalList.reserve(capnpTensorIntervalList.size());
-        for (const auto ti : capnpTensorIntervalList) {
-          tensorIntervalList.push_back(
-              std::make_pair(ti.getStart(), ti.getEnd()));
-        }
-        tils.emplace_back(std::move(tensorIntervalList));
-      }
-      std::string id = m.getId();
-      mappings.emplace(id, std::move(tils));
-    }
-    lowering.setTensorTileMap(mappings);
   }
 
   {
