@@ -547,6 +547,18 @@ public:
    */
   TensorId fmod(const std::vector<TensorId> &args,
                 const DebugContext &debugContext = {});
+
+  /*
+   * Add remainder operation to the model.
+   *
+   * This is equivalent to Python's modulo operator %. The result has the same
+   * sign as the divisor.
+   * \param args Input tensors.
+   * \return Computes the element-wise remainder of division. The remainder has
+   * the same sign as the divisor.
+   */
+  TensorId remainder(const std::vector<TensorId> &args,
+                     const DebugContext &debugContext = {});
 };
 
 /**

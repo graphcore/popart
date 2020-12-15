@@ -1953,6 +1953,14 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("args"),
             py::arg("shape"),
             py::arg("debugContext") = std::string());
+    cls.def("remainder",
+            &AiGraphcoreOpset1::remainder,
+            py::arg("args"),
+            py::arg("debugPrefix") = std::string());
+    cls.def("remainder",
+            &AiGraphcoreOpset1::remainder,
+            py::arg("args"),
+            py::arg("debugContext") = std::string());
   }
   {
     py::class_<Builder> cls(m, "_BuilderCore");

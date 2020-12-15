@@ -731,6 +731,33 @@ def test_fmod_mixed_sign_float16(op_tester):
     op_tester.run(init_builder, reference, 'infer')
 
 
+def test_remainder_grad(op_tester):
+    d1 = (np.random.rand(4).astype(np.float32) - 0.5) * 10.0
+    d2 = np.random.rand(4).astype(np.float32) - 0.5
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        i2 = builder.addInputTensor(d2)
+        o = builder.aiGraphcore.remainder([i1, i2], "test_remainder_grad")
+        builder.addOutputTensor(o)
+        gradPrefix = popart.reservedGradientPrefix()
+
+        return [o, gradPrefix + i1, i2, gradPrefix + o]
+
+    def reference(ref_data):
+        t1 = torch.tensor(d1, requires_grad=True)
+        t2 = torch.tensor(d2, requires_grad=False)
+        out = torch.remainder(t1, t2)
+        d__o = torch.tensor(ref_data.getOutputTensorGrad(0))
+        assert not torch.isnan(d__o).any()
+        out.backward(torch.tensor(d__o))
+
+        return [out, t1.grad, t2, None]
+
+    op_tester.setPatterns(['FmodArg0GradOp'], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'train')
+
+
 def test_reciprocal_grad(op_tester):
     # create test data
     d1 = np.random.rand(4).astype(np.float32)

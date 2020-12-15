@@ -1,6 +1,7 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <memory>
 #include <onnx/onnx_pb.h>
+#include <onnxpasses/nodepatterns/binary_ops.hpp>
 #include <onnxpasses/nodepatterns/conv.hpp>
 #include <onnxpasses/nodepatterns/trig.hpp>
 #include <onnxpasses/onnxtoonnx.hpp>
@@ -32,6 +33,7 @@ void Canonnxalizer::canonnxalize(GraphProto &g) const {
   patterns.push_back(std::make_unique<Acosh>(target));
   patterns.push_back(std::make_unique<Atanh>(target));
   patterns.push_back(std::make_unique<Acos>(target));
+  patterns.push_back(std::make_unique<Remainder>(target));
 
   /**
    * The ONNX spec ensures that the Nodes appear in topological order.
