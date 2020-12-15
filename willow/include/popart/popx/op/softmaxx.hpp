@@ -17,11 +17,13 @@ public:
   poplar::Tensor outplace(poplar::program::Sequence &,
                           poplar::Graph &,
                           const poplar::Tensor &,
+                          const poplar::DebugNameAndId &,
                           const std::string &) const final;
 
   void inplace(poplar::program::Sequence &,
                poplar::Graph &,
                const poplar::Tensor &,
+               const poplar::DebugNameAndId &,
                const std::string &) const final;
 
   static std::unique_ptr<EwuComputex>

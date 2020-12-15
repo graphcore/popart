@@ -21,19 +21,22 @@ SigmoidOpx::SigmoidOpx(Op *op, Devicex *devicex)
 poplar::Tensor SigmoidComputex::outplace(poplar::program::Sequence &p,
                                          poplar::Graph &g,
                                          const poplar::Tensor &t,
+                                         const poplar::DebugNameAndId &dnai,
                                          const std::string &s) const {
-  auto outTensor = cloneNcopy(p, g, t);
-  inplace(p, g, outTensor, s);
+  auto outTensor = cloneNcopy(p, g, t, dnai);
+  inplace(p, g, outTensor, dnai, s);
   return outTensor;
 }
 
 void SigmoidComputex::inplace(poplar::program::Sequence &p,
                               poplar::Graph &g,
                               const poplar::Tensor &t,
+                              const poplar::DebugNameAndId &dnai,
                               const std::string &s) const {
 
   // apply the inplace SIGMOID
-  popnn::nonLinearityInPlace(g, popnn::NonLinearityType::SIGMOID, t, p, s);
+  popnn::nonLinearityInPlace(
+      g, popnn::NonLinearityType::SIGMOID, t, p, {dnai, s});
 }
 
 SigmoidGradOpx::SigmoidGradOpx(Op *op, Devicex *devicex)
@@ -48,7 +51,7 @@ void SigmoidGradOpx::grow(poplar::program::Sequence &prog) const {
       getInTensor(SigmoidGradOp::getFwdOutInIndex()), // out,
       getInTensor(SigmoidGradOp::getGradInIndex()),   // outGradient,
       prog,                                           // prog,
-      debugPrefix()                                   // debugPrefix
+      debugPrefix()                                   // debugContext
   );
 
   setOutTensor(SigmoidOp::getOutIndex(), outTensor);

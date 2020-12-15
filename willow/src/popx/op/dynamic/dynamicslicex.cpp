@@ -57,7 +57,7 @@ poplar::Tensor DynamicSliceOpx::createInput(InIndex index,
     auto sliceTensor = graph().addVariable(
         popType(outInfo),
         outInfo.shape_szt(),
-        op.inId(DynamicSliceBaseOp::getInIndex()) + "_slice");
+        debugPrefix(op.inId(DynamicSliceBaseOp::getInIndex()) + "_slice"));
     dv_p->lowering().getLinearMapper().mapTensor(graph(), sliceTensor);
     auto inShape = op.inShape(DynamicSliceBaseOp::getInIndex());
 

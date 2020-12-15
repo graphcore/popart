@@ -1,7 +1,6 @@
 # Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 from typing import Any, Dict, Iterable, List, Union
 import re
-
 import numpy as np
 
 import popart

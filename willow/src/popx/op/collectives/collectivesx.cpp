@@ -22,9 +22,10 @@ static int64_t nextMultiple(int64_t val, int64_t multiple) {
 CollectiveBalancedReorder::CollectiveBalancedReorder(
     poplar::Graph &graph_,
     poplar::Tensor tensor_,
-    unsigned replicationFactor_)
+    unsigned replicationFactor_,
+    const poplar::DebugNameAndId &dnai_)
     : graph(graph_), replicationFactor(replicationFactor_),
-      referenceTensor(tensor_) {
+      referenceTensor(tensor_), dnai(dnai_) {
   simplifier    = graph.getSimplifyingRearranger(referenceTensor);
   auto t        = simplifier.rearrange(referenceTensor);
   auto mapping  = graph.getTileMapping(t);
@@ -134,14 +135,12 @@ CollectiveBalancedReorder::CollectiveBalancedReorder(
 }
 
 poplar::Tensor
-CollectiveBalancedReorder::createReplicaSlice(const poplar::Type &type,
-                                              const std::string &debugPrefix) {
+CollectiveBalancedReorder::createReplicaSlice(const poplar::Type &type) {
   // A replica slice is a single variable with the tile
   // mapping set so you get a contiguous region on each
   // tile of the correct size to map the reference tensor to.
-  auto t     = graph.addVariable(type,
-                             {hostRearrangement.totalElementsPerReplica},
-                             debugPrefix + "_cbr_slice0");
+  auto t = graph.addVariable(
+      type, {hostRearrangement.totalElementsPerReplica}, {dnai, "_cbr_slice0"});
   auto index = 0;
   for (unsigned tile = 0; tile < numReplicaElementsPerTile.size(); ++tile) {
     auto size = numReplicaElementsPerTile[tile];
@@ -156,11 +155,10 @@ poplar::Tensor CollectiveBalancedReorder::createCollectivesTensor(
     const std::string &debugPrefix) {
   // The full collectives (gathered) tensor is just the
   // concatenation of 'replicaFactor' slices.
-  std::vector<poplar::Tensor> slices = {
-      createReplicaSlice(type, debugPrefix).expand({0})};
+  std::vector<poplar::Tensor> slices = {createReplicaSlice(type).expand({0})};
   for (unsigned i = 1; i < replicationFactor; ++i) {
     auto name = debugPrefix + "_cbr_slice" + std::to_string(i);
-    slices.push_back(graph.clone(slices[0], name));
+    slices.push_back(graph.clone(slices[0], {dnai, name}));
   }
   return concat(slices);
 }
@@ -320,7 +318,7 @@ CollectiveBalancedReorder *CollectivesBaseOpx::createCollectiveBalancedReorder(
       dv_p->lowering().getCollectiveBalancedReorder(*group.first.begin());
   if (!cbr.get()) {
     cbr = std::make_shared<CollectiveBalancedReorder>(
-        graph(), tensor, replicationFactor);
+        graph(), tensor, replicationFactor, getDebugNameAndId());
     for (auto tensor_id : group.first) {
       logging::opx::trace("[CollectivesBaseOpx] CBR created for {}", tensor_id);
       dv_p->lowering().setCollectiveBalancedReorder(tensor_id, cbr);

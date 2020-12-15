@@ -75,7 +75,8 @@ void IdentityLossGradOpx::grow(poplar::program::Sequence &prog) const {
 
       setOutTensor(0, cloneNcopy(prog, output));
     } else {
-      throw error("Unsupported reduction type for Loss {}", debugPrefix());
+      throw error("Unsupported reduction type for Loss {}",
+                  debugPrefix().getPathName());
     }
   }
 }
@@ -112,13 +113,14 @@ void IdentityLossOpx::grow(poplar::program::Sequence &prog) const {
     // the logic will fall through to the error.
     case ReductionType::NoReduction:
     default: {
-      throw error("Unsupported reduction type for Loss {}", debugPrefix());
+      throw error("Unsupported reduction type for Loss {}",
+                  debugPrefix().getPathName());
     }
     }
 
     // t_scale is always expected to be FLOAT, regardless of the input type
     // to the reduction
-    auto t_scale = getConst(poplar::FLOAT, {}, scale, debugPrefix("scale"));
+    auto t_scale = getConst(poplar::FLOAT, {}, scale, "scale");
 
     auto reduction = popops::reduce(graph(),
                                     inTensor1D,

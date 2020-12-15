@@ -125,37 +125,37 @@ poplar::program::Sequence &PopPrograms::weightsToHostFragment() {
 }
 
 poplar::program::Sequence PopPrograms::weightsFromHost() const {
-  poplar::program::Sequence prog;
+  poplar::program::Sequence prog({}, {"weightsFromHost"});
   prog.add(streamWeightsFromHostFragment());
   return prog;
 }
 
 poplar::program::Sequence PopPrograms::optimizerFromHost() const {
-  poplar::program::Sequence prog;
+  poplar::program::Sequence prog({}, {"optimizerFromHost"});
   prog.add(streamOptimizerFromHostFragment());
   return prog;
 }
 
 poplar::program::Sequence PopPrograms::setRandomSeedFromHost() const {
-  poplar::program::Sequence prog;
+  poplar::program::Sequence prog({}, {"setRandomSeedFromHost"});
   prog.add(setRandomSeedFromHostFragment());
   return prog;
 }
 
 poplar::program::Sequence PopPrograms::cycleCountTensorToHost() const {
-  poplar::program::Sequence prog;
+  poplar::program::Sequence prog({}, {"cycleCountTensorToHost"});
   prog.add(cycleCountTensorToHostFragment());
   return prog;
 }
 
 poplar::program::Sequence PopPrograms::rngStateFromHost() const {
-  poplar::program::Sequence prog;
+  poplar::program::Sequence prog({}, {"rngStateFromHost"});
   prog.add(rngStateFromHostFragment());
   return prog;
 }
 
 poplar::program::Sequence PopPrograms::rngStateToHost() const {
-  poplar::program::Sequence prog;
+  poplar::program::Sequence prog({}, {"rngStateToHost"});
   prog.add(rngStateToHostFragment());
   return prog;
 }
@@ -311,7 +311,7 @@ PopPrograms::getMainProgramFromPipelineFragments() const {
                          ir_lowering_p->graph().addFunction(stage_seq.second)});
   }
 
-  poplar::program::Sequence fill;
+  poplar::program::Sequence fill({}, {"fill"});
   for (PipelineCycle pCycle = pInfo.fillPhase.start;
        pCycle <= pInfo.fillPhase.end;
        pCycle++) {
@@ -321,12 +321,12 @@ PopPrograms::getMainProgramFromPipelineFragments() const {
 
   // All pipeline cycles in the main phase are identical. So we create the
   // program for a single cycle and repeat for mainCycles
-  poplar::program::Sequence main;
+  poplar::program::Sequence main({}, {"main"});
   int64_t mainCycles = pInfo.mainPhase.end - pInfo.mainPhase.start + 1;
   ss << "\nPipeline Cycle 'Main', " + std::to_string(mainCycles) + " cycles";
   addPipelineCycle(pInfo.mainPhase.start, main, ss, fwdFunctions);
 
-  poplar::program::Sequence flush;
+  poplar::program::Sequence flush({}, {"flush"});
   for (PipelineCycle pCycle = pInfo.flushPhase.start;
        pCycle <= pInfo.flushPhase.end;
        pCycle++) {
@@ -337,16 +337,17 @@ PopPrograms::getMainProgramFromPipelineFragments() const {
   logging::devicex::debug("Pipelining program construction summary:");
   logging::devicex::debug(ss.str());
 
-  poplar::program::Sequence inner;
+  poplar::program::Sequence inner({}, {"inner"});
 
   inner.add(fill);
   // This is the inner main cycles loop, if doing pipelining withour gradient
   // accumulation, this the batches per step loop, as batch size = micro_batch
   // size
-  inner.add(poplar::program::Repeat(static_cast<uint32_t>(mainCycles), main));
+  inner.add(poplar::program::Repeat(
+      static_cast<uint32_t>(mainCycles), main, {"inerLoop"}));
   inner.add(flush);
 
-  poplar::program::Sequence outer;
+  poplar::program::Sequence outer({}, {"outer"});
 
   outer.add(initFragment());
 
@@ -356,7 +357,7 @@ PopPrograms::getMainProgramFromPipelineFragments() const {
     // If doing gradient accumulation, the inner loop is over mini batches,
     // and this outer loop loops over multiple batches per step.
     auto bps = ir_lowering_p->ir().getDataFlow().batchesPerStep();
-    outer.add(poplar::program::Repeat(bps, inner));
+    outer.add(poplar::program::Repeat(bps, inner, {"outerloop"}));
   } else {
     // No gradient accumulation, so just add one iteration of the inner program.
     outer.add(inner);
@@ -371,11 +372,11 @@ poplar::program::Sequence PopPrograms::program() const {
   auto instrumentations =
       ir_lowering_p->ir().getSessionOptions().hardwareInstrumentations;
 
-  poplar::program::Sequence outer;
+  poplar::program::Sequence outer({}, {"outer"});
   if (ir_lowering_p->ir().getSessionOptions().enablePipelining) {
     outer.add(getMainProgramFromPipelineFragments());
   } else {
-    poplar::program::Sequence prog;
+    poplar::program::Sequence prog({}, {"program"});
     prog.add(preForwardFragment());
     prog.add(forwardFragment());
     prog.add(backwardFragment());
@@ -388,7 +389,8 @@ poplar::program::Sequence PopPrograms::program() const {
       logging::devicex::trace(
           "Adding gradient accumulation repeat loop with {} loops",
           accumulationFactor);
-      prog = poplar::program::Repeat(accumulationFactor, prog);
+      prog = poplar::program::Repeat(
+          accumulationFactor, prog, {"accumalutionLoop"});
       prog.add(accumulateOuterFragment());
     }
 
@@ -414,7 +416,9 @@ poplar::program::Sequence PopPrograms::program() const {
 
     // BatchesPerStep loop
     outer.add(poplar::program::Repeat(
-        ir_lowering_p->ir().getDataFlow().batchesPerStep(), prog));
+        ir_lowering_p->ir().getDataFlow().batchesPerStep(),
+        prog,
+        {"batchesPerStep"}));
     outer.add(toHostFinalCopyFragment());
   }
 
@@ -429,7 +433,9 @@ poplar::program::Sequence PopPrograms::program() const {
 }
 
 poplar::program::Sequence PopPrograms::weightsToHost() const {
-  return weightsToHostFragment();
+  poplar::program::Sequence prog({}, {"weightsToHost"});
+  prog.add(weightsToHostFragment());
+  return prog;
 }
 
 const std::vector<poplar::program::Program> PopPrograms::progs() const {

@@ -596,7 +596,7 @@ def genBuilderHpp(filename, schema):
                             TensorId
                             constant(const ConstVoidData&  value,
                                      bool is_value_sparse = false,
-                                     const std::string &name = "");
+                                     const DebugContext &debugContext = {});
                             """
                         x = format_method(x, 5)
                         f.write(x)
@@ -629,8 +629,8 @@ def genBuilderHpp(filename, schema):
                                     f.write(" = {}".format(a.DefaultValue()))
                                 f.write(",\n")
                         f.write(
-                            "     {}const std::string &name = \"\");\n".format(
-                                spaces(len(op.CppName()))))
+                            "     {}const popart::DebugContext& debugContext = {});\n"
+                            .format(spaces(len(op.CppName())), '{}'))
                         f.write("\n")
 
                 f.write("};\n")
@@ -657,18 +657,24 @@ def genBuilderCpp(filename, schema):
                             TensorId
                             AiOnnxOpset11::constant(const ConstVoidData&  value,
                                                     bool is_value_sparse,
-                                                    const std::string& name) {
+                                                    const DebugContext& debugContext) {
                               std::map<std::string, popart::any> attributes;
                               if (is_value_sparse) {
                                   throw error("Attributes of type `sparse_tensor' are currently not supported.");
                               } else {
                                   attributes["value"] = value;
                               }
-                              return impl->op(Onnx::Operators::Constant_11,
+
+                              BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, {}, attributes);
+                              attributes.insert({sDebugInfoId, di.getId()});
+
+                              auto outputs = impl->op(Onnx::Operators::Constant_11,
                                               getOpsetVersion(),
                                               {},
                                               attributes,
-                                              name)[0];
+                                              {di});
+                              di.setOutputs(outputs);
+                              return outputs.at(0);
                             }
                             """
                         x = format_method(x)
@@ -698,8 +704,10 @@ def genBuilderCpp(filename, schema):
                                 spaces(len(classname)),
                                 spaces(len(op.CppName())), a.CppType(),
                                 a.name))
-                    f.write("{}  {} const std::string& name) {{\n".format(
-                        spaces(len(classname)), spaces(len(op.CppName()))))
+                    f.write(
+                        "{}  {} const popart::DebugContext& debugContext) {{\n"
+                        .format(spaces(len(classname)),
+                                spaces(len(op.CppName()))))
 
                     f.write(
                         "  std::map<std::string, popart::any> attributes;\n")
@@ -767,8 +775,20 @@ def genBuilderCpp(filename, schema):
                                             format(a.name, a.name))
                                 f.write("  }\n")
 
-                    f.write("  return impl->op(Onnx::Operators::{},\n".format(
-                        op.CppId()))
+                    if op.inputs > 0:
+                        f.write(
+                            "  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);\n"
+                        )
+                    else:
+                        f.write(
+                            "  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, {}, attributes);\n"
+                        )
+
+                    f.write(
+                        "  attributes.insert({sDebugInfoId, di.getId()});\n")
+
+                    f.write("  auto outputs = impl->op(Onnx::Operators::{},\n".
+                            format(op.CppId()))
 
                     # Add the opset version
                     f.write("                  getOpsetVersion(),\n")
@@ -783,7 +803,7 @@ def genBuilderCpp(filename, schema):
                         f.write("                  num_outputs,\n")
 
                     f.write("                  attributes,\n")
-                    f.write("                  name")
+                    f.write("                  {di}")
 
                     if op.verifyInput():
                         f.write(",\n")
@@ -798,10 +818,12 @@ def genBuilderCpp(filename, schema):
                             .format(classname, op.CppId()))
                         f.write("                  }")
 
-                    f.write(")")
+                    f.write(");\n")
+                    f.write("  di.setOutputs(outputs);\n")
                     if op.max_output == 1:
-                        f.write("[0]")
-                    f.write(";\n")
+                        f.write("  return outputs[0];\n")
+                    else:
+                        f.write("  return outputs;\n")
 
                     f.write("}\n")
                     f.write("\n")
@@ -865,131 +887,189 @@ def genPythonBuilderBinds(schema):
                     classname, classname))
                 for op in sorted(ops):
 
-                    # Operator
-                    f.write("  .def(\"{}\",\n".format(op.CppName()))
+                    def getFunc(f, op, deb):
+                        # Operator
+                        f.write("  .def(\"{}\",\n".format(op.CppName()))
 
-                    # Special case of the constant operator
-                    if op.name == "Constant":
-                        if (op.version == 11):
-                            x = f"""
-                                []({classname} &opset, py::array array, bool is_value_sparse, const std::string& name) {{
-                                   array = makeContiguous(array);
-                                   ConstVoidData initData;
-                                   initData.data = array.request().ptr;
-                                   initData.info = getTensorInfo(array);
-                                   return opset.constant(initData, is_value_sparse, name);
-                                }},
-                                py::arg("value"),
-                                py::arg("is_value_sparse") = false,
-                                py::arg("debugPrefix") = std::string())
-                                """
-                            x = format_method(x, 7)
+                        # Special case of the constant operator
+                        if op.name == "Constant":
+                            if (op.version == 11):
+                                if deb == 0:
+                                    x = f"""
+                                        []({classname} &opset, py::array array, bool is_value_sparse, const DebugContext& debugContext) {{
+                                        array = makeContiguous(array);
+                                        ConstVoidData initData;
+                                        initData.data = array.request().ptr;
+                                        initData.info = getTensorInfo(array);
+                                        return opset.constant(initData, is_value_sparse, debugContext);
+                                        }},
+                                        py::arg("value"),
+                                        py::arg("is_value_sparse") = false,
+                                        py::arg("debugPrefix") = std::string())
+                                        """
+                                    x = format_method(x, 7)
+                                    f.write(x)
+                                else:
+                                    x = f"""
+                                        []({classname} &opset, py::array array, bool is_value_sparse, const DebugContext& debugContext) {{
+                                        array = makeContiguous(array);
+                                        ConstVoidData initData;
+                                        initData.data = array.request().ptr;
+                                        initData.info = getTensorInfo(array);
+                                        return opset.constant(initData, is_value_sparse, debugContext);
+                                        }},
+                                        py::arg("value"),
+                                        py::arg("is_value_sparse") = false,
+                                        py::arg("debugContext") = std::string())
+                                        """
+                                    x = format_method(x, 7)
+                                    f.write(x)
+                                #continue
+                                return
+                            else:
+                                if deb == 0:
+                                    f.write(
+                                        "       []({} &opset, py::array array, const DebugContext& debugContext) {{\n"
+                                        .format(classname))
+                                    f.write(
+                                        "          array = makeContiguous(array);\n"
+                                    )
+                                    f.write(
+                                        "          ConstVoidData initData;\n")
+                                    f.write(
+                                        "          initData.data = array.request().ptr;\n"
+                                    )
+                                    f.write(
+                                        "          initData.info = getTensorInfo(array);\n"
+                                    )
+                                    f.write(
+                                        "          return opset.constant(initData, debugContext);\n"
+                                    )
+                                    f.write("        },\n")
+                                else:
+                                    f.write(
+                                        "       []({} &opset, py::array array, const DebugContext& debugContext) {{\n"
+                                        .format(classname))
+                                    f.write(
+                                        "          array = makeContiguous(array);\n"
+                                    )
+                                    f.write(
+                                        "          ConstVoidData initData;\n")
+                                    f.write(
+                                        "          initData.data = array.request().ptr;\n"
+                                    )
+                                    f.write(
+                                        "          initData.info = getTensorInfo(array);\n"
+                                    )
+                                    f.write(
+                                        "          return opset.constant(initData, debugContext);\n"
+                                    )
+                                    f.write("        },\n")
+                        # Special case for the constantofshape operator
+                        elif op.name == "ConstantOfShape":
+                            x = "\
+                            []({} &opset,\
+                                const std::vector<TensorId> &args,\
+                                py::array array,\
+                                const std::string &name) {{\
+                                ConstVoidData initData;\
+                                initData.data = array.request().ptr;\
+                                initData.info = getTensorInfo(array);\
+                                return opset.constantofshape(args, initData, name);\
+                            }},".format(classname)
+                            x = textwrap.dedent(x)
+                            x = textwrap.indent(x, ' ' * 7)
+                            x = x[1:]  # drop the first newline
                             f.write(x)
-                            continue
                         else:
-                            f.write(
-                                "       []({} &opset, py::array array, const std::string& name) {{\n"
-                                .format(classname))
-                            f.write(
-                                "          array = makeContiguous(array);\n")
-                            f.write("          ConstVoidData initData;\n")
-                            f.write(
-                                "          initData.data = array.request().ptr;\n"
-                            )
-                            f.write(
-                                "          initData.info = getTensorInfo(array);\n"
-                            )
-                            f.write(
-                                "          return opset.constant(initData, name);\n"
-                            )
-                            f.write("        },\n")
-                    # Special case for the constantofshape operator
-                    elif op.name == "ConstantOfShape":
-                        x = "\
-                        []({} &opset,\
-                            const std::vector<TensorId> &args,\
-                            py::array array,\
-                            const std::string &name) {{\
-                            ConstVoidData initData;\
-                            initData.data = array.request().ptr;\
-                            initData.info = getTensorInfo(array);\
-                            return opset.constantofshape(args, initData, name);\
-                        }},".format(classname)
-                        x = textwrap.dedent(x)
-                        x = textwrap.indent(x, ' ' * 7)
-                        x = x[1:]  # drop the first newline
-                        f.write(x)
-                    else:
 
-                        # Add the lamda
-                        f.write("       []({} &opset,\n".format(classname))
+                            # Add the lamda
+                            f.write("       []({} &opset,\n".format(classname))
 
-                        if op.inputs > 0:
-                            f.write(
-                                "          const std::vector<TensorId> &args,\n"
-                            )
-
-                        if op.min_output != op.max_output:
-                            f.write("          unsigned num_outputs,\n")
-
-                        for a in sorted(op.attributes,
-                                        key=lambda x: x.hasDefault() or not x.
-                                        required):
-                            if not a.isDeprecated():
-                                f.write("          {} {},\n".format(
-                                    a.CppType(), a.name))
-
-                        f.write("          const std::string &name) -> ")
-
-                        # Call the builder method
-                        if op.max_output == 1:
-                            f.write("TensorId")
-                        else:
-                            f.write("std::vector<TensorId>")
-
-                        f.write("{\n")
-                        f.write("           return opset.{}(".format(
-                            op.CppName()))
-
-                        if op.inputs > 0:
-                            f.write("args,\n".format(op.CppName()))
-
-                        if op.min_output != op.max_output:
-                            f.write(
-                                "                         {}num_outputs,\n".
-                                format(spaces(len(op.CppName()))))
-
-                        for a in sorted(op.attributes,
-                                        key=lambda x: x.hasDefault() or not x.
-                                        required):
-                            if not a.isDeprecated():
+                            if op.inputs > 0:
                                 f.write(
-                                    "                         {}{},\n".format(
-                                        spaces(len(op.CppName())), a.name))
+                                    "          const std::vector<TensorId> &args,\n"
+                                )
 
-                        f.write("                         {}name);\n".format(
-                            spaces(len(op.CppName()))))
-                        f.write("       },\n")
+                            if op.min_output != op.max_output:
+                                f.write("          unsigned num_outputs,\n")
 
-                    # Define the python function arguments
-                    if op.inputs > 0:
-                        f.write("       py::arg(\"args\"),\n")
+                            for a in sorted(op.attributes,
+                                            key=lambda x: x.hasDefault() or
+                                            not x.required):
+                                if not a.isDeprecated():
+                                    f.write("          {} {},\n".format(
+                                        a.CppType(), a.name))
 
-                    if op.min_output != op.max_output:
-                        f.write("       py::arg(\"num_outputs\"),\n")
+                            if deb == 0:
+                                f.write(
+                                    "          const DebugContext& debugContext) -> "
+                                )
+                            else:
+                                f.write(
+                                    "           const DebugContext& debugContext) -> "
+                                )
 
-                    for a in sorted(
-                            op.attributes,
-                            key=lambda x: x.hasDefault() or not x.required):
-                        if not a.isDeprecated():
-                            f.write("       py::arg(\"{}\")".format(a.name))
+                            # Call the builder method
+                            if op.max_output == 1:
+                                f.write("TensorId")
+                            else:
+                                f.write("std::vector<TensorId>")
 
-                            if a.hasDefaultValue():
-                                f.write(" = {}".format(a.DefaultValue()))
-                            f.write(",\n")
+                            f.write("{\n")
+                            f.write("           return opset.{}(".format(
+                                op.CppName()))
 
-                    f.write(
-                        "       py::arg(\"debugPrefix\") = std::string())\n")
+                            if op.inputs > 0:
+                                f.write("args,\n".format(op.CppName()))
+
+                            if op.min_output != op.max_output:
+                                f.write(
+                                    "                         {}num_outputs,\n"
+                                    .format(spaces(len(op.CppName()))))
+
+                            for a in sorted(op.attributes,
+                                            key=lambda x: x.hasDefault() or
+                                            not x.required):
+                                if not a.isDeprecated():
+                                    f.write("                         {}{},\n".
+                                            format(spaces(len(op.CppName())),
+                                                   a.name))
+
+                            f.write(
+                                "                         {}debugContext);\n".
+                                format(spaces(len(op.CppName()))))
+                            f.write("       },\n")
+
+                        # Define the python function arguments
+                        if op.inputs > 0:
+                            f.write("       py::arg(\"args\"),\n")
+
+                        if op.min_output != op.max_output:
+                            f.write("       py::arg(\"num_outputs\"),\n")
+
+                        for a in sorted(op.attributes,
+                                        key=lambda x: x.hasDefault() or not x.
+                                        required):
+                            if not a.isDeprecated():
+                                f.write("       py::arg(\"{}\")".format(
+                                    a.name))
+
+                                if a.hasDefaultValue():
+                                    f.write(" = {}".format(a.DefaultValue()))
+                                f.write(",\n")
+
+                        if (deb == 0):
+                            f.write(
+                                "       py::arg(\"debugContext\") = std::string())\n"
+                            )
+                        else:
+                            f.write(
+                                "       py::arg(\"debugPrefix\") = std::string())\n"
+                            )
+
+                    getFunc(f, op, 0)
+                    getFunc(f, op, 1)
 
                 f.write(";\n")
                 f.write("}\n")

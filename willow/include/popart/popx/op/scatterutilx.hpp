@@ -13,6 +13,7 @@ namespace scatterutilx {
 poplar::Tensor linspace(poplar::Graph &,
                         int left,
                         int right,
+                        const poplar::DebugNameAndId &dnai,
                         int increment            = 1,
                         const poplar::Type &type = poplar::INT);
 
@@ -31,7 +32,8 @@ void growScatter(poplar::program::Sequence &prog,
                  const poplar::Tensor &indices,
                  const poplar::Tensor &replacementValues,
                  const poplar::Tensor &dataToUpdateInPlace,
-                 int64_t axis);
+                 int64_t axis,
+                 const popart::DebugInfo &di);
 } // namespace scatterutilx
 } // namespace popx
 } // namespace popart

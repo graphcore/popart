@@ -49,11 +49,11 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
     break;
   }
   default:
-    throw error("Unsupported reduction type for Loss {}", debugPrefix());
+    throw error("Unsupported reduction type for Loss {}",
+                debugPrefix().getPathName());
   }
 
-  auto t_scale =
-      getConst(getInTensor(0).elementType(), {}, scale, debugPrefix("scale"));
+  auto t_scale = getConst(getInTensor(0).elementType(), {}, scale, "scale");
 
   // scale the signum tensor:
   // - first by 'scale',  so +scale if positive, -scale if negative, 0 if zero
@@ -96,8 +96,7 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
   double lambda = static_cast<double>(l1op.getLambda());
 
   if (l1op.getReductionType() == ReductionType::NoReduction) {
-    auto t_scale =
-        getConst(absTensor.elementType(), {}, lambda, debugPrefix("scale"));
+    auto t_scale = getConst(absTensor.elementType(), {}, lambda, "scale");
 
     auto scaled = popops::map(graph(),
                               popops::expr::BinaryOpType::MULTIPLY,
@@ -123,13 +122,14 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
     // the logic will fall through to the error.
     case ReductionType::NoReduction:
     default: {
-      throw error("Unsupported reduction type for Loss {}", debugPrefix());
+      throw error("Unsupported reduction type for Loss {}",
+                  debugPrefix().getPathName());
     }
     }
 
     // t_scale is always expected to be FLOAT, regardless of the input type
     // to the reduction
-    auto t_scale   = getConst(poplar::FLOAT, {}, scale, debugPrefix("scale"));
+    auto t_scale   = getConst(poplar::FLOAT, {}, scale, "scale");
     auto reduction = popops::reduce(graph(),
                                     absTensor1D,
                                     {0},

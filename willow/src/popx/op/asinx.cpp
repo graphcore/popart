@@ -28,18 +28,20 @@ AsinOpx::AsinOpx(Op *op, Devicex *devicex)
 poplar::Tensor AsinComputex::outplace(poplar::program::Sequence &p,
                                       poplar::Graph &g,
                                       const poplar::Tensor &t,
+                                      const poplar::DebugNameAndId &dnai,
                                       const std::string &s) const {
-  auto outTensor = cloneNcopy(p, g, t);
-  inplace(p, g, outTensor, s);
+  auto outTensor = cloneNcopy(p, g, t, dnai);
+  inplace(p, g, outTensor, dnai, s);
   return outTensor;
 }
 
 void AsinComputex::inplace(poplar::program::Sequence &p,
                            poplar::Graph &g,
                            const poplar::Tensor &t,
+                           const poplar::DebugNameAndId &dnai,
                            const std::string &s) const {
 
-  popops::mapInPlace(g, popops::expr::UnaryOpType::ASIN, t, p, s);
+  popops::mapInPlace(g, popops::expr::UnaryOpType::ASIN, t, p, {dnai, s});
 }
 
 AsinGradOpx::AsinGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {

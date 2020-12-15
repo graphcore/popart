@@ -82,7 +82,8 @@ void LoopOpx::copyExplicitOpInputsToBodyOutputs(
                                                                    i + 1) ||
             dv_p->lowering().getAliasZeroCopy()->copyOutputRequired(
                 &op, op.subgraphOutToOpOutIndex(i))) {
-          poplar::program::Copy copyProg(opInputTensor, bodyOutputTensor);
+          poplar::program::Copy copyProg(
+              opInputTensor, bodyOutputTensor, false, debugContext("inputs"));
           prog.add(copyProg);
           logging::opx::trace(
               "[LoopOpx] input {} -> output {} copied", inId, outId);
@@ -123,7 +124,8 @@ void LoopOpx::copyImplicitOpInputsToImplicitBodyInputs(
     if (aliases.find(op.getIr().getTensor(subgraph.getInputId(i))) ==
         aliases.end()) {
       if (dv_p->lowering().getAliasZeroCopy()->copyInputRequired(&op, i)) {
-        poplar::program::Copy copyProg(opInputTensor, bodyInputTensor);
+        poplar::program::Copy copyProg(
+            opInputTensor, bodyInputTensor, false, debugContext("inputs"));
         prog.add(copyProg);
         logging::opx::trace(
             "[LoopOpx] input {} -> input {} copied", opInId, bodyInId);
@@ -170,8 +172,10 @@ void LoopOpx::copyBodyOutputsToExplicitBodyInputs(
         // Clone to avoid issues with implicit aliases
         auto tmp =
             dstGraph(op.subgraphOutToOpOutIndex(i)).clone(bodyOutputTensor);
-        tmpCopiesProg.add(poplar::program::Copy(bodyOutputTensor, tmp));
-        finalCopiesProg.add(poplar::program::Copy(tmp, bodyInputTensor));
+        tmpCopiesProg.add(poplar::program::Copy(
+            bodyOutputTensor, tmp, false, debugContext("tmpCopies")));
+        finalCopiesProg.add(poplar::program::Copy(
+            tmp, bodyInputTensor, false, debugContext("finalCopies")));
         logging::opx::trace(
             "[LoopOpx] output {} -> input {} copied", outId, inId);
       } else {
@@ -209,7 +213,8 @@ void LoopOpx::copyBodyOutputsToOpOutputs(
       if (dv_p->lowering().getAliasZeroCopy()->copyOutputRequired(&op, i - 1)) {
         auto bodyOutputTensor = get(bodyOutputTensorId);
         auto opOutputTensor   = get(opOutputTensorId);
-        poplar::program::Copy copyProg(bodyOutputTensor, opOutputTensor);
+        poplar::program::Copy copyProg(
+            bodyOutputTensor, opOutputTensor, false, debugPrefix("outputs"));
         prog.add(copyProg);
         logging::opx::trace("[LoopOpx] output {} -> output {} copied",
                             bodyOutputTensorId,
@@ -249,9 +254,9 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
 
   auto &op = getOp<LoopOp>();
 
-  auto tconst = getConst(poplar::BOOL, {}, true, debugPrefix("fconst"));
+  auto tconst = getConst(poplar::BOOL, {}, true, "tconst");
 
-  auto fconst = getConst(poplar::BOOL, {}, false, debugPrefix("fconst"));
+  auto fconst = getConst(poplar::BOOL, {}, false, "fconst");
 
   auto condOutTensor = get(op.getCalledGraph().getOutputId(0));
 
@@ -286,7 +291,9 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
   auto maxTripCountValue = op.getTripCountValue();
 
   // 6: Create the three loop body programs
-  poplar::program::Sequence loopProg, loopExitProg, loopContinueProg;
+  poplar::program::Sequence loopProg({}, debugPrefix("loop"));
+  poplar::program::Sequence loopExitProg({}, debugPrefix("exit"));
+  poplar::program::Sequence loopContinueProg({}, debugPrefix("continue"));
 
   // 7: Update the exit condition
   if (hasInput(LoopOp::getMaximumTripCountInIndex())) {
@@ -336,12 +343,14 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   // 12: Add conditional around the loop body program
-  loopProg.add(poplar::program::If(exitTensor, loopExitProg, loopContinueProg));
+  loopProg.add(poplar::program::If(
+      exitTensor, loopExitProg, loopContinueProg, debugPrefix("condition")));
 
   // 13: Repeat the loop conditional program
   logging::opx::debug(
       "[LoopOpx] Max trip count: {} ({})", maxTripCountValue, op.debugName());
-  prog.add(poplar::program::Repeat(maxTripCountValue, loopProg));
+  prog.add(poplar::program::Repeat(
+      maxTripCountValue, loopProg, debugPrefix("loop")));
 
   // 14: Copy body outputs to op outputs
   copyBodyOutputsToOpOutputs(prog);

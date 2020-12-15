@@ -26,6 +26,7 @@
 #include <popart/intervals.hpp>
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
+#include <popart/onnxdebuginfo.hpp>
 #include <popart/op/dropout.hpp>
 #include <popart/op/getrandomseed.hpp>
 #include <popart/op/init.hpp>
@@ -1311,6 +1312,8 @@ void Ir::prepareImpl(const IrBundle &gb) {
   dotCheckpoint(DotCheck::Final);
   logIr();
 
+  prepareComplete();
+
   // some checks, now that prepare is complete
   for (auto &id_op : getMainGraph().getOps()) {
     if (id_op.second->opid == Onnx::CustomGradOperators::NllGrad) {
@@ -1667,14 +1670,27 @@ void Ir::registerInputTensors() {
       logging::info("Not creating Tensor for unused initializer, {}", tenId);
       unusedInitializers.emplace(tenId);
     } else {
+
+      uint32_t debugid = 0;
+      auto key         = std::string(onnxDebugIdInputMetaDataKey) + tenId;
+      for (auto m : onnxModel->metadata_props()) {
+        if (m.key() == key) {
+          debugid = std::stoi(m.value());
+        }
+      }
+
+      DebugNameAndId dnid(debugid);
+      DebugContext onnxDc(dnid);
+      OnnxVariableDebugInfo onnxDi(onnxDc, initializer);
+
       // If inference mode add initializers as constants if option enabled
       if (getExecutionMode() == ExecutionMode::Inference &&
           getSessionOptions().constantWeights == true) {
         logCreationInfo("Constant", tenId);
-        getTensors().addConstInit(tenId, &initializer);
+        getTensors().addConstInit(tenId, &initializer, DebugContext(onnxDi));
       } else {
         logCreationInfo("Variable", tenId);
-        getTensors().addVarInit(tenId, &initializer);
+        getTensors().addVarInit(tenId, &initializer, DebugContext(onnxDi));
       }
       onnxInitializers.emplace(tenId);
     }
@@ -1694,12 +1710,27 @@ void Ir::registerInputTensors() {
                     id);
       }
       logCreationInfo("Stream", id);
+
+      uint32_t debugid = 0;
+      auto key         = std::string(onnxDebugIdInputMetaDataKey) + id;
+      for (auto m : onnxModel->metadata_props()) {
+        if (m.key() == key) {
+          debugid = std::stoi(m.value());
+        }
+      }
+
+      DebugNameAndId dnid(debugid);
+      DebugContext onnxDc(dnid);
+
       if (inputShapeInfo.has(id)) {
-        getTensors().addStream(id, inputShapeInfo.get(id));
+        popart::OnnxVariableDebugInfo onnxDi(
+            onnxDc, valueInfo, inputShapeInfo.get(id));
+        getTensors().addStream(id, inputShapeInfo.get(id), {onnxDi});
       } else if (valueInfo.has_type() &&
                  valueInfo.type().tensor_type().has_shape()) {
         checkForDimParams(id, valueInfo.type());
-        getTensors().addStream(id, TensorInfo(valueInfo.type()));
+        popart::OnnxVariableDebugInfo onnxDi(onnxDc, valueInfo);
+        getTensors().addStream(id, TensorInfo(valueInfo.type()), {onnxDi});
       } else {
         throw error("Could not find tensor {} in InputShapeInfo, but no shape "
                     "is specified in the onnx model",
@@ -2887,6 +2918,15 @@ void Ir::append(std::stringstream &ss) const {
 
     for (auto &op : graph->getOpSchedule({}, RequireOptimalSchedule::Yes)) {
       op->append(ss);
+    }
+  }
+}
+
+void Ir::prepareComplete() {
+
+  for (auto graph : getGraphSchedule()) {
+    for (auto &op : graph->getOpSchedule({}, RequireOptimalSchedule::Yes)) {
+      op->finalize();
     }
   }
 }

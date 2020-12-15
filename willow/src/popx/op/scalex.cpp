@@ -19,6 +19,7 @@ poplar::Tensor ScaleComputex::getScaleTensor(const poplar::Type &type,
 poplar::Tensor ScaleComputex::outplace(poplar::program::Sequence &prog,
                                        poplar::Graph &graph,
                                        const poplar::Tensor &tensor,
+                                       const poplar::DebugNameAndId &dnai,
                                        const std::string &s) const {
 
   return popops::map(graph,
@@ -26,7 +27,7 @@ poplar::Tensor ScaleComputex::outplace(poplar::program::Sequence &prog,
                      tensor,
                      getScaleTensor(tensor.elementType(), graph),
                      prog,
-                     s);
+                     {dnai, s});
 }
 
 float ScaleComputex::getFromScaleOp(Op *op) {
@@ -48,6 +49,7 @@ float ScaleComputex::getFromScaleInplaceOp(Op *op) {
 void ScaleComputex::inplace(poplar::program::Sequence &prog,
                             poplar::Graph &graph,
                             const poplar::Tensor &tensor,
+                            const poplar::DebugNameAndId &dnai,
                             const std::string &s) const {
 
   popops::mapInPlace(graph,
@@ -55,7 +57,7 @@ void ScaleComputex::inplace(poplar::program::Sequence &prog,
                      tensor,
                      getScaleTensor(tensor.elementType(), graph),
                      prog,
-                     s);
+                     {dnai, s});
 }
 
 ScaleOpx::ScaleOpx(Op *op, Devicex *devicex)

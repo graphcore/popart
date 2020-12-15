@@ -213,6 +213,9 @@ public:
   // the rest of the Ir preparation will be skipped.
   void prepare(const IrBundle &);
 
+  // Called when the prepare is complete
+  void prepareComplete();
+
   bool isPrepared() const { return isPrepared_; }
   bool hashMatched() const { return hashMatched_; }
 

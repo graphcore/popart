@@ -20,16 +20,18 @@ poplar::Tensor AddComputex::outplace(poplar::program::Sequence &prog,
                                      poplar::Graph &graph,
                                      const poplar::Tensor &a,
                                      const poplar::Tensor &b,
-                                     const std::string &debugStr) const {
-  return popops::add(graph, a, b, prog, debugStr);
+                                     const poplar::DebugNameAndId &dnai,
+                                     const std::string &name) const {
+  return popops::add(graph, a, b, prog, {dnai, name});
 }
 
 void AddComputex::inplace(poplar::program::Sequence &prog,
                           poplar::Graph &graph,
                           const poplar::Tensor &tInOut,
                           const poplar::Tensor &tIn,
-                          const std::string &debugStr) const {
-  popops::addInPlace(graph, tInOut, tIn, prog, debugStr);
+                          const poplar::DebugNameAndId &dnai,
+                          const std::string &name) const {
+  popops::addInPlace(graph, tInOut, tIn, prog, {dnai, name});
 }
 
 AddOpx::AddOpx(Op *op, Devicex *devicex)

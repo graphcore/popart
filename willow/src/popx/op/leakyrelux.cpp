@@ -20,22 +20,24 @@ poplar::Tensor
 LeakyReluComputex::outplace(poplar::program::Sequence &prog,
                             poplar::Graph &graph,
                             const poplar::Tensor &tensor,
+                            const poplar::DebugNameAndId &dnai,
                             const std::string &debug_prefix) const {
-  auto out_tensor = cloneNcopy(prog, graph, tensor);
-  inplace(prog, graph, out_tensor, debug_prefix);
+  auto out_tensor = cloneNcopy(prog, graph, tensor, dnai);
+  inplace(prog, graph, out_tensor, dnai, debug_prefix);
   return out_tensor;
 }
 
 void LeakyReluComputex::inplace(poplar::program::Sequence &prog,
                                 poplar::Graph &graph,
                                 const poplar::Tensor &tensor,
+                                const poplar::DebugNameAndId &dnai,
                                 const std::string &debug_prefix) const {
   // x < 0.0f ? alpha * x : x
   auto expression = pe::Select(pe::Mul(pe::Const(getAlpha()), pe::_1),
                                pe::_1,
                                pe::Lt(pe::_1, pe::Const(0.0f)));
 
-  popops::mapInPlace(graph, expression, {tensor}, prog, debug_prefix);
+  popops::mapInPlace(graph, expression, {tensor}, prog, {dnai, debug_prefix});
 }
 
 float LeakyReluComputex::getAlphaFromLReluOp(Op *op) {

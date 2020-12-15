@@ -30,7 +30,7 @@ void IpuCopyOpx::grow(poplar::program::Sequence &prog) const {
                                 getInTensor(idx),
                                 prog,
                                 static_cast<int>(op.getDestIpu()),
-                                debugPrefix());
+                                debugPrefix("ipuCopy"));
     setOutTensor(idx, t);
   }
 }
@@ -69,7 +69,7 @@ void IpuCopyOpx::growPipelined(poplar::program::Sequence &prog) const {
 
     // Using dontOutline=false will ensure the copies (buffers & code) are
     // reused.
-    prog.add(poplar::program::Copy(source, destination, false));
+    prog.add(poplar::program::Copy(source, destination, false, debugPrefix()));
   }
 }
 

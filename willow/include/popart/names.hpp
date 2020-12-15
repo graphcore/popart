@@ -156,6 +156,7 @@ static constexpr const char *sExcludePatternsAttribute = "__exclude_patterns";
 static constexpr const char *sSchedulePriority         = "__schedule_priority";
 static constexpr const char *sTileSetAttribute         = "__tile_set";
 static constexpr const char *sOutlineAttribute         = "__outline";
+static constexpr const char *sDebugInfoId              = "__debug_info_id";
 
 static constexpr const char *sSerializeMatMulModeAttribute =
     "__serialize_matmul_mode";
@@ -178,6 +179,8 @@ static constexpr const char *sSerializeMatMulMode_OutputChannels =
 static constexpr const char *gradientStoreStreamPrefix = "gradientStore__";
 static constexpr const char *gradientLoadStreamPrefix  = "gradientLoad__";
 static constexpr const char *weightLoadStreamPrefix    = "weightLoad__";
+
+static constexpr const char *onnxDebugIdInputMetaDataKey = "__debug_id/input/";
 } // namespace popart
 
 #endif

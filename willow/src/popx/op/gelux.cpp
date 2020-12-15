@@ -24,18 +24,20 @@ GeluOpx::GeluOpx(Op *op, Devicex *devicex)
 poplar::Tensor GeluComputex::outplace(poplar::program::Sequence &prog,
                                       poplar::Graph &graph,
                                       const poplar::Tensor &tensor,
+                                      const poplar::DebugNameAndId &dnai,
                                       const std::string &debug_prefix) const {
-  auto out_tensor = cloneNcopy(prog, graph, tensor);
-  inplace(prog, graph, out_tensor, debug_prefix);
+  auto out_tensor = cloneNcopy(prog, graph, tensor, dnai);
+  inplace(prog, graph, out_tensor, dnai, debug_prefix);
   return out_tensor;
 }
 
 void GeluComputex::inplace(poplar::program::Sequence &prog,
                            poplar::Graph &graph,
                            const poplar::Tensor &tensor,
+                           const poplar::DebugNameAndId &dnai,
                            const std::string &debug_prefix) const {
   popnn::nonLinearityInPlace(
-      graph, popnn::NonLinearityType::GELU, tensor, prog, debug_prefix);
+      graph, popnn::NonLinearityType::GELU, tensor, prog, {dnai, debug_prefix});
 }
 
 GeluInplaceOpx::GeluInplaceOpx(Op *op, Devicex *devicex)

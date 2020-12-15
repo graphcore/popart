@@ -103,8 +103,8 @@ void LSTMOpx::growBias(poplar::program::Sequence &prog) const {
   if (lstm_op.hasBiasInput()) {
     auto bias_input = getInTensor(LSTMOp::getBiasInIndex());
 
-    poplar::program::Copy copyProg(bias_input.slice(0, 4 * hidden_size, 1),
-                                   biases);
+    poplar::program::Copy copyProg(
+        bias_input.slice(0, 4 * hidden_size, 1), biases, false, debugPrefix());
     prog.add(copyProg);
 
     popops::mapInPlace(graph(),
@@ -238,17 +238,21 @@ void LSTMOpx::prepareWeights(poplar::program::Sequence &prog) const {
   // check to see if the weights were created
   prog.add(poplar::program::Copy(
       getInTensor(LSTMOp::getWeightsInIndex()),
-      reshapePoplibWeightsForOnnx(getLSTMWeights().inputWeights, true)));
+      reshapePoplibWeightsForOnnx(getLSTMWeights().inputWeights, true),
+      false,
+      debugPrefix()));
   prog.add(poplar::program::Copy(
       getInTensor(LSTMOp::getRecurrenceInIndex()),
-      reshapePoplibWeightsForOnnx(getLSTMWeights().outputWeights, true)));
+      reshapePoplibWeightsForOnnx(getLSTMWeights().outputWeights, true),
+      false,
+      debugPrefix()));
 }
 
 poplar::Tensor LSTMOpx::getInput(poplar::program::Sequence &prog) const {
   if (!inputCreated(LSTMOp::getInputInIndex())) {
     auto input     = createInput(LSTMOp::getInputInIndex(), "input");
     auto raw_input = getInTensor(LSTMOp::getInputInIndex());
-    prog.add(poplar::program::Copy(raw_input, input));
+    prog.add(poplar::program::Copy(raw_input, input, false, debugPrefix()));
     return input;
   } else {
     return getInTensor(LSTMOp::getInputInIndex());
@@ -279,7 +283,9 @@ void LSTMOpx::prepareInitialState(popnn::lstm::LstmState &init_state,
     init_c      = init_c.reshape({num_directions, batch_size, hidden_size});
 
     prog.add(poplar::program::Copy(getInTensor(LSTMOp::getInitialCInIndex()),
-                                   init_c));
+                                   init_c,
+                                   false,
+                                   debugPrefix()));
   }
   // Copy initH input to initialState.output is initH is provided.
   if (hasInitH) {
@@ -287,7 +293,9 @@ void LSTMOpx::prepareInitialState(popnn::lstm::LstmState &init_state,
     init_h      = init_h.reshape({num_directions, batch_size, hidden_size});
 
     prog.add(poplar::program::Copy(getInTensor(LSTMOp::getInitialHInIndex()),
-                                   init_h));
+                                   init_h,
+                                   false,
+                                   debugPrefix()));
   }
 }
 

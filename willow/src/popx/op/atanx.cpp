@@ -28,15 +28,17 @@ AtanOpx::AtanOpx(Op *op, Devicex *devicex)
 poplar::Tensor AtanComputex::outplace(poplar::program::Sequence &p,
                                       poplar::Graph &g,
                                       const poplar::Tensor &t,
+                                      const poplar::DebugNameAndId &dnai,
                                       const std::string &s) const {
-  auto outTensor = cloneNcopy(p, g, t);
-  inplace(p, g, outTensor, s);
+  auto outTensor = cloneNcopy(p, g, t, dnai);
+  inplace(p, g, outTensor, dnai, s);
   return outTensor;
 }
 
 void AtanComputex::inplace(poplar::program::Sequence &p,
                            poplar::Graph &g,
                            const poplar::Tensor &t,
+                           const poplar::DebugNameAndId &dnai,
                            const std::string &s) const {
 
   //   The formula for atan in the poplar device is giving problems, mapping not
@@ -49,7 +51,7 @@ void AtanComputex::inplace(poplar::program::Sequence &p,
   exprs.push_back(std::make_unique<pe::Divide>(pe::_1, *exprs.back()));
   exprs.push_back(std::make_unique<pe::Asin>(*exprs.back()));
 
-  popops::mapInPlace(g, *exprs.back(), {t}, p, s);
+  popops::mapInPlace(g, *exprs.back(), {t}, p, {dnai, s});
 }
 
 AtanGradOpx::AtanGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {

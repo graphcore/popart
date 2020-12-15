@@ -23,19 +23,21 @@ ReluOpx::ReluOpx(Op *op, Devicex *devicex)
 poplar::Tensor ReluComputex::outplace(poplar::program::Sequence &p,
                                       poplar::Graph &g,
                                       const poplar::Tensor &t,
+                                      const poplar::DebugNameAndId &dnai,
                                       const std::string &s) const {
-  auto outTensor = cloneNcopy(p, g, t);
-  inplace(p, g, outTensor, s);
+  auto outTensor = cloneNcopy(p, g, t, dnai);
+  inplace(p, g, outTensor, dnai, s);
   return outTensor;
 }
 
 void ReluComputex::inplace(poplar::program::Sequence &p,
                            poplar::Graph &g,
                            const poplar::Tensor &t,
+                           const poplar::DebugNameAndId &dnai,
                            const std::string &s) const {
 
   // apply the inplace RELU
-  popnn::nonLinearityInPlace(g, popnn::NonLinearityType::RELU, t, p, s);
+  popnn::nonLinearityInPlace(g, popnn::NonLinearityType::RELU, t, p, {dnai, s});
 }
 
 ReluGradOpx::ReluGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -52,7 +54,7 @@ void ReluGradOpx::grow(poplar::program::Sequence &prog) const {
       getInTensor(rgop.getReludInIndex()),     // out,
       getInTensor(rgop.getGradReludInIndex()), // outGradient,
       prog,                                    // prog,
-      debugPrefix()                            // debugPrefix
+      debugPrefix()                            // debugContext
   );
 
   setOutTensor(0, outTensor);

@@ -11,17 +11,21 @@ namespace popx {
 poplar::Tensor RoundComputex::outplace(poplar::program::Sequence &prog,
                                        poplar::Graph &graph,
                                        const poplar::Tensor &tensor,
+                                       const poplar::DebugNameAndId &dnai,
                                        const std::string &s) const {
 
-  return popops::map(graph, popops::expr::UnaryOpType::ROUND, tensor, prog, s);
+  return popops::map(
+      graph, popops::expr::UnaryOpType::ROUND, tensor, prog, {dnai, s});
 }
 
 void RoundComputex::inplace(poplar::program::Sequence &prog,
                             poplar::Graph &graph,
                             const poplar::Tensor &tensor,
+                            const poplar::DebugNameAndId &dnai,
                             const std::string &s) const {
 
-  popops::mapInPlace(graph, popops::expr::UnaryOpType::ROUND, tensor, prog, s);
+  popops::mapInPlace(
+      graph, popops::expr::UnaryOpType::ROUND, tensor, prog, {dnai, s});
 }
 
 RoundOpx::RoundOpx(Op *op, Devicex *devicex)

@@ -32,17 +32,19 @@ LogSoftmaxInplaceOpx::LogSoftmaxInplaceOpx(Op *op, Devicex *devicex)
 poplar::Tensor LogSoftmaxComputex::outplace(poplar::program::Sequence &p,
                                             poplar::Graph &g,
                                             const poplar::Tensor &t,
+                                            const poplar::DebugNameAndId &dnai,
                                             const std::string &s) const {
-  auto outTensor = cloneNcopy(p, g, t);
-  inplace(p, g, outTensor, s);
+  auto outTensor = cloneNcopy(p, g, t, dnai);
+  inplace(p, g, outTensor, dnai, s);
   return outTensor;
 }
 
 void LogSoftmaxComputex::inplace(poplar::program::Sequence &p,
                                  poplar::Graph &g,
                                  const poplar::Tensor &t,
+                                 const poplar::DebugNameAndId &dnai,
                                  const std::string &s) const {
-  popnn::logSoftmaxInPlace(g, coerceTo2D(t, axis), p, s);
+  popnn::logSoftmaxInPlace(g, coerceTo2D(t, axis), p, {dnai, s});
 }
 
 poplar::Tensor LogSoftmaxComputex::reshape(const poplar::Tensor &t) const {

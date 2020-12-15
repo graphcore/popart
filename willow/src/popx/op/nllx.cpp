@@ -59,8 +59,7 @@ void NllOpx::grow(poplar::program::Sequence &prog) const {
   if (probs.elementType() == poplar::HALF)
     eps_f = 6.104e-05;
 
-  poplar::Tensor eps =
-      getConst(probs.elementType(), {1}, eps_f, debugPrefix("epsilon"));
+  poplar::Tensor eps = getConst(probs.elementType(), {1}, eps_f, "epsilon");
 
   if (!op.inputIsLogProbability()) {
     // Take max of prob and eps to reduction make sure it does not have any
@@ -247,8 +246,7 @@ void NllOpx::handleLossOutReducedToScalar(const Opx &opx,
       auto lossMask = applyMaskInPlaceForIgnoredIndex(
           opx, reduction, label1D, static_cast<int>(ignoreIndex), prog);
 
-      auto scaleT = opx.getConst(
-          reduction.elementType(), {}, 1.0, opx.debugPrefix("One"));
+      auto scaleT = opx.getConst(reduction.elementType(), {}, 1.0, "One");
 
       applyScalingInPlaceForMeanReductionWithIgnoreIndex(
           opx, reduction, scaleT, lossMask, prog, false);
@@ -260,8 +258,7 @@ void NllOpx::handleLossOutReducedToScalar(const Opx &opx,
   }
 
   // Scale (possibly) and negate (-scale)
-  auto t_scale =
-      opx.getConst(poplar::FLOAT, {}, -scale, opx.debugPrefix("scale"));
+  auto t_scale = opx.getConst(poplar::FLOAT, {}, -scale, "scale");
 
   auto scalar = popops::reduce(opx.graph(),
                                reduction,

@@ -31,7 +31,10 @@ bool Expm1GradOpPattern::apply(Op *op) const {
   std::vector<float> onesData(1, 1.0f);
   auto onesId = op->getIr().createIntermediateTensorId("ones");
   op->getGraph().getTensors().addConstInit(
-      onesId, onesInfo, reinterpret_cast<void *>(onesData.data()));
+      onesId,
+      onesInfo,
+      reinterpret_cast<void *>(onesData.data()),
+      op->getDebugInfo());
 
   // create the new ops
   auto mul = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Mul, op);

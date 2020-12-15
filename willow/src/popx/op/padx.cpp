@@ -211,7 +211,8 @@ poplar::Tensor BasePadOpx::constantModePadGrow(poplar::Tensor inTensor,
   if (propitious.first) {
     auto outTensor    = graph().clone(propitious.second);
     auto chisseledDst = getChisseled(outTensor);
-    s.add(poplar::program::Copy(inTensor, chisseledDst.core));
+    s.add(poplar::program::Copy(
+        inTensor, chisseledDst.core, false, debugPrefix()));
     auto allPads = chisseledDst.lows;
     allPads.insert(
         allPads.end(), chisseledDst.upps.cbegin(), chisseledDst.upps.cend());

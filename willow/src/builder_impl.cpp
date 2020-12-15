@@ -7,6 +7,7 @@
 #include <vector>
 
 #include <popart/builder_impl.hpp>
+#include <popart/builderdebuginfo.hpp>
 #include <popart/ces/constexpr.hpp>
 #include <popart/error.hpp>
 #include <popart/filereader.hpp>
@@ -215,8 +216,9 @@ void BuilderImpl::setGraphName(const std::string &name) {
 }
 
 TensorId BuilderImpl::addInputTensor(const TensorInfo &tensorInfo,
-                                     const std::string &debugPrefix) {
-  auto id = getNextInputId(debugPrefix);
+                                     const popart::DebugContext &debugContext) {
+  const auto debugPrefix = debugContext.getPathName();
+  auto id                = getNextInputId(debugPrefix);
 
   // note that a TypeProto contains both shape and numerical type
   ONNX_NAMESPACE::TypeProto onnxTensorType = tensorInfo.getOnnxTypeProto();
@@ -228,10 +230,20 @@ TensorId BuilderImpl::addInputTensor(const TensorInfo &tensorInfo,
   auto *type = input->mutable_type();
   *type      = onnxTensorType;
 
+  // Add the debug_id as meta data
+  popart::BuilderVarDebugInfo di(
+      debugContext, "addInputTensor", id, tensorInfo);
+
+  auto meta_data = model_.mutable_metadata_props();
+  auto a         = meta_data->Add();
+  a->set_key(std::string(onnxDebugIdInputMetaDataKey) + id);
+  a->set_value(std::to_string(di.getId()));
+
   return id;
 }
 
-TensorId BuilderImpl::addUntypedInputTensor(const std::string &debugPrefix) {
+TensorId
+BuilderImpl::addUntypedInputTensor(const popart::DebugContext &debugContext) {
   // TODO : Check T8276
   // In the onnx spec:
   //     message ValueInfoProto {
@@ -247,8 +259,8 @@ TensorId BuilderImpl::addUntypedInputTensor(const std::string &debugPrefix) {
                 "Builder::addInputTensor(const TensorInfo &tensorInfo, const "
                 "std::string &debugPrefix) instead.");
   }
-
-  auto id = getNextInputId(debugPrefix);
+  const auto debugPrefix = debugContext.getPathName();
+  auto id                = getNextInputId(debugPrefix);
   addGraphInput(id);
   return id;
 }
@@ -355,11 +367,11 @@ void BuilderImpl::populateTensorProtoFromConstVoidData(
   }
 }
 
-TensorId
-BuilderImpl::addInitializedInputTensor(const ConstVoidData &initData,
-                                       const std::string &debugPrefix) {
-
-  std::string name = debugPrefix.empty() ? "init_input" : debugPrefix;
+TensorId BuilderImpl::addInitializedInputTensor(
+    const ConstVoidData &initData,
+    const popart::DebugContext &debugContext) {
+  const auto debugPrefix = debugContext.getPathName();
+  std::string name       = debugPrefix.empty() ? "init_input" : debugPrefix;
 
   auto id = getNextId(name);
 
@@ -372,6 +384,14 @@ BuilderImpl::addInitializedInputTensor(const ConstVoidData &initData,
 
   auto *initializer = graph->add_initializer();
   populateTensorProtoFromConstVoidData(initData, id, initializer);
+
+  // Add the debug_id as meta data
+  popart::BuilderVarDebugInfo di(debugContext, "addInitializedInputTensor", id);
+
+  auto meta_data = model_.mutable_metadata_props();
+  auto a         = meta_data->Add();
+  a->set_key(std::string(onnxDebugIdInputMetaDataKey) + id);
+  a->set_value(std::to_string(di.getId()));
 
   return id;
 }
@@ -399,10 +419,11 @@ void BuilderImpl::op(
     const std::vector<TensorId> &inputs,
     const std::vector<TensorId> &outputs,
     const std::map<std::string, popart::any> &opAttributes,
-    const std::string &name,
+    const DebugContext &debugContext,
     std::function<void(std::vector<TensorId>,
                        std::map<std::string, popart::any>)> validateInput) {
 
+  auto name = debugContext.getPathName();
   logging::builder::debug("Adding {} to builder opset:{}, numInputs:{} "
                           "numOutputs:{} numAttributes:{} name:{}",
                           opid,

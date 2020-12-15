@@ -18,11 +18,13 @@ public:
   poplar::Tensor outplace(poplar::program::Sequence &,
                           poplar::Graph &,
                           const poplar::Tensor &,
+                          const poplar::DebugNameAndId &,
                           const std::string &) const final;
 
   void inplace(poplar::program::Sequence &,
                poplar::Graph &,
                const poplar::Tensor &,
+               const poplar::DebugNameAndId &,
                const std::string &) const final;
 
   poplar::Tensor reshape(const poplar::Tensor &) const final;

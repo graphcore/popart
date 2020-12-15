@@ -31,7 +31,8 @@ void MaxOpx::grow(poplar::program::Sequence &prog) const {
                               outTensor,
                               getInTensor(i),
                               prog,
-                              debugPrefix("max", std::to_string(i)));
+                              debugContext(std::string("max") + sNameDelimiter +
+                                           std::to_string(i)));
     }
   }
 

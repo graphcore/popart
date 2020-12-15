@@ -23,13 +23,12 @@ void StashOpx::grow(poplar::program::Sequence &prog) const {
       "Stash__" + inId(StashOp::getInIndex()));
 
   // Create the stash index tensor
-  auto one       = getConst(poplar::UNSIGNED_INT, {}, 1.0, debugPrefix("one"));
-  auto stashSize = getConst(poplar::UNSIGNED_INT,
-                            {},
-                            stashOp.getStashSize(),
-                            debugPrefix("stash_size"));
+  auto one = getConst(poplar::UNSIGNED_INT, {}, 1.0, "one");
+  auto stashSize =
+      getConst(poplar::UNSIGNED_INT, {}, stashOp.getStashSize(), "stash_size");
 
-  poplar::Tensor stashIndex = graph().addVariable(poplar::UNSIGNED_INT, {1});
+  poplar::Tensor stashIndex =
+      graph().addVariable(poplar::UNSIGNED_INT, {1}, debugPrefix());
   graph().setTileMapping(stashIndex, 0);
   graph().setInitialValue(stashIndex, poplar::ArrayRef<uint32_t>({0}));
 

@@ -39,15 +39,17 @@ ShrinkOpx::ShrinkOpx(Op *op, Devicex *devicex)
 poplar::Tensor ShrinkComputex::outplace(poplar::program::Sequence &prog,
                                         poplar::Graph &graph,
                                         const poplar::Tensor &tensor,
+                                        const poplar::DebugNameAndId &dnai,
                                         const std::string &debug_prefix) const {
-  auto out_tensor = cloneNcopy(prog, graph, tensor);
-  inplace(prog, graph, out_tensor, debug_prefix);
+  auto out_tensor = cloneNcopy(prog, graph, tensor, dnai);
+  inplace(prog, graph, out_tensor, dnai, debug_prefix);
   return out_tensor;
 }
 
 void ShrinkComputex::inplace(poplar::program::Sequence &prog,
                              poplar::Graph &graph,
                              const poplar::Tensor &tensor,
+                             const poplar::DebugNameAndId &dnai,
                              const std::string &debug_prefix) const {
   popops::mapInPlace(
       graph,
@@ -58,7 +60,7 @@ void ShrinkComputex::inplace(poplar::program::Sequence &prog,
                  pe::Lt(pe::_1, pe::Const(-this->lambd()))),
       {tensor},
       prog,
-      debug_prefix);
+      {dnai, debug_prefix});
 }
 
 ShrinkInplaceOpx::ShrinkInplaceOpx(Op *op, Devicex *devicex)

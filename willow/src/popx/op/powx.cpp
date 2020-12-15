@@ -16,16 +16,18 @@ poplar::Tensor PowComputex::outplace(poplar::program::Sequence &prog,
                                      poplar::Graph &graph,
                                      const poplar::Tensor &a,
                                      const poplar::Tensor &b,
+                                     const poplar::DebugNameAndId &dnai,
                                      const std::string &debugStr) const {
-  return popops::pow(graph, a, b, prog, debugStr);
+  return popops::pow(graph, a, b, prog, {dnai, debugStr});
 }
 
 void PowComputex::inplace(poplar::program::Sequence &prog,
                           poplar::Graph &graph,
                           const poplar::Tensor &tInOut,
                           const poplar::Tensor &tIn,
+                          const poplar::DebugNameAndId &dnai,
                           const std::string &debugStr) const {
-  popops::powInPlace(graph, tInOut, tIn, prog, debugStr);
+  popops::powInPlace(graph, tInOut, tIn, prog, {dnai, debugStr});
 }
 
 PowOpx::PowOpx(Op *op, Devicex *devicex)

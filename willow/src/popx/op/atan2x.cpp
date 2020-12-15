@@ -16,16 +16,18 @@ poplar::Tensor Atan2Computex::outplace(poplar::program::Sequence &prog,
                                        poplar::Graph &graph,
                                        const poplar::Tensor &a,
                                        const poplar::Tensor &b,
+                                       const poplar::DebugNameAndId &dnai,
                                        const std::string &debugStr) const {
-  return popops::atan2(graph, a, b, prog, debugStr);
+  return popops::atan2(graph, a, b, prog, {dnai, debugStr});
 }
 
 void Atan2Computex::inplace(poplar::program::Sequence &prog,
                             poplar::Graph &graph,
                             const poplar::Tensor &tInOut,
                             const poplar::Tensor &tIn,
+                            const poplar::DebugNameAndId &dnai,
                             const std::string &debugStr) const {
-  popops::atan2InPlace(graph, tInOut, tIn, prog, debugStr);
+  popops::atan2InPlace(graph, tInOut, tIn, prog, {dnai, debugStr});
 }
 
 Atan2Opx::Atan2Opx(Op *op, Devicex *devicex)

@@ -17,7 +17,7 @@ void GetRandomSeedOpx::grow(poplar::program::Sequence &prog) const {
 
   if (dv_p->ir().hasRandomOps()) {
     // Increment the seed
-    auto one = getConst(seed.elementType(), {}, 1.0, debugPrefix("one"));
+    auto one = getConst(seed.elementType(), {}, 1.0, "one");
     popops::addInPlace(graph(), seed, one, prog);
   }
   setOutTensor(GetRandomSeedOp::getUpdatedSeedOutIndex(), seed);

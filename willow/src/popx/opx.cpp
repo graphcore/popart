@@ -2,6 +2,7 @@
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/conv.hpp>
+#include <popart/popx/debugcontextx.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/opx.hpp>
@@ -251,29 +252,34 @@ std::string Opx::idStr() const {
   }
 }
 
-std::string Opx::debugPrefix(const std::string &prefix) const {
-  return idStr() + sNameDelimiter + prefix;
+const popart::DebugInfo &Opx::getDebugInfo() const {
+  return op_p->getDebugInfo();
 }
 
-std::string Opx::debugPrefix(const std::string &p1,
-                             const std::string &p2) const {
-  return debugPrefix(p1 + sNameDelimiter + p2);
+const poplar::DebugNameAndId
+Opx::getDebugNameAndId(const std::string name,
+                       poplar::SourceLocation loc) const {
+  auto &di = getDebugInfo();
+  return poplar::DebugNameAndId(name, di.getId(), di.getPathName());
 }
 
-std::string Opx::debugPrefix() const { return idStr(); }
+poplar::DebugContext Opx::debugContext(const std::string name,
+                                       poplar::SourceLocation loc) const {
+  return {getDebugNameAndId(), name, loc};
+}
 
 poplar::Tensor Opx::cloneNcopy(poplar::program::Sequence &prog,
                                TensorId id) const {
-  auto outTensor = graph().clone(get(id));
-  poplar::program::Copy copyProg(get(id), outTensor);
-  prog.add(copyProg);
-  return outTensor;
+  const poplar::Tensor &tensor = get(id);
+  return cloneNcopy(prog, tensor, id + "[cloned]");
 }
 
 poplar::Tensor Opx::cloneNcopy(poplar::program::Sequence &prog,
-                               const poplar::Tensor &tensor) const {
-  auto outTensor = graph().clone(tensor);
-  prog.add(poplar::program::Copy(tensor, outTensor));
+                               const poplar::Tensor &tensor,
+                               const std::string name) const {
+  // TODO Would be good to get the name of the tensor
+  auto outTensor = graph().clone(tensor, debugContext(name));
+  prog.add(poplar::program::Copy(tensor, outTensor, false, debugContext()));
   return outTensor;
 }
 
@@ -317,12 +323,13 @@ poplar::Tensor Opx::getConst(const poplar::Type &type,
                              const std::vector<size_t> &shape,
                              double val,
                              const std::string &name) const {
-  return dv_p->lowering().getConst(graph(), type, shape, val, name);
+  return dv_p->lowering().getConst(
+      graph(), type, shape, val, debugContext(name));
 }
 
 poplar::Tensor Opx::getScalarVariable(const poplar::Type &type,
                                       const std::string &name) const {
-  return dv_p->lowering().getScalarVariable(graph(), type, name);
+  return dv_p->lowering().getScalarVariable(graph(), type, debugContext(name));
 }
 
 std::vector<std::tuple<TensorId, TensorId, bool>>

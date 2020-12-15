@@ -37,7 +37,7 @@ template <class T> void appendSequence(std::ostream &ss, const T &t) {
   ss << '[';
   for (auto &x : t) {
     if (index != 0) {
-      ss << ' ';
+      ss << " ";
     }
     ss << x;
     ++index;

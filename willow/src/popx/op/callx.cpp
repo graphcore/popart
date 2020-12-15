@@ -51,7 +51,8 @@ void CallOpx::copyModified(poplar::program::Sequence &prog) const {
         logging::opx::trace("[CallOpx] Copying modified input {}->{}",
                             graph_input_id,
                             callop.inId(i));
-        poplar::program::Copy copy_prog(graph_input, call_input);
+        poplar::program::Copy copy_prog(
+            graph_input, call_input, false, debugPrefix());
         prog.add(copy_prog);
       } else {
         logging::opx::trace("[CallOpx] Skipping copy modified input {}->{}",
@@ -90,7 +91,8 @@ void CallOpx::copyInputs(poplar::program::Sequence &prog) const {
           dv_p->lowering().getAliasZeroCopy()->copyInputRequired(&callop, i)) {
         logging::opx::trace(
             "[CallOpx] Copying input {}->{}", call_input_id, graph_input_id);
-        poplar::program::Copy copy_prog(call_input, graph_input);
+        poplar::program::Copy copy_prog(
+            call_input, graph_input, false, debugPrefix());
         prog.add(copy_prog);
       } else {
         logging::opx::trace("[CallOpx] Skipping copy input {}->{} "
@@ -143,7 +145,8 @@ void CallOpx::copyOutputs(poplar::program::Sequence &prog) const {
         logging::opx::trace("[CallOpx] Copying output {}->{}",
                             graph_output_id,
                             callop.outId(i));
-        poplar::program::Copy copy_prog(graph_output, call_output);
+        poplar::program::Copy copy_prog(
+            graph_output, call_output, false, debugContext());
         prog.add(copy_prog);
       } else {
         logging::opx::trace("[CallOpx] Skipping output {}->{}",
@@ -161,7 +164,7 @@ void CallOpx::doCall(poplar::program::Sequence &prog) const {
   auto &callop       = getOp<CallOp>();
   auto &called_graph = callop.getCalledGraph();
   auto &graph_prog   = dv_p->lowering().getFragmentFunction(called_graph);
-  prog.add(poplar::program::Call(graph_prog));
+  prog.add(poplar::program::Call(graph_prog, debugPrefix()));
 }
 
 void CallOpx::grow(poplar::program::Sequence &prog) const {

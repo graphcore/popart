@@ -15,16 +15,18 @@ poplar::Tensor MulComputex::outplace(poplar::program::Sequence &prog,
                                      poplar::Graph &graph,
                                      const poplar::Tensor &a,
                                      const poplar::Tensor &b,
+                                     const poplar::DebugNameAndId &dnai,
                                      const std::string &debugStr) const {
-  return popops::mul(graph, a, b, prog, debugStr);
+  return popops::mul(graph, a, b, prog, {dnai, debugStr});
 }
 
 void MulComputex::inplace(poplar::program::Sequence &prog,
                           poplar::Graph &graph,
                           const poplar::Tensor &tInOut,
                           const poplar::Tensor &tIn,
+                          const poplar::DebugNameAndId &dnai,
                           const std::string &debugStr) const {
-  popops::mulInPlace(graph, tInOut, tIn, prog, debugStr);
+  popops::mulInPlace(graph, tInOut, tIn, prog, {dnai, debugStr});
 }
 
 MulOpx::MulOpx(Op *op, Devicex *devicex)

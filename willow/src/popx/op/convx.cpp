@@ -97,13 +97,13 @@ void ConvFlipWeightsGradOpx::grow(poplar::program::Sequence &seq) const {
   }
   optionFlags.set("pass", "TRAINING_FWD");
 
-  auto convWeights =
-      poplin::createWeights(graph(),
-                            getPoplarConvParams(params),
-                            inTensor(ConvFlipWeightsOp::getInIndex())->str() +
-                                sNameDelimiter + "flipped",
-                            optionFlags,
-                            &dv_p->convCache);
+  auto convWeights = poplin::createWeights(
+      graph(),
+      getPoplarConvParams(params),
+      debugContext(inTensor(ConvFlipWeightsOp::getInIndex())->str() +
+                   sNameDelimiter + "flipped"),
+      optionFlags,
+      &dv_p->convCache);
 
   // weightsTransposeChansFlipXY must be called on each group individually
   for (int i = 0; i < params.numGroups; i++) {

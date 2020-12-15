@@ -385,46 +385,43 @@ Attributes::Graph Attributes::getAttribute(const std::string &key) const {
 // Adds the key and value
 template <>
 void Attributes::setAttribute(const std::string &key, Attributes::Int &value) {
-  if (hasAttribute(key)) {
-    set(value, key);
-  } else {
+  if (!hasAttribute(key)) {
     names.push_back(key);
-    ONNX_NAMESPACE::AttributeProto *attribute =
-        new ONNX_NAMESPACE::AttributeProto();
-    attribute->set_name(key);
-    attribute->set_i(value);
-    att_map[key] = attribute;
   }
+
+  ONNX_NAMESPACE::AttributeProto *attribute =
+      new ONNX_NAMESPACE::AttributeProto();
+  attribute->set_name(key);
+  attribute->set_i(value);
+  att_map[key] = attribute;
 }
 
 template <>
 void Attributes::setAttribute(const std::string &key, Attributes::Ints &value) {
-  if (hasAttribute(key)) {
-    set(value, key);
-  } else {
+  if (!hasAttribute(key)) {
     names.push_back(key);
-    ONNX_NAMESPACE::AttributeProto *attribute =
-        new ONNX_NAMESPACE::AttributeProto();
-    attribute->set_name(key);
-    for (int i = 0; i < value.size(); ++i) {
-      attribute->add_ints(value[i]);
-    }
-    att_map[key] = attribute;
   }
+
+  ONNX_NAMESPACE::AttributeProto *attribute =
+      new ONNX_NAMESPACE::AttributeProto();
+  attribute->set_name(key);
+  for (int i = 0; i < value.size(); ++i) {
+    attribute->add_ints(value[i]);
+  }
+  att_map[key] = attribute;
 }
 
 template <>
 void Attributes::setAttribute(const std::string &key, std::string &value) {
-  if (hasAttribute(key)) {
-    set(value, key);
-  } else {
+  if (!hasAttribute(key)) {
     names.push_back(key);
-    ONNX_NAMESPACE::AttributeProto *attribute =
-        new ONNX_NAMESPACE::AttributeProto();
-    attribute->set_name(key);
-    attribute->set_s(value.c_str());
-    att_map[key] = attribute;
   }
+
+  ONNX_NAMESPACE::AttributeProto *attribute =
+      new ONNX_NAMESPACE::AttributeProto();
+  attribute->set_name(key);
+  attribute->set_s(value.c_str());
+  att_map[key] = attribute;
 }
 
 } // namespace popart

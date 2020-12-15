@@ -21,19 +21,21 @@ Expm1Opx::Expm1Opx(Op *op, Devicex *devicex)
 poplar::Tensor Expm1Computex::outplace(poplar::program::Sequence &p,
                                        poplar::Graph &g,
                                        const poplar::Tensor &t,
+                                       const poplar::DebugNameAndId &dnai,
                                        const std::string &dbs) const {
 
   return popops::map(
-      g, popops::expr::UnaryOpType::EXPONENT_MINUS_ONE, t, p, dbs);
+      g, popops::expr::UnaryOpType::EXPONENT_MINUS_ONE, t, p, {dnai, dbs});
 }
 
 void Expm1Computex::inplace(poplar::program::Sequence &p,
                             poplar::Graph &g,
                             const poplar::Tensor &t,
+                            const poplar::DebugNameAndId &dnai,
                             const std::string &dbs) const {
 
   popops::mapInPlace(
-      g, popops::expr::UnaryOpType::EXPONENT_MINUS_ONE, t, p, dbs);
+      g, popops::expr::UnaryOpType::EXPONENT_MINUS_ONE, t, p, {dnai, dbs});
 }
 
 namespace {

@@ -71,7 +71,7 @@ protected:
       return {initialOutput, initialCellState};
     } else {
       auto initialState = createInitialStateInput();
-      zeroInitialState(graph(), initialState, prog, debugPrefix());
+      zeroInitialState(graph(), initialState, prog, debugContext());
       return initialState;
     }
   }

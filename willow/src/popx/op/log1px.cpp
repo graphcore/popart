@@ -21,19 +21,21 @@ Log1pOpx::Log1pOpx(Op *op, Devicex *devicex)
 poplar::Tensor Log1pComputex::outplace(poplar::program::Sequence &p,
                                        poplar::Graph &g,
                                        const poplar::Tensor &t,
+                                       const poplar::DebugNameAndId &dnai,
                                        const std::string &dbs) const {
 
   return popops::map(
-      g, popops::expr::UnaryOpType::LOGARITHM_ONE_PLUS, t, p, dbs);
+      g, popops::expr::UnaryOpType::LOGARITHM_ONE_PLUS, t, p, {dnai, dbs});
 }
 
 void Log1pComputex::inplace(poplar::program::Sequence &p,
                             poplar::Graph &g,
                             const poplar::Tensor &t,
+                            const poplar::DebugNameAndId &dnai,
                             const std::string &dbs) const {
 
   popops::mapInPlace(
-      g, popops::expr::UnaryOpType::LOGARITHM_ONE_PLUS, t, p, dbs);
+      g, popops::expr::UnaryOpType::LOGARITHM_ONE_PLUS, t, p, {dnai, dbs});
 }
 
 namespace {

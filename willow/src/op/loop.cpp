@@ -187,8 +187,10 @@ void LoopOp::connectInTensor(InIndex inIndex, TensorId tensorId) {
     tripCountValue        = castTensorData.front();
     TensorId castTensorId = getIr().createIntermediateTensorId(tensorId);
 
-    getGraph().getTensors().addConstInit(
-        castTensorId, {DataType::INT32, {}}, castTensorData.data());
+    getGraph().getTensors().addConstInit(castTensorId,
+                                         {DataType::INT32, {}},
+                                         castTensorData.data(),
+                                         tensor->getDebugInfo());
     defaultConnectInTensor(inIndex, castTensorId);
   } else {
     defaultConnectInTensor(inIndex, tensorId);

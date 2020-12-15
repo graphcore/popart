@@ -1045,7 +1045,7 @@ def test_get_all_attribute_names():
     builder.addNodeAttribute("test2", -1, set([o]))
     builder.addNodeAttribute("test3", "abba", set([o]))
     res = builder.getAllNodeAttributeNames(set([o]))
-    assert (set(res) == set(("test", "test2", "test3")))
+    assert (set(res) == set(("test", "test2", "test3", "__debug_info_id")))
 
     res = builder.getFloatNodeAttribute("test", set([o]))
     assert (res == pytest.approx(100.))

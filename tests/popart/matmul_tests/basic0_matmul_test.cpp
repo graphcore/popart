@@ -25,15 +25,18 @@ BOOST_AUTO_TEST_CASE(MatMul_Case1) {
                       {},
                       OptionalDataType());
 
-  popart::Tensor lhs("lhs", popart::TensorType::ActGrad, graph);
+  popart::DebugContext dc;
+  popart::DebugInfo di(dc, "test");
+
+  popart::Tensor lhs("lhs", popart::TensorType::ActGrad, graph, di);
   lhs.info.set(popart::DataType::FLOAT, {2, 2});
   mm.input->insert(0, &lhs);
 
-  popart::Tensor rhs("rhs", popart::TensorType::ActGrad, graph);
+  popart::Tensor rhs("rhs", popart::TensorType::ActGrad, graph, di);
   rhs.info.set(popart::DataType::FLOAT, {2, 2});
   mm.input->insert(1, &rhs);
 
-  popart::Tensor out("out", popart::TensorType::ActGrad, graph);
+  popart::Tensor out("out", popart::TensorType::ActGrad, graph, di);
   mm.output->insert(0, &out);
 
   // Test the setup is correct
@@ -64,7 +67,7 @@ BOOST_AUTO_TEST_CASE(MatMul_Case1) {
       popart::MatMulLhsGradOp *lhsGradOp =
           dynamic_cast<popart::MatMulLhsGradOp *>(op);
 
-      popart::Tensor lhsOut("out", popart::TensorType::ActGrad, graph);
+      popart::Tensor lhsOut("out", popart::TensorType::ActGrad, graph, di);
       lhsGradOp->output->insert(0, &lhsOut);
 
       BOOST_CHECK(lhsGradOp->getGradInIndex() == 0);
@@ -88,7 +91,7 @@ BOOST_AUTO_TEST_CASE(MatMul_Case1) {
       popart::MatMulRhsGradOp *rhsGradOp =
           dynamic_cast<popart::MatMulRhsGradOp *>(op);
 
-      popart::Tensor rhsOut("out", popart::TensorType::ActGrad, graph);
+      popart::Tensor rhsOut("out", popart::TensorType::ActGrad, graph, di);
       rhsGradOp->output->insert(0, &rhsOut);
 
       BOOST_CHECK(rhsGradOp->getGradInIndex() == 0);
@@ -131,15 +134,18 @@ BOOST_AUTO_TEST_CASE(MatMul_Case2) {
                       {},
                       OptionalDataType());
 
-  popart::Tensor lhs("lhs", popart::TensorType::ActGrad, graph);
+  popart::DebugContext dc;
+  popart::DebugInfo di(dc, "test");
+
+  popart::Tensor lhs("lhs", popart::TensorType::ActGrad, graph, di);
   lhs.info.set(popart::DataType::FLOAT, {3, 2});
   mm.input->insert(0, &lhs);
 
-  popart::Tensor rhs("rhs", popart::TensorType::ActGrad, graph);
+  popart::Tensor rhs("rhs", popart::TensorType::ActGrad, graph, di);
   rhs.info.set(popart::DataType::FLOAT, {2, 6});
   mm.input->insert(1, &rhs);
 
-  popart::Tensor out("out", popart::TensorType::ActGrad, graph);
+  popart::Tensor out("out", popart::TensorType::ActGrad, graph, di);
   mm.output->insert(0, &out);
 
   // Test the setup is correct
@@ -170,7 +176,7 @@ BOOST_AUTO_TEST_CASE(MatMul_Case2) {
       popart::MatMulLhsGradOp *lhsGradOp =
           dynamic_cast<popart::MatMulLhsGradOp *>(op);
 
-      popart::Tensor lhsOut("out", popart::TensorType::ActGrad, graph);
+      popart::Tensor lhsOut("out", popart::TensorType::ActGrad, graph, di);
       lhsGradOp->output->insert(0, &lhsOut);
 
       BOOST_CHECK(lhsGradOp->getGradInIndex() == 0);
@@ -194,7 +200,7 @@ BOOST_AUTO_TEST_CASE(MatMul_Case2) {
       popart::MatMulRhsGradOp *rhsGradOp =
           dynamic_cast<popart::MatMulRhsGradOp *>(op);
 
-      popart::Tensor rhsOut("out", popart::TensorType::ActGrad, graph);
+      popart::Tensor rhsOut("out", popart::TensorType::ActGrad, graph, di);
       rhsGradOp->output->insert(0, &rhsOut);
 
       BOOST_CHECK(rhsGradOp->getGradInIndex() == 0);
@@ -236,15 +242,18 @@ BOOST_AUTO_TEST_CASE(MatMul_Case3) {
                       {},
                       OptionalDataType());
 
-  popart::Tensor lhs("lhs", popart::TensorType::ActGrad, graph);
+  popart::DebugContext dc;
+  popart::DebugInfo di(dc, "test");
+
+  popart::Tensor lhs("lhs", popart::TensorType::ActGrad, graph, di);
   lhs.info.set(popart::DataType::FLOAT, {2, 1, 4, 3, 2});
   mm.input->insert(0, &lhs);
 
-  popart::Tensor rhs("rhs", popart::TensorType::ActGrad, graph);
+  popart::Tensor rhs("rhs", popart::TensorType::ActGrad, graph, di);
   rhs.info.set(popart::DataType::FLOAT, {3, 1, 2, 6});
   mm.input->insert(1, &rhs);
 
-  popart::Tensor out("out", popart::TensorType::ActGrad, graph);
+  popart::Tensor out("out", popart::TensorType::ActGrad, graph, di);
   mm.output->insert(0, &out);
 
   // Test the setup is correct
@@ -263,16 +272,13 @@ BOOST_AUTO_TEST_CASE(MatMul_Case3) {
   BOOST_CHECK(gradOps[0]->isConvertibleTo<popart::MatMulLhsGradOp>());
   BOOST_CHECK(gradOps[1]->isConvertibleTo<popart::MatMulRhsGradOp>());
 
-  std::vector<popart::Tensor> tensors;
-  tensors.reserve(gradOps.size());
+  popart::Tensor t1("out", popart::TensorType::ActGrad, graph, di);
+  gradOps[0]->output->reset(0, &t1);
+  gradOps[0]->setup();
 
-  for (auto &op : gradOps) {
-    // Danger: Can cause a realloc which invalidates pointers. This won't happen
-    // if the vector has space reserved.
-    tensors.emplace_back("out", popart::TensorType::ActGrad, graph);
-    op->output->reset(0, &tensors.back());
-    op->setup();
-  }
+  popart::Tensor t2("out", popart::TensorType::ActGrad, graph, di);
+  gradOps[1]->output->reset(0, &t2);
+  gradOps[1]->setup();
 
   BOOST_CHECK(gradOps[0]->output->tensor(0)->info ==
               mm.input->tensor(popart::MatMulOp::getLhsInIndex())->info);
@@ -294,15 +300,18 @@ BOOST_AUTO_TEST_CASE(MatMul_ErrorCase1) {
                       {},
                       OptionalDataType());
 
-  popart::Tensor lhs("lhs", popart::TensorType::ActGrad, graph);
+  popart::DebugContext dc;
+  popart::DebugInfo di(dc, "test");
+
+  popart::Tensor lhs("lhs", popart::TensorType::ActGrad, graph, di);
   lhs.info.set(popart::DataType::FLOAT, {2, 2, 3});
   mm.input->insert(0, &lhs);
 
-  popart::Tensor rhs("rhs", popart::TensorType::ActGrad, graph);
+  popart::Tensor rhs("rhs", popart::TensorType::ActGrad, graph, di);
   rhs.info.set(popart::DataType::FLOAT, {2, 2});
   mm.input->insert(1, &rhs);
 
-  popart::Tensor out("out", popart::TensorType::ActGrad, graph);
+  popart::Tensor out("out", popart::TensorType::ActGrad, graph, di);
   mm.output->insert(0, &out);
 
   // Test the setup is correct
@@ -323,15 +332,18 @@ BOOST_AUTO_TEST_CASE(MatMul_ErrorCase3) {
                       {},
                       OptionalDataType());
 
-  popart::Tensor lhs("lhs", popart::TensorType::ActGrad, graph);
+  popart::DebugContext dc;
+  popart::DebugInfo di(dc, "test");
+
+  popart::Tensor lhs("lhs", popart::TensorType::ActGrad, graph, di);
   lhs.info.set(popart::DataType::FLOAT, {2, 3});
   mm.input->insert(0, &lhs);
 
-  popart::Tensor rhs("rhs", popart::TensorType::ActGrad, graph);
+  popart::Tensor rhs("rhs", popart::TensorType::ActGrad, graph, di);
   rhs.info.set(popart::DataType::FLOAT, {10, 2});
   mm.input->insert(1, &rhs);
 
-  popart::Tensor out("out", popart::TensorType::ActGrad, graph);
+  popart::Tensor out("out", popart::TensorType::ActGrad, graph, di);
   mm.output->insert(0, &out);
 
   // Test the setup is correct
@@ -352,15 +364,18 @@ BOOST_AUTO_TEST_CASE(MatMul_ErrorCase4) {
                       {},
                       OptionalDataType());
 
-  popart::Tensor lhs("lhs", popart::TensorType::ActGrad, graph);
+  popart::DebugContext dc;
+  popart::DebugInfo di(dc, "test");
+
+  popart::Tensor lhs("lhs", popart::TensorType::ActGrad, graph, di);
   lhs.info.set(popart::DataType::FLOAT, {});
   mm.input->insert(0, &lhs);
 
-  popart::Tensor rhs("rhs", popart::TensorType::ActGrad, graph);
+  popart::Tensor rhs("rhs", popart::TensorType::ActGrad, graph, di);
   rhs.info.set(popart::DataType::FLOAT, {10, 2});
   mm.input->insert(1, &rhs);
 
-  popart::Tensor out("out", popart::TensorType::ActGrad, graph);
+  popart::Tensor out("out", popart::TensorType::ActGrad, graph, di);
   mm.output->insert(0, &out);
 
   // Test the setup is correct

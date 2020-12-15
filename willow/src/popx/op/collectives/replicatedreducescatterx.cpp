@@ -39,7 +39,8 @@ void ReplicatedReduceScatterOpx::grow(poplar::program::Sequence &prog) const {
           toReduceScatter.elementType(),
           inId(ReplicatedReduceScatterOp::getInIndex()));
       auto ref = cbr->undoRearrangeForCollective(c);
-      prog.add(poplar::program::Copy(toReduceScatter.flatten(), ref.flatten()));
+      prog.add(poplar::program::Copy(
+          toReduceScatter.flatten(), ref.flatten(), false, debugContext()));
       toReduceScatter = c;
     }
   }

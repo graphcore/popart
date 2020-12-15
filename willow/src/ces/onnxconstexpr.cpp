@@ -81,6 +81,7 @@ void OnnxConstExprUtil::processShapeNode(const ONNX_NAMESPACE::NodeProto &node,
   }
 
   TensorInfo outInfo(DataType::INT64, {static_cast<int64_t>(shape.size())});
+
   graph->getTensors().addConstInit(node.output(0), outInfo, data.data());
 }
 
@@ -118,7 +119,19 @@ void OnnxConstExprUtil::processConstantOfShapeNode(
         inputTensor->info.dataType());
   }
 
-  if (node.attribute().size() == 0) {
+  // TODO : Create generic function to get attribute on certain name
+  auto getValueAttribute = [](auto &nodeLocal) -> const onnx::TensorProto * {
+    for (auto &attr : nodeLocal.attribute()) {
+      if (attr.name() == "value") {
+        return &attr.t();
+      }
+    }
+    throw error("Could not find the 'value' attribute on the constant node");
+  };
+
+  const ONNX_NAMESPACE::TensorProto *value = getValueAttribute(node);
+
+  if (value == nullptr) {
     // if no value provided, use DataType::FLOAT and value 0.0f
     TensorInfo resultInfo(DataType::FLOAT, outputShape);
     std::vector<float> resultData(resultInfo.nelms(), 0.0f);
@@ -127,8 +140,7 @@ void OnnxConstExprUtil::processConstantOfShapeNode(
         name, resultInfo, reinterpret_cast<void *>(resultData.data()));
   } else {
     // TensorData from attribute value
-    const ONNX_NAMESPACE::TensorProto &value = node.attribute(0).t();
-    ConstVoidData valueCVData                = onnxutil::getConstData(value);
+    ConstVoidData valueCVData = onnxutil::getConstData(*value);
 
     // Result takes data type from value and shape from input
     TensorInfo resultInfo(valueCVData.info.dataType(), outputShape);

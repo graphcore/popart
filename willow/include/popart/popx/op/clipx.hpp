@@ -16,19 +16,23 @@ public:
   poplar::Tensor outplace(poplar::program::Sequence &,
                           poplar::Graph &,
                           const poplar::Tensor &tensor,
+                          const poplar::DebugNameAndId &,
                           const std::string &) const final;
 
   void inplace(poplar::program::Sequence &,
                poplar::Graph &,
                const poplar::Tensor &,
+               const poplar::DebugNameAndId &,
                const std::string &) const final;
 
   static std::unique_ptr<EwuComputex> get(float min, float max) {
     return std::unique_ptr<EwuComputex>(new ClipComputex(min, max));
   }
 
-  static poplar::Tensor
-  getClipTensor(float val, const poplar::Type &type, poplar::Graph &graph);
+  static poplar::Tensor getClipTensor(float val,
+                                      const poplar::Type &type,
+                                      poplar::Graph &graph,
+                                      const poplar::DebugNameAndId &);
   poplar::Tensor broadcastClipTensor(poplar::Tensor clipT,
                                      const poplar::Tensor &refT) const;
 

@@ -30,7 +30,8 @@ void MinOpx::grow(poplar::program::Sequence &prog) const {
                               outTensor,
                               getInTensor(i),
                               prog,
-                              debugPrefix("min", std::to_string(i)));
+                              debugContext(std::string("min") + sNameDelimiter +
+                                           std::to_string(i)));
     }
   }
 

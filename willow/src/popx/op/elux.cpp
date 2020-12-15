@@ -36,6 +36,7 @@ EluOpx::EluOpx(Op *op, Devicex *devicex)
 void EluComputex::inplace(poplar::program::Sequence &prog,
                           poplar::Graph &graph,
                           const poplar::Tensor &tensor,
+                          const poplar::DebugNameAndId &dnai,
                           const std::string &debug_prefix) const {
 
   //   The Elu definition is:
@@ -49,7 +50,8 @@ void EluComputex::inplace(poplar::program::Sequence &prog,
   exprs.push_back(std::make_unique<pe::Add>(pe::Max(pe::Const(0.0f), pe::_1),
                                             *exprs.back()));
 
-  popops::mapInPlace(graph, *exprs.back(), {tensor}, prog, debug_prefix);
+  popops::mapInPlace(
+      graph, *exprs.back(), {tensor}, prog, {dnai, debug_prefix});
 }
 
 EluInplaceOpx::EluInplaceOpx(Op *op, Devicex *devicex)

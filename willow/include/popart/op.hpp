@@ -8,7 +8,9 @@
 #include <vector>
 #include <popart/attributes.hpp>
 #include <popart/basicoptionals.hpp>
+#include <popart/debugcontext.hpp>
 #include <popart/names.hpp>
+#include <popart/opdebuginfo.hpp>
 #include <popart/opidentifier.hpp>
 #include <popart/region.hpp>
 #include <popart/scope.hpp>
@@ -145,6 +147,9 @@ public:
     // Ops with different outline attributes are not outlined together
     std::map<std::string, std::string> extraOutlineAttributes;
 
+    // The debug info id of the parent debug info for this op.
+    uint64_t debugInfoId{0};
+
     // To flag an Op as being part of the optimizer
     bool optimizerOp{false};
 
@@ -157,6 +162,9 @@ public:
   };
 
   Settings settings;
+
+  // The Op debug information
+  OpDebugInfo debugInfo;
 
   Settings &getSettings() { return settings; }
   const Settings &getSettings() const { return settings; }
@@ -220,6 +228,8 @@ public:
 
   const std::string &getName() const { return settings.name; }
   void setName(const std::string &name) { settings.name = name; }
+
+  const OpDebugInfo &getDebugInfo() const { return debugInfo; }
 
   virtual bool isNorm() const;
   bool isElementWiseUnary() const;
@@ -289,6 +299,9 @@ public:
   // This function MUST set output
   // TensorInfos for all outputs
   virtual void setup();
+
+  // Called after ir scheduling is complete
+  void finalize();
 
   // return a vector of 1 or several gradient Ops: for
   // obtaining the gradient of the inputs of this Op.

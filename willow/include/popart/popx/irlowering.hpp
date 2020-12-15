@@ -182,8 +182,12 @@ private:
   // Task to create a poplar::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)
   PriTask initTensorTask(Tensor *);
-  PriTask initTensorByCloningTask(TensorId srcId, TensorId dstId);
+  PriTask initTensorByCloningTask(const Op *op,
+                                  TensorId srcId,
+                                  TensorId dstId,
+                                  const std::string postfix = "");
   PriTask initTensorByAliasingTask(TensorId srcId, TensorId dstId);
+
   static TaskId initTensorTaskId(TensorId);
   bool tryInitTensorByPostIRAliasing(TensorId dstId,
                                      const ViewChangers &viewChangers);
@@ -422,7 +426,7 @@ public:
                           const poplar::Type &type,
                           const std::vector<size_t> &shape,
                           double val,
-                          const std::string &name);
+                          const poplar::DebugContext &dc = {});
 
   std::shared_ptr<CollectiveBalancedReorder>
   getCollectiveBalancedReorder(TensorId tensor_id);
@@ -439,7 +443,7 @@ public:
 
   poplar::Tensor getScalarVariable(poplar::Graph &graph,
                                    const poplar::Type &type,
-                                   const std::string &name);
+                                   const poplar::DebugContext &dc = {});
 
   LinearMapper &getLinearMapper() { return linearMapper; }
 

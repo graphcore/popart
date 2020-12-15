@@ -111,7 +111,7 @@ void DropoutOpx::grow(poplar::program::Sequence &prog) const {
       auto mask = getConst(poplar::BOOL,
                            getInTensor(DropoutOp::getInIndex()).shape(),
                            true,
-                           debugPrefix("mask"));
+                           "mask");
       setOutTensor(DropoutOp::getMaskOutIndex(), mask);
     }
   }

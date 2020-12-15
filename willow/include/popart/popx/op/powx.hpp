@@ -17,12 +17,14 @@ public:
                           poplar::Graph &,
                           const poplar::Tensor &,
                           const poplar::Tensor &,
+                          const poplar::DebugNameAndId &,
                           const std::string &) const final;
 
   void inplace(poplar::program::Sequence &,
                poplar::Graph &,
                const poplar::Tensor &,
                const poplar::Tensor &,
+               const poplar::DebugNameAndId &,
                const std::string &) const final;
 };
 

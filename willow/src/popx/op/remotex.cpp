@@ -17,7 +17,7 @@ void RemoteBaseOpx::postLoad(poplar::program::Sequence &prog,
                              const poplar::Tensor t) const {
   auto buffer             = dv_p->lowering().getRemoteBuffer(rbid);
   poplar::Tensor rbTensor = buffer.second.value();
-  poplar::program::Copy tmp_copy_prog(rbTensor, t);
+  poplar::program::Copy tmp_copy_prog(rbTensor, t, false, debugPrefix());
   prog.add(tmp_copy_prog);
 }
 
@@ -29,13 +29,13 @@ void RemoteBaseOpx::preStore(poplar::Graph &sgraph,
   if (!dv_p->lowering().hasRemoteBuffer(rbid)) {
     rbTensor =
         sgraph.clone(t,
-                     dv_p->lowering().getRemoteBufferName(rbid),
+                     debugContext(dv_p->lowering().getRemoteBufferName(rbid)),
                      poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
     dv_p->lowering().createRemoteBuffer(rbid, rbTensor);
   }
   auto buffer = dv_p->lowering().getRemoteBuffer(rbid);
   rbTensor    = buffer.second.value();
-  poplar::program::Copy tmp_copy_prog(t, rbTensor);
+  poplar::program::Copy tmp_copy_prog(t, rbTensor, false, debugPrefix());
   prog.add(tmp_copy_prog);
 }
 
@@ -47,7 +47,7 @@ poplar::Tensor RemoteBaseOpx::makeWritable(poplar::Graph &sgraph,
   if (!dv_p->lowering().hasRemoteBuffer(rbid)) {
     rbTensor =
         sgraph.clone(t,
-                     dv_p->lowering().getRemoteBufferName(rbid),
+                     debugContext(dv_p->lowering().getRemoteBufferName(rbid)),
                      poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
     dv_p->lowering().createRemoteBuffer(rbid, rbTensor);
   }
@@ -60,7 +60,7 @@ poplar::Tensor RemoteBaseOpx::makeWritable(poplar::Graph &sgraph,
                        id);
     poplar::Tensor tw =
         sgraph.clone(rbTensor,
-                     id + "_Writable",
+                     debugContext(id + "_Writable"),
                      poplar::TensorCloneMethod::PRESERVE_ORDER_AND_ALIASES);
     return tw;
   }
@@ -77,7 +77,7 @@ void RemoteBaseOpx::load(poplar::Graph &sgraph,
   if (!dv_p->lowering().hasRemoteBuffer(rbid)) {
     rbTensor =
         sgraph.clone(t,
-                     dv_p->lowering().getRemoteBufferName(rbid),
+                     debugContext(dv_p->lowering().getRemoteBufferName(rbid)),
                      poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
     dv_p->lowering().createRemoteBuffer(rbid, rbTensor);
   }
@@ -86,10 +86,11 @@ void RemoteBaseOpx::load(poplar::Graph &sgraph,
   rbTensor    = buffer.second.value();
 
   if (offset.valid() && offset.numElements() > 0) {
-    poplar::program::Copy copy_prog(buffer.first, rbTensor, offset);
+    poplar::program::Copy copy_prog(
+        buffer.first, rbTensor, offset, debugPrefix());
     prog.add(copy_prog);
   } else {
-    poplar::program::Copy copy_prog(buffer.first, rbTensor);
+    poplar::program::Copy copy_prog(buffer.first, rbTensor, debugPrefix());
     prog.add(copy_prog);
   }
 }
@@ -101,10 +102,11 @@ void RemoteBaseOpx::store(poplar::program::Sequence &prog,
   auto buffer             = dv_p->lowering().getRemoteBuffer(rbid);
   poplar::Tensor rbTensor = buffer.second.value();
   if (offset.valid() && offset.numElements() > 0) {
-    poplar::program::Copy copy_prog(rbTensor, buffer.first, offset);
+    poplar::program::Copy copy_prog(
+        rbTensor, buffer.first, offset, debugPrefix());
     prog.add(copy_prog);
   } else {
-    poplar::program::Copy copy_prog(rbTensor, buffer.first);
+    poplar::program::Copy copy_prog(rbTensor, buffer.first, debugPrefix());
     prog.add(copy_prog);
   }
 }

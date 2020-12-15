@@ -38,13 +38,14 @@ ThresholdedReluOpx::ThresholdedReluOpx(Op *op, Devicex *devicex)
 void ThresholdedReluComputex::inplace(poplar::program::Sequence &prog,
                                       poplar::Graph &graph,
                                       const poplar::Tensor &tensor,
+                                      const poplar::DebugNameAndId &dnai,
                                       const std::string &debug_prefix) const {
 
   // x < alpha ? 0 : x
   auto expression = pe::Select(
       pe::Const(0.0f), pe::_1, pe::Lte(pe::_1, pe::Const(getAlpha())));
 
-  popops::mapInPlace(graph, expression, {tensor}, prog, debug_prefix);
+  popops::mapInPlace(graph, expression, {tensor}, prog, {dnai, debug_prefix});
 }
 
 ThresholdedReluInplaceOpx::ThresholdedReluInplaceOpx(Op *op, Devicex *devicex)

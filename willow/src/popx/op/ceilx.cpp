@@ -11,17 +11,21 @@ namespace popx {
 poplar::Tensor CeilComputex::outplace(poplar::program::Sequence &prog,
                                       poplar::Graph &graph,
                                       const poplar::Tensor &tensor,
+                                      const poplar::DebugNameAndId &dnai,
                                       const std::string &s) const {
 
-  return popops::map(graph, popops::expr::UnaryOpType::CEIL, tensor, prog, s);
+  return popops::map(
+      graph, popops::expr::UnaryOpType::CEIL, tensor, prog, {dnai, s});
 }
 
 void CeilComputex::inplace(poplar::program::Sequence &prog,
                            poplar::Graph &graph,
                            const poplar::Tensor &tensor,
+                           const poplar::DebugNameAndId &dnai,
                            const std::string &s) const {
 
-  popops::mapInPlace(graph, popops::expr::UnaryOpType::CEIL, tensor, prog, s);
+  popops::mapInPlace(
+      graph, popops::expr::UnaryOpType::CEIL, tensor, prog, {dnai, s});
 }
 
 CeilOpx::CeilOpx(Op *op, Devicex *devicex)

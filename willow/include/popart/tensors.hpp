@@ -27,21 +27,31 @@ public:
   bool contains(TensorId, const Scope &) const;
 
   // create a Variable Tensor
-  void addVarInit(const TensorId &, const ONNX_NAMESPACE::TensorProto *);
-  void addVarInit(const TensorId &, const TensorInfo &, const void *);
+  void addVarInit(const TensorId &,
+                  const ONNX_NAMESPACE::TensorProto *,
+                  const DebugContext &dc = {});
+  void addVarInit(const TensorId &,
+                  const TensorInfo &,
+                  const void *,
+                  const DebugContext &dc = {});
 
   // create a Constant Tensor
-  void addConstInit(const TensorId &, const ONNX_NAMESPACE::TensorProto *);
-  void addConstInit(const TensorId &, const TensorInfo &, const void *);
+  void addConstInit(const TensorId &,
+                    const ONNX_NAMESPACE::TensorProto *,
+                    const DebugContext &dc = {});
+  void addConstInit(const TensorId &,
+                    const TensorInfo &,
+                    const void *,
+                    const DebugContext &dc = {});
 
   // make an existing tensor a const init tensor
   void makeConstInit(const TensorId &, const void *);
 
   // create a Tensor of type Stream
-  void addStream(TensorId, const TensorInfo &);
+  void addStream(TensorId, const TensorInfo &, const DebugContext &dc = {});
   // create a Tensor of type ActGrad (basically any tensor which is
-  // the output of an Op)
-  void addActGrad(TensorId);
+  // the output of an Opm)
+  void addActGrad(TensorId, const DebugContext &dc = {});
   std::vector<TensorId> getIds(TensorType) const;
   std::vector<Tensor *> getOfType(TensorType) const;
   std::vector<TensorId> getAllTensorIds() const;
@@ -83,8 +93,10 @@ private:
   // adds to M, but first confirms that TensorId not already in
   void insert(TensorId, std::unique_ptr<Tensor>);
 
-  void
-  addInit(const TensorId &, const ONNX_NAMESPACE::TensorProto *, TensorType);
+  void addInit(const TensorId &,
+               const ONNX_NAMESPACE::TensorProto *,
+               TensorType,
+               const DebugInfo &di);
 
   Graph &graph;
 

@@ -30,14 +30,15 @@ public:
   void configure();
 
   TensorId addInputTensor(const TensorInfo &tensorInfo,
-                          const std::string &debugPrefix = "");
+                          const popart::DebugContext &debugContext = {});
 
-  TensorId addUntypedInputTensor(const std::string &debugPrefix = "");
+  TensorId addUntypedInputTensor(const popart::DebugContext &debugContext = {});
 
   void addInputTensorFromParentGraph(const TensorId &tensorId);
 
-  TensorId addInitializedInputTensor(const ConstVoidData &initData,
-                                     const std::string &debugPrefix = "");
+  TensorId
+  addInitializedInputTensor(const ConstVoidData &initData,
+                            const popart::DebugContext &debugContext = {});
 
   void addOutputTensor(const TensorId &arg0);
 
@@ -52,7 +53,7 @@ public:
    * \param inputs The input tensor ids
    * \param outputs The output tensor ids
    * \param opAttributes The attributes of the op
-   * \param name Debug name
+   * \param debugContext Debug context
    * \param validateInput Callback function to validate the inputs & attributes
    */
 
@@ -61,7 +62,7 @@ public:
           const std::vector<TensorId> &inputs,
           const std::vector<TensorId> &outputs,
           const std::map<std::string, popart::any> &opAttributes,
-          const std::string &name,
+          const DebugContext &debugContext,
           std::function<void(std::vector<TensorId>,
                              std::map<std::string, popart::any>)>
               validateInput = nullptr);
@@ -74,7 +75,7 @@ public:
    * \param opsetVersion The opset for the domain of the op
    * \param inputs The input tensor ids
    * \param opAttributes The attributes of the op
-   * \param name Debug name
+   * \param debugContext Debug context
    * \param validateInput Callback function to validate the inputs & attributes
    * \return A list of output tensor ids. Size is given by numberOfOutputs
    */
@@ -84,7 +85,7 @@ public:
      int opsetVersion,
      const std::vector<TensorId> &inputs,
      const std::map<std::string, popart::any> &opAttributes,
-     const std::string &name,
+     const DebugContext &debugContext,
      std::function<void(std::vector<TensorId>,
                         std::map<std::string, popart::any>)> validateInput =
          nullptr) {
@@ -93,7 +94,7 @@ public:
               inputs,
               opid.numOutputs,
               opAttributes,
-              name,
+              debugContext,
               validateInput);
   }
 
@@ -106,7 +107,7 @@ public:
    * \param inputs The input tensor ids
    * \param numOutputs The number if output tensors
    * \param opAttributes The attributes of the op
-   * \param name Debug name
+   * \param name Debug information
    * \param validateInput Callback function to validate the inputs & attributes
    * \return A list of output tensor ids. Size is given by numberOfOutputs
    */
@@ -117,7 +118,7 @@ public:
      const std::vector<TensorId> &inputs,
      unsigned int numOutputs,
      const std::map<std::string, popart::any> &opAttributes,
-     const std::string &name,
+     const DebugContext &debugContext,
      std::function<void(std::vector<TensorId>,
                         std::map<std::string, popart::any>)> validateInput =
          nullptr) {
@@ -129,7 +130,13 @@ public:
       outputs[i] = getNextId(opid.type, i);
     }
 
-    op(opid, opsetVersion, inputs, outputs, opAttributes, name, validateInput);
+    op(opid,
+       opsetVersion,
+       inputs,
+       outputs,
+       opAttributes,
+       debugContext,
+       validateInput);
 
     return outputs;
   }

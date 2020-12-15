@@ -10,6 +10,7 @@
 #include <popart/adam.hpp>
 #include <popart/adaptive.hpp>
 #include <popart/builder.hpp>
+#include <popart/debugcontext.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/error.hpp>
 #include <popart/graphtransformer.hpp>
@@ -520,6 +521,76 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("error", &Logger::error);
     cls.def("critical", &Logger::critical);
   }
+
+  {
+    py::class_<SourceLocation> cls(m, "SourceLocation");
+    cls.def(py::init<std::string, std::string, unsigned>(),
+            py::arg("functionName"),
+            py::arg("fileName"),
+            py::arg("lineNumber"));
+  }
+
+  {
+    py::class_<popart::DebugContext> cls(m, "DebugContext");
+    cls.def(py::init<std::string, SourceLocation>(),
+            py::arg("name"),
+            py::arg("loc"));
+
+    cls.def(py::init([]() -> DebugContext {
+      // This binding does the magic of getting the callee
+      // file & line number.
+      auto inspect = pybind11::module::import("inspect");
+      py::list s   = inspect.attr("stack")();
+
+      auto callee         = s[0];
+      py::str funcName    = callee.attr("function");
+      py::str fileName    = callee.attr("filename");
+      py::int_ lineNumber = callee.attr("lineno");
+
+      return DebugContext(
+          popart::SourceLocation(funcName, fileName, lineNumber));
+    }));
+
+    cls.def(py::init([](const std::string &name) -> DebugContext {
+      auto inspect = pybind11::module::import("inspect");
+      py::list s   = inspect.attr("stack")();
+
+      auto callee         = s[0];
+      py::str funcName    = callee.attr("function");
+      py::str fileName    = callee.attr("filename");
+      py::int_ lineNumber = callee.attr("lineno");
+
+      return DebugContext(
+          name, popart::SourceLocation(funcName, fileName, lineNumber));
+    }));
+
+    cls.def(py::init(
+        [](const DebugInfo &di, const std::string &name) -> DebugContext {
+          auto inspect        = pybind11::module::import("inspect");
+          py::list s          = inspect.attr("stack")();
+          auto callee         = s[0];
+          py::str funcName    = callee.attr("function");
+          py::str fileName    = callee.attr("filename");
+          py::int_ lineNumber = callee.attr("lineno");
+
+          return DebugContext(
+              di, name, popart::SourceLocation(funcName, fileName, lineNumber));
+        }));
+
+    // Allow for string to be implicitly convert to a debug context.
+    py::implicitly_convertible<std::string, popart::DebugContext>();
+  }
+
+  {
+    py::class_<DebugInfo> cls(m, "DebugInfo");
+    cls.def(py::init<const DebugContext &, std::string>(),
+            py::arg("debugContext"),
+            py::arg("layer"));
+    cls.def("setValue", [](DebugInfo &di, std::string k, std::string v) {
+      di.setValue(k, v);
+    });
+  }
+
   {
     py::class_<OperatorIdentifier> cls(m, "OperatorIdentifier");
     cls.def(py::init<const std::string &, const std::string &, unsigned>(),
@@ -1551,61 +1622,116 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("num_groups"),
             py::arg("epsilon")     = 1e-05f,
             py::arg("debugPrefix") = std::string());
+    cls.def("groupnormalization",
+            &AiGraphcoreOpset1::groupnormalization,
+            py::arg("args"),
+            py::arg("num_groups"),
+            py::arg("epsilon")      = 1e-05f,
+            py::arg("debugContext") = std::string());
     cls.def("printtensor",
             &AiGraphcoreOpset1::printtensor,
             py::arg("args"),
             py::arg("print_gradient") = 1,
             py::arg("debugPrefix")    = std::string(),
             py::arg("title")          = std::string());
+    cls.def("printtensor",
+            &AiGraphcoreOpset1::printtensor,
+            py::arg("args"),
+            py::arg("print_gradient") = 1,
+            py::arg("debugContext")   = std::string(),
+            py::arg("title")          = std::string());
     cls.def("nop",
             &AiGraphcoreOpset1::nop,
             py::arg("args"),
             py::arg("debugPrefix") = std::string());
+    cls.def("nop",
+            &AiGraphcoreOpset1::nop,
+            py::arg("args"),
+            py::arg("debugContext") = std::string());
     cls.def("scale",
             &AiGraphcoreOpset1::scale,
             py::arg("args"),
             py::arg("scale"),
             py::arg("debugPrefix") = std::string());
+    cls.def("scale",
+            &AiGraphcoreOpset1::scale,
+            py::arg("args"),
+            py::arg("scale"),
+            py::arg("debugContext") = std::string());
     cls.def("scaledadd",
             &AiGraphcoreOpset1::scaledadd,
             py::arg("args"),
             py::arg("scale0")      = 1.0,
             py::arg("scale1")      = 1.0,
             py::arg("debugPrefix") = std::string());
+    cls.def("scaledadd",
+            &AiGraphcoreOpset1::scaledadd,
+            py::arg("args"),
+            py::arg("scale0")       = 1.0,
+            py::arg("scale1")       = 1.0,
+            py::arg("debugContext") = std::string());
     cls.def("lstm",
             &AiGraphcoreOpset1::lstm,
             py::arg("args"),
             py::arg("outputFullSequence") = 1,
             py::arg("debugPrefix")        = std::string());
+    cls.def("lstm",
+            &AiGraphcoreOpset1::lstm,
+            py::arg("args"),
+            py::arg("outputFullSequence") = 1,
+            py::arg("debugContext")       = std::string());
     cls.def("subsample",
             &AiGraphcoreOpset1::subsample,
             py::arg("args"),
             py::arg("strides"),
             py::arg("debugPrefix") = std::string());
+    cls.def("subsample",
+            &AiGraphcoreOpset1::subsample,
+            py::arg("args"),
+            py::arg("strides"),
+            py::arg("debugContext") = std::string());
     cls.def("gelu",
             &AiGraphcoreOpset1::gelu,
+            py::arg("args"),
+            py::arg("debugPrefix") = std::string());
+    cls.def("gelu",
+            &AiGraphcoreOpset1::gelu,
+            py::arg("args"),
+            py::arg("debugContext") = std::string());
+    cls.def("detach",
+            &AiGraphcoreOpset1::detach,
             py::arg("args"),
             py::arg("debugPrefix") = std::string());
     cls.def("detach",
             &AiGraphcoreOpset1::detach,
             py::arg("args"),
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugContext") = std::string());
     cls.def("round",
             &AiGraphcoreOpset1::round,
             py::arg("args"),
             py::arg("debugPrefix") = std::string());
+    cls.def("round",
+            &AiGraphcoreOpset1::round,
+            py::arg("args"),
+            py::arg("debugContext") = std::string());
     cls.def("depthtospace",
             &AiGraphcoreOpset1::depthtospace,
             py::arg("args"),
             py::arg("blocksize"),
             py::arg("mode"),
             py::arg("debugPrefix") = std::string());
+    cls.def("depthtospace",
+            &AiGraphcoreOpset1::depthtospace,
+            py::arg("args"),
+            py::arg("blocksize"),
+            py::arg("mode"),
+            py::arg("debugContext") = std::string());
     cls.def("init",
             py::overload_cast<Attributes::Ints,
                               Attributes::Int,
                               Attributes::Int,
                               Attributes::Int,
-                              const std::string &>(&AiGraphcoreOpset1::init),
+                              const DebugContext &>(&AiGraphcoreOpset1::init),
             py::arg("shape"),
             py::arg("data_type"),
             py::arg("init_type"),
@@ -1615,13 +1741,47 @@ PYBIND11_MODULE(popart_core, m) {
             py::overload_cast<Attributes::Ints,
                               Attributes::Int,
                               Attributes::Int,
-                              const std::string &>(&AiGraphcoreOpset1::init),
+                              Attributes::Int,
+                              const DebugContext &>(&AiGraphcoreOpset1::init),
+            py::arg("shape"),
+            py::arg("data_type"),
+            py::arg("init_type"),
+            py::arg("batch_axis"),
+            py::arg("debugContext") = std::string());
+    cls.def("init",
+            py::overload_cast<Attributes::Ints,
+                              Attributes::Int,
+                              Attributes::Int,
+                              const DebugContext &>(&AiGraphcoreOpset1::init),
             py::arg("shape"),
             py::arg("data_type"),
             py::arg("init_type"),
             py::arg("debugPrefix") = std::string());
+    cls.def("init",
+            py::overload_cast<Attributes::Ints,
+                              Attributes::Int,
+                              Attributes::Int,
+                              const DebugContext &>(&AiGraphcoreOpset1::init),
+            py::arg("shape"),
+            py::arg("data_type"),
+            py::arg("init_type"),
+            py::arg("debugContext") = std::string());
     cls.def("dynamicslice",
             &AiGraphcoreOpset1::dynamicslice,
+            py::arg("args"),
+            py::arg("axes"),
+            py::arg("sizes"),
+            py::arg("noOverlap")   = 0,
+            py::arg("debugPrefix") = std::string());
+    cls.def("dynamicslice",
+            &AiGraphcoreOpset1::dynamicslice,
+            py::arg("args"),
+            py::arg("axes"),
+            py::arg("sizes"),
+            py::arg("noOverlap")    = 0,
+            py::arg("debugContext") = std::string());
+    cls.def("dynamicupdate",
+            &AiGraphcoreOpset1::dynamicupdate,
             py::arg("args"),
             py::arg("axes"),
             py::arg("sizes"),
@@ -1632,10 +1792,22 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("args"),
             py::arg("axes"),
             py::arg("sizes"),
-            py::arg("noOverlap")   = 0,
+            py::arg("noOverlap")    = 0,
+            py::arg("debugContext") = std::string());
+    cls.def("dynamiczero",
+            &AiGraphcoreOpset1::dynamiczero,
+            py::arg("args"),
+            py::arg("axes"),
+            py::arg("sizes"),
             py::arg("debugPrefix") = std::string());
     cls.def("dynamiczero",
             &AiGraphcoreOpset1::dynamiczero,
+            py::arg("args"),
+            py::arg("axes"),
+            py::arg("sizes"),
+            py::arg("debugContext") = std::string());
+    cls.def("dynamicadd",
+            &AiGraphcoreOpset1::dynamicadd,
             py::arg("args"),
             py::arg("axes"),
             py::arg("sizes"),
@@ -1645,23 +1817,39 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("args"),
             py::arg("axes"),
             py::arg("sizes"),
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugContext") = std::string());
     cls.def("call",
             &AiGraphcoreOpset1::call,
             py::arg("args"),
             py::arg("num_outputs"),
             py::arg("callee"),
             py::arg("debugPrefix") = std::string());
+    cls.def("call",
+            &AiGraphcoreOpset1::call,
+            py::arg("args"),
+            py::arg("num_outputs"),
+            py::arg("callee"),
+            py::arg("debugContext") = std::string());
     cls.def("replicatedallreduce",
             &AiGraphcoreOpset1::replicatedallreduce,
             py::arg("args"),
             py::arg("debugPrefix") = std::string());
+    cls.def("replicatedallreduce",
+            &AiGraphcoreOpset1::replicatedallreduce,
+            py::arg("args"),
+            py::arg("debugContext") = std::string());
     cls.def("l1loss",
             &AiGraphcoreOpset1::l1loss,
             py::arg("args"),
             py::arg("lambda"),
             py::arg("reduction")   = ReductionType::Mean,
             py::arg("debugPrefix") = std::string());
+    cls.def("l1loss",
+            &AiGraphcoreOpset1::l1loss,
+            py::arg("args"),
+            py::arg("lambda"),
+            py::arg("reduction")    = ReductionType::Mean,
+            py::arg("debugContext") = std::string());
     cls.def("nllloss",
             &AiGraphcoreOpset1::nllloss,
             py::arg("args"),
@@ -1669,11 +1857,23 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("ignoreIndex")           = pybind11::none(),
             py::arg("inputIsLogProbability") = false,
             py::arg("debugPrefix")           = std::string());
+    cls.def("nllloss",
+            &AiGraphcoreOpset1::nllloss,
+            py::arg("args"),
+            py::arg("reduction")             = ReductionType::Mean,
+            py::arg("ignoreIndex")           = pybind11::none(),
+            py::arg("inputIsLogProbability") = false,
+            py::arg("debugContext")          = std::string());
     cls.def("identityloss",
             &AiGraphcoreOpset1::identityloss,
             py::arg("args"),
             py::arg("reduction")   = ReductionType::Mean,
             py::arg("debugPrefix") = std::string());
+    cls.def("identityloss",
+            &AiGraphcoreOpset1::identityloss,
+            py::arg("args"),
+            py::arg("reduction")    = ReductionType::Mean,
+            py::arg("debugContext") = std::string());
     cls.def("multiconv",
             &AiGraphcoreOpset1::multiconv,
             py::arg("args"),
@@ -1686,29 +1886,64 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("perConvReservedTiles")       = pybind11::none(),
             py::arg("cycleBackOff")               = pybind11::none(),
             py::arg("debugPrefix")                = std::string());
+    cls.def("multiconv",
+            &AiGraphcoreOpset1::multiconv,
+            py::arg("args"),
+            py::arg("dilations")                  = py::list(),
+            py::arg("pads")                       = py::list(),
+            py::arg("strides")                    = py::list(),
+            py::arg("availableMemoryProportions") = py::list(),
+            py::arg("partialsTypes")              = py::list(),
+            py::arg("planType")                   = pybind11::none(),
+            py::arg("perConvReservedTiles")       = pybind11::none(),
+            py::arg("cycleBackOff")               = pybind11::none(),
+            py::arg("debugContext")               = std::string());
     cls.def("shapeddropout",
             &AiGraphcoreOpset1::shapeddropout,
             py::arg("args"),
             py::arg("shape"),
             py::arg("ratio")       = 0.5f,
             py::arg("debugPrefix") = std::string());
+    cls.def("shapeddropout",
+            &AiGraphcoreOpset1::shapeddropout,
+            py::arg("args"),
+            py::arg("shape"),
+            py::arg("ratio")        = 0.5f,
+            py::arg("debugContext") = std::string());
     cls.def("atan2",
             &AiGraphcoreOpset1::atan2,
+            py::arg("args"),
+            py::arg("debugPrefix") = std::string());
+    cls.def("atan2",
+            &AiGraphcoreOpset1::atan2,
+            py::arg("args"),
+            py::arg("debugContext") = std::string());
+    cls.def("expm1",
+            &AiGraphcoreOpset1::expm1,
             py::arg("args"),
             py::arg("debugPrefix") = std::string());
     cls.def("expm1",
             &AiGraphcoreOpset1::expm1,
             py::arg("args"),
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugContext") = std::string());
     cls.def("log1p",
             &AiGraphcoreOpset1::log1p,
             py::arg("args"),
             py::arg("debugPrefix") = std::string());
+    cls.def("log1p",
+            &AiGraphcoreOpset1::log1p,
+            py::arg("args"),
+            py::arg("debugContext") = std::string());
     cls.def("reshape",
             &AiGraphcoreOpset1::reshape,
             py::arg("args"),
             py::arg("shape"),
             py::arg("debugPrefix") = std::string());
+    cls.def("reshape",
+            &AiGraphcoreOpset1::reshape,
+            py::arg("args"),
+            py::arg("shape"),
+            py::arg("debugContext") = std::string());
   }
   {
     py::class_<Builder> cls(m, "_BuilderCore");
@@ -1716,21 +1951,45 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def(py::init(&Builder::createFromOnnxModel),
             py::arg("modelProtoOrFilename"));
     cls.def("setGraphName", &Builder::setGraphName, py::arg("name"));
+    cls.def(
+        "addInputTensor",
+        [](Builder &b, const TensorInfo &ti, const popart::DebugContext &dc)
+            -> TensorId { return b.addInputTensor(ti, dc); },
+        py::arg("tensorInfo"),
+        py::arg("debugPrefix") = std::string());
     cls.def("addInputTensor",
-            py::overload_cast<const TensorInfo &, const std::string &>(
+            py::overload_cast<const TensorInfo &, const popart::DebugContext &>(
                 &Builder::addInputTensor),
             py::arg("tensorInfo"),
-            py::arg("debugPrefix") = std::string());
-    cls.def("addInputTensor",
-            py::overload_cast<const std::string &,
-                              const Shape &,
-                              const std::string &>(&Builder::addInputTensor),
-            py::arg("dataType"),
-            py::arg("shape"),
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugContext") = std::string());
+    cls.def(
+        "addInputTensor",
+        [](Builder &b,
+           const std::string &dataType,
+           const Shape &shape,
+           const popart::DebugContext &dc) -> TensorId {
+          return b.addInputTensor(dataType, shape, dc);
+        },
+        py::arg("dataType"),
+        py::arg("shape"),
+        py::arg("debugPrefix") = std::string());
+    cls.def(
+        "addInputTensor",
+        [](Builder &b,
+           const std::string &dataType,
+           const Shape &shape,
+           const popart::DebugContext &dc) -> TensorId {
+          return b.addInputTensor(dataType, shape, dc);
+        },
+        py::arg("dataType"),
+        py::arg("shape"),
+        py::arg("debugContext") = "");
     cls.def("addUntypedInputTensor",
             &Builder::addUntypedInputTensor,
             py::arg("debugPrefix") = std::string());
+    cls.def("addUntypedInputTensor",
+            &Builder::addUntypedInputTensor,
+            py::arg("debugContext") = "");
     cls.def("addInputTensorFromParentGraph",
             &Builder::addInputTensorFromParentGraph,
             py::arg("tensorId"));
@@ -1742,15 +2001,26 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("metadataFilename") = std::string());
     cls.def(
         "addInitializedInputTensor",
-        [](Builder &builder, py::array array, std::string &debugPrefix) {
+        [](Builder &builder, py::array array, const popart::DebugContext &dc) {
           array = makeContiguous(array);
           ConstVoidData initData;
           initData.data = array.request().ptr;
           initData.info = getTensorInfo(array);
-          return builder.addInitializedInputTensor(initData, debugPrefix);
+          return builder.addInitializedInputTensor(initData, dc);
         },
         py::arg("initVal"),
         py::arg("debugPrefix") = std::string());
+    cls.def(
+        "addInitializedInputTensor",
+        [](Builder &builder, py::array array, popart::DebugContext &dc) {
+          array = makeContiguous(array);
+          ConstVoidData initData;
+          initData.data = array.request().ptr;
+          initData.info = getTensorInfo(array);
+          return builder.addInitializedInputTensor(initData, dc);
+        },
+        py::arg("initVal"),
+        py::arg("debugContext") = std::string());
     cls.def(
         "addOutputTensor", &Builder::addOutputTensor, py::arg("outputName"));
     cls.def("_createSubgraphBuilder",
@@ -2200,6 +2470,7 @@ PYBIND11_MODULE(popart_core, m) {
       return ss.str();
     });
   }
+
   m.def("reservedGradientPrefix", &reservedGradientPrefix);
   m.def("reservedUpdatedVarPrefix", &reservedUpdatedVarPrefix);
 
@@ -2273,6 +2544,27 @@ PYBIND11_MODULE(popart_core, m) {
   m.def("reservedSpecificStepPrefix", &reservedSpecificStepPrefix);
   m.def("hostReduceGradCopyPrefix", &hostReduceGradCopyPrefix);
   m.def("hostReduceVarCopyPrefix", &hostReduceVarCopyPrefix);
+
+  // These are helper methods to allow unit tests to start & stop
+  // the debug info. They should move to poplar whenit has a python
+  // interface.
+  m.def(
+      "initializePoplarDebugInfo",
+      [&](std::string filename, std::string format) {
+        poplar::DebugSerializationFormat sformat =
+            poplar::DebugSerializationFormat::JSON;
+        if (format == "json") {
+          sformat = poplar::DebugSerializationFormat::JSON;
+        } else if (format == "cbor") {
+          sformat = poplar::DebugSerializationFormat::CBOR;
+        }
+
+        poplar::DebugInfo::initializeStreamer(filename, sformat);
+      },
+      py::arg("filename"),
+      py::arg("format") = "json");
+
+  m.def("closePoplarDebugInfo", [&]() { poplar::DebugInfo::closeStreamer(); });
 
   // Exceptions are processed explicitly to allow the main dynamic library
   // to do the type inference.  This prevents some inter dynamic library type

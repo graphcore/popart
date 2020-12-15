@@ -55,18 +55,22 @@ void GradCopyToHostOpx::grow(poplar::program::Sequence &prog) const {
     // TODO(T15568): This is currently a hack to get around the shortcoming of
     // poplar::RemoteBuffers not supporting stream callbacks. We introduce
     // dummy callbacks from which we can run the copyTo/From-RemoteBuffer
-    poplar::Tensor dummyTensor = graph().addVariable(poplar::CHAR, {1});
+    poplar::Tensor dummyTensor =
+        graph().addVariable(poplar::CHAR, {1}, debugPrefix());
     graph().setTileMapping(dummyTensor, 0);
 
     auto remoteBuffer = dv_p->lowering().getOrCreateHostReduceRemoteBuffer(
         grad_id, inInfo(updater_index), graph());
 
-    poplar::program::Copy gradientsToHostProg(weightDeltas, remoteBuffer);
-    poplar::program::Copy dummyCallback(dummyTensor, deviceToHostStream);
+    poplar::program::Copy gradientsToHostProg(
+        weightDeltas, remoteBuffer, debugPrefix());
+    poplar::program::Copy dummyCallback(
+        dummyTensor, deviceToHostStream, false, debugPrefix());
     prog.add(gradientsToHostProg);
     prog.add(dummyCallback);
   } else {
-    poplar::program::Copy gradientsToHostProg(weightDeltas, deviceToHostStream);
+    poplar::program::Copy gradientsToHostProg(
+        weightDeltas, deviceToHostStream, false, debugPrefix());
     prog.add(gradientsToHostProg);
   }
 
@@ -95,20 +99,23 @@ void GradCopyFromHostOpx::grow(poplar::program::Sequence &prog) const {
 
   if (op_p->getIr().getSessionOptions().hostAllReduceRemoteBuffer) {
     // This is currently a hack
-    poplar::Tensor dummyTensor = graph().addVariable(poplar::CHAR, {1});
+    poplar::Tensor dummyTensor =
+        graph().addVariable(poplar::CHAR, {1}, debugPrefix());
     // TODO: use linear mapper?
     graph().setTileMapping(dummyTensor, 0);
 
     auto remoteBuffer = dv_p->lowering().getOrCreateHostReduceRemoteBuffer(
         grad_id, inInfo(updater_index), graph());
 
-    poplar::program::Copy dummyCallback(hostToDeviceStream, dummyTensor);
-    poplar::program::Copy gradientsFromHostProg(remoteBuffer, weightDeltas);
+    poplar::program::Copy dummyCallback(
+        hostToDeviceStream, dummyTensor, false, debugPrefix());
+    poplar::program::Copy gradientsFromHostProg(
+        remoteBuffer, weightDeltas, debugPrefix());
     prog.add(dummyCallback);
     prog.add(gradientsFromHostProg);
   } else {
-    poplar::program::Copy gradientsFromHostProg(hostToDeviceStream,
-                                                weightDeltas);
+    poplar::program::Copy gradientsFromHostProg(
+        hostToDeviceStream, weightDeltas, false, debugPrefix());
     prog.add(gradientsFromHostProg);
   }
 
@@ -134,7 +141,8 @@ void HostReduceVarCopyOpx::grow(poplar::program::Sequence &prog) const {
   dv_p->lowering().getHostReduceStreamIds().emplace_back(
       hostToDeviceStream.handle());
 
-  poplar::program::Copy hostWeightsToDeviceProg(hostToDeviceStream, weights);
+  poplar::program::Copy hostWeightsToDeviceProg(
+      hostToDeviceStream, weights, false, debugPrefix());
   prog.add(hostWeightsToDeviceProg);
 
   // output is a reference to the updated input

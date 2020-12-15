@@ -58,6 +58,8 @@ constexpr string_view format_pretty_function(const char *s) {
   }
 }
 
+#define __POPART_FUNCTION_NAME__ format_pretty_function(__PRETTY_FUNCTION__)
+
 #define POPART_TRACEPOINT()                                                    \
   PopartTracepoint __pt(format_pretty_function(__PRETTY_FUNCTION__))
 

@@ -28,7 +28,7 @@ void IfOpx::copyInputs(poplar::program::Sequence &thenProg,
     auto ifInput     = get(ifInputId);
     auto branchInput = get(branchInputId);
 
-    poplar::program::Copy copyProg(ifInput, branchInput);
+    poplar::program::Copy copyProg(ifInput, branchInput, false, debugPrefix());
     prog.add(copyProg);
   };
 
@@ -68,7 +68,8 @@ void IfOpx::copyOutputs(poplar::program::Sequence &thenProg,
 
     auto opOutput     = outputs.at(opIndex);
     auto branchOutput = get(branchId);
-    poplar::program::Copy copyProg(branchOutput, opOutput);
+    poplar::program::Copy copyProg(
+        branchOutput, opOutput, false, debugPrefix());
     prog.add(copyProg);
   };
 
@@ -134,8 +135,8 @@ IfOpx::IfOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 void IfOpx::grow(poplar::program::Sequence &prog) const {
   auto &ifop = getOp<IfOp>();
 
-  poplar::program::Sequence then_prog;
-  poplar::program::Sequence else_prog;
+  poplar::program::Sequence then_prog({}, debugContext("then"));
+  poplar::program::Sequence else_prog({}, debugContext("else"));
 
   copyInputs(then_prog, else_prog);
 
@@ -147,7 +148,8 @@ void IfOpx::grow(poplar::program::Sequence &prog) const {
   copyOutputs(then_prog, else_prog, outputs);
 
   auto condition = getInTensor(IfGradOp::getConditionInIndex());
-  prog.add(poplar::program::If(condition, then_prog, else_prog));
+  prog.add(poplar::program::If(
+      condition, then_prog, else_prog, debugContext("condition")));
 
   for (int i = 0; i < outputs.size(); i++) {
     setOutTensor(i, outputs.at(i));

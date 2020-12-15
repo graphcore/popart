@@ -28,8 +28,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "abs",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.abs(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.abs(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "abs",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.abs(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -37,8 +46,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "acos",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.acos(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.acos(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "acos",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.acos(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -46,8 +64,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "acosh",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.acosh(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.acosh(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "acosh",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.acosh(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -55,8 +82,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "add",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.add(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.add(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "add",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.add(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -64,8 +100,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "logical_and",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.logical_and(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.logical_and(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "logical_and",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.logical_and(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -75,8 +120,21 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<TensorId> &args,
              int64_t axis,
              int64_t keepdims,
-             const std::string &name) -> TensorId {
-            return opset.argmax(args, axis, keepdims, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.argmax(args, axis, keepdims, debugContext);
+          },
+          py::arg("args"),
+          py::arg("axis")         = 0,
+          py::arg("keepdims")     = 1,
+          py::arg("debugContext") = std::string())
+      .def(
+          "argmax",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             int64_t axis,
+             int64_t keepdims,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.argmax(args, axis, keepdims, debugContext);
           },
           py::arg("args"),
           py::arg("axis")        = 0,
@@ -88,8 +146,21 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<TensorId> &args,
              int64_t axis,
              int64_t keepdims,
-             const std::string &name) -> TensorId {
-            return opset.argmin(args, axis, keepdims, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.argmin(args, axis, keepdims, debugContext);
+          },
+          py::arg("args"),
+          py::arg("axis")         = 0,
+          py::arg("keepdims")     = 1,
+          py::arg("debugContext") = std::string())
+      .def(
+          "argmin",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             int64_t axis,
+             int64_t keepdims,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.argmin(args, axis, keepdims, debugContext);
           },
           py::arg("args"),
           py::arg("axis")        = 0,
@@ -99,8 +170,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "asin",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.asin(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.asin(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "asin",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.asin(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -108,8 +188,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "asinh",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.asinh(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.asinh(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "asinh",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.asinh(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -117,8 +206,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "atan",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.atan(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.atan(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "atan",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.atan(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -126,8 +224,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "atanh",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.atanh(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.atanh(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "atanh",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.atanh(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -140,14 +247,39 @@ PYBIND11_MODULE(popart_opset10, m) {
              int64_t count_include_pad,
              const std::vector<int64_t> &pads,
              const std::vector<int64_t> &strides,
-             const std::string &name) -> TensorId {
+             const DebugContext &debugContext) -> TensorId {
             return opset.averagepool(args,
                                      kernel_shape,
                                      ceil_mode,
                                      count_include_pad,
                                      pads,
                                      strides,
-                                     name);
+                                     debugContext);
+          },
+          py::arg("args"),
+          py::arg("kernel_shape"),
+          py::arg("ceil_mode")         = 0,
+          py::arg("count_include_pad") = 0,
+          py::arg("pads")              = std::vector<int64_t>(),
+          py::arg("strides")           = std::vector<int64_t>(),
+          py::arg("debugContext")      = std::string())
+      .def(
+          "averagepool",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const std::vector<int64_t> &kernel_shape,
+             int64_t ceil_mode,
+             int64_t count_include_pad,
+             const std::vector<int64_t> &pads,
+             const std::vector<int64_t> &strides,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.averagepool(args,
+                                     kernel_shape,
+                                     ceil_mode,
+                                     count_include_pad,
+                                     pads,
+                                     strides,
+                                     debugContext);
           },
           py::arg("args"),
           py::arg("kernel_shape"),
@@ -163,9 +295,25 @@ PYBIND11_MODULE(popart_opset10, m) {
              unsigned num_outputs,
              float epsilon,
              float momentum,
-             const std::string &name) -> std::vector<TensorId> {
+             const DebugContext &debugContext) -> std::vector<TensorId> {
             return opset.batchnormalization(
-                args, num_outputs, epsilon, momentum, name);
+                args, num_outputs, epsilon, momentum, debugContext);
+          },
+          py::arg("args"),
+          py::arg("num_outputs"),
+          py::arg("epsilon")      = 1e-05f,
+          py::arg("momentum")     = 0.9f,
+          py::arg("debugContext") = std::string())
+      .def(
+          "batchnormalization",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             unsigned num_outputs,
+             float epsilon,
+             float momentum,
+             const DebugContext &debugContext) -> std::vector<TensorId> {
+            return opset.batchnormalization(
+                args, num_outputs, epsilon, momentum, debugContext);
           },
           py::arg("args"),
           py::arg("num_outputs"),
@@ -177,8 +325,19 @@ PYBIND11_MODULE(popart_opset10, m) {
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
              const std::string &to,
-             const std::string &name) -> TensorId {
-            return opset.cast(args, to, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.cast(args, to, debugContext);
+          },
+          py::arg("args"),
+          py::arg("to"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "cast",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const std::string &to,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.cast(args, to, debugContext);
           },
           py::arg("args"),
           py::arg("to"),
@@ -187,8 +346,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "ceil",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.ceil(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.ceil(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "ceil",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.ceil(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -198,8 +366,21 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<TensorId> &args,
              float max,
              float min,
-             const std::string &name) -> TensorId {
-            return opset.clip(args, max, min, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.clip(args, max, min, debugContext);
+          },
+          py::arg("args"),
+          py::arg("max")          = 3.4028234663852886e+38f,
+          py::arg("min")          = -3.4028234663852886e+38f,
+          py::arg("debugContext") = std::string())
+      .def(
+          "clip",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             float max,
+             float min,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.clip(args, max, min, debugContext);
           },
           py::arg("args"),
           py::arg("max")         = 3.4028234663852886e+38f,
@@ -210,8 +391,19 @@ PYBIND11_MODULE(popart_opset10, m) {
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
              nonstd::optional<int64_t> axis,
-             const std::string &name) -> TensorId {
-            return opset.compress(args, axis, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.compress(args, axis, debugContext);
+          },
+          py::arg("args"),
+          py::arg("axis")         = nonstd::optional<int64_t>(),
+          py::arg("debugContext") = std::string())
+      .def(
+          "compress",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             nonstd::optional<int64_t> axis,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.compress(args, axis, debugContext);
           },
           py::arg("args"),
           py::arg("axis")        = nonstd::optional<int64_t>(),
@@ -221,23 +413,63 @@ PYBIND11_MODULE(popart_opset10, m) {
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
              int64_t axis,
-             const std::string &name) -> TensorId {
-            return opset.concat(args, axis, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.concat(args, axis, debugContext);
+          },
+          py::arg("args"),
+          py::arg("axis"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "concat",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             int64_t axis,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.concat(args, axis, debugContext);
           },
           py::arg("args"),
           py::arg("axis"),
           py::arg("debugPrefix") = std::string())
       .def(
           "constant",
-          [](AiOnnxOpset10 &opset, py::array array, const std::string &name) {
+          [](AiOnnxOpset10 &opset,
+             py::array array,
+             const DebugContext &debugContext) {
             array = makeContiguous(array);
             ConstVoidData initData;
             initData.data = array.request().ptr;
             initData.info = getTensorInfo(array);
-            return opset.constant(initData, name);
+            return opset.constant(initData, debugContext);
+          },
+          py::arg("value"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "constant",
+          [](AiOnnxOpset10 &opset,
+             py::array array,
+             const DebugContext &debugContext) {
+            array = makeContiguous(array);
+            ConstVoidData initData;
+            initData.data = array.request().ptr;
+            initData.info = getTensorInfo(array);
+            return opset.constant(initData, debugContext);
           },
           py::arg("value"),
           py::arg("debugPrefix") = std::string())
+      .def(
+          "constantofshape",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             py::array array,
+             const std::string &name) {
+            ConstVoidData initData;
+            initData.data = array.request().ptr;
+            initData.info = getTensorInfo(array);
+            return opset.constantofshape(args, initData, name);
+          },
+          py::arg("args"),
+          py::arg("value"),
+          py::arg("debugContext") = std::string())
       .def(
           "constantofshape",
           [](AiOnnxOpset10 &opset,
@@ -261,9 +493,39 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<int64_t> &kernel_shape,
              const std::vector<int64_t> &pads,
              const std::vector<int64_t> &strides,
-             const std::string &name) -> TensorId {
-            return opset.conv(
-                args, dilations, group, kernel_shape, pads, strides, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.conv(args,
+                              dilations,
+                              group,
+                              kernel_shape,
+                              pads,
+                              strides,
+                              debugContext);
+          },
+          py::arg("args"),
+          py::arg("dilations")    = std::vector<int64_t>(),
+          py::arg("group")        = 1,
+          py::arg("kernel_shape") = std::vector<int64_t>(),
+          py::arg("pads")         = std::vector<int64_t>(),
+          py::arg("strides")      = std::vector<int64_t>(),
+          py::arg("debugContext") = std::string())
+      .def(
+          "conv",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const std::vector<int64_t> &dilations,
+             int64_t group,
+             const std::vector<int64_t> &kernel_shape,
+             const std::vector<int64_t> &pads,
+             const std::vector<int64_t> &strides,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.conv(args,
+                              dilations,
+                              group,
+                              kernel_shape,
+                              pads,
+                              strides,
+                              debugContext);
           },
           py::arg("args"),
           py::arg("dilations")    = std::vector<int64_t>(),
@@ -281,9 +543,39 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<int64_t> &kernel_shape,
              const std::vector<int64_t> &pads,
              const std::vector<int64_t> &strides,
-             const std::string &name) -> TensorId {
-            return opset.convinteger(
-                args, dilations, group, kernel_shape, pads, strides, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.convinteger(args,
+                                     dilations,
+                                     group,
+                                     kernel_shape,
+                                     pads,
+                                     strides,
+                                     debugContext);
+          },
+          py::arg("args"),
+          py::arg("dilations")    = std::vector<int64_t>(),
+          py::arg("group")        = 1,
+          py::arg("kernel_shape") = std::vector<int64_t>(),
+          py::arg("pads")         = std::vector<int64_t>(),
+          py::arg("strides")      = std::vector<int64_t>(),
+          py::arg("debugContext") = std::string())
+      .def(
+          "convinteger",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const std::vector<int64_t> &dilations,
+             int64_t group,
+             const std::vector<int64_t> &kernel_shape,
+             const std::vector<int64_t> &pads,
+             const std::vector<int64_t> &strides,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.convinteger(args,
+                                     dilations,
+                                     group,
+                                     kernel_shape,
+                                     pads,
+                                     strides,
+                                     debugContext);
           },
           py::arg("args"),
           py::arg("dilations")    = std::vector<int64_t>(),
@@ -303,7 +595,7 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<int64_t> &output_shape,
              const std::vector<int64_t> &pads,
              const std::vector<int64_t> &strides,
-             const std::string &name) -> TensorId {
+             const DebugContext &debugContext) -> TensorId {
             return opset.convtranspose(args,
                                        dilations,
                                        group,
@@ -312,7 +604,38 @@ PYBIND11_MODULE(popart_opset10, m) {
                                        output_shape,
                                        pads,
                                        strides,
-                                       name);
+                                       debugContext);
+          },
+          py::arg("args"),
+          py::arg("dilations")      = std::vector<int64_t>(),
+          py::arg("group")          = 1,
+          py::arg("kernel_shape")   = std::vector<int64_t>(),
+          py::arg("output_padding") = std::vector<int64_t>(),
+          py::arg("output_shape")   = std::vector<int64_t>(),
+          py::arg("pads")           = std::vector<int64_t>(),
+          py::arg("strides")        = std::vector<int64_t>(),
+          py::arg("debugContext")   = std::string())
+      .def(
+          "convtranspose",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const std::vector<int64_t> &dilations,
+             int64_t group,
+             const std::vector<int64_t> &kernel_shape,
+             const std::vector<int64_t> &output_padding,
+             const std::vector<int64_t> &output_shape,
+             const std::vector<int64_t> &pads,
+             const std::vector<int64_t> &strides,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.convtranspose(args,
+                                       dilations,
+                                       group,
+                                       kernel_shape,
+                                       output_padding,
+                                       output_shape,
+                                       pads,
+                                       strides,
+                                       debugContext);
           },
           py::arg("args"),
           py::arg("dilations")      = std::vector<int64_t>(),
@@ -327,8 +650,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "cos",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.cos(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.cos(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "cos",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.cos(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -336,8 +668,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "cosh",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.cosh(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.cosh(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "cosh",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.cosh(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -346,8 +687,19 @@ PYBIND11_MODULE(popart_opset10, m) {
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
              int64_t blocksize,
-             const std::string &name) -> TensorId {
-            return opset.depthtospace(args, blocksize, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.depthtospace(args, blocksize, debugContext);
+          },
+          py::arg("args"),
+          py::arg("blocksize"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "depthtospace",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             int64_t blocksize,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.depthtospace(args, blocksize, debugContext);
           },
           py::arg("args"),
           py::arg("blocksize"),
@@ -356,8 +708,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "dequantizelinear",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.dequantizelinear(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.dequantizelinear(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "dequantizelinear",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.dequantizelinear(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -365,8 +726,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "div",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.div(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.div(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "div",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.div(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -376,8 +746,21 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<TensorId> &args,
              unsigned num_outputs,
              float ratio,
-             const std::string &name) -> std::vector<TensorId> {
-            return opset.dropout(args, num_outputs, ratio, name);
+             const DebugContext &debugContext) -> std::vector<TensorId> {
+            return opset.dropout(args, num_outputs, ratio, debugContext);
+          },
+          py::arg("args"),
+          py::arg("num_outputs"),
+          py::arg("ratio")        = 0.5f,
+          py::arg("debugContext") = std::string())
+      .def(
+          "dropout",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             unsigned num_outputs,
+             float ratio,
+             const DebugContext &debugContext) -> std::vector<TensorId> {
+            return opset.dropout(args, num_outputs, ratio, debugContext);
           },
           py::arg("args"),
           py::arg("num_outputs"),
@@ -388,8 +771,19 @@ PYBIND11_MODULE(popart_opset10, m) {
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
              float alpha,
-             const std::string &name) -> TensorId {
-            return opset.elu(args, alpha, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.elu(args, alpha, debugContext);
+          },
+          py::arg("args"),
+          py::arg("alpha")        = 1.0f,
+          py::arg("debugContext") = std::string())
+      .def(
+          "elu",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             float alpha,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.elu(args, alpha, debugContext);
           },
           py::arg("args"),
           py::arg("alpha")       = 1.0f,
@@ -398,8 +792,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "equal",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.equal(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.equal(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "equal",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.equal(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -407,8 +810,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "erf",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.erf(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.erf(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "erf",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.erf(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -416,8 +828,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "exp",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.exp(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.exp(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "exp",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.exp(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -425,8 +846,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "expand",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.expand(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.expand(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "expand",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.expand(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -436,8 +866,21 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<TensorId> &args,
              nonstd::optional<int64_t> dtype,
              int64_t k,
-             const std::string &name) -> TensorId {
-            return opset.eyelike(args, dtype, k, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.eyelike(args, dtype, k, debugContext);
+          },
+          py::arg("args"),
+          py::arg("dtype")        = nonstd::optional<int64_t>(),
+          py::arg("k")            = 0,
+          py::arg("debugContext") = std::string())
+      .def(
+          "eyelike",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             nonstd::optional<int64_t> dtype,
+             int64_t k,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.eyelike(args, dtype, k, debugContext);
           },
           py::arg("args"),
           py::arg("dtype")       = nonstd::optional<int64_t>(),
@@ -448,8 +891,19 @@ PYBIND11_MODULE(popart_opset10, m) {
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
              int64_t axis,
-             const std::string &name) -> TensorId {
-            return opset.flatten(args, axis, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.flatten(args, axis, debugContext);
+          },
+          py::arg("args"),
+          py::arg("axis")         = 1,
+          py::arg("debugContext") = std::string())
+      .def(
+          "flatten",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             int64_t axis,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.flatten(args, axis, debugContext);
           },
           py::arg("args"),
           py::arg("axis")        = 1,
@@ -458,8 +912,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "floor",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.floor(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.floor(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "floor",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.floor(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -475,7 +938,7 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::string &direction,
              nonstd::optional<int64_t> hidden_size,
              int64_t linear_before_reset,
-             const std::string &name) -> std::vector<TensorId> {
+             const DebugContext &debugContext) -> std::vector<TensorId> {
             return opset.gru(args,
                              num_outputs,
                              activation_alpha,
@@ -485,7 +948,41 @@ PYBIND11_MODULE(popart_opset10, m) {
                              direction,
                              hidden_size,
                              linear_before_reset,
-                             name);
+                             debugContext);
+          },
+          py::arg("args"),
+          py::arg("num_outputs"),
+          py::arg("activation_alpha")    = std::vector<float>(),
+          py::arg("activation_beta")     = std::vector<float>(),
+          py::arg("activations")         = std::vector<std::string>(),
+          py::arg("clip")                = nonstd::optional<float>(),
+          py::arg("direction")           = "forward",
+          py::arg("hidden_size")         = nonstd::optional<int64_t>(),
+          py::arg("linear_before_reset") = 0,
+          py::arg("debugContext")        = std::string())
+      .def(
+          "gru",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             unsigned num_outputs,
+             const std::vector<float> &activation_alpha,
+             const std::vector<float> &activation_beta,
+             const std::vector<std::string> &activations,
+             nonstd::optional<float> clip,
+             const std::string &direction,
+             nonstd::optional<int64_t> hidden_size,
+             int64_t linear_before_reset,
+             const DebugContext &debugContext) -> std::vector<TensorId> {
+            return opset.gru(args,
+                             num_outputs,
+                             activation_alpha,
+                             activation_beta,
+                             activations,
+                             clip,
+                             direction,
+                             hidden_size,
+                             linear_before_reset,
+                             debugContext);
           },
           py::arg("args"),
           py::arg("num_outputs"),
@@ -502,8 +999,19 @@ PYBIND11_MODULE(popart_opset10, m) {
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
              int64_t axis,
-             const std::string &name) -> TensorId {
-            return opset.gather(args, axis, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.gather(args, axis, debugContext);
+          },
+          py::arg("args"),
+          py::arg("axis")         = 0,
+          py::arg("debugContext") = std::string())
+      .def(
+          "gather",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             int64_t axis,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.gather(args, axis, debugContext);
           },
           py::arg("args"),
           py::arg("axis")        = 0,
@@ -516,8 +1024,25 @@ PYBIND11_MODULE(popart_opset10, m) {
              float beta,
              int64_t transA,
              int64_t transB,
-             const std::string &name) -> TensorId {
-            return opset.gemm(args, alpha, beta, transA, transB, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.gemm(args, alpha, beta, transA, transB, debugContext);
+          },
+          py::arg("args"),
+          py::arg("alpha")        = 1.0f,
+          py::arg("beta")         = 1.0f,
+          py::arg("transA")       = 0,
+          py::arg("transB")       = 0,
+          py::arg("debugContext") = std::string())
+      .def(
+          "gemm",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             float alpha,
+             float beta,
+             int64_t transA,
+             int64_t transB,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.gemm(args, alpha, beta, transA, transB, debugContext);
           },
           py::arg("args"),
           py::arg("alpha")       = 1.0f,
@@ -529,8 +1054,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "globalaveragepool",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.globalaveragepool(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.globalaveragepool(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "globalaveragepool",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.globalaveragepool(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -539,8 +1073,19 @@ PYBIND11_MODULE(popart_opset10, m) {
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
              int64_t p,
-             const std::string &name) -> TensorId {
-            return opset.globallppool(args, p, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.globallppool(args, p, debugContext);
+          },
+          py::arg("args"),
+          py::arg("p")            = 2,
+          py::arg("debugContext") = std::string())
+      .def(
+          "globallppool",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             int64_t p,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.globallppool(args, p, debugContext);
           },
           py::arg("args"),
           py::arg("p")           = 2,
@@ -549,8 +1094,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "globalmaxpool",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.globalmaxpool(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.globalmaxpool(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "globalmaxpool",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.globalmaxpool(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -558,8 +1112,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "greater",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.greater(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.greater(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "greater",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.greater(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -569,8 +1132,21 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<TensorId> &args,
              float alpha,
              float beta,
-             const std::string &name) -> TensorId {
-            return opset.hardsigmoid(args, alpha, beta, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.hardsigmoid(args, alpha, beta, debugContext);
+          },
+          py::arg("args"),
+          py::arg("alpha")        = 0.2f,
+          py::arg("beta")         = 0.5f,
+          py::arg("debugContext") = std::string())
+      .def(
+          "hardsigmoid",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             float alpha,
+             float beta,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.hardsigmoid(args, alpha, beta, debugContext);
           },
           py::arg("args"),
           py::arg("alpha")       = 0.2f,
@@ -581,8 +1157,19 @@ PYBIND11_MODULE(popart_opset10, m) {
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
              int64_t axis,
-             const std::string &name) -> TensorId {
-            return opset.hardmax(args, axis, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.hardmax(args, axis, debugContext);
+          },
+          py::arg("args"),
+          py::arg("axis")         = 1,
+          py::arg("debugContext") = std::string())
+      .def(
+          "hardmax",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             int64_t axis,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.hardmax(args, axis, debugContext);
           },
           py::arg("args"),
           py::arg("axis")        = 1,
@@ -591,8 +1178,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "identity",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.identity(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.identity(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "identity",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.identity(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -603,9 +1199,25 @@ PYBIND11_MODULE(popart_opset10, m) {
              unsigned num_outputs,
              const Builder &else_branch,
              const Builder &then_branch,
-             const std::string &name) -> std::vector<TensorId> {
+             const DebugContext &debugContext) -> std::vector<TensorId> {
             return opset.logical_if(
-                args, num_outputs, else_branch, then_branch, name);
+                args, num_outputs, else_branch, then_branch, debugContext);
+          },
+          py::arg("args"),
+          py::arg("num_outputs"),
+          py::arg("else_branch"),
+          py::arg("then_branch"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "logical_if",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             unsigned num_outputs,
+             const Builder &else_branch,
+             const Builder &then_branch,
+             const DebugContext &debugContext) -> std::vector<TensorId> {
+            return opset.logical_if(
+                args, num_outputs, else_branch, then_branch, debugContext);
           },
           py::arg("args"),
           py::arg("num_outputs"),
@@ -617,8 +1229,19 @@ PYBIND11_MODULE(popart_opset10, m) {
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
              float epsilon,
-             const std::string &name) -> TensorId {
-            return opset.instancenormalization(args, epsilon, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.instancenormalization(args, epsilon, debugContext);
+          },
+          py::arg("args"),
+          py::arg("epsilon")      = 1e-05f,
+          py::arg("debugContext") = std::string())
+      .def(
+          "instancenormalization",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             float epsilon,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.instancenormalization(args, epsilon, debugContext);
           },
           py::arg("args"),
           py::arg("epsilon")     = 1e-05f,
@@ -629,8 +1252,23 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<TensorId> &args,
              int64_t detect_negative,
              int64_t detect_positive,
-             const std::string &name) -> TensorId {
-            return opset.isinf(args, detect_negative, detect_positive, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.isinf(
+                args, detect_negative, detect_positive, debugContext);
+          },
+          py::arg("args"),
+          py::arg("detect_negative") = 1,
+          py::arg("detect_positive") = 1,
+          py::arg("debugContext")    = std::string())
+      .def(
+          "isinf",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             int64_t detect_negative,
+             int64_t detect_positive,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.isinf(
+                args, detect_negative, detect_positive, debugContext);
           },
           py::arg("args"),
           py::arg("detect_negative") = 1,
@@ -640,8 +1278,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "isnan",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.isnan(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.isnan(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "isnan",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.isnan(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -653,8 +1300,25 @@ PYBIND11_MODULE(popart_opset10, m) {
              float alpha,
              float beta,
              float bias,
-             const std::string &name) -> TensorId {
-            return opset.lrn(args, size, alpha, beta, bias, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.lrn(args, size, alpha, beta, bias, debugContext);
+          },
+          py::arg("args"),
+          py::arg("size"),
+          py::arg("alpha")        = 0.0001f,
+          py::arg("beta")         = 0.75f,
+          py::arg("bias")         = 1.0f,
+          py::arg("debugContext") = std::string())
+      .def(
+          "lrn",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             int64_t size,
+             float alpha,
+             float beta,
+             float bias,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.lrn(args, size, alpha, beta, bias, debugContext);
           },
           py::arg("args"),
           py::arg("size"),
@@ -674,7 +1338,7 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::string &direction,
              nonstd::optional<int64_t> hidden_size,
              int64_t input_forget,
-             const std::string &name) -> std::vector<TensorId> {
+             const DebugContext &debugContext) -> std::vector<TensorId> {
             return opset.lstm(args,
                               num_outputs,
                               activation_alpha,
@@ -684,7 +1348,41 @@ PYBIND11_MODULE(popart_opset10, m) {
                               direction,
                               hidden_size,
                               input_forget,
-                              name);
+                              debugContext);
+          },
+          py::arg("args"),
+          py::arg("num_outputs"),
+          py::arg("activation_alpha") = std::vector<float>(),
+          py::arg("activation_beta")  = std::vector<float>(),
+          py::arg("activations")      = std::vector<std::string>(),
+          py::arg("clip")             = nonstd::optional<float>(),
+          py::arg("direction")        = "forward",
+          py::arg("hidden_size")      = nonstd::optional<int64_t>(),
+          py::arg("input_forget")     = 0,
+          py::arg("debugContext")     = std::string())
+      .def(
+          "lstm",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             unsigned num_outputs,
+             const std::vector<float> &activation_alpha,
+             const std::vector<float> &activation_beta,
+             const std::vector<std::string> &activations,
+             nonstd::optional<float> clip,
+             const std::string &direction,
+             nonstd::optional<int64_t> hidden_size,
+             int64_t input_forget,
+             const DebugContext &debugContext) -> std::vector<TensorId> {
+            return opset.lstm(args,
+                              num_outputs,
+                              activation_alpha,
+                              activation_beta,
+                              activations,
+                              clip,
+                              direction,
+                              hidden_size,
+                              input_forget,
+                              debugContext);
           },
           py::arg("args"),
           py::arg("num_outputs"),
@@ -701,8 +1399,19 @@ PYBIND11_MODULE(popart_opset10, m) {
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
              float alpha,
-             const std::string &name) -> TensorId {
-            return opset.leakyrelu(args, alpha, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.leakyrelu(args, alpha, debugContext);
+          },
+          py::arg("args"),
+          py::arg("alpha")        = 0.01f,
+          py::arg("debugContext") = std::string())
+      .def(
+          "leakyrelu",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             float alpha,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.leakyrelu(args, alpha, debugContext);
           },
           py::arg("args"),
           py::arg("alpha")       = 0.01f,
@@ -711,8 +1420,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "less",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.less(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.less(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "less",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.less(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -720,8 +1438,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "log",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.log(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.log(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "log",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.log(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -730,8 +1457,19 @@ PYBIND11_MODULE(popart_opset10, m) {
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
              int64_t axis,
-             const std::string &name) -> TensorId {
-            return opset.logsoftmax(args, axis, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.logsoftmax(args, axis, debugContext);
+          },
+          py::arg("args"),
+          py::arg("axis")         = 1,
+          py::arg("debugContext") = std::string())
+      .def(
+          "logsoftmax",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             int64_t axis,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.logsoftmax(args, axis, debugContext);
           },
           py::arg("args"),
           py::arg("axis")        = 1,
@@ -742,8 +1480,21 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<TensorId> &args,
              unsigned num_outputs,
              const Builder &body,
-             const std::string &name) -> std::vector<TensorId> {
-            return opset.loop(args, num_outputs, body, name);
+             const DebugContext &debugContext) -> std::vector<TensorId> {
+            return opset.loop(args, num_outputs, body, debugContext);
+          },
+          py::arg("args"),
+          py::arg("num_outputs"),
+          py::arg("body"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "loop",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             unsigned num_outputs,
+             const Builder &body,
+             const DebugContext &debugContext) -> std::vector<TensorId> {
+            return opset.loop(args, num_outputs, body, debugContext);
           },
           py::arg("args"),
           py::arg("num_outputs"),
@@ -755,8 +1506,21 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<TensorId> &args,
              int64_t axis,
              int64_t p,
-             const std::string &name) -> TensorId {
-            return opset.lpnormalization(args, axis, p, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.lpnormalization(args, axis, p, debugContext);
+          },
+          py::arg("args"),
+          py::arg("axis")         = -1,
+          py::arg("p")            = 2,
+          py::arg("debugContext") = std::string())
+      .def(
+          "lpnormalization",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             int64_t axis,
+             int64_t p,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.lpnormalization(args, axis, p, debugContext);
           },
           py::arg("args"),
           py::arg("axis")        = -1,
@@ -770,8 +1534,27 @@ PYBIND11_MODULE(popart_opset10, m) {
              int64_t p,
              const std::vector<int64_t> &pads,
              const std::vector<int64_t> &strides,
-             const std::string &name) -> TensorId {
-            return opset.lppool(args, kernel_shape, p, pads, strides, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.lppool(
+                args, kernel_shape, p, pads, strides, debugContext);
+          },
+          py::arg("args"),
+          py::arg("kernel_shape"),
+          py::arg("p")            = 2,
+          py::arg("pads")         = std::vector<int64_t>(),
+          py::arg("strides")      = std::vector<int64_t>(),
+          py::arg("debugContext") = std::string())
+      .def(
+          "lppool",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const std::vector<int64_t> &kernel_shape,
+             int64_t p,
+             const std::vector<int64_t> &pads,
+             const std::vector<int64_t> &strides,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.lppool(
+                args, kernel_shape, p, pads, strides, debugContext);
           },
           py::arg("args"),
           py::arg("kernel_shape"),
@@ -783,8 +1566,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "matmul",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.matmul(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.matmul(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "matmul",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.matmul(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -792,8 +1584,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "matmulinteger",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.matmulinteger(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.matmulinteger(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "matmulinteger",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.matmulinteger(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -801,8 +1602,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "max",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.max(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.max(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "max",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.max(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -817,7 +1627,7 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<int64_t> &pads,
              int64_t storage_order,
              const std::vector<int64_t> &strides,
-             const std::string &name) -> std::vector<TensorId> {
+             const DebugContext &debugContext) -> std::vector<TensorId> {
             return opset.maxpool(args,
                                  num_outputs,
                                  kernel_shape,
@@ -826,7 +1636,38 @@ PYBIND11_MODULE(popart_opset10, m) {
                                  pads,
                                  storage_order,
                                  strides,
-                                 name);
+                                 debugContext);
+          },
+          py::arg("args"),
+          py::arg("num_outputs"),
+          py::arg("kernel_shape"),
+          py::arg("ceil_mode")     = 0,
+          py::arg("dilations")     = std::vector<int64_t>(),
+          py::arg("pads")          = std::vector<int64_t>(),
+          py::arg("storage_order") = 0,
+          py::arg("strides")       = std::vector<int64_t>(),
+          py::arg("debugContext")  = std::string())
+      .def(
+          "maxpool",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             unsigned num_outputs,
+             const std::vector<int64_t> &kernel_shape,
+             int64_t ceil_mode,
+             const std::vector<int64_t> &dilations,
+             const std::vector<int64_t> &pads,
+             int64_t storage_order,
+             const std::vector<int64_t> &strides,
+             const DebugContext &debugContext) -> std::vector<TensorId> {
+            return opset.maxpool(args,
+                                 num_outputs,
+                                 kernel_shape,
+                                 ceil_mode,
+                                 dilations,
+                                 pads,
+                                 storage_order,
+                                 strides,
+                                 debugContext);
           },
           py::arg("args"),
           py::arg("num_outputs"),
@@ -843,8 +1684,23 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<TensorId> &args,
              const std::vector<int64_t> &pooled_shape,
              float spatial_scale,
-             const std::string &name) -> TensorId {
-            return opset.maxroipool(args, pooled_shape, spatial_scale, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.maxroipool(
+                args, pooled_shape, spatial_scale, debugContext);
+          },
+          py::arg("args"),
+          py::arg("pooled_shape"),
+          py::arg("spatial_scale") = 1.0f,
+          py::arg("debugContext")  = std::string())
+      .def(
+          "maxroipool",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const std::vector<int64_t> &pooled_shape,
+             float spatial_scale,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.maxroipool(
+                args, pooled_shape, spatial_scale, debugContext);
           },
           py::arg("args"),
           py::arg("pooled_shape"),
@@ -857,8 +1713,25 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<int64_t> &kernel_shape,
              const std::vector<int64_t> &pads,
              const std::vector<int64_t> &strides,
-             const std::string &name) -> TensorId {
-            return opset.maxunpool(args, kernel_shape, pads, strides, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.maxunpool(
+                args, kernel_shape, pads, strides, debugContext);
+          },
+          py::arg("args"),
+          py::arg("kernel_shape"),
+          py::arg("pads")         = std::vector<int64_t>(),
+          py::arg("strides")      = std::vector<int64_t>(),
+          py::arg("debugContext") = std::string())
+      .def(
+          "maxunpool",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const std::vector<int64_t> &kernel_shape,
+             const std::vector<int64_t> &pads,
+             const std::vector<int64_t> &strides,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.maxunpool(
+                args, kernel_shape, pads, strides, debugContext);
           },
           py::arg("args"),
           py::arg("kernel_shape"),
@@ -869,8 +1742,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "mean",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.mean(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.mean(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "mean",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.mean(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -879,8 +1761,19 @@ PYBIND11_MODULE(popart_opset10, m) {
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
              const std::vector<int64_t> &axes,
-             const std::string &name) -> TensorId {
-            return opset.meanvariancenormalization(args, axes, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.meanvariancenormalization(args, axes, debugContext);
+          },
+          py::arg("args"),
+          py::arg("axes")         = std::vector<int64_t>(),
+          py::arg("debugContext") = std::string())
+      .def(
+          "meanvariancenormalization",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const std::vector<int64_t> &axes,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.meanvariancenormalization(args, axes, debugContext);
           },
           py::arg("args"),
           py::arg("axes")        = std::vector<int64_t>(),
@@ -889,8 +1782,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "min",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.min(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.min(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "min",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.min(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -899,8 +1801,19 @@ PYBIND11_MODULE(popart_opset10, m) {
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
              int64_t fmod,
-             const std::string &name) -> TensorId {
-            return opset.mod(args, fmod, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.mod(args, fmod, debugContext);
+          },
+          py::arg("args"),
+          py::arg("fmod")         = 0,
+          py::arg("debugContext") = std::string())
+      .def(
+          "mod",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             int64_t fmod,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.mod(args, fmod, debugContext);
           },
           py::arg("args"),
           py::arg("fmod")        = 0,
@@ -909,8 +1822,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "mul",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.mul(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.mul(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "mul",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.mul(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -921,8 +1843,25 @@ PYBIND11_MODULE(popart_opset10, m) {
              int64_t dtype,
              int64_t sample_size,
              nonstd::optional<float> seed,
-             const std::string &name) -> TensorId {
-            return opset.multinomial(args, dtype, sample_size, seed, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.multinomial(
+                args, dtype, sample_size, seed, debugContext);
+          },
+          py::arg("args"),
+          py::arg("dtype")        = 6,
+          py::arg("sample_size")  = 1,
+          py::arg("seed")         = nonstd::optional<float>(),
+          py::arg("debugContext") = std::string())
+      .def(
+          "multinomial",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             int64_t dtype,
+             int64_t sample_size,
+             nonstd::optional<float> seed,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.multinomial(
+                args, dtype, sample_size, seed, debugContext);
           },
           py::arg("args"),
           py::arg("dtype")       = 6,
@@ -933,8 +1872,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "neg",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.neg(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.neg(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "neg",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.neg(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -943,8 +1891,21 @@ PYBIND11_MODULE(popart_opset10, m) {
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
              int64_t center_point_box,
-             const std::string &name) -> TensorId {
-            return opset.nonmaxsuppression(args, center_point_box, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.nonmaxsuppression(
+                args, center_point_box, debugContext);
+          },
+          py::arg("args"),
+          py::arg("center_point_box") = 0,
+          py::arg("debugContext")     = std::string())
+      .def(
+          "nonmaxsuppression",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             int64_t center_point_box,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.nonmaxsuppression(
+                args, center_point_box, debugContext);
           },
           py::arg("args"),
           py::arg("center_point_box") = 0,
@@ -953,8 +1914,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "nonzero",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.nonzero(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.nonzero(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "nonzero",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.nonzero(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -962,8 +1932,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "logical_not",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.logical_not(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.logical_not(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "logical_not",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.logical_not(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -972,8 +1951,19 @@ PYBIND11_MODULE(popart_opset10, m) {
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
              int64_t axis,
-             const std::string &name) -> TensorId {
-            return opset.onehot(args, axis, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.onehot(args, axis, debugContext);
+          },
+          py::arg("args"),
+          py::arg("axis")         = -1,
+          py::arg("debugContext") = std::string())
+      .def(
+          "onehot",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             int64_t axis,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.onehot(args, axis, debugContext);
           },
           py::arg("args"),
           py::arg("axis")        = -1,
@@ -982,8 +1972,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "logical_or",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.logical_or(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.logical_or(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "logical_or",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.logical_or(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -991,8 +1990,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "prelu",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.prelu(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.prelu(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "prelu",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.prelu(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -1003,8 +2011,23 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<int64_t> &pads,
              const std::string &mode,
              float value,
-             const std::string &name) -> TensorId {
-            return opset.pad(args, pads, mode, value, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.pad(args, pads, mode, value, debugContext);
+          },
+          py::arg("args"),
+          py::arg("pads"),
+          py::arg("mode")         = "constant",
+          py::arg("value")        = 0.0f,
+          py::arg("debugContext") = std::string())
+      .def(
+          "pad",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const std::vector<int64_t> &pads,
+             const std::string &mode,
+             float value,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.pad(args, pads, mode, value, debugContext);
           },
           py::arg("args"),
           py::arg("pads"),
@@ -1015,8 +2038,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "pow",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.pow(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.pow(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "pow",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.pow(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -1029,9 +2061,39 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<int64_t> &kernel_shape,
              const std::vector<int64_t> &pads,
              const std::vector<int64_t> &strides,
-             const std::string &name) -> TensorId {
-            return opset.qlinearconv(
-                args, dilations, group, kernel_shape, pads, strides, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.qlinearconv(args,
+                                     dilations,
+                                     group,
+                                     kernel_shape,
+                                     pads,
+                                     strides,
+                                     debugContext);
+          },
+          py::arg("args"),
+          py::arg("dilations")    = std::vector<int64_t>(),
+          py::arg("group")        = 1,
+          py::arg("kernel_shape") = std::vector<int64_t>(),
+          py::arg("pads")         = std::vector<int64_t>(),
+          py::arg("strides")      = std::vector<int64_t>(),
+          py::arg("debugContext") = std::string())
+      .def(
+          "qlinearconv",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const std::vector<int64_t> &dilations,
+             int64_t group,
+             const std::vector<int64_t> &kernel_shape,
+             const std::vector<int64_t> &pads,
+             const std::vector<int64_t> &strides,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.qlinearconv(args,
+                                     dilations,
+                                     group,
+                                     kernel_shape,
+                                     pads,
+                                     strides,
+                                     debugContext);
           },
           py::arg("args"),
           py::arg("dilations")    = std::vector<int64_t>(),
@@ -1044,8 +2106,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "qlinearmatmul",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.qlinearmatmul(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.qlinearmatmul(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "qlinearmatmul",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.qlinearmatmul(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -1053,8 +2124,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "quantizelinear",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.quantizelinear(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.quantizelinear(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "quantizelinear",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.quantizelinear(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -1069,7 +2149,7 @@ PYBIND11_MODULE(popart_opset10, m) {
              nonstd::optional<float> clip,
              const std::string &direction,
              nonstd::optional<int64_t> hidden_size,
-             const std::string &name) -> std::vector<TensorId> {
+             const DebugContext &debugContext) -> std::vector<TensorId> {
             return opset.rnn(args,
                              num_outputs,
                              activation_alpha,
@@ -1078,7 +2158,38 @@ PYBIND11_MODULE(popart_opset10, m) {
                              clip,
                              direction,
                              hidden_size,
-                             name);
+                             debugContext);
+          },
+          py::arg("args"),
+          py::arg("num_outputs"),
+          py::arg("activation_alpha") = std::vector<float>(),
+          py::arg("activation_beta")  = std::vector<float>(),
+          py::arg("activations")      = std::vector<std::string>(),
+          py::arg("clip")             = nonstd::optional<float>(),
+          py::arg("direction")        = "forward",
+          py::arg("hidden_size")      = nonstd::optional<int64_t>(),
+          py::arg("debugContext")     = std::string())
+      .def(
+          "rnn",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             unsigned num_outputs,
+             const std::vector<float> &activation_alpha,
+             const std::vector<float> &activation_beta,
+             const std::vector<std::string> &activations,
+             nonstd::optional<float> clip,
+             const std::string &direction,
+             nonstd::optional<int64_t> hidden_size,
+             const DebugContext &debugContext) -> std::vector<TensorId> {
+            return opset.rnn(args,
+                             num_outputs,
+                             activation_alpha,
+                             activation_beta,
+                             activations,
+                             clip,
+                             direction,
+                             hidden_size,
+                             debugContext);
           },
           py::arg("args"),
           py::arg("num_outputs"),
@@ -1097,8 +2208,27 @@ PYBIND11_MODULE(popart_opset10, m) {
              float mean,
              float scale,
              nonstd::optional<float> seed,
-             const std::string &name) -> TensorId {
-            return opset.randomnormal(shape, dtype, mean, scale, seed, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.randomnormal(
+                shape, dtype, mean, scale, seed, debugContext);
+          },
+          py::arg("shape"),
+          py::arg("dtype")        = 1,
+          py::arg("mean")         = 0.0f,
+          py::arg("scale")        = 1.0f,
+          py::arg("seed")         = nonstd::optional<float>(),
+          py::arg("debugContext") = std::string())
+      .def(
+          "randomnormal",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<int64_t> &shape,
+             int64_t dtype,
+             float mean,
+             float scale,
+             nonstd::optional<float> seed,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.randomnormal(
+                shape, dtype, mean, scale, seed, debugContext);
           },
           py::arg("shape"),
           py::arg("dtype")       = 1,
@@ -1114,8 +2244,27 @@ PYBIND11_MODULE(popart_opset10, m) {
              float mean,
              float scale,
              nonstd::optional<float> seed,
-             const std::string &name) -> TensorId {
-            return opset.randomnormallike(args, dtype, mean, scale, seed, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.randomnormallike(
+                args, dtype, mean, scale, seed, debugContext);
+          },
+          py::arg("args"),
+          py::arg("dtype")        = nonstd::optional<int64_t>(),
+          py::arg("mean")         = 0.0f,
+          py::arg("scale")        = 1.0f,
+          py::arg("seed")         = nonstd::optional<float>(),
+          py::arg("debugContext") = std::string())
+      .def(
+          "randomnormallike",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             nonstd::optional<int64_t> dtype,
+             float mean,
+             float scale,
+             nonstd::optional<float> seed,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.randomnormallike(
+                args, dtype, mean, scale, seed, debugContext);
           },
           py::arg("args"),
           py::arg("dtype")       = nonstd::optional<int64_t>(),
@@ -1131,8 +2280,27 @@ PYBIND11_MODULE(popart_opset10, m) {
              float high,
              float low,
              nonstd::optional<float> seed,
-             const std::string &name) -> TensorId {
-            return opset.randomuniform(shape, dtype, high, low, seed, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.randomuniform(
+                shape, dtype, high, low, seed, debugContext);
+          },
+          py::arg("shape"),
+          py::arg("dtype")        = 1,
+          py::arg("high")         = 1.0f,
+          py::arg("low")          = 0.0f,
+          py::arg("seed")         = nonstd::optional<float>(),
+          py::arg("debugContext") = std::string())
+      .def(
+          "randomuniform",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<int64_t> &shape,
+             int64_t dtype,
+             float high,
+             float low,
+             nonstd::optional<float> seed,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.randomuniform(
+                shape, dtype, high, low, seed, debugContext);
           },
           py::arg("shape"),
           py::arg("dtype")       = 1,
@@ -1148,8 +2316,27 @@ PYBIND11_MODULE(popart_opset10, m) {
              float high,
              float low,
              nonstd::optional<float> seed,
-             const std::string &name) -> TensorId {
-            return opset.randomuniformlike(args, dtype, high, low, seed, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.randomuniformlike(
+                args, dtype, high, low, seed, debugContext);
+          },
+          py::arg("args"),
+          py::arg("dtype")        = nonstd::optional<int64_t>(),
+          py::arg("high")         = 1.0f,
+          py::arg("low")          = 0.0f,
+          py::arg("seed")         = nonstd::optional<float>(),
+          py::arg("debugContext") = std::string())
+      .def(
+          "randomuniformlike",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             nonstd::optional<int64_t> dtype,
+             float high,
+             float low,
+             nonstd::optional<float> seed,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.randomuniformlike(
+                args, dtype, high, low, seed, debugContext);
           },
           py::arg("args"),
           py::arg("dtype")       = nonstd::optional<int64_t>(),
@@ -1161,8 +2348,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "reciprocal",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.reciprocal(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.reciprocal(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "reciprocal",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.reciprocal(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -1172,8 +2368,21 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<TensorId> &args,
              nonstd::optional<std::vector<int64_t>> axes,
              int64_t keepdims,
-             const std::string &name) -> TensorId {
-            return opset.reducel1(args, axes, keepdims, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.reducel1(args, axes, keepdims, debugContext);
+          },
+          py::arg("args"),
+          py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
+          py::arg("keepdims")     = 1,
+          py::arg("debugContext") = std::string())
+      .def(
+          "reducel1",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             nonstd::optional<std::vector<int64_t>> axes,
+             int64_t keepdims,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.reducel1(args, axes, keepdims, debugContext);
           },
           py::arg("args"),
           py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
@@ -1185,8 +2394,21 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<TensorId> &args,
              nonstd::optional<std::vector<int64_t>> axes,
              int64_t keepdims,
-             const std::string &name) -> TensorId {
-            return opset.reducel2(args, axes, keepdims, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.reducel2(args, axes, keepdims, debugContext);
+          },
+          py::arg("args"),
+          py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
+          py::arg("keepdims")     = 1,
+          py::arg("debugContext") = std::string())
+      .def(
+          "reducel2",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             nonstd::optional<std::vector<int64_t>> axes,
+             int64_t keepdims,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.reducel2(args, axes, keepdims, debugContext);
           },
           py::arg("args"),
           py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
@@ -1198,8 +2420,21 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<TensorId> &args,
              nonstd::optional<std::vector<int64_t>> axes,
              int64_t keepdims,
-             const std::string &name) -> TensorId {
-            return opset.reducelogsum(args, axes, keepdims, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.reducelogsum(args, axes, keepdims, debugContext);
+          },
+          py::arg("args"),
+          py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
+          py::arg("keepdims")     = 1,
+          py::arg("debugContext") = std::string())
+      .def(
+          "reducelogsum",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             nonstd::optional<std::vector<int64_t>> axes,
+             int64_t keepdims,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.reducelogsum(args, axes, keepdims, debugContext);
           },
           py::arg("args"),
           py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
@@ -1211,8 +2446,21 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<TensorId> &args,
              nonstd::optional<std::vector<int64_t>> axes,
              int64_t keepdims,
-             const std::string &name) -> TensorId {
-            return opset.reducelogsumexp(args, axes, keepdims, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.reducelogsumexp(args, axes, keepdims, debugContext);
+          },
+          py::arg("args"),
+          py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
+          py::arg("keepdims")     = 1,
+          py::arg("debugContext") = std::string())
+      .def(
+          "reducelogsumexp",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             nonstd::optional<std::vector<int64_t>> axes,
+             int64_t keepdims,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.reducelogsumexp(args, axes, keepdims, debugContext);
           },
           py::arg("args"),
           py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
@@ -1224,8 +2472,21 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<TensorId> &args,
              nonstd::optional<std::vector<int64_t>> axes,
              int64_t keepdims,
-             const std::string &name) -> TensorId {
-            return opset.reducemax(args, axes, keepdims, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.reducemax(args, axes, keepdims, debugContext);
+          },
+          py::arg("args"),
+          py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
+          py::arg("keepdims")     = 1,
+          py::arg("debugContext") = std::string())
+      .def(
+          "reducemax",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             nonstd::optional<std::vector<int64_t>> axes,
+             int64_t keepdims,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.reducemax(args, axes, keepdims, debugContext);
           },
           py::arg("args"),
           py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
@@ -1237,8 +2498,21 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<TensorId> &args,
              nonstd::optional<std::vector<int64_t>> axes,
              int64_t keepdims,
-             const std::string &name) -> TensorId {
-            return opset.reducemean(args, axes, keepdims, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.reducemean(args, axes, keepdims, debugContext);
+          },
+          py::arg("args"),
+          py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
+          py::arg("keepdims")     = 1,
+          py::arg("debugContext") = std::string())
+      .def(
+          "reducemean",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             nonstd::optional<std::vector<int64_t>> axes,
+             int64_t keepdims,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.reducemean(args, axes, keepdims, debugContext);
           },
           py::arg("args"),
           py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
@@ -1250,8 +2524,21 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<TensorId> &args,
              nonstd::optional<std::vector<int64_t>> axes,
              int64_t keepdims,
-             const std::string &name) -> TensorId {
-            return opset.reducemin(args, axes, keepdims, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.reducemin(args, axes, keepdims, debugContext);
+          },
+          py::arg("args"),
+          py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
+          py::arg("keepdims")     = 1,
+          py::arg("debugContext") = std::string())
+      .def(
+          "reducemin",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             nonstd::optional<std::vector<int64_t>> axes,
+             int64_t keepdims,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.reducemin(args, axes, keepdims, debugContext);
           },
           py::arg("args"),
           py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
@@ -1263,8 +2550,21 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<TensorId> &args,
              nonstd::optional<std::vector<int64_t>> axes,
              int64_t keepdims,
-             const std::string &name) -> TensorId {
-            return opset.reduceprod(args, axes, keepdims, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.reduceprod(args, axes, keepdims, debugContext);
+          },
+          py::arg("args"),
+          py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
+          py::arg("keepdims")     = 1,
+          py::arg("debugContext") = std::string())
+      .def(
+          "reduceprod",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             nonstd::optional<std::vector<int64_t>> axes,
+             int64_t keepdims,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.reduceprod(args, axes, keepdims, debugContext);
           },
           py::arg("args"),
           py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
@@ -1276,8 +2576,21 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<TensorId> &args,
              nonstd::optional<std::vector<int64_t>> axes,
              int64_t keepdims,
-             const std::string &name) -> TensorId {
-            return opset.reducesum(args, axes, keepdims, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.reducesum(args, axes, keepdims, debugContext);
+          },
+          py::arg("args"),
+          py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
+          py::arg("keepdims")     = 1,
+          py::arg("debugContext") = std::string())
+      .def(
+          "reducesum",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             nonstd::optional<std::vector<int64_t>> axes,
+             int64_t keepdims,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.reducesum(args, axes, keepdims, debugContext);
           },
           py::arg("args"),
           py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
@@ -1289,8 +2602,21 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<TensorId> &args,
              nonstd::optional<std::vector<int64_t>> axes,
              int64_t keepdims,
-             const std::string &name) -> TensorId {
-            return opset.reducesumsquare(args, axes, keepdims, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.reducesumsquare(args, axes, keepdims, debugContext);
+          },
+          py::arg("args"),
+          py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
+          py::arg("keepdims")     = 1,
+          py::arg("debugContext") = std::string())
+      .def(
+          "reducesumsquare",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             nonstd::optional<std::vector<int64_t>> axes,
+             int64_t keepdims,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.reducesumsquare(args, axes, keepdims, debugContext);
           },
           py::arg("args"),
           py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
@@ -1300,8 +2626,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "relu",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.relu(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.relu(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "relu",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.relu(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -1309,8 +2644,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "reshape",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.reshape(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.reshape(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "reshape",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.reshape(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -1319,8 +2663,19 @@ PYBIND11_MODULE(popart_opset10, m) {
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
              const std::string &mode,
-             const std::string &name) -> TensorId {
-            return opset.resize(args, mode, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.resize(args, mode, debugContext);
+          },
+          py::arg("args"),
+          py::arg("mode")         = "nearest",
+          py::arg("debugContext") = std::string())
+      .def(
+          "resize",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const std::string &mode,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.resize(args, mode, debugContext);
           },
           py::arg("args"),
           py::arg("mode")        = "nearest",
@@ -1331,8 +2686,23 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<TensorId> &args,
              int64_t batch_axis,
              int64_t time_axis,
-             const std::string &name) -> TensorId {
-            return opset.reversesequence(args, batch_axis, time_axis, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.reversesequence(
+                args, batch_axis, time_axis, debugContext);
+          },
+          py::arg("args"),
+          py::arg("batch_axis")   = 1,
+          py::arg("time_axis")    = 0,
+          py::arg("debugContext") = std::string())
+      .def(
+          "reversesequence",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             int64_t batch_axis,
+             int64_t time_axis,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.reversesequence(
+                args, batch_axis, time_axis, debugContext);
           },
           py::arg("args"),
           py::arg("batch_axis")  = 1,
@@ -1347,14 +2717,39 @@ PYBIND11_MODULE(popart_opset10, m) {
              int64_t output_width,
              int64_t sampling_ratio,
              float spatial_scale,
-             const std::string &name) -> TensorId {
+             const DebugContext &debugContext) -> TensorId {
             return opset.roialign(args,
                                   mode,
                                   output_height,
                                   output_width,
                                   sampling_ratio,
                                   spatial_scale,
-                                  name);
+                                  debugContext);
+          },
+          py::arg("args"),
+          py::arg("mode")           = "avg",
+          py::arg("output_height")  = 1,
+          py::arg("output_width")   = 1,
+          py::arg("sampling_ratio") = 0,
+          py::arg("spatial_scale")  = 1.0f,
+          py::arg("debugContext")   = std::string())
+      .def(
+          "roialign",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const std::string &mode,
+             int64_t output_height,
+             int64_t output_width,
+             int64_t sampling_ratio,
+             float spatial_scale,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.roialign(args,
+                                  mode,
+                                  output_height,
+                                  output_width,
+                                  sampling_ratio,
+                                  spatial_scale,
+                                  debugContext);
           },
           py::arg("args"),
           py::arg("mode")           = "avg",
@@ -1374,7 +2769,7 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<int64_t> &scan_input_directions,
              const std::vector<int64_t> &scan_output_axes,
              const std::vector<int64_t> &scan_output_directions,
-             const std::string &name) -> std::vector<TensorId> {
+             const DebugContext &debugContext) -> std::vector<TensorId> {
             return opset.scan(args,
                               num_outputs,
                               body,
@@ -1383,7 +2778,38 @@ PYBIND11_MODULE(popart_opset10, m) {
                               scan_input_directions,
                               scan_output_axes,
                               scan_output_directions,
-                              name);
+                              debugContext);
+          },
+          py::arg("args"),
+          py::arg("num_outputs"),
+          py::arg("body"),
+          py::arg("num_scan_inputs"),
+          py::arg("scan_input_axes")        = std::vector<int64_t>(),
+          py::arg("scan_input_directions")  = std::vector<int64_t>(),
+          py::arg("scan_output_axes")       = std::vector<int64_t>(),
+          py::arg("scan_output_directions") = std::vector<int64_t>(),
+          py::arg("debugContext")           = std::string())
+      .def(
+          "scan",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             unsigned num_outputs,
+             const Builder &body,
+             int64_t num_scan_inputs,
+             const std::vector<int64_t> &scan_input_axes,
+             const std::vector<int64_t> &scan_input_directions,
+             const std::vector<int64_t> &scan_output_axes,
+             const std::vector<int64_t> &scan_output_directions,
+             const DebugContext &debugContext) -> std::vector<TensorId> {
+            return opset.scan(args,
+                              num_outputs,
+                              body,
+                              num_scan_inputs,
+                              scan_input_axes,
+                              scan_input_directions,
+                              scan_output_axes,
+                              scan_output_directions,
+                              debugContext);
           },
           py::arg("args"),
           py::arg("num_outputs"),
@@ -1399,8 +2825,19 @@ PYBIND11_MODULE(popart_opset10, m) {
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
              int64_t axis,
-             const std::string &name) -> TensorId {
-            return opset.scatter(args, axis, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.scatter(args, axis, debugContext);
+          },
+          py::arg("args"),
+          py::arg("axis")         = 0,
+          py::arg("debugContext") = std::string())
+      .def(
+          "scatter",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             int64_t axis,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.scatter(args, axis, debugContext);
           },
           py::arg("args"),
           py::arg("axis")        = 0,
@@ -1411,8 +2848,21 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<TensorId> &args,
              float alpha,
              float gamma,
-             const std::string &name) -> TensorId {
-            return opset.selu(args, alpha, gamma, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.selu(args, alpha, gamma, debugContext);
+          },
+          py::arg("args"),
+          py::arg("alpha")        = 1.67326f,
+          py::arg("gamma")        = 1.0507f,
+          py::arg("debugContext") = std::string())
+      .def(
+          "selu",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             float alpha,
+             float gamma,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.selu(args, alpha, gamma, debugContext);
           },
           py::arg("args"),
           py::arg("alpha")       = 1.67326f,
@@ -1422,8 +2872,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "shape",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.shape(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.shape(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "shape",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.shape(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -1433,8 +2892,21 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<TensorId> &args,
              float bias,
              float lambd,
-             const std::string &name) -> TensorId {
-            return opset.shrink(args, bias, lambd, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.shrink(args, bias, lambd, debugContext);
+          },
+          py::arg("args"),
+          py::arg("bias")         = 0.0f,
+          py::arg("lambd")        = 0.5f,
+          py::arg("debugContext") = std::string())
+      .def(
+          "shrink",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             float bias,
+             float lambd,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.shrink(args, bias, lambd, debugContext);
           },
           py::arg("args"),
           py::arg("bias")        = 0.0f,
@@ -1444,8 +2916,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "sigmoid",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.sigmoid(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.sigmoid(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "sigmoid",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.sigmoid(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -1453,8 +2934,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "sign",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.sign(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.sign(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "sign",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.sign(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -1462,8 +2952,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "sin",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.sin(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.sin(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "sin",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.sin(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -1471,8 +2970,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "sinh",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.sinh(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.sinh(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "sinh",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.sinh(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -1480,8 +2988,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "size",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.size(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.size(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "size",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.size(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -1489,8 +3006,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "slice",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.slice(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.slice(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "slice",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.slice(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -1499,8 +3025,19 @@ PYBIND11_MODULE(popart_opset10, m) {
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
              int64_t axis,
-             const std::string &name) -> TensorId {
-            return opset.softmax(args, axis, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.softmax(args, axis, debugContext);
+          },
+          py::arg("args"),
+          py::arg("axis")         = 1,
+          py::arg("debugContext") = std::string())
+      .def(
+          "softmax",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             int64_t axis,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.softmax(args, axis, debugContext);
           },
           py::arg("args"),
           py::arg("axis")        = 1,
@@ -1509,8 +3046,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "softplus",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.softplus(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.softplus(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "softplus",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.softplus(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -1518,8 +3064,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "softsign",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.softsign(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.softsign(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "softsign",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.softsign(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -1528,8 +3083,19 @@ PYBIND11_MODULE(popart_opset10, m) {
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
              int64_t blocksize,
-             const std::string &name) -> TensorId {
-            return opset.spacetodepth(args, blocksize, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.spacetodepth(args, blocksize, debugContext);
+          },
+          py::arg("args"),
+          py::arg("blocksize"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "spacetodepth",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             int64_t blocksize,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.spacetodepth(args, blocksize, debugContext);
           },
           py::arg("args"),
           py::arg("blocksize"),
@@ -1541,8 +3107,23 @@ PYBIND11_MODULE(popart_opset10, m) {
              unsigned num_outputs,
              int64_t axis,
              const std::vector<int64_t> &split,
-             const std::string &name) -> std::vector<TensorId> {
-            return opset.split(args, num_outputs, axis, split, name);
+             const DebugContext &debugContext) -> std::vector<TensorId> {
+            return opset.split(args, num_outputs, axis, split, debugContext);
+          },
+          py::arg("args"),
+          py::arg("num_outputs"),
+          py::arg("axis")         = 0,
+          py::arg("split")        = std::vector<int64_t>(),
+          py::arg("debugContext") = std::string())
+      .def(
+          "split",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             unsigned num_outputs,
+             int64_t axis,
+             const std::vector<int64_t> &split,
+             const DebugContext &debugContext) -> std::vector<TensorId> {
+            return opset.split(args, num_outputs, axis, split, debugContext);
           },
           py::arg("args"),
           py::arg("num_outputs"),
@@ -1553,8 +3134,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "sqrt",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.sqrt(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.sqrt(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "sqrt",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.sqrt(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -1563,8 +3153,19 @@ PYBIND11_MODULE(popart_opset10, m) {
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
              const std::vector<int64_t> &axes,
-             const std::string &name) -> TensorId {
-            return opset.squeeze(args, axes, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.squeeze(args, axes, debugContext);
+          },
+          py::arg("args"),
+          py::arg("axes")         = std::vector<int64_t>(),
+          py::arg("debugContext") = std::string())
+      .def(
+          "squeeze",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const std::vector<int64_t> &axes,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.squeeze(args, axes, debugContext);
           },
           py::arg("args"),
           py::arg("axes")        = std::vector<int64_t>(),
@@ -1577,13 +3178,35 @@ PYBIND11_MODULE(popart_opset10, m) {
              int64_t is_case_sensitive,
              nonstd::optional<std::string> locale,
              const std::vector<std::string> &stopwords,
-             const std::string &name) -> TensorId {
+             const DebugContext &debugContext) -> TensorId {
             return opset.stringnormalizer(args,
                                           case_change_action,
                                           is_case_sensitive,
                                           locale,
                                           stopwords,
-                                          name);
+                                          debugContext);
+          },
+          py::arg("args"),
+          py::arg("case_change_action") = "NONE",
+          py::arg("is_case_sensitive")  = 0,
+          py::arg("locale")             = std::string(),
+          py::arg("stopwords")          = std::vector<std::string>(),
+          py::arg("debugContext")       = std::string())
+      .def(
+          "stringnormalizer",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const std::string &case_change_action,
+             int64_t is_case_sensitive,
+             nonstd::optional<std::string> locale,
+             const std::vector<std::string> &stopwords,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.stringnormalizer(args,
+                                          case_change_action,
+                                          is_case_sensitive,
+                                          locale,
+                                          stopwords,
+                                          debugContext);
           },
           py::arg("args"),
           py::arg("case_change_action") = "NONE",
@@ -1595,8 +3218,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "sub",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.sub(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.sub(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "sub",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.sub(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -1604,8 +3236,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "sum",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.sum(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.sum(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "sum",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.sum(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -1613,8 +3254,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "tan",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.tan(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.tan(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "tan",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.tan(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -1622,8 +3272,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "tanh",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.tanh(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.tanh(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "tanh",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.tanh(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -1640,7 +3299,7 @@ PYBIND11_MODULE(popart_opset10, m) {
              const std::vector<int64_t> &pool_int64s,
              const std::vector<std::string> &pool_strings,
              const std::vector<float> &weights,
-             const std::string &name) -> TensorId {
+             const DebugContext &debugContext) -> TensorId {
             return opset.tfidfvectorizer(args,
                                          max_gram_length,
                                          max_skip_count,
@@ -1651,7 +3310,44 @@ PYBIND11_MODULE(popart_opset10, m) {
                                          pool_int64s,
                                          pool_strings,
                                          weights,
-                                         name);
+                                         debugContext);
+          },
+          py::arg("args"),
+          py::arg("max_gram_length"),
+          py::arg("max_skip_count"),
+          py::arg("min_gram_length"),
+          py::arg("mode"),
+          py::arg("ngram_counts"),
+          py::arg("ngram_indexes"),
+          py::arg("pool_int64s")  = std::vector<int64_t>(),
+          py::arg("pool_strings") = std::vector<std::string>(),
+          py::arg("weights")      = std::vector<float>(),
+          py::arg("debugContext") = std::string())
+      .def(
+          "tfidfvectorizer",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             int64_t max_gram_length,
+             int64_t max_skip_count,
+             int64_t min_gram_length,
+             const std::string &mode,
+             const std::vector<int64_t> &ngram_counts,
+             const std::vector<int64_t> &ngram_indexes,
+             const std::vector<int64_t> &pool_int64s,
+             const std::vector<std::string> &pool_strings,
+             const std::vector<float> &weights,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.tfidfvectorizer(args,
+                                         max_gram_length,
+                                         max_skip_count,
+                                         min_gram_length,
+                                         mode,
+                                         ngram_counts,
+                                         ngram_indexes,
+                                         pool_int64s,
+                                         pool_strings,
+                                         weights,
+                                         debugContext);
           },
           py::arg("args"),
           py::arg("max_gram_length"),
@@ -1669,8 +3365,19 @@ PYBIND11_MODULE(popart_opset10, m) {
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
              float alpha,
-             const std::string &name) -> TensorId {
-            return opset.thresholdedrelu(args, alpha, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.thresholdedrelu(args, alpha, debugContext);
+          },
+          py::arg("args"),
+          py::arg("alpha")        = 1.0f,
+          py::arg("debugContext") = std::string())
+      .def(
+          "thresholdedrelu",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             float alpha,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.thresholdedrelu(args, alpha, debugContext);
           },
           py::arg("args"),
           py::arg("alpha")       = 1.0f,
@@ -1679,8 +3386,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "tile",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.tile(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.tile(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "tile",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.tile(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -1689,8 +3405,19 @@ PYBIND11_MODULE(popart_opset10, m) {
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
              int64_t axis,
-             const std::string &name) -> std::vector<TensorId> {
-            return opset.topk(args, axis, name);
+             const DebugContext &debugContext) -> std::vector<TensorId> {
+            return opset.topk(args, axis, debugContext);
+          },
+          py::arg("args"),
+          py::arg("axis")         = -1,
+          py::arg("debugContext") = std::string())
+      .def(
+          "topk",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             int64_t axis,
+             const DebugContext &debugContext) -> std::vector<TensorId> {
+            return opset.topk(args, axis, debugContext);
           },
           py::arg("args"),
           py::arg("axis")        = -1,
@@ -1700,8 +3427,19 @@ PYBIND11_MODULE(popart_opset10, m) {
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
              const std::vector<int64_t> &perm,
-             const std::string &name) -> TensorId {
-            return opset.transpose(args, perm, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.transpose(args, perm, debugContext);
+          },
+          py::arg("args"),
+          py::arg("perm")         = std::vector<int64_t>(),
+          py::arg("debugContext") = std::string())
+      .def(
+          "transpose",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const std::vector<int64_t> &perm,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.transpose(args, perm, debugContext);
           },
           py::arg("args"),
           py::arg("perm")        = std::vector<int64_t>(),
@@ -1711,8 +3449,19 @@ PYBIND11_MODULE(popart_opset10, m) {
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
              const std::vector<int64_t> &axes,
-             const std::string &name) -> TensorId {
-            return opset.unsqueeze(args, axes, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.unsqueeze(args, axes, debugContext);
+          },
+          py::arg("args"),
+          py::arg("axes"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "unsqueeze",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const std::vector<int64_t> &axes,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.unsqueeze(args, axes, debugContext);
           },
           py::arg("args"),
           py::arg("axes"),
@@ -1722,8 +3471,19 @@ PYBIND11_MODULE(popart_opset10, m) {
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
              const std::string &mode,
-             const std::string &name) -> TensorId {
-            return opset.upsample(args, mode, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.upsample(args, mode, debugContext);
+          },
+          py::arg("args"),
+          py::arg("mode")         = "nearest",
+          py::arg("debugContext") = std::string())
+      .def(
+          "upsample",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const std::string &mode,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.upsample(args, mode, debugContext);
           },
           py::arg("args"),
           py::arg("mode")        = "nearest",
@@ -1732,8 +3492,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "where",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.where(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.where(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "where",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.where(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string())
@@ -1741,8 +3510,17 @@ PYBIND11_MODULE(popart_opset10, m) {
           "logical_xor",
           [](AiOnnxOpset10 &opset,
              const std::vector<TensorId> &args,
-             const std::string &name) -> TensorId {
-            return opset.logical_xor(args, name);
+             const DebugContext &debugContext) -> TensorId {
+            return opset.logical_xor(args, debugContext);
+          },
+          py::arg("args"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "logical_xor",
+          [](AiOnnxOpset10 &opset,
+             const std::vector<TensorId> &args,
+             const DebugContext &debugContext) -> TensorId {
+            return opset.logical_xor(args, debugContext);
           },
           py::arg("args"),
           py::arg("debugPrefix") = std::string());

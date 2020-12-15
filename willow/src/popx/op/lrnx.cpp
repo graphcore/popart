@@ -31,10 +31,11 @@ poplar::Tensor getScale(poplar::Graph &graph,
                         const float alpha,
                         const float bias,
                         const int64_t size,
-                        const std::string id_str) {
-  auto square     = popops::square(graph, input, prog, id_str);
-  auto square_sum = graph.clone(square);
-  prog.add(poplar::program::Copy(square, square_sum));
+                        const poplar::DebugContext &debugContext) {
+  const poplar::DebugInfo di(debugContext, "");
+  auto square     = popops::square(graph, input, prog, {di});
+  auto square_sum = graph.clone(square, {di});
+  prog.add(poplar::program::Copy(square, square_sum, false, {di}));
   auto channels = input.dim(1);
 
   auto left  = ((size - 1) / 2);
@@ -52,7 +53,7 @@ poplar::Tensor getScale(poplar::Graph &graph,
                                       channels - std::max<int64_t>(0L, -i),
                                       1),
                          prog,
-                         id_str);
+                         {di});
   }
 
   auto scale = popops::map(
@@ -60,7 +61,7 @@ poplar::Tensor getScale(poplar::Graph &graph,
       pe::Add(pe::Const(bias), pe::Mul(pe::Const(alpha / size), pe::_1)),
       {square_sum},
       prog,
-      id_str);
+      {di});
 
   return scale;
 }

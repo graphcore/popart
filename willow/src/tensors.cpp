@@ -4,6 +4,7 @@
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/tensor.hpp>
+#include <popart/tensordebuginfo.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensors.hpp>
 
@@ -208,14 +209,18 @@ void Tensors::insert(TensorId name, std::unique_ptr<Tensor> t) {
 }
 
 void Tensors::addConstInit(const TensorId &name,
-                           const ONNX_NAMESPACE::TensorProto *pt) {
-  addInit(name, pt, TensorType::Const);
+                           const ONNX_NAMESPACE::TensorProto *pt,
+                           const DebugContext &debugContext) {
+  popart::TensorDebugInfo di(debugContext, name, TensorType::Const);
+  addInit(name, pt, TensorType::Const, di);
   insertConstId(name);
 }
 
 void Tensors::addVarInit(const TensorId &name,
-                         const ONNX_NAMESPACE::TensorProto *pt) {
-  addInit(name, pt, TensorType::Variable);
+                         const ONNX_NAMESPACE::TensorProto *pt,
+                         const DebugContext &debugContext) {
+  popart::TensorDebugInfo di(debugContext, name, TensorType::Variable);
+  addInit(name, pt, TensorType::Variable, di);
 
   // A sanity check: if the tensor is fixed point, it is Const
   if (get(name)->info.getDataTypeInfo()->isFixedPoint()) {
@@ -233,9 +238,11 @@ void Tensors::addVarInit(const TensorId &name,
 
 void Tensors::addVarInit(const TensorId &name,
                          const TensorInfo &info,
-                         const void *src) {
+                         const void *src,
+                         const DebugContext &debugContext) {
+  popart::TensorDebugInfo di(debugContext, name, info, TensorType::Variable);
   insert(name,
-         std::unique_ptr<VariableTensor>(new VariableTensor(name, graph)));
+         std::unique_ptr<VariableTensor>(new VariableTensor(name, graph, di)));
 
   Tensor *init = get(name);
   init->info   = info;
@@ -244,8 +251,10 @@ void Tensors::addVarInit(const TensorId &name,
 
 void Tensors::addConstInit(const TensorId &name,
                            const TensorInfo &info,
-                           const void *src) {
-  insert(name, std::make_unique<Tensor>(name, TensorType::Const, graph));
+                           const void *src,
+                           const DebugContext &debugContext) {
+  popart::TensorDebugInfo di(debugContext, name, info, TensorType::Const);
+  insert(name, std::make_unique<Tensor>(name, TensorType::Const, graph, di));
 
   insertConstId(name);
 
@@ -267,12 +276,13 @@ void Tensors::makeConstInit(const TensorId &name, const void *src) {
 
 void Tensors::addInit(const TensorId &name,
                       const ONNX_NAMESPACE::TensorProto *pt,
-                      TensorType tt) {
+                      TensorType tt,
+                      const DebugInfo &di) {
 
   if (tt == TensorType::Variable) {
-    insert(name, std::make_unique<VariableTensor>(name, graph));
+    insert(name, std::make_unique<VariableTensor>(name, graph, di));
   } else {
-    insert(name, std::make_unique<Tensor>(name, tt, graph));
+    insert(name, std::make_unique<Tensor>(name, tt, graph, di));
   }
 
   Tensor *init = get(name);
@@ -280,17 +290,22 @@ void Tensors::addInit(const TensorId &name,
   init->setTensorData(*pt);
 }
 
-void Tensors::addStream(TensorId tenId, const TensorInfo &info) {
+void Tensors::addStream(TensorId tenId,
+                        const TensorInfo &info,
+                        const DebugContext &debugContext) {
+  popart::TensorDebugInfo di(debugContext, tenId, info, TensorType::Stream);
   insert(tenId,
-         std::unique_ptr<Tensor>(new Tensor(tenId, TensorType::Stream, graph)));
+         std::unique_ptr<Tensor>(
+             new Tensor(tenId, TensorType::Stream, graph, di)));
   get(tenId)->info = info;
 }
 
-void Tensors::addActGrad(TensorId tenId) {
+void Tensors::addActGrad(TensorId tenId, const DebugContext &debugContext) {
+  popart::DebugInfo di(debugContext, "popart#addActGrad#" + tenId);
   logging::debug("Adding ActGrad Tensor {}", tenId);
-  insert(
-      tenId,
-      std::unique_ptr<Tensor>(new Tensor(tenId, TensorType::ActGrad, graph)));
+  insert(tenId,
+         std::unique_ptr<Tensor>(
+             new Tensor(tenId, TensorType::ActGrad, graph, di)));
 }
 
 void Tensors::remove(TensorId id) { M.erase(id); }

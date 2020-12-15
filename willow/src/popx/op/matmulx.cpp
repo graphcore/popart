@@ -435,7 +435,7 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
                             combinedBroadcastTs.second, // B
                             prog,                       // prog
                             outputType,
-                            debugPrefix("matmulGrouped"), // debugPrefix
+                            debugPrefix("matmulGrouped"), // debugContext
                             opts,                         // options
                             &dv_p->matmulCache);          // cache
 
@@ -578,7 +578,7 @@ poplar::Tensor MatMulOpx::createInput(InIndex index,
         popType(getMatMulOp()->lhsIn()->info.dataType()),
         lhsShape,
         rhsShape,
-        name,
+        debugPrefix(name),
         opts,
         &dv_p->matmulCache);
 
@@ -593,7 +593,7 @@ poplar::Tensor MatMulOpx::createInput(InIndex index,
         popType(getMatMulOp()->lhsIn()->info.dataType()),
         lhsShape,
         rhsShape,
-        name,
+        debugPrefix(name),
         opts,
         &dv_p->matmulCache);
 

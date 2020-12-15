@@ -60,7 +60,7 @@ poplar::Tensor ReplicatedAllGatherOpx::unwindTensorLayout(poplar::Tensor tensor,
                                                           InIndex,
                                                           OutIndex) const {
   auto cbr = createCollectiveBalancedReorder(tensor);
-  return cbr->createReplicaSlice(tensor.elementType(), "");
+  return cbr->createReplicaSlice(tensor.elementType());
 }
 
 view::RegMap ReplicatedAllGatherOpx::unwindRegion(InIndex, OutIndex) const {
@@ -81,12 +81,12 @@ ReplicatedAllGatherOpx::createInput(InIndex index,
   auto &op = getOp<ReplicatedAllGatherOp>();
 
   if (index == ReplicatedAllGatherOp::getInIndex()) {
-    auto outInfo = op.outInfo(ReplicatedAllGatherOp::getOutIndex());
-    auto outTensor =
-        graph().addVariable(popType(outInfo), outInfo.shape_szt(), name);
+    auto outInfo   = op.outInfo(ReplicatedAllGatherOp::getOutIndex());
+    auto outTensor = graph().addVariable(
+        popType(outInfo), outInfo.shape_szt(), debugPrefix(name));
     dv_p->lowering().getLinearMapper().mapTensor(graph(), outTensor);
     auto cbr = createCollectiveBalancedReorder(outTensor);
-    return cbr->createReplicaSlice(popType(outInfo), name);
+    return cbr->createReplicaSlice(popType(outInfo));
   }
 
   throw error("ReplicatedAllGatherOpx::createInput: Invalid index = " +

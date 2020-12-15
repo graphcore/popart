@@ -2,6 +2,7 @@
 #ifndef GUARD_NEURALNET_ELEMENTWISEUNARYX_HPP
 #define GUARD_NEURALNET_ELEMENTWISEUNARYX_HPP
 
+#include <popart/popx/debugcontextx.hpp>
 #include <popart/popx/opx.hpp>
 
 namespace popart {
@@ -17,16 +18,19 @@ public:
   virtual poplar::Tensor outplace(poplar::program::Sequence &,
                                   poplar::Graph &,
                                   const poplar::Tensor &,
+                                  const poplar::DebugNameAndId &,
                                   const std::string &) const;
 
   virtual void inplace(poplar::program::Sequence &,
                        poplar::Graph &,
                        const poplar::Tensor &t,
+                       const poplar::DebugNameAndId &,
                        const std::string &) const = 0;
 
   poplar::Tensor cloneNcopy(poplar::program::Sequence &,
                             poplar::Graph &,
-                            const poplar::Tensor &) const;
+                            const poplar::Tensor &,
+                            const poplar::DebugNameAndId &) const;
 
   // certain ops reshape the input tensor (eg Softmax and LogSoftmax)
   virtual poplar::Tensor reshape(const poplar::Tensor &t) const { return t; }
@@ -117,6 +121,7 @@ public:
                                   poplar::Graph &,
                                   const poplar::Tensor &,
                                   const poplar::Tensor &,
+                                  const poplar::DebugNameAndId &,
                                   const std::string &) const = 0;
 
   // Evaluate the operation in-place
@@ -125,6 +130,7 @@ public:
                        poplar::Graph &,
                        const poplar::Tensor &,
                        const poplar::Tensor &,
+                       const poplar::DebugNameAndId &,
                        const std::string &) const = 0;
 
 private:

@@ -264,7 +264,7 @@ std::ostream &operator<<(std::ostream &os, const TensorType &tt) {
 
 std::unique_ptr<Tensor> Tensor::clone(Graph &graph_) const {
   std::unique_ptr<Tensor> theClone(
-      new Tensor("clone_" + id, tensorType(), graph_));
+      new Tensor("clone_" + id, tensorType(), graph_, getDebugInfo()));
   theClone->info = info;
   return theClone;
 }
@@ -394,9 +394,13 @@ int Consumers::getTotal() const {
 
 // using 'this' in a constructor list? Be careful.
 // https://stackoverflow.com/questions/5058349
-Tensor::Tensor(TensorId n, TensorType t, Graph &g)
+Tensor::Tensor(TensorId n,
+               TensorType t,
+               Graph &g,
+               const DebugContext &debugContext)
     : Vertex(), id(n), consumers(this), graph(g), producer(nullptr),
-      tensorTypeInfo(&getTensorTypeInfoMap().at(t)), data_(nullptr) {
+      tensorTypeInfo(&getTensorTypeInfoMap().at(t)), data_(nullptr),
+      di(debugContext, n, t) {
   // graph is currently unused - this removes the compiler warning
   (void)graph;
 }
@@ -611,12 +615,15 @@ std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap() {
   return tensor_types_m;
 }
 
-VariableTensor::VariableTensor(TensorId n, Graph &g)
-    : Tensor(n, TensorType::Variable, g),
+VariableTensor::VariableTensor(TensorId n,
+                               Graph &g,
+                               const DebugContext &debugContext)
+    : Tensor(n, TensorType::Variable, g, debugContext),
       variableUpdateType(VariableUpdateType::Gradient) {}
 
 std::unique_ptr<Tensor> VariableTensor::clone(Graph &graph_) const {
-  std::unique_ptr<Tensor> theClone(new VariableTensor("clone_" + id, graph_));
+  std::unique_ptr<Tensor> theClone(
+      new VariableTensor("clone_" + id, graph_, getDebugInfo()));
   theClone->info = info;
   return theClone;
 }

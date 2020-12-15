@@ -49,6 +49,7 @@
 #include <popart/op/subgraph.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/patterns/pattern.hpp>
+#include <popart/popx/debugcontextx.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/exporter.hpp>
 #include <popart/popx/irlowering.hpp>
@@ -531,7 +532,8 @@ void IrLowering::instrumentWithHardwareCycleCounter(
   cycleCountIds.push_back(id);
 
   // Add program fragment to copy to host stream
-  auto cyclesToHostStream = poplar::program::Copy(cycleCountTensor, st, true);
+  auto cyclesToHostStream =
+      poplar::program::Copy(cycleCountTensor, st, true, {"copyCycleCounter"});
   progs.cycleCountTensorToHostFragment().add(cyclesToHostStream);
 }
 
@@ -539,10 +541,10 @@ poplar::Tensor IrLowering::getConst(poplar::Graph &graph,
                                     const poplar::Type &type,
                                     const std::vector<size_t> &shape,
                                     double val,
-                                    const std::string &name) {
+                                    const poplar::DebugContext &debugContext) {
   static unsigned tileCounter = 0;
 
-  auto tensor     = graph.addConstant(type, shape, val, name);
+  auto tensor     = graph.addConstant(type, shape, val, debugContext);
   auto tilesTotal = graph.getTarget().getTilesPerIPU();
   auto tile       = tileCounter % tilesTotal;
   tileCounter++;
@@ -551,12 +553,13 @@ poplar::Tensor IrLowering::getConst(poplar::Graph &graph,
   return tensor;
 }
 
-poplar::Tensor IrLowering::getScalarVariable(poplar::Graph &graph,
-                                             const poplar::Type &type,
-                                             const std::string &name) {
+poplar::Tensor
+IrLowering::getScalarVariable(poplar::Graph &graph,
+                              const poplar::Type &type,
+                              const poplar::DebugContext &debugContext) {
   static int tileCounter = -1;
 
-  auto tensor     = graph.addVariable(type, {}, name);
+  auto tensor     = graph.addVariable(type, {}, debugContext);
   auto tilesTotal = graph.getTarget().getTilesPerIPU();
   auto tile       = (tilesTotal + (tileCounter % tilesTotal)) % tilesTotal;
   tileCounter--;
@@ -1023,7 +1026,11 @@ PriTask IrLowering::initTensorTask(Tensor *tensor) {
       // The clone makes sure to only keep the necessary parts of the unwound
       // tensor alive, and contiguate it,
       // reducing IPU memory liveness and fragmentation (see T18661)
-      poplar::Tensor input = graph().clone(inputAndView.first);
+      poplar::Tensor input = graph().clone(
+          inputAndView.first,
+          {poplar::DebugNameAndId(tensor->str(),
+                                  tensor->getDebugInfo().getId(),
+                                  tensor->getDebugInfo().getPathName())});
 
       tensors_.insert(tensor->id, input);
       efficientlyCreatedInputTensors.insert(tensor->id);
@@ -1066,7 +1073,11 @@ PriTask IrLowering::initTensorTask(Tensor *tensor) {
                            : getVirtualGraph(vgid.first, vgid.second);
 
       auto newTensor = dstGraph.addVariable(
-          popType(tensor->info), tensor->info.shape_szt(), tensor->str());
+          popType(tensor->info),
+          tensor->info.shape_szt(),
+          {poplar::DebugNameAndId(tensor->str(),
+                                  tensor->getDebugInfo().getId(),
+                                  tensor->getDebugInfo().getPathName())});
       linearMapper.mapTensor(dstGraph, newTensor);
 
       tensors_.insert(tensor->id, newTensor);
@@ -1124,7 +1135,10 @@ PriTask IrLowering::rngStateFromHost() {
 
     SequenceMap seqs;
     seqs[&progs.rngStateFromHostFragment()].add(
-        poplar::program::Copy(streamRngFromHost, rngStateTensor));
+        poplar::program::Copy(streamRngFromHost,
+                              rngStateTensor,
+                              false,
+                              {"copyStreamRngStateTensor"}));
     poplar::setHwSeeds(graph(),
                        rngStateTensor,
                        seqs[&progs.rngStateFromHostFragment()],
@@ -1145,7 +1159,7 @@ PriTask IrLowering::initRngStateTensor() {
     auto workersPerIPU = graph().getTarget().getNumWorkerContexts();
     auto numTiles      = graph().getTarget().getNumTiles();
     rngStateTensor     = graph().addVariable(
-        poplar::UNSIGNED_INT, {numTiles, workersPerIPU, 4}, "rngStateTensor");
+        poplar::UNSIGNED_INT, {numTiles, workersPerIPU, 4}, {"rngStateTensor"});
     linearMapper.mapTensor(graph(), rngStateTensor);
     return SequenceMap();
   };
@@ -1164,8 +1178,8 @@ PriTask IrLowering::rngStateToHost() {
     SequenceMap seqs;
     rngStateTensor = poplar::getHwSeeds(
         graph(), seqs[&progs.rngStateToHostFragment()], "RNG get");
-    seqs[&progs.rngStateToHostFragment()].add(
-        poplar::program::Copy(rngStateTensor, streamRngToHost));
+    seqs[&progs.rngStateToHostFragment()].add(poplar::program::Copy(
+        rngStateTensor, streamRngToHost, false, {"rngStateToHost"}));
     return seqs;
   };
 
@@ -1563,8 +1577,25 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
             tasks.add(initTensorByAliasingTask(std::get<0>(opInput),
                                                std::get<1>(opInput)));
           } else {
-            tasks.add(initTensorByCloningTask(std::get<0>(opInput),
-                                              std::get<1>(opInput)));
+            if (ir().getTensor(std::get<0>(opInput))->hasProducer()) {
+              auto producer =
+                  ir().getTensor(std::get<0>(opInput))->getProducer();
+              std::string postfix =
+                  logging::format("{}/input/{}",
+                                  producer->settings.graph.get().getGraphId(),
+                                  i);
+
+              tasks.add(initTensorByCloningTask(producer,
+                                                std::get<0>(opInput),
+                                                std::get<1>(opInput),
+                                                postfix));
+            } else {
+              // This is a real input to the graph i.e not the output of another
+              // op. TBD: Would be nice to find the debug information for the
+              // source tensor
+              tasks.add(initTensorByCloningTask(
+                  nullptr, std::get<0>(opInput), std::get<1>(opInput)));
+            }
           }
         }
       }
@@ -1583,8 +1614,24 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
             tasks.add(initTensorByAliasingTask(std::get<0>(opOutput),
                                                std::get<1>(opOutput)));
           } else {
-            tasks.add(initTensorByCloningTask(std::get<0>(opOutput),
-                                              std::get<1>(opOutput)));
+            if (ir().getTensor(std::get<0>(opOutput))->hasProducer()) {
+              auto producer =
+                  ir().getTensor(std::get<0>(opOutput))->getProducer();
+              // std::string postfix = logging::format("{}/input/{}",
+              std::string postfix =
+                  logging::format("{}/output/{}",
+                                  producer->settings.graph.get().getGraphId(),
+                                  i);
+              tasks.add(initTensorByCloningTask(producer,
+                                                std::get<0>(opOutput),
+                                                std::get<1>(opOutput),
+                                                postfix));
+            } else {
+              // This is not valid an output tensor which does not have a
+              // producer
+              tasks.add(initTensorByCloningTask(
+                  nullptr, std::get<0>(opOutput), std::get<1>(opOutput)));
+            }
           }
         }
       }
@@ -1644,8 +1691,11 @@ bool IrLowering::tryInitTensorByPostIRAliasing(
   return false;
 }
 
-PriTask IrLowering::initTensorByCloningTask(TensorId srcId, TensorId dstId) {
-  auto f = [srcId, dstId, this]() {
+PriTask IrLowering::initTensorByCloningTask(const Op *op,
+                                            TensorId srcId,
+                                            TensorId dstId,
+                                            const std::string postfix) {
+  auto f = [op, srcId, dstId, postfix, this]() {
     // Try if an existing Poplar tensor can be reused
     if (tryInitTensorByPostIRAliasing(dstId,
                                       tensors_.hasViewChangers(srcId)
@@ -1666,7 +1716,13 @@ PriTask IrLowering::initTensorByCloningTask(TensorId srcId, TensorId dstId) {
                    vgid.first,
                    vgid.second);
     auto src = tensors_.get(srcId);
-    auto dst = dstGraph.clone(src, dstId);
+    auto dst =
+        op ? dstGraph.clone(
+                 src,
+                 {poplar::DebugNameAndId(postfix,
+                                         op->getDebugInfo().getId(),
+                                         op->getDebugInfo().getPathName())})
+           : dstGraph.clone(src);
 
     if (tensors_.hasViewChangers(srcId)) {
       tensors_.setViewChangers(dstId, tensors_.getViewChangers(srcId));
@@ -1824,8 +1880,8 @@ void IrLowering::growOpx(Opx *opx, poplar::program::Sequence &seq) {
                           opx->op_p->debugName());
 
   if (opxTrace) {
-    seq.add(poplar::program::PrintTensor(opx->op_p->str() + "/enter",
-                                         opxTraceTensor));
+    seq.add(poplar::program::PrintTensor(
+        opx->op_p->str() + "/enter", opxTraceTensor, opx->debugContext()));
   }
 
   // Build a map of all tensors that are inputs and not
@@ -1851,8 +1907,10 @@ void IrLowering::growOpx(Opx *opx, poplar::program::Sequence &seq) {
           // Clone the input tensor with its current values
           // to check if the original input tensor has been modified
           // during opx->grow(seq)
-          auto inTensorClone = graph().clone(inTensor);
-          seq.add(poplar::program::Copy(inTensor, inTensorClone));
+          auto inTensorClone =
+              graph().clone(inTensor, opx->debugContext("orig"));
+          seq.add(poplar::program::Copy(
+              inTensor, inTensorClone, false, opx->debugContext("check")));
           nonModifiedTensors[inputMap.first] =
               std::make_pair(inTensor, inTensorClone);
         }
@@ -1897,7 +1955,7 @@ void IrLowering::growOpx(Opx *opx, poplar::program::Sequence &seq) {
                                    popops::expr::IsFinite(popops::expr::_2))),
           {nonModified.second.first, nonModified.second.second},
           seq,
-          opx->debugPrefix("opxModifyChecking"),
+          opx->debugContext("opxModifyChecking"),
           {});
       auto checkReduced = check.flatten();
       // Convert result to boolean scalar
@@ -1907,7 +1965,7 @@ void IrLowering::growOpx(Opx *opx, poplar::program::Sequence &seq) {
                                       {0},
                                       {popops::Operation::LOGICAL_OR},
                                       seq,
-                                      opx->debugPrefix("opxModifyChecking"));
+                                      opx->debugContext("opxModifyChecking"));
       } else {
         checkReduced = checkReduced.squeeze({0});
       }
@@ -1916,15 +1974,17 @@ void IrLowering::growOpx(Opx *opx, poplar::program::Sequence &seq) {
                           "but the Poplar tensors disagree.",
                           opx->op_p->debugName(),
                           nonModified.first),
-          check);
-      auto elseProg = poplar::program::Sequence();
-      seq.add(poplar::program::If(checkReduced, ifProg, elseProg));
+          check,
+          opx->debugContext("if"));
+      auto elseProg = poplar::program::Sequence({}, opx->debugContext("else"));
+      seq.add(poplar::program::If(
+          checkReduced, ifProg, elseProg, opx->debugContext("opxModifyCheck")));
     }
   }
 
   if (opxTrace) {
-    seq.add(poplar::program::PrintTensor(opx->op_p->str() + "/exit",
-                                         opxTraceTensor));
+    seq.add(poplar::program::PrintTensor(
+        opx->op_p->str() + "/exit", opxTraceTensor, opx->debugContext()));
   }
 }
 
@@ -2105,7 +2165,7 @@ void IrLowering::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
                               op->debugName());
       auto found_ = seqs.find(seqsKey);
       if (found_ == seqs.end()) {
-        seqs[seqsKey] = poplar::program::Sequence{};
+        seqs[seqsKey] = poplar::program::Sequence({}, {"keys"});
         found_        = seqs.find(seqsKey);
       }
       logging::devicex::debug(
@@ -2857,7 +2917,9 @@ void IrLowering::compileAndExport(const std::string &executablePath,
     // DEVICE_TO_HOST
     std::vector<poplar::program::Program> fusedProgs;
     const auto programs = progs.progs();
-    poplar::program::Sequence fusedH2d, fusedMain, fusedD2h;
+    poplar::program::Sequence fusedH2d({}, {"fusedHostToDevice"});
+    poplar::program::Sequence fusedMain({}, {"fusedMain"});
+    poplar::program::Sequence fusedD2h({}, {"fusedDeviceToHost"});
 
     static_assert(PopPrograms::ProgramIndex::N == 8,
                   "Make sure all the programs are added to one of the 3 "
@@ -3103,7 +3165,8 @@ PriTask IrLowering::fromHostTask(Tensor *tensor,
 
     seqs[&sq].add(poplar::program::Copy(fromHostStreams.at(tensor->id),
                                         tensors_.get(tensor->id),
-                                        doRearrangeOnHost(tensor)));
+                                        doRearrangeOnHost(tensor),
+                                        {"copyFromHost"}));
     return seqs;
   };
   return {priority,
@@ -3151,7 +3214,7 @@ PriTask IrLowering::toHostTask(Tensor *tensor,
     }
 
     seqs[&sq].add(poplar::program::Copy(
-        anchorTensor, poplarStream, doRearrangeOnHost(tensor)));
+        anchorTensor, poplarStream, doRearrangeOnHost(tensor), {"copyToHost"}));
     return seqs;
   };
 
@@ -3259,7 +3322,8 @@ PriTask IrLowering::initBatchCounterTensorsTask(poplar::program::Sequence &sq) {
                    batchCountingTensors[N],
                    sq,
                    logging::format("initBatchCountTensors[{}]", N));
-      sq.add(poplar::program::Copy(falseConst, batchCountCheckingTensors[N]));
+      sq.add(poplar::program::Copy(
+          falseConst, batchCountCheckingTensors[N], false, {"copyFalse"}));
     }
 
     // Make sure const 1 tensor exists
@@ -3280,7 +3344,7 @@ PriTask IrLowering::updateBatchCountTask(poplar::program::Sequence &sq) {
     logging::devicex::debug("Adding batch count checker program");
 
     // Placeholder 'do nothing' branch if not running assign program
-    poplar::program::Sequence emptyseq;
+    poplar::program::Sequence emptyseq({}, {"empty"});
 
     // Increment the batch count at the at the earliest point
     // the anchor tensor is required, and check if it is a
@@ -3302,8 +3366,10 @@ PriTask IrLowering::updateBatchCountTask(poplar::program::Sequence &sq) {
       auto zero = getConst(graph(), poplar::INT, {}, 0, "batchCount/zero");
       seqs[&sq].add(poplar::program::If(
           batchCountCheckingTensors[N],
-          poplar::program::Copy(zero, batchCountingTensors[N]),
-          emptyseq));
+          poplar::program::Copy(
+              zero, batchCountingTensors[N], false, {"copyZero"}),
+          emptyseq,
+          {"batchCountResetCheck"}));
     }
     return seqs;
   };
@@ -3357,15 +3423,17 @@ PriTask IrLowering::toHostEveryNBatchesTask(Tensor *tensor,
 
     poplar::Tensor isNthBatch = batchCountCheckingTensors.at(N);
 
-    poplar::program::Sequence copyseq;
+    poplar::program::Sequence copyseq({}, {"copy"});
     copyseq.add(poplar::program::Copy(tensors_.get(tensor->id),
                                       toHostAnchorStreams.at(tensor->id),
-                                      doRearrangeOnHost(tensor)));
+                                      doRearrangeOnHost(tensor),
+                                      {"copyToHostEveryNBatches"}));
 
     // Placeholder 'do nothing' branch if not running copy program
-    poplar::program::Sequence emptyseq;
+    poplar::program::Sequence emptyseq({}, {"empty"});
 
-    seqs[&sq].add(poplar::program::If(isNthBatch, copyseq, emptyseq));
+    seqs[&sq].add(
+        poplar::program::If(isNthBatch, copyseq, emptyseq, {"nthBatchCheck"}));
     return seqs;
   };
 

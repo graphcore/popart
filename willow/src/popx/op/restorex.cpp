@@ -21,7 +21,8 @@ poplar::Tensor grow_restore_dynamic_slice(const Opx &opx,
   auto &graph = opx.graph();
 
   // Create the index tensor
-  poplar::Tensor stashIndex = graph.addVariable(poplar::UNSIGNED_INT, {1});
+  poplar::Tensor stashIndex =
+      graph.addVariable(poplar::UNSIGNED_INT, {1}, opx.debugPrefix());
   graph.setTileMapping(stashIndex, 0);
   graph.setInitialValue(stashIndex, poplar::ArrayRef<uint32_t>({0}));
 
@@ -36,14 +37,14 @@ poplar::Tensor grow_restore_dynamic_slice(const Opx &opx,
                            opx.debugPrefix("grow_restore_dynamic_slice"));
 
   // Increment the index
-  auto one =
-      opx.getConst(poplar::UNSIGNED_INT, {}, 1.0, opx.debugPrefix("one"));
-  popops::addInPlace(graph, stashIndex, one, prog);
+  auto one = opx.getConst(poplar::UNSIGNED_INT, {}, 1.0, "one");
+  popops::addInPlace(graph, stashIndex, one, prog, opx.debugContext());
 
   // Wrap the index
-  auto stashSizeTensor = opx.getConst(
-      poplar::UNSIGNED_INT, {}, stashSize, opx.debugPrefix("stash_size"));
-  popops::remInPlace(graph, stashIndex, stashSizeTensor, prog);
+  auto stashSizeTensor =
+      opx.getConst(poplar::UNSIGNED_INT, {}, stashSize, "stash_size");
+  popops::remInPlace(
+      graph, stashIndex, stashSizeTensor, prog, opx.debugContext());
 
   return actFromStash;
 }
@@ -58,7 +59,8 @@ void RestoreInplaceOpx::grow(poplar::program::Sequence &prog) const {
   auto actFromStash =
       grow_restore_dynamic_slice(*this, op.getStashSize(), stash, prog);
 
-  prog.add(poplar::program::Copy(actFromStash.squeeze({0}), actToRestore));
+  prog.add(poplar::program::Copy(
+      actFromStash.squeeze({0}), actToRestore, false, debugPrefix()));
   setOutTensor(RestoreInplaceOp::getRestoredActOutIndex(), actToRestore);
 }
 

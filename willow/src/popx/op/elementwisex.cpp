@@ -129,10 +129,14 @@ void ElementWiseUnaryInplaceOpx::grow(poplar::program::Sequence &prog) const {
   // them we can use the poplar inplace version. Otherwise, we must
   // use a non-inplace version.  See T7110 for a possible improvement
   if (!outTensor.isParallelWriteable()) {
-    outTensor = cx->outplace(
-        prog, graph(), outTensor, debugPrefix("nonLinearityOutplaceFallback"));
+    outTensor = cx->outplace(prog,
+                             graph(),
+                             outTensor,
+                             getDebugNameAndId(),
+                             "nonLinearityOutplaceFallback");
   } else {
-    cx->inplace(prog, graph(), outTensor, debugPrefix("nonLinearityInplace"));
+    cx->inplace(
+        prog, graph(), outTensor, getDebugNameAndId(), "nonLinearityInplace");
   }
   outTensor = cx->reshape(outTensor);
   if (hasInViewChangers(ElementWiseUnaryOp::getInIndex())) {
@@ -146,7 +150,8 @@ void ElementWiseUnaryOutplaceOpx::grow(poplar::program::Sequence &prog) const {
   auto outTensor = cx->outplace(prog,
                                 graph(),
                                 getInTensor(ElementWiseUnaryOp::getInIndex()),
-                                debugPrefix("nonLinearityOutplace"));
+                                getDebugNameAndId(),
+                                "nonLinearityOutplace");
 
   outTensor = cx->reshape(outTensor);
   setOutTensor(ElementWiseUnaryOp::getOutIndex(), outTensor);
@@ -162,12 +167,13 @@ view::RegMap ElementWiseBinaryOpx::unwindRegion(InIndex, OutIndex) const {
   return [](const view::Region &r) { return view::Regions(1, r); };
 }
 
-poplar::Tensor EwuComputex::cloneNcopy(poplar::program::Sequence &prog,
-                                       poplar::Graph &graph,
-                                       const poplar::Tensor &tensor) const {
-
-  auto outTensor = graph.clone(tensor);
-  poplar::program::Copy copyProg(tensor, outTensor);
+poplar::Tensor
+EwuComputex::cloneNcopy(poplar::program::Sequence &prog,
+                        poplar::Graph &graph,
+                        const poplar::Tensor &tensor,
+                        const poplar::DebugNameAndId &dnai) const {
+  auto outTensor = graph.clone(tensor, {dnai});
+  poplar::program::Copy copyProg(tensor, outTensor, false, {dnai});
   prog.add(copyProg);
   return outTensor;
 }
@@ -175,9 +181,10 @@ poplar::Tensor EwuComputex::cloneNcopy(poplar::program::Sequence &prog,
 poplar::Tensor EwuComputex::outplace(poplar::program::Sequence &prog,
                                      poplar::Graph &graph,
                                      const poplar::Tensor &tensor,
+                                     const poplar::DebugNameAndId &dnai,
                                      const std::string &debug_prefix) const {
-  auto out_tensor = cloneNcopy(prog, graph, tensor);
-  inplace(prog, graph, out_tensor, debug_prefix);
+  auto out_tensor = cloneNcopy(prog, graph, tensor, dnai);
+  inplace(prog, graph, out_tensor, dnai, debug_prefix);
   return out_tensor;
 }
 
@@ -222,15 +229,19 @@ void ElementWiseBinaryOutplaceOpx::grow(poplar::program::Sequence &prog) const {
     throw internal_error(
         "Operation {} was configured for inplacing and attempting "
         "to compute out-of-place",
-        debugPrefix());
+        debugPrefix().getPathName());
   }
 
   const auto arg0Idx = ElementWiseBinaryBaseOp::getArg0InIndex();
   const auto arg1Idx = ElementWiseBinaryBaseOp::getArg1InIndex();
   const auto outIdx  = ElementWiseBinaryBaseOp::getOutIndex();
 
-  auto outTensor = cx->outplace(
-      prog, graph(), getInTensor(arg0Idx), getInTensor(arg1Idx), debugPrefix());
+  auto outTensor = cx->outplace(prog,
+                                graph(),
+                                getInTensor(arg0Idx),
+                                getInTensor(arg1Idx),
+                                getDebugNameAndId(),
+                                "");
 
   if (hasInViewChangers(ElementWiseBinaryOp::getArg0InIndex())) {
     setOutViewChangers(
@@ -244,7 +255,7 @@ void ElementWiseBinaryInplaceOpx::grow(poplar::program::Sequence &prog) const {
   if (!cx->inplaceSupported()) {
     throw error("Invalid operation {} was not configured for inplacing and "
                 "attempting to compute in-place",
-                debugPrefix());
+                debugPrefix().getPathName());
   }
 
   constexpr unsigned maxTileImbalance = 150000;
@@ -257,12 +268,12 @@ void ElementWiseBinaryInplaceOpx::grow(poplar::program::Sequence &prog) const {
   if (!tInOut.isParallelWriteable()) {
     logging::debug(
         "Unable to inplace operation {}, tensor is not parallel writeable",
-        debugPrefix());
+        debugPrefix().getPathName());
     canComputeInplace = false;
   } else if (poputil::getTileImbalance(g, tInOut) > maxTileImbalance) {
     logging::debug("Unable to inplace operation {}, tensor tile imbalance ({}) "
                    "is too high",
-                   debugPrefix(),
+                   debugPrefix().getPathName(),
                    poputil::getTileImbalance(g, tInOut));
     canComputeInplace = false;
   }
@@ -270,10 +281,10 @@ void ElementWiseBinaryInplaceOpx::grow(poplar::program::Sequence &prog) const {
   const auto outIdx = ElementWiseBinaryBaseOp::getOutIndex();
 
   if (canComputeInplace) {
-    cx->inplace(prog, g, tInOut, tIn, debugPrefix());
+    cx->inplace(prog, g, tInOut, tIn, getDebugNameAndId(), "");
     tInOut = tInOut.reshape(outInfo(outIdx).shape_szt());
   } else {
-    tInOut = cx->outplace(prog, g, tInOut, tIn, debugPrefix());
+    tInOut = cx->outplace(prog, g, tInOut, tIn, getDebugNameAndId(), "");
   }
 
   if (hasInViewChangers(ElementWiseBinaryOp::getArg0InIndex())) {

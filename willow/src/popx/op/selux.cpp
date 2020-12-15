@@ -38,6 +38,7 @@ SeluOpx::SeluOpx(Op *op, Devicex *devicex)
 void SeluComputex::inplace(poplar::program::Sequence &prog,
                            poplar::Graph &graph,
                            const poplar::Tensor &tensor,
+                           const poplar::DebugNameAndId &dnai,
                            const std::string &debug_prefix) const {
   //   The Selu definition is:
   // x > 0 ? gamma*alpha*(exp(x)-1) : gamma*x
@@ -52,7 +53,8 @@ void SeluComputex::inplace(poplar::program::Sequence &prog,
   exprs.push_back(
       std::make_unique<pe::Mul>(pe::Const(this->getGamma()), *exprs.back()));
 
-  popops::mapInPlace(graph, *exprs.back(), {tensor}, prog, debug_prefix);
+  popops::mapInPlace(
+      graph, *exprs.back(), {tensor}, prog, {dnai, debug_prefix});
 }
 
 SeluInplaceOpx::SeluInplaceOpx(Op *op, Devicex *devicex)

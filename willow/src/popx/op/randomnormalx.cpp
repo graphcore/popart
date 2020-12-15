@@ -16,8 +16,10 @@ void RandomNormalOpx::grow(poplar::program::Sequence &prog) const {
   auto shape      = vXtoY<int64_t, std::size_t>(outputInfo.shape());
   auto poplarType = popType(op.outInfo(op.getOutIndex()));
 
-  auto refTensor = graph().addVariable(
-      poplarType, shape, poplar::VariableMappingMethod::LINEAR, "refTensor");
+  auto refTensor = graph().addVariable(poplarType,
+                                       shape,
+                                       poplar::VariableMappingMethod::LINEAR,
+                                       debugPrefix("refTensor"));
 
   auto output = poprand::normal(graph(),
                                 &getInTensor(op.getSeedInIndex()),

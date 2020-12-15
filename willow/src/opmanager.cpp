@@ -1,8 +1,10 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <onnx/onnx_pb.h>
 
+#include <popart/debugcontext.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
+#include <popart/onnxdebuginfo.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opsets.hpp>
 
@@ -335,13 +337,33 @@ Op *OpManager::createOpInGraph(const Node &node, Graph &graph) {
   std::vector<TensorId> inputIds  = getInputIds(node);
   std::vector<TensorId> outputIds = getOutputIds(node);
   Op *op                          = nullptr;
+
+  // Find the debugInfoId attribute if is exists. Otherwise 0
+  std::uint64_t debugInfoId = 0;
+  for (auto &attribute : node.attribute()) {
+    auto name = attribute.name();
+    if (name == sDebugInfoId) {
+      debugInfoId = attribute.i();
+    }
+  }
+
+  // Create the OnnxOpDebugInfo
+  DebugNameAndId dnai(debugInfoId, node.name());
+  OnnxOpDebugInfo odi({dnai}, node);
+
+  // Replace the parent debugInfoId with the OnnxDebugInfo id
+  popart::Attributes attributes = node.attribute();
+  // Warning : converting uint64_t to int64_t;
+  Attributes::Int id = odi.getId();
+  attributes.setAttribute(sDebugInfoId, id);
+
   if (opInfo != nullptr) {
     if (opInfo->hasComplexFactory()) {
       op = self.create(opInfo->id,
                        graph,
                        node.name(),
                        graph.getScope(),
-                       node.attribute(),
+                       attributes,
                        inputIds,
                        outputIds,
                        opInfo->getComplexFactory());
@@ -350,7 +372,7 @@ Op *OpManager::createOpInGraph(const Node &node, Graph &graph) {
                                           graph,
                                           node.name(),
                                           graph.getScope(),
-                                          node.attribute(),
+                                          attributes,
                                           inputIds,
                                           outputIds,
                                           opInfo->getSimpleFactory());

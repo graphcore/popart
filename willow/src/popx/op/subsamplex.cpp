@@ -64,7 +64,7 @@ void SubsampleGradOpx::grow(poplar::program::Sequence &prog) const {
 
   // Design decision: make a scalar zero variable that we expand to create
   // a tensor of the same size as the output
-  auto zero = getScalarVariable(in.elementType(), debugPrefix("zero"));
+  auto zero = getScalarVariable(in.elementType(), "zero");
   graph().setInitialValue(zero, 0);
 
   // Create an 0'ed tensor to be a tensor of the right size
@@ -85,7 +85,7 @@ void SubsampleGradOpx::grow(poplar::program::Sequence &prog) const {
   auto ss_output = subsample(outTensor, gradOp.strides_u32());
 
   // Copy the input tensor into the subsampled view of the output
-  prog.add(poplar::program::Copy(in, ss_output));
+  prog.add(poplar::program::Copy(in, ss_output, false, debugPrefix()));
 
   // Return the output
   setOutTensor(SubsampleGradOp::getOutIndex(), outTensor);

@@ -43,6 +43,7 @@ void Pattern::transferBaseProperties(Op *from, Op *to) const {
   to->fromLoss                  = from->fromLoss;
   to->toLoss                    = from->toLoss;
   to->settings.schedulePriority = from->settings.schedulePriority;
+  to->settings.debugInfoId      = from->settings.debugInfoId;
 }
 
 std::unique_ptr<Op>
@@ -50,9 +51,19 @@ PreAliasPattern::makeReplacementOp(const OperatorIdentifier &operator_id,
                                    Op *oldOp,
                                    const std::string name) const {
 
+  // Need to pass the debug if from old to new op in the attributes constructor
+  // argument
+  popart::Attributes attributes;
+  // Warning : converting uint64_t to int64_t;
+  Attributes::Int debugId = oldOp->settings.debugInfoId;
+  attributes.setAttribute(sDebugInfoId, debugId);
+
   // Create replacement Op with new attributes
-  std::unique_ptr<Op> newOp = OpManager::createOp(
-      operator_id, oldOp->getGraph(), getReplacementOpName(oldOp, name));
+  std::unique_ptr<Op> newOp =
+      OpManager::createOp(operator_id,
+                          oldOp->getGraph(),
+                          getReplacementOpName(oldOp, name),
+                          attributes);
 
   if (newOp == nullptr) {
     throw internal_error(

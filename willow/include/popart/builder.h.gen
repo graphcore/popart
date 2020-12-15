@@ -25,7 +25,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     abs(const std::vector<TensorId>& args,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Add' to the model
@@ -42,7 +42,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     add(const std::vector<TensorId>& args,
         nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
         int64_t broadcast = 0,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'And' to the model
@@ -59,7 +59,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     logical_and(const std::vector<TensorId>& args,
                 nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
                 int64_t broadcast = 0,
-                const std::string &name = "");
+                const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ArgMax' to the model
@@ -76,7 +76,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     argmax(const std::vector<TensorId>& args,
            int64_t axis = 0,
            int64_t keepdims = 1,
-           const std::string &name = "");
+           const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ArgMin' to the model
@@ -93,7 +93,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     argmin(const std::vector<TensorId>& args,
            int64_t axis = 0,
            int64_t keepdims = 1,
-           const std::string &name = "");
+           const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'AveragePool' to the model
@@ -112,7 +112,7 @@ class AiOnnxOpset6 : private DomainOpSet {
                 const std::vector<int64_t>& kernel_shape,
                 const std::vector<int64_t>& pads = std::vector<int64_t>(),
                 const std::vector<int64_t>& strides = std::vector<int64_t>(),
-                const std::string &name = "");
+                const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'BatchNormalization' to the model
@@ -135,7 +135,7 @@ class AiOnnxOpset6 : private DomainOpSet {
                        int64_t is_test = 0,
                        float momentum = 0.9f,
                        int64_t spatial = 1,
-                       const std::string &name = "");
+                       const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Cast' to the model
@@ -150,7 +150,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     TensorId
     cast(const std::vector<TensorId>& args,
          const std::string& to,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Ceil' to the model
@@ -163,7 +163,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     ceil(const std::vector<TensorId>& args,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Clip' to the model
@@ -180,7 +180,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     clip(const std::vector<TensorId>& args,
          float max = 3.4028234663852886e+38f,
          float min = -3.4028234663852886e+38f,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Concat' to the model
@@ -195,7 +195,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     TensorId
     concat(const std::vector<TensorId>& args,
            int64_t axis,
-           const std::string &name = "");
+           const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Constant' to the model
@@ -208,7 +208,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     constant(             const ConstVoidData&  value,
-             const std::string &name = "");
+             const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Conv' to the model
@@ -231,7 +231,7 @@ class AiOnnxOpset6 : private DomainOpSet {
          const std::vector<int64_t>& kernel_shape = std::vector<int64_t>(),
          const std::vector<int64_t>& pads = std::vector<int64_t>(),
          const std::vector<int64_t>& strides = std::vector<int64_t>(),
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ConvTranspose' to the model
@@ -258,7 +258,7 @@ class AiOnnxOpset6 : private DomainOpSet {
                   const std::vector<int64_t>& output_shape = std::vector<int64_t>(),
                   const std::vector<int64_t>& pads = std::vector<int64_t>(),
                   const std::vector<int64_t>& strides = std::vector<int64_t>(),
-                  const std::string &name = "");
+                  const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'DepthToSpace' to the model
@@ -273,7 +273,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     TensorId
     depthtospace(const std::vector<TensorId>& args,
                  int64_t blocksize,
-                 const std::string &name = "");
+                 const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Div' to the model
@@ -290,7 +290,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     div(const std::vector<TensorId>& args,
         nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
         int64_t broadcast = 0,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Dropout' to the model
@@ -309,7 +309,7 @@ class AiOnnxOpset6 : private DomainOpSet {
             unsigned num_outputs,
             int64_t is_test = 0,
             float ratio = 0.5f,
-            const std::string &name = "");
+            const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Elu' to the model
@@ -324,7 +324,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     TensorId
     elu(const std::vector<TensorId>& args,
         float alpha = 1.0f,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Equal' to the model
@@ -341,7 +341,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     equal(const std::vector<TensorId>& args,
           nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
           int64_t broadcast = 0,
-          const std::string &name = "");
+          const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Exp' to the model
@@ -354,7 +354,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     exp(const std::vector<TensorId>& args,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Flatten' to the model
@@ -369,7 +369,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     TensorId
     flatten(const std::vector<TensorId>& args,
             int64_t axis = 1,
-            const std::string &name = "");
+            const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Floor' to the model
@@ -382,7 +382,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     floor(const std::vector<TensorId>& args,
-          const std::string &name = "");
+          const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'GRU' to the model
@@ -413,7 +413,7 @@ class AiOnnxOpset6 : private DomainOpSet {
         nonstd::optional<int64_t> hidden_size = nonstd::optional<int64_t>(),
         int64_t linear_before_reset = 0,
         int64_t output_sequence = 0,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Gather' to the model
@@ -428,7 +428,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     TensorId
     gather(const std::vector<TensorId>& args,
            int64_t axis = 0,
-           const std::string &name = "");
+           const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Gemm' to the model
@@ -451,7 +451,7 @@ class AiOnnxOpset6 : private DomainOpSet {
          int64_t broadcast = 0,
          int64_t transA = 0,
          int64_t transB = 0,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'GlobalAveragePool' to the model
@@ -464,7 +464,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     globalaveragepool(const std::vector<TensorId>& args,
-                      const std::string &name = "");
+                      const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'GlobalLpPool' to the model
@@ -479,7 +479,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     TensorId
     globallppool(const std::vector<TensorId>& args,
                  int64_t p = 2,
-                 const std::string &name = "");
+                 const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'GlobalMaxPool' to the model
@@ -492,7 +492,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     globalmaxpool(const std::vector<TensorId>& args,
-                  const std::string &name = "");
+                  const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Greater' to the model
@@ -509,7 +509,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     greater(const std::vector<TensorId>& args,
             nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
             int64_t broadcast = 0,
-            const std::string &name = "");
+            const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'HardSigmoid' to the model
@@ -526,7 +526,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     hardsigmoid(const std::vector<TensorId>& args,
                 float alpha = 0.2f,
                 float beta = 0.5f,
-                const std::string &name = "");
+                const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Hardmax' to the model
@@ -541,7 +541,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     TensorId
     hardmax(const std::vector<TensorId>& args,
             int64_t axis = 1,
-            const std::string &name = "");
+            const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Identity' to the model
@@ -554,7 +554,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     identity(const std::vector<TensorId>& args,
-             const std::string &name = "");
+             const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'If' to the model
@@ -573,7 +573,7 @@ class AiOnnxOpset6 : private DomainOpSet {
                unsigned num_outputs,
                const Builder& else_branch,
                const Builder& then_branch,
-               const std::string &name = "");
+               const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'InstanceNormalization' to the model
@@ -588,7 +588,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     TensorId
     instancenormalization(const std::vector<TensorId>& args,
                           float epsilon = 1e-05f,
-                          const std::string &name = "");
+                          const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'LRN' to the model
@@ -609,7 +609,7 @@ class AiOnnxOpset6 : private DomainOpSet {
         float alpha = 0.0001f,
         float beta = 0.75f,
         float bias = 1.0f,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'LSTM' to the model
@@ -640,7 +640,7 @@ class AiOnnxOpset6 : private DomainOpSet {
          nonstd::optional<int64_t> hidden_size = nonstd::optional<int64_t>(),
          int64_t input_forget = 0,
          int64_t output_sequence = 0,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'LeakyRelu' to the model
@@ -655,7 +655,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     TensorId
     leakyrelu(const std::vector<TensorId>& args,
               float alpha = 0.01f,
-              const std::string &name = "");
+              const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Less' to the model
@@ -672,7 +672,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     less(const std::vector<TensorId>& args,
          nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
          int64_t broadcast = 0,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Log' to the model
@@ -685,7 +685,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     log(const std::vector<TensorId>& args,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'LogSoftmax' to the model
@@ -700,7 +700,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     TensorId
     logsoftmax(const std::vector<TensorId>& args,
                int64_t axis = 1,
-               const std::string &name = "");
+               const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Loop' to the model
@@ -717,7 +717,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     loop(const std::vector<TensorId>& args,
          unsigned num_outputs,
          const Builder& body,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'LpNormalization' to the model
@@ -734,7 +734,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     lpnormalization(const std::vector<TensorId>& args,
                     int64_t axis = -1,
                     int64_t p = 2,
-                    const std::string &name = "");
+                    const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'LpPool' to the model
@@ -755,7 +755,7 @@ class AiOnnxOpset6 : private DomainOpSet {
            int64_t p = 2,
            const std::vector<int64_t>& pads = std::vector<int64_t>(),
            const std::vector<int64_t>& strides = std::vector<int64_t>(),
-           const std::string &name = "");
+           const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'MatMul' to the model
@@ -768,7 +768,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     matmul(const std::vector<TensorId>& args,
-           const std::string &name = "");
+           const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Max' to the model
@@ -781,7 +781,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     max(const std::vector<TensorId>& args,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'MaxPool' to the model
@@ -800,7 +800,7 @@ class AiOnnxOpset6 : private DomainOpSet {
             const std::vector<int64_t>& kernel_shape,
             const std::vector<int64_t>& pads = std::vector<int64_t>(),
             const std::vector<int64_t>& strides = std::vector<int64_t>(),
-            const std::string &name = "");
+            const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'MaxRoiPool' to the model
@@ -817,7 +817,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     maxroipool(const std::vector<TensorId>& args,
                const std::vector<int64_t>& pooled_shape,
                float spatial_scale = 1.0f,
-               const std::string &name = "");
+               const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Mean' to the model
@@ -830,7 +830,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     mean(const std::vector<TensorId>& args,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Min' to the model
@@ -843,7 +843,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     min(const std::vector<TensorId>& args,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Mul' to the model
@@ -860,7 +860,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     mul(const std::vector<TensorId>& args,
         nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
         int64_t broadcast = 0,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Neg' to the model
@@ -873,7 +873,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     neg(const std::vector<TensorId>& args,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Not' to the model
@@ -886,7 +886,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     logical_not(const std::vector<TensorId>& args,
-                const std::string &name = "");
+                const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Or' to the model
@@ -903,7 +903,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     logical_or(const std::vector<TensorId>& args,
                nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
                int64_t broadcast = 0,
-               const std::string &name = "");
+               const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'PRelu' to the model
@@ -916,7 +916,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     prelu(const std::vector<TensorId>& args,
-          const std::string &name = "");
+          const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Pad' to the model
@@ -935,7 +935,7 @@ class AiOnnxOpset6 : private DomainOpSet {
         const std::vector<int64_t>& pads,
         const std::string& mode = "constant",
         float value = 0.0f,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Pow' to the model
@@ -952,7 +952,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     pow(const std::vector<TensorId>& args,
         nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
         int64_t broadcast = 0,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'RNN' to the model
@@ -981,7 +981,7 @@ class AiOnnxOpset6 : private DomainOpSet {
         const std::string& direction = "forward",
         nonstd::optional<int64_t> hidden_size = nonstd::optional<int64_t>(),
         int64_t output_sequence = 0,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'RandomNormal' to the model
@@ -1002,7 +1002,7 @@ class AiOnnxOpset6 : private DomainOpSet {
                  float mean = 0.0f,
                  float scale = 1.0f,
                  nonstd::optional<float> seed = nonstd::optional<float>(),
-                 const std::string &name = "");
+                 const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'RandomNormalLike' to the model
@@ -1023,7 +1023,7 @@ class AiOnnxOpset6 : private DomainOpSet {
                      float mean = 0.0f,
                      float scale = 1.0f,
                      nonstd::optional<float> seed = nonstd::optional<float>(),
-                     const std::string &name = "");
+                     const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'RandomUniform' to the model
@@ -1044,7 +1044,7 @@ class AiOnnxOpset6 : private DomainOpSet {
                   float high = 1.0f,
                   float low = 0.0f,
                   nonstd::optional<float> seed = nonstd::optional<float>(),
-                  const std::string &name = "");
+                  const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'RandomUniformLike' to the model
@@ -1065,7 +1065,7 @@ class AiOnnxOpset6 : private DomainOpSet {
                       float high = 1.0f,
                       float low = 0.0f,
                       nonstd::optional<float> seed = nonstd::optional<float>(),
-                      const std::string &name = "");
+                      const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Reciprocal' to the model
@@ -1078,7 +1078,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     reciprocal(const std::vector<TensorId>& args,
-               const std::string &name = "");
+               const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ReduceL1' to the model
@@ -1095,7 +1095,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     reducel1(const std::vector<TensorId>& args,
              nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
              int64_t keepdims = 1,
-             const std::string &name = "");
+             const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ReduceL2' to the model
@@ -1112,7 +1112,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     reducel2(const std::vector<TensorId>& args,
              nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
              int64_t keepdims = 1,
-             const std::string &name = "");
+             const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ReduceLogSum' to the model
@@ -1129,7 +1129,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     reducelogsum(const std::vector<TensorId>& args,
                  nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
                  int64_t keepdims = 1,
-                 const std::string &name = "");
+                 const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ReduceLogSumExp' to the model
@@ -1146,7 +1146,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     reducelogsumexp(const std::vector<TensorId>& args,
                     nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
                     int64_t keepdims = 1,
-                    const std::string &name = "");
+                    const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ReduceMax' to the model
@@ -1163,7 +1163,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     reducemax(const std::vector<TensorId>& args,
               nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
               int64_t keepdims = 1,
-              const std::string &name = "");
+              const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ReduceMean' to the model
@@ -1180,7 +1180,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     reducemean(const std::vector<TensorId>& args,
                nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
                int64_t keepdims = 1,
-               const std::string &name = "");
+               const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ReduceMin' to the model
@@ -1197,7 +1197,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     reducemin(const std::vector<TensorId>& args,
               nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
               int64_t keepdims = 1,
-              const std::string &name = "");
+              const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ReduceProd' to the model
@@ -1214,7 +1214,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     reduceprod(const std::vector<TensorId>& args,
                nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
                int64_t keepdims = 1,
-               const std::string &name = "");
+               const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ReduceSum' to the model
@@ -1231,7 +1231,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     reducesum(const std::vector<TensorId>& args,
               nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
               int64_t keepdims = 1,
-              const std::string &name = "");
+              const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ReduceSumSquare' to the model
@@ -1248,7 +1248,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     reducesumsquare(const std::vector<TensorId>& args,
                     nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
                     int64_t keepdims = 1,
-                    const std::string &name = "");
+                    const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Relu' to the model
@@ -1261,7 +1261,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     relu(const std::vector<TensorId>& args,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Reshape' to the model
@@ -1274,7 +1274,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     reshape(const std::vector<TensorId>& args,
-            const std::string &name = "");
+            const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Selu' to the model
@@ -1291,7 +1291,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     selu(const std::vector<TensorId>& args,
          float alpha = 1.67326f,
          float gamma = 1.0507f,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Shape' to the model
@@ -1304,7 +1304,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     shape(const std::vector<TensorId>& args,
-          const std::string &name = "");
+          const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Sigmoid' to the model
@@ -1317,7 +1317,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     sigmoid(const std::vector<TensorId>& args,
-            const std::string &name = "");
+            const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Size' to the model
@@ -1330,7 +1330,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     size(const std::vector<TensorId>& args,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Slice' to the model
@@ -1349,7 +1349,7 @@ class AiOnnxOpset6 : private DomainOpSet {
           const std::vector<int64_t>& ends,
           const std::vector<int64_t>& starts,
           const std::vector<int64_t>& axes = std::vector<int64_t>(),
-          const std::string &name = "");
+          const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Softmax' to the model
@@ -1364,7 +1364,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     TensorId
     softmax(const std::vector<TensorId>& args,
             int64_t axis = 1,
-            const std::string &name = "");
+            const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Softplus' to the model
@@ -1377,7 +1377,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     softplus(const std::vector<TensorId>& args,
-             const std::string &name = "");
+             const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Softsign' to the model
@@ -1390,7 +1390,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     softsign(const std::vector<TensorId>& args,
-             const std::string &name = "");
+             const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'SpaceToDepth' to the model
@@ -1405,7 +1405,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     TensorId
     spacetodepth(const std::vector<TensorId>& args,
                  int64_t blocksize,
-                 const std::string &name = "");
+                 const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Split' to the model
@@ -1424,7 +1424,7 @@ class AiOnnxOpset6 : private DomainOpSet {
           unsigned num_outputs,
           int64_t axis = 0,
           const std::vector<int64_t>& split = std::vector<int64_t>(),
-          const std::string &name = "");
+          const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Sqrt' to the model
@@ -1437,7 +1437,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     sqrt(const std::vector<TensorId>& args,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Squeeze' to the model
@@ -1452,7 +1452,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     TensorId
     squeeze(const std::vector<TensorId>& args,
             const std::vector<int64_t>& axes = std::vector<int64_t>(),
-            const std::string &name = "");
+            const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Sub' to the model
@@ -1469,7 +1469,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     sub(const std::vector<TensorId>& args,
         nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
         int64_t broadcast = 0,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Sum' to the model
@@ -1482,7 +1482,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     sum(const std::vector<TensorId>& args,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Tanh' to the model
@@ -1495,7 +1495,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     tanh(const std::vector<TensorId>& args,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Tile' to the model
@@ -1508,7 +1508,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     tile(const std::vector<TensorId>& args,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'TopK' to the model
@@ -1525,7 +1525,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     topk(const std::vector<TensorId>& args,
          int64_t k,
          int64_t axis = -1,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Transpose' to the model
@@ -1540,7 +1540,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     TensorId
     transpose(const std::vector<TensorId>& args,
               const std::vector<int64_t>& perm = std::vector<int64_t>(),
-              const std::string &name = "");
+              const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Unsqueeze' to the model
@@ -1555,7 +1555,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     TensorId
     unsqueeze(const std::vector<TensorId>& args,
               const std::vector<int64_t>& axes,
-              const std::string &name = "");
+              const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Upsample' to the model
@@ -1574,7 +1574,7 @@ class AiOnnxOpset6 : private DomainOpSet {
              float height_scale,
              float width_scale,
              const std::string& mode = "nearest",
-             const std::string &name = "");
+             const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Xor' to the model
@@ -1591,7 +1591,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     logical_xor(const std::vector<TensorId>& args,
                 nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
                 int64_t broadcast = 0,
-                const std::string &name = "");
+                const popart::DebugContext& debugContext = {});
 
 };
 
@@ -1692,7 +1692,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
      */
     TensorId
     acos(const std::vector<TensorId>& args,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Add' to the model
@@ -1705,7 +1705,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
      */
     TensorId
     add(const std::vector<TensorId>& args,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'And' to the model
@@ -1718,7 +1718,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
      */
     TensorId
     logical_and(const std::vector<TensorId>& args,
-                const std::string &name = "");
+                const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Asin' to the model
@@ -1731,7 +1731,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
      */
     TensorId
     asin(const std::vector<TensorId>& args,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Atan' to the model
@@ -1744,7 +1744,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
      */
     TensorId
     atan(const std::vector<TensorId>& args,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'AveragePool' to the model
@@ -1765,7 +1765,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
                 int64_t count_include_pad = 0,
                 const std::vector<int64_t>& pads = std::vector<int64_t>(),
                 const std::vector<int64_t>& strides = std::vector<int64_t>(),
-                const std::string &name = "");
+                const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'BatchNormalization' to the model
@@ -1786,7 +1786,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
                        float epsilon = 1e-05f,
                        float momentum = 0.9f,
                        int64_t spatial = 1,
-                       const std::string &name = "");
+                       const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Cos' to the model
@@ -1799,7 +1799,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
      */
     TensorId
     cos(const std::vector<TensorId>& args,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Div' to the model
@@ -1812,7 +1812,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
      */
     TensorId
     div(const std::vector<TensorId>& args,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Dropout' to the model
@@ -1829,7 +1829,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
     dropout(const std::vector<TensorId>& args,
             unsigned num_outputs,
             float ratio = 0.5f,
-            const std::string &name = "");
+            const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Equal' to the model
@@ -1842,7 +1842,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
      */
     TensorId
     equal(const std::vector<TensorId>& args,
-          const std::string &name = "");
+          const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'GRU' to the model
@@ -1871,7 +1871,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
         const std::string& direction = "forward",
         nonstd::optional<int64_t> hidden_size = nonstd::optional<int64_t>(),
         int64_t linear_before_reset = 0,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Gemm' to the model
@@ -1892,7 +1892,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
          float beta = 1.0f,
          int64_t transA = 0,
          int64_t transB = 0,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Greater' to the model
@@ -1905,7 +1905,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
      */
     TensorId
     greater(const std::vector<TensorId>& args,
-            const std::string &name = "");
+            const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'LSTM' to the model
@@ -1934,7 +1934,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
          const std::string& direction = "forward",
          nonstd::optional<int64_t> hidden_size = nonstd::optional<int64_t>(),
          int64_t input_forget = 0,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Less' to the model
@@ -1947,7 +1947,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
      */
     TensorId
     less(const std::vector<TensorId>& args,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Mul' to the model
@@ -1960,7 +1960,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
      */
     TensorId
     mul(const std::vector<TensorId>& args,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Multinomial' to the model
@@ -1979,7 +1979,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
                 int64_t dtype = 6,
                 int64_t sample_size = 1,
                 nonstd::optional<float> seed = nonstd::optional<float>(),
-                const std::string &name = "");
+                const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Or' to the model
@@ -1992,7 +1992,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
      */
     TensorId
     logical_or(const std::vector<TensorId>& args,
-               const std::string &name = "");
+               const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'PRelu' to the model
@@ -2005,7 +2005,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
      */
     TensorId
     prelu(const std::vector<TensorId>& args,
-          const std::string &name = "");
+          const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Pow' to the model
@@ -2018,7 +2018,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
      */
     TensorId
     pow(const std::vector<TensorId>& args,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'RNN' to the model
@@ -2045,7 +2045,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
         nonstd::optional<float> clip = nonstd::optional<float>(),
         const std::string& direction = "forward",
         nonstd::optional<int64_t> hidden_size = nonstd::optional<int64_t>(),
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Sin' to the model
@@ -2058,7 +2058,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
      */
     TensorId
     sin(const std::vector<TensorId>& args,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Sub' to the model
@@ -2071,7 +2071,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
      */
     TensorId
     sub(const std::vector<TensorId>& args,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Tan' to the model
@@ -2084,7 +2084,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
      */
     TensorId
     tan(const std::vector<TensorId>& args,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Upsample' to the model
@@ -2101,7 +2101,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
     upsample(const std::vector<TensorId>& args,
              const std::vector<float>& scales,
              const std::string& mode = "nearest",
-             const std::string &name = "");
+             const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Xor' to the model
@@ -2114,7 +2114,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
      */
     TensorId
     logical_xor(const std::vector<TensorId>& args,
-                const std::string &name = "");
+                const popart::DebugContext& debugContext = {});
 
 };
 
@@ -2237,7 +2237,7 @@ class AiOnnxOpset8 : private AiOnnxOpset7 {
      */
     TensorId
     expand(const std::vector<TensorId>& args,
-           const std::string &name = "");
+           const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Max' to the model
@@ -2250,7 +2250,7 @@ class AiOnnxOpset8 : private AiOnnxOpset7 {
      */
     TensorId
     max(const std::vector<TensorId>& args,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'MaxPool' to the model
@@ -2273,7 +2273,7 @@ class AiOnnxOpset8 : private AiOnnxOpset7 {
             const std::vector<int64_t>& pads = std::vector<int64_t>(),
             int64_t storage_order = 0,
             const std::vector<int64_t>& strides = std::vector<int64_t>(),
-            const std::string &name = "");
+            const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Mean' to the model
@@ -2286,7 +2286,7 @@ class AiOnnxOpset8 : private AiOnnxOpset7 {
      */
     TensorId
     mean(const std::vector<TensorId>& args,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Min' to the model
@@ -2299,7 +2299,7 @@ class AiOnnxOpset8 : private AiOnnxOpset7 {
      */
     TensorId
     min(const std::vector<TensorId>& args,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Scan' to the model
@@ -2320,7 +2320,7 @@ class AiOnnxOpset8 : private AiOnnxOpset7 {
          const Builder& body,
          int64_t num_scan_inputs,
          const std::vector<int64_t>& directions = std::vector<int64_t>(),
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Sum' to the model
@@ -2333,7 +2333,7 @@ class AiOnnxOpset8 : private AiOnnxOpset7 {
      */
     TensorId
     sum(const std::vector<TensorId>& args,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
 };
 
@@ -2452,7 +2452,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
      */
     TensorId
     acosh(const std::vector<TensorId>& args,
-          const std::string &name = "");
+          const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Asinh' to the model
@@ -2465,7 +2465,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
      */
     TensorId
     asinh(const std::vector<TensorId>& args,
-          const std::string &name = "");
+          const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Atanh' to the model
@@ -2478,7 +2478,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
      */
     TensorId
     atanh(const std::vector<TensorId>& args,
-          const std::string &name = "");
+          const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'BatchNormalization' to the model
@@ -2497,7 +2497,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
                        unsigned num_outputs,
                        float epsilon = 1e-05f,
                        float momentum = 0.9f,
-                       const std::string &name = "");
+                       const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Cast' to the model
@@ -2512,7 +2512,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
     TensorId
     cast(const std::vector<TensorId>& args,
          const std::string& to,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Compress' to the model
@@ -2527,7 +2527,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
     TensorId
     compress(const std::vector<TensorId>& args,
              nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
-             const std::string &name = "");
+             const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Constant' to the model
@@ -2540,7 +2540,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
      */
     TensorId
     constant(             const ConstVoidData&  value,
-             const std::string &name = "");
+             const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ConstantOfShape' to the model
@@ -2555,7 +2555,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
     TensorId
     constantofshape(const std::vector<TensorId>& args,
                     const ConstVoidData&  value,
-                    const std::string &name = "");
+                    const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Cosh' to the model
@@ -2568,7 +2568,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
      */
     TensorId
     cosh(const std::vector<TensorId>& args,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Erf' to the model
@@ -2581,7 +2581,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
      */
     TensorId
     erf(const std::vector<TensorId>& args,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'EyeLike' to the model
@@ -2598,7 +2598,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
     eyelike(const std::vector<TensorId>& args,
             nonstd::optional<int64_t> dtype = nonstd::optional<int64_t>(),
             int64_t k = 0,
-            const std::string &name = "");
+            const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Flatten' to the model
@@ -2613,7 +2613,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
     TensorId
     flatten(const std::vector<TensorId>& args,
             int64_t axis = 1,
-            const std::string &name = "");
+            const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Gemm' to the model
@@ -2634,7 +2634,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
          float beta = 1.0f,
          int64_t transA = 0,
          int64_t transB = 0,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Greater' to the model
@@ -2647,7 +2647,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
      */
     TensorId
     greater(const std::vector<TensorId>& args,
-            const std::string &name = "");
+            const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'IsNaN' to the model
@@ -2660,7 +2660,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
      */
     TensorId
     isnan(const std::vector<TensorId>& args,
-          const std::string &name = "");
+          const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Less' to the model
@@ -2673,7 +2673,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
      */
     TensorId
     less(const std::vector<TensorId>& args,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'MatMul' to the model
@@ -2686,7 +2686,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
      */
     TensorId
     matmul(const std::vector<TensorId>& args,
-           const std::string &name = "");
+           const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'MaxUnpool' to the model
@@ -2705,7 +2705,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
               const std::vector<int64_t>& kernel_shape,
               const std::vector<int64_t>& pads = std::vector<int64_t>(),
               const std::vector<int64_t>& strides = std::vector<int64_t>(),
-              const std::string &name = "");
+              const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'MeanVarianceNormalization' to the model
@@ -2720,7 +2720,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
     TensorId
     meanvariancenormalization(const std::vector<TensorId>& args,
                               const std::vector<int64_t>& axes = std::vector<int64_t>(),
-                              const std::string &name = "");
+                              const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'NonZero' to the model
@@ -2733,7 +2733,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
      */
     TensorId
     nonzero(const std::vector<TensorId>& args,
-            const std::string &name = "");
+            const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'OneHot' to the model
@@ -2748,7 +2748,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
     TensorId
     onehot(const std::vector<TensorId>& args,
            int64_t axis = -1,
-           const std::string &name = "");
+           const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'PRelu' to the model
@@ -2761,7 +2761,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
      */
     TensorId
     prelu(const std::vector<TensorId>& args,
-          const std::string &name = "");
+          const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Scan' to the model
@@ -2788,7 +2788,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
          const std::vector<int64_t>& scan_input_directions = std::vector<int64_t>(),
          const std::vector<int64_t>& scan_output_axes = std::vector<int64_t>(),
          const std::vector<int64_t>& scan_output_directions = std::vector<int64_t>(),
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Scatter' to the model
@@ -2803,7 +2803,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
     TensorId
     scatter(const std::vector<TensorId>& args,
             int64_t axis = 0,
-            const std::string &name = "");
+            const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Shrink' to the model
@@ -2820,7 +2820,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
     shrink(const std::vector<TensorId>& args,
            float bias = 0.0f,
            float lambd = 0.5f,
-           const std::string &name = "");
+           const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Sign' to the model
@@ -2833,7 +2833,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
      */
     TensorId
     sign(const std::vector<TensorId>& args,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Sinh' to the model
@@ -2846,7 +2846,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
      */
     TensorId
     sinh(const std::vector<TensorId>& args,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'TfIdfVectorizer' to the model
@@ -2877,7 +2877,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
                     const std::vector<int64_t>& pool_int64s = std::vector<int64_t>(),
                     const std::vector<std::string>& pool_strings = std::vector<std::string>(),
                     const std::vector<float>& weights = std::vector<float>(),
-                    const std::string &name = "");
+                    const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Upsample' to the model
@@ -2892,7 +2892,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
     TensorId
     upsample(const std::vector<TensorId>& args,
              const std::string& mode = "nearest",
-             const std::string &name = "");
+             const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Where' to the model
@@ -2905,7 +2905,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
      */
     TensorId
     where(const std::vector<TensorId>& args,
-          const std::string &name = "");
+          const popart::DebugContext& debugContext = {});
 
 };
 
@@ -3058,7 +3058,7 @@ class AiOnnxOpset10 : private AiOnnxOpset9 {
                 int64_t count_include_pad = 0,
                 const std::vector<int64_t>& pads = std::vector<int64_t>(),
                 const std::vector<int64_t>& strides = std::vector<int64_t>(),
-                const std::string &name = "");
+                const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ConvInteger' to the model
@@ -3081,7 +3081,7 @@ class AiOnnxOpset10 : private AiOnnxOpset9 {
                 const std::vector<int64_t>& kernel_shape = std::vector<int64_t>(),
                 const std::vector<int64_t>& pads = std::vector<int64_t>(),
                 const std::vector<int64_t>& strides = std::vector<int64_t>(),
-                const std::string &name = "");
+                const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'DequantizeLinear' to the model
@@ -3094,7 +3094,7 @@ class AiOnnxOpset10 : private AiOnnxOpset9 {
      */
     TensorId
     dequantizelinear(const std::vector<TensorId>& args,
-                     const std::string &name = "");
+                     const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Dropout' to the model
@@ -3111,7 +3111,7 @@ class AiOnnxOpset10 : private AiOnnxOpset9 {
     dropout(const std::vector<TensorId>& args,
             unsigned num_outputs,
             float ratio = 0.5f,
-            const std::string &name = "");
+            const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'IsInf' to the model
@@ -3128,7 +3128,7 @@ class AiOnnxOpset10 : private AiOnnxOpset9 {
     isinf(const std::vector<TensorId>& args,
           int64_t detect_negative = 1,
           int64_t detect_positive = 1,
-          const std::string &name = "");
+          const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'MatMulInteger' to the model
@@ -3141,7 +3141,7 @@ class AiOnnxOpset10 : private AiOnnxOpset9 {
      */
     TensorId
     matmulinteger(const std::vector<TensorId>& args,
-                  const std::string &name = "");
+                  const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'MaxPool' to the model
@@ -3168,7 +3168,7 @@ class AiOnnxOpset10 : private AiOnnxOpset9 {
             const std::vector<int64_t>& pads = std::vector<int64_t>(),
             int64_t storage_order = 0,
             const std::vector<int64_t>& strides = std::vector<int64_t>(),
-            const std::string &name = "");
+            const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Mod' to the model
@@ -3183,7 +3183,7 @@ class AiOnnxOpset10 : private AiOnnxOpset9 {
     TensorId
     mod(const std::vector<TensorId>& args,
         int64_t fmod = 0,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'NonMaxSuppression' to the model
@@ -3198,7 +3198,7 @@ class AiOnnxOpset10 : private AiOnnxOpset9 {
     TensorId
     nonmaxsuppression(const std::vector<TensorId>& args,
                       int64_t center_point_box = 0,
-                      const std::string &name = "");
+                      const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'QLinearConv' to the model
@@ -3221,7 +3221,7 @@ class AiOnnxOpset10 : private AiOnnxOpset9 {
                 const std::vector<int64_t>& kernel_shape = std::vector<int64_t>(),
                 const std::vector<int64_t>& pads = std::vector<int64_t>(),
                 const std::vector<int64_t>& strides = std::vector<int64_t>(),
-                const std::string &name = "");
+                const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'QLinearMatMul' to the model
@@ -3234,7 +3234,7 @@ class AiOnnxOpset10 : private AiOnnxOpset9 {
      */
     TensorId
     qlinearmatmul(const std::vector<TensorId>& args,
-                  const std::string &name = "");
+                  const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'QuantizeLinear' to the model
@@ -3247,7 +3247,7 @@ class AiOnnxOpset10 : private AiOnnxOpset9 {
      */
     TensorId
     quantizelinear(const std::vector<TensorId>& args,
-                   const std::string &name = "");
+                   const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Resize' to the model
@@ -3262,7 +3262,7 @@ class AiOnnxOpset10 : private AiOnnxOpset9 {
     TensorId
     resize(const std::vector<TensorId>& args,
            const std::string& mode = "nearest",
-           const std::string &name = "");
+           const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ReverseSequence' to the model
@@ -3279,7 +3279,7 @@ class AiOnnxOpset10 : private AiOnnxOpset9 {
     reversesequence(const std::vector<TensorId>& args,
                     int64_t batch_axis = 1,
                     int64_t time_axis = 0,
-                    const std::string &name = "");
+                    const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'RoiAlign' to the model
@@ -3302,7 +3302,7 @@ class AiOnnxOpset10 : private AiOnnxOpset9 {
              int64_t output_width = 1,
              int64_t sampling_ratio = 0,
              float spatial_scale = 1.0f,
-             const std::string &name = "");
+             const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Slice' to the model
@@ -3315,7 +3315,7 @@ class AiOnnxOpset10 : private AiOnnxOpset9 {
      */
     TensorId
     slice(const std::vector<TensorId>& args,
-          const std::string &name = "");
+          const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'StringNormalizer' to the model
@@ -3336,7 +3336,7 @@ class AiOnnxOpset10 : private AiOnnxOpset9 {
                      int64_t is_case_sensitive = 0,
                      nonstd::optional<std::string> locale = std::string(),
                      const std::vector<std::string>& stopwords = std::vector<std::string>(),
-                     const std::string &name = "");
+                     const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ThresholdedRelu' to the model
@@ -3351,7 +3351,7 @@ class AiOnnxOpset10 : private AiOnnxOpset9 {
     TensorId
     thresholdedrelu(const std::vector<TensorId>& args,
                     float alpha = 1.0f,
-                    const std::string &name = "");
+                    const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'TopK' to the model
@@ -3366,7 +3366,7 @@ class AiOnnxOpset10 : private AiOnnxOpset9 {
     std::vector<TensorId>
     topk(const std::vector<TensorId>& args,
          int64_t axis = -1,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Upsample' to the model
@@ -3381,7 +3381,7 @@ class AiOnnxOpset10 : private AiOnnxOpset9 {
     TensorId
     upsample(const std::vector<TensorId>& args,
              const std::string& mode = "nearest",
-             const std::string &name = "");
+             const popart::DebugContext& debugContext = {});
 
 };
 
@@ -3505,7 +3505,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     argmax(const std::vector<TensorId>& args,
            int64_t axis = 0,
            int64_t keepdims = 1,
-           const std::string &name = "");
+           const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ArgMin' to the model
@@ -3522,7 +3522,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     argmin(const std::vector<TensorId>& args,
            int64_t axis = 0,
            int64_t keepdims = 1,
-           const std::string &name = "");
+           const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'AveragePool' to the model
@@ -3545,7 +3545,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
                 int64_t count_include_pad = 0,
                 const std::vector<int64_t>& pads = std::vector<int64_t>(),
                 const std::vector<int64_t>& strides = std::vector<int64_t>(),
-                const std::string &name = "");
+                const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'BitShift' to the model
@@ -3560,7 +3560,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     TensorId
     bitshift(const std::vector<TensorId>& args,
              const std::string& direction,
-             const std::string &name = "");
+             const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Clip' to the model
@@ -3573,7 +3573,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      */
     TensorId
     clip(const std::vector<TensorId>& args,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Compress' to the model
@@ -3588,7 +3588,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     TensorId
     compress(const std::vector<TensorId>& args,
              nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
-             const std::string &name = "");
+             const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Concat' to the model
@@ -3603,7 +3603,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     TensorId
     concat(const std::vector<TensorId>& args,
            int64_t axis,
-           const std::string &name = "");
+           const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ConcatFromSequence' to the model
@@ -3620,7 +3620,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     concatfromsequence(const std::vector<TensorId>& args,
                        int64_t axis,
                        int64_t new_axis = 0,
-                       const std::string &name = "");
+                       const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Constant' to the model
@@ -3635,7 +3635,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      TensorId
      constant(const ConstVoidData&  value,
               bool is_value_sparse = false,
-              const std::string &name = "");
+              const DebugContext &debugContext = {});
 
     /**
      * Add the 'Conv' to the model
@@ -3658,7 +3658,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
          const std::vector<int64_t>& kernel_shape = std::vector<int64_t>(),
          const std::vector<int64_t>& pads = std::vector<int64_t>(),
          const std::vector<int64_t>& strides = std::vector<int64_t>(),
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ConvTranspose' to the model
@@ -3685,7 +3685,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
                   const std::vector<int64_t>& output_shape = std::vector<int64_t>(),
                   const std::vector<int64_t>& pads = std::vector<int64_t>(),
                   const std::vector<int64_t>& strides = std::vector<int64_t>(),
-                  const std::string &name = "");
+                  const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'CumSum' to the model
@@ -3702,7 +3702,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     cumsum(const std::vector<TensorId>& args,
            int64_t exclusive = 0,
            int64_t reverse = 0,
-           const std::string &name = "");
+           const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'DepthToSpace' to the model
@@ -3719,7 +3719,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     depthtospace(const std::vector<TensorId>& args,
                  int64_t blocksize,
                  const std::string& mode = "DCR",
-                 const std::string &name = "");
+                 const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Det' to the model
@@ -3732,7 +3732,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      */
     TensorId
     det(const std::vector<TensorId>& args,
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'DynamicQuantizeLinear' to the model
@@ -3745,7 +3745,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      */
     std::vector<TensorId>
     dynamicquantizelinear(const std::vector<TensorId>& args,
-                          const std::string &name = "");
+                          const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Equal' to the model
@@ -3758,7 +3758,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      */
     TensorId
     equal(const std::vector<TensorId>& args,
-          const std::string &name = "");
+          const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Flatten' to the model
@@ -3773,7 +3773,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     TensorId
     flatten(const std::vector<TensorId>& args,
             int64_t axis = 1,
-            const std::string &name = "");
+            const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Gather' to the model
@@ -3788,7 +3788,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     TensorId
     gather(const std::vector<TensorId>& args,
            int64_t axis = 0,
-           const std::string &name = "");
+           const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'GatherElements' to the model
@@ -3803,7 +3803,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     TensorId
     gatherelements(const std::vector<TensorId>& args,
                    int64_t axis = 0,
-                   const std::string &name = "");
+                   const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'GatherND' to the model
@@ -3816,7 +3816,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      */
     TensorId
     gathernd(const std::vector<TensorId>& args,
-             const std::string &name = "");
+             const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Gemm' to the model
@@ -3837,7 +3837,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
          float beta = 1.0f,
          int64_t transA = 0,
          int64_t transB = 0,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Hardmax' to the model
@@ -3852,7 +3852,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     TensorId
     hardmax(const std::vector<TensorId>& args,
             int64_t axis = 1,
-            const std::string &name = "");
+            const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'If' to the model
@@ -3871,7 +3871,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
                unsigned num_outputs,
                const Builder& else_branch,
                const Builder& then_branch,
-               const std::string &name = "");
+               const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'LogSoftmax' to the model
@@ -3886,7 +3886,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     TensorId
     logsoftmax(const std::vector<TensorId>& args,
                int64_t axis = 1,
-               const std::string &name = "");
+               const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Loop' to the model
@@ -3903,7 +3903,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     loop(const std::vector<TensorId>& args,
          unsigned num_outputs,
          const Builder& body,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'LpPool' to the model
@@ -3924,7 +3924,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
            int64_t p = 2,
            const std::vector<int64_t>& pads = std::vector<int64_t>(),
            const std::vector<int64_t>& strides = std::vector<int64_t>(),
-           const std::string &name = "");
+           const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'MaxPool' to the model
@@ -3951,7 +3951,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
             const std::vector<int64_t>& pads = std::vector<int64_t>(),
             int64_t storage_order = 0,
             const std::vector<int64_t>& strides = std::vector<int64_t>(),
-            const std::string &name = "");
+            const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'MaxUnpool' to the model
@@ -3970,7 +3970,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
               const std::vector<int64_t>& kernel_shape,
               const std::vector<int64_t>& pads = std::vector<int64_t>(),
               const std::vector<int64_t>& strides = std::vector<int64_t>(),
-              const std::string &name = "");
+              const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'NonMaxSuppression' to the model
@@ -3985,7 +3985,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     TensorId
     nonmaxsuppression(const std::vector<TensorId>& args,
                       int64_t center_point_box = 0,
-                      const std::string &name = "");
+                      const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'OneHot' to the model
@@ -4000,7 +4000,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     TensorId
     onehot(const std::vector<TensorId>& args,
            int64_t axis = -1,
-           const std::string &name = "");
+           const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Pad' to the model
@@ -4015,7 +4015,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     TensorId
     pad(const std::vector<TensorId>& args,
         const std::string& mode = "constant",
-        const std::string &name = "");
+        const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Range' to the model
@@ -4028,7 +4028,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      */
     TensorId
     range(const std::vector<TensorId>& args,
-          const std::string &name = "");
+          const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ReduceL1' to the model
@@ -4045,7 +4045,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     reducel1(const std::vector<TensorId>& args,
              nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
              int64_t keepdims = 1,
-             const std::string &name = "");
+             const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ReduceL2' to the model
@@ -4062,7 +4062,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     reducel2(const std::vector<TensorId>& args,
              nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
              int64_t keepdims = 1,
-             const std::string &name = "");
+             const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ReduceLogSum' to the model
@@ -4079,7 +4079,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     reducelogsum(const std::vector<TensorId>& args,
                  nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
                  int64_t keepdims = 1,
-                 const std::string &name = "");
+                 const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ReduceLogSumExp' to the model
@@ -4096,7 +4096,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     reducelogsumexp(const std::vector<TensorId>& args,
                     nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
                     int64_t keepdims = 1,
-                    const std::string &name = "");
+                    const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ReduceMax' to the model
@@ -4113,7 +4113,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     reducemax(const std::vector<TensorId>& args,
               nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
               int64_t keepdims = 1,
-              const std::string &name = "");
+              const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ReduceMean' to the model
@@ -4130,7 +4130,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     reducemean(const std::vector<TensorId>& args,
                nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
                int64_t keepdims = 1,
-               const std::string &name = "");
+               const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ReduceMin' to the model
@@ -4147,7 +4147,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     reducemin(const std::vector<TensorId>& args,
               nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
               int64_t keepdims = 1,
-              const std::string &name = "");
+              const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ReduceProd' to the model
@@ -4164,7 +4164,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     reduceprod(const std::vector<TensorId>& args,
                nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
                int64_t keepdims = 1,
-               const std::string &name = "");
+               const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ReduceSum' to the model
@@ -4181,7 +4181,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     reducesum(const std::vector<TensorId>& args,
               nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
               int64_t keepdims = 1,
-              const std::string &name = "");
+              const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ReduceSumSquare' to the model
@@ -4198,7 +4198,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     reducesumsquare(const std::vector<TensorId>& args,
                     nonstd::optional<std::vector<int64_t>> axes = nonstd::optional<std::vector<int64_t>>(),
                     int64_t keepdims = 1,
-                    const std::string &name = "");
+                    const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Resize' to the model
@@ -4223,7 +4223,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
            float extrapolation_value = 0.0f,
            const std::string& mode = "nearest",
            const std::string& nearest_mode = "round_prefer_floor",
-           const std::string &name = "");
+           const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Round' to the model
@@ -4236,7 +4236,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      */
     TensorId
     round(const std::vector<TensorId>& args,
-          const std::string &name = "");
+          const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Scan' to the model
@@ -4263,7 +4263,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
          const std::vector<int64_t>& scan_input_directions = std::vector<int64_t>(),
          const std::vector<int64_t>& scan_output_axes = std::vector<int64_t>(),
          const std::vector<int64_t>& scan_output_directions = std::vector<int64_t>(),
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Scatter' to the model
@@ -4278,7 +4278,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     TensorId
     scatter(const std::vector<TensorId>& args,
             int64_t axis = 0,
-            const std::string &name = "");
+            const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ScatterElements' to the model
@@ -4293,7 +4293,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     TensorId
     scatterelements(const std::vector<TensorId>& args,
                     int64_t axis = 0,
-                    const std::string &name = "");
+                    const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'ScatterND' to the model
@@ -4306,7 +4306,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      */
     TensorId
     scatternd(const std::vector<TensorId>& args,
-              const std::string &name = "");
+              const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'SequenceAt' to the model
@@ -4319,7 +4319,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      */
     TensorId
     sequenceat(const std::vector<TensorId>& args,
-               const std::string &name = "");
+               const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'SequenceConstruct' to the model
@@ -4332,7 +4332,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      */
     TensorId
     sequenceconstruct(const std::vector<TensorId>& args,
-                      const std::string &name = "");
+                      const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'SequenceEmpty' to the model
@@ -4345,7 +4345,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      */
     TensorId
     sequenceempty(                  nonstd::optional<int64_t> dtype = nonstd::optional<int64_t>(),
-                  const std::string &name = "");
+                  const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'SequenceErase' to the model
@@ -4358,7 +4358,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      */
     TensorId
     sequenceerase(const std::vector<TensorId>& args,
-                  const std::string &name = "");
+                  const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'SequenceInsert' to the model
@@ -4371,7 +4371,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      */
     TensorId
     sequenceinsert(const std::vector<TensorId>& args,
-                   const std::string &name = "");
+                   const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'SequenceLength' to the model
@@ -4384,7 +4384,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      */
     TensorId
     sequencelength(const std::vector<TensorId>& args,
-                   const std::string &name = "");
+                   const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Slice' to the model
@@ -4397,7 +4397,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
      */
     TensorId
     slice(const std::vector<TensorId>& args,
-          const std::string &name = "");
+          const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Softmax' to the model
@@ -4412,7 +4412,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     TensorId
     softmax(const std::vector<TensorId>& args,
             int64_t axis = 1,
-            const std::string &name = "");
+            const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Split' to the model
@@ -4431,7 +4431,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
           unsigned num_outputs,
           int64_t axis = 0,
           const std::vector<int64_t>& split = std::vector<int64_t>(),
-          const std::string &name = "");
+          const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'SplitToSequence' to the model
@@ -4448,7 +4448,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     splittosequence(const std::vector<TensorId>& args,
                     int64_t axis = 0,
                     int64_t keepdims = 1,
-                    const std::string &name = "");
+                    const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Squeeze' to the model
@@ -4463,7 +4463,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     TensorId
     squeeze(const std::vector<TensorId>& args,
             const std::vector<int64_t>& axes = std::vector<int64_t>(),
-            const std::string &name = "");
+            const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'TopK' to the model
@@ -4482,7 +4482,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
          int64_t axis = -1,
          int64_t largest = 1,
          int64_t sorted = 1,
-         const std::string &name = "");
+         const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Unique' to the model
@@ -4501,7 +4501,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
            unsigned num_outputs,
            nonstd::optional<int64_t> axis = nonstd::optional<int64_t>(),
            int64_t sorted = 1,
-           const std::string &name = "");
+           const popart::DebugContext& debugContext = {});
 
     /**
      * Add the 'Unsqueeze' to the model
@@ -4516,7 +4516,7 @@ class AiOnnxOpset11 : private AiOnnxOpset10 {
     TensorId
     unsqueeze(const std::vector<TensorId>& args,
               const std::vector<int64_t>& axes,
-              const std::string &name = "");
+              const popart::DebugContext& debugContext = {});
 
 };
 

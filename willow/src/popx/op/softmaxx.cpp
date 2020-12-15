@@ -53,15 +53,17 @@ SoftmaxOpx::SoftmaxOpx(Op *op, Devicex *devicex)
 poplar::Tensor SoftmaxComputex::outplace(poplar::program::Sequence &p,
                                          poplar::Graph &g,
                                          const poplar::Tensor &t,
+                                         const poplar::DebugNameAndId &dnai,
                                          const std::string &s) const {
-  auto outTensor = cloneNcopy(p, g, t);
-  inplace(p, g, outTensor, s);
+  auto outTensor = cloneNcopy(p, g, t, dnai);
+  inplace(p, g, outTensor, dnai, s);
   return outTensor;
 }
 
 void SoftmaxComputex::inplace(poplar::program::Sequence &p,
                               poplar::Graph &g,
                               const poplar::Tensor &tIn,
+                              const poplar::DebugNameAndId &dnai,
                               const std::string &dbs) const {
 
   auto input = coerceTo2D(tIn, axis);
@@ -76,7 +78,7 @@ void SoftmaxComputex::inplace(poplar::program::Sequence &p,
     nlType = popnn::NonLinearityType::SOFTMAX_STABLE;
   }
 
-  popnn::nonLinearityInPlace(g, nlType, input, p, dbs);
+  popnn::nonLinearityInPlace(g, nlType, input, p, {dnai, dbs});
 }
 
 poplar::Tensor SoftmaxComputex::reshape(const poplar::Tensor &t) const {
@@ -278,8 +280,7 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                                             debugPrefix("add"));
 
   // Create an epsilon value
-  poplar::Tensor eps =
-      getConst(probs.elementType(), {1}, 1.0e-7, debugPrefix("epsilon"));
+  poplar::Tensor eps = getConst(probs.elementType(), {1}, 1.0e-7, "epsilon");
   // Add eps to reduction to make sure it does not have any 0's and log it,
   popops::mapInPlace(graph(),
                      pe::Log(pe::Add(pe::_1, pe::_2)),

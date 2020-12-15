@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include <popart/debugcontext.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/op/loss.hpp>
@@ -71,13 +72,14 @@ public:
    * \param args A vector of input tensors (x, scale, bias)
    * \param num_groups The number of groups to separate the channels into
    * \param epsilon The epsilon value to use to avoid division by zero.
-   * \param name Optional identifier for operation
+   * \param debugContext Optional debug context
    * \return A vector of tensors (y, mean, var)
    */
-  std::vector<TensorId> groupnormalization(const std::vector<TensorId> &args,
-                                           int64_t num_groups,
-                                           float epsilon           = 1e-05f,
-                                           const std::string &name = {});
+  std::vector<TensorId>
+  groupnormalization(const std::vector<TensorId> &args,
+                     int64_t num_groups,
+                     float epsilon                    = 1e-05f,
+                     const DebugContext &debugContext = {});
 
   /**
    * Add a multi-convolution to the model
@@ -126,7 +128,7 @@ public:
    * \param planType Run convolutions in parallel or series.
    * \param perConvReservedTiles Tiles to reserve per convolution when planning.
    * \param cycleBackOff Cycle back off proportion, [0, 1).
-   * \param name Optional identifier for the operation
+   * \param debugContext Optional debug context
    *
    * All input vectors must be either empty, or equal in length to
    * the number of convolutions. Note that groups for each convolution are
@@ -145,7 +147,7 @@ public:
             const nonstd::optional<std::string> planType     = nonstd::nullopt,
             const nonstd::optional<int> perConvReservedTiles = nonstd::nullopt,
             const nonstd::optional<float> cycleBackOff       = nonstd::nullopt,
-            const std::string &name                          = {});
+            const DebugContext &debugContext                 = {});
 
   /**
    * Add a subsample operation to the model
@@ -156,12 +158,12 @@ public:
    *
    * \param args Tensor T
    * \param strides The strides
-   * \param name Optional identifier for operation
+   * \param debugContext Optional debug context
    * \return The name of the result tensor
    */
   TensorId subsample(const std::vector<TensorId> &args,
                      const std::vector<int64_t> &strides,
-                     const std::string &name = {});
+                     const DebugContext &debugContext = {});
 
   /**
    * Add a print tensor operation to the model
@@ -169,18 +171,19 @@ public:
    * This is a poplar extension
    */
   TensorId printtensor(const std::vector<TensorId> &args,
-                       int64_t print_gradient   = 1,
-                       const std::string &name  = {},
-                       const std::string &title = {});
+                       int64_t print_gradient           = 1,
+                       const DebugContext &debugContext = {},
+                       const std::string &title         = {});
 
   /**
    * Add a nop operation to the model
    *
    * \param args Tensor T
-   * \param name Optional identifier for operation
+   * \param debugContext Optional debug context
    * \return The name of the result tensor
    */
-  TensorId nop(const std::vector<TensorId> &args, const std::string &name = {});
+  TensorId nop(const std::vector<TensorId> &args,
+               const DebugContext &debugContext = {});
 
   /**
    * Add a scale operation to the model
@@ -190,13 +193,12 @@ public:
    *
    * \param args Tensor T
    * \param scale The scale to apply
-   * \param name Optional identifier for operation
+   * \param debugContext Optional debug context
    * \return The name of the result tensor
    */
   TensorId scale(const std::vector<TensorId> &args,
                  float scale,
-                 const std::string &name = {});
-
+                 const DebugContext &debugContext = {});
   /**
    * Add a scaledadd operation to the model
    * X = scale0 * T0 + scale1 * T1
@@ -204,17 +206,17 @@ public:
    * \param args Tensor {T0, T1, scale0, scale1}
    * \param scale0 The scale to apply (if no scale0 tensor is supplied)
    * \param scale1 The scale to apply (if no scale1 tensor is supplied)
-   * \param name Optional identifier for operation
+   * \param debugContext Optional debug context
    * \return The name of the result tensor
    */
   TensorId scaledadd(const std::vector<TensorId> &args,
                      float scale0,
                      float scale1,
-                     const std::string &name = {});
+                     const DebugContext &debugContext = {});
 
   std::vector<TensorId> lstm(const std::vector<TensorId> &args,
                              int64_t outputFullSequence,
-                             const std::string &name = {});
+                             const DebugContext &debugContext = {});
   /**
    * Add a gelu operation to the model
    *
@@ -222,22 +224,22 @@ public:
    * operator that has been removed
    *
    * \param args Tensor T
-   * \param name Optional identifier for operation
+   * \param debugContext Optional debug context
    * \return The name of the result tensor
    */
   TensorId gelu(const std::vector<TensorId> &args,
-                const std::string &name = {});
+                const DebugContext &debugContext = {});
 
   /**
    * Add a detach operation to the model
    *
    *
    * \param args Tensor T Input tensor.
-   * \param name Optional identifier for operation.
+   * \param debugContext Optional debug context
    * \return The name of the result tensor
    */
   TensorId detach(const std::vector<TensorId> &args,
-                  const std::string &name = {});
+                  const DebugContext &debugContext = {});
 
   /**
    * Add the 'DepthToSpace' to the model
@@ -257,13 +259,13 @@ public:
    * \param mode Specifies how the data is rearranged
          "DCR": depth-column-row order
          "CRD": column-row-depth order
-   * \param name Optional identifier for the operation
+   * \param debugContext Optional debug context
    * \return A tensor which is a rearrangement of the input tensor
    */
   TensorId depthtospace(const std::vector<TensorId> &args,
                         int64_t blocksize,
-                        const std::string &mode = "DCR",
-                        const std::string &name = "");
+                        const std::string &mode          = "DCR",
+                        const DebugContext &debugContext = {});
 
   /**
    * Add the 'Round' to the model
@@ -272,11 +274,11 @@ public:
    * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Round
    *
    * \param args List of input tensor ids
-   * \param name Optional identifier for the operation
+   * \param debugContext Optional debug context
    * \return The normalized output tensor ids
    */
   TensorId round(const std::vector<TensorId> &args,
-                 const std::string &name = {});
+                 const DebugContext &debugContext = {});
 
   /**
    * Add an init operation to the model
@@ -285,28 +287,27 @@ public:
    * \param data_type Data type to initialise tensor with
    * \param init_type Mode of tensor initialisations
    * \param batch_axis Axis relative to batch size
-   * \param name Optional identifier for operation
+   * \param debugContext Optional debug context
    * \return The name of the result tensor
    */
   TensorId init(Attributes::Ints shape,
                 Attributes::Int data_type,
                 Attributes::Int init_type,
                 Attributes::Int batch_axis,
-                const std::string &name = {});
-
+                const DebugContext &debugContext = {});
   /**
    * Add an init operation to the model
    *
    * \param shape Shape of the tensor to initialise
    * \param data_type Data type to initialise tensor with
    * \param init_type Mode of tensor initialisations
-   * \param name Optional identifier for operation
+   * \param debugContext Optional debug context
    * \return The name of the result tensor
    */
   TensorId init(Attributes::Ints shape,
                 Attributes::Int data_type,
                 Attributes::Int init_type,
-                const std::string &name = {});
+                const DebugContext &debugContext = {});
 
   /**
    * Add a dynamic slice operation to the model
@@ -316,15 +317,14 @@ public:
    * \param args [tensor, offset]
    * \param axes Axes along which to slice
    * \param sizes Size of the slice in each axis
-   * \param name Optional identifier for operation
+   * \param debugContext Optional debug context
    * \return The name of the result tensor
    */
   TensorId dynamicslice(const std::vector<TensorId> &args,
                         Attributes::Ints axes,
                         Attributes::Ints sizes,
                         Attributes::Int noOverlap,
-                        const std::string &name = {});
-
+                        const DebugContext &debugContext = {});
   /**
    * Add a dynamic update operation to the model
    *
@@ -334,15 +334,14 @@ public:
    * \param args [tensor, offset, slice]
    * \param axes Axes along which to update
    * \param sizes Size of the slice in each axis
-   * \param name Optional identifier for operation
+   * \param debugContext Optional debug context
    * \return The name of the result tensor
    */
   TensorId dynamicupdate(const std::vector<TensorId> &args,
                          Attributes::Ints axes,
                          Attributes::Ints sizes,
                          Attributes::Int noOverlap,
-                         const std::string &name = {});
-
+                         const DebugContext &debugContext = {});
   /**
    * Add a dynamic zero operation to the model
    *
@@ -352,14 +351,13 @@ public:
    * \param args [tensor, offset]
    * \param axes Axes along which to erase
    * \param sizes Size of the slice in each axis
-   * \param name Optional identifier for operation
+   * \param debugContext Optional debug context
    * \return The name of the result tensor
    */
   TensorId dynamiczero(const std::vector<TensorId> &args,
                        Attributes::Ints axes,
                        Attributes::Ints sizes,
-                       const std::string &name = {});
-
+                       const DebugContext &debugContext = {});
   /**
    * Add a dynamic add operation to the model
    *
@@ -369,13 +367,13 @@ public:
    * \param args [tensor, offset, slice]
    * \param axes Axes along which to add
    * \param sizes Size of the slice in each axis
-   * \param name Optional identifier for operation
+   * \param debugContext Optional debug context
    * \return The name of the result tensor
    */
   TensorId dynamicadd(const std::vector<TensorId> &args,
                       Attributes::Ints axes,
                       Attributes::Ints sizes,
-                      const std::string &name = {});
+                      const DebugContext &debugContext = {});
 
   /**
    * Add a call operation to the model
@@ -385,13 +383,13 @@ public:
    *
    * \param args Tensor T
    * \param callee The subgraph to call into
-   * \param name Optional identifier for operation
+   * \param debugContext Optional debug context
    * \return A vector of tensors; the subgraph outputs
    */
   std::vector<TensorId> call(const std::vector<TensorId> &args,
                              unsigned num_outputs,
                              const Builder &callee,
-                             const std::string &name = {});
+                             const DebugContext &debugContext = {});
 
   /**
    * Add a replicated all reduce operation to the model
@@ -400,11 +398,11 @@ public:
    * the builder
    *
    * \param args Tensor T to reduce across
-   * \param name Optional identifier for operation
+   * \param debugContext Optional debug context
    * \return The name of the result tensor
    */
   TensorId replicatedallreduce(const std::vector<TensorId> &args,
-                               const std::string &name = {});
+                               const DebugContext &debugContext = {});
 
   /**
    * Add an l1 loss operation to the model
@@ -415,14 +413,13 @@ public:
    * \param args [tensor]
    * \param lambda Scale factor of L1 loss
    * \param reduction Type of reduction to perform on the individual losses
-   * \param name Optional identifier for operation
+   * \param debugContext Optional debug context
    * \return The name of the result tensor
    */
   TensorId l1loss(const std::vector<TensorId> &args,
                   const float lambda,
-                  const ReductionType reduction = ReductionType::Mean,
-                  const std::string &name       = {});
-
+                  const ReductionType reduction    = ReductionType::Mean,
+                  const DebugContext &debugContext = {});
   /**
    * Add a negative log-likelihood loss operation to the model
    *
@@ -435,14 +432,15 @@ public:
    * \param inputIsLogProbability Specifies if the input tensor contains
    *                              log-probabilities or raw probabilities
    *                              (false, default).
-   * \param name Optional identifier for operation
+   * \param debugContext Optional debug context
    * \return The name of the result tensor
    */
+
   TensorId nllloss(const std::vector<TensorId> &args,
                    const ReductionType reduction = ReductionType::Mean,
                    const nonstd::optional<int> ignoreIndex = nonstd::nullopt,
                    bool inputIsLogProbability              = false,
-                   const std::string &name                 = {});
+                   const DebugContext &debugContext        = {});
 
   /**
    * Add an identity loss operation to the model
@@ -452,11 +450,11 @@ public:
    * \param args [tensor]
    * \param reduction Type of reduction to perform on the individual losses
    * \param name Optional identifier for operation
-   * \return The name of the result tensor
+   * \param debugContext Optional debug context
    */
   TensorId identityloss(const std::vector<TensorId> &args,
-                        const ReductionType reduction = ReductionType::Mean,
-                        const std::string &name       = {});
+                        const ReductionType reduction    = ReductionType::Mean,
+                        const DebugContext &debugContext = {});
 
   /**
    * Add a shaped dropout operation to the model
@@ -475,8 +473,8 @@ public:
    */
   TensorId shapeddropout(const std::vector<TensorId> &args,
                          const std::vector<int64_t> &shape,
-                         float ratio             = 0.5f,
-                         const std::string &name = {});
+                         float ratio                      = 0.5f,
+                         const DebugContext &debugContext = {});
 
   /**
    * Add an atan2 operation to the model
@@ -493,7 +491,7 @@ public:
    * \return The name of the result tensor containing element wise theta values
    */
   TensorId atan2(const std::vector<TensorId> &args,
-                 const std::string &name = {});
+                 const DebugContext &debugContext = {});
 
   /**
    * Add expm1 operation to the model
@@ -506,7 +504,7 @@ public:
    * \return The name of the result tensor
    */
   TensorId expm1(const std::vector<TensorId> &args,
-                 const std::string &name = {});
+                 const DebugContext &debugContext = {});
 
   /**
    * Add log1p operation to the model
@@ -520,7 +518,7 @@ public:
    * \return The name of the result tensor
    */
   TensorId log1p(const std::vector<TensorId> &args,
-                 const std::string &name = {});
+                 const DebugContext &debugContext = {});
 
   /**
    * Add reshape operation to the model.
@@ -535,7 +533,7 @@ public:
    */
   TensorId reshape(const TensorId &arg,
                    const Attributes::Ints &shape,
-                   const std::string &name = {});
+                   const DebugContext &debugContext = {});
 };
 
 /**
@@ -572,31 +570,31 @@ public:
    * Add a new input tensor to the model
    *
    * \param tensorInfo The shape and type of the input tensor
-   * \param debugPrefix A string to prepend to the name of the tensor
+   * \param debugContext Optional debug information
    * \return The unique name of the input tensor
    */
   TensorId addInputTensor(const TensorInfo &tensorInfo,
-                          const std::string &debugPrefix = "");
+                          const popart::DebugContext &debugContext = {});
 
   /**
    * Add a new input tensor to the model
    *
    * \param dataType The type of the input tensor
    * \param shape The shape of the input tensor
-   * \param debugPrefix A string to prepend to the name of the tensor
+   * \param debugContext Optional debug information
    * \return The unique name of the input tensor
    */
   TensorId addInputTensor(const std::string &dataType,
                           const Shape &shape,
-                          const std::string &debugPrefix = "");
+                          const popart::DebugContext &debugContext = {});
 
   /**
    * Add a new input tensor without a type or shape to the model
    *
-   * \param debugPrefix A string to prepend to the name of the tensor
+   * \param debugContext Optional debug information
    * \return The unique name of the input tensor
    */
-  TensorId addUntypedInputTensor(const std::string &debugPrefix = "");
+  TensorId addUntypedInputTensor(const popart::DebugContext &debugContext = {});
 
   /**
    * Add a new named input tensor to the model
@@ -611,11 +609,12 @@ public:
    * Add a new preinitialized input tensor to the model
    *
    * \param initData The initial data of the input tensor
-   * \param debugPrefix A string to prepend to the name of the tensor
+   * \param debugContext Optional debug information
    * \return The unique name of the input tensor
    */
-  TensorId addInitializedInputTensor(const ConstVoidData &initData,
-                                     const std::string &debugPrefix = "");
+  TensorId
+  addInitializedInputTensor(const ConstVoidData &initData,
+                            const popart::DebugContext &debugContext = {});
 
   /**
    * Adds one of the outputs from a node in the graph into the list of output
@@ -673,7 +672,7 @@ public:
            const std::vector<TensorId> &inputs,
            const unsigned numOutputs,
            const std::map<std::string, popart::any> &attributes,
-           const std::string &name = "");
+           const DebugContext &debugContext = {});
 
   // Add a custom op to the model
   // provide the name of the output tensors to use
@@ -682,7 +681,7 @@ public:
                 const std::vector<TensorId> &inputs,
                 const std::vector<TensorId> &outputs,
                 const std::map<std::string, popart::any> &attributes,
-                const std::string &name = "");
+                const DebugContext &debugContext = {});
 
   /**
    * This is a helper function that will add a constant and a reshape using the

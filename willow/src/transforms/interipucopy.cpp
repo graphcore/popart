@@ -130,6 +130,15 @@ void InterIpuCopy::insertIpuCopy(Graph &graph,
 
   Op::Settings settings(graph, "");
 
+  // Link debug information to fromOp
+  settings.debugInfoId = fromOp->debugInfo.getId();
+  /*
+  @SL@
+  // Set the name of the output of the copy based on the output name of the
+  // fromOp
+  settings.name = fromOp->settings.name;
+  */
+
   // Inherit important settings from the fromOp
   // Tensor caching is inherited
   settings.tensorLocation = fromOp->getSettings().tensorLocation;

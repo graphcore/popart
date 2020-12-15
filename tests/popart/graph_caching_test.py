@@ -670,6 +670,8 @@ def test_outlining_bca3():
     summaryReport = session.getSummaryReport()
     computeSets = tu.get_compute_sets_from_report(summaryReport)
 
+    print("======================================")
+    print(computeSets)
     num_matmuls = tu.get_compute_set_regex_count(
         r'^.+/matmulGrouped/Conv_1/Convolve$', computeSets)
     # There should be only 3 matmuls (fwd, bwd_lhs, bwd_rhs)

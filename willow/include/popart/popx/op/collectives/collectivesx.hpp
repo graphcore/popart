@@ -2,6 +2,7 @@
 #ifndef GUARD_NEURALNET_COLLECTIVESX_HPP
 #define GUARD_NEURALNET_COLLECTIVESX_HPP
 
+#include <popart/debugcontext.hpp>
 #include <popart/names.hpp>
 #include <popart/popx/opx.hpp>
 #include <popart/popx/viewchangers.hpp>
@@ -65,10 +66,10 @@ class CollectiveBalancedReorder {
 public:
   CollectiveBalancedReorder(poplar::Graph &graph_,
                             poplar::Tensor tensor_,
-                            unsigned replicationFactor_);
+                            unsigned replicationFactor_,
+                            const poplar::DebugNameAndId &dnai_);
 
-  poplar::Tensor createReplicaSlice(const poplar::Type &type,
-                                    const std::string &debugPrefix);
+  poplar::Tensor createReplicaSlice(const poplar::Type &type);
 
   poplar::Tensor createCollectivesTensor(const poplar::Type &type,
                                          const std::string &debugPrefix);
@@ -102,6 +103,7 @@ private:
   poplar::TensorRearranger simplifier;
 
   CollectiveBalancedHostRearrangement hostRearrangement;
+  const poplar::DebugNameAndId dnai;
 };
 
 // If the input/output to a collective op is padded,

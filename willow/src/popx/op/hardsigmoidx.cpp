@@ -39,6 +39,7 @@ HardSigmoidOpx::HardSigmoidOpx(Op *op, Devicex *devicex)
 void HardSigmoidComputex::inplace(poplar::program::Sequence &prog,
                                   poplar::Graph &graph,
                                   const poplar::Tensor &tensor,
+                                  const poplar::DebugNameAndId &dnai,
                                   const std::string &debug_prefix) const {
   //   Hardsigmoid definition: max(0, min(1, alpha*x+beta))
   std::vector<std::unique_ptr<popops::expr::Expr>> exprs;
@@ -52,7 +53,8 @@ void HardSigmoidComputex::inplace(poplar::program::Sequence &prog,
   exprs.push_back(std::make_unique<pe::Min>(pe::Const(1.0f), *exprs.back()));
   exprs.push_back(std::make_unique<pe::Max>(pe::Const(0.0f), *exprs.back()));
 
-  popops::mapInPlace(graph, *exprs.back(), {tensor}, prog, debug_prefix);
+  popops::mapInPlace(
+      graph, *exprs.back(), {tensor}, prog, {dnai, debug_prefix});
 }
 
 HardSigmoidInplaceOpx::HardSigmoidInplaceOpx(Op *op, Devicex *devicex)

@@ -50,7 +50,7 @@ BaseSortOpx::getIotaTensor(poplar::program::Sequence &prog) const {
 
   // Loop over the front dimension and copy in the constant.
   for (int i = 0; i < nToSort; ++i) {
-    prog.add(poplar::program::Copy(c, shuffledView[i]));
+    prog.add(poplar::program::Copy(c, shuffledView[i], false, debugPrefix()));
   }
 
   return indices;
@@ -91,7 +91,7 @@ poplar::Tensor BaseSortOpx::createInput(InIndex inIndex,
     std::swap(shape[axis], shape.back());
 
     // Create a new variable of the modified shape
-    auto t = graph().addVariable(popType(info), shape, name);
+    auto t = graph().addVariable(popType(info), shape, debugPrefix(name));
 
     // Map it linearly
     poputil::mapTensorLinearly(graph(), t);

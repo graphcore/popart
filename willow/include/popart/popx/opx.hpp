@@ -101,7 +101,8 @@ public:
   poplar::Tensor cloneNcopy(poplar::program::Sequence &, TensorId) const;
   // clone the poplar::Tensor and copy the contents of it.
   poplar::Tensor cloneNcopy(poplar::program::Sequence &,
-                            const poplar::Tensor &) const;
+                            const poplar::Tensor &,
+                            const std::string name = "") const;
   // Return the poplar Tensor identified by its TensorId, numpy broadcasting it
   // up to the given shape. Throws an exception if the identified Tensor doesn't
   // have a compatible shape.
@@ -136,10 +137,39 @@ public:
   Tensor *inTensor(InIndex) const;
   // shortcut for op_p->output.id(int)
   Tensor *outTensor(OutIndex) const;
-  // the debug prefix to use in poplar calls
-  std::string debugPrefix() const;
-  std::string debugPrefix(const std::string &prefix) const;
-  std::string debugPrefix(const std::string &p1, const std::string &p2) const;
+
+  // the debug info to pass to poplar calls
+  const popart::DebugInfo &getDebugInfo() const;
+
+  const poplar::DebugNameAndId getDebugNameAndId(
+      const std::string name     = "",
+      poplar::SourceLocation loc = poplar::SourceLocation::Current()) const;
+
+  // the debug context for this opx with optional debug postfix name
+  poplar::DebugContext debugContext(
+      const std::string name     = "",
+      poplar::SourceLocation loc = poplar::SourceLocation::Current()) const;
+
+  // the debug info to pass to poplar calls
+  // @SL@ - Have adapted the legacy method to return a DebugContext. Need to
+  //        pass the location so it appears as though it was created at the
+  //        callee location. This way we don't break older code.
+  poplar::DebugContext debugPrefix(
+      poplar::SourceLocation loc = poplar::SourceLocation::Current()) const {
+    return debugContext("", loc);
+  }
+  poplar::DebugContext debugPrefix(
+      const std::string &prefix,
+      poplar::SourceLocation loc = poplar::SourceLocation::Current()) const {
+    return debugContext(prefix, loc);
+  }
+  poplar::DebugContext debugPrefix(
+      const std::string &p1,
+      const std::string &p2,
+      poplar::SourceLocation loc = poplar::SourceLocation::Current()) const {
+    return debugContext(p1 + sNameDelimiter + p2, loc);
+  }
+
   // shortcut for op_p->input.tensor(int)->info
   const TensorInfo &inInfo(InIndex) const;
   // shortcut for op_p->input.tensor(int)->info.shape()

@@ -103,7 +103,7 @@ poplar::Tensor GatherOpx::createInput(int index,
                                    shape,
                                    static_cast<unsigned>(axis),
                                    popops::GatherParams{},
-                                   name);
+                                   debugPrefix(name));
 }
 
 InputCreatorType GatherOpx::getInputCreatorType(int index0) const {

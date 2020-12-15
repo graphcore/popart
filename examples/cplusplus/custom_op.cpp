@@ -179,7 +179,7 @@ public:
                                          popops::expr::_1),
                        {get(inId(0))},
                        prog,
-                       debugPrefix()));
+                       debugPrefix("cube")));
   }
 };
 
@@ -204,7 +204,7 @@ public:
                                           popops::expr::_2)),
                     {get(inId(0)), get(inId(1))}, // FwdOut, GradOut
                     prog,
-                    debugPrefix()));
+                    debugPrefix("cubeGrad")));
   }
 };
 

@@ -7,6 +7,7 @@
 #include <popart/op/identity.hpp>
 #include <popart/op/mean.hpp>
 #include <popart/op/sum.hpp>
+#include <popart/opdebuginfo.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/region.hpp>
@@ -123,6 +124,8 @@ Op::~Op() = default;
 std::vector<std::unique_ptr<Op>> Op::getGradOps() { return {}; }
 
 void Op::setup() { throw error("No setup() for {}", opid); }
+
+void Op::finalize() { debugInfo.update(); }
 
 void Op::defaultConnectInTensor(InIndex inIndex, TensorId tenId) {
   if (input->hasIndex(inIndex)) {
@@ -252,7 +255,7 @@ void Op::createAndConnectOutTensor(OutIndex outIndex, TensorId tenId) {
 
   tenId = (getScope() / tenId).str();
 
-  getGraph().getTensors().addActGrad(tenId);
+  getGraph().getTensors().addActGrad(tenId, getDebugInfo());
   Tensor *ptensor = getGraph().getTensors().get(tenId);
   output->insert(outIndex, ptensor);
   ptensor->setProducer(this);
@@ -359,6 +362,12 @@ void Op::appendAttributes(OpSerialiserBase &os) const {
   os.appendAttribute(sExecutionContextAttribute, executionContextSs.str());
   os.appendAttribute(sPipelineStageAttribute, settings.pipelineStage);
   os.appendAttribute("scope", getScope());
+
+  // Can not add debugInfoId to the attributes as this will break
+  // cache executables - debugInfoId would be part of the hash.
+  // The id will be different each time the `same` graph is built.
+  //
+  // os.appendAttribute(sDebugInfoId, settings.debugInfoId);
 }
 
 void Op::appendOutlineAttributes(OpSerialiserBase &os) const {
@@ -391,10 +400,21 @@ TensorInfo Op::prettyNpOut(const TensorInfo &i0, const TensorInfo &i1) const {
 
 const std::string &Op::name() const { return getName(); }
 
+std::string idStr(Op &op) {
+  if (!op.name().empty()) {
+    return op.name() + sNameDelimiter + std::to_string(op.id);
+  } else {
+    return std::to_string(op.id);
+  }
+}
+
 Op::Op(const Op &op)
     : Vertex(op), input(new TensorIndexMap), output(new TensorIndexMap),
       id(op.settings.graph.get().getIr().getAndIncrOpsCounter()), opid(op.opid),
-      settings(op.settings) {
+      settings(op.settings),
+      debugInfo(
+          {DebugNameAndId(std::to_string(id), op.settings.debugInfoId, name())},
+          *this) {
   // input, output: empty.
 }
 
@@ -420,7 +440,10 @@ Op::Op(const OperatorIdentifier &_opid, const Op::Settings &settings_)
       // the id
       id(settings_.graph.get().getIr().getAndIncrOpsCounter()), opid(_opid),
       // the Attributes
-      settings(settings_) {}
+      settings(settings_),
+      debugInfo(
+          {DebugNameAndId(std::to_string(id), settings.debugInfoId, name())},
+          *this) {}
 
 Ir &Op::Op::Settings::getIr() const { return graph.get().getIr(); }
 
@@ -576,6 +599,12 @@ void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {
       extraOutlineAttributes.insert(
           {outlineAttributes[i], outlineAttributes[i + 1]});
     }
+  }
+
+  if (attributes.hasAttribute(sDebugInfoId)) {
+    int64_t debug_info_id;
+    attributes.set(debug_info_id, sDebugInfoId);
+    debugInfoId = debug_info_id;
   }
 }
 

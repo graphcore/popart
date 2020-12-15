@@ -2,11 +2,13 @@
 #include <algorithm>
 #include <onnx/checker.h>
 #include <popart/builder_impl.hpp>
+#include <popart/builderdebuginfo.hpp>
 #include <popart/filereader.hpp>
 #include <popart/logging.hpp>
 #include <popart/onnxutil.hpp>
 #include <popart/op/receptive.hpp>
 #include <popart/opidentifier.hpp>
+#include <popart/poparttracepoint.hpp>
 #include <popart/tensor.hpp>
 
 namespace popart {
@@ -336,27 +338,29 @@ Builder::createFromOnnxModel(const std::string &modelProtoOrFilename) {
 Builder::~Builder() {}
 
 TensorId Builder::addInputTensor(const TensorInfo &tensorInfo,
-                                 const std::string &debugPrefix) {
-  return impl_->addInputTensor(tensorInfo, debugPrefix);
+                                 const popart::DebugContext &debugContext) {
+  return impl_->addInputTensor(tensorInfo, debugContext);
 }
 
 TensorId Builder::addInputTensor(const std::string &dataType,
                                  const Shape &shape,
-                                 const std::string &debugPrefix) {
-  return impl_->addInputTensor(TensorInfo(dataType, shape), debugPrefix);
+                                 const popart::DebugContext &debugContext) {
+  return impl_->addInputTensor(TensorInfo(dataType, shape), debugContext);
 }
 
-TensorId Builder::addUntypedInputTensor(const std::string &debugPrefix) {
-  return impl_->addUntypedInputTensor(debugPrefix);
+TensorId
+Builder::addUntypedInputTensor(const popart::DebugContext &debugContext) {
+  return impl_->addUntypedInputTensor(debugContext);
 }
 
 void Builder::addInputTensorFromParentGraph(const TensorId &tensorId) {
   impl_->addInputTensorFromParentGraph(tensorId);
 }
 
-TensorId Builder::addInitializedInputTensor(const ConstVoidData &initData,
-                                            const std::string &debugPrefix) {
-  return impl_->addInitializedInputTensor(initData, debugPrefix);
+TensorId
+Builder::addInitializedInputTensor(const ConstVoidData &initData,
+                                   const popart::DebugContext &debugContext) {
+  return impl_->addInitializedInputTensor(initData, debugContext);
 }
 
 void Builder::addOutputTensor(const TensorId &arg0) {
@@ -372,7 +376,7 @@ std::vector<TensorId>
 AiGraphcoreOpset1::groupnormalization(const std::vector<TensorId> &args,
                                       int64_t num_groups,
                                       float epsilon,
-                                      const std::string &name) {
+                                      const DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes;
 
   if (std::abs(epsilon - 1e-05f) > std::numeric_limits<float>::epsilon()) {
@@ -381,11 +385,17 @@ AiGraphcoreOpset1::groupnormalization(const std::vector<TensorId> &args,
 
   attributes["num_groups"] = num_groups;
 
-  return impl->op(Onnx::AiGraphcore::OpSet1::GroupNormalization,
-                  getOpsetVersion(),
-                  args,
-                  attributes,
-                  name);
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::GroupNormalization,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          {di});
+
+  di.setOutputs(outputs);
+  return outputs;
 }
 
 std::vector<TensorId> AiGraphcoreOpset1::multiconv(
@@ -398,7 +408,7 @@ std::vector<TensorId> AiGraphcoreOpset1::multiconv(
     const nonstd::optional<std::string> planType,
     const nonstd::optional<int> perConvReservedTiles,
     const nonstd::optional<float> cycleBackOff,
-    const std::string &name) {
+    const DebugContext &debugContext) {
 
   // Some checks:
 
@@ -407,7 +417,7 @@ std::vector<TensorId> AiGraphcoreOpset1::multiconv(
   if (numConvs < 1) {
     throw error("MultiConvOp '{}' has no input tensors. Provide at least one "
                 "set of inputs",
-                name);
+                debugContext.getPathName());
   }
 
   // 2. Each conv must have at least two inputs where the third bias input is
@@ -417,23 +427,23 @@ std::vector<TensorId> AiGraphcoreOpset1::multiconv(
     if (numConvInputs < 2) {
       throw error("Each convolution of MultiConvOp '{}' must have at least two "
                   "inputs - data and weights",
-                  name);
+                  debugContext.getPathName());
     }
     if (numConvInputs > 3) {
       throw error("Each convolution of MultiConvOp '{}' can have at most three "
                   "inputs - data, weights, and bias",
-                  name);
+                  debugContext.getPathName());
     }
   }
 
   // 3. The number of parameters must equal the number of inputs,
   //    unless empty, in which case they take default values
-  auto checkParamSize = [&numConvs, &name](int64_t paramsSize,
-                                           std::string param) {
+  auto checkParamSize = [&numConvs, &debugContext](int64_t paramsSize,
+                                                   std::string param) {
     if (paramsSize != 0 && paramsSize != numConvs) {
       throw error("For MultiConvOp '{}', number of {} parameter sets ({}) "
                   "does not match the number of input sets ({})",
-                  name,
+                  debugContext.getPathName(),
                   param,
                   paramsSize,
                   numConvs);
@@ -514,214 +524,336 @@ std::vector<TensorId> AiGraphcoreOpset1::multiconv(
   }
   finalAttributes["numConvs"] = static_cast<int64_t>(numConvs);
 
-  return impl->op(Onnx::AiGraphcore::OpSet1::MultiConv,
-                  getOpsetVersion(),
-                  flatTensors,
-                  static_cast<unsigned>(numConvs), // number of outputs
-                  finalAttributes,
-                  name);
+  BuilderDebugInfo di(
+      debugContext, __POPART_FUNCTION_NAME__, flatTensors, finalAttributes);
+  finalAttributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::MultiConv,
+                          getOpsetVersion(),
+                          flatTensors,
+                          static_cast<unsigned>(numConvs), // number of outputs
+                          finalAttributes,
+                          debugContext);
+
+  di.setOutputs(outputs);
+  return outputs;
 }
 
 TensorId AiGraphcoreOpset1::subsample(const std::vector<TensorId> &args,
                                       const std::vector<int64_t> &strides,
-                                      const std::string &name) {
+                                      const DebugContext &debugContext) {
 
   for (int i = 0; i < strides.size(); ++i) {
     if (strides[i] == 0)
       throw error("Strides invalid. 0 stride at index {}", i);
   }
 
-  return impl->op(Onnx::AiGraphcore::OpSet1::Subsample,
-                  getOpsetVersion(),
-                  args,
-                  {{"strides", strides}},
-                  name)[0];
+  std::map<std::string, popart::any> attributes = {{"strides", strides}};
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::Subsample,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          debugContext);
+
+  di.setOutputs(outputs);
+  return outputs[0];
 }
 
 TensorId AiGraphcoreOpset1::printtensor(const std::vector<TensorId> &args,
                                         int64_t print_gradient,
-                                        const std::string &name,
+                                        const DebugContext &debugContext,
                                         const std::string &title) {
-  return impl
-      ->op(Onnx::AiGraphcore::OpSet1::PrintTensor,
-           getOpsetVersion(),
-           args,
-           {{"print_gradient", print_gradient}, {"title", title}},
-           name)
-      .at(0);
+  std::map<std::string, popart::any> attributes = {
+      {"print_gradient", print_gradient}, {"title", title}};
+
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::PrintTensor,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          debugContext);
+
+  di.setOutputs(outputs);
+  return outputs.at(0);
 }
 
 TensorId AiGraphcoreOpset1::nop(const std::vector<TensorId> &args,
-                                const std::string &name) {
-  return impl
-      ->op(Onnx::AiGraphcore::OpSet1::Nop, getOpsetVersion(), args, {}, name)
-      .at(0);
+                                const DebugContext &debugContext) {
+  std::map<std::string, popart::any> attributes;
+
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::Nop,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          debugContext);
+
+  di.setOutputs(outputs);
+  return outputs.at(0);
 }
 
 TensorId AiGraphcoreOpset1::scale(const std::vector<TensorId> &args,
                                   float scale,
-                                  const std::string &name) {
-  return impl
-      ->op(Onnx::AiGraphcore::OpSet1::Scale,
-           getOpsetVersion(),
-           args,
-           {{"scale", scale}},
-           name)
-      .at(0);
+                                  const DebugContext &debugContext) {
+  std::map<std::string, popart::any> attributes = {{"scale", scale}};
+
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::Scale,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          debugContext);
+  di.setOutputs(outputs);
+  return outputs.at(0);
 }
 
 TensorId AiGraphcoreOpset1::scaledadd(const std::vector<TensorId> &args,
                                       float scale0,
                                       float scale1,
-                                      const std::string &name) {
-  return impl
-      ->op(Onnx::AiGraphcore::OpSet1::ScaledAdd,
-           getOpsetVersion(),
-           args,
-           {{"scale0", scale0}, {"scale1", scale1}},
-           name)
-      .at(0);
+                                      const DebugContext &debugContext) {
+  std::map<std::string, popart::any> attributes = {{"scale0", scale0},
+                                                   {"scale1", scale1}};
+
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::ScaledAdd,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          debugContext);
+  di.setOutputs(outputs);
+  return outputs.at(0);
 }
 
-std::vector<TensorId> AiGraphcoreOpset1::lstm(const std::vector<TensorId> &args,
-                                              int64_t outputFullSequence,
-                                              const std::string &name) {
-  return impl->op(Onnx::AiGraphcore::OpSet1::LSTM,
-                  getOpsetVersion(),
-                  args,
-                  {{"output_full_sequence", outputFullSequence}},
-                  name);
+std::vector<TensorId>
+AiGraphcoreOpset1::lstm(const std::vector<TensorId> &args,
+                        int64_t outputFullSequence,
+                        const DebugContext &debugContext) {
+  std::map<std::string, popart::any> attributes = {
+      {"output_full_sequence", outputFullSequence}};
+
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::LSTM,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          debugContext);
+
+  di.setOutputs(outputs);
+  return outputs;
 }
 
 TensorId AiGraphcoreOpset1::gelu(const std::vector<TensorId> &args,
-                                 const std::string &name) {
-  return impl
-      ->op(Onnx::AiGraphcore::OpSet1::Gelu, getOpsetVersion(), args, {}, name)
-      .at(0);
+                                 const DebugContext &debugContext) {
+  std::map<std::string, popart::any> attributes;
+
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::Gelu,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          debugContext);
+
+  di.setOutputs(outputs);
+  return outputs.at(0);
 }
 
 TensorId AiGraphcoreOpset1::detach(const std::vector<TensorId> &args,
-                                   const std::string &name) {
-  return impl
-      ->op(Onnx::AiGraphcore::OpSet1::Detach, getOpsetVersion(), args, {}, name)
-      .at(0);
+                                   const DebugContext &debugContext) {
+  std::map<std::string, popart::any> attributes;
+
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::Detach,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          debugContext);
+
+  di.setOutputs(outputs);
+  return outputs.at(0);
 }
 
 TensorId AiGraphcoreOpset1::depthtospace(const std::vector<TensorId> &args,
                                          int64_t blocksize,
                                          const std::string &mode,
-                                         const std::string &name) {
+                                         const DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes;
   attributes["blocksize"] = blocksize;
   if (mode != "DCR") {
     attributes["mode"] = mode;
   }
-  return impl->op(Onnx::AiGraphcore::OpSet1::DepthToSpace,
-                  getOpsetVersion(),
-                  args,
-                  attributes,
-                  name)[0];
+
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::DepthToSpace,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          debugContext);
+
+  di.setOutputs(outputs);
+  return outputs.at(0);
 }
 
 TensorId AiGraphcoreOpset1::round(const std::vector<TensorId> &args,
-                                  const std::string &name) {
+                                  const DebugContext &debugContext) {
+
   std::map<std::string, popart::any> attributes;
-  return impl->op(Onnx::AiGraphcore::OpSet1::Round,
-                  getOpsetVersion(),
-                  args,
-                  attributes,
-                  name)[0];
+
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::Round,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          debugContext);
+
+  di.setOutputs(outputs);
+  return outputs.at(0);
 }
 
 TensorId AiGraphcoreOpset1::init(Attributes::Ints shape,
                                  Attributes::Int data_type,
                                  Attributes::Int init_type,
                                  Attributes::Int batch_axis,
-                                 const std::string &name) {
-  return impl
-      ->op(Onnx::AiGraphcore::OpSet1::Init,
-           getOpsetVersion(),
-           {},
-           {{"shape", shape},
-            {"data_type", data_type},
-            {"tensor_type", static_cast<int64_t>(TensorType::ActGrad)},
-            {"init_type", init_type},
-            {"batch_axis", batch_axis}},
-           name)
-      .at(0);
+                                 const DebugContext &debugContext) {
+
+  std::map<std::string, popart::any> attributes = {
+      {"shape", shape},
+      {"data_type", data_type},
+      {"tensor_type", static_cast<int64_t>(TensorType::ActGrad)},
+      {"init_type", init_type},
+      {"batch_axis", batch_axis}};
+
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, {}, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::Init,
+                          getOpsetVersion(),
+                          {},
+                          attributes,
+                          debugContext);
+
+  di.setOutputs(outputs);
+  return outputs.at(0);
 }
 
 TensorId AiGraphcoreOpset1::init(Attributes::Ints shape,
                                  Attributes::Int data_type,
                                  Attributes::Int init_type,
-                                 const std::string &name) {
-  return AiGraphcoreOpset1::init(shape, data_type, init_type, -1, name);
+                                 const DebugContext &debugContext) {
+  return AiGraphcoreOpset1::init(shape, data_type, init_type, -1, debugContext);
 }
 
 TensorId AiGraphcoreOpset1::dynamicslice(const std::vector<TensorId> &args,
                                          Attributes::Ints axes,
                                          Attributes::Ints sizes,
                                          Attributes::Int noOverlap,
-                                         const std::string &name) {
-  return impl
-      ->op(Onnx::AiGraphcore::OpSet1::DynamicSlice,
-           getOpsetVersion(),
-           args,
-           {{"axes", axes}, {"sizes", sizes}, {"noOverlap", noOverlap}},
-           name)
-      .at(0);
+                                         const DebugContext &debugContext) {
+  std::map<std::string, popart::any> attributes = {
+      {"axes", axes}, {"sizes", sizes}, {"noOverlap", noOverlap}};
+
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::DynamicSlice,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          debugContext);
+
+  di.setOutputs(outputs);
+  return outputs.at(0);
 }
 
 TensorId AiGraphcoreOpset1::dynamicupdate(const std::vector<TensorId> &args,
                                           Attributes::Ints axes,
                                           Attributes::Ints sizes,
                                           Attributes::Int noOverlap,
-                                          const std::string &name) {
-  return impl
-      ->op(Onnx::AiGraphcore::OpSet1::DynamicUpdate,
-           getOpsetVersion(),
-           args,
-           {{"axes", axes}, {"sizes", sizes}, {"noOverlap", noOverlap}},
-           name)
-      .at(0);
+                                          const DebugContext &debugContext) {
+  std::map<std::string, popart::any> attributes = {
+      {"axes", axes}, {"sizes", sizes}, {"noOverlap", noOverlap}};
+
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::DynamicUpdate,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          debugContext);
+
+  di.setOutputs(outputs);
+  return outputs.at(0);
 }
 
 TensorId AiGraphcoreOpset1::dynamiczero(const std::vector<TensorId> &args,
                                         Attributes::Ints axes,
                                         Attributes::Ints sizes,
-                                        const std::string &name) {
-  return impl
-      ->op(Onnx::AiGraphcore::OpSet1::DynamicZero,
-           getOpsetVersion(),
-           args,
-           {
-               {"axes", axes},
-               {"sizes", sizes},
-           },
-           name)
-      .at(0);
+                                        const DebugContext &debugContext) {
+  std::map<std::string, popart::any> attributes = {
+      {"axes", axes},
+      {"sizes", sizes},
+  };
+
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::DynamicZero,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          debugContext);
+
+  di.setOutputs(outputs);
+  return outputs.at(0);
 }
 
 TensorId AiGraphcoreOpset1::dynamicadd(const std::vector<TensorId> &args,
                                        Attributes::Ints axes,
                                        Attributes::Ints sizes,
-                                       const std::string &name) {
-  return impl
-      ->op(Onnx::AiGraphcore::OpSet1::DynamicAdd,
-           getOpsetVersion(),
-           args,
-           {
-               {"axes", axes},
-               {"sizes", sizes},
-           },
-           name)
-      .at(0);
+                                       const DebugContext &debugContext) {
+  std::map<std::string, popart::any> attributes = {
+      {"axes", axes},
+      {"sizes", sizes},
+  };
+
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::DynamicAdd,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          debugContext);
+
+  di.setOutputs(outputs);
+  return outputs.at(0);
 }
 
-std::vector<TensorId> AiGraphcoreOpset1::call(const std::vector<TensorId> &args,
-                                              unsigned num_outputs,
-                                              const Builder &callee,
-                                              const std::string &name) {
+std::vector<TensorId>
+AiGraphcoreOpset1::call(const std::vector<TensorId> &args,
+                        unsigned num_outputs,
+                        const Builder &callee,
+                        const DebugContext &debugContext) {
 
   ONNX_NAMESPACE::ModelProto modelProto =
       io::getModelFromString(callee.getModelProto());
@@ -740,7 +872,7 @@ std::vector<TensorId> AiGraphcoreOpset1::call(const std::vector<TensorId> &args,
     if (callSize != sgSize) {
       throw error("For CallOp '{}', number of {}s ({}) does not match that of "
                   "the callee subgraph ({})",
-                  name,
+                  debugContext.getPathName(),
                   dir,
                   callSize,
                   sgSize);
@@ -750,45 +882,65 @@ std::vector<TensorId> AiGraphcoreOpset1::call(const std::vector<TensorId> &args,
   checkInOuts(
       static_cast<int>(num_outputs), calleeProto.output_size(), "output");
 
-  return impl->op(Onnx::AiGraphcore::OpSet1::Call,
-                  getOpsetVersion(),
-                  args,
-                  num_outputs,
-                  {{"callee", calleeProto}},
-                  name);
+  std::map<std::string, popart::any> attributes = {
+      {"num_outputs", num_outputs}};
+  BuilderDebugInfo di(
+      debugContext, "AiGraphcoreOpset1::call", args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::Call,
+                          getOpsetVersion(),
+                          args,
+                          num_outputs,
+                          {{"callee", calleeProto}},
+                          debugContext);
+
+  di.setOutputs(outputs);
+  return outputs;
 }
 
 TensorId
 AiGraphcoreOpset1::replicatedallreduce(const std::vector<TensorId> &args,
-                                       const std::string &name) {
-  return impl
-      ->op(Onnx::AiGraphcore::OpSet1::ReplicatedAllReduce,
-           getOpsetVersion(),
-           args,
-           {},
-           name)
-      .at(0);
+                                       const DebugContext &debugContext) {
+  std::map<std::string, popart::any> attributes;
+  BuilderDebugInfo di(
+      debugContext, "AiGraphcoreOpset1::replicatedallreduce", args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::ReplicatedAllReduce,
+                          getOpsetVersion(),
+                          args,
+                          {},
+                          debugContext);
+
+  di.setOutputs(outputs);
+  return outputs.at(0);
 }
 
 TensorId AiGraphcoreOpset1::l1loss(const std::vector<TensorId> &args,
                                    const float lambda,
                                    const ReductionType reduction,
-                                   const std::string &name) {
+                                   const DebugContext &debugContext) {
   std::string reductionString = LossOp::reductionTypeToString(reduction);
-  return impl
-      ->op(Onnx::AiGraphcore::OpSet1::L1,
-           getOpsetVersion(),
-           args,
-           {{"lambda", lambda}, {"reduction", reductionString}},
-           name)
-      .at(0);
+  std::map<std::string, popart::any> attributes = {
+      {"lambda", lambda}, {"reduction", reductionString}};
+
+  BuilderDebugInfo di(
+      debugContext, "AiGraphcoreOpset1::l1loss", args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::L1,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          debugContext);
+  di.setOutputs(outputs);
+  return outputs.at(0);
 }
 
 TensorId AiGraphcoreOpset1::nllloss(const std::vector<TensorId> &args,
                                     const ReductionType reduction,
                                     const nonstd::optional<int> ignoreIndex,
                                     bool inputIsLogProbability,
-                                    const std::string &name) {
+                                    const DebugContext &debugContext) {
   std::string reductionString = LossOp::reductionTypeToString(reduction);
 
   std::map<std::string, popart::any> attributes = {
@@ -798,75 +950,119 @@ TensorId AiGraphcoreOpset1::nllloss(const std::vector<TensorId> &args,
     attributes.emplace("ignoreIndex", ignoreIndex.value());
   }
 
-  return impl
-      ->op(Onnx::AiGraphcore::OpSet1::Nll,
-           getOpsetVersion(),
-           args,
-           attributes,
-           name)
-      .at(0);
+  BuilderDebugInfo di(
+      debugContext, "AiGraphcoreOpset1::nllloss", args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::Nll,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          debugContext);
+  di.setOutputs(outputs);
+  return outputs.at(0);
 }
 
 TensorId AiGraphcoreOpset1::identityloss(const std::vector<TensorId> &args,
                                          const ReductionType reduction,
-                                         const std::string &name) {
+                                         const DebugContext &debugContext) {
   std::string reductionString = LossOp::reductionTypeToString(reduction);
-  return impl
-      ->op(Onnx::AiGraphcore::OpSet1::IdentityLoss,
-           getOpsetVersion(),
-           args,
-           {{"reduction", reductionString}},
-           name)
-      .at(0);
+  std::map<std::string, popart::any> attributes = {
+      {"reduction", reductionString}};
+  BuilderDebugInfo di(
+      debugContext, "AiGraphcoreOpset1::identityloss", args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::IdentityLoss,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          debugContext);
+  di.setOutputs(outputs);
+  return outputs.at(0);
 }
 
 TensorId AiGraphcoreOpset1::shapeddropout(const std::vector<TensorId> &args,
                                           const std::vector<int64_t> &shape,
                                           float ratio,
-                                          const std::string &name) {
+                                          const DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes = {{"shape", shape},
                                                    {"ratio", ratio}};
 
-  return impl
-      ->op(Onnx::AiGraphcore::OpSet1::ShapedDropout,
-           getOpsetVersion(),
-           args,
-           attributes,
-           name)
-      .at(0);
+  BuilderDebugInfo di(
+      debugContext, "AiGraphcoreOpset1::shapeddropout", args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::ShapedDropout,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          debugContext);
+  di.setOutputs(outputs);
+  return outputs.at(0);
 }
 
 TensorId AiGraphcoreOpset1::atan2(const std::vector<TensorId> &args,
-                                  const std::string &name) {
-  return impl
-      ->op(Onnx::AiGraphcore::OpSet1::Atan2, getOpsetVersion(), args, {}, name)
-      .at(0);
+                                  const DebugContext &debugContext) {
+
+  BuilderDebugInfo di(
+      debugContext, "AiGraphcoreOpset1::shapeddropout", args, {});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::Atan2,
+                          getOpsetVersion(),
+                          args,
+                          {},
+                          debugContext);
+
+  di.setOutputs(outputs);
+  return outputs.at(0);
 }
 
 TensorId AiGraphcoreOpset1::expm1(const std::vector<TensorId> &args,
-                                  const std::string &name) {
-  return impl
-      ->op(Onnx::AiGraphcore::OpSet1::Expm1, getOpsetVersion(), args, {}, name)
-      .at(0);
+                                  const DebugContext &debugContext) {
+  std::map<std::string, popart::any> attributes;
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::Expm1,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          debugContext);
+
+  di.setOutputs(outputs);
+  return outputs.at(0);
 }
 
 TensorId AiGraphcoreOpset1::log1p(const std::vector<TensorId> &args,
-                                  const std::string &name) {
-  return impl
-      ->op(Onnx::AiGraphcore::OpSet1::Log1p, getOpsetVersion(), args, {}, name)
-      .at(0);
-}
+                                  const DebugContext &debugContext) {
+  std::map<std::string, popart::any> attributes;
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
 
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::Log1p,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          debugContext);
+
+  di.setOutputs(outputs);
+  return outputs.at(0);
+}
 TensorId AiGraphcoreOpset1::reshape(const TensorId &arg,
                                     const Attributes::Ints &shape,
-                                    const std::string &name) {
-  return impl
-      ->op(Onnx::AiGraphcore::OpSet1::Reshape,
-           getOpsetVersion(),
-           {arg},
-           {{"shape", shape}},
-           name)
-      .at(0);
+                                    const DebugContext &debugContext) {
+
+  std::map<std::string, popart::any> attributes = {{"shape", shape}};
+  BuilderDebugInfo di(
+      debugContext, __POPART_FUNCTION_NAME__, {arg}, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::Reshape,
+                          getOpsetVersion(),
+                          {arg},
+                          attributes,
+                          debugContext);
+
+  di.setOutputs(outputs);
+  return outputs.at(0);
 }
 
 std::vector<TensorId>
@@ -875,8 +1071,16 @@ Builder::customOp(const OperatorIdentifier &opid,
                   const std::vector<TensorId> &inputs,
                   const unsigned numOutputs,
                   const std::map<std::string, popart::any> &attributes,
-                  const std::string &name) {
-  return impl_->op(opid, opsetVersion, inputs, numOutputs, attributes, name);
+                  const DebugContext &debugContext) {
+  std::map<std::string, popart::any> _attributes = attributes;
+  BuilderDebugInfo di(debugContext, "customOp", inputs, attributes);
+  _attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl_->op(
+      opid, opsetVersion, inputs, numOutputs, _attributes, debugContext);
+
+  di.setOutputs(outputs);
+  return outputs;
 }
 
 void Builder::customOp(const OperatorIdentifier &opid,
@@ -884,8 +1088,12 @@ void Builder::customOp(const OperatorIdentifier &opid,
                        const std::vector<TensorId> &inputs,
                        const std::vector<TensorId> &outputs,
                        const std::map<std::string, popart::any> &attributes,
-                       const std::string &name) {
-  impl_->op(opid, opsetVersion, inputs, outputs, attributes, name);
+                       const DebugContext &debugContext) {
+  std::map<std::string, popart::any> _attributes = attributes;
+  BuilderDebugInfo di(debugContext, "customOp", inputs, attributes, outputs);
+  _attributes.insert({sDebugInfoId, di.getId()});
+
+  impl_->op(opid, opsetVersion, inputs, outputs, _attributes, debugContext);
 }
 
 void Builder::addNodeAttribute(const std::string &attributeName,

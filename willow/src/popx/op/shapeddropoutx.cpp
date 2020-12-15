@@ -55,7 +55,7 @@ poplar::Tensor ShapedDropoutOpx::getReferenceTensor() const {
   return graph().addVariable(poplarType,
                              dropoutShape,
                              poplar::VariableMappingMethod::LINEAR,
-                             "dropoutShape");
+                             debugPrefix("dropoutShape"));
 }
 
 namespace {

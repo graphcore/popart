@@ -11,6 +11,7 @@
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/tensordata.hpp>
+#include <popart/tensordebuginfo.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/vertex.hpp>
 #include <popart/voiddata.hpp>
@@ -121,7 +122,7 @@ public:
 
   // note : producer (if there is one)
   // must be set after construction
-  Tensor(TensorId, TensorType, Graph &);
+  Tensor(TensorId, TensorType, Graph &, const DebugContext & = {});
   TensorId id;
   std::string str() const final { return id; }
 
@@ -226,6 +227,8 @@ public:
   // finds the original data and sets the data of the callee tensor.
   std::vector<char> getDataViaRecursion() const;
 
+  const popart::DebugInfo &getDebugInfo() const { return di; }
+
 protected:
   Graph &graph;
   Op *producer;
@@ -239,11 +242,13 @@ protected:
   std::unique_ptr<TensorData> data_;
 
   int getBatchAxisFromOp(Op *, bool, int) const;
+
+  const TensorDebugInfo di;
 };
 
 class VariableTensor : public Tensor {
 public:
-  VariableTensor(TensorId, Graph &);
+  VariableTensor(TensorId, Graph &, const DebugContext & = {});
 
   std::unique_ptr<Tensor> clone(Graph &graph_) const override;
 

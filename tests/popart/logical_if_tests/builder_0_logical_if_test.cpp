@@ -66,6 +66,6 @@ BOOST_AUTO_TEST_CASE(LogicalIf_builder0) {
   // A single "If" NodeProto:
   BOOST_CHECK(modelProto.graph().node_size() == 1);
   BOOST_CHECK(modelProto.graph().node(0).op_type() == "If");
-  // The "If" NodeProto has 2 (sub-graph) attributes:
-  BOOST_CHECK(modelProto.graph().node(0).attribute_size() == 2);
+  // The "If" NodeProto has 2 (sub-graph) attributes + 1 for debugIf:
+  BOOST_CHECK(modelProto.graph().node(0).attribute_size() == 2 + 1);
 }

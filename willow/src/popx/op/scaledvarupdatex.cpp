@@ -27,8 +27,10 @@ poplar::Tensor ScaledVarUpdateOpx::getOrCreateLrTensor() const {
     return getInTensor(ScaledVarUpdateOp::getLrInIndex());
   } else if (hasInput(ScaledVarUpdateOp::getWdInIndex())) {
     poplar::Tensor wd = getInTensor(ScaledVarUpdateOp::getWdInIndex());
-    poplar::Tensor lr = graph().addConstant(
-        wd.elementType(), wd.shape(), adaptiveVarUpdateOp.initLr.val());
+    poplar::Tensor lr = graph().addConstant(wd.elementType(),
+                                            wd.shape(),
+                                            adaptiveVarUpdateOp.initLr.val(),
+                                            debugPrefix("Lr"));
     graph().setTileMapping(lr, graph().getTileMapping(wd));
     return lr;
   } else {
@@ -44,8 +46,10 @@ poplar::Tensor ScaledVarUpdateOpx::getOrCreateWdTensor() const {
     return getInTensor(ScaledVarUpdateOp::getWdInIndex());
   } else if (hasInput(ScaledVarUpdateOp::getLrInIndex())) {
     poplar::Tensor lr = getInTensor(ScaledVarUpdateOp::getLrInIndex());
-    poplar::Tensor wd = graph().addConstant(
-        lr.elementType(), lr.shape(), adaptiveVarUpdateOp.initWd.val());
+    poplar::Tensor wd = graph().addConstant(lr.elementType(),
+                                            lr.shape(),
+                                            adaptiveVarUpdateOp.initWd.val(),
+                                            debugPrefix());
     graph().setTileMapping(wd, graph().getTileMapping(lr));
     return wd;
   } else {
