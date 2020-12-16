@@ -211,7 +211,7 @@ std::shared_ptr<popart::DeviceInfo> DevicexManager::createHostDevice(
 
     poplar::Device device = ipuModel.createDevice();
 
-    return std::make_shared<DevicexIpuModelInfo>(*this, device);
+    return std::make_shared<DevicexIpuModelInfo>(*this, device, ipuVersion);
   }
   case DeviceType::OfflineIpu: {
     checkOptions({"numIPUs", "tilesPerIPU", "ipuVersion", "syncPattern"});
