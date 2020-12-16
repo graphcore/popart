@@ -196,9 +196,6 @@ public:
 
   ~DebugContext();
   std::string getPathName() const;
-
-private:
-  DebugContext(const DebugContext &other) = default;
 };
 
 } // namespace popart
