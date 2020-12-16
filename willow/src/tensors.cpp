@@ -226,11 +226,15 @@ void Tensors::addVarInit(const TensorId &name,
   if (get(name)->info.getDataTypeInfo()->isFixedPoint()) {
     if (!constIds.contains(name)) {
       std::stringstream ss;
-      ss << "A fixed-point Variable tensor `" << name
-         << "'. Currently only floating-point tensors can be Variable. "
-         << " Consider setting fixed-point tensors to be outputs of Constant "
-         << "Ops, using (for example) "
-         << "convertAllFixedPointInitializersToConstants().";
+      ss << "Variable Tensor `" << name << "' is fixed-point, but "
+         << "currently only floating-point Tensors can be variable in PopART. "
+         << "If Tensor `" << name
+         << "' should be constant instead of variable, "
+         << "it can be converted by using "
+         << "the GraphTransormer utility method "
+         << "`convertAllFixedPointInitializersToConstants()', which converts "
+         << "all fixed-point initializers in an ONNX ModelProto"
+         << " to be outputs of ONNX Nodes of type Constant. ";
       throw error(ss.str());
     }
   }
