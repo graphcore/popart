@@ -227,7 +227,6 @@ public:
    *
    * * ``numIPUs``:         The number of IPUs to simulate
    * * ``ge``:     The number of tiles per IPU [=defaultFewTiles]
-   * * ``ipuVersion``:     The ipu architecture [="ipu2"]
    *
    * \param options Configuration settings for the Sim
    * \return A device
@@ -240,7 +239,7 @@ public:
    *
    * * ``numIPUs``:        The number of IPUs to compile for
    * * ``ge``:    The number of tiles per IPU [=defaultManyTiles]
-   * * ``ipuVersion``:     The ipu architecture [="ipu1"]
+   * * ``ipuVersion``:     The ipu architecture, defaults to "ipu1"
    * * ``syncPattern``:    The sync pattern to use:
    *                       full/singlePipline/replicaAndLadder,
    *                       defaults to full

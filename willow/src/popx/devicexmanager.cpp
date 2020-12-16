@@ -193,20 +193,17 @@ std::shared_ptr<popart::DeviceInfo> DevicexManager::createHostDevice(
 
     // Create an ipumodel, using the values set in the options map, else use the
     // defaults
-    poplar::IPUModel ipuModel;
-
-    // Derive popart ipuVersion default from the poplar default
     const std::string ipuVersion =
-        mapFind<std::string>(options, "ipuVersion", ipuModel.IPUVersion);
-    ipuModel.IPUVersion = ipuVersion;
-
+        mapFind<std::string>(options, "ipuVersion", "ipu1");
+    poplar::IPUModel ipuModel(ipuVersion.c_str());
     ipuModel.numIPUs     = mapFind(options, "numIPUs", int(ipuModel.numIPUs));
     ipuModel.tilesPerIPU = mapFind(options, "tilesPerIPU", defaultFewTiles);
+    // int(ipuModel.tilesPerIPU));
     ipuModel.compileIPUCode = mapFind(options, "compileIPUCode", true);
 
     poplar::Device device = ipuModel.createDevice();
 
-    return std::make_shared<DevicexIpuModelInfo>(*this, device, ipuVersion);
+    return std::make_shared<DevicexIpuModelInfo>(*this, device);
   }
   case DeviceType::OfflineIpu: {
     checkOptions({"numIPUs", "tilesPerIPU", "ipuVersion", "syncPattern"});

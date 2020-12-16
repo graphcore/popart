@@ -55,20 +55,3 @@ def test_on_demand_connection_type():
     device = deviceManager.acquireAvailableDevice(
         1, connectionType=popart.DeviceConnectionType.OnDemand)
     assert device.connectionType == popart.DeviceConnectionType.OnDemand
-
-
-@tu.requires_ipu_model
-def test_set_and_get_ipu_model_version():
-    dm = popart.DeviceManager()
-    device = dm.createIpuModelDevice({'ipuVersion': 'ipu1'})
-    assert device.version == "ipu1"
-
-    device = dm.createIpuModelDevice({'ipuVersion': 'ipu2'})
-    assert device.version == "ipu2"
-
-
-@tu.requires_ipu_model
-def test_check_default_ipu_model_0():
-    dm = popart.DeviceManager()
-    device = dm.createIpuModelDevice({})
-    assert device.version == "ipu2"
