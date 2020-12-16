@@ -158,6 +158,13 @@ std::string mapFind<std::string>(const std::map<std::string, std::string> &map,
   }
 }
 
+namespace {
+std::string getPoplarDefaultIpuModelVersion() {
+  poplar::IPUModel ipuModel;
+  return ipuModel.IPUVersion;
+}
+} // namespace
+
 std::shared_ptr<popart::DeviceInfo> DevicexManager::createHostDevice(
     popart::DeviceType type,
     const std::map<std::string, std::string> &options,
@@ -191,14 +198,15 @@ std::shared_ptr<popart::DeviceInfo> DevicexManager::createHostDevice(
   case DeviceType::IpuModel: {
     checkOptions({"numIPUs", "tilesPerIPU", "compileIPUCode", "ipuVersion"});
 
-    // Create an ipumodel, using the values set in the options map, else use the
-    // defaults
-    const std::string ipuVersion =
-        mapFind<std::string>(options, "ipuVersion", "ipu1");
+    // Create an ipumodel, using the values set in the options map, else use
+    // the defaults. Note: The IPUModel must be constructed with the correct
+    // IPUVersion. This cannot be set after construction.
+    const std::string ipuVersion = mapFind<std::string>(
+        options, "ipuVersion", getPoplarDefaultIpuModelVersion());
     poplar::IPUModel ipuModel(ipuVersion.c_str());
+
     ipuModel.numIPUs     = mapFind(options, "numIPUs", int(ipuModel.numIPUs));
     ipuModel.tilesPerIPU = mapFind(options, "tilesPerIPU", defaultFewTiles);
-    // int(ipuModel.tilesPerIPU));
     ipuModel.compileIPUCode = mapFind(options, "compileIPUCode", true);
 
     poplar::Device device = ipuModel.createDevice();
