@@ -1,3 +1,7 @@
+#include <testutil/test_graphs/graphs.hpp>
+
+#include <testutil/test_graphs/op/dummy.hpp>
+
 #include <popart/error.hpp>
 #include <popart/filereader.hpp>
 #include <popart/graph.hpp>
@@ -17,8 +21,6 @@
 #include <popart/op/reducesumsquare.hpp>
 #include <popart/op/relu.hpp>
 
-#include <testutil/test_graphs/op/dummy.hpp>
-
 #include <limits>
 #include <map>
 #include <memory>
@@ -28,6 +30,10 @@
 using namespace popart;
 
 namespace test_graphs {
+
+namespace {
+void transferProperties(const Op *from, Op *to);
+} // namespace
 
 void initSingleOpTestGraph(Graph &graph) {
   // Make an empty AddOp.
@@ -394,5 +400,90 @@ void initMultiInputMultiOutputComplexTestCase(Graph &graph) {
 
   return withEdges(graph, edges, topoCons);
 }
+
+VerticesDisconnectedByReplacement replaceOp(Graph &graph,
+                                            const OpReplacement &replacement) {
+  Op *oldOp = nullptr;
+  try {
+    oldOp = graph.getOp(replacement.opIdToReplace);
+  } catch (const error &err) {
+    throw error("test_graphs::replaceOp: Could not find op to replace in "
+                "provided graph. Error from Popart was:\n\n" +
+                std::string{err.what()});
+  }
+
+  Op *newOp = replacement.newOp.get();
+  if (!newOp) {
+    throw error("test_graphs::replaceOp: replacement.newOp is null.");
+  }
+
+  // 1. Transfer properties.
+  transferProperties(oldOp, newOp);
+
+  VerticesDisconnectedByReplacement disconnectedVertices;
+
+  // 2. Reconnect input tensors.
+
+  const auto nIn = replacement.mapInputsToNewOp.size();
+
+  for (InIndex oldIn = 0; oldIn < nIn; oldIn++) {
+    const auto newIn = replacement.mapInputsToNewOp[oldIn];
+
+    auto tensor = oldOp->inTensor(oldIn);
+    oldOp->disconnectInTensor(oldIn);
+
+    if (newIn != NoneInIndex) {
+      newOp->connectInTensor(newIn, tensor->id);
+    } else {
+      disconnectedVertices.inTensors.emplace(std::make_pair(oldIn, tensor));
+    }
+  }
+
+  // 3. Reconnect output tensors.
+
+  const auto nOut = replacement.mapInputsToNewOp.size();
+
+  for (OutIndex oldOut = 0; oldOut < nOut; oldOut++) {
+    const auto newOut = replacement.mapInputsToNewOp[oldOut];
+
+    auto tensor = oldOp->inTensor(oldOut);
+    oldOp->disconnectOutTensor(tensor);
+
+    if (newOut != NoneOutIndex) {
+      newOp->connectOutTensor(newOut, tensor->id);
+    } else {
+      disconnectedVertices.outTensors.emplace(std::make_pair(oldOut, tensor));
+    }
+  }
+
+  disconnectedVertices.op = oldOp;
+
+  return disconnectedVertices;
+}
+
+namespace {
+
+void transferProperties(const Op *from, Op *to) {
+  to->toLoss           = from->toLoss;
+  to->fromLoss         = from->fromLoss;
+  to->scheduledPreLoss = from->scheduledPreLoss;
+  to->nEdgesToLoss     = from->nEdgesToLoss;
+  to->pruneable        = from->pruneable;
+  // Preserve to->debugInfo. In the future, we should copy certain aspects
+  // of from->debugInfo, but this is not possible yet.
+
+  // Op::Settings we don't want to overwrite.
+  const auto &savedName        = to->settings.name;
+  const auto &savedDebugInfoId = to->settings.debugInfoId;
+  const auto &savedOptimizerOp = to->settings.optimizerOp;
+
+  to->settings = from->settings;
+
+  to->settings.name        = savedName;
+  to->settings.debugInfoId = savedDebugInfoId;
+  to->settings.optimizerOp = savedOptimizerOp;
+}
+
+} // namespace
 
 } // namespace test_graphs

@@ -32,7 +32,7 @@ target_include_directories(test-graphs-test-util
       ${test_util_include_dir_for_libs}
 )
 target_link_libraries(test-graphs-test-util
-    PRIVATE popart
+    PUBLIC popart
 )
 set_target_properties(test-graphs-test-util
     PROPERTIES

@@ -1,4 +1,6 @@
 #include <popart/graph.hpp>
+#include <popart/op.hpp>
+#include <popart/tensor.hpp>
 
 #include <map>
 #include <vector>
@@ -60,6 +62,64 @@ void initDiamondTestGraph(popart::Graph &graph);
 void withEdges(popart::Graph &graph,
                const std::vector<std::vector<popart::OpId>> &edges,
                const std::multimap<popart::OpId, popart::OpId> &topoCons);
+
+popart::InIndex NoneInIndex   = -1;
+popart::OutIndex NoneOutIndex = -1;
+
+/**
+ * Describes how to replace an Op within an existing topology.
+ */
+struct OpReplacement {
+  // Id of the op to replace.
+  popart::OpId opIdToReplace;
+
+  // New Op. Ownership will be passed to the graph we are replacing in.
+  std::unique_ptr<popart::Op> newOp;
+
+  // How to connect replacement op to the old op's input/output tensors.
+  // map[i] = j => tensor at index i will be connected at index j in new op.
+  // All indices must be specified. `replaceOp` will not check this.
+  // You can drop a tensor and not reconnect it to the new op by specifying
+  // destination indices NoneInIndex and NoneOutIndex.
+  std::vector<popart::InIndex> mapInputsToNewOp;
+  std::vector<popart::OutIndex> mapOutputsToNewOp;
+};
+
+struct VerticesDisconnectedByReplacement {
+  // Replaced op.
+  // If `OpReplacement::eraseOldOp` was true, then this will be null as the op
+  // has been erased and thus destroyed.
+  popart::Op *op;
+
+  // Tensors left disconnected by the replacement and the indices at which they
+  // were connected to the old op.
+  std::unordered_map<popart::InIndex, popart::Tensor *> inTensors;
+  std::unordered_map<popart::OutIndex, popart::Tensor *> outTensors;
+};
+
+/**
+ * In the given graph, perform the described OpReplacement.
+ *
+ * All properties, like Op::fromLoss, Op::Settings::batchSerializationPhase,
+ * etc., will be copied from the old op to the new op; except where it is not
+ * sensible to copy the property, like `Op::Settings::name`. Popart does not
+ * provide a robust way of copying over only the "sensible" properties. Please
+ * see the definition of this function for exactly what is copied and what is
+ * not.
+ *
+ * Note, in particular, the Op::debugInfo of the new Op is preservered, so you
+ * will lose some useful information held in the old op's Op::debugInfo that
+ * ideally would be transferred over.
+ *
+ * `graph`: The graph in which to replace an Op with another Op.
+ * `replacement`: Describes the replacement. See `OpReplacement` definition.
+ *
+ * Returns `VerticesDisconnectedByReplacement`:
+ *   The op and tensors that were disconnected as a result of this replacement.
+ *   See `VerticesDisconnectedByReplacement` definition.
+ */
+VerticesDisconnectedByReplacement replaceOp(popart::Graph &graph,
+                                            const OpReplacement &replacement);
 
 /*
     -------------------------------------------------------------------> 14
