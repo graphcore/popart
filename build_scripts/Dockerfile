@@ -37,10 +37,10 @@ RUN pip3 install pytest
 RUN pip3 install pytest-forked
 # Numpy
 RUN pip3 install numpy
-# Torch 1.6.0
-RUN pip3 install torch==1.6.0
-# Torch Vision 0.7.0
-RUN pip3 install torchvision==0.7.0
+# Torch 1.7.1
+RUN pip3 install torch==1.7.1
+# Torch Vision 0.8.2
+RUN pip3 install torchvision==0.8.2
 
 # -- THIRD PARTY LIBRARIES --
 
