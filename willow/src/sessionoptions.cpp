@@ -202,17 +202,15 @@ std::size_t hash<popart::SessionOptions>::operator()(
     const popart::SessionOptions &so) const {
   // Hash based on all the SessionOptions attributes that
   // can affect compiled program
-
-  std::stringstream ss;
-  ss << so.autoRecomputation;
-
-  std::size_t seed = std::hash<std::string>{}(ss.str());
+  std::size_t seed = 0;
 
   boost::hash_combine(seed, so.rearrangeAnchorsOnHost);
   boost::hash_combine(seed, so.enableNonStableSoftmax);
   boost::hash_combine(seed, so.replicatedGraphCount);
   boost::hash_combine(seed, so.globalReplicationFactor);
   boost::hash_combine(seed, so.enablePipelining);
+  boost::hash_combine(seed, so.accumulationFactor);
+  boost::hash_combine(seed, static_cast<int>(so.accumulationReductionType));
   boost::hash_combine(seed, so.enableFloatingPointChecks);
   boost::hash_combine(seed, so.enableStochasticRounding);
   boost::hash_combine(seed, so.enableFullyConnectedPass);
@@ -221,14 +219,35 @@ std::size_t hash<popart::SessionOptions>::operator()(
   boost::hash_combine(seed, so.enableGroupedMatmuls);
   boost::hash_combine(seed, so.aliasZeroCopy);
   boost::hash_combine(seed, static_cast<int>(so.numIOTiles));
-  boost::hash_combine(seed, so.enableStochasticRounding);
-  boost::hash_combine(seed, so.enableStochasticRounding);
+  boost::hash_combine(seed, so.enableOutlining);
+  boost::hash_combine(seed, so.enableOutliningCopyCostPruning);
+  boost::hash_combine(seed, so.outlineThreshold);
+  boost::hash_combine(seed, so.outlineSequenceBreakCost);
   boost::hash_combine(seed, static_cast<int>(so.autoRecomputation));
   boost::hash_combine(seed, static_cast<int>(so.mergeVarUpdate));
+  boost::hash_combine(seed, so.mergeVarUpdateMemThreshold);
+  boost::hash_combine(seed, so.looseThresholdAtPeak);
+  boost::hash_combine(seed, so.explicitRecomputation);
   boost::hash_combine(seed, so.partialsTypeMatMuls);
   boost::hash_combine(seed, so.decomposeGradSum);
   boost::hash_combine(seed, static_cast<int>(so.virtualGraphMode));
-  boost::hash_combine(seed, static_cast<int>(so.syntheticDataMode));
+  boost::hash_combine(seed, so.delayVarUpdates);
+  boost::hash_combine(seed, so.enableStableNorm);
+  boost::hash_combine(seed, so.hostAllReduce);
+  boost::hash_combine(seed, so.hostWeightUpdate);
+  boost::hash_combine(seed, so.hostAllReduceRemoteBuffer);
+  boost::hash_combine(seed, so.timeLimitScheduler);
+  boost::hash_combine(seed, so.swapLimitScheduler);
+  boost::hash_combine(seed, so.groupHostSync);
+  boost::hash_combine(seed, so.enableLoadAndOffloadRNGState);
+  boost::hash_combine(seed, so.kahnTieBreaker);
+
+  boost::hash_combine(
+      seed, static_cast<int>(so.accumulateOuterFragmentSettings.schedule));
+  boost::hash_range(
+      seed,
+      so.accumulateOuterFragmentSettings.excludedVirtualGraphs.begin(),
+      so.accumulateOuterFragmentSettings.excludedVirtualGraphs.end());
 
   boost::hash_combine(seed, so.batchSerializationSettings.factor);
   boost::hash_combine(seed,
