@@ -220,6 +220,10 @@ static void serializeMatMul(TransformBuilder &builder,
         output->info.dataType() != DataType::FLOAT) {
       attrs.insert({sOutputTypeAttribute, std::string("FLOAT")});
     }
+    std::string partialType =
+        matmul->getPartialsType() == MatMulPartialsType::FLOAT ? "FLOAT"
+                                                               : "HALF";
+    attrs.insert({sPartialsTypeAttribute, partialType});
 
     auto m = builder.matmul(lhsMatMulInput,
                             rhsMatMulInput,
@@ -846,6 +850,11 @@ bool SerializeMatMuls::apply(Graph &graph) const {
     auto matmulRhs    = matmulInputTensorMap.at(MatMulOp::getRhsInIndex());
     auto matmulOutput = matmulOutputTensorMap.at(MatMulOp::getOutIndex());
     auto outputShape  = matmulOutput->info.shape();
+    auto factor       = matmul->getSerialiseSettings().factor;
+
+    if (factor == 1) {
+      continue;
+    }
 
     logging::ir::info("matmul:{} {}x{}->{} mode: {} factor: {} phase: {}",
                       matmul->opid,
@@ -853,7 +862,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                       matmulRhs->info.shape(),
                       matmulOutput->info.shape(),
                       static_cast<int64_t>(matmul->getSerialiseSettings().mode),
-                      matmul->getSerialiseSettings().factor,
+                      factor,
                       static_cast<int64_t>(matmul->getPhase()));
 
     OptionalVGraphId virtualGraphId{};
