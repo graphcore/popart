@@ -231,6 +231,11 @@ protected:
   bool tryLoadExecutable();
 
   /**
+   * Throws an error if there is no executable.
+   */
+  void assertExecutableLoaded() const;
+
+  /**
    * abstraction of the computation, the Ir is where
    * all the compute graph optimisations, backwards pass construction,
    * re-computation growing etc. happens.

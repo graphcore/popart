@@ -112,6 +112,13 @@ bool Session::tryLoadExecutable() {
   return false;
 }
 
+void Session::assertExecutableLoaded() const {
+  if (executable_ == nullptr) {
+    throw error("There is no executatable. Try calling Session::prepareDevice "
+                "first.");
+  }
+}
+
 void Session::setRNGState(const std::vector<uint32_t> stateValue) {
   if (!ir.getSessionOptions().enableLoadAndOffloadRNGState) {
     throw error("Trying to set the RNG state, but the session option "
@@ -136,6 +143,9 @@ void Session::setRandomSeed(uint64_t seedValue) {
                            "has no random behaviour. Doing nothing.");
     return;
   }
+
+  assertExecutableLoaded();
+
   // Set seed value on host
   executable_->setRandomSeedValue(seedValue);
 
@@ -167,6 +177,7 @@ uint64_t Session::getCycleCount(std::string id) {
 // get the TensorInfo on a Tensor
 TensorInfo Session::getInfo(TensorId id) const {
   logging::session::trace("Session::getInfo({})", id);
+  assertExecutableLoaded();
   TensorInfo info = executable_->getTensor(id)->info;
   if (!info.isSet()) {
     throw error("TensorInfo for `" + id + "' not set");
@@ -337,6 +348,8 @@ void Session::modelToHost(const std::string &fn) {
   POPART_TRACEPOINT();
   logging::session::trace("Session::modelToHost");
 
+  assertExecutableLoaded();
+
   ONNX_NAMESPACE::ModelProto model = ir.getModel();
 
   std::map<TensorId, MutableVoidData> initMap;
@@ -430,6 +443,7 @@ std::string Session::getSerializedGraph() const {
 
 TensorTileMap Session::getTensorTileMap() const {
   logging::session::trace("Session::getTensorTileMap");
+  assertExecutableLoaded();
   if (executable_->isDeserialized()) {
     throw error("Tensor tile map is not populated when running from a cached "
                 "executable");
@@ -442,6 +456,9 @@ void Session::resetHostWeights(
     const std::string &modelProtoOrFilename,
     const bool ignoreWeightsInModelWithoutCorrespondingHostWeight) {
   POPART_TRACEPOINT();
+
+  assertExecutableLoaded();
+
   logging::session::trace("Session::resetHostWeights");
   if (ir.getSessionOptions().constantWeights &&
       ir.getExecutionMode() == Ir::ExecutionMode::Inference) {
@@ -457,6 +474,9 @@ void Session::resetHostWeights(
 
 std::string Session::serializeIr(IrSerializationFormat format) {
   (void)format;
+
+  assertExecutableLoaded();
+
   if (executable_->isDeserialized()) {
     logging::session::warn(
         "Ir state is not populated when running from a serialized executable.");
@@ -573,6 +593,9 @@ TrainingSession::createFromOnnxModel(const std::string &model,
 void TrainingSession::updateOptimizerFromHost(const Optimizer *optimizer) {
   POPART_TRACEPOINT();
   logging::session::trace("TrainingSession::updateOptimizerFromHost");
+
+  assertExecutableLoaded();
+
   ir.updateOptimizer(*optimizer);
   executable_->updateOptimizerTensors();
 
