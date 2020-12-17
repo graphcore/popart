@@ -38,6 +38,8 @@ class IdentityLossGradOpx : public Opx {
 public:
   IdentityLossGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
+
+  bool outputCreatedExternally(OutIndex) const final { return true; }
 };
 
 } // namespace popx

@@ -19,6 +19,25 @@ MinOpx::MinOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<MinOp>(op, {Onnx::Operators::Min_8, Onnx::Operators::Min_6});
 }
 
+InputCreatorType MinOpx::getInputCreatorType(InIndex index) const {
+  // If one of the operations is a broadcast then the tensor cannot be unwound.
+  if (op_p->inInfo(index) != op_p->outInfo(0)) {
+    return InputCreatorType::Deadend;
+  }
+
+  // Default behaviour.
+  return InputCreatorType::CanUnwind;
+}
+
+poplar::Tensor
+MinOpx::unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const {
+  return tensor;
+}
+
+view::RegMap MinOpx::unwindRegion(InIndex, OutIndex) const {
+  return [](const view::Region &r) { return view::Regions(1, r); };
+}
+
 void MinOpx::grow(poplar::program::Sequence &prog) const {
   auto outTensor = cloneNcopy(prog, getInTensor(0));
 

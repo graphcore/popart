@@ -1,6 +1,7 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <popops/ElementWise.hpp>
 #include <popops/Reduce.hpp>
+#include <popops/Zero.hpp>
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/identity.hpp>
@@ -49,17 +50,13 @@ IdentityLossOpx::IdentityLossOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 void IdentityLossGradOpx::grow(poplar::program::Sequence &prog) const {
   IdentityLossGradOp &identitylossop = getOp<IdentityLossGradOp>();
   auto output                        = getInTensor(0);
-
+  poplar::Tensor reference           = getOutTensor(0);
   if (identitylossop.getReductionType() == ReductionType::NoReduction) {
     // Same as IdentityGradOpx
-    setOutTensor(0, cloneNcopy(prog, getInTensor(0)));
+    prog.add(poplar::program::Copy(
+        output, reference, false, debugPrefix("copy_identity")));
   } else {
-    auto output_shape = outShape(IdentityLossGradOp::getOutIndex());
-
-    if (identitylossop.getReductionType() == ReductionType::Sum) {
-      output = broadcast(output_shape, getInTensor(0));
-      setOutTensor(0, cloneNcopy(prog, output));
-    } else if (identitylossop.getReductionType() == ReductionType::Mean) {
+    if (identitylossop.getReductionType() == ReductionType::Mean) {
       // Divide broadcasted tensor by total number of samples
       uint64_t totalSamples =
           dv_p->getGlobalReplicationFactor() * output.numElements();
@@ -70,14 +67,20 @@ void IdentityLossGradOpx::grow(poplar::program::Sequence &prog) const {
                            {getInTensor(0)},
                            prog,
                            debugPrefix("div"));
-
-      output = broadcast(output_shape, output);
-
-      setOutTensor(0, cloneNcopy(prog, output));
-    } else {
+    } else if (identitylossop.getReductionType() != ReductionType::Sum) {
+      // Only mean and sum are supported.
       throw error("Unsupported reduction type for Loss {}",
                   debugPrefix().getPathName());
     }
+    popops::zero(graph(),
+                 reference,
+                 prog,
+                 debugPrefix("zero_identity_reference_tensor"));
+    popops::addInPlace(graph(),
+                       reference,
+                       output,
+                       prog,
+                       debugPrefix("add_gradient_to_reference"));
   }
 }
 

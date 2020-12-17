@@ -14,6 +14,12 @@ class MinOpx : public ElementWiseUnaryOpx {
 public:
   MinOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
+
+  InputCreatorType getInputCreatorType(InIndex) const override;
+
+  poplar::Tensor
+      unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const override;
+  view::RegMap unwindRegion(InIndex, OutIndex) const override;
 };
 
 class MinArgGradOpx : public Opx {
