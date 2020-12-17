@@ -24,6 +24,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <queue>
 #include <string>
 #include <vector>
 
@@ -266,9 +267,19 @@ void initDiamondTestGraph(Graph &graph) {
   topoCons->insert(graph.getOp(5), graph.getOp(6));
 }
 
+const popart::TensorInfo &withEdgesDefaultTensorInfo() {
+  static const TensorInfo defaultTensorInfo = {
+      //
+      "FLOAT",
+      std::vector<int64_t>{4, 4, 4, 4} //
+  };
+  return defaultTensorInfo;
+}
+
 void withEdges(Graph &graph,
                const std::vector<std::vector<OpId>> &edges,
-               const std::multimap<OpId, OpId> &topoCons) {
+               const std::multimap<OpId, OpId> &topoCons,
+               const TensorInfo &tensorInfo) {
 
   const auto nOps = edges.size();
 
@@ -289,8 +300,6 @@ void withEdges(Graph &graph,
   */
 
   // First, some helpers.
-
-  const TensorInfo defaultTensorInfo{"FLOAT", std::vector<int64_t>{4, 4, 4, 4}};
 
   const auto connectInTensor = [&graph](const OpId opId, const TensorId tId) {
     auto *op = dynamic_cast<DummyOp *>(graph.getOp(opId));
@@ -314,7 +323,8 @@ void withEdges(Graph &graph,
   // Initialise the scheduling pass.
 
   std::vector<OpId> outstanding(nOps, 0);
-  std::vector<OpId> ready;
+  // Lowest OpId is at front of queue.
+  std::priority_queue<OpId, std::vector<OpId>, std::greater<OpId>> ready;
 
   // Compute, for each op, how many incoming edges (dependencies) it has.
   for (const auto &consumersOfOp : edges) {
@@ -332,10 +342,10 @@ void withEdges(Graph &graph,
   // tensors.
   for (OpId i = 0; i < nOps; i++) {
     if (outstanding[i] == 0) {
-      ready.push_back(i);
+      ready.push(i);
 
       const TensorId tId{std::to_string(i) + "-input"};
-      graph.addInput(tId, defaultTensorInfo);
+      graph.addInput(tId, tensorInfo);
       connectInTensor(i, tId);
     }
   }
@@ -343,8 +353,8 @@ void withEdges(Graph &graph,
   int nScheduled = 0;
 
   while (!ready.empty()) {
-    const OpId i = ready.back();
-    ready.pop_back();
+    const OpId i = ready.top();
+    ready.pop();
 
     nScheduled++;
 
@@ -354,7 +364,7 @@ void withEdges(Graph &graph,
       --outstanding[j];
 
       if (outstanding[j] == 0) {
-        ready.push_back(j);
+        ready.push(j);
       }
     }
   }
@@ -401,20 +411,25 @@ void initMultiInputMultiOutputComplexTestCase(Graph &graph) {
   return withEdges(graph, edges, topoCons);
 }
 
-VerticesDisconnectedByReplacement replaceOp(Graph &graph,
-                                            const OpReplacement &replacement) {
+VerticesDisconnectedByReplacement
+replaceOp(popart::Graph &graph,
+          const popart::OpId opIdToReplace,
+          std::unique_ptr<popart::Op> newOpUp,
+          const std::vector<popart::InIndex> mapInputsToNewOp,
+          const std::vector<popart::OutIndex> mapOutputsToNewOp) {
+
   Op *oldOp = nullptr;
   try {
-    oldOp = graph.getOp(replacement.opIdToReplace);
+    oldOp = graph.getOp(opIdToReplace);
   } catch (const error &err) {
     throw error("test_graphs::replaceOp: Could not find op to replace in "
                 "provided graph. Error from Popart was:\n\n" +
                 std::string{err.what()});
   }
 
-  Op *newOp = replacement.newOp.get();
+  Op *newOp = newOpUp.get();
   if (!newOp) {
-    throw error("test_graphs::replaceOp: replacement.newOp is null.");
+    throw error("test_graphs::replaceOp: newOp is null.");
   }
 
   // 1. Transfer properties.
@@ -424,10 +439,10 @@ VerticesDisconnectedByReplacement replaceOp(Graph &graph,
 
   // 2. Reconnect input tensors.
 
-  const auto nIn = replacement.mapInputsToNewOp.size();
+  const auto nIn = mapInputsToNewOp.size();
 
   for (InIndex oldIn = 0; oldIn < nIn; oldIn++) {
-    const auto newIn = replacement.mapInputsToNewOp[oldIn];
+    const auto newIn = mapInputsToNewOp[oldIn];
 
     auto tensor = oldOp->inTensor(oldIn);
     oldOp->disconnectInTensor(oldIn);
@@ -441,12 +456,12 @@ VerticesDisconnectedByReplacement replaceOp(Graph &graph,
 
   // 3. Reconnect output tensors.
 
-  const auto nOut = replacement.mapInputsToNewOp.size();
+  const auto nOut = mapOutputsToNewOp.size();
 
   for (OutIndex oldOut = 0; oldOut < nOut; oldOut++) {
-    const auto newOut = replacement.mapInputsToNewOp[oldOut];
+    const auto newOut = mapOutputsToNewOp[oldOut];
 
-    auto tensor = oldOp->inTensor(oldOut);
+    auto tensor = oldOp->outTensor(oldOut);
     oldOp->disconnectOutTensor(tensor);
 
     if (newOut != NoneOutIndex) {
@@ -457,6 +472,7 @@ VerticesDisconnectedByReplacement replaceOp(Graph &graph,
   }
 
   disconnectedVertices.op = oldOp;
+  graph.moveIntoGraph(std::move(newOpUp));
 
   return disconnectedVertices;
 }
@@ -464,6 +480,8 @@ VerticesDisconnectedByReplacement replaceOp(Graph &graph,
 namespace {
 
 void transferProperties(const Op *from, Op *to) {
+  // We want to replace id.
+  to->id               = from->id;
   to->toLoss           = from->toLoss;
   to->fromLoss         = from->fromLoss;
   to->scheduledPreLoss = from->scheduledPreLoss;
@@ -473,13 +491,14 @@ void transferProperties(const Op *from, Op *to) {
   // of from->debugInfo, but this is not possible yet.
 
   // Op::Settings we don't want to overwrite.
-  const auto &savedName        = to->settings.name;
-  const auto &savedDebugInfoId = to->settings.debugInfoId;
-  const auto &savedOptimizerOp = to->settings.optimizerOp;
+  auto savedName              = std::move(to->settings.name);
+  const auto savedDebugInfoId = to->settings.debugInfoId;
+  const auto savedOptimizerOp = to->settings.optimizerOp;
 
+  // Can't move because we don't know that the user doesn't need from op.
   to->settings = from->settings;
 
-  to->settings.name        = savedName;
+  to->settings.name        = std::move(savedName);
   to->settings.debugInfoId = savedDebugInfoId;
   to->settings.optimizerOp = savedOptimizerOp;
 }

@@ -46,44 +46,48 @@ void initSingleOpTestGraph(popart::Graph &graph);
  */
 void initDiamondTestGraph(popart::Graph &graph);
 
+const popart::TensorInfo &withEdgesDefaultTensorInfo();
+
 /**
- * Initialises a graph with `DummyOp`s according to the topology specified in
- * `edges` and `topoCons`.
+ * Initialises a graph with `DummyOp`s according to the topology specified
+ * in `edges` and `topoCons`.
  *
  * `edges`: actual Op->Tensor->Op dependencies in the graph, which will be
  *         created.
  * `topoCons`:  explicit topological constraints that will be encoded in
  *              `graph.topoCons`.
+ * `tensorInfo`: TensorInfo to use for ALL tensors created.
  *
  * The OpIds of the graph must be 0..nOps.
  * This is always (implictly) true anyway as the `edges` are specified as a
  * vector.
+ *
+ * To make the produced graph deterministic in a predictable way, if a
+ * `DummyOp` has multiple inputs, they will be connected at indices
+ * reflecting their relative topological (schedule) order (based on the
+ * inherent graph topology only, not the extra topo cons). So, the input
+ * tensor whose producer comes earliset in the order, will be connected at
+ * index 0, and so on. If multiple inputs do not have a relative ordering
+ * enforced by the topology (it would be valid for them to be scheduled in
+ * any order), they will be connected in ascending order of Op::id. For
+ * example:
+ *
+ * 0 ---> 2
+ *       /
+ * 1 ---/
+ *
+ * Will result in 0's ouput tensor being connected to 2 at index 0, and 1's
+ * output tensor being connected to 2 at index 1; because they do not have a
+ * strict topological order, so the order of Op::ids is used.
  */
-void withEdges(popart::Graph &graph,
-               const std::vector<std::vector<popart::OpId>> &edges,
-               const std::multimap<popart::OpId, popart::OpId> &topoCons);
+void withEdges(
+    popart::Graph &graph,
+    const std::vector<std::vector<popart::OpId>> &edges,
+    const std::multimap<popart::OpId, popart::OpId> &topoCons,
+    const popart::TensorInfo &tensorInfo = withEdgesDefaultTensorInfo());
 
 popart::InIndex NoneInIndex   = -1;
 popart::OutIndex NoneOutIndex = -1;
-
-/**
- * Describes how to replace an Op within an existing topology.
- */
-struct OpReplacement {
-  // Id of the op to replace.
-  popart::OpId opIdToReplace;
-
-  // New Op. Ownership will be passed to the graph we are replacing in.
-  std::unique_ptr<popart::Op> newOp;
-
-  // How to connect replacement op to the old op's input/output tensors.
-  // map[i] = j => tensor at index i will be connected at index j in new op.
-  // All indices must be specified. `replaceOp` will not check this.
-  // You can drop a tensor and not reconnect it to the new op by specifying
-  // destination indices NoneInIndex and NoneOutIndex.
-  std::vector<popart::InIndex> mapInputsToNewOp;
-  std::vector<popart::OutIndex> mapOutputsToNewOp;
-};
 
 struct VerticesDisconnectedByReplacement {
   // Replaced op.
@@ -112,14 +116,27 @@ struct VerticesDisconnectedByReplacement {
  * ideally would be transferred over.
  *
  * `graph`: The graph in which to replace an Op with another Op.
- * `replacement`: Describes the replacement. See `OpReplacement` definition.
+ * `opIdToReplace`: Op::Id of op to replace.
+ * `newOpUp`: New op to insert. Ownership will be moved to the graph.
+ * `mapInputsToNewOp`: How to connect new op to the old op's input tensors.
+ *                     mapInputsToNewOp[i] = j => input tensor connected to old
+ *                     op at index i will be connected as an input tensor to new
+ *                     op at index j.
+ *                     You can drop a tensor and not reconnected it to the new
+ *                     op by specifying destination index NoneInIndex.
+ * `mapOutputsToNewOp`: Similarly for output tensors. Drop tensors with index
+ *                      NoneOutIndex.
  *
  * Returns `VerticesDisconnectedByReplacement`:
  *   The op and tensors that were disconnected as a result of this replacement.
  *   See `VerticesDisconnectedByReplacement` definition.
  */
-VerticesDisconnectedByReplacement replaceOp(popart::Graph &graph,
-                                            const OpReplacement &replacement);
+VerticesDisconnectedByReplacement
+replaceOp(popart::Graph &graph,
+          const popart::OpId opIdToReplace,
+          std::unique_ptr<popart::Op> newOpUp,
+          const std::vector<popart::InIndex> mapInputsToNewOp,
+          const std::vector<popart::OutIndex> mapOutputsToNewOp);
 
 /*
     -------------------------------------------------------------------> 14
