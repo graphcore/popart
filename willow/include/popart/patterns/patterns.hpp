@@ -244,7 +244,6 @@ public:
   bool isDecomposeBinaryConstScalarEnabled();
   bool isDepthToSpaceOpPatternEnabled();
   bool isSpaceToDepthOpPatternEnabled();
-  bool isModArg0GradOpEnabled();
 
   // The following methods are fluent allow you to
   // Pattens().enableInPlace0(false).

@@ -576,12 +576,13 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Elementwise) {
         return builder->aiOnnxOpset10().mul(args);
       });
 
+  /*
+  // This current not supported as we don't have the MOD operation T9267
   ConstExprTest_Elementwise_Test<int64_t>(
-      {4, -12},
-      {-3, 8},
-      {1, -4},
-      [](std::unique_ptr<popart::Builder> &builder,
-         const std::vector<TensorId> &args) -> TensorId {
-        return builder->aiOnnxOpset10().mod(args);
-      });
+    {4, 12}, {3, 8}, {1, 4}, {1, 2, 2},
+    [](std::unique_ptr<popart::Builder>& builder, const std::vector<TensorId>&
+  args) -> TensorId { return builder->aiOnnxOpset10().mod(args);
+    },
+    [](int64_t lhs, int64_t rhs) { return lhs % rhs; } );
+  */
 }
