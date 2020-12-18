@@ -174,6 +174,7 @@ add_custom_target(package_and_move
   COMMAND bash -c "mkdir -p ${POPART_PKG_DIR}"
   COMMAND bash -c "mv ${PACKAGE_FILE_NAME}.tar.gz ${POPART_PKG_DIR}"
   COMMAND bash -c "mv ${PRODINFO_FILE_NAME} ${POPART_PKG_DIR}"
+  COMMAND bash -c "mv ${SUPPORTED_OPS_GEN_FILE_NAME} ${POPART_PKG_DIR}"
   COMMAND bash -c "mv ${USER_GUIDE_PDF_NAME} ${POPART_PKG_DIR}"
   COMMAND bash -c "mv ${USER_GUIDE_HTML_NAME} ${POPART_PKG_DIR}"
   COMMAND bash -c "mv ${PYTHON_API_PDF_NAME} ${POPART_PKG_DIR}"
