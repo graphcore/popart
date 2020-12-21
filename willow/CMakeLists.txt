@@ -94,10 +94,8 @@ find_package(poprithms REQUIRED)
 
 # Onnx's config file fails to find protobuf, so we have to do it ourselves.
 # We use the find module provided by CMake.
-# TODO: Add versions 3.6 and 1.6 when all buildbots have been patched to
-# correctly point CMake at the dependencies in the view.
-find_package(Protobuf REQUIRED)
-find_package(ONNX REQUIRED)
+find_package(Protobuf 3.6 REQUIRED)
+find_package(ONNX 1.6 REQUIRED)
 
 find_package(PoplarRunner)
 
