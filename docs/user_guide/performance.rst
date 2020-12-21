@@ -1,8 +1,49 @@
 Performance optimisation
 ========================
 
-.. TODO: Add sections on pipelining, recomputation,
+.. TODO: Add sections on recomputation,
 .. automatic virtual graphs, replication.
+
+Pipelined execution
+-------------------
+
+Pipelining is a feature for optimising utilization of a multi-IPU system by
+parallelizing the execution of model partitions, with each partition operating
+on a separate mini-batch of data. We refer to these partitions here as Pipeline
+Stages.
+
+You can split a model into pipeline stages by annotating operations in the
+ONNX model using the ``Builder`` class. There is a choice of two APIs. For
+instance, to place a specific convolution onto pipeline stage 1:
+
+.. code-block:: python
+
+  o = builder.aiOnnx.conv([x, w])
+  builder.pipelineStage(o, 1)
+
+Or using the context manager:
+
+.. code-block:: python
+
+  with builder.pipelineStage(1):
+      o = builder.aiOnnx.conv([x, w])
+
+Alternatively, if you have annotated the operations with ``VirtualGraph``
+attributes, then you can defer annotating pipeline stage attributes to
+the Session constructor. However, it is recommended that you profile
+the model to choose a partitioning with the optimal utilization.
+
+You can enable pipelined execution by setting the session option
+``enablePipelining`` to ``True``. See ``SessionOptions`` in the
+`PopART C++ API Reference
+<https://www.graphcore.ai/docs/popart-c-api-reference>`_.
+
+Note that by default, pipelining a training model with variable tensors stored
+over different pipeline stages results in 'stale weights' (see Zhang et al.,
+arXiv:1912.12675). This can be avoided by enabling gradient accumulation. In
+this case, the pipeline is flushed before the weight update applies the
+accumulated gradients.
+
 
 Sync configuration
 ------------------

@@ -29,7 +29,7 @@
 // that have to be stored in the pipelined model.
 //
 // We have decided on:
-//  - In-place the activation tensors when restoring
+//  - In-place the activation tensors when restoring, when possible
 //  - Running : Fwd/Stash/Restore/Bwd/Sync
 // resulting in a stash size of 2*(IPUs to end) + 1, except for the last
 // IPU, which has no stash.
