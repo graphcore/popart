@@ -284,7 +284,12 @@ public:
 private:
   ONNX_NAMESPACE::ValueInfoProto *addGraphInput(const TensorId &id);
 
-  void finalizeOp(ONNX_NAMESPACE::NodeProto *node, const std::string &name);
+  void finalizeOp(ONNX_NAMESPACE::NodeProto *node,
+                  const OperatorIdentifier &,
+                  const std::string &name);
+
+  void runShapeInference(ONNX_NAMESPACE::NodeProto *node,
+                         const OperatorIdentifier &);
 
   void addOpsetRequirement(const std::string &domain, int version);
 

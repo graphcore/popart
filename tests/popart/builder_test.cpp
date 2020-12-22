@@ -16,6 +16,7 @@
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/shapeinference.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
@@ -118,4 +119,59 @@ BOOST_AUTO_TEST_CASE(Builder_CustomOp_Into_WindowParameter_Op) {
   // Confirm that maxpool (an op whose builder method calls into
   // verifyWindowParameters) can take an input without a known tensor shape
   auto o = aiOnnx.maxpool({t0}, {3, 3}, {}, {});
+}
+
+// Testing shape inference functions.
+namespace CustomOperators {
+const popart::OperatorIdentifier Bar = {"com.acme", "Bar", 1};
+} // namespace CustomOperators
+
+static popart::RegisterShapeInferenceFunction
+    barOpShapeInference(CustomOperators::Bar, [](ShapeInferenceContext &ctx) {
+      int64_t k = ctx.getAttribute<Attributes::Int>("k");
+
+      auto shape = ctx.inShape(0);
+      for (int i = 0; i < shape.size(); i++) {
+        shape.at(i) *= k;
+      }
+      ctx.outInfo(0) = {ctx.inType(0), shape};
+    });
+
+void check_equal(const std::vector<int64_t> &v0,
+                 const std::vector<int64_t> &v1) {
+  BOOST_CHECK_EQUAL(v0.size(), v1.size());
+  for (int i = 0; i < v0.size(); i++) {
+    BOOST_CHECK_EQUAL(v0.at(i), v1.at(i));
+  }
+}
+
+BOOST_AUTO_TEST_CASE(Builder_CustomOp_ShapeInference) {
+  // Build the model:
+  //
+  // in0 ----> Bar ----> Reshape --> o
+  //       (Custom Op)
+  //
+  // First check custom shape inference works for Bar, and then make sure onnx
+  // shape inference works for an op after Bar.
+
+  // Build an onnx model
+  auto builder = Builder::create();
+  auto aiOnnx  = builder->aiOnnxOpset9();
+  auto in0     = builder->addInputTensor("FLOAT", {1, 2});
+
+  // Add Bar op and check shape and type.
+  auto t0 =
+      builder->customOp(CustomOperators::Bar, 1, {in0}, 1, {{"k", int64_t{3}}})
+          .at(0);
+  check_equal(builder->getTensorShape(t0), {3, 6});
+  BOOST_CHECK_EQUAL(builder->getTensorDataType(t0), DataType::FLOAT);
+
+  // Add Reshape op and check shape and type.
+  Shape outShape             = {3 * 6};
+  Shape outShapeSize         = {static_cast<int64_t>(outShape.size())};
+  ConstVoidData outShapeData = {outShape.data(), {"INT64", outShapeSize}};
+  auto newShapeId            = aiOnnx.constant(outShapeData, "outShapeData");
+  auto t1                    = aiOnnx.reshape({t0, newShapeId});
+  check_equal(builder->getTensorShape(t1), {3 * 6});
+  BOOST_CHECK_EQUAL(builder->getTensorDataType(t1), DataType::FLOAT);
 }

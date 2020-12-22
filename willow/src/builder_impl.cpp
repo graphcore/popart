@@ -13,6 +13,7 @@
 #include <popart/filereader.hpp>
 #include <popart/onnxutil.hpp>
 #include <popart/opidentifier.hpp>
+#include <popart/shapeinference.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensorinfo.hpp>
 
@@ -60,6 +61,7 @@ std::vector<const BuilderImpl *> BuilderImpl::getChildren() const {
 }
 
 void BuilderImpl::finalizeOp(ONNX_NAMESPACE::NodeProto *node,
+                             const OperatorIdentifier &opid,
                              const std::string &name) {
 
   std::string debug_name = name.empty() ? node->op_type() : name;
@@ -80,7 +82,7 @@ void BuilderImpl::finalizeOp(ONNX_NAMESPACE::NodeProto *node,
   }
 
   // The node outputs are added to the model's value_info field here
-  ONNX_NAMESPACE::shape_inference::InferShapes(model_);
+  runShapeInference(node, opid);
 
   // Sanity check: verify the output dimensions of each output are valid
   for (int i = 0; i < node->output_size(); ++i) {
@@ -100,6 +102,66 @@ void BuilderImpl::finalizeOp(ONNX_NAMESPACE::NodeProto *node,
             fullname.str(),
             shape);
       }
+    }
+  }
+}
+
+void BuilderImpl::runShapeInference(ONNX_NAMESPACE::NodeProto *node,
+                                    const OperatorIdentifier &opid) {
+  if (ShapeInferenceFunctions::hasFunction(opid)) {
+    auto func = ShapeInferenceFunctions::getFunction(opid);
+    // Create and prepare a ShapeInferenceContext.
+    std::map<int, TensorInfo> inputInfos;
+    for (int i = 0; i < node->input_size(); i++) {
+      auto id    = node->input(i);
+      auto shape = getTensorShape(id);
+      auto dtype = getTensorDataType(id);
+      inputInfos.insert({i, {dtype, shape}});
+    }
+    ShapeInferenceContext ctx(inputInfos, node->attribute());
+    // Call the inference function.
+    func(ctx);
+    // Create the ValueInfoProtos for the nodes outputs.
+    for (auto &idx_info : ctx.getOutputInfos()) {
+      auto idx   = idx_info.first;
+      auto &info = idx_info.second;
+
+      // Create the ValueInfoProto and set the name.
+      auto valueInfo = model_.mutable_graph()->add_value_info();
+      valueInfo->set_name(node->output(idx));
+      // Create and get the TensorTypeProto.
+      auto tt = valueInfo->mutable_type()->mutable_tensor_type();
+      // Set the shape (this assumes it is clear to start with).
+      auto shape = tt->mutable_shape();
+      for (auto value : info.shape()) {
+        shape->add_dim()->set_dim_value(value);
+      }
+      // Set the data type.
+      tt->set_elem_type(onnxutil::getTPDataType(info.dataType()));
+    }
+  } else {
+    ONNX_NAMESPACE::shape_inference::InferShapes(model_);
+  }
+
+  auto getValueInfo =
+      [&](const TensorId &id) -> const ONNX_NAMESPACE::ValueInfoProto * {
+    for (int i = 0; i < model_.graph().value_info_size(); i++) {
+      if (model_.graph().value_info(i).name() == id) {
+        return &model_.graph().value_info(i);
+      }
+    }
+    return nullptr;
+  };
+
+  // Check shape inference worked.
+  for (int i = 0; i < node->output_size(); i++) {
+    auto &id         = node->output(i);
+    auto *value_info = getValueInfo(id);
+    if (!value_info) {
+      logging::builder::warn(
+          "Shape inference failed for output '{}' of node '{}'",
+          id,
+          node->op_type());
     }
   }
 }
@@ -533,7 +595,7 @@ void BuilderImpl::op(
     addNodeAttribute(attribute.first, attribute.second, *node);
   }
 
-  finalizeOp(node, name);
+  finalizeOp(node, opid, name);
 }
 
 bool BuilderImpl::findNodeProtoByOutputNamesImpl(
