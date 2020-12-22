@@ -34,6 +34,7 @@ void Canonnxalizer::canonnxalize(GraphProto &g) const {
   patterns.push_back(std::make_unique<Atanh>(target));
   patterns.push_back(std::make_unique<Acos>(target));
   patterns.push_back(std::make_unique<Remainder>(target));
+  patterns.push_back(std::make_unique<Mod>(target));
 
   /**
    * The ONNX spec ensures that the Nodes appear in topological order.

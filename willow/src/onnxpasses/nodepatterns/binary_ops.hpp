@@ -15,6 +15,20 @@ public:
       : NodePattern(std::move(t)) {}
 
 private:
+  bool go(const NodeProto &node) override;
+
+protected:
+  virtual void remainderToFmod(const NodeProto &node);
+};
+
+// If the "fmod" attribute is 1, then ai.onnx.mod gets replaced with
+// ai.graphcore.Fmod. Otherwise, it's replaced with the same expression that is
+// used in ai.graphcore.Remainder.
+class Mod : public Remainder {
+public:
+  explicit Mod(std::shared_ptr<PatternTarget> t) : Remainder(std::move(t)) {}
+
+private:
   bool go(const NodeProto &node) override final;
 };
 
