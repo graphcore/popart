@@ -487,6 +487,18 @@ size_t Adaptive::hash() const {
   boost::hash_combine(seed, as);
   boost::hash_combine(seed, ms);
   boost::hash_combine(seed, epsvs);
+
+  boost::hash_combine(seed, static_cast<int>(type()));
+  boost::hash_combine(seed, static_cast<int>(mode));
+  boost::hash_combine(seed, static_cast<int>(accumType));
+  boost::hash_combine(seed, static_cast<int>(accl1Type));
+  boost::hash_combine(seed, static_cast<int>(accl2Type));
+  boost::hash_combine(seed, static_cast<int>(accl3Type));
+  boost::hash_combine(seed, static_cast<int>(decayMode));
+
+  bool hasVelocityTensor =
+      !ms.getDefault().isConst() || ms.getDefault().val() != 0.0f;
+  boost::hash_combine(seed, hasVelocityTensor);
   return seed;
 }
 

@@ -55,10 +55,11 @@ namespace std {
 std::size_t std::hash<popart::OptimizerValueMap>::operator()(
     const popart::OptimizerValueMap &vmap) const {
   std::size_t seed = 0;
-  boost::hash_combine(seed, hash_value(vmap.getDefault()));
+  boost::hash_combine(seed, vmap.getDefault().isConst());
+
   for (const auto &kv : vmap.getSpecifics()) {
     boost::hash_combine(seed, kv.first);
-    boost::hash_combine(seed, hash_value(kv.second));
+    boost::hash_combine(seed, kv.second.isConst());
   }
   return seed;
 }

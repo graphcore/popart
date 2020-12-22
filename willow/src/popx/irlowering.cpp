@@ -3084,7 +3084,7 @@ poplar::Executable IrLowering::getExecutable() {
     // cachedExecutable is set to nonstd::nullopt
     nonstd::optional<poplar::Executable> result = nonstd::nullopt;
     boost::swap(cachedExecutable, result);
-    logging::devicex::info("Returing CachedExecutable");
+    logging::devicex::info("Returning CachedExecutable");
 
     return std::move(result.value());
   } else {

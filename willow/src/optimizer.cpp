@@ -188,7 +188,6 @@ Optimizer::Optimizer(OptimizerValue ls_,
 
 size_t Optimizer::hash() const {
   std::size_t seed = 0;
-  boost::hash_combine(seed, ls);
   boost::hash_range(seed, clipNormSettings.begin(), clipNormSettings.end());
   return seed;
 }
@@ -572,11 +571,17 @@ std::unique_ptr<Optimizer> SGD::clone() const {
 size_t SGD::hash() const {
   std::size_t seed = 0;
   boost::hash_combine(seed, Optimizer::hash());
+  boost::hash_combine(seed, static_cast<int>(type()));
   boost::hash_combine(seed, lrs);
   boost::hash_combine(seed, wds);
   boost::hash_combine(seed, mms);
   boost::hash_combine(seed, dps);
   boost::hash_combine(seed, vss);
+
+  bool hasVelocityTensor =
+      !mms.getDefault().isConst() || mms.getDefault().val() != 0.0f;
+  boost::hash_combine(seed, hasVelocityTensor);
+
   return seed;
 }
 

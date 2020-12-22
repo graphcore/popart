@@ -3,6 +3,8 @@
 
 #include <boost/test/unit_test.hpp>
 #include <random_util.hpp>
+#include <popart/adam.hpp>
+#include <popart/adaptive.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/devicemanager.hpp>
@@ -1740,4 +1742,280 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_update_optimizer) {
       }
     }
   }
+}
+
+BOOST_AUTO_TEST_CASE(optimizer_hash_tests) {
+
+  auto sgd1 = SGD({{"defaultLearningRate", {0.01, false}},
+                   {"defaultDampening", {0.1, true}},
+                   {"defaultWeightDecay", {0.1, false}},
+                   {"defaultMomentum", {0.9, false}}});
+
+  auto sgd2 = SGD({{"defaultLearningRate", {0.02, false}},
+                   {"defaultDampening", {0.2, true}},
+                   {"defaultWeightDecay", {0.2, false}},
+                   {"defaultMomentum", {0.8, false}}});
+
+  // Changing parameter values should result in the same hash
+  BOOST_CHECK(sgd1.hash() == sgd2.hash());
+
+  auto sgd3 = SGD({{"defaultLearningRate", {0.02, false}},
+                   {"defaultDampening", {0.2, true}},
+                   {"defaultWeightDecay", {0.2, false}},
+                   {"defaultMomentum", {0.0, false}}});
+
+  // Momentum is non const which means that the momentum tensor is still added
+  // to the graph
+  BOOST_CHECK(sgd3.hash() == sgd1.hash());
+
+  auto sgd4 = SGD({{"defaultLearningRate", {0.02, false}},
+                   {"defaultDampening", {0.2, true}},
+                   {"defaultWeightDecay", {0.2, false}},
+                   {"defaultMomentum", {0.0, true}}});
+
+  // Momentum is disabled
+  BOOST_CHECK(sgd4.hash() != sgd1.hash());
+
+  auto sgd5 = SGD({{"defaultLearningRate", {0.02, false}},
+                   {"defaultDampening", {0.2, true}},
+                   {"defaultWeightDecay", {0.2, false}},
+                   {"defaultMomentum", {0.0, true}}});
+  sgd5.insertSpecific("foo", {{"momentum", {0.1, true}}});
+
+  // Momentum is disabled, but we added a specific momentum tensor
+  BOOST_CHECK(sgd5.hash() != sgd4.hash());
+  BOOST_CHECK(sgd5.hash() != sgd1.hash());
+
+  auto sgd6 = SGD({{"defaultLearningRate", {0.02, false}},
+                   {"defaultDampening", {0.2, true}},
+                   {"defaultWeightDecay", {0.2, false}},
+                   {"defaultMomentum", {0.6, true}}});
+  sgd6.insertSpecific("foo", {{"momentum", {0.1, true}}});
+
+  // Momentum enabled, but we added a specific momentum tensor
+  BOOST_CHECK(sgd6.hash() != sgd1.hash());
+
+  auto sgd7 = SGD({{"defaultLearningRate", {0.02, false}},
+                   {"defaultDampening", {0.2, true}},
+                   {"defaultWeightDecay", {0.2, false}},
+                   {"defaultMomentum", {0.6, true}}});
+
+  // Momentum enabled, but we changed constness
+  BOOST_CHECK(sgd7.hash() != sgd1.hash());
+
+  auto sgd8 = SGD({{"defaultLearningRate", {0.02, false}},
+                   {"defaultDampening", {0.2, true}},
+                   {"defaultWeightDecay", {0.2, false}},
+                   {"defaultMomentum", {0.6, false}}});
+
+  sgd8.insertSpecific("foo", {{"learningRate", {0.1, true}}});
+  // Added a specific learning rate
+  BOOST_CHECK(sgd8.hash() != sgd1.hash());
+
+  auto adam1 = Adam(
+      {
+          {"defaultLearningRate", {0.01, false}},
+          {"defaultWeightDecay", {0.1, false}},
+          {"defaultBeta1", {0.1, false}},
+          {"defaultBeta2", {0.1, false}},
+          {"defaultEps", {0.1, false}},
+          {"lossScaling", {0.1, false}},
+      },
+      AdamMode::Lamb,
+      WeightDecayMode::Decay,
+      DataType::FLOAT,
+      DataType::FLOAT,
+      DataType::FLOAT);
+
+  auto adam2 = Adam(
+      {
+          {"defaultLearningRate", {0.01, false}},
+          {"defaultWeightDecay", {0.1, false}},
+          {"defaultBeta1", {0.1, false}},
+          {"defaultBeta2", {0.1, false}},
+          {"defaultEps", {0.1, true}},
+          {"lossScaling", {0.1, false}},
+      },
+      AdamMode::Lamb,
+      WeightDecayMode::Decay,
+      DataType::FLOAT,
+      DataType::FLOAT,
+      DataType::FLOAT);
+
+  // changed constness of defaultEps
+  BOOST_CHECK(adam1.hash() != adam2.hash());
+
+  auto adam3 = Adam(
+      {
+          {"defaultLearningRate", {0.02, false}},
+          {"defaultWeightDecay", {0.2, false}},
+          {"defaultBeta1", {0.2, false}},
+          {"defaultBeta2", {0.2, false}},
+          {"defaultEps", {0.2, false}},
+          {"lossScaling", {0.2, false}},
+      },
+      AdamMode::Lamb,
+      WeightDecayMode::Decay,
+      DataType::FLOAT,
+      DataType::FLOAT,
+      DataType::FLOAT);
+
+  // changing parameter values should have no impact
+  BOOST_CHECK(adam3.hash() == adam1.hash());
+
+  auto adam4 = Adam(
+      {
+          {"defaultLearningRate", {0.02, false}},
+          {"defaultWeightDecay", {0.2, false}},
+          {"defaultBeta1", {0.2, false}},
+          {"defaultBeta2", {0.2, false}},
+          {"defaultEps", {0.2, false}},
+          {"lossScaling", {0.2, false}},
+      },
+      AdamMode::Lamb,
+      WeightDecayMode::Decay,
+      DataType::FLOAT16,
+      DataType::FLOAT,
+      DataType::FLOAT);
+
+  // changed data type
+  BOOST_CHECK(adam4.hash() != adam1.hash());
+
+  auto adam5 = Adam(
+      {
+          {"defaultLearningRate", {0.02, false}},
+          {"defaultWeightDecay", {0.2, false}},
+          {"defaultBeta1", {0.2, false}},
+          {"defaultBeta2", {0.2, false}},
+          {"defaultEps", {0.2, false}},
+          {"lossScaling", {0.2, false}},
+      },
+      AdamMode::Lamb,
+      WeightDecayMode::L2Regularization,
+      DataType::FLOAT,
+      DataType::FLOAT,
+      DataType::FLOAT);
+
+  // changed weightDecayMode
+  BOOST_CHECK(adam5.hash() != adam1.hash());
+
+  auto adam6 = Adam(
+      {
+          {"defaultLearningRate", {0.02, false}},
+          {"defaultWeightDecay", {0.2, false}},
+          {"defaultBeta1", {0.2, false}},
+          {"defaultBeta2", {0.2, false}},
+          {"defaultEps", {0.2, false}},
+          {"lossScaling", {0.2, false}},
+      },
+      AdamMode::AdaMax,
+      WeightDecayMode::L2Regularization,
+      DataType::FLOAT,
+      DataType::FLOAT,
+      DataType::FLOAT);
+
+  // changed adamMode
+  BOOST_CHECK(adam6.hash() != adam1.hash());
+
+  auto adaptive1 = Adaptive({{"defaultLearningRate", {0.02, false}},
+                             {"defaultWeightDecay", {0.2, false}},
+                             {"defaultAlpha", {0.2, false}},
+                             {"defaultMomentum", {0.2, false}},
+                             {"defaultEps", {0.2, false}}},
+                            AdaptiveMode::RMSProp,
+                            WeightDecayMode::L2Regularization,
+                            DataType::FLOAT,
+                            DataType::FLOAT,
+                            DataType::FLOAT,
+                            DataType::FLOAT);
+
+  auto adaptive2 = Adaptive({{"defaultLearningRate", {0.02, true}},
+                             {"defaultWeightDecay", {0.2, false}},
+                             {"defaultAlpha", {0.2, false}},
+                             {"defaultMomentum", {0.2, false}},
+                             {"defaultEps", {0.2, false}}},
+                            AdaptiveMode::RMSProp,
+                            WeightDecayMode::L2Regularization,
+                            DataType::FLOAT,
+                            DataType::FLOAT,
+                            DataType::FLOAT,
+                            DataType::FLOAT);
+
+  // changed learning rate constness
+  BOOST_CHECK(adaptive1.hash() != adaptive2.hash());
+
+  auto adaptive3 = Adaptive({{"defaultLearningRate", {0.2, false}},
+                             {"defaultWeightDecay", {0.3, false}},
+                             {"defaultAlpha", {0.3, false}},
+                             {"defaultMomentum", {0.3, false}},
+                             {"defaultEps", {0.3, false}}},
+                            AdaptiveMode::RMSProp,
+                            WeightDecayMode::L2Regularization,
+                            DataType::FLOAT,
+                            DataType::FLOAT,
+                            DataType::FLOAT,
+                            DataType::FLOAT);
+
+  // changing parameter values should not impact hash
+  BOOST_CHECK(adaptive1.hash() == adaptive3.hash());
+
+  auto adaptive4 = Adaptive({{"defaultLearningRate", {0.2, false}},
+                             {"defaultWeightDecay", {0.3, false}},
+                             {"defaultAlpha", {0.3, false}},
+                             {"defaultMomentum", {0.3, false}},
+                             {"defaultEps", {0.3, false}}},
+                            AdaptiveMode::AdaGrad,
+                            WeightDecayMode::L2Regularization,
+                            DataType::FLOAT,
+                            DataType::FLOAT,
+                            DataType::FLOAT,
+                            DataType::FLOAT);
+
+  // changed adaptivemode
+  BOOST_CHECK(adaptive1.hash() != adaptive4.hash());
+
+  auto adaptive5 = Adaptive({{"defaultLearningRate", {0.2, false}},
+                             {"defaultWeightDecay", {0.3, false}},
+                             {"defaultAlpha", {0.3, false}},
+                             {"defaultMomentum", {0.3, false}},
+                             {"defaultEps", {0.3, false}}},
+                            AdaptiveMode::RMSProp,
+                            WeightDecayMode::Decay,
+                            DataType::FLOAT,
+                            DataType::FLOAT,
+                            DataType::FLOAT,
+                            DataType::FLOAT);
+
+  // changed decay
+  BOOST_CHECK(adaptive1.hash() != adaptive5.hash());
+
+  auto adaptive6 = Adaptive({{"defaultLearningRate", {0.2, false}},
+                             {"defaultWeightDecay", {0.3, false}},
+                             {"defaultAlpha", {0.3, false}},
+                             {"defaultMomentum", {0.3, false}},
+                             {"defaultEps", {0.3, false}}},
+                            AdaptiveMode::RMSProp,
+                            WeightDecayMode::Decay,
+                            DataType::FLOAT16,
+                            DataType::FLOAT,
+                            DataType::FLOAT,
+                            DataType::FLOAT);
+
+  // changed accumtype
+  BOOST_CHECK(adaptive1.hash() != adaptive6.hash());
+
+  auto adaptive7 = Adaptive({{"defaultLearningRate", {0.2, false}},
+                             {"defaultWeightDecay", {0.3, false}},
+                             {"defaultAlpha", {0.3, false}},
+                             {"defaultMomentum", {0.3, false}},
+                             {"defaultEps", {0.3, false}}},
+                            AdaptiveMode::RMSProp,
+                            WeightDecayMode::Decay,
+                            DataType::FLOAT,
+                            DataType::FLOAT,
+                            DataType::FLOAT16,
+                            DataType::FLOAT);
+
+  // changed accltype
+  BOOST_CHECK(adaptive1.hash() != adaptive7.hash());
 }

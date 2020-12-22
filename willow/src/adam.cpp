@@ -567,10 +567,14 @@ size_t Adam::hash() const {
   boost::hash_combine(seed, b2s);
   boost::hash_combine(seed, epsvs);
   boost::hash_combine(seed, mwns);
+
+  boost::hash_combine(seed, static_cast<int>(type()));
   boost::hash_combine(seed, static_cast<int>(mode));
+  boost::hash_combine(seed, static_cast<int>(decayMode));
   boost::hash_combine(seed, static_cast<int>(accumType));
   boost::hash_combine(seed, static_cast<int>(accl1Type));
   boost::hash_combine(seed, static_cast<int>(accl2Type));
+
   return seed;
 }
 
