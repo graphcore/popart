@@ -3519,30 +3519,21 @@ void Ir::applyInplacePattern(Graph &graph) {
       // downstream modifies a non-empty region.
       // If both conditions true: do not inplace current op.
 
-      // Lambda to check if an inpput is a weight, and is modified.
-      auto modifiesWeight =
-          [&inplaceOp](const std::pair<const int, popart::Tensor *> &in_index) {
-            if (inplaceOp->modifiesIndex(in_index.first)) {
-              return true;
-            }
-            return false;
-          };
-
       bool varOrModified = false;
       for (const auto &in_index : inplaceOp->input->tensorMap()) {
         for (const auto &out_index : inplaceOp->output->tensorMap()) {
           auto regions = inplaceOp->aliases(in_index.first, out_index.first);
           bool opAliases =
-              !std::all_of(regions.begin(),
-                           regions.end(),
-                           [](const view::Region &r) { return r.isEmpty(); });
+              std::any_of(regions.begin(),
+                          regions.end(),
+                          [](const view::Region &r) { return !r.isEmpty(); });
           // 1. Is the input a variable, or alias of a variable?
           bool var_or_alias = op->inputVariableOrAlias(in_index.first);
           // 2. Does it indirectly modify this tensor and alias it?
           bool indirect_modify =
               (op->hasAliasedModifiers(out_index.first) && opAliases);
           // 3. Does it directly modify a weight?
-          bool direct_modify = modifiesWeight(in_index);
+          bool direct_modify = inplaceOp->modifiesIndex(in_index.first);
           // If ((1 and 2) or 3) : do not inplace.
           if (var_or_alias && (indirect_modify || direct_modify)) {
 

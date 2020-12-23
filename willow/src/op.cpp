@@ -1358,7 +1358,20 @@ bool Op::hasAliasedModifiers(OutIndex out) const {
   auto aliasedTensorMap = getGraph().getTensors().aliasChainsFrom(t);
   auto fullRegion       = view::Region::getFull(t->info.shape());
 
-  bool tChecked = false;
+  bool tChecked         = false;
+  bool aliasedModifiers = false;
+
+  auto checkConsumers = [](Tensor *t_in) {
+    for (Op *consumer : t_in->consumers.getOps()) {
+      for (InIndex in : consumer->input->indices(t_in)) {
+        auto regions = consumer->modifies(in);
+        if (regionsModified(regions)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
 
   for (auto &chain : aliasedTensorMap) {
     auto regions = chain.second.apply(fullRegion);
@@ -1369,24 +1382,15 @@ bool Op::hasAliasedModifiers(OutIndex out) const {
       }
       // Check any consumer of any aliased tensor downstream modifies a
       // non-empty region.
-      auto checkConsumers = [](Tensor *t_in) {
-        for (Op *consumer : t_in->consumers.getOps()) {
-          for (InIndex in : consumer->input->indices(t_in)) {
-            auto regions = consumer->modifies(in);
-            if (regionsModified(regions)) {
-              return true;
-            }
-          }
-        }
-        return false;
-      };
-      checkConsumers(chain.first);
-      if (!tChecked) {
-        checkConsumers(t);
-      }
+
+      aliasedModifiers |= checkConsumers(chain.first);
     }
   }
-  return false;
+
+  if (!tChecked) {
+    aliasedModifiers |= checkConsumers(t);
+  }
+  return aliasedModifiers;
 }
 bool Op::isParentOf(const Op *op) const {
   // We're a parent of op if and only if op is our child.
