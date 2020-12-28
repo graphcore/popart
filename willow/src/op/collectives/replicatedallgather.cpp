@@ -25,11 +25,15 @@ std::unique_ptr<Op> ReplicatedAllGatherOp::clone() const {
 void ReplicatedAllGatherOp::setup() {
   const auto replicationFactor =
       getIr().getSessionOptions().replicatedGraphCount;
+  DataType type =
+      inTensor(ReplicatedAllGatherOp::getInIndex())->info.dataType();
+  Shape shape = gatheredOutInfo.shape();
   if (gatheredOutInfo.shape().empty()) {
     gatheredOutInfo = inInfo(ReplicatedAllGatherOp::getInIndex());
-    Shape shape(1, replicationFactor * gatheredOutInfo.nelms());
-    gatheredOutInfo.set(gatheredOutInfo.dataType(), shape);
+    Shape new_shape(1, replicationFactor * gatheredOutInfo.nelms());
+    shape = new_shape;
   }
+  gatheredOutInfo.set(type, shape);
   outInfo(getOutIndex()) = gatheredOutInfo;
 }
 
